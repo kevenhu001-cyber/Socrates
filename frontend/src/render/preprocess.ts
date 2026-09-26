@@ -7,6 +7,35 @@
 
 import { _autoWrapBareBracketMath, fixHeadingMarkers, fixMarkdownTableSeparators } from './helpers.js';
 
+/* A line that is nothing but `$…$` is almost always a display formula the
+   model forgot to double up (weak models put `$x^2$` on its own line), so it
+   is promoted to `$$…$$`. Both preprocessors share this rule: when only the
+   final pass applied it, a settled streaming block showed the formula inline
+   and it jumped to a centred display formula at finish.
+
+   `complete` says the text cannot grow any more — the final pass, a settled
+   streaming block, a segment closed off by a tool row. Only then may the LAST
+   line, which has no trailing newline, be promoted. On a live tail that line
+   is still being typed: `$a$` there is as likely to continue as
+   `$a$ 和 $b$ …` on the next token, and promoting it would flash a centred
+   formula for one frame. */
+const STANDALONE_MATH_LINE_RE = /(^|\n)\$([^$\n]+(?:\\\\[^$\n]*)*)\$(\s*\n|$)/g;
+const STANDALONE_MATH_CLOSED_LINE_RE = /(^|\n)\$([^$\n]+(?:\\\\[^$\n]*)*)\$(\s*\n)/g;
+
+export function promoteStandaloneInlineMath(s: string, complete: boolean): string {
+  return s.replace(
+    complete ? STANDALONE_MATH_LINE_RE : STANDALONE_MATH_CLOSED_LINE_RE,
+    function (_, lead: string, math: string, tail: string) {
+      return lead + '$$' + math + '$$' + tail;
+    },
+  );
+}
+
+export interface StreamingPreprocessOptions {
+  /** The text cannot grow any more; see promoteStandaloneInlineMath. */
+  complete?: boolean;
+}
+
 /* Pre-process raw assistant output to compensate for common
    formatting sloppiness in weak / small models. Returns a string
    with normalized delimiters and closed block structures so the
@@ -48,9 +77,7 @@ export function preprocessMarkdown(t: string | null | undefined): string {
 
   s = s.replace(/\$\$\s+([\s\S]+?)\s+\$\$/g, '$$$$' + '$1' + '$$$$');
 
-  s = s.replace(/(^|\n)\$([^$\n]+(?:\\\\[^$\n]*)*)\$(\s*\n|$)/g, function (_, lead: string, math: string, tail: string) {
-    return lead + '$$' + math + '$$' + tail;
-  });
+  s = promoteStandaloneInlineMath(s, true);
 
   function _countUnescapedDollars(s: string): number {
     let n = 0;
@@ -149,11 +176,16 @@ export function preprocessMarkdown(t: string | null | undefined): string {
 }
 
 /* Streaming-safe variant of preprocessMarkdown. Skips non-idempotent
-   rules (stray-$ escape, unclosed-fence append, $ display-promote,
-   $$ whitespace trim) that cause drift when called repeatedly on a
-   growing buffer. */
-export function preprocessMarkdownForStreaming(t: string | null | undefined): string {
+   rules (stray-$ escape, unclosed-fence append, $$ whitespace trim) that
+   cause drift when called repeatedly on a growing buffer. The standalone
+   `$…$` display promotion is shared with the final pass, gated by
+   `opts.complete` for the still-typing last line. */
+export function preprocessMarkdownForStreaming(
+  t: string | null | undefined,
+  opts?: StreamingPreprocessOptions,
+): string {
   if (!t) return t as string;
+  const complete = opts?.complete === true;
   let s = String(t);
   s = s.replace(/\r\n?/g, '\n');
   s = s.replace(/<p>\s*/gi, '').replace(/\s*<\/p>/gi, '\n');
@@ -178,6 +210,16 @@ export function preprocessMarkdownForStreaming(t: string | null | undefined): st
   s = s.replace(/\\\(([\s\S]+?)\\\)/g, function (m) {
     return _stash('\\(' + m.slice(2, -2).trim() + '\\)');
   });
+
+  /* Same standalone-formula promotion as the final pass. Closed fences are
+     stashed above, so a ``` still present here opens a fence that has not
+     closed yet: everything from it on is code being typed and stays as-is
+     (a LaTeX sample line would otherwise read `$$…$$` until the fence
+     closes). */
+  const openFence = s.indexOf('```');
+  s = openFence === -1
+    ? promoteStandaloneInlineMath(s, complete)
+    : promoteStandaloneInlineMath(s.slice(0, openFence), false) + s.slice(openFence);
 
   s = _autoWrapBareBracketMath(s);
   /* Mirror the `---` horizontal-rule fix from preprocessMarkdown.

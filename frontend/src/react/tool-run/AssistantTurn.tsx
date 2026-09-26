@@ -70,12 +70,16 @@ function useProseRenderer(live: boolean): {
     const final = legacy.renderAssistantHTML;
     const progressive = legacy.renderAssistantProgressive;
     /* A runtime without the streaming variant (an older bridge, a unit-test
-       harness) still renders — formatMsg's assumptions only bite mid-stream. */
-    const paint = (text: string): string => {
+       harness) still renders — formatMsg's assumptions only bite mid-stream.
+       `complete` is true for text that can no longer grow (settled blocks,
+       segments closed off by a tool row): the streaming renderer then applies
+       its end-of-input rules too, so the block paints exactly what the final
+       renderer paints at finish instead of changing shape there. */
+    const paint = (text: string, complete: boolean): string => {
       const clean = stripLegacyToolHtml(text);
       if (!clean.trim()) return '';
       try {
-        return live && progressive ? progressive(clean) : final(clean);
+        return live && progressive ? progressive(clean, { complete }) : final(clean);
       } catch (_) {
         /* A markdown failure in one segment must not blank the whole answer. */
         return '';
@@ -86,7 +90,7 @@ function useProseRenderer(live: boolean): {
       const key = live ? 'l' + text : 'f' + text;
       const hit = cache.get(key);
       if (hit !== undefined) return hit;
-      const box = { __html: paint(text) };
+      const box = { __html: paint(text, true) };
       /* Evict the oldest half rather than clear(): a wholesale clear hands
          every still-mounted settled div a fresh {__html} object on the next
          render, and React rewrites all of their innerHTML in one frame —
@@ -115,7 +119,7 @@ function useProseRenderer(live: boolean): {
     const tail = (text: string): { __html: string } => {
       if (lastTailBox !== null && text === lastTailText) return lastTailBox;
       lastTailText = text;
-      lastTailBox = { __html: paint(text) };
+      lastTailBox = { __html: paint(text, false) };
       return lastTailBox;
     };
     return { settled, tail };

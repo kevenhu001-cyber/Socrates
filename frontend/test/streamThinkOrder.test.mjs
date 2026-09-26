@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 
 /* Regression tests for the inline-<think> scanner in chat/stream.js.
  *
- * 1. Tiny head chunks: the scanner holds back up to 7 chars per frame to
- *    reassemble a `<think>` split across chunks. The first frame(s) of a
- *    plain answer therefore emit nothing until more text arrives — the
- *    end-of-stream flush must return those head chars so the saved
- *    message is complete.
+ * 1. Tiny head chunks: the scanner holds back a trailing partial `<think`
+ *    so a tag split across chunks can be reassembled. Only that partial
+ *    tag may wait (P_think-tail-hold): ordinary prose is emitted with the
+ *    delta that carried it, and the end-of-stream flush still returns
+ *    anything held so the saved message is complete.
  *
  * 2. Back-to-back think blocks in ONE frame (`</think>HEAD<think>…`):
  *    the remainder after the first close must be reprocessed BEFORE
@@ -89,7 +89,7 @@ async function runStream(options = {}) {
   return { result, full, thinking: thinking.join(''), events };
 }
 
-test('tiny head chunks survive the 7-char think-tag hold', async () => {
+test('tiny head chunks survive the think-tag hold', async () => {
   installEnvironment([
     frame('你好'),
     frame('，我是'),
@@ -173,4 +173,33 @@ test('an incomplete think marker at EOF after tool_use never leaks into answer t
   assert.deepEqual(offsets, ['Visible before ']);
   assert.equal(result.text, 'Visible before ');
   assert.equal(full, result.text);
+});
+
+test('plain prose reaches onDelta with the delta that carried it', async () => {
+  /* P_think-tail-hold — the scanner used to keep the last 7 characters of
+     every delta, so the typing frontier lagged and an answer's final
+     characters only appeared with the finish re-render. */
+  installEnvironment([
+    frame('第一句话说完了。'),
+    frame('第二句也说完了。'),
+  ]);
+
+  const { result, events } = await runStream();
+  const texts = events.filter((event) => event.type === 'text');
+  assert.equal(texts[0].full, '第一句话说完了。');
+  assert.equal(texts[1].full, '第一句话说完了。第二句也说完了。');
+  assert.equal(result.text, '第一句话说完了。第二句也说完了。');
+});
+
+test('only a trailing partial <think tag waits for the next chunk', async () => {
+  installEnvironment([
+    frame('Answer <th'),
+    frame('ink>secret</think> done, and a < b stays prose.'),
+  ]);
+
+  const { result, events, thinking } = await runStream();
+  const texts = events.filter((event) => event.type === 'text');
+  assert.equal(texts[0].full, 'Answer ', 'the partial tag is held, the prose before it is not');
+  assert.equal(result.text, 'Answer  done, and a < b stays prose.');
+  assert.equal(thinking, 'secret');
 });

@@ -34,6 +34,20 @@ function warnBadFrame(evName,err){
   try{console.warn('[stream] failed to handle '+evName+' frame:',err&&err.message||err)}catch(_){}
 }
 
+/* P_think-tail-hold — length of the longest suffix of `s` that could still
+   grow into an opening `<think>` tag in the next chunk ("<", "<t", …
+   "<think"). Only that much visible text has to wait for the next delta.
+   The scanner used to hold back the last 7 characters of EVERY delta, so the
+   typing frontier always lagged and the final characters of an answer only
+   appeared together with the finish re-render. */
+var THINK_OPEN_TAG="<think>";
+function pendingThinkOpenLength(s){
+  for(var n=Math.min(s.length,THINK_OPEN_TAG.length-1);n>0;n--){
+    if(s.slice(-n)===THINK_OPEN_TAG.slice(0,n))return n;
+  }
+  return 0;
+}
+
 /* Format a Retry-After-seconds value as a short human phrase.
    Used by the 429 toast so the message reads "Try again in 2 min"
    rather than the raw 178s. Anything below 60s collapses to seconds
@@ -240,14 +254,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
        exposed as literal parser markup. */
     var flushVisibleThinkTail=function(){
       if(thinkOpen||!thinkTail.length)return;
-      var thinkTag="<think>";
-      var keepPrefix=0;
-      for(var prefixLength=Math.min(thinkTail.length,thinkTag.length-1);prefixLength>0;prefixLength--){
-        if(thinkTail.slice(-prefixLength)===thinkTag.slice(0,prefixLength)){
-          keepPrefix=prefixLength;
-          break;
-        }
-      }
+      var keepPrefix=pendingThinkOpenLength(thinkTail);
       var visibleLength=thinkTail.length-keepPrefix;
       if(visibleLength<=0)return;
       var visibleTail=thinkTail.slice(0,visibleLength);
@@ -455,11 +462,11 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
                 var probe=thinkTail+delta;
                 var openIdx=probe.indexOf("<think>");
                 if(openIdx===-1){
-                  /* No opening tag in sight. Flush probe-minus-tail
-                     to onDelta and shrink tail to the last 7 chars
-                     ("<think>" is 7 chars — anything shorter cannot
-                     start a tag in the next chunk). */
-                  var safeLen=Math.max(0,probe.length-7);
+                  /* No opening tag in sight. Flush everything except a
+                     trailing partial "<think" (P_think-tail-hold): only a
+                     suffix that is a prefix of the tag can still become
+                     one in the next chunk. */
+                  var safeLen=probe.length-pendingThinkOpenLength(probe);
                   var safeStr=probe.slice(0,safeLen);
                   thinkTail=probe.slice(safeLen);
                   if(safeStr.length>0){
@@ -522,7 +529,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
                       /* Recurse into the "not in think" branch. */
                       var oi2=remaining.indexOf("<think>");
                       if(oi2===-1){
-                        var sl2=Math.max(0,remaining.length-7);
+                        var sl2=remaining.length-pendingThinkOpenLength(remaining);
                         var sf2=remaining.slice(0,sl2);
                         thinkTail=remaining.slice(sl2);
                         if(sf2.length>0){
@@ -550,9 +557,9 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
                     }
                     break;
                   }
-                  /* Keep a 7-char tail in case <think> opens at the
-                     start of the next chunk. */
-                  var keepLen=Math.min(after.length,7);
+                  /* Keep a trailing partial "<think" in case the tag
+                     completes at the start of the next chunk. */
+                  var keepLen=pendingThinkOpenLength(after);
                   thinkTail=after.slice(after.length-keepLen);
                   var bodyStr=after.slice(0,after.length-keepLen);
                   if(bodyStr.length>0){

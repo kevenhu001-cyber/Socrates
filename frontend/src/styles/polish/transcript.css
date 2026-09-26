@@ -46,15 +46,42 @@
 }
 #appShell .msg-body pre code { background: transparent; padding: 0; }
 
-/* Prose rhythm. */
-#appShell .msg-body { line-height: 1.65; }
-#appShell .msg-body p { margin-bottom: 10px; }
+/* Prose rhythm. One variable feeds the paragraph gap AND the live-turn seam
+   rule below, so the two cannot drift apart again. */
+#appShell .msg-body { line-height: 1.65; --msg-para-gap: 10px; }
+#appShell .msg-body p { margin-bottom: var(--msg-para-gap); }
 #appShell .msg-body p:last-child { margin-bottom: 0; }
+/* P_stream-seam — a live turn mounts every settled markdown block in its own
+   `display:contents` wrapper (react/tool-run/AssistantTurn.tsx), so each
+   block's last <p> also matches `p:last-child` above. The finalized turn
+   renders the same prose in ONE wrapper, where only the true last paragraph
+   does. Without this, every paragraph gap read 0 while streaming and snapped
+   open at finish, shifting all text below it. */
+#appShell .msg-body .tool-run-prose.is-settled > p:last-child { margin-bottom: var(--msg-para-gap); }
 
 /* Streaming cursor — a soft pulse dot instead of a hard caret when the
    turn is mid-flight (restore owns the exact glyph; refine its motion). */
 #appShell .stream-cursor {
   animation: polishCursorPulse 1s ease-in-out infinite;
+}
+/* P_stream-cursor-flow — the dot trails the turn after the prose blocks. As
+   an inline-block there it opened a line box of its own (~34px) that vanished
+   at finish, pulling the toolbar and everything under it up. At zero height it
+   hangs in the toolbar row instead — that row is laid out, just transparent,
+   while streaming — so the toolbar fades in where the dot was and the turn's
+   height does not change. */
+#appShell .msg-body > .stream-cursor {
+  display: block;
+  width: 12px;
+  height: 0;
+  margin-left: 0;
+}
+#appShell .msg-body > .stream-cursor::before {
+  inset: auto;
+  top: 8px;
+  left: 0;
+  width: 12px;
+  height: 12px;
 }
 @keyframes polishCursorPulse {
   0%, 100% { opacity: 1; }

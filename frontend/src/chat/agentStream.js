@@ -74,7 +74,8 @@ export function beginAgentTextStream(){
       var parts=splitter.push(full);
       if(parts.reset){settled.innerHTML="";lastTail=null}
       for(var bi=0;bi<parts.added.length;bi+=1){
-        settled.insertAdjacentHTML("beforeend",formatMsgProgressive(parts.added[bi]));
+        /* A settled block can no longer grow: render it as finished text. */
+        settled.insertAdjacentHTML("beforeend",formatMsgProgressive(parts.added[bi],{complete:true}));
       }
       if(parts.tail!==lastTail){
         live.innerHTML=parts.tail?formatMsgProgressive(parts.tail):"";

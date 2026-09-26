@@ -639,20 +639,13 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
 
 /* P_declarative-tool-run — AssistantTurn wraps each prose slice of rawText in
    its own element so a tool row can sit between two slices. `display:contents`
-   takes the wrapper out of the box tree, so `.msg-body > p` spacing and
-   `:first-child` rules keep matching exactly as they did when the whole answer
-   was one HTML string. */
+   takes the wrapper out of the box tree, so margins collapse and flow exactly
+   as they did when the whole answer was one HTML string. Structural selectors
+   (`:first-child`, `:last-child`, `+`) still see the wrapper, though: a live
+   turn splits its prose into one wrapper per settled block, which is why the
+   paragraph seam rule (P_stream-seam) sits next to `p:last-child` in
+   polish/transcript.css — it has to outrank that `#appShell` rule. */
 .tool-run-prose{display:contents}
-/* P_stream-seam — during a live turn the settled prefix and the growing tail
-   are separate `display:contents` wrappers, so the settled prefix's last
-   paragraph matches `p:last-child` and its bottom margin collapses to 0.
-   The gap to the paragraph still being typed therefore read ~0 while the
-   finished text below the same cursor read .72em/8px — and every paragraph
-   that crossed the seam shifted all text above it as its margin came back.
-   Pin the seam paragraph to the same bottom margin a settled paragraph uses
-   in each mode, so spacing is identical before, during, and after streaming. */
-.msg .msg-body .tool-run-prose.is-settled:not(:empty)>p:last-child{margin-bottom:8px}
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg .msg-body .tool-run-prose.is-settled:not(:empty)>p:last-child{margin-bottom:.72em}
 .tool-run-group{
   margin:8px 0 4px;
   border:0;

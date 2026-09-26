@@ -82,6 +82,37 @@ function randomSuffix(): string {
   return Math.random().toString(36).slice(2, 7);
 }
 
+/* A "Sources:" marker opening a line, Chinese variants included. */
+const SOURCES_MARKER_RE = /(^|\n)[ \t]*(?:Sources?|参考来源|来源|参考资料|参考文献|引用|参考)[ \t]*[:：]/gi;
+/* One entry of a citation list: a URL, a markdown link, a bare domain on a
+   common TLD, or a [n] / 【n】 reference. */
+const CITATION_ENTRY_RE =
+  /https?:\/\/|\bwww\.|\]\(|^(?:[-*+•]\s*)?(?:\[\d{1,3}\]|【\d{1,3}】)|\b[\w-]+(?:\.[\w-]+)*\.(?:com|org|net|edu|gov|io|dev|ai|cn|wiki|info|co|me|app)\b/i;
+
+/**
+ * Drop a trailing "Sources: …" citation list (sources already live in the
+ * search tool card). Only a genuine list goes: the marker must open the
+ * answer's final stretch and every non-blank line after it must be a
+ * citation entry. The previous rule cut from the FIRST marker line to the
+ * end, so an ordinary "参考：详见教材第三章。" mid-answer deleted everything
+ * after it — and since only this final pass applied it, the answer visibly
+ * lost its tail at finish.
+ */
+export function stripTrailingSources(text: string): string {
+  for (const m of text.matchAll(SOURCES_MARKER_RE)) {
+    const at = m.index ?? 0;
+    const entries = text
+      .slice(at + m[0].length)
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (entries.every((line) => CITATION_ENTRY_RE.test(line))) {
+      return text.slice(0, at);
+    }
+  }
+  return text;
+}
+
 /**
  * Build the final message-body HTML for one assistant raw text,
  * scheduling widget mounts for the placeholder slots.
@@ -98,10 +129,7 @@ export function buildAssistantHtml(rawText: unknown): string {
      (e.g. "来源：意大利语…"), and deleting it reads as the head of
      the answer being swallowed. */
   if (appMode === 'chat') {
-    const stripped = text.replace(
-      /(?:^|\n)\s*(?:Sources?|参考来源|来源|参考资料|参考文献|引用|参考)\s*[:：][\s\S]*$/i,
-      '',
-    );
+    const stripped = stripTrailingSources(text);
     if (stripped.trim()) text = stripped;
   }
   /* P_strip-citations — the answer body carries no [1]/[2] search-citation

@@ -8,7 +8,7 @@
 
 import { decodeEntities, esc, escAttr, escHTML, KATEX_MACROS, _looksLikeLatex, safeHljsLang, stripTags } from './helpers.js';
 import { renderMermaid, renderViz, renderVizLoading, renderPlot } from './viz.js';
-import { preprocessMarkdown, preprocessMarkdownForStreaming } from './preprocess.js';
+import { preprocessMarkdown, preprocessMarkdownForStreaming, type StreamingPreprocessOptions } from './preprocess.js';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.js';
 import { sanitizeUrls } from '../util/safe.js';
 import { ensureKatex, onKatexReady } from '../vendor/lazy.js';
@@ -682,19 +682,28 @@ declare global {
 const MAX_RENDER_DEPTH = 8;
 let _renderDepth = 0;
 
-export function formatMsgProgressive(t: string | null | undefined): string {
+/**
+ * Streaming-safe renderer. Pass `{ complete: true }` when the text can no
+ * longer grow (a settled block, a segment closed off by a tool row): the
+ * end-of-input rules that are unsafe on a still-typing tail then run too, so
+ * the output matches what formatMsg paints for the same text at finish.
+ */
+export function formatMsgProgressive(
+  t: string | null | undefined,
+  opts?: StreamingPreprocessOptions,
+): string {
   if (!t) return '';
   if (_renderDepth >= MAX_RENDER_DEPTH) return '<p>' + escHTML(String(t)) + '</p>';
   _renderDepth += 1;
   try {
-    return _formatMsgProgressive(String(t));
+    return _formatMsgProgressive(String(t), opts);
   } finally {
     _renderDepth -= 1;
   }
 }
 
-function _formatMsgProgressive(t: string): string {
-  let s = preprocessMarkdownForStreaming(t);
+function _formatMsgProgressive(t: string, opts?: StreamingPreprocessOptions): string {
+  let s = preprocessMarkdownForStreaming(t, opts);
   if (s.charCodeAt(s.length - 1) === 10) { s = s.slice(0, -1); }
   if (!s) return '';
 

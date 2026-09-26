@@ -43,6 +43,39 @@ test('chat mode strips a trailing Sources block, tutor mode keeps it', () => {
   }
 });
 
+test('chat mode keeps prose that follows a mid-answer 参考：/来源： line', () => {
+  /* The old rule cut from the FIRST marker line to the end, so an ordinary
+     reference sentence swallowed the rest of the answer at finish. */
+  setAppMode('chat');
+  try {
+    const html = buildAssistantHtml('正文第一段。\n\n参考：教材第三章。\n\n后续还有很重要的内容。');
+    assert.match(html, /教材第三章/);
+    assert.match(html, /后续还有很重要的内容/);
+    const mixed = buildAssistantHtml('Answer.\n\nSources: example.com\n\nHope this helps!');
+    assert.match(mixed, /Hope this helps!/);
+  } finally {
+    setAppMode('chat');
+  }
+});
+
+test('chat mode strips a trailing citation list with links or [n] entries', () => {
+  setAppMode('chat');
+  try {
+    const html = buildAssistantHtml(
+      '判别式决定根的个数。\n\n参考资料：\n[1] 维基百科：二次方程\n[2] https://example.com/quadratic',
+    );
+    assert.match(html, /判别式决定根的个数/);
+    assert.doesNotMatch(html, /维基百科|example\.com|参考资料/);
+    const links = buildAssistantHtml(
+      'Answer text.\n\nSources:\n- [Wiki](https://en.wikipedia.org/wiki/Quadratic)\n- www.khanacademy.org',
+    );
+    assert.match(links, /Answer text\./);
+    assert.doesNotMatch(links, /wikipedia|khanacademy|Sources/);
+  } finally {
+    setAppMode('chat');
+  }
+});
+
 test('chat mode keeps an answer that STARTS with a sources-like marker', () => {
   /* The trailing-Sources rule must never blank the whole bubble: a short
      answer can legitimately open with such a marker (e.g. an etymology

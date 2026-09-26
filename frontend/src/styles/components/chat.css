@@ -74,6 +74,20 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   }
 }
 
+/* P_stream-finish-clip — #msgList is a flex column, and the turn-anchor
+   reserve gives the newest row an explicit min-height, which replaces the
+   automatic "never smaller than my content" minimum. With the default
+   flex-shrink:1 a long answer was squeezed back to the reserve and its
+   content overflowed the row. Harmless while streaming (the live row is
+   content-visibility: visible), but once the settled row picks up
+   content-visibility:auto below, paint containment clipped that overflow and
+   dropped it from the scroll range: at finish the answer jumped and its tail
+   became unreachable. Rows keep their content height; the reserve stays a
+   minimum. */
+#appShell #msgList > .msg {
+  flex-shrink: 0;
+}
+
 /* P_perf-scroll — long-conversation scrolling: settled assistant turns skip
    layout/paint while off-screen. Scoped to [data-stream-settled] so the live
    streaming row — whose height the streaming turn's rAF scheduler measures

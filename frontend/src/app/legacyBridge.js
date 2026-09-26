@@ -278,10 +278,12 @@ window.__socratesLegacy = {
        the bubble; this preprocessor tolerates partial input. AssistantTurn
        uses it for a live turn and renderAssistantHTML once the turn settles,
        which is the same hand-off the legacy pipeline did at finish(). */
-    renderAssistantProgressive: function (rawText) {
+    renderAssistantProgressive: function (rawText, opts) {
       /* P_strip-citations — same body contract as renderAssistantHTML, so a
-         marker never flashes in the live tail and then vanishes at finish. */
-      return formatMsgProgressive(stripCitationMarkers(stripChatArtifacts(String(rawText || ''))));
+         marker never flashes in the live tail and then vanishes at finish.
+         `opts.complete` marks text that can no longer grow (a settled
+         block): it renders exactly as renderAssistantHTML will at finish. */
+      return formatMsgProgressive(stripCitationMarkers(stripChatArtifacts(String(rawText || ''))), opts);
     },
   },
   /* P_react-live-turn — the two surfaces a declarative turn has to hand back:

@@ -217,8 +217,12 @@ export interface LegacyRender {
    * tag, so a partially-arrived answer renders as markdown instead of raw
    * LaTeX. Used for a turn that is still in flight; the settled string still
    * goes through `renderAssistantHTML`.
+   *
+   * `complete: true` marks text that can no longer grow (a settled block, a
+   * segment closed off by a tool row), so rules that are only safe on
+   * finished text also run and the block paints exactly as it will at finish.
    */
-  renderAssistantProgressive?(rawText: string): string;
+  renderAssistantProgressive?(rawText: string, opts?: { complete?: boolean }): string;
 }
 
 /**
