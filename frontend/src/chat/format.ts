@@ -79,7 +79,7 @@ function formatSourcesBlock(sources: Array<{ title?: string; snippet?: string; u
   });
   return '[Web research] — query: "' + query + '". ' +
     'Each result below was retrieved live from the web. ' +
-    'Weave the facts into your reply as natural prose. Do NOT add [1]/[2] citation markers, do NOT append a "Sources:"/"References:" list, and do NOT paste result URLs into your reply (the UI already shows every source to the user). ' +
+    'Weave the facts into your reply as natural prose. Do NOT add [1]/[2] citation markers or append a "Sources:"/"References:" list. Attribute claims supported only by these snippets with a Markdown link to the source URL when no tool source card covers them. ' +
     'Do NOT invent facts not supported by the results; if a result is irrelevant, ignore it.\n' +
     lines.join('\n');
 }

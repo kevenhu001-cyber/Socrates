@@ -22,7 +22,7 @@
  *     loops. The 8 s REQUEST_TIMEOUT below covers typical latency.
  */
 
-import { runMmx } from '../../lib/spawnMmx.js';
+import { isMmxCliAvailable, runMmx } from '../../lib/spawnMmx.js';
 
 const REQUEST_TIMEOUT = 8_000;
 
@@ -51,6 +51,10 @@ function unavailable(reason: string): SearchResult[] {
  */
 export async function searchMmx(query: string, limit = 10, signal?: AbortSignal | null): Promise<SearchResult[]> {
   if (!query || !String(query).trim()) return [];
+  /* Skip the spawn entirely when the CLI is not installed — an ENOENT
+     per query used to waste a child-process attempt and log a warning
+     on every web_search call. */
+  if (!isMmxCliAvailable()) return unavailable('cli_missing');
 
   let stdout;
   try {

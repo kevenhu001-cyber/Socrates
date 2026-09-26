@@ -2,13 +2,13 @@
  * web_search executor.
  *
  * P_search-numbered — results are formatted as a numbered list with
- * [1], [2], … markers that match the system prompt's citation convention.
+ * [1], [2], … markers for result identification; the prose uses source cards.
  * Searches are idempotent and provider/network failures are often
  * transient, so it retries once; code execution deliberately does not
  * use this path because repeating it may have side effects.
  */
 
-import { webSearch } from '../../../../services/webSearch.js';
+import { webSearch, WEB_SEARCH_CITATION_GUIDANCE } from '../../../../services/webSearch.js';
 import type { ToolExecutor, ToolExecutionResult } from './types.js';
 import type { SearchResult, ToolResult, WebSearchError } from '../types.js';
 
@@ -84,7 +84,7 @@ export const executeWebSearch: ToolExecutor = async (
       const source = r.source ? `    Source: ${r.source}\n` : '';
       return `[${idx}] ${title}\n    URL: ${url}\n${date}${source}    Snippet: ${snippet}`;
     });
-    const footer = '\n\nCite inline using the [1]/[2] markers so the UI can link each claim back to its source. Do NOT append a "Sources:"/"References:" list or paste URLs into your reply — the UI renders the Source Card automatically.';
+    const footer = `\n\n${WEB_SEARCH_CITATION_GUIDANCE}`;
     const output = blocks.join('\n\n') + footer;
     result = { status: 'completed', output, results: searchResults, retryable: false };
     emitter.event('tool_result', {

@@ -17,6 +17,7 @@
     "db:seed": "tsx src/db/seed.js",
     "lint": "npm run typecheck",
     "test": "node scripts/run-tests.mjs",
+    "test:unit": "node --import dotenv/config --import tsx --test test/*.test.js test/*.test.mjs",
     "test:strict": "node scripts/run-tests.mjs --strict",
     "test:coverage": "node --import dotenv/config --import tsx --test --experimental-test-coverage --test-coverage-exclude='test/**' --test-coverage-exclude='scripts/**' --test-coverage-exclude='**/*.generated.ts' test/*.test.js test/*.test.mjs"
   },

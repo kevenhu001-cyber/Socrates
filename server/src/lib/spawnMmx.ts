@@ -19,6 +19,7 @@
  */
 
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 
@@ -48,6 +49,36 @@ export function buildSpawnEnv(extra: Record<string, string> = {}) {
   const extraPaths = DEFAULT_EXTRA_PATHS.join(sep);
   env.PATH = extraPaths + sep + (env.PATH || process.env.PATH || '');
   return env;
+}
+
+let mmxAvailable: boolean | null = null;
+
+/**
+ * Cached PATH probe for the mmx binary. The CLI is an optional search
+ * engine / vision helper: when it is not installed every spawn fails
+ * with ENOENT, which costs a failed child-process attempt and a warn
+ * log on every call. Resolved once per process.
+ */
+export function isMmxCliAvailable(): boolean {
+  if (mmxAvailable !== null) return mmxAvailable;
+  const sep = process.platform === 'win32' ? ';' : ':';
+  const names = process.platform === 'win32'
+    ? ['mmx.cmd', 'mmx.exe', 'mmx']
+    : ['mmx'];
+  const dirs = (buildSpawnEnv().PATH || '').split(sep);
+  for (const dir of dirs) {
+    if (!dir) continue;
+    for (const name of names) {
+      try {
+        fs.accessSync(path.join(dir, name), fs.constants.X_OK);
+        mmxAvailable = true;
+        return true;
+      } catch { /* not in this directory */ }
+    }
+  }
+  mmxAvailable = false;
+  console.warn('[spawnMmx] mmx CLI not found on PATH — mmx-backed search/vision is disabled until it is installed and the server restarted');
+  return false;
 }
 
 /**

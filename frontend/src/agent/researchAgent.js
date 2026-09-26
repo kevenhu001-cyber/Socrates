@@ -13,6 +13,7 @@
 
 import { stateStore } from '../state/store.js';
 import { showToast } from '../ui/toast.js';
+import { fetchPagesForContext } from '../chat/webLinks.js';
 
 /* Start a deep research session. Returns a Promise that resolves
    when the research is complete and the report has been posted. */
@@ -94,7 +95,7 @@ async function startDeepResearch(query) {
       });
       try {
         var content = await _fetchSource(source.url);
-        if (!content && source.content) content = String(source.content).slice(0, 5000);
+        if (!content && source.content) content = "Search snippet (page unavailable): " + String(source.content).slice(0, 500);
         return content
           ? { url: source.url, title: source.title || source.url, content: content }
           : null;
@@ -202,16 +203,15 @@ function _heuristicPlan(query) {
 
 /* Search for a topic using the existing web search infrastructure.
    fetchWebContext resolves to { ok, results, context, sources } —
-   `sources` is the enriched result list ({title,url,snippet,
-   fullContent}). The old code read a non-existent `.pages` field,
-   so deep research always came back empty. */
+   `sources` contains snippets; the reading phase fetches only the
+   deduplicated URLs selected for the report. */
 async function _searchTopic(query) {
   if (typeof window.fetchWebContext === "function") {
     try {
       var res = await window.fetchWebContext(query, { background: false });
       if (res && res.ok && Array.isArray(res.sources)) {
         return res.sources.slice(0, 5).map(function (p) {
-          return { url: p.url, title: p.title, snippet: p.snippet, content: p.fullContent || p.snippet };
+          return { url: p.url, title: p.title, snippet: p.snippet, content: p.snippet };
         });
       }
     } catch { /* search failed */ }
@@ -219,16 +219,13 @@ async function _searchTopic(query) {
   return [];
 }
 
-/* Fetch the content of a source URL. Uses the existing link fetching. */
+/* Fetch the content of a selected source URL through the shared link reader. */
 async function _fetchSource(url) {
-  if (typeof window.fetchPagesForContext === "function") {
-    try {
-      var pages = await window.fetchPagesForContext([url]);
-      if (pages && pages.length && pages[0].content) {
-        return pages[0].content.slice(0, 4000);
-      }
-    } catch { /* fetch failed */ }
-  }
+  try {
+    var pages = await fetchPagesForContext([url]);
+    var page = pages && pages.results && pages.results[0];
+    if (page && page.ok && page.content) return page.content.slice(0, 4000);
+  } catch { /* fetch failed */ }
   return null;
 }
 

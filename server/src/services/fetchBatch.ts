@@ -12,6 +12,7 @@ interface ExtractedArticle {
   length?: number;
   date?: string;
   method?: string;
+  truncated?: boolean;
 }
 
 /**
@@ -126,7 +127,7 @@ function createPinnedAgent(addresses: { address: string; family: number }[]) {
  * fetchBatch shape. Keeping extraction and URL-cache ownership in Node makes
  * the Rust cutover reversible and preserves the existing Readability output.
  */
-async function materializeRustResponse(url: string, cached: urlCache.CacheEntry | null, raw: RustFetchResponse) {
+async function materializeRustResponse(url: string, cached: urlCache.CacheEntry | null, raw: RustFetchResponse, maxChars: number) {
   if (!raw.ok) {
     return { ok: false, url, code: raw.code || (raw.status ? 'http_status' : 'fetch_failed'), reason: raw.reason || (raw.status ? `HTTP ${raw.status}` : 'Fetch failed') };
   }
@@ -134,7 +135,7 @@ async function materializeRustResponse(url: string, cached: urlCache.CacheEntry 
   if (raw.status === 304) {
     if (!cached) return { ok: false, url, code: 'cache_miss', reason: 'HTTP 304 without a cached response' };
     let extracted: ExtractedArticle | null = null;
-    try { extracted = (await extractArticle(cached.html, raw.finalUrl || url)) as unknown as ExtractedArticle; } catch { extracted = null; }
+    try { extracted = (await extractArticle(cached.html, raw.finalUrl || url, maxChars > 200_000 ? { maxChars } : {})) as unknown as ExtractedArticle; } catch { extracted = null; }
     if (extracted) {
       return {
         ok: true,
@@ -146,7 +147,7 @@ async function materializeRustResponse(url: string, cached: urlCache.CacheEntry 
         pageDate: extracted.date,
         method: extracted.method,
         rawHtml: cached.html,
-        truncated: cached.truncated || false,
+        truncated: Boolean(cached.truncated || extracted.truncated),
         chars: cached.html.length,
         fromCache: true,
       };
@@ -202,7 +203,7 @@ async function materializeRustResponse(url: string, cached: urlCache.CacheEntry 
     };
   }
   let extracted: ExtractedArticle | null = null;
-  try { extracted = (await extractArticle(text, extractionUrl)) as unknown as ExtractedArticle; } catch { extracted = null; }
+  try { extracted = (await extractArticle(text, extractionUrl, maxChars > 200_000 ? { maxChars } : {})) as unknown as ExtractedArticle; } catch { extracted = null; }
   if (extracted) {
     return {
       ok: true,
@@ -214,17 +215,47 @@ async function materializeRustResponse(url: string, cached: urlCache.CacheEntry 
       pageDate: extracted.date,
       method: extracted.method,
       rawHtml: text,
-      truncated,
+      truncated: Boolean(truncated || extracted.truncated),
       chars: text.length,
     };
   }
   return { ok: true, url, title, content: text, truncated, chars: text.length };
 }
 
-export async function fetchBatch(urls: string[]) {
+async function readBoundedText(response: Response, maxBytes: number) {
+  const reader = response.body?.getReader();
+  if (!reader) return { text: '', truncated: false };
+  const decoder = new TextDecoder();
+  let text = '';
+  let bytes = 0;
+  let finished = false;
+  let truncated = false;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) { finished = true; break; }
+      const remaining = maxBytes - bytes;
+      if (value.byteLength > remaining) {
+        text += decoder.decode(value.subarray(0, remaining), { stream: true });
+        truncated = true;
+        break;
+      }
+      text += decoder.decode(value, { stream: true });
+      bytes += value.byteLength;
+    }
+    text += decoder.decode();
+  } finally {
+    if (!finished) await reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+  return { text, truncated };
+}
+
+export async function fetchBatch(urls: string[], options: { maxBytes?: number } = {}) {
   if (!Array.isArray(urls)) throw new Error('urls must be an array');
   const maxUrls = 10;
-  const maxSize = 200_000; // 200 KB per page
+  const requestedMaxBytes = options.maxBytes;
+  const maxSize = Math.min(1_000_000, Math.max(200_000, typeof requestedMaxBytes === 'number' && Number.isFinite(requestedMaxBytes) ? Math.floor(requestedMaxBytes) : 200_000)); // 200 KB by default, 1 MB for tool reads
   const timeout = 10_000; // 10s per page
 
   const results = await Promise.allSettled(
@@ -242,10 +273,11 @@ export async function fetchBatch(urls: string[]) {
 
       // Phase 2: build conditional-GET headers from the URL cache.
       const cached = urlCache.get(url);
+      const reusableCache = cached && cached.bytes <= maxSize && !(cached.truncated && cached.bytes < maxSize) ? cached : null;
       const headers: Record<string, string> = { 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36' };
-      if (cached) {
-        if (cached.etag) headers['If-None-Match'] = cached.etag;
-        if (cached.lastModified) headers['If-Modified-Since'] = cached.lastModified;
+      if (reusableCache) {
+        if (reusableCache.etag) headers['If-None-Match'] = reusableCache.etag;
+        if (reusableCache.lastModified) headers['If-Modified-Since'] = reusableCache.lastModified;
       }
 
       // The native worker is opt-in in tests and automatically falls back
@@ -257,9 +289,9 @@ export async function fetchBatch(urls: string[]) {
         maxBytes: maxSize,
         maxRedirects: 10,
         timeoutMs: timeout,
-        extract: rustExtractionEnabled(),
+        extract: rustExtractionEnabled() && maxSize <= 200_000,
       });
-      if (rustResponse) return materializeRustResponse(url, cached, rustResponse);
+      if (rustResponse) return materializeRustResponse(url, reusableCache, rustResponse, maxSize);
 
       // Resolve DNS and pin the IP to prevent DNS rebinding.
       let pinnedRecords;
@@ -323,9 +355,9 @@ export async function fetchBatch(urls: string[]) {
           }
 
           // Phase 2: 304 Not Modified — rebuild from cached entry.
-          if (response.status === 304 && cached) {
+          if (response.status === 304 && reusableCache) {
             let extracted: ExtractedArticle | null = null;
-            try { extracted = (await extractArticle(cached.html, url)) as unknown as ExtractedArticle; } catch { extracted = null; }
+            try { extracted = (await extractArticle(reusableCache.html, url, maxSize > 200_000 ? { maxChars: maxSize } : {})) as unknown as ExtractedArticle; } catch { extracted = null; }
             if (extracted) {
               return {
                 ok: true,
@@ -336,9 +368,9 @@ export async function fetchBatch(urls: string[]) {
                 wordCount: extracted.length,
                 pageDate: extracted.date,
                 method: extracted.method,
-                rawHtml: cached.html,
-                truncated: cached.truncated || false,
-                chars: cached.html.length,
+                rawHtml: reusableCache.html,
+                truncated: Boolean(reusableCache.truncated || extracted.truncated),
+                chars: reusableCache.html.length,
                 fromCache: true,
               };
             }
@@ -346,9 +378,9 @@ export async function fetchBatch(urls: string[]) {
               ok: true,
               url,
               title: '',
-              content: cached.html,
-              truncated: cached.truncated || false,
-              chars: cached.html.length,
+              content: reusableCache.html,
+              truncated: reusableCache.truncated || false,
+              chars: reusableCache.html.length,
               fromCache: true,
             };
           }
@@ -362,9 +394,7 @@ export async function fetchBatch(urls: string[]) {
             return { ok: false, url, code: 'unsupported_content_type', reason: `Unsupported content type: ${contentType}` };
           }
 
-          let text = await response.text();
-          const truncated = text.length > maxSize;
-          if (truncated) text = text.slice(0, maxSize);
+          const { text, truncated } = await readBoundedText(response, maxSize);
 
           // Phase 2: write to URL cache with validator headers for
           // future conditional GETs.
@@ -394,7 +424,7 @@ export async function fetchBatch(urls: string[]) {
           // event loop (the 2026-07-04 incident). 5s timeout via the
           // extractor pool — null on timeout/failure, caller falls back.
           let extracted: ExtractedArticle | null = null;
-          try { extracted = (await extractArticle(text, url)) as unknown as ExtractedArticle; } catch { extracted = null; }
+          try { extracted = (await extractArticle(text, url, maxSize > 200_000 ? { maxChars: maxSize } : {})) as unknown as ExtractedArticle; } catch { extracted = null; }
 
           if (extracted) {
             return {
@@ -407,7 +437,7 @@ export async function fetchBatch(urls: string[]) {
               pageDate: extracted.date,
               method: extracted.method,
               rawHtml: text,
-              truncated,
+              truncated: Boolean(truncated || extracted.truncated),
               chars: text.length,
             };
           }
@@ -462,10 +492,10 @@ export const WEB_FETCH_TOOL = {
       '- You need to quote or verify a detail the search snippet does not contain.\n\n' +
       '## When NOT to call\n' +
       '- You do not have a concrete URL yet — call web_search first to find one.\n' +
-      '- The page is already in your context (a [Referenced page] block or a prior web_fetch this turn).\n' +
+      '- The relevant page text is already in your context (a [Referenced page] block or a prior web_fetch range this turn).\n' +
       '- The target needs a login, or is a binary file such as a PDF or image — this tool only returns text.\n\n' +
       '## Output\n' +
-      'Returns the extracted main text (truncated if very long). Summarize it in natural prose; do not paste the raw page text back to the user.',
+      'Returns at most max_chars of extracted text starting at offset (defaults: 20000 and 0). Start at offset 0; then use next_offset with the same URL to continue when has_more is yes. Ranges are zero-based with an exclusive end and total available characters are reported. If the cached page snapshot expires, restart from offset 0. The source is read up to 1 MB of raw text; source_truncated means content beyond that limit is unavailable, even when has_more is no. Summarize in natural prose; do not paste raw page text back to the user.',
     parameters: {
       type: 'object',
       properties: {
@@ -475,6 +505,8 @@ export const WEB_FETCH_TOOL = {
           minLength: 8,
           maxLength: 2000,
         },
+        offset: { type: 'integer', minimum: 0, maximum: 1000000, description: 'Character offset in the available extracted text; use next_offset to continue.' },
+        max_chars: { type: 'integer', minimum: 1, maximum: 30000, description: 'Maximum number of characters returned in this call (default 20000).' },
       },
       required: ['url'],
       additionalProperties: false,

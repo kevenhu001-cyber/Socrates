@@ -26,7 +26,7 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || '/tmp/socrates-uploads';
 
 // P6.x — zod schema caps field lengths and validates types; throws
 // ZodError → errorHandler returns 400 with the offending path.
-const SessionPayloadSchema = z.object({
+export const SessionPayloadSchema = z.object({
   /* M3 — coerce instead of reject: a legacy/non-UUID client id used to
    * 400 here (the isUuid fallback below was dead code because parse ran
    * first). Non-UUID ids now become undefined so the route mints/adopts
@@ -193,7 +193,7 @@ function clipArr<T>(v: unknown, max: number, keep: 'first' | 'last' = 'first'): 
   return (keep === 'last' ? v.slice(v.length - max) : v.slice(0, max)) as T[];
 }
 
-function sanitizeSessionPayload(body: any): any {
+export function sanitizeSessionPayload(body: any): any {
   if (!body || typeof body !== 'object') return body;
   const out: Record<string, unknown> = { ...(body as Record<string, unknown>) };
   out.topic = clipStr(out.topic, 10000);
@@ -245,12 +245,54 @@ function sanitizeSessionPayload(body: any): any {
           x.stderr = clipStr(x.stderr, 500_000);
           x.errorText = clipStr(x.errorText, 100_000);
           x.userMessage = clipStr(x.userMessage, 500_000);
-          x.detail = typeof x.detail === 'string' ? clipStr(x.detail, 100_000) : x.detail;
+          /* detail must be a STRING per the schema — a structured value
+             (e.g. the issue list planning tools return) used to sail
+             through the sanitizer and then 400 the whole save. */
+          if (x.detail != null && typeof x.detail !== 'string') {
+            try { x.detail = JSON.stringify(x.detail); } catch { x.detail = null; }
+          }
+          x.detail = clipStr(x.detail, 100_000);
           x.progressPhase = clipStr(x.progressPhase, 200);
           x.executionId = clipStr(x.executionId, 200);
-          if (typeof x.durationMs === 'number' && x.durationMs > 86_400_000) x.durationMs = 86_400_000;
-          if (Array.isArray(x.artifacts)) x.artifacts = clipArr(x.artifacts, 20);
-          if (Array.isArray(x.results)) x.results = clipArr(x.results, 20);
+          x.runId = clipStr(x.runId, 200);
+          x.status = clipStr(x.status, 60);
+          /* Loose truthy/falsy values (1, '1', 'yes') collapse to a
+             boolean so z.boolean() never sees a non-boolean. */
+          if (x.isError != null) x.isError = x.isError === true || x.isError === 'true' || x.isError === 1 || x.isError === '1';
+          if (x.retryable != null) x.retryable = x.retryable === true || x.retryable === 'true' || x.retryable === 1 || x.retryable === '1';
+          if (typeof x.durationMs === 'number') {
+            x.durationMs = Math.min(Math.max(0, x.durationMs), 86_400_000);
+          } else if (x.durationMs != null) x.durationMs = null;
+          if (typeof x.textOffset === 'number') {
+            x.textOffset = Math.min(Math.max(0, Math.trunc(x.textOffset)), 10_000_000);
+          } else if (x.textOffset != null) x.textOffset = null;
+          /* Nested collections are clipped BY FIELD, not just by array
+             length — a single 20 KB `snippet` inside results[] used to
+             blow past the 5 000-char schema bound and reject the entire
+             session save with a 400. */
+          if (Array.isArray(x.artifacts)) {
+            x.artifacts = (clipArr(x.artifacts, 20) || []).map((a: any) => {
+              if (!a || typeof a !== 'object') return { id: '' };
+              const y: Record<string, unknown> = { ...(a as Record<string, unknown>) };
+              y.id = clipStr(y.id, 100) || '';
+              y.mimeType = clipStr(y.mimeType, 200);
+              y.name = clipStr(y.name, 500);
+              return y;
+            });
+          }
+          if (Array.isArray(x.results)) {
+            x.results = (clipArr(x.results, 20) || []).map((r: any) => {
+              if (!r || typeof r !== 'object') return {};
+              const y: Record<string, unknown> = { ...(r as Record<string, unknown>) };
+              y.title = clipStr(y.title, 1000);
+              y.url = clipStr(y.url, 3000);
+              y.snippet = clipStr(y.snippet, 5000);
+              y.date = clipStr(y.date, 200);
+              y.source = clipStr(y.source, 100);
+              y.matchedQuery = clipStr(y.matchedQuery, 1000);
+              return y;
+            });
+          }
           if (Array.isArray(x.steps)) x.steps = clipArr(x.steps, 60);
           return x;
         });

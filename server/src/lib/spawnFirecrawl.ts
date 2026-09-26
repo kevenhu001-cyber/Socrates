@@ -12,6 +12,7 @@
  */
 
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 
@@ -34,6 +35,37 @@ export function buildFirecrawlSpawnEnv(extra: Record<string, string> = {}) {
   const extraPaths = DEFAULT_EXTRA_PATHS.join(sep);
   env.PATH = extraPaths + sep + (env.PATH || (process.env.PATH as string) || '');
   return env;
+}
+
+let firecrawlAvailable: boolean | null = null;
+
+/**
+ * Cached PATH probe for the firecrawl binary. The CLI is an OPTIONAL
+ * search engine: when it is not installed every spawn fails with ENOENT,
+ * which used to cost a failed child-process attempt (plus a warn-level
+ * log line) on every single web_search call. Resolved once per process —
+ * installing the CLI requires a server restart to take effect.
+ */
+export function isFirecrawlCliAvailable(): boolean {
+  if (firecrawlAvailable !== null) return firecrawlAvailable;
+  const sep = process.platform === 'win32' ? ';' : ':';
+  const names = process.platform === 'win32'
+    ? ['firecrawl.cmd', 'firecrawl.exe', 'firecrawl']
+    : ['firecrawl'];
+  const dirs = (buildFirecrawlSpawnEnv().PATH || '').split(sep);
+  for (const dir of dirs) {
+    if (!dir) continue;
+    for (const name of names) {
+      try {
+        fs.accessSync(path.join(dir, name), fs.constants.X_OK);
+        firecrawlAvailable = true;
+        return true;
+      } catch { /* not in this directory */ }
+    }
+  }
+  firecrawlAvailable = false;
+  console.warn('[spawnFirecrawl] firecrawl CLI not found on PATH — the firecrawl search engine is disabled until it is installed and the server restarted');
+  return false;
 }
 
 /**

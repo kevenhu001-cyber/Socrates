@@ -32,7 +32,13 @@ function ResultSection({ section }: { section: DetailSection }) {
             const inner = (
               <>
                 <span className="tool-inline-src-title">{source.title}</span>
-                {source.host ? <span className="tool-inline-src-host">{source.host}</span> : null}
+                {source.host || source.date || source.source ? (
+                  <span className="tool-inline-src-meta">
+                    {source.host ? <span className="tool-inline-src-host">{source.host}</span> : null}
+                    {source.date ? <span className="tool-inline-src-date">{source.date}</span> : null}
+                    {source.source ? <span className="tool-inline-src-engine">{source.source}</span> : null}
+                  </span>
+                ) : null}
               </>
             );
             const key = `${source.url || source.title}-${index}`;

@@ -509,9 +509,11 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 }
 a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--text-100))}
 .tool-inline-src-title{
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:80px;flex:1 1 180px;
 }
-.tool-inline-src-host{flex:0 0 auto;font-size:12px;color:hsl(var(--text-500))}
+.tool-inline-src-meta{display:flex;flex:0 1 auto;flex-wrap:wrap;gap:2px 8px;min-width:0;font-size:12px;color:hsl(var(--text-500))}
+.tool-inline-src-host{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.tool-inline-src-date,.tool-inline-src-engine{white-space:nowrap}
 
 /* P_codex-approval — inline, reviewable approval surface for the unified
    workspace agent. It intentionally sits inside the tool row so the user

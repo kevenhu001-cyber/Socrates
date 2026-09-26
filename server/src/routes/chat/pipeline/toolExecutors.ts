@@ -17,7 +17,7 @@
 
 import { buildToolErrorFeedback } from '../../../services/toolErrorFeedback.js';
 import { wrapUntrustedToolResult } from '../../../services/toolCallSafety.js';
-import type { ToolTurnPolicy } from '../../../services/toolTurnPolicy.js';
+import { hashToolArguments, type ToolTurnPolicy } from '../../../services/toolTurnPolicy.js';
 import { SseEmitter } from './sseEmitter.js';
 import { formatToolResultContent } from './toolFeedback.js';
 import { createToolExecutorRegistry } from './executors/registry.js';
@@ -80,9 +80,15 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
         availableTools: activeToolNames,
       });
       if (code === 'invalid_tool_arguments') {
+        /* `stage` distinguishes a JSON parse failure (provider emitted
+           malformed argument text) from a schema failure (parseable JSON
+           that violates the declared contract) — the two have different
+           fixes and previously logged identically. */
         console.warn('[chat/stream] invalid tool arguments', JSON.stringify({
           id: tc.id,
           name: toolName || 'unknown_tool',
+          stage: fieldErrors ? 'schema' : 'parse',
+          fieldErrors: fieldErrors ? String(fieldErrors).slice(0, 300) : undefined,
           length: typeof tc.function?.arguments === 'string' ? tc.function.arguments.length : 0,
           remainingRetries: deps.toolPolicy.remainingRetries(toolName),
         }));
@@ -100,6 +106,10 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
       return {
         role: 'tool',
         tool_call_id: tc.id,
+        /* `name` is part of the OpenAI tool-message contract and some
+           compatible providers (MiniMax among them) validate it — a
+           missing name turns the NEXT hop into a provider-side 400. */
+        name: toolName,
         content: wrapUntrustedToolResult(toolName, feedback.modelMessage),
       };
     }
@@ -156,10 +166,23 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
       );
     }
 
+    /* A FAILED execution must release the (name,args) pair in the
+       duplicate guard: retrying an identical call after a transient
+       error (timeout, 429, flaky engine) is the correct recovery, but
+       the guard used to reject it as `duplicate_tool_call` — which also
+       contradicted the `retryable` hint in the failure feedback. The
+       per-tool failure limit still bounds deterministic retry loops. */
+    if (result.status !== 'completed') {
+      deps.toolPolicy.unmarkCall(toolName, hashToolArguments(entry.args));
+    }
+
     const toolContent = formatToolResultContent(toolName, result);
     return {
       role: 'tool',
       tool_call_id: tc.id,
+      /* See the rejection path above: `name` is part of the OpenAI
+         tool-message contract and is validated by some providers. */
+      name: toolName,
       content: wrapUntrustedToolResult(toolName, toolContent),
     };
   };

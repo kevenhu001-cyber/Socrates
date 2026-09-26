@@ -13,7 +13,7 @@
  * HTTP server.
  *
  * Protocol (parent ↔ worker):
- *   Parent → Worker: { id, type:'extract', html, url, minChars }
+ *   Parent → Worker: { id, type:'extract', html, url, maxChars? }
  *   Worker → Parent: { id, type:'result', payload } on success
  *   Worker → Parent: { id, type:'error', message } on failure
  *
@@ -55,10 +55,10 @@ function stripJunk(doc: any) {
     .forEach((el: any) => el.remove());
 }
 
-function shape(article: any, doc: any, method: string) {
+function shape(article: any, doc: any, method: string, maxChars: number) {
   const cleaned = cleanText(article.textContent || '');
-  const truncated = cleaned.length > HARD_MAX_CHARS;
-  const content = truncated ? cleaned.slice(0, HARD_MAX_CHARS) : cleaned;
+  const truncated = cleaned.length > maxChars;
+  const content = truncated ? cleaned.slice(0, maxChars) : cleaned;
   const excerptSrc = (article.excerpt || content).replace(/\s+/g, ' ').trim();
   const excerpt = excerptSrc.length > 320 ? excerptSrc.slice(0, 317) + '…' : excerptSrc;
   let date: string | null = null;
@@ -100,10 +100,11 @@ function shape(article: any, doc: any, method: string) {
     length: content.length,
     date,
     method,
+    truncated,
   };
 }
 
-function extractByTextDensity(doc: any, url: string) {
+function extractByTextDensity(doc: any, url: string, maxChars: number) {
   const candidates = doc.querySelectorAll('article, main, div, section');
   let best: any = null;
   let bestScore = 0;
@@ -133,7 +134,8 @@ function extractByTextDensity(doc: any, url: string) {
   if (joined.length < HARD_MIN_CHARS) return null;
   const title = (doc.querySelector('title') || {}).textContent || '';
   const cleaned = cleanText(joined);
-  const content = cleaned.length > HARD_MAX_CHARS ? cleaned.slice(0, HARD_MAX_CHARS) : cleaned;
+  const truncated = cleaned.length > maxChars;
+  const content = truncated ? cleaned.slice(0, maxChars) : cleaned;
   const excerptSrc = content.replace(/\s+/g, ' ').trim();
   const excerpt = excerptSrc.length > 320 ? excerptSrc.slice(0, 317) + '…' : excerptSrc;
   let siteName: string | null = null;
@@ -147,10 +149,11 @@ function extractByTextDensity(doc: any, url: string) {
     length: content.length,
     date: null,
     method: 'heuristic',
+    truncated,
   };
 }
 
-function extract(html: string, url: string) {
+function extract(html: string, url: string, maxChars: number) {
   if (!html || !url) return null;
   let dom: any;
   try {
@@ -167,15 +170,16 @@ function extract(html: string, url: string) {
     article = new Readability(doc, { debug: false, charThreshold: HARD_MIN_CHARS }).parse();
   } catch { article = null; }
   if (article && article.textContent && article.textContent.trim().length >= HARD_MIN_CHARS) {
-    return shape(article, doc, 'readability');
+    return shape(article, doc, 'readability', maxChars);
   }
-  return extractByTextDensity(doc, url);
+  return extractByTextDensity(doc, url, maxChars);
 }
 
 parentPort!.on('message', (msg) => {
   if (!msg || msg.type !== 'extract') return;
   try {
-    const payload = extract(msg.html, msg.url);
+    const maxChars = Number.isSafeInteger(msg.maxChars) ? Math.min(1_000_000, Math.max(HARD_MAX_CHARS, msg.maxChars)) : HARD_MAX_CHARS;
+    const payload = extract(msg.html, msg.url, maxChars);
     parentPort!.postMessage({ id: msg.id, type: 'result', payload });
   } catch (e) {
     parentPort!.postMessage({ id: msg.id, type: 'error', message: String(e && (e as Error).message || e) });

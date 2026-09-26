@@ -368,6 +368,73 @@ describe('streamChatCompletion: tool_calls', () => {
     );
     assert.equal(tools.length, 0, 'no onToolUse when finish_reason !== "tool_calls"');
   });
+
+  test('dispatches onToolUse when finish_reason is "length" — truncated calls still reach the correction path', async () => {
+    globalThis.fetch = mock.fn(async () =>
+      makeSseResponse([
+        { choices: [{ delta: { tool_calls: [{
+          index: 0, id: 'call_len',
+          function: { name: 'web_search', arguments: '{"q":"trunc' },
+        }] } }] },
+        { choices: [{ delta: {}, finish_reason: 'length' }] },
+        sseDone(),
+      ]),
+    );
+    const tools = [];
+    await streamChatCompletion(
+      { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'web_search' } }] },
+      () => {}, () => {}, () => {}, () => {},
+      (tc) => tools.push(tc),
+    );
+    /* Before the fix these calls were silently dropped and the turn
+       ended with no answer; now they are emitted so the truncated JSON
+       fails parsing downstream and the model gets a correction. */
+    assert.equal(tools.length, 1);
+    assert.equal(tools[0].id, 'call_len');
+  });
+
+  test('dispatches onToolUse when the stream ends without any finish_reason', async () => {
+    globalThis.fetch = mock.fn(async () =>
+      makeSseResponse([
+        { choices: [{ delta: { tool_calls: [{
+          index: 0, id: 'call_nofin',
+          function: { name: 'web_search', arguments: '{"q":"x"}' },
+        }] } }] },
+        sseDone(),
+      ]),
+    );
+    const tools = [];
+    await streamChatCompletion(
+      { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'web_search' } }] },
+      () => {}, () => {}, () => {}, () => {},
+      (tc) => tools.push(tc),
+    );
+    assert.equal(tools.length, 1);
+    assert.equal(tools[0].function.arguments, '{"q":"x"}');
+  });
+
+  test('keeps parallel tool_calls separate when the provider omits `index`', async () => {
+    globalThis.fetch = mock.fn(async () =>
+      makeSseResponse([
+        { choices: [{ delta: { tool_calls: [
+          { id: 'call_a', function: { name: 'web_search', arguments: '{"q":"a"}' } },
+          { id: 'call_b', function: { name: 'web_fetch', arguments: '{"url":"u"}' } },
+        ] } }] },
+        { choices: [{ delta: {}, finish_reason: 'tool_calls' }] },
+        sseDone(),
+      ]),
+    );
+    const tools = [];
+    await streamChatCompletion(
+      { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'web_search' } }] },
+      () => {}, () => {}, () => {}, () => {},
+      (tc) => tools.push(tc),
+    );
+    /* Without the array-position fallback both entries used to merge
+       into accumulator slot 0 and the second call was lost. */
+    assert.equal(tools.length, 2);
+    assert.deepEqual(tools.map((t) => t.id), ['call_a', 'call_b']);
+  });
 });
 
 describe('streamChatCompletion: first-byte timeout', () => {
@@ -405,6 +472,40 @@ describe('streamChatCompletion: first-byte timeout', () => {
       else process.env.LLM_FIRST_BYTE_TIMEOUT_MS = prev;
     }
   });
+
+  test('classifies a first-byte timeout even when the reader rejects with the RAW string reason', async () => {
+    /* undici aborts a body read by rejecting reader.read() with the raw
+       abort reason — for our string reasons ('first-byte-timeout') that
+       is a bare string with no .name, which is exactly why production
+       logged "LLM error: undefined". Replicate the real semantics: error
+       the stream with signal.reason, not an AbortError. */
+    const prev = process.env.LLM_FIRST_BYTE_TIMEOUT_MS;
+    process.env.LLM_FIRST_BYTE_TIMEOUT_MS = '50';
+    try {
+      globalThis.fetch = mock.fn(async (_url, init) => new Response(
+        new ReadableStream({
+          start(controller) {
+            init.signal.addEventListener('abort', () => {
+              controller.error(init.signal.reason);
+            });
+          },
+        }),
+        { status: 200, headers: { 'Content-Type': 'text/event-stream' } },
+      ));
+      const errors = [];
+      const dones = [];
+      await streamChatCompletion(
+        BASE_OPTS, () => {}, (d) => dones.push(d), (err) => errors.push(err),
+      );
+      assert.equal(errors.length, 1);
+      assert.ok(errors[0] instanceof Error, 'expected a real Error, got ' + typeof errors[0]);
+      assert.match(errors[0].message, /no response bytes/i);
+      assert.equal(dones.length, 0);
+    } finally {
+      if (prev === undefined) delete process.env.LLM_FIRST_BYTE_TIMEOUT_MS;
+      else process.env.LLM_FIRST_BYTE_TIMEOUT_MS = prev;
+    }
+  });
 });
 
 describe('tool-call compatibility helpers', () => {
@@ -420,6 +521,20 @@ describe('tool-call compatibility helpers', () => {
     assert.equal(mergeToolArgumentDelta('{"q":"x"}', '{"q":"x"}'), '{"q":"x"}');
     assert.equal(mergeToolArgumentDelta('{"q":"x"}', '{"q":"x","count":2}'), '{"q":"x","count":2}');
     assert.equal(mergeToolArgumentDelta('', { q: 'x' }), '{"q":"x"}');
+  });
+
+  test('never concatenates a fragment onto an already-complete arguments object', () => {
+    /* prev is a closed JSON object; a trailing fragment cannot extend it
+       and concatenation used to produce `{"q":"x"}"junk` — guaranteed
+       invalid_tool_arguments downstream. */
+    assert.equal(mergeToolArgumentDelta('{"q":"x"}', '"junk'), '{"q":"x"}');
+    /* A `{}` placeholder followed by the real snapshot still resolves to
+       the latest complete object. */
+    assert.equal(mergeToolArgumentDelta('{}', '{"q":"x"}'), '{"q":"x"}');
+    /* Two complete objects in sequence: newest snapshot wins. */
+    assert.equal(mergeToolArgumentDelta('{"q":"x"}', '{"q":"y"}'), '{"q":"y"}');
+    /* An incomplete prev still concatenates fragments normally. */
+    assert.equal(mergeToolArgumentDelta('{"q":"x', '"}'), '{"q":"x"}');
   });
 
   test('merges split function names without duplicating snapshots', () => {

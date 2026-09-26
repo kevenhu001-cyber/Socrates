@@ -94,10 +94,30 @@ function normalizeProviderMessages(messages: ChatCompletionRequestOptions['messa
    * a provider-side 400. Empty string is semantically equivalent here and is
    * accepted by both strict and permissive gateways. */
   return messages.map((message) => {
+    let normalized = message;
     if ((message.role === 'assistant' && Array.isArray(message.tool_calls)) || message.role === 'tool') {
-      return { ...message, content: message.content == null ? '' : message.content };
+      normalized = { ...message, content: message.content == null ? '' : message.content };
     }
-    return message;
+    /* Reasoning models need their thinking echoed back when the turn is
+       replayed: DeepSeek reads `reasoning_content`, MiniMax requires the
+       `reasoning_details` array form. Persisted history only carries
+       reasoning_content — synthesize the details array when missing so a
+       MiniMax hop does not see a bare assistant turn (its documented
+       protocol violation for tool-call continuation). */
+    if (
+      normalized.role === 'assistant'
+      && typeof (normalized as Record<string, unknown>).reasoning_content === 'string'
+      && ((normalized as Record<string, unknown>).reasoning_content as string).length > 0
+      && !Array.isArray((normalized as Record<string, unknown>).reasoning_details)
+    ) {
+      normalized = {
+        ...normalized,
+        reasoning_details: [
+          { type: 'reasoning.text', text: (normalized as Record<string, unknown>).reasoning_content },
+        ],
+      } as typeof normalized;
+    }
+    return normalized;
   });
 }
 
@@ -225,6 +245,21 @@ export function mergeToolArgumentDelta(previous: unknown, incoming: unknown): st
     }
   } catch {
     // The incoming value is a fragment; append it below.
+  }
+
+  /* Mirror image of the snapshot case: `prev` already parses as a
+     complete object (a provider that sent the whole arguments object in
+     a single delta — sometimes `{}` as a placeholder), while `next` is a
+     bare fragment. A closed JSON object cannot be extended, so
+     concatenating produces `{...}fragment` which is guaranteed to fail
+     argument parsing. Keep the complete object and drop the stray tail. */
+  try {
+    const parsedPrev = JSON.parse(prev) as unknown;
+    if (parsedPrev && typeof parsedPrev === 'object' && !Array.isArray(parsedPrev)) {
+      return prev;
+    }
+  } catch {
+    // prev is still a fragment — genuine continuation, concatenate below.
   }
   return prev + next;
 }
@@ -376,8 +411,16 @@ export async function streamChatCompletion(
             break;
           }
           if (!RETRYABLE_STATUS.has(response.status)) break;
-          // Rate-limited / transient failure — wait and retry.
-          const backoffMs = attempt === 0 ? 1000 : 2000;
+          /* Rate-limited / transient failure — wait and retry. Honour the
+             upstream Retry-After header when one was sent (bounded at 20 s
+             so a hostile or misconfigured gateway cannot park the turn),
+             otherwise fall back to jittered backoff — with several tool
+             hops running per turn, fixed sleeps make concurrent turns
+             retry in lockstep against the same exhausted RPM window. */
+          const retryAfterSec = Number.parseFloat(response.headers.get('retry-after') || '');
+          const backoffMs = Number.isFinite(retryAfterSec) && retryAfterSec > 0
+            ? Math.min(Math.round(retryAfterSec * 1000), 20_000)
+            : (attempt === 0 ? 1000 : 2000) + Math.floor(Math.random() * 400);
           await new Promise<void>((resolve) => setTimeout(resolve, backoffMs));
           if (signal && signal.aborted) {
             onError(new Error('LLM request aborted'));
@@ -548,7 +591,12 @@ export async function streamChatCompletion(
              client can stream the in-progress JSON (e.g. Python
              source) live instead of waiting for completion. */
           if (Array.isArray(delta.tool_calls) && delta.tool_calls.length > 0) {
-            for (const tc of delta.tool_calls) _accumulateToolCall(tc);
+            /* Pass the array position as the fallback index: providers
+               that omit `index` but pack several tool_calls into one
+               delta must not collapse every entry into slot 0. */
+            for (let i = 0; i < delta.tool_calls.length; i++) {
+              _accumulateToolCall(delta.tool_calls[i], i);
+            }
           }
           /* Older OpenAI-compatible gateways use the pre-tools
              `delta.function_call` shape. Treat it as tool index 0 so a
@@ -592,7 +640,9 @@ export async function streamChatCompletion(
             }
           }
           if (Array.isArray(delta.tool_calls) && delta.tool_calls.length > 0) {
-            for (const tc of delta.tool_calls) _accumulateToolCall(tc);
+            for (let i = 0; i < delta.tool_calls.length; i++) {
+              _accumulateToolCall(delta.tool_calls[i], i);
+            }
           }
           if (delta.function_call && typeof delta.function_call === 'object') {
             _accumulateToolCall(delta.function_call as Record<string, unknown>);
@@ -627,10 +677,23 @@ export async function streamChatCompletion(
 
     /* Dispatch accumulated tool calls when the model decided to call
        a tool. The chat route listens for these in its tool-execution
-       loop (Phase 3). */
-    if (isToolFinishReason(finishReason) && typeof onToolUse === 'function') {
-      for (const tc of toolCallAcc.values()) {
-        try { onToolUse(tc); } catch { /* ignore listener errors */ }
+       loop (Phase 3). Beyond the canonical tool finish reasons we also
+       dispatch when the upstream omitted finish_reason entirely (null —
+       some gateways never send the marker) or reported 'length': in both
+       cases the accumulated calls would otherwise vanish silently and the
+       turn would end with no answer. 'length' arguments are truncated and
+       still fail argument parsing downstream, where they get the
+       structured correction package — strictly better than a dead end.
+       'stop'/'content_filter' finishes are honoured literally: a model
+       that closed in prose is not invited to run the calls it may have
+       streamed speculatively. */
+    if (toolCallAcc.size > 0 && typeof onToolUse === 'function') {
+      if (isToolFinishReason(finishReason) || finishReason == null || finishReason === 'length') {
+        for (const tc of toolCallAcc.values()) {
+          try { onToolUse(tc); } catch { /* ignore listener errors */ }
+        }
+      } else {
+        console.warn('[LLM] streamed tool calls dropped — upstream finish_reason was', JSON.stringify(finishReason));
       }
     }
 
@@ -638,26 +701,33 @@ export async function streamChatCompletion(
   } catch (err) {
     if (silenceTimer) clearTimeout(silenceTimer);
     if (firstByteTimer) clearTimeout(firstByteTimer);
-    if ((err as Error).name === 'AbortError') {
-      // Distinguish user-initiated abort (client disconnect) from the
-      // optional server-side deadlines. The user signal fires on
-      // disconnect; LLM_TOTAL_TIMEOUT_MS / LLM_SILENCE_TIMEOUT_MS /
-      // LLM_FIRST_BYTE_TIMEOUT_MS only exist when configured on.
-      if (signal && signal.aborted) {
-        onDone({ finishReason: null }); // Client disconnected — clean close
-      } else if (firstByteController.signal.aborted) {
-        onError(new Error(`LLM request timed out: no response bytes for ${firstByteMs / 1000} s`));
-      } else if (silenceController.signal.aborted) {
-        onError(new Error(`LLM stream stalled: no data for ${LLM_SILENCE_TIMEOUT_MS / 1000} s`));
-      } else if (LLM_TOTAL_TIMEOUT_MS > 0) {
-        onError(new Error(`LLM request timed out after ${LLM_TOTAL_TIMEOUT_MS / 1000} s`));
-      } else {
-        /* No deadline is configured, so there is nothing to report as a
-           timeout; treat it as a closed connection. */
-        onDone({ finishReason: null });
-      }
+    /* Classify by the controllers' signals, not `err.name`: undici
+       rejects with the RAW abort reason, which for our string reasons
+       ('silence-timeout', 'first-byte-timeout', 'turn_interrupted') is a
+       bare string with no .name, and AbortSignal.timeout() rejects with a
+       TimeoutError — neither matches 'AbortError'. Matching on the name
+       is why every timeout and client disconnect surfaced upstream as
+       "LLM error: undefined". */
+    if (signal && signal.aborted) {
+      onDone({ finishReason: null }); // Caller aborted (disconnect / Stop) — clean close
+    } else if (firstByteController.signal.aborted) {
+      onError(new Error(`LLM request timed out: no response bytes for ${firstByteMs / 1000} s`));
+    } else if (silenceController.signal.aborted) {
+      onError(new Error(`LLM stream stalled: no data for ${LLM_SILENCE_TIMEOUT_MS / 1000} s`));
+    } else if (totalSignal && totalSignal.aborted) {
+      onError(new Error(`LLM request timed out after ${LLM_TOTAL_TIMEOUT_MS / 1000} s`));
+    } else if (mergedSignal.aborted || (err as Error | undefined)?.name === 'AbortError') {
+      /* An abort we cannot attribute to a configured deadline — treat it
+         as a closed connection rather than an upstream failure. */
+      onDone({ finishReason: null });
     } else {
-      onError(err as Error);
+      /* fetch/undici can reject with a raw abort-reason string or another
+         non-Error value; normalize so onError always receives a real
+         Error and "LLM error: undefined" cannot recur. */
+      const normalized = err instanceof Error
+        ? err
+        : new Error(typeof err === 'string' && err.length > 0 ? err : 'LLM request failed');
+      onError(normalized);
     }
   } finally {
     /* The early-error returns above (`!response.ok`, empty body, aborted
