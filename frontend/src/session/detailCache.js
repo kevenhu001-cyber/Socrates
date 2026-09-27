@@ -111,6 +111,96 @@ export function invalidate(id) {
   if (id != null) _entries.delete(id);
 }
 
+/* Session-level scalars a save can move. Messages are handled separately
+   because they arrive as a delta; these come back whole on the save
+   response. Kept as a list so the merge is explicit and testable rather than
+   a blind Object.assign over the response. */
+var SCALAR_KEYS = [
+  'id', 'title', 'topic', 'mode', 'kind', 'phase', 'totalQ', 'projectId',
+  'pinned', 'archivedAt', 'examData', 'kbNodes', 'mistakes', 'teachingPlan',
+  'boundariesHistory', 'mistakeFilter', 'branchedFrom', 'currentNode',
+  'teachingStage', 'currentExampleIdx', 'practiceAttempts', 'practicePhase',
+  'streamingText', 'streamingReasoning', 'createdAt', 'updatedAt', 'userId',
+];
+
+/**
+ * Fold a completed save back into the cached detail response instead of
+ * dropping it.
+ *
+ * P_cache-foldsave — the cache used to be invalidated on EVERY save, so the
+ * one session most likely to be revisited — the one the user just chatted in
+ * — was precisely the one that could never hit it. The save already computes
+ * the exact set of message rows that moved (the same delta that made the
+ * server correct, see saveDelta.js), so applying that delta to the cached copy
+ * leaves it correct rather than stale.
+ *
+ * Anything this gets wrong is self-correcting: loadSession() reconciles every
+ * hit against a live fetch and re-paints when the signature differs, so a bad
+ * fold costs one extra paint, never a wrong final state.
+ *
+ * @param {string} id         session id the save landed under
+ * @param {object} saved      the POST response (scalars)
+ * @param {Array}  rows       the message delta that was acknowledged
+ */
+export function foldSave(id, saved, rows) {
+  if (id == null) return;
+  var e = _entries.get(id);
+  if (!e) return;
+
+  var response = e.response;
+  var next = {};
+  /* Start from the cached copy, then overlay only the scalars the save
+     response actually carried. The save handler deliberately drops the big
+     JSONB blobs from its reply, so anything it omits must keep the value the
+     cached detail already had — a blind replace would blank kbNodes etc. */
+  for (var i = 0; i < SCALAR_KEYS.length; i++) {
+    var key = SCALAR_KEYS[i];
+    if (Object.prototype.hasOwnProperty.call(response, key)) next[key] = response[key];
+  }
+  if (saved && typeof saved === 'object') {
+    for (var s = 0; s < SCALAR_KEYS.length; s++) {
+      var sk = SCALAR_KEYS[s];
+      if (saved[sk] !== undefined) next[sk] = saved[sk];
+    }
+  }
+
+  if (Array.isArray(rows) && rows.length) {
+    var msgs = Array.isArray(response.messages) ? response.messages.slice() : [];
+    var byClient = Object.create(null);
+    for (var m = 0; m < msgs.length; m++) {
+      var ck = msgs[m] && (msgs[m].clientId || msgs[m].id);
+      if (ck) byClient[ck] = m;
+    }
+    for (var r = 0; r < rows.length; r++) {
+      var row = rows[r];
+      if (!row) continue;
+      var match = byClient[row.clientId] != null ? byClient[row.clientId]
+        : (byClient[row.id] != null ? byClient[row.id] : -1);
+      if (match >= 0) {
+        /* Keep the server's row id — the cache is keyed by it, and the
+           client's copy may not know it yet. */
+        var merged = Object.assign({}, msgs[match], row);
+        merged.id = msgs[match].id;
+        msgs[match] = merged;
+      } else {
+        msgs.push(row);
+        var nk = row.clientId || row.id;
+        if (nk) byClient[nk] = msgs.length - 1;
+      }
+    }
+    next.messages = msgs;
+  } else {
+    next.messages = response.messages;
+  }
+
+  e.response = next;
+  e.sig = signature(next);
+  e.at = Date.now();
+  /* Refresh LRU rank: this entry is the freshest copy we hold. */
+  _entries.delete(id);
+  _entries.set(id, e);
+}
+
 /** True when a live entry was fetched too recently to be worth re-checking. */
 export function isFresh(entry) {
   return !!entry && (Date.now() - entry.at) < REVALIDATE_AFTER_MS;
@@ -131,6 +221,7 @@ export const detailCache = {
   lookup: lookup,
   store: store,
   invalidate: invalidate,
+  foldSave: foldSave,
   has: has,
   isFresh: isFresh,
   _reset: _reset,

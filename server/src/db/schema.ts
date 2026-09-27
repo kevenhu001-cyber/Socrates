@@ -125,11 +125,16 @@ export const sessions = pgTable('sessions', {
   branchedFrom: jsonb('branched_from'),           // {sessionId, title, ...}
 }, (table) => [
   index('sessions_user_id_idx').on(table.userId),
-  /* The library hot path filters an owner's active sessions and orders by
-   * recency. The old independent indexes forced PostgreSQL to filter then
-   * sort as a user's history grew. This partial index matches that query
-   * without bloating archived-session writes. */
-  index('sessions_active_user_updated_idx').on(table.userId, table.updatedAt.desc()).where(sql`${table.archivedAt} IS NULL`),
+  /* The library hot path orders an owner's history by recency. This used to be
+     partial (`WHERE archived_at IS NULL`), which the planner can only use when
+     the query's WHERE implies that predicate — and the web client always sends
+     `archived=true`, because one fetch feeds both the Recents list and the
+     Storage modal's archived section. The partial form therefore never matched
+     the request that actually runs. A full index serves both forms: the active
+     list filters `archived_at IS NULL` on top of the ordered scan, and the
+     archived-included list scans it outright. See migration
+     0038_sessions_user_updated_all_idx. */
+  index('sessions_user_updated_idx').on(table.userId, table.updatedAt.desc()),
   index('sessions_archived_at_idx').on(table.archivedAt),
   index('sessions_updated_at_idx').on(table.updatedAt),
   index('sessions_project_id_idx').on(table.projectId),

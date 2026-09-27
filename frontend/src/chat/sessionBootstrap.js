@@ -25,7 +25,7 @@ import { updateKB } from '../ui/knowledgePanel.js';
 import { renderDiagQuestion, proceedToTeaching } from '../tutor/diagnosticFlow.js';
 import { resetSessionTransients, setCurrentSessionId } from '../session/loader.js';
 import { rememberDeletedSession } from '../session/saveState.js';
-import { refreshServerSessions } from '../session/recents.js';
+import { flushRecentsReconcile } from '../session/recents.js';
 import { generateId } from '../util/ids.js';
 import { pushChatIdToURL, setChatIdInURL } from '../session/store.js';
 import { syncChatModel, getActiveProvider } from '../pickers.js';
@@ -380,7 +380,7 @@ export async function startSession(){
           method:"DELETE",
         });
       }).then(function(){
-        return refreshServerSessions();
+        return flushRecentsReconcile();
       }).then(function(){
         _renderRecents();
       }).catch(function(){});

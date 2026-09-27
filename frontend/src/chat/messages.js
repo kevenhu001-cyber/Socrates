@@ -83,10 +83,10 @@ export function addMessage(role, text, type, actions, attachmentsArg) {
     if (role === 'user' || role === 'assistant') {
       try { appendLocalMemory(role, text); } catch (_) {}
     }
-    if (stateStore.read('phase') === 'chat' || (stateStore.read('topic') && stateStore.read('kbNodes').length)) {
-      try { if (typeof window.saveCurrentSession === 'function') window.saveCurrentSession(); } catch (_) {}
-    }
     if (role === 'assistant') {
+      if (stateStore.read('phase') === 'chat' || (stateStore.read('topic') && stateStore.read('kbNodes').length)) {
+        try { if (typeof window.saveCurrentSession === 'function') window.saveCurrentSession(); } catch (_) {}
+      }
       try { updateChatStats(); } catch (_) {}
     }
     /* Update KB: if user is answering substantive questions, mark current node progress */

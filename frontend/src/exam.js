@@ -978,7 +978,9 @@ function doSaveExamSession() {
         stateStore.dispatch({type:'state/set',key:'currentSessionId',value:r.id});
         try { pushExamIdToURL(r.id) } catch (_) { }
       }
-      return window.refreshServerSessions().then(function () {
+      /* P_recents-amplify — flush(), not schedule(): a brand-new exam row has
+         to be in the sidebar the moment the save returns. */
+      return window.flushRecentsReconcile().then(function () {
         try { window.renderRecents() } catch (_) { }
         try { toggleShareBtn() } catch (_) { }
       });

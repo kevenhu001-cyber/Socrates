@@ -7,6 +7,7 @@ import { stateStore, resetState } from '../state/store.js';
 import { serverCache } from './serverCache.js';
 import { saveState, rememberDeletedSession, forgetDeletedSession } from './saveState.js';
 import { getVisibleSessions, getArchivedSessionsFrom, sweepExpiredArchivesFrom, setChatIdInURL } from './store.js';
+import { createReconciler } from './recentsReconcile.js';
 import { getKnownTagsFromSessions } from '../ui/recentsHelpers.js';
 import { apiFetch } from '../util/api.js';
 import { detailCache } from './detailCache.js';
@@ -97,15 +98,35 @@ export async function refreshServerSessions(){
   serverCache.fetchFailed=!ok;
   return serverCache.sessions.slice();
 }
+/* P_recents-amplify — the one place that owns "when is it worth re-fetching
+   all 200 rows". saveCurrentSession() used to await this fetch on EVERY
+   successful save, which both amplified the background load and stretched
+   `saveInFlight` — and loadSession() drained `saveInFlight`, so the drain
+   became the session switch's critical path. Saves now patch their own row
+   locally (see persistence.js) and ask for a throttled reconcile here. */
+var _reconciler = createReconciler({
+  refresh: refreshServerSessions,
+  onDone: function () { try { _renderRecents(); } catch (_) { /* best effort */ } },
+});
+
+/* Fold a request into the next reconcile window. Cheap to call repeatedly. */
+export function scheduleRecentsReconcile(){ try { _reconciler.schedule(); } catch (_) {} }
+
+/* Re-fetch now and drop any pending window. Only for flows that cannot show
+   stale rows: delete, archive, restore, purge, sign-in, manual retry. */
+export function flushRecentsReconcile(){ try { return _reconciler.flush(); } catch (_) { return Promise.resolve(); } }
+
 /* P_recents-fetch-fail — manual retry entry point bound from the
    "Couldn't load sessions — Retry" empty state. Re-runs the fetch,
    then re-renders so the user sees the result immediately. */
 export async function retryRecentsFetch(){
   try{showToast(_t("toast.loadingSessions"))}catch(_){}
-  try{await refreshServerSessions()}catch(_){}
+  try{await flushRecentsReconcile()}catch(_){}
   try{_renderRecents()}catch(_){}
 }
 try{window.retryRecentsFetch=retryRecentsFetch}catch(_){}
+try{window.scheduleRecentsReconcile=scheduleRecentsReconcile}catch(_){}
+try{window.flushRecentsReconcile=flushRecentsReconcile}catch(_){}
 
 export function findServerSessionIndex(id){
   for(var i=0;i<serverCache.sessions.length;i++){
@@ -181,7 +202,7 @@ export async function actuallyDeleteSession(id,ev){
        chat view is hidden and the topic-setup is showing so the
        user lands on a clean "start a new conversation" surface
        instead of a blank / stale chat panel. */
-    refreshServerSessions().then(function(){
+    flushRecentsReconcile().then(function(){
       /* P_delete-resurrect — the server has now confirmed the
          row is gone. From this point on, a streaming-callback
          POST that happens to carry this same id is no longer
@@ -206,7 +227,7 @@ export async function actuallyDeleteSession(id,ev){
        pending POST is at best a useless retry and at worst a
        resurrection. Lift it only after a refresh confirms the
        server really is consistent. */
-    refreshServerSessions().then(function(){
+    flushRecentsReconcile().then(function(){
       var idx=findServerSessionIndex(id);
       if(idx<0)forgetDeletedSession(id);
     });
@@ -244,7 +265,7 @@ export async function archiveSession(id, ev){
       method:"POST"
     });
     showToast(_t("session.archived"));
-    await refreshServerSessions();
+    await flushRecentsReconcile();
     _renderRecents();
     _renderArchivedList();
     if(wasActive||getRecents().length===0){
@@ -255,7 +276,7 @@ export async function archiveSession(id, ev){
     var back=findServerSessionIndex(id);
     if(back>=0)serverCache.sessions[back].archivedAt=null;
     try{showToast(_t("session.archiveFailed").replace("{msg}", err&&err.message||"server error"),4000)}catch(_){}
-    try{await refreshServerSessions()}catch(_){}
+    try{await flushRecentsReconcile()}catch(_){}
     _renderRecents();
     _renderArchivedList();
   }

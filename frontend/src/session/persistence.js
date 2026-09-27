@@ -1,12 +1,17 @@
 /* session/persistence.js — extracted from main.js (B2 batch).
  * Session save pipeline (requestSave/doSave) + unload keepalive wiring.
  * Zero-behavior-change lift. Main.js-local list/stats surfaces
- * (refreshServerSessions, renderRecents) resolve via window.* at call time.
+ * (renderRecents, the recents reconciler) resolve via window.* at call time.
+ * P_recents-amplify: a save no longer awaits a full 200-row list refresh — it
+ * patches its own row and asks for a throttled reconcile. See
+ * session/recentsReconcile.js.
  */
 import { stateStore } from '../state/store.js';
 import { saveState, deletedSessionGuard } from './saveState.js';
 import { generateId } from '../util/ids.js';
 import { pushChatIdToURL } from './store.js';
+import { serverCache } from './serverCache.js';
+import { patchSessionRow } from './recentsReconcile.js';
 import { buildBeaconPayload } from './beacon.js';
 import { buildDeltaPayload, commitSynced, createFingerprintCache, seedSynced, stateFingerprint } from './saveDelta.js';
 import { generateSessionTitle } from '../chat/sessionTitle.js';
@@ -24,13 +29,32 @@ function _t(key, fallback) {
   } catch (_) {}
   return fallback != null ? fallback : key;
 }
-function _refreshServerSessions() {
+/* P_recents-amplify — the Recents list after a save. These go through window.*
+   for the same reason the old _refreshServerSessions helper did: recents.js and
+   persistence.js must not take a hard import cycle. The reconciler singleton
+   lives in recents.js and wraps refreshServerSessions. */
+function _scheduleRecentsReconcile() {
   try {
-    if (typeof window !== 'undefined' && typeof window.refreshServerSessions === 'function') {
-      return window.refreshServerSessions();
+    if (typeof window !== 'undefined' && typeof window.scheduleRecentsReconcile === 'function') {
+      window.scheduleRecentsReconcile();
+    }
+  } catch (_) {}
+}
+function _flushRecentsReconcile() {
+  try {
+    if (typeof window !== 'undefined' && typeof window.flushRecentsReconcile === 'function') {
+      return window.flushRecentsReconcile();
     }
   } catch (_) {}
   return Promise.resolve([]);
+}
+/* P_recents-amplify — keep the Recents list in step with the server after a
+   save without re-reading all 200 rows. */
+function _applySavedRow(saved, payload, sentId) {
+  if (!saved || !saved.id) return;
+  try {
+    serverCache.sessions = patchSessionRow(serverCache.sessions, saved, payload, sentId);
+  } catch (_) { /* the reconcile will fix it */ }
 }
 function _renderRecents() {
   try { if (typeof window !== 'undefined' && typeof window.renderRecents === 'function') window.renderRecents(); } catch (_) {}
@@ -55,12 +79,23 @@ export function saveCurrentSession(){
      any intercepted save would capture mismatched sessionId vs
      messages, causing "会话串台" (context cross-contamination). */
   if(saveState.loadingSession) return null;
-  /* If a save is already running, mark dirty and let it coalesce. */
+  /* If a save is already running, mark dirty and let it coalesce.
+     P_save-snapshot — capture the changed state NOW, while the session that
+     changed is still current, and let the queue post that payload verbatim.
+     The old cascade ended in doSave(), which re-captured from live state; that
+     only worked because loadSession() had to fully drain the pipeline before
+     replacing the messages. With the drain gone (a session switch must not
+     wait on the network) a drain-time re-capture would read the NEW session
+     and post it under the OLD id.
+     Every dirty call re-captures so no intermediate change is dropped; the
+     slot keeps the newest complete capture, which subsumes the older ones. */
   if(saveState.saveInFlight){
+    try{ saveState.pendingSnapshot=captureSessionPayload(); }catch(_){ saveState.pendingSnapshot=null; }
     saveState.saveDirty=true;
     return saveState.saveInFlight;  /* return the existing in-flight promise */
   }
   saveState.saveDirty=false;
+  saveState.pendingSnapshot=null;
   doSave();
   /* doSave() sets saveState.saveInFlight to the fetch+then promise, or leaves
      it as-is if early-exit guards (deleted session guard, empty topic)
@@ -352,27 +387,49 @@ function payloadSignature(payload){
   ].join('#');
 }
 
+/* P_save-snapshot — finish the queue once the in-flight save settles.
+   Posts the captured payload verbatim instead of re-capturing live state, so
+   this is safe to run while the user is already in a different session. The
+   doSave() fallback only runs when nothing was captured, and never during a
+   load: a live re-capture there would read the incoming conversation and post
+   it under the outgoing session's id. */
+function drainSaveQueue(){
+  saveState.saveInFlight=null;
+  var queued=saveState.pendingSnapshot;
+  saveState.pendingSnapshot=null;
+  if(queued&&!deletedSessionGuard.has(queued.id)){
+    /* The slot holds the newest complete capture of the changed session, so
+       posting it also discharges the dirty flag. */
+    saveState.saveDirty=false;
+    postSession(queued);
+    return;
+  }
+  if(saveState.saveDirty){
+    saveState.saveDirty=false;
+    if(saveState.loadingSession)return;
+    doSave();
+  }
+}
+
 function postSession(payload){
   var sessionId=payload.id;
   /* P_save-dedup — skip a byte-identical re-save; still advance the queue so a
      pending snapshot / dirty flag is not stranded. */
   var sig=payloadSignature(payload);
   if(sessionId===_lastPosted.id && sig===_lastPosted.sig){
-    saveState.saveInFlight=null;
-    if(saveState.pendingSnapshot){
-      var queued=saveState.pendingSnapshot;
-      saveState.pendingSnapshot=null;
-      if(!deletedSessionGuard.has(queued.id)){postSession(queued);return;}
-    }
-    if(saveState.saveDirty){ saveState.saveDirty=false; doSave(); }
+    drainSaveQueue();
     return;
   }
   _lastPosted.id=sessionId; _lastPosted.sig=sig;
-  /* P2 SWR — a save mutates this session's server copy, so any cached detail
-     is now stale. Drop it so the next open re-fetches (the reconcile-on-hit
-     would also catch it, but invalidating avoids ever painting the old copy).
-     Runs for the client id and the server-adopted id alike. */
-  detailCache.invalidate(sessionId);
+  /* P_cache-foldsave — this used to be `detailCache.invalidate(sessionId)`.
+     Dropping the entry on every save meant the session most likely to be
+     revisited — the one the user just chatted in — was the one that could
+     never hit the cache, which is the opposite of what SWR is for. The row
+     delta is not known until the POST is built below, and the acknowledgement
+     lands in the success handler, so the fold happens there. Until then the
+     stale copy is not served: loadSession() reconciles a hit against a live
+     fetch and re-paints on a signature mismatch, so the worst case is one
+     extra round-trip, not a wrong transcript. */
   /* P_context-race — snapshot the session ID at capture time so the
      POST callback can detect whether a session switch happened while
      the request was in-flight. If the active session changed, the
@@ -389,9 +446,16 @@ function postSession(payload){
        advance. Anything that failed before this point re-sends next time. */
     commitSynced(_syncedFor(capturedSessionId),sentMessages,_fingerprints);
     if(r&&r.id&&r.id!==sessionId)_rekeySynced(capturedSessionId,r.id);
-    /* P2 SWR — invalidate the server-adopted id too (a brand-new session is
-       created under a fresh UUID the client didn't know yet). */
-    if(r&&r.id)detailCache.invalidate(r.id);
+    /* P_cache-foldsave — the acknowledged delta is exactly what the server
+       now holds, so folding it into the cached detail leaves the entry
+       correct instead of dropping it. Applied to the server-adopted id too:
+       that is the id every later loadSession() uses. The client draft id is
+       re-keyed for the same reason it is for the sync watermark. */
+    var _cachedId=(r&&r.id)||capturedSessionId;
+    detailCache.foldSave(_cachedId,r,sentMessages);
+    if(r&&r.id&&r.id!==capturedSessionId){
+      detailCache.foldSave(capturedSessionId,r,sentMessages);
+    }
     /* P_delete-resurrect — if this session was deleted while the
        POST was in-flight (rememberDeletedSession set a tombstone),
        do NOT adopt the server's id or update state. The server may
@@ -401,18 +465,31 @@ function postSession(payload){
     if(r&&r.id&&r.id!==sessionId&&saveState.pendingSnapshot&&saveState.pendingSnapshot.id===sessionId){
       saveState.pendingSnapshot.id=r.id;
     }
+    /* P_recents-amplify — the response carries every scalar the list row
+       renders (server routes/sessions.ts P_save-response), so patch that one
+       row in place and hand the rest to a throttled reconcile. This used to
+       be `return _refreshServerSessions()` — a full 200-row fetch INSIDE the
+       saveInFlight promise, which meant (a) every turn paid it and (b)
+       loadSession()'s drain of saveInFlight had to wait for it. Neither is
+       needed to keep the list correct. */
+    _applySavedRow(r,payload,sessionId);
     if(deletedSessionGuard.has(capturedSessionId)){
-      return _refreshServerSessions();
+      /* P_delete-resurrect — a deleted row cannot be patched away, and the
+         tombstone means the list is genuinely wrong right now. Force a real
+         fetch instead of waiting for the reconcile window. */
+      _flushRecentsReconcile();
+    }else{
+      _scheduleRecentsReconcile();
     }
-    /* P_context-race — if the user switched to a different session
-       while this POST was in-flight, do NOT adopt the server's id
-       (it belongs to the old session) and do NOT update the URL. */
-    if(stateStore.read("currentSessionId")!==capturedSessionId)return _refreshServerSessions();
+    /* P_context-race — if the user switched to a different session while this
+       POST was in-flight, do NOT adopt the server's id (it belongs to the old
+       session) and do NOT update the URL. The row patch above is keyed by id,
+       so it is safe either way. */
+    if(stateStore.read("currentSessionId")!==capturedSessionId)return;
     if(r&&r.id&&r.id!==sessionId){
       stateStore.dispatch({type:"state/set",key:"currentSessionId",value:r.id});
       pushChatIdToURL(r.id);
     }
-    return _refreshServerSessions();
   }).then(function(){
     /* P_streaming-survival — after a successful save (the stream
        completed normally), clear the server-side streaming_text
@@ -444,19 +521,10 @@ function postSession(payload){
       },5000);
     }catch(_){}
   }).then(function(){
-    /* Clear the in-flight flag BEFORE re-checking dirty so a
-       queued save picks up the latest state (and the just-adopted
-       server id, if any) instead of re-sending a stale id. */
-    saveState.saveInFlight=null;
-    if(saveState.pendingSnapshot){
-      var queued=saveState.pendingSnapshot;
-      saveState.pendingSnapshot=null;
-      if(!deletedSessionGuard.has(queued.id)){postSession(queued);return;}
-    }
-    if(saveState.saveDirty){
-      saveState.saveDirty=false;
-      doSave();
-    }
+    /* Clear the in-flight flag BEFORE re-checking dirty so a queued save
+       picks up the latest state (and the just-adopted server id, if any)
+       instead of re-sending a stale id. */
+    drainSaveQueue();
   });
 }
 

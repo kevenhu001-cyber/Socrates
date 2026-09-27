@@ -1,0 +1,56 @@
+-- P1-index-archived — the sidebar's list query never used the index built for it.
+--
+-- routes/sessions.ts `GET /api/sessions` is the history-list read, and the web
+-- client always asks for it with `archived=true` (frontend/src/session/recents.js
+-- — one fetch has to feed both the Recents list and the Storage modal's
+-- archived section, so it cannot ask twice).
+--
+-- The handler only adds the `archived_at IS NULL` predicate when archived rows
+-- are NOT requested:
+--
+--   const showArchived = archived === 'true';
+--   if (!showArchived) conditions.push(isNull(sessions.archivedAt));
+--
+-- while the index was declared PARTIAL on exactly that predicate:
+--
+--   index('sessions_active_user_updated_idx')
+--     .on(table.userId, table.updatedAt.desc())
+--     .where(sql`${table.archivedAt} IS NULL`)
+--
+-- A partial index is only usable by a query whose WHERE clause implies its
+-- predicate. `WHERE user_id = ?` alone does not, so with archived=true the
+-- planner fell back to sessions_user_id_idx and then sorted — the cost grew
+-- with the owner's whole history, and it grew on the one request the UI fires
+-- most often.
+--
+-- Replace the partial index with a full one on the same columns. It serves
+-- BOTH forms:
+--
+--   WHERE user_id = ? AND archived_at IS NULL ORDER BY updated_at DESC
+--     -> index scan, filter on archived_at, no sort
+--   WHERE user_id = ? ORDER BY updated_at DESC          (archived=true)
+--     -> index scan, no sort
+--
+-- sessions_user_id_idx is kept: it still leads on user_id alone for lookups
+-- that do not order by recency.
+--
+-- Archived rows are a small fraction of a user's history, so a non-partial
+-- index costs marginally more on the write side than the partial one did, and
+-- that is paid on the single UPDATE per turn rather than on every list read.
+--
+-- Locking note: plain CREATE INDEX takes a ShareLock and blocks writes to
+-- `sessions` while it builds. CONCURRENTLY is unavailable because the drizzle
+-- migrator wraps migrations in a transaction. This matches the existing
+-- convention (see 0024_active_session_index.sql). On a large `sessions` table,
+-- build it out-of-band first and let this migration no-op via IF NOT EXISTS:
+--
+--   CREATE INDEX CONCURRENTLY "sessions_user_updated_idx"
+--     ON "sessions" USING btree ("user_id","updated_at" DESC);
+--   DROP INDEX CONCURRENTLY "sessions_active_user_updated_idx";
+--
+-- Idempotent: safe to re-run.
+
+DROP INDEX IF EXISTS "sessions_active_user_updated_idx";
+
+CREATE INDEX IF NOT EXISTS "sessions_user_updated_idx"
+  ON "sessions" USING btree ("user_id","updated_at" DESC);

@@ -1,8 +1,9 @@
 /* session/loader.js — extracted from main.js (B2 batch).
  * Session loading (loadSession/loadExamSession) + transients + current-id.
  * Zero-behavior-change lift. Main.js-local list surfaces
- * (refreshServerSessions, renderRecents, renderMistakes, updateMistakesBadge,
- * clearActiveTemplate) resolve via window.* at call time.
+ * (renderRecents, the recents reconciler) resolve via window.* at call time.
+ * P_save-drain-removed: loadSession no longer waits on the save pipeline — the
+ * save queue posts a self-contained snapshot (see session/saveState.js).
  */
 import { stateStore } from '../state/store.js';
 import { saveState } from './saveState.js';
@@ -57,13 +58,15 @@ function _appMode() {
   } catch (_) {}
   return 'chat';
 }
-function _refreshServerSessions() {
+/* P_recents-amplify — see loadSession()'s tail. Goes through window.* for the
+   same reason the old _refreshServerSessions helper did: recents.js owns the
+   reconciler and must not be hard-imported from here. */
+function _scheduleRecentsReconcile() {
   try {
-    if (typeof window !== 'undefined' && typeof window.refreshServerSessions === 'function') {
-      return window.refreshServerSessions();
+    if (typeof window !== 'undefined' && typeof window.scheduleRecentsReconcile === 'function') {
+      window.scheduleRecentsReconcile();
     }
   } catch (_) {}
-  return Promise.resolve([]);
 }
 function _renderRecents() {
   try { if (typeof window !== 'undefined' && typeof window.renderRecents === 'function') window.renderRecents(); } catch (_) {}
@@ -228,15 +231,27 @@ export async function loadSession(id){
      Keep a recoverable snapshot until the new history has committed. */
   var previousMessages=null;
   var historyRebuildStarted=false;
-  /* Drain the entire save pipeline — including the saveState.saveDirty
-     cascade. Loop because the cascade may fire a new doSave()
-     after the current one completes; the saveState.loadingSession guard
-     above prevents any new saves from being initiated during
-     this drain, so the loop terminates when the cascade is fully
-     exhausted. */
-  while(saveState.saveInFlight){
-    try{await saveState.saveInFlight}catch(_){}
-  }
+  /* P_save-drain-removed — this used to be
+       while (saveState.saveInFlight) { await saveState.saveInFlight }
+     which made the session switch wait for the ENTIRE save pipeline: the
+     POST, then a full `GET /api/sessions?limit=200&archived=true`, then a
+     PATCH — three serial round-trips — before the detail fetch was even
+     issued. Clicking a history row right after a turn therefore looked like
+     a dead click for as long as that chain took.
+
+     The drain was only load-bearing because the save queue used to end in
+     doSave(), which re-captures from LIVE state. Since P_save-snapshot the
+     queue posts a payload captured while the changed session was still
+     current, so it is self-contained and safe to post after we have already
+     replaced the messages. The drain is therefore unnecessary.
+
+     saveState.loadingSession is still set above: it is what stops a NEW save
+     from starting inside this window. An already-running save simply carries
+     its own captured payload to completion in the background. The delete
+     path (session/recents.js actuallyDeleteSession) keeps its own drain —
+     there, waiting genuinely is load-bearing, because a POST landing after
+     the DELETE would resurrect the row.
+  */
   /* Abort any active chat stream so its onDelta/finish callbacks
      don't write to stateStore.read("messages") after we replace them. */
   if(window._activeChatAbort){try{window._activeChatAbort("session-switch")}catch(_){}}
@@ -738,8 +753,15 @@ export async function loadSession(id){
     /* Re-sync the cache from the server so the Recents list reflects
        the authoritative state (drops genuinely-gone rows, restores
        any id-mismatched rows under their real ids). Fire-and-forget;
-       failure is harmless — the list simply keeps its current shape. */
-    try{_refreshServerSessions().then(function(){_renderRecents()}).catch(function(){})}catch(_){}
+       failure is harmless — the list simply keeps its current shape.
+
+       P_recents-amplify — this went through an unthrottled 200-row fetch on
+       EVERY switch, on top of the one the save chain used to fire. It is
+       now folded into the shared reconcile window, so a save + a switch that
+       land together cost at most one list fetch instead of two, and rapid
+       switching collapses to one. Anything that genuinely cannot show a
+       stale list (delete / archive / sign-in) uses flushRecentsReconcile. */
+    try{_scheduleRecentsReconcile()}catch(_){}
     var isUrlMatch=typeof location!=="undefined"&&location.search.indexOf("chat="+encodeURIComponent(id))>=0;
     if(stateStore.read("currentSessionId")===id||!stateStore.read("currentSessionId")||isUrlMatch){
       /* Only if no other session was loaded in the meantime. */

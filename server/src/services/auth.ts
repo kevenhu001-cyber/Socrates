@@ -12,6 +12,7 @@ import {
 import {
   BadRequest, Unauthorized, Forbidden, NotFound, Conflict,
 } from '../lib/errors.js';
+import { invalidateAuthCache, invalidateAuthCacheForUser } from '../lib/authCache.js';
 import {
   sendVerificationEmail, sendPasswordResetEmail, sendLoginCode,
   sendDuplicateRegistrationEmail,
@@ -235,6 +236,12 @@ export async function refreshMobileTokenPair(refreshToken: unknown): Promise<Mob
       { token: nextPair.refreshToken, userId: refresh.userId, expiresAt: nextPair.refreshExpiresAtDate },
     ]);
 
+    /* P1-auth-lookup — the prior ma.* bearer just got revoked by the DELETE
+       above, and the LIKE only names the pair, not the exact tokens. Drop the
+       user's whole cached set; the next request re-resolves from the rows that
+       survive this transaction. */
+    invalidateAuthCacheForUser(refresh.userId);
+
     return {
       accessToken: nextPair.accessToken,
       refreshToken: nextPair.refreshToken,
@@ -262,6 +269,9 @@ export async function logoutMobile(refreshToken: unknown) {
         eq(authSessions.userId, refresh.userId),
         like(authSessions.token, mobileAccessPattern(parsed.pairId)),
       ));
+    /* P1-auth-lookup — the ma.* bearer this call just revoked is a live
+       credential until this commit; the cache must not outlive it. */
+    invalidateAuthCacheForUser(refresh.userId);
   });
 }
 
@@ -544,6 +554,10 @@ export async function logout(sid: string | null | undefined) {
   if (!sid) return;
   const db = getDb();
   await db.delete(authSessions).where(eq(authSessions.token, sid));
+  /* P1-auth-lookup — this is the revocation the user is waiting on: without
+     the drop, the very next request with the same cookie would be served from
+     cache and appear to have succeeded. */
+  invalidateAuthCache(sid);
 }
 
 /**
@@ -771,6 +785,9 @@ export async function resetPassword(token: string, newPassword: string) {
     // sign back in (the standard "you've been signed out for security"
     // flow) but no attacker who may have had a session can continue.
     await tx.delete(authSessions).where(eq(authSessions.userId, vt.userId));
+    /* P1-auth-lookup — security-critical: a password reset is exactly the
+       moment a cached resolution would be dangerous. */
+    invalidateAuthCacheForUser(vt.userId);
   });
 }
 
@@ -819,6 +836,11 @@ export async function changePassword(userId: string, oldPassword: string, newPas
     // and have to log in again.
     await db.delete(authSessions).where(eq(authSessions.userId, userId));
   }
+  /* P1-auth-lookup — SECURITY: this is the "invalidate every OTHER session"
+     path, so a stolen cookie must not keep working out of the cache. The
+     calling session is re-resolved on its next request (one join), which is
+     the price of not leaving a revoked device authenticated. */
+  invalidateAuthCacheForUser(userId);
 }
 
 /**
@@ -870,6 +892,11 @@ export async function deleteAccount(userId: string, email?: string | null) {
   // 2. Cascade. sessions, messages, projects, api_keys, ... all go
   //    away automatically via `onDelete: 'cascade'`.
   await db.delete(users).where(eq(users.id, userId));
+
+  /* P1-auth-lookup — the cascade took the auth_sessions rows with it, so the
+     cache has to go too or a deleted account keeps authenticating for the
+     TTL. */
+  invalidateAuthCacheForUser(userId);
 
   // 3. login_failures is keyed by email, not userId — and not in the
   //    cascade tree. Look up by the email the route handed us.

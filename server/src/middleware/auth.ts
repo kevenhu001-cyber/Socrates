@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { Unauthorized } from '../lib/errors.js';
 import { getDb } from '../db/index.js';
 import { users, authSessions } from '../db/schema.js';
+import { authCacheGet, authCacheSet } from '../lib/authCache.js';
 import { isMobileAccessToken } from '../services/auth.js';
 import { verifyAgentKey, AGENT_KEY_RE } from '../services/agentKeys.js';
 import { verifyOAuthAccessToken, OAUTH_ACCESS_TOKEN_RE } from '../services/oauthTokens.js';
@@ -52,22 +53,31 @@ export function requestCredential(req: Request): RequestCredential {
   return { token: sid, source: 'cookie' };
 }
 
+/* P1-auth-lookup — this used to resolve the cookie with two sequential
+ * round-trips (auth_sessions, then users). A session switch is two requests,
+ * so that was four RTTs of pure auth before any session data moved. One INNER
+ * JOIN returns the same user row — `select({ user: users })` yields exactly the
+ * shape the two queries used to produce, so nothing downstream changes — and
+ * lib/authCache.ts removes the remaining round-trip for the bursts a single
+ * page produces. The cache never holds one-time capabilities and is invalidated
+ * at every revocation site; see that module for the full contract. */
 async function findAuthenticatedUser(token: string) {
+  const now = Date.now();
+  const cached = authCacheGet(token, now);
+  if (cached) return cached;
+
   const db = getDb();
-  const [session] = await db
-    .select()
+  const [row] = await db
+    .select({ user: users, sessionExpiresAt: authSessions.expiresAt })
     .from(authSessions)
+    .innerJoin(users, eq(users.id, authSessions.userId))
     .where(eq(authSessions.token, token))
     .limit(1);
 
-  if (!session || session.expiresAt < new Date()) return null;
+  if (!row || row.sessionExpiresAt < new Date()) return null;
 
-  const [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, session.userId))
-    .limit(1);
-  return user ?? null;
+  authCacheSet(token, row.user, row.sessionExpiresAt, now);
+  return row.user;
 }
 
 /**

@@ -109,8 +109,10 @@ function MessageItemBase({ message, textLength }: MessageItemProps) {
     } catch (_) { /* hook unavailable */ }
     try { pr.processPendingViz?.(root); } catch (_) { }
     try { pr.processPendingVizActions?.(root); } catch (_) { }
-    try { pr.wireCodeBlockHeaders?.(root); } catch (_) { }
-    try { pr.wireMsgBodyImages?.(root); } catch (_) { }
+    if (!isLive) {
+      try { pr.wireCodeBlockHeaders?.(root); } catch (_) { }
+      try { pr.wireMsgBodyImages?.(root); } catch (_) { }
+    }
     if (message.restoredFromHistory) {
       try {
         pr.restorePersistedMessageExtras?.(
@@ -125,7 +127,7 @@ function MessageItemBase({ message, textLength }: MessageItemProps) {
        changes identity between frames. It never moves on a finalized entry,
        which costs this effect nothing on history. */
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [html, clientId, textLength, message, message.restoredFromHistory]);
+  }, [html, clientId, textLength, isLive, message, message.restoredFromHistory]);
 
   if (!isRenderable(message, isLive)) return null;
   if (!clientId) return null;

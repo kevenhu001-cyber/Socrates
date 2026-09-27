@@ -4,7 +4,7 @@
  */
 import { stateStore } from '../state/store.js';
 import { serverCache } from './serverCache.js';
-import { findServerSessionIndex, getKnownTags, getRecents, refreshServerSessions } from './recents.js';
+import { findServerSessionIndex, getKnownTags, getRecents, flushRecentsReconcile } from './recents.js';
 import { getRecentsFilter } from '../sidebar/index.js';
 import { filterRecentsByChip } from '../ui/recentsHelpers.js';
 import { apiFetch } from '../util/api.js';
@@ -203,7 +203,11 @@ export function moveSessionToProject(sessionId, projectId){
           window.__activeProject = project;
         }
         closeSessionContextMenu();
-        if(typeof refreshServerSessions === "function") refreshServerSessions();
+        /* P_recents-amplify — a project move changes a row field the local
+           patch never sees, so this one needs a real fetch. flush() runs it
+           now instead of on the next window, and still coalesces with any
+           save that asked for a reconcile in the meantime. */
+        flushRecentsReconcile();
         if(typeof renderRecents === "function") _renderRecents();
         if(typeof showToast === "function") showToast(_t("toast.movedToProject").replace("{name}", project.name));
       })
@@ -341,13 +345,13 @@ export function cycleActiveProject(){
   if(sessionId){
     /* The try/catch that used to wrap this call could never see a failure:
        apiFetch() is async, so a rejected PATCH escaped as an unhandled
-       rejection. Attach the handler to the promise itself; the next
-       refreshServerSessions() below reconciles the list either way. */
+       rejection. Attach the handler to the promise itself; the
+       flushRecentsReconcile() below reconciles the list either way. */
     Promise.resolve()
       .then(function(){ return apiFetch("/api/sessions/" + encodeURIComponent(sessionId), { method: "PATCH", body: { projectId: next.id } }); })
       .catch(function(err){ console.warn("[projects] failed to move session to project:", err && err.message || err); });
   }
-  if(typeof refreshServerSessions === "function") refreshServerSessions();
+  flushRecentsReconcile();
   if(typeof renderRecents === "function") _renderRecents();
   if(typeof showToast === "function") showToast(_t("toast.projectSwitched").replace("{name}", next.name));
 }

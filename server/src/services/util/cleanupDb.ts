@@ -9,6 +9,7 @@
  */
 import { lt, sql, and } from 'drizzle-orm';
 import { getDb } from '../../db/index.js';
+import { invalidateAuthCache } from '../../lib/authCache.js';
 import {
   authSessions, pendingRegistrations, verificationTokens,
   usageEvents, auditEvents, executions,
@@ -59,6 +60,10 @@ export async function runExpiredCleanup() {
     const expiredAuth = await db.delete(authSessions)
       .where(lt(authSessions.expiresAt, now))
       .returning({ id: authSessions.token });
+    /* P1-auth-lookup — an expired credential can never be served from the auth
+       cache (its TTL is capped at expires_at), so this is belt-and-braces
+       rather than required. It keeps the two stores from ever disagreeing. */
+    for (const row of expiredAuth) invalidateAuthCache(row.id);
     const expiredPending = await db.delete(pendingRegistrations)
       .where(lt(pendingRegistrations.expiresAt, now))
       .returning({ id: pendingRegistrations.id });

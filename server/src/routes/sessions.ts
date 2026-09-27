@@ -177,6 +177,11 @@ export const SessionPayloadSchema = z.object({
 
 const router = Router();
 
+/* P_workspace-ensure-once — see the save handler. Bounded so a long-lived
+   process cannot grow it without limit. */
+const WORKSPACE_ENSURE_MEMO_MAX = 5_000;
+const _workspaceEnsured = new Set<string>();
+
 router.use(requireAuth, resourceScope('sessions'));
 
 /* M3 — pre-parse sanitizer: over-capacity payloads used to 400 the
@@ -605,22 +610,47 @@ router.post('/', writeLimiter, async (req, res, next) => {
            disappearing. Backfilling those vectors is a deliberate
            follow-up, not something to pay for on every save. */
         const priorRawTextHashes = new Map<string, string>();
-        try {
-          const prior = await tx
-            .select({
-              clientId: messages.clientId,
-              hash: sql<string>`md5(coalesce(${messages.rawText}, ''))`,
-            })
-            .from(messages)
-            .where(eq(messages.sessionId, sid));
-          for (const p of prior) {
-            if (p.clientId != null) priorRawTextHashes.set(p.clientId, p.hash);
+        /* P_hash-probe-scope — this probe used to read md5(rawText) for EVERY
+         * message in the session on EVERY save, so a 240-message transcript
+         * paid a 240-row index scan per turn even when the delta carried two
+         * rows — and a save that only changed a session scalar (title
+         * generation, phase, pinned) changed no message at all yet still paid
+         * it in full.
+         *
+         * The map is only ever consulted for the rows being written:
+         * `dedupedRows.filter(r => priorRawTextHashes.get(r.clientId) !==
+         * md5Hex(...))` and the RETURNING filter below. A delta clientId that
+         * the probe does not return is by definition not in the table yet, and
+         * the full probe would not have returned it either — `.get()` yields
+         * undefined on both paths, the row is treated as new, and it is
+         * upserted and re-indexed. So restricting the probe to the delta's
+         * clientIds is behaviour-preserving. */
+        const probeClientIds = Array.from(new Set(
+          persistMsgs
+            .map((m) => m.clientId)
+            .filter((c): c is string => typeof c === 'string' && c.length > 0),
+        ));
+        if (probeClientIds.length > 0) {
+          try {
+            const prior = await tx
+              .select({
+                clientId: messages.clientId,
+                hash: sql<string>`md5(coalesce(${messages.rawText}, ''))`,
+              })
+              .from(messages)
+              .where(and(
+                eq(messages.sessionId, sid),
+                inArray(messages.clientId, probeClientIds),
+              ));
+            for (const p of prior) {
+              if (p.clientId != null) priorRawTextHashes.set(p.clientId, p.hash);
+            }
+          } catch (hashErr) {
+            /* Never block the save on this optimisation. An empty map degrades
+               to the previous behaviour: every assistant row is re-indexed. */
+            console.warn('[sessions] rawText hash probe failed, re-indexing all assistant rows:',
+              (hashErr as Error).message);
           }
-        } catch (hashErr) {
-          /* Never block the save on this optimisation. An empty map degrades
-             to the previous behaviour: every assistant row is re-indexed. */
-          console.warn('[sessions] rawText hash probe failed, re-indexing all assistant rows:',
-            (hashErr as Error).message);
         }
         const _insertBase = Date.now();
         const rows = persistMsgs.map((m, i) => {
@@ -849,8 +879,28 @@ router.post('/', writeLimiter, async (req, res, next) => {
     /* Workspace creation is intentionally after the session transaction: a
      * slow filesystem or a concurrent save must never hold the sessions row
      * lock. It is safe to retry here, and the agent-run path repeats the same
-     * idempotent ensure before starting Codex. */
-    if (sessionId.session?.id) {
+     * idempotent ensure before starting Codex.
+     *
+     * P_workspace-ensure-once — this ran on EVERY save. For a session that
+     * already has a workspace, getOrCreateWorkspace is a SELECT plus an
+     * UPDATE that only touches lastUsedAt/updatedAt/status, followed by a
+     * blocking mkdirSync — two more round-trips and a synchronous filesystem
+     * call, on the response path of a request the user is waiting on. The
+     * folder only has to exist before the first agent turn, and the run path
+     * calls getOrCreateWorkspace itself, so remembering that we already did it
+     * is safe and self-repairing: if the row or directory is removed
+     * underneath us, the next agent run recreates it.
+     *
+     * The id is recorded BEFORE the await so two concurrent saves cannot both
+     * miss and stampede the same ensure. Session ids are server-minted UUIDs
+     * and never reused, so a stale entry cannot outlive its session in a way
+     * that matters; the bound below keeps the set from growing without limit. */
+    if (sessionId.session?.id && !_workspaceEnsured.has(sessionId.session.id)) {
+      _workspaceEnsured.add(sessionId.session.id);
+      if (_workspaceEnsured.size > WORKSPACE_ENSURE_MEMO_MAX) {
+        const oldest = _workspaceEnsured.values().next();
+        if (!oldest.done) _workspaceEnsured.delete(oldest.value);
+      }
       try {
         await ensureSessionWorkspaceForSession(
           req.userId!,
@@ -858,6 +908,8 @@ router.post('/', writeLimiter, async (req, res, next) => {
           sessionId.session.projectId || null,
         );
       } catch (workspaceErr) {
+        /* Let a later save retry rather than pinning the failure. */
+        _workspaceEnsured.delete(sessionId.session.id);
         console.warn(`[sessions] workspace initialization deferred for ${sessionId.session.id}: ${(workspaceErr as Error).message}`);
       }
     }

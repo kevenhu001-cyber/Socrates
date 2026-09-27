@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  signature, lookup, store, invalidate, has, _reset, _size, limits, detailCache,
+  signature, lookup, store, invalidate, has, foldSave, _reset, _size, limits, detailCache,
 } from '../src/session/detailCache.js';
 
 /* session/detailCache.js is pure in-memory state; reset between tests so the
@@ -91,4 +91,92 @@ test('size cap counts attachment payloads, not only message html', () => {
   const dataUrl = 'data:image/png;base64,' + 'A'.repeat(limits.MAX_ENTRY_BYTES);
   store('I', { id: 'I', kind: 'chat', messages: [{ id: 'm', html: '<p>x</p>', attachments: [{ kind: 'image', dataUrl }] }] });
   assert.equal(has('I'), false);
+});
+
+/* ── foldSave (P_cache-foldsave) ────────────────────────────────────────
+   The cache used to be dropped on every save, so the session most likely to
+   be revisited could never hit it. Folding the acknowledged delta back in
+   keeps the entry correct — these cases pin the merge down. */
+
+test('foldSave replaces an edited row in place and keeps the server id', () => {
+  _reset();
+  const resp = {
+    id: 'S', title: 'old', kind: 'chat',
+    messages: [
+      { id: 'srv-1', clientId: 'c1', html: '<p>before</p>' },
+      { id: 'srv-2', clientId: 'c2', html: '<p>other</p>' },
+    ],
+  };
+  store('S', resp);
+  foldSave('S', { id: 'S', title: 'old' }, [
+    { clientId: 'c1', html: '<p>after</p>' },   // client copy has no server id
+  ]);
+  const out = lookup('S').response;
+  assert.equal(out.messages.length, 2, 'an edit must not append a duplicate');
+  assert.equal(out.messages[0].html, '<p>after</p>');
+  assert.equal(out.messages[0].id, 'srv-1', 'the server row id must survive the merge');
+  assert.equal(out.messages[1].html, '<p>other</p>', 'untouched rows stay put');
+});
+
+test('foldSave appends a brand-new row in arrival order', () => {
+  _reset();
+  store('S', {
+    id: 'S', kind: 'chat',
+    messages: [{ id: 'srv-1', clientId: 'c1', html: '<p>a</p>' }],
+  });
+  foldSave('S', { id: 'S' }, [
+    { clientId: 'c2', html: '<p>b</p>' },
+    { clientId: 'c3', html: '<p>c</p>' },
+  ]);
+  const out = lookup('S').response;
+  assert.equal(out.messages.length, 3);
+  assert.deepEqual(out.messages.map((m) => m.clientId), ['c1', 'c2', 'c3']);
+});
+
+test('foldSave carries scalars from the save response but keeps the dropped blobs', () => {
+  _reset();
+  store('S', {
+    id: 'S', kind: 'chat', title: 'old', phase: 'learn',
+    /* The save handler deliberately omits the big JSONB from its reply. */
+    kbNodes: [{ id: 'n1' }], teachingPlan: { stage: 3 },
+    messages: [],
+  });
+  foldSave('S', { id: 'S', title: 'new', phase: 'teach' }, []);
+  const out = lookup('S').response;
+  assert.equal(out.title, 'new');
+  assert.equal(out.phase, 'teach');
+  assert.deepEqual(out.kbNodes, [{ id: 'n1' }], 'a blob absent from the reply must not be blanked');
+  assert.deepEqual(out.teachingPlan, { stage: 3 });
+});
+
+test('foldSave on a session with no cached entry is a no-op', () => {
+  _reset();
+  store('A', { id: 'A', kind: 'chat', messages: [] });
+  assert.doesNotThrow(() => foldSave('MISSING', { id: 'MISSING' }, [{ clientId: 'x' }]));
+  assert.equal(_size(), 1, 'a save for an uncached session must not create an entry');
+  assert.doesNotThrow(() => foldSave(null, null, null));
+});
+
+test('foldSave refreshes the signature so a hit is not re-painted as a change', () => {
+  _reset();
+  store('S', { id: 'S', kind: 'chat', messages: [{ id: '1', clientId: 'c1', html: '<p>a</p>' }] });
+  const before = lookup('S').sig;
+  foldSave('S', { id: 'S', title: 'retitled' }, [{ clientId: 'c1', html: '<p>b</p>' }]);
+  const after = lookup('S');
+  assert.notEqual(after.sig, before, 'a retitle and an edit must move the signature');
+  assert.equal(after.sig, signature(after.response), 'the cached sig must match the folded body');
+});
+
+test('foldSave refreshes the LRU rank and the freshness clock', () => {
+  _reset();
+  store('OLD', { id: 'OLD', kind: 'chat', messages: [] });
+  store('MID', { id: 'MID', kind: 'chat', messages: [] });
+  /* Touch OLD so MID becomes the LRU victim. */
+  lookup('OLD');
+  const midEntry = lookup('MID');
+  midEntry.at = Date.now() - limits.REVALIDATE_AFTER_MS - 1;
+  foldSave('OLD', { id: 'OLD' }, []);
+  assert.equal(_size(), 2);
+  assert.equal(detailCache.isFresh(lookup('OLD')), true, 'a folded entry counts as just read');
+  assert.equal(has('MID'), true);
 });
