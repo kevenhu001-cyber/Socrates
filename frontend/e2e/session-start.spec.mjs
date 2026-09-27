@@ -3,7 +3,7 @@
 // transitions the app out of the topic-setup view.
 
 import { test, expect } from '@playwright/test';
-import { gotoAndSettle, login } from './_lib.mjs';
+import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 async function composerSignature(page, selector) {

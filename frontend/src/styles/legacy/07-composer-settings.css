@@ -9,16 +9,27 @@
 /* UI-align: chat-input-wrap mirrors topic-input-wrap so the composer does
    not change skin between landing and in-chat. Identical width, radius,
    border, shadow, and focus feedback — only the inner Tiptap surface and
-   the footer controls differ between the two surfaces. */
-.chat-input-wrap{--composer-motion-duration:.34s;--composer-motion-ease:cubic-bezier(.22,1,.36,1);background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.24);border-radius:28px;overflow:hidden;width:100%;max-width:720px;margin:0 auto;
-  /* Focus-driven geometry (min-height/padding/border-radius/gap jump in the
-     desktop :has(:focus) rule below) must glide, not snap. Every animatable
-     property shares one duration/ease so the wrap, its shadow, and the inner
-     editor expand/collapse in a single synchronized motion — no property
-     finishing early and no visible "step". cubic-bezier(.22,1,.36,1) is a
-     smooth ease-out that decelerates without overshooting.
-     Focus feedback stays on the edge/shadow; the composer remains fixed in place. */
-  transition:border-color var(--composer-motion-duration) var(--composer-motion-ease),box-shadow var(--composer-motion-duration) var(--composer-motion-ease),min-height var(--composer-motion-duration) var(--composer-motion-ease),padding var(--composer-motion-duration) var(--composer-motion-ease),border-radius var(--composer-motion-duration) var(--composer-motion-ease),gap var(--composer-motion-duration) var(--composer-motion-ease);margin:0 12px;
+   the footer controls differ between the two surfaces.
+
+   P_composer-geometry-tokens — the three caps below are declared on this
+   element because 13-composer-rich.css and 16-final-contract.css read them
+   from it (`.rich-composer[data-surface="chat"] .tiptap` max-height, and the
+   focused wrap min-height). They were dropped from this rule when the
+   pre-split src/styles.css was re-skinned, which left every consumer
+   unresolved: an unknown var() makes the declaration invalid at
+   computed-value time, so the editor silently lost its max-height (initial
+   `none`) and the focused wrap its min-height (initial `0`). The values are
+   the ones this rule carried before that drop, and they still match the
+   intent documented at the consumers ("~280px ≈ 9 visible lines" on the
+   desktop rail, and the keyboard cap that must stay above 132px on phones). */
+.chat-input-wrap{--composer-motion-duration:.34s;--composer-motion-ease:cubic-bezier(.22,1,.36,1);--composer-editor-max:280px;--composer-editor-max-mobile:180px;--composer-focused-min:116px;background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.24);border-radius:28px;overflow:hidden;width:100%;max-width:720px;
+  /* Only the edge/shadow/background glide on focus (see the `transition`
+     at the end of this rule). A longer list that also animated
+     min-height/padding/border-radius/gap used to sit here, but the later
+     declaration always overrode it; making it effective turned the
+     paste/delete resize into a visible 140→154px bounce
+     (e2e/composer-auto-resize), so the geometry deliberately snaps. */
+  margin:0 12px;
   will-change:min-height;
   /* P_contain-scope — layout containment isolates the focus-expansion
      relayout to this subtree, so each animation frame relayouts the wrap's

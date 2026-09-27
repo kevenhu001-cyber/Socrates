@@ -19,6 +19,16 @@ var _examSaveInFlight = null;
 var _examSaveDirty = false;
 var _examListenersMounted = false;
 
+/* Cancels the debounced autosave as well as the in-flight marker — a timer
+   armed by the previous account must not fire after a user switch.
+   Called from app/lifecycle.js via clearPerUserClientState(). */
+export function resetExamSaveState() {
+  if (_examAnswerSaveTimer) clearTimeout(_examAnswerSaveTimer);
+  _examAnswerSaveTimer = null;
+  _examSaveInFlight = null;
+  _examSaveDirty = false;
+}
+
 export function mountExamListeners() {
   var view = document.getElementById("examView");
   if (!view || _examListenersMounted) return;
@@ -406,8 +416,8 @@ export function startExamGeneration() {
   var _activeProvider = typeof window.getActiveProvider === "function" ? window.getActiveProvider() : null;
   if (!_activeProvider) {
     var _msg = _examUiL("Add and select a model in Settings first", "请先在设置中添加并选择一个模型");
-    var body = _examBody();
-    if (body) body.innerHTML = '<div class="exam-empty" style="padding:40px;text-align:center;color:hsl(var(--text-500))">' + window.esc(_msg) + '</div>';
+    const emptyBody = _examBody();
+    if (emptyBody) emptyBody.innerHTML = '<div class="exam-empty" style="padding:40px;text-align:center;color:hsl(var(--text-500))">' + window.esc(_msg) + '</div>';
     var footer = _examFooter();
     if (footer) footer.innerHTML = '<button class="exam-btn primary" data-exam-command="form">' + _examUiL("Back", "返回") + '</button>';
     return;
@@ -464,7 +474,9 @@ export function startExamGeneration() {
     '<div class="exam-loading-sub" id="examGenSubMsg">' + _examUiL("The AI is preparing your questions — this usually takes a few seconds.", "AI 正在为您出题，请稍候片刻") + '</div>' +
     '</div>';
   _examFooter().innerHTML = '<button class="exam-btn secondary" data-exam-command="cancel">' + _examUiL("Cancel", "取消") + '</button>';
-  generateAllQuestions(topic, count, difficulty, typeStr, instructions, lang);
+  /* Fire-and-forget on purpose: progress, failure and completion are all
+     painted from inside generateAllQuestions(). */
+  void generateAllQuestions(topic, count, difficulty, typeStr, instructions, lang);
 }
 
 function restoreExamActiveProvider() {
@@ -557,11 +569,21 @@ async function generateAllQuestions(topic, count, difficulty, typeStr, instructi
        normally undefined) so the backend/model default applies — no
        hardcoded cap. */
     var tokens = window.MAX_TOKENS_CHAT;
-    var result = await callAPIStream(msgs, tokens, function () { });
+    /* A thrown stream error (network drop, abort) is folded into the
+       "no response" branch below. The caller fires this function without
+       awaiting it, so an escaped rejection would leave the panel stuck on
+       the loading card and surface only as an unhandled rejection. */
+    var result = null;
+    var streamErr = null;
+    try {
+      result = await callAPIStream(msgs, tokens, function () { });
+    } catch (err) {
+      streamErr = err;
+    }
     if (window.stateStore.read("examCancel")) return;
     var text = typeof result === "string" ? result : (result && (result.text || result.content)) || "";
     if (!text || !text.trim()) {
-      var errReason = window.stateStore.read("lastCallError") || _examUiL("no response", "模型无响应");
+      var errReason = (streamErr && streamErr.message) || window.stateStore.read("lastCallError") || _examUiL("no response", "模型无响应");
       if (i === 0) {
         failExam(_examUiL("Generation failed — no response", "生成失败：模型无响应"), errReason);
         return;
@@ -700,7 +722,7 @@ export function paintQuestionCard(idx, q, container) {
     html += '<div class="exam-q-opts">';
     q.opts.forEach(function (o, oi) {
       html += '<button class="exam-q-opt' + (savedAnswer === oi ? ' selected' : '') + '" data-eidx="' + idx + '" data-oidx="' + oi + '" data-exam-command="answer-option">';
-      html += '<span class="exam-q-opt-letter">' + o.letter + '</span>';
+      html += '<span class="exam-q-opt-letter">' + esc(o.letter) + '</span>';
       html += '<span class="exam-q-opt-text">' + formatMsg(o.text) + '</span>';
       html += '</button>';
     });
@@ -990,10 +1012,10 @@ export function renderExamResults() {
       var sel = ans[i];
       if (sel !== undefined && q.opts && q.opts[sel]) isCorrect = q.opts[sel].letter === q.answer;
     } else if (q.type === "fill-blank") {
-      var ua = String(ans[i] || "").trim().toLowerCase();
+      const ua = String(ans[i] || "").trim().toLowerCase();
       isCorrect = (q.answers || []).some(function (a) { return ua === String(a).trim().toLowerCase(); });
     } else if (q.type === "short-answer") {
-      var ua = String(ans[i] || "").trim().toLowerCase();
+      const ua = String(ans[i] || "").trim().toLowerCase();
       var expected = String(q.answer || "").trim().toLowerCase();
       var keywords = expected.split(/[,\s]+/).filter(function (k) { return k.length > 3 });
       isCorrect = keywords.length === 0 || keywords.some(function (k) { return ua.indexOf(k) >= 0; });
@@ -1024,15 +1046,15 @@ export function renderExamResults() {
         if (isAns) oc += " correct";
         if (selected && !isAns) oc += " wrong";
         if (selected) oc += " selected";
-        html += '<div class="' + oc + '"><span class="exam-q-opt-letter">' + o.letter + '</span><span class="exam-q-opt-text">' + formatMsg(o.text) + '</span></div>';
+        html += '<div class="' + oc + '"><span class="exam-q-opt-letter">' + esc(o.letter) + '</span><span class="exam-q-opt-text">' + formatMsg(o.text) + '</span></div>';
       });
       html += '</div>';
     } else if (q.type === "fill-blank") {
-      var ic = "exam-q-fill-input" + (isCorrect ? " correct" : " wrong");
+      const ic = "exam-q-fill-input" + (isCorrect ? " correct" : " wrong");
       html += '<input class="' + ic + '" value="' + esc(rd.ans || "") + '" readonly>';
-      if (!isCorrect) html += '<div style="font-size:calc(12px * var(--app-font-scale, 1));color:hsl(145 40% 45%);margin-top:4px">' + _L("Correct answer", "正确答案") + ': <strong>' + (q.answers || []).join(", ") + '</strong></div>';
+      if (!isCorrect) html += '<div style="font-size:calc(12px * var(--app-font-scale, 1));color:hsl(145 40% 45%);margin-top:4px">' + _L("Correct answer", "正确答案") + ': <strong>' + esc((q.answers || []).join(", ")) + '</strong></div>';
     } else if (q.type === "short-answer") {
-      var ic = "exam-q-fill-input" + (isCorrect ? " correct" : " wrong");
+      const ic = "exam-q-fill-input" + (isCorrect ? " correct" : " wrong");
       html += '<textarea class="' + ic + '" readonly rows="2">' + esc(rd.ans || "") + '</textarea>';
       if (!isCorrect) html += '<div style="font-size:calc(12px * var(--app-font-scale, 1));color:hsl(145 40% 45%);margin-top:4px">' + _L("Expected", "期望答案") + ': <strong>' + esc(q.answer || "") + '</strong></div>';
     }

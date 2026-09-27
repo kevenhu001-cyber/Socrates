@@ -95,9 +95,6 @@ function toggleChatTopBarEls(show) {
   }
 }
 
-function _show(el) { if (el) el.classList.remove("hidden"); }
-function _hide(el) { if (el) el.classList.add("hidden"); }
-
 function openShareModal() {
   var overlay = document.getElementById("shareOverlay");
   if (!overlay) return;
@@ -303,7 +300,7 @@ function _renderSharedMessageList(messages) {
           });
         }
         if (tc.name === "render_visualization" && tc.input && tc.input.version === 1 && typeof mountVisualization === "function") {
-          mountVisualization(tc.input, body, { toolCallId: tc.id || ("share-viz-" + tci) });
+          mountVisualization(tc.input, body, { toolCallId: tc.id || ("share-viz-" + tci) }).catch(function () { /* card paints its own error state */ });
         }
         if (cardOut && Array.isArray(tc.artifacts) && tc.artifacts.length > 0 && typeof appendInlineArtifact === "function") {
           for (var ai = 0; ai < tc.artifacts.length; ai++) {
@@ -378,7 +375,9 @@ async function loadSharedSession(token) {
       })
     });
     if (r.kind === "exam" && r.examData) {
-      loadSharedExamSession(r);
+      /* Awaited so a render failure lands in the catch below (toast + gate
+         teardown) instead of escaping as an unhandled rejection. */
+      await loadSharedExamSession(r);
       return;
     }
     _switchToSharedChatView();

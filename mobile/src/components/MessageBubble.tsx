@@ -379,7 +379,7 @@ export const MessageBubble = React.memo(function MessageBubble({
   highlight,
   onIterate,
 }: MessageBubbleProps) {
-  const { colors, radius, typography } = useTheme();
+  const { colors, typography } = useTheme();
   const t = useT();
   const { width: windowWidth } = useWindowDimensions();
   const isUser = message.role === 'user';

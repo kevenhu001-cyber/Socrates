@@ -6,7 +6,7 @@
 // legacy renderer (a no-op in React mode).
 
 import { test, expect } from '@playwright/test';
-import { gotoAndSettle, login } from './_lib.mjs';
+import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test('Attachment chip rows React mode hydrates both containers', async ({ page }) => {

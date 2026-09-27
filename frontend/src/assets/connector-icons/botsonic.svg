@@ -20,7 +20,7 @@
       <stop offset="0.97" stop-color="white"/>
     </linearGradient>
     <linearGradient id="paint1_linear_940_13452" x1="0.624075" y1="6.92182" x2="35.2445" y2="36.74" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#4A0FC3"/>
+      <stop offset="0" stop-color="#4A0FC3"/>
       <stop offset="1" stop-color="#4A0FC3" stop-opacity="0"/>
     </linearGradient>
   </defs>

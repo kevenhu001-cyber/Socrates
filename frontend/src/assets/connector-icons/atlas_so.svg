@@ -3,7 +3,7 @@
   <path d="M18.5633 19.5059L13.7993 14.5L9.032 19.5059C7.85505 20.7426 5.94417 20.7426 4.76392 19.5059C6.12931 20.9406 7.98399 21.7465 9.91471 21.7465H13.796H17.6773C19.608 21.7465 21.4627 20.9406 22.8281 19.5059C21.6511 20.7426 19.7402 20.7426 18.5633 19.5059Z" fill="#36B7FF" />
   <defs>
     <linearGradient id="atlas-so-mark-gradient" x1="13.7981" y1="21.6168" x2="13.7981" y2="-0.357844" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#2942EE" />
+      <stop offset="0" stop-color="#2942EE" />
       <stop offset="1" stop-color="#928BFF" />
     </linearGradient>
   </defs>

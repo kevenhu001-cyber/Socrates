@@ -192,7 +192,6 @@ function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: boolean
     const { reasoning_effort: _effort, ...withoutReasoning } = compatibilityBase;
     const withoutOptional = dropStreamOptions({ ...withoutReasoning });
     for (const key of Object.keys(extra_body || {})) delete withoutOptional[key];
-    compatibilityBase = withoutOptional;
     variants.push({ body: withoutOptional, reason: 'provider-400-with-optional-fields', speedApplied: 'standard' });
   }
   /* Only when NO other compatibility variant exists does stream_options get
@@ -375,7 +374,7 @@ export async function streamChatCompletion(
   onToolUse?: (tc: { id: string; type: 'function'; function: { name: string; arguments: string } }) => void,
   onToolCallDelta?: (delta: { index: number; id?: string; name?: string; argumentsDelta?: string; arguments: string; final?: boolean }) => void,
 ) {
-  const { apiBase, apiKey, model, messages, maxTokens, temperature = 0.7, signal, reasoning_effort, extra_body, tools, tool_choice } = opts;
+  const { apiBase, apiKey, signal, tools } = opts;
 
   const totalSignal = LLM_TOTAL_TIMEOUT_MS > 0 ? AbortSignal.timeout(LLM_TOTAL_TIMEOUT_MS) : null;
   const silenceController = new AbortController();

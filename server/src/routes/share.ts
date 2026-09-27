@@ -4,7 +4,7 @@ import type { Database } from '../db/index.js';
 import { shares, sessions } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { requireAuth } from '../middleware/auth.js';
-import { NotFound, BadRequest } from '../lib/errors.js';
+import { NotFound } from '../lib/errors.js';
 import { generateShareToken } from '../lib/crypto.js';
 import { normalizeVisibility } from '../lib/sanitize.js';
 

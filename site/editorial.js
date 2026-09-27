@@ -9,14 +9,6 @@
   /* --------------------------------------------------------------
    * Path helpers
    * -------------------------------------------------------------- */
-  function depthFromPath() {
-    var segs = window.location.pathname.split('/').filter(function (s) { return s.length > 0; });
-    var last = segs[segs.length - 1] || '';
-    return /\.html$/.test(last) ? segs.length - 1 : segs.length;
-  }
-  function rootPrefix() {
-    return new Array(depthFromPath() + 1).join('../');
-  }
   function isChinesePage() {
     return document.documentElement.lang && document.documentElement.lang.toLowerCase().indexOf('zh') === 0;
   }
@@ -303,7 +295,6 @@
   function initialiseFooter() {
     var brand = document.querySelector('.ed-footer-brand');
     if (!brand) return;
-    var prefix = rootPrefix();
 
     // Social row.
     if (!brand.querySelector('.ed-footer-social')) {

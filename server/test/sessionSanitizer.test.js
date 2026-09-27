@@ -12,9 +12,18 @@
  * Run with: node --experimental-strip-types --test test/sessionSanitizer.test.js
  */
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { after } from 'node:test';
 
 import { sanitizeSessionPayload, SessionPayloadSchema } from '../src/routes/sessions.ts';
+
+/* routes/sessions.ts pulls in lib/pubsub, which opens a long-lived
+   pg.Client LISTEN connection. That handle keeps the event loop alive, so
+   without this teardown the suite passes and then hangs until the runner's
+   timeout kills it and reports a failing suite. */
+after(async () => {
+  const { shutdownPubsub } = await import('../src/lib/pubsub.js');
+  await shutdownPubsub();
+});
 
 function payloadWithToolCall(toolCall) {
   return {

@@ -65,7 +65,6 @@ import { initLinkFavicons } from './ui/linkFavicons.js';
 import { installDiagnosticFlowListeners } from './tutor/diagnosticFlow.js';
 import { startSession } from './chat/sessionBootstrap.js';
 import { startNewChat, toggleIncognito, isInAuthGraceWindow, handleAuthExpired, getUserMemories } from './app/lifecycle.js';
-import { deletedSessionGuard } from './session/saveState.js';
 import { setRecentsSearch } from './ui/recentsView.js';
 import { installLiveTurnRetryListener } from './chat/liveTurn.js';
 
@@ -352,8 +351,6 @@ try{window.RECENTS_FILTER_KEY=RECENTS_FILTER_KEY}catch(_){}
    deletion (in actuallyDeleteSession's then-callback) so the
    guard doesn't permanently block re-saving a new session with
    a coincidentally-similar id. */
-/* B2: deletedSessionGuard + remember/forget centralized in session/saveState.js (imported at top). */
-var _deletedSessionGuard=deletedSessionGuard;
 /* Returns the saveState.saveInFlight promise when a save was
    initiated/queued, or null if guards bailed. Callers that need to
    wait for the save to complete (e.g. toggleAppMode) can await the
@@ -641,7 +638,6 @@ installAuthHooks({ on401: handleAuthExpired, isInGraceWindow: isInAuthGraceWindo
    The two strings are also pushed to the server via
    PATCH /api/users/me.customInstructions so the same value
    flows to the Android client on the next sign-in. */
-var _customInstructionsSaveTimer=null;
 
 /* P_main-split — Wave 1a: showConfirm + closeConfirm extracted to ui/confirm.js. */
 

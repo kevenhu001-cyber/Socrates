@@ -418,9 +418,9 @@ export function processPendingMermaid() {
        re-rendering it would flash its SVG away and back. */
     if (liveEl && liveEl.getAttribute('data-viz-state') !== 'loading') return;
     if (!validMermaid(item.code)) {
-      var el = document.getElementById(item.id);
+      const el = document.getElementById(item.id);
       if (!el) return;
-      var body = el.querySelector('.viz-body');
+      const body = el.querySelector('.viz-body');
       if (!body) return;
       body.innerHTML = vizErrorHtml('Diagram syntax error', item.code);
       el.setAttribute('data-viz-state', 'error');
@@ -458,9 +458,9 @@ export function processPendingMermaid() {
           delete _mermaidInFlight[item.id];
         });
     } catch (e) {
-      var el = document.getElementById(item.id);
+      const el = document.getElementById(item.id);
       if (!el) return;
-      var body = el.querySelector('.viz-body');
+      const body = el.querySelector('.viz-body');
       if (!body) return;
       var msg = esc(e.message || String(e)).slice(0, 300);
       var src = esc(item.code || '');

@@ -33,7 +33,6 @@
  */
 
 import {
-  palettes,
   type ThemePalette,
   type ThemeMode,
 } from './tokens';

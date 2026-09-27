@@ -19,7 +19,7 @@
  */
 
 import { writeFile, unlink, stat } from 'node:fs/promises';
-import { tmpdir, homedir } from 'node:os';
+import { tmpdir } from 'node:os';
 import nodePath from 'node:path';
 import crypto from 'node:crypto';
 import { isMmxCliAvailable, runMmx } from '../lib/spawnMmx.js';

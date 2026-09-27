@@ -82,8 +82,8 @@ function position(el, trigger) {
      and always opens downward. Connected plugin rows scroll inside the card
      instead of making the card jump above the prompt. */
   if (mode === "topic" && viewportWidth > 768) {
-    var wrap = trigger.closest ? trigger.closest("#topicInputWrap") : null;
-    var wrapRect = wrap ? wrap.getBoundingClientRect() : r;
+    const topicWrap = trigger.closest ? trigger.closest("#topicInputWrap") : null;
+    const wrapRect = topicWrap ? topicWrap.getBoundingClientRect() : r;
     var menuTop = r.bottom + 8;
     var room = Math.max(120, viewportBottom - menuTop - 16);
     el.style.width = "220px";

@@ -181,7 +181,7 @@ export function createMistakeBook({
       if (slot) {
         var parent = slot.closest('.inline-quiz');
         if (parent) {
-          var parsed = {
+          const parsed = {
             q: mistake.q,
             options: mistake.options.map(function (option) { return { letter: option.letter, text: option.text }; }),
             correct: mistake.correct,
@@ -206,7 +206,7 @@ export function createMistakeBook({
     requestAnimationFrame(function () { sc.scrollTop = sc.scrollHeight; });
     var quizSlot = div.querySelector('.quiz-slot');
     if (quizSlot) {
-      var parsed = {
+      const parsed = {
         q: mistake.q,
         options: mistake.options.map(function (option) { return { letter: option.letter, text: option.text }; }),
         correct: mistake.correct,

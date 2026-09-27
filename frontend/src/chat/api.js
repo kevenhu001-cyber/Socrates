@@ -298,7 +298,7 @@ export async function callAPI(messages,maxTokens,options){
            hand-rolled fetch that can send an empty X-CSRF-Token and
            bypass the auth hooks. apiFetchRaw attaches X-CSRF-Token only
            when the cookie exists and replays once after a CSRF refresh. */
-        var resp=await apiFetchRaw("/api/v2/minimax/v1/chat/completions",{
+        const resp=await apiFetchRaw("/api/v2/minimax/v1/chat/completions",{
           method:"POST",
           headers:{"Content-Type":"application/json","Authorization":"Bearer "+provider.key},
           body:JSON.stringify(beagleBody),
@@ -307,12 +307,15 @@ export async function callAPI(messages,maxTokens,options){
         /* Chrome's fetch implementation propagates signal.abort() to the
            underlying response body stream, so read the body as text
            before any abort is possible and parse it afterwards. */
-        var respText="";
+        let respText="";
         try{respText=await resp.text()}catch(_){}
         if(!resp.ok){
-          var beagleBody=null;
-          try{beagleBody=JSON.parse(respText)}catch(_){}
-          lastBeagleErr=makeAIError(resp.status+" "+(respText||"").slice(0,200),resp.status,beagleBody);
+          /* Kept separate from `beagleBody` above on purpose: that variable is
+             the request payload reused by every retry, and shadowing it with
+             the parsed error body made the next attempt POST the error. */
+          let beagleErrorBody=null;
+          try{beagleErrorBody=JSON.parse(respText)}catch(_){}
+          lastBeagleErr=makeAIError(resp.status+" "+(respText||"").slice(0,200),resp.status,beagleErrorBody);
           var beagleQuota=monthlyLimitMessage(lastBeagleErr);
           if(beagleQuota){setLastCallError(beagleQuota);return null;}
           if(await waitForRetry(beagleAttempt,lastBeagleErr,retryOptions))continue;

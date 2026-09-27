@@ -33,7 +33,7 @@ export async function authBoot(){
     await csrfReady;
     history.replaceState(null,"",location.pathname+(params.get("next")?"?next="+encodeURIComponent(params.get("next")):""));
     try{
-      var BEAGLE_BUILT_IN=window.BEAGLE_BUILT_IN;
+      const BEAGLE_BUILT_IN=window.BEAGLE_BUILT_IN;
       if(BEAGLE_BUILT_IN&&!BEAGLE_BUILT_IN.key){BEAGLE_BUILT_IN.key="local";BEAGLE_BUILT_IN.model="local";}
       window.SERVER_HAS_BEAGLE_KEY=true;
     }catch(_){}
@@ -127,7 +127,7 @@ export async function authBoot(){
          The raw key is never sent to the client, so cfg.beagleKey
          is intentionally absent. Only update model when the server
          explicitly provides one. */
-      var BEAGLE_BUILT_IN = window.BEAGLE_BUILT_IN;
+      const BEAGLE_BUILT_IN = window.BEAGLE_BUILT_IN;
       if(BEAGLE_BUILT_IN){
         if(typeof cfg.beagleKey==="string")BEAGLE_BUILT_IN.key=cfg.beagleKey;
         if(typeof cfg.beagleModel==="string")BEAGLE_BUILT_IN.model=cfg.beagleModel;

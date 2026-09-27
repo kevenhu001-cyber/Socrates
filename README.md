@@ -9,7 +9,7 @@
 [![Frontend](https://img.shields.io/badge/frontend-Vite%20SPA-f3c769?style=flat-square&logo=vite&logoColor=black)](frontend/)
 [![Android](https://img.shields.io/badge/android-React%20Native%20%2B%20Expo-3DDC84?style=flat-square&logo=android&logoColor=white)](mobile/)
 [![Database](https://img.shields.io/badge/database-PostgreSQL%2014%2B-4169e1?style=flat-square&logo=postgresql&logoColor=white)](server/src/db/)
-[![License](https://img.shields.io/badge/license-proprietary-555555?style=flat-square)](#-license)
+[![License](https://img.shields.io/badge/license-proprietary-555555?style=flat-square)](#license)
 
 **Socrates — AI-powered Socratic tutor**  
 Streaming chat with reasoning models, interactive viz canvases, KaTeX math,
@@ -27,26 +27,26 @@ cross-session memory, and a native Android client.
 
 ## Table of contents
 
-- [Why Socrates](#-why-socrates)
-- [Screenshots](#-screenshots)
-- [Features](#-features)
-- [Architecture](#-architecture)
-- [Tech stack](#-tech-stack)
-- [Repository layout](#-repository-layout)
-- [Quick start](#-quick-start)
+- [Why Socrates](#why-socrates)
+- [Screenshots](#screenshots)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Tech stack](#tech-stack)
+- [Repository layout](#repository-layout)
+- [Quick start](#quick-start)
   - [1. Frontend (Vite SPA)](#1-frontend-vite-spa)
   - [2. Backend API server](#2-backend-api-server)
   - [3. Android client](#3-android-client)
-- [Configuration](#-configuration)
-- [Custom rendering pipeline](#-custom-rendering-pipeline)
-- [API reference](#-api-reference)
-- [Deployment](#-deployment)
-- [Security model](#-security-model)
-- [Repository visibility](#-repository-visibility)
-- [Roadmap](#-roadmap)
-- [Contributing](#-contributing)
-- [License](#-license)
-- [Support](#-support)
+- [Configuration](#configuration)
+- [Custom rendering pipeline](#custom-rendering-pipeline)
+- [API reference](#api-reference)
+- [Deployment](#deployment)
+- [Security model](#security-model)
+- [Repository visibility](#repository-visibility)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [License](#license)
+- [Support](#support)
 
 ---
 
@@ -68,7 +68,7 @@ The rest of the app is plumbing that makes the Socratic experience
 feel real:
 
 - **Streaming chat** with a custom line-by-line markdown renderer
-  (see [Custom rendering pipeline](#-custom-rendering-pipeline))
+  (see [Custom rendering pipeline](#custom-rendering-pipeline))
   so `# Title` becomes an `<h1>` the moment the model types `# `,
   not after the model finishes its turn.
 - **Reasoning models** (DeepSeek R1, QwQ, etc.) stream `<think>…</think>`
@@ -137,7 +137,7 @@ builds and copies the bundle into the nginx web root.
   `>` blockquotes, `---` horizontal rules, blank-line paragraph
   breaks, and inline `**bold**` / `*italic*` / `` `code` `` /
   `[link](url)` all stream in. The renderer is purpose-built
-  (see [Custom rendering pipeline](#-custom-rendering-pipeline)) —
+  (see [Custom rendering pipeline](#custom-rendering-pipeline)) —
   no flicker between raw and rendered, no escaping bugs.
 - **`<think>` / `</think>` reasoning blocks.** Models that expose
   chain-of-thought get a collapsible details card; the live
@@ -295,7 +295,7 @@ sequenceDiagram
 | Layer | Technology | Notes |
 | --- | --- | --- |
 | Web SPA | React/TypeScript + legacy JS compatibility layer, Vite build | [`frontend/`](frontend/) — ~99% migrated, all surfaces React-driven |
-| Markdown | `marked` 4.3 + custom progressive renderer | see [Custom rendering pipeline](#-custom-rendering-pipeline) |
+| Markdown | `marked` 4.3 + custom progressive renderer | see [Custom rendering pipeline](#custom-rendering-pipeline) |
 | Math | `katex` 0.16.9 (vendored, see [`frontend/src/vendor-files/katex/`](frontend/src/vendor-files/katex/)) | display + inline modes |
 | Code highlight | `highlight.js` (vendored + loaded lazily at finish time) | see [`frontend/src/vendor-files/highlight.min.js`](frontend/src/vendor-files/highlight.min.js) |
 | Search | `fuse.js` for the Cmd-K palette | |

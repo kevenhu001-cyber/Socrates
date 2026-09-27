@@ -1,6 +1,6 @@
 # Reversal Risk Register
 
-For the reverse-align plan (see [inherited-munching-book.md](../../../../../../Users/Jiacheng/.claude/plans/inherited-munching-book.md)). Every PR landing against this direction must update the relevant row.
+For the reverse-align plan (tracked in a local planning note, `inherited-munching-book.md`, that is not part of this repository). Every PR landing against this direction must update the relevant row.
 
 ## How to use this file
 

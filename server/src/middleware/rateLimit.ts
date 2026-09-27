@@ -15,18 +15,6 @@ function emailKey(req: Request): string | null {
   return `email:${norm}`;
 }
 
-function codeKey(req: Request): string | null {
-  const raw = req.body && req.body.code;
-  if (typeof raw !== 'string' || raw.length === 0) return null;
-  return `code:${raw.slice(0, 32)}`;
-}
-
-function tokenKey(req: Request): string | null {
-  const raw = req.body && (req.body.token || req.body.reset_token);
-  if (typeof raw !== 'string' || raw.length === 0) return null;
-  return `token:${raw.slice(0, 64)}`;
-}
-
 function combineKeys(...keys: (string | null)[]): string | null {
   const valid = keys.filter(Boolean);
   if (!valid.length) return null;
@@ -59,8 +47,6 @@ function combineKeys(...keys: (string | null)[]): string | null {
  * authenticated endpoints we key on userId when available so a single
  * corporate NAT IP doesn't aggregate many users into one bucket.
  */
-
-import { getTierPlan } from '../lib/tiers.js';
 
 const jsonLimit = (code: string, message: string) => ({
   code,

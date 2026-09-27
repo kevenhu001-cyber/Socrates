@@ -152,7 +152,7 @@ export const executeCodeInterpreter: ToolExecutor = async (
     error: execResult.status !== 'completed' ? (execResult.errorMessage || execResult.status) : null,
     errorCode: execResult.errorCode
       || (execResult.status === 'skipped' ? 'code_interpreter_unavailable' : 'execution_failed'),
-    retryable: execResult.retryable === false ? false : true,
+    retryable: execResult.retryable !== false,
     userMessage: isExecutionTimeout
       ? '代码执行超过时间预算，请拆分步骤、减少循环规模或改用 numpy/pandas 向量化计算后重试。'
       : (execResult.status === 'completed' ? null : (execResult.userMessage || '代码未能完成执行。')),

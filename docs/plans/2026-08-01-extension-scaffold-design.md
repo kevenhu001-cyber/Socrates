@@ -98,8 +98,9 @@ export interface ExtensionContext {
 ### 3.2 注册表(`frontend/src/extensions/registry.ts`)
 
 ```ts
-export class ExtensionRegistry {
-  private map = new Map<string, ExtensionDefinition>();
+// 签名概览(实现省略),内部存储为 Map<string, ExtensionDefinition>
+export declare class ExtensionRegistry {
+  private map: Map<string, ExtensionDefinition>;
   register(def: ExtensionDefinition): this;         // 校验 key 唯一、kind 必填字段完整
   get(key: string): ExtensionDefinition | undefined;
   byPlacement(placement: 'tools' | 'picker'): ExtensionDefinition[];  // 按 order 升序
@@ -282,13 +283,16 @@ export interface AgentRunEvent {
 实现方式:在 `ExtensionContext.setTemplate` 中增加两个可选字段:
 
 ```ts
-setTemplate(spec: TemplateChipSpec & {
-  systemPrompt: string;
-  body?: string;
-  shortcut?: string;
-  runId?: string;                                                   // 新增
-  workflow?: 'explore' | 'deepResearch' | 'research' | 'analyze';   // 新增
-}): void;
+interface ExtensionContext {
+  // …其余成员不变
+  setTemplate(spec: TemplateChipSpec & {
+    systemPrompt: string;
+    body?: string;
+    shortcut?: string;
+    runId?: string;                                                   // 新增
+    workflow?: 'explore' | 'deepResearch' | 'research' | 'analyze';   // 新增
+  }): void;
+}
 ```
 
 `main.js` 的 `setActiveTemplate` 接收这两个字段并存入 `_activeTemplate`,聊天管线(`toolCallbacksForStream` / `askChatTurn` / `handleChatApiResult`)在读取 `_activeTemplate` 时拿到 `runId` 与 `workflow`,据此发布事件。
@@ -365,7 +369,7 @@ function publishActiveWorkflowFinish(ok) { /* completed/failed */ }
 
 代码位置:`frontend/src/react/bootstrap.tsx` 的 `bootstrapReactCompatibilityRuntime()` 末尾:
 
-```ts
+```tsx
 const appShell = document.getElementById('appShell');
 if (appShell && !document.getElementById('workflowLayerReactRoot')) {
   const host = document.createElement('div');
@@ -398,24 +402,27 @@ CSS 用 `position: sticky; bottom: 8px` 让浮层贴齐视口底部,与聊天输
 `frontend/src/extensions/modules/exam.ts`:
 
 ```ts
-onActivate(ctx) {
-  const w = window as unknown as ExamWindow;
-  const inView = !!w.state?._examInView;
-  if (inView && typeof w.closeExamView === 'function') {
-    w.closeExamView();           // toggle off: 关闭面板 + 触发 examCancel
-    return;
-  }
-  if (ctx.openNav) ctx.openNav('exam');
-  else if (typeof w.openExamPanel === 'function') w.openExamPanel();
-  else if (typeof w.openExamModal === 'function') w.openExamModal();
-},
-onDeactivate() {
-  // 兜底:另一个扩展接手时关闭 exam 面板
-  const w = window as unknown as ExamWindow;
-  if (w.state?._examInView && typeof w.closeExamView === 'function') {
-    w.closeExamView();
-  }
-},
+// 节选:模块对象上的两个生命周期钩子
+const examModule = {
+  onActivate(ctx) {
+    const w = window as unknown as ExamWindow;
+    const inView = !!w.state?._examInView;
+    if (inView && typeof w.closeExamView === 'function') {
+      w.closeExamView();           // toggle off: 关闭面板 + 触发 examCancel
+      return;
+    }
+    if (ctx.openNav) ctx.openNav('exam');
+    else if (typeof w.openExamPanel === 'function') w.openExamPanel();
+    else if (typeof w.openExamModal === 'function') w.openExamModal();
+  },
+  onDeactivate() {
+    // 兜底:另一个扩展接手时关闭 exam 面板
+    const w = window as unknown as ExamWindow;
+    if (w.state?._examInView && typeof w.closeExamView === 'function') {
+      w.closeExamView();
+    }
+  },
+};
 ```
 
 `closeExamView()` 已经实现 `state.examCancel = true` + `state._examInView = false`,无需在扩展模块里直接写这两个字段。

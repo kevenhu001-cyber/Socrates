@@ -24,7 +24,7 @@
  * indicates a brute-force loop.
  */
 import { TooManyRequests } from '../lib/errors.js';
-import { eq, sql, and, isNull, or, lt, gt } from 'drizzle-orm';
+import { eq, sql, and, isNull, or, lt } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { loginFailures } from '../db/schema.js';
 
@@ -38,7 +38,7 @@ const THRESHOLD = 5;                    // failed attempts to trigger lockout (u
    cost of a legitimate typo (3 tries, then wait 15 minutes) is
    acceptable for the extra resistance. Applied via the optional
    `threshold` argument on checkLockout / recordFailure below. */
-const ADMIN_THRESHOLD = 3;
+export const ADMIN_THRESHOLD = 3;
 
 /**
  * Best-effort prune of expired rows. Cheap because login_failures
@@ -133,10 +133,20 @@ export async function recordFailure(email: string, threshold: number = THRESHOLD
           WHEN ${loginFailures.firstAt} < ${new Date(now.getTime() - WINDOW_MS)} THEN ${now}
           ELSE ${loginFailures.firstAt}
         END`,
+        /* The window-elapsed branch must be tested before the threshold
+           branch, mirroring `count` above: once the window has rolled over
+           the stored count is stale (it is being reset to 1), so comparing
+           the *old* count + 1 against the threshold would re-lock an
+           account on its first miss after an expired lockout. Only the
+           lazy prune in checkLockout() used to paper over this.
+           `1 >= threshold` is resolved in TypeScript, not in a nested SQL
+           CASE: the inner CASE has no timestamptz anchor of its own, so
+           Postgres would type the lockout-date parameter as text and reject
+           the outer CASE with 42804 (CASE types ... cannot be matched). */
         lockedUntil: sql`CASE
           WHEN ${loginFailures.lockedUntil} IS NOT NULL AND ${loginFailures.lockedUntil} > NOW() THEN ${loginFailures.lockedUntil}
+          WHEN ${loginFailures.firstAt} < ${new Date(now.getTime() - WINDOW_MS)} THEN ${1 >= threshold ? sql`${lockedUntil}::timestamptz` : sql`NULL::timestamptz`}
           WHEN ${loginFailures.count} + 1 >= ${threshold} THEN ${lockedUntil}
-          WHEN ${loginFailures.firstAt} < ${new Date(now.getTime() - WINDOW_MS)} THEN NULL
           ELSE ${loginFailures.lockedUntil}
         END`,
       },

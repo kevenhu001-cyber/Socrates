@@ -274,7 +274,6 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
     }, 2000);
     turnCheckpointTimer.unref?.();
   }
-  const writeSse = (payload: string) => emitter.write(payload);
 
   /* ─── Tool-calling loop ─────────────────────────────────────────
    * The LLM may decide mid-stream to call a native tool. We run

@@ -210,7 +210,7 @@ footer a:hover{text-decoration:underline}
   </div>
 
   <div class="subscribe-card" id="subscribeBox">
-    <div class="label" data-i18n="subscribeLabel">Get notified when a service goes down:</div>
+    <label class="label" for="subscribeEmail" data-i18n="subscribeLabel">Get notified when a service goes down:</label>
     <div class="input-group">
       <input type="email" id="subscribeEmail" placeholder="you@example.com" data-i18n-placeholder="subscribePlaceholder" />
       <button class="btn" id="subscribeBtn" onclick="subscribe()" data-i18n="subscribeBtn">Subscribe</button>
@@ -229,7 +229,7 @@ footer a:hover{text-decoration:underline}
   'use strict';
 
   var LANG = 'en';
-  try { var saved = localStorage.getItem('socrates-status-lang'); if (saved) LANG = saved; } catch (_) {}
+  try { const saved = localStorage.getItem('socrates-status-lang'); if (saved) LANG = saved; } catch (_) {}
 
   var I18N = {
     en: {
@@ -485,7 +485,7 @@ footer a:hover{text-decoration:underline}
 
   window.toggleTheme = toggleTheme; window.toggleLang = toggleLang; window.subscribe = subscribe;
 
-  try { var saved = localStorage.getItem('socrates-status-theme'); if (saved) document.documentElement.setAttribute('data-mode', saved); } catch (_) {}
+  try { const saved = localStorage.getItem('socrates-status-theme'); if (saved) document.documentElement.setAttribute('data-mode', saved); } catch (_) {}
 
   applyI18n(); render(); fetchStatus(); setInterval(fetchStatus, 30000);
   setInterval(function () { var el = _('footTime'); if (el) el.textContent = new Date().toLocaleString(); }, 1000);

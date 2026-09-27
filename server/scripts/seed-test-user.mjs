@@ -28,7 +28,10 @@
 
 import { config } from 'dotenv';
 import { eq } from 'drizzle-orm';
-import bcrypt from 'bcrypt';
+/* bcryptjs, not the native `bcrypt`: that is what the server hashes with
+   (src/lib/crypto.ts) and the only one listed in package.json, so the old
+   import made this script die with ERR_MODULE_NOT_FOUND. */
+import bcrypt from 'bcryptjs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
@@ -48,7 +51,7 @@ async function main() {
 
   // Lazy import — dotenv has loaded DATABASE_URL by now, and the
   // drizzle pool only opens connections when the first query runs.
-  const { initDb, getDb } = await import('../src/db/index.js');
+  const { initDb } = await import('../src/db/index.js');
   const { users } = await import('../src/db/schema.js');
 
   const db = initDb(process.env.DATABASE_URL);

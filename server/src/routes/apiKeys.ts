@@ -5,7 +5,7 @@ import { apiKeys } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { NotFound, BadRequest, Forbidden } from '../lib/errors.js';
 import { audit } from '../middleware/audit.js';
-import { encrypt, decrypt, encryptionKey } from '../lib/crypto.js';
+import { encrypt, encryptionKey } from '../lib/crypto.js';
 import { getApiKeyLimit } from '../lib/tiers.js';
 import { isUuid } from '../lib/validate.js';
 

@@ -42,7 +42,7 @@ import { eq, and, ne } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { apiKeys } from '../db/schema.js';
 import { requireAdminSession } from '../middleware/adminAuth.js';
-import { NotFound, BadRequest } from '../lib/errors.js';
+import { BadRequest } from '../lib/errors.js';
 import { encrypt, encryptionKey } from '../lib/crypto.js';
 import { isAllowedProviderUrl } from './apiKeys.js';
 

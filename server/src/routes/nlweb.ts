@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from 'express';
+import { Router, type Request } from 'express';
 
 /**
  * P_nlweb — Microsoft NLWeb-conformant natural-language query surface.

@@ -281,7 +281,7 @@ export function restorePersistedMessageExtras(
         try {
           mountVisualization(vizSpec, host, {
             toolCallId: tc.id || ((idPrefix || 'history') + '-viz-' + tci),
-          });
+          }).catch(() => { /* async: the surrounding try cannot see this */ });
         } catch {}
       }
       if (Array.isArray(tc.artifacts)) {
@@ -312,7 +312,7 @@ export function restorePersistedMessageExtras(
       try {
         mountVisualization(vizSpec, body, {
           toolCallId: tc.id || ((idPrefix || 'history') + '-viz-' + tci),
-        });
+        }).catch(() => { /* async: the surrounding try cannot see this */ });
       } catch {}
     }
     if (cardOut && Array.isArray(tc.artifacts)) {

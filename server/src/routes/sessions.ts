@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { eq, and, desc, gt, isNull, sql, inArray, count } from 'drizzle-orm';
-import crypto from 'node:crypto';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import { z } from 'zod';
@@ -10,7 +9,7 @@ import { getDb } from '../db/index.js';
 import {
   sessions, messages, mistakes, artifacts, artifactVersions,
   agentRuns, usageEvents, files,
-  shares, sessionTags, tags as tagsTable,
+  sessionTags, tags as tagsTable,
 } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { resourceScope } from '../middleware/scopes.js';
@@ -21,8 +20,6 @@ import { sanitizeStoredHtml, sanitizePlainText } from '../lib/sanitize.js';
 import { compressSessionMessages } from '../services/sessionCompressor.js';
 import { getSessionLimit } from '../lib/tiers.js';
 import { isUuid } from '../lib/validate.js';
-
-const UPLOAD_DIR = process.env.UPLOAD_DIR || '/tmp/socrates-uploads';
 
 // P6.x — zod schema caps field lengths and validates types; throws
 // ZodError → errorHandler returns 400 with the offending path.

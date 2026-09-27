@@ -818,15 +818,15 @@ export function addStreamingMessage(opts){
                user message partially visible at the top of the viewport would
                otherwise drag the scroll position back to the question after
                the React handoff changes layout. */
-            for(var _fvi=0;!_fvAnchor&&_fvi<_fvRows.length;_fvi++){
-              var _fvr=_fvRows[_fvi].getBoundingClientRect();
+            for(let _fvi=0;!_fvAnchor&&_fvi<_fvRows.length;_fvi++){
+              const _fvr=_fvRows[_fvi].getBoundingClientRect();
               if(_fvr.bottom>_fvRect.top+1){
                 if(!_fvRows[_fvi].classList.contains('user')){_fvAnchor=_fvRows[_fvi];break;}
               }
             }
             if(!_fvAnchor){
-              for(var _fvi=0;_fvi<_fvRows.length;_fvi++){
-                var _fvr=_fvRows[_fvi].getBoundingClientRect();
+              for(let _fvi=0;_fvi<_fvRows.length;_fvi++){
+                const _fvr=_fvRows[_fvi].getBoundingClientRect();
                 if(_fvr.bottom>_fvRect.top+1){_fvAnchor=_fvRows[_fvi];break;}
               }
             }

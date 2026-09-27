@@ -397,7 +397,7 @@ function WidgetView({
   onQuizAnswer?: (answer: TutorQuizAnswer) => void | Promise<void>;
   onPracticeSubmit?: (answer: TutorPracticeAnswer) => void | Promise<void>;
 }) {
-  const { colors, radius, typography } = useTheme();
+  const { colors, typography } = useTheme();
   const t = useT();
   const card = [styles.widgetCard, { backgroundColor: withAlpha(colors.surface, 0.7), borderColor: colors.border }];
   switch (block.kind) {

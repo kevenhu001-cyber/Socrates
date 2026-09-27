@@ -81,7 +81,6 @@ const CJK_FONT_URL = process.env.EXEC_CJK_FONT_URL
   || 'https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@main/Sans/SubsetOTF/SC/NotoSansSC-Regular.otf';
 const CJK_FONT_BOOT_TIMEOUT_MS = parseInt(process.env.EXEC_CJK_FONT_TIMEOUT_MS || '8000', 10);
 let _cjkFontPromise: Promise<string | null> | null = null;
-let _cjkFontRegistered = false;
 
 function _cjkFontPath(): string {
   return path.join(CJK_FONT_HOST_DIR, CJK_FONT_FILENAME);
@@ -363,8 +362,7 @@ def _socrates_make_flush(orig_flush):
     // Register the optional font before advertising readiness. This keeps
     // font/network work outside the per-execution timeout budget. Failure is
     // intentionally non-fatal: matplotlib can continue with its default font.
-    const family = await _ensureCjkFontRegistered();
-    if (family) _cjkFontRegistered = true;
+    await _ensureCjkFontRegistered();
 
     parentPort!.postMessage({ id: 'boot', type: 'ready', version: pyodide.version });
   } catch (err) {
@@ -520,7 +518,6 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
   let exitCode = 0;
   let errorMessage: string | null = null;
   let pendingPyType: string | null = null;       // for the errorMessage finalized after stderr read
-  let pendingCancelled = false;   // true if caller-side AbortSignal fired
   let cancelled = false;
   const onAbort = () => { cancelled = true; };
   if (signal) {
@@ -721,7 +718,6 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
       // Defer to finalize step below — we need the stderr capture to extract
       // the human-readable "<Class>: <msg>" line.
       pendingPyType = pyType;
-      pendingCancelled = false;
       status = 'failed';
       exitCode = 1;
     }

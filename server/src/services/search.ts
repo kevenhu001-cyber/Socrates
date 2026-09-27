@@ -1,6 +1,6 @@
-import { eq, or, sql, and } from 'drizzle-orm';
+import { eq, sql, and } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { users, sessions, messages } from '../db/schema.js';
+import { sessions, messages } from '../db/schema.js';
 import { BadRequest } from '../lib/errors.js';
 
 /**

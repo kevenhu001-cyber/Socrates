@@ -599,6 +599,8 @@ async function prepareAttachment(entry, file, reportProgress) {
  * @param {FileList|File[]} fileList
  * @param {function} [onUpdate] — called after each stub mutation so
  *   the caller can re-render chips (typically renderAttachmentChips).
+ * @param {function} [onProgress] — forwarded to the per-file read /
+ *   compression step; receives an integer percent (0-100).
  * @returns {Promise<{added:number, rejected:string[]}>}
  */
 export async function addFiles(fileList, onUpdate, onProgress) {

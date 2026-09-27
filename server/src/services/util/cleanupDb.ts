@@ -8,11 +8,10 @@
  * the current user; this ensures stale rows are cleared globally.
  */
 import { lt, sql, and } from 'drizzle-orm';
-import fs from 'node:fs/promises';
 import { getDb } from '../../db/index.js';
 import {
   authSessions, pendingRegistrations, verificationTokens,
-  usageEvents, auditEvents, executions, files,
+  usageEvents, auditEvents, executions,
   statusMonitorEvents, statusSubscribers,
   ttsResults,
 } from '../../db/schema.js';
@@ -152,9 +151,11 @@ export async function runExpiredCleanup() {
  */
 export function startExpiredCleanup(intervalMs = 60 * 60 * 1000) {
   if (_timer) return;
-  // Run once on boot, then on the interval.
-  runExpiredCleanup();
-  _timer = setInterval(runExpiredCleanup, intervalMs);
+  // Run once on boot, then on the interval. Fire-and-forget on purpose: the
+  // first sweep must not delay listen(), and runExpiredCleanup() catches
+  // internally so its promise never rejects.
+  void runExpiredCleanup();
+  _timer = setInterval(() => { void runExpiredCleanup(); }, intervalMs);
   // unref so the interval doesn't keep the process alive on its own
   // — the HTTP server (or the test runner) is the real owner.
   _timer.unref?.();

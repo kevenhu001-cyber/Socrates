@@ -9,7 +9,7 @@
 //   - React components regressing to legacy inline on* handlers (source scan)
 
 import { test, expect } from '@playwright/test';
-import { gotoAndSettle, login } from './_lib.mjs';
+import { gotoAndSettle } from './_lib.mjs';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import { dirname, resolve } from 'node:path';

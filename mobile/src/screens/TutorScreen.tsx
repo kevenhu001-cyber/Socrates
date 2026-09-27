@@ -57,7 +57,7 @@ function countKnowledge(nodes: TutorKnowledgeNode[]) {
 }
 
 export function TutorScreen({ navigation, route }: Props) {
-  const { colors, radius, spacing, typography } = useTheme();
+  const { colors, radius, typography } = useTheme();
   const t = useT();
   /* P0 perf — focused selectors for the slices this screen reads. */
   const activeSessionTopic = useAppStore((s) => s.activeSession?.topic ?? null);

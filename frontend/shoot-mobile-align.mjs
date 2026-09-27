@@ -58,10 +58,10 @@ await page.waitForTimeout(1200);
 const shot = (name) => page.screenshot({ path: resolve(OUT_DIR, `${label}-${name}.jpg`), type: 'jpeg', quality: 92 });
 await shot('m1-landing');
 
-await page.evaluate(() => { window.toggleSidebar ? window.toggleSidebar() : document.getElementById('sidebarOpenBtn')?.click(); });
+await page.evaluate(() => { if (window.toggleSidebar) window.toggleSidebar(); else document.getElementById('sidebarOpenBtn')?.click(); });
 await page.waitForTimeout(450);
 await shot('m2-sidebar');
-await page.evaluate(() => { window.toggleSidebar ? window.toggleSidebar() : document.getElementById('sidebarCloseBtn')?.click(); });
+await page.evaluate(() => { if (window.toggleSidebar) window.toggleSidebar(); else document.getElementById('sidebarCloseBtn')?.click(); });
 await page.waitForTimeout(400);
 
 await page.locator('#topicComposerToolsBtn').click();

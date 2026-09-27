@@ -1,4 +1,4 @@
-const { AndroidConfig, withMainActivity, withAndroidStyles } = require('@expo/config-plugins');
+const { AndroidConfig, withMainActivity, withAndroidStyles } = require('expo/config-plugins');
 
 const { setStylesItem, getAppThemeGroup } = AndroidConfig.Styles;
 

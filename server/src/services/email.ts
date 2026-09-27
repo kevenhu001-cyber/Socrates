@@ -180,11 +180,6 @@ function ctaButton(label: string, href: string) {
   </table>`;
 }
 
-/* Hairline-divider helper — pure 1 px rule, no decoration. */
-function hairline() {
-  return `<div style="height:1px;background:#e3e3e3;line-height:1px;font-size:1px;margin:24px 0">&nbsp;</div>`;
-}
-
 /* Fallback URL — quiet, monospaced, sits below the button. */
 function fallbackLink(link: string) {
   return `<p style="margin:8px 0 0;font-size:12px;line-height:1.6;color:#999999;word-break:break-all">

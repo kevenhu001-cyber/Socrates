@@ -7,12 +7,6 @@
 //   import { mockAuthedApp } from './_mock-api.mjs';
 //   test.beforeEach(async ({ page }) => { await mockAuthedApp(page); });
 
-import fs from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
 const MOCK_USER = {
   id: 'u-test-1',
   email: 'smoke@example.test',

@@ -34,15 +34,6 @@ import { updateChatStats } from './stats.js';
 /* omit entirely; backend passes through (mirrors main.js contract) */
 var MAX_TOKENS_CHAT = undefined;
 
-function _t(key, fallback) {
-  try {
-    if (typeof window !== 'undefined' && typeof window.t === 'function') {
-      var v = window.t(key);
-      if (v && v !== key) return v;
-    }
-  } catch (_) {}
-  return fallback != null ? fallback : key;
-}
 function _addStreamingMessage(opts) {
   if (typeof window !== 'undefined' && typeof window.addStreamingMessage === 'function') {
     return window.addStreamingMessage(opts);

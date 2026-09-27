@@ -1,4 +1,4 @@
-import { eq, and, gte, ne, desc, sql, like } from 'drizzle-orm';
+import { eq, and, gte, ne, sql, like } from 'drizzle-orm';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -10,7 +10,7 @@ import {
   generateSessionToken, generateShortToken, generateLoginCode,
 } from '../lib/crypto.js';
 import {
-  ApiError, BadRequest, Unauthorized, Forbidden, NotFound, Conflict,
+  BadRequest, Unauthorized, Forbidden, NotFound, Conflict,
 } from '../lib/errors.js';
 import {
   sendVerificationEmail, sendPasswordResetEmail, sendLoginCode,

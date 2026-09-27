@@ -5,7 +5,7 @@ const {
   withAppBuildGradle,
   withDangerousMod,
   withProjectBuildGradle,
-} = require('@expo/config-plugins');
+} = require('expo/config-plugins');
 
 /**
  * Add Detox's Android test harness only for the CI device-smoke prebuild.

@@ -101,20 +101,20 @@ export function extractHistory(){
        is available, e.g. a session that was loaded from the server
        but the in-memory list hasn't been hydrated yet) */
   if(Array.isArray(window.stateStore.read("messages"))&&window.stateStore.read("messages").length){
-    var maxTurns=HISTORY_MAX_TURNS*2;
-    var tooMany=window.stateStore.read("messages").length>maxTurns;
-    var summary=null;
+    const maxTurns=HISTORY_MAX_TURNS*2;
+    const tooMany=window.stateStore.read("messages").length>maxTurns;
+    let summary=null;
     if(tooMany){
       /* Compress the overflow messages into a summary prefix. */
-      var overflow=window.stateStore.read("messages").slice(0,window.stateStore.read("messages").length-maxTurns);
+      const overflow=window.stateStore.read("messages").slice(0,window.stateStore.read("messages").length-maxTurns);
       summary=compressMessages(overflow);
     }
-    var out=[];
+    const out=[];
     if(summary){
       out.push({role:"system",content:"[Conversation summary of earlier messages]: "+summary});
     }
-    for(var i=Math.max(0,window.stateStore.read("messages").length-maxTurns);i<window.stateStore.read("messages").length;i++){
-      var m=window.stateStore.read("messages")[i];
+    for(let i=Math.max(0,window.stateStore.read("messages").length-maxTurns);i<window.stateStore.read("messages").length;i++){
+      const m=window.stateStore.read("messages")[i];
       if(!m)continue;
       /* P_file-attachments — a user turn can be attachment-only (empty
          rawText, e.g. "just a screenshot"). Keep it: the parts builder
@@ -122,7 +122,7 @@ export function extractHistory(){
          the file on every subsequent turn. */
       var _hasAtt=m.role==="user"&&Array.isArray(m.attachments)&&m.attachments.length>0;
       if(!m.rawText&&!_hasAtt)continue;
-      var txt=String(m.rawText||"").replace(/^Thinking\.\.\.\s*/i,"").replace(/^Thinking\s*/i,"").trim();
+      let txt=String(m.rawText||"").replace(/^Thinking\.\.\.\s*/i,"").replace(/^Thinking\s*/i,"").trim();
       /* P_regen-empty-stream — strip embedded <think>…</think> blocks
        * from assistant messages before sending them back to the model.
        * MiniMax M3 (and other reasoning models) sometimes emit a
@@ -147,9 +147,9 @@ export function extractHistory(){
        * multimodal providers) on every turn. Without this, the
        * attachment is only sent on the first turn and subsequent
        * history turns degrade to text-only. */
-      var content;
+      let content;
       if(m.role==="user" && Array.isArray(m.attachments) && m.attachments.length){
-        var parts=partsForStoredAttachments(txt,m.attachments,{truncate:true});
+        const parts=partsForStoredAttachments(txt,m.attachments,{truncate:true});
         if(parts){
           content=parts;
         }else{
@@ -160,7 +160,7 @@ export function extractHistory(){
         if(txt.length>HISTORY_MAX_CHARS)txt=txt.slice(0,HISTORY_MAX_CHARS)+"…";
         content=txt;
       }
-      var msg={role:m.role==="user"?"user":"assistant",content:content};
+      const msg={role:m.role==="user"?"user":"assistant",content:content};
       if(m.reasoningContent){
         msg.reasoning_content=m.reasoningContent;
       }
@@ -178,21 +178,21 @@ export function extractHistory(){
   if(!sid)return[];
   var rec=loadLocalMemory(sid);
   if(rec&&rec.messages&&rec.messages.length){
-    var maxTurns=HISTORY_MAX_TURNS*2;
-    var tooMany=rec.messages.length>maxTurns;
-    var summary=null;
+    const maxTurns=HISTORY_MAX_TURNS*2;
+    const tooMany=rec.messages.length>maxTurns;
+    let summary=null;
     if(tooMany){
-      var overflow=rec.messages.slice(0,rec.messages.length-maxTurns);
+      const overflow=rec.messages.slice(0,rec.messages.length-maxTurns);
       summary=compressMessages(overflow);
     }
-    var out=[];
+    const out=[];
     if(summary){
       out.push({role:"system",content:"[Conversation summary of earlier messages]: "+summary});
     }
-    for(var ri=Math.max(0,rec.messages.length-maxTurns);ri<rec.messages.length;ri++){
-      var m=rec.messages[ri];
+    for(let ri=Math.max(0,rec.messages.length-maxTurns);ri<rec.messages.length;ri++){
+      const m=rec.messages[ri];
       if(!m||!m.content)continue;
-      var txt=String(m.content).replace(/^Thinking\.\.\.\s*/i,"").replace(/^Thinking\s*/i,"").trim();
+      let txt=String(m.content).replace(/^Thinking\.\.\.\s*/i,"").replace(/^Thinking\s*/i,"").trim();
       if(!txt)continue;
       if(txt.length>HISTORY_MAX_CHARS)txt=txt.slice(0,HISTORY_MAX_CHARS)+"…";
       out.push({role:m.role==="user"?"user":"assistant",content:txt});
@@ -202,15 +202,15 @@ export function extractHistory(){
   }
   var list=document.getElementById("msgList");
   if(!list)return[];
-  var out=[];
-  var children=list.children;
-  for(var i=children.length-1;i>=0&&out.length<HISTORY_MAX_TURNS*2;i--){
-    var el=children[i];
+  const out=[];
+  const children=list.children;
+  for(let i=children.length-1;i>=0&&out.length<HISTORY_MAX_TURNS*2;i--){
+    const el=children[i];
     if(!el.classList.contains("user")&&!el.classList.contains("assistant"))continue;
-    var body=el.querySelector(".msg-body");
+    const body=el.querySelector(".msg-body");
     if(!body)continue;
     /* Pull the rendered text and clean it up. */
-    var txt=(body.innerText||body.textContent||"").trim();
+    let txt=(body.innerText||body.textContent||"").trim();
     if(!txt)continue;
     /* Strip leaked UI affordances that may have been serialised into history. */
     txt=txt.replace(/^Thinking\.\.\.\s*/i,"").replace(/^Thinking\s*/i,"").trim();

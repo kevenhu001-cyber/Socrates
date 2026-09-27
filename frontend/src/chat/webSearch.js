@@ -116,7 +116,7 @@ export async function fetchWebContext(topic,opts){
       /* All searches failed (network / 5xx / non-bing). Surface a
          soft error; the user still gets the previous context if any. */
       var firstErr=searchResps.find(function(x){return x&&!x.ok&&(x.status||x.reason)});
-      var emsg=firstErr?(firstErr.status?"HTTP "+firstErr.status:(firstErr.reason||"failed")):"no results";
+      const emsg=firstErr?(firstErr.status?"HTTP "+firstErr.status:(firstErr.reason||"failed")):"no results";
       console.log("[web search] all queries failed");
       stateStore.dispatch({type:'state/set',key:'searchContextError',value:emsg});
       _emit("error",{message:emsg,code:"no-results"});
@@ -236,7 +236,7 @@ export async function fetchWebContext(topic,opts){
     try{setSearchPill("ok",enriched.length,enriched.length+" sources")}catch(_){}
     return{ok:true,reason:"ok",results:enriched.length,context:ctx,sources:enriched};
   }catch(e){
-    var emsg=(e&&e.message)||String(e);
+    const emsg=(e&&e.message)||String(e);
     console.log("[web search] failed");
     stateStore.dispatch({type:'state/set',key:'searchContextError',value:emsg});
     _emit("error",{message:emsg,code:"exception"});

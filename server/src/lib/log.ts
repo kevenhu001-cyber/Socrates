@@ -62,7 +62,6 @@ export function safeUrl(rawUrl: unknown): string {
     if (!p) return p;
     const eq = p.indexOf('=');
     const rawKey = eq >= 0 ? p.slice(0, eq) : p;
-    const rawVal = eq >= 0 ? p.slice(eq + 1) : '';
     let key;
     try { key = decodeURIComponent(rawKey); } catch { key = rawKey; }
     if (SENSITIVE_PARAMS.has(key.toLowerCase())) {

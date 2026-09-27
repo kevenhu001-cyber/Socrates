@@ -9,7 +9,6 @@
 // This is a read-only diagnostic — it does not modify any files.
 
 import { readFile } from "node:fs/promises";
-import { glob } from "node:fs/promises";
 import { readdir, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";

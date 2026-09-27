@@ -604,7 +604,7 @@ export const Composer = React.memo(function Composer({
               setEditorHeight((current) => current === next ? current : next);
             }}
             returnKeyType="default"
-            blurOnSubmit={false}
+            submitBehavior="newline"
           />
 
           {/* Current SPA mobile control rail:

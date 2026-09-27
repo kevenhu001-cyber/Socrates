@@ -11,7 +11,7 @@
 ## Pre-flight P0 fixes bundled in this build
 
 Mobile ↔ frontend 1:1 alignment work landed in `mobile/` before this build (see
-[`mobile/docs/ui-gap-audit.md`](../mobile/docs/ui-gap-audit.md) for the full
+[`mobile/docs/ui-gap-audit.md`](../../mobile/docs/ui-gap-audit.md) for the full
 audit). Items shipped in the APK that addresses P0 gaps flagged by the audit:
 
 ### Screens
@@ -179,5 +179,5 @@ verification. The APK lands under
   product navigation list — see audit §1.13).
 - Reasoning click-to-expand drawer (mobile keeps the inline card for now).
 
-These are tracked in [`mobile/docs/ui-gap-audit.md`](../mobile/docs/ui-gap-audit.md)
+These are tracked in [`mobile/docs/ui-gap-audit.md`](../../mobile/docs/ui-gap-audit.md)
 §1.12 / §3.9 / §1.13 / §5.5.

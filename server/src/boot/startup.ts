@@ -211,7 +211,10 @@ function startMonitor(): void {
   (async () => {
     try {
       const { startStatusMonitor } = await import('../services/statusMonitor.js');
-      startStatusMonitor();
+      /* Awaited on purpose: startStatusMonitor is async and the catch below
+         is the only place its failures get reported. Unawaited, a rejection
+         would surface as an unhandled rejection instead. */
+      await startStatusMonitor();
     } catch (err) {
       console.warn('[status-monitor] not started:', (err as Error).message);
     }

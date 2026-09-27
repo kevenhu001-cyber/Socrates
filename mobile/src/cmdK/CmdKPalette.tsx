@@ -61,7 +61,7 @@ export function CmdKPalette({
   onNavigate: (route: NativeDestination) => void;
   onOpenEmbedded: (target: EmbeddedTarget, title: string) => void;
 }) {
-  const { colors, radius, spacing, typography, contentWidth, fontScale } = useTheme();
+  const { colors, spacing, typography, fontScale } = useTheme();
   const fs = (n: number) => Math.round(n * fontScale);
   const t = useT();
   const { mode: themeMode, setPreference: setThemePreference } = useThemeController();

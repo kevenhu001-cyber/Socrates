@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import { eq } from 'drizzle-orm';
 import { initDb, getDb, closeDb } from '../src/db/index.js';
 import { loginFailures } from '../src/db/schema.js';
-import { recordFailure, checkLockout, recordSuccess } from '../src/services/loginLockout.js';
+import { recordFailure, checkLockout } from '../src/services/loginLockout.js';
 
 const TEST_EMAIL = 'lockout-' + Date.now() + '-' + Math.random().toString(36).slice(2) + '@example.test';
 

@@ -167,7 +167,6 @@ export function KnowledgeScreen({ navigation }: Props) {
   }), [grouped]);
 
   const graphWidth = Math.max(280, Math.min(700, viewportWidth - 28));
-  const graphHeight = Math.max(250, Math.min(320, graphWidth * 0.72));
   /* The card is centered inside the scroll content, which may be narrower
    * than `viewportWidth - 28` (e.g. when a permanent drawer is docked).
    * Measure the real width so the SVG never overflows the card. */

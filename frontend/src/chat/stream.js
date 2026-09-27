@@ -418,9 +418,9 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
              Parse the JSON and look for an actual `html` property. */
           if(formattedHtml===null&&payload.indexOf("{")===0){
             try{
-              var probe=JSON.parse(payload);
-              if(probe&&typeof probe.html==="string"){
-                formattedHtml=probe;
+              const jsonProbe=JSON.parse(payload);
+              if(jsonProbe&&typeof jsonProbe.html==="string"){
+                formattedHtml=jsonProbe;
                 semanticActivity=true;
                 return;
               }

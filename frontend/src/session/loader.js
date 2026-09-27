@@ -337,7 +337,9 @@ export async function loadSession(id){
      * of the chat-view message renderer which would show nothing
      * useful (exam sessions have no chat-style messages). */
     if(s.kind==="exam"&&s.examData){
-      loadExamSession(s);
+      /* Awaited so loadSession()'s promise settles after the exam view is
+         painted and a paint failure rejects it instead of going unhandled. */
+      await loadExamSession(s);
       return;
     }
     document.getElementById("topicSetup").classList.add("hidden");

@@ -62,7 +62,6 @@ const RECONNECT_BACKOFF_MS = [500, 1000, 2000, 5000, 10000, 30000]; // capped at
  * back, so we decode it for the handler lookup. The user-facing
  * handler receives the original topic verbatim. */
 const encodeChannel = (topic: string) => topic.replace(/[^A-Za-z0-9_]/g, '_');
-const decodeChannel = (channel: string) => channel; // identity — names round-trip via the map
 
 /* In-process fallback for development / degraded mode. The fallback
  * is consulted only when the PG listener is unavailable; otherwise

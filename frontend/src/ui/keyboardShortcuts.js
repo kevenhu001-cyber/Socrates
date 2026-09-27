@@ -19,13 +19,6 @@ import { isFindOpen } from './findInSession.js';
 import { getComposerMarkdown, setComposerMarkdown, focusComposer } from '../react/composer-input/controller.ts';
 import { findLastUserMessage } from '../render/markdown.js';
 
-function _t(key) {
-  try {
-    if (typeof window !== 'undefined' && typeof window.t === 'function') return window.t(key);
-  } catch (_) {}
-  return key;
-}
-
 export function installKeyboardShortcuts() {
   document.addEventListener("keydown",function(e){if(e.key==="\\"&&e.ctrlKey){e.preventDefault();toggleSidebar()}});
   /* P1.2 — Cmd/Ctrl+K opens the global search modal. The

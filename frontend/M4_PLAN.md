@@ -13,7 +13,7 @@ window.apiConfig = apiConfig;
 window.appMode = appMode;
 window.thinkingOn = thinkingOn;
 window.SERVER_HAS_BEAGLE_KEY = SERVER_HAS_BEAGLE_KEY;
-...
+// …
 ```
 
 To delete this file, every inline handler in `index.html` (and in dynamic innerHTML templates) must be replaced with either:

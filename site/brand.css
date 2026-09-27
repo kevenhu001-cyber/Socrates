@@ -1989,7 +1989,6 @@ html:lang(zh) .ed-marquee-title { font-family: var(--site-serif-cjk); letter-spa
    keep the rule so any future selector that hooks it (e.g. line ~4813) does
    not reintroduce the grain. */
 body.ed-site::after { content: none; }
-}
 
 /* =========================================================================
    L. Brand-study layer — patterns studied on the twelve reference sites

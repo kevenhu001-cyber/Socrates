@@ -52,16 +52,13 @@ engines:
     disabled: true
   - name: presearch
     disabled: true
-    disabled: true
   - name: mwmbl
     disabled: true
   - name: privacywall
     disabled: true
   - name: marginalia
     disabled: true
-    disabled: true
   - name: wikidata
-    disabled: true
     disabled: true
   # ---- Engines that work from China Mainland ----
   - name: bing

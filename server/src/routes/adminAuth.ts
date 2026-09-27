@@ -36,7 +36,7 @@ import {
   adminLockoutKey,
   ADMIN_SESSION_TTL_MS,
 } from '../services/adminAuth.js';
-import { checkLockout, recordFailure, recordSuccess } from '../services/loginLockout.js';
+import { ADMIN_THRESHOLD, checkLockout, recordFailure, recordSuccess } from '../services/loginLockout.js';
 import { authLimiter } from '../middleware/rateLimit.js';
 import { BadRequest } from '../lib/errors.js';
 
@@ -97,18 +97,18 @@ router.post('/login', authLimiter, adminLoginLimiter, async (req, res, next) => 
     /* Layer 2 — per-IP lockout. Checked BEFORE the bcrypt compare so
        a locked-out attacker never gets another slow-hash attempt. */
     const lockKey = adminLockoutKey(req.ip);
-    if (lockKey) await checkLockout(lockKey, 3);
+    if (lockKey) await checkLockout(lockKey, ADMIN_THRESHOLD);
 
     const ok = await verifyAdminPassword(parsed.data.password);
     if (!ok) {
-      /* Layer 2 bookkeeping — count the miss (threshold 3). The
+      /* Layer 2 bookkeeping — count the miss (ADMIN_THRESHOLD). The
          failure recording is awaited so a concurrent burst cannot
          race past the threshold; a recording error still returns the
          generic 401 (the lockout is best-effort hardening on top of
          the limiters, never a way to turn a wrong password into a
          500). */
       if (lockKey) {
-        try { await recordFailure(lockKey, 3); } catch (err) {
+        try { await recordFailure(lockKey, ADMIN_THRESHOLD); } catch (err) {
           console.warn('[adminAuth] lockout record failed:', (err as Error).message);
         }
       }

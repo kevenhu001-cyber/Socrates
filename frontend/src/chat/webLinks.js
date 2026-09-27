@@ -46,7 +46,7 @@ export function extractHttpUrls(text){
   }
 
   /* (1) http(s)://... */
-  var re1=/https?:\/\/[^\s一-鿿　-〿＀-￯"'<>)\]】」』]+/gi;
+  var re1=/https?:\/\/[^\s一-鿿\u3000-〿＀-￯"'<>)\]】」』]+/gi;
   var m;
   while((m=re1.exec(text))!==null){
     add(m[0]);
@@ -66,7 +66,7 @@ export function extractHttpUrls(text){
   var FILE_EXTS=("pdf doc docx xls xlsx ppt pptx zip rar 7z tar gz "+
     "jpg jpeg png gif webp svg mp3 mp4 mov avi mkv exe dmg iso "+
     "txt md rtf csv json xml html htm").split(" ");
-  var re2=/(?:^|[^\w一-鿿＠@])([a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+(?:\/[^\s一-鿿　-〿＀-￯"'<>)\]】」』]*)?)/gi;
+  var re2=/(?:^|[^\w一-鿿＠@])([a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+(?:\/[^\s一-鿿\u3000-〿＀-￯"'<>)\]】」』]*)?)/gi;
   while((m=re2.exec(text))!==null){
     var d=m[1];
     if(!d)continue;
@@ -106,8 +106,8 @@ export async function fetchPagesForContext(urls){
   if(!Array.isArray(urls)||!urls.length)return{blocks:[],results:[]};
   try{
     var r=await apiFetch("/api/fetch-batch",{method:"POST",body:{urls:urls}});
-    var results=(r&&r.results)||[];
-    var blocks=[];
+    const results=(r&&r.results)||[];
+    const blocks=[];
     for(var i=0;i<urls.length;i++){
       var u=urls[i];
       var f=results[i];
@@ -125,9 +125,9 @@ export async function fetchPagesForContext(urls){
     }
     return{blocks:blocks,results:results};
   }catch(e){
-    var emsg=(e&&e.message)||String(e);
-    var blocks=urls.map(function(u){return"[Referenced page] "+u+"\n(could not retrieve: "+emsg+")"});
-    var results=urls.map(function(){return{ok:false,reason:emsg}});
+    const emsg=(e&&e.message)||String(e);
+    const blocks=urls.map(function(u){return"[Referenced page] "+u+"\n(could not retrieve: "+emsg+")"});
+    const results=urls.map(function(){return{ok:false,reason:emsg}});
     return{blocks:blocks,results:results};
   }
 }

@@ -79,7 +79,7 @@ function formatTime(isoStr?: string | null): string {
 }
 
 export function MistakesScreen({ navigation }: Props) {
-  const { colors, radius, typography } = useTheme();
+  const { colors, typography } = useTheme();
   const t = useT();
   const [filter, setFilter] = useState<Filter>('unresolved');
   const [items, setItems] = useState<Mistake[]>([]);

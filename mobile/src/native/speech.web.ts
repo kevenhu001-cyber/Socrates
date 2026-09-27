@@ -1,3 +1,8 @@
+/* Held only to keep the in-flight utterance reachable: Chromium garbage-
+   collects an unreferenced SpeechSynthesisUtterance mid-speech, after which
+   neither onend nor onerror fires and the caller's onDone never runs. It is
+   written, never read, by design. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 let activeUtterance: SpeechSynthesisUtterance | null = null;
 
 export type SpeechCallbacks = {

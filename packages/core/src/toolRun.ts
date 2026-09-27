@@ -81,7 +81,6 @@ export function createToolRunApi(
     if (typeof wasmBinding === 'function') return wasmBinding() || null;
     return wasmBinding || null;
   };
-  const hasWasm = (): boolean => Boolean(getW());
 
   function isTerminalToolPhase(phase: string): boolean {
     const w = getW();

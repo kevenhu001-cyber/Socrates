@@ -136,7 +136,7 @@ test('composer stays responsive and reflects typed input within the latency budg
     const start = performance.now();
     // Drive input the way the editor observes it: insert text + fire an input
     // event so the rich composer's model updates as it would for keystrokes.
-    document.execCommand && document.execCommand('insertText', false, text);
+    if (document.execCommand) document.execCommand('insertText', false, text);
     if (readValue().indexOf(text) === -1) {
       // Fallback for editors that ignore execCommand: set text directly and
       // dispatch a real input event so listeners run.

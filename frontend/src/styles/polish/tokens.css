@@ -42,6 +42,19 @@
   --chatgpt-muted: #a6acb8;
   --chatgpt-faint: #7b8291;
   --chatgpt-line: rgb(160 172 192 / 12%);
+
+  /* Two names the restore layer consumes but never declared — same case as
+     --chatgpt-composer above. `--cgv-*` is chatgpt-v2.css's own alias table
+     over the --cg- palette, and it stops at --cgv-text-3, so
+     --cgv-composer-surface only ever resolved through the per-rule literals
+     (#1a1a1a / rgb(33 33 33)) — dark values in light mode. Aliasing the live
+     tokens instead of pinning a literal keeps both names correct in either
+     mode, and neither is a repaint: every --cgv-composer-surface consumer is
+     a two-id rule already outranked by chat-surface.css's `#appShell#appShell`
+     composer background, and --conversation-text-secondary is only ever read
+     through `var(--conversation-text-secondary, var(--conversation-text-muted))`. */
+  --cgv-composer-surface: var(--cg-surface);
+  --conversation-text-secondary: var(--conversation-text-muted);
 }
 
 /* Literal #000 pins in restore (chat-surface, mobile-parity, fixes) keep the
@@ -104,12 +117,14 @@ html[data-theme="socrates"][data-mode="dark"] {
   --text-100: 222 12% 94%;
   --text-200: 222 9% 82%;
   --text-300: 222 8% 73%;
+  --text-350: 222 8% 68%;
   --text-400: 222 7% 63%;
   --text-500: 222 6% 52%;
   --border-100: 222 8% 17%;
   --border-200: 222 8% 19%;
   --border-300: 222 8% 21%;
   --border-400: 222 8% 23%;
+  --border-500: 222 8% 25%;
 }
 
 [data-mode="light"] {
@@ -163,10 +178,12 @@ html[data-theme="socrates"][data-mode="light"] {
   --text-100: 222 12% 12%;
   --text-200: 222 9% 26%;
   --text-300: 222 8% 36%;
+  --text-350: 222 8% 40%;
   --text-400: 222 7% 45%;
   --text-500: 222 6% 53%;
   --border-100: 222 11% 89%;
   --border-200: 222 11% 84%;
   --border-300: 222 11% 77%;
   --border-400: 222 11% 70%;
+  --border-500: 222 11% 63%;
 }

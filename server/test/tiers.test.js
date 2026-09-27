@@ -9,7 +9,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  TIERS, DEFAULT_TIER,
+  DEFAULT_TIER,
   getTierPlan, getBeagleQuota, getSessionLimit, getApiKeyLimit,
 } from '../src/lib/tiers.js';
 

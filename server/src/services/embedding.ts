@@ -17,7 +17,7 @@
  * `dimensions`, yields a hard failure so the caller can skip the
  * enrichment instead of persisting garbage into the HNSW index.
  */
-import { and, eq, desc } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { embeddingConfig } from '../db/schema.js';
 import { decrypt, encryptionKey } from '../lib/crypto.js';

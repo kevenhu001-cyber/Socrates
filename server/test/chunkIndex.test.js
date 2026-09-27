@@ -17,7 +17,7 @@
  */
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { initDb, getDb, closeDb } from '../src/db/index.js';
 import { users, sessions, messages, sessionChunks } from '../src/db/schema.js';
 import {

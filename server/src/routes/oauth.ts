@@ -480,8 +480,6 @@ function tokenError(res: Response, status: number, error: string, description?: 
   return res.status(status).json({ error, ...(description ? { error_description: description } : {}) });
 }
 
-type TokenRow = typeof oauthAccessTokens.$inferSelect;
-
 /* ── POST /api/oauth/token ─────────────────────────────────── */
 
 router.post('/token', oauthTokenLimiter, async (req, res, next) => {

@@ -4,13 +4,13 @@
 
 <br/>
 
-[![仓库可见性](https://img.shields.io/badge/可见性-私有-7a6c4d?style=flat-square)](#-仓库可见性)
+[![仓库可见性](https://img.shields.io/badge/可见性-私有-7a6c4d?style=flat-square)](#仓库可见性)
 [![应用状态](https://img.shields.io/badge/应用-在线-d8a85b?style=flat-square)](https://app.topodrive.top/)
 [![后端](https://img.shields.io/badge/后端-TypeScript%20%2B%20Node.js-3178c6?style=flat-square&logo=typescript&logoColor=white)](server/)
 [![前端](https://img.shields.io/badge/前端-Vite%20SPA-f3c769?style=flat-square&logo=vite&logoColor=black)](frontend/)
 [![Android](https://img.shields.io/badge/Android-React%20Native%20%2B%20Expo-3DDC84?style=flat-square&logo=android&logoColor=white)](mobile/)
 [![数据库](https://img.shields.io/badge/数据库-PostgreSQL%2014%2B-4169e1?style=flat-square&logo=postgresql&logoColor=white)](server/src/db/)
-[![许可](https://img.shields.io/badge/许可-专有-555555?style=flat-square)](#-许可)
+[![许可](https://img.shields.io/badge/许可-专有-555555?style=flat-square)](#许可)
 
 **Socrates — AI 苏格拉底式学习助手**  
 流式对话 + 推理模型、交互式 viz 画布、KaTeX 数学公式、
@@ -28,26 +28,26 @@
 
 ## 目录
 
-- [为什么选择 Socrates](#-为什么选择-socrates)
-- [截图](#-截图)
-- [功能特性](#-功能特性)
-- [架构](#-架构)
-- [技术栈](#-技术栈)
-- [仓库布局](#-仓库布局)
-- [快速开始](#-快速开始)
+- [为什么选择 Socrates](#为什么选择-socrates)
+- [截图](#截图)
+- [功能特性](#功能特性)
+- [架构](#架构)
+- [技术栈](#技术栈)
+- [仓库布局](#仓库布局)
+- [快速开始](#快速开始)
   - [1. 前端（Vite SPA）](#1-前端vite-spa)
   - [2. 后端 API 服务](#2-后端-api-服务)
   - [3. Android 客户端](#3-android-客户端)
-- [配置](#-配置)
-- [自定义渲染管线](#-自定义渲染管线)
-- [API 参考](#-api-参考)
-- [部署](#-部署)
-- [安全模型](#-安全模型)
-- [仓库可见性](#-仓库可见性)
-- [路线图](#-路线图)
-- [贡献指南](#-贡献指南)
-- [许可](#-许可)
-- [支持](#-支持)
+- [配置](#配置)
+- [自定义渲染管线](#自定义渲染管线)
+- [API 参考](#api-参考)
+- [部署](#部署)
+- [安全模型](#安全模型)
+- [仓库可见性](#仓库可见性)
+- [路线图](#路线图)
+- [贡献指南](#贡献指南)
+- [许可](#许可)
+- [支持](#支持)
 
 ---
 
@@ -219,7 +219,7 @@ sequenceDiagram
 | 层 | 技术 | 说明 |
 | --- | --- | --- |
 | Web SPA | React/TypeScript + 遗留 JS 兼容层，Vite 构建 | [`frontend/`](frontend/) — ~99% 迁移完成，所有 UI 层由 React 驱动 |
-| Markdown | `marked` 4.3 + 自定义渐进渲染器 | 见[自定义渲染管线](#-自定义渲染管线) |
+| Markdown | `marked` 4.3 + 自定义渐进渲染器 | 见[自定义渲染管线](#自定义渲染管线) |
 | 数学公式 | `katex` 0.16.9 (CDN, SRI 固定) | 显示模式 + 行内模式 |
 | 代码高亮 | `highlight.js`（完成时延迟加载） | |
 | 搜索 | `fuse.js` 用于 Cmd-K 面板 | |

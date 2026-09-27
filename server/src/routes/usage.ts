@@ -57,14 +57,13 @@ router.get('/limits', async (req, res, next) => {
     };
     const tierKey = tier || 'diophantus';
     const beagleLimit = getBeagleQuota(tierKey);
-    let beagleUsed = 0;
     const db = getDb();
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const [row] = await db.select({
       used: sql`COALESCE(SUM(${usageEvents.totalTokens}), 0)::int`,
     }).from(usageEvents)
       .where(and(eq(usageEvents.userId, req.userId!), gte(usageEvents.createdAt, monthStart)));
-    beagleUsed = (row?.used as number) || 0;
+    const beagleUsed = (row?.used as number) || 0;
     return res.json({
       plan: tierKey,
       ...(limits[tierKey] || limits.diophantus),

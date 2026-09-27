@@ -338,11 +338,6 @@ async function runWebSearch(
     pickOutcome('minimax', settled[2]),
     pickOutcome('bing', settled[3]),
   ];
-  const mmxResults = outcomes[0].results;
-  const firecrawlResults = outcomes[1].results;
-  const minimaxResults = outcomes[2].results;
-  const bingResults = outcomes[3].results;
-
   let finalResults = rankSearchResults(outcomes.map((o) => o.results), query, langCluster, limit);
 
   if (finalResults.length === 0) {

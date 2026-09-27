@@ -232,12 +232,12 @@ function _getProvider(id) {
 function _onProviderListClick(e) {
   var target = e.target;
   if (target.classList.contains("provider-active-btn")) {
-    var id = _getProviderId(target);
+    const id = _getProviderId(target);
     if (id) setActiveProvider(id);
     return;
   }
   if (target.classList.contains("provider-del")) {
-    var id = _getProviderId(target);
+    const id = _getProviderId(target);
     if (id) removeProvider(id);
 
   }
@@ -452,13 +452,13 @@ function saveSettings() {
   Promise.allSettled(newRows.map(function (p) {
     var hasReplacementKey = !_maskedKeys[p.id] && !!(p.key && p.key.trim());
     if (p.id.startsWith("new-")) {
-      var body = { label: p.label || "", url: p.url || "", key: p.key || "", model: p.model || "", isMultimodal: !!p.vision };
+      const body = { label: p.label || "", url: p.url || "", key: p.key || "", model: p.model || "", isMultimodal: !!p.vision };
       return window.apiFetch("/api/api-key", { method: "POST", body: body }).then(function (r) {
         if (r && r.id) { p.id = r.id; results.lastValidId = p.id; }
         results.saved++;
       });
     } else {
-      var body = { label: p.label, url: p.url, model: p.model, isMultimodal: !!p.vision };
+      const body = { label: p.label, url: p.url, model: p.model, isMultimodal: !!p.vision };
       /* Empty password fields mean "keep the encrypted key", never
          replace it with an encryption of an empty string. */
       if (hasReplacementKey) body.key = p.key;

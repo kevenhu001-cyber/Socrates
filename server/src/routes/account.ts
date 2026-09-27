@@ -6,7 +6,7 @@ import { Unauthorized, BadRequest, NotFound } from '../lib/errors.js';
 import {
   users, sessions, messages, apiKeys, usageEvents, tags, sessionTags,
   projects, mistakes, memories, artifacts, artifactVersions, prompts,
-  files, workspaces, workspaceMembers,
+  files, workspaceMembers,
 } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { parseScopes } from '../middleware/scopes.js';
@@ -108,7 +108,7 @@ router.get('/usage', async (req, res, next) => {
       euclid:     800_000_000,
     };
     const beagleLimit = BEAGLE_QUOTAS[user.tier] || BEAGLE_QUOTAS.diophantus;
-    let beagleUsed = 0;
+    let beagleUsed: number;
     {
       const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
       const [beagleRow] = await db

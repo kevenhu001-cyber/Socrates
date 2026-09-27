@@ -88,6 +88,7 @@ function getApiKey() {
  *
  * @param {string} query  Search query
  * @param {number} [limit=10]  Max results to return (API max is 10)
+ * @param {AbortSignal|null} [signal=null]  Aborts the upstream fetch
  * @returns {Promise<Array<{title:string, url:string, snippet:string, date:string|null, authority:string, source:'minimax'}>>}
  */
 export async function searchMinimax(query: string, limit = 10, signal: AbortSignal | null = null): Promise<SearchResult[]> {

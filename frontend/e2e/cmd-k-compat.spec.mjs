@@ -5,7 +5,7 @@
 // owns the state machine.
 
 import { test, expect } from '@playwright/test';
-import { gotoAndSettle, login } from './_lib.mjs';
+import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test('Cmd-K React mode hydrates the overlay with React', async ({ page }) => {

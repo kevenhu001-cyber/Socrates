@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  getThinkingPanelSnapshot,
   installThinkingPanelBridge,
 } from '../src/react/thinking-panel/thinkingPanel.bridge.ts';
 

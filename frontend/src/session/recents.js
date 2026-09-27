@@ -35,9 +35,6 @@ function _renderRecents() {
 function _renderArchivedList() {
   try { if (typeof window !== 'undefined' && typeof window.renderArchivedList === 'function') window.renderArchivedList(); } catch (_) {}
 }
-function _resetApp() {
-  return (typeof window !== 'undefined' && typeof window.resetApp === 'function') ? window.resetApp() : Promise.resolve(false);
-}
 function _saveCurrentSession() {
   try { if (typeof window !== 'undefined' && typeof window.saveCurrentSession === 'function') return window.saveCurrentSession(); } catch (_) {}
   return null;

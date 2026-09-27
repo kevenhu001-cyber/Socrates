@@ -155,12 +155,6 @@ function statusFrom(value: unknown, fallback: AgentStepStatus): AgentStepStatus 
   return fallback;
 }
 
-function changeKind(kind: unknown): string {
-  if (typeof kind === 'string') return kind;
-  if (kind && typeof kind === 'object') return String((kind as { type?: unknown }).type ?? '');
-  return '';
-}
-
 /** Count files and diff lines so the step can show `3 files +12 -4`. */
 function diffStatFrom(changes: unknown): AgentStepDiffStat | null {
   if (!Array.isArray(changes) || changes.length === 0) return null;

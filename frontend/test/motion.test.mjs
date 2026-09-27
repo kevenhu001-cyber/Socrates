@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  MOTION_VELOCITY_PX_PER_S,
   MOTION_MIN_DURATION_MS,
   MOTION_MAX_DURATION_MS,
   MOTION_SNAP_DISTANCE_PX,

@@ -122,6 +122,7 @@ function parseBingWebHtml(html: string): SearchResult[] {
  *
  * @param {string} query
  * @param {number} [limit=10]
+ * @param {AbortSignal|null} [signal=null]  Aborts the upstream fetch
  * @returns {Promise<Array<{title:string, url:string, snippet:string, date:string|null, authority:string, source:'bing'}>>}
  */
 export async function searchBing(query: string, limit = 10, signal: AbortSignal | null = null): Promise<SearchResult[]> {

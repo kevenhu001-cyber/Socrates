@@ -21,7 +21,7 @@ export function publishActiveWorkflowEvent(stage, status, extra) {
   var bridge = window.__socratesAgentRunBridge;
   if (!bridge || typeof bridge.publish !== 'function') return;
   var ev = { runId: tmpl.runId, workflow: tmpl.workflow, stage: stage, status: status };
-  if (extra) for (var k in extra) if (extra.hasOwnProperty(k)) ev[k] = extra[k];
+  if (extra) for (var k in extra) if (Object.prototype.hasOwnProperty.call(extra, k)) ev[k] = extra[k];
   try { bridge.publish(ev); } catch (_) {}
 }
 

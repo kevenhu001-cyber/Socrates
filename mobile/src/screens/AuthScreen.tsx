@@ -58,7 +58,7 @@ function StateIcon({ name, success = false, warning = false }: { name: React.Com
 }
 
 export function AuthScreen() {
-  const { colors, radius, typography, shadows, fontScale } = useTheme();
+  const { colors, typography, shadows, fontScale } = useTheme();
   const { width } = useWindowDimensions();
   const compact = width <= 600;
   const t = useT();

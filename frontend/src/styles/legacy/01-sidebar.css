@@ -130,7 +130,7 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 .recent-item-del svg{width:12px;height:12px}
 /* Pin indicator in the recent item title row. */
 .recent-item-title-row{display:flex;align-items:center;gap:4px;min-width:0}
-.recent-item-pin-icon{flex-shrink:0;display:inline-flex;align-items:center;color:hsl(var(--accent-500))}
+.recent-item-pin-icon{flex-shrink:0;display:inline-flex;align-items:center;color:hsl(var(--accent-300))}
 .recent-item-pin-icon svg{display:block}
 .recent-item.pinned .recent-item-text,
 .recent-item.pinned:hover .recent-item-text{color:hsl(var(--accent-300))}

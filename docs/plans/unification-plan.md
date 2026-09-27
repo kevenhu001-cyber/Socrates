@@ -137,7 +137,7 @@
 **方案：**
 - 使用 `react-native-render-html` 解析 HTML
 - 或自建 AST → RN 组件映射
-```typescript
+```tsx
 // mobile/src/render/progressive-renderer.tsx
 export const ProgressiveMarkdown = ({ content }: { content: string }) => {
   const ast = parseMarkdownAST(content);
@@ -166,7 +166,7 @@ npm install react-native-mathjax-html-to-svg
 **问题：** iframe 沙箱在 RN 中不存在
 
 **方案：**
-```typescript
+```tsx
 import { WebView } from 'react-native-webview';
 
 <WebView
@@ -180,7 +180,7 @@ import { WebView } from 'react-native-webview';
 **问题：** RN 默认是移动端布局
 
 **方案：**
-```typescript
+```tsx
 // mobile/src/theme/layout.tsx
 import { Platform, Dimensions } from 'react-native';
 

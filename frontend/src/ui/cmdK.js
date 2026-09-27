@@ -25,6 +25,18 @@ try {
   _cmdKRecent = JSON.parse(localStorage.getItem("socrates-search-recent") || "[]") || [];
 } catch (_) { _cmdKRecent = []; }
 
+/* The index and the recent-query list are built from the signed-in account's
+   sessions, so app/lifecycle.js drops them on user switch. `socrates-search-recent`
+   goes too — otherwise the queries resurface on the next reload. */
+export function resetCmdKSearchState() {
+  _cmdKIndex = null;
+  _cmdKIndexDocs = [];
+  _cmdKResults = [];
+  _cmdKSelected = 0;
+  _cmdKRecent = [];
+  try { localStorage.removeItem("socrates-search-recent"); } catch (_) { /* private mode */ }
+}
+
 /* React migration bridge — fires whenever the legacy state changes so the
    React compatibility root can mirror the palette via useSyncExternalStore.
    The registry is installed by frontend/src/react/cmdk/cmdKRuntimeStore.ts

@@ -479,7 +479,6 @@
 
     function loadUsageHeatmap() {
       var body = document.getElementById('usageHeatmapBody');
-      var sumEl = document.getElementById('usageHeatmapSummary');
       if (!body) return;
       fetch('/api/account/usage-heatmap', { credentials: 'same-origin' })
         .then(function(r){ return r.json(); })

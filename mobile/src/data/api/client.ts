@@ -16,7 +16,7 @@ import type {
   ToolApprovalDecision,
 } from '@socrates/contracts';
 import { clearTokens, readTokens, writeCachedUser, writeTokens } from './tokenStore';
-import { API_BASE_URL, AUTH_BASE_URL, WEB_BASE_URL } from './config';
+import { API_BASE_URL, WEB_BASE_URL } from './config';
 import { shouldRefreshAfterUnauthorized } from './retryPolicy';
 
 export { API_BASE_URL, AUTH_BASE_URL, WEB_BASE_URL } from './config';

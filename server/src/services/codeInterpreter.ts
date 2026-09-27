@@ -26,18 +26,16 @@ import { existsSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import os from 'node:os';
-import { EventEmitter } from 'node:events';
 import { eq } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { executions, files } from '../db/schema.js';
+import { executions } from '../db/schema.js';
 import { recordAudit } from '../middleware/audit.js';
 import { persistArtifact } from './util/fileArtifacts.js';
-import { TooManyRequests } from '../lib/errors.js';
-import { publish, subscribe as pubsubSubscribe, getStatus as pubsubStatus } from '../lib/pubsub.js';
+import { publish, subscribe as pubsubSubscribe } from '../lib/pubsub.js';
 import { parseChatSessionId, requireOwnedSession } from '../lib/sessionOwnership.js';
 import { isUuid } from '../lib/validate.js';
 import { createSessionExecutionLock } from './sessionExecutionLock.js';
-import { MAX_TOOL_ARGUMENT_CHARS, MAX_TOOL_STRING_FIELD_CHARS } from './toolCallSafety.js';
+import { MAX_TOOL_STRING_FIELD_CHARS } from './toolCallSafety.js';
 
 /* ─── Execution progress pub/sub ───
  * P_pubsub — replaces the in-process EventEmitter so SSE clients on
@@ -317,7 +315,6 @@ class WorkerSlot {
       });
     });
     w.on('exit', (code: number) => {
-      const wasBusy = this.busy;
       this.worker = null;
       this.ready = null;
       this._readyResolved = false;
@@ -452,7 +449,9 @@ class WorkerSlot {
   terminate() {
     this.terminated = true;
     if (this.worker) {
-      try { this.worker.terminate(); } catch (_) {}
+      /* terminate() resolves when the worker exits; the exit handler below is
+         what clears worker/busy. A rejection here is not actionable. */
+      try { this.worker.terminate().catch(() => {}); } catch (_) {}
     }
     if (this._releaseCurrent) {
       const r = this._releaseCurrent;
@@ -579,11 +578,6 @@ async function runOnWorker({ executionId, code, timeoutMs, signal, scratchDir, m
   onProgress?: ProgressListener | null;
 }) {
   const startedAt = Date.now();
-  /* P_progress — safe noop default so existing callers (tests, direct
-     execute()) work without changes. */
-  const emit = (typeof onProgress === 'function')
-    ? (p: any) => { try { onProgress!(p); } catch (_) {} }
-    : () => {};
     const pool = await getPool();
     /* P_progress — surface the wait while a worker is busy/booting. */
     emitProgress(executionId, { phase: 'queued', executionId }, onProgress);
@@ -959,16 +953,16 @@ async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse> {
   // Persist artifacts. Each file in result.artifacts is something the
   // user's Python wrote into the artifacts/ subdir.
   const artifactFileIds: Array<{ id?: string; name?: string; mimeType?: string | null }> = [];
-  const persistedArtifacts: any[] = [];
+  const droppedArtifacts: string[] = [];
   for (const art of (result.artifacts || [])) {
     if (art.size > MAX_ARTIFACT_BYTES) {
       // Too big — drop it (still count as a failed artifact so the
       // user can see why their PNG didn't show).
-      persistedArtifacts.push({ ...art, dropped: true, reason: 'too_large' });
+      droppedArtifacts.push(`${art.name}: too_large (${art.size} > ${MAX_ARTIFACT_BYTES} bytes)`);
       continue;
     }
     try {
-      const { id: fileId, sha256, mimeType } = await persistArtifact({
+      const { id: fileId, mimeType } = await persistArtifact({
         userId,
         sessionId: validatedSessionId,
         executionId,
@@ -977,10 +971,12 @@ async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse> {
         size: art.size,
       });
       artifactFileIds.push({ id: fileId, name: art.name, mimeType });
-      persistedArtifacts.push({ ...art, fileId, mimeType });
     } catch (err) {
-      persistedArtifacts.push({ ...art, error: String(err && (err as Error).message || err) });
+      droppedArtifacts.push(`${art.name}: ${String(err && (err as Error).message || err)}`);
     }
+  }
+  if (droppedArtifacts.length) {
+    console.log(`[code-interpreter] execution ${executionId} dropped ${droppedArtifacts.length} artifact(s): ${droppedArtifacts.join('; ')}`);
   }
 
   const finalStatus = result.status || 'failed';

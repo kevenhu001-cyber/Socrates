@@ -12,7 +12,7 @@
  *
  * Run with: npm test
  */
-import { test, describe, beforeEach, afterEach } from 'node:test';
+import { test, describe, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 
 /* sessionSecret() refuses to derive keys from the publicly known

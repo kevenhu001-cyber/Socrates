@@ -325,9 +325,14 @@
 .ed-select-trigger:focus-visible,
 .ed-select-trigger.is-open {
   border-color: var(--ed-clay);
+  outline: 0;
+}
+/* The trailing `outline: 0` used to sit in the shared rule above, after the
+   focus ring, so it cancelled the ring for keyboard users too. Only the
+   pointer-opened state drops the outline; :focus-visible keeps it. */
+.ed-select-trigger:focus-visible {
   outline: 2px solid rgba(0, 0, 0, .40);
   outline-offset: 1px;
-  outline: 0;
 }
 .ed-select-content { display: grid; gap: 1px; min-width: 0; }
 .ed-select-value { color: var(--ed-ink); font-size: 15px; font-weight: 500; }

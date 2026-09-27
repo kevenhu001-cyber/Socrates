@@ -103,13 +103,6 @@ router.get('/:id/stream', requireAuth, async (req, res, next) => {
        * common unsubscribe and metric cleanup. */
       if (!res.writableEnded && !res.destroyed) res.end();
     };
-    const onError = (event: any) => {
-      try {
-        res.write(`event: error\ndata: ${JSON.stringify({ error: event.errorMessage || event })}\n\n`);
-        (res as { flush?: () => void }).flush?.();
-      } catch {}
-      if (!res.writableEnded && !res.destroyed) res.end();
-    };
 
     const unsubProgress = await subscribeExecution(executionId, onProgress);
     const unsubResult = await subscribeExecutionResult(executionId, onResult);

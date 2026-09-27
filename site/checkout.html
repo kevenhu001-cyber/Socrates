@@ -151,8 +151,8 @@
               <div class="ed-card-input" id="cardInputWrap">
                 <div class="ed-card-input-row">
                   <input type="text" id="inputCard" placeholder="1234 1234 1234 1234" autocomplete="cc-number" maxlength="19" oninput="formatCard();validateField('card')">
-                  <input type="text" id="inputExp" placeholder="MM / YY" maxlength="7" autocomplete="cc-exp" oninput="formatExp();validateField('exp')">
-                  <input type="text" id="inputCvc" placeholder="CVC" maxlength="4" autocomplete="cc-csc" oninput="validateField('cvc')">
+                  <input type="text" id="inputExp" aria-label="Expiry date (MM / YY)" placeholder="MM / YY" maxlength="7" autocomplete="cc-exp" oninput="formatExp();validateField('exp')">
+                  <input type="text" id="inputCvc" aria-label="Security code (CVC)" placeholder="CVC" maxlength="4" autocomplete="cc-csc" oninput="validateField('cvc')">
                 </div>
                 <div class="ed-card-brand" id="cardBrand">
                   <svg viewBox="0 0 48 32" width="34" height="22"><rect width="48" height="32" rx="4" fill="#000000"/><text x="10" y="22" font-family="Arial, sans-serif" font-weight="700" font-size="14" fill="#ffffff">VISA</text></svg>
@@ -305,14 +305,14 @@
       var ok = false, msg = '';
       switch (field) {
         case 'email': {
-          var v = $('inputEmail').value.trim();
+          const v = $('inputEmail').value.trim();
           if (!v) msg = 'Email is required';
           else if (!EMAIL_RE.test(v)) msg = 'Invalid email format';
           else ok = true;
           break;
         }
         case 'card': {
-          var v = $('inputCard').value.replace(/\s/g, '');
+          const v = $('inputCard').value.replace(/\s/g, '');
           if (!v) msg = 'Card number is required';
           else if (v.length < 13 || v.length > 16) msg = 'Card number should be 13–16 digits';
           else if (!luhnOk(v)) msg = 'Invalid card number (failed checksum)';
@@ -320,20 +320,20 @@
           break;
         }
         case 'exp': {
-          var v = $('inputExp').value.replace(/\s|\//g, '');
+          const v = $('inputExp').value.replace(/\s|\//g, '');
           if (!v || v.length < 4) msg = 'Expiry is required (MMYY)';
           else { var m = parseInt(v.slice(0, 2), 10); var y = parseInt(v.slice(2), 10) + 2000; var exp = new Date(y, m, 1); if (m < 1 || m > 12) msg = 'Invalid month'; else if (exp < new Date()) msg = 'Card has expired'; else ok = true; }
           break;
         }
         case 'cvc': {
-          var v = $('inputCvc').value.trim();
+          const v = $('inputCvc').value.trim();
           if (!v) msg = 'CVC is required';
           else if (!/^\d{3,4}$/.test(v)) msg = 'CVC must be 3–4 digits';
           else ok = true;
           break;
         }
         case 'name': {
-          var v = $('inputName').value.trim();
+          const v = $('inputName').value.trim();
           if (!v) msg = 'Name is required';
           else if (v.length < 2) msg = 'Enter full name';
           else ok = true;
@@ -415,8 +415,10 @@
           icon.classList.add('is-success');
           icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="28" height="28"><polyline points="4 12 9 17 20 6"/></svg>';
           title.textContent = 'Subscription confirmed';
-          desc.textContent = 'Welcome to ' + $('submitPlanName').textContent + '. Redirecting to your dashboard…';
-          btn.innerHTML = '<span>Subscribed to ' + $('submitPlanName').textContent + '</span><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 8 7 12 13 4"/></svg>';
+          var planName = $('submitPlanName').textContent;
+          desc.textContent = 'Welcome to ' + planName + '. Redirecting to your dashboard…';
+          btn.innerHTML = '<span></span><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 8 7 12 13 4"/></svg>';
+          btn.firstChild.textContent = 'Subscribed to ' + planName;
         } else {
           icon.classList.add('is-fail');
           icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="28" height="28"><path d="M6 6l12 12M18 6l-12 12"/></svg>';

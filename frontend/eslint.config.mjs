@@ -20,14 +20,13 @@ const READONLY_GLOBALS = [
   'setLang', 'openNav', 'openProjects', 'LAST_ACTIVE_ID_KEY',
   'setCurrentSessionId', 'Fuse',
 ];
-/* Mutable cross-file state (cmd-K palette indexes, exam save timers). */
-const WRITABLE_GLOBALS = [
-  '_cmdKIndex', '_cmdKIndexDocs', '_cmdKResults', '_cmdKSelected',
-  '_cmdKRecent', '_examAnswerSaveTimer', '_examSaveInFlight',
-];
+/* Mutable cross-file state is no longer shared through the global scope:
+   the Cmd-K index and exam autosave timers are module-private and are
+   reset through the `resetCmdKSearchState()` / `resetExamSaveState()`
+   exports. Declaring them as globals here would only mask the next
+   module that reaches for a name it does not own. */
 const LEGACY_SHARED_GLOBALS = {
   ...Object.fromEntries(READONLY_GLOBALS.map((name) => [name, 'readonly'])),
-  ...Object.fromEntries(WRITABLE_GLOBALS.map((name) => [name, 'writable'])),
 };
 
 /* The legacy code already marks intentionally-unused identifiers with a
@@ -49,6 +48,11 @@ export default tseslint.config(
       'test-results/**',
       // Vendored third-party bundles (plotly/mermaid/echarts/katex/hljs).
       'src/vendor-files/**',
+      // Local, gitignored scratch output: Playwright/esbuild transform
+      // caches, repro sandboxes and captured reference sites. Linting them
+      // reports hundreds of problems in code nobody owns.
+      '.tmp-*/**',
+      '.cg-ref/**',
     ],
   },
   js.configs.recommended,
@@ -125,7 +129,34 @@ export default tseslint.config(
     },
     rules: {
       'no-unused-vars': 'warn',
-      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-unused-vars': ['warn', UNUSED_VARS_OPTIONS],
+      // `try { … } catch (_) {}` is the harness idiom for best-effort
+      // setup/cleanup (localStorage in a locked-down context, closing an
+      // already-closed stream). Other empty blocks are still reported.
+      'no-empty': ['error', { allowEmptyCatch: true }],
+    },
+  },
+  {
+    // Node tooling: build helpers under scripts/, plus the ad-hoc
+    // Playwright capture/probe scripts at the package root and under
+    // debug/, analysis/, tmp-shots/. They run in Node but pass callbacks
+    // to page.evaluate(), so both global sets are legitimately in scope.
+    files: [
+      'scripts/**/*.{js,mjs}',
+      '*.{js,mjs}',
+      'debug/**/*.{js,mjs}',
+      'analysis/**/*.{js,mjs}',
+      'tmp-shots/**/*.{js,mjs}',
+    ],
+    languageOptions: {
+      ecmaVersion: 2024,
+      sourceType: 'module',
+      globals: { ...globals.node, ...globals.browser },
+    },
+    rules: {
+      'no-unused-vars': 'warn',
+      '@typescript-eslint/no-unused-vars': ['warn', UNUSED_VARS_OPTIONS],
+      'no-empty': ['error', { allowEmptyCatch: true }],
     },
   },
 );

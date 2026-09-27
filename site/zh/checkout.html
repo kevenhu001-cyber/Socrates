@@ -157,8 +157,8 @@
               <div class="ed-card-input" id="cardInputWrap">
                 <div class="ed-card-input-row">
                   <input type="text" id="inputCard" placeholder="1234 1234 1234 1234" autocomplete="cc-number" maxlength="19" oninput="formatCard();validateField('card')">
-                  <input type="text" id="inputExp" placeholder="月 / 年" maxlength="7" autocomplete="cc-exp" oninput="formatExp();validateField('exp')">
-                  <input type="text" id="inputCvc" placeholder="CVC" maxlength="4" autocomplete="cc-csc" oninput="validateField('cvc')">
+                  <input type="text" id="inputExp" aria-label="有效期（月 / 年）" placeholder="月 / 年" maxlength="7" autocomplete="cc-exp" oninput="formatExp();validateField('exp')">
+                  <input type="text" id="inputCvc" aria-label="安全码（CVC）" placeholder="CVC" maxlength="4" autocomplete="cc-csc" oninput="validateField('cvc')">
                 </div>
                 <div class="ed-card-brand" id="cardBrand">
                   <svg viewBox="0 0 48 32" width="34" height="22"><rect width="48" height="32" rx="4" fill="#000000"/><text x="10" y="22" font-family="Arial, sans-serif" font-weight="700" font-size="14" fill="#ffffff">VISA</text></svg>
@@ -272,11 +272,11 @@
     function validateField(field) {
       var ok = false, msg = '';
       switch (field) {
-        case 'email': { var v = $('inputEmail').value.trim(); if (!v) msg = '请输入邮箱'; else if (!EMAIL_RE.test(v)) msg = '邮箱格式不正确'; else ok = true; break; }
-        case 'card': { var v = $('inputCard').value.replace(/\s/g, ''); if (!v) msg = '请输入卡号'; else if (v.length < 13 || v.length > 16) msg = '卡号应为 13–16 位'; else if (!luhnOk(v)) msg = '卡号未通过校验'; else ok = true; break; }
-        case 'exp': { var v = $('inputExp').value.replace(/\s|\//g, ''); if (!v || v.length < 4) msg = '请输入有效期（月年）'; else { var m = parseInt(v.slice(0, 2), 10); var y = parseInt(v.slice(2), 10) + 2000; var exp = new Date(y, m, 1); if (m < 1 || m > 12) msg = '月份不正确'; else if (exp < new Date()) msg = '卡片已过期'; else ok = true; } break; }
-        case 'cvc': { var v = $('inputCvc').value.trim(); if (!v) msg = '请输入 CVC'; else if (!/^\d{3,4}$/.test(v)) msg = 'CVC 应为 3–4 位'; else ok = true; break; }
-        case 'name': { var v = $('inputName').value.trim(); if (!v) msg = '请输入姓名'; else if (v.length < 2) msg = '请输入完整姓名'; else ok = true; break; }
+        case 'email': { const v = $('inputEmail').value.trim(); if (!v) msg = '请输入邮箱'; else if (!EMAIL_RE.test(v)) msg = '邮箱格式不正确'; else ok = true; break; }
+        case 'card': { const v = $('inputCard').value.replace(/\s/g, ''); if (!v) msg = '请输入卡号'; else if (v.length < 13 || v.length > 16) msg = '卡号应为 13–16 位'; else if (!luhnOk(v)) msg = '卡号未通过校验'; else ok = true; break; }
+        case 'exp': { const v = $('inputExp').value.replace(/\s|\//g, ''); if (!v || v.length < 4) msg = '请输入有效期（月年）'; else { var m = parseInt(v.slice(0, 2), 10); var y = parseInt(v.slice(2), 10) + 2000; var exp = new Date(y, m, 1); if (m < 1 || m > 12) msg = '月份不正确'; else if (exp < new Date()) msg = '卡片已过期'; else ok = true; } break; }
+        case 'cvc': { const v = $('inputCvc').value.trim(); if (!v) msg = '请输入 CVC'; else if (!/^\d{3,4}$/.test(v)) msg = 'CVC 应为 3–4 位'; else ok = true; break; }
+        case 'name': { const v = $('inputName').value.trim(); if (!v) msg = '请输入姓名'; else if (v.length < 2) msg = '请输入完整姓名'; else ok = true; break; }
       }
       validation[field] = ok;
       var inputMap = { email: 'inputEmail', card: 'inputCard', exp: 'inputExp', cvc: 'inputCvc', name: 'inputName' };
@@ -341,8 +341,10 @@
           icon.classList.add('is-success');
           icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="28" height="28"><polyline points="4 12 9 17 20 6"/></svg>';
           title.textContent = '订阅已确认';
-          desc.textContent = '欢迎使用 ' + $('submitPlanName').textContent + '。正在跳转到你的面板…';
-          btn.innerHTML = '<span>已订阅 ' + $('submitPlanName').textContent + '</span><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 8 7 12 13 4"/></svg>';
+          var planName = $('submitPlanName').textContent;
+          desc.textContent = '欢迎使用 ' + planName + '。正在跳转到你的面板…';
+          btn.innerHTML = '<span></span><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 8 7 12 13 4"/></svg>';
+          btn.firstChild.textContent = '已订阅 ' + planName;
         } else {
           icon.classList.add('is-fail');
           icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="28" height="28"><path d="M6 6l12 12M18 6l-12 12"/></svg>';

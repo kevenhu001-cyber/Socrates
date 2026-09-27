@@ -45,7 +45,7 @@ router.get('/', requireAuth, async (req, res, next) => {
     const byProvider = new Map(rows.map((row) => [row.provider, row]));
     return res.json({ connectors: CATALOG.map((connector) => ({
       ...connector,
-      configured: connector.id === 'github' ? githubIsConfigured() : connector.id === 'feishu' ? feishuIsConfigured() : connector.id === 'gitee' ? giteeIsConfigured() : connector.id === 'notion' ? notionIsConfigured() : connector.id === 'zotero' || connector.id === 'arxiv' ? true : false,
+      configured: connector.id === 'github' ? githubIsConfigured() : connector.id === 'feishu' ? feishuIsConfigured() : connector.id === 'gitee' ? giteeIsConfigured() : connector.id === 'notion' ? notionIsConfigured() : connector.id === 'zotero' || connector.id === 'arxiv',
       installUrl: connector.id === 'github' && process.env.CONNECTOR_GITHUB_APP_SLUG
         ? `https://github.com/apps/${encodeURIComponent(process.env.CONNECTOR_GITHUB_APP_SLUG)}/installations/new`
         : null,

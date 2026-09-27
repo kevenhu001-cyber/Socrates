@@ -7,7 +7,7 @@ import { stateStore, resetState } from '../state/store.js';
 import { turnState } from '../chat/turnState.js';
 import { saveState } from '../session/saveState.js';
 import { serverCache } from '../session/serverCache.js';
-import { apiConfig, appMode, setAppMode, syncAppModeUI, syncSidebarForMode } from '../config/providers.js';
+import { apiConfig, appMode, setAppMode, syncAppModeUI, syncSidebarForMode, LAST_ACTIVE_ID_KEY } from '../config/providers.js';
 import { apiFetch } from '../util/api.js';
 import { showGate, showAuthSignin } from '../auth/index.js';
 import { showConfirm } from '../ui/confirm.js';
@@ -25,6 +25,8 @@ import { saveCurrentSession, saveSessionBeforeReset } from '../session/persisten
 import { syncModelPills } from '../pickers.js';
 import { renderUserFooter } from '../ui/profile.js';
 import { resetCrossSessionKBCache } from '../ui/knowledgeCrossSession.js';
+import { resetCmdKSearchState } from '../ui/cmdK.js';
+import { resetExamSaveState } from '../exam.js';
 import { renderGreeting } from '../ui/greeting.js';
 
 function _t(key, fallback) {
@@ -309,11 +311,6 @@ export function handleAuthExpired(cause){
       if(turnState.activeChatCtl){turnState.activeChatCtl.abort();turnState.activeChatCtl=null}
       if(window._activeChatAbort){window._activeChatAbort("session-expired");window._activeChatAbort=null}
     }catch(_){}
-    if(window._onAuthExpiredListeners){
-      window._onAuthExpiredListeners.forEach(function(fn){
-        try{fn()}catch {/* auth listener threw */}
-      });
-    }
     /* Show the gate; the existing showGate() handles UI swap. */
     if(typeof showGate==="function"){showGate()}
     if(typeof showAuthSignin==="function"){showAuthSignin()}
@@ -341,9 +338,9 @@ export function clearPerUserClientState(){
      so the new user doesn't inherit the previous user's failure state. */
   try{serverCache.fetchFailed=false}catch(_){}
   try{apiConfig.activeId=null;apiConfig.providers=[]}catch(_){}
-  try{_cmdKIndex=null;_cmdKIndexDocs=[];_cmdKResults=[];_cmdKSelected=0;_cmdKRecent=[]}catch(_){}
+  try{resetCmdKSearchState()}catch(_){}
   try{resetCrossSessionKBCache()}catch(_){}
-  try{_examAnswerSaveTimer=null;_examSaveInFlight=null}catch(_){}
+  try{resetExamSaveState()}catch(_){}
   try{clearUserMemories()}catch(_){}
   try{if(turnState.pendingChatContent!==undefined)turnState.pendingChatContent=null}catch(_){}
   /* P_locale-ghost — `state.locale` was never a real field (the real
@@ -369,7 +366,7 @@ export function clearPerUserClientState(){
   /* AUDIT-fix — reset the module binding so the next user starts in
       chat mode. setAppMode() syncs window.appMode internally. */
   try{setAppMode("chat")}catch(_){}
-  try{if(typeof LAST_ACTIVE_ID_KEY!=="undefined"){try{localStorage.removeItem(LAST_ACTIVE_ID_KEY)}catch(_){}}}catch(_){}
+  try{localStorage.removeItem(LAST_ACTIVE_ID_KEY)}catch(_){}
   /* Re-render so the cleared state is visible immediately, not on
      the next user-driven re-render. */
   try{if(typeof renderRecents==="function")_renderRecents()}catch(_){}
@@ -468,7 +465,14 @@ export async function toggleAppMode(targetMode){
        capture empty/partial state. */
     var _sp = saveCurrentSession();
     if(_sp){try{await _sp}catch(_){}}
-    resetApp();
+    /* The user already confirmed the switch above, so skip resetApp()'s own
+       "start a new session?" prompt (it would otherwise fire a second dialog
+       for the same session). Awaited: resetApp() is async and the mode must
+       not flip until the reset has run — and if an exam-dirty confirm inside
+       it is cancelled, the switch is abandoned rather than applied on top of
+       the un-reset session. */
+    var _resetOk = await resetApp({ confirmActiveSession: false });
+    if(_resetOk===false)return;
   }
   /* P_tutor-sync — select the requested module-level mode directly (not
      window.appMode, which could be stale). setAppMode() also synchronizes

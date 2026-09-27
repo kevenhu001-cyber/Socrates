@@ -339,9 +339,13 @@ export function cycleActiveProject(){
   window.__activeProject = next;
   var sessionId = stateStore.read("currentSessionId");
   if(sessionId){
-    try{
-      apiFetch("/api/sessions/" + encodeURIComponent(sessionId), { method: "PATCH", body: { projectId: next.id } });
-    }catch(_){}
+    /* The try/catch that used to wrap this call could never see a failure:
+       apiFetch() is async, so a rejected PATCH escaped as an unhandled
+       rejection. Attach the handler to the promise itself; the next
+       refreshServerSessions() below reconciles the list either way. */
+    Promise.resolve()
+      .then(function(){ return apiFetch("/api/sessions/" + encodeURIComponent(sessionId), { method: "PATCH", body: { projectId: next.id } }); })
+      .catch(function(err){ console.warn("[projects] failed to move session to project:", err && err.message || err); });
   }
   if(typeof refreshServerSessions === "function") refreshServerSessions();
   if(typeof renderRecents === "function") _renderRecents();

@@ -3,7 +3,6 @@
   "info": {
     "title": "Socrates API",
     "version": "2026.05",
-    "summary": "Public surface of the Socrates tutor: health, bootstrap, auth, mobile bearer exchange, OAuth 2.0, async jobs, and bulk operations.",
     "description": "Socrates (topodrive.top) is an AI tutor. This document covers the public API surface — health, bootstrap, OAuth 2.0 authorization-code flow, scoped agent API keys, async import jobs, and a bulk-create endpoint. Authenticated browser routes (`/api/sessions`, `/api/chat`, `/api/files`) follow the same conventions and reuse the schemas declared here. Long-form reference: https://topodrive.top/llms-full.txt. Agent instructions: https://topodrive.top/agents.md.",
     "contact": {
       "name": "Socrates",

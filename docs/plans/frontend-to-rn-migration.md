@@ -105,10 +105,12 @@ frontend-rn/src/
 
 **实施步骤：**
 
-```typescript
-// 1. 选择状态管理方案 (Zustand 推荐 - 轻量且 RN 友好)
+```bash
+# 1. 选择状态管理方案 (Zustand 推荐 - 轻量且 RN 友好)
 npm install zustand
+```
 
+```typescript
 // 2. 创建核心 Store
 // frontend-rn/src/state/chatStore.ts
 import { create } from 'zustand';
@@ -176,7 +178,7 @@ function formatMsgProgressive(text) {
 
 **RN 实现方案：**
 
-```typescript
+```tsx
 // frontend-rn/src/render/MarkdownRenderer.tsx
 import React from 'react';
 import { View, Text } from 'react-native';
@@ -429,7 +431,7 @@ const MessageText = styled.Text`
 **挑战：** `formatMsgProgressive` 的逐行渲染在 RN 中性能低
 
 **解决方案：**
-```typescript
+```tsx
 // frontend-rn/src/render/StreamingMarkdown.tsx
 import { useState, useEffect } from 'react';
 import { View, Text } from 'react-native';
@@ -466,7 +468,7 @@ npm install react-native-mathjax-html-to-svg
 npm install react-native-webview  # 在 WebView 中渲染
 ```
 
-```typescript
+```tsx
 // frontend-rn/src/components/MathFormula.tsx
 import MathJax from 'react-native-mathjax-html-to-svg';
 
@@ -492,7 +494,7 @@ export const MathFormula = ({ formula, inline = false }: Props) => {
 npm install react-native-syntax-highlighter
 ```
 
-```typescript
+```tsx
 import SyntaxHighlighter from 'react-native-syntax-highlighter';
 import { docco } from 'react-syntax-highlighter/styles/hljs';
 
@@ -507,7 +509,7 @@ import { docco } from 'react-syntax-highlighter/styles/hljs';
 #### 3.4 Viz/Canvas 沙箱
 
 **过渡方案：**
-```typescript
+```tsx
 import { WebView } from 'react-native-webview';
 
 export const VizCanvas = ({ html }: { html: string }) => {
@@ -538,7 +540,7 @@ export const VizCanvas = ({ html }: { html: string }) => {
 
 ### Phase 4: 导航和路由 (2周)
 
-```typescript
+```tsx
 // frontend-rn/src/navigation/AppNavigator.tsx
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';

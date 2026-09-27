@@ -374,10 +374,6 @@ function _hideResearchProgress(id) {
 }
 
 /* Truncate a string for display. */
-function _truncate(s, max) {
-  if (!s) return "";
-  return s.length > max ? s.slice(0, max) + "..." : s;
-}
 
 /* Escape HTML for safe rendering. */
 function _esc(s) {

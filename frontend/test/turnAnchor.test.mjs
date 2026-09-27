@@ -140,7 +140,8 @@ test('scheduleTurnToTopForMessage waits for a React row to mount by client id', 
     await Promise.resolve();
     for (let i = 0; i < 8 && queue.length; i += 1) {
       const frame = queue.shift();
-      frame.length > 0 ? frame(0) : frame();
+      if (frame.length > 0) frame(0);
+      else frame();
     }
 
     assert.ok(assistant.classList.contains('turn-viewport-anchor'));

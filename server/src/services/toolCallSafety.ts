@@ -646,6 +646,7 @@ export function normalizeToolName(raw: unknown): string {
  *
  * @param requested   The name the model emitted.
  * @param candidates  Canonical names currently callable.
+ * @param options     Matching options.
  * @param options.allowFuzzy Enable edit-distance matching. Callers keep it
  *   off for side-effecting tools, where guessing wrong is worse than
  *   returning a correction to the model.

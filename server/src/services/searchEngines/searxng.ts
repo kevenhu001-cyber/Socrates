@@ -63,6 +63,7 @@ function extractDate(publishedDate: string | undefined, snippet: string | undefi
  *
  * @param {string} query
  * @param {number} [limit=10]
+ * @param {AbortSignal|null} [signal=null]  Aborts the upstream fetch
  * @returns {Promise<Array<{title:string, url:string, snippet:string, date:string|null, authority:string, source:'searxng'}>>}
  */
 export async function searchSearxng(query: string, limit = 10, signal: AbortSignal | null = null): Promise<SearchResult[]> {

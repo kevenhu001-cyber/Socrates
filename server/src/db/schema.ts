@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
-  pgTable, uuid, text, timestamp, boolean, integer, jsonb, varchar, uniqueIndex, index, customType, vector,
+  pgTable, uuid, text, timestamp, boolean, integer, jsonb, uniqueIndex, index, customType, vector,
 } from 'drizzle-orm/pg-core';
 
 /* bytea — Postgres binary type. Used by tts_results.audio to persist

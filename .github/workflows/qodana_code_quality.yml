@@ -24,7 +24,11 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
       - name: 'Qodana Scan'
-        uses: JetBrains/qodana-action@v2026.2
+        # Upstream publishes dotted tags only (v2026.2.0, v2026.2.1) — there is
+        # no bare `v2026.2` ref, and a non-existent ref fails the job before the
+        # scan starts. Keep this on the same 2026.2 line as the `linter:` image
+        # tag in qodana.yaml.
+        uses: JetBrains/qodana-action@v2026.2.1
         env:
           # The provisioned secret carries the JetBrains-generated suffix —
           # `gh secret list` shows QODANA_TOKEN_1699681199 and nothing else.

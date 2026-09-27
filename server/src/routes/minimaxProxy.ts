@@ -40,7 +40,8 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
       });
     }
 
-    const { messages: rawMessages, model, temperature, max_tokens, stream, reasoning_effort, response_speed, extra_body, assistantId, sessionId } = req.body;
+    /* `model` is intentionally not read — see P_privacy-leak below. */
+    const { messages: rawMessages, temperature, max_tokens, stream, reasoning_effort, response_speed, extra_body, assistantId, sessionId } = req.body;
     if ((assistantId && !isUuid(assistantId)) || (sessionId && !isUuid(sessionId))) throw new BadRequest('Invalid assistant or session id');
     const responseSpeed = response_speed === 'fast' ? 'fast' : 'standard';
 

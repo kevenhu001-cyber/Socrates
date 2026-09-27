@@ -10,8 +10,7 @@ import http from 'node:http';
 
 /**
  * @param {import('express').Express} app
- * @param {() => Promise<void>} done  close hook
- * @returns {{ url: string, close: () => Promise<void> }}
+ * @returns {Promise<{ url: string, close: () => Promise<void> }>}
  */
 export function listen(app) {
   return new Promise((resolve, reject) => {

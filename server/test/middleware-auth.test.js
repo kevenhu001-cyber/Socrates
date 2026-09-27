@@ -17,7 +17,7 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { requireAuth, optionalAuth } from '../src/middleware/auth.js';
-import { initDb, getDb, closeDb } from '../src/db/index.js';
+import { initDb, closeDb } from '../src/db/index.js';
 import { Unauthorized } from '../src/lib/errors.js';
 
 /* Skip the suite entirely if no DATABASE_URL is configured —

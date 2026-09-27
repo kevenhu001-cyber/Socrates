@@ -300,7 +300,7 @@ export function resetBackgroundLight() {
 
 /* ── grid ── */
 export function toggleGrid() {
-  displayPrefs.showGrid = displayPrefs.showGrid === false ? true : false;
+  displayPrefs.showGrid = displayPrefs.showGrid === false;
   applyDisplayPrefs();
   saveDisplayPrefs();
 }
