@@ -18,7 +18,7 @@ import { clearLegacyMsgListChildren } from '../ui/messageListDom.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { publishThinkingTurnStart } from '../ui/messageSnapshot.js';
 import { resetShareToken, toggleChatTopBarEls, toggleShareBtn } from '../ui/share.js';
-import { setChatIdInURL, setExamIdInURL } from '../session/store.js';
+import { clearSessionRouteInURL } from '../session/store.js';
 import { scrollContainer } from '../ui/scroll.js';
 import { updateStartBtn } from '../ui/topicSetup.js';
 import { saveCurrentSession, saveSessionBeforeReset } from '../session/persistence.js';
@@ -151,8 +151,9 @@ export async function resetApp(options){
      inside an exam view (via the +New chat button or sidebar) lands
      on a clean topicSetup page instead of leaving the exam panel
      visible behind it. */
-  setChatIdInURL(null);
-  try { setExamIdInURL(null); } catch (_) {}
+  /* P_url-single-write — one replaceState drops both ?chat= and ?exam=.
+     Previously two consecutive calls each rewrote the same URL. */
+  clearSessionRouteInURL();
   document.getElementById("topicSetup").classList.remove("hidden");
   try { renderGreeting(); } catch (_) {}
   document.getElementById("diagnosticView").classList.add("hidden");

@@ -35,7 +35,7 @@ import { embeddingConfig } from '../db/schema.js';
 import { requireAdminSession } from '../middleware/adminAuth.js';
 import { NotFound, BadRequest } from '../lib/errors.js';
 import { encrypt, encryptionKey } from '../lib/crypto.js';
-import { isAllowedEmbeddingUrl } from '../services/embedding.js';
+import { isAllowedEmbeddingUrl, invalidateEmbeddingConfigCache } from '../services/embedding.js';
 
 const router = Router();
 
@@ -154,6 +154,10 @@ router.put('/', async (req, res, next) => {
         .set({ isActive: false })
         .where(ne(embeddingConfig.id, saved.id));
     }
+    /* P_embed-cfg-cache — the service caches the active provider for a
+       short TTL, so a write here must drop that cache or the new
+       provider stays invisible to the indexing path. */
+    invalidateEmbeddingConfigCache();
     return res.json(saved);
   } catch (err) { next(err); }
 });
@@ -170,6 +174,8 @@ router.delete('/:id', async (req, res, next) => {
       .where(eq(embeddingConfig.id, String(req.params.id)))
       .returning({ id: embeddingConfig.id });
     if (!deleted.length) throw new NotFound('Embedding config not found');
+    /* P_embed-cfg-cache — a delete can deactivate the vector layer. */
+    invalidateEmbeddingConfigCache();
     return res.json({ ok: true });
   } catch (err) { next(err); }
 });

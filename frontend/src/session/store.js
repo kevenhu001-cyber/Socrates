@@ -20,6 +20,19 @@ export function setChatIdInURL(id) {
   history.replaceState({ chatId: id }, "", id ? "/?chat=" + encodeURIComponent(id) : base);
 }
 
+/* P_url-single-write — clear BOTH the ?chat= and ?exam= route keys in one
+ * history.replaceState. The new-chat reset used to call setChatIdInURL(null)
+ * and then setExamIdInURL(null) back to back; both resolve to the same
+ * `base` URL (no query string at all), so the second call re-wrote an
+ * identical URL and left a different history.state object. Nothing reads
+ * history.state.chatId / .examId anywhere in the app, so the second write
+ * was pure cost — and it was the single largest frame in the new-chat
+ * click profile. One write does the same job. */
+export function clearSessionRouteInURL() {
+  var base = /^\/(library|projects|scheduled|plugins|exam)\/?$/.test(location.pathname) ? "/" : location.pathname;
+  history.replaceState({ chatId: null, examId: null }, "", base);
+}
+
 export function pushChatIdToURL(id) {
   var base = /^\/(library|projects|scheduled|plugins|exam)\/?$/.test(location.pathname) ? "/" : location.pathname;
   history.pushState({ chatId: id }, "", id ? "/?chat=" + encodeURIComponent(id) : base);

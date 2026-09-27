@@ -349,18 +349,27 @@ var MERMAID_CHECKED_MAX = 500;
 export function renderMermaid(code, opts) {
   opts = opts || {};
   var stableId = opts.stableId;
-  if (typeof mermaid !== "undefined" && !(stableId && _mermaidChecked[stableId] === 'ok')) {
-    var ok = validMermaid(code);
-    if (stableId) {
-      if (_mermaidCheckedCount >= MERMAID_CHECKED_MAX) {
-        _mermaidChecked = Object.create(null);
-        _mermaidCheckedCount = 0;
+  /* P_mermaid-parse-once — mermaid.parse is synchronous and expensive, so
+     whichever check passes here rides along on the queue entry: the drain
+     reuses it instead of parsing the same diagram a second time. Only
+     mermaid-still-loading callers (validated stays false) are parsed once
+     in the drain, which is where they were parsed before. */
+  var validated = false;
+  if (typeof mermaid !== "undefined") {
+    validated = true;
+    if (!(stableId && _mermaidChecked[stableId] === 'ok')) {
+      var ok = validMermaid(code);
+      if (stableId) {
+        if (_mermaidCheckedCount >= MERMAID_CHECKED_MAX) {
+          _mermaidChecked = Object.create(null);
+          _mermaidCheckedCount = 0;
+        }
+        _mermaidChecked[stableId] = ok ? 'ok' : 'bad';
+        _mermaidCheckedCount++;
       }
-      _mermaidChecked[stableId] = ok ? 'ok' : 'bad';
-      _mermaidCheckedCount++;
-    }
-    if (!ok) {
-      return '<div class="viz" data-viz-state="error"><div class="viz-body">' + vizErrorHtml('Diagram syntax error', code) + '</div></div>';
+      if (!ok) {
+        return '<div class="viz" data-viz-state="error"><div class="viz-body">' + vizErrorHtml('Diagram syntax error', code) + '</div></div>';
+      }
     }
   }
   /* P_viz-stable-id — accept opts.stableId so a streaming fence
@@ -372,7 +381,7 @@ export function renderMermaid(code, opts) {
   /* Same id ⇒ same code (the stable id is a content hash), so a repeat
      push only duplicates queue work. */
   if (!_pendingMermaid.some(function (item) { return item.id === id; })) {
-    _pendingMermaid.push({ id: id, code: code });
+    _pendingMermaid.push({ id: id, code: code, validated: validated });
   }
   queueVizActions(id);
   if (typeof mermaid === "undefined") ensureMermaid();
@@ -399,6 +408,82 @@ function renderMermaidFallback(item) {
   _rememberLiveVizCard(item.id, el);
 }
 
+/* P_mermaid-frame-budget — every mermaid.render pays a synchronous
+   parse + layout, so draining the whole queue in one forEach was the
+   dominant first-visit long task in the 2026-09-27 profile. The drain
+   now starts at most MERMAID_RENDERS_PER_FRAME diagrams per frame and
+   bails out early once MERMAID_FRAME_BUDGET_MS of the frame is spent,
+   then hands the remainder to schedulePendingMermaid() — the same
+   rAF-coalescing entry point MessageItem's useLayoutEffect uses, so a
+   row mount landing mid-drain joins the pending pass instead of racing
+   a second concurrent drain. One diagram is indivisible (a single huge
+   render can still overrun a frame), but N diagrams now cost N/2
+   frames instead of one ~2s task. */
+var MERMAID_RENDERS_PER_FRAME = 2;
+var MERMAID_FRAME_BUDGET_MS = 8;
+
+function renderPendingMermaidItem(item) {
+  var liveEl = document.getElementById(item.id);
+  /* A card reclaimed from the live-card registry is already rendered —
+     re-rendering it would flash its SVG away and back. */
+  if (liveEl && liveEl.getAttribute('data-viz-state') !== 'loading') return;
+  /* P_mermaid-parse-once — renderMermaid already ran mermaid.parse on
+     this code unless mermaid was still loading when it was queued, so
+     only pay for the check when that result is genuinely missing. */
+  if (!item.validated && !validMermaid(item.code)) {
+    const el = document.getElementById(item.id);
+    if (!el) return;
+    const body = el.querySelector('.viz-body');
+    if (!body) return;
+    body.innerHTML = vizErrorHtml('Diagram syntax error', item.code);
+    el.setAttribute('data-viz-state', 'error');
+    return;
+  }
+  if (_mermaidInFlight[item.id]) return;
+  try {
+    var inflight = mermaid.render('mermaid-svg-' + item.id, item.code);
+    _mermaidInFlight[item.id] = inflight;
+    inflight
+      .then(function (result) {
+        var el = document.getElementById(item.id);
+        if (!el) return;
+        var body = el.querySelector('.viz-body');
+        if (!body) return;
+        body.innerHTML = result.svg;
+        el.setAttribute('data-viz-state', 'ready');
+        _rememberLiveVizCard(item.id, el);
+        if (result.bindFunctions) result.bindFunctions(body);
+        var svg = body.querySelector('svg');
+        if (svg) { svg.style.maxWidth = '100%'; svg.style.height = 'auto'; }
+      })
+      .catch(function (err) {
+        var el = document.getElementById(item.id);
+        if (!el) return;
+        var body = el.querySelector('.viz-body');
+        if (!body) return;
+        var msg = esc(err.message || String(err)).slice(0, 300);
+        var src = esc(item.code || '');
+        body.innerHTML = vizErrorHtml(msg, src);
+        el.setAttribute('data-viz-state', 'error');
+        _rememberLiveVizCard(item.id, el);
+      })
+      .then(function () {
+        delete _mermaidInFlight[item.id];
+      });
+  } catch (e) {
+    const el = document.getElementById(item.id);
+    if (!el) return;
+    const body = el.querySelector('.viz-body');
+    if (!body) return;
+    var msg = esc(e.message || String(e)).slice(0, 300);
+    var src = esc(item.code || '');
+    body.innerHTML = vizErrorHtml(msg, src);
+    el.setAttribute('data-viz-state', 'error');
+    _rememberLiveVizCard(item.id, el);
+    delete _mermaidInFlight[item.id];
+  }
+}
+
 export function processPendingMermaid() {
   if (typeof mermaid === "undefined") {
     ensureMermaid().then(function () {
@@ -410,76 +495,31 @@ export function processPendingMermaid() {
     });
     return;
   }
-  var pending = _pendingMermaid;
-  _pendingMermaid = [];
-  pending.forEach(function (item) {
-    var liveEl = document.getElementById(item.id);
-    /* A card reclaimed from the live-card registry is already rendered —
-       re-rendering it would flash its SVG away and back. */
-    if (liveEl && liveEl.getAttribute('data-viz-state') !== 'loading') return;
-    if (!validMermaid(item.code)) {
-      const el = document.getElementById(item.id);
-      if (!el) return;
-      const body = el.querySelector('.viz-body');
-      if (!body) return;
-      body.innerHTML = vizErrorHtml('Diagram syntax error', item.code);
-      el.setAttribute('data-viz-state', 'error');
-      return;
-    }
-    if (_mermaidInFlight[item.id]) return;
-    try {
-      var inflight = mermaid.render('mermaid-svg-' + item.id, item.code);
-      _mermaidInFlight[item.id] = inflight;
-      inflight
-        .then(function (result) {
-          var el = document.getElementById(item.id);
-          if (!el) return;
-          var body = el.querySelector('.viz-body');
-          if (!body) return;
-          body.innerHTML = result.svg;
-          el.setAttribute('data-viz-state', 'ready');
-          _rememberLiveVizCard(item.id, el);
-          if (result.bindFunctions) result.bindFunctions(body);
-          var svg = body.querySelector('svg');
-          if (svg) { svg.style.maxWidth = '100%'; svg.style.height = 'auto'; }
-        })
-        .catch(function (err) {
-          var el = document.getElementById(item.id);
-          if (!el) return;
-          var body = el.querySelector('.viz-body');
-          if (!body) return;
-          var msg = esc(err.message || String(err)).slice(0, 300);
-          var src = esc(item.code || '');
-          body.innerHTML = vizErrorHtml(msg, src);
-          el.setAttribute('data-viz-state', 'error');
-          _rememberLiveVizCard(item.id, el);
-        })
-        .then(function () {
-          delete _mermaidInFlight[item.id];
-        });
-    } catch (e) {
-      const el = document.getElementById(item.id);
-      if (!el) return;
-      const body = el.querySelector('.viz-body');
-      if (!body) return;
-      var msg = esc(e.message || String(e)).slice(0, 300);
-      var src = esc(item.code || '');
-      body.innerHTML = vizErrorHtml(msg, src);
-      el.setAttribute('data-viz-state', 'error');
-      _rememberLiveVizCard(item.id, el);
-      delete _mermaidInFlight[item.id];
-    }
-  });
+  var frameStart = Date.now();
+  var rendered = 0;
+  while (_pendingMermaid.length && rendered < MERMAID_RENDERS_PER_FRAME) {
+    /* Always start at least one diagram, even when this frame is already
+       over budget — otherwise a coarse clock could stall the queue. */
+    if (rendered > 0 && Date.now() - frameStart >= MERMAID_FRAME_BUDGET_MS) break;
+    renderPendingMermaidItem(_pendingMermaid.shift());
+    rendered++;
+  }
+  /* Work left over continues on the next frame; the queue stays
+     module-level so a card whose element lands in the DOM later is
+     still found by a later pass. */
+  if (_pendingMermaid.length) schedulePendingMermaid();
   try { processPendingVizActions(); } catch (_) {}
 }
 
-/* P_mermaid-coalesce — processPendingMermaid() drains the WHOLE global
- * _pendingMermaid queue and (via the trailing call) the viz-actions queue.
+/* P_mermaid-coalesce — processPendingMermaid() works off the global
+ * _pendingMermaid queue (a frame-budgeted slice of it, see
+ * P_mermaid-frame-budget) and (via the trailing call) the viz-actions queue.
  * It used to be invoked once per mounted React row from MessageItem's
  * useLayoutEffect, so a single history commit of N rows ran N full scans in
  * one layout phase — the biggest session-switch long task in the 2026-09-27
  * profile. This scheduler collapses any number of same-frame requests into
- * one drain on the next frame. The pending queue is module-level and
+ * one drain on the next frame, and is also where the drain hands back its
+ * leftover work. The pending queue is module-level and
  * survives across frames, so a deferred drain still finds every card whose
  * element has landed in the DOM. Callers that need a synchronous pass
  * (streaming, widget mounting) keep calling processPendingMermaid directly. */

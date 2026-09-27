@@ -8,6 +8,7 @@ import { saveState, deletedSessionGuard } from './saveState.js';
 import { generateId } from '../util/ids.js';
 import { pushChatIdToURL } from './store.js';
 import { buildBeaconPayload } from './beacon.js';
+import { buildDeltaPayload, commitSynced, createFingerprintCache, seedSynced, stateFingerprint } from './saveDelta.js';
 import { generateSessionTitle } from '../chat/sessionTitle.js';
 import { rebuildCmdKIndex } from '../ui/cmdK.js';
 import { toggleShareBtn } from '../ui/share.js';
@@ -71,17 +72,53 @@ export function saveCurrentSession(){
 /* New-session path: persist the current conversation without blocking the
    UI on an in-flight save. When a POST is already running, the state is
    snapshotted now (before the caller resets it) and sent right after the
-   running request settles, so the reset never waits on the network. */
+   running request settles, so the reset never waits on the network.
+
+   P_reset-defer — when nothing is in flight this used to call
+   saveCurrentSession() inline, which ran captureSessionPayload +
+   payloadSignature + the 1 MB JSON.stringify + fetch() all inside the
+   new-chat click handler. On a long session that put ~70 ms of work and
+   a large allocation burst into the very frame the user is waiting on
+   (INP ≈ 120 ms, one 106 ms long task).
+
+   The payload must still be CAPTURED synchronously: the caller resets
+   state on the next line, and a deferred capture would find an empty
+   conversation. So capture now, and defer only the post — the stringify,
+   the signature and the network call move to the next macrotask, after
+   the reset has been painted. */
 export function saveSessionBeforeReset(){
-  if(!saveState.saveInFlight)return saveCurrentSession();
   if(typeof window!=="undefined"&&window.incognitoOn)return null;
   if(!stateStore.read("topic"))return null;
   if(!(typeof window!=="undefined"&&window.CURRENT_USER))return null;
   if(saveState.loadingSession)return null;
   if(deletedSessionGuard.has(stateStore.read("currentSessionId")))return null;
-  saveState.pendingSnapshot=captureSessionPayload();
-  saveState.saveDirty=false;
-  return saveState.saveInFlight;
+  if(saveState.saveInFlight){
+    saveState.pendingSnapshot=captureSessionPayload();
+    saveState.saveDirty=false;
+    return saveState.saveInFlight;
+  }
+  var snapshot=captureSessionPayload();
+  /* P_reset-defer — park the snapshot for one tick. The pagehide beacon in
+     installUnloadSave flushes it if the tab is torn down inside that window,
+     so deferring cannot cost the user a conversation. */
+  saveState.deferredSnapshot=snapshot;
+  return new Promise(function(resolve){
+    setTimeout(function(){
+      if(saveState.deferredSnapshot===snapshot)saveState.deferredSnapshot=null;
+      /* Re-check under the deferred tick: the user may have switched
+         sessions or deleted this one in the frame we yielded for. */
+      if(deletedSessionGuard.has(snapshot.id)){resolve(null);return;}
+      if(saveState.saveInFlight){
+        /* Something started a save while we yielded — hand the snapshot
+           to the coalescing queue instead of racing it. */
+        saveState.pendingSnapshot=snapshot;
+        saveState.saveDirty=false;
+        resolve(saveState.saveInFlight);
+        return;
+      }
+      resolve(postSession(snapshot));
+    },0);
+  });
 }
 
 function doSave(){
@@ -235,16 +272,84 @@ function captureSessionPayload(){
  * session) moves the signature and posts normally. */
 var _lastPosted = { id: null, sig: null };
 
+/* P_incremental-save — reduce each save to the rows the server is not
+ * already known to hold. The pure delta/fingerprint logic lives in
+ * session/saveDelta.js so it can be unit-tested without the DOM globals
+ * this module installs at import time; see that file for why deletions
+ * do not travel through the save payload.
+
+ * The watermark is per session: clientId -> fingerprint of the last body
+ * the server ACKNOWLEDGED. It advances only inside the POST's success
+ * path (commitSynced), so a failed save re-sends the same rows next time
+ * instead of dropping them. */
+var _syncedBySession = new Map();
+var _SYNCED_SESSION_CAP = 8;
+var _fingerprints = createFingerprintCache();
+
+function _syncedFor(sessionId){
+  var got=_syncedBySession.get(sessionId);
+  if(!got){
+    got=new Map();
+    _syncedBySession.set(sessionId,got);
+    /* Bounded: an active user cycles through a handful of sessions, and
+       every entry here holds one string per message. */
+    while(_syncedBySession.size>_SYNCED_SESSION_CAP){
+      var oldest=_syncedBySession.keys().next().value;
+      if(oldest===undefined||oldest===sessionId)break;
+      _syncedBySession.delete(oldest);
+    }
+  }
+  return got;
+}
+
+/* Seed the watermark from a freshly loaded session so the first save
+   after a switch is a delta rather than a full re-upload. Without this
+   the delta would only ever help mid-conversation. Called by
+   session/loader.js right after the messages land in state. */
+export function seedSyncedMessages(sessionId, messages){
+  if(!sessionId)return;
+  seedSynced(_syncedFor(sessionId), messages, _fingerprints);
+}
+
+/* Keep the watermark when a brand-new session is adopted under a
+   server-minted UUID, so the next save is still a delta. */
+function _rekeySynced(fromId, toId){
+  if(!fromId||!toId||fromId===toId)return;
+  var got=_syncedBySession.get(fromId);
+  if(!got)return;
+  _syncedBySession.set(toId,got);
+  _syncedBySession.delete(fromId);
+}
+
 function payloadSignature(payload){
   var msgs=Array.isArray(payload.messages)?payload.messages:[];
   var parts='';
   for(var i=0;i<msgs.length;i++){
-    var m=msgs[i]||{};
-    parts+=(m.clientId||m.id||'')+':'+((m.html||'').length)+':'+((m.rawText||'').length)+'|';
+    /* P_signature-content — this used to be
+     *   clientId + ':' + html.length + ':' + rawText.length
+     * i.e. a LENGTH-ONLY comparison. A message rewritten to a different
+     * text of the same length produced an identical signature, so the
+     * "skip an identical re-save" short-circuit below silently dropped
+     * the edit. Reuse the same memoised content fingerprint the delta
+     * uses, so an unchanged message still costs one pointer compare. */
+    parts+=_fingerprints.of(msgs[i]||{})+';';
   }
+  /* P_signature-scope — the signature drives the "skip an identical
+     re-save" short-circuit, so ANY field whose change must reach the
+     server has to appear here. It previously covered only
+     title/phase/topic/message-shape/kbNodes.length/mistakes.length, which
+     meant the tutor state machine (teachingStage, currentNode, totalQ,
+     teachingPlan, boundariesHistory — all mutated every turn by
+     chat/sendPipeline.js) could change and the save would be silently
+     dropped. FNV-1a over the serialised state keeps this O(size of the
+     tutor state) rather than O(whole transcript). */
+  var tutorFingerprint=stateFingerprint;
   return [payload.title||'', payload.phase||'', payload.topic||'',
     msgs.length, parts, Array.isArray(payload.kbNodes)?payload.kbNodes.length:0,
-    Array.isArray(payload.mistakes)?payload.mistakes.length:0].join('#');
+    Array.isArray(payload.mistakes)?payload.mistakes.length:0,
+    payload.teachingStage||'', payload.currentNode||'', payload.totalQ||0,
+    tutorFingerprint(payload.teachingPlan), tutorFingerprint(payload.boundariesHistory)
+  ].join('#');
 }
 
 function postSession(payload){
@@ -274,7 +379,16 @@ function postSession(payload){
      POST response (server-adopted id) must NOT overwrite the new
      session's URL / state. */
   var capturedSessionId=sessionId;
-  saveState.saveInFlight=apiFetch("/api/sessions",{method:"POST",body:payload}).then(function(r){
+  /* P_incremental-save — send only the rows the server is not already
+     known to hold. The watermark advances only in the success handler
+     below, for exactly the rows that were acknowledged. */
+  var body=buildDeltaPayload(payload,_syncedFor(capturedSessionId),_fingerprints);
+  var sentMessages=body.messages;
+  saveState.saveInFlight=apiFetch("/api/sessions",{method:"POST",body:body}).then(function(r){
+    /* The server acknowledged this batch — only now may the watermark
+       advance. Anything that failed before this point re-sends next time. */
+    commitSynced(_syncedFor(capturedSessionId),sentMessages,_fingerprints);
+    if(r&&r.id&&r.id!==sessionId)_rekeySynced(capturedSessionId,r.id);
     /* P2 SWR — invalidate the server-adopted id too (a brand-new session is
        created under a fresh UUID the client didn't know yet). */
     if(r&&r.id)detailCache.invalidate(r.id);
@@ -367,6 +481,15 @@ export function installUnloadSave(){
     return m?m[1]:null;
   }
   function _beaconSave(){
+    /* P_reset-defer — a snapshot parked by saveSessionBeforeReset is the
+       authority here: the caller has already reset the live state, so the
+       store-based branch below would find an empty conversation. Flush the
+       parked snapshot first, then fall back to the live-state path. */
+    var deferred=saveState.deferredSnapshot;
+    if(deferred){
+      _beaconPost(deferred);
+      return;
+    }
     /* Only fire if we have data worth saving and a save is pending. */
     if(!saveState.saveInFlight||!stateStore.read("currentSessionId")||!(typeof window!=="undefined"&&window.CURRENT_USER))return;
     /* F3: payload shape lives in session/beacon.js (unit-tested); the
@@ -379,9 +502,12 @@ export function installUnloadSave(){
       messages:stateStore.read("messages"),
     });
     if(!payload)return;
+    _beaconPost(payload);
+  }
+  /* Raw keepalive fetch — apiFetch uses AbortController + JSON parsing which
+     is incompatible with keepalive during pagehide. */
+  function _beaconPost(payload){
     var csrf=_beaconCsrf();
-    /* Beacon save must stay a raw fetch: apiFetch uses AbortController +
-       JSON parsing which is incompatible with keepalive during pagehide. */
     try{
       fetch("/api/v2/sessions",{
         method:"POST",
