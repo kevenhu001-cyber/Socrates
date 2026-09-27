@@ -44,7 +44,7 @@ function isRenderable(message: LegacyChatMessage, live: boolean): boolean {
   return false;
 }
 
-function MessageItemBase({ message, textLength }: MessageItemProps) {
+function MessageItemBase({ message, textLength: _textLength }: MessageItemProps) {
   const role = typeof message.role === 'string' ? message.role : 'assistant';
   /* The streaming pipeline no longer paints its own bubble when React owns
      #msgList: this entry IS the live answer, laid out from the same
@@ -85,34 +85,24 @@ function MessageItemBase({ message, textLength }: MessageItemProps) {
       ));
 
   // Post-render hooks the legacy pipeline uses to wire up code-block
-  // expand buttons, image lightbox, mermaid render, viz cards. Each is
-  // idempotent (the legacy implementations guard with their own
-  // dataset flags) so re-running them on every React render is safe.
+  // expand buttons, image lightbox, mermaid render, viz cards. Run only on
+  // finalized HTML, avoiding layout overhead while streaming.
   useLayoutEffect(() => {
-    if ((!html && !isLive) || !clientId) return;
+    if (!html || isLive || !clientId) return;
     const root = bodyRef.current;
     if (!root) return;
     const pr = getLegacyActions().postRender;
     /* Reclaim rendered viz/mermaid cards BEFORE the pending queues drain:
        a placeholder adopted here must not also get a fresh handshake. */
     try { pr.reclaimVizCards?.(root); } catch (_) { /* hook unavailable */ }
-    /* P_mermaid-coalesce — this effect runs once per row during a single
-       history commit, but processPendingMermaid() drains the whole global
-       queue. Calling it inline made an N-row commit do N full scans in one
-       layout phase (the dominant session-switch long task). Schedule a
-       coalesced drain instead: N same-frame requests collapse into one pass
-       on the next frame, by which point every committed card element is in
-       the DOM. Fall back to the synchronous drain if the bridge is old. */
     try {
       if (pr.schedulePendingMermaid) pr.schedulePendingMermaid();
       else pr.processPendingMermaid?.();
     } catch (_) { /* hook unavailable */ }
     try { pr.processPendingViz?.(root); } catch (_) { }
     try { pr.processPendingVizActions?.(root); } catch (_) { }
-    if (!isLive) {
-      try { pr.wireCodeBlockHeaders?.(root); } catch (_) { }
-      try { pr.wireMsgBodyImages?.(root); } catch (_) { }
-    }
+    try { pr.wireCodeBlockHeaders?.(root); } catch (_) { }
+    try { pr.wireMsgBodyImages?.(root); } catch (_) { }
     if (message.restoredFromHistory) {
       try {
         pr.restorePersistedMessageExtras?.(
@@ -122,12 +112,8 @@ function MessageItemBase({ message, textLength }: MessageItemProps) {
         );
       } catch (_) { /* optional legacy renderer unavailable */ }
     }
-    /* `textLength` is in the deps because a live answer grows in place: the
-       message object is mutated rather than replaced, so nothing else here
-       changes identity between frames. It never moves on a finalized entry,
-       which costs this effect nothing on history. */
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [html, clientId, textLength, isLive, message, message.restoredFromHistory]);
+  }, [html, clientId, isLive, message.restoredFromHistory]);
 
   if (!isRenderable(message, isLive)) return null;
   if (!clientId) return null;

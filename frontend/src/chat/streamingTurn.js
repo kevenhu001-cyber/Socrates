@@ -318,6 +318,7 @@ export function addStreamingMessage(opts){
        Viewport position is owned by chat/turnAnchor.ts. */
     if(stillOwnsSlot()){
       patchOwnedMessage({rawText:full},true);
+      publishReactChatRuntime({type:"stream-delta",messageId:clientId,textLength:full.length});
     }
     if(fullReasoning||_extractThinkText(full)){
       _publishThinkingPanelLive();
@@ -541,10 +542,14 @@ export function addStreamingMessage(opts){
           _liveStatus:_clearWaiting ? null : (liveMessage()&&liveMessage()._liveStatus),
           _toolRunRev:_clearWaiting ? (_preRev1+1) : _preRev1
         },true);
+        publishReactChatRuntime({type:"stream-delta",messageId:clientId,textLength:full.length});
+        cancelScheduledRender();
+        pendingRender=requestAnimationFrame(function(){doRender()});
       }else{
-        patchOwnedMessage({rawText:full},true);
+        /* Subsequent deltas are coalesced through _streamScheduler, which invokes
+           doRender() at the frame boundary to update store and publish events. */
+        _streamScheduler.push(delta);
       }
-      publishReactChatRuntime({type:"stream-delta",messageId:clientId,textLength:full.length});
       /* Hide the status pill once the streamed text passes a small
          threshold — anything shorter is almost certainly a
          "好的,让我搜一下…" preamble that the model emits before its
@@ -554,15 +559,6 @@ export function addStreamingMessage(opts){
          transition phrase. */
       if(thinkCtl&&typeof thinkCtl.finalize==="function"&&full.length>=60){
         try{thinkCtl.finalize()}catch(_){}
-      }
-      if(wasFirst){
-        /* Schedule on rAF so the msg element is definitely in the DOM */
-        cancelScheduledRender();
-        pendingRender=requestAnimationFrame(function(){doRender()});
-      }else{
-        /* Task 2.4 — coalesce this delta through the shared scheduler
-           instead of the old per-chunk scheduleRender(). */
-        _streamScheduler.push(delta);
       }
     },
     /* Append reasoning deltas (DeepSeek R1 / QwQ style

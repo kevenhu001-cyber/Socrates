@@ -479,24 +479,23 @@ function postSession(payload){
        POST was in-flight, do NOT adopt the server's id (it belongs to the old
        session) and do NOT update the URL. The row patch above is keyed by id,
        so it is safe either way. */
-    if(stateStore.read("currentSessionId")!==capturedSessionId)return;
-    if(r&&r.id&&r.id!==sessionId){
+    if(stateStore.read("currentSessionId")===capturedSessionId && r && r.id && r.id!==sessionId){
       stateStore.dispatch({type:"state/set",key:"currentSessionId",value:r.id});
       pushChatIdToURL(r.id);
     }
-  }).then(function(){
     /* P_streaming-survival — after a successful save (the stream
        completed normally), clear the server-side streaming_text
        so a reload doesn't show partial content. Fire-and-forget;
        failure is harmless. */
-    var curSid=stateStore.read("currentSessionId")||stateStore.read("currentSessionId");
-    if(curSid){
-      apiFetch("/api/sessions/"+encodeURIComponent(curSid),{
+    var targetSid=(r&&r.id)||capturedSessionId;
+    if(targetSid){
+      apiFetch("/api/sessions/"+encodeURIComponent(targetSid),{
         method:"PATCH",
         body:{streamingText:null,streamingReasoning:null},
       }).catch(function(){});
     }
-    _renderRecents();}).catch(function(e){
+    _renderRecents();
+  }).catch(function(e){
     /* F1a — surface the save failure so the user knows their
        conversation isn't being persisted. Without this the recent
        list can silently lose new entries (Bug1). showToast lives at

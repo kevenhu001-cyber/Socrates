@@ -33,7 +33,6 @@ import {
   loadPendingTurn,
   subscribeChatTurnEvents,
 } from '../chat/turnClient.ts';
-import { scrollContainer } from '../ui/scroll.js';
 import { detailCache } from './detailCache.js';
 import { seedSyncedMessages } from './persistence.js';
 import { toggleChatTopBarEls, toggleShareBtn } from '../ui/share.js';
@@ -613,26 +612,30 @@ export async function loadSession(id){
        of falling back to the slower DOM scrape. Skip if the local cache
        already has something (don't clobber a fresher copy). */
     if(!loadLocalMemory(s.id)){
-      try{
-        var rec={topic:s.topic||"",ts:Date.now(),messages:[]};
-        (s.messages||[]).forEach(function(m){
-          // Prefer rawText (the source markdown) over html (a rendered
-          // snapshot) so the LLM context gets clean content without
-          // embedded HTML tags.
-          var txt="";
-          if(m.rawText){
-            txt=m.rawText;
-          }else if(m.html){
-            txt=m.html.replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
-          }
-          txt=txt.replace(/^Thinking\.\.\.\s*/i,"").replace(/^Thinking\s*/i,"").trim();
-          if(!txt)return;
-          rec.messages.push({role:m.role,content:txt});
-        });
-        if(rec.messages.length)batchSetItem(_memKey(s.id),JSON.stringify(rec));
-      }catch {/* mirror failed */}
+      var _idleSync=function(){
+        try{
+          var rec={topic:s.topic||"",ts:Date.now(),messages:[]};
+          (s.messages||[]).forEach(function(m){
+            var txt="";
+            if(m.rawText){
+              txt=m.rawText;
+            }else if(m.html){
+              txt=m.html.replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
+            }
+            txt=txt.replace(/^Thinking\.\.\.\s*/i,"").replace(/^Thinking\s*/i,"").trim();
+            if(!txt)return;
+            rec.messages.push({role:m.role,content:txt});
+          });
+          if(rec.messages.length)batchSetItem(_memKey(s.id),JSON.stringify(rec));
+        }catch {/* mirror failed */}
+      };
+      if(typeof requestIdleCallback==="function"){
+        requestIdleCallback(_idleSync,{timeout:2000});
+      }else{
+        setTimeout(_idleSync,100);
+      }
     }
-    updateKB();
+    if(_appMode()!=="chat"||(s.kbNodes&&s.kbNodes.length>0)) updateKB();
     updateChatStats();
     _renderRecents();
     _renderMistakes();
@@ -651,8 +654,6 @@ export async function loadSession(id){
         stateStore.dispatch({type:"state/batch",patch:restoredPlanSync});
       }
     }
-    var sc=scrollContainer();
-    sc.scrollTop=sc.scrollHeight;
     publishReactChatRuntime({type:"state-synced",reason:"session-loaded"});
     /* P_history-slice (retired) — this used to re-run buildAssistantHtml over
        every restored assistant turn in background slices and patch the result
@@ -670,9 +671,9 @@ export async function loadSession(id){
     if(_cachedDetail && s.kind!=="exam" && !detailCache.isFresh(_cachedDetail)){
       var _paintedSig=_cachedDetail.sig;
       Promise.resolve().then(function(){
-        return apiFetch("/api/sessions/"+encodeURIComponent(id));
+        return apiFetch("/api/sessions/"+encodeURIComponent(id), { signal: currentLoadAbort.signal });
       }).then(function(fresh){
-        if(!fresh || saveState.loadSessionId!==id) return;
+        if(!fresh || (currentLoadAbort && currentLoadAbort.signal.aborted) || saveState.loadSessionId!==id) return;
         if(stateStore.read("currentSessionId")!==id) return;
         detailCache.store(id, fresh);
         if(detailCache.signature(fresh)!==_paintedSig){
@@ -750,18 +751,7 @@ export async function loadSession(id){
         }
       }
     }catch(_){}
-    /* Re-sync the cache from the server so the Recents list reflects
-       the authoritative state (drops genuinely-gone rows, restores
-       any id-mismatched rows under their real ids). Fire-and-forget;
-       failure is harmless — the list simply keeps its current shape.
 
-       P_recents-amplify — this went through an unthrottled 200-row fetch on
-       EVERY switch, on top of the one the save chain used to fire. It is
-       now folded into the shared reconcile window, so a save + a switch that
-       land together cost at most one list fetch instead of two, and rapid
-       switching collapses to one. Anything that genuinely cannot show a
-       stale list (delete / archive / sign-in) uses flushRecentsReconcile. */
-    try{_scheduleRecentsReconcile()}catch(_){}
     var isUrlMatch=typeof location!=="undefined"&&location.search.indexOf("chat="+encodeURIComponent(id))>=0;
     if(stateStore.read("currentSessionId")===id||!stateStore.read("currentSessionId")||isUrlMatch){
       /* Only if no other session was loaded in the meantime. */

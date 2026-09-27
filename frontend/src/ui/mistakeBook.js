@@ -95,6 +95,12 @@ export function createMistakeBook({
   function renderMistakes() {
     var cont = document.getElementById('mistakesList');
     if (!cont) return;
+    var panel = document.getElementById('mistakesPanel');
+    if (panel && panel.classList.contains('hidden')) {
+      panel.dataset.mistakesDirty = '1';
+      return;
+    }
+    if (panel) delete panel.dataset.mistakesDirty;
     var tutorSocratic = getTutorSocratic();
     if (tutorSocratic && typeof tutorSocratic.renderMistakeFilterBar === 'function') {
       try { tutorSocratic.renderMistakeFilterBar(); } catch (_) {}

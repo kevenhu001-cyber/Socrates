@@ -378,7 +378,7 @@ test('auto-render host receives sanitized HTML', () => {
     renderMathInElement(el) { autoRenderCalls += 1; hostHtml = el.innerHTML; },
   };
   try {
-    const html = formatMsg('<img src=x onerror="window.__xss=1"> plain prose');
+    const html = formatMsg('<img src=x onerror="window.__xss=1"> plain $x$ prose');
     assert.equal(autoRenderCalls, 1);
     assert.doesNotMatch(hostHtml, /onerror/i);
     assert.doesNotMatch(html, /onerror/i);
