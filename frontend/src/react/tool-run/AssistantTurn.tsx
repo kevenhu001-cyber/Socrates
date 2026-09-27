@@ -50,6 +50,68 @@ function StreamCursor() {
 }
 
 /**
+ * P_prose-cache — finalized prose shared across mounts.
+ *
+ * The per-instance cache below dies with the component, and every session
+ * switch remounts every row, so re-opening a conversation used to re-run
+ * marked + KaTeX + DOMPurify for EVERY assistant turn — 2.4 s of the 3.2 s
+ * commit in the 2026-09-27 switch profile of a 200-message session (4x CPU).
+ * Rendering is a pure function of (text, renderer capabilities), so the result
+ * can outlive the component, keyed on everything the output depends on:
+ * the KaTeX revision, the UI language (scaffold labels) and whether
+ * highlight.js has loaded.
+ *
+ * Output that is NOT pure is never cached: viz / mermaid cards and scaffold
+ * widget slots register their payload in a module queue as a side effect of
+ * rendering (render/viz.js, scheduleWidgetMounts), and the post-render pass
+ * drains that queue. Replaying cached markup would leave those placeholders
+ * with nothing queued to fill them, so such text is re-rendered every mount
+ * exactly as before.
+ */
+const IMPURE_OUTPUT = /class="viz"|-slot"|canvas-block/;
+const FINAL_CACHE_BUDGET = 8_000_000; // chars of html kept across mounts
+const finalProseCache = new Map<string, { __html: string }>();
+let finalProseCacheChars = 0;
+
+function renderEnvKey(): string {
+  if (typeof window === 'undefined') return '0';
+  const w = window as unknown as {
+    __socratesMathRenderRev?: number;
+    _currentLang?: string;
+    hljs?: unknown;
+  };
+  return `${w.__socratesMathRenderRev || 0}|${w._currentLang || ''}|${w.hljs ? 1 : 0}|`;
+}
+
+function sharedFinalProse(text: string, paint: () => string): { __html: string } {
+  const key = renderEnvKey() + text;
+  const hit = finalProseCache.get(key);
+  if (hit !== undefined) {
+    /* Refresh recency: Map iteration order is insertion order. */
+    finalProseCache.delete(key);
+    finalProseCache.set(key, hit);
+    return hit;
+  }
+  const box = { __html: paint() };
+  if (IMPURE_OUTPUT.test(box.__html)) return box;
+  finalProseCache.set(key, box);
+  finalProseCacheChars += box.__html.length + key.length;
+  while (finalProseCacheChars > FINAL_CACHE_BUDGET && finalProseCache.size > 1) {
+    const oldest = finalProseCache.keys().next().value as string;
+    const dropped = finalProseCache.get(oldest);
+    finalProseCache.delete(oldest);
+    finalProseCacheChars -= (dropped ? dropped.__html.length : 0) + oldest.length;
+  }
+  return box;
+}
+
+/** Test hook: forget every shared render. */
+export function __resetSharedProseCache(): void {
+  finalProseCache.clear();
+  finalProseCacheChars = 0;
+}
+
+/**
  * A finalized turn's prose can still carry tool-row markup when the message
  * was stored before this renderer existed, so every text segment passes through
  * stripLegacyToolHtml — but rendering markdown is expensive enough that the
@@ -90,7 +152,9 @@ function useProseRenderer(live: boolean): {
       const key = live ? 'l' + text : 'f' + text;
       const hit = cache.get(key);
       if (hit !== undefined) return hit;
-      const box = { __html: paint(text, true) };
+      const box = live
+        ? { __html: paint(text, true) }
+        : sharedFinalProse(text, () => paint(text, true));
       /* Evict the oldest half rather than clear(): a wholesale clear hands
          every still-mounted settled div a fresh {__html} object on the next
          render, and React rewrites all of their innerHTML in one frame —

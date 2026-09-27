@@ -674,8 +674,10 @@ body.workspace-active #appShell .main-page {
     padding-left: var(--app-sidebar-width, 260px) !important;
   }
 
-  #appShell .sidebar.collapsed ~ .main,
-  #appShell:has(.sidebar.collapsed) .main {
+  /* .sidebar is always .main's preceding sibling; the former
+     `#appShell:has(.sidebar.collapsed) .main` duplicate made every DOM
+     insertion re-style the shell (P_has-invalidation). */
+  #appShell .sidebar.collapsed ~ .main {
     padding-left: 0 !important;
   }
 
@@ -956,12 +958,13 @@ body.workspace-active #appShell .main-page {
   /* The React directory mounts inside #pluginsPanel, whose scroll container
      would otherwise clip fixed page chrome. Keep the page scroll on the
      list itself so workspace content stays in the reference top position. */
-  body.workspace-active:has(#pluginsPanel:not(.hidden)) #appShell #mainContent,
+  :where(:root[data-plugins-panel-open]) body.workspace-active:not(#_n):not(._n) #appShell #mainContent,
   #appShell #pluginsPanel[data-live-directory="true"] {
     overflow: visible !important;
   }
 
-  body.workspace-active:has(#pluginsPanel:not(.hidden)) #appShell #mainContent {
+  /* P_has-invalidation — see ui/layoutStateMirror.js. */
+  :where(:root[data-plugins-panel-open]) body.workspace-active:not(#_n):not(._n) #appShell #mainContent {
     position: relative !important;
     z-index: 10 !important;
   }

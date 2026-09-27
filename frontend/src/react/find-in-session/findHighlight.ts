@@ -56,7 +56,9 @@ function highlightTextNodes(query: string): { matchCount: number } {
   _findQuery = query;
   const list = msgList();
   if (!_findQuery || !list) return { matchCount: 0 };
-
+  /* P_progressive-mount — a freshly opened long session mounts its older rows
+     over a few idle frames; search the whole transcript, not just the tail. */
+  try { window.__socratesFlushMessageRows?.(); } catch (_) { /* list not mounted */ }
   const needle = _findQuery.toLowerCase();
   const textNodes: Text[] = [];
   const bodies = list.querySelectorAll('.msg-body');

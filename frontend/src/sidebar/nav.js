@@ -200,8 +200,15 @@ function bindPluginWorkspaceTabs() {
   if (!pluginsTab || !skillsTab || !tabs || tabs.dataset.bound === "true") return;
   tabs.dataset.bound = "true";
 
+  var lastSkillsOpen = null;
   function syncSelection() {
     var skillsOpen = !!document.getElementById("promptTemplatesOverlay");
+    /* P_nav-observer-cheap — the observer below fires for every DOM change
+       anywhere in the document (each streamed token, each history row).
+       Only touch the tabs when the answer actually changed; rewriting the
+       same classes/attributes on every frame kept restyling them. */
+    if (skillsOpen === lastSkillsOpen) return;
+    lastSkillsOpen = skillsOpen;
     pluginsTab.classList.toggle("active", !skillsOpen);
     skillsTab.classList.toggle("active", skillsOpen);
     pluginsTab.setAttribute("aria-selected", String(!skillsOpen));

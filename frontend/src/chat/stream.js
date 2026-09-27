@@ -172,6 +172,10 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
          the body (the route also accepts ?turnId=). */
       try{
         if(opts&&typeof opts.turnId==="string"&&opts.turnId)apiBody.turnId=opts.turnId;
+        /* P_prep-parallel — let the stream request create the turn itself
+           (idempotent on clientTurn.id), instead of a separate POST
+           /api/chat-turns round-trip before the stream may start. */
+        else if(opts&&opts.clientTurn&&typeof opts.clientTurn.id==="string")apiBody.clientTurn=opts.clientTurn;
       }catch(_){}
       resp=await apiFetchRaw("/api/chat/stream",{
         method:"POST",
@@ -338,6 +342,15 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
             semanticActivity=true;
             if(opts&&typeof opts.onAgentPlan==="function"&&dataParts.length){
               try{opts.onAgentPlan(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("agent_plan",e)}
+            }
+            return;
+          }
+          /* P_prep-parallel — the server created (or re-bound) the detached
+             turn from clientTurn and reports its id. Not semantic output:
+             a retry before any content is still safe. */
+          if(evName==="turn_bound"){
+            if(opts&&typeof opts.onTurnBound==="function"&&dataParts.length){
+              try{var _tb=JSON.parse(dataParts.join("\n"));if(_tb&&typeof _tb.turnId==="string")opts.onTurnBound(_tb.turnId)}catch(e){warnBadFrame("turn_bound",e)}
             }
             return;
           }

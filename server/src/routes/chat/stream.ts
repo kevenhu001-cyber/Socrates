@@ -29,8 +29,9 @@ import {
   prepareChatRequest,
 } from './helpers.js';
 import { runChatStreamPipeline } from './pipeline/runChatStreamPipeline.js';
+import { createChatTurn } from '../../services/chatTurns.js';
 
-import type { Router } from 'express';
+import type { Request, Router } from 'express';
 
 /* A Begin flow normally awaits POST /api/sessions, but a save triggered by
  * another tab or a mobile reconnect can still race the first stream request.
@@ -70,28 +71,35 @@ export function registerStreamRoute(router: Router) {
   router.post('/stream', requireAuth, resourceScope('chat'), chatRateLimitDispatch, async (req, res, next) => {
     try {
       const sessionIdFromQuery = parseChatSessionId(req.query.sessionId ?? req.body?.sessionId);
-      if (sessionIdFromQuery) {
-        await requireOwnedSessionAfterSave(sessionIdFromQuery, req.userId!);
-      }
       const projectIdFromBody = typeof req.body?.projectId === 'string' ? req.body.projectId : null;
 
-      /* M1 async — optional detached-turn binding. The turn must belong
-       * to the caller; otherwise the run proceeds unbound (legacy path)
-       * rather than leaking another user's turn stream. */
-      let turnId: string | null = null;
-      const rawTurnId = req.query.turnId ?? req.body?.turnId;
-      if (typeof rawTurnId === 'string' && rawTurnId) {
-        if (!isUuid(rawTurnId)) throw new NotFound('Chat turn not found');
-        const [owned] = await getDb().select({ id: chatTurns.id })
-          .from(chatTurns)
-          .where(and(eq(chatTurns.id, rawTurnId), eq(chatTurns.userId, req.userId!)))
-          .limit(1);
-        if (!owned) throw new NotFound('Chat turn not found');
-        turnId = owned.id;
-      }
+      /* P_prep-parallel — the session-ownership gate, the detached-turn
+         binding and the request prelude (provider, RAG, memories, …) are
+         independent reads, and they used to run one after another before the
+         first upstream byte. Start them together.
 
-      const prep = await prepareChatRequest(req, res);
-      if (!prep.ok) return;
+         The ownership gate still decides the outcome: nothing is streamed
+         unless it passes, and its error wins over anything the prelude
+         produced. The prelude writes its own error responses, so once
+         headers are out an ownership failure can only end the request. */
+      const ownershipPromise: Promise<unknown> = sessionIdFromQuery
+        ? requireOwnedSessionAfterSave(sessionIdFromQuery, req.userId!)
+        : Promise.resolve(null);
+      const turnPromise = resolveTurnBinding(req, sessionIdFromQuery, ownershipPromise);
+      /* Observed below via Promise.all; this only stops an early rejection
+         (bad turnId) from being reported as unhandled while ownership is
+         still pending. */
+      turnPromise.catch(() => {});
+      const prepPromise = ownershipPromise.then(
+        () => prepareChatRequest(req, res),
+        () => null,
+      );
+      /* Ownership must pass before the prelude runs, since the prelude may
+         write a response of its own. Chaining it keeps that guarantee while
+         the turn binding overlaps both. */
+      await ownershipPromise;
+      const [turnId, prep] = await Promise.all([turnPromise, prepPromise]);
+      if (!prep || !prep.ok) return;
 
       await runChatStreamPipeline({
         req: req as typeof req & { userId?: string },
@@ -103,4 +111,49 @@ export function registerStreamRoute(router: Router) {
       });
     } catch (err) { next(err); }
   });
+}
+
+/* M1 async — optional detached-turn binding. Two shapes:
+ *   turnId        — the client already created the turn (POST /api/chat-turns).
+ *                   It must belong to the caller.
+ *   clientTurnId  — P_prep-parallel: create-or-get the turn here instead, which
+ *                   saves the client a full round-trip before the stream can
+ *                   start. Idempotent on (user, clientTurnId), exactly like the
+ *                   standalone endpoint, so a retried request re-binds the same
+ *                   turn rather than opening a second one.
+ * A turn is only created after the session-ownership gate passed. */
+async function resolveTurnBinding(
+  req: Request,
+  sessionId: string | null,
+  ownership: Promise<unknown>,
+): Promise<string | null> {
+  const rawTurnId = req.query.turnId ?? req.body?.turnId;
+  if (typeof rawTurnId === 'string' && rawTurnId) {
+    if (!isUuid(rawTurnId)) throw new NotFound('Chat turn not found');
+    const [owned] = await getDb().select({ id: chatTurns.id })
+      .from(chatTurns)
+      .where(and(eq(chatTurns.id, rawTurnId), eq(chatTurns.userId, req.userId!)))
+      .limit(1);
+    if (!owned) throw new NotFound('Chat turn not found');
+    return owned.id;
+  }
+  const clientTurn = req.body?.clientTurn;
+  const clientTurnId = clientTurn && typeof clientTurn.id === 'string' ? clientTurn.id.trim() : '';
+  if (!clientTurnId || clientTurnId.length > 200) return null;
+  try { await ownership; } catch { return null; }
+  try {
+    const created = await createChatTurn({
+      userId: req.userId!,
+      clientTurnId,
+      sessionId,
+      model: null,
+      inputSnapshot: clientTurn.input ?? null,
+    });
+    return created.turn.id;
+  } catch (err) {
+    /* A detached turn is a resilience feature. Failing to create one
+       degrades to the legacy unbound stream, as it does on the client. */
+    console.warn('[chat/stream] detached turn binding failed:', (err as Error).message);
+    return null;
+  }
 }

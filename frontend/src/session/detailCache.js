@@ -29,8 +29,36 @@ var MAX_AGE_MS = 600_000;          // 10 min: after this a hit is treated as a m
 /* id -> { response, sig, at } ; Map preserves insertion order = LRU. */
 var _entries = new Map();
 
+/* A cached entry fetched this recently is not re-fetched in the background:
+   the same tab just read it, and every local write path (save / delete /
+   archive) invalidates it. Rapid back-and-forth switching used to pay one
+   full detail GET + JSON.parse per click. */
+var REVALIDATE_AFTER_MS = 30_000;
+
+/* Size estimate for the cap. This used to JSON.stringify the whole response
+   on every store — a multi-hundred-KB serialisation on each switch just to
+   read `.length`. The message bodies dominate the payload, so summing their
+   string fields (plus a per-row allowance for keys and small fields) is
+   within a few percent and costs nothing. */
 function serializedBytes(response) {
-  try { return JSON.stringify(response).length; } catch (_) { return Infinity; }
+  var msgs = Array.isArray(response.messages) ? response.messages : [];
+  var total = 2048;
+  for (var i = 0; i < msgs.length; i++) {
+    var m = msgs[i];
+    if (!m) continue;
+    total += 256 + (m.html ? m.html.length : 0) + (m.rawText ? m.rawText.length : 0)
+      + (m.reasoningContent ? m.reasoningContent.length : 0);
+    if (Array.isArray(m.attachments) && m.attachments.length) {
+      for (var a = 0; a < m.attachments.length; a++) {
+        var at = m.attachments[a];
+        if (at) total += 128 + (at.dataUrl ? at.dataUrl.length : 0) + (at.text ? at.text.length : 0);
+      }
+    }
+    if (Array.isArray(m.toolCalls) && m.toolCalls.length) {
+      try { total += JSON.stringify(m.toolCalls).length; } catch (_) { return Infinity; }
+    }
+  }
+  return total;
 }
 
 /**
@@ -83,6 +111,11 @@ export function invalidate(id) {
   if (id != null) _entries.delete(id);
 }
 
+/** True when a live entry was fetched too recently to be worth re-checking. */
+export function isFresh(entry) {
+  return !!entry && (Date.now() - entry.at) < REVALIDATE_AFTER_MS;
+}
+
 export function has(id) {
   var e = _entries.get(id);
   return !!e && (Date.now() - e.at <= MAX_AGE_MS);
@@ -91,7 +124,7 @@ export function has(id) {
 /* Test seams. */
 export function _reset() { _entries.clear(); }
 export function _size() { return _entries.size; }
-export const limits = { MAX_ENTRIES: MAX_ENTRIES, MAX_ENTRY_BYTES: MAX_ENTRY_BYTES, MAX_AGE_MS: MAX_AGE_MS };
+export const limits = { MAX_ENTRIES: MAX_ENTRIES, MAX_ENTRY_BYTES: MAX_ENTRY_BYTES, MAX_AGE_MS: MAX_AGE_MS, REVALIDATE_AFTER_MS: REVALIDATE_AFTER_MS };
 
 export const detailCache = {
   signature: signature,
@@ -99,6 +132,7 @@ export const detailCache = {
   store: store,
   invalidate: invalidate,
   has: has,
+  isFresh: isFresh,
   _reset: _reset,
   _size: _size,
   limits: limits,

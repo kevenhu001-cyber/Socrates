@@ -25,7 +25,7 @@ import { renderLinkPreviews, renderNoUrlHint } from '../ui/linkPreviews.js';
 import { getReasoningEffort } from '../ui/effortPicker.js';
 import { publishThinkingTurnStart } from '../ui/messageSnapshot.js';
 import { publishActiveWorkflowEvent, publishActiveWorkflowFinish, publishWorkspaceAgentEvent } from './toolCallbacks.js';
-import { clearPendingTurn, createChatTurn, newClientTurnId, savePendingTurn } from './turnClient.ts';
+import { clearPendingTurn, newClientTurnId, savePendingTurn } from './turnClient.ts';
 import { addMessage } from './messages.js';
 import { scheduleTurnToTopForMessage } from './turnAnchor.ts';
 import { saveCurrentSession } from '../session/persistence.js';
@@ -241,25 +241,23 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
       quietTurn(retryTurn());
     }});
   }
-  /* M1 async — create the detached turn before streaming so a socket
-     drop mid-turn leaves a resumable server-side run. Best-effort:
-     a failed create falls back to the legacy unbound stream. The
-     pending pointer survives reloads; it is cleared on finish/cancel
-     below and re-attached by loadSession when still open. */
-  var _turnId=null;
+  /* M1 async — bind the turn to a detached server-side run so a socket drop
+     mid-turn leaves a resumable run. The pending pointer survives reloads;
+     it is cleared on finish/cancel below and re-attached by loadSession when
+     still open.
+     P_prep-parallel — the stream request itself creates the turn (from
+     clientTurn, idempotent on its id) and reports it back with a
+     `turn_bound` event. This used to be an awaited POST /api/chat-turns in
+     front of every send: one full round-trip before the model could even
+     be asked. A server that predates clientTurn simply streams unbound,
+     which is the same degradation a failed create always had. */
   var _turnSessionId=stateStore.read("currentSessionId")||null;
-  try{
-    var _clientTurnId=newClientTurnId();
-    var _created=await createChatTurn({
-      clientTurnId:_clientTurnId,
-      sessionId:_turnSessionId,
-      input:{ text:String(userText||"").slice(0,20000) },
-    });
-    if(_created&&_created.turn&&_created.turn.id){
-      _turnId=_created.turn.id;
-      if(_turnSessionId)savePendingTurn(_turnSessionId,{turnId:_turnId,clientTurnId:_clientTurnId,lastSeq:0});
-    }
-  }catch(_){_turnId=null}
+  var _clientTurnId=newClientTurnId();
+  var _clientTurn={id:_clientTurnId,input:{text:String(userText||"").slice(0,20000)}};
+  var _onTurnBound=function(turnId){
+    if(!turnId)return;
+    try{if(_turnSessionId)savePendingTurn(_turnSessionId,{turnId:turnId,clientTurnId:_clientTurnId,lastSeq:0});}catch(_){}
+  };
   /* P_inline-tools — tool status is now carried by the inline
      .tool-inline rows inside the bubble (created via the streaming
      controller's onInlineTool), so the transient thinking-pill label
@@ -306,7 +304,8 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
       if(!d)return;
       if(typeof ctl.recordToolCallDelta==="function")ctl.recordToolCallDelta(d);
     },
-    turnId:_turnId,
+    clientTurn:_clientTurn,
+    onTurnBound:_onTurnBound,
   });
   handleChatApiResult(result,ctl,userText,retryTurn);
   /* M1 async — finish/cancel consume the pending pointer; a transport

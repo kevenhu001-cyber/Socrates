@@ -215,7 +215,8 @@
     text-align: center !important;
   }
 
-  body:not([data-conversation-active="true"]):not(.workspace-active):has(#sidebar.collapsed)
+  /* P_has-invalidation — see ui/layoutStateMirror.js. */
+  :where(:root[data-sidebar-collapsed]) body:not([data-conversation-active="true"]):not(.workspace-active):not(#_n):not(._n)
     #appShell#appShell#appShell #topicDisclaimer {
     left: 16px !important;
   }

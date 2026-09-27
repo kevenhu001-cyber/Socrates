@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  signature, lookup, store, invalidate, has, _reset, _size, limits,
+  signature, lookup, store, invalidate, has, _reset, _size, limits, detailCache,
 } from '../src/session/detailCache.js';
 
 /* session/detailCache.js is pure in-memory state; reset between tests so the
@@ -74,4 +74,21 @@ test('signature changes when messages are added, edited in place, or a title mov
   assert.notEqual(signature(edited), s0);
   const retitled = { ...base, title: 'T2' };
   assert.notEqual(signature(retitled), s0);
+});
+
+test('isFresh: a just-stored entry skips background revalidation, an older one does not', () => {
+  _reset();
+  store('F', { id: 'F', kind: 'chat', messages: [] });
+  const entry = lookup('F');
+  assert.equal(detailCache.isFresh(entry), true);
+  entry.at = Date.now() - limits.REVALIDATE_AFTER_MS - 1;
+  assert.equal(detailCache.isFresh(entry), false);
+  assert.equal(detailCache.isFresh(null), false);
+});
+
+test('size cap counts attachment payloads, not only message html', () => {
+  _reset();
+  const dataUrl = 'data:image/png;base64,' + 'A'.repeat(limits.MAX_ENTRY_BYTES);
+  store('I', { id: 'I', kind: 'chat', messages: [{ id: 'm', html: '<p>x</p>', attachments: [{ kind: 'image', dataUrl }] }] });
+  assert.equal(has('I'), false);
 });

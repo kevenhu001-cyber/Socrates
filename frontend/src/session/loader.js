@@ -33,7 +33,6 @@ import {
   subscribeChatTurnEvents,
 } from '../chat/turnClient.ts';
 import { scrollContainer } from '../ui/scroll.js';
-import { startHistoryUpgrade } from './historyUpgrade.js';
 import { detailCache } from './detailCache.js';
 import { seedSyncedMessages } from './persistence.js';
 import { toggleChatTopBarEls, toggleShareBtn } from '../ui/share.js';
@@ -640,23 +639,20 @@ export async function loadSession(id){
     var sc=scrollContainer();
     sc.scrollTop=sc.scrollHeight;
     publishReactChatRuntime({type:"state-synced",reason:"session-loaded"});
-    /* P_history-slice — the stored snapshots painted above; now re-render
-       each assistant message from its canonical rawText so the current
-       scaffold / widget / visualization renderers upgrade the history without
-       one long task at load. session/historyUpgrade.js drives that queue
-       viewport-first (newest turns on the animation clock, off-screen older
-       turns on the idle clock) and guards on session id + slot identity so a
-       mid-drift switch abandons it. */
-    startHistoryUpgrade(s.id, restoredMessages, {
-      stateStore: stateStore,
-      buildAssistantHtml: buildAssistantHtml,
-      publish: publishReactChatRuntime,
-    });
+    /* P_history-slice (retired) — this used to re-run buildAssistantHtml over
+       every restored assistant turn in background slices and patch the result
+       into message.html. Every such row is rendered declaratively from rawText
+       by react/tool-run/AssistantTurn, which never reads message.html, so the
+       rebuild was invisible — yet it doubled the markdown/KaTeX/DOMPurify work
+       of each switch, re-rendered every row once more as the patches landed,
+       and changed each row's html fingerprint, so the first save after every
+       switch re-uploaded the whole transcript instead of a delta. */
     /* P2 reconcile — a cache-hit paint may be stale. Fetch the live detail in
        the background; refresh the cache always, and re-run loadSession (cache
        bypassed) only when the server copy actually differs. No-op on a miss
-       (that fetch already stored the current copy) and for exam sessions. */
-    if(_cachedDetail && s.kind!=="exam"){
+       (that fetch already stored the current copy), for exam sessions, and for
+       an entry this tab fetched less than REVALIDATE_AFTER_MS ago. */
+    if(_cachedDetail && s.kind!=="exam" && !detailCache.isFresh(_cachedDetail)){
       var _paintedSig=_cachedDetail.sig;
       Promise.resolve().then(function(){
         return apiFetch("/api/sessions/"+encodeURIComponent(id));

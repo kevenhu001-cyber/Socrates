@@ -96,12 +96,24 @@ function _isConversationActive() {
      are no messages, so msgList.children.length > 0 is always true
      after React mounts. Skip the placeholder when checking for real
      conversation messages. */
-  if (msgList && Array.from(msgList.children).some(function (c) { return !c.hasAttribute('data-react-message-list-empty'); })) return true;
+  if (msgList) {
+    /* First real child decides it — no need to copy the whole list. */
+    for (var c = msgList.firstElementChild; c; c = c.nextElementSibling) {
+      if (!c.hasAttribute('data-react-message-list-empty')) return true;
+    }
+  }
   return false;
 }
 
+var _lastActive = null;
+
 export function syncConversationActive() {
   var active = _isConversationActive();
+  /* P_mode-switch-cheap — this runs on every #msgList child mutation (each
+     history chunk, each sent message). Nothing to do when the answer did not
+     change. */
+  if (active === _lastActive) return;
+  _lastActive = active;
   try {
     document.body.setAttribute("data-conversation-active", active ? "true" : "false");
   } catch (_) {}
@@ -115,8 +127,12 @@ export function syncConversationActive() {
 }
 
 function _applyModeSwitchVisibility(hidden) {
-  var els = document.querySelectorAll("#modeSegmentedTop, #mobileMode");
+  /* getElementById, not querySelectorAll("#a, #b"): a selector LIST has no
+     id fast path in Blink and walks the entire document — tens of thousands
+     of nodes once a long transcript is mounted. */
+  var els = [document.getElementById("modeSegmentedTop"), document.getElementById("mobileMode")];
   for (var i = 0; i < els.length; i++) {
+    if (!els[i]) continue;
     try {
       els[i].style.setProperty("display", hidden ? "none" : "", "important");
     } catch (_) {}
@@ -126,9 +142,13 @@ function _applyModeSwitchVisibility(hidden) {
 /* P_hide-mode-switch-in-conversation — wire a MutationObserver on
    msgList so the body attribute flips automatically when messages are
    added or cleared (covers loadSession, resetApp, appendMessage). */
+var _watching = false;
 function _watchMsgList() {
   var msgList = document.getElementById("msgList");
-  if (!msgList || typeof MutationObserver === "undefined") return;
+  /* Both the DOMContentLoaded listener and the readyState branch below can
+     run for a module script, which used to install two observers. */
+  if (_watching || !msgList || typeof MutationObserver === "undefined") return;
+  _watching = true;
   try {
     new MutationObserver(function () {
       try { syncConversationActive(); } catch (_) {}

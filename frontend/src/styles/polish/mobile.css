@@ -37,7 +37,7 @@
      lower half of the viewport; the resting 35% anchor already clears the
      keyboard band, so no re-anchoring is needed. No shrink, no dim, no
      jump. */
-  :root:has(#topicInputWrap:focus-within) #appShell#appShell #topicTitle.greeting,
+  :root[data-topic-input-focus]:not(#_n) #appShell#appShell #topicTitle.greeting,
   :root[data-keyboard-open="true"] #appShell#appShell #topicTitle.greeting,
   :root[data-keyboard-phase="opening"] #appShell#appShell #topicTitle.greeting,
   :root[data-keyboard-phase="open"] #appShell#appShell #topicTitle.greeting,

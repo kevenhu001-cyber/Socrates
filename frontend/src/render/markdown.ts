@@ -1099,15 +1099,28 @@ function _formatMsg(t: string): string {
 
   if (typeof window !== 'undefined' && typeof window.renderMathInElement === 'function'
      && typeof document !== 'undefined') {
+    /* Sanitize BEFORE the detached host parses the markup. Setting
+       innerHTML starts resource loads and fires their error handlers
+       even when the node is not in the document, so an
+       `<img onerror=…>` payload would run against the live page
+       before the final sanitize pass. */
+    const clean = sanitizeHtml(html);
+    /* P_single-sanitize — the auto-render pass exists for math the regex
+       passes above did not claim. With no delimiter left in the markup it
+       cannot change anything, and `clean` is already the final sanitized
+       output — so skip the detached re-parse and the second DOMPurify run,
+       which together were ~half the cost of rendering a KaTeX-heavy answer.
+       Any delimiter at all (a literal "$5" included) takes the full path. */
+    if (!/\$|\\\(|\\\[/.test(clean)) {
+      return clean.replace(msgVizRe, function (_, id: string) {
+        return vizBlocks[parseInt(id)];
+      });
+    }
     try {
       const _arHost = document.createElement('div');
-      /* Sanitize BEFORE the detached host parses the markup. Setting
-         innerHTML starts resource loads and fires their error handlers
-         even when the node is not in the document, so an
-         `<img onerror=…>` payload would run against the live page
-         before the final sanitize pass. The final sanitize below still
-         runs (idempotent) to cover this pass's own output. */
-      _arHost.innerHTML = sanitizeHtml(html);
+      /* The final sanitize below still runs (idempotent) to cover this
+         pass's own output. */
+      _arHost.innerHTML = clean;
       window.renderMathInElement(_arHost, {
         delimiters: [
           { left: '$$', right: '$$', display: true },

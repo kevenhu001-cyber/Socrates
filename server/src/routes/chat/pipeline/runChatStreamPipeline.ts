@@ -57,6 +57,11 @@ import type {ChatStreamPipelineContext, PreparedCall, ToolCall, ToolCallDelta,} 
 export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Promise<void> {
   const { req, res, prep, sessionIdFromQuery, projectIdFromBody, turnId } = ctx;
   const { messages: finalMessages, provider, safeExtraBody, mode, temperature, maxTokens, reasoning_effort, responseSpeed } = prep.payload;
+  /* P_prep-parallel — the tool context (connector snapshots) only depends on
+     the request; start loading it now so it overlaps the SSE priming and the
+     turn bookkeeping below instead of queuing behind them. */
+  const toolCtxPromise = createStreamToolContext(req, mode);
+  toolCtxPromise.catch(() => {});
 
   // Set SSE headers
   res.writeHead(200, {
@@ -150,6 +155,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
    * keep landing in chat_turn_events, and the client re-attaches with
    * ?after=. Without a turn binding the legacy behaviour stands (abort). */
   let sseDetached = false;
+  let turnRunning: Promise<unknown> = Promise.resolve();
 
   /* Throttled turn checkpoint: fullText/fullReasoning are mirrored onto
    * the turn row so a re-attaching client can bootstrap without replaying
@@ -263,8 +269,16 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
       innerFatal(err);
       tap('turn_failed', { error: err.message });
     };
-    await setChatTurnStatus(turnId, 'running').catch(() => {});
-    await publishChatTurnEvent(turnId, 'turn_started', {
+    /* Tell the client which turn it is bound to, so it can re-attach after
+       a reload (clients that created the turn themselves already know; older
+       clients ignore an unknown event). */
+    emitter.event('turn_bound', { turnId });
+    /* P_prep-parallel — bookkeeping, not a precondition for the first token.
+       publishChatTurnEvent sequences per turn, so turn_started still lands
+       before any content event; the terminal status writes below wait for
+       `turnRunning` so a fast turn cannot be overwritten back to running. */
+    turnRunning = setChatTurnStatus(turnId, 'running').catch(() => {});
+    publishChatTurnEvent(turnId, 'turn_started', {
       sessionId: sessionIdFromQuery,
       model: provider.model,
     }).catch(() => {});
@@ -292,7 +306,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
    * previously lost whenever one malformed argument object appeared
    * twice. Every threshold is environment-tunable.
    * ───────────────────────────────────────────────────────────── */
-  const toolCtx = await createStreamToolContext(req, mode);
+  const toolCtx = await toolCtxPromise;
   const { toolPolicy, toolRegistry, toolDefs, toolNames, schemaForTool, toolExamples, FUZZY_SAFE, connectorConnectionsByProvider, projectConnectorConnectionsByProvider } = toolCtx;
   const MAX_TOOL_ITERATIONS = toolCtx.MAX_TOOL_ITERATIONS;
   const runToolCall = createToolRunner({
@@ -485,6 +499,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
         // An explicit Stop already flipped the row to interrupted via the
         // interrupt endpoint; don't overwrite it with failed.
         if (abortController.signal.reason !== 'turn_interrupted') {
+          await turnRunning;
           await setChatTurnStatus(turnId, 'failed', {
             fullText: fullText || null,
             fullReasoning: fullReasoning || null,
@@ -792,6 +807,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
   if (turnId) {
     clearTurnTimer();
     checkpointTurn();
+    await turnRunning;
     await setChatTurnStatus(turnId, 'completed', {
       fullText: fullText || null,
       fullReasoning: fullReasoning || null,

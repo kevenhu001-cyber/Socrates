@@ -92,7 +92,7 @@
      absolutely-centred greeting would otherwise stay painted in the
      middle of the black band. The focused attribute covers both the
      overlay and layout-resize keyboard modes. */
-  :root:has(#topicInputWrap:focus-within) #appShell#appShell #topicTitle.greeting,
+  :root[data-topic-input-focus]:not(#_n) #appShell#appShell #topicTitle.greeting,
   :root[data-keyboard-open="true"] #appShell#appShell #topicTitle.greeting,
   :root[data-keyboard-phase="opening"] #appShell#appShell #topicTitle.greeting,
   :root[data-keyboard-phase="open"] #appShell#appShell #topicTitle.greeting,

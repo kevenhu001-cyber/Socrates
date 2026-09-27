@@ -14,7 +14,8 @@
 
 /* ChatGPT-like empty state: quiet background, centered greeting, and a
    single broad composer that reads as the primary action. */
-.main:has(#topicSetup:not(.hidden)) .main-bg{opacity:.1}
+/* P_has-invalidation — see ui/layoutStateMirror.js. */
+:where(:root[data-topic-setup-open]) .main:not(#_n):not(._n) .main-bg{opacity:.1}
 .top-bar{
   padding-top:max(8px,env(safe-area-inset-top,0px));
   padding-left:max(14px,env(safe-area-inset-left,0px));
@@ -131,7 +132,7 @@
   :root[data-keyboard-phase="opening"] #topicDisclaimer,
   :root[data-keyboard-phase="open"] #topicDisclaimer,
   :root[data-keyboard-phase="closing"] #topicDisclaimer{visibility:hidden}
-  :root:has(#topicInputWrap:focus-within) #topicDisclaimer{visibility:hidden}
+  :root[data-topic-input-focus]:not(#_n) #topicDisclaimer{visibility:hidden}
   @media(max-height:700px){
     #topicDisclaimer{visibility:hidden}
   }

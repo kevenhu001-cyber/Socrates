@@ -45,14 +45,25 @@ async function loadConnectorSnapshots(userId?: string): Promise<{
   if (!userId) return { connectorConnectionsByProvider, projectConnectorConnectionsByProvider };
   try {
     const db = getDb();
-    const rows = await db.select().from(connectorConnections)
-      .where(and(eq(connectorConnections.userId, userId), eq(connectorConnections.status, 'connected')));
-    for (const row of rows) {
-      connectorConnectionsByProvider[row.provider] = row;
+    /* P_prep-parallel — two independent reads on the path to the first
+       upstream token; issue them together. A failure in one still leaves the
+       other's connectors available, as before. */
+    const [personal, project] = await Promise.allSettled([
+      db.select().from(connectorConnections)
+        .where(and(eq(connectorConnections.userId, userId), eq(connectorConnections.status, 'connected'))),
+      db.select().from(projectConnectorConnections)
+        .where(and(eq(projectConnectorConnections.userId, userId), eq(projectConnectorConnections.status, 'connected'))),
+    ]);
+    if (personal.status === 'fulfilled') {
+      for (const row of personal.value) connectorConnectionsByProvider[row.provider] = row;
+    } else {
+      console.error('[chat/stream] failed to load connector connections:', (personal.reason as Error)?.message);
     }
-    const projectRows = await db.select().from(projectConnectorConnections)
-      .where(and(eq(projectConnectorConnections.userId, userId), eq(projectConnectorConnections.status, 'connected')));
-    for (const row of projectRows) projectConnectorConnectionsByProvider[row.provider] = row;
+    if (project.status === 'fulfilled') {
+      for (const row of project.value) projectConnectorConnectionsByProvider[row.provider] = row;
+    } else {
+      console.error('[chat/stream] failed to load project connector connections:', (project.reason as Error)?.message);
+    }
   } catch (err) {
     console.error('[chat/stream] failed to load connector connections:', (err as Error).message);
     // Non-blocking — connector tools simply won't be available.

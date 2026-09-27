@@ -200,37 +200,46 @@ export async function searchSessionChunksHybrid(
   options: { limit?: number; minScore?: number } = {},
 ): Promise<RagSearchHit[]> {
   const limit = Math.max(1, Math.min(50, options.limit ?? 8));
-  const bm25Hits = await searchSessionChunks(sessionId, query, { limit });
+  /* P_prep-parallel — the two legs are independent; the vector leg usually
+     includes a remote embedding call, so running BM25 behind it (or it
+     behind BM25) put both latencies on the path to the first token. */
+  const bm25Promise = searchSessionChunks(sessionId, query, { limit });
+  const vectorPromise = (async () => {
+    try {
+      const config = await getActiveEmbeddingConfig();
+      if (!config) return null;
+      const [queryVector] = (await embedTexts([query])) || [];
+      if (!queryVector || queryVector.length !== config.dimensions) return null;
+      const db = getDb();
+      /* pgvector cosine distance: 0 = identical, 2 = opposite. We use
+         the raw distance as the vector score (lower = better) and fuse
+         with RRF so the two scales never have to be calibrated. */
+      return await db
+        .select({
+          id: sessionChunks.id,
+          messageId: sessionChunks.messageId,
+          ordinal: sessionChunks.ordinal,
+          text: sessionChunks.text,
+          distance: sql<number>`"embedding" <=> ${JSON.stringify(queryVector)}::vector`,
+        })
+        .from(sessionChunks)
+        .where(and(
+          eq(sessionChunks.sessionId, sessionId),
+          isNotNull(sessionChunks.embedding),
+        ))
+        .orderBy(sql`"embedding" <=> ${JSON.stringify(queryVector)}::vector`)
+        .limit(limit);
+    } catch (err) {
+      console.warn('[chunkIndex] hybrid vector leg failed, degrading to BM25:', (err as Error).message);
+      return null;
+    }
+  })();
+  const [bm25Hits, vectorRows] = await Promise.all([bm25Promise, vectorPromise]);
 
-  /* Vector leg. Guarded in a try/catch so any pgvector / provider
-     hiccup degrades to BM25-only. */
+  /* Vector leg. Any pgvector / provider hiccup above degraded to null,
+     which means BM25-only. */
   try {
-    const config = await getActiveEmbeddingConfig();
-    if (!config) return bm25Hits;
-    const [queryVector] = (await embedTexts([query])) || [];
-    if (!queryVector || queryVector.length !== config.dimensions) return bm25Hits;
-
-    const db = getDb();
-    /* pgvector cosine distance: 0 = identical, 2 = opposite. We use
-       the raw distance as the vector score (lower = better) and fuse
-       with RRF so the two scales never have to be calibrated. */
-    const vectorRows = await db
-      .select({
-        id: sessionChunks.id,
-        messageId: sessionChunks.messageId,
-        ordinal: sessionChunks.ordinal,
-        text: sessionChunks.text,
-        distance: sql<number>`"embedding" <=> ${JSON.stringify(queryVector)}::vector`,
-      })
-      .from(sessionChunks)
-      .where(and(
-        eq(sessionChunks.sessionId, sessionId),
-        isNotNull(sessionChunks.embedding),
-      ))
-      .orderBy(sql`"embedding" <=> ${JSON.stringify(queryVector)}::vector`)
-      .limit(limit);
-
-    if (!vectorRows.length) return bm25Hits;
+    if (!vectorRows || !vectorRows.length) return bm25Hits;
 
     /* RRF fusion. Each list contributes 1 / (k + rank) with k=60
        (standard RRF constant). A chunk that appears in both lists

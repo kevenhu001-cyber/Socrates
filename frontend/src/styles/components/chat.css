@@ -104,4 +104,17 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
     content-visibility: auto;
     contain-intrinsic-size: auto 240px;
   }
+  /* P_perf-stream-long — user rows too. Without this every streamed frame
+     in a long conversation re-laid-out and re-painted all of the user
+     bubbles (the settled assistant rows were already skipped), which halved
+     the frame rate of an answer streaming into a 200-message session.
+     The newest two rows are excluded: the send-time turn anchor measures the
+     just-submitted bubble while it may still be below the fold, and an
+     unrendered row would report the intrinsic-size estimate instead of its
+     real height. By the time a row is older than that it has been rendered,
+     so `auto` has its real size remembered. */
+  #appShell #msgList > .msg.user:nth-last-child(n + 3):not(.turn-viewport-anchor) {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 90px;
+  }
 }

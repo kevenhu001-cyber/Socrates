@@ -57,6 +57,7 @@ import { loadMemories } from './storage/memoryStore.js';
 
 import { initArtifactPreview } from './ui/artifactPreview.js';
 import { initLinkFavicons } from './ui/linkFavicons.js';
+import { installLayoutStateMirror } from './ui/layoutStateMirror.js';
 /* ui/searchProgress.js is no longer a live-chat surface: the model announces
    what it is doing through `_liveStatus` (react/tool-run/TurnStatus) instead
    of a step card prepended to the bubble. The module still serves the
@@ -82,6 +83,9 @@ initCookieConsent({ privacyUrl: 'https://topodrive.top/privacy' });
 installHomeSurface();
 initArtifactPreview();
 initLinkFavicons();
+/* P_has-invalidation — shell visibility flags on <html> replace ancestor-level
+   :has() rules that re-styled the whole app on every DOM insertion. */
+installLayoutStateMirror();
 import { toggleSidebar } from './sidebar/index.js';
 
 
