@@ -180,3 +180,13 @@ test('foldSave refreshes the LRU rank and the freshness clock', () => {
   assert.equal(detailCache.isFresh(lookup('OLD')), true, 'a folded entry counts as just read');
   assert.equal(has('MID'), true);
 });
+
+test('prefetch returns cached response immediately if already cached', async () => {
+  _reset();
+  const resp = { id: 'P1', kind: 'chat', messages: [] };
+  store('P1', resp);
+  const result = await detailCache.prefetch('P1');
+  assert.equal(result, resp);
+  assert.equal(detailCache.getInflight('P1'), null);
+});
+

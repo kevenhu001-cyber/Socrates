@@ -159,26 +159,17 @@ export async function resetApp(options){
   document.getElementById("diagnosticView").classList.add("hidden");
   document.getElementById("chatView").classList.add("hidden");
   if (typeof window.hideMainPages === "function") window.hideMainPages();
-  /* Hide the exam-only top-bar elements (#examBackBtn / #examTitleBar)
-     that openExamPanel() would have shown — the data-exam-only
-     attribute is the selector used by exam.toggleExamOnlyTopBar. */
-  document.querySelectorAll("[data-exam-only='true']").forEach(function (el) { el.classList.add("hidden"); });
-  /* Drop the exam view's body content so a stale exam title / form
-     doesn't bleed into the next view via a delayed render. */
-  var _examBody = document.getElementById("examViewBody");
-  if (_examBody) _examBody.innerHTML = "";
-  /* P_exam-reset — hide the exam view itself so topicSetup is
-     visible underneath. _examBody.innerHTML="" alone leaves the
-     .exam-view shell visible with its solid background, covering
-     the topic-setup page that was just revealed. */
-  var _examEl = document.getElementById("examView");
-  if (_examEl) _examEl.classList.add("hidden");
-  /* prepareExamView hides the main content container. Re-enable it when
-     starting a new chat from an exam or the topic composer remains hidden
-     behind an already-closed exam shell. */
-  var _mainInnerAfterExam = document.getElementById("mainInner");
-  if (_mainInnerAfterExam) _mainInnerAfterExam.classList.remove("hidden");
-  document.body.classList.remove("exam-active");
+  /* Hide the exam-only top-bar elements and container only when exam was active. */
+  if (document.body.classList.contains("exam-active")) {
+    document.querySelectorAll("[data-exam-only='true']").forEach(function (el) { el.classList.add("hidden"); });
+    var _examBody = document.getElementById("examViewBody");
+    if (_examBody) _examBody.innerHTML = "";
+    var _examEl = document.getElementById("examView");
+    if (_examEl) _examEl.classList.add("hidden");
+    var _mainInnerAfterExam = document.getElementById("mainInner");
+    if (_mainInnerAfterExam) _mainInnerAfterExam.classList.remove("hidden");
+    document.body.classList.remove("exam-active");
+  }
   toggleChatTopBarEls(false);
   clearLegacyMsgListChildren();
   /* P_app-reset-sync — the sole publishReactChatRuntime call for
@@ -224,10 +215,11 @@ export async function resetApp(options){
     try { window.syncConversationActive(); } catch (_) {}
   }
   publishReactChatRuntime({type:"state-synced",reason:"session-reset"});
-  /* Focus the topic input so the user can start typing right away. */
-  setTimeout(function(){
-    focusComposer("topic");
-  },50);
+  /* Focus the topic input immediately so the user can start typing without delay. */
+  try { focusComposer("topic"); } catch (_) {}
+  requestAnimationFrame(function(){
+    try { focusComposer("topic"); } catch (_) {}
+  });
   return true;
 }
 

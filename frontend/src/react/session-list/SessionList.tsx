@@ -6,6 +6,7 @@ import { getLegacyActions, t } from '../legacy/gateway';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { installSessionListBridge, setCurrentSessionId } from './sessionList.bridge';
 import { useSessionListSnapshot, formatRelativeTime } from './sessionList.bridge';
+import { detailCache } from '../../session/detailCache.js';
 import type { SessionItem } from './types';
 
 const TAG_ICON =
@@ -115,6 +116,8 @@ function SessionRowBase({ session, isActive, onPick, onTag, onArchive, onDelete,
       draggable
       onDragStart={(e) => onDragStart(e, session.id)}
       onDragEnd={onDragEnd}
+      onPointerEnter={() => { try { detailCache.prefetch(session.id); } catch (_) {} }}
+      onTouchStart={() => { try { detailCache.prefetch(session.id); } catch (_) {} }}
       onClick={() => onPick(session.id)}
     >
       <span
@@ -247,6 +250,13 @@ function SessionListInner() {
   const snap = useSessionListSnapshot();
   const { sessions, currentSessionId, searchQuery, filter, fetchFailed } = snap;
   const nowTick = useMinuteTick();
+
+  useEffect(() => {
+    if (sessions.length > 0) {
+      const topIds = sessions.map((s) => s.id).filter(Boolean);
+      try { detailCache.idleWarmup(topIds); } catch (_) {}
+    }
+  }, [sessions]);
 
   const handlePick = useCallback((id: string) => {
     // Optimistically flip the active row so the highlight appears on the

@@ -174,37 +174,42 @@ export async function submitChatMessage(textOverride,opts){
   }
 
   /* Assemble the model payload from the immutable snapshot after the UI has
-     committed. buildMessageContent waits for in-flight uploads
-     (waitForAttachmentsReady) so a send clicked while a file was still
-     uploading still ships its fileId — then we patch the already-visible
-     user bubble with the resolved attachment list. */
-  var built;
-  try{
-    built=(typeof buildMessageContent==="function")
-      ?await buildMessageContent(textForModel,turnAttachments)
-      :{rawText:textForModel,parts:textForModel,attachmentList:immediateAttList};
-  }catch(_){
-    built={rawText:textForModel,parts:textForModel,attachmentList:immediateAttList};
-  }
-  var chatContent=built.parts;
-  var attList=built.attachmentList||immediateAttList;
-  /* P_file-attachments — the committed user row still holds the pending
-     stubs (no fileId yet). Now that uploads resolved, patch the row in
-     place so the persisted message carries the durable file references. */
-  if(userClientId){
-    var _msgs=stateStore.read("messages");
-    for(var _mi=_msgs.length-1;_mi>=0;_mi--){
-      if(_msgs[_mi]&&_msgs[_mi].clientId===userClientId){
-        stateStore.dispatch({
-          type:"session/update-message",index:_mi,clientId:userClientId,
-          patch:{attachments:attList}
-        });
-        try{
-          if(typeof window.publishReactChatRuntime==="function"){
-            window.publishReactChatRuntime({type:"state-synced",reason:"send-attachment-patch"});
-          }
-        }catch(_){}
-        break;
+     committed. Plain text input (no attachments) takes a synchronous fast-path
+     to eliminate microtask stalls and redundant React re-renders. */
+  var chatContent;
+  var attList;
+  if(!turnAttachments.length){
+    chatContent=textForModel;
+    attList=immediateAttList;
+  }else{
+    var built;
+    try{
+      built=(typeof buildMessageContent==="function")
+        ?await buildMessageContent(textForModel,turnAttachments)
+        :{rawText:textForModel,parts:textForModel,attachmentList:immediateAttList};
+    }catch(_){
+      built={rawText:textForModel,parts:textForModel,attachmentList:immediateAttList};
+    }
+    chatContent=built.parts;
+    attList=built.attachmentList||immediateAttList;
+    /* P_file-attachments — the committed user row still holds the pending
+       stubs (no fileId yet). Now that uploads resolved, patch the row in
+       place so the persisted message carries the durable file references. */
+    if(userClientId){
+      var _msgs=stateStore.read("messages");
+      for(var _mi=_msgs.length-1;_mi>=0;_mi--){
+        if(_msgs[_mi]&&_msgs[_mi].clientId===userClientId){
+          stateStore.dispatch({
+            type:"session/update-message",index:_mi,clientId:userClientId,
+            patch:{attachments:attList}
+          });
+          try{
+            if(typeof window.publishReactChatRuntime==="function"){
+              window.publishReactChatRuntime({type:"state-synced",reason:"send-attachment-patch"});
+            }
+          }catch(_){}
+          break;
+        }
       }
     }
   }
@@ -219,7 +224,7 @@ export async function submitChatMessage(textOverride,opts){
   if(_webSearchOn()&&stateStore.read("topic")&&shouldRefreshSearch()&&shouldAutoSearchTutor(stateStore.read("topic")+" "+text)){
     fetchWebContext(stateStore.read("topic")+" "+text,{background:true});
   }
-  setTimeout(async function(){
+  var _dispatchTurn = async function(){
     /* Deep Research mode — if the extension is active, run research
        instead of a normal chat turn. Read the window-level flag set by
        pickers.js: the EXTENSIONS array is module-scoped in pickers.js
@@ -501,5 +506,10 @@ export async function submitChatMessage(textOverride,opts){
       }
     }
     updateChatStats();
-  },0);
+  };
+  if(_appMode()==="chat"){
+    _dispatchTurn();
+  }else{
+    setTimeout(_dispatchTurn,0);
+  }
 }

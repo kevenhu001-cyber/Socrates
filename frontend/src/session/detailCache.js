@@ -22,12 +22,15 @@
  * modules and to keep the unit test free of import-order concerns.
  */
 
+import { apiFetch } from '../util/api.js';
+
 var MAX_ENTRIES = 8;
 var MAX_ENTRY_BYTES = 3_000_000;   // 3 MB serialized cap per session
 var MAX_AGE_MS = 600_000;          // 10 min: after this a hit is treated as a miss
 
 /* id -> { response, sig, at } ; Map preserves insertion order = LRU. */
 var _entries = new Map();
+var _inflightPrefetches = new Map();
 
 /* A cached entry fetched this recently is not re-fetched in the background:
    the same tab just read it, and every local write path (save / delete /
@@ -108,7 +111,77 @@ export function store(id, response, sig) {
 }
 
 export function invalidate(id) {
-  if (id != null) _entries.delete(id);
+  if (id != null) {
+    _entries.delete(id);
+    _inflightPrefetches.delete(id);
+  }
+}
+
+/**
+ * Prefetch a session in the background (e.g. on pointerenter / touchstart).
+ * De-duplicates concurrent in-flight requests and avoids re-fetching cached entries.
+ */
+export function prefetch(id) {
+  if (!id || typeof id !== 'string') return Promise.resolve(null);
+  if (has(id)) {
+    var cached = lookup(id);
+    return Promise.resolve(cached ? cached.response : null);
+  }
+  if (_inflightPrefetches.has(id)) {
+    return _inflightPrefetches.get(id);
+  }
+
+  var p = Promise.resolve().then(function () {
+    if (typeof apiFetch === 'function') {
+      return apiFetch('/api/sessions/' + encodeURIComponent(id));
+    }
+    return null;
+  }).then(function (s) {
+    _inflightPrefetches.delete(id);
+    if (s && typeof s === 'object') {
+      store(id, s);
+    }
+    return s;
+  }).catch(function () {
+    _inflightPrefetches.delete(id);
+    return null;
+  });
+
+  _inflightPrefetches.set(id, p);
+  return p;
+}
+
+export function getInflight(id) {
+  return _inflightPrefetches.get(id) || null;
+}
+
+/**
+ * Preload the top-N recent sessions during browser idle time so switching is 0ms.
+ */
+export function idleWarmup(sessionIds) {
+  if (!Array.isArray(sessionIds) || !sessionIds.length) return;
+  var queue = sessionIds.filter(function (id) { return id && !has(id); }).slice(0, 3);
+  if (!queue.length) return;
+
+  var step = function () {
+    if (!queue.length) return;
+    var nextId = queue.shift();
+    prefetch(nextId).then(function () {
+      if (queue.length) {
+        if (typeof requestIdleCallback === 'function') {
+          requestIdleCallback(step, { timeout: 3000 });
+        } else {
+          setTimeout(step, 300);
+        }
+      }
+    });
+  };
+
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(step, { timeout: 3000 });
+  } else {
+    setTimeout(step, 300);
+  }
 }
 
 /* Session-level scalars a save can move. Messages are handled separately
@@ -212,7 +285,10 @@ export function has(id) {
 }
 
 /* Test seams. */
-export function _reset() { _entries.clear(); }
+export function _reset() {
+  _entries.clear();
+  _inflightPrefetches.clear();
+}
 export function _size() { return _entries.size; }
 export const limits = { MAX_ENTRIES: MAX_ENTRIES, MAX_ENTRY_BYTES: MAX_ENTRY_BYTES, MAX_AGE_MS: MAX_AGE_MS, REVALIDATE_AFTER_MS: REVALIDATE_AFTER_MS };
 
@@ -221,6 +297,9 @@ export const detailCache = {
   lookup: lookup,
   store: store,
   invalidate: invalidate,
+  prefetch: prefetch,
+  getInflight: getInflight,
+  idleWarmup: idleWarmup,
   foldSave: foldSave,
   has: has,
   isFresh: isFresh,

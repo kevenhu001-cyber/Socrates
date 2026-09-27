@@ -126,11 +126,19 @@ export function saveSessionBeforeReset(){
   if(!stateStore.read("topic"))return null;
   if(!(typeof window!=="undefined"&&window.CURRENT_USER))return null;
   if(saveState.loadingSession)return null;
-  if(deletedSessionGuard.has(stateStore.read("currentSessionId")))return null;
+  var sid=stateStore.read("currentSessionId");
+  if(deletedSessionGuard.has(sid))return null;
   if(saveState.saveInFlight){
     saveState.pendingSnapshot=captureSessionPayload();
     saveState.saveDirty=false;
     return saveState.saveInFlight;
+  }
+  if(!saveState.saveDirty && _lastPosted.id === sid){
+    var curMsgs = stateStore.read("messages") || [];
+    var synced = _syncedFor(sid);
+    if(synced && synced.size === curMsgs.length){
+      return null;
+    }
   }
   var snapshot=captureSessionPayload();
   /* P_reset-defer — park the snapshot for one tick. The pagehide beacon in

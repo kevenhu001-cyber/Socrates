@@ -277,7 +277,13 @@ export async function loadSession(id){
     if(_cachedDetail){
       s=_cachedDetail.response;
     }else{
-      s=await apiFetch("/api/sessions/"+encodeURIComponent(id), { signal: currentLoadAbort.signal });
+      var _inflight=detailCache.getInflight(id);
+      if(_inflight){
+        s=await _inflight;
+        if(!s) s=await apiFetch("/api/sessions/"+encodeURIComponent(id), { signal: currentLoadAbort.signal });
+      }else{
+        s=await apiFetch("/api/sessions/"+encodeURIComponent(id), { signal: currentLoadAbort.signal });
+      }
       /* P_stale-loadSession — a newer loadSession may have overtaken us
          during the await; skip touching (or caching) a stale response. */
       if(currentLoadAbort.signal.aborted || saveState.loadSessionId!==id) return;
@@ -381,10 +387,11 @@ export async function loadSession(id){
     /* Restore .main-inner visibility — exam-view may have hidden it. */
     var mi=document.getElementById("mainInner");
     if(mi)mi.classList.remove("hidden");
-    /* Hide exam-only top-bar elements (e.g. #examTitleBar) that may
-       still be visible if the previous session was an exam. */
-    var examEls=document.querySelectorAll("[data-exam-only='true']");
-    examEls.forEach(function(el){el.classList.add("hidden")});
+    if (document.body.classList.contains("exam-active")) {
+      var examEls=document.querySelectorAll("[data-exam-only='true']");
+      examEls.forEach(function(el){el.classList.add("hidden")});
+      document.body.classList.remove("exam-active");
+    }
     if (typeof window.hideMainPages === "function") window.hideMainPages();
     toggleChatTopBarEls(true);
     syncChatModel();
