@@ -157,6 +157,12 @@ export interface LegacyScheduled {
 
 export interface LegacyPostRender {
   processPendingMermaid(root?: HTMLElement): void;
+  /**
+   * Frame-coalesced variant of processPendingMermaid for per-row callers:
+   * many rows mounting in one commit collapse into a single global drain on
+   * the next frame. Used by MessageItem's layout effect (P_mermaid-coalesce).
+   */
+  schedulePendingMermaid?(): void;
   processPendingViz?(root?: HTMLElement): void;
   /**
    * Adopt already-rendered viz/mermaid card elements for fresh placeholders

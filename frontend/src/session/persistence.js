@@ -12,6 +12,7 @@ import { generateSessionTitle } from '../chat/sessionTitle.js';
 import { rebuildCmdKIndex } from '../ui/cmdK.js';
 import { toggleShareBtn } from '../ui/share.js';
 import { apiFetch } from '../util/api.js';
+import { detailCache } from './detailCache.js';
 
 function _t(key, fallback) {
   try {
@@ -222,8 +223,51 @@ function captureSessionPayload(){
   return payload;
 }
 
+/* P_save-dedup — the 2026-09-27 profile caught two content-identical
+ * POST /api/sessions firing at the end of a single streamed turn: several
+ * saveCurrentSession() call sites run in the same tick, and the
+ * saveState.saveDirty cascade re-runs doSave() after the first POST settles,
+ * capturing byte-identical state. Each POST is the WHOLE session (O(N) in
+ * message count, ~1 MB for a long chat) plus a PATCH + a 200-row list
+ * refresh, so the duplicate doubles the write load for nothing. Remember the
+ * signature of the last body we actually sent and skip a re-save that would
+ * post the same bytes. Any real change (new message, edited html, retitled
+ * session) moves the signature and posts normally. */
+var _lastPosted = { id: null, sig: null };
+
+function payloadSignature(payload){
+  var msgs=Array.isArray(payload.messages)?payload.messages:[];
+  var parts='';
+  for(var i=0;i<msgs.length;i++){
+    var m=msgs[i]||{};
+    parts+=(m.clientId||m.id||'')+':'+((m.html||'').length)+':'+((m.rawText||'').length)+'|';
+  }
+  return [payload.title||'', payload.phase||'', payload.topic||'',
+    msgs.length, parts, Array.isArray(payload.kbNodes)?payload.kbNodes.length:0,
+    Array.isArray(payload.mistakes)?payload.mistakes.length:0].join('#');
+}
+
 function postSession(payload){
   var sessionId=payload.id;
+  /* P_save-dedup — skip a byte-identical re-save; still advance the queue so a
+     pending snapshot / dirty flag is not stranded. */
+  var sig=payloadSignature(payload);
+  if(sessionId===_lastPosted.id && sig===_lastPosted.sig){
+    saveState.saveInFlight=null;
+    if(saveState.pendingSnapshot){
+      var queued=saveState.pendingSnapshot;
+      saveState.pendingSnapshot=null;
+      if(!deletedSessionGuard.has(queued.id)){postSession(queued);return;}
+    }
+    if(saveState.saveDirty){ saveState.saveDirty=false; doSave(); }
+    return;
+  }
+  _lastPosted.id=sessionId; _lastPosted.sig=sig;
+  /* P2 SWR — a save mutates this session's server copy, so any cached detail
+     is now stale. Drop it so the next open re-fetches (the reconcile-on-hit
+     would also catch it, but invalidating avoids ever painting the old copy).
+     Runs for the client id and the server-adopted id alike. */
+  detailCache.invalidate(sessionId);
   /* P_context-race — snapshot the session ID at capture time so the
      POST callback can detect whether a session switch happened while
      the request was in-flight. If the active session changed, the
@@ -231,6 +275,9 @@ function postSession(payload){
      session's URL / state. */
   var capturedSessionId=sessionId;
   saveState.saveInFlight=apiFetch("/api/sessions",{method:"POST",body:payload}).then(function(r){
+    /* P2 SWR — invalidate the server-adopted id too (a brand-new session is
+       created under a fresh UUID the client didn't know yet). */
+    if(r&&r.id)detailCache.invalidate(r.id);
     /* P_delete-resurrect — if this session was deleted while the
        POST was in-flight (rememberDeletedSession set a tombstone),
        do NOT adopt the server's id or update state. The server may

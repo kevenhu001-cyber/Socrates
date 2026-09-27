@@ -776,7 +776,37 @@ router.get('/:id', async (req, res, next) => {
       .limit(1);
     if (!session) throw new NotFound('Session not found');
 
-    const msgs = await db.select().from(messages)
+    /* P-H1 (2026-09-27 session-switch profile) — explicit column select that
+     * drops `content`. On the write path (POST, sessions.ts:575-577) `content`
+     * is stored as `sanitizeStoredHtml(m.html || contentRaw)` — i.e. a second
+     * serialization of essentially the same bytes as `html`. The transcript
+     * renderer (frontend session/loader.js) consumes `html` for paint and
+     * `rawText` for canonical rebuild + LLM history, and never reads `content`;
+     * carrying it doubled the detail payload for HTML-heavy sessions (~17% of
+     * the response). Every other column is kept as-is so share/export/mobile
+     * consumers are unaffected. Session-level heavy columns (kbNodes,
+     * mistakes, teachingPlan, boundariesHistory) ARE consumed by the loader and
+     * stay. */
+    const msgs = await db.select({
+      id: messages.id,
+      sessionId: messages.sessionId,
+      role: messages.role,
+      rawText: messages.rawText,
+      html: messages.html,
+      type: messages.type,
+      sources: messages.sources,
+      parentId: messages.parentId,
+      model: messages.model,
+      tokenCount: messages.tokenCount,
+      clientId: messages.clientId,
+      reasoningContent: messages.reasoningContent,
+      attachments: messages.attachments,
+      toolCalls: messages.toolCalls,
+      agentRunId: messages.agentRunId,
+      editedAt: messages.editedAt,
+      createdAt: messages.createdAt,
+    })
+      .from(messages)
       .where(eq(messages.sessionId, session.id))
       .orderBy(messages.createdAt);
 

@@ -9,6 +9,7 @@ import { saveState, rememberDeletedSession, forgetDeletedSession } from './saveS
 import { getVisibleSessions, getArchivedSessionsFrom, sweepExpiredArchivesFrom, setChatIdInURL } from './store.js';
 import { getKnownTagsFromSessions } from '../ui/recentsHelpers.js';
 import { apiFetch } from '../util/api.js';
+import { detailCache } from './detailCache.js';
 import { clearLocalMemory } from '../storage/localMemory.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { resetShareToken, toggleChatTopBarEls, toggleShareBtn } from '../ui/share.js';
@@ -157,6 +158,8 @@ export async function actuallyDeleteSession(id,ev){
      call fails, the catch handler re-fetches and re-renders. */
   serverCache.sessions=serverCache.sessions.filter(function(s){return s.id!==id;});
   clearLocalMemory(id);
+  /* P2 SWR — a deleted/archived session must not survive in the detail cache. */
+  detailCache.invalidate(id);
   _renderRecents();
   /* P_delete-resurrect — register this id with the doSave()
      tombstone set BEFORE the network round-trip. Any POST that
@@ -227,6 +230,7 @@ export async function archiveSession(id, ev){
     bounceOutOfArchivedSession();
   }
   var stamp=Date.now();
+  detailCache.invalidate(id);
   var idx=findServerSessionIndex(id);
   if(idx>=0){
     serverCache.sessions[idx].archivedAt=stamp;

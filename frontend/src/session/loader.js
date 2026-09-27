@@ -33,6 +33,8 @@ import {
   subscribeChatTurnEvents,
 } from '../chat/turnClient.ts';
 import { scrollContainer } from '../ui/scroll.js';
+import { startHistoryUpgrade } from './historyUpgrade.js';
+import { detailCache } from './detailCache.js';
 import { toggleChatTopBarEls, toggleShareBtn } from '../ui/share.js';
 import { updateSendBtn } from '../ui/topicSetup.js';
 import { clearComposer } from '../react/composer-input/controller.ts';
@@ -248,8 +250,22 @@ export async function loadSession(id){
      first, saveState.loadSessionId will have moved past ours; we check
      below and bail before touching state. */
   saveState.loadSessionId=id;
+  /* P2 stale-while-revalidate — if we painted this session before in the tab,
+     reuse the cached detail as an instant first paint and reconcile against a
+     live fetch in the background (see the tail of this try block). A miss
+     behaves exactly as before: await the network, then remember it. */
+  var _cachedDetail=detailCache.lookup(id);
   try{
-    var s=await apiFetch("/api/sessions/"+encodeURIComponent(id));
+    var s;
+    if(_cachedDetail){
+      s=_cachedDetail.response;
+    }else{
+      s=await apiFetch("/api/sessions/"+encodeURIComponent(id));
+      /* P_stale-loadSession — a newer loadSession may have overtaken us
+         during the await; skip touching (or caching) a stale response. */
+      if(saveState.loadSessionId!==id) return;
+      detailCache.store(id, s);
+    }
     ensureSessionShape(s);
     s.messages=Array.isArray(s.messages)?s.messages:[];
     /* P_stale-loadSession — if a newer loadSession() was already
@@ -619,42 +635,34 @@ export async function loadSession(id){
     sc.scrollTop=sc.scrollHeight;
     publishReactChatRuntime({type:"state-synced",reason:"session-loaded"});
     /* P_history-slice — the stored snapshots painted above; now re-render
-       each assistant message from its canonical rawText, two per frame, so
-       current scaffold / widget / visualization renderers upgrade the
-       history without one long task at load. Guards on session id + slot
-       identity so a mid-slice session switch abandons the queue. */
-    var _upgradeQueue=[];
-    restoredMessages.forEach(function(rm,idx){
-      if(rm.role==="assistant"&&rm.rawText){
-        _upgradeQueue.push({index:idx,clientId:rm.clientId,rawText:rm.rawText});
-      }
+       each assistant message from its canonical rawText so the current
+       scaffold / widget / visualization renderers upgrade the history without
+       one long task at load. session/historyUpgrade.js drives that queue
+       viewport-first (newest turns on the animation clock, off-screen older
+       turns on the idle clock) and guards on session id + slot identity so a
+       mid-drift switch abandons it. */
+    startHistoryUpgrade(s.id, restoredMessages, {
+      stateStore: stateStore,
+      buildAssistantHtml: buildAssistantHtml,
+      publish: publishReactChatRuntime,
     });
-    if(_upgradeQueue.length){
-      var _upgradeRaf=typeof requestAnimationFrame==="function"
-        ?requestAnimationFrame
-        :function(cb){return setTimeout(cb,0)};
-      var _uqi=0;
-      var _upgradeSlice=function(){
-        if(stateStore.read("currentSessionId")!==s.id)return;
-        var changed=false;
-        for(var _uqn=0;_uqn<2&&_uqi<_upgradeQueue.length;_uqn++,_uqi++){
-          var _uqt=_upgradeQueue[_uqi];
-          var _liveM=stateStore.read("messages")[_uqt.index];
-          if(!_liveM||_liveM.clientId!==_uqt.clientId)continue;
-          var _fresh;
-          try{_fresh=buildAssistantHtml(_uqt.rawText)}catch(_){continue}
-          if(_fresh&&_fresh!==_liveM.html){
-            stateStore.dispatch({
-              type:"session/update-message",index:_uqt.index,clientId:_uqt.clientId,
-              patch:{html:_fresh}
-            });
-            changed=true;
-          }
+    /* P2 reconcile — a cache-hit paint may be stale. Fetch the live detail in
+       the background; refresh the cache always, and re-run loadSession (cache
+       bypassed) only when the server copy actually differs. No-op on a miss
+       (that fetch already stored the current copy) and for exam sessions. */
+    if(_cachedDetail && s.kind!=="exam"){
+      var _paintedSig=_cachedDetail.sig;
+      Promise.resolve().then(function(){
+        return apiFetch("/api/sessions/"+encodeURIComponent(id));
+      }).then(function(fresh){
+        if(!fresh || saveState.loadSessionId!==id) return;
+        if(stateStore.read("currentSessionId")!==id) return;
+        detailCache.store(id, fresh);
+        if(detailCache.signature(fresh)!==_paintedSig){
+          detailCache.invalidate(id);
+          loadSession(id);
         }
-        if(changed)publishReactChatRuntime({type:"state-synced",reason:"history-html-upgraded"});
-        if(_uqi<_upgradeQueue.length)_upgradeRaf(_upgradeSlice);
-      };
-      _upgradeRaf(_upgradeSlice);
+      }).catch(function(){});
     }
   }catch(e){
     /* P_stale-loadSession — if a newer loadSession was requested

@@ -473,6 +473,29 @@ export function processPendingMermaid() {
   try { processPendingVizActions(); } catch (_) {}
 }
 
+/* P_mermaid-coalesce — processPendingMermaid() drains the WHOLE global
+ * _pendingMermaid queue and (via the trailing call) the viz-actions queue.
+ * It used to be invoked once per mounted React row from MessageItem's
+ * useLayoutEffect, so a single history commit of N rows ran N full scans in
+ * one layout phase — the biggest session-switch long task in the 2026-09-27
+ * profile. This scheduler collapses any number of same-frame requests into
+ * one drain on the next frame. The pending queue is module-level and
+ * survives across frames, so a deferred drain still finds every card whose
+ * element has landed in the DOM. Callers that need a synchronous pass
+ * (streaming, widget mounting) keep calling processPendingMermaid directly. */
+var _mermaidDrainScheduled = false;
+export function schedulePendingMermaid() {
+  if (_mermaidDrainScheduled) return;
+  _mermaidDrainScheduled = true;
+  var next = typeof requestAnimationFrame === 'function'
+    ? requestAnimationFrame
+    : function (cb) { return setTimeout(cb, 16); };
+  next(function () {
+    _mermaidDrainScheduled = false;
+    try { processPendingMermaid(); } catch (_) {}
+  });
+}
+
 /* Encode a doc for use as the value of the iframe's `srcdoc` and
    `data-srcdoc` attributes. The order matters: `&` MUST be replaced
    first so we don't double-encode `&lt;` into `&amp;lt;`. */

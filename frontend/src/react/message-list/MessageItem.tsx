@@ -1,4 +1,4 @@
-import { memo, useLayoutEffect } from 'react';
+import { memo, useLayoutEffect, useRef } from 'react';
 
 import { hasTurnStructure, type ToolCallRecord } from '../tool-run/toolRunModel';
 import { AssistantTurn } from '../tool-run/AssistantTurn';
@@ -53,6 +53,11 @@ function MessageItemBase({ message, textLength }: MessageItemProps) {
   const clientId = typeof message.clientId === 'string' ? message.clientId
     : typeof message.id === 'string' ? message.id
     : '';
+  /* P_msglist-query — reference to this row's .msg-body. The post-render hooks
+     used to re-locate it via a document-wide `[data-client-id=…] .msg-body`
+     query on every row; with a few hundred history rows that single-commit
+     scan is a real slice of the switch long task. A ref is free. */
+  const bodyRef = useRef<HTMLDivElement | null>(null);
   const html = typeof message.html === 'string' ? message.html : '';
   const liveMessage = message as LiveFields;
   const turnAnchorMinHeight = Number.isFinite(liveMessage._turnAnchorMinHeight)
@@ -85,15 +90,23 @@ function MessageItemBase({ message, textLength }: MessageItemProps) {
   // dataset flags) so re-running them on every React render is safe.
   useLayoutEffect(() => {
     if ((!html && !isLive) || !clientId) return;
-    const root = document.querySelector(
-      `[data-client-id="${CSS.escape(clientId)}"] .msg-body`,
-    ) as HTMLElement | null;
+    const root = bodyRef.current;
     if (!root) return;
     const pr = getLegacyActions().postRender;
     /* Reclaim rendered viz/mermaid cards BEFORE the pending queues drain:
        a placeholder adopted here must not also get a fresh handshake. */
     try { pr.reclaimVizCards?.(root); } catch (_) { /* hook unavailable */ }
-    try { pr.processPendingMermaid?.(); } catch (_) { /* hook unavailable */ }
+    /* P_mermaid-coalesce — this effect runs once per row during a single
+       history commit, but processPendingMermaid() drains the whole global
+       queue. Calling it inline made an N-row commit do N full scans in one
+       layout phase (the dominant session-switch long task). Schedule a
+       coalesced drain instead: N same-frame requests collapse into one pass
+       on the next frame, by which point every committed card element is in
+       the DOM. Fall back to the synchronous drain if the bridge is old. */
+    try {
+      if (pr.schedulePendingMermaid) pr.schedulePendingMermaid();
+      else pr.processPendingMermaid?.();
+    } catch (_) { /* hook unavailable */ }
     try { pr.processPendingViz?.(root); } catch (_) { }
     try { pr.processPendingVizActions?.(root); } catch (_) { }
     try { pr.wireCodeBlockHeaders?.(root); } catch (_) { }
@@ -205,11 +218,11 @@ function MessageItemBase({ message, textLength }: MessageItemProps) {
            `is-declarative` scopes the stylesheet block that re-enables the
            per-row meta/chevron the "screenshot-faithful" pass hid — see the
            end of styles.css. */
-        <div className="msg-body is-declarative">
+        <div className="msg-body is-declarative" ref={bodyRef}>
           <AssistantTurn message={message} live={isLive} />
         </div>
       ) : (
-        <div className="msg-body" dangerouslySetInnerHTML={{ __html: html }} />
+        <div className="msg-body" ref={bodyRef} dangerouslySetInnerHTML={{ __html: html }} />
       )}
       {/* P_finish-stream-boundary — keep the toolbar in the same React tree
           on every render. During streaming a CSS rule hides it (opacity 0,
