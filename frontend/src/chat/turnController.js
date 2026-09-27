@@ -316,5 +316,7 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
   }catch(_){}
   publishActiveWorkflowFinish(!!(result&&result.text&&String(result.text).trim()));
   updateChatStats();
-  if(stateStore.read("phase")==="chat"||(stateStore.read("topic")&&stateStore.read("kbNodes").length))saveCurrentSession();
+  if(!ctl || typeof ctl.isFinished !== "function" || !ctl.isFinished()){
+    if(stateStore.read("phase")==="chat"||(stateStore.read("topic")&&stateStore.read("kbNodes").length))saveCurrentSession();
+  }
 }

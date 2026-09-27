@@ -209,10 +209,10 @@ export function resetSessionTransients(){
    via the lookup table, but the explicit triple-write keeps window
    readers in lock-step and removes the four manual duplications
    scattered through loadSession / startSession / resetState. */
-export function setCurrentSessionId(id){
+export function setCurrentSessionId(id, silent){
   stateStore.dispatch({type:"state/set",key:"currentSessionId",value:id});
   try{window._currentSessionId=id;}catch(_){}
-  publishReactChatRuntime({type:"state-synced",reason:"session-id-changed"});
+  if(!silent) publishReactChatRuntime({type:"state-synced",reason:"session-id-changed"});
 }
 
 export async function loadSession(id){
@@ -220,15 +220,12 @@ export async function loadSession(id){
      navigation (synthetic click from mobile long-press). */
   if(serverCache.ctxMenuSessionId===id)return;
   /* P_context-race — prevent saveCurrentSession() during session
-     loading. Set BEFORE draining saveState.saveInFlight so no new save can
-     sneak in during the drain window. Without this, a save that
-     fires between the drain and saveState.loadingSession=true would capture
-     mismatched state (sessionId vs messages), causing "会话串台". */
+     loading. Set loadingSession flag immediately. Discard saveDirty on the
+     old session so any background save settles without triggering a re-save
+     over the new session's state. */
   saveState.loadingSession=true;
-  /* A history rebuild used to clear #msgList before all legacy messages
-     had been rendered.  One malformed/obsolete message could then throw
-     part-way through and leave the whole conversation blank until refresh.
-     Keep a recoverable snapshot until the new history has committed. */
+  saveState.saveDirty=false;
+  saveState.pendingSnapshot=null;
   var previousMessages=null;
   var historyRebuildStarted=false;
   /* P_save-drain-removed — this used to be
@@ -260,6 +257,12 @@ export async function loadSession(id){
   window._activeChatAbort=null;
   turnState.chatStreaming=false;
   turnState.chatStopMode=false;
+  /* Abort any in-flight loadSession fetch to save bandwidth and main-thread JSON.parse. */
+  if(saveState.loadAbortCtl){
+    try{saveState.loadAbortCtl.abort();}catch(_){}
+  }
+  var currentLoadAbort=new AbortController();
+  saveState.loadAbortCtl=currentLoadAbort;
   /* P_stale-loadSession — record the target id before the async
      fetch. If another loadSession() call races ahead and completes
      first, saveState.loadSessionId will have moved past ours; we check
@@ -275,10 +278,10 @@ export async function loadSession(id){
     if(_cachedDetail){
       s=_cachedDetail.response;
     }else{
-      s=await apiFetch("/api/sessions/"+encodeURIComponent(id));
+      s=await apiFetch("/api/sessions/"+encodeURIComponent(id), { signal: currentLoadAbort.signal });
       /* P_stale-loadSession — a newer loadSession may have overtaken us
          during the await; skip touching (or caching) a stale response. */
-      if(saveState.loadSessionId!==id) return;
+      if(currentLoadAbort.signal.aborted || saveState.loadSessionId!==id) return;
       detailCache.store(id, s);
     }
     ensureSessionShape(s);
@@ -490,7 +493,6 @@ export async function loadSession(id){
        first save after every session switch would re-upload the whole
        transcript and the delta would only ever help mid-conversation. */
     seedSyncedMessages(s.id, restoredMessages);
-    publishReactChatRuntime({ type: "state-synced", reason: "session-loaded-react" });
     /* P_recover-local-fallback — if the server response is missing
        the last assistant message (because the user refreshed before
        saveCurrentSession()'s async POST completed), try to recover it
@@ -595,7 +597,7 @@ export async function loadSession(id){
        currentSessionId pointed to the new session but
        stateStore.read("messages") still held old data — any saveCurrentSession()
        firing in that window would cross-contaminate contexts. */
-    setCurrentSessionId(s.id);
+    setCurrentSessionId(s.id, true);
     pushChatIdToURL(s.id);
     /* P_share-btn — loadSession() already had a toggleShareBtn()
        call early (before setCurrentSessionId fixed the id), but
@@ -621,9 +623,7 @@ export async function loadSession(id){
           if(m.rawText){
             txt=m.rawText;
           }else if(m.html){
-            var body=document.createElement("div");
-            body.innerHTML=m.html;
-            txt=(body.innerText||body.textContent||"").trim();
+            txt=m.html.replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
           }
           txt=txt.replace(/^Thinking\.\.\.\s*/i,"").replace(/^Thinking\s*/i,"").trim();
           if(!txt)return;
@@ -685,7 +685,7 @@ export async function loadSession(id){
     /* P_stale-loadSession — if a newer loadSession was requested
        while this one was in-flight, the error (if any) belongs to
        the stale request; don't disrupt the newer session's state. */
-    if(saveState.loadSessionId!==id) return;
+    if((currentLoadAbort && currentLoadAbort.signal.aborted) || saveState.loadSessionId!==id) return;
     /* Preserve the last stable conversation when a legacy record cannot be
        rendered.  The server copy remains untouched; this only prevents a
        transient client rendering failure from blanking the current view. */
@@ -786,7 +786,9 @@ export async function loadSession(id){
       }catch(_){}
     }
   } finally {
-    saveState.loadingSession = false;
+    if(saveState.loadSessionId===id){
+      saveState.loadingSession = false;
+    }
   }
 }
 

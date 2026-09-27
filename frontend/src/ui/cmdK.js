@@ -17,6 +17,7 @@ import { showToast } from './toast.js';
  */
 
 var _cmdKIndex = null;
+var _cmdKIndexDirty = false;
 var _cmdKIndexDocs = [];
 var _cmdKResults = [];
 var _cmdKSelected = 0;
@@ -25,11 +26,16 @@ try {
   _cmdKRecent = JSON.parse(localStorage.getItem("socrates-search-recent") || "[]") || [];
 } catch (_) { _cmdKRecent = []; }
 
+function markCmdKIndexDirty() {
+  _cmdKIndexDirty = true;
+}
+
 /* The index and the recent-query list are built from the signed-in account's
    sessions, so app/lifecycle.js drops them on user switch. `socrates-search-recent`
    goes too — otherwise the queries resurface on the next reload. */
 export function resetCmdKSearchState() {
   _cmdKIndex = null;
+  _cmdKIndexDirty = false;
   _cmdKIndexDocs = [];
   _cmdKResults = [];
   _cmdKSelected = 0;
@@ -114,7 +120,10 @@ function rebuildCmdKIndex() {
 
 function openCmdK() {
   if (!window.CURRENT_USER) return;
-  if (!_cmdKIndex) rebuildCmdKIndex();
+  if (!_cmdKIndex || _cmdKIndexDirty) {
+    rebuildCmdKIndex();
+    _cmdKIndexDirty = false;
+  }
   var overlay = document.getElementById("cmdKOverlay");
   if (overlay) overlay.classList.remove("hidden");
   var input = document.getElementById("cmdKInput");
@@ -263,4 +272,5 @@ export {
   onCmdKInput, onCmdKKey, renderCmdKResults,
   renderCmdKResultsHits,
   openCmdKResult, updateCmdKSelected,
+  markCmdKIndexDirty,
 };

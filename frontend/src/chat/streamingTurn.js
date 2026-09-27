@@ -501,6 +501,7 @@ export function addStreamingMessage(opts){
   claimLiveSearchRetry(_onSearchRetry);
   registerLiveTurnRuntime(clientId,toolRuntime);
   var ret={
+    isFinished:function(){return finished},
     recordToolUse:toolRuntime.recordToolUse,
     recordToolProgress:toolRuntime.recordToolProgress,
     recordToolCallDelta:toolRuntime.recordToolCallDelta,

@@ -15,7 +15,7 @@ import { patchSessionRow } from './recentsReconcile.js';
 import { buildBeaconPayload } from './beacon.js';
 import { buildDeltaPayload, commitSynced, createFingerprintCache, seedSynced, stateFingerprint } from './saveDelta.js';
 import { generateSessionTitle } from '../chat/sessionTitle.js';
-import { rebuildCmdKIndex } from '../ui/cmdK.js';
+import { markCmdKIndexDirty } from '../ui/cmdK.js';
 import { toggleShareBtn } from '../ui/share.js';
 import { apiFetch } from '../util/api.js';
 import { detailCache } from './detailCache.js';
@@ -176,6 +176,10 @@ function doSave(){
     saveState.saveDirty=false;
     return;
   }
+  if(saveState.loadingSession){
+    saveState.saveDirty=false;
+    return;
+  }
   if(!stateStore.read("topic"))return;
   var payload=captureSessionPayload();
   var sessionId=payload.id;
@@ -191,18 +195,8 @@ function doSave(){
   toggleShareBtn();
   /* Kick off AI title generation based on the user's first input. */
   if(!stateStore.read("sessionTitle"))generateSessionTitle();
-  /* P1.2 — rebuild the Cmd-K search index after every save so the
-     user can immediately find the message they just sent.
-     P_lag-fix — Fuse builds over SERVER_SESSIONS + stateStore.read("messages")
-     and can stall the click→paint path on the new-session click by
-     100-500ms when there are many sessions. Defer to idle time so
-     the greeting stream starts unblocked; Cmd-K still rebuilds
-     synchronously the first time it's opened (lazy guard at line 893). */
-  if(typeof requestIdleCallback==="function"){
-    requestIdleCallback(function(){rebuildCmdKIndex()},{timeout:2000});
-  }else{
-    setTimeout(function(){rebuildCmdKIndex()},0);
-  }
+  /* Mark Cmd-K search index dirty instead of rebuilding during interaction. */
+  markCmdKIndexDirty();
   /* Fire-and-forget write to server. The local SERVER_SESSIONS cache is
      refreshed on next renderRecents; we don't block the UI on the roundtrip.
      P0.0 — adopt the server's canonical session id when it differs
