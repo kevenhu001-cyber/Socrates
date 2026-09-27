@@ -8,7 +8,7 @@
 import {describe, test} from 'node:test';
 import assert from 'node:assert/strict';
 
-import {compressSessionMessages} from '../src/services/sessionCompressor.js';
+import {compressSessionMessages, __resetCompressMemo} from '../src/services/sessionCompressor.js';
 
 function makeMessages(n) {
   const out = [];
@@ -71,5 +71,66 @@ describe('sessionCompressor: over-budget histories compress', () => {
       delete process.env.SESSION_COMPRESS_DISABLE;
       delete process.env.SESSION_COMPRESS_TOKENS;
     }
+  });
+});
+
+/* P_compress-memo + P_summary-stable-id — the summary must be stable
+ * across repeated calls for the same head (so the memo can return it and
+ * so a retried turn sees an identical prompt), and the tail must always
+ * be rebuilt from the current input (so a growing conversation still
+ * returns fresh recent turns).
+ *
+ * Note on scope: the compressor is a model-input transform only. The
+ * session-save route no longer calls it, so nothing here is persisted —
+ * the stability assertions guard prompt determinism, not row identity. */
+describe('sessionCompressor: summary stability and memo safety', () => {
+  test('the synthetic summary message uses a stable clientId across calls', async () => {
+    process.env.SESSION_COMPRESS_DISABLE = '1';
+    process.env.SESSION_COMPRESS_TOKENS = '500';
+    __resetCompressMemo();
+    try {
+      const input = makeMessages(30);
+      const a = await compressSessionMessages(input);
+      const b = await compressSessionMessages(input);
+      assert.equal(a.messages[0].type, 'summary');
+      assert.equal(b.messages[0].type, 'summary');
+      /* Previously `summary-${Date.now()}` — a distinct identity per call. */
+      assert.equal(
+        a.messages[0].clientId, b.messages[0].clientId,
+        'repeated compression reuses one summary identity',
+      );
+    } finally {
+      delete process.env.SESSION_COMPRESS_DISABLE;
+      delete process.env.SESSION_COMPRESS_TOKENS;
+      __resetCompressMemo();
+    }
+  });
+
+  test('a repeated compression returns the same kept tail', async () => {
+    process.env.SESSION_COMPRESS_DISABLE = '1';
+    process.env.SESSION_COMPRESS_TOKENS = '500';
+    __resetCompressMemo();
+    try {
+      const input = makeMessages(30);
+      const a = await compressSessionMessages(input);
+      const b = await compressSessionMessages(input);
+      assert.equal(a.messages.length, b.messages.length);
+      assert.equal(
+        a.messages[a.messages.length - 1].clientId,
+        b.messages[b.messages.length - 1].clientId,
+        'the most recent turn is preserved on both passes',
+      );
+    } finally {
+      delete process.env.SESSION_COMPRESS_DISABLE;
+      delete process.env.SESSION_COMPRESS_TOKENS;
+      __resetCompressMemo();
+    }
+  });
+
+  test('short histories are never summarized and carry no summary row', async () => {
+    __resetCompressMemo();
+    const result = await compressSessionMessages(makeMessages(3));
+    assert.equal(result.didCompress, false);
+    assert.equal(result.messages.some((m) => m.type === 'summary'), false);
   });
 });

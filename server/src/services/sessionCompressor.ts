@@ -1,22 +1,33 @@
 /**
- * sessionCompressor — M3 automatic context compression.
+ * sessionCompressor — context-window compression (M3).
  *
- * When a session save carries more context than the budget, the built-in
- * (Beagle) model summarizes the older turns into one system summary
- * message; the older turns are then discarded and only the summary plus
- * the most recent turns are persisted. Oversize inline attachment payloads
- * in the summarized range are dropped (metadata kept, truncated flagged).
+ * When a conversation carries more context than the model's budget, the
+ * built-in (Beagle) model summarizes the older turns into one system
+ * message and the result is used in place of the originals, keeping the
+ * most recent turns verbatim. Oversize inline attachment payloads in the
+ * summarized range are dropped (metadata kept, truncated flagged).
+ *
+ * SCOPE — this is a MODEL-INPUT transform only. Its output is never
+ * written to the database. It used to be called from the session-save
+ * route on the belief that the summary would "replace" the older turns,
+ * but that route only upserts and never deletes, so nothing was ever
+ * discarded: every save of a long session paid a synchronous LLM call
+ * and added a summary row that then rendered next to the full transcript
+ * it claimed to replace. That call has been removed; the single live
+ * caller is routes/chat/helpers.ts, which compresses the messages handed
+ * to the model. Persisting a conversation is lossless.
  *
  * Design rules:
  *  - Built-in model only (operator-funded, never the user's own key) —
  *    same policy as the suggestions surface.
  *  - Any summarizer failure degrades to keeping the recent tail (the
- *    route-level sanitizer already guarantees the save lands, so this
- *    module must never throw a 400).
+ *    caller's own fallback keeps the turn alive, so this module must
+ *    never throw).
  *  - SESSION_COMPRESS_DISABLE=1 forces the dumb tail-only path (tests
- *    and operators that want zero LLM spend on saves).
+ *    and operators that want zero LLM spend).
  */
 
+import {createHash} from 'node:crypto';
 import {callChatCompletion} from './llm.js';
 import {getActiveApiKey} from './apiKey.js';
 import {estimateMessageTokens} from './usageTracker.js';
@@ -79,6 +90,38 @@ const SUMMARY_SYSTEM_PROMPT =
   '(3) what was already taught/explained and the user\'s mastery signals, (4) open questions or unfinished work. ' +
   'Be dense but complete. No preamble, no markdown headings — plain paragraphs and short bullets only.';
 
+/* P_compress-memo — the model-input path (routes/chat/helpers.ts) can
+   ask for the same conversation more than once (a retried turn, a
+   regenerate that re-sends the same prefix). Each of those re-derives an
+   identical head and therefore an identical summary — a full LLM round
+   trip for a result that cannot differ.
+
+   Cache the produced summary keyed by a digest of the head, so a repeat
+   request reuses it. The tail is always recomputed from the current
+   input, so a growing conversation still returns fresh recent turns.
+   Bounded to a handful of entries and time-limited, so an edit to an old
+   turn (new digest) re-summarizes. */
+const COMPRESS_MEMO_MAX = 8;
+const COMPRESS_MEMO_TTL_MS = 10 * 60 * 1000;
+const compressMemo = new Map<string, { summary: string; summaryTokens: number; headLength: number; at: number }>();
+
+/* P_summary-stable-id — the clientId carried by the synthetic summary
+   message. It is no longer persisted anywhere (see the scope note above),
+   but it stays fixed rather than time-based so that a summary handed to
+   the model is stable across the retries the memo above collapses, and
+   so any future caller that does persist it upserts one row instead of
+   appending a new one per request. */
+const SUMMARY_CLIENT_ID = 'context-summary';
+
+function headDigest(lines: string[]): string {
+  return createHash('sha256').update(lines.join('\n'), 'utf8').digest('hex');
+}
+
+/* Test seam — clears the memoized summaries. */
+export function __resetCompressMemo(): void {
+  compressMemo.clear();
+}
+
 export async function compressSessionMessages(
   input: CompressibleMessage[],
   opts: { keepTurns?: number; triggerTokens?: number } = {},
@@ -120,7 +163,7 @@ export async function compressSessionMessages(
     messages: [
       {
         role: 'system',
-        clientId: `dropped-${Date.now()}`,
+        clientId: SUMMARY_CLIENT_ID,
         rawText: `[Context notice — ${head.length} earlier messages were removed to fit the context window; no summary was available, so they are lost.]`,
         type: 'summary',
       },
@@ -148,6 +191,19 @@ export async function compressSessionMessages(
   }
   if (!provider || !provider.isBuiltIn || !provider.keyPlaintext || !provider.url || !provider.model) {
     return tailOnly();
+  }
+
+  /* P_compress-memo — return the memoized summary for this exact head
+     instead of paying for the LLM again. The tail is rebuilt below from
+     the current input, so the caller still gets fresh recent turns. */
+  const digest = headDigest(headLines);
+  const now = Date.now();
+  const memo = compressMemo.get(digest);
+  if (memo && now - memo.at < COMPRESS_MEMO_TTL_MS && memo.headLength === head.length) {
+    /* Refresh LRU position. */
+    compressMemo.delete(digest);
+    compressMemo.set(digest, { ...memo, at: now });
+    return finishWithSummary(memo.summary, memo.summaryTokens);
   }
 
   const transcript = headLines.join('\n\n').slice(0, 60000);
@@ -188,18 +244,37 @@ export async function compressSessionMessages(
   } catch {
     summaryTokens = 0;
   }
-  const summaryMessage: CompressibleMessage = {
-    role: 'system',
-    clientId: `summary-${Date.now()}`,
-    rawText: `[Context summary — ${head.length} earlier messages compressed]\n${summary}`,
-    type: 'summary',
-  };
-  return {
-    didCompress: true,
-    messages: [summaryMessage, ...tail],
-    keptTurns: tail.length + 1,
-    droppedTurns: head.length,
-    summaryTokens,
-    summarizer: 'beagle',
-  };
+  compressMemo.delete(digest);
+  compressMemo.set(digest, { summary, summaryTokens, headLength: head.length, at: Date.now() });
+  while (compressMemo.size > COMPRESS_MEMO_MAX) {
+    const oldest = compressMemo.keys().next().value;
+    if (oldest === undefined) break;
+    compressMemo.delete(oldest);
+  }
+  return finishWithSummary(summary, summaryTokens);
+
+  /* Shared tail assembly for both the freshly-summarised and the
+     memoized path. Declared as a closure so it always pairs the summary
+     with the CURRENT tail rather than a captured one. */
+  function finishWithSummary(summaryText: string, tokens: number): CompressionResult {
+    const summaryMessage: CompressibleMessage = {
+      role: 'system',
+      /* P_summary-stable-id — was `summary-${Date.now()}`, which made every
+         call mint a distinct identity. Harmless now that nothing persists
+         this, but a fixed id keeps the summary stable across the retries
+         the memo collapses, and keeps a future persisting caller on the
+         upsert-one-row path instead of appending one per call. */
+      clientId: SUMMARY_CLIENT_ID,
+      rawText: `[Context summary — ${head.length} earlier messages compressed]\n${summaryText}`,
+      type: 'summary',
+    };
+    return {
+      didCompress: true,
+      messages: [summaryMessage, ...tail],
+      keptTurns: tail.length + 1,
+      droppedTurns: head.length,
+      summaryTokens: tokens,
+      summarizer: 'beagle',
+    };
+  }
 }

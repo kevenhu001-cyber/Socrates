@@ -24,6 +24,12 @@ export var saveState = {
   /* Payload captured by saveSessionBeforeReset while another save was in
      flight; posted as soon as that request settles. */
   pendingSnapshot: null,
+  /* P_reset-defer — payload captured by saveSessionBeforeReset and scheduled
+     for the next macrotask so the new-chat click frame stays cheap. It is
+     parked here for exactly one tick, and the pagehide/visibilitychange
+     beacon below flushes it if the tab goes away inside that window —
+     otherwise the captured conversation would be lost. */
+  deferredSnapshot: null,
   loadingSession: false,
   loadSessionId: null,
 };

@@ -29,35 +29,71 @@ export interface EmbeddingProviderConfig {
   dimensions: number;
 }
 
+/* P_embed-cfg-cache — the active-provider lookup was an uncached
+   SELECT + a decrypt on EVERY call, and the indexing path calls it
+   twice per message (once directly, once inside embedTexts). A
+   back-fill of a long session therefore paid two DB round trips and
+   two decrypts per assistant message for a row that changes only
+   when an admin edits the provider. Cache it for a short TTL and
+   invalidate explicitly on any write to embedding_config. */
+const CFG_TTL_MS = 30_000;
+let cfgCache: { value: EmbeddingProviderConfig | null; at: number } | null = null;
+let cfgInFlight: Promise<EmbeddingProviderConfig | null> | null = null;
+
+/** Drop the cached provider config. Call after any embedding_config write. */
+export function invalidateEmbeddingConfigCache(): void {
+  cfgCache = null;
+  cfgInFlight = null;
+}
+
+/* Test seam — forces the next read to hit the database. */
+export function __resetEmbeddingConfigCache(): void {
+  invalidateEmbeddingConfigCache();
+}
+
 /* Read the active embedding config. Returns null when no row is
    active or the stored key cannot be decrypted — both cases the
    caller treats as "vector layer disabled". */
 export async function getActiveEmbeddingConfig(): Promise<EmbeddingProviderConfig | null> {
-  try {
-    const db = getDb();
-    const [row] = await db.select().from(embeddingConfig)
-      .where(eq(embeddingConfig.isActive, true))
-      .orderBy(desc(embeddingConfig.updatedAt))
-      .limit(1);
-    if (!row) return null;
-    let keyPlaintext: string | null = null;
-    if (row.keyCiphertext) {
-      try {
-        keyPlaintext = decrypt(row.keyCiphertext, encryptionKey());
-      } catch (err) {
-        console.error('[embedding] decrypt failed:', (err as Error).message);
-        return null;
+  const now = Date.now();
+  if (cfgCache && now - cfgCache.at < CFG_TTL_MS) return cfgCache.value;
+  /* Collapse concurrent misses into one query — the indexing loop used
+     to fan these out and they all raced on the same uncached read. */
+  if (cfgInFlight) return cfgInFlight;
+  cfgInFlight = (async (): Promise<EmbeddingProviderConfig | null> => {
+    try {
+      const db = getDb();
+      const [row] = await db.select().from(embeddingConfig)
+        .where(eq(embeddingConfig.isActive, true))
+        .orderBy(desc(embeddingConfig.updatedAt))
+        .limit(1);
+      if (!row) return null;
+      let keyPlaintext: string | null = null;
+      if (row.keyCiphertext) {
+        try {
+          keyPlaintext = decrypt(row.keyCiphertext, encryptionKey());
+        } catch (err) {
+          console.error('[embedding] decrypt failed:', (err as Error).message);
+          return null;
+        }
       }
+      return {
+        url: row.url,
+        model: row.model,
+        keyPlaintext,
+        dimensions: row.dimensions,
+      };
+    } catch (err) {
+      console.warn('[embedding] config lookup failed:', (err as Error).message);
+      return null;
     }
-    return {
-      url: row.url,
-      model: row.model,
-      keyPlaintext,
-      dimensions: row.dimensions,
-    };
-  } catch (err) {
-    console.warn('[embedding] config lookup failed:', (err as Error).message);
-    return null;
+  })();
+  try {
+    const value = await cfgInFlight;
+    cfgCache = { value, at: Date.now() };
+    return value;
+  } finally {
+    cfgInFlight = null;
   }
 }
 

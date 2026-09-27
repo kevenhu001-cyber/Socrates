@@ -46,5 +46,15 @@ test('new chat switches instantly while a session save is in flight', async ({ p
   releaseSave();
   await expect.poll(() => posted.length).toBe(2);
   expect(posted[1].topic).toBe('导数入门');
-  expect(posted[1].messages.map((m) => m.clientId)).toEqual(['u1', 'a1']);
+  /* P_incremental-save — each POST carries only the rows the server is
+     not already known to hold. The first POST sent `u1` and was
+     acknowledged before the second was built, so the second carries just
+     the newly added reply. What must hold is not "the second POST is the
+     whole transcript" any more, but "the union of every POST still
+     covers the full conversation" — nothing was lost by making the
+     bodies incremental. */
+  expect(posted[0].messages.map((m) => m.clientId)).toEqual(['u1']);
+  expect(posted[1].messages.map((m) => m.clientId)).toEqual(['a1']);
+  const sentAcrossAllPosts = [...new Set(posted.flatMap((b) => b.messages.map((m) => m.clientId)))].sort();
+  expect(sentAcrossAllPosts).toEqual(['a1', 'u1']);
 });

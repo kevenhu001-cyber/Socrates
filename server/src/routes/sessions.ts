@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { eq, and, desc, gt, isNull, sql, inArray, count } from 'drizzle-orm';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import { z } from 'zod';
 import { codeInterpreter } from '../services/codeInterpreter.js';
@@ -17,9 +17,16 @@ import { writeLimiter } from '../middleware/rateLimit.js';
 import { NotFound, Forbidden, BadRequest } from '../lib/errors.js';
 import { indexMessageChunks } from '../services/chunkIndex.js';
 import { sanitizeStoredHtml, sanitizePlainText } from '../lib/sanitize.js';
-import { compressSessionMessages } from '../services/sessionCompressor.js';
 import { getSessionLimit } from '../lib/tiers.js';
 import { isUuid } from '../lib/validate.js';
+
+/* P_chunk-dirty — md5 of the message text, matching the SQL-side
+ * `md5(coalesce(raw_text, ''))` probe used to decide whether a row's
+ * chunk index is stale. The two sides must agree exactly, so this
+ * helper is the single place that defines the digest. */
+function md5Hex(text: string): string {
+  return createHash('md5').update(text, 'utf8').digest('hex');
+}
 
 // P6.x — zod schema caps field lengths and validates types; throws
 // ZodError → errorHandler returns 400 with the offending path.
@@ -400,30 +407,33 @@ router.post('/', writeLimiter, async (req, res, next) => {
             teachingStage, currentExampleIdx, practiceAttempts, practicePhase,
             teachingPlan, boundariesHistory, mistakeFilter, branchedFrom } = SessionPayloadSchema.parse(sanitizeSessionPayload(req.body));
 
-    /* M3 — automatic context compression. When the history exceeds the
-     * token budget the built-in model summarizes the older turns and the
-     * summary replaces them (older turns discarded); otherwise the tail
-     * is kept verbatim. Never blocks the save: any failure falls back
-     * to the sanitized payload above, which always fits the schema. */
-    let persistMsgs = msgs;
-    let compressed: { didCompress: boolean; keptTurns: number; droppedTurns: number; summaryTokens: number; summarizer: string } | null = null;
-    if (Array.isArray(msgs) && msgs.length > 0) {
-      try {
-        const result = await compressSessionMessages(msgs as any[]);
-        if (result.didCompress) {
-          persistMsgs = result.messages as typeof msgs;
-          compressed = {
-            didCompress: true,
-            keptTurns: result.keptTurns,
-            droppedTurns: result.droppedTurns,
-            summaryTokens: result.summaryTokens,
-            summarizer: result.summarizer,
-          };
-        }
-      } catch (err) {
-        console.warn('[sessions] compression skipped:', (err as Error).message);
-      }
-    }
+    /* M3 — automatic context compression was REMOVED from this path.
+     *
+     * It was called here with the intent that the summary would REPLACE
+     * the older turns ("older turns discarded"). It never did: this route
+     * only ever upserts, and there is no DELETE on `messages` anywhere in
+     * the save path (the deletes live in routes/messages.ts for the
+     * explicit discardFollowing / delete-one flows, and in the whole-
+     * session teardown routes). So every message written by an earlier
+     * save stayed in the table, and compression achieved nothing except:
+     *   - one synchronous LLM round trip on EVERY save of a long session
+     *     (this route awaits it, so it sits directly on the save's
+     *     critical path and competes with the live SSE stream), and
+     *   - an extra "[Context summary — N earlier messages compressed]"
+     *     row at the top of the transcript. GET /:id has no type filter,
+     *     so that row rendered next to the full conversation it claimed
+     *     to replace.
+     *
+     * Context-window compression still happens where it belongs, purely
+     * in memory, in routes/chat/helpers.ts when building the messages
+     * sent to the model. Persisting the conversation is now lossless:
+     * what the user sees is exactly what is stored.
+     *
+     * If bounded storage is wanted later, that is a product decision
+     * about user history (delete vs. flag-and-hide), not something to
+     * smuggle in via a lossy transform on the save path.
+     */
+    const persistMsgs = msgs;
 
     /* ─── Atomic transaction ───
      * Wraps the existence check + upsert in a transaction to prevent a
@@ -438,7 +448,7 @@ router.post('/', writeLimiter, async (req, res, next) => {
      * same row lock) serialises after our check. */
     const sessionId = await db.transaction(async (tx) => {
       let sid: string;
-      let indexedRows: Array<{ id: string; rawText: string | null; role: string }> = [];
+      let indexedRows: Array<{ id: string; rawText: string | null; role: string; clientId: string | null }> = [];
       if (isUuid(id)) {
         const [owner] = await tx.select({ userId: sessions.userId })
           .from(sessions)
@@ -567,14 +577,67 @@ router.post('/', writeLimiter, async (req, res, next) => {
       // same clientId (placeholder + finalised, or a duplicate tool card)
       // throws 23505 and the POST returns 500.
       if (Array.isArray(persistMsgs) && persistMsgs.length) {
+        /* P_chunk-dirty — the sessionChunks index and its embeddings are
+           derived purely from `rawText` (see indexMessageChunks, which is
+           called with row.rawText below). A row whose rawText is unchanged
+           therefore already has a correct index, so re-indexing it is pure
+           waste — and it was not cheap: each call runs a chunk DELETE+INSERT,
+           an uncached embedding-config lookup, an external embedding round
+           trip, and up to 64 per-chunk UPDATEs, all awaited serially. On a
+           240-message session that is ~120 assistant messages × ~68 serial
+           round trips = thousands of round trips on EVERY save, competing
+           with the live SSE stream for the same pool.
+
+           Read the current md5(raw_text) for this session once — a small
+           fixed-width projection, one round trip — and re-index only the
+           rows whose text actually changed (new rows are absent from the
+           map, so they always qualify).
+
+           Two properties make this safe. (1) If the two md5
+           implementations ever disagreed, every row would look changed and
+           the route would fall back to re-indexing everything — i.e. the
+           old slow-but-correct behaviour, never a skipped update.
+           (2) A message whose text is unchanged keeps its existing
+           vectors, so enabling an embedding provider later yields vectors
+           only for new/edited messages. searchSessionChunksHybrid already
+           filters on isNotNull(embedding) and fuses with BM25 via RRF, so
+           the older messages still rank through the BM25 leg rather than
+           disappearing. Backfilling those vectors is a deliberate
+           follow-up, not something to pay for on every save. */
+        const priorRawTextHashes = new Map<string, string>();
+        try {
+          const prior = await tx
+            .select({
+              clientId: messages.clientId,
+              hash: sql<string>`md5(coalesce(${messages.rawText}, ''))`,
+            })
+            .from(messages)
+            .where(eq(messages.sessionId, sid));
+          for (const p of prior) {
+            if (p.clientId != null) priorRawTextHashes.set(p.clientId, p.hash);
+          }
+        } catch (hashErr) {
+          /* Never block the save on this optimisation. An empty map degrades
+             to the previous behaviour: every assistant row is re-indexed. */
+          console.warn('[sessions] rawText hash probe failed, re-indexing all assistant rows:',
+            (hashErr as Error).message);
+        }
         const _insertBase = Date.now();
         const rows = persistMsgs.map((m, i) => {
           const contentRaw = m.rawText || m.content || '';
+          /* P_sanitize-once — `content` was derived from the same source as
+             `html`, so calling sanitizeStoredHtml on both independently parsed
+             the identical markup twice for every message on every save. On a
+             240-message session that is 240 redundant DOM parses per turn.
+             Sanitize the html once and reuse the result; fall back to the raw
+             text only when the message carries no html. */
+          const cleanHtml = m.html ? sanitizeStoredHtml(m.html) : null;
+          const cleanContent = cleanHtml !== null ? cleanHtml : sanitizeStoredHtml(contentRaw);
           return {
             role: m.role || 'user',
-            content: sanitizeStoredHtml(m.html || contentRaw),
+            content: cleanContent,
             rawText: sanitizePlainText(contentRaw),
-            html: m.html ? sanitizeStoredHtml(m.html) : null,
+            html: cleanHtml,
             type: m.type || null,
             sources: m.sources || null,
             clientId: m.clientId || null,
@@ -670,34 +733,70 @@ router.post('/', writeLimiter, async (req, res, next) => {
             dedupedRows[prev] = r;
           }
         }
+        /* P_upsert-dirty — gate the multi-row upsert on the same probe.
+           The client re-POSTs the whole transcript on every save, so the
+           statement was rewriting all N message rows each turn even when
+           a single row had changed. Filtering to genuinely-dirty rows
+           turns a 240-row write into a 1-2 row write, and the RETURNING
+           below then yields just those rows, which is what
+           `indexedRows` (and therefore the chunk index) is built from.
+
+           A row is kept when it is new (absent from the probe map) or its
+           rawText moved. Rows WITHOUT a clientId cannot be matched
+           against the map (their conflict key is positional), so they are
+           always kept — preserving the existing legacy behaviour rather
+           than risking a dropped write.
+
+           Side effect, and a better one: `createdAt` is no longer bumped
+           for untouched messages, so a message's timestamp is its own
+           again instead of "whenever the session was last saved". Row
+           ORDER is unaffected — the client already sends
+           createdAt = base + index, so ordering was and remains
+           index-ordered. */
+        const upsertRows = dedupedRows.filter((r) => (
+          r.clientId == null
+          || priorRawTextHashes.get(r.clientId) !== md5Hex(r.rawText || '')
+        ));
         /* P_session-chunks — RETURNING covers both new inserts and
            conflict updates, so a re-save of an existing session
            re-indexes in place. The sessionChunks index is written
            outside the session transaction (see the .then() below). */
-        const upserted = await tx
-          .insert(messages)
-          .values(dedupedRows)
-          .onConflictDoUpdate({
-            target: [messages.sessionId, messages.clientId],
-            set: {
-              role: sql`EXCLUDED.role`,
-              content: sql`EXCLUDED.content`,
-              rawText: sql`EXCLUDED.raw_text`,
-              html: sql`EXCLUDED.html`,
-              type: sql`EXCLUDED.type`,
-              sources: sql`EXCLUDED.sources`,
-              reasoningContent: sql`EXCLUDED.reasoning_content`,
-              attachments: sql`EXCLUDED.attachments`,
-              toolCalls: sql`EXCLUDED.tool_calls`,
-              createdAt: sql`EXCLUDED.created_at`,
-            },
-          })
-          .returning({
-            id: messages.id,
-            rawText: messages.rawText,
-            role: messages.role,
-          });
-        indexedRows = upserted.filter((r) => r.role === 'assistant' && r.rawText);
+        if (upsertRows.length > 0) {
+          const upserted = await tx
+            .insert(messages)
+            .values(upsertRows)
+            .onConflictDoUpdate({
+              target: [messages.sessionId, messages.clientId],
+              set: {
+                role: sql`EXCLUDED.role`,
+                content: sql`EXCLUDED.content`,
+                rawText: sql`EXCLUDED.raw_text`,
+                html: sql`EXCLUDED.html`,
+                type: sql`EXCLUDED.type`,
+                sources: sql`EXCLUDED.sources`,
+                reasoningContent: sql`EXCLUDED.reasoning_content`,
+                attachments: sql`EXCLUDED.attachments`,
+                toolCalls: sql`EXCLUDED.tool_calls`,
+                createdAt: sql`EXCLUDED.created_at`,
+              },
+            })
+            .returning({
+              id: messages.id,
+              rawText: messages.rawText,
+              role: messages.role,
+              clientId: messages.clientId,
+            });
+          /* P_chunk-dirty — RETURNING only ever contains rows that were new
+             or whose rawText moved (see P_upsert-dirty), so every assistant
+             row here genuinely needs a fresh chunk index. The extra hash
+             check is kept as a cheap invariant guard: if the gate above is
+             ever loosened, this still refuses to re-index identical text. */
+          indexedRows = upserted.filter(
+            (r) => r.role === 'assistant'
+              && !!r.rawText
+              && priorRawTextHashes.get(r.clientId ?? '') !== md5Hex(r.rawText)
+          );
+        }
 
         /* P_file-session-link — adopt attachment uploads into this
          * session. Composer uploads hit POST /api/files before the
@@ -762,7 +861,36 @@ router.post('/', writeLimiter, async (req, res, next) => {
         console.warn(`[sessions] workspace initialization deferred for ${sessionId.session.id}: ${(workspaceErr as Error).message}`);
       }
     }
-    return res.status(id ? 200 : 201).json({ ...sessionId.session, compressed });
+    /* P_save-response — the client just POSTed this row, so echoing the
+       whole record back was pure waste: kbNodes / mistakes / teachingPlan /
+       boundariesHistory / examData are large JSONB blobs (hundreds of KB on
+       a mature session) and the save handler reads none of them. The one
+       field the web client actually consumes is `id` (to adopt a
+       server-minted UUID), so keep every scalar and drop the blobs. */
+    const saved = sessionId.session;
+    return res.status(id ? 200 : 201).json(saved ? {
+      id: saved.id,
+      userId: saved.userId,
+      topic: saved.topic,
+      title: saved.title,
+      phase: saved.phase,
+      mode: saved.mode,
+      kind: saved.kind,
+      totalQ: saved.totalQ,
+      currentNode: saved.currentNode,
+      teachingStage: saved.teachingStage,
+      currentExampleIdx: saved.currentExampleIdx,
+      practiceAttempts: saved.practiceAttempts,
+      practicePhase: saved.practicePhase,
+      mistakeFilter: saved.mistakeFilter,
+      branchedFrom: saved.branchedFrom,
+      pinned: saved.pinned,
+      projectId: saved.projectId,
+      archivedAt: saved.archivedAt,
+      streamingText: saved.streamingText,
+      createdAt: saved.createdAt,
+      updatedAt: saved.updatedAt,
+    } : {});
   } catch (err) { next(err); }
 });
 

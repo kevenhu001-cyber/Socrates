@@ -35,6 +35,7 @@ import {
 import { scrollContainer } from '../ui/scroll.js';
 import { startHistoryUpgrade } from './historyUpgrade.js';
 import { detailCache } from './detailCache.js';
+import { seedSyncedMessages } from './persistence.js';
 import { toggleChatTopBarEls, toggleShareBtn } from '../ui/share.js';
 import { updateSendBtn } from '../ui/topicSetup.js';
 import { clearComposer } from '../react/composer-input/controller.ts';
@@ -470,6 +471,11 @@ export async function loadSession(id){
       });
     });
     stateStore.dispatch({type:"session/replace-messages",payload:restoredMessages});
+    /* P_incremental-save — these rows are exactly what the server just
+       handed us, so record them in the save watermark. Without this the
+       first save after every session switch would re-upload the whole
+       transcript and the delta would only ever help mid-conversation. */
+    seedSyncedMessages(s.id, restoredMessages);
     publishReactChatRuntime({ type: "state-synced", reason: "session-loaded-react" });
     /* P_recover-local-fallback — if the server response is missing
        the last assistant message (because the user refreshed before
