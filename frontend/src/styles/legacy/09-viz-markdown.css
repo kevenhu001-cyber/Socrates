@@ -326,6 +326,87 @@
 .stream-cursor::before{content:"";position:absolute;inset:0;border-radius:50%;background:hsl(var(--text-200));animation:streamDotBreathe 1.5s ease-in-out infinite}
 @keyframes streamDotBreathe{0%,100%{transform:scale(.8);opacity:.45}50%{transform:scale(1.15);opacity:1}}
 
+/* P_smooth-stream cursor states.
+   - is-playing / is-draining keep the breathing dot (default ::before).
+   - is-starved (upstream stalled, buffer empty) hides the single dot and
+     shows three dots lighting up in sequence — a "waiting, still connected"
+     cue that never fabricates content. */
+.stream-cursor.is-starved{width:auto;height:auto}
+.stream-cursor.is-starved::before{display:none}
+.stream-dots{display:inline-flex;gap:3px;align-items:center;vertical-align:middle}
+.stream-dots i{width:5px;height:5px;border-radius:50%;background:hsl(var(--text-200));display:inline-block;opacity:.3;animation:streamDotsPulse 1.2s ease-in-out infinite}
+.stream-dots i:nth-child(2){animation-delay:.2s}
+.stream-dots i:nth-child(3){animation-delay:.4s}
+@keyframes streamDotsPulse{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1.1)}}
+
+/* ── P_smooth-stream visual playback ────────────────────────────────────
+   The playback clock (render/streamPlayer + packages/core) reveals the
+   answer at a steady visual rate. These animations dress that reveal:
+
+   - .stream-char : a freshly-revealed trailing glyph of the LIVE tail.
+     Per-character fade-in + slight rise + blur-dissipation. Decorated by
+     AssistantTurn.decorateTailReveal on the last text node only, so code
+     fences, formulas, and settled prose are never wrapped.
+   - .stream-block-in : a whole SETTLED block (a completed paragraph/list/
+     code block the splitter just promoted). Fades/rises in ONCE on mount —
+     never per glyph, so a code block's highlighting can't flicker.
+   - list items and code blocks get their own block-level entrances. */
+.stream-char{
+  display:inline-block;
+  animation:streamCharIn .34s cubic-bezier(.22,.61,.36,1) both;
+  will-change:opacity,transform,filter;
+}
+@keyframes streamCharIn{
+  0%{opacity:0;transform:translateY(.28em);filter:blur(3px)}
+  60%{opacity:1;filter:blur(0)}
+  100%{opacity:1;transform:translateY(0);filter:blur(0)}
+}
+
+/* New settled block: opacity 0→1, translateY(6px)→0, 180ms. Runs once as the
+   keyed div mounts (React only mounts each settled block a single time).
+   .tool-run-prose is normally display:contents (no box), which would ignore
+   the transform — restore a block box for the duration of the entrance. */
+.stream-block-in{display:block;animation:streamBlockIn .18s ease-out both}
+@keyframes streamBlockIn{
+  0%{opacity:0;transform:translateY(6px)}
+  100%{opacity:1;transform:translateY(0)}
+}
+
+/* List items appear one after another, ~80ms apart, when a settled block
+   that is a list mounts. Delay is capped so a very long list is not slow. */
+.stream-block-in ul>li,.stream-block-in ol>li{animation:streamBlockIn .18s ease-out both}
+.stream-block-in li:nth-child(1){animation-delay:0ms}
+.stream-block-in li:nth-child(2){animation-delay:80ms}
+.stream-block-in li:nth-child(3){animation-delay:160ms}
+.stream-block-in li:nth-child(4){animation-delay:240ms}
+.stream-block-in li:nth-child(5){animation-delay:320ms}
+.stream-block-in li:nth-child(6){animation-delay:400ms}
+.stream-block-in li:nth-child(n+7){animation-delay:480ms}
+
+/* Code block: the whole block fades in (never per glyph, so highlight.js
+   tokens do not flicker), then a soft left→right highlight sweep passes once
+   to signal "this just arrived". */
+.stream-block-in pre{position:relative;overflow:hidden}
+.stream-block-in pre::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(90deg,transparent 0%,hsl(var(--accent-500)/.14) 50%,transparent 100%);
+  transform:translateX(-100%);
+  animation:streamCodeSweep .6s ease-out .1s 1 forwards;
+}
+@keyframes streamCodeSweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+
+/* Tables and formulas are rendered only once the splitter has closed them
+   (isStableMarkdownPrefix), so they simply ride the block fade-in — no
+   half-parsed markup and no per-glyph animation. */
+
+@media (prefers-reduced-motion: reduce){
+  .stream-char{animation-name:none;filter:none;transform:none;opacity:1}
+  .stream-block-in{animation-name:none}
+  .stream-block-in ul>li,.stream-block-in ol>li{animation-name:none}
+  .stream-block-in pre::after{animation-name:none;background:none}
+  .stream-dots i{animation-name:none;opacity:.6}
+}
+
 /* Think block — cream/gold redesign.
    - Collapsed by default (the markup no longer carries `open` once
      streaming completes) so chain-of-thought doesn't push the real

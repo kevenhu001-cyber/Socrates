@@ -345,3 +345,8 @@ jobs:
       # reproduces on some clients and not others.
       - name: TypeScript twin conformance
         run: node --experimental-strip-types --test packages/core/src/toolRunConformance.test.ts
+
+      # Pure playback-clock logic (network-arrival vs visual-playback
+      # decoupling) also lives in packages/core with no DOM/rAF dependency.
+      - name: Playback clock tests
+        run: node --experimental-strip-types --test packages/core/src/streamPlayer.test.ts

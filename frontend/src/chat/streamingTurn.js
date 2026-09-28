@@ -20,7 +20,7 @@ import {
   setReactLiveStatus,
   updateMessageSnapshot,
 } from '../ui/messageSnapshot.js';
-import { createStreamScheduler } from '../render/streamScheduler.js';
+import { createStreamPlayer } from '../render/streamPlayer.js';
 import {
   scheduleActiveTurnToTop,
   removeSupersededStub,
@@ -52,6 +52,22 @@ function _appMode() {
     if (typeof window !== 'undefined' && window.appMode) return window.appMode;
   } catch (_) {}
   return 'chat';
+}
+/* Smooth streaming decouples the network-arrival stream from the visual
+   playback stream: upstream deltas only fill a buffer, and an adaptive
+   playback clock reveals characters at a steady visual rate so an upstream
+   burst or stall never reaches the reader as a jump or a freeze. It is on by
+   default; a kill switch (window.__socratesSmoothStream === false, or
+   localStorage 'socrates:smoothStream' === 'off') falls back to painting the
+   whole arrived text every frame — the pre-player behaviour — for debugging
+   or if a provider interaction ever misbehaves. */
+function _smoothStreamEnabled() {
+  try {
+    if (typeof window !== 'undefined' && window.__socratesSmoothStream === false) return false;
+    if (typeof localStorage !== 'undefined'
+        && localStorage.getItem('socrates:smoothStream') === 'off') return false;
+  } catch (_) {}
+  return true;
 }
 
 export function addStreamingMessage(opts){
@@ -134,6 +150,15 @@ export function addStreamingMessage(opts){
   }});
   publishReactChatRuntime({type:"stream-started",messageId:clientId});
   var full="";
+  /* P_smooth-stream — `full` is the ARRIVED text (persistence, the finish()
+     one-shot render, and tool textOffsets all index into it). `_visibleLen`
+     is how much of it the playback clock has revealed; the live bubble paints
+     `full.slice(0,_visibleLen)`. With smooth streaming off, the two are kept
+     equal so the reader sees the whole arrived text as before. `_playbackState`
+     drives the cursor animation (playing/starved/draining/done). */
+  var _smooth=_smoothStreamEnabled();
+  var _visibleLen=0;
+  var _playbackState="idle";
   /* P_reasoning-persist — accumulate reasoning_content deltas so we
      can save them to stateStore.read("messages") at finish() and include them in
      the session-save payload. Without this, chain-of-thought text
@@ -315,25 +340,53 @@ export function addStreamingMessage(opts){
 
     /* AssistantTurn paints this turn's prose from `rawText`, so this
        pass only mirrors the data and keeps the thinking panel fed.
-       Viewport position is owned by chat/turnAnchor.ts. */
+       Viewport position is owned by chat/turnAnchor.ts.
+       P_smooth-stream — the visible text is the played prefix, not the whole
+       arrived buffer, so an upstream burst/stall reaches the reader as a
+       steady reveal. `_playbackState` rides along for the cursor animation. */
     if(stillOwnsSlot()){
-      patchOwnedMessage({rawText:full},true);
-      publishReactChatRuntime({type:"stream-delta",messageId:clientId,textLength:full.length});
+      var _visible=_smooth?full.slice(0,_visibleLen):full;
+      patchOwnedMessage({rawText:_visible,_playbackState:_playbackState},true);
+      publishReactChatRuntime({type:"stream-delta",messageId:clientId,textLength:_visible.length});
     }
     if(fullReasoning||_extractThinkText(full)){
       _publishThinkingPanelLive();
     }
   }
-  /* Steady-state coalescing: push(delta) accumulates network deltas and
-     rAF-gates a single coalesced doRender() paint. The scheduler's rAF
-     seam is bound to the shared `pendingRender` slot so
-     cancelScheduledRender() teardown cancels a scheduler-queued frame
-     as before. */
-  var _streamScheduler=createStreamScheduler(
-    function(){doRender()},
-    function(){return performance.now()},
-    function(cb){pendingRender=requestAnimationFrame(cb)}
-  );
+  /* P_smooth-stream — the playback player decouples arrival from playback.
+     push(delta) only fills the buffer; onFrame reveals the played prefix at
+     an adaptive rate via doRender(). onStateChange feeds the cursor animation.
+     onDone fires after finish()'s beginDrain() flushes the buffer — that is
+     where the one-shot final render runs (set into _finishContinuation).
+     The rAF seam is bound to the shared `pendingRender` slot so
+     cancelScheduledRender() teardown cancels a player-queued frame. */
+  var _finishContinuation=null;
+  var _streamPlayer=createStreamPlayer({
+    onFrame:function(_visibleText,_frame){
+      _visibleLen=_visibleText.length;
+      _playbackState=_frame.state;
+      doRender();
+    },
+    onStateChange:function(_state){
+      _playbackState=_state;
+      /* A state flip with no revealed chars (e.g. entering starved) still
+         needs a paint so the cursor animation updates. */
+      if(!finished&&!_disposed&&stillOwnsSlot()){
+        patchOwnedMessage({_playbackState:_state},true);
+        publishReactChatRuntime({type:"stream-delta",messageId:clientId,textLength:_visibleLen});
+      }
+    },
+    onDone:function(){
+      var _cont=_finishContinuation;
+      _finishContinuation=null;
+      if(typeof _cont==="function"){try{_cont()}catch(_){}}
+    },
+    now:function(){return performance.now()},
+    raf:function(cb){pendingRender=requestAnimationFrame(cb)}
+  });
+  /* Legacy alias so cancelScheduledRender()'s teardown (which disposes the
+     stream driver) keeps working unchanged. */
+  var _streamScheduler=_streamPlayer;
 
   /* First delta renders immediately so the user sees content right away */
   var firstDelta=true;
@@ -534,22 +587,24 @@ export function addStreamingMessage(opts){
       }
       full+=delta;
       if(wasFirst){
+        /* P_smooth-stream — the first delta retires the waiting/retrying
+           status line, but the TEXT is revealed by the playback clock like
+           any other, not dumped synchronously. In fallback mode (_smooth
+           off) the player reveals everything each frame, so the behaviour
+           matches the old immediate paint. */
         var _curSt=liveMessage()&&liveMessage()._liveStatus;
         var _clearWaiting=_curSt&&(_curSt.phase==="waiting"||_curSt.phase==="retrying");
-        var _preRev1=(stateStore.read("messages")[msgIdx]&&stateStore.read("messages")[msgIdx]._toolRunRev)||0;
-        patchOwnedMessage({
-          rawText:full,
-          _liveStatus:_clearWaiting ? null : (liveMessage()&&liveMessage()._liveStatus),
-          _toolRunRev:_clearWaiting ? (_preRev1+1) : _preRev1
-        },true);
-        publishReactChatRuntime({type:"stream-delta",messageId:clientId,textLength:full.length});
-        cancelScheduledRender();
-        pendingRender=requestAnimationFrame(function(){doRender()});
-      }else{
-        /* Subsequent deltas are coalesced through _streamScheduler, which invokes
-           doRender() at the frame boundary to update store and publish events. */
-        _streamScheduler.push(delta);
+        if(_clearWaiting){
+          var _preRev1=(stateStore.read("messages")[msgIdx]&&stateStore.read("messages")[msgIdx]._toolRunRev)||0;
+          patchOwnedMessage({
+            _liveStatus:null,
+            _toolRunRev:_preRev1+1
+          },true);
+        }
       }
+      /* Every delta only fills the buffer; the player's onFrame reveals the
+         played prefix via doRender() at the frame boundary. */
+      _streamPlayer.push(delta);
       /* Hide the status pill once the streamed text passes a small
          threshold — anything shorter is almost certainly a
          "好的,让我搜一下…" preamble that the model emits before its
@@ -625,13 +680,23 @@ export function addStreamingMessage(opts){
         return;
       }
       if(finished)return;
-      /* Task 2.4 — turn end: force the coalescing scheduler to paint the
-         final accumulated text synchronously before we flip `finished`
-         (which makes doRender bail). This closes the cadence window where
-         the last delta was still sitting in the scheduler's rAF queue,
-         guaranteeing the live tail is current before finish() runs its
-         own single formatMsg pass below. */
-      _streamScheduler.flushNow();
+      /* P_smooth-stream — turn end. With smooth streaming on and buffered
+         text still unplayed, DRAIN it first: beginDrain() flushes the
+         remaining buffer at a boosted rate, and the one-shot final render
+         runs in the player's onDone (below, via _finishContinuation) so the
+         reader never sees the tail snap to full before the fade. When there
+         is nothing left to play (or _smooth is off), flush synchronously and
+         run the finish body inline exactly as before. */
+      if(_smooth&&_streamPlayer.playedLen()<_streamPlayer.totalLen()){
+        _finishContinuation=_finishBody;
+        _streamPlayer.beginDrain();
+        return;
+      }
+      _streamPlayer.flushNow();
+      _finishBody();
+
+      function _finishBody(){
+      if(finished)return;
       finished=true;
       _disposed=true;
       _publishThinkingPanelEnd();
@@ -1026,6 +1091,7 @@ export function addStreamingMessage(opts){
           }
         }
       }
+      } /* end _finishBody */
     },
     abort:function(){
       /* P_session-stream-dispose — flip the sticky flag FIRST so any

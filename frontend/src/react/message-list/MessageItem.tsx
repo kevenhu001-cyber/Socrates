@@ -33,6 +33,7 @@ type LiveFields = LegacyChatMessage & {
   _turnViewportTarget?: number;
   _katexRenderedRev?: number;
   _renderRev?: number;
+  _playbackState?: 'idle' | 'playing' | 'starved' | 'draining' | 'done';
 };
 
 function isRenderable(message: LegacyChatMessage, live: boolean): boolean {
@@ -277,6 +278,7 @@ const MessageItem = memo(MessageItemBase, (prev, next) => {
     && a._turnAnchorMarginTop === b._turnAnchorMarginTop
     && a._turnAnchorMode === b._turnAnchorMode
     && a._turnViewportTarget === b._turnViewportTarget
+    && (a as LiveFields)._playbackState === (b as LiveFields)._playbackState
   );
 });
 

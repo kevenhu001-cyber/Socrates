@@ -14,7 +14,7 @@
  * stable-prefix strategy the old imperative painter used — so a half-arrived
  * formula never leaks raw LaTeX, and completed blocks keep their DOM nodes.
  */
-import { Fragment, useMemo, useRef } from 'react';
+import { Fragment, useLayoutEffect, useMemo, useRef } from 'react';
 
 import { createSettledSplitter } from '../../render/streaming.js';
 import { getLegacyActions } from '../legacy/gateway.js';
@@ -44,9 +44,24 @@ export interface AssistantTurnProps {
   live?: boolean;
 }
 
-/** The caret the legacy painter kept outside the re-rendered tail. */
-function StreamCursor() {
-  return <span className="stream-cursor" aria-hidden="true">▍</span>;
+/** The caret the legacy painter kept outside the re-rendered tail.
+ *  P_smooth-stream — the cursor's animation follows the playback clock:
+ *  - playing / draining : a breathing dot (upstream is feeding or we are
+ *    flushing the buffer)
+ *  - starved            : upstream stalled with an empty buffer — three dots
+ *    light up in sequence to say "still connected, waiting for more"
+ *  The 300ms finish fade is a CSS concern on the settled bubble
+ *  (P_finish-stream-boundary), so a `done`/settled turn drops the cursor. */
+function StreamCursor({ state }: { state?: string }) {
+  if (state === 'starved') {
+    return (
+      <span className="stream-cursor is-starved" aria-hidden="true">
+        <span className="stream-dots"><i /><i /><i /></span>
+      </span>
+    );
+  }
+  const stateClass = state === 'draining' ? ' is-draining' : ' is-playing';
+  return <span className={`stream-cursor${stateClass}`} aria-hidden="true">▍</span>;
 }
 
 /**
@@ -214,22 +229,86 @@ interface LiveTextSegmentProps {
  * concurrent render simply replays on the next pass (same text → same
  * result), so no commit/effect dance is needed.
  */
+/**
+ * P_smooth-stream tail reveal — wrap the freshly-revealed trailing characters
+ * of the live tail in per-character spans so they can fade/rise/de-blur in.
+ *
+ * The tail HTML is produced by the markdown renderer and set via
+ * dangerouslySetInnerHTML, so we decorate at the DOM level AFTER the commit,
+ * touching only the LAST descendant text node (ordinary prose — a code fence,
+ * formula, or table is never the growing tail because the splitter keeps
+ * unclosed constructs whole). We wrap at most `TAIL_WINDOW` trailing glyphs;
+ * everything before that stays a plain text node, so KaTeX/code nodes and the
+ * already-settled prose are never rewrapped and never flicker. Because React
+ * rebuilds this node's innerHTML each frame, re-wrapping the trailing window
+ * every frame is correct: only the newest glyphs carry a running animation,
+ * and the reduced-motion guard is a pure CSS concern (see the stylesheet).
+ */
+const TAIL_WINDOW = 18;
+
+function lastTextNode(root: Node): Text | null {
+  let last: Text | null = null;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let node: Node | null = walker.nextNode();
+  while (node) {
+    if (node.textContent && node.textContent.length > 0) last = node as Text;
+    node = walker.nextNode();
+  }
+  return last;
+}
+
+function decorateTailReveal(root: HTMLElement): void {
+  const textNode = lastTextNode(root);
+  if (!textNode || !textNode.parentNode) return;
+  const value = textNode.textContent || '';
+  if (value.length === 0) return;
+  const splitAt = Math.max(0, value.length - TAIL_WINDOW);
+  const head = value.slice(0, splitAt);
+  const tail = value.slice(splitAt);
+  const frag = document.createDocumentFragment();
+  if (head) frag.appendChild(document.createTextNode(head));
+  for (let i = 0; i < tail.length; i++) {
+    const span = document.createElement('span');
+    span.className = 'stream-char';
+    /* Later glyphs start slightly later so the window reads as a left-to-right
+       reveal rather than a single block fade. Small, capped delay. */
+    span.style.animationDelay = `${Math.min(i, TAIL_WINDOW) * 12}ms`;
+    span.textContent = tail[i];
+    frag.appendChild(span);
+  }
+  textNode.parentNode.replaceChild(frag, textNode);
+}
+
 function LiveTextSegment({ text, settled, tail }: LiveTextSegmentProps) {
   const splitterRef = useRef<ReturnType<typeof createSettledSplitter> | null>(null);
   if (!splitterRef.current) splitterRef.current = createSettledSplitter();
   const split = splitterRef.current.push(text);
+  const liveRef = useRef<HTMLDivElement | null>(null);
+  const tailBox = tail(split.tail);
+  useLayoutEffect(() => {
+    const root = liveRef.current;
+    if (!root) return;
+    /* prefers-reduced-motion: leave the DOM plain (the CSS also disables the
+       animation, but skipping the wrap avoids the per-frame churn entirely). */
+    try {
+      if (typeof window !== 'undefined' && window.matchMedia
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    } catch (_) { /* matchMedia unavailable */ }
+    try { decorateTailReveal(root); } catch (_) { /* decoration is best-effort */ }
+  }, [tailBox]);
   return (
     <>
       {split.blocks.map((block, index) => (
         <div
           key={index}
-          className="tool-run-prose is-settled"
+          className="tool-run-prose is-settled stream-block-in"
           dangerouslySetInnerHTML={settled(block)}
         />
       ))}
       <div
+        ref={liveRef}
         className="tool-run-prose is-live"
-        dangerouslySetInnerHTML={tail(split.tail)}
+        dangerouslySetInnerHTML={tailBox}
       />
     </>
   );
@@ -341,7 +420,7 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
           On a settled turn (P_finish-stream-boundary) the cursor is also
           dropped from the rendered tree — its only role was the typing
           cue, and the parent CSS animates the toolbar in alongside. */}
-      {isLive && !showStatus ? <StreamCursor /> : null}
+      {isLive && !showStatus ? <StreamCursor state={message._playbackState} /> : null}
     </ToolRunSheetProvider>
   );
 }

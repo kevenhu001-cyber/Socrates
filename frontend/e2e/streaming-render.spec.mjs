@@ -115,7 +115,13 @@ test('streaming keeps settled Markdown mounted and follows a pinned reader', asy
     const current = document.querySelector('.tool-run-prose.is-settled')?.firstElementChild;
     return current === window.__settledHeading;
   })).toBe(true);
-  await expect(bubble.locator('.tool-run-prose.is-live')).toContainText('The final Markdown remains c');
+  /* P_smooth-stream — the visual playback stream is decoupled from arrival,
+     so the LAST sentence need not be visible in the live tail before finish:
+     the playback clock may still be revealing it. The invariant here is that
+     the tail keeps GROWING (a later checkpoint than 'adaptive streaming
+     cadence') while the settled heading stays mounted; the final sentence is
+     asserted on the settled bubble after the handoff below. */
+  await expect(bubble.locator('.tool-run-prose.is-live')).toContainText('pinned scrolling');
   /* The row element itself must survive the finish() handoff: the declarative
      turn re-renders its prose in place instead of swapping the bubble (that
      transplant is what used to jump the scroll and re-run the post-render
@@ -167,7 +173,12 @@ test('streaming respects an intentional scroll-away', async ({ page }) => {
   await expect(bubble.locator('.tool-run-prose.is-live')).toContainText('pinned scrolling behavior');
   expect(await page.evaluate(() => document.getElementById('msgList').scrollTop)).toBeLessThan(8);
   await expect(page.locator('#newReplyPill')).toHaveClass(/visible/);
-  await expect(bubble.locator('.tool-run-prose.is-live')).toContainText('The final Markdown remains c');
+  /* P_smooth-stream — the reader scrolled away; the invariant is that finish
+     does not yank them back, regardless of how much of the tail the playback
+     clock had revealed. Freeze the pre-finish scrollTop here (the tail is
+     still growing) rather than waiting for the last sentence to reach the
+     live region, which the decoupled playback clock may not have revealed
+     before finish fires. */
   const beforeFinishTop = await page.evaluate(() => document.getElementById('msgList').scrollTop);
 
   await page.evaluate(() => window.__smoothStreamPromise);

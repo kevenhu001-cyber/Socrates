@@ -14,6 +14,18 @@ export type {
   ToolRunWasmBinding,
 } from './toolRun.ts';
 
+export {
+  createPlaybackClock,
+  computeCps,
+  DEFAULT_PLAYBACK_CONFIG,
+} from './streamPlayer.ts';
+export type {
+  PlaybackClock,
+  PlaybackConfig,
+  PlaybackState,
+  TickResult,
+} from './streamPlayer.ts';
+
 /**
  * Parse one complete SSE frame. This is deliberately free of XMLHttpRequest,
  * fetch, React, and platform storage so Web, Android, and desktop clients can
