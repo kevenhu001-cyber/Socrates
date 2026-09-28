@@ -57,6 +57,11 @@ function popoverStyle(anchor: ChatConfigurationAnchor | null): React.CSSProperti
   if (anchor.top - viewportTop > 200) {
     return { left, bottom: Math.max(8, viewportBottom - anchor.top + 8), width };
   }
+  /* Header triggers (the top-left model switcher) drop a left-aligned menu,
+     like chatgpt.com's model picker. */
+  if (anchor.left < viewportWidth / 2 && anchor.top - viewportTop < 80) {
+    return { left: Math.max(8, Math.min(anchor.left, viewportWidth - width - 8)), top: anchor.bottom + 6, width };
+  }
   return { left, top: anchor.bottom + 8, width };
 }
 
@@ -84,7 +89,7 @@ export function ChatConfiguration() {
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as HTMLElement | null;
       if (popRef.current?.contains(target)) return;
-      if (target?.closest?.('.effort-trigger')) return;
+      if (target?.closest?.('.effort-trigger, [data-chat-config-trigger]')) return;
       closeChatConfiguration();
     };
     const onKeyDown = (event: KeyboardEvent) => {

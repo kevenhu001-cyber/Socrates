@@ -8,6 +8,8 @@
 
 #appShell .main-bg { background-image: none; }
 
+@media (max-width: 768px) {
+
 #appShell .top-bar {
   min-height: 56px;
   height: 56px;
@@ -15,13 +17,30 @@
   border: 0;
   background: var(--ui-bg-page);
 }
+}
+
+@media (max-width: 768px) {
 
 #appShell .top-bar-left,
 #appShell .top-bar-right { z-index: 2; }
+}
 
 #appShell #sidebarOpenBtn,
 #appShell #mobileIncognitoBtn,
-#appShell #mobileNewChatBtn,
+#appShell #mobileNewChatBtn {
+  width: var(--ui-control-touch);
+  min-width: var(--ui-control-touch);
+  height: var(--ui-control-touch);
+  min-height: var(--ui-control-touch);
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: transparent;
+  color: var(--ui-text-secondary);
+  box-shadow: none;
+}
+
+@media (max-width: 768px) {
+
 #appShell #findBtn,
 #appShell #shareBtn {
   width: var(--ui-control-touch);
@@ -34,24 +53,38 @@
   color: var(--ui-text-secondary);
   box-shadow: none;
 }
+}
 
 #appShell #sidebarOpenBtn:hover,
 #appShell #mobileIncognitoBtn:hover,
-#appShell #mobileNewChatBtn:hover,
+#appShell #mobileNewChatBtn:hover {
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+}
+
+@media (max-width: 768px) {
+
 #appShell #findBtn:hover,
 #appShell #shareBtn:hover {
   background: var(--ui-bg-hover);
   color: var(--ui-text-primary);
 }
+}
 
 #appShell #sidebarOpenBtn svg,
 #appShell #mobileIncognitoBtn svg,
-#appShell #mobileNewChatBtn svg,
+#appShell #mobileNewChatBtn svg { width: 24px; height: 24px; }
+
+@media (max-width: 768px) {
+
 #appShell #findBtn svg,
 #appShell #shareBtn svg { width: 24px; height: 24px; }
+}
 
 #appShell .mobile-newchat-btn { display: none; }
 #appShell .toggle-sidebar .glyph-hamburger { display: none; }
+
+@media (max-width: 768px) {
 
 #appShell #modeSegmentedTop {
   position: absolute;
@@ -66,6 +99,7 @@
   border-radius: var(--ui-radius-pill);
   background: var(--ui-bg-raised);
   box-shadow: none;
+}
 }
 
 #appShell #pluginWorkspaceTabs {
@@ -101,6 +135,8 @@
   font-weight: 500;
 }
 
+@media (max-width: 768px) {
+
 #appShell #modeSegmentedTop .app-mode-toggle {
   flex: 1 1 50%;
   min-width: 0;
@@ -114,6 +150,9 @@
   font-weight: 400;
   line-height: 26px;
 }
+}
+
+@media (max-width: 768px) {
 
 #appShell #modeSegmentedTop .app-mode-toggle.active {
   background: var(--ui-bg-segment-active);
@@ -121,9 +160,13 @@
   font-weight: 500;
   box-shadow: none;
 }
+}
+
+@media (max-width: 768px) {
 
 [data-mode="light"] #appShell #modeSegmentedTop .app-mode-toggle.active {
   box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
+}
 }
 
 #appShell #topicSetup {

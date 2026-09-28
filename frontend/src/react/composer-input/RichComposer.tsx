@@ -115,10 +115,68 @@ function FormattingToolbar({ editor }: { editor: Editor }) {
   );
 }
 
+/* Web search is picked from the "+" menu and then shown as a removable chip,
+   the same affordance chatgpt.com uses. State lives in config/providers.js;
+   setWebSearchOn() broadcasts `socrates:websearchchange`.
+   Desktop only for now: the phone composer's chip row (restore/ mobile
+   layer) still overlaps the "+" button, so phones keep the active dot in
+   the tools menu until that layout moves to parity/. */
+const DESKTOP_COMPOSER_QUERY = '(min-width: 769px)';
+
+function useWebSearchOn(): boolean {
+  const read = () => Boolean((window as Window & { webSearchOn?: boolean }).webSearchOn)
+    && window.matchMedia(DESKTOP_COMPOSER_QUERY).matches;
+  const [on, setOn] = useState(read);
+  useEffect(() => {
+    const sync = () => setOn(read());
+    const media = window.matchMedia(DESKTOP_COMPOSER_QUERY);
+    document.addEventListener('socrates:websearchchange', sync);
+    media.addEventListener('change', sync);
+    sync();
+    return () => {
+      document.removeEventListener('socrates:websearchchange', sync);
+      media.removeEventListener('change', sync);
+    };
+  }, []);
+  return on;
+}
+
+function WebSearchChip() {
+  const label = i18n('composer.tools.webSearch', 'Web search');
+  const removeLabel = i18n('composer.webSearch.remove', 'Web search, click to remove');
+  return (
+    <button
+      type="button"
+      className="composer-tool-chip"
+      data-tool="webSearch"
+      aria-label={removeLabel}
+      title={removeLabel}
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        getLegacyActions().composer.toggleWebSearch?.();
+      }}
+    >
+      <span className="composer-tool-chip-icon" aria-hidden="true">
+        <svg className="composer-tool-chip-glyph" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="10" cy="10" r="7.25" />
+          <path d="M2.75 10h14.5M10 2.75c2 2 3 4.4 3 7.25s-1 5.25-3 7.25c-2-2-3-4.4-3-7.25s1-5.25 3-7.25Z" />
+        </svg>
+        <svg className="composer-tool-chip-close" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+          <path d="m6 6 8 8M14 6l-8 8" />
+        </svg>
+      </span>
+      <span className="composer-tool-chip-label">{label}</span>
+    </button>
+  );
+}
+
 function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
   const snapshot = useComposerPluginSelectionSnapshot();
+  const webSearchOn = useWebSearchOn();
   const plugins = snapshot[surface];
-  if (!plugins.length) return null;
+  if (!plugins.length && !webSearchOn) return null;
 
   const visiblePlugins = plugins.slice(0, 4);
   const hiddenCount = Math.max(0, plugins.length - visiblePlugins.length);
@@ -132,6 +190,7 @@ function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
 
   return (
     <div className="composer-plugin-chips" aria-label="Selected plugins">
+      {webSearchOn ? <WebSearchChip /> : null}
       {visiblePlugins.map((plugin) => (
         <span className="composer-plugin-chip" key={plugin.id} title={plugin.description || plugin.name}>
           {plugin.iconMarkup ? (
@@ -189,12 +248,15 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
     document.addEventListener('socrates:langchange', onLangChange);
     return () => document.removeEventListener('socrates:langchange', onLangChange);
   }, []);
+  const webSearchOn = useWebSearchOn();
   const activePlaceholder = useMemo(
-    () => i18n(
-      surface === 'chat' ? 'chat.inputPlaceholder' : 'topic.inputPlaceholder',
-      placeholder,
-    ),
-    [surface, placeholder, langRevision],
+    () => (webSearchOn
+      ? i18n('composer.webSearch.placeholder', 'Search the web')
+      : i18n(
+        surface === 'chat' ? 'chat.inputPlaceholder' : 'topic.inputPlaceholder',
+        placeholder,
+      )),
+    [surface, placeholder, langRevision, webSearchOn],
   );
 
   const extensions = useMemo(() => [

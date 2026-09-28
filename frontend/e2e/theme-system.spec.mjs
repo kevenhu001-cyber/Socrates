@@ -31,7 +31,8 @@ test('theme selector follows the operating system and persists explicit modes', 
     };
   });
   expect(darkPalette.page).toBe('#000000');
-  expect(darkPalette.raised).toBe('#131519');
+  // chatgpt.com neutral ramp (styles/themes.css, docs/ref/chatgpt-parity.md).
+  expect(darkPalette.raised).toBe('#171717');
 
   await themeSegs.locator('[data-theme-option="system"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'system');

@@ -81,15 +81,14 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
   expect(messageLayout.rowWidth).toBeLessThanOrEqual(822);
   expect(messageLayout.userWidth).toBeLessThan(messageLayout.rowWidth);
   expect(Math.abs(messageLayout.userRightGap)).toBeLessThanOrEqual(1);
-  expect(messageLayout.userRadius).toBe(15);
+  expect(messageLayout.userRadius).toBe(18);
   expect(messageLayout.userBackground).not.toBe('rgba(0, 0, 0, 0)');
   expect(messageLayout.assistantBackground).toBe('rgba(0, 0, 0, 0)');
-  /* The display preference intentionally ships at 1.125×, so the 15px
-     workbench base renders as 17px. Keep the assertion tied to that token
-     instead of freezing the test to one preference value. */
-  expect(messageLayout.assistantFontSize).toBe(Math.round(15 * messageLayout.fontScale));
+  /* chatgpt.com prose is 16px at the default display step (1.125×); other
+     steps scale around it (--app-type-scale, styles/tokens.css). */
+  expect(messageLayout.assistantFontSize).toBe(Math.round(16 * messageLayout.fontScale / 1.125));
   expect(messageLayout.assistantLineHeight).toBeGreaterThanOrEqual(24);
-  expect(messageLayout.toolbarHeight).toBeLessThanOrEqual(28);
+  expect(messageLayout.toolbarHeight).toBeLessThanOrEqual(32);
 });
 
 test('desktop composer keeps focus and grows for multiline input without submitting', async ({ page }) => {
@@ -130,10 +129,11 @@ test('desktop composer keeps focus and grows for multiline input without submitt
   expect(composed.activeEditor).toBe(true);
   expect(composed.editorHeight).toBeGreaterThan(initial.editorHeight);
   expect(composed.editorHeight).toBeLessThanOrEqual(280);
-  /* Multiline keeps the same borderless ChatGPT surface language while the
-     plus and primary actions retain their independent hit targets. */
-  expect(composed.wrapRadius).toBe(24);
-  expect(composed.wrapBorder).toBe('0px');
+  /* Multiline keeps the chatgpt.com capsule (28px radius, 1px hairline —
+     docs/ref/chatgpt-parity.md) while the plus and primary actions retain
+     their independent hit targets. */
+  expect(composed.wrapRadius).toBe(28);
+  expect(composed.wrapBorder).toBe('1px');
   expect(composed.sendSize).toBe(36);
   expect(composed.attachSize).toBe(36);
   expect(composed.messageCount).toBe(initial.messageCount);

@@ -26,15 +26,22 @@
    SVGs stay in the DOM (a11y / future use) and are hidden visually so the
    change is presentation-only and instantly reversible.
    -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
 #appShell .sidebar-nav-btn svg,
 #appShell .sidebar-nav-btn .nav-kbd {
   display: none;
 }
+}
+
+@media (max-width: 768px) {
 
 #appShell .sidebar-nav {
   padding: 6px 0 14px;
   gap: 2px;
 }
+}
+
+@media (max-width: 768px) {
 
 #appShell .sidebar-nav-btn {
   min-height: 36px;
@@ -48,6 +55,9 @@
   text-align: left;
   justify-content: flex-start;
 }
+}
+
+@media (max-width: 768px) {
 
 #appShell .sidebar-nav-btn:hover,
 #appShell .sidebar-nav-btn:focus-visible {
@@ -55,76 +65,108 @@
   background: var(--cg-surface-hover);
   outline: none;
 }
+}
+
+@media (max-width: 768px) {
 
 #appShell .sidebar-nav-btn.active,
 #appShell .sidebar-nav-btn[aria-current="page"] {
   color: var(--cg-text);
   background: var(--cg-surface-hover);
 }
+}
 
 /* "New chat" keeps its primary-action pill on the home surface, matching the
    reference where 新聊天 is highlighted while the composer is empty. Once a
    conversation, workspace page or exam is active, only that section's pill
    stays lit (React publishes .active / aria-current for those states). */
+@media (max-width: 768px) {
 #appShell #navNew.sidebar-nav-btn {
   color: var(--cg-text);
   background: transparent !important;
 }
+}
+
+@media (max-width: 768px) {
 
 body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
   #appShell
   #navNew.sidebar-nav-btn {
   background: var(--cg-surface-hover) !important;
 }
+}
 
 /* Reference section order: 新聊天 / 资料库 / 项目 / 定时任务 / 插件 / ….
    styles.css pins the legacy order through flex `order` on desktop; the DOM
    (index.html + SidebarNav.tsx BUTTONS) already follows the reference order,
    so re-pin it here. Later source order wins at equal specificity. */
+@media (max-width: 768px) {
 #appShell #navNew {
   order: 1;
 }
+}
+@media (max-width: 768px) {
 #appShell #navLibrary {
   order: 2;
 }
+}
+@media (max-width: 768px) {
 #appShell #navProjects {
   order: 3;
 }
+}
+@media (max-width: 768px) {
 #appShell #navScheduled {
   order: 4;
 }
+}
+@media (max-width: 768px) {
 #appShell #navPlugins {
   order: 5;
 }
+}
+@media (max-width: 768px) {
 #appShell #navMore {
   order: 6;
 }
+}
+@media (max-width: 768px) {
 #appShell #navExam {
   order: 7;
 }
+}
+@media (max-width: 768px) {
 #appShell #navSkills {
   order: 8;
+}
 }
 
 /* Sidebar nav is a flat list: no hairline divider between 项目 and 定时任务.
    styles.css adds a two-tier separator on [data-nav="scheduled"]; neutralize
    it here so all six rows share the same rhythm. */
+@media (max-width: 768px) {
 #appShell .sidebar-nav-btn[data-nav="scheduled"] {
   margin-top: 0 !important;
   border-top: 0 !important;
 }
+}
 
 /* Recents section header + history rows follow the reference's quiet list. */
+@media (max-width: 768px) {
 #appShell .recents-title {
   color: var(--cg-text-muted);
   font-size: 13px;
   font-weight: 500;
 }
+}
+
+@media (max-width: 768px) {
 
 #appShell .recent-item-text {
   color: var(--cg-text-secondary);
   font-size: 13px;
   line-height: 21px;
+}
 }
 
 /* --------------------------------------------------------------------------
@@ -133,14 +175,19 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    from chatgpt-ui.css; this only guarantees the track/segment contrast reads
    in both themes without touching chat/tutor switching behavior.
    -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
 #appShell .top-mode-tabs {
   background: var(--cg-surface-raised);
   border-color: transparent;
 }
+}
+
+@media (max-width: 768px) {
 
 #appShell .top-mode-tabs .app-mode-toggle.active {
   background: var(--cg-surface);
   box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
+}
 }
 
 /* --------------------------------------------------------------------------
@@ -174,77 +221,115 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    (lobe-overrides.css). The reference baseline is a light UI, so every one
    of them is re-pointed at the theme tokens when [data-mode="light"].
    -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
 [data-mode="light"] #appShell .sidebar-nav-btn {
   color: var(--cg-text-secondary) !important;
 }
+}
+
+@media (max-width: 768px) {
 
 [data-mode="light"] #appShell .sidebar-nav-btn:hover,
 [data-mode="light"] #appShell .sidebar-nav-btn:focus-visible {
   color: var(--cg-text) !important;
   background: var(--cg-surface-hover) !important;
 }
+}
+
+@media (max-width: 768px) {
 
 [data-mode="light"] #appShell .sidebar-nav-btn.active,
 [data-mode="light"] #appShell .sidebar-nav-btn[aria-current="page"] {
   color: var(--cg-text) !important;
   background: var(--cg-surface-hover) !important;
 }
+}
+
+@media (max-width: 768px) {
 
 [data-mode="light"] #appShell #navNew.sidebar-nav-btn {
   color: var(--cg-text) !important;
 }
+}
+
+@media (max-width: 768px) {
 
 [data-mode="light"] #appShell .recent-item-text {
   color: var(--cg-text-secondary) !important;
 }
+}
+
+@media (max-width: 768px) {
 
 [data-mode="light"] #appShell .recents-title {
   color: var(--cg-text-muted) !important;
 }
+}
+
+@media (max-width: 768px) {
 
 [data-mode="light"] #appShell .sidebar-footer {
   border-top-color: var(--cg-border) !important;
 }
+}
+
+@media (max-width: 768px) {
 
 [data-mode="light"] #appShell .sidebar-footer .user-name {
   color: var(--cg-text) !important;
 }
+}
+
+@media (max-width: 768px) {
 
 [data-mode="light"] #appShell .sidebar-footer .user-plan {
   color: var(--cg-text-muted) !important;
+}
 }
 
 [data-mode="light"] #appShell #topicSetup .topic-title.greeting {
   color: var(--cg-text) !important;
 }
 
+@media (max-width: 768px) {
+
 [data-mode="light"] #appShell #topicInputWrap {
   border-color: var(--cg-border-strong) !important;
   background: var(--cg-surface) !important;
   box-shadow: 0 1px 3px rgb(0 0 0 / 6%) !important;
 }
+}
+
+@media (max-width: 768px) {
 
 [data-mode="light"] #appShell #topicInputWrap .attach-btn,
 [data-mode="light"] #appShell #topicInputWrap .mobile-mic-btn {
   color: var(--cg-text-secondary) !important;
 }
+}
+
+@media (max-width: 768px) {
 
 [data-mode="light"] #appShell #topicInputWrap .effort-trigger {
   color: var(--cg-text-muted) !important;
+}
 }
 
 /* Reference send button: solid dark circle in light mode. The
    specificity has to clear chatgpt-v2's `#startBtn:not(.active)`
    rule, so it carries the same :not(.active) shape. */
+@media (max-width: 768px) {
 [data-mode="light"] #appShell #topicInputWrap:not(.voice-recording-active) #startBtn:not(.active),
 [data-mode="light"] #appShell #topicInputWrap:not(.voice-recording-active) #startBtn.active {
   color: #fff !important;
   background: #111 !important;
 }
+}
 
 /* The in-session composer shares the same reference control: solid dark
    circle in light mode. Without this the shared chatgpt-v2 idle rule
    paints it white, which disappears on the white composer surface. */
+@media (max-width: 768px) {
 [data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active) .send-btn:not(.active),
 [data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active) .send-btn.active,
 [data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active) .send-btn.chat-stop,
@@ -252,23 +337,32 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   color: #fff !important;
   background: #111 !important;
 }
+}
+
+@media (max-width: 768px) {
 
 [data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active) .send-btn:hover {
   background: #000 !important;
   color: #fff !important;
+}
 }
 
 /* Reference composer outline — light mode. chatgpt-v2 drops the idle
    border entirely (`border: 0 !important`) and relies on the shadow,
    which reads as no edge at all against the white canvas. Restore a
    hairline plus a clearly stronger focus ring in light mode only. */
+@media (max-width: 768px) {
 [data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active) {
   border: 1px solid rgb(0 0 0 / 20%) !important;
 }
+}
+
+@media (max-width: 768px) {
 
 [data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active):focus-within {
   border-color: rgb(0 0 0 / 38%) !important;
   box-shadow: 0 0 0 3px rgb(0 0 0 / 6%), var(--cg-composer-shadow) !important;
+}
 }
 
 
@@ -397,15 +491,22 @@ body.workspace-active #appShell .main-page {
 /* --------------------------------------------------------------------------
    8. Unified Composer & Top Mode Pills Refinement
    -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
 #appShell .top-mode-tabs {
   border-radius: 9999px !important;
   padding: 3px !important;
 }
+}
+
+@media (max-width: 768px) {
 
 [data-mode="light"] #appShell .top-mode-tabs {
   background: #f3f4f6 !important;
   border: 1px solid rgba(0, 0, 0, 0.04) !important;
 }
+}
+
+@media (max-width: 768px) {
 
 [data-mode="light"] #appShell .top-mode-tabs .app-mode-toggle {
   border-radius: 9999px !important;
@@ -414,11 +515,15 @@ body.workspace-active #appShell .main-page {
   font-weight: 500 !important;
   color: #6b7280 !important;
 }
+}
+
+@media (max-width: 768px) {
 
 [data-mode="light"] #appShell .top-mode-tabs .app-mode-toggle.active {
   background: #ffffff !important;
   color: #111827 !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
 }
 
 /* --------------------------------------------------------------------------
@@ -665,10 +770,6 @@ body.workspace-active #appShell .main-page {
   /* Drag-to-resize owns --app-sidebar-width (set by sidebarResize.js on
      <html>); these rules must consume it rather than pin 260px or the
      handle updates the variable with no visible effect. */
-  #appShell .sidebar {
-    width: var(--app-sidebar-width, 260px) !important;
-    min-width: var(--app-sidebar-width, 260px) !important;
-  }
 
   #appShell .main {
     padding-left: var(--app-sidebar-width, 260px) !important;
@@ -677,110 +778,9 @@ body.workspace-active #appShell .main-page {
   /* .sidebar is always .main's preceding sibling; the former
      `#appShell:has(.sidebar.collapsed) .main` duplicate made every DOM
      insertion re-style the shell (P_has-invalidation). */
-  #appShell .sidebar.collapsed ~ .main {
-    padding-left: 0 !important;
-  }
-
-  #appShell .sidebar-inner {
-    padding: 8px 6px 7px !important;
-  }
-
-  #appShell .sidebar-header {
-    min-height: 52px !important;
-    padding: 12px 8px 6px 14px !important;
-  }
-
-  #appShell .sidebar-logo {
-    padding-left: 0 !important;
-    font-size: 16px !important;
-    font-weight: 650 !important;
-  }
-
-  #appShell .sidebar-nav {
-    gap: 0 !important;
-    padding: 7px 0 9px !important;
-  }
-
-  #appShell .sidebar-nav-btn {
-    width: 100% !important;
-    min-height: 36px !important;
-    padding: 6px 10px !important;
-    border-radius: 10px !important;
-    font-size: 14px !important;
-    font-weight: 400 !important;
-    line-height: 20px !important;
-  }
-
-  #appShell .sidebar-nav-btn.active,
-  #appShell .sidebar-nav-btn[aria-current="page"],
-  body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
-    #appShell
-    #navNew.sidebar-nav-btn {
-    background: var(--cg-surface-hover) !important;
-  }
-
-  #appShell .recents-header {
-    padding: 10px 10px 4px !important;
-  }
-
-  #appShell .recents-title {
-    font-size: 13px !important;
-    font-weight: 400 !important;
-  }
-
-  #appShell .recent-item {
-    min-height: 32px !important;
-    padding: 5px 10px !important;
-  }
-
-  #appShell .recent-item-text {
-    font-size: 14px !important;
-    line-height: 20px !important;
-  }
-
-  #appShell .sidebar-footer {
-    min-height: 50px !important;
-    margin: 0 -6px !important;
-    padding: 8px 14px !important;
-  }
 
   /* Top segmented control: reference is 214 x 32, optically centred on the
      content pane rather than on the full viewport (the rail is asymmetric). */
-  #appShell .top-bar {
-    position: relative !important;
-    min-height: 44px !important;
-    padding: 6px 16px !important;
-  }
-
-  #appShell .top-mode-tabs {
-    position: absolute !important;
-    top: 6px !important;
-    left: 50% !important;
-    width: 214px !important;
-    min-width: 214px !important;
-    height: 32px !important;
-    padding: 3px !important;
-    gap: 2px !important;
-    transform: translateX(-50%) !important;
-  }
-
-  #appShell .top-mode-tabs .app-mode-toggle {
-    flex: 1 1 0 !important;
-    min-width: 0 !important;
-    height: 26px !important;
-    padding: 0 14px !important;
-    border-radius: 999px !important;
-    font-size: 14px !important;
-    font-weight: 400 !important;
-  }
-
-  body[data-conversation-active="true"] #appShell .top-bar-right {
-    visibility: visible !important;
-    width: auto !important;
-    min-width: 0 !important;
-    flex: 0 0 auto !important;
-    overflow: visible !important;
-  }
 
   /* Home: one optical group centred in the pane below the 44px top bar. */
   #appShell #topicSetup {
@@ -792,8 +792,7 @@ body.workspace-active #appShell .main-page {
   #appShell #topicSetup > .topic-title,
   #appShell #topicSetup > .topic-sub,
   #appShell #topicSetup > .mobile-starter-prompts,
-  #appShell #topicSetup > .cg-history,
-  #appShell #topicSetup > #topicInputWrap {
+  #appShell #topicSetup > .cg-history {
     top: 0 !important;
     left: 0 !important;
   }
@@ -810,44 +809,6 @@ body.workspace-active #appShell .main-page {
     letter-spacing: -0.01em !important;
   }
 
-  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
-    /* P_chatgpt-baseline-composer — the home composer geometry mirrors
-       the ChatGPT reference surface: 768px wide, 52px tall, 28px fully
-       rounded pill. The grid template reserves 36px columns for the
-       attach/mic/send controls, lets the editor grow in the middle
-       column, and lets the effort picker shrink to its own intrinsic
-       width.
-
-       The grid track is the full 52px so the editor root stretches to
-       the optical midline of the pill, and the 0 top/bottom padding
-       lets the editor's own vertical padding absorb the visual spacing.
-       The shared index.css rule that sets padding: 0 10px 0 4px is
-       overridden here because the chatgpt-v2 layer needs the side
-       buttons flush with the inner edge. */
-    width: min(100%, calc(768px * var(--app-width-scale, 1))) !important;
-    max-width: calc(768px * var(--app-width-scale, 1)) !important;
-    height: 52px !important;
-    min-height: 52px !important;
-    margin: 22px auto 0 !important;
-    padding: 0 8px !important;
-    border-radius: 28px !important;
-    /* P_mic-dedup — four tracks: attach, editor, effort, send. */
-    grid-template-columns: 36px minmax(0, 1fr) auto 36px !important;
-    grid-template-rows: 52px !important;
-    align-items: center !important;
-  }
-
-  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .composer-editor-root {
-    grid-column: 2 !important;
-    grid-row: 1 !important;
-    align-self: stretch !important;
-    display: flex !important;
-    align-items: center !important;
-    height: 100% !important;
-    min-height: 0 !important;
-  }
-
-  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer,
   #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer > div {
     display: flex !important;
     align-items: center !important;
@@ -855,76 +816,14 @@ body.workspace-active #appShell .main-page {
     height: 100% !important;
   }
 
-  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer-editor,
-  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer .tiptap {
-    height: 42px !important;
-    min-height: 42px !important;
-    max-height: 42px !important;
-    padding: 9px 4px !important;
-    overflow: hidden !important;
-    font-size: 16px !important;
-    line-height: 24px !important;
-  }
-
-  #appShell #topicInputWrap:not(.voice-recording-active) #topicComposerToolsBtn,
-  #appShell #topicInputWrap:not(.voice-recording-active) .mobile-mic-btn {
-    width: 36px !important;
-    min-width: 36px !important;
-    height: 36px !important;
-    min-height: 36px !important;
-    border-radius: 50% !important;
-  }
-
   /* The two edge actions are one optical pair: equal circles on the same
      52px midline. The attach action uses a quiet raised surface while the
      primary voice/send action keeps the high-contrast fill. */
-  #appShell #topicInputWrap:not(.voice-recording-active) #topicComposerToolsBtn {
-    align-self: center !important;
-    justify-self: center !important;
-    background: var(--cg-surface-raised) !important;
-  }
-
-  #appShell #topicInputWrap:not(.voice-recording-active) #topicComposerToolsBtn:hover {
-    background: var(--cg-surface-hover) !important;
-  }
-
-  #appShell #topicInputWrap:not(.voice-recording-active) #topicComposerToolsBtn svg {
-    width: 20px !important;
-    height: 20px !important;
-    transform: none !important;
-  }
-
-  #appShell #topicInputWrap:not(.voice-recording-active) #startBtn {
-    width: 36px !important;
-    min-width: 36px !important;
-    height: 36px !important;
-    min-height: 36px !important;
-    align-self: center !important;
-    justify-self: center !important;
-    border-radius: 50% !important;
-    padding: 0 !important;
-  }
-
-  #appShell #topicInputWrap:not(.voice-recording-active) #startBtnContent {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 100%;
-    height: 100%;
-  }
 
   /* P_effort-send-adjacency — the mic track is gone, so the send button
      takes grid column 4 directly after the effort picker. Leaving it on
      column 5 creates an empty track that reads as a gap between the
      effort pill and the send button. */
-  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #startBtn {
-    grid-column: 4 !important;
-    grid-row: 1 !important;
-  }
-  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .topic-footer .effort-picker {
-    justify-self: end !important;
-    margin-right: 4px !important;
-  }
 
   /* The previous `.home-suggestions-*` overrides were removed together
      with the corresponding DOM container; see the section-7 comment above. */
@@ -1234,82 +1133,15 @@ body.workspace-active #appShell .main-page {
 }
 
 @media (min-width: 769px) {
-  #appShell .sidebar-inner {
-    position: relative !important;
-  }
-
-  #appShell .sidebar-nav-btn {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    gap: 10px !important;
-    padding-left: 12px !important;
-    text-align: left !important;
-  }
-
-  #appShell .sidebar-nav-btn svg {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    flex: 0 0 20px !important;
-    width: 20px !important;
-    height: 20px !important;
-    margin: 0 !important;
-    color: currentColor !important;
-  }
-
-  #appShell .sidebar-nav-btn > span:not(.nav-kbd) {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    flex: 0 1 auto !important;
-    min-width: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    line-height: 20px !important;
-    text-align: left !important;
-  }
 
   /* Sidebar search + Knowledge / Mistakes actions stay in normal flow
      directly above the Recents list (最近会话), not floating in the
      header. Keep the full-width filter input plus the two icon buttons
      on one row so nothing overlaps the top bar. */
-  #appShell .sidebar-search-row {
-    display: flex !important;
-    position: static !important;
-    z-index: auto !important;
-    width: auto !important;
-    height: auto !important;
-    padding: 0 0 10px !important;
-    gap: 6px !important;
-  }
-
-  #appShell .sidebar-search {
-    flex: 1 1 auto !important;
-    width: auto !important;
-    height: 36px !important;
-    border: 1px solid var(--cg-border) !important;
-    border-radius: 10px !important;
-    background: var(--cg-surface) !important;
-    box-shadow: none !important;
-  }
 
   #appShell .sidebar-search-icon {
     width: 15px !important;
     height: 15px !important;
-  }
-
-  #appShell .sidebar-search input {
-    position: static !important;
-    width: auto !important;
-    height: auto !important;
-    flex: 1 1 auto !important;
-    padding: 0 !important;
-    border: 0 !important;
-    clip: auto !important;
-    clip-path: none !important;
-    overflow: visible !important;
-    white-space: normal !important;
   }
 
   #appShell .sidebar-view-btn {
@@ -1319,19 +1151,6 @@ body.workspace-active #appShell .main-page {
   }
 
   /* The reference segmented control is 220 x 40 with 36px inner segments. */
-  #appShell .top-mode-tabs {
-    width: 220px !important;
-    min-width: 220px !important;
-    height: 40px !important;
-    top: 6px !important;
-    padding: 2px !important;
-    gap: 0 !important;
-  }
-
-  #appShell .top-mode-tabs .app-mode-toggle {
-    height: 36px !important;
-    padding: 0 15px !important;
-  }
 
   /* The reference workspace heads use 28px type and 240px search fields. */
   body.workspace-active #appShell .main-page {
@@ -1587,6 +1406,7 @@ body.workspace-active #appShell .main-page {
    pill rule (active / aria-current / home-state / light-mode repairs),
    and this block sits last so it also wins ties. Hover keeps its wash.
    -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
 #appShell#appShell .sidebar-nav-btn,
 #appShell#appShell .sidebar-nav-btn.active,
 #appShell#appShell .sidebar-nav-btn[aria-current="page"],
@@ -1596,10 +1416,14 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   #navNew.sidebar-nav-btn {
   background: transparent !important;
 }
+}
+
+@media (max-width: 768px) {
 
 #appShell#appShell .sidebar-nav-btn:hover,
 #appShell#appShell .sidebar-nav-btn:focus-visible {
   background: var(--cg-surface-hover) !important;
+}
 }
 
 /* #navNew carries an extra id in its transparent resting rule, so the
@@ -1607,6 +1431,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    the wash for the primary entry so it responds to hover like every other
    row. The home-state selector needs the same body:not prefix as its
    transparent counterpart to win that tie too. */
+@media (max-width: 768px) {
 #appShell#appShell #navNew.sidebar-nav-btn:hover,
 #appShell#appShell #navNew.sidebar-nav-btn:focus-visible,
 body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
@@ -1616,6 +1441,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   #appShell#appShell
   #navNew.sidebar-nav-btn:focus-visible {
   background: var(--cg-surface-hover) !important;
+}
 }
 
 /* --------------------------------------------------------------------------
@@ -1628,111 +1454,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    and plugin-chip drafts keep their two-row expansion below.
    -------------------------------------------------------------------------- */
 @media (min-width: 769px) {
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
-    #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
-    height: 52px !important;
-    min-height: 52px !important;
-    padding: 0 6px !important;
-    border-radius: 26px !important;
-  }
-
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
-    #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .chat-composer-body {
-    grid-template-columns: 40px minmax(0, 1fr) auto 32px 36px !important;
-    grid-template-rows: 100% !important;
-    column-gap: 4px !important;
-    align-items: center !important;
-    align-self: stretch !important;
-    height: 100% !important;
-    min-height: 0 !important;
-  }
-
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
-    #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .composer-editor-root {
-    grid-column: 2 !important;
-    grid-row: 1 !important;
-  }
-
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
-    #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .chat-input-footer .attach-btn {
-    grid-column: 1 !important;
-    grid-row: 1 !important;
-    width: 36px !important;
-    min-width: 36px !important;
-    height: 36px !important;
-    min-height: 36px !important;
-    align-self: center !important;
-    justify-self: center !important;
-    border-radius: 50% !important;
-    background: var(--cg-surface-raised) !important;
-  }
-
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
-    #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .chat-input-footer .attach-btn:hover {
-    background: var(--cg-surface-hover) !important;
-  }
-
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
-    #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .chat-input-footer .attach-btn svg {
-    width: 20px !important;
-    height: 20px !important;
-    transform: none !important;
-  }
-
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
-    #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .footer-left-group .effort-picker {
-    grid-column: 3 !important;
-    grid-row: 1 !important;
-    align-self: center !important;
-  }
-
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
-    #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .mobile-mic-btn {
-    display: inline-flex !important;
-    grid-column: 4 !important;
-    grid-row: 1 !important;
-    width: 32px !important;
-    min-width: 32px !important;
-    height: 32px !important;
-    min-height: 32px !important;
-    align-self: center !important;
-    justify-self: center !important;
-    /* The 20px microphone glyph carries more visual mass below its SVG
-       midpoint; lift the control one device pixel to share the edge
-       buttons' optical axis. */
-    transform: translateY(-1px) !important;
-  }
-
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
-    #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .chat-input-footer .send-btn {
-    grid-column: 5 !important;
-    grid-row: 1 !important;
-    width: 36px !important;
-    min-width: 36px !important;
-    height: 36px !important;
-    min-height: 36px !important;
-    align-self: center !important;
-    justify-self: center !important;
-    border-radius: 50% !important;
-    padding: 0 !important;
-  }
-
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
-    #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #sendBtnContent {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 100%;
-    height: 100%;
-  }
-
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
-    #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer[data-surface="chat"] .tiptap {
-    height: 100% !important;
-    min-height: 0 !important;
-    max-height: 100% !important;
-    padding: 13px 4px !important;
-  }
 
   /* Keep the active chat shell on the same content-column edge as the topic
      composer. The bar remains transparent; only its vertical padding is
@@ -1745,35 +1466,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 
   /* Multiline + plugin-chip drafts expand to content above and controls
      below, keeping the same five controls in the action row. */
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
-    #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active),
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
-    #appShell#appShell #chatInputWrap:has(.composer-plugin-chips):not(.voice-recording-active) {
-    border-radius: 24px !important;
-  }
-
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
-    #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .chat-composer-body,
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
-    #appShell#appShell #chatInputWrap:has(.composer-plugin-chips):not(.voice-recording-active) .chat-composer-body {
-    grid-template-columns: 40px minmax(0, 1fr) auto 32px 34px !important;
-    column-gap: 4px !important;
-  }
-
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
-    #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .mobile-mic-btn,
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
-    #appShell#appShell #chatInputWrap:has(.composer-plugin-chips):not(.voice-recording-active) .mobile-mic-btn {
-    display: inline-flex !important;
-    grid-column: 4 !important;
-  }
-
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
-    #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .chat-input-footer .send-btn,
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
-    #appShell#appShell #chatInputWrap:has(.composer-plugin-chips):not(.voice-recording-active) .chat-input-footer .send-btn {
-    grid-column: 5 !important;
-  }
 }
 
 /* --------------------------------------------------------------------------
@@ -1810,24 +1502,19 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   --ref-muted: #a7a7a7;
 }
 
-[data-mode="dark"] #appShell {
-  --cg-page: #000;
-  --cg-rail: #000;
-  --cg-surface: #212121;
-  --cg-surface-raised: #2a2a2a;
-  --cg-surface-hover: #2a2a2a;
-  --cg-border: rgb(255 255 255 / 10%);
-  --cg-border-strong: rgb(255 255 255 / 18%);
-  --cg-text: #f5f5f5;
-  --cg-text-secondary: #c5c5c5;
-  --cg-text-muted: #a7a7a7;
-}
-
-#appShell .top-bar,
 #appShell .main-content,
 #appShell .main-bg {
   background: var(--cg-page) !important;
 }
+
+@media (max-width: 768px) {
+
+#appShell .top-bar {
+  background: var(--cg-page) !important;
+}
+}
+
+@media (max-width: 768px) {
 
 #appShell .top-mode-tabs {
   border: 0 !important;
@@ -1835,6 +1522,9 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   background: var(--cg-surface-raised) !important;
   box-shadow: none !important;
 }
+}
+
+@media (max-width: 768px) {
 
 #appShell .top-mode-tabs .app-mode-toggle {
   color: var(--cg-text-muted) !important;
@@ -1842,11 +1532,15 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   font-family: var(--cg-font) !important;
   font-weight: 400 !important;
 }
+}
+
+@media (max-width: 768px) {
 
 #appShell .top-mode-tabs .app-mode-toggle.active {
   color: var(--cg-text) !important;
   background: var(--cg-surface) !important;
   box-shadow: 0 1px 2px rgb(0 0 0 / 24%) !important;
+}
 }
 
 #appShell .home-quick-action {
@@ -2008,25 +1702,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 }
 
 @media (min-width: 769px) {
-  #appShell .top-bar {
-    min-height: 44px !important;
-    padding: 2px 16px !important;
-  }
-
-  #appShell .top-mode-tabs {
-    top: 2px !important;
-    width: 220px !important;
-    min-width: 220px !important;
-    height: 40px !important;
-    padding: 2px !important;
-  }
-
-  #appShell .top-mode-tabs .app-mode-toggle {
-    min-width: 0 !important;
-    height: 36px !important;
-    padding: 0 15px !important;
-    font-size: 15px !important;
-  }
 
   #appShell #topicSetup {
     min-height: calc(100dvh - 44px) !important;
@@ -2043,53 +1718,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
     min-height: 52px !important;
     padding: 10px 44px 10px 14px !important;
     border-radius: 10px !important;
-  }
-
-  #appShell #topicInputWrap:not(.voice-recording-active),
-  #appShell #chatInputWrap:not(.voice-recording-active) {
-    border-radius: 28px !important;
-    background: var(--cg-surface) !important;
-    box-shadow: none !important;
-  }
-
-  #appShell #topicInputWrap:not(.voice-recording-active) {
-    width: min(100%, 768px) !important;
-    max-width: 768px !important;
-    height: 52px !important;
-    min-height: 52px !important;
-    grid-template-columns: 40px minmax(0, 1fr) auto 40px !important;
-    grid-template-rows: 52px !important;
-    padding: 0 8px !important;
-  }
-
-  #appShell #topicInputWrap:not(.voice-recording-active) .rich-composer-editor,
-  #appShell #chatInputWrap:not(.voice-recording-active) .rich-composer[data-surface="chat"] .tiptap {
-    height: 52px !important;
-    min-height: 52px !important;
-    max-height: 52px !important;
-    padding: 13px 4px !important;
-    font-size: 16px !important;
-    line-height: 24px !important;
-  }
-
-  #appShell #topicComposerToolsBtn,
-  #appShell #chatComposerToolsBtn,
-  #appShell #topicInputWrap:not(.voice-recording-active) #startBtn,
-  #appShell #chatInputWrap:not(.voice-recording-active) .send-btn,
-  #appShell #chatInputWrap:not(.voice-recording-active) .mobile-mic-btn {
-    width: 40px !important;
-    min-width: 40px !important;
-    height: 40px !important;
-    min-height: 40px !important;
-  }
-
-  #appShell #topicComposerToolsBtn svg,
-  #appShell #chatComposerToolsBtn svg,
-  #appShell #topicInputWrap:not(.voice-recording-active) #startBtn svg,
-  #appShell #chatInputWrap:not(.voice-recording-active) .send-btn svg,
-  #appShell #chatInputWrap:not(.voice-recording-active) .mobile-mic-btn svg {
-    width: 22px !important;
-    height: 22px !important;
   }
 
   body.workspace-active #appShell .main-page,
@@ -2156,60 +1784,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    inside the rounded composer instead of letting the legacy single-row lock
    clip the chips above the border.  The empty-editor variant is intentionally
    explicit; a text draft still uses the measured multiline rules above. */
-@media (min-width: 769px) {
-  #appShell #topicInputWrap:has(.composer-plugin-chips):not(.composer-multiline) {
-    display: grid !important;
-    height: 128px !important;
-    min-height: 128px !important;
-    grid-template-columns: 40px minmax(0, 1fr) auto 40px !important;
-    grid-template-rows: 82px 40px !important;
-    padding: 6px 8px !important;
-    overflow: visible !important;
-    border-radius: 24px !important;
-  }
-
-  #appShell #topicInputWrap:has(.composer-plugin-chips):not(.composer-multiline) .composer-editor-root {
-    grid-column: 1 / -1 !important;
-    grid-row: 1 !important;
-    align-self: stretch !important;
-    height: 82px !important;
-    min-height: 82px !important;
-  }
-
-  #appShell #topicInputWrap:has(.composer-plugin-chips):not(.composer-multiline) .rich-composer {
-    display: grid !important;
-    grid-template-rows: 30px 52px !important;
-    gap: 4px !important;
-    height: 82px !important;
-  }
-
-  #appShell #topicInputWrap:has(.composer-plugin-chips):not(.composer-multiline) .composer-plugin-chips {
-    min-height: 30px !important;
-    height: 30px !important;
-  }
-
-  #appShell #topicInputWrap:has(.composer-plugin-chips):not(.composer-multiline) .rich-composer-editor {
-    height: 52px !important;
-    min-height: 52px !important;
-    max-height: 52px !important;
-    padding: 13px 4px !important;
-  }
-
-  #appShell #topicInputWrap:has(.composer-plugin-chips):not(.composer-multiline) #topicComposerToolsBtn {
-    grid-column: 1 !important;
-    grid-row: 2 !important;
-  }
-
-  #appShell #topicInputWrap:has(.composer-plugin-chips):not(.composer-multiline) .topic-footer .effort-picker {
-    grid-column: 3 !important;
-    grid-row: 2 !important;
-  }
-
-  #appShell #topicInputWrap:has(.composer-plugin-chips):not(.composer-multiline) #startBtn {
-    grid-column: 4 !important;
-    grid-row: 2 !important;
-  }
-}
 
 /* The reference directory is a quiet list on the black canvas; only the
    connector tile carries a raised surface.  Keep rows borderless at rest and
@@ -2229,49 +1803,11 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    landing composer.  These scoped compatibility rules preserve the existing
    chat workbench contract while the screenshot-owned home/workspace shells
    use their 28px/24px radii above. */
-@media (min-width: 769px) {
-  body[data-conversation-active="true"]:not(.workspace-active)
-    #appShell .top-bar {
-    min-height: 52px !important;
-  }
-
-  body[data-conversation-active="true"]:not(.workspace-active)
-    #appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
-    border-radius: 26px !important;
-  }
-
-  body[data-conversation-active="true"]:not(.workspace-active)
-    #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active),
-  body[data-conversation-active="true"]:not(.workspace-active)
-    #appShell #chatInputWrap:has(.composer-plugin-chips):not(.voice-recording-active) {
-    border: 1px solid var(--cg-border-strong) !important;
-  }
-}
 
 /* Workbench control sizing is intentionally separate from the landing pill.
    The transcript draft keeps a 42px attachment target and a compact 36px
    send target once the editor grows to two rows.  The id-qualified rules also
    beat the legacy footer defaults without changing the mobile landing shell. */
-@media (min-width: 769px) {
-  body[data-conversation-active="true"]:not(.workspace-active)
-    #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active)
-    #chatComposerToolsBtn {
-    width: 42px !important;
-    min-width: 42px !important;
-    height: 42px !important;
-    min-height: 42px !important;
-  }
-
-  body[data-conversation-active="true"]:not(.workspace-active)
-    #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active)
-    #sendBtn {
-    width: 36px !important;
-    min-width: 36px !important;
-    height: 36px !important;
-    min-height: 36px !important;
-    border-radius: 50% !important;
-  }
-}
 
 [data-mode="light"] #appShell .plugin-directory-row {
   background: transparent !important;

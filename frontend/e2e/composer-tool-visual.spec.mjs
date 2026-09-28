@@ -62,7 +62,9 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
     };
     return {
       attach: box('#chatInputWrap .attach-btn'),
-      editor: box('#chatComposerRoot'),
+      // #chatComposerRoot is a display:contents wrapper on desktop
+      // (styles/parity/composer.css); the editable box is the real item.
+      editor: box('#chatComposerRoot .rich-composer-editor'),
       effort: box('#chatInputWrap .effort-picker'),
       mic: box('#chatMobileMicBtn'),
       send: box('#sendBtn'),

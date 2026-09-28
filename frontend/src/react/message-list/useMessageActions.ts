@@ -9,9 +9,13 @@ function messageIdOf(message: LegacyChatMessage): string | null {
 }
 
 function plainTextOf(message: LegacyChatMessage): string {
-  if (typeof message.rawText === 'string' && message.rawText.length > 0) return message.rawText;
-  if (typeof message.html === 'string' && message.html.length > 0) return stripHtmlToText(message.html);
-  return '';
+  let text = '';
+  if (typeof message.rawText === 'string' && message.rawText.length > 0) {
+    text = message.rawText;
+  } else if (typeof message.html === 'string' && message.html.length > 0) {
+    text = stripHtmlToText(message.html);
+  }
+  return text.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/<\/?think>/gi, '').trim();
 }
 
 function stripHtmlToText(html: string): string {

@@ -1,4 +1,4 @@
-#appShell .sidebar {
+@media (max-width: 768px) {#appShell .sidebar {
   width: var(--app-sidebar-width, var(--ui-sidebar-desktop));
   min-width: var(--app-sidebar-width, var(--ui-sidebar-desktop));
   border-right: 1px solid var(--ui-border-subtle);
@@ -7,31 +7,53 @@
   box-shadow: none;
   backdrop-filter: none;
 }
+}
+
+@media (max-width: 768px) {
 
 #appShell .sidebar-inner { background: transparent; }
+}
+@media (max-width: 768px) {
 #appShell .sidebar-header { min-height: 56px; padding: 6px 8px 6px 12px; }
+}
+@media (max-width: 768px) {
 #appShell .sidebar-logo {
   gap: 9px;
   padding: 6px 4px;
   color: var(--ui-text-primary);
-  font-family: "Inter", "Noto Sans SC", sans-serif;
+  font-family: var(--font-sans);
   font-size: 15px;
   font-weight: 500;
   letter-spacing: 0;
 }
+}
+@media (max-width: 768px) {
 #appShell .sidebar-logo-img { width: 22px; height: 22px; border-radius: 6px; }
+}
 #appShell .cg-sidebar-caret { display: none; }
+@media (max-width: 768px) {
 #appShell .sidebar-header-actions { gap: 2px; }
+}
+@media (max-width: 768px) {
 #appShell .sidebar-header .icon-btn {
   width: var(--ui-control-md);
   height: var(--ui-control-md);
   border-radius: var(--ui-radius-pill);
   color: var(--ui-text-secondary);
 }
+}
+@media (max-width: 768px) {
 #appShell .sidebar-header .icon-btn svg { width: 22px; height: 22px; }
+}
+@media (max-width: 768px) {
 #appShell .sidebar-header .icon-btn:hover { background: var(--ui-bg-hover); }
+}
+
+@media (max-width: 768px) {
 
 #appShell .sidebar-nav { gap: 0; padding: 4px 8px; }
+}
+@media (max-width: 768px) {
 #appShell .sidebar-nav-btn {
   min-height: 40px;
   gap: 1px;
@@ -42,7 +64,11 @@
   font-weight: 400;
   line-height: 20px;
 }
+}
+@media (max-width: 768px) {
 #appShell .sidebar-nav-btn svg { width: 22px; height: 22px; color: inherit; flex: 0 0 22px; }
+}
+@media (max-width: 768px) {
 #appShell .sidebar-nav-btn .nav-new-badge {
   margin-left: 4px;
   padding: 1px 6px 2px;
@@ -52,41 +78,69 @@
   font-size: 10px;
   line-height: 16px;
 }
+}
+@media (max-width: 768px) {
 #appShell .sidebar-nav-btn:hover,
 #appShell .sidebar-nav-btn.active { background: var(--ui-bg-raised); color: var(--ui-text-primary); }
+}
+@media (max-width: 768px) {
 #appShell .sidebar-nav-btn.active { font-weight: 400; }
+}
 /* The landing surface IS the new-chat surface — keep its row raised like
    the reference drawer does, until another surface takes over. */
+@media (max-width: 768px) {
 body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-active):not(.exam-active)
   #appShell .sidebar-nav-btn[data-nav="new"] {
   background: var(--ui-bg-raised);
   color: var(--ui-text-primary);
 }
+}
+@media (max-width: 768px) {
 #appShell .nav-kbd { display: none; }
+}
 
 /* Exam and Skills live in the 更多 popover — the primary rail stays at
    the reference's six destinations on every viewport. */
+@media (max-width: 768px) {
 #appShell .sidebar-nav-btn[data-nav="exam"] { display: none; }
+}
 
 /* Session-row overflow: desktop keeps the hover icon pair inline; the
    ⋯ button and its dropdown are the phone affordance. */
+@media (max-width: 768px) {
 #appShell .recent-item-overflow { display: none; }
+}
 #appShell .recent-item-menu { display: contents; }
 #appShell .recent-item-action-icon { display: inline-flex; }
 #appShell .recent-item-action-text { display: none; }
 
+@media (max-width: 768px) {
+
 #appShell .sidebar-search-row { padding: 0 8px 8px; }
+}
+@media (max-width: 768px) {
 #appShell .sidebar-search {
   height: 38px;
   border: 1px solid var(--ui-border-subtle);
   border-radius: 10px;
   background: var(--ui-bg-raised);
 }
+}
+@media (max-width: 768px) {
 #appShell .sidebar-search input { color: var(--ui-text-primary); font-size: 14px; }
+}
+@media (max-width: 768px) {
 #appShell .sidebar-search input::placeholder { color: var(--ui-text-muted); }
+}
+
+@media (max-width: 768px) {
 
 #appShell .recents-panel { padding: 0 8px; }
+}
+@media (max-width: 768px) {
 #appShell .recents-header { padding: 12px 10px 6px; }
+}
+@media (max-width: 768px) {
 #appShell .recents-title,
 #appShell .recents-time-label {
   color: var(--ui-text-muted);
@@ -95,22 +149,25 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   text-transform: none;
   letter-spacing: 0.01em;
 }
+}
+@media (max-width: 768px) {
 #appShell .recent-item {
   min-height: 44px;
   padding: 7px 10px;
   border-radius: 9px;
   color: var(--ui-text-secondary);
 }
+}
+@media (max-width: 768px) {
 #appShell .recent-item:hover,
 #appShell .recent-item.active { background: var(--ui-bg-raised); color: var(--ui-text-primary); }
+}
+@media (max-width: 768px) {
 #appShell .sidebar-footer {
   min-height: 68px;
   border-top: 1px solid var(--ui-border-subtle);
   background: var(--ui-bg-sidebar);
 }
-
-@media (min-width: 769px) {
-  #appShell .sidebar-search-btn { display: none; }
 }
 
 @media (max-width: 768px) {

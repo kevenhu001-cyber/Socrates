@@ -39,16 +39,42 @@ export function editUserMessage(messageId){
   if(!div){return}
   var body=div.querySelector(".msg-body");
   if(!body){return}
-  /* Swap the rendered body for a textarea, preserving width.
-     Show plain text only — strip markdown formatting symbols so
-     the user edits clean content without **bold**, *italic*, etc. */
+  /* Swap the rendered body for a textarea with explicit Cancel / Send actions (ChatGPT-style). */
+  var wrap=document.createElement("div");
+  wrap.className="msg-edit-wrap";
+
   var ta=document.createElement("textarea");
   ta.className="msg-edit-area";
   ta.value=stripMarkdown(entry.rawText||"");
+
+  var actions=document.createElement("div");
+  actions.className="msg-edit-actions";
+
+  var cancelBtn=document.createElement("button");
+  cancelBtn.type="button";
+  cancelBtn.className="msg-edit-btn msg-edit-cancel";
+  cancelBtn.textContent=_t("common.cancel")||"Cancel";
+
+  var submitBtn=document.createElement("button");
+  submitBtn.type="button";
+  submitBtn.className="msg-edit-btn msg-edit-submit";
+  submitBtn.textContent=_t("chat.send")||"Send";
+
+  actions.appendChild(cancelBtn);
+  actions.appendChild(submitBtn);
+
+  wrap.appendChild(ta);
+  wrap.appendChild(actions);
+
   body.innerHTML="";
-  body.appendChild(ta);
+  body.appendChild(wrap);
   ta.focus();
   ta.setSelectionRange(ta.value.length,ta.value.length);
+
+  function cancel(){
+    restoreMessageBody(entry,body);
+  }
+
   function commit(){
     var next=ta.value.trim();
     if(!next||next===entry.rawText){
@@ -119,14 +145,23 @@ export function editUserMessage(messageId){
        linters don't drop it. */
     void patchPromise;
   }
-  ta.addEventListener("blur",commit);
+  cancelBtn.addEventListener("click",function(ev){
+    ev.preventDefault();
+    ev.stopPropagation();
+    cancel();
+  });
+  submitBtn.addEventListener("click",function(ev){
+    ev.preventDefault();
+    ev.stopPropagation();
+    commit();
+  });
   ta.addEventListener("keydown",function(ev){
     if(ev.key==="Enter"&&(ev.metaKey||ev.ctrlKey)){
       ev.preventDefault();
-      ta.blur();
+      commit();
     }else if(ev.key==="Escape"){
       ev.preventDefault();
-      restoreMessageBody(entry,body);
+      cancel();
     }
   });
 }

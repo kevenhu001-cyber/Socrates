@@ -12,6 +12,7 @@ import {
   setBackgroundDark, setBackgroundLight, resetBackgroundDark, resetBackgroundLight,
   DISPLAY_FONT_STEPS, DISPLAY_WIDTH_STEPS, FONT_LABELS, WIDTH_LABELS,
 } from '../../displayPrefs.js';
+import { getAllMemories, removeMemory, setMemory, clearAllMemories } from '../../storage/memoryStore.js';
 
 const OVERLAY_ID = 'settingsOverlay';
 const TRACK_ID = 'stgToggleTrack';
@@ -33,6 +34,14 @@ function SettingsModal() {
     try { return localStorage.getItem('socrates-image-model') || ''; } catch { return ''; }
   });
   const [voiceLanguage, setVoiceLanguage] = useState(() => localStorage.getItem('socrates-voice-language') || 'auto');
+  const [memories, setMemories] = useState<Array<{ id: string; key: string; value: string }>>(() => {
+    try { return getAllMemories(); } catch { return []; }
+  });
+  const [newMemoryKey, setNewMemoryKey] = useState('');
+  const [newMemoryVal, setNewMemoryVal] = useState('');
+  const [customInstructions, setCustomInstructions] = useState(() => {
+    try { return localStorage.getItem('socrates-custom-instructions') || ''; } catch { return ''; }
+  });
   const profile = useProfileSnapshot();
   const profileActions = useProfileDispatch();
   /* displayPrefs is a live module binding — mirror it into state so the
@@ -258,8 +267,124 @@ function SettingsModal() {
           </section>
           <section className="settings-pane" hidden={section !== 'personalization'}>
             <h2>{label('个性化', 'Personalization')}</h2>
-            <p>{label('选择助手的说话风格。', 'Choose how Socrates speaks in a session.')}</p>
-            <div className="tone-preset-options" id={TONE_OPTIONS_ID} />
+
+            <section className="settings-section">
+              <div className="settings-section-head">
+                <h3>{label('助手语调风格', 'Tone & voice')}</h3>
+                <p>{label('选择助手的说话风格。', 'Choose how Socrates speaks in a session.')}</p>
+              </div>
+              <div className="tone-preset-options" id={TONE_OPTIONS_ID} />
+            </section>
+
+            <section className="settings-section">
+              <div className="settings-section-head">
+                <h3>{label('自定义指令', 'Custom instructions')}</h3>
+                <p>{label('希望助手了解你什么，或者以怎样的风格与格式回答。', 'What would you like the assistant to know about you to provide better responses.')}</p>
+              </div>
+              <textarea
+                className="settings-textarea"
+                rows={3}
+                value={customInstructions}
+                placeholder={label('例如：我是高中物理老师，喜欢结构化、带有举例说明的清晰回答。', 'e.g. I am a physics student; prefer concise, step-by-step explanations with examples.')}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setCustomInstructions(val);
+                  try { localStorage.setItem('socrates-custom-instructions', val); } catch (_) {}
+                  void savePreference({ customInstructions: val });
+                }}
+              />
+            </section>
+
+            <section className="settings-section">
+              <div className="settings-section-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3>{label('跨会话记忆', 'Memory')}</h3>
+                  <p>{label('助手在对话中自动沉淀的关于你的背景与偏好。', 'Things the assistant has learned about you across conversations.')}</p>
+                </div>
+                {memories.length > 0 && (
+                  <button
+                    type="button"
+                    className="settings-btn-mini danger"
+                    onClick={() => {
+                      if (!window.confirm(label('确定要清空全部已保存的记忆吗？', 'Are you sure you want to clear all memories?'))) return;
+                      clearAllMemories();
+                      setMemories([]);
+                    }}
+                  >
+                    {label('清空全部', 'Clear all')}
+                  </button>
+                )}
+              </div>
+
+              <div className="settings-memory-list">
+                {memories.length === 0 ? (
+                  <div className="settings-empty-hint">
+                    {label('暂无已保存的记忆。在对话中助手会自动记住关键偏好，你也可以在此手动添加。', 'No saved memories yet. The assistant learns details as you chat, or you can add them below.')}
+                  </div>
+                ) : (
+                  memories.map((m) => (
+                    <div key={m.id} className="settings-memory-item">
+                      <div className="settings-memory-content">
+                        <span className="settings-memory-key">{m.key}</span>
+                        <span className="settings-memory-val">{m.value}</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="settings-memory-del-btn"
+                        aria-label={label('删除记忆', 'Delete memory')}
+                        title={label('删除记忆', 'Delete memory')}
+                        onClick={() => {
+                          removeMemory(m.id);
+                          setMemories(getAllMemories());
+                          try {
+                            (window as any).apiFetch?.(`/api/memory/${m.id}`, { method: 'DELETE' }).catch(() => {});
+                          } catch (_) {}
+                        }}
+                      >
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <form
+                className="settings-memory-add-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!newMemoryVal.trim()) return;
+                  const k = newMemoryKey.trim() || 'fact';
+                  setMemory(k, newMemoryVal.trim());
+                  setMemories(getAllMemories());
+                  try {
+                    (window as any).apiFetch?.('/api/memory', {
+                      method: 'POST',
+                      body: { text: `${k}: ${newMemoryVal.trim()}` },
+                    }).catch(() => {});
+                  } catch (_) {}
+                  setNewMemoryKey('');
+                  setNewMemoryVal('');
+                }}
+              >
+                <input
+                  type="text"
+                  className="settings-input settings-memory-key-input"
+                  placeholder={label('标签 (如偏好)', 'Key (e.g. preference)')}
+                  value={newMemoryKey}
+                  onChange={(e) => setNewMemoryKey(e.target.value)}
+                />
+                <input
+                  type="text"
+                  className="settings-input settings-memory-val-input"
+                  placeholder={label('记忆内容 (如喜欢用 TypeScript)', 'Value (e.g. prefers TypeScript)')}
+                  value={newMemoryVal}
+                  onChange={(e) => setNewMemoryVal(e.target.value)}
+                />
+                <button type="submit" className="settings-btn secondary" disabled={!newMemoryVal.trim()}>
+                  {label('添加', 'Add')}
+                </button>
+              </form>
+            </section>
           </section>
           <div className="settings-pane" hidden={section !== 'models'}>
           <div className="settings-hero">

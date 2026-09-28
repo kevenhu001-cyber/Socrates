@@ -1,8 +1,11 @@
 /* Page-owned styles for Images, Assistants and Sites. Shared shell colors
    intentionally resolve through the restored ChatGPT surface tokens. */
-#appShell #navSites.sidebar-nav-btn { order:6; }
-#appShell #navMore.sidebar-nav-btn { order:7; }
-#appShell #navImages.sidebar-nav-btn, #appShell #navAssistants.sidebar-nav-btn { display:none !important; }
+@media (max-width: 768px) {
+#appShell #navSites.sidebar-nav-btn { order:6; } }
+@media (max-width: 768px) {
+#appShell #navMore.sidebar-nav-btn { order:7; } }
+@media (max-width: 768px) {
+#appShell #navImages.sidebar-nav-btn, #appShell #navAssistants.sidebar-nav-btn { display:none !important; } }
 #appShell .creation-panel {
   box-sizing: border-box;
   width: 100%;

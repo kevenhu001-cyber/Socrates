@@ -857,11 +857,18 @@
   }
 }
 
-[data-mode="light"] #appShell#appShell #topicInputWrap:not(.voice-recording-active),
-[data-mode="light"] #appShell#appShell #chatInputWrap:not(.voice-recording-active),
 [data-mode="light"] #appShell#appShell .scheduled-task-composer {
   background: var(--cg-surface) !important;
   border-color: var(--cg-border-strong) !important;
+}
+
+@media (max-width: 768px) {
+
+[data-mode="light"] #appShell#appShell #topicInputWrap:not(.voice-recording-active),
+[data-mode="light"] #appShell#appShell #chatInputWrap:not(.voice-recording-active) {
+  background: var(--cg-surface) !important;
+  border-color: var(--cg-border-strong) !important;
+}
 }
 
 [data-mode="light"] body #composerToolsMenu {

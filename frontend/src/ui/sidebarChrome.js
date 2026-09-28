@@ -23,6 +23,23 @@ export function syncSidebarBtns() {
      var, so reading the var here would desync after the first toggle. */
   var s = document.getElementById('sidebar');
   var open = s ? !s.classList.contains('collapsed') : sidebarOpen;
+  /* Desktop collapses to chatgpt.com's 52px icon rail (styles/parity/
+     sidebar.css): the rail keeps its own toggle, so the header button stays
+     reachable in both states and the top-bar opener is never needed. */
+  if (!isMobileViewport()) {
+    if (ob) {
+      ob.style.display = 'none';
+      ob.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    if (cb) {
+      cb.style.display = '';
+      cb.removeAttribute('aria-hidden');
+      cb.setAttribute('aria-expanded', open ? 'true' : 'false');
+      cb.setAttribute('aria-label', open ? 'Close sidebar' : 'Open sidebar');
+      cb.setAttribute('title', open ? 'Close sidebar (⌘B)' : 'Open sidebar (⌘B)');
+    }
+    return;
+  }
   /* Keep the top-bar toggle button hidden when sidebar is open
      (the close button inside the sidebar header is visible then).
      Show the toggle button only when sidebar is collapsed so the

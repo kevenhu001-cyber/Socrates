@@ -55,6 +55,8 @@ function setWebSearchOn(value) {
   webSearchOn = !!value;
   try { window.webSearchOn = webSearchOn; } catch {}
   try { localStorage.setItem("socrates-websearch", JSON.stringify(webSearchOn)); } catch {}
+  /* The composer's web-search chip (RichComposer) subscribes to this. */
+  try { document.dispatchEvent(new CustomEvent("socrates:websearchchange", { detail: { on: webSearchOn } })); } catch {}
   return webSearchOn;
 }
 

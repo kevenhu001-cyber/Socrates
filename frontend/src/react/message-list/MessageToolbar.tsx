@@ -37,16 +37,26 @@ interface MessageToolbarProps {
 
 function MessageToolbar({ message, role }: MessageToolbarProps): React.ReactElement | null {
   const c = useMessageToolbarCallbacks(message);
+  const [copied, setCopied] = React.useState(false);
   const id = typeof message.id === 'string' ? message.id
     : typeof message.clientId === 'string' ? message.clientId
     : '';
 
+  const handleCopy = () => {
+    c.onCopy?.();
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className="msg-toolbar" data-role={role} data-message-id={id}>
       <IconButton
-        label="Copy"
-        onClick={() => c.onCopy?.()}
-        svgInner='<rect width="14" height="14" x="8" y="8" rx="2.5"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>'
+        label={copied ? "Copied" : "Copy"}
+        onClick={handleCopy}
+        active={copied}
+        svgInner={copied
+          ? '<polyline points="20 6 9 17 4 12"/>'
+          : '<rect width="14" height="14" x="8" y="8" rx="2.5"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>'}
       />
       {role === 'user' && (
         <>

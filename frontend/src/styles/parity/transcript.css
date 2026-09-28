@@ -1,0 +1,229 @@
+/*
+ * parity/transcript.css — the desktop (>= 769px) conversation column,
+ * aligned with chatgpt.com (docs/ref/chatgpt-parity.md): a 768px reading
+ * column, 16px/28px prose, neutral user bubble (radius 18, max 70%), light
+ * code blocks in light mode, hairline tables, non-italic quotes and a quiet
+ * 32px action toolbar.
+ *
+ * Text sizes follow the display preference: --app-type-scale is 1 at the
+ * default "M" step (--app-font-scale 1.125), so the default is exactly the
+ * reference size and S/L/XL still scale proportionally.
+ *
+ * Socrates-specific blocks (viz cards, tool rows, thinking, tutor widgets,
+ * KaTeX) are untouched here; see parity/socrates.css.
+ */
+
+@media (min-width: 769px) {
+  #appShell #msgList {
+    --prose-size: calc(var(--ui-text-body) * var(--app-type-scale));
+    --prose-line: calc(var(--ui-text-body-line) * var(--app-type-scale));
+    box-sizing: border-box;
+    width: 100%;
+    max-width: calc(var(--ui-content-chat) + 40px);
+    margin-inline: auto;
+    padding: 28px 20px 24px;
+    gap: 0;
+    scroll-padding-block: 24px;
+    font-family: var(--font-sans);
+  }
+
+  /* ── Turns ───────────────────────────────────────────────────────────── */
+  #appShell #msgList > .msg {
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  #appShell #msgList > .msg.user { align-items: flex-end; }
+  #appShell #msgList > .msg + .msg { margin-top: 20px; }
+  #appShell #msgList > .msg.assistant + .msg.user { margin-top: 40px; }
+
+  #appShell #msgList .msg-body {
+    color: var(--ui-text-primary);
+    font-family: var(--font-sans);
+    font-size: var(--prose-size);
+    line-height: var(--prose-line);
+    letter-spacing: normal;
+    overflow-wrap: anywhere;
+  }
+
+  /* User bubble */
+  #appShell #msgList .msg.user .msg-body {
+    max-width: 70%;
+    padding: 10px 16px;
+    border: 0;
+    border-radius: var(--ui-radius-bubble);
+    background: var(--ui-bg-bubble);
+  }
+  #appShell #msgList .msg.user .msg-body p { margin: 0; }
+
+  /* ── Prose (assistant) ───────────────────────────────────────────────── */
+  #appShell #msgList .msg.assistant .msg-body { padding: 0; border: 0; border-radius: 0; background: transparent; }
+  #appShell #msgList .msg-body :where(p, ul, ol, pre, table, blockquote, .code-block-header):first-child,
+  #appShell #msgList .msg-body > :first-child > :where(h1, h2, h3, h4, p):first-child { margin-top: 0; }
+  #appShell #msgList .msg-body p { margin: 0 0 12px; }
+  #appShell #msgList .msg-body p:last-child { margin-bottom: 0; }
+  #appShell #msgList .msg-body strong { font-weight: 600; }
+  #appShell #msgList .msg-body :where(h1, h2, h3, h4) {
+    color: var(--ui-text-primary);
+    font-family: var(--font-sans);
+    font-weight: 600;
+    letter-spacing: normal;
+  }
+  #appShell #msgList .msg-body h1 { margin: 28px 0 12px; font-size: calc(24px * var(--app-type-scale)); line-height: 1.33; }
+  #appShell #msgList .msg-body h2 { margin: 24px 0 8px; font-size: calc(20px * var(--app-type-scale)); line-height: 1.4; }
+  #appShell #msgList .msg-body h3 { margin: 20px 0 6px; font-size: calc(18px * var(--app-type-scale)); line-height: 1.55; }
+  #appShell #msgList .msg-body h4 { margin: 16px 0 4px; font-size: var(--prose-size); line-height: var(--prose-line); }
+  #appShell #msgList .msg-body :where(ul, ol) { margin: 0 0 12px; padding-left: 26px; }
+  #appShell #msgList .msg-body li { margin: 0 0 4px; padding-left: 2px; }
+  #appShell #msgList .msg-body li > :where(ul, ol) { margin: 4px 0 0; }
+  #appShell #msgList .msg-body li::marker { color: var(--ui-text-tertiary); }
+  #appShell #msgList .msg-body hr {
+    height: 0;
+    margin: 24px 0;
+    border: 0;
+    border-top: 1px solid var(--ui-border-default);
+  }
+  #appShell #msgList .msg-body a:not(.code-block-copy) {
+    color: inherit;
+    font-weight: 500;
+    text-decoration: underline;
+    text-decoration-color: var(--ui-border-strong);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+  #appShell #msgList .msg-body a:not(.code-block-copy):hover { text-decoration-color: currentColor; }
+  #appShell #msgList .msg-body blockquote {
+    margin: 0 0 12px;
+    padding: 0 0 0 16px;
+    border: 0;
+    border-left: 2px solid var(--ui-border-strong);
+    color: var(--ui-text-primary);
+    font-style: normal;
+  }
+  #appShell #msgList .msg-body blockquote p { color: inherit; font-style: normal; }
+
+  /* Inline code */
+  #appShell #msgList .msg-body :not(pre) > code {
+    padding: 2px 5px;
+    border-radius: var(--ui-radius-sm);
+    background: var(--ui-bg-chip);
+    color: var(--ui-text-primary);
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    font-weight: 500;
+  }
+
+  /* ── Code blocks: one rounded card, label + copy in a quiet header ───── */
+  #appShell #msgList .msg-body .code-block-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 36px;
+    margin: 0;
+    padding: 0 8px 0 16px;
+    border: 0;
+    border-radius: var(--ui-radius-xl) var(--ui-radius-xl) 0 0;
+    background: var(--ui-bg-code);
+    color: var(--ui-text-tertiary);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    line-height: 16px;
+    opacity: 1;
+  }
+  #appShell #msgList .msg-body .code-block-header-lang { margin-right: auto; color: inherit; font: inherit; }
+  #appShell #msgList .msg-body .code-block-copy,
+  #appShell #msgList .msg-body .code-block-expand {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 28px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: var(--ui-radius-md);
+    background: transparent;
+    color: var(--ui-text-tertiary);
+    font: inherit;
+    cursor: pointer;
+    transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+  }
+  #appShell #msgList .msg-body .code-block-copy:hover,
+  #appShell #msgList .msg-body .code-block-expand:hover {
+    background: var(--ui-bg-hover-ghost);
+    color: var(--ui-text-primary);
+  }
+  #appShell #msgList .msg-body pre {
+    margin: 0 0 16px;
+    padding: 16px;
+    overflow-x: auto;
+    border: 0;
+    border-radius: var(--ui-radius-xl);
+    background: var(--ui-bg-code);
+    color: var(--ui-text-primary);
+    font-family: var(--font-mono);
+    font-size: calc(14px * var(--app-type-scale));
+    line-height: 1.6;
+  }
+  #appShell #msgList .msg-body .code-block-header + pre {
+    padding-top: 4px;
+    border-radius: 0 0 var(--ui-radius-xl) var(--ui-radius-xl);
+  }
+  #appShell #msgList .msg-body pre code {
+    padding: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+  }
+
+  /* ── Tables: hairline rows, no fills ─────────────────────────────────── */
+  #appShell #msgList .msg-body table {
+    width: auto;
+    min-width: 50%;
+    max-width: 100%;
+    margin: 0 0 16px;
+    border: 0;
+    border-collapse: collapse;
+    font-size: calc(14px * var(--app-type-scale));
+    line-height: 1.5;
+  }
+  #appShell #msgList .msg-body :where(th, td) {
+    padding: 8px 16px 8px 0;
+    border: 0;
+    border-bottom: 1px solid var(--ui-border-subtle);
+    background: transparent;
+    color: var(--ui-text-primary);
+    text-align: left;
+    vertical-align: top;
+  }
+  #appShell #msgList .msg-body th {
+    border-bottom-color: var(--ui-border-strong);
+    font-weight: 600;
+  }
+  #appShell #msgList .msg-body tr:last-child td { border-bottom: 0; }
+
+  /* ── Action toolbar ──────────────────────────────────────────────────── */
+  #appShell #msgList .msg-toolbar {
+    gap: 0;
+    margin: 4px 0 0 -6px;
+  }
+  #appShell #msgList .msg.user .msg-toolbar { margin: 4px -6px 0 0; }
+  #appShell #msgList .msg-toolbar-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--ui-radius-md);
+    background: transparent;
+    color: var(--ui-text-secondary);
+    cursor: pointer;
+    transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+  }
+  #appShell #msgList .msg-toolbar-btn:hover,
+  #appShell #msgList .msg-toolbar-btn:focus-visible {
+    background: var(--ui-bg-hover-ghost);
+    color: var(--ui-text-primary);
+  }
+  #appShell #msgList .msg-toolbar-btn svg { width: 18px; height: 18px; }
+}

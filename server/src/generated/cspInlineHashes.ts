@@ -11,6 +11,6 @@
  * gate instead of breaking script execution in production.
  */
 export const CSP_INLINE_SCRIPT_HASHES: readonly string[] = [
-  "'sha256-V5ESntZJTxktBbdZNC268w0gIH6g/beEbhSQSqEYO50='",
+  "'sha256-Wr5vEyauh86ISxi4UFWtlOBCUydUZjEl+Vsq3Ub4CWs='",
   "'sha256-qOFuoUR4ljRJGqtdsIm//H58vPr68RBB44qHOGIyxnQ='",
 ] as const;

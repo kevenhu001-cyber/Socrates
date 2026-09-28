@@ -6,6 +6,8 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   margin-inline: auto;
 }
 
+@media (max-width: 768px) {
+
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell #msgList {
   box-sizing: border-box;
   width: 100%;
@@ -15,6 +17,9 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   padding: 28px 20px 24px;
   scroll-padding-block: 24px;
 }
+}
+
+@media (max-width: 768px) {
 
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell #msgList > .msg {
   box-sizing: border-box;
@@ -22,19 +27,28 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   padding: 0;
   color: var(--ui-text-primary);
 }
+}
+
+@media (max-width: 768px) {
 
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell #msgList > .msg.user {
   align-items: flex-end;
 }
+}
+
+@media (max-width: 768px) {
 
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body {
   color: var(--ui-text-primary);
-  font-family: "Inter", "Noto Sans SC", sans-serif;
+  font-family: var(--font-sans);
   font-size: calc(15px * var(--app-font-scale, 1));
   font-weight: 400;
   line-height: 1.65;
   letter-spacing: -.006em;
 }
+}
+
+@media (max-width: 768px) {
 
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg.user .msg-body {
   max-width: min(76%, 680px);
@@ -44,6 +58,9 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   background: var(--ui-bg-bubble);
   box-shadow: none;
 }
+}
+
+@media (max-width: 768px) {
 
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg.assistant .msg-body {
   width: 100%;
@@ -53,11 +70,15 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   background: transparent;
   box-shadow: none;
 }
+}
+
+@media (max-width: 768px) {
 
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-toolbar {
   min-height: 26px;
   height: 26px;
   margin-top: 5px;
+}
 }
 
 @media (max-width: 768px) {

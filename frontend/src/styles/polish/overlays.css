@@ -236,3 +236,105 @@
 .tag-editor-popover input {
   border-radius: var(--ui-radius-control, 8px);
 }
+
+/* ── Settings modal: custom instructions & memory list ── */
+.settings-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--ui-radius-lg);
+  border: 0.5px solid hsl(var(--border-300) / 0.15);
+  background: hsl(var(--bg-200));
+  font-size: calc(13.5px * var(--app-font-scale, 1));
+  color: hsl(var(--text-100));
+  font-family: inherit;
+  outline: none;
+  resize: vertical;
+  line-height: 1.5;
+  transition: border-color 0.12s;
+}
+.settings-textarea:focus {
+  border-color: hsl(var(--accent-000) / 0.4);
+}
+.settings-textarea::placeholder {
+  color: hsl(var(--text-500));
+}
+.settings-memory-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-bottom: 8px;
+}
+.settings-memory-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: var(--ui-radius-control);
+  background: hsl(var(--bg-200));
+  border: 0.5px solid hsl(var(--border-300) / 0.1);
+}
+.settings-memory-content {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  overflow: hidden;
+  flex: 1;
+}
+.settings-memory-key {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--ui-radius-xs);
+  background: hsl(var(--bg-300));
+  color: hsl(var(--text-300));
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+.settings-memory-val {
+  font-size: 13px;
+  color: hsl(var(--text-100));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.settings-memory-del-btn {
+  background: transparent;
+  border: none;
+  color: hsl(var(--text-400));
+  padding: 4px;
+  border-radius: var(--ui-radius-xs);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.12s, background 0.12s;
+}
+.settings-memory-del-btn:hover {
+  color: hsl(0 65% 55%);
+  background: hsl(var(--bg-300));
+}
+.settings-memory-add-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 6px;
+}
+.settings-memory-key-input {
+  flex: 0 0 110px;
+}
+.settings-memory-val-input {
+  flex: 1;
+}
+.settings-empty-hint {
+  font-size: 12.5px;
+  color: hsl(var(--text-400));
+  padding: 12px 4px;
+  font-style: italic;
+  line-height: 1.4;
+}
+

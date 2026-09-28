@@ -732,25 +732,11 @@ function _formatMsgProgressive(t: string, opts?: StreamingPreprocessOptions): st
 
   s = s.replace(/^```(?:viz|html|svg)\s*$/m, '```viz\n');
 
-  s = s.replace(/<think>([\s\S]*?)<\/think>/g, function (_, content: string) {
-    let inner: string;
-    try {
-      inner = formatMsgProgressive(content.trim().replace(/<\/?think>/g, ''));
-    } catch (_e) {
-      inner = escHTML(content.trim());
-    }
-    return save(_thinkDetails(inner, { streaming: false, count: _thinkUnitCount(content.trim().replace(/<\/?think>/g, '')) }));
-  });
-  s = s.replace(/<think>([\s\S]*)$/g, function (_, content: string) {
-    let inner = '';
-    try {
-      const c = content.trim().replace(/<\/?think>/g, '');
-      inner = c ? formatMsgProgressive(c) : '<span class="scaffold-stream-placeholder">Thinking…</span>';
-    } catch (_e) {
-      inner = escHTML(content.trim());
-    }
-    return save(_thinkDetails(inner, { streaming: true, count: _thinkUnitCount(content.trim().replace(/<\/?think>/g, '')) }));
-  });
+  /* P_chatgpt-parity — strip <think> blocks so thinking process does not
+     clutter the chat bubble or persistent transcript; the live status line
+     (TurnStatus) handles the transient thinking cue during streaming. */
+  s = s.replace(/<think>[\s\S]*?<\/think>/gi, '');
+  s = s.replace(/<think>[\s\S]*$/gi, '');
 
   function _scaffoldText(inner: string): string {
     const text = inner.replace(/<[^>]+>/g, '').trim();
@@ -1001,25 +987,10 @@ function _formatMsg(t: string): string {
 
   procT = procT.replace(/^```(?:viz|html|svg)\s*$/m, '```viz\n');
 
-  procT = procT.replace(/<think>([\s\S]*?)<\/think>/g, function (_, content: string) {
-    let inner: string;
-    try {
-      inner = formatMsg(content.trim().replace(/<\/?think>/g, ''));
-    } catch (_) {
-      inner = esc(content.trim());
-    }
-    return save(_thinkDetails(inner, { streaming: false, count: _thinkUnitCount(content.trim().replace(/<\/?think>/g, '')) }));
-  });
-  procT = procT.replace(/<think>([\s\S]*)$/g, function (_, content: string) {
-    let inner = '';
-    try {
-      const c = content.trim().replace(/<\/?think>/g, '');
-      inner = c ? formatMsg(c) : '<span class="scaffold-stream-placeholder">Thinking…</span>';
-    } catch (_) {
-      inner = esc(content.trim());
-    }
-    return save(_thinkDetails(inner, { streaming: true, count: _thinkUnitCount(content.trim().replace(/<\/?think>/g, '')) }));
-  });
+  /* P_chatgpt-parity — settled messages and reloaded history do not retain
+     collapsible thinking blocks; user sees only the finished answer. */
+  procT = procT.replace(/<think>[\s\S]*?<\/think>/gi, '');
+  procT = procT.replace(/<think>[\s\S]*$/gi, '');
 
   procT = procT.replace(/```mermaid\s*\n?([\s\S]*?)```/g, function (_, code: string) {
     const trimmed = code.trim();
@@ -1203,17 +1174,26 @@ interface CopyButtonEl extends HTMLButtonElement {
   _copyFeedbackTimer?: ReturnType<typeof setTimeout>;
 }
 
+const CHECK_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+  'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<polyline points="20 6 9 17 4 12"/></svg>';
+
 function setCodeCopyFeedback(button: CopyButtonEl, ok: boolean): void {
   const labelEl = button.querySelector('.code-block-copy-label');
   const idleLabel = trCopy('tool.copyCode', 'Copy');
   button.classList.remove('copied', 'copy-failed');
   button.classList.add(ok ? 'copied' : 'copy-failed');
-  if (labelEl) labelEl.textContent = ok ? trCopy('tool.copied', 'Copied') : trCopy('tool.copyFailed', 'Copy failed');
+  if (ok) {
+    button.innerHTML = CHECK_ICON + '<span class="code-block-copy-label">' + escHTML(trCopy('tool.copied', 'Copied')) + '</span>';
+  } else {
+    if (labelEl) labelEl.textContent = trCopy('tool.copyFailed', 'Copy failed');
+  }
   clearTimeout(button._copyFeedbackTimer);
   button._copyFeedbackTimer = setTimeout(function () {
     button.classList.remove('copied', 'copy-failed');
-    if (labelEl) labelEl.textContent = idleLabel;
-  }, 1200);
+    button.innerHTML = COPY_ICON + '<span class="code-block-copy-label">' + escHTML(idleLabel) + '</span>';
+  }, 1800);
 }
 
 /* Build the copy button for a code-block header. The `<code>` textContent is

@@ -5,7 +5,7 @@
  * Two machine-checked rules (the 2026-09-23 audit's "Remaining work" item):
  *
  * 1. Cascade order: styles/index.css must import the tiers in the documented
- *    order (tokens → legacy → modular → restore → polish). Reordering across
+ *    order (tokens → legacy → modular → restore → parity → polish). Reordering across
  *    tiers silently flips which layer owns a surface.
  *
  * 2. Debt ratchet: for every stylesheet under src/styles we count
@@ -62,6 +62,7 @@ function checkCascadeOrder() {
     if (spec === './tokens.css' || spec === './themes.css') return 1;
     if (spec.startsWith('./legacy/')) return 2;
     if (spec.startsWith('./restore/')) return 4;
+    if (spec.startsWith('./parity/')) return 4.5;
     if (spec.startsWith('./polish/')) return 5;
     if (spec.startsWith('./foundations/') || spec.startsWith('./layout/')
       || spec.startsWith('./components/') || spec.startsWith('./features/')) return 3;

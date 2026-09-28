@@ -1,0 +1,11 @@
+/*
+ * parity/ — chatgpt.com-aligned desktop layer (reference values:
+ * docs/ref/chatgpt-parity.md). Each file owns one surface on desktop; the
+ * older rules for that surface were moved behind @media (max-width: 768px)
+ * by scripts/migrate-surface-css.mjs, so this layer needs no !important.
+ * Sits after restore/ (being retired) and before polish/.
+ */
+@import './sidebar.css';
+@import './topbar.css';
+@import './composer.css';
+@import './transcript.css';

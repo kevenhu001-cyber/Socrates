@@ -1,0 +1,172 @@
+/*
+ * parity/topbar.css — the desktop (>= 769px) header, aligned with
+ * chatgpt.com (docs/ref/chatgpt-parity.md): a borderless 52px bar on the
+ * page color with the model switcher at the top-left ("Socrates <model> ▾",
+ * opening the chat-configuration popover) and ghost actions (find, share)
+ * on the right. Socrates' Chat/Tutor mode tabs stay, restyled as a quiet
+ * centered segmented control.
+ *
+ * Older header rules were moved behind @media (max-width: 768px) by
+ * scripts/migrate-surface-css.mjs (surface "topbar"); phone-only controls
+ * keep their legacy desktop display:none.
+ */
+
+#appShell #topModelSwitcher { display: none; }
+
+@media (min-width: 769px) {
+  #appShell .top-bar {
+    position: relative;
+    z-index: 20;
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    box-sizing: border-box;
+    height: 52px;
+    min-height: 52px;
+    margin: 0;
+    padding: 0 8px;
+    border: 0;
+    background: var(--ui-bg-page);
+    color: var(--ui-text-primary);
+    font-family: var(--font-sans);
+    font-size: var(--ui-text-ui);
+    line-height: var(--ui-text-ui-line);
+    box-shadow: none;
+  }
+
+  #appShell .top-bar-left,
+  #appShell .top-bar-right {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 4px;
+    height: 52px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+  }
+  #appShell .top-bar-right { margin-left: auto; }
+
+  /* ── Model switcher ──────────────────────────────────────────────────── */
+  #appShell #topModelSwitcher {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 360px;
+    height: 36px;
+    margin: 0;
+    padding: 0 8px 0 10px;
+    border: 0;
+    border-radius: var(--ui-radius-row);
+    background: transparent;
+    color: var(--ui-text-primary);
+    font: inherit;
+    font-size: 18px;
+    line-height: 28px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color var(--ui-duration-hover) ease;
+  }
+  #appShell #topModelSwitcher:hover,
+  #appShell #topModelSwitcher[aria-expanded="true"] { background: var(--ui-bg-hover); }
+  #appShell #topModelSwitcher:focus-visible { outline: 2px solid var(--ui-border-strong); outline-offset: 1px; }
+  #appShell .top-model-switcher-name { font-weight: 600; }
+  #appShell .top-model-switcher-model {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--ui-text-tertiary);
+    font-weight: 400;
+    text-overflow: ellipsis;
+  }
+  #appShell .top-model-switcher-model:empty { display: none; }
+  #appShell .top-model-switcher-caret {
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+    color: var(--ui-text-tertiary);
+  }
+  /* The header switcher replaces the old icon-only model trigger. */
+  #appShell #chatModelWrap { display: none; }
+
+  /* ── Chat / Tutor mode tabs (Socrates-specific) ──────────────────────── */
+  #appShell #modeSegmentedTop {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    z-index: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    height: 36px;
+    margin: 0;
+    padding: 2px;
+    border: 0;
+    border-radius: var(--ui-radius-pill);
+    background: var(--ui-bg-chip);
+    transform: translateX(-50%);
+  }
+  #appShell #modeSegmentedTop[hidden],
+  #appShell #modeSegmentedTop.hidden { display: none; }
+  #appShell #modeSegmentedTop .app-mode-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 56px;
+    height: 32px;
+    margin: 0;
+    padding: 0 14px;
+    border: 0;
+    border-radius: var(--ui-radius-pill);
+    background: transparent;
+    color: var(--ui-text-secondary);
+    font: inherit;
+    font-size: var(--ui-text-ui);
+    font-weight: 500;
+    line-height: var(--ui-text-ui-line);
+    cursor: pointer;
+    transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+  }
+  #appShell #modeSegmentedTop .app-mode-toggle:hover { color: var(--ui-text-primary); }
+  #appShell #modeSegmentedTop .app-mode-toggle.active,
+  #appShell #modeSegmentedTop .app-mode-toggle[aria-selected="true"] {
+    background: var(--ui-bg-segment-active);
+    color: var(--ui-text-primary);
+  }
+  [data-mode="light"] #appShell #modeSegmentedTop .app-mode-toggle[aria-selected="true"] {
+    box-shadow: 0 1px 2px rgb(0 0 0 / 8%), 0 0 0 1px rgb(0 0 0 / 4%);
+  }
+
+  /* ── Right actions ───────────────────────────────────────────────────── */
+  #appShell #shareBtn,
+  #appShell #findBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 36px;
+    margin: 0;
+    border: 0;
+    border-radius: var(--ui-radius-pill);
+    background: transparent;
+    color: var(--ui-text-primary);
+    font: inherit;
+    font-size: var(--ui-text-ui);
+    font-weight: 500;
+    line-height: var(--ui-text-ui-line);
+    cursor: pointer;
+    transition: background-color var(--ui-duration-hover) ease;
+  }
+  #appShell #findBtn { width: 36px; padding: 0; }
+  #appShell #shareBtn:hover,
+  #appShell #findBtn:hover { background: var(--ui-bg-hover); }
+  #appShell #shareBtn svg,
+  #appShell #findBtn svg { width: 18px; height: 18px; }
+  #appShell #shareBtn.hidden,
+  #appShell #findBtn.hidden { display: none; }
+  /* Icon-only on desktop (sidebar-nav.spec contract). */
+  #appShell #shareBtn { width: 36px; padding: 0; }
+}

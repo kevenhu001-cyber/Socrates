@@ -11,7 +11,9 @@
  *                                  slices override each other by order.
  *   Tier 3  modular              — foundations/layout/components/features:
  *                                  the current component-owned styles.
- *   Tier 4  restore/             — the pre-rework visual layer.
+ *   Tier 4  restore/             — the pre-rework visual layer (being retired).
+ *   Tier 4b parity/              — chatgpt.com-aligned desktop layer; owns
+ *                                  each migrated surface on desktop.
  *   Tier 5  polish/              — the design-polish layer; must stay
  *                                  last so it outranks everything above.
  */
@@ -35,6 +37,9 @@
 
 /* Tier 4 — restored pre-rework visual layer */
 @import './restore/index.css';
+
+/* Tier 4b — chatgpt.com parity layer (replaces restore/ surface by surface) */
+@import './parity/index.css';
 
 /* Tier 5 — design-polish layer (always last; see polish/index.css) */
 @import './polish/index.css';

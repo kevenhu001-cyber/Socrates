@@ -1,0 +1,449 @@
+/*
+ * parity/sidebar.css — the desktop (>= 769px) sidebar, aligned with
+ * chatgpt.com (docs/ref/chatgpt-parity.md): 260px column on the page color
+ * with a hairline edge, 36px rows (radius 10, 6/10 padding, 20px icons),
+ * solid hover wash, and a 52px icon rail when collapsed instead of sliding
+ * off screen.
+ *
+ * Older sidebar rules in restore/, polish/ and components/ were moved behind
+ * @media (max-width: 768px) by scripts/migrate-surface-css.mjs (surface
+ * "sidebar"); legacy/01-sidebar.css still provides the base box and is
+ * outranked here by specificity, so this file needs no !important.
+ * Tutor panels, tag editing, drag/drop and the row menu keep their own rules.
+ */
+
+/* The toggle carries two glyphs; phones keep the drawer's ×. */
+#appShell #sidebarCloseBtn .sidebar-toggle-panel { display: none; }
+
+@media (min-width: 769px) {
+  #appShell #sidebarCloseBtn .sidebar-toggle-close { display: none; }
+  #appShell #sidebarCloseBtn .sidebar-toggle-panel { display: block; }
+
+  #appShell {
+    --sidebar-rail: 52px;
+    --sidebar-row: 36px;
+    --sidebar-duration: 200ms;
+  }
+
+  /* ── Column ──────────────────────────────────────────────────────────── */
+  #appShell #sidebar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    width: var(--app-sidebar-width, 260px);
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    overflow: hidden;
+    border-right: 1px solid var(--ui-sidebar-border);
+    background: var(--ui-bg-sidebar);
+    color: var(--ui-text-primary);
+    font-family: var(--font-sans);
+    font-size: var(--ui-text-ui);
+    line-height: var(--ui-text-ui-line);
+    transform: none;
+    box-shadow: none;
+    transition: width var(--sidebar-duration) var(--ui-ease-out);
+  }
+  #appShell #sidebar .sidebar-inner {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    width: 100%;
+    opacity: 1;
+  }
+
+  /* ── Header: logo · (new chat) · toggle ─────────────────────────────── */
+  #appShell #sidebarHeader {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+    height: 52px;
+    margin: 0;
+    padding: 0 8px;
+  }
+  #appShell #sidebarHeader .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    height: 36px;
+    padding: 0 8px;
+    border-radius: var(--ui-radius-row);
+    color: var(--ui-text-primary);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 20px;
+    white-space: nowrap;
+  }
+  #appShell #sidebarHeader .sidebar-logo-img { width: 24px; height: 24px; border-radius: var(--ui-radius-sm); }
+  #appShell #sidebarHeader .sidebar-logo > span { font: inherit; }
+  #appShell #sidebarHeader .cg-sidebar-caret { display: none; }
+  #appShell #sidebarHeader > div:last-child,
+  #appShell #sidebarHeader .sidebar-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  #appShell #sidebarSearchBtn { display: none; }
+  #appShell #newChatBtn,
+  #appShell #sidebarCloseBtn {
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--ui-radius-md);
+    background: transparent;
+    color: var(--ui-text-secondary);
+    cursor: pointer;
+    transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+  }
+  #appShell #newChatBtn:hover,
+  #appShell #sidebarCloseBtn:hover {
+    background: var(--ui-bg-hover);
+    color: var(--ui-text-primary);
+  }
+  #appShell #newChatBtn svg,
+  #appShell #sidebarCloseBtn svg { width: 20px; height: 20px; }
+
+  /* ── Rows (primary nav, search, history) ─────────────────────────────── */
+  #appShell #sidebarNav {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    gap: 0;
+    margin: 0;
+    padding: 0 6px 8px;
+  }
+  #appShell #sidebarNav .sidebar-nav-btn,
+  #appShell #sidebar .recent-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: var(--sidebar-row);
+    height: var(--sidebar-row);
+    margin: 0;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: var(--ui-radius-row);
+    background: transparent;
+    color: var(--ui-text-primary);
+    font: inherit;
+    font-size: var(--ui-text-ui);
+    font-weight: 400;
+    line-height: var(--ui-text-ui-line);
+    letter-spacing: normal;
+    text-align: start;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color var(--ui-duration-hover) ease;
+  }
+  #appShell #sidebarNav .sidebar-nav-btn:hover,
+  #appShell #sidebarNav .sidebar-nav-btn:focus-visible,
+  #appShell #sidebar .recent-item:hover,
+  #appShell #sidebar .recent-item:focus-within {
+    background: var(--ui-bg-hover);
+  }
+  #appShell #sidebarNav .sidebar-nav-btn.active,
+  #appShell #sidebarNav .sidebar-nav-btn[aria-current="page"],
+  #appShell #sidebar .recent-item.active,
+  #appShell #sidebar .recent-item[aria-current="true"] {
+    background: var(--ui-bg-hover);
+  }
+  #appShell #sidebarNav .sidebar-nav-btn svg {
+    flex: 0 0 20px;
+    width: 20px;
+    height: 20px;
+    color: currentColor;
+  }
+  /* React wraps each glyph in a bare <span>; the label span carries the
+     i18n key. */
+  #appShell #sidebarNav .sidebar-nav-btn > span:not([data-i18n-key]):not(.nav-kbd) {
+    display: grid;
+    place-items: center;
+    flex: 0 0 20px;
+    width: 20px;
+    height: 20px;
+  }
+  #appShell #sidebarNav .sidebar-nav-btn svg { display: block; }
+  #appShell #sidebarNav .sidebar-nav-btn > span[data-i18n-key] {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* Same visible set and order as before the parity pass. */
+  #appShell #sidebarNav .sidebar-nav-btn.nav-kbd,
+  #appShell #sidebarNav .sidebar-nav-btn .nav-kbd,
+  #appShell #sidebarNav #navImages.sidebar-nav-btn,
+  #appShell #sidebarNav #navAssistants.sidebar-nav-btn,
+  #appShell #sidebarNav #navExam.sidebar-nav-btn { display: none; }
+  #appShell #sidebarNav #navSites.sidebar-nav-btn { order: 6; }
+  #appShell #sidebarNav #navMore.sidebar-nav-btn { order: 7; }
+  #appShell #sidebarNav #navSkills.sidebar-nav-btn { order: 8; }
+
+  /* "Search chats" reads as a nav row whose label is the input. */
+  #appShell #sidebar .sidebar-search-row {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin: 0 6px;
+    padding: 0;
+  }
+  #appShell #sidebar .sidebar-search {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 6px;
+    box-sizing: border-box;
+    min-width: 0;
+    height: var(--sidebar-row);
+    padding: 0 10px;
+    border: 0;
+    border-radius: var(--ui-radius-row);
+    background: transparent;
+    transition: background-color var(--ui-duration-hover) ease;
+  }
+  #appShell #sidebar .sidebar-search:hover,
+  #appShell #sidebar .sidebar-search:focus-within { background: var(--ui-bg-hover); }
+  #appShell #sidebar .sidebar-search svg {
+    flex: 0 0 20px;
+    width: 20px;
+    height: 20px;
+    color: var(--ui-text-primary);
+  }
+  #appShell #sidebarSearch {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 20px;
+    padding: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: var(--ui-text-primary);
+    font: inherit;
+    font-size: var(--ui-text-ui);
+    line-height: var(--ui-text-ui-line);
+  }
+  #appShell #sidebarSearch::placeholder { color: var(--ui-text-primary); opacity: 1; }
+  #appShell #sidebarSearch:focus::placeholder { color: var(--ui-text-muted); }
+
+  /* ── History ─────────────────────────────────────────────────────────── */
+  #appShell #recentsPanel {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 0 6px 8px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  #appShell #recentsPanel.hidden { display: none; }
+  #appShell #sidebar .recents-header {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 20px 10px 6px;
+  }
+  #appShell #sidebar .recents-title {
+    color: var(--ui-text-tertiary);
+    font-size: var(--ui-text-ui);
+    font-weight: 400;
+    line-height: var(--ui-text-ui-line);
+  }
+  #appShell #sidebar .recents-list-content { display: flex; flex-direction: column; }
+  #appShell #sidebar .recents-time-label {
+    padding: 12px 10px 4px;
+    color: var(--ui-text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+  }
+  #appShell #sidebar .recents-list-content > .recents-time-label:first-child { padding-top: 0; }
+
+  /* One line per chat, like chatgpt.com: title only; the relative time
+     stays available as the row's tooltip (title attribute set by React). */
+  #appShell #sidebar .recent-item { gap: 8px; }
+  #appShell #sidebar .recent-mode-badge {
+    flex: 0 0 6px;
+    width: 6px;
+    height: 6px;
+    margin: 0;
+    border-radius: 50%;
+  }
+  #appShell #sidebar .recent-item-main {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 0;
+    min-width: 0;
+  }
+  #appShell #sidebar .recent-item-title-row { display: flex; align-items: center; gap: 4px; min-width: 0; }
+  #appShell #sidebar .recent-item-text {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--ui-text-primary);
+    font-size: var(--ui-text-ui);
+    font-weight: 400;
+    line-height: var(--ui-text-ui-line);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #appShell #sidebar .recent-item-meta { display: none; }
+  #appShell #sidebar .recent-item-actions {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 2px;
+    margin: 0;
+    opacity: 0;
+    transition: opacity var(--ui-duration-hover) ease;
+  }
+  #appShell #sidebar .recent-item:hover .recent-item-actions,
+  #appShell #sidebar .recent-item:focus-within .recent-item-actions { opacity: 1; }
+  #appShell #sidebar .recent-item-overflow { display: none; }
+
+  /* ── Footer: account row + quick actions ─────────────────────────────── */
+  #appShell #sidebarFooter {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 4px;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 6px;
+    border-top: 1px solid var(--ui-border-subtle);
+  }
+  #appShell #sidebarUserRow {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    padding: 0;
+    border-radius: var(--ui-radius-row);
+    transition: background-color var(--ui-duration-hover) ease;
+  }
+  #appShell #sidebarUserRow:hover { background: var(--ui-bg-hover); }
+  #appShell #sidebarUserRow .sidebar-account-trigger {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    padding: 6px 8px;
+  }
+  #appShell #sidebarUserRow .user-identity { display: flex; flex-direction: column; min-width: 0; }
+  #appShell #sidebarUserRow .user-avatar {
+    display: grid;
+    place-items: center;
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--ui-bg-control);
+    color: var(--ui-text-primary);
+    font-size: 11px;
+    font-weight: 600;
+  }
+  #appShell #sidebarUserRow .user-name {
+    overflow: hidden;
+    color: var(--ui-text-primary);
+    font-size: var(--ui-text-ui);
+    line-height: var(--ui-text-ui-line);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #appShell #sidebarUserRow .user-plan {
+    color: var(--ui-text-tertiary);
+    font-size: 12px;
+    line-height: 16px;
+  }
+  #appShell #sidebarFooter .sidebar-footer-actions { display: flex; align-items: center; gap: 0; }
+  #appShell #sidebarFooter .icon-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--ui-radius-md);
+    color: var(--ui-text-secondary);
+    transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+  }
+  #appShell #sidebarFooter .icon-btn:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
+
+  /* ── Collapsed: 52px icon rail ───────────────────────────────────────── */
+  #appShell #sidebar.collapsed {
+    width: var(--sidebar-rail);
+    min-width: var(--sidebar-rail);
+    transform: none;
+    border-right-color: var(--ui-sidebar-border);
+  }
+  #appShell #sidebar.collapsed ~ .main { --app-sidebar-width: var(--sidebar-rail); }
+  #appShell #sidebar.collapsed .sidebar-inner { opacity: 1; }
+  #appShell #sidebar.collapsed #sidebarHeader {
+    flex-direction: column;
+    justify-content: flex-start;
+    height: auto;
+    padding: 8px 8px 4px;
+  }
+  #appShell #sidebar.collapsed #sidebarHeader .sidebar-logo,
+  #appShell #sidebar.collapsed #newChatBtn { display: none; }
+  #appShell #sidebar.collapsed #sidebarNav { padding: 0 8px; align-items: center; }
+  #appShell #sidebar.collapsed #sidebarNav .sidebar-nav-btn {
+    justify-content: center;
+    width: var(--sidebar-row);
+    padding: 0;
+  }
+  #appShell #sidebar.collapsed .sidebar-search-row,
+  #appShell #sidebar.collapsed .recents-panel,
+  #appShell #sidebar.collapsed .knowledge-panel,
+  #appShell #sidebar.collapsed .sidebar-footer-actions,
+  #appShell #sidebar.collapsed .user-identity,
+  #appShell #sidebar.collapsed .sidebar-resize-handle { display: none; }
+  /* Labels stay in the accessibility tree so each icon keeps its name. */
+  #appShell #sidebar.collapsed #sidebarNav .sidebar-nav-btn > span[data-i18n-key] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  #appShell #sidebar.collapsed #sidebarFooter {
+    justify-content: center;
+    margin-top: auto;
+    padding: 8px 0;
+  }
+  #appShell #sidebar.collapsed #sidebarUserRow { flex: 0 0 auto; justify-content: center; }
+  #appShell #sidebar.collapsed #sidebarUserRow .sidebar-account-trigger { padding: 4px; }
+
+  /* The rail owns the toggle; the top-bar opener is never needed here. */
+  #appShell #sidebarOpenBtn { display: none; }
+
+  /* Main column follows the sidebar edge. */
+  #appShell #sidebar ~ .main {
+    transition: padding-left var(--sidebar-duration) var(--ui-ease-out);
+  }
+}
+
+@media (min-width: 769px) and (prefers-reduced-motion: reduce) {
+  #appShell #sidebar,
+  #appShell #sidebar ~ .main { transition: none; }
+}

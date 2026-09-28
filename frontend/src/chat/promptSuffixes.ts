@@ -61,6 +61,13 @@ export function memoriesSuffix(): string {
     const local = injectMemoryContext();
     if (local) s += local;
   }
+  /* Also include user's custom instructions */
+  try {
+    const ci = typeof localStorage !== 'undefined' ? localStorage.getItem('socrates-custom-instructions') : null;
+    if (ci && ci.trim()) {
+      s += '\n\n## User custom instructions\n' + ci.trim() + '\n';
+    }
+  } catch (_) { /* ignore */ }
   return s;
 }
 

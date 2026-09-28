@@ -90,6 +90,24 @@ export function syncEffortUI() {
     var valueEl = picker.querySelector(".effort-value");
     if (valueEl) valueEl.textContent = effortLabel;
   });
+  /* Top-bar model switcher: "Socrates <model>" like chatgpt.com's header. */
+  var switcher = document.getElementById("topModelSwitcher");
+  if (switcher) {
+    var model = _activeModelLabel();
+    var modelEl = document.getElementById("topModelSwitcherModel");
+    if (modelEl) modelEl.textContent = model || "";
+    var label = model ? model + " · " + _labelFor(v) : _labelFor(v);
+    switcher.setAttribute("title", label);
+  }
+}
+
+if (typeof document !== "undefined") {
+  document.addEventListener("click", function (event) {
+    var switcher = event.target && event.target.closest && event.target.closest("#topModelSwitcher");
+    if (!switcher) return;
+    event.preventDefault();
+    openChatConfiguration(switcher);
+  });
 }
 
 if (typeof document !== "undefined") {

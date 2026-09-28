@@ -437,6 +437,9 @@ export async function loadSession(id){
       } else {
         restoredHtml = m.html || (m.rawText ? formatMsg(m.rawText) : "");
       }
+      if (typeof restoredHtml === "string" && restoredHtml.indexOf("think-block") !== -1) {
+        restoredHtml = restoredHtml.replace(/<details class="think-block[\s\S]*?<\/details>/gi, "");
+      }
       restoredMessages.push({
         clientId: _rrClientId,
         serverId: m.id || null,

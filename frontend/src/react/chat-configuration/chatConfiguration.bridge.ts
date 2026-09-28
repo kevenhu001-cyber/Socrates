@@ -13,6 +13,7 @@ declare global {
 
 type Action = Omit<ChatConfigurationSnapshot, 'revision'>;
 let returnFocus: HTMLElement | null = null;
+let openTrigger: HTMLElement | null = null;
 
 const factoryBridge = createImmutableBridge<ChatConfigurationSnapshot, Action>({
   initial: {
@@ -47,6 +48,8 @@ export function openChatConfiguration(trigger?: HTMLElement | null): void {
   const config = window.apiConfig || {};
   returnFocus = trigger || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
   const rect = trigger && trigger.getBoundingClientRect ? trigger.getBoundingClientRect() : null;
+  openTrigger = trigger || null;
+  openTrigger?.setAttribute('aria-expanded', 'true');
   installChatConfigurationBridge().publish({
     open: true,
     providers: Array.isArray(config.providers) ? config.providers.map((provider) => ({ ...provider })) : [],
@@ -69,6 +72,8 @@ export function closeChatConfiguration(restoreFocus = true): void {
     speed: current.speed,
     anchorRect: current.anchorRect,
   });
+  openTrigger?.setAttribute('aria-expanded', 'false');
+  openTrigger = null;
   if (restoreFocus && returnFocus) {
     const target = returnFocus;
     window.setTimeout(() => target.focus({ preventScroll: true }), 0);

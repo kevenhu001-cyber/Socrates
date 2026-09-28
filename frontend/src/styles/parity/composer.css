@@ -1,0 +1,398 @@
+/*
+ * parity/composer.css — the desktop (>= 769px) composer, aligned with
+ * chatgpt.com (reference: docs/ref/chatgpt-parity.md).
+ *
+ * This file is the single owner of the desktop composer on both surfaces
+ * (#topicInputWrap on the landing page, #chatInputWrap in a conversation).
+ * Every older rule for these elements was moved behind
+ * `@media (max-width: 768px)` by scripts/migrate-surface-css.mjs, so nothing
+ * here needs !important and phones keep their existing layout.
+ *
+ * Structure: the wrappers between the capsule and its controls
+ * (.chat-composer-body, .topic-footer, .chat-input-footer, .footer-left-group,
+ * .composer-editor-root, .rich-composer) are `display: contents`, which makes
+ * the editor, the chip row and every button direct grid items of the capsule.
+ *
+ *   single row      [+] [editor ··········] [effort] [mic] [send]
+ *   expanded        [editor ····································]
+ *   (multiline,     [+] [chips ·········]   [effort] [mic] [send]
+ *    chips)
+ *   attachments     an extra full-width row above the editor.
+ */
+
+@media (min-width: 769px) {
+  #appShell #topicInputWrap,
+  #appShell #chatInputWrap {
+    --composer-control: 36px;
+  }
+
+  #appShell #topicInputWrap .topic-footer,
+  #appShell #topicInputWrap .footer-left-group,
+  #appShell #chatInputWrap .chat-composer-body,
+  #appShell #chatInputWrap .chat-input-footer,
+  #appShell #chatInputWrap .footer-left-group,
+  #appShell #topicInputWrap .composer-editor-root,
+  #appShell #chatInputWrap .composer-editor-root,
+  #appShell #topicInputWrap .rich-composer,
+  #appShell #chatInputWrap .rich-composer {
+    display: contents;
+  }
+
+  /* ── Capsule ─────────────────────────────────────────────────────────── */
+  #appShell #topicInputWrap:not(.voice-recording-active),
+  #appShell #chatInputWrap:not(.voice-recording-active) {
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: var(--composer-control) minmax(0, 1fr) auto var(--composer-control) var(--composer-control);
+    grid-template-rows: auto;
+    grid-template-areas: "plus editor effort mic send";
+    align-items: center;
+    column-gap: 4px;
+    row-gap: 0;
+    width: min(100%, var(--ui-content-chat));
+    max-width: var(--ui-content-chat);
+    height: auto;
+    min-height: 52px;
+    margin: 0 auto;
+    padding: 7px 10px 7px 8px;
+    overflow: visible;
+    border: 1px solid var(--ui-composer-border);
+    border-radius: var(--ui-radius-composer-desktop);
+    background: var(--ui-bg-composer);
+    background-clip: padding-box;
+    color: var(--ui-text-primary);
+    box-shadow: var(--ui-composer-shadow);
+    transform: none;
+    /* Paint-only feedback; geometry changes are animated by RichComposer. */
+    transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  /* Two-row layout: a real multi-line draft, or any tool / plugin chip. */
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active),
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active),
+  #appShell #topicInputWrap:has(.composer-plugin-chips):not(.voice-recording-active),
+  #appShell #chatInputWrap:has(.composer-plugin-chips):not(.voice-recording-active) {
+    grid-template-areas:
+      "editor editor editor editor editor"
+      "plus   chips  effort mic    send";
+    padding: 10px 10px 7px 8px;
+  }
+
+  /* Attachments add a full-width row on top. */
+  #appShell #topicInputWrap:has(> .attachment-chips:not(.hidden)):not(.voice-recording-active),
+  #appShell #chatInputWrap:has(> .attachment-chips:not(.hidden)):not(.voice-recording-active) {
+    grid-template-areas:
+      "files  files  files  files  files"
+      "editor editor editor editor editor"
+      "plus   chips  effort mic    send";
+    padding-top: 10px;
+  }
+  #appShell #topicInputWrap > .attachment-chips,
+  #appShell #chatInputWrap > .attachment-chips {
+    grid-area: files;
+    min-width: 0;
+    margin: 0 0 4px 2px;
+    padding: 0;
+  }
+
+  /* ── Editor ──────────────────────────────────────────────────────────── */
+  #appShell #topicInputWrap .rich-composer > :not(.composer-plugin-chips):not(.rich-composer-toolbar),
+  #appShell #chatInputWrap .rich-composer > :not(.composer-plugin-chips):not(.rich-composer-toolbar) {
+    grid-area: editor;
+    align-self: center;
+    min-width: 0;
+  }
+  #appShell #topicInputWrap .rich-composer-editor,
+  #appShell #chatInputWrap .rich-composer-editor {
+    box-sizing: border-box;
+    min-height: 24px;
+    max-height: min(40dvh, 336px);
+    margin: 0;
+    padding: 6px 8px;
+    overflow-y: auto;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: var(--ui-text-primary);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 24px;
+    scrollbar-width: thin;
+  }
+  #appShell #topicInputWrap.composer-multiline .rich-composer-editor,
+  #appShell #chatInputWrap.composer-multiline .rich-composer-editor,
+  #appShell #topicInputWrap:has(.composer-plugin-chips) .rich-composer-editor,
+  #appShell #chatInputWrap:has(.composer-plugin-chips) .rich-composer-editor {
+    padding: 4px 12px 10px;
+  }
+  #appShell #topicInputWrap .rich-composer-editor p,
+  #appShell #chatInputWrap .rich-composer-editor p {
+    margin: 0;
+  }
+  #appShell #topicInputWrap .rich-composer-editor p.is-editor-empty:first-child::before,
+  #appShell #chatInputWrap .rich-composer-editor p.is-editor-empty:first-child::before {
+    color: var(--ui-text-muted);
+    opacity: 1;
+  }
+
+  /* ── Chip row (web search, connectors) ───────────────────────────────── */
+  #appShell #topicInputWrap .composer-plugin-chips,
+  #appShell #chatInputWrap .composer-plugin-chips {
+    grid-area: chips;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    width: auto;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: none;
+  }
+  #appShell #topicInputWrap .composer-plugin-chip,
+  #appShell #chatInputWrap .composer-plugin-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 220px;
+    height: var(--composer-control);
+    padding: 0 6px 0 10px;
+    overflow: hidden;
+    border: 0;
+    border-radius: var(--ui-radius-pill);
+    background: var(--ui-bg-chip);
+    color: var(--ui-text-secondary);
+    font-size: 14px;
+    line-height: 20px;
+  }
+  #appShell #topicInputWrap .composer-plugin-chip-icon,
+  #appShell #chatInputWrap .composer-plugin-chip-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+    overflow: hidden;
+    border-radius: var(--ui-radius-xs);
+  }
+  #appShell #topicInputWrap .composer-plugin-chip-icon svg,
+  #appShell #chatInputWrap .composer-plugin-chip-icon svg { display: block; width: 16px; height: 16px; }
+  #appShell #topicInputWrap .composer-plugin-chip-fallback,
+  #appShell #chatInputWrap .composer-plugin-chip-fallback { background: var(--ui-bg-raised); font-size: 10px; }
+  #appShell #topicInputWrap .composer-plugin-chip-label,
+  #appShell #chatInputWrap .composer-plugin-chip-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #appShell #topicInputWrap .composer-plugin-chip-remove,
+  #appShell #chatInputWrap .composer-plugin-chip-remove {
+    display: grid;
+    place-items: center;
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--ui-text-muted);
+  }
+  #appShell #topicInputWrap .composer-plugin-chip-remove:hover,
+  #appShell #chatInputWrap .composer-plugin-chip-remove:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
+  #appShell #topicInputWrap .composer-plugin-chip-remove svg,
+  #appShell #chatInputWrap .composer-plugin-chip-remove svg { width: 14px; height: 14px; }
+  #appShell #topicInputWrap .composer-plugin-chip-more,
+  #appShell #chatInputWrap .composer-plugin-chip-more { padding-inline: 10px; color: var(--ui-text-muted); }
+
+  /* ── Controls ────────────────────────────────────────────────────────── */
+  #appShell #topicComposerToolsBtn,
+  #appShell #chatComposerToolsBtn { grid-area: plus; }
+  #appShell #topicInputWrap .effort-picker,
+  #appShell #chatInputWrap .effort-picker { grid-area: effort; }
+  #appShell #topicMobileMicBtn,
+  #appShell #chatMobileMicBtn { grid-area: mic; }
+  #appShell #startBtn,
+  #appShell #sendBtn { grid-area: send; }
+
+  #appShell #topicComposerToolsBtn,
+  #appShell #chatComposerToolsBtn,
+  #appShell #topicMobileMicBtn,
+  #appShell #chatMobileMicBtn,
+  #appShell #startBtn,
+  #appShell #sendBtn {
+    position: static;
+    display: inline-grid;
+    place-items: center;
+    align-self: end;
+    width: var(--composer-control);
+    min-width: var(--composer-control);
+    height: var(--composer-control);
+    min-height: var(--composer-control);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    box-shadow: none;
+    transform: none;
+    opacity: 1;
+    cursor: pointer;
+    transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease, opacity var(--ui-duration-fast) ease;
+  }
+  #appShell #topicComposerToolsBtn,
+  #appShell #chatComposerToolsBtn,
+  #appShell #topicMobileMicBtn,
+  #appShell #chatMobileMicBtn {
+    background: transparent;
+    color: var(--ui-text-primary);
+  }
+  #appShell #topicComposerToolsBtn:hover,
+  #appShell #chatComposerToolsBtn:hover,
+  #appShell #topicComposerToolsBtn[aria-expanded="true"],
+  #appShell #chatComposerToolsBtn[aria-expanded="true"],
+  #appShell #topicMobileMicBtn:hover,
+  #appShell #chatMobileMicBtn:hover {
+    background: var(--ui-bg-hover);
+  }
+  #appShell #topicComposerToolsBtn svg,
+  #appShell #chatComposerToolsBtn svg,
+  #appShell #topicMobileMicBtn svg,
+  #appShell #chatMobileMicBtn svg { display: block; width: 20px; height: 20px; }
+
+  /* Primary action: voice mode when empty, send when there is a draft, stop
+     while a turn streams — one filled circle, like chatgpt.com. */
+  #appShell #startBtn,
+  #appShell #sendBtn {
+    background: var(--ui-text-primary);
+    color: var(--ui-bg-page);
+  }
+  #appShell #startBtn:hover,
+  #appShell #sendBtn:hover { opacity: 0.8; }
+  #appShell #startBtn:active,
+  #appShell #sendBtn:active { transform: scale(0.94); }
+  #appShell #startBtn:disabled,
+  #appShell #sendBtn:disabled { opacity: 0.3; cursor: default; }
+  #appShell #startBtnContent,
+  #appShell #sendBtnContent { display: grid; place-items: center; }
+  #appShell #startBtn svg,
+  #appShell #sendBtn svg { display: block; width: 20px; height: 20px; }
+
+  #appShell #topicInputWrap .composer-tools-trigger:focus-visible,
+  #appShell #chatInputWrap .composer-tools-trigger:focus-visible,
+  #appShell #topicMobileMicBtn:focus-visible,
+  #appShell #chatMobileMicBtn:focus-visible,
+  #appShell #startBtn:focus-visible,
+  #appShell #sendBtn:focus-visible {
+    outline: 2px solid var(--ui-focus-ring, currentColor);
+    outline-offset: 2px;
+  }
+
+  /* Reasoning effort: a compact ghost pill that never wraps. */
+  #appShell #topicInputWrap .effort-picker,
+  #appShell #chatInputWrap .effort-picker {
+    position: relative;
+    display: inline-flex;
+    align-self: end;
+    width: auto;
+    min-width: 0;
+    margin: 0;
+    transform: none;
+  }
+  #appShell #topicInputWrap .effort-trigger,
+  #appShell #chatInputWrap .effort-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    width: auto;
+    height: var(--composer-control);
+    min-height: var(--composer-control);
+    margin: 0;
+    padding: 0 10px 0 12px;
+    border: 0;
+    border-radius: var(--ui-radius-pill);
+    background: transparent;
+    color: var(--ui-text-secondary);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color var(--ui-duration-fast) ease;
+  }
+  #appShell #topicInputWrap .effort-trigger:hover,
+  #appShell #chatInputWrap .effort-trigger:hover,
+  #appShell #topicInputWrap .effort-trigger[aria-expanded="true"],
+  #appShell #chatInputWrap .effort-trigger[aria-expanded="true"] {
+    background: var(--ui-bg-hover);
+    color: var(--ui-text-primary);
+  }
+  #appShell #topicInputWrap .effort-label,
+  #appShell #chatInputWrap .effort-label,
+  #appShell #topicInputWrap .effort-value,
+  #appShell #chatInputWrap .effort-value {
+    display: inline;
+    font: inherit;
+    color: inherit;
+  }
+  #appShell #topicInputWrap .effort-value:empty,
+  #appShell #chatInputWrap .effort-value:empty { display: none; }
+  #appShell #topicInputWrap .effort-caret,
+  #appShell #chatInputWrap .effort-caret {
+    width: 16px;
+    height: 16px;
+    color: var(--ui-text-muted);
+  }
+
+  /* In a conversation the effort control lives in the "+" tools surface
+     (chatgpt.com keeps model/effort out of the capsule); its auto track
+     collapses to zero. */
+  #appShell #chatInputWrap .effort-picker { display: none; }
+}
+
+/* ── Tool chip (all widths) ────────────────────────────────────────────────
+   Web search picked from the "+" menu (chatgpt.com: 14px, pill, 0 12 0 8
+   padding, blue text; the globe turns into × on hover = "click to remove"). */
+#appShell .composer-tool-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  height: 36px;
+  padding: 0 12px 0 8px;
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: transparent;
+  color: var(--ui-tool-chip-text);
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.1s ease, color 0.1s ease;
+}
+#appShell .composer-tool-chip:hover,
+#appShell .composer-tool-chip:focus-visible {
+  background: var(--ui-tool-chip-hover-bg);
+  color: var(--ui-tool-chip-hover-text);
+}
+#appShell .composer-tool-chip:focus-visible { outline: 2px solid currentColor; outline-offset: 1px; }
+#appShell .composer-tool-chip-icon {
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+}
+#appShell .composer-tool-chip-icon svg {
+  grid-area: 1 / 1;
+  width: 20px;
+  height: 20px;
+  transition: opacity 0.1s ease;
+}
+#appShell .composer-tool-chip-close { opacity: 0; }
+#appShell .composer-tool-chip:hover .composer-tool-chip-glyph,
+#appShell .composer-tool-chip:focus-visible .composer-tool-chip-glyph { opacity: 0; }
+#appShell .composer-tool-chip:hover .composer-tool-chip-close,
+#appShell .composer-tool-chip:focus-visible .composer-tool-chip-close { opacity: 1; }
