@@ -718,9 +718,14 @@ gate_check() {
   # nginx reloads gracefully and EdgeOne can briefly route a request to an
   # old worker. Retry only the app entry gate so that a short handoff window
   # does not turn an otherwise valid release into a false failure.
-  if [[ "$label" == "app frontend        " ]]; then
-    attempts="${APP_GATE_ATTEMPTS:-3}"
-  fi
+  # `mobile api + db` joins it because it closes the same versioned-path run
+  # against a backend restarted moments earlier: a cold first request there
+  # can exceed the 8s curl budget exactly as it can for mobile.bootstrap.
+  case "$label" in
+    "app frontend        "|"mobile api + db     ")
+      attempts="${APP_GATE_ATTEMPTS:-3}"
+      ;;
+  esac
 
   for ((attempt = 1; attempt <= attempts; attempt++)); do
     code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 "$@" "$url" || echo 000)
@@ -824,19 +829,45 @@ gate_check "status page         " "${STATUS_PUBLIC_URL%/}/"
 # APK and SPA use. This catches stale nginx rewrites, a mismatched APP_URL in
 # the systemd environment, or a mobile build pointing at a different origin.
 MOBILE_BOOTSTRAP_URL="${MOBILE_API_BASE_URL%/}/mobile/bootstrap"
-MOBILE_BOOTSTRAP_BODY=$(curl -sf --max-time 8 "$MOBILE_BOOTSTRAP_URL" || true)
 EXPECTED_WEB_BASE_URL="${APP_PUBLIC_URL%/}"
 EXPECTED_MOBILE_API_BASE_URL="${MOBILE_API_BASE_URL%/}"
 EXPECTED_CANONICAL_API_BASE_URL="${EXPECTED_WEB_BASE_URL}/api"
-if [[ -n "$MOBILE_BOOTSTRAP_BODY" ]] && echo "$MOBILE_BOOTSTRAP_BODY" | jq -e \
-  --arg web "$EXPECTED_WEB_BASE_URL" \
-  --arg api "$EXPECTED_MOBILE_API_BASE_URL" \
-  --arg canonical "$EXPECTED_CANONICAL_API_BASE_URL" \
-  '.ok == true and .contractVersion == 1 and .webBaseUrl == $web and .apiBaseUrl == $api and .canonicalApiBaseUrl == $canonical and .healthPath == "/api/v2/health"' \
-  >/dev/null 2>&1; then
+
+mobile_bootstrap_aligned() {
+  local body
+  body=$(curl -sf --max-time 8 "$MOBILE_BOOTSTRAP_URL" || true)
+  [[ -n "$body" ]] || return 1
+  echo "$body" | jq -e \
+    --arg web "$EXPECTED_WEB_BASE_URL" \
+    --arg api "$EXPECTED_MOBILE_API_BASE_URL" \
+    --arg canonical "$EXPECTED_CANONICAL_API_BASE_URL" \
+    '.ok == true and .contractVersion == 1 and .webBaseUrl == $web and .apiBaseUrl == $api and .canonicalApiBaseUrl == $canonical and .healthPath == "/api/v2/health"' \
+    >/dev/null 2>&1
+}
+
+# Retried for the same reason as the app entry gate. This runs immediately
+# after the backend restart, so a cold process can push one request past the
+# 8s curl budget — and `curl -sf` turns that timeout into an EMPTY body, which
+# the contract test cannot tell apart from a genuinely missing endpoint.
+# Observed 2026-09-28 as a spurious MISALIGNED on a host whose loopback TLS
+# handshake alone cost ~600ms while /mobile/bootstrap answered in 1.3ms: a
+# latency false negative, retried away here rather than rolled back.
+MOBILE_BOOTSTRAP_ATTEMPTS="${APP_GATE_ATTEMPTS:-3}"
+MOBILE_BOOTSTRAP_OK=0
+for ((attempt = 1; attempt <= MOBILE_BOOTSTRAP_ATTEMPTS; attempt++)); do
+  if mobile_bootstrap_aligned; then
+    MOBILE_BOOTSTRAP_OK=1
+    break
+  fi
+  if (( attempt < MOBILE_BOOTSTRAP_ATTEMPTS )); then
+    sleep "${APP_GATE_RETRY_DELAY_SEC:-2}"
+  fi
+done
+
+if (( MOBILE_BOOTSTRAP_OK == 1 )); then
   GATE_RESULTS+=("  mobile.bootstrap contract v1 aligned")
 else
-  echo "GATE FAIL: mobile bootstrap is missing or misaligned ($MOBILE_BOOTSTRAP_URL)" >&2
+  echo "GATE FAIL: mobile bootstrap is missing or misaligned after $MOBILE_BOOTSTRAP_ATTEMPTS attempt(s) ($MOBILE_BOOTSTRAP_URL)" >&2
   GATE_FAILED=1
   GATE_RESULTS+=("  mobile.bootstrap MISALIGNED  ← FAIL")
 fi
