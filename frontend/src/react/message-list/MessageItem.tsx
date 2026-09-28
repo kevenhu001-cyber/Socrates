@@ -18,6 +18,10 @@ interface MessageItemProps {
   textLength: number;
   /** `message._toolRunRev` as the list last read it; bumped by toolRuntime. */
   toolRevision: number;
+  /** `window.__socratesMathRenderRev`, bumped when KaTeX is ready or math re-renders. */
+  mathRevision?: number;
+  /** `_katexRenderedRev` or `_renderRev` on the message. */
+  renderRevision?: number;
 }
 
 type LiveFields = LegacyChatMessage & {
@@ -27,6 +31,8 @@ type LiveFields = LegacyChatMessage & {
   _turnAnchorMode?: 'turn' | 'retry';
   /** px from the scroller's top edge the anchored row aims for. */
   _turnViewportTarget?: number;
+  _katexRenderedRev?: number;
+  _renderRev?: number;
 };
 
 function isRenderable(message: LegacyChatMessage, live: boolean): boolean {
@@ -242,8 +248,12 @@ function MessageItemBase({ message, textLength: _textLength }: MessageItemProps)
 const MessageItem = memo(MessageItemBase, (prev, next) => {
   if (prev.textLength !== next.textLength) return false;
   if (prev.toolRevision !== next.toolRevision) return false;
+  if (prev.mathRevision !== next.mathRevision) return false;
+  if (prev.renderRevision !== next.renderRevision) return false;
   const a = prev.message as LiveFields;
   const b = next.message as LiveFields;
+  if (a._katexRenderedRev !== b._katexRenderedRev) return false;
+  if (a._renderRev !== b._renderRev) return false;
   /* Same object, and neither counter moved: nothing rendered can have
      changed, because every field below is derived from the same reference. */
   if (a === b) return true;

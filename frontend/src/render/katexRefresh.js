@@ -37,7 +37,7 @@ export function rerenderMathAfterKatex() {
     for(var mi=msgs.length-1;mi>=0;mi--){
       var m=msgs[mi];
       if(!m||m.role!=="assistant"||typeof m.rawText!=="string")continue;
-      if(!/\$|\\\(/.test(m.rawText))continue;
+      if(!/\$|\\\(|\\\[/.test(m.rawText))continue;
       /* Idempotent re-paint: a message whose html was recomputed after the
          katex-ready bump is already correct — touching it again (e.g. a
          second onKatexReady after a vendor retry) would only churn its DOM. */
@@ -92,6 +92,9 @@ export function rerenderMathAfterKatex() {
   }catch(_){}
 }
 
+if (typeof window !== 'undefined') {
+  window.__socratesRerenderMath = rerenderMathAfterKatex;
+}
 try { onKatexReady(rerenderMathAfterKatex); } catch (_) {}
 
 /* P_hljs-unknown-lang — monkey-patch hljs.highlightElement. */

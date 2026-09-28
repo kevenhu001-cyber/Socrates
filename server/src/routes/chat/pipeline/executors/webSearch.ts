@@ -20,7 +20,7 @@ export const executeWebSearch: ToolExecutor = async (
   const { emitter, req } = ctx;
   let result: ToolResult;
 
-  const searchQuery = String(args.query || '').trim();
+  const searchQuery = String(args.query || args.q || args.search_query || args.keyword || '').trim();
   /* Schema declares minimum:1, but argument validation is best-effort —
      don't fan out an empty query across every engine. */
   if (!searchQuery) {

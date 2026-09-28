@@ -46,6 +46,7 @@ export function isStableMarkdownPrefix(text: string): boolean {
   if (countOccurrences(s, '~~~') % 2 !== 0) return false;
   if (countOccurrences(s, '$$') % 2 !== 0) return false;
   if (countOccurrences(s, '\\[') !== countOccurrences(s, '\\]')) return false;
+  if (countOccurrences(s, '\\(') !== countOccurrences(s, '\\)')) return false;
   /* No '<' means no <think> and no scaffold tags, so the remaining checks
      cannot fail. Skips the tag scan for ordinary prose, the common case. */
   if (s.indexOf('<') === -1) return true;

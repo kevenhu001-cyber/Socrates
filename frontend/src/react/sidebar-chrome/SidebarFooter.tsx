@@ -8,7 +8,10 @@ export function SidebarFooter() {
   const user = useUserInfo();
 
   return (
-    <div className="sidebar-account-trigger sidebar-account-static" aria-label={user.displayName || undefined}>
+    <div
+      className="sidebar-account-static"
+      aria-label={user.displayName || undefined}
+    >
       <span className="user-avatar">{user.initials}</span>
       <span className="user-identity">
         <span className="user-name">{user.displayName}</span>

@@ -358,7 +358,8 @@
   }
 
   #appShell#appShell .chat-input-bar {
-    padding-inline: 0 !important;
+    padding-inline: 12px !important;
+    box-sizing: border-box !important;
   }
 
   /* ─────────────────────────────────────────────────────────────
@@ -885,34 +886,46 @@
    the screenshot-sized two-tier draft authoritative at the end of the phone
    cascade: 96px for the editor tier plus a 42px control tier. */
 @media (max-width: 768px) {
-  body[data-conversation-active="true"]:not(.workspace-active)
-    #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) {
+  body:not(.workspace-active)
+    #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active),
+  body:not(.workspace-active)
+    #appShell#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) {
     height: 140px !important;
     min-height: 140px !important;
     border-radius: 24px !important;
   }
 
-  body[data-conversation-active="true"]:not(.workspace-active)
-    #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .chat-composer-body {
+  body:not(.workspace-active)
+    #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .chat-composer-body,
+  body:not(.workspace-active)
+    #appShell#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .topic-composer-body {
     grid-template-rows: 96px 42px !important;
   }
 
-  body[data-conversation-active="true"]:not(.workspace-active)
-    #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .composer-editor-root {
+  body:not(.workspace-active)
+    #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .composer-editor-root,
+  body:not(.workspace-active)
+    #appShell#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .composer-editor-root {
     min-height: 96px !important;
   }
 
-  body[data-conversation-active="true"]:not(.workspace-active)
-    #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .rich-composer[data-surface="chat"] .tiptap {
+  body:not(.workspace-active)
+    #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .rich-composer[data-surface="chat"] .tiptap,
+  body:not(.workspace-active)
+    #appShell#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .rich-composer .tiptap {
     height: 96px !important;
     min-height: 96px !important;
     max-height: 96px !important;
     font-size: 16px !important;
+    line-height: 24px !important;
   }
 
-  body[data-conversation-active="true"]:not(.workspace-active)
+  body:not(.workspace-active)
     #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active)
-    .chat-input-footer #sendBtn {
+    .chat-input-footer #sendBtn,
+  body:not(.workspace-active)
+    #appShell#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active)
+    .topic-footer #startBtn {
     width: 36px !important;
     min-width: 36px !important;
     height: 36px !important;
@@ -920,13 +933,28 @@
     border-radius: 50% !important;
   }
 
-  body[data-conversation-active="true"]:not(.workspace-active)
+  body:not(.workspace-active)
     #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active)
-    .chat-input-footer #chatComposerToolsBtn {
+    .chat-input-footer #chatComposerToolsBtn,
+  body:not(.workspace-active)
+    #appShell#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active)
+    .topic-footer #topicComposerToolsBtn {
     width: 44px !important;
     min-width: 44px !important;
     height: 44px !important;
     min-height: 44px !important;
+  }
+
+  /* Prevent iOS Safari auto-zoom and align all system/dialog inputs */
+  #appShell .workspace-field input,
+  #appShell .workspace-field textarea,
+  #appShell .settings-field input,
+  #appShell .settings-field textarea,
+  #appShell #sidebarSearch,
+  #appShell .modal input,
+  #appShell .modal textarea {
+    font-size: 16px !important;
+    border-radius: 10px !important;
   }
 
   #appShell .scheduled-directory .scheduled-section-heading span:last-child {

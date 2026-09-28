@@ -313,6 +313,8 @@ function MessageList() {
                object identity intact. */
             textLength={typeof entry.rawText === 'string' ? entry.rawText.length : 0}
             toolRevision={entry._toolRunRev || 0}
+            mathRevision={typeof window === 'undefined' ? 0 : (window as any).__socratesMathRenderRev || 0}
+            renderRevision={(entry as any)._katexRenderedRev || (entry as any)._renderRev || 0}
           />
         );
       })}

@@ -23,7 +23,8 @@ export const executeCodeInterpreter: ToolExecutor = async (
   const tc = call;
   const { userId } = req;
 
-  const code = (args.code || '').toLowerCase();
+  const rawCode = args.code || args.script || args.python || args.source || '';
+  const code = (typeof rawCode === 'string' ? rawCode : '').toLowerCase();
   const illustrationPatterns = [
     /<svg[\s>]/,              // building SVG strings
     /turtle\.(forward|backward|left|right|circle|goto)/,  // turtle graphics
@@ -121,7 +122,7 @@ export const executeCodeInterpreter: ToolExecutor = async (
     userId,
     sessionId: sessionIdFromQuery,
     language: args.language || 'python',
-    code: args.code || '',
+    code: typeof rawCode === 'string' ? rawCode : '',
     signal: abortSignal,
     onProgress,
   });

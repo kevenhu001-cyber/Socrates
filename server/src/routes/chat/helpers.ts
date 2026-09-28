@@ -442,9 +442,17 @@ When a user message contains \`[Attached file: "name" (mime, size) — fileId: <
 const WORKSPACE_AGENT_ROUTING_HINT = `## Workspace agent (Pi)
 Choose \`workspace_agent\` automatically whenever the user's intent requires touching the project workspace: creating, editing, or reviewing files; implementing, fixing, or refactoring code; inspecting a repository; running commands or tests; performing an experiment; using project workspace context; or doing work that should be resumed later. This includes a request that changes only one file. Call \`initialize_workspace\` first when the user wants an explicit or clean workspace. Do not wait for the user to enable Agent, start a worker, or provide a special mode. Include the concrete desired outcome and constraints in \`task\`, then let the workspace agent perform the work instead of returning an imagined patch or merely describing commands. Ordinary explanations, short calculations, and a single quick lookup belong in the native response path. The server owns the workspace, model, sandbox, and resource limits. Never ask for or invent an absolute workspace path. While the agent works, the interface streams each step it takes (commands run, files edited, files read) directly into the conversation, so do not narrate those steps yourself or paste raw command output. After the tool returns, summarize what changed, tests run, and created artifacts. In Tutor mode, preserve the explanation and add a short learning takeaway or follow-up exercise.`;
 
+const WEB_SEARCH_ROUTING_HINT = `## Web search
+When \`web_search\` is supplied, call it for real-time information, current facts, or looking up URLs. The required parameter is \`query\` (a concise search string, 1-6 words). Do not use \`q\` or \`keyword\`. An optional \`count\` (1-12, default 8) may be provided.`;
+
+const WEB_FETCH_ROUTING_HINT = `## Web fetch
+When \`web_fetch\` is supplied, call it to read the content of specific URLs discovered via search or provided by the user. Pass \`url\` (a single http/https URL string) or \`urls\` (an array of up to 4 URLs).`;
+
 export function appendToolRoutingHints<T extends { role: string; content?: unknown }>(messages: T[], toolNames: string[]): T[] {
   const nameSet = new Set(toolNames.filter((name): name is string => typeof name === 'string'));
   const blocks: string[] = [];
+  if (nameSet.has('web_search')) blocks.push(WEB_SEARCH_ROUTING_HINT);
+  if (nameSet.has('web_fetch')) blocks.push(WEB_FETCH_ROUTING_HINT);
   if (nameSet.has('render_visualization')) blocks.push(VISUALIZATION_ROUTING_HINT);
   if (nameSet.has('create_plan') || nameSet.has('create_spec')) blocks.push(PLANNING_ROUTING_HINT);
   if (nameSet.has('read_attachment')) blocks.push(READ_ATTACHMENT_ROUTING_HINT);

@@ -77,7 +77,7 @@ export const executeWebFetch: ToolExecutor = async (
 
   const rawList: unknown[] = Array.isArray(args.urls) && args.urls.length
     ? args.urls
-    : (args.url != null ? [args.url] : []);
+    : (args.url != null ? [args.url] : (args.link != null ? [args.link] : (args.href != null ? [args.href] : [])));
   const urls = rawList
     .map((u) => String(u || '').trim())
     .filter((u) => u.length > 0)

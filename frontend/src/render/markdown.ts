@@ -833,37 +833,52 @@ function _formatMsgProgressive(t: string, opts?: StreamingPreprocessOptions): st
   s = inlineCodeGuard.text;
 
   if (typeof katex !== 'undefined') {
-    /* Closed display math. */
+    /* Closed display math: $$...$$ and \[...\] */
     s = s.replace(/\$\$([\s\S]+?)\$\$/g, function (_, math: string) {
       const html = renderStreamMath(math, true, false);
       return html === null ? _ : save(html);
     });
-    /* Display math still arriving: the closing `$$` has not appeared.
-       Auto-close open environments and neutralize parse-error spans so
-       the formula renders live, grows smoothly, and only visibly
-       "completes" when the last token lands. */
+    s = s.replace(/\\\[([\s\S]+?)\\\]/g, function (_, math: string) {
+      const html = renderStreamMath(math, true, false);
+      return html === null ? _ : save(html);
+    });
+    /* Display math still arriving: the closing `$$` or `\]` has not appeared.
+       If incomplete, defer with a smooth height placeholder instead of flashing raw LaTeX code. */
     s = s.replace(/\$\$([\s\S]+)$/g, function (_, math: string) {
       const html = renderStreamMath(math, true, true);
-      return html === null ? _ : save(html);
+      if (html !== null) return save(html);
+      return opts?.complete ? _ : save('<div class="katex-display math-stream-placeholder" style="min-height:2em;opacity:0.5;"><span class="scaffold-stream-placeholder shimmer-text">…</span></div>');
+    });
+    s = s.replace(/\\\[([\s\S]+)$/g, function (_, math: string) {
+      const html = renderStreamMath(math, true, true);
+      if (html !== null) return save(html);
+      return opts?.complete ? _ : save('<div class="katex-display math-stream-placeholder" style="min-height:2em;opacity:0.5;"><span class="scaffold-stream-placeholder shimmer-text">…</span></div>');
     });
   }
 
   if (typeof katex !== 'undefined') {
-    /* Closed inline math. Guard with the LaTeX heuristic so ordinary
-       "$5"-style amounts keep their literal text. */
+    /* Closed inline math: $...$ and \(...\) */
     s = s.replace(/\$(.+?)\$/g, function (m, math: string) {
       if (!_looksLikeInlineMath(String(math).trim())) return m;
       const html = renderStreamMath(math, false, false);
       return html === null ? m : save(html);
     });
-    /* Inline math still arriving: the closing `$` has not appeared.
-       Only engage when the fragment looks like a live symbol or real
-       LaTeX, so ordinary "$5"-style amounts and a trailing prose word
-       ("... $5$ only") keep their literal text. */
+    s = s.replace(/\\\((.+?)\\\)/g, function (m, math: string) {
+      const html = renderStreamMath(math, false, false);
+      return html === null ? m : save(html);
+    });
+    /* Inline math still arriving: closing `$` or `\)` has not appeared.
+       Defer unclosed tail so incomplete raw syntax is never shown to the user. */
     s = s.replace(/\$([^\n$]+)$/g, function (m, math: string) {
       if (!_looksLikeInlineMathTail(math.trim())) return m;
       const html = renderStreamMath(math, false, true);
-      return html === null ? m : save(html);
+      if (html !== null) return save(html);
+      return opts?.complete ? m : save('<span class="math-stream-placeholder shimmer-text" style="display:inline-block;width:1.2em;text-align:center;opacity:0.4;">…</span>');
+    });
+    s = s.replace(/\\\(([^\n\\]+)$/g, function (m, math: string) {
+      const html = renderStreamMath(math, false, true);
+      if (html !== null) return save(html);
+      return opts?.complete ? m : save('<span class="math-stream-placeholder shimmer-text" style="display:inline-block;width:1.2em;text-align:center;opacity:0.4;">…</span>');
     });
   }
 
@@ -1044,7 +1059,11 @@ function _formatMsg(t: string): string {
       const html = renderStreamMath(math, true, false);
       return html === null ? _ : save(html);
     });
-    /* Final pass on a message whose `$$` never closed (truncated output,
+    procT = procT.replace(/\\\[([\s\S]+?)\\\]/g, function (_, math: string) {
+      const html = renderStreamMath(math, true, false);
+      return html === null ? _ : save(html);
+    });
+    /* Final pass on a message whose `$$` or `\]` never closed (truncated output,
        a Stop mid-formula). Auto-close open environments and neutralize
        parse-error spans so the stored answer shows calm partial math
        instead of a red KaTeX error block. */
@@ -1052,9 +1071,17 @@ function _formatMsg(t: string): string {
       const html = renderStreamMath(math, true, true);
       return html === null ? _ : save(html);
     });
+    procT = procT.replace(/\\\[([\s\S]+?)$/g, function (_, math: string) {
+      const html = renderStreamMath(math, true, true);
+      return html === null ? _ : save(html);
+    });
 
     procT = procT.replace(/\$([\s\S]+?)\$/g, function (m, math: string) {
       if (!_looksLikeInlineMath(String(math).trim())) return m;
+      const html = renderStreamMath(math, false, false);
+      return html === null ? m : save(html);
+    });
+    procT = procT.replace(/\\\(([\s\S]+?)\\\)/g, function (m, math: string) {
       const html = renderStreamMath(math, false, false);
       return html === null ? m : save(html);
     });

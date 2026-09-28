@@ -202,10 +202,8 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   }
   #appShell .sidebar:not(.search-open) .sidebar-search-row { pointer-events: none; }
   #appShell .sidebar-nav { padding-top: 4px; }
-  /* The reference footer is just the user row — the icon cluster stays
-     reachable through the 更多 popover. Only the buttons hide; the nested
-     display-prefs popover must keep rendering when it opens. */
-  #appShell .sidebar-footer-actions > .icon-btn { display: none; }
+  /* Mobile drawer footer keeps footer action buttons reachable. */
+  #appShell .sidebar-footer-actions > .icon-btn { display: inline-flex; }
 
   /* The reference drawer keeps only the logo glyph in the header and a
      flat recent-session list — no mode bullets, meta rows, tag pills or

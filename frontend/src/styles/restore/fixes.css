@@ -333,9 +333,10 @@
   }
   #appShell #sidebarNav .sidebar-nav-btn { min-height: 40px !important; padding-block: 7px !important; font-size: 15px !important; }
   #appShell #sidebarNav.sidebar-nav { padding-inline: 6px !important; }
-  #appShell #apiSettingsBtn { display: none !important; }
-  #appShell .sidebar-footer-actions > .icon-btn { display: none !important; }
-  #appShell .sidebar-account-trigger { min-height: 52px; }
+  #appShell .sidebar-footer-actions { display: flex !important; align-items: center !important; gap: 4px !important; }
+  #appShell .sidebar-footer-actions > .icon-btn { display: inline-flex !important; min-width: 36px !important; min-height: 36px !important; align-items: center !important; justify-content: center !important; }
+  #appShell #apiSettingsBtn { display: inline-flex !important; }
+  #appShell .sidebar-account-trigger { min-height: 52px; cursor: pointer; }
   #appShell .sidebar-account-menu { width: 100%; }
 }
 
