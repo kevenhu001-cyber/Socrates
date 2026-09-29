@@ -1,0 +1,28 @@
+{
+  "extends": "./tsconfig.json",
+  "//": [
+    "ADR 0015 — the test suite is `.js` and runs under tsx (a declared",
+    "dependency); the `.js` specifiers are the correct NodeNext form, and",
+    "the tests do run. What was actually missing is TYPE COVERAGE: the",
+    "main tsconfig includes only src/, so 65 test files were never checked.",
+    "",
+    "This config adds test/ to the compiler's view. It deliberately does",
+    "NOT relax any compilerOption: src/ must be checked under exactly the",
+    "same settings as `npm run typecheck`, otherwise this config would",
+    "report src/ errors that the real gate considers clean (relaxing",
+    "strictNullChecks changes discriminated-union narrowing and surfaces",
+    "11 phantom src/ errors). Being additive-only keeps the only new",
+    "signal coming from test/.",
+    "",
+    "Expect ~1002 errors across 53 of 65 files, 73% of them untyped-mock",
+    "shaped. That is the measured cost of turning the light on, not a",
+    "backlog to clear in one PR. This gate is REPORT-ONLY and is not wired",
+    "into CI as a blocker; promote file by file per ADR 0015."
+  ],
+  "compilerOptions": {
+    "//": "The suite stays .js (ADR 0015) — turn it on so the files are actually in the program.",
+    "allowJs": true,
+    "checkJs": false
+  },
+  "include": ["src/**/*.ts", "test/**/*.js", "test/**/*.mjs"]
+}

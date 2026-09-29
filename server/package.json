@@ -16,6 +16,7 @@
     "db:migrate": "tsx src/db/migrate.ts",
     "db:seed": "tsx src/db/seed.js",
     "lint": "npm run typecheck",
+    "typecheck:tests": "tsc -p tsconfig.test.json --noEmit",
     "test": "node scripts/run-tests.mjs",
     "test:unit": "node --import dotenv/config --import tsx --test test/*.test.js test/*.test.mjs",
     "test:strict": "node scripts/run-tests.mjs --strict",
