@@ -111,7 +111,7 @@ for (const [name, viewport] of [
     expect(after.height).toBe(before.height);
     expect(after.radius).toBe(before.radius);
     await expect(page.locator('#chatComposerRoot .rich-composer-editor'))
-      .toHaveAttribute('aria-label', 'Ask Socrates...');
+      .toHaveAttribute('aria-label', 'Ask Socrates');
   });
 }
 

@@ -350,32 +350,6 @@
     min-width: 0;
     padding: 6px 8px;
   }
-  #appShell #sidebarUserRow .user-identity { display: flex; flex-direction: column; min-width: 0; }
-  #appShell #sidebarUserRow .user-avatar {
-    display: grid;
-    place-items: center;
-    flex: 0 0 28px;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: var(--ui-bg-control);
-    color: var(--ui-text-primary);
-    font-size: 11px;
-    font-weight: 600;
-  }
-  #appShell #sidebarUserRow .user-name {
-    overflow: hidden;
-    color: var(--ui-text-primary);
-    font-size: var(--ui-text-ui);
-    line-height: var(--ui-text-ui-line);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  #appShell #sidebarUserRow .user-plan {
-    color: var(--ui-text-tertiary);
-    font-size: 12px;
-    line-height: 16px;
-  }
   #appShell #sidebarFooter .sidebar-footer-actions { display: flex; align-items: center; gap: 0; }
   #appShell #sidebarFooter .icon-btn {
     display: inline-grid;
@@ -446,4 +420,75 @@
 @media (min-width: 769px) and (prefers-reduced-motion: reduce) {
   #appShell #sidebar,
   #appShell #sidebar ~ .main { transition: none; }
+}
+
+/* ── Account row (all widths) — P_account-compact ─────────────────────────
+   Avatar + plan badge only. The name is not painted: it lives in the row's
+   title / aria-label (react/sidebar-chrome/SidebarFooter.tsx). The avatar
+   and badge share one centre line, and the row stays compact so the footer
+   actions keep their width. */
+#appShell #sidebarUserRow .sidebar-account-static {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 6px;
+  border-radius: var(--ui-radius-row);
+  cursor: default;
+}
+#appShell #sidebarUserRow .user-avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  border-radius: 50%;
+  background: var(--ui-bg-control);
+  color: var(--ui-text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+#appShell #sidebarUserRow .user-identity {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+#appShell #sidebarUserRow .user-plan {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  color: var(--ui-text-muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+#appShell #sidebarUserRow .tier-badge {
+  display: inline-block;
+  max-width: 100%;
+  padding: 2px 8px;
+  overflow: hidden;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-chip);
+  color: var(--ui-text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+/* Collapsed rail: the avatar alone, centred in the rail. */
+#appShell #sidebar.collapsed #sidebarUserRow { justify-content: center; }
+#appShell #sidebar.collapsed #sidebarUserRow .sidebar-account-static { flex: 0 0 auto; padding: 4px; }
+#appShell #sidebar.collapsed #sidebarUserRow .user-identity { display: none; }
+/* The phone drawer is narrow (~237px) and the footer actions keep ~116px:
+   tighten the row so the whole plan badge fits instead of truncating. */
+@media (max-width: 768px) {
+  #appShell #sidebarUserRow .sidebar-account-static { gap: 6px; padding: 4px 0; }
+  #appShell #sidebarUserRow .tier-badge { padding: 2px 6px; }
 }

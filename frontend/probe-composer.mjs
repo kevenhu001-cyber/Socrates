@@ -52,8 +52,8 @@ await page.evaluate(() => {
 await page.waitForTimeout(400);
 
 console.log('CHAT wrap', JSON.stringify(await dump('#chatInputWrap')));
-console.log('CHAT body', JSON.stringify(await dump('#chatInputWrap .chat-composer-body')));
-console.log('CHAT footer', JSON.stringify(await dump('#chatInputWrap .chat-input-footer')));
+console.log('CHAT body', JSON.stringify(await dump('#chatInputWrap .composer-footer')));
+console.log('CHAT footer', JSON.stringify(await dump('#chatInputWrap .composer-footer')));
 console.log('CHAT leftGroup', JSON.stringify(await dump('#chatInputWrap .footer-left-group')));
 console.log('CHAT editor', JSON.stringify(await dump('#chatComposerRoot')));
 console.log('CHAT tiptap', JSON.stringify(await dump('#chatComposerRoot .tiptap')));

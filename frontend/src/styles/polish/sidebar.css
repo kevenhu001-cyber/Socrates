@@ -252,9 +252,6 @@
 }
 }
 @media (max-width: 768px) {
-#appShell .user-name { font-size: 13px; font-weight: 500; }
-}
-@media (max-width: 768px) {
 #appShell .user-plan { font-size: 11px; color: var(--ui-text-muted); }
 }
 @media (max-width: 768px) {

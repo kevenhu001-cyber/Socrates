@@ -67,29 +67,6 @@
    via its own transform:translateY transition, so the visible
    motion matches what fr-interpolating engines produce — wrap
    grows, footer slides in, no snap. */
-.composer-anim-no-fr .chat-input-wrap .chat-composer-body{
-  display:block;
-  grid-template-rows:auto;
-  min-height:42px;
-  transition:min-height var(--composer-motion-duration) var(--composer-motion-ease);
-}
-.composer-anim-no-fr .chat-input-wrap.composer-focused .chat-composer-body{
-  min-height:106px;
-}
-.composer-anim-no-fr .chat-input-wrap .chat-input-footer{
-  /* Same translate trick as the default layout, but pinned to the
-     body's bottom so the row-2 grid split is not required. The
-     collapsed footer is lifted out of flow entirely: in a display:block
-     body its in-flow 44px would inflate the collapsed composer the
-     same way the `0fr` row did on the grid path. */
-  position:absolute;left:2px;right:2px;bottom:0;
-  transform:translateY(0);
-  transition:transform var(--composer-motion-duration) var(--composer-motion-ease);
-}
-.composer-anim-no-fr .chat-input-wrap.composer-focused .chat-input-footer{
-  position:static;
-  transform:translateY(0);
-}
 
 /* Chat transcript — full-width vertical scroll container anchored to
    the right edge of the main pane (page right minus sidebar). The

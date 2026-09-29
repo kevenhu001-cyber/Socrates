@@ -1,0 +1,444 @@
+/*
+ * parity/composer-unified.css — THE composer stylesheet.
+ *
+ * One composer, two mounts: #topicInputWrap (landing) and #chatInputWrap
+ * (conversation) share the same DOM (index.html, P_composer-unify) and are
+ * styled here, and only here, through `.composer-shell`. The landing
+ * composer's pre-unification look is the reference; the conversation
+ * composer now simply is the same component. scripts/check-composer-css.mjs
+ * (part of `npm run lint`) fails if any other stylesheet styles the shell,
+ * its controls or its editor again.
+ *
+ *   .composer-shell
+ *     .attachment-chips          (own component — styled elsewhere)
+ *     .composer-editor-root > .rich-composer > [chips] .rich-composer-editor
+ *     .composer-footer
+ *       .footer-left-group > .composer-tools-trigger (+ file input)
+ *       .effort-picker > .effort-trigger
+ *       .mobile-mic-btn
+ *       .composer-primary-btn     (voice / send / stop)
+ *
+ * The wrappers between the shell and its controls are `display: contents`,
+ * so the editor, the chip row and every control are grid items of the shell.
+ *
+ *   desktop, single row   [+] [editor ··········] [effort] [mic] [send]
+ *   desktop, expanded     [editor ····································]
+ *   (multiline / chips)   [+] [chips ·········]   [effort] [mic] [send]
+ *   phone (always two)    [editor ····································]
+ *                         [+] [chips ·········]   [effort] [mic] [send]
+ *   attachments           an extra full-width row above the editor.
+ *
+ * Outer placement (landing column, sticky conversation bar) belongs to the
+ * page containers (.topic-setup, .chat-input-bar), not to this file.
+ */
+
+#appShell .composer-shell {
+  --composer-control: 36px;
+}
+
+#appShell .composer-shell .composer-footer,
+#appShell .composer-shell .footer-left-group,
+#appShell .composer-shell .composer-editor-root,
+#appShell .composer-shell .rich-composer {
+  display: contents;
+}
+
+/* ── Shell ─────────────────────────────────────────────────────────────── */
+#appShell .composer-shell:not(.voice-recording-active) {
+  position: relative;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: var(--composer-control) minmax(0, 1fr) auto var(--composer-control) var(--composer-control);
+  grid-template-rows: auto;
+  grid-template-areas: "plus editor effort mic send";
+  align-items: center;
+  column-gap: 4px;
+  row-gap: 0;
+  width: min(100%, var(--ui-content-chat));
+  max-width: var(--ui-content-chat);
+  height: auto;
+  min-height: 52px;
+  margin: 0 auto;
+  padding: 7px 10px 7px 8px;
+  overflow: visible;
+  border: 1px solid var(--ui-composer-border);
+  border-radius: var(--ui-radius-composer-desktop);
+  background: var(--ui-bg-composer);
+  background-clip: padding-box;
+  color: var(--ui-text-primary);
+  box-shadow: var(--ui-composer-shadow);
+  transform: none;
+  /* Paint-only feedback; geometry changes are animated by RichComposer. */
+  transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+/* Two-row layout: a real multi-line draft, or any tool / plugin chip. */
+#appShell .composer-shell.composer-multiline:not(.voice-recording-active),
+#appShell .composer-shell:has(.composer-plugin-chips):not(.voice-recording-active) {
+  grid-template-areas:
+    "editor editor editor editor editor"
+    "plus   chips  effort mic    send";
+  padding: 10px 10px 7px 8px;
+}
+
+/* Attachments add a full-width row on top. */
+#appShell .composer-shell:has(> .attachment-chips:not(.hidden)):not(.voice-recording-active) {
+  grid-template-areas:
+    "files  files  files  files  files"
+    "editor editor editor editor editor"
+    "plus   chips  effort mic    send";
+  padding-top: 10px;
+}
+#appShell .composer-shell > .attachment-chips {
+  grid-area: files;
+  min-width: 0;
+  margin: 0 0 4px 2px;
+  padding: 0;
+}
+
+/* ── Editor ────────────────────────────────────────────────────────────── */
+#appShell .composer-shell .rich-composer > :not(.composer-plugin-chips):not(.rich-composer-toolbar) {
+  grid-area: editor;
+  align-self: center;
+  min-width: 0;
+}
+#appShell .composer-shell .rich-composer-toolbar { display: none; }
+#appShell .composer-shell .rich-composer-editor {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 24px;
+  max-height: min(40dvh, 336px);
+  margin: 0;
+  padding: 6px 8px;
+  overflow-y: auto;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ui-text-primary);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  text-align: left;
+  scrollbar-width: thin;
+}
+#appShell .composer-shell.composer-multiline .rich-composer-editor,
+#appShell .composer-shell:has(.composer-plugin-chips) .rich-composer-editor {
+  padding: 4px 12px 10px;
+}
+#appShell .composer-shell .rich-composer-editor[contenteditable="false"] { opacity: 0.65; cursor: not-allowed; }
+
+/* Draft content (Markdown shortcuts still produce rich blocks). */
+#appShell .composer-shell .rich-composer-editor p { margin: 0; }
+#appShell .composer-shell .rich-composer-editor p + p { margin-top: 0.45em; }
+#appShell .composer-shell .rich-composer-editor :is(h1, h2, h3) { margin: 0.2em 0; font-weight: 650; line-height: 1.3; }
+#appShell .composer-shell .rich-composer-editor h1 { font-size: 1.35em; }
+#appShell .composer-shell .rich-composer-editor h2 { font-size: 1.2em; }
+#appShell .composer-shell .rich-composer-editor h3 { font-size: 1.08em; }
+#appShell .composer-shell .rich-composer-editor :is(ul, ol) { margin: 0.35em 0; padding-left: 1.45em; }
+#appShell .composer-shell .rich-composer-editor ul[data-type="taskList"] { list-style: none; padding-left: 0.25em; }
+#appShell .composer-shell .rich-composer-editor ul[data-type="taskList"] li { display: flex; gap: 7px; }
+#appShell .composer-shell .rich-composer-editor blockquote {
+  margin: 0.35em 0;
+  padding-left: 10px;
+  border-left: 2px solid var(--ui-border-subtle);
+  color: var(--ui-text-secondary);
+}
+#appShell .composer-shell .rich-composer-editor pre {
+  margin: 0.4em 0;
+  padding: 8px 10px;
+  border-radius: var(--ui-radius-control, 8px);
+  background: var(--ui-bg-raised);
+  font: 400 0.86em/1.5 var(--font-mono);
+  white-space: pre-wrap;
+}
+#appShell .composer-shell .rich-composer-editor a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
+/* Placeholder: the copy comes from --composer-placeholder, which React sets
+   on .rich-composer so it survives runtime language switches. */
+#appShell .composer-shell .rich-composer-editor p.is-editor-empty:first-child { position: relative; }
+#appShell .composer-shell .rich-composer-editor p.is-editor-empty:first-child::before {
+  content: var(--composer-placeholder);
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0;
+  float: none;
+  height: 0;
+  color: var(--ui-text-muted);
+  opacity: 1;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ── Chip row (web search, connectors) ─────────────────────────────────── */
+#appShell .composer-shell .composer-plugin-chips {
+  grid-area: chips;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: none;
+}
+#appShell .composer-shell .composer-plugin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 220px;
+  height: var(--composer-control);
+  padding: 0 6px 0 10px;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-chip);
+  color: var(--ui-text-secondary);
+  font-size: 14px;
+  line-height: 20px;
+}
+#appShell .composer-shell .composer-plugin-chip-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  overflow: hidden;
+  border-radius: var(--ui-radius-xs);
+}
+#appShell .composer-shell .composer-plugin-chip-icon svg { display: block; width: 16px; height: 16px; }
+#appShell .composer-shell .composer-plugin-chip-fallback { background: var(--ui-bg-raised); font-size: 10px; }
+#appShell .composer-shell .composer-plugin-chip-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#appShell .composer-shell .composer-plugin-chip-remove {
+  display: grid;
+  place-items: center;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ui-text-muted);
+}
+#appShell .composer-shell .composer-plugin-chip-remove:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
+#appShell .composer-shell .composer-plugin-chip-remove svg { width: 14px; height: 14px; }
+#appShell .composer-shell .composer-plugin-chip-more { padding-inline: 10px; color: var(--ui-text-muted); }
+
+/* Tool chip — web search picked from the "+" menu (chatgpt.com: 14px pill,
+   blue text; the globe turns into × on hover = "click to remove"). */
+#appShell .composer-tool-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  height: var(--composer-control, 36px);
+  padding: 0 12px 0 8px;
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: transparent;
+  color: var(--ui-tool-chip-text);
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.1s ease, color 0.1s ease;
+}
+#appShell .composer-tool-chip:hover,
+#appShell .composer-tool-chip:focus-visible {
+  background: var(--ui-tool-chip-hover-bg);
+  color: var(--ui-tool-chip-hover-text);
+}
+#appShell .composer-tool-chip:focus-visible { outline: 2px solid currentColor; outline-offset: 1px; }
+#appShell .composer-tool-chip-icon { display: inline-grid; width: 20px; height: 20px; }
+#appShell .composer-tool-chip-icon svg { grid-area: 1 / 1; width: 20px; height: 20px; transition: opacity 0.1s ease; }
+#appShell .composer-tool-chip-close { opacity: 0; }
+#appShell .composer-tool-chip:hover .composer-tool-chip-glyph,
+#appShell .composer-tool-chip:focus-visible .composer-tool-chip-glyph { opacity: 0; }
+#appShell .composer-tool-chip:hover .composer-tool-chip-close,
+#appShell .composer-tool-chip:focus-visible .composer-tool-chip-close { opacity: 1; }
+
+/* ── Controls ──────────────────────────────────────────────────────────── */
+#appShell .composer-shell .composer-tools-trigger { grid-area: plus; }
+#appShell .composer-shell .effort-picker { grid-area: effort; }
+#appShell .composer-shell .mobile-mic-btn { grid-area: mic; }
+#appShell .composer-shell .composer-primary-btn { grid-area: send; }
+
+#appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn) {
+  position: static;
+  display: inline-grid;
+  place-items: center;
+  align-self: end;
+  box-sizing: border-box;
+  width: var(--composer-control);
+  min-width: var(--composer-control);
+  height: var(--composer-control);
+  min-height: var(--composer-control);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  box-shadow: none;
+  transform: none;
+  opacity: 1;
+  cursor: pointer;
+  transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease, opacity var(--ui-duration-fast) ease;
+}
+#appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn) {
+  background: transparent;
+  color: var(--ui-text-primary);
+}
+#appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn):hover,
+#appShell .composer-shell .composer-tools-trigger[aria-expanded="true"] {
+  background: var(--ui-bg-hover);
+}
+#appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn) svg { display: block; width: 20px; height: 20px; }
+
+/* Primary action: voice mode when empty, send when there is a draft, stop
+   while a turn streams — one filled circle, like chatgpt.com. */
+#appShell .composer-shell .composer-primary-btn {
+  background: var(--ui-text-primary);
+  color: var(--ui-bg-page);
+  font-weight: 500;
+}
+#appShell .composer-shell .composer-primary-btn:hover { opacity: 0.8; }
+#appShell .composer-shell .composer-primary-btn:active { transform: scale(0.94); }
+#appShell .composer-shell .composer-primary-btn:disabled { opacity: 0.3; cursor: default; }
+#appShell .composer-shell .composer-primary-btn > span { display: grid; place-items: center; }
+#appShell .composer-shell .composer-primary-btn svg { display: block; width: 20px; height: 20px; }
+
+#appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn, .effort-trigger):focus-visible {
+  outline: 2px solid var(--ui-focus-ring, currentColor);
+  outline-offset: 2px;
+}
+
+/* Reasoning effort: a compact ghost pill that never wraps. Shown on both
+   surfaces — the conversation composer is the landing composer. */
+#appShell .composer-shell .effort-picker {
+  position: relative;
+  display: inline-flex;
+  align-self: end;
+  width: auto;
+  min-width: 0;
+  margin: 0;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+#appShell .composer-shell .effort-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-sizing: border-box;
+  width: auto;
+  height: var(--composer-control);
+  min-height: var(--composer-control);
+  margin: 0;
+  padding: 0 10px 0 12px;
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: transparent;
+  color: var(--ui-text-secondary);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--ui-duration-fast) ease;
+}
+#appShell .composer-shell .effort-trigger:hover,
+#appShell .composer-shell .effort-trigger[aria-expanded="true"] {
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+}
+#appShell .composer-shell :is(.effort-label, .effort-value) { display: inline; font: inherit; color: inherit; }
+#appShell .composer-shell .effort-value:empty { display: none; }
+#appShell .composer-shell .effort-caret { flex: 0 0 16px; width: 16px; height: 16px; color: var(--ui-text-muted); }
+
+/* ── Phone (<= 768px) ──────────────────────────────────────────────────────
+   Always two storeys: the editor gets the whole first row, the controls sit
+   on a rail beneath it. Borderless card with a soft drop shadow. */
+@media (max-width: 768px) {
+  #appShell .composer-shell:not(.voice-recording-active),
+  #appShell .composer-shell.composer-multiline:not(.voice-recording-active),
+  #appShell .composer-shell:has(.composer-plugin-chips):not(.voice-recording-active) {
+    grid-template-areas:
+      "editor editor editor editor editor"
+      "plus   chips  effort mic    send";
+    row-gap: 6px;
+    width: 100%;
+    max-width: none;
+    padding: 12px 12px 9px;
+    border: 0;
+    border-radius: 26px;
+    box-shadow: 0 4px 16px rgb(0 0 0 / 5%);
+  }
+  #appShell .composer-shell:has(> .attachment-chips:not(.hidden)):not(.voice-recording-active) {
+    padding-top: 12px;
+  }
+  #appShell .composer-shell .rich-composer-editor,
+  #appShell .composer-shell.composer-multiline .rich-composer-editor,
+  #appShell .composer-shell:has(.composer-plugin-chips) .rich-composer-editor {
+    min-height: 26px;
+    max-height: 220px;
+    padding: 0 2px;
+    line-height: 26px;
+  }
+  #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn, .effort-picker) {
+    align-self: center;
+  }
+  #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn) {
+    background: var(--ui-bg-hover-ghost);
+  }
+  #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn):hover,
+  #appShell .composer-shell .composer-tools-trigger[aria-expanded="true"] {
+    background: var(--ui-bg-chip-hover);
+  }
+  #appShell .composer-shell .effort-trigger {
+    padding: 0 10px;
+    background: var(--ui-bg-raised);
+    font-size: 15px;
+    line-height: 18px;
+  }
+  html[data-mode="dark"] #appShell .composer-shell .effort-trigger { background: var(--ui-bg-control); }
+  /* Phones show the level only ("Medium"), not "Thinking Medium". */
+  #appShell .composer-shell .effort-label:has(+ .effort-value:not(:empty)) { display: none; }
+}
+
+/* ── Voice recording ───────────────────────────────────────────────────────
+   While dictating, the shell hosts only the recording bar (ui/voiceInput.js
+   toggles .voice-recording-active and injects .voice-recording-bar). */
+#appShell .composer-shell.voice-recording-active {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0;
+  width: min(100%, var(--ui-content-chat));
+  max-width: var(--ui-content-chat);
+  min-height: 104px;
+  margin: 0 auto;
+  padding: 10px;
+  overflow: hidden;
+  border: 1px solid var(--ui-composer-border);
+  border-radius: var(--ui-radius-composer-desktop);
+  background: var(--ui-bg-composer);
+  color: var(--ui-text-primary);
+  box-shadow: none;
+}
+#appShell .composer-shell.voice-recording-active > :not(.voice-recording-bar) { display: none; }
+@media (max-width: 768px) {
+  #appShell .composer-shell.voice-recording-active { width: 100%; max-width: none; border-radius: 26px; }
+}

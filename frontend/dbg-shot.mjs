@@ -34,7 +34,7 @@ async function setup(page) {
   console.log('=== Empty ===');
   console.log(JSON.stringify(await p.evaluate(() => {
     const wrap = document.getElementById('chatInputWrap');
-    const body = wrap.querySelector('.chat-composer-body');
+    const body = wrap.querySelector('.composer-footer');
     return {
       wrap: { rect: wrap.getBoundingClientRect(), height: getComputedStyle(wrap).height, classes: Array.from(wrap.classList) },
       body: { rect: body.getBoundingClientRect(), rows: getComputedStyle(body).gridTemplateRows },
@@ -48,7 +48,7 @@ async function setup(page) {
   console.log('=== After Hello (single line) ===');
   console.log(JSON.stringify(await p.evaluate(() => {
     const wrap = document.getElementById('chatInputWrap');
-    const body = wrap.querySelector('.chat-composer-body');
+    const body = wrap.querySelector('.composer-footer');
     return {
       wrap: { rect: wrap.getBoundingClientRect(), height: getComputedStyle(wrap).height, classes: Array.from(wrap.classList) },
       body: { rect: body.getBoundingClientRect(), rows: getComputedStyle(body).gridTemplateRows },
@@ -62,7 +62,7 @@ async function setup(page) {
   console.log('=== After Shift+Enter World (2 lines) ===');
   console.log(JSON.stringify(await p.evaluate(() => {
     const wrap = document.getElementById('chatInputWrap');
-    const body = wrap.querySelector('.chat-composer-body');
+    const body = wrap.querySelector('.composer-footer');
     return {
       wrap: { rect: wrap.getBoundingClientRect(), height: getComputedStyle(wrap).height, classes: Array.from(wrap.classList) },
       body: { rect: body.getBoundingClientRect(), rows: getComputedStyle(body).gridTemplateRows },

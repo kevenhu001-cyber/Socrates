@@ -47,47 +47,13 @@
   margin:0 0 22px;
   white-space:normal;
 }
-.topic-input-wrap{
-  max-width:760px;
-  margin-top:0;
-  border-radius:28px;
-  border-color:hsl(var(--border-300)/.38);
-  box-shadow:0 8px 30px -12px hsl(var(--always-black)/.28),0 1px 2px hsl(var(--always-black)/.08);
-}
-.topic-input-wrap:hover{border-color:hsl(var(--border-300)/.58)}
-.topic-input-wrap.composer-focused,
-.topic-input-wrap:focus-within{
-  border-color:hsl(var(--accent-000)/.58);
-  box-shadow:0 0 0 3px hsl(var(--accent-000)/.09),0 12px 34px -14px hsl(var(--always-black)/.34);
-}
 .topic-input-wrap .attachment-chips{padding:8px 14px 0;max-height:132px}
-.topic-footer{
-  gap:8px;
-  padding:8px 12px max(10px,env(safe-area-inset-bottom,0px));
-}
-.topic-footer .footer-left-group{gap:2px}
-.topic-input-wrap .start-btn{
-  width:42px;
-  min-width:42px;
-  height:42px;
-  min-height:42px;
-  padding:0;
-  border-radius:50%;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-}
-.topic-input-wrap .start-btn svg{width:18px;height:18px}
 
 /* Chat composer: safe-area aware, in-flow, and bounded by its real content.
    The transcript remains a sibling flex item, so it can never be covered by
    a composer whose height changes after focus or attachment loading. */
 .chat-input-bar{
   padding-inline:max(12px,env(safe-area-inset-left,0px)) max(12px,env(safe-area-inset-right,0px));
-}
-.chat-input-wrap{
-  box-sizing:border-box;
-  will-change:min-height;
 }
 
 @media(max-width:768px){
@@ -115,9 +81,6 @@
     margin-bottom:18px;
     font-size:calc(13px * var(--app-font-scale,1));
   }
-  .topic-input-wrap{border-radius:24px}
-  .topic-input-wrap .start-btn{width:40px;min-width:40px;height:40px;min-height:40px}
-  .topic-footer{padding-inline:10px}
   /* P_mobile-overlap — hide the disclaimer on mobile when ANY of these
      is true:
        ① the soft keyboard is open (data-keyboard-open on <html>),
@@ -146,173 +109,24 @@
     padding-bottom:max(16px,env(safe-area-inset-bottom,0px));
     padding-inline:max(8px,env(safe-area-inset-left,0px)) max(8px,env(safe-area-inset-right,0px));
   }
-  .chat-input-wrap{
-    width:min(calc(100% - 32px),640px);
-    min-height:0;
-    padding:6px;
-    gap:0;
-    flex-direction:column;
-    flex-wrap:nowrap;
-    align-items:stretch;
-    border-radius:24px;
-    transition:border-color var(--composer-motion-duration) var(--composer-motion-ease),
-      min-height var(--composer-motion-duration) var(--composer-motion-ease),
-      width var(--composer-motion-duration) var(--composer-motion-ease),
-      padding var(--composer-motion-duration) var(--composer-motion-ease),
-      border-radius var(--composer-motion-duration) var(--composer-motion-ease),
-      box-shadow var(--composer-motion-duration) var(--composer-motion-ease),
-      gap var(--composer-motion-duration) var(--composer-motion-ease);
-  }
   .chat-input-wrap .attachment-chips{
     order:0;
     flex:0 0 auto;
     width:100%;
     max-height:96px;
   }
-  .chat-input-wrap .chat-composer-body{
-    order:1;
-    position:relative;
-    display:grid;
-    grid-template-columns:auto minmax(0,1fr) auto;
-    grid-template-rows:44px;
-    column-gap:2px;
-    flex:0 0 auto;
-    width:100%;
-    min-width:0;
-    min-height:0;
-    align-items:center;
-    transition:none;
-  }
-  .chat-input-wrap .composer-editor-root{
-    order:initial;
-    grid-column:2;
-    grid-row:1;
-    width:100%;
-    min-width:0;
-    min-height:0;
-    flex:none;
-  }
-  .rich-composer[data-surface="chat"]{
-    min-height:44px;
-    display:flex;
-    align-items:stretch;
-  }
   .rich-composer[data-surface="chat"] > div:last-child{width:100%;min-width:0}
   .rich-composer[data-surface="chat"] .rich-composer-toolbar{display:none}
-  .rich-composer[data-surface="chat"] .tiptap{
-    min-height:44px;
-    max-height:var(--composer-editor-max-mobile);
-    padding:9px 8px;
-    font-size:16px;
-    line-height:1.5;
-    transition:min-height var(--composer-motion-duration) var(--composer-motion-ease),
-      padding var(--composer-motion-duration) var(--composer-motion-ease);
-  }
-  .chat-input-wrap .chat-input-footer{display:contents}
-  .chat-input-wrap .chat-input-footer > *{pointer-events:auto}
-  .chat-input-wrap .chat-input-footer .footer-left-group{
-    grid-column:1;
-    grid-row:1;
-    display:flex;
-    align-items:center;
-    gap:2px;
-    min-width:0;
-    margin:0;
-    order:0;
-  }
-  .chat-input-wrap .chat-input-footer .send-btn{grid-column:3;grid-row:1;margin-left:0}
-  
-  .chat-input-wrap .footer-left-group .effort-picker{
-    position:absolute;
-    right:48px;
-    top:50%;
-    z-index:5;
-    display:none;
-    margin:0;
-    transform:translateY(-50%);
-    pointer-events:none;
-  }
-  .chat-input-wrap .chat-input-footer .send-btn{width:40px;height:40px}
-  .chat-input-wrap .chat-input-footer .attach-btn{width:38px;height:38px}
-  .chat-input-wrap.composer-focused{
-    min-height:0;
-    padding:8px;
-    gap:0;
-    border-radius:26px;
-    align-content:initial;
-  }
-  .chat-input-wrap.composer-focused .chat-composer-body{
-    order:1;
-    flex:0 0 auto;
-    width:100%;
-    min-width:0;
-    max-width:none;
-    grid-template-columns:minmax(0,1fr) auto;
-    grid-template-rows:minmax(64px,auto) 44px;
-    row-gap:2px;
-  }
-  .chat-input-wrap.composer-focused .composer-editor-root{
-    grid-column:1 / -1;
-    grid-row:1;
-  }
-  .chat-input-wrap.composer-focused .rich-composer[data-surface="chat"] .tiptap{
-    min-height:64px;
-    max-height:var(--composer-editor-max-mobile);
-    padding:10px 8px 8px;
-  }
-  .chat-input-wrap.composer-focused .chat-input-footer .footer-left-group{
-    grid-column:1;
-    grid-row:2;
-    display:flex;
-    align-items:center;
-    gap:4px;
-    min-width:0;
-    margin:0;
-  }
-  .chat-input-wrap.composer-focused .footer-left-group .effort-picker{
-    position:static;
-    display:block;
-    margin:0;
-    transform:none;
-    pointer-events:auto;
-  }
-  .chat-input-wrap.composer-focused .chat-input-footer .attach-btn{order:0}
-  .chat-input-wrap.composer-focused .chat-input-footer .send-btn{grid-column:3;grid-row:2;margin-left:0}
   /* Voice input button: the focused grid becomes a two-row layout
      ([editor full-width], then [left-controls][mic][send]). Add a
      third auto column so the mic has a stable slot between the tool
      controls and the send button. Collapsed the button stays hidden
      from the `.chat-input-wrap .mobile-mic-btn` rule above. */
-  .chat-input-wrap.composer-focused .chat-composer-body{
-    grid-template-columns:minmax(0,1fr) auto auto;
-  }
-  .chat-input-wrap.composer-focused .mobile-mic-btn{
-    display:inline-flex;grid-column:2;grid-row:2;justify-self:end;
-    margin-right:6px;
-  }
 
   /* Older engines use the same two-stage shape with a height transition
      rather than attempting to interpolate grid tracks. The footer remains
      anchored to the bottom in both states, so it never changes the body's
      positioning mode during the animation. */
-  .composer-anim-no-fr .chat-input-wrap .chat-composer-body{
-    display:block;
-    min-height:44px;
-    transition:min-height var(--composer-motion-duration) var(--composer-motion-ease);
-  }
-  .composer-anim-no-fr .chat-input-wrap.composer-focused .chat-composer-body{min-height:108px}
-  .composer-anim-no-fr .chat-input-wrap .chat-input-footer{
-    position:absolute;
-    left:2px;
-    right:2px;
-    bottom:0;
-    transform:translateY(-40px);
-  }
-  .composer-anim-no-fr .chat-input-wrap.composer-focused .chat-input-footer{
-    position:absolute;
-    bottom:0;
-    transform:translateY(0);
-  }
 
   /* Only the active topic surface is scrolled when the focused editor would
      be covered; the shell itself is never artificially lifted. */
@@ -325,12 +139,7 @@
 }
 
 @media(prefers-reduced-motion:reduce){
-  .chat-view,
-  .topic-input-wrap,
-  .chat-input-wrap,
-  .chat-input-wrap .chat-composer-body,
-  .chat-input-wrap .chat-input-footer,
-  .rich-composer[data-surface="chat"] .tiptap{
+  .chat-view{
     transition:none!important;
   }
 }

@@ -311,33 +311,9 @@
   top: -52px;
 }
 
-@media (max-width: 768px) {
-
-#appShell #topicSetup > #topicInputWrap {
-  top: -48px;
-}
-}
-
 #appShell .topic-title.greeting {
   color: var(--cgv-text) !important;
   text-align: center;
-}
-
-@media (max-width: 768px) {
-
-#appShell #topicInputWrap:not(.voice-recording-active),
-#appShell #chatInputWrap:not(.voice-recording-active) {
-  /* P_chatgpt-composer-border — the ChatGPT reference surface is a flat,
-     borderless pill on a slightly darker canvas. The previous 1px stroke
-     reads as a frame around the composer on dark and looked visually
-     heavier than the reference. Drop the idle border entirely and rely on
-     the focus state below to show an outline when the editor is active.
-     The mobile section further down re-adds a hairline so the pill stays
-     visible against the #000 phone canvas. */
-  border: 0 !important;
-  background: var(--cgv-composer-surface, rgb(33 33 33)) !important;
-  box-shadow: none !important;
-}
 }
 
 @media (max-width: 768px) {
@@ -345,43 +321,6 @@
      black (see ref-baseline.css), which would leave the borderless pill
      invisible. Re-add a hairline stroke here and lift the surface one
      step above the canvas so the composer's silhouette stays readable. */
-  #appShell #topicInputWrap:not(.voice-recording-active),
-  #appShell #chatInputWrap:not(.voice-recording-active) {
-    border: 1px solid var(--cg-border) !important;
-    background: var(--cgv-composer-surface, #1a1a1a) !important;
-  }
-
-  #appShell #topicInputWrap:not(.voice-recording-active):focus-within,
-  #appShell #chatInputWrap:not(.voice-recording-active):focus-within {
-    border-color: rgb(255 255 255 / 30%) !important;
-    box-shadow: 0 0 0 1px rgb(255 255 255 / 10%) !important;
-  }
-}
-
-@media (max-width: 768px) {
-
-#appShell #topicInputWrap:not(.voice-recording-active):focus-within,
-#appShell #chatInputWrap:not(.voice-recording-active):focus-within {
-  border-color: rgb(255 255 255 / 22%) !important;
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 8%) !important;
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell #topicInputWrap:not(.voice-recording-active) #startBtn:not(.active),
-#appShell #topicInputWrap:not(.voice-recording-active) #startBtn.active,
-#appShell #chatInputWrap:not(.voice-recording-active) .send-btn:not(.active),
-#appShell #chatInputWrap:not(.voice-recording-active) .send-btn.active {
-  /* P_chatgpt-send-idle — the reference paints the voice/send control
-     white so it always stands out on the dark pill. The shared index.css
-     rule targets `#startBtn:not(.active)` with the same specificity we
-     use here, so we explicitly list both states (active + not active)
-     to win the cascade and keep the icon legible on the white surface. */
-  color: rgb(20 20 20) !important;
-  background: rgb(255 255 255) !important;
-  box-shadow: none !important;
-}
 }
 
 /* Static workspace shell used before the live directory data arrives. */
@@ -718,26 +657,6 @@
   background: var(--cg-surface) !important;
 }
 
-@media (max-width: 768px) {
-
-[data-mode="light"] #appShell #topicInputWrap:not(.voice-recording-active),
-[data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active) {
-  border-color: var(--cg-border-strong) !important;
-  background: var(--cg-surface) !important;
-}
-}
-
-@media (max-width: 768px) {
-
-[data-mode="light"] #appShell #topicInputWrap:not(.voice-recording-active):focus-within,
-[data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active):focus-within {
-  border-color: var(--cg-text) !important;
-  border-color: color-mix(in srgb, var(--cg-text) 34%, transparent) !important;
-  box-shadow: 0 0 0 3px var(--cg-text) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cg-text) 7%, transparent) !important;
-}
-}
-
 /* -------------------------------------------------------------------------
    Neutral theme + interaction stability
 
@@ -852,58 +771,11 @@ html[data-mode="light"] #appShell {
 }
 
 @media (max-width: 768px) {
-
-#appShell #topicInputWrap:not(.voice-recording-active),
-#appShell #chatInputWrap:not(.voice-recording-active) {
-  border-color: var(--cg-border-strong) !important;
-  background: var(--cg-surface) !important;
-}
-}
-
-@media (max-width: 768px) {
   /* P_mobile-composer-outline — must live AFTER the shared rule above:
      that rule paints every input surface with `--cg-surface` (#212121),
      which disappears against the #000 mobile canvas. This block wins the
      cascade on phones and gives the composer a hairline stroke plus one
      step of surface lift so its silhouette stays readable. */
-  #appShell #topicInputWrap:not(.voice-recording-active),
-  #appShell #chatInputWrap:not(.voice-recording-active) {
-    border: 1px solid var(--cg-border) !important;
-    background: var(--cgv-composer-surface, #1a1a1a) !important;
-    box-shadow: none !important;
-  }
-
-  #appShell #topicInputWrap:not(.voice-recording-active):focus-within,
-  #appShell #chatInputWrap:not(.voice-recording-active):focus-within {
-    border-color: rgb(255 255 255 / 30%) !important;
-    box-shadow: 0 0 0 1px rgb(255 255 255 / 10%) !important;
-  }
-}
-
-@media (max-width: 768px) {
-
-#appShell #topicInputWrap:not(.voice-recording-active),
-#appShell #chatInputWrap:not(.voice-recording-active) {
-  box-shadow: var(--cg-composer-shadow) !important;
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell #topicInputWrap:not(.voice-recording-active):focus-within,
-#appShell #chatInputWrap:not(.voice-recording-active):focus-within {
-  border-color: var(--cg-focus-ring) !important;
-  box-shadow: var(--cg-composer-focus-shadow) !important;
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell #topicInputWrap:not(.voice-recording-active) #startBtn.active,
-#appShell #chatInputWrap:not(.voice-recording-active) .send-btn.active {
-  color: var(--cg-accent-ink) !important;
-  background: var(--cg-accent) !important;
-}
 }
 
 /* P_chatgpt-send-removal — the duplicate idle-state rule that lived
@@ -940,15 +812,5 @@ html[data-mode="light"] #appShell {
 :where(button, a, [role="button"]):hover,
 :where(button, a, [role="button"]):active {
   transform: none !important;
-}
-
-
-@media (max-width: 768px) {
-
-
-#appShell .attach-btn:hover svg,
-#appShell .send-btn:hover svg {
-  transform: none !important;
-}
 }
 

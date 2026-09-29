@@ -22,44 +22,10 @@
    the ones this rule carried before that drop, and they still match the
    intent documented at the consumers ("~280px ≈ 9 visible lines" on the
    desktop rail, and the keyboard cap that must stay above 132px on phones). */
-.chat-input-wrap{--composer-motion-duration:.34s;--composer-motion-ease:cubic-bezier(.22,1,.36,1);--composer-editor-max:280px;--composer-editor-max-mobile:180px;--composer-focused-min:116px;background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.24);border-radius:28px;overflow:hidden;width:100%;max-width:720px;
-  /* Only the edge/shadow/background glide on focus (see the `transition`
-     at the end of this rule). A longer list that also animated
-     min-height/padding/border-radius/gap used to sit here, but the later
-     declaration always overrode it; making it effective turned the
-     paste/delete resize into a visible 140→154px bounce
-     (e2e/composer-auto-resize), so the geometry deliberately snaps. */
-  margin:0 12px;
-  will-change:min-height;
-  /* P_contain-scope — layout containment isolates the focus-expansion
-     relayout to this subtree, so each animation frame relayouts the wrap's
-     children only, not the document. We deliberately do NOT use
-     `contain:paint`: it would clip absolutely-positioned descendants
-     (effort-picker menu, slash command palette) to the wrap's bounds, so
-     opening the effort menu on mobile would hide the upper ~360px of the
-     dropdown. The composer shell is small enough that the missing paint
-     containment is not measurable. */
-  contain:layout;
-  box-shadow:0 .35rem 1.8rem hsl(var(--always-black)/5%);
-  position:relative;z-index:1;
-  /* Focus feedback glides on the same duration/curve as topic-input-wrap
-     so the composer skin does not change between landing and in-chat. */
-  transition:box-shadow var(--composer-motion-duration) var(--composer-motion-ease),border-color var(--composer-motion-duration) var(--composer-motion-ease),background-color var(--composer-motion-duration) var(--composer-motion-ease)}
-.chat-input-wrap:focus-within{border-color:hsl(var(--accent-000)/0.6)}
-@supports (scrollbar-width:none){}
-
-
-.chat-input-footer{display:flex;align-items:center;padding:0 12px 8px}
 
 /* P_attachments — paperclip button to the left of the hint. Same
    circle footprint as the send button so the footer stays balanced
    regardless of attach state. */
-.attach-btn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:transparent;color:hsl(var(--text-400));transition:background-color .2s cubic-bezier(.4,0,.2,1),color .2s cubic-bezier(.4,0,.2,1),transform .12s ease;flex-shrink:0;cursor:pointer;border:none;padding:0}
-.attach-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
-.attach-btn:active{transform:scale(.88)}
-.attach-btn svg{width:16px;height:16px;transition:transform .2s cubic-bezier(.4,0,.2,1)}
-.attach-btn:hover svg{transform:rotate(-12deg)}
-.attach-btn.has-error{color:hsl(0 70% 50%)}
 /* P_attachments — chip strip rendered above the textarea. Hidden
    when there are no pending attachments. */
 .attachment-chips{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px 0;max-height:120px;overflow-y:auto}
@@ -89,25 +55,11 @@ a.attachment-chip-link:hover{border-color:hsl(var(--accent-000)/0.45);background
 a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 /* Drag-over visual — the wrap gets a subtle accent border when the
    user drags files over the input. */
-.chat-input-wrap.drag-over{border-color:hsl(var(--accent-000)/0.5);box-shadow:0 0 0 2px hsl(var(--accent-000)/0.2)}
 .chat-input-bar.drag-over-doc{position:relative}.chat-input-bar.drag-over-doc::after{content:'';position:absolute;inset:4px;border:2px dashed hsl(var(--accent-000)/0.4);border-radius:18px;pointer-events:none;z-index:20}
-.send-btn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:hsl(var(--bg-300));color:hsl(var(--text-400));transition:background-color .28s var(--ease-out),color .28s var(--ease-out),box-shadow .28s var(--ease-out),transform .18s var(--ease-out);flex-shrink:0;cursor:pointer;border:none;padding:0}
-#sendBtnContent{display:contents}
-.send-btn:hover{background:hsl(var(--bg-400));color:hsl(var(--text-200))}
-.send-btn:active{transform:scale(.88)}
-.send-btn svg{width:16px;height:16px;transition:transform .28s var(--ease-out)}
-.send-btn:hover svg{transform:translateY(-1px)}
-.send-btn.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));box-shadow:0 2px 10px hsl(var(--accent-000)/0.22),0 4px 18px hsl(var(--accent-000)/0.12);transform:scale(1.05)}.send-btn.active:hover{background:hsl(var(--accent-100));box-shadow:0 4px 16px hsl(var(--accent-000)/0.34);transform:translateY(-1px) scale(1.05)}
-.send-btn.active:active{transform:translateY(0) scale(.92)}
-.send-btn svg{width:16px;height:16px}
 /* Agent-run state: send button morphs into a quiet Stop. UI-align:
    open-webui uses a neutral surface with a square glyph instead of a
    red pulsing alarm — stopping a stream is routine, not destructive. */
-.send-btn.agent-stop{background:hsl(var(--bg-300));color:hsl(var(--text-000))}
-.send-btn.agent-stop:hover{background:hsl(var(--bg-400));color:hsl(var(--text-000))}
 /* Chat-mode Stop button — same quiet look. */
-.send-btn.chat-stop{background:hsl(var(--bg-300));color:hsl(var(--text-000))}
-.send-btn.chat-stop:hover{background:hsl(var(--bg-400));color:hsl(var(--text-000))}
 /* Loading animations — rotating ring spinner.
    Uses a simple border-based ring (no mask) for reliable rendering
    across all browsers. The inner spans (from the old 3-dot pattern)

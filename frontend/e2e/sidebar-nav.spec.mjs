@@ -105,6 +105,25 @@ test('account row is a static identity label; settings live behind the gear', as
   await expect(row).toBeVisible();
   await expect(row).not.toHaveAttribute('role', 'button');
   await expect(row).toHaveCSS('cursor', 'default');
+  /* P_account-compact — avatar + plan badge only: the name is never painted
+     but stays in the tooltip and the accessible name. */
+  await expect(row.locator('.user-name')).toHaveCount(0);
+  await expect(row.locator('.user-avatar')).toBeVisible();
+  await expect(row.locator('.tier-badge')).toBeVisible();
+  const name = await page.evaluate(() => window.__socratesSidebarChromeBridge?.getSnapshot().user.displayName || '');
+  expect(name.length).toBeGreaterThan(0);
+  await expect(row).toHaveAttribute('title', name);
+  await expect(row).toHaveAttribute('aria-label', new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+  expect(await row.evaluate((el, n) => el.innerText.includes(n), name)).toBe(false);
+  const geo = await row.evaluate((el) => {
+    const c = (sel) => { const r = el.querySelector(sel).getBoundingClientRect(); return { w: r.width, h: r.height, cy: r.top + r.height / 2 }; };
+    return { avatar: c('.user-avatar'), badge: c('.tier-badge'), radius: getComputedStyle(el.querySelector('.user-avatar')).borderTopLeftRadius };
+  });
+  expect(Math.round(geo.avatar.w)).toBe(32);
+  expect(Math.round(geo.avatar.h)).toBe(32);
+  expect(geo.radius).toBe('50%');
+  expect(Math.abs(geo.avatar.cy - geo.badge.cy)).toBeLessThanOrEqual(1);
+  await page.screenshot({ path: 'test-results/visual-qa/sidebar-account-row.png', clip: await page.locator('#sidebarFooter').boundingBox() });
   await row.click();
   await expect(page.getByRole('menu', { name: /Account menu|账户菜单/ })).toHaveCount(0);
   // The gear still opens the settings modal, whose account pane carries
@@ -114,6 +133,24 @@ test('account row is a static identity label; settings live behind the gear', as
   await expect(overlay).toBeVisible();
   await overlay.locator('.settings-nav button').last().click();
   await expect(overlay.locator('.settings-account-card')).toBeVisible();
+});
+
+test('collapsed sidebar rail keeps only the avatar of the account row', async ({ page }) => {
+  await page.evaluate(() => {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar && !sidebar.classList.contains('collapsed')) window.toggleSidebar?.();
+  });
+  await expect(page.locator('#sidebar')).toHaveClass(/collapsed/);
+  const row = page.locator('#sidebarUserRow');
+  await expect(row.locator('.user-avatar')).toBeVisible();
+  await expect(row.locator('.user-identity')).toBeHidden();
+  const fit = await page.evaluate(() => {
+    const rail = document.getElementById('sidebar').getBoundingClientRect();
+    const a = document.querySelector('#sidebarUserRow .user-avatar').getBoundingClientRect();
+    return { inside: a.left >= rail.left && a.right <= rail.right, offCentre: Math.abs((a.left + a.right) / 2 - (rail.left + rail.right) / 2) };
+  });
+  expect(fit.inside).toBe(true);
+  expect(fit.offCentre).toBeLessThanOrEqual(4);
 });
 
 test('phone drawer keeps nav glyphs aligned and account menu in view', async ({ page }) => {

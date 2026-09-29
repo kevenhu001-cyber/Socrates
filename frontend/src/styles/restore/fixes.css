@@ -145,13 +145,6 @@
   min-width: 0;
 }
 }
-@media (max-width: 768px) {
-#appShell .sidebar-account-trigger .user-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-}
 #appShell .sidebar-account-chevron { width: 18px; height: 18px; flex: none; opacity: .65; }
 #appShell .sidebar-account-menu {
   position: absolute;
@@ -333,7 +326,8 @@
   }
   #appShell #sidebarNav .sidebar-nav-btn { min-height: 40px !important; padding-block: 7px !important; font-size: 15px !important; }
   #appShell #sidebarNav.sidebar-nav { padding-inline: 6px !important; }
-  #appShell .sidebar-footer-actions { display: flex !important; align-items: center !important; gap: 4px !important; }
+  /* 36px touch targets sit edge to edge so the account badge fits beside them. */
+  #appShell .sidebar-footer-actions { display: flex !important; align-items: center !important; gap: 0 !important; }
   #appShell .sidebar-footer-actions > .icon-btn { display: inline-flex !important; min-width: 36px !important; min-height: 36px !important; align-items: center !important; justify-content: center !important; }
   #appShell #apiSettingsBtn { display: inline-flex !important; }
   #appShell .sidebar-account-trigger { min-height: 52px; cursor: pointer; }
@@ -540,36 +534,6 @@
      17px text is comfortable, plus the 40px control rail. 104px total
      (6 + 48 + 40 + 6 + 2 border) replaces the previous 86px/32px field
      that read as a thin strip next to the reference. */
-  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
-    grid-template-rows: 0 minmax(48px, auto) 40px !important;
-    min-height: 104px !important;
-    height: 104px !important;
-    max-height: 104px !important;
-    padding: 6px 10px !important;
-  }
-  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
-    grid-template-rows: 0 minmax(48px, auto) 40px !important;
-    min-height: 104px !important;
-    height: 104px !important;
-    max-height: 104px !important;
-    padding: 6px 10px !important;
-  }
-  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .composer-editor-root,
-  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer-editor,
-  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer .tiptap {
-    min-height: 48px !important;
-    height: 48px !important;
-    padding-top: 8px !important;
-    padding-bottom: 6px !important;
-  }
-  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .composer-editor-root,
-  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer-editor,
-  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer .tiptap {
-    min-height: 48px !important;
-    height: 48px !important;
-    padding-top: 8px !important;
-    padding-bottom: 6px !important;
-  }
 }
 
 @media (min-width: 769px) {
@@ -577,31 +541,6 @@
   #appShell#appShell#appShell #topicSetup .topic-title.greeting {
     font-size: calc(24px * var(--app-font-scale, 1)) !important;
   }
-}
-
-@media (max-width: 768px) {
-
-[data-mode="light"] #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active),
-[data-mode="light"] #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active) {
-  border: 1px solid var(--ui-border-default) !important;
-  background: var(--ui-bg-composer) !important;
-  box-shadow: 0 1px 3px rgb(0 0 0 / 6%) !important;
-}
-}
-
-@media (max-width: 768px) {
-
-[data-mode="light"] #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active) #sendBtn {
-  background: #111 !important;
-  color: #fff !important;
-}
-}
-
-@media (max-width: 768px) {
-
-[data-mode="light"] #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active) #sendBtn:hover {
-  background: #000 !important;
-}
 }
 
 #appShell#appShell#appShell button:focus-visible,
@@ -799,22 +738,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
      previously pinned: editor on row 1 (full width), the add/dictation/
      send controls on row 2. Measured box [12,428,376,89], radius 26px,
      min-height 52px, 12px page insets, drop shadow 0 4px 16px rgb(0 0 0 / 5%). */
-  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)),
-  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
-    width: 100% !important;
-    max-width: none !important;
-    margin: 0 !important;
-    grid-template-rows: 32px 36px !important;
-    grid-template-columns: 36px minmax(0, 1fr) auto 36px 36px !important;
-    min-height: 52px !important;
-    height: auto !important;
-    max-height: none !important;
-    padding: 12px 12px 9px !important;
-    gap: 0 4px !important;
-    border: 0 solid transparent !important;
-    border-radius: 26px !important;
-    box-shadow: 0 4px 16px rgb(0 0 0 / 5%) !important;
-  }
 
   /* The reference keeps 12px of page inset on both sides of the capsule. */
   #appShell#appShell#appShell #topicSetup {
@@ -827,133 +750,16 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
     grid-row: 1 !important;
   }
 
-  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .composer-editor-root,
-  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .composer-editor-root {
-    grid-column: 1 / -1 !important;
-    grid-row: 1 !important;
-    align-self: center !important;
-    /* Explicit heights, not auto: while the shape controller holds its
-       animation lock the grid row can stretch the editor to the expanded
-       height, and a tall editor measures as multiline again — which
-       re-expands the capsule and loops. Pinning the collapsed band keeps
-       the measurement honest. The reference editor row is 32px. */
-    min-height: 32px !important;
-    height: 32px !important;
-    padding: 0 !important;
-  }
-
-  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer,
-  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer {
-    min-height: 26px !important;
-    height: 26px !important;
-  }
-
-  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer-editor,
-  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer .tiptap,
-  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer-editor,
-  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer[data-surface="chat"] .tiptap {
-    min-height: 26px !important;
-    height: 26px !important;
-    padding: 0 2px !important;
-    font-size: 16px !important;
-    line-height: 26px !important;
-  }
-
-  #appShell#appShell#appShell #topicInputWrap #topicComposerToolsBtn,
-  #appShell#appShell#appShell #chatInputWrap #chatComposerToolsBtn,
-  #appShell#appShell#appShell #topicInputWrap #topicMobileMicBtn,
-  #appShell#appShell#appShell #chatInputWrap #chatMobileMicBtn,
-  #appShell#appShell#appShell #topicInputWrap .mobile-mic-btn,
-  #appShell#appShell#appShell #chatInputWrap .mobile-mic-btn {
-    grid-row: 2 !important;
-    align-self: center !important;
-  }
-
   /* Control sizing applies in every state, including the multiline card.
      The selector carries the composer id as well: a two-id rule in
      chat-surface.css sizes these controls from
      var(--conversation-control-size) and wins the tie otherwise. */
-  #appShell#appShell#appShell #topicInputWrap #topicComposerToolsBtn,
-  #appShell#appShell#appShell #chatInputWrap #chatComposerToolsBtn,
-  #appShell#appShell#appShell #topicInputWrap #topicMobileMicBtn,
-  #appShell#appShell#appShell #chatInputWrap #chatMobileMicBtn,
-  #appShell#appShell#appShell #topicInputWrap #startBtn,
-  #appShell#appShell#appShell #chatInputWrap #sendBtn,
-  #appShell#appShell#appShell #topicInputWrap .mobile-mic-btn,
-  #appShell#appShell#appShell #chatInputWrap .mobile-mic-btn {
-    width: 36px !important;
-    min-width: 36px !important;
-    height: 36px !important;
-    min-height: 36px !important;
-    border-radius: 50% !important;
-    align-self: center !important;
-  }
-
-  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #topicComposerToolsBtn,
-  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #chatComposerToolsBtn {
-    grid-column: 1 !important;
-  }
-
-  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .effort-picker,
-  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .effort-picker {
-    grid-column: 3 !important;
-    grid-row: 2 !important;
-    align-self: center !important;
-  }
-
-  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #topicMobileMicBtn,
-  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #chatMobileMicBtn,
-  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .mobile-mic-btn,
-  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .mobile-mic-btn {
-    grid-column: 4 !important;
-  }
-
-  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #startBtn,
-  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #sendBtn {
-    grid-column: 5 !important;
-    grid-row: 2 !important;
-    align-self: center !important;
-    width: 36px !important;
-    min-width: 36px !important;
-    height: 36px !important;
-    min-height: 36px !important;
-  }
 
   /* The effort chip shares the control row's 36px height so the row reads
      as one band of equal controls. It also drops its text label: the
      labelled variant leaves the editor column ~78px wide, so every draft
      wraps and the capsule can never rest at the reference's one-row
      height. The value + caret still names the active level. */
-  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .effort-trigger,
-  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .effort-trigger {
-    height: 36px !important;
-    min-height: 36px !important;
-    padding: 0 10px !important;
-    border-radius: 999px !important;
-  }
-
-  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .effort-trigger .effort-label,
-  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .effort-trigger .effort-label {
-    display: none !important;
-  }
-
-  [data-mode="dark"] #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #topicComposerToolsBtn,
-  [data-mode="dark"] #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #chatComposerToolsBtn,
-  [data-mode="dark"] #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #topicMobileMicBtn,
-  [data-mode="dark"] #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #chatMobileMicBtn,
-  [data-mode="dark"] #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .mobile-mic-btn,
-  [data-mode="dark"] #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .mobile-mic-btn {
-    background: rgb(255 255 255 / 10%) !important;
-  }
-
-  [data-mode="light"] #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #topicComposerToolsBtn,
-  [data-mode="light"] #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #chatComposerToolsBtn,
-  [data-mode="light"] #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #topicMobileMicBtn,
-  [data-mode="light"] #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #chatMobileMicBtn,
-  [data-mode="light"] #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .mobile-mic-btn,
-  [data-mode="light"] #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .mobile-mic-btn {
-    background: rgb(0 0 0 / 5%) !important;
-  }
 
   /* Greeting — reference phone heading is 24px/28px at weight 400. */
   #appShell#appShell#appShell #topicTitle.greeting {
@@ -972,89 +778,9 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    shape with one more id (and land later in the file) so both surfaces and
    both the idle and multiline states resolve to the reference's 36px circle.
    -------------------------------------------------------------------------- */
-@media (max-width: 768px) {
-body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #chatInputWrap:not(.voice-recording-active):not(.composer-multiline)
-  #chatComposerToolsBtn,
-body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #chatInputWrap:not(.voice-recording-active).composer-multiline
-  #chatComposerToolsBtn,
-body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #chatInputWrap:not(.voice-recording-active):not(.composer-multiline)
-  #chatMobileMicBtn,
-body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #chatInputWrap:not(.voice-recording-active).composer-multiline
-  #chatMobileMicBtn,
-body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #chatInputWrap:not(.voice-recording-active):not(.composer-multiline)
-  .chat-input-footer
-  #chatComposerToolsBtn,
-body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #chatInputWrap:not(.voice-recording-active).composer-multiline
-  .chat-input-footer
-  #chatComposerToolsBtn,
-body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #chatInputWrap:not(.voice-recording-active):not(.composer-multiline)
-  .chat-input-footer
-  #chatMobileMicBtn,
-body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #chatInputWrap:not(.voice-recording-active):not(.composer-multiline)
-  .chat-input-footer
-  #chatMobileMicBtn,
-body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #chatInputWrap:not(.voice-recording-active).composer-multiline
-  .chat-input-footer
-  #chatMobileMicBtn,
-body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #chatInputWrap:not(.voice-recording-active):not(.composer-multiline)
-  #sendBtn,
-body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #chatInputWrap:not(.voice-recording-active).composer-multiline
-  #sendBtn,
-body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #chatInputWrap:not(.voice-recording-active):not(.composer-multiline)
-  .chat-input-footer
-  #sendBtn,
-body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #chatInputWrap:not(.voice-recording-active).composer-multiline
-  .chat-input-footer
-  #sendBtn {
-  width: 36px !important;
-  min-width: 36px !important;
-  height: 36px !important;
-  min-height: 36px !important;
-  border-radius: 50% !important;
-  align-self: center !important;
-}
-}
 
 /* Multiline phone composers use row 2 for the editor and row 3 for controls.
    The shared control rule above must not pull the add button into the editor. */
-@media (max-width: 768px) {
-  #appShell#appShell#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) #topicComposerToolsBtn,
-  #appShell#appShell#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) #topicMobileMicBtn,
-  #appShell#appShell#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) #startBtn,
-  #appShell#appShell#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .effort-picker,
-  #appShell#appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) #chatComposerToolsBtn,
-  #appShell#appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) #chatMobileMicBtn,
-  #appShell#appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) #sendBtn,
-  #appShell#appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .effort-picker {
-    grid-row: 3 !important;
-  }
-}
 
 /* The empty mobile landing page pins the prompt capsule to the bottom
    action band: #topicSetup's flex-end column (chat-surface.css) owns the
@@ -1065,17 +791,6 @@ body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
    data-keyboard-open to mask — a mid-gesture shift that could retarget a
    tap to #topicSetup and skip the tools/mic/send listeners. */
 @media (max-width: 768px) {
-  body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
-    #appShell#appShell#appShell
-    #topicSetup
-    > #topicInputWrap:not(.voice-recording-active) {
-    position: static !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    width: 100% !important;
-    margin: 0 !important;
-  }
 
   body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
     #appShell#appShell#appShell #topicSetup .home-quick-actions {

@@ -146,7 +146,6 @@
 
 /* Sending stays the familiar arrow while idle; active voice capture replaces
    the full composer with the recording bar defined at the end of this file. */
-.start-btn .icon-arrow,.send-btn .icon-arrow{display:inline-flex}
 .display-prefs-row{display:flex;flex-direction:column;gap:4px}
 .display-prefs-label{display:flex;justify-content:space-between;align-items:center;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.04em}
 .display-prefs-label .value{color:hsl(var(--text-200));font-weight:600;text-transform:none;letter-spacing:0}
@@ -198,8 +197,7 @@
 
 
 
-.user-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:calc(12px * var(--sidebar-font-scale));font-weight:600;background:hsl(var(--text-200));color:hsl(var(--bg-100))}
-.user-name{font-size:calc(12px * var(--sidebar-font-scale));font-weight:500;color:hsl(var(--text-100))}.user-plan{font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-500));display:flex;align-items:center;gap:4px}
+.user-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:calc(12px * var(--sidebar-font-scale));font-weight:600;background:hsl(var(--text-200));color:hsl(var(--bg-100))}.user-plan{font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-500));display:flex;align-items:center;gap:4px}
 .tier-badge{font-size:calc(9px * var(--sidebar-font-scale));font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:1px 6px;border-radius:3px}
 .tier-badge.tier-diophantus{background:hsl(var(--bg-300));color:hsl(var(--text-500))}
 .tier-badge.tier-riemann{background:hsl(var(--bg-300));color:hsl(var(--text-400))}

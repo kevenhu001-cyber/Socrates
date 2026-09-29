@@ -249,7 +249,8 @@ test('the empty chat primary action uses the same recording bar', async ({ page 
   const bar = wrap.locator('.voice-recording-bar');
   await expect(bar).toBeVisible();
   await expect(wrap).toHaveClass(/voice-recording-active/);
-  await expect(wrap.locator('.chat-composer-body')).toBeHidden();
+  await expect(wrap.locator('.composer-footer')).toBeHidden();
+  await expect(wrap.locator('.composer-editor-root')).toBeHidden();
   await expect(bar.locator('.voice-recording-wave > span')).toHaveCount(26);
 
   await bar.locator('.voice-recording-stop').click();

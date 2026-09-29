@@ -29,27 +29,11 @@
 /* UI-align: staged empty-state entrance (open-webui Placeholder —
    greeting, subtitle, then input fade in one after another). */
 @keyframes emptyStateIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.topic-input-wrap{--composer-motion-duration:.34s;--composer-motion-ease:cubic-bezier(.22,1,.36,1);width:100%;max-width:720px;margin-top:clamp(16px,3dvh,50px);background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.24);border-radius:26px;overflow:hidden;box-shadow:0 .35rem 1.8rem hsl(var(--always-black)/5%);
-  position:relative;z-index:1;
-  /* Focus feedback glides on the same duration/curve as the chat composer
-     (see .chat-input-wrap) — the old .2s default-ease border/shadow snap
-     read as an abrupt "blink" when the landing input gained focus.
-     Focus feedback only changes the edge/shadow; the input stays fixed in place. */
-  transition:box-shadow var(--composer-motion-duration) var(--composer-motion-ease),border-color var(--composer-motion-duration) var(--composer-motion-ease),background-color var(--composer-motion-duration) var(--composer-motion-ease);
-  animation:emptyStateIn .4s var(--ease-out) 140ms both}
-.topic-input-wrap:focus-within{border-color:hsl(var(--accent-000)/0.5)}
 #topicInput{width:100%;border:none;outline:none;background:transparent;resize:none;font-size:calc(16px * var(--app-font-scale, 1));line-height:1.55;color:hsl(var(--text-100));min-height:76px;max-height:320px;overflow-y:auto;font-family:var(--font-sans);padding:16px 20px 12px}
 #topicInput::placeholder{color:hsl(var(--text-400))}
-.topic-footer{display:flex;align-items:center;padding:0 20px 16px}
-.footer-left-group{display:flex;align-items:center;gap:4px;margin-right:auto}
 /* .start-btn has no :hover rule — drop transition: all (was paying compositor
    cost watching properties that never animate). Active state still flips
    color/background instantly. */
-.start-btn{padding:10px 24px;border-radius:10px;font-size:calc(14px * var(--app-font-scale, 1));font-weight:500;background:hsl(var(--bg-300));color:hsl(var(--text-400));transition:background-color .22s cubic-bezier(.4,0,.2,1),color .22s cubic-bezier(.4,0,.2,1),box-shadow .22s cubic-bezier(.4,0,.2,1),transform .12s ease;cursor:pointer;border:none;font-family:var(--font-sans)}
-.start-btn:hover{background:hsl(var(--bg-400));color:hsl(var(--text-200))}
-.start-btn:active{transform:scale(.96)}
-.start-btn.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));box-shadow:0 2px 8px hsl(var(--accent-000)/0.18)}.start-btn.active:hover{background:hsl(var(--accent-100));box-shadow:0 4px 14px hsl(var(--accent-000)/0.28);transform:translateY(-1px)}
-.start-btn.active:active{transform:translateY(0) scale(.97)}
 /* Model picker — a single trigger with a dropdown of available models.
    Matches the .extensions-trigger style so the two sit on the same row
    without one looking heavier than the other. */
@@ -227,11 +211,7 @@ true) but the dropdown never shows — see commit history. */
 /* P_chatgpt-landing — reasoning-effort selector (高/中/低) inside the
    composer footer. Compact pill trigger + a small pop-up menu that
    opens upward (the picker sits at the bottom of the composer). */
-.effort-picker{position:relative;display:inline-flex}
-.effort-trigger{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:8px;border:1px solid transparent;background:transparent;color:hsl(var(--text-400));font-size:calc(13px * var(--app-font-scale, 1));font-family:var(--font-sans);line-height:1.2;cursor:pointer;transition:background-color .18s ease,color .18s ease}
-.effort-trigger:hover{background:hsl(var(--bg-300)/0.6);color:hsl(var(--text-100))}
 .effort-caret{width:12px;height:12px;opacity:.65;transition:transform .18s ease}
-.effort-picker[data-open="true"] .effort-caret{transform:rotate(180deg)}
 /* P_effort-glyph — three ascending bars. Default render shows all three
    as outline ghosts; the .effort-picker[data-effort="…"] rules below
    fill the active number of bars (1 = low, 2 = medium, 3 = high) so the
@@ -296,8 +276,6 @@ true) but the dropdown never shows — see commit history. */
 .extensions-item.on .extensions-item-check{background:hsl(var(--accent-000));border-color:hsl(var(--accent-000))}
 .extensions-item-check svg{width:10px;height:10px;stroke:hsl(var(--oncolor-100));opacity:0}
 .extensions-item.on .extensions-item-check svg{opacity:1}
-
-@media (max-width:600px){}
 @media (max-width:768px){.model-picker-menu{left:0;right:auto;transform-origin:top left;transform:translateY(-6px) scale(.96);min-width:200px;max-width:calc(100vw - 24px)}.model-picker[data-open="true"] .model-picker-menu{transform:translateY(0) scale(1)}}
 
 .settings-label-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}

@@ -275,13 +275,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 
 @media (max-width: 768px) {
 
-[data-mode="light"] #appShell .sidebar-footer .user-name {
-  color: var(--cg-text) !important;
-}
-}
-
-@media (max-width: 768px) {
-
 [data-mode="light"] #appShell .sidebar-footer .user-plan {
   color: var(--cg-text-muted) !important;
 }
@@ -291,79 +284,18 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   color: var(--cg-text) !important;
 }
 
-@media (max-width: 768px) {
-
-[data-mode="light"] #appShell #topicInputWrap {
-  border-color: var(--cg-border-strong) !important;
-  background: var(--cg-surface) !important;
-  box-shadow: 0 1px 3px rgb(0 0 0 / 6%) !important;
-}
-}
-
-@media (max-width: 768px) {
-
-[data-mode="light"] #appShell #topicInputWrap .attach-btn,
-[data-mode="light"] #appShell #topicInputWrap .mobile-mic-btn {
-  color: var(--cg-text-secondary) !important;
-}
-}
-
-@media (max-width: 768px) {
-
-[data-mode="light"] #appShell #topicInputWrap .effort-trigger {
-  color: var(--cg-text-muted) !important;
-}
-}
-
 /* Reference send button: solid dark circle in light mode. The
    specificity has to clear chatgpt-v2's `#startBtn:not(.active)`
    rule, so it carries the same :not(.active) shape. */
-@media (max-width: 768px) {
-[data-mode="light"] #appShell #topicInputWrap:not(.voice-recording-active) #startBtn:not(.active),
-[data-mode="light"] #appShell #topicInputWrap:not(.voice-recording-active) #startBtn.active {
-  color: #fff !important;
-  background: #111 !important;
-}
-}
 
 /* The in-session composer shares the same reference control: solid dark
    circle in light mode. Without this the shared chatgpt-v2 idle rule
    paints it white, which disappears on the white composer surface. */
-@media (max-width: 768px) {
-[data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active) .send-btn:not(.active),
-[data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active) .send-btn.active,
-[data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active) .send-btn.chat-stop,
-[data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active) .send-btn.agent-stop {
-  color: #fff !important;
-  background: #111 !important;
-}
-}
-
-@media (max-width: 768px) {
-
-[data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active) .send-btn:hover {
-  background: #000 !important;
-  color: #fff !important;
-}
-}
 
 /* Reference composer outline — light mode. chatgpt-v2 drops the idle
    border entirely (`border: 0 !important`) and relies on the shadow,
    which reads as no edge at all against the white canvas. Restore a
    hairline plus a clearly stronger focus ring in light mode only. */
-@media (max-width: 768px) {
-[data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active) {
-  border: 1px solid rgb(0 0 0 / 20%) !important;
-}
-}
-
-@media (max-width: 768px) {
-
-[data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active):focus-within {
-  border-color: rgb(0 0 0 / 38%) !important;
-  box-shadow: 0 0 0 3px rgb(0 0 0 / 6%), var(--cg-composer-shadow) !important;
-}
-}
 
 
 

@@ -63,19 +63,19 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
     return {
       attach: box('#chatInputWrap .attach-btn'),
       // #chatComposerRoot is a display:contents wrapper on desktop
-      // (styles/parity/composer.css); the editable box is the real item.
+      // (styles/parity/composer-unified.css); the editable box is the real item.
       editor: box('#chatComposerRoot .rich-composer-editor'),
       effort: box('#chatInputWrap .effort-picker'),
       mic: box('#chatMobileMicBtn'),
       send: box('#sendBtn'),
     };
   });
-  /* Desktop matches ChatGPT's single rail: plus → editor → mic → send.
-     Reasoning remains available in the tools surface instead of consuming
-     permanent composer width. */
-  expect(desktopControlBoxes.effort).toBeNull();
+  /* P_composer-unify — the conversation composer IS the landing composer:
+     plus → editor → effort → mic → send on one rail. */
+  expect(desktopControlBoxes.effort).not.toBeNull();
   expect(desktopControlBoxes.attach?.right ?? 0).toBeLessThanOrEqual((desktopControlBoxes.editor?.left ?? 0) + 1);
-  expect(desktopControlBoxes.editor?.right ?? 0).toBeLessThanOrEqual((desktopControlBoxes.mic?.left ?? 0) + 1);
+  expect(desktopControlBoxes.editor?.right ?? 0).toBeLessThanOrEqual((desktopControlBoxes.effort?.left ?? 0) + 1);
+  expect(desktopControlBoxes.effort?.right ?? 0).toBeLessThanOrEqual((desktopControlBoxes.mic?.left ?? 0) + 1);
   expect(desktopControlBoxes.mic?.right ?? 0).toBeLessThanOrEqual((desktopControlBoxes.send?.left ?? 0) + 1);
   const editorCenter = ((desktopControlBoxes.editor?.top ?? 0) + (desktopControlBoxes.editor?.bottom ?? 0)) / 2;
   const attachCenter = ((desktopControlBoxes.attach?.top ?? 0) + (desktopControlBoxes.attach?.bottom ?? 0)) / 2;
@@ -114,10 +114,10 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
     };
     return {
       left: rect('#chatInputWrap .footer-left-group'),
-      editor: rect('#chatComposerRoot'),
+      editor: rect('#chatInputWrap .rich-composer-editor'),
       send: rect('#sendBtn'),
-      bodyDisplay: getComputedStyle(document.querySelector('#chatInputWrap .chat-composer-body')).display,
-      bodyColumns: getComputedStyle(document.querySelector('#chatInputWrap .chat-composer-body')).gridTemplateColumns,
+      bodyDisplay: getComputedStyle(document.querySelector('#chatInputWrap .composer-footer')).display,
+      bodyColumns: getComputedStyle(document.querySelector('#chatInputWrap .composer-footer')).gridTemplateColumns,
     };
   });
   console.log('[mobile-collapsed-geometry]', JSON.stringify(collapsedGeometry));
@@ -133,7 +133,7 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   // already visible at rest, matching the reference.
   await expect.poll(async () => (await mobileComposer.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual((collapsedBox?.height ?? 0) - 1);
   const focusedBox = await mobileComposer.boundingBox();
-  const focusedEditorBox = await page.locator('#chatComposerRoot').boundingBox();
+  const focusedEditorBox = await page.locator('#chatInputWrap .rich-composer-editor').boundingBox();
   /* The effort pill is already visible at rest, so focus only narrows the
      editor column while every control stays on the same row. */
   // The mobile rail keeps the reasoning control exposed, leaving a

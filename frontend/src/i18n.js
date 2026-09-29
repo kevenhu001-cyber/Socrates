@@ -5,7 +5,7 @@ var I18N={
   en:{
     "a11y.skipToContent":"Skip to content",
     "chat.placeholder":"Type your thinking...",
-    "chat.inputPlaceholder":"Ask Socrates...",
+    "chat.inputPlaceholder":"Ask Socrates",
     "chat.hint":"Shift+Enter for new line",
     "chat.send":"Send",
     /* P_attachments — UI strings for the chat-input attachment chip
@@ -1056,7 +1056,7 @@ var I18N={
   zh:{
     "a11y.skipToContent":"跳到主要内容",
     "chat.placeholder":"输入你的想法...",
-    "chat.inputPlaceholder":"问问 Socrates…",
+    "chat.inputPlaceholder":"问问 Socrates",
     "chat.hint":"Shift+Enter 换行",
     "chat.send":"发送",
     /* P_attachments — see matching en block. */
