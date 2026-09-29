@@ -851,7 +851,7 @@ export async function reattachPendingTurn(sessionId){
     return;
   }
   if(typeof window.addStreamingMessage!=="function")return;
-  var ctl=window.addStreamingMessage({onRetry:function(){
+  var ctl=await window.addStreamingMessage({onRetry:function(){
     try{
       var lastUserEntry=null;
       var lastUser=null;

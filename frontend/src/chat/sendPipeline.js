@@ -89,6 +89,10 @@ function _addAnchoredAssistant(text, type, actions) {
 
 export async function submitChatMessage(textOverride,opts){
   opts=opts||{};
+  /* Warm the lazy streamingTurn chunk — the fetch overlaps with the
+     attachment/template preamble so precreateChatTurn resolves in a
+     microtask. */
+  try { if (typeof window.__loadStreamingTurn === 'function') window.__loadStreamingTurn(); } catch (_) { /* prefetch is best effort */ }
   var rawText=(textOverride!=null?textOverride:getComposerMarkdown("chat"));
   var text=rawText.trim();
   /* P5.8 — if a template is active, strip its body prefix
@@ -135,10 +139,13 @@ export async function submitChatMessage(textOverride,opts){
    * so two fast submits cannot overwrite a global hand-off slot. */
   var precreatedChatCtl=null;
   var precreatedRetry=null;
-  function precreateChatTurn() {
+  /* streamingTurn is lazy — _addStreamingMessage resolves through an
+     import(); awaiting keeps the user-row → placeholder ordering because
+     a resolved chunk resolves in a microtask. */
+  async function precreateChatTurn() {
     if (_appMode() !== "chat" || _deepResearchOn()) return;
     try {
-      precreatedChatCtl=_addStreamingMessage({
+      precreatedChatCtl=await _addStreamingMessage({
         onRetry:function(){
           if (typeof precreatedRetry === "function") return precreatedRetry();
           return _askChatTurn(text, textForModel);
@@ -149,7 +156,7 @@ export async function submitChatMessage(textOverride,opts){
   var userClientId=null;
   if(isComposerSubmit){
     userClientId=addMessage("user",text,null,null,immediateAttList);
-    precreateChatTurn();
+    await precreateChatTurn();
     clearComposer("chat");updateSendBtn();
     /* Click-send (opts.blurAfterSend) ends the typing session: drop the
        editor focus so the composer collapses out of its focus-within
@@ -163,7 +170,7 @@ export async function submitChatMessage(textOverride,opts){
   }else{
     /* Origin: quiz — synthetic message from a quiz pick. */
     userClientId=addMessage("user",text,null,null,immediateAttList);
-    precreateChatTurn();
+    await precreateChatTurn();
   }
   /* P_attachments — clear the pending chips after the message is
    * committed to the DOM. Render an empty strip so the UI updates. */
@@ -419,7 +426,7 @@ export async function submitChatMessage(textOverride,opts){
       /* Follow up within same node — streamed */
       var streamCtl=null;
       if(hasUsableActive()){
-        streamCtl=_addStreamingMessage({onRetry:function(){submitChatMessage(text,opts)}});
+        streamCtl=await _addStreamingMessage({onRetry:function(){submitChatMessage(text,opts)}});
         var fu=await generateFollowUpStream(
           text,
           node,

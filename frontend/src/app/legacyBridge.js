@@ -11,7 +11,9 @@ import { getExplanation } from '../tutor/socraticTurn.js';
 import { setActiveTemplate, clearActiveTemplate } from '../chat/templateSlash.js';
 import { openTagEditor, closeTagEditor, onSessionDragStart, onSessionDragEnd, cycleActiveProject } from '../session/organize.js';
 import { askChatTurn } from '../chat/turnController.js';
-import { addStreamingMessage } from '../chat/streamingTurn.js';
+/* chat/streamingTurn.js (~65KB) is lazy — window.addStreamingMessage is
+   an async proxy below; all call sites sit inside async send/restore
+   paths and await the controller. */
 import { syncSidebarBtns, toggleSidebarView } from '../ui/sidebarChrome.js';
 import { loadSession } from '../session/loader.js';
 import { toggleKBDetail } from '../ui/knowledgeDetail.js';
@@ -68,7 +70,15 @@ window.setActiveTemplate = setActiveTemplate;
 window.clearActiveTemplate = clearActiveTemplate;
 window.closeTagEditor = closeTagEditor;
 window.askChatTurn = askChatTurn;
-window.addStreamingMessage = addStreamingMessage;
+/* Warm path returns the controller synchronously — callers that read
+   state.messages right after askChatTurn() (the placeholder is pushed
+   inside addStreamingMessage) depend on it. The cold path returns a
+   Promise; every internal call site awaits either way. */
+window.__loadStreamingTurn = _loadStreamingTurn;
+window.addStreamingMessage = function (opts) {
+  if (_streamingModule) return _streamingModule.addStreamingMessage(opts);
+  return _loadStreamingTurn().then(function (m) { return m.addStreamingMessage(opts); });
+};
 window.syncSidebarBtns = syncSidebarBtns;
 window.toggleSidebarView = toggleSidebarView;
 window.loadSession = loadSession;
@@ -79,6 +89,19 @@ window.renderRecents = renderRecents;
 window.resendLastUserMessage = resendLastUserMessage;
 window.setChatStopState = setChatStopState;
 window.handleSendClick = handleSendClick;
+var _streamingImport = null;
+var _streamingModule = null;
+function _loadStreamingTurn() {
+  if (!_streamingImport) {
+    _streamingImport = import('../chat/streamingTurn.js');
+    _streamingImport.then(function (m) { _streamingModule = m; });
+    _streamingImport.catch(function (err) {
+      _streamingImport = null;
+      console.error('[stream] failed to load', err);
+    });
+  }
+  return _streamingImport;
+}
 var _webSearchImport = null;
 function _loadWebSearch() {
   if (!_webSearchImport) {

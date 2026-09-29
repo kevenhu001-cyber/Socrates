@@ -208,12 +208,13 @@ export async function startSession(){
        askChatTurn will explicitly claim this new placeholder. Landing
        attachments ride along immediately (pending stubs resolve into
        fileIds in the deferred patch below). */
+    try { if (typeof window.__loadStreamingTurn === 'function') window.__loadStreamingTurn(); } catch (_) { /* prefetch is best effort */ }
     var _startUserClientId = addMessage("user", stateStore.read("topic"), null, null, startImmediateAttList);
     var _startSaveP = saveState.saveInFlight || null;
     var _syncCtl = null;
     if(typeof window.addStreamingMessage === "function"){
       try{
-        _syncCtl = window.addStreamingMessage({onRetry:function(){
+        _syncCtl = await window.addStreamingMessage({onRetry:function(){
           try{ console.warn("[chat] sync start retry not wired yet"); }catch(_){}
         }});
       }catch(_){ /* askChatTurn will create the normal controller */ }

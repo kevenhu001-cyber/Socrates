@@ -131,7 +131,7 @@ function _addAnchoredAssistant(text) {
 export async function askNextQuestion(){
   var node=stateStore.read("kbNodes")[stateStore.read("currentNode")];
   if(hasUsableActive()){
-    var ctl=_addStreamingMessage({onRetry:function(){askNextQuestion()}});
+    var ctl=await _addStreamingMessage({onRetry:function(){askNextQuestion()}});
     var result=await generateSocraticQuestionStream(
       node,
       stateStore.read("domain"),

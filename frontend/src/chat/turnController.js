@@ -95,7 +95,7 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
     var retryThisTurn=function(){
       quietTurn(askChatTurn(userText,pendingContent));
     };
-    var ctlOff=precreatedCtl||_addStreamingMessage({onRetry:retryThisTurn});
+    var ctlOff=precreatedCtl||await _addStreamingMessage({onRetry:retryThisTurn});
     ctlOff.replaceWithError("You appear to be offline — check your connection and retry.",retryThisTurn);
     return;
   }
@@ -235,7 +235,7 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
      and double the React commit work). */
   var ctl=precreatedCtl;
   if(!ctl){
-    ctl=_addStreamingMessage({onRetry:function(){
+    ctl=await _addStreamingMessage({onRetry:function(){
       /* Carry this turn's immutable content directly so retrying an older
          multimodal turn can never pick up a newer draft's attachments. */
       quietTurn(retryTurn());

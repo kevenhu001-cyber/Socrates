@@ -32,6 +32,12 @@ export function bootstrapApp(options) {
     console.error('[react-migration] compatibility runtime failed to initialize', error);
   }
 
+  /* streamingTurn stays out of the entry chunk (saves parse+eval on the
+     critical path) but every session needs it on first send — kick the
+     fetch now so the module is warm before any interaction; the send
+     path then serves the controller synchronously. */
+  try { if (typeof window.__loadStreamingTurn === 'function') window.__loadStreamingTurn(); } catch (_) { /* prefetch is best effort */ }
+
   mountLegacyShellListeners({
     toggleSidebar: options.toggleSidebar,
     startNewChat: options.startNewChat,
@@ -61,6 +67,9 @@ export function bootstrapApp(options) {
        instantly; the module stays lazy for users who never visit it —
        this only moves the fetch off the click path. */
     try { if (typeof window.__loadExamModule === 'function') window.__loadExamModule(); } catch (_) {}
+    /* Same for streamingTurn (12KB gz): once warm, addStreamingMessage
+       serves synchronously again (placeholder lands in the same task). */
+    try { if (typeof window.__loadStreamingTurn === 'function') window.__loadStreamingTurn(); } catch (_) { /* prefetch is best effort */ }
   };
   if (typeof requestIdleCallback === 'function') {
     try { requestIdleCallback(loadIdleVendors, { timeout: 15000 }); }
