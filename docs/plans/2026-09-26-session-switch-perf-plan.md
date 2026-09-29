@@ -1,6 +1,6 @@
 # 历史会话切换性能优化方案
 
-> 状态：部分已实施（2026-09-27）。P1 详情列裁剪、P2 渲染副作用降噪（mermaid 按帧合并 + 每行全局查询改 ref）、P3 stale-while-revalidate 详情缓存、P4 升级队列视口优先（tail-first + idle）已落地；另追加保存双 POST 去重。前后运行时对比见 `tasks/evidence/2026-09-27-session-perf-profile.md`。**未做（维持原判断）**：列表虚拟化、mermaid 视口内惰性加载（IO 门控）——二者改造半径大，是首访长任务的剩余主体。方案原文生成于 2026-09-26，基于对切换链路的逐文件审查。
+> 状态：部分已实施（2026-09-27）。P1 详情列裁剪、P2 渲染副作用降噪（mermaid 按帧合并 + 每行全局查询改 ref）、P3 stale-while-revalidate 详情缓存、P4 升级队列视口优先（tail-first + idle）已落地；另追加保存双 POST 去重。前后运行时对比见 `tasks/evidence/2026-09-27-session-perf-profile.md`。**mermaid 视口内惰性加载（IO 门控）已落地**（P_mermaid-viewport-gate，2026-09-29）：长会话首访不再为每张图付一次同步 `mermaid.parse`，只渲染视口附近（600px 预热边距）的卡片，见 `frontend/test/mermaidViewportGate.test.mjs`。**未做**：消息列表虚拟化——与 `turnAnchor` 滚动锚定、流式高度、postRender DOM 回填耦合过深，仍维持"单独立项"的原判断。方案原文生成于 2026-09-26，基于对切换链路的逐文件审查。
 > 范围：`server/src/routes/sessions.ts`、`frontend/src/session/loader.js`、`frontend/src/react/message-list/*`、`frontend/src/session/serverCache.js`。
 
 ---

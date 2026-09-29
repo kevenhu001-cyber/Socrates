@@ -158,6 +158,22 @@ function _unparkVizCard(card) {
 export function parkVizCardForTest(card) { _parkVizCard(card); }
 export function unparkVizCardForTest(card) { _unparkVizCard(card); }
 
+/* Viewport-gate test hooks (P_mermaid-viewport-gate). The gate is plain
+   rect math, so it is unit-testable without a layout engine by driving the
+   rect directly; see test/mermaidViewportGate.test.mjs. */
+export function mermaidCardIsNearViewportForTest(el) { return _mermaidCardIsNearViewport(el); }
+export function resetMermaidGateForTest() {
+  if (_mermaidGateObserver) {
+    try { _mermaidGateObserver.disconnect(); } catch (_) { /* ignore */ }
+  }
+  _mermaidGateObserver = null;
+  _mermaidGateSeen = Object.create(null);
+  _mermaidIdleTimer = null;
+  /* Drop anything the gate was holding so one test's backlog cannot leak
+     into the next. */
+  _pendingMermaid.length = 0;
+}
+
 
 /**
  * Swap freshly-parsed `data-viz-state="loading"` placeholders inside `root`
@@ -249,6 +265,107 @@ function renderMermaidFallback(item) {
 var MERMAID_RENDERS_PER_FRAME = 2;
 var MERMAID_FRAME_BUDGET_MS = 8;
 
+/* P_mermaid-viewport-gate — the frame budget above splits an N-diagram
+   backlog across frames, but it still renders every diagram in a long
+   session: opening a 200-message history with 40 diagrams pays 40
+   synchronous mermaid.parse+layout calls for the 2 the user can actually
+   see. The gate defers a queued diagram until its card nears the
+   viewport, so the first-visit long task becomes O(visible cards).
+
+   Gating is decided per item at drain time from the card's live rect
+   (getBoundingClientRect), not from where it sits in the queue — a queue
+   that is scanned in order would starve the visible tail whenever the
+   head is full of off-screen diagrams.
+
+   Guards:
+     - No IntersectionObserver (or a zero-size rect from a not-yet-laid-out
+       element) ⇒ render now. Deferring on a rect we cannot trust would
+       strand a card that will never be reported again.
+     - A card whose element is not in the DOM yet (streaming markup not yet
+       mounted) is left in the queue exactly as before, so the existing
+       "element lands later, a later pass finds it" contract holds.
+     - The tab being hidden is treated as "render": IntersectionObserver
+       reports everything offscreen on a tab switch, which would hold the
+       whole backlog until the user comes back.
+   Deferred items keep their queue entry, so the idle fallback below still
+   reaches them; the observer only decides WHEN they render, never WHETHER. */
+var MERMAID_VIEWPORT_MARGIN_PX = 600;
+/* Bounded look-ahead: how many off-screen items one drain may rotate past
+   before yielding the frame. Keeps a 40-diagram backlog from turning the
+   drain itself into a long task. */
+var MERMAID_GATE_SCAN_MAX = 12;
+/* Slow safety net for cards the observer will never wake (see below). */
+var MERMAID_IDLE_DRAIN_MS = 2000;
+var _mermaidIdleTimer = null;
+
+function armMermaidIdleDrain() {
+  if (_mermaidIdleTimer) return;
+  _mermaidIdleTimer = setTimeout(function () {
+    _mermaidIdleTimer = null;
+    if (!_pendingMermaid.length) return;
+    /* Re-run the gate rather than force-rendering. If the observer is
+       healthy it wakes us on its own and this is a no-op; if a card was
+       orphaned (its element was swapped by a message re-render while
+       observed), the element is gone or zero-size now, which the gate
+       treats as visible and renders. */
+    schedulePendingMermaid();
+  }, MERMAID_IDLE_DRAIN_MS);
+  try {
+    if (_mermaidIdleTimer && typeof _mermaidIdleTimer.unref === 'function') {
+      _mermaidIdleTimer.unref();
+    }
+  } catch (_) { /* ignore */ }
+}
+
+var _mermaidGateObserver = null;
+var _mermaidGateSeen = Object.create(null);
+
+function _ensureMermaidGateObserver() {
+  if (_mermaidGateObserver || typeof IntersectionObserver !== 'function') return _mermaidGateObserver;
+  _mermaidGateObserver = new IntersectionObserver(function (entries) {
+    for (var i = 0; i < entries.length; i++) {
+      var el = entries[i].target;
+      if (!entries[i].isIntersecting) continue;
+      try { _mermaidGateObserver.unobserve(el); } catch (_) {}
+      delete _mermaidGateSeen[el.id];
+      /* The item stayed in _pendingMermaid the whole time; all this needs
+         to do is hand control back to the normal drain. */
+      schedulePendingMermaid();
+    }
+  }, { rootMargin: MERMAID_VIEWPORT_MARGIN_PX + 'px 0px ' + MERMAID_VIEWPORT_MARGIN_PX + 'px 0px' });
+  return _mermaidGateObserver;
+}
+
+/* True when the card is close enough to the viewport to be worth its
+   synchronous mermaid.render right now. */
+function _mermaidCardIsNearViewport(el) {
+  if (typeof IntersectionObserver !== 'function') return true;
+  try {
+    /* A hidden tab makes every card report offscreen; render rather than
+       hold an entire backlog until the user returns. */
+    if (document.visibilityState === 'hidden') return true;
+  } catch (_) { /* ignore */ }
+  var rect;
+  try { rect = el.getBoundingClientRect(); } catch (_) { return true; }
+  /* An unlaid-out element (display:none ancestor, freshly detached) has a
+     zero rect. Treat it as visible: the observer will not report it again,
+     so holding it would strand the diagram permanently. */
+  if (!rect || (!rect.width && !rect.height)) return true;
+  var vh = window.innerHeight || 0;
+  if (vh > 0 && rect.top < vh + MERMAID_VIEWPORT_MARGIN_PX && rect.bottom > -MERMAID_VIEWPORT_MARGIN_PX) {
+    return true;
+  }
+  return false;
+}
+
+function _holdMermaidUntilVisible(item, el) {
+  var obs = _ensureMermaidGateObserver();
+  if (!obs || _mermaidGateSeen[el.id]) return false;
+  _mermaidGateSeen[el.id] = 1;
+  try { obs.observe(el); } catch (_) { return false; }
+  return true;
+}
+
 function renderPendingMermaidItem(item) {
   var liveEl = document.getElementById(item.id);
   /* A card reclaimed from the live-card registry is already rendered —
@@ -323,17 +440,45 @@ export function processPendingMermaid() {
   }
   var frameStart = Date.now();
   var rendered = 0;
+  var held = 0;
   while (_pendingMermaid.length && rendered < MERMAID_RENDERS_PER_FRAME) {
     /* Always start at least one diagram, even when this frame is already
        over budget — otherwise a coarse clock could stall the queue. */
     if (rendered > 0 && Date.now() - frameStart >= MERMAID_FRAME_BUDGET_MS) break;
-    renderPendingMermaidItem(_pendingMermaid.shift());
+    var item = _pendingMermaid[0];
+    /* P_mermaid-viewport-gate — look at the head item without consuming
+       it. An off-screen card stays at the head for a later pass; the
+       observer wakes us when it nears the viewport. A bounded scan keeps
+       one long off-screen run from spinning here. */
+    var headEl = item ? document.getElementById(item.id) : null;
+    if (headEl && !_mermaidCardIsNearViewport(headEl)) {
+      if (_holdMermaidUntilVisible(item, headEl)) {
+        held++;
+        /* Skip this item for this frame but keep the rest of the queue
+           moving — a visible diagram further down must not wait behind
+           an off-screen one. */
+        _pendingMermaid.shift();
+        _pendingMermaid.push(item);
+        if (held >= MERMAID_GATE_SCAN_MAX) break;
+        continue;
+      }
+    }
+    _pendingMermaid.shift();
+    renderPendingMermaidItem(item);
     rendered++;
   }
   /* Work left over continues on the next frame; the queue stays
      module-level so a card whose element lands in the DOM later is
-     still found by a later pass. */
-  if (_pendingMermaid.length) schedulePendingMermaid();
+     still found by a later pass.
+
+     Only re-arm on rAF when this frame actually made progress (or nothing
+     was gated). If every remaining card is off-screen the gate has taken
+     over and the observer wakes us when one approaches — re-arming here
+     would spin rAF forever, rendering nothing. The idle drain below is
+     the safety net for a card the observer will never wake (e.g. its
+     element was replaced by a message re-render under the same id). */
+  if (_pendingMermaid.length && (rendered > 0 || !held)) schedulePendingMermaid();
+  if (held) armMermaidIdleDrain();
   try { processPendingVizActions(); } catch (_) {}
 }
 
