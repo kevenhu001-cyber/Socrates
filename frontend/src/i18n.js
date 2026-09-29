@@ -748,13 +748,11 @@ var I18N={
     /* P_kb-i18n — the knowledge-boundary detail panel (ui/knowledgeDetail.js)
      * was the last surface still hardcoding English. zh is the default
      * locale, so every label below was showing up untranslated in the
-     * product's flagship knowledge feature. The status enum is localized
-     * too: it arrives from the model as raw internalized/fuzzy/blank and
-     * was being echoed straight into the DOM. */
+     * product's flagship knowledge feature. The status badge reuses the
+     * existing tutor.status* keys rather than adding a second vocabulary:
+     * the same "internalized" node must not read 已内化 in the plan
+     * sidebar and 已掌握 in its own detail panel. */
     "kb.questions":"{n} Qs",
-    "kb.status.internalized":"Mastered",
-    "kb.status.fuzzy":"Fuzzy",
-    "kb.status.blank":"Not explored",
     "kb.go":"→ Go",
     "kb.goTitle":"Jump the chat to this knowledge point",
     "kb.confidence":"Confidence",
@@ -764,6 +762,21 @@ var I18N={
     "kb.yourNote":"Your note",
     "kb.history":"Snapshot history",
     "kb.noHistory":"No snapshots yet.",
+    /* P_mistakes-i18n — mistakeBook.js (ui/) had the same gap as the
+     * knowledge detail panel: raw English literals plus the internal
+     * mistake.type enum echoed straight into the card meta. The mistake
+     * book is one of the four structural moat features, so it ships in
+     * the default locale like everything else. */
+    "mistakes.empty":"No mistakes yet.",
+    "mistakes.emptyHint":"Wrong quiz picks and incorrect practice attempts will land here for review.",
+    "mistakes.filterEmptyResolved":"No resolved mistakes yet. Redo a mistake and mark it conquered once you get it right.",
+    "mistakes.filterEmptyOther":"Nothing in this filter. Switch to “all” to see every mistake.",
+    "mistakes.conquered":"conquered",
+    "mistakes.redo":"Redo",
+    "mistakes.redoneOne":"Redone once",
+    "mistakes.redoneMany":"Redone {n} times",
+    "mistakes.type.quiz":"Quiz",
+    "mistakes.type.practice":"Practice",
     "prompt.placeholderTitle":"e.g. Code review",
     "prompt.placeholderShortcut":"/my-template",
     "prompt.placeholderDesc":"One-line summary",

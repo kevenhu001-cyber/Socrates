@@ -727,11 +727,10 @@ export const zh = {
     "profile.disclaimerTutor":"Socrates 通过提问帮助你思考，不会评判你的回答。",
     "tag.placeholder":"输入标签后按回车",
     "kb.placeholderNote":"写下你对本主题想记住的任何内容...",
-    /* P_kb-i18n — see matching en block. */
+    /* P_kb-i18n — see matching en block. 状态标签复用 tutor.status*，
+       不另起一套译法：同一个 internalized 节点不能在教学面板里叫
+       「已内化」、在自己的详情里又叫「已掌握」。 */
     "kb.questions":"{n} 问",
-    "kb.status.internalized":"已掌握",
-    "kb.status.fuzzy":"模糊",
-    "kb.status.blank":"未探测",
     "kb.go":"→ 进入",
     "kb.goTitle":"把对话跳到这个知识点",
     "kb.confidence":"掌握置信度",
@@ -741,6 +740,17 @@ export const zh = {
     "kb.yourNote":"我的笔记",
     "kb.history":"存档历史",
     "kb.noHistory":"暂无存档。",
+    /* P_mistakes-i18n — see matching en block. */
+    "mistakes.empty":"还没有错题。",
+    "mistakes.emptyHint":"测验选错和练习答错的题目会收集到这里，供你回看。",
+    "mistakes.filterEmptyResolved":"还没有已攻克的错题。重做一次，答对后即可标记为攻克。",
+    "mistakes.filterEmptyOther":"该筛选下没有内容。切到「全部」可查看所有错题。",
+    "mistakes.conquered":"已攻克",
+    "mistakes.redo":"重做",
+    "mistakes.redoneOne":"已重做 1 次",
+    "mistakes.redoneMany":"已重做 {n} 次",
+    "mistakes.type.quiz":"测验",
+    "mistakes.type.practice":"练习",
     "prompt.placeholderTitle":"如：代码审查",
     "prompt.placeholderShortcut":"/my-template",
     "prompt.placeholderDesc":"一行简介",

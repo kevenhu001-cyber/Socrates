@@ -82,15 +82,15 @@ export function updateKB() {
   };
   var html = '';
   if (sections.internalized.length) {
-    html += sectionTitle('kb.status.internalized', 'Internalized') + sections.internalized.length + '</span></div>';
+    html += sectionTitle('tutor.statusInternalized', 'Internalized') + sections.internalized.length + '</span></div>';
     sections.internalized.forEach(function (n) { html += kbNodeHtml(n, 'internalized'); });
   }
   if (sections.fuzzy.length) {
-    html += sectionTitle('kb.status.fuzzy', 'Exploring') + sections.fuzzy.length + '</span></div>';
+    html += sectionTitle('tutor.statusFuzzy', 'Fuzzy') + sections.fuzzy.length + '</span></div>';
     sections.fuzzy.forEach(function (n) { html += kbNodeHtml(n, 'fuzzy'); });
   }
   if (sections.blank.length) {
-    html += sectionTitle('kb.status.blank', 'Not yet reached') + sections.blank.length + '</span></div>';
+    html += sectionTitle('tutor.statusBlank', 'Blank') + sections.blank.length + '</span></div>';
     sections.blank.forEach(function (n) { html += kbNodeHtml(n, 'blank'); });
   }
   cont.innerHTML = html;

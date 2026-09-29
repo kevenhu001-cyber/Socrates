@@ -76,10 +76,24 @@ test('the detail panel is localized and does not echo the status enum', async ({
   await expect(detail.locator('.kb-go-btn')).toHaveText('→ 进入');
 
   /* The backend emits internalized / fuzzy / blank; the panel showed that
-     raw enum as the badge text. */
+     raw enum as the badge text. It now reuses tutor.status* — the same
+     vocabulary the teaching-plan sidebar uses — so one node never reads
+     已内化 in the sidebar and a different word in its own detail panel. */
   const badge = detail.locator('.kb-detail-status');
-  await expect(badge).toHaveText('已掌握');
+  await expect(badge).toHaveText('已内化');
   await expect(badge).not.toHaveText(/internalized/);
+});
+
+test('confidence dot tooltips interpolate their ordinal', async ({ page }) => {
+  await openPanel(page);
+  await page.locator('#kbContent .kb-graph-node').first().click();
+  const dots = page.locator('#kbContent .kb-node-detail .kb-conf-dot');
+  await expect(dots).toHaveCount(5);
+  /* kb.confidenceSet carries a {n} placeholder and i18n.js's t() does not
+     substitute, so an unimplemented interpolator would show a literal
+     "{n}" in every tooltip. */
+  await expect(dots.nth(2)).toHaveAttribute('title', '将置信度设为 3');
+  await expect(dots.nth(2)).not.toHaveAttribute('title', /\{n\}/);
 });
 
 test('snapshot history renders the shape the writer actually produces', async ({ page }) => {

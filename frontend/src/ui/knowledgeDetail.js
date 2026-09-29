@@ -17,11 +17,16 @@ function tr(key, vars) {
 }
 
 /* The model emits raw internalized / fuzzy / blank; the panel shows a
-   human label. Unknown values pass through so a future status the backend
-   invents is still readable instead of rendering as "undefined". */
+   human label. Reuses tutor.status* — the same vocabulary the teaching
+   plan sidebar already uses for these three states — so one node never
+   reads 已内化 in one place and a different word in its own detail panel.
+   Unknown values pass through so a future status the backend invents is
+   still readable instead of rendering as a raw identifier. */
 function statusLabel(status) {
   var s = status || 'blank';
-  return tr('kb.status.' + s);
+  var key = 'tutor.status' + s.charAt(0).toUpperCase() + s.slice(1);
+  var label = tr(key);
+  return label === key ? s : label;
 }
 
 function saveCurrentSessionSafe() { if (typeof window.saveCurrentSession === 'function') window.saveCurrentSession(); }
