@@ -27,7 +27,8 @@ import { syncWorkspaceRoute } from '../sidebar/nav.js';
 
 import { toggleShareBtn } from '../ui/share.js';
 
-import { renderProviderList } from '../ui/settings.js';
+/* ui/settings.js is lazy (windowExports proxies) — post-auth refresh
+   goes through window.__settingsModule below. */
 
 import { renderGreeting } from '../ui/greeting.js';
 
@@ -292,7 +293,10 @@ export async function afterAuthEnter(){
   window.renderRecents&&window.renderRecents();
   window.renderMistakes&&window.renderMistakes();
   window.updateMistakesBadge&&window.updateMistakesBadge();
-  renderProviderList&&renderProviderList();
+  /* ui/settings.js is lazy — refresh the provider list only when the
+     module is already loaded; otherwise the first openSettings() render
+     covers it. */
+  window.__settingsModule&&window.__settingsModule.renderProviderList();
   window.syncModelPills&&window.syncModelPills();
   syncExtensionsUI&&syncExtensionsUI();
   window.syncAppModeUI&&window.syncAppModeUI();

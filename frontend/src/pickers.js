@@ -193,9 +193,11 @@ function renderProviderItemsHTML(providers, activeId){
    ============================================================ */
 function pickActiveProviderById(id){
   if(!id)return;
-  setActiveProvider(id);
-  closeModelPicker();
-  syncChatModel();
+  import('./ui/settings.js').then(function (m) {
+    m.setActiveProvider(id);
+    closeModelPicker();
+    syncChatModel();
+  }).catch(function (err) { console.error('[pickers] settings failed to load', err); });
 }
 function toggleModelPicker(){
   var p=document.getElementById("modelPicker");
@@ -612,4 +614,5 @@ export {
 };
 export { EXTENSIONS };
 
-import { setActiveProvider } from './ui/settings.js';
+/* ui/settings.js is lazy (windowExports proxies) — setActiveProvider is
+   dynamic-imported inside pickActiveProviderById below. */

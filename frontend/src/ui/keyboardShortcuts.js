@@ -10,10 +10,12 @@ import { openCheatsheet, closeCheatsheet } from './cheatsheet.js';
 import { toggleTheme } from '../displayPrefs.js';
 import { toggleSidebar } from '../sidebar/index.js';
 import { openShareModal, closeShareModal } from './share.js';
-import { closeUsageModal } from './usage.js';
+/* closeUsageModal resolves via window.* — ui/usage.js is lazy-loaded and
+   the overlay can only be visible after the module mounted. */
 import { closeStorageModal } from './storage.js';
 import { closePromptTemplatesModal } from './promptTemplates.js';
-import { closeSettings } from './settings.js';
+/* closeSettings resolves via window.* — ui/settings.js is lazy-loaded
+   and the overlay can only be visible after the module mounted. */
 import { closeProfile, openProfile, toggleProfileWebSearch } from './profile.js';
 import { isFindOpen } from './findInSession.js';
 import { getComposerMarkdown, setComposerMarkdown, focusComposer } from '../react/composer-input/controller.ts';
@@ -84,13 +86,13 @@ export function installKeyboardShortcuts() {
         e.preventDefault();closeProfile();return;
       }
       if(document.getElementById("settingsOverlay")&&!document.getElementById("settingsOverlay").classList.contains("hidden")){
-        e.preventDefault();closeSettings();return;
+        e.preventDefault();window.closeSettings?.();return;
       }
       if(document.getElementById("cheatsheetOverlay")&&!document.getElementById("cheatsheetOverlay").classList.contains("hidden")){
         e.preventDefault();closeCheatsheet();return;
       }
       if(document.getElementById("usageOverlay")&&!document.getElementById("usageOverlay").classList.contains("hidden")){
-        e.preventDefault();closeUsageModal();return;
+        e.preventDefault();window.closeUsageModal?.();return;
       }
       if(document.getElementById("tagEditorPopover")&&!document.getElementById("tagEditorPopover").classList.contains("hidden")){
         e.preventDefault();window.closeTagEditor();return;

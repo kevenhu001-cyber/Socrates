@@ -24,7 +24,8 @@ import { showToast } from '../ui/toast.js';
 import { addMessage } from '../chat/messages.js';
 import { askNextQuestion } from '../tutor/socraticTurn.js';
 import { saveCurrentSession } from '../session/persistence.js';
-import { fetchWebContext } from '../chat/webSearch.js';
+/* chat/webSearch.js (~16KB) is lazy — the window.fetchWebContext proxy
+   below returns a promise, which every caller already awaits. */
 import { openAttachmentPicker, openMediaPicker } from '../attachments/render.js';
 import { getCustomInstructionsString, saveProfileName, onCustomInstructionsChange, toggleProfileWebSearch } from '../ui/profile.js';
 import { editUserMessage, regenerateAssistantMessage, branchFromMessage } from '../chat/editBranch.js';
@@ -35,10 +36,11 @@ import { clearRecentsFilter } from '../sidebar/index.js';
 import { toggleDisplayPrefs } from '../displayPrefs.js';
 import { openStorageModal, closeStorageModal } from '../ui/storage.js';
 import { openPromptTemplatesModal, closePromptTemplatesModal } from '../ui/promptTemplates.js';
-import { toggleAPI, clearSettings, saveSettings } from '../ui/settings.js';
 import { toggleExtensionByKey } from '../pickers.js';
 import { openCmdKResult } from '../ui/cmdK.js';
-import { confirmClearCache, confirmClearSettings, confirmDeleteAccount } from '../ui/dangerConfirms.js';
+/* ui/settings.js + ui/dangerConfirms.js are lazy — the bridge entries
+   below dynamic-import them on click so the settings overlay graph
+   (~24KB) stays out of the entry chunk. */
 import { processPendingMermaid, processPendingViz, reclaimVizCards, schedulePendingMermaid } from '../render/viz.js';
 import { wireCodeBlockHeaders, wireMsgBodyImages } from '../render/postRender.js';
 import { mountVisualization, disposeVisualizations, disposeVisualization } from '../render/visualization.js';
@@ -77,6 +79,40 @@ window.renderRecents = renderRecents;
 window.resendLastUserMessage = resendLastUserMessage;
 window.setChatStopState = setChatStopState;
 window.handleSendClick = handleSendClick;
+var _webSearchImport = null;
+function _loadWebSearch() {
+  if (!_webSearchImport) {
+    _webSearchImport = import('../chat/webSearch.js');
+    _webSearchImport.catch(function (err) {
+      _webSearchImport = null;
+      console.error('[webSearch] failed to load', err);
+    });
+  }
+  return _webSearchImport;
+}
+var _settingsImport = null;
+function _loadSettings() {
+  if (!_settingsImport) {
+    _settingsImport = import('../ui/settings.js');
+    _settingsImport.catch(function (err) {
+      _settingsImport = null;
+      console.error('[settings] failed to load', err);
+    });
+  }
+  return _settingsImport;
+}
+var _dangerImport = null;
+function _loadDangerConfirms() {
+  if (!_dangerImport) {
+    _dangerImport = import('../ui/dangerConfirms.js');
+    _dangerImport.catch(function (err) {
+      _dangerImport = null;
+      console.error('[dangerConfirms] failed to load', err);
+    });
+  }
+  return _dangerImport;
+}
+
 window.setCurrentUser = setCurrentUser;
 window.markAuthSuccess = markAuthSuccess;
 window.isInAuthGraceWindow = isInAuthGraceWindow;
@@ -86,7 +122,9 @@ window.updateModeBadge = updateModeBadge;
 window.addMessage = addMessage;
 window.askNextQuestion = askNextQuestion;
 window.saveCurrentSession = saveCurrentSession;
-window.fetchWebContext = fetchWebContext;
+window.fetchWebContext = function (query, opts) {
+  return _loadWebSearch().then(function (m) { return m.fetchWebContext(query, opts); });
+};
 window.openAttachmentPicker = openAttachmentPicker;
 window.openMediaPicker = openMediaPicker;
 window.getArchivedSessions = getArchivedSessions;
@@ -140,10 +178,10 @@ window.__socratesLegacy = {
     signOut: signOut,
   },
   settings: {
-    toggleAPI: toggleAPI,
+    toggleAPI: function () { return _loadSettings().then(function (m) { return m.toggleAPI(); }); },
     addProvider: window.addProvider,
-    clearSettings: clearSettings,
-    saveSettings: saveSettings,
+    clearSettings: function () { return _loadSettings().then(function (m) { return m.clearSettings(); }); },
+    saveSettings: function () { return _loadSettings().then(function (m) { return m.saveSettings(); }); },
   },
   confirm: {
     closeConfirm: window.closeConfirm,
@@ -199,9 +237,9 @@ window.__socratesLegacy = {
     saveProfileName: saveProfileName,
     onCustomInstructionsChange: onCustomInstructionsChange,
     toggleProfileWebSearch: toggleProfileWebSearch,
-    confirmClearCache: confirmClearCache,
-    confirmClearSettings: confirmClearSettings,
-    confirmDeleteAccount: confirmDeleteAccount,
+    confirmClearCache: function () { return _loadDangerConfirms().then(function (m) { return m.confirmClearCache(); }); },
+    confirmClearSettings: function () { return _loadDangerConfirms().then(function (m) { return m.confirmClearSettings(); }); },
+    confirmDeleteAccount: function () { return _loadDangerConfirms().then(function (m) { return m.confirmDeleteAccount(); }); },
     setLang: window.setLang,
   },
   workspace: {

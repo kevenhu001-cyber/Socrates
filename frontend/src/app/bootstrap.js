@@ -1,7 +1,6 @@
 import { installModalA11y } from '../ui/modalA11y.js';
 import { ensureFuse, ensureHighlight, ensureKatex } from '../vendor/lazy.js';
 import { bootstrapReactCompatibilityRuntime } from '../react/bootstrap.tsx';
-import { mountUsageListeners } from '../ui/usage.js';
 import { mountAuthListeners } from '../auth/index.js';
 import { mountLegacyShellListeners } from '../ui/legacyShellListeners.js';
 
@@ -50,7 +49,8 @@ export function bootstrapApp(options) {
     switchTab: options.switchTab,
     toggleSidebarView: options.toggleSidebarView,
   });
-  mountUsageListeners();
+  /* usage.js listeners mount lazily inside windowExports' usage loader —
+     the overlay only exists once the module loads. */
 
   window.__socratesEnsureFuse = ensureFuse;
   const loadIdleVendors = () => {

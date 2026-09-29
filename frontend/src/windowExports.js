@@ -187,15 +187,28 @@ function _loadVoiceInput() {
 }
 window.toggleSpeechInput = function (surface) { return _loadVoiceInput().then(function (m) { return m.toggleSpeechInput(surface); }); };
 window.stopSpeechInput = function () { if (_voiceImport) return _voiceImport.then(function (m) { return m.stopSpeechInput(); }); };
-/* ─── ui/settings.js ─── */
-/* React's SettingsModal calls these via __socratesLegacy.settings
-   (assembled from main.js's direct imports); only the four inline-handler
-   entry points below stay on window. */
-import { openSettings, closeSettings, renderProviderList, addProvider } from './ui/settings.js';
-window.openSettings = openSettings;
-window.closeSettings = closeSettings;
-window.renderProviderList = renderProviderList;
-window.addProvider = addProvider;
+/* ─── ui/settings.js ───
+   Lazy (~20KB): the settings overlay only loads when opened.
+   React's SettingsModal calls these via __socratesLegacy.settings
+   (legacyBridge lazy-proxies into the same module). `__settingsModule`
+   exposes the loaded module so boot-time refreshes (auth/index) can
+   no-op when settings never loaded instead of triggering a fetch. */
+var _settingsImport = null;
+function _loadSettingsModule() {
+  if (!_settingsImport) {
+    _settingsImport = import('./ui/settings.js');
+    _settingsImport.then(function (m) { window.__settingsModule = m; });
+    _settingsImport.catch(function (err) {
+      _settingsImport = null;
+      console.error('[settings] failed to load', err);
+    });
+  }
+  return _settingsImport;
+}
+window.openSettings = function () { return _loadSettingsModule().then(function (m) { return m.openSettings(); }); };
+window.closeSettings = function () { if (_settingsImport) return _settingsImport.then(function (m) { return m.closeSettings(); }); };
+window.renderProviderList = function () { if (_settingsImport) return _settingsImport.then(function (m) { return m.renderProviderList(); }); };
+window.addProvider = function () { return _loadSettingsModule().then(function (m) { return m.addProvider(); }); };
 
 /* ─── ui/share.js ─── */
 /* Copy/load handlers are wired module-locally inside ui/share.js and by
@@ -209,10 +222,9 @@ window.revokeShareLink = revokeShareLink;
 window.createShareLink = createShareLink;
 
 /* ─── ui/dangerConfirms.js ─── */
-/* Confirm buttons resolve through ui/confirm.js's window surface;
-   main.js imports the confirm actions directly. Bare import keeps
-   evaluation order. */
-import './ui/dangerConfirms.js';
+/* The three confirm actions are reached only through
+   __socratesLegacy.profile.*, which legacyBridge.js lazy-proxies — the
+   module stays out of the entry graph entirely. */
 
 /* ─── ui/profile.js ─── */
 /* Profile handlers are wired module-locally; only the two inline-handler
@@ -301,16 +313,31 @@ window.STREAM_RETRYABLE_STATUS = STREAM_RETRYABLE_STATUS;
 window.offlineGuard = offlineGuard;
 window.sleepBackoff = sleepBackoff;
 
-/* ─── ui/usage.js ─── */
-import { openUsageModal, closeUsageModal, loadUsageData, loadUsageMonth, showUsageTip, hideUsageTip } from './ui/usage.js';
-window.openUsageModal = openUsageModal;
-window.closeUsageModal = closeUsageModal;
-window.loadUsageData = loadUsageData;
-window.loadUsageMonth = loadUsageMonth;
-window.showUsageTip = showUsageTip;
-window.hideUsageTip = hideUsageTip;
-/* Period tab inline onclick handlers (usage.js:138-139). */
-/* Heatmap cell inline onmouseenter/onmouseleave handlers (usage.js:168). */
+/* ─── ui/usage.js ───
+   Lazy (~11KB): the usage overlay only loads on first open. The module's
+   own listeners mount inside the lazy loader (previously done eagerly
+   by app/bootstrap.js).
+   Period tab inline onclick handlers (usage.js:138-139) and heatmap cell
+   inline onmouseenter/onmouseleave (usage.js:168) resolve through the
+   window bridges below — they only exist once the module rendered them. */
+var _usageImport = null;
+function _loadUsageModule() {
+  if (!_usageImport) {
+    _usageImport = import('./ui/usage.js');
+    _usageImport.then(function (m) { m.mountUsageListeners(); });
+    _usageImport.catch(function (err) {
+      _usageImport = null;
+      console.error('[usage] failed to load', err);
+    });
+  }
+  return _usageImport;
+}
+window.openUsageModal = function () { return _loadUsageModule().then(function (m) { return m.openUsageModal(); }); };
+window.closeUsageModal = function () { if (_usageImport) return _usageImport.then(function (m) { return m.closeUsageModal(); }); };
+window.loadUsageData = function () { if (_usageImport) return _usageImport.then(function (m) { return m.loadUsageData(); }); };
+window.loadUsageMonth = function () { if (_usageImport) return _usageImport.then(function (m) { return m.loadUsageMonth(); }); };
+window.showUsageTip = function (ev) { if (_usageImport) return _usageImport.then(function (m) { return m.showUsageTip(ev); }); };
+window.hideUsageTip = function () { if (_usageImport) return _usageImport.then(function (m) { return m.hideUsageTip(); }); };
 
 /* ─── render/helpers.js (esc alias) ─── */
 import { esc } from './render/helpers.js';
