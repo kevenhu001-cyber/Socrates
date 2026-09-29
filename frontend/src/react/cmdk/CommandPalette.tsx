@@ -1,4 +1,4 @@
-import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
+import { clearHostMounted, markHostMountedBy } from '../lib/boot/ownership';
 import { useEffect, useMemo, useRef } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
@@ -235,13 +235,16 @@ export interface CmdKReactRootHandle {
  * Callers claim the overlay through the module-private ownership registry,
  * so the legacy renderer becomes a no-op the moment React takes over.
  */
+let cmdKMounted = false;
+
 export function hydrateCmdKOverlay(): CmdKReactRootHandle | null {
   const overlay = document.getElementById(OVERLAY_ID);
   if (!overlay) return null;
-  /* A duplicate registry run short-circuits on the ownership marker. */
-  if (hostIsMountedBy(overlay, 'cmd-k')) {
-    throw new Error('CmdK React runtime was initialized more than once.');
-  }
+  /* The mount registry marks the host at dispatch time — before this lazy
+     import resolves — so a module-level flag is the real re-entry guard
+     (same pattern as mountConfirmDialog). */
+  if (cmdKMounted) return null;
+  cmdKMounted = true;
 
   installCmdKBridge();
 
@@ -253,6 +256,7 @@ export function hydrateCmdKOverlay(): CmdKReactRootHandle | null {
     root,
     destroy: () => {
       root.unmount();
+      cmdKMounted = false;
       clearHostMounted(overlay);
     },
   };

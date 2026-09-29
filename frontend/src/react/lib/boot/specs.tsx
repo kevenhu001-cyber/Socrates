@@ -12,13 +12,12 @@ import { createRoot, hydrateRoot } from 'react-dom/client';
 import { ErrorBoundary } from '../../ErrorBoundary';
 import type { MountSpec } from './registry';
 
-import { hydrateComposerToolsMenu } from '../../composer/ComposerToolsMenu';
-import { hydrateCmdKOverlay } from '../../cmdk/CommandPalette';
-import { hydrateFindInSession } from '../../find-in-session/FindInSession';
-import { hydrateMorePopover } from '../../morePopover';
-import { hydrateProfileModal } from '../../profileModal';
-import { hydrateShareModal } from '../../shareModal';
-import { hydrateUsageModal } from '../../usageModal';
+/* P_perf-modal-lazy — on-demand overlays (tools menu, cmdk, find,
+   more-popover, profile/share/usage modals) are dynamically imported in
+   their mount callbacks below so their module graph stays out of the
+   entry chunk; they still mount during the boot registry pass, just a
+   tick later. Visible chrome (sidebar nav, recents, session list,
+   message list, attachment chips) stays statically imported. */
 import { hydrateRecentsFilterChips, hydrateSidebarNav } from '../../sidebar';
 import { installSidebarChromeBridge } from '../../sidebar-chrome/sidebarChrome.bridge';
 import { SidebarHeader } from '../../sidebar-chrome/SidebarHeader';
@@ -94,19 +93,26 @@ export function mountRegistryList(): MountSpec[] {
       createRoot(host).render(<StrictMode><StartButton /></StrictMode>);
     } },
     /* 2. Overlays / modals / popovers */
-    { hostId: 'cmdKOverlay', label: 'cmd-k', mount: () => hydrateCmdKOverlay() },
-    { hostId: 'findBar', label: 'find-in-session', mount: () => hydrateFindInSession() },
+    { hostId: 'cmdKOverlay', label: 'cmd-k',
+      mount: () => { void import('../../cmdk/CommandPalette').then((m) => m.hydrateCmdKOverlay()); } },
+    { hostId: 'findBar', label: 'find-in-session',
+      mount: () => { void import('../../find-in-session/FindInSession').then((m) => m.hydrateFindInSession()); } },
     { hostId: 'sidebarNav', label: 'sidebar-nav', mount: () => hydrateSidebarNav() },
     { hostId: 'recentsFilterChips', label: 'recents-filter-chips', mount: () => hydrateRecentsFilterChips() },
-    { hostId: 'composerToolsMenu', label: 'composer-tools-menu', mount: () => hydrateComposerToolsMenu() },
+    { hostId: 'composerToolsMenu', label: 'composer-tools-menu',
+      mount: () => { void import('../../composer/ComposerToolsMenu').then((m) => m.hydrateComposerToolsMenu()); } },
     { hostId: 'attachmentChips', label: 'attachment-chips',
       mount: () => { installAttachmentsBridge(); hydrateAttachmentChipsRows(); } },
     { hostId: 'topicAttachmentChips', label: 'attachment-chips',
       mount: () => { installAttachmentsBridge(); hydrateAttachmentChipsRows(); } },
-    { hostId: 'moreNavPopover', label: 'more-popover', mount: () => hydrateMorePopover() },
-    { hostId: 'shareOverlay', label: 'share-modal', mount: () => hydrateShareModal() },
-    { hostId: 'profileOverlay', label: 'profile-modal', mount: () => hydrateProfileModal() },
-    { hostId: 'usageOverlay', label: 'usage-modal', mount: () => hydrateUsageModal() },
+    { hostId: 'moreNavPopover', label: 'more-popover',
+      mount: () => { void import('../../morePopover').then((m) => m.hydrateMorePopover()); } },
+    { hostId: 'shareOverlay', label: 'share-modal',
+      mount: () => { void import('../../shareModal').then((m) => m.hydrateShareModal()); } },
+    { hostId: 'profileOverlay', label: 'profile-modal',
+      mount: () => { void import('../../profileModal').then((m) => m.hydrateProfileModal()); } },
+    { hostId: 'usageOverlay', label: 'usage-modal',
+      mount: () => { void import('../../usageModal').then((m) => m.hydrateUsageModal()); } },
     /* 3. Sidebar chrome — install the bridge once before mounting both header + footer */
     { hostId: 'sidebarHeader', label: 'sidebar-header', mount: (host) => {
       installSidebarChromeBridge();

@@ -1,4 +1,4 @@
-import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
+import { clearHostMounted, markHostMountedBy } from '../lib/boot/ownership';
 import { createRoot, type Root } from 'react-dom/client';
 
 import { t as _t } from '../legacy/gateway';
@@ -97,12 +97,15 @@ export interface MorePopoverHandle {
  * the popover's position and open/close state via the `.hidden` class.
  * React subscribes to the bridge to stay in sync.
  */
+let morePopoverMounted = false;
+
 export function hydrateMorePopover(): MorePopoverHandle | null {
   const popover = document.getElementById(POPOVER_ID);
   if (!popover) return null;
-  if (hostIsMountedBy(popover, 'more-popover')) {
-    throw new Error('More popover React runtime was initialized more than once.');
-  }
+  /* See hydrateCmdKOverlay — the registry marks the host at dispatch time,
+     before this lazy import resolves, so a module flag is the guard. */
+  if (morePopoverMounted) return null;
+  morePopoverMounted = true;
 
   installMorePopoverBridge();
 
@@ -114,6 +117,7 @@ export function hydrateMorePopover(): MorePopoverHandle | null {
     root,
     destroy: () => {
       root.unmount();
+      morePopoverMounted = false;
       clearHostMounted(popover);
     },
   };

@@ -1,4 +1,4 @@
-import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
+import { clearHostMounted, markHostMountedBy } from '../lib/boot/ownership';
 import { useCallback } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
@@ -324,12 +324,15 @@ export interface ProfileModalHandle {
   destroy: () => void;
 }
 
+let profileModalMounted = false;
+
 export function hydrateProfileModal(): ProfileModalHandle | null {
   const overlay = document.getElementById(OVERLAY_ID);
   if (!overlay) return null;
-  if (hostIsMountedBy(overlay, 'profile-modal')) {
-    throw new Error('Profile modal React runtime was initialized more than once.');
-  }
+  /* See hydrateCmdKOverlay — the registry marks the host at dispatch time,
+     before this lazy import resolves, so a module flag is the guard. */
+  if (profileModalMounted) return null;
+  profileModalMounted = true;
 
   installProfileBridge();
 
@@ -341,6 +344,7 @@ export function hydrateProfileModal(): ProfileModalHandle | null {
     root,
     destroy: () => {
       root.unmount();
+      profileModalMounted = false;
       clearHostMounted(overlay);
     },
   };

@@ -1,4 +1,4 @@
-import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
+import { clearHostMounted, markHostMountedBy } from '../lib/boot/ownership';
 import { createRoot, type Root } from 'react-dom/client';
 
 import { t as _t } from '../legacy/gateway';
@@ -180,12 +180,15 @@ export interface ShareModalHandle {
   destroy: () => void;
 }
 
+let shareModalMounted = false;
+
 export function hydrateShareModal(): ShareModalHandle | null {
   const overlay = document.getElementById(OVERLAY_ID);
   if (!overlay) return null;
-  if (hostIsMountedBy(overlay, 'share-modal')) {
-    throw new Error('Share modal React runtime was initialized more than once.');
-  }
+  /* See hydrateCmdKOverlay — the registry marks the host at dispatch time,
+     before this lazy import resolves, so a module flag is the guard. */
+  if (shareModalMounted) return null;
+  shareModalMounted = true;
 
   installShareBridge();
 
@@ -197,6 +200,7 @@ export function hydrateShareModal(): ShareModalHandle | null {
     root,
     destroy: () => {
       root.unmount();
+      shareModalMounted = false;
       clearHostMounted(overlay);
     },
   };

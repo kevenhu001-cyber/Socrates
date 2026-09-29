@@ -1,4 +1,4 @@
-import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
+import { clearHostMounted, markHostMountedBy } from '../lib/boot/ownership';
 import { useEffect, useMemo, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
@@ -453,12 +453,15 @@ export interface ComposerToolsHandle {
   destroy: () => void;
 }
 
+let composerToolsMenuMounted = false;
+
 export function hydrateComposerToolsMenu(): ComposerToolsHandle | null {
   const menu = document.getElementById(MENU_ID);
   if (!menu) return null;
-  if (hostIsMountedBy(menu, 'composer-tools-menu')) {
-    throw new Error('Composer tools menu React runtime was initialized more than once.');
-  }
+  /* See hydrateCmdKOverlay — the registry marks the host at dispatch time,
+     before this lazy import resolves, so a module flag is the guard. */
+  if (composerToolsMenuMounted) return null;
+  composerToolsMenuMounted = true;
 
   installComposerToolsBridge();
 
@@ -470,6 +473,7 @@ export function hydrateComposerToolsMenu(): ComposerToolsHandle | null {
     root,
     destroy: () => {
       root.unmount();
+      composerToolsMenuMounted = false;
       clearHostMounted(menu);
     },
   };

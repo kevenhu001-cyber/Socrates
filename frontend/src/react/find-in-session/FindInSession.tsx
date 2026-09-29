@@ -1,4 +1,4 @@
-import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
+import { clearHostMounted, markHostMountedBy } from '../lib/boot/ownership';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, KeyboardEvent } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -214,12 +214,15 @@ export interface FindInSessionReactRootHandle {
  * Mounts the React find-in-session bar into the existing `#findBar` element.
  * Idempotent — a second call returns the existing handle.
  */
+let findInSessionMounted = false;
+
 export function hydrateFindInSession(): FindInSessionReactRootHandle | null {
   const bar = document.getElementById(FIND_BAR_ID);
   if (!bar) return null;
-  if (hostIsMountedBy(bar, 'find-in-session')) {
-    throw new Error('FindInSession React runtime was initialized more than once.');
-  }
+  /* See hydrateCmdKOverlay — the registry marks the host at dispatch time,
+     before this lazy import resolves, so a module flag is the guard. */
+  if (findInSessionMounted) return null;
+  findInSessionMounted = true;
 
   installFindInSessionBridge();
 
@@ -237,6 +240,7 @@ export function hydrateFindInSession(): FindInSessionReactRootHandle | null {
     root,
     destroy: () => {
       root.unmount();
+      findInSessionMounted = false;
       clearHostMounted(bar);
     },
   };

@@ -2,8 +2,9 @@ import { toggleMorePopover } from "./morePopover.js";
 import { stateStore } from "../state/store.js";
 import { showToast } from "../ui/toast.js";
 import { openPromptTemplatesModal } from "../ui/promptTemplates.js";
-import { getConnectorIconMarkup as connectorIcon } from "../connector-icons.ts";
-import { renderCreationSurface } from "../ui/creationSurfaces.js";
+/* creationSurfaces.js (~20KB) is lazy — images/assistants/sites panels
+   only need it when the user opens one. openCreation() below awaits the
+   module before showing the (created-on-demand) panel. */
 
 /* React migration bridge — publishes scheduled task state so the React
    compatibility root can render the page. Installed by
@@ -74,13 +75,59 @@ function confirmAction(title, message) { return typeof window.showConfirm === "f
    connectors now render bundled local SVG marks (see
    src/connector-icons.ts) or a monogram fallback. Unknown ids still
    fall back to a two-letter monogram so new connectors degrade
-   gracefully. */
-function connectorIconWithFallback(provider) {
-  var markup = connectorIcon(provider);
-  if (markup) return markup;
-  return '<span class="connector-logo-fallback" style="display:flex" aria-hidden="true">'
+   gracefully.
+   P_perf-icons-lazy — the icon pack inlines ~110 raw SVGs (~295KB)
+   that no first-paint surface needs; it lazy-loads on first icon
+   request (slash palette / connectors / workspace rows) and the
+   hydrate pass swaps pending monograms for real marks. */
+var _ciMod = null;
+var _ciReady = null;
+function ensureConnectorIcons() {
+  if (!_ciReady) {
+    _ciReady = import("../connector-icons.ts").then(function (m) {
+      _ciMod = m;
+      hydrateConnectorIcons();
+      try {
+        requestAnimationFrame(function () { hydrateConnectorIcons(); });
+      } catch (_) {}
+      return m;
+    });
+    _ciReady.catch(function (err) {
+      _ciReady = null;
+      console.error("[icons] connector icon pack failed to load", err);
+    });
+  }
+  return _ciReady;
+}
+window.ensureConnectorIcons = ensureConnectorIcons;
+
+function _connectorMonogram(provider) {
+  return '<span class="connector-logo-fallback" data-cicon="'
+    + esc(String(provider || "?"))
+    + '" style="display:flex" aria-hidden="true">'
     + esc(String(provider || "?").slice(0, 2).toUpperCase()) + '</span>';
 }
+
+function connectorIconWithFallback(provider) {
+  var markup = _ciMod && _ciMod.getConnectorIconMarkup(provider);
+  if (markup) return markup;
+  if (!_ciMod) ensureConnectorIcons();
+  return _connectorMonogram(provider);
+}
+
+/* Swap pending monogram placeholders for real SVG marks once the icon
+   pack resolves. Fallback spans carry data-cicon so the pass is
+   idempotent and safe to re-run (also covers React-committed chips). */
+function hydrateConnectorIcons(root) {
+  if (!_ciMod) return;
+  var scope = root && typeof root.querySelectorAll === "function" ? root : document;
+  scope.querySelectorAll(".connector-logo-fallback[data-cicon]").forEach(function (el) {
+    var markup = _ciMod.getConnectorIconMarkup(el.dataset.cicon);
+    if (markup) el.outerHTML = markup;
+  });
+}
+window.hydrateConnectorIcons = hydrateConnectorIcons;
+
 /* React composer/plugin surfaces reuse the same local brand marks as the
    legacy connector panel. Keep the adapter on window so the React module
    does not duplicate Vite's raw SVG imports or introduce a second icon map. */
@@ -107,6 +154,7 @@ var _slashConnectorsLoaded = false;
 /* Fetch the connector list once so the slash palette can show which
    apps are actually callable. Fire-and-forget; safe to call repeatedly. */
 function ensureSlashApps() {
+  ensureConnectorIcons();
   if (_slashConnectorsLoaded && workspaceCache.connectors.length) return Promise.resolve();
   return api("/api/connectors").then(function (res) {
     workspaceCache.connectors = (res && res.connectors) || [];
@@ -391,8 +439,12 @@ export function openNav(name, options) {
 }
 function openCreation(name) {
   hideChatAndTopic();
-  renderCreationSurface(name);
-  showMainPage(name + "Panel");
+  import("../ui/creationSurfaces.js").then(function (m) {
+    m.renderCreationSurface(name);
+    showMainPage(name + "Panel");
+  }).catch(function (err) {
+    console.error("[nav] creation surface failed to load", err);
+  });
 }
 export function syncWorkspaceRoute() {
   var page = workspaceForPath(location.pathname);
@@ -606,6 +658,7 @@ function currentMainView() {
 export function openPlugins() {
   PLUGINS_RETURN_VIEW = currentMainView();
   hideChatAndTopic();
+  ensureConnectorIcons();
   showMainPage("pluginsPanel");
   if (typeof window.__socratesMountWorkspace === "function") {
     window.__socratesMountWorkspace("plugins");
@@ -1043,6 +1096,7 @@ function paintArxivPapers(papers) {
   list.innerHTML = papers.length ? papers.map(arxivPaperMarkup).join("") : '<div class="workspace-empty"><strong>No matching papers</strong><span>Try another research topic or author.</span></div>';
 }
 window.openArxivSearch = function () {
+  ensureConnectorIcons();
   showDialog('<div class="workspace-dialog-title"><div><h2>Search arXiv</h2><p>Explore public research preprints. No account connection is needed.</p></div><button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">脳</button></div><form id="arxivSearchForm" class="workspace-form"><div class="workspace-form-grid"><label class="workspace-field"><span>Research topic</span><input name="query" maxlength="200" minlength="2" autocomplete="off" required placeholder="e.g. retrieval augmented generation"></label><div class="workspace-field"><span>&nbsp;</span><button class="workspace-primary" type="submit">Search</button></div></div></form><div id="arxivPapers" class="marketplace-list"><div class="workspace-empty"><strong>Find a paper</strong><span>Search by topic, method, author, or year.</span></div></div>');
   byId("arxivSearchForm").addEventListener("submit", async function (event) {
     event.preventDefault();

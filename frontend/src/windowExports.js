@@ -170,10 +170,23 @@ import { toggleComposerTools } from './ui/composerTools.js';
 window.toggleComposerTools = toggleComposerTools;
 
 
-/* ─── ui/voiceInput.js ─── */
-import { stopSpeechInput, toggleSpeechInput } from './ui/voiceInput.js';
-window.toggleSpeechInput = toggleSpeechInput;
-window.stopSpeechInput = stopSpeechInput;
+/* ─── ui/voiceInput.js ───
+   Lazy (~16KB): the mic button only loads the speech module when
+   pressed. stopSpeechInput skips the import when speech was never
+   started (module can't be mid-session if it never loaded). */
+var _voiceImport = null;
+function _loadVoiceInput() {
+  if (!_voiceImport) {
+    _voiceImport = import('./ui/voiceInput.js');
+    _voiceImport.catch(function (err) {
+      _voiceImport = null;
+      console.error('[voice] failed to load', err);
+    });
+  }
+  return _voiceImport;
+}
+window.toggleSpeechInput = function (surface) { return _loadVoiceInput().then(function (m) { return m.toggleSpeechInput(surface); }); };
+window.stopSpeechInput = function () { if (_voiceImport) return _voiceImport.then(function (m) { return m.stopSpeechInput(); }); };
 /* ─── ui/settings.js ─── */
 /* React's SettingsModal calls these via __socratesLegacy.settings
    (assembled from main.js's direct imports); only the four inline-handler
@@ -227,10 +240,22 @@ import './storage/memoryStore.js';
    imports the module directly. Bare import keeps evaluation order. */
 import './config/tonePresets.js';
 
-/* ─── agent/researchAgent.js — Deep Research / Agent Mode ─── */
-import { startDeepResearch, launchDeepResearch } from './agent/researchAgent.js';
-window.startDeepResearch = startDeepResearch;
-window.launchDeepResearch = launchDeepResearch;
+/* ─── agent/researchAgent.js — Deep Research / Agent Mode ───
+   Lazy (~18KB): the deep-research entry is a quick-action click, so the
+   module loads on first use rather than at boot. */
+var _researchImport = null;
+function _loadResearchAgent() {
+  if (!_researchImport) {
+    _researchImport = import('./agent/researchAgent.js');
+    _researchImport.catch(function (err) {
+      _researchImport = null;
+      console.error('[research] failed to load', err);
+    });
+  }
+  return _researchImport;
+}
+window.startDeepResearch = function (opts) { return _loadResearchAgent().then(function (m) { return m.startDeepResearch(opts); }); };
+window.launchDeepResearch = function (opts) { return _loadResearchAgent().then(function (m) { return m.launchDeepResearch(opts); }); };
 
 /* ─── attachments.js ─── */
 // attachments is a mutable array reference shared across modules
