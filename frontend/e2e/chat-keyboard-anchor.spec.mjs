@@ -269,18 +269,23 @@ test('a progressive iOS viewport pan keeps the composer glued without jumps', as
     document.getElementById('appShell').getBoundingClientRect().bottom,
   ));
   /* Real iOS pans in small per-frame scroll events while the height
-     animates — not in one 100px compositor jump. Each step keeps
-     travel − pan continuous, so the layout inset (and the composer's
-     visual position) glides instead of teleporting. */
+     animates — ~15px height and ~5px pan per 60Hz frame, not 50px jumps.
+     Each step keeps travel − pan continuous, so the layout inset (and the
+     composer's visual position) glides instead of teleporting. */
   const samples = await page.evaluate(async ({ bottom }) => new Promise((resolve) => {
     const positions = [];
     let frame = 0;
     const targets = [
-      { height: bottom - 45, offsetTop: 0 },
-      { height: bottom - 90, offsetTop: 12 },
-      { height: bottom - 135, offsetTop: 28 },
-      { height: bottom - 180, offsetTop: 48 },
-      { height: bottom - 220, offsetTop: 64 },
+      { height: bottom - 20, offsetTop: 0 },
+      { height: bottom - 45, offsetTop: 4 },
+      { height: bottom - 70, offsetTop: 9 },
+      { height: bottom - 95, offsetTop: 15 },
+      { height: bottom - 120, offsetTop: 22 },
+      { height: bottom - 145, offsetTop: 30 },
+      { height: bottom - 170, offsetTop: 39 },
+      { height: bottom - 195, offsetTop: 49 },
+      { height: bottom - 215, offsetTop: 59 },
+      { height: bottom - 230, offsetTop: 68 },
       { height: bottom - 240, offsetTop: 76 },
     ];
     const sample = () => {
@@ -309,7 +314,7 @@ test('a progressive iOS viewport pan keeps the composer glued without jumps', as
   /* Progressive pan+shrink steps move the visual position by ~25px per
      sample at most; guard against the old 64-112px pan jump while the
      direct follower tracks a fast keyboard. */
-  expect(largestStep, JSON.stringify(samples)).toBeLessThan(50);
+  expect(largestStep, JSON.stringify(samples)).toBeLessThan(35);
   await expect.poll(async () => page.evaluate(() => Number.parseFloat(
     document.documentElement.style.getPropertyValue('--keyboard-inset'),
   ))).toBe(164);
