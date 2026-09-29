@@ -1,5 +1,5 @@
 import { esc } from './helpers.js';
-import { openVizModalRaw } from './viz.js';
+import { openVizModalRaw } from './vizStubs.js';
 
 /** Add language labels and fullscreen controls to rendered code blocks. */
 export function wireCodeBlockHeaders(body) {

@@ -5,7 +5,7 @@
 import { onKatexReady } from '../vendor/lazy.js';
 import { stateStore } from '../state/store.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
-import { processPendingMermaid, processPendingViz, processPendingVizActions, reclaimVizCards } from './viz.js';
+import { processPendingMermaid, processPendingViz, processPendingVizActions, reclaimVizCards } from './vizStubs.js';
 import { wireCodeBlockHeaders } from './postRender.js';
 import { safeHljsLang } from './helpers.js';
 

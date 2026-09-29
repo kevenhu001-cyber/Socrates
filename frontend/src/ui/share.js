@@ -20,7 +20,7 @@ import { showToast } from './toast.js';
 
 import { appendToolModule, appendInlineArtifact, appendFileChangeSummaryCards } from './toolCards.js';
 
-import { mountVisualization, disposeVisualizations } from '../render/visualization.js';
+import { mountVisualization, disposeVisualizations } from '../render/vizStubs.js';
 
 var _shareVisibility = "public";
 var _shareToken = null;

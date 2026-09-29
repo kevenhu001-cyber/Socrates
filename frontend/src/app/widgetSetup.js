@@ -5,11 +5,10 @@
 import { stateStore } from '../state/store.js';
 import { apiFetch } from '../util/api.js';
 import { saveCurrentSession } from '../session/persistence.js';
-import { mountQuizWidget, mountPracticeWidget, configureWidgetRuntime } from '../render/widgets.js';
+import { mountQuizWidget, mountPracticeWidget, configureWidgetRuntimeEarly, handleQuizPick } from '../render/widgetScheduler.js';
 import { scrollContainer } from '../ui/scroll.js';
 import { createMistakeBook } from '../ui/mistakeBook.js';
 import { formatMsg } from '../render/markdown.js';
-import { handleQuizPick } from '../render/widgets.js';
 import { shouldRequestTutorAfterQuiz } from '../tutor/policy.js';
 import { updateKB } from '../ui/knowledgePanel.js';
 import { updateChatStats } from '../chat/stats.js';
@@ -47,7 +46,7 @@ export function installWidgetRuntime() {
   /* Note: updateMistakesBadge/renderMistakes from the mistake book are
      bridged to window by main.js (window.updateMistakesBadge etc.);
      installWidgetRuntime only wires the runtimes. */
-  configureWidgetRuntime({
+  configureWidgetRuntimeEarly({
     formatMsg: formatMsg,
     t: window.t,
     submitChatMessage: submitChatMessage,

@@ -43,9 +43,9 @@ import { openCmdKResult } from '../ui/cmdK.js';
 /* ui/settings.js + ui/dangerConfirms.js are lazy — the bridge entries
    below dynamic-import them on click so the settings overlay graph
    (~24KB) stays out of the entry chunk. */
-import { processPendingMermaid, processPendingViz, reclaimVizCards, schedulePendingMermaid } from '../render/viz.js';
+import { processPendingMermaid, processPendingViz, reclaimVizCards, schedulePendingMermaid } from '../render/vizStubs.js';
 import { wireCodeBlockHeaders, wireMsgBodyImages } from '../render/postRender.js';
-import { mountVisualization, disposeVisualizations, disposeVisualization } from '../render/visualization.js';
+import { mountVisualization, disposeVisualizations, disposeVisualization } from '../render/vizStubs.js';
 import { appendInlineArtifact } from '../ui/toolCards.js';
 import { formatMsgProgressive } from '../render/markdown.js';
 import { stripCitationMarkers } from '../render/helpers.js';

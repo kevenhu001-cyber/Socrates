@@ -49,10 +49,10 @@ window.apiFetch = apiFetch;
 window.getCsrfToken = getCsrfToken;
 
 /* ─── render/viz.js ─── */
-import { processPendingVizActions, getLiveVizCardIds } from './render/viz.js';
+import { processPendingVizActions, getLiveVizCardIds } from './render/vizStubs.js';
 /* mountVisualization / disposeVisualizations are imported directly by
    their consumers (main.js, share.js); no window surface is needed. */
-import './render/visualization.js';
+import './render/vizStubs.js';
 window.processPendingVizActions = processPendingVizActions;
 /* E2E test surface: viz-canvas.spec.mjs asserts the iframe registry
    releases the entry after `viz-ready` fires. Expose a snapshot

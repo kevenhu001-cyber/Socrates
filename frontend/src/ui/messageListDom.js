@@ -1,4 +1,4 @@
-import { disposeVisualizations } from '../render/visualization.js';
+import { disposeVisualizations } from '../render/vizStubs.js';
 
 /**
  * Remove only legacy-rendered message nodes from the shared message list.

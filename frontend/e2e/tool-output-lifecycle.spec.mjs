@@ -563,7 +563,7 @@ test('a failed GeoGebra load is retried locally instead of replaying the rejecti
   /* The card's own Retry must re-request the CDN script. Before the cache
      reset it replayed the cached rejection, so the request count stayed 1
      and the button could never recover. */
-  await fallback.locator('button').click();
+  await fallback.locator('[data-viz-fallback="retry"]').click();
   await expect.poll(() => scriptRequests, { timeout: 10_000 }).toBe(2);
   await expect(body.locator('.visualization-fallback')).toBeVisible();
 });

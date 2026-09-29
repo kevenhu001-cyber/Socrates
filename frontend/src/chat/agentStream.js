@@ -10,7 +10,7 @@ import { esc } from '../render/helpers.js';
 import { formatMsg, formatMsgProgressive } from '../render/markdown.js';
 import { getStreamRenderInterval, createSettledSplitter } from '../render/streaming.js';
 import { scrollContainer } from '../ui/scroll.js';
-import { processPendingMermaid, processPendingViz, processPendingVizActions, reclaimVizCards } from '../render/viz.js';
+import { processPendingMermaid, processPendingViz, processPendingVizActions, reclaimVizCards } from '../render/vizStubs.js';
 
 /* Stream agent text into a single assistant bubble. Returns the
    controller { append(delta), finalize() }. Same rAF-coalesced

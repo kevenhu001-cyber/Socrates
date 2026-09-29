@@ -19,8 +19,8 @@ import {
   appendToolModule,
   renderToolTextOutput,
 } from './toolCards.js';
-import { mountVisualization } from '../render/visualization.js';
-import { processPendingMermaid, processPendingViz, processPendingVizActions } from '../render/viz.js';
+import { mountVisualization } from '../render/vizStubs.js';
+import { processPendingMermaid, processPendingViz, processPendingVizActions } from '../render/vizStubs.js';
 
 /**
  * Build the API path for one message, scoping client ids to the current
