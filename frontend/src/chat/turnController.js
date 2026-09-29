@@ -5,7 +5,7 @@
  */
 import { stateStore } from '../state/store.js';
 import { turnState } from './turnState.js';
-import { quietTurn } from './turnUi.js';
+import { interruptPendingTurn, quietTurn } from './turnUi.js';
 import { hasUsableActive } from '../config/providers.js';
 import { extractHistory } from './history.js';
 import { callAPIStream } from './stream.js';
@@ -68,6 +68,11 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
      which makes the UI feel frozen when the user fires a follow-up
      while the previous reply is still in flight. */
   if(turnState.activeChatCtl&&turnState.activeChatCtl!==precreatedCtl){try{turnState.activeChatCtl.abort()}catch(_){}}
+  /* P_supersede-interrupt — the superseded answer is gone from the screen,
+     so stop it on the server too. A bound turn keeps running detached once
+     its socket closes; only the interrupt ends it. This turn has not bound
+     yet, so any pending pointer here is the one being replaced. */
+  try{interruptPendingTurn()}catch(_){}
   if(window._activeChatAbort){try{window._activeChatAbort("superseded")}catch(_){}}
   /* Capture this turn before any guard or await. New submit paths pass an
      immutable override; legacy edit/regenerate paths can still use the
@@ -312,7 +317,7 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
      failure keeps it so reload/reconnect can re-attach to the detached
      run instead of opening a duplicate LLM call. */
   try{
-    if(_turnSessionId&&(result&&(result.text||result.cancelled)))clearPendingTurn(_turnSessionId);
+    if(_turnSessionId&&(result&&(result.text||result.cancelled)))clearPendingTurn(_turnSessionId,_clientTurnId);
   }catch(_){}
   publishActiveWorkflowFinish(!!(result&&result.text&&String(result.text).trim()));
   updateChatStats();

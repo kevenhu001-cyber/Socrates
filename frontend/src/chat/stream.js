@@ -68,8 +68,13 @@ function bindAbortSignal(parent,child){
   return function(){try{parent.removeEventListener("abort",onAbort)}catch(_) {}};
 }
 
-function clearActiveChatAbort(){
-  if(window._activeChatAbort&&window._activeChatAbort._fromThisCall){
+/* Drop the global abort handle only while it is still the one this call
+   installed. A superseded stream unwinds after the next turn has put its
+   own handle in place; a marker every call sets alike let the old stream's
+   cleanup wipe the new turn's handle, so a later Stop could not reach the
+   live request any more. */
+function clearActiveChatAbort(handle){
+  if(handle&&window._activeChatAbort===handle){
     window._activeChatAbort=null;
   }
 }
@@ -122,10 +127,11 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
   var turnAbort=new AbortController();
   var unbindExternal=bindAbortSignal(retryOptions.signal,turnAbort);
   var unbindAttempt=function(){};
+  var activeAbortHandle=null;
   var finishTurn=function(){
     unbindAttempt();
     unbindExternal();
-    clearActiveChatAbort();
+    clearActiveChatAbort(activeAbortHandle);
   };
   var retryWaitOptions=Object.assign({},retryOptions,{signal:turnAbort.signal});
   var waitForRetry=async function(retryAttempt,error){
@@ -150,11 +156,11 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
     attempt++;
     var ac=new AbortController();
     unbindAttempt=bindAbortSignal(turnAbort.signal,ac);
-    window._activeChatAbort=function(reason){
+    activeAbortHandle=function(reason){
       try{turnAbort.abort(reason)}catch(_){}
       try{ac.abort(reason)}catch(_){}
     };
-    window._activeChatAbort._fromThisCall=true;
+    window._activeChatAbort=activeAbortHandle;
     var resp=null;
     try{
       /* P0.3 — use apiFetchRaw so credentials / CSRF / 401 → handleAuthExpired /

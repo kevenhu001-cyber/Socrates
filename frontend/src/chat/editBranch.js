@@ -5,7 +5,7 @@
  */
 import { stateStore } from '../state/store.js';
 import { turnState } from './turnState.js';
-import { quietTurn } from './turnUi.js';
+import { interruptPendingTurn, quietTurn } from './turnUi.js';
 import {
   findMessageIndex,
   messageApiPath,
@@ -136,6 +136,8 @@ export function editUserMessage(messageId){
          while the previous reply was still arriving), abort it
          first so the new turn isn't racing the old one. */
       if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(_){}}
+      /* Stop the replaced answer server-side as well (see interruptPendingTurn). */
+      try{interruptPendingTurn()}catch(_){}
       if(window._activeChatAbort){try{window._activeChatAbort("msg-edit")}catch(_){}}
       patchPromise.then(function(){
         try{ quietTurn(window.askChatTurn(editedText)); }catch {/* msg-edit replay failed */}
@@ -217,6 +219,7 @@ export function regenerateAssistantMessage(messageId){
     /* Abort any in-flight stream so the regenerated turn isn't racing
        a previous reply that's still arriving. */
     if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(_){}}
+    try{interruptPendingTurn()}catch(_){}
     if(window._activeChatAbort){try{window._activeChatAbort("msg-regen")}catch(_){}}
     /* P0.1 NOTE-P01-06 — re-ask only AFTER the server discardFollowing
        settles, so the delete (assistant rows createdAt >= user turn)

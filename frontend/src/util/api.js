@@ -54,6 +54,18 @@ export function makeApiError(status, message, body, code, retried) {
   return err;
 }
 
+/* A response whose body the caller will read incrementally (SSE). */
+function isEventStreamResponse(r) {
+  try {
+    const type = r && r.headers && typeof r.headers.get === 'function'
+      ? String(r.headers.get('content-type') || '')
+      : '';
+    return /text\/event-stream/i.test(type);
+  } catch (_) {
+    return false;
+  }
+}
+
 export function getCsrfToken() {
   const m = document.cookie.match(/\bcsrf=([^;]+)/);
   return m ? m[1] : null;
@@ -86,11 +98,16 @@ export async function apiFetchRaw(path, opts = {}) {
   }
   const controller = new AbortController();
   /* P_abort_listener_cleanup — the listener we add to opts.signal
-     captures `controller`. After the fetch returns the listener is
-     dead weight; in the streaming path the caller's signal is a
-     per-call ac that goes out of scope, but in apiFetch / retryApiFetch
-     callers can re-use a long-lived signal and the listener chain
-     grows. Track the listener so we can detach it once the call ends. */
+     captures `controller`. Once a plain response is back it is dead
+     weight, and callers that re-use a long-lived signal would grow the
+     listener chain, so it is detached as soon as the call ends.
+     P_stream-abort-link — except for an event stream: its body is read
+     long after fetch() resolves, and `controller` is what the browser
+     cancels the body (and the connection) with. Detaching at the headers
+     turned every later Stop / supersede into a UI-only abort while the
+     socket kept downloading, and the server kept generating. Streaming
+     callers pass a per-attempt signal, so the `{ once: true }` listener
+     goes away with it. */
   let onCallerAbort = null;
   if (opts.signal) {
     if (opts.signal.aborted) { try { controller.abort(); } catch (_) {} }
@@ -108,7 +125,7 @@ export async function apiFetchRaw(path, opts = {}) {
     }
     throw makeApiError(0, '网络异常，请检查连接后重试', null, 'NETWORK', 0);
   }
-  if (opts.signal && onCallerAbort) {
+  if (opts.signal && onCallerAbort && !(r.ok && isEventStreamResponse(r))) {
     try { opts.signal.removeEventListener('abort', onCallerAbort); } catch (_) {}
   }
   if (!r.ok) {

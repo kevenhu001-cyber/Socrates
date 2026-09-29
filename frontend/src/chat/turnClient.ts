@@ -199,9 +199,19 @@ export function bumpPendingSeq(sessionId: string, lastSeq: number): void {
   } catch { /* ignore */ }
 }
 
-export function clearPendingTurn(sessionId: string): void {
+/**
+ * Drop the session's pending-turn pointer. With `clientTurnId`, only when
+ * the pointer still belongs to that turn: a superseded turn unwinds after
+ * the next one may already have bound, and clearing unconditionally there
+ * erased the live turn's pointer (no Stop, no re-attach after reload).
+ */
+export function clearPendingTurn(sessionId: string, clientTurnId?: string): void {
   try {
     if (!sessionId) return;
+    if (clientTurnId) {
+      const current = loadPendingTurn(sessionId);
+      if (current && current.clientTurnId !== clientTurnId) return;
+    }
     localStorage.removeItem(pendingKey(sessionId));
   } catch { /* ignore */ }
 }

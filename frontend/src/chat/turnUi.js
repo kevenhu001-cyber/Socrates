@@ -139,8 +139,11 @@ export function stopChatResponse() {
 /* Best-effort Stop propagation for bound turns. Reads the pending-turn
    pointer for the active session and flips the server row; the worker
    polls the row and aborts the upstream call. Fire-and-forget: socket
-   abort below already detaches the feed. */
-function interruptPendingTurn() {
+   abort below already detaches the feed. Every path that abandons an
+   in-flight answer (Stop, a newer send, edit, regenerate) calls this
+   before aborting the stream — closing the socket alone leaves a bound
+   turn generating on the server. */
+export function interruptPendingTurn() {
   var sid = null;
   try{ sid = stateStore.read('currentSessionId') || null; }catch(_){}
   if (!sid) return;
