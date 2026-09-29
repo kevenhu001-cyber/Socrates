@@ -329,6 +329,32 @@ export function _autoWrapBareBracketMath(s: string): string {
    bail out via a small directive guard — a real heading virtually never
    reads `#include`. */
 const HEADING_RUN_RE = /^([ \t]{0,3}(?:(?:>[ \t]*)+|(?:[-*+]|\d{1,9}[.)])[ \t]+)*)([#＃]+)/;
+
+/* P_heading-repair — heading shapes CommonMark rejects that models emit:
+
+   • Invisible or non-ASCII lead-in: a zero-width space, BOM, word joiner,
+     NBSP or fullwidth space (U+3000) before the marker. CommonMark only
+     allows ASCII spaces there, so `<U+3000>## 标题` renders as prose.
+   • Over-indented: a tab or 4+ spaces before the marker makes it an
+     indented CODE block (`<pre>## 标题</pre>`). Models never use indented
+     code (they fence it), so the line is dedented, unless the previous
+     non-blank line is a list item or itself indented (the heading then
+     legitimately nests, or it really is part of an indented code block).
+   • Glued: the model dropped the newline before the heading, so it trails
+     the previous sentence (`上文结束。## 标题`). A 2–6 `#` run right after
+     sentence-ending punctuation or a closing emphasis/code mark is split
+     onto its own line behind a blank line. A single `#` (`C# 语言`) and a
+     run preceded by a letter/digit (`issue##3`) are left alone. */
+/* Alternation, not a character class: ZWJ inside a class reads as a joined
+   emoji sequence to eslint (no-misleading-character-class). */
+const LEAD_INVISIBLE = '(?:\\u200b|\\u200c|\\u200d|\\u2060|\\ufeff|\\u00a0|\\u3000)';
+const HEADING_LEAD_JUNK_RE = new RegExp('^(?:' + LEAD_INVISIBLE + '|[ \\t])*' + LEAD_INVISIBLE + '(?:' + LEAD_INVISIBLE + '|[ \\t])*(?=[#＃])');
+const HEADING_OVERINDENT_RE = /^(?:\t|[ ]{4,}|[ ]{0,3}\t)[ \t]*(?=[#＃]{1,6}[ \t]+\S)/;
+const LIST_OR_INDENTED_RE = /^(?:[ \t]*(?:[-*+]|\d{1,9}[.)])[ \t]|\t|[ ]{4})/;
+const BOLD_WRAPPED_HEADING_RE = /^([ \t]{0,3})(\*\*|__)[ \t]*(#{1,6}|＃{1,6})[ \t]*(\S.*?)[ \t]*\2[ \t]*$/;
+/* `##4. 标题` / `##4、标题` — a numbered section title. `##3 条` stays prose. */
+const NUMBERED_TITLE_RE = /^\d{1,3}[.．、)）]\s*\S/;
+const GLUED_HEADING_RE = /^(.*?[。！？；：.!?;:…）)】」』”"*`~])[ \t]*((?:#{2,6}|＃{2,6})(?![#＃])[ \t]*[^\s#＃].*)$/;
 const HEADING_DIRECTIVE_RE = /^(?:include|define|pragma|ifdef|ifndef|elif|else|endif|error|warning|line|undef|import|using|region|endregion|!)/;
 
 export function fixHeadingMarkers(s: string): string {
@@ -357,11 +383,38 @@ export function fixHeadingMarkers(s: string): string {
     if (dollarRun % 2 === 1 || bracketDelta !== 0) inMath = !inMath;
     if (wasMath) continue;
 
-    const m = line.match(HEADING_RUN_RE);
+    /* Emphasis wrapped around the marker (`**## 标题**`): CommonMark sees a
+       paragraph starting with `**`. Move the marker out; the heading is
+       already bold, so the emphasis is dropped. */
+    const wrapped = line.match(BOLD_WRAPPED_HEADING_RE);
+    if (wrapped) {
+      lines[i] = wrapped[1] + wrapped[3] + ' ' + wrapped[4];
+    }
+    /* Glued heading: split it off and let the loop repair the new line. */
+    if (!wrapped && !/^[ \t]*\|/.test(line)) {
+      const g = lines[i].match(GLUED_HEADING_RE);
+      if (g && !/^[ \t]*[#＃]/.test(line) && /[^*_`~\s]/.test(g[1])
+          && !(g[2].charAt(2) !== ' ' && /^#{2}\d/.test(g[2]))) {
+        lines.splice(i, 1, g[1], '', g[2]);
+        i += 1; /* next iteration handles the heading line (i + 2) */
+        continue;
+      }
+    }
+    if (HEADING_LEAD_JUNK_RE.test(lines[i])) {
+      lines[i] = lines[i].replace(HEADING_LEAD_JUNK_RE, '');
+    } else if (HEADING_OVERINDENT_RE.test(lines[i])) {
+      let p = i - 1;
+      while (p >= 0 && !/\S/.test(lines[p])) p--;
+      if (p < 0 || !LIST_OR_INDENTED_RE.test(lines[p])) {
+        lines[i] = lines[i].replace(HEADING_OVERINDENT_RE, '');
+      }
+    }
+
+    const m = lines[i].match(HEADING_RUN_RE);
     if (!m) continue;
     const prefix = m[1];
     const run = m[2];
-    const rest = line.slice(m[0].length);
+    const rest = lines[i].slice(m[0].length);
     if (!/\S/.test(rest)) {
       /* Bare `#`+ line: escape the ASCII hashes so the reader sees the
          literal characters instead of an empty heading's gap. */
@@ -371,7 +424,7 @@ export function fixHeadingMarkers(s: string): string {
     if (/^[ \t]/.test(rest)) continue; /* already spaced */
     /* `#1`-style enumerations are prose; 3+ hashes before a digit are
        headings (`###1. 方法`). Preprocessor/shebang lines bail too. */
-    if (run.length <= 2 && /\d/.test(rest.charAt(0))) continue;
+    if (run.length <= 2 && /\d/.test(rest.charAt(0)) && !NUMBERED_TITLE_RE.test(rest)) continue;
     if (HEADING_DIRECTIVE_RE.test(rest)) continue;
     lines[i] = prefix + '#'.repeat(Math.min(run.length, 6)) + ' ' + rest;
   }

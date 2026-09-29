@@ -79,36 +79,12 @@ export function preprocessMarkdown(t: string | null | undefined): string {
 
   s = promoteStandaloneInlineMath(s, true);
 
-  function _countUnescapedDollars(s: string): number {
-    let n = 0;
-    for (let i = 0; i < s.length; i++) {
-      if (s.charAt(i) !== '$') continue;
-      let bs = 0;
-      let j = i - 1;
-      while (j >= 0 && s.charAt(j) === '\\') { bs++; j--; }
-      if (bs % 2 === 0) n++;
-    }
-    return n;
-  }
-  function _lastUnescapedDollar(s: string): number {
-    for (let i = s.length - 1; i >= 0; i--) {
-      if (s.charAt(i) !== '$') continue;
-      let bs = 0;
-      let j = i - 1;
-      while (j >= 0 && s.charAt(j) === '\\') { bs++; j--; }
-      if (bs % 2 === 0) return i;
-    }
-    return -1;
-  }
-  if (_countUnescapedDollars(s) % 2 === 1) {
-    const idx = _lastUnescapedDollar(s);
-    if (idx >= 0) {
-      const prev = s.charAt(idx - 1), next = s.charAt(idx + 1);
-      if (prev !== '$' && next !== '$') {
-        s = s.slice(0, idx) + '\\$' + s.slice(idx + 1);
-      }
-    }
-  }
+  /* P_numeric-math — there used to be an "odd `$` count → escape the LAST
+     `$`" rule here. It guessed the wrong dollar whenever a currency amount
+     came first (`花了 $5，概率 $1/2$` escaped the formula's closing `$`), and
+     the streaming preprocessor never had it, so the answer changed at
+     finish. render/markdown.ts replaceInlineDollarMath pairs dollars itself
+     and leaves an unpaired `$` literal, which is what this rule was for. */
 
   s = _autoWrapBareBracketMath(s);
 

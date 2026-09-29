@@ -255,7 +255,9 @@ test('compact inline math rejects lowercase prose words', () => {
   withKatex(() => {
     assert.doesNotMatch(renderProgressive('only $only$ word'), /class="katex/);
     assert.doesNotMatch(renderProgressive('home $home$ dir'), /class="katex/);
-    assert.doesNotMatch(renderProgressive('amount $5$ only'), /class="katex/);
+    /* P_numeric-math — a number closed by `$` on BOTH sides is a formula
+       (pandoc's rule); currency never carries a closing `$`. */
+    assert.match(renderProgressive('amount $5$ only'), /class="katex/);
 
     assert.match(renderProgressive('segment $AB$ and $ABC$'), /class="katex/);
     assert.match(renderProgressive('call $f(x)$ now'), /class="katex/);
@@ -320,9 +322,11 @@ test('comma-separated symbol lists render as inline math', () => {
        while the closing `$` is still in flight. */
     assert.match(renderProgressive('对于 $x, y'), /class="katex/);
 
-    /* No letter (grouped currency), or a connector embedded inside a
-       word, keeps the text literal. */
-    assert.doesNotMatch(renderProgressive('price $5, 000$ today'), /class="katex/);
+    /* A connector embedded inside a word keeps the text literal. A spaced
+       number list closed by `$` on both sides (`$5, 000$`) is a formula now
+       (P_numeric-math); an open amount (`$5, 000 today`) stays literal. */
+    assert.match(renderProgressive('price $5, 000$ today'), /class="katex/);
+    assert.doesNotMatch(renderProgressive('price $5, 000 today'), /class="katex/);
     assert.doesNotMatch(renderProgressive('paid in $USD (about'), /class="katex/);
 
     const previousKatex = globalThis.katex;

@@ -548,16 +548,110 @@ function _looksLikeInlineMath(s: string): boolean {
       && trimmed.indexOf(')') > 0);
 }
 
+/* P_numeric-math — letter-free formulas: `$1/2$`, `$3+4=7$`, `$2^{10}$`,
+   `$-1$`, `$0.5$`, `$5$`. The letter-based heuristics above reject them all,
+   yet Chinese-model output writes plain numbers and fractions in dollars
+   constantly. Currency is the risk (`$5 到 $10`, `$5-$10`, `$1,000`), so this
+   follows pandoc's tex_math_dollars rule, which separates the two by
+   position rather than by content:
+     • the opening `$` is followed, and the closing `$` preceded, by a
+       non-space character (`$5 到 $` fails);
+     • the closing `$` is not followed by a digit (`$5-$10` fails);
+   plus: only digits, whitespace and math punctuation inside (any CJK or
+   prose word fails), at least one digit, and no dangling binary operator at
+   either end (`5-`, `/2`). */
+const NUMERIC_MATH_CHARS_RE = /^[0-9\s.,+\-*/^_=<>()[\]{}|!%:×÷±∓≤≥≠≈∞√°′″·\u2212]+$/;
+const NUMERIC_MATH_BAD_EDGE_RE = /^[*/^_=<>,:+]|[+\-*/^_=<>,:\u2212]$/;
+
+export function _looksLikeNumericMath(raw: string, next: string): boolean {
+  if (!raw || /^\s|\s$/.test(raw)) return false;
+  if (/[0-9]/.test(next || '')) return false;
+  if (!NUMERIC_MATH_CHARS_RE.test(raw) || !/[0-9]/.test(raw)) return false;
+  return !NUMERIC_MATH_BAD_EDGE_RE.test(raw);
+}
+
+/* Closed `$…$` acceptance shared by the streaming and final passes. `next`
+   is the character right after the closing `$`. */
+function _acceptInlineMath(raw: string, next: string): boolean {
+  return _looksLikeInlineMath(String(raw).trim()) || _looksLikeNumericMath(raw, next);
+}
+
+/* Closed inline `$…$` replacement, shared by the streaming and final passes.
+
+   A lazy `/\$(.+?)\$/` pairs dollars strictly left to right and consumes
+   BOTH delimiters even when the candidate is rejected, so one currency
+   amount swallowed the next formula's opening `$` (`花了 $5，概率 $1/2$`
+   paired `$5，概率 $` and left `1/2$` as text). This scanner hands back only
+   the opening `$` on a rejection and retries from the next character.
+   `$$` runs are display-math delimiters and never open or close inline
+   math; an escaped `\$` never opens. `multiline` (the final pass) lets a
+   formula wrap a single newline but never cross a blank line. */
+export function replaceInlineDollarMath(
+  s: string,
+  multiline: boolean,
+  render: (math: string) => string | null,
+): string {
+  let out = '';
+  let i = 0;
+  const isEscaped = (k: number): boolean => {
+    let bs = 0;
+    for (let j = k - 1; j >= 0 && s.charAt(j) === '\\'; j--) bs++;
+    return bs % 2 === 1;
+  };
+  for (let open = s.indexOf('$', i); open !== -1; open = s.indexOf('$', i)) {
+    if (s.charAt(open + 1) === '$') {
+      /* Skip the whole `$$…` run. */
+      let k = open;
+      while (s.charAt(k) === '$') k++;
+      out += s.slice(i, k);
+      i = k;
+      continue;
+    }
+    if (isEscaped(open)) {
+      out += s.slice(i, open + 1);
+      i = open + 1;
+      continue;
+    }
+    let close = -1;
+    for (let j = open + 1; j < s.length; j++) {
+      const c = s.charAt(j);
+      if (c === '\\') { j++; continue; }
+      if (c === '\n' && (!multiline || s.charAt(j + 1) === '\n')) break;
+      if (c === '$') {
+        if (s.charAt(j + 1) !== '$') close = j;
+        break;
+      }
+    }
+    if (close > open + 1) {
+      const math = s.slice(open + 1, close);
+      const html = _acceptInlineMath(math, s.charAt(close + 1)) ? render(math) : null;
+      if (html !== null) {
+        out += s.slice(i, open) + html;
+        i = close + 1;
+        continue;
+      }
+    }
+    out += s.slice(i, open + 1);
+    i = open + 1;
+  }
+  return out + s.slice(i);
+}
+
 /* A formula whose closing `$` has not arrived yet. Multi-letter words
    after a stray `$` are almost always prose (`paid in $USD`), so only
    single symbols and punctuation-carrying tokens render live; `$AB`
    waits one token for its closing `$` and then renders through the
    closed pass. An open function call (`$u(x, y`) renders live because
    the attached callee+paren is already unambiguous. */
+/* A plain lowercase word (3+ letters, not a `\command`) in a spaced tail is
+   prose after a currency amount (`$5+ tax`, `$10 and`), not a formula. */
+const TAIL_PROSE_WORD_RE = /(?:^|[^\\A-Za-z])[a-z]{3,}(?![A-Za-z(])/;
+
 function _looksLikeInlineMathTail(s: string): boolean {
-  if (_looksLikeLatex(s)) return true;
   const trimmed = String(s).trim();
   if (!trimmed) return false;
+  if (/\s/.test(trimmed) && !/\\/.test(trimmed) && TAIL_PROSE_WORD_RE.test(trimmed)) return false;
+  if (_looksLikeLatex(s)) return true;
   if (/[\\^_{}[\]]/.test(trimmed)) return true;
   if (/\s/.test(trimmed)) {
     /* Same widening as the closed pass: `$x, y` renders live while a
@@ -565,7 +659,14 @@ function _looksLikeInlineMathTail(s: string): boolean {
     return _isSpacedMathList(trimmed)
       || (SPACED_CALL_RE.test(trimmed) && SPACED_MATH_CHARS_RE.test(trimmed));
   }
-  if (!/[A-Za-z]/.test(trimmed) || !COMPACT_MATH_RE.test(trimmed)) return false;
+  /* P_numeric-math — an unclosed letter-free formula renders live only when a
+     fraction / power / equation operator already marks it (`$1/2`, `$3+4=7`);
+     a bare amount (`$5`, `$1,000`) waits for its closing `$`, so currency on
+     the live tail never flashes as math. */
+  if (!/[A-Za-z]/.test(trimmed)) {
+    return /[/^=]/.test(trimmed) && _looksLikeNumericMath(trimmed, '');
+  }
+  if (!COMPACT_MATH_RE.test(trimmed)) return false;
   return /[^A-Za-z]/.test(trimmed) || trimmed.length === 1;
 }
 
@@ -868,10 +969,9 @@ function _formatMsgProgressive(t: string, opts?: StreamingPreprocessOptions): st
 
   if (typeof katex !== 'undefined') {
     /* Closed inline math: $...$ and \(...\) */
-    s = s.replace(/\$(.+?)\$/g, function (m, math: string) {
-      if (!_looksLikeInlineMath(String(math).trim())) return m;
+    s = replaceInlineDollarMath(s, false, function (math: string) {
       const html = renderStreamMath(math, false, false);
-      return html === null ? m : save(html);
+      return html === null ? null : save(html);
     });
     s = s.replace(/\\\((.+?)\\\)/g, function (m, math: string) {
       const html = renderStreamMath(math, false, false);
@@ -880,6 +980,9 @@ function _formatMsgProgressive(t: string, opts?: StreamingPreprocessOptions): st
     /* Inline math still arriving: closing `$` or `\)` has not appeared.
        Defer unclosed tail so incomplete raw syntax is never shown to the user. */
     s = s.replace(/\$([^\n$]+)$/g, function (m, math: string) {
+      /* Text that cannot grow has no "still arriving" formula: the final
+         renderer leaves an unpaired `$` literal, so this pass must too. */
+      if (opts?.complete) return m;
       if (!_looksLikeInlineMathTail(math.trim())) return m;
       const html = renderStreamMath(math, false, true);
       if (html !== null) return save(html);
@@ -1004,8 +1107,7 @@ function _formatMsg(t: string): string {
         try { return save(katex.renderToString(math.trim(), { displayMode: true, throwOnError: false, macros: KATEX_MACROS })); }
         catch { return save('<pre>' + esc('$$' + math + '$$') + '</pre>'); }
       });
-      txt = txt.replace(/\$(.+?)\$/g, function (m, math: string) {
-        if (!_looksLikeInlineMath(String(math).trim())) return m;
+      txt = replaceInlineDollarMath(txt, false, function (math: string) {
         try { return save(katex.renderToString(math.trim(), { displayMode: false, throwOnError: false, macros: KATEX_MACROS })); }
         catch { return save('<code>' + esc('$' + math + '$') + '</code>'); }
       });
@@ -1092,10 +1194,9 @@ function _formatMsg(t: string): string {
       return html === null ? _ : save(html);
     });
 
-    procT = procT.replace(/\$([\s\S]+?)\$/g, function (m, math: string) {
-      if (!_looksLikeInlineMath(String(math).trim())) return m;
+    procT = replaceInlineDollarMath(procT, true, function (math: string) {
       const html = renderStreamMath(math, false, false);
-      return html === null ? m : save(html);
+      return html === null ? null : save(html);
     });
     procT = procT.replace(/\\\(([\s\S]+?)\\\)/g, function (m, math: string) {
       const html = renderStreamMath(math, false, false);
