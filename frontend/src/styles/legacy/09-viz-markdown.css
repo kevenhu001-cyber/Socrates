@@ -322,7 +322,8 @@
    The glyph itself is hidden; the dot is drawn as a pseudo-element
    so no JS change is needed. Pure opacity/scale — never touches
    text layout, so KaTeX renders stay crisp. */
-.stream-cursor{display:inline-block;position:relative;width:12px;height:12px;margin-left:3px;vertical-align:-1px;color:transparent;font-size:0;line-height:0}
+.stream-cursor{display:inline-block;position:relative;width:12px;height:12px;margin-left:3px;vertical-align:-1px;color:transparent;font-size:0;line-height:0;transition:opacity 300ms ease-out}
+.stream-cursor.is-settling{opacity:0;pointer-events:none}
 .stream-cursor::before{content:"";position:absolute;inset:0;border-radius:50%;background:hsl(var(--text-200));animation:streamDotBreathe 1.5s ease-in-out infinite}
 @keyframes streamDotBreathe{0%,100%{transform:scale(.8);opacity:.45}50%{transform:scale(1.15);opacity:1}}
 
@@ -353,20 +354,17 @@
    - list items and code blocks get their own block-level entrances. */
 .stream-char{
   display:inline-block;
-  animation:streamCharIn .34s cubic-bezier(.22,.61,.36,1) both;
+  white-space:pre-wrap;
+  animation:streamCharIn .3s cubic-bezier(.22,.61,.36,1) both;
   will-change:opacity,transform,filter;
 }
 @keyframes streamCharIn{
-  0%{opacity:0;transform:translateY(.28em);filter:blur(3px)}
+  0%{opacity:0;transform:translateY(4px);filter:blur(2px)}
   60%{opacity:1;filter:blur(0)}
   100%{opacity:1;transform:translateY(0);filter:blur(0)}
 }
 
-/* New settled block: opacity 0→1, translateY(6px)→0, 180ms. Runs once as the
-   keyed div mounts (React only mounts each settled block a single time).
-   .tool-run-prose is normally display:contents (no box), which would ignore
-   the transform — restore a block box for the duration of the entrance. */
-.stream-block-in{display:block;animation:streamBlockIn .18s ease-out both}
+.stream-block-in > *{animation:streamBlockIn .18s ease-out both}
 @keyframes streamBlockIn{
   0%{opacity:0;transform:translateY(6px)}
   100%{opacity:1;transform:translateY(0)}
@@ -391,9 +389,47 @@
   content:"";position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(90deg,transparent 0%,hsl(var(--accent-500)/.14) 50%,transparent 100%);
   transform:translateX(-100%);
-  animation:streamCodeSweep .6s ease-out .1s 1 forwards;
+  animation:streamCodeSweep .65s ease-out .1s 1 forwards;
 }
 @keyframes streamCodeSweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+
+/* In-progress streaming placeholders (table / code block) */
+.table-stream-placeholder{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 14px;
+  margin:8px 0;
+  border-radius:var(--ui-radius-control);
+  border:1px dashed hsl(var(--border-200));
+  background:hsl(var(--surface-100)/.5);
+  color:hsl(var(--text-400));
+  font-size:0.9em;
+}
+.table-stream-icon{font-size:1.1em;opacity:0.7}
+
+.stream-code-pending{
+  display:block;
+  margin:10px 0;
+  padding:10px 14px;
+  border-radius:var(--ui-radius-control);
+  border:1px solid hsl(var(--border-150));
+  background:hsl(var(--surface-150)/.4);
+}
+.stream-code-pending-header{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  font-size:0.82em;
+  font-family:var(--font-mono, monospace);
+  color:hsl(var(--text-400));
+}
+.stream-code-badge{
+  padding:1px 6px;
+  border-radius:var(--ui-radius-xs);
+  background:hsl(var(--surface-250)/.6);
+  font-weight:500;
+}
 
 /* Tables and formulas are rendered only once the splitter has closed them
    (isStableMarkdownPrefix), so they simply ride the block fade-in — no

@@ -20,11 +20,6 @@ import { hydrateProfileModal } from '../../profileModal';
 import { hydrateShareModal } from '../../shareModal';
 import { hydrateUsageModal } from '../../usageModal';
 import { hydrateRecentsFilterChips, hydrateSidebarNav } from '../../sidebar';
-import { mountStorageModal } from '../../storageModal';
-import { mountCheatsheet } from '../../cheatsheet';
-import { mountPromptTemplatesModal } from '../../promptTemplatesModal';
-import { mountConfirmDialog } from '../../confirm';
-import { mountChatConfiguration } from '../../chat-configuration';
 import { installSidebarChromeBridge } from '../../sidebar-chrome/sidebarChrome.bridge';
 import { SidebarHeader } from '../../sidebar-chrome/SidebarHeader';
 import { SidebarFooter } from '../../sidebar-chrome/SidebarFooter';
@@ -158,22 +153,22 @@ export function mountRegistryList(): MountSpec[] {
     /* 5. Lazy portal roots */
     { hostId: 'storageModalReactRoot', label: 'storage-modal',
       ensureHost: (doc) => ensureBodyChild(doc, 'storageModalReactRoot'),
-      mount: () => mountStorageModal() },
+      mount: () => { void import('../../storageModal').then((m) => m.mountStorageModal()); } },
     { hostId: 'cheatsheetReactRoot', label: 'cheatsheet',
       ensureHost: (doc) => ensureBodyChild(doc, 'cheatsheetReactRoot'),
-      mount: () => mountCheatsheet() },
+      mount: () => { void import('../../cheatsheet').then((m) => m.mountCheatsheet()); } },
     { hostId: 'promptTemplatesReactRoot', label: 'prompt-templates',
       ensureHost: (doc) => ensureBodyChild(doc, 'promptTemplatesReactRoot'),
-      mount: () => mountPromptTemplatesModal() },
+      mount: () => { void import('../../promptTemplatesModal').then((m) => m.mountPromptTemplatesModal()); } },
     /* M4 step 4.5c — confirm dialog is React-owned. The static
        index.html #confirmDialog markup was removed; the mount spec
        lazily creates the body-level root the component renders into. */
     { hostId: 'confirmDialogReactRoot', label: 'confirm-dialog',
       ensureHost: (doc) => ensureBodyChild(doc, 'confirmDialogReactRoot'),
-      mount: () => mountConfirmDialog() },
+      mount: () => { void import('../../confirm').then((m) => m.mountConfirmDialog()); } },
     { hostId: 'chatConfigurationReactRoot', label: 'chat-configuration',
       ensureHost: (doc) => ensureBodyChild(doc, 'chatConfigurationReactRoot'),
-      mount: () => mountChatConfiguration() },
+      mount: () => { void import('../../chat-configuration').then((m) => m.mountChatConfiguration()); } },
     /* 5. Lazy portal roots. The session list mounts into the existing
        `#recentsList` host (mountSessionList targets that id directly);
        the hostId must match it or the registry skips the spec and the

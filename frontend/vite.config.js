@@ -293,16 +293,23 @@ export default defineConfig({
         manualChunks(id) {
           const f = id.split('\\').join('/');
           if (f.includes('/node_modules/')) {
-            if (f.includes('/node_modules/react-dom/') || f.includes('/node_modules/react/') || f.includes('/node_modules/scheduler/')) return 'vendor-react';
-            if (f.includes('/node_modules/zustand/')) return 'vendor-react';
+            if (f.includes('/node_modules/react-dom/') || f.includes('/node_modules/react/') || f.includes('/node_modules/scheduler/') || f.includes('/node_modules/zustand/')) {
+              return 'vendor-react';
+            }
+            if (f.includes('/node_modules/@tiptap/') || f.includes('/node_modules/prosemirror-') || f.includes('/node_modules/orderedmap/')) {
+              return 'vendor-editor';
+            }
+            if (f.includes('/node_modules/marked/') || f.includes('/node_modules/dompurify/')) {
+              return 'vendor-markdown';
+            }
+            if (f.includes('/node_modules/tldraw/') || f.includes('/node_modules/@tldraw/')) {
+              return 'vendor-tldraw';
+            }
+            if (f.includes('/node_modules/@lobehub/')) {
+              return 'vendor-icons';
+            }
             return;
           }
-          if (!f.includes('/src/')) return;
-          if (f.includes('/src/i18n.js')) return 'i18n';
-          if (f.includes('/src/store/')) return 'store';
-          if (f.includes('/src/render/')) return 'render';
-          if (f.includes('/src/chat/')) return 'chat';
-          if (f.includes('/src/ui/')) return 'ui';
         },
         entryFileNames: 'assets/[name]-[hash].js',
         chunkFileNames: 'assets/[name]-[hash].js',

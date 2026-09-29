@@ -4,7 +4,10 @@ import { openVizModalRaw } from './viz.js';
 /** Add language labels and fullscreen controls to rendered code blocks. */
 export function wireCodeBlockHeaders(body) {
   if (!body) return;
-  const pres = body.querySelectorAll('.msg-body pre,.think-content pre');
+  const isDirectContainer = typeof body.matches === 'function' && body.matches('.msg-body, .think-content, .tool-run-prose');
+  const pres = isDirectContainer
+    ? body.querySelectorAll('pre')
+    : body.querySelectorAll('.msg-body pre,.think-content pre,.tool-run-prose pre');
   for (const pre of pres) {
     if (pre.previousElementSibling?.matches('.code-block-header')) continue;
     if (pre.closest?.('.exec-artifact,.agent-tool-card,.viz')) continue;

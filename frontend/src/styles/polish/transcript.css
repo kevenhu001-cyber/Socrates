@@ -178,6 +178,7 @@
 
 /* Prose rhythm. One variable feeds the paragraph gap AND the live-turn seam
    rule below, so the two cannot drift apart again. */
+#appShell .msg-body { --msg-para-gap: 12px; }
 @media (max-width: 768px) {
 #appShell .msg-body { line-height: 1.65; --msg-para-gap: 10px; }
 }
@@ -193,7 +194,8 @@
    renders the same prose in ONE wrapper, where only the true last paragraph
    does. Without this, every paragraph gap read 0 while streaming and snapped
    open at finish, shifting all text below it. */
-#appShell .msg-body .tool-run-prose.is-settled > p:last-child { margin-bottom: var(--msg-para-gap); }
+#appShell #msgList .msg-body .tool-run-prose.is-settled > p:last-child,
+#appShell .msg-body .tool-run-prose.is-settled > p:last-child { margin-bottom: var(--msg-para-gap, 12px); }
 
 /* Streaming cursor — a soft pulse dot instead of a hard caret when the
    turn is mid-flight (restore owns the exact glyph; refine its motion). */

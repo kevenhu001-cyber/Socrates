@@ -10,6 +10,8 @@ import './vendor/init.js';
    in the bundle. Without this, esbuild's tree-shaking would drop
    the file because main.js never references its named exports. */
 import './windowExports.js';
+import './tutorSocratic.js';
+import './ui/workspace-reference-ui.js';
 import './app/legacyBridge.js';
 /* P_storage-shim — import before any other module so the in-memory
    localStorage/sessionStorage shim is installed before downstream

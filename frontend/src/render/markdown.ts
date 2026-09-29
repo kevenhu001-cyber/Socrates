@@ -821,9 +821,19 @@ function _formatMsgProgressive(t: string, opts?: StreamingPreprocessOptions): st
       if (isHtmlLang) {
         return saveViz(renderVizLoading({ streaming: true, stableId: _getStreamingVizId(lang || 'html', trimmed) }));
       }
-      const hljsLang = safeHljsLang(lang);
-      const langAttr = hljsLang ? ' class="language-' + escAttr(hljsLang) + '"' : '';
-      return save('<pre><code' + langAttr + '>' + escHTML(trimmed) + '</code></pre>');
+      if (opts?.complete) {
+        const hljsLang = safeHljsLang(lang);
+        const langAttr = hljsLang ? ' class="language-' + escAttr(hljsLang) + '"' : '';
+        return save('<pre><code' + langAttr + '>' + escHTML(trimmed) + '</code></pre>');
+      }
+      return save(
+        '<div class="stream-code-pending">' +
+          '<div class="stream-code-pending-header">' +
+            '<span class="stream-code-badge">' + escHTML(lang || 'code') + '</span>' +
+            '<span class="stream-code-dots shimmer-text">…</span>' +
+          '</div>' +
+        '</div>'
+      );
     }
     return save('<span style="color:hsl(var(--text-400));font-style:italic;font-size:0.9em">…</span>');
   });
@@ -883,6 +893,12 @@ function _formatMsgProgressive(t: string, opts?: StreamingPreprocessOptions): st
   }
 
   s = inlineCodeGuard.restore(s);
+
+  if (!opts?.complete) {
+    s = s.replace(/(?:^|\n)((?:\|[^\n]+\|\s*\n?)+)$/, function () {
+      return save('<div class="table-stream-placeholder shimmer-text"><span class="table-stream-icon">⊞</span> 正在生成表格…</div>');
+    });
+  }
 
   let html: string;
   const marked = getMarked();

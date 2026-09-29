@@ -55,7 +55,7 @@ function chunk(text, size) {
 
 /* Streams `deltas`, then holds [DONE] for `finishDelay` ms so the fully
    painted live turn can be measured before finish() replaces it. */
-async function startStream(page, deltas, { delay = 25, finishDelay = 1500 } = {}) {
+async function startStream(page, deltas, { delay = 25, finishDelay = 2600 } = {}) {
   await page.evaluate(async ({ deltas, delay, finishDelay }) => {
     const originalFetch = window.fetch.bind(window);
     window.fetch = function (input, init) {

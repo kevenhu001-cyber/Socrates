@@ -614,3 +614,31 @@ test('chat-artifact stripping is unchanged by the fast-path guard', () => {
   // Falsy passthrough (guards the early return).
   assert.equal(stripChatArtifacts(''), '');
 });
+
+test('unclosed code block renders calm placeholder while closed renders full block', () => {
+  const streaming = renderProgressive('Here is code:\n```python\ndef hello():\n    print(1)');
+  assert.match(streaming, /class="stream-code-pending"/);
+  assert.match(streaming, /python/);
+  assert.doesNotMatch(streaming, /def hello/);
+
+  const complete = renderProgressive('Here is code:\n```python\ndef hello():\n    print(1)\n```');
+  assert.match(complete, /<pre><code/);
+  assert.match(complete, /def hello/);
+});
+
+test('unclosed table renders calm placeholder while closed renders complete table', () => {
+  const prevMarked = globalThis.marked;
+  globalThis.marked = marked;
+  try {
+    const streaming = renderProgressive('Data:\n| Col 1 | Col 2 |\n|---|---|\n| val 1 | val 2 |');
+    assert.match(streaming, /class="table-stream-placeholder/);
+    assert.doesNotMatch(streaming, /<table>/);
+
+    const closed = renderProgressive('Data:\n\n| Col 1 | Col 2 |\n|---|---|\n| val 1 | val 2 |\n\n', { complete: true });
+    assert.match(closed, /<table>/);
+    assert.match(closed, /Col 1/);
+  } finally {
+    globalThis.marked = prevMarked;
+  }
+});
+

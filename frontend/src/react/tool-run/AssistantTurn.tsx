@@ -14,7 +14,7 @@
  * stable-prefix strategy the old imperative painter used — so a half-arrived
  * formula never leaks raw LaTeX, and completed blocks keep their DOM nodes.
  */
-import { Fragment, useLayoutEffect, useMemo, useRef } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { createSettledSplitter } from '../../render/streaming.js';
 import { getLegacyActions } from '../legacy/gateway.js';
@@ -52,16 +52,17 @@ export interface AssistantTurnProps {
  *    light up in sequence to say "still connected, waiting for more"
  *  The 300ms finish fade is a CSS concern on the settled bubble
  *  (P_finish-stream-boundary), so a `done`/settled turn drops the cursor. */
-function StreamCursor({ state }: { state?: string }) {
+function StreamCursor({ state, settling }: { state?: string; settling?: boolean }) {
+  const settleClass = settling ? ' is-settling' : '';
   if (state === 'starved') {
     return (
-      <span className="stream-cursor is-starved" aria-hidden="true">
+      <span className={`stream-cursor is-starved${settleClass}`} aria-hidden="true">
         <span className="stream-dots"><i /><i /><i /></span>
       </span>
     );
   }
   const stateClass = state === 'draining' ? ' is-draining' : ' is-playing';
-  return <span className={`stream-cursor${stateClass}`} aria-hidden="true">▍</span>;
+  return <span className={`stream-cursor${stateClass}${settleClass}`} aria-hidden="true">▍</span>;
 }
 
 /**
@@ -251,7 +252,7 @@ function lastTextNode(root: Node): Text | null {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   let node: Node | null = walker.nextNode();
   while (node) {
-    if (node.textContent && node.textContent.length > 0) last = node as Text;
+    if (node.textContent && node.textContent.trim().length > 0) last = node as Text;
     node = walker.nextNode();
   }
   return last;
@@ -259,9 +260,9 @@ function lastTextNode(root: Node): Text | null {
 
 function decorateTailReveal(root: HTMLElement): void {
   const textNode = lastTextNode(root);
-  if (!textNode || !textNode.parentNode) return;
+  if (!textNode || !textNode.parentNode || textNode.parentNode === root) return;
   const value = textNode.textContent || '';
-  if (value.length === 0) return;
+  if (value.trim().length === 0) return;
   const splitAt = Math.max(0, value.length - TAIL_WINDOW);
   const head = value.slice(0, splitAt);
   const tail = value.slice(splitAt);
@@ -277,6 +278,24 @@ function decorateTailReveal(root: HTMLElement): void {
     frag.appendChild(span);
   }
   textNode.parentNode.replaceChild(frag, textNode);
+}
+
+function SettledBlock({ html }: { html: { __html: string } }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    try {
+      getLegacyActions().postRender?.wireCodeBlockHeaders?.(el);
+    } catch (_) {}
+  }, [html]);
+  return (
+    <div
+      ref={ref}
+      className="tool-run-prose is-settled stream-block-in"
+      dangerouslySetInnerHTML={html}
+    />
+  );
 }
 
 function LiveTextSegment({ text, settled, tail }: LiveTextSegmentProps) {
@@ -299,10 +318,9 @@ function LiveTextSegment({ text, settled, tail }: LiveTextSegmentProps) {
   return (
     <>
       {split.blocks.map((block, index) => (
-        <div
+        <SettledBlock
           key={index}
-          className="tool-run-prose is-settled stream-block-in"
-          dangerouslySetInnerHTML={settled(block)}
+          html={settled(block)}
         />
       ))}
       <div
@@ -326,6 +344,19 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
   const rawText = typeof message.rawText === 'string' ? message.rawText : '';
   const calls = Array.isArray(message.toolCalls) ? (message.toolCalls as ToolCallRecord[]) : [];
   const isLive = Boolean(live);
+  const [isSettling, setIsSettling] = useState(false);
+  const wasLiveRef = useRef(isLive);
+
+  useEffect(() => {
+    if (wasLiveRef.current && !isLive) {
+      setIsSettling(true);
+      const timer = setTimeout(() => {
+        setIsSettling(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+    wasLiveRef.current = isLive;
+  }, [isLive]);
   // toolCalls[] is mutated in place as rows settle. Rebuild this small, pure
   // layout on each published render so labels, states, and sentence-safe split
   // points cannot be trapped behind stale object identity.
@@ -420,7 +451,9 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
           On a settled turn (P_finish-stream-boundary) the cursor is also
           dropped from the rendered tree — its only role was the typing
           cue, and the parent CSS animates the toolbar in alongside. */}
-      {isLive && !showStatus ? <StreamCursor state={message._playbackState} /> : null}
+      {(isLive || isSettling) && !showStatus ? (
+        <StreamCursor state={message._playbackState} settling={!isLive && isSettling} />
+      ) : null}
     </ToolRunSheetProvider>
   );
 }
