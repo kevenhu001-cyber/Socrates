@@ -248,11 +248,16 @@ function createPrecompressedAssetsPlugin() {
     name: 'precompressed-assets',
     apply: 'build',
     closeBundle() {
-      const assetsDir = join(process.cwd(), 'dist', 'assets');
+      const distDir = join(process.cwd(), 'dist');
       try {
-        for (const file of walk(assetsDir)) {
+        for (const file of walk(join(distDir, 'assets'))) {
           writeFileSync(file + '.gz', gzipSync(readFileSync(file), { level: 9 }));
         }
+        /* The SPA entry too — deploy.sh installs it as index.<TS>.html.gz
+           next to the versioned file so nginx gzip_static can serve the
+           compressed document (location / needs gzip_static on). */
+        const indexHtml = join(distDir, 'index.html');
+        writeFileSync(indexHtml + '.gz', gzipSync(readFileSync(indexHtml), { level: 9 }));
       } catch (error) {
         if (error && error.code !== 'ENOENT') throw error;
       }

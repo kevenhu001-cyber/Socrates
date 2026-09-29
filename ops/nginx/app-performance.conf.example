@@ -45,9 +45,17 @@ location / {
     try_files $uri /__APP_INDEX__;
 }
 
+# The versioned SPA entry (~72KB → ~15KB gz). Vite emits
+# dist/index.html.gz at build time and deploy.sh installs it as
+# index.<TS>.html.gz next to the versioned file, so gzip_static
+# here serves the compressed document. (Optional upgrade: if the
+# nginx build has ngx_brotli, `brotli_static on;` serves .br
+# siblings — the build does not emit them today, so add a brotli
+# step to the bundle plugin before enabling.)
 location ~ ^/index\.[0-9]+\.html$ {
     add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
     add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+    gzip_static on;
     include /etc/nginx/snippets/socrates-csp-spa.conf;
 }
 

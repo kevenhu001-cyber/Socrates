@@ -57,6 +57,10 @@ export function bootstrapApp(options) {
     try { ensureHighlight().catch(() => { /* idle preload is best effort */ }); } catch (_) {}
     try { ensureFuse().catch(() => { /* idle preload is best effort */ }); } catch (_) {}
     try { ensureKatex().catch(() => { /* idle preload is best effort */ }); } catch (_) {}
+    /* Warm the exam chunk (11KB gz) at idle so the sidebar entry opens
+       instantly; the module stays lazy for users who never visit it —
+       this only moves the fetch off the click path. */
+    try { if (typeof window.__loadExamModule === 'function') window.__loadExamModule(); } catch (_) {}
   };
   if (typeof requestIdleCallback === 'function') {
     try { requestIdleCallback(loadIdleVendors, { timeout: 15000 }); }

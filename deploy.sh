@@ -126,7 +126,7 @@ backup_previous() {
   $SUDO mkdir -p "$web_root/.previous"
   # Stable-name files (e.g. /var/www/topodrive.top/index.html) copy as
   # themselves; versioned files (index.<TS>.html) keep their timestamp.
-  for f in "$web_root"/index*.html "$web_root"/status*.html; do
+  for f in "$web_root"/index*.html "$web_root"/index*.html.gz "$web_root"/status*.html; do
     [[ -f "$f" ]] || continue
     $SUDO cp -a "$f" "$web_root/.previous/$(basename "$f")"
   done
@@ -475,11 +475,17 @@ else
   for f in "$DIST_DIR"/*; do
     [[ -f "$f" ]] || continue
     fname=$(basename "$f")
-    [[ "$fname" == "index.html" ]] && continue
+    [[ "$fname" == "index.html" || "$fname" == "index.html.gz" ]] && continue
     $SUDO install -m 644 -o www-data -g www-data "$f" "$APP_WEB_ROOT/$fname"
   done
 
   $SUDO install -m 644 -o www-data -g www-data "$DIST_DIR/index.html" "$APP_WEB_ROOT/$APP_FILE"
+  # gzip sibling for the versioned entry — nginx gzip_static serves
+  # index.<TS>.html.gz when the client accepts gzip (requires
+  # `gzip_static on` in the HTML-serving location).
+  if [[ -f "$DIST_DIR/index.html.gz" ]]; then
+    $SUDO install -m 644 -o www-data -g www-data "$DIST_DIR/index.html.gz" "$APP_WEB_ROOT/$APP_FILE.gz"
+  fi
 
   # Repoint the nginx SPA fallback at the freshly deployed versioned file.
   # This handles both the initial placeholder and a previous timestamp, and
