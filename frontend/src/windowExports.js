@@ -292,19 +292,36 @@ import { esc } from './render/helpers.js';
 window.esc = esc;
 
 /* ─── exam.js — Generate Exam extension ───
-   exam.js is a standalone module with its own imports (esc, formatMsg,
-   callAPI). It renders inline onclick="..." handlers that reference
-   functions on window.* — all of them must be bridged here. */
-import {
-  openExamPanel, openExamModal,
-  refreshExamI18n,
-} from './exam.js';
-window.openExamPanel = openExamPanel;
-/* openExamModal stays on window: pickers.js (in the light chat/api.js
-   import chain) must not import exam.js, which drags ui/share.js →
-   ui/toolCards.js (top-level document listener) into pure-Node unit tests. */
-window.openExamModal = openExamModal;
-window.refreshExamI18n = refreshExamI18n;
+   exam.js (~57KB) is lazy: it only downloads when the exam view is
+   actually opened (sidebar exam nav / openExamModal / exam session
+   restore). window.__loadExamModule dedupes the import, mounts the
+   delegated listeners once, and exposes the module for conditional
+   resets (lifecycle.clearPerUserClientState). Callers fire-and-forget
+   through the proxies; the view opens on the next microtask. */
+var _examImport = null;
+function _loadExamModule() {
+  if (!_examImport) {
+    _examImport = import('./exam.js').then(function (m) {
+      window.__examModule = m;
+      try { m.mountExamListeners(); } catch (_) {}
+      return m;
+    });
+    _examImport.catch(function (err) {
+      _examImport = null;
+      console.error('[exam] failed to load', err);
+    });
+  }
+  return _examImport;
+}
+window.__loadExamModule = _loadExamModule;
+window.openExamPanel = function () { _loadExamModule().then(function (m) { m.openExamPanel(); }); };
+window.openExamModal = function () { _loadExamModule().then(function (m) { m.openExamModal(); }); };
+/* Only refresh i18n when the exam module is already loaded — i18n.js
+   gates this on _examInView anyway, and a language switch must not
+   pull in exam.js for users who never open the exam view. */
+window.refreshExamI18n = function () {
+  if (_examImport) _examImport.then(function (m) { m.refreshExamI18n(); });
+};
 
 /* ─── ui/toolCards.js — needed by share.js to restore tool cards ─── */
 import { appendToolModule } from './ui/toolCards.js';

@@ -1,4 +1,4 @@
-import { hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
+import { markHostMountedBy } from '../lib/boot/ownership';
 import { useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -137,7 +137,15 @@ function ConfirmDialog() {
  * `showConfirm()` / `closeConfirm()` keep the Promise resolver and
  * publish visibility/copy through the bridge (M4 step 4.5c).
  */
+let confirmDialogMounted = false;
+
 export function mountConfirmDialog(): void {
+  /* The mount registry marks the host with 'confirm-dialog' at dispatch
+     time — before this async import resolves — so hostIsMountedBy()
+     cannot be used as the re-entry guard here (it would always see the
+     registry's mark and skip the real mount). A module-level flag keeps
+     direct re-calls idempotent instead. */
+  if (confirmDialogMounted) return;
   let container = document.getElementById('confirmDialogReactRoot');
   if (!container) {
     container = document.createElement('div');
@@ -145,7 +153,7 @@ export function mountConfirmDialog(): void {
     document.body.appendChild(container);
   }
 
-  if (hostIsMountedBy(container, 'confirm-dialog')) return;
+  confirmDialogMounted = true;
   markHostMountedBy(container, 'confirm-dialog');
 
   installConfirmBridge();

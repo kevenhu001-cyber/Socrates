@@ -107,6 +107,11 @@ export function prepareExamView() {
   var mi = document.getElementById("mainInner");
   if (mi) mi.classList.add("hidden");
   ev.classList.remove("hidden");
+  /* body.exam-active must accompany the exam view: CSS uses it to hide
+     the chat mode tabs, and resetApp()'s exam cleanup block only runs
+     when it sees the class. Previously only loadSharedExamSession set
+     it, so a normal open left #mainInner hidden after reset. */
+  document.body.classList.add("exam-active");
   /* Show the exam-only top-bar elements (#examBackBtn / #examTitleBar);
      hide the chat/tutor mode switcher + incognito (they're useless inside
      an exam). toggleChatTopBarEls(true) hides the mode tabs, matching the
@@ -153,6 +158,7 @@ export function closeExamView() {
   /* Restore .main-inner visibility (was hidden when exam opened). */
   var mi = document.getElementById("mainInner");
   if (mi) mi.classList.remove("hidden");
+  document.body.classList.remove("exam-active");
   toggleExamOnlyTopBar(false);
   /* Mark the cancel flag so any in-flight generation loop bails. The
      state itself (questions / answers / topic) is preserved — closing

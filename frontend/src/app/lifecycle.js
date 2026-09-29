@@ -26,7 +26,6 @@ import { syncModelPills } from '../pickers.js';
 import { renderUserFooter } from '../ui/profile.js';
 import { resetCrossSessionKBCache } from '../ui/knowledgeCrossSession.js';
 import { resetCmdKSearchState } from '../ui/cmdK.js';
-import { resetExamSaveState } from '../exam.js';
 import { renderGreeting } from '../ui/greeting.js';
 
 function _t(key, fallback) {
@@ -96,7 +95,9 @@ export async function resetApp(options){
      exam page used to skip straight to topicSetup with no warning.
      The dialog text ("会保存到「最近」") is still accurate — exam
      sessions are persisted to Recents via saveExamSession. */
-  var _examDirty = !!stateStore.read("_examInView")
+  var _examWasOpen = !!stateStore.read("_examInView")
+    || document.body.classList.contains("exam-active");
+  var _examDirty = _examWasOpen
     || (typeof stateStore.read("examTopic") === "string" && stateStore.read("examTopic").length > 0
         && Array.isArray(stateStore.read("examQuestions")) && stateStore.read("examQuestions").length > 0)
     || !!stateStore.read("examSubmitted");
@@ -159,8 +160,11 @@ export async function resetApp(options){
   document.getElementById("diagnosticView").classList.add("hidden");
   document.getElementById("chatView").classList.add("hidden");
   if (typeof window.hideMainPages === "function") window.hideMainPages();
-  /* Hide the exam-only top-bar elements and container only when exam was active. */
-  if (document.body.classList.contains("exam-active")) {
+  /* Hide the exam-only top-bar elements and container only when exam was
+     active. The flag must be captured before hideMainPages() above —
+     that helper strips body.exam-active itself, so a live read here
+     would always see false and leave #mainInner hidden. */
+  if (_examWasOpen) {
     document.querySelectorAll("[data-exam-only='true']").forEach(function (el) { el.classList.add("hidden"); });
     var _examBody = document.getElementById("examViewBody");
     if (_examBody) _examBody.innerHTML = "";
@@ -333,7 +337,9 @@ export function clearPerUserClientState(){
   try{apiConfig.activeId=null;apiConfig.providers=[]}catch(_){}
   try{resetCmdKSearchState()}catch(_){}
   try{resetCrossSessionKBCache()}catch(_){}
-  try{resetExamSaveState()}catch(_){}
+  /* exam.js is lazy — if it was never imported its save state is already
+     pristine, so only reset when the module is actually loaded. */
+  try{var _em=(typeof window!=="undefined")&&window.__examModule;if(_em&&typeof _em.resetExamSaveState==="function")_em.resetExamSaveState()}catch(_){}
   try{clearUserMemories()}catch(_){}
   try{if(turnState.pendingChatContent!==undefined)turnState.pendingChatContent=null}catch(_){}
   /* P_locale-ghost — `state.locale` was never a real field (the real

@@ -1,7 +1,6 @@
 import { installModalA11y } from '../ui/modalA11y.js';
 import { ensureFuse, ensureHighlight, ensureKatex } from '../vendor/lazy.js';
 import { bootstrapReactCompatibilityRuntime } from '../react/bootstrap.tsx';
-import { mountExamListeners } from '../exam.js';
 import { mountUsageListeners } from '../ui/usage.js';
 import { mountAuthListeners } from '../auth/index.js';
 import { mountLegacyShellListeners } from '../ui/legacyShellListeners.js';
@@ -51,7 +50,6 @@ export function bootstrapApp(options) {
     switchTab: options.switchTab,
     toggleSidebarView: options.toggleSidebarView,
   });
-  mountExamListeners();
   mountUsageListeners();
 
   window.__socratesEnsureFuse = ensureFuse;

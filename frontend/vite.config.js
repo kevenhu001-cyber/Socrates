@@ -1,5 +1,8 @@
 import { defineConfig } from 'vite';
 import { fileURLToPath } from 'node:url';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { gzipSync } from 'node:zlib';
+import { join } from 'node:path';
 
 const LOCAL_AUTH_BYPASS = process.env.LOCAL_AUTH_BYPASS !== '0';
 
@@ -226,6 +229,37 @@ function handleStubbedApi(req, res, next, localPath) {
         return void readBody(req).then(() => send(res, 200, { ok: true, stub: true }));
 }
 
+/* P_perf-gzip-static — production nginx serves /assets/ with
+   `gzip_static on` (ops/nginx/app-performance.conf.example), which only
+   picks up pre-compressed `<file>.gz` siblings. Vite does not emit them,
+   so dist used to ship uncompressed and gzip_static was a no-op. Emit
+   .gz files at build end; deploy.sh's `install assets/*` loop copies
+   them alongside automatically. Skips already-compressed formats. */
+function createPrecompressedAssetsPlugin() {
+  const COMPRESS_EXT = new Set(['.js', '.css', '.svg', '.html', '.json', '.map', '.wasm']);
+  function* walk(dir) {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) yield* walk(full);
+      else if (COMPRESS_EXT.has(entry.name.slice(entry.name.lastIndexOf('.')))) yield full;
+    }
+  }
+  return {
+    name: 'precompressed-assets',
+    apply: 'build',
+    closeBundle() {
+      const assetsDir = join(process.cwd(), 'dist', 'assets');
+      try {
+        for (const file of walk(assetsDir)) {
+          writeFileSync(file + '.gz', gzipSync(readFileSync(file), { level: 9 }));
+        }
+      } catch (error) {
+        if (error && error.code !== 'ENOENT') throw error;
+      }
+    },
+  };
+}
+
 function createLocalApiStubPlugin() {
   return {
     name: 'local-api-stub',
@@ -292,6 +326,16 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           const f = id.split('\\').join('/');
+          /* P_perf-tldraw-eager — Vite's __vitePreload runtime helper is
+             imported by every module that uses dynamic import(). Function-
+             form manualChunks used to merge it into vendor-tldraw (the
+             largest manual chunk), so the entry's static import of the
+             ~300 B helper dragged the whole 1.4 MB tldraw bundle — and its
+             CSS — into the first-paint modulepreload list. Pin it to
+             vendor-react, which is already eagerly loaded. */
+          if (f.includes('vite/preload-helper')) {
+            return 'vendor-react';
+          }
           if (f.includes('/node_modules/')) {
             if (f.includes('/node_modules/react-dom/') || f.includes('/node_modules/react/') || f.includes('/node_modules/scheduler/') || f.includes('/node_modules/zustand/')) {
               return 'vendor-react';
@@ -320,7 +364,7 @@ export default defineConfig({
     sourcemap: false,
     modulePreload: { polyfill: true },
   },
-  plugins: [createLocalApiStubPlugin()],
+  plugins: [createLocalApiStubPlugin(), createPrecompressedAssetsPlugin()],
   server: {
     port: 5173,
     strictPort: false,

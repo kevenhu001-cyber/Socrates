@@ -326,6 +326,27 @@ export async function afterAuthEnter(){
   syncWorkspaceRoute&&syncWorkspaceRoute();
 }
 
+/* Reveal the app shell first, then hydrate user data in the background.
+   afterAuthEnter's synchronous prefix — clearPerUserClientState and the
+   localStorage migration read — still runs before hideGate(), so no
+   stale-data frame is painted. Previously every call site awaited the
+   full hydration chain (csrf → sessions → api-key → memories → optional
+   loadSession) before revealing the shell: 3+ serial round-trips of
+   boot-loading spinner on every cold visit. A hydration 401 still routes
+   through installAuthHooks → handleAuthExpired → showGate; other failures
+   only log — a transient sessions fetch must not bounce an authed user
+   back to the gate.
+   onHydrated: optional callback fired after hydration settles (success
+   or failure) — the mobile hand-off target needs hydrated lists. */
+export function revealAppAndHydrate(onHydrated){
+  var hydration;
+  try{ hydration=afterAuthEnter(); }catch(err){ hydration=Promise.reject(err); }
+  hideGate();
+  Promise.resolve(hydration)
+    .catch(function(err){ try{console.error("[auth] post-auth hydration failed",err)}catch(_){} })
+    .then(function(){ if(typeof onHydrated==="function")try{onHydrated()}catch(_){} });
+}
+
 /* ── Submit handlers ── */
 
 export async function submitAuthSignin(){
@@ -356,8 +377,7 @@ export async function submitAuthSignin(){
         if(me2&&me2.user)window.setCurrentUser(me2.user);
       }catch(__){ /* still nothing — proceed with what we have */ }
     }
-    await afterAuthEnter();
-    hideGate();
+    revealAppAndHydrate();
   }catch(e){
     showGate();
     if(e.status===403 && e.code==="UNVERIFIED"){
@@ -439,8 +459,7 @@ export async function submitAuthVerify(token){
         }catch(__){ /* fall through with what we have */ }
       }
     }
-    await afterAuthEnter();
-    hideGate();
+    revealAppAndHydrate();
   }catch(e){
     var title="This link is invalid or expired";
     var msg="Verification links expire after 24 hours. Enter your email and we'll send a fresh one.";
@@ -529,8 +548,7 @@ export async function submitAuthLoginWithCode(){
       window.setCurrentUser(r.user);
     }
     if(guest)try{localStorage.setItem("socrates-guest","1")}catch {}
-    await afterAuthEnter();
-    hideGate();
+    revealAppAndHydrate();
   }catch(e){
     setAuthError("authCodeError",e.message);
   }finally{

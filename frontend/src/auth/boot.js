@@ -13,9 +13,20 @@ import { openMobileTargetFromUrl } from '../native/mobileWebSessionBridge.js';
 
 import { loadSharedSession } from '../ui/share.js';
 
-import { showAuthView, submitAuthVerify, afterAuthEnter } from './index.js';
+import { showAuthView, submitAuthVerify, revealAppAndHydrate } from './index.js';
 
 import { renderUserFooter } from '../ui/profile.js';
+
+/* P_perf-i18n-split — give the lazily-loaded zh locale chunk a bounded
+   head start before any UI becomes visible. zh is the default locale and
+   its chunk normally lands long before /api/auth/me resolves, so this is
+   a no-op in practice; the 500 ms cap only bounds the worst case. */
+function i18nSettled(){
+  try{
+    var p=window.__i18nReady;
+    return p?Promise.race([p,new Promise(function(r){setTimeout(r,500)})]):Promise.resolve();
+  }catch(_){return Promise.resolve();}
+}
 
 /* Hoisted flag — `var` so it's available to refreshApiConfig()
    even if the boot IIFE completes before that function is defined. */
@@ -41,8 +52,7 @@ export async function authBoot(){
     if(typeof window.setCurrentUser==="function")window.setCurrentUser(devUser);
     else window.CURRENT_USER=devUser;
     try{window.markAuthSuccess&&window.markAuthSuccess()}catch(_){}
-    if(typeof afterAuthEnter==="function")try{await afterAuthEnter()}catch(_){}
-    window.hideGate&&window.hideGate();
+    revealAppAndHydrate();
     return;
   }
   var oauthError=params.get("oauth_error");
@@ -115,6 +125,7 @@ export async function authBoot(){
   var configRequest=fetch("/api/v2/config",{credentials:"include"}).then(function(response){return response.json()}).catch(function(){return {}});
   var initialMe=await meRequest;
   if(initialMe.error&&initialMe.error.status===401&&!window.isInAuthGraceWindow?.()){
+    await i18nSettled();
     window.showGate&&window.showGate();
     window.showAuthSignin&&window.showAuthSignin();
     return;
@@ -174,6 +185,7 @@ export async function authBoot(){
           await new Promise(function(r){setTimeout(r,500)});
           continue;
         }
+        await i18nSettled();
         window.showGate&&window.showGate();
         window.showAuthSignin&&window.showAuthSignin();
         return;
@@ -182,23 +194,22 @@ export async function authBoot(){
     }
   }
   if(me&&me.user){
-    await csrfReady;
+    await Promise.all([csrfReady,i18nSettled()]);
     if(typeof window.setCurrentUser==="function")window.setCurrentUser(me.user);
     else window.CURRENT_USER=me.user;
     /* Grace window for the Set-Cookie to settle (see notes in
      * markAuthSuccess). */
     try{window.markAuthSuccess&&window.markAuthSuccess()}catch(_){}
-    if(typeof afterAuthEnter==="function")await afterAuthEnter();
-    window.hideGate&&window.hideGate();
     /* The one-time mobile web-session consume route leaves an allow-listed
        target in the query. Open it only after normal authenticated hydration
        so its list data and controls match a first-party browser visit. */
-    openMobileTargetFromUrl();
+    revealAppAndHydrate(openMobileTargetFromUrl);
     return;
   }
   /* /me never resolved with a user — surface a visible error and
    * leave the user on the existing app shell so they can retry,
    * rather than yanking them to the sign-in form. */
+  await i18nSettled();
   window.showGate&&window.showGate();
   window.showAuthSignin&&window.showAuthSignin();
   try{showToast("Couldn't reach the server. Check your connection and retry.",5000)}catch(_){}

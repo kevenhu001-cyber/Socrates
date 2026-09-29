@@ -416,6 +416,11 @@ async function loadSharedExamSession(session) {
   });
   var examView = document.getElementById("examView");
   if (examView) examView.classList.remove("hidden");
+  /* exam.js is lazy — the shared view's Close button uses the delegated
+     data-exam-command listener, so kick off the module load now. */
+  if (typeof window.__loadExamModule === "function") {
+    try { window.__loadExamModule(); } catch (_) {}
+  }
   var sharedExamTitle = (exam.submitted ? "Exam Results: " : "") + (exam.topic || session.topic || "");
   var titleEl = document.getElementById("examViewTitle");
   if (titleEl) titleEl.textContent = sharedExamTitle;

@@ -38,7 +38,6 @@ import { seedSyncedMessages } from './persistence.js';
 import { toggleChatTopBarEls, toggleShareBtn } from '../ui/share.js';
 import { updateSendBtn } from '../ui/topicSetup.js';
 import { clearComposer } from '../react/composer-input/controller.ts';
-import { paintQuestionCard, prepareExamView, renderExamNav, renderExamResults, syncExamNav } from '../exam.js';
 import { updateChatStats } from '../chat/stats.js';
 import { updateKB } from '../ui/knowledgePanel.js';
 
@@ -80,7 +79,26 @@ function _clearActiveTemplate() {
   try { if (typeof window !== 'undefined' && typeof window.clearActiveTemplate === 'function') window.clearActiveTemplate(); } catch (_) {}
 }
 
+/* exam.js is lazy-loaded (see windowExports.__loadExamModule). The exam
+   view only needs it when an exam session is actually restored, so the
+   module resolves here on first use and is cached for
+   paintRestoredQuestionCard below. */
+var _examMod = null;
+async function _ensureExamModule() {
+  if (_examMod) return _examMod;
+  if (typeof window !== 'undefined' && typeof window.__loadExamModule === 'function') {
+    _examMod = await window.__loadExamModule();
+  } else {
+    _examMod = await import('../exam.js');
+    try { _examMod.mountExamListeners(); } catch (_) {}
+  }
+  return _examMod;
+}
+
 export async function loadExamSession(s){
+  var _ex = await _ensureExamModule();
+  var prepareExamView=_ex.prepareExamView, renderExamNav=_ex.renderExamNav,
+      renderExamResults=_ex.renderExamResults, syncExamNav=_ex.syncExamNav;
   if(typeof prepareExamView==="function"){
     try{prepareExamView()}catch(_){}
   }else{
@@ -160,8 +178,8 @@ export async function loadExamSession(s){
  * Wraps paintQuestionCard and adds the "selected" / "value" overrides. */
 export function paintRestoredQuestionCard(idx,q){
   var ph=document.getElementById("examQ"+idx);
-  if(!ph)return;
-  paintQuestionCard(idx,q,ph);
+  if(!ph||!_examMod)return;
+  _examMod.paintQuestionCard(idx,q,ph);
   var saved=stateStore.read("examAnswers")&&stateStore.read("examAnswers")[idx];
   if(q.type==="multiple-choice"&&q.opts&&saved!==undefined){
     var btns=ph.querySelectorAll(".exam-q-opt");

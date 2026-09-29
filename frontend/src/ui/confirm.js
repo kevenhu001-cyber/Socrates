@@ -12,6 +12,28 @@
 
 var _confirmResolve = null;
 var _state = { open: false, title: "", msg: "", danger: false };
+var _bridgePromise = null;
+
+/* The React ConfirmDialog mounts lazily at boot. If a showConfirm()
+   lands before that mount has installed the bridge, the publish would
+   be swallowed and the returned Promise would never resolve — the
+   dialog simply never appears. Self-install the bridge in that case so
+   the snapshot is waiting for the component when it does render. */
+function _ensureConfirmBridge() {
+  if (typeof window !== "undefined" && window.__socratesConfirmBridge) {
+    return Promise.resolve(window.__socratesConfirmBridge);
+  }
+  if (!_bridgePromise) {
+    _bridgePromise = import("../react/confirm/confirm.bridge.ts").then(function (m) {
+      return m.installConfirmBridge();
+    }).catch(function (err) {
+      _bridgePromise = null;
+      console.error("[confirm] bridge install failed", err);
+      return null;
+    });
+  }
+  return _bridgePromise;
+}
 
 function _publishConfirmState() {
   try {
@@ -23,7 +45,9 @@ function _publishConfirmState() {
         msg: _state.msg,
         danger: _state.danger,
       });
+      return;
     }
+    _ensureConfirmBridge().then(function () { _publishConfirmState(); });
   } catch (_) { /* swallow */ }
 }
 

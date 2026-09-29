@@ -25,7 +25,6 @@ import { SidebarHeader } from '../../sidebar-chrome/SidebarHeader';
 import { SidebarFooter } from '../../sidebar-chrome/SidebarFooter';
 import { mountSessionList } from '../../session-list';
 import { mountMessageList } from '../../message-list';
-import { RichComposer } from '../../composer-input';
 import { WorkflowLayer } from '../../extensions/WorkflowLayer';
 import { installThinkingPanelBridge, mountThinkingPanel } from '../../thinking-panel';
 import { getLegacyActions, i18n } from '../../legacy/gateway';
@@ -175,17 +174,26 @@ export function mountRegistryList(): MountSpec[] {
        Recents list stays empty. */
     { hostId: 'recentsList', label: 'session-list',
       mount: () => mountSessionList() },
-    /* 6. Global React roots — composer, message list, workflow layer, thinking panel */
+    /* 6. Global React roots — composer, message list, workflow layer, thinking panel.
+       P_perf-composer-lazy — RichComposer pulls the whole tiptap/prosemirror
+       editor chain (vendor-editor, ~460 KB). Mount it via dynamic import so
+       that chunk leaves the first-paint preload graph; the shell's composer
+       area keeps its reserved height until the component mounts moments
+       after reveal. */
     { hostId: 'topicComposerRoot', label: 'rich-composer', mount: (host) => {
-      createRoot(host).render(<ErrorBoundary><RichComposer surface="topic"
-        placeholder={i18n('topic.inputPlaceholder', 'What would you like to explore?')}
-        onSubmit={() => legacyComposer.startSession()} /></ErrorBoundary>);
+      void import('../../composer-input').then(({ RichComposer }) => {
+        createRoot(host).render(<ErrorBoundary><RichComposer surface="topic"
+          placeholder={i18n('topic.inputPlaceholder', 'What would you like to explore?')}
+          onSubmit={() => legacyComposer.startSession()} /></ErrorBoundary>);
+      });
     } },
     { hostId: 'chatComposerRoot', label: 'rich-composer', mount: (host) => {
-      createRoot(host).render(<ErrorBoundary><RichComposer surface="chat"
-        placeholder={i18n('chat.inputPlaceholder', 'Send a message')}
-        onSubmit={() => legacyComposer.submitChatMessage()}
-        onEscape={() => legacyComposer.stopChatResponse()} /></ErrorBoundary>);
+      void import('../../composer-input').then(({ RichComposer }) => {
+        createRoot(host).render(<ErrorBoundary><RichComposer surface="chat"
+          placeholder={i18n('chat.inputPlaceholder', 'Send a message')}
+          onSubmit={() => legacyComposer.submitChatMessage()}
+          onEscape={() => legacyComposer.stopChatResponse()} /></ErrorBoundary>);
+      });
     } },
     { hostId: 'workflowLayerReactRoot', label: 'workflow-layer',
       ensureHost: ensureWorkflowHost,
