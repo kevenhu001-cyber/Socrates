@@ -126,13 +126,32 @@
 4. **数据零改造** ✅ — 全程读 `state.kbNodes`，无后端改动。
 5. **可访问性** ✅ — `role="img"` + `aria-label` + 三段式文本视图保留为降级路径。
 
-**待补**：路线图原定的 `native-visualization.spec.mjs` e2e 覆盖**尚未添加**，是目前最该补的欠账。
+**e2e 覆盖**：原路线图写的 `native-visualization.spec.mjs` 实际并不存在，但覆盖并非真缺——分两层：
 
-### P1.3 Agent 分屏视图 —— ❌ 未开始（本阶段唯一剩余项）
+- `e2e/kb-graph.spec.mjs`（5 例，既有）直接调 `renderKnowledgeBoundaryFile({immediate:true})`，覆盖节点数、配色、半径、active、点击开面板。
+- `e2e/knowledge-panel.spec.mjs`（5 例，2026-09-30 补）走 `updateKB()` **真实入口** + tutor 模式 + 侧栏知识页签，覆盖委托契约、中文文案、状态枚举不外泄、`{n}` 插值、历史形状、键盘可达。
 
-**现状**：Agent 模式内联渲染于 `#msgList`（`chat/agentStream.js` `beginAgentTextStream`），工具卡片（`ui/toolCards.js`）与运行时（`chat/toolRuntime.js`）嵌在消息气泡内，**无独立分屏**。
+这一层是必需的：既有 spec 绕过了 `updateKB` 与模式/页签装配，因此下面三个用户可见缺陷它一条都抓不到（已于 2026-09-30 修复，见 `fix/knowledge-panel-i18n-and-history`）：
 
-改造要点：
+1. 详情面板整块硬编码英文（zh 是默认语言）
+2. `internalized` / `fuzzy` / `blank` 原始枚举直接回显进 DOM
+3. 历史栏读 `h.from` / `h.to`，而写入方产出的形状是 `{date, at, summary, counts}`，渲染成 `2026-09-20 ? → ?`
+
+附带发现：`updateKB()` 委托渲染后又用线性列表覆盖一遍 `#kbContent`。**这不会让图谱消失**（委托走 rAF 合并，晚于同步写入并把图谱画回来，实测回退后照常显示），真实代价是每次 `updateKB` 多一次整面板 DOM 重建，而它每轮对话被调 5-10 次。
+
+### P1.3 Agent 分屏视图 —— ❌ 未开始（2026-09-30 重估：建议降级）
+
+**现状**：Agent 模式内联渲染于 `#msgList`（`chat/agentStream.js` `beginAgentTextStream`），工具卡片（`ui/toolCards.js`，1100 行）与运行时（`chat/toolRuntime.js`）嵌在消息气泡内，**无独立分屏**。
+
+**重估结论：建议降级，不作为下一项。** 理由：
+
+1. **回归风险与收益不匹配。** 要动的是一个已实现、已被 8 条 e2e 覆盖的面（`agent-steps` / `tool-cards` / `tool-card-lifecycle` / `tool-output-lifecycle` / `tool-run-group` / `tool-order` / `tool-status-visual` / `composer-tool-visual`），5-7 天的重构换来的是"长 agent 运行更好读"。
+2. **收益场景偏向编码工作流。** 分屏对齐的是 Claude / Cursor 的用法——多工具长链条、文件与 shell 输出刷屏。那是通用 agent 的痛点，不是"把教得会作为第一目标的 AI 学习伙伴"的核心教学场景。
+3. **同一轮里更有价值的产出已经出现。** 2026-09-30 的两次修复（A4 编辑静默丢数据、知识面板 + 错题本本地化）都落在四大护城河上，且都是既有代码里长期存在的用户可见缺陷。
+
+**建议**：等教学主链路（苏格拉底教学 / 知识图谱 / 错题本 / 诊断评估）没有已知缺陷时再开；届时先补一个"agent 运行可读性"的真实用户反馈作为立项依据，而不是照本节改造要点直接开工。
+
+原改造要点保留备查：
 
 1. **左右分屏布局**：左侧对话区域，右侧工具面板。
 2. **右侧工具 Tab**：文件 / Shell / Web 三类 Tab，复用现有工具卡片渲染（`toolCards.js` `TOOL_META`：Read/Bash/web_search/code_interpreter/render_visualization 等）与 `toolRuntime.js` 的生命周期（`tool_use` → `tool_progress` → `tool_result`，含 `/api/executions/<id>/stream` 执行流）。
@@ -197,21 +216,31 @@
 | P0.1 | 编辑/重生成边界审计报告 + bug 票 | 2-3 天 | ✅ 完成（A4 离线重试队列未做） | 手动回归 + `frontend/e2e/chat-send.spec.mjs` |
 | P0.2 | 会话内 Ctrl-F 查找 | 约 1 天 | ✅ 完成 | `frontend/e2e/find-in-session.spec.mjs` |
 | P1.1 | 教育化分支（`branchedFrom` + 多角度重讲） | 3-5 天 | ✅ 完成 | 手动辅导场景验证 |
-| P1.2 | 力导向知识图谱 | 5-7 天 | ✅ 完成（e2e 欠账） | ⚠️ `native-visualization.spec.mjs` 尚未添加 |
-| P1.3 | Agent 分屏视图 | 5-7 天 | ❌ 未开始 | 扩展 `tool-cards.spec.mjs` |
+| P1.2 | 力导向知识图谱 | 5-7 天 | ✅ 完成（e2e 已补 2026-09-30） | `kb-graph.spec.mjs` 5 例 + `knowledge-panel.spec.mjs` 5 例 |
+| P1.3 | Agent 分屏视图 | 5-7 天 | ❌ 未开始（建议降级，见上节） | 扩展 `tool-cards.spec.mjs` |
 | P2.1 | 微交互 + 无障碍（U-L1~L5） | 持续 | 部分完成 | 无障碍审计通过 |
-| P2.2 | 国际化收尾（U-M6） | 持续 | 持续 | 语言切换无残留英文 |
+| P2.2 | 国际化收尾（U-M6） | 持续 | 进行中（知识面板 / 错题本已收口） | 语言切换无残留英文 |
 | P2.3 | Pyodide 沙箱（可选） | 待评估 | 待评估 | 视决策 |
 
 ---
 
-## 执行顺序建议（2026-09-29 更新）
+## 执行顺序建议（2026-09-30 更新）
 
-已完成：P0.1 ✅ → P0.2 ✅ → P1.1 ✅ → P1.2 ✅。
+已完成：P0.1 ✅ → P0.2 ✅ → P1.1 ✅ → P1.2 ✅（含 e2e）→ P1.3 建议降级。
 
-**下一项按此顺序：**
+**2026-09-30 的一轮实际产出**（均为既有代码里长期存在、用户可见的缺陷）：
 
-1. **P1.3 Agent 分屏**（5-7 天）—— P1 阶段唯一剩余项，产品差异化价值最高。
-2. **P1.2 补 e2e**（约 0.5 天）—— 给已落地的力导向图谱加 `native-visualization.spec.mjs`，成本极低，堵住"实现了但无回归保护"的缺口。
-3. **消息列表虚拟化**（见 `docs/plans/2026-09-26-session-switch-perf-plan.md`）—— 长会话首访的剩余主体，与 `turnAnchor` 滚动锚定 / 流式高度 / postRender 回填耦合过深，需单独立项。
-4. **P2 持续推进**：每个功能上线时同步补齐无障碍与国际化，避免债务堆积。
+| 缺陷 | 严重性 | 提交 |
+| --- | --- | --- |
+| A4 编辑/删除离线失败后本地裁剪、服务端留旧行；保存只 upsert 不 delete，硬刷新把被丢弃的回答连同新一轮一起带回来 | 信任级数据丢失 | `fix/edit-offline-replay-outbox` |
+| 知识详情面板整块硬编码英文 + 状态枚举外泄 + 历史读不存在的字段 | 旗舰功能本地化 | `fix/knowledge-panel-i18n-and-history` |
+| 错题本整块硬编码英文 + `mistake.type` 枚举外泄 | 护城河功能本地化 | `fix/mistake-book-i18n` |
+
+**下一项建议：**
+
+1. **继续在教学主链路找同类缺陷**，而不是开 P1.3。上一轮的三个缺陷有共同特征——都是"实现了、但从没人断言过用户实际看到的那一层"。错题本的"已攻克/重做"、诊断评估的结果页、诊断出题流程都还没被 e2e 覆盖到文案层。
+2. **消息列表虚拟化**（见 `docs/plans/2026-09-26-session-switch-perf-plan.md`）—— 长会话首访的剩余主体，与 `turnAnchor` 滚动锚定 / 流式高度 / postRender 回填耦合过深，需单独立项。
+3. **F-007 capacitor 定生死** —— 决定删除还是正式支持，避免它继续被 CI 构建却无人使用。
+4. **F-015 / F-004：`site/` 与 `packages/` 补 CI** —— `packages/` 是 `mobile/` 的依赖来源，无 CI 意味着 `@socrates/core` 的破坏性改动会静默通过。
+5. **P1.3 Agent 分屏** —— 降级待议，见 P1.3 节的立项条件。
+6. **P2 持续推进**：每个功能上线时同步补齐无障碍与国际化，避免债务堆积。
