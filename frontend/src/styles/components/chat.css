@@ -121,6 +121,22 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
    guess during that reflow, which the anchor hold cannot correct per-frame.
    Message virtualization (P2) is the mobile-safe version of this win. */
 @media (min-width: 769px) {
+  /* P_cv-remembered-size — `auto` only has a remembered size to fall back on
+     once the browser has recorded one, and it records it only while the
+     row already carries `contain-intrinsic-size: auto`. Declared solely on
+     the size-contained selectors below, a row that just crossed into them
+     (the previous prompt when a new turn is appended, an answer the moment
+     it settles) lays out for one frame at the fallback guess — the send
+     frame visibly collapsed the previous prompt by ~18px and bounced the new
+     prompt down before the glide. Declaring it on every row lets the real
+     height be remembered while the row is still fully rendered. It has no
+     effect until size containment applies. */
+  #appShell #msgList > .msg.assistant {
+    contain-intrinsic-size: auto 240px;
+  }
+  #appShell #msgList > .msg.user {
+    contain-intrinsic-size: auto 90px;
+  }
   #appShell #msgList > .msg.assistant[data-stream-settled="true"] {
     content-visibility: auto;
     contain-intrinsic-size: auto 240px;

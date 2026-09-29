@@ -1,0 +1,141 @@
+/*
+ * polish/press.css — the single press-feedback contract for every control.
+ *
+ * Why the `scale` property and not `transform`:
+ *   Dozens of rules across the older tiers write `transform` on buttons
+ *   (centering translates, hover grows, and the `transform: none !important`
+ *   geometry guards in restore/). The individual `scale` property composes
+ *   with any of them instead of fighting them, so a press never cancels a
+ *   control's own positioning, and a guard that freezes `transform` does not
+ *   silently swallow the press.
+ *
+ * Why animations and not transitions:
+ *   Controls already declare their own `transition` lists (colour, opacity,
+ *   background); adding `scale` to each of them would overwrite those lists.
+ *   A press-in animation while held and a release animation afterwards
+ *   (`.is-press-release`, added by ui/pressFeedback.js) leave every existing
+ *   transition untouched.
+ *
+ * States:
+ *   :active       — native press (mouse, keyboard Space/Enter).
+ *   .is-pressed   — ui/pressFeedback.js keeps this for at least 90ms so a
+ *                   fast mobile tap is visible for more than one frame.
+ *   .is-press-release — the springy release, 180ms.
+ *
+ * Per-control depth: set `--press-scale` (compact icon controls use
+ * --ui-press-scale-sm). Composer controls set it in
+ * parity/composer-unified.css, which owns the composer.
+ *
+ * Reduced motion: the scale rules only exist inside
+ * `prefers-reduced-motion: no-preference`, so no specificity contest can
+ * bring them back; a reduced-motion press is acknowledged by a dim instead.
+ */
+
+:where(button, [role="button"], [role="tab"], [role="menuitem"], [role="option"]) {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Compact icon controls press deeper so they read as the same physical
+   depth as a wide button. */
+:where(
+  .icon-btn,
+  .sidebar-view-btn,
+  .viz-btn,
+  .exec-artifact-btn,
+  .display-prefs-seg,
+  .voice-recording-stop,
+  .voice-recording-cancel,
+  .recent-item-del,
+  .msg-toolbar button,
+  .new-reply-pill
+) {
+  --press-scale: var(--ui-press-scale-sm);
+}
+
+/* Row-style controls: a whole row (or menu item) shrinking reads as a
+   wobble, so these acknowledge the press with a tint only. The #appShell
+   branch outranks the shell's own `#appShell .row.active` / `:hover`
+   backgrounds, so the currently selected row still visibly presses. */
+:is(
+  [role="menuitem"],
+  [role="option"],
+  .press-tint,
+  .recent-item,
+  .composer-tools-item,
+  .tool-run-summary,
+  .sidebar-nav-btn,
+  .sidebar-more-item,
+  .user-row,
+  .kb-node,
+  .mobile-mode-item,
+  .mobile-mode-trigger,
+  .home-quick-action,
+  .model-picker-item,
+  .extensions-item,
+  .thinking-status-clickable
+):not(:disabled, [aria-disabled="true"]):is(:active, .is-pressed),
+#appShell :is(
+  [role="menuitem"],
+  [role="option"],
+  .press-tint,
+  .recent-item,
+  .composer-tools-item,
+  .tool-run-summary,
+  .sidebar-nav-btn,
+  .sidebar-more-item,
+  .user-row,
+  .kb-node,
+  .mobile-mode-item,
+  .mobile-mode-trigger,
+  .home-quick-action,
+  .model-picker-item,
+  .extensions-item,
+  .thinking-status-clickable
+):not(:disabled, [aria-disabled="true"]):is(:active, .is-pressed) {
+  background-color: var(--ui-press-tint);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes ui-press-in {
+    from { scale: 1; }
+    to { scale: var(--press-scale, var(--ui-press-scale)); }
+  }
+  @keyframes ui-press-out {
+    from { scale: var(--press-scale, var(--ui-press-scale)); }
+    to { scale: 1; }
+  }
+
+  :is(button, [role="button"], [role="tab"]):not(
+    :disabled,
+    [aria-disabled="true"],
+    [role="menuitem"],
+    [role="option"],
+    .press-tint,
+    .recent-item,
+    .composer-tools-item,
+    .tool-run-summary,
+    .sidebar-nav-btn,
+    .sidebar-more-item,
+    .user-row,
+    .kb-node,
+    .mobile-mode-item,
+    .mobile-mode-trigger,
+    .home-quick-action,
+    .model-picker-item,
+    .extensions-item,
+    .thinking-status-clickable
+  ):is(:active, .is-pressed) {
+    animation: ui-press-in var(--ui-press-in) var(--ui-ease-out) forwards;
+  }
+
+  :is(button, [role="button"], [role="tab"]).is-press-release:not(:active, .is-pressed) {
+    animation: ui-press-out var(--ui-press-out) var(--ui-ease-spring);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(button, [role="button"], [role="tab"]):not(:disabled, [aria-disabled="true"]):is(:active, .is-pressed) {
+    opacity: 0.8;
+  }
+}

@@ -39,6 +39,7 @@ import { isNativeApp, setupNativeBridge } from './native/capacitorBridge.js';
 import { initSidebarDrag } from './ui/sidebarResize.js';
 import { switchTab, toggleSidebarView, initSidebarChrome } from './ui/sidebarChrome.js';
 import { wireScrollPill } from './ui/scrollPill.js';
+import { wirePressFeedback } from './ui/pressFeedback.js';
 
 
 
@@ -114,6 +115,8 @@ import { loadTonePreset } from './config/tonePresets.js';
    the global scroll + click listeners; main.js's addStreamingMessage
    (and friends) call show/hide as needed. */
 wireScrollPill();
+/* Minimum-visible press state for every control (styles/polish/press.css). */
+wirePressFeedback();
 
 /* ─── DISPLAY PREFERENCES — imported from displayPrefs.js ─── */
 /* (functions defined in src/displayPrefs.js — window exports below) */

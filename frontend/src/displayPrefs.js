@@ -5,6 +5,7 @@
 
 import { applyCustomBg, removeCustomBg, parseHexColor } from './util/colors.js';
 import { DEFAULT_DARK_PICKER, DEFAULT_LIGHT_PICKER } from './ui/tokens.js';
+import { restingRect } from './ui/pressFeedback.js';
 
 /* ── constants ── */
 export const DISPLAY_FONT_STEPS  = [1, 1.125, 1.25, 1.375];
@@ -376,7 +377,7 @@ export function toggleDisplayPrefs() {
   var isOpen = !p.classList.contains("hidden");
   if (isOpen) { p.classList.add("hidden"); return; }
   if (btn) {
-    var r = btn.getBoundingClientRect();
+    var r = restingRect(btn); /* not the mid-press box (ui/pressFeedback.js) */
     var popW = 240;
     var left = r.right - popW;
     if (left < 8) left = 8;

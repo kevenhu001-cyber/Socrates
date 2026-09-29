@@ -32,6 +32,7 @@ import {
 import { renderAttachmentChips } from '../attachments/render.js';
 import { updateSendBtn } from '../ui/topicSetup.js';
 import { scheduleTurnToTopForMessage } from './turnAnchor.ts';
+import { playSendGlyph } from '../ui/sendGlyph.js';
 
 function _t(key, fallback) {
   try {
@@ -144,6 +145,15 @@ export async function submitChatMessage(textOverride,opts){
      a resolved chunk resolves in a microtask. */
   async function precreateChatTurn() {
     if (_appMode() !== "chat" || _deepResearchOn()) return;
+    /* P_supersede-live — addStreamingMessage publishes the new controller
+       as turnState.activeChatCtl, so by the time askChatTurn runs its
+       "abort the previous in-flight stream" step the previous controller
+       is no longer reachable and a still-streaming answer keeps growing
+       above the new prompt, pushing it down the screen. Capture it first
+       and retire it once the new turn owns the slot (abort() is a no-op
+       for a finished controller; an empty one becomes the invisible
+       P_supersede-stable stub the new anchor glides past). */
+    var supersededCtl=turnState.activeChatCtl;
     try {
       precreatedChatCtl=await _addStreamingMessage({
         onRetry:function(){
@@ -152,9 +162,15 @@ export async function submitChatMessage(textOverride,opts){
         },
       });
     } catch (_) { precreatedChatCtl=null; }
+    if(supersededCtl&&supersededCtl!==precreatedChatCtl&&typeof supersededCtl.abort==="function"){
+      try{supersededCtl.abort()}catch(_){/* already torn down */}
+    }
   }
   var userClientId=null;
   if(isComposerSubmit){
+    /* The arrow lifts off and the stop glyph settles in while the prompt
+       is committed (ui/sendGlyph.js). */
+    playSendGlyph();
     userClientId=addMessage("user",text,null,null,immediateAttList);
     await precreateChatTurn();
     clearComposer("chat");updateSendBtn();

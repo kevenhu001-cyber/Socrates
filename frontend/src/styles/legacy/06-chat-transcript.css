@@ -191,7 +191,7 @@
   white-space:nowrap;
 }
 .top-mode-tabs .app-mode-toggle:hover{color:hsl(var(--text-100))}
-.top-mode-tabs .app-mode-toggle:active{transform:scale(.97)}
+
 .top-mode-tabs .app-mode-toggle.active{
   color:hsl(var(--text-100));
   background:hsl(var(--bg-100));

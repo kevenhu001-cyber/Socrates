@@ -107,7 +107,6 @@
 #appShell .voice-recording-stop:hover,
 #appShell .voice-recording-stop:focus-visible { background: hsl(0 0% 24%); color: #fff; }
 #appShell .voice-recording-stop:focus-visible { outline: 2px solid hsl(0 0% 0% / .58); outline-offset: 2px; }
-#appShell .voice-recording-stop:active { transform: scale(.92); }
 #appShell .voice-recording-stop svg { display: block; width: 16px; height: 16px; }
 
 /* Neutral recording surface in dark mode: stay black with an inverted

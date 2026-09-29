@@ -15,8 +15,9 @@
 import { stateStore } from '../state/store.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { updateMessageSnapshot } from '../ui/messageSnapshot.js';
-import { velocityScrollTo } from '../ui/scroll.js';
-import { suppressScrollPositionIntent } from '../ui/scrollPill.js';
+import { velocityScrollTo, cancelScrollAnimation } from '../ui/scroll.js';
+import { suppressScrollPositionIntent, hideNewReplyPill } from '../ui/scrollPill.js';
+import { planSendGlide } from '../ui/motion.js';
 import { getKeyboardLift } from '../ui/keyboard/index.ts';
 import type { MessageEntry } from '../ui/messageActions.ts';
 
@@ -190,6 +191,11 @@ interface TurnViewportHold {
 
 let viewportHold: TurnViewportHold | null = null;
 
+/* Which send currently owns `data-turn-anchor-settling`. A previous turn's
+   bounded settle loop can finish after the next send has already taken the
+   transcript; only the owning send may clear the flag. */
+let settlingOwner = 0;
+
 /**
  * Release the active send-time viewport hold, if any. Safe to repeat, and
  * called whenever a newer turn, a reader gesture, or a finished answer takes
@@ -352,6 +358,22 @@ export function scheduleActiveTurnToTop(
      task that mounts this one, so the two never fight over scrollTop. */
   releaseTurnViewportHold();
   let anchorMotionStarted = false;
+  /* P_send-ownership — take the transcript over in the same task as the
+     submit, not when the reserve finally paints a few frames later. In that
+     gap a still-running content-follow (the previous answer streaming, a
+     late image, a bottom glide from the keyboard) could otherwise write
+     scrollTop and start the send glide from a moving position — the jolt
+     before the glide. Retries keep their exact, instant restore. */
+  const settlingSeq = ++settlingOwner;
+  const clearSettling = (): void => {
+    if (settlingSeq !== settlingOwner || !list || !list.dataset) return;
+    delete list.dataset.turnAnchorSettling;
+  };
+  if (list && !retryViewport) {
+    if (list.dataset) list.dataset.turnAnchorSettling = 'true';
+    cancelScrollAnimation(list);
+    try { hideNewReplyPill(); } catch (_) { /* pill not mounted */ }
+  }
   const messages = stateStore.read('messages') as MessageEntry[];
   let message: MessageEntry | null =
     msgIdx >= 0 && messages[msgIdx] ? messages[msgIdx] : null;
@@ -566,6 +588,8 @@ export function scheduleActiveTurnToTop(
     /* `offsetTop` is layout-based (transforms ignored), so the entrance
        animation on the fresh user bubble cannot bias the target. Retries
        keep the rect-based measurement for their exact visible restore. */
+    const promptTarget = (): number =>
+      Math.max(0, (anchor as HTMLElement).offsetTop - targetOffset);
     const target = retryViewport
       ? Math.max(0, list.scrollTop + (anchorRect.top - listRect.top) - targetOffset)
       : Math.max(0, (anchor as HTMLElement).offsetTop - targetOffset);
@@ -629,12 +653,12 @@ export function scheduleActiveTurnToTop(
        prompt settles at the target offset instead of teleporting there.
        `turnAnchorSettling` tells the content-follow observer to leave the
        scroll alone until the motion and its convergence window finish. */
-    list.dataset.turnAnchorSettling = 'true';
+    if (settlingSeq === settlingOwner) list.dataset.turnAnchorSettling = 'true';
     const releaseAnchor = () => {
       const holdClientId = clientId || (assistant && assistant.dataset ? assistant.dataset.clientId || '' : '');
       const done = () => {
         retireReservesAboveViewport();
-        if (list.dataset) delete list.dataset.turnAnchorSettling;
+        clearSettling();
       };
       if (stateStore.read('_userScrolledAway')) { done(); return; }
       stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
@@ -646,8 +670,15 @@ export function scheduleActiveTurnToTop(
       startTurnViewportHold(list, row, holdClientId, targetOffset);
       settleNormalTurnAnchor(targetOffset, Date.now() + 420, done);
     };
-    velocityScrollTo(list, target, { smooth: true }).then(() => {
-      if (!list.isConnected) return;
+    /* P_send-glide — whatever the reader was looking at (the bottom, one
+       screen up, or the first message of a long session), glide the whole
+       way: planSendGlide grows the duration with the log of the distance so
+       a far send is a visible, continuous motion rather than a blur. The
+       target is re-read every frame, so a reserve repaint or React commit
+       during the glide bends the motion instead of snapping at the end. */
+    const plan = planSendGlide(Math.abs(target - list.scrollTop), list.clientHeight);
+    velocityScrollTo(list, target, { smooth: true, target: promptTarget, plan }).then(() => {
+      if (!list.isConnected) { clearSettling(); return; }
       releaseAnchor();
     });
   }
@@ -665,7 +696,13 @@ export function scheduleActiveTurnToTop(
     const ready = retryViewport
       ? Boolean(row())
       : Boolean(row()) && anchorReservePainted();
-    if (ready || ++positionWaits > 30) return;
+    if (ready || ++positionWaits > 30) {
+      /* Gave up without starting the glide (the row never mounted, the
+         prompt was removed): hand scrolling back to content-follow instead
+         of leaving it blocked. */
+      if (!anchorMotionStarted && !retryViewport) clearSettling();
+      return;
+    }
     requestAnimationFrame(positionSoon);
   }
   if (retryViewport && row()) position();

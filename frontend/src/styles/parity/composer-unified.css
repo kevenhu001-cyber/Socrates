@@ -312,10 +312,55 @@
   font-weight: 500;
 }
 #appShell .composer-shell .composer-primary-btn:hover { opacity: 0.8; }
-#appShell .composer-shell .composer-primary-btn:active { transform: scale(0.94); }
+/* Press depth for the compact composer controls; the press itself is the
+   shared contract in polish/press.css (scale property, not transform). */
+#appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn) {
+  --press-scale: var(--ui-press-scale-sm);
+}
 #appShell .composer-shell .composer-primary-btn:disabled { opacity: 0.3; cursor: default; }
 #appShell .composer-shell .composer-primary-btn > span { display: grid; place-items: center; }
 #appShell .composer-shell .composer-primary-btn svg { display: block; width: 20px; height: 20px; }
+
+/* Sent moment (ui/sendGlyph.js): the arrow lifts off while the stop glyph
+   settles in, stacked in one grid cell so the button box never changes. */
+#appShell .composer-shell .composer-primary-btn .send-glyph {
+  grid-area: 1 / 1;
+  display: grid;
+  place-items: center;
+}
+#appShell .composer-shell .composer-primary-btn .send-glyph-out {
+  animation: send-glyph-out 160ms var(--ui-ease-out) forwards;
+}
+#appShell .composer-shell .composer-primary-btn .send-glyph-in {
+  opacity: 0;
+  animation: send-glyph-in 180ms var(--ui-ease-spring) 60ms forwards;
+}
+#appShell .composer-shell .composer-primary-btn .icon-stop {
+  animation: send-glyph-settle 140ms var(--ui-ease-out);
+}
+#appShell .composer-shell .composer-primary-btn .send-glyph-in .icon-stop { animation: none; }
+@keyframes send-glyph-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-6px); }
+}
+@keyframes send-glyph-in {
+  from { opacity: 0; transform: scale(0.7); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes send-glyph-settle {
+  from { opacity: 0.4; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #appShell .composer-shell .composer-primary-btn .send-glyph-out {
+    animation-name: send-glyph-fade-out;
+  }
+  #appShell .composer-shell .composer-primary-btn .send-glyph-in {
+    animation-name: send-glyph-fade-in;
+  }
+  @keyframes send-glyph-fade-out { from { opacity: 1; } to { opacity: 0; } }
+  @keyframes send-glyph-fade-in { from { opacity: 0; } to { opacity: 1; } }
+}
 
 #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn, .effort-trigger):focus-visible {
   outline: 2px solid var(--ui-focus-ring, currentColor);

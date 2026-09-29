@@ -26,6 +26,8 @@
    `?react=1`; legacy mode never sees a subscriber so the helper is a
    cheap no-op. */
 
+import { restingRect } from "../ui/pressFeedback.js";
+
 var POPOVER_ID = "moreNavPopover";
 var BTN_ID = "navMore";
 
@@ -62,7 +64,7 @@ var GAP = 8;
 
 function _position(p, btn) {
   if (!btn) return;
-  var r = btn.getBoundingClientRect();
+  var r = restingRect(btn); /* not the mid-press box (ui/pressFeedback.js) */
   /* Width matches the popover's CSS (220px). Read it from computed
      style if available; fall back to the CSS-defined minimum. */
   var popW = 220;

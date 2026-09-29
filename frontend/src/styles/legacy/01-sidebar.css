@@ -35,7 +35,7 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 .sidebar-logo em{font-style:italic;color:hsl(var(--accent-000))}
 .icon-btn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;color:hsl(var(--text-300));transition:color .18s var(--ease-out),background .18s var(--ease-out),transform .14s var(--ease-out);cursor:pointer;border:none;background:transparent}
 .icon-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
-.icon-btn:active{transform:scale(.92)}
+
 .icon-btn svg{width:16px;height:16px;transition:transform .2s cubic-bezier(.4,0,.2,1)}
 /* Compose (new chat) button — the sidebar's primary action anchor.
    Gets a subtle amber tint on hover so it reads as the accent action,
@@ -54,7 +54,7 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 .sidebar-view-btn{position:relative;flex-shrink:0;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:0;background:transparent;color:hsl(var(--text-400));cursor:pointer;transition:color .18s var(--ease-out),background .18s var(--ease-out),transform .14s var(--ease-out)}
 .sidebar-view-btn svg{width:17px;height:17px}
 .sidebar-view-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
-.sidebar-view-btn:active{transform:scale(.92)}
+
 .sidebar-view-btn.active{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
 .sidebar-view-btn .tab-badge{position:absolute;top:-3px;right:-3px;margin:0}
 .knowledge-panel{flex:1;overflow-y:auto;padding:12px 8px;display:flex;flex-direction:column;gap:6px;opacity:1;transition:opacity .15s ease}
@@ -62,7 +62,7 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 .kb-section-title{font-size:calc(10px * var(--sidebar-font-scale));font-weight:500;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 2px}
 .kb-node{display:flex;align-items:center;gap:10px;padding:7px 12px;border-radius:8px;font-size:calc(12px * var(--sidebar-font-scale));transition:background .18s var(--ease-out),transform .14s var(--ease-out);cursor:pointer}
 .kb-node:hover{background:hsl(var(--bg-300))}
-.kb-node:active{transform:scale(.99)}
+
 .kb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .kb-dot.internalized{background:hsl(145 50% 50%)}.kb-dot.fuzzy{background:hsl(43 77% 62%)}.kb-dot.blank{background:hsl(var(--text-500))}
 .kb-name{flex:1;color:hsl(var(--text-200))}.kb-count{font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-500))}

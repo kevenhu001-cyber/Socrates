@@ -202,7 +202,7 @@
 .exec-artifact:hover .exec-artifact-actions,.exec-artifact:focus-within .exec-artifact-actions{opacity:1}
 .exec-artifact-btn{width:24px;height:24px;border:0;border-radius:5px;background:hsl(var(--bg-200)/0.92);color:hsl(var(--text-400));cursor:pointer;display:inline-flex;align-items:center;justify-content:center;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);transition:color .18s cubic-bezier(.4,0,.2,1),background .18s cubic-bezier(.4,0,.2,1),transform .12s ease}
 .exec-artifact-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300)/0.95);transform:translateY(-1px)}
-.exec-artifact-btn:active{transform:scale(.9)}
+
 .exec-artifact-btn svg{width:12px;height:12px;display:block}
 .exec-artifact-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 10px 5px;font-size:calc(10.5px * var(--app-font-scale,1));color:hsl(var(--text-500));border-top:0.5px solid hsl(var(--border-300)/0.18);background:hsl(var(--bg-200)/0.4)}
 .exec-artifact-meta-name{font-family:var(--font-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}

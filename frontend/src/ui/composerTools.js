@@ -1,4 +1,5 @@
 import { openPromptTemplatesModal } from '../ui/promptTemplates.js';
+import { restingRect } from './pressFeedback.js';
 /* Compact, ChatGPT-style action menu for both composers.  Keeping the menu
  * in a body portal prevents the rounded input surface from clipping it. */
 
@@ -63,7 +64,9 @@ function position(el, trigger) {
   el.style.removeProperty('bottom');
   el.style.removeProperty('left');
   el.style.removeProperty('right');
-  var r = trigger.getBoundingClientRect();
+  /* The trigger is usually still mid-press (the click, then this module's
+     rAF re-position after React commits): anchor to its resting box. */
+  var r = restingRect(trigger);
   var viewport = window.visualViewport;
   var viewportTop = viewport ? Math.max(0, viewport.offsetTop || 0) : 0;
   var viewportBottom = viewport ? (viewportTop + viewport.height) : window.innerHeight;

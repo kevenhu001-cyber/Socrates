@@ -1,5 +1,6 @@
 import { createImmutableBridge, useBridge } from '../../lib/bridge/index.ts';
 import { getStoredReasoningEffort, getStoredResponseSpeed } from '../../config/chatPreferences.ts';
+import { restingRect } from '../../ui/pressFeedback.js';
 import type { ChatConfigurationBridge, ChatConfigurationSnapshot, ChatProviderOption } from './types';
 
 declare global {
@@ -47,7 +48,8 @@ export function openChatConfiguration(trigger?: HTMLElement | null): void {
   }
   const config = window.apiConfig || {};
   returnFocus = trigger || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
-  const rect = trigger && trigger.getBoundingClientRect ? trigger.getBoundingClientRect() : null;
+  /* The trigger is still mid-press when its click opens the popover. */
+  const rect = trigger ? restingRect(trigger) : null;
   openTrigger = trigger || null;
   openTrigger?.setAttribute('aria-expanded', 'true');
   installChatConfigurationBridge().publish({

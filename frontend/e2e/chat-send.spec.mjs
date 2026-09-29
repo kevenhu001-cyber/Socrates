@@ -597,3 +597,54 @@ test('the live turn keeps exactly one row while deltas arrive', async ({ page })
     'Partial reply, and the answer keeps growing from here.',
   );
 });
+
+test('send button plays the sent glyph, then settles on the stop state', async ({ page }) => {
+  await mockAuthedApp(page);
+  /* Hold the stream open so the button stays in its stop state. */
+  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 2_500));
+    await route.fulfill({ status: 200, contentType: 'text/event-stream', body: 'data: [DONE]\n\n' });
+  });
+  const pageErrors = [];
+  page.on('pageerror', (e) => pageErrors.push(String(e)));
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.evaluate(() => {
+    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '33333333-3333-4333-8333-333333333333' });
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    /* Record every class flip on the button and whether the glyph pair was
+       rendered while it lasted. */
+    const btn = document.getElementById('sendBtn');
+    window.__glyphLog = [];
+    new MutationObserver(() => {
+      window.__glyphLog.push({
+        t: performance.now(),
+        sending: btn.classList.contains('is-sending'),
+      });
+    }).observe(btn, { attributes: true, attributeFilter: ['class'] });
+    window.__glyphPairSeen = false;
+    new MutationObserver(() => {
+      if (btn.querySelector('.send-glyph-out') && btn.querySelector('.send-glyph-in')) window.__glyphPairSeen = true;
+    }).observe(btn, { childList: true, subtree: true });
+  });
+
+  const chatInput = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  await chatInput.fill('Play the sent glyph');
+  await page.locator('#sendBtn').click();
+
+  await expect.poll(() => page.evaluate(() => window.__glyphLog.some((e) => e.sending))).toBe(true);
+  await expect.poll(() => page.evaluate(() => document.getElementById('sendBtn').classList.contains('is-sending'))).toBe(false);
+  const { log, pairSeen } = await page.evaluate(() => ({ log: window.__glyphLog, pairSeen: window.__glyphPairSeen }));
+  const on = log.find((e) => e.sending);
+  const off = log.find((e) => e.t > on.t && !e.sending);
+  expect(off, JSON.stringify(log)).toBeTruthy();
+  expect(off.t - on.t).toBeGreaterThanOrEqual(150);
+  expect(pairSeen, 'departing arrow + arriving stop glyph rendered together').toBe(true);
+
+  /* After the beat, the button shows the stop glyph while the turn streams. */
+  await expect(page.locator('#sendBtn[data-stop="1"] #sendBtnContent .icon-stop')).toHaveCount(1);
+  await expect(page.locator('#sendBtnContent .send-glyph')).toHaveCount(0);
+  expect(pageErrors).toEqual([]);
+});

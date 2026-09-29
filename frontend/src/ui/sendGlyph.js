@@ -1,0 +1,29 @@
+// src/ui/sendGlyph.js — the send button's "sent" moment.
+//
+// A composer submit flips #sendBtn through arrow → (voice, draft cleared)
+// → stop within a frame or two. Without a transition the icon just
+// flickers. While `.is-sending` is on the button, the React SendButton
+// (react/lib/boot/indicatorComponents.tsx) renders the departing arrow
+// and the arriving stop glyph together; CSS in parity/composer-unified.css
+// animates them. Only transform/opacity move, so the button's measured
+// box never changes.
+
+export const SEND_GLYPH_MS = 220;
+
+let timer = 0;
+
+export function playSendGlyph(doc) {
+  const d = doc || (typeof document !== 'undefined' ? document : null);
+  const btn = d && d.getElementById ? d.getElementById('sendBtn') : null;
+  if (!btn) return;
+  if (timer) clearTimeout(timer);
+  /* Restart cleanly on a rapid second send: drop the class for one
+     style recalculation so the CSS animations run again. */
+  btn.classList.remove('is-sending');
+  void btn.offsetWidth;
+  btn.classList.add('is-sending');
+  timer = setTimeout(function () {
+    timer = 0;
+    btn.classList.remove('is-sending');
+  }, SEND_GLYPH_MS);
+}

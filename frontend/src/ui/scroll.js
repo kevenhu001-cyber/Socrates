@@ -90,6 +90,13 @@ function cancelScrollAnimationFor(list){
   activeScrollAnims.delete(list);
 }
 
+/* Public cancellation hook: the send path (chat/turnAnchor.ts) takes the
+   transcript over the moment a turn is submitted, so any content-follow or
+   bottom glide still in flight must stop before the send glide starts. */
+export function cancelScrollAnimation(list){
+  cancelScrollAnimationFor(list);
+}
+
 /* `easeOutQuint` lives in ui/motion.js alongside the velocity planner
    so the per-frame interpolation matches the curve used by scroll
    consumers. */
@@ -123,13 +130,33 @@ export function velocityScrollTo(list, targetTop, opts){
   if(!list)return Promise.resolve();
   const o = opts || {};
   const startTop = list.scrollTop;
-  const distance = targetTop - startTop;
+  /* `opts.target` — a live target. Re-read every frame (and clamped to the
+     reachable range) so a layout that settles mid-glide (a React commit, a
+     reserve repaint, a late image) bends the motion toward the real
+     destination instead of landing on a stale one and snapping. */
+  const liveTarget = typeof o.target === 'function' ? o.target : null;
+  const resolveTarget = liveTarget
+    ? function(){
+        let next = Number(liveTarget());
+        if (!isFinite(next)) next = Number(targetTop);
+        if (!isFinite(next)) next = list.scrollTop;
+        const max = Math.max(0, (list.scrollHeight || 0) - (list.clientHeight || 0));
+        return Math.max(0, Math.min(max, next));
+      }
+    : function(){ return targetTop; };
+  const initialTarget = resolveTarget();
+  const distance = initialTarget - startTop;
   if (!isFinite(distance) || distance === 0) {
     return Promise.resolve();
   }
   const absDistance = Math.abs(distance);
   const reduced = prefersReducedMotion();
-  const snap = reduced || o.smooth === false || absDistance <= 24 || typeof requestAnimationFrame !== 'function';
+  /* `opts.plan` — a caller-planned motion ({duration, ease, snap}), e.g.
+     ui/motion.js planSendGlide. Without it the velocity planner decides. */
+  const injectedPlan = o.plan && typeof o.plan === 'object' ? o.plan : null;
+  const snap = reduced || o.smooth === false || absDistance <= 24 ||
+    typeof requestAnimationFrame !== 'function' ||
+    !!(injectedPlan && (injectedPlan.snap || !(injectedPlan.duration > 0)));
   const previous = list.dataset.autoScrolling;
   list.dataset.autoScrolling = 'true';
   const settle = function(){
@@ -143,12 +170,14 @@ export function velocityScrollTo(list, targetTop, opts){
   };
   if (snap) {
     cancelActive();
-    list.scrollTop = targetTop;
+    list.scrollTop = liveTarget ? resolveTarget() : targetTop;
     settle();
     return Promise.resolve();
   }
-  const plan = planMotionForUser(absDistance, o.motion);
+  const plan = injectedPlan || planMotionForUser(absDistance, o.motion);
   const duration = plan.duration;
+  const ease = typeof plan.ease === 'function' ? plan.ease : easeOutQuint;
+  const direction = distance > 0 ? 1 : -1;
   cancelActive();
   return new Promise(function(resolve){
     let startedAt = 0;
@@ -195,15 +224,28 @@ export function velocityScrollTo(list, targetTop, opts){
       if (!startedAt) startedAt = now;
       const elapsed = now - startedAt;
       if (elapsed >= duration) {
-        list.scrollTop = targetTop;
+        list.scrollTop = liveTarget ? resolveTarget() : targetTop;
         stop();
         return;
       }
       const t = elapsed / duration;
+      let next;
+      if (liveTarget) {
+        const to = resolveTarget();
+        next = startTop + (to - startTop) * ease(t);
+        /* A target that moves further along the glide must never pull the
+           viewport backwards: hold the last written position until the
+           curve catches up. Only a target that genuinely retreats behind
+           the viewport (content removed above it) moves it back. */
+        if (direction > 0) { next = Math.max(next, lastWrittenTop); if (next > to) next = to; }
+        else { next = Math.min(next, lastWrittenTop); if (next < to) next = to; }
+      } else {
+        next = startTop + distance * ease(t);
+      }
       /* Read the value back after writing: the browser clamps scrollTop to
          the real maximum, so the "last value we wrote" must be the clamped
          position or our own scroll event would look like a foreign write. */
-      list.scrollTop = startTop + distance * easeOutQuint(t);
+      list.scrollTop = next;
       lastWrittenTop = list.scrollTop;
       handle = requestAnimationFrame(tick);
     };
@@ -601,6 +643,11 @@ export function scrollMainToBottom(opts){
   if(!opts.force&&stateStore.read("_userScrolledAway"))return;
   var sc=scrollContainer();
   if(!sc)return;
+  /* A send glide (chat/turnAnchor.ts) owns the transcript while it runs.
+     Thinking pills, tool cards, and search progress call this on every
+     update; starting a bottom glide here would cancel the send glide
+     mid-flight and yank the viewport. */
+  if(!opts.force&&sc.dataset&&sc.dataset.turnAnchorSettling==="true")return;
   /* Centralise the pin decision behind the pure shouldAutoScroll predicate
      (slack = SCROLL_SLACK = 64) so the "auto-scroll only when pinned and the
      reader has not scrolled away" rule is defined once and unit-tested in

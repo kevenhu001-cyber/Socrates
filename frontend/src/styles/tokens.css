@@ -83,6 +83,18 @@
   --ui-ease-standard: ease;
   --ui-overlay-enter-scale: 0.98;
 
+  /* Press feedback (styles/polish/press.css + ui/pressFeedback.js). One
+     press language for every control: a quick press-in and a slightly
+     springy release. Compact icon controls travel further than wide
+     buttons so both read as the same physical depth. */
+  --ui-press-scale: 0.96;
+  --ui-press-scale-sm: 0.92;
+  --ui-press-in: 80ms;
+  --ui-press-out: 180ms;
+  /* Row-style controls (menus, lists) acknowledge a press with a tint
+     instead of shrinking the whole row. */
+  --ui-press-tint: color-mix(in srgb, var(--ui-bg-hover), var(--ui-text-primary) 8%);
+
   /* chatgpt.com type scale: 14px UI chrome, 16px/28px transcript and
      composer, 24px/28px landing greeting. */
   --ui-text-ui: 14px;

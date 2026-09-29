@@ -230,3 +230,62 @@ test('planMotion round-trips: duration is reproducible for the same distance', (
   const b = planMotion(420);
   assert.deepEqual(a, b);
 });
+/* ── planSendGlide ─────────────────────────────────────────────── */
+
+test('planSendGlide snaps sub-perceptual distances and invalid input', async () => {
+  const { planSendGlide } = await import('../src/ui/motion.js');
+  assert.equal(planSendGlide(0, 800).snap, true);
+  assert.equal(planSendGlide(MOTION_SNAP_DISTANCE_PX, 800).snap, true);
+  assert.equal(planSendGlide(NaN, 800).snap, true);
+  assert.equal(planSendGlide(MOTION_SNAP_DISTANCE_PX + 1, 800).snap, false);
+});
+
+test('planSendGlide duration grows monotonically with distance and stays within bounds', async () => {
+  const { planSendGlide, SEND_GLIDE_MIN_MS, SEND_GLIDE_MAX_MS } = await import('../src/ui/motion.js');
+  let prev = 0;
+  for (const d of [30, 100, 400, 800, 1600, 4000, 12000, 40000, 400000]) {
+    const plan = planSendGlide(d, 800);
+    assert.ok(plan.duration >= prev, `duration non-decreasing at ${d}`);
+    assert.ok(plan.duration >= SEND_GLIDE_MIN_MS && plan.duration <= SEND_GLIDE_MAX_MS, `bounded at ${d}`);
+    prev = plan.duration;
+  }
+  assert.equal(planSendGlide(1e9, 800).duration, SEND_GLIDE_MAX_MS);
+});
+
+test('planSendGlide keeps far glides visibly slower than the constant-velocity planner cap', async () => {
+  const { planSendGlide } = await import('../src/ui/motion.js');
+  const far = planSendGlide(20000, 800);
+  assert.ok(far.duration > MOTION_MAX_DURATION_MS, 'a 25-screen send must glide longer than 520ms');
+  /* A negative distance (upward glide) plans like its magnitude. */
+  assert.equal(planSendGlide(-20000, 800).duration, far.duration);
+});
+
+test('planSendGlide chooses ease-out for short hops and ease-in-out for long glides', async () => {
+  const { planSendGlide, SEND_GLIDE_LONG_VIEWPORTS } = await import('../src/ui/motion.js');
+  const short = planSendGlide(800 * SEND_GLIDE_LONG_VIEWPORTS, 800);
+  assert.equal(short.long, false);
+  assert.equal(short.ease, easeOutQuint);
+  const long = planSendGlide(800 * SEND_GLIDE_LONG_VIEWPORTS + 1, 800);
+  assert.equal(long.long, true);
+  assert.equal(long.ease, easeInOutCubic);
+});
+
+test('planSendGlide falls back to a default viewport for invalid heights', async () => {
+  const { planSendGlide } = await import('../src/ui/motion.js');
+  assert.deepEqual(planSendGlide(2000, 0), planSendGlide(2000, 800));
+  assert.deepEqual(planSendGlide(2000, NaN), planSendGlide(2000, 800));
+});
+
+test('planSendGlide snaps under prefers-reduced-motion', async () => {
+  const { planSendGlide } = await import('../src/ui/motion.js');
+  const previous = globalThis.matchMedia;
+  globalThis.matchMedia = (q) => ({ matches: q.includes('reduce'), media: q });
+  try {
+    const plan = planSendGlide(20000, 800);
+    assert.equal(plan.snap, true);
+    assert.equal(plan.duration, 0);
+  } finally {
+    if (previous === undefined) delete globalThis.matchMedia;
+    else globalThis.matchMedia = previous;
+  }
+});

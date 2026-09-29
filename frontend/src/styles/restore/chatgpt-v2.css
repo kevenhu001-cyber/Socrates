@@ -808,9 +808,10 @@ html[data-mode="light"] #appShell {
 }
 
 /* A hover state may tint a control, but it must not change its geometry.
-   Keep transforms available for layout containers and menu open states. */
-:where(button, a, [role="button"]):hover,
-:where(button, a, [role="button"]):active {
+   Keep transforms available for layout containers and menu open states.
+   Press feedback is owned by polish/press.css through the `scale`
+   property, so :active is no longer frozen here. */
+:where(button, a, [role="button"]):hover {
   transform: none !important;
 }
 

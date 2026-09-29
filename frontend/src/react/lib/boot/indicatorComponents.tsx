@@ -16,7 +16,7 @@ const ICON_PROPS = {
 } as const;
 
 function SendArrowIcon() { return <svg viewBox="0 0 24 24" {...ICON_PROPS} strokeWidth="2.5" className="icon-arrow"><path d="M12 19V5M5 12l7-7 7 7" /></svg>; }
-function StopSquareIcon() { return <svg viewBox="0 0 24 24" {...ICON_PROPS} strokeWidth="2"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>; }
+function StopSquareIcon() { return <svg viewBox="0 0 24 24" {...ICON_PROPS} strokeWidth="2" className="icon-stop"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>; }
 /* Voice-input waveform bars — the idle state of the shared primary
    control (the same glyph the static markup ships in #startBtnContent /
    #sendBtnContent). Bars are <line> elements so `… .icon-arrow path`
@@ -48,20 +48,24 @@ function useScrolledAway(): boolean {
    button's `.active` class (canSend = has text or attachments). Observe
    that class so the icon swaps voice ⇄ arrow exactly when the legacy
    contract flips, without duplicating its canSend logic. */
-function useControlActive(id: 'startBtn' | 'sendBtn'): boolean {
+function useControlClass(id: 'startBtn' | 'sendBtn', className: string): boolean {
   const [active, setActive] = useState(
-    () => document.getElementById(id)?.classList.contains('active') ?? false,
+    () => document.getElementById(id)?.classList.contains(className) ?? false,
   );
   useEffect(() => {
     const btn = document.getElementById(id);
     if (!btn) return undefined;
-    const sync = () => setActive(btn.classList.contains('active'));
+    const sync = () => setActive(btn.classList.contains(className));
     const observer = new MutationObserver(sync);
     observer.observe(btn, { attributes: true, attributeFilter: ['class'] });
     sync();
     return () => observer.disconnect();
-  }, [id]);
+  }, [id, className]);
   return active;
+}
+
+function useControlActive(id: 'startBtn' | 'sendBtn'): boolean {
+  return useControlClass(id, 'active');
 }
 
 export function NewReplyPill({ host }: { host?: HTMLElement | null }) {
@@ -90,6 +94,19 @@ export function StartButton() {
 export function SendButton() {
   const streamStatus = useChatStreamStatus();
   const active = useControlActive('sendBtn');
+  /* ui/sendGlyph.js holds `.is-sending` for one short beat after a
+     composer submit: render the departing arrow over the arriving stop
+     glyph so the swap reads as one motion instead of arrow → waveform →
+     stop flicker while the draft clears and the stream starts. */
+  const sending = useControlClass('sendBtn', 'is-sending');
+  if (sending) {
+    return (
+      <>
+        <span className="send-glyph send-glyph-out"><SendArrowIcon /></span>
+        <span className="send-glyph send-glyph-in"><StopSquareIcon /></span>
+      </>
+    );
+  }
   if (streamStatus === 'streaming') return <StopSquareIcon />;
   return active ? <SendArrowIcon /> : <VoiceIcon />;
 }

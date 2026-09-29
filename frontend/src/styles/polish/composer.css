@@ -183,7 +183,6 @@ body #composerToolsMenu .composer-tools-item kbd {
   background: var(--ui-bg-hover);
   color: var(--ui-text-primary);
 }
-#appShell .voice-recording-cancel:active { transform: scale(0.9); }
 #appShell .voice-recording-cancel svg { display: block; width: 15px; height: 15px; }
 
 /* Live dot — solid core + expanding halo ring instead of the offset
@@ -233,7 +232,6 @@ body #composerToolsMenu .composer-tools-item kbd {
 /* Confirm — keep the inverted 36px circle; a slight hover grow instead of
    only a shade change. */
 #appShell .voice-recording-stop:hover { transform: scale(1.05); }
-#appShell .voice-recording-stop:active { transform: scale(0.92); }
 
 @media (prefers-reduced-motion: reduce) {
   #appShell .voice-recording-indicator::after { animation: none; }

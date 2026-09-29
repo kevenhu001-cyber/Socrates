@@ -108,7 +108,7 @@
  .composer-tools-icon{width:30px;height:30px;color:hsl(var(--text-200))}
  .composer-tools-icon svg{width:24px;height:24px}
 .composer-tools-item:hover,.composer-tools-item:focus-visible{color:hsl(var(--text-100))}
-.composer-tools-item:active{transform:scale(.985)}
+
  .composer-tools-item:hover .composer-tools-icon{color:hsl(var(--text-100))}
  .composer-tools-menu .composer-tools-copy{line-height:1.2}
  /* Scrim behind the sheet; ui/composerTools.js toggles the body class.
@@ -172,7 +172,7 @@
 }
 .display-prefs-seg{flex:1 1 0;min-width:0;padding:4px 6px;border-radius:4px;border:0;background:transparent;color:hsl(var(--text-400));font-size:calc(11.5px * var(--app-font-scale, 1));cursor:pointer;transition:color .2s cubic-bezier(.4,0,.2,1),transform .12s ease;font-family:inherit;white-space:nowrap;text-align:center;position:relative;z-index:1}
 .display-prefs-seg:hover{color:hsl(var(--text-200))}
-.display-prefs-seg:active{transform:scale(.94)}
+
 .display-prefs-seg.on{color:hsl(var(--text-100))}
 /* The theme selector has three options and uses a compact active fill;
    its options are updated by syncThemeUI() independently of the font and
@@ -281,7 +281,7 @@ html[data-show-grid="false"] .main-bg{background-image:none}
   pointer-events:auto;
 }
 .new-reply-pill:hover{filter:brightness(1.08);transform:translateY(-2px) scale(1);box-shadow:0 6px 20px -2px hsl(var(--shadow-color,0 0% 0%)/0.32),0 2px 4px hsl(var(--shadow-color,0 0% 0%)/0.14)}
-.new-reply-pill:active{transform:translateY(0) scale(.96)}
+.new-reply-pill:active{transform:translateY(0)}
 .new-reply-pill:focus-visible{outline:2px solid hsl(var(--accent-200));outline-offset:2px}
 /* P_pill-anchor-composer — anchor the new-reply pill to the composer's
    top edge instead of chat-view's top edge. Earlier the pill floated
