@@ -15,6 +15,7 @@ import { apiFetch } from '../util/api.js';
 import { notifyEmbeddedAuthExpired } from '../native/mobileWebSessionBridge.js';
 import { syncCookieConsentPlacement } from '../cookieConsent.js';
 import { stateStore } from '../state/store.js';
+import { drainMessageOutbox } from '../session/mutationOutbox.js';
 import { getChatIdFromURL, getExamIdFromURL, setChatIdInURL, setExamIdInURL } from '../session/store.js';
 
 import { loadUserMemories, renderUserFooter } from '../ui/profile.js';
@@ -219,6 +220,15 @@ export async function afterAuthEnter(){
   if(typeof window.clearPerUserClientState==="function"){
     try{window.clearPerUserClientState()}catch {/* ignore */}
   }
+  /* P0.1 A4 — replay any message edit/delete queued while the previous
+     session was offline. The `online` listener cannot cover this: signing
+     in on an already-connected machine never fires `online`, so without
+     this the queue would sit until the next reload. Ownership is enforced
+     server-side, so a queue left behind by a different user on this
+     browser is rejected and dropped rather than applied. */
+  try{ drainMessageOutbox().then(function(n){
+    if(n>0){try{if(typeof window.saveCurrentSession==="function")window.saveCurrentSession()}catch(_){}}
+  }); }catch(_){ /* replay is best effort */ }
   /* Run the localStorage -> server migration once if there's anything to bring. */
   try{
     var localApi=localStorage.getItem("socrates-api");
