@@ -343,6 +343,15 @@ window.hideUsageTip = function () { if (_usageImport) return _usageImport.then(f
 import { esc } from './render/helpers.js';
 window.esc = esc;
 
+/* ─── ui/knowledgePanel.js ───
+   updateKB is already a cross-module app entry point (session/loader.js,
+   chat/sessionBootstrap.js and chat/sendPipeline.js all call it). Exposed
+   here so the knowledge-map surface can be driven directly from e2e —
+   the panel previously clobbered its own delegated renderer, which no
+   existing spec could see because nothing called updateKB from a test. */
+import { updateKB } from './ui/knowledgePanel.js';
+window.updateKB = updateKB;
+
 /* ─── exam.js — Generate Exam extension ───
    exam.js (~57KB) is lazy: it only downloads when the exam view is
    actually opened (sidebar exam nav / openExamModal / exam session

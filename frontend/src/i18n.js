@@ -745,6 +745,25 @@ var I18N={
     "profile.disclaimerTutor":"Socrates asks questions to help you think. It does not judge your answers.",
     "tag.placeholder":"Add a tag and press Enter",
     "kb.placeholderNote":"Write anything you want to remember about this sub-topic...",
+    /* P_kb-i18n — the knowledge-boundary detail panel (ui/knowledgeDetail.js)
+     * was the last surface still hardcoding English. zh is the default
+     * locale, so every label below was showing up untranslated in the
+     * product's flagship knowledge feature. The status enum is localized
+     * too: it arrives from the model as raw internalized/fuzzy/blank and
+     * was being echoed straight into the DOM. */
+    "kb.questions":"{n} Qs",
+    "kb.status.internalized":"Mastered",
+    "kb.status.fuzzy":"Fuzzy",
+    "kb.status.blank":"Not explored",
+    "kb.go":"→ Go",
+    "kb.goTitle":"Jump the chat to this knowledge point",
+    "kb.confidence":"Confidence",
+    "kb.confidenceSet":"Set confidence to {n}",
+    "kb.systemNote":"System note",
+    "kb.noSystemNote":"No system note yet.",
+    "kb.yourNote":"Your note",
+    "kb.history":"Snapshot history",
+    "kb.noHistory":"No snapshots yet.",
     "prompt.placeholderTitle":"e.g. Code review",
     "prompt.placeholderShortcut":"/my-template",
     "prompt.placeholderDesc":"One-line summary",
