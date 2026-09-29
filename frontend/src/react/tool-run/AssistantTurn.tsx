@@ -17,6 +17,12 @@
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { createSettledSplitter } from '../../render/streaming.js';
+import {
+  applyTailFade,
+  computeFadeSegments,
+  recordReveal,
+  type RevealEntry,
+} from '../../render/tailReveal.js';
 import { getLegacyActions } from '../legacy/gateway.js';
 import {
   buildTurnLayout,
@@ -44,24 +50,16 @@ export interface AssistantTurnProps {
   live?: boolean;
 }
 
-/** The caret the legacy painter kept outside the re-rendered tail.
- *  P_smooth-stream — the cursor's animation follows the playback clock:
- *  - playing / draining : a breathing dot (upstream is feeding or we are
- *    flushing the buffer)
- *  - starved            : upstream stalled with an empty buffer — three dots
- *    light up in sequence to say "still connected, waiting for more"
+/** The typing frontier. P_smooth-stream — one soft dot for every playback
+ *  state; only its pulse speed follows the clock:
+ *  - playing / draining : steady pulse (upstream is feeding / we are flushing)
+ *  - starved            : slower pulse — upstream stalled with an empty
+ *                         buffer; "still connected", never fabricated text
  *  The 300ms finish fade is a CSS concern on the settled bubble
- *  (P_finish-stream-boundary), so a `done`/settled turn drops the cursor. */
+ *  (P_finish-stream-boundary). Styles: polish/transcript.css. */
 function StreamCursor({ state, settling }: { state?: string; settling?: boolean }) {
+  const stateClass = state === 'starved' ? ' is-starved' : '';
   const settleClass = settling ? ' is-settling' : '';
-  if (state === 'starved') {
-    return (
-      <span className={`stream-cursor is-starved${settleClass}`} aria-hidden="true">
-        <span className="stream-dots"><i /><i /><i /></span>
-      </span>
-    );
-  }
-  const stateClass = state === 'draining' ? ' is-draining' : ' is-playing';
   return <span className={`stream-cursor${stateClass}${settleClass}`} aria-hidden="true">▍</span>;
 }
 
@@ -231,55 +229,15 @@ interface LiveTextSegmentProps {
  * result), so no commit/effect dance is needed.
  */
 /**
- * P_smooth-stream tail reveal — wrap the freshly-revealed trailing characters
- * of the live tail in per-character spans so they can fade/rise/de-blur in.
+ * P_smooth-stream tail reveal — freshly revealed text fades in (opacity only).
  *
- * The tail HTML is produced by the markdown renderer and set via
- * dangerouslySetInnerHTML, so we decorate at the DOM level AFTER the commit,
- * touching only the LAST descendant text node (ordinary prose — a code fence,
- * formula, or table is never the growing tail because the splitter keeps
- * unclosed constructs whole). We wrap at most `TAIL_WINDOW` trailing glyphs;
- * everything before that stays a plain text node, so KaTeX/code nodes and the
- * already-settled prose are never rewrapped and never flicker. Because React
- * rebuilds this node's innerHTML each frame, re-wrapping the trailing window
- * every frame is correct: only the newest glyphs carry a running animation,
- * and the reduced-motion guard is a pure CSS concern (see the stylesheet).
+ * The tail HTML is rebuilt by React whenever it grows, so the fade is anchored
+ * to reveal TIME rather than to DOM nodes (render/tailReveal.ts): after each
+ * commit we record the visible length, then wrap the ranges still inside the
+ * fade window in inline spans with a negative animation-delay. A rebuilt span
+ * resumes its fade where it was instead of restarting — no shimmer — and only
+ * the last text node is touched, never code, formulas, or settled prose.
  */
-const TAIL_WINDOW = 18;
-
-function lastTextNode(root: Node): Text | null {
-  let last: Text | null = null;
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  let node: Node | null = walker.nextNode();
-  while (node) {
-    if (node.textContent && node.textContent.trim().length > 0) last = node as Text;
-    node = walker.nextNode();
-  }
-  return last;
-}
-
-function decorateTailReveal(root: HTMLElement): void {
-  const textNode = lastTextNode(root);
-  if (!textNode || !textNode.parentNode || textNode.parentNode === root) return;
-  const value = textNode.textContent || '';
-  if (value.trim().length === 0) return;
-  const splitAt = Math.max(0, value.length - TAIL_WINDOW);
-  const head = value.slice(0, splitAt);
-  const tail = value.slice(splitAt);
-  const frag = document.createDocumentFragment();
-  if (head) frag.appendChild(document.createTextNode(head));
-  for (let i = 0; i < tail.length; i++) {
-    const span = document.createElement('span');
-    span.className = 'stream-char';
-    /* Later glyphs start slightly later so the window reads as a left-to-right
-       reveal rather than a single block fade. Small, capped delay. */
-    span.style.animationDelay = `${Math.min(i, TAIL_WINDOW) * 12}ms`;
-    span.textContent = tail[i];
-    frag.appendChild(span);
-  }
-  textNode.parentNode.replaceChild(frag, textNode);
-}
-
 function SettledBlock({ html }: { html: { __html: string } }) {
   const ref = useRef<HTMLDivElement | null>(null);
   useLayoutEffect(() => {
@@ -292,7 +250,7 @@ function SettledBlock({ html }: { html: { __html: string } }) {
   return (
     <div
       ref={ref}
-      className="tool-run-prose is-settled stream-block-in"
+      className="tool-run-prose is-settled"
       dangerouslySetInnerHTML={html}
     />
   );
@@ -303,17 +261,24 @@ function LiveTextSegment({ text, settled, tail }: LiveTextSegmentProps) {
   if (!splitterRef.current) splitterRef.current = createSettledSplitter();
   const split = splitterRef.current.push(text);
   const liveRef = useRef<HTMLDivElement | null>(null);
+  const revealRef = useRef<RevealEntry[]>([]);
   const tailBox = tail(split.tail);
   useLayoutEffect(() => {
     const root = liveRef.current;
     if (!root) return;
+    /* Measure BEFORE wrapping: spans do not change textContent, but the
+       history must describe what the renderer painted. */
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    revealRef.current = recordReveal(revealRef.current, (root.textContent || '').length, now);
     /* prefers-reduced-motion: leave the DOM plain (the CSS also disables the
-       animation, but skipping the wrap avoids the per-frame churn entirely). */
+       animation, but skipping the wrap avoids the per-commit churn entirely). */
     try {
       if (typeof window !== 'undefined' && window.matchMedia
         && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     } catch (_) { /* matchMedia unavailable */ }
-    try { decorateTailReveal(root); } catch (_) { /* decoration is best-effort */ }
+    try {
+      applyTailFade(root, computeFadeSegments(revealRef.current, now));
+    } catch (_) { /* decoration is best-effort */ }
   }, [tailBox]);
   return (
     <>

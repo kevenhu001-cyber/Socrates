@@ -47,9 +47,12 @@ export interface PlaybackConfig {
 }
 
 export const DEFAULT_PLAYBACK_CONFIG: PlaybackConfig = {
-  baseCps: 45,
-  maxCps: 260,
-  catchUpPending: 220,
+  /* Tuned toward chatgpt.com's reading cadence: a shallow buffer still reads
+     briskly (~90 cps ≈ 3–4 CJK words per frame-second), and a deep burst
+     catches up within ~1–2 s instead of trailing the network by several. */
+  baseCps: 90,
+  maxCps: 600,
+  catchUpPending: 400,
   drainBoost: 2.2,
   starveAfterMs: 320,
 };

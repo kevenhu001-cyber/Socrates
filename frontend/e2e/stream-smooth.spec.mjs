@@ -7,9 +7,10 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
  * playback. These specs assert the reader-facing consequences:
  *   1. a single upstream BURST is revealed gradually (visible < arrived for a
  *      while), never dumped in one frame;
- *   2. an upstream STALL with an empty buffer shows the starved cursor (three
- *      dots) rather than freezing or fabricating content;
- *   3. the kill switch restores the old "paint everything" behaviour.
+ *   2. an upstream STALL with an empty buffer shows the starved cursor (one
+ *      slowed dot) rather than freezing or fabricating content;
+ *   3. the kill switch restores the old "paint everything" behaviour;
+ *   4. new text fades in (opacity only), and a settled block never re-animates.
  */
 
 async function startStream(page, { deltas, gapMs = 400, smooth = true, holdOpenMs = 0 }) {
@@ -93,26 +94,77 @@ test('a large burst is revealed gradually, not dumped in one frame', async ({ pa
   ), { timeout: 12000 }).toBeGreaterThanOrEqual(big.length - 2);
 });
 
-test('per-character reveal wraps only the trailing glyphs of the live tail', async ({ page }) => {
-  await startStream(page, { deltas: ['Streaming characters reveal one by one at the tail.'], gapMs: 200, holdOpenMs: 4000 });
+test('freshly revealed text fades in with opacity only, as inline runs', async ({ page }) => {
+  await startStream(page, {
+    deltas: ['Streaming text fades in softly at the tail, the way chatgpt.com reveals an answer while it is written.'],
+    gapMs: 200,
+    holdOpenMs: 4000,
+  });
   const live = page.locator('.msg.assistant').last().locator('.tool-run-prose.is-live');
   await expect(live).toBeVisible();
-  // While the tail is still being revealed, stream-char spans exist.
+  // While the tail is still being revealed, fade runs exist …
   await expect.poll(() => page.evaluate(
-    () => document.querySelectorAll('.tool-run-prose.is-live .stream-char').length,
+    () => document.querySelectorAll('.tool-run-prose.is-live .stream-fade').length,
   ), { timeout: 4000 }).toBeGreaterThan(0);
+  // … and they never move or blur the glyphs, nor break the line box.
+  const style = await page.evaluate(() => {
+    const el = document.querySelector('.tool-run-prose.is-live .stream-fade');
+    if (!el) return null;
+    const cs = getComputedStyle(el);
+    return { display: cs.display, transform: cs.transform, filter: cs.filter, delay: el.style.animationDelay };
+  });
+  expect(style).not.toBeNull();
+  expect(style.display).toBe('inline');
+  expect(style.transform).toBe('none');
+  expect(style.filter).toBe('none');
+  // Anchored to reveal time: a rebuilt tail resumes the fade mid-way.
+  expect(style.delay).toMatch(/^-?\d+(\.\d+)?ms$/);
+  // The old per-glyph wrapper is gone.
+  expect(await page.locator('.stream-char').count()).toBe(0);
 });
 
-test('an upstream stall with an empty buffer shows the starved cursor', async ({ page }) => {
+test('a paragraph that settles mid-stream does not replay an entrance animation', async ({ page }) => {
+  await startStream(page, {
+    deltas: ['First paragraph settles here.\n\n', 'Second paragraph keeps growing while the first stays put.'],
+    gapMs: 250,
+    holdOpenMs: 4000,
+  });
+  const settled = page.locator('.msg.assistant').last().locator('.tool-run-prose.is-settled').first();
+  await expect(settled).toBeVisible({ timeout: 6000 });
+  // Sample the settled block over several frames: no running animation and
+  // full opacity on every frame — the reader never sees it fade in again.
+  const samples = await page.evaluate(async () => {
+    const out = [];
+    for (let i = 0; i < 12; i++) {
+      const el = document.querySelector('.msg.assistant:last-of-type .tool-run-prose.is-settled');
+      if (el) {
+        const child = el.firstElementChild || el;
+        out.push({
+          anims: el.getAnimations({ subtree: true }).length,
+          opacity: Number(getComputedStyle(child).opacity),
+        });
+      }
+      await new Promise((r) => requestAnimationFrame(r));
+    }
+    return out;
+  });
+  expect(samples.length).toBeGreaterThan(0);
+  for (const s of samples) {
+    expect(s.anims).toBe(0);
+    expect(s.opacity).toBe(1);
+  }
+});
+
+test('an upstream stall with an empty buffer keeps a single slowed cursor dot', async ({ page }) => {
   // A short first delta drains quickly; then the stream holds open with no
   // further deltas, so the playback buffer empties and the clock goes starved.
   await startStream(page, { deltas: ['Hi'], gapMs: 200, holdOpenMs: 5000 });
   const bubble = page.locator('.msg.assistant').last();
   await expect(bubble.locator('.tool-run-prose.is-live')).toContainText('Hi');
-  // The starved cursor renders three dots.
-  await expect.poll(() => page.evaluate(
-    () => document.querySelectorAll('.stream-cursor.is-starved .stream-dots i').length,
-  ), { timeout: 4000 }).toBe(3);
+  await expect(bubble.locator('.stream-cursor.is-starved')).toHaveCount(1, { timeout: 4000 });
+  // One dot, no three-dot ellipsis.
+  expect(await bubble.locator('.stream-cursor .stream-dots').count()).toBe(0);
+  expect(await bubble.locator('.stream-cursor').count()).toBe(1);
 });
 
 test('kill switch paints the whole arrived text immediately', async ({ page }) => {

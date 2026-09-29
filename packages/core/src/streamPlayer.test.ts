@@ -73,7 +73,7 @@ describe('createPlaybackClock — burst is smoothed', () => {
       frames += 1;
     }
     assert.equal(clock.playedLen(), 1000);
-    // 1000 chars at maxCps 260 => ~3.8s => ~240 frames. Well above a few.
+    // 1000 chars at maxCps 600 => ~1.7s => ~100 frames. Well above a few.
     assert.ok(frames > 30, `expected gradual playback, got ${frames} frames`);
   });
 });
