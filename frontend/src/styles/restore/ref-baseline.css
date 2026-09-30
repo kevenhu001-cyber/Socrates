@@ -314,67 +314,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    hexes (!important). The reference baseline is a light UI, so each surface
    is re-pointed at the theme tokens here. Dark mode is untouched.
    -------------------------------------------------------------------------- */
-[data-mode="light"] #appShell .plugin-directory {
-  color: var(--cg-text) !important;
-}
-
-[data-mode="light"] #appShell .plugin-directory-heading h2 {
-  color: var(--cg-text) !important;
-}
-
-[data-mode="light"] #appShell .plugin-directory-desc {
-  color: var(--cg-text-muted) !important;
-}
-
-[data-mode="light"] #appShell .plugin-directory-search {
-  border-color: var(--cg-border-strong) !important;
-  background: var(--cg-surface) !important;
-}
-
-[data-mode="light"] #appShell .plugin-directory-search input {
-  color: var(--cg-text) !important;
-}
-
-[data-mode="light"] #appShell .plugin-directory-tabs button {
-  color: var(--cg-text-muted) !important;
-}
-
-[data-mode="light"] #appShell .plugin-directory-tabs button.active {
-  color: var(--cg-text) !important;
-  background: var(--cg-surface-hover) !important;
-}
-
-[data-mode="light"] #appShell .plugin-directory-section > h3 {
-  color: var(--cg-text) !important;
-}
-
-[data-mode="light"] #appShell .plugin-directory-row:hover {
-  background: var(--cg-surface-hover) !important;
-}
-
-[data-mode="light"] #appShell .plugin-directory-row .workspace-row-copy strong {
-  color: var(--cg-text) !important;
-}
-
-[data-mode="light"] #appShell .plugin-directory-row .workspace-row-copy span {
-  color: var(--cg-text-muted) !important;
-}
-
-[data-mode="light"] #appShell .plugin-directory-icon-action {
-  color: var(--cg-text-secondary) !important;
-}
-
-[data-mode="light"] #appShell .plugin-directory-icon-action:hover {
-  background: var(--cg-surface-hover) !important;
-}
-
-[data-mode="light"] #appShell .plugin-installed-label {
-  color: var(--cg-text-secondary) !important;
-}
-
-[data-mode="light"] #appShell .plugin-directory-note {
-  color: var(--cg-text-muted) !important;
-}
 
 [data-mode="light"] #appShell .workspace-page-head h1 {
   color: var(--cg-text) !important;
@@ -461,177 +400,20 @@ body.workspace-active #appShell .main-page {
 /* --------------------------------------------------------------------------
    9. Live OpenConnector Plugins Grid Refinement (2-column layout matching reference)
    -------------------------------------------------------------------------- */
-#appShell .plugin-directory-list {
-  display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 12px !important;
-}
-
-#appShell .plugin-directory-row {
-  display: flex !important;
-  align-items: center !important;
-  padding: 12px 14px !important;
-  border-radius: 12px !important;
-  border: 1px solid var(--cg-border) !important;
-  background: var(--cg-surface) !important;
-  transition: background 0.15s ease, border-color 0.15s ease !important;
-}
-
-[data-mode="light"] #appShell .plugin-directory-row {
-  background: #ffffff !important;
-  border-color: rgba(0, 0, 0, 0.08) !important;
-}
-
-[data-mode="light"] #appShell .plugin-directory-row:hover {
-  background: #f9f9f9 !important;
-  border-color: rgba(0, 0, 0, 0.15) !important;
-}
-
-#appShell .plugin-directory-row .connector-icon {
-  width: 38px !important;
-  height: 38px !important;
-  border-radius: 10px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  margin-right: 12px !important;
-  flex-shrink: 0 !important;
-}
-
-#appShell .plugin-directory-row .workspace-row-copy {
-  flex: 1 !important;
-  min-width: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 2px !important;
-}
-
-#appShell .plugin-directory-row .workspace-row-copy strong {
-  font-size: 14px !important;
-  font-weight: 600 !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-}
-
-#appShell .plugin-directory-row .workspace-row-copy span {
-  font-size: 13px !important;
-  color: var(--cg-text-muted) !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-}
-
-#appShell .plugin-directory-row-action {
-  margin-left: 8px !important;
-  flex-shrink: 0 !important;
-}
-
-#appShell .plugin-directory-icon-action {
-  width: 32px !important;
-  height: 32px !important;
-  border-radius: 50% !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border: 1px solid var(--cg-border) !important;
-  background: var(--cg-surface-raised) !important;
-  cursor: pointer !important;
-  color: var(--cg-text-secondary) !important;
-  transition: background 0.15s ease, color 0.15s ease !important;
-}
-
-#appShell .plugin-directory-icon-action:hover {
-  background: var(--cg-surface-hover) !important;
-  color: var(--cg-text) !important;
-}
 
 @media (max-width: 768px) {
-  #appShell .plugin-directory-list {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-#appShell .plugin-directory-tools {
-  display: flex !important;
-  align-items: center !important;
-  gap: 8px !important;
 }
 
 /* P_directory-tools — the header tools row holds only the search field
    (each directory row carries its own connect button, so there is no
    header-level add action). Let the search fill the row so the input
    renders at a usable width instead of collapsing to the icon. */
-#appShell .plugin-directory-tools .plugin-directory-search {
-  flex: 1 1 240px !important;
-  width: auto !important;
-  min-width: 0 !important;
-}
-#appShell .plugin-directory-tools .plugin-directory-search input {
-  flex: 1 1 auto !important;
-  width: 100% !important;
-}
 @media (max-width: 900px) {
-  #appShell .plugin-directory-tools {
-    width: 100% !important;
-  }
-}
-
-#appShell .plugin-directory-add-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1px solid var(--cg-border);
-  background: var(--cg-surface-raised);
-  color: var(--cg-text);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.15s ease;
-  flex-shrink: 0;
-}
-
-[data-mode="light"] #appShell .plugin-directory-add-btn {
-  background: #ffffff;
-  border-color: rgba(0, 0, 0, 0.1);
-}
-
-#appShell .plugin-directory-add-btn:hover {
-  background: var(--cg-surface-hover);
 }
 
 /* P_directory-mono-tiles — single-color brand marks need a light tile to
    read on the dark directory (same pattern as the legacy connector tile
    list in styles.css). Multi-color marks keep the raised dark tile. */
-#appShell .plugin-directory-row .connector-icon.connector-telegram,
-#appShell .plugin-directory-row .connector-icon.connector-slack,
-#appShell .plugin-directory-row .connector-icon.connector-twilio,
-#appShell .plugin-directory-row .connector-icon.connector-circle,
-#appShell .plugin-directory-row .connector-icon.connector-cloudflare,
-#appShell .plugin-directory-row .connector-icon.connector-airtable,
-#appShell .plugin-directory-row .connector-icon.connector-trello,
-#appShell .plugin-directory-row .connector-icon.connector-asana,
-#appShell .plugin-directory-row .connector-icon.connector-jira,
-#appShell .plugin-directory-row .connector-icon.connector-linear,
-#appShell .plugin-directory-row .connector-icon.connector-clickup,
-#appShell .plugin-directory-row .connector-icon.connector-one_password,
-#appShell .plugin-directory-row .connector-icon.connector-zendesk,
-#appShell .plugin-directory-row .connector-icon.connector-intercom,
-#appShell .plugin-directory-row .connector-icon.connector-agora,
-#appShell .plugin-directory-row .connector-icon.connector-aircall,
-#appShell .plugin-directory-row .connector-icon.connector-bluesky,
-#appShell .plugin-directory-row .connector-icon.connector-discourse,
-#appShell .plugin-directory-row .connector-icon.connector-deepgram,
-#appShell .plugin-directory-row .connector-icon.connector-airbrake,
-#appShell .plugin-directory-row .connector-icon.connector-whatsapp,
-#appShell .plugin-directory-row .connector-icon.connector-baidu_maps,
-#appShell .plugin-directory-row .connector-icon.connector-zhihu,
-#appShell .plugin-directory-row .connector-icon.connector-mcdonalds_cn {
-  background: #fff !important;
-  color: #111 !important;
-  border-color: rgb(0 0 0 / 8%) !important;
-}
 
 /* P_directory-oc-tiles — plugin ids for OpenConnector apps are namespaced
    (`oc_<service>`, e.g. `oc_telegram` → class `connector-oc_telegram`), so
@@ -639,43 +421,6 @@ body.workspace-active #appShell .main-page {
    treatment for the namespaced classes, plus dark single-color marks that
    would vanish on the default dark tile (openai, elevenlabs, pipedrive,
    encharge, deck_co, emaillistverify). */
-#appShell .plugin-directory-row .connector-icon.connector-oc_telegram,
-#appShell .plugin-directory-row .connector-icon.connector-oc_slack,
-#appShell .plugin-directory-row .connector-icon.connector-oc_twilio,
-#appShell .plugin-directory-row .connector-icon.connector-oc_circle,
-#appShell .plugin-directory-row .connector-icon.connector-oc_cloudflare_email_routing,
-#appShell .plugin-directory-row .connector-icon.connector-oc_airtable,
-#appShell .plugin-directory-row .connector-icon.connector-oc_trello,
-#appShell .plugin-directory-row .connector-icon.connector-oc_asana,
-#appShell .plugin-directory-row .connector-icon.connector-oc_jira,
-#appShell .plugin-directory-row .connector-icon.connector-oc_linear,
-#appShell .plugin-directory-row .connector-icon.connector-oc_clickup,
-#appShell .plugin-directory-row .connector-icon.connector-oc_one_password,
-#appShell .plugin-directory-row .connector-icon.connector-oc_zendesk,
-#appShell .plugin-directory-row .connector-icon.connector-oc_intercom,
-#appShell .plugin-directory-row .connector-icon.connector-oc_agora,
-#appShell .plugin-directory-row .connector-icon.connector-oc_aircall,
-#appShell .plugin-directory-row .connector-icon.connector-oc_bluesky,
-#appShell .plugin-directory-row .connector-icon.connector-oc_discourse,
-#appShell .plugin-directory-row .connector-icon.connector-oc_deepgram,
-#appShell .plugin-directory-row .connector-icon.connector-oc_airbrake,
-#appShell .plugin-directory-row .connector-icon.connector-oc_whatsapp,
-#appShell .plugin-directory-row .connector-icon.connector-oc_baidu_maps,
-#appShell .plugin-directory-row .connector-icon.connector-oc_zhihu,
-#appShell .plugin-directory-row .connector-icon.connector-oc_mcdonalds_cn,
-#appShell .plugin-directory-row .connector-icon.connector-oc_openai,
-#appShell .plugin-directory-row .connector-icon.connector-oc_elevenlabs,
-#appShell .plugin-directory-row .connector-icon.connector-oc_pipedrive,
-#appShell .plugin-directory-row .connector-icon.connector-oc_encharge,
-#appShell .plugin-directory-row .connector-icon.connector-oc_deck_co,
-#appShell .plugin-directory-row .connector-icon.connector-oc_emaillistverify,
-#appShell .plugin-directory-row .connector-icon.connector-oc_agenty,
-#appShell .plugin-directory-row .connector-icon.connector-oc_cursor,
-#appShell .plugin-directory-row .connector-icon.connector-oc_deepgram {
-  background: #fff !important;
-  color: #111 !important;
-  border-color: rgb(0 0 0 / 8%) !important;
-}
 
 /* --------------------------------------------------------------------------
    10. Final desktop parity pass.
@@ -844,137 +589,7 @@ body.workspace-active #appShell .main-page {
     font-size: 13px !important;
   }
 
-  #appShell .plugin-directory-add-btn {
-    width: 36px !important;
-    height: 36px !important;
-  }
-
   /* OpenConnector directory, restyled as the reference's two-column list. */
-  #appShell .plugin-directory {
-    width: 100% !important;
-    max-width: 768px !important;
-    margin: 0 auto !important;
-    padding: 0 !important;
-  }
-
-  #appShell .plugin-installed-strip {
-    margin: 0 0 20px !important;
-  }
-
-  #appShell .plugin-installed-label {
-    margin: 0 0 10px !important;
-    font-size: 13px !important;
-    font-weight: 400 !important;
-  }
-
-  #appShell .plugin-installed-icons {
-    gap: 8px !important;
-  }
-
-  #appShell .plugin-installed-icons .workspace-row-icon {
-    width: 40px !important;
-    height: 40px !important;
-    border-radius: 12px !important;
-  }
-
-  #appShell .plugin-installed-icons .workspace-row-icon svg {
-    width: 24px !important;
-    height: 24px !important;
-  }
-
-  #appShell .plugin-directory-tabs {
-    align-self: flex-start !important;
-    width: auto !important;
-    margin: 0 0 10px !important;
-    padding: 2px !important;
-    border: 0 !important;
-    background: transparent !important;
-  }
-
-  #appShell .plugin-directory-tabs button {
-    height: 30px !important;
-    padding: 0 15px !important;
-    border-radius: 999px !important;
-    font-size: 14px !important;
-  }
-
-  #appShell .plugin-directory-body {
-    display: block !important;
-  }
-
-  #appShell .plugin-directory-section {
-    margin: 0 !important;
-  }
-
-  #appShell .plugin-directory-section + .plugin-directory-section {
-    margin-top: 28px !important;
-  }
-
-  #appShell .plugin-directory-section > h3 {
-    margin: 0 0 4px !important;
-    font-size: 13px !important;
-    font-weight: 400 !important;
-    line-height: 20px !important;
-  }
-
-  #appShell .plugin-directory-list {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    column-gap: 38px !important;
-    row-gap: 0 !important;
-  }
-
-  #appShell .plugins-list .connector-row.plugin-directory-row {
-    min-height: 68px !important;
-    padding: 8px 0 !important;
-    border: 0 !important;
-    border-radius: 8px !important;
-    background: transparent !important;
-    box-shadow: none !important;
-  }
-
-  #appShell .plugin-directory-row:hover {
-    background: var(--cg-surface-hover) !important;
-  }
-
-  #appShell .plugin-directory-row .workspace-row-icon {
-    width: 40px !important;
-    height: 40px !important;
-    margin-right: 14px !important;
-    border-radius: 12px !important;
-  }
-
-  #appShell .plugin-directory-row .workspace-row-icon svg {
-    width: 24px !important;
-    height: 24px !important;
-  }
-
-  #appShell .plugin-directory-row .workspace-row-copy strong {
-    font-size: 14px !important;
-    font-weight: 400 !important;
-    line-height: 20px !important;
-  }
-
-  #appShell .plugin-directory-row .workspace-row-copy span {
-    font-size: 13px !important;
-    line-height: 18px !important;
-  }
-
-  #appShell .plugin-directory-icon-action {
-    width: 28px !important;
-    height: 28px !important;
-    border: 0 !important;
-    background: transparent !important;
-  }
-
-  #appShell .plugin-directory-icon-action:hover {
-    background: var(--cg-surface-hover) !important;
-  }
-
-  #appShell .plugin-directory-icon-action svg {
-    width: 18px !important;
-    height: 18px !important;
-  }
 
   /* Scheduled directory: reference header rhythm and 60px task composer. */
   #appShell .scheduled-directory {
@@ -1203,10 +818,6 @@ body.workspace-active #appShell .main-page {
 
   #appShell .scheduled-recommendation-add {
     visibility: hidden !important;
-  }
-
-  #appShell .plugin-directory-row {
-    min-height: 72px !important;
   }
 }
 
@@ -1534,7 +1145,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 #appShell .scheduled-composer-plus svg,
 #appShell .scheduled-composer-submit svg,
 #appShell .workspace-create-button svg,
-#appShell .plugin-directory-icon-action svg,
 #appShell .workspace-row-action svg {
   width: 22px;
   height: 22px;
@@ -1557,11 +1167,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   color: var(--cg-text-secondary) !important;
   font-size: 16px;
   line-height: 1.55;
-}
-
-#appShell .plugin-installed-strip {
-  border: 0 !important;
-  background: transparent !important;
 }
 
 #appShell .plugin-installed-icons .connector-icon,
@@ -1609,7 +1214,9 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   line-height: 1.45 !important;
 }
 
-#appShell .plugin-directory-icon-action,
+/* Icon-only square action used by the projects / scheduled surfaces. The
+   plugin directory is deliberately absent: its action is a labelled
+   "Connect" / "Manage" pill owned by features/surfaces.css. */
 #appShell .workspace-icon-action,
 #appShell .scheduled-recommendation-add {
   width: 32px !important;
@@ -1622,10 +1229,8 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   background: transparent !important;
 }
 
-#appShell .plugin-directory-icon-action:hover,
 #appShell .workspace-icon-action:hover,
 #appShell .scheduled-recommendation-add:hover,
-#appShell .plugin-directory-icon-action:focus-visible,
 #appShell .workspace-icon-action:focus-visible,
 #appShell .scheduled-recommendation-add:focus-visible {
   color: var(--cg-text) !important;
@@ -1720,16 +1325,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 /* The reference directory is a quiet list on the black canvas; only the
    connector tile carries a raised surface.  Keep rows borderless at rest and
    reserve the soft fill for pointer/keyboard feedback. */
-#appShell .plugin-directory-row {
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-}
-
-#appShell .plugin-directory-row:hover,
-#appShell .plugin-directory-row:focus-within {
-  background: var(--cg-surface-hover) !important;
-}
 
 /* The transcript composer keeps a slightly smaller idle pill than the
    landing composer.  These scoped compatibility rules preserve the existing
@@ -1740,15 +1335,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    The transcript draft keeps a 42px attachment target and a compact 36px
    send target once the editor grows to two rows.  The id-qualified rules also
    beat the legacy footer defaults without changing the mobile landing shell. */
-
-[data-mode="light"] #appShell .plugin-directory-row {
-  background: transparent !important;
-}
-
-[data-mode="light"] #appShell .plugin-directory-row:hover,
-[data-mode="light"] #appShell .plugin-directory-row:focus-within {
-  background: var(--cg-surface-hover) !important;
-}
 
 /* Projects use the same calm, full-width filter rail as the supplied mobile
    reference.  The list heading is deliberately separate from the live API
@@ -1816,40 +1402,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
     margin-inline: 8px !important;
     padding-top: 16px !important;
     background: transparent !important;
-  }
-
-  #appShell .plugin-directory-head {
-    margin-bottom: 24px !important;
-  }
-
-  #appShell .plugin-directory-tools {
-    display: flex !important;
-    width: 100% !important;
-    gap: 10px !important;
-  }
-
-  #appShell .plugin-directory-tools .plugin-directory-search {
-    flex: 1 1 auto !important;
-    width: auto !important;
-    min-width: 0 !important;
-  }
-
-  #appShell .plugin-directory-add-btn {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    flex: 0 0 40px !important;
-    width: 40px !important;
-    min-width: 40px !important;
-    height: 40px !important;
-    min-height: 40px !important;
-    padding: 0 !important;
-    border-radius: 50% !important;
-  }
-
-  #appShell .plugin-directory-add-btn svg {
-    width: 22px !important;
-    height: 22px !important;
   }
 
   /* Projects and scheduled tasks place their title in the app-owned top

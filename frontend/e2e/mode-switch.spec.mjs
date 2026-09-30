@@ -13,6 +13,11 @@ test('top mode tabs select the clicked position without toggling the active tab'
   const tabs = page.locator('#modeSegmentedTop');
   const chat = tabs.getByRole('tab', { name: '聊天' });
   const tutor = tabs.getByRole('tab', { name: '辅导' });
+  const desktopBox = await tabs.boundingBox();
+  const desktopTabBox = await chat.boundingBox();
+  expect(desktopBox?.height).toBe(40);
+  expect(desktopBox?.width ?? 0).toBeGreaterThanOrEqual(134);
+  expect(desktopTabBox?.height).toBe(36);
 
   await expect(chat).toHaveAttribute('aria-selected', 'true');
   await expect(tutor).toHaveAttribute('aria-selected', 'false');

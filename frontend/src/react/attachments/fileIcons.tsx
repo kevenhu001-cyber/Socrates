@@ -1,7 +1,7 @@
 /**
  * SVG icons for the attachment chip row.
  *
- * Each icon is a 24×24 outline that lives inside a 28×28 rounded chip
+ * Each icon is a 24×24 outline that lives inside a 42×42 rounded preview
  * background. Icons are tinted via `currentColor`, so the chip CSS
  * (color: hsl(var(--text-300)) in the dark theme) decides the final
  * hue. The reference design uses a single accent (a soft blue) across

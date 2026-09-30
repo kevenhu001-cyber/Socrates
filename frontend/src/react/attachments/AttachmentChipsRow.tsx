@@ -22,6 +22,42 @@ function truncateName(name: string): string {
   return name.length > 60 ? name.slice(0, 57) + '…' : name;
 }
 
+function fileType(entry: AttachmentEntry): string {
+  if (entry.docKind) return entry.docKind.toUpperCase();
+  const name = entry.name ?? '';
+  const extension = name.includes('.') ? name.split('.').pop() : '';
+  if (extension && extension.length <= 8) return extension.toUpperCase();
+  if (entry.kind === 'image') return 'IMAGE';
+  if (entry.kind === 'text') return 'TEXT';
+  return 'FILE';
+}
+
+function formatFileSize(size: number | undefined): string | null {
+  if (typeof size !== 'number' || !Number.isFinite(size) || size < 0) return null;
+  if (size < 1024) return `${size} B`;
+  const units = ['KB', 'MB', 'GB'];
+  let value = size / 1024;
+  let unit = units[0];
+  for (let index = 1; index < units.length && value >= 1024; index += 1) {
+    value /= 1024;
+    unit = units[index];
+  }
+  return `${value >= 10 ? value.toFixed(0) : value.toFixed(1)} ${unit}`;
+}
+
+function attachmentMeta(entry: AttachmentEntry): string {
+  if (entry.error) return 'Upload failed';
+  if (entry.pending) {
+    const progress = typeof entry.progress === 'number'
+      ? ` · ${Math.round(Math.min(Math.max(entry.progress, 0), 100))}%`
+      : '';
+    return `Uploading${progress}`;
+  }
+  const details = [fileType(entry), formatFileSize(entry.size)].filter(Boolean);
+  if (entry.truncated) details.push('Truncated');
+  return details.join(' · ');
+}
+
 interface ChipProps {
   entry: AttachmentEntry;
   onRemove: (id: string) => void;
@@ -30,7 +66,7 @@ interface ChipProps {
 function Chip({ entry, onRemove }: ChipProps) {
   /* P_perf-blob-url — prefer thumbnailUrl (URL.createObjectURL) for
      the chip <img> source. It's O(1) and the browser lazily decodes
-     only what the 28×28 chip needs. Once the upload resolves, the
+     only what the 42×42 preview needs. Once the upload resolves, the
      durable /api/v2/files/:id/raw URL (then the inline dataUrl)
      takes over so the chip survives composer resets and reloads. */
   const fileUrl = entry.fileId ? `/api/v2/files/${entry.fileId}/raw` : undefined;
@@ -38,7 +74,6 @@ function Chip({ entry, onRemove }: ChipProps) {
   const isImage = entry.kind === 'image' && !!imgSrc;
   const showSpinner = !!entry.pending;
   const showProgressBar = !!entry.pending && typeof entry.progress === 'number' && entry.progress >= 0;
-  const showTruncatedBadge = !!entry.truncated && !entry.pending;
   const progressWidth = showProgressBar
     ? Math.min(Math.max(entry.progress ?? 0, 0), 100)
     : 0;
@@ -48,41 +83,53 @@ function Chip({ entry, onRemove }: ChipProps) {
       className={`attachment-chip${entry.error ? ' error' : ''}${entry.pending ? ' pending' : ''}`}
       data-id={entry.id}
     >
-      {showSpinner ? (
-        <span
-          className="attachment-chip-spinner"
-          dangerouslySetInnerHTML={{ __html: SPINNER_HTML }}
-        />
-      ) : isImage ? (
-        <img
-          className="attachment-chip-thumb"
-          src={imgSrc}
-          alt={entry.name ?? ''}
-        />
-      ) : (
-        <span
-          className="attachment-chip-icon"
-          dangerouslySetInnerHTML={{ __html: getAttachmentIcon(entry) }}
-        />
-      )}
+      <span className="attachment-chip-preview" aria-hidden="true">
+        {showSpinner ? (
+          <span
+            className="attachment-chip-spinner"
+            dangerouslySetInnerHTML={{ __html: SPINNER_HTML }}
+          />
+        ) : isImage ? (
+          <img
+            className="attachment-chip-thumb"
+            src={imgSrc}
+            alt=""
+          />
+        ) : (
+          <span
+            className="attachment-chip-icon"
+            dangerouslySetInnerHTML={{ __html: getAttachmentIcon(entry) }}
+          />
+        )}
+      </span>
 
-      <span className="attachment-chip-name">{truncateName(entry.name ?? 'file')}</span>
+      <span className="attachment-chip-copy">
+        <span className="attachment-chip-name" title={entry.name ?? 'file'}>
+          {truncateName(entry.name ?? 'file')}
+        </span>
+        <span className="attachment-chip-meta">{attachmentMeta(entry)}</span>
+      </span>
 
       {showProgressBar ? (
-        <div className="attachment-chip-progress-bar">
+        <div
+          className="attachment-chip-progress-bar"
+          role="progressbar"
+          aria-label={`Uploading ${entry.name ?? 'file'}`}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(progressWidth)}
+        >
           <div
             className="attachment-chip-progress-fill"
             style={{ width: `${progressWidth}%` }}
           />
         </div>
-      ) : showTruncatedBadge ? (
-        <span className="attachment-chip-meta">(truncated)</span>
       ) : null}
 
       <button
         type="button"
         className="attachment-chip-remove"
-        aria-label="Remove attachment"
+        aria-label={`Remove ${entry.name ?? 'attachment'}`}
         onClick={() => onRemove(entry.id)}
         dangerouslySetInnerHTML={{ __html: REMOVE_ICON }}
       />

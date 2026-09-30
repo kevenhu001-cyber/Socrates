@@ -95,13 +95,13 @@
   /* ── Chat / Tutor mode tabs (Socrates-specific) ──────────────────────── */
   #appShell #modeSegmentedTop {
     position: absolute;
-    top: 8px;
+    top: 6px;
     left: 50%;
     z-index: 0;
     display: inline-flex;
     align-items: center;
-    gap: 2px;
-    height: 36px;
+    gap: 3px;
+    height: 40px;
     margin: 0;
     padding: 2px;
     border: 0;
@@ -115,16 +115,16 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 56px;
-    height: 32px;
+    min-width: 64px;
+    height: 36px;
     margin: 0;
-    padding: 0 14px;
+    padding: 0 16px;
     border: 0;
     border-radius: var(--ui-radius-pill);
     background: transparent;
     color: var(--ui-text-secondary);
     font: inherit;
-    font-size: var(--ui-text-ui);
+    font-size: 15px;
     font-weight: 500;
     line-height: var(--ui-text-ui-line);
     cursor: pointer;

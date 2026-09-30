@@ -1,31 +1,27 @@
 /*
  * styles/index.css — single stylesheet entry and cascade manifest.
  *
- * The bundle is produced by inlining these @imports top to bottom, so this
- * list IS the cascade: later entries outrank earlier ones at equal
- * specificity. Keep it in three tiers and never reorder across tiers.
+ * The bundle is produced by inlining these @imports top to bottom. The old
+ * styles remain as a compatibility foundation, while current component rules
+ * form the canonical UI. themes.css is applied exactly once at the end so one
+ * palette wins across every surface and legacy token family.
  *
- *   Tier 1  tokens + themes      — --ui-* custom properties only.
- *   Tier 2  legacy/              — the pre-modular base sheet (old
- *                                  src/styles.css), sliced contiguously;
- *                                  slices override each other by order.
- *   Tier 3  modular              — foundations/layout/components/features:
- *                                  the current component-owned styles.
- *   Tier 4  restore/             — the pre-rework visual layer (being retired).
- *   Tier 4b parity/              — chatgpt.com-aligned desktop layer; owns
- *                                  each migrated surface on desktop.
- *   Tier 5  polish/              — the design-polish layer; must stay
- *                                  last so it outranks everything above.
+ *   Tier 1  structural tokens    — geometry, type, motion and control metrics.
+ *   Tier 2  compatibility        — legacy/ and restore/ rules still required by
+ *                                  feature surfaces during selector migration.
+ *   Tier 3  canonical UI         — modular component ownership plus parity and
+ *                                  polish rules that define the current design.
+ *   Tier 4  final theme contract — the only active palette and compatibility
+ *                                  token mapping, always imported last.
  */
 
-/* Tier 1 — design tokens */
+/* Tier 1 — structural design tokens */
 @import './tokens.css';
-@import './themes.css';
 
-/* Tier 2 — legacy base sheet (order-sensitive slices) */
+/* Tier 2 — compatibility foundation (order-sensitive) */
 @import './legacy/index.css';
 
-/* Tier 3 — modular layer */
+/* Tier 3 — canonical component layer */
 @import './foundations/base.css';
 @import './layout/app-shell.css';
 @import './components/sidebar.css';
@@ -35,11 +31,14 @@
 @import './features/surfaces.css';
 @import './components/tool-card.css';
 
-/* Tier 4 — restored pre-rework visual layer */
+/* Compatibility visuals still consumed by unmigrated feature surfaces */
 @import './restore/index.css';
 
-/* Tier 4b — chatgpt.com parity layer (replaces restore/ surface by surface) */
+/* Canonical desktop surface owners */
 @import './parity/index.css';
 
-/* Tier 5 — design-polish layer (always last; see polish/index.css) */
+/* Canonical cross-surface details and interaction states */
 @import './polish/index.css';
+
+/* Tier 4 — one final palette and legacy-token bridge */
+@import './themes.css';

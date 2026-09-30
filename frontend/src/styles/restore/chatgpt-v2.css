@@ -809,8 +809,8 @@ html[data-mode="light"] #appShell {
 
 /* A hover state may tint a control, but it must not change its geometry.
    Keep transforms available for layout containers and menu open states.
-   Press feedback is owned by polish/press.css through the `scale`
-   property, so :active is no longer frozen here. */
+   Press feedback is owned by polish/press.css through paint-only opacity and
+   tint, so :active no longer needs a geometry change here. */
 :where(button, a, [role="button"]):hover {
   transform: none !important;
 }

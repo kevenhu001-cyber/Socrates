@@ -1,13 +1,13 @@
 // e2e/button-press.spec.mjs — one press language for every control.
 //
-// styles/polish/press.css owns press feedback through the individual
-// `scale` property (so it composes with each control's own `transform`),
-// and ui/pressFeedback.js keeps `.is-pressed` long enough for a fast tap
-// to paint. These cases check the computed result in a real browser:
-//   - buttons and icon buttons scale down while held and spring back;
-//   - row-style controls (menu items, list rows) tint instead of scaling;
+// styles/polish/press.css owns paint-only press feedback without changing
+// control or icon geometry, and ui/pressFeedback.js keeps `.is-pressed`
+// long enough for a fast tap to paint. These cases check the computed result
+// in a real browser:
+//   - buttons and icon buttons stay at scale 1 while held and released;
+//   - row-style controls acknowledge the press with a stable tint;
 //   - a quick touch tap still shows the pressed state for >1 frame;
-//   - disabled controls and reduced motion never scale.
+//   - disabled controls and reduced motion remain geometrically stable.
 
 import { test } from './_lib.mjs';
 import { expect } from '@playwright/test';
@@ -21,8 +21,8 @@ async function boot(page, opts = {}) {
   await waitForAppShell(page);
 }
 
-/* The rendered scale of `selector` after the press-in animation settles.
-   `scale: none` computes to "none"; an active press to e.g. "0.92". */
+/* The rendered scale of `selector` while the paint-only pressed state is held.
+   `scale: none` computes to "none" and is normalized to the stable value 1. */
 function computedScale(page, selector) {
   return page.evaluate((sel) => {
     const el = document.querySelector(sel);
@@ -34,27 +34,31 @@ function computedScale(page, selector) {
 }
 
 async function holdAndMeasure(page, selector) {
-  const box = await page.locator(selector).first().boundingBox();
+  const target = page.locator(selector).first();
+  const icon = target.locator('svg').first();
+  const box = await target.boundingBox();
+  const iconBefore = await icon.count() ? await icon.boundingBox() : null;
   expect(box, `${selector} is on screen`).not.toBeNull();
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
-  await page.waitForTimeout(160); /* > --ui-press-in (80ms) */
+  await page.waitForTimeout(160);
   const pressed = await computedScale(page, selector);
+  const boxDuring = await target.boundingBox();
+  const iconDuring = iconBefore ? await icon.boundingBox() : null;
   await page.mouse.up();
-  await page.waitForTimeout(400); /* > min press (90ms) + release (180ms) */
+  await page.waitForTimeout(400);
   const released = await computedScale(page, selector);
-  return { pressed, released };
+  return { pressed, released, boxBefore: box, boxDuring, iconBefore, iconDuring };
 }
 
-test('the primary composer button presses down and springs back', async ({ page }) => {
+test('the primary composer button stays geometrically stable while pressed', async ({ page }) => {
   await boot(page);
   const { pressed, released } = await holdAndMeasure(page, '#startBtn');
-  expect(pressed).toBeGreaterThan(0.85);
-  expect(pressed).toBeLessThan(0.97);
+  expect(pressed).toBe(1);
   expect(released).toBe(1);
 });
 
-test('a generic button presses with the shared default depth', async ({ page }) => {
+test('a generic button uses stable paint-only feedback', async ({ page }) => {
   await boot(page);
   /* Inject a plain button so the check does not depend on a particular
      screen's layout. */
@@ -66,7 +70,7 @@ test('a generic button presses with the shared default depth', async ({ page }) 
     document.body.appendChild(b);
   });
   const { pressed, released } = await holdAndMeasure(page, '#pressProbe');
-  expect(pressed).toBeCloseTo(0.96, 2);
+  expect(pressed).toBe(1);
   expect(released).toBe(1);
 });
 
@@ -153,7 +157,7 @@ test('reduced motion: presses never scale', async ({ page }) => {
   expect(pressed).toBe(1);
 });
 
-test('real shell controls: an icon button scales, a sidebar row tints', async ({ page }) => {
+test('real shell controls: an icon button stays stable and a sidebar row tints', async ({ page }) => {
   await boot(page);
   const iconSel = await page.evaluate(() => {
     const el = Array.from(document.querySelectorAll('#appShell .icon-btn'))
@@ -164,8 +168,14 @@ test('real shell controls: an icon button scales, a sidebar row tints', async ({
   });
   test.skip(!iconSel, 'no visible .icon-btn in this shell layout');
   const icon = await holdAndMeasure(page, iconSel);
-  expect(icon.pressed).toBeCloseTo(0.92, 2);
+  expect(icon.pressed).toBe(1);
   expect(icon.released).toBe(1);
+  expect(icon.iconBefore).not.toBeNull();
+  expect(icon.iconDuring).not.toBeNull();
+  for (const key of ['x', 'y', 'width', 'height']) {
+    expect(Math.abs(icon.boxBefore[key] - icon.boxDuring[key])).toBeLessThanOrEqual(0.01);
+    expect(Math.abs(icon.iconBefore[key] - icon.iconDuring[key])).toBeLessThanOrEqual(0.01);
+  }
 
   const rowSel = await page.evaluate(() => {
     const el = Array.from(document.querySelectorAll('#appShell .sidebar-nav-btn'))
@@ -193,8 +203,8 @@ test('real shell controls: an icon button scales, a sidebar row tints', async ({
 test('a popover opened by a pressed trigger is placed from the trigger\'s resting box', async ({ page }) => {
   await boot(page);
   /* Desktop landing: composerTools.js places the menu at trigger.bottom + 8.
-     The click fires while the trigger is still inside its press, so without
-     the pressFeedback geometry guard the measured bottom was the scaled one. */
+     The trigger now stays fixed during a press; the compatibility geometry
+     guard must preserve that exact resting anchor. */
   await page.locator('#topicComposerToolsBtn').click();
   await expect(page.locator('#composerToolsMenu')).toBeVisible();
   await page.waitForTimeout(400); /* press + release fully settled */

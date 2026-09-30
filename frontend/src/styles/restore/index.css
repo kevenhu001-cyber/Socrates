@@ -12,8 +12,7 @@
  *   3. ref-baseline.css   — ChatGPT reference baseline (shell + workspaces)
  *   4. mobile-parity.css  — ≤768px monochrome phone layout
  *   5. chat-surface.css   — unified conversation surface (composers/messages)
- *   6. chatgpt-parity.css — final owner: shell, landing composer, tool menu,
- *                           plugin directory
+ *   6. chatgpt-parity.css — final owner: shell, landing composer, tool menu
  *   7. fixes.css          — post-restore adjustments against the current
  *                           DOM/modular base (NOT history; add tweaks here)
  *
@@ -21,13 +20,13 @@
  *   - lobe-overrides.css — present at 54b7cea0^ but never linked; dead code.
  *   - tool-card.css      — still lives at components/tool-card.css.
  *
- * Self-containment: every custom property these rules consume is either
- * defined inside this directory (--cg-*, --conversation-*, --chatgpt-* …) or
- * referenced with an explicit fallback, so the layer does not depend on the
- * retired themes.css token set.
+ * Compatibility scope: these historical selectors still provide unmigrated
+ * feature geometry, but they no longer own the active palette. themes.css is
+ * imported once at the end of styles/index.css and remaps every historical
+ * token family onto the canonical --ui-* contract.
  *
- * This directory is @imported LAST from styles/index.css so its rules
- * outrank the modular styles tree wherever selectors overlap.
+ * This directory is imported before parity/ and polish/. New component rules
+ * must live in the canonical owners rather than extending this layer.
  *
  * Component ownership map (2026-09-23 audit):
  *
@@ -49,9 +48,18 @@
  *   Modals                              generic chrome features/surfaces.css
  *     + legacy; share modal legacy/08; settings--full creation-surfaces.css.
  *   Workspace pages                     ref-baseline.css + chatgpt-v2.css
- *     (panel chrome); plugin directory skin chatgpt-parity.css (desktop) +
- *     features/surfaces.css (live rows); creation panels
+ *     (panel chrome); plugin directory skin features/surfaces.css (sole
+ *     owner, 2026-09-30); creation panels
  *     creation-surfaces.css (sole owner).
+ *
+ * Plugin directory (2026-09-30): the historical `!important` blocks for
+ * .plugin-directory* in chatgpt-ui.css, ref-baseline.css and the desktop
+ * half of chatgpt-parity.css were retired. They were overriding
+ * features/surfaces.css purely by cascade order (restore/ is imported after
+ * features/), which left the canonical owner dead. Only genuinely shared
+ * selectors (e.g. .workspace-icon-action, .plugin-directory-search svg) are
+ * still declared here; mobile-parity.css keeps the ≤768px reference
+ * geometry (42px pill search, 40px connector tiles) the smoke specs assert.
  *
  * Rule: visual parity tweaks go in fixes.css; feature-page styles in
  * creation-surfaces.css; do not edit the historical files 1-6.

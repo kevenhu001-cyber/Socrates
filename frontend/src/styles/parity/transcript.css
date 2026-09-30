@@ -19,9 +19,9 @@
     --prose-line: calc(var(--ui-text-body-line) * var(--app-type-scale));
     box-sizing: border-box;
     width: 100%;
-    max-width: calc(var(--ui-content-chat) + 40px);
-    margin-inline: auto;
-    padding: 28px 20px 24px;
+    max-width: none;
+    margin-inline: 0;
+    padding: 28px max(20px, calc((100% - var(--ui-content-chat)) / 2)) 24px;
     gap: 0;
     scroll-padding-block: 24px;
     font-family: var(--font-sans);

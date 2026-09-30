@@ -4,17 +4,15 @@
 // touch screen releases within the same frame it pressed, so the press
 // feedback in styles/polish/press.css never paints. This module mirrors
 // the press onto `.is-pressed` and keeps it for at least MIN_PRESS_MS,
-// then swaps to `.is-press-release` for the springy release.
+// then swaps to `.is-press-release` for a short cleanup window.
 //
 // It only toggles classes: no preventDefault, no stopPropagation, so
 // click handlers, focus, and text selection behave exactly as before.
 //
-// Geometry: a click fires while its control is still visibly pressed
-// (inside the minimum hold, then the release spring), and
-// getBoundingClientRect() includes the press scale. Anything that anchors
-// to a control it was just clicked on — popovers, menus — must measure it
-// with restingRect() below, both in the click handler and in any later
-// frame that re-positions it, or it lands a pixel or two off.
+// Geometry: the first-party press contract is paint-only, so clicks never
+// change a control's box or SVG position. restingRect() remains a defensive
+// compatibility helper for custom or legacy controls that carry their own
+// scale while a popover or menu is being positioned.
 
 export const MIN_PRESS_MS = 90;
 export const RELEASE_MS = 180;
@@ -131,12 +129,11 @@ function parseLengths(value) {
 }
 
 /**
- * The element's border box as laid out, without its own `scale` — i.e.
- * where a pressed control will be once the press has sprung back. Use it
- * to anchor anything to a control that may be mid-press. The press scale
- * is the only transform undone (styles/polish/press.css animates `scale`
- * alone, about the element's transform-origin); an element at rest
- * returns getBoundingClientRect() unchanged.
+ * The element's border box as laid out, without an optional custom `scale`.
+ * First-party controls now remain at scale 1 while pressed, but this keeps
+ * popover positioning compatible with custom or legacy scaled triggers.
+ * Only the individual scale property is undone; an element at rest returns
+ * getBoundingClientRect() unchanged.
  */
 export function restingRect(el) {
   const rect = el.getBoundingClientRect();

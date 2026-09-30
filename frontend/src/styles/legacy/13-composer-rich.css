@@ -181,8 +181,8 @@
 .sidebar-nav-btn:hover:not([disabled]) svg{color:hsl(var(--text-200))}
 .sidebar-nav-btn[disabled]{opacity:.4;cursor:not-allowed}
 /* PR-A — active highlight on the currently-focused sidebar nav button.
-   Subtle accent tint, same shape as the hover, no transform (so the
-   active state doesn't compete with the :active press-down scale). */
+   Subtle accent tint, same shape as the hover, with fixed geometry so the
+   active state stays aligned with the paint-only press feedback. */
 .sidebar-nav-btn.active{background:hsl(var(--bg-300));color:hsl(var(--text-100));font-weight:520}
 .sidebar-nav-btn.active svg{color:hsl(var(--text-100))}
 /* PR-A — "is-soon" used by the Scheduled button in PR-A. Faded but

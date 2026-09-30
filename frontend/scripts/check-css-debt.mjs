@@ -2,13 +2,16 @@
 /*
  * scripts/check-css-debt.mjs — CSS design-debt ratchet + cascade guard.
  *
- * Two machine-checked rules (the 2026-09-23 audit's "Remaining work" item):
+ * Three machine-checked rules keep the canonical CSS contract stable:
  *
- * 1. Cascade order: styles/index.css must import the tiers in the documented
- *    order (tokens → legacy → modular → restore → parity → polish). Reordering across
- *    tiers silently flips which layer owns a surface.
+ * 1. Cascade order: styles/index.css must import structural tokens first,
+ *    compatibility layers before canonical components, and themes.css exactly
+ *    once at the end. Reordering silently flips ownership or palette values.
  *
- * 2. Debt ratchet: for every stylesheet under src/styles we count
+ * 2. Theme ownership: live component styles cannot declare palette families;
+ *    themes.css is the sole owner and is always the final import.
+ *
+ * 3. Debt ratchet: for every stylesheet under src/styles we count
  *    `!important`, literal hex colors, and literal px border-radius values.
  *    legacy/ and restore/ are frozen historical zones; every other directory
  *    is "live". Counts may only go DOWN — if a metric grows past its baseline
@@ -29,7 +32,7 @@ const UPDATE = process.argv.includes('--update');
 const FROZEN_DIRS = new Set(['legacy', 'restore']);
 
 function stripComments(text) {
-  return text.replace(/\/\*[\s\S]*?\*\//g, ' ');
+  return text.replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\n]/g, ' '));
 }
 
 function walkCss(dir) {
@@ -40,6 +43,22 @@ function walkCss(dir) {
     else if (entry.name.endsWith('.css')) out.push(p);
   }
   return out;
+}
+
+function themeOwnershipProblems() {
+  const paletteDeclaration = /--(?:ui-(?:bg|text|border|shadow|composer|sidebar|accent|danger|success|link|backdrop|on-accent)|cg-|cgv-|chatgpt-|conversation-|bg-|text-|border-)[\w-]*\s*:/g;
+  const problems = [];
+  for (const file of walkCss(STYLES)) {
+    const rel = relative(STYLES, file).split(sep).join('/');
+    const top = rel.split('/')[0];
+    if (rel === 'themes.css' || rel === 'tokens.css' || FROZEN_DIRS.has(top)) continue;
+    const text = stripComments(readFileSync(file, 'utf8'));
+    for (const match of text.matchAll(paletteDeclaration)) {
+      const line = text.slice(0, match.index).split('\n').length;
+      problems.push(`${rel}:${line} palette declaration outside themes.css: ${match[0].slice(0, -1)}`);
+    }
+  }
+  return problems;
 }
 
 function countMetric(re, text) {
@@ -59,14 +78,15 @@ function checkCascadeOrder() {
   const indexCss = readFileSync(join(STYLES, 'index.css'), 'utf8');
   const imports = [...indexCss.matchAll(/@import\s+'([^']+)'/g)].map((m) => m[1]);
   const tierOf = (spec) => {
-    if (spec === './tokens.css' || spec === './themes.css') return 1;
+    if (spec === './tokens.css') return 1;
     if (spec.startsWith('./legacy/')) return 2;
-    if (spec.startsWith('./restore/')) return 4;
-    if (spec.startsWith('./parity/')) return 4.5;
-    if (spec.startsWith('./polish/')) return 5;
     if (spec.startsWith('./foundations/') || spec.startsWith('./layout/')
       || spec.startsWith('./components/') || spec.startsWith('./features/')) return 3;
-    return 3; // unknown modular path — treat as tier 3
+    if (spec.startsWith('./restore/')) return 3.5;
+    if (spec.startsWith('./parity/')) return 4;
+    if (spec.startsWith('./polish/')) return 5;
+    if (spec === './themes.css') return 6;
+    return 3;
   };
   const problems = [];
   const tiers = imports.map(tierOf);
@@ -79,8 +99,9 @@ function checkCascadeOrder() {
       problems.push(`tier regression: '${imports[i]}' (tier ${tiers[i]}) imported after '${imports[i - 1]}' (tier ${tiers[i - 1]})`);
     }
   }
-  // polish must be the final import; restore must precede it directly.
-  if (tiers[tiers.length - 1] !== 5) problems.push('last import must be a polish/ file');
+  const themeImports = imports.filter((spec) => spec === './themes.css');
+  if (themeImports.length !== 1) problems.push(`themes.css must be imported exactly once (found ${themeImports.length})`);
+  if (imports[imports.length - 1] !== './themes.css') problems.push('themes.css must be the final import');
   if (!imports.includes('./polish/index.css')) problems.push('polish/index.css missing from styles/index.css');
   return problems;
 }
@@ -114,7 +135,10 @@ function main() {
     baseline = JSON.parse(readFileSync(BASELINE, 'utf8'));
   }
 
-  const failures = [...orderProblems.map((p) => `cascade: ${p}`)];
+  const failures = [
+    ...orderProblems.map((p) => `cascade: ${p}`),
+    ...themeOwnershipProblems().map((p) => `theme ownership: ${p}`),
+  ];
 
   if (!baseline) {
     writeFileSync(BASELINE, JSON.stringify({ totals, generatedBy: 'check-css-debt.mjs --update' }, null, 2) + '\n');

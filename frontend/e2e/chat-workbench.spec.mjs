@@ -26,6 +26,7 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
   expect(geometry.app).not.toBeNull();
   expect(geometry.app.height).toBe(WORKBENCH_VIEWPORTS.desktop.height);
   expect(geometry.transcript.bottom).toBeLessThanOrEqual(geometry.composer.top + 2);
+  expect(Math.abs(geometry.transcript.right - geometry.app.right)).toBeLessThanOrEqual(1);
   expect(geometry.composer.width).toBeLessThanOrEqual(930);
   expect(geometry.overflow).toBeLessThanOrEqual(0);
 
@@ -47,7 +48,7 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
   expect(contract.page).not.toBe('');
   expect(contract.surface).not.toBe('');
   expect(contract.mainBackgroundImage).toBe('none');
-  expect(contract.sidebarBackground).not.toBe('rgba(0, 0, 0, 0)');
+  expect(contract.sidebarBackground).toBe('rgb(24, 24, 24)');
   expect(contract.sidebarBorder).not.toBe('0px');
   expect(contract.topbarHeight).toBeGreaterThanOrEqual(50);
 

@@ -56,38 +56,70 @@
   overflow-y: auto;
   scrollbar-width: thin;
 }
-#appShell .plugin-directory { box-sizing: border-box; width: 100%; max-width: 1040px; margin: 0 auto; padding: 36px 32px 56px; }
-#appShell .plugin-directory-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 28px; margin-bottom: 28px; }
+/* Plugin directory — aligned with the chatgpt.com app directory: a card grid
+   of apps, a labelled "Connect" action per card, and the connection state
+   visible on the card itself. This file is the sole owner; the historical
+   restore/ rules for these selectors were retired so they cannot compete. */
+#appShell .plugin-directory { box-sizing: border-box; width: 100%; max-width: 1040px; margin: 0 auto; padding: 40px 32px 64px; }
+#appShell .plugin-directory-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
 #appShell .plugin-directory-heading { min-width: 0; }
 #appShell .plugin-directory-heading h2 { margin: 0 0 8px; font-size: 30px; line-height: 1.2; }
 #appShell .plugin-directory-desc { margin: 0; font-size: 15px; line-height: 1.5; }
-#appShell .plugin-directory-tools { display: flex; align-items: center; gap: 10px; }
-#appShell .plugin-directory-search { display: flex; align-items: center; gap: 10px; width: min(330px, 42vw); min-width: 220px; height: 44px; padding: 0 14px; }
-#appShell .plugin-directory-search svg { width: 18px; height: 18px; }
+#appShell .plugin-directory-tools { display: flex; align-items: center; gap: 8px; }
+#appShell .plugin-directory-search { display: flex; align-items: center; gap: 10px; width: min(320px, 44vw); min-width: 200px; height: 40px; padding: 0 14px; }
+#appShell .plugin-directory-search svg { width: 18px; height: 18px; flex: 0 0 18px; }
 #appShell .plugin-directory-search input { width: 100%; border: 0; outline: 0; background: transparent; }
-#appShell .plugin-directory-add-btn,
-#appShell .plugin-directory-icon-action { display: grid; place-items: center; flex: 0 0 auto; border: 0; background: var(--ui-bg-raised); color: var(--ui-text-primary); }
-#appShell .plugin-directory-add-btn { width: 44px; height: 44px; border-radius: 50%; }
-#appShell .plugin-directory-add-btn svg,
-#appShell .plugin-directory-icon-action svg { width: 22px; height: 22px; }
-#appShell .plugin-installed-strip { display: flex; align-items: center; gap: 18px; min-height: 64px; margin: 0 0 20px; }
-#appShell .plugin-installed-label { display: flex; align-items: center; gap: 8px; padding: 0; border: 0; background: transparent; color: var(--ui-text-primary); font-size: 15px; white-space: nowrap; }
-#appShell .plugin-installed-icons { display: flex; align-items: center; gap: 12px; min-width: 0; }
-#appShell .plugin-installed-icons .workspace-row-icon { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 13px; background: var(--ui-bg-raised); }
-#appShell .plugin-directory-tabs { display: flex; align-items: center; width: 192px; height: 36px; padding: 2px; margin: 0 0 28px; border-radius: 22px; background: var(--ui-bg-raised); }
-#appShell .plugin-directory-tabs button { height: 32px; padding: 0 14px; border: 0; border-radius: 18px; background: transparent; color: var(--ui-text-secondary); font-size: 14px; }
-#appShell .plugin-directory-tabs button.active { background: var(--ui-bg-segment-active); color: var(--ui-text-primary); }
-#appShell .plugin-directory-section { margin: 0 0 28px; }
-#appShell .plugin-directory-section h3 { margin: 0 0 14px; color: var(--ui-text-primary); font-size: 18px; font-weight: 500; }
-#appShell .plugin-directory-row { display: flex; align-items: center; min-width: 0; min-height: 72px; padding: 8px 4px; gap: 14px; border-bottom: 1px solid var(--ui-border-subtle); }
-#appShell .plugin-directory-row .workspace-row-icon { display: grid; place-items: center; flex: 0 0 52px; width: 52px; height: 52px; border: 0; border-radius: 15px; background: var(--ui-bg-raised); }
-#appShell .plugin-directory-row .workspace-row-copy { display: flex; flex: 1 1 auto; flex-direction: column; gap: 3px; min-width: 0; }
-#appShell .plugin-directory-row .workspace-row-copy strong { overflow: hidden; color: var(--ui-text-primary); font-size: 16px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
-#appShell .plugin-directory-row .workspace-row-copy span { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; font-size: 14px; line-height: 1.35; }
-#appShell .plugin-directory-row-action { flex: 0 0 auto; }
-#appShell .plugin-directory-icon-action { width: 40px; height: 40px; border-radius: 50%; background: transparent; }
-#appShell .plugin-directory-icon-action:disabled { opacity: .35; }
-#appShell .plugin-directory-empty { display: flex; flex-direction: column; gap: 5px; padding: 32px 0; color: var(--ui-text-tertiary); }
+#appShell .plugin-directory-add-btn { display: grid; place-items: center; flex: 0 0 auto; width: 40px; height: 40px; border: 1px solid var(--ui-border-default); border-radius: 50%; background: var(--ui-bg-raised); color: var(--ui-text-primary); }
+#appShell .plugin-directory-add-btn svg { width: 20px; height: 20px; }
+#appShell .plugin-directory-add-btn:hover { background: var(--ui-bg-hover); }
+
+/* Your apps — the connected strip doubles as the jump target for "Personal". */
+#appShell .plugin-installed-strip { display: flex; align-items: center; gap: 18px; min-height: 60px; margin: 0 0 24px; }
+#appShell .plugin-installed-label { display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 14px; border: 1px solid var(--ui-border-subtle); border-radius: var(--ui-radius-pill); background: var(--ui-bg-raised); color: var(--ui-text-secondary); font-size: 14px; white-space: nowrap; }
+#appShell .plugin-installed-label:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
+#appShell .plugin-installed-count { display: grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: var(--ui-radius-pill); background: var(--ui-bg-segment-active); color: var(--ui-text-primary); font-size: 12px; }
+#appShell .plugin-installed-caret { color: var(--ui-text-tertiary); }
+#appShell .plugin-installed-icons { display: flex; align-items: center; gap: 10px; min-width: 0; }
+#appShell .plugin-installed-icons .workspace-row-icon { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--ui-border-subtle); border-radius: var(--ui-radius-lg); background: var(--ui-bg-raised); }
+
+/* Scope chips — chatgpt.com scrolls plain-text categories with a filled
+   active pill rather than a boxed segmented control. */
+#appShell .plugin-directory-tabs { display: flex; align-items: center; gap: 8px; margin: 0 0 28px; overflow-x: auto; scrollbar-width: none; }
+#appShell .plugin-directory-tabs::-webkit-scrollbar { display: none; }
+#appShell .plugin-directory-tabs button { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; min-height: 36px; padding: 0 16px; border: 0; border-radius: var(--ui-radius-pill); background: transparent; color: var(--ui-text-secondary); font-size: 14px; white-space: nowrap; }
+#appShell .plugin-directory-tabs button:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
+#appShell .plugin-directory-tabs button.active { background: var(--ui-bg-raised); color: var(--ui-text-primary); font-weight: var(--ui-font-weight-semibold); }
+#appShell .plugin-directory-tab-count { color: var(--ui-text-tertiary); font-size: 13px; font-weight: var(--ui-font-weight-regular); }
+#appShell .plugin-directory-tabs button.active .plugin-directory-tab-count { color: var(--ui-text-secondary); }
+
+#appShell .plugin-directory-section { margin: 0 0 32px; }
+#appShell .plugin-directory-section h3 { margin: 0 0 14px; color: var(--ui-text-primary); font-size: 17px; font-weight: var(--ui-font-weight-semibold); }
+#appShell .plugin-directory-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+
+/* App card. The name keeps the shared .workspace-row-copy typography while
+   the description and the action stack underneath it. */
+#appShell .plugin-directory-row { display: flex; flex-direction: column; align-items: stretch; gap: 12px; min-width: 0; padding: 16px; border: 1px solid var(--ui-border-subtle); border-radius: var(--ui-radius-xl); background: var(--ui-bg-raised); }
+#appShell .plugin-directory-row:hover { border-color: var(--ui-border-default); background: var(--ui-bg-hover); }
+#appShell .plugin-directory-card-top { display: flex; align-items: center; gap: 12px; min-width: 0; }
+#appShell .plugin-directory-row .workspace-row-icon { display: grid; place-items: center; flex: 0 0 40px; width: 40px; height: 40px; padding: 7px; border: 1px solid var(--ui-border-subtle); border-radius: var(--ui-radius-lg); background: var(--ui-bg-surface); }
+#appShell .plugin-directory-row .workspace-row-icon svg { width: 24px; height: 24px; }
+#appShell .plugin-directory-row .workspace-row-copy { display: flex; flex: 1 1 auto; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+#appShell .plugin-directory-row .workspace-row-copy strong { overflow: hidden; max-width: 100%; color: var(--ui-text-primary); font-size: 15px; font-weight: var(--ui-font-weight-semibold); text-overflow: ellipsis; white-space: nowrap; }
+#appShell .plugin-directory-card-status { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: var(--ui-radius-pill); background: var(--ui-bg-chip); color: var(--ui-text-secondary); font-size: 12px; line-height: 18px; white-space: nowrap; }
+#appShell .plugin-directory-card-desc { display: -webkit-box; overflow: hidden; flex: 1 1 auto; margin: 0; color: var(--ui-text-tertiary); font-size: 14px; line-height: 1.4; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
+#appShell .plugin-directory-row-action { display: flex; flex: 0 0 auto; margin-top: auto; }
+
+/* Labelled Connect / Manage action, matching the reference outlined pill
+   buttons. Transparent fill keeps the control legible on the raised card in
+   both themes, where a filled surface would step the wrong way. */
+#appShell .plugin-directory-icon-action { display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1 1 auto; min-height: 36px; padding: 0 14px; border: 1px solid var(--ui-border-default); border-radius: var(--ui-radius-pill); background: transparent; color: var(--ui-text-primary); font-size: 14px; font-weight: var(--ui-font-weight-medium); }
+#appShell .plugin-directory-icon-action svg { width: 18px; height: 18px; flex: 0 0 18px; }
+#appShell .plugin-directory-icon-action:hover { background: var(--ui-bg-hover); border-color: var(--ui-border-strong); }
+#appShell .plugin-directory-icon-action:disabled { border-color: var(--ui-border-subtle); color: var(--ui-text-disabled); cursor: not-allowed; }
+#appShell .plugin-directory-icon-action:disabled:hover { background: transparent; border-color: var(--ui-border-subtle); }
+#appShell .plugin-directory-action-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#appShell .plugin-directory-empty { display: flex; flex-direction: column; gap: 6px; padding: 48px 0; color: var(--ui-text-tertiary); }
+#appShell .plugin-directory-note { margin: 0; color: var(--ui-text-tertiary); font-size: 14px; }
 
 #appShell .workspace-search-field,
 #appShell .plugin-directory-search,
@@ -133,7 +165,7 @@
     overflow-y: auto;
     overscroll-behavior: contain;
   }
-  #appShell .plugin-directory-head { display: block; margin-bottom: 23px; }
+  #appShell .plugin-directory-head { display: block; margin-bottom: 20px; }
   #appShell .plugin-directory-heading h2 {
     margin: 0 0 10px;
     font-size: 26px;
@@ -142,55 +174,44 @@
   }
   #appShell .plugin-directory-desc { margin: 0 0 10px; font-size: 15px; line-height: 1.5; }
   #appShell .plugin-directory-tools { display: flex; align-items: center; gap: 12px; }
+  /* mobile-parity.css pins the reference 42px pill search; mirror it here so
+     the two layers agree instead of relying on the override. */
   #appShell .plugin-directory-search {
     flex: 1;
     min-width: 0;
-    height: 36px;
-    padding-inline: 12px;
-    border-radius: 22px;
+    width: 100%;
+    height: 42px;
+    min-height: 42px;
+    padding-inline: 14px;
+    border-radius: var(--ui-radius-pill);
   }
   #appShell .plugin-directory-search svg { width: 18px; height: 18px; flex: 0 0 18px; }
   #appShell .plugin-directory-search input { min-width: 0; font-size: 15px; }
   #appShell .plugin-directory-add-btn {
-    width: 36px;
-    min-width: 36px;
-    height: 36px;
+    width: 42px;
+    min-width: 42px;
+    height: 42px;
+    min-height: 42px;
     border-radius: 50%;
   }
-  #appShell .plugin-installed-strip { min-height: 0; flex-direction: column; align-items: flex-start; gap: 9px; margin: 18px 0 36px; }
-  #appShell .plugin-installed-label { font-size: 15px; }
+  #appShell .plugin-installed-strip { min-height: 0; flex-direction: column; align-items: flex-start; gap: 9px; margin: 16px 0 22px; }
+  #appShell .plugin-installed-label { font-size: 14px; }
   #appShell .plugin-installed-icons { gap: 8px; overflow-x: auto; scrollbar-width: none; }
   #appShell .plugin-installed-icons .workspace-row-icon { width: 40px; min-width: 40px; height: 40px; }
-  #appShell .plugin-directory-tabs { width: 122px; max-width: none; height: 40px; gap: 6px; margin: 31px 0 31px; padding: 0; border-radius: 0; background: transparent; }
-  #appShell .plugin-directory-tabs button { flex: 0 0 auto; height: 36px; padding: 0 16px; border-radius: 20px; font-size: 15px; }
-  #appShell .plugin-directory-tabs button:nth-child(2) { padding-inline: 8px; }
-  #appShell .plugin-directory-tabs button.active { background: var(--ui-bg-raised); }
+  /* Size to the labels — a fixed track clipped "Personal" to "Pers". */
+  #appShell .plugin-directory-tabs { gap: 8px; max-width: 100%; margin: 0 0 24px; padding: 0; }
+  #appShell .plugin-directory-tabs button { min-height: 40px; padding: 0 18px; font-size: 15px; }
   #appShell .plugin-directory-section { margin: 0 0 26px; }
-  #appShell .plugin-directory-section h3 { margin: 0 0 3px; font-size: 16px; font-weight: 500; }
+  #appShell .plugin-directory-section h3 { margin: 0 0 12px; font-size: 16px; font-weight: var(--ui-font-weight-semibold); }
+  #appShell .plugin-directory-list { grid-template-columns: 1fr; gap: 10px; }
   #appShell .plugin-directory-row {
-    align-items: flex-start;
-    min-height: 71px;
-    padding: 8px 0 0;
-    gap: 12px;
-    border-radius: 0;
-    border: 0;
-    background: transparent;
-    box-shadow: none;
+    gap: 10px;
+    padding: 14px;
+    border-radius: var(--ui-radius-lg);
   }
-  #appShell .plugin-directory-row .workspace-row-copy { padding-top: 4px; }
-  #appShell .plugin-directory-row .workspace-row-icon {
-    flex-basis: 40px;
-    width: 40px;
-    min-width: 40px;
-    height: 40px;
-    border-radius: 14px;
-    background: var(--ui-bg-raised) !important;
-  }
-  #appShell .plugin-directory-row .workspace-row-copy { min-width: 0; }
-  #appShell .plugin-directory-row .workspace-row-copy strong { font-size: 16px; font-weight: 500; }
-  #appShell .plugin-directory-row .workspace-row-copy span { font-size: 13px; line-height: 1.4; }
-  #appShell .plugin-directory .connector-icon svg { width: 28px; height: 28px; }
-  #appShell .plugin-directory .connector-icon .connector-logo { width: 30px; height: 30px; }
-  #appShell .plugin-directory .connector-icon { color: var(--ui-text-primary) !important; background: var(--ui-bg-raised) !important; border: 0 !important; box-shadow: none !important; }
-  #appShell .plugin-directory-icon-action { width: 28px; min-width: 28px; height: 40px; border-radius: 50%; }
+  #appShell .plugin-directory-row .workspace-row-copy { min-width: 0; gap: 3px; }
+  #appShell .plugin-directory-row .workspace-row-copy strong { font-size: 16px; }
+  #appShell .plugin-directory-card-desc { font-size: 14px; line-height: 1.4; }
+  #appShell .plugin-directory-row-action { margin-top: 2px; }
+  #appShell .plugin-directory-icon-action { width: 100%; min-height: 42px; }
 }

@@ -85,6 +85,10 @@ test('Attachment chips React mode mirrors the legacy attachments array', async (
   await expect(chips).toHaveCount(2);
   await expect(chips.first()).toHaveAttribute('data-id', 'att-test-1');
   await expect(chips.nth(1)).toHaveAttribute('data-id', 'att-test-2');
+  await expect(chips.first().locator('.attachment-chip-name')).toHaveText('cat.png');
+  await expect(chips.first().locator('.attachment-chip-meta')).toHaveText('PNG · 1.2 KB');
+  await expect(chips.nth(1).locator('.attachment-chip-meta')).toHaveText('TXT · 4.2 KB');
+  await expect(chips.first().locator('.attachment-chip-remove')).toHaveAttribute('aria-label', 'Remove cat.png');
 
   // The chip row should be visible (no .hidden class).
   await expect(chatChipsAttrVisible(page, '#attachmentChips')).resolves.toBe(true);

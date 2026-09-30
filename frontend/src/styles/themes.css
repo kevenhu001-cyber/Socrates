@@ -1,17 +1,18 @@
-/* Theme values are the single source of truth for every first-party surface.
-   The ramp is chatgpt.com's pure neutral scale (no hue), measured over CDP on
-   2026-09-28 — see docs/ref/chatgpt-parity.md. polish/tokens.css aliases every
-   older palette family (--cg-*, --chatgpt-*, --conversation-*, the legacy
-   HSL channels) onto these names, so changing a value here repaints the app.
+/* themes.css — final theme contract for the complete application.
+   This file is imported once, after every compatibility and component rule.
+   It owns the --ui-* palette and maps every legacy token family onto that
+   palette, so no earlier stylesheet can establish a competing theme.
 
-   Hierarchy follows chatgpt.com: page and sidebar share one color and are
+   Hierarchy keeps the page black while the sidebar uses a neighboring charcoal
    separated by a hairline; raised surfaces (composer, menus, bubbles) step up
    in lightness in dark mode and sit white-on-white with a shadow in light. */
 [data-mode="dark"] {
   color-scheme: dark;
   --ui-bg-page: #000000;
-  --ui-bg-sidebar: #000000;
-  --ui-sidebar-border: rgb(255 255 255 / 15%);
+  --ui-bg-sidebar: #181818;
+  --ui-bg-sidebar-hover: #242424;
+  --ui-bg-sidebar-active: #2a2a2a;
+  --ui-sidebar-border: rgb(255 255 255 / 8%);
   --ui-bg-raised: #171717;
   --ui-bg-surface: #212121;
   --ui-bg-control: #303030;
@@ -55,6 +56,8 @@
   color-scheme: light;
   --ui-bg-page: #ffffff;
   --ui-bg-sidebar: #fcfcfc;
+  --ui-bg-sidebar-hover: #f3f3f3;
+  --ui-bg-sidebar-active: #e8e8e8;
   --ui-sidebar-border: rgb(0 0 0 / 10%);
   --ui-bg-raised: #f9f9f9;
   --ui-bg-surface: #f3f3f3;
@@ -89,4 +92,110 @@
   --ui-tool-chip-hover-text: rgb(36 81 218);
   --ui-link: rgb(36 81 218);
   --ui-bg-code: var(--ui-bg-raised);
+}
+
+:root {
+  --ui-shadow-menu: var(--ui-shadow-popover);
+  --ui-shadow-modal: var(--ui-shadow-dialog);
+  --ui-shadow-toast: 0 6px 22px rgb(0 0 0 / 14%);
+  --ui-focus-ring: 0 0 0 2px var(--ui-bg-page), 0 0 0 4px var(--ui-border-strong);
+  --chatgpt-font: var(--cg-font);
+  --chatgpt-page: var(--ui-bg-page);
+  --chatgpt-rail: var(--ui-bg-sidebar);
+  --chatgpt-surface: var(--ui-bg-surface);
+  --chatgpt-menu: var(--ui-bg-overlay);
+  --chatgpt-hover: var(--ui-bg-hover);
+  --chatgpt-composer: var(--ui-bg-composer);
+  --chatgpt-text: var(--ui-text-primary);
+  --chatgpt-muted: var(--ui-text-tertiary);
+  --chatgpt-faint: var(--ui-text-muted);
+  --chatgpt-line: var(--ui-border-default);
+  --cgv-border: var(--ui-border-default);
+  --cgv-border-strong: var(--ui-border-strong);
+  --cgv-surface: var(--ui-bg-surface);
+  --cgv-surface-hover: var(--ui-bg-hover);
+  --cgv-text: var(--ui-text-primary);
+  --cgv-text-2: var(--ui-text-secondary);
+  --cgv-text-3: var(--ui-text-muted);
+  --cgv-composer-surface: var(--ui-bg-composer);
+  --conversation-text-secondary: var(--conversation-text-muted);
+}
+
+html[data-theme="socrates"][data-mode="dark"] body,
+html[data-theme="socrates"][data-mode="dark"] #appShell,
+html[data-theme="socrates"][data-mode="dark"] #appShell .main,
+html[data-theme="socrates"][data-mode="dark"] #appShell .main-content,
+html[data-theme="socrates"][data-mode="dark"] #appShell .main-bg,
+html[data-theme="socrates"][data-mode="dark"] #appShell .top-bar {
+  background: var(--ui-bg-page) !important;
+  background-color: var(--ui-bg-page) !important;
+}
+html[data-theme="socrates"][data-mode="dark"] #appShell#appShell .sidebar {
+  background: var(--ui-bg-sidebar) !important;
+}
+
+html[data-theme="socrates"][data-mode="dark"],
+html[data-theme="socrates"][data-mode="light"] {
+  --cg-page: var(--ui-bg-page);
+  --cg-rail: var(--ui-bg-sidebar);
+  --cg-surface: var(--ui-bg-surface);
+  --cg-surface-hover: var(--ui-bg-hover);
+  --cg-border: var(--ui-border-default);
+  --cg-border-strong: var(--ui-border-strong);
+  --cg-text: var(--ui-text-primary);
+  --cg-text-secondary: var(--ui-text-secondary);
+  --cg-text-muted: var(--ui-text-muted);
+  --cg-text-faint: var(--ui-text-disabled);
+  --cg-accent: var(--ui-accent-strong);
+  --cg-accent-strong: var(--ui-accent-strong);
+  --cg-accent-ink: var(--ui-on-accent);
+  --cg-danger: var(--ui-danger);
+  --conversation-page: var(--ui-bg-page);
+  --conversation-surface: var(--ui-bg-surface);
+  --conversation-control: var(--ui-bg-control);
+  --conversation-control-hover: color-mix(in srgb, var(--ui-bg-control), var(--ui-text-primary) 8%);
+  --conversation-border: var(--ui-border-default);
+  --conversation-text: var(--ui-text-primary);
+  --conversation-text-muted: var(--ui-text-tertiary);
+  --conversation-user: var(--ui-bg-bubble);
+}
+html[data-theme="socrates"][data-mode="dark"] { --cg-surface-raised: var(--ui-bg-control); }
+html[data-theme="socrates"][data-mode="light"] { --cg-surface-raised: var(--ui-bg-raised); }
+
+html[data-theme="socrates"][data-mode="dark"] {
+  --bg-000: 0 0% 0%;
+  --bg-100: 0 0% 5%;
+  --bg-200: 0 0% 9%;
+  --bg-300: 0 0% 13%;
+  --text-000: 0 0% 100%;
+  --text-100: 0 0% 95%;
+  --text-200: 0 0% 80%;
+  --text-300: 0 0% 69%;
+  --text-350: 0 0% 64%;
+  --text-400: 0 0% 61%;
+  --text-500: 0 0% 47%;
+  --border-100: 0 0% 13%;
+  --border-200: 0 0% 16%;
+  --border-300: 0 0% 19%;
+  --border-400: 0 0% 22%;
+  --border-500: 0 0% 25%;
+}
+
+html[data-theme="socrates"][data-mode="light"] {
+  --bg-000: 0 0% 100%;
+  --bg-100: 0 0% 99%;
+  --bg-200: 0 0% 98%;
+  --bg-300: 0 0% 95%;
+  --text-000: 0 0% 5%;
+  --text-100: 0 0% 5%;
+  --text-200: 0 0% 24%;
+  --text-300: 0 0% 36%;
+  --text-350: 0 0% 40%;
+  --text-400: 0 0% 43%;
+  --text-500: 0 0% 56%;
+  --border-100: 0 0% 91%;
+  --border-200: 0 0% 87%;
+  --border-300: 0 0% 80%;
+  --border-400: 0 0% 70%;
+  --border-500: 0 0% 60%;
 }

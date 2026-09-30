@@ -904,39 +904,8 @@ body.workspace-active #appShell .workspace-secondary:hover{
   background: var(--cg-surface-hover);
 }
 
-.plugin-directory {
-  width: 100%;
-}
-
 /* Kimi-style head: left-aligned title + one-line description, with the
    circular back button quieted to a top-right corner affordance. */
-.plugin-directory-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.plugin-directory-heading {
-  min-width: 0;
-}
-
-.plugin-directory-head h2 {
-  margin: 0;
-  color: var(--cg-text);
-  font-size: 26px;
-  font-weight: 650;
-  letter-spacing: -.02em;
-  line-height: 1.25;
-}
-
-.plugin-directory-desc {
-  margin: 8px 0 0;
-  color: var(--cg-text-muted);
-  font-size: 14px;
-  line-height: 1.55;
-}
 
 
 
@@ -979,154 +948,18 @@ body.workspace-active #appShell .workspace-secondary:hover{
   text-transform: uppercase;
 }
 
-.plugin-directory-search {
-  width: 100%;
-  height: 56px;
-  margin: 0;
-  padding: 0 22px;
-  gap: 12px;
-  border-radius: 28px;
-}
-
-.plugin-directory-search svg {
-  flex: 0 0 20px;
-  width: 20px;
-  height: 20px;
-}
-
-.plugin-directory-search input {
-  font-size: 15px;
-  line-height: 24px;
-}
-
 /* Reference-style category chips: plain text that scrolls horizontally,
    the active scope becomes a filled pill. */
-.plugin-directory-tabs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 18px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.plugin-directory-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.plugin-directory-tabs button {
-  flex: 0 0 auto;
-  min-height: 44px;
-  padding: 10px 22px;
-  border: 0;
-  border-radius: 999px;
-  color: var(--cg-text-muted);
-  background: transparent;
-  font: 500 15px/24px var(--cg-font);
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background-color .16s ease, color .16s ease;
-}
-
-.plugin-directory-tabs button:hover {
-  color: var(--cg-text);
-}
-
-.plugin-directory-tabs button.active {
-  color: var(--cg-text);
-  background: var(--cg-surface-hover);
-  font-weight: 600;
-}
-
-.plugin-directory-tabs button:focus-visible {
-  outline: 2px solid var(--cg-accent);
-  outline: 2px solid color-mix(in srgb, var(--cg-accent) 65%, transparent);
-  outline-offset: 2px;
-}
 
 /* Kimi-style two-column card grid. Cards keep the legacy connector-row
    hooks (`.connector-row.plugin-directory-row`) so the plugin form and
    bridge logic stay untouched — only the box model changes here. */
-.plugin-directory-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 16px;
-}
 
 /* The empty state must span the full grid width. */
-.plugin-directory-empty {
-  grid-column: 1 / -1;
-}
 
 /* Beat the legacy `.plugins-list .connector-row` card rules (0,2,0):
    directory rows own their box, radius, and background here so the two
    layers can never blend into an accidental hybrid again. */
-.plugins-list .connector-row.plugin-directory-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  min-width: 0;
-  min-height: 0;
-  margin: 0;
-  padding: 16px 18px;
-  border: 1px solid var(--cg-border);
-  border-radius: 16px;
-  background: var(--cg-surface);
-  transition: background-color .16s ease, border-color .16s ease;
-}
-
-.plugins-list .connector-row.plugin-directory-row:hover {
-  border-color: var(--cg-border-strong);
-  background: var(--cg-surface-hover);
-}
-
-.plugin-directory-row .workspace-row-icon {
-  flex: 0 0 auto;
-  width: 46px;
-  height: 46px;
-  border-radius: 13px;
-  background: var(--cg-surface-raised);
-}
-
-.plugin-directory-row .workspace-row-icon svg {
-  width: 26px;
-  height: 26px;
-}
-
-.plugin-directory-row .workspace-row-copy {
-  /* Inherit flex:1 (1 1 0%) from .workspace-row-copy: a zero basis keeps
-     the copy on the icon's line. An auto basis sizes from max-content and
-     pushes the copy below the icon on narrow cards. */
-  min-width: 0;
-  gap: 5px;
-}
-
-.plugin-directory-row .workspace-row-copy strong {
-  display: block;
-  overflow: hidden;
-  color: var(--cg-text);
-  font-size: 14.5px;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.plugin-directory-row .workspace-row-copy span {
-  display: block;
-  overflow: hidden;
-  color: var(--cg-text-muted);
-  font-size: 12.5px;
-  line-height: 18px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.plugin-directory-row-action {
-  flex: 0 0 auto;
-  margin-left: auto;
-}
 
 
 
@@ -1134,39 +967,6 @@ body.workspace-active #appShell .workspace-secondary:hover{
 
 /* Kimi-style quiet connected state: a bare accent checkmark instead of a
    text pill. The accessible label lives on the span (aria-label). */
-
-
-
-
-
-.plugin-directory-note {
-  color: var(--cg-text-muted);
-  font-size: 12px;
-}
-
-.plugin-directory-note {
-  margin-top: 18px;
-}
-
-.plugin-directory-warning,
-.plugin-directory-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 40px 20px;
-  color: var(--cg-text-muted);
-  font-size: 14px;
-  text-align: center;
-}
-
-
-
-.plugin-directory-warning strong,
-.plugin-directory-empty strong {
-  color: var(--cg-text-secondary);
-  font-weight: 550;
-}
 
 /* Scheduled */
 
@@ -1576,55 +1376,8 @@ body.workspace-active #appShell .workspace-row:hover {
     font-size: 14px;
   }
 
-  .plugin-directory-head {
-    margin-bottom: 14px;
-  }
-
-  .plugin-directory-head h2 {
-    font-size: 22px;
-  }
-
-  .plugin-directory-desc {
-    margin-top: 6px;
-    font-size: 13.5px;
-  }
-
-  .plugin-directory-search {
-    height: 52px;
-    padding: 0 18px;
-    border-radius: 26px;
-  }
-
-  .plugin-directory-tabs {
-    margin-top: 14px;
-    margin-right: -16px;
-    margin-left: -16px;
-    padding-right: 16px;
-    padding-left: 16px;
-  }
-
-  .plugin-directory-list {
-    gap: 10px;
-    margin-top: 14px;
-  }
-
   /* Reference cards keep the action on the same line even on phones:
      single-line ellipsis on the copy absorbs the narrow width. */
-  .plugins-list .connector-row.plugin-directory-row {
-    gap: 12px;
-    padding: 14px;
-  }
-
-  .plugin-directory-row .workspace-row-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 11px;
-  }
-
-  .plugin-directory-row .workspace-row-icon svg {
-    width: 22px;
-    height: 22px;
-  }
 
   
 
@@ -1758,9 +1511,6 @@ body.workspace-active #appShell .workspace-row:hover {
 /* Plugin directory: the card grid falls back to a single column once two
    cards would each get less than ~300px. */
 @media (max-width: 640px) {
-  .plugin-directory-list {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* The workspace-active button theme block above forces a 10px radius on
@@ -2013,52 +1763,13 @@ body.workspace-active #appShell .project-row {
 .workspace-icon-action { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border-radius: 50%; }
 .workspace-icon-action svg { width: 18px; height: 18px; }
 
-.plugin-directory-head { align-items: flex-end; }
-.plugin-directory-heading { flex: 1 1 auto; }
-.plugin-directory-head .plugin-directory-search { flex: 0 1 360px; }
-.plugin-installed-strip { margin: -6px 0 28px; }
-.plugin-installed-label { display: block; margin-bottom: 12px; color: var(--cg-text-secondary); font-size: 13px; font-weight: 520; }
-.plugin-installed-icons { display: flex; flex-wrap: wrap; gap: 10px; }
-.plugin-installed-icons .workspace-row-icon { width: 42px; height: 42px; border: 1px solid var(--cg-border); border-radius: 12px; background: var(--cg-surface-raised); }
-.plugin-installed-icons .workspace-row-icon svg { width: 24px; height: 24px; }
-
-.plugin-directory-tabs { margin-bottom: 18px; }
-.plugin-directory-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: 56px;
-  row-gap: 0;
-  margin: 0;
-}
-
-.plugins-list .connector-row.plugin-directory-row {
-  min-height: 76px;
-  padding: 12px 0;
-  gap: 14px;
-  border: 0;
-  border-bottom: 1px solid var(--cg-border);
-  border-radius: 0;
-  background: transparent;
-}
-
-.plugins-list .connector-row.plugin-directory-row:hover { border-color: var(--cg-border); background: transparent; }
-.plugin-directory-row .workspace-row-icon { width: 42px; height: 42px; border: 1px solid var(--cg-border); border-radius: 11px; background: var(--cg-surface-raised); }
-.plugin-directory-row .workspace-row-icon svg { width: 24px; height: 24px; }
-.plugin-directory-row .workspace-row-copy { gap: 3px; }
-.plugin-directory-row .workspace-row-copy strong { font-size: 14px; font-weight: 560; }
-.plugin-directory-row .workspace-row-copy span { color: var(--cg-text-muted); font-size: 12px; line-height: 17px; }
-
-.plugin-directory-note { margin: 18px 0 0; }
-
 @media (max-width: 900px) {
   body.workspace-active #appShell .main-page { padding: 48px 28px 64px; }
   .workspace-page-head,
   .plugin-directory-head { align-items: stretch; flex-direction: column; gap: 20px; margin-bottom: 32px; }
   .workspace-head-actions { flex: 0 0 auto; justify-content: flex-start; }
-  .plugin-directory-head .plugin-directory-search { flex: 0 0 48px; width: 100%; }
   .workspace-table-head { grid-template-columns: minmax(0, 1fr) 120px 80px 48px; }
   body.workspace-active #appShell .library-row { grid-template-columns: 24px 42px minmax(0, 1fr) 120px 80px 48px; }
-  .plugin-directory-list { column-gap: 28px; }
 }
 
 @media (max-width: 640px) {
@@ -2077,7 +1788,5 @@ body.workspace-active #appShell .project-row {
   .library-row-actions { grid-column: 4; }
   .library-row-actions .workspace-row-action { width: 36px; overflow: hidden; padding: 0; font-size: 0; }
   .library-row-actions .workspace-row-action::before { content: "•••"; font-size: 12px; }
-  .plugin-directory-list { grid-template-columns: 1fr; }
-  .plugin-installed-strip { margin-top: 0; }
 }
 

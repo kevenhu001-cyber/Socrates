@@ -28,11 +28,19 @@ test('theme selector follows the operating system and persists explicit modes', 
     return {
       page: styles.getPropertyValue('--ui-bg-page').trim(),
       raised: styles.getPropertyValue('--ui-bg-raised').trim(),
+      cgPage: styles.getPropertyValue('--cg-page').trim(),
+      chatgptPage: styles.getPropertyValue('--chatgpt-page').trim(),
+      conversationPage: styles.getPropertyValue('--conversation-page').trim(),
+      legacyPage: styles.getPropertyValue('--bg-000').trim(),
     };
   });
   expect(darkPalette.page).toBe('#000000');
   // chatgpt.com neutral ramp (styles/themes.css, docs/ref/chatgpt-parity.md).
   expect(darkPalette.raised).toBe('#171717');
+  expect(darkPalette.cgPage).toBe(darkPalette.page);
+  expect(darkPalette.chatgptPage).toBe(darkPalette.page);
+  expect(darkPalette.conversationPage).toBe(darkPalette.page);
+  expect(darkPalette.legacyPage).toBe('0 0% 0%');
 
   await themeSegs.locator('[data-theme-option="system"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'system');
