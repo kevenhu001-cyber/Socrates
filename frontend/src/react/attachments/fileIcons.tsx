@@ -25,7 +25,7 @@ import type { AttachmentEntry } from './types';
 /* Structural subset the icon picker actually reads — widened so both
    the composer AttachmentEntry and the persisted domain attachment
    (optional id, ReadonlyArray rows) can drive it. */
-type IconSource = Pick<AttachmentEntry, 'kind' | 'docKind' | 'mime' | 'name'>;
+export type IconSource = Pick<AttachmentEntry, 'kind' | 'docKind' | 'mime' | 'name'>;
 
 const DOC_OUTLINE =
   '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>' +

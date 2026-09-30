@@ -151,7 +151,7 @@ function currentSessionId() {
   return '';
 }
 
-function formatAttachmentSize(bytes) {
+export function formatAttachmentSize(bytes) {
   const n = Number(bytes) || 0;
   if (n >= 1024 * 1024) return (n / (1024 * 1024)).toFixed(1) + ' MB';
   if (n >= 1024) return Math.round(n / 1024) + ' KB';

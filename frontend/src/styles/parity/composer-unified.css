@@ -93,7 +93,9 @@
   grid-area: files;
   min-width: 0;
   margin: 0 0 4px 2px;
-  padding: 0;
+  /* Card chips carry a floating remove disc 7px above their top edge —
+     this padding keeps it inside the composer card. */
+  padding: 8px 2px 0;
 }
 
 /* ── Editor ────────────────────────────────────────────────────────────── */

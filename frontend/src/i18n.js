@@ -21,6 +21,8 @@ var I18N={
     "chat.attach.fileTooLarge":"File exceeds the 25 MB limit.",
     "chat.attach.duplicate":"This file is already attached.",
     "chat.attach.retry.aria":"Retry upload",
+    "chat.attach.uploading":"Uploading",
+    "chat.attach.failed":"Upload failed",
     "chat.attach.networkError":"Network error during upload.",
     "chat.attach.uploadTimeout":"Upload timed out.",
     "chat.attach.cancelled":"Upload cancelled.",

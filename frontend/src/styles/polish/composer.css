@@ -138,10 +138,11 @@ body #composerToolsMenu .composer-tools-item kbd {
   body #composerToolsMenu .composer-tools-footer-search input { min-height: 30px; }
 }
 
-/* Attachment chips inside the capsule — consistent pill + hairline. */
+/* Attachment chips inside the capsule — the card radius (12px) matches
+   the legacy/07-composer-settings.css chip block so both files agree. */
 #appShell .attachment-chips .attachment-chip,
 #appShell .msg-attachment {
-  border-radius: var(--ui-radius-control, 8px);
+  border-radius: 12px;
 }
 
 /* Under-composer disclaimer: quiet centered microcopy. */

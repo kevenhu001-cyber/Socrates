@@ -84,39 +84,15 @@ export async function addComposerFiles(files, source){
   return res;
 }
 
-/* Lightweight progress-only update — directly finds existing pending
-   chips in the DOM and updates the progress-fill width, WITHOUT
-   destroying and recreating chip elements. Called on every progress
-   tick from addFiles(). This avoids the jank of a full DOM rebuild
-   (which transitions the progress bar's width smoothly). */
+/* Lightweight progress-only update — rAF-coalesced bridge publish so the
+   React chip row re-renders the "Uploading… n%" meta at most once per
+   frame instead of rebuilding DOM per progress event. */
 let _progressRAF = null;
 function updateProgressOnly(){
   if (_progressRAF) return;
   _progressRAF = requestAnimationFrame(function(){
     _progressRAF = null;
-    const ids = WIRED_INPUTS.map(function(w){ return w.chipsId; }).filter(Boolean);
-    if(!ids.length){
-      var fb = document.getElementById("attachmentChips");
-      if(fb) ids.push("attachmentChips");
-    }
-    ids.forEach(function(id){
-      var wrap = document.getElementById(id);
-      if(!wrap) return;
-      var chips = wrap.querySelectorAll('.attachment-chip.pending[data-id]');
-      for(var ci = 0; ci < chips.length; ci++){
-        var chip = chips[ci];
-        var aid = chip.getAttribute('data-id');
-        if(!aid) continue;
-        /* Find the matching attachment entry (O(n) but n ≤ 6). */
-        var entry = null;
-        for(var ai = 0; ai < attachments.length; ai++){
-          if(attachments[ai].id === aid){ entry = attachments[ai]; break; }
-        }
-        if(!entry || !entry.pending || typeof entry.progress !== 'number') continue;
-        var fill = chip.querySelector('.attachment-chip-progress-fill');
-        if(fill) fill.style.width = Math.min(entry.progress, 100) + '%';
-      }
-    });
+    _publishAttachments();
   });
 }
 
