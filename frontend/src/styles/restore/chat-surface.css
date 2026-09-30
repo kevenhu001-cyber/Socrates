@@ -247,7 +247,7 @@ body #composerToolsMenu .composer-tools-plugin-item {
 
 body #composerToolsMenu .composer-tools-item:hover,
 body #composerToolsMenu .composer-tools-plugin-item:hover {
-  background: var(--conversation-control-hover) !important;
+  background: var(--ui-bg-hover-ghost) !important;
 }
 
 /* Conversation ----------------------------------------------------------- */
@@ -413,7 +413,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 }
 @media (max-width: 768px) {
 [data-mode="light"] #appShell#appShell .sidebar {
-  background: #f7f7f5 !important;
+  background: var(--ui-bg-sidebar) !important;
 }
 }
 
@@ -454,19 +454,13 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
      the level label plus a chevron on every phone width. Scoped to the
      wrap ids so it also beats the focused/multiline caret-hiding layer. */
 
-  /* Selected tools/plugins render as a blue pill in the controls row,
-     immediately right of "+", matching the mobile reference. Flattening
-     the two editor wrappers (display:contents) turns the chip strip and
-     the editor host into direct grid items of the composer card, so the
-     strip lands in the spare 1fr track of the controls row and the card
-     keeps its compact resting height instead of growing a third tier. */
-
-  #appShell#appShell #topicInputWrap:has(.composer-plugin-chips):not(.voice-recording-active) .rich-composer > div:not(.composer-plugin-chips),
-  #appShell#appShell #chatInputWrap:has(.composer-plugin-chips):not(.voice-recording-active) .rich-composer > div:not(.composer-plugin-chips) {
-    grid-column: 1 / -1 !important;
-    grid-row: 2 !important;
-    min-width: 0 !important;
-  }
+  /* Selected tools/plugins render as pills in the controls row,
+     immediately right of "+". parity/composer-unified.css now owns the
+     two-row template ("editor …" over "plus chips effort mic send"); the
+     editor host takes grid-area: editor (row 1) and the chip strip lands
+     in the spare 1fr track of the controls row, so no override is needed
+     here — forcing the editor host into row 2 collapsed the editor row
+     and painted the placeholder underneath the controls. */
 
   #appShell#appShell #findBtn,
   #appShell#appShell #shareBtn {

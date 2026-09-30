@@ -85,7 +85,15 @@ export async function startSession(){
      keydown listener to insert the selected template. */
   if(isSlashCommandPaletteOpen()) return;
   var topic=getComposerMarkdown("topic").trim();
-  if(!topic)return;
+  /* P_attachments — same contract as submitChatMessage: a file dropped on
+     the landing composer with no caption is still a valid first turn. The
+     pending store is the same window.attachments array used below. */
+  var hasStartAttachments=Array.isArray(attachments)&&attachments.length>0;
+  if(!topic&&!hasStartAttachments)return;
+  /* Attachment-only start: session/persistence.js's early-exit guard and
+     the Recents title both key on a non-empty topic. The first file's
+     name is the most honest label for a turn that is just an upload. */
+  if(!topic)topic=String(attachments[0]&&attachments[0].name||"").trim()||"Attachment";
   /* Keep a mode the user deliberately selected on the landing composer.
      resetSessionTransients clears stale templates from the previous session,
      but this fresh first turn still needs its selected image/skill prompt. */

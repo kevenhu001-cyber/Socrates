@@ -285,6 +285,14 @@ window.removeAttachment = removeAttachment;
 import { renderAttachmentChips } from './attachments/render.js';
 window.renderAttachmentChips = renderAttachmentChips;
 
+/* ─── ui/topicSetup.js — send/start button refreshers. attachments/
+   render.js calls them by name (window[w.updateBtnName]) after every
+   file add/remove so an attachment-only draft still lights up Send, and
+   extensions/modules/write.ts reaches them through window as well. */
+import { updateStartBtn, updateSendBtn } from './ui/topicSetup.js';
+window.updateStartBtn = updateStartBtn;
+window.updateSendBtn = updateSendBtn;
+
 /* ─── i18n.js (setLang) ─── */
 // i18n.js does not have ESM named exports — setLang is bound on
 // `window.setLang` directly inside i18n.js (line 931) after the

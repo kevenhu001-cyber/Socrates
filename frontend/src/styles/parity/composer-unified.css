@@ -440,6 +440,18 @@
     padding: 0 2px;
     line-height: 26px;
   }
+  /* The chips track is ~1fr of a narrow row — several selected plugins
+     would crush each chip to icon width under flex-shrink. Keep chips at
+     full size and let the strip scroll horizontally instead, as the
+     pre-unification mobile sheet did. */
+  #appShell .composer-shell .composer-plugin-chips {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+  #appShell .composer-shell .composer-plugin-chips::-webkit-scrollbar { display: none; }
+  #appShell .composer-shell .composer-plugin-chip,
+  #appShell .composer-shell .composer-tool-chip { flex: 0 0 auto; }
   #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn, .effort-picker) {
     align-self: center;
   }

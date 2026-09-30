@@ -236,6 +236,40 @@ test('Image upload is admitted for a multimodal active model', async ({ page }) 
   expect(entry).toEqual({ fileId: 'file-uuid-1', hasDataUrl: true });
 });
 
+/* Regression: attachments/render.js refreshes the primary button through
+   window[updateBtnName]; when window.updateStartBtn/updateSendBtn lost
+   their bindings an attachment-only draft left the button in voice mode,
+   and startSession() then early-returned on the empty topic anyway. */
+test('Attachment-only landing draft activates Send and enters chat', async ({ page }) => {
+  await mockAuthedApp(page);
+  await mockProviderAndUpload(page, [{
+    id: 'any', label: 'Any', url: 'https://example.test/v1',
+    model: 'm', hasKey: true, isActive: true,
+    isBuiltIn: false, isMultimodal: false,
+  }]);
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+
+  await page.locator('#topicAttachInput').setInputFiles({
+    name: 'report.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('%PDF-1.4 fake'),
+  });
+  await page.waitForFunction(() => {
+    const s = window.__socratesAttachmentsBridge?.getSnapshot();
+    return s?.attachments?.length === 1;
+  });
+
+  const startBtn = page.locator('#startBtn');
+  await expect(startBtn).toHaveClass(/active/);
+  await expect(startBtn).toHaveAttribute('aria-label', 'Send');
+  await expect(page.locator('#topicInputWrap')).toHaveClass(/has-text/);
+
+  await startBtn.click();
+  await expect(page.locator('#topicSetup')).toHaveClass(/hidden/);
+  await expect(page.locator('#chatView')).not.toHaveClass(/hidden/);
+});
+
 test('Document upload (PDF) produces a fileId pointer chip', async ({ page }) => {
   await mockAuthedApp(page);
   await mockProviderAndUpload(page, [{
