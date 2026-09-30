@@ -230,6 +230,16 @@ export function initKeyboardLift({
     setPhase('closed');
     publishInset(0);
     anchor.end();
+    /* A resize-mode or panned browser can leave the document itself
+     * scrolled when the session ends (the platform scrolled it to reveal
+     * the focused composer). While the session is live we never fight that
+     * pan — once it ends, snap the document home exactly once so the shell
+     * is not left offset under a keyboard that is gone. */
+    try {
+      if (window.scrollY !== 0 || window.scrollX !== 0) {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      }
+    } catch { /* detached */ }
   };
 
   const scheduleFinish = () => {

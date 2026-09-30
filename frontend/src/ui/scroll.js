@@ -310,7 +310,12 @@ export function initChatComposerReserve(options){
     return {
       scrollHeight:list.scrollHeight,
       scrollTop:list.scrollTop,
-      clientHeight:list.clientHeight
+      clientHeight:list.clientHeight,
+      /* The tracked last message and its own height, so a later sample can
+         measure this message's growth directly instead of relying on the
+         list-level baseline (which can hold a transient mid-commit height). */
+      msg:lastMessage,
+      msgHeight:lastMessage?lastMessage.offsetHeight:null
     };
   }
   function userScrolledAway(){
@@ -498,14 +503,28 @@ export function initChatComposerReserve(options){
        change; the ResizeObserver path uses the current baseline. */
     var previous=baselineOverride||lastMetrics;
     var current=readMetrics();
-    var grew=!!previous&&!!current&&current.scrollHeight>previous.scrollHeight+1;
+    /* The list-level baseline can hold a transient mid-commit height that
+       settled with no observer replay (batched React commits, the
+       scrollbar-gutter reflow shortening every message, a font swap). A
+       stale-high baseline masks real growth: grew and the pre-growth pin
+       check both compute against a bottom that no longer exists. When the
+       same message element persists between samples, undo just its own
+       height delta — an append to it never moves scrollTop, so this
+       reconstructs the true pre-growth bottom exactly. */
+    var sameMessage=!!(previous&&current&&previous.msg&&
+      previous.msg===current.msg&&
+      previous.msgHeight!=null&&current.msgHeight!=null);
+    var growth=sameMessage?current.msgHeight-previous.msgHeight:null;
+    var grew=!!current&&(growth!=null
+      ?growth>1
+      :(!!previous&&current.scrollHeight>previous.scrollHeight+1));
     /* ResizeObserver fires after layout. Compare the current scrollTop with
        the PREVIOUS scrollHeight to recover whether the reader was pinned
        before the latest message grew. This also handles a scrollTop write and
        a rich-content resize occurring in the same task, before the browser
        dispatches the scroll event. */
     var beforeGrowth=previous&&list?{
-      scrollHeight:previous.scrollHeight,
+      scrollHeight:growth!=null?current.scrollHeight-growth:previous.scrollHeight,
       scrollTop:list.scrollTop,
       clientHeight:previous.clientHeight
     }:null;

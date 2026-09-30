@@ -186,7 +186,9 @@ test('auto-retry recovers sessions when the server comes back after a transient 
   console.log('[recovery test] Recents DOM count:', result.recentsCount);
 
   // The auto-retry should have fired (2 attempts) and recovered the sessions.
-  expect(sessionsFetchCount, 'auto-retry should have fired a second attempt').toBe(2);
+  // A successful retry may be followed by a normal reconcile fetch, so the
+  // count asserts the retry happened, not that the total is exactly two.
+  expect(sessionsFetchCount, 'auto-retry should have fired a second attempt').toBeGreaterThanOrEqual(2);
   expect(result.fetchFailedFlag, 'failure flag should be cleared after successful retry').toBe(false);
   expect(result.recentsCount, 'recovered session should render in the Recents list').toBe(1);
 });
