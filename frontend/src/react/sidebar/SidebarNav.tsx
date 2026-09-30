@@ -101,7 +101,7 @@ function SidebarNav() {
           <button
             key={button.key}
             type="button"
-            className={`sidebar-nav-btn${isActive ? ' active' : ''}`}
+            className={`btn btn-ghost btn-touch sidebar-nav-btn${isActive ? ' active' : ''}`}
             data-nav={button.key}
             id={navButtonId(button.key)}
             aria-current={isActive ? 'page' : undefined}

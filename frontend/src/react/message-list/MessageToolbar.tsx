@@ -13,7 +13,7 @@ function IconButton({ label, onClick, svgInner, active }: IconButtonProps): Reac
   return (
     <button
       type="button"
-      className={`msg-toolbar-btn${active ? ' active' : ''}`}
+      className={`btn btn-icon btn-touch msg-toolbar-btn${active ? ' active' : ''}`}
       aria-label={label}
       onClick={onClick}
     >

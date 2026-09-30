@@ -110,7 +110,7 @@ function SessionRowBase({ session, isActive, onPick, onTag, onArchive, onDelete,
   return (
     <div
       ref={rowRef}
-      className={`recent-item${isActive ? ' active' : ''}${session.pinned ? ' pinned' : ''}${actionsOpen ? ' actions-open' : ''}`}
+      className={`btn btn-ghost btn-touch recent-item${isActive ? ' active' : ''}${session.pinned ? ' pinned' : ''}${actionsOpen ? ' actions-open' : ''}`}
       data-recent-id={sid}
       data-recent-actual={session.id}
       draggable
@@ -165,7 +165,7 @@ function SessionRowBase({ session, isActive, onPick, onTag, onArchive, onDelete,
       </div>
       <div className="recent-item-actions">
         <button
-          className="recent-item-overflow"
+          className="btn-icon recent-item-overflow"
           type="button"
           title={t('session.moreActions')}
           aria-label={t('session.moreActions')}
@@ -184,7 +184,7 @@ function SessionRowBase({ session, isActive, onPick, onTag, onArchive, onDelete,
             the wrap becomes the ⋯ dropdown listing icon + label rows. */}
         <div className="recent-item-menu" role="menu" onClick={(e) => e.stopPropagation()}>
           <button
-            className="recent-item-tag-btn"
+            className="btn-icon recent-item-tag-btn"
             data-tag-open="1"
             title={t('session.editTags')}
             data-i18n-title="session.editTags"
@@ -194,7 +194,7 @@ function SessionRowBase({ session, isActive, onPick, onTag, onArchive, onDelete,
             <span className="recent-item-action-text" data-i18n-key="session.editTags">{t('session.editTags')}</span>
           </button>
           <button
-            className="recent-item-archive"
+            className="btn-icon recent-item-archive"
             data-archive-session="1"
             title={t('session.ctxArchive')}
             aria-label={t('session.ctxArchive')}
@@ -206,7 +206,7 @@ function SessionRowBase({ session, isActive, onPick, onTag, onArchive, onDelete,
             <span className="recent-item-action-text" data-i18n-key="session.ctxArchive">{t('session.ctxArchive')}</span>
           </button>
           <button
-            className="recent-item-del"
+            className="btn-icon recent-item-del"
             title={t('session.ctxDelete')}
             aria-label={t('session.ctxDelete')}
             data-i18n-title="session.ctxDelete"

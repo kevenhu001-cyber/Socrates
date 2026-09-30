@@ -167,7 +167,9 @@ test('phone drawer keeps nav glyphs aligned and account menu in view', async ({ 
   }));
   expect(rows).toHaveLength(7);
   for (const row of rows) {
-    expect(row.height).toBe(40);
+    // Mobile drawer rows are 44px tall (--ui-hit-area) — chatgpt-aligned
+    // touch target via polish/mobile-controls.css.
+    expect(row.height).toBe(44);
     expect(Math.abs(row.glyphCenter - row.labelCenter)).toBeLessThanOrEqual(2);
   }
   // The account row is a static label — no menu opens from it.

@@ -22,6 +22,9 @@
  *   workspace.css   — projects/directory page fixes
  *   auth.css        — auth gate card
  *   mobile.css      — ≤768px skin alignment only
+ *   press.css       — single press-feedback contract for every control
+ *   buttons.css     — .btn / .btn-icon / .btn-pill utility classes
+ *   mobile-controls.css — ≤768px touch targets + radii + colour overrides
  */
 
 @import './tokens.css';
@@ -34,3 +37,5 @@
 @import './auth.css';
 @import './mobile.css';
 @import './press.css';
+@import './buttons.css';
+@import './mobile-controls.css';

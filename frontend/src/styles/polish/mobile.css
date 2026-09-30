@@ -5,13 +5,12 @@
  */
 
 @media (max-width: 768px) {
-  /* Drawer: same surface as desktop rail + hairline edge. */
+  /* Drawer: same surface as desktop rail + hairline edge. The backdrop is a
+     flat --ui-backdrop dim with no blur: blur is the most expensive effect
+     on low-end phones and runs on every open while the drawer slides in
+     (see P_perf-mobile-backdrop in legacy/15). */
   #appShell .sidebar {
     border-right: 1px solid var(--ui-border-subtle);
-  }
-  #appShell .sidebar-backdrop {
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
   }
 
   /* Top bar icons keep 40px touch targets, quieter color. */
@@ -21,9 +20,8 @@
     color: var(--ui-text-secondary);
   }
 
-  /* Nav rows stay at the desktop rhythm (34px / 8px). */
-  #appShell .sidebar-nav-btn { border-radius: var(--ui-radius-control, 8px); }
-  #appShell .recent-item { border-radius: var(--ui-radius-control, 8px); }
+  /* Nav rows / recents: radius is owned by mobile-controls.css (10px row
+     radius, chatgpt-aligned). This file no longer redefines it. */
 
   /* Mobile tools sheet radius matches the desktop popover contract. */
   body #composerToolsMenu.composer-tools-menu {

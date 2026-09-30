@@ -164,7 +164,7 @@
   top: 0;
   float: none;
   height: 0;
-  color: var(--ui-text-muted);
+  color: var(--ui-text-placeholder);
   opacity: 1;
   white-space: nowrap;
   pointer-events: none;
@@ -459,6 +459,20 @@
   html[data-mode="dark"] #appShell .composer-shell .effort-trigger { background: var(--ui-bg-control); }
   /* Phones show the level only ("Medium"), not "Thinking Medium". */
   #appShell .composer-shell .effort-label:has(+ .effort-value:not(:empty)) { display: none; }
+
+  /* Hit-area wrapper: keep the 36×36 visual (chatgpt reference) but
+     extend the tap surface to 44×44 via ::before so iOS-precision taps
+     don't miss the round button. See polish/mobile-controls.css for the
+     same pattern applied to msg-toolbar-btn. */
+  #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn) {
+    position: relative;
+  }
+  #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn)::before {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    pointer-events: auto;
+  }
 }
 
 /* ── Voice recording ───────────────────────────────────────────────────────

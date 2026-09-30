@@ -131,7 +131,7 @@ function createRecordingBar(session) {
   /* Discard affordance — left-edge ghost "×". Without it the only way out
      of a recording was committing whatever transcript had accumulated. */
   const cancelButton = document.createElement('button');
-  cancelButton.className = 'voice-recording-cancel';
+  cancelButton.className = 'btn-icon btn-touch circle voice-recording-cancel';
   cancelButton.type = 'button';
   cancelButton.dataset.voiceCancel = 'true';
   cancelButton.setAttribute('aria-label', copy('voice.cancel', 'Cancel voice input', '取消语音输入'));
@@ -140,7 +140,7 @@ function createRecordingBar(session) {
   cancelButton.addEventListener('click', cancelSpeechInput);
 
   const stopButton = document.createElement('button');
-  stopButton.className = 'voice-recording-stop';
+  stopButton.className = 'btn-icon btn-touch circle voice-recording-stop';
   stopButton.type = 'button';
   stopButton.dataset.voiceStop = 'true';
   stopButton.setAttribute('aria-label', copy('voice.stop', 'Stop voice input', '停止语音输入'));
