@@ -237,6 +237,7 @@ window.__socratesLegacy = {
     analyzeAction: window.analyzeAction,
     toggleExtensionByKey: toggleExtensionByKey,
     removeAttachment: window.removeAttachment,
+    retryAttachment: window.retryComposerAttachment,
     renderAttachmentChips: window.renderAttachmentChips,
     startSession: startSession,
     submitChatMessage: submitChatMessage,

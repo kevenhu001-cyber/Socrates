@@ -18,6 +18,12 @@ var I18N={
     "chat.attach.imageTooLarge":"Image exceeds the {size} MB limit.",
     "chat.attach.pdfTooLarge":"PDF exceeds the 25 MB limit.",
     "chat.attach.unsupported":"This file type isn't supported. Images, text/code files, PDF, Office documents, EPUB, audio, and video are accepted.",
+    "chat.attach.fileTooLarge":"File exceeds the 25 MB limit.",
+    "chat.attach.duplicate":"This file is already attached.",
+    "chat.attach.retry.aria":"Retry upload",
+    "chat.attach.networkError":"Network error during upload.",
+    "chat.attach.uploadTimeout":"Upload timed out.",
+    "chat.attach.cancelled":"Upload cancelled.",
     "chat.attach.truncated":"(truncated)",
     /* P_attachments-multimodal — UI strings for the user-controlled
      * multimodal checkbox on the API key editor row (provider.*) and

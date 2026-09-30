@@ -40,6 +40,9 @@
 .attachment-chip-remove{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:transparent;color:hsl(var(--text-400));border:none;cursor:pointer;padding:0;flex-shrink:0}
 .attachment-chip-remove:hover{background:var(--ui-bg-hover);color:hsl(var(--text-200))}
 .attachment-chip-remove svg{width:12px;height:12px}
+.attachment-chip-retry{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:transparent;color:hsl(var(--accent-000));border:none;cursor:pointer;padding:0;flex-shrink:0}
+.attachment-chip-retry:hover{background:var(--ui-bg-hover)}
+.attachment-chip-retry svg{width:12px;height:12px}
 .attachment-chip.error{border-color:hsl(0 70% 50%/0.4)}
 .attachment-chip.pending{background:hsl(var(--bg-200));border-color:hsl(var(--accent-000)/0.25);padding:3px 10px 3px 3px;flex-wrap:wrap;gap:3px;max-width:200px;min-width:120px}
 .attachment-chip-spinner{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:hsl(var(--accent-000)/0.08);flex-shrink:0}

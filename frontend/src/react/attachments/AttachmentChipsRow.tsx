@@ -6,16 +6,24 @@ import {
   installAttachmentsBridge,
   useAttachments,
   useAttachmentsRemove,
+  useAttachmentsRetry,
   useAttachmentsSnapshot,
 } from './attachments.bridge';
 import { getAttachmentIcon } from './fileIcons';
+import { t as _t } from '../legacy/gateway';
 import type { AttachmentEntry } from './types';
+
+function i18n(key: string, fallback: string): string {
+  const v = _t(key);
+  return v !== key ? v : fallback;
+}
 
 const CHIPS_ID = 'attachmentChips';
 const TOPIC_CHIPS_ID = 'topicAttachmentChips';
 
 const SPINNER_HTML = '<span class="thinking-ring thinking-ring-sm" aria-hidden="true"></span>';
 const REMOVE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+const RETRY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>';
 
 function truncateName(name: string): string {
   if (!name) return 'file';
@@ -25,9 +33,10 @@ function truncateName(name: string): string {
 interface ChipProps {
   entry: AttachmentEntry;
   onRemove: (id: string) => void;
+  onRetry: (id: string) => void;
 }
 
-function Chip({ entry, onRemove }: ChipProps) {
+function Chip({ entry, onRemove, onRetry }: ChipProps) {
   /* P_perf-blob-url — prefer thumbnailUrl (URL.createObjectURL) for
      the chip <img> source. It's O(1) and the browser lazily decodes
      only what the 28×28 chip needs. Once the upload resolves, the
@@ -47,6 +56,7 @@ function Chip({ entry, onRemove }: ChipProps) {
     <div
       className={`attachment-chip${entry.error ? ' error' : ''}${entry.pending ? ' pending' : ''}`}
       data-id={entry.id}
+      title={entry.error || undefined}
     >
       {showSpinner ? (
         <span
@@ -79,10 +89,23 @@ function Chip({ entry, onRemove }: ChipProps) {
         <span className="attachment-chip-meta">(truncated)</span>
       ) : null}
 
+      {/* Failed uploads offer an explicit retry — the entry still holds
+          its File handle so the user never re-picks the file. */}
+      {entry.error && !entry.pending ? (
+        <button
+          type="button"
+          className="attachment-chip-retry"
+          aria-label={i18n('chat.attach.retry.aria', 'Retry upload')}
+          title={entry.error}
+          onClick={() => onRetry(entry.id)}
+          dangerouslySetInnerHTML={{ __html: RETRY_ICON }}
+        />
+      ) : null}
+
       <button
         type="button"
         className="attachment-chip-remove"
-        aria-label="Remove attachment"
+        aria-label={i18n('chat.attach.remove.aria', 'Remove attachment')}
         onClick={() => onRemove(entry.id)}
         dangerouslySetInnerHTML={{ __html: REMOVE_ICON }}
       />
@@ -99,6 +122,7 @@ function ChipsRow({ targetId }: ChipsRowProps) {
   useAttachmentsSnapshot();
   const attachments = useAttachments();
   const onRemove = useAttachmentsRemove();
+  const onRetry = useAttachmentsRetry();
 
   // The host element (e.g. #attachmentChips) is the hydration root — we
   // never re-render the host itself, only its children. React keeps the
@@ -120,9 +144,9 @@ function ChipsRow({ targetId }: ChipsRowProps) {
   const chips = useMemo(
     () =>
       attachments.map((entry) => (
-        <Chip key={entry.id} entry={entry} onRemove={onRemove} />
+        <Chip key={entry.id} entry={entry} onRemove={onRemove} onRetry={onRetry} />
       )),
-    [attachments, onRemove],
+    [attachments, onRemove, onRetry],
   );
 
   // Fragment — the legacy-created host element stays as the React root;

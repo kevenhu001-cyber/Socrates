@@ -22,13 +22,17 @@
  * The exposed API:
  *   attachments                      — module-level array (current turn)
  *   resetAttachments()               — clear the array (call on submit / cancel)
+ *   snapshotAttachments()            — per-turn copy; marks entries sent
  *   addFiles(FileList|File[])        — async; uploads files, builds entries
- *   removeAttachment(id)             — drop one chip
+ *   removeAttachment(id)             — abort + drop one chip, delete orphans
+ *   retryAttachment(id, onUpdate)    — re-run a failed upload
  *   waitForAttachmentsReady(list)    — settle pending upload/encode jobs
  *   buildMessageContent(text, list)  — assemble { rawText, parts, attachmentList }
  *   attachmentPointerLine(att)       — the [Attached file: …] model pointer
  *   activeProviderSupportsImages()   — vision capability of the active model
  */
+
+import { apiFetch } from './util/api.js';
 
 /* Limits — kept as named constants so the UI can show "max 6" hints
  * and the renderer can refuse oversized inputs without re-checking. */
@@ -456,8 +460,12 @@ function docKindFromFile(file) {
  * Calls onProgress(percent) during the upload. Resolves with
  * { fileId, kind, mimeType, size } or { error } — never rejects.
  * XHR (not fetch) because fetch does not expose upload progress.
+ *
+ * onXhr(xhr) receives the live request so the caller can keep an
+ * abort handle on the entry — removing a chip (or a send-time
+ * timeout) must actually cancel the transfer, not just orphan it.
  */
-function uploadAttachmentFile(file, onProgress) {
+function uploadAttachmentFile(file, onProgress, onXhr) {
   return new Promise((resolve) => {
     const fd = new FormData();
     fd.append('file', file, file.name || 'file');
@@ -469,6 +477,7 @@ function uploadAttachmentFile(file, onProgress) {
     const csrf = (typeof window !== 'undefined' && window.getCsrfToken)
       ? window.getCsrfToken() : '';
     const xhr = new XMLHttpRequest();
+    if (typeof onXhr === 'function') onXhr(xhr);
     if (typeof onProgress === 'function' && xhr.upload) {
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
@@ -489,8 +498,11 @@ function uploadAttachmentFile(file, onProgress) {
         resolve({ error: String(msg) });
       }
     };
-    xhr.onerror = () => resolve({ error: 'Network error during upload' });
-    xhr.ontimeout = () => resolve({ error: 'Upload timed out' });
+    xhr.onerror = () => resolve({ error: _t('chat.attach.networkError', 'Network error during upload') });
+    xhr.ontimeout = () => resolve({ error: _t('chat.attach.uploadTimeout', 'Upload timed out') });
+    /* Aborted by removeAttachment / the send-time straggler cutoff —
+       settle quietly; the entry is already gone or flagged. */
+    xhr.onabort = () => resolve({ error: _t('chat.attach.cancelled', 'Upload cancelled') });
     /* /api/v2 — same CDN-bypass prefix apiFetch uses; the server and
        dev stub both strip it back to /api/files. */
     xhr.open('POST', '/api/v2/files');
@@ -522,6 +534,11 @@ async function prepareAttachment(entry, file, reportProgress) {
     const jobs = [];
     jobs.push(uploadAttachmentFile(file, function (pct) {
       reportProgress(wantsInlineImage ? Math.min(70, Math.round(pct * 0.7)) : pct);
+    }, function (xhr) {
+      /* Live abort handle — removeAttachment cancels a still-running
+         transfer so an unwanted chip does not finish writing a files
+         row nobody references. */
+      entry._abort = function () { try { xhr.abort(); } catch (_) { /* noop */ } };
     }).then(function (outcome) { uploadOutcome = outcome; }));
 
     if (entry.kind === 'image' && wantsInlineImage) {
@@ -601,11 +618,20 @@ async function prepareAttachment(entry, file, reportProgress) {
  *   the caller can re-render chips (typically renderAttachmentChips).
  * @param {function} [onProgress] — forwarded to the per-file read /
  *   compression step; receives an integer percent (0-100).
+ * @param {function} [onRejected] — invoked synchronously per rejection
+ *   so a bad file's toast is not held hostage by a slow in-flight
+ *   upload (the promise only resolves after every job settles).
  * @returns {Promise<{added:number, rejected:string[]}>}
  */
-export async function addFiles(fileList, onUpdate, onProgress) {
+export async function addFiles(fileList, onUpdate, onProgress, onRejected) {
   const files = Array.from(fileList || []);
   const result = { added: 0, rejected: [] };
+  function reject(msg) {
+    result.rejected.push(msg);
+    if (onRejected) {
+      try { onRejected(msg); } catch (_) { /* toast is best-effort */ }
+    }
+  }
   /* U/perf — coalesce per-tick progress into one repaint per animation
      frame. Upload progress events fire far faster than the browser can
      usefully re-render every chip; rAF (setTimeout fallback in non-DOM
@@ -626,16 +652,25 @@ export async function addFiles(fileList, onUpdate, onProgress) {
   const jobs = [];
   for (const file of files) {
     if (attachments.length >= MAX_TOTAL_ATTACHMENTS) {
-      result.rejected.push(`${file.name || 'file'}: max ${MAX_TOTAL_ATTACHMENTS} attachments per turn`);
+      reject(`${file.name || 'file'}: ${_t('chat.attach.maxReached', `max ${MAX_TOTAL_ATTACHMENTS} attachments per turn`)}`);
+      continue;
+    }
+    /* Dedup — re-picking or re-dropping the same file would otherwise
+       queue a second chip and a second files row for identical bytes.
+       Keyed on name+size only: lastModified varies between picker
+       invocations for the same file in some environments. */
+    const sig = `${file.name || ''}|${file.size}`;
+    if (attachments.some((a) => a && a._sig === sig)) {
+      reject(`${file.name || 'file'}: ${_t('chat.attach.duplicate', 'already attached')}`);
       continue;
     }
     const kind = classify(file);
     if (!kind) {
-      result.rejected.push(`${file.name || 'file'}: ${_t('chat.attach.unsupported', 'unsupported file type')}`);
+      reject(`${file.name || 'file'}: ${_t('chat.attach.unsupported', 'unsupported file type')}`);
       continue;
     }
     if (file.size > MAX_FILE_BYTES) {
-      result.rejected.push(`${file.name}: file exceeds ${MAX_FILE_BYTES / 1024 / 1024} MB limit`);
+      reject(`${file.name}: ${_t('chat.attach.fileTooLarge', `file exceeds ${MAX_FILE_BYTES / 1024 / 1024} MB limit`)}`);
       continue;
     }
     const pendingId = shortId();
@@ -644,6 +679,11 @@ export async function addFiles(fileList, onUpdate, onProgress) {
       name: file.name || 'file',
       mime: file.type || 'application/octet-stream',
       size: file.size,
+      /* Private (never persisted — attachmentList whitelists fields):
+         _sig dedups re-adds; _file powers retry; _abort cancels the
+         live upload; _sent marks entries already claimed by a turn. */
+      _sig: sig,
+      _file: file,
     };
     if (kind === 'document') entry.docKind = docKindFromFile(file);
     if (kind === 'image'
@@ -662,7 +702,13 @@ export async function addFiles(fileList, onUpdate, onProgress) {
     }).then(function (outcome) {
       if (outcome && outcome.error) {
         entry.error = outcome.error;
-        result.rejected.push(`${file.name}: ${outcome.error}`);
+        /* A chip the user removed mid-upload settles here with
+           'cancelled' — deliberate intent, not a rejection to surface.
+           Everything else on a still-attached chip gets an error toast
+           and the chip's retry affordance. */
+        if (attachments.includes(entry)) {
+          reject(`${file.name}: ${outcome.error}`);
+        }
       } else {
         result.added++;
       }
@@ -686,15 +732,75 @@ function _revokeBlobUrls(list) {
 }
 
 /**
+ * Immutable per-turn snapshot for the send paths. Returns a shallow
+ * copy of the pending list AND marks the shared entries as claimed:
+ * an entry referenced by an outgoing message must not be deleted by
+ * a later chip removal, and its File handle is dropped (sent entries
+ * can never be retried, so holding the Blob would just pin memory).
+ */
+export function snapshotAttachments() {
+  const snap = attachments.slice();
+  for (let i = 0; i < snap.length; i++) {
+    const a = snap[i];
+    if (!a) continue;
+    a.sent = true;
+    a._file = null;
+  }
+  return snap;
+}
+
+/**
  * Remove one attachment by id. Returns true if found.
- * The in-flight upload job is left to settle on the detached entry —
- * cancelling mid-XHR is not worth the complexity for a 25 MB cap.
+ * A still-running upload is aborted so the transfer does not keep
+ * burning bandwidth for a chip the user already discarded; when the
+ * upload already finished, its files row is deleted best-effort —
+ * an un-referenced upload would otherwise occupy the user quota
+ * forever. Entries already claimed by a turn (sent) are never
+ * deleted: the persisted message points at their fileId.
  */
 export function removeAttachment(id) {
   const idx = attachments.findIndex((a) => a.id === id);
   if (idx === -1) return false;
-  _revokeBlobUrls([attachments[idx]]);
+  const entry = attachments[idx];
+  if (entry && entry.pending && typeof entry._abort === 'function') {
+    try { entry._abort(); } catch (_) { /* noop */ }
+  }
+  if (entry && entry.fileId && !entry.sent) {
+    /* Fire-and-forget — the chip is already gone; a failed delete just
+       leaves the row for the usual orphan-adoption path. apiFetch adds
+       the /api/v2 prefix, credentials, and CSRF header itself. */
+    apiFetch(`/api/files/${encodeURIComponent(entry.fileId)}`, { method: 'DELETE' })
+      .catch(() => {});
+  }
+  _revokeBlobUrls([entry]);
   attachments.splice(idx, 1);
+  return true;
+}
+
+/**
+ * Re-run the upload for an entry whose job failed. The chip stays in
+ * place (same id) and flips back to pending — the File handle kept on
+ * the entry means the user does not have to re-pick the file.
+ */
+export function retryAttachment(id, onUpdate) {
+  const entry = attachments.find((a) => a && a.id === id);
+  if (!entry || entry.pending || !entry.error || !entry._file) return false;
+  entry.pending = true;
+  entry.error = undefined;
+  entry.progress = 0;
+  if (entry.kind === 'image' && !entry.thumbnailUrl
+      && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+    try { entry.thumbnailUrl = URL.createObjectURL(entry._file); } catch (_) { /* noop */ }
+  }
+  if (onUpdate) onUpdate();
+  const job = prepareAttachment(entry, entry._file, function (pct) {
+    entry.progress = pct;
+    if (onUpdate) onUpdate();
+  }).then(function (outcome) {
+    if (outcome && outcome.error) entry.error = outcome.error;
+    if (onUpdate) onUpdate();
+  });
+  READY_PROMISES.set(entry.id, job.finally(function () { READY_PROMISES.delete(entry.id); }));
   return true;
 }
 
@@ -729,11 +835,26 @@ export async function buildMessageContent(text, attachmentSnapshot) {
   if (!turnAttachments.length) {
     return { rawText: t, parts: t, attachmentList: [] };
   }
+  /* Claim every entry for this turn — snapshotAttachments() already does
+     this for the main send paths; marking here too keeps any future
+     caller that passes a live-array slice from racing a chip remove. */
+  for (const a of turnAttachments) {
+    if (a) { a.sent = true; a._file = null; }
+  }
 
   /* Entries may still be uploading (pending:true). Wait for their jobs
      before assembling parts — dropping the fileId would leave the model
-     a pointer it cannot resolve and the user a dead chip after reload. */
+     a pointer it cannot resolve and the user a dead chip after reload.
+     Entries still pending when the window closes get their XHR aborted:
+     the parts below already describe them as unfinished, and letting the
+     upload land after the turn commits would write a files row that no
+     message ever references. */
   await waitForAttachmentsReady(turnAttachments, ATTACHMENT_READY_TIMEOUT_MS);
+  for (const a of turnAttachments) {
+    if (a && a.pending && typeof a._abort === 'function') {
+      try { a._abort(); } catch (_) { /* noop */ }
+    }
+  }
 
   const multimodal = activeProviderSupportsImages();
   const parts = [];

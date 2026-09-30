@@ -50,6 +50,7 @@ import {
   attachments,
   buildMessageContent,
   resetAttachments,
+  snapshotAttachments,
 } from '../attachments.js';
 import { renderAttachmentChips } from '../attachments/render.js';
 
@@ -113,7 +114,7 @@ export async function startSession(){
      buildMessageContent read an emptied store and the landing-page
      attachments silently vanished from the first turn (the reported
      "uploaded image never reaches the model or history" bug). */
-  var startAttachments=Array.isArray(attachments)?attachments.slice():[];
+  var startAttachments=snapshotAttachments();
   var startImmediateAttList=startAttachments.slice(0,20).map(function(a){
     return Object.assign({},a);
   });

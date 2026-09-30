@@ -16,6 +16,12 @@ export const zh = {
     "chat.attach.imageTooLarge":"图片超过 {size} MB 上限。",
     "chat.attach.pdfTooLarge":"PDF 超过 25 MB 上限。",
     "chat.attach.unsupported":"不支持的文件类型。支持图片、文本/代码文件、PDF、Office 文档、EPUB、音频和视频。",
+    "chat.attach.fileTooLarge":"文件超过 25 MB 上限。",
+    "chat.attach.duplicate":"该文件已附加。",
+    "chat.attach.retry.aria":"重试上传",
+    "chat.attach.networkError":"上传时网络错误。",
+    "chat.attach.uploadTimeout":"上传超时。",
+    "chat.attach.cancelled":"上传已取消。",
     "chat.attach.truncated":"（已截断）",
     /* P_attachments-multimodal — see matching en block. */
     "provider.multimodal":"多模态（支持图像理解）",

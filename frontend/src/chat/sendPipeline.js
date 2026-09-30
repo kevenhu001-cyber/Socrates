@@ -28,6 +28,7 @@ import { serializeSelectedPluginContext } from '../react/composer/pluginCatalog.
 import {
   buildMessageContent,
   resetAttachments,
+  snapshotAttachments,
 } from '../attachments.js';
 import { renderAttachmentChips } from '../attachments/render.js';
 import { updateSendBtn } from '../ui/topicSetup.js';
@@ -124,7 +125,11 @@ export async function submitChatMessage(textOverride,opts){
      collapse, and cleared draft now happen in one interaction frame while
      image description / multimodal assembly continues in the background. */
   var isComposerSubmit=textOverride==null;
-  var turnAttachments=isComposerSubmit&&Array.isArray(window.attachments)?window.attachments.slice():[];
+  /* snapshotAttachments() (not a bare slice) also marks each shared
+     entry sent — a chip remove racing the async send must not delete a
+     files row this turn will reference, and the File handle is released
+     since a committed attachment is never retried. */
+  var turnAttachments=isComposerSubmit?snapshotAttachments():[];
   /* P_file-attachments — entries may still be uploading (pending:true).
      The bubble gets the stub list immediately so chips appear in-frame;
      buildMessageContent waits for their jobs (waitForAttachmentsReady)

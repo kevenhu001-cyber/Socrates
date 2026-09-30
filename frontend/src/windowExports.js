@@ -282,8 +282,11 @@ window.removeAttachment = removeAttachment;
    React's legacyAdapter and by main.js for the attachment chip strip.
    It was exported but never bridged to window, causing
    window.__socratesLegacy.composer.renderAttachmentChips to be undefined. */
-import { renderAttachmentChips } from './attachments/render.js';
+import { renderAttachmentChips, retryComposerAttachment } from './attachments/render.js';
 window.renderAttachmentChips = renderAttachmentChips;
+/* Error-chip retry entry point for the React chip row
+   (composer.retryAttachment in the legacy gateway). */
+window.retryComposerAttachment = retryComposerAttachment;
 
 /* ─── ui/topicSetup.js — send/start button refreshers. attachments/
    render.js calls them by name (window[w.updateBtnName]) after every

@@ -270,6 +270,81 @@ test('Attachment-only landing draft activates Send and enters chat', async ({ pa
   await expect(page.locator('#chatView')).not.toHaveClass(/hidden/);
 });
 
+test('Failed upload shows a retry affordance that re-runs the job', async ({ page }) => {
+  await mockAuthedApp(page);
+  let attempts = 0;
+  await page.route('**/api/**', async (route) => {
+    const req = route.request();
+    const apiUrl = req.url().replace('/api/v2/', '/api/');
+    if (req.method() === 'POST' && apiUrl.includes('/api/files')) {
+      attempts++;
+      if (attempts === 1) {
+        await route.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"boom"}' });
+      } else {
+        await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(MOCK_UPLOAD) });
+      }
+      return;
+    }
+    if (req.method() === 'GET' && apiUrl.includes('/api/api-key')) {
+      await route.fulfill({
+        status: 200, contentType: 'application/json',
+        body: JSON.stringify({ providers: [{
+          id: 'any', label: 'Any', url: 'https://example.test/v1',
+          model: 'm', hasKey: true, isActive: true,
+          isBuiltIn: false, isMultimodal: false,
+        }] }),
+      });
+      return;
+    }
+    await route.fallback();
+  });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+
+  await page.locator('#topicAttachInput').setInputFiles({
+    name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('hello'),
+  });
+
+  /* First attempt fails → error chip with a retry button carrying the
+     failure reason as its tooltip. */
+  const chip = page.locator('#topicAttachmentChips .attachment-chip');
+  await expect(chip).toHaveCount(1);
+  await expect(chip).toHaveClass(/error/);
+  const retryBtn = page.locator('#topicAttachmentChips .attachment-chip-retry');
+  await expect(retryBtn).toHaveCount(1);
+
+  /* Retry re-uploads the retained File — no re-pick needed — and the
+     same chip resolves into a durable fileId. */
+  await retryBtn.click();
+  await page.waitForFunction(() => {
+    const s = window.__socratesAttachmentsBridge?.getSnapshot();
+    return s?.attachments?.[0]?.fileId === 'file-uuid-1';
+  });
+  await expect(chip).not.toHaveClass(/error/);
+  expect(attempts).toBe(2);
+});
+
+test('Re-picking an identical file is deduplicated', async ({ page }) => {
+  await mockAuthedApp(page);
+  await mockProviderAndUpload(page, [{
+    id: 'any', label: 'Any', url: 'https://example.test/v1',
+    model: 'm', hasKey: true, isActive: true,
+    isBuiltIn: false, isMultimodal: false,
+  }]);
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+
+  const file = { name: 'dup.txt', mimeType: 'text/plain', buffer: Buffer.from('same bytes') };
+  await page.locator('#topicAttachInput').setInputFiles(file);
+  await page.locator('#topicAttachInput').setInputFiles(file);
+
+  await page.waitForFunction(() => {
+    const s = window.__socratesAttachmentsBridge?.getSnapshot();
+    return s?.attachments?.length === 1;
+  });
+  await expect(page.locator('#topicAttachmentChips .attachment-chip')).toHaveCount(1);
+});
+
 test('Document upload (PDF) produces a fileId pointer chip', async ({ page }) => {
   await mockAuthedApp(page);
   await mockProviderAndUpload(page, [{
