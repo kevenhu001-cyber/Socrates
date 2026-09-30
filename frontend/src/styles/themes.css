@@ -1,18 +1,17 @@
-/* themes.css — final theme contract for the complete application.
-   This file is imported once, after every compatibility and component rule.
-   It owns the --ui-* palette and maps every legacy token family onto that
-   palette, so no earlier stylesheet can establish a competing theme.
+/* Theme values are the single source of truth for every first-party surface.
+   The ramp is chatgpt.com's pure neutral scale (no hue), measured over CDP on
+   2026-09-28 — see docs/ref/chatgpt-parity.md. polish/tokens.css aliases every
+   older palette family (--cg-*, --chatgpt-*, --conversation-*, the legacy
+   HSL channels) onto these names, so changing a value here repaints the app.
 
-   Hierarchy keeps the page black while the sidebar uses a neighboring charcoal
+   Hierarchy follows chatgpt.com: page and sidebar share one color and are
    separated by a hairline; raised surfaces (composer, menus, bubbles) step up
    in lightness in dark mode and sit white-on-white with a shadow in light. */
 [data-mode="dark"] {
   color-scheme: dark;
   --ui-bg-page: #000000;
-  --ui-bg-sidebar: #181818;
-  --ui-bg-sidebar-hover: #242424;
-  --ui-bg-sidebar-active: #2a2a2a;
-  --ui-sidebar-border: rgb(255 255 255 / 8%);
+  --ui-bg-sidebar: #000000;
+  --ui-sidebar-border: rgb(255 255 255 / 15%);
   --ui-bg-raised: #171717;
   --ui-bg-surface: #212121;
   --ui-bg-control: #303030;
@@ -50,13 +49,13 @@
   --ui-tool-chip-hover-text: rgb(218 230 253);
   --ui-link: rgb(129 166 249);
   --ui-bg-code: var(--ui-bg-raised);
-  --ui-bg-code-header: var(--ui-bg-code);
-  --ui-border-code: var(--ui-border-subtle);
-  /* Placeholder tone is its own step so it can drift from small muted
-     labels without repainting body copy. */
+  /* Phone code blocks keep a distinct header band in dark mode. */
+  --ui-bg-code-header: var(--ui-bg-control);
+  --ui-border-code: var(--ui-border-default);
+  /* Dialog cards (auth, workspace dialogs) sit one step above the page. */
+  --ui-bg-dialog: var(--ui-bg-surface);
+  /* Placeholders stay at the muted step; labels use --ui-text-muted. */
   --ui-text-placeholder: var(--ui-text-muted);
-  /* Consumed by legacy/00-foundations.css for the global scrollbar; without
-     these the thumb resolved to nothing and light surfaces looked unscrolled. */
   --ui-scrollbar-thumb: rgb(255 255 255 / 12%);
   --ui-scrollbar-thumb-hover: rgb(255 255 255 / 22%);
 }
@@ -65,8 +64,6 @@
   color-scheme: light;
   --ui-bg-page: #ffffff;
   --ui-bg-sidebar: #fcfcfc;
-  --ui-bg-sidebar-hover: #f3f3f3;
-  --ui-bg-sidebar-active: #e8e8e8;
   --ui-sidebar-border: rgb(0 0 0 / 10%);
   --ui-bg-raised: #f9f9f9;
   --ui-bg-surface: #f3f3f3;
@@ -77,7 +74,12 @@
   --ui-text-primary: #0d0d0d;
   --ui-text-secondary: #5d5d5d;
   --ui-text-tertiary: #6e6e6e;
-  --ui-text-muted: #8f8f8f;
+  /* #8f8f8f (chatgpt.com) is 3.2:1 on white, below WCAG AA for the small
+     labels that use this step (section headers, disclaimers, descriptions).
+     #737373 clears 4.5:1 on the page, sidebar and raised surfaces; the
+     composer placeholder keeps the lighter reference value below. */
+  --ui-text-muted: #737373;
+  --ui-text-placeholder: #8f8f8f;
   --ui-text-disabled: #b4b4b4;
   --ui-border-subtle: rgb(0 0 0 / 6%);
   --ui-border-default: rgb(0 0 0 / 10%);
@@ -101,19 +103,43 @@
   --ui-tool-chip-hover-text: rgb(36 81 218);
   --ui-link: rgb(36 81 218);
   --ui-bg-code: var(--ui-bg-raised);
+  /* Light code blocks are one card, like the desktop transcript. */
   --ui-bg-code-header: var(--ui-bg-code);
   --ui-border-code: var(--ui-border-subtle);
-  --ui-text-placeholder: var(--ui-text-muted);
+  /* White-on-white with a hairline + shadow, never a grey slab. */
+  --ui-bg-dialog: var(--ui-bg-page);
   --ui-scrollbar-thumb: rgb(0 0 0 / 16%);
   --ui-scrollbar-thumb-hover: rgb(0 0 0 / 28%);
 }
+
+/* ---------------------------------------------------------------------------
+ * Compatibility bridge (moved here from polish/tokens.css, 2026-09-30).
+ *
+ * themes.css is the sole owner of the palette, so the legacy token families
+ * that restore/ and legacy/ still consume — --chatgpt-*, --cg-*, --cgv-*,
+ * --conversation-*, and the HSL channel families (--bg-, --text-, --border-
+ * prefixed) — are aliased onto the --ui-* ramp here. Keeping them in this
+ * file is what lets polish/tokens.css go away: check-css-debt.mjs and
+ * check-surface-ownership.mjs both exempt themes.css, so the bridge cannot
+ * register as a competing palette or as a desktop owner for the topbar and
+ * sidebar surfaces.
+ *
+ * HSL channels cannot alias a hex token (consumers write
+ * hsl(var(--bg-100))), so they carry the same neutral steps as the ramp.
+ * ------------------------------------------------------------------------- */
 
 :root {
   --ui-shadow-menu: var(--ui-shadow-popover);
   --ui-shadow-modal: var(--ui-shadow-dialog);
   --ui-shadow-toast: 0 6px 22px rgb(0 0 0 / 14%);
+
+  /* Focus — single hairline ring, never the UA blue. */
   --ui-focus-ring: 0 0 0 2px var(--ui-bg-page), 0 0 0 4px var(--ui-border-strong);
+
+  /* One font family everywhere: the parity rules that pin --chatgpt-font
+     land on the bundled face (--cg-font) instead of a second stack. */
   --chatgpt-font: var(--cg-font);
+
   --chatgpt-page: var(--ui-bg-page);
   --chatgpt-rail: var(--ui-bg-sidebar);
   --chatgpt-surface: var(--ui-bg-surface);
@@ -124,17 +150,13 @@
   --chatgpt-muted: var(--ui-text-tertiary);
   --chatgpt-faint: var(--ui-text-muted);
   --chatgpt-line: var(--ui-border-default);
-  --cgv-border: var(--ui-border-default);
-  --cgv-border-strong: var(--ui-border-strong);
-  --cgv-surface: var(--ui-bg-surface);
-  --cgv-surface-hover: var(--ui-bg-hover);
-  --cgv-text: var(--ui-text-primary);
-  --cgv-text-2: var(--ui-text-secondary);
-  --cgv-text-3: var(--ui-text-muted);
+
   --cgv-composer-surface: var(--ui-bg-composer);
   --conversation-text-secondary: var(--conversation-text-muted);
 }
 
+/* Literal #000 pins in restore (chat-surface, mobile-parity, fixes) — repin
+   them to the ramp with identical selectors + !important + later order. */
 html[data-theme="socrates"][data-mode="dark"] body,
 html[data-theme="socrates"][data-mode="dark"] #appShell,
 html[data-theme="socrates"][data-mode="dark"] #appShell .main,
@@ -148,6 +170,10 @@ html[data-theme="socrates"][data-mode="dark"] #appShell#appShell .sidebar {
   background: var(--ui-bg-sidebar) !important;
 }
 
+/* chat-surface pins --conversation-page/--cg-page/--cg-rail at
+   html[data-theme][data-mode] (0,2,1); the remap lives at the same
+   specificity and wins by order. The two blocks differ only where the old
+   families mapped a name to different ramp steps per mode. */
 html[data-theme="socrates"][data-mode="dark"],
 html[data-theme="socrates"][data-mode="light"] {
   --cg-page: var(--ui-bg-page);
@@ -164,6 +190,7 @@ html[data-theme="socrates"][data-mode="light"] {
   --cg-accent-strong: var(--ui-accent-strong);
   --cg-accent-ink: var(--ui-on-accent);
   --cg-danger: var(--ui-danger);
+
   --conversation-page: var(--ui-bg-page);
   --conversation-surface: var(--ui-bg-surface);
   --conversation-control: var(--ui-bg-control);
@@ -176,6 +203,8 @@ html[data-theme="socrates"][data-mode="light"] {
 html[data-theme="socrates"][data-mode="dark"] { --cg-surface-raised: var(--ui-bg-control); }
 html[data-theme="socrates"][data-mode="light"] { --cg-surface-raised: var(--ui-bg-raised); }
 
+/* Legacy HSL channels — neutral (hue 0, saturation 0) steps of the same ramp:
+   dark bg #000 / #0d0d0d / #171717 / #212121, text #fff → #808080. */
 html[data-theme="socrates"][data-mode="dark"] {
   --bg-000: 0 0% 0%;
   --bg-100: 0 0% 5%;
@@ -187,7 +216,9 @@ html[data-theme="socrates"][data-mode="dark"] {
   --text-300: 0 0% 69%;
   --text-350: 0 0% 64%;
   --text-400: 0 0% 61%;
-  --text-500: 0 0% 47%;
+  /* 50% (#808080) is 4.9:1 on the #0d0d0d dialog/quiz surfaces; 47% sat at
+     4.4:1 there (cheatsheet section labels, usage stat labels, quiz letters). */
+  --text-500: 0 0% 50%;
   --border-100: 0 0% 13%;
   --border-200: 0 0% 16%;
   --border-300: 0 0% 19%;
@@ -195,6 +226,10 @@ html[data-theme="socrates"][data-mode="dark"] {
   --border-500: 0 0% 25%;
 }
 
+/* light: bg #fff / #fcfcfc / #f9f9f9 / #f3f3f3, text #0d0d0d → #737373.
+   --text-500 mirrors --ui-text-muted (45% = #737373, AA on the page and the
+   sidebar); the old 56% step was 3.2:1 and made every legacy caption,
+   section label and meta line fail contrast. */
 html[data-theme="socrates"][data-mode="light"] {
   --bg-000: 0 0% 100%;
   --bg-100: 0 0% 99%;
@@ -206,7 +241,7 @@ html[data-theme="socrates"][data-mode="light"] {
   --text-300: 0 0% 36%;
   --text-350: 0 0% 40%;
   --text-400: 0 0% 43%;
-  --text-500: 0 0% 56%;
+  --text-500: 0 0% 45%;
   --border-100: 0 0% 91%;
   --border-200: 0 0% 87%;
   --border-300: 0 0% 80%;

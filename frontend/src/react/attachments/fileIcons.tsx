@@ -1,7 +1,7 @@
 /**
  * SVG icons for the attachment chip row.
  *
- * Each icon is a 24×24 outline that lives inside a 42×42 rounded preview
+ * Each icon is a 24×24 outline that lives inside a 28×28 rounded chip
  * background. Icons are tinted via `currentColor`, so the chip CSS
  * (color: hsl(var(--text-300)) in the dark theme) decides the final
  * hue. The reference design uses a single accent (a soft blue) across
@@ -24,9 +24,7 @@ import type { AttachmentEntry } from './types';
 
 /* Structural subset the icon picker actually reads — widened so both
    the composer AttachmentEntry and the persisted domain attachment
-   (optional id, ReadonlyArray rows) can drive it. Exported so
-   message-list/MessageItem.tsx can type its attachment rows against the
-   same shape. */
+   (optional id, ReadonlyArray rows) can drive it. */
 export type IconSource = Pick<AttachmentEntry, 'kind' | 'docKind' | 'mime' | 'name'>;
 
 const DOC_OUTLINE =

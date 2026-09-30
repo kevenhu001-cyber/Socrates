@@ -55,7 +55,7 @@ body #composerToolsMenu {
   border-radius: var(--ui-radius-lg, 12px) !important;
   border-color: var(--ui-border-subtle) !important;
   box-shadow: var(--ui-shadow-menu) !important;
-  padding: 6px !important;
+  padding: 8px !important;
 }
 
 /* "+" open animation — the card springs out of the trigger edge. The menu
@@ -138,149 +138,11 @@ body #composerToolsMenu .composer-tools-item kbd {
   body #composerToolsMenu .composer-tools-footer-search input { min-height: 30px; }
 }
 
-/* Attachment chips inside the capsule — consistent pill + hairline. */
-#appShell .attachment-chips {
-  flex-wrap: nowrap;
-  align-items: stretch;
-  gap: 8px;
-  max-height: none;
-  padding-bottom: 2px !important;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  scroll-snap-type: x proximity;
-}
-#appShell .attachment-chips::-webkit-scrollbar { display: none; }
-#appShell .attachment-chips .attachment-chip {
-  position: relative;
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  align-items: center;
-  flex: 0 0 min(224px, calc(100vw - 52px));
-  gap: 10px;
-  width: 224px;
-  max-width: calc(100vw - 52px);
-  min-height: 58px;
-  padding: 7px 32px 7px 7px;
-  overflow: hidden;
-  border: 1px solid var(--ui-border-default);
-  border-radius: var(--ui-radius-lg, 12px);
-  background: var(--ui-bg-chip);
-  color: var(--ui-text-primary);
-  line-height: 1.2;
-  scroll-snap-align: start;
-  box-shadow: 0 1px 1px rgb(0 0 0 / 4%);
-  transition: background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
-}
-#appShell .attachment-chips .attachment-chip:hover,
-#appShell .attachment-chips .attachment-chip:focus-within {
-  border-color: var(--ui-border-strong);
-  background: var(--ui-bg-chip-hover);
-  box-shadow: 0 2px 8px rgb(0 0 0 / 8%);
-}
-#appShell .attachment-chip-preview {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
-  overflow: hidden;
-  border-radius: var(--ui-radius-control, 8px);
-  background: var(--ui-bg-control);
-  color: var(--ui-text-secondary);
-}
-#appShell .attachment-chips .attachment-chip-thumb,
-#appShell .attachment-chips .attachment-chip-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: var(--ui-radius-control, 8px);
-  background: transparent;
-}
-#appShell .attachment-chips .attachment-chip-icon svg {
-  width: 20px;
-  height: 20px;
-}
-#appShell .attachment-chip-copy {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 3px;
-}
-#appShell .attachment-chips .attachment-chip-name {
-  overflow: hidden;
-  color: var(--ui-text-primary);
-  font-size: calc(13px * var(--app-font-scale, 1));
-  font-weight: 600;
-  line-height: 17px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-#appShell .attachment-chips .attachment-chip-meta {
-  overflow: hidden;
-  color: var(--ui-text-muted);
-  font-size: calc(11px * var(--app-font-scale, 1));
-  font-weight: 400;
-  line-height: 14px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-#appShell .attachment-chips .attachment-chip-remove {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 22px;
-  height: 22px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--ui-text-muted);
-  opacity: 0.72;
-  transition: opacity 120ms ease, color 120ms ease, background-color 120ms ease, border-color 120ms ease;
-}
-#appShell .attachment-chips .attachment-chip-remove:hover,
-#appShell .attachment-chips .attachment-chip-remove:focus-visible {
-  border-color: var(--ui-border-subtle);
-  background: var(--ui-bg-hover);
-  color: var(--ui-text-primary);
-  opacity: 1;
-  outline: none;
-}
-#appShell .attachment-chips .attachment-chip-remove svg {
-  width: 11px;
-  height: 11px;
-}
-#appShell .attachment-chips .attachment-chip-spinner {
-  width: 24px;
-  height: 24px;
-  background: transparent;
-}
-#appShell .attachment-chips .attachment-chip-progress-bar {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  width: auto;
-  height: 2px;
-  margin: 0;
-  overflow: hidden;
-  border-radius: 0;
-  background: var(--ui-border-subtle);
-}
-#appShell .attachment-chips .attachment-chip-progress-fill {
-  border-radius: 0;
-  background: var(--ui-accent-strong);
-}
-#appShell .attachment-chips .attachment-chip.error {
-  border-color: color-mix(in srgb, var(--ui-danger) 42%, transparent);
-}
-#appShell .attachment-chips .attachment-chip.error .attachment-chip-meta {
-  color: var(--ui-danger);
-}
+/* Attachment chips inside the capsule — the card radius (12px) matches
+   the legacy/07-composer-settings.css chip block so both files agree. */
+#appShell .attachment-chips .attachment-chip,
 #appShell .msg-attachment {
-  border-radius: var(--ui-radius-control, 8px);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  #appShell .attachment-chips .attachment-chip { transition: none; }
+  border-radius: 12px;
 }
 
 /* Under-composer disclaimer: quiet centered microcopy. */
@@ -374,4 +236,18 @@ body #composerToolsMenu .composer-tools-item kbd {
 
 @media (prefers-reduced-motion: reduce) {
   #appShell .voice-recording-indicator::after { animation: none; }
+}
+
+/* Reference phone sheet is a flat action list — group labels stay in the
+   DOM for the group aria-labels and the compat specs, but clip out of the
+   painted sheet on phones. */
+@media (max-width: 768px) {
+  body #composerToolsMenu .composer-tools-mobile-items .composer-tools-group-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }

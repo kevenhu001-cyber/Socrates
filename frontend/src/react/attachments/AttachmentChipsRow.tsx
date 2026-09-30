@@ -1,135 +1,135 @@
 import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
 import {
   installAttachmentsBridge,
   useAttachments,
   useAttachmentsRemove,
+  useAttachmentsRetry,
   useAttachmentsSnapshot,
 } from './attachments.bridge';
 import { getAttachmentIcon } from './fileIcons';
+import { t as _t } from '../legacy/gateway';
+import { formatAttachmentSize } from '../../attachments.js';
 import type { AttachmentEntry } from './types';
+
+function i18n(key: string, fallback: string): string {
+  const v = _t(key);
+  return v !== key ? v : fallback;
+}
 
 const CHIPS_ID = 'attachmentChips';
 const TOPIC_CHIPS_ID = 'topicAttachmentChips';
 
 const SPINNER_HTML = '<span class="thinking-ring thinking-ring-sm" aria-hidden="true"></span>';
 const REMOVE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+const RETRY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>';
 
 function truncateName(name: string): string {
   if (!name) return 'file';
   return name.length > 60 ? name.slice(0, 57) + '…' : name;
 }
 
-function fileType(entry: AttachmentEntry): string {
-  if (entry.docKind) return entry.docKind.toUpperCase();
-  const name = entry.name ?? '';
-  const extension = name.includes('.') ? name.split('.').pop() : '';
-  if (extension && extension.length <= 8) return extension.toUpperCase();
-  if (entry.kind === 'image') return 'IMAGE';
-  if (entry.kind === 'text') return 'TEXT';
-  return 'FILE';
-}
-
-function formatFileSize(size: number | undefined): string | null {
-  if (typeof size !== 'number' || !Number.isFinite(size) || size < 0) return null;
-  if (size < 1024) return `${size} B`;
-  const units = ['KB', 'MB', 'GB'];
-  let value = size / 1024;
-  let unit = units[0];
-  for (let index = 1; index < units.length && value >= 1024; index += 1) {
-    value /= 1024;
-    unit = units[index];
-  }
-  return `${value >= 10 ? value.toFixed(0) : value.toFixed(1)} ${unit}`;
-}
-
-function attachmentMeta(entry: AttachmentEntry): string {
-  if (entry.error) return 'Upload failed';
-  if (entry.pending) {
-    const progress = typeof entry.progress === 'number'
-      ? ` · ${Math.round(Math.min(Math.max(entry.progress, 0), 100))}%`
-      : '';
-    return `Uploading${progress}`;
-  }
-  const details = [fileType(entry), formatFileSize(entry.size)].filter(Boolean);
-  if (entry.truncated) details.push('Truncated');
-  return details.join(' · ');
-}
-
 interface ChipProps {
   entry: AttachmentEntry;
   onRemove: (id: string) => void;
+  onRetry: (id: string) => void;
 }
 
-function Chip({ entry, onRemove }: ChipProps) {
+/* ChatGPT/Vercel-style meta label: the document/extension tag plus the
+   size ("PDF · 2.3 MB"), "Uploading… 42%" while in flight, or a plain
+   "Upload failed" the retry button clears. */
+function kindLabel(entry: AttachmentEntry): string {
+  if (entry.docKind) return String(entry.docKind).toUpperCase();
+  const name = String(entry.name || '');
+  const dot = name.lastIndexOf('.');
+  if (dot > 0) {
+    const ext = name.slice(dot + 1);
+    if (ext.length >= 1 && ext.length <= 5) return ext.toUpperCase();
+  }
+  return String(entry.kind || 'file').toUpperCase();
+}
+
+function Chip({ entry, onRemove, onRetry }: ChipProps) {
   /* P_perf-blob-url — prefer thumbnailUrl (URL.createObjectURL) for
      the chip <img> source. It's O(1) and the browser lazily decodes
-     only what the 42×42 preview needs. Once the upload resolves, the
-     durable /api/v2/files/:id/raw URL (then the inline dataUrl)
-     takes over so the chip survives composer resets and reloads. */
+     only what the tile needs. Once the upload resolves, the durable
+     /api/v2/files/:id/raw URL (then the inline dataUrl) takes over so
+     the chip survives composer resets and reloads. */
   const fileUrl = entry.fileId ? `/api/v2/files/${entry.fileId}/raw` : undefined;
-  const imgSrc = (entry.thumbnailUrl || fileUrl || entry.dataUrl) ?? undefined;
+  /* Fallback chain: blob thumbnail → durable raw file → inline dataUrl.
+     A source that 404s/decode-fails is blacklisted and the next
+     candidate takes over; when nothing loads the kind icon tile shows
+     instead of a broken-image glyph. */
+  const [badSrc, setBadSrc] = useState<string | null>(null);
+  const imgCandidates = [entry.thumbnailUrl, fileUrl, entry.dataUrl]
+    .filter((s): s is string => !!s && s !== badSrc);
+  const imgSrc = imgCandidates[0];
   const isImage = entry.kind === 'image' && !!imgSrc;
-  const showSpinner = !!entry.pending;
-  const showProgressBar = !!entry.pending && typeof entry.progress === 'number' && entry.progress >= 0;
-  const progressWidth = showProgressBar
-    ? Math.min(Math.max(entry.progress ?? 0, 0), 100)
-    : 0;
+  const progress = Math.min(Math.max(entry.progress ?? 0, 0), 100);
+  const meta = entry.pending
+    ? `${i18n('chat.attach.uploading', 'Uploading')}… ${Math.round(progress)}%`
+    : entry.error
+      ? i18n('chat.attach.failed', 'Upload failed')
+      : entry.truncated
+        ? i18n('chat.attach.truncated', '(truncated)')
+        : `${kindLabel(entry)}${entry.size ? ` · ${formatAttachmentSize(entry.size)}` : ''}`;
 
   return (
     <div
-      className={`attachment-chip${entry.error ? ' error' : ''}${entry.pending ? ' pending' : ''}`}
+      className={`attachment-chip${isImage ? ' is-image' : ''}${entry.error ? ' error' : ''}${entry.pending ? ' pending' : ''}`}
       data-id={entry.id}
+      title={entry.error || entry.name || undefined}
     >
-      <span className="attachment-chip-preview" aria-hidden="true">
-        {showSpinner ? (
-          <span
-            className="attachment-chip-spinner"
-            dangerouslySetInnerHTML={{ __html: SPINNER_HTML }}
-          />
-        ) : isImage ? (
+      {/* Visual tile — thumbnail for images, kind-tinted icon tile for
+          documents; the pending veil + spinner sit on top of it. */}
+      <span className="attachment-chip-visual" data-kind={entry.docKind || entry.kind || 'file'}>
+        {isImage ? (
           <img
             className="attachment-chip-thumb"
             src={imgSrc}
-            alt=""
+            alt={entry.name ?? ''}
+            onError={() => setBadSrc(imgSrc ?? null)}
           />
         ) : (
           <span
             className="attachment-chip-icon"
+            aria-hidden="true"
             dangerouslySetInnerHTML={{ __html: getAttachmentIcon(entry) }}
           />
         )}
+        {entry.pending ? (
+          <span className="attachment-chip-veil" aria-hidden="true">
+            <span dangerouslySetInnerHTML={{ __html: SPINNER_HTML }} />
+          </span>
+        ) : null}
       </span>
 
-      <span className="attachment-chip-copy">
-        <span className="attachment-chip-name" title={entry.name ?? 'file'}>
-          {truncateName(entry.name ?? 'file')}
+      {isImage ? null : (
+        <span className="attachment-chip-info">
+          <span className="attachment-chip-name">{truncateName(entry.name ?? 'file')}</span>
+          <span className="attachment-chip-meta">{meta}</span>
         </span>
-        <span className="attachment-chip-meta">{attachmentMeta(entry)}</span>
-      </span>
+      )}
 
-      {showProgressBar ? (
-        <div
-          className="attachment-chip-progress-bar"
-          role="progressbar"
-          aria-label={`Uploading ${entry.name ?? 'file'}`}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(progressWidth)}
-        >
-          <div
-            className="attachment-chip-progress-fill"
-            style={{ width: `${progressWidth}%` }}
-          />
-        </div>
+      {/* Failed uploads offer an explicit retry — the entry still holds
+          its File handle so the user never re-picks the file. */}
+      {entry.error && !entry.pending ? (
+        <button
+          type="button"
+          className="attachment-chip-retry"
+          aria-label={i18n('chat.attach.retry.aria', 'Retry upload')}
+          title={entry.error}
+          onClick={() => onRetry(entry.id)}
+          dangerouslySetInnerHTML={{ __html: RETRY_ICON }}
+        />
       ) : null}
 
       <button
         type="button"
         className="attachment-chip-remove"
-        aria-label={`Remove ${entry.name ?? 'attachment'}`}
+        aria-label={i18n('chat.attach.remove.aria', 'Remove attachment')}
         onClick={() => onRemove(entry.id)}
         dangerouslySetInnerHTML={{ __html: REMOVE_ICON }}
       />
@@ -146,6 +146,7 @@ function ChipsRow({ targetId }: ChipsRowProps) {
   useAttachmentsSnapshot();
   const attachments = useAttachments();
   const onRemove = useAttachmentsRemove();
+  const onRetry = useAttachmentsRetry();
 
   // The host element (e.g. #attachmentChips) is the hydration root — we
   // never re-render the host itself, only its children. React keeps the
@@ -167,9 +168,9 @@ function ChipsRow({ targetId }: ChipsRowProps) {
   const chips = useMemo(
     () =>
       attachments.map((entry) => (
-        <Chip key={entry.id} entry={entry} onRemove={onRemove} />
+        <Chip key={entry.id} entry={entry} onRemove={onRemove} onRetry={onRetry} />
       )),
-    [attachments, onRemove],
+    [attachments, onRemove, onRetry],
   );
 
   // Fragment — the legacy-created host element stays as the React root;

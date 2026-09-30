@@ -5,6 +5,10 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 /* These screenshots are intentionally written to /tmp.  The spec checks the
    app-owned surfaces at the same mobile and desktop sizes as the supplied
    references without committing generated artefacts to the repository. */
+
+/* Local standard: the phone drawer is `--ui-sidebar-mobile` (254px), so the
+   off-canvas edge sits at -254. (Remote's 350px drawer is not adopted.) */
+const MOBILE_DRAWER = 254;
 const REFERENCE_CONNECTORS = [
   { id: 'gmail', name: 'Gmail', description: 'Read and manage Gmail.', capabilities: ['Mail'], authType: 'oauth', connection: { status: 'initiated', displayName: 'Study inbox' } },
   { id: 'github', name: 'GitHub', description: 'Triage PRs, issues, CI, and publish flows.', capabilities: ['Repositories', 'Issues'], authType: 'oauth', connection: { status: 'connected', displayName: 'Study org' } },
@@ -64,7 +68,7 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
     const sidebar = document.getElementById('sidebar');
     if (sidebar && !sidebar.classList.contains('collapsed')) window.toggleSidebar?.();
   });
-  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? 0)).toBe(-350);
+  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? 0)).toBe(-MOBILE_DRAWER);
   await expect(page.locator('#topicSetup')).toBeVisible();
   await expect(page.locator('#modeSegmentedTop')).toBeVisible();
   await expect(page.locator('#topicInputWrap')).toBeVisible();
@@ -131,8 +135,8 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   await expect(toolsMenu).toBeHidden();
 
   await openSidebar(page);
-  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.width ?? 0)).toBe(350);
-  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? -350)).toBe(0);
+  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.width ?? 0)).toBe(MOBILE_DRAWER);
+  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? -MOBILE_DRAWER)).toBe(0);
   await expect(page.locator('#sidebarSearchBtn')).toBeVisible();
   await expect(page.locator('#sidebarCloseBtn')).toBeVisible();
   await page.screenshot({ path: '/tmp/socrates-reference-mobile-sidebar-390x769.png', fullPage: true });

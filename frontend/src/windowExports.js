@@ -120,10 +120,14 @@ window.closeCheatsheet = closeCheatsheet;
 
 /* ─── sidebar/nav.js (PR-A of the sidebar overhaul) ─── */
 import { openNav, setActiveNav } from './sidebar/nav.js';
-/* `openNav` is the dispatcher wired to the .sidebar-nav-btn onclick
-   in index.html. `setActiveNav` is exposed for the morePopover
-   module to clear the More button's active state on close (avoids
-   a nav.js ↔ morePopover.js import cycle). */
+/* `openNav` drives navigation from the imperative callers below — the
+   React sidebar (react/sidebar/SidebarNav.tsx), the more-popover, the
+   keyboard shortcuts, the home surface and the native bridge. index.html
+   renders the nav rows as a pre-hydration placeholder with no inline
+   handlers, so nothing here is required by the static markup.
+   `setActiveNav` is exposed for the morePopover module to clear the More
+   button's active state on close (avoids a nav.js ↔ morePopover.js import
+   cycle). */
 window.openNav = openNav;
 window.setActiveNav = setActiveNav;
 /* PR-B/C/D/E — panel inline handlers. nav.js defines these on

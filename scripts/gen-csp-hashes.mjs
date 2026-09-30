@@ -248,7 +248,11 @@ if (update) {
 const drifted = [];
 for (const { path, label, body } of artifacts) {
   if (!existsSync(path)) { drifted.push(`${label} (missing)`); continue; }
-  if (readFileSync(path, 'utf8') !== body) drifted.push(label);
+  /* Compare with line endings normalised. A Windows checkout can hold the
+     same bytes as LF-with-CR, which made this gate report DRIFT for an
+     artifact that was byte-for-byte in sync — a false merge-gate failure
+     that also pushed people to run `--update` and commit a no-op diff. */
+  if (readFileSync(path, 'utf8').replace(/\r\n/g, '\n') !== body) drifted.push(label);
 }
 
 if (drifted.length > 0) {

@@ -203,16 +203,11 @@
     font-size: 12px !important;
   }
 
-  /* Workspace page canvas. Shared by library / projects / scheduled / plugins,
-     so it stays here even though the plugin directory itself is now owned by
-     the canonical layer. */
+  /* Plugin marketplace: dense two-column rows and genuine connector marks. */
   body.workspace-active #appShell .main-page {
     padding: 0 !important;
     background: var(--chatgpt-page) !important;
   }
-
-  /* Plugin directory rows/cards/tabs: retired. The canonical owner is
-     features/surfaces.css. */
 }
 
 @media (max-width: 768px) {

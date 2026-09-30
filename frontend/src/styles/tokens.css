@@ -42,10 +42,10 @@
   --ui-control-sm: 32px;
   --ui-control-md: 40px;
   --ui-control-touch: 44px;
-  /* Minimum hit area for phone controls. polish/buttons.css and
-     polish/mobile-controls.css size rows with this; without it the whole
-     44px touch-target layer resolved to nothing and drawer rows fell back
-     to their 24px glyph box. */
+  /* Semantic alias for "mobile tap target": same value as
+     --ui-control-touch but lets mobile-controls.css and buttons.css
+     read intent (touch hit area) rather than reusing a generic "touch"
+     slot — keeps the two knobs free to diverge later. */
   --ui-hit-area: 44px;
   --ui-sidebar-mobile: 254px;
   --ui-sidebar-desktop: 260px;
@@ -89,12 +89,15 @@
   --ui-overlay-enter-scale: 0.98;
 
   /* Press feedback (styles/polish/press.css + ui/pressFeedback.js). Every
-     control keeps fixed geometry and acknowledges a press through opacity;
-     compact icon controls dim slightly further than wide buttons. */
+     control keeps fixed geometry and acknowledges a press through paint
+     only; compact icon controls dim slightly further than wide buttons so
+     their small surface still reads. `--ui-press-opacity*` are consumed by
+     press.css — renaming or dropping them here silently removes press
+     feedback app-wide without breaking any geometry test. */
   --ui-press-opacity: 0.82;
   --ui-press-opacity-sm: 0.72;
   /* Row-style controls (menus, lists) acknowledge a press with a tint
-     instead of moving the whole row. */
+     instead of dimming the whole row. */
   --ui-press-tint: color-mix(in srgb, var(--ui-bg-hover), var(--ui-text-primary) 8%);
 
   /* chatgpt.com type scale: 14px UI chrome, 16px/28px transcript and

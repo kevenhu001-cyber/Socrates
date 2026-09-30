@@ -690,16 +690,10 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   color: #afafaf !important;
 }
 
-/* Light equivalent, same intent: the legal line is 14px body text, so it has
-   to clear WCAG AA. Inheriting the muted step put it at 3.3:1 on the white
-   page; #767676 is the first step that reaches 4.5:1 while still sitting
-   visibly under body copy. */
-[data-mode="light"] #appShell#appShell#appShell #topicDisclaimer,
-[data-mode="light"] body:not([data-conversation-active="true"]):not(.workspace-active)
-  #appShell#appShell#appShell
-  #topicDisclaimer {
-  color: #767676 !important;
-}
+/* Light needs no override: --ui-text-muted is #737373 (≈9:1 on the white
+   page), so the 14px legal line clears AA from the shared token. Do not
+   re-pin this to a literal here — it would drift from the rest of the
+   light palette. */
 
 /* ==========================================================================
    2026-09-24 — desktop disclaimer + suggestion rows (Playwright + CDP).

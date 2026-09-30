@@ -35,9 +35,16 @@ function computedScale(page, selector) {
 
 async function holdAndMeasure(page, selector) {
   const target = page.locator(selector).first();
-  const icon = target.locator('svg').first();
+  /* Only the painted icon has geometry. A control may carry several svgs
+     where one is switched off by mode (`.theme-toggle` renders sun + moon
+     and hides the one for the inactive mode), and a hidden svg measures
+     null — which would read as "the icon moved" instead of "there is no
+     icon to measure". */
+  const icon = target.locator('svg:visible').first();
+  const opacityOf = () => page.evaluate((sel) => parseFloat(getComputedStyle(document.querySelector(sel)).opacity), selector);
   const box = await target.boundingBox();
   const iconBefore = await icon.count() ? await icon.boundingBox() : null;
+  const opacityBefore = await opacityOf();
   expect(box, `${selector} is on screen`).not.toBeNull();
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
@@ -45,10 +52,15 @@ async function holdAndMeasure(page, selector) {
   const pressed = await computedScale(page, selector);
   const boxDuring = await target.boundingBox();
   const iconDuring = iconBefore ? await icon.boundingBox() : null;
+  const opacityDuring = await opacityOf();
   await page.mouse.up();
   await page.waitForTimeout(400);
   const released = await computedScale(page, selector);
-  return { pressed, released, boxBefore: box, boxDuring, iconBefore, iconDuring };
+  const opacityReleased = await opacityOf();
+  return {
+    pressed, released, boxBefore: box, boxDuring, iconBefore, iconDuring,
+    opacityBefore, opacityDuring, opacityReleased,
+  };
 }
 
 test('the primary composer button stays geometrically stable while pressed', async ({ page }) => {
@@ -69,9 +81,15 @@ test('a generic button uses stable paint-only feedback', async ({ page }) => {
     b.style.cssText = 'position:fixed;left:40px;top:40px;z-index:99999;padding:12px 24px';
     document.body.appendChild(b);
   });
-  const { pressed, released } = await holdAndMeasure(page, '#pressProbe');
+  const { pressed, released, opacityBefore, opacityDuring, opacityReleased } = await holdAndMeasure(page, '#pressProbe');
   expect(pressed).toBe(1);
   expect(released).toBe(1);
+  /* Stable geometry is only half the contract — the press has to be *seen*.
+     press.css reads --ui-press-opacity, and a missing token makes the whole
+     `opacity` declaration invalid at computed-value time, which drops the
+     feedback while every scale assertion above still passes. */
+  expect(opacityDuring).toBeLessThan(opacityBefore);
+  expect(opacityReleased).toBe(opacityBefore);
 });
 
 test('row-style controls tint instead of scaling', async ({ page }) => {

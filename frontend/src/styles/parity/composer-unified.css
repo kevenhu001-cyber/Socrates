@@ -71,11 +71,6 @@
   /* Paint-only feedback; geometry changes are animated by RichComposer. */
   transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
 }
-#appShell .composer-shell.drag-over:not(.voice-recording-active) {
-  border-color: var(--ui-border-strong);
-  background: var(--ui-bg-hover);
-  box-shadow: 0 0 0 3px var(--ui-bg-chip-hover), var(--ui-composer-shadow);
-}
 
 /* Two-row layout: a real multi-line draft, or any tool / plugin chip. */
 #appShell .composer-shell.composer-multiline:not(.voice-recording-active),
@@ -98,7 +93,9 @@
   grid-area: files;
   min-width: 0;
   margin: 0 0 4px 2px;
-  padding: 0;
+  /* Card chips carry a floating remove disc 7px above their top edge —
+     this padding keeps it inside the composer card. */
+  padding: 8px 2px 0;
 }
 
 /* ── Editor ────────────────────────────────────────────────────────────── */
@@ -169,7 +166,7 @@
   top: 0;
   float: none;
   height: 0;
-  color: var(--ui-text-muted);
+  color: var(--ui-text-placeholder);
   opacity: 1;
   white-space: nowrap;
   pointer-events: none;
@@ -318,7 +315,8 @@
 }
 #appShell .composer-shell .composer-primary-btn:hover { opacity: 0.8; }
 /* Paint-only feedback for compact composer controls; polish/press.css keeps
-   their circles and SVG geometry fixed throughout the press. */
+   their circles and SVG geometry fixed throughout the press. They dim a
+   step further than wide buttons so the 36px disc still reads as pressed. */
 #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn) {
   --press-opacity: var(--ui-press-opacity-sm);
 }
@@ -445,6 +443,18 @@
     padding: 0 2px;
     line-height: 26px;
   }
+  /* The chips track is ~1fr of a narrow row — several selected plugins
+     would crush each chip to icon width under flex-shrink. Keep chips at
+     full size and let the strip scroll horizontally instead, as the
+     pre-unification mobile sheet did. */
+  #appShell .composer-shell .composer-plugin-chips {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+  #appShell .composer-shell .composer-plugin-chips::-webkit-scrollbar { display: none; }
+  #appShell .composer-shell .composer-plugin-chip,
+  #appShell .composer-shell .composer-tool-chip { flex: 0 0 auto; }
   #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn, .effort-picker) {
     align-self: center;
   }
@@ -464,6 +474,20 @@
   html[data-mode="dark"] #appShell .composer-shell .effort-trigger { background: var(--ui-bg-control); }
   /* Phones show the level only ("Medium"), not "Thinking Medium". */
   #appShell .composer-shell .effort-label:has(+ .effort-value:not(:empty)) { display: none; }
+
+  /* Hit-area wrapper: keep the 36×36 visual (chatgpt reference) but
+     extend the tap surface to 44×44 via ::before so iOS-precision taps
+     don't miss the round button. See polish/mobile-controls.css for the
+     same pattern applied to msg-toolbar-btn. */
+  #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn) {
+    position: relative;
+  }
+  #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn)::before {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    pointer-events: auto;
+  }
 }
 
 /* ── Voice recording ───────────────────────────────────────────────────────

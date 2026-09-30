@@ -43,8 +43,12 @@ test('light and dark surfaces keep SVG contrast and hover geometry stable', asyn
 
     const palette = await readPalette(page);
     expect(palette.mode).toBe(mode);
-    expect(palette.page).not.toBe('rgb(0, 0, 0)');
-    expect(palette.sidebar).not.toBe('rgb(0, 0, 0)');
+    /* Page and sidebar are page-colored by contract, so in dark mode both
+       are legitimately #000 (docs/ref/chatgpt-parity.md) — asserting they
+       avoid pure black only encoded the old blue-tinted palette this
+       document lists as the deviation to fix. The composer is the one
+       surface that must still read as raised against the page. */
+    expect(palette.composer).not.toBe(palette.page);
     expect(palette.composer).not.toBe('rgb(0, 0, 0)');
     expect(palette.iconColor).toBe(palette.buttonColor);
 
