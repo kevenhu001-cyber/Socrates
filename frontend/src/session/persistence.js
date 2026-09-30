@@ -17,6 +17,7 @@ import { buildDeltaPayload, commitSynced, createFingerprintCache, seedSynced, st
 import { generateSessionTitle } from '../chat/sessionTitle.js';
 import { markCmdKIndexDirty } from '../ui/cmdK.js';
 import { toggleShareBtn } from '../ui/share.js';
+import { showToast } from '../ui/toast.js';
 import { apiFetch } from '../util/api.js';
 import { detailCache } from './detailCache.js';
 
@@ -506,21 +507,10 @@ function postSession(payload){
   }).catch(function(e){
     /* F1a — surface the save failure so the user knows their
        conversation isn't being persisted. Without this the recent
-       list can silently lose new entries (Bug1). showToast lives at
-       main.js:5226 (signature: msg only); _t() is window.t set by
-       i18n.js. The default 1800ms timeout is too short for an error
-       toast, so we re-implement a longer-lived variant inline. */
-    try{
-      var el=document.createElement("div");
-      el.className="msg-toast msg-toast-error";
-      el.textContent=_t("sessions.save_failed","Save failed")+": "+e.message+(e.requestId?(" (ref "+e.requestId+")"):"");
-      document.body.appendChild(el);
-      requestAnimationFrame(function(){el.classList.add("visible")});
-      setTimeout(function(){
-        el.classList.remove("visible");
-        setTimeout(function(){if(el&&el.parentNode)el.parentNode.removeChild(el)},300);
-      },5000);
-    }catch(_){}
+       list can silently lose new entries (Bug1). The default 1800ms
+       timeout is too short for an error toast, so this uses the
+       shared toast's longer-lived error variant. */
+    showToast(_t("sessions.save_failed","Save failed")+": "+e.message+(e.requestId?(" (ref "+e.requestId+")"):""),{variant:"error",duration:5000});
   }).then(function(){
     /* Clear the in-flight flag BEFORE re-checking dirty so a queued save
        picks up the latest state (and the just-adopted server id, if any)

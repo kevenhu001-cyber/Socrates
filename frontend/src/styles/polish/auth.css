@@ -53,7 +53,7 @@
   border-radius: 10px;
   color: var(--ui-text-secondary);
 }
-.auth-btn.secondary:hover { background: var(--ui-bg-raised); color: var(--ui-text-primary); }
+.auth-btn.secondary:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
 
 .auth-view-separator { color: var(--ui-text-muted); }
 .auth-foot, .auth-footnote { color: var(--ui-text-muted); }

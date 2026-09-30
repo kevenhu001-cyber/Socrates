@@ -189,12 +189,14 @@ body[data-conversation-active="true"] #mobileMode{display:none!important}
   ::view-transition-old(root),::view-transition-new(root){animation-duration:0.01ms!important}
 }
 /* ─── Scrollbar — cross-browser ── */
+/* The thumb comes from a mode-aware token (themes.css): a fixed white alpha
+   painted an invisible thumb on every light surface. */
 /* WebKit (Chrome, Edge, Safari) */
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:hsl(var(--always-white)/0.12);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:hsl(var(--always-white)/0.22)}
+::-webkit-scrollbar-thumb{background:var(--ui-scrollbar-thumb);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--ui-scrollbar-thumb-hover)}
 /* Firefox — supported since FF 64. WebKit fallback above. */
-@supports (scrollbar-width:thin){*{scrollbar-width:thin;scrollbar-color:hsl(var(--always-white)/0.12) transparent}}
+@supports (scrollbar-width:thin){*{scrollbar-width:thin;scrollbar-color:var(--ui-scrollbar-thumb) transparent}}
 .app{display:flex;height:100vh;height:100dvh;
   /* The dynamic viewport is allowed to follow the browser's native resize.
      ui/keyboard/index.ts adds only the measured overlay inset when a browser

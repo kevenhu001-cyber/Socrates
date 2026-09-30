@@ -5,10 +5,9 @@ import { useUserInfo } from './sidebarChrome.bridge';
    account page. It used to open a popup menu duplicating those entries —
    removed so the footer reads as identity, not a second settings surface.
 
-   P_account-compact — the row shows only the avatar and the plan badge.
-   The name is not painted (it truncated to a few glyphs beside the footer
-   actions and repeated what the avatar says); it stays one hover away via
-   `title` and is announced through `aria-label`. */
+   Identity mirrors the chatgpt.com drawer: avatar + name over plan tier,
+   two quiet left-aligned lines. The full "name · tier" label also stays
+   one hover away via `title` and is announced through `aria-label`. */
 export function SidebarFooter() {
   const user = useUserInfo();
   const name = user.displayName || '';
@@ -22,6 +21,7 @@ export function SidebarFooter() {
     >
       <span className="user-avatar" aria-hidden="true">{user.initials}</span>
       <span className="user-identity">
+        {name ? <span className="user-name">{name}</span> : null}
         <span className="user-plan"><span className={`tier-badge ${user.tier}`}>{user.tierLabel}</span></span>
       </span>
     </div>

@@ -118,7 +118,7 @@
 .thinking-panel-text.is-rich ul,.thinking-panel-text.is-rich ol{margin:0 0 .6em;padding-left:1.4em}
 .thinking-panel-text.is-rich li{margin:.2em 0}
 .thinking-panel-text.is-rich strong{color:hsl(var(--text-100))}
-.thinking-panel-text.is-rich code{font-family:var(--font-mono);font-size:.9em;background:hsl(var(--always-white)/0.06);padding:2px 5px;border-radius:3px}
+.thinking-panel-text.is-rich code{font-family:var(--font-mono);font-size:.9em;background:var(--ui-bg-chip);padding:2px 5px;border-radius:3px}
 .thinking-panel-text.is-rich pre{background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.08);border-radius:12px;padding:12px 14px;overflow-x:auto;font-family:var(--font-mono);font-size:calc(12px * var(--app-font-scale,1));line-height:1.5;margin:8px 0;white-space:pre}
 .thinking-panel-text.is-rich pre code{background:none;padding:0}
 .thinking-panel-text.is-rich blockquote{margin:0 0 .6em;padding:2px 0 2px 12px;border-left:2px solid hsl(var(--border-300)/0.4);color:hsl(var(--text-300))}

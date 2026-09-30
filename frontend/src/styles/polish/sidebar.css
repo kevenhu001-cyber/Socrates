@@ -54,7 +54,7 @@
 }
 @media (max-width: 768px) {
 #appShell .sidebar-header .icon-btn:hover {
-  background: var(--ui-bg-raised);
+  background: var(--ui-bg-hover);
   color: var(--ui-text-primary);
 }
 }
@@ -90,7 +90,7 @@
 }
 }
 @media (max-width: 768px) {
-#appShell .sidebar-nav-btn:hover { background: var(--ui-bg-raised); color: var(--ui-text-primary); }
+#appShell .sidebar-nav-btn:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
 }
 @media (max-width: 768px) {
 #appShell .sidebar-nav-btn.active { background: var(--ui-bg-surface); color: var(--ui-text-primary); font-weight: 500; }
@@ -133,7 +133,7 @@
 #appShell .sidebar-search input { font-size: 13px; color: var(--ui-text-primary); }
 }
 @media (max-width: 768px) {
-#appShell .sidebar-search input::placeholder { color: var(--ui-text-muted); }
+#appShell .sidebar-search input::placeholder { color: var(--ui-text-placeholder); }
 }
 #appShell .sidebar-view-btn {
   width: 30px;
@@ -141,7 +141,7 @@
   border-radius: var(--ui-radius-control, 8px);
   color: var(--ui-text-tertiary);
 }
-#appShell .sidebar-view-btn:hover { background: var(--ui-bg-raised); color: var(--ui-text-primary); }
+#appShell .sidebar-view-btn:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
 #appShell .sidebar-view-btn.active { background: var(--ui-bg-surface); color: var(--ui-text-primary); }
 
 /* ── Recents — tighter rows, quieter labels ── */
@@ -149,6 +149,53 @@
 #appShell .recents-header {
   padding: 10px 10px 4px;
 }
+}
+/* Reference drawer affordances: a persistent "+" on Projects and compose /
+   overflow icons on the Recents header. */
+@media (max-width: 768px) {
+/* label+badge share one grid cell so the "新" pill hugs the text. */
+#appShell #sidebarNav .sidebar-nav-btn > .nav-label-wrap {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#appShell .sidebar-nav-btn .nav-item-add {
+  width: 26px;
+  height: 26px;
+  margin-left: auto;
+  color: var(--ui-text-secondary);
+  opacity: 1;
+}
+/* ~40px tap ring without changing the row's visual track. */
+#appShell .sidebar-nav-btn .nav-item-add::before {
+  content: "";
+  position: absolute;
+  inset: -6px -8px;
+}
+#appShell .sidebar-nav-btn .nav-item-add svg { width: 17px; height: 17px; }
+}
+@media (max-width: 768px) {
+#appShell .recents-header-actions { display: inline-flex; align-items: center; gap: 2px; }
+#appShell .recents-head-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-control, 8px);
+  background: transparent;
+  color: var(--ui-text-tertiary);
+}
+#appShell .recents-head-btn:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
+#appShell .recents-head-btn svg { width: 18px; height: 18px; }
+}
+/* The reference drawer footer is identity-only; theme/language/settings
+   stay available on the desktop footer and the profile surfaces. */
+@media (max-width: 768px) {
+#appShell .sidebar-footer-actions > .icon-btn { display: none; }
 }
 @media (max-width: 768px) {
 #appShell .recents-title,
@@ -264,7 +311,7 @@
 }
 @media (max-width: 768px) {
 #appShell .sidebar-footer .icon-btn:hover {
-  background: var(--ui-bg-raised);
+  background: var(--ui-bg-hover);
   color: var(--ui-text-primary);
 }
 }

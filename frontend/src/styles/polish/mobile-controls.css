@@ -14,7 +14,7 @@
  *
  * What lives here:
  *   - Sidebar drawer width: collapses the 5 different mobile widths to
- *     var(--ui-sidebar-mobile) (254 px).
+ *     var(--ui-sidebar-mobile) (350 px, capped at 90vw).
  *   - Sidebar internal rows / search / recents / header / footer icon
  *     buttons: 44 px touch height, 10 px row radius (chatgpt-aligned).
  *   - Message toolbar buttons: 32 px visual + 40 px hit area via ::before.
@@ -34,11 +34,12 @@
 
 @media (max-width: 768px) {
 
-  /* ── Sidebar drawer width — single value ── */
+  /* ── Sidebar drawer width — single value, capped at 90vw so a sliver of
+     the page stays visible behind it like the reference drawer. ── */
   #appShell .sidebar {
-    width: var(--ui-sidebar-mobile);
-    min-width: var(--ui-sidebar-mobile);
-    max-width: var(--ui-sidebar-mobile);
+    width: min(var(--ui-sidebar-mobile), 90vw);
+    min-width: min(var(--ui-sidebar-mobile), 90vw);
+    max-width: min(var(--ui-sidebar-mobile), 90vw);
   }
 
   /* ── Sidebar header icon-btn — 44 visual (chatgpt reference row height) ── */

@@ -39,7 +39,12 @@ channels onto it. Motion/type tokens live in `styles/tokens.css`
 Deliberate deviations: light page is `#fff` (chatgpt.com logged-out: `#fcfcfc`)
 so the `#fcfcfc` sidebar still reads as a separate band; dark tool-chip text is
 lifted to `#81a6f9` for WCAG AA; the bundled Plus Jakarta Sans face is kept as
-the single UI font instead of the system stack.
+the single UI font instead of the system stack. Light `--ui-text-muted` is
+`#737373` (reference `#8f8f8f` is 3.2:1 on white and fails AA for the small
+labels that use it); the composer and search placeholders keep `#8f8f8f` via
+`--ui-text-placeholder`. Dialog scrims are a flat `--ui-backdrop` with no blur,
+and menus/dialogs share one `ui-overlay-in` entrance (`polish/overlays.css`).
+Guarded by `e2e/theme-contrast.spec.mjs`.
 
 ## Sidebar (styles/parity/sidebar.css)
 

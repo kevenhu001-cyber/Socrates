@@ -6,7 +6,7 @@ import { formatRelativeTime } from './recentsHelpers.js';
    into the card meta. i18n.js's t() does no interpolation, so {n} is
    substituted here, matching the convention in ui/diagnosticQuestion.js. */
 function t(key, vars) {
-  var v = (typeof window.t === 'function') ? window.t(key) : key;
+  var v = (typeof window !== 'undefined' && typeof window.t === 'function') ? window.t(key) : key;
   if (!vars) return v;
   return String(v).replace(/\{(\w+)\}/g, function (whole, name) {
     return Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : whole;
@@ -25,7 +25,7 @@ export function createMistakeBook({
   mountQuizWidget,
   mountPracticeWidget,
   scrollContainer,
-  getTutorSocratic = () => window.tutorSocratic,
+  getTutorSocratic = () => (typeof window !== 'undefined' ? window.tutorSocratic : undefined),
 }) {
   function persistMistake(mistakeData) {
     var sid = stateStore.read('currentSessionId');

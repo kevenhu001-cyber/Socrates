@@ -64,7 +64,7 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
     const sidebar = document.getElementById('sidebar');
     if (sidebar && !sidebar.classList.contains('collapsed')) window.toggleSidebar?.();
   });
-  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? 0)).toBe(-254);
+  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? 0)).toBe(-350);
   await expect(page.locator('#topicSetup')).toBeVisible();
   await expect(page.locator('#modeSegmentedTop')).toBeVisible();
   await expect(page.locator('#topicInputWrap')).toBeVisible();
@@ -93,7 +93,9 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   expect((mobileGeometry.composer?.y ?? 0) + (mobileGeometry.composer?.height ?? 0)).toBeLessThanOrEqual(769);
   expect(mobileGeometry.plus?.width).toBe(36);
   expect(mobileGeometry.send?.width).toBe(36);
-  expect(mobileGeometry.background).toBe('rgb(9, 9, 11)');
+  /* The reference phone surface is true black — --ui-bg-page is #000 and
+     the mobile layer pins .main-content to it. */
+  expect(mobileGeometry.background).toBe('rgb(0, 0, 0)');
 
   await page.locator('#topicComposerToolsBtn').click();
   const toolsMenu = page.locator('#composerToolsMenu');
@@ -105,8 +107,9 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
     return t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)';
   })).toBe(true);
   const toolsBox = await toolsMenu.boundingBox();
-  expect(toolsBox?.width).toBeGreaterThanOrEqual(292);
-  expect(toolsBox?.width).toBeLessThanOrEqual(308);
+  /* The reference sheet is ~65% of the phone width — 252px at 390px. */
+  expect(toolsBox?.width).toBeGreaterThanOrEqual(244);
+  expect(toolsBox?.width).toBeLessThanOrEqual(260);
   expect(toolsBox?.height).toBeGreaterThanOrEqual(300);
   expect(toolsBox?.height).toBeLessThanOrEqual(368);
   /* The sheet is flush with the capsule's 12px page inset. */
@@ -128,8 +131,8 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   await expect(toolsMenu).toBeHidden();
 
   await openSidebar(page);
-  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.width ?? 0)).toBe(254);
-  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? -254)).toBe(0);
+  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.width ?? 0)).toBe(350);
+  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? -350)).toBe(0);
   await expect(page.locator('#sidebarSearchBtn')).toBeVisible();
   await expect(page.locator('#sidebarCloseBtn')).toBeVisible();
   await page.screenshot({ path: '/tmp/socrates-reference-mobile-sidebar-390x769.png', fullPage: true });

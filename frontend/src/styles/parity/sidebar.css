@@ -42,6 +42,11 @@
     overflow: hidden;
     border-right: 1px solid var(--ui-sidebar-border);
     background: var(--ui-bg-sidebar);
+    /* legacy/01 still blurs the (once translucent) rail. The surface is
+       opaque now, so the blur only re-rasterises the page behind the rail
+       on every frame of the width animation. */
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
     color: var(--ui-text-primary);
     font-family: var(--font-sans);
     font-size: var(--ui-text-ui);
@@ -171,8 +176,9 @@
     color: currentColor;
   }
   /* React wraps each glyph in a bare <span>; the label span carries the
-     i18n key. */
-  #appShell #sidebarNav .sidebar-nav-btn > span:not([data-i18n-key]):not(.nav-kbd) {
+     i18n key. Rows with a trailing badge wrap label+badge in .nav-label-wrap
+     so the pill hugs the text instead of the row's edge. */
+  #appShell #sidebarNav .sidebar-nav-btn > span:not([data-i18n-key]):not(.nav-kbd):not(.nav-label-wrap):not(.nav-item-add) {
     display: grid;
     place-items: center;
     flex: 0 0 20px;
@@ -180,7 +186,8 @@
     height: 20px;
   }
   #appShell #sidebarNav .sidebar-nav-btn svg { display: block; }
-  #appShell #sidebarNav .sidebar-nav-btn > span[data-i18n-key] {
+  #appShell #sidebarNav .sidebar-nav-btn > span[data-i18n-key],
+  #appShell #sidebarNav .sidebar-nav-btn > .nav-label-wrap {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -239,7 +246,7 @@
     line-height: var(--ui-text-ui-line);
   }
   #appShell #sidebarSearch::placeholder { color: var(--ui-text-primary); opacity: 1; }
-  #appShell #sidebarSearch:focus::placeholder { color: var(--ui-text-muted); }
+  #appShell #sidebarSearch:focus::placeholder { color: var(--ui-text-placeholder); }
 
   /* ── History ─────────────────────────────────────────────────────────── */
   #appShell #recentsPanel {
@@ -383,6 +390,8 @@
   #appShell #sidebar.collapsed #sidebarNav .sidebar-nav-btn {
     justify-content: center;
     width: var(--sidebar-row);
+    min-width: var(--sidebar-row);
+    min-height: var(--sidebar-row);
     padding: 0;
   }
   #appShell #sidebar.collapsed .sidebar-search-row,
@@ -391,8 +400,13 @@
   #appShell #sidebar.collapsed .sidebar-footer-actions,
   #appShell #sidebar.collapsed .user-identity,
   #appShell #sidebar.collapsed .sidebar-resize-handle { display: none; }
+  /* The trailing-affordance rules below load after this block at equal
+     specificity — scope these to #sidebarNav so they keep winning. */
+  #appShell #sidebar.collapsed #sidebarNav .nav-item-add,
+  #appShell #sidebar.collapsed #sidebarNav .nav-new-badge { display: none; }
   /* Labels stay in the accessibility tree so each icon keeps its name. */
-  #appShell #sidebar.collapsed #sidebarNav .sidebar-nav-btn > span[data-i18n-key] {
+  #appShell #sidebar.collapsed #sidebarNav .sidebar-nav-btn > span[data-i18n-key],
+  #appShell #sidebar.collapsed #sidebarNav .sidebar-nav-btn > .nav-label-wrap {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -422,11 +436,47 @@
   #appShell #sidebar ~ .main { transition: none; }
 }
 
-/* ── Account row (all widths) — P_account-compact ─────────────────────────
-   Avatar + plan badge only. The name is not painted: it lives in the row's
-   title / aria-label (react/sidebar-chrome/SidebarFooter.tsx). The avatar
-   and badge share one centre line, and the row stays compact so the footer
-   actions keep their width. */
+/* ── Nav trailing affordances (all widths) ────────────────────────────────
+   Reference drawer: a "+" sits at Projects' trailing edge and a small
+   outlined pill marks new surfaces. On desktop the "+" reveals on row
+   hover/focus; on mobile it is persistent (polish/sidebar.css). */
+#appShell .sidebar-nav-btn .nav-item-add {
+  display: grid;
+  place-items: center;
+  position: relative;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  margin-left: auto;
+  border-radius: var(--ui-radius-control, 8px);
+  color: var(--ui-text-tertiary);
+  opacity: 0;
+}
+#appShell .sidebar-nav-btn:hover .nav-item-add,
+#appShell .sidebar-nav-btn:focus-within .nav-item-add { opacity: 1; }
+#appShell .nav-item-add:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
+#appShell .nav-item-add svg { width: 15px; height: 15px; }
+#appShell .sidebar-nav-btn .nav-new-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 6px;
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-pill);
+  color: var(--ui-text-tertiary);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 14px;
+  letter-spacing: 0.02em;
+  vertical-align: 1px;
+}
+/* Recents header icons are a phone-drawer affordance; desktop keeps the
+   bare "Recents" label. */
+#appShell .recents-header-actions { display: none; }
+
+/* ── Account row (all widths) — avatar + name over plan tier ──────────────
+   Mirrors the reference drawer's two-line identity block. The avatar and
+   the stacked name/plan share one row; the name truncates before the plan
+   line does. */
 #appShell #sidebarUserRow .sidebar-account-static {
   display: flex;
   flex: 1 1 auto;
@@ -455,8 +505,21 @@
 }
 #appShell #sidebarUserRow .user-identity {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1px;
   min-width: 0;
+}
+#appShell #sidebarUserRow .user-name {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--ui-text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 17px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 #appShell #sidebarUserRow .user-plan {
   display: inline-flex;
@@ -469,13 +532,12 @@
 #appShell #sidebarUserRow .tier-badge {
   display: inline-block;
   max-width: 100%;
-  padding: 2px 8px;
+  padding: 0;
   overflow: hidden;
-  border-radius: var(--ui-radius-pill);
-  background: var(--ui-bg-chip);
-  color: var(--ui-text-secondary);
-  font-size: 11px;
-  font-weight: 500;
+  background: transparent;
+  color: var(--ui-text-muted);
+  font-size: 12px;
+  font-weight: 400;
   line-height: 16px;
   letter-spacing: 0;
   text-overflow: ellipsis;
@@ -486,9 +548,8 @@
 #appShell #sidebar.collapsed #sidebarUserRow { justify-content: center; }
 #appShell #sidebar.collapsed #sidebarUserRow .sidebar-account-static { flex: 0 0 auto; padding: 4px; }
 #appShell #sidebar.collapsed #sidebarUserRow .user-identity { display: none; }
-/* The phone drawer is narrow (~237px) and the footer actions keep ~116px:
-   tighten the row so the whole plan badge fits instead of truncating. */
+/* The phone drawer is narrow (~237px): keep the identity row tight so the
+   name and plan line stay inside it. */
 @media (max-width: 768px) {
   #appShell #sidebarUserRow .sidebar-account-static { gap: 6px; padding: 4px 0; }
-  #appShell #sidebarUserRow .tier-badge { padding: 2px 6px; }
 }

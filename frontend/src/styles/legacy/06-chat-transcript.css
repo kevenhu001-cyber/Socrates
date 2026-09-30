@@ -356,11 +356,25 @@ body.admin-active #appShell #modeSegmentedTop{display:none!important}
 .msg-list{display:flex;flex-direction:column;gap:12px;flex:1;overflow-anchor:none}
 .msg{animation:msgIn .22s var(--ease-out);padding:6px 0}
 /* The submitted prompt is already being moved by turnAnchor's single
-   transcript scroll glide. A row-level opacity/transform entrance makes it
-   briefly paint in a second visual state while that glide is starting. Keep
-   user rows fully present from their first frame; assistant status rows may
-   still use the opacity-only reveal below. */
+   transcript scroll glide, so transform stays at none. The bubble's
+   opacity ramp is **tied to the glide duration** — turnAnchor stamps
+   `--bubble-fade-duration` (== planSendGlide duration, 180-900ms) on the
+   just-sent user bubble, then sets `data-bubble-arriving` so this rule
+   kicks in. The bubble's fade ends at the exact frame the camera
+   arrives at the top, so the user reads a single coordinated landing
+   instead of "bubble pops in, then camera glides, then bubble fades,
+   then camera lands, then content-follow". History loads / prepended
+   pages / retries never set the attribute, so they keep opacity:1 from
+   the first frame.
+   `animation:none` on the base rule matters: it stops the base .msg
+   `msgIn` reveal from REPLAYING when `data-bubble-arriving` is removed
+   at landing — a finished named animation restarts from 0 the moment
+   the shorthand flips back, which used to re-dim the settled bubble
+   for another 220ms right after arrival. */
 .msg.user{animation:none;opacity:1;transform:none}
+.msg.user[data-bubble-arriving]{
+  animation:msgUserIn var(--bubble-fade-duration, 200ms) var(--ease-out) both;
+}
 .msg.turn-viewport-anchor{box-sizing:border-box}
 /* Keep transcript geometry exact. Height-estimated content-visibility made
    long/off-screen answers replace their 150px estimate only when scrolled
@@ -376,6 +390,7 @@ body.admin-active #appShell #modeSegmentedTop{display:none!important}
    to teleport. Starting partially visible also avoids a blank frame between
    clearing the composer and painting the submitted bubble. */
 @keyframes msgIn{from{opacity:.45}to{opacity:1}}
+@keyframes msgUserIn{from{opacity:.4}to{opacity:1}}
 /* User bubbles right-align. The toolbar lives BELOW the bubble
  * (flex-direction:column + align-items:flex-end), not next to it on
  * the right edge. This keeps the bubble flush-right while putting
@@ -557,7 +572,7 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
 .msg-body p{margin-bottom:8px}.msg-body p:last-child{margin-bottom:0}
 .msg-body strong{font-weight:600;color:hsl(var(--text-000))}.msg-body em{font-style:italic}
 .msg-body pre{background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.08);border-radius:16px;padding:12px 14px;overflow-x:auto;font-family:var(--font-mono);font-size:calc(12px * var(--app-font-scale, 1));line-height:1.5;margin:8px 0;color:hsl(var(--text-200))}
-.msg-body code{font-family:var(--font-mono);font-size:.9em;background:hsl(var(--always-white)/0.06);padding:2px 5px;border-radius:3px}
+.msg-body code{font-family:var(--font-mono);font-size:.9em;background:var(--ui-bg-chip);padding:2px 5px;border-radius:3px}
 .msg-body pre code{background:none;padding:0}
 /* Streaming→final transition: finish() rewrites the body's innerHTML
    to swap in the marked+KaTeX render. Without this fade the user sees

@@ -111,15 +111,15 @@ test.describe('mobile button consistency', () => {
     }
   }
 
-  test('mobile drawer width collapses to --ui-sidebar-mobile (254 px)', async ({ page }) => {
+  test('mobile drawer width collapses to --ui-sidebar-mobile (350 px)', async ({ page }) => {
     await mockAuthedApp(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await gotoAndSettle(page, '/');
     await waitForAppShell(page);
 
     const { token, expected } = await assertSidebarDrawerWidth(page);
-    expect(expected).toBe(254);
-    expect(token).toBe('254px');
+    expect(expected).toBe(350);
+    expect(token).toBe('350px');
 
     // Open the drawer so its width is measurable.
     await openDrawer(page);

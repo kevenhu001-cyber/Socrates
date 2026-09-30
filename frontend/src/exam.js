@@ -10,6 +10,7 @@ import { stateStore } from './state/store.js';
 import { pushChatIdToURL, pushExamIdToURL, setExamIdInURL } from './session/store.js';
 
 import { toggleShareBtn } from './ui/share.js';
+import { prefersReducedMotion } from './ui/motion.js';
 
 /* ── module-level state ── */
 var _examSelectedTypes = { mc: true, fb: true, sa: false };
@@ -853,7 +854,7 @@ function examNavCurrentIdx() {
 export function examNavJump(idx) {
   var el = document.getElementById("examQ" + idx);
   if (!el) return;
-  el.scrollIntoView({ behavior: "smooth", block: "start" });
+  el.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "start" });
   setTimeout(syncExamNav, 300);
 }
 
@@ -922,7 +923,7 @@ export function submitExam() {
   });
   if (missing.length) {
     var el = document.querySelector('.exam-q-card#examQ' + (missing[0] - 1));
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (el) el.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "center" });
     return;
   }
   stateStore.dispatch({type:'state/set',key:'examSubmitted',value:true});

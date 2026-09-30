@@ -38,7 +38,7 @@
 .attachment-chip-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .attachment-chip-meta{font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));flex-shrink:0}
 .attachment-chip-remove{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:transparent;color:hsl(var(--text-400));border:none;cursor:pointer;padding:0;flex-shrink:0}
-.attachment-chip-remove:hover{background:hsl(var(--bg-400));color:hsl(var(--text-200))}
+.attachment-chip-remove:hover{background:var(--ui-bg-hover);color:hsl(var(--text-200))}
 .attachment-chip-remove svg{width:12px;height:12px}
 .attachment-chip.error{border-color:hsl(0 70% 50%/0.4)}
 .attachment-chip.pending{background:hsl(var(--bg-200));border-color:hsl(var(--accent-000)/0.25);padding:3px 10px 3px 3px;flex-wrap:wrap;gap:3px;max-width:200px;min-width:120px}
@@ -181,7 +181,7 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 .settings-btn.primary{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
 .settings-btn.primary:hover{background:hsl(var(--accent-100))}
 .settings-btn.secondary{background:hsl(var(--bg-300));color:hsl(var(--text-300))}
-.settings-btn.secondary:hover{background:hsl(var(--bg-400));color:hsl(var(--text-200))}
+.settings-btn.secondary:hover{background:var(--ui-bg-hover);color:hsl(var(--text-200))}
 .settings-btn.danger{background:transparent;color:hsl(0 60% 55%)}
 .settings-btn.danger:hover{background:hsl(0 60% 15%)}
 /* Settings validation and state styles */
@@ -213,7 +213,7 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 .profile-btn.signout{background:hsl(var(--bg-300));color:hsl(0 60% 55%)}
 .profile-btn.signout:hover{background:hsl(0 60% 15%)}
 .profile-btn.close-btn{background:hsl(var(--bg-200));color:hsl(var(--text-300))}
-.profile-btn.close-btn:hover{background:hsl(var(--bg-400));color:hsl(var(--text-100))}
+.profile-btn.close-btn:hover{background:var(--ui-bg-hover);color:hsl(var(--text-100))}
 .profile-btn.danger{background:hsl(var(--bg-300));color:hsl(0 60% 55%)}
 .profile-btn.danger:hover{background:hsl(0 60% 15%)}
 .profile-btn.warning{background:hsl(var(--bg-200));color:hsl(39 70% 50%)}
@@ -249,7 +249,7 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 .confirm-btn.danger{background:hsl(0 60% 15%);color:hsl(0 60% 55%)}
 .confirm-btn.danger:hover{background:hsl(0 60% 20%)}
 .confirm-btn.cancel{background:hsl(var(--bg-300));color:hsl(var(--text-300))}
-.confirm-btn.cancel:hover{background:hsl(var(--bg-400));color:hsl(var(--text-200))}
+.confirm-btn.cancel:hover{background:var(--ui-bg-hover);color:hsl(var(--text-200))}
 .stg-toggle{display:flex;align-items:center;gap:10px;cursor:pointer}
 .stg-toggle-track{width:36px;height:20px;border-radius:10px;background:hsl(var(--bg-300)/0.6);border:0.5px solid hsl(var(--border-300)/0.5);transition:background .15s,border-color .15s;position:relative}
 .stg-toggle-track.on{background:hsl(var(--accent-000));border-color:hsl(var(--accent-000))}

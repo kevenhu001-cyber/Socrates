@@ -49,6 +49,15 @@
   --ui-tool-chip-hover-text: rgb(218 230 253);
   --ui-link: rgb(129 166 249);
   --ui-bg-code: var(--ui-bg-raised);
+  /* Phone code blocks keep a distinct header band in dark mode. */
+  --ui-bg-code-header: var(--ui-bg-control);
+  --ui-border-code: var(--ui-border-default);
+  /* Dialog cards (auth, workspace dialogs) sit one step above the page. */
+  --ui-bg-dialog: var(--ui-bg-surface);
+  /* Placeholders stay at the muted step; labels use --ui-text-muted. */
+  --ui-text-placeholder: var(--ui-text-muted);
+  --ui-scrollbar-thumb: rgb(255 255 255 / 12%);
+  --ui-scrollbar-thumb-hover: rgb(255 255 255 / 22%);
 }
 
 [data-mode="light"] {
@@ -65,7 +74,12 @@
   --ui-text-primary: #0d0d0d;
   --ui-text-secondary: #5d5d5d;
   --ui-text-tertiary: #6e6e6e;
-  --ui-text-muted: #8f8f8f;
+  /* #8f8f8f (chatgpt.com) is 3.2:1 on white, below WCAG AA for the small
+     labels that use this step (section headers, disclaimers, descriptions).
+     #737373 clears 4.5:1 on the page, sidebar and raised surfaces; the
+     composer placeholder keeps the lighter reference value below. */
+  --ui-text-muted: #737373;
+  --ui-text-placeholder: #8f8f8f;
   --ui-text-disabled: #b4b4b4;
   --ui-border-subtle: rgb(0 0 0 / 6%);
   --ui-border-default: rgb(0 0 0 / 10%);
@@ -89,4 +103,11 @@
   --ui-tool-chip-hover-text: rgb(36 81 218);
   --ui-link: rgb(36 81 218);
   --ui-bg-code: var(--ui-bg-raised);
+  /* Light code blocks are one card, like the desktop transcript. */
+  --ui-bg-code-header: var(--ui-bg-code);
+  --ui-border-code: var(--ui-border-subtle);
+  /* White-on-white with a hairline + shadow, never a grey slab. */
+  --ui-bg-dialog: var(--ui-bg-page);
+  --ui-scrollbar-thumb: rgb(0 0 0 / 16%);
+  --ui-scrollbar-thumb-hover: rgb(0 0 0 / 28%);
 }

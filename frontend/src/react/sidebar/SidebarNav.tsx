@@ -13,7 +13,14 @@ interface NavButtonSpec {
   label: string;
   i18nKey: string;
   icon: string;
+  /* Trailing affordances copied from the chatgpt.com drawer: a pill badge
+     next to the label (Sites "New") and a row-end + button (Projects). */
+  badgeKey?: string;
+  addTarget?: boolean;
 }
+
+const ADD_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
 
 const BUTTONS: NavButtonSpec[] = [
   {
@@ -26,13 +33,14 @@ const BUTTONS: NavButtonSpec[] = [
     key: 'library',
     label: 'Library',
     i18nKey: 'sidebar.nav.library',
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></svg>',
   },
   {
     key: 'projects',
     label: 'Projects',
     i18nKey: 'sidebar.nav.projects',
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14l-6.5-4L6 21z"/></svg>',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>',
+    addTarget: true,
   },
   {
     key: 'scheduled',
@@ -44,7 +52,7 @@ const BUTTONS: NavButtonSpec[] = [
     key: 'plugins',
     label: 'Plugins',
     i18nKey: 'sidebar.nav.plugins',
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v3"/><path d="M15 3v3"/><path d="M7 4h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M9 11h6"/><path d="M9 15h4"/></svg>',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h3a1 1 0 0 0 1-1V5a2 2 0 0 1 4 0v1a1 1 0 0 0 1 1h3a1 1 0 0 1 1 1v3a1 1 0 0 0 1 1h1a2 2 0 0 1 0 4h-1a1 1 0 0 0-1 1v3a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1v-1a2 2 0 0 0-4 0v1a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-3a1 1 0 0 0-1-1H4a2 2 0 0 1 0-4h1a1 1 0 0 0 1-1V8a1 1 0 0 1 1-1z"/></svg>',
   },
   {
     key: 'images',
@@ -62,7 +70,8 @@ const BUTTONS: NavButtonSpec[] = [
     key: 'sites',
     label: 'Sites',
     i18nKey: 'sidebar.nav.sites',
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c-3 3-3 15 0 18M12 3c3 3 3 15 0 18"/></svg>',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+    badgeKey: 'sidebar.nav.newBadge',
   },
   {
     key: 'exam',
@@ -106,6 +115,15 @@ function SidebarNav() {
             id={navButtonId(button.key)}
             aria-current={isActive ? 'page' : undefined}
             onClick={(event: ReactMouseEvent<HTMLButtonElement>) => {
+              /* The row-end + affordance (Projects) opens the create flow
+                 instead of just navigating, same as chatgpt.com's drawer. */
+              const addTarget = event.target instanceof Element
+                && event.target.closest('.nav-item-add');
+              if (addTarget && button.key === 'projects') {
+                open('projects');
+                getLegacyActions().workspace.openCreateProject();
+                return;
+              }
               if (button.key === 'new') {
                 /* The ⌘K badge names the command palette shortcut, so a
                    click there must open the palette instead of resetting. */
@@ -122,7 +140,28 @@ function SidebarNav() {
             }}
           >
             <span dangerouslySetInnerHTML={{ __html: button.icon }} />
-            <span data-i18n-key={button.i18nKey}>{label}</span>
+            {button.badgeKey ? (
+              /* The badge hugs the label text like the reference drawer, so
+                 both live in one label cell — applyI18n only writes
+                 textContent on the leaf spans, leaving the badge intact. */
+              <span className="nav-label-wrap">
+                <span data-i18n-key={button.i18nKey}>{label}</span>
+                <span className="nav-new-badge" data-i18n-key={button.badgeKey}>{i18n(button.badgeKey, 'New')}</span>
+              </span>
+            ) : (
+              <span data-i18n-key={button.i18nKey}>{label}</span>
+            )}
+            {button.addTarget ? (
+              <span
+                className="nav-item-add"
+                role="button"
+                title={i18n('sidebar.spaces.create', 'New project')}
+                aria-label={i18n('sidebar.spaces.create', 'New project')}
+                data-i18n-title="sidebar.spaces.create"
+                data-i18n-aria="sidebar.spaces.create"
+                dangerouslySetInnerHTML={{ __html: ADD_ICON }}
+              />
+            ) : null}
             {button.key === 'new' ? (
               <span className="nav-kbd">{i18n('sidebar.nav.kbd', '⌘K')}</span>
             ) : null}

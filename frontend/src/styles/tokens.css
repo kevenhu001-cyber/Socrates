@@ -47,7 +47,7 @@
      read intent (touch hit area) rather than reusing a generic "touch"
      slot — keeps the two knobs free to diverge later. */
   --ui-hit-area: 44px;
-  --ui-sidebar-mobile: 254px;
+  --ui-sidebar-mobile: 350px;
   --ui-sidebar-desktop: 260px;
   --ui-content-chat: calc(768px * var(--app-width-scale, 1));
   --ui-safe-bottom: max(16px, env(safe-area-inset-bottom, 0px));

@@ -91,7 +91,7 @@ html[data-theme="socrates"][data-mode="dark"] { --cg-surface-raised: var(--ui-bg
 html[data-theme="socrates"][data-mode="light"] { --cg-surface-raised: var(--ui-bg-raised); }
 
 /* Legacy HSL channels — neutral (hue 0, saturation 0) steps of the same ramp:
-   dark bg #000 / #0d0d0d / #171717 / #212121, text #fff → #787878. */
+   dark bg #000 / #0d0d0d / #171717 / #212121, text #fff → #808080. */
 html[data-theme="socrates"][data-mode="dark"] {
   --bg-000: 0 0% 0%;
   --bg-100: 0 0% 5%;
@@ -103,7 +103,9 @@ html[data-theme="socrates"][data-mode="dark"] {
   --text-300: 0 0% 69%;
   --text-350: 0 0% 64%;
   --text-400: 0 0% 61%;
-  --text-500: 0 0% 47%;
+  /* 50% (#808080) is 4.9:1 on the #0d0d0d dialog/quiz surfaces; 47% sat at
+     4.4:1 there (cheatsheet section labels, usage stat labels, quiz letters). */
+  --text-500: 0 0% 50%;
   --border-100: 0 0% 13%;
   --border-200: 0 0% 16%;
   --border-300: 0 0% 19%;
@@ -111,7 +113,10 @@ html[data-theme="socrates"][data-mode="dark"] {
   --border-500: 0 0% 25%;
 }
 
-/* light: bg #fff / #fcfcfc / #f9f9f9 / #f3f3f3, text #0d0d0d → #8f8f8f. */
+/* light: bg #fff / #fcfcfc / #f9f9f9 / #f3f3f3, text #0d0d0d → #737373.
+   --text-500 mirrors --ui-text-muted (45% = #737373, AA on the page and the
+   sidebar); the old 56% step was 3.2:1 and made every legacy caption,
+   section label and meta line fail contrast. */
 html[data-theme="socrates"][data-mode="light"] {
   --bg-000: 0 0% 100%;
   --bg-100: 0 0% 99%;
@@ -123,7 +128,7 @@ html[data-theme="socrates"][data-mode="light"] {
   --text-300: 0 0% 36%;
   --text-350: 0 0% 40%;
   --text-400: 0 0% 43%;
-  --text-500: 0 0% 56%;
+  --text-500: 0 0% 45%;
   --border-100: 0 0% 91%;
   --border-200: 0 0% 87%;
   --border-300: 0 0% 80%;

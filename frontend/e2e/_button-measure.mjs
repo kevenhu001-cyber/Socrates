@@ -54,7 +54,7 @@ export async function assertTouchTargets(page, selector, floor = 44) {
 
 /**
  * Assert that the sidebar drawer width equals the --ui-sidebar-mobile
- * token (default 254). Resolves the value from the live CSS variable
+ * token (default 350). Resolves the value from the live CSS variable
  * instead of hardcoding it so a future token change auto-follows.
  */
 export async function assertSidebarDrawerWidth(page) {

@@ -1,4 +1,4 @@
-import { planMotionForUser, easeOutQuint } from './motion.js';
+import { planMotionForUser, easeOutHouse } from './motion.js';
 import { isPinnedToBottom, shouldAutoScroll, SCROLL_SLACK } from './scrollDecision.ts';
 import { stateStore } from '../state/store.js';
 
@@ -176,7 +176,11 @@ export function velocityScrollTo(list, targetTop, opts){
   }
   const plan = injectedPlan || planMotionForUser(absDistance, o.motion);
   const duration = plan.duration;
-  const ease = typeof plan.ease === 'function' ? plan.ease : easeOutQuint;
+  /* Default ease is the house cubic-bezier(.16,1,.3,1) — same curve the
+     CSS msgUserIn bubble reveal uses. Settle handoff into the first
+     content-follow delta no longer "kicks" off rest because the easing
+     itself starts from zero velocity. */
+  const ease = typeof plan.ease === 'function' ? plan.ease : easeOutHouse;
   const direction = distance > 0 ? 1 : -1;
   cancelActive();
   return new Promise(function(resolve){
@@ -514,9 +518,13 @@ export function initChatComposerReserve(options){
        converging (chat/turnAnchor.ts). Once that window closes, growth that
        pushes the answer past the reserved room follows the tail again when
        the reader is still pinned — the prompt-anchor itself does not block
-       sticky-bottom. */
+       sticky-bottom. The hold window (the post-settle ResizeObserver guard
+       that keeps the prompt at the top offset while the answer grows in
+       its reserve) likewise blocks follow: hold writes scrollTop instantly
+       and any concurrent content-follow tween would race against it. */
     var turnAnchorSettling=!!(list&&list.dataset&&list.dataset.turnAnchorSettling==="true");
-    var shouldFollow=grew&&!retryOwnsViewport&&!turnAnchorSettling&&wasPinned(beforeGrowth);
+    var turnAnchorHold=!!(list&&list.dataset&&list.dataset.turnAnchorHold==="true");
+    var shouldFollow=grew&&!retryOwnsViewport&&!turnAnchorSettling&&!turnAnchorHold&&wasPinned(beforeGrowth);
     contentFrame=requestAnimationFrame(function(){
       contentFrame=0;
       if(shouldFollow&&!userScrolledAway()){

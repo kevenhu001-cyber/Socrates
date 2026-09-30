@@ -23,6 +23,51 @@ function cssColor(name, fallback) {
   return value ? `hsl(${value})` : fallback;
 }
 
+/* Charts bake theme colours into their SVG at mount time. Without a
+   re-theme, a chart drawn in dark mode keeps near-white ticks and dark grid
+   lines (Plotly) or dark-filled nodes (Mermaid) after the user switches to
+   light, and vice versa. ECharts cards re-theme in visualization.js; this is
+   the same hook for the specialised renderers. Returns a disconnect fn. */
+function watchTheme(onChange) {
+  if (typeof MutationObserver === 'undefined') return () => {};
+  let last = document.documentElement.getAttribute('data-mode');
+  const observer = new MutationObserver(() => {
+    const mode = document.documentElement.getAttribute('data-mode');
+    if (mode === last) return;
+    last = mode;
+    try { onChange(mode); } catch (_) { /* a failed re-theme keeps the old colours */ }
+  });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-mode', 'data-theme'] });
+  return () => observer.disconnect();
+}
+
+function plotlyColors() {
+  return {
+    text: cssColor('--text-100', '#1c2637'),
+    muted: cssColor('--text-300', '#68748a'),
+    grid: cssColor('--border-100', '#edf1f5'),
+    primary: cssColor('--accent-500', '#3a6df0'),
+  };
+}
+
+/* Theme-dependent layout keys, flat so the same object feeds newPlot (via
+   the nested form below) and Plotly.relayout. The modebar is pinned too:
+   left to its default, Plotly derives it from paper_bgcolor 'transparent'
+   and paints a 50% black bar with 30% white icons — a dark strip on every
+   light chart (always visible on touch devices). */
+function plotlyThemeUpdate(colors) {
+  return {
+    'font.color': colors.text,
+    'xaxis.gridcolor': colors.grid,
+    'xaxis.zerolinecolor': colors.muted,
+    'yaxis.gridcolor': colors.grid,
+    'yaxis.zerolinecolor': colors.muted,
+    'modebar.bgcolor': 'rgba(0,0,0,0)',
+    'modebar.color': colors.muted,
+    'modebar.activecolor': colors.text,
+  };
+}
+
 function downloadSvgAdapter(stage) {
   return {
     dispatchAction() {},
@@ -39,12 +84,7 @@ async function mountPlotly(spec, stage, helpers) {
      injected only when a Plotly card mounts. */
   plotlyPromise ||= ensurePlotly();
   const Plotly = await plotlyPromise;
-  const colors = {
-    text: cssColor('--text-100', '#1c2637'),
-    muted: cssColor('--text-300', '#68748a'),
-    grid: cssColor('--border-100', '#edf1f5'),
-    primary: cssColor('--accent-500', '#3a6df0'),
-  };
+  const colors = plotlyColors();
   let traces = [];
   if (spec.template === 'function') {
     traces = (spec.payload.functions || []).map((fn, index) => {
@@ -84,11 +124,15 @@ async function mountPlotly(spec, stage, helpers) {
     yaxis: { title: { text: spec.payload.yLabel || 'y' }, gridcolor: colors.grid, zerolinecolor: colors.muted, automargin: true },
     legend: { orientation: 'h', y: 1.08 },
     hovermode: 'closest',
+    modebar: { bgcolor: 'rgba(0,0,0,0)', color: colors.muted, activecolor: colors.text },
   }, {
     responsive: true,
     displaylogo: false,
     scrollZoom: true,
     modeBarButtonsToRemove: ['sendDataToCloud', 'lasso2d', 'select2d'],
+  });
+  const stopWatchingTheme = watchTheme(() => {
+    Plotly.relayout(stage, plotlyThemeUpdate(plotlyColors()));
   });
   return {
     handled: true,
@@ -96,7 +140,7 @@ async function mountPlotly(spec, stage, helpers) {
       dispatchAction() { Plotly.relayout(stage, { 'xaxis.autorange': true, 'yaxis.autorange': true }); },
       getDataURL() { return Plotly.toImage(stage, { format: 'png', width: 1400, height: 820, scale: 1 }); },
     },
-    cleanup() { Plotly.purge(stage); },
+    cleanup() { stopWatchingTheme(); Plotly.purge(stage); },
   };
 }
 
@@ -129,18 +173,34 @@ async function mountMermaid(spec, stage) {
      injected only when a mermaid card mounts. */
   mermaidPromise ||= ensureMermaid();
   const mermaid = await mermaidPromise;
-  mermaid.initialize({
-    startOnLoad: false,
-    securityLevel: 'strict',
-    theme: document.documentElement.getAttribute('data-mode') === 'dark' ? 'dark' : 'neutral',
-    flowchart: { htmlLabels: false, curve: 'basis', useMaxWidth: true },
-  });
-  const id = `socrates-mermaid-${Math.random().toString(36).slice(2)}`;
+  const text = mermaidText(spec);
+  /* Mermaid bakes the theme into the SVG, so a theme switch re-renders.
+     `generation` drops a render that finishes after a newer one started or
+     after the card was cleaned up. */
+  let generation = 0;
+  let disposed = false;
+  const draw = async () => {
+    const mine = ++generation;
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: document.documentElement.getAttribute('data-mode') === 'dark' ? 'dark' : 'neutral',
+      flowchart: { htmlLabels: false, curve: 'basis', useMaxWidth: true },
+    });
+    const id = `socrates-mermaid-${Math.random().toString(36).slice(2)}`;
+    const { svg, bindFunctions } = await mermaid.render(id, text);
+    if (disposed || mine !== generation) return;
+    stage.innerHTML = svg;
+    bindFunctions?.(stage);
+  };
   await whenFontsReady('Plus Jakarta Sans');
-  const { svg, bindFunctions } = await mermaid.render(id, mermaidText(spec));
-  stage.innerHTML = svg;
-  bindFunctions?.(stage);
-  return { handled: true, chart: downloadSvgAdapter(stage), cleanup() { stage.replaceChildren(); } };
+  await draw();
+  const stopWatchingTheme = watchTheme(() => { draw().catch(() => {}); });
+  return {
+    handled: true,
+    chart: downloadSvgAdapter(stage),
+    cleanup() { disposed = true; stopWatchingTheme(); stage.replaceChildren(); },
+  };
 }
 
 async function mountThree(spec, stage) {

@@ -82,6 +82,13 @@ export function mountLegacyShellListeners(actions) {
   click('tabKnowledge', () => actions.toggleSidebarView('knowledge'));
   click('tabMistakes', () => actions.toggleSidebarView('mistakes'));
 
+  /* Recents header affordances (chatgpt.com drawer): compose starts a new
+     chat; ··· opens the Storage modal, which lists archived sessions. */
+  click('recentsNewBtn', actions.startNewChat);
+  click('recentsMoreBtn', () => {
+    try { window.__socratesLegacy?.navigation?.openStorageModal?.(); } catch (_) { /* best effort */ }
+  });
+
   return function unmountLegacyShellListeners() {
     cleanups.splice(0).forEach((cleanup) => cleanup());
     mounted = false;

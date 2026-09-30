@@ -464,7 +464,13 @@ html[data-boot-state="auth"] #appShell{display:none !important}
 .boot-loading{position:fixed;inset:0;z-index:190;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:hsl(var(--bg-100));background-image:linear-gradient(to right,hsl(var(--bg-200)) 1px,transparent 1px),linear-gradient(to bottom,hsl(var(--bg-200)) 1px,transparent 1px);background-size:32px 32px;opacity:1;transition:opacity .25s var(--ease-out)}
 html[data-show-grid="false"] .boot-loading{background-image:none}
 html[data-boot-state="app"] .boot-loading,
-html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
+html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none;visibility:hidden;transition:opacity .25s var(--ease-out),visibility 0s linear .25s}
+/* The layer is never removed from the DOM, so its two infinite spinners kept
+   ticking under opacity:0 for the whole session. Stop them once boot is done. */
+html[data-boot-state="app"] .boot-loading-dots::before,
+html[data-boot-state="app"] .boot-loading-dots::after,
+html[data-boot-state="auth"] .boot-loading-dots::before,
+html[data-boot-state="auth"] .boot-loading-dots::after{animation:none}
 .boot-loading-logo{display:flex;align-items:center;gap:8px;color:hsl(var(--text-300));font-weight:600;font-size:calc(15px * var(--app-font-scale,1));letter-spacing:-.02em}
 .boot-loading-logo svg,.boot-loading-logo img{flex-shrink:0;color:hsl(var(--brand-000))}
 .boot-loading-dots{display:inline-flex;align-items:center;margin-left:6px;width:16px;height:16px;position:relative}

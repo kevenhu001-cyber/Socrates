@@ -98,7 +98,7 @@
     border: 0 !important;
     border-radius: 16px !important;
     background: var(--chatgpt-menu) !important;
-    box-shadow: 0 14px 34px rgb(0 0 0 / 34%), 0 2px 8px rgb(0 0 0 / 18%) !important;
+    box-shadow: var(--ui-shadow-popover) !important;
   }
 
   #composerToolsMenu .composer-tools-desktop-items,

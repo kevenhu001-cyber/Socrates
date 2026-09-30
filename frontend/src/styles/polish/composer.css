@@ -55,7 +55,7 @@ body #composerToolsMenu {
   border-radius: var(--ui-radius-lg, 12px) !important;
   border-color: var(--ui-border-subtle) !important;
   box-shadow: var(--ui-shadow-menu) !important;
-  padding: 6px !important;
+  padding: 8px !important;
 }
 
 /* "+" open animation — the card springs out of the trigger edge. The menu
@@ -235,4 +235,18 @@ body #composerToolsMenu .composer-tools-item kbd {
 
 @media (prefers-reduced-motion: reduce) {
   #appShell .voice-recording-indicator::after { animation: none; }
+}
+
+/* Reference phone sheet is a flat action list — group labels stay in the
+   DOM for the group aria-labels and the compat specs, but clip out of the
+   painted sheet on phones. */
+@media (max-width: 768px) {
+  body #composerToolsMenu .composer-tools-mobile-items .composer-tools-group-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
