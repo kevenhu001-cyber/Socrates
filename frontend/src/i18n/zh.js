@@ -115,6 +115,7 @@ export const zh = {
     "sidebar.nav.incognito":"无痕对话",
     "sidebar.nav.more":"更多",
     "sidebar.nav.soon":"即将",
+    "sidebar.upgrade":"升级",
     /* PR-A — More popover items */
     "sidebar.more.settings":"API 设置",
     "sidebar.more.skills":"技能与快捷键",

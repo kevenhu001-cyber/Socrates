@@ -321,6 +321,33 @@
 #appShell .sidebar-footer .icon-btn svg { width: 17px; height: 17px; }
 }
 
+/* Free-tier "升级" pill at the footer row's right edge — the reference
+   drawer's upgrade affordance. Phones only; desktop keeps plan changes
+   inside the profile surface. Rendered by React SidebarFooter solely for
+   the diophantus tier. */
+#appShell .sidebar-upgrade-pill { display: none; }
+@media (max-width: 768px) {
+#appShell .sidebar-upgrade-pill {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-pill);
+  background: transparent;
+  color: var(--ui-text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+#appShell .sidebar-upgrade-pill:hover,
+#appShell .sidebar-upgrade-pill:focus-visible { background: var(--ui-bg-hover); }
+}
+
 /* ── More popover ── */
 #appShell .sidebar-more-popover {
   border-radius: var(--ui-radius-lg, 12px);

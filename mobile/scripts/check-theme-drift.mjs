@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 const repoRoot = new URL('../../', import.meta.url);
 const read = (relativePath) => readFileSync(new URL(relativePath, repoRoot), 'utf8');
 
-const css = read('frontend/src/styles.css');
+const css = read('frontend/src/styles/legacy/00-foundations.css');
 const webJsTokens = read('frontend/src/ui/tokens.js');
 const webCssTokens = read('frontend/src/styles/tokens.css');
 const frontendTokens = read('frontend/src/ui/tokens.ts');

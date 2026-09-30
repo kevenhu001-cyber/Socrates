@@ -58,9 +58,14 @@ function _publishProfileState() {
    under `?react=1`; legacy mode never sees a subscriber. */
 function _publishSidebarChrome() {
   try {
+    var cu = window.CURRENT_USER || null;
+    /* Mirror the tier onto <html> so CSS can gate free-tier affordances
+       (the mobile "升级" pill in the top bar) without a JS listener. */
+    try {
+      document.documentElement.dataset.userTier = (cu && cu.tier) || "diophantus";
+    } catch (_) { /* swallow */ }
     var bridge = window.__socratesSidebarChromeBridge;
     if (!bridge || typeof bridge.publish !== "function") return;
-    var cu = window.CURRENT_USER || null;
     var initials, displayName, tier, tierLabel;
     if (cu) {
       /* P_cowork-landing — the footer row is ~150px wide once the avatar and

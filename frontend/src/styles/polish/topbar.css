@@ -36,6 +36,34 @@
 }
 }
 
+/* Free-tier "升级" pill left of the new-chat circle — the reference mobile
+   top bar's upgrade entry. Hidden until ui/profile.js stamps
+   [data-user-tier="diophantus"] on <html>; phones only. */
+#appShell .mobile-upgrade-pill { display: none; }
+@media (max-width: 768px) {
+:root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-pill);
+  background: transparent;
+  color: var(--ui-text-primary);
+  font-size: 13px;
+  font-weight: 450;
+  line-height: 18px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+#appShell .mobile-upgrade-pill svg { width: 14px; height: 14px; }
+#appShell .mobile-upgrade-pill:hover,
+#appShell .mobile-upgrade-pill:focus-visible { background: var(--ui-bg-hover); }
+}
+
 /* Mode pill — calmer border, tighter hit rows. */
 @media (max-width: 768px) {
 #appShell #modeSegmentedTop {
