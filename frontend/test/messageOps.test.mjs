@@ -50,8 +50,12 @@ test('rollbackMessagesAfter drops later turns but spares React rows', () => {
   const legacyRow = mountRow('rb-a1', false);
   const reactRow = mountRow('rb-u2', true);
   try {
+    /* Returns the dropped entries, not a count: the edit path feeds each
+       dropped clientId to the mutation outbox so a failed server-side
+       prune can be replayed on reconnect. */
     const dropped = rollbackMessagesAfter('rb-u1');
-    assert.equal(dropped, 2);
+    assert.equal(dropped.length, 2);
+    assert.deepEqual(dropped.map((m) => m.clientId), ['rb-a1', 'rb-u2']);
     assert.equal(legacyRow.parentNode, null);
     assert.notEqual(reactRow.parentNode, null);
     const ids = stateStore.read('messages').map((m) => m && m.clientId);

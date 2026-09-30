@@ -92,6 +92,9 @@ export interface LegacyComposer {
   analyzeAction(): void;
   toggleExtensionByKey(key: string): void;
   removeAttachment(id: string): void;
+  /* Re-runs a failed upload against the File retained on the entry —
+     optional so older bridges degrade to remove+re-pick. */
+  retryAttachment?(id: string): void;
   renderAttachmentChips?(): void;
   startSession(): Promise<void> | void;
   submitChatMessage(): Promise<void> | void;

@@ -35,15 +35,32 @@ export function updateKB() {
      the snapshot history from §6.5. We delegate the entire
      #kbContent body to that renderer. */
   var _ts = _tutorSocratic();
-  if (_ts && typeof _ts.renderKnowledgeBoundaryFile === 'function') {
-    try { _ts.renderKnowledgeBoundaryFile(); } catch (_) { /* kb boundary render failed */ }
-  }
   /* Mode banner and teaching plan re-render in the new module. */
   if (_ts) {
     try { _ts.renderTeachingPlan(); } catch (_) {}
   }
   var cont = document.getElementById('kbContent');
   if (!cont) return;
+
+  /* P_kb-double-render — the delegated renderer above OWNS #kbContent.
+     This function used to call it and then keep going, rebuilding the
+     panel as a plain three-section list and assigning cont.innerHTML
+     over the top. The P1.2 force-directed graph was therefore painted
+     and destroyed inside the same synchronous call: the flagship
+     knowledge map was never visible, and users saw the old list with
+     English section headers instead.
+
+     Delegation now short-circuits. The legacy list is kept strictly as
+     a fallback for when tutorSocratic.js has not loaded (it is resolved
+     off window at call time), so a failed module load degrades to the
+     old view rather than an empty panel. */
+  if (_ts && typeof _ts.renderKnowledgeBoundaryFile === 'function') {
+    try {
+      _ts.renderKnowledgeBoundaryFile();
+      return;
+    } catch (_) { /* delegate failed — fall through to the legacy list */ }
+  }
+
   if (!stateStore.read('kbNodes').length) {
     cont.innerHTML = '<div class="kb-empty">' + _t('tutor.kbTopicFirst', 'Set a learning topic to build your knowledge map.') + '</div>';
     return;
@@ -55,17 +72,25 @@ export function updateKB() {
     sections[cls].push({ name: n.name, questions: n.questions || 0, idx: i });
   });
 
+  /* Legacy fallback (only reached when tutorSocratic.js is unavailable).
+     Headers go through the same kb.status.* keys as the detail panel so a
+     degraded load does not re-introduce hardcoded English for the default
+     zh locale. */
+  var sectionTitle = function (key, fallback) {
+    return '<div class="kb-section-title">' + _t(key, fallback)
+         + ' <span class="kb-section-count">';
+  };
   var html = '';
   if (sections.internalized.length) {
-    html += '<div class="kb-section-title">Internalized <span class="kb-section-count">' + sections.internalized.length + '</span></div>';
+    html += sectionTitle('tutor.statusInternalized', 'Internalized') + sections.internalized.length + '</span></div>';
     sections.internalized.forEach(function (n) { html += kbNodeHtml(n, 'internalized'); });
   }
   if (sections.fuzzy.length) {
-    html += '<div class="kb-section-title">Exploring <span class="kb-section-count">' + sections.fuzzy.length + '</span></div>';
+    html += sectionTitle('tutor.statusFuzzy', 'Fuzzy') + sections.fuzzy.length + '</span></div>';
     sections.fuzzy.forEach(function (n) { html += kbNodeHtml(n, 'fuzzy'); });
   }
   if (sections.blank.length) {
-    html += '<div class="kb-section-title">Not yet reached <span class="kb-section-count">' + sections.blank.length + '</span></div>';
+    html += sectionTitle('tutor.statusBlank', 'Blank') + sections.blank.length + '</span></div>';
     sections.blank.forEach(function (n) { html += kbNodeHtml(n, 'blank'); });
   }
   cont.innerHTML = html;

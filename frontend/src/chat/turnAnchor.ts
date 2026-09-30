@@ -182,6 +182,12 @@ interface TurnViewportHold {
   promptRow: HTMLElement;
   clientId: string;
   targetOffset: number;
+  /* While the send glide is still in flight, `align` stays false: the hold
+     re-syncs the reserve on every viewport change so the glide's live target
+     never outruns the reachable scroll range, but it must NOT write
+     scrollTop — the eased motion owns the prompt's position until it lands.
+     Flipped on when the glide resolves (releaseAnchor restarts the hold). */
+  align: boolean;
   observer: ResizeObserver | null;
   /** Same-task correction listeners, removed on release. */
   onViewportResize: (() => void) | null;
@@ -289,7 +295,7 @@ function holdTurnViewport(): void {
     updateMessageSnapshot(entry, { _turnAnchorMinHeight: nextReserve }, true);
     publishReactChatRuntime({ type: 'tool-run-updated', messageId: hold.clientId });
   }
-  alignPromptToOffset(list, promptRow, hold.targetOffset);
+  if (hold.align) alignPromptToOffset(list, promptRow, hold.targetOffset);
 }
 
 function startTurnViewportHold(
@@ -297,6 +303,7 @@ function startTurnViewportHold(
   rowFor: () => HTMLElement | null,
   clientId: string,
   targetOffset: number,
+  align = true,
 ): void {
   releaseTurnViewportHold();
   if (!list || !clientId || typeof ResizeObserver !== 'function') return;
@@ -309,6 +316,7 @@ function startTurnViewportHold(
     promptRow,
     clientId,
     targetOffset,
+    align,
     observer: null,
     onViewportResize: null,
     unsubInset: null,
@@ -661,6 +669,12 @@ export function scheduleActiveTurnToTop(
         clearSettling();
       };
       if (stateStore.read('_userScrolledAway')) { done(); return; }
+      /* A newer send already owns the transcript: its own glide/hold is
+         converging the same prompt. A superseded pass must not write
+         scrollTop or start a competing hold — its settle loop would
+         instant-correct the remaining distance and cut the newer glide
+         short. */
+      if (settlingSeq !== settlingOwner) { done(); return; }
       stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
       /* The glide is over but the layout around the prompt is not settled:
          the keyboard or the composer can still change the transcript's
@@ -668,7 +682,13 @@ export function scheduleActiveTurnToTop(
          from the first of those changes, while the settle loop below
          converges the offset itself. */
       startTurnViewportHold(list, row, holdClientId, targetOffset);
-      settleNormalTurnAnchor(targetOffset, Date.now() + 420, done);
+      /* The settle window runs just long enough for the keyboard/composer
+         transition to finish; the hold's ResizeObserver keeps correcting
+         drift past that. A shorter window means content-follow can pick
+         up the streaming answer sooner, so the user-bubble fade (380ms)
+         hands off to the camera follow with no visible dead zone on a
+         typical 180-220ms glide. */
+      settleNormalTurnAnchor(targetOffset, Date.now() + 220, done);
     };
     /* P_send-glide — whatever the reader was looking at (the bottom, one
        screen up, or the first message of a long session), glide the whole
@@ -677,8 +697,55 @@ export function scheduleActiveTurnToTop(
        target is re-read every frame, so a reserve repaint or React commit
        during the glide bends the motion instead of snapping at the end. */
     const plan = planSendGlide(Math.abs(target - list.scrollTop), list.clientHeight);
+    /* The composer can still be collapsing (and on mobile the keyboard may
+       still be opening) while the glide runs — each change moves
+       scrollHeight - clientHeight, so a reserve stamped from the send-time
+       measurement leaves the live target clamped short of the slot: the
+       eased curve stalls above the top and the post-glide hold then snaps
+       the remainder. Starting the hold now re-syncs the reserve on every
+       mid-glide viewport change so the target stays reachable; `align:false`
+       keeps it off scrollTop until the eased motion lands. */
+    if (!retryViewport) {
+      const holdClientId = clientId || (assistant && assistant.dataset ? assistant.dataset.clientId || '' : '');
+      startTurnViewportHold(list, row, holdClientId, targetOffset, false);
+    }
+    /* Tie the user-bubble fade to the glide duration — the bubble lands
+       on full opacity at the exact frame the camera lands on its target,
+       so the user reads a single coordinated arrival. Without this link
+       the bubble's opacity reaches 1 on a fixed clock (independent of
+       glide distance), so a 180ms glide finishes long before the bubble
+       does and a 900ms glide finishes long after — both read as a
+       disconnect between the prompt moving up and "settling in". A snap
+       plan has no motion to coordinate with, so the bubble stays fully
+       present instead of starting a fade that outlives the scroll. */
+    if (!retryViewport && !plan.snap) {
+      const promptRows = list.querySelectorAll('.msg.user');
+      const promptBubble = promptRows.length
+        ? (promptRows[promptRows.length - 1] as HTMLElement)
+        : null;
+      if (promptBubble) {
+        promptBubble.style.setProperty(
+          '--bubble-fade-duration',
+          plan.duration + 'ms',
+        );
+        promptBubble.dataset.bubbleArriving = 'true';
+      }
+    }
     velocityScrollTo(list, target, { smooth: true, target: promptTarget, plan }).then(() => {
       if (!list.isConnected) { clearSettling(); return; }
+      /* The CSS animation is `both` so the bubble holds opacity:1 even
+         after we drop the attribute; removing it just stops a future
+         rule from re-running on top of the settled state. Skipped when a
+         newer send superseded this one — it re-arms the same attribute
+         with its own duration, and stripping it mid-glide would snap the
+         fade. */
+      if (!retryViewport && list && settlingSeq === settlingOwner) {
+        const promptRows = list.querySelectorAll('.msg.user');
+        const promptBubble = promptRows.length
+          ? (promptRows[promptRows.length - 1] as HTMLElement)
+          : null;
+        if (promptBubble) delete promptBubble.dataset.bubbleArriving;
+      }
       releaseAnchor();
     });
   }

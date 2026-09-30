@@ -1,6 +1,18 @@
 import { esc } from '../render/helpers.js';
 import { formatRelativeTime } from './recentsHelpers.js';
 
+/* P_mistakes-i18n — this panel shipped raw English literals while zh is
+   the default locale, and echoed the internal mistake.type enum straight
+   into the card meta. i18n.js's t() does no interpolation, so {n} is
+   substituted here, matching the convention in ui/diagnosticQuestion.js. */
+function t(key, vars) {
+  var v = (typeof window !== 'undefined' && typeof window.t === 'function') ? window.t(key) : key;
+  if (!vars) return v;
+  return String(v).replace(/\{(\w+)\}/g, function (whole, name) {
+    return Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : whole;
+  });
+}
+
 /**
  * Owns the mistake-book UI and persistence workflow. The chat controller
  * supplies the few cross-feature actions (session save, scrolling, and quiz
@@ -13,7 +25,7 @@ export function createMistakeBook({
   mountQuizWidget,
   mountPracticeWidget,
   scrollContainer,
-  getTutorSocratic = () => window.tutorSocratic,
+  getTutorSocratic = () => (typeof window !== 'undefined' ? window.tutorSocratic : undefined),
 }) {
   function persistMistake(mistakeData) {
     var sid = stateStore.read('currentSessionId');
@@ -107,7 +119,8 @@ export function createMistakeBook({
     }
     var mistakes = stateStore.read('mistakes') || [];
     if (mistakes.length === 0) {
-      cont.innerHTML = '<div class="recents-empty">No mistakes yet.<br>Wrong quiz picks and incorrect practice attempts will land here for review.</div>';
+      cont.innerHTML = '<div class="recents-empty">' + esc(t('mistakes.empty'))
+        + '<br>' + esc(t('mistakes.emptyHint')) + '</div>';
       return;
     }
     var filter = stateStore.read('mistakeFilter') || 'all';
@@ -119,9 +132,7 @@ export function createMistakeBook({
     }
     if (!filtered.length) {
       cont.innerHTML = '<div class="recents-empty">'
-        + (filter === 'resolved'
-          ? 'No resolved mistakes yet. Mark a mistake as conquered after redoing it successfully.'
-          : 'Nothing in this filter. Switch to "all" to see every mistake.')
+        + esc(filter === 'resolved' ? t('mistakes.filterEmptyResolved') : t('mistakes.filterEmptyOther'))
         + '</div>';
       return;
     }
@@ -133,14 +144,22 @@ export function createMistakeBook({
         optionsHtml += '<div class="mistake-opt ' + tag + '"><span class="mistake-opt-letter">' + esc(option.letter) + '</span><span>' + esc(option.text) + '</span></div>';
       });
       var resolved = !!(mistake.resolved || mistake.isResolved);
+      /* mistake.type is the internal 'quiz' / 'practice' enum — a label,
+         not something to show a learner verbatim. */
+      var typeKey = 'mistakes.type.' + (mistake.type || '');
+      var typeLabel = t(typeKey);
       html += '<div class="mistake-card' + (resolved ? ' mistake-card-resolved' : '') + '" data-mistake-id="' + esc(mistake.id) + '">';
-      html += '<div class="mistake-meta"><span class="mistake-type">' + esc(mistake.type) + '</span><span class="mistake-topic">' + esc(mistake.topic || '') + '</span><span class="mistake-time">' + formatRelativeTime(mistake.timestamp) + '</span>'
-        + (resolved ? '<span class="mistake-resolved-tag">conquered</span>' : '')
+      html += '<div class="mistake-meta"><span class="mistake-type">' + esc(typeLabel === typeKey ? (mistake.type || '') : typeLabel) + '</span><span class="mistake-topic">' + esc(mistake.topic || '') + '</span><span class="mistake-time">' + formatRelativeTime(mistake.timestamp) + '</span>'
+        + (resolved ? '<span class="mistake-resolved-tag">' + esc(t('mistakes.conquered')) + '</span>' : '')
         + '</div>';
       html += '<div class="mistake-q">' + esc(mistake.q || '') + '</div>';
       html += '<div class="mistake-opts">' + optionsHtml + '</div>';
-      if (mistake.redoCount) html += '<div class="mistake-redo-count">Redone ' + mistake.redoCount + ' time' + (mistake.redoCount > 1 ? 's' : '') + '</div>';
-      html += '<button class="mistake-redo-btn" data-redo="' + esc(mistake.id) + '">Redo</button>';
+      if (mistake.redoCount) {
+        html += '<div class="mistake-redo-count">'
+          + esc(mistake.redoCount === 1 ? t('mistakes.redoneOne') : t('mistakes.redoneMany', { n: mistake.redoCount }))
+          + '</div>';
+      }
+      html += '<button class="mistake-redo-btn" data-redo="' + esc(mistake.id) + '">' + esc(t('mistakes.redo')) + '</button>';
       html += '</div>';
     });
     cont.innerHTML = html;

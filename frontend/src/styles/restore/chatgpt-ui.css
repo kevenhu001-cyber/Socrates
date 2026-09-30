@@ -1231,8 +1231,8 @@ body.workspace-active #appShell .workspace-row:hover {
 .modal-card {
   border: 1px solid var(--cg-border-strong) !important;
   border-radius: 20px !important;
-  background: var(--cg-surface) !important;
-  box-shadow: 0 24px 80px rgb(0 0 0 / 32%) !important;
+  background: var(--ui-bg-dialog) !important;
+  box-shadow: var(--ui-shadow-dialog) !important;
 }
 
 .auth-brand,

@@ -16,6 +16,13 @@
   border-color: var(--ui-border-subtle);
   box-shadow: var(--ui-shadow-menu);
 }
+/* legacy/04 gives the "+" menu an 18px backdrop blur, but every layer since
+   paints it opaque (--chatgpt-menu), so the blur only costs a full
+   re-rasterise of what is behind it during the open animation. */
+.composer-tools-menu {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
 .sidebar-more-popover,
 .display-prefs-popover,
 .model-picker-menu,
@@ -28,14 +35,27 @@
 
 /* Generation-config popover — converge on the same density as the "+"
    tools menu: 14px type, 40px rows, quiet hairline divider. The card
-   anchors to a 36px pill; 46px rows at 15px read oversized beside it. */
-.chat-config-pop { padding: 6px; }
+   anchors to a 36px pill; 46px rows at 15px read oversized beside it.
+   Surface: restore/chat-surface.css paints it with --chat-control, a grey
+   control fill (#e7e7e7 in light) — a popover is a raised white card like
+   the other menus, with the ghost wash for rows. */
+.chat-config-pop {
+  padding: 6px;
+  background: var(--ui-bg-overlay);
+  color: var(--ui-text-primary);
+}
 .chat-config-row {
   min-height: 40px;
   padding: 7px 10px;
   gap: 10px;
   font-size: 14px;
+  color: var(--ui-text-primary);
 }
+.chat-config-row:hover,
+.chat-config-row:focus-visible { background: var(--ui-bg-hover-ghost); }
+.chat-config-row small,
+.chat-config-value { color: var(--ui-text-tertiary); }
+.chat-config-divider { background: var(--ui-border-default); }
 .chat-config-row strong { font-size: 14px; }
 .chat-config-row small { font-size: 11.5px; }
 .chat-config-row > svg { width: 17px; height: 17px; }
@@ -68,16 +88,46 @@
   color: var(--ui-text-primary);
 }
 
-/* ── Backdrops: consistent dim + slight blur ── */
+/* ── Backdrops: one flat dim ──
+   The dim comes from --ui-backdrop (40% light / 50% dark). The legacy
+   overlays hard-coded 55–65% black, which turned a light page into a muddy
+   grey slab behind every dialog. No blur: chatgpt.com uses a flat scrim
+   (docs/ref/chatgpt-parity.md, P1 #9), and a full-viewport backdrop-filter
+   re-rasterises the whole page on every frame of the open fade. */
 #appShell .cmd-k-overlay,
 .cmd-k-overlay,
 .share-overlay,
 .profile-overlay,
 .usage-overlay,
 .settings-overlay,
+.admin-modal-overlay,
 .confirm-dialog {
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: var(--ui-backdrop);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* ── Motion: one entrance for dialogs and sidebar popovers ──
+   docs/ref/chatgpt-parity.md: menus and dialogs fade + scale over ~160ms
+   ease-out (tokens.css --ui-duration-overlay / --ui-overlay-enter-scale).
+   Before this every surface had its own entrance: dialogs slid 12px over
+   200ms (confirm 150ms), and the command palette plus the sidebar "more" /
+   display popovers had none and popped in. The composer "+" menu and the
+   generation-config popover keep their anchored lift (polish/composer.css,
+   restore/chat-surface.css). Reduced motion collapses this via
+   foundations/base.css. The scrims keep their own fadeIn. */
+@keyframes ui-overlay-in {
+  from { opacity: 0; transform: scale(var(--ui-overlay-enter-scale, .98)); }
+}
+.cmd-k-modal,
+.settings-modal,
+.profile-modal,
+.usage-modal,
+.share-modal,
+.confirm-box,
+.sidebar-more-popover,
+.display-prefs-popover {
+  animation: ui-overlay-in var(--ui-duration-overlay, 160ms) var(--ui-ease-out) both;
 }
 
 /* ── CmdK palette ── */
@@ -114,7 +164,6 @@
   border-radius: var(--ui-radius-xl, 16px);
   box-shadow: var(--ui-shadow-modal);
 }
-.settings-overlay { backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 .settings-nav button { border-radius: var(--ui-radius-control, 8px); }
 .settings-nav button.active { background: var(--ui-bg-surface); }
 .settings-btn { border-radius: var(--ui-radius-control, 8px); }
@@ -126,9 +175,36 @@
   border-radius: var(--ui-radius-xl, 16px);
   box-shadow: var(--ui-shadow-modal);
 }
+/* Same identity chip as the sidebar account row (parity/sidebar.css). The
+   legacy skin inverted it to a near-black disc in light mode, so the one
+   avatar read as two different things. */
+.profile-avatar {
+  background: var(--ui-bg-control);
+  color: var(--ui-text-primary);
+}
 .profile-btn { border-radius: var(--ui-radius-control, 8px); }
 .profile-lang-toggle { border-radius: var(--ui-radius-control, 8px); }
 .stg-toggle-track { border-radius: var(--ui-radius-pill, 999px); }
+/* Switch skin. Legacy painted the knob with --text-000 and the "on" track
+   with --accent-000 — the same colour in both modes — so an enabled switch
+   was one solid pill with no visible knob, and the light "off" knob was a
+   near-black dot that read as "on". Off is a neutral control fill with a
+   white (light) / grey (dark) knob; on is the inverted primary with an
+   on-accent knob, so the knob always contrasts with its track. */
+.stg-toggle-track {
+  background: var(--ui-bg-control);
+  border-color: var(--ui-border-default);
+}
+.stg-toggle-track.on {
+  background: var(--ui-accent-strong);
+  border-color: var(--ui-accent-strong);
+}
+.stg-toggle-knob {
+  background: var(--ui-text-secondary);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 25%);
+}
+[data-mode="light"] .stg-toggle-knob { background: var(--ui-bg-page); }
+.stg-toggle-track.on .stg-toggle-knob { background: var(--ui-on-accent); }
 
 /* ── Settings · Account pane ── */
 .settings-account-card {

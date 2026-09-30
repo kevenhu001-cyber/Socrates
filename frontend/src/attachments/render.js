@@ -9,7 +9,7 @@
 //
 // All inline handler references (window.renderAttachmentChips /
 // window.setupAttachmentInput) are re-bound in src/windowExports.js.
-import { attachments, addFiles } from '../attachments.js';
+import { attachments, addFiles, retryAttachment } from '../attachments.js';
 import { showToast } from '../ui/toast.js';
 
 /* React migration bridge — fires whenever the pending attachments array
@@ -30,13 +30,8 @@ function _publishAttachments(){
   }catch(_){ /* swallow — bridge is best-effort */ }
 }
 
-/* Surface the first rejection via toast — rejects carry plain reasons
-   ("unsupported file type", "file exceeds 25 MB limit", upload errors). */
-function surfaceRejectionToast(res){
-  if(!res || !res.rejected || !res.rejected.length) return;
-  console.warn("[attachments] rejected:", res.rejected);
-  showToast(res.rejected[0]);
-}
+/* Rejections surface per-file through addFiles' onRejected callback
+   (showToast) so a slow in-flight upload never delays them. */
 
 /* P_multi-input-attachment — every composer that wants attachments
    registers itself here. setupAttachmentInput pushes onto the list;
@@ -69,51 +64,35 @@ function renderAndRefresh(){
   });
 }
 
+/* Error-chip retry — flips a failed upload back to pending and re-runs
+   the job against the retained File handle, then re-syncs the send
+   buttons (a failed chip still counts toward activation). */
+export function retryComposerAttachment(id){
+  const ok = retryAttachment(id, renderAndRefresh);
+  refreshAllSendBtns();
+  return ok;
+}
+
 export async function addComposerFiles(files, source){
   const list = Array.from(files || []);
   if(!list.length) return { added:0, rejected:[] };
-  const res = await addFiles(list, renderAndRefresh, updateProgressOnly);
+  const res = await addFiles(list, renderAndRefresh, updateProgressOnly, showToast);
   refreshAllSendBtns();
   if(source === "paste" && res.added > 0){
     showToast(res.added + " file" + (res.added > 1 ? "s" : "") + " pasted");
   }
-  surfaceRejectionToast(res);
   return res;
 }
 
-/* Lightweight progress-only update — directly finds existing pending
-   chips in the DOM and updates the progress-fill width, WITHOUT
-   destroying and recreating chip elements. Called on every progress
-   tick from addFiles(). This avoids the jank of a full DOM rebuild
-   (which transitions the progress bar's width smoothly). */
+/* Lightweight progress-only update — rAF-coalesced bridge publish so the
+   React chip row re-renders the "Uploading… n%" meta at most once per
+   frame instead of rebuilding DOM per progress event. */
 let _progressRAF = null;
 function updateProgressOnly(){
   if (_progressRAF) return;
   _progressRAF = requestAnimationFrame(function(){
     _progressRAF = null;
-    const ids = WIRED_INPUTS.map(function(w){ return w.chipsId; }).filter(Boolean);
-    if(!ids.length){
-      var fb = document.getElementById("attachmentChips");
-      if(fb) ids.push("attachmentChips");
-    }
-    ids.forEach(function(id){
-      var wrap = document.getElementById(id);
-      if(!wrap) return;
-      var chips = wrap.querySelectorAll('.attachment-chip.pending[data-id]');
-      for(var ci = 0; ci < chips.length; ci++){
-        var chip = chips[ci];
-        var aid = chip.getAttribute('data-id');
-        if(!aid) continue;
-        /* Find the matching attachment entry (O(n) but n ≤ 6). */
-        var entry = null;
-        for(var ai = 0; ai < attachments.length; ai++){
-          if(attachments[ai].id === aid){ entry = attachments[ai]; break; }
-        }
-        if(!entry || !entry.pending || typeof entry.progress !== 'number') continue;
-        var fill = chip.querySelector('.attachment-chip-progress-fill');
-        if(fill) fill.style.width = Math.min(entry.progress, 100) + '%';
-      }
-    });
+    _publishAttachments();
   });
 }
 
@@ -182,14 +161,13 @@ export function setupAttachmentInput(opts){
   };
   input.onchange = async function(){
     if(!input.files || !input.files.length) return;
-    const res = await addFiles(input.files, renderAndRefresh, updateProgressOnly);
+    const res = await addFiles(input.files, renderAndRefresh, updateProgressOnly, showToast);
     refreshAllSendBtns();
     if(res.rejected && res.rejected.length){
       if(btn) {
         btn.classList.add("has-error");
         setTimeout(function(){ btn.classList.remove("has-error"); }, 1500);
       }
-      surfaceRejectionToast(res);
     }
   };
 
@@ -209,8 +187,7 @@ export function setupAttachmentInput(opts){
   wrap.addEventListener("drop", async function(e){
     const dt = e.dataTransfer;
     if(!dt || !dt.files || !dt.files.length) return;
-    const res = await addFiles(dt.files, renderAndRefresh, updateProgressOnly);
-    surfaceRejectionToast(res);
+    await addFiles(dt.files, renderAndRefresh, updateProgressOnly, showToast);
   });
 
   /* P_paste-attach — clipboard paste handler for the composer.
@@ -231,13 +208,12 @@ export function setupAttachmentInput(opts){
         }
       }
       if(!files.length) return;
-e.preventDefault();
-    e.stopPropagation();
-    const res = await addFiles(files, renderAndRefresh, updateProgressOnly);
-    if(res.added > 0){
+      e.preventDefault();
+      e.stopPropagation();
+      const res = await addFiles(files, renderAndRefresh, updateProgressOnly, showToast);
+      if(res.added > 0){
         showToast(res.added + " file" + (res.added > 1 ? "s" : "") + " pasted");
       }
-      surfaceRejectionToast(res);
     });
   }
 }
@@ -268,9 +244,8 @@ function mediaInput(kind){
   else input.multiple = true;
   input.addEventListener("change", async function(){
     if(!input.files || !input.files.length) return;
-    const res = await addFiles(input.files, renderAndRefresh, updateProgressOnly);
+    await addFiles(input.files, renderAndRefresh, updateProgressOnly, showToast);
     refreshAllSendBtns();
-    surfaceRejectionToast(res);
   });
   document.body.appendChild(input);
   MEDIA_INPUTS[kind] = input;
@@ -356,8 +331,7 @@ function wireDocumentDrag(){
     if(!dt || !dt.files || !dt.files.length) return;
     e.preventDefault();
     e.stopPropagation();
-    const res = await addFiles(dt.files, renderAndRefresh, updateProgressOnly);
-    surfaceRejectionToast(res);
+    await addFiles(dt.files, renderAndRefresh, updateProgressOnly, showToast);
   });
 }
 

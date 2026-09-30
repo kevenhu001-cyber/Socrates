@@ -302,14 +302,17 @@
   opacity:.7;
 }
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-spinner{
-  animation:calm-status-breathe 2.2s ease-in-out infinite!important;
+  /* No !important: this already wins by order + specificity, and an
+     important infinite loop would beat every prefers-reduced-motion rule
+     except restore/'s #appShell-scoped guard. */
+  animation:calm-status-breathe 2.2s ease-in-out infinite;
 }
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-label.shimmer-text,
 .agent-tool-card[data-tool-state="running"] .agent-tool-name{
   background:none!important;
   color:hsl(var(--text-300))!important;
   -webkit-text-fill-color:currentColor!important;
-  animation:calm-status-text 2.2s ease-in-out infinite!important;
+  animation:calm-status-text 2.2s ease-in-out infinite;
 }
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail{
   margin-top:5px!important;

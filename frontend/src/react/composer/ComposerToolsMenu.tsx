@@ -76,6 +76,42 @@ const TOOL_GROUPS: ReadonlyArray<{
   },
 ];
 
+/* The phone sheet mirrors the reference's flat ordering — camera, photos,
+   files, create image, web search lead — before the remaining workflows.
+   Group labels stay in the DOM for the desktop twin and for tests; CSS
+   hides them on the mobile sheet. */
+const MOBILE_GROUP_ORDER: ReadonlyArray<{
+  key: string;
+  labelKey: string;
+  label: string;
+  actions: ReadonlyArray<string>;
+}> = [
+  {
+    key: 'context',
+    labelKey: 'composer.tools.group.context',
+    label: 'Add context',
+    actions: ['upload'],
+  },
+  {
+    key: 'create',
+    labelKey: 'composer.tools.group.create',
+    label: 'Create & analyze',
+    actions: ['createImage'],
+  },
+  {
+    key: 'research',
+    labelKey: 'composer.tools.group.research',
+    label: 'Search & research',
+    actions: ['webSearch', 'explore'],
+  },
+  {
+    key: 'workflows',
+    labelKey: 'composer.tools.group.create',
+    label: 'Create & analyze',
+    actions: ['write', 'analyze', 'createSite', 'exam', 'skills'],
+  },
+];
+
 const MOBILE_THINKING_SPEC: MenuItemSpec = {
   ...extensiveThinkingExtension,
   nameKey: 'composer.tools.thinkDeeper',
@@ -375,11 +411,16 @@ function MenuItems({
       .filter((spec): spec is MenuItemSpec => Boolean(spec))
       .filter(matchesQuery),
   }));
-  const mobileGroupTools = groups.map((group) => ({
+  const mobileGroupTools = MOBILE_GROUP_ORDER.map((group) => ({
     ...group,
-    tools: group.key === 'create'
-      ? [...group.tools, ...(matchesQuery(MOBILE_THINKING_SPEC) ? [MOBILE_THINKING_SPEC] : [])]
-      : group.tools,
+    label: i18n(group.labelKey, group.label),
+    tools: [
+      ...group.actions
+        .map((key) => definitions.find((spec) => spec.key === key))
+        .filter((spec): spec is MenuItemSpec => Boolean(spec))
+        .filter(matchesQuery),
+      ...(group.key === 'workflows' && matchesQuery(MOBILE_THINKING_SPEC) ? [MOBILE_THINKING_SPEC] : []),
+    ],
   }));
   const hasMobileToolMatch = mobileStaticItems.length > 0 || mobileGroupTools.some((group) => group.tools.length > 0);
 

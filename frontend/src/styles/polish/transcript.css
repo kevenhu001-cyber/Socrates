@@ -27,7 +27,7 @@
 }
 @media (max-width: 768px) {
 #appShell .msg-toolbar-btn:hover {
-  background: var(--ui-bg-raised);
+  background: var(--ui-bg-hover-ghost);
   color: var(--ui-text-primary);
 }
 }
@@ -44,42 +44,48 @@
 }
 }
 
-/* Code blocks: ChatGPT-style all-weather dark surface with crisp header */
+/* Code blocks: a bordered card with a crisp header. Dark keeps the
+   all-weather dark band; light matches the desktop light card
+   (themes.css --ui-bg-code / --ui-bg-code-header / --ui-border-code) instead
+   of dropping a black slab into the white phone transcript. */
 @media (max-width: 768px) {
 #appShell#appShell .msg-body .code-block-header {
-  background: rgb(47 47 47);
-  color: rgb(180 180 180);
-  border: 1px solid rgb(60 60 60);
+  background: var(--ui-bg-code-header);
+  color: var(--ui-text-tertiary);
+  border: 1px solid var(--ui-border-code);
   border-bottom: none;
   border-top-left-radius: var(--ui-radius-lg);
   border-top-right-radius: var(--ui-radius-lg);
+  /* legacy/09 dims the header to .85 until :hover — a state touch never
+     reaches, so the label and copy action stayed below AA on phones. */
+  opacity: 1;
 }
 }
 @media (max-width: 768px) {
 #appShell#appShell .msg-body .code-block-header-lang {
-  color: rgb(209 213 219);
+  color: var(--ui-text-secondary);
   font-weight: 500;
 }
 }
 @media (max-width: 768px) {
 #appShell#appShell .msg-body .code-block-expand,
 #appShell#appShell .msg-body .code-block-copy {
-  color: rgb(156 163 175);
+  color: var(--ui-text-tertiary);
 }
 }
 @media (max-width: 768px) {
 #appShell#appShell .msg-body .code-block-expand:hover,
 #appShell#appShell .msg-body .code-block-copy:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: rgb(255 255 255);
+  background: var(--ui-bg-hover-ghost);
+  color: var(--ui-text-primary);
 }
 }
 @media (max-width: 768px) {
 #appShell#appShell .msg-body pre {
   border-radius: var(--ui-radius-lg);
-  border: 1px solid rgb(60 60 60);
-  background: rgb(23 23 23);
-  color: rgb(243 244 246);
+  border: 1px solid var(--ui-border-code);
+  background: var(--ui-bg-code);
+  color: var(--ui-text-primary);
   padding: 12px 14px;
 }
 }
@@ -167,14 +173,24 @@
 #appShell .msg-edit-cancel:hover {
   background: rgba(128, 128, 128, 0.32);
 }
+/* Primary action = the app's one inverted primary (same as the send
+   button). `--primary` is not defined anywhere, so this used to fall back
+   to a saturated #0080ff with 3.7:1 white text in both modes. */
 #appShell .msg-edit-submit {
-  background: hsl(var(--primary, 210 100% 50%));
-  color: rgb(255 255 255);
+  background: var(--ui-accent-strong);
+  color: var(--ui-on-accent);
 }
 #appShell .msg-edit-submit:hover {
   opacity: 0.88;
 }
 
+
+/* Row reveal. legacy/06 gives every .msg the msgIn fade (0.45 → 1) meant
+   for a reply that is appearing now. Settled rows — every row of a session
+   being opened, and each older page prepended while scrolling up — replayed
+   it together, dimming the whole transcript for 220ms. They are present on
+   arrival; only the live row (no data-stream-settled yet) fades in. */
+#appShell .msg.assistant[data-stream-settled] { animation: none; }
 
 /* Prose rhythm. One variable feeds the paragraph gap AND the live-turn seam
    rule below, so the two cannot drift apart again. */
@@ -258,11 +274,21 @@
   box-shadow: var(--ui-shadow-menu);
 }
 
-/* Toasts. */
+/* Toasts. The legacy skin painted them with --bg-000, which is the page
+   colour itself (pure black on the black dark page), and the error variant
+   with a 12% red wash that let the transcript show through the text. Both
+   now sit on the raised overlay surface like every other floating card. */
 #appShell .msg-toast, .msg-toast {
   border-radius: var(--ui-radius-control, 8px);
   border-color: var(--ui-border-subtle);
+  background: var(--ui-bg-overlay);
+  color: var(--ui-text-primary);
   box-shadow: var(--ui-shadow-toast);
+}
+.msg-toast.msg-toast-error {
+  border-color: color-mix(in srgb, var(--ui-danger) 40%, transparent);
+  background: color-mix(in srgb, var(--ui-danger) 10%, var(--ui-bg-overlay));
+  color: var(--ui-danger);
 }
 
 #appShell .msg.assistant .msg-body:has(.tool-run-group) .tool-run-summary-chev {

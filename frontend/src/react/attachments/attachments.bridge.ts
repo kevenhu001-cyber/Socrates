@@ -78,3 +78,12 @@ export function useAttachmentsRemove(): (id: string) => void {
     getLegacyActions().composer.renderAttachmentChips?.();
   };
 }
+
+/* Failed uploads keep the source File on the entry, so a chip-level
+   retry re-runs the same job without making the user re-pick. */
+export function useAttachmentsRetry(): (id: string) => void {
+  return (id: string) => {
+    getLegacyActions().composer.retryAttachment?.(id);
+    getLegacyActions().composer.renderAttachmentChips?.();
+  };
+}

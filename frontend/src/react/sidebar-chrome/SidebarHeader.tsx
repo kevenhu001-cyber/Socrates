@@ -38,7 +38,7 @@ export function SidebarHeader() {
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <button
-          className="icon-btn sidebar-search-btn"
+          className="btn-icon sidebar-search-btn"
           id="sidebarSearchBtn"
           type="button"
           title="Search chats"
@@ -57,7 +57,7 @@ export function SidebarHeader() {
           dangerouslySetInnerHTML={{ __html: SEARCH_ICON }}
         />
         <button
-          className="icon-btn compose-btn"
+          className="btn-icon compose-btn"
           id="newChatBtn"
           title="Start a new chat"
           aria-label="Start a new chat"
@@ -68,7 +68,7 @@ export function SidebarHeader() {
           dangerouslySetInnerHTML={{ __html: NEW_CHAT_ICON }}
         />
         <button
-          className="icon-btn"
+          className="btn-icon"
           id="sidebarCloseBtn"
           title="Close sidebar"
           aria-label="Close sidebar"

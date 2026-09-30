@@ -17,12 +17,31 @@ import { buildUserContentParts } from '../chat/history.js';
 import { apiFetch } from '../util/api.js';
 import { showToast } from '../ui/toast.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
+import { queueMessageOp } from '../session/mutationOutbox.js';
 
 function _t(key) {
   try {
     if (typeof window !== 'undefined' && typeof window.t === 'function') return window.t(key);
   } catch (_) {}
   return key;
+}
+
+/* P0.1 A4 — record a failed edit/regenerate for later replay.
+   `anchorId` is the user turn the operation targets, `dropped` is what
+   rollbackMessagesAfter removed locally, and `newText` is the rewritten
+   turn (null when the text did not change, as in a plain regenerate).
+   The deletes go first so a reconnect that already produced fresh turns
+   keeps them: the queued ops name rows explicitly instead of re-asserting
+   the server's "delete everything after" rule, which would eat exactly
+   the turns the user made while the network was down. */
+function queueEditReplay(anchorId, dropped, newText) {
+  var sid = stateStore.read("currentSessionId");
+  (dropped || []).forEach(function (m) {
+    if (m && m.clientId) queueMessageOp(sid, m.clientId, "delete");
+  });
+  if (anchorId && typeof newText === "string") {
+    queueMessageOp(sid, anchorId, "patch", newText);
+  }
 }
 function _saveCurrentSession() {
   try { if (typeof window.saveCurrentSession === 'function') window.saveCurrentSession(); } catch (_) {}
@@ -91,7 +110,7 @@ export function editUserMessage(messageId){
     entry.rawText=editedText;
     entry.html=null;
     restoreMessageBody(entry,body);
-    rollbackMessagesAfter(messageId);
+    var dropped=rollbackMessagesAfter(messageId);
     /* PATCH /api/messages/<id>?regenerate=false&discardFollowing=true
        — server updates the user turn in place AND deletes any later
        assistant / user rows it had previously stored, so a hard
@@ -106,10 +125,18 @@ export function editUserMessage(messageId){
       /* A just-created local message may not have reached the session
          upsert yet. The local state remains authoritative and the next save
          will persist it, so do not turn that expected 404 into an error toast. */
-      if(!e||e.status!==404){
-        console.log("[msg-edit] PATCH failed");
-        showToast(_t("toast.savedOffline"));
-      }
+      if(e&&e.status===404)return;
+      /* P0.1 A4 — "the next save will persist it" is only half true. The
+         save path upserts rows and never deletes them, so the rewritten
+         text would land but the DISCARDED replies would not: a hard
+         reload would re-hydrate the old answer right next to the new one
+         and the edit would look like it silently un-did itself. Queue
+         both halves for replay — the text as a patch, each dropped row
+         as an explicit delete (never a replayed discardFollowing, which
+         would eat turns created after the reconnect). */
+      queueEditReplay(messageId, dropped, editedText);
+      console.log("[msg-edit] PATCH failed — queued for replay");
+      showToast(_t("toast.savedOffline"));
     });
     /* P0.1 BUG-P01-03 — if the edited message carried image / PDF /
        text attachments, rebuild the multimodal content parts and stash
@@ -192,7 +219,7 @@ export function regenerateAssistantMessage(messageId){
      reply) this removes exactly that bubble; for a mid-conversation
      regenerate it prevents the new reply from being appended out of
      order after stale later turns. */
-  rollbackMessagesAfter(userMessageId);
+  var dropped=rollbackMessagesAfter(userMessageId);
   /* P0.1 BUG-P01-02 — delete the replaced assistant rows server-side so
      a hard reload doesn't resurrect the stale reply. saveCurrentSession
      only upserts (never deletes rows absent from the payload), so the
@@ -208,7 +235,14 @@ export function regenerateAssistantMessage(messageId){
       method:"PATCH",
       body:{content:userText,regenerate:false,discardFollowing:true},
     }).catch(function(e){
-      if(!e||e.status!==404)console.log("[msg-regen] server cleanup failed");
+      if(!e||e.status===404)return;
+      /* P0.1 A4 — same gap as the edit path: a regenerate that can't
+         reach the server leaves the replaced assistant rows orphaned,
+         and the upsert-only save can never remove them. The user text
+         itself is unchanged here, so only the dropped rows need
+         replaying. */
+      queueEditReplay(userMessageId, dropped, null);
+      console.log("[msg-regen] server cleanup failed — queued for replay");
     });
   }
   /* P0.1 BUG-P01-03 (regenerate parity) — carry the original turn's

@@ -105,24 +105,24 @@ test('account row is a static identity label; settings live behind the gear', as
   await expect(row).toBeVisible();
   await expect(row).not.toHaveAttribute('role', 'button');
   await expect(row).toHaveCSS('cursor', 'default');
-  /* P_account-compact — avatar + plan badge only: the name is never painted
-     but stays in the tooltip and the accessible name. */
-  await expect(row.locator('.user-name')).toHaveCount(0);
-  await expect(row.locator('.user-avatar')).toBeVisible();
-  await expect(row.locator('.tier-badge')).toBeVisible();
+  /* Reference drawer identity — avatar + name over plan tier: all three are
+     painted, and the full "name · tier" label stays in the tooltip and the
+     accessible name. */
   const name = await page.evaluate(() => window.__socratesSidebarChromeBridge?.getSnapshot().user.displayName || '');
   expect(name.length).toBeGreaterThan(0);
+  await expect(row.locator('.user-name')).toHaveText(name);
+  await expect(row.locator('.user-avatar')).toBeVisible();
+  await expect(row.locator('.tier-badge')).toBeVisible();
   await expect(row).toHaveAttribute('title', name);
   await expect(row).toHaveAttribute('aria-label', new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
-  expect(await row.evaluate((el, n) => el.innerText.includes(n), name)).toBe(false);
   const geo = await row.evaluate((el) => {
     const c = (sel) => { const r = el.querySelector(sel).getBoundingClientRect(); return { w: r.width, h: r.height, cy: r.top + r.height / 2 }; };
-    return { avatar: c('.user-avatar'), badge: c('.tier-badge'), radius: getComputedStyle(el.querySelector('.user-avatar')).borderTopLeftRadius };
+    return { avatar: c('.user-avatar'), identity: c('.user-identity'), radius: getComputedStyle(el.querySelector('.user-avatar')).borderTopLeftRadius };
   });
   expect(Math.round(geo.avatar.w)).toBe(32);
   expect(Math.round(geo.avatar.h)).toBe(32);
   expect(geo.radius).toBe('50%');
-  expect(Math.abs(geo.avatar.cy - geo.badge.cy)).toBeLessThanOrEqual(1);
+  expect(Math.abs(geo.avatar.cy - geo.identity.cy)).toBeLessThanOrEqual(1);
   await page.screenshot({ path: 'test-results/visual-qa/sidebar-account-row.png', clip: await page.locator('#sidebarFooter').boundingBox() });
   await row.click();
   await expect(page.getByRole('menu', { name: /Account menu|账户菜单/ })).toHaveCount(0);
@@ -167,7 +167,9 @@ test('phone drawer keeps nav glyphs aligned and account menu in view', async ({ 
   }));
   expect(rows).toHaveLength(7);
   for (const row of rows) {
-    expect(row.height).toBe(40);
+    // Mobile drawer rows are 44px tall (--ui-hit-area) — chatgpt-aligned
+    // touch target via polish/mobile-controls.css.
+    expect(row.height).toBe(44);
     expect(Math.abs(row.glyphCenter - row.labelCenter)).toBeLessThanOrEqual(2);
   }
   // The account row is a static label — no menu opens from it.

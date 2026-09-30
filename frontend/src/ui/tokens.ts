@@ -221,7 +221,7 @@ export const lightPalette: ThemePalette = {
     primary: '0 0% 5%',
     secondary: '0 0% 36%',
     tertiary: '0 0% 43%',
-    muted: '0 0% 56%',
+    muted: '0 0% 45%',
     disabled: '0 0% 71%',
   },
   border: {
@@ -231,7 +231,7 @@ export const lightPalette: ThemePalette = {
   },
   danger: '3 79% 47%',
   success: '171 97% 25%',
-  muted: '0 0% 56%',
+  muted: '0 0% 45%',
   onAccent: '0 0% 100%',
 };
 

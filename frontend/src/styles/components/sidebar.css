@@ -130,7 +130,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 #appShell .sidebar-search input { color: var(--ui-text-primary); font-size: 14px; }
 }
 @media (max-width: 768px) {
-#appShell .sidebar-search input::placeholder { color: var(--ui-text-muted); }
+#appShell .sidebar-search input::placeholder { color: var(--ui-text-placeholder); }
 }
 
 @media (max-width: 768px) {

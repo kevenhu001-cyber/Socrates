@@ -311,7 +311,7 @@
   }
 
   body #composerToolsMenu .composer-tools-mobile-item {
-    min-height: 52px !important;
+    min-height: 56px !important;
     border-radius: 12px !important;
   }
 
@@ -366,7 +366,7 @@
   [data-mode="dark"] #appShell .main-content,
   [data-mode="dark"] #appShell .main-bg,
   [data-mode="dark"] #appShell .top-bar {
-    background: #000 !important;
+    background: var(--ui-bg-page) !important;
   }
 
   #appShell#appShell .top-bar {
@@ -381,7 +381,7 @@
     min-height: 40px !important;
     padding: 2px !important;
     border-radius: 999px !important;
-    background: #131313 !important;
+    background: var(--ui-bg-raised) !important;
   }
 
   #appShell#appShell .top-mode-tabs .app-mode-toggle {
@@ -499,15 +499,15 @@
     width: min(252px, calc(100vw - 24px)) !important;
     max-width: none !important;
     max-height: min(50vh, 520px) !important;
-    padding: 6px !important;
+    padding: 8px !important;
     border: 1px solid rgb(255 255 255 / 10%) !important;
-    border-radius: 16px !important;
-    background: #1b1b1b !important;
+    border-radius: 20px !important;
+    background: var(--ui-bg-surface) !important;
     box-shadow: 0 18px 48px rgb(0 0 0 / 40%) !important;
   }
 
   body #composerToolsMenu .composer-tools-item {
-    min-height: 52px !important;
+    min-height: 56px !important;
     border-radius: 12px !important;
   }
 
@@ -518,13 +518,13 @@
     height: 40px !important;
     min-height: 40px !important;
     border-radius: 50% !important;
-    background: #2a2a2a !important;
-    color: #f5f5f5 !important;
+    background: var(--conversation-control-hover) !important;
+    color: var(--ui-text-primary) !important;
   }
 
   body #composerToolsMenu .composer-tools-copy span,
   body #composerToolsMenu .composer-tools-plugin-name {
-    color: #f5f5f5 !important;
+    color: var(--ui-text-primary) !important;
     font-size: 16px !important;
     line-height: 24px !important;
   }
@@ -627,13 +627,25 @@
 }
 
 [data-mode="light"] body #composerToolsMenu {
-  background: #fff !important;
+  background: var(--ui-bg-page) !important;
   border-color: rgb(0 0 0 / 12%) !important;
 }
 
 [data-mode="light"] body #composerToolsMenu .composer-tools-copy span,
 [data-mode="light"] body #composerToolsMenu .composer-tools-plugin-name {
   color: var(--cg-text) !important;
+}
+
+/* The phone sheet above pins dark #2a2a2a chips with a white glyph; in light
+   mode they read as black holes in a white menu. Same chip, light ramp — the
+   translucent chip token (matches the composer's own round buttons) so it
+   still composites a step darker on the hovered row's wash. */
+@media (max-width: 768px) {
+  [data-mode="light"] body #composerToolsMenu .composer-tools-icon,
+  [data-mode="light"] body #composerToolsMenu .composer-plugin-mark {
+    background: var(--ui-bg-chip) !important;
+    color: var(--ui-text-primary) !important;
+  }
 }
 
 /* The legacy workbench layer has a more specific 108px multiline rule. Keep

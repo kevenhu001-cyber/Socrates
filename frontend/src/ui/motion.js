@@ -119,7 +119,7 @@ export const SEND_GLIDE_LONG_VIEWPORTS = 1.5;
 export function planSendGlide(distance, viewportHeight) {
   const d = typeof distance === 'number' && isFinite(distance) ? Math.abs(distance) : 0;
   if (d <= MOTION_SNAP_DISTANCE_PX || prefersReducedMotion()) {
-    return { duration: 0, ease: easeOutQuint, distance: d, snap: true, long: false };
+    return { duration: 0, ease: easeOutHouse, distance: d, snap: true, long: false };
   }
   const vh = typeof viewportHeight === 'number' && isFinite(viewportHeight) && viewportHeight > 0
     ? viewportHeight
@@ -158,6 +158,31 @@ export function easeOutCubic(t) {
   if (t <= 0) return 0;
   if (t >= 1) return 1;
   return 1 - Math.pow(1 - t, 3);
+}
+
+/* House-style ease curve: matches the CSS --ease-out =
+ * cubic-bezier(0.16, 1, 0.3, 1) used across the legacy transcript, the
+ * toast slide-in, the modal popovers, and the new msgUserIn user-bubble
+ * reveal. Function approximation via Newton-Raphson so manual frame
+ * loops (velocityScrollTo, settle tweens) can share one motion
+ * language with the CSS keyframes — settling into a follow should not
+ * "kick" the first frame after settling clears.
+ *
+ * P0=(0,0) P1=(0.16,1) P2=(0.3,1) P3=(1,1). B_y simplifies to
+ * 3t - 3t^2 + t^3 once we solve for t from B_x = progress. */
+export function easeOutHouse(progress) {
+  if (progress <= 0) return 0;
+  if (progress >= 1) return 1;
+  /* B_x(t) = 0.48t - 0.06t^2 + 0.58t^3 ; B'_x(t) = 0.48 - 0.12t + 1.74t^2 */
+  let t = progress;
+  for (let i = 0; i < 8; i += 1) {
+    const cx = 0.48 * t - 0.06 * t * t + 0.58 * t * t * t;
+    const cdx = 0.48 - 0.12 * t + 1.74 * t * t;
+    const dt = (cx - progress) / cdx;
+    t -= dt;
+    if (Math.abs(dt) < 1e-5) break;
+  }
+  return 3 * t - 3 * t * t + t * t * t;
 }
 
 /* ease-in-out cubic for the keyboard lift. The first motion frame

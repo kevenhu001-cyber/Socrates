@@ -130,7 +130,7 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
     padding: 6px;
     border-radius: 20px;
   }
-  [data-mode="dark"] body #composerToolsMenu.composer-tools-menu { background: #1f1f1f; }
+  [data-mode="dark"] body #composerToolsMenu.composer-tools-menu { background: var(--ui-bg-surface); }
   #composerToolsMenu .composer-tools-item,
   #composerToolsMenu .composer-tools-mobile-item,
   #composerToolsMenu .composer-tools-plugin-item {
@@ -144,7 +144,7 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
     min-width: 36px;
     height: 36px;
   }
-  [data-mode="dark"] #composerToolsMenu .composer-tools-icon { background: #3a3a3a; }
+  [data-mode="dark"] #composerToolsMenu .composer-tools-icon { background: var(--ui-bg-control); }
   #composerToolsMenu .composer-tools-icon svg { width: 22px; height: 22px; }
   #composerToolsMenu .composer-tools-copy > span { font-size: 16px; }
   #composerToolsMenu .composer-tools-footer-search { display: none; }

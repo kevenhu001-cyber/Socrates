@@ -183,9 +183,9 @@
 [data-theme=socrates][data-mode=dark] .recent-mode-badge.mode-exam{background:hsl(0 0% 60%)}
 .recent-item-del{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:hsl(var(--text-500));opacity:0;transition:opacity .18s cubic-bezier(.4,0,.2,1),background .18s cubic-bezier(.4,0,.2,1),color .18s cubic-bezier(.4,0,.2,1);flex-shrink:0;cursor:pointer}
 .recent-item:hover .recent-item-del{opacity:1}
-.recent-item-del:hover{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 70%)}
+.recent-item-del:hover{background:color-mix(in srgb,var(--ui-danger) 14%,transparent);color:var(--ui-danger)}
 .recent-item-del:active{transform:none}
-.recent-item-del.holding{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 70%);opacity:1}
+.recent-item-del.holding{background:color-mix(in srgb,var(--ui-danger) 14%,transparent);color:var(--ui-danger);opacity:1}
 .recent-item-del svg{width:12px;height:12px}
 /* P4.1 — inline confirm bar shown when the user holds the delete
    button for 600ms. Replaces the row's normal content with a

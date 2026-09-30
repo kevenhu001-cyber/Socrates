@@ -24,14 +24,14 @@
 }
 }
 #appShell .top-bar .toggle-sidebar:hover {
-  background: var(--ui-bg-raised);
+  background: var(--ui-bg-hover);
   color: var(--ui-text-primary);
 }
 @media (max-width: 768px) {
 #appShell .top-bar .icon-btn:hover,
 #appShell .top-bar .find-btn:hover,
 #appShell .top-bar .share-btn:hover {
-  background: var(--ui-bg-raised);
+  background: var(--ui-bg-hover);
   color: var(--ui-text-primary);
 }
 }

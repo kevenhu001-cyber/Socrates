@@ -1,7 +1,34 @@
 import { esc } from '../render/helpers.js';
 import { stateStore } from '../state/store.js';
 
-function tr(key) { return typeof window.t === 'function' ? window.t(key) : key; }
+/* Locale lookup + {placeholder} substitution. i18n.js's t() deliberately
+   does no interpolation, and the established call convention is
+   t(key).replace('{n}', v) (see ui/diagnosticQuestion.js), so the
+   substitution lives here rather than changing a helper every existing
+   caller shares. */
+function tr(key, vars) {
+  var v = (typeof window.t === 'function') ? window.t(key) : key;
+  /* A missing key resolves to the key itself — showing "kb.confidence" in
+     the UI is a loud bug, which beats a blank label. */
+  if (!vars) return v;
+  return String(v).replace(/\{(\w+)\}/g, function (whole, name) {
+    return Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : whole;
+  });
+}
+
+/* The model emits raw internalized / fuzzy / blank; the panel shows a
+   human label. Reuses tutor.status* — the same vocabulary the teaching
+   plan sidebar already uses for these three states — so one node never
+   reads 已内化 in one place and a different word in its own detail panel.
+   Unknown values pass through so a future status the backend invents is
+   still readable instead of rendering as a raw identifier. */
+function statusLabel(status) {
+  var s = status || 'blank';
+  var key = 'tutor.status' + s.charAt(0).toUpperCase() + s.slice(1);
+  var label = tr(key);
+  return label === key ? s : label;
+}
+
 function saveCurrentSessionSafe() { if (typeof window.saveCurrentSession === 'function') window.saveCurrentSession(); }
 
 export function kbNodeHtml(n,cls){
@@ -9,7 +36,7 @@ export function kbNodeHtml(n,cls){
      "→ go" button (added in mountKBDetail) is what actually jumps the
      chat to this node — so reading a note never accidentally triggers a
      new question. */
-  return '<div class="kb-node" data-node-idx="'+n.idx+'"><div class="kb-dot '+cls+'"></div><span class="kb-name">'+esc(n.name)+'</span>'+(n.questions?'<span class="kb-count">'+n.questions+' Qs</span>':'')+'</div>';
+  return '<div class="kb-node" data-node-idx="'+n.idx+'"><div class="kb-dot '+cls+'"></div><span class="kb-name">'+esc(n.name)+'</span>'+(n.questions?'<span class="kb-count">'+esc(tr('kb.questions',{n:n.questions}))+'</span>':'')+'</div>';
 }
 
 export function toggleKBDetail(idx){
@@ -35,33 +62,47 @@ export function toggleKBDetail(idx){
 function renderKBDetailInner(node,idx){
   var html="";
   html+='<div class="kb-detail-head">';
-  html+='<div class="kb-detail-status kb-detail-status-'+(node.status||"blank")+'">'+esc(node.status||"blank")+'</div>';
-  html+='<button class="kb-go-btn" data-go="'+idx+'" title="Jump chat to this node">→ go</button>';
+  html+='<div class="kb-detail-status kb-detail-status-'+(node.status||"blank")+'">'+esc(statusLabel(node.status))+'</div>';
+  html+='<button class="kb-go-btn" data-go="'+idx+'" title="'+esc(tr('kb.goTitle'))+'">'+esc(tr('kb.go'))+'</button>';
   html+='</div>';
   /* Confidence 1-5 dots. */
   var cs=typeof node.confidence_score==="number"?node.confidence_score:0;
-  html+='<div class="kb-detail-row"><span class="kb-detail-label">Confidence</span><div class="kb-conf-row">';
+  html+='<div class="kb-detail-row"><span class="kb-detail-label">'+esc(tr('kb.confidence'))+'</span><div class="kb-conf-row">';
   for(var i=1;i<=5;i++){
-    html+='<button class="kb-conf-dot'+(i<=cs?' on':'')+'" data-conf="'+i+'" title="Set confidence to '+i+'"></button>';
+    html+='<button class="kb-conf-dot'+(i<=cs?' on':'')+'" data-conf="'+i+'" title="'+esc(tr('kb.confidenceSet',{n:i}))+'"></button>';
   }
   html+='</div></div>';
   /* System note (read-only). */
-  html+='<div class="kb-detail-row"><span class="kb-detail-label">System note</span>';
-  html+='<div class="kb-system-note">'+(node.system_note?esc(node.system_note):'<em style="color:hsl(var(--text-500))">No system note yet.</em>')+'</div></div>';
+  html+='<div class="kb-detail-row"><span class="kb-detail-label">'+esc(tr('kb.systemNote'))+'</span>';
+  html+='<div class="kb-system-note">'+(node.system_note?esc(node.system_note):'<em style="color:hsl(var(--text-500))">'+esc(tr('kb.noSystemNote'))+'</em>')+'</div></div>';
   /* User note (editable). */
-  html+='<div class="kb-detail-row"><label class="kb-detail-label" for="kbUserNote">Your note</label>';
-  html+='<textarea class="kb-user-note" id="kbUserNote" name="kbUserNote" rows="3" placeholder="'+tr("kb.placeholderNote")+'">'+esc(node.user_note||"")+'</textarea></div>';
-  /* History list. */
-  var hist=node.history||[];
-  html+='<div class="kb-detail-row"><span class="kb-detail-label">History</span>';
+  html+='<div class="kb-detail-row"><label class="kb-detail-label" for="kbUserNote">'+esc(tr('kb.yourNote'))+'</label>';
+  html+='<textarea class="kb-user-note" id="kbUserNote" name="kbUserNote" rows="3" placeholder="'+esc(tr('kb.placeholderNote'))+'">'+esc(node.user_note||"")+'</textarea></div>';
+  /* Snapshot history.
+     P_kb-history-shape — this used to read h.from / h.to off
+     node.history and render "<date> ? → ?" for every row. Neither field
+     ever existed: saveBoundarySnapshot (tutorSocratic.js) writes
+     { date, at, summary, counts } into the SESSION-level
+     boundariesHistory, and node.history was always undefined, so the
+     section was permanently empty at best. Now reads the snapshots that
+     actually exist, so opening a node shows when the map was last saved
+     and how it looked. */
+  var hist=stateStore.read('boundariesHistory')||[];
+  html+='<div class="kb-detail-row"><span class="kb-detail-label">'+esc(tr('kb.history'))+'</span>';
   if(hist.length){
     html+='<ul class="kb-history">';
-    hist.forEach(function(h){
-      html+='<li><span class="kb-hist-date">'+esc(h.date||"")+'</span> <span class="kb-hist-from kb-hist-from-'+esc(h.from||"")+'">'+esc(h.from||"?")+'</span> → <span class="kb-hist-to kb-hist-to-'+esc(h.to||"")+'">'+esc(h.to||"?")+'</span>'+(h.reason?' <span class="kb-hist-reason">— '+esc(h.reason)+'</span>':'')+'</li>';
+    hist.slice(-8).reverse().forEach(function(h){
+      /* Tolerate both shapes: older rows may carry a numeric `at`. */
+      var when=h&&(h.date||h.at);
+      if(typeof when==="number"){
+        try{when=new Date(when).toISOString().slice(0,10)}catch(_){}
+      }
+      html+='<li><span class="kb-hist-date">'+esc(when||"")+'</span>'
+          +(h&&h.summary?esc(h.summary):'')+'</li>';
     });
     html+='</ul>';
   }else{
-    html+='<div class="kb-history-empty">No status changes yet.</div>';
+    html+='<div class="kb-history-empty">'+esc(tr('kb.noHistory'))+'</div>';
   }
   html+='</div>';
   return html;

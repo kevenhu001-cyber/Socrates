@@ -68,10 +68,10 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.topicFontSize).toBeGreaterThanOrEqual(16);
   expect(geometry.topicFontSize).toBeLessThanOrEqual(18);
   expect(geometry.composer?.y).toBeGreaterThan(550);
-  /* P_mobile-black-canvas — the dark mobile canvas rides the near-black
-     ramp (#09090b), not a warm or tinted black. */
-  expect(geometry.background).toBe('rgb(9, 9, 11)');
-  expect(geometry.pageToken).toBe('#09090b');
+  /* The dark mobile canvas is the reference's true black — --ui-bg-page is
+     #000 and the mobile layer pins .main-content to it. */
+  expect(geometry.background).toBe('rgb(0, 0, 0)');
+  expect(geometry.pageToken).toBe('#000000');
 
   /* P_greeting-mobile-center — the landing greeting must be visually
      centred horizontally on the viewport and sit just above the optical
@@ -195,9 +195,9 @@ test('mobile conversation home matches the compact dark reference layout', async
   await expect(menu.locator('.composer-tools-disclosure')).toHaveCount(0);
   const menuBox = await menu.boundingBox();
   /* On phones the add-content menu is a floating card anchored above the
-     composer, matching the mobile reference. */
-  expect(menuBox?.width).toBeLessThanOrEqual(310);
-  expect(menuBox?.width).toBeGreaterThanOrEqual(292);
+     composer, matching the mobile reference (~65% of the phone width). */
+  expect(menuBox?.width).toBeLessThanOrEqual(260);
+  expect(menuBox?.width).toBeGreaterThanOrEqual(244);
 
   await page.screenshot({ path: 'test-results/mobile-home-reference-menu.png', fullPage: true });
 

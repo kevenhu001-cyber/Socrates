@@ -8,6 +8,8 @@
  * already-rendered markdown/KaTeX/code DOM without re-rendering.
  */
 
+import { prefersReducedMotion } from '../../ui/motion.js';
+
 let _findMatches: HTMLElement[] = [];
 let _findIndex = -1;
 let _findQuery = '';
@@ -97,7 +99,7 @@ function setActive(i: number): void {
   const el = _findMatches[_findIndex];
   if (el) {
     el.classList.add('find-hl-active');
-    try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+    try { el.scrollIntoView({ block: 'center', behavior: prefersReducedMotion() ? 'auto' : 'smooth' }); }
     catch (_) { try { el.scrollIntoView(); } catch (__) { /* ignore */ } }
   }
 }

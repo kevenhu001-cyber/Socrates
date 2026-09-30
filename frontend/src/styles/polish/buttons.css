@@ -1,0 +1,235 @@
+/*
+ * polish/buttons.css — single source of truth for the button utility classes.
+ *
+ * Replaces the eight-or-so scattered `.icon-btn` redefinitions (28 / 32 / 34 /
+ * 36 / 40 / 44px, six different radii) with a small, orthogonal grammar:
+ *   .btn          text-bearing button (use .btn-ghost / .btn-primary / .btn-pill)
+ *   .btn-icon     square-or-circle icon button
+ *   .btn-{sm,md,touch} size ladder (32 / 40 / 44)
+ *
+ * Cascade position: this file is @imported last in polish/index.css, so
+ * equal-specificity rules win by order. Mobile (≤768px) then bumps every
+ * `.btn` / `.btn-md` to 44 px touch height inside the same media query —
+ * mobile users should never have to land on a 40 px target.
+ *
+ * Style language (docs/ref/chatgpt-parity.md):
+ *   - square icon: 8px radius (`--ui-radius-control`)
+ *   - circle icon: pill (`--ui-radius-pill`)
+ *   - sidebar row: 10px (`--ui-radius-row`)
+ *   - colour feedback: `--ui-duration-hover` (100 ms)
+ *   - press feedback: handled by polish/press.css (`scale` property, not
+ *     `transform`, so it composes with the controls' own transitions)
+ *
+ * Composers stay out of this file: parity/composer-unified.css is the
+ * single owner of `.composer-shell` and its controls, enforced by
+ * scripts/check-composer-css.mjs.
+ */
+
+:root {
+  /* Make all .btn-icon hit areas honour the touch baseline even outside
+     the ≤768px media query — `.btn-icon.touch` is the explicit opt-in,
+     but the bare `.btn-icon` already opts in to ≥40 via min-width /
+     min-height, so the floor is never below the standard control size. */
+}
+
+/* ─────────── Base .btn ─────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--ui-control-md);   /* 40px default */
+  min-width: var(--ui-control-md);
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-control); /* 8px */
+  background: transparent;
+  color: var(--ui-text-secondary);
+  font: 400 var(--ui-text-ui) / 20px var(--font-sans, system-ui, sans-serif);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color var(--ui-duration-hover) ease,
+    color var(--ui-duration-hover) ease,
+    border-color var(--ui-duration-hover) ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.btn:hover {
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--ui-border-strong, currentColor);
+  outline-offset: 2px;
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+
+.btn svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  display: block;
+}
+
+/* ─────────── Size ladder ─────────── */
+.btn-sm {
+  min-height: var(--ui-control-sm);   /* 32 */
+  min-width: var(--ui-control-sm);
+  padding: 0 10px;
+  font-size: 13px;
+  gap: 4px;
+}
+
+.btn-md { /* default — explicit opt-in, kept for symmetry with btn-touch */ }
+
+.btn-touch {
+  min-height: var(--ui-hit-area);    /* 44 */
+  min-width: var(--ui-hit-area);
+  padding: 0 14px;
+  font-size: var(--ui-text-ui);
+}
+
+/* ─────────── Semantic variants ─────────── */
+.btn-ghost {
+  background: transparent;
+  color: var(--ui-text-primary);
+  font-weight: var(--ui-font-weight-regular);
+}
+
+.btn-ghost.active,
+.btn-ghost[aria-current="page"],
+.btn-ghost[aria-selected="true"] {
+  background: var(--ui-bg-surface);
+  color: var(--ui-text-primary);
+}
+
+.btn-primary {
+  background: var(--ui-accent-strong);   /* light #0d0d0d / dark #fff */
+  color: var(--ui-on-accent);
+  font-weight: var(--ui-font-weight-medium);
+  border-color: transparent;
+}
+.btn-primary:hover { opacity: 0.88; background: var(--ui-accent-strong); }
+.btn-primary:active { opacity: 0.88; }
+.btn-primary:disabled,
+.btn-primary[aria-disabled="true"] {
+  opacity: 0.3;
+  cursor: default;
+  pointer-events: none;
+}
+
+.btn-pill {
+  border-radius: var(--ui-radius-pill);
+  padding: 0 12px;
+  min-height: var(--ui-control-md);
+  background: transparent;
+  color: var(--ui-text-primary);
+}
+
+.btn-pill.outline {
+  border: 1px solid var(--ui-border-default);
+  background: transparent;
+  color: var(--ui-text-primary);
+  font-weight: var(--ui-font-weight-semibold);
+}
+.btn-pill.outline:hover { background: var(--ui-bg-hover); }
+
+/* ─────────── .btn-icon ─────────── */
+.btn-icon {
+  display: inline-grid;
+  place-items: center;
+  width: var(--ui-control-md);       /* 40 default */
+  height: var(--ui-control-md);
+  min-width: var(--ui-control-md);
+  min-height: var(--ui-control-md);
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-control); /* 8px — chatgpt square icon */
+  background: transparent;
+  color: var(--ui-text-secondary);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color var(--ui-duration-hover) ease,
+    color var(--ui-duration-hover) ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.btn-icon:hover {
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+}
+
+.btn-icon:focus-visible {
+  outline: 2px solid var(--ui-border-strong, currentColor);
+  outline-offset: 2px;
+}
+
+.btn-icon:disabled,
+.btn-icon[aria-disabled="true"] {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+
+.btn-icon svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+/* shape variants */
+.btn-icon.circle { border-radius: var(--ui-radius-pill); }
+.btn-icon.square { border-radius: var(--ui-radius-control); }
+.btn-icon.accent {
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+}
+
+/* size ladder */
+.btn-icon.sm {
+  width: var(--ui-control-sm);
+  height: var(--ui-control-sm);
+  min-width: var(--ui-control-sm);
+  min-height: var(--ui-control-sm);
+}
+.btn-icon.sm svg { width: 16px; height: 16px; }
+
+.btn-icon.md { /* default 40 */ }
+
+.btn-icon.touch {
+  width: var(--ui-hit-area);
+  height: var(--ui-hit-area);
+  min-width: var(--ui-hit-area);
+  min-height: var(--ui-hit-area);
+}
+.btn-icon.touch svg { width: 22px; height: 22px; }
+
+/* ─────────── Mobile (≤768px) touch bump ─────────── */
+@media (max-width: 768px) {
+  .btn,
+  .btn-md {
+    min-height: var(--ui-hit-area); /* 44 */
+    padding: 0 14px;
+  }
+
+  /* .btn-touch already 44, just lock the floor */
+  .btn-touch { min-height: var(--ui-hit-area); min-width: var(--ui-hit-area); }
+}
+
+/* ─────────── Reduced motion ─────────── */
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .btn-icon { transition: none; }
+}

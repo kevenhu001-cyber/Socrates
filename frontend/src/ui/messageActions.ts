@@ -21,6 +21,7 @@ import {
 } from './toolCards.js';
 import { mountVisualization } from '../render/vizStubs.js';
 import { processPendingMermaid, processPendingViz, processPendingVizActions } from '../render/vizStubs.js';
+import { queueMessageOp } from '../session/mutationOutbox.js';
 
 /**
  * Build the API path for one message, scoping client ids to the current
@@ -120,11 +121,16 @@ export function findMessageIndex(messageId: string): number {
 
 /**
  * Drop every message after the given user turn from state + DOM.
- * Returns the number of dropped messages.
+ *
+ * Returns the dropped entries (empty when the anchor isn't found). The
+ * caller needs the actual entries, not just a count: when the matching
+ * server-side prune fails, each dropped clientId is queued for replay in
+ * session/mutationOutbox.js, because the whole-session save can rewrite
+ * rows but can never delete them.
  */
-export function rollbackMessagesAfter(userMessageId: string): number {
+export function rollbackMessagesAfter(userMessageId: string): MessageEntry[] {
   const startIdx = findMessageIndex(userMessageId);
-  if (startIdx < 0) return 0;
+  if (startIdx < 0) return [];
   /* Snapshot ids first — splicing the array while iterating
      backwards is safe, but collecting the list up front keeps the
      DOM removal straightforward. */
@@ -144,7 +150,7 @@ export function rollbackMessagesAfter(userMessageId: string): number {
     if (div && div.parentNode) div.parentNode.removeChild(div);
   });
   publishReactChatRuntime({ type: 'state-synced', reason: 'rollback' });
-  return toDrop.length;
+  return toDrop;
 }
 
 /** Delete one user message locally and server-side. */
@@ -158,7 +164,13 @@ export function deleteUserMessage(messageId: string): void {
   apiFetch(messageApiPath(messageId), {
     method: 'DELETE',
   }).catch(function (e: { status?: number } | null) {
-    if (!e || e.status !== 404) console.log('[msg-delete] not synced');
+    if (!e || e.status !== 404) {
+      /* P0.1 A4 — the row is gone locally but still on the server, and
+         the whole-session save only upserts, so a reload would bring the
+         deleted message straight back. Queue it for replay instead. */
+      queueMessageOp(stateStore.read('currentSessionId') as string | null, messageId, 'delete');
+      console.log('[msg-delete] not synced — queued for replay');
+    }
   });
 }
 

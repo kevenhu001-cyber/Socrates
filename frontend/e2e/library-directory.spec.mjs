@@ -96,7 +96,7 @@ test('phone library filters actual images and selects only visible rows', async 
     const sidebar = document.getElementById('sidebar');
     if (sidebar && !sidebar.classList.contains('collapsed')) window.toggleSidebar?.();
   });
-  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? 0)).toBe(-254);
+  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? 0)).toBe(-350);
   await expect(page.locator('.library-directory')).toBeVisible();
   await page.screenshot({ path: '/tmp/socrates-reference-mobile-library-list-390x769.png' });
   await page.getByRole('tab', { name: 'Images' }).click();

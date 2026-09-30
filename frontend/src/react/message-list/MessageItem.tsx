@@ -1,4 +1,4 @@
-import { memo, useLayoutEffect, useRef } from 'react';
+import { memo, useLayoutEffect, useRef, useState } from 'react';
 
 import { hasTurnStructure, type ToolCallRecord } from '../tool-run/toolRunModel';
 import { AssistantTurn } from '../tool-run/AssistantTurn';
@@ -6,7 +6,7 @@ import type { LegacyChatMessage } from '../types/domain';
 import { MessageToolbar } from './MessageToolbar';
 import { CanvasBlock } from '../canvas';
 import { getLegacyActions } from '../legacy/gateway';
-import { getAttachmentIcon } from '../attachments/fileIcons';
+import { getAttachmentIcon, type IconSource } from '../attachments/fileIcons';
 
 interface MessageItemProps {
   message: LegacyChatMessage;
@@ -49,6 +49,40 @@ function isRenderable(message: LegacyChatMessage, live: boolean): boolean {
      sent — the "uploaded image never shows in history" report. */
   if (Array.isArray(message.attachments) && message.attachments.length > 0) return true;
   return false;
+}
+
+function MessageAttachmentThumb({
+  attachment,
+  fileUrl,
+  isImage,
+}: {
+  attachment: IconSource & { dataUrl?: string };
+  fileUrl?: string;
+  isImage: boolean;
+}) {
+  /* dataUrl first (works when the file row is gone), then the durable
+     raw URL. A failed source falls back to the kind icon tile rather
+     than leaving a broken-image glyph inside history bubbles. */
+  const [badSrc, setBadSrc] = useState<string | null>(null);
+  const imgSrc = [attachment.dataUrl, isImage ? fileUrl : undefined]
+    .filter((s): s is string => !!s && s !== badSrc)[0];
+  if (!imgSrc) {
+    return (
+      <span
+        className="attachment-chip-icon"
+        aria-hidden="true"
+        dangerouslySetInnerHTML={{ __html: getAttachmentIcon(attachment) }}
+      />
+    );
+  }
+  return (
+    <img
+      className="attachment-chip-thumb"
+      src={imgSrc}
+      alt=""
+      onError={() => setBadSrc(imgSrc)}
+    />
+  );
 }
 
 function MessageItemBase({ message, textLength: _textLength }: MessageItemProps) {
@@ -163,22 +197,9 @@ function MessageItemBase({ message, textLength: _textLength }: MessageItemProps)
             const fileUrl = attachment.fileId
               ? `/api/v2/files/${attachment.fileId}/raw`
               : undefined;
-            const imgSrc = attachment.dataUrl || (isImage ? fileUrl : undefined);
             const inner = (
               <>
-                {imgSrc ? (
-                  <img
-                    className="attachment-chip-thumb"
-                    src={imgSrc}
-                    alt=""
-                  />
-                ) : (
-                  <span
-                    className="attachment-chip-icon"
-                    aria-hidden="true"
-                    dangerouslySetInnerHTML={{ __html: getAttachmentIcon(attachment) }}
-                  />
-                )}
+                <MessageAttachmentThumb attachment={attachment} fileUrl={fileUrl} isImage={isImage} />
                 <span className="attachment-chip-name">{attachment.name ?? 'file'}</span>
               </>
             );

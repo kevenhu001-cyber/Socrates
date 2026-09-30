@@ -38,9 +38,12 @@ test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async
   const mobileActions = await page.locator('#composerToolsMenu .composer-tools-mobile-items [data-composer-action]').evaluateAll((els) =>
     els.map((el) => el.getAttribute('data-composer-action')),
   );
+  /* The phone sheet mirrors the reference's flat ordering: media/context
+     first (camera, photos, upload, createImage), then search, then the
+     remaining workflows. */
   expect(mobileActions).toEqual([
-    'camera', 'photos', 'upload', 'webSearch', 'explore', 'write',
-    'analyze', 'createImage', 'createSite', 'exam', 'skills', 'extensiveThinking',
+    'camera', 'photos', 'upload', 'createImage', 'webSearch', 'explore',
+    'write', 'analyze', 'createSite', 'exam', 'skills', 'extensiveThinking',
   ]);
 });
 
@@ -212,8 +215,8 @@ test('mobile plus menu opens without expanding the chat composer', async ({ page
   // a full-width bottom sheet.
   expect(sheetBox.x).toBeGreaterThanOrEqual(12);
   expect(sheetBox.x).toBeLessThanOrEqual(20);
-  expect(sheetBox.width).toBeGreaterThanOrEqual(292);
-  expect(sheetBox.width).toBeLessThanOrEqual(308);
+  expect(sheetBox.width).toBeGreaterThanOrEqual(244);
+  expect(sheetBox.width).toBeLessThanOrEqual(260);
   expect(sheetBox.y + sheetBox.height).toBeLessThanOrEqual(830);
   expect(Math.abs((sheetBox.y + sheetBox.height) - (before.y + before.height))).toBeLessThanOrEqual(2);
   // The expanded card never grows past the viewport's vertical midline.

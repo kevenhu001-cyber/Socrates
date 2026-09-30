@@ -28,21 +28,25 @@
 
 ## 基线核对（当前代码现状）
 
+> 最后复核：2026-09-29。下表行号取自拆分**前**的 `main.js`；自 `chat/editBranch.js`、`react/message-list/*` 抽离后这些行号已失效，现按模块给出归属。
+
 在动工前必须认清哪些能力**已经存在**，防止把已完成的功能当成待开发项。
 
-### 已实现（位于 `frontend/src/main.js`）
+### 已实现
 
 | 能力 | 函数 | 位置 | 说明 |
 | --- | --- | --- | --- |
-| 编辑用户消息 | `editUserMessage` | L4498 | textarea 替换消息体，Cmd/Ctrl+Enter 或失焦提交，Esc 取消 |
-| 回滚后续消息 | `rollbackMessagesAfter` | L4583 | 编辑后 splice 掉该轮之后的 state + DOM |
-| 重生成回答 | `regenerateAssistantMessage` | L4614 | 定位上一条 user 消息，splice 掉 assistant 气泡后重新 `askChatTurn` |
-| 会话分支 | `branchFromMessage` | L4641 | 复制到分支点的消息，新建会话（当前**无** `branchedFrom` 指针、无教学化框架） |
-| 消息工具栏 | `buildMessageToolbar` | L4284 | user 角色：copy/edit/delete；assistant 角色：copy/share/regenerate/thumbs/branch |
+| 编辑用户消息 | `editUserMessage` | `chat/editBranch.js` | textarea 替换消息体，Cmd/Ctrl+Enter 或失焦提交，Esc 取消 |
+| 回滚后续消息 | `rollbackMessagesAfter` | `chat/editBranch.js` | 编辑后 splice 掉该轮之后的 state + DOM |
+| 会话分支 / 多角度重讲 | `branchFromMessage` | `chat/editBranch.js` L240+ | `opts.reExplain` 走教育化分支：注入"换一种解释角度"追问并自动续讲 |
+| 重生成回答 | `regenerateAssistantMessage` | `chat/editBranch.js` | 定位上一条 user 消息，splice 掉 assistant 气泡后重新 `askChatTurn` |
+| 消息工具栏 | `buildMessageToolbar` | `react/message-list/useMessageActions.ts` | user 角色：copy/edit/delete；assistant 角色：copy/share/regenerate/thumbs/branch/re-explain |
+
+`branchedFrom` 指针已贯穿全链路（**P1.1 已落地**）：`state/session.ts` 类型 → `session/persistence.js` L292 持久化 → `session/loader.js` L372 恢复 → `session/organize.js` L265 比较 → `react/session-list/SessionList.tsx` L66 侧栏展示 `Branched` / `Re-explained` 角标。
 
 上下文重建：`frontend/src/chat/history.js` 的 `extractHistory`（三级来源：内存 `state.messages.rawText` → localStorage 镜像 → 实时 DOM 兜底），已支持编辑/重生成后的历史重建，并做了 `<think>` 剥离、多模态附件重建、超长会话压缩。
 
-**结论**：P0.1 的"编辑 + 重生成"核心链路**已经打通**，编辑按钮已出现在每条用户消息的工具栏中，且复用了 `history.js` 上下文重建能力。因此 P0.1 重定为**"审计 + 补缺"**，而非从零开发。
+**结论**：P0.1 的"编辑 + 重生成"核心链路**已经打通**；P1.1 的 `branchedFrom` + 多角度重讲**也已打通**（2026-09-29 复核）。
 
 ### 待新建 / 待改造
 
@@ -98,39 +102,56 @@
 
 **目标**：强化教育优势，建立竞争壁垒。**周期**：3-4 周。
 
-### P1.1 对话分支（教育场景特化）
+### P1.1 对话分支（教育场景特化）—— ✅ 已落地（2026-09-29 复核）
 
-**现状**：`branchFromMessage`（L4641）已能从某条消息分叉出新会话，但**缺少** `branchedFrom` 指针与教学化框架。
+**原现状**：`branchFromMessage` 已能从某条消息分叉出新会话，但缺少 `branchedFrom` 指针与教学化框架。**该缺口已补齐。**
 
-扩展要点：
+落地情况：
 
-1. **`branchedFrom` 元数据**：新会话记录来源会话 ID + 分支点消息 ID，便于回溯与在侧栏展示"分支于 XX"。
-2. **"换个思路再讲一遍"入口**：在 assistant 消息工具栏（`buildMessageToolbar` 的 assistant 分支）新增教学化分支动作，创建分支时向系统提示注入"请换一种解释角度/教学方法重新讲解"的指令（参照 `chat/socraticDirectives.js`、`chat/systemPrompts.js`）。
-3. **多角度解释**：针对辅导场景，支持从同一知识点生成不同讲法（类比 / 逐步推导 / 举例），沉淀为教育差异化能力。
+1. **`branchedFrom` 元数据** ✅ — `{ sessionId, messageId, reExplain }`，在 `state/session.ts` 定型，持久化 / 恢复 / 排序比较 / 侧栏展示四处均已接通。
+2. **"换个思路再讲一遍"入口** ✅ — assistant 工具栏的 re-explain 动作走 `useMessageActions.ts:121` → `branchFromMessage(id, { reExplain: true })`。
+3. **教学化注入** ✅ — `chat/editBranch.js` L301+ 追加一条 "Please re-explain that from a different angle…" 追问并自动续讲，同时打 toast。
 
-**教育价值**：把"分支"从通用功能升级为辅导专属的"多角度重讲"，竞品难以直接照搬。
+**未覆盖**：第 3 点"多角度解释"的沉淀（把同一知识点的不同讲法归组成可复用资产）尚未做，属后续增强，非本项缺口。
 
-### P1.2 知识图谱可视化升级
+### P1.2 知识图谱可视化升级 —— ✅ 已落地（2026-09-29 复核）
 
-**现状**：线性 5 节点列表，每个 `.kb-node` 携带 `status`（internalized/fuzzy/blank）、`confidence_score`（1-5）、`questions`（提问数）（`ui/knowledgeDetail.js` `kbNodeHtml` L7-13）。数据源 `state.kbNodes`。
+**原现状**：线性 5 节点列表（`ui/knowledgeDetail.js` `kbNodeHtml`）。**已升级为力导向图**（`tutorSocratic.js` L240+）。
 
-升级要点：
+落地情况：
 
-1. **力导向图**：将线性列表升级为力导向布局。
-   - **节点颜色** = 掌握程度：internalized / fuzzy / blank，叠加 `confidence_score` 的深浅。
-   - **节点大小** = 提问数量（`questions`）。
-2. **交互**：点击节点等价于当前 `jumpToNode(idx)`（设置 `state.currentNode` 并 `askNextQuestion`）；保留详情面板（confidence dots / 笔记 / 历史）。
-3. **数据零改造**：完全沿用 `state.kbNodes` 现有字段，无需后端改动。
+1. **力导向图** ✅ — 确定性 Fruchterman-Reingold（index-seeded 环状初值，无 RNG，可复现于测试），320×240 SVG，`viewBox` 自适应。
+2. **编码** ✅ — 颜色 = 掌握度（internalized / fuzzy / blank），`fill-opacity` 叠加 `confidence_score` 深浅（0.35→1.0）；半径 = `sqrt(questions)`，上限 22px。
+3. **交互** ✅ — 节点 `tabindex=0` + `role=button` + Enter/Space 打开与列表视图**同一个** `toggleKBDetail` 详情面板（confidence dots / 笔记 / 历史 / `→ go` 均复用）。
+4. **数据零改造** ✅ — 全程读 `state.kbNodes`，无后端改动。
+5. **可访问性** ✅ — `role="img"` + `aria-label` + 三段式文本视图保留为降级路径。
 
-**渲染方案（技术决策见下）**：轻量 SVG + 简易力导向布局，直接渲染于知识面板 DOM。
+**e2e 覆盖**：原路线图写的 `native-visualization.spec.mjs` 实际并不存在，但覆盖并非真缺——分两层：
 
-**壁垒价值**：把"知识边界可视化"做成 Socrates 独有的招牌功能。
+- `e2e/kb-graph.spec.mjs`（5 例，既有）直接调 `renderKnowledgeBoundaryFile({immediate:true})`，覆盖节点数、配色、半径、active、点击开面板。
+- `e2e/knowledge-panel.spec.mjs`（5 例，2026-09-30 补）走 `updateKB()` **真实入口** + tutor 模式 + 侧栏知识页签，覆盖委托契约、中文文案、状态枚举不外泄、`{n}` 插值、历史形状、键盘可达。
 
-### P1.3 Agent 分屏视图
+这一层是必需的：既有 spec 绕过了 `updateKB` 与模式/页签装配，因此下面三个用户可见缺陷它一条都抓不到（已于 2026-09-30 修复，见 `fix/knowledge-panel-i18n-and-history`）：
 
-**现状**：Agent 模式内联渲染于 `#msgList`（`chat/agentStream.js` `beginAgentTextStream`），工具卡片（`ui/toolCards.js`）与运行时（`chat/toolRuntime.js`）嵌在消息气泡内，**无独立分屏**。
+1. 详情面板整块硬编码英文（zh 是默认语言）
+2. `internalized` / `fuzzy` / `blank` 原始枚举直接回显进 DOM
+3. 历史栏读 `h.from` / `h.to`，而写入方产出的形状是 `{date, at, summary, counts}`，渲染成 `2026-09-20 ? → ?`
 
-改造要点：
+附带发现：`updateKB()` 委托渲染后又用线性列表覆盖一遍 `#kbContent`。**这不会让图谱消失**（委托走 rAF 合并，晚于同步写入并把图谱画回来，实测回退后照常显示），真实代价是每次 `updateKB` 多一次整面板 DOM 重建，而它每轮对话被调 5-10 次。
+
+### P1.3 Agent 分屏视图 —— ❌ 未开始（2026-09-30 重估：建议降级）
+
+**现状**：Agent 模式内联渲染于 `#msgList`（`chat/agentStream.js` `beginAgentTextStream`），工具卡片（`ui/toolCards.js`，1100 行）与运行时（`chat/toolRuntime.js`）嵌在消息气泡内，**无独立分屏**。
+
+**重估结论：建议降级，不作为下一项。** 理由：
+
+1. **回归风险与收益不匹配。** 要动的是一个已实现、已被 8 条 e2e 覆盖的面（`agent-steps` / `tool-cards` / `tool-card-lifecycle` / `tool-output-lifecycle` / `tool-run-group` / `tool-order` / `tool-status-visual` / `composer-tool-visual`），5-7 天的重构换来的是"长 agent 运行更好读"。
+2. **收益场景偏向编码工作流。** 分屏对齐的是 Claude / Cursor 的用法——多工具长链条、文件与 shell 输出刷屏。那是通用 agent 的痛点，不是"把教得会作为第一目标的 AI 学习伙伴"的核心教学场景。
+3. **同一轮里更有价值的产出已经出现。** 2026-09-30 的两次修复（A4 编辑静默丢数据、知识面板 + 错题本本地化）都落在四大护城河上，且都是既有代码里长期存在的用户可见缺陷。
+
+**建议**：等教学主链路（苏格拉底教学 / 知识图谱 / 错题本 / 诊断评估）没有已知缺陷时再开；届时先补一个"agent 运行可读性"的真实用户反馈作为立项依据，而不是照本节改造要点直接开工。
+
+原改造要点保留备查：
 
 1. **左右分屏布局**：左侧对话区域，右侧工具面板。
 2. **右侧工具 Tab**：文件 / Shell / Web 三类 Tab，复用现有工具卡片渲染（`toolCards.js` `TOOL_META`：Read/Bash/web_search/code_interpreter/render_visualization 等）与 `toolRuntime.js` 的生命周期（`tool_use` → `tool_progress` → `tool_result`，含 `/api/executions/<id>/stream` 执行流）。
@@ -145,7 +166,7 @@
 
 ### P2.1 微交互与无障碍优化
 
-改动集中于 `frontend/src/styles.css`：
+改动分散在 `frontend/src/styles/`（原 `styles.css` 单体已于 2026-09-23 拆为 17 个 order-sensitive 切片，级联顺序由 `styles/index.css` → `styles/legacy/index.css` 定义；动样式前先确认目标规则落在哪个切片）：
 
 - 消息入场动画（尊重 `prefers-reduced-motion`，动画可关）。
 - 全局 `:focus-visible` 样式（键盘可达性）。
@@ -171,9 +192,9 @@
 
 ## 技术决策
 
-### 知识图谱渲染方案
+### 知识图谱渲染方案 —— 已采纳并实现
 
-**推荐**：轻量 SVG + 简易力导向布局，直接渲染于知识面板 DOM。
+**采纳**：轻量 SVG + 简易力导向布局，直接渲染于知识面板 DOM。实现在 `tutorSocratic.js` L240+（`kbLayout` / `buildKBGraphHtml` / `wireKBGraph`），确定性 Fruchterman-Reingold，无 RNG。
 
 **不采用** `render/viz.js` 沙箱 iframe 方案，原因：
 
@@ -190,23 +211,36 @@
 
 ## 里程碑与验收
 
-| 阶段 | 交付物 | 预估工作量 | 验收标准（e2e / 现有规格） |
-| --- | --- | --- | --- |
-| P0.1 | 编辑/重生成边界审计报告 + bug 票 | 2-3 天 | 手动回归 + `frontend/e2e/chat-send.spec.mjs` |
-| P0.2 | 会话内 Ctrl-F 查找 | 约 1 天 | 新增 `find-in-session.spec.mjs`（参照 `cmd-k.spec.mjs`） |
-| P1.1 | 教育化分支（`branchedFrom` + 多角度重讲） | 3-5 天 | 手动辅导场景验证 |
-| P1.2 | 力导向知识图谱 | 5-7 天 | 新增 / 扩展 `native-visualization.spec.mjs` |
-| P1.3 | Agent 分屏视图 | 5-7 天 | 扩展 `tool-cards.spec.mjs` |
-| P2.1 | 微交互 + 无障碍（U-L1~L5） | 持续 | 无障碍审计通过 |
-| P2.2 | 国际化收尾（U-M6） | 持续 | 语言切换无残留英文 |
-| P2.3 | Pyodide 沙箱（可选） | 待评估 | 视决策 |
+| 阶段 | 交付物 | 预估工作量 | 状态 | 验收标准（e2e / 现有规格） |
+| --- | --- | --- | --- | --- |
+| P0.1 | 编辑/重生成边界审计报告 + bug 票 | 2-3 天 | ✅ 完成（A4 离线重试队列未做） | 手动回归 + `frontend/e2e/chat-send.spec.mjs` |
+| P0.2 | 会话内 Ctrl-F 查找 | 约 1 天 | ✅ 完成 | `frontend/e2e/find-in-session.spec.mjs` |
+| P1.1 | 教育化分支（`branchedFrom` + 多角度重讲） | 3-5 天 | ✅ 完成 | 手动辅导场景验证 |
+| P1.2 | 力导向知识图谱 | 5-7 天 | ✅ 完成（e2e 已补 2026-09-30） | `kb-graph.spec.mjs` 5 例 + `knowledge-panel.spec.mjs` 5 例 |
+| P1.3 | Agent 分屏视图 | 5-7 天 | ❌ 未开始（建议降级，见上节） | 扩展 `tool-cards.spec.mjs` |
+| P2.1 | 微交互 + 无障碍（U-L1~L5） | 持续 | 部分完成 | 无障碍审计通过 |
+| P2.2 | 国际化收尾（U-M6） | 持续 | 进行中（知识面板 / 错题本已收口） | 语言切换无残留英文 |
+| P2.3 | Pyodide 沙箱（可选） | 待评估 | 待评估 | 视决策 |
 
 ---
 
-## 执行顺序建议
+## 执行顺序建议（2026-09-30 更新）
 
-1. **先 P0.2（Ctrl-F，约 1 天）**：见效快、纯新增、无既有代码依赖风险。
-2. **并行 P0.1 审计**：登记边界问题，按严重度排期修复。
-3. **P1.2 知识图谱优先于 P1.1/P1.3**：护城河价值最高，数据零改造，投入产出比最优。
-4. **P1.3 分屏** 依赖较重，放在知识图谱之后。
-5. **P2 持续推进**：每个功能上线时同步补齐无障碍与国际化，避免债务堆积。
+已完成：P0.1 ✅ → P0.2 ✅ → P1.1 ✅ → P1.2 ✅（含 e2e）→ P1.3 建议降级。
+
+**2026-09-30 的一轮实际产出**（均为既有代码里长期存在、用户可见的缺陷）：
+
+| 缺陷 | 严重性 | 提交 |
+| --- | --- | --- |
+| A4 编辑/删除离线失败后本地裁剪、服务端留旧行；保存只 upsert 不 delete，硬刷新把被丢弃的回答连同新一轮一起带回来 | 信任级数据丢失 | `fix/edit-offline-replay-outbox` |
+| 知识详情面板整块硬编码英文 + 状态枚举外泄 + 历史读不存在的字段 | 旗舰功能本地化 | `fix/knowledge-panel-i18n-and-history` |
+| 错题本整块硬编码英文 + `mistake.type` 枚举外泄 | 护城河功能本地化 | `fix/mistake-book-i18n` |
+
+**下一项建议：**
+
+1. **继续在教学主链路找同类缺陷**，而不是开 P1.3。上一轮的三个缺陷有共同特征——都是"实现了、但从没人断言过用户实际看到的那一层"。错题本的"已攻克/重做"、诊断评估的结果页、诊断出题流程都还没被 e2e 覆盖到文案层。
+2. **消息列表虚拟化**（见 `docs/plans/2026-09-26-session-switch-perf-plan.md`）—— 长会话首访的剩余主体，与 `turnAnchor` 滚动锚定 / 流式高度 / postRender 回填耦合过深，需单独立项。
+3. **F-007 capacitor 定生死** —— 决定删除还是正式支持，避免它继续被 CI 构建却无人使用。
+4. **F-015 / F-004：`site/` 与 `packages/` 补 CI** —— `packages/` 是 `mobile/` 的依赖来源，无 CI 意味着 `@socrates/core` 的破坏性改动会静默通过。
+5. **P1.3 Agent 分屏** —— 降级待议，见 P1.3 节的立项条件。
+6. **P2 持续推进**：每个功能上线时同步补齐无障碍与国际化，避免债务堆积。

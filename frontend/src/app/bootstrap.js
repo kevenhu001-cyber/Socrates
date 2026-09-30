@@ -3,6 +3,7 @@ import { ensureFuse, ensureHighlight, ensureKatex } from '../vendor/lazy.js';
 import { bootstrapReactCompatibilityRuntime } from '../react/bootstrap.tsx';
 import { mountAuthListeners } from '../auth/index.js';
 import { mountLegacyShellListeners } from '../ui/legacyShellListeners.js';
+import { bootstrapOutbox } from '../session/mutationOutbox.js';
 
 /**
  * Functions required by the legacy shell and the React compatibility gateway.
@@ -20,6 +21,10 @@ export function bootstrapApp(options) {
   options.loadTonePreset();
   options.loadMemories();
   mountAuthListeners();
+  /* P0.1 A4 — replay message edits/deletes that never reached the server
+     (the user edited while offline, closed the tab, and came back). Runs
+     once here for a cold start and then on every `online` event. */
+  bootstrapOutbox();
 
   installModalA11y({ overlayId: 'cmdKOverlay', closeFn: () => window.closeCmdK?.() });
   installModalA11y({ overlayId: 'shareOverlay', closeFn: () => window.closeShareModal?.() });

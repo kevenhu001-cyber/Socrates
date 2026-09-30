@@ -18,6 +18,14 @@ var I18N={
     "chat.attach.imageTooLarge":"Image exceeds the {size} MB limit.",
     "chat.attach.pdfTooLarge":"PDF exceeds the 25 MB limit.",
     "chat.attach.unsupported":"This file type isn't supported. Images, text/code files, PDF, Office documents, EPUB, audio, and video are accepted.",
+    "chat.attach.fileTooLarge":"File exceeds the 25 MB limit.",
+    "chat.attach.duplicate":"This file is already attached.",
+    "chat.attach.retry.aria":"Retry upload",
+    "chat.attach.uploading":"Uploading",
+    "chat.attach.failed":"Upload failed",
+    "chat.attach.networkError":"Network error during upload.",
+    "chat.attach.uploadTimeout":"Upload timed out.",
+    "chat.attach.cancelled":"Upload cancelled.",
     "chat.attach.truncated":"(truncated)",
     /* P_attachments-multimodal — UI strings for the user-controlled
      * multimodal checkbox on the API key editor row (provider.*) and
@@ -745,6 +753,38 @@ var I18N={
     "profile.disclaimerTutor":"Socrates asks questions to help you think. It does not judge your answers.",
     "tag.placeholder":"Add a tag and press Enter",
     "kb.placeholderNote":"Write anything you want to remember about this sub-topic...",
+    /* P_kb-i18n — the knowledge-boundary detail panel (ui/knowledgeDetail.js)
+     * was the last surface still hardcoding English. zh is the default
+     * locale, so every label below was showing up untranslated in the
+     * product's flagship knowledge feature. The status badge reuses the
+     * existing tutor.status* keys rather than adding a second vocabulary:
+     * the same "internalized" node must not read 已内化 in the plan
+     * sidebar and 已掌握 in its own detail panel. */
+    "kb.questions":"{n} Qs",
+    "kb.go":"→ Go",
+    "kb.goTitle":"Jump the chat to this knowledge point",
+    "kb.confidence":"Confidence",
+    "kb.confidenceSet":"Set confidence to {n}",
+    "kb.systemNote":"System note",
+    "kb.noSystemNote":"No system note yet.",
+    "kb.yourNote":"Your note",
+    "kb.history":"Snapshot history",
+    "kb.noHistory":"No snapshots yet.",
+    /* P_mistakes-i18n — mistakeBook.js (ui/) had the same gap as the
+     * knowledge detail panel: raw English literals plus the internal
+     * mistake.type enum echoed straight into the card meta. The mistake
+     * book is one of the four structural moat features, so it ships in
+     * the default locale like everything else. */
+    "mistakes.empty":"No mistakes yet.",
+    "mistakes.emptyHint":"Wrong quiz picks and incorrect practice attempts will land here for review.",
+    "mistakes.filterEmptyResolved":"No resolved mistakes yet. Redo a mistake and mark it conquered once you get it right.",
+    "mistakes.filterEmptyOther":"Nothing in this filter. Switch to “all” to see every mistake.",
+    "mistakes.conquered":"conquered",
+    "mistakes.redo":"Redo",
+    "mistakes.redoneOne":"Redone once",
+    "mistakes.redoneMany":"Redone {n} times",
+    "mistakes.type.quiz":"Quiz",
+    "mistakes.type.practice":"Practice",
     "prompt.placeholderTitle":"e.g. Code review",
     "prompt.placeholderShortcut":"/my-template",
     "prompt.placeholderDesc":"One-line summary",

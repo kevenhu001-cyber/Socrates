@@ -282,8 +282,19 @@ window.removeAttachment = removeAttachment;
    React's legacyAdapter and by main.js for the attachment chip strip.
    It was exported but never bridged to window, causing
    window.__socratesLegacy.composer.renderAttachmentChips to be undefined. */
-import { renderAttachmentChips } from './attachments/render.js';
+import { renderAttachmentChips, retryComposerAttachment } from './attachments/render.js';
 window.renderAttachmentChips = renderAttachmentChips;
+/* Error-chip retry entry point for the React chip row
+   (composer.retryAttachment in the legacy gateway). */
+window.retryComposerAttachment = retryComposerAttachment;
+
+/* ─── ui/topicSetup.js — send/start button refreshers. attachments/
+   render.js calls them by name (window[w.updateBtnName]) after every
+   file add/remove so an attachment-only draft still lights up Send, and
+   extensions/modules/write.ts reaches them through window as well. */
+import { updateStartBtn, updateSendBtn } from './ui/topicSetup.js';
+window.updateStartBtn = updateStartBtn;
+window.updateSendBtn = updateSendBtn;
 
 /* ─── i18n.js (setLang) ─── */
 // i18n.js does not have ESM named exports — setLang is bound on
@@ -342,6 +353,15 @@ window.hideUsageTip = function () { if (_usageImport) return _usageImport.then(f
 /* ─── render/helpers.js (esc alias) ─── */
 import { esc } from './render/helpers.js';
 window.esc = esc;
+
+/* ─── ui/knowledgePanel.js ───
+   updateKB is already a cross-module app entry point (session/loader.js,
+   chat/sessionBootstrap.js and chat/sendPipeline.js all call it). Exposed
+   here so the knowledge-map surface can be driven directly from e2e —
+   the panel previously clobbered its own delegated renderer, which no
+   existing spec could see because nothing called updateKB from a test. */
+import { updateKB } from './ui/knowledgePanel.js';
+window.updateKB = updateKB;
 
 /* ─── exam.js — Generate Exam extension ───
    exam.js (~57KB) is lazy: it only downloads when the exam view is

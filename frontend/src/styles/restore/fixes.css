@@ -320,16 +320,18 @@
 
 @media (max-width: 768px) {
   #appShell#appShell .sidebar {
-    width: min(254px, calc(100vw - 54px)) !important;
-    min-width: min(254px, calc(100vw - 54px)) !important;
+    width: min(var(--ui-sidebar-mobile), 90vw) !important;
+    min-width: min(var(--ui-sidebar-mobile), 90vw) !important;
     border-radius: 0 !important;
   }
   #appShell #sidebarNav .sidebar-nav-btn { min-height: 40px !important; padding-block: 7px !important; font-size: 15px !important; }
   #appShell #sidebarNav.sidebar-nav { padding-inline: 6px !important; }
-  /* 36px touch targets sit edge to edge so the account badge fits beside them. */
+  /* The reference drawer footer is identity-only on phones — theme /
+     display / settings stay reachable through desktop chrome and the
+     Settings surfaces, so the trailing icon buttons hide outright. */
   #appShell .sidebar-footer-actions { display: flex !important; align-items: center !important; gap: 0 !important; }
-  #appShell .sidebar-footer-actions > .icon-btn { display: inline-flex !important; min-width: 36px !important; min-height: 36px !important; align-items: center !important; justify-content: center !important; }
-  #appShell #apiSettingsBtn { display: inline-flex !important; }
+  #appShell .sidebar-footer-actions > .icon-btn { display: none !important; min-width: 36px !important; min-height: 36px !important; align-items: center !important; justify-content: center !important; }
+  #appShell #apiSettingsBtn { display: none !important; }
   #appShell .sidebar-account-trigger { min-height: 52px; cursor: pointer; }
   #appShell .sidebar-account-menu { width: 100%; }
 }
@@ -409,8 +411,8 @@
   body #composerToolsMenu:not(.hidden).composer-tools-menu {
     left: 16px !important;
     right: auto !important;
-    width: min(300px, calc(100vw - 32px)) !important;
-    min-width: min(300px, calc(100vw - 32px)) !important;
+    width: min(252px, calc(100vw - 32px)) !important;
+    min-width: min(252px, calc(100vw - 32px)) !important;
     max-width: none !important;
     height: auto !important;
     max-height: min(52dvh, 360px) !important;
@@ -666,7 +668,13 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 @media (max-width: 768px) {
 
 [data-mode="light"] #appShell#appShell#appShell #sidebarNav .sidebar-nav-btn:hover,
-[data-mode="light"] #appShell#appShell#appShell #sidebarNav .sidebar-nav-btn:focus-visible {
+[data-mode="light"] #appShell#appShell#appShell #sidebarNav .sidebar-nav-btn:focus-visible,
+[data-mode="light"] body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+  #appShell#appShell#appShell
+  #navNew.sidebar-nav-btn:hover,
+[data-mode="light"] body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+  #appShell#appShell#appShell
+  #navNew.sidebar-nav-btn:focus-visible {
   background: rgb(0 0 0 / 5%) !important;
 }
 }
