@@ -23,8 +23,13 @@
  *   workspace.css   — projects/directory page fixes
  *   auth.css        — auth gate card
  *   mobile.css      — ≤768px skin alignment only
+ *   tokens.css      — polish-level token overrides (precedes the files
+ *                     below so they can read the values they adjust)
+ *   buttons.css     — shared button sizing / touch-target floor
+ *   mobile-controls.css — ≤768px control geometry (follows mobile.css)
  */
 
+@import './tokens.css';
 @import './sidebar.css';
 @import './topbar.css';
 @import './composer.css';
@@ -34,3 +39,5 @@
 @import './auth.css';
 @import './mobile.css';
 @import './press.css';
+@import './buttons.css';
+@import './mobile-controls.css';
