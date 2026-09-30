@@ -50,6 +50,15 @@
   --ui-tool-chip-hover-text: rgb(218 230 253);
   --ui-link: rgb(129 166 249);
   --ui-bg-code: var(--ui-bg-raised);
+  --ui-bg-code-header: var(--ui-bg-code);
+  --ui-border-code: var(--ui-border-subtle);
+  /* Placeholder tone is its own step so it can drift from small muted
+     labels without repainting body copy. */
+  --ui-text-placeholder: var(--ui-text-muted);
+  /* Consumed by legacy/00-foundations.css for the global scrollbar; without
+     these the thumb resolved to nothing and light surfaces looked unscrolled. */
+  --ui-scrollbar-thumb: rgb(255 255 255 / 12%);
+  --ui-scrollbar-thumb-hover: rgb(255 255 255 / 22%);
 }
 
 [data-mode="light"] {
@@ -92,6 +101,11 @@
   --ui-tool-chip-hover-text: rgb(36 81 218);
   --ui-link: rgb(36 81 218);
   --ui-bg-code: var(--ui-bg-raised);
+  --ui-bg-code-header: var(--ui-bg-code);
+  --ui-border-code: var(--ui-border-subtle);
+  --ui-text-placeholder: var(--ui-text-muted);
+  --ui-scrollbar-thumb: rgb(0 0 0 / 16%);
+  --ui-scrollbar-thumb-hover: rgb(0 0 0 / 28%);
 }
 
 :root {

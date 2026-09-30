@@ -270,7 +270,9 @@
   #appShell #sidebar .recents-list-content { display: flex; flex-direction: column; }
   #appShell #sidebar .recents-time-label {
     padding: 12px 10px 4px;
-    color: var(--ui-text-muted);
+    /* Section headers are 12px body text, so they sit on the secondary step:
+       --ui-text-muted is 3.3:1 on the light sidebar and misses WCAG AA. */
+    color: var(--ui-text-secondary);
     font-size: 12px;
     font-weight: 500;
     line-height: 16px;
@@ -383,6 +385,10 @@
   #appShell #sidebar.collapsed #sidebarNav .sidebar-nav-btn {
     justify-content: center;
     width: var(--sidebar-row);
+    /* The 52px rail is a desktop affordance, so its rows stay on the 36px
+       row size. polish/buttons.css gives .btn-touch a 44px min-width floor
+       for phone controls; that floor must not inflate the rail. */
+    min-width: var(--sidebar-row);
     padding: 0;
   }
   #appShell #sidebar.collapsed .sidebar-search-row,

@@ -200,7 +200,9 @@
 @media (max-width: 768px) {
 #appShell .recents-title,
 #appShell .recents-time-label {
-  color: var(--ui-text-muted);
+  /* Matches parity/sidebar.css: small labels use the secondary step so they
+     clear WCAG AA on the light sidebar rail. */
+  color: var(--ui-text-secondary);
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.04em;
