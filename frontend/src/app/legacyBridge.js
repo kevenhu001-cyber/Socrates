@@ -20,6 +20,7 @@ import { toggleKBDetail } from '../ui/knowledgeDetail.js';
 import { refreshApiConfig } from '../config/providers.js';
 import { refreshServerSessions, retryRecentsFetch, actuallyDeleteSession, archiveSession, restoreSession, confirmPurgeSession, getArchivedSessions } from '../session/recents.js';
 import { renderRecents } from '../ui/recentsView.js';
+import { openNav } from '../sidebar/nav.js';
 import { deleteUserMessage, sendFeedback, restorePersistedMessageExtras } from '../ui/messageActions.ts';
 import { buildAssistantHtml as renderAssistantHTML } from '../render/assistantHtml.ts';
 import { showToast } from '../ui/toast.js';
@@ -182,7 +183,7 @@ window.__socratesLegacy = {
     resetApp: window.resetApp,
     startNewChat: window.startNewChat,
     toggleSidebar: window.toggleSidebar,
-    openNav: window.openNav,
+    openNav,
     openSettings: window.openSettings,
     closeSettings: window.closeSettings,
     openProfile: window.openProfile,

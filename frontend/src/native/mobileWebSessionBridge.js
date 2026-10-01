@@ -1,4 +1,5 @@
 import { openPromptTemplatesModal } from '../ui/promptTemplates.js';
+import { openNav } from '../sidebar/nav.js';
 import { toggleDisplayPrefs } from '../displayPrefs.js';
 import { openCheatsheet } from '../ui/cheatsheet.js';
 /*
@@ -94,8 +95,7 @@ export function openMobileTargetFromUrl() {
   let opened = false;
   try {
     if (target === 'projects' || target === 'scheduled' || target === 'plugins' || target === 'library' || target === 'exam') {
-      if (typeof window.openNav !== 'function') return false;
-      window.openNav(target);
+      openNav(target);
       opened = true;
     } else if (target === 'knowledge' || target === 'mistakes') {
       if (typeof window.toggleSidebarView !== 'function') return false;

@@ -3,6 +3,7 @@
  * its click affordances so the visual layer stays declarative. */
 
 import { toggleWebSearch } from '../pickers.js';
+import { openNav } from '../sidebar/nav.js';
 
 export function installHomeSurface() {
   document.addEventListener('click', (event) => {
@@ -20,10 +21,7 @@ export function installHomeSurface() {
       event.preventDefault();
       const destination = navTarget.dataset.homeNav;
       if (!destination) return;
-      if (typeof window.openNav === 'function') window.openNav(destination);
-      else if (typeof window[`open${destination[0].toUpperCase()}${destination.slice(1)}`] === 'function') {
-        window[`open${destination[0].toUpperCase()}${destination.slice(1)}`]();
-      }
+      openNav(destination);
       return;
     }
 

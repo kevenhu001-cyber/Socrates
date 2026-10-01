@@ -7,6 +7,7 @@
 import { esc } from './render/helpers.js';
 import { webSearchOn, setWebSearchOn } from './config/providers.js';
 import { stateStore } from './state/store.js';
+import { openNav } from './sidebar/nav.js';
 
 /* P_init-sync — providers가 서버에서 로드되었는지 추적.
    syncModelPills()가 providers=[] 상태에서 "Add a model"을 렌더링하지 않고
@@ -453,9 +454,7 @@ var EXTENSIONS=[
   {key:"exam",         name:"Generate exam",
    icon: EXTENSION_ICONS.exam,
    on:false, onChange:function(){
-     if(typeof window.openNav==="function"){window.openNav('exam');}
-     else if(typeof window.openExamPanel==="function"){window.openExamPanel();}
-     else if(typeof window.openExamModal==="function"){window.openExamModal();}
+     openNav('exam');
      syncExtensionsUI();
    }},
 ];

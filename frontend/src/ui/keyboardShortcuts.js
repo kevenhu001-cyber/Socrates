@@ -9,6 +9,7 @@ import { showToast } from './toast.js';
 import { openCheatsheet, closeCheatsheet } from './cheatsheet.js';
 import { toggleTheme } from '../displayPrefs.js';
 import { toggleSidebar } from '../sidebar/index.js';
+import { openNav } from '../sidebar/nav.js';
 import { openShareModal, closeShareModal } from './share.js';
 /* closeUsageModal resolves via window.* — ui/usage.js is lazy-loaded and
    the overlay can only be visible after the module mounted. */
@@ -194,11 +195,7 @@ export function installKeyboardShortcuts() {
     /* Cmd+Shift+A — open projects picker. */
     if(cmd&&!e.altKey&&e.shiftKey&&key==="a"){
       e.preventDefault();
-      if(typeof openNav==="function"){
-        window.openNav("projects");
-      }else if(typeof openProjects==="function"){
-        window.openProjects();
-      }
+      openNav("projects");
       return;
     }
     /* Cmd+Shift+P — cycle active project. */
