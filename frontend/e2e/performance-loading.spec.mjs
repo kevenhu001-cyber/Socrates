@@ -31,7 +31,7 @@ test('settings and workspace code load only when opened', async ({ page }) => {
 
   await page.evaluate(() => window.closeSettings());
   await page.click('#navLibrary');
-  await expect(page.locator('#libraryList')).not.toHaveAttribute('aria-busy', 'true');
+  await expect(page.locator('#libraryPanel')).not.toHaveAttribute('aria-busy', 'true');
   expect((await loadedScripts()).some((path) => /WorkspacePage-/.test(path))).toBe(true);
 });
 

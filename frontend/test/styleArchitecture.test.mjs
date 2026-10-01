@@ -28,6 +28,20 @@ test('the stylesheet entry does not reconnect historical parity layers', async (
   }
 });
 
+test('migrated workspace panels are single React-owned page hosts', async () => {
+  const [html, workspacePage, mountSpecs] = await Promise.all([
+    read('index.html'),
+    read('src/react/pages/workspace/WorkspacePage.tsx'),
+    read('src/react/lib/boot/specs.tsx'),
+  ]);
+  assert.equal(html.includes('id="libraryList"'), false, 'legacy inner Library host must stay removed');
+  assert.equal(html.includes('id="spacesList"'), false, 'legacy inner Projects host must stay removed');
+  assert.match(html, /<div class="library-panel main-page hidden" id="libraryPanel"><\/div>\s*<input type="file" id="libraryUploadInput"/);
+  assert.match(html, /<div class="spaces-panel main-page hidden" id="spacesPanel"><\/div>/);
+  assert.match(workspacePage, /page === 'library' \? 'libraryPanel' : page === 'projects' \? 'spacesPanel'/);
+  assert.match(mountSpecs, /page === 'library' \? 'libraryPanel' : page === 'projects' \? 'spacesPanel'/);
+});
+
 test('new owner modules use the ui token namespace', async () => {
   const files = [
     'src/styles/foundations/base.css',

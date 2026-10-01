@@ -35,7 +35,8 @@ import {
 } from '../chat/turnClient.ts';
 import { detailCache } from './detailCache.js';
 import { seedSyncedMessages } from './persistence.js';
-import { toggleChatTopBarEls, toggleShareBtn } from '../ui/share.js';
+import { toggleShareBtn } from '../ui/share.js';
+import { activateMainView } from '../ui/mainViewController.js';
 import { updateSendBtn } from '../ui/topicSetup.js';
 import { clearComposer } from '../react/composer-input/controller.ts';
 import { updateChatStats } from '../chat/stats.js';
@@ -399,19 +400,7 @@ export async function loadSession(id){
       await loadExamSession(s);
       return;
     }
-    document.getElementById("topicSetup").classList.add("hidden");
-    document.getElementById("diagnosticView").classList.add("hidden");
-    document.getElementById("chatView").classList.remove("hidden");
-    /* Restore .main-inner visibility — exam-view may have hidden it. */
-    var mi=document.getElementById("mainInner");
-    if(mi)mi.classList.remove("hidden");
-    if (document.body.classList.contains("exam-active")) {
-      var examEls=document.querySelectorAll("[data-exam-only='true']");
-      examEls.forEach(function(el){el.classList.add("hidden")});
-      document.body.classList.remove("exam-active");
-    }
-    if (typeof window.hideMainPages === "function") window.hideMainPages();
-    toggleChatTopBarEls(true);
+    activateMainView("chatView", document);
     syncChatModel();
     var msgList=document.getElementById("msgList");
     previousMessages=stateStore.read("messages").slice();
@@ -797,10 +786,7 @@ export async function loadSession(id){
         }});
         stateStore.dispatch({type:"session/replace-messages",payload:[]});
         publishReactChatRuntime({type:"state-synced",reason:"session-not-found"});
-        document.getElementById("chatView").classList.add("hidden");
-        toggleChatTopBarEls(false);
-        document.getElementById("topicSetup").classList.remove("hidden");
-        if (typeof window.hideMainPages === "function") window.hideMainPages();
+        activateMainView("topicSetup", document);
       }catch(_){}
     }
   } finally {

@@ -11,9 +11,9 @@ import { buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan } from '../cha
 import { renderDiagResultsScreen } from '../ui/diagnosticResults.js';
 import { renderDiagQuestion as renderDiagQuestionUI } from '../ui/diagnosticQuestion.js';
 import { formatMsg } from '../render/markdown.js';
-import { toggleChatTopBarEls } from '../ui/share.js';
 import { updateChatStats } from '../chat/stats.js';
 import { updateKB } from '../ui/knowledgePanel.js';
+import { activateMainView } from '../ui/mainViewController.js';
 
 function _t(key, fallback) {
   try {
@@ -86,9 +86,7 @@ export function finishDiagnostic() {
    teaching phase. Separated from finishDiagnostic so the user has a
    moment to read the interpretation before teaching begins. */
 export function proceedToTeaching() {
-  document.getElementById('diagnosticView').classList.add('hidden');
-  document.getElementById('chatView').classList.remove('hidden');
-  toggleChatTopBarEls(true);
+  activateMainView('chatView', document);
   try { updateKB(); } catch (_) {}
   try { updateChatStats(); } catch (_) {}
 

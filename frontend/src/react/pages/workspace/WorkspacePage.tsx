@@ -591,14 +591,14 @@ function WorkspacePage({ page }: { page: string }) {
 const roots = new Map<string, Root>();
 
 export function mountWorkspacePage(page: string): void {
-  const containerId = page === 'library' ? 'libraryList' : page === 'projects' ? 'spacesList' : 'pluginsList';
+  const panelId = page === 'library' ? 'libraryPanel' : page === 'projects' ? 'spacesPanel' : 'pluginsPanel';
+  const containerId = page === 'library' ? 'libraryPanel' : page === 'projects' ? 'spacesPanel' : 'pluginsList';
   const container = document.getElementById(containerId);
   if (!container) return;
 
   container.classList.remove('visually-hidden');
-  const panelId = page === 'library' ? 'libraryPanel' : page === 'projects' ? 'spacesPanel' : 'pluginsPanel';
   const panel = document.getElementById(panelId);
-  panel?.setAttribute('data-live-directory', 'true');
+  if (page === 'plugins') panel?.setAttribute('data-live-directory', 'true');
 
   installWorkspaceBridge();
 

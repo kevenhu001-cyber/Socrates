@@ -29,7 +29,7 @@ import { flushRecentsReconcile } from '../session/recents.js';
 import { generateId } from '../util/ids.js';
 import { pushChatIdToURL, setChatIdInURL } from '../session/store.js';
 import { syncChatModel, getActiveProvider } from '../pickers.js';
-import { toggleChatTopBarEls } from '../ui/share.js';
+import { activateMainView } from '../ui/mainViewController.js';
 import { updateSendBtn, updateStartBtn } from '../ui/topicSetup.js';
 import { publishReactChatRuntime, } from '../ui/reactBridge.js';
 import { publishThinkingTurnStart } from '../ui/messageSnapshot.js';
@@ -205,11 +205,7 @@ export async function startSession(){
        assistant placeholder out of the interaction frame, so the swap
        itself stays instant and the incoming motion is carried by the
        message entrance (`msgIn`) and the send-time anchor glide. */
-    document.getElementById("topicSetup").classList.add("hidden");
-    document.getElementById("diagnosticView").classList.add("hidden");
-    document.getElementById("chatView").classList.remove("hidden");
-    if (typeof window.hideMainPages === "function") window.hideMainPages();
-    toggleChatTopBarEls(true);
+    activateMainView("chatView", document);
     clearLegacyMsgListChildren();
 
     /* The user turn must precede its assistant placeholder in the
@@ -313,10 +309,7 @@ export async function startSession(){
   }
 
   /* Show diagnostic view with loading animation immediately */
-  document.getElementById("topicSetup").classList.add("hidden");
-  document.getElementById("diagnosticView").classList.remove("hidden");
-  document.getElementById("chatView").classList.add("hidden");
-  toggleChatTopBarEls(false);
+  activateMainView("diagnosticView", document);
     syncChatModel();
 
   /* P_attachments-tutor-persist — copy any pending attachments from

@@ -2,6 +2,7 @@ import { toggleMorePopover } from "./morePopover.js";
 import { stateStore } from "../state/store.js";
 import { showToast } from "../ui/toast.js";
 import { openPromptTemplatesModal } from "../ui/promptTemplates.js";
+import { activateMainView, getVisibleCoreView, hideCoreViews } from "../ui/mainViewController.js";
 /* creationSurfaces.js (~20KB) is lazy — images/assistants/sites panels
    only need it when the user opens one. openCreation() below awaits the
    module before showing the (created-on-demand) panel. */
@@ -210,35 +211,9 @@ export function closeAllPanels() {
   ["tabKnowledge", "tabRecents", "tabMistakes"].forEach(function (id) { var b = byId(id); if (b) b.classList.remove("active"); });
 }
 
-/* Hide all main-content pages (library, projects, scheduled, plugins, exam, admin). */
-function hideMainPages() {
-  ["libraryPanel", "spacesPanel", "scheduledPanel", "pluginsPanel", "imagesPanel", "assistantsPanel", "sitesPanel", "adminPanel", "examView"].forEach(function (id) { var p = byId(id); if (p) p.classList.add("hidden"); });
-  document.body.classList.remove("workspace-active");
-  document.body.classList.remove("plugins-active");
-  var pluginTabs = byId("pluginWorkspaceTabs"); if (pluginTabs) pluginTabs.hidden = true;
-  document.body.classList.remove("admin-active");
-  /* Leaving exam via sidebar nav must also drop the exam-active body
-     class, otherwise CSS keeps hiding the mode switcher and other
-     chat top-bar elements (exam.js only removes it in closeExamView). */
-  document.body.classList.remove("exam-active");
-}
-window.hideMainPages = hideMainPages;
-
 /* Show a single main-content page and hide the others. */
 function showMainPage(pageId) {
-  hideMainPages();
-  var page = byId(pageId);
-  if (page) page.classList.remove("hidden");
-  if (pageId !== "examView") document.body.classList.add("workspace-active");
-  document.body.classList.toggle("plugins-active", pageId === "pluginsPanel");
-  var pluginTabs = byId("pluginWorkspaceTabs"); if (pluginTabs) pluginTabs.hidden = pageId !== "pluginsPanel";
-  /* Restore .main-inner visibility — exam-view (a sibling of
-     .main-inner inside .main-content) may have hidden it. */
-  var mi = byId("mainInner");
-  if (mi) mi.classList.remove("hidden");
-  /* Hide exam-only top bar elements when leaving exam mode. */
-  var examEls = document.querySelectorAll("[data-exam-only='true']");
-  examEls.forEach(function (el) { el.classList.add("hidden"); });
+  activateMainView(pageId, document);
 }
 
 function bindPluginWorkspaceTabs() {
@@ -386,23 +361,13 @@ function restoreConnectorReturnContext() {
   }
   if (workspace === "plugins") return false;
 
-  hideMainPages();
   var query = new URLSearchParams(new URL(returnPath, location.origin).search);
   var chatId = query.get("chat");
-  var topic = byId("topicSetup");
-  var chat = byId("chatView");
-  var diagnostic = byId("diagnosticView");
   if (chatId && typeof window.loadSession === "function") {
-    if (topic) topic.classList.add("hidden");
-    if (diagnostic) diagnostic.classList.add("hidden");
-    if (chat) chat.classList.remove("hidden");
-    if (typeof window.toggleChatTopBarEls === "function") window.toggleChatTopBarEls(true);
+    activateMainView("chatView", document);
     Promise.resolve(window.loadSession(chatId)).catch(function () {});
   } else {
-    if (topic) topic.classList.remove("hidden");
-    if (chat) chat.classList.add("hidden");
-    if (diagnostic) diagnostic.classList.add("hidden");
-    if (typeof window.toggleChatTopBarEls === "function") window.toggleChatTopBarEls(false);
+    activateMainView("topicSetup", document);
   }
   if (context.connectorId && typeof window.refreshProjectConnector === "function") {
     setTimeout(function () { window.refreshProjectConnector(context.connectorId); }, 0);
@@ -438,7 +403,7 @@ export function openNav(name, options) {
   }
 }
 function openCreation(name) {
-  hideChatAndTopic();
+  hideCoreViews(document);
   import("../ui/creationSurfaces.js").then(function (m) {
     m.renderCreationSurface(name);
     showMainPage(name + "Panel");
@@ -454,15 +419,7 @@ window.addEventListener("popstate", function () { syncWorkspaceRoute(); });
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", syncWorkspaceRoute, { once: true });
 else setTimeout(syncWorkspaceRoute, 0);
 
-function hideChatAndTopic() {
-  var ts = byId("topicSetup"); if (ts) ts.classList.add("hidden");
-  var cv = byId("chatView"); if (cv) cv.classList.add("hidden");
-  var dv = byId("diagnosticView"); if (dv) dv.classList.add("hidden");
-  if (typeof window.toggleChatTopBarEls === "function") window.toggleChatTopBarEls(false);
-}
-
 export function openLibrary() {
-  hideChatAndTopic();
   showMainPage("libraryPanel");
   if (typeof window.__socratesMountWorkspace === "function") {
     window.__socratesMountWorkspace("library");
@@ -470,7 +427,7 @@ export function openLibrary() {
   renderLibrary();
 }
 async function renderLibrary() {
-  /* #libraryList is React-owned (WorkspacePage) — never write its DOM
+  /* #libraryPanel is React-owned (WorkspacePage) — never write its DOM
      here; fetch, update the cache, and publish through the bridge. */
   try {
     var results = await Promise.all([api("/api/files?limit=100"), api("/api/artifacts?limit=100")]);
@@ -574,7 +531,6 @@ window.renameArtifact = async function (id) {
 };
 
 export function openProjects() {
-  hideChatAndTopic();
   showMainPage("spacesPanel");
   if (typeof window.__socratesMountWorkspace === "function") {
     window.__socratesMountWorkspace("projects");
@@ -582,7 +538,7 @@ export function openProjects() {
   renderProjects();
 }
 async function renderProjects() {
-  /* #spacesList is React-owned (WorkspacePage) — never write its DOM
+  /* #spacesPanel is React-owned (WorkspacePage) — never write its DOM
      here; fetch, update the cache, and publish through the bridge. */
   try {
     var res = await api("/api/projects");
@@ -602,7 +558,6 @@ function paintProjects() {
 }
 
 export function openScheduled() {
-  hideChatAndTopic();
   showMainPage("scheduledPanel");
   if (typeof window.__socratesMountScheduled === "function") {
     window.__socratesMountScheduled();
@@ -615,12 +570,8 @@ window.__socratesNavRenderScheduled = function () { renderScheduled(); };
 
 /* P_exam-nav — Exam is a main-content panel (not a sidebar nav into
    a workspace). We delegate the heavy lifting to exam.openExamPanel(),
-   which renders the form, hydrates state.exam.*, and shows/hides the
-   top-bar exam-only elements (#examBackBtn / #examTitleBar). hideChatAndTopic()
-   is intentionally NOT called here — exam.openExamPanel() performs the
-   equivalent DOM swap internally so the chat/topic setup panes stay
-   hidden without forcing the top-bar elements to disappear (the user
-   still needs the back-button to leave the exam). */
+   which renders the form, hydrates state.exam.*, and activates the exam
+   view metadata without applying the landing-page chrome. */
 export function openExam() {
   if (typeof window.openExamPanel !== "function") return;
   window.openExamPanel();
@@ -649,15 +600,10 @@ async function renderScheduled() {
    blank shell. Defaults to the topic setup on a direct /plugins load. */
 var PLUGINS_RETURN_VIEW = "topicSetup";
 function currentMainView() {
-  var chat = byId("chatView");
-  if (chat && !chat.classList.contains("hidden")) return "chatView";
-  var diagnostic = byId("diagnosticView");
-  if (diagnostic && !diagnostic.classList.contains("hidden")) return "diagnosticView";
-  return "topicSetup";
+  return getVisibleCoreView(document);
 }
 export function openPlugins() {
   PLUGINS_RETURN_VIEW = currentMainView();
-  hideChatAndTopic();
   ensureConnectorIcons();
   showMainPage("pluginsPanel");
   if (typeof window.__socratesMountWorkspace === "function") {
@@ -670,28 +616,17 @@ export function openPlugins() {
    here: the previous entry may be a bare "/" which no workspace route
    owns, leaving the panel stuck open. Exit explicitly instead. */
 window.exitPluginsView = function () {
-  hideMainPages();
   setActiveNav(null);
   var view = PLUGINS_RETURN_VIEW || "topicSetup";
-  var topic = byId("topicSetup");
-  var chat = byId("chatView");
-  var diagnostic = byId("diagnosticView");
-  if (topic) topic.classList.add("hidden");
-  if (chat) chat.classList.add("hidden");
-  if (diagnostic) diagnostic.classList.add("hidden");
-  var target = byId(view) || topic;
-  if (target) target.classList.remove("hidden");
-  if (typeof window.toggleChatTopBarEls === "function") window.toggleChatTopBarEls(view === "chatView");
+  activateMainView(view, document);
   try { history.pushState({}, "", "/"); } catch (_) { /* non-critical */ }
   PLUGINS_RETURN_VIEW = "topicSetup";
 };
 export function openAdmin() {
-  hideChatAndTopic();
   showMainPage("adminPanel");
   /* Standalone operator page: drop the chat top-bar chrome (mode
      switch, model picker, find, share) via body.admin-active.
-     hideMainPages() removes it on every exit path. */
-  document.body.classList.add("admin-active");
+     The shared view controller removes it on every exit path. */
   if (typeof window.__socratesMountAdmin === "function") {
     window.__socratesMountAdmin();
   }

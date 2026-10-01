@@ -17,6 +17,7 @@ import { esc } from '../render/helpers.js';
 import { apiFetch } from '../util/api.js';
 import { stateStore } from '../state/store.js';
 import { showToast } from './toast.js';
+import { activateMainView } from './mainViewController.js';
 
 import { appendToolModule, appendInlineArtifact, appendFileChangeSummaryCards } from './toolCards.js';
 
@@ -69,29 +70,6 @@ function toggleShareBtn() {
   if (findBtn) findBtn.classList.toggle("hidden", !show);
   if (!show && typeof window.closeFindInSession === "function") {
     try { window.closeFindInSession(); } catch (_) {}
-  }
-}
-
-function toggleChatTopBarEls(show) {
-  var els = document.querySelectorAll(".chat-top-bar .btn-group .icon-btn, .chat-top-bar .btn-group .start-btn");
-  els.forEach(function (el) { el.style.display = show ? "" : "none"; });
-  /* P_mobile-topbar — the mobile mode switcher (#mobileMode) and the
-     incognito toggle (#mobileIncognitoBtn) live in the new top-bar, not
-     in the legacy .chat-top-bar selectors above. They are only useful
-     while the user is composing the first message (topic-setup screen);
-     once a conversation starts they should be hidden so the chat-view
-     header reads cleanly. We mirror the show flag onto their `display`
-     style here so every existing toggleChatTopBarEls(true|false) call
-     site (main.js + exam.js + sidebar/nav.js) automatically hides them
-     when the conversation starts and re-shows them on resetApp().
-     Note: #modeSegmentedTop is the shared Chat/Tutor pill on the landing
-     surface, including the compact phone layout. It must NOT be in this
-     list — its conversation visibility is state-driven in CSS, and toggling
-     its inline style.display here would defeat the landing control on reset. */
-  var mobileEls = document.querySelectorAll("#mobileMode, #mobileIncognitoBtn");
-  mobileEls.forEach(function (el) { el.style.display = show ? "none" : ""; });
-  if (typeof window.syncConversationActive === "function") {
-    try { window.syncConversationActive(); } catch (_) {}
   }
 }
 
@@ -324,12 +302,7 @@ function _renderSharedMessageList(messages) {
 }
 
 function _switchToSharedChatView() {
-  ["topicSetup", "diagnosticView", "examView"].forEach(function (id) {
-    var el = document.getElementById(id);
-    if (el) el.classList.add("hidden");
-  });
-  var chatView = document.getElementById("chatView");
-  if (chatView) chatView.classList.remove("hidden");
+  activateMainView("chatView", document);
   var inputBar = document.getElementById("chatInputBar");
   if (inputBar) inputBar.classList.add("hidden");
   var topBar = document.querySelector(".chat-top-bar");
@@ -410,12 +383,7 @@ async function loadSharedExamSession(session) {
     examCount: questions.length,
     _examInView: true,
   } });
-  ["topicSetup", "diagnosticView", "chatView"].forEach(function (id) {
-    var el = document.getElementById(id);
-    if (el) el.classList.add("hidden");
-  });
-  var examView = document.getElementById("examView");
-  if (examView) examView.classList.remove("hidden");
+  activateMainView("examView", document);
   /* exam.js is lazy — the shared view's Close button uses the delegated
      data-exam-command listener, so kick off the module load now. */
   if (typeof window.__loadExamModule === "function") {
@@ -482,7 +450,7 @@ function renderSharedQuestionCard(idx, q) {
 }
 
 export {
-  toggleShareBtn, toggleChatTopBarEls,
+  toggleShareBtn,
   openShareModal, closeShareModal, selectShareVis, renderShareModal,
   createShareLink, copyShareLink, revokeShareLink, resetShareToken,
   loadSharedSession, loadSharedExamSession, renderSharedQuestionCard,

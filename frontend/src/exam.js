@@ -11,6 +11,7 @@ import { pushChatIdToURL, pushExamIdToURL, setExamIdInURL } from './session/stor
 
 import { toggleShareBtn } from './ui/share.js';
 import { prefersReducedMotion } from './ui/motion.js';
+import { activateMainView } from './ui/mainViewController.js';
 
 /* ── module-level state ── */
 var _examSelectedTypes = { mc: true, fb: true, sa: false };
@@ -90,37 +91,15 @@ function _setExamTitle(title) {
 export function prepareExamView() {
   var ev = document.getElementById("examView");
   if (!ev) return;
-  /* P_exam-nav — Exam is now a first-class sidebar panel (was an overlay
-     modal). We hide the chat/topic/diagnostic pages and any sibling
-     workspace panels (library / projects / scheduled / plugins) the same
-     way the other panel openers do — via hideMainPages() exposed by
-     sidebar/nav.js — and we leave the top-bar visible so the back-button
-     + exam-title-bar can carry the user back home. */
-  if (typeof window.hideMainPages === "function") {
-    try { window.hideMainPages(); } catch (_) {}
-  }
-  /* Hide chat/topic/diagnostic pages — hideMainPages() only covers
-     workspace panels, not the core chat pages. */
-  var corePages = ["topicSetup", "diagnosticView", "chatView"];
-  corePages.forEach(function (id) { var el = document.getElementById(id); if (el) el.classList.add("hidden"); });
-  /* Hide .main-inner so it doesn't take up flex space (exam-view is
-     its sibling inside .main-content). */
-  var mi = document.getElementById("mainInner");
-  if (mi) mi.classList.add("hidden");
-  ev.classList.remove("hidden");
-  /* body.exam-active must accompany the exam view: CSS uses it to hide
-     the chat mode tabs, and resetApp()'s exam cleanup block only runs
-     when it sees the class. Previously only loadSharedExamSession set
-     it, so a normal open left #mainInner hidden after reset. */
-  document.body.classList.add("exam-active");
+  /* P_exam-nav — Exam is now a first-class sidebar panel (was an overlay).
+     The shared view controller hides core/workspace siblings, collapses
+     .main-inner, and applies body.exam-active as one transition. */
+  activateMainView("examView", document);
   /* Show the exam-only top-bar elements (#examBackBtn / #examTitleBar);
-     hide the chat/tutor mode switcher + incognito (they're useless inside
-     an exam). toggleChatTopBarEls(true) hides the mode tabs, matching the
-     visual rhythm of a chat-session top bar. */
+     the shared view controller already applied the conversation chrome. */
   toggleExamOnlyTopBar(true);
   /* The top bar is the single visible exam title. */
   _setExamTitle(window.stateStore.read("examTopic") || (window._currentLang === "zh" ? "生成考卷" : "Generate Exam"));
-  window.toggleChatTopBarEls(true);
   /* Hide chat-specific top-bar elements that are meaningless in exam mode. */
   ["chatStats", "chatModelWrap"].forEach(function (id) {
     var el = document.getElementById(id);
@@ -154,12 +133,6 @@ export function openExamPanel() {
 export function openExamModal() { openExamPanel(); }
 
 export function closeExamView() {
-  var ev = document.getElementById("examView");
-  if (ev) ev.classList.add("hidden");
-  /* Restore .main-inner visibility (was hidden when exam opened). */
-  var mi = document.getElementById("mainInner");
-  if (mi) mi.classList.remove("hidden");
-  document.body.classList.remove("exam-active");
   toggleExamOnlyTopBar(false);
   /* Mark the cancel flag so any in-flight generation loop bails. The
      state itself (questions / answers / topic) is preserved — closing
@@ -173,12 +146,10 @@ export function closeExamView() {
      chat/tutor pattern: if a session is open, go back to chatView;
      otherwise surface the topic-setup landing page. */
   if (window.stateStore.read("currentSessionId")) {
-    document.getElementById("chatView").classList.remove("hidden");
-    window.toggleChatTopBarEls(true);
+    activateMainView("chatView", document);
     try { pushChatIdToURL(window.stateStore.read("currentSessionId")) } catch (_) { }
   } else {
-    document.getElementById("topicSetup").classList.remove("hidden");
-    window.toggleChatTopBarEls(false);
+    activateMainView("topicSetup", document);
     try { setExamIdInURL(null) } catch (_) { }
   }
 }
@@ -189,8 +160,7 @@ export function closeExamModal() {
 
 /* Show / hide the top-bar elements that are only meaningful while an
    exam is in view (#examBackBtn / #examTitleBar). Everything else in
-   the top-bar keeps its current visibility — toggleChatTopBarEls is
-   the single source of truth for the chat/tutor/incognito trio. */
+   the top-bar follows the active view through mainViewController. */
 function toggleExamOnlyTopBar(show) {
   document.body.classList.toggle("exam-active", show);
   var els = document.querySelectorAll("[data-exam-only='true']");

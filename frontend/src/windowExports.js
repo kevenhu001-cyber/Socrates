@@ -218,7 +218,8 @@ window.addProvider = function () { return _loadSettingsModule().then(function (m
 /* Copy/load handlers are wired module-locally inside ui/share.js and by
    main.js's direct imports; only the topbar/entry points below stay on
    window. */
-import { toggleChatTopBarEls, openShareModal, closeShareModal, revokeShareLink, createShareLink } from './ui/share.js';
+import { openShareModal, closeShareModal, revokeShareLink, createShareLink } from './ui/share.js';
+import { toggleChatTopBarEls } from './ui/topBarState.js';
 window.toggleChatTopBarEls = toggleChatTopBarEls;
 window.openShareModal = openShareModal;
 window.closeShareModal = closeShareModal;

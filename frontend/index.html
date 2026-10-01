@@ -692,45 +692,9 @@
            See the sibling .chat-view-lifted below. -->
 
     <!-- Main-content pages for Library, Projects, Scheduled, Plugins -->
-    <div class="library-panel main-page hidden" id="libraryPanel">
-      <div class="library-panel-head">
-        <div>
-          <h1 data-i18n-key="sidebar.library.title">Library</h1>
-          <p>你添加或创建的文件与内容。</p>
-        </div>
-        <div class="actions">
-          <button type="button" class="spaces-panel-new library-panel-upload" aria-label="Upload">上传</button>
-        </div>
-      </div>
-      <div class="library-list" id="libraryList">
-        <div class="spaces-empty" data-i18n-key="sidebar.library.empty">No files yet. Upload files in a chat to see them here.</div>
-      </div>
-      <input type="file" id="libraryUploadInput" multiple hidden>
-    </div>
-    <div class="spaces-panel main-page hidden" id="spacesPanel">
-      <div class="spaces-panel-head">
-        <div>
-          <h1 data-i18n-key="sidebar.spaces.title">项目</h1>
-          <p>将相关对话、文件和指令整理在一起。</p>
-        </div>
-        <div class="actions">
-          <input type="search" class="spaces-panel-search" placeholder="搜索项目" aria-label="搜索项目" />
-          <button type="button" class="spaces-panel-new" aria-label="新建项目">新建</button>
-        </div>
-      </div>
-      <div class="spaces-panel-filters" role="tablist" aria-label="项目过滤">
-        <button type="button" role="tab" aria-selected="true" class="active" data-filter="all">全部</button>
-        <button type="button" role="tab" aria-selected="false" data-filter="owned">由你创建</button>
-        <button type="button" role="tab" aria-selected="false" data-filter="shared">与你共享</button>
-      </div>
-      <div class="spaces-list" id="spacesList">
-        <div class="spaces-list-header">
-          <div>名称</div>
-          <div>修改时间</div>
-        </div>
-        <div class="spaces-empty" data-i18n-key="sidebar.spaces.empty">No projects yet. Create a project to organize your sessions.</div>
-      </div>
-    </div>
+    <div class="library-panel main-page hidden" id="libraryPanel"></div>
+    <input type="file" id="libraryUploadInput" multiple hidden>
+    <div class="spaces-panel main-page hidden" id="spacesPanel"></div>
     <div class="scheduled-panel main-page hidden" id="scheduledPanel">
       <div class="scheduled-header">
         <span class="scheduled-title" data-i18n-key="sidebar.scheduled.title">Scheduled</span>

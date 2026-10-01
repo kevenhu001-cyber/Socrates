@@ -17,7 +17,7 @@ import { clearComposerPlugins } from '../react/composer/pluginSelection.ts';
 import { clearLegacyMsgListChildren } from '../ui/messageListDom.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { publishThinkingTurnStart } from '../ui/messageSnapshot.js';
-import { resetShareToken, toggleChatTopBarEls, toggleShareBtn } from '../ui/share.js';
+import { resetShareToken, toggleShareBtn } from '../ui/share.js';
 import { clearSessionRouteInURL } from '../session/store.js';
 import { scrollContainer } from '../ui/scroll.js';
 import { updateStartBtn } from '../ui/topicSetup.js';
@@ -27,6 +27,7 @@ import { renderUserFooter } from '../ui/profile.js';
 import { resetCrossSessionKBCache } from '../ui/knowledgeCrossSession.js';
 import { resetCmdKSearchState } from '../ui/cmdK.js';
 import { renderGreeting } from '../ui/greeting.js';
+import { activateMainView } from '../ui/mainViewController.js';
 
 function _t(key, fallback) {
   try {
@@ -155,26 +156,12 @@ export async function resetApp(options){
   /* P_url-single-write — one replaceState drops both ?chat= and ?exam=.
      Previously two consecutive calls each rewrote the same URL. */
   clearSessionRouteInURL();
-  document.getElementById("topicSetup").classList.remove("hidden");
+  activateMainView("topicSetup", document);
   try { renderGreeting(); } catch (_) {}
-  document.getElementById("diagnosticView").classList.add("hidden");
-  document.getElementById("chatView").classList.add("hidden");
-  if (typeof window.hideMainPages === "function") window.hideMainPages();
-  /* Hide the exam-only top-bar elements and container only when exam was
-     active. The flag must be captured before hideMainPages() above —
-     that helper strips body.exam-active itself, so a live read here
-     would always see false and leave #mainInner hidden. */
   if (_examWasOpen) {
-    document.querySelectorAll("[data-exam-only='true']").forEach(function (el) { el.classList.add("hidden"); });
     var _examBody = document.getElementById("examViewBody");
     if (_examBody) _examBody.innerHTML = "";
-    var _examEl = document.getElementById("examView");
-    if (_examEl) _examEl.classList.add("hidden");
-    var _mainInnerAfterExam = document.getElementById("mainInner");
-    if (_mainInnerAfterExam) _mainInnerAfterExam.classList.remove("hidden");
-    document.body.classList.remove("exam-active");
   }
-  toggleChatTopBarEls(false);
   clearLegacyMsgListChildren();
   /* P_app-reset-sync — the sole publishReactChatRuntime call for
      resetApp() is at the end (reason:"session-reset") after all

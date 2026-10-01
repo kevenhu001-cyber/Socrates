@@ -13,7 +13,7 @@ import { apiFetch } from '../util/api.js';
 import { detailCache } from './detailCache.js';
 import { clearLocalMemory } from '../storage/localMemory.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
-import { resetShareToken, toggleChatTopBarEls, toggleShareBtn } from '../ui/share.js';
+import { resetShareToken, toggleShareBtn } from '../ui/share.js';
 import { showConfirm } from '../ui/confirm.js';
 import { showToast } from '../ui/toast.js';
 import { clearComposer } from '../react/composer-input/controller.ts';
@@ -21,6 +21,7 @@ import { clearComposerPlugins } from '../react/composer/pluginSelection.ts';
 import { clearLegacyMsgListChildren } from '../ui/messageListDom.js';
 import { updateStartBtn } from '../ui/topicSetup.js';
 import { turnState } from '../chat/turnState.js';
+import { activateMainView } from '../ui/mainViewController.js';
 
 function _t(key, fallback) {
   try {
@@ -379,11 +380,7 @@ export function bounceOutOfArchivedSession(){
   resetState();
   toggleShareBtn();
   setChatIdInURL(null);
-  document.getElementById("topicSetup").classList.remove("hidden");
-  document.getElementById("diagnosticView").classList.add("hidden");
-  document.getElementById("chatView").classList.add("hidden");
-  if (typeof window.hideMainPages === "function") window.hideMainPages();
-  toggleChatTopBarEls(false);
+  activateMainView("topicSetup", document);
   clearLegacyMsgListChildren();
   publishReactChatRuntime({type:"state-synced",reason:"archived-session-reset"});
   clearComposer("topic");
