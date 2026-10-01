@@ -23,9 +23,10 @@
  * so the cost is paid once per state change instead of once per DOM insertion.
  *
  * Timing: the mirror runs from a MutationObserver (end of the current task,
- * before the next paint) and from focusin/focusout (synchronous). The only rule
- * whose effect a same-task layout read could observe — #msgList's display —
- * was rewritten as a sibling selector in CSS instead, so it stays synchronous.
+ * before the next paint) and from focusin/focusout (synchronous). #msgList's
+ * display is gated by #chatPage.hidden, which mainViewController toggles in
+ * the same task as #chatView — so synchronous callers stay correct, and the
+ * sync below re-applies it for writers that bypass the controller.
  */
 
 var MIRRORS = [
@@ -55,6 +56,13 @@ export function syncLayoutStateMirror(doc) {
   }
   var wrap = d.getElementById('topicInputWrap');
   setFlag(root, 'data-topic-input-focus', !!wrap && !!d.activeElement && wrap.contains(d.activeElement));
+  /* Compat resync: legacy/test writers may toggle #chatView.hidden without
+     going through mainViewController — keep #chatPage's gate aligned. */
+  var chatView = d.getElementById('chatView');
+  var chatPage = d.getElementById('chatPage');
+  if (chatView && chatPage) {
+    chatPage.classList.toggle('hidden', chatView.classList.contains('hidden'));
+  }
 }
 
 var installed = false;

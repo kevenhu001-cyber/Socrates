@@ -109,21 +109,17 @@
 /* #chatPage is the structural owner of the chat surface: transcript +
    composer live under it. display:contents keeps its children flattened
    into the main-content flex column, so every rule below behaves exactly
-   as if they were still direct children of #mainContent. */
+   as if they were still direct children of #mainContent. .hidden beats
+   display:contents and switches the whole surface synchronously — the
+   former chatView~msgList sibling gate is no longer needed. */
 .chat-page{display:contents}
-/* The landing and non-chat views keep their own layout. Once chatView is
-   visible, the empty landing column must stop consuming flex height so the
-   transcript can fill the space above the composer. */
-.chat-page > #msgList{display:none}
+.chat-page.hidden{display:none}
+.chat-page > #msgList{display:flex}
 /* P_has-invalidation — no ancestor-level :has() here: it made every DOM
    insertion under the shell re-style the whole app (see
    ui/layoutStateMirror.js). `:not(#_n):not(._n)` never excludes anything; it
    only keeps the specificity identical to the :has() form it replaced. */
 :where(:root[data-chat-view-open]) #mainContent:not(#_n):not(._n) > #mainInner{display:none}
-/* #msgList follows #chatView, so a sibling selector expresses this exactly and
-   stays synchronous with the class toggle (layout reads right after showing
-   the chat view depend on it). */
-#chatPage > #chatView:not(.hidden) ~ #msgList{display:flex}
 /* Search progress is inserted immediately after #msgList. Keep it in the
    same flow slot so it sits between the transcript and composer instead of
    becoming an unrelated flex item above the transcript. */

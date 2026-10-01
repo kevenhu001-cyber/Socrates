@@ -38,10 +38,23 @@ function resetShellState(doc) {
   });
 }
 
+/* #chatPage gates the whole chat surface (transcript + composer). The
+   controller keeps it in the same hidden state as #chatView so same-task
+   layout reads stay correct; layoutStateMirror re-syncs it for writers
+   that toggle #chatView directly (legacy paths and test hooks). */
+function syncChatPageGate(d) {
+  var chatPage = d.getElementById('chatPage');
+  var chatView = d.getElementById('chatView');
+  if (chatPage && chatView) {
+    chatPage.classList.toggle('hidden', chatView.classList.contains('hidden'));
+  }
+}
+
 export function hideCoreViews(doc) {
   var d = resolveDocument(doc);
   if (!d) return;
   setHidden(d, CORE_VIEW_IDS, true);
+  syncChatPageGate(d);
   setConversationChrome(false, d);
 }
 
@@ -66,6 +79,7 @@ export function activateMainView(viewId, doc) {
 
   var target = d.getElementById(viewId);
   if (target) target.classList.remove('hidden');
+  syncChatPageGate(d);
 
   var mainInner = d.getElementById('mainInner');
   if (mainInner) mainInner.classList.toggle('hidden', viewId === 'examView');

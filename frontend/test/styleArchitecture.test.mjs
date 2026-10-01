@@ -46,6 +46,10 @@ test('migrated workspace panels are single React-owned page hosts', async () => 
   assert.match(html, /<div class="plugins-panel main-page hidden" id="pluginsPanel"><\/div>/);
   assert.match(html, /<div class="scheduled-panel main-page hidden" id="scheduledPanel"><\/div>/);
   assert.match(html, /<div class="admin-panel main-page hidden" id="adminPanel"><\/div>/);
+  /* The chat surface has a single owner: #chatPage wraps the transcript
+     (#msgList) and the composer column (#chatView), with DOM order
+     matching the visual order (transcript first). */
+  assert.match(html, /<div class="chat-page hidden" id="chatPage">\s*<div class="msg-list" id="msgList"><\/div>\s*<div class="chat-view chat-view-lifted hidden" id="chatView">/);
   assert.match(workspacePage, /page === 'library' \? 'libraryPanel' : page === 'projects' \? 'spacesPanel' : 'pluginsPanel'/);
   /* Page mounting is a module API — sidebar navigation imports
      pageMounts.ts directly; the window.__socratesMount* compat globals

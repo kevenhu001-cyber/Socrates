@@ -718,8 +718,14 @@
          It renders as display:contents, so its children still participate
          directly in the main-content flex column — #msgList's viewport
          ends at the real composer top and its scrollbar keeps spanning
-         the main pane, exactly as before. -->
-    <div class="chat-page" id="chatPage">
+         the main pane, exactly as before. Visibility is gated by
+         .hidden on #chatPage: mainViewController toggles it in the same
+         task as #chatView (same-task layout reads stay correct), and
+         ui/layoutStateMirror re-syncs it for writers that bypass the
+         controller. DOM order matches the visual order: transcript
+         first, composer last. -->
+    <div class="chat-page hidden" id="chatPage">
+    <div class="msg-list" id="msgList"></div>
     <div class="chat-view chat-view-lifted hidden" id="chatView">
 
         <!-- P0.2 — In-session find bar. A browser-style "find on page"
@@ -779,12 +785,6 @@
           </div>
         </div>
       </div>
-    <!-- #msgList sits next to #chatView inside #chatPage. The scroll
-         viewport ends at the composer's real top edge instead of
-         relying on a fixed bottom reserve, and the new-reply pill
-         sits inside the chat-view wrapper so it can track the
-         composer's measured height. -->
-    <div class="msg-list" id="msgList"></div>
     </div>
 
   </div>
