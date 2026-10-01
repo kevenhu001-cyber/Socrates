@@ -697,12 +697,10 @@
     <div class="spaces-panel main-page hidden" id="spacesPanel"></div>
     <div class="scheduled-panel main-page hidden" id="scheduledPanel"></div>
     <div class="plugins-panel main-page hidden" id="pluginsPanel"></div>
-    <!-- Admin operator console (/admin). The React AdminPage mounts
-         into #adminPanelBody when the route is active; the login form
-         and the two config sections are rendered by React. -->
-    <div class="admin-panel main-page hidden" id="adminPanel">
-      <div class="admin-panel-body" id="adminPanelBody"></div>
-    </div>
+    <!-- Admin operator console (/admin). The React AdminPage owns
+         #adminPanel when the route is active; the login form and the
+         two config sections are rendered by React. -->
+    <div class="admin-panel main-page hidden" id="adminPanel"></div>
 
     <p class="disclaimer" id="topicDisclaimer">Socrates asks questions to help you think. It does not judge your answers.</p>
 

@@ -425,7 +425,7 @@ function AdminPage() {
 let root: Root | null = null;
 
 export function mountAdminPage(): void {
-  const container = document.getElementById('adminPanelBody');
+  const container = document.getElementById('adminPanel');
   if (!container) return;
 
   installAdminBridge();

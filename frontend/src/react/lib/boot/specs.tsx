@@ -143,11 +143,11 @@ export function mountRegistryList(): MountSpec[] {
         });
       };
     } },
-    /* /admin operator console — the React page mounts into the
-       static #adminPanelBody when the sidebar routes to it. */
+    /* /admin operator console — the React page owns #adminPanel when
+       the sidebar routes to it. */
     { hostId: 'adminPanel', label: 'admin-page', mount: () => {
       window.__socratesMountAdmin = () => {
-        loadPage('adminPanelBody', async () => {
+        loadPage('adminPanel', async () => {
           const { mountAdminPage } = await import('../../adminModal/AdminPage');
           mountAdminPage();
         });

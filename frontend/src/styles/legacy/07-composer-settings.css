@@ -186,7 +186,7 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
    workspace panels, styled with the same form controls as the modal
    variant so the two surfaces stay visually consistent. */
 .admin-panel{padding:32px 24px 48px;overflow-y:auto}
-.admin-panel-body{max-width:680px;margin:0 auto}
+.admin-panel>*{max-width:680px;margin:0 auto}
 .admin-console{display:flex;flex-direction:column;gap:24px}
 .admin-console-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:16px;border-bottom:0.5px solid hsl(var(--border-300)/0.15)}
 .admin-console-head h2{font-size:20px;font-weight:650;color:hsl(var(--text-100));margin:0;letter-spacing:-0.01em}
