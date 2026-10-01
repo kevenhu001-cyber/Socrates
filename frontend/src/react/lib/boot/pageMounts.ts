@@ -3,7 +3,7 @@
    directly; each call lazy-loads the page chunk through loadPage and
    mounts it into its panel (which React owns outright). */
 
-import { loadPage } from './pageLoader';
+import { loadPage } from './pageLoader.ts';
 
 const WORKSPACE_HOSTS: Record<string, string> = {
   library: 'libraryPanel',
