@@ -38,9 +38,11 @@ test('migrated workspace panels are single React-owned page hosts', async () => 
   assert.equal(html.includes('id="libraryList"'), false, 'legacy inner Library host must stay removed');
   assert.equal(html.includes('id="spacesList"'), false, 'legacy inner Projects host must stay removed');
   assert.equal(html.includes('id="pluginsList"'), false, 'legacy inner Plugins host must stay removed');
+  assert.equal(html.includes('id="scheduledList"'), false, 'legacy inner Scheduled host must stay removed');
   assert.match(html, /<div class="library-panel main-page hidden" id="libraryPanel"><\/div>\s*<input type="file" id="libraryUploadInput"/);
   assert.match(html, /<div class="spaces-panel main-page hidden" id="spacesPanel"><\/div>/);
   assert.match(html, /<div class="plugins-panel main-page hidden" id="pluginsPanel"><\/div>/);
+  assert.match(html, /<div class="scheduled-panel main-page hidden" id="scheduledPanel"><\/div>/);
   assert.match(workspacePage, /page === 'library' \? 'libraryPanel' : page === 'projects' \? 'spacesPanel' : 'pluginsPanel'/);
   assert.match(mountSpecs, /page === 'library' \? 'libraryPanel' : page === 'projects' \? 'spacesPanel' : 'pluginsPanel'/);
   /* The fallback-shell compatibility layer went away with the last static

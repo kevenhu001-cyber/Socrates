@@ -126,7 +126,7 @@ export function mountRegistryList(): MountSpec[] {
        funnels through `__socratesMountWorkspace` regardless. */
     { hostId: 'scheduledPanel', label: 'scheduled-page', mount: () => {
       window.__socratesMountScheduled = () => {
-        loadPage('scheduledList', async () => {
+        loadPage('scheduledPanel', async () => {
           const { mountScheduledPage } = await import('../../pages/scheduled/ScheduledPage');
           mountScheduledPage();
           window.__socratesNavRenderScheduled?.();

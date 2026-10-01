@@ -8,7 +8,7 @@ import {
   useScheduledSnapshot,
 } from './scheduled.bridge';
 
-const LIST_ID = 'scheduledList';
+const PANEL_ID = 'scheduledPanel';
 
 /* Hand-drawn stroke icons for the suggestion templates — same 24px grid,
    1.8 stroke, round caps as the other scheduled-page glyphs. No emoji:
@@ -276,13 +276,13 @@ function ScheduledPage() {
 let root: Root | null = null;
 
 export function mountScheduledPage(): void {
-  const container = document.getElementById(LIST_ID);
-  if (!container) return;
+  const panel = document.getElementById(PANEL_ID);
+  if (!panel) return;
 
   installScheduledBridge();
 
   if (!root) {
-    root = createRoot(container);
+    root = createRoot(panel);
   }
   root.render(<ScheduledPage />);
 }

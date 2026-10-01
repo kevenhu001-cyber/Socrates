@@ -577,7 +577,7 @@ export function openExam() {
   window.openExamPanel();
 }
 async function renderScheduled() {
-  /* #scheduledList is React-owned (ScheduledPage) — fetch, update the
+  /* #scheduledPanel is React-owned (ScheduledPage) — fetch, update the
      cache, and publish through the bridge. */
   if (!workspaceCache.tasks.length) _publishScheduledState({ loading: true });
   try {

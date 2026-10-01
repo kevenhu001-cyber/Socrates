@@ -868,15 +868,6 @@ body.workspace-active #appShell .main-page {
 }
 
 
-body.workspace-active #appShell .main-page > .scheduled-header{
-  display: none;
-}
-
-body.workspace-active #appShell .main-page > .workspace-intro {
-  display: none;
-}
-
-body.workspace-active #appShell .workspace-add-btn,
 body.workspace-active #appShell .workspace-primary,
 body.workspace-active #appShell .workspace-secondary,
 body.workspace-active #appShell .workspace-danger{
@@ -1151,21 +1142,6 @@ body.workspace-active #appShell .workspace-secondary:hover{
   color: var(--cg-text-muted);
   font-size: 22px;
   font-weight: 300;
-}
-
-.scheduled-empty-state {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 34px 0 0;
-  color: var(--cg-text-muted);
-  font-size: 13px;
-}
-
-.scheduled-empty-state strong {
-  color: var(--cg-text-secondary);
-  font-size: 14px;
-  font-weight: 550;
 }
 
 .scheduled-task-list {
