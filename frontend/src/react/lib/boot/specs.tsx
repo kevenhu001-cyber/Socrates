@@ -19,16 +19,13 @@ import type { MountSpec } from './registry';
    tick later. Visible chrome (sidebar nav, recents, session list,
    message list, attachment chips) stays statically imported. */
 import { hydrateRecentsFilterChips, hydrateSidebarNav } from '../../sidebar';
-import { installSidebarChromeBridge } from '../../sidebar-chrome/sidebarChrome.bridge';
-import { SidebarHeader } from '../../sidebar-chrome/SidebarHeader';
-import { SidebarFooter } from '../../sidebar-chrome/SidebarFooter';
+import { mountSidebarChrome } from '../../sidebar-chrome';
 import { mountSessionList } from '../../session-list';
 import { mountMessageList } from '../../message-list';
 import { WorkflowLayer } from '../../extensions/WorkflowLayer';
 import { installThinkingPanelBridge, mountThinkingPanel } from '../../thinking-panel';
 import { getLegacyActions, i18n } from '../../legacy/gateway';
 import { hydrateAttachmentChipsRows } from '../../attachments/AttachmentChipsRow';
-import { installAttachmentsBridge } from '../../attachments/attachments.bridge';
 import { installWorkspaceBridge } from '../../pages/workspace/workspace.bridge';
 
 import { NewReplyPill, SendButton, StartButton } from './indicatorComponents';
@@ -91,10 +88,13 @@ export function mountRegistryList(): MountSpec[] {
     { hostId: 'recentsFilterChips', label: 'recents-filter-chips', mount: () => hydrateRecentsFilterChips() },
     { hostId: 'composerToolsMenu', label: 'composer-tools-menu',
       mount: () => { void import('../../composer/ComposerToolsMenu').then((m) => m.hydrateComposerToolsMenu()); } },
+    /* One spec covers both chips hosts: hydrateAttachmentChipsRows mounts
+       #attachmentChips and #topicAttachmentChips together and installs the
+       attachments bridge internally. A second spec for the topic host
+       would always skip — the host is already marked when the registry
+       reaches it. */
     { hostId: 'attachmentChips', label: 'attachment-chips',
-      mount: () => { installAttachmentsBridge(); hydrateAttachmentChipsRows(); } },
-    { hostId: 'topicAttachmentChips', label: 'attachment-chips',
-      mount: () => { installAttachmentsBridge(); hydrateAttachmentChipsRows(); } },
+      mount: () => { hydrateAttachmentChipsRows(); } },
     { hostId: 'moreNavPopover', label: 'more-popover',
       mount: () => { void import('../../morePopover').then((m) => m.hydrateMorePopover()); } },
     { hostId: 'shareOverlay', label: 'share-modal',
@@ -103,15 +103,9 @@ export function mountRegistryList(): MountSpec[] {
       mount: () => { void import('../../profileModal').then((m) => m.hydrateProfileModal()); } },
     { hostId: 'usageOverlay', label: 'usage-modal',
       mount: () => { void import('../../usageModal').then((m) => m.hydrateUsageModal()); } },
-    /* 3. Sidebar chrome — install the bridge once before mounting both header + footer */
-    { hostId: 'sidebarHeader', label: 'sidebar-header', mount: (host) => {
-      installSidebarChromeBridge();
-      createRoot(host).render(<SidebarHeader />);
-    } },
-    { hostId: 'sidebarUserRow', label: 'sidebar-user-row', mount: (host) => {
-      installSidebarChromeBridge();
-      createRoot(host).render(<SidebarFooter />);
-    } },
+    /* 3. Sidebar chrome — one root owns the header and portaled user
+       footer; they share the bridge snapshot (sidebar-chrome/mount.tsx). */
+    { hostId: 'sidebarHeader', label: 'sidebar-chrome', mount: () => { mountSidebarChrome(); } },
     /* 4. Workspace pages — the registry tags each panel as React-owned;
        the nav mounts them on demand through pageMounts.ts. */
     { hostId: 'scheduledPanel', label: 'scheduled-page', mount: () => undefined },

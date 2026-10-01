@@ -1,5 +1,6 @@
 export { SidebarHeader } from './SidebarHeader';
 export { SidebarFooter } from './SidebarFooter';
+export { mountSidebarChrome } from './mount';
 export {
   installSidebarChromeBridge,
   getSidebarChromeSnapshot,
