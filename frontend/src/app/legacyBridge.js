@@ -21,6 +21,7 @@ import { refreshApiConfig } from '../config/providers.js';
 import { refreshServerSessions, retryRecentsFetch, actuallyDeleteSession, archiveSession, restoreSession, confirmPurgeSession, getArchivedSessions } from '../session/recents.js';
 import { renderRecents } from '../ui/recentsView.js';
 import { openNav } from '../sidebar/nav.js';
+import { closeConfirm } from '../ui/confirm.js';
 import { deleteUserMessage, sendFeedback, restorePersistedMessageExtras } from '../ui/messageActions.ts';
 import { buildAssistantHtml as renderAssistantHTML } from '../render/assistantHtml.ts';
 import { showToast } from '../ui/toast.js';
@@ -208,7 +209,7 @@ window.__socratesLegacy = {
     saveSettings: function () { return _loadSettings().then(function (m) { return m.saveSettings(); }); },
   },
   confirm: {
-    closeConfirm: window.closeConfirm,
+    closeConfirm,
   },
   sessions: {
     loadSession,

@@ -1,6 +1,7 @@
 import { deleteCustomTemplate, findTemplateByShortcut, loadPromptTemplates, upsertCustomTemplate } from '../chat/promptTemplates.js';
 import { showToast } from './toast.js';
 import { esc } from '../render/helpers.js';
+import { showConfirm } from './confirm.js';
 /* ui/promptTemplates.js — Wave 1d of main-js-split plan.
  * Prompt-templates modal: lists built-in and user templates, with edit and
  * delete actions. Extracted from main.js (post-Wave-1b): L9890-L10010.
@@ -80,7 +81,7 @@ function renderPromptRow(t, editable) {
 }
 
 function onPromptRowDelete(id) {
-  window.showConfirm(window.t("confirm.deleteTemplate.title"), window.t("confirm.deleteTemplate.msg"), true).then(function (yes) {
+  showConfirm(window.t("confirm.deleteTemplate.title"), window.t("confirm.deleteTemplate.msg"), true).then(function (yes) {
     if (!yes) return;
     deleteCustomTemplate(id);
     renderPromptTemplatesModal();

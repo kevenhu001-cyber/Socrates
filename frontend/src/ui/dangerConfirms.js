@@ -13,6 +13,7 @@
  */
 
 import { stateStore } from '../state/store.js';
+import { showConfirm } from './confirm.js';
 
 import { LAST_ACTIVE_ID_KEY } from '../config/providers.js';
 
@@ -21,7 +22,7 @@ import { syncSettingsUI, renderProviderList } from './settings.js';
 import { renderUserFooter } from './profile.js';
 
 function confirmClearCache() {
-  window.showConfirm(window.t("confirm.clearConversations.title"), window.t("confirm.clearConversations.msg"), false).then(function (yes) {
+  showConfirm(window.t("confirm.clearConversations.title"), window.t("confirm.clearConversations.msg"), false).then(function (yes) {
     if (yes !== true) { return; }
     try { localStorage.removeItem("socrates-sessions-v2"); } catch { /* ignore */ }
     stateStore.dispatch({type:'state/set',key:'currentSessionId',value:null});
@@ -32,7 +33,7 @@ function confirmClearCache() {
 }
 
 function confirmClearSettings() {
-  window.showConfirm(window.t("confirm.clearApiSettings.title"), window.t("confirm.clearApiSettings.msg"), false).then(function (yes) {
+  showConfirm(window.t("confirm.clearApiSettings.title"), window.t("confirm.clearApiSettings.msg"), false).then(function (yes) {
     if (yes !== true) { return; }
     if (!window.CURRENT_USER) { return; }
     var apiConfig = window.apiConfig;
@@ -60,7 +61,7 @@ function confirmClearSettings() {
 }
 
 function confirmDeleteAccount() {
-  window.showConfirm(window.t("confirm.deleteAccount.title"), window.t("confirm.deleteAccount.msg"), true).then(function (yes) {
+  showConfirm(window.t("confirm.deleteAccount.title"), window.t("confirm.deleteAccount.msg"), true).then(function (yes) {
     if (!yes) return;
     (async function () {
       try {
