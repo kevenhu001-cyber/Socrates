@@ -106,10 +106,15 @@
      instead of overflowing it. */
   box-sizing:border-box;
 }
+/* #chatPage is the structural owner of the chat surface: transcript +
+   composer live under it. display:contents keeps its children flattened
+   into the main-content flex column, so every rule below behaves exactly
+   as if they were still direct children of #mainContent. */
+.chat-page{display:contents}
 /* The landing and non-chat views keep their own layout. Once chatView is
    visible, the empty landing column must stop consuming flex height so the
    transcript can fill the space above the composer. */
-.main-content > #msgList{display:none}
+.chat-page > #msgList{display:none}
 /* P_has-invalidation — no ancestor-level :has() here: it made every DOM
    insertion under the shell re-style the whole app (see
    ui/layoutStateMirror.js). `:not(#_n):not(._n)` never excludes anything; it
@@ -118,11 +123,11 @@
 /* #msgList follows #chatView, so a sibling selector expresses this exactly and
    stays synchronous with the class toggle (layout reads right after showing
    the chat view depend on it). */
-#mainContent > #chatView:not(.hidden) ~ #msgList{display:flex}
+#chatPage > #chatView:not(.hidden) ~ #msgList{display:flex}
 /* Search progress is inserted immediately after #msgList. Keep it in the
    same flow slot so it sits between the transcript and composer instead of
    becoming an unrelated flex item above the transcript. */
-.main-content > .search-progress-floating{order:1;flex:0 0 auto}
+.chat-page > .search-progress-floating{order:1;flex:0 0 auto}
 @supports (scrollbar-width:thin){.msg-list{scrollbar-width:thin}}
 @supports (scrollbar-color:transparent transparent){.msg-list{scrollbar-color:transparent transparent}}
 @supports (scrollbar-color:hsl(var(--text-500)/0.25) transparent){
