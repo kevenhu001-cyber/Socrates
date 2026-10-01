@@ -709,9 +709,13 @@ For core contributors:
 
 ## Source availability and use
 
-This repository is source-available. Its source code may be viewed, used, and
-modified free of charge for non-commercial purposes. Commercial use requires
-separate authorization.
+Code in this repository that Jiacheng Hu owns or is authorized to license is
+available under a custom source-available license, not an OSI-approved
+open-source license. You may use, modify, and redistribute the original or
+modified covered code free of charge for non-commercial purposes, provided
+you retain the copyright and license notices. Any commercial use requires
+separate authorization. Third-party code remains subject to its own license.
+See [LICENSE](LICENSE) for the full bilingual terms.
 
 For end-user terms, see [site/terms.html](site/terms.html).
 
