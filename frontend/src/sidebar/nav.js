@@ -4,6 +4,7 @@ import { showToast } from "../ui/toast.js";
 import { openPromptTemplatesModal } from "../ui/promptTemplates.js";
 import { activateMainView, getVisibleCoreView, hideCoreViews } from "../ui/mainViewController.js";
 import { mountWorkspacePage, mountScheduledPage, mountAdminPage } from "../react/lib/boot/pageMounts.ts";
+import { workspaceForPath, pushWorkspaceRoute, pushHomeRoute, replaceRoute } from "../app/router.js";
 /* creationSurfaces.js (~20KB) is lazy — images/assistants/sites panels
    only need it when the user opens one. openCreation() below awaits the
    module before showing the (created-on-demand) panel. */
@@ -53,7 +54,9 @@ function _publishWorkspaceState() {
 
 var NAV_NAMES = ["library", "projects", "scheduled", "plugins", "images", "assistants", "sites", "exam", "admin", "more"];
 var workspaceCache = { library: { files: [], artifacts: [], query: "", selection: {}, renameItem: null }, projects: [], tasks: [], connectors: [], mcp: [], mcpConfigured: false, mcpProjectId: null, openConnectorAvailable: false };
-var WORKSPACE_ROUTES = { library: "/library", projects: "/projects", scheduled: "/scheduled", plugins: "/plugins", images: "/images", assistants: "/assistants", sites: "/sites", exam: "/exam", admin: "/admin" };
+/* The path↔view route table and the view-scoped history writes live in
+   ../app/router.js (workspaceForPath, pushWorkspaceRoute, pushHomeRoute,
+   replaceRoute). */
 var CONNECTOR_RETURN_CONTEXT_KEY = "socrates-connector-return-v1";
 var CONNECTOR_RETURN_CONTEXT_TTL = 10 * 60 * 1000;
 
@@ -249,10 +252,7 @@ function bindPluginWorkspaceTabs() {
 }
 bindPluginWorkspaceTabs();
 
-function workspaceForPath(pathname) {
-  var clean = String(pathname || "/").replace(/\/+$/, "") || "/";
-  return Object.keys(WORKSPACE_ROUTES).find(function (name) { return WORKSPACE_ROUTES[name] === clean; }) || null;
-}
+
 
 function safeConnectorReturnPath(value) {
   var path = String(value || "");
@@ -353,7 +353,7 @@ function restoreConnectorReturnContext() {
   if (!context) return false;
   var returnPath = safeConnectorReturnPath(context.returnPath);
   restoreComposerReturnState(context.composer);
-  history.replaceState(null, "", returnPath);
+  replaceRoute(returnPath);
 
   var workspace = workspaceForPath(new URL(returnPath, location.origin).pathname);
   if (workspace && workspace !== "plugins") {
@@ -377,10 +377,6 @@ function restoreConnectorReturnContext() {
 }
 
 window.rememberConnectorReturnContext = rememberConnectorReturnContext;
-function pushWorkspaceRoute(name) {
-  var next = WORKSPACE_ROUTES[name];
-  if (next && location.pathname !== next) history.pushState({ workspace: name }, "", next);
-}
 export function openNav(name, options) {
   var openers = { library: openLibrary, projects: openProjects, scheduled: openScheduled, plugins: openPlugins, images: function () { openCreation('images'); }, assistants: function () { openCreation('assistants'); }, sites: function () { openCreation('sites'); }, exam: openExam, admin: openAdmin, more: openMoreNav };
   if (!openers[name]) return;
@@ -610,7 +606,7 @@ window.exitPluginsView = function () {
   setActiveNav(null);
   var view = PLUGINS_RETURN_VIEW || "topicSetup";
   activateMainView(view, document);
-  try { history.pushState({}, "", "/"); } catch (_) { /* non-critical */ }
+  pushHomeRoute();
   PLUGINS_RETURN_VIEW = "topicSetup";
 };
 export function openAdmin() {

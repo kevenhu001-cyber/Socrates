@@ -16,6 +16,5 @@ export function bootstrapReactCompatibilityRuntime(): Root {
   }
   configureMountRegistry(mountRegistryList());
   runMountRegistry(document);
-  try { (window as any).syncWorkspaceRoute?.(); } catch (_) { /* optional legacy route sync */ }
   return (window as any).__socratesPillRoot ?? null;
 }
