@@ -177,8 +177,6 @@
   background: var(--ui-bg-page);
 }
 
-#appShell #topicSetup.hidden { display: none !important; }
-
 #appShell #topicSetup .topic-title.greeting {
   display: block;
   animation: none;
