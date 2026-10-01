@@ -63,20 +63,20 @@ jobs:
       contents: write
     steps:
       - name: Download desktop web bundle
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: socrates-desktop-web-package-${{ github.sha }}
           path: release-assets
 
       - name: Download Android release artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: socrates-android-release-*-${{ github.sha }}
           path: release-assets
           merge-multiple: true
 
       - name: Download Windows release artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: socrates-windows-release-${{ github.sha }}
           path: release-assets
@@ -107,7 +107,7 @@ jobs:
       contents: read
     steps:
       - name: Download Android release artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: socrates-android-release-*-${{ github.sha }}
           path: release-assets
