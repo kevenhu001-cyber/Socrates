@@ -1,5 +1,6 @@
 import { stateStore } from '../state/store.js';
 import { showToast } from './toast.js';
+import { loadSession } from '../session/loader.js';
 
 /* ui/cmdK.js — Wave 1b of main-js-split plan.
  * Cmd-K global search palette: indexer (fuse.js), open/close, render,
@@ -211,11 +212,11 @@ function openCmdKResult(idx) {
     try { localStorage.setItem("socrates-search-recent", JSON.stringify(_cmdKRecent)); } catch (_) {}
   }
   if (item.kind === "session") {
-    window.loadSession(item.id);
-  } else if (item.kind === "message" && item.sessionId && window.loadSession) {
-    window.loadSession(item.sessionId);
+    loadSession(item.id);
+  } else if (item.kind === "message" && item.sessionId) {
+    loadSession(item.sessionId);
   } else if (item.kind === "remote" && item.sessionId) {
-    window.loadSession(item.sessionId);
+    loadSession(item.sessionId);
   }
   closeCmdK();
   _publishCmdKState();

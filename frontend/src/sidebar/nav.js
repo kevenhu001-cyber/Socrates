@@ -4,6 +4,7 @@ import { showToast } from "../ui/toast.js";
 import { openPromptTemplatesModal } from "../ui/promptTemplates.js";
 import { activateMainView, getVisibleCoreView, hideCoreViews } from "../ui/mainViewController.js";
 import { mountWorkspacePage, mountScheduledPage, mountAdminPage } from "../react/lib/boot/pageMounts.ts";
+import { loadSession } from "../session/loader.js";
 import { workspaceForPath, pushWorkspaceRoute, pushHomeRoute, replaceRoute } from "../app/router.js";
 /* creationSurfaces.js (~20KB) is lazy — images/assistants/sites panels
    only need it when the user opens one. openCreation() below awaits the
@@ -364,9 +365,9 @@ function restoreConnectorReturnContext() {
 
   var query = new URLSearchParams(new URL(returnPath, location.origin).search);
   var chatId = query.get("chat");
-  if (chatId && typeof window.loadSession === "function") {
+  if (chatId) {
     activateMainView("chatView", document);
-    Promise.resolve(window.loadSession(chatId)).catch(function () {});
+    Promise.resolve(loadSession(chatId)).catch(function () {});
   } else {
     activateMainView("topicSetup", document);
   }

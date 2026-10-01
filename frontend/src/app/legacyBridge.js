@@ -211,7 +211,7 @@ window.__socratesLegacy = {
     closeConfirm: window.closeConfirm,
   },
   sessions: {
-    loadSession: window.loadSession,
+    loadSession,
     setRecentsFilter: window.setRecentsFilter,
     getRecentsFilter: window.getRecentsFilter,
     setRecentsSearch: setRecentsSearch,

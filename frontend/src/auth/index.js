@@ -17,6 +17,7 @@ import { syncCookieConsentPlacement } from '../cookieConsent.js';
 import { stateStore } from '../state/store.js';
 import { drainMessageOutbox } from '../session/mutationOutbox.js';
 import { getChatIdFromURL, getExamIdFromURL, setChatIdInURL, setExamIdInURL } from '../session/store.js';
+import { loadSession } from '../session/loader.js';
 
 import { loadUserMemories, renderUserFooter } from '../ui/profile.js';
 
@@ -320,12 +321,12 @@ export async function afterAuthEnter(){
   var chatId=getChatIdFromURL();
   var examId=getExamIdFromURL();
   if(chatId){
-    try{await window.loadSession(chatId)}catch {/* failed to load session */
+    try{await loadSession(chatId)}catch {/* failed to load session */
       stateStore.dispatch({type:'state/set',key:'currentSessionId',value:null});
       setChatIdInURL(null);
     }
   }else if(examId){
-    try{await window.loadSession(examId)}catch {/* failed to load session */
+    try{await loadSession(examId)}catch {/* failed to load session */
       stateStore.dispatch({type:'state/set',key:'currentSessionId',value:null});
       setExamIdInURL(null);
     }
