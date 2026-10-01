@@ -136,7 +136,7 @@ export function mountRegistryList(): MountSpec[] {
     { hostId: 'libraryPanel', label: 'workspace-page', mount: () => {
       installWorkspaceBridge();
       window.__socratesMountWorkspace = (page: string) => {
-        const hostId = page === 'library' ? 'libraryPanel' : page === 'projects' ? 'spacesPanel' : 'pluginsList';
+        const hostId = page === 'library' ? 'libraryPanel' : page === 'projects' ? 'spacesPanel' : 'pluginsPanel';
         loadPage(hostId, async () => {
           const { mountWorkspacePage } = await import('../../pages/workspace/WorkspacePage');
           mountWorkspacePage(page);

@@ -29,17 +29,25 @@ test('the stylesheet entry does not reconnect historical parity layers', async (
 });
 
 test('migrated workspace panels are single React-owned page hosts', async () => {
-  const [html, workspacePage, mountSpecs] = await Promise.all([
+  const [html, workspacePage, mountSpecs, mainJs] = await Promise.all([
     read('index.html'),
     read('src/react/pages/workspace/WorkspacePage.tsx'),
     read('src/react/lib/boot/specs.tsx'),
+    read('src/main.js'),
   ]);
   assert.equal(html.includes('id="libraryList"'), false, 'legacy inner Library host must stay removed');
   assert.equal(html.includes('id="spacesList"'), false, 'legacy inner Projects host must stay removed');
+  assert.equal(html.includes('id="pluginsList"'), false, 'legacy inner Plugins host must stay removed');
   assert.match(html, /<div class="library-panel main-page hidden" id="libraryPanel"><\/div>\s*<input type="file" id="libraryUploadInput"/);
   assert.match(html, /<div class="spaces-panel main-page hidden" id="spacesPanel"><\/div>/);
-  assert.match(workspacePage, /page === 'library' \? 'libraryPanel' : page === 'projects' \? 'spacesPanel'/);
-  assert.match(mountSpecs, /page === 'library' \? 'libraryPanel' : page === 'projects' \? 'spacesPanel'/);
+  assert.match(html, /<div class="plugins-panel main-page hidden" id="pluginsPanel"><\/div>/);
+  assert.match(workspacePage, /page === 'library' \? 'libraryPanel' : page === 'projects' \? 'spacesPanel' : 'pluginsPanel'/);
+  assert.match(mountSpecs, /page === 'library' \? 'libraryPanel' : page === 'projects' \? 'spacesPanel' : 'pluginsPanel'/);
+  /* The fallback-shell compatibility layer went away with the last static
+     workspace shell — it must not be reintroduced. */
+  assert.equal(mainJs.includes('workspace-reference-ui'), false, 'workspace-reference-ui import must stay removed');
+  assert.equal(workspacePage.includes('data-live-directory'), false, 'data-live-directory compat attribute must stay removed');
+  await assert.rejects(access(new URL('src/ui/workspace-reference-ui.js', root)), 'workspace-reference-ui.js must stay deleted');
 });
 
 test('new owner modules use the ui token namespace', async () => {

@@ -592,23 +592,18 @@ const roots = new Map<string, Root>();
 
 export function mountWorkspacePage(page: string): void {
   const panelId = page === 'library' ? 'libraryPanel' : page === 'projects' ? 'spacesPanel' : 'pluginsPanel';
-  const containerId = page === 'library' ? 'libraryPanel' : page === 'projects' ? 'spacesPanel' : 'pluginsList';
-  const container = document.getElementById(containerId);
-  if (!container) return;
-
-  container.classList.remove('visually-hidden');
   const panel = document.getElementById(panelId);
-  if (page === 'plugins') panel?.setAttribute('data-live-directory', 'true');
+  if (!panel) return;
 
   installWorkspaceBridge();
 
   let root = roots.get(page);
   if (!root) {
-    root = createRoot(container);
+    root = createRoot(panel);
     roots.set(page, root);
   }
   root.render(<WorkspacePage page={page} />);
-  panel?.classList.remove('hidden');
+  panel.classList.remove('hidden');
 }
 
 export function unmountWorkspacePage(page: string): void {

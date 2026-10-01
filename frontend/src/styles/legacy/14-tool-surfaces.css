@@ -153,18 +153,6 @@
 .composer-tools-copy small{font-size:var(--tool-card-desc-size);font-weight:var(--tool-card-desc-weight);color:var(--tool-card-text-subtle)}
 
 /* Plugin / connector cards */
-.plugins-list{gap:8px}
-.plugins-list .connector-row{
-  min-height:66px;
-  margin:0;
-  padding:12px 14px;
-  gap:12px;
-  border:1px solid var(--tool-card-border);
-  border-radius:var(--tool-card-radius);
-  background:var(--tool-card-bg);
-  transition:background-color .16s ease,border-color .16s ease
-}
-.plugins-list .connector-row:hover{background:var(--tool-card-bg-hover);border-color:var(--tool-card-border-strong)}
 .connector-row .connector-icon{
   width:32px;
   height:32px;
@@ -318,7 +306,6 @@ a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-
 .model-picker-item:focus-visible,.extensions-item:focus-visible{outline:2px solid var(--tool-card-focus);outline-offset:-2px}
 
 @media(max-width:768px){
-  .plugins-list .connector-row{padding:12px}
   .tool-inline-detail{padding-left:10px}
   .composer-tools-menu{border-radius:20px 20px 0 0}
 }

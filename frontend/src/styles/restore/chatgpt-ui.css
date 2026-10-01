@@ -957,9 +957,9 @@ body.workspace-active #appShell .workspace-secondary:hover{
 
 /* The empty state must span the full grid width. */
 
-/* Beat the legacy `.plugins-list .connector-row` card rules (0,2,0):
-   directory rows own their box, radius, and background here so the two
-   layers can never blend into an accidental hybrid again. */
+/* Directory rows own their box, radius, and background (`.plugin-directory-row`
+   in surfaces.css) — the legacy `.plugins-list` host rules were removed with
+   the static shell. */
 
 
 
@@ -1560,13 +1560,6 @@ body.workspace-active #appShell #mainInner {
 body.workspace-active #appShell .main-page {
   max-width: 1120px;
   padding: clamp(68px, 10vh, 104px) 48px 80px;
-}
-
-body.workspace-active #appShell #libraryList,
-body.workspace-active #appShell #spacesList,
-body.workspace-active #appShell #pluginsList {
-  flex: 0 0 auto;
-  overflow: visible;
 }
 
 .workspace-surface {

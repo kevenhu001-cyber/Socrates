@@ -43,19 +43,11 @@
 #appShell .library-row:hover,
 #appShell .project-row:hover { background: var(--ui-bg-hover); }
 
-/* The live connector directory owns the plugin panel after its React mount.
-   Hide the old static sample cards so duplicate/mock rows can never leak
-   into the real account catalog. */
-#appShell #pluginsPanel[data-live-directory="true"] { gap: 0; padding: 0; overflow: hidden; }
-#appShell #pluginsPanel[data-live-directory="true"] > :not(#pluginsList) { display: none !important; }
-#appShell #pluginsPanel[data-live-directory="true"] > #pluginsList {
-  display: flex;
-  flex: 1 1 auto;
-  width: 100%;
-  min-height: 0;
-  overflow-y: auto;
-  scrollbar-width: thin;
-}
+/* The React connector directory mounts straight into #pluginsPanel. The
+   panel is the scroll container again (overflow-y:auto from the base
+   .plugins-panel/.main-page rules), so the directory's own padding and
+   centred column are the only geometry it owns. */
+#appShell #pluginsPanel { gap: 0; padding: 0; scrollbar-width: thin; }
 /* Plugin directory — aligned with the chatgpt.com app directory: a card grid
    of apps, a labelled "Connect" action per card, and the connection state
    visible on the card itself. This file is the sole owner; the historical

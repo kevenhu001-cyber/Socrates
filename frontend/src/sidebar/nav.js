@@ -632,7 +632,7 @@ export function openAdmin() {
   }
 }
 async function renderPlugins() {
-  /* #pluginsList is React-owned (WorkspacePage) — never write its DOM
+  /* #pluginsPanel is React-owned (WorkspacePage) — never write its DOM
      here; fetch, update the cache, and publish through the bridge. */
   try {
     var projectId = window.stateStore.read("currentProjectId") || null;

@@ -15,8 +15,8 @@
      baseline holds in both modes. Rules that only repair hardcoded dark
      paint from earlier layers are grouped under section 4.
    - DOM hooks (ids / data-nav / data-home-nav / React mount points) are
-     never renamed here; the OpenConnector directory keeps rendering through
-     #pluginsList and all of its connect/manage actions.
+     never renamed here; the OpenConnector directory renders through
+     #pluginsPanel and all of its connect/manage actions.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -335,14 +335,12 @@ body.workspace-active #appShell .main-page {
 }
 
 #appShell .workspace-page-head h1,
-#appShell .plugin-directory-heading h2,
-#appShell .plugins-panel-head h1 {
+#appShell .plugin-directory-heading h2 {
   letter-spacing: -0.01em;
 }
 
 #appShell .workspace-page-head p,
-#appShell .plugin-directory-desc,
-#appShell .plugins-panel-head p {
+#appShell .plugin-directory-desc {
   color: var(--cg-text-muted);
 }
 
@@ -531,11 +529,10 @@ body.workspace-active #appShell .main-page {
     display: none !important;
   }
 
-  /* The React directory mounts inside #pluginsPanel, whose scroll container
-     would otherwise clip fixed page chrome. Keep the page scroll on the
-     list itself so workspace content stays in the reference top position. */
-  :where(:root[data-plugins-panel-open]) body.workspace-active:not(#_n):not(._n) #appShell #mainContent,
-  #appShell #pluginsPanel[data-live-directory="true"] {
+  /* While the plugins panel is open, keep #mainContent's overflow visible so
+     fixed page chrome is not clipped. #pluginsPanel itself is the React-owned
+     scroll container. */
+  :where(:root[data-plugins-panel-open]) body.workspace-active:not(#_n):not(._n) #appShell #mainContent {
     overflow: visible !important;
   }
 
@@ -543,11 +540,6 @@ body.workspace-active #appShell .main-page {
   :where(:root[data-plugins-panel-open]) body.workspace-active:not(#_n):not(._n) #appShell #mainContent {
     position: relative !important;
     z-index: 10 !important;
-  }
-
-  #appShell #pluginsPanel[data-live-directory="true"] #pluginsList {
-    max-height: 100% !important;
-    overflow-y: auto !important;
   }
 
   #appShell .workspace-page-head,
@@ -1293,7 +1285,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 }
 
 @media (max-width: 768px) {
-  #appShell #pluginsPanel[data-live-directory="true"] {
+  #appShell #pluginsPanel {
     width: calc(100% - 16px) !important;
     max-width: none !important;
     margin-inline: 8px !important;
@@ -1301,10 +1293,8 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
     background: transparent !important;
   }
 
-  /* Projects and scheduled tasks place their title in the app-owned top
-     chrome, matching the phone references while leaving the plugin directory
-     content below its 插件 / 技能 switch. */
-  body.workspace-active #appShell #spacesPanel[data-live-directory="true"],
+  /* Scheduled tasks place their title in the app-owned top chrome,
+     matching the phone references. */
   body.workspace-active #appShell #scheduledPanel {
     position: relative !important;
     top: -71px !important;
@@ -1312,13 +1302,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
     margin-inline: 8px !important;
     background: transparent !important;
     z-index: 1 !important;
-  }
-
-  body.workspace-active #appShell #spacesPanel[data-live-directory="true"] {
-    padding-top: 12px !important;
-  }
-
-  body.workspace-active #appShell #scheduledPanel {
     padding-top: 0 !important;
   }
 

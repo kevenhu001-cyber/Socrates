@@ -79,52 +79,15 @@
 #appShell .recent-item-text { font-size: 12px !important; }
 }
 
-#appShell .spaces-panel-head,
-#appShell .library-panel-head,
-#appShell .plugins-panel-head,
 .workspace-page-head,
 .plugin-directory-head { margin-bottom: 24px; }
-#appShell .spaces-panel-head h1,
-#appShell .library-panel-head h1,
-#appShell .plugins-panel-head h1,
 .workspace-page-head h1,
 .plugin-directory-head h2 { font-size: 27px; font-weight: 500; }
-#appShell .spaces-panel-head p,
-#appShell .library-panel-head p,
-#appShell .plugins-panel-head p,
 .workspace-page-head p,
 .plugin-directory-desc { margin-top: 4px; color: var(--cgv-text-2); font-size: 12px; }
-#appShell .spaces-panel-search,
-#appShell .plugins-panel-search,
 .workspace-search-field,
 .plugin-directory-search { width: 232px; height: 36px; padding-inline: 12px; font-size: 12px; }
-#appShell .spaces-panel-new,
-#appShell .plugins-panel-add,
 .workspace-create-button { height: 36px; min-height: 36px; }
-#appShell .plugins-panel-add { width: 36px; }
-#appShell .plugins-installed { margin-top: 0; padding: 4px 2px 8px; }
-#appShell .plugins-installed-label { margin-bottom: 8px; font-size: 12px; }
-#appShell .plugins-installed-icons { gap: 8px; padding: 2px 0 8px; }
-#appShell .plugins-installed-icons .installed-icon { width: 36px; height: 36px; border-radius: 9px; }
-#appShell .plugins-scope-tabs { align-self: flex-start; width: auto; margin: 7px 0 12px; padding: 2px; border: 0; background: transparent; }
-#appShell .plugins-scope-tabs button { height: 30px; padding-inline: 15px; font-size: 12px; }
-#appShell .plugins-section-title { margin: 12px 0 3px; font-size: 12px; font-weight: 500; }
-#appShell .plugins-cards { column-gap: 38px; row-gap: 0; }
-#appShell .plugins-card { min-height: 68px; padding: 8px 0; gap: 10px; border: 0; border-radius: 8px; }
-#appShell .plugins-cards:first-of-type::after {
-  content: "更多工具";
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  min-height: 40px;
-  color: var(--cgv-text-2);
-  font-size: 11px;
-}
-#appShell .plugins-card .glyph { flex-basis: 36px; width: 36px; height: 36px; border-radius: 9px; }
-#appShell .plugins-card .copy strong { font-size: 12px; font-weight: 500; }
-#appShell .plugins-card .copy small { margin-top: 0; font-size: 10px; }
-#appShell .plugins-card .add,
-#appShell .plugins-card .menu { width: 28px; height: 28px; border: 0; }
 
 @media (min-width: 769px) {
   body.workspace-active #appShell .main-page {
@@ -132,11 +95,6 @@
     left: 8px;
     padding-top: 38px;
   }
-  #appShell .plugins-panel.main-page { padding-top: 0; }
-  #appShell .plugins-panel-head { align-items: flex-start; }
-  #appShell .plugins-installed { margin-top: 8px; }
-  #appShell .plugins-scope-tabs { margin-top: 17px; }
-  #appShell .plugins-section-title { margin-top: 42px; }
 }
 
 /* Core paint and component primitives that make the geometry above visible. */
@@ -323,231 +281,12 @@
      step above the canvas so the composer's silhouette stays readable. */
 }
 
-/* Static workspace shell used before the live directory data arrives. */
+/* Workspace panels — each is now a React-owned page host. */
 #appShell .spaces-panel.main-page,
 #appShell .library-panel.main-page,
 #appShell .plugins-panel.main-page {
   gap: 12px;
 }
-
-#appShell .plugins-panel.main-page {
-  padding-top: 22px;
-}
-
-#appShell .spaces-panel-head,
-#appShell .library-panel-head,
-#appShell .plugins-panel-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
-}
-
-#appShell .spaces-panel-head h1,
-#appShell .library-panel-head h1,
-#appShell .plugins-panel-head h1 {
-  margin: 0;
-  color: var(--cgv-text);
-  line-height: 1.15;
-  letter-spacing: -0.03em;
-}
-
-#appShell .spaces-panel-head p,
-#appShell .library-panel-head p,
-#appShell .plugins-panel-head p {
-  margin-bottom: 0;
-}
-
-#appShell .spaces-panel-head .actions,
-#appShell .library-panel-head .actions,
-#appShell .plugins-panel-head .actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-#appShell .spaces-panel-search,
-#appShell .plugins-panel-search {
-  box-sizing: border-box;
-  border: 1px solid var(--cgv-border-strong);
-  border-radius: 999px;
-  outline: 0;
-  color: var(--cgv-text);
-}
-
-#appShell .spaces-panel-new,
-#appShell .plugins-panel-add {
-  box-sizing: border-box;
-  border: 1px solid var(--cgv-border-strong);
-  border-radius: 999px;
-  color: var(--cgv-text);
-  background: transparent;
-}
-
-#appShell .plugins-panel-add {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-#appShell .plugins-panel-add svg {
-  width: 16px;
-  height: 16px;
-}
-
-#appShell .plugins-scope-tabs button {
-  border: 0;
-  border-radius: 999px;
-  color: var(--cgv-text-3);
-  background: transparent;
-}
-
-#appShell .plugins-scope-tabs button.active {
-  color: var(--cgv-text);
-  background: var(--cg-surface-hover);
-}
-
-#appShell .plugins-installed-label {
-  color: var(--cgv-text-2);
-}
-
-#appShell .plugins-installed-icons {
-  display: flex;
-  flex-wrap: wrap;
-}
-
-#appShell .plugins-installed-icons .installed-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--cgv-text);
-}
-
-#appShell .plugins-installed-icons .installed-icon.add {
-  border: 1px dashed var(--cgv-border-strong);
-  color: var(--cgv-text-3);
-  background: transparent !important;
-}
-
-#appShell .plugins-section-title {
-  color: var(--cgv-text);
-}
-
-#appShell .plugins-cards {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-#appShell .plugins-card {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  color: var(--cgv-text);
-  background: transparent;
-  text-align: left;
-}
-
-#appShell .plugins-card .glyph,
-#appShell .plugins-card .add,
-#appShell .plugins-card .menu {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-#appShell .plugins-card .copy {
-  min-width: 0;
-  flex: 1;
-}
-
-/* Installed-plugin chip backgrounds and card glyph gradients.
-   Centralised here so the markup stays free of inline styles
-   (webhint no-inline-styles) while keeping each connector's brand colour
-   discoverable from the class name. The installed chip placeholders are
-   monochrome chrome; the `.glyph--*` card logos keep their real brand
-   colours. */
-#appShell .installed-icon--purple   { background: #3d3d3d; }
-#appShell .installed-icon--blue     { background: #4a4a4a; }
-#appShell .installed-icon--red      { background: #2e2e2e; }
-#appShell .installed-icon--yellow   { background: #6b6b6b; }
-#appShell .installed-icon--green    { background: #565656; }
-#appShell .installed-icon--violet   { background: #757575; }
-#appShell .installed-icon--teal     { background: #656565; }
-#appShell .installed-icon--black    { background: #1d1d1d; color: #fff; }
-
-#appShell .plugins-card .glyph--gmail     { background: linear-gradient(135deg, #ea4335, #fbbc05, #34a853, #4285f4); color: #fff; }
-#appShell .plugins-card .glyph--github    { background: #1d1d1d; color: #fff; }
-#appShell .plugins-card .glyph--gdrive    { background: linear-gradient(135deg, #34a853, #fbbc05, #4285f4); color: #fff; }
-#appShell .plugins-card .glyph--slack     { background: linear-gradient(135deg, #36c5f0, #e01e5b, #2eb67d, #ecb22e); color: #fff; }
-#appShell .plugins-card .glyph--outlook   { background: #0078d4; color: #fff; }
-#appShell .plugins-card .glyph--canva     { background: linear-gradient(135deg, #00c4cc, #7d2ae8); color: #fff; }
-#appShell .plugins-card .glyph--healthcare{ background: linear-gradient(135deg, #1e88e5, #26c6da); color: #fff; }
-#appShell .plugins-card .glyph--datadog   { background: linear-gradient(135deg, #7c4dff, #7e57c2); color: #fff; }
-
-#appShell .plugins-card .copy strong,
-#appShell .plugins-card .copy small {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-#appShell .plugins-card .copy small {
-  color: var(--cgv-text-3);
-}
-
-#appShell .plugins-card .add svg,
-#appShell .plugins-card .menu svg {
-  width: 14px;
-  height: 14px;
-}
-
-#appShell .spaces-panel-filters {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-#appShell .spaces-panel-filters button {
-  height: 32px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: 999px;
-  color: var(--cgv-text-2);
-  background: transparent;
-}
-
-#appShell .spaces-panel-filters button.active {
-  color: var(--cgv-text);
-  background: var(--cg-surface-hover);
-}
-
-#appShell .spaces-list-header,
-#appShell .spaces-list-row {
-  display: grid;
-  grid-template-columns: 1fr 160px;
-}
-
-#appShell .spaces-list-header {
-  padding: 9px 10px;
-  color: var(--cgv-text-3);
-  font-size: 11px;
-  border-bottom: 1px solid var(--cgv-border);
-}
-
-#appShell .spaces-list-row {
-  min-height: 46px;
-  padding: 7px 10px;
-  border-bottom: 1px solid var(--cgv-border);
-}
-
-#appShell .spaces-empty {
-  padding: 42px 0;
-  color: var(--cgv-text-3);
-  text-align: center;
-  font-size: 12px;
-}
-
 
 #appShell .main-page > .workspace-intro{
   display: none !important;
@@ -618,30 +357,9 @@
     padding: 28px 16px max(44px, env(safe-area-inset-bottom));
   }
 
-  #appShell .plugins-cards,
   .plugin-directory-list {
     grid-template-columns: 1fr;
   }
-}
-
-/* Once real workspace data mounts, replace the static loading composition
-   with the functional React directory without showing duplicate chrome. */
-#libraryPanel[data-live-directory="true"] > :not(#libraryList):not(#libraryUploadInput),
-#spacesPanel[data-live-directory="true"] > :not(#spacesList),
-#pluginsPanel[data-live-directory="true"] > :not(#pluginsList) {
-  display: none !important;
-}
-
-#libraryPanel[data-live-directory="true"] #libraryList,
-#spacesPanel[data-live-directory="true"] #spacesList,
-#pluginsPanel[data-live-directory="true"] #pluginsList {
-  position: static !important;
-  width: 100% !important;
-  height: auto !important;
-  margin: 0 !important;
-  overflow: visible !important;
-  clip: auto !important;
-  white-space: normal !important;
 }
 
 /* Theme-specific paint must follow the shared dark reference primitives. */
@@ -649,12 +367,6 @@
 [data-mode="light"] #appShell .sidebar {
   background: var(--cg-rail) !important;
 }
-}
-
-[data-mode="light"] #appShell .spaces-panel-search,
-[data-mode="light"] #appShell .plugins-panel-search {
-  border-color: var(--cg-border-strong) !important;
-  background: var(--cg-surface) !important;
 }
 
 /* -------------------------------------------------------------------------
@@ -764,12 +476,6 @@ html[data-mode="light"] #appShell {
 }
 }
 
-#appShell .spaces-panel-search,
-#appShell .plugins-panel-search {
-  border-color: var(--cg-border-strong) !important;
-  background: var(--cg-surface) !important;
-}
-
 @media (max-width: 768px) {
   /* P_mobile-composer-outline — must live AFTER the shared rule above:
      that rule paints every input surface with `--cg-surface` (#212121),
@@ -787,14 +493,6 @@ html[data-mode="light"] #appShell {
    by the `chatgpt-send-idle` block at the top of this layer; the
    active state keeps its accent fill for in-session send buttons. */
 
-#appShell .plugins-scope-tabs button.active,
-#appShell .spaces-panel-filters button.active {
-  color: var(--cg-text) !important;
-  background: var(--cg-surface-hover) !important;
-}
-
-#appShell .plugins-installed-icons .installed-icon,
-#appShell .plugins-card,
 #appShell .workspace-row-icon,
 #appShell .workspace-page-head,
 #appShell .plugin-directory-head {
