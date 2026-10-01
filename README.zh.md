@@ -4,13 +4,13 @@
 
 <br/>
 
-[![仓库可见性](https://img.shields.io/badge/可见性-私有-7a6c4d?style=flat-square)](#仓库可见性)
+[![仓库可见性](https://img.shields.io/badge/可见性-公开-7a6c4d?style=flat-square)](#仓库可见性)
 [![应用状态](https://img.shields.io/badge/应用-在线-d8a85b?style=flat-square)](https://app.topodrive.top/)
 [![后端](https://img.shields.io/badge/后端-TypeScript%20%2B%20Node.js-3178c6?style=flat-square&logo=typescript&logoColor=white)](server/)
 [![前端](https://img.shields.io/badge/前端-Vite%20SPA-f3c769?style=flat-square&logo=vite&logoColor=black)](frontend/)
 [![Android](https://img.shields.io/badge/Android-React%20Native%20%2B%20Expo-3DDC84?style=flat-square&logo=android&logoColor=white)](mobile/)
 [![数据库](https://img.shields.io/badge/数据库-PostgreSQL%2014%2B-4169e1?style=flat-square&logo=postgresql&logoColor=white)](server/src/db/)
-[![许可](https://img.shields.io/badge/许可-专有-555555?style=flat-square)](#许可)
+[![源码使用](https://img.shields.io/badge/源码可见-非商业使用-555555?style=flat-square)](#源码可见与使用范围)
 
 **Socrates — AI 苏格拉底式学习助手**  
 流式对话 + 推理模型、交互式 viz 画布、KaTeX 数学公式、
@@ -46,7 +46,7 @@
 - [仓库可见性](#仓库可见性)
 - [路线图](#路线图)
 - [贡献指南](#贡献指南)
-- [许可](#许可)
+- [源码可见与使用范围](#源码可见与使用范围)
 - [支持](#支持)
 
 ---
@@ -470,13 +470,13 @@ Android 客户端由 GitHub Actions 自动构建，产物可在 Actions 页下�
 
 ## 仓库可见性
 
-本仓库为**私有仓库**。公开面包括：
+本仓库为**公开仓库**。公开面包括：
 
 - 市场站点 <https://topodrive.top/>
 - 在线应用 <https://app.topodrive.top/>
 - Android 客户端的 Google Play 页面（发布后）
 
-如果你已获得访问权限，请勿公开仓库内容 — SPA 包含苏格拉底教师提示词原文、Agent 工具实现和自定义渲染管线，目前保持专有。
+源代码的使用与修改范围见[源码可见与使用范围](#源码可见与使用范围)。
 
 ## 路线图
 
@@ -504,9 +504,11 @@ Android 客户端由 GitHub Actions 自动构建，产物可在 Actions 页下�
 4. 推送并创建 PR
 5. 通过 squash 合并
 
-## 许可
+## 源码可见与使用范围
 
-专有。保留所有权利。最终用户条款见 [site/terms.html](site/terms.html)；源代码许可在公开发布前为"仅限内部使用"。
+本仓库源代码可见（source-available），允许免费用于非商业目的并进行修改；商业用途需另行授权。
+
+最终用户条款见 [site/terms.html](site/terms.html)。
 
 ## 支持
 
