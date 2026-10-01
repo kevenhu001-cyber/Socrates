@@ -104,10 +104,10 @@ test('in-flow composer and transcript follow the normalized keyboard inset on mo
       distanceFromBottom: Math.round(list.scrollHeight - list.scrollTop - list.clientHeight),
     };
   });
-  /* The 24px is the constant reading-column breathing margin from
+  /* The 36px is the constant reading-column breathing margin from
      components/chat.css, not a keyboard reserve — the exact 300px linear
      lift above proves the inset pipeline never consumes it. */
-  expect(geometry.paddingBottom).toBe(24);
+  expect(geometry.paddingBottom).toBe(36);
   expect(geometry.barPosition).toBe('relative');
   expect(geometry.appVh).toBe('');
   expect(geometry.measuredBarHeight).toBe('');
@@ -326,7 +326,7 @@ test('a second input line expands the mobile composer and keeps the latest messa
   });
 
   expect(after.barHeight).toBeGreaterThan(before.barHeight);
-  expect(after.paddingBottom).toBe(24);
+  expect(after.paddingBottom).toBe(36);
   expect(after.listBottom).toBeLessThanOrEqual(after.barTop);
   expect(after.distanceFromBottom).toBeLessThanOrEqual(2);
   expect(after.clearance).toBeGreaterThanOrEqual(8);
@@ -407,7 +407,9 @@ test('conversation transcript remains independently scrollable', async ({ page }
     };
   });
 
-  expect(geometry.parentId).toBe('mainContent');
+  /* #chatPage is the structural owner of the chat surface; it renders as
+     display:contents so #msgList still sits in mainContent's flex column. */
+  expect(geometry.parentId).toBe('chatPage');
   expect(geometry.overflowY).toBe('auto');
   expect(geometry.clientHeight).toBeGreaterThan(0);
   expect(geometry.scrollHeight).toBeGreaterThan(geometry.clientHeight);
@@ -447,7 +449,13 @@ test('a growing composer keeps the latest message visible and the transcript pin
   await page.evaluate(() => {
     document.getElementById('chatInputWrap').style.minHeight = '240px';
   });
-  await page.waitForTimeout(150);
+  /* The composer→transcript re-pin runs through a ResizeObserver + rAF
+     follow sequence in ui/scroll.js — poll for the settled state instead
+     of racing a fixed delay on slower runners. */
+  await expect.poll(() => page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    return Math.round(list.scrollHeight - list.scrollTop - list.clientHeight);
+  })).toBeLessThanOrEqual(2);
 
   const geometry = await page.evaluate(() => {
     const list = document.getElementById('msgList');
