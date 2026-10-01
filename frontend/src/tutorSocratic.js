@@ -1,4 +1,5 @@
 import { stateStore } from './state/store.js';
+import { esc } from './render/helpers.js';
 import { scheduleTurnToTopForMessage } from './chat/turnAnchor.ts';
 
 /* =====================================================================
@@ -110,12 +111,7 @@ import { scheduleTurnToTopForMessage } from './chat/turnAnchor.ts';
     if (status === 'fuzzy')        return ti('tutor.statusFuzzy',        currentLang() === 'zh' ? '模糊' : 'Fuzzy');
     return ti('tutor.statusBlank', currentLang() === 'zh' ? '空白' : 'Blank');
   }
-  function esc(s) {
-    if (typeof window.esc === 'function') return window.esc(s);
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  }
+
 
   /* ----------------------------------------------------------------
    * Stuck detection

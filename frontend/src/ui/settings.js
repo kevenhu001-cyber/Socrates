@@ -1,6 +1,7 @@
 import { confirmClearSettings } from './dangerConfirms.js';
 import { saveLastActiveId } from '../config/providers.js';
 import { showToast } from './toast.js';
+import { esc } from '../render/helpers.js';
 import { publishProfileSnapshot } from './profile.js';
 
 import { renderTonePresets } from '../config/tonePresets.js';
@@ -144,7 +145,7 @@ function renderProviderList() {
   if (!userProviders.length) {
     if (builtIn) {
       var t2 = window.t;
-      var esc2 = window.esc;
+      var esc2 = esc;
       var biLabel = esc2(builtIn.label || builtIn.model || "Built-in AI");
       var biModel = esc2(builtIn.model || "");
       var builtInActive = apiConfig.activeId === builtIn.id || !apiConfig.activeId;
@@ -165,7 +166,6 @@ function renderProviderList() {
     return;
   }
   var t = window.t;
-  var esc = window.esc;
   var html = "";
   userProviders.forEach(function (p) {
     var isActive = p.id === apiConfig.activeId;

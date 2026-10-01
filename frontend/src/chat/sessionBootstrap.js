@@ -4,6 +4,7 @@
  * via direct imports (extracted modules) or window.* (main.js-owned).
  */
 import { stateStore } from '../state/store.js';
+import { esc } from '../render/helpers.js';
 import { turnState } from './turnState.js';
 import { saveState } from '../session/saveState.js';
 import { isExpectedTurnAbort } from './turnUi.js';
@@ -461,15 +462,14 @@ export async function startSession(){
   function renderDiagFailure(fallbackErr){
     var dv=document.getElementById("diagnosticView");
     if(!dv)return;
-    var _esc=(typeof window.esc==="function")?window.esc:function(x){return String(x==null?"":x)};
     var reason=stateStore.read("lastCallError")||fallbackErr||"";
     dv.classList.remove("hidden");
     dv.innerHTML='<div class="diag-error">'
-      +'<p class="diag-error-title">'+_esc(_t("diag.timeoutTitle"))+'</p>'
-      +(reason?'<p class="diag-error-reason">'+_esc(reason)+'</p>':'')
+      +'<p class="diag-error-title">'+esc(_t("diag.timeoutTitle"))+'</p>'
+      +(reason?'<p class="diag-error-reason">'+esc(reason)+'</p>':'')
       +'<div class="diag-error-actions">'
-      +'<button type="button" class="diag-error-retry" data-diag-command="retry">'+_esc(_t("diag.retry"))+'</button>'
-      +'<button type="button" class="diag-error-builtin" data-diag-command="builtin">'+_esc(_t("diag.useBuiltin"))+'</button>'
+      +'<button type="button" class="diag-error-retry" data-diag-command="retry">'+esc(_t("diag.retry"))+'</button>'
+      +'<button type="button" class="diag-error-builtin" data-diag-command="builtin">'+esc(_t("diag.useBuiltin"))+'</button>'
       +'</div></div>';
   }
   async function attemptDiagGeneration(reinjectLoading){

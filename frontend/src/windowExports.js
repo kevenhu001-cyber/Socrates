@@ -355,9 +355,6 @@ window.loadUsageMonth = function () { if (_usageImport) return _usageImport.then
 window.showUsageTip = function (ev) { if (_usageImport) return _usageImport.then(function (m) { return m.showUsageTip(ev); }); };
 window.hideUsageTip = function () { if (_usageImport) return _usageImport.then(function (m) { return m.hideUsageTip(); }); };
 
-/* ─── render/helpers.js (esc alias) ─── */
-import { esc } from './render/helpers.js';
-window.esc = esc;
 
 /* ─── ui/knowledgePanel.js ───
    updateKB is already a cross-module app entry point (session/loader.js,

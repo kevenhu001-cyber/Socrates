@@ -1,5 +1,6 @@
 import { deleteCustomTemplate, findTemplateByShortcut, loadPromptTemplates, upsertCustomTemplate } from '../chat/promptTemplates.js';
 import { showToast } from './toast.js';
+import { esc } from '../render/helpers.js';
 /* ui/promptTemplates.js — Wave 1d of main-js-split plan.
  * Prompt-templates modal: lists built-in and user templates, with edit and
  * delete actions. Extracted from main.js (post-Wave-1b): L9890-L10010.
@@ -63,17 +64,17 @@ function renderPromptTemplatesModal() {
 }
 
 function renderPromptRow(t, editable) {
-  var iconHtml = t.icon && t.icon.indexOf("<svg") === 0 ? t.icon : window.esc(t.icon || "pg");
+  var iconHtml = t.icon && t.icon.indexOf("<svg") === 0 ? t.icon : esc(t.icon || "pg");
   return '<div class="prompt-row' + (t.isBuiltin ? " builtin" : "") + '">' +
     '<span class="prompt-row-icon">' + iconHtml + '</span>' +
     '<div class="prompt-row-main">' +
-      '<div class="prompt-row-title">' + window.esc(t.title) + ' <span class="prompt-row-shortcut">' + window.esc(t.shortcut) + '</span></div>' +
-      '<div class="prompt-row-desc">' + window.esc(t.description || "") + '</div>' +
+      '<div class="prompt-row-title">' + esc(t.title) + ' <span class="prompt-row-shortcut">' + esc(t.shortcut) + '</span></div>' +
+      '<div class="prompt-row-desc">' + esc(t.description || "") + '</div>' +
     '</div>' +
     (editable ?
       '<div class="prompt-row-actions">' +
-        '<button class="prompt-row-edit" data-prompt-command="edit" data-template-id="' + window.esc(t.id) + '">Edit</button>' +
-        '<button class="prompt-row-delete" data-prompt-command="delete" data-template-id="' + window.esc(t.id) + '">Delete</button>' +
+        '<button class="prompt-row-edit" data-prompt-command="edit" data-template-id="' + esc(t.id) + '">Edit</button>' +
+        '<button class="prompt-row-delete" data-prompt-command="delete" data-template-id="' + esc(t.id) + '">Delete</button>' +
       '</div>' : '') +
   '</div>';
 }
@@ -99,12 +100,12 @@ function openPromptTemplateEditor(id) {
     '</div>' +
     '<div class="prompt-templates-body">' +
       '<div class="prompt-editor-grid">' +
-        '<label class="prompt-editor-label">Title<input class="prompt-editor-input" id="ptTitle" maxlength="80" value="' + window.esc(t.title) + '" placeholder="' + window.t("prompt.placeholderTitle") + '"></label>' +
-        '<label class="prompt-editor-label">Shortcut<input class="prompt-editor-input prompt-editor-shortcut" id="ptShortcut" maxlength="20" pattern="^/[a-z0-9-]+$" value="' + window.esc(t.shortcut) + '" placeholder="' + window.t("prompt.placeholderShortcut") + '"></label>' +
+        '<label class="prompt-editor-label">Title<input class="prompt-editor-input" id="ptTitle" maxlength="80" value="' + esc(t.title) + '" placeholder="' + window.t("prompt.placeholderTitle") + '"></label>' +
+        '<label class="prompt-editor-label">Shortcut<input class="prompt-editor-input prompt-editor-shortcut" id="ptShortcut" maxlength="20" pattern="^/[a-z0-9-]+$" value="' + esc(t.shortcut) + '" placeholder="' + window.t("prompt.placeholderShortcut") + '"></label>' +
       '</div>' +
-      '<label class="prompt-editor-label">Description<input class="prompt-editor-input" id="ptDescription" maxlength="200" value="' + window.esc(t.description || "") + '" placeholder="' + window.t("prompt.placeholderDesc") + '"></label>' +
+      '<label class="prompt-editor-label">Description<input class="prompt-editor-input" id="ptDescription" maxlength="200" value="' + esc(t.description || "") + '" placeholder="' + window.t("prompt.placeholderDesc") + '"></label>' +
       '<div class="prompt-editor-grid">' +
-        '<label class="prompt-editor-label">Icon<input class="prompt-editor-input prompt-editor-icon" id="ptIcon" maxlength="4" value="' + window.esc(t.icon || "pg") + '"></label>' +
+        '<label class="prompt-editor-label">Icon<input class="prompt-editor-input prompt-editor-icon" id="ptIcon" maxlength="4" value="' + esc(t.icon || "pg") + '"></label>' +
         '<label class="prompt-editor-label">Category' +
           '<select class="prompt-editor-input" id="ptCategory">' +
             ["writing", "code", "learning", "analysis", "creative", "other"].map(function (c) {
@@ -113,13 +114,13 @@ function openPromptTemplateEditor(id) {
           '</select>' +
         '</label>' +
       '</div>' +
-      '<label class="prompt-editor-label">Body<textarea class="prompt-editor-textarea" id="ptBody" rows="4" placeholder="' + window.t("prompt.placeholderBody") + '">' + window.esc(t.body || "") + '</textarea></label>' +
-      '<label class="prompt-editor-label">System prompt<textarea class="prompt-editor-textarea" id="ptSystemPrompt" rows="6" placeholder="' + window.t("prompt.placeholderSystem") + '">' + window.esc(t.systemPrompt || "") + '</textarea></label>' +
+      '<label class="prompt-editor-label">Body<textarea class="prompt-editor-textarea" id="ptBody" rows="4" placeholder="' + window.t("prompt.placeholderBody") + '">' + esc(t.body || "") + '</textarea></label>' +
+      '<label class="prompt-editor-label">System prompt<textarea class="prompt-editor-textarea" id="ptSystemPrompt" rows="6" placeholder="' + window.t("prompt.placeholderSystem") + '">' + esc(t.systemPrompt || "") + '</textarea></label>' +
     '</div>' +
     '<div class="modal-foot">' +
       '<div class="modal-spacer"></div>' +
       '<button class="modal-cancel" data-prompt-command="list">Cancel</button>' +
-      '<button class="modal-save" data-prompt-command="save" data-template-id="' + window.esc(t.id) + '">Save</button>' +
+      '<button class="modal-save" data-prompt-command="save" data-template-id="' + esc(t.id) + '">Save</button>' +
     '</div>';
   _publishPromptTemplatesState();
   /* React renders the published HTML asynchronously; wait a tick

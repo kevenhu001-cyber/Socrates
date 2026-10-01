@@ -394,7 +394,7 @@ export function startExamGeneration() {
   if (!_activeProvider) {
     var _msg = _examUiL("Add and select a model in Settings first", "请先在设置中添加并选择一个模型");
     const emptyBody = _examBody();
-    if (emptyBody) emptyBody.innerHTML = '<div class="exam-empty" style="padding:40px;text-align:center;color:hsl(var(--text-500))">' + window.esc(_msg) + '</div>';
+    if (emptyBody) emptyBody.innerHTML = '<div class="exam-empty" style="padding:40px;text-align:center;color:hsl(var(--text-500))">' + esc(_msg) + '</div>';
     var footer = _examFooter();
     if (footer) footer.innerHTML = '<button class="exam-btn primary" data-exam-command="form">' + _examUiL("Back", "返回") + '</button>';
     return;
