@@ -63,19 +63,9 @@ function ensureWorkflowHost(doc: Document): HTMLElement | null {
   return host;
 }
 
-const loadedPages = new Set<string>();
-
-function loadPage(hostId: string, load: () => Promise<void>): void {
-  const host = document.getElementById(hostId);
-  if (host && !loadedPages.has(hostId)) {
-    host.classList.remove('visually-hidden');
-    host.textContent = 'Loading…';
-    host.setAttribute('aria-busy', 'true');
-  }
-  void load().then(() => loadedPages.add(hostId)).catch(() => {
-    if (host) host.textContent = 'Could not load this page. Please try again.';
-  }).finally(() => host?.removeAttribute('aria-busy'));
-}
+/* Workspace/scheduled/admin panels are mounted on demand through
+   pageMounts.ts — sidebar navigation imports those functions directly;
+   the specs below only tag the panels' ownership at bootstrap. */
 
 export function mountRegistryList(): MountSpec[] {
   const legacyComposer = getLegacyActions().composer;
@@ -122,37 +112,13 @@ export function mountRegistryList(): MountSpec[] {
       installSidebarChromeBridge();
       createRoot(host).render(<SidebarFooter />);
     } },
-    /* 4. Workspace pages — the registry tags each panel; the nav call
-       funnels through `__socratesMountWorkspace` regardless. */
-    { hostId: 'scheduledPanel', label: 'scheduled-page', mount: () => {
-      window.__socratesMountScheduled = () => {
-        loadPage('scheduledPanel', async () => {
-          const { mountScheduledPage } = await import('../../pages/scheduled/ScheduledPage');
-          mountScheduledPage();
-          window.__socratesNavRenderScheduled?.();
-        });
-      };
-    } },
-    { hostId: 'libraryPanel', label: 'workspace-page', mount: () => {
-      installWorkspaceBridge();
-      window.__socratesMountWorkspace = (page: string) => {
-        const hostId = page === 'library' ? 'libraryPanel' : page === 'projects' ? 'spacesPanel' : 'pluginsPanel';
-        loadPage(hostId, async () => {
-          const { mountWorkspacePage } = await import('../../pages/workspace/WorkspacePage');
-          mountWorkspacePage(page);
-        });
-      };
-    } },
+    /* 4. Workspace pages — the registry tags each panel as React-owned;
+       the nav mounts them on demand through pageMounts.ts. */
+    { hostId: 'scheduledPanel', label: 'scheduled-page', mount: () => undefined },
+    { hostId: 'libraryPanel', label: 'workspace-page', mount: () => { installWorkspaceBridge(); } },
     /* /admin operator console — the React page owns #adminPanel when
        the sidebar routes to it. */
-    { hostId: 'adminPanel', label: 'admin-page', mount: () => {
-      window.__socratesMountAdmin = () => {
-        loadPage('adminPanel', async () => {
-          const { mountAdminPage } = await import('../../adminModal/AdminPage');
-          mountAdminPage();
-        });
-      };
-    } },
+    { hostId: 'adminPanel', label: 'admin-page', mount: () => undefined },
     { hostId: 'spacesPanel', label: 'workspace-page', mount: () => undefined },
     { hostId: 'pluginsPanel', label: 'workspace-page', mount: () => undefined },
     /* 5. Lazy portal roots */

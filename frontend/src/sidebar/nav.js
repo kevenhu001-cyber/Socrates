@@ -3,6 +3,7 @@ import { stateStore } from "../state/store.js";
 import { showToast } from "../ui/toast.js";
 import { openPromptTemplatesModal } from "../ui/promptTemplates.js";
 import { activateMainView, getVisibleCoreView, hideCoreViews } from "../ui/mainViewController.js";
+import { mountWorkspacePage, mountScheduledPage, mountAdminPage } from "../react/lib/boot/pageMounts.ts";
 /* creationSurfaces.js (~20KB) is lazy — images/assistants/sites panels
    only need it when the user opens one. openCreation() below awaits the
    module before showing the (created-on-demand) panel. */
@@ -421,9 +422,7 @@ else setTimeout(syncWorkspaceRoute, 0);
 
 export function openLibrary() {
   showMainPage("libraryPanel");
-  if (typeof window.__socratesMountWorkspace === "function") {
-    window.__socratesMountWorkspace("library");
-  }
+  mountWorkspacePage("library");
   renderLibrary();
 }
 async function renderLibrary() {
@@ -532,9 +531,7 @@ window.renameArtifact = async function (id) {
 
 export function openProjects() {
   showMainPage("spacesPanel");
-  if (typeof window.__socratesMountWorkspace === "function") {
-    window.__socratesMountWorkspace("projects");
-  }
+  mountWorkspacePage("projects");
   renderProjects();
 }
 async function renderProjects() {
@@ -559,14 +556,10 @@ function paintProjects() {
 
 export function openScheduled() {
   showMainPage("scheduledPanel");
-  if (typeof window.__socratesMountScheduled === "function") {
-    window.__socratesMountScheduled();
-  }
+  /* renderScheduled runs after the page mounts so the freshly installed
+     bridge publishes the fetch results. */
+  mountScheduledPage(renderScheduled);
 }
-
-/* Expose renderScheduled on window so the React mount can trigger the
-   fetch/bridge flow. */
-window.__socratesNavRenderScheduled = function () { renderScheduled(); };
 
 /* P_exam-nav — Exam is a main-content panel (not a sidebar nav into
    a workspace). We delegate the heavy lifting to exam.openExamPanel(),
@@ -606,9 +599,7 @@ export function openPlugins() {
   PLUGINS_RETURN_VIEW = currentMainView();
   ensureConnectorIcons();
   showMainPage("pluginsPanel");
-  if (typeof window.__socratesMountWorkspace === "function") {
-    window.__socratesMountWorkspace("plugins");
-  }
+  mountWorkspacePage("plugins");
   restoreConnectorReturnContext();
   renderPlugins();
 }
@@ -627,9 +618,7 @@ export function openAdmin() {
   /* Standalone operator page: drop the chat top-bar chrome (mode
      switch, model picker, find, share) via body.admin-active.
      The shared view controller removes it on every exit path. */
-  if (typeof window.__socratesMountAdmin === "function") {
-    window.__socratesMountAdmin();
-  }
+  mountAdminPage();
 }
 async function renderPlugins() {
   /* #pluginsPanel is React-owned (WorkspacePage) — never write its DOM

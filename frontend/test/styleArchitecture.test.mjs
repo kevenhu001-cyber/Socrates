@@ -29,10 +29,11 @@ test('the stylesheet entry does not reconnect historical parity layers', async (
 });
 
 test('migrated workspace panels are single React-owned page hosts', async () => {
-  const [html, workspacePage, mountSpecs, mainJs] = await Promise.all([
+  const [html, workspacePage, pageMounts, navJs, mainJs] = await Promise.all([
     read('index.html'),
     read('src/react/pages/workspace/WorkspacePage.tsx'),
-    read('src/react/lib/boot/specs.tsx'),
+    read('src/react/lib/boot/pageMounts.ts'),
+    read('src/sidebar/nav.js'),
     read('src/main.js'),
   ]);
   assert.equal(html.includes('id="libraryList"'), false, 'legacy inner Library host must stay removed');
@@ -46,7 +47,17 @@ test('migrated workspace panels are single React-owned page hosts', async () => 
   assert.match(html, /<div class="scheduled-panel main-page hidden" id="scheduledPanel"><\/div>/);
   assert.match(html, /<div class="admin-panel main-page hidden" id="adminPanel"><\/div>/);
   assert.match(workspacePage, /page === 'library' \? 'libraryPanel' : page === 'projects' \? 'spacesPanel' : 'pluginsPanel'/);
-  assert.match(mountSpecs, /page === 'library' \? 'libraryPanel' : page === 'projects' \? 'spacesPanel' : 'pluginsPanel'/);
+  /* Page mounting is a module API — sidebar navigation imports
+     pageMounts.ts directly; the window.__socratesMount* compat globals
+     must not come back. */
+  assert.match(pageMounts, /library: 'libraryPanel'/);
+  assert.match(pageMounts, /projects: 'spacesPanel'/);
+  assert.match(pageMounts, /plugins: 'pluginsPanel'/);
+  assert.match(navJs, /from ["']\.\.\/react\/lib\/boot\/pageMounts\.ts["']/);
+  for (const global of ['__socratesMountWorkspace', '__socratesMountScheduled', '__socratesMountAdmin', '__socratesNavRenderScheduled']) {
+    assert.equal(navJs.includes(global), false, `${global} compat global must stay removed`);
+    assert.equal(pageMounts.includes(global), false, `${global} compat global must stay removed`);
+  }
   /* The fallback-shell compatibility layer went away with the last static
      workspace shell — it must not be reintroduced. */
   assert.equal(mainJs.includes('workspace-reference-ui'), false, 'workspace-reference-ui import must stay removed');

@@ -27,7 +27,6 @@ export interface WorkspaceBridge {
 declare global {
   interface Window {
     __socratesWorkspaceBridge?: WorkspaceBridge;
-    __socratesMountWorkspace?: (page: string) => void;
     switchLibraryTab?: (tab: string) => void;
     filterLibrary?: (query: string) => void;
     openLibraryItem?: (id: string, kind: string, collection?: string) => void;
