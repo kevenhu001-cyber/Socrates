@@ -136,6 +136,12 @@
     position: relative;
     display: flex;
     align-items: center;
+    /* Rows carry the generic .btn class, whose base sets
+       justify-content: center. Without this the icon+label group floats to
+       the middle of the 247px row, so every button's glyph lands at a
+       different x and the rail reads as ragged. The collapsed icon rail
+       re-centres on purpose (see the .collapsed block below). */
+    justify-content: flex-start;
     gap: 6px;
     box-sizing: border-box;
     width: 100%;

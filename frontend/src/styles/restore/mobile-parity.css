@@ -279,9 +279,15 @@
     border-top: 0 !important;
   }
 
+  /* P_sidebar-avatar-circle — flex-basis outranks `width` on a flex item,
+     so raising width/height alone left this box 32x36 and `border-radius:
+     50%` rendered an ellipse (reads as a rounded square). Pin the basis
+     to the same 36px so the phone-drawer avatar stays a true circle. */
   #appShell#appShell .user-avatar {
+    flex: 0 0 36px !important;
     width: 36px !important;
     height: 36px !important;
+    border-radius: 50% !important;
   }
 
   /* ─────────────────────────────────────────────────────────────

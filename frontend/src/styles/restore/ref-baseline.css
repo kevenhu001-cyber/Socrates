@@ -591,49 +591,10 @@ body.workspace-active #appShell .main-page {
 
   /* OpenConnector directory, restyled as the reference's two-column list. */
 
-  /* Scheduled directory: reference header rhythm and 60px task composer. */
-  #appShell .scheduled-directory {
-    width: 100% !important;
-    max-width: 768px !important;
-    margin: 0 auto !important;
-  }
-
-  #appShell .scheduled-directory .workspace-eyebrow {
-    display: none !important;
-  }
-
-  #appShell .scheduled-task-composer {
-    height: 60px !important;
-    margin-bottom: 28px !important;
-    border-radius: 30px !important;
-  }
-
-  #appShell .scheduled-task-composer input {
-    font-size: 16px !important;
-  }
-
-  #appShell .scheduled-section-heading {
-    margin-bottom: 4px !important;
-    font-size: 14px !important;
-  }
-
-  #appShell .scheduled-recommendations {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    column-gap: 38px !important;
-  }
-
-  #appShell .scheduled-recommendation {
-    min-height: 68px !important;
-    padding: 8px 0 !important;
-  }
-
-  #appShell .scheduled-recommendation-copy strong {
-    font-size: 14px !important;
-  }
-
-  #appShell .scheduled-recommendation-copy small {
-    font-size: 13px !important;
-  }
+  /* Scheduled directory: reference header rhythm and 60px task composer.
+     Superseded by features/surfaces.css — see the note at the end of this
+     media block. The eyebrow stays hidden via that file, which explains why
+     the plugin and site directories carry no such line either. */
 
   /* Library rows and tabs follow the same table rhythm as the reference. */
   #appShell .workspace-toolbar {
@@ -744,81 +705,16 @@ body.workspace-active #appShell .main-page {
     padding-inline: 17px !important;
   }
 
-  /* Scheduled recommendations are a single quiet list in the reference,
-     while the underlying click-to-create behavior remains unchanged. */
-  #appShell .scheduled-directory-head {
-    margin-bottom: 67px !important;
-  }
-
-  #appShell .scheduled-directory-head p {
-    display: none !important;
-  }
-
-  #appShell .scheduled-filter-button {
-    width: 72px !important;
-    min-width: 72px !important;
-    padding-inline: 0 !important;
-    justify-content: center !important;
-  }
-
-  #appShell .scheduled-filter-button svg {
-    display: none !important;
-  }
-
-  #appShell .scheduled-task-composer {
-    height: 54px !important;
-    min-height: 54px !important;
-    padding: 4px 5px 4px 5px !important;
-    border-radius: 27px !important;
-  }
-
-  #appShell .scheduled-task-composer input {
-    height: 44px !important;
-  }
-
-  #appShell .scheduled-composer-plus {
-    flex-basis: 36px !important;
-    width: 36px !important;
-    height: 36px !important;
-  }
-
-  #appShell .scheduled-section-heading {
-    align-items: center !important;
-    height: 40px !important;
-    margin-top: 23px !important;
-    margin-bottom: 0 !important;
-    padding: 0 !important;
-  }
-
-  #appShell .scheduled-section-heading span:first-child {
-    display: inline-flex !important;
-    align-items: center !important;
-    height: 40px !important;
-    padding: 0 16px !important;
-    border: 1px solid var(--cg-border-strong) !important;
-    border-radius: 8px !important;
-    color: var(--cg-text-secondary) !important;
-    font-size: 16px !important;
-    font-weight: 500 !important;
-  }
-
-  #appShell .scheduled-section-heading span:last-child {
-    display: none !important;
-  }
-
-  #appShell .scheduled-recommendations {
-    grid-template-columns: 1fr !important;
-    column-gap: 0 !important;
-  }
-
-  #appShell .scheduled-recommendation {
-    min-height: 72px !important;
-    padding: 8px 0 !important;
-  }
-
-  #appShell .scheduled-recommendation-add {
-    visibility: hidden !important;
-  }
+  /* Scheduled directory geometry moved to features/surfaces.css.
+     This block used to pin the page to the 768px chat column, hide the
+     subtitle, force a single-column recommendation list, chip the section
+     label and strip the cards' inner padding. It won every tie with
+     !important, which left the parity owner in that file entirely dead and
+     the scheduled page reading unlike the plugin and site directories.
+     Scheduled now shares the same 1040px column, two-column raised-card
+     grid, plain section label and 16px card padding. The shared
+     .workspace-page-head / .plugin-directory-head rules further down still
+     apply to .scheduled-directory-head, so its header keeps matching them. */
 }
 
 /* Functional landing shortcuts shown when the server has no AI-generated
@@ -1257,8 +1153,9 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
     border-radius: 10px !important;
   }
 
-  body.workspace-active #appShell .main-page,
-  body.workspace-active #appShell .scheduled-directory {
+  /* .scheduled-directory dropped: it is not a chat-column surface and now
+     shares the 1040px directory column with the plugin and site pages. */
+  body.workspace-active #appShell .main-page {
     width: min(768px, calc(100% - 64px)) !important;
     max-width: 768px !important;
     margin-inline: auto !important;
@@ -1521,8 +1418,14 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
     z-index: 40 !important;
   }
 
+  /* The h1 is position:fixed into the top bar on phones (see below), so the
+     heading still reserves that band — but it now also carries the subtitle
+     to match the plugin directory's heading > (title, desc) shape. A fixed
+     36px height clipped the subtitle to a sliver behind the top bar, so keep
+     the band as padding and let the box grow. */
   #appShell .scheduled-directory-heading {
-    height: 36px !important;
+    height: auto !important;
+    padding-top: 36px !important;
   }
 
   #appShell .scheduled-directory .workspace-eyebrow {

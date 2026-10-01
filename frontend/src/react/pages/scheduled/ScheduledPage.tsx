@@ -112,23 +112,29 @@ function statusLabel(status: string, active: boolean): string {
   return active ? i18n('scheduled.active', 'Active') : status;
 }
 
+function SearchGlyph() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>;
+}
+
+function PlusGlyph() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>;
+}
+
 function ScheduledPage() {
   const snap = useScheduledSnapshot();
   const dispatch = useScheduledDispatch();
   const tasks = snap.tasks;
-  const [draft, setDraft] = useState('');
-  const [activeOnly, setActiveOnly] = useState(false);
+  const [query, setQuery] = useState('');
+  const [scope, setScope] = useState<'all' | 'active'>('all');
 
   const visibleTasks = useMemo(() => {
-    if (!activeOnly) return tasks;
-    return tasks.filter((task) => task.status === 'pending' || task.status === 'active');
-  }, [activeOnly, tasks]);
-
-  const createFromDraft = () => {
-    const value = draft.trim();
-    dispatch.create(value || undefined);
-    if (value) setDraft('');
-  };
+    const needle = query.trim().toLowerCase();
+    return tasks.filter((task) => {
+      if (scope === 'active' && task.status !== 'pending' && task.status !== 'active') return false;
+      if (!needle) return true;
+      return [task.title, task.prompt].filter(Boolean).join(' ').toLowerCase().includes(needle);
+    });
+  }, [tasks, query, scope]);
 
   if (snap.loading) {
     return <div className="workspace-loading">{i18n('scheduled.loading', 'Loading tasks…')}</div>;
@@ -138,55 +144,67 @@ function ScheduledPage() {
     return <div className="scheduled-empty">{snap.error}</div>;
   }
 
+  const searching = query.trim().length > 0;
+
   return (
-    <div className="scheduled-directory">
-      <div className="scheduled-directory-head">
-        <div className="scheduled-directory-heading">
-          <span className="workspace-eyebrow">{i18n('scheduled.workspaceEyebrow', 'Workspace')}</span>
-          <h1>{i18n('scheduled.title', 'Scheduled')}</h1>
+    <section className="workspace-surface scheduled-directory" aria-labelledby="scheduled-directory-title">
+      <div className="workspace-page-head">
+        <div>
+          <h1 id="scheduled-directory-title">{i18n('scheduled.title', 'Scheduled')}</h1>
+          <p>{i18n('scheduled.subtitle', 'Let Socrates plan follow-ups, reminders, and recurring updates for you.')}</p>
         </div>
-        <button type="button" className={'scheduled-filter-button' + (activeOnly ? ' active' : '')} onClick={() => setActiveOnly((value) => !value)} aria-pressed={activeOnly}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 5h16l-6.5 8v5l-3 1v-6z" /></svg>
-          {activeOnly ? i18n('scheduled.activeOnly', 'Active') : i18n('scheduled.allTasks', 'All tasks')}
-        </button>
-        <p>{i18n('scheduled.subtitle', 'Let Socrates plan follow-ups, reminders, and recurring updates for you.')}</p>
-      </div>
-
-      <div className="scheduled-task-composer">
-        <button type="button" className="scheduled-composer-plus" onClick={() => dispatch.create()} aria-label={i18n('scheduled.createTask', 'Create task')}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-        </button>
-        <input value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); createFromDraft(); } }} placeholder={i18n('scheduled.inputPlaceholder', 'What should Socrates do, and when?')} aria-label={i18n('scheduled.inputPlaceholder', 'What should Socrates do, and when?')} />
-        <button type="button" className="scheduled-composer-submit" onClick={createFromDraft} aria-label={i18n('scheduled.createTask', 'Create task')}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 14-7-4 14-3-6z" /><path d="m12 13 7-8" /></svg>
-        </button>
-      </div>
-
-      <div className="scheduled-section-heading">
-        <span className="scheduled-heading-label">
-          {i18n('scheduled.recommendations', 'Suggestions')}
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
-        </span>
-        <span>{i18n('scheduled.pickOne', 'Start with a template')}</span>
-      </div>
-      <div className="scheduled-recommendations">
-        {RECOMMENDATIONS.map((recommendation) => {
-          const title = i18n(recommendation.titleKey, recommendation.titleFallback);
-          const description = i18n(recommendation.descriptionKey, recommendation.descriptionFallback);
-          return (
-          <button type="button" className="scheduled-recommendation" key={recommendation.titleKey} onClick={() => dispatch.create(recommendation.prompt)}>
-            <span className="scheduled-recommendation-icon" aria-hidden="true">{recommendation.icon}</span>
-            <span className="scheduled-recommendation-copy"><strong>{title}</strong><small>{description}</small></span>
-            <span className="scheduled-recommendation-add" aria-hidden="true">+</span>
+        <div className="workspace-head-actions">
+          <label className="workspace-search-field">
+            <SearchGlyph />
+            <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={i18n('scheduled.search', 'Search tasks')} aria-label={i18n('scheduled.search', 'Search tasks')} />
+          </label>
+          <button type="button" className="workspace-create-button" onClick={() => dispatch.create()}>
+            <PlusGlyph />
+            <span>{i18n('scheduled.new', 'New')}</span>
           </button>
-          );
-        })}
+        </div>
       </div>
+
+      <div className="scheduled-filter-tabs" role="tablist" aria-label={i18n('scheduled.filter', 'Task filter')}>
+        <button type="button" role="tab" aria-selected={scope === 'all'} className={scope === 'all' ? 'active' : ''} onClick={() => setScope('all')}>{i18n('scheduled.all', 'All')}</button>
+        <button type="button" role="tab" aria-selected={scope === 'active'} className={scope === 'active' ? 'active' : ''} onClick={() => setScope('active')}>{i18n('scheduled.activeOnly', 'Active')}</button>
+      </div>
+
+      {!searching && (
+        <>
+          <div className="scheduled-section-heading">
+            <span className="scheduled-heading-label">{i18n('scheduled.recommendations', 'Suggestions')}</span>
+            <span>{i18n('scheduled.pickOne', 'Start with a template')}</span>
+          </div>
+          <div className="scheduled-recommendations">
+            {RECOMMENDATIONS.map((recommendation) => {
+              const title = i18n(recommendation.titleKey, recommendation.titleFallback);
+              const description = i18n(recommendation.descriptionKey, recommendation.descriptionFallback);
+              return (
+              <button type="button" className="scheduled-recommendation" key={recommendation.titleKey} onClick={() => dispatch.create(recommendation.prompt)}>
+                <span className="scheduled-recommendation-icon" aria-hidden="true">{recommendation.icon}</span>
+                <span className="scheduled-recommendation-copy"><strong>{title}</strong><small>{description}</small></span>
+                <span className="scheduled-recommendation-add" aria-hidden="true">+</span>
+              </button>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       {visibleTasks.length === 0 ? (
-        <div className="scheduled-empty-state">
-          <strong>{activeOnly ? i18n('scheduled.noActive', 'No active tasks') : i18n('scheduled.empty', 'Let Socrates follow up')}</strong>
-          <span>{activeOnly ? i18n('scheduled.noActiveDesc', 'Paused and completed tasks are hidden.') : i18n('scheduled.emptyDesc', 'Create a reminder, recurring briefing, or monitoring task.')}</span>
+        <div className="workspace-empty">
+          {searching ? (
+            <><strong>{i18n('scheduled.noMatch', 'No matching tasks')}</strong><span>{i18n('scheduled.noMatchDesc', 'Try a different search.')}</span></>
+          ) : scope === 'active' ? (
+            <><strong>{i18n('scheduled.noActive', 'No active tasks')}</strong><span>{i18n('scheduled.noActiveDesc', 'Paused and completed tasks are hidden.')}</span></>
+          ) : (
+            <>
+              <strong>{i18n('scheduled.empty', 'Let Socrates follow up')}</strong>
+              <span>{i18n('scheduled.emptyDesc', 'Create a reminder, recurring briefing, or monitoring task.')}</span>
+              <button type="button" className="workspace-primary" onClick={() => dispatch.create()}>{i18n('scheduled.createTask', 'Create task')}</button>
+            </>
+          )}
         </div>
       ) : (
         <div className="scheduled-task-list">
@@ -251,7 +269,7 @@ function ScheduledPage() {
             })}
         </div>
       )}
-    </div>
+    </section>
   );
 }
 

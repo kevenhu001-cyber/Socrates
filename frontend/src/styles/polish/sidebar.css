@@ -369,7 +369,7 @@
   min-height: 34px;
 }
 
-/* ── Empty state (mobile) — icon above text, both centred ── */
+/* ── Empty state (mobile) — centred text ── */
 @media (max-width: 768px) {
 #appShell .recents-empty {
   display: flex;
@@ -382,13 +382,18 @@
   font-size: 13.5px;
   line-height: 20px;
 }
-#appShell .recents-empty-icon {
-  color: var(--ui-text-tertiary);
-  opacity: 0.7;
-}
 #appShell .recents-empty-text a {
   color: var(--ui-text-primary);
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+/* The search field is its own focus surface: `.sidebar-search:focus-within`
+   already shifts its border, background and glow, so the forced app-wide
+   focus ring would draw a second rectangle inside it. See the focus contract
+   in components/input.css; the rule lives here because the sidebar surface is
+   owned by this file per check-surface-ownership.mjs. */
+#appShell#appShell#appShell .sidebar-search input:focus-visible {
+  outline: none !important;
 }
 }

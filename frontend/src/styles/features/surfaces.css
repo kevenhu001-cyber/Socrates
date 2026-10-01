@@ -100,6 +100,229 @@
    the description and the action stack underneath it. */
 #appShell .plugin-directory-row { display: flex; flex-direction: column; align-items: stretch; gap: 12px; min-width: 0; padding: 16px; border: 1px solid var(--ui-border-subtle); border-radius: var(--ui-radius-xl); background: var(--ui-bg-raised); }
 #appShell .plugin-directory-row:hover { border-color: var(--ui-border-default); background: var(--ui-bg-hover); }
+
+/* Scheduled directory — same page chrome as Projects/Library: a shared
+   .workspace-page-head (title + description left, search + create right),
+   a pill tab rail for the active filter, quiet section labels, and the
+   raised card grid for template suggestions. */
+#appShell .scheduled-directory {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 40px 32px 64px;
+}
+
+/* Scope tabs mirror .plugin-directory-tabs: plain-text pills with a
+   filled active state rather than a boxed segmented control. */
+#appShell .scheduled-filter-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 28px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+#appShell .scheduled-filter-tabs::-webkit-scrollbar { display: none; }
+#appShell .scheduled-filter-tabs button {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: transparent;
+  color: var(--ui-text-secondary);
+  font-size: 14px;
+  white-space: nowrap;
+}
+#appShell .scheduled-filter-tabs button:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
+#appShell .scheduled-filter-tabs button.active {
+  background: var(--ui-bg-raised);
+  color: var(--ui-text-primary);
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+/* Section labels match .plugin-directory-section h3: quiet text, no chip. */
+#appShell .scheduled-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: auto;
+  margin: 0 0 14px;
+  padding: 0;
+  color: var(--ui-text-primary);
+  font-size: 17px;
+  font-weight: var(--ui-font-weight-semibold);
+}
+#appShell .scheduled-section-heading > span:last-child {
+  color: var(--ui-text-tertiary);
+  font-size: 13px;
+  font-weight: var(--ui-font-weight-regular);
+}
+#appShell .scheduled-heading-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: inherit;
+  font-size: inherit;
+}
+#appShell .scheduled-heading-label svg { display: none; }
+
+/* Template suggestions become the same raised cards as the plugin grid. */
+#appShell .scheduled-recommendations {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin: 0 0 32px;
+}
+#appShell .scheduled-recommendation {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  min-height: 72px;
+  padding: 16px;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-raised);
+  color: var(--ui-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+#appShell .scheduled-recommendation:hover {
+  border-color: var(--ui-border-default);
+  background: var(--ui-bg-hover);
+}
+#appShell .scheduled-recommendation-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  padding: 7px;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-surface);
+  color: var(--ui-text-secondary);
+}
+#appShell .scheduled-recommendation-icon svg { width: 24px; height: 24px; }
+#appShell .scheduled-recommendation-copy {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+#appShell .scheduled-recommendation-copy strong {
+  overflow: hidden;
+  color: var(--ui-text-primary);
+  font-size: 15px;
+  font-weight: var(--ui-font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#appShell .scheduled-recommendation-copy small {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--ui-text-tertiary);
+  font-size: 14px;
+  line-height: 1.4;
+  /* restore/chatgpt-ui.css leaves `white-space: nowrap` on this unscoped
+     selector. The plugin card's description wraps to two lines, so the
+     template cards have to wrap too or the copy reads as truncated. */
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+#appShell .scheduled-recommendation-add {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ui-text-secondary);
+  font-size: 22px;
+  font-weight: 300;
+  visibility: visible;
+}
+#appShell .scheduled-recommendation-add:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
+
+/* Task rows share the raised card material too, so the list reads as one
+   system with the plugin and site directories. */
+#appShell .scheduled-task-list { display: flex; flex-direction: column; gap: 10px; }
+#appShell .scheduled-task-list .scheduled-section-heading { margin: 0 0 4px; }
+#appShell .scheduled-task-list .task-row {
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-raised);
+}
+#appShell .scheduled-task-list .task-row:hover { border-color: var(--ui-border-default); background: var(--ui-bg-hover); }
+
+/* Empty state matches the Projects one: centred copy plus a primary action. */
+#appShell .scheduled-directory .workspace-empty { padding: 56px 24px; gap: 8px; font-size: 14px; }
+#appShell .scheduled-directory .workspace-empty strong {
+  color: var(--ui-text-primary);
+  font-size: 16px;
+  font-weight: var(--ui-font-weight-semibold);
+  letter-spacing: -0.01em;
+}
+#appShell .scheduled-directory .workspace-empty > span {
+  color: var(--ui-text-tertiary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+#appShell .scheduled-directory .workspace-empty .workspace-primary {
+  min-height: 36px;
+  margin-top: 10px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+
+/* Sites is the third directory surface. It is still built on the older
+   .creation-panel / .main-page shell, which restore/creation-surfaces.css
+   pins to the 768px chat column (and ref-baseline re-pins .main-page), so
+   it read as a narrower, denser page than Plugins and Scheduled. Give it the
+   same 1040px directory column and header rhythm.
+   The doubled #appShell is the convention documented in polish/index.css for
+   beating a restore/ `!important`. Desktop-only: at phone widths the
+   doubled-id rule would outrank creation-surfaces.css's own mobile padding
+   (18px 16px 48px) and blow the column out to 40px 32px 64px. */
+@media (min-width: 769px) {
+  #appShell#appShell #sitesPanel {
+    width: 100% !important;
+    max-width: 1040px !important;
+    margin-inline: auto !important;
+    padding: 40px 32px 64px !important;
+  }
+  #appShell#appShell #sitesPanel .creation-sites-header {
+    margin-bottom: 20px !important;
+  }
+  #appShell#appShell #sitesPanel .creation-header h1 {
+    margin: 0;
+    color: var(--ui-text-primary);
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 36px;
+    letter-spacing: -.025em;
+  }
+}
+
+#appShell .plugin-directory-row { display: flex; flex-direction: column; align-items: stretch; gap: 12px; min-width: 0; padding: 16px; border: 1px solid var(--ui-border-subtle); border-radius: var(--ui-radius-xl); background: var(--ui-bg-raised); }
+#appShell .plugin-directory-row:hover { border-color: var(--ui-border-default); background: var(--ui-bg-hover); }
 #appShell .plugin-directory-card-top { display: flex; align-items: center; gap: 12px; min-width: 0; }
 #appShell .plugin-directory-row .workspace-row-icon { display: grid; place-items: center; flex: 0 0 40px; width: 40px; height: 40px; padding: 7px; border: 1px solid var(--ui-border-subtle); border-radius: var(--ui-radius-lg); background: var(--ui-bg-surface); }
 #appShell .plugin-directory-row .workspace-row-icon svg { width: 24px; height: 24px; }
@@ -214,4 +437,65 @@
   #appShell .plugin-directory-card-desc { font-size: 14px; line-height: 1.4; }
   #appShell .plugin-directory-row-action { margin-top: 2px; }
   #appShell .plugin-directory-icon-action { width: 100%; min-height: 42px; }
+
+  /* Scheduled mirrors the plugin directory's phone geometry: full-width
+     single column, stacked head, and 14px card padding. */
+  #appShell .scheduled-directory {
+    width: 100%;
+    min-height: calc(100dvh - 56px);
+    padding: 16px 16px calc(24px + var(--ui-safe-bottom));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  /* ref-baseline docks #scheduledPanel's title into the top chrome
+     (top:-71px + position:fixed h1). The panel reset lives in
+     polish/workspace.css next to the Projects one — this file loads before
+     restore/, so an !important here would lose. Scheduled shares the Projects
+     head structure and gets the same in-flow grid pattern: title + create
+     pill on row 1, search full-width on row 2. */
+  #appShell .scheduled-directory .workspace-page-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 18px 10px;
+    align-items: start;
+    margin: 0 0 24px;
+    position: static;
+    z-index: auto;
+  }
+  #appShell .scheduled-directory .workspace-page-head > div:first-child {
+    display: block;
+    padding-left: 0;
+  }
+  #appShell .scheduled-directory .workspace-page-head h1 {
+    position: static;
+    margin: 0;
+    font-size: 27px;
+    line-height: 36px;
+    z-index: auto;
+  }
+  #appShell .scheduled-directory .workspace-page-head p { display: none; }
+  #appShell .scheduled-directory .workspace-head-actions { display: contents; }
+  #appShell .scheduled-directory .workspace-create-button {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 999px;
+  }
+  #appShell .scheduled-directory .workspace-search-field {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+    height: 44px;
+    min-height: 44px;
+    border-radius: var(--ui-radius-pill);
+  }
+  #appShell .scheduled-filter-tabs { margin: 0 -16px 18px; padding: 0 16px; }
+  #appShell .scheduled-filter-tabs button { min-height: 40px; padding: 0 16px; font-size: 16px; }
+  #appShell .scheduled-section-heading { font-size: 16px; }
+  #appShell .scheduled-recommendations { grid-template-columns: 1fr; gap: 10px; }
+  #appShell .scheduled-recommendation { gap: 10px; padding: 14px; border-radius: var(--ui-radius-lg); }
+  #appShell .scheduled-recommendation-copy { gap: 3px; }
+  #appShell .scheduled-recommendation-copy strong { font-size: 16px; }
 }

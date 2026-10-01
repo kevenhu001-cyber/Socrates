@@ -73,7 +73,8 @@
      which keeps an in-flow hero header — it reads as a broken title crammed
      beside the hamburger. Revert to the same grid pattern Library uses:
      title + create pill on row 1, search full-width on row 2. */
-  body.workspace-active #appShell #spacesPanel[data-live-directory="true"] {
+  body.workspace-active #appShell #spacesPanel[data-live-directory="true"],
+  body.workspace-active #appShell #scheduledPanel {
     top: 0 !important;
     padding-top: 16px !important;
   }

@@ -1,6 +1,47 @@
 /*
  * styles/components/input.css
  *
- * M1 placeholder. Will own the `.auth-input`, `.profile-input`,
- * `.chat-input-wrap`, and related input / textarea rules.
+ * Owns `.auth-input`, `.profile-input`, `.chat-input-wrap` and related
+ * input / textarea rules.
+ *
+ * ── Focus contract ───────────────────────────────────────────────────────
+ * Two rules govern focus in this app and they used to disagree:
+ *
+ *   1. foundations/base.css `:focus-visible` — a soft ring,
+ *      `color-mix(in srgb, var(--ui-text-primary) 55%, transparent)`.
+ *   2. restore/fixes.css `#appShell#appShell#appShell :focus-visible` —
+ *      the same geometry in `--ui-accent-strong`, which is a *surface-fill*
+ *      token (white in the dark theme, near-black in light). Painting a ring
+ *      with it produced a hard opaque rectangle on every focused control.
+ *
+ * fixes.css now uses the translucent treatment, so the harsh white box is
+ * gone everywhere. This file handles the remaining half of the problem: an
+ * input that is embedded in a container which already reacts to focus must
+ * not draw a ring of its own. The container's border / background / glow
+ * *is* the focus indicator, and a second rectangle inside it reads as a
+ * border, not as focus — the "white frame inside the pill" that showed up
+ * on the scheduled-task composer.
+ *
+ * Scope is deliberately narrow: only fields with a verified focus treatment
+ * are listed. Standalone inputs (the auth gate lives outside #appShell, and
+ * `.exam-input` has no focus styling of its own) keep the soft ring, so
+ * keyboard focus is never made invisible.
+ *
+ * Specificity follows the convention documented in polish/index.css: to beat
+ * a restore/ `!important`, keep `!important` and match the `#appShell`
+ * repetition. Nothing here changes geometry that JS measures.
  */
+
+#appShell#appShell#appShell .scheduled-task-composer input:focus-visible,
+#appShell#appShell#appShell .workspace-search-field input:focus-visible,
+#appShell#appShell#appShell .plugin-directory-search input:focus-visible,
+#appShell#appShell#appShell .workspace-field input:focus-visible,
+#appShell#appShell#appShell .workspace-field textarea:focus-visible,
+#appShell#appShell#appShell .workspace-field select:focus-visible {
+  outline: none !important;
+}
+
+/* `.sidebar-search input` is deliberately absent: the sidebar surface is
+   owned by parity/sidebar.css and polish/sidebar.css per
+   check-surface-ownership.mjs, so its half of this contract lives in
+   polish/sidebar.css. */

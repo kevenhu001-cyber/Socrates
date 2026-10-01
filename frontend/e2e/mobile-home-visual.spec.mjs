@@ -121,6 +121,8 @@ test('mobile conversation home matches the compact dark reference layout', async
       const rect = el?.getBoundingClientRect();
       const style = el ? getComputedStyle(el) : null;
       return rect && style ? {
+        x: rect.x,
+        right: rect.right,
         width: rect.width,
         height: rect.height,
         borderStyle: style.borderStyle,
@@ -130,6 +132,8 @@ test('mobile conversation home matches the compact dark reference layout', async
     };
     return {
       sidebar: measure('#sidebarOpenBtn'),
+      modelSwitcher: measure('#topModelSwitcher'),
+      newChat: measure('#mobileNewChatBtn'),
       find: measure('#findBtn'),
       share: measure('#shareBtn'),
       sidebarStatus: measure('.mobile-sidebar-status'),
@@ -141,6 +145,19 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(headerVisual.sidebar?.width).toBe(44);
   expect(headerVisual.find?.width).toBe(44);
   expect(headerVisual.share?.width).toBe(44);
+  expect(headerVisual.modelSwitcher?.width).toBeGreaterThan(0);
+  expect(headerVisual.modelSwitcher?.right).toBeLessThanOrEqual(headerVisual.newChat?.x ?? 0);
+  for (const width of [390, 360, 320]) {
+    await page.setViewportSize({ width, height: 844 });
+    const boxes = await page.evaluate(() => {
+      const rect = (selector) => document.querySelector(selector).getBoundingClientRect();
+      const switcher = rect('#topModelSwitcher');
+      const newChat = rect('#mobileNewChatBtn');
+      return { switcherRight: switcher.right, newChatLeft: newChat.left, switcherWidth: switcher.width };
+    });
+    expect(boxes.switcherWidth).toBeGreaterThan(0);
+    expect(boxes.switcherRight).toBeLessThanOrEqual(boxes.newChatLeft);
+  }
   expect(headerVisual.find?.borderWidth).toBe('0px');
   expect(headerVisual.share?.borderWidth).toBe('0px');
   /* The reference header shows no always-on status dot next to the

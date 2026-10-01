@@ -246,24 +246,12 @@ const SessionRow = memo(SessionRowBase, (prev, next) => (
   && prev.onDragEnd === next.onDragEnd
 ));
 
-/* Shared empty-state chrome — icon above body. The icon gives first-time
-   users a visual anchor for "nothing here yet"; the layout only paints
-   on phones via polish/sidebar.css. Desktop keeps the unstyled text
-   fallback (the wrapper class is .recents-empty in both cases, but the
-   flex/icon rules are scoped to @media (max-width: 768px)). */
-const EMPTY_ICON = (
-  <svg viewBox="0 0 64 64" width="64" height="64" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M12 14a4 4 0 0 1 4-4h32a4 4 0 0 1 4 4v22a4 4 0 0 1-4 4H26l-8 7v-7h-2a4 4 0 0 1-4-4z" />
-    <circle cx="24" cy="25" r="1.5" fill="currentColor" stroke="none" />
-    <circle cx="32" cy="25" r="1.5" fill="currentColor" stroke="none" />
-    <circle cx="40" cy="25" r="1.5" fill="currentColor" stroke="none" />
-  </svg>
-);
-
+/* Shared empty-state chrome — text only, centred on phones via
+   polish/sidebar.css (the flex rules are scoped to
+   @media (max-width: 768px)). Desktop keeps the unstyled fallback. */
 function EmptyState({ children }: { children: React.ReactNode }) {
   return (
     <div className="recents-empty">
-      <div className="recents-empty-icon">{EMPTY_ICON}</div>
       <div className="recents-empty-text">{children}</div>
     </div>
   );

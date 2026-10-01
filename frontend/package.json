@@ -9,7 +9,7 @@
   "description": "Socrates — single-page learning app (Vite-bundled)",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "node scripts/build.mjs",
     "build:wasm": "node scripts/build-wasm.mjs",
     "lint": "tsc --noEmit && eslint src && node scripts/check-css-debt.mjs && node scripts/check-composer-css.mjs && node scripts/check-surface-ownership.mjs && node ../scripts/gen-csp-hashes.mjs",
     "lint:eslint": "eslint src",

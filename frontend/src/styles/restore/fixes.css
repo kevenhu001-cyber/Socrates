@@ -198,7 +198,8 @@
    Plugins and Scheduled. Keep controls visible on touch devices. */
 #appShell .library-directory .workspace-page-head,
 #appShell .projects-directory .workspace-page-head,
-#appShell .plugin-directory .plugin-directory-head { margin-bottom: 20px !important; }
+#appShell .plugin-directory .plugin-directory-head,
+#appShell .scheduled-directory .scheduled-directory-head { margin-bottom: 20px !important; }
 #appShell .library-directory .workspace-tabs { display: flex; gap: 4px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
 #appShell .library-directory .workspace-tabs button { white-space: nowrap; }
 #appShell .library-row-menu-wrap { position: relative; }
@@ -547,13 +548,23 @@
   }
 }
 
+/* The !important and the tripled #appShell are load-bearing: they outrank the
+   legacy `outline: 0` rules that individual inputs carry, and the app-wide
+   :focus-visible baseline in foundations/base.css. What was wrong is the
+   colour. --ui-accent-strong is a surface-fill token (white in the dark
+   theme, near-black in light) meant for .btn-primary, .stg-toggle-track.on
+   and .msg-edit-submit backgrounds; painting a 2px ring with it produced a
+   hard opaque white rectangle around every focused input — the "white box
+   inside the pill" seen on the scheduled composer, the search fields and
+   every other text control. Use the same translucent treatment as the
+   baseline so the ring reads as focus rather than as a border. */
 #appShell#appShell#appShell button:focus-visible,
 #appShell#appShell#appShell a:focus-visible,
 #appShell#appShell#appShell [role="button"]:focus-visible,
 #appShell#appShell#appShell input:focus-visible,
 #appShell#appShell#appShell textarea:focus-visible,
 #appShell#appShell#appShell select:focus-visible {
-  outline: 2px solid var(--ui-accent-strong) !important;
+  outline: 2px solid color-mix(in srgb, var(--ui-text-primary) 55%, transparent) !important;
   outline-offset: 2px !important;
 }
 
