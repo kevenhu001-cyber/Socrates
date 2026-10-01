@@ -13,16 +13,31 @@
 
 /* Assistant column keeps full width, no bubble. */
 
-/* Hover toolbar — 26px ghost buttons, 6px radius. */
+/* Hover toolbar — 32px ghost buttons, 8px radius on mobile. */
 @media (max-width: 768px) {
-#appShell .msg-toolbar { gap: 2px; height: 26px; }
+#appShell .msg-toolbar {
+  gap: 4px;
+  height: 32px;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+#appShell .msg-toolbar::-webkit-scrollbar { display: none; }
 }
 @media (max-width: 768px) {
 #appShell .msg-toolbar-btn {
-  width: 26px;
-  height: 26px;
-  border-radius: var(--ui-radius-sm, 6px);
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  border-radius: var(--ui-radius-sm, 8px);
   color: var(--ui-text-muted);
+  transition: background-color var(--ui-duration-fast, 0.12s) ease,
+              color var(--ui-duration-fast, 0.12s) ease,
+              transform var(--ui-duration-fast, 0.12s) ease;
 }
 }
 @media (max-width: 768px) {
@@ -30,9 +45,14 @@
   background: var(--ui-bg-hover-ghost);
   color: var(--ui-text-primary);
 }
+#appShell .msg-toolbar-btn:active {
+  transform: scale(0.92);
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+}
 }
 @media (max-width: 768px) {
-#appShell .msg-toolbar-btn svg { width: 15px; height: 15px; }
+#appShell .msg-toolbar-btn svg { width: 16px; height: 16px; }
 }
 
 /* Tooltip micro-label — consistent with the rest of the shell. */

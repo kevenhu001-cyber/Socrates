@@ -75,9 +75,9 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 @media (max-width: 768px) {
 
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-toolbar {
-  min-height: 26px;
-  height: 26px;
-  margin-top: 5px;
+  min-height: 32px;
+  height: 32px;
+  margin-top: 6px;
 }
 }
 
@@ -87,7 +87,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   }
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell #msgList {
     max-width: none;
-    padding: 20px 16px 24px;
+    padding: 20px 16px 36px;
   }
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg.user .msg-body {
     max-width: 88%;

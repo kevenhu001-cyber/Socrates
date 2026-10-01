@@ -7,6 +7,22 @@
 
 #appShell .top-bar {
   padding: 6px 14px;
+  background: color-mix(in srgb, var(--ui-bg-page) 88%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--ui-border-subtle);
+}
+
+#appShell .top-bar .toggle-sidebar,
+#appShell .top-bar .mobile-newchat-btn,
+#appShell .top-bar .icon-btn {
+  transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease, transform 0.1s ease;
+}
+
+#appShell .top-bar .toggle-sidebar:active,
+#appShell .top-bar .mobile-newchat-btn:active,
+#appShell .top-bar .icon-btn:active {
+  transform: scale(0.92);
 }
 }
 
@@ -36,9 +52,10 @@
 }
 }
 
-/* Free-tier "升级" pill left of the new-chat circle — the reference mobile
-   top bar's upgrade entry. Hidden until ui/profile.js stamps
-   [data-user-tier="diophantus"] on <html>; phones only. */
+/* Free-tier "升级" pill: top-bar entry on every viewport <= 768px for
+   free-tier accounts so the upgrade is one tap away. The sidebar drawer
+   footer (polish/sidebar.css .sidebar-upgrade-pill) carries the same
+   link as a redundant entry point once the drawer is open. */
 #appShell .mobile-upgrade-pill { display: none; }
 @media (max-width: 768px) {
 :root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill {
@@ -48,21 +65,22 @@
   flex: 0 0 auto;
   box-sizing: border-box;
   min-height: 30px;
-  padding: 0 12px;
+  padding: 0 10px;
   border: 1px solid var(--ui-border-default);
   border-radius: var(--ui-radius-pill);
   background: transparent;
   color: var(--ui-text-primary);
   font-size: 13px;
-  font-weight: 450;
+  font-weight: 500;
   line-height: 18px;
   text-decoration: none;
   white-space: nowrap;
 }
-#appShell .mobile-upgrade-pill svg { width: 14px; height: 14px; }
-#appShell .mobile-upgrade-pill:hover,
-#appShell .mobile-upgrade-pill:focus-visible { background: var(--ui-bg-hover); }
+:root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill svg { width: 14px; height: 14px; }
+:root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill:hover,
+:root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill:focus-visible { background: var(--ui-bg-hover); }
 }
+
 
 /* Mode pill — calmer border, tighter hit rows. */
 @media (max-width: 768px) {

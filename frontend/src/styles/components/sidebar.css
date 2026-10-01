@@ -177,14 +177,20 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     width: min(var(--ui-sidebar-mobile), calc(100vw - 54px));
     min-width: min(var(--ui-sidebar-mobile), calc(100vw - 54px));
     transform: translateX(0);
-    transition: transform var(--ui-duration-normal) var(--ui-ease-out);
-    box-shadow: none;
+    transition: transform var(--ui-duration-normal) var(--ui-ease-out), box-shadow var(--ui-duration-normal) ease;
+    box-shadow: 4px 0 28px rgba(0, 0, 0, 0.25);
     z-index: var(--ui-z-drawer);
     background: var(--ui-bg-sidebar);
     border-right: 1px solid var(--ui-border-subtle);
   }
   #appShell .sidebar.collapsed { transform: translateX(-100%); box-shadow: none; }
-  #appShell .sidebar-backdrop { background: var(--ui-backdrop); z-index: var(--ui-z-backdrop); }
+  #appShell .sidebar-backdrop {
+    background: var(--ui-backdrop);
+    z-index: var(--ui-z-backdrop, 80);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+    transition: opacity var(--ui-duration-normal) ease;
+  }
   #appShell .sidebar-footer { background: var(--ui-bg-sidebar); }
   #appShell .sidebar-header .compose-btn { display: none; }
   #appShell .sidebar-search-row {
@@ -231,8 +237,8 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 30px;
-    height: 30px;
+    width: 36px;
+    height: 36px;
     padding: 0;
     border: 0;
     border-radius: var(--ui-radius-pill);

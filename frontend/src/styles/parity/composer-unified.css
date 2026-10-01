@@ -481,6 +481,10 @@
      same pattern applied to msg-toolbar-btn. */
   #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn) {
     position: relative;
+    transition: transform var(--ui-duration-fast, 0.12s) ease, background-color var(--ui-duration-fast, 0.12s) ease;
+  }
+  #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn):active {
+    transform: scale(0.92);
   }
   #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn)::before {
     content: "";

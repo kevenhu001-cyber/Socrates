@@ -246,6 +246,29 @@ const SessionRow = memo(SessionRowBase, (prev, next) => (
   && prev.onDragEnd === next.onDragEnd
 ));
 
+/* Shared empty-state chrome — icon above body. The icon gives first-time
+   users a visual anchor for "nothing here yet"; the layout only paints
+   on phones via polish/sidebar.css. Desktop keeps the unstyled text
+   fallback (the wrapper class is .recents-empty in both cases, but the
+   flex/icon rules are scoped to @media (max-width: 768px)). */
+const EMPTY_ICON = (
+  <svg viewBox="0 0 64 64" width="64" height="64" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 14a4 4 0 0 1 4-4h32a4 4 0 0 1 4 4v22a4 4 0 0 1-4 4H26l-8 7v-7h-2a4 4 0 0 1-4-4z" />
+    <circle cx="24" cy="25" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="32" cy="25" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="40" cy="25" r="1.5" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+function EmptyState({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="recents-empty">
+      <div className="recents-empty-icon">{EMPTY_ICON}</div>
+      <div className="recents-empty-text">{children}</div>
+    </div>
+  );
+}
+
 function SessionListInner() {
   const snap = useSessionListSnapshot();
   const { sessions, currentSessionId, searchQuery, filter, fetchFailed } = snap;
@@ -297,7 +320,7 @@ function SessionListInner() {
     if (searchQuery) {
       const [before, after] = t('session.noSearchMatch').split('{query}');
       empty = (
-        <div className="recents-empty">
+        <EmptyState>
           {before}<strong>&ldquo;{searchQuery}&rdquo;</strong>{after}<br />
           <a
             href="#"
@@ -306,11 +329,11 @@ function SessionListInner() {
               sessionActions.setRecentsSearch('');
             }}
           >{t('session.clearSearch')}</a> {t('session.showAllHint')}
-        </div>
+        </EmptyState>
       );
     } else if (fetchFailed && !filter) {
       empty = (
-        <div className="recents-empty">
+        <EmptyState>
           {t('session.loadListFailed')}<br />
           <a
             href="#"
@@ -319,13 +342,13 @@ function SessionListInner() {
               sessionActions.retryRecentsFetch();
             }}
           >{t('session.retry')}</a>
-        </div>
+        </EmptyState>
       );
     } else if (filter) {
       const filterLabel = filter.indexOf('project:') === 0 ? 'Project' : '#' + filter;
       const [before, after] = t('session.noFilterMatch').split('{filter}');
       empty = (
-        <div className="recents-empty">
+        <EmptyState>
           {before}<strong>{filterLabel}</strong>{after}<br />
           <a
             href="#"
@@ -334,13 +357,13 @@ function SessionListInner() {
               sessionActions.clearRecentsFilter();
             }}
           >{t('session.clearFilter')}</a> {t('session.showAllHint')}
-        </div>
+        </EmptyState>
       );
     } else {
       empty = (
-        <div className="recents-empty">
+        <EmptyState>
           {t('session.empty')}<br />{t('session.emptyHint')}
-        </div>
+        </EmptyState>
       );
     }
     return <div className="recents-list-content">{empty}</div>;

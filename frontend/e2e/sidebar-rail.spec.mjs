@@ -75,6 +75,17 @@ test('collapsing keeps a 52px icon rail with named buttons and reopens from it',
   // Labels are visually hidden, not removed: icons keep accessible names.
   await expect(page.getByRole('button', { name: /资料库/ })).toBeVisible();
 
+  // Each visible nav button exposes its label via `title` so the CSS
+  // rail-tooltip (`::after` with `content: attr(title)`) has text to show
+  // and screen readers announce a useful name on hover/focus.
+  const railIds = await page.locator('#sidebarNav .sidebar-nav-btn').evaluateAll((buttons) =>
+    buttons.filter((b) => getComputedStyle(b).display !== 'none').map((b) => b.id),
+  );
+  expect(railIds.length).toBeGreaterThan(0);
+  for (const id of railIds) {
+    await expect(page.locator(`#${id}`)).toHaveAttribute('title', /\S+/);
+  }
+
   const toggle = page.locator('#sidebarCloseBtn');
   await expect(toggle).toBeVisible();
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');

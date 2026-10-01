@@ -113,6 +113,7 @@ function SidebarNav() {
             className={`btn btn-ghost btn-touch sidebar-nav-btn${isActive ? ' active' : ''}`}
             data-nav={button.key}
             id={navButtonId(button.key)}
+            data-i18n-title={button.i18nKey}
             aria-current={isActive ? 'page' : undefined}
             onClick={(event: ReactMouseEvent<HTMLButtonElement>) => {
               /* The row-end + affordance (Projects) opens the create flow

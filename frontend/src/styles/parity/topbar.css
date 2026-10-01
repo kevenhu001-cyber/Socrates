@@ -13,6 +13,60 @@
 
 #appShell #topModelSwitcher { display: none; }
 
+@media (max-width: 768px) {
+  body[data-conversation-active="true"] #appShell #topModelSwitcher {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    max-width: calc(100vw - 120px);
+    height: 36px;
+    margin: 0;
+    padding: 0 10px;
+    border: 0;
+    border-radius: var(--ui-radius-row, 10px);
+    background: transparent;
+    color: var(--ui-text-primary);
+    font: inherit;
+    font-size: 15px;
+    line-height: 24px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color var(--ui-duration-hover, 0.12s) ease, transform 0.1s ease;
+  }
+  body[data-conversation-active="true"] #appShell #topModelSwitcher:hover {
+    background: var(--ui-bg-hover);
+  }
+  body[data-conversation-active="true"] #appShell #topModelSwitcher:active {
+    background: var(--ui-bg-hover);
+    transform: translate(-50%, -50%) scale(0.96);
+  }
+  body[data-conversation-active="true"] #appShell .top-model-switcher-name {
+    font-weight: 600;
+    font-size: 15px;
+  }
+  body[data-conversation-active="true"] #appShell .top-model-switcher-model {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--ui-text-tertiary);
+    font-weight: 400;
+    font-size: 13px;
+    text-overflow: ellipsis;
+  }
+  body[data-conversation-active="true"] #appShell .top-model-switcher-model:empty { display: none; }
+  body[data-conversation-active="true"] #appShell .top-model-switcher-caret {
+    flex: 0 0 14px;
+    width: 14px;
+    height: 14px;
+    color: var(--ui-text-tertiary);
+  }
+}
+
+
 @media (min-width: 769px) {
   #appShell .top-bar {
     position: relative;

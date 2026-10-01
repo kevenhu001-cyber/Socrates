@@ -218,10 +218,19 @@
 @media (max-width: 768px) {
 
 #appShell .recent-item {
-  min-height: 32px;
-  padding: 5px 10px;
+  min-height: 40px;
+  padding: 8px 10px;
   border-radius: var(--ui-radius-control, 8px);
   transition: background-color var(--ui-duration-fast) ease;
+}
+}
+/* Current-session emphasis: 3px inset accent bar on the row's left edge.
+   `box-shadow: inset` avoids taking layout space (the row already has
+   padding) and stays visible when the row is at the top/bottom of the
+   scroll viewport where a border would clip. */
+@media (max-width: 768px) {
+#appShell .recent-item.active {
+  box-shadow: inset 3px 0 0 var(--ui-accent);
 }
 }
 @media (max-width: 768px) {
@@ -358,4 +367,28 @@
 #appShell .sidebar-more-item {
   border-radius: var(--ui-radius-control, 8px);
   min-height: 34px;
+}
+
+/* ── Empty state (mobile) — icon above text, both centred ── */
+@media (max-width: 768px) {
+#appShell .recents-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 36px 24px;
+  text-align: center;
+  color: var(--ui-text-secondary);
+  font-size: 13.5px;
+  line-height: 20px;
+}
+#appShell .recents-empty-icon {
+  color: var(--ui-text-tertiary);
+  opacity: 0.7;
+}
+#appShell .recents-empty-text a {
+  color: var(--ui-text-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 }
