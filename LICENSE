@@ -1,0 +1,28 @@
+Custom Source-Available License
+自定义源码可见许可
+
+Copyright © Jiacheng Hu
+版权所有 © Jiacheng Hu
+
+This is a custom source-available license. It is not an OSI-approved open-source license.
+本许可为自定义源码可见许可，并非 OSI 批准的开源许可。
+
+1. Scope / 适用范围
+
+This License applies only to code in this repository whose copyright Jiacheng Hu owns or that Jiacheng Hu is authorized to license. Third-party code, assets, and other components remain subject to their respective licenses; this License does not replace or change those terms.
+本许可仅适用于本仓库中版权归 Jiacheng Hu 所有或 Jiacheng Hu 有权许可的代码。第三方代码、素材及其他组件仍受其各自许可约束；本许可不替代或更改其条款。
+
+2. Non-commercial permission / 非商业授权
+
+You may use, copy, modify, and redistribute the original or modified code covered by this License, free of charge, for non-commercial purposes, provided that each copy or redistribution retains the applicable copyright and license notices.
+您可免费为非商业目的使用、复制、修改及再分发本许可涵盖的原始代码或修改版本，但每份副本或再分发均须保留适用的版权声明和许可声明。
+
+3. Commercial use / 商业用途
+
+Any commercial use of code covered by this License requires separate authorization from Jiacheng Hu.
+对本许可涵盖代码的任何商业用途，均须另行获得 Jiacheng Hu 的授权。
+
+4. Disclaimer / 免责声明
+
+The code covered by this License is provided "as is", without express or implied warranties.
+本许可涵盖的代码按“现状”提供，不附带任何明示或默示保证。

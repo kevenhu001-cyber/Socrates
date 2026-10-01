@@ -9,7 +9,7 @@
 [![Frontend](https://img.shields.io/badge/frontend-Vite%20SPA-f3c769?style=flat-square&logo=vite&logoColor=black)](frontend/)
 [![Android](https://img.shields.io/badge/android-React%20Native%20%2B%20Expo-3DDC84?style=flat-square&logo=android&logoColor=white)](mobile/)
 [![Database](https://img.shields.io/badge/database-PostgreSQL%2014%2B-4169e1?style=flat-square&logo=postgresql&logoColor=white)](server/src/db/)
-[![License](https://img.shields.io/badge/license-proprietary-555555?style=flat-square)](#license)
+[![Source availability](https://img.shields.io/badge/source-available-555555?style=flat-square)](#source-availability-and-use)
 
 **Socrates — AI-powered Socratic tutor**  
 Streaming chat with reasoning models, interactive viz canvases, KaTeX math,
@@ -45,7 +45,7 @@ cross-session memory, and a native Android client.
 - [Repository visibility](#repository-visibility)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
-- [License](#license)
+- [Source availability and use](#source-availability-and-use)
 - [Support](#support)
 
 ---
@@ -667,16 +667,14 @@ workflow and secret contract.
 
 ## Repository visibility
 
-This repository is **private**. The public-facing surfaces are:
+This repository is **public**. The public-facing surfaces include:
 
 - The marketing site at <https://topodrive.top/>
 - The live app at <https://app.topodrive.top/>
 - The Google Play listing (when published) for the Android client
 
-If you've been granted access to this repo, please don't make
-the contents public — the SPA includes the Socratic teacher
-prompt verbatim, the agent-tool implementation, and the custom
-rendering pipeline that we'd like to keep proprietary for now.
+For source-code use and modification, see
+[Source availability and use](#source-availability-and-use).
 
 ## Roadmap
 
@@ -694,9 +692,8 @@ Roughly in priority order, no dates:
 
 ## Contributing
 
-This is a private repository; PRs from outside the core team
-aren't currently accepted. If you have a feature request or a
-bug report, please email [help@addtech.site](mailto:help@addtech.site)
+PRs from outside the core team aren't currently accepted. If you have a feature
+request or a bug report, please email [help@addtech.site](mailto:help@addtech.site)
 or open a ticket in the internal tracker.
 
 For core contributors:
@@ -710,11 +707,17 @@ For core contributors:
 4. Push and open a PR.
 5. Merge via squash.
 
-## License
+## Source availability and use
 
-Proprietary. All rights reserved. See [site/terms.html](site/terms.html)
-for the end-user terms; the source-code licence is "internal use
-only" until a public release is announced.
+Code in this repository that Jiacheng Hu owns or is authorized to license is
+available under a custom source-available license, not an OSI-approved
+open-source license. You may use, modify, and redistribute the original or
+modified covered code free of charge for non-commercial purposes, provided
+you retain the copyright and license notices. Any commercial use requires
+separate authorization. Third-party code remains subject to its own license.
+See [LICENSE](LICENSE) for the full bilingual terms.
+
+For end-user terms, see [site/terms.html](site/terms.html).
 
 ## Support
 
