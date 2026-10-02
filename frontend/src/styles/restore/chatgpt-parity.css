@@ -54,9 +54,9 @@
   }
 
   body:not([data-conversation-active="true"]):not(.workspace-active) #appShell#appShell#appShell #topicDisclaimer {
-    position: fixed !important;
+    position: fixed;
     right: 16px !important;
-    bottom: 12px !important;
+    bottom: 12px;
     left: 276px !important;
     display: block !important;
     width: auto !important;
@@ -64,10 +64,10 @@
     margin: 0 !important;
     transform: none !important;
     color: var(--chatgpt-faint) !important;
-    font-family: var(--chatgpt-font) !important;
+    font-family: var(--chatgpt-font);
     font-size: 12px !important;
     line-height: 18px !important;
-    text-align: center !important;
+    text-align: center;
   }
 
   /* P_has-invalidation — see ui/layoutStateMirror.js. */

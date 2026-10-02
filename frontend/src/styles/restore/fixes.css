@@ -34,7 +34,7 @@
      .recent-item has `contain: layout` (own stacking context). Lift the open
      row; keep every menu item clickable (legacy .recent-item-del opacity:0). */
   #appShell .recent-item.actions-open {
-    z-index: var(--ui-z-popover, 200) !important;
+    z-index: var(--ui-z-popover, 200);
     position: relative;
   }
   #appShell .recent-item-menu {
