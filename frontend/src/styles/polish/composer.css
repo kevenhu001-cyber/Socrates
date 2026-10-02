@@ -11,7 +11,7 @@
    of the app renders Plus Jakarta Sans via --cg-font; the bundled face is
    also what the localization specs assert. */
 #appShell#appShell#appShell#appShell #topicSetup .topic-title.greeting {
-  font-family: var(--cg-font) !important;
+  font-family: var(--cg-font);
 }
 
 /* Greeting stays one line in every locale. The pool strings are short, but
@@ -30,7 +30,7 @@
    moves the centered block up by half the added amount. */
 @media (min-width: 769px) {
   #appShell#appShell#appShell #topicSetup {
-    padding-bottom: calc(80px + var(--conversation-safe-bottom) + 18vh) !important;
+    padding-bottom: calc(80px + var(--conversation-safe-bottom) + 18vh);
   }
 }
 
@@ -42,10 +42,10 @@
      #appShell anchor is needed to outrank the body:not(...) landing-state
      rule that owns these properties. */
   #appShell#appShell#appShell#appShell #topicSetup .topic-title.greeting {
-    top: 35% !important;
-    width: auto !important;
-    max-width: min(92vw, 560px) !important;
-    font-size: calc(min(27px, 6vw) * var(--app-font-scale, 1)) !important;
+    top: 35%;
+    width: auto;
+    max-width: min(92vw, 560px);
+    font-size: calc(min(27px, 6vw) * var(--app-font-scale, 1));
   }
 }
 

@@ -159,7 +159,12 @@ body,
   position: relative;
   isolation: isolate;
   min-height: calc(100dvh - 56px) !important;
-  padding: 0 24px calc(112px + var(--conversation-safe-bottom)) !important;
+  padding-top: 0 !important;
+  padding-inline: 24px !important;
+  /* Bottom inset stays plain so the canonical hero-lift padding-bottom in
+     polish/composer.css wins by specificity, not !important bidding. On
+     phones the bottom-band rules (keyboard inset) still pin it anyway. */
+  padding-bottom: calc(112px + var(--conversation-safe-bottom));
   background: var(--conversation-page) !important;
 }
 
@@ -178,8 +183,6 @@ body,
   max-width: min(100%, 620px);
   margin: 0 auto 28px !important;
   color: var(--conversation-text) !important;
-  font-family: var(--cg-font) !important;
-  font-size: calc(clamp(28px, 2.4vw, 32px) * var(--app-font-scale, 1)) !important;
   font-weight: 400 !important;
   line-height: 1.25 !important;
   letter-spacing: -0.01em !important;
@@ -357,15 +360,13 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
        caused by a nested 16px content inset. */
     position: absolute !important;
     inset-inline: 0 !important;
-    top: 42% !important;
     bottom: auto !important;
     transform: translateY(-50%) !important;
     align-self: auto !important;
-    width: auto !important;
-    max-width: none !important;
     margin: 0 !important;
     text-align: center !important;
-    font-size: clamp(26px, 7.5vw, 30px) !important;
+    /* top/width/max-width/font-size moved on — polish/composer.css owns
+       the greeting's placement and size on phones. */
     /* P_greeting-optical-center — negative letter-spacing adds a
        trailing -0.01em after the last character that is included in
        the layout width but not visible, so text-align:center centers
@@ -725,11 +726,6 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
     padding-inline: 16px !important;
   }
 
-  #appShell#appShell #topicSetup .topic-title.greeting {
-    top: 44% !important;
-    font-size: clamp(20px, 5.5vw, 22px) !important;
-    letter-spacing: -.015em !important;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

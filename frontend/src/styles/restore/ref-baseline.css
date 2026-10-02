@@ -460,7 +460,6 @@ body.workspace-active #appShell .main-page {
   /* Home: one optical group centred in the pane below the 44px top bar. */
   #appShell #topicSetup {
     min-height: calc(100dvh - 44px) !important;
-    padding: 0 24px 22px !important;
     justify-content: flex-start !important;
   }
 
@@ -478,7 +477,6 @@ body.workspace-active #appShell .main-page {
     justify-content: center !important;
     min-height: 42px !important;
     margin: 0 auto !important;
-    font-size: calc(24px * var(--app-font-scale, 1)) !important;
     font-weight: 400 !important;
     line-height: 28px !important;
     letter-spacing: -0.01em !important;
@@ -1129,7 +1127,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 
   #appShell #topicSetup {
     min-height: calc(100dvh - 44px) !important;
-    padding: 0 24px 24px !important;
   }
 
   /* Only the quick-actions row remains on landing; the home-suggestions-wrap

@@ -51,7 +51,12 @@
      Socrates keeps both modes available while adopting that visual weight. */
 
   #appShell#appShell #topicSetup {
-    padding: 0 24px calc(64px + var(--conversation-safe-bottom)) !important;
+    padding-top: 0 !important;
+    padding-inline: 24px !important;
+    /* Bottom inset is a plain declaration so polish/composer.css's
+       hero-lift padding-bottom (the canonical owner) resolves by
+       specificity instead of !important bidding. */
+    padding-bottom: calc(64px + var(--conversation-safe-bottom));
   }
 
   #appShell#appShell#appShell #topicSetup .topic-title.greeting {
@@ -59,8 +64,6 @@
     height: auto !important;
     max-width: min(100%, 768px) !important;
     margin: 0 auto 48px !important;
-    font-family: var(--chatgpt-font) !important;
-    font-size: 24px !important;
     font-weight: 400 !important;
     line-height: 28px !important;
     letter-spacing: 0 !important;
@@ -212,10 +215,7 @@
 
 @media (max-width: 768px) {
   #appShell#appShell #topicSetup .topic-title.greeting {
-    font-family: var(--chatgpt-font) !important;
-    font-size: calc(24px * var(--app-font-scale, 1)) !important;
-    line-height: 30px !important;
-    letter-spacing: 0 !important;
+    letter-spacing: 0;
   }
 
   #composerToolsMenu .composer-tools-divider {

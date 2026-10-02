@@ -528,9 +528,6 @@
   }
 
   #appShell#appShell#appShell #topicSetup .topic-title.greeting {
-    top: 42% !important;
-    font-family: var(--chatgpt-font) !important;
-    font-size: calc(24px * var(--app-font-scale, 1)) !important;
     font-weight: 400 !important;
   }
 
@@ -538,13 +535,6 @@
      17px text is comfortable, plus the 40px control rail. 104px total
      (6 + 48 + 40 + 6 + 2 border) replaces the previous 86px/32px field
      that read as a thin strip next to the reference. */
-}
-
-@media (min-width: 769px) {
-
-  #appShell#appShell#appShell #topicSetup .topic-title.greeting {
-    font-size: calc(24px * var(--app-font-scale, 1)) !important;
-  }
 }
 
 /* The !important and the tripled #appShell are load-bearing: they outrank the
@@ -594,7 +584,6 @@
      text-scale preference, as it was before this pass. */
   #appShell#appShell#appShell #topicSetup .topic-title.greeting {
     margin: 0 auto 36px !important;
-    font-size: calc(24px * var(--app-font-scale, 1)) !important;
     font-weight: 400 !important;
     line-height: 28px !important;
     letter-spacing: normal !important;
@@ -786,9 +775,8 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
      wraps and the capsule can never rest at the reference's one-row
      height. The value + caret still names the active level. */
 
-  /* Greeting — reference phone heading is 24px/28px at weight 400. */
+  /* Greeting — reference phone heading is 28px tall. */
   #appShell#appShell#appShell #topicTitle.greeting {
-    font-size: calc(24px * var(--app-font-scale, 1)) !important;
     line-height: 28px !important;
   }
 }
@@ -822,13 +810,15 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
     display: none !important;
   }
 
+  /* Landing greeting shrink-wraps and centers on the 50% anchor: width:auto
+     with a hard left edge and translateX(-50%). `right:auto` is load-bearing
+     — with both insets set (chat-surface's inset-inline:0) and width:auto
+     the box would stretch instead of shrink-wrapping. !important is required
+     to outrank chat-surface's own !important inset/transform pins. */
   body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
     #appShell#appShell#appShell #topicSetup .topic-title.greeting {
-    top: 41% !important;
     left: 50% !important;
     right: auto !important;
-    width: min(220px, 100%) !important;
-    max-width: 220px !important;
     transform: translate(-50%, -50%) !important;
   }
 }

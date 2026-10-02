@@ -204,7 +204,9 @@
   #appShell #topicSetup .topic-title.greeting {
     position: static;
     margin: 0 0 48px;
-    font-size: calc(28px * var(--app-font-scale, 1));
+    /* Reference hero is 24px/28px — this is now the canonical declaration;
+       the restore-layer 24px !important pins were retired together. */
+    font-size: calc(24px * var(--app-font-scale, 1));
     line-height: 1.25;
   }
 }

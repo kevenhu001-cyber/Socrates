@@ -1,12 +1,12 @@
 {
   "totals": {
     "live": {
-      "important": 62,
+      "important": 56,
       "hexColor": 46,
       "literalRadius": 37
     },
     "frozen": {
-      "important": 1351,
+      "important": 1322,
       "hexColor": 217,
       "literalRadius": 454
     }

@@ -12,7 +12,6 @@
   #appShell #topicSetup > .mobile-starter-prompts,
   #appShell #topicSetup > .cg-history { position: relative; }
   #appShell .topic-title.greeting {
-    font-size: calc(23px * var(--app-font-scale, 1)) !important;
     font-weight: 500 !important;
     letter-spacing: -0.025em !important;
   }
