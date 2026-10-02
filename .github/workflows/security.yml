@@ -145,12 +145,6 @@ jobs:
       - name: Generate CycloneDX SBOMs
         run: |
           mkdir -p sbom
-          # cyclonedx-npm runs `npm ls --all`, which walks into the linked
-          # file: package @socrates/core and requires its own dependency
-          # (@socrates/contracts via file:../contracts) to be physically
-          # installed under packages/core/node_modules. A consumer-side
-          # `npm ci` never creates that nested link — install it once here.
-          (cd packages/core && npm ci --ignore-scripts --no-audit --no-fund)
           for project in frontend server mobile; do
             echo "::group::$project"
             (cd "$project" && npm ci --ignore-scripts --no-audit --no-fund)

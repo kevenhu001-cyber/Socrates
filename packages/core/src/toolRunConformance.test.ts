@@ -15,6 +15,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { pureToolRunApi, TOOL_RUN_PHASES } from './toolRun.ts';
@@ -31,9 +32,15 @@ interface Fixture {
   }>;
 }
 
-const FIXTURE_PATH = fileURLToPath(
-  new URL('../../contracts/toolRunConformance.fixture.json', import.meta.url),
-);
+// Dual-runtime: jest (mobile suite) evaluates this file as CJS where
+// import.meta.url is undefined, while `node --test` (shared CI job) runs it
+// as ESM where __dirname is undefined.
+const FIXTURE_PATH = typeof __dirname === 'string'
+  ? join(__dirname, '..', '..', 'contracts', 'toolRunConformance.fixture.json')
+  : join(
+      dirname(fileURLToPath(import.meta.url)),
+      '../../contracts/toolRunConformance.fixture.json',
+    );
 const fixture: Fixture = JSON.parse(readFileSync(FIXTURE_PATH, 'utf8'));
 
 const api = pureToolRunApi;

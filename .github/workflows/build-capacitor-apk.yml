@@ -68,6 +68,13 @@ jobs:
         working-directory: frontend
         run: |
           npm ci
+          # The Vite bundle imports ../../wasm/socrates_wasm.js — build it or
+          # the bundle fails at rollup resolution. The rsproxy crates mirror
+          # is dev-network only; runners reach crates.io directly.
+          rm -f ../tools-rust/.cargo/config.toml
+          rustup target add wasm32-unknown-unknown
+          cargo install wasm-bindgen-cli --version 0.2.126 --locked
+          npm run build:wasm
           npm run build
 
       - name: Install Capacitor dependencies
