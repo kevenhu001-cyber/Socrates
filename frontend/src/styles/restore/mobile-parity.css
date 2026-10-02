@@ -516,8 +516,8 @@
     height: 32px !important;
     min-height: 32px !important;
     visibility: visible;
-    font-size: 28px !important;
-    font-weight: 300 !important;
+    font-size: 28px;
+    font-weight: 300;
   }
 
   /* Workspace plugin tabs live in the panel for backwards compatibility,

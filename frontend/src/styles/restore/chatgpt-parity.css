@@ -185,7 +185,7 @@
   /* Plugin marketplace: dense two-column rows and genuine connector marks. */
   body.workspace-active #appShell .main-page:not(#sitesPanel) {
     padding: 0 !important;
-    background: var(--chatgpt-page) !important;
+    background: var(--chatgpt-page);
   }
 }
 
