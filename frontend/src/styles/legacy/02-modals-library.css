@@ -151,7 +151,7 @@
    The card uses the same bundled Plus Jakarta Sans + Inter face as the rest
    of the shell so labels stay consistent regardless of the user's installed
    system fonts. */
-.visualization-card{margin:14px 0 4px;border:1px solid hsl(var(--border-200));border-radius:14px;background:hsl(var(--bg-100));overflow:hidden;color:hsl(var(--text-100));box-shadow:0 1px 2px rgba(15,23,42,.04);font-family:'Plus Jakarta Sans','Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif}
+.visualization-card{margin:14px 0 4px;border:1px solid hsl(var(--border-200));border-radius:14px;overflow:hidden;font-family:'Plus Jakarta Sans','Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif}
 .visualization-header{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid hsl(var(--border-100))}
 .visualization-header h3{margin:0;font:600 14px/1.35 'Plus Jakarta Sans','Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif;letter-spacing:-.01em}.visualization-header p,.visualization-caption{margin:4px 0 0;color:hsl(var(--text-300));font-size:12px;line-height:1.45}
 .visualization-actions{display:flex;align-items:center;gap:3px;flex:none}.visualization-actions button{-webkit-appearance:none;appearance:none;border:0;border-radius:7px;padding:5px 7px;background:transparent;color:hsl(var(--text-300));font:500 11px/1 'Plus Jakarta Sans','Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif;cursor:pointer}.visualization-actions button:hover,.visualization-actions button:focus-visible{color:hsl(var(--text-100));background:hsl(var(--bg-200));outline:none}
