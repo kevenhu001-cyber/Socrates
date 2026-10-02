@@ -43,7 +43,7 @@
   #appShell .recent-item-menu .recent-item-del,
   #appShell .recent-item-menu .recent-item-archive,
   #appShell .recent-item-menu .recent-item-tag-btn {
-    opacity: 1 !important;
+    opacity: 1;
   }
   #appShell#appShell#appShell #sidebarOpenBtn {
     border: 0 !important;
