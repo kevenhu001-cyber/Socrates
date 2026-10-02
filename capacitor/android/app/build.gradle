@@ -13,7 +13,10 @@ android {
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
-            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+            // dist also ships nginx gzip_static siblings (*.js.gz next to
+            // *.js) — aapt2 counts the pair as duplicate resources, and the
+            // compressed copies are useless to the WebView anyway.
+            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~:!*.gz'
         }
         /* Backend origin is configured in ../capacitor.config.js under
            server.url (env: SOCRATES_SERVER_URL). The WebView loads the
