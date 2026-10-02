@@ -64,7 +64,7 @@
 #appShell .sidebar-logo { padding-left: 6px; font-size: 13px; font-weight: 500; }
 }
 @media (max-width: 768px) {
-#appShell .sidebar-nav-btn { min-height: 30px; padding: 5px 8px; gap: 8px; }
+#appShell .sidebar-nav-btn { min-height: 30px; padding: 5px 8px; }
 }
 @media (max-width: 768px) {
 #appShell .sidebar-nav-btn svg { width: 15px; height: 15px; }
@@ -152,9 +152,7 @@
 
 @media (max-width: 768px) {
 
-#appShell .sidebar-inner {
-  padding: 8px 7px 7px;
-}
+
 }
 
 @media (max-width: 768px) {
@@ -412,7 +410,6 @@ html[data-mode="light"] #appShell {
 #appShell .main,
 #appShell .main-content {
   background-color: var(--cg-page) !important;
-  color: var(--cg-text);
 }
 
 #appShell .main-bg {

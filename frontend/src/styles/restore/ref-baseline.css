@@ -43,7 +43,6 @@
 #appShell .sidebar-nav-btn {
   min-height: 36px;
   padding: 7px 12px;
-  gap: 0;
   color: var(--cg-text-secondary);
   line-height: 22px;
   text-align: left;

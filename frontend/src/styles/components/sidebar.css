@@ -47,7 +47,6 @@
 @media (max-width: 768px) {
 #appShell .sidebar-nav-btn {
   min-height: 40px;
-  gap: 1px;
   padding: 6px 8px;
   color: var(--ui-text-secondary);
   line-height: 20px;

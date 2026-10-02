@@ -98,9 +98,7 @@ body,
 
 @media (max-width: 768px) {
 
-#appShell .sidebar-inner {
-  padding: 12px 10px 10px;
-}
+
 }
 
 @media (max-width: 768px) {
@@ -165,7 +163,6 @@ body,
 #appShell .sidebar-nav-btn {
   min-height: 38px;
   padding: 8px 10px;
-  gap: 11px;
   color: var(--cg-text-secondary);
   line-height: 20px;
 }

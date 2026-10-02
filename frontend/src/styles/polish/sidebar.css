@@ -66,10 +66,6 @@
 
 @media (max-width: 768px) {
 #appShell .sidebar-nav-btn {
-  min-height: 34px;
-  height: 34px;
-  padding: 6px 10px;
-  gap: 10px;
   /* Reference drawer renders nav labels and glyphs at primary brightness,
      same as the session titles below them. */
   color: var(--ui-text-primary);
@@ -90,7 +86,7 @@
 #appShell .sidebar-nav-btn:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
 }
 @media (max-width: 768px) {
-#appShell .sidebar-nav-btn.active { background: var(--ui-bg-surface); color: var(--ui-text-primary); font-weight: 500; }
+#appShell .sidebar-nav-btn.active { background: var(--ui-bg-surface); color: var(--ui-text-primary); }
 }
 @media (max-width: 768px) {
 #appShell .sidebar-nav-btn .nav-kbd {

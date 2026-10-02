@@ -175,7 +175,7 @@
 
 /* Sidebar nav block — sits between header and search row */
 .sidebar-nav{flex-shrink:0}
-.sidebar-nav-btn{display:flex;align-items:center;gap:10px;width:100%;padding:7px 10px;border-radius:8px;background:transparent;border:none;color:hsl(var(--text-200));font-size:calc(13.5px * var(--sidebar-font-scale));font-weight:400;cursor:pointer;text-align:left;transition:background .15s var(--ease-out),color .15s var(--ease-out);font-family:var(--font-sans)}
+.sidebar-nav-btn{background:transparent;border:none;color:hsl(var(--text-200));cursor:pointer;font-family:var(--font-sans)}
 .sidebar-nav-btn:hover:not([disabled]){background:hsl(var(--bg-200));color:hsl(var(--text-100))}
 .sidebar-nav-btn svg{width:16px;height:16px;flex-shrink:0;color:hsl(var(--text-400));transition:color .15s var(--ease-out)}
 .sidebar-nav-btn:hover:not([disabled]) svg{color:hsl(var(--text-200))}
@@ -183,7 +183,7 @@
 /* PR-A — active highlight on the currently-focused sidebar nav button.
    Subtle accent tint, same shape as the hover, with fixed geometry so the
    active state stays aligned with the paint-only press feedback. */
-.sidebar-nav-btn.active{background:hsl(var(--bg-300));color:hsl(var(--text-100));font-weight:520}
+.sidebar-nav-btn.active{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .sidebar-nav-btn.active svg{color:hsl(var(--text-100))}
 /* PR-A — "is-soon" used by the Scheduled button in PR-A. Faded but
    still clickable (so the click handler can fire a toast). Lighter
