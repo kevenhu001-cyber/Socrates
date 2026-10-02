@@ -1,48 +1,314 @@
 {
   "schemaVersion": 2,
-  "webBaseline": "3eff68e79b48f189bc6e8b13fb1bdd28ba6377a0",
+  "webBaseline": "3870ba4ee51197d8e6a7fb684c1f85c630dc24d3",
   "baselineNote": "Generated from the latest commit touching frontend/. Any later Web UI change must update this manifest and the visual baselines.",
   "viewports": [
-    { "name": "phone-compact", "width": 390, "height": 844, "densityIndependent": true },
-    { "name": "phone-large", "width": 412, "height": 915, "densityIndependent": true },
-    { "name": "tablet", "width": 768, "height": 1024, "densityIndependent": true },
-    { "name": "desktop", "width": 1440, "height": 900, "densityIndependent": true }
+    {
+      "name": "phone-compact",
+      "width": 390,
+      "height": 844,
+      "densityIndependent": true
+    },
+    {
+      "name": "phone-large",
+      "width": 412,
+      "height": 915,
+      "densityIndependent": true
+    },
+    {
+      "name": "tablet",
+      "width": 768,
+      "height": 1024,
+      "densityIndependent": true
+    },
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 900,
+      "densityIndependent": true
+    }
   ],
-  "themes": ["dark", "light", "system"],
-  "locales": ["en", "zh"],
-  "states": ["loading", "empty", "data", "error", "offline", "streaming", "complete"],
+  "themes": [
+    "dark",
+    "light",
+    "system"
+  ],
+  "locales": [
+    "en",
+    "zh"
+  ],
+  "states": [
+    "loading",
+    "empty",
+    "data",
+    "error",
+    "offline",
+    "streaming",
+    "complete"
+  ],
   "nativeSurfaces": [
-    { "id": "auth", "entrypoint": "AuthScreen", "coverage": ["loading", "error", "complete"], "webReference": "login/register/reset/oauth" },
-    { "id": "home", "route": "Home", "coverage": ["empty", "data", "offline"], "webReference": "chat-landing" },
-    { "id": "chat", "route": "Chat", "coverage": ["empty", "data", "streaming", "error", "offline", "complete"], "webReference": "chat-workbench" },
-    { "id": "tutor", "route": "Tutor", "coverage": ["loading", "data", "error", "complete"], "webReference": "tutor" },
-    { "id": "library", "route": "Library", "coverage": ["loading", "empty", "data", "error"], "webReference": "workspace/library" },
-    { "id": "projects", "route": "Projects", "coverage": ["loading", "empty", "data", "error"], "webReference": "workspace/projects" },
-    { "id": "scheduled", "route": "Scheduled", "coverage": ["loading", "empty", "data", "error"], "webReference": "scheduled" },
-    { "id": "plugins", "route": "Plugins", "coverage": ["loading", "empty", "data", "error"], "webReference": "workspace/plugins" },
-    { "id": "knowledge", "route": "Knowledge", "coverage": ["loading", "empty", "data", "error"], "webReference": "knowledge" },
-    { "id": "mistakes", "route": "Mistakes", "coverage": ["loading", "empty", "data", "error"], "webReference": "mistakes" },
-    { "id": "skills", "route": "Skills", "coverage": ["empty", "data", "complete"], "webReference": "prompt-templates-modal" },
-    { "id": "exam", "route": "ExamSession", "coverage": ["loading", "empty", "data", "error", "complete"], "webReference": "exam" },
-    { "id": "search", "route": "Search", "coverage": ["loading", "empty", "data", "error"], "webReference": "search" },
-    { "id": "settings", "route": "Settings", "coverage": ["loading", "data", "error", "complete"], "webReference": "settings" },
-    { "id": "display", "route": "Display", "coverage": ["data", "complete"], "webReference": "display-preferences" },
-    { "id": "more", "route": "More", "coverage": ["data"], "webReference": "more" },
-    { "id": "workspace-alias", "route": "Workspace", "coverage": ["data"], "webReference": "workspace/library", "platformException": "backwards-compatible deep-link alias" }
+    {
+      "id": "auth",
+      "entrypoint": "AuthScreen",
+      "coverage": [
+        "loading",
+        "error",
+        "complete"
+      ],
+      "webReference": "login/register/reset/oauth"
+    },
+    {
+      "id": "home",
+      "route": "Home",
+      "coverage": [
+        "empty",
+        "data",
+        "offline"
+      ],
+      "webReference": "chat-landing"
+    },
+    {
+      "id": "chat",
+      "route": "Chat",
+      "coverage": [
+        "empty",
+        "data",
+        "streaming",
+        "error",
+        "offline",
+        "complete"
+      ],
+      "webReference": "chat-workbench"
+    },
+    {
+      "id": "tutor",
+      "route": "Tutor",
+      "coverage": [
+        "loading",
+        "data",
+        "error",
+        "complete"
+      ],
+      "webReference": "tutor"
+    },
+    {
+      "id": "library",
+      "route": "Library",
+      "coverage": [
+        "loading",
+        "empty",
+        "data",
+        "error"
+      ],
+      "webReference": "workspace/library"
+    },
+    {
+      "id": "projects",
+      "route": "Projects",
+      "coverage": [
+        "loading",
+        "empty",
+        "data",
+        "error"
+      ],
+      "webReference": "workspace/projects"
+    },
+    {
+      "id": "scheduled",
+      "route": "Scheduled",
+      "coverage": [
+        "loading",
+        "empty",
+        "data",
+        "error"
+      ],
+      "webReference": "scheduled"
+    },
+    {
+      "id": "plugins",
+      "route": "Plugins",
+      "coverage": [
+        "loading",
+        "empty",
+        "data",
+        "error"
+      ],
+      "webReference": "workspace/plugins"
+    },
+    {
+      "id": "knowledge",
+      "route": "Knowledge",
+      "coverage": [
+        "loading",
+        "empty",
+        "data",
+        "error"
+      ],
+      "webReference": "knowledge"
+    },
+    {
+      "id": "mistakes",
+      "route": "Mistakes",
+      "coverage": [
+        "loading",
+        "empty",
+        "data",
+        "error"
+      ],
+      "webReference": "mistakes"
+    },
+    {
+      "id": "skills",
+      "route": "Skills",
+      "coverage": [
+        "empty",
+        "data",
+        "complete"
+      ],
+      "webReference": "prompt-templates-modal"
+    },
+    {
+      "id": "exam",
+      "route": "ExamSession",
+      "coverage": [
+        "loading",
+        "empty",
+        "data",
+        "error",
+        "complete"
+      ],
+      "webReference": "exam"
+    },
+    {
+      "id": "search",
+      "route": "Search",
+      "coverage": [
+        "loading",
+        "empty",
+        "data",
+        "error"
+      ],
+      "webReference": "search"
+    },
+    {
+      "id": "settings",
+      "route": "Settings",
+      "coverage": [
+        "loading",
+        "data",
+        "error",
+        "complete"
+      ],
+      "webReference": "settings"
+    },
+    {
+      "id": "display",
+      "route": "Display",
+      "coverage": [
+        "data",
+        "complete"
+      ],
+      "webReference": "display-preferences"
+    },
+    {
+      "id": "more",
+      "route": "More",
+      "coverage": [
+        "data"
+      ],
+      "webReference": "more"
+    },
+    {
+      "id": "workspace-alias",
+      "route": "Workspace",
+      "coverage": [
+        "data"
+      ],
+      "webReference": "workspace/library",
+      "platformException": "backwards-compatible deep-link alias"
+    }
   ],
   "nativeOverlays": [
-    { "id": "drawer", "implementation": "AppDrawer", "presentation": "slide-in", "backDismiss": true },
-    { "id": "profile", "implementation": "ProfileOverlay", "presentation": "dialog", "backDismiss": true },
-    { "id": "usage", "implementation": "UsageOverlay", "presentation": "dialog", "backDismiss": true },
-    { "id": "storage", "implementation": "StorageOverlay", "presentation": "dialog", "backDismiss": true },
-    { "id": "share", "implementation": "ShareModal", "presentation": "dialog", "backDismiss": true },
-    { "id": "confirm", "implementation": "ConfirmDialog", "presentation": "dialog", "backDismiss": true },
-    { "id": "cmd-k", "implementation": "CmdKPalette", "presentation": "popover", "backDismiss": true },
-    { "id": "find", "implementation": "WebFindHandler", "presentation": "popover", "backDismiss": true }
+    {
+      "id": "drawer",
+      "implementation": "AppDrawer",
+      "presentation": "slide-in",
+      "backDismiss": true
+    },
+    {
+      "id": "profile",
+      "implementation": "ProfileOverlay",
+      "presentation": "dialog",
+      "backDismiss": true
+    },
+    {
+      "id": "usage",
+      "implementation": "UsageOverlay",
+      "presentation": "dialog",
+      "backDismiss": true
+    },
+    {
+      "id": "storage",
+      "implementation": "StorageOverlay",
+      "presentation": "dialog",
+      "backDismiss": true
+    },
+    {
+      "id": "share",
+      "implementation": "ShareModal",
+      "presentation": "dialog",
+      "backDismiss": true
+    },
+    {
+      "id": "confirm",
+      "implementation": "ConfirmDialog",
+      "presentation": "dialog",
+      "backDismiss": true
+    },
+    {
+      "id": "cmd-k",
+      "implementation": "CmdKPalette",
+      "presentation": "popover",
+      "backDismiss": true
+    },
+    {
+      "id": "find",
+      "implementation": "WebFindHandler",
+      "presentation": "popover",
+      "backDismiss": true
+    }
   ],
   "controlledWebViews": [
-    { "id": "html-artifact", "component": "ArtifactWebView", "routes": ["ArtifactPreview"], "reason": "HTML, chart, 3D and rich visualization rendering", "bridge": "artifact-v1", "csp": "sandboxed", "fallback": "source-and-reload" },
-    { "id": "embedded-external", "component": "EmbeddedWebScreen", "routes": ["Embedded"], "reason": "provider authorization and approved external flows", "bridge": "embedded-v1", "csp": "allowlisted-origins", "fallback": "native-error-and-retry" }
+    {
+      "id": "html-artifact",
+      "component": "ArtifactWebView",
+      "routes": [
+        "ArtifactPreview"
+      ],
+      "reason": "HTML, chart, 3D and rich visualization rendering",
+      "bridge": "artifact-v1",
+      "csp": "sandboxed",
+      "fallback": "source-and-reload"
+    },
+    {
+      "id": "embedded-external",
+      "component": "EmbeddedWebScreen",
+      "routes": [
+        "Embedded"
+      ],
+      "reason": "provider authorization and approved external flows",
+      "bridge": "embedded-v1",
+      "csp": "allowlisted-origins",
+      "fallback": "native-error-and-retry"
+    }
   ],
-  "androidDifferences": ["system-back", "keyboard", "status-bar", "navigation-bar", "permissions", "haptics", "system-share"]
+  "androidDifferences": [
+    "system-back",
+    "keyboard",
+    "status-bar",
+    "navigation-bar",
+    "permissions",
+    "haptics",
+    "system-share"
+  ]
 }
