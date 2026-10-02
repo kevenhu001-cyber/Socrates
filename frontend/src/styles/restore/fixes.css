@@ -505,7 +505,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   }
 
   #appShell#appShell#appShell .home-quick-actions {
-    width: min(100%, 768px) !important;
+    width: min(100%, 768px);
   }
 }
 
