@@ -228,7 +228,7 @@
 
   /* The filter now works on the mobile tool and connected-app lists too. */
   body #composerToolsMenu .composer-tools-footer-search {
-    display: flex;
+    display: flex !important;
     align-items: center;
     min-height: 36px;
     margin: 4px 4px 0;
