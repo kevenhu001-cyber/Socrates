@@ -51,13 +51,10 @@
 
 /* Effort trigger reads as a chip: quieter type than the editor text. */
 
-/* "+" tools menu — menu radius/shadow converge on the overlay contract. */
-body #composerToolsMenu {
-  border-radius: var(--ui-radius-lg, 12px) !important;
-  border-color: var(--ui-border-subtle) !important;
-  box-shadow: var(--ui-shadow-menu) !important;
-  padding: 8px !important;
-}
+/* "+" tools menu — the desktop card skin (16px radius, border, shadow,
+   220px width) is owned by restore/chatgpt-parity.css's :not(.hidden)
+   block and the phone sheet by restore/mobile-parity.css + fixes.css;
+   nothing to converge here. */
 
 /* "+" open animation — the card springs out of the trigger edge. The menu
    lives on <body> and is shown by removing .hidden (display:none), so this
@@ -81,7 +78,7 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side="above"]:not(.hidden)
 }
 body #composerToolsMenu .composer-tools-item,
 body #composerToolsMenu .composer-tools-plugin-item {
-  border-radius: var(--ui-radius-control, 8px) !important;
+  border-radius: var(--ui-radius-control, 8px);
   min-height: 40px;
 }
 body #composerToolsMenu .composer-tools-group-label {
@@ -105,12 +102,12 @@ body #composerToolsMenu .composer-tools-item kbd {
 @media (min-width: 769px) {
   body #composerToolsMenu .composer-tools-desktop-items .composer-tools-item,
   body #composerToolsMenu .composer-tools-plugin-item {
-    min-height: 34px !important;
-    padding: 4px 10px !important;
-    gap: 10px !important;
+    min-height: 34px;
+    padding: 4px 10px;
+    gap: 10px;
   }
   body #composerToolsMenu .composer-tools-desktop-items .composer-tools-copy small {
-    display: none !important;
+    display: none;
   }
   body #composerToolsMenu .composer-tools-icon {
     width: 20px !important;
@@ -125,13 +122,13 @@ body #composerToolsMenu .composer-tools-item kbd {
     height: 17px !important;
   }
   body #composerToolsMenu .composer-tools-group-label {
-    padding: 10px 10px 3px !important;
+    padding: 10px 10px 3px;
   }
   body #composerToolsMenu .composer-tools-group:first-child .composer-tools-group-label {
-    padding-top: 4px !important;
+    padding-top: 4px;
   }
   body #composerToolsMenu .composer-tools-plugin-state {
-    padding: 8px 10px !important;
+    padding: 8px 10px;
     font-size: 12px;
   }
   body #composerToolsMenu .composer-tools-plugin-state small { font-size: 11px; }

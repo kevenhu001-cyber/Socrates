@@ -114,11 +114,7 @@
   #composerToolsMenu .composer-tools-item,
   #composerToolsMenu .composer-tools-plugin-item {
     width: calc(100% - 12px) !important;
-    min-height: 44px !important;
-    height: 44px !important;
     margin: 0 6px !important;
-    padding: 6px 10px !important;
-    gap: 10px !important;
     border: 0 !important;
     border-radius: 8px !important;
     background: transparent !important;
@@ -126,6 +122,8 @@
     font-size: 14px !important;
     font-weight: 400 !important;
     line-height: 20px !important;
+    /* padding/gap moved on — the desktop compact-directory rhythm lives in
+       polish/composer.css and needs no !important. */
   }
 
   #composerToolsMenu .composer-tools-item:hover,

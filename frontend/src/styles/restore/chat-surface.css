@@ -243,11 +243,6 @@ body #composerToolsMenu {
   box-shadow: 0 18px 48px rgb(0 0 0 / 40%) !important;
 }
 
-body #composerToolsMenu .composer-tools-item,
-body #composerToolsMenu .composer-tools-plugin-item {
-  border-radius: 12px !important;
-}
-
 body #composerToolsMenu .composer-tools-item:hover,
 body #composerToolsMenu .composer-tools-plugin-item:hover {
   background: var(--ui-bg-hover-ghost) !important;

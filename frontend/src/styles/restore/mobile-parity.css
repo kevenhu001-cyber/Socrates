@@ -514,7 +514,6 @@
 
   body #composerToolsMenu .composer-tools-item {
     min-height: 56px !important;
-    border-radius: 12px !important;
   }
 
   body #composerToolsMenu .composer-tools-icon,

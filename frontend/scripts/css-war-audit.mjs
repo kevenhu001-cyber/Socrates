@@ -32,8 +32,9 @@ const args = Object.fromEntries(
 );
 const MATCH = args.match;
 const PROP = args.prop;
+const SEL = args.sel ? new RegExp(args.sel) : null;
 if (!MATCH) {
-  console.error('usage: node scripts/css-war-audit.mjs --match=<selector-substr> [--prop=<css-prop>]');
+  console.error('usage: node scripts/css-war-audit.mjs --match=<selector-substr> [--sel=<regex-on-full-selector>] [--prop=<css-prop>]');
   process.exit(2);
 }
 
@@ -139,6 +140,7 @@ files.forEach((file, fileIdx) => {
     }
     for (const sel of rule.selectors) {
       if (!sel.includes(MATCH)) continue;
+      if (SEL && !SEL.test(sel)) continue;
       for (const decl of rule.nodes || []) {
         if (decl.type !== 'decl') continue;
         if (PROP && decl.prop !== PROP) continue;
