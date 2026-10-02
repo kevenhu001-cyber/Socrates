@@ -334,7 +334,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
        width inset + text-align center also avoids the sub-pixel asymmetry
        caused by a nested 16px content inset. */
     position: absolute !important;
-    inset-inline: 0 !important;
+    inset-inline: 0;
     bottom: auto;
     transform: translateY(-50%) !important;
     align-self: auto;

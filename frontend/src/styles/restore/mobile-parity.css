@@ -181,7 +181,7 @@
   /* Send / voice — solid ink circle (inverted in dark mode). */
 
   #appShell#appShell .chat-input-bar {
-    padding-inline: 12px !important;
+    padding-inline: 12px;
     box-sizing: border-box;
   }
 

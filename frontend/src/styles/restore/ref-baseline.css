@@ -443,14 +443,14 @@ body.workspace-active #appShell .main-page {
   #appShell #topicSetup > .topic-sub,
   #appShell #topicSetup > .mobile-starter-prompts,
   #appShell #topicSetup > .cg-history {
-    top: 0 !important;
-    left: 0 !important;
+    top: 0;
+    left: 0;
   }
 
   #appShell #topicSetup .topic-title.greeting {
     display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+    align-items: center;
+    justify-content: center;
     min-height: 42px !important;
     margin: 0 auto !important;
     font-weight: 400 !important;
