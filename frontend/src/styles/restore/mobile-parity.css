@@ -100,8 +100,6 @@
    * 2. Home — suggestion rows directly above the composer.
    * ───────────────────────────────────────────────────────────── */
   #appShell#appShell #topicSetup {
-    justify-content: flex-end !important;
-    gap: 12px !important;
     padding: 0 14px max(16px, env(safe-area-inset-bottom)) !important;
   }
 
@@ -415,11 +413,8 @@
   }
 
   #appShell#appShell #topicSetup {
-    min-height: calc(100dvh - 56px) !important;
     width: 100% !important;
     padding: 0 16px max(16px, env(safe-area-inset-bottom)) !important;
-    gap: 2px !important;
-    justify-content: flex-end !important;
   }
 
   /* The home-suggestions-wrap container was removed from index.html — only

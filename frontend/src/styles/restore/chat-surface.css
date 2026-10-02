@@ -325,7 +325,6 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
     display: flex !important;
     flex-direction: column !important;
     justify-content: flex-end !important;
-    min-height: calc(100dvh - 56px) !important;
     /* P_topic-kb-avoid — the safe-area bottom stays CONSTANT and the
        keyboard inset adds on top of it, so the landing composer tracks
        the keyboard edge exactly 1:1 from the very first frame (no dead

@@ -282,6 +282,7 @@ files.forEach((file, fileIdx) => {
 const CONTEXTS = [
   { name: 'desktop', width: 1440 },
   { name: 'narrow', width: 1000 },
+  { name: 'tablet', width: 850 },
   { name: 'mobile', width: 390 },
 ];
 

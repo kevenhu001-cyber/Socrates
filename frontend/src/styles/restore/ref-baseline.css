@@ -452,10 +452,7 @@ body.workspace-active #appShell .main-page {
      content pane rather than on the full viewport (the rail is asymmetric). */
 
   /* Home: one optical group centred in the pane below the 44px top bar. */
-  #appShell #topicSetup {
-    min-height: calc(100dvh - 44px) !important;
-    justify-content: flex-start !important;
-  }
+
 
   #appShell #topicSetup > .topic-title,
   #appShell #topicSetup > .topic-sub,
@@ -1119,9 +1116,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 
 @media (min-width: 769px) {
 
-  #appShell #topicSetup {
-    min-height: calc(100dvh - 44px) !important;
-  }
+
 
   /* Only the quick-actions row remains on landing; the home-suggestions-wrap
      container was removed from index.html. */

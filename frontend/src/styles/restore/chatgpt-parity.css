@@ -53,10 +53,6 @@
   #appShell#appShell #topicSetup {
     padding-top: 0 !important;
     padding-inline: 24px !important;
-    /* Bottom inset is a plain declaration so polish/composer.css's
-       hero-lift padding-bottom (the canonical owner) resolves by
-       specificity instead of !important bidding. */
-    padding-bottom: calc(64px + var(--conversation-safe-bottom));
   }
 
   #appShell#appShell#appShell #topicSetup .topic-title.greeting {

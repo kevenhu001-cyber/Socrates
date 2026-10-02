@@ -54,7 +54,7 @@
 
 /* Main-content pages (Library, Projects, Scheduled, Plugins shown in
    main area instead of sidebar). Overrides sidebar-panel sizing. */
-.main-page{width:100%;flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:1px;padding:0 4px;align-self:stretch}
+.main-page{flex:1;min-height:0;display:flex;flex-direction:column;align-self:stretch}
 .main-page.hidden{display:none}
 
 .sidebar-footer{display:flex;align-items:center;gap:4px;padding:6px 8px;flex-shrink:0;border-top:0.5px solid hsl(var(--border-300)/0.10)}

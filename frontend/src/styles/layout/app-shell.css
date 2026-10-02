@@ -160,13 +160,7 @@
 }
 }
 
-#appShell #topicSetup {
-  position: relative;
-  box-sizing: border-box;
-  min-height: calc(100dvh - 56px);
-  padding: 0 24px calc(72px + var(--ui-safe-bottom));
-  background: var(--ui-bg-page);
-}
+
 
 #appShell #topicSetup .topic-title.greeting {
   display: block;
@@ -186,12 +180,6 @@
 #appShell #topicDisclaimer { display: none; }
 
 @media (min-width: 769px) {
-  #appShell #topicSetup {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-  }
   #appShell #topicSetup .topic-title.greeting {
     position: static;
     margin: 0 0 48px;
