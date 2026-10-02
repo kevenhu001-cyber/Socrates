@@ -78,14 +78,15 @@ test('archive from Recents row soft-hides the session and surfaces it in Storage
   const row = page.locator('#recentsList .recent-item', { hasText: 'Archive me please' });
   await expect(row).toBeVisible();
 
-  // Desktop shows the icon pair inline (display:contents); force visibility
-  // for headless hover-free clicking.
-  const archiveBtn = row.locator('.recent-item-archive');
+  // Row actions live behind the ⋯ overflow on every viewport — open the
+  // menu, then click archive inside it.
+  const overflow = row.locator('.recent-item-overflow');
+  await row.hover();
+  await overflow.click();
+  const menu = row.locator('.recent-item-menu');
+  await expect(menu).toBeVisible();
+  const archiveBtn = menu.locator('.recent-item-archive');
   await expect(archiveBtn).toHaveAttribute('data-archive-session', '1');
-  await archiveBtn.evaluate((el) => {
-    el.style.opacity = '1';
-    el.style.pointerEvents = 'auto';
-  });
   await archiveBtn.click();
 
   await expect.poll(() => archiveCalls.length).toBeGreaterThan(0);

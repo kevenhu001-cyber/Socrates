@@ -16,8 +16,11 @@
 
 @media (max-width: 768px) {
 
+/* Reference drawer gutters: ~6px outside the row backgrounds on the left,
+   ~4px on the right — everything inside (nav glyph, session title, label)
+   then lands ~16px from the drawer edge via the rows' own 10px padding. */
 #appShell .sidebar-inner {
-  padding: 8px 8px 6px;
+  padding: 8px 4px 6px 6px;
 }
 }
 
@@ -25,7 +28,7 @@
 @media (max-width: 768px) {
 #appShell .sidebar-header {
   min-height: 48px;
-  padding: 4px 6px 4px 10px;
+  padding: 4px 6px 4px 6px;
 }
 }
 @media (max-width: 768px) {
@@ -63,7 +66,7 @@
 @media (max-width: 768px) {
 #appShell .sidebar-nav {
   gap: 1px;
-  padding: 2px 4px 10px;
+  padding: 2px 0 10px;
 }
 }
 @media (max-width: 768px) {
@@ -73,7 +76,9 @@
   padding: 6px 10px;
   gap: 10px;
   border-radius: var(--ui-radius-control, 8px);
-  color: var(--ui-text-secondary);
+  /* Reference drawer renders nav labels and glyphs at primary brightness,
+     same as the session titles below them. */
+  color: var(--ui-text-primary);
   font-size: 13.5px;
   font-weight: 450;
   line-height: 20px;
@@ -105,7 +110,7 @@
 /* ── Search — a quiet raised field instead of a bare icon+input row ── */
 @media (max-width: 768px) {
 #appShell .sidebar-search-row {
-  padding: 0 4px 6px;
+  padding: 0 0 6px;
   gap: 4px;
 }
 }
@@ -146,8 +151,13 @@
 
 /* ── Recents — tighter rows, quieter labels ── */
 @media (max-width: 768px) {
+/* restore/chatgpt-v2 insets the panel 3px — collapse it so rows own the
+   full inner width and their 10px padding lands content at ~16px. */
+#appShell .recents-panel {
+  padding-inline: 0;
+}
 #appShell .recents-header {
-  padding: 10px 10px 4px;
+  padding: 16px 4px 4px 10px;
 }
 }
 /* Reference drawer affordances: a persistent "+" on Projects and compose /
@@ -217,11 +227,31 @@
 
 @media (max-width: 768px) {
 
+/* The row carries the generic .btn class, whose base is `display:
+   inline-flex; justify-content: center; min-width: 40px` — on the drawer
+   that shrink-wraps every session row to its title, leaves the ···
+   floating mid-row, and adds a ~6px inline line-box gap under each row.
+   Re-pin it to a full-width block-level flex row: title on the left, ···
+   pushed to the right edge by .recent-item-main's flex:1. */
+#appShell #sidebar .recent-item {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 0;
+}
 #appShell .recent-item {
   min-height: 40px;
   padding: 8px 10px;
   border-radius: var(--ui-radius-control, 8px);
+  color: var(--ui-text-primary);
   transition: background-color var(--ui-duration-fast) ease;
+}
+/* Reference drawer titles sit at primary brightness; keep the pinned
+   accent intact by scoping the raise to non-pinned rows. */
+#appShell .recent-item:not(.pinned) .recent-item-text {
+  color: var(--ui-text-primary);
 }
 }
 /* Current-session emphasis: 3px inset accent bar on the row's left edge.
@@ -234,8 +264,10 @@
 }
 }
 @media (max-width: 768px) {
+/* ~14px row type, matching the reference drawer's session titles against
+   the 15px nav rows (a stale restore/ rule previously forced 12px). */
 #appShell .recent-item-text {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 450;
   line-height: 18px;
 }
@@ -291,9 +323,11 @@
 }
 }
 @media (max-width: 768px) {
+/* mobile-parity.css owns the same padding with !important — keep the
+   value in sync so reading either file gives the reference geometry. */
 #appShell .sidebar-footer {
   min-height: 56px;
-  padding: 8px 10px;
+  padding: 8px 6px;
   border-top: 1px solid var(--ui-border-subtle);
   background: transparent;
 }

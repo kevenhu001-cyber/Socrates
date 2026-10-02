@@ -54,12 +54,13 @@
   #appShell .sidebar-header .icon-btn svg,
   #appShell .sidebar-header .btn-icon svg { width: 18px; height: 18px; }
 
-  /* ── Sidebar nav rows — 44 hit area, 10px radius (chatgpt row) ──
+  /* ── Sidebar nav rows — 40px pitch, 10px radius (reference drawer rows
+     measure ~40px, not 44) ──
      Higher specificity + !important needed to beat the
      `min-height: 40px !important` rule in restore/fixes.css (line 327). */
   #appShell #sidebarNav .sidebar-nav-btn,
   #appShell .sidebar-nav-btn {
-    min-height: var(--ui-hit-area) !important;
+    min-height: 40px !important;
     height: auto;
     padding: 0 10px !important;
     border-radius: var(--ui-radius-row, 10px);
@@ -77,14 +78,22 @@
     border-radius: var(--ui-radius-row, 10px);
   }
 
-  /* ── Sidebar recents — 44 hit area, 10px radius ── */
+  /* ── Sidebar recents — 40px pitch, 10px radius; the right pad is 6px so
+     the ··· glyph shares the reference drawer's ~16px trailing inset ── */
   #appShell .recent-item {
-    min-height: var(--ui-hit-area);
-    padding: 0 10px;
+    min-height: 40px;
+    padding: 0 6px 0 10px;
     border-radius: var(--ui-radius-row, 10px);
   }
   #appShell .recent-item-text {
-    line-height: var(--ui-hit-area);
+    line-height: 20px;
+  }
+  #appShell .recent-item-overflow {
+    width: 32px;
+    min-width: 32px;
+    /* The ··· is the drawer's quiet trailing affordance — one step below
+       the title, matching the reference's muted dots. */
+    color: var(--ui-text-muted);
   }
 
   /* ── Recents overflow buttons (tag / archive / del) — 44 hit area ── */

@@ -43,12 +43,15 @@
 #appShell #sidebarNav .sidebar-nav-btn {
   box-sizing: border-box !important;
   display: grid !important;
-  grid-template-columns: 22px minmax(0, 1fr) auto !important;
+  /* Reference drawer: 20px glyph column + 6px gap so the label lands
+     ~40px from the drawer edge; right pad is 8px so the trailing "+"
+     shares the ~16px glyph inset of the recents rows' ···. */
+  grid-template-columns: 20px minmax(0, 1fr) auto !important;
   align-items: center !important;
-  column-gap: 10px !important;
+  column-gap: 6px !important;
   width: 100% !important;
   min-height: 40px !important;
-  padding: 7px 10px !important;
+  padding: 7px 8px 7px 10px !important;
   border-radius: 10px !important;
   font-size: 14px !important;
   line-height: 22px !important;
@@ -328,7 +331,7 @@
     border-radius: 0 !important;
   }
   #appShell #sidebarNav .sidebar-nav-btn { min-height: 40px !important; padding-block: 7px !important; font-size: 15px !important; }
-  #appShell #sidebarNav.sidebar-nav { padding-inline: 6px !important; }
+  #appShell #sidebarNav.sidebar-nav { padding-inline: 0 !important; }
   /* The reference drawer footer is identity-only on phones — theme /
      display / settings stay reachable through desktop chrome and the
      Settings surfaces, so the trailing icon buttons hide outright. */

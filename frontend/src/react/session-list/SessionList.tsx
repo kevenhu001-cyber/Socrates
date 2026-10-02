@@ -180,8 +180,9 @@ function SessionRowBase({ session, isActive, onPick, onTag, onArchive, onDelete,
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /></svg>
         </button>
-        {/* Desktop keeps the icon trio inline (display:contents); on phones
-            the wrap becomes the ⋯ dropdown listing icon + label rows. */}
+        {/* The ⋯ trigger opens this wrap as an anchored dropdown with
+            icon + label rows on every width — desktop reveals the trigger
+            on row hover/focus; phones show it persistently. */}
         <div className="recent-item-menu" role="menu" onClick={(e) => e.stopPropagation()}>
           <button
             className="btn-icon recent-item-tag-btn"

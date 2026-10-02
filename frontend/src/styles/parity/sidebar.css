@@ -329,8 +329,33 @@
     transition: opacity var(--ui-duration-hover) ease;
   }
   #appShell #sidebar .recent-item:hover .recent-item-actions,
-  #appShell #sidebar .recent-item:focus-within .recent-item-actions { opacity: 1; }
-  #appShell #sidebar .recent-item-overflow { display: none; }
+  #appShell #sidebar .recent-item:focus-within .recent-item-actions,
+  #appShell #sidebar .recent-item.actions-open .recent-item-actions { opacity: 1; }
+  /* The reference row shows a single quiet ⋯ trigger on hover — the
+     tag/archive/delete actions live inside its dropdown (the menu is a
+     universal rule in components/sidebar.css). The open row keeps the
+     hover wash so the menu's anchor stays readable. */
+  #appShell #sidebar .recent-item-overflow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    min-width: 24px;
+    height: 24px;
+    min-height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--ui-radius-sm, 6px);
+    background: transparent;
+    color: var(--ui-text-tertiary);
+    cursor: pointer;
+  }
+  #appShell #sidebar .recent-item-overflow:hover {
+    background: var(--ui-bg-hover);
+    color: var(--ui-text-primary);
+  }
+  #appShell #sidebar .recent-item-overflow svg { width: 16px; height: 16px; }
+  #appShell #sidebar .recent-item.actions-open { background: var(--ui-bg-hover); }
 
   /* ── Footer: account row + quick actions ─────────────────────────────── */
   #appShell #sidebarFooter {
@@ -508,6 +533,13 @@
 /* Recents header icons are a phone-drawer affordance; desktop keeps the
    bare "Recents" label. */
 #appShell .recents-header-actions { display: none; }
+
+/* ── Session-row ⋯ menu anchor (all widths) ─────────────────────────────
+   The dropdown positions itself against the actions box; `contain:
+   layout` on .recent-item gives each row its own stacking context, so an
+   open row must lift above its siblings for the menu to paint on top. */
+#appShell .recent-item-actions { position: relative; }
+#appShell .recent-item.actions-open { z-index: var(--ui-z-popover, 200); }
 
 /* ── Account row (all widths) — avatar + name over plan tier ──────────────
    Mirrors the reference drawer's two-line identity block. The avatar and

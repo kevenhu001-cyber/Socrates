@@ -274,19 +274,21 @@
     border-radius: 10px !important;
   }
 
+  /* Reference drawer: footer identity sits ~12px in from the edge (tighter
+     than the 16px row content inset); the upgrade pill keeps ~14px right. */
   #appShell#appShell .sidebar-footer {
-    padding: 10px 8px !important;
+    padding: 8px 6px 8px 6px !important;
     border-top: 0 !important;
   }
 
   /* P_sidebar-avatar-circle — flex-basis outranks `width` on a flex item,
-     so raising width/height alone left this box 32x36 and `border-radius:
-     50%` rendered an ellipse (reads as a rounded square). Pin the basis
-     to the same 36px so the phone-drawer avatar stays a true circle. */
-  #appShell#appShell .user-avatar {
-    flex: 0 0 36px !important;
-    width: 36px !important;
-    height: 36px !important;
+     so raising width/height alone left this box oblong and `border-radius:
+     50%` rendered an ellipse. Pin the basis to the same 28px — the
+     reference drawer's footer avatar is ~26px — so it stays a true circle. */
+  #appShell#appShell #sidebarUserRow .user-avatar {
+    flex: 0 0 28px !important;
+    width: 28px !important;
+    height: 28px !important;
     border-radius: 50% !important;
   }
 

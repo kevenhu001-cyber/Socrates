@@ -75,9 +75,7 @@
 @media (max-width: 768px) {
 #appShell .recent-item { min-height: 28px; padding: 5px 8px; font-size: 12px; }
 }
-@media (max-width: 768px) {
-#appShell .recent-item-text { font-size: 12px !important; }
-}
+
 
 .workspace-page-head,
 .plugin-directory-head { margin-bottom: 24px; }
