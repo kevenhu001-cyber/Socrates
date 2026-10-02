@@ -161,14 +161,12 @@
 @media (max-width: 768px) {
 
 #appShell .recents-panel {
-  padding-inline: 3px;
 }
 }
 
 @media (max-width: 768px) {
 
 #appShell .recents-header {
-  padding: 8px 8px 5px;
 }
 }
 
@@ -228,9 +226,6 @@
    Desktop keeps the offset (ref-baseline pins it to 0 via !important);
    mobile falls back to the natural centered position. */
 @media (min-width: 769px) {
-  #appShell #topicSetup > .topic-title {
-    left: 14px;
-  }
 }
 
 #appShell #topicSetup > .topic-title {

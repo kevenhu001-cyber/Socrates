@@ -172,7 +172,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 #appShell .recents-panel { padding: 0 8px; }
 }
 @media (max-width: 768px) {
-#appShell .recents-header { padding: 12px 10px 6px; }
+#appShell .recents-header { }
 }
 @media (max-width: 768px) {
 #appShell .recents-title {
