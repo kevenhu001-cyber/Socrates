@@ -33,7 +33,7 @@
 /* P5.8 — Slash-command palette (Spotlight-style). Anchored
    above the chat input bar; the active row is highlighted
    and the kbd hints sit at the bottom. */
-.slash-command-palette{position:fixed;left:50%;bottom:120px;transform:translateX(-50%) translateY(8px);width:min(520px,92vw);max-height:60vh;background:hsl(var(--bg-100));border:0.5px solid hsl(var(--border-300)/0.3);border-radius:12px;box-shadow:0 16px 50px hsl(var(--always-black)/0.4);overflow:hidden;display:none;flex-direction:column;z-index:850;opacity:0;transition:opacity .16s var(--ease-out),transform .16s var(--ease-out)}
+.slash-command-palette{position:fixed;left:50%;bottom:120px;transform:translateX(-50%) translateY(8px);width:min(520px,92vw);max-height:60vh;overflow:hidden;display:none;flex-direction:column;z-index:850;opacity:0;transition:opacity .16s var(--ease-out),transform .16s var(--ease-out)}
 .slash-command-palette.visible{display:flex;opacity:1;transform:translateX(-50%) translateY(0)}
 .slash-command-head{padding:10px 14px;font-size:11px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:hsl(var(--text-500));border-bottom:0.5px solid hsl(var(--border-300)/0.15)}
 .slash-command-empty{padding:20px 14px;text-align:center;color:hsl(var(--text-400));font-size:12px}

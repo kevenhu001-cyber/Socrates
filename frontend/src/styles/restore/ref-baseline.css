@@ -148,8 +148,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 @media (max-width: 768px) {
 #appShell .recents-title {
   color: var(--cg-text-muted);
-  font-size: 13px;
-  font-weight: 500;
 }
 }
 

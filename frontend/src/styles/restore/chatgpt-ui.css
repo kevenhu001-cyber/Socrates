@@ -216,9 +216,6 @@ body,
 
 #appShell .recents-title {
   color: var(--cg-text-muted);
-  font-size: 12px;
-  font-weight: 550;
-  letter-spacing: 0;
   text-transform: none;
 }
 }

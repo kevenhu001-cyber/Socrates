@@ -457,7 +457,10 @@ for (const [prop, list] of byProp) {
           return cmp(ow, c) <= 0; // c wins or ties (ties keep it: same value anyway)
         });
         const conditionalOutranks = conditional.some((o) => o !== c && cmp(o, c) > 0);
-        if (!stillAlive && !c.stateful && !conditionalOutranks) {
+        // Bare element/universal resets (`*`, `button, input {…}`) are
+        // designed to be overridden — losing is their job, not debt.
+        const isReset = c.spec[0] === 0 && c.spec[1] === 0 && c.spec[2] <= 1;
+        if (!stillAlive && !c.stateful && !conditionalOutranks && !isReset) {
           console.log(`${ctx.name}\t${prop}\t${c.file}:${c.line}\t${c.value}\t<- loses to ${winner.file}:${winner.line}`);
         }
       }

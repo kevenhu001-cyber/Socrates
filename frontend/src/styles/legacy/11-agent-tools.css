@@ -399,7 +399,6 @@
 
 /* Open WebUI-style tool disclosure: a quiet status row until the reader
    explicitly opens Input/Output evidence. */
-.tool-run-list{padding:2px 8px 7px}
 .tool-run-list .agent-tool-card,.agent-tool-card{
   background:transparent;border:0;overflow:visible;
 }
