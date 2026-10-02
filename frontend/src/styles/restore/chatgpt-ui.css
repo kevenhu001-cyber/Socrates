@@ -1273,7 +1273,7 @@ body.workspace-active #appShell .workspace-row:hover {
   #composerToolsMenu {
     left: 0 !important;
     right: 0 !important;
-    top: auto !important;
+    top: auto;
     bottom: 0 !important;
     width: 100vw !important;
     max-width: none !important;

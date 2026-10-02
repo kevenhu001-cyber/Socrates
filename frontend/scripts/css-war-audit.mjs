@@ -129,6 +129,11 @@ function parseCompound(c) {
   return out;
 }
 
+// Classes the runtime toggles on elements — a missing one is 'cond'
+// (it can be added later), never 'no'. Structural classes absent from
+// the signature stay 'no' to keep the candidate pool honest.
+const TOGGLEABLE_CLASS =
+  /^(?:hidden|active|open|closed|closing|opening|collapsed|expanded|visible|show|shown|busy|loading|loaded|selected|checked|enabled|disabled|focused|focus|dragover|dragging|playing|paused|pinned|sticky|fixed|compact|empty|error|invalid|highlight|current|compact-mode|is-[\w-]+|has-[\w-]+|in-[\w-]+|no-[\w-]+|on|off|first|last|visible-[\w-]+|scrollable|composer-focused|voice-recording-active|hover|idle|streaming|settled)$/;
 // compound vs signature: true (always applies) | false (never) | 'cond'
 function compoundMatch(comp, sig) {
   if (comp.tag) {
@@ -136,8 +141,13 @@ function compoundMatch(comp, sig) {
     if (!sig.tag) return 'cond';
   }
   for (const id of comp.ids) if (!sig.ids.has(id)) return false;
-  for (const cls of comp.classes) if (!sig.classes.has(cls)) return false;
   let cond = false;
+  for (const cls of comp.classes) {
+    if (!sig.classes.has(cls)) {
+      if (TOGGLEABLE_CLASS.test(cls)) cond = true;
+      else return false;
+    }
+  }
   for (const a of comp.attrs) {
     const m = /\[([\w-]+)(?:=["']?([^"'\]]+)["']?)?\]/.exec(a);
     if (!m) { cond = true; continue; }

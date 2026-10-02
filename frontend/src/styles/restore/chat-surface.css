@@ -70,7 +70,7 @@ body,
 
 #appShell#appShell .top-bar {
   background: var(--conversation-page) !important;
-  border-bottom: 0 !important;
+  border-bottom: 0;
 }
 }
 
@@ -150,7 +150,7 @@ body,
      polish/composer.css wins by specificity, not !important bidding. On
      phones the bottom-band rules (keyboard inset) still pin it anyway. */
   padding-bottom: calc(112px + var(--conversation-safe-bottom));
-  background: var(--conversation-page) !important;
+  background: var(--conversation-page);
 }
 
 /* `.hidden` must win over the forced landing flex layout in the two
@@ -224,7 +224,7 @@ body #composerToolsMenu {
   border: 1px solid var(--conversation-border) !important;
   border-radius: 20px !important;
   background: var(--conversation-control) !important;
-  color: var(--conversation-text) !important;
+  color: var(--conversation-text);
   box-shadow: 0 18px 48px rgb(0 0 0 / 40%) !important;
 }
 
@@ -262,11 +262,11 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 #appShell#appShell .msg.user .msg-body {
   /* max-width/padding moved on — polish/transcript.css owns the phone
      bubble's 72%/560px cap and 10px 16px padding. */
-  border: 0 !important;
-  border-radius: 15px !important;
+  border: 0;
+  border-radius: 15px;
   background: var(--conversation-user) !important;
   color: var(--conversation-text) !important;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 }
 
@@ -290,9 +290,9 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 @media (min-width: 769px) {
   #appShell#appShell #topicSetup {
     display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
-    align-items: stretch !important;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
   }
 
   #appShell#appShell #chatInputBar {
@@ -310,8 +310,8 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 
   #appShell#appShell #topicSetup {
     display: flex !important;
-    flex-direction: column !important;
-    justify-content: flex-end !important;
+    flex-direction: column;
+    justify-content: flex-end;
     /* P_topic-kb-avoid — the safe-area bottom stays CONSTANT and the
        keyboard inset adds on top of it, so the landing composer tracks
        the keyboard edge exactly 1:1 from the very first frame (no dead
@@ -336,9 +336,9 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
        caused by a nested 16px content inset. */
     position: absolute !important;
     inset-inline: 0 !important;
-    bottom: auto !important;
+    bottom: auto;
     transform: translateY(-50%) !important;
-    align-self: auto !important;
+    align-self: auto;
     margin: 0 !important;
     text-align: center !important;
     /* top/width/max-width/font-size moved on — polish/composer.css owns
@@ -353,7 +353,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
        asymmetry more legible. text-indent shifts the first (only)
        line left by half the trailing space, pulling the optical
        centre back onto the geometric centre. */
-    text-indent: -0.005em !important;
+    text-indent: -0.005em;
   }
 
   #appShell#appShell #chatInputBar {
@@ -663,8 +663,8 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 
 @media (max-width: 768px) {
   #appShell#appShell .top-bar {
-    min-height: 72px !important;
-    padding: max(10px, env(safe-area-inset-top, 0px)) 16px 8px !important;
+    min-height: 72px;
+    padding: max(10px, env(safe-area-inset-top, 0px)) 16px 8px;
   }
 
   /* Landing top-bar buttons are 44px tactile chips; the in-conversation

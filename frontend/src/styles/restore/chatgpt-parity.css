@@ -45,8 +45,8 @@
 
   #appShell#appShell#appShell #topicSetup .topic-title.greeting {
     min-height: 0 !important;
-    height: auto !important;
-    max-width: min(100%, 768px) !important;
+    height: auto;
+    max-width: min(100%, 768px);
     margin: 0 auto 48px !important;
     font-weight: 400 !important;
     line-height: 28px !important;

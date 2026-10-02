@@ -367,7 +367,7 @@
   }
 
   #appShell#appShell #topicSetup {
-    width: 100% !important;
+    width: 100%;
     padding: 0 16px max(16px, env(safe-area-inset-bottom)) !important;
   }
 
