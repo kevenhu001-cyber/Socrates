@@ -91,8 +91,8 @@
   #composerToolsMenu .composer-tools-desktop-items,
   #composerToolsMenu .composer-tools-expanded {
     display: flex !important;
-    flex-direction: column !important;
-    gap: 0 !important;
+    flex-direction: column;
+    gap: 0;
   }
 
   #composerToolsMenu .composer-tools-item,
@@ -134,9 +134,9 @@
   }
 
   #composerToolsMenu .composer-tools-copy > span {
-    overflow: visible !important;
+    overflow: visible;
     white-space: nowrap !important;
-    text-overflow: clip !important;
+    text-overflow: clip;
   }
 
   #composerToolsMenu .composer-tools-copy small,

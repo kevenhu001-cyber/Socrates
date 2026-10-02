@@ -113,7 +113,7 @@ body #composerToolsMenu .composer-tools-item kbd {
     width: 20px !important;
     min-width: 20px !important;
     height: 20px !important;
-    border-radius: 0 !important;
+    border-radius: 0;
     background: transparent !important;
     color: var(--ui-text-secondary);
   }
