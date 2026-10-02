@@ -51,7 +51,7 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 .sidebar-search:focus-within .sidebar-search-icon{color:hsl(var(--accent-000))}
 .sidebar-search input{flex:1;min-width:0;border:0;background:transparent;outline:none;color:hsl(var(--text-100));font-size:calc(12px * var(--sidebar-font-scale));line-height:1;padding:0}
 .sidebar-search input::placeholder{color:hsl(var(--text-500))}
-.sidebar-view-btn{position:relative;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:8px;border:0;background:transparent;color:hsl(var(--text-400));cursor:pointer;transition:color .18s var(--ease-out),background .18s var(--ease-out),transform .14s var(--ease-out)}
+.sidebar-view-btn{position:relative;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:0;background:transparent;color:hsl(var(--text-400));cursor:pointer;transition:color .18s var(--ease-out),background .18s var(--ease-out),transform .14s var(--ease-out)}
 .sidebar-view-btn svg{width:17px;height:17px}
 .sidebar-view-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
 
