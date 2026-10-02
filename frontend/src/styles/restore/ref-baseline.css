@@ -482,7 +482,7 @@ body.workspace-active #appShell .main-page {
      keep that bias explicit instead of baking it into every page. */
   body.workspace-active #appShell .main-page:not(#sitesPanel) {
     position: relative;
-    left: 0 !important;
+    left: 0;
     width: min(768px, calc(100% - 64px)) !important;
     max-width: 768px !important;
     margin-inline: auto !important;
@@ -1231,21 +1231,21 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 
 @media (max-width: 768px) {
   #appShell #pluginsPanel {
-    width: calc(100% - 16px) !important;
-    max-width: none !important;
-    margin-inline: 8px !important;
-    padding-top: 16px !important;
-    background: transparent !important;
+    width: calc(100% - 16px);
+    max-width: none;
+    margin-inline: 8px;
+    padding-top: 16px;
+    background: transparent;
   }
 
   /* Scheduled tasks place their title in the app-owned top chrome,
      matching the phone references. */
   body.workspace-active #appShell #scheduledPanel {
-    position: relative !important;
-    width: calc(100% - 16px) !important;
-    margin-inline: 8px !important;
-    background: transparent !important;
-    z-index: 1 !important;
+    position: relative;
+    width: calc(100% - 16px);
+    margin-inline: 8px;
+    background: transparent;
+    z-index: 1;
   }
 
   /* The mobile projects head layout moved to polish/workspace.css — it owns
