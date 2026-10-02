@@ -109,11 +109,7 @@ body,
 @media (max-width: 768px) {
 
 #appShell .sidebar-logo {
-  gap: 8px;
   color: var(--cg-text);
-  font-size: 15px;
-  font-weight: 650;
-  letter-spacing: -0.025em;
 }
 }
 
@@ -216,9 +212,6 @@ body,
 @media (max-width: 768px) {
 
 #appShell .sidebar-search {
-  height: 36px;
-  border: 1px solid var(--cg-border);
-  border-radius: 10px;
   background: var(--cg-surface);
   background: color-mix(in srgb, var(--cg-surface) 72%, transparent);
 }

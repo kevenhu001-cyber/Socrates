@@ -104,12 +104,8 @@
 }
 @media (max-width: 768px) {
 #appShell .sidebar-search {
-  height: 34px;
-  padding: 0 10px;
   gap: 8px;
-  border-radius: var(--ui-radius-control, 8px);
   background: var(--ui-bg-raised);
-  border: 1px solid transparent;
   transition: border-color var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;
 }
 }

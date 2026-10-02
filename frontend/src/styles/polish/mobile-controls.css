@@ -70,10 +70,7 @@
 
   /* ── Sidebar search — 44 hit area, 10px radius ── */
   #appShell .sidebar-search {
-    min-height: var(--ui-hit-area);
-    height: var(--ui-hit-area);
     padding: 0 10px;
-    border-radius: var(--ui-radius-row, 10px);
   }
 
   /* ── Sidebar recents — 40px pitch, 10px radius; the right pad is 6px so

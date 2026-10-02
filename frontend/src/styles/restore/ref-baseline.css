@@ -700,7 +700,6 @@ body.workspace-active #appShell .main-page {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  width: min(100%, 720px);
   margin: 24px auto 0;
 }
 
@@ -1111,9 +1110,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 
   /* Only the quick-actions row remains on landing; the home-suggestions-wrap
      container was removed from index.html. */
-  #appShell .home-quick-actions {
-    width: min(100%, 768px) !important;
-  }
+
 
   #appShell .home-quick-action {
     min-height: 52px !important;

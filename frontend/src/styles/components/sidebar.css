@@ -12,13 +12,8 @@
 
 @media (max-width: 768px) {
 #appShell .sidebar-logo {
-  gap: 9px;
   padding: 6px 4px;
-  color: var(--ui-text-primary);
   font-family: var(--font-sans);
-  font-size: 15px;
-  font-weight: 500;
-  letter-spacing: 0;
 }
 }
 @media (max-width: 768px) {
@@ -168,9 +163,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 }
 @media (max-width: 768px) {
 #appShell .sidebar-search {
-  height: 38px;
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: 10px;
   background: var(--ui-bg-raised);
 }
 }

@@ -407,12 +407,6 @@
   /* The home-suggestions-wrap container was removed from index.html — only
      the quick-actions row remains on landing. */
   #appShell#appShell .home-quick-actions {
-    width: 100% !important;
-    max-width: none !important;
-    margin: 0 !important;
-  }
-
-  #appShell#appShell .home-quick-actions {
     display: flex !important;
     gap: 0 !important;
   }

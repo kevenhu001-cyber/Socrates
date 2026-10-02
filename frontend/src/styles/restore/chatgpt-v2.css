@@ -61,7 +61,7 @@
 @media (max-width: 768px) {
 }
 @media (max-width: 768px) {
-#appShell .sidebar-logo { padding-left: 6px; font-size: 13px; font-weight: 500; }
+#appShell .sidebar-logo { padding-left: 6px; }
 }
 @media (max-width: 768px) {
 #appShell .sidebar-nav-btn { min-height: 30px; padding: 5px 8px; }
@@ -193,13 +193,7 @@
 
 @media (max-width: 768px) {
 
-#appShell .top-bar-left,
-#appShell .top-bar-right {
-  width: 0 !important;
-  min-width: 0 !important;
-  flex: 0 0 0 !important;
-  visibility: hidden;
-}
+
 }
 
 /* P_topbar-sidebar-toggle — the collapse above hides both side groups at
