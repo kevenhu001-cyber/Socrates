@@ -7,10 +7,8 @@
 @media (max-width: 768px) {
 #appShell #navImages.sidebar-nav-btn, #appShell #navAssistants.sidebar-nav-btn { display:none !important; } }
 #appShell .creation-panel {
-  box-sizing: border-box;
   width: 100%;
   min-height: 100%;
-  padding: 108px max(24px, calc((100% - 840px) / 2)) 64px !important;
   color: var(--chatgpt-text, #f4f4f4);
   background: var(--chatgpt-page, #212121) !important;
 }

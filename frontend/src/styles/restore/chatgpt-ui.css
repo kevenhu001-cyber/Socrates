@@ -746,7 +746,6 @@ body.workspace-active #appShell #mainInner {
 
 body.workspace-active #appShell .main-page {
   box-sizing: border-box;
-  margin: 0 auto;
   overflow-y: auto;
   gap: 0;
 }

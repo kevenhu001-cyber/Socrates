@@ -285,7 +285,6 @@ html[data-show-grid="false"] .main-bg{background-image:none}
   padding:0 16px;
   /* UI-align: widened from 720px to 58rem (928px) to match the
    * open-webui reading column. --app-width-scale still applies. */
-  max-width:calc(58rem * var(--app-width-scale, 1));
   margin:0 auto;
   width:100%;
   flex:1;

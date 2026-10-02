@@ -229,7 +229,7 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 
 /* ────── Responsive: large screens ≥ 1200 px ────── */
 @media(min-width:1200px){
-  .main-inner{max-width:calc(900px * var(--app-width-scale, 1));padding:5vh 20px 32px}
+  .main-inner{padding:5vh 20px 32px}
   .topic-title{font-size:calc(2.1rem * var(--app-font-scale, 1));padding:40px 20px 0}
   .msg-body{padding:14px 20px}
   .msg.user .msg-body{font-size:calc(15px * var(--app-font-scale, 1))}
