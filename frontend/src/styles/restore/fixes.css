@@ -274,10 +274,10 @@
   }
 
   #appShell#appShell .top-mode-tabs .app-mode-toggle {
-    flex: 1 1 50% !important;
-    min-width: 0 !important;
-    height: 26px !important;
-    min-height: 26px !important;
+    flex: 1 1 50%;
+    min-width: 0;
+    height: 26px;
+    min-height: 26px;
   }
 
   #appShell#appShell#appShell #sidebarOpenBtn,
@@ -285,10 +285,10 @@
   #appShell#appShell#appShell #mobileNewChatBtn,
   #appShell#appShell#appShell #findBtn,
   #appShell#appShell#appShell #shareBtn {
-    width: 44px !important;
-    min-width: 44px !important;
-    height: 44px !important;
-    min-height: 44px !important;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
   }
 
   /* P_has-invalidation — see ui/layoutStateMirror.js. */

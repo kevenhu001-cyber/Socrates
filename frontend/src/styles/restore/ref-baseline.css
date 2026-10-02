@@ -918,7 +918,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 #appShell .top-mode-tabs .app-mode-toggle {
   color: var(--cg-text-muted) !important;
   border-radius: 999px !important;
-  font-family: var(--cg-font) !important;
+  font-family: var(--cg-font);
   font-weight: 400 !important;
 }
 }

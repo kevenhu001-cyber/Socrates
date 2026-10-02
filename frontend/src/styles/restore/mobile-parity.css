@@ -112,15 +112,15 @@
 
   #appShell#appShell .home-quick-action {
     display: flex !important;
-    align-items: center !important;
-    width: 100% !important;
+    align-items: center;
+    width: 100%;
     min-height: 52px !important;
     padding: 8px 6px !important;
     gap: 14px !important;
-    border: 0 !important;
+    border: 0;
     border-radius: 12px !important;
     background: transparent !important;
-    text-align: left !important;
+    text-align: left;
   }
 
   #appShell#appShell .home-quick-action:active {
@@ -129,8 +129,8 @@
 
   #appShell#appShell .home-quick-action-icon {
     display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+    align-items: center;
+    justify-content: center;
     flex: 0 0 28px !important;
     width: 28px !important;
     height: 28px !important;
