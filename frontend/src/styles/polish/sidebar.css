@@ -69,7 +69,6 @@
   /* Reference drawer renders nav labels and glyphs at primary brightness,
      same as the session titles below them. */
   color: var(--ui-text-primary);
-  line-height: 20px;
   letter-spacing: -0.1px;
   transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease;
 }

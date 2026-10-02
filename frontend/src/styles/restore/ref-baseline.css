@@ -41,11 +41,7 @@
 @media (max-width: 768px) {
 
 #appShell .sidebar-nav-btn {
-  min-height: 36px;
-  padding: 7px 12px;
   color: var(--cg-text-secondary);
-  line-height: 22px;
-  text-align: left;
   justify-content: flex-start;
 }
 }

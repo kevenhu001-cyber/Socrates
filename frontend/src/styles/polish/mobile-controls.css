@@ -60,7 +60,6 @@
      used to fight them were retired in the same change. */
   #appShell #sidebarNav .sidebar-nav-btn,
   #appShell .sidebar-nav-btn {
-    min-height: 40px;
     height: auto;
     padding: 0 10px;
   }

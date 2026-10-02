@@ -64,7 +64,6 @@
 #appShell .sidebar-logo { padding-left: 6px; }
 }
 @media (max-width: 768px) {
-#appShell .sidebar-nav-btn { min-height: 30px; padding: 5px 8px; }
 }
 @media (max-width: 768px) {
 #appShell .sidebar-nav-btn svg { width: 15px; height: 15px; }
