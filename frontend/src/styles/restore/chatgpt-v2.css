@@ -347,34 +347,34 @@
    ------------------------------------------------------------------------- */
 
 [data-mode="dark"] {
-  --cg-page: #212121;
-  --cg-rail: #171717;
-  --cg-surface: #2f2f2f;
-  --cg-surface-raised: #383838;
-  --cg-surface-hover: #343434;
-  --cg-border: rgb(255 255 255 / 11%);
-  --cg-border-strong: rgb(255 255 255 / 18%);
-  --cg-text: #f4f4f4;
-  --cg-text-secondary: #c6c6c6;
-  --cg-text-muted: #9a9a9a;
-  --cg-text-faint: #707070;
+  --cg-page: var(--ui-bg-page);
+  --cg-rail: var(--ui-bg-sidebar);
+  --cg-surface: var(--ui-bg-surface);
+  --cg-surface-raised: var(--ui-bg-control);
+  --cg-surface-hover: var(--ui-bg-hover);
+  --cg-border: var(--ui-border-default);
+  --cg-border-strong: var(--ui-border-strong);
+  --cg-text: var(--ui-text-primary);
+  --cg-text-secondary: var(--ui-text-secondary);
+  --cg-text-muted: var(--ui-text-muted);
+  --cg-text-faint: var(--ui-text-disabled);
   --cg-focus-ring: rgb(255 255 255 / 16%);
   --cg-composer-shadow: 0 10px 28px rgb(0 0 0 / 22%);
   --cg-composer-focus-shadow: 0 0 0 3px rgb(255 255 255 / 8%), 0 12px 30px rgb(0 0 0 / 24%);
 }
 
 [data-mode="light"] {
-  --cg-page: #ffffff;
-  --cg-rail: #f7f7f5;
-  --cg-surface: #ffffff;
-  --cg-surface-raised: #f2f2f0;
-  --cg-surface-hover: #e9e9e7;
-  --cg-border: rgb(0 0 0 / 9%);
-  --cg-border-strong: rgb(0 0 0 / 16%);
-  --cg-text: #202020;
-  --cg-text-secondary: #5e5e5e;
-  --cg-text-muted: #777777;
-  --cg-text-faint: #9b9b9b;
+  --cg-page: var(--ui-bg-page);
+  --cg-rail: var(--ui-bg-sidebar);
+  --cg-surface: var(--ui-bg-surface);
+  --cg-surface-raised: var(--ui-bg-raised);
+  --cg-surface-hover: var(--ui-bg-hover);
+  --cg-border: var(--ui-border-default);
+  --cg-border-strong: var(--ui-border-strong);
+  --cg-text: var(--ui-text-primary);
+  --cg-text-secondary: var(--ui-text-secondary);
+  --cg-text-muted: var(--ui-text-muted);
+  --cg-text-faint: var(--ui-text-disabled);
   --cg-focus-ring: rgb(0 0 0 / 13%);
   --cg-composer-shadow: 0 10px 30px rgb(0 0 0 / 7%);
   --cg-composer-focus-shadow: 0 0 0 3px rgb(0 0 0 / 5%), 0 12px 32px rgb(0 0 0 / 9%);

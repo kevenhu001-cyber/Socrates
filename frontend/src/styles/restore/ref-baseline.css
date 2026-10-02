@@ -610,10 +610,10 @@ body.workspace-active #appShell .main-page {
   --cg-page: var(--ui-bg-page);
   --cg-rail: var(--ui-bg-sidebar);
   --cg-surface: var(--ui-bg-surface);
-  --cg-surface-raised: #2a2a2a;
+  --cg-surface-raised: var(--ui-bg-control);
   --cg-surface-hover: var(--ui-bg-hover);
-  --cg-border: rgb(255 255 255 / 10%);
-  --cg-border-strong: rgb(255 255 255 / 18%);
+  --cg-border: var(--ui-border-default);
+  --cg-border-strong: var(--ui-border-strong);
 }
 
 @media (min-width: 769px) {

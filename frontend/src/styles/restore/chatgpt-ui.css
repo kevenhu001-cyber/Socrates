@@ -27,41 +27,7 @@
   --cg-content-width: calc(1024px * var(--app-width-scale, 1));
 }
 
-[data-mode="dark"] {
-  --cg-page: #212121;
-  --cg-rail: #171717;
-  --cg-surface: #2f2f2f;
-  --cg-surface-raised: #383838;
-  --cg-surface-hover: #343434;
-  --cg-border: rgb(255 255 255 / 10%);
-  --cg-border-strong: rgb(255 255 255 / 18%);
-  --cg-text: #f5f5f5;
-  --cg-text-secondary: #c5c5c5;
-  --cg-text-muted: #9b9b9b;
-  --cg-text-faint: #717171;
-  --cg-accent: #f5f5f5;
-  --cg-accent-strong: #ffffff;
-  --cg-accent-ink: #0a0a0a;
-  --cg-danger: #ef8f8f;
-}
 
-[data-mode="light"] {
-  --cg-page: #fbfbfa;
-  --cg-rail: #f3f3f1;
-  --cg-surface: #fff;
-  --cg-surface-raised: #f4f4f2;
-  --cg-surface-hover: #e9e9e7;
-  --cg-border: rgb(0 0 0 / 10%);
-  --cg-border-strong: rgb(0 0 0 / 16%);
-  --cg-text: #171717;
-  --cg-text-secondary: #595959;
-  --cg-text-muted: #858585;
-  --cg-text-faint: #a4a4a4;
-  --cg-accent: #171717;
-  --cg-accent-strong: #000000;
-  --cg-accent-ink: #fff;
-  --cg-danger: #b65050;
-}
 
 html,
 body,
@@ -1405,17 +1371,17 @@ body.workspace-active #appShell .workspace-row:hover {
    These final rules intentionally own those surfaces as one design system. */
 
 [data-mode="light"] {
-  --cg-page: #fff;
-  --cg-rail: #f7f7f7;
-  --cg-surface: #fff;
-  --cg-surface-raised: #f3f3f3;
-  --cg-surface-hover: #ececec;
-  --cg-border: rgb(0 0 0 / 9%);
-  --cg-border-strong: rgb(0 0 0 / 15%);
-  --cg-text: #171717;
-  --cg-text-secondary: #4d4d4d;
-  --cg-text-muted: #737373;
-  --cg-text-faint: #999;
+  --cg-page: var(--ui-bg-page);
+  --cg-rail: var(--ui-bg-sidebar);
+  --cg-surface: var(--ui-bg-surface);
+  --cg-surface-raised: var(--ui-bg-raised);
+  --cg-surface-hover: var(--ui-bg-hover);
+  --cg-border: var(--ui-border-default);
+  --cg-border-strong: var(--ui-border-strong);
+  --cg-text: var(--ui-text-primary);
+  --cg-text-secondary: var(--ui-text-secondary);
+  --cg-text-muted: var(--ui-text-muted);
+  --cg-text-faint: var(--ui-text-disabled);
 }
 
 @media (max-width: 768px) {
