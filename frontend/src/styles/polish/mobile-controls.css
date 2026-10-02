@@ -56,15 +56,16 @@
 
   /* ── Sidebar nav rows — 40px pitch, 10px radius (reference drawer rows
      measure ~40px, not 44) ──
-     Higher specificity + !important needed to beat the
-     `min-height: 40px !important` rule in restore/fixes.css (line 327). */
+     Padding is owned here (0 block / 10px inline). Row height and the 15px
+     label size are deliberately still pinned !important by
+     restore/fixes.css — mobile-parity's 44px/8-10px padding rules that
+     used to fight them were retired in the same change. */
   #appShell #sidebarNav .sidebar-nav-btn,
   #appShell .sidebar-nav-btn {
-    min-height: 40px !important;
+    min-height: 40px;
     height: auto;
-    padding: 0 10px !important;
+    padding: 0 10px;
     border-radius: var(--ui-radius-row, 10px);
-    font-size: var(--ui-text-ui);
   }
   #appShell .sidebar-nav-btn .nav-label {
     line-height: var(--ui-hit-area);
@@ -116,16 +117,17 @@
   }
 
   /* ── Sidebar footer icon-btn — 44 hit area ──
-     Higher specificity + !important needed to beat the
-     `min-width: 36px !important; min-height: 36px !important`
-     rule in restore/fixes.css (line 331). */
+     The only !important competitor (the 36px pins in restore/fixes.css)
+     targets `.sidebar-footer-actions > .icon-btn`, which that same layer
+     keeps display:none on phones — a plain declaration suffices for any
+     footer button that is actually visible. */
   #appShell .sidebar-footer .icon-btn,
   #appShell .sidebar-footer-actions > .icon-btn,
   #appShell .sidebar-footer .btn-icon {
-    width: var(--ui-hit-area) !important;
-    min-width: var(--ui-hit-area) !important;
-    height: var(--ui-hit-area) !important;
-    min-height: var(--ui-hit-area) !important;
+    width: var(--ui-hit-area);
+    min-width: var(--ui-hit-area);
+    height: var(--ui-hit-area);
+    min-height: var(--ui-hit-area);
     border-radius: var(--ui-radius-control, 8px);
   }
   #appShell .sidebar-footer .icon-btn svg,

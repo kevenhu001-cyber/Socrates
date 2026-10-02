@@ -16,11 +16,12 @@
 
 /* Greeting stays one line in every locale. The pool strings are short, but
    long translations or an XL font scale must never wrap the hero line —
-   nowrap + ellipsis is the hard guarantee. */
+   nowrap + ellipsis is the hard guarantee. No competing rule sets these
+   properties, so plain declarations are enough. */
 #appShell#appShell#appShell #topicSetup .topic-title.greeting {
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Lift the landing hero off geometric center: the reference composition
