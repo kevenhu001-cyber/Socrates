@@ -78,8 +78,7 @@
 .plugin-directory-head { margin-bottom: 24px; }
 .workspace-page-head h1,
 .plugin-directory-head h2 { font-size: 27px; font-weight: 500; }
-.workspace-page-head p,
-.plugin-directory-desc { margin-top: 4px; color: var(--cgv-text-2); font-size: 12px; }
+
 .workspace-search-field,
 .plugin-directory-search { width: 232px; height: 36px; padding-inline: 12px; font-size: 12px; }
 .workspace-create-button { height: 36px; }

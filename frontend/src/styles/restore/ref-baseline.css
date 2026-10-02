@@ -330,10 +330,7 @@ body.workspace-active #appShell .main-page {
   letter-spacing: -0.01em;
 }
 
-#appShell .workspace-page-head p,
-#appShell .plugin-directory-desc {
-  color: var(--cg-text-muted);
-}
+
 
 /* --------------------------------------------------------------------------
    7. Home suggestions — REMOVED

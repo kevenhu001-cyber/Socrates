@@ -28,8 +28,6 @@
   letter-spacing: -.02em;
 }
 
-#appShell .workspace-page-head p,
-#appShell .plugin-directory-desc,
 #appShell .workspace-row-copy span,
 #appShell .workspace-empty { color: var(--ui-text-tertiary); }
 
@@ -55,7 +53,6 @@
 #appShell .plugin-directory-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
 #appShell .plugin-directory-heading { min-width: 0; }
 #appShell .plugin-directory-heading h2 { margin: 0 0 8px; font-size: 30px; line-height: 1.2; }
-#appShell .plugin-directory-desc { margin: 0; font-size: 15px; line-height: 1.5; }
 #appShell .plugin-directory-tools { display: flex; align-items: center; gap: 8px; }
 #appShell .plugin-directory-search { display: flex; align-items: center; gap: 10px; width: min(320px, 44vw); min-width: 200px; height: 40px; padding: 0 14px; }
 #appShell .plugin-directory-search svg { width: 18px; height: 18px; flex: 0 0 18px; }

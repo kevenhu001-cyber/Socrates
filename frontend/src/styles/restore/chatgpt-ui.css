@@ -1231,13 +1231,7 @@ body.workspace-active #appShell #mainInner {
   line-height: 1.15;
 }
 
-.workspace-page-head p,
-.plugin-directory-desc {
-  margin: 10px 0 0;
-  color: var(--cg-text-secondary);
-  font-size: 14px;
-  line-height: 1.55;
-}
+
 
 .workspace-head-actions {
   display: flex;
