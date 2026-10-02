@@ -1375,7 +1375,7 @@ body.workspace-active #appShell .project-row {
 .project-row .workspace-row-copy { gap: 5px; }
 .project-row .workspace-row-copy strong { color: var(--cg-text); font-size: 15px; font-weight: 560; }
 .project-row .workspace-row-copy span { color: var(--cg-text-muted); font-size: 13px; }
-.workspace-icon-action { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border-radius: 50%; }
+.workspace-icon-action { display: grid; place-items: center; padding: 0; }
 .workspace-icon-action svg { width: 18px; height: 18px; }
 
 @media (max-width: 900px) {
