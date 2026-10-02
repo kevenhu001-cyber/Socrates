@@ -128,7 +128,6 @@
   border-radius:var(--tool-card-radius);
   box-shadow:var(--tool-card-shadow);
 }
-.composer-tools-menu{padding:8px}
 .composer-tools-item{
   transition:color .16s ease
 }

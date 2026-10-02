@@ -17,7 +17,6 @@ body #composerToolsMenu.composer-tools-menu {
   min-width: 236px;
   max-width: calc(100vw - 24px);
   max-height: min(44dvh, 336px);
-  padding: 6px;
   overflow-y: auto;
   overscroll-behavior: contain;
   border-radius: 20px;
@@ -122,7 +121,6 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
     min-width: 236px;
     height: min(48dvh, 234px);
     max-height: min(48dvh, 234px);
-    padding: 6px;
     border-radius: 20px;
   }
   [data-mode="dark"] body #composerToolsMenu.composer-tools-menu { background: var(--ui-bg-surface); }

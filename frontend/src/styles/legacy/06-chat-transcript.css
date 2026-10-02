@@ -308,7 +308,6 @@ body.admin-active #appShell #modeSegmentedTop{display:none!important}
     padding:10px 12px;
     border:0;
     background:transparent;
-    border-radius:12px;
     text-align:left;
     cursor:pointer;
     transition:background-color .12s ease;

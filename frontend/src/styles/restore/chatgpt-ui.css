@@ -476,7 +476,6 @@ body,
      keeps the expanded card inside the viewport's lower half. */
   width: min(620px, calc(100vw - 32px));
   max-height: min(50vh, 620px);
-  padding: 8px !important;
   overflow-y: auto;
   border: 1px solid var(--cg-border-strong) !important;
   border-radius: 18px !important;
