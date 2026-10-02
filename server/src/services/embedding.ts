@@ -180,6 +180,7 @@ export async function embedTexts(
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${config.keyPlaintext}`,
+        'Accept-Encoding': 'identity',
       },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(EMBED_TIMEOUT_MS),

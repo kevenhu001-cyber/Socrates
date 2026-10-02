@@ -103,7 +103,7 @@ export function addStreamingMessage(opts){
      every delta and `html` is set to null. At finish() time we
      do a single formatMsg pass and write `html`. The DOM bubble
      is the rendered view, not the source. */
-  var clientId="msg-"+generateId();
+  var clientId=(opts&&opts.clientId)?opts.clientId:("msg-"+generateId());
   div.dataset.clientId=clientId;
   /* P_stream-start-reserve — the assistant placeholder is published to the
      runtime bridge before this turn's leading reserve is laid out. Without
@@ -555,6 +555,7 @@ export function addStreamingMessage(opts){
   claimLiveSearchRetry(_onSearchRetry);
   registerLiveTurnRuntime(clientId,toolRuntime);
   var ret={
+    getClientId:function(){return clientId},
     isFinished:function(){return finished},
     recordToolUse:toolRuntime.recordToolUse,
     recordToolProgress:toolRuntime.recordToolProgress,

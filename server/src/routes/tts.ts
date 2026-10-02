@@ -133,6 +133,7 @@ router.post('/', requireAuth, chatLimiter, async (req, res) => {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${provider.keyPlaintext}`,
+        'Accept-Encoding': 'identity',
       },
       body: JSON.stringify({
         model: 'tts-1',

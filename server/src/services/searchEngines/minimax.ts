@@ -114,6 +114,7 @@ export async function searchMinimax(query: string, limit = 10, signal: AbortSign
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
+        'Accept-Encoding': 'identity',
       },
       body: JSON.stringify({ q: String(query).trim() }),
     });

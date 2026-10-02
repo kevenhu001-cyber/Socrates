@@ -138,16 +138,18 @@ async function resolveTurnBinding(
     return owned.id;
   }
   const clientTurn = req.body?.clientTurn;
-  const clientTurnId = clientTurn && typeof clientTurn.id === 'string' ? clientTurn.id.trim() : '';
-  if (!clientTurnId || clientTurnId.length > 200) return null;
+  const providedTurnId = clientTurn && typeof clientTurn.id === 'string' ? clientTurn.id.trim() : '';
+  const effectiveTurnId = (providedTurnId && providedTurnId.length <= 200)
+    ? providedTurnId
+    : `srv-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
   try { await ownership; } catch { return null; }
   try {
     const created = await createChatTurn({
       userId: req.userId!,
-      clientTurnId,
+      clientTurnId: effectiveTurnId,
       sessionId,
       model: null,
-      inputSnapshot: clientTurn.input ?? null,
+      inputSnapshot: clientTurn?.input ?? null,
     });
     return created.turn.id;
   } catch (err) {

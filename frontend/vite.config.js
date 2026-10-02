@@ -361,15 +361,39 @@ export default defineConfig({
           }
         },
         entryFileNames: 'assets/[name]-[hash].js',
-        chunkFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames(chunkInfo) {
+          if (chunkInfo.name && chunkInfo.name.startsWith('vendor-')) {
+            return 'assets/[name]-[hash].js';
+          }
+          return 'assets/chunk-[hash].js';
+        },
       },
     },
     target: 'es2020',
-    minify: 'esbuild',
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+        pure_funcs: ['console.log', 'console.debug', 'console.info'],
+        passes: 2,
+      },
+      mangle: {
+        toplevel: true,
+        safari10: true,
+      },
+      format: {
+        comments: false,
+      },
+    },
     sourcemap: false,
     modulePreload: { polyfill: true },
   },
-  plugins: [createLocalApiStubPlugin(), createPrecompressedAssetsPlugin()],
+  plugins: [
+    createLocalApiStubPlugin(),
+    // createObfuscatorPlugin(),
+    createPrecompressedAssetsPlugin(),
+  ],
   server: {
     port: 5173,
     strictPort: false,

@@ -190,8 +190,24 @@ export function recordUsage({
       totalTokens: total,
       source,
       usageSource,
-    }).catch((err: unknown) => {
-      console.warn('[usage] record failed:', errorMessage(err));
+    }).catch(async (err: unknown) => {
+      const errStr = errorMessage(err);
+      if (sessionId && errStr.includes('usage_events_session_id_sessions_id_fk')) {
+        try {
+          await db.insert(usageEvents).values({
+            userId,
+            model: model || null,
+            sessionId: null,
+            promptTokens: promptTokens || 0,
+            completionTokens: completionTokens || 0,
+            totalTokens: total,
+            source,
+            usageSource,
+          });
+          return;
+        } catch { /* ignore fallback error */ }
+      }
+      console.warn('[usage] record failed:', errStr);
     });
   } catch (err) {
     console.warn('[usage] record failed:', errorMessage(err));

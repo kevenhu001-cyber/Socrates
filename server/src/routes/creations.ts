@@ -154,7 +154,7 @@ router.post('/images', async (req, res, next) => {
     const model = process.env.IMAGE_MODEL || text(req.body?.model, 120);
     if (!provider?.keyPlaintext || !model) return res.status(503).json({ code: 'IMAGE_PROVIDER_NOT_CONFIGURED', message: 'Configure an image model in settings (IMAGE_MODEL) and an active provider.' });
     const endpoint = provider.url.replace(/\/(chat\/completions|responses)\/?$/, '').replace(/\/$/, '') + '/images/generations';
-    const response = await fetch(endpoint, { method: 'POST', headers: { Authorization: `Bearer ${provider.keyPlaintext}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ model, prompt, size: '1024x1024', response_format: 'b64_json' }), signal: AbortSignal.timeout(120_000) });
+    const response = await fetch(endpoint, { method: 'POST', headers: { Authorization: `Bearer ${provider.keyPlaintext}`, 'Content-Type': 'application/json', 'Accept-Encoding': 'identity' }, body: JSON.stringify({ model, prompt, size: '1024x1024', response_format: 'b64_json' }), signal: AbortSignal.timeout(120_000) });
     const data = await response.json() as { data?: { b64_json?: string }[]; error?: { message?: string } };
     if (!response.ok) return res.status(502).json({ code: 'IMAGE_PROVIDER_ERROR', message: data.error?.message || `Image provider returned ${response.status}` });
     const encoded = data.data?.[0]?.b64_json;

@@ -258,7 +258,28 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
      which is the same degradation a failed create always had. */
   var _turnSessionId=stateStore.read("currentSessionId")||null;
   var _clientTurnId=newClientTurnId();
-  var _clientTurn={id:_clientTurnId,input:{text:String(userText||"").slice(0,20000)}};
+  var _userClientId=null;
+  try {
+    var _allMsgs=stateStore.read("messages")||[];
+    for(var ui=_allMsgs.length-1;ui>=0;ui--){
+      if(_allMsgs[ui]&&_allMsgs[ui].role==="user"){
+        _userClientId=_allMsgs[ui].clientId||null;
+        break;
+      }
+    }
+  }catch(_){}
+  var _assistantClientId=(ctl&&typeof ctl.getClientId==="function")?ctl.getClientId():null;
+  var _clientTurn={
+    id:_clientTurnId,
+    userClientId:_userClientId,
+    assistantClientId:_assistantClientId,
+    input:{text:String(userText||"").slice(0,20000)}
+  };
+  try{
+    if(_turnSessionId){
+      savePendingTurn(_turnSessionId,{turnId:"",clientTurnId:_clientTurnId,lastSeq:0});
+    }
+  }catch(_){}
   var _onTurnBound=function(turnId){
     if(!turnId)return;
     try{if(_turnSessionId)savePendingTurn(_turnSessionId,{turnId:turnId,clientTurnId:_clientTurnId,lastSeq:0});}catch(_){}

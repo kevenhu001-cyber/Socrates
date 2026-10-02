@@ -439,6 +439,7 @@ export async function streamChatCompletion(
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${apiKey}`,
+              'Accept-Encoding': 'identity',
             },
             body: JSON.stringify(variant.body),
             signal: mergedSignal,
@@ -639,10 +640,29 @@ export async function streamChatCompletion(
       for (const line of lines) {
         const trimmed = line.trim();
         if (!trimmed || trimmed === 'data: [DONE]') continue;
-        if (!trimmed.startsWith('data: ')) continue;
+        if (!trimmed.startsWith('data: ')) {
+          if (trimmed.startsWith('{')) {
+            try {
+              const errObj = JSON.parse(trimmed);
+              if (errObj && (errObj.error || errObj.code || (errObj.base_resp && errObj.base_resp.status_code !== 0))) {
+                const msg = typeof errObj.error === 'object'
+                  ? errObj.error.message
+                  : (errObj.error || errObj.message || errObj.base_resp?.status_msg || 'Upstream error');
+                onError(new Error(msg));
+                return;
+              }
+            } catch { /* ignore */ }
+          }
+          continue;
+        }
 
         try {
           const json = JSON.parse(trimmed.slice(6));
+          if (json.error) {
+            const msg = typeof json.error === 'object' ? json.error.message : json.error;
+            onError(new Error(msg || 'Upstream error in stream'));
+            return;
+          }
           /* Usage arrives in its OWN frame, after the last content delta,
              with `choices: []`. It must be read BEFORE the `!delta` guard
              below — that guard is why `stream_options.include_usage` data
@@ -856,6 +876,7 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
+        'Accept-Encoding': 'identity',
       },
       body: JSON.stringify(variant.body),
       signal: mergedSignal,

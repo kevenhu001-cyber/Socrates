@@ -29,8 +29,10 @@ import { showToast } from '../ui/toast.js';
 import {
   bumpPendingSeq,
   clearPendingTurn,
+  createChatTurn,
   getChatTurn,
   loadPendingTurn,
+  savePendingTurn,
   subscribeChatTurnEvents,
 } from '../chat/turnClient.ts';
 import { detailCache } from './detailCache.js';
@@ -809,9 +811,20 @@ export async function loadSession(id){
 export async function reattachPendingTurn(sessionId){
   var pending=null;
   try{ pending=loadPendingTurn(sessionId); }catch(_){ return; }
-  if(!pending||!pending.turnId)return;
+  if(!pending||(!pending.turnId && !pending.clientTurnId))return;
   var snapshot=null;
-  try{ snapshot=await getChatTurn(pending.turnId); }
+  try{
+    if(pending.turnId){
+      snapshot=await getChatTurn(pending.turnId);
+    }else if(pending.clientTurnId){
+      var resTurn=await createChatTurn({ clientTurnId: pending.clientTurnId, sessionId: sessionId });
+      if(resTurn && resTurn.turn && resTurn.turn.id){
+        pending.turnId=resTurn.turn.id;
+        savePendingTurn(sessionId, { turnId: pending.turnId, clientTurnId: pending.clientTurnId, lastSeq: 0 });
+        snapshot=await getChatTurn(pending.turnId);
+      }
+    }
+  }
   catch(_){ try{clearPendingTurn(sessionId)}catch(_){} return; }
   if(!snapshot||!snapshot.turn)return;
   var turn=snapshot.turn;
@@ -826,7 +839,10 @@ export async function reattachPendingTurn(sessionId){
         for(var i=0;i<msgs.length;i++){
           if(msgs[i]&&msgs[i].role==="assistant"&&msgs[i].rawText===full){already=true;break}
         }
-        if(!already&&typeof window.addMessage==="function")window.addMessage("assistant",full);
+        if(!already&&typeof window.addMessage==="function"){
+          window.addMessage("assistant",full);
+          try{publishReactChatRuntime({type:"state-synced",reason:"pending-turn-completed"});}catch(_){}
+        }
       }
     }catch(_){}
     try{clearPendingTurn(sessionId)}catch(_){}

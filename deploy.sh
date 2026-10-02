@@ -440,6 +440,12 @@ else
   # of this script for the restore + nginx re-point sequence.
   backup_previous "$APP_WEB_ROOT"
 
+  # Verify no un-obfuscated TypeScript/JSX/sourcemap files leaked into dist/
+  if find "$DIST_DIR" -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.jsx" -o -name "*.map" \) -print -quit 2>/dev/null | grep -q .; then
+    echo "ERROR: raw source files or sourcemaps (*.ts, *.tsx, *.jsx, *.map) detected in frontend build dist/" >&2
+    exit 1
+  fi
+
   # Versioned SPA entry. Writes the freshly-built index.html to
   # `index.<TS>.html` (timestamp seconds since epoch) so each deploy
   # gets a fresh CDN cache key on the SPA HTML response, and so the
@@ -776,6 +782,15 @@ if [[ -n "${DIST_DIR:-}" ]]; then
       GATE_RESULTS+=("  bundle.md5 MISMATCH  ← FAIL")
     fi
   fi
+fi
+
+# 4.5a-2. Source leak gate: ensure no sourcemaps or raw source files were deployed
+if find "$APP_WEB_ROOT" -maxdepth 2 -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.map" \) -print -quit 2>/dev/null | grep -q .; then
+  echo "GATE FAIL: source files or sourcemaps leaked into webroot ($APP_WEB_ROOT)" >&2
+  GATE_FAILED=1
+  GATE_RESULTS+=("  source.leak DETECTED  ← FAIL")
+else
+  GATE_RESULTS+=("  source.obfuscated ok (no sourcemaps/raw sources in webroot)")
 fi
 
 # 4.5b. Public endpoints — catches nginx→wrong port, DNS/SSL/firewall issues.

@@ -151,6 +151,7 @@ function warmLlmProvider(): void {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${provider.keyPlaintext}`,
+            'Accept-Encoding': 'identity',
           },
           body: JSON.stringify({
             model,

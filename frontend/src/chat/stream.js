@@ -17,9 +17,123 @@ import {
 } from './retryPolicy.ts';
 import { consumeSseBuffer } from '../../../packages/core/src/index.ts';
 import { notifySpeedFallbackOnce } from './speedFallback.js';
+import { createChatTurn, getChatTurn, subscribeChatTurnEvents } from './turnClient.ts';
 
 function setLastCallError(value){
   stateStore.dispatch({type:'state/set',key:'lastCallError',value:value});
+}
+
+async function recoverDetachedTurn(turnId, context) {
+  var full = context.currentFull || "";
+  var onDelta = context.onDelta;
+  var onThinking = context.onThinking;
+  var opts = context.opts;
+  var signal = context.signal;
+
+  var subAbort = new AbortController();
+  var abortBridge = function() {
+    try { subAbort.abort("user-abort"); } catch(_) {}
+  };
+  if (signal) {
+    if (signal.aborted) return null;
+    signal.addEventListener("abort", abortBridge, { once: true });
+  }
+
+  // 1. Initial status check
+  try {
+    var initial = await getChatTurn(turnId);
+    if (initial && initial.turn) {
+      if (initial.turn.status === "completed") {
+        var completedText = initial.turn.fullText || "";
+        if (completedText.length > full.length) {
+          var remaining = completedText.slice(full.length);
+          full = completedText;
+          try { if (typeof onDelta === "function") onDelta(remaining); } catch(_) {}
+        }
+        return { text: full, html: null, widgets: [] };
+      }
+      if (initial.turn.status === "failed" || initial.turn.status === "interrupted") {
+        return null;
+      }
+    }
+  } catch (_) {}
+
+  // 2. Subscribe and poll
+  var done = false;
+  var failed = false;
+  var maxSeq = 0;
+
+  function handleFrame(frame) {
+    if (!frame) return;
+    try {
+      var data = frame.data || {};
+      if (frame.event === "content" && typeof data.delta === "string") {
+        full += data.delta;
+        try { if (typeof onDelta === "function") onDelta(data.delta); } catch(_) {}
+      } else if (frame.event === "reasoning" && typeof data.delta === "string") {
+        try { if (typeof onThinking === "function") onThinking(data.delta); } catch(_) {}
+      } else if (frame.event === "tool_use") {
+        var calls = Array.isArray(data) ? data : (data.calls || [data]);
+        if (opts && typeof opts.onToolUse === "function") {
+          try { opts.onToolUse(calls); } catch(_) {}
+        }
+      } else if (frame.event === "tool_result") {
+        if (opts && typeof opts.onToolResult === "function") {
+          try { opts.onToolResult(data); } catch(_) {}
+        }
+      } else if (frame.event === "turn_done") {
+        done = true;
+        try { subAbort.abort("done"); } catch(_) {}
+      } else if (frame.event === "turn_failed") {
+        failed = true;
+        try { subAbort.abort("failed"); } catch(_) {}
+      }
+      if (typeof frame.sequence === "number" && frame.sequence > maxSeq) {
+        maxSeq = frame.sequence;
+      }
+    } catch(_) {}
+  }
+
+  var attempts = 0;
+  while (!done && !failed && attempts < 30) {
+    if (signal && signal.aborted) break;
+    attempts++;
+    try {
+      var check = await getChatTurn(turnId);
+      if (check && check.turn && check.turn.status === "completed") {
+        var finalFull = check.turn.fullText || full;
+        if (finalFull.length > full.length) {
+          try { if (typeof onDelta === "function") onDelta(finalFull.slice(full.length)); } catch(_) {}
+          full = finalFull;
+        }
+        return { text: full, html: null, widgets: [] };
+      }
+      if (check && check.turn && (check.turn.status === "failed" || check.turn.status === "interrupted")) {
+        return null;
+      }
+    } catch (_) {}
+
+    try {
+      await subscribeChatTurnEvents(turnId, maxSeq, subAbort.signal, {
+        onEvent: handleFrame,
+        onDone: function() {},
+        onError: function() {}
+      });
+    } catch (_) {}
+
+    if (done) {
+      return { text: full, html: null, widgets: [] };
+    }
+    if (failed) {
+      return null;
+    }
+    await new Promise(function(resolve) { setTimeout(resolve, 800); });
+  }
+
+  if (done) {
+    return { text: full, html: null, widgets: [] };
+  }
+  return null;
 }
 
 /* P_log-gating — DEV-only diagnostics. Tool-event frames used to be
@@ -151,6 +265,8 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
     finishTurn();
     return null;
   }
+
+  var activeBoundTurnId=(opts&&typeof opts.turnId==="string")?opts.turnId:null;
 
   while(attempt<STREAM_MAX_ATTEMPTS){
     attempt++;
@@ -355,8 +471,14 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
              turn from clientTurn and reports its id. Not semantic output:
              a retry before any content is still safe. */
           if(evName==="turn_bound"){
-            if(opts&&typeof opts.onTurnBound==="function"&&dataParts.length){
-              try{var _tb=JSON.parse(dataParts.join("\n"));if(_tb&&typeof _tb.turnId==="string")opts.onTurnBound(_tb.turnId)}catch(e){warnBadFrame("turn_bound",e)}
+            if(dataParts.length){
+              try{
+                var _tb=JSON.parse(dataParts.join("\n"));
+                if(_tb&&typeof _tb.turnId==="string"){
+                  activeBoundTurnId=_tb.turnId;
+                  if(opts&&typeof opts.onTurnBound==="function")opts.onTurnBound(_tb.turnId);
+                }
+              }catch(e){warnBadFrame("turn_bound",e)}
             }
             return;
           }
@@ -715,6 +837,39 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
       }else{
         setLastCallError(String(e&&e.message||e));
       }
+
+      // P_detached_recovery: if the socket closed mid-stream (network drop, proxy timeout),
+      // the backend keeps running detached. Attempt to recover the turn so the dialogue is never dropped!
+      if(!isUserAbort(e,ac.signal) && !isUserAbort(e,turnAbort.signal)){
+        var turnToRecover = activeBoundTurnId;
+        if(!turnToRecover && opts && opts.clientTurn && typeof opts.clientTurn.id === "string"){
+          try {
+            var existingTurn = await createChatTurn({ clientTurnId: opts.clientTurn.id });
+            if(existingTurn && existingTurn.turn && existingTurn.turn.id){
+              turnToRecover = existingTurn.turn.id;
+            }
+          } catch (_) {}
+        }
+        if(turnToRecover){
+          try {
+            console.info("[API stream] connection dropped, recovering from detached turn:", turnToRecover);
+            var recovered = await recoverDetachedTurn(turnToRecover, {
+              currentFull: full,
+              onDelta: onDelta,
+              onThinking: onThinking,
+              opts: opts,
+              signal: turnAbort.signal,
+            });
+            if(recovered){
+              finishTurn();
+              return recovered;
+            }
+          } catch(recErr){
+            console.warn("[API stream] detached recovery failed:", recErr);
+          }
+        }
+      }
+
       finishTurn();
       return null;
     }

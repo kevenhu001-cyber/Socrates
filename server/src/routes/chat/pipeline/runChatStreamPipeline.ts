@@ -19,8 +19,10 @@
 
 import {and, eq} from 'drizzle-orm';
 import {getDb} from '../../../db/index.js';
-import {chatTurns, sessions} from '../../../db/schema.js';
-import {publishChatTurnEvent, setChatTurnStatus} from '../../../services/chatTurns.js';
+import {chatTurns, messages, sessions} from '../../../db/schema.js';
+import {publishChatTurnEvent, setChatTurnStatus, subscribeToChatTurn} from '../../../services/chatTurns.js';
+import {sanitizeStoredHtml, sanitizePlainText} from '../../../lib/sanitize.js';
+import {indexMessageChunks} from '../../../services/chunkIndex.js';
 import {streamChatCompletion} from '../../../services/llm.js';
 import {
   MAX_TOOL_ARGUMENT_CHARS,
@@ -115,6 +117,68 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
      through this route are no longer needed. */
   startSseKeepalive(res, { intervalMs: 10_000 });
 
+  // Persist initial user message to session if not already persisted
+  if (sessionIdFromQuery && req.userId) {
+    try {
+      const db = getDb();
+      const rawUserMsgs = Array.isArray(req.body?.messages) ? req.body.messages : [];
+      let lastUserMsg: any = null;
+      for (let i = rawUserMsgs.length - 1; i >= 0; i--) {
+        if (rawUserMsgs[i] && rawUserMsgs[i].role === 'user') {
+          lastUserMsg = rawUserMsgs[i];
+          break;
+        }
+      }
+      if (lastUserMsg) {
+        const userContentStr = typeof lastUserMsg.content === 'string'
+          ? lastUserMsg.content
+          : (Array.isArray(lastUserMsg.content)
+              ? lastUserMsg.content.filter((p: any) => p && p.type === 'text').map((p: any) => p.text).join('\n')
+              : '');
+        const userRaw = lastUserMsg.rawText || userContentStr;
+        const userClientId = lastUserMsg.clientId
+          || req.body?.clientTurn?.userClientId
+          || (turnId ? `user-${turnId}` : null);
+        const userAttachments = Array.isArray(lastUserMsg.attachments) ? lastUserMsg.attachments : [];
+
+        const safeUserContent = sanitizeStoredHtml(userContentStr);
+        const safeUserRaw = sanitizePlainText(userRaw);
+
+        if (userClientId) {
+          await db.insert(messages).values({
+            sessionId: sessionIdFromQuery,
+            role: 'user',
+            content: safeUserContent,
+            html: safeUserContent,
+            rawText: safeUserRaw,
+            clientId: userClientId,
+            attachments: userAttachments,
+          }).onConflictDoNothing();
+        } else {
+          const [existingRecent] = await db.select({ id: messages.id })
+            .from(messages)
+            .where(and(eq(messages.sessionId, sessionIdFromQuery), eq(messages.role, 'user'), eq(messages.rawText, userRaw)))
+            .limit(1);
+          if (!existingRecent) {
+            await db.insert(messages).values({
+              sessionId: sessionIdFromQuery,
+              role: 'user',
+              content: safeUserContent,
+              html: safeUserContent,
+              rawText: safeUserRaw,
+              attachments: userAttachments,
+            });
+          }
+        }
+        await db.update(sessions)
+          .set({ updatedAt: new Date() })
+          .where(and(eq(sessions.id, sessionIdFromQuery), eq(sessions.userId, req.userId)));
+      }
+    } catch (err) {
+      console.warn('[chat/stream] persisting initial user message skipped:', (err as Error).message);
+    }
+  }
+
   let fullText = '';
   let fullReasoning = '';  // P_streaming-survival
   /* Token accounting — the chars/4 estimate is the fallback. The
@@ -157,6 +221,15 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
   let sseDetached = false;
   let turnRunning: Promise<unknown> = Promise.resolve();
 
+  let unsubscribeTurn: (() => void) | null = null;
+  if (turnId) {
+    unsubscribeTurn = subscribeToChatTurn(turnId, (event) => {
+      if (event.event === 'turn_interrupted') {
+        abortController.abort('turn_interrupted');
+      }
+    });
+  }
+
   /* Throttled turn checkpoint: fullText/fullReasoning are mirrored onto
    * the turn row so a re-attaching client can bootstrap without replaying
    * thousands of delta events. Tool deltas/progress stay SSE-only (write
@@ -194,6 +267,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
       clearInterval(turnCheckpointTimer);
       turnCheckpointTimer = null;
     }
+    unsubscribeTurn?.();
   };
 
   req.on('close', () => {
@@ -325,6 +399,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
   /* Kept structurally loose to match the legacy `finalMessages` shape that
      appendNativeToolContract / prependCodeInterpreterPrompt accept. */
   let workingMessages: any[] = finalMessages as any[];
+  const executedToolCalls: Array<{ id: string; name: string; input: unknown; output?: unknown; isError?: boolean }> = [];
   /* Calls that exceeded the per-iteration cap on the previous hop and were
    * dropped without executing — surfaced in the contract so the model
    * knows they never ran (they are not echoed upstream either). */
@@ -727,6 +802,17 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
       (entry) => runToolCall(entry, activeToolNames),
     );
     workingMessages = workingMessages.concat(toolMessages);
+    for (let i = 0; i < prepared.length; i++) {
+      const prepCall = prepared[i];
+      const toolMsg = (toolMessages as any[]).find((m: any) => m && m.tool_call_id === prepCall.call.id);
+      executedToolCalls.push({
+        id: prepCall.call.id,
+        name: prepCall.toolName,
+        input: prepCall.args,
+        output: toolMsg?.content || null,
+        isError: !prepCall.registryEntry || prepCall.rejection != null,
+      });
+    }
 
     /* An exhausted call or time budget ends the tool phase deliberately:
        the next hop runs without tools so the turn still produces a
@@ -776,14 +862,52 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
         completionTokens: estimateTokens(fullText),
         source: 'chat',
       });
+      if (sessionIdFromQuery) {
+        const db = getDb();
+        const assistantClientId = (typeof req.body?.clientTurn?.assistantClientId === 'string' && req.body.clientTurn.assistantClientId)
+          ? req.body.clientTurn.assistantClientId
+          : `ast-${turnId}`;
+        const safeContent = sanitizeStoredHtml(fullText);
+        const safeRaw = sanitizePlainText(fullText);
+        db.insert(messages).values({
+          sessionId: sessionIdFromQuery,
+          role: 'assistant',
+          content: safeContent,
+          html: safeContent,
+          rawText: safeRaw,
+          reasoningContent: fullReasoning || null,
+          toolCalls: executedToolCalls,
+          model: provider.model,
+          clientId: assistantClientId,
+          type: 'assistant',
+        }).onConflictDoUpdate({
+          target: [messages.sessionId, messages.clientId],
+          set: {
+            content: safeContent,
+            html: safeContent,
+            rawText: safeRaw,
+            reasoningContent: fullReasoning || null,
+            toolCalls: executedToolCalls,
+          },
+        }).catch((err) => console.error('[chat/stream] persist interrupted message failed:', err));
+
+        db.update(sessions)
+          .set({
+            preview: safeRaw.slice(0, 200),
+            updatedAt: new Date(),
+            streamingText: null,
+            streamingReasoning: null,
+          })
+          .where(and(eq(sessions.id, sessionIdFromQuery), eq(sessions.userId, req.userId!)))
+          .catch(() => {});
+      }
     }
     return;
   }
 
   /* Done — record usage, clear streaming text, and close the stream.
-   * The streaming_text is cleared so the client knows the stream
-   * completed normally (no partial content to recover). The client's
-   * own saveCurrentSession() will persist the full message. */
+   * Both chat_turns and sessions.messages are now persisted server-side
+   * so client disconnection mid-stream never drops dialogue history. */
   emitter.finish();
   if (req.userId) {
     /* Prefer what the provider says it billed. resolveUsage falls back to
@@ -808,14 +932,68 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
     clearTurnTimer();
     checkpointTurn();
     await turnRunning;
-    await setChatTurnStatus(turnId, 'completed', {
+    const isBlank = !fullText && !fullReasoning && executedToolCalls.length === 0;
+    await setChatTurnStatus(turnId, isBlank && !abortController.signal.aborted ? 'failed' : 'completed', {
       fullText: fullText || null,
       fullReasoning: fullReasoning || null,
+      toolCalls: executedToolCalls,
+      ...(isBlank && !abortController.signal.aborted ? { error: 'Upstream returned no content' } : {}),
     }).catch(() => {});
   }
-  // P_streaming-survival — clear streaming_text on normal completion
-  // so the client knows no partial content needs recovery.
-  if (sessionIdFromQuery) {
+  // P_streaming-survival & backend persistence — save completed assistant message to messages table
+  if (sessionIdFromQuery && req.userId && (fullText || executedToolCalls.length > 0)) {
+    const db = getDb();
+    const assistantClientId = (typeof req.body?.clientTurn?.assistantClientId === 'string' && req.body.clientTurn.assistantClientId)
+      ? req.body.clientTurn.assistantClientId
+      : (turnId ? `ast-${turnId}` : `ast-${Date.now()}`);
+
+    const safeContent = sanitizeStoredHtml(fullText);
+    const safeRaw = sanitizePlainText(fullText);
+
+    try {
+      const [inserted] = await db.insert(messages).values({
+        sessionId: sessionIdFromQuery,
+        role: 'assistant',
+        content: safeContent,
+        html: safeContent,
+        rawText: safeRaw,
+        reasoningContent: fullReasoning || null,
+        toolCalls: executedToolCalls,
+        model: provider.model,
+        clientId: assistantClientId,
+        type: 'assistant',
+      }).onConflictDoUpdate({
+        target: [messages.sessionId, messages.clientId],
+        set: {
+          content: safeContent,
+          html: safeContent,
+          rawText: safeRaw,
+          reasoningContent: fullReasoning || null,
+          toolCalls: executedToolCalls,
+          model: provider.model,
+        },
+      }).returning({ id: messages.id });
+
+      if (inserted?.id && safeRaw) {
+        try {
+          await indexMessageChunks(inserted.id, sessionIdFromQuery, safeRaw);
+        } catch (idxErr) {
+          console.warn('[chat/stream] chunk index failed:', (idxErr as Error).message);
+        }
+      }
+
+      await db.update(sessions)
+        .set({
+          preview: safeRaw.slice(0, 200),
+          updatedAt: new Date(),
+          streamingText: null,
+          streamingReasoning: null,
+        })
+        .where(and(eq(sessions.id, sessionIdFromQuery), eq(sessions.userId, req.userId!)));
+    } catch (err) {
+      console.error('[chat/stream] Failed to persist completed assistant message:', err);
+    }
+  } else if (sessionIdFromQuery) {
     const db = getDb();
     db.update(sessions)
       .set({ streamingText: null, streamingReasoning: null })
