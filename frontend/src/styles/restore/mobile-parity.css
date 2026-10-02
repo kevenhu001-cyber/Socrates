@@ -182,7 +182,7 @@
 
   #appShell#appShell .chat-input-bar {
     padding-inline: 12px !important;
-    box-sizing: border-box !important;
+    box-sizing: border-box;
   }
 
   /* ─────────────────────────────────────────────────────────────
