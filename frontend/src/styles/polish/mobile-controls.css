@@ -148,10 +148,9 @@
   /* ── Message toolbar buttons — 32 visual + 40 hit area ── */
   #appShell .msg-toolbar { gap: 4px; height: 32px; }
   #appShell .msg-toolbar-btn {
+    position: relative;
     width: 32px;
     height: 32px;
-    border-radius: var(--ui-radius-sm, 6px);
-    position: relative;
   }
   #appShell .msg-toolbar-btn::before {
     content: "";

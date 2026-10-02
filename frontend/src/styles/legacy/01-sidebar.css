@@ -112,7 +112,6 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
    middle, action buttons on the right. */
 .recent-item-main{min-width:0;display:flex;flex-direction:column;gap:2px}
 .recent-item-text{font-size:calc(12px * var(--sidebar-font-scale));color:hsl(var(--text-100));line-height:1.35;display:-webkit-box;-webkit-line-clamp:1;line-clamp:1;-webkit-box-orient:vertical}
-.recent-item-meta{font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-500));display:flex;align-items:center;gap:6px}
 .recent-item-tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:2px}
 .recent-tag-pill{padding:1px 6px;border-radius:999px;background:hsl(var(--bg-300));color:hsl(var(--text-300));font-size:calc(9px * var(--sidebar-font-scale));border:0;cursor:pointer;font-family:inherit;line-height:1.5}
 .recent-tag-pill:hover{background:hsl(var(--accent-900));color:hsl(var(--accent-100))}

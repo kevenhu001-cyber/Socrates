@@ -111,7 +111,8 @@ function parseSig(sig) {
 }
 
 function parseCompound(c) {
-  const out = { tag: null, ids: [], classes: [], attrs: [], not: [], state: false };
+  const out = { tag: null, ids: [], classes: [], attrs: [], not: [], state: false, pseudo: false };
+  if (/::[\w-]+|:(?:before|after|first-line|first-letter|backdrop|marker|placeholder|selection|cue|file-selector-button|-webkit-scrollbar[\w-]*)/i.test(c)) out.pseudo = true;
   c = c.replace(/::[\w-]+(?:\([^)]*\))?/g, '');
   c = c.replace(/:not\(([^()]*)\)/g, (_, inner) => { out.not.push(parseCompound(inner)); return ' '; });
   c = c.replace(/:(?:is|has|where)\([^()]*\)/g, () => { out.state = true; return ' '; });
@@ -179,7 +180,11 @@ function selectorApplies(sel) {
   const comps = splitCompounds(sel);
   if (!comps.length) return 'no';
   let verdict = 'yes';
-  const last = compoundMatch(parseCompound(comps[comps.length - 1]), EL);
+  const lastComp = parseCompound(comps[comps.length - 1]);
+  // Declarations on a pseudo-element apply to the pseudo, not the element —
+  // they can never compete for the element's own props.
+  if (lastComp.pseudo) return 'no';
+  const last = compoundMatch(lastComp, EL);
   if (last === false) return 'no';
   if (last === 'cond') verdict = 'cond';
   let ai = 0;

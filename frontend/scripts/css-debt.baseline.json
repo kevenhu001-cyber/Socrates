@@ -6,9 +6,9 @@
       "literalRadius": 34
     },
     "frozen": {
-      "important": 1218,
+      "important": 1178,
       "hexColor": 119,
-      "literalRadius": 441
+      "literalRadius": 437
     }
   },
   "generatedBy": "check-css-debt.mjs --update"
