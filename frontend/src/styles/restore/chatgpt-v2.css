@@ -80,7 +80,7 @@
 .plugin-directory-head h2 { font-size: 27px; font-weight: 500; }
 
 .workspace-search-field,
-.plugin-directory-search { width: 232px; height: 36px; padding-inline: 12px; font-size: 12px; }
+.plugin-directory-search { font-size: 12px; }
 .workspace-create-button { height: 36px; }
 
 @media (min-width: 769px) {

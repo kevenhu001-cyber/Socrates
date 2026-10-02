@@ -54,7 +54,7 @@
 #appShell .plugin-directory-heading { min-width: 0; }
 #appShell .plugin-directory-heading h2 { margin: 0 0 8px; font-size: 30px; line-height: 1.2; }
 #appShell .plugin-directory-tools { display: flex; align-items: center; gap: 8px; }
-#appShell .plugin-directory-search { display: flex; align-items: center; gap: 10px; width: min(320px, 44vw); min-width: 200px; height: 40px; padding: 0 14px; }
+#appShell .plugin-directory-search { display: flex; align-items: center; gap: 10px; min-width: 200px; padding: 0 14px; }
 #appShell .plugin-directory-search svg { width: 18px; height: 18px; flex: 0 0 18px; }
 #appShell .plugin-directory-search input { width: 100%; border: 0; outline: 0; background: transparent; }
 #appShell .plugin-directory-add-btn { display: grid; place-items: center; flex: 0 0 auto; width: 40px; height: 40px; border: 1px solid var(--ui-border-default); border-radius: 50%; background: var(--ui-bg-raised); color: var(--ui-text-primary); }
@@ -432,9 +432,7 @@
   /* Scheduled mirrors the plugin directory's phone geometry: full-width
      single column, stacked head, and 14px card padding. */
   #appShell .scheduled-directory {
-    width: 100%;
     min-height: calc(100dvh - 56px);
-    padding: 16px 16px calc(24px + var(--ui-safe-bottom));
     overflow-y: auto;
     overscroll-behavior: contain;
   }

@@ -527,8 +527,7 @@ body,
   font-weight: 450;
 }
 
-.composer-tools-search,
-.plugin-directory-search {
+.composer-tools-search {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -541,8 +540,7 @@ body,
   background: var(--cg-rail);
 }
 
-.composer-tools-search:focus-within,
-.plugin-directory-search:focus-within {
+.composer-tools-search:focus-within {
   border-color: var(--cg-border-strong);
   border-color: color-mix(in srgb, var(--cg-accent) 48%, var(--cg-border-strong));
   box-shadow: 0 0 0 3px var(--cg-accent);
@@ -807,9 +805,6 @@ body.workspace-active #appShell .workspace-secondary:hover{
 
 /* Scheduled */
 
-.scheduled-directory {
-  width: 100%;
-}
 
 
 .scheduled-section-heading {
@@ -1249,7 +1244,6 @@ body.workspace-active #appShell #mainInner {
   display: flex;
   align-items: center;
   margin: 0;
-  padding: 0 16px;
   gap: 10px;
   background: var(--cg-surface);
   transition: border-color .16s ease, background-color .16s ease;
