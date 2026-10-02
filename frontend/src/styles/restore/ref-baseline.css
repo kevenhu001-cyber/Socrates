@@ -575,7 +575,7 @@ body.workspace-active #appShell .main-page {
 
   #appShell .workspace-table-head,
   #appShell .library-row {
-    min-height: 52px !important;
+    min-height: 52px;
   }
 }
 
