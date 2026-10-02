@@ -122,9 +122,7 @@
 
 /* Menus and card surfaces */
 .slash-command-palette,
-.prompt-templates-modal,
-.model-picker-menu,
-.extensions-menu{
+.prompt-templates-modal{
   background:var(--tool-card-surface);
   border:1px solid var(--tool-card-border);
   border-radius:var(--tool-card-radius);

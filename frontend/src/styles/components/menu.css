@@ -8,7 +8,6 @@
   border: 1px solid var(--ui-border-subtle);
   background: var(--ui-bg-overlay);
   color: var(--ui-text-primary);
-  box-shadow: var(--ui-shadow-popover);
 }
 
 body #composerToolsMenu.composer-tools-menu {
@@ -89,9 +88,6 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
 .chat-config-pop input[type="range"] { accent-color: #1687f8; }
 
 .sidebar-more-popover,
-.display-prefs-popover,
-.model-picker-menu,
-.extensions-menu { border-radius: 14px; }
 
 @media (min-width: 769px) {
   .composer-tools-desktop-items { display: block; }
