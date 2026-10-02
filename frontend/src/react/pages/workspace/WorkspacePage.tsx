@@ -489,9 +489,9 @@ function PluginDirectory({ plugins, configured, openConnectorAvailable, dispatch
           <strong>{plugin.name}</strong>
           {plugin.connection?.status === 'connected' ? <span className="plugin-directory-card-status">{connectedLabel}</span> : null}
         </div>
+        <div className="plugin-directory-row-action">{renderAction(plugin)}</div>
       </div>
       <p className="plugin-directory-card-desc">{plugin.description || i18n('plugins.noDescription', 'Use this app in chat')}</p>
-      <div className="plugin-directory-row-action">{renderAction(plugin)}</div>
     </article>
   );
 

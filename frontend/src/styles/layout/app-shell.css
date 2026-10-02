@@ -79,13 +79,13 @@
 
 #appShell #modeSegmentedTop {
   position: absolute;
-  top: 12px;
+  top: 50%;
   left: 50%;
   display: flex;
-  width: 146px;
+  width: 140px;
   height: 32px;
   padding: 2px;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   border: 1px solid var(--ui-border-default);
   border-radius: var(--ui-radius-pill);
   background: var(--ui-bg-raised);
@@ -95,14 +95,14 @@
 
 #appShell #pluginWorkspaceTabs {
   position: absolute;
-  top: 10px;
+  top: 50%;
   left: 50%;
   z-index: 3;
   display: flex;
   width: 184px;
   height: 36px;
   padding: 2px;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   border: 0;
   border-radius: var(--ui-radius-pill);
   background: var(--ui-bg-raised);

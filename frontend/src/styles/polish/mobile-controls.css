@@ -256,25 +256,25 @@
 @media (max-width: 768px) {
 #appShell #sidebarNav #navSkills.sidebar-nav-btn,
 #appShell #sidebarNav #navExam.sidebar-nav-btn,
-#appShell #sidebarNav #navImages.sidebar-nav-btn,
+#appShell #sidebarNav #navSites.sidebar-nav-btn,
 #appShell #sidebarNav #navAssistants.sidebar-nav-btn { display: none; }
 }
 @media (max-width: 768px) {
 #appShell #sidebarNav #navNew { order: 0; }
 }
 @media (max-width: 768px) {
-#appShell #sidebarNav #navLibrary { order: 1; }
-}
-/* Reference drawer order: New chat · Library · Scheduled · Plugins ·
-   Sites · Projects(+) · More — Projects sits directly above More. */
-@media (max-width: 768px) {
-#appShell #sidebarNav #navScheduled { order: 2; }
+#appShell #sidebarNav #navImages { order: 1; }
 }
 @media (max-width: 768px) {
-#appShell #sidebarNav #navPlugins { order: 3; }
+#appShell #sidebarNav #navLibrary { order: 2; }
+}
+/* Reference drawer order: New chat · Images · Library · Scheduled · Plugins ·
+   Projects(+) · More — exactly matching ChatGPT mobile screenshot. */
+@media (max-width: 768px) {
+#appShell #sidebarNav #navScheduled { order: 3; }
 }
 @media (max-width: 768px) {
-#appShell #sidebarNav #navSites { order: 4; }
+#appShell #sidebarNav #navPlugins { order: 4; }
 }
 @media (max-width: 768px) {
 #appShell #sidebarNav #navProjects { order: 5; }

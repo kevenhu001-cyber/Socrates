@@ -57,30 +57,36 @@
 :root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   flex: 0 0 auto;
   box-sizing: border-box;
-  min-height: 30px;
-  padding: 0 10px;
+  min-height: 28px;
+  height: 28px;
+  padding: 0 8px;
   border: 1px solid var(--ui-border-default);
   border-radius: var(--ui-radius-pill);
   background: transparent;
   color: var(--ui-text-primary);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  line-height: 18px;
+  line-height: 16px;
   text-decoration: none;
   white-space: nowrap;
 }
-:root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill svg { width: 14px; height: 14px; }
+:root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill svg { width: 13px; height: 13px; }
 :root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill:hover,
 :root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill:focus-visible { background: var(--ui-bg-hover); }
+}
+@media (max-width: 375px) {
+  :root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill { display: none; }
 }
 
 
 /* Mode pill — calmer border, tighter hit rows. */
 @media (max-width: 768px) {
 #appShell #modeSegmentedTop {
+  top: 50%;
+  transform: translate(-50%, -50%);
   border-color: var(--ui-border-subtle);
   background: var(--ui-bg-raised);
 }
@@ -110,6 +116,32 @@
 @media (max-width: 768px) {
 [data-mode="light"] #appShell #modeSegmentedTop .app-mode-toggle.active {
   background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 8%), 0 0 0 1px rgb(0 0 0 / 4%);
+}
+}
+@media (max-width: 768px) {
+#appShell #pluginWorkspaceTabs {
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--ui-border-subtle);
+  background: var(--ui-bg-raised);
+}
+#appShell #pluginWorkspaceTabs .plugin-workspace-tab {
+  border-radius: var(--ui-radius-pill);
+  font-size: 13px;
+  font-weight: 450;
+  color: var(--ui-text-tertiary);
+  transition: color var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;
+}
+#appShell #pluginWorkspaceTabs .plugin-workspace-tab.active {
+  color: var(--ui-text-primary);
+  font-weight: 550;
+}
+[data-mode="dark"] #appShell #pluginWorkspaceTabs .plugin-workspace-tab.active {
+  background: rgb(255 255 255 / 10%);
+}
+[data-mode="light"] #appShell #pluginWorkspaceTabs .plugin-workspace-tab.active {
+  background: var(--ui-bg-surface, rgb(255 255 255));
   box-shadow: 0 1px 2px rgb(0 0 0 / 8%), 0 0 0 1px rgb(0 0 0 / 4%);
 }
 }

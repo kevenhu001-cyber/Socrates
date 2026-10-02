@@ -494,10 +494,9 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 }
 
 @media (max-width: 768px) {
-
 #appShell#appShell .top-mode-tabs .app-mode-toggle {
-  padding: 0 18px !important;
-  font-size: 16px !important;
+  padding: 0 10px !important;
+  font-size: 13px !important;
   letter-spacing: 0;
 }
 }
@@ -663,7 +662,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 @media (max-width: 768px) {
   #appShell#appShell .top-bar {
     min-height: 72px;
-    padding: max(10px, env(safe-area-inset-top, 0px)) 16px 8px;
+    padding: max(10px, env(safe-area-inset-top, 0px)) 12px 8px;
   }
 
   /* Landing top-bar buttons are 44px tactile chips; the in-conversation

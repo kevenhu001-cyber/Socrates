@@ -266,11 +266,11 @@
 
   #appShell#appShell .top-mode-tabs {
     box-sizing: border-box;
-    width: min(152px, calc(100vw - 112px));
+    width: min(140px, calc(100vw - 112px));
     min-width: 0;
     height: 32px;
     min-height: 32px;
-    padding: 3px;
+    padding: 2px;
   }
 
   #appShell#appShell .top-mode-tabs .app-mode-toggle {
