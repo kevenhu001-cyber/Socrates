@@ -16,7 +16,7 @@
 }
 #appShell .creation-header { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-bottom:30px; }
 #appShell .creation-header h1 { margin:0; font-size:28px; line-height:36px; font-weight:500; letter-spacing:-.025em; }
-#appShell #sitesPanel { width:min(100%,768px) !important; padding:22px 0 64px !important; margin:0 auto; }
+#appShell #sitesPanel { margin:0 auto; }
 #appShell .creation-sites-header { margin-bottom:62px; }
 #appShell #sitesPanel .creation-sites-header input { width:240px; min-height:36px; border-radius:20px; background:var(--chatgpt-composer, #303030); font-size:13px; }
 #appShell .creation-sites-view { display:flex; justify-content:flex-end; gap:5px; margin-bottom:22px; }

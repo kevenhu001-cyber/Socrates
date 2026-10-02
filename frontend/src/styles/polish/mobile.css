@@ -23,9 +23,9 @@
   /* Nav rows / recents: radius is owned by mobile-controls.css (10px row
      radius, chatgpt-aligned). This file no longer redefines it. */
 
-  /* Mobile tools sheet radius matches the desktop popover contract. */
+  /* Mobile tools sheet: fixes.css's open-state rule owns the 20px radius;
+     the border/shadow tokens here outrank mobile-parity's light-mode pin. */
   body #composerToolsMenu.composer-tools-menu {
-    border-radius: var(--ui-radius-xl, 16px) !important;
     border-color: var(--ui-border-subtle) !important;
     box-shadow: var(--ui-shadow-menu) !important;
   }

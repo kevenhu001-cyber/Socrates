@@ -152,10 +152,13 @@
 .usage-modal,
 .confirm-box,
 .modal-card {
-  border: 1px solid var(--ui-border-subtle) !important;
-  border-radius: var(--ui-radius-xl, 16px) !important;
-  box-shadow: var(--ui-shadow-modal) !important;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-xl, 16px);
+  box-shadow: var(--ui-shadow-modal);
 }
+/* .modal-card's dialog fill used to come from restore/chatgpt-ui.css's
+   shared card rule; it owns it here now that the selector split out. */
+.modal-card { background: var(--ui-bg-dialog); }
 .confirm-btn, .share-copy-btn { border-radius: var(--ui-radius-control, 8px); }
 
 /* ── Settings modal — keep the nav rail, refine chrome ── */

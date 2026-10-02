@@ -16,7 +16,7 @@
    send controls stay mounted for restoration, but are hidden as a group so
    the composer never jumps to a different page-level position. */
 #appShell .voice-recording-bar {
-  display: flex !important;
+  display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;

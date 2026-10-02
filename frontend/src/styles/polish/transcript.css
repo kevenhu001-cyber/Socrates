@@ -6,8 +6,8 @@
    reference-aligned 15px (restore/chat-surface.css). */
 @media (max-width: 768px) {
 #appShell#appShell .msg.user .msg-body {
-  max-width: min(72%, 560px) !important;
-  padding: 10px 16px !important;
+  max-width: min(72%, 560px);
+  padding: 10px 16px;
 }
 }
 

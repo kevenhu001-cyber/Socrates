@@ -504,7 +504,7 @@ body.workspace-active #appShell .main-page {
   /* Workspace pages share the same 768px column. Library's reference
      capture is 15px right of the exact centre because of its outer gutter;
      keep that bias explicit instead of baking it into every page. */
-  body.workspace-active #appShell .main-page {
+  body.workspace-active #appShell .main-page:not(#sitesPanel) {
     position: relative !important;
     left: 0 !important;
     width: min(768px, calc(100% - 64px)) !important;
@@ -650,7 +650,7 @@ body.workspace-active #appShell .main-page {
   /* The reference segmented control is 220 x 40 with 36px inner segments. */
 
   /* The reference workspace heads use 28px type and 240px search fields. */
-  body.workspace-active #appShell .main-page {
+  body.workspace-active #appShell .main-page:not(#sitesPanel) {
     padding-top: 27px !important;
   }
 
@@ -1143,7 +1143,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 
   /* .scheduled-directory dropped: it is not a chat-column surface and now
      shares the 1040px directory column with the plugin and site pages. */
-  body.workspace-active #appShell .main-page {
+  body.workspace-active #appShell .main-page:not(#sitesPanel) {
     width: min(768px, calc(100% - 64px)) !important;
     max-width: 768px !important;
     margin-inline: auto !important;

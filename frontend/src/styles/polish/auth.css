@@ -11,9 +11,10 @@
 }
 
 .auth-card {
-  border: 1px solid var(--ui-border-subtle) !important;
-  border-radius: 16px !important;
-  box-shadow: var(--ui-shadow-modal) !important;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: 16px;
+  background: var(--ui-bg-dialog);
+  box-shadow: var(--ui-shadow-modal);
 }
 
 .auth-brand { letter-spacing: -0.01em; }
@@ -33,13 +34,15 @@
 }
 
 .auth-input {
-  border: 1px solid var(--ui-border-default) !important;
-  border-radius: 10px !important;
+  border: 1px solid var(--ui-border-default);
+  border-radius: 10px;
+  background: var(--cg-rail);
+  color: var(--cg-text);
   transition: border-color var(--ui-duration-fast) ease, box-shadow var(--ui-duration-fast) ease;
 }
 .auth-input:focus {
-  border-color: var(--ui-border-strong) !important;
-  box-shadow: 0 0 0 3px var(--ui-bg-control) !important;
+  border-color: var(--ui-border-strong);
+  box-shadow: 0 0 0 3px var(--ui-bg-control);
 }
 
 .auth-btn {

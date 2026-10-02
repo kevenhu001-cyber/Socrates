@@ -11,7 +11,7 @@
    conversation. Converge the shell on the bundled brand stack. */
 #appShell,
 #composerToolsMenu {
-  font-family: var(--cg-font) !important;
+  font-family: var(--cg-font);
 }
 
 @media (max-width: 768px) {

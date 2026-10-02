@@ -275,8 +275,8 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 @media (max-width: 768px) {
 
 #appShell#appShell .msg.user .msg-body {
-  max-width: min(86%, 620px) !important;
-  padding: 11px 16px !important;
+  /* max-width/padding moved on — polish/transcript.css owns the phone
+     bubble's 72%/560px cap and 10px 16px padding. */
   border: 0 !important;
   border-radius: 15px !important;
   background: var(--conversation-user) !important;

@@ -204,8 +204,6 @@
    * 4. Conversation — dark user bubble, centered disclaimer.
    * ───────────────────────────────────────────────────────────── */
   #appShell#appShell .msg.user .msg-body {
-    max-width: 86% !important;
-    padding: 10px 16px !important;
     border: 0 !important;
     border-radius: 22px !important;
     background: hsl(0 0% 8%) !important;

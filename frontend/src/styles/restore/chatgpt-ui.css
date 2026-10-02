@@ -1201,9 +1201,7 @@ body.workspace-active #appShell .workspace-row:hover {
   color: var(--cg-text);
 }
 
-.auth-card,
-.workspace-dialog-card,
-.modal-card {
+.workspace-dialog-card {
   border: 1px solid var(--cg-border-strong) !important;
   border-radius: 20px !important;
   background: var(--ui-bg-dialog) !important;
@@ -1217,7 +1215,6 @@ body.workspace-active #appShell .workspace-row:hover {
   font-family: var(--cg-font) !important;
 }
 
-.auth-input,
 .workspace-field input,
 .workspace-field textarea,
 .workspace-field select {
@@ -1227,7 +1224,6 @@ body.workspace-active #appShell .workspace-row:hover {
   color: var(--cg-text) !important;
 }
 
-.auth-input:focus,
 .workspace-field input:focus,
 .workspace-field textarea:focus,
 .workspace-field select:focus {

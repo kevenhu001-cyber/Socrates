@@ -33,8 +33,10 @@ const args = Object.fromEntries(
 const MATCH = args.match;
 const PROP = args.prop;
 const SEL = args.sel ? new RegExp(args.sel) : null;
-if (!MATCH) {
-  console.error('usage: node scripts/css-war-audit.mjs --match=<selector-substr> [--sel=<regex-on-full-selector>] [--prop=<css-prop>]');
+const EL = args.el ? parseSig(args.el) : null;
+const ANC = args.anc ? args.anc.split('|').map(parseSig) : null;
+if (!MATCH && !EL) {
+  console.error('usage: node scripts/css-war-audit.mjs (--match=<selector-substr> | --el=<tag#id.cls[attr=v]>) [--anc="<anc sig> <anc sig> ..."] [--sel=<regex>] [--prop=<css-prop>]');
   process.exit(2);
 }
 
@@ -85,6 +87,114 @@ function specificity(sel) {
   const b = classes + Math.floor((flat % 1e6) / 1e3);
   const c = elements + (flat % 1e3);
   return [a, b, c];
+}
+
+/* ---------- element signature matching (--el / --anc) ---------- */
+// Signatures look like "#sitesPanel.creation-panel.main-page" or
+// 'body.workspace-active[data-mode=dark]'. parseSig/parseCompound share the
+// same token shape; a compound matches a signature when every simple
+// selector the compound names is present in the signature.
+function parseSig(sig) {
+  const s = { tag: null, ids: new Set(), classes: new Set(), attrs: new Map() };
+  const re = /\[[^\]]*\]|#[\w-]+|\.[\w-]+|[a-zA-Z][\w-]*|\*/g;
+  for (const m of sig.replace(/::[\w-]+/g, '').matchAll(re)) {
+    const tok = m[0];
+    if (tok === '*') continue;
+    if (tok[0] === '#') s.ids.add(tok.slice(1));
+    else if (tok[0] === '.') s.classes.add(tok.slice(1));
+    else if (tok[0] === '[') {
+      const a = /\[([\w-]+)(?:=["']?([^"'\]]+)["']?)?\]/.exec(tok);
+      if (a) s.attrs.set(a[1], a[2] === undefined ? true : a[2]);
+    } else s.tag = tok.toLowerCase();
+  }
+  return s;
+}
+
+function parseCompound(c) {
+  const out = { tag: null, ids: [], classes: [], attrs: [], not: [], state: false };
+  c = c.replace(/::[\w-]+(?:\([^)]*\))?/g, '');
+  c = c.replace(/:not\(([^()]*)\)/g, (_, inner) => { out.not.push(parseCompound(inner)); return ' '; });
+  c = c.replace(/:(?:is|has|where)\([^()]*\)/g, () => { out.state = true; return ' '; });
+  const re = /\[[^\]]*\]|#[\w-]+|\.[\w-]+|:(?!:)[\w-]+(?:\([^)]*\))?|[a-zA-Z][\w-]*|\*/g;
+  for (const m of c.matchAll(re)) {
+    const tok = m[0];
+    if (tok === '*') continue;
+    if (tok[0] === '#') out.ids.push(tok.slice(1));
+    else if (tok[0] === '.') out.classes.push(tok.slice(1));
+    else if (tok[0] === '[') out.attrs.push(tok);
+    else if (tok[0] === ':') out.state = true;
+    else out.tag = tok.toLowerCase();
+  }
+  return out;
+}
+
+// compound vs signature: true (always applies) | false (never) | 'cond'
+function compoundMatch(comp, sig) {
+  if (comp.tag) {
+    if (sig.tag && comp.tag !== sig.tag) return false;
+    if (!sig.tag) return 'cond';
+  }
+  for (const id of comp.ids) if (!sig.ids.has(id)) return false;
+  for (const cls of comp.classes) if (!sig.classes.has(cls)) return false;
+  let cond = false;
+  for (const a of comp.attrs) {
+    const m = /\[([\w-]+)(?:=["']?([^"'\]]+)["']?)?\]/.exec(a);
+    if (!m) { cond = true; continue; }
+    if (sig.attrs.has(m[1])) {
+      if (m[2] !== undefined && String(sig.attrs.get(m[1])) !== m[2]) return false;
+    } else cond = true; // attribute may still be set at runtime
+  }
+  for (const n of comp.not) {
+    const r = compoundMatch(n, sig);
+    if (r === true) return false;
+    if (r === 'cond') cond = true;
+  }
+  if (comp.state) cond = true;
+  return cond ? 'cond' : true;
+}
+
+// split a complex selector into compounds on combinators (paren/bracket aware)
+function splitCompounds(sel) {
+  const parts = [];
+  let depth = 0;
+  let cur = '';
+  for (const ch of sel) {
+    if (ch === '(' || ch === '[') depth++;
+    else if (ch === ')' || ch === ']') depth--;
+    if (depth === 0 && (ch === ' ' || ch === '>' || ch === '+' || ch === '~')) {
+      if (cur.trim()) parts.push(cur.trim());
+      cur = '';
+      continue;
+    }
+    cur += ch;
+  }
+  if (cur.trim()) parts.push(cur.trim());
+  return parts;
+}
+
+// 'yes' | 'cond' | 'no': last compound must match the element signature and
+// earlier compounds must hit ancestors in order. With no --anc, selectors
+// with ancestor compounds are conditional (they may match some ancestor).
+function selectorApplies(sel) {
+  const comps = splitCompounds(sel);
+  if (!comps.length) return 'no';
+  let verdict = 'yes';
+  const last = compoundMatch(parseCompound(comps[comps.length - 1]), EL);
+  if (last === false) return 'no';
+  if (last === 'cond') verdict = 'cond';
+  let ai = 0;
+  for (let i = 0; i < comps.length - 1; i++) {
+    if (!ANC) { verdict = 'cond'; continue; }
+    const comp = parseCompound(comps[i]);
+    let hit = null;
+    for (; ai < ANC.length; ai++) {
+      const r = compoundMatch(comp, ANC[ai]);
+      if (r !== false) { hit = r; ai++; break; }
+    }
+    if (hit === null) return 'no';
+    if (hit === 'cond') verdict = 'cond';
+  }
+  return verdict;
 }
 
 /* ---------- state-dependent selector detection ---------- */
@@ -139,10 +249,16 @@ files.forEach((file, fileIdx) => {
       if (p.type === 'atrule') medias.unshift(p.params);
     }
     for (const sel of rule.selectors) {
-      if (!sel.includes(MATCH)) continue;
       if (SEL && !SEL.test(sel)) continue;
+      let elCond = false;
+      if (EL) {
+        const v = selectorApplies(sel);
+        if (v === 'no') continue;
+        elCond = v === 'cond';
+      } else if (!sel.includes(MATCH)) continue;
       for (const decl of rule.nodes || []) {
         if (decl.type !== 'decl') continue;
+        if (decl.prop.startsWith('--')) continue;
         if (PROP && decl.prop !== PROP) continue;
         candidates.push({
           fileIdx,
@@ -154,7 +270,7 @@ files.forEach((file, fileIdx) => {
           prop: decl.prop,
           value: decl.value.replace(/\s+/g, ' ').slice(0, 80),
           medias,
-          stateful: STATEFUL.test(sel),
+          stateful: STATEFUL.test(sel) || elCond,
           order: order++,
         });
       }

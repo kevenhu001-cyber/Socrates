@@ -295,13 +295,16 @@
    (18px 16px 48px) and blow the column out to 40px 32px 64px. */
 @media (min-width: 769px) {
   #appShell#appShell #sitesPanel {
-    width: 100% !important;
-    max-width: 1040px !important;
-    margin-inline: auto !important;
+    width: 100%;
+    max-width: 1040px;
+    margin-inline: auto;
+    /* padding stays flagged: creation-surfaces.css pins .creation-panel's
+       108px centered column with !important, and sitesPanel still carries
+       that class. */
     padding: 40px 32px 64px !important;
   }
   #appShell#appShell #sitesPanel .creation-sites-header {
-    margin-bottom: 20px !important;
+    margin-bottom: 20px;
   }
   #appShell#appShell #sitesPanel .creation-header h1 {
     margin: 0;
