@@ -53,7 +53,7 @@
 #appShell .plugin-directory-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
 #appShell .plugin-directory-heading { min-width: 0; }
 #appShell .plugin-directory-heading h2 { margin: 0 0 8px; font-size: 30px; line-height: 1.2; }
-#appShell .plugin-directory-tools { display: flex; align-items: center; gap: 8px; }
+#appShell .plugin-directory-tools { display: flex; align-items: center; }
 #appShell .plugin-directory-search { display: flex; align-items: center; gap: 10px; min-width: 200px; padding: 0 14px; }
 #appShell .plugin-directory-search svg { width: 18px; height: 18px; flex: 0 0 18px; }
 #appShell .plugin-directory-search input { width: 100%; border: 0; outline: 0; background: transparent; }
