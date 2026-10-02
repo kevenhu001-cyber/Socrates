@@ -24,7 +24,36 @@
       "accepted": []
     },
     "mobile": {
-      "accepted": []
+      "accepted": [
+        {
+          "name": "@expo/cli",
+          "severity": "high",
+          "direct": false,
+          "range": "<=0.0.0-canary-20231123-1b19f96-4 || >=0.0.1-canary-20231125-d600e44",
+          "reason": "Build/dev tooling only; the flagged surface is its embedded code-signing verification (node-forge) used for OTA bundles, which this project never produces or validates. No fixed @expo/cli release as of expo 57."
+        },
+        {
+          "name": "@expo/code-signing-certificates",
+          "severity": "high",
+          "direct": false,
+          "range": "*",
+          "reason": "Carrier of the vulnerable node-forge for OTA update signature checks. Same exposure note as node-forge: the app does not consume expo-updates, so the verifier never runs. Blocked upstream \u2014 no fixed release of the chain."
+        },
+        {
+          "name": "expo",
+          "severity": "high",
+          "direct": true,
+          "range": "40.0.0-alpha.0 - 40.0.0-beta.5 || >=41.0.0-alpha.0",
+          "reason": "Flags the same node-forge chain via @expo/cli \u2014 npm's suggested fix (expo 44.0.6) is a six-major downgrade and wrong for RN 0.86. No real fix version exists; the vulnerable code path (OTA signing) is unused."
+        },
+        {
+          "name": "node-forge",
+          "severity": "high",
+          "direct": false,
+          "range": "*",
+          "reason": "Only reachable through @expo/cli's OTA code-signing certificate verification (@expo/code-signing-certificates). The mobile app ships as a compiled APK/AAB \u2014 expo-updates is not a dependency and no OTA bundle signature is ever verified at runtime. No patched node-forge release exists (advisory range *). Unblocks when Expo's CLI chain upgrades node-forge."
+        }
+      ]
     }
   }
 }

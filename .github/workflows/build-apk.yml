@@ -176,6 +176,10 @@ jobs:
         working-directory: frontend
         run: |
           npm ci
+          # tools-rust/.cargo/config.toml redirects crates.io to the
+          # rsproxy.cn mirror for the local dev network; hosted runners reach
+          # crates.io directly, and the mirror has timed out in CI.
+          rm -f ../tools-rust/.cargo/config.toml
           rustup target add wasm32-unknown-unknown
           cargo install wasm-bindgen-cli --version 0.2.126 --locked
           npm run build:wasm

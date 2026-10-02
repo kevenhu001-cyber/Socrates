@@ -154,75 +154,71 @@ export const easing = {
 export const borderAlpha = 0.25;
 
 /**
- * Values are mirrored from the blocks in `frontend/src/styles.css` that
- * actually paint — `[data-theme=socrates][data-mode=dark|light]` — NOT from
- * `frontend/src/styles/themes.css`. See the role map in `./rn.ts`.
+ * Values are ported verbatim from `frontend/src/ui/tokens.ts`, which was
+ * retuned to chatgpt.com's measured neutral scale (docs/ref/chatgpt-parity.md).
+ * `rn.ts` keeps a separate hand-mapped hex table for the phone canvas.
  */
 export const darkPalette: ThemePalette = {
   mode: 'dark',
-  /* --accent-000 / --accent-900 — monochrome */
   accent: {
     strong: '0 0% 100%',
-    soft: '0 0% 20%',
-    surface: '0 0% 20%',
+    soft: '0 0% 19%',
+    surface: '0 0% 19%',
   },
-  /* --bg-100 / --bg-200 / --bg-000 / --bg-300 / --bg-400 */
   bg: {
-    page: '0 0% 13%',
-    raised: '0 0% 16%',
-    overlay: '0 0% 5%',
-    hover: '0 0% 21%',
-    sunken: '0 0% 2%',
+    page: '0 0% 0%',
+    raised: '0 0% 13%',
+    overlay: '0 0% 19%',
+    hover: '0 0% 19%',
+    sunken: '0 0% 0%',
   },
-  /* --text-100 / --text-200 / --text-400 / --text-500 */
   text: {
     primary: '0 0% 100%',
     secondary: '0 0% 80%',
-    tertiary: '0 0% 65%',
-    muted: '0 0% 55%',
-    disabled: '0 0% 55%',
+    tertiary: '0 0% 69%',
+    muted: '0 0% 61%',
+    disabled: '0 0% 42%',
   },
-  /* --border-100 / --border-300 / --border-400 */
   border: {
-    subtle: '0 0% 22%',
-    default: '0 0% 22%',
-    strong: '0 0% 22%',
+    subtle: '0 0% 13%',
+    default: '0 0% 19%',
+    strong: '0 0% 25%',
   },
-  danger: '0 60% 55%',
-  success: '142 60% 50%',
-  muted: '0 0% 55%',
-  onAccent: '0 0% 8%',
+  danger: '1 100% 70%',
+  success: '169 71% 56%',
+  muted: '0 0% 61%',
+  onAccent: '0 0% 0%',
 };
 
 export const lightPalette: ThemePalette = {
   mode: 'light',
   accent: {
-    strong: '0 0% 10%',
-    soft: '0 0% 90%',
-    surface: '0 0% 90%',
+    strong: '0 0% 5%',
+    soft: '0 0% 91%',
+    surface: '0 0% 91%',
   },
   bg: {
-    page: '0 0% 98%',
-    raised: '0 0% 95%',
+    page: '0 0% 100%',
+    raised: '0 0% 98%',
     overlay: '0 0% 100%',
-    hover: '0 0% 91%',
+    hover: '0 0% 95%',
     sunken: '0 0% 100%',
   },
   text: {
-    primary: '0 0% 13%',
-    secondary: '0 0% 27%',
-    tertiary: '0 0% 44%',
-    muted: '0 0% 52%',
-    disabled: '0 0% 52%',
+    primary: '0 0% 5%',
+    secondary: '0 0% 36%',
+    tertiary: '0 0% 43%',
+    muted: '0 0% 45%',
+    disabled: '0 0% 71%',
   },
   border: {
-    subtle: '0 0% 90%',
-    default: '0 0% 76%',
-    strong: '0 0% 70%',
+    subtle: '0 0% 94%',
+    default: '0 0% 90%',
+    strong: '0 0% 80%',
   },
-  danger: '0 60% 45%',
-  success: '142 50% 35%',
-  muted: '0 0% 52%',
+  danger: '3 79% 47%',
+  success: '171 97% 25%',
+  muted: '0 0% 45%',
   onAccent: '0 0% 100%',
 };
 

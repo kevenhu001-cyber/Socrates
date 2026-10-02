@@ -49,4 +49,8 @@ projectJDK: "21" #(Applied in CI/CD pipeline)
 #    failOnUnknown: false
 
 #Specify Qodana linter for analysis (Applied in CI/CD pipeline)
-linter: jetbrains/qodana-jvm:2026.2
+# The repo is overwhelmingly JS/TS (frontend/, server/, mobile/, packages/).
+# The JVM linter tried to Gradle-build mobile/ — whose android/ tree is
+# expo-prebuild output and not checked in — and died before scanning a line.
+# qodana-js analyzes the actual codebase and needs no project model.
+linter: jetbrains/qodana-js:2026.2

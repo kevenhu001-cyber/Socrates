@@ -115,6 +115,11 @@ jobs:
       # entry point.
       - name: Build Rust WASM support
         run: |
+          # tools-rust/.cargo/config.toml points cargo at the rsproxy.cn
+          # mirror, which exists for the local dev network and stalls
+          # intermittently from hosted runners (observed: transfer-too-slow
+          # timeouts on crates.io fetches). Runners reach crates.io directly.
+          rm -f ../tools-rust/.cargo/config.toml
           rustup target add wasm32-unknown-unknown
           cargo install wasm-bindgen-cli --version 0.2.126 --locked
           npm run build:wasm

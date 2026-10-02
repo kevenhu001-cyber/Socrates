@@ -195,6 +195,10 @@ jobs:
 
       - name: Build Rust WASM support
         run: |
+          # tools-rust/.cargo/config.toml redirects crates.io to the
+          # rsproxy.cn mirror for the local dev network; hosted runners reach
+          # crates.io directly, and the mirror has timed out in CI.
+          rm -f ../tools-rust/.cargo/config.toml
           rustup target add wasm32-unknown-unknown
           cargo install wasm-bindgen-cli --version 0.2.126 --locked
           npm run build:wasm
@@ -329,7 +333,9 @@ jobs:
       # uses `.ts`-suffixed imports that need allowImportingTsExtensions,
       # so it is red on main independent of any change.)
       - name: Rust protocol tests
-        run: cargo test -p socrates-protocol
+        # Drop the dev-network rsproxy mirror first — hosted runners reach
+        # crates.io directly and the mirror has timed out in CI.
+        run: rm -f .cargo/config.toml && cargo test -p socrates-protocol
         working-directory: tools-rust
 
       - uses: actions/setup-node@v4

@@ -51,6 +51,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # docker references must be all-lowercase, but github.repository keeps
+      # the repo's display casing (here: "Socrates"). metadata-action papers
+      # over it for pushed tags, while the verify step's `docker run` aborts
+      # with "invalid reference format" on the same string.
+      - name: Normalize image name to lowercase
+        run: echo "IMAGE_NAME=$(printf '%s' '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')/socrates-api" >> "$GITHUB_ENV"
+
       - uses: docker/setup-buildx-action@v4
 
       # Only authenticate for pushes. A pull_request from a fork has no
