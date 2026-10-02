@@ -221,7 +221,7 @@
 
 
   #appShell#appShell .sidebar-nav-btn {
-    gap: 14px !important;
+    gap: 14px;
     font-weight: 400;
   }
 

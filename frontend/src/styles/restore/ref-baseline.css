@@ -426,7 +426,7 @@ body.workspace-active #appShell .main-page {
      handle updates the variable with no visible effect. */
 
   #appShell .main {
-    padding-left: var(--app-sidebar-width, 260px) !important;
+    padding-left: var(--app-sidebar-width, 260px);
   }
 
   /* .sidebar is always .main's preceding sibling; the former
