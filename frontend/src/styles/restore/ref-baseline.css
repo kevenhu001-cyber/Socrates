@@ -139,8 +139,8 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    it here so all six rows share the same rhythm. */
 @media (max-width: 768px) {
 #appShell .sidebar-nav-btn[data-nav="scheduled"] {
-  margin-top: 0 !important;
-  border-top: 0 !important;
+  margin-top: 0;
+  border-top: 0;
 }
 }
 

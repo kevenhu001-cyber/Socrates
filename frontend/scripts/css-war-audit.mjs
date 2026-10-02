@@ -314,6 +314,83 @@ for (const c of candidates) {
 }
 
 const LOSERS = !!args.losers;
+const UNPIN = !!args.unpin;
+
+/* Shorthand → longhand expansion so a flagged shorthand is counted as a
+   competitor of every longhand it covers (and vice versa). */
+const SHORTHANDS = {
+  padding: ['padding-top', 'padding-right', 'padding-bottom', 'padding-left', 'padding-inline', 'padding-block'],
+  'padding-inline': ['padding-left', 'padding-right'],
+  'padding-block': ['padding-top', 'padding-bottom'],
+  margin: ['margin-top', 'margin-right', 'margin-bottom', 'margin-left', 'margin-inline', 'margin-block'],
+  'margin-inline': ['margin-left', 'margin-right'],
+  'margin-block': ['margin-top', 'margin-bottom'],
+  inset: ['top', 'right', 'bottom', 'left', 'inset-inline', 'inset-block'],
+  'inset-inline': ['left', 'right'],
+  'inset-block': ['top', 'bottom'],
+  'border-radius': ['border-top-left-radius', 'border-top-right-radius', 'border-bottom-left-radius', 'border-bottom-right-radius'],
+  border: ['border-width', 'border-style', 'border-color', 'border-top', 'border-right', 'border-bottom', 'border-left', 'border-inline', 'border-block'],
+  'border-width': ['border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width'],
+  'border-style': ['border-top-style', 'border-right-style', 'border-bottom-style', 'border-left-style'],
+  'border-color': ['border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color'],
+  'border-top': ['border-top-width', 'border-top-style', 'border-top-color'],
+  'border-right': ['border-right-width', 'border-right-style', 'border-right-color'],
+  'border-bottom': ['border-bottom-width', 'border-bottom-style', 'border-bottom-color'],
+  'border-left': ['border-left-width', 'border-left-style', 'border-left-color'],
+  'border-inline': ['border-left-width', 'border-right-width', 'border-left-style', 'border-right-style', 'border-left-color', 'border-right-color'],
+  flex: ['flex-grow', 'flex-shrink', 'flex-basis'],
+  'flex-flow': ['flex-direction', 'flex-wrap'],
+  gap: ['row-gap', 'column-gap'],
+  overflow: ['overflow-x', 'overflow-y'],
+  font: ['font-family', 'font-size', 'font-weight', 'font-style', 'line-height'],
+  background: ['background-color', 'background-image', 'background-position', 'background-size', 'background-repeat', 'background-attachment', 'background-clip', 'background-origin'],
+  'place-items': ['align-items', 'justify-items'],
+  'place-content': ['align-content', 'justify-content'],
+  'place-self': ['align-self', 'justify-self'],
+  transition: ['transition-property', 'transition-duration', 'transition-timing-function', 'transition-delay'],
+  animation: ['animation-name', 'animation-duration', 'animation-timing-function', 'animation-delay', 'animation-iteration-count', 'animation-direction', 'animation-fill-mode', 'animation-play-state'],
+  outline: ['outline-width', 'outline-style', 'outline-color'],
+  'text-decoration': ['text-decoration-line', 'text-decoration-color', 'text-decoration-style'],
+};
+// every prop a declaration influences: itself + the longhands it covers
+const effProps = (p) => (SHORTHANDS[p] ? [p, ...SHORTHANDS[p]] : [p]);
+
+if (UNPIN) {
+  const effByProp = new Map();
+  for (const c of candidates) {
+    for (const p of effProps(c.prop)) {
+      if (!effByProp.has(p)) effByProp.set(p, []);
+      if (!effByProp.get(p).includes(c)) effByProp.get(p).push(c);
+    }
+  }
+  const scoreNoImp = (c) => [...c.spec, c.order];
+  const cmpNoImp = (a, b) => {
+    const sa = scoreNoImp(a), sb = scoreNoImp(b);
+    for (let i = 0; i < sa.length; i++) if (sa[i] !== sb[i]) return sa[i] - sb[i];
+    return 0;
+  };
+  const done = new Set();
+  for (const c of candidates) {
+    if (!c.important || done.has(c)) continue;
+    done.add(c);
+    let safe = true;
+    outer: for (const p of effProps(c.prop)) {
+      const list = effByProp.get(p) || [];
+      for (const ctx of CONTEXTS) {
+        if (applies(c, ctx) === 'no') continue;
+        for (const o of list) {
+          if (o === c || applies(o, ctx) === 'no') continue;
+          // a flagged competitor wins once the flag is gone; a stronger
+          // (spec, order) competitor takes over too.
+          if (o.important || cmpNoImp(o, c) > 0) { safe = false; break outer; }
+        }
+      }
+    }
+    if (safe) {
+      console.log(`UNPIN\t${c.prop}\t${c.file}:${c.line}\t${c.value}\t${c.selector.replace(/\s+/g, ' ').slice(0, 80)}`);
+    }
+  }
+}
 const fmt = (c) => `${c.file}:${c.line} [${c.spec.join(',')}]${c.important ? ' !' : ''}${c.stateful ? ' (stateful)' : ''}`;
 
 for (const [prop, list] of byProp) {

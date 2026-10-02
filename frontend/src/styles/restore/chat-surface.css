@@ -78,7 +78,7 @@ body,
 
 #appShell#appShell .top-mode-tabs {
   border: 1px solid var(--conversation-border) !important;
-  border-radius: 999px !important;
+  border-radius: 999px;
 }
 }
 

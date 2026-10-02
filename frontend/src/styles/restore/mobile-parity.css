@@ -50,7 +50,7 @@
   }
 
   #appShell#appShell .top-mode-tabs {
-    gap: 0 !important;
+    gap: 0;
   }
 
   #appShell#appShell .top-mode-tabs .app-mode-toggle {
@@ -222,7 +222,7 @@
 
   #appShell#appShell .sidebar-nav-btn {
     gap: 14px !important;
-    font-weight: 400 !important;
+    font-weight: 400;
   }
 
   #appShell#appShell .sidebar-nav-btn.active,
@@ -231,10 +231,10 @@
   }
 
   #appShell#appShell .sidebar-search {
-    height: 40px !important;
-    border: 0 !important;
-    border-radius: 12px !important;
-    background: var(--cg-surface-raised) !important;
+    height: 40px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--cg-surface-raised);
   }
 
   #appShell#appShell .recents-title {
@@ -243,15 +243,15 @@
   }
 
   #appShell#appShell .recent-item {
-    min-height: 40px !important;
-    border-radius: 10px !important;
+    min-height: 40px;
+    border-radius: 10px;
   }
 
   /* Reference drawer: footer identity sits ~12px in from the edge (tighter
      than the 16px row content inset); the upgrade pill keeps ~14px right. */
   #appShell#appShell .sidebar-footer {
-    padding: 8px 6px 8px 6px !important;
-    border-top: 0 !important;
+    padding: 8px 6px 8px 6px;
+    border-top: 0;
   }
 
   /* P_sidebar-avatar-circle — flex-basis outranks `width` on a flex item,

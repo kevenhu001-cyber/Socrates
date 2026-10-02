@@ -41,19 +41,19 @@
 }
 @media (max-width: 768px) {
 #appShell #sidebarNav .sidebar-nav-btn {
-  box-sizing: border-box !important;
-  display: grid !important;
+  box-sizing: border-box;
+  display: grid;
   /* Reference drawer: 20px glyph column + 6px gap so the label lands
      ~40px from the drawer edge. Padding/min-height/font-size moved on:
      polish/mobile-controls.css owns padding, the ruleset below owns
      min-height + font-size. */
-  grid-template-columns: 20px minmax(0, 1fr) auto !important;
-  align-items: center !important;
-  column-gap: 6px !important;
-  width: 100% !important;
-  border-radius: 10px !important;
-  line-height: 22px !important;
-  text-align: left !important;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 6px;
+  width: 100%;
+  border-radius: 10px;
+  line-height: 22px;
+  text-align: left;
 }
 }
 @media (max-width: 768px) {
@@ -322,11 +322,11 @@
 
 @media (max-width: 768px) {
   #appShell#appShell .sidebar {
-    width: min(var(--ui-sidebar-mobile), 90vw) !important;
-    min-width: min(var(--ui-sidebar-mobile), 90vw) !important;
-    border-radius: 0 !important;
+    width: min(var(--ui-sidebar-mobile), 90vw);
+    min-width: min(var(--ui-sidebar-mobile), 90vw);
+    border-radius: 0;
   }
-  #appShell #sidebarNav .sidebar-nav-btn { min-height: 40px !important; font-size: 15px !important; }
+  #appShell #sidebarNav .sidebar-nav-btn { min-height: 40px !important; font-size: 15px; }
   #appShell #sidebarNav.sidebar-nav { padding-inline: 0 !important; }
   /* The reference drawer footer is identity-only on phones — theme /
      display / settings stay reachable through desktop chrome and the
@@ -436,7 +436,7 @@
      top:12px and floated ~10px above the 44px header controls. Anchor it
      to the bar's midline instead of a fixed offset. */
   #appShell .top-mode-tabs {
-    top: 50% !important;
+    top: 50%;
     transform: translate(-50%, -50%) !important;
   }
 
@@ -479,12 +479,12 @@
   }
 
   #appShell#appShell .top-mode-tabs {
-    box-sizing: border-box !important;
-    width: min(152px, calc(100vw - 112px)) !important;
-    min-width: 0 !important;
-    height: 32px !important;
-    min-height: 32px !important;
-    padding: 3px !important;
+    box-sizing: border-box;
+    width: min(152px, calc(100vw - 112px));
+    min-width: 0;
+    height: 32px;
+    min-height: 32px;
+    padding: 3px;
   }
 
   #appShell#appShell .top-mode-tabs .app-mode-toggle {
