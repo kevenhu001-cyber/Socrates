@@ -9,9 +9,9 @@
  * ======================================================================== */
 
 :root {
-  --conversation-page: #000;
-  --conversation-surface: #212121;
-  --conversation-control: #303030;
+  --conversation-page: var(--ui-bg-page);
+  --conversation-surface: var(--ui-bg-surface);
+  --conversation-control: var(--ui-bg-control);
   --conversation-control-hover: #3a3a3a;
   --conversation-border: rgb(255 255 255 / 10%);
   --conversation-text: #f5f5f5;
@@ -41,8 +41,8 @@
   html[data-theme="socrates"][data-mode="dark"] #appShell .main,
   html[data-theme="socrates"][data-mode="dark"] #appShell .main-content,
   html[data-theme="socrates"][data-mode="dark"] #appShell .main-bg {
-    background: #000000 !important;
-    background-color: #000000 !important;
+    background: var(--ui-bg-page) !important;
+    background-color: var(--ui-bg-page) !important;
   }
 }
 

@@ -620,11 +620,11 @@ body.workspace-active #appShell .main-page {
 [data-mode="dark"] {
   /* The supplied baseline uses a true-black canvas with a charcoal
      composer/active-surface layer. Keep light mode's existing tokens intact. */
-  --cg-page: #000000;
-  --cg-rail: #000000;
-  --cg-surface: #212121;
+  --cg-page: var(--ui-bg-page);
+  --cg-rail: var(--ui-bg-sidebar);
+  --cg-surface: var(--ui-bg-surface);
   --cg-surface-raised: #2a2a2a;
-  --cg-surface-hover: #2a2a2a;
+  --cg-surface-hover: var(--ui-bg-hover);
   --cg-border: rgb(255 255 255 / 10%);
   --cg-border-strong: rgb(255 255 255 / 18%);
 }
@@ -779,8 +779,8 @@ body.workspace-active #appShell .main-page {
        any charcoal-on-charcoal bleed. Desktop keeps its slightly
        lighter #212121 reading surface; mobile drops to #000 to match
        the reference's near-black phone surface. */
-    --cg-page: #000000;
-    --cg-rail: #000000;
+    --cg-page: var(--ui-bg-page);
+    --cg-rail: var(--ui-bg-sidebar);
   }
 
   #appShell .home-quick-actions {

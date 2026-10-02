@@ -155,21 +155,6 @@
   --conversation-text-secondary: var(--conversation-text-muted);
 }
 
-/* Literal #000 pins in restore (chat-surface, mobile-parity, fixes) — repin
-   them to the ramp with identical selectors + !important + later order. */
-html[data-theme="socrates"][data-mode="dark"] body,
-html[data-theme="socrates"][data-mode="dark"] #appShell,
-html[data-theme="socrates"][data-mode="dark"] #appShell .main,
-html[data-theme="socrates"][data-mode="dark"] #appShell .main-content,
-html[data-theme="socrates"][data-mode="dark"] #appShell .main-bg,
-html[data-theme="socrates"][data-mode="dark"] #appShell .top-bar {
-  background: var(--ui-bg-page) !important;
-  background-color: var(--ui-bg-page) !important;
-}
-html[data-theme="socrates"][data-mode="dark"] #appShell#appShell .sidebar {
-  background: var(--ui-bg-sidebar) !important;
-}
-
 /* chat-surface pins --conversation-page/--cg-page/--cg-rail at
    html[data-theme][data-mode] (0,2,1); the remap lives at the same
    specificity and wins by order. The two blocks differ only where the old
