@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "webBaseline": "3870ba4ee51197d8e6a7fb684c1f85c630dc24d3",
+  "webBaseline": "a722b35df8b860e607dce52d9819acac8a757bb3",
   "baselineNote": "Generated from the latest commit touching frontend/. Any later Web UI change must update this manifest and the visual baselines.",
   "viewports": [
     {
