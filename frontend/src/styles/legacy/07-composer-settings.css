@@ -151,7 +151,7 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 .settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
 .settings-overlay.hidden{display:none}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-.settings-modal{background:hsl(var(--bg-000));width:90%;max-width:440px;max-height:85vh;overflow-y:auto;animation:slideUp .2s var(--ease-out)}
+.settings-modal{background:hsl(var(--bg-000));width:90%;max-width:440px;max-height:85vh;overflow-y:auto}
 
 /* Admin modal — system model + embedding provider config. Shares the
    modal-overlay / modal-card / modal-head conventions above; adds the
@@ -232,7 +232,7 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 /* profile modal */
 .profile-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
 .profile-overlay.hidden{display:none}
-.profile-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;width:90%;max-width:360px;max-height:85vh;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:slideUp .2s var(--ease-out);display:flex;flex-direction:column}
+.profile-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;width:90%;max-width:360px;max-height:85vh;box-shadow:0 8px 32px rgba(0,0,0,.5);display:flex;flex-direction:column}
 .profile-header{display:flex;flex-direction:column;align-items:center;padding:28px 20px 20px;gap:12px;background:hsl(var(--bg-100))}
 .profile-avatar{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:calc(24px * var(--app-font-scale, 1));font-weight:600;background:hsl(var(--text-200));color:hsl(var(--bg-100));flex-shrink:0}
 
