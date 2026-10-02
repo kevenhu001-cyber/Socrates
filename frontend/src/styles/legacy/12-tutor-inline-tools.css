@@ -222,7 +222,6 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
   .auth-gate{padding:24px 12px}
   .auth-card{padding:24px 16px}
   .profile-overlay{padding:20px 12px}
-  .sidebar{width:var(--app-sidebar-width,16rem);min-width:var(--app-sidebar-width,16rem)}
   .new-reply-pill{right:10px;bottom:calc(96px + env(safe-area-inset-bottom, 0px) + var(--keyboard-inset, 0px) + 12px);font-size:11px;padding:4px 10px}
   /* P_pill-anchor-composer — keep parity with the desktop rule above:
      anchor to chat-input-bar so the pill tracks the composer. */

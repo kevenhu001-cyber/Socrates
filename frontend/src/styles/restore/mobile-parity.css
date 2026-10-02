@@ -16,11 +16,7 @@
   /* ─────────────────────────────────────────────────────────────
    * 1. Top bar — plain hamburger, centered segmented tabs.
    * ───────────────────────────────────────────────────────────── */
-  #appShell#appShell .top-bar {
-    min-height: 56px !important;
-    padding: 8px 10px !important;
-    background: var(--cg-page) !important;
-  }
+
 
   #appShell#appShell #sidebarOpenBtn,
   #appShell#appShell #mobileIncognitoBtn {
@@ -235,11 +231,7 @@
     flex: 0 0 20px !important;
   }
 
-  #appShell#appShell .sidebar {
-    width: min(300px, 78vw) !important;
-    min-width: min(300px, 78vw) !important;
-    border-radius: 0 18px 18px 0;
-  }
+
 
   #appShell#appShell .sidebar-nav-btn {
     gap: 14px !important;
@@ -373,10 +365,7 @@
     background: var(--ui-bg-page) !important;
   }
 
-  #appShell#appShell .top-bar {
-    min-height: 56px !important;
-    padding: 8px 10px !important;
-  }
+
 
   #appShell#appShell .top-mode-tabs {
     width: 168px !important;

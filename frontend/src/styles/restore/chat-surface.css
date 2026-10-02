@@ -69,8 +69,6 @@ body,
 @media (max-width: 768px) {
 
 #appShell#appShell .top-bar {
-  min-height: 56px !important;
-  padding: 8px 16px !important;
   background: var(--conversation-page) !important;
   border-bottom: 0 !important;
 }
@@ -321,10 +319,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 }
 
 @media (max-width: 768px) {
-  #appShell#appShell .top-bar {
-    min-height: 56px !important;
-    padding: 8px 10px !important;
-  }
+
 
   #appShell#appShell #topicSetup {
     display: flex !important;

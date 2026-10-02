@@ -5,13 +5,9 @@
 
 @media (max-width: 768px) {
 
-#appShell .top-bar {
-  padding: 6px 14px;
-  background: color-mix(in srgb, var(--ui-bg-page) 88%, transparent);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--ui-border-subtle);
-}
+/* The phone top bar is fully owned by restore/chat-surface.css's 72px
+   safe-area block — every decl in the earlier translucent-bar rule lost to
+   its !important pins, so it was removed rather than kept as dead code. */
 
 #appShell .top-bar .toggle-sidebar,
 #appShell .top-bar .mobile-newchat-btn,

@@ -281,6 +281,7 @@ files.forEach((file, fileIdx) => {
 /* ---------- winner computation ---------- */
 const CONTEXTS = [
   { name: 'desktop', width: 1440 },
+  { name: 'narrow', width: 1000 },
   { name: 'mobile', width: 390 },
 ];
 
@@ -306,20 +307,44 @@ for (const c of candidates) {
   byProp.get(c.prop).push(c);
 }
 
+const LOSERS = !!args.losers;
 const fmt = (c) => `${c.file}:${c.line} [${c.spec.join(',')}]${c.important ? ' !' : ''}${c.stateful ? ' (stateful)' : ''}`;
 
 for (const [prop, list] of byProp) {
-  console.log(`\n=== ${prop} ===`);
+  if (!LOSERS) console.log(`\n=== ${prop} ===`);
   for (const ctx of CONTEXTS) {
     const applicable = list.filter((c) => applies(c, ctx) !== 'no');
     const conditional = applicable.filter((c) => applies(c, ctx) === 'cond' || c.stateful);
     const definite = applicable.filter((c) => applies(c, ctx) === 'yes' && !c.stateful);
     const pool = definite.length ? definite : applicable;
     if (!pool.length) {
-      console.log(`  ${ctx.name.padEnd(7)} winner: — (no candidate applies)`);
+      if (!LOSERS) console.log(`  ${ctx.name.padEnd(7)} winner: — (no candidate applies)`);
       continue;
     }
     const winner = pool.reduce((a, b) => (cmp(a, b) >= 0 ? a : b));
+    if (LOSERS) {
+      // A decl is only reported dead when it loses in EVERY context it can
+      // apply in: a mid-width or state-dependent win elsewhere means it is
+      // still live somewhere.
+      for (const c of pool) {
+        if (c === winner) continue;
+        const stillAlive = CONTEXTS.some((o) => {
+          if (applies(c, o) === 'no') return false;
+          const opool = (() => {
+            const app = list.filter((x) => applies(x, o) !== 'no');
+            const def = app.filter((x) => applies(x, o) === 'yes' && !x.stateful);
+            return def.length ? def : app;
+          })();
+          const ow = opool.reduce((a, b) => (cmp(a, b) >= 0 ? a : b));
+          return cmp(ow, c) <= 0; // c wins or ties (ties keep it: same value anyway)
+        });
+        const conditionalOutranks = conditional.some((o) => o !== c && cmp(o, c) > 0);
+        if (!stillAlive && !c.stateful && !conditionalOutranks) {
+          console.log(`${ctx.name}\t${prop}\t${c.file}:${c.line}\t${c.value}\t<- loses to ${winner.file}:${winner.line}`);
+        }
+      }
+      continue;
+    }
     const condWinner = conditional.length
       ? conditional.reduce((a, b) => (cmp(a, b) >= 0 ? a : b))
       : null;
@@ -330,8 +355,10 @@ for (const [prop, list] of byProp) {
     );
   }
   // losers carrying !important or sitting in live files are the actionable rows
-  const list2 = [...list].sort((a, b) => cmp(b, a));
-  for (const c of list2) {
-    console.log(`    ${c.important ? '!' : ' '} ${fmt(c)}  ${c.value}`);
+  if (!LOSERS) {
+    const list2 = [...list].sort((a, b) => cmp(b, a));
+    for (const c of list2) {
+      console.log(`    ${c.important ? '!' : ' '} ${fmt(c)}  ${c.value}`);
+    }
   }
 }

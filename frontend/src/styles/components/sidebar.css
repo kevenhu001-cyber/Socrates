@@ -1,11 +1,7 @@
 @media (max-width: 768px) {#appShell .sidebar {
-  width: var(--app-sidebar-width, var(--ui-sidebar-desktop));
-  min-width: var(--app-sidebar-width, var(--ui-sidebar-desktop));
-  border-right: 1px solid var(--ui-border-subtle);
   background: var(--ui-bg-sidebar);
   color: var(--ui-text-primary);
   box-shadow: none;
-  backdrop-filter: none;
 }
 }
 
@@ -235,8 +231,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   #appShell .sidebar {
     position: fixed;
     inset: 0 auto 0 0;
-    width: min(var(--ui-sidebar-mobile), calc(100vw - 54px));
-    min-width: min(var(--ui-sidebar-mobile), calc(100vw - 54px));
     transform: translateX(0);
     transition: transform var(--ui-duration-normal) var(--ui-ease-out), box-shadow var(--ui-duration-normal) ease;
     box-shadow: 4px 0 28px rgba(0, 0, 0, 0.25);

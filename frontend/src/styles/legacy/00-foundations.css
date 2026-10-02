@@ -185,7 +185,6 @@ body[data-conversation-active="true"] #mobileMode{display:none!important}
    accessibility sense. Only animating transforms and layout properties
    are suppressed. */
 @media (prefers-reduced-motion: reduce){
-  *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important}
   ::view-transition-old(root),::view-transition-new(root){animation-duration:0.01ms!important}
 }
 /* ─── Scrollbar — cross-browser ── */

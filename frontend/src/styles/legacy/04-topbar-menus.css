@@ -221,7 +221,7 @@ body.sidebar-resizing .main{transition:none!important}
    sidebar collapse). */
 .main-bg{position:absolute;inset:0;pointer-events:none;z-index:0;background-color:hsl(var(--bg-100));background-image:linear-gradient(to right,hsl(var(--bg-200)) 1px,transparent 1px),linear-gradient(to bottom,hsl(var(--bg-200)) 1px,transparent 1px);background-size:32px 32px;clip-path:circle(150% at 50% 50%);opacity:0.5;will-change:transform;transform:translateZ(0)}
 html[data-show-grid="false"] .main-bg{background-image:none}
-.top-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 14px;flex-shrink:0;position:relative;z-index:5;min-height:44px}
+.top-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;position:relative;z-index:5}
 .top-bar-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1;overflow:hidden}
 .top-bar-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .toggle-sidebar{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;color:hsl(var(--text-300));transition:color .06s,background .06s;flex-shrink:0}

@@ -92,14 +92,9 @@ body,
 @media (max-width: 768px) {
 
 #appShell .sidebar {
-  width: var(--app-sidebar-width, var(--cg-sidebar-width)) !important;
-  min-width: var(--app-sidebar-width, var(--cg-sidebar-width)) !important;
   background: var(--cg-rail) !important;
   background-image: none !important;
-  border-right: 1px solid var(--cg-border) !important;
   box-shadow: none !important;
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
 }
 }
 
@@ -418,15 +413,7 @@ body,
 }
 }
 
-@media (max-width: 768px) {
 
-#appShell .top-bar {
-  min-height: 58px;
-  padding: 8px 18px;
-  border-bottom: 0;
-  background: var(--cg-page) !important;
-}
-}
 
 @media (max-width: 768px) {
 
@@ -1249,20 +1236,14 @@ body.workspace-active #appShell .workspace-row:hover {
     --conversation-composer-width: calc(100vw - 28px);
   }
 
-  #appShell .sidebar {
-    width: var(--cg-sidebar-width) !important;
-    min-width: var(--cg-sidebar-width) !important;
-  }
+
 
   #appShell .main,
   #appShell .sidebar.collapsed ~ .main {
     padding-left: 0 !important;
   }
 
-  #appShell .top-bar {
-    min-height: 58px;
-    padding: 8px 12px;
-  }
+
 
   #appShell .top-mode-tabs {
     min-width: 166px;
@@ -1371,15 +1352,7 @@ body.workspace-active #appShell .workspace-row:hover {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  #appShell *,
-  #composerToolsMenu * {
-    animation-duration: .01ms !important;
-    animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
-    transition-duration: .01ms !important;
-  }
-}
+
 
 /* Final cascade guard. The legacy stylesheet contains a few later, highly
    specific composer rules. Keep the new idle geometry authoritative while

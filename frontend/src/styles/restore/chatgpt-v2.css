@@ -118,8 +118,6 @@
 @media (max-width: 768px) {
 
 #appShell .sidebar {
-  width: var(--app-sidebar-width, 246px) !important;
-  min-width: var(--app-sidebar-width, 246px) !important;
   border-right: 1px solid var(--cgv-border) !important;
   background: var(--cg-rail) !important;
 }
