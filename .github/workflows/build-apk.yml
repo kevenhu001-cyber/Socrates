@@ -15,7 +15,6 @@ on:
       - 'docs/api/openapi.yaml'
       - 'docs/plans/rn-migration.md'
       - '.github/workflows/build-apk.yml'
-      - '.github/workflows/build-windows.yml'
       - '.github/workflows/release-clients.yml'
       - 'docs/audits/client-release.md'
       - 'desktop/windows/**'
@@ -33,7 +32,6 @@ on:
       - 'docs/api/openapi.yaml'
       - 'docs/plans/rn-migration.md'
       - '.github/workflows/build-apk.yml'
-      - '.github/workflows/build-windows.yml'
       - '.github/workflows/release-clients.yml'
       - 'docs/audits/client-release.md'
       - 'desktop/windows/**'
@@ -52,16 +50,6 @@ on:
         required: true
         type: boolean
         default: true
-      build_windows:
-        description: Also build the isolated RNW Windows shell
-        required: true
-        type: boolean
-        default: false
-      build_windows_only:
-        description: Build only the isolated RNW Windows shell
-        required: true
-        type: boolean
-        default: false
       run_device_smoke:
         description: Run the Android emulator Detox smoke suite
         required: true
@@ -84,16 +72,6 @@ on:
         required: false
         type: boolean
         default: true
-      build_windows:
-        description: Also build the isolated RNW Windows shell
-        required: false
-        type: boolean
-        default: false
-      build_windows_only:
-        description: Build only the isolated RNW Windows shell
-        required: false
-        type: boolean
-        default: false
       run_device_smoke:
         description: Run the Android emulator Detox smoke suite
         required: false
@@ -126,7 +104,7 @@ permissions:
 concurrency:
   group: >-
     ${{ github.workflow }}-${{ github.ref }}-
-    ${{ inputs.device_smoke_only && 'device' || inputs.build_windows_only && 'windows' || 'full' }}
+    ${{ inputs.device_smoke_only && 'device' || 'full' }}
   cancel-in-progress: true
 
 env:
@@ -141,7 +119,6 @@ jobs:
   verify:
     name: Verify shared clients and API contract
     if: >-
-      !inputs.build_windows_only &&
       !inputs.device_smoke_only &&
       ((github.event_name != 'workflow_dispatch' && github.event_name != 'workflow_call') || inputs.run_verification)
     runs-on: ubuntu-latest
@@ -202,7 +179,6 @@ jobs:
     needs: verify
     if: >-
       always() &&
-      !inputs.build_windows_only &&
       !inputs.device_smoke_only &&
       (needs.verify.result == 'success' || needs.verify.result == 'skipped')
     runs-on: ubuntu-latest
@@ -268,7 +244,6 @@ jobs:
     needs: verify
     if: >-
       always() && github.event_name != 'pull_request' &&
-      !inputs.build_windows_only &&
       !inputs.device_smoke_only &&
       (needs.verify.result == 'success' || needs.verify.result == 'skipped')
     runs-on: ubuntu-latest
@@ -401,244 +376,11 @@ jobs:
         if: always()
         run: rm -f mobile/release.keystore
 
-  build-windows:
-    name: Build RNW Windows shell
-    # The native RNW Windows shell is still a prototype whose MSIX packaging
-    # needs a debug UCRT SDK that GitHub's Windows image does not ship. Keep it
-    # from failing the whole cross-platform run while the shell matures.
-    continue-on-error: true
-    needs: verify
-    if: >-
-      always() &&
-      (inputs.build_windows || inputs.build_windows_only) &&
-      (needs.verify.result == 'success' || needs.verify.result == 'skipped')
-    runs-on: windows-latest
-    env:
-      BUILD_PROFILE: ${{ inputs.build_profile || 'debug' }}
-      RN_VERSION: '0.84.1'
-      RNW_VERSION: '0.84.0'
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Generate lockstep RNW host
-        shell: pwsh
-        run: |
-          $project = Join-Path $env:RUNNER_TEMP 'SocratesWindows'
-          if (Test-Path $project) { Remove-Item -Recurse -Force $project }
-          Push-Location $env:RUNNER_TEMP
-          npx --yes @react-native-community/cli@latest init SocratesWindows --version $env:RN_VERSION --skip-install
-          Pop-Location
-          Set-Location $project
-
-          npm install --install-links --save --no-audit --no-fund "react-native-windows@$env:RNW_VERSION"
-          npm install --install-links --save --no-audit --no-fund `
-            (Join-Path $env:GITHUB_WORKSPACE 'packages\contracts') `
-            (Join-Path $env:GITHUB_WORKSPACE 'packages\core')
-          # init-windows --overwrite regenerates the host project and can reset
-          # tsconfig.json (dropping our path mappings). Customize the generated
-          # project only AFTER the regeneration so App.tsx, the shared local
-          # packages, and the pathed tsconfig survive for typecheck and bundling.
-          npx react-native init-windows --overwrite
-          if (-not (Test-Path (Join-Path $project 'windows'))) { throw 'RNW did not generate a Windows host project.' }
-          Copy-Item (Join-Path $env:GITHUB_WORKSPACE 'desktop\windows\App.tsx') (Join-Path $project 'App.tsx') -Force
-          New-Item -ItemType Directory -Force -Path (Join-Path $project 'shared') | Out-Null
-          Copy-Item (Join-Path $env:GITHUB_WORKSPACE 'packages\contracts') (Join-Path $project 'shared\contracts') -Recurse -Force
-          Copy-Item (Join-Path $env:GITHUB_WORKSPACE 'packages\core') (Join-Path $project 'shared\core') -Recurse -Force
-          Copy-Item (Join-Path $env:GITHUB_WORKSPACE 'desktop\windows\tsconfig.json') (Join-Path $project 'tsconfig.json') -Force
-
-      - name: Typecheck Windows shell
-        shell: pwsh
-        run: |
-          Set-Location (Join-Path $env:RUNNER_TEMP 'SocratesWindows')
-          npx tsc --noEmit --pretty false
-
-      - name: Select installed Windows SDK
-        shell: pwsh
-        run: |
-          $kitsRoot = Join-Path ([Environment]::GetEnvironmentVariable('ProgramFiles(x86)')) 'Windows Kits\10\Lib'
-          $sdk = Get-ChildItem -Path $kitsRoot -Directory |
-            Where-Object { $_.Name -match '^\d+\.\d+\.\d+\.\d+$' } |
-            Sort-Object { [version]$_.Name } -Descending |
-            Select-Object -First 1
-          if (-not $sdk) { throw "No Windows SDK found under $kitsRoot" }
-          "WINDOWS_SDK_VERSION=$($sdk.Name)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          Write-Host "Using Windows SDK $($sdk.Name)"
-
-      - name: Retarget generated Windows project
-        shell: pwsh
-        run: |
-          $project = Join-Path $env:RUNNER_TEMP 'SocratesWindows'
-          $windowsRoot = Join-Path $project 'windows'
-          $changed = 0
-          $projectFiles = Get-ChildItem -Path $windowsRoot -Recurse -File |
-            Where-Object { $_.Extension -in @('.props', '.targets', '.vcxproj', '.wapproj') }
-          foreach ($file in $projectFiles) {
-            $before = [System.IO.File]::ReadAllText($file.FullName)
-            $after = [regex]::Replace(
-              $before,
-              '<WindowsTargetPlatformVersion>[^<]*</WindowsTargetPlatformVersion>',
-              "<WindowsTargetPlatformVersion>$env:WINDOWS_SDK_VERSION</WindowsTargetPlatformVersion>"
-            )
-            $after = [regex]::Replace($after, '10\.0\.22621(?:\.0)?', $env:WINDOWS_SDK_VERSION)
-            if ($file.Extension -eq '.wapproj') {
-              # The generated package project imports WinUI's debug UCRT SDK by
-              # default. GitHub's Windows image has a newer Windows SDK but not
-              # the exact 10.0.22621 debug framework package, so opt out of the
-              # optional framework dependencies for this standalone RNW shell.
-              $after = [regex]::Replace($after, '<WinUISDKReferences>[^<]*</WinUISDKReferences>', '<WinUISDKReferences>false</WinUISDKReferences>')
-              if ($after -notmatch '<WinUISDKReferences>') {
-                $propertyGroup = [regex]::Match($after, '<PropertyGroup[^>]*>')
-                if ($propertyGroup.Success) {
-                  $after = $after.Insert($propertyGroup.Index + $propertyGroup.Length, "`r`n    <WinUISDKReferences>false</WinUISDKReferences>")
-                }
-              }
-            }
-            if ($after -ne $before) {
-              [System.IO.File]::WriteAllText($file.FullName, $after, [System.Text.UTF8Encoding]::new($false))
-              $changed++
-              Write-Host "Retargeted $($file.FullName)"
-            }
-          }
-          if ($changed -eq 0) {
-            Write-Host "Generated Windows project already targets $env:WINDOWS_SDK_VERSION or inherits the runner SDK"
-          } else {
-            Write-Host "Retargeted $changed generated Windows project file(s) to $env:WINDOWS_SDK_VERSION"
-          }
-
-      - name: Set Windows package publisher
-        if: env.BUILD_PROFILE == 'release'
-        shell: pwsh
-        env:
-          WINDOWS_PUBLISHER: ${{ secrets.WINDOWS_PUBLISHER }}
-        run: |
-          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_PUBLISHER)) {
-            throw 'WINDOWS_PUBLISHER is required for Windows release packages.'
-          }
-          $project = Join-Path $env:RUNNER_TEMP 'SocratesWindows'
-          $manifests = @(Get-ChildItem -Path (Join-Path $project 'windows') -Recurse -Filter '*appxmanifest' -File)
-          if ($manifests.Count -eq 0) { throw 'No Windows AppX manifest was generated.' }
-          foreach ($manifest in $manifests) {
-            $before = [IO.File]::ReadAllText($manifest.FullName)
-            $after = [regex]::Replace(
-              $before,
-              'Publisher="[^"]+"',
-              [System.Text.RegularExpressions.MatchEvaluator]{ param($match) 'Publisher="' + $env:WINDOWS_PUBLISHER + '"' }
-            )
-            if ($after -eq $before) { throw "Publisher field was not found in $($manifest.Name)" }
-            [IO.File]::WriteAllText($manifest.FullName, $after, [Text.UTF8Encoding]::new($false))
-          }
-
-      - name: Build Windows package
-        shell: pwsh
-        run: |
-          Set-Location (Join-Path $env:RUNNER_TEMP 'SocratesWindows')
-          $args = @('--arch', 'x64', '--no-launch', '--no-autolink', '--logging', '--msbuildprops', "WindowsTargetPlatformVersion=$env:WINDOWS_SDK_VERSION")
-          if ($env:BUILD_PROFILE -eq 'release') { $args += '--release' }
-          & npx react-native run-windows @args
-
-      - name: Restore Windows signing certificate
-        if: env.BUILD_PROFILE == 'release'
-        shell: pwsh
-        env:
-          WINDOWS_PFX_BASE64: ${{ secrets.WINDOWS_PFX_BASE64 }}
-          WINDOWS_PFX_PASSWORD: ${{ secrets.WINDOWS_PFX_PASSWORD }}
-        run: |
-          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_PFX_BASE64) -or [string]::IsNullOrWhiteSpace($env:WINDOWS_PFX_PASSWORD)) {
-            throw 'WINDOWS_PFX_BASE64 and WINDOWS_PFX_PASSWORD are required for Windows release packages.'
-          }
-          $pfx = Join-Path $env:RUNNER_TEMP 'socrates-signing.pfx'
-          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_PFX_BASE64))
-          "WINDOWS_PFX_PATH=$pfx" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-      - name: Sign Windows package
-        if: env.BUILD_PROFILE == 'release'
-        shell: pwsh
-        env:
-          WINDOWS_PFX_PASSWORD: ${{ secrets.WINDOWS_PFX_PASSWORD }}
-        run: |
-          $project = Join-Path $env:RUNNER_TEMP 'SocratesWindows'
-          $packages = @(Get-ChildItem -Path (Join-Path $project 'windows') -Recurse -File |
-            Where-Object { $_.Extension -in @('.msix', '.msixbundle', '.appx', '.appxbundle') })
-          if ($packages.Count -eq 0) { throw 'No Windows package was produced for signing.' }
-          $signTool = Get-ChildItem -Path (Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin') -Recurse -Filter signtool.exe |
-            Sort-Object FullName | Select-Object -Last 1
-          if (-not $signTool) { throw 'signtool.exe was not found on the Windows runner.' }
-          foreach ($package in $packages) {
-            & $signTool.FullName sign /fd SHA256 /f $env:WINDOWS_PFX_PATH /p $env:WINDOWS_PFX_PASSWORD $package.FullName
-            if ($LASTEXITCODE -ne 0) { throw "signtool failed for $($package.Name)" }
-          }
-
-      - name: Collect Windows package
-        shell: pwsh
-        run: |
-          $project = Join-Path $env:RUNNER_TEMP 'SocratesWindows'
-          $files = @(Get-ChildItem -Path (Join-Path $project 'windows') -Recurse -File `
-            | Where-Object { $_.Extension -in @('.msix', '.msixbundle', '.appx', '.appxbundle', '.zip') })
-          if ($files.Count -eq 0) {
-            Get-ChildItem -Path (Join-Path $project 'windows') -Recurse -File | Select-Object -First 100 FullName
-            throw 'No Windows package was produced.'
-          }
-          $out = Join-Path $env:GITHUB_WORKSPACE 'desktop\windows-dist'
-          New-Item -ItemType Directory -Force -Path $out | Out-Null
-          $files | ForEach-Object { Copy-Item $_.FullName (Join-Path $out $_.Name) -Force }
-
-      - name: Package Windows release bundle
-        if: env.BUILD_PROFILE == 'release'
-        shell: pwsh
-        run: |
-          $out = Join-Path $env:GITHUB_WORKSPACE 'desktop\windows-dist'
-          $archive = Join-Path $env:RUNNER_TEMP "socrates-windows-$env:BUILD_PROFILE-$env:GITHUB_SHA.zip"
-          Compress-Archive -Path (Join-Path $out '*') -DestinationPath $archive -Force
-          Copy-Item $archive $out -Force
-
-      - name: Create Windows checksums
-        shell: pwsh
-        run: |
-          $out = Join-Path $env:GITHUB_WORKSPACE 'desktop\windows-dist'
-          Get-ChildItem -Path $out -File |
-            Where-Object { $_.Name -ne 'SHA256SUMS.txt' } |
-            ForEach-Object {
-              $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash.ToLowerInvariant()
-              "{0}  {1}" -f $hash, $_.Name
-            } |
-            Set-Content -Path (Join-Path $out 'SHA256SUMS.txt') -Encoding utf8
-
-      - name: Verify signed Windows package
-        if: env.BUILD_PROFILE == 'release'
-        shell: pwsh
-        run: |
-          $out = Join-Path $env:GITHUB_WORKSPACE 'desktop\windows-dist'
-          $signTool = Get-ChildItem -Path (Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin') -Recurse -Filter signtool.exe |
-            Sort-Object FullName | Select-Object -Last 1
-          foreach ($package in Get-ChildItem -Path $out -File | Where-Object { $_.Extension -in @('.msix', '.msixbundle', '.appx', '.appxbundle') }) {
-            & $signTool.FullName verify /pa $package.FullName
-            if ($LASTEXITCODE -ne 0) { throw "Signature verification failed for $($package.Name)" }
-          }
-
-      - name: Remove Windows signing material
-        if: always()
-        shell: pwsh
-        run: |
-          if ($env:WINDOWS_PFX_PATH -and (Test-Path $env:WINDOWS_PFX_PATH)) { Remove-Item -Force $env:WINDOWS_PFX_PATH }
-
-      - name: Upload Windows package
-        uses: actions/upload-artifact@v4
-        with:
-          name: socrates-windows-${{ env.BUILD_PROFILE }}-${{ github.sha }}
-          path: desktop/windows-dist
-          if-no-files-found: error
-          retention-days: 30
-
   build-desktop-exe:
     name: Build Desktop EXE installer
     needs: verify
     if: >-
       always() &&
-      !inputs.build_windows_only &&
       !inputs.device_smoke_only &&
       (needs.verify.result == 'success' || needs.verify.result == 'skipped')
     runs-on: windows-latest

@@ -87,8 +87,9 @@ jobs:
           SOCRATES_SERVER_URL: ${{ inputs.backend_target == 'prod' && 'https://app.topodrive.top' || inputs.backend_target == 'staging' && 'https://staging.topodrive.top' || 'http://10.0.2.2:3037' }}
         run: |
           npx cap sync android
-          chmod +x android/gradlew
-          android/gradlew :app:assembleDebug --no-daemon --console=plain
+          # gradlew uses the CWD as the project root — the Gradle build lives
+          # in capacitor/android, not capacitor/.
+          (cd android && chmod +x gradlew && ./gradlew :app:assembleDebug --no-daemon --console=plain)
 
       - name: Upload Capacitor debug APK
         uses: actions/upload-artifact@v4

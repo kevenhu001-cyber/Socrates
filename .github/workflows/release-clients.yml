@@ -49,8 +49,6 @@ jobs:
     with:
       build_profile: release
       run_verification: true
-      build_windows: true
-      build_windows_only: false
       run_device_smoke: false
       device_smoke_only: false
     secrets: inherit
@@ -74,12 +72,6 @@ jobs:
           pattern: socrates-android-release-*-${{ github.sha }}
           path: release-assets
           merge-multiple: true
-
-      - name: Download Windows release artifacts
-        uses: actions/download-artifact@v8
-        with:
-          name: socrates-windows-release-${{ github.sha }}
-          path: release-assets
 
       - name: Validate and checksum release assets
         run: |
