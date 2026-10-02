@@ -136,8 +136,8 @@
 }
 
 #composerToolsMenu .composer-tools-desktop-items .composer-tools-item {
-  height: auto !important;
-  align-items: center !important;
+  height: auto;
+  align-items: center;
 }
 
 #composerToolsMenu .composer-tools-desktop-items .composer-tools-copy {
@@ -199,8 +199,8 @@
   body #composerToolsMenu .composer-tools-item,
   body #composerToolsMenu .composer-tools-mobile-item,
   body #composerToolsMenu .composer-tools-plugin-item {
-    min-height: 56px !important;
-    padding: 6px 10px !important;
+    min-height: 56px;
+    padding: 6px 10px;
   }
 
   body #composerToolsMenu .composer-tools-icon,
