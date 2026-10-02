@@ -173,7 +173,7 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 
 
 /* P2.2 — tag editor popover */
-.tag-editor-popover{position:fixed;width:320px;background:hsl(var(--bg-100));border:0.5px solid hsl(var(--border-300)/0.3);border-radius:10px;box-shadow:0 12px 36px hsl(var(--always-black)/0.35);z-index:950;padding:14px;display:none;flex-direction:column;gap:10px}
+.tag-editor-popover{position:fixed;width:320px;z-index:950;padding:14px;display:none;flex-direction:column;gap:10px}
 .tag-editor-popover.visible{display:flex}
 .tag-editor-head{font-size:13px;font-weight:600;color:hsl(var(--text-200))}
 .tag-editor-current{display:flex;flex-wrap:wrap;gap:4px;min-height:24px}

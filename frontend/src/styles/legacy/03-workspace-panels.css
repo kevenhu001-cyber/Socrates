@@ -94,7 +94,7 @@
 
 
 /* Display / reading preferences (font size + content width) */
-.display-prefs-popover{position:fixed;min-width:240px;max-width:280px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.5);border-radius:10px;padding:10px 12px;box-shadow:0 8px 24px hsl(var(--always-black)/0.2);z-index:80;display:flex;flex-direction:column;gap:10px;font-size:calc(12px * var(--app-font-scale, 1))}
+.display-prefs-popover{position:fixed;min-width:240px;max-width:280px;padding:10px 12px;z-index:80;display:flex;flex-direction:column;gap:10px;font-size:calc(12px * var(--app-font-scale, 1))}
 .display-prefs-popover.hidden{display:none}
 
 /* PR-A — "More" popover (anchored to #navMore). Mirrors the

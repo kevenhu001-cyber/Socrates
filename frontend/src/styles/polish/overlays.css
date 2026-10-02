@@ -131,11 +131,6 @@
 }
 
 /* ── CmdK palette ── */
-.cmd-k-modal {
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-xl, 16px);
-  box-shadow: var(--ui-shadow-modal);
-}
 .cmd-k-input-row { border-bottom: 1px solid var(--ui-border-subtle); }
 .cmd-k-results { padding: 6px; }
 .cmd-k-foot {
