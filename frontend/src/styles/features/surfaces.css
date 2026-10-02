@@ -294,10 +294,7 @@
     width: 100%;
     max-width: 1040px;
     margin-inline: auto;
-    /* padding stays flagged: creation-surfaces.css pins .creation-panel's
-       108px centered column with !important, and sitesPanel still carries
-       that class. */
-    padding: 40px 32px 64px !important;
+    padding: 40px 32px 64px;
   }
   #appShell#appShell #sitesPanel .creation-sites-header {
     margin-bottom: 20px;
