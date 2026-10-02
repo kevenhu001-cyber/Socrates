@@ -63,12 +63,7 @@
 }
 
 /* ── Primary nav — one row rhythm: 34px, 8px radius, 20px glyphs ── */
-@media (max-width: 768px) {
-#appShell .sidebar-nav {
-  gap: 1px;
-  padding: 2px 0 10px;
-}
-}
+
 @media (max-width: 768px) {
 #appShell .sidebar-nav-btn {
   min-height: 34px;

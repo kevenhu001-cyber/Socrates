@@ -214,7 +214,7 @@
    pins transition: none. */
 .main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
 body.sidebar-resizing .main{transition:none!important}
-@media(min-width:769px){.main{padding-left:var(--app-sidebar-width,18rem)}.sidebar.collapsed~.main{padding-left:0}}
+@media(min-width:769px){.sidebar.collapsed~.main{padding-left:0}}
 /* P_perf-main-bg — Promote the chat-area background to its own
    composited layer so the clip-path circle(150%) rasterizes once
    and isn't invalidated alongside .main's layout passes (e.g. during

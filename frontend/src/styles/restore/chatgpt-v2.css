@@ -123,9 +123,7 @@
 }
 }
 
-#appShell .main {
-  padding-left: var(--app-sidebar-width, 246px) !important;
-}
+
 
 @media (max-width: 768px) {
 
@@ -163,10 +161,7 @@
 
 @media (max-width: 768px) {
 
-#appShell .sidebar-nav {
-  gap: 1px;
-  padding: 3px 0 7px;
-}
+
 }
 
 @media (max-width: 768px) {

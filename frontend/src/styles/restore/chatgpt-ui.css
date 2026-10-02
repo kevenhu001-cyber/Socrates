@@ -69,15 +69,6 @@ body,
   font-family: var(--cg-font);
 }
 
-body,
-#appShell,
-#appShell .main,
-#appShell .main-content,
-#appShell .main-bg {
-  background: var(--cg-page) !important;
-  color: var(--cg-text);
-}
-
 #appShell {
   /* --app-sidebar-width is intentionally NOT declared here: sidebarResize.js
      sets it on <html>, and a local declaration would shadow that value and
@@ -169,10 +160,7 @@ body,
 
 @media (max-width: 768px) {
 
-#appShell .sidebar-nav {
-  gap: 3px;
-  padding: 6px 0 12px;
-}
+
 }
 
 @media (max-width: 768px) {
@@ -402,9 +390,7 @@ body,
 
 /* Top bar and landing */
 
-#appShell .main {
-  padding-left: var(--app-sidebar-width, var(--cg-sidebar-width)) !important;
-}
+
 
 @media (max-width: 768px) {
 
