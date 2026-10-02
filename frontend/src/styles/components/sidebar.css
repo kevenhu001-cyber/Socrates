@@ -217,7 +217,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     backdrop-filter: blur(4px);
     transition: opacity var(--ui-duration-normal) ease;
   }
-  #appShell .sidebar-footer { background: var(--ui-bg-sidebar); }
   #appShell .sidebar-header .compose-btn { display: none; }
   #appShell .sidebar-search-row {
     max-height: 0;

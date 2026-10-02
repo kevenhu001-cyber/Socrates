@@ -82,7 +82,7 @@
 .plugin-directory-desc { margin-top: 4px; color: var(--cgv-text-2); font-size: 12px; }
 .workspace-search-field,
 .plugin-directory-search { width: 232px; height: 36px; padding-inline: 12px; font-size: 12px; }
-.workspace-create-button { height: 36px; min-height: 36px; }
+.workspace-create-button { height: 36px; }
 
 @media (min-width: 769px) {
   body.workspace-active #appShell .main-page {

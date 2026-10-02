@@ -81,7 +81,6 @@
      inset resize the viewport without a measured/fixed reserve. */
   position:relative;
   order:1;
-  flex:1 1 auto;
   min-height:0;
   padding-top:12px;
   padding-bottom:0;
@@ -354,7 +353,7 @@ body.admin-active #appShell #modeSegmentedTop{display:none!important}
   .mobile-incognito-btn[aria-pressed="true"]{color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.12)}
 }
 
-.msg-list{display:flex;flex-direction:column;gap:12px;flex:1;overflow-anchor:none}
+.msg-list{display:flex;flex-direction:column;flex:1;overflow-anchor:none}
 .msg{animation:msgIn .22s var(--ease-out);padding:6px 0}
 /* The submitted prompt is already being moved by turnAnchor's single
    transcript scroll glide, so transform stays at none. The bubble's
