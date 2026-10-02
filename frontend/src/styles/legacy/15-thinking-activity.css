@@ -273,73 +273,6 @@
   }
 }
 
-/* When consent is shown before authentication, it must not sit above the
-   sign-in card as a viewport-fixed layer. Keep it in the auth gate's scroll
-   flow instead; the card remains usable and the banner is still reachable
-   below the form. Once the gate closes, cookieConsent.js moves it back to
-   body and the normal fixed treatment resumes. */
-.auth-gate:has(.socrates-cookie-consent--auth){
-  justify-content:flex-start;
-  gap:16px;
-}
-.socrates-cookie-consent--auth{
-  position:static;
-  left:auto;
-  bottom:auto;
-  transform:none;
-  z-index:auto;
-  width:min(420px,calc(100vw - 24px));
-  margin:0 auto;
-  flex:0 0 auto;
-}
-@media (max-width:520px){
-  .auth-gate:has(.socrates-cookie-consent--auth){
-    padding-top:24px;
-    padding-bottom:24px;
-  }
-  .socrates-cookie-consent--auth{
-    width:calc(100vw - 24px);
-    padding:12px 14px;
-    gap:8px;
-  }
-}
-
-/* ── Codex App activity stream refinement ──────────────────────────
-   The execution UI is intentionally open rather than card-stacked. A
-   tool row should read like a quiet event in the assistant's transcript:
-   icon, state label, optional command preview, then an indented detail
-   surface when the row is expanded. */
-:root{
-  --tool-activity-bg:transparent;
-  --tool-activity-border:hsl(var(--border-300)/.26);
-  --tool-activity-text:hsl(var(--text-100));
-  --tool-activity-row:hsl(var(--text-400));
-  --tool-activity-row-hover:hsl(var(--text-200));
-  --tool-activity-focus:hsl(var(--text-300)/.58);
-  --tool-activity-code-bg:hsl(var(--bg-200)/.72);
-  --tool-activity-danger:hsl(0 58% 62%);
-  --tool-activity-danger-bg:hsl(0 58% 50%/.12);
-}
-
-.msg.assistant .msg-body:has(.tool-inline),
-.msg.assistant .msg-body:has(.tool-run-group),
-.msg.assistant .msg-body:has(.agent-run-host),
-.msg.assistant .msg-body:has(.agent-tool-card){
-  margin:0;
-  padding:0;
-  border:0;
-  border-radius:0;
-  background:transparent;
-  box-shadow:none;
-  color:var(--tool-activity-text);
-}
-.msg.assistant .msg-body:has(.tool-inline) p,
-.msg.assistant .msg-body:has(.tool-inline) li,
-.msg.assistant .msg-body:has(.tool-run-group) p,
-.msg.assistant .msg-body:has(.tool-run-group) li,
-.msg.assistant .msg-body:has(.agent-tool-card) p,
-.msg.assistant .msg-body:has(.agent-tool-card) li{color:hsl(var(--text-100))}
-
 /* Live compact rows. */
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline{
   display:block;
@@ -458,34 +391,6 @@
   white-space:pre-wrap;
   word-break:break-word;
 }
-/* A running call streams its arguments — and then its stdout — into the row
-   itself, outside any collapsible. That is the point of the live row: the
-   reader sees the program being executed instead of a spinner. Cap the box so
-   a long script cannot push the answer off screen, and give the output block a
-   quieter face than the code above it so the pair reads as "ran this" /
-   "printed this" rather than two copies of the same text. */
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline-code-preview{
-  max-height:180px;
-  overflow:auto;
-  margin:0 0 4px;
-}
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline-code-preview.is-output{
-  margin:0;
-  border-color:transparent;
-  background:transparent;
-  color:hsl(var(--text-500));
-}
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail-section[data-kind="error"] .tool-inline-detail-value{
-  border-color:var(--tool-activity-danger-bg);
-  background:var(--tool-activity-danger-bg);
-  color:var(--tool-activity-danger);
-}
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline-src,
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline-src-host,
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail-empty{color:hsl(var(--text-500))}
-.msg.assistant .msg-body:has(.tool-inline) a.tool-inline-src{color:hsl(var(--text-300));text-decoration-color:hsl(var(--text-500)/.6)}
-.msg.assistant .msg-body:has(.tool-inline) a.tool-inline-src:hover{color:hsl(var(--text-100));background:transparent}
-
 /* Detailed/history rows use the same anatomy as live rows. The body still
    contains the existing Input/Output sections, but those sections now feel
    like an indented execution trace instead of a nested dashboard card. */
@@ -839,4 +744,3 @@
   transform:rotate(42deg);
 }
 .agent-plan-note{margin:7px 0 0;color:hsl(var(--text-500));font-size:12px;line-height:1.5}
-

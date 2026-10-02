@@ -69,78 +69,6 @@
 .agent-stepper-stage-past .agent-stepper-dot,.agent-stepper-stage-done .agent-stepper-dot{background:hsl(145 45% 45%)}
 .agent-stepper-stage-failed .agent-stepper-dot{background:var(--tool-card-danger)}
 
-/* ── Tool-card visual system ────────────────────────────────────────
-   The tool surfaces share one neutral scale: a light 1px outline, one
-   quiet surface, generous padding, and no brand-colour state changes.
-   Runtime semantics (error/delete) are the only intentional colour cue. */
-:root{
-  --tool-card-bg:hsl(0 0% 100%/.58);
-  --tool-card-bg-hover:hsl(0 0% 100%/.84);
-  --tool-card-bg-sunken:hsl(0 0% 0%/.035);
-  --tool-card-surface:hsl(0 0% 100%/.9);
-  --tool-card-border:hsl(0 0% 0%/.12);
-  --tool-card-border-strong:hsl(0 0% 0%/.22);
-  --tool-card-text:hsl(0 0% 16%);
-  --tool-card-text-muted:hsl(0 0% 36%);
-  --tool-card-text-subtle:hsl(0 0% 50%);
-  --tool-card-icon:hsl(0 0% 42%);
-  --tool-card-icon-hover:hsl(0 0% 16%);
-  --tool-card-radius:12px;
-  --tool-card-radius-sm:10px;
-  --tool-card-pad-y:12px;
-  --tool-card-pad-x:14px;
-  --tool-card-title-size:14px;
-  --tool-card-title-weight:600;
-  --tool-card-desc-size:12.5px;
-  --tool-card-desc-weight:400;
-  --tool-card-meta-size:11px;
-  --tool-card-meta-weight:400;
-  --tool-card-focus:hsl(0 0% 0%/.36);
-  --tool-card-shadow:0 8px 24px hsl(0 0% 0%/.08);
-  --tool-card-danger:hsl(0 58% 46%);
-  --tool-card-danger-soft:hsl(0 58% 46%/.1);
-  --tool-card-danger-soft-strong:hsl(0 58% 46%/.18)
-}
-[data-theme=socrates][data-mode=dark]{
-  --tool-card-bg:hsl(0 0% 16%/.78);
-  --tool-card-bg-hover:hsl(0 0% 22%/.9);
-  --tool-card-bg-sunken:hsl(0 0% 7%/.46);
-  --tool-card-surface:hsl(0 0% 11%/.96);
-  --tool-card-border:hsl(0 0% 100%/.14);
-  --tool-card-border-strong:hsl(0 0% 100%/.26);
-  --tool-card-text:hsl(0 0% 92%);
-  --tool-card-text-muted:hsl(0 0% 72%);
-  --tool-card-text-subtle:hsl(0 0% 54%);
-  --tool-card-icon:hsl(0 0% 70%);
-  --tool-card-icon-hover:hsl(0 0% 94%);
-  --tool-card-focus:hsl(0 0% 100%/.44);
-  --tool-card-shadow:0 8px 24px hsl(0 0% 0%/.28);
-  --tool-card-danger:hsl(0 58% 70%);
-  --tool-card-danger-soft:hsl(0 58% 48%/.18);
-  --tool-card-danger-soft-strong:hsl(0 58% 48%/.28)
-}
-
-/* Menus and card surfaces */
-.slash-command-palette,
-.prompt-templates-modal{
-  background:var(--tool-card-surface);
-  border:1px solid var(--tool-card-border);
-  border-radius:var(--tool-card-radius);
-  box-shadow:var(--tool-card-shadow);
-}
-.composer-tools-item{
-  transition:color .16s ease
-}
-.composer-tools-item:hover,
-.composer-tools-item:focus-visible{color:var(--tool-card-text);outline:0}
-.composer-tools-item:focus-visible{outline:2px solid var(--tool-card-focus);outline-offset:2px;box-shadow:none}
-.composer-tools-item:active{color:var(--tool-card-text);transform:none}
-.composer-tools-icon{width:22px;height:22px;color:var(--tool-card-icon)}
-.composer-tools-item:hover .composer-tools-icon,
-.composer-tools-item:focus-visible .composer-tools-icon{color:var(--tool-card-icon-hover)}
-.composer-tools-copy > span{font-size:var(--tool-card-title-size);font-weight:var(--tool-card-title-weight);color:var(--tool-card-text)}
-.composer-tools-copy small{font-size:var(--tool-card-desc-size);font-weight:var(--tool-card-desc-weight);color:var(--tool-card-text-subtle)}
-
 /* Plugin / connector cards */
 .connector-row .connector-icon{
   width:32px;
@@ -173,33 +101,6 @@
   font-weight:var(--tool-card-title-weight)
 }
 .connector-connect.workspace-secondary:hover{background:var(--tool-card-bg-hover);color:var(--tool-card-text);border-color:var(--tool-card-border-strong)}
-
-/* Skills / shortcuts and slash-command entries */
-.prompt-templates-body{padding:18px 20px 20px;gap:10px}
-.prompt-row{gap:12px;padding:12px 14px;border:1px solid var(--tool-card-border);border-radius:var(--tool-card-radius);background:var(--tool-card-bg)}
-.prompt-row:hover{background:var(--tool-card-bg-hover);border-color:var(--tool-card-border-strong)}
-.prompt-row-icon{display:grid;place-items:center;width:26px;height:26px;font-size:16px;color:var(--tool-card-icon);filter:grayscale(1)}
-.prompt-row-icon svg{width:18px;height:18px;color:currentColor}
-.prompt-row-main{gap:3px}
-.prompt-row-title{font-size:var(--tool-card-title-size);font-weight:var(--tool-card-title-weight);color:var(--tool-card-text);gap:8px}
-.prompt-row-shortcut,
-.slash-command-shortcut{padding:0;background:transparent;color:var(--tool-card-text-subtle);font-size:var(--tool-card-meta-size);font-weight:var(--tool-card-meta-weight);border-radius:0}
-.prompt-row-desc,.slash-command-desc{font-size:var(--tool-card-desc-size);font-weight:var(--tool-card-desc-weight);color:var(--tool-card-text-muted)}
-.prompt-row-actions{gap:6px}
-.prompt-row-edit,.prompt-row-delete{min-height:30px;padding:6px 10px;border:1px solid var(--tool-card-border-strong);border-radius:var(--tool-card-radius-sm);font-size:var(--tool-card-meta-size);font-weight:var(--tool-card-title-weight)}
-.prompt-row-edit{color:var(--tool-card-text-muted)}
-.prompt-row-edit:hover{background:var(--tool-card-bg-hover);color:var(--tool-card-text)}
-.prompt-row-delete{color:var(--tool-card-danger);border-color:var(--tool-card-danger-soft-strong)}
-.prompt-row-delete:hover{background:var(--tool-card-danger-soft);color:var(--tool-card-danger)}
-.prompt-templates-new{min-height:38px;padding:9px 12px;border:1px solid var(--tool-card-border);border-radius:var(--tool-card-radius-sm);color:var(--tool-card-text-muted);font-size:var(--tool-card-desc-size);margin-top:4px}
-.prompt-templates-new:hover{background:var(--tool-card-bg-hover);color:var(--tool-card-text);border-color:var(--tool-card-border-strong)}
-.slash-command-palette{overflow:hidden}
-.slash-command-head{padding:12px 14px;color:var(--tool-card-text-subtle);border-bottom:1px solid var(--tool-card-border);font-weight:var(--tool-card-title-weight)}
-.slash-command-row{min-height:46px;padding:10px 14px;border-radius:var(--tool-card-radius-sm);transition:background-color .16s ease,color .16s ease}
-.slash-command-row:hover,.slash-command-row.selected{background:var(--tool-card-bg-hover)}
-.slash-command-icon{color:var(--tool-card-icon);filter:grayscale(1)}
-.slash-command-title{font-size:var(--tool-card-title-size);font-weight:var(--tool-card-title-weight);color:var(--tool-card-text)}
-.slash-command-foot{border-top:1px solid var(--tool-card-border)}
 
 /* Expandable tool execution cards — borderless, same line language as
    the live inline rows: bare tool glyph + quiet text, sunken indented
@@ -271,13 +172,6 @@ a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-
 .tool-run-group[data-state="error"] .tool-run-summary-icon{color:var(--tool-card-danger)}
 .tool-run-summary-label{color:var(--tool-card-text)}
 .tool-run-summary-meta{color:var(--tool-card-text-subtle)}
-
-/* Storage and quick suggestions use the same quiet card language
-   so tool output does not become a second dashboard. */
-.storage-row{padding:12px 14px;border:1px solid var(--tool-card-border);border-radius:var(--tool-card-radius);background:var(--tool-card-bg)}
-.storage-row-title{font-size:var(--tool-card-title-size);font-weight:var(--tool-card-title-weight);color:var(--tool-card-text)}
-.storage-row-meta{font-size:var(--tool-card-meta-size);color:var(--tool-card-text-subtle)}
-
 
 /* Extension/model menus: keep active state neutral and remove scale-heavy
    entrance motion while preserving keyboard focus and selection semantics. */
@@ -679,48 +573,6 @@ a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-
   }
 }
 
-/* ── Unboxed assistant response ────────────────────────────────────
-   The Codex reference keeps the assistant's prose on the page surface.
-   Only an actual tool result gets a contained card. The previous activity
-   treatment wrapped the entire answer in a panel, which made normal prose
-   look like a user bubble and broke the visual hierarchy of the page. */
-.msg.assistant .msg-body:has(.tool-inline),
-.msg.assistant .msg-body:has(.tool-run-group),
-.msg.assistant .msg-body:has(.agent-run-host),
-.msg.assistant .msg-body:has(.agent-tool-card){
-  margin:0;
-  padding:0;
-  border:0;
-  border-radius:0;
-  background:transparent;
-  box-shadow:none;
-  color:hsl(var(--text-100));
-}
-.msg.assistant .msg-body:has(.tool-inline) p,
-.msg.assistant .msg-body:has(.tool-inline) li,
-.msg.assistant .msg-body:has(.tool-run-group) p,
-.msg.assistant .msg-body:has(.tool-run-group) li,
-.msg.assistant .msg-body:has(.agent-tool-card) p,
-.msg.assistant .msg-body:has(.agent-tool-card) li{
-  color:hsl(var(--text-100));
-}
-.msg.assistant .msg-body:has(.tool-inline) strong,
-.msg.assistant .msg-body:has(.tool-run-group) strong,
-.msg.assistant .msg-body:has(.agent-tool-card) strong{
-  color:hsl(var(--text-000));
-}
-.msg.assistant .msg-body:has(.tool-inline) a,
-.msg.assistant .msg-body:has(.tool-run-group) a,
-.msg.assistant .msg-body:has(.agent-tool-card) a{
-  color:hsl(var(--text-100));
-  text-decoration-color:hsl(var(--text-400));
-}
-.msg.assistant .msg-body:has(.tool-inline) a:hover,
-.msg.assistant .msg-body:has(.tool-run-group) a:hover,
-.msg.assistant .msg-body:has(.agent-tool-card) a:hover{
-  color:hsl(var(--text-000));
-}
-
 /* Tool results remain the only contained surface in the answer. This is
    the file/action card language visible in the reference page; the card's
    existing head/body controls and keyboard handlers are unchanged. */
@@ -941,4 +793,3 @@ a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-
   overflow:auto;
   max-height:none;
 }
-
