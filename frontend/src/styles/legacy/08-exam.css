@@ -225,7 +225,6 @@
 .exam-score-lbl{font-size:calc(12px*var(--app-font-scale,1));color:hsl(var(--text-500));margin-top:1px}
 
 
-.exam-result-correct{color:hsl(145 50% 45%);font-weight:500}
 .exam-result-wrong{color:hsl(0 60% 55%);font-weight:500}
 
 /* ── Exam Nav ── */

@@ -277,7 +277,6 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 }
 }
 
-#appShell#appShell .msg-actions,
 #appShell#appShell .msg-toolbar {
   color: var(--conversation-text-muted) !important;
 }

@@ -208,14 +208,12 @@
 .library-tab{padding:4px 10px;border-radius:6px;border:none;background:transparent;color:hsl(var(--text-400));font-size:calc(12px * var(--sidebar-font-scale));cursor:pointer;transition:background .12s,color .12s;font-family:var(--font-sans)}
 .library-tab:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
 .library-tab.active{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
-.library-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
 
 
 
 
 
 
-.library-empty{text-align:center;color:hsl(var(--text-500));font-size:calc(12px * var(--sidebar-font-scale));padding:32px 12px;line-height:1.6}
 .library-selection-bar{display:none;align-items:center;justify-content:space-between;padding:4px 12px 6px;gap:8px;flex-shrink:0}
 .library-selection-bar.visible{display:flex}
 .library-select-all{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-400));-webkit-user-select:none;user-select:none}

@@ -1001,8 +1001,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 #appShell .workspace-search-field svg,
 #appShell .plugin-directory-search svg,
 #appShell .scheduled-filter-button svg,
-#appShell .scheduled-composer-plus svg,
-#appShell .scheduled-composer-submit svg,
 #appShell .workspace-create-button svg,
 #appShell .workspace-row-action svg {
   width: 22px;

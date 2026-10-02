@@ -518,14 +518,6 @@
     border-radius: 28px !important;
   }
 
-  #appShell .scheduled-composer-plus,
-  #appShell .scheduled-composer-submit {
-    width: 40px !important;
-    min-width: 40px !important;
-    height: 40px !important;
-    min-height: 40px !important;
-    border-radius: 50% !important;
-  }
 
   #appShell .scheduled-recommendation-add {
     width: 32px !important;

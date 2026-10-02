@@ -138,8 +138,7 @@ body #composerToolsMenu .composer-tools-item kbd {
 
 /* Attachment chips inside the capsule — the card radius (12px) matches
    the legacy/07-composer-settings.css chip block so both files agree. */
-#appShell .attachment-chips .attachment-chip,
-#appShell .msg-attachment {
+#appShell .attachment-chips .attachment-chip {
   border-radius: 12px;
 }
 

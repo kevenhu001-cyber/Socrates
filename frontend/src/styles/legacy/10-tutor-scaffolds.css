@@ -379,5 +379,5 @@
 /* Inline "(stopped by user)" marker — appended at the bottom of a
    partially streamed chat bubble when the user clicks Stop. Visually
    muted so it doesn't compete with the actual reply content. */
-.msg-stopped-marker{font-style:italic;color:hsl(var(--text-400));font-size:calc(12px * var(--app-font-scale, 1));margin-top:8px;opacity:.8}
+
 
