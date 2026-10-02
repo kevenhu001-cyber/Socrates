@@ -81,7 +81,7 @@
     width: 220px !important;
     min-width: 220px !important;
     max-width: min(220px, calc(100vw - 16px)) !important;
-    padding: 6px 0 !important;
+    padding: 6px 0;
     border: 0 !important;
     border-radius: 16px !important;
     background: var(--chatgpt-menu) !important;
@@ -166,20 +166,20 @@
   }
 
   #composerToolsMenu .composer-tools-footer-search {
-    width: calc(100% - 12px) !important;
-    height: 36px !important;
-    margin: 5px 6px 0 !important;
-    border: 0 !important;
-    border-top: 1px solid var(--chatgpt-line) !important;
-    border-radius: 0 !important;
-    background: transparent !important;
+    width: calc(100% - 12px);
+    height: 36px;
+    margin: 5px 6px 0;
+    border: 0;
+    border-top: 1px solid var(--chatgpt-line);
+    border-radius: 0;
+    background: transparent;
   }
 
   #composerToolsMenu .composer-tools-footer-search input {
-    height: 36px !important;
-    padding: 6px 10px !important;
-    color: var(--chatgpt-text) !important;
-    font-size: 12px !important;
+    height: 36px;
+    padding: 6px 10px;
+    color: var(--chatgpt-text);
+    font-size: 12px;
   }
 
   /* Plugin marketplace: dense two-column rows and genuine connector marks. */

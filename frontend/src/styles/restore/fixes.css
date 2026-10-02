@@ -228,19 +228,19 @@
 
   /* The filter now works on the mobile tool and connected-app lists too. */
   body #composerToolsMenu .composer-tools-footer-search {
-    display: flex !important;
-    align-items: center !important;
-    min-height: 36px !important;
-    margin: 4px 4px 0 !important;
-    padding: 0 8px !important;
-    border-top: 1px solid var(--cg-border) !important;
+    display: flex;
+    align-items: center;
+    min-height: 36px;
+    margin: 4px 4px 0;
+    padding: 0 8px;
+    border-top: 1px solid var(--cg-border);
   }
 
   #composerToolsMenu .composer-tools-footer-search input {
-    width: 100% !important;
-    min-height: 36px !important;
-    color: var(--cg-text) !important;
-    font-size: 12px !important;
+    width: 100%;
+    min-height: 36px;
+    color: var(--cg-text);
+    font-size: 12px;
   }
 
   #composerToolsMenu .composer-tools-mobile-items .composer-tools-item .composer-tools-copy small {
@@ -248,8 +248,8 @@
   }
 
   #composerToolsMenu .composer-tools-mobile-items .composer-tools-group-label {
-    padding-top: 8px !important;
-    padding-bottom: 2px !important;
+    padding-top: 8px;
+    padding-bottom: 2px;
   }
 
   #composerToolsMenu .composer-tools-plugin-state {
@@ -258,10 +258,10 @@
   }
 
   #composerToolsMenu .composer-tools-plugin-state small {
-    display: block !important;
-    color: var(--cg-text-muted) !important;
-    font-size: 12px !important;
-    line-height: 16px !important;
+    display: block;
+    color: var(--cg-text-muted);
+    font-size: 12px;
+    line-height: 16px;
   }
 
   #appShell#appShell .top-mode-tabs {
