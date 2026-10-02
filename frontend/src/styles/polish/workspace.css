@@ -1,16 +1,23 @@
 /*
  * polish/workspace.css — Projects / workspace directory refinement.
- * Geometry owned by restore/ stays measured (search field, create button,
- * tab rail heights); this layer fixes the proportional problems: the head
- * copy column was shrink-wrapped so the description broke mid-phrase, the
- * filter tabs inherited the mobile reference's oversized pills, and the
- * empty state read cramped at 12px in a sea of dead space.
+ * Canonical owner of the projects directory head and filter rail density:
+ * the competing all-!important rules in restore/ref-baseline.css,
+ * restore/mobile-parity.css and restore/fixes.css were retired or narrowed
+ * in the same change, so nothing here needs !important. Geometry owned by
+ * restore/ stays measured (search field, create button, tab rail heights);
+ * this layer fixes the proportional problems: the head copy column was
+ * shrink-wrapped so the description broke mid-phrase, the filter tabs
+ * inherited the mobile reference's oversized pills, and the empty state
+ * read cramped at 12px in a sea of dead space.
  */
 
 /* The head is a flex row. The actions cell reserved a 520px basis while its
    content is ~330px, so the title+description cell shrank to ~230px and the
    Chinese description broke mid-phrase. Size actions to content and let the
    copy claim the free width. */
+#appShell .projects-directory .workspace-page-head {
+  margin: 0 0 20px;
+}
 #appShell .workspace-head-actions {
   flex: 0 0 auto;
 }
@@ -23,24 +30,6 @@
 }
 
 @media (min-width: 769px) {
-  /* Filter rail — the supplied reference was mobile-scale; on desktop the
-     56px rail with 40px pills at 16px reads oversized next to a 28px page
-     title. Converge on desktop density. */
-  #appShell .projects-filter-tabs {
-    min-height: 44px !important;
-    margin-bottom: 14px !important;
-  }
-  #appShell .projects-filter-tabs button {
-    min-height: 32px !important;
-    padding: 0 14px !important;
-    font-size: 14px !important;
-    line-height: 20px !important;
-  }
-  #appShell .projects-list-heading {
-    font-size: 14px !important;
-    line-height: 20px !important;
-  }
-
   /* Empty state — own the vertical space instead of floating a 12px block
      under the tabs. */
   #appShell .projects-directory .workspace-empty {
@@ -67,58 +56,78 @@
 }
 
 @media (max-width: 768px) {
-  /* The restore layer docks the projects title + create button into the
-     top chrome (fixed at top:12/7px) and pulls the panel up 71px to meet
-     them. That was meant to match a phone reference, but next to Library —
-     which keeps an in-flow hero header — it reads as a broken title crammed
-     beside the hamburger. Revert to the same grid pattern Library uses:
-     title + create pill on row 1, search full-width on row 2. */
+  /* The restore layer used to dock the projects title + create button into
+     the top chrome and pull the panel up 71px to meet them. That was meant
+     to match a phone reference, but next to Library — which keeps an
+     in-flow hero header — it reads as a broken title crammed beside the
+     hamburger. The docked/fixed rules in ref-baseline.css and the generic
+     h1/search pins in mobile-parity.css were narrowed off the projects
+     subtree, so these rules own the layout outright: title + create pill
+     on row 1, search full-width on row 2. */
   body.workspace-active #appShell #scheduledPanel {
-    top: 0 !important;
-    padding-top: 16px !important;
+    top: 0;
+    padding-top: 16px;
   }
 
   #appShell .projects-directory .workspace-page-head {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) auto !important;
-    grid-template-rows: none !important;
-    gap: 18px 10px !important;
-    align-items: start !important;
-    margin: 0 0 24px !important;
-    position: static !important;
-    z-index: auto !important;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: none;
+    gap: 18px 10px;
+    align-items: start;
+    margin: 0 0 24px;
+    position: static;
+    z-index: auto;
   }
 
   #appShell .projects-directory .workspace-page-head > div:first-child {
-    grid-row: auto !important;
-    display: block !important;
-    padding-left: 0 !important;
+    grid-column: 1;
+    grid-row: 1;
+    display: block;
+    padding-left: 0;
   }
 
   #appShell .projects-directory .workspace-page-head h1 {
-    position: static !important;
-    font-size: 27px !important;
-    line-height: 36px !important;
-    z-index: auto !important;
+    position: static;
+    font-size: 27px;
+    line-height: 36px;
+    z-index: auto;
+  }
+
+  #appShell .projects-directory .workspace-page-head p {
+    display: none;
+  }
+
+  #appShell .projects-directory .workspace-head-actions {
+    display: contents;
   }
 
   #appShell .projects-directory .projects-create-button {
-    position: static !important;
-    top: auto !important;
-    right: auto !important;
-    z-index: auto !important;
-    grid-column: 2 !important;
-    grid-row: 1 !important;
-    align-self: start !important;
-    height: auto !important;
+    position: static;
+    top: auto;
+    right: auto;
+    z-index: auto;
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+    width: auto;
+    min-width: 52px;
+    height: auto;
+    /* mobile-parity.css still pins every .workspace-create-button to 42px
+       for the directory pages that keep the reference rhythm; projects
+       converges on the 40px density Library already uses. */
     min-height: 40px !important;
-    padding: 0 16px !important;
+    padding: 0 16px;
+    font-size: 16px;
+    font-weight: 500;
   }
 
   #appShell .projects-directory .workspace-search-field {
-    grid-column: 1 / -1 !important;
-    grid-row: 2 !important;
-    height: 44px !important;
-    min-height: 44px !important;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+    height: 44px;
+    min-height: 44px;
+    border-radius: var(--ui-radius-pill);
   }
 }

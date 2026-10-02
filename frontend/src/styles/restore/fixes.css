@@ -200,7 +200,6 @@
 /* Directory rows share the same quiet hierarchy across Library, Projects,
    Plugins and Scheduled. Keep controls visible on touch devices. */
 #appShell .library-directory .workspace-page-head,
-#appShell .projects-directory .workspace-page-head,
 #appShell .plugin-directory .plugin-directory-head,
 #appShell .scheduled-directory .scheduled-directory-head { margin-bottom: 20px !important; }
 #appShell .library-directory .workspace-tabs { display: flex; gap: 4px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
@@ -320,7 +319,6 @@
   #appShell .scheduled-recommendation { min-height: 72px !important; }
   #appShell .scheduled-recommendation-add { visibility: visible !important; }
   #appShell .scheduled-task-list .task-row { min-height: 70px; }
-  #appShell .projects-directory .workspace-page-head,
   #appShell .plugin-directory .plugin-directory-head { margin-bottom: 20px !important; }
 }
 

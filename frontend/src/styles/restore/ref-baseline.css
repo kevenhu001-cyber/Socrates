@@ -542,7 +542,6 @@ body.workspace-active #appShell .main-page {
     z-index: 10 !important;
   }
 
-  #appShell .workspace-page-head,
   #appShell .plugin-directory-head,
   #appShell .scheduled-directory-head {
     align-items: flex-start !important;
@@ -1153,7 +1152,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
     margin-inline: auto !important;
   }
 
-  #appShell .workspace-page-head,
   #appShell .plugin-directory-head,
   #appShell .scheduled-directory-head {
     margin-bottom: 32px !important;
@@ -1232,8 +1230,8 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   display: flex !important;
   align-items: center !important;
   gap: 8px !important;
-  min-height: 56px !important;
-  margin: 0 0 18px !important;
+  min-height: 44px !important;
+  margin: 0 0 14px !important;
   padding: 0 !important;
   border-bottom: 1px solid var(--cg-border) !important;
   overflow-x: auto !important;
@@ -1244,16 +1242,16 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 
 #appShell .projects-filter-tabs button {
   flex: 0 0 auto !important;
-  min-height: 40px !important;
-  padding: 0 18px !important;
+  min-height: 32px !important;
+  padding: 0 14px !important;
   border: 0 !important;
   border-radius: 999px !important;
   color: var(--cg-text-secondary) !important;
   background: transparent !important;
   font-family: var(--cg-font) !important;
-  font-size: 16px !important;
+  font-size: 14px !important;
   font-weight: 400 !important;
-  line-height: 24px !important;
+  line-height: 20px !important;
   white-space: nowrap !important;
 }
 
@@ -1266,8 +1264,8 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 #appShell .projects-list-heading {
   margin: 0 0 12px !important;
   color: var(--cg-text-secondary) !important;
-  font-size: 16px !important;
-  line-height: 24px !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
 }
 
 #appShell .scheduled-heading-label {
@@ -1297,78 +1295,14 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
      matching the phone references. */
   body.workspace-active #appShell #scheduledPanel {
     position: relative !important;
-    top: -71px !important;
     width: calc(100% - 16px) !important;
     margin-inline: 8px !important;
     background: transparent !important;
     z-index: 1 !important;
-    padding-top: 0 !important;
   }
 
-  #appShell .projects-directory .workspace-page-head {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) auto !important;
-    grid-template-rows: 42px 42px !important;
-    column-gap: 8px !important;
-    row-gap: 14px !important;
-    align-items: stretch !important;
-    margin: 0 0 32px !important;
-    position: relative !important;
-    z-index: 40 !important;
-  }
-
-  #appShell .projects-directory .workspace-page-head > div:first-child {
-    grid-column: 1 !important;
-    grid-row: 1 !important;
-    display: flex !important;
-    align-items: center !important;
-    min-width: 0 !important;
-    padding-left: 40px !important;
-  }
-
-  #appShell .projects-directory .workspace-page-head h1 {
-    margin: 0 !important;
-    font-size: 30px !important;
-    line-height: 36px !important;
-    position: fixed !important;
-    top: 12px !important;
-    left: 56px !important;
-    z-index: 60 !important;
-  }
-
-  #appShell .projects-directory .workspace-page-head p {
-    display: none !important;
-  }
-
-  #appShell .projects-directory .workspace-head-actions {
-    display: contents !important;
-  }
-
-  #appShell .projects-directory .workspace-search-field {
-    grid-column: 1 / -1 !important;
-    grid-row: 2 !important;
-    width: 100% !important;
-    height: 42px !important;
-    min-height: 42px !important;
-  }
-
-  #appShell .projects-directory .projects-create-button {
-    grid-column: 2 !important;
-    grid-row: 1 !important;
-    align-self: center !important;
-    width: auto !important;
-    min-width: 52px !important;
-    height: 42px !important;
-    min-height: 42px !important;
-    padding: 0 14px !important;
-    border-radius: 999px !important;
-    font-size: 16px !important;
-    font-weight: 500 !important;
-    position: fixed !important;
-    top: 7px !important;
-    right: 8px !important;
-    z-index: 60 !important;
-  }
+  /* The mobile projects head layout moved to polish/workspace.css — it owns
+     the grid outright now (no fixed docking, no !important bidding). */
 
   #appShell .projects-filter-tabs {
     min-height: 40px !important;
@@ -1381,11 +1315,13 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
     min-height: 40px !important;
     padding: 0 16px !important;
     font-size: 16px !important;
+    line-height: 24px !important;
   }
 
   #appShell .projects-list-heading {
     margin: 0 0 12px !important;
     font-size: 16px !important;
+    line-height: 24px !important;
   }
 
   #appShell #scheduledPanel .scheduled-directory {

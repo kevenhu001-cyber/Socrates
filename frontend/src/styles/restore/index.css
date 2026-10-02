@@ -62,7 +62,11 @@
  * geometry (42px pill search, 40px connector tiles) the smoke specs assert.
  *
  * Rule: visual parity tweaks go in fixes.css; feature-page styles in
- * creation-surfaces.css; do not edit the historical files 1-6.
+ * creation-surfaces.css; do not ADD rules to the historical files 1-6.
+ * Removing or narrowing rules that a canonical owner (parity/, polish/,
+ * features/) has superseded is the sanctioned digestion path — the
+ * projects-directory head/filter rules migrated to polish/workspace.css
+ * on 2026-10-02 under exactly this rule.
  */
 
 @import './chatgpt-ui.css';
