@@ -82,15 +82,6 @@
 }
 
 /* ─────────── Size ladder ─────────── */
-.btn-sm {
-  min-height: var(--ui-control-sm);   /* 32 */
-  min-width: var(--ui-control-sm);
-  padding: 0 10px;
-  font-size: 13px;
-  gap: 4px;
-}
-
-.btn-md { /* default — explicit opt-in, kept for symmetry with btn-touch */ }
 
 .btn-touch {
   min-height: var(--ui-hit-area);    /* 44 */
@@ -112,37 +103,6 @@
   background: var(--ui-bg-surface);
   color: var(--ui-text-primary);
 }
-
-.btn-primary {
-  background: var(--ui-accent-strong);   /* light #0d0d0d / dark #fff */
-  color: var(--ui-on-accent);
-  font-weight: var(--ui-font-weight-medium);
-  border-color: transparent;
-}
-.btn-primary:hover { opacity: 0.88; background: var(--ui-accent-strong); }
-.btn-primary:active { opacity: 0.88; }
-.btn-primary:disabled,
-.btn-primary[aria-disabled="true"] {
-  opacity: 0.3;
-  cursor: default;
-  pointer-events: none;
-}
-
-.btn-pill {
-  border-radius: var(--ui-radius-pill);
-  padding: 0 12px;
-  min-height: var(--ui-control-md);
-  background: transparent;
-  color: var(--ui-text-primary);
-}
-
-.btn-pill.outline {
-  border: 1px solid var(--ui-border-default);
-  background: transparent;
-  color: var(--ui-text-primary);
-  font-weight: var(--ui-font-weight-semibold);
-}
-.btn-pill.outline:hover { background: var(--ui-bg-hover); }
 
 /* ─────────── .btn-icon ─────────── */
 .btn-icon {
@@ -218,8 +178,7 @@
 
 /* ─────────── Mobile (≤768px) touch bump ─────────── */
 @media (max-width: 768px) {
-  .btn,
-  .btn-md {
+  .btn {
     min-height: var(--ui-hit-area); /* 44 */
     padding: 0 14px;
   }

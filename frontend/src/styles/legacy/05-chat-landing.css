@@ -217,7 +217,6 @@ true) but the dropdown never shows — see commit history. */
    fill the active number of bars (1 = low, 2 = medium, 3 = high) so the
    icon doubles as a level indicator next to the text label. */
 .effort-glyph{width:15px;height:15px;flex:0 0 15px}
-.effort-glyph .effort-bar{fill:none;stroke:currentColor;transition:fill .15s ease,opacity .15s ease;opacity:.35}
 .effort-picker[data-effort="low"] .effort-glyph [data-bar="1"],
 .effort-picker[data-effort="medium"] .effort-glyph [data-bar="1"],
 .effort-picker[data-effort="medium"] .effort-glyph [data-bar="2"],

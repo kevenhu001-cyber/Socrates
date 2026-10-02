@@ -186,13 +186,7 @@
   body #composerToolsMenu .composer-tools-icon {
     background-color: var(--ui-bg-control);   /* was #3a3a3a */
   }
-  [data-mode="dark"] #appShell .app-home-cards .user-mic-btn-bg,
-  [data-mode="dark"] #appShell .composer-tools-bg {
-    background-color: var(--ui-bg-control);   /* was #2a2a2a */
-  }
-  [data-mode="dark"] #appShell .sidebar-tools-bg,
-  [data-mode="dark"] body #composerToolsMenu.composer-tools-menu,
-  [data-mode="dark"] #appShell .composer-tools-sheet {
+  [data-mode="dark"] body #composerToolsMenu.composer-tools-menu {
     background-color: var(--ui-bg-surface);   /* was #1b1b1b */
   }
 

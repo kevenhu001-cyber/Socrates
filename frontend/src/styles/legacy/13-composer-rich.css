@@ -151,7 +151,6 @@
   .tool-run-summary-chev{transition:transform .12s ease,color .12s ease}
   /* Disable transform-on-press/hover for all interactive controls. */
   .icon-btn:active,
-  .sidebar-tab:active,
   .recent-item:active,
   .recent-item-del:active,
   .recent-item-del:hover,
@@ -233,9 +232,6 @@
 .sr-only-old{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 .sr-only-opacity{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 .sidebar-header-actions{display:flex;align-items:center;gap:2px}
-.share-centered{text-align:center}
-.share-create-area{text-align:center;margin-top:4px}
-.share-create-btn{margin-top:8px}
 .stg-toggle-label{margin-bottom:0}
 
 

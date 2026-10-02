@@ -247,7 +247,6 @@
   .agent-tool-input{white-space:normal;overflow-wrap:anywhere;line-height:1.35}
   .agent-tool-code,.agent-tool-out{padding:8px;max-height:220px}
   .agent-tool-card.websearch .agent-tool-out{max-height:55vh}
-  .wsr-url{white-space:normal;overflow-wrap:anywhere}
 }
 
 /* Codex project workspace history — intentionally compact so the project

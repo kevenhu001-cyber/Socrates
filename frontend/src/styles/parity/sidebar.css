@@ -380,14 +380,6 @@
     transition: background-color var(--ui-duration-hover) ease;
   }
   #appShell #sidebarUserRow:hover { background: var(--ui-bg-hover); }
-  #appShell #sidebarUserRow .sidebar-account-trigger {
-    display: flex;
-    flex: 1 1 auto;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-    padding: 6px 8px;
-  }
   #appShell #sidebarFooter .sidebar-footer-actions { display: flex; align-items: center; gap: 0; }
   #appShell #sidebarFooter .icon-btn {
     display: inline-grid;
@@ -481,7 +473,6 @@
     padding: 8px 0;
   }
   #appShell #sidebar.collapsed #sidebarUserRow { flex: 0 0 auto; justify-content: center; }
-  #appShell #sidebar.collapsed #sidebarUserRow .sidebar-account-trigger { padding: 4px; }
 
   /* The rail owns the toggle; the top-bar opener is never needed here. */
   #appShell #sidebarOpenBtn { display: none; }

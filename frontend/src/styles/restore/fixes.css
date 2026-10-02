@@ -124,82 +124,13 @@
   padding: 0 !important;
 }
 }
-#appShell .sidebar-account-trigger {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-height: 48px;
-  padding: 5px 8px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--chatgpt-text);
-  text-align: left;
-  cursor: pointer;
-}
-#appShell .sidebar-account-trigger:hover,
-#appShell .sidebar-account-trigger[aria-expanded="true"] { background: var(--chatgpt-hover); }
 @media (max-width: 768px) {
-#appShell .sidebar-account-trigger .user-identity {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  min-width: 0;
 }
-}
-#appShell .sidebar-account-chevron { width: 18px; height: 18px; flex: none; opacity: .65; }
-#appShell .sidebar-account-menu {
-  position: absolute;
-  left: 0;
-  bottom: calc(100% + 8px);
-  z-index: 90;
-  box-sizing: border-box;
-  width: min(100%, 254px);
-  padding: 8px;
-  border: 1px solid var(--chatgpt-line);
-  border-radius: 16px;
-  background: var(--chatgpt-menu);
-  color: var(--chatgpt-text);
-  box-shadow: 0 12px 36px rgb(0 0 0 / 25%);
-}
-#appShell .sidebar-account-menu-heading {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 54px;
-  padding: 6px 9px 12px;
-}
-#appShell .sidebar-account-menu-heading > span:last-child { display: flex; min-width: 0; flex-direction: column; }
-#appShell .sidebar-account-menu-heading strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 500; }
-#appShell .sidebar-account-menu-heading small { color: var(--chatgpt-muted); font-size: 12px; }
-#appShell .sidebar-account-menu-group { padding: 6px 0; border-top: 1px solid var(--chatgpt-line); }
-#appShell .sidebar-account-menu-group button {
-  display: grid;
-  grid-template-columns: 20px minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 40px;
-  padding: 8px 10px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 14px;
-  text-align: left;
-  cursor: pointer;
-}
-#appShell .sidebar-account-menu-group button svg { display: block; width: 20px; height: 20px; }
-#appShell .sidebar-account-menu-group button:hover,
-#appShell .sidebar-account-menu-group button:focus-visible { background: var(--chatgpt-hover); }
 
 /* Directory rows share the same quiet hierarchy across Library, Projects,
    Plugins and Scheduled. Keep controls visible on touch devices. */
 #appShell .library-directory .workspace-page-head,
-#appShell .plugin-directory .plugin-directory-head,
-#appShell .scheduled-directory .scheduled-directory-head { margin-bottom: 20px !important; }
+#appShell .plugin-directory .plugin-directory-head { margin-bottom: 20px !important; }
 #appShell .library-directory .workspace-tabs { display: flex; gap: 4px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
 #appShell .library-directory .workspace-tabs button { white-space: nowrap; }
 #appShell .library-row-menu-wrap { position: relative; }
@@ -308,11 +239,6 @@
   #appShell .library-directory .library-size { display: none !important; }
   #appShell .library-directory .library-mobile-meta { display: block !important; margin-top: 3px; font-size: 12px !important; }
   #appShell .library-directory .library-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px !important; }
-
-  #appShell .scheduled-directory-head { margin-bottom: 22px !important; }
-  #appShell .scheduled-directory-head p { display: block !important; }
-  #appShell .scheduled-task-composer { height: 86px !important; min-height: 86px !important; border-radius: 26px !important; }
-  #appShell .scheduled-task-composer input { font-size: 16px !important; }
   #appShell .scheduled-recommendations { display: grid !important; grid-template-columns: 1fr !important; }
   #appShell .scheduled-recommendation { min-height: 72px !important; }
   #appShell .scheduled-recommendation-add { visibility: visible !important; }
@@ -334,8 +260,6 @@
   #appShell .sidebar-footer-actions { display: flex !important; align-items: center !important; gap: 0 !important; }
   #appShell .sidebar-footer-actions > .icon-btn { display: none !important; min-width: 36px !important; min-height: 36px !important; align-items: center !important; justify-content: center !important; }
   #appShell #apiSettingsBtn { display: none !important; }
-  #appShell .sidebar-account-trigger { min-height: 52px; cursor: pointer; }
-  #appShell .sidebar-account-menu { width: 100%; }
 }
 
 /* Task-oriented composer menu: category labels and short descriptions explain

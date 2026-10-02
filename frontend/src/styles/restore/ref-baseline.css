@@ -525,15 +525,13 @@ body.workspace-active #appShell .main-page {
     z-index: 10 !important;
   }
 
-  #appShell .plugin-directory-head,
-  #appShell .scheduled-directory-head {
+  #appShell .plugin-directory-head {
     align-items: flex-start !important;
     margin-bottom: 40px !important;
   }
 
   #appShell .workspace-page-head h1,
-  #appShell .plugin-directory-heading h2,
-  #appShell .scheduled-directory-head h1 {
+#appShell .plugin-directory-heading h2 {
     margin: 0 !important;
     font-size: 30px !important;
     font-weight: 500 !important;
@@ -542,8 +540,7 @@ body.workspace-active #appShell .main-page {
   }
 
   #appShell .workspace-page-head p,
-  #appShell .plugin-directory-desc,
-  #appShell .scheduled-directory-head p {
+#appShell .plugin-directory-desc {
     margin: 4px 0 0 !important;
     font-size: 14px !important;
     line-height: 20px !important;
@@ -638,8 +635,7 @@ body.workspace-active #appShell .main-page {
   }
 
   #appShell .workspace-page-head h1,
-  #appShell .plugin-directory-heading h2,
-  #appShell .scheduled-directory-head h1 {
+#appShell .plugin-directory-heading h2 {
     font-size: 28px !important;
     line-height: 36px !important;
   }
@@ -991,8 +987,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 }
 
 #appShell .workspace-search-field,
-#appShell .plugin-directory-search,
-#appShell .scheduled-task-composer {
+#appShell .plugin-directory-search {
   border-color: var(--cg-border-strong) !important;
   background: var(--cg-surface) !important;
   box-shadow: none !important;
@@ -1000,7 +995,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 
 #appShell .workspace-search-field svg,
 #appShell .plugin-directory-search svg,
-#appShell .scheduled-filter-button svg,
 #appShell .workspace-create-button svg,
 #appShell .workspace-row-action svg {
   width: 22px;
@@ -1010,8 +1004,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 }
 
 #appShell .workspace-page-head h1,
-#appShell .plugin-directory-heading h2,
-#appShell .scheduled-directory-head h1 {
+#appShell .plugin-directory-heading h2 {
   color: var(--cg-text) !important;
   font-family: var(--cg-font) !important;
   font-weight: 600 !important;
@@ -1019,8 +1012,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 }
 
 #appShell .workspace-page-head p,
-#appShell .plugin-directory-desc,
-#appShell .scheduled-directory-head p {
+#appShell .plugin-directory-desc {
   color: var(--cg-text-secondary) !important;
   font-size: 16px;
   line-height: 1.55;
@@ -1117,8 +1109,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
     margin-inline: auto !important;
   }
 
-  #appShell .plugin-directory-head,
-  #appShell .scheduled-directory-head {
+  #appShell .plugin-directory-head {
     margin-bottom: 32px !important;
   }
 
@@ -1295,52 +1286,10 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
     padding: 14px 0 72px !important;
   }
 
-  #appShell .scheduled-directory-head {
-    display: block !important;
-    margin: 0 0 24px !important;
-    position: relative !important;
-    z-index: 40 !important;
-  }
-
   /* The h1 is position:fixed into the top bar on phones (see below), so the
      heading still reserves that band — but it now also carries the subtitle
      to match the plugin directory's heading > (title, desc) shape. A fixed
      36px height clipped the subtitle to a sliver behind the top bar, so keep
      the band as padding and let the box grow. */
-  #appShell .scheduled-directory-heading {
-    height: auto !important;
-    padding-top: 36px !important;
-  }
-
-  #appShell .scheduled-directory .workspace-eyebrow {
-    display: none !important;
-  }
-
-  #appShell .scheduled-directory-head h1 {
-    margin: 0 !important;
-    padding-left: 0 !important;
-    font-size: 30px !important;
-    line-height: 36px !important;
-    position: fixed !important;
-    top: 12px !important;
-    left: 56px !important;
-    z-index: 60 !important;
-  }
-
-  #appShell .scheduled-directory-head > .scheduled-filter-button {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    height: 42px !important;
-    min-height: 42px !important;
-    margin-top: 20px !important;
-    border-radius: 999px !important;
-  }
-
-  #appShell .scheduled-directory-head p {
-    margin: 8px 0 0 !important;
-    font-size: 17px !important;
-    line-height: 26px !important;
-  }
 }
 

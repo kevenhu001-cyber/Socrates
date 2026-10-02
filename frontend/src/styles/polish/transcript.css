@@ -283,8 +283,7 @@
 }
 
 /* "New reply" / scroll pill — floating chip, menu shadow. */
-#appShell .new-reply-pill,
-#appShell .scroll-pill {
+#appShell .new-reply-pill {
   border-radius: var(--ui-radius-pill);
   border: 1px solid var(--ui-border-subtle);
   box-shadow: var(--ui-shadow-menu);

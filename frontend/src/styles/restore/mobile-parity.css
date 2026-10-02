@@ -468,15 +468,13 @@
     padding: 30px 0 72px !important;
   }
 
-  #appShell .plugin-directory-heading h2,
-  #appShell .scheduled-directory-head h1 {
+  #appShell .plugin-directory-heading h2 {
     font-size: 30px !important;
     line-height: 36px !important;
   }
 
   #appShell .workspace-page-head p,
-  #appShell .plugin-directory-desc,
-  #appShell .scheduled-directory-head p {
+  #appShell .plugin-directory-desc {
     font-size: 17px !important;
     line-height: 1.55 !important;
   }
@@ -511,13 +509,6 @@
     min-height: 72px !important;
   }
 
-  #appShell .scheduled-task-composer {
-    height: 84px !important;
-    min-height: 84px !important;
-    padding: 10px !important;
-    border-radius: 28px !important;
-  }
-
 
   #appShell .scheduled-recommendation-add {
     width: 32px !important;
@@ -540,11 +531,6 @@
 
   /* Active-chat multiline drafts need a full control tier plus breathing room;
      keep the landing composer at its compact 104px reference height. */
-}
-
-[data-mode="light"] #appShell#appShell .scheduled-task-composer {
-  background: var(--cg-surface) !important;
-  border-color: var(--cg-border-strong) !important;
 }
 
 [data-mode="light"] body #composerToolsMenu {
@@ -573,11 +559,6 @@
    the screenshot-sized two-tier draft authoritative at the end of the phone
    cascade: 96px for the editor tier plus a 42px control tier. */
 @media (max-width: 768px) {
-
-  body:not(.workspace-active)
-    #appShell#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .topic-composer-body {
-    grid-template-rows: 96px 42px !important;
-  }
 
   /* Prevent iOS Safari auto-zoom and align all system/dialog inputs */
   #appShell .workspace-field input,

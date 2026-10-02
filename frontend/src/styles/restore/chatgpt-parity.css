@@ -144,12 +144,6 @@
     display: none !important;
   }
 
-  #composerToolsMenu .composer-tools-divider {
-    height: 1px !important;
-    margin: 5px 12px !important;
-    background: var(--chatgpt-line) !important;
-  }
-
   #composerToolsMenu .composer-tools-active-dot {
     width: 7px !important;
     height: 7px !important;
@@ -198,10 +192,6 @@
 @media (max-width: 768px) {
   #appShell#appShell #topicSetup .topic-title.greeting {
     letter-spacing: 0;
-  }
-
-  #composerToolsMenu .composer-tools-divider {
-    display: none !important;
   }
 }
 

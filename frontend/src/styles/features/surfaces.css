@@ -31,8 +31,7 @@
 #appShell .workspace-page-head p,
 #appShell .plugin-directory-desc,
 #appShell .workspace-row-copy span,
-#appShell .workspace-empty,
-#appShell .modal-sub { color: var(--ui-text-tertiary); }
+#appShell .workspace-empty { color: var(--ui-text-tertiary); }
 
 #appShell .workspace-row,
 #appShell .connector-row,
@@ -341,7 +340,6 @@
 
 #appShell .workspace-search-field,
 #appShell .plugin-directory-search,
-#appShell .exam-input,
 #appShell .workspace-field input,
 #appShell .workspace-field textarea,
 #appShell .workspace-field select {

@@ -65,7 +65,6 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
 #composerToolsMenu .composer-tools-copy > span { color: inherit; font-size: 16px; font-weight: 400; }
 #composerToolsMenu .composer-tools-copy small,
 #composerToolsMenu .composer-tools-item kbd { display: none; }
-#composerToolsMenu .composer-tools-divider { display: none; }
 
 #composerToolsMenu .composer-tools-group-label {
   padding: 8px 8px 4px;

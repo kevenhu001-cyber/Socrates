@@ -302,7 +302,6 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
    fill: state is carried by color alone so a settled row reads as a
    quiet line of prose. Spinner and tool glyph share the same fixed
    slot, so settling never reflows the label. */
-.tool-inline-icon{display:none}
 .tool-inline-tool-icon{
   display:inline-flex; align-items:center; justify-content:center;
   width:var(--inline-icon-size); height:var(--inline-icon-size); flex:0 0 auto;
@@ -352,7 +351,6 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
    font-size:13px;
    font-weight:400;
  }
-.tool-inline[data-state="running"] .tool-inline-icon{display:none}
 /* The label carries a softened neutral wave while in flight. */
 .tool-inline[data-state="running"] .tool-inline-label{
   animation:neutralTextWave var(--shimmer-duration) linear infinite;

@@ -88,8 +88,6 @@
 /* P_file-attachments — chip row inside a sent user bubble. Reuses the
    composer chip look; durable-file chips are links so the raw upload is
    one click away (opens in a new tab, authorized by the session). */
-.msg-attachment-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 8px}
-.msg-attachment-chips .attachment-chip{max-width:260px}
 a.attachment-chip-link{text-decoration:none;color:inherit;cursor:pointer}
 a.attachment-chip-link:hover{border-color:var(--ui-border-strong);background:var(--ui-bg-hover)}
 a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
