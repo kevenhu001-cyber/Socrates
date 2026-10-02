@@ -237,7 +237,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 
 #appShell#appShell #chatView,
 #appShell#appShell #msgList {
-  background: var(--conversation-page) !important;
+  background: var(--conversation-page);
 }
 
 #appShell#appShell #chatInputBar {
@@ -254,7 +254,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 }
 
 #appShell#appShell .msg-list {
-  color: var(--conversation-text) !important;
+  color: var(--conversation-text);
 }
 
 @media (max-width: 768px) {
@@ -367,7 +367,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 
   /* Keep the transcript comfortable above the persistent input surface. */
   #appShell#appShell #msgList {
-    padding-inline: 16px !important;
+    padding-inline: 16px;
   }
 }
 

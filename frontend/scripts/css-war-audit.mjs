@@ -250,6 +250,11 @@ function mediaVerdict(params, viewportWidth) {
   return conditional ? 'cond' : 'yes';
 }
 
+function specCmp(a, b) {
+  for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i] - b[i];
+  return 0;
+}
+
 /* ---------- collect candidates ---------- */
 const files = importOrder(join(STYLES, 'index.css'));
 const candidates = []; // {fileIdx, file, line, selector, spec, important, prop, value, media:[verdicts], stateful, order}
@@ -258,11 +263,21 @@ let order = 0;
 files.forEach((file, fileIdx) => {
   const root = postcss.parse(readFileSync(file, 'utf8'), { from: file });
   root.walkRules((rule) => {
-    // media chain, outermost first
+    // media chain, outermost first; @keyframes/@font-face etc. are not
+    // style rules — their decls belong to the animation, not the element
     const medias = [];
+    let insideKeyframes = false;
     for (let p = rule.parent; p && p.type !== 'root'; p = p.parent) {
-      if (p.type === 'atrule') medias.unshift(p.params);
+      if (p.type === 'atrule') {
+        if (/keyframes/i.test(p.name)) insideKeyframes = true;
+        else medias.unshift(p.params);
+      }
     }
+    if (insideKeyframes) return;
+    // the same decl counted once per matching selector in a selector list —
+    // keep only the strongest selector's entry so a rule never "loses to
+    // itself" (e.g. `#msgList,.msg-list` on a `div#msgList.msg-list`)
+    let bestSel = null, bestSpec = null, bestCond = false;
     for (const sel of rule.selectors) {
       if (SEL && !SEL.test(sel)) continue;
       let elCond = false;
@@ -271,6 +286,16 @@ files.forEach((file, fileIdx) => {
         if (v === 'no') continue;
         elCond = v === 'cond';
       } else if (!sel.includes(MATCH)) continue;
+      const s = specificity(sel);
+      if (!bestSpec || specCmp(s, bestSpec) > 0 || (specCmp(s, bestSpec) === 0 && bestCond && !elCond)) {
+        bestSpec = s; bestSel = sel; bestCond = elCond;
+      }
+    }
+    if (bestSel === null) return;
+    const elCondFinal = bestCond;
+    {
+      const sel = bestSel;
+      const elCond = elCondFinal;
       for (const decl of rule.nodes || []) {
         if (decl.type !== 'decl') continue;
         if (decl.prop.startsWith('--')) continue;
