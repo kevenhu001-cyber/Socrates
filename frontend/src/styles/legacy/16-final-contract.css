@@ -43,9 +43,7 @@
   letter-spacing:-.025em;
 }
 .topic-sub{
-  max-width:min(640px,100%);
   margin:0 0 22px;
-  white-space:normal;
 }
 .topic-input-wrap .attachment-chips{padding:8px 14px 0;max-height:132px}
 
@@ -78,7 +76,6 @@
   .topic-sub{
     padding-inline:8px;
     margin-bottom:18px;
-    font-size:calc(13px * var(--app-font-scale,1));
   }
   /* P_mobile-overlap — hide the disclaimer on mobile when ANY of these
      is true:

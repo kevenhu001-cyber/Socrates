@@ -1217,8 +1217,7 @@ body.workspace-active #appShell .workspace-row:hover {
 
   #appShell #topicSetup::before,
   #appShell #topicSetup::after,
-  #appShell #topicSetup .topic-title.greeting,
-  #appShell #topicSetup .topic-sub {
+  #appShell #topicSetup .topic-title.greeting {
     display: none !important;
   }
 
@@ -1635,7 +1634,7 @@ body.workspace-active #appShell .project-row {
 
 @media (max-width: 900px) {
   .workspace-page-head,
-  .plugin-directory-head { align-items: stretch; flex-direction: column; gap: 20px; margin-bottom: 32px; }
+  .plugin-directory-head { align-items: stretch; flex-direction: column; gap: 20px; }
   .workspace-head-actions { flex: 0 0 auto; justify-content: flex-start; }
   .workspace-table-head { grid-template-columns: minmax(0, 1fr) 120px 80px 48px; }
   body.workspace-active #appShell .library-row { grid-template-columns: 24px 42px minmax(0, 1fr) 120px 80px 48px; }
