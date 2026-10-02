@@ -492,7 +492,7 @@ html[data-boot-state="auth"] .boot-loading-dots::after{animation:none}
   max-width:420px;
   border:0.5px solid hsl(var(--accent-000)/0.4);
 }
-.auth-brand{display:flex;align-items:center;gap:8px;justify-content:center;color:hsl(var(--text-100));font-weight:600;font-size:calc(17px * var(--app-font-scale, 1));margin-bottom:24px;letter-spacing:-.01em}
+.auth-brand{display:flex;align-items:center;gap:8px;justify-content:center;font-weight:600;font-size:calc(17px * var(--app-font-scale, 1));margin-bottom:24px}
 .auth-brand svg{color:hsl(var(--accent-000))}
 .auth-tabs{display:flex;border-bottom:0.5px solid hsl(var(--border-300)/0.18);margin-bottom:22px}
 .auth-tab{appearance:none;flex:1;text-align:center;padding:10px 0;font:500 calc(13px * var(--app-font-scale, 1))/1.2 var(--font-sans);color:hsl(var(--text-400));border:0;border-bottom:2px solid transparent;background:transparent;cursor:pointer;font-weight:500;transition:color .1s,border-color .1s}

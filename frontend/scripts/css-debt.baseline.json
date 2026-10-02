@@ -8,7 +8,7 @@
     "frozen": {
       "important": 1178,
       "hexColor": 119,
-      "literalRadius": 428
+      "literalRadius": 426
     }
   },
   "generatedBy": "check-css-debt.mjs --update"

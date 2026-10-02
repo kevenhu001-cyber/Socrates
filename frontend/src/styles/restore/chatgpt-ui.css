@@ -1396,7 +1396,6 @@ body.workspace-active #appShell #mainInner {
 
 .workspace-surface {
   width: 100%;
-  color: var(--cg-text);
 }
 
 .workspace-page-head,
