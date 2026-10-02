@@ -51,7 +51,7 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 .sidebar-search:focus-within .sidebar-search-icon{color:hsl(var(--accent-000))}
 .sidebar-search input{flex:1;min-width:0;border:0;background:transparent;outline:none;color:hsl(var(--text-100));font-size:calc(12px * var(--sidebar-font-scale));line-height:1;padding:0}
 .sidebar-search input::placeholder{color:hsl(var(--text-500))}
-.sidebar-view-btn{position:relative;flex-shrink:0;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:0;background:transparent;color:hsl(var(--text-400));cursor:pointer;transition:color .18s var(--ease-out),background .18s var(--ease-out),transform .14s var(--ease-out)}
+.sidebar-view-btn{position:relative;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:8px;border:0;background:transparent;color:hsl(var(--text-400));cursor:pointer;transition:color .18s var(--ease-out),background .18s var(--ease-out),transform .14s var(--ease-out)}
 .sidebar-view-btn svg{width:17px;height:17px}
 .sidebar-view-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
 
@@ -111,7 +111,7 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 /* P2.2 — recent-item layout: mode badge + title/meta/tags in the
    middle, action buttons on the right. */
 .recent-item-main{min-width:0;display:flex;flex-direction:column;gap:2px}
-.recent-item-text{font-size:calc(12px * var(--sidebar-font-scale));color:hsl(var(--text-100));font-weight:500;line-height:1.35;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:1;line-clamp:1;-webkit-box-orient:vertical}
+.recent-item-text{font-size:calc(12px * var(--sidebar-font-scale));color:hsl(var(--text-100));line-height:1.35;display:-webkit-box;-webkit-line-clamp:1;line-clamp:1;-webkit-box-orient:vertical}
 .recent-item-meta{font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-500));display:flex;align-items:center;gap:6px}
 .recent-item-tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:2px}
 .recent-tag-pill{padding:1px 6px;border-radius:999px;background:hsl(var(--bg-300));color:hsl(var(--text-300));font-size:calc(9px * var(--sidebar-font-scale));border:0;cursor:pointer;font-family:inherit;line-height:1.5}

@@ -54,10 +54,6 @@
   }
 
   #appShell#appShell .top-mode-tabs .app-mode-toggle {
-    min-width: 82px !important;
-    height: 36px !important;
-    font-size: 15px !important;
-    color: var(--cg-text-muted) !important;
     background: transparent !important;
   }
 
@@ -358,14 +354,7 @@
 
 
 
-  #appShell#appShell .top-mode-tabs .app-mode-toggle {
-    flex: 1 1 0 !important;
-    min-width: 0 !important;
-    height: 36px !important;
-    padding: 0 8px !important;
-    border-radius: 999px !important;
-    font-size: 15px !important;
-  }
+
 
   #appShell#appShell #sidebarOpenBtn,
   #appShell#appShell #mobileIncognitoBtn,

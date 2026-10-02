@@ -125,8 +125,6 @@
 #appShell .sidebar-search input::placeholder { color: var(--ui-text-placeholder); }
 }
 #appShell .sidebar-view-btn {
-  width: 30px;
-  height: 30px;
   border-radius: var(--ui-radius-control, 8px);
   color: var(--ui-text-tertiary);
 }
@@ -250,7 +248,6 @@
 #appShell .recent-item-text {
   font-size: 14px;
   font-weight: 450;
-  line-height: 18px;
 }
 }
 @media (max-width: 768px) {

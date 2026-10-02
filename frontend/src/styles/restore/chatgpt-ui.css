@@ -169,10 +169,7 @@ body,
 
 @media (max-width: 768px) {
 
-#appShell .sidebar-search-row {
-  gap: 6px;
-  padding: 0 0 12px;
-}
+
 }
 
 @media (max-width: 768px) {
@@ -239,8 +236,6 @@ body,
 
 #appShell .recent-item-text {
   color: var(--cg-text-secondary);
-  font-size: 13px;
-  line-height: 18px;
 }
 }
 
@@ -268,7 +263,6 @@ body,
 @media (max-width: 768px) {
 
 #appShell .user-row {
-  gap: 9px;
   min-width: 0;
   padding: 4px;
   border-radius: 9px;
@@ -351,7 +345,6 @@ body,
 @media (max-width: 768px) {
 
 #appShell .top-mode-tabs .app-mode-toggle {
-  min-width: 94px;
   padding: 7px 20px;
   border-radius: var(--cg-radius-pill);
   color: var(--cg-text-muted);
@@ -1166,7 +1159,6 @@ body.workspace-active #appShell .workspace-row:hover {
   }
 
   #appShell .top-mode-tabs .app-mode-toggle {
-    min-width: 78px;
     padding-inline: 10px;
     font-size: 13px;
   }

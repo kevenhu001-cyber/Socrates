@@ -157,8 +157,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 
 #appShell .recent-item-text {
   color: var(--cg-text-secondary);
-  font-size: 13px;
-  line-height: 21px;
 }
 }
 

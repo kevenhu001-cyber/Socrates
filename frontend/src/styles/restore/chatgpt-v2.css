@@ -213,7 +213,6 @@
 @media (max-width: 768px) {
 
 #appShell .top-mode-tabs .app-mode-toggle {
-  flex: 1 1 0;
   border-radius: 999px;
   color: var(--cgv-text-3);
 }

@@ -157,10 +157,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 }
 #appShell .recent-item-action-icon { display: inline-flex; }
 
-@media (max-width: 768px) {
 
-#appShell .sidebar-search-row { padding: 0 8px 8px; }
-}
 @media (max-width: 768px) {
 #appShell .sidebar-search {
   background: var(--ui-bg-raised);

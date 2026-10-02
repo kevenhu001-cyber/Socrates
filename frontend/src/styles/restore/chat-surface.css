@@ -85,12 +85,8 @@ body,
 @media (max-width: 768px) {
 
 #appShell#appShell .top-mode-tabs .app-mode-toggle {
-  min-width: 82px !important;
-  height: 34px !important;
-  padding: 0 15px !important;
   border-radius: 999px !important;
   color: var(--conversation-text-muted) !important;
-  font-size: 15px !important;
   font-weight: 500 !important;
 }
 }
@@ -512,8 +508,6 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 @media (max-width: 768px) {
 
 #appShell#appShell .top-mode-tabs .app-mode-toggle {
-  min-width: 0 !important;
-  height: 36px !important;
   padding: 0 18px !important;
   font-size: 16px !important;
   letter-spacing: 0 !important;
