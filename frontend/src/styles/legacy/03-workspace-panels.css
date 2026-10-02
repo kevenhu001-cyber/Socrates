@@ -104,7 +104,7 @@
    can co-exist if the user opens Display & theme from inside More. */
 .sidebar-more-popover{position:fixed;min-width:220px;max-width:260px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.5);border-radius:10px;padding:6px;box-shadow:0 8px 24px hsl(var(--always-black)/0.25);z-index:75;display:flex;flex-direction:column;gap:2px;font-size:calc(13px * var(--app-font-scale, 1))}
 .sidebar-more-popover.hidden{display:none}
-.sidebar-more-item{display:flex;align-items:center;gap:10px;width:100%;padding:7px 10px;border-radius:7px;background:transparent;border:none;color:hsl(var(--text-200));font-size:inherit;font-family:var(--font-sans);text-align:left;cursor:pointer;transition:background .18s var(--ease-out),color .18s var(--ease-out)}
+.sidebar-more-item{display:flex;align-items:center;gap:10px;width:100%;padding:7px 10px;background:transparent;border:none;color:hsl(var(--text-200));font-size:inherit;font-family:var(--font-sans);text-align:left;cursor:pointer;transition:background .18s var(--ease-out),color .18s var(--ease-out)}
 .sidebar-more-item:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 
 .sidebar-more-item svg{width:14px;height:14px;flex-shrink:0;color:hsl(var(--text-400))}
