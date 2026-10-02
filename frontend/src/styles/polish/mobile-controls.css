@@ -194,3 +194,104 @@
     border-radius: var(--ui-radius-bubble, 18px);
   }
 }
+
+/* ── Drawer nav geometry contract (moved from restore/fixes.css) ── */
+/* One geometry contract for the legacy host and React-owned navigation.
+   The historical layers set different row heights and flex bases, which
+   made the glyph and text appear to sit on different vertical centers. */
+@media (max-width: 768px) {
+#appShell #sidebarNav.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 4px 6px 8px;
+}
+}
+@media (max-width: 768px) {
+#appShell #sidebarNav .sidebar-nav-btn {
+  box-sizing: border-box;
+  display: grid;
+  /* Reference drawer: 20px glyph column + 6px gap so the label lands
+     ~40px from the drawer edge. Padding/min-height/font-size moved on:
+     polish/mobile-controls.css owns padding, the ruleset below owns
+     min-height + font-size. */
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 6px;
+  width: 100%;
+  border-radius: var(--ui-radius-row);
+  line-height: 22px;
+  text-align: left;
+}
+}
+@media (max-width: 768px) {
+#appShell #sidebarNav .sidebar-nav-btn > span:first-child {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  line-height: 0;
+}
+}
+@media (max-width: 768px) {
+#appShell #sidebarNav .sidebar-nav-btn > svg,
+#appShell #sidebarNav .sidebar-nav-btn > span:first-child svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  flex: none;
+  stroke-width: 1.8;
+}
+}
+@media (max-width: 768px) {
+#appShell #sidebarNav .sidebar-nav-btn > span[data-i18n-key] {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+}
+@media (max-width: 768px) {
+#appShell #sidebarNav #navSkills.sidebar-nav-btn,
+#appShell #sidebarNav #navExam.sidebar-nav-btn,
+#appShell #sidebarNav #navImages.sidebar-nav-btn,
+#appShell #sidebarNav #navAssistants.sidebar-nav-btn { display: none; }
+}
+@media (max-width: 768px) {
+#appShell #sidebarNav #navNew { order: 0; }
+}
+@media (max-width: 768px) {
+#appShell #sidebarNav #navLibrary { order: 1; }
+}
+/* Reference drawer order: New chat · Library · Scheduled · Plugins ·
+   Sites · Projects(+) · More — Projects sits directly above More. */
+@media (max-width: 768px) {
+#appShell #sidebarNav #navScheduled { order: 2; }
+}
+@media (max-width: 768px) {
+#appShell #sidebarNav #navPlugins { order: 3; }
+}
+@media (max-width: 768px) {
+#appShell #sidebarNav #navSites { order: 4; }
+}
+@media (max-width: 768px) {
+#appShell #sidebarNav #navProjects { order: 5; }
+}
+@media (max-width: 768px) {
+#appShell #sidebarNav #navMore { order: 6; }
+}
+
+@media (max-width: 768px) {
+
+#appShell #sidebarUserRow.user-row {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+}
+}
+@media (max-width: 768px) {
+}
+
