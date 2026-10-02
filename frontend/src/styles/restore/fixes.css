@@ -28,45 +28,6 @@
 }
 }
 
-/* Directory rows share the same quiet hierarchy across Library, Projects,
-   Plugins and Scheduled. Keep controls visible on touch devices. */
-#appShell .library-directory .workspace-page-head,
-#appShell .plugin-directory .plugin-directory-head { margin-bottom: 20px !important; }
-#appShell .library-directory .workspace-tabs { display: flex; gap: 4px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
-#appShell .library-directory .workspace-tabs button { white-space: nowrap; }
-#appShell .library-row-menu-wrap { position: relative; }
-#appShell .library-row-menu-trigger {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--chatgpt-muted);
-}
-#appShell .library-row-menu-trigger:hover,
-#appShell .library-row-menu-trigger[aria-expanded="true"] { background: var(--chatgpt-hover); color: var(--chatgpt-text); }
-#appShell .library-row-menu {
-  position: absolute;
-  right: 0;
-  top: 100%;
-  z-index: 30;
-  display: grid;
-  min-width: 126px;
-  padding: 5px;
-  border: 1px solid var(--chatgpt-line);
-  border-radius: 10px;
-  background: var(--chatgpt-menu);
-  box-shadow: 0 10px 28px rgb(0 0 0 / 20%);
-}
-#appShell .library-row-menu button { padding: 8px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--chatgpt-text); font: inherit; text-align: left; cursor: pointer; }
-#appShell .library-row-menu button:hover { background: var(--chatgpt-hover); }
-#appShell .library-row .library-mobile-meta { color: var(--chatgpt-muted); }
-#appShell .scheduled-recommendation-add { visibility: visible !important; }
-
 @media (max-width: 768px) {
   [data-mode="dark"] #appShell#appShell .sidebar { background: var(--ui-bg-sidebar) !important; }
   /* Recents row ⋯ menu: later sibling rows paint over an open menu because
@@ -142,9 +103,9 @@
   #appShell .library-directory .library-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px !important; }
   #appShell .scheduled-recommendations { display: grid !important; grid-template-columns: 1fr !important; }
   #appShell .scheduled-recommendation { min-height: 72px !important; }
-  #appShell .scheduled-recommendation-add { visibility: visible !important; }
+  #appShell .scheduled-recommendation-add { visibility: visible; }
   #appShell .scheduled-task-list .task-row { min-height: 70px; }
-  #appShell .plugin-directory .plugin-directory-head { margin-bottom: 20px !important; }
+  #appShell .plugin-directory .plugin-directory-head { margin-bottom: 20px; }
 }
 
 @media (max-width: 768px) {
