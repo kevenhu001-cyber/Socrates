@@ -133,13 +133,6 @@
 }
 .composer-tools-menu{padding:8px}
 .composer-tools-item{
-  min-height:46px;
-  padding:10px 12px;
-  gap:12px;
-  border-radius:8px;
-  color:var(--tool-card-text-muted);
-  font-size:var(--tool-card-desc-size);
-  font-weight:var(--tool-card-desc-weight);
   transition:color .16s ease
 }
 .composer-tools-item:hover,
@@ -317,9 +310,6 @@ a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-
 
 .composer-tools-item{
   position:relative;
-  min-height:48px;
-  padding:9px 10px;
-  border:0;
 }
 .composer-tools-item.is-active{
   color:var(--tool-card-text);

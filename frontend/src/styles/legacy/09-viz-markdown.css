@@ -478,7 +478,7 @@ html[data-boot-state="auth"] .boot-loading-dots::after{animation:none}
 .boot-loading-dots::before{content:"";display:block;width:100%;height:100%;border-radius:50%;border:2px solid hsl(var(--border-300)/0.3);border-top-color:hsl(var(--accent-000));border-right-color:hsl(var(--brand-000));animation:bootSpin 1s cubic-bezier(.4,0,.2,1) infinite;box-sizing:border-box}
 .boot-loading-dots::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1px solid hsl(var(--accent-000)/0.2);animation:bootSpin 2s linear infinite reverse;opacity:.5}
 @keyframes bootSpin{to{transform:rotate(360deg)}}
-.auth-card{width:100%;max-width:420px;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.18);border-radius:18px;padding:32px 28px;box-shadow:0 12px 48px hsl(var(--always-black)/0.5)}
+.auth-card{width:100%;max-width:420px;padding:32px 28px}
 /* P4.5 — transient banner shown at the top of the auth gate when a
    401 from any background apiFetch triggers handleAuthExpired(). */
 .auth-expired-banner{
@@ -505,7 +505,7 @@ html[data-boot-state="auth"] .boot-loading-dots::after{animation:none}
 .auth-icon-warn{background:hsl(0 60% 50%/0.1);color:hsl(0 60% 65%)}
 .auth-icon-ok{background:hsl(145 50% 50%/0.15);color:hsl(145 50% 65%)}
 .auth-label{font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.05em;margin:6px 0 2px}
-.auth-input{width:100%;padding:10px 12px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.18);border-radius:10px;font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-100));font-family:var(--font-sans);outline:none;transition:border-color .12s;margin-bottom:4px}
+.auth-input{width:100%;padding:10px 12px;font-size:calc(14px * var(--app-font-scale, 1));outline:none;margin-bottom:4px}
 .auth-input:focus{border-color:hsl(var(--accent-000)/0.5)}
 .auth-input::placeholder{color:hsl(var(--text-500))}
 .auth-error{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(0 60% 70%);min-height:14px;line-height:1.4;padding:2px 0}

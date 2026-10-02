@@ -30,18 +30,10 @@
    is a subtle 5% white wash + border strengthening 1 step; no colour
    lift, no scale animation. */
 .composer-tools-item{
-  display:flex;align-items:center;gap:12px;width:100%;
-  min-height:38px;
-  padding:8px 10px;
-  margin:0;
-  border:0;border-radius:8px;
+  display:flex;align-items:center;
   background:transparent;
-  color:var(--tool-card-text-muted);
   font:inherit;
-  font-size:calc(13.5px * var(--app-font-scale,1));
-  font-weight:var(--tool-card-desc-weight);
   text-align:left;cursor:pointer;
-  transition:color .18s var(--ease-out)
 }
 .composer-tools-item + .composer-tools-item{margin-top:1px}
 .composer-tools-item:hover{color:var(--tool-card-text)}

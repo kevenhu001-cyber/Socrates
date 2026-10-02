@@ -356,7 +356,8 @@
 #appShell .modal-overlay,
 #appShell .cmd-k-overlay { background: var(--ui-backdrop); }
 
-#appShell .workspace-dialog-card,
+/* .workspace-dialog-card's chrome is pinned by chatgpt-ui's !important
+   rule (border/radius/dialog bg/shadow) — it still takes color above. */
 #appShell .modal,
 #appShell .modal-card,
 #appShell .cmd-k-modal {
