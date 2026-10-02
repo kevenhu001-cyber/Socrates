@@ -11,7 +11,7 @@
    UI-align: chat-input-bar mirrors the topic-setup footer surface so the
    composer skin does not change between landing and in-chat — no fade
    gradient, no extra padding-top. */
-.chat-input-bar{padding-top:6px;padding-inline:16px;background:transparent}
+.chat-input-bar{background:transparent}
 /* UI-align: chat-input-wrap mirrors topic-input-wrap. The width, radius,
    border, shadow, and focus feedback here intentionally duplicate
    topic-input-wrap so the composer skin does not change between surfaces. */
@@ -58,7 +58,7 @@
    composer in the visual reference. The topic composer and phone layout
    retain the full formatting rail; Markdown shortcuts still work here. */
 @media(min-width:769px){
-  .chat-input-bar{padding-top:6px;padding-inline:16px}
+  
   
   /* Voice input: place between the hint and the send button so the row
      stays `[attach][editor][mic][send]` without disturbing the existing
@@ -74,7 +74,6 @@
 }
 
 @media(max-width:768px){
-  .chat-input-bar{padding-inline:8px}
   /* Mobile collapsed state is a real three-column row: left controls,
      editor, send. Controls therefore own layout space instead of being
      translated over the contenteditable. On focus the same grid becomes

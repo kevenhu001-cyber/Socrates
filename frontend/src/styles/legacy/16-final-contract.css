@@ -50,9 +50,6 @@
 /* Chat composer: safe-area aware, in-flow, and bounded by its real content.
    The transcript remains a sibling flex item, so it can never be covered by
    a composer whose height changes after focus or attachment loading. */
-.chat-input-bar{
-  padding-inline:max(12px,env(safe-area-inset-left,0px)) max(12px,env(safe-area-inset-right,0px));
-}
 
 @media(max-width:768px){
   .sidebar-header{
@@ -100,11 +97,6 @@
      footer use explicit grid tracks rather than changing flex-basis/order;
      that removes the transient width collapse which used to make the input
      jump sideways while focus was entering. */
-  .chat-input-bar{
-    padding-top:14px;
-    padding-bottom:max(16px,env(safe-area-inset-bottom,0px));
-    padding-inline:max(8px,env(safe-area-inset-left,0px)) max(8px,env(safe-area-inset-right,0px));
-  }
   .chat-input-wrap .attachment-chips{
     order:0;
     flex:0 0 auto;

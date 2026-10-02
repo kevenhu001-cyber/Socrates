@@ -556,8 +556,6 @@ body.workspace-active #appShell .main-page {
 
   #appShell .workspace-search-field,
   #appShell .plugin-directory-search {
-    width: 238px !important;
-    height: 36px !important;
     padding-inline: 14px !important;
     border-radius: 999px !important;
     font-size: 13px !important;
@@ -646,10 +644,7 @@ body.workspace-active #appShell .main-page {
     line-height: 36px !important;
   }
 
-  #appShell .workspace-search-field,
-  #appShell .plugin-directory-search {
-    width: 240px !important;
-  }
+
 
   #appShell #libraryPanel.main-page {
     left: 17px !important;

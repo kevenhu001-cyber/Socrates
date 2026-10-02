@@ -589,9 +589,8 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
   flex-shrink:0;
   /* P_pill-anchor-composer — become the positioning ancestor for the
      new-reply pill, which was moved inside this bar so it tracks the
-     composer's top edge instead of chat-view's. */
-  position:relative;
-  /* P_chat-reserve — composer is now part of the flex column flow.
+     composer's top edge instead of chat-view's.
+     P_chat-reserve — composer is now part of the flex column flow.
      Its height is whatever the chip strip + wrap + footer naturally
      add up to, so flex-shrink on the sibling `.msg-list` (flex:1 1 auto)
      leaves the right amount of room. There is no longer a floating
@@ -609,8 +608,4 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
   bottom:auto;
   z-index:10;
   background:transparent;
-  padding-top:12px;
-  /* Keep the composer comfortably above the viewport edge on desktop and
-     mobile. Safe-area devices get whichever inset is larger. */
-  padding-bottom:max(16px, env(safe-area-inset-bottom, 0px));
 }

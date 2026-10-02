@@ -161,8 +161,6 @@
   /* Phone layout — the reference's single-row capsule:
      [+] · editor · [高⌄] · [mic] · [voice/send]. The wrap is a wrapping
      flex row so attachment chips still get their own line on top. */
-  #appShell .chat-input-bar { padding-inline: 12px; }
-
   #appShell #topicInputWrap:not(.voice-recording-active) .attachment-chips,
   #appShell #chatInputWrap:not(.voice-recording-active) .attachment-chips {
     flex: 0 0 100%;

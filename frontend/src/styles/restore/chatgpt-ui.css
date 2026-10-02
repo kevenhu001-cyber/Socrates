@@ -1440,14 +1440,9 @@ body.workspace-active #appShell #mainInner {
 .plugin-directory-search {
   display: flex;
   align-items: center;
-  width: min(100%, 420px);
-  height: 48px;
   margin: 0;
   padding: 0 16px;
   gap: 10px;
-  border: 1px solid var(--cg-border-strong);
-  border-radius: 24px;
-  color: var(--cg-text-muted);
   background: var(--cg-surface);
   transition: border-color .16s ease, background-color .16s ease;
 }
