@@ -213,7 +213,7 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
   .msg-body{padding:10px 12px;font-size:calc(13px * var(--app-font-scale, 1))}
   .msg.user .msg-body{font-size:calc(13px * var(--app-font-scale, 1))}
   .chat-input-bar textarea{font-size:calc(13px * var(--app-font-scale, 1));padding:8px 36px 8px 12px;min-height:40px}
-  .msg-toolbar{opacity:.6;gap:2px}
+  .msg-toolbar{opacity:.6}
   .msg-toolbar button{padding:4px 6px;font-size:calc(11px * var(--app-font-scale, 1))}
   .diag-card{padding:16px;margin:0 4px}
   .diag-text{font-size:calc(14px * var(--app-font-scale, 1))}

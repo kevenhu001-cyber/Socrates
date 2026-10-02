@@ -232,9 +232,7 @@
    Desktop keeps the offset (ref-baseline pins it to 0 via !important);
    mobile falls back to the natural centered position. */
 @media (min-width: 769px) {
-  #appShell #topicSetup > .topic-title,
-  #appShell #topicSetup > .mobile-starter-prompts,
-  #appShell #topicSetup > .cg-history {
+  #appShell #topicSetup > .topic-title {
     left: 14px;
   }
 }

@@ -16,7 +16,6 @@
 /* Hover toolbar — 32px ghost buttons, 8px radius on mobile. */
 @media (max-width: 768px) {
 #appShell .msg-toolbar {
-  gap: 4px;
   height: 32px;
   min-height: 32px;
   display: flex;
