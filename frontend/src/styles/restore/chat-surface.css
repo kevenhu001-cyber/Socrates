@@ -116,10 +116,6 @@ body,
 
 #appShell#appShell #findBtn,
 #appShell#appShell #shareBtn {
-  width: 40px !important;
-  min-width: 40px !important;
-  height: 40px !important;
-  min-height: 40px !important;
   border-radius: 50% !important;
   background: transparent !important;
   color: var(--conversation-text-secondary, var(--conversation-text-muted)) !important;
@@ -442,14 +438,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
      here — forcing the editor host into row 2 collapsed the editor row
      and painted the placeholder underneath the controls. */
 
-  #appShell#appShell #findBtn,
-  #appShell#appShell #shareBtn {
-    width: 44px !important;
-    min-width: 44px !important;
-    height: 44px !important;
-    min-height: 44px !important;
-    border: 0 !important;
-  }
+
 
   #appShell#appShell #findBtn svg,
   #appShell#appShell #shareBtn svg {

@@ -356,28 +356,6 @@
 
 
 
-  #appShell#appShell #sidebarOpenBtn,
-  #appShell#appShell #mobileIncognitoBtn,
-  #appShell#appShell #findBtn,
-  #appShell#appShell #shareBtn {
-    width: 40px !important;
-    min-width: 40px !important;
-    height: 40px !important;
-    min-height: 40px !important;
-    border: 0 !important;
-    border-radius: 12px !important;
-    background: transparent !important;
-    box-shadow: none !important;
-  }
-
-  #appShell#appShell #findBtn,
-  #appShell#appShell #shareBtn {
-    width: 44px !important;
-    min-width: 44px !important;
-    height: 44px !important;
-    min-height: 44px !important;
-  }
-
   #appShell#appShell #sidebarOpenBtn svg,
   #appShell#appShell #mobileIncognitoBtn svg,
   #appShell#appShell #findBtn svg,
