@@ -116,7 +116,7 @@
   .settings-modal--full .settings-body { padding:20px 18px; }
 }
 @media(max-width:768px) {
-  #appShell .creation-panel { padding:88px 16px 48px !important; }
+  #appShell .creation-panel { padding:88px 16px 48px; }
   #appShell #sitesPanel { width:100%; padding:20px 16px 48px !important; }
   #appShell .creation-sites-header { margin-bottom:28px; }
   #appShell #sitesPanel .creation-sites-header input { width:100%; }
