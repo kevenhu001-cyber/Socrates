@@ -38,7 +38,7 @@
 .agent-tool-card{font-size:calc(12px * var(--app-font-scale, 1))}
 .agent-tool-card:hover{background:var(--tool-card-bg-hover)}
 .agent-tool-card.open{box-shadow:0 2px 10px hsl(220 30% 50%/0.05)}
-.agent-tool-head{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;-webkit-user-select:none;user-select:none;transition:background .12s ease}
+.agent-tool-head{display:flex;align-items:center;gap:8px;cursor:pointer;-webkit-user-select:none;user-select:none;transition:background .12s ease}
 .agent-tool-head:hover{background:var(--tool-card-bg-hover)}
 .agent-tool-head:focus-visible{outline:2px solid var(--tool-card-focus);outline-offset:-2px;border-radius:var(--tool-card-radius)}
 .agent-tool-icon{flex-shrink:0;width:20px;height:20px;border-radius:5px;background:hsl(var(--bg-300));color:var(--tool-card-icon);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;font-size:calc(11px * var(--app-font-scale, 1));line-height:1;letter-spacing:-0.02em}
@@ -243,7 +243,7 @@
 [data-theme=socrates][data-mode=dark] .wsr-snippet{color:hsl(var(--text-300))}
 [data-theme=socrates][data-mode=dark] .wsr-index{background:hsl(var(--bg-200));color:hsl(var(--text-500))}
 @media(max-width:480px){
-  .agent-tool-head{align-items:flex-start;gap:6px;padding:7px 8px}
+  .agent-tool-head{align-items:flex-start;gap:6px}
   .agent-tool-input{white-space:normal;overflow-wrap:anywhere;line-height:1.35}
   .agent-tool-code,.agent-tool-out{padding:8px;max-height:220px}
   .agent-tool-card.websearch .agent-tool-out{max-height:55vh}
@@ -278,7 +278,7 @@
 }
 .agent-tool-card:hover{background:var(--tool-card-bg-hover);box-shadow:none}
 .agent-tool-card.open{box-shadow:0 4px 14px hsl(220 30% 50%/0.05)}
-.agent-tool-head{min-height:36px;padding:9px 12px;gap:8px;background:transparent;border-radius:var(--tool-card-radius-sm) var(--tool-card-radius-sm) 0 0}
+.agent-tool-head{min-height:36px;gap:8px;background:transparent;border-radius:var(--tool-card-radius-sm) var(--tool-card-radius-sm) 0 0}
 .agent-tool-head:hover{background:var(--tool-card-bg-hover)}
 .agent-tool-card .agent-tool-body::before{display:none}
 .agent-tool-name,.agent-tool-input,.wsr-title{letter-spacing:0}
@@ -404,7 +404,7 @@
 }
 .agent-tool-card:hover,.agent-tool-card.open{border:0;box-shadow:none}
 .agent-tool-head,.tool-run-list .agent-tool-head{
-  min-height:30px;padding:4px 2px;gap:7px;border-radius:7px;
+  min-height:30px;gap:7px;border-radius:7px;
   color:hsl(var(--text-400));
 }
 .agent-tool-head:hover{background:hsl(var(--bg-200)/.42);color:hsl(var(--text-200))}
