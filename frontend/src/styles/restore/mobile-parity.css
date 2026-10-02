@@ -238,8 +238,8 @@
   }
 
   #appShell#appShell .recents-title {
-    font-size: 13px !important;
-    font-weight: 500 !important;
+    font-size: 13px;
+    font-weight: 500;
   }
 
   #appShell#appShell .recent-item {
@@ -480,10 +480,10 @@
   }
 
   #appShell .plugin-directory-search {
-    width: 100% !important;
-    height: 42px !important;
-    min-height: 42px !important;
-    border-radius: 999px !important;
+    width: 100%;
+    height: 42px;
+    min-height: 42px;
+    border-radius: 999px;
   }
 
   #appShell .workspace-create-button {

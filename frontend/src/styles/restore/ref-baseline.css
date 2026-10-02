@@ -544,9 +544,9 @@ body.workspace-active #appShell .main-page {
 
   #appShell .workspace-search-field,
   #appShell .plugin-directory-search {
-    padding-inline: 14px !important;
-    border-radius: 999px !important;
-    font-size: 13px !important;
+    padding-inline: 14px;
+    border-radius: 999px;
+    font-size: 13px;
   }
 
   /* OpenConnector directory, restyled as the reference's two-column list. */
@@ -613,9 +613,9 @@ body.workspace-active #appShell .main-page {
   }
 
   #appShell .sidebar-view-btn {
-    flex: 0 0 36px !important;
-    width: 36px !important;
-    height: 36px !important;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
   }
 
   /* The reference segmented control is 220 x 40 with 36px inner segments. */
@@ -979,9 +979,9 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 
 #appShell .workspace-search-field,
 #appShell .plugin-directory-search {
-  border-color: var(--cg-border-strong) !important;
-  background: var(--cg-surface) !important;
-  box-shadow: none !important;
+  border-color: var(--cg-border-strong);
+  background: var(--cg-surface);
+  box-shadow: none;
 }
 
 #appShell .workspace-search-field svg,
@@ -1106,8 +1106,8 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 
   #appShell .workspace-search-field,
   #appShell .plugin-directory-search {
-    width: 240px !important;
-    height: 42px !important;
+    width: 240px;
+    height: 42px;
   }
 
   #appShell .workspace-create-button {
