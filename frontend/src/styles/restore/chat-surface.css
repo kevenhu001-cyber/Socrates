@@ -273,7 +273,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 @media (max-width: 768px) {
 
 #appShell#appShell .msg.assistant .msg-body {
-  color: var(--conversation-text) !important;
+  color: var(--conversation-text);
 }
 }
 

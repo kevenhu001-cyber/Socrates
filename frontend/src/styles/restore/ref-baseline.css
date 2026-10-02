@@ -1111,8 +1111,8 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   }
 
   #appShell .workspace-create-button {
-    min-height: 42px !important;
-    border-radius: 999px !important;
+    min-height: 42px;
+    border-radius: 999px;
   }
 
   #appShell .plugin-directory-row,

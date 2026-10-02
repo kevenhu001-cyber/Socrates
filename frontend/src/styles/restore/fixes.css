@@ -252,7 +252,7 @@
     min-width: min(var(--ui-sidebar-mobile), 90vw);
     border-radius: 0;
   }
-  #appShell #sidebarNav .sidebar-nav-btn { min-height: 40px !important; font-size: 15px; }
+  #appShell #sidebarNav .sidebar-nav-btn { min-height: 40px; font-size: 15px; }
   #appShell #sidebarNav.sidebar-nav { padding-inline: 0 !important; }
   /* The reference drawer footer is identity-only on phones — theme /
      display / settings stay reachable through desktop chrome and the
