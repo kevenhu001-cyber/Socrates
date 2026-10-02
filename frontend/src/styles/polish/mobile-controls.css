@@ -63,7 +63,6 @@
     min-height: 40px;
     height: auto;
     padding: 0 10px;
-    border-radius: var(--ui-radius-row, 10px);
   }
   #appShell .sidebar-nav-btn .nav-label {
     line-height: var(--ui-hit-area);

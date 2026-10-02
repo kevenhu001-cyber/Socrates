@@ -3,12 +3,12 @@
     "live": {
       "important": 22,
       "hexColor": 46,
-      "literalRadius": 37
+      "literalRadius": 36
     },
     "frozen": {
-      "important": 1269,
+      "important": 1265,
       "hexColor": 205,
-      "literalRadius": 452
+      "literalRadius": 448
     }
   },
   "generatedBy": "check-css-debt.mjs --update"

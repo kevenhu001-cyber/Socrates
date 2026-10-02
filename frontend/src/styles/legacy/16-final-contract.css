@@ -175,9 +175,7 @@
    on the brand `--bg-*` token so themes adapt automatically. */
 .msg-list{gap:var(--chat-msg-gap)}
 .msg.user .msg-body{
-  background:hsl(var(--bg-000));
   border-radius:var(--chat-bubble-radius);
-  padding:var(--chat-bubble-pad-y) var(--chat-bubble-pad-x);
 }
 .msg.assistant .msg-body{
   max-width:100%;

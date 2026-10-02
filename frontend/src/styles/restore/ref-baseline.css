@@ -44,10 +44,7 @@
   min-height: 36px;
   padding: 7px 12px;
   gap: 0;
-  border-radius: 10px;
   color: var(--cg-text-secondary);
-  font-size: 14px;
-  font-weight: 500;
   line-height: 22px;
   text-align: left;
   justify-content: flex-start;
