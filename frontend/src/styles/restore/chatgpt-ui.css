@@ -788,12 +788,6 @@ body.workspace-active #appShell .workspace-secondary:hover{
   background: var(--cg-surface-hover);
 }
 
-/* Kimi-style head: left-aligned title + one-line description, with the
-   circular back button quieted to a top-right corner affordance. */
-
-/* Reference-style category chips: plain text that scrolls horizontally,
-   the active scope becomes a filled pill. */
-
 /* Kimi-style two-column card grid. Cards keep the legacy connector-row
    hooks (`.connector-row.plugin-directory-row`) so the plugin form and
    bridge logic stay untouched — only the box model changes here. */
@@ -1045,7 +1039,6 @@ body.workspace-active #appShell .workspace-row:hover {
   }
 
   /* P_mic-dedup — topic send fills the old mic track's neighbour slot. */
-
 
   #composerToolsMenu {
     width: calc(100vw - 20px) !important;

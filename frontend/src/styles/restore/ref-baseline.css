@@ -531,7 +531,7 @@ body.workspace-active #appShell .main-page {
   }
 
   #appShell .workspace-page-head h1,
-#appShell .plugin-directory-heading h2 {
+  #appShell .plugin-directory-heading h2 {
     margin: 0 !important;
     font-size: 30px !important;
     font-weight: 500 !important;
@@ -540,7 +540,7 @@ body.workspace-active #appShell .main-page {
   }
 
   #appShell .workspace-page-head p,
-#appShell .plugin-directory-desc {
+  #appShell .plugin-directory-desc {
     margin: 4px 0 0 !important;
     font-size: 14px !important;
     line-height: 20px !important;
@@ -635,7 +635,7 @@ body.workspace-active #appShell .main-page {
   }
 
   #appShell .workspace-page-head h1,
-#appShell .plugin-directory-heading h2 {
+  #appShell .plugin-directory-heading h2 {
     font-size: 28px !important;
     line-height: 36px !important;
   }
@@ -1286,10 +1286,5 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
     padding: 14px 0 72px !important;
   }
 
-  /* The h1 is position:fixed into the top bar on phones (see below), so the
-     heading still reserves that band — but it now also carries the subtitle
-     to match the plugin directory's heading > (title, desc) shape. A fixed
-     36px height clipped the subtitle to a sliver behind the top bar, so keep
-     the band as padding and let the box grow. */
 }
 
