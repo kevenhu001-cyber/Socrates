@@ -59,7 +59,6 @@
 #appShell .sidebar-nav-btn .nav-kbd { display: none !important; }
 }
 @media (max-width: 768px) {
-#appShell .sidebar-header { min-height: 38px; padding: 3px 4px 5px; }
 }
 @media (max-width: 768px) {
 #appShell .sidebar-logo { padding-left: 6px; font-size: 13px; font-weight: 500; }

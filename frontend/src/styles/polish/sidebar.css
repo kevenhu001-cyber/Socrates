@@ -312,12 +312,10 @@
 }
 }
 @media (max-width: 768px) {
-/* mobile-parity.css owns the same padding with !important — keep the
-   value in sync so reading either file gives the reference geometry. */
+/* mobile-parity.css pins the drawer footer padding/border with
+   !important; this layer owns only the min-height and flat background. */
 #appShell .sidebar-footer {
   min-height: 56px;
-  padding: 8px 6px;
-  border-top: 1px solid var(--ui-border-subtle);
   background: transparent;
 }
 }

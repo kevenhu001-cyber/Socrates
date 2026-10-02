@@ -9,9 +9,7 @@
 
 #appShell .sidebar-inner { background: transparent; }
 }
-@media (max-width: 768px) {
-#appShell .sidebar-header { min-height: 56px; padding: 6px 8px 6px 12px; }
-}
+
 @media (max-width: 768px) {
 #appShell .sidebar-logo {
   gap: 9px;
@@ -210,13 +208,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 #appShell .recent-item:hover,
 #appShell .recent-item.active { background: var(--ui-bg-raised); color: var(--ui-text-primary); }
 }
-@media (max-width: 768px) {
-#appShell .sidebar-footer {
-  min-height: 68px;
-  border-top: 1px solid var(--ui-border-subtle);
-  background: var(--ui-bg-sidebar);
-}
-}
+
 
 @media (max-width: 768px) {
   #appShell .sidebar {
