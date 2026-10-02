@@ -355,10 +355,7 @@ body.workspace-active #appShell .main-page {
    8. Unified Composer & Top Mode Pills Refinement
    -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
-#appShell .top-mode-tabs {
-  border-radius: 9999px !important;
-  padding: 3px !important;
-}
+
 }
 
 @media (max-width: 768px) {
@@ -935,12 +932,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 
 @media (max-width: 768px) {
 
-#appShell .top-mode-tabs {
-  border: 0 !important;
-  border-radius: 999px !important;
-  background: var(--cg-surface-raised) !important;
-  box-shadow: none !important;
-}
+
 }
 
 @media (max-width: 768px) {

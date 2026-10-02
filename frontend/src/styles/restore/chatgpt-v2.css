@@ -71,7 +71,7 @@
 #appShell .sidebar-nav-btn svg { width: 15px; height: 15px; }
 }
 @media (max-width: 768px) {
-#appShell .recent-item { min-height: 28px; padding: 5px 8px; font-size: 12px; }
+#appShell .recent-item { font-size: 12px; }
 }
 
 
@@ -215,10 +215,6 @@
 #appShell .top-mode-tabs {
   box-sizing: border-box;
   width: 206px;
-  gap: 2px;
-  border: 1px solid var(--cgv-border-strong) !important;
-  border-radius: 999px;
-  background: var(--cg-surface) !important;
   transform: translateX(10px);
 }
 }

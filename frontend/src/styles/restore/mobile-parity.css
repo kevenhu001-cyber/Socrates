@@ -50,12 +50,7 @@
   }
 
   #appShell#appShell .top-mode-tabs {
-    height: 40px !important;
-    min-height: 40px !important;
-    padding: 2px !important;
     gap: 0 !important;
-    border: 0 !important;
-    background: var(--cg-surface-raised) !important;
   }
 
   #appShell#appShell .top-mode-tabs .app-mode-toggle {
@@ -361,15 +356,7 @@
 
 
 
-  #appShell#appShell .top-mode-tabs {
-    width: 168px !important;
-    min-width: 168px !important;
-    height: 40px !important;
-    min-height: 40px !important;
-    padding: 2px !important;
-    border-radius: 999px !important;
-    background: var(--ui-bg-raised) !important;
-  }
+
 
   #appShell#appShell .top-mode-tabs .app-mode-toggle {
     flex: 1 1 0 !important;

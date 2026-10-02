@@ -203,9 +203,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 }
 @media (max-width: 768px) {
 #appShell .recent-item {
-  min-height: 44px;
-  padding: 7px 10px;
-  border-radius: 9px;
   color: var(--ui-text-secondary);
 }
 }
@@ -271,7 +268,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   #appShell .recent-mode-badge { display: none; }
   #appShell .recent-item-meta,
   #appShell .recent-item-tags { display: none; }
-  #appShell .recent-item { min-height: 40px; padding-top: 8px; padding-bottom: 8px; }
+
 
   /* ⋯ overflow is persistent on phones; the dropdown menu itself is now
      a universal rule above (same trigger → menu contract as the reference

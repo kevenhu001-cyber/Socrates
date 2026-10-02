@@ -279,11 +279,7 @@ body,
 
 @media (max-width: 768px) {
 
-#appShell .recent-item {
-  min-height: 36px;
-  padding: 7px 10px;
-  border-radius: 9px;
-}
+
 }
 
 @media (max-width: 768px) {
@@ -400,14 +396,7 @@ body,
 
 @media (max-width: 768px) {
 
-#appShell .top-mode-tabs {
-  gap: 2px;
-  padding: 3px;
-  border: 1px solid var(--cg-border);
-  border-radius: var(--cg-radius-pill);
-  background: var(--cg-surface) !important;
-  box-shadow: none !important;
-}
+
 }
 
 @media (max-width: 768px) {

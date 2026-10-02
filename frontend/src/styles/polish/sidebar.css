@@ -234,9 +234,6 @@
   border: 0;
 }
 #appShell .recent-item {
-  min-height: 40px;
-  padding: 8px 10px;
-  border-radius: var(--ui-radius-control, 8px);
   color: var(--ui-text-primary);
   transition: background-color var(--ui-duration-fast) ease;
 }

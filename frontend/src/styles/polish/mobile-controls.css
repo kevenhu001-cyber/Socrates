@@ -79,9 +79,7 @@
   /* ── Sidebar recents — 40px pitch, 10px radius; the right pad is 6px so
      the ··· glyph shares the reference drawer's ~16px trailing inset ── */
   #appShell .recent-item {
-    min-height: 40px;
     padding: 0 6px 0 10px;
-    border-radius: var(--ui-radius-row, 10px);
   }
   #appShell .recent-item-text {
     line-height: 20px;

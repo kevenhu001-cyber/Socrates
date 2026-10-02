@@ -77,13 +77,8 @@ body,
 @media (max-width: 768px) {
 
 #appShell#appShell .top-mode-tabs {
-  height: 40px !important;
-  min-height: 40px !important;
-  padding: 2px !important;
   border: 1px solid var(--conversation-border) !important;
   border-radius: 999px !important;
-  background: var(--conversation-surface) !important;
-  box-shadow: none !important;
 }
 }
 
@@ -510,10 +505,6 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 @media (max-width: 768px) {
 
 #appShell#appShell .top-mode-tabs {
-  width: 176px !important;
-  height: 44px !important;
-  min-height: 44px !important;
-  padding: 3px !important;
   border-color: var(--chat-line) !important;
   background: var(--chat-surface) !important;
 }
