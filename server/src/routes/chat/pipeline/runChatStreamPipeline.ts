@@ -52,18 +52,23 @@ import {
   SSE_PRIME,
 } from '../helpers.js';
 import {SseEmitter} from './sseEmitter.js';
-import {createStreamToolContext} from './toolContext.js';
 import {createToolRunner} from './toolExecutors.js';
+import {createStreamToolContext} from './toolContext.js';
 import type {ChatStreamPipelineContext, PreparedCall, ToolCall, ToolCallDelta,} from './types.js';
 
 export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Promise<void> {
   const { req, res, prep, sessionIdFromQuery, projectIdFromBody, turnId } = ctx;
   const { messages: finalMessages, provider, safeExtraBody, mode, temperature, maxTokens, reasoning_effort, responseSpeed } = prep.payload;
-  /* P_prep-parallel — the tool context (connector snapshots) only depends on
-     the request; start loading it now so it overlaps the SSE priming and the
-     turn bookkeeping below instead of queuing behind them. */
-  const toolCtxPromise = createStreamToolContext(req, mode);
-  toolCtxPromise.catch(() => {});
+  /* P_prep-parallel — prefer the tool context the route shell started
+     alongside ownership/turn/prep; direct pipeline callers (tests) that
+     did not supply one fall back to creating it here, giving up only
+     the overlap. Either way it is awaited before the first hop, and a
+     rejection propagates identically. */
+  const toolCtxPromise = ctx.toolCtxPromise ?? (() => {
+    const p = createStreamToolContext(req, mode);
+    p.catch(() => {});
+    return p;
+  })();
 
   // Set SSE headers
   res.writeHead(200, {
@@ -117,66 +122,75 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
      through this route are no longer needed. */
   startSseKeepalive(res, { intervalMs: 10_000 });
 
-  // Persist initial user message to session if not already persisted
+  /* P_ttfb-background-persist — this insert + touch does not feed the
+     upstream request, so awaiting it here would park two serial DB
+     round-trips on the path to the first token. It runs detached: the
+     client already rendered the message optimistically, the turn's
+     inputSnapshot covers detached recovery, and the write is idempotent
+     (onConflictDoNothing / pre-existence check), so a late write is
+     indistinguishable from an early one. Failures keep the
+     warn-and-continue contract. */
   if (sessionIdFromQuery && req.userId) {
-    try {
-      const db = getDb();
-      const rawUserMsgs = Array.isArray(req.body?.messages) ? req.body.messages : [];
-      let lastUserMsg: any = null;
-      for (let i = rawUserMsgs.length - 1; i >= 0; i--) {
-        if (rawUserMsgs[i] && rawUserMsgs[i].role === 'user') {
-          lastUserMsg = rawUserMsgs[i];
-          break;
+    void (async () => {
+      try {
+        const db = getDb();
+        const rawUserMsgs = Array.isArray(req.body?.messages) ? req.body.messages : [];
+        let lastUserMsg: any = null;
+        for (let i = rawUserMsgs.length - 1; i >= 0; i--) {
+          if (rawUserMsgs[i] && rawUserMsgs[i].role === 'user') {
+            lastUserMsg = rawUserMsgs[i];
+            break;
+          }
         }
-      }
-      if (lastUserMsg) {
-        const userContentStr = typeof lastUserMsg.content === 'string'
-          ? lastUserMsg.content
-          : (Array.isArray(lastUserMsg.content)
+        if (lastUserMsg) {
+          const userContentStr = typeof lastUserMsg.content === 'string'
+            ? lastUserMsg.content
+            : (Array.isArray(lastUserMsg.content)
               ? lastUserMsg.content.filter((p: any) => p && p.type === 'text').map((p: any) => p.text).join('\n')
               : '');
-        const userRaw = lastUserMsg.rawText || userContentStr;
-        const userClientId = lastUserMsg.clientId
-          || req.body?.clientTurn?.userClientId
-          || (turnId ? `user-${turnId}` : null);
-        const userAttachments = Array.isArray(lastUserMsg.attachments) ? lastUserMsg.attachments : [];
+          const userRaw = lastUserMsg.rawText || userContentStr;
+          const userClientId = lastUserMsg.clientId
+            || req.body?.clientTurn?.userClientId
+            || (turnId ? `user-${turnId}` : null);
+          const userAttachments = Array.isArray(lastUserMsg.attachments) ? lastUserMsg.attachments : [];
 
-        const safeUserContent = sanitizeStoredHtml(userContentStr);
-        const safeUserRaw = sanitizePlainText(userRaw);
+          const safeUserContent = sanitizeStoredHtml(userContentStr);
+          const safeUserRaw = sanitizePlainText(userRaw);
 
-        if (userClientId) {
-          await db.insert(messages).values({
-            sessionId: sessionIdFromQuery,
-            role: 'user',
-            content: safeUserContent,
-            html: safeUserContent,
-            rawText: safeUserRaw,
-            clientId: userClientId,
-            attachments: userAttachments,
-          }).onConflictDoNothing();
-        } else {
-          const [existingRecent] = await db.select({ id: messages.id })
-            .from(messages)
-            .where(and(eq(messages.sessionId, sessionIdFromQuery), eq(messages.role, 'user'), eq(messages.rawText, userRaw)))
-            .limit(1);
-          if (!existingRecent) {
+          if (userClientId) {
             await db.insert(messages).values({
               sessionId: sessionIdFromQuery,
               role: 'user',
               content: safeUserContent,
               html: safeUserContent,
               rawText: safeUserRaw,
+              clientId: userClientId,
               attachments: userAttachments,
-            });
+            }).onConflictDoNothing();
+          } else {
+            const [existingRecent] = await db.select({ id: messages.id })
+              .from(messages)
+              .where(and(eq(messages.sessionId, sessionIdFromQuery), eq(messages.role, 'user'), eq(messages.rawText, userRaw)))
+              .limit(1);
+            if (!existingRecent) {
+              await db.insert(messages).values({
+                sessionId: sessionIdFromQuery,
+                role: 'user',
+                content: safeUserContent,
+                html: safeUserContent,
+                rawText: safeUserRaw,
+                attachments: userAttachments,
+              });
+            }
           }
+          await db.update(sessions)
+            .set({ updatedAt: new Date() })
+            .where(and(eq(sessions.id, sessionIdFromQuery), eq(sessions.userId, req.userId)));
         }
-        await db.update(sessions)
-          .set({ updatedAt: new Date() })
-          .where(and(eq(sessions.id, sessionIdFromQuery), eq(sessions.userId, req.userId)));
+      } catch (err) {
+        console.warn('[chat/stream] persisting initial user message skipped:', (err as Error).message);
       }
-    } catch (err) {
-      console.warn('[chat/stream] persisting initial user message skipped:', (err as Error).message);
-    }
+    })();
   }
 
   let fullText = '';

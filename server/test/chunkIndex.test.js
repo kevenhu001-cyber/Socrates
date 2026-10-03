@@ -23,6 +23,7 @@ import { users, sessions, messages, sessionChunks } from '../src/db/schema.js';
 import {
   indexMessageChunks,
   searchSessionChunks,
+  searchSessionChunksHybrid,
   removeMessageChunks,
   sessionOwnedBy,
 } from '../src/services/chunkIndex.js';
@@ -224,5 +225,30 @@ describe('chunkIndex.searchSessionChunks', () => {
     const hitsA = await searchSessionChunks(TEST_SESSION_ID, 'eiffel', { limit: 10 });
     assert.ok(hitsA.every((h) => h.messageId === TEST_MESSAGE_ID),
       'every hit in session A came from session A');
+  });
+});
+
+describe('chunkIndex.searchSessionChunksHybrid', () => {
+  test('returns [] for a session with no chunks (TTFB short-circuit)', async (t) => {
+    if (!dbAvailable) return t.skip();
+    /* The EXISTS probe fires before the BM25 full-load and before the
+       vector leg's remote embedding call, so a chunk-less session pays
+       one indexed lookup instead of both legs on every turn. */
+    const db = getDb();
+    await db.delete(sessionChunks).where(eq(sessionChunks.messageId, TEST_OTHER_MESSAGE_ID));
+    const hits = await searchSessionChunksHybrid(TEST_OTHER_SESSION_ID, 'eiffel', { limit: 3 });
+    assert.deepEqual(hits, []);
+  });
+
+  test('still retrieves once the session has chunks (probe is not over-eager)', async (t) => {
+    if (!dbAvailable) return t.skip();
+    await indexMessageChunks(TEST_MESSAGE_ID, TEST_SESSION_ID,
+      'The Eiffel Tower is a wrought-iron lattice tower in Paris, France.');
+    const hits = await searchSessionChunksHybrid(
+      TEST_SESSION_ID, 'Where is the Eiffel Tower located?', { limit: 3 },
+    );
+    assert.ok(hits.length >= 1, 'at least one hit');
+    assert.ok(hits[0].text.toLowerCase().includes('eiffel tower'),
+      'first hit mentions the Eiffel Tower');
   });
 });

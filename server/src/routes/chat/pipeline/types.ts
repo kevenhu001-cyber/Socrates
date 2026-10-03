@@ -94,4 +94,16 @@ export interface ChatStreamPipelineContext {
    * in the route before the pipeline starts.
    */
   turnId?: string | null;
+  /**
+   * P_prep-parallel — the tool context promise started by the route
+   * shell alongside ownership/turn/prep, so the connector snapshot
+   * reads overlap the RAG embedding round-trip instead of queueing
+   * behind the whole prelude. The pipeline awaits it before the first
+   * tool-loop hop (the tool definitions ship inside the first upstream
+   * request); rejection propagates exactly as if it had been created
+   * inside the pipeline. Optional so direct pipeline callers (tests)
+   * keep working — when absent the pipeline creates it inline, giving
+   * up only the overlap.
+   */
+  toolCtxPromise?: Promise<import('./toolContext.js').StreamToolContext>;
 }

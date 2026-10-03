@@ -200,6 +200,25 @@ export async function searchSessionChunksHybrid(
   options: { limit?: number; minScore?: number } = {},
 ): Promise<RagSearchHit[]> {
   const limit = Math.max(1, Math.min(50, options.limit ?? 8));
+  /* P_ttfb-rag-shortcircuit — both legs below are wasted work when the
+     session has no indexed chunks: the BM25 leg would load zero rows and
+     the vector leg would burn a remote embedding call plus a pgvector
+     query to fuse nothing. One indexed EXISTS probe (~1 ms)
+     short-circuits all of it on the path to the first token. Fresh
+     sessions and sessions saved while indexing was off hit this on
+     every turn. */
+  try {
+    const db = getDb();
+    const [probe] = await db
+      .select({ id: sessionChunks.id })
+      .from(sessionChunks)
+      .where(eq(sessionChunks.sessionId, sessionId))
+      .limit(1);
+    if (!probe) return [];
+  } catch {
+    /* A failed probe must not fail retrieval — fall through to the
+       normal legs, which degrade to [] / BM25-only on their own. */
+  }
   /* P_prep-parallel — the two legs are independent; the vector leg usually
      includes a remote embedding call, so running BM25 behind it (or it
      behind BM25) put both latencies on the path to the first token. */

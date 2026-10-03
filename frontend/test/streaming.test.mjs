@@ -221,6 +221,46 @@ test('currency amounts stay literal after the bare-symbol widening', () => {
   });
 });
 
+/* Capital-led identifiers (`$Oxyz$`, `$Oz$`) are coordinate-system /
+   point labels, ubiquitous in Chinese math output. They render in both
+   renderers and on the live tail; ALL CAPS (`$USD`) still waits for its
+   closing `$` so currency prose never flashes as math, and
+   all-lowercase words stay literal. Accepted trade-off, locked in:
+   a capitalized English word deliberately wrapped in dollars (`$Only$`)
+   renders as math — LLMs never emit that shape except as an identifier. */
+test('capital-led identifier math renders, currency tails still wait', () => {
+  withKatex(() => {
+    const previousMarked = globalThis.marked;
+    globalThis.marked = marked;
+    try {
+      for (const src of [
+        '建立空间直角坐标系$Oxyz$，求点坐标',
+        '设 $Oxyz$ 为坐标系，绕$Oz$轴旋转',
+        'Let $Oxyz$ be the coordinate system',
+        'the $Only$ choice',
+      ]) {
+        const final = formatMsg(src);
+        assert.match(final, /class="katex/, src);
+        assert.doesNotMatch(final.replace(/<[^>]+>/g, ''), /\$Oxyz\$|\$Oz\$|\$Only\$/, src);
+        const live = renderProgressive(src);
+        assert.match(live, /class="katex/, `live: ${src}`);
+      }
+      /* The unclosed tail renders with no flash at the closing `$`. */
+      const frames = ['设 $Ox', '设 $Oxy', '设 $Oxyz', '设 $Oxyz$'];
+      for (const frame of frames) {
+        assert.match(renderProgressive(frame), /class="katex/, frame);
+      }
+      assert.doesNotMatch(renderProgressive('paid in $USD'), /class="katex/);
+      assert.match(renderProgressive('paid in $USD'), /\$USD/);
+      const prose = formatMsg('I like apples and $only$ words');
+      assert.doesNotMatch(prose, /class="katex/);
+    } finally {
+      if (previousMarked === undefined) delete globalThis.marked;
+      else globalThis.marked = previousMarked;
+    }
+  });
+});
+
 test('math-looking text inside inline code stays literal', () => {
   withKatex(() => {
     const previousKatex = globalThis.katex;

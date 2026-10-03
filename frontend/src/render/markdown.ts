@@ -480,11 +480,17 @@ function neutralizeKatexErrors(html: string): string {
    Broaden the check for the inline cases:
      • explicit LaTeX syntax (`^`, `_`, braces, brackets) still counts;
      • a compact, whitespace-free token counts once it carries an ASCII
-       letter. Bare alphabetic runs must be a single symbol (`D`, `x`)
-       or ALL CAPS (`AB`, `ABC` — point/segment labels); lowercase words
-       (`only`, `home`) stay literal, so currency amounts (`$5`,
-       `$1,000`) and prose fragments (`$5 and`) keep their text.
-       Known cosmetic trade-off: uppercase acronyms (`$US$`, `$OK$`)
+       letter. Bare alphabetic runs must be a single symbol (`D`, `x`),
+       ALL CAPS (`AB`, `ABC` — point/segment labels), or a capital-led
+       identifier (`Oxyz`, `Ox` — coordinate-system labels; `Abc` —
+       point labels). All-lowercase words (`only`, `home`) stay literal,
+       so currency amounts (`$5`, `$1,000`) and prose fragments (`$5 and`)
+       keep their text.
+       Known cosmetic trade-off: a capitalized English word deliberately
+       wrapped in dollars (`$Only$`, `$Note$`) now renders as math —
+       LLMs essentially never emit that shape except as a math
+       identifier, while coordinate labels like `$Oxyz$` are ubiquitous
+       in Chinese math output. Uppercase acronyms (`$US$`, `$OK$`)
        and punctuated tokens (`$N/A$`, `$P(x,y)$`) render as math.
        The fullwidth `，；：、` sit in the class so Chinese-model output
        like `$x，y$` parses the same way `$x,y$` does. */
@@ -531,7 +537,14 @@ function _isCompactMathToken(trimmed: string): boolean {
   if (!COMPACT_MATH_RE.test(trimmed)) return false;
   /* Non-letter characters (digits, parens, operators) mark real math. */
   if (/[^A-Za-z]/.test(trimmed)) return true;
-  return trimmed.length === 1 || /^[A-Z]+$/.test(trimmed);
+  if (trimmed.length === 1 || /^[A-Z]+$/.test(trimmed)) return true;
+  /* Capital-led identifiers (`Oxyz`, `Ox`, `Abc`): coordinate-system and
+     point labels. Both guards above already ran, so reaching here means
+     an all-letter token of length 2+ that is neither single nor ALL
+     CAPS — it renders only when it starts with a capital AND carries a
+     lowercase letter, keeping all-lowercase prose (`only`, `tax`) and
+     lowercase-led camelCase (`xMax`) literal. */
+  return /^[A-Z]/.test(trimmed) && /[a-z]/.test(trimmed);
 }
 
 function _looksLikeInlineMath(s: string): boolean {
@@ -639,10 +652,11 @@ export function replaceInlineDollarMath(
 
 /* A formula whose closing `$` has not arrived yet. Multi-letter words
    after a stray `$` are almost always prose (`paid in $USD`), so only
-   single symbols and punctuation-carrying tokens render live; `$AB`
-   waits one token for its closing `$` and then renders through the
-   closed pass. An open function call (`$u(x, y`) renders live because
-   the attached callee+paren is already unambiguous. */
+   single symbols, punctuation-carrying tokens and capital-led
+   identifiers (`$Oxyz`) render live; `$AB` waits one token for its
+   closing `$` and then renders through the closed pass. An open function
+   call (`$u(x, y`) renders live because the attached callee+paren is
+   already unambiguous. */
 /* A plain lowercase word (3+ letters, not a `\command`) in a spaced tail is
    prose after a currency amount (`$5+ tax`, `$10 and`), not a formula. */
 const TAIL_PROSE_WORD_RE = /(?:^|[^\\A-Za-z])[a-z]{3,}(?![A-Za-z(])/;
@@ -667,7 +681,13 @@ function _looksLikeInlineMathTail(s: string): boolean {
     return /[/^=]/.test(trimmed) && _looksLikeNumericMath(trimmed, '');
   }
   if (!COMPACT_MATH_RE.test(trimmed)) return false;
-  return /[^A-Za-z]/.test(trimmed) || trimmed.length === 1;
+  if (/[^A-Za-z]/.test(trimmed) || trimmed.length === 1) return true;
+  /* Mirror the closed pass for capital-led identifiers (`$Oxyz` renders
+     while it streams, so the closing `$` never pops a formula in).
+     ALL CAPS still waits for its closing `$`: an unclosed `$USD` is far
+     more likely the start of `$USD (about …` prose than a point label,
+     and a tail that rendered live but reverted at the close would flash. */
+  return /^[A-Z]/.test(trimmed) && /[a-z]/.test(trimmed);
 }
 
 /* Inline code spans are opaque: a `$D$` or `\alpha` behind backticks is

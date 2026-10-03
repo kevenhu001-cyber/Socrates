@@ -29,6 +29,7 @@ import {
   prepareChatRequest,
 } from './helpers.js';
 import { runChatStreamPipeline } from './pipeline/runChatStreamPipeline.js';
+import { createStreamToolContext } from './pipeline/toolContext.js';
 import { createChatTurn } from '../../services/chatTurns.js';
 
 import type { Request, Router } from 'express';
@@ -94,6 +95,20 @@ export function registerStreamRoute(router: Router) {
         () => prepareChatRequest(req, res),
         () => null,
       );
+      /* P_prep-parallel — the tool context (connector snapshots +
+         registry build) only needs the request mode, not the prepared
+         payload, so start it here alongside ownership/turn/prep instead
+         of inside the pipeline after prep settles. The connector reads
+         then overlap the RAG embedding round-trip rather than queueing
+         behind it on the path to the first token. The mode mirrors the
+         ChatPayloadSchema default; an invalid body fails prep below and
+         the orphaned promise is dropped (rejection already handled). */
+      const bodyMode = (req.body as { mode?: unknown } | undefined)?.mode;
+      const toolCtxPromise = createStreamToolContext(
+        req as typeof req & { userId?: string },
+        bodyMode === 'tutor' ? 'tutor' : 'chat',
+      );
+      toolCtxPromise.catch(() => {});
       /* Ownership must pass before the prelude runs, since the prelude may
          write a response of its own. Chaining it keeps that guarantee while
          the turn binding overlaps both. */
@@ -108,6 +123,7 @@ export function registerStreamRoute(router: Router) {
         sessionIdFromQuery,
         projectIdFromBody,
         turnId,
+        toolCtxPromise,
       });
     } catch (err) { next(err); }
   });
