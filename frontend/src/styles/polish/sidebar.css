@@ -101,17 +101,24 @@
   gap: 4px;
 }
 }
+/* Drawer search field — a quiet pill instead of the heavy filled bar
+   mobile-parity draws (border:0, 12px radius, raised block). Hairline
+   edge + pill radius echo the workspace search fields; the doubled
+   #appShell keeps parity with that restore-layer pin. */
 @media (max-width: 768px) {
-#appShell .sidebar-search {
+#appShell#appShell .sidebar-search {
   gap: 8px;
+  padding: 0 14px;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-pill);
   background: var(--ui-bg-raised);
   transition: border-color var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;
 }
 }
 @media (max-width: 768px) {
-#appShell .sidebar-search:focus-within {
+#appShell#appShell .sidebar-search:focus-within {
+  border-color: var(--ui-border-strong);
   background: var(--ui-bg-surface);
-  border-color: var(--ui-border-default);
 }
 }
 @media (max-width: 768px) {
@@ -345,25 +352,49 @@
    the diophantus tier. */
 #appShell .sidebar-upgrade-pill { display: none; }
 @media (max-width: 768px) {
+#appShell .sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  gap: 8px;
+}
+#appShell .sidebar-footer-account-wrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 10px;
+}
 #appShell .sidebar-upgrade-pill {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  flex: 0 0 auto;
-  box-sizing: border-box;
-  min-height: 30px;
-  padding: 0 12px;
+  justify-content: center;
+  width: 100%;
+  min-height: 38px;
+  padding: 0 16px;
   border: 1px solid var(--ui-border-default);
   border-radius: var(--ui-radius-pill);
-  background: transparent;
+  background: var(--ui-bg-surface);
   color: var(--ui-text-primary);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
-  line-height: 18px;
+  line-height: 20px;
   text-decoration: none;
-  white-space: nowrap;
+  text-align: center;
+  box-sizing: border-box;
 }
 #appShell .sidebar-upgrade-pill:hover,
 #appShell .sidebar-upgrade-pill:focus-visible { background: var(--ui-bg-hover); }
+#appShell #navAssistants,
+#appShell #navSites,
+#appShell #navExam,
+#appShell #navSkills {
+  display: none;
+}
+#appShell .sidebar-nav-btn[data-nav="new"] {
+  background: var(--ui-bg-surface);
+  color: var(--ui-text-primary);
+  border-radius: var(--ui-radius-lg);
+}
 }
 
 /* ── More popover ── */
