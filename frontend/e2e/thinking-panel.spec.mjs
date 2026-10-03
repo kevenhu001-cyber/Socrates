@@ -140,7 +140,9 @@ test('the thinking placeholder is clickable before reasoning arrives', async ({ 
   await installReasoningStream(page, { immediate: false });
   await bootChat(page);
 
-  const dot = page.locator('.msg.assistant .thinking-dot').last();
+  /* P_thinking-unified — the pre-first-token line is the same pill shape
+     as every other live phase; only the label differs. */
+  const dot = page.locator('.msg.assistant .thinking-status').last();
   await expect(dot).toBeVisible();
   await expect(dot).toHaveAttribute('role', 'button');
   const spinner = dot.locator('.thinking-spinner');

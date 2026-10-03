@@ -1,16 +1,18 @@
 /**
  * react/tool-run/TurnStatus.tsx — the one live status line of a turn.
  *
- * While an answer streams, the reader is told what the assistant is doing by
- * up to three legacy surfaces: the `.thinking-placeholder` dot (before the
- * first token, with phase copy and a quiet elapsed cue), the `.thinking-status`
- * reasoning pill, and a `.msg-error` block when the wait expired. They were
- * separate DOM appenders, each created and removed at a different moment, which
- * is how a turn ended up showing two "working on it" lines at once — or, after
- * React took over the bubble, zero.
+ * While an answer streams, the reader is told what the assistant is doing
+ * through `message._liveStatus`, and this is the only thing that draws it,
+ * so a turn can never show two "working on it" lines at once.
  *
- * Here there is exactly one slot, and `phase` picks which shape fills it. The
- * markup and class names match the stylesheet that already exists.
+ * P_thinking-unified — every live phase (waiting for the first token,
+ * streaming reasoning, tool-running, retrying) renders the SAME markup:
+ * one `span.thinking-status` pill with the shared 14px spinner and a flat
+ * label. Only the label text (and the quiet elapsed cue) changes between
+ * phases, so React updates the text in place: no remount, no box change,
+ * no visible jump when the first token lands or reasoning starts. The
+ * error / stopped phases keep their own block — they replace the answer,
+ * not continue it.
  */
 import { getLegacyActions, i18n } from '../legacy/gateway.js';
 import type { LiveTurnStatus } from '../types/domain';
@@ -45,42 +47,26 @@ function ThinkingSpinner() {
   return <span className="thinking-spinner" aria-hidden="true" />;
 }
 
-function WaitingLine({ status, messageId }: TurnStatusProps) {
+function StatusLine({ status, messageId }: TurnStatusProps) {
   const clickable = status.clickable !== false;
+  /* The quiet elapsed cue belongs to the waiting phase only — it is the
+     sole writer of `elapsedSec`, so no other phase can grow this pill. */
   const elapsed = status.elapsedSec && status.elapsedSec >= 12 ? `${status.elapsedSec}s` : '';
-  return (
-    <div className="thinking-placeholder">
-      <span
-        className={`thinking-dot${clickable ? ' thinking-dot-clickable' : ''}${elapsed ? ' thinking-elapsed-shown' : ''}`}
-        data-mode={status.mode || 'chat'}
-        data-elapsed={elapsed || undefined}
-        role={clickable ? 'button' : undefined}
-        tabIndex={clickable ? 0 : undefined}
-        aria-label={clickable ? i18n('think.openPanel', 'View thinking process') : undefined}
-        onClick={clickable ? () => openThinkingPanel(messageId) : undefined}
-        onKeyDown={clickable ? panelKeyHandler(messageId) : undefined}
-      >
-        <ThinkingSpinner />
-        <span className="thinking-dot-label">{status.label}</span>
-      </span>
-    </div>
-  );
-}
-
-function ReasoningLine({ status, messageId }: TurnStatusProps) {
+  const onOpen = clickable ? (event: React.SyntheticEvent<HTMLElement>) => {
+    event.preventDefault();
+    openThinkingPanel(messageId);
+  } : undefined;
   return (
     <span
-      className="thinking-status thinking-status-clickable"
-      data-mode="tool"
+      className={`thinking-status thinking-status-clickable${elapsed ? ' thinking-elapsed-shown' : ''}`}
+      data-mode={status.mode || 'tool'}
       data-state={status.state || undefined}
-      role="button"
-      tabIndex={0}
-      aria-label={i18n('think.openPanel', 'View thinking process')}
-      onClick={(event) => {
-        event.preventDefault();
-        openThinkingPanel(messageId);
-      }}
-      onKeyDown={panelKeyHandler(messageId)}
+      data-elapsed={elapsed || undefined}
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      aria-label={clickable ? i18n('think.openPanel', 'View thinking process') : undefined}
+      onClick={onOpen}
+      onKeyDown={clickable ? panelKeyHandler(messageId) : undefined}
     >
       <ThinkingSpinner />
       <span className="thinking-status-label" aria-live="polite">
@@ -143,9 +129,9 @@ export function TurnStatus(props: TurnStatusProps) {
   if (!status || !status.phase) return null;
   if (status.phase === 'error') return <FailedLine {...props} />;
   if (status.phase === 'stopped') return <StoppedLine {...props} />;
-  if (status.phase === 'waiting') return <WaitingLine {...props} />;
   if (!status.label) return null;
-  return <ReasoningLine {...props} />;
+  /* waiting / thinking / tool-running / retrying: one shape. */
+  return <StatusLine {...props} />;
 }
 
 export default TurnStatus;

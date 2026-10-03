@@ -451,11 +451,10 @@ export function addStreamingMessage(opts){
     if(!reactLive||statusIsBusy())return;
     /* Reasoning owns the line once it starts. Reasoning deltas re-stamp
        phase "thinking" on every chunk; the 1s elapsed tick would otherwise
-       flip the pill back to the waiting shape between deltas. The two
-       shapes have different margins/padding, so the label visibly jumped
-       for the whole reasoning phase. One-way rule: waiting may not
-       overwrite a thinking line — only content (append/tool activity)
-       retires it. */
+       flip the label back to the waiting copy between deltas. One-way rule:
+       waiting may not overwrite a thinking line — only content (append/tool
+       activity) retires it. (P_thinking-unified: all live phases share one
+       pill shape, so this is purely about label stability now, not layout.) */
     var _owner=liveMessage();
     var _prev=_owner&&_owner._liveStatus;
     if(_prev&&_prev.phase==="thinking")return;
