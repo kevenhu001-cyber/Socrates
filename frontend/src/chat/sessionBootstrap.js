@@ -31,13 +31,15 @@ import { generateId } from '../util/ids.js';
 import { pushChatIdToURL, setChatIdInURL } from '../session/store.js';
 import { syncChatModel, getActiveProvider } from '../pickers.js';
 import { activateMainView } from '../ui/mainViewController.js';
-import { updateSendBtn, updateStartBtn } from '../ui/topicSetup.js';
+import { placeComposerForView } from '../ui/mainViewController.js';
+import { updateComposerBtn } from '../ui/topicSetup.js';
 import { publishReactChatRuntime, } from '../ui/reactBridge.js';
 import { publishThinkingTurnStart } from '../ui/messageSnapshot.js';
 import { clearLegacyMsgListChildren } from '../ui/messageListDom.js';
 import { formatMsg } from '../render/markdown.js';
 import { apiFetch } from '../util/api.js';
 import {
+  clearComposer,
   getComposerMarkdown,
   focusComposer,
 } from '../react/composer-input/controller.ts';
@@ -207,6 +209,11 @@ export async function startSession(){
        itself stays instant and the incoming motion is carried by the
        message entrance (`msgIn`) and the send-time anchor glide. */
     activateMainView("chatView", document);
+    /* P_composer-single — the topic draft was consumed above; clear it
+       before the flip so the sent text does not travel with the single
+       editor into the now-visible chat composer (the two-box build left
+       it behind in the hidden topic editor). */
+    try{ clearComposer("topic"); }catch(_){/* best effort */}
     clearLegacyMsgListChildren();
 
     /* The user turn must precede its assistant placeholder in the
@@ -231,7 +238,7 @@ export async function startSession(){
        leak its draft state into the now-visible chat composer. */
     if(typeof resetAttachments === "function") resetAttachments();
     if(typeof renderAttachmentChips === "function") renderAttachmentChips();
-    if(typeof updateSendBtn === "function") updateSendBtn();
+    if(typeof updateComposerBtn === "function") updateComposerBtn();
     updateKB();
     updateChatStats();
 
@@ -330,8 +337,8 @@ export async function startSession(){
      proceed with an empty attachment list. */
   if(typeof resetAttachments === "function") resetAttachments();
   if(typeof renderAttachmentChips === "function") renderAttachmentChips();
-  if(typeof updateStartBtn === "function") updateStartBtn();
-  if(typeof updateSendBtn === "function") updateSendBtn();
+  if(typeof updateComposerBtn === "function") updateComposerBtn();
+  if(typeof updateComposerBtn === "function") updateComposerBtn();
   if(typeof buildMessageContent === "function"){
     /* Fire-and-forget — on the SNAPSHOT taken before resetAttachments,
        not the cleared live store (same bug class as the chat branch:
@@ -393,6 +400,10 @@ export async function startSession(){
     if(dv){dv.classList.add("hidden");dv.innerHTML="";}
     var ts=document.getElementById("topicSetup");
     if(ts)ts.classList.remove("hidden");
+    /* P_composer-single — this path bypasses activateMainView, so park
+       the shell explicitly or it stays stranded under the hidden chat
+       view while landing is visible. */
+    try{ placeComposerForView("topicSetup", document); }catch(_){/* best effort */}
     clearComposerPlugins("topic");
     clearComposerPlugins("chat");
     focusComposer("topic");

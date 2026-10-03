@@ -12,18 +12,16 @@
    composer skin does not change between landing and in-chat — no fade
    gradient, no extra padding-top. */
 .chat-input-bar{background:transparent}
-/* UI-align: chat-input-wrap mirrors topic-input-wrap. The width, radius,
-   border, shadow, and focus feedback here intentionally duplicate
-   topic-input-wrap so the composer skin does not change between surfaces. */
- .chat-input-wrap .attachment-chips{order:0;flex-basis:100%}
+/* P_composer-single — one shell, one selector for the width, radius,
+   border, shadow and focus feedback. */
+ .composer-input-wrap .attachment-chips{order:0;flex-basis:100%}
 
 /* UI-align: send-btn mirrors start-btn. Same 30px circle footprint and
    15px SVG so the run control does not change size between landing and
    in-chat. */
 
 /* Mic button (data-action="toggleSpeechInput") — sit inside the composer
-   footer as a 30px circular control. Two render surfaces use it:
-     `.topic-input-wrap` and `.chat-input-wrap`. The footer's parent
+   footer as a 30px circular control. The footer's parent
    grid handles placement; this rule only owns the visual footprint. */
 @keyframes voiceGlyph{to{transform:translateY(-1px)}}
 
@@ -98,7 +96,7 @@
      the composer geometry stable while the keyboard transition is in flight.
      The cap stays above 132px (≈ 4 lines) so single-screen messages remain
      fully readable. */
-  .chat-input-wrap.composer-focused .attachment-chips{
+  .composer-input-wrap.composer-focused .attachment-chips{
     /* Shrink the chip strip under the keyboard so the wrap doesn't
        overflow. The chips keep their own overflow-y:auto so the user
        can still see all attachments by scrolling the strip. */

@@ -59,7 +59,7 @@ test('assistant can be created and started from More', async ({ page }) => {
   await page.locator('#assistantsPanel [data-action=use]').click();
   await expect(page.locator('#topicSetup')).toBeVisible();
   await expect.poll(() => page.evaluate(() => sessionStorage.getItem('socrates-active-assistant'))).toBe('assistants-1');
-  await expect(page.locator('#topicComposerRoot')).toContainText('Help me with algebra');
+  await expect(page.locator('#composerRoot')).toContainText('Help me with algebra');
 });
 
 test('Create site returns to chat and activates create-site mode', async ({ page }) => {
@@ -67,7 +67,7 @@ test('Create site returns to chat and activates create-site mode', async ({ page
   await page.getByRole('button', { name: 'Create site' }).click();
   await expect(page.locator('#sitesPanel')).toBeHidden();
   await expect(page.locator('#topicSetup')).toBeVisible();
-  await expect(page.locator('#topicComposerRoot [data-extension-key="createSite"]')).toBeVisible();
+  await expect(page.locator('#composerRoot [data-extension-key="createSite"]')).toBeVisible();
   await expect(page.locator('.creation-editor[data-editor="sites"]')).toHaveCount(0);
 });
 

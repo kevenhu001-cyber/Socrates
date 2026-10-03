@@ -20,7 +20,7 @@ test('mobile composer groups tools, filters actions, and reflects active search'
   await enterChat(page);
 
   const menu = page.locator('#composerToolsMenu');
-  await page.locator('#chatComposerToolsBtn').click();
+  await page.locator('#composerToolsBtn').click();
   await expect(menu).toBeVisible();
   await expect(menu.locator('.composer-tools-mobile-items .composer-tools-group-label').first())
     .toContainText(/Add context|添加资料/);
@@ -36,7 +36,7 @@ test('mobile composer groups tools, filters actions, and reflects active search'
   await menu.locator('.composer-tools-mobile-items [data-composer-action="webSearch"]').click();
   await expect(menu).toHaveClass(/hidden/);
 
-  await page.locator('#chatComposerToolsBtn').click();
+  await page.locator('#composerToolsBtn').click();
   await expect(menu.locator('.composer-tools-mobile-items [data-composer-action="webSearch"]'))
     .toHaveAttribute('aria-pressed', 'true');
   await expect(menu.locator('.composer-tools-mobile-items [data-composer-action="webSearch"] .composer-tools-active-dot'))
@@ -45,7 +45,7 @@ test('mobile composer groups tools, filters actions, and reflects active search'
 
   await page.keyboard.press('Escape');
   await expect(menu).toHaveClass(/hidden/);
-  await expect(page.locator('#chatComposerToolsBtn')).toBeFocused();
+  await expect(page.locator('#composerToolsBtn')).toBeFocused();
 });
 
 test('mobile plugin status explains the empty state and opens the connector directory', async ({ page }) => {
@@ -55,7 +55,7 @@ test('mobile plugin status explains the empty state and opens the connector dire
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
   await enterChat(page);
-  await page.locator('#chatComposerToolsBtn').click();
+  await page.locator('#composerToolsBtn').click();
 
   const menu = page.locator('#composerToolsMenu');
   await expect(menu.locator('.composer-tools-plugin-state'))

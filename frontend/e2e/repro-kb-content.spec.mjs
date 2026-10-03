@@ -80,7 +80,7 @@ test('A: clean focus at bottom', async ({ page }) => {
   await page.evaluate(() => { const l = document.getElementById('msgList'); l.scrollTop = l.scrollHeight; });
   await page.waitForTimeout(150);
   await snapshot(page, 'A before-focus');
-  await page.locator('#chatComposerRoot .rich-composer-editor').first().focus();
+  await page.locator('#composerRoot .rich-composer-editor').first().focus();
   await page.waitForTimeout(100);
   await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
   await page.waitForTimeout(600);
@@ -93,7 +93,7 @@ test('B: sloppy tap (touchmove drift) then focus', async ({ page }) => {
   await page.waitForTimeout(150);
   await snapshot(page, 'B before-focus');
   await page.evaluate(() => {
-    const el = document.querySelector('#chatComposerRoot .rich-composer-editor');
+    const el = document.querySelector('#composerRoot .rich-composer-editor');
     const r = el.getBoundingClientRect();
     const x = r.left + r.width / 2, y = r.top + 10;
     const t = new Touch({ identifier: 1, target: el, clientX: x, clientY: y });
@@ -128,7 +128,7 @@ test('C: wheel-up (scrolledAway) then back to bottom WITHOUT new scroll, then fo
   });
   await page.waitForTimeout(100);
   await snapshot(page, 'C back-at-bottom');
-  await page.locator('#chatComposerRoot .rich-composer-editor').first().focus();
+  await page.locator('#composerRoot .rich-composer-editor').first().focus();
   await page.waitForTimeout(100);
   await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
   await page.waitForTimeout(600);

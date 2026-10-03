@@ -11,7 +11,7 @@ export function bootstrapReactCompatibilityRuntime(): Root {
     mountAssistantTurn(container, message as LegacyChatMessage, options);
   window.__socratesReleaseAssistantTurns = releaseAssistantTurns;
   installChatRuntimeBridge();
-  for (const id of ['newReplyPill', 'sendBtnContent']) {
+  for (const id of ['newReplyPill', 'composerPrimaryBtnContent']) {
     if (!document.getElementById(id)) throw new Error(`React mount target "#${id}" was not found.`);
   }
   configureMountRegistry(mountRegistryList());

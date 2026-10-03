@@ -1,6 +1,7 @@
 // Direct listeners for the few static shell controls that sit outside React
 // roots. This is intentionally an explicit element map, not an action-string
 // interpreter or a document-wide event dispatcher.
+import { readComposerSurface } from '../react/composer-input/controller.ts';
 
 let mounted = false;
 
@@ -23,12 +24,26 @@ export function mountLegacyShellListeners(actions) {
   click('shareBtn', actions.openShare);
   click('apiSettingsBtn', actions.openSettings);
   bind(document, 'socrates:open-settings', actions.openSettings);
-  click('startBtn', () => {
-    /* Empty-topic voice input: the old document-wide data-action dispatcher
-       routed a non-active start button to toggleSpeechInput('topic'); keep
-       that behavior now that the button is bound directly. The dedicated
-       mic button next to it is the same entry point — both route here. */
-    const button = byId('startBtn');
+  click('composerPrimaryBtn', () => {
+    /* P_composer-single — one primary control for the single shell. Each
+       surface keeps its predecessor's exact contract: empty routes to
+       voice input, a draft submits (landing starts a session, chat
+       sends), streaming falls through to sendMessage, whose wrapper
+       aborts the live turn. */
+    const button = byId('composerPrimaryBtn');
+    let surface = 'topic';
+    try { surface = readComposerSurface(); } catch (_) { /* default above */ }
+    if (surface === 'chat') {
+      if (button && !button.classList.contains('active')
+          && !button.classList.contains('chat-stop')
+          && !button.classList.contains('agent-stop')
+          && typeof window.toggleSpeechInput === 'function') {
+        window.toggleSpeechInput('chat');
+        return;
+      }
+      actions.sendMessage();
+      return;
+    }
     if (button && !button.classList.contains('active')
         && typeof window.toggleSpeechInput === 'function') {
       window.toggleSpeechInput('topic');
@@ -36,25 +51,10 @@ export function mountLegacyShellListeners(actions) {
     }
     actions.startSession();
   });
-  click('sendBtn', () => {
-    /* The shared primary control is voice input while empty and send while a
-       draft exists. This is identical on the landing and conversation
-       surfaces, so moving between them never changes the control contract. */
-    const button = byId('sendBtn');
-    if (button && !button.classList.contains('active')
-        && !button.classList.contains('chat-stop')
-        && !button.classList.contains('agent-stop')
-        && typeof window.toggleSpeechInput === 'function') {
-      window.toggleSpeechInput('chat');
-      return;
-    }
-    actions.sendMessage();
-  });
-  click('topicMobileMicBtn', () => {
-    if (typeof window.toggleSpeechInput === 'function') window.toggleSpeechInput('topic');
-  });
-  click('chatMobileMicBtn', () => {
-    if (typeof window.toggleSpeechInput === 'function') window.toggleSpeechInput('chat');
+  click('composerMicBtn', () => {
+    let surface = 'topic';
+    try { surface = readComposerSurface(); } catch (_) { /* default above */ }
+    if (typeof window.toggleSpeechInput === 'function') window.toggleSpeechInput(surface);
   });
   click('mobileModeTrigger', actions.toggleMobileMode);
   click('sidebarSearchBtn', (event) => {
@@ -67,8 +67,11 @@ export function mountLegacyShellListeners(actions) {
     if (open) requestAnimationFrame(() => input?.focus());
   });
 
-  bind(byId('topicComposerToolsBtn'), 'click', (event) => actions.toggleComposerTools(event.currentTarget, 'topic'));
-  bind(byId('chatComposerToolsBtn'), 'click', (event) => actions.toggleComposerTools(event.currentTarget, 'chat'));
+  bind(byId('composerToolsBtn'), 'click', (event) => {
+    let surface = 'topic';
+    try { surface = readComposerSurface(); } catch (_) { /* default above */ }
+    actions.toggleComposerTools(event.currentTarget, surface);
+  });
   document.querySelectorAll('.effort-trigger').forEach((element) => {
     bind(element, 'click', () => actions.toggleEffort(element));
   });

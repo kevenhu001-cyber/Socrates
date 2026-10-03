@@ -24,7 +24,7 @@ test('diag', async ({ page }) => {
     const m = await page.evaluate(() => {
       const bar=document.getElementById('chatInputBar'),list=document.getElementById('msgList'),view=document.getElementById('chatView');
       const msgs=list.querySelectorAll('.msg'),last=msgs[msgs.length-1];
-      return {barTop:bar.getBoundingClientRect().top,barH:bar.getBoundingClientRect().height,wrapTop:document.getElementById('chatInputWrap').getBoundingClientRect().top,pad:getComputedStyle(list).paddingBottom,varH:view.style.getPropertyValue('--chat-input-bar-height'),lastBottom:last?last.getBoundingClientRect().bottom:null,st:list.scrollTop,sh:list.scrollHeight,ch:list.clientHeight,n:msgs.length};
+      return {barTop:bar.getBoundingClientRect().top,barH:bar.getBoundingClientRect().height,wrapTop:document.getElementById('composerInputWrap').getBoundingClientRect().top,pad:getComputedStyle(list).paddingBottom,varH:view.style.getPropertyValue('--chat-input-bar-height'),lastBottom:last?last.getBoundingClientRect().bottom:null,st:list.scrollTop,sh:list.scrollHeight,ch:list.clientHeight,n:msgs.length};
     });
     console.log('[diag:'+vp[2]+']', JSON.stringify(m));
     await page.screenshot({ path: 'test-results/diag-'+vp[2]+'.png' });

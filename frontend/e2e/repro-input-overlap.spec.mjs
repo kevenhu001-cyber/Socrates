@@ -18,7 +18,7 @@ test('measure composer and reserve - what is happening?', async ({ page }) => {
   const initial = await page.evaluate(() => {
     const list = document.getElementById('msgList');
     const bar = document.getElementById('chatInputBar');
-    const wrap = document.getElementById('chatInputWrap');
+    const wrap = document.getElementById('composerInputWrap');
     const view = document.getElementById('chatView');
     return {
       barHeight: bar.getBoundingClientRect().height,

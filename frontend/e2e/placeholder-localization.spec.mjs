@@ -11,7 +11,7 @@ test('zh UI localizes live with the bundled Plus Jakarta Sans face', async ({ pa
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await expect(editor).toHaveAttribute('aria-label', 'Ask Socrates');
 
   /* Switch the app language at runtime — the composer must re-localize

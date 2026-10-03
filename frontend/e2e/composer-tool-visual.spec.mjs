@@ -17,7 +17,7 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.setViewportSize({ width: 1440, height: 960 });
-  await page.locator('#topicComposerRoot .rich-composer-editor').fill('How does the Socratic method improve learning?');
+  await page.locator('#composerRoot .rich-composer-editor').fill('How does the Socratic method improve learning?');
   await page.screenshot({ path: 'test-results/visual-qa/topic-dark.png', fullPage: true });
 
   await page.evaluate(async () => {
@@ -44,7 +44,7 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   // they must NOT be created in the live chat path.
   await expect(page.locator('.tool-run-group')).toHaveCount(0);
   await expect(page.locator('.agent-tool-card')).toHaveCount(0);
-  const chatComposer = page.locator('#chatInputWrap');
+  const chatComposer = page.locator('#composerInputWrap');
   await expect(chatComposer.locator('.rich-composer-toolbar')).toBeHidden();
   const desktopComposerBox = await chatComposer.boundingBox();
   // The workbench content column is the shared 768px reading column.
@@ -61,13 +61,13 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
       return rect ? { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom } : null;
     };
     return {
-      attach: box('#chatInputWrap .attach-btn'),
-      // #chatComposerRoot is a display:contents wrapper on desktop
+      attach: box('#composerInputWrap .attach-btn'),
+      // #composerRoot is a display:contents wrapper on desktop
       // (styles/parity/composer-unified.css); the editable box is the real item.
-      editor: box('#chatComposerRoot .rich-composer-editor'),
-      effort: box('#chatInputWrap .effort-picker'),
-      mic: box('#chatMobileMicBtn'),
-      send: box('#sendBtn'),
+      editor: box('#composerRoot .rich-composer-editor'),
+      effort: box('#composerInputWrap .effort-picker'),
+      mic: box('#composerMicBtn'),
+      send: box('#composerPrimaryBtn'),
     };
   });
   /* P_composer-unify — the conversation composer IS the landing composer:
@@ -95,8 +95,8 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
   });
   await page.waitForTimeout(400);
-  const mobileComposer = page.locator('#chatInputWrap');
-  const mobileEditor = page.locator('#chatComposerRoot .rich-composer-editor');
+  const mobileComposer = page.locator('#composerInputWrap');
+  const mobileEditor = page.locator('#composerRoot .rich-composer-editor');
   await expect(mobileComposer.locator('.rich-composer-toolbar')).toBeHidden();
   /* The reference keeps the reasoning-effort pill visible at rest. */
   await expect(mobileComposer.locator('.effort-picker')).toBeVisible();
@@ -113,11 +113,11 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
       return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
     };
     return {
-      left: rect('#chatInputWrap .footer-left-group'),
-      editor: rect('#chatInputWrap .rich-composer-editor'),
-      send: rect('#sendBtn'),
-      bodyDisplay: getComputedStyle(document.querySelector('#chatInputWrap .composer-footer')).display,
-      bodyColumns: getComputedStyle(document.querySelector('#chatInputWrap .composer-footer')).gridTemplateColumns,
+      left: rect('#composerInputWrap .footer-left-group'),
+      editor: rect('#composerInputWrap .rich-composer-editor'),
+      send: rect('#composerPrimaryBtn'),
+      bodyDisplay: getComputedStyle(document.querySelector('#composerInputWrap .composer-footer')).display,
+      bodyColumns: getComputedStyle(document.querySelector('#composerInputWrap .composer-footer')).gridTemplateColumns,
     };
   });
   console.log('[mobile-collapsed-geometry]', JSON.stringify(collapsedGeometry));
@@ -133,7 +133,7 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   // already visible at rest, matching the reference.
   await expect.poll(async () => (await mobileComposer.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual((collapsedBox?.height ?? 0) - 1);
   const focusedBox = await mobileComposer.boundingBox();
-  const focusedEditorBox = await page.locator('#chatInputWrap .rich-composer-editor').boundingBox();
+  const focusedEditorBox = await page.locator('#composerInputWrap .rich-composer-editor').boundingBox();
   /* The effort pill is already visible at rest, so focus only narrows the
      editor column while every control stays on the same row. */
   // The mobile rail keeps the reasoning control exposed, leaving a

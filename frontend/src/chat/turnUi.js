@@ -83,12 +83,12 @@ export function resendLastUserMessage() {
   return false;
 }
 
-/* Morph the send button into a red Stop button during streaming,
+/* Morph the primary button into a red Stop button during streaming,
    or restore it to the normal send arrow when idle. React owns
-   #sendBtnContent and re-renders the icon from dataset.stop, so
-   this function only toggles the dataset + CSS class. */
+   #composerPrimaryBtnContent and re-renders the icon from dataset.stop,
+   so this function only toggles the dataset + CSS class. */
 export function setChatStopState(active) {
-  var btn = document.getElementById('sendBtn');
+  var btn = document.getElementById('composerPrimaryBtn');
   if (!btn) return;
   if (active) {
     btn.classList.add('chat-stop');
@@ -97,13 +97,13 @@ export function setChatStopState(active) {
     btn.classList.remove('chat-stop');
     btn.dataset.stop = '0';
   }
-  /* React owns #sendBtnContent and re-renders the icon from dataset.stop. */
+  /* React owns #composerPrimaryBtnContent and re-renders the icon from dataset.stop. */
 }
 
 /* Wrapper for the send/stop button click. When a stream is active,
    clicking stops it; otherwise it sends the message. */
 export function handleSendClick() {
-  var btn = document.getElementById('sendBtn');
+  var btn = document.getElementById('composerPrimaryBtn');
   if (btn && btn.dataset.stop === '1') {
     /* M2 Stop semantics — aborting the socket only detaches the feed
        when the turn is bound; flip the server turn to interrupted so

@@ -3,7 +3,7 @@
  *
  * The legacy module (`src/attachments.js`) owns the pending-attachment
  * store; the renderer in `src/attachments/render.js` mirrors it into
- * `#attachmentChips` and `#topicAttachmentChips`. This module describes
+ * `#composerAttachmentChips`. This module describes
  * what the React compatibility root needs to know to render the same
  * rows.
  */

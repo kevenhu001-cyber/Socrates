@@ -28,11 +28,11 @@ test('light conversation home has a neutral readable palette and balanced compos
       getComputedStyle(document.querySelector(selector))[property];
     return {
       title: rect('#topicTitle'),
-      composer: rect('#topicInputWrap'),
-      topicFontSize: parseFloat(getComputedStyle(document.querySelector('#topicComposerRoot .rich-composer-editor')).fontSize),
+      composer: rect('#composerInputWrap'),
+      topicFontSize: parseFloat(getComputedStyle(document.querySelector('#composerRoot .rich-composer-editor')).fontSize),
       pageBackground: rgb('.main-content'),
       sidebarBackground: rgb('#sidebar'),
-      composerBackground: rgb('#topicInputWrap'),
+      composerBackground: rgb('#composerInputWrap'),
       titleColor: rgb('#topicTitle', 'color'),
     };
   });
@@ -66,7 +66,7 @@ test('light conversation home has a neutral readable palette and balanced compos
   expect(luminance(geometry.composerBackground)).toBeGreaterThanOrEqual(luminance(geometry.pageBackground));
   expect(contrast(geometry.titleColor, geometry.pageBackground)).toBeGreaterThan(10);
 
-  const editor = page.locator('#topicComposerRoot .rich-composer-editor');
+  const editor = page.locator('#composerRoot .rich-composer-editor');
   await page.locator('#navNew').focus();
   await page.keyboard.press('Tab');
   const focusedControl = await page.evaluate(() => ({
@@ -78,10 +78,10 @@ test('light conversation home has a neutral readable palette and balanced compos
   expect(focusedControl.outlineStyle).toBe('solid');
   expect(focusedControl.outlineWidth).toBe('2px');
 
-  const beforeFocus = await page.locator('#topicInputWrap').boundingBox();
+  const beforeFocus = await page.locator('#composerInputWrap').boundingBox();
   await editor.click();
-  await expect(page.locator('#topicInputWrap')).toHaveClass(/composer-focused/);
-  const afterFocus = await page.locator('#topicInputWrap').boundingBox();
+  await expect(page.locator('#composerInputWrap')).toHaveClass(/composer-focused/);
+  const afterFocus = await page.locator('#composerInputWrap').boundingBox();
   expect(Math.abs((afterFocus?.y ?? 0) - (beforeFocus?.y ?? 0))).toBeLessThanOrEqual(1);
   expect(consoleErrors).toEqual([]);
 
@@ -100,9 +100,9 @@ test('light conversation home has a neutral readable palette and balanced compos
     const setup = document.getElementById('topicSetup');
     if (setup) setup.scrollTop = 0;
   });
-  await expect(page.locator('#topicInputWrap')).toBeVisible();
+  await expect(page.locator('#composerInputWrap')).toBeVisible();
   await expect(page.locator('.home-ideas, .chat-suggestions, #topicQuickActions')).toHaveCount(0);
-  const mobileComposer = await page.locator('#topicInputWrap').boundingBox();
+  const mobileComposer = await page.locator('#composerInputWrap').boundingBox();
   /* The empty state pins the prompt to the bottom action band: the capsule's
      bottom edge rests on the safe-area inset above the viewport foot. */
   const mobileComposerBottom = (mobileComposer?.y ?? 0) + (mobileComposer?.height ?? 0);

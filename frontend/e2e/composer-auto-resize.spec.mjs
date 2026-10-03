@@ -55,8 +55,8 @@ async function sampleDuring(page, wrapSelector, action, duration = 450) {
 
 test('topic composer changes geometry only after a second rendered line', async ({ page }) => {
   await openApp(page);
-  const wrap = page.locator('#topicInputWrap');
-  const editor = page.locator('#topicComposerRoot .rich-composer-editor');
+  const wrap = page.locator('#composerInputWrap');
+  const editor = page.locator('#composerRoot .rich-composer-editor');
   const baseline = await heightOf(wrap);
 
   await editor.focus();
@@ -67,7 +67,7 @@ test('topic composer changes geometry only after a second rendered line', async 
   await page.waitForTimeout(80);
   expect(await heightOf(wrap)).toBe(baseline);
 
-  const growth = await sampleDuring(page, '#topicInputWrap', async () => {
+  const growth = await sampleDuring(page, '#composerInputWrap', async () => {
     await editor.fill('First line\nSecond line');
   });
   expect(await heightOf(wrap)).toBeGreaterThan(baseline);
@@ -88,7 +88,7 @@ test('topic composer changes geometry only after a second rendered line', async 
      otherwise starts inside the growth animation's tail, which reads as a
      bounce. */
   await settle(wrap);
-  const shrink = await sampleDuring(page, '#topicInputWrap', async () => {
+  const shrink = await sampleDuring(page, '#composerInputWrap', async () => {
     await editor.fill('Back');
   });
   /* The capsule glides back to the one-row baseline; poll for the settled
@@ -108,18 +108,18 @@ test('topic composer changes geometry only after a second rendered line', async 
 });
 test('chat composer stays continuous through paste, rapid delete and resize', async ({ page }) => {
   await openApp(page);
-  const topic = page.locator('#topicComposerRoot .rich-composer-editor');
+  const topic = page.locator('#composerRoot .rich-composer-editor');
   await topic.fill('Open the conversation');
   await topic.press('Enter');
   await expect(page.locator('#chatView')).toBeVisible();
 
-  const wrap = page.locator('#chatInputWrap');
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor');
+  const wrap = page.locator('#composerInputWrap');
+  const editor = page.locator('#composerRoot .rich-composer-editor');
   const baseline = await heightOf(wrap);
   await editor.focus();
   expect(await heightOf(wrap)).toBe(baseline);
 
-  const growth = await sampleDuring(page, '#chatInputWrap', async () => {
+  const growth = await sampleDuring(page, '#composerInputWrap', async () => {
     await editor.fill('Pasted first line\nPasted second line\nPasted third line');
   });
   /* The multiline layout is a designed two-tier grid (editor row + control
@@ -137,7 +137,7 @@ test('chat composer stays continuous through paste, rapid delete and resize', as
   }
 
   await settle(wrap);
-  const shrink = await sampleDuring(page, '#chatInputWrap', async () => {
+  const shrink = await sampleDuring(page, '#composerInputWrap', async () => {
     await editor.fill('short');
   });
   /* Same settled-height poll as the topic composer above: the capsule
@@ -165,8 +165,8 @@ test('desktop composers stay compact single-row and return to their exact baseli
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
-  const topicWrap = page.locator('#topicInputWrap');
-  const topicEditor = page.locator('#topicComposerRoot .rich-composer-editor');
+  const topicWrap = page.locator('#composerInputWrap');
+  const topicEditor = page.locator('#composerRoot .rich-composer-editor');
   const topicBaseline = await heightOf(topicWrap);
   await topicEditor.focus();
   expect(await heightOf(topicWrap)).toBe(topicBaseline);
@@ -186,8 +186,8 @@ test('desktop composers stay compact single-row and return to their exact baseli
   await topicEditor.press('Enter');
   await expect(page.locator('#chatView')).toBeVisible();
 
-  const chatWrap = page.locator('#chatInputWrap');
-  const chatEditor = page.locator('#chatComposerRoot .rich-composer-editor');
+  const chatWrap = page.locator('#composerInputWrap');
+  const chatEditor = page.locator('#composerRoot .rich-composer-editor');
   const chatBaseline = await heightOf(chatWrap);
   await chatEditor.focus();
   expect(await heightOf(chatWrap)).toBe(chatBaseline);

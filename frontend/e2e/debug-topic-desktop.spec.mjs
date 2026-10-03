@@ -26,22 +26,22 @@ test('DEBUG: topic composer on DESKTOP — focus + 1 line behavior', async ({ pa
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  const baseline = await snapshotWrap(page, '#topicInputWrap');
+  const baseline = await snapshotWrap(page, '#composerInputWrap');
   console.log('DESKTOP TOPIC BASELINE:', JSON.stringify(baseline));
 
-  await page.locator('#topicComposerRoot .rich-composer-editor').focus();
+  await page.locator('#composerRoot .rich-composer-editor').focus();
   await page.waitForTimeout(150);
-  const afterFocus = await snapshotWrap(page, '#topicInputWrap');
+  const afterFocus = await snapshotWrap(page, '#composerInputWrap');
   console.log('DESKTOP TOPIC AFTER FOCUS:', JSON.stringify(afterFocus));
 
-  await page.locator('#topicComposerRoot .rich-composer-editor').fill('First line only');
+  await page.locator('#composerRoot .rich-composer-editor').fill('First line only');
   await page.waitForTimeout(300);
-  const afterOneLine = await snapshotWrap(page, '#topicInputWrap');
+  const afterOneLine = await snapshotWrap(page, '#composerInputWrap');
   console.log('DESKTOP TOPIC AFTER 1LINE:', JSON.stringify(afterOneLine));
 
-  await page.locator('#topicComposerRoot .rich-composer-editor').fill('A much longer line of text that should wrap to the second line on desktop');
+  await page.locator('#composerRoot .rich-composer-editor').fill('A much longer line of text that should wrap to the second line on desktop');
   await page.waitForTimeout(500);
-  const afterMulti = await snapshotWrap(page, '#topicInputWrap');
+  const afterMulti = await snapshotWrap(page, '#composerInputWrap');
   console.log('DESKTOP TOPIC AFTER MULTILINE:', JSON.stringify(afterMulti));
 });
 
@@ -58,21 +58,21 @@ test('DEBUG: chat composer on DESKTOP — focus + 1 line behavior', async ({ pag
     document.getElementById('chatView').classList.remove('hidden');
   });
   await page.waitForTimeout(150);
-  const baseline = await snapshotWrap(page, '#chatInputWrap');
+  const baseline = await snapshotWrap(page, '#composerInputWrap');
   console.log('DESKTOP CHAT BASELINE:', JSON.stringify(baseline));
 
-  await page.locator('#chatComposerRoot .rich-composer-editor').focus();
+  await page.locator('#composerRoot .rich-composer-editor').focus();
   await page.waitForTimeout(150);
-  const afterFocus = await snapshotWrap(page, '#chatInputWrap');
+  const afterFocus = await snapshotWrap(page, '#composerInputWrap');
   console.log('DESKTOP CHAT AFTER FOCUS:', JSON.stringify(afterFocus));
 
-  await page.locator('#chatComposerRoot .rich-composer-editor').fill('First line only');
+  await page.locator('#composerRoot .rich-composer-editor').fill('First line only');
   await page.waitForTimeout(500);
-  const afterOneLine = await snapshotWrap(page, '#chatInputWrap');
+  const afterOneLine = await snapshotWrap(page, '#composerInputWrap');
   console.log('DESKTOP CHAT AFTER 1LINE:', JSON.stringify(afterOneLine));
 
-  await page.locator('#chatComposerRoot .rich-composer-editor').fill('A much longer line of text that should wrap to the second line on desktop');
+  await page.locator('#composerRoot .rich-composer-editor').fill('A much longer line of text that should wrap to the second line on desktop');
   await page.waitForTimeout(800);
-  const afterMulti = await snapshotWrap(page, '#chatInputWrap');
+  const afterMulti = await snapshotWrap(page, '#composerInputWrap');
   console.log('DESKTOP CHAT AFTER MULTILINE:', JSON.stringify(afterMulti));
 });

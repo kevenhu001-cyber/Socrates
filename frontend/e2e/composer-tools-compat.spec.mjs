@@ -56,7 +56,7 @@ test('Composer tools menu opens via legacy entry point and React mirrors state',
   // Open via the legacy window.toggleComposerTools(trigger, mode) — the
   // inline-onclick contract in index.html still uses this entry point.
   await page.evaluate(() => {
-    const btn = document.getElementById('topicComposerToolsBtn');
+    const btn = document.getElementById('composerToolsBtn');
     if (btn && typeof window.toggleComposerTools === 'function') {
       window.toggleComposerTools(btn, 'topic');
     }
@@ -70,7 +70,7 @@ test('Composer tools menu opens via legacy entry point and React mirrors state',
     const s = window.__socratesComposerToolsBridge?.getSnapshot();
     return s ? { isOpen: s.isOpen, mode: s.mode, triggerId: s.triggerId } : null;
   });
-  expect(snap).toEqual({ isOpen: true, mode: 'topic', triggerId: 'topicComposerToolsBtn' });
+  expect(snap).toEqual({ isOpen: true, mode: 'topic', triggerId: 'composerToolsBtn' });
   /* Expanded card: every workflow is visible at once with no disclosure. */
   const desktopItems = menu.locator('.composer-tools-desktop-items [data-composer-action]');
   await expect(desktopItems).toHaveCount(9);
@@ -117,7 +117,7 @@ test('Composer tools menu items dispatch through legacy window.* actions', async
 
   // Open menu from the chat composer.
   await page.evaluate(() => {
-    const btn = document.getElementById('chatComposerToolsBtn');
+    const btn = document.getElementById('composerToolsBtn');
     if (btn && typeof window.toggleComposerTools === 'function') {
       window.toggleComposerTools(btn, 'chat');
     }
@@ -131,7 +131,7 @@ test('Composer tools menu items dispatch through legacy window.* actions', async
 
   // Re-open and click the "exam" item.
   await page.evaluate(() => {
-    const btn = document.getElementById('chatComposerToolsBtn');
+    const btn = document.getElementById('composerToolsBtn');
     if (btn && typeof window.toggleComposerTools === 'function') {
       window.toggleComposerTools(btn, 'chat');
     }
@@ -174,8 +174,8 @@ test('mobile plus menu opens without expanding the chat composer', async ({ page
     document.getElementById('chatView').classList.remove('hidden');
   });
 
-  const wrap = page.locator('#chatInputWrap');
-  const plus = page.locator('#chatComposerToolsBtn');
+  const wrap = page.locator('#composerInputWrap');
+  const plus = page.locator('#composerToolsBtn');
   const before = await wrap.boundingBox();
   expect(before).not.toBeNull();
 
@@ -237,7 +237,7 @@ test('desktop workflow selection embeds a themed token in the editable content',
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
-  const plus = page.locator('#topicComposerToolsBtn');
+  const plus = page.locator('#composerToolsBtn');
   expect(await plus.count()).toBe(1);
   await plus.click();
 
@@ -247,7 +247,7 @@ test('desktop workflow selection embeds a themed token in the editable content',
   await write.click();
 
   await expect(menu).toHaveClass(/hidden/);
-  const editor = page.locator('#topicComposerRoot .rich-composer-editor');
+  const editor = page.locator('#composerRoot .rich-composer-editor');
   const token = editor.locator('.composer-extension-token');
   await expect(token).toBeVisible();
   const tokenBox = await token.boundingBox();
@@ -270,7 +270,7 @@ test('desktop workflow selection embeds a themed token in the editable content',
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
   });
-  const chatEditor = page.locator('#chatComposerRoot .rich-composer-editor');
+  const chatEditor = page.locator('#composerRoot .rich-composer-editor');
   const chatToken = chatEditor.locator('.composer-extension-token');
   await expect(chatToken).toBeVisible();
   expect(await chatToken.evaluate((element) => element.closest('.rich-composer-editor')?.getAttribute('contenteditable'))).toBe('true');
@@ -300,7 +300,7 @@ test('composer plus menu lists only connected plugins', async ({ page }) => {
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  await page.locator('#topicComposerToolsBtn').click();
+  await page.locator('#composerToolsBtn').click();
   const menu = page.locator('#composerToolsMenu');
   await expect(menu).toBeVisible();
 
@@ -340,7 +340,7 @@ test('composer plugin catalog exposes a retry after a failed request', async ({ 
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
-  await page.locator('#topicComposerToolsBtn').click();
+  await page.locator('#composerToolsBtn').click();
 
   const menu = page.locator('#composerToolsMenu');
   await expect(menu.locator('.composer-tools-plugin-state')).toContainText(/could not be loaded|加载失败/);

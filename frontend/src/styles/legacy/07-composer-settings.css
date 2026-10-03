@@ -1,12 +1,12 @@
 /* ==========================================================================
    07-composer-settings.css — slice of the pre-modular base stylesheet (src/styles.css).
-   Covers: chat-input-wrap mirror, attachments, stop buttons, spinners/animations, disclaimer, settings/admin/profile modals, usage heatmap.
+   Covers: composer shell mirror, attachments, stop buttons, spinners/animations, disclaimer, settings/admin/profile modals, usage heatmap.
    Order-sensitive: rules here may be overridden by later slices and by
    the modular layer (foundations/layout/components/features) and the
    restore layer. Keep this file's position in legacy/index.css stable.
    ========================================================================== */
 
-/* UI-align: chat-input-wrap mirrors topic-input-wrap so the composer does
+/* P_composer-single: one shell so the composer does
    not change skin between landing and in-chat. Identical width, radius,
    border, shadow, and focus feedback — only the inner Tiptap surface and
    the footer controls differ between the two surfaces.

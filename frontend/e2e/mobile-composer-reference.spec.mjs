@@ -8,9 +8,9 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
-  const topic = page.locator('#topicInputWrap');
+  const topic = page.locator('#composerInputWrap');
   await expect(page.locator('#topicTitle')).toBeVisible();
-  await expect(topic.locator('#topicMobileMicBtn')).toBeVisible();
+  await expect(topic.locator('#composerMicBtn')).toBeVisible();
 
   const measure = async (wrapSelector, controls) => page.evaluate(({ wrapSelector: selector, controls: ids }) => {
     const rect = (target) => {
@@ -33,8 +33,8 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
     };
   }, { wrapSelector, controls });
 
-  const landing = await measure('#topicInputWrap', [
-    '#topicComposerToolsBtn', '#topicMobileMicBtn', '#startBtn',
+  const landing = await measure('#composerInputWrap', [
+    '#composerToolsBtn', '#composerMicBtn', '#composerPrimaryBtn',
   ]);
   /* The phone capsule is the reference's two-row stack: 89px tall,
      26px radius, 12px/12px/9px padding, editor on row 1 (full width),
@@ -61,10 +61,10 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
     document.getElementById('chatView')?.classList.remove('hidden');
     document.body.dataset.conversationActive = 'true';
   });
-  await expect(page.locator('#chatInputWrap')).toBeVisible();
+  await expect(page.locator('#composerInputWrap')).toBeVisible();
 
-  const conversation = await measure('#chatInputWrap', [
-    '#chatComposerToolsBtn', '#chatMobileMicBtn', '#sendBtn',
+  const conversation = await measure('#composerInputWrap', [
+    '#composerToolsBtn', '#composerMicBtn', '#composerPrimaryBtn',
   ]);
   /* Same single-row capsule height and chrome on both surfaces; the
      horizontal inset differs because the landing column owns 12px page
@@ -107,19 +107,19 @@ test('mobile composer keeps model selector and reference controls discoverable',
   });
   await page.waitForTimeout(250);
 
-  const composer = page.locator('#chatInputWrap');
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor');
+  const composer = page.locator('#composerInputWrap');
+  const editor = page.locator('#composerRoot .rich-composer-editor');
   const effort = composer.locator('.effort-picker');
 
   /* P_hide-mode-switch-in-conversation — the user contract is "only show
      before the conversation starts"; the pill is hidden once the
      conversation is active, on all viewports. */
   await expect(page.locator('#modeSegmentedTop')).toBeHidden();
-  await expect(composer.locator('#chatMobileMicBtn')).toBeVisible();
+  await expect(composer.locator('#composerMicBtn')).toBeVisible();
   /* Empty composer → the shared primary control is the voice-input
      affordance (waveform icon + label), not a disabled arrow. */
-  await expect(composer.locator('#sendBtn')).toHaveAttribute('aria-label', '语音输入');
-  await expect(composer.locator('#sendBtn .icon-voice')).toHaveCount(1);
+  await expect(composer.locator('#composerPrimaryBtn')).toHaveAttribute('aria-label', '语音输入');
+  await expect(composer.locator('#composerPrimaryBtn .icon-voice')).toHaveCount(1);
   /* The reference pill reads the current level (高/中/低), not the
      section label. */
   await expect(effort).toBeVisible();
@@ -140,12 +140,12 @@ test('mobile composer keeps model selector and reference controls discoverable',
       return box ? { top: Math.round(box.top), bottom: Math.round(box.bottom) } : null;
     };
     return {
-      composer: rect('#chatInputWrap'),
-      editor: rect('#chatComposerRoot'),
-      attach: rect('#chatComposerToolsBtn'),
-      model: rect('#chatInputWrap .effort-picker'),
-      mic: rect('#chatMobileMicBtn'),
-      send: rect('#sendBtn'),
+      composer: rect('#composerInputWrap'),
+      editor: rect('#composerRoot'),
+      attach: rect('#composerToolsBtn'),
+      model: rect('#composerInputWrap .effort-picker'),
+      mic: rect('#composerMicBtn'),
+      send: rect('#composerPrimaryBtn'),
     };
   });
   /* The controls form one row: add/effort/mic/send share the capsule's
@@ -175,7 +175,7 @@ test('desktop configuration reuses the same content in an anchored popover', asy
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
-  const trigger = page.locator('#topicInputWrap .effort-trigger');
+  const trigger = page.locator('#composerInputWrap .effort-trigger');
   await trigger.click();
   const pop = page.locator('.chat-config-pop');
   await expect(pop).toBeVisible();

@@ -193,8 +193,7 @@ installKeyboardShortcuts();
    the tap. */
 const keyboardLift = initKeyboardLift({
   inputs: [
-    document.getElementById('chatInputWrap'),
-    document.getElementById('topicInputWrap'),
+    document.getElementById('composerInputWrap'),
   ].filter(Boolean),
   container: document.getElementById('appShell'),
 });
@@ -226,7 +225,7 @@ if (isNativeApp()) {
 /* ============================================================
    TOPIC SETUP
    ============================================================ */
-// autoResize / updateStartBtn / updateSendBtn extracted to
+// autoResize / updateComposerBtn extracted to
 // src/ui/topicSetup.js (Phase C-2.3).
 
 /* ============================================================

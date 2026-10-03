@@ -297,9 +297,8 @@ window.retryComposerAttachment = retryComposerAttachment;
    render.js calls them by name (window[w.updateBtnName]) after every
    file add/remove so an attachment-only draft still lights up Send, and
    extensions/modules/write.ts reaches them through window as well. */
-import { updateStartBtn, updateSendBtn } from './ui/topicSetup.js';
-window.updateStartBtn = updateStartBtn;
-window.updateSendBtn = updateSendBtn;
+import { updateComposerBtn } from './ui/topicSetup.js';
+window.updateComposerBtn = updateComposerBtn;
 
 /* ─── i18n.js (setLang) ─── */
 // i18n.js does not have ESM named exports — setLang is bound on

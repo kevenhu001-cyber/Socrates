@@ -150,9 +150,9 @@ test('the empty landing primary action starts voice input and becomes send after
   await expect(page.locator('#appShell')).toBeVisible();
   await expect(page.locator('vite-error-overlay, nextjs-portal, #webpack-dev-server-client-overlay')).toHaveCount(0);
 
-  const wrap = page.locator('#topicInputWrap');
-  const primary = page.locator('#startBtn');
-  const editor = page.locator('#topicComposerRoot .rich-composer-editor');
+  const wrap = page.locator('#composerInputWrap');
+  const primary = page.locator('#composerPrimaryBtn');
+  const editor = page.locator('#composerRoot .rich-composer-editor');
   const mic = wrap.locator('.mobile-mic-btn');
   await expect(mic).toHaveCount(1);
   await expect(mic).toBeVisible();
@@ -204,7 +204,7 @@ test('the empty landing primary action starts voice input and becomes send after
 
   const recordingMode = await page.evaluate(() => ({
     mode: document.documentElement.dataset.mode,
-    background: getComputedStyle(document.getElementById('topicInputWrap')).backgroundColor,
+    background: getComputedStyle(document.getElementById('composerInputWrap')).backgroundColor,
   }));
   if (recordingMode.mode === 'dark') {
     const red = Number(recordingMode.background.match(/\d+/)?.[0] || 255);
@@ -234,9 +234,9 @@ test('the empty chat primary action uses the same recording bar', async ({ page 
   await bootVoiceFixture(page, { width: 390, height: 844 });
   await enterChat(page);
 
-  const wrap = page.locator('#chatInputWrap');
-  const primary = page.locator('#sendBtn');
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor');
+  const wrap = page.locator('#composerInputWrap');
+  const primary = page.locator('#composerPrimaryBtn');
+  const editor = page.locator('#composerRoot .rich-composer-editor');
   await expect(wrap).toBeVisible();
   const mic = wrap.locator('.mobile-mic-btn');
   await expect(mic).toHaveCount(1);

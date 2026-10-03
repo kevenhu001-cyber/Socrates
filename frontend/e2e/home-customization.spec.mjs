@@ -41,8 +41,8 @@ test('greeting keeps its size and stays visible when the composer is focused', a
     return { fontSize: style.fontSize, opacity: style.opacity, display: style.display, height: box.height };
   });
   const before = await read();
-  await page.locator('#topicInputWrap .tiptap').click();
-  await expect(page.locator('#topicInputWrap .tiptap')).toBeFocused();
+  await page.locator('#composerInputWrap .tiptap').click();
+  await expect(page.locator('#composerInputWrap .tiptap')).toBeFocused();
   const after = await read();
   expect(after.fontSize).toBe(before.fontSize);
   expect(after.display).not.toBe('none');
@@ -61,8 +61,8 @@ test('mobile greeting keeps its size and stays visible while typing', async ({ p
     return { fontSize: style.fontSize, opacity: style.opacity, display: style.display, visibility: style.visibility };
   });
   const before = await read();
-  await page.locator('#topicInputWrap .tiptap').click();
-  await expect(page.locator('#topicInputWrap .tiptap')).toBeFocused();
+  await page.locator('#composerInputWrap .tiptap').click();
+  await expect(page.locator('#composerInputWrap .tiptap')).toBeFocused();
   await page.waitForTimeout(350);
   const after = await read();
   expect(after.fontSize).toBe(before.fontSize);
@@ -77,7 +77,7 @@ test('display settings change theme, text scale, and content width', async ({ pa
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
-  const before = await page.locator('#topicInputWrap').boundingBox();
+  const before = await page.locator('#composerInputWrap').boundingBox();
   const beforeTitleSize = await page.locator('#topicTitle').evaluate((element) => parseFloat(getComputedStyle(element).fontSize));
   await page.locator('#displayPrefsBtn').click();
   await page.locator('#displayPrefsFontSegs [data-font="1.375"]').click();
@@ -87,7 +87,7 @@ test('display settings change theme, text scale, and content width', async ({ pa
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'light');
   await expect(page.locator('#displayPrefsFontLabel')).toHaveText('XL');
   await expect(page.locator('#displayPrefsWidthLabel')).toHaveText('XL');
-  const after = await page.locator('#topicInputWrap').boundingBox();
+  const after = await page.locator('#composerInputWrap').boundingBox();
   const afterTitleSize = await page.locator('#topicTitle').evaluate((element) => parseFloat(getComputedStyle(element).fontSize));
   expect(after?.width ?? 0).toBeGreaterThan((before?.width ?? 0) + 250);
   expect(afterTitleSize).toBeGreaterThan(beforeTitleSize * 1.2);
@@ -132,7 +132,7 @@ test('light conversation is readable and find opens at the upper right', async (
   await page.locator('#findBtn').click();
   await expect(page.locator('#findBar')).toBeVisible();
   const findBox = await page.locator('#findBar').boundingBox();
-  const composerBox = await page.locator('#chatInputWrap').boundingBox();
+  const composerBox = await page.locator('#composerInputWrap').boundingBox();
   expect(findBox?.y ?? 999).toBeLessThan(100);
   expect(findBox?.x ?? 0).toBeGreaterThan(900);
   expect((findBox ? findBox.y + findBox.height : 999) + 200).toBeLessThan(composerBox?.y ?? 0);

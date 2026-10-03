@@ -16,7 +16,7 @@ async function enterChat(page) {
 
 function focusInComposer(page) {
   return page.evaluate(() => {
-    const rootEl = document.getElementById('chatComposerRoot');
+    const rootEl = document.getElementById('composerRoot');
     return Boolean(rootEl && document.activeElement && rootEl.contains(document.activeElement));
   });
 }
@@ -30,12 +30,12 @@ test('click-send blurs the composer; Enter-send keeps focus', async ({ page }) =
   await waitForAppShell(page);
   await enterChat(page);
 
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await editor.click();
   await editor.type('blur me after click send');
   expect(await focusInComposer(page)).toBe(true);
 
-  await page.locator('#sendBtn').click();
+  await page.locator('#composerPrimaryBtn').click();
   await page.waitForTimeout(600);
   expect(await focusInComposer(page), 'click-send must blur the composer').toBe(false);
   const collapsed = await page.evaluate(() => {
@@ -69,7 +69,7 @@ test('click-send blurs before asynchronous attachment preparation finishes', asy
   await waitForAppShell(page);
   await enterChat(page);
 
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await editor.fill('send with a slow image');
   await page.evaluate(() => {
     window.attachments.push({
@@ -82,7 +82,7 @@ test('click-send blurs before asynchronous attachment preparation finishes', asy
     });
   });
   await editor.focus();
-  await page.locator('#sendBtn').click();
+  await page.locator('#composerPrimaryBtn').click();
 
   // The vision request is still pending here. Focus and selection must
   // already be gone rather than waiting for buildMessageContent().
@@ -106,7 +106,7 @@ test('chat-input-wrap transitions cover focus feedback without geometry animatio
   await waitForAppShell(page);
   await enterChat(page);
   const t = await page.evaluate(() => {
-    const wrap = document.getElementById('chatInputWrap');
+    const wrap = document.getElementById('composerInputWrap');
     const cs = getComputedStyle(wrap);
     return { property: cs.transitionProperty, duration: cs.transitionDuration };
   });

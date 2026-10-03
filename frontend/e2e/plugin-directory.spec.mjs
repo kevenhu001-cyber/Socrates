@@ -49,7 +49,7 @@ test('plus menu supports real connector search, multi-select, and removal', asyn
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
-  await page.locator('#topicComposerToolsBtn').click();
+  await page.locator('#composerToolsBtn').click();
   const menu = page.locator('#composerToolsMenu');
   await expect(menu).toBeVisible();
   await expect(menu.locator('[data-composer-plugin]')).toHaveCount(2);
@@ -64,12 +64,12 @@ test('plus menu supports real connector search, multi-select, and removal', asyn
   await search.fill('');
   await page.locator('[data-composer-plugin="github"]').click();
   await page.locator('[data-composer-plugin="notion"]').click();
-  await expect(page.locator('#topicInputWrap .composer-plugin-chip')).toHaveCount(2);
-  await expect(page.locator('#topicInputWrap .composer-plugin-chip-label')).toHaveText(['GitHub', 'Notion']);
+  await expect(page.locator('#composerInputWrap .composer-plugin-chip')).toHaveCount(2);
+  await expect(page.locator('#composerInputWrap .composer-plugin-chip-label')).toHaveText(['GitHub', 'Notion']);
 
-  await page.locator('#topicInputWrap .composer-plugin-chip-remove').first().click();
-  await expect(page.locator('#topicInputWrap .composer-plugin-chip')).toHaveCount(1);
-  await expect(page.locator('#topicInputWrap .composer-plugin-chip-label')).toHaveText(['Notion']);
+  await page.locator('#composerInputWrap .composer-plugin-chip-remove').first().click();
+  await expect(page.locator('#composerInputWrap .composer-plugin-chip')).toHaveCount(1);
+  await expect(page.locator('#composerInputWrap .composer-plugin-chip-label')).toHaveText(['Notion']);
   await page.keyboard.press('Escape');
   await expect(menu).toBeHidden();
 });
@@ -258,7 +258,7 @@ test('OAuth return restores the original composer surface and plugin context', a
 
   await expect(page.locator('#topicSetup')).toBeVisible();
   await expect(page.locator('#pluginsPanel')).toBeHidden();
-  await expect(page.locator('#topicInputWrap .composer-plugin-chip-label')).toHaveText(['GitHub']);
+  await expect(page.locator('#composerInputWrap .composer-plugin-chip-label')).toHaveText(['GitHub']);
   await expect.poll(() => page.evaluate(() => window.__socratesComposerController?.getMarkdown('topic')))
     .toBe('Restored OAuth draft');
   await expect(page).toHaveURL(/127\.0\.0\.1:4173\/$/);

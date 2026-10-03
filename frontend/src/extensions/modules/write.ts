@@ -50,12 +50,10 @@ export const writeExtension: ExtensionDefinition = {
       body: '',
     });
     const w = window as unknown as {
-      updateStartBtn?: () => void;
-      updateSendBtn?: () => void;
+      updateComposerBtn?: () => void;
     };
     try {
-      w.updateStartBtn?.();
-      w.updateSendBtn?.();
+      w.updateComposerBtn?.();
     } catch (_) {}
     ctx.focusComposer();
   },

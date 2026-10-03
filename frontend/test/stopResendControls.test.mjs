@@ -9,11 +9,12 @@
  * main.js wires up, and asserting the same observable outcomes:
  *
  *   Req 2.5 — Stop is present while a turn is in progress. main.js drives Stop
- *     via setChatStopState(active), which toggles the send button's
+ *     via setChatStopState(active), which toggles the primary button's
  *     dataset.stop ("1"/"0") and the "chat-stop" class. Because that toggle is
  *     called with _turnUi.inProgress, Stop is visible iff a turn is in
  *     progress. Tested here as a truth table over a _turnUi-shaped object
- *     driving a setChatStopState mirror against a #sendBtn fixture.
+ *     driving a setChatStopState mirror against a #composerPrimaryBtn
+ *     fixture.
  *
  *   Req 2.6 — after a stop, the Resend control is present. main.js appends a
  *     stopped assistant bubble whose HTML carries
@@ -41,10 +42,11 @@ const dom = new JSDOM('<!doctype html><html><body></body></html>');
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 
-/* Mirror of main.js setChatStopState(active): toggles dataset.stop + the
-   chat-stop class on #sendBtn. Stop is "present" when dataset.stop === "1". */
+/* Mirror of turnUi setChatStopState(active): toggles dataset.stop + the
+   chat-stop class on #composerPrimaryBtn. Stop is "present" when
+   dataset.stop === "1". */
 function setChatStopState(active) {
-  const btn = document.getElementById('sendBtn');
+  const btn = document.getElementById('composerPrimaryBtn');
   if (!btn) return;
   if (active) {
     btn.classList.add('chat-stop');
@@ -75,10 +77,10 @@ function resendLastUserMessage(messages, onNoTarget) {
   return false;
 }
 
-/* Build a fresh #sendBtn and return it. */
+/* Build a fresh #composerPrimaryBtn and return it. */
 function mountSendBtn() {
-  document.body.innerHTML = '<button id="sendBtn"></button>';
-  return document.getElementById('sendBtn');
+  document.body.innerHTML = '<button id="composerPrimaryBtn"></button>';
+  return document.getElementById('composerPrimaryBtn');
 }
 
 // ---------------------------------------------------------------------------

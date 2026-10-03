@@ -4,8 +4,8 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 const HOVER_TARGETS = [
   '#navNew',
-  '#topicComposerToolsBtn',
-  '#startBtn',
+  '#composerToolsBtn',
+  '#composerPrimaryBtn',
   '#modeSegmentedTop .app-mode-toggle',
 ];
 
@@ -15,13 +15,13 @@ async function readPalette(page) {
       const node = document.querySelector(selector);
       return node ? getComputedStyle(node).getPropertyValue(property).trim() : null;
     };
-    const button = document.querySelector('#topicComposerToolsBtn');
+    const button = document.querySelector('#composerToolsBtn');
     const icon = button?.querySelector('svg');
     return {
       mode: document.documentElement.dataset.mode,
       page: read('.main-content', 'background-color'),
       sidebar: read('#sidebar', 'background-color'),
-      composer: read('#topicInputWrap', 'background-color'),
+      composer: read('#composerInputWrap', 'background-color'),
       iconColor: icon ? getComputedStyle(icon).color : null,
       buttonColor: button ? getComputedStyle(button).color : null,
     };

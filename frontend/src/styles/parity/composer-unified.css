@@ -1,11 +1,13 @@
 /*
  * parity/composer-unified.css — THE composer stylesheet.
  *
- * One composer, two mounts: #topicInputWrap (landing) and #chatInputWrap
- * (conversation) share the same DOM (index.html, P_composer-unify) and are
- * styled here, and only here, through `.composer-shell`. The landing
- * composer's pre-unification look is the reference; the conversation
- * composer now simply is the same component. scripts/check-composer-css.mjs
+ * One composer shell (#composerInputWrap) parked in exactly one slot at a
+ * time: #topicComposerSlot on landing, #chatComposerSlot in conversation
+ * (P_composer-single — the shell moves, never rebuilds). Both slots are
+ * display:contents (see below), so the shell lays out exactly as if it
+ * were the slot's parent's direct child. The landing look is the
+ * reference; the shell simply is the same component everywhere.
+ * scripts/check-composer-css.mjs
  * (part of `npm run lint`) fails if any other stylesheet styles the shell,
  * its controls or its editor again.
  *
@@ -40,6 +42,13 @@
 #appShell .composer-shell .footer-left-group,
 #appShell .composer-shell .composer-editor-root,
 #appShell .composer-shell .rich-composer {
+  display: contents;
+}
+
+/* P_composer-single — parking slots for the moving shell. display:contents
+   keeps them out of layout entirely, so the shell measures exactly as if
+   it were still a direct child of the landing column / chat bar. */
+#appShell .composer-slot {
   display: contents;
 }
 

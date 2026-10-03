@@ -19,8 +19,8 @@ test('mobile conversation home matches the compact dark reference layout', async
      the legacy dropdown remains mounted only for compatibility. */
   const modeTabs = page.locator('#modeSegmentedTop');
   const modeSwitch = page.locator('#mobileModeTrigger');
-  const composer = page.locator('#topicInputWrap');
-  const editor = page.locator('#topicComposerRoot .rich-composer-editor');
+  const composer = page.locator('#composerInputWrap');
+  const editor = page.locator('#composerRoot .rich-composer-editor');
 
   /* The landing surface intentionally has no hardcoded prompt suggestions. */
   await expect(page.locator('.mobile-starter-prompt')).toHaveCount(0);
@@ -39,8 +39,8 @@ test('mobile conversation home matches the compact dark reference layout', async
       left: rect('#sidebarOpenBtn'),
       right: rect('#mobileNewChatBtn'),
       modeTabs: rect('#modeSegmentedTop'),
-      composer: rect('#topicInputWrap'),
-      topicFontSize: parseFloat(getComputedStyle(document.querySelector('#topicComposerRoot .rich-composer-editor')).fontSize),
+      composer: rect('#composerInputWrap'),
+      topicFontSize: parseFloat(getComputedStyle(document.querySelector('#composerRoot .rich-composer-editor')).fontSize),
       viewportHeight: window.innerHeight,
       /* .main is a transparent layout box; the painted surface is
          .main-content (the shell's page colour). Dark mode uses a layered
@@ -195,10 +195,10 @@ test('mobile conversation home matches the compact dark reference layout', async
      dictation mic sits beside the voice/send primary. */
   await expect(composer.locator('.mobile-mic-btn')).toHaveCount(1);
   await expect(composer.locator('.mobile-mic-btn')).toBeVisible();
-  await expect(composer.locator('.start-btn')).toBeVisible();
-  await expect(composer.locator('.start-btn')).toHaveAttribute('aria-label', 'Send');
+  await expect(composer.locator('.composer-primary-btn')).toBeVisible();
+  await expect(composer.locator('.composer-primary-btn')).toHaveAttribute('aria-label', 'Send');
 
-  await page.locator('#topicComposerToolsBtn').click();
+  await page.locator('#composerToolsBtn').click();
   const menu = page.locator('#composerToolsMenu');
   await expect(menu).toBeVisible();
   /* Grouped mobile actions retain the common capture, file, create, and
@@ -222,7 +222,7 @@ test('mobile conversation home matches the compact dark reference layout', async
   await expect(menu).toBeHidden();
   await expect.poll(async () => page.evaluate(() => window.extensiveThinkingOn === true)).toBe(true);
 
-  await page.locator('#topicComposerToolsBtn').click();
+  await page.locator('#composerToolsBtn').click();
   const activeThinking = menu.getByRole('menuitem', { name: 'Think deeper' });
   await expect(activeThinking).toHaveClass(/is-active/);
   await expect(activeThinking.locator('.composer-tools-active-dot')).toBeVisible();

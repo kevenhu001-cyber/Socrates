@@ -38,7 +38,7 @@ test('topic submit opens a stable chat with one user turn and one live assistant
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
-  const topicEditor = page.locator('#topicComposerRoot .rich-composer-editor');
+  const topicEditor = page.locator('#composerRoot .rich-composer-editor');
   await topicEditor.fill('A stable first conversation turn');
   const startedAt = await page.evaluate(() => performance.now());
   await topicEditor.press('Enter');
@@ -49,7 +49,9 @@ test('topic submit opens a stable chat with one user turn and one live assistant
 
   await expect(page.locator('#msgList .msg.user')).toHaveCount(1);
   await expect(page.locator('#msgList .msg.assistant')).toHaveCount(1);
-  await expect(page.locator('#msgList .msg.assistant .thinking-placeholder')).toBeVisible();
+  /* P_thinking-unified — every live phase (including pre-first-token
+     waiting) renders the same .thinking-status pill. */
+  await expect(page.locator('#msgList .msg.assistant .thinking-status')).toBeVisible();
 
   const first = await page.evaluate(() => window.stateStore.read('messages').map((message) => ({
     clientId: message.clientId,

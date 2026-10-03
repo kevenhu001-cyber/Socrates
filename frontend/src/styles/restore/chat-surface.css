@@ -194,16 +194,14 @@ body,
 
 /* Shared composer -------------------------------------------------------- */
 
-#appShell#appShell #topicInputWrap:not(.voice-recording-active) .attachment-chips,
-#appShell#appShell #chatInputWrap:not(.voice-recording-active) .attachment-chips {
+#appShell#appShell #composerInputWrap:not(.voice-recording-active) .attachment-chips {
   grid-column: 1 / -1 !important;
   grid-row: 1 !important;
   width: 100% !important;
   margin: 0 0 6px !important;
 }
 
-#appShell#appShell #topicInputWrap:not(.voice-recording-active) .rich-composer > div,
-#appShell#appShell #chatInputWrap:not(.voice-recording-active) .rich-composer > div {
+#appShell#appShell #composerInputWrap:not(.voice-recording-active) .rich-composer > div {
   min-width: 0 !important;
   height: 100% !important;
 }

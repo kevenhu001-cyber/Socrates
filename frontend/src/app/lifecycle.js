@@ -20,7 +20,7 @@ import { publishThinkingTurnStart } from '../ui/messageSnapshot.js';
 import { resetShareToken, toggleShareBtn } from '../ui/share.js';
 import { clearSessionRouteInURL } from '../session/store.js';
 import { scrollContainer } from '../ui/scroll.js';
-import { updateStartBtn } from '../ui/topicSetup.js';
+import { updateComposerBtn } from '../ui/topicSetup.js';
 import { saveCurrentSession, saveSessionBeforeReset } from '../session/persistence.js';
 import { syncModelPills } from '../pickers.js';
 import { renderUserFooter } from '../ui/profile.js';
@@ -178,7 +178,7 @@ export async function resetApp(options){
   /* Task 3.3 — clear the teaching-plan view on full reset so a
      previous session's plan doesn't linger in the sidebar. */
   var _tpc2=document.getElementById("teachingPlanContent");if(_tpc2)_tpc2.innerHTML="";
-  updateStartBtn();
+  updateComposerBtn();
   _renderRecents();
   _renderMistakes();
   _updateMistakesBadge();

@@ -50,8 +50,8 @@ async function snapshotPalette(page) {
     return {
       bubble: style('#msgList .msg.user .msg-body'),
       avatar: style('#appShell .user-avatar'),
-      composer: style('#chatInputWrap'),
-      send: style('#sendBtn'),
+      composer: style('#composerInputWrap'),
+      send: style('#composerPrimaryBtn'),
     };
   });
 }

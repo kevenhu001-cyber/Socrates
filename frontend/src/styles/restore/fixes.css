@@ -385,8 +385,7 @@
      components/composer.css, so it overflowed the 36px editor root by 4px
      top and bottom — the placeholder line sat 4px above the capsule's
      optical centre. Pin the whole chain to the same 36px row. */
-  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline) .composer-editor-root .rich-composer > div,
-  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline) .composer-editor-root .rich-composer > div {
+  #appShell#appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline) .composer-editor-root .rich-composer > div {
     height: 36px !important;
     min-height: 36px !important;
   }
@@ -531,8 +530,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
     padding: 0 12px max(16px, env(safe-area-inset-bottom)) !important;
   }
 
-  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .attachment-chips,
-  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .attachment-chips {
+  #appShell#appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .attachment-chips {
     grid-column: 1 / -1 !important;
     grid-row: 1 !important;
   }

@@ -9,7 +9,7 @@
 // Strategy: drive the streaming state deterministically by installing a fetch
 // stub over /chat/stream that opens a stream and holds it open (emitting an
 // initial delta but never closing) so the turn stays "in progress". While that
-// stream is live, type into the rich composer (#chatComposerRoot editor) and
+// stream is live, type into the rich composer (#composerRoot editor) and
 // assert the composer reflects the typed text promptly. The 100ms budget is
 // measured via an elapsed timing around the keystroke with a generous tolerance
 // to stay robust on CI, and is backstopped by a bounded functional assertion
@@ -99,7 +99,7 @@ test('composer stays responsive and reflects typed input within the latency budg
   const streamingBubble = page.locator('.msg.assistant').last();
   await expect(streamingBubble).toContainText('Streaming a long answer while you keep');
 
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const editor = page.locator('#composerRoot .rich-composer-editor').first();
 
   // Skip gracefully if the rich composer isn't mounted in this build/screen —
   // the meaningful assertions require the composer surface to exist.
@@ -126,7 +126,7 @@ test('composer stays responsive and reflects typed input within the latency budg
   // the text. We type, then poll for the value with a short interval and
   // capture how long it took to appear.
   const elapsedMs = await page.evaluate(async ({ text, budget, tolerance }) => {
-    const root = document.getElementById('chatComposerRoot');
+    const root = document.getElementById('composerRoot');
     const el = root && root.querySelector('.rich-composer-editor');
     if (!el) return -1;
     el.focus();

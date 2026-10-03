@@ -77,7 +77,7 @@ function openMobileAttachmentPicker(
     composer.openMediaPicker(kind);
     return;
   }
-  composer.openAttachmentPicker(mode === 'topic' ? 'topicAttachInput' : 'attachInput');
+  composer.openAttachmentPicker('composerAttachInput');
 }
 
 function dispatchAction(action: ComposerToolsAction, mode: ComposerMode | null): void {

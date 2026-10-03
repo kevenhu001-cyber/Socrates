@@ -49,10 +49,10 @@ test('mode tabs reappear on the topic page after a conversation and new chat', a
   await expect(tabs).toBeVisible();
 
   /* Start a conversation: the pill must hide while it is active. */
-  const editor = page.locator('#topicComposerRoot .rich-composer-editor');
+  const editor = page.locator('#composerRoot .rich-composer-editor');
   await editor.click();
   await editor.fill('测试主题');
-  await page.locator('#startBtn').click();
+  await page.locator('#composerPrimaryBtn').click();
   await expect(tabs).toBeHidden();
 
   /* Returning to the topic-input page via "new chat" restores the

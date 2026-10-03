@@ -309,7 +309,7 @@ function _switchToSharedChatView() {
   if (topBar) topBar.style.display = "none";
   var shareBtn = document.getElementById("shareBtn");
   if (shareBtn) shareBtn.style.display = "none";
-  var composer = document.getElementById("chatComposerRoot");
+  var composer = document.getElementById("composerRoot");
   if (composer) composer.setAttribute("aria-disabled", "true");
   var gate = document.getElementById("authGate");
   if (gate) gate.classList.add("hidden");

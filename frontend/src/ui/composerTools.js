@@ -85,7 +85,7 @@ function position(el, trigger) {
      and always opens downward. Connected plugin rows scroll inside the card
      instead of making the card jump above the prompt. */
   if (mode === "topic" && viewportWidth > 768) {
-    const topicWrap = trigger.closest ? trigger.closest("#topicInputWrap") : null;
+    const topicWrap = trigger.closest ? trigger.closest("#composerInputWrap") : null;
     const wrapRect = topicWrap ? topicWrap.getBoundingClientRect() : r;
     var menuTop = r.bottom + 8;
     var room = Math.max(120, viewportBottom - menuTop - 16);
@@ -110,7 +110,7 @@ function position(el, trigger) {
   /* The menu floats above the whole composer capsule, not the trigger
      button — the plus control lives on the capsule's second row, so
      anchoring to the trigger would overlap the editor row. */
-  var wrap = trigger.closest ? trigger.closest('#topicInputWrap, #chatInputWrap') : null;
+  var wrap = trigger.closest ? trigger.closest('#composerInputWrap') : null;
   var wrapRect = wrap ? wrap.getBoundingClientRect() : r;
   var anchorLeft = viewportWidth <= 768 ? wrapRect.left : r.left;
   /* Phones keep a 12px gutter so the card never sits flush against the
@@ -204,7 +204,6 @@ if (typeof document !== "undefined") {
     if (!el || el.classList.contains("hidden")) return;
     var action = event.target.closest && event.target.closest("[data-action],[data-composer-action]");
     if (action && el.contains(action)) {
-      var mode = activeTrigger && activeTrigger.dataset.composerMode;
       var kind = action.dataset.composerAction || action.dataset.action;
       close();
       /* 'upload' opens the native attachment picker directly; 'skills'
@@ -214,7 +213,7 @@ if (typeof document !== "undefined") {
          by installWindowExtensionDelegates() (extensions/index.ts:99). */
       if (kind === "upload") {
         if (typeof window.openAttachmentPicker === "function") {
-          window.openAttachmentPicker(mode === "topic" ? "topicAttachInput" : "attachInput");
+          window.openAttachmentPicker("composerAttachInput");
         }
       } else if (kind === "skills") {
         if (typeof openPromptTemplatesModal === "function") openPromptTemplatesModal();

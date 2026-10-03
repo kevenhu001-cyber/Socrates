@@ -25,10 +25,11 @@ import { mountMessageList } from '../../message-list';
 import { WorkflowLayer } from '../../extensions/WorkflowLayer';
 import { installThinkingPanelBridge, mountThinkingPanel } from '../../thinking-panel';
 import { getLegacyActions, i18n } from '../../legacy/gateway';
+import { readComposerSurface } from '../../composer-input/controller';
 import { hydrateAttachmentChipsRows } from '../../attachments/AttachmentChipsRow';
 import { installWorkspaceBridge } from '../../pages/workspace/workspace.bridge';
 
-import { NewReplyPill, SendButton, StartButton } from './indicatorComponents';
+import { NewReplyPill, PrimaryButton } from './indicatorComponents';
 
 /* Module-level reference the registry's pill mount needs to capture. */
 export let pillRoot: import('react-dom/client').Root | null = null;
@@ -73,11 +74,8 @@ export function mountRegistryList(): MountSpec[] {
     { hostId: 'newReplyPill', label: 'new-reply-pill', mount: (host) => {
       setPillRoot(hydrateRoot(host, <StrictMode><NewReplyPill host={host} /></StrictMode>));
     } },
-    { hostId: 'sendBtnContent', label: 'send-button', mount: (host) => {
-      createRoot(host).render(<StrictMode><SendButton /></StrictMode>);
-    } },
-    { hostId: 'startBtnContent', label: 'start-button', mount: (host) => {
-      createRoot(host).render(<StrictMode><StartButton /></StrictMode>);
+    { hostId: 'composerPrimaryBtnContent', label: 'primary-button', mount: (host) => {
+      createRoot(host).render(<StrictMode><PrimaryButton /></StrictMode>);
     } },
     /* 2. Overlays / modals / popovers */
     { hostId: 'cmdKOverlay', label: 'cmd-k',
@@ -88,12 +86,9 @@ export function mountRegistryList(): MountSpec[] {
     { hostId: 'recentsFilterChips', label: 'recents-filter-chips', mount: () => hydrateRecentsFilterChips() },
     { hostId: 'composerToolsMenu', label: 'composer-tools-menu',
       mount: () => { void import('../../composer/ComposerToolsMenu').then((m) => m.hydrateComposerToolsMenu()); } },
-    /* One spec covers both chips hosts: hydrateAttachmentChipsRows mounts
-       #attachmentChips and #topicAttachmentChips together and installs the
-       attachments bridge internally. A second spec for the topic host
-       would always skip — the host is already marked when the registry
-       reaches it. */
-    { hostId: 'attachmentChips', label: 'attachment-chips',
+    /* The single composer shell owns one chips host; the registry mounts
+       it once. */
+    { hostId: 'composerAttachmentChips', label: 'attachment-chips',
       mount: () => { hydrateAttachmentChipsRows(); } },
     { hostId: 'moreNavPopover', label: 'more-popover',
       mount: () => { void import('../../morePopover').then((m) => m.hydrateMorePopover()); } },
@@ -145,20 +140,23 @@ export function mountRegistryList(): MountSpec[] {
        editor chain (vendor-editor, ~460 KB). Mount it via dynamic import so
        that chunk leaves the first-paint preload graph; the shell's composer
        area keeps its reserved height until the component mounts moments
-       after reveal. */
-    { hostId: 'topicComposerRoot', label: 'rich-composer', mount: (host) => {
+       after reveal.
+       P_composer-single — ONE editor for the whole app. The shell moves
+       between the landing slot and the chat slot (see placeComposerForView)
+       while this root stays mounted, so the draft, focus and chips travel
+       with it. Submit/escape branch on the live surface at call time, so no
+       remount is ever needed when the view flips. */
+    { hostId: 'composerRoot', label: 'rich-composer', mount: (host) => {
       void import('../../composer-input').then(({ RichComposer }) => {
-        createRoot(host).render(<ErrorBoundary><RichComposer surface="topic"
+        createRoot(host).render(<ErrorBoundary><RichComposer
           placeholder={i18n('topic.inputPlaceholder', 'What would you like to explore?')}
-          onSubmit={() => legacyComposer.startSession()} /></ErrorBoundary>);
-      });
-    } },
-    { hostId: 'chatComposerRoot', label: 'rich-composer', mount: (host) => {
-      void import('../../composer-input').then(({ RichComposer }) => {
-        createRoot(host).render(<ErrorBoundary><RichComposer surface="chat"
-          placeholder={i18n('chat.inputPlaceholder', 'Send a message')}
-          onSubmit={() => legacyComposer.submitChatMessage()}
-          onEscape={() => legacyComposer.stopChatResponse()} /></ErrorBoundary>);
+          onSubmit={() => (readComposerSurface() === 'chat'
+            ? legacyComposer.submitChatMessage()
+            : legacyComposer.startSession())}
+          onEscape={() => {
+            if (readComposerSurface() !== 'chat') return;
+            legacyComposer.stopChatResponse();
+          }} /></ErrorBoundary>);
       });
     } },
     { hostId: 'workflowLayerReactRoot', label: 'workflow-layer',

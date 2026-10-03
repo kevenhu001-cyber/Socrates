@@ -15,11 +15,11 @@ test('Attachment chip rows React mode hydrates both containers', async ({ page }
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  const chatChips = page.locator('#attachmentChips');
+  const chatChips = page.locator('#composerAttachmentChips');
   await expect(chatChips).toBeAttached();
   await expect(chatChips).not.toHaveAttribute('data-mounted-by', /.+/);
 
-  const topicChips = page.locator('#topicAttachmentChips');
+  const topicChips = page.locator('#composerAttachmentChips');
   await expect(topicChips).toBeAttached();
   await expect(topicChips).not.toHaveAttribute('data-mounted-by', /.+/);
 
@@ -81,13 +81,13 @@ test('Attachment chips React mode mirrors the legacy attachments array', async (
   ]);
 
   // React rendered both chips in the chat composer.
-  const chips = page.locator('#attachmentChips .attachment-chip');
+  const chips = page.locator('#composerAttachmentChips .attachment-chip');
   await expect(chips).toHaveCount(2);
   await expect(chips.first()).toHaveAttribute('data-id', 'att-test-1');
   await expect(chips.nth(1)).toHaveAttribute('data-id', 'att-test-2');
 
   // The chip row should be visible (no .hidden class).
-  await expect(chatChipsAttrVisible(page, '#attachmentChips')).resolves.toBe(true);
+  await expect(chatChipsAttrVisible(page, '#composerAttachmentChips')).resolves.toBe(true);
 });
 
 test('Attachment chips remove button dispatches through window.removeAttachment', async ({ page }) => {
@@ -112,12 +112,12 @@ test('Attachment chips remove button dispatches through window.removeAttachment'
     });
   });
 
-  await expect(page.locator('#attachmentChips .attachment-chip')).toHaveCount(2);
+  await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveCount(2);
 
   // Click the remove button on the first chip. We dispatch a click event
   // directly to avoid Playwright's visibility heuristic failing on a
   // tiny icon-only button rendered into a fresh DOM.
-  await page.locator('#attachmentChips .attachment-chip').first().locator('.attachment-chip-remove').dispatchEvent('click');
+  await page.locator('#composerAttachmentChips .attachment-chip').first().locator('.attachment-chip-remove').dispatchEvent('click');
 
   const removed = await page.evaluate(() => window.__removedIds);
   expect(removed).toContain('att-r-1');
@@ -129,10 +129,10 @@ test('Attachment chips React mode always loads (no ?react=1 flag needed)', async
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  const chatChips = page.locator('#attachmentChips');
+  const chatChips = page.locator('#composerAttachmentChips');
   await expect(chatChips).not.toHaveAttribute('data-mounted-by', /.+/);
 
-  const topicChips = page.locator('#topicAttachmentChips');
+  const topicChips = page.locator('#composerAttachmentChips');
   await expect(topicChips).not.toHaveAttribute('data-mounted-by', /.+/);
 
   const installed = await page.evaluate(
@@ -191,7 +191,7 @@ test('Image upload is admitted for a text-only model and stored as a durable fil
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
-  await page.locator('#attachInput').setInputFiles({
+  await page.locator('#composerAttachInput').setInputFiles({
     name: 'shot.png',
     mimeType: 'image/png',
     buffer: Buffer.from('synthetic image bytes'),
@@ -203,7 +203,7 @@ test('Image upload is admitted for a text-only model and stored as a durable fil
     const snapshot = window.__socratesAttachmentsBridge?.getSnapshot();
     return snapshot?.attachments?.[0]?.fileId === 'file-uuid-1';
   });
-  await expect(page.locator('#attachmentChips .attachment-chip')).toHaveCount(1);
+  await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveCount(1);
 });
 
 test('Image upload is admitted for a multimodal active model', async ({ page }) => {
@@ -216,7 +216,7 @@ test('Image upload is admitted for a multimodal active model', async ({ page }) 
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
-  await page.locator('#attachInput').setInputFiles({
+  await page.locator('#composerAttachInput').setInputFiles({
     name: 'shot.png',
     mimeType: 'image/png',
     buffer: Buffer.from('synthetic image bytes'),
@@ -225,7 +225,7 @@ test('Image upload is admitted for a multimodal active model', async ({ page }) 
     const snapshot = window.__socratesAttachmentsBridge?.getSnapshot();
     return snapshot?.attachments?.[0]?.pending === false;
   });
-  await expect(page.locator('#attachmentChips .attachment-chip')).toHaveCount(1);
+  await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveCount(1);
   /* Multimodal images additionally carry an inline dataUrl for the
      native image_url part, alongside the durable fileId. */
   const entry = await page.evaluate(() => {
@@ -237,8 +237,8 @@ test('Image upload is admitted for a multimodal active model', async ({ page }) 
 });
 
 /* Regression: attachments/render.js refreshes the primary button through
-   window[updateBtnName]; when window.updateStartBtn/updateSendBtn lost
-   their bindings an attachment-only draft left the button in voice mode,
+   window[updateBtnName]; when window.updateComposerBtn lost
+   its binding an attachment-only draft left the button in voice mode,
    and startSession() then early-returned on the empty topic anyway. */
 test('Attachment-only landing draft activates Send and enters chat', async ({ page }) => {
   await mockAuthedApp(page);
@@ -250,7 +250,7 @@ test('Attachment-only landing draft activates Send and enters chat', async ({ pa
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
-  await page.locator('#topicAttachInput').setInputFiles({
+  await page.locator('#composerAttachInput').setInputFiles({
     name: 'report.pdf',
     mimeType: 'application/pdf',
     buffer: Buffer.from('%PDF-1.4 fake'),
@@ -260,10 +260,10 @@ test('Attachment-only landing draft activates Send and enters chat', async ({ pa
     return s?.attachments?.length === 1;
   });
 
-  const startBtn = page.locator('#startBtn');
+  const startBtn = page.locator('#composerPrimaryBtn');
   await expect(startBtn).toHaveClass(/active/);
   await expect(startBtn).toHaveAttribute('aria-label', 'Send');
-  await expect(page.locator('#topicInputWrap')).toHaveClass(/has-text/);
+  await expect(page.locator('#composerInputWrap')).toHaveClass(/has-text/);
 
   await startBtn.click();
   await expect(page.locator('#topicSetup')).toHaveClass(/hidden/);
@@ -301,16 +301,16 @@ test('Failed upload shows a retry affordance that re-runs the job', async ({ pag
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
-  await page.locator('#topicAttachInput').setInputFiles({
+  await page.locator('#composerAttachInput').setInputFiles({
     name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('hello'),
   });
 
   /* First attempt fails → error chip with a retry button carrying the
      failure reason as its tooltip. */
-  const chip = page.locator('#topicAttachmentChips .attachment-chip');
+  const chip = page.locator('#composerAttachmentChips .attachment-chip');
   await expect(chip).toHaveCount(1);
   await expect(chip).toHaveClass(/error/);
-  const retryBtn = page.locator('#topicAttachmentChips .attachment-chip-retry');
+  const retryBtn = page.locator('#composerAttachmentChips .attachment-chip-retry');
   await expect(retryBtn).toHaveCount(1);
 
   /* Retry re-uploads the retained File — no re-pick needed — and the
@@ -335,14 +335,14 @@ test('Re-picking an identical file is deduplicated', async ({ page }) => {
   await waitForAppShell(page);
 
   const file = { name: 'dup.txt', mimeType: 'text/plain', buffer: Buffer.from('same bytes') };
-  await page.locator('#topicAttachInput').setInputFiles(file);
-  await page.locator('#topicAttachInput').setInputFiles(file);
+  await page.locator('#composerAttachInput').setInputFiles(file);
+  await page.locator('#composerAttachInput').setInputFiles(file);
 
   await page.waitForFunction(() => {
     const s = window.__socratesAttachmentsBridge?.getSnapshot();
     return s?.attachments?.length === 1;
   });
-  await expect(page.locator('#topicAttachmentChips .attachment-chip')).toHaveCount(1);
+  await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveCount(1);
 });
 
 test('Document upload (PDF) produces a fileId pointer chip', async ({ page }) => {
@@ -355,7 +355,7 @@ test('Document upload (PDF) produces a fileId pointer chip', async ({ page }) =>
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
-  await page.locator('#attachInput').setInputFiles({
+  await page.locator('#composerAttachInput').setInputFiles({
     name: 'report.pdf',
     mimeType: 'application/pdf',
     buffer: Buffer.from('%PDF-1.4 fake'),
@@ -364,7 +364,7 @@ test('Document upload (PDF) produces a fileId pointer chip', async ({ page }) =>
     const snapshot = window.__socratesAttachmentsBridge?.getSnapshot();
     return snapshot?.attachments?.[0]?.fileId === 'file-uuid-1';
   });
-  await expect(page.locator('#attachmentChips .attachment-chip')).toHaveCount(1);
+  await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveCount(1);
   const kind = await page.evaluate(() => {
     const s = window.__socratesAttachmentsBridge?.getSnapshot();
     return s?.attachments?.[0]?.kind;

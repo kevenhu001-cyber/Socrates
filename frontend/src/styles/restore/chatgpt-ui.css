@@ -426,7 +426,7 @@ body,
 /* One-row idle composer. The existing editor still expands to the legacy
    multiline grid when its controller adds .composer-multiline. */
 
-#appShell #topicInputWrap:not(.voice-recording-active) > .attachment-chips {
+#appShell #composerInputWrap:not(.voice-recording-active) > .attachment-chips {
   grid-column: 1 / -1;
 }
 

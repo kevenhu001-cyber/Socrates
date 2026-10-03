@@ -2,7 +2,7 @@
 // Playwright spec for the Stop / Resend controls (Requirements 2.6, 2.7, 5.3).
 //
 // Flow under test:
-//   1. Send a message so a stream begins and the send button (#sendBtn)
+//   1. Send a message so a stream begins and the send button (#composerPrimaryBtn)
 //      morphs into a Stop control (setChatStopState(true) → dataset.stop==="1"
 //      and class "chat-stop").  [Req 2.5 precondition]
 //   2. Click Stop mid-stream. window.handleSendClick aborts the active stream
@@ -81,12 +81,12 @@ test('clicking Stop mid-stream halts the turn and surfaces Resend', async ({ pag
   await installOpenStream(page);
   await bootChatTurn(page);
 
-  const sendBtn = page.locator('#sendBtn');
+  const sendBtn = page.locator('#composerPrimaryBtn');
 
   // The send button morphs into Stop while the turn streams (Req 2.5).
   await expect
     .poll(() => page.evaluate(() => {
-      const b = document.getElementById('sendBtn');
+      const b = document.getElementById('composerPrimaryBtn');
       return Boolean(b && (b.dataset.stop === '1' || b.classList.contains('chat-stop')));
     }))
     .toBe(true);
@@ -103,7 +103,7 @@ test('clicking Stop mid-stream halts the turn and surfaces Resend', async ({ pag
   // The stream halts: the button returns to its non-stop (send) state.
   await expect
     .poll(() => page.evaluate(() => {
-      const b = document.getElementById('sendBtn');
+      const b = document.getElementById('composerPrimaryBtn');
       return Boolean(b && b.dataset.stop !== '1' && !b.classList.contains('chat-stop'));
     }))
     .toBe(true);
@@ -118,10 +118,10 @@ test('clicking Resend starts a new turn from the latest user message', async ({ 
   await installOpenStream(page);
   await bootChatTurn(page);
 
-  const sendBtn = page.locator('#sendBtn');
+  const sendBtn = page.locator('#composerPrimaryBtn');
   await expect
     .poll(() => page.evaluate(() => {
-      const b = document.getElementById('sendBtn');
+      const b = document.getElementById('composerPrimaryBtn');
       return Boolean(b && (b.dataset.stop === '1' || b.classList.contains('chat-stop')));
     }))
     .toBe(true);
@@ -157,7 +157,7 @@ test('clicking Resend starts a new turn from the latest user message', async ({ 
   // Stop, confirming a fresh streaming turn started from that message.
   await expect
     .poll(() => page.evaluate(() => {
-      const b = document.getElementById('sendBtn');
+      const b = document.getElementById('composerPrimaryBtn');
       return Boolean(b && (b.dataset.stop === '1' || b.classList.contains('chat-stop')));
     }))
     .toBe(true);

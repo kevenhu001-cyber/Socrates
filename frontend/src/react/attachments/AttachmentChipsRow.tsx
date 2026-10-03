@@ -19,8 +19,7 @@ function i18n(key: string, fallback: string): string {
   return v !== key ? v : fallback;
 }
 
-const CHIPS_ID = 'attachmentChips';
-const TOPIC_CHIPS_ID = 'topicAttachmentChips';
+const CHIPS_ID = 'composerAttachmentChips';
 
 const SPINNER_HTML = '<span class="thinking-ring thinking-ring-sm" aria-hidden="true"></span>';
 const REMOVE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>';
@@ -184,36 +183,24 @@ export interface AttachmentChipsHandle {
 }
 
 /**
- * Hydrate both legacy chips containers (`#attachmentChips` for the chat
- * composer and `#topicAttachmentChips` for the tutor-mode topic setup).
- * Idempotent — second call returns the existing handle. The host
- * elements keep their id / classes / CSS — React owns only their direct
- * children (the chip buttons). The legacy renderer in
- * `src/attachments/render.js` is suppressed by a data-attribute guard
- * so the two never collide.
+ * Hydrate the single chips container of the single composer shell.
+ * Idempotent — second call returns the existing handle. The host keeps
+ * its id / classes / CSS — React owns only its direct children (the
+ * chip buttons). The legacy renderer in `src/attachments/render.js` is
+ * suppressed by a data-attribute guard so the two never collide.
  */
 export function hydrateAttachmentChipsRows(): AttachmentChipsHandle | null {
-  const chatTarget = document.getElementById(CHIPS_ID);
-  const topicTarget = document.getElementById(TOPIC_CHIPS_ID);
+  const target = document.getElementById(CHIPS_ID);
 
   installAttachmentsBridge();
 
   const roots: Root[] = [];
 
-  /* Each host is tagged independently so the registry can mount them as
-     separate specs. */
-  if (chatTarget && !hostIsMountedBy(chatTarget, 'attachment-chips')) {
-    const chatRoot = createRoot(chatTarget);
-    chatRoot.render(<ChipsRow targetId={CHIPS_ID} />);
-    markHostMountedBy(chatTarget, 'attachment-chips');
-    roots.push(chatRoot);
-  }
-
-  if (topicTarget && !hostIsMountedBy(topicTarget, 'attachment-chips')) {
-    const topicRoot = createRoot(topicTarget);
-    topicRoot.render(<ChipsRow targetId={TOPIC_CHIPS_ID} />);
-    markHostMountedBy(topicTarget, 'attachment-chips');
-    roots.push(topicRoot);
+  if (target && !hostIsMountedBy(target, 'attachment-chips')) {
+    const root = createRoot(target);
+    root.render(<ChipsRow targetId={CHIPS_ID} />);
+    markHostMountedBy(target, 'attachment-chips');
+    roots.push(root);
   }
 
   if (roots.length === 0) return null;
@@ -222,11 +209,8 @@ export function hydrateAttachmentChipsRows(): AttachmentChipsHandle | null {
     roots,
     destroy: () => {
       roots.forEach((root) => root.unmount());
-      if (chatTarget) {
-        clearHostMounted(chatTarget);
-      }
-      if (topicTarget) {
-        clearHostMounted(topicTarget);
+      if (target) {
+        clearHostMounted(target);
       }
     },
   };

@@ -35,11 +35,11 @@ export function installHomeSurface() {
     if (action === 'upload') {
       /* Keep the entry point on the real composer tools control so the
          existing upload flow and the OpenConnector menu stay in one place. */
-      const toolsButton = document.getElementById('topicComposerToolsBtn');
+      const toolsButton = document.getElementById('composerToolsBtn');
       if (toolsButton) {
         toolsButton.click();
       } else {
-        document.getElementById('topicAttachInput')?.click();
+        document.getElementById('composerAttachInput')?.click();
       }
       return;
     }

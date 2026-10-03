@@ -23,7 +23,7 @@ test('composer tools visual baseline covers desktop and mobile themes and locale
           document.documentElement.setAttribute('data-mode', nextTheme);
         }, { language, theme });
 
-        await page.locator('#topicComposerToolsBtn').click();
+        await page.locator('#composerToolsBtn').click();
         await expect(menu).toBeVisible();
         await expect(menu.locator('.composer-tools-plugin-state')).toContainText(
           language === 'zh' ? '还没有已连接应用' : 'No connected apps yet',

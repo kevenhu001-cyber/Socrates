@@ -143,9 +143,9 @@ export function buildExtensionContext(surface: ComposerSurface): ExtensionContex
     // ── legacy bridge passthroughs ──
     openNav: (page) => w().openNav?.(page),
     openPromptTemplatesModal: () => w().openPromptTemplatesModal?.(),
-    openAttachmentPicker: (mode) => {
-      // Legacy picker takes an element id — map surface → input id.
-      w().openAttachmentPicker?.(mode === 'topic' ? 'topicAttachInput' : 'attachInput');
+    openAttachmentPicker: (_mode) => {
+      // Legacy picker takes an element id — one composer, one input.
+      w().openAttachmentPicker?.('composerAttachInput');
     },
     toggleWebSearch: () => w().toggleWebSearch?.(),
     launchDeepResearch: () => w().launchDeepResearch?.(),

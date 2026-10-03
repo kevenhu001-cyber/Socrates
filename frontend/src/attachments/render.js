@@ -1,11 +1,10 @@
 // src/attachments/render.js — Phase C-2.4 extraction
 // DOM-side rendering and event wiring for the attachment chip strip
-// above each composer (chat-mode follow-up AND tutor-mode topic
-// setup). Module state (the pending attachments array) lives in
-// src/attachments.js; this module just mirrors it into the DOM and
-// wires the paperclip button + drag/drop + paste for every wired
-// input. Both composers share the same attachments[] store — the
-// pending files travel with whichever submit button fires next.
+// above the single composer. Module state (the pending attachments
+// array) lives in src/attachments.js; this module just mirrors it
+// into the DOM and wires the paperclip button + drag/drop + paste.
+// The composer shell moves between the landing slot and the chat slot
+// (P_composer-single) but stays one node, so one wiring covers both.
 //
 // All inline handler references (window.renderAttachmentChips /
 // window.setupAttachmentInput) are re-bound in src/windowExports.js.
@@ -96,16 +95,22 @@ function updateProgressOnly(){
   });
 }
 
-/* Run every wired input's "send button refresher" (updateSendBtn for
-   chat, updateStartBtn for tutor). Keeps each button in sync with
-   pending attachments without the per-input wiring needing to know
-   about the others. */
+/* Run the wired input's "send button refresher" (updateComposerBtn).
+   Keeps the primary button in sync with pending attachments. */
 function refreshAllSendBtns(){
   WIRED_INPUTS.forEach(function(w){
     if(typeof window !== "undefined" && typeof window[w.updateBtnName] === "function"){
       try{ window[w.updateBtnName](); }catch(_){}
     }
   });
+}
+
+/* Bar ids for the doc-level drop hint. Accepts one id or an array —
+   hidden ancestors never paint, so the single wiring names both the
+   landing and chat containers and the visible one lights up. */
+function wiredBarIds(w){
+  if(!w.barId) return [];
+  return Array.isArray(w.barId) ? w.barId : [w.barId];
 }
 
 /* Returns the wired-input whose wrap contains the event target, or
@@ -125,13 +130,15 @@ function findWiredForTarget(target){
  *   inputId      — hidden file input id
  *   wrapId       — composer container (drop zone + visual hint)
  *   textareaId   — textarea id (clipboard paste handler)
- *   barId        — input bar id (full-doc drop visual hint)
+ *   barId        — input bar id(s) for the full-doc drop visual hint;
+ *                  accepts one id or an array — hidden ancestors never
+ *                  paint, so naming both the landing and chat containers
+ *                  keeps the hint working wherever the shell is parked
  *   chipsId      — chips container id (renderAttachmentChips target)
  *   updateBtnName — name of the function on window to call after
- *                   mutations (updateSendBtn for chat, updateStartBtn
- *                   for tutor)
- * Called once per composer; safe to call multiple times for the same
- * ids (de-duplicated by chipsId). */
+ *                   mutations (updateComposerBtn)
+ * Called once for the single composer; safe to call multiple times for
+ * the same ids (de-duplicated by chipsId). */
 export function setupAttachmentInput(opts){
   if(!opts || !opts.inputId || !opts.wrapId) return;
   // De-dup: if a config with the same chipsId is already wired, skip.
@@ -150,7 +157,7 @@ export function setupAttachmentInput(opts){
     textareaId: opts.textareaId || null,
     barId: opts.barId || null,
     chipsId: opts.chipsId || null,
-    updateBtnName: opts.updateBtnName || "updateSendBtn",
+    updateBtnName: opts.updateBtnName || "updateComposerBtn",
   };
   WIRED_INPUTS.push(cfg);
 
@@ -281,10 +288,10 @@ function wireDocumentDrag(){
       WIRED_INPUTS.forEach(function(w){
         const el = document.getElementById(w.wrapId);
         if(el) el.classList.add("drag-over");
-        if(w.barId){
-          const bar = document.getElementById(w.barId);
+        wiredBarIds(w).forEach(function(barId){
+          const bar = document.getElementById(barId);
           if(bar) bar.classList.add("drag-over-doc");
-        }
+        });
       });
     }
   });
@@ -301,10 +308,10 @@ function wireDocumentDrag(){
       WIRED_INPUTS.forEach(function(w){
         const el = document.getElementById(w.wrapId);
         if(el) el.classList.remove("drag-over");
-        if(w.barId){
-          const bar = document.getElementById(w.barId);
+        wiredBarIds(w).forEach(function(barId){
+          const bar = document.getElementById(barId);
           if(bar) bar.classList.remove("drag-over-doc");
-        }
+        });
       });
     }
   });
@@ -317,10 +324,10 @@ function wireDocumentDrag(){
     if(!hasFile) return;
     // Clear doc-level visual hint on every wired bar.
     WIRED_INPUTS.forEach(function(w){
-      if(w.barId){
-        const bar = document.getElementById(w.barId);
+      wiredBarIds(w).forEach(function(barId){
+        const bar = document.getElementById(barId);
         if(bar) bar.classList.remove("drag-over-doc");
-      }
+      });
     });
     // If the drop landed on a specific composer, that composer's
     // own handler already processed it. Otherwise the drop is on
@@ -340,23 +347,17 @@ function autoWire(){
   if(booted) return;
   booted = true;
   wireDocumentDrag();
-  // Chat-mode composer.
+  /* P_composer-single — one shell, one wiring. barId names both view
+     containers; only the visible one paints the drop hint. The paperclip
+     button keeps its tools-menu listener (legacyShellListeners); this
+     wiring owns the hidden file input, drop and paste only. */
   setupAttachmentInput({
-    inputId: "attachInput",
-    wrapId: "chatInputWrap",
+    inputId: "composerAttachInput",
+    wrapId: "composerInputWrap",
     textareaId: null,
-    barId: "chatInputBar",
-    chipsId: "attachmentChips",
-    updateBtnName: "updateSendBtn",
-  });
-  // Tutor-mode topic setup.
-  setupAttachmentInput({
-    inputId: "topicAttachInput",
-    wrapId: "topicInputWrap",
-    textareaId: null,
-    barId: "topicSetup",
-    chipsId: "topicAttachmentChips",
-    updateBtnName: "updateStartBtn",
+    barId: ["chatInputBar", "topicSetup"],
+    chipsId: "composerAttachmentChips",
+    updateBtnName: "updateComposerBtn",
   });
 }
 /* P_timing-DCL — the Vite IIFE evaluates before the DOM is ready,

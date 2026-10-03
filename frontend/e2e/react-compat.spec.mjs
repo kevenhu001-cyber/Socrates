@@ -10,25 +10,25 @@ test('React compatibility mode preserves the legacy application shell', async ({
   await waitForAppShell(page);
 
   await expect(page.locator('#sidebar')).toBeVisible();
-  await expect(page.locator('#topicComposerRoot .rich-composer-editor').first()).toBeVisible();
+  await expect(page.locator('#composerRoot .rich-composer-editor').first()).toBeVisible();
 
   const compatibilityRoot = page.locator('#newReplyPill');
   await expect(compatibilityRoot).toHaveText('↓ New reply');
   /* Voice input is unified with the send button: idle (empty composer)
      shows the voice icon, text arms the send arrow. */
-  await expect(page.locator('#sendBtnContent .icon-voice')).toHaveCount(1);
+  await expect(page.locator('#composerPrimaryBtnContent .icon-voice')).toHaveCount(1);
 
   await expect(page.locator('#msgList')).not.toHaveAttribute('data-mounted-by', /.+/);
 
   /* Text in the chat composer arms the arrow (legacy updateSendBtn
-     toggles #sendBtn.active; React's SendButtonContent reads it). */
+     toggles #composerPrimaryBtn.active; React's SendButtonContent reads it). */
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
   });
-  await page.locator('#chatComposerRoot .rich-composer-editor').first().fill('compat arrow');
-  await expect(page.locator('#sendBtnContent .icon-arrow')).toHaveCount(1);
+  await page.locator('#composerRoot .rich-composer-editor').first().fill('compat arrow');
+  await expect(page.locator('#composerPrimaryBtnContent .icon-arrow')).toHaveCount(1);
 
   await page.evaluate(() => {
     window.setChatStopState(true);
@@ -37,8 +37,8 @@ test('React compatibility mode preserves the legacy application shell', async ({
       messageId: 'compat-send-button',
     });
   });
-  await expect(page.locator('#sendBtn')).toHaveAttribute('data-stop', '1');
-  await expect(page.locator('#sendBtnContent rect')).toHaveCount(1);
+  await expect(page.locator('#composerPrimaryBtn')).toHaveAttribute('data-stop', '1');
+  await expect(page.locator('#composerPrimaryBtnContent rect')).toHaveCount(1);
 
   await page.evaluate(() => {
     window.setChatStopState(false);
@@ -48,7 +48,7 @@ test('React compatibility mode preserves the legacy application shell', async ({
       textLength: 0,
     });
   });
-  await expect(page.locator('#sendBtnContent path')).toHaveCount(1);
+  await expect(page.locator('#composerPrimaryBtnContent path')).toHaveCount(1);
 });
 
 test('React compatibility mode always loads (no ?react=1 flag needed)', async ({ page }) => {
@@ -58,7 +58,7 @@ test('React compatibility mode always loads (no ?react=1 flag needed)', async ({
   await waitForAppShell(page);
 
   await expect(page.locator('#newReplyPill')).toHaveText('↓ New reply');
-  await expect(page.locator('#sendBtnContent .icon-voice')).toHaveCount(1);
+  await expect(page.locator('#composerPrimaryBtnContent .icon-voice')).toHaveCount(1);
   await expect(page.locator('#sidebarUserRow')).toBeAttached();
 });
 
@@ -108,9 +108,9 @@ test('React chat store observes legacy message and stream lifecycle', async ({ p
 
   await page.evaluate(() => window.__reactChatStreamPromise);
 
-  await expect(page.locator('#sendBtn')).toHaveAttribute('data-stop', '0');
-  await expect(page.locator('#sendBtnContent path')).toHaveCount(1);
-  await expect(page.locator('#sendBtnContent rect')).toHaveCount(0);
+  await expect(page.locator('#composerPrimaryBtn')).toHaveAttribute('data-stop', '0');
+  await expect(page.locator('#composerPrimaryBtnContent path')).toHaveCount(1);
+  await expect(page.locator('#composerPrimaryBtnContent rect')).toHaveCount(0);
 
   const result = await page.evaluate(() => {
     window.__stopReactChatSnapshotCapture?.();

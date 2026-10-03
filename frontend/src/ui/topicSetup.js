@@ -1,16 +1,14 @@
 // src/ui/topicSetup.js — Phase C-2.3 extraction
-import { getComposerMarkdown } from '../react/composer-input/controller.ts';
-// Small helpers for the topic-setup and chat composer areas:
+import { getComposerMarkdown, getVisibleComposerSurface } from '../react/composer-input/controller.ts';
+// Small helpers for the single composer:
 //
 //   autoResize(el)        — retained for older secondary textareas.
-//   updateStartBtn()      — toggle the topic-setup "Start" button's
-//                            active state based on the input value.
-//   updateSendBtn()       — toggle the chat "Send" button's active
-//                            state based on the chat input value AND
-//                            any pending attachments.
+//   updateComposerBtn()   — toggle the composer primary button's active
+//                            state based on the visible surface's draft
+//                            value AND any pending attachments.
 //
-// All three are called from inline `oninput=` / `onclick=` handlers
-// in index.html, so they are also exposed on `window` via
+// Called from RichComposer change notifications and the flows that
+// mutate attachments, so it is also exposed on `window` via
 // src/windowExports.js (see C-2.3 mirror block).
 
 /* autoResize — the chat composer is capped at 120px (≈6 lines),
@@ -22,19 +20,24 @@ export function autoResize(el){
   el.style.height = Math.min(el.scrollHeight, maxH) + "px";
 }
 
-/* Light up the "Start" button when the topic input has non-empty
-   text OR pending attachments (P_attachments-tutor — a user can drop
-   a PDF in tutor mode, leave the textarea empty, and Begin must
-   still be active).
+/* Light up the primary button when the visible surface's draft has
+   non-empty text OR there are pending attachments (P_attachments-tutor
+   and P_attachments — a dropped file with an empty editor is still a
+   valid turn). P_composer-single: one button, one wrap; the surface is
+   read live so landing and chat share the updater.
    P_chatgpt-landing — also toggle .has-text on the input wrap so the
    CSS can swap the mic icon for the up-arrow on the send button. */
-export function updateStartBtn(){
-  var v = getComposerMarkdown("topic").trim();
-  var b = document.getElementById("startBtn");
+export function updateComposerBtn(){
+  var surface = "topic";
+  try{ surface = getVisibleComposerSurface(); }catch(_){/* default above */}
+  var v = "";
+  try{ v = getComposerMarkdown(surface).trim(); }catch(_){/* default above */}
+  var b = document.getElementById("composerPrimaryBtn");
   var hasAtt = typeof window.attachments !== "undefined"
     && Array.isArray(window.attachments)
     && window.attachments.length > 0;
   var canSend = !!(v || hasAtt);
+  if(!b) return;
   if(canSend) b.classList.add("active"); else b.classList.remove("active");
   /* Empty state is the voice-input action (the click handler routes a
      non-active press to toggleSpeechInput), so the control is never
@@ -45,28 +48,6 @@ export function updateStartBtn(){
   b.setAttribute("aria-label", label);
   b.setAttribute("title", label);
   b.disabled = false;
-  var wrap = document.getElementById("topicInputWrap");
-  if(wrap) wrap.classList.toggle("has-text", !!(v || hasAtt));
-}
-
-/* Light up the "Send" button when there's text OR pending attachments
-   (P_attachments: a user can attach an image, leave the textarea
-   empty, and the send button must still look active).
-   P_chatgpt-landing — also toggle .has-text on the chat-input wrap. */
-export function updateSendBtn(){
-  var v = getComposerMarkdown("chat").trim();
-  var b = document.getElementById("sendBtn");
-  var hasAtt = typeof window.attachments !== "undefined"
-    && Array.isArray(window.attachments)
-    && window.attachments.length > 0;
-  var canSend = !!(v || hasAtt);
-  if(canSend) b.classList.add("active"); else b.classList.remove("active");
-  var key = canSend ? "chat.send" : "voice.input";
-  var fallback = canSend ? "Send" : "Voice input";
-  var label = typeof window.t === "function" ? window.t(key) : fallback;
-  b.setAttribute("aria-label", label);
-  b.setAttribute("title", label);
-  b.disabled = false;
-  var wrap = document.getElementById("chatInputWrap");
+  var wrap = document.getElementById("composerInputWrap");
   if(wrap) wrap.classList.toggle("has-text", !!(v || hasAtt));
 }

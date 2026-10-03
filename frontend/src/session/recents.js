@@ -19,7 +19,7 @@ import { showToast } from '../ui/toast.js';
 import { clearComposer } from '../react/composer-input/controller.ts';
 import { clearComposerPlugins } from '../react/composer/pluginSelection.ts';
 import { clearLegacyMsgListChildren } from '../ui/messageListDom.js';
-import { updateStartBtn } from '../ui/topicSetup.js';
+import { updateComposerBtn } from '../ui/topicSetup.js';
 import { turnState } from '../chat/turnState.js';
 import { activateMainView } from '../ui/mainViewController.js';
 
@@ -391,7 +391,7 @@ export function bounceOutOfArchivedSession(){
      previous session's plan doesn't linger in the sidebar. */
   var _tpc=document.getElementById("teachingPlanContent");if(_tpc)_tpc.innerHTML="";
   document.getElementById("chatStats").textContent="";
-  updateStartBtn();
+  updateComposerBtn();
 }
 
 /* ─── Session context menu (long-press / right-click) ───

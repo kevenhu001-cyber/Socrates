@@ -16,7 +16,7 @@ import {
 } from '../react/composer-input/controller.ts';
 import { loadPromptTemplates } from './promptTemplates.js';
 import { esc } from '../render/helpers.js';
-import { updateSendBtn, updateStartBtn } from '../ui/topicSetup.js';
+import { updateComposerBtn } from '../ui/topicSetup.js';
 
 export var _slashSelected=0;
 var _slashList=[];
@@ -212,12 +212,8 @@ export function closeSlashCommandPalette(){
 export function positionSlashCommandPalette(){
   var p=document.getElementById("slashCommandPalette");
   if(!p) return;
-  /* P_slash-topic — anchor to the active input's wrapper. */
-  var anchor=null;
-  if(_slashActiveSurface==="topic"){
-    anchor=document.getElementById("topicInputWrap");
-  }
-  if(!anchor) anchor=document.getElementById("chatInputWrap")||document.getElementById("chatComposerRoot");
+  /* P_composer-single — one shell; anchor to it wherever it is parked. */
+  var anchor=document.getElementById("composerInputWrap")||document.getElementById("composerRoot");
   if(!anchor){
     p.style.left="50%";
     p.style.right="";
@@ -337,9 +333,9 @@ export function insertSelectedSlashTemplate(){
        idea why the response shape changed. */
     setActiveTemplate(t);
   }
-  if(typeof updateSendBtn==="function")updateSendBtn();
+  if(typeof updateComposerBtn==="function")updateComposerBtn();
   /* P_slash-topic — also sync the Begin button when on topic input. */
-  if(surface==="topic" && typeof updateStartBtn==="function") updateStartBtn();
+  if(typeof updateComposerBtn==="function") updateComposerBtn();
   closeSlashCommandPalette();
 }
 /* Wire arrow / Enter / Esc handling for the palette itself. */
@@ -368,8 +364,7 @@ document.addEventListener("keydown",function(e){
    leading `/` is gone (e.g. user backspaces past it or
    pastes over it). */
 subscribeComposer(function(surface,v){
-  if(surface==="chat")updateSendBtn();
-  else updateStartBtn();
+  updateComposerBtn();
   if(v.charAt(0)==="/"){
     _slashActiveSurface=surface;
     if(!isSlashCommandPaletteOpen()) openSlashCommandPalette();
@@ -384,15 +379,15 @@ window.addEventListener("resize",function(){
   if(isSlashCommandPaletteOpen()) positionSlashCommandPalette();
 });
 
-/* Blur whatever is focused inside the chat composer (editor root OR
+/* Blur whatever is focused inside the composer (editor root OR
    the wider input wrap, which includes the send/attach buttons) and
    collapse the selection Tiptap leaves behind, so the focus-driven
    visuals (border accent, expanded desktop layout) reset after a
-   click-send. The `:focus-within` on `.chat-input-wrap` covers all
+   click-send. The `:focus-within` on `.composer-input-wrap` covers all
    descendants, so we must clear focus everywhere inside that wrap. */
 export function blurChatComposer(){
-  var rootEl=document.getElementById("chatComposerRoot");
-  var wrapEl=document.getElementById("chatInputWrap");
+  var rootEl=document.getElementById("composerRoot");
+  var wrapEl=document.getElementById("composerInputWrap");
   var active=document.activeElement;
   var withinComposer = (rootEl&&rootEl.contains(active))
     || (wrapEl&&wrapEl.contains(active));

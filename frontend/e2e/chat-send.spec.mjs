@@ -13,8 +13,8 @@ test('clicking send mounts a streaming bubble or surfaces a notice without throw
   await waitForAppShell(page);
   await page.waitForTimeout(400);
 
-  const chatInput = page.locator('#chatComposerRoot .rich-composer-editor').first();
-  const sendBtn = page.locator('#sendBtn, .send-btn').first();
+  const chatInput = page.locator('#composerRoot .rich-composer-editor').first();
+  const sendBtn = page.locator('#composerPrimaryBtn, .composer-primary-btn').first();
 
   if (!(await chatInput.isVisible().catch(() => false))) {
     // Pre-chat-screen path: just verify the function exists.
@@ -69,13 +69,13 @@ test('mobile send places the submitted prompt and thinking state at the viewport
     window.stateStore.dispatch({ type: "state/set", key: "_userScrolledAway", value: false });
   });
 
-  const chatInput = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const chatInput = page.locator('#composerRoot .rich-composer-editor').first();
   await chatInput.focus();
   await chatInput.fill('A focused mobile send should remain at the newest message.');
   /* Exercise the production button path: handleSendClick passes the blur
      option into submitChatMessage, so mobile focus/keyboard collapse and the
      turn anchor are tested in the same interaction. */
-  await page.locator('#sendBtn').click();
+  await page.locator('#composerPrimaryBtn').click();
   await expect(page.locator('#msgList .msg.user').last()).toBeVisible();
   const enteringTransform = await page.locator('#msgList .msg.user').last().evaluate(
     (row) => getComputedStyle(row).transform,
@@ -124,7 +124,7 @@ test('mobile send places the submitted prompt and thinking state at the viewport
     && frame.visibility !== 'hidden',
   )).toBe(true);
   await page.waitForFunction(() => Boolean(
-    document.querySelector('#msgList .msg.assistant.turn-viewport-anchor .thinking-placeholder'),
+    document.querySelector('#msgList .msg.assistant.turn-viewport-anchor .thinking-status'),
   ));
   /* The send-time anchor now glides the prompt into place; wait for the
      settling window to close before measuring the final offset. */
@@ -141,7 +141,7 @@ test('mobile send places the submitted prompt and thinking state at the viewport
     const list = document.getElementById('msgList');
     const users = list.querySelectorAll('.msg.user');
     const latestUser = users[users.length - 1];
-    const thinking = list.querySelector('.msg.assistant:last-child .thinking-placeholder');
+    const thinking = list.querySelector('.msg.assistant:last-child .thinking-status');
     const listRect = list.getBoundingClientRect();
     const userRect = latestUser?.getBoundingClientRect();
     return {
@@ -207,12 +207,12 @@ test('Tutor button send uses the same top anchor while the reply streams', async
     window.stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
   });
 
-  const chatInput = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const chatInput = page.locator('#composerRoot .rich-composer-editor').first();
   await chatInput.fill('Tutor should glide my submitted answer to the top before following the response.');
-  await page.locator('#sendBtn').click();
+  await page.locator('#composerPrimaryBtn').click();
   try {
     await expect(page.locator('#msgList .msg.user').last()).toBeVisible();
-    await expect(page.locator('#msgList .msg.assistant .thinking-placeholder').last()).toBeVisible();
+    await expect(page.locator('#msgList .msg.assistant .thinking-status').last()).toBeVisible();
     await expect.poll(() => page.evaluate(() => {
       const list = document.getElementById('msgList');
       const users = list.querySelectorAll('.msg.user');
@@ -272,7 +272,7 @@ test('mobile first turn stays at the transcript top when the viewport grows', as
     window.submitChatMessage('First prompt');
   });
   await expect(page.locator('#msgList .msg.user')).toHaveCount(1);
-  await expect(page.locator('#msgList .thinking-placeholder')).toBeVisible();
+  await expect(page.locator('#msgList .thinking-status')).toBeVisible();
 
   const firstTurnOffset = () => page.evaluate(() => {
     const list = document.getElementById('msgList');
@@ -453,7 +453,7 @@ test('retry replaces the failed answer and resumes at the visible error position
       '#msgList .msg.assistant[data-viewport-anchor="retry"]',
     );
     return Boolean(message && message.dataset.clientId !== oldId
-      && message.querySelector('.thinking-placeholder'));
+      && message.querySelector('.thinking-status'));
   }, failedMessageId);
 
   const retried = await page.evaluate((oldId) => {
@@ -520,7 +520,7 @@ test('retry replays the failed turn content including attachments', async ({ pag
     });
   });
 
-  await page.locator('#chatComposerRoot .rich-composer-editor').first().fill('Read the attached notes.');
+  await page.locator('#composerRoot .rich-composer-editor').first().fill('Read the attached notes.');
   await page.evaluate(() => window.submitChatMessage());
 
   const retryButton = page.locator('#msgList .msg-error .msg-retry-btn').last();
@@ -624,7 +624,7 @@ test('send button plays the sent glyph, then settles on the stop state', async (
     document.getElementById('chatView').classList.remove('hidden');
     /* Record every class flip on the button and whether the glyph pair was
        rendered while it lasted. */
-    const btn = document.getElementById('sendBtn');
+    const btn = document.getElementById('composerPrimaryBtn');
     window.__glyphLog = [];
     new MutationObserver(() => {
       window.__glyphLog.push({
@@ -638,12 +638,12 @@ test('send button plays the sent glyph, then settles on the stop state', async (
     }).observe(btn, { childList: true, subtree: true });
   });
 
-  const chatInput = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const chatInput = page.locator('#composerRoot .rich-composer-editor').first();
   await chatInput.fill('Play the sent glyph');
-  await page.locator('#sendBtn').click();
+  await page.locator('#composerPrimaryBtn').click();
 
   await expect.poll(() => page.evaluate(() => window.__glyphLog.some((e) => e.sending))).toBe(true);
-  await expect.poll(() => page.evaluate(() => document.getElementById('sendBtn').classList.contains('is-sending'))).toBe(false);
+  await expect.poll(() => page.evaluate(() => document.getElementById('composerPrimaryBtn').classList.contains('is-sending'))).toBe(false);
   const { log, pairSeen } = await page.evaluate(() => ({ log: window.__glyphLog, pairSeen: window.__glyphPairSeen }));
   const on = log.find((e) => e.sending);
   const off = log.find((e) => e.t > on.t && !e.sending);
@@ -652,7 +652,7 @@ test('send button plays the sent glyph, then settles on the stop state', async (
   expect(pairSeen, 'departing arrow + arriving stop glyph rendered together').toBe(true);
 
   /* After the beat, the button shows the stop glyph while the turn streams. */
-  await expect(page.locator('#sendBtn[data-stop="1"] #sendBtnContent .icon-stop')).toHaveCount(1);
-  await expect(page.locator('#sendBtnContent .send-glyph')).toHaveCount(0);
+  await expect(page.locator('#composerPrimaryBtn[data-stop="1"] #composerPrimaryBtnContent .icon-stop')).toHaveCount(1);
+  await expect(page.locator('#composerPrimaryBtnContent .send-glyph')).toHaveCount(0);
   expect(pageErrors).toEqual([]);
 });

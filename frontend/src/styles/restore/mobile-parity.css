@@ -151,15 +151,14 @@
 
   /* ─────────────────────────────────────────────────────────────
    * 3. Composer — two-row card: text on top, controls below.
-   *    Selectors carry a fourth id (#topicInputWrap/#chatInputWrap)
+   *    Selectors carry a fourth id (#composerInputWrap)
    *    to outrank the final `#appShell#appShell …` legacy layer.
    * ───────────────────────────────────────────────────────────── */
 
   /* Flatten the footer wrappers so the controls become grid items. */
 
   /* Attachment chips (when present) own the first row. */
-  #appShell#appShell #topicInputWrap:not(.voice-recording-active) .attachment-chips,
-  #appShell#appShell #chatInputWrap:not(.voice-recording-active) .attachment-chips {
+  #appShell#appShell #composerInputWrap:not(.voice-recording-active) .attachment-chips {
     grid-column: 1 / -1 !important;
     grid-row: 1 !important;
   }
@@ -171,8 +170,7 @@
   /* Reasoning-effort pill. */
 
   /* Reference pill shows the label + caret only. */
-  #appShell#appShell #topicInputWrap:not(.voice-recording-active) .effort-trigger .effort-glyph,
-  #appShell#appShell #chatInputWrap:not(.voice-recording-active) .effort-trigger .effort-glyph {
+  #appShell#appShell #composerInputWrap:not(.voice-recording-active) .effort-trigger .effort-glyph {
     display: none !important;
   }
 

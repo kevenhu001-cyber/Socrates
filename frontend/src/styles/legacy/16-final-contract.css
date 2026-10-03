@@ -45,7 +45,9 @@
 .topic-sub{
   margin:0 0 22px;
 }
-.topic-input-wrap .attachment-chips{padding:8px 14px 0;max-height:132px}
+/* P_composer-single — the landing chip geometry is the reference for the
+   single shell (union of both predecessors' rules). */
+.composer-input-wrap .attachment-chips{order:0;flex-basis:100%;padding:8px 14px 0;max-height:132px}
 
 /* Chat composer: safe-area aware, in-flow, and bounded by its real content.
    The transcript remains a sibling flex item, so it can never be covered by
@@ -97,7 +99,7 @@
      footer use explicit grid tracks rather than changing flex-basis/order;
      that removes the transient width collapse which used to make the input
      jump sideways while focus was entering. */
-  .chat-input-wrap .attachment-chips{
+  .composer-input-wrap .attachment-chips{
     order:0;
     flex:0 0 auto;
     width:100%;
@@ -109,7 +111,7 @@
      ([editor full-width], then [left-controls][mic][send]). Add a
      third auto column so the mic has a stable slot between the tool
      controls and the send button. Collapsed the button stays hidden
-     from the `.chat-input-wrap .mobile-mic-btn` rule above. */
+     from the `.composer-input-wrap .mobile-mic-btn` rule above. */
 
   /* Older engines use the same two-stage shape with a height transition
      rather than attempting to interpolate grid tracks. The footer remains

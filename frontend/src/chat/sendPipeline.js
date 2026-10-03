@@ -31,7 +31,7 @@ import {
   snapshotAttachments,
 } from '../attachments.js';
 import { renderAttachmentChips } from '../attachments/render.js';
-import { updateSendBtn } from '../ui/topicSetup.js';
+import { updateComposerBtn } from '../ui/topicSetup.js';
 import { scheduleTurnToTopForMessage } from './turnAnchor.ts';
 import { playSendGlyph } from '../ui/sendGlyph.js';
 
@@ -178,7 +178,7 @@ export async function submitChatMessage(textOverride,opts){
     playSendGlyph();
     userClientId=addMessage("user",text,null,null,immediateAttList);
     await precreateChatTurn();
-    clearComposer("chat");updateSendBtn();
+    clearComposer("chat");updateComposerBtn();
     /* Click-send (opts.blurAfterSend) ends the typing session: drop the
        editor focus so the composer collapses out of its focus-within
        visuals. Enter-send keeps the classic keep-typing flow by
@@ -198,7 +198,7 @@ export async function submitChatMessage(textOverride,opts){
   if(isComposerSubmit){
     if(typeof resetAttachments==="function")resetAttachments();
     if(typeof renderAttachmentChips==="function")renderAttachmentChips();
-    if(typeof updateSendBtn==="function")updateSendBtn();
+    if(typeof updateComposerBtn==="function")updateComposerBtn();
   }
 
   /* Assemble the model payload from the immutable snapshot after the UI has

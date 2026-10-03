@@ -122,7 +122,7 @@ test('public ?share=TOKEN loads the read-only chat view without auth', async ({ 
   await expect(page.locator('.visualization-card svg path')).not.toHaveCount(0);
 
   // The composer is hidden; user cannot post into a shared view.
-  const composer = page.locator('#chatComposerRoot');
+  const composer = page.locator('#composerRoot');
   await expect(composer).toBeHidden();
 
   // Shared loading must preserve every immutable namespace.

@@ -10,7 +10,9 @@ import { Markdown } from '@tiptap/markdown';
 import DOMPurify from 'dompurify';
 
 import {
+  COMPOSER_SURFACE_EVENT,
   notifyComposerChange,
+  readComposerSurface,
   registerComposer,
   type ComposerSurface,
 } from './controller';
@@ -25,11 +27,26 @@ import {
 } from '../composer/pluginSelection';
 
 interface RichComposerProps {
-  surface: ComposerSurface;
   placeholder: string;
   onSubmit: () => void;
   showToolbar?: boolean;
   onEscape?: () => void;
+}
+
+/* P_composer-single — one editor serves every surface, so the surface is
+   live view state, not a mount prop. placeComposerForView dispatches the
+   event whenever the shell moves; the placeholder, plugin chips, controller
+   registration and data-surface all follow it without remounting the
+   editor (draft, undo history and focus survive the flip). */
+function useComposerSurface(): ComposerSurface {
+  const [surface, setSurface] = useState<ComposerSurface>(() => readComposerSurface());
+  useEffect(() => {
+    const sync = () => setSurface(readComposerSurface());
+    sync();
+    document.addEventListener(COMPOSER_SURFACE_EVENT, sync);
+    return () => document.removeEventListener(COMPOSER_SURFACE_EVENT, sync);
+  }, []);
+  return surface;
 }
 
 function ToolbarButton({
@@ -181,8 +198,7 @@ function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
   const visiblePlugins = plugins.slice(0, 4);
   const hiddenCount = Math.max(0, plugins.length - visiblePlugins.length);
   const openTools = () => {
-    const triggerId = surface === 'topic' ? 'topicComposerToolsBtn' : 'chatComposerToolsBtn';
-    const trigger = document.getElementById(triggerId);
+    const trigger = document.getElementById('composerToolsBtn');
     if (trigger) {
       getLegacyActions().composer.toggleTools?.(trigger, surface);
     }
@@ -224,7 +240,8 @@ function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
   );
 }
 
-export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToolbar = false }: RichComposerProps) {
+export function RichComposer({ placeholder, onSubmit, onEscape, showToolbar = false }: RichComposerProps) {
+  const surface = useComposerSurface();
   const onRemoveExtension = useCallback((key: string) => {
     const legacyWindow = window as Window & {
       _activeTemplate?: { extensionKey?: string } | null;
@@ -295,7 +312,7 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
     singleLineHeight: number;
   } | null>(null);
   const captureShapeHeight = useCallback((editorDom: HTMLElement) => {
-    const wrap = editorDom.closest<HTMLElement>('.chat-input-wrap, .topic-input-wrap');
+    const wrap = editorDom.closest<HTMLElement>('.composer-input-wrap');
     if (wrap && wrap.getClientRects().length) {
       shapeHeightRef.current = wrap.getBoundingClientRect().height;
     }
@@ -304,7 +321,7 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
     if (shapeFrameRef.current !== null) cancelAnimationFrame(shapeFrameRef.current);
     const run = () => {
       shapeFrameRef.current = null;
-      const wrap = editorDom.closest<HTMLElement>('.chat-input-wrap, .topic-input-wrap');
+      const wrap = editorDom.closest<HTMLElement>('.composer-input-wrap');
       if (!wrap) return;
       /* P_zero-delay — when the parent page is mid-view-swap (e.g. the
          topic-setup → chat-view flip in startSession()), the wrap is
@@ -616,7 +633,7 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
           return false;
         },
         focus: (view) => {
-          composerWrapRef.current = view.dom.closest('.chat-input-wrap, .topic-input-wrap');
+          composerWrapRef.current = view.dom.closest('.composer-input-wrap');
           /* Prevent mobile WebKit native scrollIntoView from scrolling window on focus */
           if (typeof window !== 'undefined' && (window.scrollY !== 0 || window.scrollX !== 0)) {
             window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -676,7 +693,6 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
 
   const setExtensionToken = useCallback((token: ComposerExtensionToken | null) => {
     if (!editor) return;
-
     const existing: Array<{ pos: number; nodeSize: number }> = [];
     editor.state.doc.descendants((node, pos) => {
       if (node.type.name === 'extensionToken') {
@@ -719,6 +735,22 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
     editor.commands.focus(position + tokenNode.nodeSize);
   }, [editor]);
 
+  /* P_composer-single — read the live extension-token node so surface
+     flips can park it under the surface being left (it is editor-doc
+     content; setMarkdown would otherwise wipe it). */
+  const getExtensionToken = useCallback((): ComposerExtensionToken | null => {
+    if (!editor) return null;
+    let found: ComposerExtensionToken | null = null;
+    editor.state.doc.descendants((node) => {
+      if (!found && node.type.name === 'extensionToken') {
+        found = (node.attrs ?? {}) as ComposerExtensionToken;
+        return false;
+      }
+      return true;
+    });
+    return found;
+  }, [editor]);
+
   useEffect(() => {
     if (!editor) return;
     return registerComposer(surface, {
@@ -736,6 +768,7 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
         editor.commands.clearContent(true);
       },
       setExtensionToken,
+      getExtensionToken,
       focus(position = 'end') {
         editor.commands.focus(position, { scrollIntoView: false });
       },
@@ -746,12 +779,12 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
         return editor.view.dom.closest('.hidden') === null && editor.view.dom.getClientRects().length > 0;
       },
     });
-  }, [captureShapeHeight, editor, getMarkdown, setExtensionToken, surface]);
+  }, [captureShapeHeight, editor, getMarkdown, setExtensionToken, getExtensionToken, surface]);
 
   useLayoutEffect(() => {
     if (!editor) return;
     const editorDom = editor.view.dom as HTMLElement;
-    const wrap = editorDom.closest<HTMLElement>('.chat-input-wrap, .topic-input-wrap');
+    const wrap = editorDom.closest<HTMLElement>('.composer-input-wrap');
     let previousEditorWidth = -1;
     let previousWrapWidth = -1;
     const observer = new ResizeObserver(() => {

@@ -16,7 +16,7 @@ function measure(page, wrapSel) {
   return page.evaluate((wrapSel) => {
     const wrap = document.querySelector(wrapSel);
     const box = (n) => { const r = n.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, h: r.height, w: r.width, cy: r.top + r.height / 2 }; };
-    const controls = [...wrap.querySelectorAll('.composer-tools-trigger, .effort-trigger, .mobile-mic-btn, #sendBtn, #startBtn')]
+    const controls = [...wrap.querySelectorAll('.composer-tools-trigger, .effort-trigger, .mobile-mic-btn, #composerPrimaryBtn, #composerPrimaryBtn')]
       .filter((n) => n.getClientRects().length);
     const range = document.createRange();
     const lineCount = (n) => {
@@ -39,7 +39,7 @@ function measure(page, wrapSel) {
 for (const lang of ['zh', 'en']) {
   test(`landing composer is one 52px row with centred, unwrapped controls (${lang})`, async ({ page }) => {
     await boot(page, { lang });
-    const m = await measure(page, '#topicInputWrap');
+    const m = await measure(page, '#composerInputWrap');
     expect(m.legacyToggle).toBe(0);
     expect(Math.round(m.wrap.h)).toBe(52);
     expect(m.radius).toBe(28);
@@ -60,7 +60,7 @@ for (const width of [1024, 1280]) {
       document.body.dataset.conversationActive = 'true';
     });
     await page.waitForTimeout(300);
-    const m = await measure(page, '#chatInputWrap');
+    const m = await measure(page, '#composerInputWrap');
     expect(Math.round(m.wrap.h)).toBe(52);
     const centres = m.controls.map((c) => c.cy);
     expect(Math.max(...centres) - Math.min(...centres)).toBeLessThanOrEqual(1);
@@ -69,8 +69,8 @@ for (const width of [1024, 1280]) {
 
 test('web search is picked from the + menu, shows a removable chip, and clears', async ({ page }) => {
   await boot(page, { lang: 'en' });
-  const wrap = page.locator('#topicInputWrap');
-  await page.locator('#topicComposerToolsBtn').click();
+  const wrap = page.locator('#composerInputWrap');
+  await page.locator('#composerToolsBtn').click();
   await page.locator('#composerToolsMenu [data-composer-action="webSearch"]:visible').first().click();
 
   const chip = wrap.locator('.composer-tool-chip[data-tool="webSearch"]');
@@ -79,8 +79,8 @@ test('web search is picked from the + menu, shows a removable chip, and clears',
   expect(await page.evaluate(() => window.webSearchOn)).toBe(true);
 
   // chatgpt.com layout: editor on its own row, chip in the footer after "+".
-  const m = await measure(page, '#topicInputWrap');
-  const plus = m.controls.find((c) => c.id === 'topicComposerToolsBtn');
+  const m = await measure(page, '#composerInputWrap');
+  const plus = m.controls.find((c) => c.id === 'composerToolsBtn');
   expect(m.editor.bottom).toBeLessThanOrEqual(m.chip.top + 2);
   expect(Math.abs(m.chip.cy - plus.cy)).toBeLessThanOrEqual(1);
   const centres = m.controls.map((c) => c.cy);

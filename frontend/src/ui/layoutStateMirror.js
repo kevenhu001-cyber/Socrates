@@ -54,8 +54,13 @@ export function syncLayoutStateMirror(doc) {
     var el = d.getElementById(m.id);
     setFlag(root, m.attr, !!el && m.on(el));
   }
-  var wrap = d.getElementById('topicInputWrap');
-  setFlag(root, 'data-topic-input-focus', !!wrap && !!d.activeElement && wrap.contains(d.activeElement));
+  /* P_composer-single — the flag keeps its landing-only meaning: the
+     single shell sets it only while parked in the visible topic setup,
+     so focusing the chat composer never trips landing rules. */
+  var wrap = d.getElementById('composerInputWrap');
+  var ts = d.getElementById('topicSetup');
+  var topicVisible = !!ts && !ts.classList.contains('hidden');
+  setFlag(root, 'data-topic-input-focus', topicVisible && !!wrap && !!d.activeElement && wrap.contains(d.activeElement));
   /* Compat resync: legacy/test writers may toggle #chatView.hidden without
      going through mainViewController — keep #chatPage's gate aligned. */
   var chatView = d.getElementById('chatView');
@@ -80,14 +85,20 @@ export function installLayoutStateMirror(doc) {
       if (el) mo.observe(el, { attributes: true, attributeFilter: ['class'] });
     }
   }
-  /* :focus-within replacement for #topicInputWrap. focusout fires before the
-     new target is focused, so read relatedTarget rather than activeElement. */
-  var wrap = d.getElementById('topicInputWrap');
-  if (wrap) {
-    wrap.addEventListener('focusin', function () { setFlag(root, 'data-topic-input-focus', true); });
-    wrap.addEventListener('focusout', function (e) {
+  /* :focus-within replacement for the single composer shell. focusout
+     fires before the new target is focused, so read relatedTarget rather
+     than activeElement. Landing-only, like the mirror above. */
+  var wrap2 = d.getElementById('composerInputWrap');
+  if (wrap2) {
+    wrap2.addEventListener('focusin', function () {
+      var ts2 = d.getElementById('topicSetup');
+      setFlag(root, 'data-topic-input-focus', !!ts2 && !ts2.classList.contains('hidden'));
+    });
+    wrap2.addEventListener('focusout', function (e) {
       var next = e && e.relatedTarget;
-      setFlag(root, 'data-topic-input-focus', !!next && wrap.contains(next));
+      var ts3 = d.getElementById('topicSetup');
+      var tv = !!ts3 && !ts3.classList.contains('hidden');
+      setFlag(root, 'data-topic-input-focus', tv && !!next && wrap2.contains(next));
     });
   }
 }

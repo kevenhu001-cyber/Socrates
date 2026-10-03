@@ -18,8 +18,8 @@ const ICON_PROPS = {
 function SendArrowIcon() { return <svg viewBox="0 0 24 24" {...ICON_PROPS} strokeWidth="2.5" className="icon-arrow"><path d="M12 19V5M5 12l7-7 7 7" /></svg>; }
 function StopSquareIcon() { return <svg viewBox="0 0 24 24" {...ICON_PROPS} strokeWidth="2" className="icon-stop"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>; }
 /* Voice-input waveform bars — the idle state of the shared primary
-   control (the same glyph the static markup ships in #startBtnContent /
-   #sendBtnContent). Bars are <line> elements so `… .icon-arrow path`
+   control (the same glyph the static markup ships in
+   #composerPrimaryBtnContent). Bars are <line> elements so `… .icon-arrow path`
    style selectors keep counting a single path. */
 function VoiceIcon() {
   return (
@@ -44,28 +44,29 @@ function useScrolledAway(): boolean {
   return away;
 }
 
-/* The legacy updateStartBtn/updateSendBtn mirror draft state onto the
-   button's `.active` class (canSend = has text or attachments). Observe
-   that class so the icon swaps voice ⇄ arrow exactly when the legacy
-   contract flips, without duplicating its canSend logic. */
-function useControlClass(id: 'startBtn' | 'sendBtn', className: string): boolean {
+/* The legacy updateComposerBtn mirrors draft state onto the button's
+   `.active` class (canSend = has text or attachments). Observe that class
+   so the icon swaps voice ⇄ arrow exactly when the legacy contract flips,
+   without duplicating its canSend logic. Single button since the composer
+   shell is one instance (P_composer-single). */
+function useControlClass(className: string): boolean {
   const [active, setActive] = useState(
-    () => document.getElementById(id)?.classList.contains(className) ?? false,
+    () => document.getElementById('composerPrimaryBtn')?.classList.contains(className) ?? false,
   );
   useEffect(() => {
-    const btn = document.getElementById(id);
+    const btn = document.getElementById('composerPrimaryBtn');
     if (!btn) return undefined;
     const sync = () => setActive(btn.classList.contains(className));
     const observer = new MutationObserver(sync);
     observer.observe(btn, { attributes: true, attributeFilter: ['class'] });
     sync();
     return () => observer.disconnect();
-  }, [id, className]);
+  }, [className]);
   return active;
 }
 
-function useControlActive(id: 'startBtn' | 'sendBtn'): boolean {
-  return useControlClass(id, 'active');
+function useControlActive(): boolean {
+  return useControlClass('active');
 }
 
 export function NewReplyPill({ host }: { host?: HTMLElement | null }) {
@@ -86,19 +87,18 @@ export function NewReplyPill({ host }: { host?: HTMLElement | null }) {
   return <>↓ New reply</>;
 }
 
-export function StartButton() {
-  const active = useControlActive('startBtn');
-  return active ? <SendArrowIcon /> : <VoiceIcon />;
-}
-
-export function SendButton() {
+/* P_composer-single — one primary button for the single shell. It merges
+   both predecessors' contracts: streaming renders stop (chat only ever
+   streams), the send-glyph beat covers submit, otherwise active renders
+   the arrow and idle the voice glyph. */
+export function PrimaryButton() {
   const streamStatus = useChatStreamStatus();
-  const active = useControlActive('sendBtn');
+  const active = useControlActive();
   /* ui/sendGlyph.js holds `.is-sending` for one short beat after a
      composer submit: render the departing arrow over the arriving stop
      glyph so the swap reads as one motion instead of arrow → waveform →
      stop flicker while the draft clears and the stream starts. */
-  const sending = useControlClass('sendBtn', 'is-sending');
+  const sending = useControlClass('is-sending');
   if (sending) {
     return (
       <>

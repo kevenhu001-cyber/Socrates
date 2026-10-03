@@ -1,7 +1,10 @@
-// e2e/composer-parity.spec.mjs — the landing composer (#topicInputWrap) is the
-// single source of truth; the in-session composer (#chatInputWrap) must match
-// it exactly: same DOM shape, same class vocabulary, same computed geometry and
-// paint, on desktop and phone, in light and dark themes.
+// e2e/composer-parity.spec.mjs — P_composer-single: ONE composer shell
+// (#composerInputWrap) serves landing and chat. It is parked in
+// #topicComposerSlot, then moved (never rebuilt) to #chatComposerSlot on the
+// topic-setup → chat-view flip. The spec marks the node, flips, and asserts
+// the same node renders the same DOM shape, class vocabulary, computed
+// geometry and paint in its new slot — on desktop and phone, in light and
+// dark themes.
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
@@ -24,11 +27,11 @@ async function boot(page, { width, height, theme }) {
 }
 
 async function enterChat(page) {
+  /* Production flip path (hidden swap + composer move), not a manual
+     class toggle — the move logic under test lives in activateMainView. */
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    document.getElementById('topicSetup')?.classList.add('hidden');
-    document.getElementById('mainInner')?.classList.add('hidden');
-    document.getElementById('chatView')?.classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     document.body.dataset.conversationActive = 'true';
   });
   await page.waitForTimeout(350);
@@ -57,7 +60,7 @@ function describe(page, sel) {
         const cls = [...child.classList].filter((c) => !skipSet.has(c)).sort().join('.');
         shape.push(`${depth}:${child.tagName.toLowerCase()}.${cls}`);
         if (child.tagName === 'svg' || child.classList.contains('composer-editor-root')) continue;
-        if (child.id === 'startBtnContent' || child.id === 'sendBtnContent') continue;
+        if (child.id === 'composerPrimaryBtnContent' || child.id === 'composerPrimaryBtnContent') continue;
         walk(child, depth + 1);
       }
     };
@@ -107,12 +110,27 @@ function diff(a, b, path = '') {
 
 for (const vp of VIEWPORTS) {
   for (const theme of THEMES) {
-    test(`chat composer matches the landing composer (${vp.name}, ${theme})`, async ({ page }) => {
+    test(`single composer shell across the landing → chat flip (${vp.name}, ${theme})`, async ({ page }) => {
       await boot(page, { ...vp, theme });
-      const topic = await describe(page, '#topicInputWrap');
-      await enterChat(page);
-      const chat = await describe(page, '#chatInputWrap');
+      const topic = await describe(page, '#composerInputWrap');
       expect(topic, 'landing composer present').not.toBeNull();
+      /* Mark the live node: a rebuild (instead of a move) would lose it. */
+      await page.evaluate(() => {
+        document.getElementById('composerInputWrap').__composerSingleMark = 1;
+      });
+      await enterChat(page);
+      const moved = await page.evaluate(() => {
+        const shell = document.getElementById('composerInputWrap');
+        return {
+          sameNode: shell && shell.__composerSingleMark === 1,
+          inChatSlot: !!document.getElementById('chatComposerSlot')?.contains(shell),
+          topicSlotEmpty: (document.getElementById('topicComposerSlot')?.childElementCount ?? -1) === 0,
+        };
+      });
+      expect(moved.sameNode, 'same shell node after the flip (moved, not rebuilt)').toBe(true);
+      expect(moved.inChatSlot, 'shell parked in the chat slot').toBe(true);
+      expect(moved.topicSlotEmpty, 'landing slot vacated').toBe(true);
+      const chat = await describe(page, '#composerInputWrap');
       expect(chat, 'chat composer present').not.toBeNull();
       const { shape: topicShape, ...topicRest } = topic;
       const { shape: chatShape, ...chatRest } = chat;

@@ -19,7 +19,7 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
   await expect(page.locator('#sidebar')).toBeVisible();
   await expect(page.locator('.top-bar')).toBeVisible();
   await expect(page.locator('#msgList')).toBeVisible();
-  await expect(page.locator('#chatInputWrap')).toBeVisible();
+  await expect(page.locator('#composerInputWrap')).toBeVisible();
   await expect(page.locator('#msgList')).not.toHaveAttribute('data-mounted-by', /.+/);
 
   const geometry = await snapshotWorkbenchGeometry(page);
@@ -102,8 +102,8 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
 test('desktop composer keeps focus and grows for multiline input without submitting', async ({ page }) => {
   await prepareChatWorkbench(page, { messages: BASE_MESSAGES, viewport: WORKBENCH_VIEWPORTS.desktop });
 
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor');
-  const wrap = page.locator('#chatInputWrap');
+  const editor = page.locator('#composerRoot .rich-composer-editor');
+  const wrap = page.locator('#composerInputWrap');
   const initial = await editor.evaluate((node) => ({
     editorHeight: node.getBoundingClientRect().height,
     messageCount: document.querySelectorAll('#msgList > .msg').length,
@@ -119,10 +119,10 @@ test('desktop composer keeps focus and grows for multiline input without submitt
   await page.waitForTimeout(220);
 
   const composed = await page.evaluate(() => {
-    const wrapNode = document.getElementById('chatInputWrap');
-    const editorNode = document.querySelector('#chatComposerRoot .rich-composer-editor');
-    const send = document.getElementById('sendBtn');
-    const attach = document.getElementById('chatComposerToolsBtn');
+    const wrapNode = document.getElementById('composerInputWrap');
+    const editorNode = document.querySelector('#composerRoot .rich-composer-editor');
+    const send = document.getElementById('composerPrimaryBtn');
+    const attach = document.getElementById('composerToolsBtn');
     const wrapStyle = getComputedStyle(wrapNode);
     return {
       activeEditor: document.activeElement === editorNode,
@@ -164,10 +164,10 @@ test('desktop idle composer keeps its edge controls circular and optically align
       } : null;
     };
     return {
-      wrap: measure('#chatInputWrap'),
-      attach: measure('#chatComposerToolsBtn'),
-      mic: measure('#chatMobileMicBtn'),
-      send: measure('#sendBtn'),
+      wrap: measure('#composerInputWrap'),
+      attach: measure('#composerToolsBtn'),
+      mic: measure('#composerMicBtn'),
+      send: measure('#composerPrimaryBtn'),
     };
   });
 
@@ -199,8 +199,8 @@ test('mobile chat workbench keeps a focusable multiline composer without horizon
     streamBody: [textFrame('Sent without changing the composer surface.'), completeFrame()].join(''),
   });
 
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor');
-  const wrap = page.locator('#chatInputWrap');
+  const editor = page.locator('#composerRoot .rich-composer-editor');
+  const wrap = page.locator('#composerInputWrap');
   await expect(page.locator('#msgList')).toBeVisible();
   await expect(editor).toBeVisible();
   const initial = await wrap.evaluate((node) => {
@@ -237,10 +237,10 @@ test('mobile chat workbench keeps a focusable multiline composer without horizon
 
   const geometry = await snapshotWorkbenchGeometry(page);
   const mobileComposer = await page.evaluate(() => {
-    const wrapNode = document.getElementById('chatInputWrap');
-    const editorNode = document.querySelector('#chatComposerRoot .rich-composer-editor');
-    const send = document.getElementById('sendBtn');
-    const attach = document.getElementById('chatComposerToolsBtn');
+    const wrapNode = document.getElementById('composerInputWrap');
+    const editorNode = document.querySelector('#composerRoot .rich-composer-editor');
+    const send = document.getElementById('composerPrimaryBtn');
+    const attach = document.getElementById('composerToolsBtn');
     return {
       focusedHeight: Math.round(wrapNode.getBoundingClientRect().height),
       fontSize: Math.round(parseFloat(getComputedStyle(editorNode).fontSize)),
@@ -263,7 +263,7 @@ test('mobile chat workbench keeps a focusable multiline composer without horizon
   await editor.fill('Short');
   await expect(wrap).not.toHaveClass(/composer-multiline/);
   await page.evaluate(() => {
-    const wrapNode = document.getElementById('chatInputWrap');
+    const wrapNode = document.getElementById('composerInputWrap');
     window.__composerShapeTransitions = [];
     window.__composerShapeObserver = new MutationObserver(() => {
       window.__composerShapeTransitions.push(wrapNode.classList.contains('composer-multiline'));

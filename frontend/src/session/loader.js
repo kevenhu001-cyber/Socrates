@@ -39,7 +39,7 @@ import { detailCache } from './detailCache.js';
 import { seedSyncedMessages } from './persistence.js';
 import { toggleShareBtn } from '../ui/share.js';
 import { activateMainView } from '../ui/mainViewController.js';
-import { updateSendBtn } from '../ui/topicSetup.js';
+import { updateComposerBtn } from '../ui/topicSetup.js';
 import { clearComposer } from '../react/composer-input/controller.ts';
 import { updateChatStats } from '../chat/stats.js';
 import { updateKB } from '../ui/knowledgePanel.js';
@@ -211,7 +211,7 @@ export function resetSessionTransients(){
     sessionTitle:null
   }});
   try{clearComposer("chat")}catch(_){}
-  try{updateSendBtn();}catch(_){}
+  try{updateComposerBtn();}catch(_){}
   try{if(turnState.pendingChatContent!==undefined)turnState.pendingChatContent=null;}catch(_){}
   try{if(turnState.pendingAttachments!==undefined)turnState.pendingAttachments=null;}catch(_){}
   /* F2a-ext — clear the active template so a slash-command template

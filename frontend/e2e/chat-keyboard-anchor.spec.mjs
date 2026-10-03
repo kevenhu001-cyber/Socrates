@@ -129,7 +129,7 @@ test.beforeEach(async ({ page }) => {
 
 test('progressive viewport samples keep the composer attached to the rising keyboard', async ({ page }) => {
   await seedChat(page, 8);
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await editor.focus();
   await page.waitForTimeout(80);
 
@@ -199,7 +199,7 @@ test('progressive viewport samples keep the composer attached to the rising keyb
 
 test('keyboard lift keeps composer geometry on the same continuous timeline', async ({ page }) => {
   await seedChat(page, 8);
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await editor.focus();
   await page.waitForTimeout(80);
 
@@ -212,7 +212,7 @@ test('keyboard lift keeps composer geometry on the same continuous timeline', as
     window.__fakeViewport.__resize({ height: nextHeight });
     const sample = () => {
       const root = document.documentElement;
-      const wrap = document.getElementById('chatInputWrap');
+      const wrap = document.getElementById('composerInputWrap');
       const bar = document.getElementById('chatInputBar');
       const rect = bar.getBoundingClientRect();
       samples.push({
@@ -261,7 +261,7 @@ test('keyboard lift keeps composer geometry on the same continuous timeline', as
 
 test('a progressive iOS viewport pan keeps the composer glued without jumps', async ({ page }) => {
   await seedChat(page, 8);
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await editor.focus();
   await page.waitForTimeout(80);
 
@@ -350,7 +350,7 @@ test('visualViewport keyboard lift follows a pinned reader through open and clos
   });
   await page.waitForTimeout(200);
 
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await editor.focus();
   await page.waitForTimeout(100);
 
@@ -406,7 +406,7 @@ test('visualViewport keyboard lift keeps a history reader anchored and never for
   await expect.poll(async () => (await transcriptState(page)).away).toBe(true);
   const before = await transcriptState(page);
 
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await editor.focus();
   await page.waitForTimeout(100);
   await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
@@ -438,7 +438,7 @@ test('a prompt sent with the keyboard open keeps its top offset when the keyboar
   });
   await seedChat(page, 30);
 
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await editor.focus();
   await page.waitForTimeout(120);
   /* Keyboard up: the transcript viewport shrinks under the prompt the send
@@ -501,7 +501,7 @@ test('a wheel gesture during the keyboard lift owns the scroll', async ({ page }
   });
   await page.waitForTimeout(200);
 
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await editor.focus();
   await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
 
@@ -530,7 +530,7 @@ test('visual viewport pan compensates a history reader and returns on un-pan', a
   });
   await expect.poll(async () => (await transcriptState(page)).away).toBe(true);
 
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await editor.focus();
   await page.waitForTimeout(100);
   await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
@@ -596,7 +596,7 @@ test('layout-viewport compression (Android resizes-content) follows pinned and a
     list.scrollTop = list.scrollHeight;
     window.stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
   });
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await editor.focus();
   await page.waitForTimeout(150);
   await page.setViewportSize({ width: 390, height: 544 });
@@ -638,7 +638,7 @@ test('layout-viewport compression (Android resizes-content) follows pinned and a
 
 test('document scroll during an open session is absorbed, not fought', async ({ page }) => {
   await seedChat(page);
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await editor.focus();
   await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
   await page.waitForTimeout(700);
@@ -726,7 +726,7 @@ test('focus on composer chrome keeps the transcript anchor alive', async ({ page
   });
   await expect.poll(async () => (await transcriptState(page)).away).toBe(true);
 
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await editor.focus();
   await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
   await page.waitForTimeout(700);
@@ -736,7 +736,7 @@ test('focus on composer chrome keeps the transcript anchor alive', async ({ page
      surface — the keyboard session (and its anchor) must stay armed. Wait
      past the anchor's refresh window so an expired anchor would be dead by
      the time the pan lands. */
-  await page.locator('#chatComposerToolsBtn').focus();
+  await page.locator('#composerToolsBtn').focus();
   await page.waitForTimeout(450);
   const focused = await page.evaluate(() => ({
     open: document.documentElement.dataset.keyboardOpen,
@@ -757,7 +757,7 @@ test('focus on composer chrome keeps the transcript anchor alive', async ({ page
 
 test('a single empty geometry frame does not dip the composer', async ({ page }) => {
   await seedChat(page);
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await editor.focus();
   await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
   await page.waitForTimeout(700);
@@ -792,7 +792,7 @@ test('a single empty geometry frame does not dip the composer', async ({ page })
 
 test('native height hint is a floor, not an override', async ({ page }) => {
   await seedChat(page);
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await editor.focus();
   await page.waitForTimeout(80);
 

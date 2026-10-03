@@ -458,7 +458,7 @@ body.workspace-active #appShell .main-page {
     letter-spacing: -0.01em !important;
   }
 
-  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer > div {
+  #appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer > div {
     display: flex !important;
     align-items: center !important;
     width: 100% !important;

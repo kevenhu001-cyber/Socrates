@@ -32,7 +32,7 @@ async function composerSignature(page, selector) {
       attach: childRect('.attach-btn'),
       effort: childRect('.effort-picker'),
       mic: childRect('.mobile-mic-btn'),
-      send: childRect('.start-btn,.send-btn'),
+      send: childRect('.composer-primary-btn,.composer-primary-btn'),
     };
   });
 }
@@ -44,11 +44,11 @@ test('typing into topic input enables the Start button; clicking does not throw'
   await waitForAppShell(page);
   await page.waitForTimeout(400);
 
-  const topicInput = page.locator('#topicComposerRoot .rich-composer-editor').first();
+  const topicInput = page.locator('#composerRoot .rich-composer-editor').first();
   await expect(topicInput).toBeAttached({ timeout: 5_000 });
   await expect(topicInput).toBeVisible({ timeout: 5_000 });
 
-  const startBtn = page.locator('button.start-btn, .start-btn').first();
+  const startBtn = page.locator('button.composer-primary-btn, .composer-primary-btn').first();
   await expect(startBtn).toBeAttached();
 
   // Capture console errors during the click.
@@ -76,7 +76,7 @@ test('pressing Enter in the topic input starts the session', async ({ page }) =>
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  const topicInput = page.locator('#topicComposerRoot .rich-composer-editor');
+  const topicInput = page.locator('#composerRoot .rich-composer-editor');
   await topicInput.fill('Enter should send this topic');
   await topicInput.press('Enter');
 
@@ -95,13 +95,13 @@ for (const [name, viewport] of [
     await gotoAndSettle(page, '/');
     await waitForAppShell(page);
 
-    const topicEditor = page.locator('#topicComposerRoot .rich-composer-editor');
+    const topicEditor = page.locator('#composerRoot .rich-composer-editor');
     await topicEditor.fill('Keep this UI');
-    const before = await composerSignature(page, '#topicInputWrap');
+    const before = await composerSignature(page, '#composerInputWrap');
     await topicEditor.press('Enter');
     await expect(page.locator('#chatView')).toBeVisible();
     await expect(page.locator('#msgList .msg.assistant .msg-body').first()).toBeVisible();
-    const after = await composerSignature(page, '#chatInputWrap');
+    const after = await composerSignature(page, '#composerInputWrap');
 
     /* The topic composer is the visual baseline. The first in-session
        composer must inherit its complete outer geometry during the handoff,
@@ -110,7 +110,7 @@ for (const [name, viewport] of [
     expect(after.width).toBe(before.width);
     expect(after.height).toBe(before.height);
     expect(after.radius).toBe(before.radius);
-    await expect(page.locator('#chatComposerRoot .rich-composer-editor'))
+    await expect(page.locator('#composerRoot .rich-composer-editor'))
       .toHaveAttribute('aria-label', 'Ask Socrates');
   });
 }
@@ -135,10 +135,10 @@ test('Deep Research extension: Start on landing enters chat and runs research', 
     window.deepResearchOn = true;
   });
 
-  const topicInput = page.locator('#topicComposerRoot .rich-composer-editor').first();
+  const topicInput = page.locator('#composerRoot .rich-composer-editor').first();
   await topicInput.fill('history of the printing press');
   await page.waitForTimeout(150);
-  await page.locator('button.start-btn, .start-btn').first().click();
+  await page.locator('button.composer-primary-btn, .composer-primary-btn').first().click();
 
   await expect(page.locator('#topicSetup')).toBeHidden();
   await expect(page.locator('#chatView')).toBeVisible();

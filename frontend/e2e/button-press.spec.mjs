@@ -65,7 +65,7 @@ async function holdAndMeasure(page, selector) {
 
 test('the primary composer button stays geometrically stable while pressed', async ({ page }) => {
   await boot(page);
-  const { pressed, released } = await holdAndMeasure(page, '#startBtn');
+  const { pressed, released } = await holdAndMeasure(page, '#composerPrimaryBtn');
   expect(pressed).toBe(1);
   expect(released).toBe(1);
 });
@@ -171,7 +171,7 @@ test('disabled buttons do not press', async ({ page }) => {
 
 test('reduced motion: presses never scale', async ({ page }) => {
   await boot(page, { reducedMotion: true });
-  const { pressed } = await holdAndMeasure(page, '#startBtn');
+  const { pressed } = await holdAndMeasure(page, '#composerPrimaryBtn');
   expect(pressed).toBe(1);
 });
 
@@ -223,11 +223,11 @@ test('a popover opened by a pressed trigger is placed from the trigger\'s restin
   /* Desktop landing: composerTools.js places the menu at trigger.bottom + 8.
      The trigger now stays fixed during a press; the compatibility geometry
      guard must preserve that exact resting anchor. */
-  await page.locator('#topicComposerToolsBtn').click();
+  await page.locator('#composerToolsBtn').click();
   await expect(page.locator('#composerToolsMenu')).toBeVisible();
   await page.waitForTimeout(400); /* press + release fully settled */
   const geo = await page.evaluate(() => {
-    const trigger = document.getElementById('topicComposerToolsBtn');
+    const trigger = document.getElementById('composerToolsBtn');
     const menu = document.getElementById('composerToolsMenu');
     return {
       restingBottom: trigger.getBoundingClientRect().bottom,

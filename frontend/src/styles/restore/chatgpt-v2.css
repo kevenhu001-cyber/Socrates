@@ -27,7 +27,7 @@
      The editor's own padding (14px 6px below) absorbs the visual
      spacing so the placeholder sits on the optical midline of the
      52px pill instead of hugging the top edge. */
-  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer > div {
+  #appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer > div {
     display: flex !important;
     align-items: center !important;
     width: 100% !important;
@@ -39,7 +39,7 @@
      below keeps the picker min-height at 34px and the trigger corners
      at 17px; both fall short of the reference geometry, so this block
      forces the bigger pill and lets the caret drive the open state. */
-  #appShell #topicInputWrap:not(.voice-recording-active) .effort-trigger .effort-glyph {
+  #appShell #composerInputWrap:not(.voice-recording-active) .effort-trigger .effort-glyph {
     width: 16px;
     height: 16px;
   }

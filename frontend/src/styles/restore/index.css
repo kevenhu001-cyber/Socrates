@@ -38,7 +38,7 @@
  *   Landing #topicSetup / greeting      chat-surface.css + chatgpt-parity.css
  *     (desktop); mobile-parity.css (<=768px). .topic-sub/.cg-history/
  *     .home-quick-actions are hidden by layout/app-shell.css.
- *   Composer frame (#topic/#chatInputWrap)  chatgpt-parity.css (desktop
+ *   Composer frame (#topic/#composerInputWrap)  chatgpt-parity.css (desktop
  *     grid, 52px/28px radius) + chat-surface.css (multiline); editor
  *     internals (.composer-editor-root/.tiptap) components/composer.css.
  *   Composer tools menu                 chatgpt-parity.css (desktop) /

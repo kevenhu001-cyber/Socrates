@@ -30,7 +30,7 @@ test('formulas recover after a transient KaTeX chunk failure', async ({ page }) 
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
   });
-  const chatInput = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const chatInput = page.locator('#composerRoot .rich-composer-editor').first();
   await chatInput.fill('Show the derivative formula.');
   await page.evaluate(() => window.submitChatMessage('Show the derivative formula.'));
 

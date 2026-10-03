@@ -145,7 +145,7 @@ test('phone light tools menu keeps light icon chips', async ({ page }) => {
     const sidebar = document.getElementById('sidebar');
     if (sidebar && !sidebar.classList.contains('collapsed')) window.toggleSidebar?.();
   });
-  await page.locator('#topicComposerToolsBtn').click();
+  await page.locator('#composerToolsBtn').click();
   const menu = page.locator('#composerToolsMenu');
   await expect(menu).toBeVisible();
   const chips = await menu.locator('.composer-tools-mobile-items .composer-tools-icon').evaluateAll((nodes) => nodes

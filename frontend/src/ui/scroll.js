@@ -483,7 +483,7 @@ export function initChatComposerReserve(options){
   function onComposerTransition(event){
     if(keyboardTransitionActive())return;
     var target=event&&event.target;
-    if(target&&target.closest&&target.closest(".chat-input-wrap"))armComposerFollow();
+    if(target&&target.closest&&target.closest(".composer-input-wrap"))armComposerFollow();
   }
   if(chatView){
     chatView.addEventListener("transitionrun",onComposerTransition);

@@ -639,20 +639,24 @@
              container so the layout reserves space without hard-coding demo
              items in markup. -->
         <div class="cg-history" id="cgHistory" hidden></div>
-        <div class="topic-input-wrap composer-shell" id="topicInputWrap">
-          <!-- P_attachments-tutor — chip strip above the topic-setup
-               textarea. Shares the same .attachment-chips class and
-               renderAttachmentChips() path as the chat-mode chips
-               container; src/attachments/render.js fans the render
-               out to every wired composer. -->
-          <div class="attachment-chips hidden" id="topicAttachmentChips"></div>
-          <div id="topicComposerRoot" class="composer-editor-root" aria-label="What would you like to explore?"></div>
+        <div class="topic-composer-slot composer-slot" id="topicComposerSlot">
+        <!-- P_composer-single — ONE composer shell for the whole app. It is
+             parked here on landing and moved to #chatComposerSlot whenever
+             a conversation view activates (see placeComposerForView); the
+             editor, draft, focus and chips travel with it, so the input box
+             never rebuilds between surfaces. -->
+        <div class="composer-input-wrap composer-shell" id="composerInputWrap">
+          <!-- Chip strip above the editor. Shares the same
+               .attachment-chips class and renderAttachmentChips() path for
+               every surface; there is only one chips container now. -->
+          <div class="attachment-chips hidden" id="composerAttachmentChips"></div>
+          <div id="composerRoot" class="composer-editor-root" aria-label="Message input"></div>
           <div class="composer-footer">
             <div class="footer-left-group">
-              <button class="attach-btn composer-tools-trigger" id="topicComposerToolsBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Add tools and files" title="Add tools and files">
+              <button class="attach-btn composer-tools-trigger" id="composerToolsBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Add tools and files" title="Add tools and files">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
               </button>
-              <input type="file" id="topicAttachInput" multiple
+              <input type="file" id="composerAttachInput" multiple
                      accept="image/jpeg,image/png,image/gif,image/webp,image/bmp,image/avif,text/*,application/json,application/pdf,application/rtf,text/rtf,application/epub+zip,application/msword,application/vnd.ms-excel,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation,video/mp4,video/webm,video/quicktime,audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/mp4,audio/aac,audio/flac,.txt,.md,.markdown,.csv,.tsv,.log,.json,.jsonl,.yaml,.yml,.toml,.xml,.py,.js,.ts,.tsx,.jsx,.java,.c,.h,.cpp,.cs,.go,.rs,.rb,.php,.swift,.kt,.sh,.sql,.css,.ipynb,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.epub,.rtf,.mp4,.webm,.mov,.mp3,.wav,.m4a,.ogg,.flac,.aac"
                      hidden>
             </div>
@@ -669,17 +673,17 @@
                 <svg class="effort-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
               </button>
             </div>
-            <!-- Keep the topic controls structurally identical to the
-                 in-session composer. The microphone is the explicit
-                 dictation entry point; the primary button keeps its
-                 voice/send state without moving the control row. -->
-            <button class="mobile-mic-btn" id="topicMobileMicBtn" type="button" aria-label="Voice input" title="Voice input">
+            <!-- The microphone is the explicit dictation entry point; the
+                 primary button keeps its voice/send state without moving
+                 the control row. -->
+            <button class="mobile-mic-btn" id="composerMicBtn" type="button" aria-label="Voice input" title="Voice input">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8"/></svg>
             </button>
-            <button class="start-btn composer-primary-btn" id="startBtn" aria-label="Voice input" title="Voice input">
-              <span id="startBtnContent"><svg class="icon-voice" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 10v4M8 7v10M12 5v14M16 8v8M20 10v4"/></svg></span>
+            <button class="composer-primary-btn" id="composerPrimaryBtn" aria-label="Voice input" title="Voice input">
+              <span id="composerPrimaryBtnContent"><svg class="icon-voice" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 10v4M8 7v10M12 5v14M16 8v8M20 10v4"/></svg></span>
             </button>
           </div>
+        </div>
         </div>
 
         <!-- Landing shortcuts: each row delegates to an existing composer
@@ -791,37 +795,8 @@
                chat-view's top edge. The CSS rule `.chat-input-bar >
                .new-reply-pill` keys off this parent. -->
           <div class="new-reply-pill" id="newReplyPill" role="button" tabindex="0" aria-label="Jump to new reply">↓ New reply</div>
-          <div class="chat-input-wrap composer-shell" id="chatInputWrap">
-            <!-- P_composer-unify — same DOM as #topicInputWrap: chips →
-                 editor root → .composer-footer [left group, effort, mic,
-                 primary]. One stylesheet (styles/parity/composer-unified.css)
-                 styles both through .composer-shell; only the ids differ. -->
-            <div class="attachment-chips hidden" id="attachmentChips"></div>
-            <div id="chatComposerRoot" class="composer-editor-root" aria-label="Type your thinking"></div>
-            <div class="composer-footer">
-              <div class="footer-left-group">
-                <button class="attach-btn composer-tools-trigger" id="chatComposerToolsBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Add tools and files" title="Add tools and files">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                  </button>
-                <input type="file" id="attachInput" multiple
-                       accept="image/jpeg,image/png,image/gif,image/webp,image/bmp,image/avif,text/*,application/json,application/pdf,application/rtf,text/rtf,application/epub+zip,application/msword,application/vnd.ms-excel,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation,video/mp4,video/webm,video/quicktime,audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/mp4,audio/aac,audio/flac,.txt,.md,.markdown,.csv,.tsv,.log,.json,.jsonl,.yaml,.yml,.toml,.xml,.py,.js,.ts,.tsx,.jsx,.java,.c,.h,.cpp,.cs,.go,.rs,.rb,.php,.swift,.kt,.sh,.sql,.css,.ipynb,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.epub,.rtf,.mp4,.webm,.mov,.mp3,.wav,.m4a,.ogg,.flac,.aac"
-                       hidden>
-              </div>
-              <div class="effort-picker" data-open="false">
-                <button type="button" class="effort-trigger" aria-haspopup="dialog" aria-expanded="false" data-i18n-title="effort.label" title="Reasoning effort">
-                      <span class="effort-label" data-i18n-key="effort.label">Effort</span>
-                      <span class="effort-value" aria-hidden="true"></span>
-                      <svg class="effort-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-                    </button>
-              </div>
-              <button class="mobile-mic-btn" id="chatMobileMicBtn" type="button" aria-label="Voice input" title="Voice input">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8"/></svg>
-                </button>
-              <button class="send-btn composer-primary-btn" id="sendBtn" aria-label="Voice input" title="Voice input">
-                  <span id="sendBtnContent"><svg class="icon-voice" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 10v4M8 7v10M12 5v14M16 8v8M20 10v4"/></svg></span>
-                </button>
-            </div>
-          </div>
+          <!-- P_composer-single — parking slot for the single composer shell. It lives in #topicComposerSlot on landing and is moved here whenever a conversation view activates (see placeComposerForView). -->
+          <div class="chat-composer-slot composer-slot" id="chatComposerSlot"></div>
         </div>
       </div>
     </div>

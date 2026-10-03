@@ -15,8 +15,11 @@ export {
   getComposerSelection,
   getVisibleComposerSurface,
   insertComposerText,
+  readComposerSurface,
   setComposerMarkdown,
   subscribeComposer,
+  swapComposerSurface,
+  COMPOSER_SURFACE_EVENT,
 } from './controller';
 export { tiptapJSONToMarkdown } from './markdown';
 export type {

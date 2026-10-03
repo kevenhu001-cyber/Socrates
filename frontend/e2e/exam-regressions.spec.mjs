@@ -19,7 +19,7 @@ test('starting a new chat from exam mode reveals the topic composer', async ({ p
   await expect(page.locator('#examView')).toBeHidden();
   await expect(page.locator('#mainInner')).not.toHaveClass(/hidden/);
   await expect(page.locator('#topicSetup')).toBeVisible();
-  await expect(page.locator('#topicComposerRoot .rich-composer-editor')).toBeVisible();
+  await expect(page.locator('#composerRoot .rich-composer-editor')).toBeVisible();
 });
 
 test('exam UI follows language changes without losing form values or answers', async ({ page }) => {

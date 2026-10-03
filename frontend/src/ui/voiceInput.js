@@ -17,16 +17,22 @@ function copy(key, english, chinese) {
   return document.documentElement.lang === 'zh' ? chinese : english;
 }
 
+/* P_composer-single — one shell, so these resolve to the single ids
+   regardless of which surface started the session. The surface argument
+   is kept because transcripts still route through the controller's
+   per-surface stash. */
 function wrapForSurface(surface) {
-  return document.getElementById(surface === 'topic' ? 'topicInputWrap' : 'chatInputWrap');
+  void surface;
+  return document.getElementById('composerInputWrap');
 }
 
 function mobileMicForSurface(surface) {
-  return document.getElementById(surface === 'topic' ? 'topicMobileMicBtn' : 'chatMobileMicBtn');
+  void surface;
+  return document.getElementById('composerMicBtn');
 }
 
 function setListening(surface, listening) {
-  const primary = document.getElementById(surface === 'topic' ? 'startBtn' : 'sendBtn');
+  const primary = document.getElementById('composerPrimaryBtn');
   if (primary) {
     primary.classList.toggle('is-listening', !!listening);
     primary.setAttribute('aria-pressed', listening ? 'true' : 'false');

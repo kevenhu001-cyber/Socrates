@@ -192,7 +192,7 @@ test('resize-mode keyboard follows the native layout reflow with no JS compensat
     document.documentElement.style.setProperty('--keyboard-inset', '0px');
   });
 
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await editor.focus();
   await page.waitForTimeout(420);
   const before = await page.evaluate(() => {
@@ -246,7 +246,7 @@ test('resize-mode keyboard restores exactly with no stuck inset or height', asyn
     document.getElementById('chatView').classList.remove('hidden');
   });
 
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await editor.focus();
   await page.waitForTimeout(420);
   const before = await page.evaluate(() => ({
@@ -300,7 +300,7 @@ test('a second input line expands the mobile composer and keeps the latest messa
     return { barHeight: bar.getBoundingClientRect().height };
   });
 
-  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await editor.focus();
   await editor.fill('First line');
   await page.waitForTimeout(80);
@@ -308,7 +308,7 @@ test('a second input line expands the mobile composer and keeps the latest messa
   expect(Math.abs(focusedSingleLine - before.barHeight)).toBeLessThanOrEqual(2);
   await editor.press('Shift+Enter');
   await editor.type('Second line');
-  await expect(page.locator('#chatInputWrap')).toHaveClass(/composer-multiline/);
+  await expect(page.locator('#composerInputWrap')).toHaveClass(/composer-multiline/);
   await page.waitForTimeout(450);
 
   const after = await page.evaluate(() => {
@@ -447,7 +447,7 @@ test('a growing composer keeps the latest message visible and the transcript pin
   });
 
   await page.evaluate(() => {
-    document.getElementById('chatInputWrap').style.minHeight = '240px';
+    document.getElementById('composerInputWrap').style.minHeight = '240px';
   });
   /* The composer→transcript re-pin runs through a ResizeObserver + rAF
      follow sequence in ui/scroll.js — poll for the settled state instead

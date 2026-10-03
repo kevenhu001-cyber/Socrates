@@ -161,8 +161,7 @@
   /* Phone layout — the reference's single-row capsule:
      [+] · editor · [高⌄] · [mic] · [voice/send]. The wrap is a wrapping
      flex row so attachment chips still get their own line on top. */
-  #appShell #topicInputWrap:not(.voice-recording-active) .attachment-chips,
-  #appShell #chatInputWrap:not(.voice-recording-active) .attachment-chips {
+  #appShell #composerInputWrap:not(.voice-recording-active) .attachment-chips {
     flex: 0 0 100%;
     order: 0;
   }
@@ -182,7 +181,7 @@
   /* Single-line editors: compact tiptap so the capsule stays ~54px. */
   /* The topic composer shares the in-session rule: no formatting toolbar
      inside the phone capsule. */
-  #appShell #topicInputWrap .rich-composer-toolbar { display: none; }
+  #appShell #composerInputWrap .rich-composer-toolbar { display: none; }
 
   /* Both phone composers use the same two-storey capsule: the prompt owns
      the first row and controls sit on a dedicated second row. */

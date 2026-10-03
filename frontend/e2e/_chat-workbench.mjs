@@ -75,7 +75,7 @@ export async function snapshotWorkbenchGeometry(page) {
       sidebar: rect('#sidebar'),
       topbar: rect('.top-bar'),
       transcript: rect('#msgList'),
-      composer: rect('#chatInputWrap'),
+      composer: rect('#composerInputWrap'),
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     };
   });

@@ -8,7 +8,7 @@
 // controller own focus reveal.
 
 const TOPIC_SCROLL_ROOT = '#topicSetup, .topic-setup';
-const TOPIC_COMPOSER = '#topicComposerRoot, #topicInputWrap';
+const TOPIC_COMPOSER = '#composerRoot, #composerInputWrap';
 const FOCUS_SETTLE_MS = 180;
 
 function keyboardEngaged() {

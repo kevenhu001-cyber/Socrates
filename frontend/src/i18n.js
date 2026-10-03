@@ -1217,8 +1217,12 @@ function applyI18n(){
     try{syncThemeUI()}catch(_){/* theme UI may not be mounted yet */}
   }
   /* Placeholder / value updates — done selectively for now. */
-  var ci=document.getElementById("chatComposerRoot");
-  if(ci)ci.setAttribute("aria-label",t("chat.placeholder"));
+  var ci=document.getElementById("composerRoot");
+  if(ci){
+    var _cv=document.getElementById("chatView");
+    var _inChat=!!_cv&&!_cv.classList.contains("hidden");
+    ci.setAttribute("aria-label",t(_inChat?"chat.placeholder":"topic.inputPlaceholder"));
+  }
   var ch=document.getElementById("chatInputHint");
   if(ch)ch.textContent=t("chat.hint");
   /* Topic-setup title/sub/disclaimer. syncAppModeUI() rewrote these
@@ -1247,21 +1251,12 @@ function applyI18n(){
   if(ts)ts.textContent=t(appMode==="chat"?"topic.subChat":"topic.subtitle");
   var tdisc=document.getElementById("topicDisclaimer");
   if(tdisc)tdisc.textContent=t(appMode==="chat"?"topic.disclaimerChat":"profile.disclaimerTutor");
-  var tp=document.getElementById("topicComposerRoot");
-  if(tp)tp.setAttribute("aria-label",t("topic.inputPlaceholder"));
-  var sb=document.getElementById("startBtn");
-  if(sb){
-    var startLabel=t(sb.classList.contains("active")?"chat.send":"voice.input");
-    sb.setAttribute("aria-label",startLabel);
-    sb.setAttribute("title",startLabel);
-    sb.disabled=false;
-  }
-  var sendBtn=document.getElementById("sendBtn");
-  if(sendBtn&&!sendBtn.classList.contains("chat-stop")&&!sendBtn.classList.contains("agent-stop")){
-    var sendLabel=t(sendBtn.classList.contains("active")?"chat.send":"voice.input");
-    sendBtn.setAttribute("aria-label",sendLabel);
-    sendBtn.setAttribute("title",sendLabel);
-    sendBtn.disabled=false;
+  var cpb=document.getElementById("composerPrimaryBtn");
+  if(cpb&&!cpb.classList.contains("chat-stop")&&!cpb.classList.contains("agent-stop")){
+    var composerLabel=t(cpb.classList.contains("active")?"chat.send":"voice.input");
+    cpb.setAttribute("aria-label",composerLabel);
+    cpb.setAttribute("title",composerLabel);
+    cpb.disabled=false;
   }
   var el=document.getElementById("extensionsLabel");
   if(el)el.textContent=t("topic.extensions");
