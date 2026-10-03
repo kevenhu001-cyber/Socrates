@@ -7,7 +7,7 @@
    Reads main.js globals via window (BEAGLE_BUILT_IN, CURRENT_USER,
    apiFetch, etc.). */
 
-import { apiFetch } from '../util/api.js';
+import { apiFetch, makeApiError } from '../util/api.js';
 import { showToast } from '../ui/toast.js';
 import { openMobileTargetFromUrl } from '../native/mobileWebSessionBridge.js';
 
@@ -33,8 +33,29 @@ function i18nSettled(){
 export var SERVER_HAS_BEAGLE_KEY=false;
 
 export async function authBoot(){
+  /* P_perf-boot-prefetch — index.html fires me/config/csrf while the
+     parser is still in <head>, so by the time 200+ modules evaluate the
+     responses are usually already here. Prefer those promises; a missing
+     or failed preflight (older cached HTML, CSP-blocked inline script,
+     network error shape) falls back to the exact calls below, so the
+     boot behaves identically with or without the head start. */
+  var preflight=null;
+  try{ preflight=window.__bootApi||null; }catch(_){ preflight=null; }
   /* Prime the CSRF cookie before any API calls. */
-  var csrfReady=fetch("/api/v2/auth/csrf-token",{credentials:"include"}).catch(function(){});
+  var csrfReady=(preflight&&preflight.csrf)
+    || fetch("/api/v2/auth/csrf-token",{credentials:"include"}).catch(function(){});
+  /* Shape the raw preflight result into the apiFetch contract (parsed
+     JSON on success; a thrown status-carrying error otherwise) so the
+     single wrapper below and the retry loop treat both sources exactly
+     alike. Uses the same error taxonomy as util/api.js. */
+  function adoptPreflight(p,label){
+    return Promise.resolve(p).then(function(r){
+      if(!r||r.failed)throw makeApiError(0,"网络异常，请检查连接后重试",null,"NETWORK",0);
+      if(r.status===401)throw makeApiError(401,"Unauthorized",null,"UNAUTHORIZED",0);
+      if(r.status<200||r.status>=300)throw makeApiError(r.status,"request failed: "+label,null,"HTTP_"+r.status,0);
+      return r.json;
+    });
+  }
   var params=new URLSearchParams(location.search);
   /* P_local-dev-bypass — when the app is served from localhost (vite dev
    * server, `npm run dev`) append `?dev=1` to skip the sign-in flow.
@@ -121,8 +142,13 @@ export async function authBoot(){
   }
   /* Fetch the built-in Beagle API key from the server's public config
      endpoint so the key lives in the server environment, not the source. */
-  var meRequest=apiFetch("/api/auth/me",{_authEndpoint:true}).then(function(value){return {value:value}},function(error){return {error:error}});
-  var configRequest=fetch("/api/v2/config",{credentials:"include"}).then(function(response){return response.json()}).catch(function(){return {}});
+  var meRequest=(preflight&&preflight.me)
+    ? adoptPreflight(preflight.me,"/api/auth/me")
+    : apiFetch("/api/auth/me",{_authEndpoint:true});
+  meRequest=meRequest.then(function(value){return {value:value}},function(error){return {error:error}});
+  var configRequest=(preflight&&preflight.config)
+    ? Promise.resolve(preflight.config).then(function(r){ return (r&&!r.failed&&r.json)?r.json:{}; })
+    : fetch("/api/v2/config",{credentials:"include"}).then(function(response){return response.json()}).catch(function(){return {}});
   var initialMe=await meRequest;
   if(initialMe.error&&initialMe.error.status===401&&!window.isInAuthGraceWindow?.()){
     await i18nSettled();

@@ -64,6 +64,14 @@ export function bootstrapApp(options) {
      the overlay only exists once the module loads. */
 
   window.__socratesEnsureFuse = ensureFuse;
+  /* P_perf-defer-idle-vendors — the KaTeX/highlight/Fuse/exam prefetches
+     below are pure best-effort (every consumer lazy-loads on demand), but
+     requestIdleCallback fires while authBoot is still awaiting the
+     network — i.e. right in the middle of the boot waterfall. On a slow
+     link those ~500 KB then fight fonts, API responses and the entry
+     tail for the six-per-origin connections, delaying first paint. Gate
+     them on window `load` (all render-blocking work done) plus idle, so
+     the boot waterfall carries only what first paint needs. */
   const loadIdleVendors = () => {
     try { ensureHighlight().catch(() => { /* idle preload is best effort */ }); } catch (_) {}
     try { ensureFuse().catch(() => { /* idle preload is best effort */ }); } catch (_) {}
@@ -76,10 +84,20 @@ export function bootstrapApp(options) {
        serves synchronously again (placeholder lands in the same task). */
     try { if (typeof window.__loadStreamingTurn === 'function') window.__loadStreamingTurn(); } catch (_) { /* prefetch is best effort */ }
   };
-  if (typeof requestIdleCallback === 'function') {
-    try { requestIdleCallback(loadIdleVendors, { timeout: 15000 }); }
-    catch (_) { setTimeout(loadIdleVendors, 15000); }
-  } else {
-    setTimeout(loadIdleVendors, 15000);
-  }
+  const scheduleIdleVendors = () => {
+    if (typeof requestIdleCallback === 'function') {
+      try { requestIdleCallback(loadIdleVendors, { timeout: 15000 }); }
+      catch (_) { setTimeout(loadIdleVendors, 15000); }
+    } else {
+      setTimeout(loadIdleVendors, 15000);
+    }
+  };
+  try {
+    /* `load` may already have fired when a cached entry evaluates fast
+       (document.readyState === 'complete'); polling readyState avoids a
+       prefetch that never runs on repeat visits. */
+    if (typeof document !== 'undefined' && document.readyState === 'complete') scheduleIdleVendors();
+    else if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') window.addEventListener('load', scheduleIdleVendors, { once: true });
+    else scheduleIdleVendors();
+  } catch (_) { scheduleIdleVendors(); }
 }

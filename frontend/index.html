@@ -11,6 +11,45 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <title>Socrates</title>
 <link rel="icon" type="image/png" href="/favicon.png">
+<!-- P_perf-boot-prefetch — fire the three boot GETs the moment the parser
+     reaches <head>, so /api/auth/me + /api/v2/config (+ the CSRF prime)
+     overlap the entry-JS download instead of waiting for 200+ modules to
+     evaluate. auth/boot.js prefers these promises and falls back to fresh
+     apiFetch calls when the preflight is missing or failed, so behaviour
+     is identical with or without it. Same-origin credentials:include, no
+     custom headers — wire-identical to what apiFetch sends for GETs; the
+     /api/v2/ prefix dodges the CDN-cached /api/ path and the cb= nonce
+     keeps the CDN from ever caching the preflight URL itself, exactly
+     like apiFetch. -->
+<script>
+(function () {
+  try {
+    var w = window;
+    if (w.__bootApi) return;
+    w.__bootApi = {};
+    var opts = { credentials: 'include' };
+    var cb = '?cb=' + Date.now();
+    function get(url) {
+      return fetch(url + cb, opts).then(function (r) {
+        return r.json().then(function (j) {
+          return { status: r.status, json: j };
+        }, function () {
+          return { status: r.status, json: null };
+        });
+      }, function () {
+        return { failed: true };
+      });
+    }
+    w.__bootApi.me = get('/api/v2/auth/me');
+    w.__bootApi.config = get('/api/v2/config');
+    w.__bootApi.csrf = fetch('/api/v2/auth/csrf-token' + cb, opts).then(function () {
+      return null;
+    }, function () {
+      return null;
+    });
+  } catch (_) { /* preflight is best effort */ }
+})();
+</script>
 <script>
 /* Resolve the theme preference before the stylesheet is parsed. This
    keeps the system-following option from flashing the default dark
