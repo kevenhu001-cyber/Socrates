@@ -40,17 +40,29 @@
     max-width: min(var(--ui-sidebar-mobile), 90vw);
   }
 
-  /* ── Sidebar header icon-btn — 44 visual (chatgpt reference row height) ── */
+  /* ── Sidebar header icon-btn — 32px visual, 40px invisible hit ring.
+     Both polish/sidebar.css and restore/chatgpt-ui.css intended 32px for
+     these quiet chrome actions, but this layer's earlier 44px pin won the
+     cascade and read as a heavy block next to the logo. The ::before ring
+     keeps the ≥40 touch baseline without enlarging the painted box. ── */
   #appShell .sidebar-header .icon-btn,
   #appShell .sidebar-header .btn-icon {
-    width: var(--ui-hit-area);
-    min-width: var(--ui-hit-area);
-    height: var(--ui-hit-area);
-    min-height: var(--ui-hit-area);
-    border-radius: var(--ui-radius-control, 8px);
+    position: relative;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    min-height: 32px;
+    border-radius: 9px;
+    color: var(--ui-text-secondary);
+  }
+  #appShell .sidebar-header .icon-btn::before,
+  #appShell .sidebar-header .btn-icon::before {
+    content: "";
+    position: absolute;
+    inset: -4px;
   }
   #appShell .sidebar-header .icon-btn svg,
-  #appShell .sidebar-header .btn-icon svg { width: 18px; height: 18px; }
+  #appShell .sidebar-header .btn-icon svg { width: 17px; height: 17px; }
 
   /* ── Sidebar nav rows — 40px pitch, 10px radius (reference drawer rows
      measure ~40px, not 44) ──
