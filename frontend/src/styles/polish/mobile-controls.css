@@ -67,9 +67,11 @@
     line-height: var(--ui-hit-area);
   }
 
-  /* ── Sidebar search — 44 hit area, 10px radius ── */
+  /* ── Sidebar search — 44 hit area, 10px radius. The 14px inline pad
+     centres the 15px magnifier on the nav icon column (icons sit ~28px
+     from the row edge); 10px left the glyph touching the field border ── */
   #appShell .sidebar-search {
-    padding: 0 10px;
+    padding: 0 14px;
   }
 
   /* ── Sidebar recents — 40px pitch, 10px radius; the right pad is 6px so

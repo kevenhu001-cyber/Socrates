@@ -1235,6 +1235,7 @@ body.workspace-active #appShell #mainInner {
   display: flex;
   align-items: center;
   margin: 0;
+  padding-inline: 14px;
   gap: 10px;
   background: var(--cg-surface);
   transition: border-color .16s ease, background-color .16s ease;
