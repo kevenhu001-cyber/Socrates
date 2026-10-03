@@ -2,8 +2,8 @@
  * Thinking panel bridge — M2 single-bridge migration.
  *
  * Carries the reasoning text stream that the side panel / bottom sheet
- * renders. The legacy `chat/toolRuntime.ts` and `ui/thinkingPill.js`
- * publishers call `window.__socratesThinkingPanelBridge.publish(event)`
+ * renders. The legacy `chat/toolRuntime.ts` publishers call
+ * `window.__socratesThinkingPanelBridge.publish(event)`
  * and `.publishThinkingDelta(messageId, text)` for high-frequency
  * reasoning updates.
  *
@@ -22,7 +22,7 @@
  *
  * M2 conventions
  *  - `dispatch` and `publish` both route through the same RAF loop;
- *    `publish` is the legacy alias `ui/thinkingPill.js` still calls.
+ *    `publish` is the legacy alias retained for pre-React callers.
  *  - `publishThinkingDelta` is preserved verbatim — it is a
  *    documented hot-path entry on the legacy bridge.
  *  - React subscribers use `useBridge(bridge)` directly.

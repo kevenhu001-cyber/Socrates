@@ -402,7 +402,7 @@ export async function startSession(){
 /* Phase 3 — background web search populates stateStore.read("searchContext")
    * for the diagnostic question without rendering a separate
    * activity log. The chat bubble's inline status label (see
-   * thinkingPill.labelForTool) takes care of "Searching…" for live
+   * react/tool-run/labels.ts) takes care of "Searching…" for live
    * tool calls; diagnostic-mode web search used to show a richer
    * step-by-step card via startSearchProgress, but that surface
    * was retired when the agent-tool-card UI was removed. */

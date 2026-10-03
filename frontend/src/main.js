@@ -485,9 +485,6 @@ installDiagnosticFlowListeners();
 /* B5: extracted to chat/turnUi.js */
 /* B5: retry-viewport singleton centralized in chat/turnState.js (imported). */
 
-/* looksLikeMetaInstruction + appendThinking extracted to
-   src/ui/thinkingPill.js (Phase 1B split). Imported at the top. */
-
 
 
 
