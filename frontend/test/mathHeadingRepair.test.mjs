@@ -134,6 +134,15 @@ const HEADING_CASES = {
   numberedDot: [`##4. ${H}\n正文`, 'h2', `4. ${H}`],
   numberedDun: [`##4、${H}\n正文`, 'h2', `4、${H}`],
   missingSpace: [`##${H}`, 'h2', H],
+  /* Glued after a closing formula dollar (physics derivations constantly
+     glue `##` to `$…$`), a `》` / `]` close, or a CJK comma. */
+  gluedFormula: ['由牛顿第二定律$F=ma$## 四、推导加速度合成定理\n正文', 'h2', '四、推导加速度合成定理'],
+  gluedBookTitle: ['详见《定理》## 四、推导加速度合成定理', 'h2', '四、推导加速度合成定理'],
+  gluedBracket: ['如图[见图1]## 四、推导加速度合成定理', 'h2', '四、推导加速度合成定理'],
+  gluedCjkComma: ['已知条件，## 四、推导加速度合成定理', 'h2', '四、推导加速度合成定理'],
+  /* Fullwidth markers normalize even when the space is present. */
+  fullwidthSpaced: ['＃＃ 四、推导加速度合成定理\n正文', 'h2', '四、推导加速度合成定理'],
+  fullwidthGlued: ['＃＃四、推导加速度合成定理', 'h2', '四、推导加速度合成定理'],
 };
 
 for (const [name, [src, tag, text]] of Object.entries(HEADING_CASES)) {
@@ -156,6 +165,9 @@ test('heading repair leaves prose and code alone', () => {
       ['a ## b 是宏拼接', /a ## b/],
       ['#1 号选手表现最好', /#1 号选手/],
       ['用 `a。## b` 表示', /<code>a。## b<\/code>/],
+      /* `$`-closed but digit-led: no terminal in the glued class, and no
+         closing `$` for the math pass — stays literal, never a heading. */
+      ['价格 $5 ## 10', /\$5 ## 10/],
     ];
     for (const [src, re] of keep) {
       const { final, live } = both(src);
