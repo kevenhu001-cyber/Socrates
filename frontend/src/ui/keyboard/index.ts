@@ -25,6 +25,7 @@ import {
   type ViewportLike,
 } from './geometry.ts';
 import { TranscriptAnchor } from './anchor.ts';
+import { reportSwallow } from '../../util/reportSwallow.ts';
 
 const BLUR_GRACE_MS = 900;
 /* A restored (zero-coverage) read must persist this long before the lift is
@@ -107,15 +108,15 @@ export function initKeyboardLift({
   const setPhase = (next: KeyboardPhase) => {
     if (phase === next && root.dataset.keyboardPhase === next) return;
     phase = next;
-    try { root.dataset.keyboardPhase = next; } catch { /* detached */ }
+    try { root.dataset.keyboardPhase = next; } catch (e) { reportSwallow(e, 'keyboard.setPhase'); /* detached */ }
   };
 
   const setIntent = (open: boolean) => {
-    try { root.dataset.keyboardOpen = open ? 'true' : 'false'; } catch { /* detached */ }
+    try { root.dataset.keyboardOpen = open ? 'true' : 'false'; } catch (e) { reportSwallow(e, 'keyboard.setIntent'); /* detached */ }
   };
 
   const setMode = (next: KeyboardMode) => {
-    try { root.dataset.keyboardMode = next; } catch { /* detached */ }
+    try { root.dataset.keyboardMode = next; } catch (e) { reportSwallow(e, 'keyboard.setMode'); /* detached */ }
   };
 
   const publishInset = (value: number) => {
@@ -124,7 +125,7 @@ export function initKeyboardLift({
     appliedInset = next;
     root.style.setProperty('--keyboard-inset', `${next}px`);
     for (const cb of insetListeners) {
-      try { cb(next); } catch { /* isolated */ }
+      try { cb(next); } catch (e) { reportSwallow(e, 'keyboard.publishInset'); /* isolated */ }
     }
     /* The transcript correction lands in the same task as the inset write,
      * so the painted messages never trail the composer by a frame. */
@@ -138,7 +139,7 @@ export function initKeyboardLift({
         const bottom = Number(el.getBoundingClientRect().bottom);
         if (Number.isFinite(bottom) && bottom > 0) return bottom;
       }
-    } catch { /* detached */ }
+    } catch (e) { reportSwallow(e, 'keyboard.shellBottom.measure'); /* detached */ }
     return Math.max(0, Number(window.innerHeight) || 0);
   };
 
@@ -239,7 +240,7 @@ export function initKeyboardLift({
       if (window.scrollY !== 0 || window.scrollX !== 0) {
         window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
       }
-    } catch { /* detached */ }
+    } catch (e) { reportSwallow(e, 'keyboard.finishSession.snapHome'); /* detached */ }
   };
 
   const scheduleFinish = () => {
@@ -387,7 +388,7 @@ export function initKeyboardLift({
   setPhase('closed');
   setIntent(false);
   setMode('unknown');
-  try { delete root.dataset.keyboardMotion; } catch { /* cleanup */ }
+  try { delete root.dataset.keyboardMotion; } catch (e) { reportSwallow(e, 'keyboard.onGeometryEvent.clearMotion'); /* cleanup */ }
 
   const controller: KeyboardLift = {
     get phase() { return phase; },
@@ -470,11 +471,11 @@ export function initKeyboardLift({
       document.removeEventListener('focusin', onFocusIn);
       document.removeEventListener('focusout', onFocusOut);
       document.removeEventListener('visibilitychange', onGeometryEvent);
-      try { root.style.removeProperty('--keyboard-inset'); } catch { /* detached */ }
-      try { delete root.dataset.keyboardOpen; } catch { /* detached */ }
-      try { delete root.dataset.keyboardPhase; } catch { /* detached */ }
-      try { delete root.dataset.keyboardMode; } catch { /* detached */ }
-      try { delete root.dataset.keyboardMotion; } catch { /* detached */ }
+      try { root.style.removeProperty('--keyboard-inset'); } catch (e) { reportSwallow(e, 'keyboard.onGeometryEvent.clearInset'); /* detached */ }
+      try { delete root.dataset.keyboardOpen; } catch (e) { reportSwallow(e, 'keyboard.onGeometryEvent.clearOpen'); /* detached */ }
+      try { delete root.dataset.keyboardPhase; } catch (e) { reportSwallow(e, 'keyboard.onGeometryEvent.clearPhase'); /* detached */ }
+      try { delete root.dataset.keyboardMode; } catch (e) { reportSwallow(e, 'keyboard.onGeometryEvent.clearMode'); /* detached */ }
+      try { delete root.dataset.keyboardMotion; } catch (e) { reportSwallow(e, 'keyboard.onGeometryEvent.clearMotionFlag'); /* detached */ }
       if (active === controller) active = null;
     },
   };

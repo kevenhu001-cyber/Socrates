@@ -44,6 +44,7 @@ export var VIZ_THEME_RESET =
   '</style>';
 
 import { esc } from './helpers.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 /* Runtime snippet that runs at the END of every iframe body. It
    1. Posts {type:'viz-ready'} when the body has parsed + all
@@ -77,6 +78,13 @@ function vizRuntime(vizId) {
          loads lazily), so postReady and the ping ack re-check the
          recorded state instead of blindly claiming readiness. */
       'function errNow(){return _err||window.__vizErr||null}' +
+      /* NOTE — the catch(e){} bodies below are part of the IFRAME source
+         string, not parent-frame code. They run inside the sandboxed srcdoc
+         document, where `reportSwallow` does not exist: injecting it would
+         raise a ReferenceError and break the card outright. Their own error
+         channel is the guardUserScripts wrapper (window.__vizErr) plus
+         postError(), which posts to the parent. Instrumenting them needs a
+         local shim inside the srcdoc, not this module's helper. */
       'function postReady(){' +
         'var er=errNow();if(er!==null){postError(er);return}' +
         'try{window.parent.postMessage({type:"viz-ready",vizId:VIZ_ID,h:docH()},"*")}catch(e){}' +
@@ -117,7 +125,7 @@ function vizRuntime(vizId) {
    (streaming re-renders included, since renderViz reads it fresh each
    call). Persisted so the choice survives reloads. */
 var _vizViewPref = null;
-try { _vizViewPref = localStorage.getItem('socrates-viz-view'); } catch (_) { /* ignore */ }
+try { _vizViewPref = localStorage.getItem('socrates-viz-view'); } catch (e) { reportSwallow(e, 'vizStubs.readViewPref'); /* ignore */ }
 if (_vizViewPref !== 'code') _vizViewPref = 'preview';
 
 function vizActions(cardId, showSource, viewToggle) {
@@ -541,9 +549,9 @@ export function loadVizRuntime() {
   if (!_vizRuntimeImport) {
     _vizRuntimeImport = import('./viz.js').then(function (m) {
       _vizRuntime = m;
-      try { m.processPendingViz(); } catch (_) { /* drain errors are non-fatal */ }
-      try { m.processPendingMermaid(); } catch (_) { /* drain errors are non-fatal */ }
-      try { m.processPendingVizActions(); } catch (_) { /* drain errors are non-fatal */ }
+      try { m.processPendingViz(); } catch (e) { reportSwallow(e, 'vizStubs.drainViz'); /* drain errors are non-fatal */ }
+      try { m.processPendingMermaid(); } catch (e) { reportSwallow(e, 'vizStubs.drainMermaid'); /* drain errors are non-fatal */ }
+      try { m.processPendingVizActions(); } catch (e) { reportSwallow(e, 'vizStubs.drainActions'); /* drain errors are non-fatal */ }
       return m;
     });
     _vizRuntimeImport.catch(function (err) {

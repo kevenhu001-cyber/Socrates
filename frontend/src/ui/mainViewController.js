@@ -1,5 +1,6 @@
 import { setConversationChrome } from './topBarState.js';
 import { swapComposerSurface } from '../react/composer-input/controller.ts';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 export const CORE_VIEW_IDS = ['topicSetup', 'diagnosticView', 'chatView'];
 
@@ -103,7 +104,7 @@ function ensureComposerParkObserver(d) {
 }
 export function placeComposerForView(viewId, doc) {
   var d = resolveDocument(doc);
-  try { ensureComposerParkObserver(d); } catch (_) { /* observer is best effort */ }
+  try { ensureComposerParkObserver(d); } catch (e) { reportSwallow(e, 'mainViewController.ensureComposerParkObserver'); /* observer is best effort */ }
   if (viewId !== 'topicSetup' && viewId !== 'chatView') return 'topic';
   var shell = d && d.getElementById('composerInputWrap');
   var surface = viewId === 'chatView' ? 'chat' : 'topic';
@@ -118,11 +119,11 @@ export function placeComposerForView(viewId, doc) {
       try {
         var prev = shell.parentNode && shell.parentNode.id === 'chatComposerSlot' ? 'chat' : 'topic';
         swapComposerSurface(prev, surface);
-      } catch (_) { /* stash is best effort; the move still lands */ }
+      } catch (e) { reportSwallow(e, 'mainViewController.stashComposerSurface'); /* stash is best effort; the move still lands */ }
       slot.appendChild(shell);
       try {
         d.dispatchEvent(new CustomEvent('socrates:composer-surface', { detail: { surface: surface } }));
-      } catch (_) { /* event is advisory; the DOM move already landed */ }
+      } catch (e) { reportSwallow(e, 'mainViewController.announceViewSwap'); /* event is advisory; the DOM move already landed */ }
     }
   }
   return surface;
@@ -142,7 +143,7 @@ export function activateMainView(viewId, doc) {
   /* The single composer shell rides along: park it in the incoming view's
      slot (and swap the per-surface drafts) in the same task as the
      hidden-class swap, so the flip paints once with the right box. */
-  try { placeComposerForView(viewId, d); } catch (_) { /* composer is best effort here */ }
+  try { placeComposerForView(viewId, d); } catch (e) { reportSwallow(e, 'mainViewController.placeComposerForView'); /* composer is best effort here */ }
 
   var mainInner = d.getElementById('mainInner');
   if (mainInner) mainInner.classList.toggle('hidden', viewId === 'examView');
@@ -176,11 +177,11 @@ if (typeof window !== 'undefined') {
 function installComposerParkObserver() {
   try {
     ensureComposerParkObserver(typeof document !== 'undefined' ? document : null);
-  } catch (_) { /* observer is best effort */ }
+  } catch (e) { reportSwallow(e, 'mainViewController.disconnectComposerParkObserver'); /* observer is best effort */ }
 }
 if (typeof window !== 'undefined') {
   window.addEventListener('DOMContentLoaded', installComposerParkObserver);
   try {
     if (document.readyState !== 'loading') installComposerParkObserver();
-  } catch (_) { /* covered by the listener above */ }
+  } catch (e) { reportSwallow(e, 'mainViewController.hideCoreViews'); /* covered by the listener above */ }
 }
