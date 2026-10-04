@@ -5,38 +5,43 @@
  * status stamps, tool runtime wiring), plus session guards, viewport
  * anchoring, persistence (save/session stats) and retry/resend.
  * It never paints message content itself.
+ *
+ * What used to live in this single function and where it went during the
+ * 2026-10 split:
+ *   finish-time viewport capture + RAF settle — chat/turn/finishViewport.js
+ *   live-status chrome + thinking-panel publishes — chat/turn/statusChrome.js
+ *   finish-time single formatMsg pass + canvas mode writeback — chat/turn/finishRender.js
+ *   user-stop (abort) body — chat/turn/abortPath.js
+ *   replaceWithError body — chat/turn/errorPath.js
  */
 import { stateStore } from '../state/store.js';
 import { turnState, streamRetryViewport } from './turnState.js';
-import { quietTurn, markTurnInProgress, markTurnEnded, resendLastUserMessage, setChatStopState } from './turnUi.js';
-import { claimLiveRetry, registerLiveTurnRuntime, claimLiveSearchRetry } from './liveTurn.js';
+import { setChatStopState, markTurnInProgress, markTurnEnded, quietTurn } from './turnUi.js';
+import { registerLiveTurnRuntime, claimLiveSearchRetry } from './liveTurn.js';
 import { generateId } from '../util/ids.js';
 import { hideNewReplyPill } from '../ui/scrollPill.js';
 import { isMsgListMounted } from '../react/message-list/MessageList.tsx';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
-import { combineThinkingText, extractThinkText } from './thinkExtract.ts';
-import {
-  publishThinkingPanelEvent,
-  setReactLiveStatus,
-  updateMessageSnapshot,
-} from '../ui/messageSnapshot.js';
+import { setReactLiveStatus } from '../ui/messageSnapshot.js';
 import { createStreamPlayer } from '../render/streamPlayer.js';
 import {
   scheduleActiveTurnToTop,
-  removeSupersededStub,
   turnAnchorReserve,
   TURN_ANCHOR_TOP_OFFSET,
 } from './turnAnchor.ts';
 import { createToolRuntime } from './toolRuntime.js';
 import { esc } from '../render/helpers.js';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.js';
-import { formatMsgProgressive } from '../render/markdown.js';
-import { buildAssistantHtml } from '../render/assistantHtml.ts';
-import { appendLocalMemory } from '../storage/localMemory.js';
 import { scrollContainer, isPinnedToBottom } from '../ui/scroll.js';
 import { announceTranscript } from '../ui/liveRegion.js';
 import { saveCurrentSession } from '../session/persistence.js';
 import { updateChatStats } from './stats.js';
+import { appendLocalMemory } from '../storage/localMemory.js';
+import { createStatusChrome } from './turn/statusChrome.js';
+import { createFinishRender } from './turn/finishRender.js';
+import { createFinishViewport } from './turn/finishViewport.js';
+import { createAbortPath } from './turn/abortPath.js';
+import { createErrorPath } from './turn/errorPath.js';
 
 function _t(key, fallback) {
   try {
@@ -149,7 +154,43 @@ export function addStreamingMessage(opts){
     _turnViewportTarget: _initialReserve > 0 ? _initialTargetOffset : undefined,
   }});
   publishReactChatRuntime({type:"stream-started",messageId:clientId});
-  var full="";
+
+  /* Shared turn state — passed to every helper factory below so the
+     extracted modules can read/mutate the same closure-bound values
+     the original in-function locals held. Anything the streaming hot
+     path mutates (full, finished, _disposed, thinkCtl, inlineToolRows,
+     _elapsedTick) lives on this object; functions close over it. */
+  var state={
+    /* identity / DOM refs (set once) */
+    list: list, div: div, clientId: clientId, msgIdx: msgIdx,
+    reactLive: reactLive,
+    retryBtnId: "retry-"+Math.random().toString(36).slice(2,10),
+    onRetry: onRetry,
+    /* mutable streaming data */
+    full: "",
+    fullReasoning: "",
+    finished: false,
+    _disposed: false,
+    _elapsedTick: null,
+    thinkCtl: null,
+    inlineToolRows: [],
+    _streamScheduler: null,
+    /* runtime singletons (filled in below) */
+    toolRuntime: null,
+    cancelScheduledRender: function(){},
+    ownsMessageSlot: function(){return false},
+    patchOwnedMessage: function(){return null},
+    _publishThinkingPanelEnd: function(){},
+    _publishThinkingPanelStart: function(){},
+    _publishThinkingPanelLive: function(){},
+    // global turn flags (mutated by the abort / error paths).
+    chatStreaming: true,
+    activeChatCtl: null,
+    ret: null,
+    /* utilities */
+    t: _t,
+    appMode: _appMode,
+  };
   /* P_smooth-stream — `full` is the ARRIVED text (persistence, the finish()
      one-shot render, and tool textOffsets all index into it). `_visibleLen`
      is how much of it the playback clock has revealed; the live bubble paints
@@ -164,32 +205,19 @@ export function addStreamingMessage(opts){
      the session-save payload. Without this, chain-of-thought text
      from DeepSeek / QwQ / o1-style models is rendered in the DOM
      during streaming but lost on reload. */
-  var fullReasoning="";
-  var finished=false;
-  /* P_thinking-panel — the right drawer shows both reasoning_content
-     deltas and inline <think> blocks. These helpers keep the panel's
-     text snapshot in sync with the live stream without slowing the
-     markdown renderer (the bridge throttles + dedupes commits). */
-  function _extractThinkText(raw){
-    return extractThinkText(raw);
-  }
-  function _combinedThinkingText(){
-    return combineThinkingText(fullReasoning, full);
-  }
-  function _publishThinkingPanelLive(){
-    try{
-      var bridge=window.__socratesThinkingPanelBridge;
-      if(bridge&&typeof bridge.publishThinkingDelta==="function"){
-        bridge.publishThinkingDelta(clientId,_combinedThinkingText());
-      }
-    }catch(_){}
-  }
-  function _publishThinkingPanelEnd(){
-    publishThinkingPanelEvent({type:"thinking-end",messageId:clientId});
-  }
-  function _publishThinkingPanelStart(){
-    publishThinkingPanelEvent({type:"thinking-start",messageId:clientId});
-  }
+
+  /* Thinking pill (for chat-mode reasoning_content). Data-only: the status
+     line is written to `message._liveStatus` and drawn by TurnStatus. */
+
+  /* Build the status chrome BEFORE the chrome helpers are called below.
+     P_session-stream-dispose / P_session-cross-talk — sticky flag and
+     session-slot guards are owned by the helpers above; status chrome
+     only mirrors state, it does not own it. */
+  var statusChrome=createStatusChrome(state);
+  state._publishThinkingPanelStart=statusChrome.publishThinkingPanelStart;
+  state._publishThinkingPanelLive=statusChrome.publishThinkingPanelLive;
+  state._publishThinkingPanelEnd=statusChrome.publishThinkingPanelEnd;
+
   /* P_session-stream-dispose — when resetApp() or loadSession() aborts
      an in-flight stream, already-queued delta chunks from the response
      body can still reach append()/finish() callbacks via stream.js's
@@ -204,7 +232,6 @@ export function addStreamingMessage(opts){
      and every `stateStore.read("messages")[msgIdx]` write site checks it before
      touching state. _disposed is sticky (no resurrection) so even if
      abort races with a late finish callback, the writes stay inert. */
-  var _disposed=false;
   /* P_session-cross-talk — capture the session identity at the moment
      this streaming bubble is created (synchronously, before any await).
      All async callbacks (onDelta / onThinking / doRender / finish /
@@ -227,7 +254,7 @@ export function addStreamingMessage(opts){
     return true;
   }
   function stillOwnsSlot(){
-    if(_disposed||finished)return false;
+    if(state._disposed||state.finished)return false;
     return ownsMessageSlot();
   }
   function patchOwnedMessage(patch,deferNotify){
@@ -237,6 +264,8 @@ export function addStreamingMessage(opts){
       patch:patch,deferNotify:deferNotify===true
     });
   }
+  state.ownsMessageSlot=ownsMessageSlot;
+  state.patchOwnedMessage=patchOwnedMessage;
   var pendingRender=null;
   var pendingRenderTimer=null;
   function cancelScheduledRender(){
@@ -247,11 +276,9 @@ export function addStreamingMessage(opts){
        believing a flush is still pending (which would drop the next
        push). Guarded because cancelScheduledRender() can run during the
        first delta before _streamScheduler is assigned. */
-    if(typeof _streamScheduler!=="undefined"&&_streamScheduler){_streamScheduler.dispose()}
+    if(state._streamScheduler){state._streamScheduler.dispose()}
   }
-  /* Thinking pill (for chat-mode reasoning_content). Data-only: the status
-     line is written to `message._liveStatus` and drawn by TurnStatus. */
-  var thinkCtl=null;
+  state.cancelScheduledRender=cancelScheduledRender;
   var suppressedThinkCtl={append:function(){},finalize:function(){},remove:function(){}};
   /* The React surface of the same controller: every mutation is a write to
      `message._liveStatus`, never a node. TurnStatus draws it. */
@@ -259,51 +286,61 @@ export function addStreamingMessage(opts){
     append:function(){},
     finalize:function(){clearLiveStatus()},
     remove:function(){clearLiveStatus()},
-    setLabel:function(text,state){
+    setLabel:function(text,state2){
       if(statusIsBusy())return;
       setLiveStatus({phase:"thinking",label:String(text||""),
-        state:state||"",clickable:_appMode()==="chat"});
+        state:state2||"",clickable:_appMode()==="chat"});
     }
   };
   function hideThinkCtl(){
-    if(thinkCtl&&typeof thinkCtl.remove==="function"){
-      try{thinkCtl.remove()}catch(_){/* status may already be detached */}
+    if(state.thinkCtl&&typeof state.thinkCtl.remove==="function"){
+      try{state.thinkCtl.remove()}catch(_){/* status may already be detached */}
     }
-    thinkCtl=null;
+    state.thinkCtl=null;
+  }
+  function clearLiveStatus(){
+    if(!statusIsBusy())setLiveStatus(null);
+  }
+  function statusIsBusy(){
+    var msg=statusChrome.liveMessage();
+    var prev=msg&&msg._liveStatus;
+    return !!(prev&&(prev.phase==="error"||prev.phase==="retrying"||prev.phase==="tool-running"));
+  }
+  function setLiveStatus(st){
+    var msg=statusChrome.liveMessage();
+    if(msg)setReactLiveStatus(msg,st);
   }
   /* P_declarative-tool-run — where in `full` the answer was when each tool_use
      landed. inlineToolRows is the {id,name,offset} ledger finish() stamps
      onto toolCalls[] as `textOffset`, which is the sole input react/tool-run
      needs to lay the rows out. */
-  var segBase=0;
-  var inlineToolRows=[];
   function ensureThinkCtl(){
     /* Tool activity owns the single live status line. Keep the reasoning
        buffer in memory, but do not mount a second loading indicator while
        a tool is running. The next reasoning delta after all tools
        settle can create the pill again. */
-    if(toolRuntime&&typeof toolRuntime.hasActiveTools==="function"&&toolRuntime.hasActiveTools()){
+    if(state.toolRuntime&&typeof state.toolRuntime.hasActiveTools==="function"&&state.toolRuntime.hasActiveTools()){
       return suppressedThinkCtl;
     }
     /* The status line is data drawn by TurnStatus — there is no pill DOM. */
-    thinkCtl=reactThinkCtl;
-    stampThinking();
+    state.thinkCtl=reactThinkCtl;
+    statusChrome.stampThinking();
     return reactThinkCtl;
   }
   /* Unique ID for the retry button so we can attach a click handler after
      setting innerHTML (innerHTML wipes previous listeners). */
-  var retryBtnId="retry-"+Math.random().toString(36).slice(2,10);
   /* The waiting line is data drawn by TurnStatus. stampWaiting(0) paints
      the first frame immediately so a fast first delta still had a visible
      predecessor state in the status history. There is deliberately no
      first-delta watchdog: a reasoning model may think for as long as it
      needs, so the waiting line stays up until real content arrives or the
      user stops the turn. */
-  stampWaiting(0);
+  statusChrome.stampWaiting(0);
   scheduleActiveTurnToTop(list,div,msgIdx,retryViewport);
   /* Morph the send button into a red Stop so the user can abort
      the stream. setChatStopState(false) on finish/abort. */
   turnState.chatStreaming=true;
+  state.chatStreaming=true;
   try{setChatStopState(true)}catch(_){}
   /* Task 4.1 — record turn-in-progress + Resend target (latest user msg). */
   try{markTurnInProgress()}catch(_){}
@@ -312,9 +349,10 @@ export function addStreamingMessage(opts){
      twitchy elapsed-seconds counter that can read like a stalled request. */
   var _elapsedTick=null;
   _elapsedTick=setInterval(function(){
-    if(finished||!firstDelta)return;
-    stampWaiting(Math.round((Date.now()-thinkStarted)/1000));
+    if(state.finished||!firstDelta)return;
+    statusChrome.stampWaiting(Math.round((Date.now()-thinkStarted)/1000));
   },1000);
+  state._elapsedTick=_elapsedTick;
 
   /* Follow the answer as it grows, unless the reader said otherwise. React
      paints the text in its own commit off the delta publish, which can land
@@ -336,7 +374,7 @@ export function addStreamingMessage(opts){
     /* P_session-stream-dispose — rAF guard. cancelAnimationFrame in
        abort()/finish() usually wins, but a doRender body may already
        be running on this very tick. Bail before touching stateStore.read("messages"). */
-    if(finished||_disposed)return;
+    if(state.finished||state._disposed)return;
 
     /* AssistantTurn paints this turn's prose from `rawText`, so this
        pass only mirrors the data and keeps the thinking panel fed.
@@ -345,12 +383,12 @@ export function addStreamingMessage(opts){
        arrived buffer, so an upstream burst/stall reaches the reader as a
        steady reveal. `_playbackState` rides along for the cursor animation. */
     if(stillOwnsSlot()){
-      var _visible=_smooth?full.slice(0,_visibleLen):full;
+      var _visible=state._smooth?state.full.slice(0,_visibleLen):state.full;
       patchOwnedMessage({rawText:_visible,_playbackState:_playbackState},true);
       publishReactChatRuntime({type:"stream-delta",messageId:clientId,textLength:_visible.length});
     }
-    if(fullReasoning||_extractThinkText(full)){
-      _publishThinkingPanelLive();
+    if(state.fullReasoning||statusChrome.extractThinkText(state.full)){
+      statusChrome.publishThinkingPanelLive();
     }
   }
   /* P_smooth-stream — the playback player decouples arrival from playback.
@@ -371,7 +409,7 @@ export function addStreamingMessage(opts){
       _playbackState=_state;
       /* A state flip with no revealed chars (e.g. entering starved) still
          needs a paint so the cursor animation updates. */
-      if(!finished&&!_disposed&&stillOwnsSlot()){
+      if(!state.finished&&!state._disposed&&stillOwnsSlot()){
         patchOwnedMessage({_playbackState:_state},true);
         publishReactChatRuntime({type:"stream-delta",messageId:clientId,textLength:_visibleLen});
       }
@@ -386,7 +424,8 @@ export function addStreamingMessage(opts){
   });
   /* Legacy alias so cancelScheduledRender()'s teardown (which disposes the
      stream driver) keeps working unchanged. */
-  var _streamScheduler=_streamPlayer;
+  state._streamScheduler=_streamPlayer;
+  state._smooth=_smooth;
 
   /* First delta renders immediately so the user sees content right away */
   var firstDelta=true;
@@ -418,63 +457,13 @@ export function addStreamingMessage(opts){
      react/tool-run/TurnStatus is the only thing that draws it, so a
      turn cannot show two "working on it" lines. */
   var _pinWanted=true;
-  var _waitingLabel=_appMode()==="chat"?_t("think.thinking"):_t("common.generating");
-  function liveMessage(){
-    return (msgIdx>=0&&stateStore.read("messages")[msgIdx]&&
-      stateStore.read("messages")[msgIdx].clientId===clientId)?stateStore.read("messages")[msgIdx]:null;
-  }
-  function setLiveStatus(status){
-    var msg=liveMessage();
-    if(msg)setReactLiveStatus(msg,status);
-  }
-  /* A status line never overwrites a failure or a retry notice, and the
-     waiting dot gives up as soon as the turn has real content.
-     P_tool-order-defer — tool-running is busy too: while a tool row is
-     deferred behind an unfinished paragraph, thinking/waiting stamps must
-     not overwrite its line (the row itself isn't mounted yet, so this
-     line is the only visible proof of work). */
-  function statusIsBusy(){
-    var msg=liveMessage();
-    var prev=msg&&msg._liveStatus;
-    return !!(prev&&(prev.phase==="error"||prev.phase==="retrying"||prev.phase==="tool-running"));
-  }
-  function clearLiveStatus(){
-    if(!statusIsBusy())setLiveStatus(null);
-  }
-  function waitingCopyFor(sec){
-    if(sec>=45)return _t("think.stillWorking");
-    if(sec>=20)return _t("think.organizingAnswer");
-    if(sec>=8)return _t("think.reviewingContext");
-    return _waitingLabel;
-  }
-  function stampWaiting(sec){
-    if(!reactLive||statusIsBusy())return;
-    /* Reasoning owns the line once it starts. Reasoning deltas re-stamp
-       phase "thinking" on every chunk; the 1s elapsed tick would otherwise
-       flip the label back to the waiting copy between deltas. One-way rule:
-       waiting may not overwrite a thinking line — only content (append/tool
-       activity) retires it. (P_thinking-unified: all live phases share one
-       pill shape, so this is purely about label stability now, not layout.) */
-    var _owner=liveMessage();
-    var _prev=_owner&&_owner._liveStatus;
-    if(_prev&&_prev.phase==="thinking")return;
-    /* The elapsed cue is quantized to 5s steps so the pill's width only
-       changes rarely and predictably, instead of ticking every second. */
-    var _elapsedQ=sec>=12?Math.max(10,Math.floor(sec/5)*5):undefined;
-    setLiveStatus({phase:"waiting",label:waitingCopyFor(sec),mode:_appMode(),
-      clickable:_appMode()==="chat",elapsedSec:_elapsedQ});
-  }
-  function stampThinking(){
-    if(!reactLive||statusIsBusy())return;
-    setLiveStatus({phase:"thinking",label:_t("think.thinking"),
-      clickable:_appMode()==="chat"});
-  }
+
   /* React commits the growth in its own rAF, which runs before doRender's
      scroll pass — so "was the reader at the bottom?" has to be answered when
      the delta arrives, not after the DOM already grew. */
   var _growthMeasuredAt=-1e9;
   function noteStreamGrowth(){
-    if(!reactLive)return;
+    if(!state.reactLive)return;
     /* A token burst can deliver dozens of chunks inside one frame, and each
        read below forces a synchronous layout. The DOM cannot have changed
        between chunks in the same frame, so only the first call pays for the
@@ -506,10 +495,10 @@ export function addStreamingMessage(opts){
        claiming the same offset (buildTurnLayout would drop the duplicate
        row). */
     onInlineTool:function(entry,_row){
-      var _roff=full.length;
+      var _roff=state.full.length;
       if(_roff<segBase)_roff=segBase;
       segBase=_roff;
-      inlineToolRows.push({id:entry.id,name:entry.name,offset:_roff});
+      state.inlineToolRows.push({id:entry.id,name:entry.name,offset:_roff});
       noteStreamGrowth();
       /* P_tool-textoffset — return the split point so the tool runtime
          can persist it on synthetic rows created from a late tool_result
@@ -523,14 +512,14 @@ export function addStreamingMessage(opts){
          it again the moment the real row mounts, so the two never appear
          together. Never overwrite a failure or retry notice. */
       noteStreamGrowth();
-      var _cur=liveMessage()&&liveMessage()._liveStatus;
+      var _cur=statusChrome.liveMessage()&&statusChrome.liveMessage()._liveStatus;
       if(!_cur||(_cur.phase!=="error"&&_cur.phase!=="retrying")){
         setLiveStatus({phase:"tool-running",label:_t("tool.running")});
       }
       hideThinkCtl();
       /* A tool call counts as first visible activity, so retire the
          waiting status before execution progress begins. */
-      if(firstDelta&&!finished){
+      if(firstDelta&&!state.finished){
         firstDelta=false;
         if(_elapsedTick)clearInterval(_elapsedTick);
         cancelScheduledRender();
@@ -546,6 +535,11 @@ export function addStreamingMessage(opts){
        blindly re-issuing the same call. */
     onSearchRetry:_onSearchRetry
   });
+  state.toolRuntime=toolRuntime;
+  /* P_declarative-tool-run — where in `full` the answer was when each tool_use
+     landed. segBase always advances; the inline-tool ledger above pushes the
+     offset. finish() stamps `textOffset` onto toolCalls[] from that ledger. */
+  var segBase=0;
 
   /* P_tool_retry_button — claim the route for the delegated `tool-retry`
      listener (registered once, module scope) and hand this turn's runtime to
@@ -553,9 +547,18 @@ export function addStreamingMessage(opts){
      paused on a decision. */
   claimLiveSearchRetry(_onSearchRetry);
   registerLiveTurnRuntime(clientId,toolRuntime);
+
+  /* Build the extracted paths now that state.toolRuntime and friends are
+     populated. Each factory returns { methodName } bound to the same
+     closure-shared state object the streamingTurn.js core still uses. */
+  var errorPath=createErrorPath(state);
+  var abortPath=createAbortPath(state);
+  var finishRender=createFinishRender(state);
+  var finishViewport=createFinishViewport(state);
+
   var ret={
     getClientId:function(){return clientId},
-    isFinished:function(){return finished},
+    isFinished:function(){return state.finished},
     recordToolUse:toolRuntime.recordToolUse,
     recordToolProgress:toolRuntime.recordToolProgress,
     recordToolCallDelta:toolRuntime.recordToolCallDelta,
@@ -585,14 +588,14 @@ export function addStreamingMessage(opts){
         /* First delta arrived — stop the elapsed counter. */
         if(_elapsedTick)clearInterval(_elapsedTick);
       }
-      full+=delta;
+      state.full+=delta;
       if(wasFirst){
         /* P_smooth-stream — the first delta retires the waiting/retrying
            status line, but the TEXT is revealed by the playback clock like
            any other, not dumped synchronously. In fallback mode (_smooth
            off) the player reveals everything each frame, so the behaviour
            matches the old immediate paint. */
-        var _curSt=liveMessage()&&liveMessage()._liveStatus;
+        var _curSt=statusChrome.liveMessage()&&statusChrome.liveMessage()._liveStatus;
         var _clearWaiting=_curSt&&(_curSt.phase==="waiting"||_curSt.phase==="retrying");
         if(_clearWaiting){
           var _preRev1=(stateStore.read("messages")[msgIdx]&&stateStore.read("messages")[msgIdx]._toolRunRev)||0;
@@ -612,8 +615,8 @@ export function addStreamingMessage(opts){
          "Searching" label has a host. 60 chars is well below any
          substantive answer but well above a typical Chinese/English
          transition phrase. */
-      if(thinkCtl&&typeof thinkCtl.finalize==="function"&&full.length>=60){
-        try{thinkCtl.finalize()}catch(_){}
+      if(state.thinkCtl&&typeof state.thinkCtl.finalize==="function"&&state.full.length>=60){
+        try{state.thinkCtl.finalize()}catch(_){}
       }
     },
     /* Append reasoning deltas (DeepSeek R1 / QwQ style
@@ -624,16 +627,16 @@ export function addStreamingMessage(opts){
          P_session-cross-talk — stillOwnsSlot() closes the race window. */
       if(!stillOwnsSlot())return;
       if(typeof delta==="string"){
-        if(!fullReasoning)_publishThinkingPanelStart();
-        fullReasoning+=delta;
-        _publishThinkingPanelLive();
+        if(!state.fullReasoning)state._publishThinkingPanelStart();
+        state.fullReasoning+=delta;
+        statusChrome.publishThinkingPanelLive();
       }
-      if(toolRuntime&&typeof toolRuntime.hasActiveTools==="function"&&toolRuntime.hasActiveTools())return;
+      if(state.toolRuntime&&typeof state.toolRuntime.hasActiveTools==="function"&&state.toolRuntime.hasActiveTools())return;
       try{ensureThinkCtl().append(delta||"")}catch(_){}
     },
     finalizeThinking:function(){
-      if(thinkCtl&&typeof thinkCtl.finalize==="function"){
-        try{thinkCtl.finalize()}catch(_){}
+      if(state.thinkCtl&&typeof state.thinkCtl.finalize==="function"){
+        try{state.thinkCtl.finalize()}catch(_){}
       }
     },
     setRetryStatus:function(notice){
@@ -650,7 +653,7 @@ export function addStreamingMessage(opts){
          too, so any queued microtask racing the close can't sneak in
          a stale write between finish()'s reads of `full` and the
          actual stateStore.read("messages")[msgIdx].html assignment. */
-      if(_disposed)return;
+      if(state._disposed)return;
       /* P_session-cross-talk — verify slot ownership BEFORE flipping
          _disposed/finished. If the user switched sessions while the
          stream was wrapping up, the natural [DONE] frame would
@@ -665,8 +668,8 @@ export function addStreamingMessage(opts){
          || msgIdx<0
          || !stateStore.read("messages")[msgIdx]
          || stateStore.read("messages")[msgIdx].clientId!==clientId){
-        finished=true;
-        _disposed=true;
+        state.finished=true;
+        state._disposed=true;
         /* Still tear down timers / SSE so nothing leaks. */
         if(_elapsedTick)clearInterval(_elapsedTick);
         cancelScheduledRender();
@@ -674,12 +677,12 @@ export function addStreamingMessage(opts){
         publishReactChatRuntime({
           type:"stream-aborted",
           messageId:clientId,
-          textLength:full.length,
+          textLength:state.full.length,
           reason:"session-replaced"
         });
         return;
       }
-      if(finished)return;
+      if(state.finished)return;
       /* P_smooth-stream — turn end. With smooth streaming on and buffered
          text still unplayed, DRAIN it first: beginDrain() flushes the
          remaining buffer at a boosted rate, and the one-shot final render
@@ -696,10 +699,10 @@ export function addStreamingMessage(opts){
       _finishBody();
 
       function _finishBody(){
-      if(finished)return;
-      finished=true;
-      _disposed=true;
-      _publishThinkingPanelEnd();
+      if(state.finished)return;
+      state.finished=true;
+      state._disposed=true;
+      state._publishThinkingPanelEnd();
       toolRuntime.dispose();
       if(_elapsedTick)clearInterval(_elapsedTick);
       cancelScheduledRender();
@@ -716,98 +719,26 @@ export function addStreamingMessage(opts){
          of snapping. The update callback also runs finishAfterRender(), whose
          anchor capture reads the still-old DOM — inside the transition the
          new frame is captured two frames later, so the reads stay correct. */
+      var _renderResult;
       try{
-        /* Final render: buildAssistantHtml parses <quiz>/<example>/<practice>
-           scaffold blocks (replaces them with slot divs), runs formatMsg,
-           then asynchronously mounts interactive widgets in setTimeout(0).
-           Without this, no scaffold widgets ever rendered in live mode. */
-        var finalHtml;
-        try{
-          /* P_canvas-mode — seed a stable canvasId on state BEFORE the
-             buildAssistantHtml call so the canvas wrapper inside that
-             function reuses the same id. */
-          if(window._activeTemplate&&window._activeTemplate.outputMode==='canvas'){
-            stateStore.dispatch({
-              type:"state/set",key:"_canvasPendingId",
-              value:'canvas-'+Math.random().toString(36).slice(2,10)
-            });
-          }
-          /* P_declarative-tool-run — the finalized html carries prose only:
-             react/tool-run splices the rows in from toolCalls[].textOffset,
-             so a second copy baked into `html` would render each row twice.
-             The split points captured at tool time are stamped onto the
-             entries here — that is what makes the layout survive the
-             save/reload round-trip. */
-          try{
-            var _m=msgIdx>=0?stateStore.read("messages")[msgIdx]:null;
-            if(_m&&Array.isArray(_m.toolCalls)){
-              for(var _ti=0;_ti<inlineToolRows.length;_ti++){
-                for(var _tj=0;_tj<_m.toolCalls.length;_tj++){
-                  if(_m.toolCalls[_tj].id===inlineToolRows[_ti].id){
-                    _m.toolCalls[_tj].textOffset=inlineToolRows[_ti].offset;
-                    break;
-                  }
-                }
-              }
-            }
-          }catch(_){}
-          var visibleFinal=stripChatArtifacts(full)
-            .replace(/<think>[\s\S]*?<\/think>/gi,"")
-            .replace(/<think>[\s\S]*$/gi,"");
-          finalHtml=buildAssistantHtml(visibleFinal);
-        }catch {
-          console.log("[finish] render error");
-          finalHtml="<p>"+esc(stripChatArtifacts(full).replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/<think>[\s\S]*$/gi,""))+"</p>";
-        }
-        /* Finalize the thinking status BEFORE saving it so the spinner
-           stops once the response is complete. */
-        if(thinkCtl&&typeof thinkCtl.finalize==="function"){
-          try{thinkCtl.finalize()}catch(_){}
-        }
-        if(ownsMessageSlot()){
-          /* P_canvas-mode — copy the active template's outputMode + canvasId
-             onto the message so React's <CanvasBlock> can branch instead of
-             falling through to dangerouslySetInnerHTML. */
-          var _om=(window._activeTemplate&&window._activeTemplate.outputMode)||'chat';
-          var _preRev=(stateStore.read("messages")[msgIdx]&&stateStore.read("messages")[msgIdx]._toolRunRev)||0;
-          var _finalPatch={
-            html:finalHtml,rawText:full,
-            type:"assistant",
-            reasoningContent:fullReasoning||null,outputMode:_om,
-            _streamSettled:true,
-            _toolRunRev:_preRev+1,
-          };
-          if(_om==='canvas'){
-            _finalPatch.canvasId=stateStore.read("_canvasPendingId")||('canvas-'+Math.random().toString(36).slice(2,10));
-            _finalPatch._extensionIcon=(window._activeTemplate&&window._activeTemplate.icon)||'';
-          }
-          patchOwnedMessage(_finalPatch);
-          stateStore.dispatch({type:"state/set",key:"_canvasPendingId",value:null});
-        }
-      }catch {
+        _renderResult=finishRender.run();
+      } catch {
         console.log("[finish] render error");
-        var fb="<p>"+esc(stripChatArtifacts(full).replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/<think>[\s\S]*$/gi,""))+"</p>";
+        var fb="<p>"+esc(stripChatArtifacts(state.full).replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/<think>[\s\S]*$/gi,""))+"</p>";
         var _preRevE=(stateStore.read("messages")[msgIdx]&&stateStore.read("messages")[msgIdx]._toolRunRev)||0;
         patchOwnedMessage({
-          html:fb,rawText:full,
+          html:fb,rawText:state.full,
           type:"assistant",
-          reasoningContent:fullReasoning||null,
+          reasoningContent:state.fullReasoning||null,
           _streamSettled:true,
           _toolRunRev:_preRevE+1,
         });
       }
-      try {
-        if (div && div.isConnected) div.dataset.streamSettled = "true";
-        if (list && list.querySelector) {
-          var _settledRow = list.querySelector('.msg[data-client-id="' + clientId + '"]');
-          if (_settledRow) _settledRow.dataset.streamSettled = "true";
-        }
-      } catch (_) {}
       finishAfterRender();
       publishReactChatRuntime({
         type: "stream-finished",
         messageId: clientId,
-        textLength: full.length,
+        textLength: state.full.length,
       });
 
       function finishAfterRender(){
@@ -818,15 +749,16 @@ export function addStreamingMessage(opts){
         /* Streaming AI bubbles skip addMessage(). React owns #msgList and the
            React MessageToolbar component renders the same action buttons
            from the snapshot, so the legacy toolbar path is unreachable. */
-        try{appendLocalMemory("assistant",full)}catch(_){}
+        try{appendLocalMemory("assistant",state.full)}catch(_){}
         /* a11y — the transcript has no live region during streaming (a
            token-cadence announcer floods AT queues), so surface the
            completed reply once here. `visibleFinal` is the prose with
            think blocks / chat artifacts stripped; it is skipped when the
            render path threw and the var was never assigned. */
+        var _visibleFinal=_renderResult?_renderResult.visibleFinal:null;
         try{
-          if(typeof visibleFinal==="string"&&visibleFinal.trim()){
-            announceTranscript(visibleFinal);
+          if(typeof _visibleFinal==="string"&&_visibleFinal.trim()){
+            announceTranscript(_visibleFinal);
           }
         }catch(_){}
         if(stateStore.read("phase")==="chat"||(stateStore.read("topic")&&stateStore.read("kbNodes").length)){
@@ -842,519 +774,41 @@ export function addStreamingMessage(opts){
          * stream is running. */
         if(turnState.activeChatCtl===ret){
           turnState.chatStreaming=false;
+          state.chatStreaming=false;
           try{setChatStopState(false)}catch(_){}
           try{markTurnEnded()}catch(_){}
           /* P1.4 — clearing the global abort handle on natural finish
              keeps the closure (and DOM refs) eligible for GC. */
           turnState.activeChatCtl=null;
+          state.activeChatCtl=null;
         }
         /* The final pass changes the answer's height (a running row folds
            into its group, the status line retires, KaTeX resolves), and
            neither scrollTop nor distance-from-bottom survives that. Capture
-           row identity + viewport offset instead, and re-assert it below. */
-        var _finishViewport=null;
-        if(reactLive&&list){
-          try{
-            var _fvRect=list.getBoundingClientRect();
-            var _fvRows=list.querySelectorAll('.msg[data-client-id]');
-            var _fvAnchor=null;
-            var _fvStreamRowOffset=null;
-            var _fvStreamRowNearTop=false;
-            /* If the answer that is finishing is actually visible, it is the
-               unambiguous anchor. Scanning from the top can accidentally pick
-               the previous assistant row when its margin/border overlaps the
-               viewport by a pixel, which shifts the current answer during the
-               legacy-to-React swap. Keep an explicit row-level snapshot too:
-               inner nodes may be transplanted and stay connected, masking the
-               fact that the outer answer row itself moved. */
-            if(div&&div.isConnected){
-              var _fvLiveRect=div.getBoundingClientRect();
-              if(_fvLiveRect.bottom>_fvRect.top+1&&_fvLiveRect.top<_fvRect.bottom-1){
-                _fvAnchor=div;
-                _fvStreamRowOffset=_fvLiveRect.top-_fvRect.top;
-                _fvStreamRowNearTop=Math.abs(_fvStreamRowOffset)<=96;
-              }
-            }
-            /* Otherwise prefer an assistant (non-user) message as the anchor
-               so the viewport stays on the answer the reader is looking at. A
-               user message partially visible at the top of the viewport would
-               otherwise drag the scroll position back to the question after
-               the React handoff changes layout. */
-            for(let _fvi=0;!_fvAnchor&&_fvi<_fvRows.length;_fvi++){
-              const _fvr=_fvRows[_fvi].getBoundingClientRect();
-              if(_fvr.bottom>_fvRect.top+1){
-                if(!_fvRows[_fvi].classList.contains('user')){_fvAnchor=_fvRows[_fvi];break;}
-              }
-            }
-            if(!_fvAnchor){
-              for(let _fvi=0;_fvi<_fvRows.length;_fvi++){
-                const _fvr=_fvRows[_fvi].getBoundingClientRect();
-                if(_fvr.bottom>_fvRect.top+1){_fvAnchor=_fvRows[_fvi];break;}
-              }
-            }
-            /* Prefer an exact visible node inside the message body. The old
-               row-level anchor could preserve the bubble's top while still
-               moving the paragraph the user was reading by hundreds of
-               pixels after async content and tool rows were transplanted. */
-            var _fvInnerAnchor=null;
-            if(_fvAnchor){
-              var _fvCandidates=_fvAnchor.querySelectorAll(
-                '.stream-settled-content > *,.stream-live-content > *,'+
-                '.think-prefix > *,.think-suffix > *,.tool-inline,'+
-                '.visualization-card,.exec-artifact,.msg-body > *'
-              );
-              for(var _fvni=0;_fvni<_fvCandidates.length;_fvni++){
-                var _fvnr=_fvCandidates[_fvni].getBoundingClientRect();
-                if(_fvnr.bottom>_fvRect.top+1){_fvInnerAnchor=_fvCandidates[_fvni];break;}
-              }
-            }
-            /* When the answer row itself begins at the viewport top, anchor
-               the row rather than its first paragraph. Streaming-only chrome
-               above that paragraph disappears during the React handoff; an
-               inner anchor would preserve the paragraph but visibly pull the
-               whole answer upward by exactly that chrome height. Once the row
-               starts well above the viewport, the reader is genuinely in the
-               middle of a long answer and the inner paragraph is the better
-               anchor. */
-            var _fvRowOffset=_fvAnchor
-              ?_fvAnchor.getBoundingClientRect().top-_fvRect.top
-              :0;
-            var _fvMeasuredAnchor=(_fvAnchor&&Math.abs(_fvRowOffset)<=96)
-              ?_fvAnchor
-              :(_fvInnerAnchor||_fvAnchor);
-            _finishViewport={
-              scroller:list,
-              pinned:!stateStore.read("_userScrolledAway")&&
-                list.scrollHeight-list.scrollTop-list.clientHeight<=96,
-              /* Freeze the reader-intent flag NOW: layout churn during the
-                 handoff fires scroll events that can flip the live flag
-                 without any user input. */
-              scrolledAway:!!stateStore.read("_userScrolledAway"),
-              scrollTop:list.scrollTop,
-              streamRowId:_fvStreamRowNearTop?clientId:null,
-              streamRowOffset:_fvStreamRowNearTop?_fvStreamRowOffset:null,
-              anchorNode:_fvMeasuredAnchor,
-              anchorId:_fvAnchor?_fvAnchor.getAttribute('data-client-id'):null,
-              anchorOffset:_fvMeasuredAnchor?_fvMeasuredAnchor.getBoundingClientRect().top-_fvRect.top:0
-            };
-          }catch(_){}
-        }
-        /* The `stream-finished` runtime event is fired in the microtask
-           scheduled above, AFTER React commits the `_streamSettled`
-           bubble. Doing it here would flip the chat-runtime bridge to
-           "completed" before the visible row settles, which is what made
-           the page reload-and-flicker at end of stream. */
-        /* P_react-live-turn — the bubble React has been painting this whole
-           turn IS the finalized one: there is no transplant, no reveal, and
-           no duplicate legacy node to drop. What still changes at finish is
-           the content height — the running row folds into its group, the
-           status line retires, KaTeX resolves — so re-assert the anchor
-           captured above for a bounded number of frames. A one-shot restore
-           taken mid-flux strands the reader above the answer ("jumped back
-           to my own message"), and the churn fires scroll events the
-           scrollPill listener misreads as the user scrolling away. */
-        if(reactLive){
-          if(_finishViewport&&_finishViewport.scroller){
-            var _fvScroller=_finishViewport.scroller;
-            var _fvUserIntent=false;
-            var _fvMarkIntent=function(){_fvUserIntent=true;};
-            var _fvIntentEvents=["wheel","touchstart","pointerdown","keydown"];
-            for(var _fvei=0;_fvei<_fvIntentEvents.length;_fvei++){
-              window.addEventListener(_fvIntentEvents[_fvei],_fvMarkIntent,
-                {passive:true,capture:true});
-            }
-            var _fvDetachIntent=function(){
-              for(var _fvej=0;_fvej<_fvIntentEvents.length;_fvej++){
-                window.removeEventListener(_fvIntentEvents[_fvej],_fvMarkIntent,
-                  {capture:true});
-              }
-            };
-            var _fvApply=function(){
-              if(_finishViewport.pinned){
-                /* A short answer can be both at the physical bottom and
-                   aligned near the viewport top. If completion removes
-                   streaming-only chrome, blindly staying at bottom moves
-                   the whole answer downward. Restore the lost row height
-                   first, then snap to the new bottom so both invariants
-                   remain true. */
-                if(_finishViewport.streamRowId&&
-                  Number.isFinite(_finishViewport.streamRowOffset)){
-                  var _fvPinnedRow=list.querySelector(
-                    '.msg[data-client-id="'+_finishViewport.streamRowId+'"][data-react-owned]'
-                  );
-                  if(_fvPinnedRow){
-                    var _fvPinnedRect=_fvPinnedRow.getBoundingClientRect();
-                    var _fvPinnedNow=_fvPinnedRect.top-
-                      _fvScroller.getBoundingClientRect().top;
-                    var _fvPinnedDelta=Math.ceil(
-                      _fvPinnedNow-_finishViewport.streamRowOffset
-                    );
-                    if(_fvPinnedDelta>1){
-                      var _fvPinnedMin=Math.ceil(
-                        _fvPinnedRect.height+_fvPinnedDelta
-                      );
-                      _fvPinnedRow.style.minHeight=_fvPinnedMin+"px";
-                      var _fvPinnedMsg=msgIdx>=0?stateStore.read("messages")[msgIdx]:null;
-                      if(_fvPinnedMsg){
-                        updateMessageSnapshot(_fvPinnedMsg,{
-                          _turnAnchorMinHeight:Math.max(
-                            Number(_fvPinnedMsg._turnAnchorMinHeight)||0,
-                            _fvPinnedMin
-                          )
-                        },true);
-                      }
-                    }
-                  }
-                }
-                _fvScroller.scrollTop=_fvScroller.scrollHeight;
-                /* Layout-shift scroll events during the handoff may
-                   have flipped this flag; the reader never left the
-                   bottom, so undo the corruption. */
-                stateStore.dispatch({type:"state/set",key:"_userScrolledAway",value:false});
-              }else if(_finishViewport.scrolledAway&&_finishViewport.scrollTop<=2){
-                /* At the absolute transcript top, preserving scrollTop
-                   is the user's explicit intent. Mid-answer reading is
-                   different: React/legacy height deltas move the visible
-                   paragraph even when scrollTop itself is unchanged, so
-                   let the row-anchor branches below preserve content. */
-                _fvScroller.scrollTop=_finishViewport.scrollTop;
-              }else if(_finishViewport.streamRowId&&
-                Number.isFinite(_finishViewport.streamRowOffset)){
-                var _fvStreamRow=list.querySelector(
-                  '.msg[data-client-id="'+_finishViewport.streamRowId+'"][data-react-owned]'
-                );
-                if(_fvStreamRow){
-                  var _fvStreamRect=_fvStreamRow.getBoundingClientRect();
-                  var _fvStreamNow=_fvStreamRect.top-
-                    _fvScroller.getBoundingClientRect().top;
-                  var _fvStreamDelta=_fvStreamNow-_finishViewport.streamRowOffset;
-                  if(_fvStreamDelta>1){
-                    var _fvMaxTop=Math.max(0,
-                      _fvScroller.scrollHeight-_fvScroller.clientHeight);
-                    var _fvNeededTop=_fvScroller.scrollTop+_fvStreamDelta;
-                    var _fvShortfall=Math.ceil(_fvNeededTop-_fvMaxTop);
-                    if(_fvShortfall>0){
-                      /* The reader is already at the physical scroll
-                         limit, so create only the missing answer reserve
-                         before applying the row correction. This blank
-                         tail is the same turn viewport anchor used while
-                         streaming and is cleared when the next user turn
-                         begins. */
-                      var _fvRequiredMin=Math.ceil(
-                        _fvStreamRect.height+_fvShortfall
-                      );
-                      _fvStreamRow.style.minHeight=_fvRequiredMin+"px";
-                      var _fvStreamMsg=msgIdx>=0?stateStore.read("messages")[msgIdx]:null;
-                      if(_fvStreamMsg){
-                        updateMessageSnapshot(_fvStreamMsg,{
-                          _turnAnchorMinHeight:Math.max(
-                            Number(_fvStreamMsg._turnAnchorMinHeight)||0,
-                            _fvRequiredMin
-                          )
-                        },true);
-                      }
-                    }
-                  }
-                  _fvScroller.scrollTop+=_fvStreamDelta;
-                }
-              }else if(_finishViewport.anchorNode&&_finishViewport.anchorNode.isConnected){
-                var _fvExactNow=_finishViewport.anchorNode.getBoundingClientRect().top-
-                  _fvScroller.getBoundingClientRect().top;
-                _fvScroller.scrollTop+=_fvExactNow-_finishViewport.anchorOffset;
-              }else if(_finishViewport.anchorId){
-                var _fvCurrent=null;
-                var _fvCurrentRows=list.querySelectorAll('.msg[data-client-id]');
-                for(var _fvci=0;_fvci<_fvCurrentRows.length;_fvci++){
-                  if(_fvCurrentRows[_fvci].getAttribute('data-client-id')===_finishViewport.anchorId){
-                    _fvCurrent=_fvCurrentRows[_fvci];break;
-                  }
-                }
-                if(_fvCurrent){
-                  var _fvNow=_fvCurrent.getBoundingClientRect().top-
-                    _fvScroller.getBoundingClientRect().top;
-                  _fvScroller.scrollTop+=_fvNow-_finishViewport.anchorOffset;
-                }else{
-                  _fvScroller.scrollTop=_finishViewport.scrollTop;
-                }
-              }else{
-                _fvScroller.scrollTop=_finishViewport.scrollTop;
-              }
-            };
-            var _fvFrames=0;
-            var _fvSettle=function(){
-              if(_fvUserIntent){_fvDetachIntent();return;}
-              try{_fvApply()}catch(_){}
-              if(++_fvFrames<30){requestAnimationFrame(_fvSettle);}
-              else{_fvDetachIntent();}
-            };
-            _fvSettle();
-          }
-        }
+           row identity + viewport offset instead, and re-assert it below.
+           Done by chat/turn/finishViewport.js — see that module for the
+           full rationale and the per-branch intent comments. */
+        finishViewport.capture();
+        finishViewport.settle();
       }
       } /* end _finishBody */
     },
-    abort:function(){
-      /* P_session-stream-dispose — flip the sticky flag FIRST so any
-         in-flight append()/recordToolUse()/finish() callbacks that
-         are already scheduled in the microtask queue (the stream.js
-         reader keeps draining the SSE buffer for one or two ticks
-         after AbortController.abort()) will short-circuit on their
-         own _disposed checks and never touch stateStore.read("messages"). */
-      if(_disposed)return;
-      if(finished)return;
-      finished=true;
-      _disposed=true;
-      _publishThinkingPanelEnd();
-      if(_elapsedTick)clearInterval(_elapsedTick);
-      cancelScheduledRender();
-      /* Restore the send button — but only if no new stream has
-       * already taken over (the new wrapper cancels the OLD
-       * controller when the user sends a follow-up, and the new
-       * addStreamingMessage has already raised turnState.chatStreaming). */
-      if(turnState.activeChatCtl===ret){
-        turnState.chatStreaming=false;
-        try{setChatStopState(false)}catch(_){}
-        try{markTurnEnded()}catch(_){}
-      }
-      /* Stop the independent execution stream and any queued delta
-         frame before this message can lose ownership of its slot. */
-      toolRuntime.cancel();
-      /* A user stop is an intentional end state. Keep any visible text as a
-       * normal assistant message so it remains on screen and can be saved.
-       * P_session-cross-talk — verify the slot still holds OUR placeholder
-       * (by clientId) before splicing. If the user switched sessions,
-       * stateStore.read("messages") was replaced and msgIdx now points at the new
-       * session's message — splicing here would delete the new session's
-       * message. The abandoned placeholder is harmless (it's not in the
-       * new session's array), so just skip the splice. */
-      var abortedMessage=(msgIdx>=0&&stateStore.read("messages")[msgIdx]&&
-        stateStore.read("messages")[msgIdx].clientId===clientId)?stateStore.read("messages")[msgIdx]:null;
-      var stoppedRaw=abortedMessage?String(full||abortedMessage.rawText||""):String(full||"");
-      var visibleStoppedRaw=stoppedRaw
-        .replace(/<think>[\s\S]*?<\/think>/gi,"")
-        .replace(/<think>[\s\S]*$/gi,"")
-        .trim();
-      var hasPartial=!!(abortedMessage&&visibleStoppedRaw);
-      if(abortedMessage&&!hasPartial&&abortedMessage.type==="streaming"){
-        /* P_supersede-stable — removing the empty placeholder also removes
-           the turn's viewport reserve, collapsing the scroll range on the
-           send frame. Keep the entry as an invisible stub that still holds
-           its reserve; the new turn's anchor glides past it and retires it
-           off-screen (removeSupersededStub is the no-new-turn fallback). */
-        abortedMessage=patchOwnedMessage({
-          rawText:"",
-          html:'<span data-turn-stub="1"></span>',
-          type:"assistant",
-          _supersededStub:true
-        })||abortedMessage;
-        setTimeout(function(){
-          try{removeSupersededStub(clientId)}catch(_){/* already gone */}
-        },700);
-      }
-      /* Finalize the partial text before publishing the aborted state. A
-         complete scaffold becomes interactive; an open scaffold stays on
-         the tolerant progressive renderer so already-streamed fields are
-         not replaced by an empty fallback. */
-      if(hasPartial&&abortedMessage){
-        var stoppedHtml="";
-        try{
-          stoppedHtml=buildAssistantHtml(stoppedRaw);
-          if(/scaffold-stream-unclosed/.test(stoppedHtml)){
-            stoppedHtml=formatMsgProgressive(stoppedRaw);
-          }
-        }catch(_){
-          try{stoppedHtml=formatMsgProgressive(stoppedRaw)}catch(__){stoppedHtml="<p>"+esc(visibleStoppedRaw)+"</p>"}
-        }
-        /* Task 4.1 — Resend affordance. After a user Stop, offer a
-           Resend control on the stopped bubble that re-runs the send path
-           from the most recent user message with a fresh turn (Req 2.6/2.7).
-           Mirrors the recovered-stream `data-stream-retry` pattern: the
-           button lives in the message HTML and clicks are delegated on the
-           React-owned list. Reuses askChatTurn's AbortController/isUserAbort
-           path — no new retry logic. */
-        var resendHtml='<div class="msg-error msg-resend" style="margin-top:8px">'+
-          '<span class="msg-error-text">'+esc(_t("chat.stopped")||"Response stopped")+'</span>'+
-          '<button type="button" class="msg-retry-btn chat-resend-btn" data-chat-resend>'+esc(_t("chat.resend")||"Resend")+'</button>'+
-          '</div>';
-        stoppedHtml=stoppedHtml+resendHtml;
-        abortedMessage=patchOwnedMessage({
-          rawText:stoppedRaw,html:stoppedHtml,type:"assistant",state:"stopped"
-        })||abortedMessage;
-        /* The declarative renderer has no host for the html-resend
-           affordance, so the stopped line is data. */
-        setReactLiveStatus(abortedMessage,{
-          phase:"stopped",label:_t("chat.stopped")||"Response stopped"
-        });
-        claimLiveRetry(ret,function(){
-          try{resendLastUserMessage()}catch(_){/* resend handler threw */}
-        });
-        /* Delegate the Resend click on the list (button DOM is React-owned
-           after the next paint). One-shot: detaches after firing. */
-        var _resendDelegated=function(ev){
-          var tgt=ev.target;
-          if(!(tgt&&tgt.closest&&tgt.closest("[data-chat-resend]")))return;
-          try{list.removeEventListener("click",_resendDelegated)}catch(_){}
-          resendLastUserMessage();
-        };
-        try{list.addEventListener("click",_resendDelegated)}catch(_){}
-        try{saveCurrentSession()}catch(_){ }
-        try{updateChatStats()}catch(_){ }
-      }
-      /* Publish first, then remove only a throwaway shell on the next
-         frame (a non-React node with our clientId, if one ever exists). */
-      publishReactChatRuntime({
-        type:"stream-aborted",
-        messageId:clientId,
-        textLength:full.length
-      });
-      requestAnimationFrame(function(){
-        try{
-          var _abLegacy=list.querySelector('[data-client-id="'+clientId+'"]');
-          if(_abLegacy&&!_abLegacy.hasAttribute("data-react-owned")&&_abLegacy.parentNode===list){
-            list.removeChild(_abLegacy);
-          }
-        }catch(_){ }
-      });
-    },
+    abort: abortPath.abort,
     /* Show an inline error state with a retry button so the user can
        recover from a transient failure (network, 429, 5xx) without
-       retyping. onRetry() is invoked when the button is clicked. */
-      replaceWithError:function(errMsg,onRetry){
-        if(finished)return;
-        finished=true;
-        _publishThinkingPanelEnd();
-        toolRuntime.cancel();
-        if(_elapsedTick)clearInterval(_elapsedTick);
-        cancelScheduledRender();
-       try{
-         var partialHtml="";
-         if(full.trim()){
-           try{partialHtml=buildAssistantHtml(full)}catch(_){partialHtml="<p>"+esc(full)+"</p>"}
-         }
-         var errHtml=partialHtml+'<div class="msg-error">'+
-             '<span class="msg-error-text">'+esc(errMsg||'Generation failed')+'</span>'+
-              '<button type="button" class="msg-retry-btn" id="'+retryBtnId+'">Retry</button>'+
-            '</div>';
-          /* Serialize the error into the snapshot so React re-renders a
-             finalized error bubble. The status line is that error's other
-             half — the declarative renderer has no host for markup inside
-             `html`. The placeholder `btn` (just an id, no addEventListener)
-             triggers the delegation branch below for click handling. */
-          if(ownsMessageSlot()){
-            var _errorMessage=patchOwnedMessage({html:errHtml,type:"assistant"});
-            if(_errorMessage){
-              var _errCopy=String(errMsg||'Generation failed');
-              setReactLiveStatus(_errorMessage,{
-                phase:"error",label:_errCopy,error:_errCopy,
-                retryable:typeof onRetry==="function"
-              });
-            }
-          }
-          var btn={ id: retryBtnId };
-          if(btn&&typeof onRetry==="function"){
-            var retryHandler=function(){
-              /* P_no_retry_loading — fire onRetry() immediately so the
-                 new streaming bubble appears in one step. Replace the failed
-                 assistant entry first and preserve the error row's viewport
-                 offset so retry starts where the interruption was visible,
-                 rather than jumping back to the user's prompt. */
-              try{
-                streamRetryViewport.prepareViewport(list,msgIdx,clientId);
-                var innerRet=onRetry();
-                if(innerRet&&typeof innerRet.then==="function"){
-                  innerRet.catch(function(){/* retry async handler failed */});
-                }
-              }catch {/* retry handler threw */}
-            };
-            /* React's status line asks this closure to retry; it is the same
-               handler the delegated legacy click below runs. */
-            claimLiveRetry(ret,retryHandler);
-            if(typeof btn.addEventListener==="function"){
-              var _captureDirectRetry=function(ev){
-                streamRetryViewport.captureViewport(list,clientId);
-                /* Mouse focus would collapse the expanded composer before
-                   click. Keep editor focus until the retry stream replaces
-                   the failed row; keyboard activation is unaffected. */
-                if(ev.type==="mousedown")ev.preventDefault();
-              };
-              btn.addEventListener("pointerdown",_captureDirectRetry,true);
-              btn.addEventListener("mousedown",_captureDirectRetry,true);
-              btn.addEventListener("click",retryHandler);
-            }else{
-              function _findRetryTarget(node){
-                if(!node)return null;
-                if(node.id===retryBtnId)return node;
-                return node.closest?node.closest("#"+retryBtnId):null;
-              }
-              /* Capture the visible error offset before the retry button
-                 steals focus from the expanded mobile composer. Chromium can
-                 synthesize either pointer+mouse events or only mouse events
-                 depending on the input source, so cover both paths. */
-              var _captureRetryPress=function(ev){
-                if(!_findRetryTarget(ev.target))return;
-                streamRetryViewport.captureViewport(list,clientId);
-                if(ev.type==="mousedown")ev.preventDefault();
-              };
-              list.addEventListener("pointerdown",_captureRetryPress,true);
-              list.addEventListener("mousedown",_captureRetryPress,true);
-              /* Delegate retry clicks for React-rendered error bubbles.
-                 (Previously this was an `else if(msgList && ...)`
-                 guard, but `msgList` was undeclared in this closure
-                 scope so the delegation never fired — retry clicks on
-                 React-rendered error bubbles were silently dead.) */
-              list.addEventListener("click",function _retryDelegated(ev){
-                if(_findRetryTarget(ev.target)){
-                  list.removeEventListener("pointerdown",_captureRetryPress,true);
-                  list.removeEventListener("mousedown",_captureRetryPress,true);
-                  list.removeEventListener("click",_retryDelegated);
-                  retryHandler();
-                }
-              });
-            }
-          }
-       }catch {
-         patchOwnedMessage({html:'<p>'+esc(errMsg||'Generation failed')+'</p>',type:"assistant"});
-       }
-       updateChatStats();
-       /* Restore the send button — even error paths end the stream.
-        * Guarded on the active controller so a new stream that
-        * supersedes this one is not clobbered. */
-       if(turnState.activeChatCtl===ret){
-         turnState.chatStreaming=false;
-         try{setChatStopState(false)}catch(_){}
-         try{markTurnEnded()}catch(_){}
-       }
-       /* Drop the legacy bubble so the next snapshot-driven re-render
-          doesn't duplicate the finalized error bubble. (Same bug as
-          finish/abort — `msgList` was undeclared here too.) */
-       try{
-         var _errLegacy=list.querySelector('[data-client-id="'+clientId+'"]');
-         if(_errLegacy && !_errLegacy.hasAttribute("data-react-owned") && _errLegacy.parentNode===list){
-           list.removeChild(_errLegacy);
-         }
-       }catch(_){}
-       publishReactChatRuntime({
-         type:"stream-failed",
-         messageId:clientId,
-         textLength:full.length,
-         error:String(errMsg||"Generation failed").slice(0,160)
-       });
-        /* The error row is the new end of the answer. Keep it inside the same
-           dynamically measured safe area as normal text so the retry control
-           can never settle underneath the composer. Save the last stable
-           offset so focus changes during a Retry press cannot redefine where
-           the replacement stream begins. */
-        streamRetryViewport.settleErrorViewport(list,clientId,function(offset){
-          streamRetryViewport.rememberStableViewport(clientId,offset,60000);
-        });
-      },
+       retyping. onRetry() is invoked when the button is clicked.
+       Done by chat/turn/errorPath.js — see that module for the full
+       rationale and the retry-button wiring comments. */
+    replaceWithError: errorPath.replaceWithError,
   };
+  state.ret=ret;
   /* Publish this controller on window so a subsequent turn in the same
      chat can call turnState.activeChatCtl.abort() to evict the "正在思考…"
      bubble immediately instead of leaving it pinned while the model is
      still thinking. The next addStreamingMessage() call will overwrite
      turnState.activeChatCtl with its own controller. */
   turnState.activeChatCtl=ret;
+  state.activeChatCtl=ret;
   return ret;
 }
 
