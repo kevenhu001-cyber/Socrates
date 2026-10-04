@@ -42,6 +42,7 @@ import { createFinishRender } from './turn/finishRender.js';
 import { createFinishViewport } from './turn/finishViewport.js';
 import { createAbortPath } from './turn/abortPath.js';
 import { createErrorPath } from './turn/errorPath.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 function _t(key, fallback) {
   try {
@@ -49,13 +50,13 @@ function _t(key, fallback) {
       var v = window.t(key);
       if (v && v !== key) return v;
     }
-  } catch (_) {}
+  } catch (e) { reportSwallow(e, 'streamingTurn._t.prefLookup'); }
   return fallback != null ? fallback : key;
 }
 function _appMode() {
   try {
     if (typeof window !== 'undefined' && window.appMode) return window.appMode;
-  } catch (_) {}
+  } catch (e) { reportSwallow(e, 'streamingTurn._appMode.readGlobal'); }
   return 'chat';
 }
 /* Smooth streaming decouples the network-arrival stream from the visual
@@ -71,7 +72,7 @@ function _smoothStreamEnabled() {
     if (typeof window !== 'undefined' && window.__socratesSmoothStream === false) return false;
     if (typeof localStorage !== 'undefined'
         && localStorage.getItem('socrates:smoothStream') === 'off') return false;
-  } catch (_) {}
+  } catch (e) { reportSwallow(e, 'streamingTurn._smoothStreamEnabled.readPref'); }
   return true;
 }
 
@@ -140,7 +141,7 @@ export function addStreamingMessage(opts){
         _listBottomPad,
       );
     }
-  } catch (_) {}
+  } catch (e) { reportSwallow(e, 'streamingTurn._listStyles.measureReserve'); }
 
   var msgIdx=stateStore.dispatch({type:"session/append-message",payload:{
     clientId:clientId,
@@ -294,7 +295,7 @@ export function addStreamingMessage(opts){
   };
   function hideThinkCtl(){
     if(state.thinkCtl&&typeof state.thinkCtl.remove==="function"){
-      try{state.thinkCtl.remove()}catch(_){/* status may already be detached */}
+      try{state.thinkCtl.remove()}catch(e){reportSwallow(e, 'streamingTurn.hideThinkCtl.remove');/* status may already be detached */}
     }
     state.thinkCtl=null;
   }
@@ -341,9 +342,9 @@ export function addStreamingMessage(opts){
      the stream. setChatStopState(false) on finish/abort. */
   turnState.chatStreaming=true;
   state.chatStreaming=true;
-  try{setChatStopState(true)}catch(_){}
+  try{setChatStopState(true)}catch(e){reportSwallow(e, 'streamingTurn.start.setChatStopState'); }
   /* Task 4.1 — record turn-in-progress + Resend target (latest user msg). */
-  try{markTurnInProgress()}catch(_){}
+  try{markTurnInProgress()}catch(e){reportSwallow(e, 'streamingTurn.start.markTurnInProgress'); }
   var thinkStarted=Date.now();
   /* Phase-based reassurance keeps the status line visibly alive without a
      twitchy elapsed-seconds counter that can read like a stalled request. */
@@ -417,7 +418,7 @@ export function addStreamingMessage(opts){
     onDone:function(){
       var _cont=_finishContinuation;
       _finishContinuation=null;
-      if(typeof _cont==="function"){try{_cont()}catch(_){}}
+      if(typeof _cont==="function"){try{_cont()}catch(e){reportSwallow(e, 'streamingTurn.doRender.finishContinuation'); }}
     },
     now:function(){return performance.now()},
     raf:function(cb){pendingRender=requestAnimationFrame(cb)}
@@ -616,7 +617,7 @@ export function addStreamingMessage(opts){
          substantive answer but well above a typical Chinese/English
          transition phrase. */
       if(state.thinkCtl&&typeof state.thinkCtl.finalize==="function"&&state.full.length>=60){
-        try{state.thinkCtl.finalize()}catch(_){}
+        try{state.thinkCtl.finalize()}catch(e){reportSwallow(e, 'streamingTurn._preRev1.finalizeLongForm'); }
       }
     },
     /* Append reasoning deltas (DeepSeek R1 / QwQ style
@@ -632,11 +633,11 @@ export function addStreamingMessage(opts){
         statusChrome.publishThinkingPanelLive();
       }
       if(state.toolRuntime&&typeof state.toolRuntime.hasActiveTools==="function"&&state.toolRuntime.hasActiveTools())return;
-      try{ensureThinkCtl().append(delta||"")}catch(_){}
+      try{ensureThinkCtl().append(delta||"")}catch(e){reportSwallow(e, 'streamingTurn._preRev1.appendDelta'); }
     },
     finalizeThinking:function(){
       if(state.thinkCtl&&typeof state.thinkCtl.finalize==="function"){
-        try{state.thinkCtl.finalize()}catch(_){}
+        try{state.thinkCtl.finalize()}catch(e){reportSwallow(e, 'streamingTurn._preRev1.finalizeThinking'); }
       }
     },
     setRetryStatus:function(notice){
@@ -749,7 +750,7 @@ export function addStreamingMessage(opts){
         /* Streaming AI bubbles skip addMessage(). React owns #msgList and the
            React MessageToolbar component renders the same action buttons
            from the snapshot, so the legacy toolbar path is unreachable. */
-        try{appendLocalMemory("assistant",state.full)}catch(_){}
+        try{appendLocalMemory("assistant",state.full)}catch(e){reportSwallow(e, 'streamingTurn.finishAfterRender.appendLocalMemory'); }
         /* a11y — the transcript has no live region during streaming (a
            token-cadence announcer floods AT queues), so surface the
            completed reply once here. `visibleFinal` is the prose with
@@ -760,7 +761,7 @@ export function addStreamingMessage(opts){
           if(typeof _visibleFinal==="string"&&_visibleFinal.trim()){
             announceTranscript(_visibleFinal);
           }
-        }catch(_){}
+        }catch(e){reportSwallow(e, 'streamingTurn.finishAfterRender.announceTranscript'); }
         if(stateStore.read("phase")==="chat"||(stateStore.read("topic")&&stateStore.read("kbNodes").length)){
           saveCurrentSession();
         }
@@ -775,8 +776,8 @@ export function addStreamingMessage(opts){
         if(turnState.activeChatCtl===ret){
           turnState.chatStreaming=false;
           state.chatStreaming=false;
-          try{setChatStopState(false)}catch(_){}
-          try{markTurnEnded()}catch(_){}
+          try{setChatStopState(false)}catch(e){reportSwallow(e, 'streamingTurn.finishAfterRender.setChatStopState'); }
+          try{markTurnEnded()}catch(e){reportSwallow(e, 'streamingTurn.finishAfterRender.markTurnEnded'); }
           /* P1.4 — clearing the global abort handle on natural finish
              keeps the closure (and DOM refs) eligible for GC. */
           turnState.activeChatCtl=null;

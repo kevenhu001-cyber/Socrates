@@ -23,6 +23,7 @@ import { esc } from '../render/helpers.js';
 import { formatToolOutput } from '../render/toolOutput.js';
 import { toolCategory as categoryOf } from '../render/toolCategory.js';
 import { getSocratesWasm } from '../lib/socratesWasm.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 import { toolCardView } from './toolCardView.js';
 import { STROKE_ICONS, toolIcon } from './icons/toolIcons.js';
 
@@ -145,7 +146,7 @@ function translate(key: string, fallback: string): string {
       const s = (w.t as (k: string) => string)(key);
       if (s && s !== key) return s;
     }
-  } catch (_) { /* ignore */ }
+  } catch (e) { reportSwallow(e, 'toolInline.s.prefLookup'); /* ignore */ }
   return fallback;
 }
 
@@ -318,7 +319,7 @@ function appendDetailSection(
      call sites pass nothing and behave identically. */
   if (attrs) {
     for (const key of Object.keys(attrs)) {
-      try { section.dataset[key] = attrs[key]; } catch (_) { /* ignore */ }
+      try { section.dataset[key] = attrs[key]; } catch (e) { reportSwallow(e, 'toolInline.appendDetailSection.setDataset'); /* ignore */ }
     }
   }
   const heading = document.createElement('div');
@@ -410,7 +411,7 @@ function renderInlineDetails(
       ) || hasContent;
       row.dataset.errorCode = String(result.errorCode);
     } else {
-      try { delete row.dataset.errorCode; } catch (_) { /* ignore */ }
+      try { delete row.dataset.errorCode; } catch (e) { reportSwallow(e, 'toolInline.renderInlineDetails.clearErrorCode'); /* ignore */ }
     }
     if (failed && typeof result.retryable === 'boolean') {
       /* P_tool_retryable — surface the backend's retryable hint so the
@@ -423,7 +424,7 @@ function renderInlineDetails(
       hasContent = appendDetailSection(detail, translate('tool.retryable', 'Retryable'), hint, 'technical', { retryable: result.retryable ? '1' : '0' }) || hasContent;
       row.dataset.retryable = result.retryable ? '1' : '0';
     } else {
-      try { delete row.dataset.retryable; } catch (_) { /* ignore */ }
+      try { delete row.dataset.retryable; } catch (e) { reportSwallow(e, 'toolInline.renderInlineDetails.clearRetryable'); /* ignore */ }
     }
     /* P_tool_retry_button — for failed search rows, append a Retry
        button that dispatches a `tool-retry` CustomEvent. The runtime
@@ -692,7 +693,7 @@ export function settleInlineToolGroupRow(
   if (firstFailed && firstFailed.result && firstFailed.result.errorCode) {
     row.dataset.errorCode = String(firstFailed.result.errorCode);
   } else {
-    try { delete row.dataset.errorCode; } catch (_) { /* ignore */ }
+    try { delete row.dataset.errorCode; } catch (e) { reportSwallow(e, 'toolInline.settleInlineToolGroupRow.clearErrorCode'); /* ignore */ }
   }
   const allRetryable = failed && members.every((m) => {
     if (!(m.failed || (m.result && m.result.ok === false))) return true;
@@ -701,7 +702,7 @@ export function settleInlineToolGroupRow(
   if (failed) {
     row.dataset.retryable = allRetryable ? '1' : '0';
   } else {
-    try { delete row.dataset.retryable; } catch (_) { /* ignore */ }
+    try { delete row.dataset.retryable; } catch (e) { reportSwallow(e, 'toolInline.settleInlineToolGroupRow.clearRetryable'); /* ignore */ }
   }
   renderInlineGroupDetails(row, members, state);
 }
@@ -773,7 +774,7 @@ function settleIconCrossfade(slot: Element, html: string): void {
   const swap = (): void => {
     setTimeout(() => {
       slot.innerHTML = html;
-      setTimeout(() => { try { slot.classList.remove('is-settling'); } catch (_) { /* ignore */ } }, 260);
+      setTimeout(() => { try { slot.classList.remove('is-settling'); } catch (e) { reportSwallow(e, 'toolInline.swap.clearSettling'); /* ignore */ } }, 260);
     }, 110);
   };
   if (typeof requestAnimationFrame === 'function') requestAnimationFrame(swap);
@@ -849,7 +850,7 @@ export function updateInlineToolCodePreview(row: HTMLElement, argsJson: string, 
 export function fadeOutInlineToolRow(row: HTMLElement, durationMs: number = 160): void {
   if (!row || !row.classList) return;
   if (typeof row.getAnimations === 'function') {
-    try { row.getAnimations().forEach(function (a) { try { a.cancel(); } catch (_) { /* ignore */ } }); } catch (_) { /* ignore */ }
+    try { row.getAnimations().forEach(function (a) { try { a.cancel(); } catch (e) { reportSwallow(e, 'toolInline.fadeOutInlineToolRow.cancelAnimation'); /* ignore */ } }); } catch (e) { reportSwallow(e, 'toolInline.fadeOutInlineToolRow.getAnimations'); /* ignore */ }
   }
   row.classList.add('tool-inline-leaving');
   /* The leaving keyframe (defined in styles.css) drives opacity/transform.
@@ -862,7 +863,7 @@ export function fadeOutInlineToolRow(row: HTMLElement, durationMs: number = 160)
     try {
       if (typeof row.remove === 'function') { row.remove(); return; }
       if (row.parentNode && typeof row.parentNode.removeChild === 'function') row.parentNode.removeChild(row);
-    } catch (_) { /* ignore */ }
+    } catch (e) { reportSwallow(e, 'toolInline.fadeOutInlineToolRow.remove'); /* ignore */ }
   };
   try {
     const handler = function () {
@@ -872,7 +873,7 @@ export function fadeOutInlineToolRow(row: HTMLElement, durationMs: number = 160)
     };
     row.addEventListener('transitionend', handler);
     row.addEventListener('animationend', handler);
-  } catch (_) { /* ignore */ }
+  } catch (e) { reportSwallow(e, 'toolInline.fadeOutInlineToolRow.listeners'); /* ignore */ }
   /* Hard fallback: if no animation/transition fires (reduced-motion cut
      the duration to 0.01ms and the browser skipped the event), tear the
      element down after the requested window. */
@@ -890,7 +891,7 @@ export function flashInlineToolRow(row: HTMLElement): void {
   if (!row || !row.classList) return;
   if (typeof row.dataset === 'undefined') return;
   if (row.dataset._flashTimer) {
-    try { clearTimeout(Number(row.dataset._flashTimer)); } catch (_) { /* ignore */ }
+    try { clearTimeout(Number(row.dataset._flashTimer)); } catch (e) { reportSwallow(e, 'toolInline.flashInlineToolRow.clearTimer'); /* ignore */ }
   }
   row.classList.add('tool-inline-flash');
   const handle = setTimeout(function () {
@@ -921,7 +922,7 @@ export function replaceLiveInlineToolRow(host: HTMLElement | null, next: HTMLEle
   for (let i = 0; i < previous.length; i++) {
     const child = previous[i];
     if (!child || child === next) continue;
-    try { fadeOutInlineToolRow(child); } catch (_) { /* ignore */ }
+    try { fadeOutInlineToolRow(child); } catch (e) { reportSwallow(e, 'toolInline.replaceLiveInlineToolRow.fadeOut'); /* ignore */ }
   }
   if (next.parentNode !== host) host.appendChild(next);
   if (!opts || !opts.skipFlash) flashInlineToolRow(next);

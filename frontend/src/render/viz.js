@@ -31,6 +31,7 @@
 
 import { ensureMermaid } from '../vendor/lazy.js';
 import { esc } from './helpers.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 import {
   _pendingMermaid,
   _pendingViz,
@@ -112,13 +113,13 @@ function _ensureVizParkObserver() {
 function _observeVizPark(card) {
   _ensureVizParkObserver();
   if (_vizParkObserver && card) {
-    try { _vizParkObserver.observe(card); } catch (_) { /* ignore */ }
+    try { _vizParkObserver.observe(card); } catch (e) { reportSwallow(e, 'viz._observeVizPark.observe'); /* ignore */ }
   }
 }
 
 function _unobserveVizPark(card) {
   if (_vizParkObserver && card) {
-    try { _vizParkObserver.unobserve(card); } catch (_) { /* ignore */ }
+    try { _vizParkObserver.unobserve(card); } catch (e) { reportSwallow(e, 'viz._unobserveVizPark.unobserve'); /* ignore */ }
   }
   if (card && card.__vizParkTimer) { clearTimeout(card.__vizParkTimer); card.__vizParkTimer = null; }
 }
@@ -127,8 +128,8 @@ function _parkVizCard(card) {
   if (!card || !card.isConnected) return;
   if (card.getAttribute('data-viz-state') !== 'ready') return;
   if (card.getAttribute('data-viz-parked') === '1') return;
-  try { if (document.visibilityState === 'hidden') return; } catch (_) { /* ignore */ }
-  try { if (document.fullscreenElement && card.contains(document.fullscreenElement)) return; } catch (_) { /* ignore */ }
+  try { if (document.visibilityState === 'hidden') return; } catch (e) { reportSwallow(e, 'viz._parkVizCard.visibilityState'); /* ignore */ }
+  try { if (document.fullscreenElement && card.contains(document.fullscreenElement)) return; } catch (e) { reportSwallow(e, 'viz._parkVizCard.fullscreenElement'); /* ignore */ }
   var iframe = card.querySelector('iframe');
   if (!iframe || !iframe.getAttribute('data-srcdoc')) return;
   /* Removing srcdoc navigates the frame to about:blank, tearing down
@@ -149,7 +150,7 @@ function _unparkVizCard(card) {
   if (card.id && !_pendingViz.some(function (item) { return item.id === card.id; })) {
     _pendingViz.push({ id: card.id });
   }
-  try { processPendingViz(); } catch (_) { /* ignore */ }
+  try { processPendingViz(); } catch (e) { reportSwallow(e, 'viz._unparkVizCard.processPendingViz'); /* ignore */ }
 }
 
 /* Test hooks — the IntersectionObserver path needs a real layout
@@ -164,7 +165,7 @@ export function unparkVizCardForTest(card) { _unparkVizCard(card); }
 export function mermaidCardIsNearViewportForTest(el) { return _mermaidCardIsNearViewport(el); }
 export function resetMermaidGateForTest() {
   if (_mermaidGateObserver) {
-    try { _mermaidGateObserver.disconnect(); } catch (_) { /* ignore */ }
+    try { _mermaidGateObserver.disconnect(); } catch (e) { reportSwallow(e, 'viz.resetMermaidGateForTest.disconnect'); /* ignore */ }
   }
   _mermaidGateObserver = null;
   _mermaidGateSeen = Object.create(null);
@@ -193,7 +194,7 @@ export function reclaimVizCards(root) {
     try {
       card.replaceWith(cached);
       dropPendingVizId(card.id);
-    } catch (_) { /* leave the placeholder to render normally */ }
+    } catch (e) { reportSwallow(e, 'viz.reclaimVizCards.replaceWith'); /* leave the placeholder to render normally */ }
   }
 }
 
@@ -314,7 +315,7 @@ function armMermaidIdleDrain() {
     if (_mermaidIdleTimer && typeof _mermaidIdleTimer.unref === 'function') {
       _mermaidIdleTimer.unref();
     }
-  } catch (_) { /* ignore */ }
+  } catch (e) { reportSwallow(e, 'viz.armMermaidIdleDrain.unref'); /* ignore */ }
 }
 
 var _mermaidGateObserver = null;
@@ -326,7 +327,7 @@ function _ensureMermaidGateObserver() {
     for (var i = 0; i < entries.length; i++) {
       var el = entries[i].target;
       if (!entries[i].isIntersecting) continue;
-      try { _mermaidGateObserver.unobserve(el); } catch (_) {}
+      try { _mermaidGateObserver.unobserve(el); } catch (e) { reportSwallow(e, 'viz._ensureMermaidGateObserver.unobserve'); }
       delete _mermaidGateSeen[el.id];
       /* The item stayed in _pendingMermaid the whole time; all this needs
          to do is hand control back to the normal drain. */
@@ -344,7 +345,7 @@ function _mermaidCardIsNearViewport(el) {
     /* A hidden tab makes every card report offscreen; render rather than
        hold an entire backlog until the user returns. */
     if (document.visibilityState === 'hidden') return true;
-  } catch (_) { /* ignore */ }
+  } catch (e) { reportSwallow(e, 'viz._mermaidCardIsNearViewport.visibilityState'); /* ignore */ }
   var rect;
   try { rect = el.getBoundingClientRect(); } catch (_) { return true; }
   /* An unlaid-out element (display:none ancestor, freshly detached) has a
@@ -479,7 +480,7 @@ export function processPendingMermaid() {
      element was replaced by a message re-render under the same id). */
   if (_pendingMermaid.length && (rendered > 0 || !held)) schedulePendingMermaid();
   if (held) armMermaidIdleDrain();
-  try { processPendingVizActions(); } catch (_) {}
+  try { processPendingVizActions(); } catch (e) { reportSwallow(e, 'viz.processPendingMermaid.drainActions'); }
 }
 
 /* P_mermaid-coalesce — processPendingMermaid() works off the global
@@ -503,7 +504,7 @@ export function schedulePendingMermaid() {
     : function (cb) { return setTimeout(cb, 16); };
   next(function () {
     _mermaidDrainScheduled = false;
-    try { processPendingMermaid(); } catch (_) {}
+    try { processPendingMermaid(); } catch (e) { reportSwallow(e, 'viz.processPendingMermaid'); }
   });
 }
 
@@ -603,7 +604,7 @@ export function processPendingViz(root) {
         if (!card || card.getAttribute('data-viz-state') === 'ready') return;
         if (!card.isConnected) return;
         try { iframe.contentWindow && iframe.contentWindow.postMessage({ type: 'viz-ping', vizId: item.id }, '*'); }
-        catch (_) { /* cannot even post → the grace window lapses into the banner */ }
+        catch (e) { reportSwallow(e, 'viz.processPendingViz.pingCard'); /* cannot even post → the grace window lapses into the banner */ }
         entry.pingTimer = setTimeout(function () {
           // A ping answer arrives as an ordinary viz-ready; if the
           // card flipped state in the meantime, stand down.
@@ -639,7 +640,7 @@ export function processPendingViz(root) {
     _pendingReady[item.id] = entry;
     _vizCards[item.id] = entry;
   });
-  try { processPendingVizActions(); } catch (_) {}
+  try { processPendingVizActions(); } catch (e) { reportSwallow(e, 'viz.processPendingViz.drainActions'); }
   _ensureMessageListener();
 }
 
@@ -1070,7 +1071,7 @@ function _bindAction(el) {
         segs[si].classList.toggle('is-on', segs[si].getAttribute('data-viz-view-opt') === view);
       }
       setVizViewPref(view);
-      try { localStorage.setItem('socrates-viz-view', view); } catch (_) { /* ignore */ }
+      try { localStorage.setItem('socrates-viz-view', view); } catch (e) { reportSwallow(e, 'viz.setVizViewPref.persist'); /* ignore */ }
     });
   } else if (act === 'viz-close-modal') {
     el.addEventListener('click', function (ev) {

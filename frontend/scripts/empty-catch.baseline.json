@@ -1,5 +1,5 @@
 {
-  "count": 551,
+  "count": 508,
   "note": "Empty catch blocks (try { ... } catch (_) {} / catch {}). May only go down. Run with --update after an intentional reduction.",
   "generatedBy": "check-empty-catch.mjs --update"
 }
