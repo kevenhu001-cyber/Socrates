@@ -1,55 +1,41 @@
+import { useCallback, useRef, useState } from 'react';
+import { ChevronRight, CircleUserRound, LifeBuoy, LogOut, Settings, Sparkles, SlidersHorizontal } from 'lucide-react';
 import { useUserInfo } from './sidebarChrome.bridge';
-import { t as _t } from '../legacy/gateway.ts';
+import { getCurrentLang, getLegacyActions, i18n } from '../legacy/gateway.ts';
+import { AnchoredMenu } from '../menu/AnchoredMenu';
 
-function i18n(key: string, fallback: string): string {
-  const v = _t(key);
-  return v !== key ? v : fallback;
-}
-
-/* The account row is display-only: settings live behind the gear button
-   (apiSettingsBtn → openSettings) and profile/sign-out inside the Settings
-   account page. It used to open a popup menu duplicating those entries —
-   removed so the footer reads as identity, not a second settings surface.
-
-   Identity mirrors the chatgpt.com drawer: avatar + name over plan tier,
-   two quiet left-aligned lines. The full "name · tier" label also stays
-   one hover away via `title` and is announced through `aria-label`. */
 export function SidebarFooter() {
   const user = useUserInfo();
-  const name = user.displayName || '';
-  const label = [name, user.tierLabel].filter(Boolean).join(' · ') || undefined;
-  /* The reference drawer's footer carries a small "升级" pill on the right
-     for free-tier accounts; paid tiers see the bare identity row. It links
-     to the same pricing page as ProfileModal's "Compare plans". CSS keeps
-     it phone-only (polish/sidebar.css). */
-  const upgradeLabel = i18n('sidebar.upgrade', 'Upgrade');
-
-  const tierDisplay = (user.tier === 'diophantus' || user.tier === 'free')
-    ? (typeof document !== 'undefined' && document.documentElement.lang.toLowerCase().startsWith('zh') ? '免费版' : 'Free')
-    : user.tierLabel;
-
-  return (
-    <div className="sidebar-footer-account-wrap">
-      <div
-        className="sidebar-account-static"
-        aria-label={label}
-        title={name || undefined}
-      >
-        <span className="user-avatar" aria-hidden="true">{user.initials}</span>
-        <span className="user-identity">
-          {name ? <span className="user-name">{name}</span> : null}
-          <span className="user-plan"><span className={`tier-badge ${user.tier}`}>{tierDisplay}</span></span>
-        </span>
-      </div>
-      {user.tier === 'diophantus' ? (
-        <a
-          className="sidebar-upgrade-pill"
-          href="https://topodrive.top/pricing"
-          aria-label={upgradeLabel}
-        >
-          {upgradeLabel}
-        </a>
-      ) : null}
-    </div>
-  );
+  const [open, setOpen] = useState(false);
+  const anchor = useRef<HTMLButtonElement>(null);
+  const close = useCallback(() => setOpen(false), []);
+  const free = user.tier === 'diophantus' || user.tier === 'free';
+  const tier = free ? (getCurrentLang() === 'zh' ? '免费版' : 'Free') : user.tierLabel;
+  const label = (zh: string, en: string) => getCurrentLang() === 'zh' ? zh : en;
+  const navigate = async (section: string) => {
+    close();
+    await getLegacyActions().navigation.openSettings();
+    document.dispatchEvent(new CustomEvent('socrates:settings-section', { detail: section }));
+  };
+  const identity = <><span className="user-avatar" aria-hidden="true">{user.initials}</span>
+    <span className="user-identity"><span className="user-name">{user.displayName}</span>
+      <span className="user-plan"><span className={`tier-badge ${user.tier}`}>{tier}</span></span></span></>;
+  return <div className="sidebar-footer-account-wrap">
+    <button type="button" ref={anchor} className="sidebar-account-trigger" aria-haspopup="menu"
+      aria-expanded={open} title={user.displayName} aria-label={[user.displayName, tier].filter(Boolean).join(' · ')} onClick={() => setOpen(!open)}>
+      {identity}
+    </button>
+    {free && <a className="sidebar-upgrade-pill" href="https://topodrive.top/pricing">{i18n('sidebar.upgrade', 'Upgrade')}</a>}
+    {open && <AnchoredMenu anchor={anchor} onClose={close} above className="sidebar-account-menu">
+      <button type="button" role="menuitem" className="account-menu-identity" onClick={() => { close(); getLegacyActions().navigation.openProfile(); }}>{identity}<ChevronRight /></button>
+      <hr />
+      <a role="menuitem" href="https://topodrive.top/pricing"><Sparkles />{label('升级套餐', 'Upgrade plan')}</a>
+      <button type="button" role="menuitem" onClick={() => navigate('personalization')}><SlidersHorizontal />{label('个性化', 'Personalization')}</button>
+      <button type="button" role="menuitem" onClick={() => { close(); getLegacyActions().navigation.openProfile(); }}><CircleUserRound />{label('个人资料', 'Profile')}</button>
+      <button type="button" role="menuitem" onClick={() => navigate('general')}><Settings />{label('设置', 'Settings')}</button>
+      <hr />
+      <button type="button" role="menuitem" onClick={() => { close(); getLegacyActions().navigation.openCheatsheet(); }}><LifeBuoy />{label('帮助', 'Help')}<ChevronRight className="account-menu-trailing" /></button>
+      {user.isSignedIn && <button type="button" role="menuitem" onClick={() => { close(); getLegacyActions().navigation.signOut(); }}><LogOut />{label('退出登录', 'Sign out')}</button>}
+    </AnchoredMenu>}
+  </div>;
 }

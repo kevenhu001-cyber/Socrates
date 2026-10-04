@@ -1,44 +1,75 @@
-# Design QA — supplied mobile states
+# 手机参考 UI 验收记录
 
-## Visual baseline
+本次保留 Socrates 名称、标志、真实套餐及服务数据。代码与交互检查通过；视觉验收尚缺原始图片的最终并排比较，不能据此声明逐像素一致。
 
-The four user-provided screenshots are the reference for this update:
+## 证据与状态
 
-- Plugin directory: `/tmp/paseo-attachments-KFkElB/b2cbb0cd4cad450758ff01e0e8def6b8b14353a7829c69fee32f96b6a9f36650.jpg`
-- Sidebar drawer: `/tmp/paseo-attachments-KFkElB/29dfb1c727e402749815ea66d8d96eff66de9b0e33e472b713fffe59bdd0c620.jpg`
-- Composer tools menu: `/tmp/paseo-attachments-KFkElB/4799c78c9f415bdccd1b40b0de0c48a2c846daa95f003c244889414ad4cfea16.jpg`
-- Chat composer: `/tmp/paseo-attachments-KFkElB/5c32182f2090420f597719d6807d0ea3fcc8c44c33dddd226f4c947dabb38def.jpg`
+- Source visual truth：用户提供的六张参考图，原路径为 `/tmp/paseo-attachments-u3yMUL/`。此目录在当前环境已不存在，原始图片无法重新打开。
+- 原先记录的参考尺寸：1200 × 2670 像素；剔除顶部 306px 浏览器区域，再归一化到 390 × 769 CSS px。该裁剪需要恢复原图后复核。
+- Implementation：本地 Vite 生产构建，通过 Playwright Chromium 渲染；390 × 769 CSS px，deviceScaleFactor=1，截图为390 × 769 像素。
+- 状态：中文、暗色；首页/免费账户侧栏/会话菜单/插件/资料库/付费账户菜单。仅浏览器测试使用参考中的名称、文件和连接器；生产数据来自现有 API。
+- 额外检查：320 × 568 短屏、1440 × 900 桌面、浅色模式、字体缩放、键盘焦点。
 
-Each reference is 1200 × 2670 physical pixels. Browser status/address chrome was excluded at y=303; the app-owned 1200 × 2367 region was normalized to 390 × 769. Playwright captured the app at a 390 × 769 CSS-pixel viewport. The comparison PNGs are 780 × 799 with the reference on the left and the implementation on the right:
+| 状态 | 实现截图 |
+| --- | --- |
+| 首页 | `/tmp/socrates-final-home.png` |
+| 免费账户侧栏 | `/tmp/socrates-final-sidebar.png` |
+| 会话操作菜单 | `/tmp/socrates-final-session-menu.png` |
+| 插件目录 | `/tmp/socrates-final-plugins.png` |
+| 资料库 | `/tmp/socrates-final-library.png` |
+| 付费账户菜单 | `/tmp/socrates-final-account-menu.png` |
+| 桌面 | `/tmp/socrates-final-desktop.png` |
 
-- `/tmp/design-qa-plugins.png`
-- `/tmp/design-qa-sidebar.png`
-- `/tmp/design-qa-tools.png`
-- `/tmp/design-qa-chat-composer.png`
+实现全景汇总保存在 `docs/ref/mobile-implementation-2026-10-04.png`，便于直接查看。所有实现截图已打开检查。**Full-view comparison evidence 尚不完整**：当前只能复核之前记录的参考尺寸，不能把源图和最终实现放在同一个比较输入中。Focused region comparison 同样等待原图恢复；需要重点复核顶栏、输入框、两种弹出菜单以及文件/连接器图标。
 
-## Findings and final layout
+## 修正历史
 
-- The plugin page has its own centered **Plugins / Skills** switch. Plugins shows the existing live connector catalog, and Skills opens the existing prompt-template library. The main **Chat / Tutor** mode remains independent. The search field is 36px high, app tiles and list icons are 40px, and installed applications retain their real connector artwork and status.
-- On the 390px mobile viewport, the drawer measures 254px wide. It keeps a dedicated scroll area, compact navigation rows, and the account footer. Navigation closes the drawer after a destination is selected.
-- The tools menu is a compact floating card aligned to the composer. The first five actions are Camera, Photos, Files, Create Image, and Web Search; the remaining tools are reachable by scrolling the card.
-- Home and chat composers use a matching 86px two-row frame with 16px side insets and the controls anchored to the lower row. The mobile layout stays inside the safe bottom area.
-- The four app surfaces use a black canvas with high-contrast controls. Product name, branding, copy, signed-in account, and dynamic connector data remain Socrates-owned, so those values can differ from the ChatGPT reference while the layout and interaction states match.
+| 优先级 | 发现 | 修正 | 修正后证据 |
+| --- | --- | --- | --- |
+| P1 | 侧栏关闭按钮的伪元素点击区域覆盖“更多” | 给手机侧栏按钮明确设置定位上下文 | incognito 用例重跑通过，更多及设置可点击 |
+| P2 | 首页动画最终状态覆盖标题的 translateY，中心落在359.75px | 手机标题取消旧入场动画 | 标题中心344.75px；输入框仍位于y660，高85px |
+| P2 | 插件名称受兼容层16px/500强制样式影响，第一行图标落在448.5px | 旧字体规则限定桌面；手机目录统一控制名称与节奏 | 名称15px/400；第一行y408，图标y423 |
+| P2 | 会话菜单锚点偏下且条目间隙累积 | 手机菜单锚点和行间隙统一 | x201、y413.5、宽158、高288px |
+| P2 | 首页/对话输入框左右留白不同 | 对话容器使用相同16px页面边距 | 手机明暗两种composer-parity用例通过 |
+| P2 | 返回新聊天后，旧目录仍呈选中状态 | 重置页面时同步现有侧栏导航桥 | plugin-directory 回归检查新聊天清除旧选中状态 |
 
-## Create Image behavior
+## 必需视觉面检查
 
-Choosing Create Image checks for a connected Jimeng AI connector. When it is missing, the app opens Plugins and shows the connection hint; it does not submit a generation request. With a connection, the composer enters image-creation mode and waits for the user's prompt. Replacing the inline mode marker while typing does not clear the selected mode. The first submitted chat request includes the image-generation instructions.
+- **字体**：本地引入 Inter、Noto Sans SC 的400/500/600字重，避免中文回退到衬线体；手机标题23px、导航14px、插件名15px/400。Android系统字体轮廓与Chromium抗锯齿差异仍需原图核对。
+- **间距**：顶栏56px、抽屉254px、导航及历史行40px；首页输入框x16/宽358/高85/底部24px。资料库行60px，菜单通过视口约束避免短屏溢出。
+- **色彩**：唯一活动调色板仍由最后导入的 `themes.css` 提供。暗色画布黑色，输入框#212121，圆形控制#383838，弹出层#353535，选中行#1a1a1a；需要恢复原图才能重新采样对比。
+- **图像与图标**：Socrates现有logo保留，两个favicon与对应logo字节一致。连接器使用已有本地品牌资产；语音和置顶使用Lucide。第三方品牌资产版本、文件类型图标与参考的细微轮廓差异待逐区核对。
+- **文案与内容**：固定文案保持Socrates产品语义；账号名、文件、历史和安装状态来自实际数据。保留实际套餐名称，不把付费账户改成ChatGPT Plus；不重画Android或Chrome界面。
 
-The server exposes the bounded Jimeng 4.6 submit action and its result query through the existing OpenConnector chat path. Submit accepts only a non-blank prompt up to 800 characters and rejects extra fields. Execution requires the authenticated user's connector to be connected; credentials stay on the server. The mode instructs the assistant to check for results up to eight times, render returned image URLs inline, and report missing connections, provider failures, missing image URLs, or timeout without claiming a generation succeeded.
+## 交互与工程验证
 
-## Verification
+- lint（含TypeScript、现有CSS归属检查、新手机CSS检查、i18n及CSP）通过；生产构建通过。
+- 2项输入框相关单元测试通过。
+- 37项不同的定向浏览器用例通过（早期失败项修复后重跑；最终两个子集分别10/10和7/7通过）。检查覆盖首页/对话输入框、录音转写与发送状态、菜单键盘导航/焦点恢复、会话重命名/置顶/移至项目、资料库筛选/选择、连接器搜索/连接管理、明暗模式、字体设置和侧栏导航。
+- 最终截图运行未捕获未处理的浏览器运行异常。录音测试使用浏览器能力模拟；没有新增实时语音服务。
+- 样式归属及测量契约见 `docs/ref/mobile-reference-2026-10-04.md`。未发布、部署或提交生成文件。
 
-- `frontend`: `npm run lint` — passed (`tsc --noEmit`).
-- `frontend`: `npm run typecheck && npm run build` — passed; Vite emitted existing directive, circular-chunk, and large-chunk warnings.
-- `frontend`: `npx playwright test --config=playwright.config.mjs e2e/reference-ui-visual.spec.mjs e2e/composer-tools-compat.spec.mjs e2e/mobile-home-visual.spec.mjs e2e/sidebar-nav.spec.mjs e2e/plugin-directory.spec.mjs --workers=1` — 27 passed. This includes all four screenshot states, desktop layout checks, plugin/skills switching, drawer navigation, menu ordering/position, image-mode connection gating, first-prompt submission, and inline rendering of a returned image URL.
-- `server`: `npm run typecheck` — passed.
-- `server`: `node --import dotenv/config --import tsx --test test/openConnectorCatalog.test.js` — 22 passed, including connection gating, argument bounds, completed image results, provider failures, timeout, and secret redaction.
-- `git diff --check` — passed.
+## 剩余项
 
-No unresolved P0, P1, or P2 visual finding remains in the four agreed reference states.
+1. 恢复六张原始参考图。
+2. 以同一尺寸、主题和账户状态制作全图及局部并排比较，复核裁剪、字体、图标、菜单和安装列表；当前实现截图不能替代这一步。
+3. 修正比较发现的P0/P1/P2差异后再次截图，再决定是否通过视觉验收。
 
-final result: passed
+P3候选：Android字形/抗锯齿与品牌资产版本造成的轻微轮廓差异，须有原图证据后再分类。
+
+final result: blocked
+
+阻塞原因：原始参考图片临时文件已失效，无法完成同输入中的最终视觉对照；这不是构建或交互测试失败。
+
+## 后续局部验收：资料库标题与操作按钮对齐
+
+用户要求资料库与插件等目录页对齐，此要求取代原参考图中的资料库固定顶栏布局。本项比较目标为当前插件页，而不是缺失的原始图片。
+
+- 比较输入：`docs/ref/library-heading-alignment-2026-10-04.png` 将中文暗色插件页与资料库页放在同一输入中；每页390×769 CSS px，deviceScaleFactor=1，无密度缩放。
+- 原问题：手机资料库标题位于x56/y12、按钮位于y9，占据应用顶栏；插件标题位于x16/y76。桌面资料库存在15px横向偏移及不同的顶栏高度。
+- 修正：手机目录使用共同的20px顶部及16px侧边距，资料库标题和操作按钮参与内容区正常布局；桌面去除额外偏移并共用插件页的紧凑应用顶栏、标题字号及内容边距。
+- 复查：390px与320px的两页标题起点均为x16/y76，行高32px；1440px两页均为x498/y129，字号28px、行高36px。资料库操作区与标题顶边对齐，320px宽度下仍完整可用。
+- 完整截图及局部标题区域已打开检查。调色板、品牌资产与文案没有因本项修改而改变；目录内容继续使用实际API数据。
+- 构建、lint及4项资料库浏览器用例通过，涵盖对齐、新建菜单、设置、文件筛选和行选择。
+
+本项局部验收：passed。上面的总体参考图验收仍待原图恢复。

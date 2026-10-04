@@ -20,12 +20,7 @@
 
   #appShell#appShell #sidebarOpenBtn,
   #appShell#appShell #mobileIncognitoBtn {
-    width: 40px !important;
-    min-width: 40px !important;
-    height: 40px !important;
-    min-height: 40px !important;
     border: 0 !important;
-    border-radius: 12px !important;
     background: transparent !important;
     color: var(--cg-text) !important;
     box-shadow: none !important;
@@ -35,12 +30,6 @@
   #appShell#appShell #mobileIncognitoBtn:hover {
     background: var(--cg-surface-hover) !important;
     color: var(--cg-text) !important;
-  }
-
-  #appShell#appShell #sidebarOpenBtn svg,
-  #appShell#appShell #mobileIncognitoBtn svg {
-    width: 22px !important;
-    height: 22px !important;
   }
 
   /* The reference hamburger carries no badge; the status dot is static
@@ -90,9 +79,6 @@
   /* ─────────────────────────────────────────────────────────────
    * 2. Home — suggestion rows directly above the composer.
    * ───────────────────────────────────────────────────────────── */
-  #appShell#appShell #topicSetup {
-    padding: 0 14px max(16px, env(safe-area-inset-bottom)) !important;
-  }
 
   /* The quick-actions row sits after the composer in the DOM; pull it
      above it in the flex column. (The home-suggestions-wrap container was
@@ -112,7 +98,7 @@
   }
 
   #appShell#appShell .home-quick-actions {
-    display: flex !important;
+    display: none;
     flex-direction: column;
     width: 100%;
     max-width: none;
@@ -188,10 +174,7 @@
 
   /* Send / voice — solid ink circle (inverted in dark mode). */
 
-  #appShell#appShell .chat-input-bar {
-    padding-inline: 12px;
-    box-sizing: border-box;
-  }
+
 
   /* ─────────────────────────────────────────────────────────────
    * 4. Conversation — dark user bubble, centered disclaimer.
@@ -219,19 +202,6 @@
   /* ─────────────────────────────────────────────────────────────
    * 5. Sidebar drawer — icon rows, quiet chrome.
    * ───────────────────────────────────────────────────────────── */
-  #appShell#appShell .sidebar-nav-btn svg {
-    display: inline-flex !important;
-    width: 20px !important;
-    height: 20px !important;
-    flex: 0 0 20px !important;
-  }
-
-
-
-  #appShell#appShell .sidebar-nav-btn {
-    gap: 14px;
-    font-weight: 400;
-  }
 
   #appShell#appShell .sidebar-nav-btn.active,
   #appShell#appShell .sidebar-nav-btn[aria-current="page"] {
@@ -245,20 +215,9 @@
     background: var(--cg-surface-raised);
   }
 
-  #appShell#appShell .recents-title {
-    font-size: 13px;
-    font-weight: 500;
-  }
-
-  #appShell#appShell .recent-item {
-    min-height: 40px;
-    border-radius: 10px;
-  }
-
   /* Reference drawer: footer identity sits ~12px in from the edge (tighter
      than the 16px row content inset); the upgrade pill keeps ~14px right. */
   #appShell#appShell .sidebar-footer {
-    padding: 8px 6px 8px 6px;
     border-top: 0;
   }
 
@@ -266,12 +225,6 @@
      so raising width/height alone left this box oblong and `border-radius:
      50%` rendered an ellipse. Pin the basis to the same 28px — the
      reference drawer's footer avatar is ~26px — so it stays a true circle. */
-  #appShell#appShell #sidebarUserRow .user-avatar {
-    flex: 0 0 28px !important;
-    width: 28px !important;
-    height: 28px !important;
-    border-radius: 50% !important;
-  }
 
   /* ─────────────────────────────────────────────────────────────
    * 6. Attachment menu — floating card above the composer.
@@ -352,8 +305,10 @@
    -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
   [data-mode="dark"] #appShell,
-  [data-mode="dark"] #appShell .main-content,
-  [data-mode="dark"] #appShell .main-bg,
+[data-mode="dark"] #appShell .main-content,
+[data-mode="dark"] #appShell .main-bg {
+    background: var(--ui-bg-page) !important;
+  }
   [data-mode="dark"] #appShell .top-bar {
     background: var(--ui-bg-page) !important;
   }
@@ -364,26 +319,31 @@
 
 
 
-  #appShell#appShell #sidebarOpenBtn svg,
-  #appShell#appShell #mobileIncognitoBtn svg,
   #appShell#appShell #findBtn svg,
-  #appShell#appShell #shareBtn svg {
+#appShell#appShell #shareBtn svg {
     width: 24px !important;
     height: 24px !important;
     stroke-linecap: round !important;
     stroke-linejoin: round !important;
   }
 
-  #appShell#appShell #topicSetup {
-    width: 100%;
-    padding: 0 16px max(16px, env(safe-area-inset-bottom)) !important;
+
+
+
+
+
+
+  #appShell#appShell #sidebarOpenBtn svg,
+#appShell#appShell #mobileIncognitoBtn svg {
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
   }
 
   /* The home-suggestions-wrap container was removed from index.html — only
      the quick-actions row remains on landing. */
   #appShell#appShell .home-quick-actions {
-    display: flex !important;
-    gap: 0 !important;
+    display: none;
+    gap: 0;
   }
 
   #appShell#appShell .home-quick-action {
@@ -483,22 +443,9 @@
     padding: 30px 0 72px;
   }
 
-  #appShell .plugin-directory-heading h2 {
-    font-size: 30px;
-    line-height: 36px;
-  }
-
-  #appShell .workspace-page-head p,
-  #appShell .plugin-directory-desc {
+  #appShell .workspace-page-head p {
     font-size: 17px;
     line-height: 1.55;
-  }
-
-  #appShell .plugin-directory-search {
-    width: 100%;
-    height: 42px;
-    min-height: 42px;
-    border-radius: 999px;
   }
 
   #appShell .workspace-create-button {
@@ -506,22 +453,17 @@
     border-radius: 999px;
   }
 
-  #appShell .plugin-installed-icons .connector-icon,
-  #appShell .plugin-directory-row .connector-icon,
   #appShell .project-icon,
-  #appShell .task-row .workspace-row-icon {
+#appShell .task-row .workspace-row-icon {
     width: 40px !important;
     min-width: 40px !important;
     height: 40px !important;
-    min-height: 40px !important;
     border-radius: 12px !important;
   }
 
-  #appShell .plugin-directory-row,
   #appShell .project-row,
-  #appShell .scheduled-recommendation,
-  #appShell .task-row {
-    min-height: 72px !important;
+#appShell .scheduled-recommendation,
+#appShell .task-row {
   }
 
 

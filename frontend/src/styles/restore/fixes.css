@@ -15,11 +15,6 @@
 
 /* Socrates-specific Skills stays reachable from More while the primary
    destinations match the compact reference drawer. */
-@media (max-width: 768px) {
-#appShell #navSkills.sidebar-nav-btn {
-  display: none !important;
-}
-}
 
 @media (max-width: 768px) {
 
@@ -50,62 +45,10 @@
     background: transparent !important;
     box-shadow: none !important;
   }
-  #appShell #libraryPanel.main-page {
-    box-sizing: border-box;
-    width: 100%;
-    max-width: none;
-    margin: 0;
-    padding: 18px 16px 48px;
-  }
-  #appShell .library-directory .workspace-page-head {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 18px 10px;
-    align-items: start;
-  }
-  #appShell .library-directory .workspace-page-head > div:first-child { grid-column: 1; }
-  #appShell .library-directory .workspace-page-head h1 { font-size: 27px !important; line-height: 36px !important; }
-  #appShell .library-directory .workspace-page-head p { display: none !important; }
-  #appShell .library-directory .workspace-head-actions { display: contents !important; }
-  #appShell .library-directory .workspace-create-button {
-    grid-column: 2;
-    grid-row: 1;
-    min-height: 40px !important;
-    border-radius: 999px !important;
-  }
-  #appShell .library-directory .workspace-search-field {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    width: 100%;
-    height: 42px;
-    min-height: 42px;
-    border-radius: 999px;
-  }
-  #appShell .library-directory .workspace-toolbar { margin: 20px -16px 10px; padding: 0 16px; }
-  #appShell .library-directory .workspace-tabs { gap: 8px; }
-  #appShell .library-directory .workspace-tabs button { min-height: 38px; height: 38px; border-radius: 999px; font-size: 14px; }
-  #appShell .library-directory .workspace-table-head { display: none !important; }
-  #appShell .library-directory .library-row {
-    display: grid !important;
-    grid-template-columns: 38px minmax(0, 1fr) 34px !important;
-    align-items: center;
-    gap: 10px !important;
-    min-height: 62px !important;
-    padding: 8px 0 !important;
-    border-bottom: 1px solid var(--chatgpt-line) !important;
-  }
-  #appShell .library-directory .library-file-icon { grid-column: 1; width: 34px !important; height: 34px !important; min-width: 34px !important; border-radius: 8px !important; }
-  #appShell .library-directory .workspace-row-copy { grid-column: 2; min-width: 0; }
-  #appShell .library-directory .library-row-actions { grid-column: 3; display: block !important; }
-  #appShell .library-directory .library-updated,
-  #appShell .library-directory .library-size { display: none !important; }
-  #appShell .library-directory .library-mobile-meta { display: block !important; margin-top: 3px; font-size: 12px !important; }
-  #appShell .library-directory .library-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px !important; }
   #appShell .scheduled-recommendations { display: grid !important; grid-template-columns: 1fr !important; }
   #appShell .scheduled-recommendation { min-height: 72px !important; }
   #appShell .scheduled-recommendation-add { visibility: visible; }
   #appShell .scheduled-task-list .task-row { min-height: 70px; }
-  #appShell .plugin-directory .plugin-directory-head { margin-bottom: 20px; }
 }
 
 @media (max-width: 768px) {
@@ -114,8 +57,6 @@
     min-width: min(var(--ui-sidebar-mobile), 90vw);
     border-radius: 0;
   }
-  #appShell #sidebarNav .sidebar-nav-btn { min-height: 40px; font-size: 15px; }
-  #appShell #sidebarNav.sidebar-nav { padding-inline: 0 !important; }
   /* The reference drawer footer is identity-only on phones — theme /
      display / settings stay reachable through desktop chrome and the
      Settings surfaces, so the trailing icon buttons hide outright. */
@@ -280,11 +221,8 @@
     min-height: 26px;
   }
 
-  #appShell#appShell#appShell #sidebarOpenBtn,
-  #appShell#appShell#appShell #mobileIncognitoBtn,
-  #appShell#appShell#appShell #mobileNewChatBtn,
   #appShell#appShell#appShell #findBtn,
-  #appShell#appShell#appShell #shareBtn {
+#appShell#appShell#appShell #shareBtn {
     width: 44px;
     min-width: 44px;
     height: 44px;
@@ -294,14 +232,6 @@
   /* P_has-invalidation — see ui/layoutStateMirror.js. */
   :where(:root[data-topic-setup-open]) #appShell#appShell #mainInner:not(#_n):not(._n) {
     padding-bottom: 0 !important;
-  }
-
-  #appShell#appShell#appShell #topicSetup {
-    min-height: 0 !important;
-  }
-
-  #appShell#appShell#appShell #topicSetup .topic-title.greeting {
-    font-weight: 400 !important;
   }
 
   /* Idle two-row capsule: a taller editor band so one wrapped line of
@@ -406,20 +336,25 @@
    on the light rail) that also answers hover. The body:not() prefix mirrors
    the home-state rule in ref-baseline.css so this wins that tie. */
 @media (max-width: 768px) {
-#appShell#appShell#appShell #navNew.sidebar-nav-btn,
 body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
   #appShell#appShell#appShell
   #navNew.sidebar-nav-btn {
+  background: rgb(255 255 255 / 10%) !important;
+}
+#appShell#appShell#appShell #navNew.sidebar-nav-btn {
   background: rgb(255 255 255 / 10%) !important;
 }
 }
 
 @media (max-width: 768px) {
 
-[data-mode="light"] #appShell#appShell#appShell #navNew.sidebar-nav-btn,
 [data-mode="light"] body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
   #appShell#appShell#appShell
   #navNew.sidebar-nav-btn {
+  background: rgb(0 0 0 / 5%) !important;
+}
+
+[data-mode="light"] #appShell#appShell#appShell #navNew.sidebar-nav-btn {
   background: rgb(0 0 0 / 5%) !important;
 }
 }
@@ -526,9 +461,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
      min-height 52px, 12px page insets, drop shadow 0 4px 16px rgb(0 0 0 / 5%). */
 
   /* The reference keeps 12px of page inset on both sides of the capsule. */
-  #appShell#appShell#appShell #topicSetup {
-    padding: 0 12px max(16px, env(safe-area-inset-bottom)) !important;
-  }
 
   #appShell#appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .attachment-chips {
     grid-column: 1 / -1 !important;
@@ -547,9 +479,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
      height. The value + caret still names the active level. */
 
   /* Greeting — reference phone heading is 28px tall. */
-  #appShell#appShell#appShell #topicTitle.greeting {
-    line-height: 28px !important;
-  }
 }
 
 /* --------------------------------------------------------------------------
@@ -582,15 +511,4 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
      owner and left the row styled but invisible. Do not re-add the pin —
      the cards are real entry points, not decoration. */
 
-  /* Landing greeting shrink-wraps and centers on the 50% anchor: width:auto
-     with a hard left edge and translateX(-50%). `right:auto` is load-bearing
-     — with both insets set (chat-surface's inset-inline:0) and width:auto
-     the box would stretch instead of shrink-wrapping. !important is required
-     to outrank chat-surface's own !important inset/transform pins. */
-  body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
-    #appShell#appShell#appShell #topicSetup .topic-title.greeting {
-    left: 50% !important;
-    right: auto !important;
-    transform: translate(-50%, -50%) !important;
-  }
 }

@@ -24,6 +24,14 @@ function SettingsModal() {
   const snap = useSettingsSnapshot();
   const overlayRef = useRef<HTMLDivElement>(null);
   const [section, setSection] = useState('general');
+  useEffect(() => {
+    const select = (event: Event) => {
+      const value = (event as CustomEvent<string>).detail;
+      if (['general', 'personalization', 'account'].includes(value)) setSection(value);
+    };
+    document.addEventListener('socrates:settings-section', select);
+    return () => document.removeEventListener('socrates:settings-section', select);
+  }, []);
   const [query, setQuery] = useState('');
   const [uiLang, setUiLang] = useState(() => getCurrentLang());
   const [saveError, setSaveError] = useState('');

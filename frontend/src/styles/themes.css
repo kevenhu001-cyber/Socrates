@@ -7,6 +7,11 @@
    Hierarchy follows chatgpt.com: page and sidebar share one color and are
    separated by a hairline; raised surfaces (composer, menus, bubbles) step up
    in lightness in dark mode and sit white-on-white with a shadow in light. */
+html[data-theme="socrates"][data-mode],
+html[data-theme="socrates"][data-mode]:lang(zh) {
+  --font-sans: "Inter", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --cg-font: var(--font-sans);
+}
 [data-mode="dark"] {
   color-scheme: dark;
   --ui-bg-page: #000000;
@@ -18,6 +23,8 @@
   /* Solid wash for rows on the page/sidebar; the ghost variant is for rows
      inside raised surfaces (menus, dialogs), where a solid step would vanish. */
   --ui-bg-hover: #303030;
+  --ui-bg-selected: rgb(26 26 26);
+  --ui-bg-pill-selected: rgb(66 66 66);
   --ui-bg-hover-ghost: rgb(255 255 255 / 10%);
   --ui-bg-overlay: #303030;
   --ui-text-primary: #ffffff;
@@ -70,6 +77,8 @@
   --ui-bg-surface: #f3f3f3;
   --ui-bg-control: #e8e8e8;
   --ui-bg-hover: #f3f3f3;
+  --ui-bg-selected: rgb(243 243 243);
+  --ui-bg-pill-selected: rgb(232 232 232);
   --ui-bg-hover-ghost: rgb(0 0 0 / 5%);
   --ui-bg-overlay: #ffffff;
   --ui-text-primary: #0d0d0d;
@@ -114,6 +123,19 @@
   --ui-scrollbar-thumb-hover: rgb(0 0 0 / 28%);
 }
 
+/* The supplied phone references use three solid surface steps, with no
+   tinted shadows: input 33, controls 56, popovers 53 (8-bit neutral). */
+@media (max-width: 768px) {
+  [data-mode="dark"] {
+    --ui-bg-control: rgb(56 56 56);
+    --ui-bg-overlay: rgb(53 53 53);
+    --ui-composer-border: rgb(255 255 255 / 7%);
+    --ui-composer-shadow: none;
+    --ui-link: rgb(109 169 239);
+    --ui-danger: rgb(229 72 77);
+  }
+}
+
 /* ---------------------------------------------------------------------------
  * Compatibility bridge (moved here from polish/tokens.css, 2026-09-30).
  *
@@ -131,6 +153,9 @@
  * ------------------------------------------------------------------------- */
 
 :root {
+  --ui-file-image: rgb(233 110 174);
+  --ui-file-document: rgb(38 135 233);
+  --ui-file-table: rgb(56 184 109);
   --ui-shadow-menu: var(--ui-shadow-popover);
   --ui-shadow-modal: var(--ui-shadow-dialog);
   --ui-shadow-toast: 0 6px 22px rgb(0 0 0 / 14%);
@@ -156,6 +181,10 @@
   --cgv-composer-surface: var(--ui-bg-composer);
   --conversation-text-secondary: var(--conversation-text-muted);
 }
+
+.library-file-image { --ui-file-color: var(--ui-file-image); }
+.library-file-doc { --ui-file-color: var(--ui-file-document); }
+.library-file-table { --ui-file-color: var(--ui-file-table); }
 
 /* chat-surface pins --conversation-page/--cg-page/--cg-rail at
    html[data-theme][data-mode] (0,2,1); the remap lives at the same

@@ -9,30 +9,14 @@
 
 #appShell .sidebar-inner { background: transparent; }
 }
-
-@media (max-width: 768px) {
-#appShell .sidebar-logo {
-  padding: 6px 4px;
-  font-family: var(--font-sans);
-}
-}
-@media (max-width: 768px) {
-#appShell .sidebar-logo-img { width: 22px; height: 22px; border-radius: 6px; }
-}
 #appShell .cg-sidebar-caret { display: none; }
 @media (max-width: 768px) {
 #appShell .sidebar-header-actions { gap: 2px; }
 }
 @media (max-width: 768px) {
 #appShell .sidebar-header .icon-btn {
-  width: var(--ui-control-md);
-  height: var(--ui-control-md);
-  border-radius: var(--ui-radius-pill);
   color: var(--ui-text-secondary);
 }
-}
-@media (max-width: 768px) {
-#appShell .sidebar-header .icon-btn svg { width: 22px; height: 22px; }
 }
 @media (max-width: 768px) {
 #appShell .sidebar-header .icon-btn:hover { background: var(--ui-bg-hover); }
@@ -45,7 +29,7 @@
 }
 }
 @media (max-width: 768px) {
-#appShell .sidebar-nav-btn svg { width: 22px; height: 22px; color: inherit; flex: 0 0 22px; }
+#appShell .sidebar-nav-btn svg { color: inherit; }
 }
 @media (max-width: 768px) {
 #appShell .sidebar-nav-btn .nav-new-badge {
@@ -196,14 +180,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 @media (max-width: 768px) {
 #appShell .sidebar-search input::placeholder { color: var(--ui-text-placeholder); }
 }
-
-@media (max-width: 768px) {
-
-#appShell .recents-panel { padding: 0 8px; }
-}
-@media (max-width: 768px) {
-#appShell .recents-header { }
-}
 @media (max-width: 768px) {
 #appShell .recents-title {
   color: var(--ui-text-muted);
@@ -235,8 +211,8 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   #appShell .sidebar-backdrop {
     background: var(--ui-backdrop);
     z-index: var(--ui-z-backdrop, 80);
-    -webkit-backdrop-filter: blur(4px);
-    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
     transition: opacity var(--ui-duration-normal) ease;
   }
   #appShell .sidebar-header .compose-btn { display: none; }
@@ -263,7 +239,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
      time-group separators on phones. */
   #appShell .sidebar-logo span,
   #appShell .sidebar-logo .cg-sidebar-caret { display: none; }
-  #appShell .sidebar-header { padding-left: 8px; }
   #appShell .recents-filter-chips,
   #appShell .recents-time-label { display: none; }
   #appShell .recent-mode-badge { display: none; }
@@ -276,17 +251,31 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
      drawer on every width). */
   #appShell .recent-item-actions { opacity: 1; }
   #appShell .recent-item-overflow {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    padding: 0;
     border: 0;
-    border-radius: var(--ui-radius-pill);
     background: transparent;
     color: var(--ui-text-tertiary);
   }
   #appShell .recent-item-overflow svg { width: 18px; height: 18px; }
   #appShell .recent-item-overflow:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
+}
+
+/* Shared viewport menus escape scrolling drawers via AnchoredMenu. */
+#appShell .recent-item-menu.is-open { display: flex; }
+#appShell .sidebar-account-trigger { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; padding: 6px; border: 0; border-radius: var(--ui-radius-row); background: transparent; color: var(--ui-text-primary); text-align: left; font: inherit; cursor: pointer; }
+#appShell .sidebar-account-trigger:hover, #appShell .sidebar-account-trigger[aria-expanded="true"] { background: var(--ui-bg-hover); }
+#appShell .sidebar-account-menu { z-index: var(--ui-z-popover, 200); width: 242px; max-width: calc(100vw - 12px); box-sizing: border-box; padding: 12px 16px; border: 1px solid var(--ui-border-subtle); border-radius: var(--ui-radius-2xl); background: var(--ui-bg-overlay); color: var(--ui-text-primary); box-shadow: var(--ui-shadow-popover); }
+#appShell .sidebar-account-menu :is(button, a) { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 0 4px; border: 0; border-radius: var(--ui-radius-control); background: transparent; color: inherit; font: inherit; font-size: 14px; text-align: left; text-decoration: none; cursor: pointer; }
+#appShell .sidebar-account-menu :is(button, a):hover { background: var(--ui-bg-hover); }
+#appShell .sidebar-account-menu svg { width: 20px; height: 20px; flex: 0 0 20px; }
+#appShell .sidebar-account-menu hr { border: 0; border-top: 1px solid var(--ui-border-strong); margin: 12px 0 8px; }
+#appShell .sidebar-account-menu .account-menu-identity { min-height: 44px; }
+#appShell .sidebar-account-menu .account-menu-trailing, #appShell .sidebar-account-menu .account-menu-identity > svg { margin-left: auto; }
+@media (max-width: 768px) {
+  #appShell .recent-item-menu { min-width: 158px; width: 158px; gap: 0; padding: 14px; border-radius: var(--ui-radius-2xl); background: var(--ui-bg-overlay); }
+  #appShell .recent-item-menu .recent-item-menu-row { min-height: 40px; height: 40px; padding: 0 6px; font-size: 14px; }
+  #appShell .recent-item-menu .recent-item-action-icon, #appShell .recent-item-menu .recent-item-action-icon svg { width: 18px; height: 18px; flex-basis: 18px; }
+}
+#appShell .sidebar-account-menu .tier-badge { padding: 0; background: transparent; color: var(--ui-text-muted); font-size: 13px; font-weight: 400; line-height: 18px; text-transform: none; }
+@media (max-width: 768px) {
+  #appShell .recent-item-menu .recent-item-action-text { font-size: 14px; }
 }

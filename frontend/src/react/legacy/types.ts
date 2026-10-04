@@ -18,7 +18,7 @@ export interface LegacyMessages {
      the synthesized audio can be persisted in tts_results and
      replayed for free on subsequent reads of the same message. */
   toggleReadAloud(element: HTMLElement, text: string, messageId?: string): void;
-  openShareModal(): void;
+  openShareModal(sessionId?: string): void;
   showToast?(message: string): void;
 }
 
@@ -27,7 +27,7 @@ export interface LegacyNavigation {
   startNewChat(): void;
   toggleSidebar(): void;
   openNav(key: string): void;
-  openSettings(): void;
+  openSettings(): Promise<void> | void;
   closeSettings(): void;
   openProfile(): void;
   closeProfile(): void;
@@ -63,6 +63,7 @@ export interface LegacyConfirm {
 }
 
 export interface LegacySessions {
+  updateSessionMetadata(id: string, patch: { title?: string; pinned?: boolean; projectId?: string }): Promise<void>;
   loadSession(sessionId: string): Promise<void> | void;
   setRecentsFilter(filter: string | null): void;
   getRecentsFilter?(): string | null;

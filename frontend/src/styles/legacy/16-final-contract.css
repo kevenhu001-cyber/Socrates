@@ -21,6 +21,7 @@
   padding-left:max(14px,env(safe-area-inset-left,0px));
   padding-right:max(14px,env(safe-area-inset-right,0px));
 }
+@media (min-width: 769px){
 .topic-setup{
   box-sizing:border-box;
   justify-content:center;
@@ -37,11 +38,12 @@
   scroll-padding-top:16px;
   scroll-padding-bottom:24px;
   overscroll-behavior-y:contain;
-}
+}}
+@media (min-width: 769px){
 .topic-title.greeting{
   margin:0 0 10px;
   letter-spacing:-.025em;
-}
+}}
 .topic-sub{
   margin:0 0 22px;
 }
@@ -54,24 +56,6 @@
    a composer whose height changes after focus or attachment loading. */
 
 @media(max-width:768px){
-  .sidebar-header{
-    padding-top:max(8px,env(safe-area-inset-top,0px));
-    padding-right:max(8px,env(safe-area-inset-right,0px));
-  }
-  .topic-setup{
-    justify-content:flex-start;
-    /* P_topic-lower-mobile — push the greeting + input group further
-       down the viewport. Previous clamp(72px,13vh,120px) still sat
-       too high on tall phones; bumped to clamp(96px,17vh,140px) so
-       the greeting aligns closer to the optical center, leaving a
-       generous gutter for the disclaimer pinned to the bottom. */
-    padding-top:clamp(96px,17vh,140px);
-    padding-bottom:max(64px,calc(env(safe-area-inset-bottom,0px) + 40px));
-  }
-  .topic-title.greeting{
-    font-size:calc(clamp(1.8rem,7vw,2.35rem) * var(--app-font-scale,1));
-    margin-bottom:8px;
-  }
   .topic-sub{
     padding-inline:8px;
     margin-bottom:18px;

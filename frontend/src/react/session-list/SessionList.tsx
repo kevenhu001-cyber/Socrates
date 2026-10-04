@@ -1,8 +1,11 @@
 import { hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
 import React, { useCallback, useEffect, useRef, useState, memo } from 'react';
 import { createRoot } from 'react-dom/client';
+import { Pin } from 'lucide-react';
 
 import { getLegacyActions, getLegacyActionsOrNull, t } from '../legacy/gateway.ts';
+import { AnchoredMenu } from '../menu/AnchoredMenu';
+import { getApiFetch, getCurrentLang } from '../legacy/gateway.ts';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { installSessionListBridge, setCurrentSessionId } from './sessionList.bridge';
 import { useSessionListSnapshot, formatRelativeTime } from './sessionList.bridge';
@@ -14,9 +17,6 @@ const SHARE_ICON =
 
 const RENAME_ICON =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>';
-
-const PIN_MENU_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>';
 
 const ARCHIVE_ICON =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9"/><path d="M10 13h4"/></svg>';
@@ -96,7 +96,7 @@ interface SessionRowProps {
   onDragEnd: (e: React.DragEvent) => void;
 }
 
-function SessionRowBase({ session, isActive, onPick, onTag, onArchive, onDelete, onDragStart, onDragEnd }: SessionRowProps) {
+function SessionRowBase({ session, isActive, onPick, onArchive, onDelete, onDragStart, onDragEnd }: SessionRowProps) {
   const ml = modeLabel(session);
   const meta = buildMeta(session);
   const sid = safeId(session.id);
@@ -108,16 +108,26 @@ function SessionRowBase({ session, isActive, onPick, onTag, onArchive, onDelete,
      click before React sees it. */
   const [actionsOpen, setActionsOpen] = useState(false);
   const rowRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!actionsOpen) return undefined;
-    const close = (event: Event) => {
-      const target = event.target;
-      if (target instanceof Node && rowRef.current?.contains(target)) return;
-      setActionsOpen(false);
-    };
-    document.addEventListener('click', close, true);
-    return () => document.removeEventListener('click', close, true);
-  }, [actionsOpen]);
+  const menuAnchor = useRef<HTMLButtonElement>(null);
+  const closeMenu = useCallback(() => setActionsOpen(false), []);
+  const [renaming, setRenaming] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [projects, setProjects] = useState<Array<{ id: string; name: string }> | null>(null);
+  const copy = (zh: string, en: string) => getCurrentLang() === 'zh' ? zh : en;
+  const update = async (patch: { title?: string; pinned?: boolean; projectId?: string }) => {
+    if (saving) return;
+    setSaving(true);
+    setError('');
+    try {
+      await getLegacyActions().sessions.updateSessionMetadata(session.id, patch);
+      setRenaming(false);
+      setProjects(null);
+      closeMenu();
+    } catch { setError(copy('保存失败，请重试', 'Could not save. Try again.')); }
+    finally { setSaving(false); }
+  };
+
 
   return (
     <div
@@ -148,7 +158,14 @@ function SessionRowBase({ session, isActive, onPick, onTag, onArchive, onDelete,
               dangerouslySetInnerHTML={{ __html: PIN_ICON }}
             />
           )}
-          <div className="recent-item-text">{session.title || session.topic || '(untitled)'}</div>
+          {renaming ? <form onClick={(e) => e.stopPropagation()} onSubmit={(e) => {
+            e.preventDefault();
+            const title = new FormData(e.currentTarget).get('title')?.toString().trim();
+            if (title) void update({ title });
+          }}><input name="title" aria-label={t('session.ctxRename')} defaultValue={session.title || session.topic || ''}
+            maxLength={255} autoFocus disabled={saving} onKeyDown={(e) => { if (e.key === 'Escape') setRenaming(false); }} /></form>
+          : <div className="recent-item-text">{session.title || session.topic || '(untitled)'}</div>}
+          {error && <span role="alert">{error}</span>}
           {label && <span className="recent-item-label">{label}</span>}
         </div>
         <div className="recent-item-meta">
@@ -177,6 +194,7 @@ function SessionRowBase({ session, isActive, onPick, onTag, onArchive, onDelete,
       </div>
       <div className="recent-item-actions">
         <button
+          ref={menuAnchor}
           className="btn-icon recent-item-overflow"
           type="button"
           title={t('session.moreActions')}
@@ -195,16 +213,19 @@ function SessionRowBase({ session, isActive, onPick, onTag, onArchive, onDelete,
         {/* The ⋯ trigger opens this wrap as an anchored dropdown with
             icon + label rows on every width — desktop reveals the trigger
             on row hover/focus; phones show it persistently. */}
-        <div className="recent-item-menu" role="menu" onClick={(e) => e.stopPropagation()}>
+        {actionsOpen && <AnchoredMenu anchor={menuAnchor} onClose={closeMenu} spill className="recent-item-menu is-open">
+          {projects ? <>
+            <button role="menuitem" onClick={() => setProjects(null)}>{copy("返回", "Back")}</button>
+            {projects.length ? projects.map((project) => <button key={project.id} role="menuitem" disabled={saving} onClick={() => void update({ projectId: project.id })}>{project.name}</button>) : <span>{copy("暂无项目，请先创建项目", "Create a project first")}</span>}
+          </> : <>
           <button
             className="btn-icon recent-item-menu-row recent-item-share"
             type="button"
+            role="menuitem"
             title={t('session.ctxShare')}
             onClick={() => {
               setActionsOpen(false);
-              const shareBtn = document.getElementById('shareBtn');
-              if (shareBtn) shareBtn.click();
-              else getLegacyActionsOrNull()?.messages.openShareModal();
+              getLegacyActionsOrNull()?.messages.openShareModal(session.id);
             }}
           >
             <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: SHARE_ICON }} />
@@ -213,10 +234,12 @@ function SessionRowBase({ session, isActive, onPick, onTag, onArchive, onDelete,
           <button
             className="btn-icon recent-item-menu-row recent-item-rename"
             type="button"
+            role="menuitem"
             title={t('session.ctxRename')}
             onClick={(e) => {
               setActionsOpen(false);
-              onTag(session.id, e);
+              e.stopPropagation();
+              setRenaming(true);
             }}
           >
             <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: RENAME_ICON }} />
@@ -226,18 +249,20 @@ function SessionRowBase({ session, isActive, onPick, onTag, onArchive, onDelete,
           <button
             className="btn-icon recent-item-menu-row recent-item-pin"
             type="button"
-            title={t('session.ctxPin')}
+            role="menuitem"
+            title={t(session.pinned ? 'session.ctxUnpin' : 'session.ctxPin')}
             onClick={() => {
               setActionsOpen(false);
-              session.pinned = !session.pinned;
+              void update({ pinned: !session.pinned });
             }}
           >
-            <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: PIN_MENU_ICON }} />
-            <span className="recent-item-action-text">{t('session.ctxPin')}</span>
+            <span className="recent-item-action-icon"><Pin strokeWidth={1.8} aria-hidden="true" style={{ transform: 'rotate(45deg)' }} /></span>
+            <span className="recent-item-action-text">{t(session.pinned ? 'session.ctxUnpin' : 'session.ctxPin')}</span>
           </button>
           <button
             className="btn-icon recent-item-menu-row recent-item-archive"
             type="button"
+            role="menuitem"
             data-archive-session="1"
             title={t('session.ctxArchive')}
             aria-label={t('session.ctxArchive')}
@@ -251,6 +276,7 @@ function SessionRowBase({ session, isActive, onPick, onTag, onArchive, onDelete,
           <button
             className="btn-icon recent-item-menu-row recent-item-del"
             type="button"
+            role="menuitem"
             title={t('session.ctxDelete')}
             aria-label={t('session.ctxDelete')}
             data-i18n-title="session.ctxDelete"
@@ -264,17 +290,22 @@ function SessionRowBase({ session, isActive, onPick, onTag, onArchive, onDelete,
           <button
             className="btn-icon recent-item-menu-row recent-item-project"
             type="button"
+            role="menuitem"
             title={t('session.ctxMoveToProject')}
             onClick={() => {
               setActionsOpen(false);
-              document.getElementById('navProjects')?.click();
+              setActionsOpen(true);
+              getApiFetch()?.('/api/projects').then((result: { projects?: Array<{ id: string; name: string }> }) => {
+                setProjects(result.projects || []);
+              }).catch(() => setError(copy('项目加载失败，请重试', 'Could not load projects. Try again.')));
             }}
           >
             <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: PROJECT_ICON }} />
             <span className="recent-item-action-text">{t('session.ctxMoveToProject')}</span>
             <span className="recent-item-action-trailing" dangerouslySetInnerHTML={{ __html: CHEVRON_RIGHT }} />
           </button>
-        </div>
+        </>}
+        </AnchoredMenu>}
       </div>
     </div>
   );

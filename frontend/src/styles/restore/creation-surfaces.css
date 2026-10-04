@@ -1,8 +1,6 @@
 /* Page-owned styles for Images, Assistants and Sites. Shared shell colors
    intentionally resolve through the restored ChatGPT surface tokens. */
 @media (max-width: 768px) {
-#appShell #navSites.sidebar-nav-btn, #appShell #navAssistants.sidebar-nav-btn { display:none !important; } }
-@media (max-width: 768px) {
 #appShell #navMore.sidebar-nav-btn { order:6; } }
 #appShell .creation-panel {
   width: 100%;

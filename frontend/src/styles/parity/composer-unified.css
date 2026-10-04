@@ -444,13 +444,13 @@
     grid-template-areas:
       "editor editor editor editor editor"
       "plus   chips  effort mic    send";
-    row-gap: 6px;
+    row-gap: 3px;
     width: 100%;
     max-width: none;
-    padding: 11px 12px 8px;
+    padding: 12px 8px 8px;
     border: 1px solid var(--ui-composer-border);
     border-radius: var(--ui-radius-composer-desktop);
-    box-shadow: 0 4px 16px rgb(0 0 0 / 12%);
+    box-shadow: var(--ui-composer-shadow);
   }
   #appShell .composer-shell:has(> .attachment-chips:not(.hidden)):not(.voice-recording-active) {
     padding-top: 12px;
@@ -458,10 +458,10 @@
   #appShell .composer-shell .rich-composer-editor,
   #appShell .composer-shell.composer-multiline .rich-composer-editor,
   #appShell .composer-shell:has(.composer-plugin-chips) .rich-composer-editor {
-    min-height: 26px;
+    min-height: 24px;
     max-height: 220px;
-    padding: 0 2px;
-    line-height: 26px;
+    padding: 0 8px;
+    line-height: 24px;
   }
   /* The chips track is ~1fr of a narrow row — several selected plugins
      would crush each chip to icon width under flex-shrink. Keep chips at
@@ -493,6 +493,9 @@
     line-height: 18px;
   }
   html[data-mode="dark"] #appShell .composer-shell .effort-trigger { background: var(--ui-bg-control); }
+  /* The default effort remains accessible from the header configuration
+     menu; only explicitly selected levels need a chip on the phone rail. */
+  #appShell .composer-shell .effort-picker[data-effort="medium"] { display: none; }
   /* Phones show the level only ("Medium"), not "Thinking Medium". */
   #appShell .composer-shell .effort-label:has(+ .effort-value:not(:empty)) { display: none; }
 

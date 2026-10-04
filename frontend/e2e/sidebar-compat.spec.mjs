@@ -27,12 +27,12 @@ test('Sidebar React mode hydrates #sidebarNav and #recentsFilterChips', async ({
   }));
   expect(bridges).toEqual({ nav: true, filter: true });
 
-  // Nav snapshot reflects initial state (no active nav).
+  // The landing surface selects New chat, including the initial bridge snapshot.
   const initialNav = await page.evaluate(() => {
     const s = window.__socratesSidebarNavBridge?.getSnapshot();
     return s ? { activeNav: s.activeNav, hasRevision: typeof s.revision === 'number' } : null;
   });
-  expect(initialNav).toEqual({ activeNav: null, hasRevision: true });
+  expect(initialNav).toEqual({ activeNav: 'new', hasRevision: true });
 });
 
 test('Sidebar React nav buttons call window.openNav and reflect active state', async ({ page }) => {

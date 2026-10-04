@@ -38,6 +38,34 @@ test.beforeEach(async ({ page }) => {
 
 const row = (page, name) => page.locator('.library-row', { hasText: name });
 
+test('directory headings and actions align without occupying the phone app bar', async ({ page }) => {
+  for (const width of [1440, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.evaluate(() => window.openNav('plugins'));
+    await expect(page.locator('.plugin-directory')).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    const plugin = await page.locator('.plugin-directory-heading h2').boundingBox();
+    await page.evaluate(() => window.openNav('library'));
+    await expect(page.locator('.library-directory')).toBeVisible();
+    const title = await page.locator('#library-directory-title').boundingBox();
+    const actions = await page.locator('.library-head-actions').boundingBox();
+    const appBar = await page.locator('.top-bar').boundingBox();
+    expect(Math.abs(title.x - plugin.x)).toBeLessThan(1);
+    expect(Math.abs(title.y - plugin.y)).toBeLessThan(1);
+    expect(title.height).toBe(plugin.height);
+    expect(title.y).toBeGreaterThan(appBar.y + appBar.height);
+    expect(Math.abs(actions.y - title.y)).toBeLessThan(1);
+    expect(actions.x).toBeGreaterThan(title.x + title.width);
+    expect(actions.x + actions.width).toBeLessThanOrEqual(width - 16);
+  }
+  await page.evaluate(() => { if (!document.querySelector('#sidebar').classList.contains('collapsed')) window.toggleSidebar(); });
+  await page.locator('.library-new-pill').click();
+  await expect(page.locator('.library-new-menu')).toBeInViewport();
+  await page.locator('.library-new-pill').click();
+  await page.locator('.library-settings-btn').click();
+  await expect(page.locator('#settingsOverlay')).toBeVisible();
+});
+
 test('selection checkbox only appears on hover, selection or focus', async ({ page }) => {
   const csv = row(page, 'country_risk_data.csv');
   const label = csv.locator('.library-checkbox-label');

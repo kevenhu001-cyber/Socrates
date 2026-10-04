@@ -58,19 +58,6 @@
 #appShell .sidebar-logo .cg-sidebar-caret,
 #appShell .sidebar-nav-btn .nav-kbd { display: none !important; }
 }
-@media (max-width: 768px) {
-}
-@media (max-width: 768px) {
-#appShell .sidebar-logo { padding-left: 6px; }
-}
-@media (max-width: 768px) {
-}
-@media (max-width: 768px) {
-#appShell .sidebar-nav-btn svg { width: 15px; height: 15px; }
-}
-@media (max-width: 768px) {
-#appShell .recent-item { font-size: 12px; }
-}
 
 
 .workspace-page-head,
@@ -150,28 +137,6 @@
 
 @media (max-width: 768px) {
 
-
-}
-
-@media (max-width: 768px) {
-
-
-}
-
-@media (max-width: 768px) {
-
-#appShell .recents-panel {
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell .recents-header {
-}
-}
-
-@media (max-width: 768px) {
-
 #appShell .recents-title {
   color: var(--cgv-text-3) !important;
 }
@@ -180,14 +145,8 @@
 @media (max-width: 768px) {
 
 #appShell .top-bar {
-  justify-content: center !important;
   background: transparent !important;
 }
-}
-
-@media (max-width: 768px) {
-
-
 }
 
 /* P_topbar-sidebar-toggle — the collapse above hides both side groups at
@@ -225,16 +184,17 @@
    the 14px-gutter #topicSetup turns it into a 28px-left / 0-right pill.
    Desktop keeps the offset (ref-baseline pins it to 0 via !important);
    mobile falls back to the natural centered position. */
-@media (min-width: 769px) {
-}
 
 #appShell #topicSetup > .topic-title {
   top: -52px;
 }
 
+@media (min-width: 769px) {
+
 #appShell .topic-title.greeting {
   color: var(--cgv-text) !important;
   text-align: center;
+}
 }
 
 @media (max-width: 768px) {
@@ -273,10 +233,6 @@
      mode switch absolutely centered, utilities right. The shared
      desktop rule centers the whole bar, which bunches every icon
      in the middle once the side groups become visible. */
-  #appShell .top-bar {
-    justify-content: space-between !important;
-    align-items: center;
-  }
 
   #appShell .top-bar-left {
     width: auto !important;
@@ -308,12 +264,6 @@
   #appShell .top-mode-tabs {
     width: 174px;
     transform: translate(-50%, -50%) !important;
-  }
-
-
-
-  .plugin-directory-list {
-    grid-template-columns: 1fr;
   }
 }
 

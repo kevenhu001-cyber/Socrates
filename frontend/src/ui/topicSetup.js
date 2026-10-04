@@ -20,21 +20,9 @@ export function autoResize(el){
   el.style.height = Math.min(el.scrollHeight, maxH) + "px";
 }
 
-/* Light up the primary button when the visible surface's draft has
-   non-empty text OR there are pending attachments (P_attachments-tutor
-   and P_attachments — a dropped file with an empty editor is still a
-   valid turn). P_composer-single: one button, one wrap; the surface is
-   read live so landing and chat share the updater.
-
-   P_composer-primary-split (2026-10-04) — the primary button is a pure
-   submit control: Send when a draft (or attachment) is ready, Stop while
-   a turn is live, disabled at 30% when there is nothing to send. Voice
-   input belongs to the sibling #composerMicBtn, which used to be a
-   byte-identical second trigger for the same toggleSpeechInput(surface)
-   call. Two controls doing one job is what produced two buttons with the
-   same accessible name at both breakpoints. The reference composer is
-   `+ / mic / send`, so the mic stays and the primary stops impersonating
-   it. */
+/* The primary action follows the draft: waveform starts voice input when
+   empty, arrow sends text/attachments, and Stop always remains enabled while
+   a turn streams. The sibling microphone stays a direct dictation shortcut. */
 export function updateComposerBtn(){
   var surface = "topic";
   try{ surface = getVisibleComposerSurface(); }catch(_){/* default above */}
@@ -53,11 +41,11 @@ export function updateComposerBtn(){
     || b.classList.contains("chat-stop")
     || b.classList.contains("agent-stop");
   var label = typeof window.t === "function"
-    ? window.t(streaming ? "chat.stop" : "chat.send")
-    : (streaming ? "Stop generating" : "Send");
+    ? window.t(streaming ? "chat.stop" : canSend ? "chat.send" : "chrome.startVoiceInput")
+    : (streaming ? "Stop generating" : canSend ? "Send" : "Voice input");
   b.setAttribute("aria-label", label);
   b.setAttribute("title", label);
-  b.disabled = !canSend && !streaming;
+  b.disabled = false;
   var wrap = document.getElementById("composerInputWrap");
   if(wrap) wrap.classList.toggle("has-text", !!(v || hasAtt));
 }

@@ -41,8 +41,8 @@ export function syncMobileModeSwitch() {
   var key = mode === "tutor" ? "tutor.modeTutor" : "tutor.modeChat";
   var label = document.getElementById("mobileModeLabel");
   if (label) {
-    label.setAttribute("data-i18n-key", key);
-    label.textContent = _t(key, mode === "tutor" ? "Tutor" : "Chat");
+    label.removeAttribute("data-i18n-key");
+    label.textContent = mode === "tutor" ? _t(key, "Tutor") : "Socrates";
   }
   document.querySelectorAll("#mobileModeMenu .mobile-mode-item").forEach(function (item) {
     item.classList.toggle("active", item.getAttribute("data-mode") === mode);

@@ -140,6 +140,8 @@ body,
 
 /* Landing ---------------------------------------------------------------- */
 
+@media (min-width: 769px) {
+
 #appShell#appShell #topicSetup {
   position: relative;
   isolation: isolate;
@@ -152,6 +154,7 @@ body,
   padding-bottom: calc(112px + var(--conversation-safe-bottom));
   background: var(--conversation-page);
 }
+}
 
 /* `.hidden` must win over the forced landing flex layout in the two
    media blocks below. hideChatAndTopic() adds the class when a sidebar
@@ -161,6 +164,8 @@ body,
 #appShell#appShell #topicSetup.hidden {
   display: none !important;
 }
+
+@media (min-width: 769px) {
 
 #appShell#appShell #topicSetup .topic-title.greeting {
   position: static !important;
@@ -172,6 +177,7 @@ body,
   line-height: 1.25 !important;
   letter-spacing: -0.01em !important;
   text-align: center !important;
+}
 }
 
 #appShell#appShell #topicSetup .topic-sub,
@@ -305,9 +311,6 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 
 
   #appShell#appShell #topicSetup {
-    display: flex !important;
-    flex-direction: column;
-    justify-content: flex-end;
     /* P_topic-kb-avoid — the safe-area bottom stays CONSTANT and the
        keyboard inset adds on top of it, so the landing composer tracks
        the keyboard edge exactly 1:1 from the very first frame (no dead
@@ -315,7 +318,6 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
        safe-area when no keyboard is open. No CSS transition here:
        transitioning would lag each write by its full duration and read
        as trailing/jitter. */
-    padding: 0 16px calc(var(--conversation-safe-bottom) + var(--keyboard-inset, 0px)) !important;
   }
 
   #appShell#appShell #topicSetup .topic-title.greeting {
@@ -330,12 +332,6 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
        centre (~45% of the viewport), matching the reference hero. Full-
        width inset + text-align center also avoids the sub-pixel asymmetry
        caused by a nested 16px content inset. */
-    position: absolute !important;
-    inset-inline: 0;
-    bottom: auto;
-    transform: translateY(-50%) !important;
-    align-self: auto;
-    margin: 0 !important;
     text-align: center !important;
     /* top/width/max-width/font-size moved on — polish/composer.css owns
        the greeting's placement and size on phones. */
@@ -359,7 +355,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
        lift, no first-frame snap. */
     width: 100%;
     margin-inline: 0;
-    padding: 0 12px var(--conversation-safe-bottom) !important;
+    padding: 0 var(--ui-mobile-page-gutter) var(--conversation-safe-bottom) !important;
   }
 
   /* Keep the transcript comfortable above the persistent input surface. */
@@ -505,9 +501,12 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 }
 }
 
+@media (min-width: 769px) {
+
 #appShell#appShell #topicSetup .topic-title.greeting {
   color: var(--chat-text) !important;
   font-weight: 400 !important;
+}
 }
 
 /* The legacy effort dropdown markup was removed; the trigger now opens the
@@ -657,10 +656,6 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 }
 
 @media (max-width: 768px) {
-  #appShell#appShell .top-bar {
-    min-height: 72px;
-    padding: max(10px, env(safe-area-inset-top, 0px)) 12px 8px;
-  }
 
   /* Landing top-bar buttons are 44px tactile chips; the in-conversation
      header keeps its existing 40px unframed utilities. */
@@ -677,11 +672,6 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
   }
 
   #appShell#appShell .mobile-sidebar-status { display: none !important; }
-
-  #appShell#appShell #topicSetup {
-    min-height: calc(100dvh - 72px) !important;
-    padding-inline: 16px !important;
-  }
 
 }
 

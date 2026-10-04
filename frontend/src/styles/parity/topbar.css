@@ -231,17 +231,17 @@
   /* Icon-only on desktop (sidebar-nav.spec contract). */
   #appShell #shareBtn { width: 36px; padding: 0; }
 
-  /* Plugins workspace — compact 44px header. The panel below already
+  /* Plugins and Library share a compact 44px header. The panel below already
      carries its own directory head/toolbar, so the shared bar only needs
      to host the 36px tabs pill; the sidebar toggle shrinks to the same
      36px row to keep the 4px inset. */
-  body.plugins-active #appShell .top-bar {
+  body:is(.plugins-active, .library-active) #appShell .top-bar {
     height: 44px;
     min-height: 44px;
   }
-  body.plugins-active #appShell .top-bar-left,
-  body.plugins-active #appShell .top-bar-right { height: 44px; }
-  body.plugins-active #appShell #sidebarOpenBtn {
+  body:is(.plugins-active, .library-active) #appShell .top-bar-left,
+  body:is(.plugins-active, .library-active) #appShell .top-bar-right { height: 44px; }
+  body:is(.plugins-active, .library-active) #appShell #sidebarOpenBtn {
     width: 36px;
     min-width: 36px;
     height: 36px;

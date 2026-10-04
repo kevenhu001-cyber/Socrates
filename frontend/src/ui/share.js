@@ -23,6 +23,7 @@ import { appendToolModule, appendInlineArtifact, appendFileChangeSummaryCards } 
 
 import { mountVisualization, disposeVisualizations } from '../render/vizStubs.js';
 
+var _shareSessionId = null;
 var _shareVisibility = "public";
 var _shareToken = null;
 var _shareUrl = "";
@@ -73,7 +74,8 @@ function toggleShareBtn() {
   }
 }
 
-function openShareModal() {
+function openShareModal(sessionId) {
+  _shareSessionId = typeof sessionId === "string" ? sessionId : window.stateStore.read("currentSessionId");
   var overlay = document.getElementById("shareOverlay");
   if (!overlay) return;
   _shareToken = null;
@@ -111,7 +113,7 @@ function _setShareStatus(msg) {
 }
 
 async function createShareLink() {
-  var sessionId = window.stateStore.read("currentSessionId");
+  var sessionId = _shareSessionId || window.stateStore.read("currentSessionId");
   if (!sessionId) { _setShareError("No active session"); return; }
   _setShareError("");
   _setShareStatus("Creating share link…");
@@ -153,7 +155,7 @@ function resetShareToken() {
 }
 
 async function revokeShareLink() {
-  var sessionId = window.stateStore.read("currentSessionId");
+  var sessionId = _shareSessionId || window.stateStore.read("currentSessionId");
   if (!_shareToken || !sessionId) return;
   try {
     await apiFetch("/api/sessions/" + encodeURIComponent(sessionId) + "/share", { method: "DELETE" });

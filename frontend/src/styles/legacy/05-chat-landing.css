@@ -9,7 +9,8 @@
 /* #msgList is a sibling of .chat-view and owns the transcript viewport.
    The composer is an in-flow flex item, so no measured bottom reserve or
    duplicate transcript padding is needed. */
-.topic-setup{width:100%;display:flex;flex-direction:column;align-items:center;gap:20px;padding-top:clamp(56px,12dvh,136px);flex:1;min-height:0;overflow-y:auto}
+@media (min-width: 769px){
+.topic-setup{width:100%;display:flex;flex-direction:column;align-items:center;gap:20px;padding-top:clamp(56px,12dvh,136px);flex:1;min-height:0;overflow-y:auto}}
 /* .hidden variants on chat-mode siblings of #msgList - kept out
    of layout so they stop claiming flex space inside .main-content
    when chat-view is active. */

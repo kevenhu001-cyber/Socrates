@@ -1,35 +1,7 @@
-/*
- * polish/mobile-controls.css — single source for ≤768px control polish
- * (touch targets, radii, hit-area wrappers, hardcoded colour overrides).
- *
- * Why this file exists:
- *   The mobile shell has been tuned in eight places — polish/sidebar.css,
- *   polish/topbar.css, polish/transcript.css, polish/mobile.css, plus
- *   their counterparts under components/ and restore/. Each repeated the
- *   same width/height/border-radius/font-size for the same control,
- *   often drifting apart. This file owns the converged values; older
- *   files keep their rules (for restore/ parity, see the Tier-5 cascade
- *   manifest) and this file is @imported last in polish/, so it wins
- *   equal-specificity contests without !important.
- *
- * What lives here:
- *   - Sidebar drawer width: collapses the 5 different mobile widths to
- *     var(--ui-sidebar-mobile) (350 px, capped at 90vw).
- *   - Sidebar internal rows / search / recents / header / footer icon
- *     buttons: 44 px touch height, 10 px row radius (chatgpt-aligned).
- *   - Message toolbar buttons: 32 px visual + 40 px hit area via ::before.
- *   - Composer controls: keep their 36×36 visual but extend the hit area
- *     to 44 via ::before so taps still hit on iOS-style precision.
- *   - Hardcoded colour overrides: dark `#1b1b1b`, `#2a2a2a`, `#000`,
- *     light `#fff` in restore/ + components/ layers are forced onto the
- *     `--ui-*` token palette. Visual delta ≤7/255; theme-contrast.spec.mjs
- *     guards the result.
- *
- * What does NOT live here:
- *   - Composer geometry (parity/composer-unified.css owns it; any
- *     .composer-* rule must respect scripts/check-composer-css.mjs).
- *   - Drawer transform / keyboard inset / safe-area insets — owned by
- *     restore/mobile-parity.css + legacy/16.
+/* Shared phone controls and invisible touch extensions. Drawer layout is
+ * owned by mobile-sidebar.css; home/topbar by mobile-shell.css; directory
+ * layout by mobile-directories.css. Composer geometry remains in
+ * parity/composer-unified.css and the only active palette in themes.css.
  */
 
 @media (max-width: 768px) {
@@ -47,12 +19,6 @@
      keeps the ≥40 touch baseline without enlarging the painted box. ── */
   #appShell .sidebar-header .icon-btn,
   #appShell .sidebar-header .btn-icon {
-    position: relative;
-    width: 32px;
-    min-width: 32px;
-    height: 32px;
-    min-height: 32px;
-    border-radius: 9px;
     color: var(--ui-text-secondary);
   }
   #appShell .sidebar-header .icon-btn::before,
@@ -61,20 +27,10 @@
     position: absolute;
     inset: -4px;
   }
-  #appShell .sidebar-header .icon-btn svg,
-  #appShell .sidebar-header .btn-icon svg { width: 17px; height: 17px; }
 
   /* ── Sidebar nav rows — 40px pitch, 10px radius (reference drawer rows
      measure ~40px, not 44) ──
-     Padding is owned here (0 block / 10px inline). Row height and the 15px
-     label size are deliberately still pinned !important by
-     restore/fixes.css — mobile-parity's 44px/8-10px padding rules that
-     used to fight them were retired in the same change. */
-  #appShell #sidebarNav .sidebar-nav-btn,
-  #appShell .sidebar-nav-btn {
-    height: auto;
-    padding: 0 10px;
-  }
+     Layout and typography are defined by mobile-sidebar.css. */
   #appShell .sidebar-nav-btn .nav-label {
     line-height: var(--ui-hit-area);
   }
@@ -88,15 +44,7 @@
 
   /* ── Sidebar recents — 40px pitch, 10px radius; the right pad is 6px so
      the ··· glyph shares the reference drawer's ~16px trailing inset ── */
-  #appShell .recent-item {
-    padding: 0 6px 0 10px;
-  }
-  #appShell .recent-item-text {
-    line-height: 20px;
-  }
   #appShell .recent-item-overflow {
-    width: 32px;
-    min-width: 32px;
     /* The ··· is the drawer's quiet trailing affordance — one step below
        the title, matching the reference's muted dots. */
     color: var(--ui-text-muted);
@@ -214,27 +162,11 @@
    The historical layers set different row heights and flex bases, which
    made the glyph and text appear to sit on different vertical centers. */
 @media (max-width: 768px) {
-#appShell #sidebarNav.sidebar-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  padding: 4px 6px 8px;
-}
-}
-@media (max-width: 768px) {
 #appShell #sidebarNav .sidebar-nav-btn {
-  box-sizing: border-box;
-  display: grid;
   /* Reference drawer: 20px glyph column + 6px gap so the label lands
      ~40px from the drawer edge. Padding/min-height/font-size moved on:
      polish/mobile-controls.css owns padding, the ruleset below owns
      min-height + font-size. */
-  grid-template-columns: 20px minmax(0, 1fr) auto;
-  align-items: center;
-  column-gap: 6px;
-  width: 100%;
-  border-radius: var(--ui-radius-row);
-  line-height: 22px;
   text-align: left;
 }
 }
@@ -268,16 +200,10 @@
 }
 }
 @media (max-width: 768px) {
-#appShell #sidebarNav #navSkills.sidebar-nav-btn,
-#appShell #sidebarNav #navExam.sidebar-nav-btn,
-#appShell #sidebarNav #navSites.sidebar-nav-btn,
-#appShell #sidebarNav #navAssistants.sidebar-nav-btn { display: none; }
-}
-@media (max-width: 768px) {
 #appShell #sidebarNav #navNew { order: 0; }
 }
 @media (max-width: 768px) {
-#appShell #sidebarNav #navImages { order: 1; }
+#appShell #sidebarNav #navImages { order: 1; display: none; }
 }
 @media (max-width: 768px) {
 #appShell #sidebarNav #navLibrary { order: 2; }
@@ -285,27 +211,29 @@
 /* Reference drawer order: New chat · Images · Library · Scheduled · Plugins ·
    Projects(+) · More — exactly matching ChatGPT mobile screenshot. */
 @media (max-width: 768px) {
-#appShell #sidebarNav #navScheduled { order: 3; }
+#appShell #sidebarNav #navScheduled { order: 4; }
 }
 @media (max-width: 768px) {
-#appShell #sidebarNav #navPlugins { order: 4; }
+#appShell #sidebarNav #navPlugins { order: 5; }
 }
 @media (max-width: 768px) {
-#appShell #sidebarNav #navProjects { order: 5; }
+#appShell #sidebarNav #navProjects { order: 3; }
 }
 @media (max-width: 768px) {
-#appShell #sidebarNav #navMore { order: 6; }
+#appShell #sidebarNav #navMore { order: 7; }
 }
 
-@media (max-width: 768px) {
 
-#appShell #sidebarUserRow.user-row {
-  position: relative;
-  flex: 1 1 auto;
-  min-width: 0;
-  padding: 0;
-}
+/* Reference shell metrics. This existing mobile owner consumes theme tokens. */
+@media (max-width: 768px) {
+  #appShell #sidebarHeader .sidebar-logo > span, #appShell #sidebarHeader .cg-sidebar-caret { display: none; }
+  #appShell #sidebarHeader .btn-icon svg { width: 20px; height: 20px; }
+  #appShell .recent-item.active { box-shadow: none; background: var(--ui-bg-hover); }
+  #appShell #sidebarUserRow .tier-badge { font-size: 13px; line-height: 18px; }
+  #appShell .sidebar-account-menu .user-plan { color: var(--ui-text-muted); }
+  #appShell .sidebar-account-menu .user-avatar { place-items: center; background: var(--ui-avatar-bg); color: var(--ui-text-primary); }
+  #appShell .sidebar-account-menu .user-identity { display: flex; flex-direction: column; }
 }
 @media (max-width: 768px) {
+  #appShell #sidebarNav #navSites.sidebar-nav-btn { display: grid; order: 6; }
 }
-

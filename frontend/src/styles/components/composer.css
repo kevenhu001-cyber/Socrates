@@ -138,7 +138,7 @@
   #appShell .voice-recording-wave > span { transition: none; }
 }
 
-#appShell .chat-input-bar {
+#appShell #chatInputBar {
   box-sizing: border-box;
   padding-inline: 16px;
   padding-bottom: var(--ui-safe-bottom);

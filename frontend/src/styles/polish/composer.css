@@ -1,7 +1,7 @@
 /*
  * polish/composer.css — composer capsule + tools menu + effort picker.
- * Grid geometry and control sizes stay owned by restore/chat-surface.css +
- * fixes.css (JS measures them); this layer refines skin only.
+ * Grid geometry and control sizes are owned by parity/composer-unified.css;
+ * this layer refines surrounding tools and desktop greeting details.
  */
 
 /* Capsule focus: brighten the hairline one step, no glow. */
@@ -10,18 +10,22 @@
    dropped these to the generic system stack (--chatgpt-font) while the rest
    of the app renders Plus Jakarta Sans via --cg-font; the bundled face is
    also what the localization specs assert. */
+@media (min-width: 769px) {
 #appShell#appShell#appShell#appShell #topicSetup .topic-title.greeting {
   font-family: var(--cg-font);
+}
 }
 
 /* Greeting stays one line in every locale. The pool strings are short, but
    long translations or an XL font scale must never wrap the hero line —
    nowrap + ellipsis is the hard guarantee. No competing rule sets these
    properties, so plain declarations are enough. */
+@media (min-width: 769px) {
 #appShell#appShell#appShell #topicSetup .topic-title.greeting {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
 }
 
 /* Lift the landing hero off geometric center: the reference composition
@@ -34,20 +38,6 @@
   }
 }
 
-@media (max-width: 768px) {
-  /* The phone greeting was capped at 220px (fixes.css), which wrapped every
-     longer pool string to two lines. Open the width to the viewport gutter
-     and cap the size so the longest pool string still fits on one line;
-     nowrap + ellipsis above is the backstop for XL font scale. The 4×
-     #appShell anchor is needed to outrank the body:not(...) landing-state
-     rule that owns these properties. */
-  #appShell#appShell#appShell#appShell #topicSetup .topic-title.greeting {
-    top: 35%;
-    width: auto;
-    max-width: min(92vw, 560px);
-    font-size: calc(min(27px, 6vw) * var(--app-font-scale, 1));
-  }
-}
 
 /* Effort trigger reads as a chip: quieter type than the editor text. */
 

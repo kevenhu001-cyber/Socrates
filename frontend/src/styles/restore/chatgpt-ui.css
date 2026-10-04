@@ -64,27 +64,8 @@ body,
 
 @media (max-width: 768px) {
 
-
-}
-
-@media (max-width: 768px) {
-
-
-}
-
-@media (max-width: 768px) {
-
 #appShell .sidebar-logo {
   color: var(--cg-text);
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell .sidebar-logo-img {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
 }
 }
 
@@ -97,11 +78,15 @@ body,
 
 @media (max-width: 768px) {
 
-#appShell .sidebar-header .icon-btn,
 #appShell .sidebar-header .icon-btn:hover {
   width: 32px;
   height: 32px;
   border-radius: 9px;
+  color: var(--cg-text-secondary);
+  background: transparent;
+}
+
+#appShell .sidebar-header .icon-btn {
   color: var(--cg-text-secondary);
   background: transparent;
 }
@@ -117,11 +102,6 @@ body,
 
 @media (max-width: 768px) {
 
-
-}
-
-@media (max-width: 768px) {
-
 #appShell .sidebar-nav-btn {
   color: var(--cg-text-secondary);
 }
@@ -130,8 +110,6 @@ body,
 @media (max-width: 768px) {
 
 #appShell .sidebar-nav-btn svg {
-  width: 18px;
-  height: 18px;
   color: currentColor;
   opacity: 0.92;
 }
@@ -150,7 +128,11 @@ body,
 @media (max-width: 768px) {
 
 #appShell .sidebar-nav-btn.active,
-#appShell .sidebar-nav-btn[aria-current="page"],
+#appShell .sidebar-nav-btn[aria-current="page"] {
+  color: var(--cg-text);
+  background: var(--cg-surface);
+}
+
 #appShell #navNew.sidebar-nav-btn {
   color: var(--cg-text);
   background: var(--cg-surface);
@@ -162,11 +144,6 @@ body,
 #appShell #navNew.sidebar-nav-btn:hover {
   background: var(--cg-surface-hover);
 }
-}
-
-@media (max-width: 768px) {
-
-
 }
 
 @media (max-width: 768px) {
@@ -197,19 +174,6 @@ body,
 
 @media (max-width: 768px) {
 
-#appShell .recents-panel {
-  padding: 0;
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell .recents-header {
-}
-}
-
-@media (max-width: 768px) {
-
 #appShell .recents-title {
   color: var(--cg-text-muted);
   text-transform: none;
@@ -218,11 +182,6 @@ body,
 
 #appShell .recents-filter-chips {
   padding: 0 6px 6px;
-}
-
-@media (max-width: 768px) {
-
-
 }
 
 @media (max-width: 768px) {
@@ -242,15 +201,13 @@ body,
 
 @media (max-width: 768px) {
 
-#appShell .recent-item.active .recent-item-text,
 #appShell .recent-item:hover .recent-item-text {
   color: var(--cg-text);
 }
+
+#appShell .recent-item.active .recent-item-text {
+  color: var(--cg-text);
 }
-
-@media (max-width: 768px) {
-
-
 }
 
 @media (max-width: 768px) {
@@ -272,15 +229,10 @@ body,
 @media (max-width: 768px) {
 
 #appShell .user-avatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
   /* Default identity mark is neutral gray; the gold accent stays reserved
      for interactive/active surfaces instead of every avatar. */
   background: var(--cg-surface-hover);
   color: var(--cg-text);
-  font-size: 11px;
-  font-weight: 700;
 }
 }
 
@@ -288,7 +240,6 @@ body,
 
 #appShell .user-plan {
   color: var(--cg-text-muted);
-  font-size: 11px;
 }
 }
 
@@ -326,13 +277,6 @@ body,
 #appShell .sidebar.collapsed ~ .main {
   padding-left: 0 !important;
 }
-}
-
-
-
-@media (max-width: 768px) {
-
-
 }
 
 @media (max-width: 768px) {
@@ -399,8 +343,11 @@ body,
   max-width: var(--cg-content-width);
 }
 
+@media (min-width: 769px) {
+
 #appShell #topicSetup {
   gap: 0;
+}
 }
 
 #appShell #topicSetup::before,
@@ -409,12 +356,15 @@ body,
   flex: 1 1 0;
 }
 
+@media (min-width: 769px) {
+
 #appShell .topic-title.greeting {
   max-width: 680px;
   color: var(--cg-text) !important;
   font-weight: 520 !important;
   letter-spacing: -0.04em !important;
   line-height: 1.2 !important;
+}
 }
 
 #appShell .topic-sub {
@@ -1014,13 +964,8 @@ body.workspace-active #appShell .workspace-row:hover {
     max-width: none;
   }
 
-  #appShell #topicSetup {
-    padding: 0 14px max(24px, env(safe-area-inset-bottom));
-  }
-
   #appShell #topicSetup::before,
-  #appShell #topicSetup::after,
-  #appShell #topicSetup .topic-title.greeting {
+#appShell #topicSetup::after {
     display: none !important;
   }
 
@@ -1115,11 +1060,14 @@ body.workspace-active #appShell .workspace-row:hover {
    3. A centered row of quick capability chips under the composer
       (markup: #topicQuickActions in index.html; logic: ui/quickChips.js). */
 
+@media (min-width: 769px) {
+
 #appShell .topic-title.greeting {
   /* font-size moved on — the canonical 24px owner is
      layout/app-shell.css (desktop) / polish/composer.css (mobile). */
   font-weight: 600 !important;
   letter-spacing: -.025em !important;
+}
 }
 
 
@@ -1148,8 +1096,6 @@ body.workspace-active #appShell .workspace-row:hover {
 
 /* Plugin directory: the card grid falls back to a single column once two
    cards would each get less than ~300px. */
-@media (max-width: 640px) {
-}
 
 /* The workspace-active button theme block above forces a 10px radius on
    every action button; the directory's Connect/Refresh pills stay round. */
@@ -1184,9 +1130,12 @@ body.workspace-active #appShell .workspace-row:hover {
 }
 }
 
+@media (min-width: 769px) {
+
 #appShell .topic-title.greeting {
   font-weight: 550 !important;
   letter-spacing: -.035em !important;
+}
 }
 
 body.workspace-active #appShell #mainInner {

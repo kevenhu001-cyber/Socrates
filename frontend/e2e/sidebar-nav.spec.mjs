@@ -98,13 +98,12 @@ test('More keeps secondary settings and Skills reachable', async ({ page }) => {
   await expect(page.locator('#cheatsheetOverlay')).toBeVisible();
 });
 
-test('account row is a static identity label; settings live behind the gear', async ({ page }) => {
-  /* The row renders as a plain div — no button role, no popup menu, no
-     pointer affordance. Profile/sign-out moved into Settings → Account. */
-  const row = page.locator('#sidebarUserRow .sidebar-account-static');
+test('account row exposes profile and settings through its menu', async ({ page }) => {
+  // Account identity is also the accessible trigger for the account menu.
+  const row = page.locator('#sidebarUserRow .sidebar-account-trigger');
   await expect(row).toBeVisible();
-  await expect(row).not.toHaveAttribute('role', 'button');
-  await expect(row).toHaveCSS('cursor', 'default');
+  await expect(row).toHaveAttribute('aria-haspopup', 'menu');
+  await expect(row).toHaveCSS('cursor', 'pointer');
   /* Reference drawer identity — avatar + name over plan tier: all three are
      painted, and the full "name · tier" label stays in the tooltip and the
      accessible name. */
@@ -125,7 +124,8 @@ test('account row is a static identity label; settings live behind the gear', as
   expect(Math.abs(geo.avatar.cy - geo.identity.cy)).toBeLessThanOrEqual(1);
   await page.screenshot({ path: 'test-results/visual-qa/sidebar-account-row.png', clip: await page.locator('#sidebarFooter').boundingBox() });
   await row.click();
-  await expect(page.getByRole('menu', { name: /Account menu|账户菜单/ })).toHaveCount(0);
+  await expect(page.locator('.sidebar-account-menu')).toBeInViewport();
+  await page.keyboard.press('Escape');
   // The gear still opens the settings modal, whose account pane carries
   // the profile entry.
   await page.locator('#apiSettingsBtn').click();
@@ -172,11 +172,12 @@ test('phone drawer keeps nav glyphs aligned and account menu in view', async ({ 
     expect(row.height).toBe(40);
     expect(Math.abs(row.glyphCenter - row.labelCenter)).toBeLessThanOrEqual(2);
   }
-  // The account row is a static label — no menu opens from it.
-  const accountRow = page.locator('#sidebarUserRow .sidebar-account-static');
+  // Portaled account menus stay inside the phone viewport.
+  const accountRow = page.locator('#sidebarUserRow .sidebar-account-trigger');
   await expect(accountRow).toBeInViewport();
   await accountRow.click();
-  await expect(page.getByRole('menu', { name: /Account menu|账户菜单/ })).toHaveCount(0);
+  await expect(page.locator('.sidebar-account-menu')).toBeInViewport();
+  await page.keyboard.press('Escape');
   await page.screenshot({ path: '/tmp/socrates-reference-mobile-account-390x769.png' });
 });
 

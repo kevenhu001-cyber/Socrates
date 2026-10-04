@@ -409,59 +409,9 @@
 @media (max-width: 768px) {
   #appShell .workspace-surface,
   #appShell .main-page { padding-inline: 16px; }
-
-  #appShell .plugin-directory {
-    width: 100%;
-    min-height: calc(100dvh - 56px);
-    padding: 16px 16px calc(24px + var(--ui-safe-bottom));
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-  #appShell .plugin-directory-head { display: block; margin-bottom: 20px; }
-  #appShell .plugin-directory-heading h2 {
-    margin: 0 0 10px;
-    font-size: 26px;
-    line-height: 1.2;
-    letter-spacing: -.035em;
-  }
-  #appShell .plugin-directory-desc { margin: 0 0 10px; font-size: 15px; line-height: 1.5; }
-  #appShell .plugin-directory-tools { display: flex; align-items: center; gap: 12px; }
   /* mobile-parity.css pins the reference 42px pill search; mirror it here so
      the two layers agree instead of relying on the override. */
-  #appShell .plugin-directory-search {
-    flex: 1;
-    min-width: 0;
-    width: 100%;
-    height: 42px;
-    min-height: 42px;
-    padding-inline: 14px;
-    border-radius: var(--ui-radius-pill);
-  }
-  #appShell .plugin-directory-search svg { width: 18px; height: 18px; flex: 0 0 18px; }
-  #appShell .plugin-directory-search input { min-width: 0; font-size: 15px; }
-  #appShell .plugin-directory-add-btn {
-    display: none;
-  }
-  #appShell .plugin-installed-strip { min-height: 0; flex-direction: column; align-items: flex-start; gap: 9px; margin: 16px 0 22px; }
-  #appShell .plugin-installed-label { font-size: 14px; }
-  #appShell .plugin-installed-icons { gap: 8px; overflow-x: auto; scrollbar-width: none; }
-  #appShell .plugin-installed-icons .workspace-row-icon { width: 40px; min-width: 40px; height: 40px; }
   /* Size to the labels — a fixed track clipped "Personal" to "Pers". */
-  #appShell .plugin-directory-tabs { gap: 8px; max-width: 100%; margin: 0 0 24px; padding: 0; }
-  #appShell .plugin-directory-tabs button { min-height: 36px; padding: 0 16px; font-size: 14px; }
-  #appShell .plugin-directory-section { margin: 0 0 24px; }
-  #appShell .plugin-directory-section h3 { margin: 0 0 12px; font-size: 15px; font-weight: var(--ui-font-weight-semibold); }
-  #appShell .plugin-directory-list { grid-template-columns: 1fr; gap: 10px; }
-  #appShell .plugin-directory-row {
-    gap: 8px;
-    padding: 12px 14px;
-    border-radius: var(--ui-radius-lg);
-  }
-  #appShell .plugin-directory-row .workspace-row-copy { min-width: 0; gap: 2px; }
-  #appShell .plugin-directory-row .workspace-row-copy strong { font-size: 15px; }
-  #appShell .plugin-directory-card-desc { font-size: 13px; line-height: 1.4; color: var(--ui-text-secondary); }
-  #appShell .plugin-directory-row-action { margin-top: 0; margin-left: auto; }
-  #appShell .plugin-directory-icon-action { width: auto; min-height: 32px; height: 32px; padding: 0 12px; font-size: 13px; }
 
   /* Scheduled mirrors the plugin directory's phone geometry: full-width
      single column, stacked head, and 14px card padding. */

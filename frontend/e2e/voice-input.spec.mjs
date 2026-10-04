@@ -156,16 +156,14 @@ test('the mic starts voice input and the primary becomes send after transcriptio
   const mic = wrap.locator('.mobile-mic-btn');
   await expect(mic).toHaveCount(1);
   await expect(mic).toBeVisible();
-  /* P_composer-primary-split — the two controls used to share the label
-     "Voice input" and the same toggleSpeechInput(surface) call, so a screen
-     reader met two indistinguishable buttons. The mic keeps dictation; the
-     primary is submit-only (send / stop) and starts disabled at 30%. */
+  // Empty primary matches the reference waveform; transcription replaces it
+  // with Send while the microphone remains the direct dictation shortcut.
   await expect(mic).toHaveAttribute('aria-label', 'Voice input');
-  await expect(primary).toHaveAttribute('aria-label', 'Send');
+  await expect(primary).toHaveAttribute('aria-label', 'Start voice input');
   await expect(editor).toHaveCSS('text-align', 'left');
-  await expect(primary.locator('.icon-arrow')).toHaveCount(1);
-  await expect(primary.locator('.icon-voice')).toHaveCount(0);
-  await expect(primary).toBeDisabled();
+  await expect(primary.locator('.icon-arrow')).toHaveCount(0);
+  await expect(primary.locator('.icon-voice')).toHaveCount(1);
+  await expect(primary).toBeEnabled();
 
   await editor.click();
   const emptyCaret = await editor.evaluate((node) => {
@@ -198,13 +196,12 @@ test('the mic starts voice input and the primary becomes send after transcriptio
   await editor.press(process.platform === 'darwin' ? 'Meta+A' : 'Control+A');
   await editor.press('Backspace');
   await expect(primary).not.toHaveClass(/active/);
-  /* Clearing the draft returns the button to the disabled send state — it
-     must not morph back into a second dictation trigger. */
-  await expect(primary.locator('.icon-arrow')).toHaveCount(1);
-  await expect(primary.locator('.icon-voice')).toHaveCount(0);
-  await expect(primary).toBeDisabled();
+  // Clearing the draft restores the idle voice action.
+  await expect(primary.locator('.icon-arrow')).toHaveCount(0);
+  await expect(primary.locator('.icon-voice')).toHaveCount(1);
+  await expect(primary).toBeEnabled();
 
-  await mic.click();
+  await primary.click();
   const bar = wrap.locator('.voice-recording-bar');
   await expect(wrap).toHaveClass(/voice-recording-active/);
   await expect(bar).toBeVisible();
@@ -254,11 +251,11 @@ test('the chat mic uses the same recording bar', async ({ page }) => {
      primary action uses the same recording bar" and clicked the primary.
      Dictation is the mic's job now; the primary only sends and stops. */
   await expect(mic).toHaveAttribute('aria-label', 'Voice input');
-  await expect(primary).toHaveAttribute('aria-label', 'Send');
+  await expect(primary).toHaveAttribute('aria-label', 'Start voice input');
   await expect(editor).toHaveCSS('text-align', 'left');
-  await expect(primary.locator('.icon-arrow')).toHaveCount(1);
-  await expect(primary.locator('.icon-voice')).toHaveCount(0);
-  await expect(primary).toBeDisabled();
+  await expect(primary.locator('.icon-arrow')).toHaveCount(0);
+  await expect(primary.locator('.icon-voice')).toHaveCount(1);
+  await expect(primary).toBeEnabled();
 
   await mic.click();
   const bar = wrap.locator('.voice-recording-bar');

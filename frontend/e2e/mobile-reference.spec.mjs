@@ -1,0 +1,93 @@
+import { test, expect } from '@playwright/test';
+import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
+const id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+
+test('reference home keeps its bottom composer and phone configuration usable', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 769 });
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await mockAuthedApp(page, { lang: 'zh', user: { displayName: 'Adex Hu', tier: 'diophantus' } });
+  await page.goto('/');
+  await waitForAppShell(page);
+  await page.evaluate(() => document.fonts.ready);
+  const composer = page.locator('#composerInputWrap');
+  await expect(composer).toHaveCSS('background-color', 'rgb(33, 33, 33)');
+  await expect(page.locator('#composerPrimaryBtn .icon-voice')).toBeVisible();
+  const rect = await composer.boundingBox();
+  expect(rect.x).toBe(16);
+  expect(rect.width).toBe(358);
+  expect(rect.height).toBe(85);
+  expect(769 - rect.y - rect.height).toBe(24);
+  const greeting = await page.locator('#topicTitle').boundingBox();
+  expect(Math.abs(greeting.y + greeting.height / 2 - 344.765)).toBeLessThan(1);
+  await page.locator('#mobileModeTrigger').click();
+  await page.locator('#mobileConfigBtn').click();
+  await expect(page.locator('.chat-config-pop')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.setViewportSize({ width: 320, height: 568 });
+  const compact = await composer.boundingBox();
+  expect(compact.x).toBe(16);
+  expect(compact.width).toBe(288);
+  expect(compact.y + compact.height).toBeLessThanOrEqual(568);
+  await page.locator('#sidebarOpenBtn').click();
+  await page.locator('.sidebar-account-trigger').click();
+  const menu = await page.locator('.sidebar-account-menu').boundingBox();
+  expect(menu.x).toBeGreaterThanOrEqual(0);
+  expect(menu.y).toBeGreaterThanOrEqual(0);
+  expect(menu.x + menu.width).toBeLessThanOrEqual(320);
+  expect(menu.y + menu.height).toBeLessThanOrEqual(568);
+});
+
+test('mobile account menu opens settings and restores keyboard focus', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 768 });
+  await mockAuthedApp(page, { lang: 'zh', user: { displayName: 'Adex Hu', tier: 'descartes' } });
+  await page.goto('/');
+  await waitForAppShell(page);
+  await page.locator('#sidebarOpenBtn').click();
+  const trigger = page.locator('.sidebar-account-trigger');
+  await trigger.click();
+  const menu = page.locator('.sidebar-account-menu');
+  await expect(menu).toBeInViewport();
+  await expect(menu.getByRole('menuitem').first()).toBeFocused();
+  await page.screenshot({ path: '/tmp/socrates-reference-account-menu.png' });
+  await page.keyboard.press('Escape');
+  await expect(menu).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+  await trigger.click();
+  await menu.getByRole('menuitem', { name: '个性化', exact: true }).click();
+  await expect(page.locator('#settingsOverlay')).toBeVisible();
+  await expect(page.locator('.settings-nav [data-section="personalization"]')).toHaveClass(/active/);
+});
+
+test('session menu persists rename, pin and project move for the selected row', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 768 });
+  await mockAuthedApp(page, { lang: 'en' });
+  const session = { id, title: 'Reference chat', topic: 'Reference chat', mode: 'chat', updatedAt: new Date().toISOString(), pinned: false };
+  const patches = [];
+  await page.route(/\/api\/(?:v2\/)?sessions(?:\?|\/|$)/, async route => {
+    if (route.request().method() === 'PATCH') {
+      const patch = route.request().postDataJSON(); patches.push(patch); Object.assign(session, patch);
+      await route.fulfill({ json: { session } });
+    } else await route.fulfill({ json: { sessions: [session] } });
+  });
+  await page.route(/\/api\/(?:v2\/)?projects(?:\?|$)/, route => route.fulfill({ json: { projects: [{ id: 'project-1', name: 'Study' }] } }));
+  await page.goto('/'); await waitForAppShell(page);
+  await page.locator('#sidebarOpenBtn').click();
+  await page.evaluate(id => window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: id }), id);
+  const row = page.locator('.recent-item').filter({ hasText: 'Reference chat' });
+  await row.locator('.recent-item-overflow').click();
+  await expect(page.locator('.recent-item-menu')).toBeInViewport();
+  await page.screenshot({ path: '/tmp/socrates-reference-session-menu.png' });
+  await page.locator('.recent-item-rename').click();
+  await page.locator('.recent-item input[name="title"]').fill('Renamed chat');
+  await page.locator('.recent-item input[name="title"]').press('Enter');
+  await expect(page.locator('.recent-item-text')).toHaveText('Renamed chat');
+  expect(patches.at(-1)).toEqual({ title: 'Renamed chat' });
+  expect(await page.evaluate(() => window.stateStore.read('sessionTitle'))).toBe('Renamed chat');
+  await page.locator('.recent-item-overflow').click(); await page.locator('.recent-item-pin').click();
+  await expect.poll(() => patches.at(-1)).toEqual({ pinned: true });
+  await expect(page.locator('.recent-item')).toHaveClass(/pinned/);
+  await page.locator('.recent-item-overflow').click(); await page.locator('.recent-item-project').click();
+  await page.getByRole('menuitem', { name: 'Study', exact: true }).click();
+  await expect.poll(() => patches.at(-1)).toEqual({ projectId: 'project-1' });
+  await expect(page.locator('.recent-item-menu')).toHaveCount(0);
+});

@@ -189,9 +189,3 @@
   }
 }
 
-@media (max-width: 768px) {
-  #appShell#appShell #topicSetup .topic-title.greeting {
-    letter-spacing: 0;
-  }
-}
-

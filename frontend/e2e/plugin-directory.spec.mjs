@@ -100,6 +100,8 @@ test('plugin center filters public/personal apps and scheduled templates prefill
   await page.locator('#navNew').click();
   await expect(page.locator('#topicSetup')).toBeVisible();
   await expect(page.locator('#pluginsPanel')).toBeHidden();
+  await expect(page.locator('#navPlugins')).not.toHaveClass(/active/);
+  await expect(page.locator('#navPlugins')).not.toHaveAttribute('aria-current', 'page');
 
   await page.locator('#navScheduled').click();
   await expect(page.locator('.scheduled-directory')).toBeVisible();
@@ -261,5 +263,5 @@ test('OAuth return restores the original composer surface and plugin context', a
   await expect(page.locator('#composerInputWrap .composer-plugin-chip-label')).toHaveText(['GitHub']);
   await expect.poll(() => page.evaluate(() => window.__socratesComposerController?.getMarkdown('topic')))
     .toBe('Restored OAuth draft');
-  await expect(page).toHaveURL(/127\.0\.0\.1:4173\/$/);
+  await expect(page).toHaveURL(url => url.pathname === '/' && url.search === '');
 });

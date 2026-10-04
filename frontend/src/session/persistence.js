@@ -266,6 +266,7 @@ function captureSessionPayload(){
     id:sessionId,
     topic:stateStore.read("topic"),
     title:stateStore.read("sessionTitle")||stateStore.read("topic"),
+    pinned:!!serverCache.sessions.find((row) => row.id === sessionId)?.pinned,
     domain:stateStore.read("domain")||stateStore.read("topic"),
     projectId:stateStore.read("currentProjectId")||null,
     assistantId:sessionStorage.getItem("socrates-active-assistant")||null,

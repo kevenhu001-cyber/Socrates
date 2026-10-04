@@ -30,6 +30,7 @@ import { renderUserFooter } from '../ui/profile.js';
 import { resetCmdKSearchState } from '../ui/cmdK.js';
 import { renderGreeting } from '../ui/greeting.js';
 import { activateMainView } from '../ui/mainViewController.js';
+import { setActiveNav } from '../sidebar/nav.js';
 
 function _t(key, fallback) {
   try {
@@ -159,6 +160,9 @@ export async function resetApp(options){
      Previously two consecutive calls each rewrote the same URL. */
   clearSessionRouteInURL();
   activateMainView("topicSetup", document);
+  /* Reset the React nav snapshot as well as the main pane. Otherwise a
+     directory stays highlighted after any new-chat entry point. */
+  setActiveNav(null);
   try { renderGreeting(); } catch (_) {}
   if (_examWasOpen) {
     var _examBody = document.getElementById("examViewBody");

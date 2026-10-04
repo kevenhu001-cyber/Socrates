@@ -162,6 +162,10 @@
 
 
 
+@media (min-width: 769px) {
+
+
+
 #appShell #topicSetup .topic-title.greeting {
   display: block;
   animation: none;
@@ -171,6 +175,7 @@
   font-weight: 400;
   letter-spacing: -.02em;
   text-align: center;
+}
 }
 
 #appShell #topicSetup .topic-sub,
@@ -203,37 +208,20 @@
      circular new-chat button right. The incognito toggle moved into the
      sidebar 更多 popover; the desktop panel-collapse glyph becomes a
      three-line hamburger. */
-  #appShell .mobile-newchat-btn { display: inline-flex; align-items: center; justify-content: center; }
   #appShell .toggle-sidebar .glyph-panel { display: block; }
   #appShell .toggle-sidebar .glyph-hamburger { display: none; }
   /* The landing column owns its 12px inset itself — the legacy
      .main-inner adds another 8px at ≤480px which would double the
      composer's side margin versus the in-session bar. */
-  #appShell .main-inner { padding-inline: 0; }
   #appShell #topicSetup {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    align-items: stretch;
-    padding: 0 16px calc(var(--ui-safe-bottom) + var(--keyboard-inset, 0px));
     overflow: hidden;
   }
   #appShell #topicSetup .topic-title.greeting {
-    position: absolute;
-    inset-inline: 0;
-    top: 40%;
-    width: auto;
-    margin: 0;
-    padding: 0;
-    transform: translateY(-50%);
-    font-size: calc(24px * var(--app-font-scale, 1));
-    line-height: 1.25;
     white-space: normal;
   }
   body[data-conversation-active="true"] #appShell #modeSegmentedTop,
   body.workspace-active #appShell #modeSegmentedTop,
   body.exam-active #appShell #modeSegmentedTop,
   body.admin-active #appShell #modeSegmentedTop { display: none; }
-  #appShell #mobileMode { display: none; }
   body #appShell #pluginWorkspaceTabs { display: none; }
 }

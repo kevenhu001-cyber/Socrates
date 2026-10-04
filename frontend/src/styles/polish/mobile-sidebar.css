@@ -1,0 +1,75 @@
+/* Phone drawer geometry. Desktop ownership stays in parity/sidebar.css. */
+@media (max-width: 768px) {
+  #appShell .sidebar-inner { padding: 0 6px 6px; }
+  #appShell #sidebarHeader {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    height: 60px;
+    min-height: 60px;
+    padding: 10px 4px 16px;
+  }
+  #appShell .sidebar-logo { display: flex; padding: 6px; }
+  #appShell .sidebar-logo-img { width: 20px; height: 20px; border-radius: 0; }
+  #appShell .sidebar-logo > span, #appShell .cg-sidebar-caret { display: none; }
+  #appShell #sidebarHeader .btn-icon { position: relative; display: grid; place-items: center; width: 32px; min-width: 32px; height: 32px; min-height: 32px; padding: 0; }
+  #appShell #sidebarHeader .btn-icon svg { width: 20px; height: 20px; }
+  #appShell #sidebarNav { display: flex; flex-direction: column; gap: 0; padding: 0; }
+  #appShell #sidebarNav .sidebar-nav-btn {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 10px;
+    width: 100%;
+    min-height: var(--ui-mobile-row);
+    height: var(--ui-mobile-row);
+    padding: 0 10px;
+    border-radius: var(--ui-radius-row);
+    font-size: calc(14px * var(--app-type-scale));
+    font-weight: 400;
+    line-height: 20px;
+    color: var(--ui-text-primary);
+  }
+  #appShell #sidebarNav .sidebar-nav-btn svg { width: 20px; height: 20px; stroke-width: 1.8; }
+  #appShell #sidebarNav .nav-label { line-height: 20px; }
+  #appShell #sidebarNav #navNew { order: 0; }
+  #appShell #sidebarNav #navImages { order: 1; }
+  #appShell #sidebarNav #navLibrary { order: 2; }
+  #appShell #sidebarNav #navScheduled { order: 3; }
+  #appShell #sidebarNav #navPlugins { order: 4; }
+  #appShell #sidebarNav #navProjects { order: 5; }
+  #appShell #sidebarNav #navMore { order: 6; }
+  #appShell #sidebarNav #navAssistants,
+  #appShell #sidebarNav #navSkills,
+  #appShell #sidebarNav #navExam { display: none; }
+  #appShell #sidebarNav #navImages { display: grid; }
+  :root #appShell #sidebarNav #navSites { display: none; }
+  :root[data-user-tier]:not([data-user-tier="diophantus"]):not([data-user-tier="free"]) #appShell #sidebarNav #navImages { display: none; }
+  :root[data-user-tier]:not([data-user-tier="diophantus"]):not([data-user-tier="free"]) #appShell #sidebarNav #navSites { display: grid; order: 6; }
+  #appShell #sidebarHeader #newChatBtn { display: none; }
+  #appShell #sidebarNav #navNew, #appShell #sidebarNav .sidebar-nav-btn.active { background: var(--ui-bg-selected); }
+  #appShell .recents-panel { padding: 0; margin-top: 0; }
+  #appShell .recents-header { display: flex; align-items: center; justify-content: space-between; height: 30px; min-height: 30px; margin-top: 0; padding: 0 4px 0 10px; }
+  #appShell .recents-title { font-size: 13px; font-weight: 500; line-height: 20px; letter-spacing: 0; color: var(--ui-text-muted); }
+  #appShell .recents-head-btn { display: grid; place-items: center; width: 22px; height: 32px; padding: 0; border: 0; background: transparent; color: var(--ui-text-muted); }
+  #appShell .recents-head-btn svg { width: 16px; height: 16px; }
+  #appShell .recent-item { display: flex; align-items: center; height: var(--ui-mobile-row); min-height: var(--ui-mobile-row); padding: 0 6px 0 10px; border-radius: var(--ui-radius-row); font-size: calc(14px * var(--app-type-scale)); }
+  #appShell .recent-item-text { font-size: inherit; line-height: 20px; font-weight: 400; }
+  #appShell .recent-item-overflow { width: 32px; min-width: 32px; height: 32px; padding: 0; color: var(--ui-text-muted); }
+  #appShell .recent-item.active, #appShell .recent-item.actions-open { background: var(--ui-bg-selected); box-shadow: none; }
+  #appShell #sidebarFooter { flex: 0 0 auto; padding: 8px; border-top: 1px solid var(--ui-border-subtle); gap: 0; }
+  #appShell #sidebarUserRow { display: block; width: 100%; padding: 0; flex: 0 0 auto; }
+  #appShell .sidebar-footer-account-wrap { display: flex; flex-direction: column; width: 100%; gap: 12px; }
+  #appShell #sidebarUserRow .sidebar-account-trigger { display: flex; align-items: center; justify-content: flex-start; width: 100%; height: 42px; padding: 0; gap: 8px; font-size: 14px; }
+  #appShell #sidebarUserRow .user-avatar { display: grid; place-items: center; flex: 0 0 24px; width: 24px; height: 24px; border-radius: 50%; font-size: 10px; }
+  #appShell #sidebarUserRow .user-name { font-size: 15px; line-height: 21px; font-weight: 400; }
+  #appShell #sidebarUserRow .user-plan, #appShell #sidebarUserRow .tier-badge { font-size: 13px; line-height: 18px; color: var(--ui-text-muted); }
+  #appShell #sidebarUserRow .sidebar-upgrade-pill { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 40px; padding: 0 12px; border: 1px solid var(--ui-border-strong); border-radius: var(--ui-radius-pill); font-size: 14px; font-weight: 500; background: var(--ui-bg-surface); }
+  #appShell .sidebar-account-menu { width: 242px; padding: 14px 16px; }
+  #appShell .sidebar-account-menu :is(button, a) { height: 40px; min-height: 40px; font-size: 14px; }
+  #appShell .sidebar-account-menu .account-menu-identity { height: 44px; gap: 8px; }
+  #appShell .sidebar-account-menu .user-avatar { display: grid; place-items: center; width: 24px; height: 24px; flex: 0 0 24px; font-size: 10px; border-radius: 50%; background: var(--ui-avatar-bg); }
+  #appShell .sidebar-account-menu .user-identity { display: flex; flex-direction: column; }
+  #appShell .sidebar-account-menu .user-name { font-size: 15px; font-weight: 400; }
+  #appShell .sidebar-account-menu .user-plan { font-size: 13px; color: var(--ui-text-muted); }
+}

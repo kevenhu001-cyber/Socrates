@@ -1,0 +1,93 @@
+/* Canonical phone shell. Measurements use the supplied 1200px screenshots
+   at a 390px CSS viewport, excluding the browser's 306px chrome. */
+@media (max-width: 768px) {
+  #appShell .top-bar {
+    height: calc(var(--ui-mobile-header) + env(safe-area-inset-top, 0px));
+    min-height: calc(var(--ui-mobile-header) + env(safe-area-inset-top, 0px));
+    padding: env(safe-area-inset-top, 0px) 8px 0;
+    gap: 8px;
+    border: 0;
+    background: var(--ui-bg-page);
+  }
+  #appShell .top-bar-left, #appShell .top-bar-right { gap: 8px; }
+  #appShell #sidebarOpenBtn, #appShell #mobileNewChatBtn {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--ui-text-primary);
+  }
+  #appShell #sidebarOpenBtn svg, #appShell #mobileNewChatBtn svg { width: 24px; height: 24px; }
+  #appShell .mobile-newchat-btn { display: inline-flex; align-items: center; justify-content: center; }
+  #appShell #mobileMode { position: absolute; left: 58px; top: calc(50% + env(safe-area-inset-top, 0px) / 2); transform: translateY(-50%); }
+  #appShell #mobileModeTrigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ui-text-primary);
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+  #appShell #mobileModeTrigger svg { width: 16px; height: 16px; }
+  #appShell #mobileModeMenu { left: 0; right: auto; transform: none; width: min(260px, calc(100vw - 72px)); }
+  :root[data-user-tier="diophantus"] body:not(.workspace-active) #appShell #mobileUpgradeBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ui-link);
+    font-size: 14px;
+    font-weight: 500;
+  }
+  #appShell #mobileUpgradeBtn svg { width: 20px; height: 20px; }
+  #appShell .main-content, #appShell .main-inner { padding: 0; }
+  #appShell #topicSetup {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-end;
+    min-height: 0;
+    height: 100%;
+    width: 100%;
+    gap: 0;
+    padding: 0 var(--ui-mobile-page-gutter) calc(var(--ui-mobile-bottom) + var(--keyboard-inset, 0px));
+    overflow: hidden;
+  }
+  #appShell #topicSetup .topic-title.greeting {
+    position: absolute;
+    inset-inline: 0;
+    top: 40.5%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    transform: translateY(-50%);
+    animation: none;
+    font-family: var(--font-sans);
+    font-size: calc(23px * var(--app-type-scale));
+    font-weight: 400;
+    line-height: 30px;
+    letter-spacing: 0;
+    color: var(--ui-text-primary);
+    text-align: center;
+  }
+  #appShell .home-quick-actions { display: none; }
+  body.workspace-active #appShell #mobileMode { display: none; }
+  body.workspace-active #appShell #mobileUpgradeBtn,
+  body.workspace-active #appShell .mobile-newchat-btn { display: none; }
+}
+@media (max-width: 359px) {
+  #appShell #mobileMode { left: 48px; }
+  #appShell #mobileModeTrigger { font-size: 16px; }
+  :root[data-user-tier="diophantus"] body:not(.workspace-active) #appShell #mobileUpgradeBtn { font-size: 12px; }
+}

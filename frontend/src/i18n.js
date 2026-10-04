@@ -39,6 +39,7 @@ var I18N={
     "chrome.shareConversation":"Share this conversation",
     "chrome.addToolsFiles":"Add tools and files",
     "chrome.voiceInput":"Voice input",
+    "chrome.startVoiceInput":"Start voice input",
     "chrome.quickActions":"Quick actions",
     "chrome.previousMatch":"Previous match",
     "chrome.nextMatch":"Next match",
@@ -1421,18 +1422,13 @@ function applyI18n(){
   if(tdisc)tdisc.textContent=t(appMode==="chat"?"topic.disclaimerChat":"profile.disclaimerTutor");
   var cpb=document.getElementById("composerPrimaryBtn");
   if(cpb&&!cpb.classList.contains("chat-stop")&&!cpb.classList.contains("agent-stop")){
-    /* P_composer-primary-split — the primary is submit-only, so its label is
-       always chat.send. Voice input is announced by #composerMicBtn. The old
-       send/voice-input swap here is what let the two buttons share one
-       accessible name. Fall through to updateComposerBtn for the disabled
-       state instead of forcing it open on every language change. */
-    var composerLabel=t("chat.send");
+    var composerLabel=t(cpb.classList.contains("active")?"chat.send":"chrome.startVoiceInput");
     cpb.setAttribute("aria-label",composerLabel);
     cpb.setAttribute("title",composerLabel);
     if(typeof window.updateComposerBtn==="function"){
       try{window.updateComposerBtn();}catch(_){}
     }else{
-      cpb.disabled=!cpb.classList.contains("active");
+      cpb.disabled=false;
     }
   }
   var el=document.getElementById("extensionsLabel");

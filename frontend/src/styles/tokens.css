@@ -48,6 +48,10 @@
      slot — keeps the two knobs free to diverge later. */
   --ui-hit-area: 44px;
   --ui-sidebar-mobile: 254px;
+  --ui-mobile-row: 40px;
+  --ui-mobile-header: 56px;
+  --ui-mobile-page-gutter: 16px;
+  --ui-mobile-bottom: max(24px, env(safe-area-inset-bottom, 0px));
   --ui-sidebar-desktop: 260px;
   --ui-content-chat: calc(768px * var(--app-width-scale, 1));
   --ui-safe-bottom: max(16px, env(safe-area-inset-bottom, 0px));

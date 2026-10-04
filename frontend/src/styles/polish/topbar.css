@@ -10,8 +10,11 @@
    its !important pins, so it was removed rather than kept as dead code. */
 
 #appShell .top-bar .toggle-sidebar,
-#appShell .top-bar .mobile-newchat-btn,
 #appShell .top-bar .icon-btn {
+  transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease, transform 0.1s ease;
+}
+
+#appShell .top-bar .mobile-newchat-btn {
   transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease, transform 0.1s ease;
 }
 
@@ -55,21 +58,9 @@
 #appShell .mobile-upgrade-pill { display: none; }
 @media (max-width: 768px) {
 :root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  flex: 0 0 auto;
-  box-sizing: border-box;
-  min-height: 28px;
-  height: 28px;
-  padding: 0 10px;
   border: 1px solid var(--ui-border-default);
-  border-radius: var(--ui-radius-pill);
   background: var(--ui-bg-surface);
   color: var(--ui-text-primary);
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 16px;
   text-decoration: none;
   white-space: nowrap;
 }
@@ -77,24 +68,18 @@
 :root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill:hover,
 :root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill:focus-visible { background: var(--ui-bg-hover); }
 }
-@media (max-width: 375px) {
-  :root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill { display: none; }
-}
 
 @media (max-width: 768px) {
   #appShell #pluginWorkspaceTabs,
-  body #appShell #pluginWorkspaceTabs,
-  body.plugins-active #appShell #pluginWorkspaceTabs,
-  body.workspace-active #appShell #pluginWorkspaceTabs,
-  body.workspace-active #appShell #mobileUpgradeBtn,
-  body.workspace-active #appShell .mobile-upgrade-pill,
-  body.workspace-active #appShell .mobile-newchat-btn,
-  body.plugins-active #appShell #mobileUpgradeBtn,
-  body.plugins-active #appShell .mobile-upgrade-pill,
-  body.plugins-active #appShell .mobile-newchat-btn,
-  body.library-active #appShell #mobileUpgradeBtn,
-  body.library-active #appShell .mobile-upgrade-pill,
-  body.library-active #appShell .mobile-newchat-btn {
+body #appShell #pluginWorkspaceTabs,
+body.plugins-active #appShell #pluginWorkspaceTabs,
+body.workspace-active #appShell #pluginWorkspaceTabs,
+body.workspace-active #appShell #mobileUpgradeBtn,
+body.workspace-active #appShell .mobile-upgrade-pill,
+body.workspace-active #appShell .mobile-newchat-btn,
+body.plugins-active #appShell #mobileUpgradeBtn,
+body.plugins-active #appShell .mobile-upgrade-pill,
+body.plugins-active #appShell .mobile-newchat-btn {
     display: none;
   }
 }
@@ -106,7 +91,7 @@
   top: 50%;
   transform: translate(-50%, -50%);
   border-color: var(--ui-border-subtle);
-  background: var(--ui-bg-raised);
+  background: var(--ui-bg-raised); display: none;
 }
 }
 @media (max-width: 768px) {
@@ -167,4 +152,11 @@
 /* In-chat affordances (share/find/model) keep the same quiet skin. */
 @media (max-width: 768px) {
 #appShell .top-bar-right .share-btn .share-btn-label { font-weight: 500; }
+}
+
+/* Phone mode menu reuses the existing functional dropdown. */
+@media (max-width: 768px) {
+  #appShell #mobileModeTrigger { background: transparent; border: 0; box-shadow: none; color: var(--ui-text-primary); }
+  :root[data-user-tier="diophantus"] #appShell #mobileUpgradeBtn { background: transparent; border: 0; color: var(--ui-link); }
+  body.workspace-active #appShell #mobileMode { display: none; }
 }

@@ -206,7 +206,6 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 
 /* ────── Responsive: small screens ≤ 480 px ────── */
 @media(max-width:480px){
-  .main-inner{padding:2dvh 8px 20px}
   .topic-title{font-size:calc(1.25rem * var(--app-font-scale, 1));padding:16px 4px 0}
   .topic-sub{padding:0 4px}
   .msg-body{padding:10px 12px;font-size:calc(13px * var(--app-font-scale, 1))}

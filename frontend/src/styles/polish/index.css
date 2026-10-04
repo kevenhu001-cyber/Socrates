@@ -1,11 +1,11 @@
 /*
- * styles/polish/index.css — Tier 5: design-polish layer (always last).
+ * styles/polish/index.css — canonical details and phone surface owners.
  *
  * Purpose: converge the shell on a single, quieter visual contract
  * (hairline borders, unified radii, one shadow scale, consistent control
- * sizes) without touching the historical restore/ files or the legacy
- * slices. Everything here is skin-only: no geometry that JS measures
- * (sidebar width, composer grid, keyboard inset) is changed.
+ * sizes). Phone geometry belongs to mobile-shell, mobile-sidebar and
+ * mobile-directories; composer geometry stays in parity/composer-unified.
+ * themes.css follows this layer and owns the sole active palette.
  *
  * Cascade position is the mechanism: this file is @imported after
  * restore/, so equal-specificity rules win by order. Rules that must beat
@@ -23,7 +23,10 @@
  *   mobile.css      — ≤768px skin alignment only
  *   press.css       — single press-feedback contract for every control
  *   buttons.css     — .btn / .btn-icon / .btn-pill utility classes
- *   mobile-controls.css — ≤768px touch targets + radii + colour overrides
+ *   mobile-controls.css — ≤768px expanded hit areas and shared controls
+ *   mobile-shell.css — ≤768px header and home layout
+ *   mobile-sidebar.css — ≤768px drawer rows, header and account layout
+ *   mobile-directories.css — ≤768px library and plugin layout
  */
 
 @import './sidebar.css';
@@ -37,3 +40,7 @@
 @import './press.css';
 @import './buttons.css';
 @import './mobile-controls.css';
+@import './mobile-shell.css';
+@import './mobile-sidebar.css';
+
+@import './mobile-directories.css';

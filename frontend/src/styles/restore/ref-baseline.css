@@ -27,7 +27,6 @@
    change is presentation-only and instantly reversible.
    -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
-#appShell .sidebar-nav-btn svg,
 #appShell .sidebar-nav-btn .nav-kbd {
   display: none;
 }
@@ -35,14 +34,8 @@
 
 @media (max-width: 768px) {
 
-
-}
-
-@media (max-width: 768px) {
-
 #appShell .sidebar-nav-btn {
   color: var(--cg-text-secondary);
-  justify-content: flex-start;
 }
 }
 
@@ -182,6 +175,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    from lobe-overrides.css; the rules below only normalize metrics that the
    reference pins down (row rhythm + composer breathing room).
    -------------------------------------------------------------------------- */
+@media (min-width: 769px) {
 #appShell #topicSetup .topic-title.greeting {
   font-weight: 400;
   letter-spacing: -0.01em;
@@ -192,6 +186,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   overflow-wrap: break-word;
   text-wrap: wrap;
   text-wrap: balance;
+}
 }
 
 
@@ -265,8 +260,11 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 }
 }
 
+@media (min-width: 769px) {
+
 [data-mode="light"] #appShell #topicSetup .topic-title.greeting {
   color: var(--cg-text) !important;
+}
 }
 
 /* Reference send button: solid dark circle in light mode. The
@@ -342,9 +340,6 @@ body.workspace-active #appShell .main-page {
 /* --------------------------------------------------------------------------
    8. Unified Composer & Top Mode Pills Refinement
    -------------------------------------------------------------------------- */
-@media (max-width: 768px) {
-
-}
 
 @media (max-width: 768px) {
 
@@ -378,15 +373,10 @@ body.workspace-active #appShell .main-page {
    9. Live OpenConnector Plugins Grid Refinement (2-column layout matching reference)
    -------------------------------------------------------------------------- */
 
-@media (max-width: 768px) {
-}
-
 /* P_directory-tools — the header tools row holds only the search field
    (each directory row carries its own connect button, so there is no
    header-level add action). Let the search fill the row so the input
    renders at a usable width instead of collapsing to the icon. */
-@media (max-width: 900px) {
-}
 
 /* P_directory-mono-tiles — single-color brand marks need a light tile to
    read on the dark directory (same pattern as the legacy connector tile
@@ -477,9 +467,7 @@ body.workspace-active #appShell .main-page {
   /* The previous `.home-suggestions-*` overrides were removed together
      with the corresponding DOM container; see the section-7 comment above. */
 
-  /* Workspace pages share the same 768px column. Library's reference
-     capture is 15px right of the exact centre because of its outer gutter;
-     keep that bias explicit instead of baking it into every page. */
+  /* Workspace pages share the same centered 768px column. */
   body.workspace-active #appShell .main-page:not(#sitesPanel) {
     position: relative;
     left: 0;
@@ -487,12 +475,6 @@ body.workspace-active #appShell .main-page {
     max-width: 768px !important;
     margin-inline: auto !important;
     padding: 30px 0 72px !important;
-  }
-
-  body.workspace-active #appShell #libraryPanel.main-page {
-    left: 15px !important;
-    width: min(738px, calc(100% - 64px)) !important;
-    max-width: 738px !important;
   }
 
   #appShell #libraryPanel .workspace-page-head {
@@ -632,12 +614,6 @@ body.workspace-active #appShell .main-page {
   }
 
 
-
-  #appShell #libraryPanel.main-page {
-    left: 17px !important;
-    width: min(736px, calc(100% - 64px)) !important;
-    max-width: 736px !important;
-  }
 
   #appShell #libraryPanel .workspace-page-head {
     margin-bottom: 44px !important;
@@ -802,13 +778,15 @@ body.workspace-active #appShell .main-page {
    and this block sits last so it also wins ties. Hover keeps its wash.
    -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
-#appShell#appShell .sidebar-nav-btn,
 #appShell#appShell .sidebar-nav-btn.active,
 #appShell#appShell .sidebar-nav-btn[aria-current="page"],
-#appShell#appShell #navNew.sidebar-nav-btn,
 body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
   #appShell#appShell
   #navNew.sidebar-nav-btn {
+  background: transparent !important;
+}
+#appShell#appShell .sidebar-nav-btn,
+#appShell#appShell #navNew.sidebar-nav-btn {
   background: transparent !important;
 }
 }
@@ -907,11 +885,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 #appShell .top-bar {
   background: var(--cg-page) !important;
 }
-}
-
-@media (max-width: 768px) {
-
-
 }
 
 @media (max-width: 768px) {
@@ -1068,7 +1041,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   border-bottom-color: transparent;
 }
 
-#appShell .plugin-directory-row .workspace-row-copy strong,
 #appShell .project-row .workspace-row-copy strong,
 #appShell .scheduled-recommendation-copy strong,
 #appShell .task-row .workspace-row-copy strong {
@@ -1076,6 +1048,14 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   font-size: 16px !important;
   font-weight: 500 !important;
   line-height: 1.4 !important;
+}
+
+@media (min-width: 769px) {
+  #appShell .plugin-directory-row .workspace-row-copy strong {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
 }
 
 #appShell .plugin-directory-row .workspace-row-copy span,
@@ -1312,4 +1292,3 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   }
 
 }
-

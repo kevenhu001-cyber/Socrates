@@ -25,18 +25,15 @@ export function mountLegacyShellListeners(actions) {
   click('apiSettingsBtn', actions.openSettings);
   bind(document, 'socrates:open-settings', actions.openSettings);
   click('composerPrimaryBtn', () => {
-    /* P_composer-single — one primary control for the single shell.
-       P_composer-primary-split (2026-10-04) — the primary is submit-only:
-       a draft sends (landing starts a session, chat sends) and a live turn
-       falls through to sendMessage → handleSendClick, whose wrapper aborts
-       it. The former "empty routes to voice input" branch is gone; voice
-       lives on #composerMicBtn below. Keeping both would leave two controls
-       calling the same toggleSpeechInput(surface) with the same accessible
-       name at both breakpoints. */
     const button = byId('composerPrimaryBtn');
     if (button && button.disabled) return;
     let surface = 'topic';
     try { surface = readComposerSurface(); } catch (_) { /* default above */ }
+    const streaming = button?.dataset.stop === '1' || button?.classList.contains('chat-stop') || button?.classList.contains('agent-stop');
+    if (button && !button.classList.contains('active') && !streaming) {
+      window.toggleSpeechInput?.(surface);
+      return;
+    }
     if (surface === 'chat') {
       actions.sendMessage();
       return;
@@ -49,6 +46,11 @@ export function mountLegacyShellListeners(actions) {
     if (typeof window.toggleSpeechInput === 'function') window.toggleSpeechInput(surface);
   });
   click('mobileModeTrigger', actions.toggleMobileMode);
+  click('mobileConfigBtn', () => {
+    byId('mobileMode')?.setAttribute('data-open', 'false');
+    byId('mobileModeTrigger')?.setAttribute('aria-expanded', 'false');
+    actions.toggleEffort(byId('mobileModeTrigger'));
+  });
   click('sidebarSearchBtn', (event) => {
     const sidebar = byId('sidebar');
     const input = byId('sidebarSearch');
@@ -67,7 +69,7 @@ export function mountLegacyShellListeners(actions) {
   document.querySelectorAll('.effort-trigger').forEach((element) => {
     bind(element, 'click', () => actions.toggleEffort(element));
   });
-  document.querySelectorAll('.app-mode-toggle, .mobile-mode-item').forEach((element) => {
+  document.querySelectorAll('.app-mode-toggle, .mobile-mode-item[data-mode]').forEach((element) => {
     bind(element, 'click', () => actions.selectMode(element.dataset.mode));
   });
 

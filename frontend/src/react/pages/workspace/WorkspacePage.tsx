@@ -1,7 +1,8 @@
 import { createRoot, type Root } from 'react-dom/client';
 import React, { useMemo, useState } from 'react';
+import { ListFilter } from 'lucide-react';
 
-import { t as _t } from '../../legacy/gateway.ts';
+import { getCurrentLang, getLegacyActions, t as _t } from '../../legacy/gateway.ts';
 import { installWorkspaceBridge, useWorkspaceSnapshot, useWorkspaceDispatch } from './workspace.bridge';
 import { getConnectorIconMarkup } from '../../../connector-icons';
 import { PluginDetailView } from './PluginDetailView';
@@ -35,7 +36,9 @@ function libraryDate(value?: string): string {
   const elapsedDays = Math.floor(diffMs / (24 * 3600000));
   const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'always' });
   let rel = '';
-  if (elapsedDays >= 1) {
+  if (elapsedDays >= 7) {
+    rel = rtf.format(-Math.floor(elapsedDays / 7), 'week');
+  } else if (elapsedDays >= 1) {
     rel = rtf.format(-elapsedDays, 'day');
   } else {
     const elapsedHours = Math.max(1, Math.round(diffMs / 3600000));
@@ -52,13 +55,7 @@ function PlusIcon() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>;
 }
 
-function FilterIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" width="18" height="18">
-      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-    </svg>
-  );
-}
+function FilterIcon() { return <ListFilter aria-hidden="true" width={18} height={18} />; }
 
 function GridIcon() {
   return (
@@ -174,10 +171,16 @@ function fileTypeGlyph(item: { name?: string; title?: string; kind?: string }): 
   if (ext === 'html' || ext === 'htm' || ext === 'web') {
     return (
       <FileGlyph>
-        <polyline points="16 18 22 12 16 6" />
-        <polyline points="8 6 2 12 8 18" />
+        <circle cx="12" cy="12" r="9" />
+        <path d="M3 12h18M12 3c-5 5-5 13 0 18M12 3c5 5 5 13 0 18" />
       </FileGlyph>
     );
+  }
+  if (['json', 'js', 'ts', 'py', 'css'].includes(ext)) {
+    return <FileGlyph><path d="m8 6-5 6 5 6M16 6l5 6-5 6M14 4l-4 16" /></FileGlyph>;
+  }
+  if (ext === 'md' || ext === 'markdown' || ext === 'txt') {
+    return <FileGlyph><rect x="4" y="2.5" width="16" height="19" rx="3" /><path d="M8 9h8M8 15h5" /></FileGlyph>;
   }
   if (kind === 'image' || has(IMAGE_EXTENSIONS)) {
     return (
@@ -393,8 +396,7 @@ function LibraryView({ data, dispatch }: {
             className="library-settings-btn"
             aria-label={i18n('profile.preferences', '偏好设置')}
             onClick={() => {
-              const settingsBtn = document.getElementById('settingsBtn') || document.getElementById('openProfileBtn');
-              settingsBtn?.click();
+              getLegacyActions().navigation.openSettings();
             }}
           >
             <GearIcon />
@@ -799,6 +801,10 @@ function PluginDirectory({ plugins, configured, openConnectorAvailable, dispatch
         </div>
         <div className="plugin-directory-tools">
           <label className="plugin-directory-search"><SearchIcon /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchLabel} aria-label={searchLabel} /></label>
+          <button type="button" className="plugin-directory-add-btn" aria-label={getCurrentLang() === 'zh' ? '添加插件' : 'Add plugin'} onClick={() => {
+            setScope('public'); setQuery('');
+            document.querySelector<HTMLInputElement>('.plugin-directory-search input')?.focus();
+          }}><PlusIcon /></button>
         </div>
       </div>
 
