@@ -1,5 +1,6 @@
 import {renderGreeting} from './ui/greeting.js';
 import {syncThemeUI} from './displayPrefs.js';
+import { reportSwallow } from './util/reportSwallow.ts';
 
 var I18N={
   en:{
@@ -1281,7 +1282,7 @@ var _zhReady=null;
 function ensureZh(){
   if(I18N.zh)return Promise.resolve();
   if(!_zhReady){
-    _zhReady=import("./i18n/zh.js").then(function(m){I18N.zh=m.zh||m.default||m;}).catch(function(err){_zhReady=null;try{console.error("[i18n] zh locale failed to load",err)}catch(_){/* ignore */}});
+    _zhReady=import("./i18n/zh.js").then(function(m){I18N.zh=m.zh||m.default||m;}).catch(function(err){_zhReady=null;try{console.error("[i18n] zh locale failed to load",err)}catch(e){reportSwallow(e, 'i18n.ensureZh.logError'); /* ignore */}});
   }
   return _zhReady;
 }
@@ -1294,14 +1295,14 @@ function setLang(lang){
   }
   _currentLang=lang;
   window._currentLang=lang;
-  try{document.documentElement.lang=lang==="zh"?"zh":"en";}catch(_){}
-  try{localStorage.setItem("socrates-lang-app",lang)}catch(_){}
+  try{document.documentElement.lang=lang==="zh"?"zh":"en";}catch(e){reportSwallow(e, 'i18n.setLang.documentLang'); }
+  try{localStorage.setItem("socrates-lang-app",lang)}catch(e){reportSwallow(e, 'i18n.setLang.persist'); }
   applyI18n();
   /* P_tutor-leak — applyI18n() rewrites #topicTitle / #topicSub /
      #topicDisclaimer using the current appMode. Without this call
      the topic-setup copy could drift if anything else touched those
      elements between mode-sync ticks. Cheap and idempotent. */
-  try{if(typeof syncAppModeUI==="function")syncAppModeUI()}catch(_){}
+  try{if(typeof syncAppModeUI==="function")syncAppModeUI()}catch(e){reportSwallow(e, 'i18n.setLang.syncAppModeUI'); }
   /* Update language toggle active state. Only en + zh are supported;
      removing ja/ko from this iteration avoids keeping dead UI states
      if the toggle HTML reverts. */
@@ -1322,14 +1323,14 @@ function setLang(lang){
       if(lang==="zh")lbl.textContent="中";
       else lbl.textContent="EN";
     }
-  }catch(_){}
+  }catch(e){reportSwallow(e, 'i18n.setLang.toggleLabel'); }
   /* Notify React-owned surfaces (Tiptap composer placeholders) that the
      active language changed, so they can re-localize without a reload. */
   try{
     if(typeof CustomEvent!=="undefined"){
       document.dispatchEvent(new CustomEvent("socrates:langchange",{detail:{lang:lang}}));
     }
-  }catch(_){}
+  }catch(e){reportSwallow(e, 'i18n.setLang.langChangeEvent'); }
 }
 function applyI18n(){
   /* Translate all elements with data-i18n-key attribute */
@@ -1356,7 +1357,7 @@ function applyI18n(){
       langEl.classList.toggle("active",langActive);
       langEl.setAttribute("aria-pressed",langActive?"true":"false");
     }
-  }catch(_){}
+  }catch(e){reportSwallow(e, 'i18n.applyI18n.profileLangChips'); }
   /* Translate all elements with data-i18n-placeholder attribute
      (used on <input>/<textarea> where textContent doesn't apply). */
   var phs=document.querySelectorAll("[data-i18n-placeholder]");
@@ -1383,7 +1384,7 @@ function applyI18n(){
   /* The selected theme label is generated from the active preference, so
      refresh it after a language switch alongside the static selector copy. */
   if(typeof syncThemeUI === "function"){
-    try{syncThemeUI()}catch(_){/* theme UI may not be mounted yet */}
+    try{syncThemeUI()}catch(e){reportSwallow(e, 'i18n.applyI18n.syncThemeUI'); /* theme UI may not be mounted yet */ }
   }
   /* Placeholder / value updates — done selectively for now. */
   var ci=document.getElementById("composerRoot");
@@ -1426,7 +1427,7 @@ function applyI18n(){
     cpb.setAttribute("aria-label",composerLabel);
     cpb.setAttribute("title",composerLabel);
     if(typeof window.updateComposerBtn==="function"){
-      try{window.updateComposerBtn();}catch(_){}
+      try{window.updateComposerBtn();}catch(e){reportSwallow(e, 'i18n.applyI18n.updateComposerBtn'); }
     }else{
       cpb.disabled=false;
     }
@@ -1437,11 +1438,11 @@ function applyI18n(){
      cannot update it. Repaint its UI chrome while preserving form values,
      generated questions and answers. */
   if(window.stateStore.read("_examInView")&&typeof window.refreshExamI18n==="function"){
-    try{window.refreshExamI18n()}catch(_){}
+    try{window.refreshExamI18n()}catch(e){reportSwallow(e, 'i18n.applyI18n.refreshExam'); }
   }
   /* P_chatgpt-landing — the reasoning-effort trigger label (高/中/低) is
      driven by JS, not a data-i18n-key element, so refresh it here too. */
-  if(typeof window.syncEffortUI==="function"){try{window.syncEffortUI();}catch(_){}}
+  if(typeof window.syncEffortUI==="function"){try{window.syncEffortUI();}catch(e){reportSwallow(e, 'i18n.applyI18n.syncEffortUI'); }}
 }
 /* Load saved language preference. _currentLang is the single source
    of truth at runtime; setLang() persists changes and applyI18n()
@@ -1464,18 +1465,18 @@ try{
     /* No preference recorded yet — persist the default so the
        next load picks up the same value instead of leaving the
        slot empty. */
-    try{localStorage.setItem("socrates-lang-app",_currentLang)}catch(_){}
+    try{localStorage.setItem("socrates-lang-app",_currentLang)}catch(e){reportSwallow(e, 'i18n.bootstrap.persistDefault'); }
   }else{
     /* Stale value (e.g. user downgraded and we removed a locale) —
      * overwrite with the default so the entry stays canonical. */
-    try{localStorage.removeItem("socrates-lang-app");localStorage.setItem("socrates-lang-app",_currentLang)}catch(_){}
+    try{localStorage.removeItem("socrates-lang-app");localStorage.setItem("socrates-lang-app",_currentLang)}catch(e){reportSwallow(e, 'i18n.bootstrap.resetStale'); }
   }
-}catch(_){}
+}catch(e){reportSwallow(e, 'i18n.bootstrap.readPref'); }
 /* Fetch the zh chunk in parallel with boot for zh users; en users never
    pay for it until they toggle. When it lands, run the full setLang path
    so JS-rendered strings (greeting, topic copy, toggles) repaint too. */
 if(_currentLang==="zh"){
-  ensureZh().then(function(){if(_currentLang==="zh"){try{setLang("zh")}catch(_){/* applyI18n retry covers stragglers */}}});
+  ensureZh().then(function(){if(_currentLang==="zh"){try{setLang("zh")}catch(e){reportSwallow(e, 'i18n.bootstrap.zhRetry'); /* applyI18n retry covers stragglers */ }}});
 }
 /* P_lang-init — run applyI18n SYNCHRONOUSLY at module load so every
    data-i18n-key element is in the saved language BEFORE main.js
@@ -1489,7 +1490,7 @@ try{
   if(lbl)lbl.textContent=_currentLang==="en"?"EN":"中";
   document.documentElement.lang=_currentLang==="zh"?"zh":"en";
   applyI18n();
-}catch(_){}
+}catch(e){reportSwallow(e, 'i18n.bootstrap.initialApply'); }
 
 /* Expose i18n functions as globals for main.js and other modules. */
 window._currentLang = _currentLang;

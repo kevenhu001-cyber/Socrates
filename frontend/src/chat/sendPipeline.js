@@ -9,6 +9,7 @@ import { isExpectedTurnAbort } from './turnUi.js';
 import { hasUsableActive } from '../config/providers.js';
 import { _origGenerateFollowUp } from './mocks.js';
 import { notifyMockFallbackOnce } from './mockFallbackNotice.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 import { generateFollowUpStream, askNextQuestion } from '../tutor/socraticTurn.js';
 import { toolCallbacksForStream } from './toolCallbacks.js';
 import { fetchWebContext, shouldRefreshSearch } from './webSearch.js';
@@ -42,25 +43,25 @@ function _t(key, fallback) {
       var v = window.t(key);
       if (v && v !== key) return v;
     }
-  } catch (_) {}
+  } catch (e) { reportSwallow(e, 'sendPipeline._t.prefLookup'); }
   return fallback != null ? fallback : key;
 }
 function _appMode() {
   try {
     if (typeof window !== 'undefined' && window.appMode) return window.appMode;
-  } catch (_) {}
+  } catch (e) { reportSwallow(e, 'sendPipeline._appMode.readGlobal'); }
   return 'chat';
 }
 function _webSearchOn() {
   try {
     if (typeof window !== 'undefined' && typeof window.webSearchOn !== 'undefined') return !!window.webSearchOn;
-  } catch (_) {}
+  } catch (e) { reportSwallow(e, 'sendPipeline._webSearchOn.readGlobal'); }
   return true;
 }
 function _tutorSocratic() {
   try {
     if (typeof window !== 'undefined' && window.tutorSocratic) return window.tutorSocratic;
-  } catch (_) {}
+  } catch (e) { reportSwallow(e, 'sendPipeline._tutorSocratic.readGlobal'); }
   return null;
 }
 function _askChatTurn(text, pending, precreatedCtl) {
@@ -95,7 +96,7 @@ export async function submitChatMessage(textOverride,opts){
   /* Warm the lazy streamingTurn chunk — the fetch overlaps with the
      attachment/template preamble so precreateChatTurn resolves in a
      microtask. */
-  try { if (typeof window.__loadStreamingTurn === 'function') window.__loadStreamingTurn(); } catch (_) { /* prefetch is best effort */ }
+  try { if (typeof window.__loadStreamingTurn === 'function') window.__loadStreamingTurn(); } catch (e) { reportSwallow(e, 'sendPipeline.precreate.prefetchStreamingTurn'); /* prefetch is best effort */ }
   var rawText=(textOverride!=null?textOverride:getComposerMarkdown("chat"));
   var text=rawText.trim();
   /* P5.8 — if a template is active, strip its body prefix
@@ -111,7 +112,7 @@ export async function submitChatMessage(textOverride,opts){
       /* User sent the placeholder without typing anything
          real. Bail with a hint instead of firing an empty
          request at the model. */
-      try{showToast(_t("toast.typeTextFirst"));}catch(_){}
+      try{showToast(_t("toast.typeTextFirst"));}catch(e){reportSwallow(e, 'sendPipeline.typeTextFirst'); }
       return;
     }
   }
@@ -169,7 +170,7 @@ export async function submitChatMessage(textOverride,opts){
       });
     } catch (_) { precreatedChatCtl=null; }
     if(supersededCtl&&supersededCtl!==precreatedChatCtl&&typeof supersededCtl.abort==="function"){
-      try{supersededCtl.abort()}catch(_){/* already torn down */}
+      try{supersededCtl.abort()}catch(e){reportSwallow(e, 'sendPipeline.precreate.abortSuperseded');/* already torn down */}
     }
   }
   var userClientId=null;
@@ -236,7 +237,7 @@ export async function submitChatMessage(textOverride,opts){
             if(typeof window.publishReactChatRuntime==="function"){
               window.publishReactChatRuntime({type:"state-synced",reason:"send-attachment-patch"});
             }
-          }catch(_){}
+          }catch(e){reportSwallow(e, 'sendPipeline.publishAttachmentPatch'); }
           break;
         }
       }
@@ -261,7 +262,7 @@ export async function submitChatMessage(textOverride,opts){
        "undefined" and this branch never fired (P_deep-research-fix). */
     var deepResearchOn = _deepResearchOn();
     if(deepResearchOn && text){
-      if(precreatedChatCtl){try{precreatedChatCtl.abort()}catch(_){} precreatedChatCtl=null;}
+      if(precreatedChatCtl){try{precreatedChatCtl.abort()}catch(e){reportSwallow(e, 'sendPipeline.deepResearch.abortPrecreated'); } precreatedChatCtl=null;}
       if(typeof window.startDeepResearch === "function"){
         await window.startDeepResearch(text);
       }
@@ -277,7 +278,7 @@ export async function submitChatMessage(textOverride,opts){
            expected (the gate / new turn already owns the UX). Anything
            else is a real bug: log it without the red banner, since the
            stream controller already surfaced the failure in-bubble. */
-        if(!isExpectedTurnAbort(turnErr)){try{console.error("[chat] turn failed:",turnErr)}catch(_){}}
+        if(!isExpectedTurnAbort(turnErr)){try{console.error("[chat] turn failed:",turnErr)}catch(e){reportSwallow(e, 'sendPipeline._dispatchTurn.logTurnError'); }}
       }
       return;
     }
@@ -334,14 +335,14 @@ export async function submitChatMessage(textOverride,opts){
        user sees their attempt count climb. */
     if(typeof _tutorSocratic()==="object"&&_tutorSocratic()
        &&typeof _tutorSocratic().renderPracticeProgress==="function"){
-      try{_tutorSocratic().renderPracticeProgress()}catch(_){}
+      try{_tutorSocratic().renderPracticeProgress()}catch(e){reportSwallow(e, 'sendPipeline._dispatchTurn.practiceProgress'); }
     }
     /* U-M1 — the teaching-plan sidebar now shows the substantive-answer
        depth counter (n/3), so re-render it whenever the counter or the
        stage may have moved. */
     if(typeof _tutorSocratic()==="object"&&_tutorSocratic()
        &&typeof _tutorSocratic().renderTeachingPlan==="function"){
-      try{_tutorSocratic().renderTeachingPlan()}catch(_){}
+      try{_tutorSocratic().renderTeachingPlan()}catch(e){reportSwallow(e, 'sendPipeline._dispatchTurn.teachingPlan'); }
     }
 
     /* P_stage-gate — a node is only internalized when the user has
@@ -439,7 +440,7 @@ export async function submitChatMessage(textOverride,opts){
         try{
           await _askChatTurn(text,chatContent);
         }catch(turnErr){
-          if(!isExpectedTurnAbort(turnErr)){try{console.error("[chat] turn failed:",turnErr)}catch(_){}}
+          if(!isExpectedTurnAbort(turnErr)){try{console.error("[chat] turn failed:",turnErr)}catch(e){reportSwallow(e, 'sendPipeline.planSubs.logTurnError'); }}
         }
         stateStore.dispatch({type:"state/set",key:"totalQ",value:stateStore.read("totalQ")+1});
         updateChatStats();
@@ -501,7 +502,7 @@ export async function submitChatMessage(textOverride,opts){
              four-option dialog (per design). */
           if(typeof _tutorSocratic()==="object"&&_tutorSocratic()
              &&typeof _tutorSocratic().showFourOptionDialog==="function"){
-            try{_tutorSocratic().showFourOptionDialog(text)}catch(_){}
+            try{_tutorSocratic().showFourOptionDialog(text)}catch(e){reportSwallow(e, 'sendPipeline.planSubs.fourOptionDialog'); }
           }else{
             _addAnchoredAssistant("Let's try a different approach.","suggest",[
               {text:_t("tutor.explain"),action:"explain",primary:true},
@@ -517,7 +518,7 @@ export async function submitChatMessage(textOverride,opts){
              instead of dumping a textbook at the user. */
           if(typeof _tutorSocratic()==="object"&&_tutorSocratic()
              &&typeof _tutorSocratic().showExplainPrompt==="function"){
-            try{_tutorSocratic().showExplainPrompt()}catch(_){}
+            try{_tutorSocratic().showExplainPrompt()}catch(e){reportSwallow(e, 'sendPipeline.planSubs.explainPrompt'); }
           }else{
             _addAnchoredAssistant("Let's try a different approach.","suggest",[
               {text:_t("tutor.explain"),action:"explain",primary:true},
