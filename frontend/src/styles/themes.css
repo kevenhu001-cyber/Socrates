@@ -33,6 +33,7 @@
   --ui-accent-strong: #ffffff;
   --ui-danger: #ff6764;
   --ui-success: #42dec2;
+  --ui-avatar-bg: rgb(16 163 127);
   --ui-bg-composer: #212121;
   --ui-bg-chip: rgb(255 255 255 / 8%);
   --ui-bg-chip-hover: rgb(255 255 255 / 12%);
@@ -89,6 +90,7 @@
   --ui-accent-strong: #0d0d0d;
   --ui-danger: #d8241a;
   --ui-success: #027c6a;
+  --ui-avatar-bg: rgb(16 163 127);
   --ui-bg-composer: #fff;
   --ui-bg-chip: rgb(0 0 0 / 5%);
   --ui-bg-chip-hover: rgb(0 0 0 / 8%);

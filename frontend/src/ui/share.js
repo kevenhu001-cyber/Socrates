@@ -303,6 +303,18 @@ function _renderSharedMessageList(messages) {
 
 function _switchToSharedChatView() {
   activateMainView("chatView", document);
+  /* Show the read-only banner — it exists in index.html but was never
+     unhidden, so shared sessions had no visible "this is not yours"
+     affordance. */
+  var banner = document.getElementById("sharedBanner");
+  if (banner) {
+    banner.classList.remove("hidden");
+    var label = banner.querySelector("[data-i18n-key='share.readOnlyBanner']");
+    if (label && typeof window.t === "function") {
+      var text = window.t("share.readOnlyBanner");
+      if (text && text !== "share.readOnlyBanner") label.textContent = text;
+    }
+  }
   var inputBar = document.getElementById("chatInputBar");
   if (inputBar) inputBar.classList.add("hidden");
   var topBar = document.querySelector(".chat-top-bar");

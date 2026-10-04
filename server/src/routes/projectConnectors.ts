@@ -72,13 +72,35 @@ router.get('/', requireAuth, async (req, res, next) => {
       .where(eq(projectConnectorConnections.userId, req.userId!));
     const byProvider = new Map(rows.map((row) => [row.provider, row]));
     const openConnector = await listOpenConnectorCatalogItems();
-    const openConnectors = openConnector.items.map((item) => ({ ...item, connection: publicConnection(byProvider.get(item.id)) }));
+    const catalogServices = new Set<string>();
+    const catalogNames = new Set<string>();
+    for (const item of PROJECT_CONNECTOR_CATALOG) {
+      if (item.id) catalogServices.add(item.id.toLowerCase());
+      if (item.service) catalogServices.add(item.service.toLowerCase());
+      if (item.name) catalogNames.add(item.name.toLowerCase().replace(/\s+/g, ''));
+    }
+
+    const filteredOpenConnectors = openConnector.items.filter((item) => {
+      const s = (item.service || item.id.replace(/^oc_/, '')).toLowerCase();
+      const n = (item.name || '').toLowerCase().replace(/\s+/g, '');
+      if (catalogServices.has(s) || catalogNames.has(n)) return false;
+      return true;
+    });
+
+    const openConnectors = filteredOpenConnectors.map((item) => ({
+      ...item,
+      connection: publicConnection(byProvider.get(item.id)),
+    }));
+
     return res.json({
       mode: 'oomol-project-connector',
       configured: isProjectConnectorConfigured(),
       openConnector: { available: openConnector.available, cloud: openConnector.cloud },
       connectors: [
-        ...PROJECT_CONNECTOR_CATALOG.map((item) => ({ ...item, connection: publicConnection(byProvider.get(item.id)) })),
+        ...PROJECT_CONNECTOR_CATALOG.map((item) => ({
+          ...item,
+          connection: publicConnection(byProvider.get(item.id) || byProvider.get(`oc_${item.id}`)),
+        })),
         ...openConnectors,
       ],
     });

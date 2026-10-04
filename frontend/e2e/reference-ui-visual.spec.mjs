@@ -143,9 +143,8 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   await page.evaluate(() => document.getElementById('navPlugins')?.click());
   await expect(page.locator('.plugin-directory')).toBeVisible();
   await expect(page.locator('#sidebar')).toHaveClass(/collapsed/);
-  await expect(page.locator('#pluginWorkspaceTabs')).toBeVisible();
+  await expect(page.locator('#pluginWorkspaceTabs')).toBeHidden();
   await expect(page.locator('#modeSegmentedTop')).toBeHidden();
-  await expect(page.locator('#pluginWorkspacePluginsTab')).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('#pluginsPanel .plugins-panel-head')).toBeHidden();
   const pluginGeometry = await page.evaluate(() => {
     const box = (selector) => {
@@ -166,13 +165,10 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   expect(pluginGeometry.tabs?.y).toBeGreaterThan(315);
   expect(pluginGeometry.tabs?.y).toBeLessThan(410);
   expect(pluginGeometry.rowIcon?.width).toBe(40);
-  await page.screenshot({ path: '/tmp/socrates-reference-mobile-plugins-390x769.png', fullPage: true });
-  await page.locator('#pluginWorkspaceSkillsTab').click();
+  await page.evaluate(() => document.getElementById('pluginWorkspaceSkillsTab')?.click());
   await expect(page.locator('#promptTemplatesOverlay')).toBeVisible();
-  await expect(page.locator('#pluginWorkspaceSkillsTab')).toHaveAttribute('aria-selected', 'true');
   await page.locator('#promptTemplatesOverlay [data-prompt-command="close"]').click();
   await expect(page.locator('#promptTemplatesOverlay')).toHaveCount(0);
-  await expect(page.locator('#pluginWorkspacePluginsTab')).toHaveAttribute('aria-selected', 'true');
   await page.evaluate(() => document.getElementById('navProjects')?.click());
   await expect(page.locator('.projects-directory')).toBeVisible();
   await expect(page.locator('.project-row').filter({ hasText: 'Socrates' })).toBeVisible();

@@ -31,7 +31,7 @@ function setHidden(doc, ids, hidden) {
 }
 
 function resetShellState(doc) {
-  doc.body.classList.remove('workspace-active', 'plugins-active', 'admin-active', 'exam-active');
+  doc.body.classList.remove('workspace-active', 'plugins-active', 'library-active', 'admin-active', 'exam-active');
   var pluginTabs = doc.getElementById('pluginWorkspaceTabs');
   if (pluginTabs) pluginTabs.hidden = true;
   doc.querySelectorAll("[data-exam-only='true']").forEach(function (element) {
@@ -150,6 +150,7 @@ export function activateMainView(viewId, doc) {
   if (WORKSPACE_PAGE_IDS.has(viewId)) {
     d.body.classList.add('workspace-active');
     d.body.classList.toggle('plugins-active', viewId === 'pluginsPanel');
+    d.body.classList.toggle('library-active', viewId === 'libraryPanel');
     d.body.classList.toggle('admin-active', viewId === 'adminPanel');
     var pluginTabs = d.getElementById('pluginWorkspaceTabs');
     if (pluginTabs) pluginTabs.hidden = viewId !== 'pluginsPanel';

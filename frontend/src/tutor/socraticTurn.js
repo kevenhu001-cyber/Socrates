@@ -12,6 +12,7 @@ import { BASELINE_LEVEL, fromBasicsDirective } from '../chat/socraticDirectives.
 import { appendClientContextMessages } from '../chat/promptSuffixes.ts';
 import { injectTemplateSystemPrompt } from '../chat/templateSystemPrompt.ts';
 import { _origGenerateSocraticQuestion, _origGetExplanation } from '../chat/mocks.js';
+import { notifyMockFallbackOnce } from '../chat/mockFallbackNotice.js';
 import { addMessage as _addMessage } from '../chat/messages.js';
 import { scheduleTurnToTopForMessage } from '../chat/turnAnchor.ts';
 import { toolCallbacksForStream as _toolCallbacksForStream } from '../chat/toolCallbacks.js';
@@ -33,6 +34,8 @@ export async function generateSocraticQuestion(node, domain) {
     }
     stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'mock' });
   } else { stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'mock' }); }
+  /* Canned prompt, not an AI reply — make the degradation visible. */
+  notifyMockFallbackOnce();
   return _origGenerateSocraticQuestion(node, domain);
 }
 
@@ -88,6 +91,8 @@ export async function getExplanation(status) {
     }
     stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'mock' });
   } else { stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'mock' }); }
+  /* Canned explanation, not an AI reply — make it visible. */
+  notifyMockFallbackOnce();
   return _origGetExplanation(status);
 }
 

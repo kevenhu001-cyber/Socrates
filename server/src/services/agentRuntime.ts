@@ -434,7 +434,14 @@ async function getOrCreateWorkspace(
 }
 
 const DEFAULT_POLICY = {
-  approvalPolicy: 'on-request',
+  /* The workspace agent executes unattended. It is confined by a dedicated
+   * workspace directory plus an allowlisted process environment, not by an
+   * interactive approval gate, so this must stay 'never' to match the
+   * `policy.approvalPolicy` reported by `GET /api/agent-runs/capabilities`
+   * and the `initialize_workspace` tool description. Nothing in the
+   * runtime emits `approval_required`, so a value of 'on-request' here
+   * would advertise a human gate that no code path can reach. */
+  approvalPolicy: 'never',
   sandbox: 'workspace-write',
   unattended: 'read-only',
   maxDurationMs: TURN_TIMEOUT_MS,

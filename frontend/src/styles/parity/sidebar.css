@@ -554,8 +554,8 @@
   height: 32px;
   margin: 0;
   border-radius: 50%;
-  background: var(--ui-bg-control);
-  color: var(--ui-text-primary);
+  background: var(--ui-avatar-bg);
+  color: rgb(255 255 255);
   font-size: 12px;
   font-weight: 600;
   line-height: 1;

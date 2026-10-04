@@ -19,6 +19,12 @@ export interface ToolRun {
   elapsedMs?: number;
 }
 
+/* Approval payloads are a dormant part of the tool contract. The workspace
+ * agent runs unattended — `GET /api/agent-runs/capabilities` reports
+ * `approvalPolicy: 'never'` and the server never emits a `tool_approval`
+ * frame — so no client currently receives one. The types are kept so the
+ * web client's defensive frame routing stays typed; do not build UI on
+ * them without a matching server emit + decision endpoint. */
 export type ToolApprovalDecision = 'accept' | 'acceptForSession' | 'decline' | 'interrupt';
 
 export interface ToolApproval {
@@ -285,6 +291,7 @@ export interface ChatSseHandlers {
   onToolProgress?: (payload: JsonValue) => void;
   onToolCallDelta?: (payload: JsonValue) => void;
   onExecutionStart?: (payload: JsonValue) => void;
+  /** Dormant — see the note above. Never populated by the current server. */
   onToolApproval?: (payload: ToolApproval) => void;
   onError?: (message: string) => void;
   onDone?: () => void;

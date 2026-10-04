@@ -32,7 +32,7 @@ function _publishScheduledState(overrides) {
    projects, plugins) so the React compatibility root can render.
    Installed by frontend/src/react/pages/workspace/workspaceStore.ts
    under `?react=1`. */
-function _publishWorkspaceState() {
+function _publishWorkspaceState(overrides) {
   try {
     var bridge = window.__socratesWorkspaceBridge;
     if (bridge && typeof bridge.publish === "function") {
@@ -46,8 +46,8 @@ function _publishWorkspaceState() {
         mcpData: workspaceCache.mcp || [],
         mcpConfigured: !!workspaceCache.mcpConfigured,
         mcpProjectId: workspaceCache.mcpProjectId || null,
-        loading: false,
-        error: null,
+        loading: !!(overrides && overrides.loading),
+        error: (overrides && overrides.error) || null,
       });
     }
   } catch (_) { /* swallow */ }
@@ -379,7 +379,7 @@ function restoreConnectorReturnContext() {
 
 window.rememberConnectorReturnContext = rememberConnectorReturnContext;
 export function openNav(name, options) {
-  var openers = { library: openLibrary, projects: openProjects, scheduled: openScheduled, plugins: openPlugins, images: function () { openCreation('images'); }, assistants: function () { openCreation('assistants'); }, sites: function () { openCreation('sites'); }, exam: openExam, admin: openAdmin, more: openMoreNav };
+  var openers = { library: openLibrary, projects: openProjects, scheduled: openScheduled, plugins: openPlugins, images: function () { openCreation('images'); }, assistants: function () { openCreation('assistants'); }, sites: function () { openCreation('sites'); }, exam: openExam, admin: openAdmin, more: openMoreNav, skills: openPromptTemplatesModal };
   if (!openers[name]) return;
   if (name !== "more" && !(options && options.fromRoute)) pushWorkspaceRoute(name);
   setActiveNav(name);
@@ -426,15 +426,16 @@ async function renderLibrary() {
   /* #libraryPanel is React-owned (WorkspacePage) — never write its DOM
      here; fetch, update the cache, and publish through the bridge. */
   try {
+    if (!workspaceCache.library.files.length && !workspaceCache.library.artifacts.length) _publishWorkspaceState({ loading: true });
     var results = await Promise.all([api("/api/files?limit=100"), api("/api/artifacts?limit=100")]);
     workspaceCache.library.files = results[0].files || [];
     workspaceCache.library.artifacts = results[1].artifacts || [];
     paintLibrary();
-    _publishWorkspaceState();
+    _publishWorkspaceState({ loading: false });
   } catch (err) {
     workspaceCache.library.files = [];
     workspaceCache.library.artifacts = [];
-    _publishWorkspaceState();
+    _publishWorkspaceState({ loading: false });
     toast(err && err.status === 401
       ? "Sign in to upload files and create artifacts."
       : "Your library could not be loaded. Try again.");
@@ -535,13 +536,14 @@ async function renderProjects() {
   /* #spacesPanel is React-owned (WorkspacePage) — never write its DOM
      here; fetch, update the cache, and publish through the bridge. */
   try {
+    if (!workspaceCache.projects.length) _publishWorkspaceState({ loading: true });
     var res = await api("/api/projects");
     workspaceCache.projects = (res && res.projects) || [];
     paintProjects();
-    _publishWorkspaceState();
+    _publishWorkspaceState({ loading: false });
   } catch (err) {
     workspaceCache.projects = [];
-    _publishWorkspaceState();
+    _publishWorkspaceState({ loading: false });
     toast(err && err.status === 401
       ? "Sign in to create projects."
       : "Projects could not be loaded. Try again.");
@@ -621,6 +623,7 @@ async function renderPlugins() {
   /* #pluginsPanel is React-owned (WorkspacePage) — never write its DOM
      here; fetch, update the cache, and publish through the bridge. */
   try {
+    if (!workspaceCache.connectors.length) _publishWorkspaceState({ loading: true });
     var projectId = window.stateStore.read("currentProjectId") || null;
     var res = await api("/api/project-connectors").catch(function () { return {}; });
     workspaceCache.connectors = (res && res.connectors) || [];
@@ -633,13 +636,13 @@ async function renderPlugins() {
     workspaceCache.mcpConfigured = false;
     workspaceCache.mcpProjectId = projectId || null;
     paintPlugins();
-    _publishWorkspaceState();
+    _publishWorkspaceState({ loading: false });
   } catch (err) {
     workspaceCache.connectors = [];
     workspaceCache.mcp = [];
     workspaceCache.mcpConfigured = false;
     workspaceCache.openConnectorAvailable = false;
-    _publishWorkspaceState();
+    _publishWorkspaceState({ loading: false });
     toast(err && err.status === 401
       ? "Sign in to connect apps."
       : "Apps could not be loaded. Try again.");
@@ -888,6 +891,32 @@ function toLocalDateTimeValue(value) {
   var p = function (n) { return String(n).length < 2 ? "0" + n : String(n); };
   return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + "T" + p(d.getHours()) + ":" + p(d.getMinutes());
 }
+/* The workspace agent is only offered when the server can actually run it —
+   PI_AGENT_ENABLED=false or a missing pi binary makes every codex task fail
+   server-side. /api/agent-runs/capabilities exposes that flag; fetch once
+   and cache on workspaceCache. */
+var _agentCapsPromise = null;
+function loadAgentCapabilities() {
+  if (workspaceCache.agentCaps) return Promise.resolve(workspaceCache.agentCaps);
+  if (!_agentCapsPromise) {
+    _agentCapsPromise = api("/api/agent-runs/capabilities").then(function (caps) {
+      workspaceCache.agentCaps = caps || null;
+      return workspaceCache.agentCaps;
+    }).catch(function () {
+      _agentCapsPromise = null;
+      return null;
+    });
+  }
+  return _agentCapsPromise;
+}
+function applyAgentCapabilityOptions(selectEl) {
+  loadAgentCapabilities().then(function (caps) {
+    if (!selectEl || !caps || caps.background !== false) return;
+    var option = selectEl.querySelector('option[value="codex"]');
+    if (option) option.disabled = true;
+    if (selectEl.value === "codex") selectEl.value = "native";
+  });
+}
 /* Workspace-agent scheduled task editor — the Scheduled page's first-class
    runtime form. */
 function openAgentTaskForm(task, initialPrompt) {
@@ -905,6 +934,7 @@ function openAgentTaskForm(task, initialPrompt) {
   }
   form.elements.frequency.value = (task && task.frequency) || "once";
   form.elements.agentKind.value = (task && task.agentKind) || "native";
+  applyAgentCapabilityOptions(form.elements.agentKind);
   form.elements.projectId.value = activeProjectId;
   form.addEventListener("submit", async function (event) {
     event.preventDefault();
@@ -1001,11 +1031,6 @@ window.deleteLibraryFile = async function (id) { if (!(await confirmAction(t("co
 var libraryUpload = byId("libraryUploadInput");
 if (libraryUpload && !libraryUpload.dataset.wired) { libraryUpload.dataset.wired = "1"; libraryUpload.addEventListener("change", async function () { var files = Array.prototype.slice.call(libraryUpload.files || []); if (!files.length) return; try { for (var i = 0; i < files.length; i++) { var body = new FormData(); body.append("file", files[i]); await api("/api/files", { method: "POST", body: body }); } toast(files.length === 1 ? t("toast.fileAdded", "File added to Library") : t("toast.filesAdded", "{n} files added to Library").replace("{n}", files.length)); renderLibrary(); } catch (_) { toast(t("toast.uploadFailed", "Some files could not be uploaded")); } finally { libraryUpload.value = ""; } }); }
 
-window.connectConnector = function (id) {
-  if (id === "zotero") { openZoteroConnectDialog(); return; }
-  if (id !== "github" && id !== "feishu" && id !== "gitee" && id !== "notion") { toast(t("toast.appComingSoon", "This app is coming soon.")); return; }
-  window.location.assign("/api/v2/connectors/" + id + "/start");
-};
 function arxivPaperMarkup(paper) {
   var meta = [paper.authors && paper.authors.join(", "), paper.publishedAt ? new Date(paper.publishedAt).getFullYear() : "", paper.categories && paper.categories.slice(0, 2).join(", ")].filter(Boolean).join(" · ");
   var links = (paper.abstractUrl ? '<a class="workspace-row-action" href="' + esc(paper.abstractUrl) + '" target="_blank" rel="noopener noreferrer">Abstract</a>' : "") + (paper.pdfUrl ? '<a class="workspace-row-action" href="' + esc(paper.pdfUrl) + '" target="_blank" rel="noopener noreferrer">PDF</a>' : "");
@@ -1014,35 +1039,19 @@ function arxivPaperMarkup(paper) {
 function paintArxivPapers(papers) {
   var list = byId("arxivPapers");
   if (!list) return;
-  list.innerHTML = papers.length ? papers.map(arxivPaperMarkup).join("") : '<div class="workspace-empty"><strong>No matching papers</strong><span>Try another research topic or author.</span></div>';
+  list.innerHTML = papers.length ? papers.map(arxivPaperMarkup).join("") : '<div class="workspace-empty"><strong>' + t("connectors.arxivNone", "No matching papers") + '</strong><span>' + t("connectors.arxivNoneHint", "Try another research topic or author.") + '</span></div>';
 }
 window.openArxivSearch = function () {
   ensureConnectorIcons();
-  showDialog('<div class="workspace-dialog-title"><div><h2>Search arXiv</h2><p>Explore public research preprints. No account connection is needed.</p></div><button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">脳</button></div><form id="arxivSearchForm" class="workspace-form"><div class="workspace-form-grid"><label class="workspace-field"><span>Research topic</span><input name="query" maxlength="200" minlength="2" autocomplete="off" required placeholder="e.g. retrieval augmented generation"></label><div class="workspace-field"><span>&nbsp;</span><button class="workspace-primary" type="submit">Search</button></div></div></form><div id="arxivPapers" class="marketplace-list"><div class="workspace-empty"><strong>Find a paper</strong><span>Search by topic, method, author, or year.</span></div></div>');
+  showDialog(libraryPreviewHeader(t("connectors.arxivTitle", "Search arXiv"), t("connectors.arxivSubtitle", "Explore public research preprints. No account connection is needed.")) + '<form id="arxivSearchForm" class="workspace-form"><div class="workspace-form-grid"><label class="workspace-field"><span>' + t("connectors.researchTopic", "Research topic") + '</span><input name="query" maxlength="200" minlength="2" autocomplete="off" required placeholder="e.g. retrieval augmented generation"></label><div class="workspace-field"><span>&nbsp;</span><button class="workspace-primary" type="submit">' + t("connectors.search", "Search") + '</button></div></div></form><div id="arxivPapers" class="marketplace-list"><div class="workspace-empty"><strong>' + t("connectors.arxivEmptyTitle", "Find a paper") + '</strong><span>' + t("connectors.arxivEmptyHint", "Search by topic, method, author, or year.") + '</span></div></div>');
   byId("arxivSearchForm").addEventListener("submit", async function (event) {
     event.preventDefault();
     var form = event.currentTarget; var list = byId("arxivPapers"); var query = form.elements.query.value;
-    if (list) list.innerHTML = '<div class="workspace-loading">Searching arXiv…</div>';
+    if (list) list.innerHTML = '<div class="workspace-loading">' + t("connectors.arxivSearching", "Searching arXiv…") + '</div>';
     try { paintArxivPapers((await api("/api/connectors/arxiv/papers?query=" + encodeURIComponent(query))).papers || []); }
-    catch (err) { if (list) list.innerHTML = '<div class="workspace-empty"><strong>arXiv could not be searched</strong><span>' + esc((err && err.message) || "Try again shortly.") + '</span></div>'; }
+    catch (err) { if (list) list.innerHTML = '<div class="workspace-empty"><strong>' + t("connectors.arxivError", "arXiv could not be searched") + '</strong><span>' + esc((err && err.message) || t("connectors.tryAgain", "Try again shortly.")) + '</span></div>'; }
   });
 };
-function openZoteroConnectDialog() {
-  showDialog('<div class="workspace-dialog-title"><div><h2>Connect Zotero</h2><p>Use a dedicated, read-only API Key from your Zotero account. Your Key is encrypted and never shown again.</p></div><button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">脳</button></div><form id="zoteroConnectForm" class="workspace-form"><label class="workspace-field"><span>Zotero API Key</span><input name="apiKey" type="password" minlength="16" maxlength="128" autocomplete="off" spellcheck="false" required placeholder="Paste your dedicated read-only Key"></label><p class="workspace-note">Create one in <a href="https://www.zotero.org/settings/keys" target="_blank" rel="noopener noreferrer">Zotero API Keys</a>. Enable personal library access only, with write access turned off.</p><div class="workspace-dialog-actions"><span></span><button type="button" class="workspace-secondary" onclick="closeWorkspaceDialog()">' + t("common.cancel", "Cancel") + '</button><button class="workspace-primary" type="submit">Connect</button></div></form>');
-  byId("zoteroConnectForm").addEventListener("submit", async function (event) {
-    event.preventDefault();
-    var form = event.currentTarget;
-    var submit = form.querySelector('button[type="submit"]');
-    submit.disabled = true; submit.textContent = "Verifying…";
-    try {
-      await api("/api/connectors/zotero", { method: "POST", body: { apiKey: form.elements.apiKey.value } });
-      closeWorkspaceDialog(); renderPlugins(); toast(t("toast.zoteroConnected", "Zotero connected"));
-    } catch (err) {
-      toast((err && err.message) || "Zotero could not be connected");
-      submit.disabled = false; submit.textContent = "Connect";
-    }
-  });
-}
 function zoteroItemMarkup(item) {
   var details = [item.itemType, item.creators && item.creators.join(", "), item.date].filter(Boolean).join(" · ");
   return '<div class="workspace-row zotero-item"><span class="workspace-row-icon connector-icon connector-zotero">' + connectorIconWithFallback('zotero') + '</span><div class="workspace-row-copy"><strong>' + esc(item.title || "Untitled item") + '</strong><span>' + esc(details || "Zotero item") + '</span></div></div>';
@@ -1050,15 +1059,15 @@ function zoteroItemMarkup(item) {
 function paintZoteroItems(items) {
   var list = byId("zoteroItems");
   if (!list) return;
-  list.innerHTML = items.length ? items.map(zoteroItemMarkup).join("") : '<div class="workspace-empty"><strong>No matching references</strong><span>Try a title, author, or year.</span></div>';
+  list.innerHTML = items.length ? items.map(zoteroItemMarkup).join("") : '<div class="workspace-empty"><strong>' + t("connectors.zoteroNone", "No matching references") + '</strong><span>' + t("connectors.zoteroNoneHint", "Try a title, author, or year.") + '</span></div>';
 }
 window.openZoteroLibrary = async function () {
-  showDialog('<div class="workspace-dialog-title"><div><h2>Zotero library</h2><p>Search the references connected to this account.</p></div><button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">脳</button></div><form id="zoteroSearchForm" class="workspace-form"><div class="workspace-form-grid"><label class="workspace-field"><span>Search</span><input name="query" maxlength="200" autocomplete="off" placeholder="Title, author, or year"></label><div class="workspace-field"><span>&nbsp;</span><button class="workspace-primary" type="submit">Search</button></div></div></form><div id="zoteroItems" class="marketplace-list"><div class="workspace-loading">Loading references…</div></div>');
+  showDialog(libraryPreviewHeader(t("connectors.zoteroTitle", "Zotero library"), t("connectors.zoteroSubtitle", "Search the references connected to this account.")) + '<form id="zoteroSearchForm" class="workspace-form"><div class="workspace-form-grid"><label class="workspace-field"><span>' + t("connectors.search", "Search") + '</span><input name="query" maxlength="200" autocomplete="off" placeholder="' + t("connectors.zoteroSearchPh", "Title, author, or year") + '"></label><div class="workspace-field"><span>&nbsp;</span><button class="workspace-primary" type="submit">' + t("connectors.search", "Search") + '</button></div></div></form><div id="zoteroItems" class="marketplace-list"><div class="workspace-loading">' + t("connectors.zoteroLoading", "Loading references…") + '</div></div>');
   async function load(query) {
     var list = byId("zoteroItems");
-    if (list) list.innerHTML = '<div class="workspace-loading">Loading references…</div>';
+    if (list) list.innerHTML = '<div class="workspace-loading">' + t("connectors.zoteroLoading", "Loading references…") + '</div>';
     try { paintZoteroItems((await api("/api/connectors/zotero/items?query=" + encodeURIComponent(query || ""))).items || []); }
-    catch (err) { if (list) list.innerHTML = '<div class="workspace-empty"><strong>References could not be loaded</strong><span>' + esc((err && err.message) || "Try reconnecting Zotero.") + '</span></div>'; }
+    catch (err) { if (list) list.innerHTML = '<div class="workspace-empty"><strong>' + t("connectors.zoteroError", "References could not be loaded") + '</strong><span>' + esc((err && err.message) || t("connectors.zoteroRetryHint", "Try reconnecting Zotero.")) + '</span></div>'; }
   }
   byId("zoteroSearchForm").addEventListener("submit", function (event) { event.preventDefault(); load(event.currentTarget.elements.query.value); });
   load("");
@@ -1069,7 +1078,5 @@ window.disconnectConnector = async function (id) {
   try { await api("/api/connectors/" + encodeURIComponent(id), { method: "DELETE" }); renderPlugins(); toast(t("toast.appDisconnected", "App disconnected")); }
   catch (_) { toast(t("toast.appDisconnectFailed", "Could not disconnect app")); }
 };
-window.openPluginMarketplace = function () { renderPlugins(); };
-
 window.closeWorkspaceDialog = closeWorkspaceDialog;
 export function openMoreNav() { try { toggleMorePopover(); } catch (_) {} }

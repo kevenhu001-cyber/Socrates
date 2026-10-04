@@ -126,8 +126,1250 @@
     grid-column: 1 / -1;
     grid-row: 2;
     width: 100%;
-    height: 44px;
-    min-height: 44px;
+    height: 42px;
+    min-height: 42px;
     border-radius: var(--ui-radius-pill);
+  }
+}
+
+/* ==========================================================================
+   Library Directory — Mobile OLED replication (Screenshot 5)
+   ========================================================================== */
+
+#appShell .library-directory {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+}
+
+#appShell .library-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 16px;
+}
+
+#appShell .library-head-left h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ui-text-primary);
+}
+
+#appShell .library-desktop-desc {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--ui-text-tertiary);
+}
+
+#appShell .library-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#appShell .library-new-wrap {
+  position: relative;
+}
+
+#appShell .library-new-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-control);
+  border: 1px solid var(--ui-border-default);
+  color: var(--ui-text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+#appShell .library-new-pill:hover {
+  background: var(--ui-bg-hover);
+}
+
+#appShell .library-new-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 30;
+  min-width: 120px;
+  padding: 4px;
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-surface);
+  border: 1px solid var(--ui-border-subtle);
+  box-shadow: var(--ui-shadow-popover);
+}
+
+#appShell .library-new-menu button {
+  width: 100%;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: var(--ui-radius-row);
+  background: transparent;
+  color: var(--ui-text-primary);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+#appShell .library-new-menu button:hover {
+  background: var(--ui-bg-hover);
+}
+
+#appShell .library-settings-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-control);
+  border: 1px solid var(--ui-border-default);
+  color: var(--ui-text-secondary);
+  cursor: pointer;
+}
+
+#appShell .library-settings-btn:hover {
+  color: var(--ui-text-primary);
+  background: var(--ui-bg-hover);
+}
+
+#appShell .library-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 16px;
+}
+
+#appShell .library-toolbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+#appShell .library-tool-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: transparent;
+  color: var(--ui-text-secondary);
+  border-radius: var(--ui-radius-control);
+  cursor: pointer;
+}
+
+#appShell .library-tool-btn:hover {
+  color: var(--ui-text-primary);
+  background: var(--ui-bg-hover);
+}
+
+/* Filter popover — anchored under the toolbar button that owns it. */
+#appShell .library-tool-btn-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+#appShell .library-tool-btn.is-active {
+  color: var(--ui-text-primary);
+  background: var(--ui-bg-hover);
+}
+
+#appShell .library-filter-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  min-width: 148px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--ui-bg-raised);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-control);
+  box-shadow: var(--ui-shadow-popover);
+}
+
+#appShell .library-filter-option {
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: calc(var(--ui-radius-control) - 2px);
+  background: transparent;
+  color: var(--ui-text-secondary);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+#appShell .library-filter-option:hover {
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+}
+
+#appShell .library-filter-option.is-active {
+  color: var(--ui-text-primary);
+  font-weight: 600;
+}
+
+#appShell .library-toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--ui-border-subtle);
+}
+
+#appShell .library-view-switcher {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+#appShell .library-view-btn {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  background: transparent;
+  color: var(--ui-text-tertiary);
+  border-radius: var(--ui-radius-control);
+  cursor: pointer;
+}
+
+#appShell .library-view-btn:hover {
+  color: var(--ui-text-primary);
+  background: var(--ui-bg-hover);
+}
+
+#appShell .library-view-btn.active {
+  color: var(--ui-text-primary);
+  background: var(--ui-bg-raised);
+}
+
+/* Layout hook only — the shared .workspace-search-field pill chrome
+   (42px, 999px radius, 18px icon, gap 10px) is the single search-field
+   UI across every workspace page; only the flex sizing is local. */
+#appShell .library-search-pill {
+  flex: 1;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 14px;
+  border-radius: var(--ui-radius-pill);
+}
+
+#appShell .library-chips-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+#appShell .library-chips-bar::-webkit-scrollbar {
+  display: none;
+}
+
+#appShell .library-chip {
+  flex: 0 0 auto;
+  height: 34px;
+  padding: 0 16px;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-pill);
+  background: transparent;
+  color: var(--ui-text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+#appShell .library-chip:hover {
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+}
+
+#appShell .library-chip.active {
+  background: var(--ui-bg-raised);
+  color: var(--ui-text-primary);
+  font-weight: 500;
+  border-color: var(--ui-border-default);
+}
+
+/* File type squircle icons */
+#appShell .library-file-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: var(--ui-radius-lg);
+  color: rgb(255 255 255);
+  flex: 0 0 44px;
+}
+
+#appShell .library-file-icon svg {
+  width: 22px;
+  height: 22px;
+  stroke: rgb(255 255 255);
+}
+
+#appShell .library-file-image { background: rgb(244 63 94); }
+#appShell .library-file-html { background: rgb(20 184 166); }
+#appShell .library-file-doc { background: rgb(59 130 246); }
+#appShell .library-file-code { background: rgb(168 85 247); }
+#appShell .library-file-table { background: rgb(34 197 94); }
+#appShell .library-file-video { background: rgb(239 68 68); }
+#appShell .library-file-audio { background: rgb(245 158 11); }
+#appShell .library-file-file { background: rgb(100 116 139); }
+
+/* ------------------------------------------------------------------ */
+/*  Plugin Detail Page                                                */
+/* ------------------------------------------------------------------ */
+
+#appShell .plugin-detail-view {
+  display: flex;
+  flex-direction: column;
+  max-width: 680px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px 24px 64px;
+}
+
+#appShell .plugin-detail-nav {
+  margin-bottom: 20px;
+}
+
+#appShell .plugin-detail-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  margin-left: -8px;
+  border: 0;
+  border-radius: var(--ui-radius-md);
+  background: transparent;
+  color: var(--ui-text-secondary);
+  font-size: 14.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+#appShell .plugin-detail-back-btn:hover {
+  color: var(--ui-text-primary);
+  background: var(--ui-bg-hover);
+}
+
+#appShell .plugin-detail-hero {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+#appShell .plugin-detail-logo-tile {
+  flex: 0 0 64px;
+  width: 64px;
+  min-width: 64px;
+  height: 64px;
+  min-height: 64px;
+  border-radius: var(--ui-radius-lg);
+  display: grid;
+  place-items: center;
+  background: var(--cg-surface-raised);
+  overflow: hidden;
+  padding: 0;
+}
+
+#appShell .plugin-detail-logo-tile svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+#appShell .plugin-detail-logo-tile img.connector-logo {
+  width: 38px;
+  height: 38px;
+  max-width: 38px;
+  max-height: 38px;
+  object-fit: contain;
+  display: block;
+}
+
+#appShell .plugin-detail-hero-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#appShell .plugin-detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#appShell .plugin-detail-title-row h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ui-text-primary);
+  line-height: 1.25;
+}
+
+#appShell .plugin-detail-badge-verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-control);
+  font-size: 12px;
+  color: var(--ui-text-secondary);
+}
+
+#appShell .plugin-detail-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  color: var(--ui-text-tertiary);
+  margin-top: 2px;
+}
+
+#appShell .plugin-detail-meta-dot {
+  opacity: 0.6;
+}
+
+#appShell .plugin-detail-status-row {
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
+}
+
+#appShell .plugin-detail-status-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  color: var(--ui-text-tertiary);
+}
+
+#appShell .plugin-detail-status-pill.connected {
+  color: rgb(34 197 94);
+  font-weight: 500;
+}
+
+#appShell .plugin-detail-cta-bar {
+  margin-bottom: 28px;
+}
+
+#appShell .plugin-detail-cta-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+#appShell .plugin-detail-btn-primary {
+  flex: 1 1 auto;
+  height: 42px;
+  padding: 0 20px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-text-primary);
+  color: var(--ui-on-accent);
+  font-size: 14.5px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s ease;
+}
+
+#appShell .plugin-detail-btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+#appShell .plugin-detail-btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+#appShell .plugin-detail-btn-secondary {
+  flex: 0 0 auto;
+  height: 42px;
+  padding: 0 18px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--cg-surface-raised);
+  color: var(--ui-text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid var(--ui-border-default);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+#appShell .plugin-detail-btn-secondary:hover {
+  background: var(--ui-bg-hover);
+}
+
+#appShell .plugin-detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+#appShell .plugin-detail-section {
+  display: flex;
+  flex-direction: column;
+}
+
+#appShell .plugin-detail-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ui-text-primary);
+  margin: 0 0 10px;
+  letter-spacing: -0.01em;
+}
+
+#appShell .plugin-detail-desc {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--ui-text-secondary);
+  margin: 0;
+}
+
+#appShell .plugin-detail-prompts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#appShell .plugin-detail-prompt-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--cg-surface-raised);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-lg);
+  color: var(--ui-text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+#appShell .plugin-detail-prompt-card:hover {
+  background: var(--ui-bg-hover);
+  border-color: var(--ui-border-default);
+}
+
+#appShell .plugin-detail-prompt-text {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ui-text-primary);
+}
+
+#appShell .plugin-detail-prompt-arrow {
+  color: var(--ui-text-tertiary);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+#appShell .plugin-detail-features-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#appShell .plugin-detail-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--ui-text-secondary);
+  line-height: 1.4;
+}
+
+#appShell .plugin-detail-feature-icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+#appShell .plugin-detail-security-card {
+  padding: 16px;
+  background: var(--cg-surface-raised);
+  border-radius: var(--ui-radius-lg);
+  border: 1px solid var(--ui-border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#appShell .plugin-detail-security-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13.5px;
+}
+
+#appShell .plugin-detail-security-label {
+  color: var(--ui-text-tertiary);
+}
+
+#appShell .plugin-detail-security-value {
+  color: var(--ui-text-primary);
+  font-weight: 500;
+}
+
+#appShell .plugin-detail-privacy-note {
+  margin: 6px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--ui-border-subtle);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ui-text-tertiary);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Workspace Loading & Skeletons                                     */
+/* ------------------------------------------------------------------ */
+
+@keyframes workspaceSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes workspaceBreathe {
+  0%, 100% { transform: scale(0.85); opacity: 0.5; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
+@keyframes workspaceSkeletonPulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.75; }
+}
+
+#appShell .workspace-loading-surface {
+  display: flex;
+  flex-direction: column;
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+
+#appShell .workspace-loading-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  border-radius: var(--ui-radius-lg);
+  background: var(--cg-surface-raised);
+  border: 1px solid var(--ui-border-subtle);
+}
+
+#appShell .workspace-loading-spinner-box {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  display: grid;
+  place-items: center;
+}
+
+#appShell .workspace-loading-spinner-ring {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--ui-radius-full);
+  border: 2px solid var(--ui-border-subtle);
+  border-top-color: var(--ui-text-primary);
+  animation: workspaceSpin 0.9s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+}
+
+#appShell .workspace-loading-spinner-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--ui-radius-full);
+  background: var(--ui-text-primary);
+  animation: workspaceBreathe 1.8s ease-in-out infinite;
+}
+
+#appShell .workspace-loading-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+#appShell .workspace-loading-banner-text strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ui-text-primary);
+}
+
+#appShell .workspace-loading-banner-text span {
+  font-size: 13px;
+  color: var(--ui-text-tertiary);
+}
+
+#appShell .workspace-skeleton-container {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  animation: workspaceSkeletonPulse 1.8s ease-in-out infinite;
+}
+
+#appShell .workspace-skeleton-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#appShell .workspace-skeleton-icons {
+  display: flex;
+  gap: 12px;
+  overflow: hidden;
+}
+
+#appShell .workspace-skeleton-squircle {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: var(--ui-radius-lg);
+  background: var(--cg-surface-raised);
+}
+
+#appShell .workspace-skeleton-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+#appShell .workspace-skeleton-pill {
+  border-radius: var(--ui-radius-pill);
+  background: var(--cg-surface-raised);
+}
+
+#appShell .workspace-skeleton-pill-sm {
+  width: 80px;
+  height: 24px;
+}
+
+#appShell .workspace-skeleton-pill-tab {
+  width: 68px;
+  height: 32px;
+}
+
+#appShell .workspace-skeleton-pill-tab.active {
+  background: var(--ui-bg-control);
+}
+
+#appShell .workspace-skeleton-pill-chip {
+  width: 56px;
+  height: 28px;
+}
+
+#appShell .workspace-skeleton-pill-md {
+  width: 100px;
+  height: 32px;
+}
+
+#appShell .workspace-skeleton-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+#appShell .workspace-skeleton-search {
+  width: 220px;
+  height: 36px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--cg-surface-raised);
+}
+
+#appShell .workspace-skeleton-chips {
+  display: flex;
+  gap: 8px;
+  overflow: hidden;
+}
+
+#appShell .workspace-skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+#appShell .workspace-skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0;
+}
+
+#appShell .workspace-skeleton-logo {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: var(--ui-radius-lg);
+  background: var(--cg-surface-raised);
+}
+
+#appShell .workspace-skeleton-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 auto;
+}
+
+#appShell .workspace-skeleton-line {
+  border-radius: var(--ui-radius-sm);
+  background: var(--cg-surface-raised);
+}
+
+#appShell .workspace-skeleton-line-title {
+  width: 140px;
+  height: 16px;
+}
+
+#appShell .workspace-skeleton-line-desc {
+  width: 280px;
+  max-width: 80%;
+  height: 12px;
+}
+
+#appShell .workspace-skeleton-line-sub {
+  width: 180px;
+  height: 12px;
+}
+
+#appShell .workspace-skeleton-line-date {
+  width: 80px;
+  height: 12px;
+}
+
+#appShell .workspace-skeleton-line-size {
+  width: 60px;
+  height: 12px;
+}
+
+#appShell .workspace-skeleton-action {
+  width: 72px;
+  height: 32px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--cg-surface-raised);
+  flex-shrink: 0;
+}
+
+#appShell .workspace-skeleton-icon-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--ui-radius-full);
+  background: var(--cg-surface-raised);
+  flex-shrink: 0;
+}
+
+#appShell .workspace-skeleton-dot-action {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--ui-radius-full);
+  background: var(--cg-surface-raised);
+  flex-shrink: 0;
+}
+
+#appShell .workspace-skeleton-check {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--ui-radius-sm);
+  background: var(--cg-surface-raised);
+  flex-shrink: 0;
+}
+
+#appShell .workspace-skeleton-file-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--ui-radius-sm);
+  background: var(--cg-surface-raised);
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  #appShell .library-directory {
+    padding: 16px 16px calc(24px + var(--ui-safe-bottom));
+  }
+
+  #appShell .library-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 0 0 16px;
+  }
+
+  #appShell .library-head-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  #appShell .library-desktop-desc {
+    display: none;
+  }
+
+  #appShell .library-desktop-table-head {
+    display: none;
+  }
+
+  #appShell .library-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--ui-border-subtle);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  #appShell .library-row .library-checkbox-label {
+    display: none;
+  }
+
+  #appShell .library-row .library-item-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ui-text-primary);
+  }
+
+  #appShell .library-row .library-mobile-meta {
+    font-size: 13px;
+    color: var(--ui-text-tertiary);
+  }
+
+  #appShell .library-row .library-updated,
+  #appShell .library-row .library-size {
+    display: none;
+  }
+
+  #appShell .library-row-more-btn {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--ui-text-secondary);
+    cursor: pointer;
+  }
+  #appShell .library-row-more-btn:hover {
+    background: var(--ui-bg-hover);
+    color: var(--ui-text-primary);
+  }
+
+  /* Plugins page refinements on mobile */
+  #appShell .plugin-installed-strip {
+    min-height: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    margin: 16px 0 24px;
+  }
+
+  #appShell .plugin-installed-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ui-text-primary);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  #appShell .plugin-installed-caret {
+    font-size: 18px;
+    color: var(--ui-text-tertiary);
+  }
+
+  #appShell .plugin-installed-icons {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    width: 100%;
+  }
+
+  #appShell .plugin-installed-icons .workspace-row-icon {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    border-radius: var(--ui-radius-lg);
+    background: transparent;
+    border: none;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  #appShell .plugin-installed-icons .workspace-row-icon svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  #appShell .plugin-directory-add-btn {
+    display: grid;
+    place-items: center;
+    flex: 0 0 42px;
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    border-radius: var(--ui-radius-pill);
+    background: transparent;
+    border: 1px solid var(--ui-border-default);
+    color: var(--ui-text-primary);
+    cursor: pointer;
+  }
+
+  #appShell .plugin-directory-tools {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 20px;
+  }
+
+  #appShell .plugin-directory-search {
+    flex: 1;
+    min-width: 0;
+    height: 42px;
+    padding: 0 14px;
+    border-radius: var(--ui-radius-pill);
+    background: var(--ui-bg-control);
+    border: none;
+  }
+
+  #appShell .connector-mark-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+  }
+
+  #appShell .connector-mark-wrap > span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+  }
+
+  #appShell .plugin-directory-tabs {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  #appShell .plugin-directory-tabs button {
+    height: 36px;
+    min-height: 36px;
+    padding: 0 16px;
+    border-radius: var(--ui-radius-pill);
+    background: transparent;
+    color: rgb(150 150 150);
+    font-size: 14px;
+    border: 0;
+    cursor: pointer;
+  }
+
+  #appShell .plugin-directory-tabs button.active {
+    background: rgb(52 52 52);
+    color: rgb(255 255 255);
+    font-weight: 500;
+    border: none;
+  }
+
+  #appShell .plugin-directory-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  #appShell .plugin-directory-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 0;
+    border-radius: 0;
+    background: transparent;
+    border: none;
+    border-bottom: none;
+    min-height: 0;
+  }
+
+  #appShell .plugin-directory-row:hover {
+    background: transparent;
+    border-color: transparent;
+  }
+
+  #appShell .plugin-directory-row .connector-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 40px;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    border-radius: var(--ui-radius-lg);
+    background: transparent;
+    border: none;
+    padding: 0;
+    overflow: visible;
+  }
+
+  #appShell .plugin-directory-row .connector-icon svg,
+  #appShell .plugin-directory-row .connector-icon img.connector-logo {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+  }
+
+  #appShell .connector-tile-base {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--ui-radius-lg);
+    background: var(--cg-surface-raised);
+    overflow: hidden;
+  }
+
+  #appShell .connector-tile-base img.connector-logo {
+    width: 24px;
+    height: 24px;
+    max-width: 24px;
+    max-height: 24px;
+    object-fit: contain;
+    display: block;
+  }
+
+  #appShell .plugin-directory-row .workspace-row-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  #appShell .plugin-directory-card-title-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  #appShell .plugin-directory-card-title-row strong {
+    font-size: 16px;
+    font-weight: 550;
+    color: var(--ui-text-primary);
+    line-height: 1.3;
+  }
+
+  #appShell .plugin-directory-card-status {
+    display: none;
+  }
+
+  #appShell .plugin-directory-card-desc {
+    margin: 0;
+    font-size: 13.5px;
+    line-height: 1.35;
+    color: var(--ui-text-secondary);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #appShell .plugin-directory-row-action {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+
+  #appShell .plugin-directory-action-label {
+    display: none;
+  }
+
+  #appShell .plugin-directory-icon-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    border-radius: 0;
+    background: transparent;
+    border: none;
+    color: var(--ui-text-primary);
+    padding: 0;
+    cursor: pointer;
+  }
+
+  #appShell .plugin-directory-icon-action svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  #appShell .plugin-detail-view {
+    padding: 12px 16px calc(32px + var(--ui-safe-bottom));
+  }
+
+  #appShell .plugin-detail-logo-tile {
+    flex: 0 0 56px;
+    width: 56px;
+    min-width: 56px;
+    height: 56px;
+    min-height: 56px;
+  }
+
+  #appShell .plugin-detail-title-row h2 {
+    font-size: 20px;
   }
 }

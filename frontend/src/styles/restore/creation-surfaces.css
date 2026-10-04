@@ -45,6 +45,14 @@
   outline:none; color:var(--chatgpt-text, #f4f4f4); background:var(--chatgpt-page, #212121); font:inherit;
 }
 #appShell .creation-header input:focus, #appShell .creation-image-actions input:focus, #appShell .creation-editor input:focus, #appShell .creation-editor textarea:focus { border-color:var(--chatgpt-text, #f4f4f4); }
+/* The header search reuses the shared .workspace-search-field pill
+   (magnifier + input); the bare-input chrome above would otherwise draw a
+   second frame inside it. */
+#appShell .creation-header .workspace-search-field input {
+  min-height:0; padding:0; border:0; border-radius:0;
+  color:var(--cg-text); background:transparent;
+  font:400 14px/22px var(--cg-font);
+}
 #appShell .creation-primary { min-height:38px; border:0; border-radius:9px; padding:8px 15px; color:var(--chatgpt-page, #212121); background:var(--chatgpt-text, #f4f4f4); font:inherit; font-weight:600; cursor:pointer; white-space:nowrap; }
 #appShell .creation-primary:disabled { opacity:.55; cursor:wait; }
 #appShell .creation-empty { padding:68px 20px; border-top:1px solid var(--chatgpt-line, #444); text-align:center; color:var(--chatgpt-muted, #a0a0a0); font-size:14px; }
@@ -127,6 +135,7 @@
   #appShell .creation-header { align-items:stretch; flex-direction:column; gap:15px; }
   #appShell .creation-header h1 { font-size:26px; }
   #appShell .creation-header-actions input { min-width:0; flex:1; }
+  #appShell .creation-header-actions .workspace-search-field { min-width:0; flex:1; min-height:42px; padding:0 14px; border-radius:var(--ui-radius-pill); }
   #appShell .creation-gallery { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
   #appShell .creation-image-form { margin:20px auto 40px; }
   #appShell .creation-row { align-items:flex-start; }
@@ -138,30 +147,14 @@
    owned by creationSurfaces.js. */
 #appShell #sitesPanel .creation-sites-header { margin-bottom: 18px; }
 #appShell #sitesPanel .creation-sites-new { min-width: 72px; border-radius: 999px; }
+/* Layout only — .creation-sites-search also carries the shared
+   .workspace-search-field class, so flex/gap/icon/input chrome comes from
+   the same rules that drive the plugin-directory pill. */
 #appShell #sitesPanel .creation-sites-search {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  box-sizing: border-box;
   width: 100%;
   min-height: 42px;
-  padding: 0 13px;
-  border: 1px solid var(--chatgpt-line);
-  border-radius: 999px;
-  background: var(--chatgpt-surface);
-}
-#appShell #sitesPanel .creation-sites-search svg { width: 19px; height: 19px; flex: none; color: var(--chatgpt-muted); }
-#appShell #sitesPanel .creation-sites-search input {
-  width: 100%;
-  min-width: 0;
-  height: 40px;
-  padding: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--chatgpt-text);
-  font: inherit;
-  font-size: 15px;
+  padding: 0 14px;
+  border-radius: var(--ui-radius-pill);
 }
 #appShell #sitesPanel .creation-sites-view { margin: 18px 0 14px; }
 #appShell #sitesPanel .creation-sites-view button { display: grid; place-items: center; width: 38px; height: 38px; }

@@ -1,4 +1,4 @@
-import { deleteCustomTemplate, findTemplateByShortcut, loadPromptTemplates, upsertCustomTemplate } from '../chat/promptTemplates.js';
+import { deleteCustomTemplate, findTemplateByShortcut, loadPromptTemplates, upsertCustomTemplate, syncPromptTemplates } from '../chat/promptTemplates.js';
 import { showToast } from './toast.js';
 import { esc } from '../render/helpers.js';
 import { showConfirm } from './confirm.js';
@@ -36,6 +36,11 @@ function _publishPromptTemplatesState() {
 function openPromptTemplatesModal() {
   _ptOpen = true;
   renderPromptTemplatesModal();
+  /* Pull the account-level copy; re-render once the merge lands so rows
+     synced from other devices appear without reopening the modal. */
+  syncPromptTemplates(true).then(function () {
+    if (_ptOpen) renderPromptTemplatesModal();
+  });
 }
 
 function closePromptTemplatesModal() {

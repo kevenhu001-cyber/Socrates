@@ -9,14 +9,26 @@ import { useSessionListSnapshot, formatRelativeTime } from './sessionList.bridge
 import { detailCache } from '../../session/detailCache.js';
 import type { SessionItem } from './types';
 
-const TAG_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>';
+const SHARE_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>';
+
+const RENAME_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>';
+
+const PIN_MENU_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>';
 
 const ARCHIVE_ICON =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9"/><path d="M10 13h4"/></svg>';
 
 const DELETE_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
+
+const PROJECT_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>';
+
+const CHEVRON_RIGHT =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="m9 18 6-6-6-6"/></svg>';
 
 const PIN_ICON =
   '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><path d="M12 2v10l4 4v2H8v-2l4-4V2"/></svg>';
@@ -185,17 +197,47 @@ function SessionRowBase({ session, isActive, onPick, onTag, onArchive, onDelete,
             on row hover/focus; phones show it persistently. */}
         <div className="recent-item-menu" role="menu" onClick={(e) => e.stopPropagation()}>
           <button
-            className="btn-icon recent-item-tag-btn"
-            data-tag-open="1"
-            title={t('session.editTags')}
-            data-i18n-title="session.editTags"
-            onClick={(e) => { setActionsOpen(false); onTag(session.id, e); }}
+            className="btn-icon recent-item-menu-row recent-item-share"
+            type="button"
+            title={t('session.ctxShare')}
+            onClick={() => {
+              setActionsOpen(false);
+              const shareBtn = document.getElementById('shareBtn');
+              if (shareBtn) shareBtn.click();
+              else if (typeof window !== 'undefined' && (window as any).openShareModal) (window as any).openShareModal();
+            }}
           >
-            <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: TAG_ICON }} />
-            <span className="recent-item-action-text" data-i18n-key="session.editTags">{t('session.editTags')}</span>
+            <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: SHARE_ICON }} />
+            <span className="recent-item-action-text">{t('session.ctxShare')}</span>
           </button>
           <button
-            className="btn-icon recent-item-archive"
+            className="btn-icon recent-item-menu-row recent-item-rename"
+            type="button"
+            title={t('session.ctxRename')}
+            onClick={(e) => {
+              setActionsOpen(false);
+              onTag(session.id, e);
+            }}
+          >
+            <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: RENAME_ICON }} />
+            <span className="recent-item-action-text">{t('session.ctxRename')}</span>
+          </button>
+          <div className="recent-item-menu-divider" />
+          <button
+            className="btn-icon recent-item-menu-row recent-item-pin"
+            type="button"
+            title={t('session.ctxPin')}
+            onClick={() => {
+              setActionsOpen(false);
+              session.pinned = !session.pinned;
+            }}
+          >
+            <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: PIN_MENU_ICON }} />
+            <span className="recent-item-action-text">{t('session.ctxPin')}</span>
+          </button>
+          <button
+            className="btn-icon recent-item-menu-row recent-item-archive"
+            type="button"
             data-archive-session="1"
             title={t('session.ctxArchive')}
             aria-label={t('session.ctxArchive')}
@@ -207,7 +249,8 @@ function SessionRowBase({ session, isActive, onPick, onTag, onArchive, onDelete,
             <span className="recent-item-action-text" data-i18n-key="session.ctxArchive">{t('session.ctxArchive')}</span>
           </button>
           <button
-            className="btn-icon recent-item-del"
+            className="btn-icon recent-item-menu-row recent-item-del"
+            type="button"
             title={t('session.ctxDelete')}
             aria-label={t('session.ctxDelete')}
             data-i18n-title="session.ctxDelete"
@@ -216,6 +259,20 @@ function SessionRowBase({ session, isActive, onPick, onTag, onArchive, onDelete,
           >
             <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: DELETE_ICON }} />
             <span className="recent-item-action-text" data-i18n-key="session.ctxDelete">{t('session.ctxDelete')}</span>
+          </button>
+          <div className="recent-item-menu-divider" />
+          <button
+            className="btn-icon recent-item-menu-row recent-item-project"
+            type="button"
+            title={t('session.ctxMoveToProject')}
+            onClick={() => {
+              setActionsOpen(false);
+              document.getElementById('navProjects')?.click();
+            }}
+          >
+            <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: PROJECT_ICON }} />
+            <span className="recent-item-action-text">{t('session.ctxMoveToProject')}</span>
+            <span className="recent-item-action-trailing" dangerouslySetInnerHTML={{ __html: CHEVRON_RIGHT }} />
           </button>
         </div>
       </div>

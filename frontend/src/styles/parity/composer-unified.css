@@ -436,10 +436,19 @@
     row-gap: 6px;
     width: 100%;
     max-width: none;
-    padding: 12px 12px 9px;
-    border: 0;
-    border-radius: 26px;
-    box-shadow: 0 4px 16px rgb(0 0 0 / 5%);
+    padding: 11px 12px 8px;
+    border: 1px solid var(--ui-composer-border);
+    border-radius: var(--ui-radius-composer-desktop);
+    box-shadow: 0 4px 16px rgb(0 0 0 / 12%);
+  }
+  #appShell .topic-composer-slot .composer-shell:not(.voice-recording-active) {
+    grid-template-areas:
+      "editor editor editor editor"
+      "plus   chips  mic    send";
+    grid-template-columns: var(--composer-control) 1fr var(--composer-control) var(--composer-control);
+  }
+  #appShell .topic-composer-slot .composer-shell:not(.voice-recording-active) .effort-picker {
+    display: none;
   }
   #appShell .composer-shell:has(> .attachment-chips:not(.hidden)):not(.voice-recording-active) {
     padding-top: 12px;
@@ -468,11 +477,12 @@
     align-self: center;
   }
   #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn) {
-    background: var(--ui-bg-hover-ghost);
+    background: var(--ui-bg-control);
+    color: var(--ui-text-primary);
   }
   #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn):hover,
   #appShell .composer-shell .composer-tools-trigger[aria-expanded="true"] {
-    background: var(--ui-bg-chip-hover);
+    background: var(--ui-bg-hover);
   }
   #appShell .composer-shell .effort-trigger {
     padding: 0 10px;

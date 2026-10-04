@@ -27,9 +27,6 @@ function SettingsModal() {
   const [query, setQuery] = useState('');
   const [uiLang, setUiLang] = useState(() => (window as any)._currentLang === 'en' ? 'en' : 'zh');
   const [saveError, setSaveError] = useState('');
-  const [notifications, setNotifications] = useState(() => {
-    try { return localStorage.getItem('socrates-notifications') !== 'off'; } catch { return true; }
-  });
   const [imageModel, setImageModel] = useState(() => {
     try { return localStorage.getItem('socrates-image-model') || ''; } catch { return ''; }
   });
@@ -205,9 +202,15 @@ function SettingsModal() {
           </section>
           <section className="settings-pane" hidden={section !== 'notifications'}>
             <h2>{label('通知', 'Notifications')}</h2>
-            <label className="settings-choice">{label('显示任务与消息通知', 'Show task and message notifications')}
-              <input type="checkbox" checked={notifications} onChange={(event) => { setNotifications(event.target.checked); localStorage.setItem('socrates-notifications', event.target.checked ? 'on' : 'off'); void savePreference({ notifications: event.target.checked }); }} />
-            </label>
+            {/* Push delivery is FCM-backed and Android-only — the web SPA
+               registers no push token and has no service worker, so a
+               toggle here would claim to control something it cannot.
+               The Android client owns the switch (mobile preferences
+               `notifications`); this pane just says so. */}
+            <p>{label(
+              '推送通知仅在 Android 客户端可用。请在手机端的应用设置中开关通知。',
+              'Push notifications are available in the Android app only. Turn them on or off in the app settings on your phone.',
+            )}</p>
           </section>
           <section className="settings-pane" hidden={section !== 'apps'}>
             <h2>{label('应用与连接', 'Apps & connections')}</h2>

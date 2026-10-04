@@ -984,8 +984,9 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   box-shadow: none;
 }
 
-#appShell .workspace-search-field svg,
-#appShell .plugin-directory-search svg,
+/* Search-field icons are intentionally absent here: this group's 22px
+   height collided with chatgpt-ui.css's flex-basis:18px, rendering the
+   magnifier as a 18x22 oval. They fall back to the 18x18 square rule. */
 #appShell .workspace-create-button svg,
 #appShell .workspace-row-action svg {
   width: 22px;

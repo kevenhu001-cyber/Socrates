@@ -479,6 +479,7 @@ export const prompts = pgTable('prompts', {
   icon: text('icon'),
   category: text('category').notNull().default('other'),
   shortcut: text('shortcut'),
+  systemPrompt: text('system_prompt'),
   isBuiltin: boolean('is_builtin').notNull().default(false),
   usageCount: integer('usage_count').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

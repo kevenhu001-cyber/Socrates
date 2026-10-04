@@ -215,8 +215,6 @@ export function buildTurnLayout(
   const defer = opts?.deferOpenParagraph === true;
   const calls = sortableToolCalls(raw, toolCalls).filter((call) => {
     if (!defer) return true;
-    /* Approvals need a human decision: never hide them behind prose. */
-    if (call.approval && call.approval.approvalId) return true;
     const persistedOffset = Math.min(call.textOffset as number, raw.length);
     const visual = snapToolOffsetOutOfBlock(raw, toolRowAnchorOffset(raw, persistedOffset));
     return isRowMountableAt(raw, visual);

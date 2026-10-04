@@ -89,20 +89,18 @@ describe('reduceToolEvent', () => {
     });
   });
 
-  it('attaches an approval request to its tool card', () => {
+  it('ignores a tool_approval frame, which the server no longer emits', () => {
+    /* The workspace agent runs unattended (`approvalPolicy: 'never'`), so
+     * there is no approval gate to reflect on the card. A stray frame must
+     * leave the existing calls untouched rather than resurrect one. */
     let calls = reduceToolEvent([], 'tool_use', [{ id: 'agent-1', name: 'workspace_agent', input: {} }]);
-    calls = reduceToolEvent(calls, 'tool_approval', {
+    const before = JSON.stringify(calls);
+    const after = reduceToolEvent(calls, 'tool_approval' as never, {
       id: 'agent-1',
       runId: 'run-1',
       approvalId: 'approval-1',
-      command: 'npm test',
-      cwd: '[workspace]',
-    });
-    expect(calls).toHaveLength(1);
-    expect(calls[0]).toMatchObject({
-      status: 'awaiting',
-      approval: { runId: 'run-1', approvalId: 'approval-1', command: 'npm test', status: 'pending' },
-    });
+    } as never);
+    expect(JSON.stringify(after)).toBe(before);
   });
 
   it('never mutates the array it is given', () => {

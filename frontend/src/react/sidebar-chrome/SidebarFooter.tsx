@@ -24,8 +24,12 @@ export function SidebarFooter() {
      it phone-only (polish/sidebar.css). */
   const upgradeLabel = i18n('sidebar.upgrade', 'Upgrade');
 
+  const tierDisplay = (user.tier === 'diophantus' || user.tier === 'free')
+    ? (typeof document !== 'undefined' && document.documentElement.lang.toLowerCase().startsWith('zh') ? '免费版' : 'Free')
+    : user.tierLabel;
+
   return (
-    <>
+    <div className="sidebar-footer-account-wrap">
       <div
         className="sidebar-account-static"
         aria-label={label}
@@ -34,7 +38,7 @@ export function SidebarFooter() {
         <span className="user-avatar" aria-hidden="true">{user.initials}</span>
         <span className="user-identity">
           {name ? <span className="user-name">{name}</span> : null}
-          <span className="user-plan"><span className={`tier-badge ${user.tier}`}>{user.tierLabel}</span></span>
+          <span className="user-plan"><span className={`tier-badge ${user.tier}`}>{tierDisplay}</span></span>
         </span>
       </div>
       {user.tier === 'diophantus' ? (
@@ -46,6 +50,6 @@ export function SidebarFooter() {
           {upgradeLabel}
         </a>
       ) : null}
-    </>
+    </div>
   );
 }

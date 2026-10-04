@@ -66,7 +66,7 @@ const TOOL_GROUPS: ReadonlyArray<{
     key: 'research',
     labelKey: 'composer.tools.group.research',
     label: 'Search & research',
-    actions: ['webSearch', 'explore'],
+    actions: ['webSearch', 'explore', 'deepResearch'],
   },
   {
     key: 'create',
@@ -102,7 +102,7 @@ const MOBILE_GROUP_ORDER: ReadonlyArray<{
     key: 'research',
     labelKey: 'composer.tools.group.research',
     label: 'Search & research',
-    actions: ['webSearch', 'explore'],
+    actions: ['webSearch', 'explore', 'deepResearch'],
   },
   {
     key: 'workflows',
@@ -480,9 +480,11 @@ function ComposerToolsMenu() {
   const { pick } = useComposerToolsDispatch();
   const activeTemplate = getLegacyGlobalValue('_activeTemplate', null as { extensionKey?: string } | null);
   const webSearchOn = getLegacyGlobalValue('webSearchOn', false);
+  const deepResearchOn = getLegacyGlobalValue('deepResearchOn', false);
   const extensiveThinkingOn = getLegacyGlobalValue('extensiveThinkingOn', false);
   const activeKey = activeTemplate?.extensionKey
     ?? (webSearchOn ? 'webSearch' : null)
+    ?? (deepResearchOn ? 'deepResearch' : null)
     ?? (extensiveThinkingOn ? 'extensiveThinking' : null);
 
   return <MenuItems activeKey={activeKey} onPick={pick} isOpen={snapshot.isOpen} mode={snapshot.mode} />;

@@ -37,11 +37,11 @@ router.get('/', async (req, res, next) => {
 /* POST /api/prompts */
 router.post('/', async (req, res, next) => {
   try {
-    const { title, description, body, icon, category, shortcut } = req.body;
+    const { title, description, body, icon, category, shortcut, systemPrompt } = req.body;
     if (!title || !body) throw new BadRequest('title and body are required');
     const db = getDb();
     const [p] = await db.insert(prompts).values({
-      userId: req.userId!, title, description, body, icon, category: category || 'other', shortcut,
+      userId: req.userId!, title, description, body, icon, category: category || 'other', shortcut, systemPrompt,
     }).returning();
     return res.status(201).json(p);
   } catch (err) { next(err); }
@@ -55,7 +55,7 @@ router.patch('/:id', async (req, res, next) => {
       .where(and(eq(prompts.id, req.params.id), eq(prompts.userId, req.userId!))).limit(1);
     if (!p) throw new NotFound('Template not found');
     const patch: Record<string, unknown> = {};
-    for (const k of ['title', 'description', 'body', 'icon', 'category', 'shortcut'])
+    for (const k of ['title', 'description', 'body', 'icon', 'category', 'shortcut', 'systemPrompt'])
       if (req.body[k] !== undefined) patch[k] = req.body[k];
     await db.update(prompts).set(patch).where(eq(prompts.id, req.params.id));
     const [updated] = await db.select().from(prompts).where(eq(prompts.id, req.params.id)).limit(1);

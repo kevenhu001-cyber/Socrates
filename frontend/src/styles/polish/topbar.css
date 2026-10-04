@@ -57,28 +57,46 @@
 :root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   flex: 0 0 auto;
   box-sizing: border-box;
   min-height: 28px;
   height: 28px;
-  padding: 0 8px;
+  padding: 0 10px;
   border: 1px solid var(--ui-border-default);
   border-radius: var(--ui-radius-pill);
-  background: transparent;
+  background: var(--ui-bg-surface);
   color: var(--ui-text-primary);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   line-height: 16px;
   text-decoration: none;
   white-space: nowrap;
 }
-:root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill svg { width: 13px; height: 13px; }
+:root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill svg { width: 14px; height: 14px; color: var(--ui-tool-chip-text); }
 :root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill:hover,
 :root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill:focus-visible { background: var(--ui-bg-hover); }
 }
 @media (max-width: 375px) {
   :root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill { display: none; }
+}
+
+@media (max-width: 768px) {
+  #appShell #pluginWorkspaceTabs,
+  body #appShell #pluginWorkspaceTabs,
+  body.plugins-active #appShell #pluginWorkspaceTabs,
+  body.workspace-active #appShell #pluginWorkspaceTabs,
+  body.workspace-active #appShell #mobileUpgradeBtn,
+  body.workspace-active #appShell .mobile-upgrade-pill,
+  body.workspace-active #appShell .mobile-newchat-btn,
+  body.plugins-active #appShell #mobileUpgradeBtn,
+  body.plugins-active #appShell .mobile-upgrade-pill,
+  body.plugins-active #appShell .mobile-newchat-btn,
+  body.library-active #appShell #mobileUpgradeBtn,
+  body.library-active #appShell .mobile-upgrade-pill,
+  body.library-active #appShell .mobile-newchat-btn {
+    display: none;
+  }
 }
 
 

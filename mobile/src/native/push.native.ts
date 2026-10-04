@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { notificationsApi } from '../data/api/client';
 import { readDeviceId } from '../data/api/tokenStore';
+import { getPreferences } from '../data/preferences';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -16,6 +17,16 @@ let registeredToken: string | null = null;
 
 export async function registerPushNotifications() {
   if (Platform.OS !== 'android') return false;
+
+  /* Respects the Notifications switch, the same way `native.vibrate`
+     respects Haptics. A device that has opted out is not registered with
+     the server. The unregister call is made even when this process never
+     registered a token: `registeredToken` is in-memory only, so after a
+     restart it is null while the server may still hold this device. */
+  if (!getPreferences().notifications) {
+    try { await notificationsApi.unregister(); } catch { /* best effort */ }
+    return false;
+  }
 
   const current = await Notifications.getPermissionsAsync();
   const permissions = current.granted

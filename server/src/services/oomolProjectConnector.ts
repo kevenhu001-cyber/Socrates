@@ -13,12 +13,11 @@ import { ConnectorError, ProjectConnector } from '@oomol-lab/connector';
  * non-OAuth auth types. Each field has key/label/type/required/help. The
  * backend never echoes raw credentials back; only opaque connection IDs. */
 export const PROJECT_CONNECTOR_CATALOG = [
-  { id: 'github',         service: 'github',         name: 'GitHub',       description: 'Bring repositories, issues, pull requests, and CI context into a chat.', capabilities: ['Repositories', 'Issues', 'Pull requests'], authType: 'oauth' },
-  { id: 'feishu',         service: 'feishu',         name: 'Feishu',       description: 'Use documents and collaboration context from your Feishu account.', capabilities: ['Documents', 'Messages'], authType: 'oauth' },
-  { id: 'gitee',          service: 'gitee',          name: 'Gitee',        description: 'Use repositories and issue context from your Gitee account.', capabilities: ['Repositories', 'Issues'], authType: 'oauth' },
-  { id: 'gmail',          service: 'gmail',          name: 'Gmail',        description: 'Search mail context that you explicitly authorize.', capabilities: ['Mail search'], authType: 'oauth' },
-  { id: 'notion',         service: 'notion',         name: 'Notion',       description: 'Search pages and knowledge you share with Socrates.', capabilities: ['Page search'], authType: 'oauth' },
-  { id: 'googledrive',    service: 'googledrive',    name: 'Google Drive', description: 'Bring files and folders from your Google Drive into a chat.', capabilities: ['Files', 'Folders'], authType: 'oauth' },
+  { id: 'gmail',          service: 'gmail',          name: 'Gmail',        description: 'Read and manage Gmail', capabilities: ['Mail search'], authType: 'oauth' },
+  { id: 'health',         service: 'health',         name: 'Health',       description: 'Explore your health data in ChatGPT', capabilities: ['Health data'], authType: 'oauth' },
+  { id: 'googledrive',    service: 'googledrive',    name: 'Google Drive', description: 'Drive, Docs, Sheets or Slides', capabilities: ['Files', 'Folders'], authType: 'oauth' },
+  { id: 'github',         service: 'github',         name: 'GitHub',       description: 'Triage PRs, issues, CI, and publish flows', capabilities: ['Repositories', 'Issues', 'Pull requests'], authType: 'oauth' },
+  { id: 'supabase',       service: 'supabase',       name: 'Supabase',     description: 'Manage and query databases', capabilities: ['Databases'], authType: 'oauth' },
   { id: 'googlecalendar', service: 'googlecalendar', name: 'Google Calendar', description: 'Use your schedule and event context when planning study sessions.', capabilities: ['Events'], authType: 'oauth' },
   { id: 'todoist',        service: 'todoist',        name: 'Todoist',      description: 'Use your task list as study context.', capabilities: ['Tasks'], authType: 'oauth' },
   { id: 'ticktick',       service: 'ticktick',       name: 'TickTick',     description: 'Pull tasks from TickTick into study context.', capabilities: ['Tasks'], authType: 'oauth' },

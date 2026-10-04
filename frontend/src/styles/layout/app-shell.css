@@ -196,8 +196,8 @@
      sidebar 更多 popover; the desktop panel-collapse glyph becomes a
      three-line hamburger. */
   #appShell .mobile-newchat-btn { display: inline-flex; align-items: center; justify-content: center; }
-  #appShell .toggle-sidebar .glyph-panel { display: none; }
-  #appShell .toggle-sidebar .glyph-hamburger { display: block; }
+  #appShell .toggle-sidebar .glyph-panel { display: block; }
+  #appShell .toggle-sidebar .glyph-hamburger { display: none; }
   /* The landing column owns its 12px inset itself — the legacy
      .main-inner adds another 8px at ≤480px which would double the
      composer's side margin versus the in-session bar. */
@@ -227,6 +227,5 @@
   body.exam-active #appShell #modeSegmentedTop,
   body.admin-active #appShell #modeSegmentedTop { display: none; }
   #appShell #mobileMode { display: none; }
-body.plugins-active #appShell #pluginWorkspaceTabs { display: flex; }
-body.plugins-active #appShell #pluginWorkspaceTabs { width: 146px; }
+  body #appShell #pluginWorkspaceTabs { display: none; }
 }

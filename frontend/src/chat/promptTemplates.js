@@ -77,6 +77,9 @@ export var BUILTIN_TEMPLATES=[
 export var PROMPT_TEMPLATES_KEY="socrates-prompt-templates";
 
 export function loadPromptTemplates(){
+  /* Throttled background pull — keeps the local cache fresh for the slash
+     palette and the modal without making callers wait on the network. */
+  try{syncPromptTemplates();}catch(_){}
   var custom;
   try{
     var raw=localStorage.getItem(PROMPT_TEMPLATES_KEY);
@@ -111,9 +114,108 @@ export function upsertCustomTemplate(t){
   for(var i=0;i<customs.length;i++)if(customs[i].id===t.id){idx=i;break}
   if(idx>=0)customs[idx]=t;else customs.push(t);
   savePromptTemplates(customs);
+  _syncTemplateToServer(t);
 }
 
 export function deleteCustomTemplate(id){
   var customs=loadPromptTemplates().filter(function(x){return!x.isBuiltin&&x.id!==id;});
   savePromptTemplates(customs);
+  _deleteTemplateOnServer(id);
+}
+
+/* ─── Server sync ─────────────────────────────────────────────────────────
+ * The backend (/api/prompts) is the account-level store; localStorage is
+ * the offline cache + sync staging area. Server rows carry uuid ids; a
+ * local template keeps its "tpl-*" id until its first successful POST
+ * adopts the server's uuid. Guests (401) and offline sessions silently
+ * keep localStorage-only behaviour — loadPromptTemplates() stays the
+ * synchronous source of truth for every caller.
+ */
+function _isServerId(id){
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id||"");
+}
+function _templateToServerRow(t){
+  return {
+    title:t.title, description:t.description||null, body:t.body||"",
+    icon:t.icon||null, category:t.category||"other",
+    shortcut:t.shortcut||null, systemPrompt:t.systemPrompt||null
+  };
+}
+function _serverRowToTemplate(row){
+  return {
+    id:row.id, title:row.title||"", description:row.description||"",
+    icon:row.icon||"pg", category:row.category||"other",
+    shortcut:row.shortcut||"", body:row.body||"",
+    systemPrompt:row.systemPrompt||"", isBuiltin:false
+  };
+}
+function _loadCustomTemplates(){
+  return loadPromptTemplates().filter(function(x){return!x.isBuiltin;});
+}
+
+var _syncInFlight=null;
+var _lastSyncAt=0;
+var SYNC_MIN_INTERVAL_MS=30000;
+
+export function syncPromptTemplates(force){
+  var apiFetch=(typeof window!=="undefined")&&window.apiFetch;
+  if(typeof apiFetch!=="function")return Promise.resolve();
+  var now=Date.now();
+  if(!force&&now-_lastSyncAt<SYNC_MIN_INTERVAL_MS)return Promise.resolve();
+  if(_syncInFlight)return _syncInFlight;
+  _lastSyncAt=now;
+  _syncInFlight=apiFetch("/api/prompts?scope=mine&limit=200")
+    .then(function(res){
+      var rows=(res&&Array.isArray(res.templates))?res.templates:[];
+      var remoteIds={};
+      var merged=rows.map(function(row){
+        remoteIds[row.id]=true;
+        return _serverRowToTemplate(row);
+      });
+      var remoteShortcuts={};
+      merged.forEach(function(t){if(t.shortcut)remoteShortcuts[t.shortcut]=true;});
+      var pending=[];
+      _loadCustomTemplates().forEach(function(t){
+        if(_isServerId(t.id))return;      /* server copy wins; absent => deleted elsewhere */
+        if(t.shortcut&&remoteShortcuts[t.shortcut])return;  /* remote row already owns this /alias */
+        pending.push(t);
+      });
+      /* Push never-synced local templates so they follow the account. */
+      return Promise.all(pending.map(function(t){
+        return apiFetch("/api/prompts",{method:"POST",body:_templateToServerRow(t)})
+          .then(function(created){if(created&&created.id)t.id=created.id;})
+          .catch(function(){ /* stays local-only until next sync */ });
+      })).then(function(){
+        savePromptTemplates(merged.concat(pending));
+        try{window.dispatchEvent(new CustomEvent("socrates:prompt-templates-synced"));}catch(_){ }
+      });
+    })
+    .catch(function(){ /* offline / guest — localStorage keeps working */ })
+    .finally(function(){_syncInFlight=null;});
+  return _syncInFlight;
+}
+
+/* Fire-and-forget write-through. Errors are swallowed — the local copy is
+   already saved and the next pull sync reconciles. */
+function _syncTemplateToServer(t){
+  var apiFetch=(typeof window!=="undefined")&&window.apiFetch;
+  if(typeof apiFetch!=="function")return;
+  var row=_templateToServerRow(t);
+  var op=_isServerId(t.id)
+    ?apiFetch("/api/prompts/"+encodeURIComponent(t.id),{method:"PATCH",body:row})
+    :apiFetch("/api/prompts",{method:"POST",body:row}).then(function(created){
+        if(created&&created.id&&created.id!==t.id){
+          /* adopt the server uuid so future edits PATCH instead of duplicating */
+          var customs=_loadCustomTemplates();
+          for(var i=0;i<customs.length;i++)if(customs[i].id===t.id){customs[i].id=created.id;break}
+          savePromptTemplates(customs);
+          t.id=created.id;
+        }
+      });
+  op.catch(function(){});
+}
+function _deleteTemplateOnServer(id){
+  var apiFetch=(typeof window!=="undefined")&&window.apiFetch;
+  if(typeof apiFetch!=="function"||!_isServerId(id))return;
+  apiFetch("/api/prompts/"+encodeURIComponent(id),{method:"DELETE"}).catch(function(){});
 }

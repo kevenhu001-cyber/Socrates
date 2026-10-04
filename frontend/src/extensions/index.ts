@@ -21,6 +21,7 @@ import { examExtension } from './modules/exam';
 import { extensiveThinkingExtension } from './modules/extensiveThinking';
 import { uploadExtension } from './modules/upload';
 import { webSearchExtension } from './modules/webSearch';
+import { deepResearchExtension } from './modules/deepResearch';
 import { skillsExtension } from './modules/skills';
 import { createImageExtension } from './modules/createImage';
 import { createSiteExtension } from './modules/createSite';
@@ -45,6 +46,7 @@ export function installExtensions(): void {
     .register(extensiveThinkingExtension)
     .register(uploadExtension)
     .register(webSearchExtension)
+    .register(deepResearchExtension)
     .register(skillsExtension)
     .register(createImageExtension)
     .register(createSiteExtension);
@@ -89,7 +91,7 @@ export function installWindowExtensionDelegates(): void {
   };
 
   if (!w.composeAction) w.composeAction = () => dispatchExtension('write');
-  if (!w.researchAction) w.researchAction = () => dispatchExtension('research');
+  if (!w.researchAction) w.researchAction = () => dispatchExtension('webSearch');
   if (!w.exploreAction) w.exploreAction = () => dispatchExtension('explore');
   if (!w.deepResearchAction) w.deepResearchAction = () => dispatchExtension('deepResearch');
   if (!w.analyzeAction) w.analyzeAction = () => dispatchExtension('analyze');

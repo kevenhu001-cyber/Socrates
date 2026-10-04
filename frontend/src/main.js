@@ -443,9 +443,10 @@ installDiagnosticFlowListeners();
    Storage: localStorage key "socrates-prompt-templates",
    value: Array<{ id, title, description, body, icon,
                    category, shortcut, isBuiltin }>.
-   API contract: docs/api/openapi.yaml P5.8 — these mirror
-   the server shape; when the backend lands /api/prompts
-   the local array becomes the offline cache. */
+   API contract: docs/api/openapi.yaml P5.8 — the server
+   (/api/prompts) is the account-level store; the local
+   array is the offline cache + sync staging area. See
+   syncPromptTemplates() in src/chat/promptTemplates.js. */
 
 /* ICON_*, SYSTEM_PROMPT_*, BUILTIN_TEMPLATES, loadPromptTemplates,
    savePromptTemplates, findTemplateByShortcut, upsertCustomTemplate,

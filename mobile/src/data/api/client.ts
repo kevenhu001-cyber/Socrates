@@ -13,7 +13,6 @@ import type {
   ScheduledTask,
   Session,
   User,
-  ToolApprovalDecision,
 } from '@socrates/contracts';
 import { clearTokens, readTokens, writeCachedUser, writeTokens } from './tokenStore';
 import { API_BASE_URL, WEB_BASE_URL } from './config';
@@ -427,11 +426,11 @@ export const notificationsApi = {
   unregister: () => apiRequest('/notifications/unregister', { method: 'DELETE' }),
 };
 
+/* The workspace agent runs unattended (`approvalPolicy: 'never'` on
+ * `GET /api/agent-runs/capabilities`): the server never emits a
+ * `tool_approval` frame, so there is no approval decision to post back.
+ * Stopping a run is the only user-side control over one. */
 export const agentRunsApi = {
-  decideApproval: (runId: string, approvalId: string, decision: Exclude<ToolApprovalDecision, 'interrupt'>) =>
-    apiRequest(`/agent-runs/${encodeURIComponent(runId)}/approvals/${encodeURIComponent(approvalId)}`, {
-      method: 'POST', body: JSON.stringify({ decision }),
-    }),
   interrupt: (runId: string) => apiRequest(`/agent-runs/${encodeURIComponent(runId)}/interrupt`, {
     method: 'POST', body: '{}',
   }),

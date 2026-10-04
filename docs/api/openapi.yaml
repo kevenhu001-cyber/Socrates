@@ -1482,6 +1482,7 @@ paths:
                 icon: { type: string, maxLength: 16 }
                 category: { type: string, enum: [writing, code, learning, analysis, creative, other] }
                 shortcut: { type: string, maxLength: 20, description: Optional slash-command alias, e.g. "/summarize" }
+                systemPrompt: { type: string, maxLength: 32000, description: Optional system prompt injected while the template is active }
       responses:
         '201':
           description: Created
@@ -1511,6 +1512,7 @@ paths:
                 icon: { type: string }
                 category: { type: string }
                 shortcut: { type: string }
+                systemPrompt: { type: string, nullable: true }
       responses:
         '200':
           description: Updated
@@ -3065,6 +3067,7 @@ components:
         icon: { type: string, nullable: true }
         category: { type: string, enum: [writing, code, learning, analysis, creative, other] }
         shortcut: { type: string, nullable: true, description: Slash-command alias }
+        systemPrompt: { type: string, nullable: true, description: Optional system prompt injected while the template is active }
         isBuiltin: { type: boolean, default: false }
         usageCount: { type: integer, default: 0 }
         createdAt: { type: string, format: date-time }

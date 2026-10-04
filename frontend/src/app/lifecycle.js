@@ -24,7 +24,9 @@ import { updateComposerBtn } from '../ui/topicSetup.js';
 import { saveCurrentSession, saveSessionBeforeReset } from '../session/persistence.js';
 import { syncModelPills } from '../pickers.js';
 import { renderUserFooter } from '../ui/profile.js';
-import { resetCrossSessionKBCache } from '../ui/knowledgeCrossSession.js';
+/* cross-session KB module removed — the kbCrossBody panel it fed was
+   deleted with the cross-session knowledge section; nothing calls
+   loadAndRenderCrossSessionKB any more. */
 import { resetCmdKSearchState } from '../ui/cmdK.js';
 import { renderGreeting } from '../ui/greeting.js';
 import { activateMainView } from '../ui/mainViewController.js';
@@ -174,7 +176,7 @@ export async function resetApp(options){
   clearComposerPlugins("topic");
   clearComposerPlugins("chat");
   document.getElementById("kbContent").innerHTML='<div class="kb-empty">'+(typeof t==="function"?_t("tutor.kbTopicFirst"):"Set a topic to build your knowledge map.")+'</div>';
-  document.getElementById("chatStats").textContent="";
+  var _statsEl=document.getElementById("chatStats");if(_statsEl)_statsEl.textContent="";
   /* Task 3.3 — clear the teaching-plan view on full reset so a
      previous session's plan doesn't linger in the sidebar. */
   var _tpc2=document.getElementById("teachingPlanContent");if(_tpc2)_tpc2.innerHTML="";
@@ -323,7 +325,6 @@ export function clearPerUserClientState(){
   try{serverCache.fetchFailed=false}catch(_){}
   try{apiConfig.activeId=null;apiConfig.providers=[]}catch(_){}
   try{resetCmdKSearchState()}catch(_){}
-  try{resetCrossSessionKBCache()}catch(_){}
   /* exam.js is lazy — if it was never imported its save state is already
      pristine, so only reset when the module is actually loaded. */
   try{var _em=(typeof window!=="undefined")&&window.__examModule;if(_em&&typeof _em.resetExamSaveState==="function")_em.resetExamSaveState()}catch(_){}

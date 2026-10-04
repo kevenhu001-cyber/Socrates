@@ -21,7 +21,9 @@ function CheatsheetSection({ title, rows }: { title: string; rows: Array<[string
 const SECTIONS: Array<[string, Array<[string, string[]]>]> = [
   ['Navigation', [
     ['Open search', ['⌘', 'K']],
+    ['Keyboard shortcuts', ['⌘', '/']],
     ['Toggle sidebar', ['⌘', 'B']],
+    ['Toggle sidebar (alt)', ['Ctrl', '\\']],
     ['Open settings', ['⌘', '.']],
     ['New chat', ['⌘', '⇧', 'O']],
     ['Cycle project', ['⌘', '⇧', 'P']],
@@ -29,6 +31,7 @@ const SECTIONS: Array<[string, Array<[string, string[]]>]> = [
   ['Sharing & search', [
     ['Share current chat', ['⌘', '⇧', 'S']],
     ['Open project picker', ['⌘', '⇧', 'A']],
+    ['Find in conversation', ['⌘', 'F']],
   ]],
   ['Toggles', [
     ['Toggle theme', ['⌘', '⇧', 'T']],
@@ -39,6 +42,9 @@ const SECTIONS: Array<[string, Array<[string, string[]]>]> = [
     ['Send (alternative)', ['⌘', '⏎']],
     ['Edit last prompt', ['↑', '(empty input)']],
     ['New line', ['⇧', '⏎']],
+  ]],
+  ['General', [
+    ['Close dialog', ['Esc']],
   ]],
 ];
 

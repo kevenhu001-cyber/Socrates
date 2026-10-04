@@ -8,6 +8,7 @@ import { turnState } from './turnState.js';
 import { isExpectedTurnAbort } from './turnUi.js';
 import { hasUsableActive } from '../config/providers.js';
 import { _origGenerateFollowUp } from './mocks.js';
+import { notifyMockFallbackOnce } from './mockFallbackNotice.js';
 import { generateFollowUpStream, askNextQuestion } from '../tutor/socraticTurn.js';
 import { toolCallbacksForStream } from './toolCallbacks.js';
 import { fetchWebContext, shouldRefreshSearch } from './webSearch.js';
@@ -468,10 +469,14 @@ export async function submitChatMessage(textOverride,opts){
             });
           }else{
             streamCtl.abort();
+            /* Canned follow-up, not an AI reply — make it visible. */
+            notifyMockFallbackOnce();
             _addAnchoredAssistant(_origGenerateFollowUp(text,node,stateStore.read("domain")));
           }
         }
       }else{
+        /* No usable model configured at all. */
+        notifyMockFallbackOnce();
         _addAnchoredAssistant(_origGenerateFollowUp(text,node,stateStore.read("domain")));
       }
       /* U-M2 — only a substantive (or quiz-driven) answer proves the

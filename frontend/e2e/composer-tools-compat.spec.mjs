@@ -34,7 +34,7 @@ test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async
   const actions = await page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action]').evaluateAll((els) =>
     els.map((el) => el.getAttribute('data-composer-action')),
   );
-  expect(actions).toEqual(['upload', 'webSearch', 'explore', 'write', 'analyze', 'createImage', 'createSite', 'exam', 'skills']);
+  expect(actions).toEqual(['upload', 'webSearch', 'explore', 'deepResearch', 'write', 'analyze', 'createImage', 'createSite', 'exam', 'skills']);
   const mobileActions = await page.locator('#composerToolsMenu .composer-tools-mobile-items [data-composer-action]').evaluateAll((els) =>
     els.map((el) => el.getAttribute('data-composer-action')),
   );
@@ -42,7 +42,7 @@ test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async
      first (camera, photos, upload, createImage), then search, then the
      remaining workflows. */
   expect(mobileActions).toEqual([
-    'camera', 'photos', 'upload', 'createImage', 'webSearch', 'explore',
+    'camera', 'photos', 'upload', 'createImage', 'webSearch', 'explore', 'deepResearch',
     'write', 'analyze', 'createSite', 'exam', 'skills', 'extensiveThinking',
   ]);
 });
@@ -73,14 +73,14 @@ test('Composer tools menu opens via legacy entry point and React mirrors state',
   expect(snap).toEqual({ isOpen: true, mode: 'topic', triggerId: 'composerToolsBtn' });
   /* Expanded card: every workflow is visible at once with no disclosure. */
   const desktopItems = menu.locator('.composer-tools-desktop-items [data-composer-action]');
-  await expect(desktopItems).toHaveCount(9);
+  await expect(desktopItems).toHaveCount(10);
   await expect(desktopItems.nth(0)).toContainText('Upload files');
   /* Footer filter narrows the expanded list. */
   await menu.locator('.composer-tools-footer-search input').fill('exam');
   await expect(menu.locator('.composer-tools-desktop-items [data-composer-action]')).toHaveCount(1);
   await expect(menu.locator('.composer-tools-desktop-items [data-composer-action]').first()).toContainText('Generate exam');
   await menu.locator('.composer-tools-footer-search input').fill('');
-  await expect(menu.locator('.composer-tools-desktop-items [data-composer-action]')).toHaveCount(9);
+  await expect(menu.locator('.composer-tools-desktop-items [data-composer-action]')).toHaveCount(10);
   await expect(menu.locator('.composer-tools-desktop-items .composer-tools-group-label').first())
     .toContainText(/Add context|添加资料/);
   await page.screenshot({
