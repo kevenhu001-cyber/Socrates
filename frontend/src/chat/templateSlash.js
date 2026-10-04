@@ -17,6 +17,7 @@ import {
 import { loadPromptTemplates } from './promptTemplates.js';
 import { esc } from '../render/helpers.js';
 import { updateComposerBtn } from '../ui/topicSetup.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 export var _slashSelected=0;
 var _slashList=[];
@@ -41,15 +42,15 @@ var EXTENSION_SIDE_EFFECTS={
   deepResearch:function(on){ window.deepResearchOn=!!on; if(typeof window.syncQuickChips==="function") window.syncQuickChips(); },
   extensiveThinking:function(on){
     window.extensiveThinkingOn=!!on;
-    try{localStorage.setItem("socrates-extensive-thinking",JSON.stringify(!!window.extensiveThinkingOn))}catch {}
+    try{localStorage.setItem("socrates-extensive-thinking",JSON.stringify(!!window.extensiveThinkingOn))}catch(e){reportSwallow(e, 'templateSlash.extensiveThinking.persist');}
   }
 };
 export function _applyExtensionSideEffects(prevExt,nextExt){
   if(prevExt && EXTENSION_SIDE_EFFECTS[prevExt]){
-    try{ EXTENSION_SIDE_EFFECTS[prevExt](false); }catch(_){}
+    try{ EXTENSION_SIDE_EFFECTS[prevExt](false); }catch(e){reportSwallow(e, 'templateSlash._applyExtensionSideEffects.prev');}
   }
   if(nextExt && EXTENSION_SIDE_EFFECTS[nextExt]){
-    try{ EXTENSION_SIDE_EFFECTS[nextExt](true); }catch(_){}
+    try{ EXTENSION_SIDE_EFFECTS[nextExt](true); }catch(e){reportSwallow(e, 'templateSlash._applyExtensionSideEffects.next');}
   }
 }
 /* P_extension-runs — the chat pipeline publishes workflow-stage events
@@ -95,7 +96,7 @@ export function setActiveTemplate(t){
     outputMode:t.outputMode||'chat'
   }:null;
   if(prevExt!==nextExt) _applyExtensionSideEffects(prevExt,nextExt);
-  try { window._activeTemplate = _activeTemplate; } catch (_) {}
+  try { window._activeTemplate = _activeTemplate; } catch (e) { reportSwallow(e, 'templateSlash.setActiveTemplate.mirrorGlobal'); }
   renderTemplateModeChip();
 }
 export function clearActiveTemplate(){
@@ -409,7 +410,7 @@ export function blurChatComposer(){
   try{
     var sel=window.getSelection();
     if(sel&&sel.rangeCount)sel.removeAllRanges();
-  }catch(_){}
+  }catch(e){reportSwallow(e, 'templateSlash.withinComposer.clearSelection');}
 }
 
 

@@ -6,6 +6,7 @@ import { activateMainView, getVisibleCoreView, hideCoreViews } from "../ui/mainV
 import { mountWorkspacePage, mountScheduledPage, mountAdminPage } from "../react/lib/boot/pageMounts.ts";
 import { loadSession } from "../session/loader.js";
 import { workspaceForPath, pushWorkspaceRoute, pushHomeRoute, replaceRoute } from "../app/router.js";
+import { reportSwallow } from "../util/reportSwallow.ts";
 /* creationSurfaces.js (~20KB) is lazy — images/assistants/sites panels
    only need it when the user opens one. openCreation() below awaits the
    module before showing the (created-on-demand) panel. */
@@ -25,7 +26,7 @@ function _publishScheduledState(overrides) {
         error: (overrides && overrides.error) || null,
       });
     }
-  } catch (_) { /* swallow */ }
+  } catch (e) { reportSwallow(e, 'sidebar/nav._publishScheduledState'); /* swallow */ }
 }
 
 /* React migration bridge — publishes workspace page state (library,
@@ -50,7 +51,7 @@ function _publishWorkspaceState(overrides) {
         error: (overrides && overrides.error) || null,
       });
     }
-  } catch (_) { /* swallow */ }
+  } catch (e) { reportSwallow(e, 'sidebar/nav._publishWorkspaceState'); /* swallow */ }
 }
 
 var NAV_NAMES = ["library", "projects", "scheduled", "plugins", "images", "assistants", "sites", "exam", "admin", "more"];
@@ -95,7 +96,7 @@ function ensureConnectorIcons() {
       hydrateConnectorIcons();
       try {
         requestAnimationFrame(function () { hydrateConnectorIcons(); });
-      } catch (_) {}
+      } catch (e) { reportSwallow(e, 'sidebar/nav.ensureConnectorIcons.deferHydrate'); }
       return m;
     });
     _ciReady.catch(function (err) {
@@ -193,7 +194,7 @@ function _publishSidebarNav(name) {
     if (bridge && typeof bridge.publish === "function") {
       bridge.publish({ activeNav: name == null ? null : String(name) });
     }
-  } catch (_) { /* swallow — bridge is best-effort */ }
+  } catch (e) { reportSwallow(e, 'sidebar/nav._publishSidebarNav'); /* swallow — bridge is best-effort */ }
 }
 
 export function setActiveNav(name) {
@@ -302,7 +303,7 @@ function rememberConnectorReturnContext(connectorId) {
       createdAt: Date.now(),
       composer: composerReturnSnapshot(),
     }));
-  } catch (_) { /* storage can be unavailable in private/embedded contexts */ }
+  } catch (e) { reportSwallow(e, 'sidebar/nav.rememberConnectorReturnContext'); /* storage can be unavailable in private/embedded contexts */ }
 }
 
 function readConnectorReturnContext() {
@@ -322,7 +323,7 @@ function restoreComposerReturnState(composer) {
   if (controller && typeof controller.setMarkdown === "function" && composer.drafts) {
     ["topic", "chat"].forEach(function (surface) {
       if (typeof composer.drafts[surface] === "string") {
-        try { controller.setMarkdown(surface, composer.drafts[surface]); } catch (_) {}
+        try { controller.setMarkdown(surface, composer.drafts[surface]); } catch (e) { reportSwallow(e, 'sidebar/nav.restoreComposerReturnState.setMarkdown'); }
       }
     });
   }
@@ -343,7 +344,7 @@ function restoreComposerReturnState(composer) {
           iconMarkup: typeof window.getConnectorIconMarkup === "function" ? window.getConnectorIconMarkup(id) : "",
         };
       }).filter(function (plugin) { return plugin.id; }) });
-    } catch (_) {}
+    } catch (e) { reportSwallow(e, 'sidebar/nav.ensureConnectorIcons.list'); }
   });
 }
 
@@ -395,7 +396,7 @@ export function openNav(name, options) {
       sidebar.classList.add("collapsed");
       if (backdrop) backdrop.classList.remove("show");
       window.sidebarOpen = false;
-      try { localStorage.setItem("socrates-sb", "0"); } catch (_) { /* storage is optional */ }
+      try { localStorage.setItem("socrates-sb", "0"); } catch (e) { reportSwallow(e, 'sidebar/nav.openNav.clearStorage'); /* storage is optional */ }
       if (typeof window.syncSidebarBtns === "function") window.syncSidebarBtns();
     }
   }
@@ -951,7 +952,7 @@ function openAgentTaskForm(task, initialPrompt) {
   });
 }
 window.toggleScheduledTask = async function (id, pause) { try { await api("/api/scheduled-tasks/" + id, { method: "PATCH", body: { status: pause ? "paused" : "active" } }); renderScheduled(); toast(pause ? t("toast.taskPaused", "Task paused") : t("toast.taskResumed", "Task resumed")); } catch (_) { toast(t("toast.taskUpdateFailed", "Could not update task")); } };
-window.runScheduledTask = async function (id) { toast(t("toast.taskRunStarted", "Running task…")); try { await api("/api/scheduled-tasks/" + id + "/run", { method: "POST" }); renderScheduled(); if (typeof window.flushRecentsReconcile === "function") try { window.flushRecentsReconcile(); } catch (_) {} toast(t("toast.taskRunDone", "Task ran — see Recents for the result")); } catch (_) { renderScheduled(); toast(t("toast.taskRunFailed", "Could not run task")); } };
+window.runScheduledTask = async function (id) { toast(t("toast.taskRunStarted", "Running task…")); try { await api("/api/scheduled-tasks/" + id + "/run", { method: "POST" }); renderScheduled(); if (typeof window.flushRecentsReconcile === "function") try { window.flushRecentsReconcile(); } catch (e) { reportSwallow(e, 'sidebar/nav.runScheduledTask.flushReconcile'); } toast(t("toast.taskRunDone", "Task ran — see Recents for the result")); } catch (_) { renderScheduled(); toast(t("toast.taskRunFailed", "Could not run task")); } };
 window.deleteScheduledTask = async function (id) { if (!(await confirmAction(t("confirm.deleteScheduled.title", "Delete this scheduled task?"), t("confirm.cannotUndo", "This cannot be undone.")))) return; try { await api("/api/scheduled-tasks/" + id, { method: "DELETE" }); closeWorkspaceDialog(); renderScheduled(); toast(t("toast.taskDeleted", "Task deleted")); } catch (_) { toast(t("toast.taskDeleteFailed", "Could not delete task")); } };
 
 window.switchLibraryTab = function (tab) { document.querySelectorAll(".library-tab").forEach(function (button) { button.classList.toggle("active", button.dataset.libraryTab === tab); }); paintLibrary(); _publishWorkspaceState(); };
@@ -1079,4 +1080,4 @@ window.disconnectConnector = async function (id) {
   catch (_) { toast(t("toast.appDisconnectFailed", "Could not disconnect app")); }
 };
 window.closeWorkspaceDialog = closeWorkspaceDialog;
-export function openMoreNav() { try { toggleMorePopover(); } catch (_) {} }
+export function openMoreNav() { try { toggleMorePopover(); } catch (e) { reportSwallow(e, 'sidebar/nav.openMoreNav'); } }

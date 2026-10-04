@@ -9,6 +9,7 @@ import {
 import { ErrorBoundary } from '../ErrorBoundary';
 import { MessageItem } from './MessageItem';
 import type { LegacyChatMessage } from '../types/domain';
+import { reportSwallow } from '../../util/reportSwallow.ts';
 
 const MSG_LIST_ID = 'msgList';
 
@@ -357,7 +358,7 @@ export function mountMessageList(): { root: Root | null } {
 
   window.__socratesFlushMessageRows = flushDeferredMessageRows;
   window.__socratesReleaseMsgListReact = () => {
-    try { root.unmount(); } catch (_) { /* already unmounted */ }
+    try { root.unmount(); } catch (e) { reportSwallow(e, 'MessageList.releaseMsgListReact.unmount'); /* already unmounted */ }
     messageListMounted = false;
     delete window.__socratesReleaseMsgListReact;
   };

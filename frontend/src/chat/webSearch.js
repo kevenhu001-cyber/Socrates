@@ -4,6 +4,7 @@ import { offlineGuard } from './offline.js';
 import { hasUsableActive, webSearchOn } from '../config/providers.js';
 import { loadLocalMemory } from '../storage/localMemory.js';
 import { stateStore } from '../state/store.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 function tr(key) { return typeof window.t === 'function' ? window.t(key) : key; }
 
@@ -32,22 +33,22 @@ export async function fetchWebContext(topic,opts){
      streaming activity feed. Wrapped in try/catch so a UI bug never
      breaks the search itself. */
   function _emit(kind,data){
-    try{if(typeof opts.onStep==="function")opts.onStep({kind:kind,data:data||{}})}catch(_){}
+    try{if(typeof opts.onStep==="function")opts.onStep({kind:kind,data:data||{}})}catch(e){reportSwallow(e, 'webSearch._emit');}
   }
   if(!webSearchOn||!topic)return{ok:false,reason:"disabled",results:0,context:""};
   if(opts.background){
     /* Background refresh — set the pill to "refreshing" but don't await.
        The refresh paints its own success/error pill when it finishes;
        there is no client-side deadline on it. */
-    try{setSearchPill("loading",0,"Refreshing…")}catch(_){}
+    try{setSearchPill("loading",0,"Refreshing…")}catch(e){reportSwallow(e, 'webSearch.pill.refreshing');}
   }else{
-    try{setSearchPill("loading",0,"Searching…")}catch(_){}
+    try{setSearchPill("loading",0,"Searching…")}catch(e){reportSwallow(e, 'webSearch.pill.searching');}
   }
   _emit("started",{topic:topic,background:!!opts.background});
   /* Offline precheck — fail fast in background too, so the pill
      resolves to an error state instead of hanging on "Refreshing…". */
   if(offlineGuard()){
-    try{setSearchPill("err",0,"Offline")}catch(_){}
+    try{setSearchPill("err",0,"Offline")}catch(e){reportSwallow(e, 'webSearch.pill.offline');}
     return{ok:false,reason:"offline",results:0,context:opts.background?window.stateStore.read("searchContext")||"":""};
   }
   /* Collect search queries. If the rewriter returns good ones, we also
@@ -110,7 +111,7 @@ export async function fetchWebContext(topic,opts){
         var d2=await r2.json();
         searchResults=(d2.results||[]).map(function(x){return Object.assign({matchedQuery:topic},x)});
         _emit("got_results",{query:topic,count:searchResults.length});
-      }catch(_){}
+      }catch(e){reportSwallow(e, 'webSearch.runQuery.fetchResults');}
     }
     if(!searchResults.length){
       /* All searches failed (network / 5xx / non-bing). Surface a
@@ -120,7 +121,7 @@ export async function fetchWebContext(topic,opts){
       console.log("[web search] all queries failed");
       stateStore.dispatch({type:'state/set',key:'searchContextError',value:emsg});
       _emit("error",{message:emsg,code:"no-results"});
-      try{setSearchPill("err",0,"Search failed: "+emsg)}catch(_){}
+      try{setSearchPill("err",0,"Search failed: "+emsg)}catch(e){reportSwallow(e, 'webSearch.pill.noResults');}
       return{ok:false,reason:emsg,results:0,context:opts.background?window.stateStore.read("searchContext")||"":""};
     }
     var d={results:searchResults,query:queries.join(" | ")};
@@ -132,7 +133,7 @@ export async function fetchWebContext(topic,opts){
         searchContextCount:0,
         searchResults:[]
       }});
-      try{setSearchPill("ok",0,"No results")}catch(_){}
+      try{setSearchPill("ok",0,"No results")}catch(e){reportSwallow(e, 'webSearch.pill.empty');}
       return{ok:true,reason:"empty",results:0,context:""};
     }
     /* Step 2: rank search snippets without fetching every page. The model
@@ -233,14 +234,14 @@ export async function fetchWebContext(topic,opts){
       _emit("done",{finalCount:enriched.length,fetchedCount:0,engines:engineCounts});
     }
     console.log("[web search]",enriched.length,"results for:",topic);
-    try{setSearchPill("ok",enriched.length,enriched.length+" sources")}catch(_){}
+    try{setSearchPill("ok",enriched.length,enriched.length+" sources")}catch(e){reportSwallow(e, 'webSearch.pill.done');}
     return{ok:true,reason:"ok",results:enriched.length,context:ctx,sources:enriched};
   }catch(e){
     const emsg=(e&&e.message)||String(e);
     console.log("[web search] failed");
     stateStore.dispatch({type:'state/set',key:'searchContextError',value:emsg});
     _emit("error",{message:emsg,code:"exception"});
-    try{setSearchPill("err",0,"Search: "+emsg)}catch(_){}
+    try{setSearchPill("err",0,"Search: "+emsg)}catch(e){reportSwallow(e, 'webSearch.pill.exception');}
     /* Keep the previous context so a transient failure doesn't drop
        grounding from the next turn. */
     return{ok:false,reason:emsg,results:0,context:opts.background?window.stateStore.read("searchContext")||"":""};
@@ -350,7 +351,7 @@ export async function webSearchWithRetry(topic, opts){
   opts=opts||{};
   var onStep=opts.onStep;
   function _emit(kind,data){
-    try{if(typeof onStep==="function")onStep({kind:kind,data:data||{}})}catch(_){}
+    try{if(typeof onStep==="function")onStep({kind:kind,data:data||{}})}catch(e){reportSwallow(e, 'webSearch.fetchWebContext._emit');}
   }
   _emit("started",{topic:topic});
   /* Round 1 */
