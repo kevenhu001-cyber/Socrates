@@ -56,6 +56,7 @@ import {
   snapshotAttachments,
 } from '../attachments.js';
 import { renderAttachmentChips } from '../attachments/render.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 function _t(key, fallback) {
   try {
@@ -63,23 +64,23 @@ function _t(key, fallback) {
       var v = window.t(key);
       if (v && v !== key) return v;
     }
-  } catch (_) {}
+  } catch (e) {reportSwallow(e, 'chat/sessionBootstrap._t'); }
   return fallback != null ? fallback : key;
 }
 function _webSearchOn() {
   try {
     if (typeof window !== 'undefined' && typeof window.webSearchOn !== 'undefined') return !!window.webSearchOn;
-  } catch (_) {}
+  } catch (e) {reportSwallow(e, 'chat/sessionBootstrap._webSearchOn'); }
   return true;
 }
 function _appMode() {
   try {
     if (typeof window !== 'undefined' && window.appMode) return window.appMode;
-  } catch (_) {}
+  } catch (e) {reportSwallow(e, 'chat/sessionBootstrap._appMode'); }
   return 'chat';
 }
 function _renderRecents() {
-  try { if (typeof window !== 'undefined' && typeof window.renderRecents === 'function') window.renderRecents(); } catch (_) {}
+  try { if (typeof window !== 'undefined' && typeof window.renderRecents === 'function') window.renderRecents(); } catch (e) {reportSwallow(e, 'chat/sessionBootstrap._renderRecents'); }
 }
 
 export async function startSession(){
@@ -104,7 +105,7 @@ export async function startSession(){
   var startTemplate = null;
   try {
     if (window._activeTemplate) startTemplate = Object.assign({}, window._activeTemplate);
-  } catch (_) { /* no active prompt template */ }
+  } catch (e) { /* no active prompt template */ reportSwallow(e, 'chat/sessionBootstrap.startSession'); }
   /* P_composer-plugins — selected connected apps are a presentation-layer
      context selector. Keep the persisted topic/user bubble clean, while the
      model receives the same natural-language connector hints used by the
@@ -130,7 +131,7 @@ export async function startSession(){
      agent message into the still-hidden #msgList — the topic screen
      stayed up and Begin looked like it did nothing (P_deep-research-view). */
   var _deepResearchOn=false;
-  try{ _deepResearchOn=!!window.deepResearchOn; }catch(_){}
+  try{ _deepResearchOn=!!window.deepResearchOn; }catch (e) {reportSwallow(e, 'chat/sessionBootstrap.startSession#2'); }
 
   var lang=detectLanguage(topic);
   var tutorExploration={enabled:false,count:0};
@@ -145,13 +146,13 @@ export async function startSession(){
      session's controller before changing the session id or replacing its
      messages; doing this later would also abort a placeholder created for
      the new session. */
-  if(window._activeChatAbort){try{window._activeChatAbort("new-session")}catch(_){}}
-  if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(_){}}
+  if(window._activeChatAbort){try{window._activeChatAbort("new-session")}catch (e) {reportSwallow(e, 'chat/sessionBootstrap.startSession#3'); }}
+  if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch (e) {reportSwallow(e, 'chat/sessionBootstrap.startSession#4'); }}
   turnState.activeChatCtl=null;
   window._activeChatAbort=null;
   turnState.chatStreaming=false;
   turnState.chatStopMode=false;
-  try{delete window.__socratesSyncCtl}catch(_){}
+  try{delete window.__socratesSyncCtl}catch (e) {reportSwallow(e, 'chat/sessionBootstrap.startSession#5'); }
 
   /* P_send-instant — common state setup. Run BEFORE the branch so both
      chat and tutor modes share the same fresh session identity. The
@@ -213,7 +214,7 @@ export async function startSession(){
        before the flip so the sent text does not travel with the single
        editor into the now-visible chat composer (the two-box build left
        it behind in the hidden topic editor). */
-    try{ clearComposer("topic"); }catch(_){/* best effort */}
+    try{ clearComposer("topic"); }catch (e) { /* best effort */ reportSwallow(e, 'chat/sessionBootstrap.startSession#6'); }
     clearLegacyMsgListChildren();
 
     /* The user turn must precede its assistant placeholder in the
@@ -221,18 +222,18 @@ export async function startSession(){
        askChatTurn will explicitly claim this new placeholder. Landing
        attachments ride along immediately (pending stubs resolve into
        fileIds in the deferred patch below). */
-    try { if (typeof window.__loadStreamingTurn === 'function') window.__loadStreamingTurn(); } catch (_) { /* prefetch is best effort */ }
+    try { if (typeof window.__loadStreamingTurn === 'function') window.__loadStreamingTurn(); } catch (e) { /* prefetch is best effort */ reportSwallow(e, 'chat/sessionBootstrap.startSession#7'); }
     var _startUserClientId = addMessage("user", stateStore.read("topic"), null, null, startImmediateAttList);
     var _startSaveP = saveState.saveInFlight || null;
     var _syncCtl = null;
     if(typeof window.addStreamingMessage === "function"){
       try{
         _syncCtl = await window.addStreamingMessage({onRetry:function(){
-          try{ console.warn("[chat] sync start retry not wired yet"); }catch(_){}
+          try{ console.warn("[chat] sync start retry not wired yet"); }catch (e) {reportSwallow(e, 'chat/sessionBootstrap.startSession#8'); }
         }});
-      }catch(_){ /* askChatTurn will create the normal controller */ }
+      }catch (e) { /* askChatTurn will create the normal controller */ reportSwallow(e, 'chat/sessionBootstrap.startSession#9'); }
     }
-    if(_syncCtl){try{window.__socratesSyncCtl=_syncCtl}catch(_){}}
+    if(_syncCtl){try{window.__socratesSyncCtl=_syncCtl}catch (e) {reportSwallow(e, 'chat/sessionBootstrap.startSession#10'); }}
 
     /* Reset attachments + chips immediately so the topic composer cannot
        leak its draft state into the now-visible chat composer. */
@@ -310,7 +311,7 @@ export async function startSession(){
       }catch(startErr){
         /* P_turn-abort-quiet — see submitChatMessage: expected lifecycle
            aborts unwind silently; real failures log without banner. */
-        if(!isExpectedTurnAbort(startErr)){try{console.error("[chat] start turn failed:",startErr)}catch(_){}}
+        if(!isExpectedTurnAbort(startErr)){try{console.error("[chat] start turn failed:",startErr)}catch (e) {reportSwallow(e, 'chat/sessionBootstrap.startSession#11'); }}
       }
     }, 0);
     return;
@@ -352,11 +353,11 @@ export async function startSession(){
           tutorAttachments:(tutorBuilt&&tutorBuilt.attachmentList)||[],
           tutorPartsTemplate:(tutorBuilt&&tutorBuilt.parts)||topic
         }});
-      }catch(_){}
+      }catch (e) {reportSwallow(e, 'chat/sessionBootstrap.startSession#12'); }
     }).catch(function(){
       try{
         stateStore.dispatch({type:"state/batch",patch:{tutorAttachments:[],tutorPartsTemplate:topic}});
-      }catch(_){}
+      }catch (e) {reportSwallow(e, 'chat/sessionBootstrap.startSession#13'); }
     });
   } else {
     stateStore.dispatch({type:"state/batch",patch:{tutorAttachments:[],tutorPartsTemplate:topic}});
@@ -386,7 +387,7 @@ export async function startSession(){
     setChatIdInURL(null);
     if(cancelledSid){
       rememberDeletedSession(cancelledSid);
-      Promise.resolve(saveState.saveInFlight).catch(function(){}).then(function(){
+      Promise.resolve(saveState.saveInFlight).catch(function(e){ reportSwallow(e, 'chat/sessionBootstrap.deleteSession.saveInFlight'); }).then(function(){
         return apiFetch("/api/sessions/"+encodeURIComponent(cancelledSid),{
           method:"DELETE",
         });
@@ -394,7 +395,7 @@ export async function startSession(){
         return flushRecentsReconcile();
       }).then(function(){
         _renderRecents();
-      }).catch(function(){});
+      }).catch(function(e){ reportSwallow(e, 'chat/sessionBootstrap.deleteSession.recentsChain'); });
     }
     var dv=document.getElementById("diagnosticView");
     if(dv){dv.classList.add("hidden");dv.innerHTML="";}
@@ -403,7 +404,7 @@ export async function startSession(){
     /* P_composer-single — this path bypasses activateMainView, so park
        the shell explicitly or it stays stranded under the hidden chat
        view while landing is visible. */
-    try{ placeComposerForView("topicSetup", document); }catch(_){/* best effort */}
+    try{ placeComposerForView("topicSetup", document); }catch (e) { /* best effort */ reportSwallow(e, 'chat/sessionBootstrap.diagLoadingHTML#3'); }
     clearComposerPlugins("topic");
     clearComposerPlugins("chat");
     focusComposer("topic");
@@ -421,8 +422,8 @@ export async function startSession(){
     try{
       fetchWebContext(topic,{}).then(function(sc){
         stateStore.dispatch({type:"state/set",key:"searchContext",value:sc.context||""});
-      }).catch(function(){});
-    }catch(_){}
+      }).catch(function(e){ reportSwallow(e, 'chat/sessionBootstrap.autoSearch.fetchWebContext'); });
+    }catch (e) {reportSwallow(e, 'chat/sessionBootstrap.autoSearch.guard'); }
   }
 
   /* Progress bar helper — updates fill width and step text. */

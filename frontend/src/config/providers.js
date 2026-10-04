@@ -1,3 +1,4 @@
+import { reportSwallow } from '../util/reportSwallow.ts';
 /* config/providers.js — Wave 3 of main-js-split plan.
  * Provider configuration: apiConfig, BEAGLE_BUILT_IN, webSearchOn, appMode,
  * and helper functions for reasoning/model detection.
@@ -30,7 +31,7 @@ var thinkingOn = true;
 try {
   var savedMode = localStorage.getItem("socrates-appmode");
   if (savedMode === "chat" || savedMode === "tutor") appMode = savedMode;
-} catch {}
+} catch (e) {reportSwallow(e, 'config/providers.restoreAppMode'); }
 /* Web search stays off unless the user explicitly enabled it before.
    An existing stored preference (any non-null value) still wins. */
 try {
@@ -38,7 +39,7 @@ try {
   if (_wsSaved !== null) {
     webSearchOn = _wsSaved === "true";
   }
-} catch { /* localStorage blocked — keep the default (false) */ }
+} catch (e) { /* localStorage blocked — keep the default (false) */ reportSwallow(e, 'config/providers.restoreWebSearchOn'); }
 /* Deep thinking now follows the reasoning-effort picker: High effort
  * enables the verbose prompt, Medium/Low use the concise one. Derive the
  * initial value from the persisted effort so the first turn matches the
@@ -46,17 +47,17 @@ try {
 try {
   var savedEffort = localStorage.getItem("socrates-reasoning-effort");
   extensiveThinkingOn = (savedEffort === "high");
-} catch {}
+} catch (e) {reportSwallow(e, 'config/providers.restoreReasoningEffort'); }
 
 /* P_privacy-leak — built-in providers don't expose their model name,
  * so the regex-based check below would always return false for them.
  * Use the boolean capability hint bridged from /api/config instead. */
 function setWebSearchOn(value) {
   webSearchOn = !!value;
-  try { window.webSearchOn = webSearchOn; } catch {}
-  try { localStorage.setItem("socrates-websearch", JSON.stringify(webSearchOn)); } catch {}
+  try { window.webSearchOn = webSearchOn; } catch (e) {reportSwallow(e, 'config/providers.setWebSearchOn'); }
+  try { localStorage.setItem("socrates-websearch", JSON.stringify(webSearchOn)); } catch (e) {reportSwallow(e, 'config/providers.setWebSearchOn#2'); }
   /* The composer's web-search chip (RichComposer) subscribes to this. */
-  try { document.dispatchEvent(new CustomEvent("socrates:websearchchange", { detail: { on: webSearchOn } })); } catch {}
+  try { document.dispatchEvent(new CustomEvent("socrates:websearchchange", { detail: { on: webSearchOn } })); } catch (e) {reportSwallow(e, 'config/providers.setWebSearchOn#3'); }
   return webSearchOn;
 }
 
@@ -111,24 +112,24 @@ function syncAppModeUI() {
      signal for downstream CSS hooks. */
   var topSegEl = document.getElementById("modeSegmentedTop");
   if (topSegEl) topSegEl.setAttribute("data-seg-active", appMode);
-  try { localStorage.setItem("socrates-appmode", appMode); } catch {}
+  try { localStorage.setItem("socrates-appmode", appMode); } catch (e) {reportSwallow(e, 'config/providers.syncAppModeUI'); }
   /* Mirror appMode to body[data-app-mode] so the CSS rule
      body[data-app-mode="chat"] .tutor-only{display:none !important}
      actually takes effect — hiding tutor-only tab buttons + panels
      in chat mode so the sidebar keeps a stable flex layout. */
-  try { document.body.setAttribute("data-app-mode", appMode); } catch {}
+  try { document.body.setAttribute("data-app-mode", appMode); } catch (e) {reportSwallow(e, 'config/providers.syncAppModeUI#2'); }
   /* P_mode-i18n — reroute the topic title / subtitle / disclaimer and
      the chat-input placeholder through applyI18n() so they reflect the
      active mode (chat vs tutor). Without this, toggling the mode from
      Extensions would switch CSS/visibility but leave the topic-setup
      text stuck on whichever mode was active on the first page load. */
   if (typeof window.applyI18n === 'function') {
-    try { window.applyI18n(); } catch (_) {}
+    try { window.applyI18n(); } catch (e) {reportSwallow(e, 'config/providers.syncAppModeUI#3'); }
   }
   /* P_mobile-topbar — keep the mobile top-bar mode dropdown label +
      active item in sync with the current mode. */
   if (typeof window.syncMobileModeSwitch === 'function') {
-    try { window.syncMobileModeSwitch(); } catch (_) {}
+    try { window.syncMobileModeSwitch(); } catch (e) {reportSwallow(e, 'config/providers.syncAppModeUI#4'); }
   }
   /* P_hide-mode-switch-in-conversation — re-evaluate the conversation-
      active body attribute whenever the mode UI is re-synced. State
@@ -136,7 +137,7 @@ function syncAppModeUI() {
      mode, switching phase) are caught here; message-driven changes are
      covered by the MutationObserver in mobileModeSwitch. */
   if (typeof window.syncConversationActive === 'function') {
-    try { window.syncConversationActive(); } catch (_) {}
+    try { window.syncConversationActive(); } catch (e) {reportSwallow(e, 'config/providers.syncAppModeUI#5'); }
   }
 }
 
@@ -165,10 +166,10 @@ async function refreshApiConfig() {
   if (!CURRENT_USER) {
     apiConfig.activeId = null;
     apiConfig.providers = [];
-    try { if (typeof window.markProvidersFetched === "function") window.markProvidersFetched(); } catch (_) {}
-    try { window.syncModelPills(); } catch (_) {}
-    try { window.renderProviderList(); } catch (_) {}
-    try { if (typeof window.syncEffortUI === "function") window.syncEffortUI(); } catch (_) {}
+    try { if (typeof window.markProvidersFetched === "function") window.markProvidersFetched(); } catch (e) {reportSwallow(e, 'config/providers.refreshApiConfig'); }
+    try { window.syncModelPills(); } catch (e) {reportSwallow(e, 'config/providers.refreshApiConfig#2'); }
+    try { window.renderProviderList(); } catch (e) {reportSwallow(e, 'config/providers.refreshApiConfig#3'); }
+    try { if (typeof window.syncEffortUI === "function") window.syncEffortUI(); } catch (e) {reportSwallow(e, 'config/providers.refreshApiConfig#4'); }
     return apiConfig;
   }
   try {
@@ -198,7 +199,7 @@ async function refreshApiConfig() {
     rows = rows.filter(function (p) { return p.id !== BEAGLE_BUILT_IN.id; });
     if (serverBeagleModel) BEAGLE_BUILT_IN.model = serverBeagleModel;
     var lastId = null;
-    try { lastId = localStorage.getItem(LAST_ACTIVE_ID_KEY); } catch (_) {}
+    try { lastId = localStorage.getItem(LAST_ACTIVE_ID_KEY); } catch (e) {reportSwallow(e, 'config/providers.refreshApiConfig#5'); }
     var activeId = null;
     /* Priority 1: user's last selection from localStorage.
        This ensures the user's preference survives page refresh,
@@ -226,16 +227,16 @@ async function refreshApiConfig() {
        picker show a plausible-but-unusable model and could replace a saved
        selection with it on cold start. */
     apiConfig.providers = (window.SERVER_HAS_BEAGLE_KEY ? [BEAGLE_BUILT_IN] : []).concat(rows);
-    try { if (typeof window.markProvidersFetched === "function") window.markProvidersFetched(); } catch (_) {}
-    try { window.syncModelPills(); } catch (_) {}
-    try { window.renderProviderList(); } catch (_) {}
-    try { window.syncChatModel(); } catch (_) {}
-    try { if (typeof window.syncEffortUI === "function") window.syncEffortUI(); } catch (_) {}
+    try { if (typeof window.markProvidersFetched === "function") window.markProvidersFetched(); } catch (e) {reportSwallow(e, 'config/providers.refreshApiConfig#6'); }
+    try { window.syncModelPills(); } catch (e) {reportSwallow(e, 'config/providers.refreshApiConfig#7'); }
+    try { window.renderProviderList(); } catch (e) {reportSwallow(e, 'config/providers.refreshApiConfig#8'); }
+    try { window.syncChatModel(); } catch (e) {reportSwallow(e, 'config/providers.refreshApiConfig#9'); }
+    try { if (typeof window.syncEffortUI === "function") window.syncEffortUI(); } catch (e) {reportSwallow(e, 'config/providers.refreshApiConfig#10'); }
     return apiConfig;
   } catch {
     apiConfig.activeId = null;
     apiConfig.providers = [];
-    try { if (typeof window.markProvidersFetched === "function") window.markProvidersFetched(); } catch (_) {}
+    try { if (typeof window.markProvidersFetched === "function") window.markProvidersFetched(); } catch (e) {reportSwallow(e, 'config/providers.refreshApiConfig#11'); }
     return apiConfig;
   }
 }
@@ -249,7 +250,7 @@ function saveLastActiveId(id) {
       return;
     }
     localStorage.setItem(LAST_ACTIVE_ID_KEY, String(id));
-  } catch {}
+  } catch (e) {reportSwallow(e, 'config/providers.saveLastActiveId'); }
 }
 
 function loadLastActiveId() {

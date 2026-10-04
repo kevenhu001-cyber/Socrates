@@ -22,6 +22,7 @@ import {
 import { mountVisualization } from '../render/vizStubs.js';
 import { processPendingMermaid, processPendingViz, processPendingVizActions } from '../render/vizStubs.js';
 import { queueMessageOp } from '../session/mutationOutbox.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 /**
  * Build the API path for one message, scoping client ids to the current
@@ -59,9 +60,10 @@ export function fireFeedback(
       /* Telemetry failures are non-fatal. */
       console.debug('[msg-feedback] not sent');
     });
-  } catch {
-    /* A synchronous throw (no fetch in this environment) is equally non-fatal. */
-  }
+  } catch (e) {
+      /* A synchronous throw (no fetch in this environment) is equally non-fatal. */
+      reportSwallow(e, 'ui/messageActions.fireFeedback');
+    }
 }
 
 /** Send feedback with optimistic toolbar highlighting. */
@@ -187,15 +189,15 @@ export function restoreMessageBody(entry: MessageEntry, body: HTMLElement): void
         body.innerHTML = buildAssistantHtml(raw);
         try {
           processPendingMermaid();
-        } catch {}
+        } catch (e) {reportSwallow(e, 'ui/messageActions.restoreMessageBody'); }
         try {
           processPendingViz();
-        } catch {}
+        } catch (e) {reportSwallow(e, 'ui/messageActions.restoreMessageBody#2'); }
         try {
           processPendingVizActions();
-        } catch {}
+        } catch (e) {reportSwallow(e, 'ui/messageActions.restoreMessageBody#3'); }
         return;
-      } catch {}
+      } catch (e) {reportSwallow(e, 'ui/messageActions.restoreMessageBody#4'); }
     }
     body.innerHTML = formatMsg(raw);
   } else if (entry.html) {
@@ -205,19 +207,19 @@ export function restoreMessageBody(entry: MessageEntry, body: HTMLElement): void
   }
   try {
     processPendingMermaid();
-  } catch {}
+  } catch (e) {reportSwallow(e, 'ui/messageActions.restoreMessageBody#5'); }
   try {
     processPendingViz();
-  } catch {}
+  } catch (e) {reportSwallow(e, 'ui/messageActions.restoreMessageBody#6'); }
   try {
     processPendingVizActions();
-  } catch {}
+  } catch (e) {reportSwallow(e, 'ui/messageActions.restoreMessageBody#7'); }
   try {
     wireCodeBlockHeaders(body);
-  } catch {}
+  } catch (e) {reportSwallow(e, 'ui/messageActions.restoreMessageBody#8'); }
   try {
     wireMsgBodyImages(body);
-  } catch {}
+  } catch (e) {reportSwallow(e, 'ui/messageActions.restoreMessageBody#9'); }
 }
 
 /* Restore non-HTML message content that is persisted separately from the
@@ -258,7 +260,7 @@ export function restorePersistedMessageExtras(
           ? CSS.escape(String(tc.id || ''))
           : String(tc.id || '').replace(/[^a-zA-Z0-9_-]/g, '');
       if (sel) inlineRow = body.querySelector('.tool-inline[data-tcid="' + sel + '"]');
-    } catch {}
+    } catch (e) {reportSwallow(e, 'ui/messageActions.restorePersistedMessageExtras'); }
     if (inlineRow) {
       /* P_declarative-tool-run — nothing to mount means nothing to insert:
          react/tool-run already rendered the host for a call that has a chart
@@ -276,7 +278,7 @@ export function restorePersistedMessageExtras(
         host = body.querySelector(
           '.tool-inline-attachments[data-tool-anchor="' + sel + '"]',
         );
-      } catch {}
+      } catch (e) {reportSwallow(e, 'ui/messageActions.restorePersistedMessageExtras#2'); }
       if (!host) {
         const next = inlineRow.nextElementSibling;
         if (next && next.classList && next.classList.contains('tool-inline-attachments')) {
@@ -294,7 +296,7 @@ export function restorePersistedMessageExtras(
           mountVisualization(vizSpec, host, {
             toolCallId: tc.id || ((idPrefix || 'history') + '-viz-' + tci),
           }).catch(() => { /* async: the surrounding try cannot see this */ });
-        } catch {}
+        } catch (e) {reportSwallow(e, 'ui/messageActions.restorePersistedMessageExtras#3'); }
       }
       if (Array.isArray(tc.artifacts)) {
         for (let aj = 0; aj < tc.artifacts.length; aj++) {
@@ -302,7 +304,7 @@ export function restorePersistedMessageExtras(
           if (!artJ || !artJ.id) continue;
           try {
             appendInlineArtifact(artJ.id, artJ.mimeType, host, artJ.name);
-          } catch {}
+          } catch (e) {reportSwallow(e, 'ui/messageActions.restorePersistedMessageExtras#4'); }
         }
       }
       continue;
@@ -319,13 +321,13 @@ export function restorePersistedMessageExtras(
           kind: tc.isError === true ? 'error' : 'output',
         });
       }
-    } catch {}
+    } catch (e) {reportSwallow(e, 'ui/messageActions.restorePersistedMessageExtras#5'); }
     if (vizSpec) {
       try {
         mountVisualization(vizSpec, body, {
           toolCallId: tc.id || ((idPrefix || 'history') + '-viz-' + tci),
         }).catch(() => { /* async: the surrounding try cannot see this */ });
-      } catch {}
+      } catch (e) {reportSwallow(e, 'ui/messageActions.restorePersistedMessageExtras#6'); }
     }
     if (cardOut && Array.isArray(tc.artifacts)) {
       for (let ai = 0; ai < tc.artifacts.length; ai++) {
@@ -341,13 +343,13 @@ export function restorePersistedMessageExtras(
             previewable ? body : cardOut,
             art.name,
           );
-        } catch {}
+        } catch (e) {reportSwallow(e, 'ui/messageActions.restorePersistedMessageExtras#7'); }
       }
     }
   }
   try {
     appendFileChangeSummaryCards(body);
-  } catch {}
+  } catch (e) {reportSwallow(e, 'ui/messageActions.restorePersistedMessageExtras#8'); }
   if (body.dataset) body.dataset.persistedExtrasFor = messageKey;
 }
 
@@ -370,6 +372,6 @@ export function reseatSavedArtifact(container: Element, node: Element): void {
         return;
       }
     }
-  } catch {}
+  } catch (e) {reportSwallow(e, 'ui/messageActions.reseatSavedArtifact'); }
   container.appendChild(node);
 }

@@ -31,6 +31,7 @@ import { resetCmdKSearchState } from '../ui/cmdK.js';
 import { renderGreeting } from '../ui/greeting.js';
 import { activateMainView } from '../ui/mainViewController.js';
 import { setActiveNav } from '../sidebar/nav.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 function _t(key, fallback) {
   try {
@@ -38,41 +39,41 @@ function _t(key, fallback) {
       var v = window.t(key);
       if (v && v !== key) return v;
     }
-  } catch (_) {}
+  } catch (e) { reportSwallow(e, 'app/lifecycle._t'); }
   return fallback != null ? fallback : key;
 }
 function _renderRecents() {
-  try { if (typeof window !== 'undefined' && typeof window.renderRecents === 'function') window.renderRecents(); } catch (_) {}
+  try { if (typeof window !== 'undefined' && typeof window.renderRecents === 'function') window.renderRecents(); } catch (e) { reportSwallow(e, 'app/lifecycle._renderRecents'); }
 }
 function _renderMistakes() {
-  try { if (typeof window !== 'undefined' && typeof window.renderMistakes === 'function') window.renderMistakes(); } catch (_) {}
+  try { if (typeof window !== 'undefined' && typeof window.renderMistakes === 'function') window.renderMistakes(); } catch (e) { reportSwallow(e, 'app/lifecycle._renderMistakes'); }
 }
 function _updateMistakesBadge() {
-  try { if (typeof window !== 'undefined' && typeof window.updateMistakesBadge === 'function') window.updateMistakesBadge(); } catch (_) {}
+  try { if (typeof window !== 'undefined' && typeof window.updateMistakesBadge === 'function') window.updateMistakesBadge(); } catch (e) { reportSwallow(e, 'app/lifecycle._updateMistakesBadge'); }
 }
 function _renderProviderList() {
-  try { if (typeof window !== 'undefined' && typeof window.renderProviderList === 'function') window.renderProviderList(); } catch (_) {}
+  try { if (typeof window !== 'undefined' && typeof window.renderProviderList === 'function') window.renderProviderList(); } catch (e) { reportSwallow(e, 'app/lifecycle._renderProviderList'); }
 }
 function _syncSidebarBtns() {
-  try { if (typeof window !== 'undefined' && typeof window.syncSidebarBtns === 'function') window.syncSidebarBtns(); } catch (_) {}
+  try { if (typeof window !== 'undefined' && typeof window.syncSidebarBtns === 'function') window.syncSidebarBtns(); } catch (e) { reportSwallow(e, 'app/lifecycle._syncSidebarBtns'); }
 }
 function _clearActiveTemplate() {
-  try { if (typeof window !== 'undefined' && typeof window.clearActiveTemplate === 'function') window.clearActiveTemplate(); } catch (_) {}
+  try { if (typeof window !== 'undefined' && typeof window.clearActiveTemplate === 'function') window.clearActiveTemplate(); } catch (e) { reportSwallow(e, 'app/lifecycle._clearActiveTemplate'); }
 }
 
 /* P_mobile-topbar — incognito flag. Mirrored to window for the save guard. */
 var incognitoOn = false;
-try { window.incognitoOn = false; } catch (_) {}
+try { window.incognitoOn = false; } catch (e) { reportSwallow(e, 'app/lifecycle.incognitoMirror'); }
 
 /* Cross-module CURRENT_USER — single source is window.CURRENT_USER (mirrored
    below); no module-local copy so readers never drift. */
-try { if (typeof window !== 'undefined' && window.CURRENT_USER === undefined) window.CURRENT_USER = null; } catch (_) {}
+try { if (typeof window !== 'undefined' && window.CURRENT_USER === undefined) window.CURRENT_USER = null; } catch (e) { reportSwallow(e, 'app/lifecycle.currentUserMirror'); }
 
 /* Cached user memories (see configurePromptSuffixes wiring in main.js).
    Centralized here so auth/sign-out clears hit the same array the getter reads. */
 var _userMemories = [];
 export function getUserMemories() { return _userMemories; }
-export function clearUserMemories() { try { _userMemories = []; } catch (_) {} }
+export function clearUserMemories() { try { _userMemories = []; } catch (e) { reportSwallow(e, 'app/lifecycle.clearUserMemories'); } }
 
 /* Post-auth grace window (see isInAuthGraceWindow). */
 var _lastAuthSuccessAt = 0;
@@ -117,7 +118,7 @@ export async function resetApp(options){
      posted as soon as that request settles, so the new-session switch
      never stalls behind a POST + session-list roundtrip. */
   saveSessionBeforeReset();
-  try { sessionStorage.removeItem('socrates-active-assistant'); } catch (_) {}
+  try { sessionStorage.removeItem('socrates-active-assistant'); } catch (e) { reportSwallow(e, 'app/lifecycle.resetApp.clearActiveAssistant'); }
   /* P5.8 — clear the active prompt template. A new session
      is a fresh context; carrying over "summarize mode" from
      the previous chat would silently shape the first
@@ -125,8 +126,8 @@ export async function resetApp(options){
   _clearActiveTemplate();
   /* Abort any in-flight chat stream so its callbacks don't write to
      stateStore.read("messages") after we reset them. */
-  if(window._activeChatAbort){try{window._activeChatAbort("session-reset")}catch(_){}}
-  if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(_){}}
+  if(window._activeChatAbort){try{window._activeChatAbort("session-reset")}catch(e){reportSwallow(e,'app/lifecycle.resetApp.abortActive');}}
+  if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(e){reportSwallow(e,'app/lifecycle.resetApp.abortTurnState');}}
   turnState.activeChatCtl=null;
   window._activeChatAbort=null;
   turnState.chatStreaming=false;
@@ -138,8 +139,8 @@ export async function resetApp(options){
      parts array from the last send) would be replayed as the first
      turn of the new session — the re-explain branch path
      (branchFromMessage → resetApp → askChatTurn) hit exactly this. */
-  try{turnState.pendingChatContent=null}catch(_){}
-  try{turnState.pendingAttachments=null}catch(_){}
+  try{turnState.pendingChatContent=null}catch(e){reportSwallow(e,'app/lifecycle.resetApp.clearPendingChat');}
+  try{turnState.pendingAttachments=null}catch(e){reportSwallow(e,'app/lifecycle.resetApp.clearPendingAttachments');}
   resetState();
   /* Preserve a project selected immediately before a fresh chat. */
   if(window._nextProjectId){
@@ -163,7 +164,7 @@ export async function resetApp(options){
   /* Reset the React nav snapshot as well as the main pane. Otherwise a
      directory stays highlighted after any new-chat entry point. */
   setActiveNav(null);
-  try { renderGreeting(); } catch (_) {}
+  try { renderGreeting(); } catch (e) { reportSwallow(e, 'app/lifecycle.resetApp.renderGreeting'); }
   if (_examWasOpen) {
     var _examBody = document.getElementById("examViewBody");
     if (_examBody) _examBody.innerHTML = "";
@@ -195,9 +196,9 @@ export async function resetApp(options){
     var bd=document.getElementById("sidebarBackdrop");
     if(sb&&!sb.classList.contains("collapsed")){
       sb.classList.add("collapsed");
-      try{window.sidebarOpen=false;}catch(_){}
+      try{window.sidebarOpen=false;}catch(e){reportSwallow(e,'app/lifecycle.resetApp.sidebarOpenFlag');}
       if(bd)bd.classList.remove("show");
-      try{localStorage.setItem("socrates-sb","0")}catch {}
+      try{localStorage.setItem("socrates-sb","0")}catch (e) {reportSwallow(e, 'app/lifecycle.resetApp'); }
     }
   }
   _syncSidebarBtns();
@@ -208,20 +209,20 @@ export async function resetApp(options){
      cleared (line above), this is belt-and-suspenders for the
      stateStore.read("topic") / stateStore.read("phase") / stateStore.read("kbNodes") fields. */
   if (typeof window.syncConversationActive === 'function') {
-    try { window.syncConversationActive(); } catch (_) {}
+    try { window.syncConversationActive(); } catch (e) { reportSwallow(e, 'app/lifecycle.resetApp.syncConversationActive'); }
   }
   publishReactChatRuntime({type:"state-synced",reason:"session-reset"});
   /* Focus the topic input immediately so the user can start typing without delay. */
-  try { focusComposer("topic"); } catch (_) {}
+  try { focusComposer("topic"); } catch (e) { reportSwallow(e, 'app/lifecycle.resetApp.focusComposer'); }
   requestAnimationFrame(function(){
-    try { focusComposer("topic"); } catch (_) {}
+    try { focusComposer("topic"); } catch (e) { reportSwallow(e, 'app/lifecycle.resetApp.focusComposerRAF'); }
   });
   return true;
 }
 
 export function syncIncognitoBtn(){
   var on=!!incognitoOn;
-  try{document.body.setAttribute("data-incognito",on?"true":"false")}catch(_){}
+  try{document.body.setAttribute("data-incognito",on?"true":"false")}catch(e){reportSwallow(e,'app/lifecycle.syncIncognitoBtn');}
   var btn=document.getElementById("mobileIncognitoBtn");
   if(btn){
     btn.setAttribute("aria-pressed",on?"true":"false");
@@ -238,7 +239,7 @@ export async function toggleIncognito(){
        then turn incognito off for future (saved) sessions. */
     await resetApp();
     incognitoOn=false;
-    try{window.incognitoOn=false;}catch(_){}
+    try{window.incognitoOn=false;}catch(e){reportSwallow(e,'app/lifecycle.toggleIncognitoOff');}
     syncIncognitoBtn();
     if(typeof showToast==="function")showToast(_t("incognito.off"));
     return;
@@ -248,12 +249,12 @@ export async function toggleIncognito(){
      never persisted. */
   await resetApp();
   incognitoOn=true;
-  try{window.incognitoOn=true;}catch(_){}
+  try{window.incognitoOn=true;}catch(e){reportSwallow(e,'app/lifecycle.toggleIncognitoOn');}
   syncIncognitoBtn();
   if(typeof showToast==="function")showToast(_t("incognito.on"));
 }
 
-export function setCurrentUser(user){ try { window.CURRENT_USER = user; } catch (_) {} }
+export function setCurrentUser(user){ try { window.CURRENT_USER = user; } catch (e) { reportSwallow(e, 'app/lifecycle.setCurrentUser'); } }
 
 export function markAuthSuccess(){
   _lastAuthSuccessAt=Date.now();
@@ -273,8 +274,8 @@ export function handleAuthExpired(cause){
        memories in any subsequent system-context preview, and
        turnState.pendingChatContent could replay a draft image after the
        user signs back in. */
-    try{clearUserMemories()}catch(_){}
-    try{turnState.pendingChatContent=null}catch(_){}
+    try{clearUserMemories()}catch(e){reportSwallow(e,'app/lifecycle.handleAuthExpired.clearMemories');}
+    try{turnState.pendingChatContent=null}catch(e){reportSwallow(e,'app/lifecycle.handleAuthExpired.clearPendingChat');}
     /* P_bleed-auth-expired — same comprehensive wipe as signOut(). A
        401 may fire mid-session; without clearing serverCache.sessions /
        apiConfig / _cmdKIndex, the sign-in gate's flash of
@@ -282,7 +283,7 @@ export function handleAuthExpired(cause){
        previous user's sessions before the next signin's fetch
        resolves. */
     clearPerUserClientState();
-    try{window.CURRENT_USER=null;}catch(_){}
+    try{window.CURRENT_USER=null;}catch(e){reportSwallow(e,'app/lifecycle.handleAuthExpired.clearCurrentUser');}
     /* P_bleed-auth-expired-v2 — reset state so React components
        reading from state don't see the previous user's data after
        the gate shows. Without this, state.session, stateStore.read("messages"),
@@ -299,7 +300,7 @@ export function handleAuthExpired(cause){
     try{
       if(turnState.activeChatCtl){turnState.activeChatCtl.abort();turnState.activeChatCtl=null}
       if(window._activeChatAbort){window._activeChatAbort("session-expired");window._activeChatAbort=null}
-    }catch(_){}
+    }catch(e){reportSwallow(e,'app/lifecycle.handleAuthExpired.abortActive');}
     /* Show the gate; the existing showGate() handles UI swap. */
     if(typeof showGate==="function"){showGate()}
     if(typeof showAuthSignin==="function"){showAuthSignin()}
@@ -317,57 +318,57 @@ export function handleAuthExpired(cause){
         if(gate){gate.insertBefore(banner,gate.firstChild)}
       }
     },0);
-  }catch {/* handleAuthExpired failed */}
+  }catch(e){/* handleAuthExpired failed */ reportSwallow(e,'app/lifecycle.handleAuthExpired.outer');}
 }
 
 export function clearPerUserClientState(){
   /* In-memory module-level caches. */
-  try{if(Array.isArray(serverCache.sessions))serverCache.sessions.length=0}catch(_){}
+  try{if(Array.isArray(serverCache.sessions))serverCache.sessions.length=0}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.serverCache');}
   /* P_recents-fetch-fail — reset the fetch-failed flag on user switch
      so the new user doesn't inherit the previous user's failure state. */
-  try{serverCache.fetchFailed=false}catch(_){}
-  try{apiConfig.activeId=null;apiConfig.providers=[]}catch(_){}
-  try{resetCmdKSearchState()}catch(_){}
+  try{serverCache.fetchFailed=false}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.fetchFailed');}
+  try{apiConfig.activeId=null;apiConfig.providers=[]}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.apiConfig');}
+  try{resetCmdKSearchState()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.cmdKIndex');}
   /* exam.js is lazy — if it was never imported its save state is already
      pristine, so only reset when the module is actually loaded. */
-  try{var _em=(typeof window!=="undefined")&&window.__examModule;if(_em&&typeof _em.resetExamSaveState==="function")_em.resetExamSaveState()}catch(_){}
-  try{clearUserMemories()}catch(_){}
-  try{if(turnState.pendingChatContent!==undefined)turnState.pendingChatContent=null}catch(_){}
+  try{var _em=(typeof window!=="undefined")&&window.__examModule;if(_em&&typeof _em.resetExamSaveState==="function")_em.resetExamSaveState()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.examSave');}
+  try{clearUserMemories()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.userMemories');}
+  try{if(turnState.pendingChatContent!==undefined)turnState.pendingChatContent=null}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.pendingChat');}
   /* P_locale-ghost — `state.locale` was never a real field (the real
      language selector is window._currentLang, managed by i18n.js).
      The previous `window.state.locale=null` here only triggered the
      state/store.js Proxy's "unknown flat key, setting on root: locale"
      warning on every signin / user switch. Removed. */
   /* Persisted caches. */
-  try{localStorage.removeItem("socrates-sessions-v2")}catch(_){}
-  try{localStorage.removeItem("socrates-api")}catch(_){}
-  try{localStorage.removeItem("socrates-guest")}catch(_){}
-  try{localStorage.removeItem("socrates-projects")}catch(_){}
-  try{localStorage.removeItem("socrates-recents-filter")}catch(_){}
-  try{localStorage.removeItem("socrates-provider-keys")}catch(_){}
-  try{localStorage.removeItem("socrates-websearch")}catch(_){}
+  try{localStorage.removeItem("socrates-sessions-v2")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.sessionsCache');}
+  try{localStorage.removeItem("socrates-api")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.apiCache');}
+  try{localStorage.removeItem("socrates-guest")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.guestCache');}
+  try{localStorage.removeItem("socrates-projects")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.projectsCache');}
+  try{localStorage.removeItem("socrates-recents-filter")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.recentsFilterCache');}
+  try{localStorage.removeItem("socrates-provider-keys")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.providerKeysCache');}
+  try{localStorage.removeItem("socrates-websearch")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.websearchCache');}
   /* P_tutor-leak — socrates-appmode is a per-user preference but it
      was never wiped on signOut. A user who once toggled tutor mode
      leaves it set to "tutor" in localStorage; the next person to
      sign in on the same browser inherits tutor mode without ever
      touching the toggle. Clear it (and the runtime mirror) so the
      new session starts in the documented default of "chat". */
-  try{localStorage.removeItem("socrates-appmode")}catch(_){}
+  try{localStorage.removeItem("socrates-appmode")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.appmodeCache');}
   /* AUDIT-fix — reset the module binding so the next user starts in
       chat mode. setAppMode() syncs window.appMode internally. */
-  try{setAppMode("chat")}catch(_){}
-  try{localStorage.removeItem(LAST_ACTIVE_ID_KEY)}catch(_){}
+  try{setAppMode("chat")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.setAppMode');}
+  try{localStorage.removeItem(LAST_ACTIVE_ID_KEY)}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.lastActiveId');}
   /* Re-render so the cleared state is visible immediately, not on
      the next user-driven re-render. */
-  try{if(typeof renderRecents==="function")_renderRecents()}catch(_){}
-  try{if(typeof renderMistakes==="function")_renderMistakes()}catch(_){}
-  try{if(typeof updateMistakesBadge==="function")_updateMistakesBadge()}catch(_){}
-  try{if(typeof renderProviderList==="function")_renderProviderList()}catch(_){}
-  try{if(typeof syncModelPills==="function")syncModelPills()}catch(_){}
+  try{if(typeof renderRecents==="function")_renderRecents()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.renderRecents');}
+  try{if(typeof renderMistakes==="function")_renderMistakes()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.renderMistakes');}
+  try{if(typeof updateMistakesBadge==="function")_updateMistakesBadge()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.updateMistakesBadge');}
+  try{if(typeof renderProviderList==="function")_renderProviderList()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.renderProviderList');}
+  try{if(typeof syncModelPills==="function")syncModelPills()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.syncModelPills');}
 }
 
 export async function signOut(){
-  try{await apiFetch("/api/auth/logout",{method:"POST"})}catch(_){}
+  try{await apiFetch("/api/auth/logout",{method:"POST"})}catch(e){reportSwallow(e,'app/lifecycle.signOut.apiLogout');}
   /* Clear browser cookies on the current domain. The server already
    * cleared both the host-only and .topodrive.top variants of `sid`
    * and `csrf`, but belt-and-braces: also expire the host-only copy
@@ -384,12 +385,12 @@ export async function signOut(){
     document.cookie=name+"=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain="+host;
   });
   /* Re-fetch the CSRF token cookie so subsequent auth POSTs succeed. */
-  try{await fetch("/api/v2/auth/csrf-token",{credentials:"include"})}catch(_){}
+  try{await fetch("/api/v2/auth/csrf-token",{credentials:"include"})}catch(e){reportSwallow(e,'app/lifecycle.signOut.csrfRefresh');}
   /* P_bleed-signout — drain any in-flight save first, so the
      subsequent saveCurrentSession doesn't cascade into a stale
      saveState.saveDirty chain. */
   if(saveState.saveInFlight){
-    try{await saveState.saveInFlight}catch(_){}
+    try{await saveState.saveInFlight}catch(e){reportSwallow(e,'app/lifecycle.signOut.drainInFlight1');}
   }
   /* P_bleed-signout-v2 — save the current session BEFORE clearing
      any caches or state. Previously (Bug 1&2), clearPerUserClientState
@@ -399,7 +400,7 @@ export async function signOut(){
      silently lost on every sign-out. */
   saveCurrentSession();
   if(saveState.saveInFlight){
-    try{await saveState.saveInFlight}catch(_){}
+    try{await saveState.saveInFlight}catch(e){reportSwallow(e,'app/lifecycle.signOut.drainInFlight2');}
   }
   /* P_bleed-signout — wipe every per-user cache so the next user on
       this browser starts from a clean slate. Clears _userMemories /
@@ -407,21 +408,21 @@ export async function signOut(){
       level set (serverCache.sessions, apiConfig, _cmdKIndex, …)
       plus localStorage entries that survive sign-out. */
   clearPerUserClientState();
-  try{window.CURRENT_USER=null;}catch(_){}
+  try{window.CURRENT_USER=null;}catch(e){reportSwallow(e,'app/lifecycle.signOut.clearCurrentUser');}
   /* Reset state. */
   resetState();
   /* Abort any active chat stream — resetApp() isn't called from
      signOut (to avoid its "Start a new session?" confirm dialog), so
      we inline the essential stream teardown here. */
-  if(window._activeChatAbort){try{window._activeChatAbort("signout")}catch(_){}}
-  if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(_){}}
+  if(window._activeChatAbort){try{window._activeChatAbort("signout")}catch(e){reportSwallow(e,'app/lifecycle.signOut.abortActive');}}
+  if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(e){reportSwallow(e,'app/lifecycle.signOut.abortTurnState');}}
   turnState.activeChatCtl=null;
   window._activeChatAbort=null;
   turnState.chatStreaming=false;
   turnState.chatStopMode=false;
   resetShareToken();
-  try{turnState.pendingChatContent=null}catch(_){}
-  try{turnState.pendingAttachments=null}catch(_){}
+  try{turnState.pendingChatContent=null}catch(e){reportSwallow(e,'app/lifecycle.signOut.clearPendingChat');}
+  try{turnState.pendingAttachments=null}catch(e){reportSwallow(e,'app/lifecycle.signOut.clearPendingAttachments');}
   showGate();
   renderUserFooter();
 }
@@ -454,7 +455,7 @@ export async function toggleAppMode(targetMode){
        doSave() was still in flight, causing the saved payload to
        capture empty/partial state. */
     var _sp = saveCurrentSession();
-    if(_sp){try{await _sp}catch(_){}}
+    if(_sp){try{await _sp}catch(e){reportSwallow(e,'app/lifecycle.toggleAppMode.saveCurrent');}}
     /* The user already confirmed the switch above, so skip resetApp()'s own
        "start a new session?" prompt (it would otherwise fire a second dialog
        for the same session). Awaited: resetApp() is async and the mode must
@@ -468,13 +469,13 @@ export async function toggleAppMode(targetMode){
      window.appMode, which could be stale). setAppMode() also synchronizes
      the legacy window binding. */
   setAppMode(nextMode);
-  try{localStorage.setItem("socrates-appmode",appMode)}catch {}
+  try{localStorage.setItem("socrates-appmode",appMode)}catch (e) {reportSwallow(e, 'app/lifecycle.toggleAppMode'); }
   syncAppModeUI();
   syncSidebarForMode();
   /* v3.0 design — re-render the mode banner after a switch so the
      label and switch-button text flip. */
   if(typeof tutorSocratic==="object"&&tutorSocratic
      &&typeof tutorSocratic.renderModeBanner==="function"){
-    try{tutorSocratic.renderModeBanner()}catch(_){}
+    try{tutorSocratic.renderModeBanner()}catch(e){reportSwallow(e,'app/lifecycle.toggleAppMode.renderModeBanner');}
   }
 }

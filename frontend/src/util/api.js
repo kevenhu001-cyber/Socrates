@@ -1,3 +1,4 @@
+import { reportSwallow } from '../util/reportSwallow.ts';
 // @ts-nocheck
 /**
  * apiFetch + apiFetchRaw + retryApiFetch — the single point of
@@ -110,9 +111,9 @@ export async function apiFetchRaw(path, opts = {}) {
      goes away with it. */
   let onCallerAbort = null;
   if (opts.signal) {
-    if (opts.signal.aborted) { try { controller.abort(); } catch (_) {} }
+    if (opts.signal.aborted) { try { controller.abort(); } catch (e) {reportSwallow(e, 'util/api.apiFetchRaw'); } }
     else {
-      onCallerAbort = () => { try { controller.abort(); } catch (_) {} };
+      onCallerAbort = () => { try { controller.abort(); } catch (e) {reportSwallow(e, 'util/api.apiFetchRaw#2'); } };
       opts.signal.addEventListener('abort', onCallerAbort, { once: true });
     }
   }
@@ -121,25 +122,25 @@ export async function apiFetchRaw(path, opts = {}) {
     r = await fetch(path, Object.assign({}, opts, { signal: controller.signal }));
   } catch {
     if (opts.signal && onCallerAbort) {
-      try { opts.signal.removeEventListener('abort', onCallerAbort); } catch (_) {}
+      try { opts.signal.removeEventListener('abort', onCallerAbort); } catch (e) {reportSwallow(e, 'util/api.apiFetchRaw#3'); }
     }
     throw makeApiError(0, '网络异常，请检查连接后重试', null, 'NETWORK', 0);
   }
   if (opts.signal && onCallerAbort && !(r.ok && isEventStreamResponse(r))) {
-    try { opts.signal.removeEventListener('abort', onCallerAbort); } catch (_) {}
+    try { opts.signal.removeEventListener('abort', onCallerAbort); } catch (e) {reportSwallow(e, 'util/api.apiFetchRaw#4'); }
   }
   if (!r.ok) {
     if (r.status === 401 && !opts._authEndpoint && !_isInGraceWindow()) {
-      try { _on401 && _on401('apiFetchRaw:' + method + ' ' + path); } catch (_) {}
+      try { _on401 && _on401('apiFetchRaw:' + method + ' ' + path); } catch (e) {reportSwallow(e, 'util/api.apiFetchRaw#5'); }
     } else if (r.status === 403 && !opts._csrfRetried && method !== 'GET' && method !== 'HEAD') {
-      try { await fetch('/api/v2/auth/csrf-token', { credentials: 'include' }); } catch (_) {}
+      try { await fetch('/api/v2/auth/csrf-token', { credentials: 'include' }); } catch (e) {reportSwallow(e, 'util/api.apiFetchRaw#6'); }
       await new Promise((res) => setTimeout(res, 0));
       return apiFetchRaw(path, Object.assign({}, opts, { _csrfRetried: true }));
     }
     let txt = '';
     let parsedBody = null;
-    try { txt = await r.text(); } catch (_) {}
-    try { if (txt) parsedBody = JSON.parse(txt); } catch (_) {}
+    try { txt = await r.text(); } catch (e) {reportSwallow(e, 'util/api.apiFetchRaw#7'); }
+    try { if (txt) parsedBody = JSON.parse(txt); } catch (e) {reportSwallow(e, 'util/api.apiFetchRaw#8'); }
     const msg = (parsedBody && parsedBody.message) || (parsedBody && parsedBody.detail) || (parsedBody && parsedBody.error) || txt || r.statusText || ('HTTP ' + r.status);
     throw makeApiError(r.status, String(msg).slice(0, 200), parsedBody, (parsedBody && parsedBody.code) || null, 0);
   }
@@ -189,9 +190,9 @@ export async function apiFetch(path, opts = {}) {
   // preventing listener accumulation when a long-lived signal is reused.
   let onUserAbort = null;
   if (userSignal) {
-    if (userSignal.aborted) { try { controller.abort(); } catch (_) {} }
+    if (userSignal.aborted) { try { controller.abort(); } catch (e) {reportSwallow(e, 'util/api.apiFetch'); } }
     else {
-      onUserAbort = () => { try { controller.abort(); } catch (_) {} };
+      onUserAbort = () => { try { controller.abort(); } catch (e) {reportSwallow(e, 'util/api.apiFetch#2'); } };
       userSignal.addEventListener('abort', onUserAbort, { once: true });
     }
   }
@@ -200,7 +201,7 @@ export async function apiFetch(path, opts = {}) {
     r = await fetch(path, Object.assign({}, opts, { signal: controller.signal }));
   } catch (e) {
     if (userSignal && onUserAbort) {
-      try { userSignal.removeEventListener('abort', onUserAbort); } catch (_) {}
+      try { userSignal.removeEventListener('abort', onUserAbort); } catch (e) {reportSwallow(e, 'util/api.apiFetch#3'); }
     }
     const aborted = e && (e.name === 'AbortError' || controller.signal.aborted);
     throw makeApiError(
@@ -212,7 +213,7 @@ export async function apiFetch(path, opts = {}) {
     );
   } finally {
     if (userSignal && onUserAbort) {
-      try { userSignal.removeEventListener('abort', onUserAbort); } catch (_) {}
+      try { userSignal.removeEventListener('abort', onUserAbort); } catch (e) {reportSwallow(e, 'util/api.apiFetch#4'); }
     }
   }
   let text;
@@ -220,7 +221,7 @@ export async function apiFetch(path, opts = {}) {
     throw makeApiError(r.status || 0, '响应读取失败', null, 'READ_BODY', 0);
   }
   let json = null;
-  try { json = text ? JSON.parse(text) : null; } catch (_) {}
+  try { json = text ? JSON.parse(text) : null; } catch (e) {reportSwallow(e, 'util/api.apiFetch#5'); }
   if (!r.ok) {
     /* M3 — surface the server's message/code. The validation error shape
        is {code:'VALIDATION_ERROR', message:'Request validation failed'} —
@@ -231,16 +232,16 @@ export async function apiFetch(path, opts = {}) {
     try {
       const rid = r.headers && typeof r.headers.get === 'function' ? r.headers.get('X-Request-Id') : null;
       if (rid) err.requestId = rid;
-    } catch (_) {}
+    } catch (e) {reportSwallow(e, 'util/api.apiFetch#6'); }
     if (r.status === 401 && !opts._authEndpoint && !_isInGraceWindow()) {
-      try { _on401 && _on401('apiFetch:' + method + ' ' + path); } catch (_) {}
+      try { _on401 && _on401('apiFetch:' + method + ' ' + path); } catch (e) {reportSwallow(e, 'util/api.apiFetch#7'); }
     } else if (r.status === 403 && !opts._csrfRetried && method !== 'GET' && method !== 'HEAD') {
       // Use a fresh AbortController for the CSRF refresh — the original
       // controller may already be aborted by a user stop, which would
       // silently fail the CSRF token fetch and leave the retry without a
       // valid token, causing a permanent 403 loop.
       const csrfController = new AbortController();
-      try { await fetch('/api/v2/auth/csrf-token', { credentials: 'include', signal: csrfController.signal }); } catch (_) {}
+      try { await fetch('/api/v2/auth/csrf-token', { credentials: 'include', signal: csrfController.signal }); } catch (e) {reportSwallow(e, 'util/api.apiFetch#8'); }
       await new Promise((res) => setTimeout(res, 0));
       return apiFetch(path, Object.assign({}, opts, { _csrfRetried: true }));
     }

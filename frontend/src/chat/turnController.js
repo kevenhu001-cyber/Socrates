@@ -30,6 +30,7 @@ import { addMessage } from './messages.js';
 import { scheduleTurnToTopForMessage } from './turnAnchor.ts';
 import { saveCurrentSession } from '../session/persistence.js';
 import { updateChatStats } from './stats.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 /* omit entirely; backend passes through (mirrors main.js contract) */
 var MAX_TOKENS_CHAT = undefined;
@@ -59,7 +60,7 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
     try{
       if(typeof window!=="undefined"&&window.__socratesSyncCtl){
         precreatedCtl=window.__socratesSyncCtl;
-        try{delete window.__socratesSyncCtl}catch(_){}
+        try{delete window.__socratesSyncCtl}catch (e) {reportSwallow(e, 'chat/turnController.askChatTurn'); }
       }
     }catch(_){precreatedCtl=null}
   }
@@ -67,18 +68,18 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
      old streamCtl stays in "正在思考…" until its own 45 s timer fires,
      which makes the UI feel frozen when the user fires a follow-up
      while the previous reply is still in flight. */
-  if(turnState.activeChatCtl&&turnState.activeChatCtl!==precreatedCtl){try{turnState.activeChatCtl.abort()}catch(_){}}
+  if(turnState.activeChatCtl&&turnState.activeChatCtl!==precreatedCtl){try{turnState.activeChatCtl.abort()}catch (e) {reportSwallow(e, 'chat/turnController.askChatTurn#2'); }}
   /* P_supersede-interrupt — the superseded answer is gone from the screen,
      so stop it on the server too. A bound turn keeps running detached once
      its socket closes; only the interrupt ends it. This turn has not bound
      yet, so any pending pointer here is the one being replaced. */
-  try{interruptPendingTurn()}catch(_){}
-  if(window._activeChatAbort){try{window._activeChatAbort("superseded")}catch(_){}}
+  try{interruptPendingTurn()}catch (e) {reportSwallow(e, 'chat/turnController.askChatTurn#3'); }
+  if(window._activeChatAbort){try{window._activeChatAbort("superseded")}catch (e) {reportSwallow(e, 'chat/turnController.askChatTurn#4'); }}
   /* Capture this turn before any guard or await. New submit paths pass an
      immutable override; legacy edit/regenerate paths can still use the
      consume-once window bridge. */
   var pendingContent = arguments.length>1 ? pendingOverride : turnState.pendingChatContent;
-  try{turnState.pendingChatContent=null;}catch(_){}
+  try{turnState.pendingChatContent=null;}catch (e) {reportSwallow(e, 'chat/turnController.askChatTurn#5'); }
   /* Re-enter THIS turn with its immutable content. The error-bubble Retry
      is wired by handleChatApiResult, so the closure has to be handed there
      explicitly; without it the retry degrades to the visible rawText and
@@ -87,7 +88,7 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
   /* No API configured: provide a minimal local echo so the chat panel
      is not dead. Tells the user how to enable a real model. */
   if(!hasUsableActive()){
-    if(precreatedCtl){try{precreatedCtl.abort()}catch(_){}}
+    if(precreatedCtl){try{precreatedCtl.abort()}catch (e) {reportSwallow(e, 'chat/turnController.askChatTurn#6'); }}
     var fallback=userText
       ?"You said: \""+userText+"\". I can't actually reply yet because no model is configured — open Settings and add a provider to enable Chat mode."
       :"I'm in Chat mode but no model is configured. Open Settings to add a provider, and I'll be able to talk about \""+stateStore.read("topic")+"\" for real.";
@@ -154,7 +155,7 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
       if(last&&last.classList.contains("user")){
         renderLinkPreviews(last,urls,pageResults);
       }
-    }catch(_){}
+    }catch (e) {reportSwallow(e, 'chat/turnController.askChatTurn#7'); }
   }else if(looksLikeUserMentionedSite(userMsg)){
     /* User talked about a site but we couldn't pull a clean URL. Show
        a small inline reminder card so they know to paste a full URL
@@ -166,7 +167,7 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
       if(last2&&last2.classList.contains("user")){
         renderNoUrlHint(last2);
       }
-    }catch(_){}
+    }catch (e) {reportSwallow(e, 'chat/turnController.askChatTurn#8'); }
   }
   /* P_lang-directive — inject a strong language directive at the very
    * top of the system message, derived from the user's actual input.
@@ -185,7 +186,7 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
    * window.extensiveThinkingOn in sync) so the choice always matches the
    * picker regardless of load order. */
   var _effortHigh = (typeof getReasoningEffort === "function" && getReasoningEffort() === "high");
-  try{ window.extensiveThinkingOn = _effortHigh; }catch(_){}
+  try{ window.extensiveThinkingOn = _effortHigh; }catch (e) {reportSwallow(e, 'chat/turnController.askChatTurn#9'); }
   var chatPrompt = _effortHigh ? CHAT_SYSTEM_PROMPT : CHAT_CONCISE_PROMPT;
   var thinkSuffix = _effortHigh ? thinkingSuffix() : "";
   var toneSuffix = toneVoiceSuffix();
@@ -267,7 +268,7 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
         break;
       }
     }
-  }catch(_){}
+  }catch (e) {reportSwallow(e, 'chat/turnController.askChatTurn#10'); }
   var _assistantClientId=(ctl&&typeof ctl.getClientId==="function")?ctl.getClientId():null;
   var _clientTurn={
     id:_clientTurnId,
@@ -279,10 +280,10 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
     if(_turnSessionId){
       savePendingTurn(_turnSessionId,{turnId:"",clientTurnId:_clientTurnId,lastSeq:0});
     }
-  }catch(_){}
+  }catch (e) {reportSwallow(e, 'chat/turnController.askChatTurn#11'); }
   var _onTurnBound=function(turnId){
     if(!turnId)return;
-    try{if(_turnSessionId)savePendingTurn(_turnSessionId,{turnId:turnId,clientTurnId:_clientTurnId,lastSeq:0});}catch(_){}
+    try{if(_turnSessionId)savePendingTurn(_turnSessionId,{turnId:turnId,clientTurnId:_clientTurnId,lastSeq:0});}catch (e) {reportSwallow(e, 'chat/turnController.askChatTurn#12'); }
   };
   /* P_inline-tools — tool status is now carried by the inline
      .tool-inline rows inside the bubble (created via the streaming
@@ -339,7 +340,7 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
      run instead of opening a duplicate LLM call. */
   try{
     if(_turnSessionId&&(result&&(result.text||result.cancelled)))clearPendingTurn(_turnSessionId,_clientTurnId);
-  }catch(_){}
+  }catch (e) {reportSwallow(e, 'chat/turnController.askChatTurn#13'); }
   publishActiveWorkflowFinish(!!(result&&result.text&&String(result.text).trim()));
   updateChatStats();
   if(!ctl || typeof ctl.isFinished !== "function" || !ctl.isFinished()){

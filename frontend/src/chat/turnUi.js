@@ -9,11 +9,12 @@ import { showToast } from '../ui/toast.js';
 import { turnState } from './turnState.js';
 import { buildUserContentParts } from './history.js';
 import { clearPendingTurn, interruptChatTurn, loadPendingTurn } from './turnClient.ts';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 function _t(key) {
   try {
     if (typeof window !== 'undefined' && typeof window.t === 'function') return window.t(key);
-  } catch (_) {}
+  } catch (e) {reportSwallow(e, 'chat/turnUi._t'); }
   return key;
 }
 
@@ -24,7 +25,7 @@ export function isExpectedTurnAbort(e) {
   var s = '';
   try { s = String((e.reason != null ? e.reason : '') + ' ' + (e.message || e)).toLowerCase(); } catch (_) { return false; }
   if (/session-expired|session-switch|session-deleted|session-purged|session-reset|archived-session|new-session|superseded|msg-edit|msg-regen|signout|sign-out|user-stop|user_stop|cancelled|canceled|first-delta-timeout/.test(s)) return true;
-  var nm = ''; try { nm = String(e.name || ''); } catch (_) {}
+  var nm = ''; try { nm = String(e.name || ''); } catch (e) {reportSwallow(e, 'chat/turnUi.isExpectedTurnAbort'); }
   if (nm === 'AbortError' && /abort/i.test(s)) return true;
   return false;
 }
@@ -34,7 +35,7 @@ export function isExpectedTurnAbort(e) {
    stream controller already surfaced them in-bubble, so no banner). */
 export function quietTurn(p) {
   if (p && typeof p.catch === 'function') {
-    p.catch(function (e) { if (!isExpectedTurnAbort(e)) { try { console.error('[chat] turn failed:', e); } catch (_) {} } });
+    p.catch(function (e) { if (!isExpectedTurnAbort(e)) { try { console.error('[chat] turn failed:', e); } catch (e) {reportSwallow(e, 'chat/turnUi.quietTurn'); } } });
   }
   return p;
 }
@@ -79,7 +80,7 @@ export function resendLastUserMessage() {
     quietTurn(window.askChatTurn(text, parts));
     return true;
   }
-  try { showToast(_t('toast.noRetryTarget')); } catch (_) {}
+  try { showToast(_t('toast.noRetryTarget')); } catch (e) {reportSwallow(e, 'chat/turnUi.resendLastUserMessage'); }
   return false;
 }
 
@@ -115,12 +116,12 @@ export function handleSendClick() {
     /* M2 Stop semantics — aborting the socket only detaches the feed
        when the turn is bound; flip the server turn to interrupted so
        the detached worker stops instead of running to completion. */
-    try{ interruptPendingTurn(); }catch(_){}
+    try{ interruptPendingTurn(); }catch (e) {reportSwallow(e, 'chat/turnUi.handleSendClick'); }
     if (turnState.activeChatCtl) {
       turnState.activeChatCtl.abort();
     }
     if (window._activeChatAbort) {
-      try { window._activeChatAbort('user-stop'); } catch (_) {}
+      try { window._activeChatAbort('user-stop'); } catch (e) {reportSwallow(e, 'chat/turnUi.handleSendClick#2'); }
     }
   } else {
     /* submitChatMessage snapshots and commits the draft before its first
@@ -134,12 +135,12 @@ export function handleSendClick() {
 }
 
 export function stopChatResponse() {
-  try{ interruptPendingTurn(); }catch(_){}
+  try{ interruptPendingTurn(); }catch (e) {reportSwallow(e, 'chat/turnUi.stopChatResponse'); }
   if (turnState.activeChatCtl && typeof turnState.activeChatCtl.abort === 'function') {
     turnState.activeChatCtl.abort();
   }
   if (window._activeChatAbort) {
-    try { window._activeChatAbort('user-stop'); } catch (_) {}
+    try { window._activeChatAbort('user-stop'); } catch (e) {reportSwallow(e, 'chat/turnUi.stopChatResponse#2'); }
   }
 }
 
@@ -152,14 +153,14 @@ export function stopChatResponse() {
    turn generating on the server. */
 export function interruptPendingTurn() {
   var sid = null;
-  try{ sid = stateStore.read('currentSessionId') || null; }catch(_){}
+  try{ sid = stateStore.read('currentSessionId') || null; }catch (e) {reportSwallow(e, 'chat/turnUi.interruptPendingTurn'); }
   if (!sid) return;
   var pending = null;
-  try{ pending = loadPendingTurn(sid); }catch(_){}
+  try{ pending = loadPendingTurn(sid); }catch (e) {reportSwallow(e, 'chat/turnUi.interruptPendingTurn#2'); }
   if (!pending || !pending.turnId) return;
-  try{ clearPendingTurn(sid); }catch(_){}
+  try{ clearPendingTurn(sid); }catch (e) {reportSwallow(e, 'chat/turnUi.interruptPendingTurn#3'); }
   try{
     var p = interruptChatTurn(pending.turnId);
-    if (p && typeof p.catch === 'function') p.catch(function(){});
-  }catch(_){}
+    if (p && typeof p.catch === 'function') p.catch(function(e){ reportSwallow(e, 'chat/turnUi.interruptPendingTurn.reject'); });
+  }catch (e) {reportSwallow(e, 'chat/turnUi.interruptPendingTurn.guard'); }
 }

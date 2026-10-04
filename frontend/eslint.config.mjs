@@ -89,6 +89,22 @@ export default tseslint.config(
       'no-useless-catch': 'warn',
       'prefer-spread': 'warn',
       'prefer-const': 'warn',
+      // Function-size backlog. The audit found three function-length
+      // time bombs — addStreamingMessage (1287 lines, chat/streamingTurn.js),
+      // createToolRuntime (805, chat/toolRuntime.ts) and loadSession (561,
+      // session/loader.js) — and 48 functions over 120 lines in total.
+      // `no-empty` already reports the 566 empty blocks above; those are
+      // warn-only, which is why the count survived this long. These two
+      // rules exist for the same reason: make the size debt VISIBLE on every
+      // lint run so scripts/check-empty-catch.mjs-style ratchets have a
+      // baseline to shrink. Flip to 'error' per-directory once a directory
+      // is clean, the way the no-unused-imports rules already are.
+      'complexity': ['warn', 15],
+      'max-lines-per-function': ['warn', {
+        max: 120,
+        skipBlankLines: true,
+        skipComments: true,
+      }],
       // tseslint.configs.recommended enables the TS variant for ALL files
       // (no files scope) at error severity; JS files use the core rule and
       // the TS override below re-enables it for TS files only.

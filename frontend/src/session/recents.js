@@ -22,6 +22,7 @@ import { clearLegacyMsgListChildren } from '../ui/messageListDom.js';
 import { updateComposerBtn } from '../ui/topicSetup.js';
 import { turnState } from '../chat/turnState.js';
 import { activateMainView } from '../ui/mainViewController.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 function _t(key, fallback) {
   try {
@@ -29,21 +30,21 @@ function _t(key, fallback) {
       var v = window.t(key);
       if (v && v !== key) return v;
     }
-  } catch (_) {}
+  } catch (e) { reportSwallow(e, 'session/recents._t'); }
   return fallback != null ? fallback : key;
 }
 function _renderRecents() {
-  try { if (typeof window !== 'undefined' && typeof window.renderRecents === 'function') window.renderRecents(); } catch (_) {}
+  try { if (typeof window !== 'undefined' && typeof window.renderRecents === 'function') window.renderRecents(); } catch (e) { reportSwallow(e, 'session/recents._renderRecents'); }
 }
 function _renderArchivedList() {
-  try { if (typeof window !== 'undefined' && typeof window.renderArchivedList === 'function') window.renderArchivedList(); } catch (_) {}
+  try { if (typeof window !== 'undefined' && typeof window.renderArchivedList === 'function') window.renderArchivedList(); } catch (e) { reportSwallow(e, 'session/recents._renderArchivedList'); }
 }
 function _saveCurrentSession() {
-  try { if (typeof window !== 'undefined' && typeof window.saveCurrentSession === 'function') return window.saveCurrentSession(); } catch (_) {}
+  try { if (typeof window !== 'undefined' && typeof window.saveCurrentSession === 'function') return window.saveCurrentSession(); } catch (e) { reportSwallow(e, 'session/recents.saveCurrentSession'); }
   return null;
 }
 function _currentUser() {
-  try { if (typeof window !== 'undefined') return window.CURRENT_USER || null; } catch (_) {}
+  try { if (typeof window !== 'undefined') return window.CURRENT_USER || null; } catch (e) { reportSwallow(e, 'session/recents.currentUser'); }
   return null;
 }
 
@@ -93,7 +94,7 @@ export async function refreshServerSessions(){
         var r2=await apiFetch("/api/sessions?limit=200&archived=true");
         serverCache.sessions=Array.isArray(r2&&r2.sessions)?r2.sessions:[];
         ok=true;
-      }catch {/* still failing — surface below */}
+      }catch(e){/* still failing — surface below */ reportSwallow(e,'session/recents.fetch.retry');}
     }
   }
   serverCache.fetchFailed=!ok;
@@ -107,27 +108,27 @@ export async function refreshServerSessions(){
    locally (see persistence.js) and ask for a throttled reconcile here. */
 var _reconciler = createReconciler({
   refresh: refreshServerSessions,
-  onDone: function () { try { _renderRecents(); } catch (_) { /* best effort */ } },
+  onDone: function () { try { _renderRecents(); } catch (e) { reportSwallow(e, 'session/recents.reconciler.onDone'); } /* best effort */ },
 });
 
 /* Fold a request into the next reconcile window. Cheap to call repeatedly. */
-export function scheduleRecentsReconcile(){ try { _reconciler.schedule(); } catch (_) {} }
+export function scheduleRecentsReconcile(){ try { _reconciler.schedule(); } catch (e) { reportSwallow(e, 'session/recents.scheduleReconcile'); } }
 
 /* Re-fetch now and drop any pending window. Only for flows that cannot show
    stale rows: delete, archive, restore, purge, sign-in, manual retry. */
-export function flushRecentsReconcile(){ try { return _reconciler.flush(); } catch (_) { return Promise.resolve(); } }
+export function flushRecentsReconcile(){ try { return _reconciler.flush(); } catch (e) { reportSwallow(e, 'session/recents.flushReconcile'); return Promise.resolve(); } }
 
 /* P_recents-fetch-fail — manual retry entry point bound from the
    "Couldn't load sessions — Retry" empty state. Re-runs the fetch,
    then re-renders so the user sees the result immediately. */
 export async function retryRecentsFetch(){
-  try{showToast(_t("toast.loadingSessions"))}catch(_){}
-  try{await flushRecentsReconcile()}catch(_){}
-  try{_renderRecents()}catch(_){}
+  try{showToast(_t("toast.loadingSessions"))}catch(e){reportSwallow(e,'session/recents.fetch.loadingToast');}
+  try{await flushRecentsReconcile()}catch(e){reportSwallow(e,'session/recents.fetch.flushReconcile');}
+  try{_renderRecents()}catch(e){reportSwallow(e,'session/recents.fetch.renderRecents');}
 }
-try{window.retryRecentsFetch=retryRecentsFetch}catch(_){}
-try{window.scheduleRecentsReconcile=scheduleRecentsReconcile}catch(_){}
-try{window.flushRecentsReconcile=flushRecentsReconcile}catch(_){}
+try{window.retryRecentsFetch=retryRecentsFetch}catch(e){reportSwallow(e,'session/recents.exports.retryRecentsFetch');}
+try{window.scheduleRecentsReconcile=scheduleRecentsReconcile}catch(e){reportSwallow(e,'session/recents.exports.scheduleReconcile');}
+try{window.flushRecentsReconcile=flushRecentsReconcile}catch(e){reportSwallow(e,'session/recents.exports.flushReconcile');}
 
 export function findServerSessionIndex(id){
   for(var i=0;i<serverCache.sessions.length;i++){
@@ -156,7 +157,7 @@ export async function actuallyDeleteSession(id,ev){
      (including the saveState.saveDirty cascade), then register the tombstone
      so no subsequent save can race with the delete. */
   if(saveState.saveInFlight){
-    try{await saveState.saveInFlight}catch(_){}
+    try{await saveState.saveInFlight}catch(e){reportSwallow(e,'session/recents.deleteSession.drainInFlight');}
   }
   /* P_delete-stale — bounce the user out of the chat view if the
      deleted session is EITHER (a) the one currently on screen
@@ -171,8 +172,8 @@ export async function actuallyDeleteSession(id,ev){
   
   var wasActive=stateStore.read("currentSessionId")===id||stateStore.read("currentSessionId")===id;
   if(wasActive){
-    if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(_){}}
-    if(window._activeChatAbort){try{window._activeChatAbort("session-deleted")}catch(_){}}
+    if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(e){reportSwallow(e,'session/recents.deleteSession.abortTurn');}}
+    if(window._activeChatAbort){try{window._activeChatAbort("session-deleted")}catch(e){reportSwallow(e,'session/recents.deleteSession.abortActive');}}
     bounceOutOfArchivedSession();
   }
   /* Drop the session from the local cache immediately so the UI
@@ -221,7 +222,7 @@ export async function actuallyDeleteSession(id,ev){
     });
   }).catch(function(err){
     /* delete sync failed */
-    try{showToast(_t("session.deleteFailedRefresh").replace("{msg}", err&&err.message||"server error"),4000)}catch(_){}
+    try{showToast(_t("session.deleteFailedRefresh").replace("{msg}", err&&err.message||"server error"),4000)}catch(e){reportSwallow(e,'session/recents.deleteSession.toast');}
     /* P_delete-resurrect — keep the tombstone on failure. The
        local mirror no longer has the row (we filtered it at
        t≈0) and the server claim is "404 / error", so any
@@ -243,12 +244,12 @@ export async function archiveSession(id, ev){
   if(ev&&ev.stopPropagation)ev.stopPropagation();
   if(ev&&ev.preventDefault)ev.preventDefault();
   if(saveState.saveInFlight){
-    try{await saveState.saveInFlight}catch(_){}
+    try{await saveState.saveInFlight}catch(e){reportSwallow(e,'session/recents.archiveSession.drainInFlight');}
   }
   var wasActive=stateStore.read("currentSessionId")===id;
   if(wasActive){
-    if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(_){}}
-    if(window._activeChatAbort){try{window._activeChatAbort("session-archived")}catch(_){}}
+    if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(e){reportSwallow(e,'session/recents.archiveSession.abortTurn');}}
+    if(window._activeChatAbort){try{window._activeChatAbort("session-archived")}catch(e){reportSwallow(e,'session/recents.archiveSession.abortActive');}}
     bounceOutOfArchivedSession();
   }
   var stamp=Date.now();
@@ -276,8 +277,8 @@ export async function archiveSession(id, ev){
     /* Roll the optimistic stamp so a failed POST doesn't hide the row. */
     var back=findServerSessionIndex(id);
     if(back>=0)serverCache.sessions[back].archivedAt=null;
-    try{showToast(_t("session.archiveFailed").replace("{msg}", err&&err.message||"server error"),4000)}catch(_){}
-    try{await flushRecentsReconcile()}catch(_){}
+    try{showToast(_t("session.archiveFailed").replace("{msg}", err&&err.message||"server error"),4000)}catch(e){reportSwallow(e,'session/recents.archiveSession.toast');}
+    try{await flushRecentsReconcile()}catch(e){reportSwallow(e,'session/recents.archiveSession.flushReconcile');}
     _renderRecents();
     _renderArchivedList();
   }
@@ -294,8 +295,9 @@ export function restoreSession(id){
   serverCache.sessions[idx].archivedAt=null;
   apiFetch("/api/sessions/"+encodeURIComponent(id)+"/archive",{
     method:"DELETE"
-  }).catch(function(){
+  }).catch(function(e){
     /* archive sync failed */
+    reportSwallow(e, 'session/recents.restoreSession.archiveSync');
   });
   _renderRecents();
   _renderArchivedList();
@@ -329,8 +331,8 @@ export function confirmPurgeSession(id){
          graph until the user manually navigates away. */
       var wasActive=stateStore.read("currentSessionId")===id||stateStore.read("currentSessionId")===id;
       if(wasActive){
-        if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(_){}}
-        if(window._activeChatAbort){try{window._activeChatAbort("session-purged")}catch(_){}}
+        if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(e){reportSwallow(e,'session/recents.purge.abortTurn');}}
+        if(window._activeChatAbort){try{window._activeChatAbort("session-purged")}catch(e){reportSwallow(e,'session/recents.purge.abortActive');}}
         bounceOutOfArchivedSession();
       }
       serverCache.sessions=serverCache.sessions.filter(function(r){return r.id!==id});
@@ -369,14 +371,14 @@ export function bounceOutOfArchivedSession(){
   resetShareToken();
   /* Abort any active chat stream so callbacks don't write to
      state after resetState() has cleared it. */
-  if(window._activeChatAbort){try{window._activeChatAbort("archived-session")}catch(_){}}
-  if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(_){}}
+  if(window._activeChatAbort){try{window._activeChatAbort("archived-session")}catch(e){reportSwallow(e,'session/recents.bounceOutOfArchivedSession.abortActive');}}
+  if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(e){reportSwallow(e,'session/recents.bounceOutOfArchivedSession.abortTurn');}}
   turnState.activeChatCtl=null;
   window._activeChatAbort=null;
   turnState.chatStreaming=false;
   turnState.chatStopMode=false;
-  try{turnState.pendingChatContent=null}catch(_){}
-  try{turnState.pendingAttachments=null}catch(_){}
+  try{turnState.pendingChatContent=null}catch(e){reportSwallow(e,'session/recents.bounceOutOfArchivedSession.clearPendingChat');}
+  try{turnState.pendingAttachments=null}catch(e){reportSwallow(e,'session/recents.bounceOutOfArchivedSession.clearPendingAttachments');}
   resetState();
   toggleShareBtn();
   setChatIdInURL(null);

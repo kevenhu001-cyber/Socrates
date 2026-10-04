@@ -18,6 +18,7 @@ import {
 import { consumeSseBuffer } from '../../../packages/core/src/index.ts';
 import { notifySpeedFallbackOnce } from './speedFallback.js';
 import { createChatTurn, getChatTurn, subscribeChatTurnEvents } from './turnClient.ts';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 function setLastCallError(value){
   stateStore.dispatch({type:'state/set',key:'lastCallError',value:value});
@@ -32,7 +33,7 @@ async function recoverDetachedTurn(turnId, context) {
 
   var subAbort = new AbortController();
   var abortBridge = function() {
-    try { subAbort.abort("user-abort"); } catch(_) {}
+    try { subAbort.abort("user-abort"); } catch (e) { reportSwallow(e, 'chat/stream.recoverDetachedTurn.abortBridge'); }
   };
   if (signal) {
     if (signal.aborted) return null;
@@ -48,7 +49,7 @@ async function recoverDetachedTurn(turnId, context) {
         if (completedText.length > full.length) {
           var remaining = completedText.slice(full.length);
           full = completedText;
-          try { if (typeof onDelta === "function") onDelta(remaining); } catch(_) {}
+          try { if (typeof onDelta === "function") onDelta(remaining); } catch (e) { reportSwallow(e, 'chat/stream.recoverDetachedTurn.onDelta.remaining'); }
         }
         return { text: full, html: null, widgets: [] };
       }
@@ -56,7 +57,7 @@ async function recoverDetachedTurn(turnId, context) {
         return null;
       }
     }
-  } catch (_) {}
+  } catch (e) { reportSwallow(e, 'chat/stream.recoverDetachedTurn.initialCheck'); }
 
   // 2. Subscribe and poll
   var done = false;
@@ -69,29 +70,29 @@ async function recoverDetachedTurn(turnId, context) {
       var data = frame.data || {};
       if (frame.event === "content" && typeof data.delta === "string") {
         full += data.delta;
-        try { if (typeof onDelta === "function") onDelta(data.delta); } catch(_) {}
+        try { if (typeof onDelta === "function") onDelta(data.delta); } catch (e) { reportSwallow(e, 'chat/stream.handleFrame.onDelta'); }
       } else if (frame.event === "reasoning" && typeof data.delta === "string") {
-        try { if (typeof onThinking === "function") onThinking(data.delta); } catch(_) {}
+        try { if (typeof onThinking === "function") onThinking(data.delta); } catch (e) { reportSwallow(e, 'chat/stream.handleFrame.onThinking'); }
       } else if (frame.event === "tool_use") {
         var calls = Array.isArray(data) ? data : (data.calls || [data]);
         if (opts && typeof opts.onToolUse === "function") {
-          try { opts.onToolUse(calls); } catch(_) {}
+          try { opts.onToolUse(calls); } catch (e) { reportSwallow(e, 'chat/stream.handleFrame.onToolUse'); }
         }
       } else if (frame.event === "tool_result") {
         if (opts && typeof opts.onToolResult === "function") {
-          try { opts.onToolResult(data); } catch(_) {}
+          try { opts.onToolResult(data); } catch (e) { reportSwallow(e, 'chat/stream.handleFrame.onToolResult'); }
         }
       } else if (frame.event === "turn_done") {
         done = true;
-        try { subAbort.abort("done"); } catch(_) {}
+        try { subAbort.abort("done"); } catch (e) { reportSwallow(e, 'chat/stream.handleFrame.abortDone'); }
       } else if (frame.event === "turn_failed") {
         failed = true;
-        try { subAbort.abort("failed"); } catch(_) {}
+        try { subAbort.abort("failed"); } catch (e) { reportSwallow(e, 'chat/stream.handleFrame.abortFailed'); }
       }
       if (typeof frame.sequence === "number" && frame.sequence > maxSeq) {
         maxSeq = frame.sequence;
       }
-    } catch(_) {}
+    } catch (e) { reportSwallow(e, 'chat/stream.handleFrame.outer'); }
   }
 
   var attempts = 0;
@@ -103,7 +104,7 @@ async function recoverDetachedTurn(turnId, context) {
       if (check && check.turn && check.turn.status === "completed") {
         var finalFull = check.turn.fullText || full;
         if (finalFull.length > full.length) {
-          try { if (typeof onDelta === "function") onDelta(finalFull.slice(full.length)); } catch(_) {}
+          try { if (typeof onDelta === "function") onDelta(finalFull.slice(full.length)); } catch (e) { reportSwallow(e, 'chat/stream.recoverDetachedTurn.onDelta.final'); }
           full = finalFull;
         }
         return { text: full, html: null, widgets: [] };
@@ -111,7 +112,7 @@ async function recoverDetachedTurn(turnId, context) {
       if (check && check.turn && (check.turn.status === "failed" || check.turn.status === "interrupted")) {
         return null;
       }
-    } catch (_) {}
+    } catch (e) { reportSwallow(e, 'chat/stream.recoverDetachedTurn.pollCheck'); }
 
     try {
       await subscribeChatTurnEvents(turnId, maxSeq, subAbort.signal, {
@@ -119,7 +120,7 @@ async function recoverDetachedTurn(turnId, context) {
         onDone: function() {},
         onError: function() {}
       });
-    } catch (_) {}
+    } catch (e) { reportSwallow(e, 'chat/stream.recoverDetachedTurn.subscribe'); }
 
     if (done) {
       return { text: full, html: null, widgets: [] };
@@ -137,7 +138,7 @@ async function recoverDetachedTurn(turnId, context) {
 }
 
 /* P_log-gating — DEV-only diagnostics. Tool-event frames used to be
-   parsed inside bare `catch(_){}` blocks, so a malformed tool_use /
+   parsed inside bare `catch (e) {reportSwallow(e, 'chat/stream.handleFrame'); }` blocks, so a malformed tool_use /
    tool_call_delta frame vanished without a trace and the tool card
    simply never updated. Surface those parse failures in development;
    production stays quiet (the predicate is a build-time constant, so
@@ -145,7 +146,7 @@ async function recoverDetachedTurn(turnId, context) {
 var DEV=(typeof import.meta!=='undefined'&&import.meta.env&&import.meta.env.DEV)===true;
 function warnBadFrame(evName,err){
   if(!DEV)return;
-  try{console.warn('[stream] failed to handle '+evName+' frame:',err&&err.message||err)}catch(_){}
+  try{console.warn('[stream] failed to handle '+evName+' frame:',err&&err.message||err)}catch(e){reportSwallow(e,'chat/stream.warnBadFrame');}
 }
 
 /* P_think-tail-hold — length of the longest suffix of `s` that could still
@@ -176,10 +177,10 @@ function makeStreamError(message,status,body) {
 
 function bindAbortSignal(parent,child){
   if(!parent)return function(){};
-  var onAbort=function(){try{child.abort(parent.reason||"aborted")}catch(_) {}};
+  var onAbort=function(){try{child.abort(parent.reason||"aborted")}catch (e) {reportSwallow(e, 'chat/stream.bindAbortSignal'); }};
   if(parent.aborted)onAbort();
   else parent.addEventListener("abort",onAbort,{once:true});
-  return function(){try{parent.removeEventListener("abort",onAbort)}catch(_) {}};
+  return function(){try{parent.removeEventListener("abort",onAbort)}catch (e) {reportSwallow(e, 'chat/stream.bindAbortSignal#2'); }};
 }
 
 /* Drop the global abort handle only while it is still the one this call
@@ -273,8 +274,8 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
     var ac=new AbortController();
     unbindAttempt=bindAbortSignal(turnAbort.signal,ac);
     activeAbortHandle=function(reason){
-      try{turnAbort.abort(reason)}catch(_){}
-      try{ac.abort(reason)}catch(_){}
+      try{turnAbort.abort(reason)}catch (e) {reportSwallow(e, 'chat/stream.callAPIStream'); }
+      try{ac.abort(reason)}catch (e) {reportSwallow(e, 'chat/stream.callAPIStream#2'); }
     };
     window._activeChatAbort=activeAbortHandle;
     var resp=null;
@@ -298,7 +299,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
            (idempotent on clientTurn.id), instead of a separate POST
            /api/chat-turns round-trip before the stream may start. */
         else if(opts&&opts.clientTurn&&typeof opts.clientTurn.id==="string")apiBody.clientTurn=opts.clientTurn;
-      }catch(_){}
+      }catch (e) {reportSwallow(e, 'chat/stream.callAPIStream#3'); }
       resp=await apiFetchRaw("/api/chat/stream",{
         method:"POST",
         body:apiBody,
@@ -565,7 +566,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
                 semanticActivity=true;
                 return;
               }
-            }catch(_){}
+            }catch (e) {reportSwallow(e, 'chat/stream.callAPIStream#4'); }
           }
           /* Some upstreams send "event: error" frames; surface them. */
           try{
@@ -583,7 +584,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
             if(typeof reasoning==="string"&&reasoning.length>0){
               semanticActivity=true;
               if(typeof onThinking==="function"){
-                try{onThinking(reasoning)}catch(_){}
+                try{onThinking(reasoning)}catch (e) {reportSwallow(e, 'chat/stream.callAPIStream#5'); }
               }
             }
             /* P_inline_think — split delta on <think>/</think> boundaries.
@@ -649,7 +650,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
                   var inside=probe2.slice(0,closeIdx);
                   thinkBuf+=inside;
                   if(thinkBuf.length>0&&typeof onThinking==="function"){
-                    try{onThinking(thinkBuf)}catch(_){}
+                    try{onThinking(thinkBuf)}catch (e) {reportSwallow(e, 'chat/stream.callAPIStream#6'); }
                   }
                   thinkBuf="";
                   thinkOpen=false;
@@ -721,7 +722,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
                   thinkBuf+=probe2.slice(0,Math.max(0,probe2.length-7));
                   thinkTail=probe2.slice(Math.max(0,probe2.length-7));
                   if(typeof onThinking==="function"&&thinkBuf.length>=200){
-                    try{onThinking(thinkBuf)}catch(_){}
+                    try{onThinking(thinkBuf)}catch (e) {reportSwallow(e, 'chat/stream.callAPIStream#7'); }
                     thinkBuf="";
                   }
                 }
@@ -734,7 +735,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
                the bug shows up in the console without flooding it. */
             if(!hasWarnedMissingThinking&&typeof delta==="string"&&(thinkOpen||thinkBuf.length>0)&&typeof onThinking!=="function"){
               hasWarnedMissingThinking=true;
-              try{console.warn("[API stream] inline <think> detected but caller did not provide onThinking; thinking pill will not light up. Pass an onThinking callback in callAPIStream(...,onThinking,opts).")}catch(_){}
+              try{console.warn("[API stream] inline <think> detected but caller did not provide onThinking; thinking pill will not light up. Pass an onThinking callback in callAPIStream(...,onThinking,opts).")}catch (e) {reportSwallow(e, 'chat/stream.callAPIStream#8'); }
             }
           }catch {
             /* Could be a final [DONE] or unknown frame; ignore unless the
@@ -769,7 +770,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
          pool. Without this, the browser keeps the stream counted
          against its per-host concurrent-stream limit (Chrome 256,
          Firefox 100), and a long chat session can exhaust it. */
-      try{reader.releaseLock()}catch(_){}
+      try{reader.releaseLock()}catch (e) {reportSwallow(e, 'chat/stream.callAPIStream#9'); }
       /* Flush any trailing UTF-8 bytes that didn't have a closing chunk. */
       buf+=decoder.decode();
       /* P_final_frame_flush — upstream may close the connection without a
@@ -791,7 +792,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
         var remainingThink=thinkBuf+thinkTail;
         if(remainingThink.length>0){
           semanticActivity=true;
-          try{onThinking(remainingThink)}catch(_){}
+          try{onThinking(remainingThink)}catch (e) {reportSwallow(e, 'chat/stream.callAPIStream#10'); }
         }
         thinkBuf="";
         thinkTail="";
@@ -817,8 +818,8 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
            &&!semanticActivity&&await waitForRetry(attempt,attemptError)){
           lastErr=attemptError;
           console.warn("[API stream]",attemptError.message+", retrying before visible output");
-          try{await reader.cancel()}catch(_){}
-          try{reader.releaseLock()}catch(_){}
+          try{await reader.cancel()}catch (e) {reportSwallow(e, 'chat/stream.callAPIStream#11'); }
+          try{reader.releaseLock()}catch (e) {reportSwallow(e, 'chat/stream.callAPIStream#12'); }
           unbindAttempt();
           continue;
         }
@@ -848,7 +849,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
             if(existingTurn && existingTurn.turn && existingTurn.turn.id){
               turnToRecover = existingTurn.turn.id;
             }
-          } catch (_) {}
+          } catch (e) { reportSwallow(e, 'chat/stream.createChatTurn'); }
         }
         if(turnToRecover){
           try {
@@ -883,7 +884,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
        promptly. This is the path that runs on a clean DONE; the
        earlier `releaseLock` is for the path where the reader is
        still bound to a writable variable. */
-    try{resp.body&&resp.body.cancel&&resp.body.cancel().catch(function(){})}catch(_){}
+    try{resp.body&&resp.body.cancel&&resp.body.cancel().catch(function(e){ reportSwallow(e, 'chat/stream.callAPIStream.cancelReject'); })}catch (e) {reportSwallow(e, 'chat/stream.callAPIStream.cancelGuard'); }
     resp=null;
     reader=null;
     if(streamError){
