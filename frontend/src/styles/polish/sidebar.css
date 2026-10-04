@@ -115,17 +115,41 @@
   transition: border-color var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;
 }
 }
+/* Focus keeps the same hairline edge — only the fill lifts a step. */
 @media (max-width: 768px) {
 #appShell#appShell .sidebar-search:focus-within {
-  border-color: var(--ui-border-strong);
   background: var(--ui-bg-surface);
+}
+}
+
+/* legacy/01-sidebar.css gives .sidebar backdrop-filter: blur(12px) for the
+   translucent desktop rail. On the mobile drawer the background is opaque
+   (--ui-bg-sidebar: #000), so the blur is invisible — but the backdrop
+   compositing context still triggers the WebKit quirk where the blinking
+   caret inside a backdrop-filtered fixed element never paints. Drop it on
+   mobile only; desktop keeps the glass look. */
+@media (max-width: 768px) {
+#appShell .sidebar {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 }
 @media (max-width: 768px) {
 #appShell .sidebar-search .sidebar-search-icon { width: 15px; height: 15px; color: var(--ui-text-muted); }
 }
+/* The drawer is a composited layer (fixed + transform + will-change), and
+   WebKit drops the caret of a fully transparent, borderless input under a
+   composited ancestor (bug 215731). Two invisible countermeasures: a 1%
+   fill counts as non-transparent so the caret keeps painting, and
+   translateZ(0) gives the field its own layer so the caret cannot be
+   swallowed by the drawer's layer. */
 @media (max-width: 768px) {
-#appShell .sidebar-search input { font-size: 13px; color: var(--ui-text-primary); }
+#appShell .sidebar-search input {
+  font-size: 13px;
+  color: var(--ui-text-primary);
+  background: color-mix(in srgb, var(--ui-text-primary) 1%, transparent);
+  transform: translateZ(0);
+}
 }
 @media (max-width: 768px) {
 #appShell .sidebar-search input::placeholder { color: var(--ui-text-placeholder); }
