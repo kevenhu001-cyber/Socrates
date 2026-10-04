@@ -33,6 +33,7 @@
  */
 
 import { apiFetch } from './util/api.js';
+import { reportSwallow } from './util/reportSwallow.ts';
 
 /* Limits — kept as named constants so the UI can show "max 6" hints
  * and the renderer can refuse oversized inputs without re-checking. */
@@ -122,7 +123,7 @@ function _t(key, fallback) {
       const v = window.t(key);
       if (v && v !== key) return v;
     }
-  } catch (_) { /* fall through */ }
+  } catch (e) { reportSwallow(e, 'attachments._t.prefLookup'); /* fall through */ }
   return fallback != null ? fallback : key;
 }
 
@@ -147,7 +148,7 @@ function currentSessionId() {
       const sid = store.read('currentSessionId');
       if (typeof sid === 'string' && sid) return sid;
     }
-  } catch (_) { /* fall through */ }
+  } catch (e) { reportSwallow(e, 'attachments.store.sessionIdLookup'); /* fall through */ }
   return '';
 }
 
@@ -184,7 +185,7 @@ export function resetAttachments() {
     if (bridge && typeof bridge.publish === "function") {
       bridge.publish({ attachments: attachments.slice() });
     }
-  } catch (_) { /* swallow — bridge is best-effort */ }
+  } catch (e) { reportSwallow(e, 'attachments.bridge.publish'); /* swallow — bridge is best-effort */ }
 }
 
 /**
@@ -289,7 +290,7 @@ async function compressWithOffscreenCanvas(file, onProgress) {
           const blob = await canvas.convertToBlob({ type: 'image/webp', quality: q });
           const out = await blobToDataUrl(blob, onProgress);
           if (out && out.length <= MAX_IMAGE_DATAURL_CHARS) return out;
-        } catch (_) { /* try next quality */ }
+        } catch (e) { reportSwallow(e, 'attachments.compressWithOffscreenCanvas.qualityStep'); /* try next quality */ }
         if (typeof onProgress === 'function') {
           const completed = edgeIndex * QUALITY_STEPS.length + qualityIndex + 1;
           onProgress(Math.min(90, 20 + Math.round(completed * 70 / (EDGE_STEPS.length * QUALITY_STEPS.length))));
@@ -321,7 +322,7 @@ async function compressWithLegacyCanvas(file, onProgress) {
     });
   } catch (_) {
     if (sourceUrl) {
-      try { URL.revokeObjectURL(sourceUrl); } catch (_) { /* noop */ }
+      try { URL.revokeObjectURL(sourceUrl); } catch (e) { reportSwallow(e, 'attachments.compressWithLegacyCanvas.revokeSourceUrl'); /* noop */ }
     }
     return null;
   }
@@ -329,7 +330,7 @@ async function compressWithLegacyCanvas(file, onProgress) {
   const srcH = img.naturalHeight || img.height || 0;
   if (!srcW || !srcH) {
     if (sourceUrl) {
-      try { URL.revokeObjectURL(sourceUrl); } catch (_) { /* noop */ }
+      try { URL.revokeObjectURL(sourceUrl); } catch (e) { reportSwallow(e, 'attachments.compressWithLegacyCanvas.revokeSourceUrl'); /* noop */ }
     }
     return null;
   }
@@ -366,7 +367,7 @@ async function compressWithLegacyCanvas(file, onProgress) {
     return null;
   } finally {
     if (sourceUrl) {
-      try { URL.revokeObjectURL(sourceUrl); } catch (_) { /* noop */ }
+      try { URL.revokeObjectURL(sourceUrl); } catch (e) { reportSwallow(e, 'attachments.compressWithLegacyCanvas.revokeSourceUrl'); /* noop */ }
     }
   }
 }
@@ -394,7 +395,7 @@ function shortId() {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
       return 'att-' + crypto.randomUUID().slice(0, 8);
     }
-  } catch (_) { /* fall through */ }
+  } catch (e) { reportSwallow(e, 'attachments.shortId.cryptoRandomUUID'); /* fall through */ }
   return 'att-' + Math.random().toString(36).slice(2, 10);
 }
 
@@ -485,7 +486,7 @@ function uploadAttachmentFile(file, onProgress, onXhr) {
     }
     xhr.onload = function () {
       let data = null;
-      try { data = JSON.parse(xhr.responseText || '{}'); } catch (_) { /* non-JSON error page */ }
+      try { data = JSON.parse(xhr.responseText || '{}'); } catch (e) { reportSwallow(e, 'attachments.csrf.parseResponse'); /* non-JSON error page */ }
       if (xhr.status >= 200 && xhr.status < 300 && data && data.id) {
         resolve({
           fileId: String(data.id),
@@ -538,7 +539,7 @@ async function prepareAttachment(entry, file, reportProgress) {
       /* Live abort handle — removeAttachment cancels a still-running
          transfer so an unwanted chip does not finish writing a files
          row nobody references. */
-      entry._abort = function () { try { xhr.abort(); } catch (_) { /* noop */ } };
+      entry._abort = function () { try { xhr.abort(); } catch (e) { reportSwallow(e, 'attachments.prepareAttachment.xhrAbort'); /* noop */ } };
     }).then(function (outcome) { uploadOutcome = outcome; }));
 
     if (entry.kind === 'image' && wantsInlineImage) {
@@ -574,7 +575,7 @@ async function prepareAttachment(entry, file, reportProgress) {
        inline dataUrl) existed — the chip now renders from
        /api/files/:id/raw or dataUrl. */
     if (entry.thumbnailUrl) {
-      try { URL.revokeObjectURL(entry.thumbnailUrl); } catch (_) { /* noop */ }
+      try { URL.revokeObjectURL(entry.thumbnailUrl); } catch (e) { reportSwallow(e, 'attachments.prepareAttachment.revokeThumbnail'); /* noop */ }
       entry.thumbnailUrl = undefined;
     }
 
@@ -629,7 +630,7 @@ export async function addFiles(fileList, onUpdate, onProgress, onRejected) {
   function reject(msg) {
     result.rejected.push(msg);
     if (onRejected) {
-      try { onRejected(msg); } catch (_) { /* toast is best-effort */ }
+      try { onRejected(msg); } catch (e) { reportSwallow(e, 'attachments.reject.onRejected'); /* toast is best-effort */ }
     }
   }
   /* U/perf — coalesce per-tick progress into one repaint per animation
@@ -691,7 +692,7 @@ export async function addFiles(fileList, onUpdate, onProgress, onRejected) {
       /* P_perf-blob-url — the chip thumbnail appears instantly from the
          local blob while the upload runs; revoked once the durable
          file (or inline dataUrl) exists. */
-      try { entry.thumbnailUrl = URL.createObjectURL(file); } catch (_) { /* noop */ }
+      try { entry.thumbnailUrl = URL.createObjectURL(file); } catch (e) { reportSwallow(e, 'attachments.notifyProgress.createThumbUrl'); /* noop */ }
     }
     attachments.push(entry);
     if (onUpdate) onUpdate();
@@ -726,7 +727,7 @@ function _revokeBlobUrls(list) {
   for (let i = 0; i < list.length; i++) {
     const url = list[i].thumbnailUrl;
     if (url) {
-      try { URL.revokeObjectURL(url); } catch (_) { /* noop */ }
+      try { URL.revokeObjectURL(url); } catch (e) { reportSwallow(e, 'attachments._revokeBlobUrls.one'); /* noop */ }
     }
   }
 }
@@ -763,7 +764,7 @@ export function removeAttachment(id) {
   if (idx === -1) return false;
   const entry = attachments[idx];
   if (entry && entry.pending && typeof entry._abort === 'function') {
-    try { entry._abort(); } catch (_) { /* noop */ }
+    try { entry._abort(); } catch (e) { reportSwallow(e, 'attachments.removeAttachment.abort'); /* noop */ }
   }
   if (entry && entry.fileId && !entry.sent) {
     /* Fire-and-forget — the chip is already gone; a failed delete just
@@ -790,7 +791,7 @@ export function retryAttachment(id, onUpdate) {
   entry.progress = 0;
   if (entry.kind === 'image' && !entry.thumbnailUrl
       && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
-    try { entry.thumbnailUrl = URL.createObjectURL(entry._file); } catch (_) { /* noop */ }
+    try { entry.thumbnailUrl = URL.createObjectURL(entry._file); } catch (e) { reportSwallow(e, 'attachments.retryAttachment.createThumbUrl'); /* noop */ }
   }
   if (onUpdate) onUpdate();
   const job = prepareAttachment(entry, entry._file, function (pct) {
@@ -852,7 +853,7 @@ export async function buildMessageContent(text, attachmentSnapshot) {
   await waitForAttachmentsReady(turnAttachments, ATTACHMENT_READY_TIMEOUT_MS);
   for (const a of turnAttachments) {
     if (a && a.pending && typeof a._abort === 'function') {
-      try { a._abort(); } catch (_) { /* noop */ }
+      try { a._abort(); } catch (e) { reportSwallow(e, 'attachments.buildMessageContent.abortStale'); /* noop */ }
     }
   }
 

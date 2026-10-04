@@ -33,6 +33,7 @@ import { toggleShareBtn } from '../ui/share.js';
    goes through window.__settingsModule below. */
 
 import { renderGreeting } from '../ui/greeting.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 function isEmbeddedNativeWebView(){
   try{
@@ -49,14 +50,14 @@ export function hideGate(){
   /* P0.6 — also flip the pre-boot data attribute so the CSS rules
      in <head> take over. From this point on, showGate()/hideGate()
      are the single source of truth for which view is on top. */
-  try{document.documentElement.dataset.bootState="app"}catch(_){}
+  try{document.documentElement.dataset.bootState="app"}catch(e){reportSwallow(e, 'auth/index.hideGate.bootState'); }
   syncCookieConsentPlacement(false);
 }
 
 export function showGate(){
   /* Flip bootState first so the CSS rule hiding #authGate while
      data-boot-state="checking" is removed before we try to show it. */
-  try{document.documentElement.dataset.bootState="auth"}catch(_){}
+  try{document.documentElement.dataset.bootState="auth"}catch(e){reportSwallow(e, 'auth/index.showGate.bootState'); }
   var g=document.getElementById("authGate");if(g)g.classList.remove("hidden");
   var s=document.getElementById("appShell");if(s)s.classList.add("hidden");
   syncCookieConsentPlacement(true);
@@ -219,7 +220,7 @@ export async function afterAuthEnter(){
      affected UI surfaces (renderRecents, renderProviderList) so
      the empty state appears immediately. */
   if(typeof window.clearPerUserClientState==="function"){
-    try{window.clearPerUserClientState()}catch {/* ignore */}
+    try{window.clearPerUserClientState()}catch(e){ reportSwallow(e, 'auth/index.clearPerUserClientState');/* ignore */}
   }
   /* P0.1 A4 — replay any message edit/delete queued while the previous
      session was offline. The `online` listener cannot cover this: signing
@@ -228,24 +229,24 @@ export async function afterAuthEnter(){
      server-side, so a queue left behind by a different user on this
      browser is rejected and dropped rather than applied. */
   try{ drainMessageOutbox().then(function(n){
-    if(n>0){try{if(typeof window.saveCurrentSession==="function")window.saveCurrentSession()}catch(_){}}
-  }); }catch(_){ /* replay is best effort */ }
+    if(n>0){try{if(typeof window.saveCurrentSession==="function")window.saveCurrentSession()}catch(e){reportSwallow(e, 'auth/index.drainOutbox.saveCurrentSession'); }}
+  }); }catch(e){ reportSwallow(e, 'auth/index.drainOutbox.guard'); /* replay is best effort */ }
   /* Run the localStorage -> server migration once if there's anything to bring. */
   try{
     var localApi=localStorage.getItem("socrates-api");
     var localSessions=localStorage.getItem("socrates-sessions-v2");
     var payload={};
     var hasAny=false;
-    if(localSessions){try{var arr=JSON.parse(localSessions);if(Array.isArray(arr)&&arr.length){payload.localSessions=arr;hasAny=true}}catch(_){}}
-    if(localApi){try{var o=JSON.parse(localApi);if(o&&o.providers&&o.providers.length){var p=o.providers.find(function(x){return x.id===o.activeId})||o.providers[0];if(p&&p.key){payload.localApi={label:p.label,url:p.url,model:p.model,key:p.key};hasAny=true}}}catch(_){}}
+    if(localSessions){try{var arr=JSON.parse(localSessions);if(Array.isArray(arr)&&arr.length){payload.localSessions=arr;hasAny=true}}catch(e){reportSwallow(e, 'auth/index.migrate.parseSessions'); }}
+    if(localApi){try{var o=JSON.parse(localApi);if(o&&o.providers&&o.providers.length){var p=o.providers.find(function(x){return x.id===o.activeId})||o.providers[0];if(p&&p.key){payload.localApi={label:p.label,url:p.url,model:p.model,key:p.key};hasAny=true}}}catch(e){reportSwallow(e, 'auth/index.migrate.parseApi'); }}
     if(hasAny){
       try{
         await apiFetch("/api/migrate",{method:"POST",body:payload});
-        try{localStorage.removeItem("socrates-sessions-v2")}catch(_){}
-        try{localStorage.removeItem("socrates-api")}catch(_){}
-      }catch {/* migrate failed */}
+        try{localStorage.removeItem("socrates-sessions-v2")}catch(e){reportSwallow(e, 'auth/index.migrate.clearSessions'); }
+        try{localStorage.removeItem("socrates-api")}catch(e){reportSwallow(e, 'auth/index.migrate.clearApi'); }
+      }catch(e){ reportSwallow(e, 'auth/index.migrate.post'); /* migrate failed */}
     }
-  }catch {/* migrate setup failed */}
+  }catch(e){ reportSwallow(e, 'auth/index.migrate.setup'); /* migrate setup failed */}
   /* Boot-time data fetch helper — calls a `fn` once; if it throws
      an ApiError(401) DURING the post-login grace window
      (isInAuthGraceWindow), the brand-new `sid` cookie may not have
@@ -299,7 +300,7 @@ export async function afterAuthEnter(){
   /* Once the user object is available, paint the personalized greeting. */
   try {
     if (typeof renderGreeting === "function") renderGreeting();
-  } catch (_) { /* first-paint helpers — never block sign-in */ }
+  } catch (e) { reportSwallow(e, 'auth/index.hydrate.greeting'); /* first-paint helpers — never block sign-in */ }
   /* Re-render sidebar lists now that the cache is fresh. */
   window.renderRecents&&window.renderRecents();
   window.renderMistakes&&window.renderMistakes();
@@ -358,8 +359,8 @@ export function revealAppAndHydrate(onHydrated){
   try{ hydration=afterAuthEnter(); }catch(err){ hydration=Promise.reject(err); }
   hideGate();
   Promise.resolve(hydration)
-    .catch(function(err){ try{console.error("[auth] post-auth hydration failed",err)}catch(_){} })
-    .then(function(){ if(typeof onHydrated==="function")try{onHydrated()}catch(_){} });
+    .catch(function(err){ try{console.error("[auth] post-auth hydration failed",err)}catch(e){reportSwallow(e, 'auth/index.hydrate.log'); } })
+    .then(function(){ if(typeof onHydrated==="function")try{onHydrated()}catch(e){reportSwallow(e, 'auth/index.hydrate.onHydrated'); } });
 }
 
 /* ── Submit handlers ── */
@@ -374,7 +375,7 @@ export async function submitAuthSignin(){
   var markAuthSuccess=window.markAuthSuccess;
   try{
     var r=await apiFetch("/api/auth/login",{method:"POST",_authEndpoint:true,body:{email,password}});
-    if(guest)try{localStorage.setItem("socrates-guest","1")}catch {}
+    if(guest)try{localStorage.setItem("socrates-guest","1")}catch(e){reportSwallow(e, 'auth/index.submitAuthSignin.markGuest'); }
     markAuthSuccess&&markAuthSuccess();
     try{
       var me=await apiFetch("/api/auth/me",{_authEndpoint:true});
@@ -390,14 +391,14 @@ export async function submitAuthSignin(){
         await new Promise(function(r2){setTimeout(r2,150)});
         var me2=await apiFetch("/api/auth/me",{_authEndpoint:true});
         if(me2&&me2.user)window.setCurrentUser(me2.user);
-      }catch(__){ /* still nothing — proceed with what we have */ }
+      }catch(e){ reportSwallow(e, 'auth/index.submitAuthSignin.recheckMe'); /* still nothing — proceed with what we have */ }
     }
     revealAppAndHydrate();
   }catch(e){
     showGate();
     if(e.status===403 && e.code==="UNVERIFIED"){
       document.getElementById("authVerifyEmail").textContent=email;
-      try{document.getElementById("authResendEmail").value=email}catch(_){}
+      try{document.getElementById("authResendEmail").value=email}catch(e){reportSwallow(e, 'auth/index.submitAuthSignin.prefillResendEmail'); }
       showAuthView("authVerifySentView");
       return;
     }
@@ -471,7 +472,7 @@ export async function submitAuthVerify(token){
           await new Promise(function(r2){setTimeout(r2,150)});
           var me2=await apiFetch("/api/auth/me",{_authEndpoint:true});
           if(me2&&me2.user)window.setCurrentUser(me2.user);
-        }catch(__){ /* fall through with what we have */ }
+        }catch(e){ reportSwallow(e, 'auth/index.submitAuthLoginWithCode.recheckMe'); /* fall through with what we have */ }
       }
     }
     revealAppAndHydrate();
@@ -562,7 +563,7 @@ export async function submitAuthLoginWithCode(){
     }catch(_){
       window.setCurrentUser(r.user);
     }
-    if(guest)try{localStorage.setItem("socrates-guest","1")}catch {}
+    if(guest)try{localStorage.setItem("socrates-guest","1")}catch(e){reportSwallow(e, 'auth/index.submitAuthLoginWithCode.markGuest'); }
     revealAppAndHydrate();
   }catch(e){
     setAuthError("authCodeError",e.message);
@@ -576,5 +577,5 @@ export async function resendAuthCode(){
   if(!email)return;
   try{
     await apiFetch("/api/auth/send-code",{method:"POST",_authEndpoint:true,body:{email}});
-  }catch(_){ /* swallow — user can retry from the UI */ }
+  }catch(e){ reportSwallow(e, 'auth/index.sendAuthCode'); /* swallow — user can retry from the UI */ }
 }
