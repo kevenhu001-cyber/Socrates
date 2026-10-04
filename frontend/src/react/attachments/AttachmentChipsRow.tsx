@@ -10,7 +10,7 @@ import {
   useAttachmentsSnapshot,
 } from './attachments.bridge';
 import { getAttachmentIcon } from './fileIcons';
-import { t as _t } from '../legacy/gateway';
+import { t as _t } from '../legacy/gateway.ts';
 import { formatAttachmentSize } from '../../attachments.js';
 import type { AttachmentEntry } from './types';
 

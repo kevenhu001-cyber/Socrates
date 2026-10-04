@@ -1,7 +1,7 @@
 import { createRoot, type Root } from 'react-dom/client';
 import React, { useMemo, useState } from 'react';
 
-import { t as _t } from '../../legacy/gateway';
+import { t as _t } from '../../legacy/gateway.ts';
 import { installWorkspaceBridge, useWorkspaceSnapshot, useWorkspaceDispatch } from './workspace.bridge';
 import { getConnectorIconMarkup } from '../../../connector-icons';
 import { PluginDetailView } from './PluginDetailView';

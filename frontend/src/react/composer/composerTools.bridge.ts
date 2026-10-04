@@ -9,7 +9,7 @@
  */
 
 import { createImmutableBridge, useBridge, useBridgeSelector } from '../../lib/bridge';
-import { getLegacyActions, t as legacyT } from '../legacy/gateway';
+import { getLegacyActions, t as legacyT } from '../legacy/gateway.ts';
 import { loadPluginCatalog, normalisePluginId } from './pluginCatalog';
 import type {
   ComposerMode,

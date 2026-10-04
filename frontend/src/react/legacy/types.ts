@@ -99,6 +99,8 @@ export interface LegacyComposer {
   startSession(): Promise<void> | void;
   submitChatMessage(): Promise<void> | void;
   stopChatResponse(): void;
+  /** Re-sync the model pill's tooltip/aria copy after the active model changes. */
+  syncEffortUI(): void;
 }
 
 export interface LegacyCmdK {

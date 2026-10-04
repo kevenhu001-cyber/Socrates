@@ -2,7 +2,7 @@ import { hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
 import React, { useCallback, useEffect, useRef, useState, memo } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import { getLegacyActions, t } from '../legacy/gateway';
+import { getLegacyActions, getLegacyActionsOrNull, t } from '../legacy/gateway.ts';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { installSessionListBridge, setCurrentSessionId } from './sessionList.bridge';
 import { useSessionListSnapshot, formatRelativeTime } from './sessionList.bridge';
@@ -204,7 +204,7 @@ function SessionRowBase({ session, isActive, onPick, onTag, onArchive, onDelete,
               setActionsOpen(false);
               const shareBtn = document.getElementById('shareBtn');
               if (shareBtn) shareBtn.click();
-              else if (typeof window !== 'undefined' && (window as any).openShareModal) (window as any).openShareModal();
+              else getLegacyActionsOrNull()?.messages.openShareModal();
             }}
           >
             <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: SHARE_ICON }} />

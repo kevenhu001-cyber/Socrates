@@ -2,7 +2,7 @@ import { markHostMountedBy } from '../lib/boot/ownership';
 import { useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import { getLegacyActions, i18n } from '../legacy/gateway';
+import { getLegacyActions, i18n } from '../legacy/gateway.ts';
 import { installConfirmBridge, useConfirmSnapshot } from './confirm.bridge';
 import { trapFocus, setModalOpen } from '../../ui/modalA11y.js';
 

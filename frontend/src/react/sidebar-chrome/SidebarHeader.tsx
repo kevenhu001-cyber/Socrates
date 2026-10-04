@@ -1,5 +1,5 @@
 
-import { getLegacyActions, t } from '../legacy/gateway';
+import { getLegacyActions, t } from '../legacy/gateway.ts';
 import { useUserInfo } from './sidebarChrome.bridge';
 
 const NEW_CHAT_ICON =

@@ -14,7 +14,7 @@
  * error / stopped phases keep their own block — they replace the answer,
  * not continue it.
  */
-import { getLegacyActions, i18n } from '../legacy/gateway.js';
+import { getLegacyActions, i18n } from '../legacy/gateway.ts';
 import type { LiveTurnStatus } from '../types/domain';
 
 export interface TurnStatusProps {

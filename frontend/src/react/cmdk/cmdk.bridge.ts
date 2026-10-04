@@ -15,7 +15,7 @@
  */
 
 import { createImmutableBridge, useBridge, useBridgeSelector } from '../../lib/bridge';
-import { getLegacyActions } from '../legacy/gateway';
+import { getLegacyActions } from '../legacy/gateway.ts';
 import type {
   CmdKBridge,
   CmdKHit,

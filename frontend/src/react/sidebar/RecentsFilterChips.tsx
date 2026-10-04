@@ -2,7 +2,7 @@ import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boo
 import { createRoot, type Root } from 'react-dom/client';
 
 import { getKnownTagsFromSessions } from '../../ui/recentsHelpers.js';
-import { getLegacyGlobalValue, t } from '../legacy/gateway';
+import { getLegacyGlobalValue, t } from '../legacy/gateway.ts';
 import {
   useRecentsFilter,
   useRecentsFilterCommands,

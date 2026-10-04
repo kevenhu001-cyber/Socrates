@@ -1,4 +1,5 @@
 import { apiFetch } from '../../util/api.js';
+import { getConnectorIconMarkupFn } from '../legacy/gateway.ts';
 
 export type PluginConnectionStatus =
   | 'connected'
@@ -144,15 +145,7 @@ export function resetPluginCatalogForTests(): void {
   catalogRequest = null;
 }
 
-declare global {
-  interface Window {
-    getConnectorIconMarkup?: (id: string) => string;
-  }
-}
-
 export function pluginIconMarkup(id: string): string {
-  if (typeof window !== 'undefined' && typeof window.getConnectorIconMarkup === 'function') {
-    return window.getConnectorIconMarkup(id) || '';
-  }
-  return '';
+  const fn = getConnectorIconMarkupFn();
+  return fn ? fn(id) || '' : '';
 }

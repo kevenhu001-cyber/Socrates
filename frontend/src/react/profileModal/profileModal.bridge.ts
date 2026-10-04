@@ -8,7 +8,7 @@
  */
 
 import { createImmutableBridge, useBridge, useBridgeSelector } from '../../lib/bridge';
-import { getLegacyActions } from '../legacy/gateway';
+import { getLegacyActions } from '../legacy/gateway.ts';
 import type { ProfileBridge, ProfileSnapshot } from './types';
 
 declare global {

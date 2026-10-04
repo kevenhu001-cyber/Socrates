@@ -8,7 +8,7 @@
  */
 import { useEffect } from 'react';
 
-import { getLegacyActions } from '../legacy/gateway.js';
+import { getLegacyActions } from '../legacy/gateway.ts';
 import type { ArtifactOutput as ArtifactOutputData } from '../tool-run/toolRunModel';
 
 export interface ArtifactOutputProps {

@@ -20,7 +20,7 @@ import { ExtensionToken } from './extensionToken';
 import { useAutoHeight } from './useAutoHeight';
 import type { ComposerExtensionToken } from './types';
 import { addComposerFiles } from '../../attachments/render.js';
-import { getLegacyActions, i18n } from '../legacy/gateway';
+import { getLegacyActions, i18n, isWebSearchOn } from '../legacy/gateway.ts';
 import {
   removeComposerPlugin,
   useComposerPluginSelectionSnapshot,
@@ -141,7 +141,7 @@ function FormattingToolbar({ editor }: { editor: Editor }) {
 const DESKTOP_COMPOSER_QUERY = '(min-width: 769px)';
 
 function useWebSearchOn(): boolean {
-  const read = () => Boolean((window as Window & { webSearchOn?: boolean }).webSearchOn)
+  const read = () => isWebSearchOn()
     && window.matchMedia(DESKTOP_COMPOSER_QUERY).matches;
   const [on, setOn] = useState(read);
   useEffect(() => {

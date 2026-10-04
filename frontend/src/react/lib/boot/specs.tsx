@@ -24,7 +24,7 @@ import { mountSessionList } from '../../session-list';
 import { mountMessageList } from '../../message-list';
 import { WorkflowLayer } from '../../extensions/WorkflowLayer';
 import { installThinkingPanelBridge, mountThinkingPanel } from '../../thinking-panel';
-import { getLegacyActions, i18n } from '../../legacy/gateway';
+import { getLegacyActions, i18n } from '../../legacy/gateway.ts';
 import { readComposerSurface } from '../../composer-input/controller';
 import { hydrateAttachmentChipsRows } from '../../attachments/AttachmentChipsRow';
 import { installWorkspaceBridge } from '../../pages/workspace/workspace.bridge';

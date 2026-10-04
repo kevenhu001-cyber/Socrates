@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 
-import { getLegacyActions, i18n } from '../legacy/gateway';
+import { getApiFetch, getCurrentLang, getCurrentUser, getLegacyActions, i18n } from '../legacy/gateway.ts';
 import { installSettingsBridge, useSettingsSnapshot } from './settings.bridge';
 import { useProfileDispatch, useProfileSnapshot } from '../profileModal/profileModal.bridge';
 import { trapFocus, setModalOpen } from '../../ui/modalA11y.js';
@@ -25,7 +25,7 @@ function SettingsModal() {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [section, setSection] = useState('general');
   const [query, setQuery] = useState('');
-  const [uiLang, setUiLang] = useState(() => (window as any)._currentLang === 'en' ? 'en' : 'zh');
+  const [uiLang, setUiLang] = useState(() => getCurrentLang());
   const [saveError, setSaveError] = useState('');
   const [imageModel, setImageModel] = useState(() => {
     try { return localStorage.getItem('socrates-image-model') || ''; } catch { return ''; }
@@ -49,8 +49,11 @@ function SettingsModal() {
   const label = (zh: string, en: string) => lang === 'zh' ? zh : en;
   const savePreference = async (patch: Record<string, unknown>) => {
     try {
-      const result = await (window as any).apiFetch('/api/users/me/preferences', { method: 'PATCH', body: patch });
-      if ((window as any).CURRENT_USER) (window as any).CURRENT_USER.preferences = result.preferences;
+      const api = getApiFetch();
+      if (!api) throw new Error('apiFetch unavailable');
+      const result = await api('/api/users/me/preferences', { method: 'PATCH', body: patch });
+      const user = getCurrentUser<{ preferences?: unknown }>();
+      if (user) user.preferences = result.preferences;
       setSaveError('');
     } catch {
       setSaveError(label('偏好已保存在此设备；账户同步暂不可用。', 'Saved on this device; account sync is unavailable.'));
@@ -157,7 +160,7 @@ function SettingsModal() {
               </select>
             </label>
             <label className="settings-choice">{label('语言', 'Language')}
-              <select value={lang} onChange={(event) => { setUiLang(event.target.value); (window as any).setLang?.(event.target.value); void savePreference({ language: event.target.value }); }}>
+              <select value={lang} onChange={(event) => { setUiLang(event.target.value as 'zh' | 'en'); getLegacyActions().profile.setLang(event.target.value); void savePreference({ language: event.target.value }); }}>
                 <option value="zh">中文</option><option value="en">English</option>
               </select>
             </label>
@@ -341,7 +344,7 @@ function SettingsModal() {
                           removeMemory(m.id);
                           setMemories(getAllMemories());
                           try {
-                            (window as any).apiFetch?.(`/api/memory/${m.id}`, { method: 'DELETE' }).catch(() => {});
+                            getApiFetch()?.(`/api/memory/${m.id}`, { method: 'DELETE' })?.catch(() => {});
                           } catch (_) {}
                         }}
                       >
@@ -361,10 +364,10 @@ function SettingsModal() {
                   setMemory(k, newMemoryVal.trim());
                   setMemories(getAllMemories());
                   try {
-                    (window as any).apiFetch?.('/api/memory', {
+                    getApiFetch()?.('/api/memory', {
                       method: 'POST',
                       body: { text: `${k}: ${newMemoryVal.trim()}` },
-                    }).catch(() => {});
+                    })?.catch(() => {});
                   } catch (_) {}
                   setNewMemoryKey('');
                   setNewMemoryVal('');

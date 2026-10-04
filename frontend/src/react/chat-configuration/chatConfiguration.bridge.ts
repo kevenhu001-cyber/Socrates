@@ -1,4 +1,5 @@
 import { createImmutableBridge, useBridge } from '../../lib/bridge/index.ts';
+import { getLegacyGlobalValue } from '../legacy/gateway.ts';
 import { getStoredReasoningEffort, getStoredResponseSpeed } from '../../config/chatPreferences.ts';
 import { restingRect } from '../../ui/pressFeedback.js';
 import type { ChatConfigurationBridge, ChatConfigurationSnapshot, ChatProviderOption } from './types';
@@ -46,7 +47,7 @@ export function openChatConfiguration(trigger?: HTMLElement | null): void {
     closeChatConfiguration();
     return;
   }
-  const config = window.apiConfig || {};
+  const config = getLegacyGlobalValue('apiConfig', {} as { activeId?: string; providers?: ChatProviderOption[] });
   returnFocus = trigger || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
   /* The trigger is still mid-press when its click opens the popover. */
   const rect = trigger ? restingRect(trigger) : null;

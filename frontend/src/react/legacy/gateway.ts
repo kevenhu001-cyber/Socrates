@@ -4,7 +4,7 @@
 // React code MUST NOT read window.* directly. This file is the only exception.
 //
 // Usage:
-//   import { getLegacyActions, t } from '../legacy/gateway';
+//   import { getLegacyActions, t } from '../legacy/gateway.ts';
 //
 //   const { messages } = getLegacyActions();
 //   messages.editUserMessage(id);
@@ -47,6 +47,15 @@ export function getLegacyActions(): LegacyActions {
 }
 
 /**
+ * Optional bridge access. Prefer getLegacyActions() where the app is known to
+ * have booted; use this in handlers that must degrade to a no-op instead of
+ * throwing when the bridge is absent (late boot, teardown, tests).
+ */
+export function getLegacyActionsOrNull(): LegacyActions | null {
+  return ((window as any).__socratesLegacy as LegacyActions | undefined) ?? null;
+}
+
+/**
  * Invalidate the cached bridge reference.
  * Only needed in test environments where the bridge is swapped between runs.
  */
@@ -82,6 +91,19 @@ export function i18n(key: string, fallback: string): string {
   return v !== key ? v : fallback;
 }
 
+// ─── Typed accessors for lazily-published legacy globals ─────────────────────
+
+/**
+ * Connector icon markup helper. Published on window by the legacy layer
+ * (windowExports.js) because connector-icons.ts is a ~40 KB SVG module the
+ * app loads lazily; resolving it through here keeps the direct window read
+ * in this file instead of scattering it across React components.
+ */
+export function getConnectorIconMarkupFn(): ((id: string) => string) | null {
+  const fn = (window as any).getConnectorIconMarkup;
+  return typeof fn === 'function' ? fn : null;
+}
+
 // ─── Temporary global cache access ───────────────────────────────────────────
 
 export function getLegacyGlobalValue<K extends string, V = unknown>(
@@ -90,4 +112,42 @@ export function getLegacyGlobalValue<K extends string, V = unknown>(
 ): V {
   if (key in (window as any)) return (window as any)[key] as V;
   return fallback;
+}
+
+// ─── Typed reads of standalone legacy globals ───────────────────────────────
+// A handful of legacy globals are not part of the __socratesLegacy bridge but
+// are still read by React (the web-search toggle, the i18n language code, the
+// authenticated fetch helper, and the signed-in user record). Expose them
+// through typed accessors so the direct window read stays here.
+
+/**
+ * Legacy web-search toggle. config/providers.js owns the flag and broadcasts
+ * `socrates:websearchchange`; callers subscribe to that event for updates.
+ */
+export function isWebSearchOn(): boolean {
+  return Boolean((window as any).webSearchOn);
+}
+
+/** Active UI language code tracked by the legacy i18n layer (defaults to zh). */
+export function getCurrentLang(): 'zh' | 'en' {
+  return (window as any)._currentLang === 'en' ? 'en' : 'zh';
+}
+
+type ApiFetchFn = (
+  url: string,
+  init?: Record<string, unknown>,
+) => Promise<any>;
+
+/**
+ * Legacy authenticated fetch helper, published in windowExports.js. Returns
+ * null before the app boots so call sites keep their optional-chaining shape.
+ */
+export function getApiFetch(): ApiFetchFn | null {
+  const fn = (window as any).apiFetch;
+  return typeof fn === 'function' ? (fn as ApiFetchFn) : null;
+}
+
+/** The signed-in user record published by the legacy auth layer, or null. */
+export function getCurrentUser<T = Record<string, any>>(): T | null {
+  return (((window as any).CURRENT_USER) ?? null) as T | null;
 }

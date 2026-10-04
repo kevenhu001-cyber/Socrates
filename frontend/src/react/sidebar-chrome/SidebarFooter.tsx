@@ -1,5 +1,5 @@
 import { useUserInfo } from './sidebarChrome.bridge';
-import { t as _t } from '../legacy/gateway';
+import { t as _t } from '../legacy/gateway.ts';
 
 function i18n(key: string, fallback: string): string {
   const v = _t(key);

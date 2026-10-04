@@ -1,7 +1,7 @@
 import { createRoot, type Root } from 'react-dom/client';
 import { useMemo, useState, type ReactNode } from 'react';
 
-import { t as _t } from '../../legacy/gateway';
+import { t as _t } from '../../legacy/gateway.ts';
 import {
   installScheduledBridge,
   useScheduledDispatch,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { i18n, getLegacyActions } from '../../legacy/gateway';
+import { i18n, getLegacyActions } from '../../legacy/gateway.ts';
 import { focusComposer } from '../../composer-input';
 import { toggleComposerPlugin } from '../../composer/pluginSelection';
 import { getConnectorIconMarkup } from '../../../connector-icons';

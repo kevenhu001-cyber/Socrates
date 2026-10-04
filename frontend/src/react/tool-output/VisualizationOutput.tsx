@@ -15,7 +15,7 @@
  */
 import { useEffect } from 'react';
 
-import { getLegacyActions } from '../legacy/gateway.js';
+import { getLegacyActions } from '../legacy/gateway.ts';
 import {
   visualizationSpecKey,
   type VisualizationOutput as VisualizationOutputData,

@@ -2,7 +2,7 @@ import { clearHostMounted, markHostMountedBy } from '../lib/boot/ownership';
 import { useEffect, useMemo, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
-import { getLegacyGlobalValue, t as _t } from '../legacy/gateway';
+import { getLegacyGlobalValue, t as _t } from '../legacy/gateway.ts';
 import { repositionComposerTools } from '../../ui/composerTools';
 import { installComposerToolsBridge } from './composerTools.bridge';
 import {

@@ -1,0 +1,5 @@
+{
+  "count": 0,
+  "note": "React direct legacy-global reads. May only go down. Run with --update after an intentional reduction.",
+  "generatedBy": "check-react-globals.mjs --update"
+}

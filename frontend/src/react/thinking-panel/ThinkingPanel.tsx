@@ -5,7 +5,7 @@ import {
   getThinkingPanelSnapshot,
   subscribeToThinkingPanel,
 } from './thinkingPanel.bridge';
-import { getLegacyActions } from '../legacy/gateway.js';
+import { getLegacyActions } from '../legacy/gateway.ts';
 
 function translate(key: string, fallback: string): string {
   try {

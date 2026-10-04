@@ -23,7 +23,7 @@ import {
   recordReveal,
   type RevealEntry,
 } from '../../render/tailReveal.js';
-import { getLegacyActions } from '../legacy/gateway.js';
+import { getLegacyActions } from '../legacy/gateway.ts';
 import {
   buildTurnLayout,
   stripLegacyToolHtml,

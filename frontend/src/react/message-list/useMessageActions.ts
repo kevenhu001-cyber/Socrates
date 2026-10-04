@@ -1,6 +1,6 @@
 import type { LegacyChatMessage } from '../types/domain';
 import type { MessageToolbarCallbacks } from './types';
-import { getLegacyActions } from '../legacy/gateway';
+import { getLegacyActions } from '../legacy/gateway.ts';
 
 function messageIdOf(message: LegacyChatMessage): string | null {
   if (message.id) return message.id;

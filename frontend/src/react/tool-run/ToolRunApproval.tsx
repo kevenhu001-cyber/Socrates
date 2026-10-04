@@ -10,7 +10,7 @@
  * flight so the status line ("Saving your decision…", "Approved") arrives as
  * data rather than as a textContent write into nodes it no longer owns.
  */
-import { getLegacyActions, i18n } from '../legacy/gateway.js';
+import { getLegacyActions, i18n } from '../legacy/gateway.ts';
 import type { ApprovalView } from './toolRunModel';
 
 export interface ToolRunApprovalProps {

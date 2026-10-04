@@ -20,7 +20,7 @@
  */
 
 import { createImmutableBridge, useBridge } from '../../lib/bridge';
-import { getLegacyActions } from '../legacy/gateway';
+import { getLegacyActions } from '../legacy/gateway.ts';
 import type { CheatsheetBridge, CheatsheetSnapshot } from './types';
 
 declare global {

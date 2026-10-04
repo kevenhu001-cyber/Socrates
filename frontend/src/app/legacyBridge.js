@@ -57,6 +57,7 @@ import { retryLiveTurn, decideLiveApproval } from '../chat/liveTurn.js';
 import { startSession } from '../chat/sessionBootstrap.js';
 import { submitChatMessage } from '../chat/sendPipeline.js';
 import { setRecentsSearch } from '../ui/recentsView.js';
+import { syncEffortUI } from '../ui/effortPicker.js';
 
 /* Diagnostic entry points (noop until startSession installs per-session closures). */
 window.cancelDiagnostic = function () {};
@@ -244,6 +245,7 @@ window.__socratesLegacy = {
     startSession: startSession,
     submitChatMessage: submitChatMessage,
     stopChatResponse: stopChatResponse,
+    syncEffortUI: syncEffortUI,
   },
   cmdK: {
     openCmdK: window.openCmdK,

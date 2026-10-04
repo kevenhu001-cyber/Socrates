@@ -5,7 +5,7 @@ import { AssistantTurn } from '../tool-run/AssistantTurn';
 import type { LegacyChatMessage } from '../types/domain';
 import { MessageToolbar } from './MessageToolbar';
 import { CanvasBlock } from '../canvas';
-import { getLegacyActions, t } from '../legacy/gateway';
+import { getLegacyActions, t } from '../legacy/gateway.ts';
 import { getAttachmentIcon, type IconSource } from '../attachments/fileIcons';
 
 interface MessageItemProps {

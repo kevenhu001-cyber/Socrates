@@ -1,6 +1,7 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
 import type { LegacyChatMessage } from '../types/domain';
+import { getLegacyGlobalValue } from '../legacy/gateway.ts';
 import { sanitizeHtml } from './sanitize';
 import { copyToClipboard } from './clipboard';
 import { useTranslation } from './useTranslation';
@@ -63,7 +64,7 @@ export function CanvasBlock({ message, html, canvasId, originalText }: CanvasBlo
       const dom = innerRef.current?.innerHTML ?? '';
       const safe = sanitizeHtml(dom);
       if (innerRef.current) innerRef.current.innerHTML = safe;
-      const state = (typeof window !== 'undefined' ? (window as unknown as { state?: MutableState }).state : null);
+      const state = getLegacyGlobalValue('state', null as MutableState | null);
       const entry = state?.messages?.find((m) => m && m.canvasId === canvasId);
       if (entry) entry.editedText = safe;
       setHasEdited(true);
@@ -100,9 +101,10 @@ export function CanvasBlock({ message, html, canvasId, originalText }: CanvasBlo
        composer as the next user turn. Wire through the existing
        legacyActions bridge rather than adding a new module boundary. */
     type ComposerActions = { setMarkdown?: (surface: 'chat' | 'topic', text: string) => void; };
-    const actions = (typeof window !== 'undefined'
-      ? (window as unknown as { legacyActions?: { composer?: ComposerActions } }).legacyActions?.composer
-      : null);
+    const actions = getLegacyGlobalValue(
+      'legacyActions',
+      null as { composer?: ComposerActions } | null,
+    )?.composer;
     if (actions && typeof actions.setMarkdown === 'function') {
       actions.setMarkdown('chat', text);
     } else {
@@ -128,7 +130,7 @@ export function CanvasBlock({ message, html, canvasId, originalText }: CanvasBlo
   const extensionIcon = typeof message._extensionIcon === 'string' ? message._extensionIcon : '';
   const extensionLabel = (() => {
     const k = 'composer.write';
-    const v = (typeof window !== 'undefined' && window.t) ? window.t(k) : k;
+    const v = t(k);
     return v !== k ? v : 'write';
   })();
 

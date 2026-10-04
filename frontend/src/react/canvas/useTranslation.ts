@@ -5,6 +5,8 @@
  * missing i18n entry never breaks the canvas UI.
  */
 
+import { t } from '../legacy/gateway.ts';
+
 type Translator = (key: string, fallback?: string) => string;
 
 const FALLBACKS: Record<string, string> = {
@@ -21,8 +23,7 @@ const FALLBACKS: Record<string, string> = {
 
 export function useTranslation(): Translator {
   return function translate(key: string, fallback?: string): string {
-    const fn = typeof window !== 'undefined' ? window.t : undefined;
-    const v = typeof fn === 'function' ? fn(key) : key;
+    const v = t(key);
     if (typeof v === 'string' && v && v !== key) return v;
     return FALLBACKS[key] ?? fallback ?? key;
   };

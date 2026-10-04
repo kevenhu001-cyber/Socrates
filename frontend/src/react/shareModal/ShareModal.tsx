@@ -1,7 +1,7 @@
 import { clearHostMounted, markHostMountedBy } from '../lib/boot/ownership';
 import { createRoot, type Root } from 'react-dom/client';
 
-import { t as _t } from '../legacy/gateway';
+import { t as _t } from '../legacy/gateway.ts';
 import {
   installShareBridge,
   useShareDispatch,

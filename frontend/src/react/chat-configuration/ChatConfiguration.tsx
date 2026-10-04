@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 
 import { saveChatPreferences, type ReasoningEffort, type ResponseSpeed } from '../../config/chatPreferences';
 import { pickActiveProviderById } from '../../pickers.js';
-import { i18n } from '../legacy/gateway';
+import { getLegacyActions, i18n } from '../legacy/gateway.ts';
 import { markHostMountedBy } from '../lib/boot/ownership';
 import {
   closeChatConfiguration,
@@ -121,14 +121,14 @@ export function ChatConfiguration() {
     if (id && id !== snapshot.activeId) {
       pickActiveProviderById(id);
       /* The pill's tooltip/aria copy carries the active model name. */
-      window.syncEffortUI?.();
+      getLegacyActions().composer.syncEffortUI();
     }
     closeChatConfiguration();
   };
 
   const openSettings = () => {
     closeChatConfiguration(false);
-    window.openSettings?.();
+    getLegacyActions().navigation.openSettings();
   };
 
   const sliderIndex = EFFORT_STOPS.indexOf(effort);

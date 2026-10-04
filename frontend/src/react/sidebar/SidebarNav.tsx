@@ -2,7 +2,7 @@ import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boo
 import { createRoot, type Root } from 'react-dom/client';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 
-import { getLegacyActions, t as _t } from '../legacy/gateway';
+import { getLegacyActions, t as _t } from '../legacy/gateway.ts';
 import { seedSidebarBridgesFromLegacy, useActiveNav, useSidebarNavCommands } from './sidebar.bridge';
 import type { SidebarNavKey } from './types';
 
@@ -129,7 +129,7 @@ function SidebarNav() {
                 /* The ⌘K badge names the command palette shortcut, so a
                    click there must open the palette instead of resetting. */
                 if (event.target instanceof Element && event.target.closest('.nav-kbd')) {
-                  window.openCmdK?.();
+                  getLegacyActions().cmdK.openCmdK();
                   return;
                 }
                 getLegacyActions().navigation.startNewChat();
