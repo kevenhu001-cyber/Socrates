@@ -17,8 +17,8 @@
  *     .composer-footer
  *       .footer-left-group > .composer-tools-trigger (+ file input)
  *       .effort-picker > .effort-trigger
- *       .mobile-mic-btn
- *       .composer-primary-btn     (voice / send / stop)
+ *       .mobile-mic-btn        (dictation — the only voice entry point)
+ *       .composer-primary-btn  (send / stop; disabled at 0.3 when empty)
  *
  * The wrappers between the shell and its controls are `display: contents`,
  * so the editor, the chip row and every control are grid items of the shell.
@@ -429,6 +429,17 @@
 @media (max-width: 768px) {
   #appShell .composer-shell:not(.voice-recording-active),
   #appShell .composer-shell.composer-multiline:not(.voice-recording-active),
+  /* P_composer-single — the landing and conversation shells are one node
+     with one grid. A landing-only 4-track grid that hid .effort-picker
+     landed in a983ed9f and broke e2e/composer-parity.spec.mjs on both phone
+     themes: the contract is that the shell keeps the same DOM shape and the
+     same computed styles across the landing → chat flip.
+
+     It was also a capability gap, not a layout necessity. There is exactly
+     one .effort-picker in index.html and no alternate affordance, so a phone
+     user could set reasoning effort from chat but not before their first
+     message, while the desktop landing could. The 4-track row fit fine
+     anyway: 36 + 36 + 36 fixed controls leave ~160px for the chip strip. */
   #appShell .composer-shell:has(.composer-plugin-chips):not(.voice-recording-active) {
     grid-template-areas:
       "editor editor editor editor editor"
@@ -440,15 +451,6 @@
     border: 1px solid var(--ui-composer-border);
     border-radius: var(--ui-radius-composer-desktop);
     box-shadow: 0 4px 16px rgb(0 0 0 / 12%);
-  }
-  #appShell .topic-composer-slot .composer-shell:not(.voice-recording-active) {
-    grid-template-areas:
-      "editor editor editor editor"
-      "plus   chips  mic    send";
-    grid-template-columns: var(--composer-control) 1fr var(--composer-control) var(--composer-control);
-  }
-  #appShell .topic-composer-slot .composer-shell:not(.voice-recording-active) .effort-picker {
-    display: none;
   }
   #appShell .composer-shell:has(> .attachment-chips:not(.hidden)):not(.voice-recording-active) {
     padding-top: 12px;

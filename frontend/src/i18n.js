@@ -103,6 +103,9 @@ var I18N={
     "chat.inputPlaceholder":"Ask Socrates",
     "chat.hint":"Shift+Enter for new line",
     "chat.send":"Send",
+    /* P_composer-primary-split — the composer primary button is submit-only
+     * and announces the live-turn action while a turn streams. */
+    "chat.stop":"Stop generating",
     /* P_attachments — UI strings for the chat-input attachment chip
      * strip, paperclip button, and toast feedback. Kept short so
      * the chips don't wrap. */
@@ -289,7 +292,9 @@ var I18N={
     "sidebar.plugins.disabled":"Disabled",
     "topbar.modeChat":"Chat",
     "topbar.modeTutor":"Tutor",
-    "voice.input":"Voice input",
+    /* P_composer-primary-split — voice.input retired with the primary's
+       empty-state dictation. Dictation is announced by chrome.voiceInput on
+       #composerMicBtn; the primary speaks chat.send / chat.stop. */
     "voice.listening":"Listening…",
     "voice.processing":"Processing voice input…",
     "voice.stop":"Stop voice input",
@@ -594,6 +599,17 @@ var I18N={
     "dialog.project.newChat":"New chat in project",
     "dialog.project.moveCurrent":"Move current chat here",
     "dialog.project.note":"Project instructions are saved with the project. Files and chats remain available as shared context for future work.",
+    "dialog.project.runsTitle":"Workspace agent runs",
+    "dialog.project.runsLoading":"Loading agent runs…",
+    "dialog.project.runsEmpty":"Runs, approvals, and generated artifacts will appear here.",
+    "dialog.project.runsFailed":"Run history is unavailable right now.",
+    "dialog.project.untitledRun":"Untitled agent task",
+    "dialog.project.viewRun":"View run",
+    "dialog.project.runDetails":"Agent run",
+    "dialog.project.runDetailsLoading":"Loading the execution record…",
+    "dialog.project.noRunSummary":"No summary was saved.",
+    "dialog.project.artifacts":"Created artifacts",
+    "dialog.project.activity":"Activity",
     "dialog.task.editTitle":"Edit task",
     "dialog.task.newTitle":"Schedule a task",
     "dialog.task.subtitle":"Choose what should run and when to check back.",
@@ -602,6 +618,12 @@ var I18N={
     "dialog.task.prompt":"Prompt",
     "dialog.task.promptPh":"What should Socrates do when this task runs?",
     "dialog.task.repeat":"Repeat",
+    "dialog.task.agent":"Agent",
+    "dialog.task.nativeAgent":"Socrates · native tools",
+    "dialog.task.codexAgent":"Pi Agent · project workspace",
+    "dialog.task.project":"Project",
+    "dialog.task.noProject":"No project",
+    "dialog.task.codexNote":"Pi Agent scheduled runs work inside the selected project workspace with server-enforced disk limits.",
     "dialog.task.firstRun":"First run",
     "dialog.task.note":"Tasks run in the background. Each result is saved as a chat in Recents.",
     "dialog.task.save":"Save task",
@@ -692,6 +714,7 @@ var I18N={
     "composer.deepThinking":"Deep thinking",
     "composer.explore":"Explore",
     "composer.exploreHint":"Scope → batch search → report",
+    "composer.explore.planning":"Scoping the question…",
     "composer.deepResearch":"Deep Research",
     "composer.deepResearch.hint":"Enter a research topic above, then press send.",
     "composer.exam":"Generate exam",
@@ -714,6 +737,7 @@ var I18N={
     "composer.researchHint":"Search and compare evidence",
     "composer.deepResearchHint":"Plan → search → read → report",
     "composer.analyzeHint":"Calculate, chart and export",
+    "composer.analyze.planning":"Preparing the analysis…",
     "composer.examHint":"Blueprint, questions and grading",
     "picker.modelSection":"Model",
     "picker.effortSection":"Reasoning",
@@ -1024,6 +1048,7 @@ var I18N={
     "toast.filesAdded":"{n} files added to Library",
     "toast.uploadFailed":"Some files could not be uploaded",
     "toast.zoteroConnected":"Zotero connected",
+    "toast.appConnected":"App connected",
     "toast.appDisconnected":"App disconnected",
     "toast.appDisconnectFailed":"Could not disconnect app",
     "toast.shareStartFirst":"Start a chat first to share it",
@@ -1396,10 +1421,19 @@ function applyI18n(){
   if(tdisc)tdisc.textContent=t(appMode==="chat"?"topic.disclaimerChat":"profile.disclaimerTutor");
   var cpb=document.getElementById("composerPrimaryBtn");
   if(cpb&&!cpb.classList.contains("chat-stop")&&!cpb.classList.contains("agent-stop")){
-    var composerLabel=t(cpb.classList.contains("active")?"chat.send":"voice.input");
+    /* P_composer-primary-split — the primary is submit-only, so its label is
+       always chat.send. Voice input is announced by #composerMicBtn. The old
+       send/voice-input swap here is what let the two buttons share one
+       accessible name. Fall through to updateComposerBtn for the disabled
+       state instead of forcing it open on every language change. */
+    var composerLabel=t("chat.send");
     cpb.setAttribute("aria-label",composerLabel);
     cpb.setAttribute("title",composerLabel);
-    cpb.disabled=false;
+    if(typeof window.updateComposerBtn==="function"){
+      try{window.updateComposerBtn();}catch(_){}
+    }else{
+      cpb.disabled=!cpb.classList.contains("active");
+    }
   }
   var el=document.getElementById("extensionsLabel");
   if(el)el.textContent=t("topic.extensions");
@@ -1412,8 +1446,6 @@ function applyI18n(){
   /* P_chatgpt-landing — the reasoning-effort trigger label (高/中/低) is
      driven by JS, not a data-i18n-key element, so refresh it here too. */
   if(typeof window.syncEffortUI==="function"){try{window.syncEffortUI();}catch(_){}}
-  /* The chat-header mode badge (Tutor/Chat) is JS-rendered too. */
-  if(typeof window.updateModeBadge==="function"){try{window.updateModeBadge();}catch(_){}}
 }
 /* Load saved language preference. _currentLang is the single source
    of truth at runtime; setLang() persists changes and applyI18n()

@@ -96,9 +96,19 @@
 
   /* The quick-actions row sits after the composer in the DOM; pull it
      above it in the flex column. (The home-suggestions-wrap container was
-     removed from index.html — see section-7 note in ref-baseline.css.) */
+     removed from index.html — see section-7 note in ref-baseline.css.)
+
+     This was `order: 0`, which is a no-op: every sibling already resolves
+     to 0, so the row stayed below the composer. That only went unnoticed
+     while the row was display:none; once the landing shortcuts were
+     restored on 2026-10-04 the row landed in the bottom action band and
+     pushed the capsule up, breaking the "composer rests on the safe-area
+     inset" contract asserted by e2e/landing-light-visual.spec.mjs.
+     -1 puts the shortcuts above the composer and hands the bottom band
+     back to the capsule, which is what the comment always described. */
   #appShell#appShell .home-quick-actions {
-    order: 0;
+    order: -1;
+    margin-bottom: 14px;
   }
 
   #appShell#appShell .home-quick-actions {
@@ -383,6 +393,13 @@
     border-radius: 10px !important;
     background: transparent !important;
     color: var(--cg-text-secondary) !important;
+  }
+
+  /* P_a11y-nested-controls — the primary button now holds the icon and the
+     copy, so it inherits the phone row's 14px gap rather than the 12px the
+     desktop row uses. */
+  #appShell#appShell .home-quick-action-primary {
+    gap: 14px;
   }
 
   #appShell#appShell .home-quick-action-icon {

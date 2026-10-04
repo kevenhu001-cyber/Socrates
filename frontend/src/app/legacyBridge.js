@@ -6,7 +6,7 @@
  * except the documented optional surfaces that remain window.* reads).
  */
 import { resendLastUserMessage, setChatStopState, handleSendClick, stopChatResponse } from '../chat/turnUi.js';
-import { setCurrentUser, markAuthSuccess, isInAuthGraceWindow, clearPerUserClientState, toggleAppMode, updateModeBadge, resetApp, startNewChat, signOut, toggleIncognito } from './lifecycle.js';
+import { setCurrentUser, markAuthSuccess, isInAuthGraceWindow, clearPerUserClientState, toggleAppMode, resetApp, startNewChat, signOut, toggleIncognito } from './lifecycle.js';
 import { getExplanation } from '../tutor/socraticTurn.js';
 import { setActiveTemplate, clearActiveTemplate } from '../chat/templateSlash.js';
 import { openTagEditor, closeTagEditor, onSessionDragStart, onSessionDragEnd, cycleActiveProject } from '../session/organize.js';
@@ -144,7 +144,6 @@ window.markAuthSuccess = markAuthSuccess;
 window.isInAuthGraceWindow = isInAuthGraceWindow;
 window.clearPerUserClientState = clearPerUserClientState;
 window.toggleAppMode = toggleAppMode;
-window.updateModeBadge = updateModeBadge;
 window.addMessage = addMessage;
 window.askNextQuestion = askNextQuestion;
 window.saveCurrentSession = saveCurrentSession;

@@ -640,7 +640,6 @@
              (server-sourced sessions) and the local fallback. Kept as an empty
              container so the layout reserves space without hard-coding demo
              items in markup. -->
-        <div class="cg-history" id="cgHistory" hidden></div>
         <div class="topic-composer-slot composer-slot" id="topicComposerSlot">
         <!-- P_composer-single — ONE composer shell for the whole app. It is
              parked here on landing and moved to #chatComposerSlot whenever
@@ -675,14 +674,20 @@
                 <svg class="effort-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
               </button>
             </div>
-            <!-- The microphone is the explicit dictation entry point; the
-                 primary button keeps its voice/send state without moving
-                 the control row. -->
+            <!-- P_composer-primary-split — the microphone is the one and only
+                 dictation entry point, and the primary is submit-only
+                 (send / stop). They used to call the same
+                 toggleSpeechInput(surface) and both announced "Voice input",
+                 so a screen-reader user met two indistinguishable controls
+                 at 1440px and at 390px alike. The reference composer is
+                 `+ / mic / send`; that is what ships now. The primary starts
+                 disabled at 30% (parity/composer-unified.css) until a draft
+                 or attachment exists, and updateComposerBtn re-enables it. -->
             <button class="mobile-mic-btn" id="composerMicBtn" type="button" aria-label="Voice input" title="Voice input" data-i18n-aria="chrome.voiceInput" data-i18n-title="chrome.voiceInput">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8"/></svg>
             </button>
-            <button class="composer-primary-btn" id="composerPrimaryBtn" aria-label="Voice input" title="Voice input" data-i18n-aria="chrome.voiceInput" data-i18n-title="chrome.voiceInput">
-              <span id="composerPrimaryBtnContent"><svg class="icon-voice" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 10v4M8 7v10M12 5v14M16 8v8M20 10v4"/></svg></span>
+            <button class="composer-primary-btn" id="composerPrimaryBtn" type="button" disabled aria-label="Send" title="Send" data-i18n-aria="chat.send" data-i18n-title="chat.send">
+              <span id="composerPrimaryBtnContent"><svg class="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
             </button>
           </div>
         </div>
@@ -695,33 +700,39 @@
              chips read as noise on mobile and were the most-skipped UI on the
              landing surface. -->
         <div class="home-quick-actions" id="homeQuickActions" aria-label="Quick actions" data-i18n-aria="chrome.quickActions">
-          <button type="button" class="home-quick-action" data-home-action="upload">
+          <div class="home-quick-action">
+            <button type="button" class="home-quick-action-primary" data-home-action="upload">
             <span class="home-quick-action-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m5.5 17 4.5-4.5 3.2 3.2 2.2-2.2 3.1 3.5"/></svg>
             </span>
             <span class="home-quick-action-copy"><span data-i18n-key="home.quick.upload">添加图片或文件</span></span>
-            <span class="home-quick-action-dismiss" data-home-dismiss role="button" tabindex="0" data-i18n-aria="home.quick.dismiss" data-i18n-title="home.quick.dismiss" aria-label="关闭快捷操作" title="关闭快捷操作">
+            </button>
+            <button type="button" class="home-quick-action-dismiss" data-home-dismiss data-i18n-aria="home.quick.dismiss" data-i18n-title="home.quick.dismiss" aria-label="关闭快捷操作" title="关闭快捷操作">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
-            </span>
-          </button>
-          <button type="button" class="home-quick-action" data-home-action="write">
+            </button>
+          </div>
+          <div class="home-quick-action">
+            <button type="button" class="home-quick-action-primary" data-home-action="write">
             <span class="home-quick-action-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 20 4.2-1 10.6-10.6a2.1 2.1 0 0 0-3-3L5.2 16z"/><path d="m14.8 6.2 3 3"/></svg>
             </span>
             <span class="home-quick-action-copy"><span data-i18n-key="home.quick.write">撰写或编辑</span></span>
-            <span class="home-quick-action-dismiss" data-home-dismiss role="button" tabindex="0" data-i18n-aria="home.quick.dismiss" data-i18n-title="home.quick.dismiss" aria-label="关闭快捷操作" title="关闭快捷操作">
+            </button>
+            <button type="button" class="home-quick-action-dismiss" data-home-dismiss data-i18n-aria="home.quick.dismiss" data-i18n-title="home.quick.dismiss" aria-label="关闭快捷操作" title="关闭快捷操作">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
-            </span>
-          </button>
-          <button type="button" class="home-quick-action" data-home-action="research">
+            </button>
+          </div>
+          <div class="home-quick-action">
+            <button type="button" class="home-quick-action-primary" data-home-action="research">
             <span class="home-quick-action-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5M11 7.5v7M7.5 11h7"/></svg>
             </span>
             <span class="home-quick-action-copy"><span data-i18n-key="home.quick.research">搜索网页</span></span>
-            <span class="home-quick-action-dismiss" data-home-dismiss role="button" tabindex="0" data-i18n-aria="home.quick.dismiss" data-i18n-title="home.quick.dismiss" aria-label="关闭快捷操作" title="关闭快捷操作">
+            </button>
+            <button type="button" class="home-quick-action-dismiss" data-home-dismiss data-i18n-aria="home.quick.dismiss" data-i18n-title="home.quick.dismiss" aria-label="关闭快捷操作" title="关闭快捷操作">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
-            </span>
-          </button>
+            </button>
+          </div>
         </div>
 
       </div>

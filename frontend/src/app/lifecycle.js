@@ -176,7 +176,6 @@ export async function resetApp(options){
   clearComposerPlugins("topic");
   clearComposerPlugins("chat");
   document.getElementById("kbContent").innerHTML='<div class="kb-empty">'+(typeof t==="function"?_t("tutor.kbTopicFirst"):"Set a topic to build your knowledge map.")+'</div>';
-  var _statsEl=document.getElementById("chatStats");if(_statsEl)_statsEl.textContent="";
   /* Task 3.3 — clear the teaching-plan view on full reset so a
      previous session's plan doesn't linger in the sidebar. */
   var _tpc2=document.getElementById("teachingPlanContent");if(_tpc2)_tpc2.innerHTML="";
@@ -468,40 +467,10 @@ export async function toggleAppMode(targetMode){
   try{localStorage.setItem("socrates-appmode",appMode)}catch {}
   syncAppModeUI();
   syncSidebarForMode();
-  updateModeBadge();
   /* v3.0 design — re-render the mode banner after a switch so the
      label and switch-button text flip. */
   if(typeof tutorSocratic==="object"&&tutorSocratic
      &&typeof tutorSocratic.renderModeBanner==="function"){
     try{tutorSocratic.renderModeBanner()}catch(_){}
-  }
-}
-
-export function updateModeBadge(){
-  var badge=document.getElementById("chatModeBadge");
-  if(!badge)return;
-  var mode=(window.appMode==="tutor")?"tutor":"chat";
-  var label=(typeof window.t==="function")
-    ? window.t(mode==="tutor"?"tutor.modeTutor":"tutor.modeChat")
-    : (mode==="tutor"?"Tutor":"Chat");
-  badge.textContent=label;
-  badge.classList.remove("hidden");
-  /* U-H2-anim — re-trigger the badgeSwap CSS keyframes each time the
-     mode flips. The badge style has `animation: badgeSwap …` set
-     unconditionally, so the keyframes only run on first render. We
-     toggle the inline `animation` to none, force a reflow, and
-     restore so the animation replays on every mode change. */
-  var prevMode=badge.getAttribute("data-mode");
-  badge.setAttribute("data-mode",mode);
-  badge.classList.remove("mode-tutor","mode-chat");
-  badge.classList.toggle("mode-tutor",mode==="tutor");
-  badge.classList.toggle("mode-chat",mode==="chat");
-  if(prevMode!==mode){
-    badge.style.animation="none";
-    /* Force layout flush so the browser sees the cleared animation
-       before we restore it — without this, the animation property
-       resets but no reflow happens and the keyframes don't replay. */
-    void badge.offsetWidth;
-    badge.style.animation="";
   }
 }

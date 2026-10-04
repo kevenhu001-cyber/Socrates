@@ -4,13 +4,9 @@
  */
 
 function updateChatStats() {
-  var statsEl = document.getElementById("chatStats");
-  if (statsEl) statsEl.textContent = "";
-  /* U-H2 — refresh the chat-header mode badge on every stats update so
-     it reflects the current mode as the chat view re-renders. */
-  if (typeof window.updateModeBadge === "function") {
-    try { window.updateModeBadge(); } catch {}
-  }
+  /* #chatStats and #chatModeBadge were both removed from the shell —
+     nothing left to paint. The function stays as the semantic
+     "stats changed" hook so callers need no edits. */
 }
 
 export { updateChatStats };

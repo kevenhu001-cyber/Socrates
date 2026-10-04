@@ -3,7 +3,6 @@
  * its click affordances so the visual layer stays declarative. */
 
 import { toggleWebSearch } from '../pickers.js';
-import { openNav } from '../sidebar/nav.js';
 
 export function installHomeSurface() {
   document.addEventListener('click', (event) => {
@@ -13,15 +12,6 @@ export function installHomeSurface() {
       event.stopPropagation();
       const row = dismissTarget.closest('.home-quick-action');
       if (row) row.hidden = true;
-      return;
-    }
-
-    const navTarget = event.target.closest?.('[data-home-nav]');
-    if (navTarget) {
-      event.preventDefault();
-      const destination = navTarget.dataset.homeNav;
-      if (!destination) return;
-      openNav(destination);
       return;
     }
 
@@ -56,15 +46,5 @@ export function installHomeSurface() {
     if (delegate && typeof window[delegate] === 'function') {
       window[delegate]();
     }
-  });
-
-  document.addEventListener('keydown', (event) => {
-    if (event.key !== 'Enter' && event.key !== ' ') return;
-    const dismissTarget = event.target.closest?.('[data-home-dismiss]');
-    if (!dismissTarget) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const row = dismissTarget.closest('.home-quick-action');
-    if (row) row.hidden = true;
   });
 }

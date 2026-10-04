@@ -103,20 +103,12 @@ function syncAppModeUI() {
     el.classList.toggle("active", active);
     if (el.getAttribute("role") === "tab") el.setAttribute("aria-selected", active ? "true" : "false");
   });
-  var chatEl = document.getElementById("chatModeToggle");
-  var tutorEl = document.getElementById("tutorModeToggle");
-  if (chatEl) chatEl.classList.toggle("active", appMode === "chat");
-  if (tutorEl) tutorEl.classList.toggle("active", appMode === "tutor");
   /* Drive the .mode-segmented sliding indicator — the CSS pseudo-element
      reacts to [data-seg-active="chat"|"tutor"] and slides to the matching
      half. This produces the slide-between-Chat/Tutor animation.
-     P_chatgpt-landing — the segmented control now lives in the top bar
-     (#modeSegmentedTop). Mirror the attribute there too for any
-     downstream CSS hooks (the new top-bar pill uses :not(::before)
-     styling so the indicator itself stays hidden, but data-seg-active
-     is still useful as a JS-readable signal). */
-  var segEl = document.getElementById("modeSegmented");
-  if (segEl) segEl.setAttribute("data-seg-active", appMode);
+     P_chatgpt-landing — the segmented control lives in the top bar
+     (#modeSegmentedTop). data-seg-active stays useful as a JS-readable
+     signal for downstream CSS hooks. */
   var topSegEl = document.getElementById("modeSegmentedTop");
   if (topSegEl) topSegEl.setAttribute("data-seg-active", appMode);
   try { localStorage.setItem("socrates-appmode", appMode); } catch {}
@@ -132,11 +124,6 @@ function syncAppModeUI() {
      text stuck on whichever mode was active on the first page load. */
   if (typeof window.applyI18n === 'function') {
     try { window.applyI18n(); } catch (_) {}
-  }
-  /* U-H2 — keep the chat-header mode badge in sync with the active
-     mode whenever the mode UI is re-synced. */
-  if (typeof window.updateModeBadge === 'function') {
-    try { window.updateModeBadge(); } catch (_) {}
   }
   /* P_mobile-topbar — keep the mobile top-bar mode dropdown label +
      active item in sync with the current mode. */
@@ -171,8 +158,6 @@ function setAppMode(v) {
 function syncSidebarForMode() {
   var tutorOnly = document.querySelectorAll(".tutor-only");
   tutorOnly.forEach(function (el) { el.style.display = appMode === "tutor" ? "" : "none"; });
-  var chatModeEl = document.getElementById("chatModeOnly");
-  if (chatModeEl) chatModeEl.style.display = appMode === "chat" ? "" : "none";
 }
 
 async function refreshApiConfig() {

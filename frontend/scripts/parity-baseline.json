@@ -1,0 +1,3259 @@
+{
+ "note": "Committed visual baseline for scripts/parity-audit.mjs --check. Only stable fields are recorded (no x/y). Regenerate with `npm run parity:update` and review the diff.",
+ "tolerancePx": 1,
+ "generatedBy": "parity-audit.mjs --update",
+ "scenarios": {
+  "home-1440-dark-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "chat-1440-dark-zh": {
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "plusMenu-1440-dark-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "effortMenu-1440-dark-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "cmdk-1440-dark-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "settings-1440-dark-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "home-1440-dark-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "chat-1440-dark-en": {
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "plusMenu-1440-dark-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "effortMenu-1440-dark-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "cmdk-1440-dark-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "settings-1440-dark-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "home-1440-light-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "chat-1440-light-zh": {
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "plusMenu-1440-light-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "effortMenu-1440-light-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "cmdk-1440-light-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "settings-1440-light-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "home-1440-light-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "chat-1440-light-en": {
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "plusMenu-1440-light-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "effortMenu-1440-light-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "cmdk-1440-light-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "settings-1440-light-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "home-1280-dark-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "chat-1280-dark-zh": {
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "plusMenu-1280-dark-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "effortMenu-1280-dark-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "cmdk-1280-dark-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "settings-1280-dark-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "home-1280-dark-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "chat-1280-dark-en": {
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "plusMenu-1280-dark-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "effortMenu-1280-dark-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "cmdk-1280-dark-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "settings-1280-dark-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "home-1280-light-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "chat-1280-light-zh": {
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "plusMenu-1280-light-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "effortMenu-1280-light-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "cmdk-1280-light-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "settings-1280-light-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 508,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "home-1280-light-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "chat-1280-light-en": {
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "plusMenu-1280-light-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "effortMenu-1280-light-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "cmdk-1280-light-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "settings-1280-light-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 768,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 470,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "home-1024-dark-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 684,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 424,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "chat-1024-dark-zh": {
+   "composer": {
+    "w": 764,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 504,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "plusMenu-1024-dark-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 684,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 424,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "effortMenu-1024-dark-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 684,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 424,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "cmdk-1024-dark-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 684,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 424,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "settings-1024-dark-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 684,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 424,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "home-1024-dark-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 684,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 386,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "chat-1024-dark-en": {
+   "composer": {
+    "w": 764,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 466,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "plusMenu-1024-dark-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 684,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 386,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "effortMenu-1024-dark-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 684,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 386,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "cmdk-1024-dark-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 684,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 386,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "settings-1024-dark-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 684,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 386,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "home-1024-light-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 684,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 424,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "chat-1024-light-zh": {
+   "composer": {
+    "w": 764,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 504,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "plusMenu-1024-light-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 684,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 424,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "effortMenu-1024-light-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 684,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 424,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "cmdk-1024-light-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 684,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 424,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "settings-1024-light-zh": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 684,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 424,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "home-1024-light-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 684,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 386,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "chat-1024-light-en": {
+   "composer": {
+    "w": 764,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 466,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "plusMenu-1024-light-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 684,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 386,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "effortMenu-1024-light-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 684,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 386,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "cmdk-1024-light-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 684,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 386,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  },
+  "settings-1024-light-en": {
+   "heroTitle": {
+    "h": 28,
+    "style.fontSize": "27px",
+    "style.lineHeight": "28px"
+   },
+   "homeQuickActions": {
+    "h": 160
+   },
+   "disclaimer": {
+    "h": 28
+   },
+   "composer": {
+    "w": 684,
+    "h": 52,
+    "style.borderRadius": "28px"
+   },
+   "composerPlus": {
+    "w": 36,
+    "h": 36
+   },
+   "composerSend": {
+    "w": 36,
+    "h": 36
+   },
+   "composerMic": {
+    "w": 36,
+    "h": 36
+   },
+   "composerEditor": {
+    "w": 386,
+    "h": 36
+   },
+   "sidebar": {
+    "w": 260,
+    "style.fontSize": "14px",
+    "style.lineHeight": "20px"
+   },
+   "sidebarItem": {
+    "h": 36,
+    "style.borderRadius": "10px",
+    "style.fontSize": "14px"
+   },
+   "topbar": {
+    "h": 52
+   }
+  }
+ }
+}

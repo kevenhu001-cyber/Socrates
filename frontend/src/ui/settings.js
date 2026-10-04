@@ -447,14 +447,14 @@ function saveSettings() {
   _saving = true;
   _setSaveButtonState(true);
 
-  var results = { saved: 0, failed: 0, lastError: null, lastValidId: null };
+  var results = { saved: 0, failed: 0, lastError: null, lastValidId: null, lastValidLabel: null };
 
   Promise.allSettled(newRows.map(function (p) {
     var hasReplacementKey = !_maskedKeys[p.id] && !!(p.key && p.key.trim());
     if (p.id.startsWith("new-")) {
       const body = { label: p.label || "", url: p.url || "", key: p.key || "", model: p.model || "", isMultimodal: !!p.vision };
       return window.apiFetch("/api/api-key", { method: "POST", body: body }).then(function (r) {
-        if (r && r.id) { p.id = r.id; results.lastValidId = p.id; }
+        if (r && r.id) { p.id = r.id; results.lastValidId = p.id; results.lastValidLabel = p.label || p.model || r.id; }
         results.saved++;
       });
     } else {
@@ -464,6 +464,7 @@ function saveSettings() {
       if (hasReplacementKey) body.key = p.key;
       return window.apiFetch("/api/api-key/" + encodeURIComponent(p.id), { method: "PATCH", body: body }).then(function () {
         results.lastValidId = p.id;
+        results.lastValidLabel = p.label || p.model || p.id;
         results.saved++;
       });
     }
@@ -491,7 +492,10 @@ function saveSettings() {
     } else if (results.failed > 0) {
       showToast("Save failed: " + ((results.lastError && results.lastError.message) || "unknown error"));
     } else if (apiConfig.activeId) {
-      showToast("Saved — " + window.t("api.saved"));
+      /* window.t("api.saved") used to render the raw key — the toast's
+         intent is "Saved — <active provider>", so resolve the label
+         from the row that was just persisted. */
+      showToast("Saved — " + (results.lastValidLabel || apiConfig.activeId));
     }
   });
 }

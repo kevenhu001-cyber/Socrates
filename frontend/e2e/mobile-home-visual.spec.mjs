@@ -142,7 +142,15 @@ test('mobile conversation home matches the compact dark reference layout', async
       shareLabelVisible: Boolean(document.querySelector('#shareBtn .share-btn-label')?.getClientRects().length),
     };
   });
-  expect(headerVisual.sidebar?.width).toBe(44);
+  /* This block deliberately flips body[data-conversation-active="true"]
+     above, so the mobile header is in its in-conversation form. That state
+     has two documented sizes (restore/chat-surface.css: "Landing top-bar
+     buttons are 44px tactile chips; the in-conversation header keeps its
+     existing 40px unframed utilities"), and this expectation was still
+     asserting the landing size for #sidebarOpenBtn, so it failed at 40.
+     #findBtn / #shareBtn are 44 in both states (fixes.css pins them on
+     phone regardless of surface). */
+  expect(headerVisual.sidebar?.width).toBe(40);
   expect(headerVisual.find?.width).toBe(44);
   expect(headerVisual.share?.width).toBe(44);
   expect(headerVisual.modelSwitcher?.width).toBeGreaterThan(0);

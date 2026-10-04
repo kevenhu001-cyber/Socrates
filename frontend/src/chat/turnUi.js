@@ -86,7 +86,14 @@ export function resendLastUserMessage() {
 /* Morph the primary button into a red Stop button during streaming,
    or restore it to the normal send arrow when idle. React owns
    #composerPrimaryBtnContent and re-renders the icon from dataset.stop,
-   so this function only toggles the dataset + CSS class. */
+   so this function only toggles the dataset + CSS class.
+
+   P_composer-primary-split (2026-10-04) — the idle glyph is the send
+   arrow, not a voice waveform: dictation belongs to #composerMicBtn.
+   updateComposerBtn reads dataset.stop / .chat-stop here to decide the
+   accessible name ("Stop generating" vs "Send") and to keep the button
+   enabled while a turn is live, so a draft-less stream can still be
+   stopped. */
 export function setChatStopState(active) {
   var btn = document.getElementById('composerPrimaryBtn');
   if (!btn) return;

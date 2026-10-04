@@ -1,12 +1,15 @@
 // src/ui/sendGlyph.js — the send button's "sent" moment.
 //
-// A composer submit flips the primary button through arrow → (voice, draft cleared)
-// → stop within a frame or two. Without a transition the icon just
-// flickers. While `.is-sending` is on the button, the React PrimaryButton
-// (react/lib/boot/indicatorComponents.tsx) renders the departing arrow
-// and the arriving stop glyph together; CSS in parity/composer-unified.css
-// animates them. Only transform/opacity move, so the button's measured
-// box never changes.
+// A composer submit flips the primary button through arrow → stop within a
+// frame or two. Without a transition the icon just flickers. While
+// `.is-sending` is on the button, the React PrimaryButton
+// (react/lib/boot/indicatorComponents.tsx) renders the departing arrow and
+// the arriving stop glyph together; CSS in parity/composer-unified.css
+// animates them. Only transform/opacity move, so the button's measured box
+// never changes.
+//
+// P_composer-primary-split dropped the voice leg of the sequence: the idle
+// glyph is the arrow, so the morph is arrow → stop.
 
 export const SEND_GLYPH_MS = 220;
 

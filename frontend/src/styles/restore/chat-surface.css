@@ -177,7 +177,6 @@ body,
 #appShell#appShell #topicSetup .topic-sub,
 #appShell#appShell #topicSetup .mobile-starter-prompts,
 #appShell#appShell #topicSetup .cg-history,
-#appShell#appShell #topicSetup .home-quick-actions,
 #appShell#appShell #topicSetup #topicDisclaimer {
   display: none !important;
 }

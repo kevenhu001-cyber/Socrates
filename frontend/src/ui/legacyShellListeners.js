@@ -25,28 +25,20 @@ export function mountLegacyShellListeners(actions) {
   click('apiSettingsBtn', actions.openSettings);
   bind(document, 'socrates:open-settings', actions.openSettings);
   click('composerPrimaryBtn', () => {
-    /* P_composer-single — one primary control for the single shell. Each
-       surface keeps its predecessor's exact contract: empty routes to
-       voice input, a draft submits (landing starts a session, chat
-       sends), streaming falls through to sendMessage, whose wrapper
-       aborts the live turn. */
+    /* P_composer-single — one primary control for the single shell.
+       P_composer-primary-split (2026-10-04) — the primary is submit-only:
+       a draft sends (landing starts a session, chat sends) and a live turn
+       falls through to sendMessage → handleSendClick, whose wrapper aborts
+       it. The former "empty routes to voice input" branch is gone; voice
+       lives on #composerMicBtn below. Keeping both would leave two controls
+       calling the same toggleSpeechInput(surface) with the same accessible
+       name at both breakpoints. */
     const button = byId('composerPrimaryBtn');
+    if (button && button.disabled) return;
     let surface = 'topic';
     try { surface = readComposerSurface(); } catch (_) { /* default above */ }
     if (surface === 'chat') {
-      if (button && !button.classList.contains('active')
-          && !button.classList.contains('chat-stop')
-          && !button.classList.contains('agent-stop')
-          && typeof window.toggleSpeechInput === 'function') {
-        window.toggleSpeechInput('chat');
-        return;
-      }
       actions.sendMessage();
-      return;
-    }
-    if (button && !button.classList.contains('active')
-        && typeof window.toggleSpeechInput === 'function') {
-      window.toggleSpeechInput('topic');
       return;
     }
     actions.startSession();

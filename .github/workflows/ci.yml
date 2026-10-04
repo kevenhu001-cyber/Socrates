@@ -225,6 +225,41 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
+      # Geometry + layout-defect ratchet. Blocking.
+      #
+      # Until 2026-10-04 this audit was diagnostic-only: it wrote
+      # metrics.json / defects.json into the gitignored debug/parity/ and
+      # nothing read them. Three of its composer selectors still pointed at
+      # #topicInputWrap / #chatInputWrap / #startBtn, retired by
+      # P_composer-single, so the composer geometry it exists to protect was
+      # measuring `null` — which is how a `display:none` shipped on the three
+      # landing shortcut buttons and left a ~410px dead band under the
+      # composer without any gate noticing.
+      #
+      # The gate fails on (a) any layout defect, including the new
+      # `home-dead-zone` probe, and (b) >1px drift from
+      # frontend/scripts/parity-baseline.json. `--only` runs are supported:
+      # scenarios absent from the run are reported as coverage gaps, not
+      # failures.
+      #
+      # If this fails on geometry alone, read the baseline diff before
+      # regenerating: `npm run parity:update` is only correct when the visual
+      # change was intended.
+      - name: Parity geometry gate
+        run: |
+          node e2e/dist-server.mjs &
+          server_pid=$!
+          trap 'kill $server_pid 2>/dev/null || true' EXIT
+          for _ in $(seq 1 40); do
+            if curl -sf -o /dev/null http://127.0.0.1:4173/; then break; fi
+            sleep 0.5
+          done
+          curl -sf -o /dev/null http://127.0.0.1:4173/ || {
+            echo "::error::dist-server did not come up on :4173"
+            exit 1
+          }
+          npm run parity:check
+
       - name: End-to-end smoke tests
         run: npm run test:smoke
 

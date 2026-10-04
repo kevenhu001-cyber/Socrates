@@ -176,15 +176,23 @@
 #appShell #topicSetup .topic-sub,
 #appShell #topicSetup .mobile-starter-prompts,
 #appShell #topicSetup .cg-history,
-#appShell #topicSetup .home-quick-actions,
 #appShell #topicDisclaimer { display: none; }
+
+/* .home-quick-actions is deliberately NOT in the group above. It carries
+   three real composer entry points (upload / write / research) with live
+   markup, i18n keys and click handlers in ui/homeSurface.js; hiding it left
+   a ~410px dead band under the composer on 2026-10-04. Geometry owners:
+   restore/ref-baseline.css (row + rows), restore/fixes.css (desktop
+   52px/r8/16px sizing), restore/mobile-parity.css (<=768px column). */
 
 @media (min-width: 769px) {
   #appShell #topicSetup .topic-title.greeting {
     position: static;
     margin: 0 0 48px;
-    /* Reference hero is 24px/28px — this is now the canonical declaration;
-       the restore-layer 24px !important pins were retired together. */
+    /* Reference hero is 24px/28px. Measured 2026-10-04 at 1440x900: the
+       restore-layer `.topic-title.greeting` clamp still wins and computes
+       to 27px, so the canonical 24px declaration below is NOT the shipped
+       value yet. See docs/ref/chatgpt-parity.md P1 item 5. */
     font-size: calc(24px * var(--app-font-scale, 1));
     line-height: 1.25;
   }

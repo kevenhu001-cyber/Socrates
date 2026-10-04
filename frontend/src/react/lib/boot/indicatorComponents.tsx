@@ -17,17 +17,10 @@ const ICON_PROPS = {
 
 function SendArrowIcon() { return <svg viewBox="0 0 24 24" {...ICON_PROPS} strokeWidth="2.5" className="icon-arrow"><path d="M12 19V5M5 12l7-7 7 7" /></svg>; }
 function StopSquareIcon() { return <svg viewBox="0 0 24 24" {...ICON_PROPS} strokeWidth="2" className="icon-stop"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>; }
-/* Voice-input waveform bars — the idle state of the shared primary
-   control (the same glyph the static markup ships in
-   #composerPrimaryBtnContent). Bars are <line> elements so `… .icon-arrow path`
-   style selectors keep counting a single path. */
-function VoiceIcon() {
-  return (
-    <svg viewBox="0 0 24 24" {...ICON_PROPS} strokeWidth="2" className="icon-voice">
-      <path d="M4 10v4M8 7v10M12 5v14M16 8v8M20 10v4" />
-    </svg>
-  );
-}
+/* P_composer-primary-split — the idle voice waveform (icon-voice) left with
+   the primary's empty-state routing. It is dead: nothing renders it any
+   more, and the reference composer draws its mic on #composerMicBtn. Kept
+   here only as a record of what the control used to morph into. */
 
 /* The pill's visibility is part of the sticky-bottom contract: while an
    answer streams, a reader who scrolls away gets the "↓ New reply"
@@ -65,10 +58,10 @@ function useControlClass(className: string): boolean {
   return active;
 }
 
-function useControlActive(): boolean {
-  return useControlClass('active');
-}
-
+/* P_composer-primary-split — `.active` (canSend = has text or attachments)
+   no longer drives the icon, so useControlActive() is gone. useControlClass
+   stays for `.is-sending`. The disabled state is owned by the legacy
+   updateComposerBtn, which toggles the native `disabled` attribute. */
 export function NewReplyPill({ host }: { host?: HTMLElement | null }) {
   /* Establish the first React subscription without changing the legacy
      element's markup, text, or delegated click behavior. */
@@ -87,17 +80,19 @@ export function NewReplyPill({ host }: { host?: HTMLElement | null }) {
   return <>↓ New reply</>;
 }
 
-/* P_composer-single — one primary button for the single shell. It merges
-   both predecessors' contracts: streaming renders stop (chat only ever
-   streams), the send-glyph beat covers submit, otherwise active renders
-   the arrow and idle the voice glyph. */
+/* P_composer-single — one primary button for the single shell: streaming
+   renders stop, the send-glyph beat covers submit, otherwise send arrow.
+   P_composer-primary-split (2026-10-04) — the idle glyph is the arrow too.
+   It used to be a voice glyph while the draft was empty, which duplicated
+   the sibling #composerMicBtn (same toggleSpeechInput(surface) call, same
+   accessible name) at both breakpoints. The primary no longer reads
+   `.active`; updateComposerBtn only drives the disabled state now. */
 export function PrimaryButton() {
   const streamStatus = useChatStreamStatus();
-  const active = useControlActive();
   /* ui/sendGlyph.js holds `.is-sending` for one short beat after a
      composer submit: render the departing arrow over the arriving stop
-     glyph so the swap reads as one motion instead of arrow → waveform →
-     stop flicker while the draft clears and the stream starts. */
+     glyph so the swap reads as one motion instead of arrow → stop flicker
+     while the draft clears and the stream starts. */
   const sending = useControlClass('is-sending');
   if (sending) {
     return (
@@ -108,5 +103,5 @@ export function PrimaryButton() {
     );
   }
   if (streamStatus === 'streaming') return <StopSquareIcon />;
-  return active ? <SendArrowIcon /> : <VoiceIcon />;
+  return <SendArrowIcon />;
 }

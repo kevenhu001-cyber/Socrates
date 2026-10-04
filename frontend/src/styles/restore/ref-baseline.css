@@ -749,9 +749,10 @@ body.workspace-active #appShell .main-page {
     --cg-rail: var(--ui-bg-sidebar);
   }
 
-  #appShell .home-quick-actions {
-    display: none !important;
-  }
+  /* .home-quick-actions used to be display:none !important here. It is the
+     mobile quick-action column that mobile-parity.css owns (imported after
+     this file), so the two contradicted each other for ~1px of cascade.
+     The row is live again since 2026-10-04. */
 
   /* P_mobile-canvas-fade — the legacy conversation layer fades
      .chat-input-bar into the canvas colour. Land the fade on the active
@@ -935,6 +936,37 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 #appShell .home-quick-action {
   position: relative;
   padding-right: 44px;
+}
+
+/* P_a11y-nested-controls — the row used to BE the button, with the dismiss
+   affordance as a `span[role="button"]` nested inside it. An interactive
+   control inside another is invalid HTML and unrepresentable for assistive
+   tech: the outer button swallows the inner activation, and a screen reader
+   announces one control where the UI has two.
+
+   The row is now a plain flex container holding two sibling real buttons.
+   The primary takes the icon + copy and inherits the row's flex geometry, so
+   the painted result is identical; the dismiss stays absolutely positioned
+   against the row. Both breakpoints' gap values are mirrored here because
+   the primary is now the element holding icon and copy. */
+#appShell .home-quick-action-primary {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+#appShell .home-quick-action {
+  cursor: pointer;
 }
 
 #appShell .home-quick-action-copy span {

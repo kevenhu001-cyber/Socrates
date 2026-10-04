@@ -390,8 +390,6 @@ export function bounceOutOfArchivedSession(){
   /* Task 3.3 — clear the teaching-plan view on full reset so a
      previous session's plan doesn't linger in the sidebar. */
   var _tpc=document.getElementById("teachingPlanContent");if(_tpc)_tpc.innerHTML="";
-  var _statsEl = document.getElementById("chatStats");
-  if (_statsEl) _statsEl.textContent="";
   updateComposerBtn();
 }
 

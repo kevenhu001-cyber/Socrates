@@ -12,7 +12,8 @@
  *    themes.css is the sole owner and is always the final import.
  *
  * 3. Debt ratchet: for every stylesheet under src/styles we count
- *    `!important`, literal hex colors, and literal px border-radius values.
+ *    `!important`, literal hex colors, literal px border-radius values, and
+ *    selectors that repeat one id three or more times (`#appShell#appShell…`).
  *    legacy/ and restore/ are frozen historical zones; every other directory
  *    is "live". Counts may only go DOWN — if a metric grows past its baseline
  *    the check fails. Shrink the baseline with --update after an intentional
@@ -67,10 +68,34 @@ function countMetric(re, text) {
   return n;
 }
 
+/* ---------- 3. stacked-id specificity ---------- */
+/* A selector that repeats the same id (`#appShell#appShell#appShell …`) is
+ * not styling, it is winning a cascade fight by brute force. Each new one
+ * makes the next legitimate rule harder to place, which is how
+ * restore/fixes.css accumulated 21 of them. The count is ratcheted exactly
+ * like the other metrics so it can only shrink. */
+function countStackedIdSelectors(text) {
+  let n = 0;
+  for (const m of text.matchAll(/([^{}]*)\{/g)) {
+    const ids = m[1].match(/#[A-Za-z][A-Za-z0-9_-]*/g);
+    if (!ids) continue;
+    const counts = new Map();
+    for (const raw of ids) {
+      const id = raw.slice(1);
+      counts.set(id, (counts.get(id) || 0) + 1);
+    }
+    for (const c of counts.values()) {
+      if (c >= 3) { n += 1; break; }
+    }
+  }
+  return n;
+}
+
 const METRICS = {
   important: /!important/g,
   hexColor: /#[0-9a-fA-F]{3,8}\b/g,
   literalRadius: /border-radius:\s*(?:[0-9.]+px|var\([^)]*\)\s+[0-9.]+px)/g,
+  stackedId: countStackedIdSelectors,
 };
 
 /* ---------- 1. cascade order ---------- */
@@ -117,8 +142,8 @@ function collectCounts() {
     const zone = FROZEN_DIRS.has(top) ? 'frozen' : 'live';
     const text = stripComments(readFileSync(file, 'utf8'));
     perFile[rel] = { zone };
-    for (const [name, re] of Object.entries(METRICS)) {
-      const n = countMetric(re, text);
+    for (const [name, matcher] of Object.entries(METRICS)) {
+      const n = typeof matcher === 'function' ? matcher(text) : countMetric(matcher, text);
       totals[zone][name] += n;
       perFile[rel][name] = n;
     }

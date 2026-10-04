@@ -578,17 +578,13 @@ import { scheduleTurnToTopForMessage } from './chat/turnAnchor.ts';
       cont = document.createElement('span');
       cont.id = 'practiceProgressChip';
       cont.className = 'practice-progress-chip tutor-only';
-      var chatHeader = document.getElementById('chatHeader');
-      if (chatHeader) {
-        chatHeader.appendChild(cont);
-      } else {
-        /* Fallback: place inline in the top-bar next to the
-           stats badge. This keeps the unified single
-           top row instead of leaking above the message list. */
-        var badge = document.getElementById('chatStats');
-        if (badge && badge.parentNode) {
-          badge.parentNode.insertBefore(cont, badge);
-        }
+      /* #chatHeader / #chatStats were removed from the shell — anchor the
+         chip to .top-bar-left (the model-switcher row) so the practice
+         progress pill actually mounts. The tutor-only class keeps it out
+         of chat mode. */
+      var topBarLeft = document.querySelector('.top-bar-left');
+      if (topBarLeft) {
+        topBarLeft.appendChild(cont);
       }
     }
     var phase = window.stateStore.read("practicePhase");

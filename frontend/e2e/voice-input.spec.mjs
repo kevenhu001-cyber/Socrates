@@ -139,7 +139,7 @@ test('incognito lives in the 更多 popover; the header keeps one new-chat contr
   await expect(incognito).toBeHidden();
 });
 
-test('the empty landing primary action starts voice input and becomes send after transcription', async ({ page }) => {
+test('the mic starts voice input and the primary becomes send after transcription', async ({ page }) => {
   const consoleErrors = [];
   page.on('console', (message) => {
     if (message.type() === 'error') consoleErrors.push(message.text());
@@ -156,10 +156,16 @@ test('the empty landing primary action starts voice input and becomes send after
   const mic = wrap.locator('.mobile-mic-btn');
   await expect(mic).toHaveCount(1);
   await expect(mic).toBeVisible();
-  await expect(primary).toHaveAttribute('aria-label', 'Voice input');
+  /* P_composer-primary-split — the two controls used to share the label
+     "Voice input" and the same toggleSpeechInput(surface) call, so a screen
+     reader met two indistinguishable buttons. The mic keeps dictation; the
+     primary is submit-only (send / stop) and starts disabled at 30%. */
+  await expect(mic).toHaveAttribute('aria-label', 'Voice input');
+  await expect(primary).toHaveAttribute('aria-label', 'Send');
   await expect(editor).toHaveCSS('text-align', 'left');
-  await expect(primary.locator('.icon-voice')).toHaveCount(1);
-  await expect(primary.locator('.icon-arrow')).toHaveCount(0);
+  await expect(primary.locator('.icon-arrow')).toHaveCount(1);
+  await expect(primary.locator('.icon-voice')).toHaveCount(0);
+  await expect(primary).toBeDisabled();
 
   await editor.click();
   const emptyCaret = await editor.evaluate((node) => {
@@ -187,12 +193,16 @@ test('the empty landing primary action starts voice input and becomes send after
   await expect(primary).toHaveClass(/active/);
   await expect(primary.locator('.icon-arrow')).toHaveCount(1);
   await expect(primary.locator('.icon-voice')).toHaveCount(0);
+  await expect(primary).toBeEnabled();
   await page.screenshot({ path: '/tmp/socrates-composer-with-text.png', fullPage: true });
   await editor.press(process.platform === 'darwin' ? 'Meta+A' : 'Control+A');
   await editor.press('Backspace');
   await expect(primary).not.toHaveClass(/active/);
-  await expect(primary.locator('.icon-voice')).toHaveCount(1);
-  await expect(primary.locator('.icon-arrow')).toHaveCount(0);
+  /* Clearing the draft returns the button to the disabled send state — it
+     must not morph back into a second dictation trigger. */
+  await expect(primary.locator('.icon-arrow')).toHaveCount(1);
+  await expect(primary.locator('.icon-voice')).toHaveCount(0);
+  await expect(primary).toBeDisabled();
 
   await mic.click();
   const bar = wrap.locator('.voice-recording-bar');
@@ -230,7 +240,7 @@ test('the empty landing primary action starts voice input and becomes send after
   expect(consoleErrors).toEqual([]);
 });
 
-test('the empty chat primary action uses the same recording bar', async ({ page }) => {
+test('the chat mic uses the same recording bar', async ({ page }) => {
   await bootVoiceFixture(page, { width: 390, height: 844 });
   await enterChat(page);
 
@@ -240,10 +250,15 @@ test('the empty chat primary action uses the same recording bar', async ({ page 
   await expect(wrap).toBeVisible();
   const mic = wrap.locator('.mobile-mic-btn');
   await expect(mic).toHaveCount(1);
-  await expect(primary).toHaveAttribute('aria-label', 'Voice input');
+  /* P_composer-primary-split — this case used to be titled "the empty chat
+     primary action uses the same recording bar" and clicked the primary.
+     Dictation is the mic's job now; the primary only sends and stops. */
+  await expect(mic).toHaveAttribute('aria-label', 'Voice input');
+  await expect(primary).toHaveAttribute('aria-label', 'Send');
   await expect(editor).toHaveCSS('text-align', 'left');
-  await expect(primary.locator('.icon-voice')).toHaveCount(1);
-  await expect(primary.locator('.icon-arrow')).toHaveCount(0);
+  await expect(primary.locator('.icon-arrow')).toHaveCount(1);
+  await expect(primary.locator('.icon-voice')).toHaveCount(0);
+  await expect(primary).toBeDisabled();
 
   await mic.click();
   const bar = wrap.locator('.voice-recording-bar');

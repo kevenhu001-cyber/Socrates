@@ -25,8 +25,16 @@ export function autoResize(el){
    and P_attachments — a dropped file with an empty editor is still a
    valid turn). P_composer-single: one button, one wrap; the surface is
    read live so landing and chat share the updater.
-   P_chatgpt-landing — also toggle .has-text on the input wrap so the
-   CSS can swap the mic icon for the up-arrow on the send button. */
+
+   P_composer-primary-split (2026-10-04) — the primary button is a pure
+   submit control: Send when a draft (or attachment) is ready, Stop while
+   a turn is live, disabled at 30% when there is nothing to send. Voice
+   input belongs to the sibling #composerMicBtn, which used to be a
+   byte-identical second trigger for the same toggleSpeechInput(surface)
+   call. Two controls doing one job is what produced two buttons with the
+   same accessible name at both breakpoints. The reference composer is
+   `+ / mic / send`, so the mic stays and the primary stops impersonating
+   it. */
 export function updateComposerBtn(){
   var surface = "topic";
   try{ surface = getVisibleComposerSurface(); }catch(_){/* default above */}
@@ -39,15 +47,17 @@ export function updateComposerBtn(){
   var canSend = !!(v || hasAtt);
   if(!b) return;
   if(canSend) b.classList.add("active"); else b.classList.remove("active");
-  /* Empty state is the voice-input action (the click handler routes a
-     non-active press to toggleSpeechInput), so the control is never
-     disabled — only its label/icon swap with the draft state. */
-  var key = canSend ? "chat.send" : "voice.input";
-  var fallback = canSend ? "Send" : "Voice input";
-  var label = typeof window.t === "function" ? window.t(key) : fallback;
+  /* A live turn owns the button as Stop, so "nothing to send" must not
+     disable it out from under the one action that can end the turn. */
+  var streaming = b.dataset.stop === "1"
+    || b.classList.contains("chat-stop")
+    || b.classList.contains("agent-stop");
+  var label = typeof window.t === "function"
+    ? window.t(streaming ? "chat.stop" : "chat.send")
+    : (streaming ? "Stop generating" : "Send");
   b.setAttribute("aria-label", label);
   b.setAttribute("title", label);
-  b.disabled = false;
+  b.disabled = !canSend && !streaming;
   var wrap = document.getElementById("composerInputWrap");
   if(wrap) wrap.classList.toggle("has-text", !!(v || hasAtt));
 }

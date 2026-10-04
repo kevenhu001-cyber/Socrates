@@ -576,10 +576,11 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    tap to #topicSetup and skip the tools/mic/send listeners. */
 @media (max-width: 768px) {
 
-  body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
-    #appShell#appShell#appShell #topicSetup .home-quick-actions {
-    display: none !important;
-  }
+  /* The mobile landing quick-action column is live again (2026-10-04).
+     mobile-parity.css owns its geometry; this file used to pin it to
+     display:none with a triple-#appShell selector, which outranked that
+     owner and left the row styled but invisible. Do not re-add the pin —
+     the cards are real entry points, not decoration. */
 
   /* Landing greeting shrink-wraps and centers on the 50% anchor: width:auto
      with a hard left edge and translateX(-50%). `right:auto` is load-bearing

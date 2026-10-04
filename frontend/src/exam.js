@@ -95,13 +95,13 @@ export function prepareExamView() {
      The shared view controller hides core/workspace siblings, collapses
      .main-inner, and applies body.exam-active as one transition. */
   activateMainView("examView", document);
-  /* Show the exam-only top-bar elements (#examBackBtn / #examTitleBar);
+  /* Show the exam-only top-bar elements (#examTitleBar);
      the shared view controller already applied the conversation chrome. */
   toggleExamOnlyTopBar(true);
   /* The top bar is the single visible exam title. */
   _setExamTitle(window.stateStore.read("examTopic") || (window._currentLang === "zh" ? "生成考卷" : "Generate Exam"));
   /* Hide chat-specific top-bar elements that are meaningless in exam mode. */
-  ["chatStats", "chatModelWrap"].forEach(function (id) {
+  ["chatModelWrap"].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.classList.add("hidden");
   });
@@ -159,7 +159,7 @@ export function closeExamModal() {
 }
 
 /* Show / hide the top-bar elements that are only meaningful while an
-   exam is in view (#examBackBtn / #examTitleBar). Everything else in
+   exam is in view (#examTitleBar). Everything else in
    the top-bar follows the active view through mainViewController. */
 function toggleExamOnlyTopBar(show) {
   document.body.classList.toggle("exam-active", show);
