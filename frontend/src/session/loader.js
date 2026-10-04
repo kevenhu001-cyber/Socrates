@@ -43,6 +43,7 @@ import { updateComposerBtn } from '../ui/topicSetup.js';
 import { clearComposer } from '../react/composer-input/controller.ts';
 import { updateChatStats } from '../chat/stats.js';
 import { updateKB } from '../ui/knowledgePanel.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 function _t(key, fallback) {
   try {
@@ -50,13 +51,13 @@ function _t(key, fallback) {
       var v = window.t(key);
       if (v && v !== key) return v;
     }
-  } catch (_) {}
+  } catch (e) {reportSwallow(e, 'session/loader._t'); }
   return fallback != null ? fallback : key;
 }
 function _appMode() {
   try {
     if (typeof window !== 'undefined' && window.appMode) return window.appMode;
-  } catch (_) {}
+  } catch (e) {reportSwallow(e, 'session/loader._appMode'); }
   return 'chat';
 }
 /* P_recents-amplify — see loadSession()'s tail. Goes through window.* for the
@@ -67,19 +68,19 @@ function _scheduleRecentsReconcile() {
     if (typeof window !== 'undefined' && typeof window.scheduleRecentsReconcile === 'function') {
       window.scheduleRecentsReconcile();
     }
-  } catch (_) {}
+  } catch (e) {reportSwallow(e, 'session/loader._scheduleRecentsReconcile'); }
 }
 function _renderRecents() {
-  try { if (typeof window !== 'undefined' && typeof window.renderRecents === 'function') window.renderRecents(); } catch (_) {}
+  try { if (typeof window !== 'undefined' && typeof window.renderRecents === 'function') window.renderRecents(); } catch (e) {reportSwallow(e, 'session/loader._renderRecents'); }
 }
 function _renderMistakes() {
-  try { if (typeof window !== 'undefined' && typeof window.renderMistakes === 'function') window.renderMistakes(); } catch (_) {}
+  try { if (typeof window !== 'undefined' && typeof window.renderMistakes === 'function') window.renderMistakes(); } catch (e) {reportSwallow(e, 'session/loader._renderMistakes'); }
 }
 function _updateMistakesBadge() {
-  try { if (typeof window !== 'undefined' && typeof window.updateMistakesBadge === 'function') window.updateMistakesBadge(); } catch (_) {}
+  try { if (typeof window !== 'undefined' && typeof window.updateMistakesBadge === 'function') window.updateMistakesBadge(); } catch (e) {reportSwallow(e, 'session/loader._updateMistakesBadge'); }
 }
 function _clearActiveTemplate() {
-  try { if (typeof window !== 'undefined' && typeof window.clearActiveTemplate === 'function') window.clearActiveTemplate(); } catch (_) {}
+  try { if (typeof window !== 'undefined' && typeof window.clearActiveTemplate === 'function') window.clearActiveTemplate(); } catch (e) {reportSwallow(e, 'session/loader._clearActiveTemplate'); }
 }
 
 /* exam.js is lazy-loaded (see windowExports.__loadExamModule). The exam
@@ -93,7 +94,7 @@ async function _ensureExamModule() {
     _examMod = await window.__loadExamModule();
   } else {
     _examMod = await import('../exam.js');
-    try { _examMod.mountExamListeners(); } catch (_) {}
+    try { _examMod.mountExamListeners(); } catch (e) {reportSwallow(e, 'session/loader._ensureExamModule'); }
   }
   return _examMod;
 }
@@ -103,7 +104,7 @@ export async function loadExamSession(s){
   var prepareExamView=_ex.prepareExamView, renderExamNav=_ex.renderExamNav,
       renderExamResults=_ex.renderExamResults, syncExamNav=_ex.syncExamNav;
   if(typeof prepareExamView==="function"){
-    try{prepareExamView()}catch(_){}
+    try{prepareExamView()}catch (e) {reportSwallow(e, 'session/loader.loadExamSession'); }
   }else{
     var ev=document.getElementById("examView");
     var others=["topicSetup","diagnosticView","chatView"];
@@ -130,7 +131,7 @@ export async function loadExamSession(s){
     examAnswers:(s.examData&&s.examData.answers)||{},
     examSubmitted:!!(s.examData&&s.examData.submitted)
   }});
-  try { pushExamIdToURL(s.id); } catch (_) { }
+  try { pushExamIdToURL(s.id); } catch (e) {reportSwallow(e, 'session/loader.loadExamSession~2'); }
   document.getElementById("examViewTitle").textContent=stateStore.read("examSubmitted")?("Exam Results: "+stateStore.read("examTopic")):(stateStore.read("examTopic"));
   var titleBar=document.getElementById("examTitleBar");
   if(titleBar)titleBar.textContent=stateStore.read("examTopic")||"Generate Exam";
@@ -210,17 +211,17 @@ export function resetSessionTransients(){
     lastCallError:null,
     sessionTitle:null
   }});
-  try{clearComposer("chat")}catch(_){}
-  try{updateComposerBtn();}catch(_){}
-  try{if(turnState.pendingChatContent!==undefined)turnState.pendingChatContent=null;}catch(_){}
-  try{if(turnState.pendingAttachments!==undefined)turnState.pendingAttachments=null;}catch(_){}
+  try{clearComposer("chat")}catch (e) {reportSwallow(e, 'session/loader.resetSessionTransients'); }
+  try{updateComposerBtn();}catch (e) {reportSwallow(e, 'session/loader.resetSessionTransients~2'); }
+  try{if(turnState.pendingChatContent!==undefined)turnState.pendingChatContent=null;}catch (e) {reportSwallow(e, 'session/loader.resetSessionTransients~3'); }
+  try{if(turnState.pendingAttachments!==undefined)turnState.pendingAttachments=null;}catch (e) {reportSwallow(e, 'session/loader.resetSessionTransients~4'); }
   /* F2a-ext — clear the active template so a slash-command template
      (/quiz, /summarize, etc.) from the previous session doesn't
      inject its systemPrompt into the new session's LLM call via
      injectTemplateSystemPrompt (main.js:3910). The template is a
      user-level tool, not a session-scoped state; resetting it on
      session switch prevents the #1 cross-session context leak. */
-  try{if(typeof clearActiveTemplate==="function")_clearActiveTemplate()}catch(_){}
+  try{if(typeof clearActiveTemplate==="function")_clearActiveTemplate()}catch (e) {reportSwallow(e, 'session/loader.resetSessionTransients~5'); }
 }
 
 /* F2d — write the active session id to every place it's mirrored
@@ -231,7 +232,7 @@ export function resetSessionTransients(){
    scattered through loadSession / startSession / resetState. */
 export function setCurrentSessionId(id, silent){
   stateStore.dispatch({type:"state/set",key:"currentSessionId",value:id});
-  try{window._currentSessionId=id;}catch(_){}
+  try{window._currentSessionId=id;}catch (e) {reportSwallow(e, 'session/loader.setCurrentSessionId'); }
   if(!silent) publishReactChatRuntime({type:"state-synced",reason:"session-id-changed"});
 }
 
@@ -271,15 +272,15 @@ export async function loadSession(id){
   */
   /* Abort any active chat stream so its onDelta/finish callbacks
      don't write to stateStore.read("messages") after we replace them. */
-  if(window._activeChatAbort){try{window._activeChatAbort("session-switch")}catch(_){}}
-  if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(_){}}
+  if(window._activeChatAbort){try{window._activeChatAbort("session-switch")}catch (e) {reportSwallow(e, 'session/loader.loadSession'); }}
+  if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch (e) {reportSwallow(e, 'session/loader.loadSession~2'); }}
   turnState.activeChatCtl=null;
   window._activeChatAbort=null;
   turnState.chatStreaming=false;
   turnState.chatStopMode=false;
   /* Abort any in-flight loadSession fetch to save bandwidth and main-thread JSON.parse. */
   if(saveState.loadAbortCtl){
-    try{saveState.loadAbortCtl.abort();}catch(_){}
+    try{saveState.loadAbortCtl.abort();}catch (e) {reportSwallow(e, 'session/loader.loadSession~3'); }
   }
   var currentLoadAbort=new AbortController();
   saveState.loadAbortCtl=currentLoadAbort;
@@ -344,7 +345,7 @@ export async function loadSession(id){
     try {
       if (s.assistantId) sessionStorage.setItem("socrates-active-assistant", s.assistantId);
       else sessionStorage.removeItem("socrates-active-assistant");
-    } catch (_) {}
+    } catch (e) {reportSwallow(e, 'session/loader.loadSession~4'); }
     if(s.projectId){
       apiFetch("/api/projects").then(function(r){
         var rows=(r&&r.projects)||[];
@@ -543,7 +544,7 @@ export async function loadSession(id){
         }
         publishReactChatRuntime({ type: "state-synced", reason: "local-recovered-react" });
       }
-    }catch(_){}
+    }catch (e) {reportSwallow(e, 'session/loader.loadSession~5'); }
     /* P_streaming-survival — if the server has saved streaming_text
        (the previous stream was interrupted before completion), surface
        it as a partial assistant message with a Retry button so the
@@ -625,7 +626,7 @@ export async function loadSession(id){
     /* M2 async — re-attach a still-open detached turn (network drop or
        reload mid-stream). Fire-and-forget: the bubble owns its slot and
        goes inert on session switch via stillOwnsSlot. */
-    try{ void reattachPendingTurn(s.id); }catch(_){}
+    try{ void reattachPendingTurn(s.id); }catch (e) {reportSwallow(e, 'session/loader.loadSession~6'); }
     /* Mirror the server history into the localStorage cache so the
        next chat turn can read it via extractHistory() (fast path) instead
        of falling back to the slower DOM scrape. Skip if the local cache
@@ -646,7 +647,7 @@ export async function loadSession(id){
             rec.messages.push({role:m.role,content:txt});
           });
           if(rec.messages.length)batchSetItem(_memKey(s.id),JSON.stringify(rec));
-        }catch {/* mirror failed */}
+        }catch (e) { /* mirror failed */ reportSwallow(e, 'session/loader.loadSession~7'); }
       };
       if(typeof requestIdleCallback==="function"){
         requestIdleCallback(_idleSync,{timeout:2000});
@@ -713,7 +714,7 @@ export async function loadSession(id){
       try{
         stateStore.dispatch({type:"session/replace-messages",payload:previousMessages});
         publishReactChatRuntime({type:"state-synced",reason:"session-load-failed"});
-      }catch(_){}
+      }catch (e) {reportSwallow(e, 'session/loader.loadSession~8'); }
     }
     
     /* Distinguish session-not-found (404) from transient errors
@@ -769,7 +770,7 @@ export async function loadSession(id){
           }
         }
       }
-    }catch(_){}
+    }catch (e) {reportSwallow(e, 'session/loader.loadSession~9'); }
 
     var isUrlMatch=typeof location!=="undefined"&&location.search.indexOf("chat="+encodeURIComponent(id))>=0;
     if(stateStore.read("currentSessionId")===id||!stateStore.read("currentSessionId")||isUrlMatch){
@@ -780,7 +781,7 @@ export async function loadSession(id){
           u.searchParams.delete("chat");
           history.replaceState(history.state,"",u.pathname+(u.search?u.search.replace(/^\?/,"?"):"")+u.hash);
         }
-      }catch(_){}
+      }catch (e) {reportSwallow(e, 'session/loader.loadSession~10'); }
       try{
         clearLegacyMsgListChildren();
         stateStore.dispatch({type:"state/batch",patch:{
@@ -789,7 +790,7 @@ export async function loadSession(id){
         stateStore.dispatch({type:"session/replace-messages",payload:[]});
         publishReactChatRuntime({type:"state-synced",reason:"session-not-found"});
         activateMainView("topicSetup", document);
-      }catch(_){}
+      }catch (e) {reportSwallow(e, 'session/loader.loadSession~11'); }
     }
   } finally {
     if(saveState.loadSessionId===id){
@@ -825,10 +826,10 @@ export async function reattachPendingTurn(sessionId){
       }
     }
   }
-  catch(_){ try{clearPendingTurn(sessionId)}catch(_){} return; }
+  catch(_){ try{clearPendingTurn(sessionId)}catch (e) {reportSwallow(e, 'session/loader.loadSession~12'); } return; }
   if(!snapshot||!snapshot.turn)return;
   var turn=snapshot.turn;
-  if(turn.sessionId&&turn.sessionId!==sessionId){ try{clearPendingTurn(sessionId)}catch(_){} return; }
+  if(turn.sessionId&&turn.sessionId!==sessionId){ try{clearPendingTurn(sessionId)}catch (e) {reportSwallow(e, 'session/loader.loadSession~13'); } return; }
   if(stateStore.read("currentSessionId")!==sessionId)return;
   if(turn.status==="completed"){
     try{
@@ -841,15 +842,15 @@ export async function reattachPendingTurn(sessionId){
         }
         if(!already&&typeof window.addMessage==="function"){
           window.addMessage("assistant",full);
-          try{publishReactChatRuntime({type:"state-synced",reason:"pending-turn-completed"});}catch(_){}
+          try{publishReactChatRuntime({type:"state-synced",reason:"pending-turn-completed"});}catch (e) {reportSwallow(e, 'session/loader.loadSession~14'); }
         }
       }
-    }catch(_){}
-    try{clearPendingTurn(sessionId)}catch(_){}
+    }catch (e) {reportSwallow(e, 'session/loader.loadSession~15'); }
+    try{clearPendingTurn(sessionId)}catch (e) {reportSwallow(e, 'session/loader.loadSession~16'); }
     return;
   }
   if(turn.status==="failed"||turn.status==="interrupted"){
-    try{clearPendingTurn(sessionId)}catch(_){}
+    try{clearPendingTurn(sessionId)}catch (e) {reportSwallow(e, 'session/loader.loadSession~17'); }
     return;
   }
   if(typeof window.addStreamingMessage!=="function")return;
@@ -872,13 +873,13 @@ export async function reattachPendingTurn(sessionId){
         try{lastUserParts=buildUserContentParts(lastUser,lastUserEntry&&lastUserEntry.attachments);}catch(_){lastUserParts=null;}
         quietTurn(window.askChatTurn(lastUser,lastUserParts));
       }
-    }catch(_){}
+    }catch (e) {reportSwallow(e, 'session/loader.loadSession~18'); }
   }});
   var subAbort=new AbortController();
   var maxSeq=Number(pending.lastSeq)||0;
   function applyFrame(frame){
     if(!frame||stateStore.read("currentSessionId")!==sessionId){
-      try{subAbort.abort("session-switch")}catch(_){}
+      try{subAbort.abort("session-switch")}catch (e) {reportSwallow(e, 'session/loader.loadSession~19'); }
       return;
     }
     try{
@@ -887,7 +888,7 @@ export async function reattachPendingTurn(sessionId){
       else if(frame.event==="reasoning"&&typeof data.delta==="string")ctl.appendThinking(data.delta);
       else if(frame.event==="tool_use"){
         var _calls=Array.isArray(data)?data:(data.calls||[data]);
-        for(var ci=0;ci<_calls.length;ci++){ try{ctl.recordToolUse(_calls[ci])}catch(_){} }
+        for(var ci=0;ci<_calls.length;ci++){ try{ctl.recordToolUse(_calls[ci])}catch (e) {reportSwallow(e, 'session/loader.loadSession~20'); } }
       }
       else if(frame.event==="tool_result")ctl.recordToolResult(data);
       else if(frame.event==="tool_approval"&&typeof ctl.recordToolApproval==="function")ctl.recordToolApproval(data);
@@ -895,30 +896,30 @@ export async function reattachPendingTurn(sessionId){
       else if(frame.event==="execution_start"&&ctl.recordExecutionStart)ctl.recordExecutionStart(data);
       else if(frame.event==="agent_step"&&typeof ctl.recordAgentStep==="function")ctl.recordAgentStep(data);
       else if(frame.event==="agent_plan"&&typeof ctl.recordAgentPlan==="function")ctl.recordAgentPlan(data);
-      else if(frame.event==="turn_done"){ ctl.finish(); try{clearPendingTurn(sessionId)}catch(_){} try{subAbort.abort("done")}catch(_){} return; }
+      else if(frame.event==="turn_done"){ ctl.finish(); try{clearPendingTurn(sessionId)}catch (e) {reportSwallow(e, 'session/loader.loadSession~21'); } try{subAbort.abort("done")}catch (e) {reportSwallow(e, 'session/loader.loadSession~22'); } return; }
       else if(frame.event==="turn_failed"){
         try{
           if(turn.fullText||ctl)ctl.finish();
-        }catch(_){}
-        try{clearPendingTurn(sessionId)}catch(_){}
-        try{subAbort.abort("done")}catch(_){}
+        }catch (e) {reportSwallow(e, 'session/loader.loadSession~23'); }
+        try{clearPendingTurn(sessionId)}catch (e) {reportSwallow(e, 'session/loader.loadSession~24'); }
+        try{subAbort.abort("done")}catch (e) {reportSwallow(e, 'session/loader.loadSession~25'); }
         return;
       }
       if(typeof frame.sequence==="number"&&frame.sequence>maxSeq){
         maxSeq=frame.sequence;
-        try{bumpPendingSeq(sessionId,maxSeq)}catch(_){}
+        try{bumpPendingSeq(sessionId,maxSeq)}catch (e) {reportSwallow(e, 'session/loader.loadSession~26'); }
       }
-    }catch(_){}
+    }catch (e) {reportSwallow(e, 'session/loader.loadSession~27'); }
   }
   try{
     var replay=(snapshot.events||[]);
     for(var r=0;r<replay.length;r++)applyFrame(replay[r]);
-    if(stateStore.read("currentSessionId")!==sessionId){try{subAbort.abort("session-switch")}catch(_){}return}
+    if(stateStore.read("currentSessionId")!==sessionId){try{subAbort.abort("session-switch")}catch (e) {reportSwallow(e, 'session/loader.loadSession~28'); }return}
     await subscribeChatTurnEvents(pending.turnId,maxSeq,subAbort.signal,{
       onEvent:applyFrame,
       onError:function(){},
     });
-  }catch(_){}
+  }catch (e) {reportSwallow(e, 'session/loader.loadSession~29'); }
 }
 
 /* ============================================================
