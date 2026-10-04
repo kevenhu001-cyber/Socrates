@@ -1054,8 +1054,13 @@
     background: transparent;
   }
 
+  /* Touch has no hover, so the desktop hover-reveal contract cannot gate the
+     only row-selection affordance. Keep the row checkbox visible on phones —
+     hiding it made the selection bar (and bulk delete) unreachable.
+     e2e: library-directory.spec.mjs (phone selection). */
   #appShell .library-row .library-checkbox-label {
-    display: none;
+    display: flex;
+    opacity: 1;
   }
 
   #appShell .library-row .library-item-name {

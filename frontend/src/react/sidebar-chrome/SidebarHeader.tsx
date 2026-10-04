@@ -1,5 +1,5 @@
 
-import { getLegacyActions } from '../legacy/gateway';
+import { getLegacyActions, t } from '../legacy/gateway';
 import { useUserInfo } from './sidebarChrome.bridge';
 
 const NEW_CHAT_ICON =
@@ -41,8 +41,10 @@ export function SidebarHeader() {
           className="btn-icon sidebar-search-btn"
           id="sidebarSearchBtn"
           type="button"
-          title="Search chats"
-          aria-label="Search chats"
+          title={t('sidebar.searchPlaceholder')}
+          aria-label={t('sidebar.searchPlaceholder')}
+          data-i18n-title="sidebar.searchPlaceholder"
+          data-i18n-aria="sidebar.searchPlaceholder"
           aria-controls="sidebarSearch"
           aria-expanded="false"
           onClick={(event) => {
@@ -59,8 +61,10 @@ export function SidebarHeader() {
         <button
           className="btn-icon compose-btn"
           id="newChatBtn"
-          title="Start a new chat"
-          aria-label="Start a new chat"
+          title={t('sidebar.startNewChat')}
+          aria-label={t('sidebar.startNewChat')}
+          data-i18n-title="sidebar.startNewChat"
+          data-i18n-aria="sidebar.startNewChat"
           onClick={(e) => {
             e.preventDefault();
             getLegacyActions().navigation.startNewChat();
@@ -70,8 +74,10 @@ export function SidebarHeader() {
         <button
           className="btn-icon"
           id="sidebarCloseBtn"
-          title="Close sidebar"
-          aria-label="Close sidebar"
+          title={t('chrome.closeSidebar')}
+          aria-label={t('chrome.closeSidebar')}
+          data-i18n-title="chrome.closeSidebar"
+          data-i18n-aria="chrome.closeSidebar"
           aria-controls="sidebar"
           onClick={() => {
             getLegacyActions().navigation.toggleSidebar();

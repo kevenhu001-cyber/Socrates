@@ -370,7 +370,7 @@ export async function submitAuthSignin(){
   var guest=document.getElementById("authGuestCheckbox").checked;
   setAuthError("authSigninError","");
   if(!email||!password)return setAuthError("authSigninError","Please enter your email and password.");
-  var btn=document.getElementById("authSigninBtn");btn.disabled=true;btn.textContent="Signing in…";
+  var btn=document.getElementById("authSigninBtn");btn.disabled=true;btn.textContent=t("auth.signingIn");
   var markAuthSuccess=window.markAuthSuccess;
   try{
     var r=await apiFetch("/api/auth/login",{method:"POST",_authEndpoint:true,body:{email,password}});
@@ -476,11 +476,11 @@ export async function submitAuthVerify(token){
     }
     revealAppAndHydrate();
   }catch(e){
-    var title="This link is invalid or expired";
-    var msg="Verification links expire after 24 hours. Enter your email and we'll send a fresh one.";
+    var title=t("auth.verifyFailedTitle");
+    var msg=t("auth.verifyFailedMsg");
     if(e.status===400&&e.code==="EXPIRED"){
-      title="This link has expired";
-      msg="Verification links expire after 24 hours. Enter your email and we'll send a fresh one.";
+      title=t("auth.verifyFailedExpiredTitle");
+      msg=t("auth.verifyFailedMsg");
     }
     document.getElementById("authVerifyFailedTitle").textContent=title;
     document.getElementById("authVerifyFailedMsg").textContent=msg;
@@ -551,7 +551,7 @@ export async function submitAuthLoginWithCode(){
      (server/lib/crypto.ts). Keep the client validator in lockstep so it
      never rejects a valid code before it reaches the server. */
   if(!/^[A-HJ-KM-NP-Z2-9]{8}$/.test(code))return setAuthError("authCodeError","Please enter the 8-character code.");
-  var btn=document.getElementById("authCodeLoginBtn");btn.disabled=true;btn.textContent="Logging in…";
+  var btn=document.getElementById("authCodeLoginBtn");btn.disabled=true;btn.textContent=t("auth.loggingIn");
   var markAuthSuccess=window.markAuthSuccess;
   try{
     var r=await apiFetch("/api/auth/login-with-code",{method:"POST",_authEndpoint:true,body:{email,code}});

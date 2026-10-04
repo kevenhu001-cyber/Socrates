@@ -77,7 +77,7 @@ function ShareModal() {
         <button
           type="button"
           className="share-close"
-          aria-label="Close"
+          aria-label={i18n('common.close', 'Close')}
           onClick={() => dispatch.close()}
         >
           <Icon name="close" size={16} strokeWidth={2.5} />
@@ -115,7 +115,7 @@ function ShareModal() {
           type="text"
           readOnly
           onClick={(e) => (e.target as HTMLInputElement).select()}
-          aria-label="Share link"
+          aria-label={i18n('sidebar.shareLink', 'Share link')}
           value={snap.shareUrl}
         />
         <button

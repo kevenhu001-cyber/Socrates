@@ -135,7 +135,9 @@ function CommandPalette() {
           id={INPUT_ID}
           name="cmdKInput"
           aria-label="Search sessions and messages"
+          data-i18n-aria="chrome.cmdkSearchAria"
           placeholder="Search sessions and messages…"
+          data-i18n-placeholder="chrome.cmdkSearch"
           autoComplete="off"
           spellCheck={false}
           defaultValue=""

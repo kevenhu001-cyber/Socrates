@@ -444,7 +444,8 @@ function LibraryView({ data, dispatch }: {
               type="button"
               className={'library-view-btn' + (viewMode === 'grid' ? ' active' : '')}
               onClick={() => setViewMode('grid')}
-              aria-label="Grid view"
+              aria-label={_t('chrome.gridView')}
+              data-i18n-aria="chrome.gridView"
             >
               <GridIcon />
             </button>
@@ -452,7 +453,8 @@ function LibraryView({ data, dispatch }: {
               type="button"
               className={'library-view-btn' + (viewMode === 'list' ? ' active' : '')}
               onClick={() => setViewMode('list')}
-              aria-label="List view"
+              aria-label={_t('chrome.listView')}
+              data-i18n-aria="chrome.listView"
             >
               <ListIcon />
             </button>

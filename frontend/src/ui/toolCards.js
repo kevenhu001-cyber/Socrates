@@ -919,11 +919,13 @@ function appendInlineImage(fileId, mimeType, url, out, artifactName) {
      buttons. Always visible at low opacity, brightens on hover. */
   const actions = document.createElement("div");
   actions.className = "exec-artifact-actions";
+  const fsLabel = trTool('chrome.fullscreen', 'Fullscreen');
+  const dlLabel = trTool('chrome.download', 'Download');
   actions.innerHTML =
-    '<button type="button" class="exec-artifact-btn" title="Fullscreen" aria-label="Fullscreen">' +
+    '<button type="button" class="exec-artifact-btn" title="' + esc(fsLabel) + '" aria-label="' + esc(fsLabel) + '" data-i18n-title="chrome.fullscreen" data-i18n-aria="chrome.fullscreen">' +
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>' +
     '</button>' +
-    '<a class="exec-artifact-btn" href="' + esc(url) + '" download target="_blank" rel="noopener" title="Download" aria-label="Download">' +
+    '<a class="exec-artifact-btn" href="' + esc(url) + '" download target="_blank" rel="noopener" title="' + esc(dlLabel) + '" aria-label="' + esc(dlLabel) + '" data-i18n-title="chrome.download" data-i18n-aria="chrome.download">' +
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>' +
     '</a>';
   wrap.appendChild(actions);

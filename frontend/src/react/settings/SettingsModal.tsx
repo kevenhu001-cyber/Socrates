@@ -128,7 +128,8 @@ function SettingsModal() {
           <button
             className="settings-close"
             id="settingsCloseBtn"
-            aria-label="Close"
+            aria-label={label('关闭', 'Close')}
+            data-i18n-aria="common.close"
             data-initial-focus="true"
             onClick={() => legacy.navigation.closeSettings()}
           >

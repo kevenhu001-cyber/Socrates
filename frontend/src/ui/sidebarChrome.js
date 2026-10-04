@@ -14,6 +14,12 @@ function _renderRecents() {
 function _renderMistakes() {
   try { if (typeof window !== 'undefined' && typeof window.renderMistakes === 'function') window.renderMistakes(); } catch (_) {}
 }
+/* Localize the sidebar toggle copy. `window.t` is installed by i18n.js at
+   boot; fall back to the English string so a pre-i18n paint still reads. */
+function _tr(key, fallback) {
+  try { if (typeof window !== 'undefined' && typeof window.t === 'function') { var v = window.t(key); if (v && v !== key) return v; } } catch (_) {}
+  return fallback;
+}
 
 export function syncSidebarBtns() {
   var ob = document.getElementById('sidebarOpenBtn');
@@ -35,8 +41,8 @@ export function syncSidebarBtns() {
       cb.style.display = '';
       cb.removeAttribute('aria-hidden');
       cb.setAttribute('aria-expanded', open ? 'true' : 'false');
-      cb.setAttribute('aria-label', open ? 'Close sidebar' : 'Open sidebar');
-      cb.setAttribute('title', open ? 'Close sidebar (⌘B)' : 'Open sidebar (⌘B)');
+      cb.setAttribute('aria-label', _tr(open ? 'chrome.closeSidebar' : 'chrome.openSidebar', open ? 'Close sidebar' : 'Open sidebar'));
+      cb.setAttribute('title', _tr(open ? 'chrome.closeSidebarKbd' : 'chrome.openSidebarKbd', open ? 'Close sidebar (⌘B)' : 'Open sidebar (⌘B)'));
     }
     return;
   }
@@ -47,8 +53,8 @@ export function syncSidebarBtns() {
   if (ob) {
     ob.style.display = open ? 'none' : '';
     ob.setAttribute('aria-expanded', open ? 'true' : 'false');
-    ob.setAttribute('aria-label', open ? 'Collapse sidebar' : 'Expand sidebar');
-    ob.setAttribute('title', open ? 'Collapse sidebar (⌘B)' : 'Expand sidebar (⌘B)');
+    ob.setAttribute('aria-label', _tr(open ? 'chrome.collapseSidebar' : 'chrome.expandSidebar', open ? 'Collapse sidebar' : 'Expand sidebar'));
+    ob.setAttribute('title', _tr(open ? 'chrome.collapseSidebarKbd' : 'chrome.expandSidebarKbd', open ? 'Collapse sidebar (⌘B)' : 'Expand sidebar (⌘B)'));
   }
   /* The close button inside the sidebar header is only useful when
      the sidebar is open. Hidden when collapsed so it drops out of
@@ -105,6 +111,11 @@ export function initSidebarChrome() {
     }
   } catch (_) {}
   syncSidebarBtns();
+  /* Re-localize the JS-owned toggle copy whenever the language changes. It
+     carries the state-dependent ⌘B hint, so it is written by
+     syncSidebarBtns() rather than a static data-i18n hook; without this the
+     title would stay in the previous language until the sidebar is toggled. */
+  document.addEventListener('socrates:langchange', syncSidebarBtns);
   try { window.sidebarOpen = sidebarOpen; } catch (_) {}
 
   document.addEventListener('click', function (e) {

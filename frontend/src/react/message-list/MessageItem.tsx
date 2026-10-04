@@ -5,7 +5,7 @@ import { AssistantTurn } from '../tool-run/AssistantTurn';
 import type { LegacyChatMessage } from '../types/domain';
 import { MessageToolbar } from './MessageToolbar';
 import { CanvasBlock } from '../canvas';
-import { getLegacyActions } from '../legacy/gateway';
+import { getLegacyActions, t } from '../legacy/gateway';
 import { getAttachmentIcon, type IconSource } from '../attachments/fileIcons';
 
 interface MessageItemProps {
@@ -184,7 +184,7 @@ function MessageItemBase({ message, textLength: _textLength }: MessageItemProps)
       data-stream-settled={streamSettled ? 'true' : undefined}
     >
       {role === 'user' && attachments.length > 0 ? (
-        <div className="msg-attachment-chips" aria-label="Attachments">
+        <div className="msg-attachment-chips" aria-label={t('chrome.attachments')} data-i18n-aria="chrome.attachments">
           {attachments.map((attachment, index) => {
             const key = `${attachment.id ?? attachment.name ?? 'attachment'}-${index}`;
             const isImage = attachment.kind === 'image'

@@ -149,45 +149,45 @@
      rest of the page inert). On successful login/registration/verify
      we hide the gate and reveal the app.
      ============================================================ -->
-<div class="auth-gate" id="authGate" role="dialog" aria-modal="true" aria-label="Sign in">
+<div class="auth-gate" id="authGate" role="dialog" aria-modal="true" aria-label="Sign in" data-i18n-aria="auth.signIn">
   <div class="auth-card">
     <div class="auth-brand">
       <img src="/logo.png" width="22" height="22" alt="" class="logo-img">
       <span>Socrates</span>
     </div>
 
-    <div class="auth-tabs" id="authTabs" role="tablist" aria-label="Account access">
-      <button type="button" class="auth-tab active" id="authSigninTab" role="tab" aria-controls="authSigninView" aria-selected="true" tabindex="0" data-tab="signin">Sign in</button>
-      <button type="button" class="auth-tab" id="authRegisterTab" role="tab" aria-controls="authRegisterView" aria-selected="false" tabindex="-1" data-tab="register">Create account</button>
+    <div class="auth-tabs" id="authTabs" role="tablist" aria-label="Account access" data-i18n-aria="chrome.accountAccess">
+      <button type="button" class="auth-tab active" id="authSigninTab" role="tab" aria-controls="authSigninView" aria-selected="true" tabindex="0" data-tab="signin" data-i18n-key="auth.signIn">Sign in</button>
+      <button type="button" class="auth-tab" id="authRegisterTab" role="tab" aria-controls="authRegisterView" aria-selected="false" tabindex="-1" data-tab="register" data-i18n-key="auth.createAccount">Create account</button>
     </div>
 
     <div class="auth-views">
       <!-- Sign in -->
       <form class="auth-view" id="authSigninView">
-        <label class="auth-label" for="authSigninEmail">Email</label>
+        <label class="auth-label" for="authSigninEmail" data-i18n-key="auth.email">Email</label>
         <input class="auth-input" id="authSigninEmail" name="authSigninEmail" type="email" autocomplete="email" required placeholder="you@example.com">
-        <label class="auth-label" for="authSigninPassword">Password</label>
+        <label class="auth-label" for="authSigninPassword" data-i18n-key="auth.password">Password</label>
         <input class="auth-input" id="authSigninPassword" name="authSigninPassword" type="password" autocomplete="current-password" required placeholder="••••••••">
-        <a class="auth-inline-link auth-inline-link-right" href="#">Forgot password?</a>
+        <a class="auth-inline-link auth-inline-link-right" href="#" data-i18n-key="auth.forgotPassword">Forgot password?</a>
         <div class="auth-error" id="authSigninError"></div>
-        <label class="auth-guest-label" for="authGuestCheckbox"><input type="checkbox" id="authGuestCheckbox" name="authGuestCheckbox"> Guest mode</label>
-        <button class="auth-btn primary" id="authSigninBtn" type="submit">Sign in</button>
-        <div class="auth-view-separator">or</div>
-        <a class="auth-btn secondary auth-github-btn" id="authGithubBtn" href="/api/auth/oauth/github/start?return_to=/"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.92.58.1.79-.25.79-.56v-2.16c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.05-.72.08-.7.08-.7 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.72 1.27 3.39.97.1-.76.4-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.28 1.2-3.09-.12-.3-.52-1.49.11-3.1 0 0 .98-.31 3.2 1.18a11.2 11.2 0 015.84 0c2.22-1.49 3.2-1.18 3.2-1.18.63 1.61.23 2.8.11 3.1.75.81 1.2 1.83 1.2 3.09 0 4.43-2.7 5.4-5.26 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>Continue with GitHub</a>
-        <a class="auth-inline-link auth-code-login-link" href="#">Login with verification code</a>
-        <div class="auth-foot">No account? <a href="#">Create one</a></div>
+        <label class="auth-guest-label" for="authGuestCheckbox"><input type="checkbox" id="authGuestCheckbox" name="authGuestCheckbox"> <span data-i18n-key="auth.guestMode">Guest mode</span></label>
+        <button class="auth-btn primary" id="authSigninBtn" type="submit" data-i18n-key="auth.signIn">Sign in</button>
+        <div class="auth-view-separator" data-i18n-key="auth.or">or</div>
+        <a class="auth-btn secondary auth-github-btn" id="authGithubBtn" href="/api/auth/oauth/github/start?return_to=/"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.92.58.1.79-.25.79-.56v-2.16c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.05-.72.08-.7.08-.7 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.72 1.27 3.39.97.1-.76.4-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.28 1.2-3.09-.12-.3-.52-1.49.11-3.1 0 0 .98-.31 3.2 1.18a11.2 11.2 0 015.84 0c2.22-1.49 3.2-1.18 3.2-1.18.63 1.61.23 2.8.11 3.1.75.81 1.2 1.83 1.2 3.09 0 4.43-2.7 5.4-5.26 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg><span data-i18n-key="auth.continueGithub">Continue with GitHub</span></a>
+        <a class="auth-inline-link auth-code-login-link" href="#" data-i18n-key="auth.codeLoginLink">Login with verification code</a>
+        <div class="auth-foot"><span data-i18n-key="auth.noAccount">No account?</span> <a href="#" data-i18n-key="auth.createOne">Create one</a></div>
       </form>
 
       <!-- Register -->
       <form class="auth-view hidden" id="authRegisterView">
-        <p class="auth-lede">Sign up with your email. We'll send a verification link — no codes to memorize.</p>
-        <label class="auth-label" for="authRegisterEmail">Email</label>
+        <p class="auth-lede" data-i18n-key="auth.registerLede">Sign up with your email. We'll send a verification link — no codes to memorize.</p>
+        <label class="auth-label" for="authRegisterEmail" data-i18n-key="auth.email">Email</label>
         <input class="auth-input" id="authRegisterEmail" name="authRegisterEmail" type="email" autocomplete="email" required placeholder="you@example.com">
-        <label class="auth-label" for="authRegisterPassword">Password</label>
-        <input class="auth-input" id="authRegisterPassword" name="authRegisterPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters">
+        <label class="auth-label" for="authRegisterPassword" data-i18n-key="auth.password">Password</label>
+        <input class="auth-input" id="authRegisterPassword" name="authRegisterPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters" data-i18n-placeholder="chrome.passwordHint">
         <div class="auth-error" id="authRegisterError"></div>
-        <button class="auth-btn primary" id="authRegisterBtn" type="submit">Send verification link</button>
-        <div class="auth-foot">Already verified? <a href="#">Sign in</a></div>
+        <button class="auth-btn primary" id="authRegisterBtn" type="submit" data-i18n-key="auth.sendVerificationLink">Send verification link</button>
+        <div class="auth-foot"><span data-i18n-key="auth.alreadyVerified">Already verified?</span> <a href="#" data-i18n-key="auth.signIn">Sign in</a></div>
       </form>
 
       <!-- Verify-sent -->
@@ -195,10 +195,10 @@
         <div class="auth-icon">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
         </div>
-        <h2 class="auth-title">Check your inbox</h2>
-        <p class="auth-lede">We sent a verification link to <strong id="authVerifyEmail"></strong>. Click the button in the email to start learning with Socrates. The link expires in 24 hours.</p>
-        <button class="auth-btn secondary">Resend the link</button>
-        <div class="auth-foot"><a href="#">Use a different email</a></div>
+        <h2 class="auth-title" data-i18n-key="auth.checkInbox">Check your inbox</h2>
+        <p class="auth-lede"><span data-i18n-key="auth.verifySentPre">We sent a verification link to </span><strong id="authVerifyEmail"></strong><span data-i18n-key="auth.verifySentPost">. Click the button in the email to start learning with Socrates. The link expires in 24 hours.</span></p>
+        <button class="auth-btn secondary" data-i18n-key="auth.resendLink">Resend the link</button>
+        <div class="auth-foot"><a href="#" data-i18n-key="auth.useDifferentEmail">Use a different email</a></div>
       </div>
 
       <!-- Verify-failed -->
@@ -209,10 +209,10 @@
         <h2 class="auth-title" id="authVerifyFailedTitle">This link is invalid or expired</h2>
         <p class="auth-lede" id="authVerifyFailedMsg">Verification links expire after 24 hours. Enter your email and we'll send a fresh one.</p>
         <form>
-          <label class="auth-label" for="authResendEmail">Email</label>
+          <label class="auth-label" for="authResendEmail" data-i18n-key="auth.email">Email</label>
           <input class="auth-input" id="authResendEmail" name="authResendEmail" type="email" required placeholder="you@example.com">
           <div class="auth-error" id="authVerifyFailedError"></div>
-          <button class="auth-btn primary" type="submit">Send a new link</button>
+          <button class="auth-btn primary" type="submit" data-i18n-key="auth.sendNewLink">Send a new link</button>
         </form>
         <div class="auth-foot"><a href="#">Back to sign in</a></div>
       </div>
@@ -223,22 +223,22 @@
         <div class="auth-icon auth-icon-ok">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
-        <h2 class="auth-title">Email verified</h2>
-        <p class="auth-lede">You're signed in. Taking you to your dashboard…</p>
+        <h2 class="auth-title" data-i18n-key="auth.verifiedTitle">Email verified</h2>
+        <p class="auth-lede" data-i18n-key="auth.verifiedMsg">You're signed in. Taking you to your dashboard…</p>
       </div>
 
       <!-- Forgot-password (enter email to receive reset link) -->
       <form class="auth-view hidden" id="authForgotPasswordView">
-        <a class="auth-back-link" href="#"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Back to sign in</a>
+        <a class="auth-back-link" href="#"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg><span data-i18n-key="auth.backToSignIn">Back to sign in</span></a>
         <div class="auth-icon">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         </div>
-        <h2 class="auth-title">Reset your password</h2>
-        <p class="auth-lede">Enter your email and we'll send a reset link.</p>
-        <label class="auth-label" for="authForgotEmail">Email</label>
+        <h2 class="auth-title" data-i18n-key="auth.resetTitle">Reset your password</h2>
+        <p class="auth-lede" data-i18n-key="auth.resetLede">Enter your email and we'll send a reset link.</p>
+        <label class="auth-label" for="authForgotEmail" data-i18n-key="auth.email">Email</label>
         <input class="auth-input" id="authForgotEmail" name="authForgotEmail" type="email" autocomplete="email" required placeholder="you@example.com">
         <div class="auth-error" id="authForgotError"></div>
-        <button class="auth-btn primary" id="authForgotBtn" type="submit">Send reset link</button>
+        <button class="auth-btn primary" id="authForgotBtn" type="submit" data-i18n-key="auth.sendResetLink">Send reset link</button>
       </form>
 
       <!-- Forgot-password-sent -->
@@ -246,9 +246,9 @@
         <div class="auth-icon">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
         </div>
-        <h2 class="auth-title">Check your inbox</h2>
-        <p class="auth-lede">If an account exists for <strong id="authForgotSentEmail"></strong>, we sent a password reset link. The link expires in 1 hour.</p>
-        <div class="auth-foot"><a href="#">Back to sign in</a></div>
+        <h2 class="auth-title" data-i18n-key="auth.checkInbox">Check your inbox</h2>
+        <p class="auth-lede"><span data-i18n-key="auth.forgotSentPre">If an account exists for </span><strong id="authForgotSentEmail"></strong><span data-i18n-key="auth.forgotSentPost">, we sent a password reset link. The link expires in 1 hour.</span></p>
+        <div class="auth-foot"><a href="#" data-i18n-key="auth.backToSignIn">Back to sign in</a></div>
       </div>
 
       <!-- Reset-password (accessed via ?reset_token= URL param) -->
@@ -256,8 +256,8 @@
         <div class="auth-icon auth-icon-ok">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         </div>
-        <h2 class="auth-title">Set new password</h2>
-        <p class="auth-lede">Choose a new password for your account.</p>
+        <h2 class="auth-title" data-i18n-key="auth.setNewPassword">Set new password</h2>
+        <p class="auth-lede" data-i18n-key="auth.setNewPasswordLede">Choose a new password for your account.</p>
         <!-- a11y: password managers and screen readers expect a
              username/email field on the same form so the new password
              can be associated with an account. The reset link itself
@@ -265,12 +265,12 @@
              still part of the form. -->
         <label class="auth-label sr-only-old" for="authResetEmail">Email</label>
         <input class="auth-input sr-only-opacity" id="authResetEmail" type="email" autocomplete="username" tabindex="-1" aria-hidden="true">
-        <label class="auth-label" for="authResetPassword">New password</label>
-        <input class="auth-input" id="authResetPassword" name="authResetPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters">
-        <label class="auth-label" for="authResetConfirm">Confirm password</label>
-        <input class="auth-input" id="authResetConfirm" name="authResetConfirm" type="password" autocomplete="new-password" minlength="8" required placeholder="Repeat your password">
+        <label class="auth-label" for="authResetPassword" data-i18n-key="auth.newPassword">New password</label>
+        <input class="auth-input" id="authResetPassword" name="authResetPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters" data-i18n-placeholder="chrome.passwordHint">
+        <label class="auth-label" for="authResetConfirm" data-i18n-key="auth.confirmPassword">Confirm password</label>
+        <input class="auth-input" id="authResetConfirm" name="authResetConfirm" type="password" autocomplete="new-password" minlength="8" required placeholder="Repeat your password" data-i18n-placeholder="chrome.repeatPassword">
         <div class="auth-error" id="authResetError"></div>
-        <button class="auth-btn primary" id="authResetBtn" type="submit">Reset password</button>
+        <button class="auth-btn primary" id="authResetBtn" type="submit" data-i18n-key="auth.resetPassword">Reset password</button>
       </form>
 
       <!-- Reset-success (shown after password is reset) -->
@@ -278,36 +278,36 @@
         <div class="auth-icon auth-icon-ok">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
-        <h2 class="auth-title">Password updated</h2>
-        <p class="auth-lede">Your password has been reset successfully. Sign in with your new password.</p>
-        <button class="auth-btn primary">Sign in</button>
+        <h2 class="auth-title" data-i18n-key="auth.passwordUpdated">Password updated</h2>
+        <p class="auth-lede" data-i18n-key="auth.passwordUpdatedLede">Your password has been reset successfully. Sign in with your new password.</p>
+        <button class="auth-btn primary" data-i18n-key="auth.signIn">Sign in</button>
       </div>
 
       <!-- Code-login (email + verification code) -->
       <div class="auth-view hidden" id="authCodeLoginView">
-        <a class="auth-back-link" href="#"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Back to sign in</a>
+        <a class="auth-back-link" href="#"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg><span data-i18n-key="auth.backToSignIn">Back to sign in</span></a>
         <div class="auth-icon">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M12 11v4"/><circle cx="12" cy="8" r=".5" fill="currentColor"/></svg>
         </div>
-        <h2 class="auth-title">Email code login</h2>
-        <p class="auth-lede">Enter your email to receive an 8-character login code.</p>
-        <label class="auth-label" for="authCodeEmail">Email</label>
+        <h2 class="auth-title" data-i18n-key="auth.codeLoginTitle">Email code login</h2>
+        <p class="auth-lede" data-i18n-key="auth.codeLoginLede">Enter your email to receive an 8-character login code.</p>
+        <label class="auth-label" for="authCodeEmail" data-i18n-key="auth.email">Email</label>
         <input class="auth-input" id="authCodeEmail" name="authCodeEmail" type="email" autocomplete="email" required placeholder="you@example.com">
         <div id="authCodeCodeWrap" class="hidden">
-          <label class="auth-label" for="authCodeInput">8-character code</label>
+          <label class="auth-label" for="authCodeInput" data-i18n-key="auth.codeLabel">8-character code</label>
           <input class="auth-input auth-code-input" id="authCodeInput" name="authCodeInput" type="text" inputmode="text" pattern="[A-HJ-KM-NP-Z2-9]{8}" maxlength="8" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="ABCD2345">
-          <p class="auth-msg hidden" id="authCodeSentMsg">We sent a code to <strong id="authCodeSentEmail"></strong>. It expires in 10 minutes.</p>
+          <p class="auth-msg hidden" id="authCodeSentMsg"><span data-i18n-key="auth.codeSentPre">We sent a code to </span><strong id="authCodeSentEmail"></strong><span data-i18n-key="auth.codeSentPost">. It expires in 10 minutes.</span></p>
         </div>
         <div class="auth-error" id="authCodeError"></div>
-        <label class="auth-guest-label" for="authCodeGuestCheckbox"><input type="checkbox" id="authCodeGuestCheckbox" name="authCodeGuestCheckbox"> Guest mode</label>
-        <button class="auth-btn primary" id="authCodeSendBtn" type="button">Send code</button>
-        <button class="auth-btn primary hidden" id="authCodeLoginBtn" type="button">Log in</button>
-        <div class="auth-foot hidden" id="authCodeResendWrap"><a href="#">Resend code</a></div>
-        <div class="auth-foot"><a href="#">Back to sign in</a></div>
+        <label class="auth-guest-label" for="authCodeGuestCheckbox"><input type="checkbox" id="authCodeGuestCheckbox" name="authCodeGuestCheckbox"> <span data-i18n-key="auth.guestMode">Guest mode</span></label>
+        <button class="auth-btn primary" id="authCodeSendBtn" type="button" data-i18n-key="auth.sendCode">Send code</button>
+        <button class="auth-btn primary hidden" id="authCodeLoginBtn" type="button" data-i18n-key="auth.logIn">Log in</button>
+        <div class="auth-foot hidden" id="authCodeResendWrap"><a href="#" data-i18n-key="auth.resendCode">Resend code</a></div>
+        <div class="auth-foot"><a href="#" data-i18n-key="auth.backToSignIn">Back to sign in</a></div>
       </div>
     </div>
   </div>
-  <div class="auth-footnote">Socrates asks questions to help you think. It does not judge your answers.</div>
+  <div class="auth-footnote" data-i18n-key="auth.footnote">Socrates asks questions to help you think. It does not judge your answers.</div>
 </div>
 
 <div class="app hidden" id="appShell">
@@ -322,10 +322,10 @@
         <svg class="cg-sidebar-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
       </div>
       <div class="sidebar-header-actions">
-        <button class="icon-btn sidebar-search-btn" id="sidebarSearchBtn" type="button" title="Search chats" aria-label="Search chats" aria-controls="sidebarSearch" aria-expanded="false">
+        <button class="icon-btn sidebar-search-btn" id="sidebarSearchBtn" type="button" title="Search chats" aria-label="Search chats" data-i18n-title="sidebar.searchPlaceholder" data-i18n-aria="sidebar.searchPlaceholder" aria-controls="sidebarSearch" aria-expanded="false">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
         </button>
-        <button class="icon-btn compose-btn" id="newChatBtn" title="Start a new chat">
+        <button class="icon-btn compose-btn" id="newChatBtn" title="Start a new chat" data-i18n-title="sidebar.startNewChat">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
         </button>
         <button class="icon-btn" id="sidebarCloseBtn" title="Close sidebar" aria-label="Close sidebar" aria-controls="sidebar">
@@ -334,7 +334,7 @@
       </div>
     </div>
     <!-- Keep this fallback navigation aligned with the React-owned drawer. -->
-    <nav class="sidebar-nav" id="sidebarNav" aria-label="Primary navigation">
+    <nav class="sidebar-nav" id="sidebarNav" aria-label="Primary navigation" data-i18n-aria="chrome.primaryNav">
       <button type="button" class="sidebar-nav-btn active" data-nav="new" id="navNew">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
         <span data-i18n-key="sidebar.nav.new">New chat</span>
@@ -437,14 +437,14 @@
            this pre-paint placeholder with the same structure). -->
       <div class="user-row" id="sidebarUserRow"><div class="user-avatar" aria-hidden="true">?</div><div class="user-identity"><div class="user-name"></div><div class="user-plan">Free</div></div></div>
       <div class="sidebar-footer-actions">
-        <button type="button" class="icon-btn theme-toggle" id="themeToggle" title="Toggle theme">
+        <button type="button" class="icon-btn theme-toggle" id="themeToggle" title="Toggle theme" data-i18n-title="display.themeToggle">
           <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
           <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
-        <button type="button" class="icon-btn" id="displayPrefsBtn" title="Display settings" aria-label="Display settings">
+        <button type="button" class="icon-btn" id="displayPrefsBtn" title="Display settings" aria-label="Display settings" data-i18n-title="chrome.displaySettings" data-i18n-aria="chrome.displaySettings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="6" x2="14" y2="6"/><line x1="10" y1="6" x2="3" y2="6"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="18" x2="16" y2="18"/><line x1="12" y1="18" x2="3" y2="18"/></svg>
         </button>
-        <button class="icon-btn" id="apiSettingsBtn" title="API Settings">
+        <button class="icon-btn" id="apiSettingsBtn" title="API Settings" data-i18n-title="chrome.apiSettings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
         <div class="display-prefs-popover hidden" id="displayPrefsPopover">
@@ -460,7 +460,7 @@
             </div>
           </div>
           <div class="display-prefs-row">
-            <div class="display-prefs-label"><span>Text size</span><span class="value" id="displayPrefsFontLabel">M</span></div>
+            <div class="display-prefs-label"><span data-i18n-key="sidebar.textSize">Text size</span><span class="value" id="displayPrefsFontLabel">M</span></div>
             <div class="display-prefs-segs" id="displayPrefsFontSegs">
               <button type="button" class="display-prefs-seg" data-font="1">S</button>
               <button type="button" class="display-prefs-seg" data-font="1.125">M</button>
@@ -469,40 +469,40 @@
             </div>
           </div>
           <div class="display-prefs-row">
-            <div class="display-prefs-label"><span>Content width</span><span class="value" id="displayPrefsWidthLabel">M</span></div>
+            <div class="display-prefs-label"><span data-i18n-key="sidebar.contentWidth">Content width</span><span class="value" id="displayPrefsWidthLabel">M</span></div>
             <div class="display-prefs-segs" id="displayPrefsWidthSegs">
-              <button type="button" class="display-prefs-seg" data-width="0.85" title="Narrow">S</button>
-              <button type="button" class="display-prefs-seg" data-width="1" title="Medium">M</button>
-              <button type="button" class="display-prefs-seg" data-width="1.3" title="Wide">L</button>
-              <button type="button" class="display-prefs-seg" data-width="1.7" title="Full width">XL</button>
+              <button type="button" class="display-prefs-seg" data-width="0.85" title="Narrow" data-i18n-title="sidebar.narrow">S</button>
+              <button type="button" class="display-prefs-seg" data-width="1" title="Medium" data-i18n-title="sidebar.medium">M</button>
+              <button type="button" class="display-prefs-seg" data-width="1.3" title="Wide" data-i18n-title="sidebar.wide">L</button>
+              <button type="button" class="display-prefs-seg" data-width="1.7" title="Full width" data-i18n-title="sidebar.fullWidth">XL</button>
             </div>
           </div>
           <!-- Grid background toggle -->
           <div class="display-prefs-row display-prefs-toggle-row">
-            <div class="display-prefs-label"><span>Background grid</span></div>
-            <button class="grid-toggle" id="gridToggle" type="button" title="Toggle background grid" aria-label="Toggle background grid">
+            <div class="display-prefs-label"><span data-i18n-key="chrome.backgroundGrid">Background grid</span></div>
+            <button class="grid-toggle" id="gridToggle" type="button" title="Toggle background grid" aria-label="Toggle background grid" data-i18n-title="chrome.toggleBackgroundGrid" data-i18n-aria="chrome.toggleBackgroundGrid">
               <div class="toggle-knob"></div>
             </button>
           </div>
           <!-- Background color pickers — separate per mode -->
           <div class="display-prefs-row">
-            <div class="display-prefs-label"><span>Dark mode BG</span></div>
+            <div class="display-prefs-label"><span data-i18n-key="chrome.darkModeBg">Dark mode BG</span></div>
             <div class="display-prefs-bg-picker">
-              <input type="color" id="displayPrefsBgDark" value="#000000" title="Dark mode page background">
-              <button type="button" class="display-prefs-bg-reset" id="displayPrefsBgDarkReset" title="Reset dark mode to theme default">↺</button>
+              <input type="color" id="displayPrefsBgDark" value="#000000" title="Dark mode page background" data-i18n-title="chrome.darkModePageBg">
+              <button type="button" class="display-prefs-bg-reset" id="displayPrefsBgDarkReset" title="Reset dark mode to theme default" data-i18n-title="chrome.resetDarkBg">↺</button>
             </div>
           </div>
           <div class="display-prefs-row">
-            <div class="display-prefs-label"><span>Light mode BG</span></div>
+            <div class="display-prefs-label"><span data-i18n-key="chrome.lightModeBg">Light mode BG</span></div>
             <div class="display-prefs-bg-picker">
-              <input type="color" id="displayPrefsBgLight" value="#ffffff" title="Light mode page background">
-              <button type="button" class="display-prefs-bg-reset" id="displayPrefsBgLightReset" title="Reset light mode to theme default">↺</button>
+              <input type="color" id="displayPrefsBgLight" value="#ffffff" title="Light mode page background" data-i18n-title="chrome.lightModePageBg">
+              <button type="button" class="display-prefs-bg-reset" id="displayPrefsBgLightReset" title="Reset light mode to theme default" data-i18n-title="chrome.resetLightBg">↺</button>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <div class="sidebar-resize-handle" id="sidebarResizeHandle" aria-label="Drag to resize sidebar" title="Drag to resize sidebar"></div>
+    <div class="sidebar-resize-handle" id="sidebarResizeHandle" aria-label="Drag to resize sidebar" title="Drag to resize sidebar" data-i18n-aria="chrome.resizeSidebar" data-i18n-title="chrome.resizeSidebar"></div>
   </div>
 </aside>
 <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
@@ -516,11 +516,11 @@
          config/providers.js) keeps the active tab in sync with the
          landing #modeSegmented control automatically. Absolute-centered
          so it stays visually centered regardless of side-content width. -->
-    <div class="top-mode-tabs" id="modeSegmentedTop" role="tablist" aria-label="Session mode">
+    <div class="top-mode-tabs" id="modeSegmentedTop" role="tablist" aria-label="Session mode" data-i18n-aria="chrome.sessionMode">
       <button type="button" class="app-mode-toggle" data-mode="chat" role="tab" data-i18n-key="topbar.modeChat">聊天</button>
       <button type="button" class="app-mode-toggle" data-mode="tutor" role="tab" data-i18n-key="topbar.modeTutor">辅导</button>
     </div>
-    <div class="top-mode-tabs plugin-workspace-tabs" id="pluginWorkspaceTabs" role="tablist" aria-label="Plugin workspace" hidden>
+    <div class="top-mode-tabs plugin-workspace-tabs" id="pluginWorkspaceTabs" role="tablist" aria-label="Plugin workspace" data-i18n-aria="chrome.pluginWorkspace" hidden>
       <button type="button" class="plugin-workspace-tab active" id="pluginWorkspacePluginsTab" role="tab" aria-selected="true" data-i18n-key="plugins.pluginsTab">插件</button>
       <button type="button" class="plugin-workspace-tab" id="pluginWorkspaceSkillsTab" role="tab" aria-selected="false" data-i18n-key="plugins.skillsTab">技能</button>
     </div>
@@ -534,7 +534,7 @@
         <span class="mobile-mode-label" id="mobileModeLabel" data-i18n-key="tutor.modeChat">Chat</span>
         <svg class="mobile-mode-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
       </button>
-      <div class="mobile-mode-menu" id="mobileModeMenu" role="menu" aria-label="Session mode">
+      <div class="mobile-mode-menu" id="mobileModeMenu" role="menu" aria-label="Session mode" data-i18n-aria="chrome.sessionMode">
         <button type="button" class="mobile-mode-item" data-mode="chat" role="menuitem">
           <span class="mobile-mode-item-title" data-i18n-key="tutor.modeChat">Chat</span>
           <span class="mobile-mode-item-desc" data-i18n-key="tutor.modeChatDesc">Plain conversation, no scaffolding</span>
@@ -584,7 +584,7 @@
            top-right. Starts a temporary chat that is not saved to
            Recents. Styled like the left sidebar toggle (not a filled
            circle). Hidden on desktop. -->
-      <button type="button" class="mobile-incognito-btn" id="mobileIncognitoBtn" aria-pressed="false" aria-label="Incognito chat" title="Incognito chat">
+      <button type="button" class="mobile-incognito-btn" id="mobileIncognitoBtn" aria-pressed="false" aria-label="Incognito chat" title="Incognito chat" data-i18n-aria="sidebar.nav.incognito" data-i18n-title="sidebar.nav.incognito">
         <svg class="incognito-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <!-- A compact hat-and-glasses mark: symmetric, conventional and
                still distinct from refresh/sync icons at the 24px size. -->
@@ -596,7 +596,7 @@
         </svg>
       </button>
       <div class="chat-model-wrap hidden" id="chatModelWrap">
-        <button class="chat-model-trigger" id="chatModel" type="button" aria-haspopup="listbox" aria-expanded="false" aria-label="Pick or configure the model for this conversation" title="Pick or configure the model for this conversation">
+        <button class="chat-model-trigger" id="chatModel" type="button" aria-haspopup="listbox" aria-expanded="false" aria-label="Pick or configure the model for this conversation" title="Pick or configure the model for this conversation" data-i18n-aria="chrome.pickModel" data-i18n-title="chrome.pickModel">
           <!-- Model glyph — inner SVG is replaced by pickers.js
                _syncChatModelInternal() on every active-model change.
                Sized 16x16 so the trigger stays compact regardless of
@@ -608,7 +608,7 @@
           <span class="chat-model-label sr-only" id="chatModelLabel">Model</span>
           <svg class="chat-model-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 10l6 5 6-5"/></svg>
         </button>
-        <div class="chat-model-menu model-picker-menu hidden" id="chatModelMenu" role="listbox" aria-label="Available models"></div>
+        <div class="chat-model-menu model-picker-menu hidden" id="chatModelMenu" role="listbox" aria-label="Available models" data-i18n-aria="chrome.availableModels"></div>
       </div>
       <!-- P0.2 — In-session find (Ctrl-F). Shown alongside Share once a
            conversation is active (toggled by toggleShareBtn in
@@ -616,7 +616,7 @@
       <button class="find-btn hidden" id="findBtn" data-i18n-title="find.title" data-i18n-aria="find.title" title="Find in conversation" aria-label="Find in conversation">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
       </button>
-      <button class="share-btn hidden" id="shareBtn" title="Share this conversation" aria-label="Share this conversation">
+      <button class="share-btn hidden" id="shareBtn" title="Share this conversation" aria-label="Share this conversation" data-i18n-title="chrome.shareConversation" data-i18n-aria="chrome.shareConversation">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
         <span class="share-btn-label" data-i18n-key="sidebar.share">Share</span>
       </button>
@@ -655,7 +655,7 @@
           <div id="composerRoot" class="composer-editor-root" aria-label="Message input"></div>
           <div class="composer-footer">
             <div class="footer-left-group">
-              <button class="attach-btn composer-tools-trigger" id="composerToolsBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Add tools and files" title="Add tools and files">
+              <button class="attach-btn composer-tools-trigger" id="composerToolsBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Add tools and files" title="Add tools and files" data-i18n-aria="chrome.addToolsFiles" data-i18n-title="chrome.addToolsFiles">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
               </button>
               <input type="file" id="composerAttachInput" multiple
@@ -678,10 +678,10 @@
             <!-- The microphone is the explicit dictation entry point; the
                  primary button keeps its voice/send state without moving
                  the control row. -->
-            <button class="mobile-mic-btn" id="composerMicBtn" type="button" aria-label="Voice input" title="Voice input">
+            <button class="mobile-mic-btn" id="composerMicBtn" type="button" aria-label="Voice input" title="Voice input" data-i18n-aria="chrome.voiceInput" data-i18n-title="chrome.voiceInput">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8"/></svg>
             </button>
-            <button class="composer-primary-btn" id="composerPrimaryBtn" aria-label="Voice input" title="Voice input">
+            <button class="composer-primary-btn" id="composerPrimaryBtn" aria-label="Voice input" title="Voice input" data-i18n-aria="chrome.voiceInput" data-i18n-title="chrome.voiceInput">
               <span id="composerPrimaryBtnContent"><svg class="icon-voice" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 10v4M8 7v10M12 5v14M16 8v8M20 10v4"/></svg></span>
             </button>
           </div>
@@ -694,7 +694,7 @@
              suggestions block (id="homeSuggestionsWrap") was removed — those
              chips read as noise on mobile and were the most-skipped UI on the
              landing surface. -->
-        <div class="home-quick-actions" id="homeQuickActions" aria-label="Quick actions">
+        <div class="home-quick-actions" id="homeQuickActions" aria-label="Quick actions" data-i18n-aria="chrome.quickActions">
           <button type="button" class="home-quick-action" data-home-action="upload">
             <span class="home-quick-action-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m5.5 17 4.5-4.5 3.2 3.2 2.2-2.2 3.1 3.5"/></svg>
@@ -781,13 +781,13 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="find-bar-icon" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
           <input type="text" id="findInput" name="findInput" data-i18n-placeholder="find.placeholder" data-i18n-aria="find.placeholder" aria-label="Find in conversation" placeholder="Find in conversation…" autocomplete="off" spellcheck="false">
           <span class="find-count" id="findCount" aria-live="polite"></span>
-          <button class="find-nav-btn" type="button" title="Previous match" aria-label="Previous match">
+          <button class="find-nav-btn" type="button" title="Previous match" aria-label="Previous match" data-i18n-title="chrome.previousMatch" data-i18n-aria="chrome.previousMatch">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
           </button>
-          <button class="find-nav-btn" type="button" title="Next match" aria-label="Next match">
+          <button class="find-nav-btn" type="button" title="Next match" aria-label="Next match" data-i18n-title="chrome.nextMatch" data-i18n-aria="chrome.nextMatch">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
           </button>
-          <button class="find-close-btn" type="button" title="Close find" aria-label="Close find">
+          <button class="find-close-btn" type="button" title="Close find" aria-label="Close find" data-i18n-title="chrome.closeFind" data-i18n-aria="chrome.closeFind">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
           </button>
         </div>
@@ -796,7 +796,7 @@
                pill anchors to the composer's top edge instead of
                chat-view's top edge. The CSS rule `.chat-input-bar >
                .new-reply-pill` keys off this parent. -->
-          <div class="new-reply-pill" id="newReplyPill" role="button" tabindex="0" aria-label="Jump to new reply">↓ New reply</div>
+          <div class="new-reply-pill" id="newReplyPill" role="button" tabindex="0" aria-label="Jump to new reply" data-i18n-aria="chrome.jumpToNewReply">↓ New reply</div>
           <!-- P_composer-single — parking slot for the single composer shell. It lives in #topicComposerSlot on landing and is moved here whenever a conversation view activates (see placeComposerForView). -->
           <div class="chat-composer-slot composer-slot" id="chatComposerSlot"></div>
         </div>
@@ -819,11 +819,11 @@
        - cached titles of older sessions loaded from localStorage
      Indexed on first open and rebuilt whenever a session is
      saved. Recent queries persist under socrates-search-recent. -->
-<div class="cmd-k-overlay hidden" id="cmdKOverlay" role="dialog" aria-modal="true" aria-label="Command palette">
+<div class="cmd-k-overlay hidden" id="cmdKOverlay" role="dialog" aria-modal="true" aria-label="Command palette" data-i18n-aria="chrome.commandPalette">
   <!-- Inner markup is React-owned and mounted via createRoot at boot. -->
 </div>
 
-<div class="share-overlay hidden" id="shareOverlay" role="dialog" aria-modal="true" aria-label="Share chat">
+<div class="share-overlay hidden" id="shareOverlay" role="dialog" aria-modal="true" aria-label="Share chat" data-i18n-aria="chrome.shareChat">
   <!-- Inner markup is React-owned and mounted via createRoot at boot. -->
 </div>
 
@@ -832,7 +832,7 @@
      handles its own Esc/focus/backdrop-close. No static markup here. -->
 
 <!-- profile modal -->
-<div class="profile-overlay hidden" id="profileOverlay" role="dialog" aria-modal="true" aria-label="Account">
+<div class="profile-overlay hidden" id="profileOverlay" role="dialog" aria-modal="true" aria-label="Account" data-i18n-aria="profile.account">
   <!-- Inner markup is React-owned and mounted via createRoot at boot. -->
 </div>
 
@@ -841,7 +841,7 @@
      handles its own Esc/focus/backdrop-close. No static markup here. -->
 
 <!-- usage modal -->
-<div class="usage-overlay hidden" id="usageOverlay" role="dialog" aria-modal="true" aria-label="Token usage">
+<div class="usage-overlay hidden" id="usageOverlay" role="dialog" aria-modal="true" aria-label="Token usage" data-i18n-aria="profile.usage">
   <!-- Inner markup is React-owned and mounted via createRoot at boot. -->
 </div>
 
