@@ -12,6 +12,7 @@ import { showToast } from '../ui/toast.js';
 import { openMobileTargetFromUrl } from '../native/mobileWebSessionBridge.js';
 
 import { loadSharedSession } from '../ui/share.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 import { showAuthView, submitAuthVerify, revealAppAndHydrate } from './index.js';
 
@@ -68,11 +69,11 @@ export async function authBoot(){
       const BEAGLE_BUILT_IN=window.BEAGLE_BUILT_IN;
       if(BEAGLE_BUILT_IN&&!BEAGLE_BUILT_IN.key){BEAGLE_BUILT_IN.key="local";BEAGLE_BUILT_IN.model="local";}
       window.SERVER_HAS_BEAGLE_KEY=true;
-    }catch(_){}
+    }catch(e){reportSwallow(e, 'auth/boot.adoptPreflight.localConfig');}
     var devUser={id:"local-dev",name:"Local Dev",email:"dev@local",plan:"local",isLocal:true};
     if(typeof window.setCurrentUser==="function")window.setCurrentUser(devUser);
     else window.CURRENT_USER=devUser;
-    try{window.markAuthSuccess&&window.markAuthSuccess()}catch(_){}
+    try{window.markAuthSuccess&&window.markAuthSuccess()}catch(e){reportSwallow(e, 'auth/boot.adoptPreflight.markAuthSuccess'); }
     revealAppAndHydrate();
     return;
   }
@@ -82,7 +83,7 @@ export async function authBoot(){
     window.showGate&&window.showGate();
     window.showAuthSignin&&window.showAuthSignin();
     var msg="GitHub login failed: "+decodeURIComponent(oauthError)+".";
-    setTimeout(function(){try{showToast(msg,5000)}catch(_){}},500);
+    setTimeout(function(){try{showToast(msg,5000)}catch(e){reportSwallow(e, 'auth/boot.adoptPreflight.toast');}},500);
     return;
   }
   /* Also handle plain ?error= for backward compatibility. */
@@ -102,7 +103,7 @@ export async function authBoot(){
       if (sharePromise && typeof sharePromise.then === "function") {
         await sharePromise;
       }
-    }catch(_){}
+    }catch(e){reportSwallow(e, 'auth/boot.adoptPreflight.shareSession'); }
     return;
   }
 
@@ -136,7 +137,7 @@ export async function authBoot(){
         var info=await apiFetch("/api/auth/reset-info?token="+encodeURIComponent(resetToken));
         var el=document.getElementById("authResetEmail");
         if(el&&info&&info.email)el.value=info.email;
-      }catch(_){ /* leave empty; form still works */ }
+      }catch(e){ reportSwallow(e, 'auth/boot.adoptPreflight.prefillResetEmail'); /* leave empty; form still works */ }
     })();
     return;
   }
@@ -176,8 +177,8 @@ export async function authBoot(){
      * the built-in provider without ever knowing its model name.
      * Default false (assume non-reasoning) if the server is older and
      * doesn't send the field. */
-    try { window.BEAGLE_IS_REASONING = cfg && cfg.isReasoning === true; } catch (_) {}
-  }catch(_){/* config fetch failed */}
+    try { window.BEAGLE_IS_REASONING = cfg && cfg.isReasoning === true; } catch (e) { reportSwallow(e, 'auth/boot.configRequest.setReasoningFlag'); }
+  }catch(e){reportSwallow(e, 'auth/boot.configRequest.fetchConfig'); /* config fetch failed */ }
   /* Promote to the module-level flag so refreshApiConfig() — which
      runs after we return — can decide whether to fall back to
      BEAGLE on cold start. */
@@ -188,7 +189,7 @@ export async function authBoot(){
      windowExports.js captured the value at import time, so the
      window copy never sees the runtime update above. Re-bridge
      here so refreshApiConfig() sees the true value. */
-  try { window.SERVER_HAS_BEAGLE_KEY = cfgOk; } catch (_) {}
+  try { window.SERVER_HAS_BEAGLE_KEY = cfgOk; } catch (e) { reportSwallow(e, 'auth/boot.configRequest.rebridgeServerHasKey'); }
 
   /* P0.0 — only route the user to the auth gate when the server
    * explicitly says 401. Network blips, 5xx, and a missing
@@ -225,7 +226,7 @@ export async function authBoot(){
     else window.CURRENT_USER=me.user;
     /* Grace window for the Set-Cookie to settle (see notes in
      * markAuthSuccess). */
-    try{window.markAuthSuccess&&window.markAuthSuccess()}catch(_){}
+    try{window.markAuthSuccess&&window.markAuthSuccess()}catch(e){reportSwallow(e, 'auth/boot.configRequest.markAuthSuccess'); }
     /* The one-time mobile web-session consume route leaves an allow-listed
        target in the query. Open it only after normal authenticated hydration
        so its list data and controls match a first-party browser visit. */
@@ -238,7 +239,7 @@ export async function authBoot(){
   await i18nSettled();
   window.showGate&&window.showGate();
   window.showAuthSignin&&window.showAuthSignin();
-  try{showToast("Couldn't reach the server. Check your connection and retry.",5000)}catch(_){}
+  try{showToast("Couldn't reach the server. Check your connection and retry.",5000)}catch(e){reportSwallow(e, 'auth/boot.configRequest.offlineToast'); }
   if(typeof renderUserFooter==="function")renderUserFooter();
 }
 
@@ -248,5 +249,5 @@ authBoot().catch(function(){
   try{
     window.showGate&&window.showGate();
     window.showAuthSignin&&window.showAuthSignin();
-  }catch(_){}
+  }catch(e){reportSwallow(e, 'auth/boot.configRequest.fallbackGate');}
 });

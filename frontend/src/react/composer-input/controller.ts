@@ -1,4 +1,5 @@
 import type { ComposerExtensionToken } from './types';
+import { reportSwallow } from '../../util/reportSwallow.ts';
 
 export type ComposerSurface = 'topic' | 'chat';
 
@@ -49,12 +50,12 @@ export function registerComposer(surface: ComposerSurface, handle: ComposerHandl
     if (stored.has(surfaceNow)) {
       const value = stored.get(surfaceNow) ?? '';
       stored.delete(surfaceNow);
-      try { handle.setMarkdown(value); } catch (_) { /* editor not ready */ }
+      try { handle.setMarkdown(value); } catch (e) { reportSwallow(e, 'controller.registerComposer.setMarkdown'); /* editor not ready */ }
     }
     if (storedExtensionTokens.has(surfaceNow)) {
       const token = storedExtensionTokens.get(surfaceNow) ?? null;
       storedExtensionTokens.delete(surfaceNow);
-      try { handle.setExtensionToken(token); } catch (_) { /* editor not ready */ }
+      try { handle.setExtensionToken(token); } catch (e) { reportSwallow(e, 'controller.registerComposer.setExtensionToken'); /* editor not ready */ }
     }
   }
   void surface;
@@ -79,7 +80,7 @@ export function getComposerHandle(surface: ComposerSurface): ComposerHandle | nu
 
 export function getComposerMarkdown(surface: ComposerSurface): string {
   if (surface === activeSurface() && currentHandle) {
-    try { return currentHandle.getMarkdown(); } catch (_) { /* fall through to stash */ }
+    try { return currentHandle.getMarkdown(); } catch (e) { reportSwallow(e, 'controller.getComposerMarkdown'); /* fall through to stash */ }
   }
   return stored.get(surface) ?? '';
 }
@@ -95,7 +96,7 @@ export function setComposerMarkdown(surface: ComposerSurface, value: string): vo
 
 export function insertComposerText(surface: ComposerSurface, value: string): void {
   if (surface === activeSurface() && currentHandle) {
-    try { currentHandle.insertText(value); return; } catch (_) { /* fall through to stash */ }
+    try { currentHandle.insertText(value); return; } catch (e) { reportSwallow(e, 'controller.insertComposerText'); /* fall through to stash */ }
   }
   setComposerMarkdown(surface, `${stored.get(surface) ?? ''}${value}`);
 }
@@ -105,7 +106,7 @@ export function setComposerExtensionToken(
   token: ComposerExtensionToken | null,
 ): void {
   if (surface === activeSurface() && currentHandle) {
-    try { currentHandle.setExtensionToken(token); return; } catch (_) { /* fall through to stash */ }
+    try { currentHandle.setExtensionToken(token); return; } catch (e) { reportSwallow(e, 'controller.setComposerExtensionToken'); /* fall through to stash */ }
   }
   storedExtensionTokens.set(surface, token);
 }
@@ -121,13 +122,13 @@ export function clearComposer(surface: ComposerSurface): void {
 
 export function focusComposer(surface: ComposerSurface, position: 'start' | 'end' = 'end'): void {
   if (surface !== activeSurface()) return;
-  try { currentHandle?.focus(position); } catch (_) { /* editor not ready */ }
+  try { currentHandle?.focus(position); } catch (e) { reportSwallow(e, 'controller.focusComposer'); /* editor not ready */ }
 }
 
 export function getVisibleComposerSurface(): ComposerSurface {
   try {
     if (currentHandle?.isVisible()) return activeSurface();
-  } catch (_) { /* fall through */ }
+  } catch (e) { reportSwallow(e, 'controller.getVisibleComposerSurface.isVisible'); /* fall through */ }
   return 'topic';
 }
 
@@ -144,9 +145,9 @@ export function swapComposerSurface(from: ComposerSurface, to: ComposerSurface):
   try {
     if (currentHandle) {
       stored.set(from, currentHandle.getMarkdown());
-      try { storedExtensionTokens.set(from, currentHandle.getExtensionToken()); } catch (_) { /* keep previous stash */ }
+      try { storedExtensionTokens.set(from, currentHandle.getExtensionToken()); } catch (e) { reportSwallow(e, 'controller.swapComposerSurface.stashToken'); /* keep previous stash */ }
     }
-  } catch (_) { /* keep the previous stash */ }
+  } catch (e) { reportSwallow(e, 'controller.swapComposerSurface.stashMarkdown'); /* keep the previous stash */ }
   const next = stored.get(to) ?? '';
   stored.delete(to);
   const nextToken = storedExtensionTokens.has(to) ? storedExtensionTokens.get(to) ?? null : null;
@@ -170,13 +171,13 @@ export function readComposerSurface(doc?: Document): ComposerSurface {
     const d = doc || (typeof document !== 'undefined' ? document : undefined);
     const chatView = d ? d.getElementById('chatView') : null;
     if (chatView && !chatView.classList.contains('hidden')) return 'chat';
-  } catch (_) { /* DOM unavailable — default below */ }
+  } catch (e) { reportSwallow(e, 'controller.readComposerSurface.isChatVisible'); /* DOM unavailable — default below */ }
   return 'topic';
 }
 
 export function getComposerSelection(surface: ComposerSurface): ComposerSelection {
   if (surface === activeSurface() && currentHandle) {
-    try { return currentHandle.getSelection(); } catch (_) { /* fall through */ }
+    try { return currentHandle.getSelection(); } catch (e) { reportSwallow(e, 'controller.getComposerSelection'); /* fall through */ }
   }
   return { from: 0, to: 0 };
 }

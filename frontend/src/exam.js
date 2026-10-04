@@ -8,6 +8,7 @@ import { formatMsg } from './render/markdown.js';
 import { callAPIStream } from './chat/stream.js';
 import { stateStore } from './state/store.js';
 import { pushChatIdToURL, pushExamIdToURL, setExamIdInURL } from './session/store.js';
+import { reportSwallow } from './util/reportSwallow.ts';
 
 import { toggleShareBtn } from './ui/share.js';
 import { prefersReducedMotion } from './ui/motion.js';
@@ -141,16 +142,16 @@ export function closeExamView() {
   stateStore.dispatch({type:'state/batch',patch:{
     examCancel:true,_examInView:false,examReadOnly:false
   }});
-  try { restoreExamActiveProvider() } catch (_) { }
+  try { restoreExamActiveProvider() } catch (e) { reportSwallow(e, 'exam.closeExamView.restoreProvider'); }
   /* Decide what to reveal behind the exam panel. Mirrors the
      chat/tutor pattern: if a session is open, go back to chatView;
      otherwise surface the topic-setup landing page. */
   if (window.stateStore.read("currentSessionId")) {
     activateMainView("chatView", document);
-    try { pushChatIdToURL(window.stateStore.read("currentSessionId")) } catch (_) { }
+    try { pushChatIdToURL(window.stateStore.read("currentSessionId")) } catch (e) { reportSwallow(e, 'exam.closeExamView.pushChatId'); }
   } else {
     activateMainView("topicSetup", document);
-    try { setExamIdInURL(null) } catch (_) { }
+    try { setExamIdInURL(null) } catch (e) { reportSwallow(e, 'exam.closeExamView.clearExamId'); }
   }
 }
 
@@ -434,7 +435,7 @@ export function startExamGeneration() {
          404s (harmless but noisy). Activation for the built-in is purely a
          client-side apiConfig.activeId change; only persist for real DB rows. */
       if (!chosenProv.isBuiltIn && chosenModel !== "beagle-built-in") {
-        try { window.apiFetch("/api/api-key/" + encodeURIComponent(chosenModel), { method: "PATCH", body: { isActive: true } }).catch(function () { }) } catch (_) { }
+        try { window.apiFetch("/api/api-key/" + encodeURIComponent(chosenModel), { method: "PATCH", body: { isActive: true } }).catch(function (e) { reportSwallow(e, 'exam.startExamGeneration.persistActiveModel'); }) } catch (e) { reportSwallow(e, 'exam.startExamGeneration.persistActiveModel.guard'); }
       }
     }
   }
@@ -466,7 +467,7 @@ function restoreExamActiveProvider() {
     /* Skip the PATCH for the built-in provider — its id isn't a UUID and the
        server would 404. See startExamGeneration for the full rationale. */
     if (!prevProv.isBuiltIn && prev !== "beagle-built-in") {
-      try { window.apiFetch("/api/api-key/" + encodeURIComponent(prev), { method: "PATCH", body: { isActive: true } }).catch(function () { }) } catch (_) { }
+      try { window.apiFetch("/api/api-key/" + encodeURIComponent(prev), { method: "PATCH", body: { isActive: true } }).catch(function (e) { reportSwallow(e, 'exam.restoreExamActiveProvider.deactivatePrevModel'); }) } catch (e) { reportSwallow(e, 'exam.restoreExamActiveProvider.deactivatePrevModel.guard'); }
     }
   }
   stateStore.dispatch({type:'state/set',key:'_examPrevActiveId',value:null});
@@ -615,7 +616,7 @@ export function parseSingleExamQuestion(text) {
           if (!parsed.explanation) parsed.explanation = "";
           return parsed;
         }
-      } catch (_) { }
+      } catch (e) { reportSwallow(e, 'exam.parseSingleExamQuestion.innerSlice'); }
       idx = start + 1;
     }
     return null;
@@ -629,7 +630,7 @@ export function parseExamArrayJSON(text) {
     var direct = JSON.parse(clean);
     if (direct && Array.isArray(direct.questions)) return direct;
     if (Array.isArray(direct)) return { questions: direct };
-  } catch (_) { }
+  } catch (e) { reportSwallow(e, 'exam.parseExamArrayJSON.directParse'); }
   function findBalanced(s, openCh, closeCh) {
     var start = -1, depth = 0, inStr = false, escape = false, quote = null;
     for (var i = 0; i < s.length; i++) {
@@ -657,14 +658,14 @@ export function parseExamArrayJSON(text) {
       var parsed = JSON.parse(objSlice);
       if (parsed && Array.isArray(parsed.questions)) return parsed;
       if (Array.isArray(parsed)) return { questions: parsed };
-    } catch (_) { }
+    } catch (e) { reportSwallow(e, 'exam.findBalanced.bracedSlice'); }
   }
   var arrSlice = findBalanced(clean, "[", "]");
   if (arrSlice) {
     try {
       var arr = JSON.parse(arrSlice);
       if (Array.isArray(arr)) return { questions: arr };
-    } catch (_) { }
+    } catch (e) { reportSwallow(e, 'exam.findBalanced.bracketSlice'); }
   }
   console.warn("[exam] parseExamArrayJSON failed. Raw response (first 800 chars):", text.slice(0, 800));
   return null;
@@ -953,13 +954,13 @@ function doSaveExamSession() {
     .then(function (r) {
       if (r && r.id) {
         stateStore.dispatch({type:'state/set',key:'currentSessionId',value:r.id});
-        try { pushExamIdToURL(r.id) } catch (_) { }
+        try { pushExamIdToURL(r.id) } catch (e) { reportSwallow(e, 'exam.doSaveExamSession.pushExamId'); }
       }
       /* P_recents-amplify — flush(), not schedule(): a brand-new exam row has
          to be in the sidebar the moment the save returns. */
       return window.flushRecentsReconcile().then(function () {
-        try { window.renderRecents() } catch (_) { }
-        try { toggleShareBtn() } catch (_) { }
+        try { window.renderRecents() } catch (e) { reportSwallow(e, 'exam.doSaveExamSession.renderRecents'); }
+        try { toggleShareBtn() } catch (e) { reportSwallow(e, 'exam.doSaveExamSession.toggleShareBtn'); }
       });
     })
     .catch(function (e) {

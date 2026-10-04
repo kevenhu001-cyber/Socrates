@@ -6,6 +6,7 @@
 import { stateStore } from '../state/store.js';
 import { turnState } from './turnState.js';
 import { interruptPendingTurn, quietTurn } from './turnUi.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 import {
   findMessageIndex,
   messageApiPath,
@@ -22,7 +23,7 @@ import { queueMessageOp } from '../session/mutationOutbox.js';
 function _t(key) {
   try {
     if (typeof window !== 'undefined' && typeof window.t === 'function') return window.t(key);
-  } catch (_) {}
+  } catch (e) { reportSwallow(e, 'editBranch._t.readGlobal'); }
   return key;
 }
 
@@ -44,7 +45,7 @@ function queueEditReplay(anchorId, dropped, newText) {
   }
 }
 function _saveCurrentSession() {
-  try { if (typeof window.saveCurrentSession === 'function') window.saveCurrentSession(); } catch (_) {}
+  try { if (typeof window.saveCurrentSession === 'function') window.saveCurrentSession(); } catch (e) { reportSwallow(e, 'editBranch._saveCurrentSession'); }
 }
 function _resetApp() {
   return (typeof window.resetApp === 'function') ? window.resetApp() : Promise.resolve(false);
@@ -162,12 +163,12 @@ export function editUserMessage(messageId){
       /* If a stream is already in flight (e.g. user clicked edit
          while the previous reply was still arriving), abort it
          first so the new turn isn't racing the old one. */
-      if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(_){}}
+      if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(e){reportSwallow(e, 'editBranch.commit.abortActive'); }}
       /* Stop the replaced answer server-side as well (see interruptPendingTurn). */
-      try{interruptPendingTurn()}catch(_){}
-      if(window._activeChatAbort){try{window._activeChatAbort("msg-edit")}catch(_){}}
+      try{interruptPendingTurn()}catch(e){reportSwallow(e, 'editBranch.commit.interruptPending'); }
+      if(window._activeChatAbort){try{window._activeChatAbort("msg-edit")}catch(e){reportSwallow(e, 'editBranch.commit.globalAbort'); }}
       patchPromise.then(function(){
-        try{ quietTurn(window.askChatTurn(editedText)); }catch {/* msg-edit replay failed */}
+        try{ quietTurn(window.askChatTurn(editedText)); }catch(e){ reportSwallow(e, 'editBranch.commit.replay'); /* msg-edit replay failed */ }
       });
     }
     /* Avoid leaving the patch promise dangling — reference it so
@@ -252,15 +253,15 @@ export function regenerateAssistantMessage(messageId){
   if(typeof window.askChatTurn==="function"){
     /* Abort any in-flight stream so the regenerated turn isn't racing
        a previous reply that's still arriving. */
-    if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(_){}}
-    try{interruptPendingTurn()}catch(_){}
-    if(window._activeChatAbort){try{window._activeChatAbort("msg-regen")}catch(_){}}
+    if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(e){reportSwallow(e, 'editBranch.regenerateAssistantMessage.abortActive'); }}
+    try{interruptPendingTurn()}catch(e){reportSwallow(e, 'editBranch.regenerateAssistantMessage.interruptPending'); }
+    if(window._activeChatAbort){try{window._activeChatAbort("msg-regen")}catch(e){reportSwallow(e, 'editBranch.regenerateAssistantMessage.globalAbort'); }}
     /* P0.1 NOTE-P01-06 — re-ask only AFTER the server discardFollowing
        settles, so the delete (assistant rows createdAt >= user turn)
        can't land after the fresh reply is saved and wipe it. Mirrors
        editUserMessage. patchPromise resolves even on failure (.catch). */
      patchPromise.then(function(){
-       try{ quietTurn(window.askChatTurn(userText)); }catch {/* regen failed */}
+       try{ quietTurn(window.askChatTurn(userText)); }catch(e){ reportSwallow(e, 'editBranch.regenerateAssistantMessage.replay'); /* regen failed */}
      });
   }
 }
@@ -350,7 +351,7 @@ export function branchFromMessage(messageId, opts){
         publishReactChatRuntime({type:"state-synced",reason:"re-explain-prompt"});
         /* Fire the re-explain question immediately. */
         if(typeof window.askChatTurn === "function"){
-          setTimeout(function(){ try{quietTurn(window.askChatTurn(reExplainMsg))}catch(_){} }, 100);
+          setTimeout(function(){ try{quietTurn(window.askChatTurn(reExplainMsg))}catch(e){reportSwallow(e, 'editBranch.branchTitle.reExplain');} }, 100);
         }
       }
       _saveCurrentSession();
