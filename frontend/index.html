@@ -510,25 +510,14 @@
 <main class="main">
   <div class="main-bg" aria-hidden="true"></div>
   <div class="top-bar">
-    <!-- P_chatgpt-top — centered Chat/Tutor tabs, mirroring ChatGPT's
-         top-center 聊天/辅导 segmented control. These reuse the
-         .app-mode-toggle class + data-mode so syncAppModeUI() (in
-         config/providers.js) keeps the active tab in sync with the
-         landing #modeSegmented control automatically. Absolute-centered
-         so it stays visually centered regardless of side-content width. -->
-    <div class="top-mode-tabs" id="modeSegmentedTop" role="tablist" aria-label="Session mode" data-i18n-aria="chrome.sessionMode">
-      <button type="button" class="app-mode-toggle" data-mode="chat" role="tab" data-i18n-key="topbar.modeChat">聊天</button>
-      <button type="button" class="app-mode-toggle" data-mode="tutor" role="tab" data-i18n-key="topbar.modeTutor">辅导</button>
-    </div>
     <div class="top-mode-tabs plugin-workspace-tabs" id="pluginWorkspaceTabs" role="tablist" aria-label="Plugin workspace" data-i18n-aria="chrome.pluginWorkspace" hidden>
       <button type="button" class="plugin-workspace-tab active" id="pluginWorkspacePluginsTab" role="tab" aria-selected="true" data-i18n-key="plugins.pluginsTab">插件</button>
       <button type="button" class="plugin-workspace-tab" id="pluginWorkspaceSkillsTab" role="tab" aria-selected="false" data-i18n-key="plugins.skillsTab">技能</button>
     </div>
-    <!-- P_mobile-topbar — compatibility mode switcher kept mounted for
-         narrow layouts and accessibility. The final compact shell uses the
-         two-tab #modeSegmentedTop pill on phones as well; this dropdown still
-         remains wired for fallback states. Toggle + label sync live in
-         src/ui/mobileModeSwitch.js. -->
+    <!-- P_mobile-topbar — the mobile dropdown (#mobileMode) is the only
+         user-facing mode switch after the top-bar pill was removed; it stays
+         mounted for narrow layouts and accessibility. Toggle + label sync
+         live in src/ui/mobileModeSwitch.js. -->
     <div class="mobile-mode" id="mobileMode">
       <button type="button" class="mobile-mode-trigger" id="mobileModeTrigger" aria-haspopup="menu" aria-expanded="false">
         <span class="mobile-mode-label" id="mobileModeLabel" data-i18n-key="tutor.modeChat">Chat</span>

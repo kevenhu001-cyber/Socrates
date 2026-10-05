@@ -12,18 +12,16 @@ test.beforeEach(async ({ page }) => {
   await waitForAppShell(page);
 });
 
-test('header is a 52px bar with the switcher at the top-left and centered mode tabs', async ({ page }) => {
+test('header is a 52px bar with the switcher at the top-left', async ({ page }) => {
   const g = await page.evaluate(() => {
     const r = (s) => document.querySelector(s).getBoundingClientRect();
-    const bar = r('.top-bar'); const sw = r('#topModelSwitcher'); const tabs = r('#modeSegmentedTop'); const main = r('#appShell .main-content');
-    return { barH: bar.height, swLeft: sw.left - bar.left, swH: sw.height, swCy: sw.top + sw.height / 2 - bar.top,
-      tabsCenter: tabs.left + tabs.width / 2, mainCenter: main.left + main.width / 2 };
+    const bar = r('.top-bar'); const sw = r('#topModelSwitcher');
+    return { barH: bar.height, swLeft: sw.left - bar.left, swH: sw.height, swCy: sw.top + sw.height / 2 - bar.top };
   });
   expect(Math.round(g.barH)).toBe(52);
   expect(Math.round(g.swH)).toBe(36);
   expect(Math.round(g.swCy)).toBe(26);
   expect(g.swLeft).toBeLessThanOrEqual(12);
-  expect(Math.abs(g.tabsCenter - g.mainCenter)).toBeLessThanOrEqual(2);
   await expect(page.locator('#topModelSwitcher .top-model-switcher-name')).toHaveText('Socrates');
 });
 

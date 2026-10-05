@@ -69,7 +69,9 @@ export function mountLegacyShellListeners(actions) {
   document.querySelectorAll('.effort-trigger').forEach((element) => {
     bind(element, 'click', () => actions.toggleEffort(element));
   });
-  document.querySelectorAll('.app-mode-toggle, .mobile-mode-item[data-mode]').forEach((element) => {
+  /* The top-bar Chat/Tutor pill was removed; the dropdown items in
+     #mobileModeMenu are the remaining in-shell mode affordance. */
+  document.querySelectorAll('#mobileModeMenu .mobile-mode-item[data-mode]').forEach((element) => {
     bind(element, 'click', () => actions.selectMode(element.dataset.mode));
   });
 

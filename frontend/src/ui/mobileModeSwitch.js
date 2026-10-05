@@ -2,10 +2,9 @@ import { stateStore } from '../state/store.js';
 
 /* ui/mobileModeSwitch.js — mobile-only 对话/导师 (Chat/Tutor) switcher.
  *
- * P_mobile-topbar. The compact segmented pill (#modeSegmentedTop) is now the
- * primary control on both desktop and phone landing surfaces. This module
- * keeps the legacy "Chat ˅" dropdown synchronized for fallback states and
- * accessibility:
+ * The mobile dropdown (#mobileMode) is the only user-facing mode switch on
+ * narrow viewports and the a11y fallback after the top-bar #modeSegmentedTop
+ * pill was removed. This module keeps the dropdown synchronized:
  *
  *   - toggleMobileModeMenu()  opens/closes the popover (#mobileModeMenu)
  *   - selectAppMode(mode)     switches mode via window.toggleAppMode()
@@ -13,7 +12,8 @@ import { stateStore } from '../state/store.js';
  *                             called from providers.js syncAppModeUI().
  *
  * The popover animation is CSS-driven off [data-open] on #mobileMode; we
- * only flip that attribute + aria-expanded here.
+ * only flip that attribute + aria-expanded here. `_applyModeSwitchVisibility`
+ * hides the dropdown for the duration of a live conversation.
  */
 
 function _t(key, fallback) {
@@ -127,16 +127,15 @@ export function syncConversationActive() {
 }
 
 function _applyModeSwitchVisibility(hidden) {
-  /* getElementById, not querySelectorAll("#a, #b"): a selector LIST has no
-     id fast path in Blink and walks the entire document — tens of thousands
-     of nodes once a long transcript is mounted. */
-  var els = [document.getElementById("modeSegmentedTop"), document.getElementById("mobileMode")];
-  for (var i = 0; i < els.length; i++) {
-    if (!els[i]) continue;
-    try {
-      els[i].style.setProperty("display", hidden ? "none" : "", "important");
-    } catch (_) {}
-  }
+  /* #mobileMode is the only mode switch left in the shell, so this is a
+     direct lookup rather than a selector LIST (a list has no id fast path in
+     Blink and walks the whole document — tens of thousands of nodes once a
+     long transcript is mounted). */
+  var el = document.getElementById("mobileMode");
+  if (!el) return;
+  try {
+    el.style.setProperty("display", hidden ? "none" : "", "important");
+  } catch (_) {}
 }
 
 /* P_hide-mode-switch-in-conversation — wire a MutationObserver on

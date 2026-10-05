@@ -157,11 +157,9 @@
   60%{transform:scale(1.04);opacity:1;filter:blur(0)}
   100%{transform:scale(1);opacity:1;filter:blur(0)}
 }
-/* P_chatgpt-top — centered Chat/Tutor tabs in the top bar. Absolutely
-   centered inside .top-bar (which is position:relative) so it stays
-   visually centered regardless of the width of the left/right groups,
-   mirroring ChatGPT's 聊天/工作 top control. Reuses .app-mode-toggle
-   segments; the active segment gets a subtle raised pill background. */
+/* P_chatgpt-top — the top-bar container class, still used by the plugin
+   workspace tabs (#pluginWorkspaceTabs). The centered Chat/Tutor pill that
+   used to live here was removed; #mobileMode owns mode switching now. */
 .top-mode-tabs{
   position:absolute;
   left:50%;top:calc(50% + 14px);
@@ -175,34 +173,10 @@
   z-index:1;
   pointer-events:auto;
 }
-.top-mode-tabs .app-mode-toggle{
-  -webkit-appearance:none;
-  appearance:none;
-  border:0;cursor:pointer;
-  background:transparent;
-  color:hsl(var(--text-400));
-  font-size:calc(13px * var(--app-font-scale, 1));
-  font-weight:600;
-  padding:4px 14px;
-  border-radius:999px;
-  transition:color .18s ease,background-color .18s ease,transform .12s ease;
-  -webkit-user-select:none;
-  user-select:none;
-  white-space:nowrap;
-}
-.top-mode-tabs .app-mode-toggle:hover{color:hsl(var(--text-100))}
-
-.top-mode-tabs .app-mode-toggle.active{
-  color:hsl(var(--text-100));
-  background:hsl(var(--bg-100));
-  box-shadow:0 1px 2px hsl(0 0% 0%/0.18);
-}
 /* Exam is a focused workspace. The regular chat/tutor controls are hidden
    independently of inline styles so neither desktop nor mobile can leak in. */
-body.exam-active #modeSegmentedTop,
 body.exam-active #mobileMode,
 body.exam-active #mobileIncognitoBtn{display:none!important}
-body.workspace-active #modeSegmentedTop,
 body.workspace-active #mobileMode,
 body.workspace-active #mobileIncognitoBtn,
 body.workspace-active #topicDisclaimer{display:none!important}
@@ -211,7 +185,6 @@ body.workspace-active #topicDisclaimer{display:none!important}
    stats). !important because the chat runtime toggles .hidden off
    these controls whenever a session is active. The sidebar toggle
    stays visible for navigation. */
-body.admin-active #modeSegmentedTop,
 body.admin-active #mobileMode,
 body.admin-active #mobileIncognitoBtn,
 body.admin-active #chatModelWrap,
@@ -219,22 +192,14 @@ body.admin-active #findBtn,
 body.admin-active #shareBtn,
 body.admin-active #chatStats,
 body.admin-active #topicDisclaimer{display:none!important}
-/* The <=768px mobile-reference block force-shows the pill with a
-   double-ID selector (#appShell #modeSegmentedTop{display:flex!
-   important}), which outranks the single-ID rule above. This triple
-   selector (2 IDs + 1 class) wins the !important tie-break on phones
-   so the standalone console stays chrome-free on every viewport. */
-body.admin-active #appShell #modeSegmentedTop{display:none!important}
 :where(:root[data-chat-view-open]) .main-content:not(#_n):not(._n) #topicDisclaimer{display:none}
-/* P_hide-mode-switch-in-conversation — see the canonical rule near
-   the top of this file (line ~130). The pre-existing rule was kept
-   here for historical reference but the authoritative copy lives
-   up there. The attribute reflects the live conversation state, so
-   the pill is hidden only while a conversation is active and
+/* P_hide-mode-switch-in-conversation — see the canonical rule in
+   00-foundations.css. The attribute reflects the live conversation state, so
+   the mode dropdown is hidden only while a conversation is active and
    reappears when the user returns to the topic-input page. */
-[data-mode=light] .top-mode-tabs .app-mode-toggle.active{background:hsl(var(--bg-400))}
 /* Compatibility layer: the final responsive contract below keeps the shared
-   pill on the empty landing surface and only hides it for live conversations. */
+   top-bar container on the empty landing surface and only hides it for live
+   conversations. */
 @media (max-width:640px){.top-mode-tabs{display:none}}
 
 /* P_mobile-topbar — mobile top bar. On desktop the centered mode

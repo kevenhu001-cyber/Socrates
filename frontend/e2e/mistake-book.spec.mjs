@@ -32,7 +32,10 @@ async function openMistakeBook(page, mistakes) {
   await page.setViewportSize({ width: 1280, height: 1200 });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
-  await page.locator('#modeSegmentedTop').getByRole('tab', { name: '辅导' }).click();
+  /* After the top-bar Chat/Tutor pill was removed (see frontend/index.html),
+     enter tutor mode programmatically via the same entry point the deleted
+     pill used to drive. */
+  await page.evaluate(() => window.toggleAppMode?.('tutor'));
   await expect.poll(() => page.evaluate(() => window.appMode)).toBe('tutor');
   await page.locator('#tabMistakes').click();
   await expect(page.locator('#mistakesPanel')).toBeVisible();

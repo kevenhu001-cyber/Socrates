@@ -6,7 +6,6 @@ const HOVER_TARGETS = [
   '#navNew',
   '#composerToolsBtn',
   '#composerPrimaryBtn',
-  '#modeSegmentedTop .app-mode-toggle',
 ];
 
 async function readPalette(page) {

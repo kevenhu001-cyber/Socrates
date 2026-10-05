@@ -8,8 +8,10 @@ export function setConversationChrome(active, doc) {
      in the legacy .chat-top-bar selectors below. They are only useful
      while the user is composing the first message (topic-setup screen);
      once a conversation starts they should be hidden so the chat-view
-     header reads cleanly. #modeSegmentedTop is state-driven in CSS and
-     must not receive an inline display value here. */
+     header reads cleanly. Both are also hidden by the canonical
+     body[data-conversation-active="true"] rule in styles/legacy/
+     00-foundations.css; this inline pass is the same belt-and-braces
+     fallback syncConversationActive() applies. */
   var d = resolveDocument(doc);
   if (!d) return;
 

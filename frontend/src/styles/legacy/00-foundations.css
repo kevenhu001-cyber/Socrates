@@ -162,15 +162,13 @@ a{color:inherit;text-decoration:none}
    next conversation.
 
    This single rule covers:
-     • #modeSegmentedTop — the centered Chat/Tutor pill (desktop)
      • #mobileMode       — the mobile "Chat ⌄" dropdown
    and uses !important so cowork / cowork-cascade overrides can't
-   reveal the pill mid-session. The rule lives up here (line ~130)
+   reveal it mid-session. The rule lives up here (line ~130)
    instead of next to the original `.top-mode-tabs { display: flex }`
    block (line ~1667) so future readers see it before they decide to
    tweak the visible-on-landing state.
    ────────────────────────────────────────────────────────────────── */
-body[data-conversation-active="true"] #modeSegmentedTop,
 body[data-conversation-active="true"] #mobileMode{display:none!important}
 /* ─── A11y utilities ── */
 /* P_a11y-visually-hidden — screen-reader-only text. The 1px size and

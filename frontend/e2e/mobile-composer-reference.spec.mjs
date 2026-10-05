@@ -111,10 +111,11 @@ test('mobile composer keeps model selector and reference controls discoverable',
   const editor = page.locator('#composerRoot .rich-composer-editor');
   const effort = composer.locator('.effort-picker');
 
-  /* P_hide-mode-switch-in-conversation — the user contract is "only show
-     before the conversation starts"; the pill is hidden once the
-     conversation is active, on all viewports. */
-  await expect(page.locator('#modeSegmentedTop')).toBeHidden();
+  /* The top-bar Chat/Tutor pill was removed; mobile dropdown is the
+     remaining user-facing mode switch and is hidden during a conversation
+     by the same body[data-conversation-active] contract. We assert the
+     dropdown here rather than the (now-absent) top pill. */
+  await expect(page.locator('#mobileMode')).toBeHidden();
   await expect(composer.locator('#composerMicBtn')).toBeVisible();
   /* Empty composer → the shared primary control is the voice-input
      affordance (waveform icon + label), not a disabled arrow. */

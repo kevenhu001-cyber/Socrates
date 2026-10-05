@@ -32,7 +32,10 @@ async function openPanel(page) {
   await page.setViewportSize({ width: 1280, height: 1400 });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
-  await page.locator('#modeSegmentedTop').getByRole('tab', { name: '辅导' }).click();
+  /* After the top-bar Chat/Tutor pill was removed (see frontend/index.html),
+     enter tutor mode programmatically via the same entry point the deleted
+     pill used to drive. */
+  await page.evaluate(() => window.toggleAppMode?.('tutor'));
   await expect.poll(() => page.evaluate(() => window.appMode)).toBe('tutor');
   /* The map lives in the sidebar's Knowledge tab, which starts hidden;
      without this every assertion runs against a display:none subtree. */

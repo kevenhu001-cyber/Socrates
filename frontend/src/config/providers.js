@@ -98,20 +98,10 @@ function ensureSessionShape(s) {
 }
 
 function syncAppModeUI() {
-  var toggles = document.querySelectorAll(".app-mode-toggle");
-  toggles.forEach(function (el) {
-    var active = el.dataset.mode === appMode;
-    el.classList.toggle("active", active);
-    if (el.getAttribute("role") === "tab") el.setAttribute("aria-selected", active ? "true" : "false");
-  });
-  /* Drive the .mode-segmented sliding indicator — the CSS pseudo-element
-     reacts to [data-seg-active="chat"|"tutor"] and slides to the matching
-     half. This produces the slide-between-Chat/Tutor animation.
-     P_chatgpt-landing — the segmented control lives in the top bar
-     (#modeSegmentedTop). data-seg-active stays useful as a JS-readable
-     signal for downstream CSS hooks. */
-  var topSegEl = document.getElementById("modeSegmentedTop");
-  if (topSegEl) topSegEl.setAttribute("data-seg-active", appMode);
+  /* The top-bar Chat/Tutor pill (#modeSegmentedTop / .app-mode-toggle) was
+     removed, so there is no segmented indicator to drive here. Mode state is
+     mirrored onto <body data-app-mode> below; #mobileMode (narrow viewports)
+     and the tutor mode banner own their own per-mode UI. */
   try { localStorage.setItem("socrates-appmode", appMode); } catch (e) {reportSwallow(e, 'config/providers.syncAppModeUI'); }
   /* Mirror appMode to body[data-app-mode] so the CSS rule
      body[data-app-mode="chat"] .tutor-only{display:none !important}

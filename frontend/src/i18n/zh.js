@@ -272,8 +272,6 @@ export const zh = {
     "sidebar.plugins.uninstall":"卸载",
     "sidebar.plugins.enabled":"已启用",
     "sidebar.plugins.disabled":"已禁用",
-    "topbar.modeChat":"聊天",
-    "topbar.modeTutor":"辅导",
     /* P_composer-primary-split — 见英文对应注释。 */
     "voice.listening":"正在聆听…",
     "voice.processing":"正在处理语音…",

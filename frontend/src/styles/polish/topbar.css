@@ -84,52 +84,6 @@ body.plugins-active #appShell .mobile-newchat-btn {
   }
 }
 
-
-/* Mode pill — calmer border, tighter hit rows.
-
-   This block is a VISUAL override only (position, border, background). It must
-   not carry `display`: the pill's visibility is owned elsewhere —
-   `body[data-conversation-active="true"] #appShell #modeSegmentedTop` hides it
-   once a conversation is running, and layout/app-shell.css shows it on the
-   landing page. A stray `display: none` here used to win the cascade (polish/
-   is imported after layout/) and hid the pill on mobile landing too, which
-   e2e/reference-ui-visual.spec.mjs caught. */
-@media (max-width: 768px) {
-#appShell #modeSegmentedTop {
-  top: 50%;
-  transform: translate(-50%, -50%);
-  border-color: var(--ui-border-subtle);
-  background: var(--ui-bg-raised);
-}
-}
-@media (max-width: 768px) {
-#appShell #modeSegmentedTop .app-mode-toggle {
-  font-size: 13px;
-  font-weight: 450;
-  color: var(--ui-text-tertiary);
-  transition: color var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;
-}
-}
-@media (max-width: 768px) {
-#appShell #modeSegmentedTop .app-mode-toggle:hover { color: var(--ui-text-secondary); }
-}
-@media (max-width: 768px) {
-#appShell #modeSegmentedTop .app-mode-toggle.active {
-  color: var(--ui-text-primary);
-  font-weight: 550;
-}
-}
-@media (max-width: 768px) {
-[data-mode="dark"] #appShell #modeSegmentedTop .app-mode-toggle.active {
-  background: rgb(255 255 255 / 10%);
-}
-}
-@media (max-width: 768px) {
-[data-mode="light"] #appShell #modeSegmentedTop .app-mode-toggle.active {
-  background: #fff;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 8%), 0 0 0 1px rgb(0 0 0 / 4%);
-}
-}
 @media (max-width: 768px) {
 #appShell #pluginWorkspaceTabs {
   top: 50%;

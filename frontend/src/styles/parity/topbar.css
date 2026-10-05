@@ -153,54 +153,6 @@
   /* The header switcher replaces the old icon-only model trigger. */
   #appShell #chatModelWrap { display: none; }
 
-  /* ── Chat / Tutor mode tabs (Socrates-specific) ──────────────────────── */
-  #appShell #modeSegmentedTop {
-    position: absolute;
-    top: 6px;
-    left: 50%;
-    z-index: 0;
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    height: 40px;
-    margin: 0;
-    padding: 2px;
-    border: 0;
-    border-radius: var(--ui-radius-pill);
-    background: var(--ui-bg-chip);
-    transform: translateX(-50%);
-  }
-  #appShell #modeSegmentedTop[hidden],
-  #appShell #modeSegmentedTop.hidden { display: none; }
-  #appShell #modeSegmentedTop .app-mode-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 64px;
-    height: 36px;
-    margin: 0;
-    padding: 0 16px;
-    border: 0;
-    border-radius: var(--ui-radius-pill);
-    background: transparent;
-    color: var(--ui-text-secondary);
-    font: inherit;
-    font-size: 15px;
-    font-weight: 500;
-    line-height: var(--ui-text-ui-line);
-    cursor: pointer;
-    transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
-  }
-  #appShell #modeSegmentedTop .app-mode-toggle:hover { color: var(--ui-text-primary); }
-  #appShell #modeSegmentedTop .app-mode-toggle.active,
-  #appShell #modeSegmentedTop .app-mode-toggle[aria-selected="true"] {
-    background: var(--ui-bg-segment-active);
-    color: var(--ui-text-primary);
-  }
-  [data-mode="light"] #appShell #modeSegmentedTop .app-mode-toggle[aria-selected="true"] {
-    box-shadow: 0 1px 2px rgb(0 0 0 / 8%), 0 0 0 1px rgb(0 0 0 / 4%);
-  }
-
   /* ── Right actions ───────────────────────────────────────────────────── */
   #appShell #shareBtn,
   #appShell #findBtn {

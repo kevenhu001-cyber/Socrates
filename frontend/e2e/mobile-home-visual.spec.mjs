@@ -15,10 +15,6 @@ test('mobile conversation home matches the compact dark reference layout', async
   await page.waitForTimeout(350);
 
   const leftButton = page.locator('#sidebarOpenBtn');
-  /* ChatGPT keeps the two mode tabs visible on the compact landing surface;
-     the legacy dropdown remains mounted only for compatibility. */
-  const modeTabs = page.locator('#modeSegmentedTop');
-  const modeSwitch = page.locator('#mobileModeTrigger');
   const composer = page.locator('#composerInputWrap');
   const editor = page.locator('#composerRoot .rich-composer-editor');
 
@@ -26,8 +22,6 @@ test('mobile conversation home matches the compact dark reference layout', async
   await expect(page.locator('.mobile-starter-prompt')).toHaveCount(0);
   await expect(page.locator('.home-ideas, .chat-suggestions, #topicQuickActions')).toHaveCount(0);
   await expect(leftButton).toBeVisible();
-  await expect(modeTabs).toBeVisible();
-  await expect(modeSwitch).toBeHidden();
   await expect(composer).toBeVisible();
 
   const geometry = await page.evaluate(() => {
@@ -38,7 +32,6 @@ test('mobile conversation home matches the compact dark reference layout', async
     return {
       left: rect('#sidebarOpenBtn'),
       right: rect('#mobileNewChatBtn'),
-      modeTabs: rect('#modeSegmentedTop'),
       composer: rect('#composerInputWrap'),
       topicFontSize: parseFloat(getComputedStyle(document.querySelector('#composerRoot .rich-composer-editor')).fontSize),
       viewportHeight: window.innerHeight,
@@ -53,9 +46,6 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.left?.width).toBe(44);
   expect(geometry.left?.height).toBe(44);
   expect(geometry.right?.width).toBe(44);
-  expect(geometry.modeTabs?.width).toBeGreaterThanOrEqual(140);
-  expect(geometry.modeTabs?.width).toBeLessThanOrEqual(152);
-  expect(geometry.modeTabs?.height).toBe(32);
   expect(geometry.composer?.width).toBeGreaterThanOrEqual(320);
   /* Empty-home mobile composer uses the reference's two-row 89px stack
      (editor on row 1, add/dictation/send controls on row 2). */

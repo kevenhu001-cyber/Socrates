@@ -70,7 +70,6 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   });
   await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? 0)).toBe(-MOBILE_DRAWER);
   await expect(page.locator('#topicSetup')).toBeVisible();
-  await expect(page.locator('#modeSegmentedTop')).toBeVisible();
   await expect(page.locator('#composerInputWrap')).toBeVisible();
   await page.screenshot({ path: 'test-results/socrates-reference-mobile-home-390x769.png', fullPage: true });
 
@@ -81,16 +80,12 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
       return box ? { x: box.x, y: box.y, width: box.width, height: box.height } : null;
     };
     return {
-      mode: read('#modeSegmentedTop'),
       composer: read('#composerInputWrap'),
       plus: read('#composerToolsBtn'),
       send: read('#composerPrimaryBtn'),
       background: getComputedStyle(document.querySelector('.main-content')).backgroundColor,
     };
   });
-  expect(mobileGeometry.mode?.width).toBeGreaterThanOrEqual(140);
-  expect(mobileGeometry.mode?.width).toBeLessThanOrEqual(152);
-  expect(mobileGeometry.mode?.height).toBe(32);
   expect(mobileGeometry.composer?.width).toBeGreaterThanOrEqual(320);
   /* Reference phone capsule is a two-row 89px stack (editor row 1, controls row 2). */
   expect(mobileGeometry.composer?.height).toBe(89);
@@ -144,7 +139,6 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   await expect(page.locator('.plugin-directory')).toBeVisible();
   await expect(page.locator('#sidebar')).toHaveClass(/collapsed/);
   await expect(page.locator('#pluginWorkspaceTabs')).toBeHidden();
-  await expect(page.locator('#modeSegmentedTop')).toBeHidden();
   await expect(page.locator('#pluginsPanel .plugins-panel-head')).toBeHidden();
   const pluginGeometry = await page.evaluate(() => {
     const box = (selector) => {

@@ -75,24 +75,6 @@
 #appShell .mobile-newchat-btn { display: none; }
 #appShell .toggle-sidebar .glyph-hamburger { display: none; }
 
-@media (max-width: 768px) {
-
-#appShell #modeSegmentedTop {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  display: flex;
-  width: 140px;
-  height: 32px;
-  padding: 2px;
-  transform: translate(-50%, -50%);
-  border: 1px solid var(--ui-border-default);
-  border-radius: var(--ui-radius-pill);
-  background: var(--ui-bg-raised);
-  box-shadow: none;
-}
-}
-
 #appShell #pluginWorkspaceTabs {
   position: absolute;
   top: 50%;
@@ -125,41 +107,6 @@
   color: var(--ui-text-primary);
   font-weight: 500;
 }
-
-@media (max-width: 768px) {
-
-#appShell #modeSegmentedTop .app-mode-toggle {
-  flex: 1 1 50%;
-  min-width: 0;
-  height: 26px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: var(--ui-radius-pill);
-  background: transparent;
-  color: var(--ui-text-tertiary);
-  font-size: calc(15px * var(--app-font-scale, 1));
-  font-weight: 400;
-  line-height: 26px;
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell #modeSegmentedTop .app-mode-toggle.active {
-  background: var(--ui-bg-segment-active);
-  color: var(--ui-text-primary);
-  font-weight: 500;
-  box-shadow: none;
-}
-}
-
-@media (max-width: 768px) {
-
-[data-mode="light"] #appShell #modeSegmentedTop .app-mode-toggle.active {
-  box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
-}
-}
-
 
 
 @media (min-width: 769px) {
@@ -219,9 +166,5 @@
   #appShell #topicSetup .topic-title.greeting {
     white-space: normal;
   }
-  body[data-conversation-active="true"] #appShell #modeSegmentedTop,
-  body.workspace-active #appShell #modeSegmentedTop,
-  body.exam-active #appShell #modeSegmentedTop,
-  body.admin-active #appShell #modeSegmentedTop { display: none; }
   body #appShell #pluginWorkspaceTabs { display: none; }
 }

@@ -292,8 +292,6 @@ var I18N={
     "sidebar.plugins.uninstall":"Uninstall",
     "sidebar.plugins.enabled":"Enabled",
     "sidebar.plugins.disabled":"Disabled",
-    "topbar.modeChat":"Chat",
-    "topbar.modeTutor":"Tutor",
     /* P_composer-primary-split — voice.input retired with the primary's
        empty-state dictation. Dictation is announced by chrome.voiceInput on
        #composerMicBtn; the primary speaks chat.send / chat.stop. */
