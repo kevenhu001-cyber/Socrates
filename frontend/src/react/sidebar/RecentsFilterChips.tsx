@@ -2,7 +2,8 @@ import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boo
 import { createRoot, type Root } from 'react-dom/client';
 
 import { getKnownTagsFromSessions } from '../../ui/recentsHelpers.js';
-import { getLegacyGlobalValue, t } from '../legacy/gateway.ts';
+import { serverCache } from '../../session/serverCache.js';
+import { getCachedProjects, t } from '../legacy/gateway.ts';
 import {
   useRecentsFilter,
   useRecentsFilterCommands,
@@ -31,13 +32,11 @@ interface AllChip {
 type ChipDescriptor = (AllChip | ProjectChip | TagChip) & { active: boolean };
 
 function readProjects(): ReadonlyArray<{ id: string; name: string }> {
-  const cache = getLegacyGlobalValue('__projectsCache', []);
-  return Array.isArray(cache) ? cache as ReadonlyArray<{ id: string; name: string }> : [];
+  return getCachedProjects();
 }
 
 function readTags(): string[] {
-  const sessions = getLegacyGlobalValue('SERVER_SESSIONS', []);
-  return getKnownTagsFromSessions(Array.isArray(sessions) ? sessions as Array<{ tags?: string[] }> : []).slice(0, 8);
+  return getKnownTagsFromSessions(serverCache.sessions).slice(0, 8);
 }
 
 function buildChips(currentFilter: string | null): ChipDescriptor[] {

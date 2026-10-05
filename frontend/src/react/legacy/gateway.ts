@@ -104,21 +104,9 @@ export function getConnectorIconMarkupFn(): ((id: string) => string) | null {
   return typeof fn === 'function' ? fn : null;
 }
 
-// ─── Temporary global cache access ───────────────────────────────────────────
-
-export function getLegacyGlobalValue<K extends string, V = unknown>(
-  key: K,
-  fallback: V,
-): V {
-  if (key in (window as any)) return (window as any)[key] as V;
-  return fallback;
-}
-
 // ─── Typed reads of standalone legacy globals ───────────────────────────────
-// A handful of legacy globals are not part of the __socratesLegacy bridge but
-// are still read by React (the web-search toggle, the i18n language code, the
-// authenticated fetch helper, and the signed-in user record). Expose them
-// through typed accessors so the direct window read stays here.
+// A few mutable legacy values and caches still have window-backed owners.
+// Name each supported read here so React callers avoid unbounded global lookup.
 
 /**
  * Legacy web-search toggle. config/providers.js owns the flag and broadcasts
@@ -144,6 +132,17 @@ export function isDeepResearchOn(): boolean {
 /** Legacy extensive-thinking toggle used by the composer tools menu. */
 export function isExtensiveThinkingOn(): boolean {
   return Boolean((window as any).extensiveThinkingOn);
+}
+
+/** Cached projects used by the recents filter chips. */
+export function getCachedProjects(): ReadonlyArray<{ id: string; name: string }> {
+  const projects = (window as any).__projectsCache;
+  if (!Array.isArray(projects)) return [];
+  return projects.filter((project: unknown): project is { id: string; name: string } => {
+    if (!project || typeof project !== 'object') return false;
+    const candidate = project as { id?: unknown; name?: unknown };
+    return typeof candidate.id === 'string' && typeof candidate.name === 'string';
+  });
 }
 
 /** Active UI language code tracked by the legacy i18n layer (defaults to zh). */

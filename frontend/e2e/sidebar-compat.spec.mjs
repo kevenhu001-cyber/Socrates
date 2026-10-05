@@ -115,6 +115,27 @@ test('Sidebar React recents filter bridge remains wired while the compact drawer
   expect(filterAfter).toBeNull();
 });
 
+test('React recents chips refresh after project and session caches change', async ({ page }) => {
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  await expect.poll(() => page.evaluate(() => Array.isArray(window.__projectsCache))).toBe(true);
+  await page.evaluate(() => {
+    window.__projectsCache = [{ id: 'project-algebra', name: 'Algebra project' }];
+    window.SERVER_SESSIONS = [
+      { id: 'session-1', tags: ['algebra', 'practice'] },
+      { id: 'session-2', tags: ['algebra'] },
+    ];
+    window.renderRecents();
+  });
+
+  await expect(page.locator('#recentsFilterChips [data-filter="project:project-algebra"]')).toContainText('Algebra project');
+  await expect(page.locator('#recentsFilterChips [data-filter="algebra"]')).toHaveCount(1);
+  await expect(page.locator('#recentsFilterChips [data-filter="practice"]')).toHaveCount(1);
+});
+
 test('Sidebar React mode always loads (no ?react=1 flag needed)', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');

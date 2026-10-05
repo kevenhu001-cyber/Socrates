@@ -7,6 +7,7 @@ import { _publishSessionList } from '../session/organize.js';
 import { renderRecentsFilterChips as renderRecentsFilterChipsUI } from './recentsFilterChips.js';
 import { getRecentsFilter } from '../sidebar/index.js';
 import { getKnownTags } from '../session/recents.js';
+import { refreshRecentsFilterChipData } from '../react/sidebar/sidebar.bridge.ts';
 import { apiFetch } from '../util/api.js';
 
 var _renderRecentsPending = false;
@@ -61,6 +62,7 @@ export function renderRecentsFilterChips() {
     tags: getKnownTags().slice(0, 8),
     projects: projects || []
   });
+  refreshRecentsFilterChipData();
 }
 
 /* Unified sidebar search state. Read by doRenderRecents() as a

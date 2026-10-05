@@ -106,6 +106,11 @@ export function publishRecentsFilter(filter: string | null): void {
   filterBridge.dispatch({ filter });
 }
 
+/** Re-render chips whose project/tag inputs live in the legacy recents caches. */
+export function refreshRecentsFilterChipData(): void {
+  filterBridge.dispatch({ filter: filterBridge.getSnapshot().filter });
+}
+
 export function useRecentsFilterSnapshot(): RecentsFilterSnapshot {
   return useBridge(filterBridge);
 }

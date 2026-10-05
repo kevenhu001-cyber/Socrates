@@ -99,3 +99,11 @@ The chat configuration bridge now reads the live `apiConfig` export from its
 owning provider module. This removes its generic global lookup and duplicate
 `Window.apiConfig` declaration while keeping the published popover snapshot
 copied from the same provider object the legacy client updates in place.
+
+## Eighth increment
+
+The recents chips now read projects through a named cache accessor and tags
+from the session cache owner, removing the last caller of generic
+`getLegacyGlobalValue`. The legacy recents renderer also republishes the
+existing filter snapshot after its caches change, so React refreshes project
+and tag chips when asynchronous data arrives.

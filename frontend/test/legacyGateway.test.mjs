@@ -6,10 +6,12 @@ globalThis.window = {
   webSearchOn: false,
   deepResearchOn: false,
   extensiveThinkingOn: false,
+  __projectsCache: [],
 };
 
 const {
   getActiveTemplateExtensionKey,
+  getCachedProjects,
   isDeepResearchOn,
   isExtensiveThinkingOn,
   isWebSearchOn,
@@ -33,4 +35,14 @@ test('active template accessor safely handles absent or malformed legacy data', 
 
   window._activeTemplate = null;
   assert.equal(getActiveTemplateExtensionKey(), null);
+});
+
+test('typed project cache accessor excludes entries without project labels and ids', () => {
+  window.__projectsCache = [
+    { id: 'project-1', name: 'Algebra' },
+    { id: 'project-2', name: 12 },
+    null,
+  ];
+
+  assert.deepEqual(getCachedProjects(), [{ id: 'project-1', name: 'Algebra' }]);
 });
