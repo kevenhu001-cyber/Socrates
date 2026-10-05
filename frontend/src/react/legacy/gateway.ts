@@ -128,6 +128,24 @@ export function isWebSearchOn(): boolean {
   return Boolean((window as any).webSearchOn);
 }
 
+/** Active extension mode selected in the legacy template system, if any. */
+export function getActiveTemplateExtensionKey(): string | null {
+  const template = (window as any)._activeTemplate as { extensionKey?: unknown } | null | undefined;
+  return template && typeof template.extensionKey === 'string'
+    ? template.extensionKey
+    : null;
+}
+
+/** Legacy deep-research toggle used by the composer tools menu. */
+export function isDeepResearchOn(): boolean {
+  return Boolean((window as any).deepResearchOn);
+}
+
+/** Legacy extensive-thinking toggle used by the composer tools menu. */
+export function isExtensiveThinkingOn(): boolean {
+  return Boolean((window as any).extensiveThinkingOn);
+}
+
 /** Active UI language code tracked by the legacy i18n layer (defaults to zh). */
 export function getCurrentLang(): 'zh' | 'en' {
   return (window as any)._currentLang === 'en' ? 'en' : 'zh';

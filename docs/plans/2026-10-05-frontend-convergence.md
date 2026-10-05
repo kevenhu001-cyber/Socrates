@@ -85,3 +85,10 @@ textarea fallback. Focused coverage protects reducer persistence and the edit
 and iterate flow. `editedText` is not in the current session save payload or
 message-table schema, so this only guarantees reducer-backed in-memory state;
 surviving reloads needs a separate persistence change.
+
+## Sixth increment
+
+The composer tools menu no longer reads the active extension and mode flags
+through the generic `getLegacyGlobalValue` escape hatch. Named gateway
+accessors document the shape of each legacy value while preserving the menu's
+existing active-mode precedence.

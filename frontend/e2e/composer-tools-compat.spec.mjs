@@ -47,6 +47,23 @@ test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async
   ]);
 });
 
+test('Composer tools menu highlights the active template ahead of mode flags', async ({ page }) => {
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  await page.evaluate(() => {
+    window._activeTemplate = { extensionKey: 'write' };
+    window.deepResearchOn = true;
+  });
+  await page.locator('#composerToolsBtn').click();
+
+  const menu = page.locator('#composerToolsMenu .composer-tools-desktop-items');
+  await expect(menu.locator('[data-composer-action="write"]')).toHaveClass(/is-active/);
+  await expect(menu.locator('[data-composer-action="deepResearch"]')).not.toHaveClass(/is-active/);
+});
+
 test('Composer tools menu opens via legacy entry point and React mirrors state', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');

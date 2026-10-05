@@ -2,7 +2,13 @@ import { clearHostMounted, markHostMountedBy } from '../lib/boot/ownership';
 import { useEffect, useMemo, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
-import { getLegacyGlobalValue, t as _t } from '../legacy/gateway.ts';
+import {
+  getActiveTemplateExtensionKey,
+  isDeepResearchOn,
+  isExtensiveThinkingOn,
+  isWebSearchOn,
+  t as _t,
+} from '../legacy/gateway.ts';
 import { repositionComposerTools } from '../../ui/composerTools';
 import { installComposerToolsBridge } from './composerTools.bridge';
 import {
@@ -478,14 +484,10 @@ function MenuItems({
 function ComposerToolsMenu() {
   const snapshot = useComposerToolsSnapshot();
   const { pick } = useComposerToolsDispatch();
-  const activeTemplate = getLegacyGlobalValue('_activeTemplate', null as { extensionKey?: string } | null);
-  const webSearchOn = getLegacyGlobalValue('webSearchOn', false);
-  const deepResearchOn = getLegacyGlobalValue('deepResearchOn', false);
-  const extensiveThinkingOn = getLegacyGlobalValue('extensiveThinkingOn', false);
-  const activeKey = activeTemplate?.extensionKey
-    ?? (webSearchOn ? 'webSearch' : null)
-    ?? (deepResearchOn ? 'deepResearch' : null)
-    ?? (extensiveThinkingOn ? 'extensiveThinking' : null);
+  const activeKey = getActiveTemplateExtensionKey()
+    ?? (isWebSearchOn() ? 'webSearch' : null)
+    ?? (isDeepResearchOn() ? 'deepResearch' : null)
+    ?? (isExtensiveThinkingOn() ? 'extensiveThinking' : null);
 
   return <MenuItems activeKey={activeKey} onPick={pick} isOpen={snapshot.isOpen} mode={snapshot.mode} />;
 }
