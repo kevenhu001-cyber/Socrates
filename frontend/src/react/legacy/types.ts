@@ -23,8 +23,8 @@ export interface LegacyMessages {
 }
 
 export interface LegacyNavigation {
-  resetApp(): void;
-  startNewChat(): void;
+  resetApp(options?: { confirmActiveSession?: boolean }): Promise<boolean>;
+  startNewChat(): Promise<boolean>;
   toggleSidebar(): void;
   openNav(key: string): void;
   openSettings(): Promise<void> | void;

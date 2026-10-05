@@ -86,11 +86,9 @@ export function PluginDetailView({
   const handleUseInChat = async () => {
     try {
       /* The plugin must be selected AFTER the reset clears the composer
-         selection (session/recents.js clears both surfaces), so await the
-         reset before toggling. startNewChat() is typed void but returns the
-         resetApp() promise at runtime — Promise.resolve covers both, and a
-         false result means the user cancelled the new-session confirm. */
-      const resetResult = await Promise.resolve(getLegacyActions().navigation.startNewChat() as unknown);
+         selection (session/recents.js clears both surfaces). A false result
+         means the user cancelled the new-session confirmation. */
+      const resetResult = await getLegacyActions().navigation.startNewChat();
       if (resetResult === false) return;
       toggleComposerPlugin('topic', {
         id: plugin.id,

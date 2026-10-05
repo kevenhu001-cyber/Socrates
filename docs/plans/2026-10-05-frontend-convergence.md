@@ -60,3 +60,11 @@ restore order determines historical winners, and the canonical surface layers
 depend on their documented ownership order. The existing `lint` chain and
 `lint:css-debt` entrypoint run the guard, so this adds no parallel lint path or
 baseline budget.
+
+## Third increment
+
+The `LegacyNavigation` contract now reflects that `resetApp()` and
+`startNewChat()` return `Promise<boolean>`: `false` means an in-progress exam or
+stream confirmation was canceled. The connected-plugin “Use in chat” flow waits
+for that result before changing composer selection. Focused coverage protects
+both the successful reset and cancel paths.

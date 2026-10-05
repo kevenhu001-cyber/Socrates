@@ -43,6 +43,37 @@ async function mockConnectedCatalog(page) {
   });
 }
 
+async function openConnectedPluginDetail(page) {
+  await mockAuthedApp(page, { lang: 'en' });
+  await mockConnectedCatalog(page);
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.locator('#navPlugins').click();
+  await page.locator('[data-connector-id="github"]').click();
+  await expect(page.locator('.plugin-detail-view')).toBeVisible();
+}
+
+test('using a connected plugin waits for the chat reset to succeed', async ({ page }) => {
+  await openConnectedPluginDetail(page);
+
+  await page.locator('.plugin-detail-btn-primary').click();
+
+  await expect(page.locator('#topicSetup')).toBeVisible();
+  await expect(page.locator('#composerInputWrap .composer-plugin-chip-label')).toHaveText(['GitHub']);
+});
+
+test('canceling the chat reset keeps the connected plugin unselected', async ({ page }) => {
+  await openConnectedPluginDetail(page);
+  await page.evaluate(() => {
+    window.__socratesLegacy.navigation.startNewChat = async () => false;
+  });
+
+  await page.locator('.plugin-detail-btn-primary').click();
+
+  await expect(page.locator('.plugin-detail-view')).toBeVisible();
+  await expect(page.locator('.composer-plugin-chip')).toHaveCount(0);
+});
+
 test('plus menu supports real connector search, multi-select, and removal', async ({ page }) => {
   await mockAuthedApp(page, { lang: 'en' });
   await mockConnectedCatalog(page);
