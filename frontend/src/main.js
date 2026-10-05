@@ -1,3 +1,21 @@
+/* P_storage-shim — first side-effect import, so the in-memory
+   localStorage/sessionStorage shim is installed before the app modules
+   below it (state/store.js, i18n.js, providers.js, displayPrefs.js, …)
+   evaluate and touch storage. Without this ordering, first-party storage
+   calls made during module evaluation can fire one
+   "Tracking Prevention blocked access to storage" warning each
+   before the shim's IIFE kicks in.
+
+   The guarantee is RELATIVE, not absolute: `batchStorage.js` itself imports
+   `ui/toast.js`, and ES modules evaluate a module's dependencies before the
+   module, so anything reaching storage from inside that transitive graph runs
+   before the shim is in place. What protects the ordering is the bundler
+   honoring declaration order for side-effect-only imports — which is exactly
+   what `e2e/storage-bootstrap.spec.mjs` pins (currently exactly one bundled
+   storage read escapes the shim). Move this import, add one above it, or let
+   a new early import reach storage and that spec fails. Treat the spec as the
+   contract, not this comment. */
+import './batchStorage.js';
 /* ─── Module imports (Phase 2 split) ─── */
 /* P_perf-self-host — bundle the former CDN globals (marked, DOMPurify,
    katex, hljs, Fuse) before any consumer module evaluates. */
@@ -12,14 +30,7 @@ import './vendor/init.js';
 import './windowExports.js';
 import './tutorSocratic.js';
 import './app/legacyBridge.js';
-/* P_storage-shim — import before any other module so the in-memory
-   localStorage/sessionStorage shim is installed before downstream
-   imports (state/store.js, i18n.js, providers.js, displayPrefs.js, …)
-   touch storage. Without this ordering, first-party storage calls
-   made during module evaluation can fire one
-   "Tracking Prevention blocked access to storage" warning each
-   before the shim's IIFE kicks in. */
-import './batchStorage.js';
+
 import './app/errorGuard.js';
 import './render/katexRefresh.js';
 import './i18n.js';

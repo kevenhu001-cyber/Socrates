@@ -162,3 +162,105 @@ test('clicking Resend starts a new turn from the latest user message', async ({ 
     }))
     .toBe(true);
 });
+
+test('editing a frozen user message saves the new text and starts a replacement answer', async ({ page }) => {
+  const errors = [];
+  const patches = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await installOpenStream(page);
+  await bootChatTurn(page);
+  await expect(page.locator('.msg.assistant').last()).toContainText('Partial answer');
+  await page.locator('#composerPrimaryBtn').click();
+  await expect(page.locator('#composerPrimaryBtn')).toHaveAttribute('data-stop', '0');
+  await page.route('**/api/v2/messages/user-stop?*', async route => {
+    patches.push(route.request().postDataJSON());
+    await route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
+  });
+  await page.evaluate(() => {
+    window.__beforeEditSnapshot = window.stateStore.read('messages');
+  });
+  const user = page.locator('[data-client-id="user-stop"]');
+  await user.hover();
+  await user.getByRole('button', { name: 'Edit message', exact: true }).click();
+  await user.locator('.msg-edit-area').fill('Updated question after editing');
+  await user.locator('.msg-edit-submit').click();
+  await expect(user.locator('.msg-edit-area')).toHaveCount(0);
+  await expect(user.locator('.msg-body')).toContainText('Updated question after editing');
+  await expect(page.locator('#composerPrimaryBtn')).toHaveAttribute('data-stop', '1');
+  await expect(page.locator('.msg.assistant')).toHaveCount(1);
+  await expect(page.locator('.msg.assistant')).toContainText('Partial answer');
+  expect(patches).toEqual([{
+    content: 'Updated question after editing', regenerate: false, discardFollowing: true,
+  }]);
+  expect(await page.evaluate(() => ({
+    originalText: window.__beforeEditSnapshot[0].rawText,
+    currentText: window.stateStore.read('messages')[0].rawText,
+    replaced: window.__beforeEditSnapshot[0] !== window.stateStore.read('messages')[0],
+  }))).toEqual({
+    originalText: 'Stop me mid-stream', currentText: 'Updated question after editing', replaced: true,
+  });
+  expect(errors).toEqual([]);
+  await page.locator('#composerPrimaryBtn').click();
+});
+
+for (const ending of ['abort', 'error']) {
+  test(`a late ${ending} from the old turn preserves the new turn's Stop control`, async ({ page }) => {
+    await mockAuthedApp(page);
+    await gotoAndSettle(page, '/');
+    await waitForAppShell(page);
+    await page.evaluate(async () => {
+      window.stateStore.dispatch({ type: 'state/batch', patch: {
+        phase: 'chat', currentSessionId: '88888888-8888-4888-8888-888888888888',
+        messages: [{ clientId: 'owner-user', role: 'user', rawText: 'Keep the new turn active' }],
+      } });
+      document.getElementById('topicSetup').classList.add('hidden');
+      document.getElementById('chatView').classList.remove('hidden');
+      window.__oldOwner = await window.addStreamingMessage({ clientId: 'owner-old' });
+      window.__newOwner = await window.addStreamingMessage({ clientId: 'owner-new' });
+    });
+    const sendBtn = page.locator('#composerPrimaryBtn');
+    await expect(sendBtn).toHaveAttribute('data-stop', '1');
+    await page.evaluate((path) => {
+      if (path === 'abort') window.__oldOwner.abort();
+      else window.__oldOwner.replaceWithError('Old turn failed');
+    }, ending);
+    await expect(sendBtn).toHaveAttribute('data-stop', '1');
+    expect(await page.evaluate(() => window.__newOwner.isFinished())).toBe(false);
+    // The visible control must still stop the new owner, not merely look active.
+    await sendBtn.click();
+    await expect(sendBtn).toHaveAttribute('data-stop', '0');
+    expect(await page.evaluate(() => window.__newOwner.isFinished())).toBe(true);
+  });
+}
+
+test('caught failures report safely in the production bundle without opening an error banner', async ({ page }) => {
+  const reports = [];
+  const seenPaths = new Set();
+  await mockAuthedApp(page);
+  /* Spelling-agnostic on purpose: the path is one shared constant
+     (src/util/clientErrorReporter.ts → CLIENT_ERROR_PATH), so this test
+     asserts which spelling actually shipped rather than re-hardcoding it. */
+  await page.route('**/client-error', async (route) => {
+    seenPaths.add(new URL(route.request().url()).pathname);
+    reports.push(route.request().postDataJSON());
+    await route.fulfill({ status: 204 });
+  });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.evaluate(() => {
+    const original = Storage.prototype.setItem;
+    try {
+      Storage.prototype.setItem = () => { throw new TypeError('DO_NOT_SEND_PRIVATE_CONTENT'); };
+      window.setLang('en');
+      window.setLang('en');
+    } finally {
+      Storage.prototype.setItem = original;
+    }
+  });
+  await expect.poll(() => reports.filter((r) => /i18n.setLang.persist/.test(r.msg)).length).toBe(1);
+  const report = reports.find((r) => /i18n.setLang.persist/.test(r.msg));
+  expect(report.msg).toMatch(/build=[a-f0-9]{12}/);
+  expect(JSON.stringify(reports)).not.toContain('DO_NOT_SEND_PRIVATE_CONTENT');
+  expect([...seenPaths]).toEqual(['/api/v2/client-error']);
+  await expect(page.locator('#__socrates_global_err_banner')).toHaveCount(0);
+});

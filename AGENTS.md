@@ -31,6 +31,24 @@
 - Cross-client API changes: update the OpenAPI description and check `mobile/` compatibility.
 - Deployment changes: use a non-production dry-run environment or shell-level validation before operating on web roots or services.
 
+## Architecture guards (run inside `npm run lint`)
+
+`npm run lint` is not just `tsc` + `eslint` — it ends in a chain of custom ratchets. When you add a new guard, add it to both `lint` and a `lint:<name>` script, and give it a `--update` baseline that may only shrink.
+
+| Guard | Enforces |
+|---|---|
+| `check-react-globals.mjs` | React components read the store through `store/index.ts` hooks, not `window.stateStore` |
+| `check-css-debt.mjs` | `!important` / hex colors / literal radii / stacked IDs stay at or below their frozen counts |
+| `check-empty-catch.mjs` | Every empty `catch` carries a reasoned `empty-catch: intentional — …` marker (AST-based, so strings/regexes never count) |
+| `check-composer-css.mjs` | Exactly one owner for composer CSS: `styles/parity/composer-unified.css` |
+| `check-surface-ownership.mjs` | Sidebar / topbar / transcript each have one desktop owner under `styles/parity/` |
+| `check-mobile-css.mjs` | Mobile CSS stays in the mobile owner files |
+| `check-i18n-locales.mjs` | `en` and `zh` carry the same key set |
+| `check-e2e-artifacts.mjs` | e2e writes screenshots under `test-results/`, never to absolute paths like `/tmp` (which break on non-POSIX runners and leak across runs) |
+| `check-chat-layering.mjs` | `src/chat/**` must not import `src/react/**` — `src/react/types/**` is the allowed shared contract. The legacy chat layer must not depend on the React component tree; put shared pieces in `src/ui/` or `src/react/types/`. |
+
+Conventions these follow: a failing check prints the offending `file:line` and exits 1; a baseline lives next to the script as `<name>.baseline.json` and can only move down; a `--update` run regenerates it and prints what it dropped, so a shrinking ratchet is an explicit act.
+
 ## Incremental testing (required)
 
 Do not run the full `test:unit` / Playwright suites for every change. Tests are slow

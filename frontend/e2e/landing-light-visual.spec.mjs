@@ -85,7 +85,7 @@ test('light conversation home has a neutral readable palette and balanced compos
   expect(Math.abs((afterFocus?.y ?? 0) - (beforeFocus?.y ?? 0))).toBeLessThanOrEqual(1);
   expect(consoleErrors).toEqual([]);
 
-  await page.screenshot({ path: '/tmp/socrates-landing-light-desktop.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/socrates-landing-light-desktop.png', fullPage: true });
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => {
@@ -108,5 +108,5 @@ test('light conversation home has a neutral readable palette and balanced compos
   const mobileComposerBottom = (mobileComposer?.y ?? 0) + (mobileComposer?.height ?? 0);
   expect(mobileComposerBottom).toBeGreaterThanOrEqual(844 - 24);
   expect(mobileComposerBottom).toBeLessThanOrEqual(844);
-  await page.screenshot({ path: '/tmp/socrates-landing-light-mobile.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/socrates-landing-light-mobile.png', fullPage: true });
 });

@@ -85,3 +85,46 @@ test('defaults mirror Codex LiveCommandOutput (50 lines / 1 MiB)', () => {
   assert.equal(DEFAULT_MAX_LINES, 50);
   assert.equal(DEFAULT_MAX_BYTES, 1024 * 1024);
 });
+
+/* ---------------------------------------------------------------------------
+ * Characterized: the byte cap applies to COMPLETED lines only.
+ *
+ * `pending` — the unterminated line still being assembled — is not capped, so
+ * a tool that streams one long line without a newline grows it without bound.
+ * That is a deliberate characterization, not an endorsement:
+ *
+ *   - measured 0.0020 ms/push for typical newline-terminated stdout
+ *   - measured 3.07 ms/push and 13 MiB `pending` for 4 KiB chunks with no
+ *     newline, because V8 flattens the cons-string on every indexed access
+ *   - the 1 MiB byte cap therefore only bounds completed lines, never the
+ *     partial one
+ *
+ * Capping it changes what the user sees for a long unterminated line (a
+ * truncated tail instead of the whole thing) and must be done in BOTH
+ * socrates-format/src/live_buffer.rs and the TS fallback, with
+ * wasmParity.test.mjs updated — the two implementations currently agree on
+ * the unbounded behavior. Do not change one side alone.
+ *
+ * These assertions pin the current contract so a change to either side is a
+ * deliberate, reviewed act.
+ * ------------------------------------------------------------------------ */
+
+test('the byte cap bounds completed lines, not the pending partial line', () => {
+  const b = createLiveOutputBuffer(50, 1024);
+  b.push('x'.repeat(512) + '\n');          // one completed line, within the cap
+  b.push('y'.repeat(4096));                 // one unterminated line, way over
+  const p = b.preview();
+  assert.equal(p.totalBytes, 512 + 1 + 4096, 'the chunk byte count includes the newline');
+  assert.equal(p.omittedBytes, 0, 'the completed line was stored, not omitted');
+  assert.equal(p.pending.length, 4096, 'the partial line is kept whole');
+});
+
+test('a long unterminated line is never truncated by the caps', () => {
+  const b = createLiveOutputBuffer(2, 10);
+  for (let i = 0; i < 200; i++) b.push('ab');   // 400 bytes, no newline at all
+  const p = b.preview();
+  assert.equal(p.pending.length, 400);
+  assert.equal(p.totalLines, 0);
+  assert.equal(p.omittedLines, 0);
+  assert.equal(p.omittedBytes, 0);
+});

@@ -550,7 +550,10 @@ test('a running code call paints its program and stdout outside any collapsible'
   const row = page.locator('.msg.assistant').last().locator('.tool-inline[data-tcid="live-code"]').last();
   await expect(row).toHaveAttribute('data-state', 'running');
 
-  await page.evaluate(() => window.__streamArgs());
+  await page.evaluate(() => {
+    window.__beforeToolSnapshot = window.stateStore.read('messages').at(-1);
+    window.__streamArgs();
+  });
   const preview = row.locator('.tool-inline-code-preview').first();
   await expect(preview).toBeVisible();
   await expect(preview).toContainText('step_39(data)');
@@ -579,6 +582,24 @@ test('a running code call paints its program and stdout outside any collapsible'
   await expect(output).toBeVisible();
   await expect(output).toContainText('running step_0');
   await row.screenshot({ path: 'test-results/tool-run-live-preview.png' });
+  const snapshotChecks = await page.evaluate(() => {
+    const current = window.stateStore.read('messages').at(-1);
+    const call = current.toolCalls[0];
+    const previous = window.__beforeToolSnapshot;
+    return {
+      frozen: Object.isFrozen(current) && Object.isFrozen(call) && Object.isFrozen(call.input),
+      replaced: previous !== current && previous.toolCalls !== current.toolCalls,
+      previousOutput: previous.toolCalls[0]._liveOutput ?? null,
+      previousArguments: previous.toolCalls[0].argumentsText ?? null,
+      currentOutput: call._liveOutput,
+      privateBuffer: '_liveBuffer' in call || '_pendingDeltas' in call || '_orphanProgress' in current,
+      persistedRuntime: '_run' in JSON.parse(JSON.stringify(call)),
+    };
+  });
+  expect(snapshotChecks).toEqual({
+    frozen: true, replaced: true, previousOutput: null, previousArguments: null,
+    currentOutput: 'running step_0', privateBuffer: false, persistedRuntime: false,
+  });
 
   await page.evaluate(() => window.__finishCode());
   await expect(row).toHaveAttribute('data-state', 'done');

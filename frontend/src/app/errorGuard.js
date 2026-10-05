@@ -2,6 +2,8 @@
  * Global error / unhandledrejection guard with correlation banner.
  * Zero-behavior-change lift; self-contained (window/document only).
  */
+import { CLIENT_ERROR_PATH } from '../util/clientErrorReporter.ts';
+
 export var __socratesGlobalErrorHandlerInstalled = false;
 
 export function installGlobalErrorGuard() {
@@ -85,9 +87,9 @@ export function installGlobalErrorGuard() {
         ua: typeof navigator !== 'undefined' ? navigator.userAgent : '',
       });
       if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
-        navigator.sendBeacon('/api/client-error', new Blob([data], { type: 'application/json' }));
+        navigator.sendBeacon(CLIENT_ERROR_PATH, new Blob([data], { type: 'application/json' }));
       } else if (typeof fetch !== 'undefined') {
-        fetch('/api/client-error', { method: 'POST', body: data, keepalive: true }).catch(function(){});
+        fetch(CLIENT_ERROR_PATH, { method: 'POST', body: data, keepalive: true }).catch(function(){});
       }
     } catch (_) { /* swallow */ }
   }

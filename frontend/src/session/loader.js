@@ -345,7 +345,7 @@ export async function loadSession(id){
     try {
       if (s.assistantId) sessionStorage.setItem("socrates-active-assistant", s.assistantId);
       else sessionStorage.removeItem("socrates-active-assistant");
-    } catch (e) {reportSwallow(e, 'session/loader.loadSession~4'); }
+    } catch (e) {reportSwallow(e, 'session/loader.loadSession~4', 'expected'); }
     if(s.projectId){
       apiFetch("/api/projects").then(function(r){
         var rows=(r&&r.projects)||[];

@@ -18,6 +18,7 @@ import { buildAssistantHtml } from '../../render/assistantHtml.ts';
 import { setReactLiveStatus } from '../../ui/messageSnapshot.js';
 import { setChatStopState, markTurnEnded } from '../turnUi.js';
 import { claimLiveRetry } from '../liveTurn.js';
+import { turnState } from '../turnState.js';
 import { updateChatStats } from '../stats.js';
 import { streamRetryViewport } from '../turnState.js';
 import { publishReactChatRuntime } from '../../ui/reactBridge.js';
@@ -133,8 +134,8 @@ export function createErrorPath(state) {
     /* Restore the send button — even error paths end the stream.
      * Guarded on the active controller so a new stream that
      * supersedes this one is not clobbered. */
-    if (state.activeChatCtl === state.ret) {
-      state.chatStreaming = false;
+    if (turnState.activeChatCtl === state.ret) {
+      turnState.chatStreaming = false;
       try { setChatStopState(false); } catch (_) { /* stop state already cleared */ }
       try { markTurnEnded(); } catch (_) { /* turn already ended */ }
     }

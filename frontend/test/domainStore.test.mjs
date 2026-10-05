@@ -58,3 +58,61 @@ test('the six domain namespaces ride the zustand stores without facade changes',
   // The zustand vanilla store mirrors the committed snapshot object.
   assert.strictEqual(sessionStore.getState(), after);
 });
+
+test('public domain stores cannot bypass actions and split the bridge snapshot', () => {
+  const domain = createDomainStore({
+    initial: { value: 0, revision: 0 },
+    reducer: (state, value) => ({ ...state, value }),
+  });
+  assert.equal(domain.store.setState, undefined);
+  assert.ok(Object.isFrozen(domain.store));
+  assert.throws(() => { domain.store.setState = () => {}; }, TypeError);
+  const seen = [];
+  const dispose = domain.store.subscribe((state) => seen.push(state));
+  domain.bridge.dispatch(42);
+  domain.bridge.flush();
+  assert.strictEqual(domain.store.getState(), domain.bridge.getSnapshot());
+  assert.strictEqual(seen[0], domain.bridge.getSnapshot());
+  assert.equal(domain.store.getInitialState().value, 0);
+  dispose();
+});
+
+test('new stores reject nested writes and preserve old snapshots across actions', () => {
+  const domain = createDomainStore({
+    initial: { items: [{ text: 'before' }], revision: 0 },
+    reducer: (state, text) => ({ ...state, items: [{ text }] }),
+  });
+  const before = domain.store.getState();
+  assert.throws(() => before.items.push({ text: 'bypass' }), TypeError);
+  assert.throws(() => { before.items[0].text = 'bypass'; }, TypeError);
+  domain.bridge.dispatch('after');
+  domain.bridge.flush();
+  assert.equal(before.items[0].text, 'before');
+  assert.equal(domain.store.getState().items[0].text, 'after');
+  assert.equal(domain.store.getState().revision, 1);
+  assert.ok(Object.isFrozen(domain.store.getState().items));
+});
+
+test('a reducer that attempts an in-place write cannot corrupt a frozen snapshot', () => {
+  const domain = createDomainStore({
+    initial: { items: ['original'], revision: 0 },
+    reducer: (state) => { state.items.push('bad'); return state; },
+  });
+  const before = domain.store.getState();
+  let notifications = 0;
+  domain.store.subscribe(() => { notifications += 1; });
+  const originalError = console.error;
+  const originalWarn = console.warn;
+  try {
+    console.error = () => {};
+    console.warn = () => {};
+    domain.bridge.dispatch('mutate');
+    domain.bridge.flush();
+  } finally {
+    console.error = originalError;
+    console.warn = originalWarn;
+  }
+  assert.strictEqual(domain.store.getState(), before);
+  assert.deepEqual(before.items, ['original']);
+  assert.equal(notifications, 0);
+});

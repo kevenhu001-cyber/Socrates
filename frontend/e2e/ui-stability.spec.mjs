@@ -68,5 +68,5 @@ test('light and dark surfaces keep SVG contrast and hover geometry stable', asyn
     }
   }
 
-  await page.screenshot({ path: '/tmp/socrates-ui-stability-light.png', fullPage: false });
+  await page.screenshot({ path: 'test-results/socrates-ui-stability-light.png', fullPage: false });
 });

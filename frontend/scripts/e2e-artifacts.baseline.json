@@ -1,0 +1,5 @@
+{
+  "count": 0,
+  "note": "e2e screenshots with paths outside or not provably under test-results/. May only go down.",
+  "generatedBy": "check-e2e-artifacts.mjs --update"
+}

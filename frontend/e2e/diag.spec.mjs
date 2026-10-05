@@ -27,6 +27,6 @@ test('diag', async ({ page }) => {
       return {barTop:bar.getBoundingClientRect().top,barH:bar.getBoundingClientRect().height,wrapTop:document.getElementById('composerInputWrap').getBoundingClientRect().top,pad:getComputedStyle(list).paddingBottom,varH:view.style.getPropertyValue('--chat-input-bar-height'),lastBottom:last?last.getBoundingClientRect().bottom:null,st:list.scrollTop,sh:list.scrollHeight,ch:list.clientHeight,n:msgs.length};
     });
     console.log('[diag:'+vp[2]+']', JSON.stringify(m));
-    await page.screenshot({ path: 'test-results/diag-'+vp[2]+'.png' });
+    await page.screenshot({ path: 'test-results/diag-'+encodeURIComponent(vp[2])+'.png' });
   }
 });

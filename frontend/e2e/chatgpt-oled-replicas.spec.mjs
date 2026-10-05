@@ -113,13 +113,13 @@ test('capture all 5 reference replica screens on mobile OLED', async ({ page }) 
   });
   await expect(page.locator('#topicSetup')).toBeVisible();
   await expect(page.locator('#composerInputWrap')).toBeVisible();
-  await page.screenshot({ path: '/tmp/replica-1-mobile-home.png' });
+  await page.screenshot({ path: 'test-results/replica-1-mobile-home.png' });
 
   // 2. Mobile Sidebar Drawer (Image 2)
   await page.locator('#sidebarOpenBtn').click();
   await expect(page.locator('#sidebar')).not.toHaveClass(/collapsed/);
   await page.waitForTimeout(200);
-  await page.screenshot({ path: '/tmp/replica-2-mobile-sidebar.png' });
+  await page.screenshot({ path: 'test-results/replica-2-mobile-sidebar.png' });
 
   // 3. Mobile Context Menu Popover (Image 3)
   const firstItem = page.locator('.recent-item').first();
@@ -128,27 +128,27 @@ test('capture all 5 reference replica screens on mobile OLED', async ({ page }) 
   await dotsBtn.click();
   await expect(firstItem.locator('.recent-item-menu')).toBeVisible();
   await page.waitForTimeout(150);
-  await page.screenshot({ path: '/tmp/replica-3-mobile-context-menu.png' });
+  await page.screenshot({ path: 'test-results/replica-3-mobile-context-menu.png' });
 
   // Close context menu & navigate to plugins
   await page.keyboard.press('Escape');
   await page.evaluate(() => document.getElementById('navPlugins')?.click());
   await expect(page.locator('.plugin-directory')).toBeVisible();
   await page.waitForTimeout(200);
-  await page.screenshot({ path: '/tmp/replica-4-mobile-plugins.png' });
+  await page.screenshot({ path: 'test-results/replica-4-mobile-plugins.png' });
 
   // Scroll down to inspect more connector icons (Discord, Asana, Airtable, Jira, etc.)
   await page.locator('[data-connector-id="discord"]').scrollIntoViewIfNeeded();
   await page.waitForTimeout(200);
-  await page.screenshot({ path: '/tmp/replica-4-mobile-plugins-scroll1.png' });
+  await page.screenshot({ path: 'test-results/replica-4-mobile-plugins-scroll1.png' });
 
   await page.locator('[data-connector-id="chatbotkit"]').scrollIntoViewIfNeeded();
   await page.waitForTimeout(200);
-  await page.screenshot({ path: '/tmp/replica-4-mobile-plugins-scroll2.png' });
+  await page.screenshot({ path: 'test-results/replica-4-mobile-plugins-scroll2.png' });
 
   await page.locator('[data-connector-id="data247"]').scrollIntoViewIfNeeded();
   await page.waitForTimeout(200);
-  await page.screenshot({ path: '/tmp/replica-4-mobile-plugins-scroll3.png' });
+  await page.screenshot({ path: 'test-results/replica-4-mobile-plugins-scroll3.png' });
 
   // 4b. Plugin Detail View (Gmail)
   await page.locator('[data-connector-id="gmail"]').scrollIntoViewIfNeeded();
@@ -156,12 +156,12 @@ test('capture all 5 reference replica screens on mobile OLED', async ({ page }) 
   await expect(page.locator('.plugin-detail-view')).toBeVisible();
   await expect(page.locator('#plugin-detail-title')).toHaveText('Gmail');
   await page.waitForTimeout(300);
-  await page.screenshot({ path: '/tmp/replica-4-mobile-plugin-detail-gmail.png' });
+  await page.screenshot({ path: 'test-results/replica-4-mobile-plugin-detail-gmail.png' });
 
   // Scroll down in detail view to see prompts and permissions
   await page.locator('.plugin-detail-security-card').scrollIntoViewIfNeeded();
   await page.waitForTimeout(200);
-  await page.screenshot({ path: '/tmp/replica-4-mobile-plugin-detail-gmail-scroll.png' });
+  await page.screenshot({ path: 'test-results/replica-4-mobile-plugin-detail-gmail-scroll.png' });
 
   // Test back navigation
   await page.locator('.plugin-detail-back-btn').click();
@@ -172,7 +172,7 @@ test('capture all 5 reference replica screens on mobile OLED', async ({ page }) 
   await expect(page.locator('.plugin-detail-view')).toBeVisible();
   await expect(page.locator('#plugin-detail-title')).toHaveText('GitHub');
   await page.waitForTimeout(200);
-  await page.screenshot({ path: '/tmp/replica-4-mobile-plugin-detail-github.png' });
+  await page.screenshot({ path: 'test-results/replica-4-mobile-plugin-detail-github.png' });
   await page.locator('.plugin-detail-back-btn').click();
   await expect(page.locator('.plugin-directory')).toBeVisible();
 
@@ -180,7 +180,7 @@ test('capture all 5 reference replica screens on mobile OLED', async ({ page }) 
   await page.evaluate(() => document.getElementById('navLibrary')?.click());
   await expect(page.locator('.library-directory')).toBeVisible();
   await page.waitForTimeout(300);
-  await page.screenshot({ path: '/tmp/replica-5-mobile-library.png' });
+  await page.screenshot({ path: 'test-results/replica-5-mobile-library.png' });
 });
 
 test('capture plugin detail screen on desktop OLED', async ({ page }) => {
@@ -193,7 +193,7 @@ test('capture plugin detail screen on desktop OLED', async ({ page }) => {
   await page.locator('[data-connector-id="gmail"]').click();
   await expect(page.locator('.plugin-detail-view')).toBeVisible();
   await page.waitForTimeout(300);
-  await page.screenshot({ path: '/tmp/replica-desktop-plugin-detail-gmail.png' });
+  await page.screenshot({ path: 'test-results/replica-desktop-plugin-detail-gmail.png' });
 
   // Test Asana detail view
   await page.locator('.plugin-detail-back-btn').click();
@@ -205,7 +205,7 @@ test('capture plugin detail screen on desktop OLED', async ({ page }) => {
   const asanaDesc = await page.locator('.plugin-detail-desc').textContent();
   expect(asanaDesc?.length).toBeGreaterThan(30);
   await page.waitForTimeout(200);
-  await page.screenshot({ path: '/tmp/replica-desktop-plugin-detail-asana.png' });
+  await page.screenshot({ path: 'test-results/replica-desktop-plugin-detail-asana.png' });
 });
 
 test('verify loading animation on plugins and projects pages', async ({ page }) => {
@@ -237,7 +237,7 @@ test('verify loading animation on plugins and projects pages', async ({ page }) 
   await expect(page.locator('.workspace-loading-plugins')).toBeVisible();
   await expect(page.locator('.workspace-loading-plugins .workspace-loading-spinner-ring')).toBeVisible();
   await page.waitForTimeout(150);
-  await page.screenshot({ path: '/tmp/loading-animation-plugins.png' });
+  await page.screenshot({ path: 'test-results/loading-animation-plugins.png' });
 
   // Settle to plugins catalog
   await expect(page.locator('.plugin-directory')).toBeVisible({ timeout: 5000 });
@@ -247,7 +247,7 @@ test('verify loading animation on plugins and projects pages', async ({ page }) 
   await expect(page.locator('.workspace-loading-projects')).toBeVisible();
   await expect(page.locator('.workspace-loading-projects .workspace-loading-spinner-ring')).toBeVisible();
   await page.waitForTimeout(150);
-  await page.screenshot({ path: '/tmp/loading-animation-projects.png' });
+  await page.screenshot({ path: 'test-results/loading-animation-projects.png' });
 
   // Settle to projects directory
   await expect(page.locator('.projects-directory')).toBeVisible({ timeout: 5000 });

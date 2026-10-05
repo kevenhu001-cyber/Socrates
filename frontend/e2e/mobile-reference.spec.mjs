@@ -48,7 +48,7 @@ test('mobile account menu opens settings and restores keyboard focus', async ({ 
   const menu = page.locator('.sidebar-account-menu');
   await expect(menu).toBeInViewport();
   await expect(menu.getByRole('menuitem').first()).toBeFocused();
-  await page.screenshot({ path: '/tmp/socrates-reference-account-menu.png' });
+  await page.screenshot({ path: 'test-results/socrates-reference-account-menu.png' });
   await page.keyboard.press('Escape');
   await expect(menu).toHaveCount(0);
   await expect(trigger).toBeFocused();
@@ -76,7 +76,7 @@ test('session menu persists rename, pin and project move for the selected row', 
   const row = page.locator('.recent-item').filter({ hasText: 'Reference chat' });
   await row.locator('.recent-item-overflow').click();
   await expect(page.locator('.recent-item-menu')).toBeInViewport();
-  await page.screenshot({ path: '/tmp/socrates-reference-session-menu.png' });
+  await page.screenshot({ path: 'test-results/socrates-reference-session-menu.png' });
   await page.locator('.recent-item-rename').click();
   await page.locator('.recent-item input[name="title"]').fill('Renamed chat');
   await page.locator('.recent-item input[name="title"]').press('Enter');

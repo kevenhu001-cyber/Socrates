@@ -72,7 +72,7 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   await expect(page.locator('#topicSetup')).toBeVisible();
   await expect(page.locator('#modeSegmentedTop')).toBeVisible();
   await expect(page.locator('#composerInputWrap')).toBeVisible();
-  await page.screenshot({ path: '/tmp/socrates-reference-mobile-home-390x769.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/socrates-reference-mobile-home-390x769.png', fullPage: true });
 
   const mobileGeometry = await page.evaluate(() => {
     const read = (selector) => {
@@ -130,7 +130,7 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   expect(await mobileActions.count()).toBeGreaterThanOrEqual(5);
   await expect(toolsMenu.locator('.composer-tools-mobile-items [data-composer-action="createImage"]')).toBeVisible();
   await expect(toolsMenu.locator('.composer-tools-mobile-items [data-composer-action="webSearch"]')).toBeVisible();
-  await page.screenshot({ path: '/tmp/socrates-reference-mobile-tools-390x769.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/socrates-reference-mobile-tools-390x769.png', fullPage: true });
   await page.keyboard.press('Escape');
   await expect(toolsMenu).toBeHidden();
 
@@ -139,7 +139,7 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? -MOBILE_DRAWER)).toBe(0);
   await expect(page.locator('#sidebarSearchBtn')).toBeVisible();
   await expect(page.locator('#sidebarCloseBtn')).toBeVisible();
-  await page.screenshot({ path: '/tmp/socrates-reference-mobile-sidebar-390x769.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/socrates-reference-mobile-sidebar-390x769.png', fullPage: true });
   await page.evaluate(() => document.getElementById('navPlugins')?.click());
   await expect(page.locator('.plugin-directory')).toBeVisible();
   await expect(page.locator('#sidebar')).toHaveClass(/collapsed/);
@@ -172,11 +172,11 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   await page.evaluate(() => document.getElementById('navProjects')?.click());
   await expect(page.locator('.projects-directory')).toBeVisible();
   await expect(page.locator('.project-row').filter({ hasText: 'Socrates' })).toBeVisible();
-  await page.screenshot({ path: '/tmp/socrates-reference-mobile-projects-390x756.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/socrates-reference-mobile-projects-390x756.png', fullPage: true });
   await page.evaluate(() => document.getElementById('navScheduled')?.click());
   await expect(page.locator('.scheduled-directory')).toBeVisible();
   await expect(page.locator('.scheduled-recommendation')).toHaveCount(5);
-  await page.screenshot({ path: '/tmp/socrates-reference-mobile-scheduled-390x756.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/socrates-reference-mobile-scheduled-390x756.png', fullPage: true });
 
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
@@ -190,7 +190,7 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   const chatToolsBox = await page.locator('#composerToolsBtn').boundingBox();
   expect(chatComposerBox?.height).toBe(89);
   expect(chatToolsBox?.width).toBe(36);
-  await page.screenshot({ path: '/tmp/socrates-reference-mobile-chat-composer-390x769.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/socrates-reference-mobile-chat-composer-390x769.png', fullPage: true });
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.evaluate(() => {
@@ -200,7 +200,7 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   });
   await expect(page.locator('#topicSetup')).toBeVisible();
   await page.waitForTimeout(250);
-  await page.screenshot({ path: '/tmp/socrates-reference-desktop-home-1440x900.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/socrates-reference-desktop-home-1440x900.png', fullPage: true });
 
   await page.locator('#composerToolsBtn').click();
   const desktopToolsMenu = page.locator('#composerToolsMenu');
@@ -211,20 +211,20 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   expect(desktopToolsBox?.height).toBeLessThanOrEqual(560);
   const desktopToolsBackground = await desktopToolsMenu.evaluate((element) => getComputedStyle(element).backgroundColor);
   expect(desktopToolsBackground).not.toBe('rgba(0, 0, 0, 0)');
-  await page.screenshot({ path: '/tmp/socrates-reference-desktop-tools-1440x900.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/socrates-reference-desktop-tools-1440x900.png', fullPage: true });
   await page.keyboard.press('Escape');
   await expect(desktopToolsMenu).toBeHidden();
 
   await page.evaluate(() => document.getElementById('navPlugins')?.click());
   await expect(page.locator('.plugin-directory')).toBeVisible();
-  await page.screenshot({ path: '/tmp/socrates-reference-desktop-plugins-1440x900.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/socrates-reference-desktop-plugins-1440x900.png', fullPage: true });
   await page.evaluate(() => document.getElementById('navProjects')?.click());
   await expect(page.locator('.projects-directory')).toBeVisible();
   await expect(page.locator('.project-row').filter({ hasText: 'Socrates' })).toBeVisible();
-  await page.screenshot({ path: '/tmp/socrates-reference-desktop-projects-1440x900.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/socrates-reference-desktop-projects-1440x900.png', fullPage: true });
   await page.evaluate(() => document.getElementById('navScheduled')?.click());
   await expect(page.locator('.scheduled-directory')).toBeVisible();
-  await page.screenshot({ path: '/tmp/socrates-reference-desktop-scheduled-1440x900.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/socrates-reference-desktop-scheduled-1440x900.png', fullPage: true });
 
   expect(consoleErrors, `console errors: ${consoleErrors.join('\n')}`).toEqual([]);
   expect(pageErrors, `page errors: ${pageErrors.join('\n')}`).toEqual([]);

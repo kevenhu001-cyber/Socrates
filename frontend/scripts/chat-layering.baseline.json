@@ -1,0 +1,5 @@
+{
+  "count": 7,
+  "note": "src/chat/** modules importing src/react/** (src/react/types/** is the allowed shared contract). May only go down.",
+  "generatedBy": "check-chat-layering.mjs --update"
+}

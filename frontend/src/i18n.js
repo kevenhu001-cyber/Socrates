@@ -1469,9 +1469,9 @@ try{
   }else{
     /* Stale value (e.g. user downgraded and we removed a locale) —
      * overwrite with the default so the entry stays canonical. */
-    try{localStorage.removeItem("socrates-lang-app");localStorage.setItem("socrates-lang-app",_currentLang)}catch(e){reportSwallow(e, 'i18n.bootstrap.resetStale'); }
+    try{localStorage.removeItem("socrates-lang-app");localStorage.setItem("socrates-lang-app",_currentLang)}catch(e){reportSwallow(e, 'i18n.bootstrap.resetStale', 'expected'); }
   }
-}catch(e){reportSwallow(e, 'i18n.bootstrap.readPref'); }
+}catch(e){reportSwallow(e, 'i18n.bootstrap.readPref', 'expected'); }
 /* Fetch the zh chunk in parallel with boot for zh users; en users never
    pay for it until they toggle. When it lands, run the full setLang path
    so JS-rendered strings (greeting, topic copy, toggles) repaint too. */

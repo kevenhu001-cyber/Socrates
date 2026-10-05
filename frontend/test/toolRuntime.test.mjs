@@ -13,7 +13,7 @@ globalThis.document = dom.window.document;
 globalThis.HTMLElement = dom.window.HTMLElement;
 globalThis.CSS = dom.window.CSS;
 
-import { createToolRuntime } from '../src/chat/toolRuntime.ts';
+import { createToolRuntime as createRuntime } from '../src/chat/toolRuntime.ts';
 
 function makeBody() {
   return {
@@ -40,8 +40,9 @@ test('ToolRuntime coalesces orphan deltas before a tool card exists', () => {
   assert.equal(typeof scheduled, 'function');
   scheduled();
 
-  assert.equal(message._orphanDeltas.early.length, 1);
-  assert.equal(message._orphanDeltas.early[0].arguments, '{"code":"ab"}');
+  assert.equal(message._orphanDeltas, undefined);
+  runtime.recordToolUse({id: 'early', name: 'code_interpreter', input: null});
+  assert.equal(message.toolCalls[0].argumentsText, '{"code":"ab"}');
   runtime.dispose();
 });
 
@@ -121,10 +122,10 @@ test('ToolRuntime drains progress that arrives before tool_use', () => {
   });
 
   runtime.recordToolProgress({ id: 'late-use', phase: 'running', elapsedMs: 125 });
-  assert.equal(message._orphanProgress['late-use'].length, 1);
+  assert.equal(message._orphanProgress, undefined);
   runtime.recordToolUse({ id: 'late-use', name: 'web_search', input: { query: 'q' } });
 
-  assert.equal(message._orphanProgress['late-use'], undefined);
+  assert.equal(message._orphanProgress, undefined);
   assert.equal(message.toolCalls[0]._run.phase, 'running');
   assert.equal(message.toolCalls[0]._run.elapsedMs, 125);
   runtime.dispose();
@@ -238,8 +239,7 @@ test('ToolRuntime exposes whether any tool is still active', () => {
   });
 
   assert.equal(runtime.hasActiveTools(), true);
-  message.toolCalls[0].output = 'done';
-  message.toolCalls[0]._toolResultApplied = true;
+  runtime.recordToolResult({id: message.toolCalls[0].id, ok: true, output: 'done'});
   assert.equal(runtime.hasActiveTools(), false);
   runtime.dispose();
 });
@@ -415,7 +415,7 @@ test('agent plan frames update the persisted checklist in place', () => {
 test('agent frames that arrive before tool_use are replayed', () => {
   const { message, runtime } = agentRuntimeHarness();
   runtime.recordAgentStep(stepFrame({ id: '', stepId: 'early' }));
-  assert.ok(message._orphanAgentFrames, 'the frame is buffered');
+  assert.equal(message._orphanAgentFrames, undefined, 'buffer stays private');
 
   runtime.recordToolUse({ id: 'agent-1', name: 'workspace_agent', input: {} });
   const entry = message.toolCalls.find((call) => call.id === 'agent-1');
@@ -561,6 +561,8 @@ test('decideApproval still POSTs after dispose when the store swaps the message 
   let message = { clientId: 'msg-postfinish-1', id: 'msg-postfinish-1', toolCalls: [pendingCall] };
   const calls = [];
   const originalFetch = globalThis.fetch;
+  const originalTimeout = window.setTimeout;
+  window.setTimeout = () => 0; // This test covers the decision POST, not polling.
   globalThis.fetch = async (url, opts = {}) => {
     calls.push({ url: String(url), method: opts.method || 'GET', body: opts.body });
     if (String(url).includes('/approvals/')) {
@@ -598,5 +600,13 @@ test('decideApproval still POSTs after dispose when the store swaps the message 
     assert.equal(message.toolCalls[0].approval.status, 'accept', 'entry approval flips to accepted');
   } finally {
     globalThis.fetch = originalFetch;
+    window.setTimeout = originalTimeout;
   }
 });
+
+// The shell mirrors session/update-message; entries are replaced on each commit.
+function createToolRuntime(options) {
+  return createRuntime({...options, updateMessage(patch) {
+    Object.assign(options.getMessage(), patch);
+  }});
+}

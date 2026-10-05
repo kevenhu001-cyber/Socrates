@@ -323,11 +323,10 @@ function MessageList() {
   );
 }
 
-let messageListMounted = false;
-
-export function isMsgListMounted(): boolean {
-  return messageListMounted;
-}
+/* The mount flag lives in ui/msgListMount.ts so the legacy chat layer can ask
+   the same question without importing this React module (see the chat-layering
+   check script). */
+import { isMsgListMounted, setMsgListMounted } from '../../ui/msgListMount.ts';
 
 /**
  * Mounts the React message list into the existing `#msgList` element.
@@ -348,18 +347,18 @@ export function isMsgListMounted(): boolean {
 export function mountMessageList(): { root: Root | null } {
   const container = document.getElementById(MSG_LIST_ID);
   if (!container) return { root: null };
-  if (messageListMounted) return { root: null };
+  if (isMsgListMounted()) return { root: null };
   // The read-only share view renders #msgList itself; never mount over it.
   if (window.__socratesShareMsgListTakeover) return { root: null };
 
   const root = createRoot(container);
   root.render(<ErrorBoundary><MessageList /></ErrorBoundary>);
-  messageListMounted = true;
+  setMsgListMounted(true);
 
   window.__socratesFlushMessageRows = flushDeferredMessageRows;
   window.__socratesReleaseMsgListReact = () => {
     try { root.unmount(); } catch (e) { reportSwallow(e, 'MessageList.releaseMsgListReact.unmount'); /* already unmounted */ }
-    messageListMounted = false;
+    setMsgListMounted(false);
     delete window.__socratesReleaseMsgListReact;
   };
 

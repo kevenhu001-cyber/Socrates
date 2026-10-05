@@ -20,7 +20,7 @@ import { setChatStopState, markTurnInProgress, markTurnEnded, quietTurn } from '
 import { registerLiveTurnRuntime, claimLiveSearchRetry } from './liveTurn.js';
 import { generateId } from '../util/ids.js';
 import { hideNewReplyPill } from '../ui/scrollPill.js';
-import { isMsgListMounted } from '../react/message-list/MessageList.tsx';
+import { isMsgListMounted } from '../ui/msgListMount.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { setReactLiveStatus } from '../ui/messageSnapshot.js';
 import { createStreamPlayer } from '../render/streamPlayer.js';
@@ -72,7 +72,7 @@ function _smoothStreamEnabled() {
     if (typeof window !== 'undefined' && window.__socratesSmoothStream === false) return false;
     if (typeof localStorage !== 'undefined'
         && localStorage.getItem('socrates:smoothStream') === 'off') return false;
-  } catch (e) { reportSwallow(e, 'streamingTurn._smoothStreamEnabled.readPref'); }
+  } catch (e) { reportSwallow(e, 'streamingTurn._smoothStreamEnabled.readPref', 'expected'); }
   return true;
 }
 
@@ -184,9 +184,7 @@ export function addStreamingMessage(opts){
     _publishThinkingPanelEnd: function(){},
     _publishThinkingPanelStart: function(){},
     _publishThinkingPanelLive: function(){},
-    // global turn flags (mutated by the abort / error paths).
-    chatStreaming: true,
-    activeChatCtl: null,
+    // Only turnState owns the active controller and global streaming flags.
     ret: null,
     /* utilities */
     t: _t,
@@ -341,7 +339,6 @@ export function addStreamingMessage(opts){
   /* Morph the send button into a red Stop so the user can abort
      the stream. setChatStopState(false) on finish/abort. */
   turnState.chatStreaming=true;
-  state.chatStreaming=true;
   try{setChatStopState(true)}catch(e){reportSwallow(e, 'streamingTurn.start.setChatStopState'); }
   /* Task 4.1 — record turn-in-progress + Resend target (latest user msg). */
   try{markTurnInProgress()}catch(e){reportSwallow(e, 'streamingTurn.start.markTurnInProgress'); }
@@ -483,8 +480,9 @@ export function addStreamingMessage(opts){
     ownsLiveTurn:function(){return reactLive},
     stillOwnsSlot:stillOwnsSlot,
     getMessage:function(){
-      return msgIdx>=0?(stateStore.read("messages")[msgIdx]||null):null;
+      return ownsMessageSlot()?(stateStore.read("messages")[msgIdx]||null):null;
     },
+    updateMessage:function(patch){patchOwnedMessage(patch)},
     /* P_declarative-tool-run — a tool_use landed: record where in `full` the
        answer was (the RAW fire position — end of what has streamed so far),
        and let the renderer derive the row position from that offset.
@@ -775,13 +773,11 @@ export function addStreamingMessage(opts){
          * stream is running. */
         if(turnState.activeChatCtl===ret){
           turnState.chatStreaming=false;
-          state.chatStreaming=false;
           try{setChatStopState(false)}catch(e){reportSwallow(e, 'streamingTurn.finishAfterRender.setChatStopState'); }
           try{markTurnEnded()}catch(e){reportSwallow(e, 'streamingTurn.finishAfterRender.markTurnEnded'); }
           /* P1.4 — clearing the global abort handle on natural finish
              keeps the closure (and DOM refs) eligible for GC. */
           turnState.activeChatCtl=null;
-          state.activeChatCtl=null;
         }
         /* The final pass changes the answer's height (a running row folds
            into its group, the status line retires, KaTeX resolves), and
@@ -809,7 +805,6 @@ export function addStreamingMessage(opts){
      still thinking. The next addStreamingMessage() call will overwrite
      turnState.activeChatCtl with its own controller. */
   turnState.activeChatCtl=ret;
-  state.activeChatCtl=ret;
   return ret;
 }
 

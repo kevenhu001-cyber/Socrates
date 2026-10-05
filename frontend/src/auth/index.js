@@ -242,8 +242,8 @@ export async function afterAuthEnter(){
     if(hasAny){
       try{
         await apiFetch("/api/migrate",{method:"POST",body:payload});
-        try{localStorage.removeItem("socrates-sessions-v2")}catch(e){reportSwallow(e, 'auth/index.migrate.clearSessions'); }
-        try{localStorage.removeItem("socrates-api")}catch(e){reportSwallow(e, 'auth/index.migrate.clearApi'); }
+        try{localStorage.removeItem("socrates-sessions-v2")}catch(e){reportSwallow(e, 'auth/index.migrate.clearSessions', 'expected'); }
+        try{localStorage.removeItem("socrates-api")}catch(e){reportSwallow(e, 'auth/index.migrate.clearApi', 'expected'); }
       }catch(e){ reportSwallow(e, 'auth/index.migrate.post'); /* migrate failed */}
     }
   }catch(e){ reportSwallow(e, 'auth/index.migrate.setup'); /* migrate setup failed */}

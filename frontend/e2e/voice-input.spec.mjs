@@ -185,14 +185,14 @@ test('the mic starts voice input and the primary becomes send after transcriptio
   expect(emptyCaret.paragraphLeft).toBeLessThanOrEqual(emptyCaret.editorLeft + emptyCaret.paddingLeft + 1);
   expect(emptyCaret.placeholderPosition).toBe('absolute');
   expect(emptyCaret.placeholderFloat).toBe('none');
-  await page.screenshot({ path: '/tmp/socrates-composer-empty-focused.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/socrates-composer-empty-focused.png', fullPage: true });
 
   await editor.pressSequentially('typed');
   await expect(primary).toHaveClass(/active/);
   await expect(primary.locator('.icon-arrow')).toHaveCount(1);
   await expect(primary.locator('.icon-voice')).toHaveCount(0);
   await expect(primary).toBeEnabled();
-  await page.screenshot({ path: '/tmp/socrates-composer-with-text.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/socrates-composer-with-text.png', fullPage: true });
   await editor.press(process.platform === 'darwin' ? 'Meta+A' : 'Control+A');
   await editor.press('Backspace');
   await expect(primary).not.toHaveClass(/active/);

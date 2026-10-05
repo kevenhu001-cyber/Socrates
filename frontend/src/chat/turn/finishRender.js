@@ -49,14 +49,13 @@ export function createFinishRender(state) {
     try {
       var _m = state.msgIdx >= 0 ? stateStore.read("messages")[state.msgIdx] : null;
       if (_m && Array.isArray(_m.toolCalls)) {
-        for (var _ti = 0; _ti < state.inlineToolRows.length; _ti++) {
-          for (var _tj = 0; _tj < _m.toolCalls.length; _tj++) {
-            if (_m.toolCalls[_tj].id === state.inlineToolRows[_ti].id) {
-              _m.toolCalls[_tj].textOffset = state.inlineToolRows[_ti].offset;
-              break;
-            }
-          }
-        }
+        var offsets = new Map(state.inlineToolRows.map(row => [row.id, row.offset]));
+        state.patchOwnedMessage({toolCalls: _m.toolCalls.map(call => {
+          if (!offsets.has(call.id) || call.textOffset === offsets.get(call.id)) return call;
+          var updated = {...call, textOffset: offsets.get(call.id)};
+          if (call._run) Object.defineProperty(updated, '_run', {value: call._run, enumerable: false});
+          return updated;
+        })});
       }
     } catch (_) { /* tool offset writeback failed; layout will fall back */ }
     var finalHtml;

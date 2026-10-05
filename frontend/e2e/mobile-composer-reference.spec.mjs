@@ -53,7 +53,7 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
   expect(Math.abs((landing.controls[0]?.top ?? 0) - (landing.controls[2]?.top ?? 0))).toBeLessThanOrEqual(4);
   expect((landing.controls[0]?.left ?? 0) + 36).toBeLessThanOrEqual(landing.controls[1]?.left ?? 0);
   expect((landing.controls[1]?.left ?? 0) + 36).toBeLessThanOrEqual(landing.controls[2]?.left ?? 0);
-  await page.screenshot({ path: '/tmp/socrates-mobile-unified-landing.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/socrates-mobile-unified-landing.png', fullPage: true });
 
   await page.evaluate(() => {
     document.getElementById('topicSetup')?.classList.add('hidden');
@@ -76,7 +76,7 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
   expect(conversation.controls[1]?.width).toBe(36);
   expect(conversation.controls[2]?.width).toBe(36);
   expect((conversation.controls[1]?.left ?? 0) + 36).toBeLessThanOrEqual(conversation.controls[2]?.left ?? 0);
-  await page.screenshot({ path: '/tmp/socrates-mobile-unified-composer.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/socrates-mobile-unified-composer.png', fullPage: true });
 });
 
 /* This visual regression deliberately uses mockAuthedApp: browser coverage

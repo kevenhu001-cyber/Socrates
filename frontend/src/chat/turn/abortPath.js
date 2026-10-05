@@ -20,6 +20,7 @@ import { formatMsgProgressive } from '../../render/markdown.js';
 import { setReactLiveStatus } from '../../ui/messageSnapshot.js';
 import { setChatStopState, markTurnEnded, resendLastUserMessage } from '../turnUi.js';
 import { claimLiveRetry } from '../liveTurn.js';
+import { turnState } from '../turnState.js';
 import { removeSupersededStub } from '../turnAnchor.ts';
 import { updateChatStats } from '../stats.js';
 import { saveCurrentSession } from '../../session/persistence.js';
@@ -31,7 +32,7 @@ import { publishReactChatRuntime } from '../../ui/reactBridge.js';
  *
  * @param {object} state  shared turn state (see chat/streamingTurn.js). The
  *   helper reads and mutates `state._disposed`, `state.finished`,
- *   `state.toolRuntime`, `state.activeChatCtl`, etc., so callers see the
+ *   `state.toolRuntime`, etc., so callers see the
  *   exact same lifecycle flips the original in-function abort() performed.
  * @returns {{abort: () => void}}
  */
@@ -54,8 +55,8 @@ export function createAbortPath(state) {
      * already taken over (the new wrapper cancels the OLD
      * controller when the user sends a follow-up, and the new
      * addStreamingMessage has already raised turnState.chatStreaming). */
-    if (state.activeChatCtl === state.ret) {
-      state.chatStreaming = false;
+    if (turnState.activeChatCtl === state.ret) {
+      turnState.chatStreaming = false;
       try { setChatStopState(false); } catch (_) { /* stop state already cleared */ }
       try { markTurnEnded(); } catch (_) { /* turn already ended */ }
     }

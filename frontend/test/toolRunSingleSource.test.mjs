@@ -9,7 +9,7 @@ globalThis.document = dom.window.document;
 globalThis.HTMLElement = dom.window.HTMLElement;
 globalThis.CSS = dom.window.CSS;
 
-const { createToolRuntime } = await import('../src/chat/toolRuntime.ts');
+const { createToolRuntime: createRuntime } = await import('../src/chat/toolRuntime.ts');
 const { toolRunLabel } = await import('../src/react/tool-run/labels.ts');
 
 function makeBody() {
@@ -56,12 +56,13 @@ test('M4 orphan progress is capped by key and by list', () => {
   for (let i = 0; i < 60; i++) {
     h.runtime.recordToolProgress({ id: `ghost-${i}`, phase: 'stdout', chunk: 'x', elapsedMs: 10 });
   }
-  assert.ok(Object.keys(message._orphanProgress).length <= 50, 'keys capped');
+  h.runtime.recordToolUse({id: 'ghost-0', name: 'code_interpreter'});
+  assert.equal(message.toolCalls[0]._liveOutput, undefined, 'oldest orphan key evicted');
   for (let i = 0; i < 60; i++) {
     h.runtime.recordToolProgress({ id: 'same-ghost', phase: 'stdout', chunk: 'x', elapsedMs: 10 });
   }
-  const lists = Object.values(message._orphanProgress);
-  for (const list of lists) assert.ok(list.length <= 50, 'lists capped');
+  h.runtime.recordToolUse({id: 'same-ghost', name: 'code_interpreter'});
+  assert.equal(message.toolCalls.at(-1)._liveOutput.length, 50, 'only the last 50 chunks replay');
   h.dispose();
 });
 
@@ -72,7 +73,10 @@ test('M4 orphan deltas are capped after flush', () => {
     h.runtime.recordToolCallDelta({ id: `early-${i}`, index: 0, arguments: '{"a":1}' });
   }
   h.flush();
-  assert.ok(Object.keys(message._orphanDeltas).length <= 50, 'delta keys capped');
+  h.runtime.recordToolUse({id: 'early-0', name: 'code_interpreter'});
+  assert.equal(message.toolCalls[0].argumentsText, undefined);
+  h.runtime.recordToolUse({id: 'early-59', name: 'code_interpreter'});
+  assert.equal(message.toolCalls.at(-1).argumentsText, '{"a":1}');
   h.dispose();
 });
 
@@ -82,6 +86,16 @@ test('M4 orphan approvals are capped', () => {
   for (let i = 0; i < 60; i++) {
     h.runtime.recordToolApproval({ id: `nope-${i}`, runId: `run-${i}`, approvalId: `ap-${i}` });
   }
-  assert.ok(Object.keys(message._orphanApprovals).length <= 50, 'approval keys capped');
+  h.runtime.recordToolUse({id: 'nope-0', name: 'workspace_agent'});
+  assert.equal(message.toolCalls[0].approval, undefined);
+  h.runtime.recordToolUse({id: 'nope-59', name: 'workspace_agent'});
+  assert.equal(message.toolCalls.at(-1).approval.approvalId, 'ap-59');
   h.dispose();
 });
+
+// The shell mirrors session/update-message; entries are replaced on each commit.
+function createToolRuntime(options) {
+  return createRuntime({...options, updateMessage(patch) {
+    Object.assign(options.getMessage(), patch);
+  }});
+}

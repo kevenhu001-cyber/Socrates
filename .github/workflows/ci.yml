@@ -263,6 +263,15 @@ jobs:
       - name: End-to-end smoke tests
         run: npm run test:smoke
 
+      # Mobile-desktop-compositor UX: the phone-sized composer surface has its
+      # own Playwright config (400x890, isMobile, hasTouch) and its own
+      # dist-server on :4174, so it cannot ride the desktop smoke server. It was
+      # previously only reachable via `npm run test:smoke:mobile` locally, so a
+      # regression in phone composer grouping, tool filtering or the connector
+      # empty state could reach main with nothing red.
+      - name: Mobile composer UX smoke tests
+        run: npm run test:smoke:mobile
+
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4

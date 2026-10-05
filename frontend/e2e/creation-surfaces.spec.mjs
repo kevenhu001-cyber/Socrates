@@ -99,7 +99,7 @@ test('new pages and settings fit a phone viewport in both themes', async ({ page
     await page.evaluate((value) => document.querySelector(`[data-theme-option="${value}"]`)?.click(), theme);
     await page.evaluate(() => window.openNav('sites'));
     await expect(page.locator('#sitesPanel')).toBeInViewport();
-    await page.screenshot({ path: `/tmp/socrates-reference-mobile-sites-empty-${theme}-390x844.png` });
+    await page.screenshot({ path: `test-results/socrates-reference-mobile-sites-empty-${encodeURIComponent(theme)}-390x844.png` });
     const sizes = await page.evaluate(() => ({
       panel: document.getElementById('sitesPanel').getBoundingClientRect().width,
       viewport: document.documentElement.clientWidth,

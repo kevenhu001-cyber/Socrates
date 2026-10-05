@@ -19,9 +19,9 @@
  *        `stateStore` facade, `window.stateStore`, e2e mocks and the
  *        existing unit tests keep working unchanged.
  *
- * Behavior (must match `createImmutableBridge` bit for bit)
- *  - Snapshots are shallow-frozen; nested objects/arrays stay mutable
- *    for legacy in-place mutation patterns.
+ * Behavior
+ *  - All domain stores freeze nested plain data. Runtime buffers stay outside
+ *    snapshots; actions replace affected objects instead of mutating them.
  *  - `dispatch` queues actions; the queued batch is applied by a RAF
  *    flush. Reducer output identical to the previous snapshot is a
  *    no-op (no revision bump, no notification).
@@ -31,6 +31,7 @@
  *    queue.
  */
 
+import { reportSwallow } from '../util/reportSwallow.ts';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 
 export interface RevisionedSnapshot {
@@ -45,11 +46,16 @@ export interface DomainBridge<Snapshot extends RevisionedSnapshot, Action> {
   __resetForTests(): void;
 }
 
+/** Read-only Zustand API: domain actions are the sole write entry. */
+export type DomainStoreReader<Snapshot> = Pick<
+  StoreApi<Snapshot>, 'getState' | 'getInitialState' | 'subscribe'
+>;
+
 export interface DomainStore<Snapshot extends RevisionedSnapshot, Action> {
   /** ImmutableBridge-compatible facade (dispatch/flush/subscribe). */
   bridge: DomainBridge<Snapshot, Action>;
   /** Zustand vanilla store — snapshot holder + subscription plumbing. */
-  store: StoreApi<Snapshot>;
+  store: DomainStoreReader<Snapshot>;
 }
 
 export interface CreateDomainStoreOptions<Snapshot extends RevisionedSnapshot, Action> {
@@ -62,19 +68,28 @@ export interface CreateDomainStoreOptions<Snapshot extends RevisionedSnapshot, A
 
 type Listener = () => void;
 
-function shallowFreeze<T>(value: T): T {
-  if (value === null || typeof value !== 'object') return value;
-  if (Object.isFrozen(value)) return value;
-  Object.freeze(value as unknown as Record<string, unknown>);
-  return value;
-}
-
 export function createDomainStore<Snapshot extends RevisionedSnapshot, Action>(
   options: CreateDomainStoreOptions<Snapshot, Action>,
 ): DomainStore<Snapshot, Action> {
   const { initial, reducer } = options;
+  // Remember fully frozen subtrees so structurally shared snapshots stay cheap.
+  const frozen = new WeakSet<object>();
+  function freezeSnapshot<T>(value: T): T {
+    const visiting = new WeakSet<object>();
+    function visit(item: unknown): void {
+      if (!item || typeof item !== 'object' || frozen.has(item) || visiting.has(item)) return;
+      const prototype = Object.getPrototypeOf(item);
+      if (!Array.isArray(item) && prototype !== Object.prototype && prototype !== null) return;
+      visiting.add(item);
+      Object.values(item).forEach(visit);
+      Object.freeze(item);
+      frozen.add(item);
+    }
+    visit(value);
+    return value;
+  }
 
-  const start: Snapshot = shallowFreeze({ ...initial });
+  const start: Snapshot = freezeSnapshot({ ...initial });
 
   /* Zustand vanilla store holds the committed snapshot. `setState` with
      a replacement object notifies subscribers; we never use updater
@@ -105,7 +120,7 @@ export function createDomainStore<Snapshot extends RevisionedSnapshot, Action>(
         changed = true;
       }
       if (!changed) return;
-      snapshot = shallowFreeze({
+      snapshot = freezeSnapshot({
         ...next,
         revision: snapshot.revision + 1,
       });
@@ -117,8 +132,8 @@ export function createDomainStore<Snapshot extends RevisionedSnapshot, Action>(
       /* Reducer errors leave the previous snapshot in place so
          subscribers always see consistent state. Matches the
          createImmutableBridge behavior this factory replaces. */
-      // eslint-disable-next-line no-console
       console.error('[domainStore] reducer threw, snapshot preserved', error);
+      reportSwallow(error, 'store/reducer', 'invariant');
       return;
     }
     listeners.forEach((listener) => listener());
@@ -163,5 +178,10 @@ export function createDomainStore<Snapshot extends RevisionedSnapshot, Action>(
     },
   };
 
-  return { bridge, store };
+  const reader: DomainStoreReader<Snapshot> = Object.freeze({
+    getState: store.getState,
+    getInitialState: store.getInitialState,
+    subscribe: store.subscribe,
+  });
+  return { bridge, store: reader };
 }

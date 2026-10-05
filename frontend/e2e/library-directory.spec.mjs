@@ -128,7 +128,7 @@ test('phone library filters actual images and selects only visible rows', async 
   // off-canvas edge sits at -254. (Remote's 350px drawer is not adopted.)
   await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? 0)).toBe(-254);
   await expect(page.locator('.library-directory')).toBeVisible();
-  await page.screenshot({ path: '/tmp/socrates-reference-mobile-library-list-390x769.png' });
+  await page.screenshot({ path: 'test-results/socrates-reference-mobile-library-list-390x769.png' });
   await page.getByRole('tab', { name: 'Images' }).click();
   await expect(page.locator('.library-row')).toHaveCount(1);
   await expect(page.locator('.library-row')).toContainText('grid_mapping.png');
@@ -136,5 +136,5 @@ test('phone library filters actual images and selects only visible rows', async 
   await expect(page.locator('.library-selection-bar')).toContainText('1 selected');
   await page.locator('.library-select-all .library-checkbox').click();
   await expect(page.locator('.library-selection-bar')).toBeHidden();
-  await page.screenshot({ path: '/tmp/socrates-reference-mobile-library-images-390x769.png' });
+  await page.screenshot({ path: 'test-results/socrates-reference-mobile-library-images-390x769.png' });
 });

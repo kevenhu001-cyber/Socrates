@@ -1,39 +1,10 @@
-// @ts-check
-/**
- * util/reportSwallow.ts — report a deliberately-swallowed error.
- *
- * Many legacy `try { ... } catch (_) {}` blocks intentionally ignore the
- * failure (feature absent in a local-only build, callback side-effect that
- * must not abort the parent flow, cleanup that is best-effort). The cost
- * is that nothing reaches `src/app/errorGuard.js`'s banner / beacon path
- * and nothing surfaces in devtools either, so a regression that turns
- * every previously-fine catch into a real failure is invisible until a
- * user reports it.
- *
- * `reportSwallow(err, context)` is the cheap instrumented bridge: it
- * makes the swallowed event observable without changing control flow
- * (the caller's catch still returns / breaks as before) and without
- * throwing — if its own sink misbehaves, the host page must not crash.
- *
- * Hard requirements:
- *  - Must never throw. The whole body is wrapped in try/catch and the
- *    inner guards short-circuit on any sink failure.
- *  - No per-call heap allocation on the hot path. The production path
- *    is a single dev-guarded `console.warn` — no object literals, no
- *    arrays, no JSON, no stack walks.
- *  - The signature accepts `unknown` (callers are plain `.js`) and
- *    a free-form `context` string the reader can grep.
- *  - Optionally forwards to the existing global guard so its banner /
- *    /api/client-error beacon sees the event, but only if the guard
- *    is already installed AND its seam (`__socratesGlobalErrorHandlerInstalled`
- *    on `src/app/errorGuard.js`) is reachable without a circular import.
- *    Today we do NOT reach into it directly — the early lifecycle boot
- *    that loads reportSwallow.ts happens before `installGlobalErrorGuard`
- *    has run, and a dynamic import inside a guarded error path is the
- *    kind of cleverness that bites during incident response. A guarded
- *    `console.warn` is the documented sink; errorGuard will pick up
- *    a future `unhandledrejection` if one ever does propagate.
+/** Report caught failures without changing caller control flow or opening a banner.
+ * Production telemetry is bounded, deduplicated and excludes original error content.
+ * Development retains console diagnostics; neither sink is allowed to throw.
  */
+import { createClientErrorReporter, sendClientError, type FailureSeverity } from './clientErrorReporter.ts';
+
+declare const __SOCRATES_BUILD_ID__: string;
 
 const IS_DEV = (() => {
   // Vite injects `import.meta.env.DEV` at build time; default to `true`
@@ -51,30 +22,58 @@ const IS_DEV = (() => {
   return true;
 })();
 
+const reportProduction = createClientErrorReporter({
+  send: sendClientError,
+  buildId: typeof __SOCRATES_BUILD_ID__ === 'string' ? __SOCRATES_BUILD_ID__ : undefined,
+});
+
+/** Expected-by-design swallows seen in this dev session. */
+let devExpectedCount = 0;
+
+/** How many optional/best-effort catches fired in dev. Exposed for debugging. */
+export function expectedSwallowCount(): number {
+  return devExpectedCount;
+}
+
 /**
- * Record that an error was deliberately swallowed at `context`. Always
- * returns void; never throws. The default sink is `console.warn`,
- * gated by `IS_DEV`, so production builds pay one boolean check per
- * call and zero heap allocations on the hot path.
+ * Report a caught failure without changing caller control flow or opening a banner.
  *
- * @param err      The caught error (typed as `unknown` so plain-JS callers
- *                 can pass anything). Treated as opaque; we don't assume
- *                 `.message` / `.stack` exist.
- * @param context  Free-form, greppable site label (e.g. "chat/stream.foo",
- *                 "session/recents.loadArchived"). The reader of a console
- *                 line or a future telemetry sink uses this to jump to the
- *                 catch site.
+ * Three severities, and the choice matters because there are ~480 call sites:
+ *
+ *  - `expected` — the failure is part of normal operation (feature absent
+ *    locally, storage blocked, a user-initiated abort, an optional cache).
+ *    Silent in production and in dev; nothing is sent.
+ *  - `recoverable` — the app kept running but a feature degraded. Sent to the
+ *    server, which logs it at warn under `[client-error] recoverable`.
+ *  - `invariant` — a control-flow contract was violated; this should never
+ *    happen. Sent and logged at error.
+ *
+ * The default is `recoverable`, NOT `invariant`: the overwhelming majority of
+ * instrumented catches are best-effort by design, and promoting them to error
+ * level is what buried the real uncaught-error signal. Sites whose own comments
+ * say "optional" / "best-effort" / "feature absent locally" pass `'expected'`
+ * so they neither spend the reporting budget nor reach the log.
+ *
+ * Neither sink is allowed to throw.
  */
-export function reportSwallow(err: unknown, context: string): void {
+export function reportSwallow(
+  err: unknown, context: string, severity: FailureSeverity = 'recoverable',
+): void {
   try {
-    if (!IS_DEV) return;
-    // Production safety: if `console` itself is missing (some sandboxes),
-    // or `err` throws on toString, swallow it. This helper is itself the
-    // last line of defence for the caller's control flow.
-    if (typeof console === "undefined" || typeof console.warn !== "function") return;
-    let msg = "";
-    try { msg = err == null ? String(err) : (typeof err === "string" ? err : String(err)); }
-    catch (_) { msg = "<unstringifiable>"; }
-    console.warn("[swallow]", context, msg);
-  } catch (_) { /* reportSwallow MUST never throw */ }
+    if (!IS_DEV) {
+      reportProduction(err, context, severity);
+      return;
+    }
+    /* Development keeps the reported classes visible; expected ones are only
+       counted, so their volume stays measurable without shipping it. */
+    if (severity !== 'expected') {
+      if (typeof console === 'undefined' || typeof console.warn !== 'function') return;
+      let msg = '';
+      try { msg = String(err); }
+      catch (_) { msg = '<unstringifiable>'; }
+      console.warn('[swallow]', context, msg);
+    } else {
+      devExpectedCount += 1;
+    }
+  } catch (_) { /* empty-catch: intentional — reportSwallow MUST never throw */ }
 }

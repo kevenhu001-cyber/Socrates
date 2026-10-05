@@ -24,7 +24,7 @@
 
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/shallow';
-import type { StoreApi } from 'zustand/vanilla';
+import type { DomainStoreReader } from './createDomainStore.ts';
 
 import {
   callBridge,
@@ -63,7 +63,7 @@ type DomainSnapshot =
   | ExamSnapshot;
 
 function defineDomainHook<Snapshot extends DomainSnapshot & RevisionedSnapshot, _Action>(
-  store: StoreApi<Snapshot>,
+  store: DomainStoreReader<Snapshot>,
 ) {
   function useDomainStore<T>(selector: (snapshot: Snapshot) => T): T {
     /* Shallow equality (the LobeHub `createWithEqualityFn` + `shallow`
@@ -75,14 +75,8 @@ function defineDomainHook<Snapshot extends DomainSnapshot & RevisionedSnapshot, 
   }
   useDomainStore.getState = store.getState;
   useDomainStore.subscribe = store.subscribe;
-  return useDomainStore as UseBoundStoreShallow<StoreApi<Snapshot>>;
+  return useDomainStore;
 }
-
-type UseBoundStoreShallow<Store> = {
-  (selector: (snapshot: unknown) => unknown): unknown;
-  getState: Store extends { getState: infer G } ? G : never;
-  subscribe: Store extends { subscribe: infer S } ? S : never;
-};
 
 export const useSessionStore = defineDomainHook<SessionSnapshot, SessionAction>(sessionStore);
 export const useKbStore = defineDomainHook<KbSnapshot, KbAction>(kbStore);

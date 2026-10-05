@@ -1,8 +1,34 @@
 import { defineConfig } from 'vite';
 import { fileURLToPath } from 'node:url';
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
+
+function getBuildId() {
+  const configured = process.env.SOCRATES_BUILD_ID || process.env.GITHUB_SHA;
+  if (configured && /^[a-f0-9]{7,40}$/i.test(configured)) return configured.slice(0, 12);
+  try {
+    // Read metadata directly: sandboxed builds need not be able to spawn git.
+    const root = fileURLToPath(new URL('..', import.meta.url));
+    let gitDir = join(root, '.git');
+    if (!existsSync(join(gitDir, 'HEAD'))) {
+      gitDir = resolve(root, readFileSync(gitDir, 'utf8').trim().replace(/^gitdir:\s*/, ''));
+    }
+    let sha = readFileSync(join(gitDir, 'HEAD'), 'utf8').trim();
+    if (sha.startsWith('ref: ')) {
+      const ref = sha.slice(5);
+      const commonFile = join(gitDir, 'commondir');
+      const common = existsSync(commonFile)
+        ? resolve(gitDir, readFileSync(commonFile, 'utf8').trim()) : gitDir;
+      const refFile = join(common, ref);
+      sha = existsSync(refFile) ? readFileSync(refFile, 'utf8').trim()
+        : readFileSync(join(common, 'packed-refs'), 'utf8').split('\n')
+          .find((line) => line.endsWith(' ' + ref))?.split(' ')[0] || '';
+    }
+    if (/^[a-f0-9]{40}$/i.test(sha)) return sha.slice(0, 12);
+  } catch (_) { /* source archives may not include git metadata */ }
+  return 'local-' + Date.now().toString(36);
+}
 
 const LOCAL_AUTH_BYPASS = process.env.LOCAL_AUTH_BYPASS !== '0';
 
@@ -315,6 +341,7 @@ function createLocalApiStubPlugin() {
 // a set of hashed ES-module chunks that get deployed to
 // /var/www/app.topodrive.top via deploy.sh (which copies dist/assets/*).
 export default defineConfig({
+  define: { __SOCRATES_BUILD_ID__: JSON.stringify(getBuildId()) },
   root: '.',
   publicDir: 'public',
   resolve: {

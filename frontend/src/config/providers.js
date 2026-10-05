@@ -31,7 +31,7 @@ var thinkingOn = true;
 try {
   var savedMode = localStorage.getItem("socrates-appmode");
   if (savedMode === "chat" || savedMode === "tutor") appMode = savedMode;
-} catch (e) {reportSwallow(e, 'config/providers.restoreAppMode'); }
+} catch (e) {reportSwallow(e, 'config/providers.restoreAppMode', 'expected'); }
 /* Web search stays off unless the user explicitly enabled it before.
    An existing stored preference (any non-null value) still wins. */
 try {
@@ -47,7 +47,7 @@ try {
 try {
   var savedEffort = localStorage.getItem("socrates-reasoning-effort");
   extensiveThinkingOn = (savedEffort === "high");
-} catch (e) {reportSwallow(e, 'config/providers.restoreReasoningEffort'); }
+} catch (e) {reportSwallow(e, 'config/providers.restoreReasoningEffort', 'expected'); }
 
 /* P_privacy-leak — built-in providers don't expose their model name,
  * so the regex-based check below would always return false for them.
@@ -55,7 +55,7 @@ try {
 function setWebSearchOn(value) {
   webSearchOn = !!value;
   try { window.webSearchOn = webSearchOn; } catch (e) {reportSwallow(e, 'config/providers.setWebSearchOn'); }
-  try { localStorage.setItem("socrates-websearch", JSON.stringify(webSearchOn)); } catch (e) {reportSwallow(e, 'config/providers.setWebSearchOn#2'); }
+  try { localStorage.setItem("socrates-websearch", JSON.stringify(webSearchOn)); } catch (e) {reportSwallow(e, 'config/providers.setWebSearchOn#2', 'expected'); }
   /* The composer's web-search chip (RichComposer) subscribes to this. */
   try { document.dispatchEvent(new CustomEvent("socrates:websearchchange", { detail: { on: webSearchOn } })); } catch (e) {reportSwallow(e, 'config/providers.setWebSearchOn#3'); }
   return webSearchOn;
@@ -250,7 +250,7 @@ function saveLastActiveId(id) {
       return;
     }
     localStorage.setItem(LAST_ACTIVE_ID_KEY, String(id));
-  } catch (e) {reportSwallow(e, 'config/providers.saveLastActiveId'); }
+  } catch (e) {reportSwallow(e, 'config/providers.saveLastActiveId', 'expected'); }
 }
 
 function loadLastActiveId() {

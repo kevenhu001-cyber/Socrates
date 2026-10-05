@@ -178,7 +178,7 @@ test('phone drawer keeps nav glyphs aligned and account menu in view', async ({ 
   await accountRow.click();
   await expect(page.locator('.sidebar-account-menu')).toBeInViewport();
   await page.keyboard.press('Escape');
-  await page.screenshot({ path: '/tmp/socrates-reference-mobile-account-390x769.png' });
+  await page.screenshot({ path: 'test-results/socrates-reference-mobile-account-390x769.png' });
 });
 
 test('mobile free-tier upgrade pill stays in the top bar at 390px', async ({ page }) => {

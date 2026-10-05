@@ -108,8 +108,13 @@ export function editUserMessage(messageId){
        once the user turn is different, so we drop them from the
        authoritative state + the DOM before re-sending. */
     var editedText=next;
-    entry.rawText=editedText;
-    entry.html=null;
+    /* React renders user messages from html; commit it with the text so its
+       next render preserves the edited body. */
+    entry=stateStore.dispatch({
+      type:"session/update-message",index:idx,clientId:entry.clientId,
+      patch:{rawText:editedText,html:formatMsg(editedText)},
+    });
+    if(!entry)return;
     restoreMessageBody(entry,body);
     var dropped=rollbackMessagesAfter(messageId);
     /* PATCH /api/messages/<id>?regenerate=false&discardFollowing=true

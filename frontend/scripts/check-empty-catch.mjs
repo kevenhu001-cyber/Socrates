@@ -30,28 +30,14 @@
 import { readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import ts from 'typescript';
 
 const FRONTEND = fileURLToPath(new URL('..', import.meta.url));
 const SRC = join(FRONTEND, 'src');
 const BASELINE = join(FRONTEND, 'scripts', 'empty-catch.baseline.json');
 const UPDATE = process.argv.includes('--update');
 
-/* Single-line `catch (...) {}` — open and close braces on the same line,
-   with at most whitespace between them. Matches both `catch {}` and
-   `catch (id) {}` forms. The brief is strict: the body is literally
-   empty (or whitespace-only) AND on the same line as the catch header.
-   Multi-line `catch (_) { /* comment-only *\/ }` is a separate case —
-   see `MULTILINE_CATCH_PATTERN` below for those, but the brief treats
-   them as out of scope for this wave. */
-const SINGLELINE_CATCH_PATTERN = /catch\s*(?:\(\s*[A-Za-z_$][A-Za-z0-9_$]*\s*\))?\s*\{\s*\}/g;
-
-/* A multi-line catch block whose body, AFTER comment-stripping, contains
-   nothing but whitespace. Catches whose only body content is a
-   comment (e.g. a `handleAuthExpired failed` notice) fall into this
-   bucket once the comment is removed. */
-const MULTILINE_CATCH_PATTERN = /catch\s*(?:\([^)]*\))?\s*\{/g;
-
-const EXEMPT_MARKER = /empty-catch:\s*intentional\s*—\s*[^\n]*/;
+const EXEMPT_MARKER = /empty-catch:[ \t]*intentional[ \t]*—[ \t]*[^\s]/;
 
 /* Walk `src/`, skipping the vendored bundle directory. */
 function walk(dir, out = []) {
@@ -64,89 +50,58 @@ function walk(dir, out = []) {
   return out;
 }
 
-/* Preserve column positions inside line-blocks and block comments by
-   replacing each non-newline character with a space. Mirrors the
-   stripping used by `check-react-globals.mjs` and `check-css-debt.mjs`
-   so every ratchet counts the same set of files after the same
-   transform. */
-function stripComments(text) {
-  return text
-    .replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' '))
-    .replace(/\/\/[^\n]*/g, (c) => c.replace(/[^\n]/g, ' '));
-}
-
-/* True if a catch site is exempted by a marker comment in the
-   surrounding source — either on the same line (single-line form) or
-   anywhere in the block body before the matching close brace (multi-line
-   form). The marker must include the reason so the next reader can
-   judge whether the exemption is still valid. */
-function isExempted(text, headerStart, headerEnd, body) {
-  // Same-line marker (e.g. `} catch (_) {} /* empty-catch: intentional — foo */`)
-  // — only checked AFTER stripping, so the marker must survive the
-  // strip (it doesn't contain `//` or `/*` so it always does).
-  const sameLineAfter = text.slice(headerEnd, text.indexOf('\n', headerEnd) < 0 ? text.length : text.indexOf('\n', headerEnd));
-  if (EXEMPT_MARKER.test(sameLineAfter)) return true;
-  // Multi-line body marker — already stripped, so we check the body
-  // string itself (which is what `collect` extracted) for the marker.
-  if (EXEMPT_MARKER.test(body)) return true;
-  // Same-line marker that lives BEFORE the catch header on the same line
-  // (rare; included so authors can annotate `} /* empty-catch: intentional — … */ catch (_) {}`).
-  const lineStart = text.lastIndexOf('\n', headerStart) + 1;
-  const before = text.slice(lineStart, headerStart);
-  if (EXEMPT_MARKER.test(before)) return true;
-  return false;
+/** Parse source, excluding catch-looking text in strings, regexes and comments. */
+export function collectEmptyCatchSites(raw, filename = 'fixture.js') {
+  const source = ts.createSourceFile(filename, raw, ts.ScriptTarget.Latest, true);
+  if (source.parseDiagnostics.length) {
+    throw new Error('Cannot parse ' + filename + ': ' +
+      ts.flattenDiagnosticMessageText(source.parseDiagnostics[0].messageText, '\n'));
+  }
+  const offenders = [];
+  const exempted = [];
+  function hasExemption(node) {
+    // Read attached comments from the original source, before any stripping.
+    const positions = [node.pos, node.block.getStart(source) + 1, node.end];
+    return positions.some((position) => {
+      const ranges = [
+        ...(ts.getLeadingCommentRanges(raw, position) || []),
+        ...(ts.getTrailingCommentRanges(raw, position) || []),
+      ];
+      return ranges.some(({ pos, end, kind }) => {
+        if (position === node.end &&
+            source.getLineAndCharacterOfPosition(pos).line !==
+            source.getLineAndCharacterOfPosition(node.end).line) return false;
+        if (position === node.pos &&
+            source.getLineAndCharacterOfPosition(end).line !==
+            source.getLineAndCharacterOfPosition(node.getStart(source)).line) return false;
+        const comment = raw.slice(pos + 2,
+          kind === ts.SyntaxKind.MultiLineCommentTrivia ? end - 2 : end);
+        return EXEMPT_MARKER.test(comment);
+      });
+    });
+  }
+  function visit(node) {
+    if (ts.isCatchClause(node) && node.block.statements.length === 0) {
+      const line = source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1;
+      (hasExemption(node) ? exempted : offenders).push(`${filename}:${line}`);
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(source);
+  return { offenders, exempted };
 }
 
 function collect() {
   const offenders = [];
   const exempted = [];
   for (const file of walk(SRC)) {
-    const raw = readFileSync(file, 'utf8');
-    const text = stripComments(raw);
     const rel = relative(SRC, file).split(sep).join('/');
-    // Single-line form: `catch (...) { ... }` all on one line.
-    for (const m of text.matchAll(SINGLELINE_CATCH_PATTERN)) {
-      // Compute the line number in the original (pre-strip) source. The
-      // strip preserves line breaks, so positions are stable.
-      const line = raw.slice(0, m.index).split('\n').length;
-      if (isExempted(text, m.index, m.index + m[0].length, m[0])) {
-        exempted.push(`${rel}:${line} (same-line)`);
-        continue;
-      }
-      offenders.push(`${rel}:${line}`);
-    }
-    // Multi-line form: header on one line, `}` on a later line. Walk
-    // braces to find the matching close.
-    for (const m of text.matchAll(MULTILINE_CATCH_PATTERN)) {
-      const headerStart = m.index;
-      const headerEnd = m.index + m[0].length;
-      // Skip if this is part of a single-line match (the SINGLELINE_CATCH_PATTERN
-      // would have caught it above). The single-line pattern requires
-      // `}\s*` immediately after the open brace, so we check whether the
-      // character right after `headerEnd` is `}` (optionally whitespace).
-      let probe = headerEnd;
-      while (probe < text.length && /\s/.test(text[probe]) && text[probe] !== '\n') probe += 1;
-      if (text[probe] === '}') continue; // already counted as single-line
-      // Walk to matching close brace.
-      let depth = 1;
-      let i = probe;
-      while (i < text.length && depth > 0) {
-        const c = text[i];
-        if (c === '{') depth += 1;
-        else if (c === '}') depth -= 1;
-        i += 1;
-      }
-      const body = text.slice(probe, i - 1);
-      if (body.trim() !== '') continue;
-      const line = raw.slice(0, headerStart).split('\n').length;
-      if (isExempted(text, headerStart, headerEnd, body)) {
-        exempted.push(`${rel}:${line} (multi-line)`);
-        continue;
-      }
-      offenders.push(`${rel}:${line}`);
-    }
+    const sites = collectEmptyCatchSites(readFileSync(file, 'utf8'), rel);
+    offenders.push(...sites.offenders);
+    exempted.push(...sites.exempted);
   }
   offenders.sort();
+  exempted.sort();
   return { offenders, exempted };
 }
 
@@ -196,4 +151,4 @@ function main() {
   }
 }
 
-main();
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) main();

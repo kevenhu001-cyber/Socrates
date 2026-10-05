@@ -13,7 +13,7 @@
  *    rather than new abstractions.
  *
  * Behavior
- *  - Snapshots are deep-frozen (`Object.freeze`) and the factory bumps a
+ *  - Snapshots are shallow-frozen (`Object.freeze`) and the factory bumps a
  *    monotonic `revision` on every commit. Subscribers only run
  *    after a successful commit; failed reducers leave the previous
  *    snapshot untouched and surface the error in development.
@@ -34,6 +34,8 @@
  *  - `subscribe(listener)` matches React's `useSyncExternalStore`
  *    subscribe contract.
  */
+
+import { reportSwallow } from '../../util/reportSwallow.ts';
 
 export interface ImmutableBridge<Snapshot, Action> {
   /** Synchronous read of the current frozen snapshot. */
@@ -86,7 +88,7 @@ function shallowFreeze<T>(value: T): T {
 
 /**
  * Create an immutable bridge with the snapshot/action types of the
- * caller's choice. Reducers must be pure; the factory deep-freezes
+ * caller's choice. Reducers must be pure; the factory shallow-freezes
  * every committed snapshot before notifying subscribers.
  */
 export function createImmutableBridge<Snapshot extends RevisionedSnapshot, Action>(
@@ -129,6 +131,7 @@ export function createImmutableBridge<Snapshot extends RevisionedSnapshot, Actio
          dispatch is async-ish (RAF-coalesced). */
       // eslint-disable-next-line no-console
       console.error('[bridge] reducer threw, snapshot preserved', error);
+      reportSwallow(error, 'bridge/reducer', 'invariant');
       return;
     }
     listeners.forEach((listener) => listener());

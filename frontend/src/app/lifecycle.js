@@ -340,24 +340,24 @@ export function clearPerUserClientState(){
      state/store.js Proxy's "unknown flat key, setting on root: locale"
      warning on every signin / user switch. Removed. */
   /* Persisted caches. */
-  try{localStorage.removeItem("socrates-sessions-v2")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.sessionsCache');}
-  try{localStorage.removeItem("socrates-api")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.apiCache');}
-  try{localStorage.removeItem("socrates-guest")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.guestCache');}
-  try{localStorage.removeItem("socrates-projects")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.projectsCache');}
-  try{localStorage.removeItem("socrates-recents-filter")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.recentsFilterCache');}
-  try{localStorage.removeItem("socrates-provider-keys")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.providerKeysCache');}
-  try{localStorage.removeItem("socrates-websearch")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.websearchCache');}
+  try{localStorage.removeItem("socrates-sessions-v2")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.sessionsCache','expected');}
+  try{localStorage.removeItem("socrates-api")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.apiCache','expected');}
+  try{localStorage.removeItem("socrates-guest")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.guestCache','expected');}
+  try{localStorage.removeItem("socrates-projects")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.projectsCache','expected');}
+  try{localStorage.removeItem("socrates-recents-filter")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.recentsFilterCache','expected');}
+  try{localStorage.removeItem("socrates-provider-keys")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.providerKeysCache','expected');}
+  try{localStorage.removeItem("socrates-websearch")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.websearchCache','expected');}
   /* P_tutor-leak — socrates-appmode is a per-user preference but it
      was never wiped on signOut. A user who once toggled tutor mode
      leaves it set to "tutor" in localStorage; the next person to
      sign in on the same browser inherits tutor mode without ever
      touching the toggle. Clear it (and the runtime mirror) so the
      new session starts in the documented default of "chat". */
-  try{localStorage.removeItem("socrates-appmode")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.appmodeCache');}
+  try{localStorage.removeItem("socrates-appmode")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.appmodeCache','expected');}
   /* AUDIT-fix — reset the module binding so the next user starts in
       chat mode. setAppMode() syncs window.appMode internally. */
   try{setAppMode("chat")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.setAppMode');}
-  try{localStorage.removeItem(LAST_ACTIVE_ID_KEY)}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.lastActiveId');}
+  try{localStorage.removeItem(LAST_ACTIVE_ID_KEY)}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.lastActiveId','expected');}
   /* Re-render so the cleared state is visible immediately, not on
      the next user-driven re-render. */
   try{if(typeof renderRecents==="function")_renderRecents()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.renderRecents');}

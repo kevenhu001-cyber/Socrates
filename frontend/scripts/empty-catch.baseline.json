@@ -1,5 +1,5 @@
 {
-  "count": 415,
-  "note": "Empty catch blocks (try { ... } catch (_) {} / catch {}). May only go down. Run with --update after an intentional reduction.",
+  "count": 392,
+  "note": "Empty catch blocks (try { ... } catch (_) {} / catch {}). May only go down. Run with --update after an intentional reduction. 415 -> 392 on the AST rewrite of check-empty-catch.mjs was NOT a loosening of the check: the old regex parser reported 418 offenders on the same tree, and 27 of those (across 20 files) were false positives. It stripped // comments before matching, so (a) a // inside a regex or string ate the rest of the line including any catch on it, and (b) catch(e){} text inside an iframe srcdoc string literal was counted as real source. It also stripped the body's /* empty-catch: intentional */ marker BEFORE testing for the exemption, so every exempted multi-line catch was miscounted as an offender. The AST parser counts what JavaScript actually parses, which is 392.",
   "generatedBy": "check-empty-catch.mjs --update"
 }

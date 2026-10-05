@@ -9,6 +9,11 @@ import { csrfProtection } from './middleware/csrf.js';
 import { requireAuth, optionalAuth } from './middleware/auth.js';
 import { errorHandler, notFoundHandler, timeoutMiddleware } from './middleware/error.js';
 import { searchLimiter, fetchLimiter, clientErrorLimiter } from './middleware/rateLimit.js';
+import {
+  normalizeClientErrorSeverity,
+  clientErrorLogLevel,
+  clientErrorLabel,
+} from './middleware/clientError.js';
 import crypto from 'node:crypto';
 import authRouter from './routes/auth.js';
 import sessionRouter from './routes/sessions.js';
@@ -379,9 +384,26 @@ app.use(cors({
   credentials: true,
 }));
 
+/* P_client-error-severity — the SPA instruments ~480 deliberately-swallowed
+ * catch sites (frontend/src/util/reportSwallow.ts). Almost every one is
+ * documented best-effort/optional ("feature absent locally", "cleanup is
+ * best-effort"), so logging them all at `console.error` made the real
+ * uncaught-error signal indistinguishable from noise. The reporter sends an
+ * explicit `severity`; middleware/clientError.ts owns the validation and the
+ * mapping so it stays unit-testable without booting the server. */
 app.post('/api/client-error', clientErrorLimiter, express.json({ limit: '10kb' }), (req, res) => {
-  const { correl, msg, stack, href, ua } = req.body || {};
-  console.error('[client-error]', String(correl ?? '').slice(0, 64), String(msg ?? '').slice(0, 500), String(href ?? '').slice(0, 300), String(ua ?? '').slice(0, 200));
+  const { kind, correl, msg, stack, href, ua } = req.body || {};
+  const severity = normalizeClientErrorSeverity((req.body as { severity?: unknown } | undefined)?.severity);
+  const level = clientErrorLogLevel(kind, severity);
+  const write = level === 'error' ? console.error.bind(console) : console.warn.bind(console);
+  write(
+    '[client-error]',
+    clientErrorLabel(kind, severity),
+    String(correl ?? '').slice(0, 64),
+    String(msg ?? '').slice(0, 500),
+    String(href ?? '').slice(0, 300),
+    String(ua ?? '').slice(0, 200),
+  );
   if (stack) console.error('[client-error-stack]', String(stack).slice(0, 4000));
   res.status(204).end();
 });
