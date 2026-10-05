@@ -1,16 +1,22 @@
 # React + TypeScript Migration
 
+Current frontend convergence work follows
+[`2026-10-05-frontend-convergence.md`](2026-10-05-frontend-convergence.md).
+
 This migration preserves the current UI, copy, routes, API payloads, and
 deployment behavior. React replaces DOM ownership incrementally; TypeScript
 replaces JavaScript module by module.
 
 ## Current status
 
-All user-facing surfaces are React-driven under the always-on runtime.
-The legacy DOM/window compatibility layer has been progressively
-shredded: every `_reactOwnsXxx()` guard is gone, and most of the
-legacy renderers that lived behind those guards have been deleted
-or collapsed into React-only paths.
+The React runtime is always on and owns the surfaces listed as migrated below.
+Legacy JavaScript still owns parts of navigation orchestration, composer
+lifecycle, session persistence, chat submission and streaming, and exam
+rendering. React migration describes surface ownership; it does not mean the
+legacy runtime has been removed. The compatibility layer has been progressively
+reduced: every `_reactOwnsXxx()` guard is gone, and most of the legacy renderers
+that lived behind those guards have been deleted or collapsed into React-only
+paths.
 
 Concrete progress since the runtime landed:
 

@@ -34,6 +34,15 @@
 - `e2e/composer-tools-visual-baseline.spec.mjs` 固化菜单的桌面/移动、明暗和中英文截图；全站其它界面仍需按改动范围建立基线。
 - 尚未实现 `lint:css:order`。`styles/index.css` 的导入顺序仍是维护者需要遵守的级联契约。
 
+## 后续治理状态（截至 2026-10-05）
+
+上述“尚未实现”是 2026-09-23 的快照，现已过时。项目没有新增独立的
+`lint:css:order` 命令或 `_order.lock.json`；现有
+`frontend/scripts/check-css-debt.mjs` 已检查顶层层级与 `themes.css` 唯一且
+最后加载，并锁定 `legacy/`、`restore/`、`parity/`、`polish/` 四个聚合清单的
+导入顺序。该检查通过 `npm run lint` 和 `npm run lint:css-debt` 执行；设计债务
+计数基线不参与导入顺序检查。
+
 ## 备选方案
 
 ### A. 不拆 + 改进 INDEX
@@ -53,8 +62,9 @@
 
 采用 **C**。具体路线（多 PR；每个 PR 自身可 revert）：
 
-**前置（不在本 ADR 范围内，作为 PR-0012.0 单独 PR）**：
-- 增 `npm run lint:css:order` ：解析 `src/styles/index.css` 的 `@import` 顺序，与一个静态表 `styles/_order.lock.json` 比较 —— 阻断 `import` 顺序漂移。
+**前置（不在本 ADR 范围内，原提案为 PR-0012.0）**：
+- 导入顺序检查已按“后续治理状态”实现；采用现有 CSS debt guard，而非单独的
+  `lint:css:order` 命令和 `styles/_order.lock.json`。
 - 视觉基线 capture：`frontend/e2e/__screenshots__/` 留 Light/Dark × 关键 surface（landing, chat-light, chat-dark, settings, exam, mobile）。
 
 **PR-0012.1 — Tokens/Themes 锚定段迁出**
@@ -84,9 +94,9 @@
 
 - **代码**：5+ PR 改动 `styles/` 目录结构 + styles.css 体积缩减；`frontend/src/styles.css` 主文件按每次 PR 切片逐渐变小。
 - **构建**：Vite 仍然把整个 CSS bundle 成一个 hashed 文件（`styles/index.css` 的 `@import` 全部 inline）。仅做 source organization，不改产物形态。
-- **CI**：`lint:css:order` 新增；视觉基线 capture 走 Playwright snapshot diff。
+- **CI**：导入顺序由现有 CSS debt guard 执行；视觉基线 capture 走 Playwright snapshot diff。
 - **数据**：无 schema 变更。
-- **依赖**：无新增 npm 包；仅自研 `lint:css:order` 脚本。
+- **依赖**：无新增 npm 包；导入顺序检查复用 `check-css-debt.mjs`。
 - **CSP / font URL**：vendored katex/fonts/ 仍走本仓库路径（PR-0011 同步治理），不引入 CDN 域名。
 
 ## 可逆性

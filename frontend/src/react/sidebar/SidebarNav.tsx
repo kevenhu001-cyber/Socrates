@@ -13,14 +13,9 @@ interface NavButtonSpec {
   label: string;
   i18nKey: string;
   icon: string;
-  /* Trailing affordances copied from the chatgpt.com drawer: a pill badge
-     next to the label (Sites "New") and a row-end + button (Projects). */
+  /* Trailing badge next to the Sites label. */
   badgeKey?: string;
-  addTarget?: boolean;
 }
-
-const ADD_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
 
 const BUTTONS: NavButtonSpec[] = [
   {
@@ -40,7 +35,6 @@ const BUTTONS: NavButtonSpec[] = [
     label: 'Projects',
     i18nKey: 'sidebar.nav.projects',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>',
-    addTarget: true,
   },
   {
     key: 'scheduled',
@@ -116,15 +110,6 @@ function SidebarNav() {
             data-i18n-title={button.i18nKey}
             aria-current={isActive ? 'page' : undefined}
             onClick={(event: ReactMouseEvent<HTMLButtonElement>) => {
-              /* The row-end + affordance (Projects) opens the create flow
-                 instead of just navigating, same as chatgpt.com's drawer. */
-              const addTarget = event.target instanceof Element
-                && event.target.closest('.nav-item-add');
-              if (addTarget && button.key === 'projects') {
-                open('projects');
-                getLegacyActions().workspace.openCreateProject();
-                return;
-              }
               if (button.key === 'new') {
                 /* The ⌘K badge names the command palette shortcut, so a
                    click there must open the palette instead of resetting. */
@@ -152,17 +137,6 @@ function SidebarNav() {
             ) : (
               <span data-i18n-key={button.i18nKey}>{label}</span>
             )}
-            {button.addTarget ? (
-              <span
-                className="nav-item-add"
-                role="button"
-                title={i18n('sidebar.spaces.create', 'New project')}
-                aria-label={i18n('sidebar.spaces.create', 'New project')}
-                data-i18n-title="sidebar.spaces.create"
-                data-i18n-aria="sidebar.spaces.create"
-                dangerouslySetInnerHTML={{ __html: ADD_ICON }}
-              />
-            ) : null}
             {button.key === 'new' ? (
               <span className="nav-kbd">{i18n('sidebar.nav.kbd', '⌘K')}</span>
             ) : null}

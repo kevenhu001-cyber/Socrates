@@ -134,8 +134,8 @@
 /* restore/chatgpt-v2 insets the panel 3px — collapse it so rows own the
    full inner width and their 10px padding lands content at ~16px. */
 }
-/* Reference drawer affordances: a persistent "+" on Projects and compose /
-   overflow icons on the Recents header. */
+/* Reference drawer affordances: compose / overflow icons on the Recents
+   header. */
 @media (max-width: 768px) {
 /* label+badge share one grid cell so the "新" pill hugs the text. */
 #appShell #sidebarNav .sidebar-nav-btn > .nav-label-wrap {
@@ -145,20 +145,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-#appShell .sidebar-nav-btn .nav-item-add {
-  width: 26px;
-  height: 26px;
-  margin-left: auto;
-  color: var(--ui-text-secondary);
-  opacity: 1;
-}
-/* ~40px tap ring without changing the row's visual track. */
-#appShell .sidebar-nav-btn .nav-item-add::before {
-  content: "";
-  position: absolute;
-  inset: -6px -8px;
-}
-#appShell .sidebar-nav-btn .nav-item-add svg { width: 17px; height: 17px; }
 }
 @media (max-width: 768px) {
 #appShell .recents-header-actions { display: inline-flex; align-items: center; gap: 2px; }

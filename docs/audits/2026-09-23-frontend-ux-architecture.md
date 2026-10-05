@@ -104,6 +104,10 @@ iteration.
 - `styles/index.css` loads 17 legacy slices and seven restore sheets after the
   modular layer. Do not move other UI CSS in bulk; migrate one tested surface
   at a time. A machine-checked CSS import-order rule is still absent.
+- **Status update (2026-10-05):** the import-order finding above is superseded.
+  `check-css-debt.mjs` now guards the top-level layer/theme order and exact
+  import sequences in the `legacy/`, `restore/`, `parity/`, and `polish/`
+  manifests. The one-surface-at-a-time migration recommendation still applies.
 - The chat/session streaming runtime and Markdown rendering are still largely
   JavaScript-owned. Typed bridges are an incremental adapter, not proof that
   those state domains have one React owner.

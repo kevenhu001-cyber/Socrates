@@ -55,7 +55,10 @@ export interface RevisionedSnapshot {
 }
 
 export interface CreateImmutableBridgeOptions<Snapshot extends RevisionedSnapshot, Action> {
-  /** Initial snapshot value. Will be deep-frozen by the factory. */
+  /**
+   * Initial snapshot value. The factory freezes its top level only;
+   * nested values remain mutable for compatibility with legacy callers.
+   */
   initial: Snapshot;
   /** Pure reducer `(state, action) => nextState`. */
   reducer: (
@@ -73,11 +76,10 @@ export interface CreateImmutableBridgeOptions<Snapshot extends RevisionedSnapsho
 type Listener = () => void;
 
 /**
- * Shallow-freeze the top level of a snapshot so the snapshot
- * identity is stable but nested objects/arrays remain mutable for
- * legacy `state.kb.boundariesHistory.push(...)` patterns. The
- * snapshot's `revision` is what gives consumers a stable identity
- * for change detection (see `useSyncExternalStore`).
+ * Shallow-freeze the top level of a snapshot. Nested values remain mutable
+ * only for legacy `state.kb.boundariesHistory.push(...)` patterns; those
+ * mutations bypass revision bumps and subscriber notifications. New code
+ * must treat nested values as immutable and dispatch replacement actions.
  */
 function shallowFreeze<T>(value: T): T {
   if (value === null || typeof value !== 'object') return value;

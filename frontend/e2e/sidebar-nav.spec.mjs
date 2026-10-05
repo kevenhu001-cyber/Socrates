@@ -55,6 +55,23 @@ test('workspace destinations replace the chat landing instead of stacking under 
   }
 });
 
+test('Projects has one keyboard action and keeps creation in its directory', async ({ page }) => {
+  const projectsNav = page.locator('#navProjects');
+  await expect(projectsNav.locator('button, [role="button"]')).toHaveCount(0);
+  await projectsNav.focus();
+  await expect(projectsNav).toBeFocused();
+  await page.keyboard.press('Enter');
+
+  await expect(page.locator('.projects-directory')).toBeVisible();
+  const createProject = page.locator('.projects-directory .projects-create-button');
+  await expect(createProject).toBeVisible();
+  await page.screenshot({ path: 'test-results/visual-qa/projects-directory-entry.png' });
+
+  await createProject.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#projectForm')).toBeVisible();
+});
+
 test('phone workspace destinations hide the landing too', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => window.openNav('plugins'));

@@ -184,7 +184,7 @@
   /* React wraps each glyph in a bare <span>; the label span carries the
      i18n key. Rows with a trailing badge wrap label+badge in .nav-label-wrap
      so the pill hugs the text instead of the row's edge. */
-  #appShell #sidebarNav .sidebar-nav-btn > span:not([data-i18n-key]):not(.nav-kbd):not(.nav-label-wrap):not(.nav-item-add) {
+  #appShell #sidebarNav .sidebar-nav-btn > span:not([data-i18n-key]):not(.nav-kbd):not(.nav-label-wrap) {
     display: grid;
     place-items: center;
     flex: 0 0 20px;
@@ -423,9 +423,6 @@
   #appShell #sidebar.collapsed .sidebar-footer-actions,
   #appShell #sidebar.collapsed .user-identity,
   #appShell #sidebar.collapsed .sidebar-resize-handle { display: none; }
-  /* The trailing-affordance rules below load after this block at equal
-     specificity — scope these to #sidebarNav so they keep winning. */
-  #appShell #sidebar.collapsed #sidebarNav .nav-item-add,
   #appShell #sidebar.collapsed #sidebarNav .nav-new-badge { display: none; }
   /* Labels stay in the accessibility tree so each icon keeps its name. */
   #appShell #sidebar.collapsed #sidebarNav .sidebar-nav-btn > span[data-i18n-key],
@@ -488,26 +485,7 @@
   #appShell #sidebar ~ .main { transition: none; }
 }
 
-/* ── Nav trailing affordances (all widths) ────────────────────────────────
-   Reference drawer: a "+" sits at Projects' trailing edge and a small
-   outlined pill marks new surfaces. On desktop the "+" reveals on row
-   hover/focus; on mobile it is persistent (polish/sidebar.css). */
-#appShell .sidebar-nav-btn .nav-item-add {
-  display: grid;
-  place-items: center;
-  position: relative;
-  flex: 0 0 auto;
-  width: 22px;
-  height: 22px;
-  margin-left: auto;
-  border-radius: var(--ui-radius-control, 8px);
-  color: var(--ui-text-tertiary);
-  opacity: 0;
-}
-#appShell .sidebar-nav-btn:hover .nav-item-add,
-#appShell .sidebar-nav-btn:focus-within .nav-item-add { opacity: 1; }
-#appShell .nav-item-add:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
-#appShell .nav-item-add svg { width: 15px; height: 15px; }
+/* ── Nav trailing badge ─────────────────────────────────────────────────── */
 #appShell .sidebar-nav-btn .nav-new-badge {
   display: inline-block;
   margin-left: 6px;

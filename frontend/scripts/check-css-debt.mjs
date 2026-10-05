@@ -6,7 +6,8 @@
  *
  * 1. Cascade order: styles/index.css must import structural tokens first,
  *    compatibility layers before canonical components, and themes.css exactly
- *    once at the end. Reordering silently flips ownership or palette values.
+ *    once at the end. Order-sensitive nested manifests are locked too, because
+ *    reordering their slices silently flips ownership or visual winners.
  *
  * 2. Theme ownership: live component styles cannot declare palette families;
  *    themes.css is the sole owner and is always the final import.
@@ -31,6 +32,64 @@ const BASELINE = join(FRONTEND, 'scripts', 'css-debt.baseline.json');
 const UPDATE = process.argv.includes('--update');
 
 const FROZEN_DIRS = new Set(['legacy', 'restore']);
+
+/* These aggregate files document their ordering contract inline. Keep the
+ * machine check in sync with that contract so a routine import shuffle cannot
+ * change the cascade unnoticed. Adding or intentionally moving a slice should
+ * update both the owning manifest and this reviewed list. */
+const ORDERED_MANIFESTS = {
+  'legacy/index.css': [
+    './00-foundations.css',
+    './01-sidebar.css',
+    './02-modals-library.css',
+    './03-workspace-panels.css',
+    './04-topbar-menus.css',
+    './05-chat-landing.css',
+    './06-chat-transcript.css',
+    './07-composer-settings.css',
+    './08-exam.css',
+    './09-viz-markdown.css',
+    './10-tutor-scaffolds.css',
+    './11-agent-tools.css',
+    './12-tutor-inline-tools.css',
+    './13-composer-rich.css',
+    './14-tool-surfaces.css',
+    './15-thinking-activity.css',
+    './16-final-contract.css',
+  ],
+  'restore/index.css': [
+    './chatgpt-ui.css',
+    './chatgpt-v2.css',
+    './ref-baseline.css',
+    './mobile-parity.css',
+    './chat-surface.css',
+    './chatgpt-parity.css',
+    './fixes.css',
+    './creation-surfaces.css',
+  ],
+  'parity/index.css': [
+    './sidebar.css',
+    './topbar.css',
+    './composer-unified.css',
+    './transcript.css',
+  ],
+  'polish/index.css': [
+    './sidebar.css',
+    './topbar.css',
+    './composer.css',
+    './transcript.css',
+    './overlays.css',
+    './workspace.css',
+    './auth.css',
+    './mobile.css',
+    './press.css',
+    './buttons.css',
+    './mobile-controls.css',
+    './mobile-shell.css',
+    './mobile-sidebar.css',
+    './mobile-directories.css',
+  ],
+};
 
 function stripComments(text) {
   return text.replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\n]/g, ' '));
@@ -91,6 +150,11 @@ function countStackedIdSelectors(text) {
   return n;
 }
 
+function importsIn(file) {
+  const text = stripComments(readFileSync(file, 'utf8'));
+  return [...text.matchAll(/@import\s+['"]([^'"]+)['"]/g)].map((match) => match[1]);
+}
+
 const METRICS = {
   important: /!important/g,
   hexColor: /#[0-9a-fA-F]{3,8}\b/g,
@@ -100,8 +164,7 @@ const METRICS = {
 
 /* ---------- 1. cascade order ---------- */
 function checkCascadeOrder() {
-  const indexCss = readFileSync(join(STYLES, 'index.css'), 'utf8');
-  const imports = [...indexCss.matchAll(/@import\s+'([^']+)'/g)].map((m) => m[1]);
+  const imports = importsIn(join(STYLES, 'index.css'));
   const tierOf = (spec) => {
     if (spec === './tokens.css') return 1;
     if (spec.startsWith('./legacy/')) return 2;
@@ -128,6 +191,19 @@ function checkCascadeOrder() {
   if (themeImports.length !== 1) problems.push(`themes.css must be imported exactly once (found ${themeImports.length})`);
   if (imports[imports.length - 1] !== './themes.css') problems.push('themes.css must be the final import');
   if (!imports.includes('./polish/index.css')) problems.push('polish/index.css missing from styles/index.css');
+
+  for (const [manifest, expected] of Object.entries(ORDERED_MANIFESTS)) {
+    const actual = importsIn(join(STYLES, manifest));
+    if (actual.length !== expected.length) {
+      problems.push(`${manifest} import count changed (expected ${expected.length}, found ${actual.length})`);
+    }
+    const length = Math.max(actual.length, expected.length);
+    for (let i = 0; i < length; i += 1) {
+      if (actual[i] !== expected[i]) {
+        problems.push(`${manifest} import #${i + 1} must be '${expected[i] ?? '(none)'}' (found '${actual[i] ?? '(none)'}')`);
+      }
+    }
+  }
   return problems;
 }
 
