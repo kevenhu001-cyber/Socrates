@@ -107,3 +107,11 @@ from the session cache owner, removing the last caller of generic
 `getLegacyGlobalValue`. The legacy recents renderer also republishes the
 existing filter snapshot after its caches change, so React refreshes project
 and tag chips when asynchronous data arrives.
+
+## Ninth increment
+
+The unused string-based recents chip renderer and its no-op compatibility
+wrapper are removed. `ui/recentsView.js` now loads project filter data and
+notifies the React owner; it no longer imports or passes render-only chip data
+to a retired legacy surface. An in-flight guard prevents repeated recents
+renders from starting duplicate `/api/projects` requests.

@@ -136,6 +136,38 @@ test('React recents chips refresh after project and session caches change', asyn
   await expect(page.locator('#recentsFilterChips [data-filter="practice"]')).toHaveCount(1);
 });
 
+test('Recents fetches project filter data once while the request is pending', async ({ page }) => {
+  let projectRequestCount = 0;
+  let releaseProjects;
+  const projectsGate = new Promise((resolve) => { releaseProjects = resolve; });
+
+  await mockAuthedApp(page);
+  await page.addInitScript(() => { window.__projectsCache = undefined; });
+  await page.route('**/api/**', async (route) => {
+    if (new URL(route.request().url()).pathname.endsWith('/projects')) {
+      projectRequestCount += 1;
+      await projectsGate;
+    }
+    await route.fallback();
+  });
+
+  try {
+    await gotoAndSettle(page, '/');
+    await page.waitForLoadState('domcontentloaded');
+    await waitForAppShell(page);
+    await expect.poll(() => projectRequestCount).toBe(1);
+
+    for (let i = 0; i < 3; i += 1) {
+      await page.evaluate(() => window.renderRecents());
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+    }
+
+    expect(projectRequestCount).toBe(1);
+  } finally {
+    releaseProjects();
+  }
+});
+
 test('Sidebar React mode always loads (no ?react=1 flag needed)', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');

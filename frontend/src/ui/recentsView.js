@@ -4,9 +4,6 @@
  * the window.renderRecents bridge in main.js stays as the public entry.
  */
 import { _publishSessionList } from '../session/organize.js';
-import { renderRecentsFilterChips as renderRecentsFilterChipsUI } from './recentsFilterChips.js';
-import { getRecentsFilter } from '../sidebar/index.js';
-import { getKnownTags } from '../session/recents.js';
 import { refreshRecentsFilterChipData } from '../react/sidebar/sidebar.bridge.ts';
 import { apiFetch } from '../util/api.js';
 
@@ -29,39 +26,25 @@ export function doRenderRecents() {
      was reachable only when session-list was not migrated, which is
      no longer possible after the always-on React runtime landed. */
   _publishSessionList();
-  renderRecentsFilterChips();
+  refreshRecentsFilterData();
 }
 
-/* One-shot projects fetch guard (module-local): an empty project list or a
-   failed /api/projects call marks the cache as populated so renderRecents
-   never re-fetches on every render. */
-var __projectsFetchFailed = false;
+/* An empty project list and a failed request both settle the project lookup.
+   React owns the chip markup; this module only keeps its source data current. */
+var __projectsFetchState = 'idle';
 
-export function renderRecentsFilterChips() {
-  /* Fetch projects for the filter chips if not cached. P_projects-once —
-     a successful response (including an empty project list) marks the
-     cache as populated so we never re-fetch. Previously an empty list
-     (`{projects: []}` for users with no projects) kept the
-     `!projects.length` guard true, so the success handler recursively
-     called renderRecentsFilterChips() → fetched again → looped
-     indefinitely, flooding /api/projects. */
-  var projects = window.__projectsCache;
-  var fetched = Array.isArray(projects) || __projectsFetchFailed;
-  if (!fetched && typeof apiFetch === 'function') {
+export function refreshRecentsFilterData() {
+  if (!Array.isArray(window.__projectsCache) && __projectsFetchState === 'idle') {
+    __projectsFetchState = 'pending';
     apiFetch('/api/projects').then(function (r) {
       window.__projectsCache = (r && r.projects) || [];
-      renderRecentsFilterChips();
+      __projectsFetchState = 'ready';
+      refreshRecentsFilterChipData();
     }).catch(function () {
-      /* Mark failure so we don't retry on every renderRecents call.
-         The user can refresh the page to retry. */
-      __projectsFetchFailed = true;
+      /* Keep failure settled; the user can refresh the page to retry. */
+      __projectsFetchState = 'failed';
     });
   }
-  renderRecentsFilterChipsUI({
-    currentFilter: getRecentsFilter(),
-    tags: getKnownTags().slice(0, 8),
-    projects: projects || []
-  });
   refreshRecentsFilterChipData();
 }
 

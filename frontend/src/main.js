@@ -390,10 +390,8 @@ try{window.RECENTS_FILTER_KEY=RECENTS_FILTER_KEY}catch(_){}
    tags and persists via PATCH. */
 /* B6: tags/context-menu/drag/row-publish extracted to session/organize.js (imported at top). */
 /* B6: renderRecents/doRenderRecents moved to ui/recentsView.js (imported at top). */
-/* One-shot projects fetch guard (module-local): an empty project list or a
-   failed /api/projects call marks the cache as populated so renderRecents
-   never re-fetches on every render. */
-/* B6: renderRecentsFilterChips moved to ui/recentsView.js (imported at top). */
+/* B6: recents rendering and filter data refresh live in ui/recentsView.js
+   (imported at top); React owns the filter-chip markup. */
 /* =============================================================
    In production, this would call an LLM API.
    ============================================================ */
