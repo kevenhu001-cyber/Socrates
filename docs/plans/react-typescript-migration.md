@@ -135,9 +135,10 @@ below.
       (deferred — the textarea is tightly coupled to `autoResize`,
       `updateSendBtn`, `handleChatKey`, and streaming).
 - [x] Settings modal ported to React/TS (`frontend/src/react/settings/`).
-      React owns the overlay shell (header, close button, backdrop click).
-      The bridge publishes `open` state + `bodyHTML` through
-      `window.__socratesSettingsBridge`.
+      React owns the overlay and its interactive surface. A typed settings
+      snapshot carries visibility, provider summaries, validation state, and
+      the external-API toggle; the legacy module retains preference state and
+      provider/API operations but no longer writes settings DOM.
 - [x] Account, library, scheduled tasks, and plugins — all migrated as
       part of the workspace/scheduled page React components
       (`frontend/src/react/pages/workspace/`, `frontend/src/react/pages/scheduled/`).

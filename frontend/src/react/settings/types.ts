@@ -1,23 +1,41 @@
-/**
- * Shared contracts for the settings modal React migration boundary.
- *
- * React owns the overlay shell and the static skeleton (toggle, provider
- * list container, tone preset container, action buttons). Legacy
- * `ui/settings.js` renders the dynamic content (provider rows, tone
- * presets) into the React-owned containers and publishes the open state
- * plus the external-API toggle so React can mirror visibility and the
- * toggle track.
- */
+export type SettingsProviderField = 'label' | 'url' | 'key' | 'model' | 'vision';
+export type SettingsProviderErrorField = Exclude<SettingsProviderField, 'vision'>;
+
+export interface SettingsProviderSnapshot {
+  id: string;
+  label: string;
+  url: string;
+  model: string;
+  vision: boolean;
+  isBuiltIn: boolean;
+  isActive: boolean;
+  hasKey: boolean;
+}
+
+export type SettingsProviderDraft = Partial<Pick<SettingsProviderSnapshot, 'label' | 'url' | 'model' | 'vision'>>;
+
+export type SettingsProviderErrors = Record<
+  string,
+  Partial<Record<SettingsProviderErrorField, string>>
+>;
+
+export interface SettingsProviderSaveResult {
+  savedIds: string[];
+  failedIds: string[];
+}
 
 export interface SettingsSnapshot {
   open: boolean;
   externalApiOn: boolean;
+  providers: SettingsProviderSnapshot[];
+  providerErrors: SettingsProviderErrors;
+  saving: boolean;
   revision: number;
 }
 
 export interface SettingsBridge {
   getSnapshot: () => SettingsSnapshot;
-  publish: (snapshot: Omit<SettingsSnapshot, 'revision'>) => void;
+  publish: (snapshot: Partial<Omit<SettingsSnapshot, 'revision'>>) => void;
   subscribe: (listener: () => void) => () => void;
 }
 

@@ -1,11 +1,7 @@
-// e2e/settings-modal.spec.mjs — M4 step 4.5b regression coverage.
-// The settings modal is React-owned (SettingsModal.tsx renders the full
-// overlay into #settingsModalReactRoot at boot); legacy ui/settings.js
-// still renders provider rows / tone presets into the React containers and
-// publishes open + externalApiOn through the bridge. These specs pin the
-// converted contract: open/close visibility, the React-rendered skeleton
-// (toggle + add/clear/cancel/save), and legacy-rendered dynamic content
-// (provider list, tone presets) surviving React ownership.
+// e2e/settings-modal.spec.mjs — Settings ownership regression coverage.
+// SettingsModal.tsx owns the overlay and all provider/tone markup; the legacy
+// service updates provider configuration through the typed settings bridge.
+// These specs pin open/close, provider CRUD, tone selection, and persistence.
 
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle, login } from './_lib.mjs';
@@ -17,8 +13,8 @@ test.beforeEach(async ({ page }) => {
   await login(page);
 });
 
-/* The provider/tone skeleton lives in the "Models & voice" category pane;
-   the modal opens on General, so specs navigate there first. */
+/* The provider and tone controls live in separate category panes;
+   the modal opens on General, so these specs navigate to Models & voice. */
 async function openModelsPane(page) {
   await page.evaluate(() => window.openSettings());
   const overlay = page.locator('#settingsOverlay');
@@ -27,22 +23,30 @@ async function openModelsPane(page) {
   return overlay;
 }
 
-test('settings modal opens, renders React skeleton + legacy provider rows, and closes', async ({ page }) => {
+test('settings modal opens with React-owned providers and tones, and closes', async ({ page }) => {
   // Open via the legacy window binding (the model-picker "add" path).
   const overlay = await openModelsPane(page);
 
-  // React-owned skeleton: toggle + action buttons + containers.
+  // React-owned settings controls and provider list.
   await expect(overlay.locator('#stgToggleTrack')).toBeVisible();
   await expect(overlay.locator('#addProviderBtn')).toBeVisible();
   await expect(overlay.locator('#clearSettingsBtn')).toBeVisible();
   await expect(overlay.locator('#cancelSettingsBtn')).toBeVisible();
   await expect(overlay.locator('#saveSettingsBtn')).toBeVisible();
 
-  // Legacy-rendered dynamic content: provider list (Models & voice) +
-  // tone presets (Personalization).
+  // React owns both provider rows and tone preset buttons.
   await expect(overlay.locator('#providerList')).toBeVisible();
+  const builtInRow = overlay.locator('#providerList .provider-row.built-in-row');
+  await expect(builtInRow).toContainText('Built-in · Active');
+  await expect(builtInRow).not.toContainText(/settings\.(builtInTag|builtInHint|noCustomProviders)/);
+
   await overlay.locator('.settings-nav [data-section="personalization"]').click();
-  await expect(overlay.locator('#tonePresetOptions')).toBeVisible();
+  const toneOptions = overlay.locator('#tonePresetOptions');
+  await expect(toneOptions.locator('.tone-preset-btn')).toHaveCount(5);
+  const friendlyTone = toneOptions.locator('.tone-preset-btn[data-tone="friendly"]');
+  await friendlyTone.click();
+  await expect(friendlyTone).toHaveAttribute('aria-pressed', 'true');
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-tone'))).toBe('friendly');
 
   // Close via the React close button.
   await overlay.locator('#settingsCloseBtn').click();
@@ -80,21 +84,26 @@ test('settings toggle flips the track class and persists', async ({ page }) => {
   await expect(track).toHaveClass(expectedClass);
 });
 
-test('add provider renders editable rows into the legacy-rendered list', async ({ page }) => {
+test('React-owned provider rows stay synchronized with provider configuration', async ({ page }) => {
   const overlay = await openModelsPane(page);
 
-  // Empty state: the built-in row is the empty-state affordance (historical
-  // renderer behavior — it is replaced, not appended to, once a custom
-  // provider exists).
+  // With no custom provider, the built-in model is the provider-list empty state.
   const builtInRow = overlay.locator('#providerList .provider-row.built-in-row');
   await expect(builtInRow).toBeVisible();
 
-  // First add: the legacy addProvider() pushes a `new-*` provider and the
-  // legacy renderer paints the editable row into the React-owned container.
+  // The legacy service adds provider data; React paints the new editable row.
   await overlay.locator('#addProviderBtn').click();
-  const firstNewRow = overlay.locator('#providerList .provider-row[data-id^="new-"]');
+  const firstNewRow = overlay.locator('#providerList .provider-row[data-id^="new-"]').first();
   await expect(firstNewRow).toBeVisible();
   await expect(firstNewRow.locator('input[data-field="label"]')).toHaveValue('');
+  await expect(firstNewRow.locator('input[data-field="label"]')).toBeFocused();
+  const firstProviderId = await firstNewRow.getAttribute('data-id');
+  const firstProviderRow = overlay.locator(`#providerList .provider-row[data-id="${firstProviderId}"]`);
+  await firstNewRow.locator('input[data-field="label"]').fill('React-owned provider');
+  await expect.poll(() => page.evaluate((id) => window.apiConfig.providers.find((provider) => provider.id === id)?.label, firstProviderId)).toBe('React-owned provider');
+  await firstNewRow.locator('input[data-field="key"]').fill('test-secret-value');
+  const bridgeKey = await page.evaluate((id) => window.__socratesSettingsBridge.getSnapshot().providers.find((provider) => provider.id === id)?.key, firstProviderId);
+  expect(bridgeKey).toBeUndefined();
   const providersAfterFirst = await page.evaluate(() => (window.apiConfig.providers || []).length);
   expect(providersAfterFirst).toBe(2); // built-in + new
 
@@ -103,4 +112,22 @@ test('add provider renders editable rows into the legacy-rendered list', async (
   await expect(overlay.locator('#providerList .provider-row[data-id^="new-"]')).toHaveCount(2);
   const providersAfterSecond = await page.evaluate(() => (window.apiConfig.providers || []).length);
   expect(providersAfterSecond).toBe(3);
+
+  await firstProviderRow.locator('.provider-active-btn').click();
+  await expect(firstProviderRow).toHaveClass(/active/);
+  await firstProviderRow.locator('.provider-del').click();
+  await expect(firstProviderRow).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => (window.apiConfig.providers || []).length)).toBe(2);
+});
+
+test('provider validation errors render from React-owned state', async ({ page }) => {
+  const overlay = await openModelsPane(page);
+  await overlay.locator('#addProviderBtn').click();
+  const row = overlay.locator('#providerList .provider-row[data-id^="new-"]').first();
+  await expect(row).toBeVisible();
+  await row.locator('input[data-field="url"]').fill('ftp://example.test');
+  const invalidProviderId = await row.getAttribute('data-id');
+  await expect.poll(() => page.evaluate((id) => window.apiConfig.providers.find((provider) => provider.id === id)?.url, invalidProviderId)).toBe('ftp://example.test');
+  await overlay.locator('#saveSettingsBtn').click();
+  await expect(row.locator('.settings-field-error')).toContainText('URL must start with http:// or https://');
 });

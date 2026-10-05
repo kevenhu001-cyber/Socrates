@@ -5,7 +5,9 @@ import { flushSync } from 'react-dom';
 
 import { getApiFetch, getCurrentLang, getCurrentUser, getLegacyActions, i18n } from '../legacy/gateway.ts';
 import { installSettingsBridge, useSettingsSnapshot } from './settings.bridge';
+import { ProviderList, useProviderListState } from './ProviderList';
 import { useProfileDispatch, useProfileSnapshot } from '../profileModal/profileModal.bridge';
+import { getAvailablePresets, getTonePreset, setTonePreset } from '../../config/tonePresets.js';
 import { trapFocus, setModalOpen } from '../../ui/modalA11y.js';
 import {
   displayPrefs, setDisplayFont, setDisplayWidth, toggleGrid,
@@ -35,6 +37,7 @@ function SettingsModal() {
   const [query, setQuery] = useState('');
   const [uiLang, setUiLang] = useState(() => getCurrentLang());
   const [saveError, setSaveError] = useState('');
+  const [selectedTone, setSelectedTone] = useState(() => getTonePreset());
   const [imageModel, setImageModel] = useState(() => {
     try { return localStorage.getItem('socrates-image-model') || ''; } catch { return ''; }
   });
@@ -75,12 +78,9 @@ function SettingsModal() {
     ['account', label('账户', 'Account')],
   ];
 
-  /* M4 step 4.5b — React owns the overlay now (static index.html markup
-     removed). Legacy settings.js still renders the dynamic content
-     (provider rows / tone preset buttons) into #providerList and
-     #tonePresetOptions; React renders the empty containers so the
-     legacy innerHTML writes survive React re-renders. */
   const legacy = getLegacyActions();
+  const providerState = useProviderListState(legacy.settings, snap.providers);
+  const tonePresets = getAvailablePresets();
 
   /* Esc-to-close + focus management, replacing the legacy
      installModalA11y({ overlayId: 'settingsOverlay' }) registration
@@ -288,7 +288,29 @@ function SettingsModal() {
                 <h3>{label('助手语调风格', 'Tone & voice')}</h3>
                 <p>{label('选择助手的说话风格。', 'Choose how Socrates speaks in a session.')}</p>
               </div>
-              <div className="tone-preset-options" id={TONE_OPTIONS_ID} />
+              <div className="tone-preset-options" id={TONE_OPTIONS_ID}>
+                {tonePresets.map((preset) => {
+                  const active = selectedTone === preset.id;
+                  const presetLabel = lang === 'zh' ? preset.labelZh || preset.label : preset.label;
+                  const presetDescription = lang === 'zh' ? preset.descriptionZh || preset.description : preset.description;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      className={`tone-preset-btn${active ? ' active' : ''}`}
+                      data-tone={preset.id}
+                      aria-pressed={active}
+                      onClick={() => {
+                        setTonePreset(preset.id);
+                        setSelectedTone(preset.id);
+                      }}
+                    >
+                      <span className="tone-preset-label">{presetLabel}</span>
+                      <span className="tone-preset-desc">{presetDescription}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </section>
 
             <section className="settings-section">
@@ -430,16 +452,26 @@ function SettingsModal() {
             <div className="settings-field">
               <div className="settings-label-row">
                 <span className="settings-label">{i18n('settings.models', 'Models')}</span>
-                <button className="settings-btn-mini" id="addProviderBtn" onClick={() => legacy.settings.addProvider()}>
+                <button className="settings-btn-mini" id="addProviderBtn" type="button" onClick={() => void providerState.addProvider()}>
                   {i18n('settings.addProvider', '+ Add')}
                 </button>
               </div>
               <span className="settings-hint">
                 {i18n('settings.providerHint', 'Configure one or more providers. Click the circle to set one as active.')}
               </span>
-              <div
-                className={`provider-list${snap.externalApiOn ? '' : ' collapsed'}`}
+              <ProviderList
                 id={PROVIDER_LIST_ID}
+                providers={snap.providers}
+                providerErrors={snap.providerErrors}
+                providerDrafts={providerState.providerDrafts}
+                keyDrafts={providerState.keyDrafts}
+                externalApiOn={snap.externalApiOn}
+                language={lang}
+                onFieldChange={providerState.onFieldChange}
+                onKeyDraftChange={providerState.onKeyDraftChange}
+                onLabelRef={providerState.onLabelRef}
+                onSetActive={providerState.onSetActive}
+                onRemove={providerState.onRemove}
               />
             </div>
           </section>
@@ -470,8 +502,8 @@ function SettingsModal() {
             <button className="settings-btn secondary" id="cancelSettingsBtn" onClick={() => legacy.navigation.closeSettings()}>
               {i18n('common.cancel', 'Cancel')}
             </button>
-            <button className="settings-btn primary" id={SAVE_BTN_ID} onClick={() => legacy.settings.saveSettings()}>
-              {i18n('settings.save', 'Save')}
+            <button className="settings-btn primary" id={SAVE_BTN_ID} disabled={snap.saving} onClick={() => void providerState.saveProviders()}>
+              {snap.saving ? i18n('settings.saving', 'Saving…') : i18n('settings.save', 'Save')}
             </button>
           </div>
           </div>
@@ -484,10 +516,8 @@ function SettingsModal() {
 }
 
 /**
- * Mount the React settings modal. Creates a dedicated container at body
- * level so `createRoot` owns the overlay shell. Legacy `openSettings()`
- * / `closeSettings()` still toggle visibility + publish bridge state;
- * React mirrors it and owns the interactive buttons (M4 step 4.5b).
+ * Mount the React-owned settings surface. The legacy settings module only
+ * publishes open state and provider configuration through the typed bridge.
  */
 export function mountSettingsModal(): void {
   let container = document.getElementById('settingsModalReactRoot');

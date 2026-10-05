@@ -8,6 +8,8 @@
 // Each domain should be migrated out of this file as its functions are
 // extracted into standalone TypeScript modules (C5).
 
+import type { SettingsProviderField, SettingsProviderSaveResult } from '../settings/types';
+
 export interface LegacyMessages {
   editUserMessage(messageId: string): void;
   regenerateAssistantMessage(messageId: string): void;
@@ -45,14 +47,16 @@ export interface LegacyNavigation {
   signOut(): void;
 }
 
-/* M4 step 4.5b — settings modal button actions, called from React's
-   SettingsModal.tsx (which owns the overlay skeleton). Backed by
-   ui/settings.js exports. */
+/* Settings configuration actions exposed to the React-owned SettingsModal.
+   The legacy module retains provider API/config operations, not DOM writes. */
 export interface LegacySettings {
-  toggleAPI(): void;
-  addProvider(): void;
-  clearSettings(): void;
-  saveSettings(): void;
+  toggleAPI(): Promise<void>;
+  addProvider(): Promise<string | null>;
+  removeProvider(id: string): Promise<boolean>;
+  setActiveProvider(id: string): Promise<void>;
+  updateProviderField(id: string, field: SettingsProviderField, value: string | boolean): Promise<void>;
+  clearSettings(): Promise<void>;
+  saveSettings(): Promise<SettingsProviderSaveResult>;
 }
 
 /* M4 step 4.5c — confirm-dialog actions, called from React's

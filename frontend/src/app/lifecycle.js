@@ -51,8 +51,8 @@ function _renderMistakes() {
 function _updateMistakesBadge() {
   try { if (typeof window !== 'undefined' && typeof window.updateMistakesBadge === 'function') window.updateMistakesBadge(); } catch (e) { reportSwallow(e, 'app/lifecycle._updateMistakesBadge'); }
 }
-function _renderProviderList() {
-  try { if (typeof window !== 'undefined' && typeof window.renderProviderList === 'function') window.renderProviderList(); } catch (e) { reportSwallow(e, 'app/lifecycle._renderProviderList'); }
+function _publishSettingsProviders() {
+  try { if (typeof window !== 'undefined' && typeof window.renderProviderList === 'function') window.renderProviderList(); } catch (e) { reportSwallow(e, 'app/lifecycle._publishSettingsProviders'); }
 }
 function _syncSidebarBtns() {
   try { if (typeof window !== 'undefined' && typeof window.syncSidebarBtns === 'function') window.syncSidebarBtns(); } catch (e) { reportSwallow(e, 'app/lifecycle._syncSidebarBtns'); }
@@ -363,7 +363,7 @@ export function clearPerUserClientState(){
   try{if(typeof renderRecents==="function")_renderRecents()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.renderRecents');}
   try{if(typeof renderMistakes==="function")_renderMistakes()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.renderMistakes');}
   try{if(typeof updateMistakesBadge==="function")_updateMistakesBadge()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.updateMistakesBadge');}
-  try{if(typeof renderProviderList==="function")_renderProviderList()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.renderProviderList');}
+  try{_publishSettingsProviders()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.publishSettingsProviders');}
   try{if(typeof syncModelPills==="function")syncModelPills()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.syncModelPills');}
 }
 

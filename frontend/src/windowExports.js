@@ -103,9 +103,8 @@ window.syncChatModel = syncChatModel;
 window.toggleWebSearch = toggleWebSearch;
 window.markProvidersFetched = markProvidersFetched;
 
-// Note: renderProviderList stays on window for config/providers.js, which
-// cannot import ui/settings.js (providers.js must stay a zero-dependency
-// leaf that loads first — the reverse edge already exists).
+// Settings provider snapshots publish through a lazy window adapter so the
+// zero-dependency provider config module does not import the settings surface.
 
 /* ─── ui/cheatsheet.js ─── */
 import { closeCheatsheet, openCheatsheet } from './ui/cheatsheet.js';
@@ -192,16 +191,13 @@ function _loadVoiceInput() {
 window.toggleSpeechInput = function (surface) { return _loadVoiceInput().then(function (m) { return m.toggleSpeechInput(surface); }); };
 window.stopSpeechInput = function () { if (_voiceImport) return _voiceImport.then(function (m) { return m.stopSpeechInput(); }); };
 /* ─── ui/settings.js ───
-   Lazy (~20KB): the settings overlay only loads when opened.
-   React's SettingsModal calls these via __socratesLegacy.settings
-   (legacyBridge lazy-proxies into the same module). `__settingsModule`
-   exposes the loaded module so boot-time refreshes (auth/index) can
-   no-op when settings never loaded instead of triggering a fetch. */
+   Lazy: the settings surface loads only when opened. React owns its DOM;
+   this adapter lets the earlier-loaded provider module publish fresh data
+   without importing the settings feature or creating a cycle. */
 var _settingsImport = null;
 function _loadSettingsModule() {
   if (!_settingsImport) {
     _settingsImport = import('./ui/settings.js');
-    _settingsImport.then(function (m) { window.__settingsModule = m; });
     _settingsImport.catch(function (err) {
       _settingsImport = null;
       console.error('[settings] failed to load', err);
@@ -211,8 +207,7 @@ function _loadSettingsModule() {
 }
 window.openSettings = function () { return _loadSettingsModule().then(function (m) { return m.openSettings(); }); };
 window.closeSettings = function () { if (_settingsImport) return _settingsImport.then(function (m) { return m.closeSettings(); }); };
-window.renderProviderList = function () { if (_settingsImport) return _settingsImport.then(function (m) { return m.renderProviderList(); }); };
-window.addProvider = function () { return _loadSettingsModule().then(function (m) { return m.addProvider(); }); };
+window.renderProviderList = function () { if (_settingsImport) return _settingsImport.then(function (m) { return m.publishSettingsProviders(); }); };
 
 /* ─── ui/share.js ─── */
 /* Copy/load handlers are wired module-locally inside ui/share.js and by
@@ -253,8 +248,8 @@ import './ui/topicSetup.js';
 import './storage/memoryStore.js';
 
 /* ─── config/tonePresets.js — AI tone/voice presets ─── */
-/* Tone presets render inside ui/settings.js's own wiring; main.js
-   imports the module directly. Bare import keeps evaluation order. */
+/* React SettingsModal imports the state module directly. This bare import
+   keeps its initialization order. */
 import './config/tonePresets.js';
 
 /* ─── agent/researchAgent.js — Deep Research / Agent Mode ───

@@ -29,8 +29,8 @@ import { syncWorkspaceRoute } from '../sidebar/nav.js';
 
 import { toggleShareBtn } from '../ui/share.js';
 
-/* ui/settings.js is lazy (windowExports proxies) — post-auth refresh
-   goes through window.__settingsModule below. */
+/* Settings is lazy; a named window adapter publishes refreshed provider
+   metadata only when its React surface has been mounted. */
 
 import { renderGreeting } from '../ui/greeting.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
@@ -217,7 +217,7 @@ export async function afterAuthEnter(){
      refreshServerSessions / refreshApiConfig would show the
      previous user's sessions in the sidebar or providers in the
      model picker. clearPerUserClientState also re-renders the
-     affected UI surfaces (renderRecents, renderProviderList) so
+     affected UI surfaces (renderRecents and provider snapshot) so
      the empty state appears immediately. */
   if(typeof window.clearPerUserClientState==="function"){
     try{window.clearPerUserClientState()}catch(e){ reportSwallow(e, 'auth/index.clearPerUserClientState');/* ignore */}
@@ -305,10 +305,9 @@ export async function afterAuthEnter(){
   window.renderRecents&&window.renderRecents();
   window.renderMistakes&&window.renderMistakes();
   window.updateMistakesBadge&&window.updateMistakesBadge();
-  /* ui/settings.js is lazy — refresh the provider list only when the
-     module is already loaded; otherwise the first openSettings() render
-     covers it. */
-  window.__settingsModule&&window.__settingsModule.renderProviderList();
+  /* Compatibility name only: the lazy adapter publishes provider data to
+     the React owner and does not render DOM. */
+  window.renderProviderList&&window.renderProviderList();
   window.syncModelPills&&window.syncModelPills();
   syncExtensionsUI&&syncExtensionsUI();
   window.syncAppModeUI&&window.syncAppModeUI();

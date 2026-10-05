@@ -205,7 +205,10 @@ window.__socratesLegacy = {
   },
   settings: {
     toggleAPI: function () { return _loadSettings().then(function (m) { return m.toggleAPI(); }); },
-    addProvider: window.addProvider,
+    addProvider: function () { return _loadSettings().then(function (m) { return m.addProvider(); }); },
+    removeProvider: function (id) { return _loadSettings().then(function (m) { return m.removeProvider(id); }); },
+    setActiveProvider: function (id) { return _loadSettings().then(function (m) { return m.setActiveProvider(id); }); },
+    updateProviderField: function (id, field, value) { return _loadSettings().then(function (m) { return m.updateProviderField(id, field, value); }); },
     clearSettings: function () { return _loadSettings().then(function (m) { return m.clearSettings(); }); },
     saveSettings: function () { return _loadSettings().then(function (m) { return m.saveSettings(); }); },
   },

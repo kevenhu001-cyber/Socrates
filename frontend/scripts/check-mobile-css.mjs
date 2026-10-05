@@ -14,7 +14,7 @@ const walk = dir => readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
 });
 const errors = [];
 for (const file of walk(styles)) {
-  const owner = relative(styles, file);
+  const owner = relative(styles, file).replaceAll('\\', '/');
   postcss.parse(readFileSync(file, 'utf8')).walkRules(rule => {
     let phone = false;
     for (let parent = rule.parent; parent && parent.type !== 'root'; parent = parent.parent) {

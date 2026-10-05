@@ -1,8 +1,8 @@
 /* config/tonePresets.js — AI tone/voice presets.
  *
  * Lets the user choose how the AI speaks. Each preset modifies the
- * VOICE section of the system prompt. Presets are stored in
- * localStorage as "socrates-tone" and exposed via window.tonePreset.
+ * VOICE section of the system prompt. Presets are stored in localStorage
+ * as "socrates-tone" and read through this module's exports.
  *
  * IMPORTANT: a preset sets register, warmth, and personality ONLY.
  * Structure, depth, math, and safety rules are owned by the server's
@@ -90,8 +90,6 @@ function setTonePreset(tone) {
   if (!TONE_PRESETS[tone]) return;
   _currentTone = tone;
   try { localStorage.setItem(TONE_KEY, tone); } catch { /* ignore */ }
-  /* Sync the UI if the settings modal is open. */
-  syncTonePresetUI();
 }
 
 /* Get the current tone preset id. */
@@ -113,36 +111,6 @@ function getAvailablePresets() {
   });
 }
 
-/* Sync the tone preset UI in the settings overlay. */
-function syncTonePresetUI() {
-  var container = document.getElementById("tonePresetOptions");
-  if (!container) return;
-  var btns = container.querySelectorAll(".tone-preset-btn");
-  btns.forEach(function (btn) {
-    btn.classList.toggle("active", btn.dataset.tone === _currentTone);
-  });
-}
-
-/* Render the tone preset radio buttons into the settings overlay. */
-function renderTonePresets() {
-  var container = document.getElementById("tonePresetOptions");
-  if (!container) return;
-  var presets = getAvailablePresets();
-  var lang = (typeof window._currentLang === "string" && window._currentLang.indexOf("zh") === 0) ? "zh" : "en";
-  container.innerHTML = presets.map(function (p) {
-    var label = lang === "zh" ? (p.labelZh || p.label) : p.label;
-    var desc = lang === "zh" ? (p.descriptionZh || p.description) : p.description;
-    return '<button class="tone-preset-btn' + (p.id === _currentTone ? ' active' : '') + '" data-tone="' + p.id + '">' +
-      '<span class="tone-preset-label">' + label + '</span>' +
-      '<span class="tone-preset-desc">' + desc + '</span>' +
-      '</button>';
-  }).join("");
-  container.onclick = function (event) {
-    var button = event.target.closest && event.target.closest('.tone-preset-btn[data-tone]');
-    if (button && container.contains(button)) setTonePreset(button.dataset.tone);
-  };
-}
-
 /* Consumers import these directly (no window bridge since the
    window-dead-bridge batch 2). */
 
@@ -153,6 +121,4 @@ export {
   getTonePreset,
   getToneVoice,
   getAvailablePresets,
-  renderTonePresets,
-  syncTonePresetUI,
 };

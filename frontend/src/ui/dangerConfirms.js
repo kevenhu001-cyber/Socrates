@@ -7,7 +7,7 @@
  * Touches the following globals:
  *   - showConfirm (ui/confirm.js)
  *   - apiFetch, t, renderRecents, resetApp, showGate, showAuthSignin, resetState,
- *     renderUserFooter, closeProfile, renderProviderList, syncModelPills, syncSettingsUI,
+ *     renderUserFooter, closeProfile, publishSettingsProviders, syncModelPills, syncSettingsUI,
  *     CURRENT_USER, apiConfig (mutate in place!), webSearchOn, BEAGLE_BUILT_IN,
  *     LAST_ACTIVE_ID_KEY
  */
@@ -17,7 +17,7 @@ import { showConfirm } from './confirm.js';
 
 import { LAST_ACTIVE_ID_KEY } from '../config/providers.js';
 
-import { syncSettingsUI, renderProviderList } from './settings.js';
+import { syncSettingsUI, publishSettingsProviders } from './settings.js';
 
 import { renderUserFooter } from './profile.js';
 
@@ -52,7 +52,7 @@ function confirmClearSettings() {
       apiConfig.providers = [Object.assign({}, window.BEAGLE_BUILT_IN)];
       try { localStorage.removeItem("socrates-provider-keys"); } catch { /* ignore */ }
       try { localStorage.removeItem(LAST_ACTIVE_ID_KEY); } catch { /* ignore */ }
-      renderProviderList();
+      publishSettingsProviders();
       window.syncModelPills();
       syncSettingsUI();
       window.closeProfile();
