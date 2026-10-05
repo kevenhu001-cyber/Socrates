@@ -68,3 +68,9 @@ The `LegacyNavigation` contract now reflects that `resetApp()` and
 stream confirmation was canceled. The connected-plugin “Use in chat” flow waits
 for that result before changing composer selection. Focused coverage protects
 both the successful reset and cancel paths.
+
+## Fourth increment
+
+In-session search and the progressive React message list now share an explicit
+typed flusher module. This removes their ad hoc `window.__socratesFlushMessageRows`
+global while preserving the flush-before-search behavior and cleanup on unmount.

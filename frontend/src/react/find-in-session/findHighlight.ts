@@ -9,6 +9,7 @@
  */
 
 import { prefersReducedMotion } from '../../ui/motion.js';
+import { flushDeferredMessageRows } from '../message-list/deferredRows';
 
 let _findMatches: HTMLElement[] = [];
 let _findIndex = -1;
@@ -60,7 +61,7 @@ function highlightTextNodes(query: string): { matchCount: number } {
   if (!_findQuery || !list) return { matchCount: 0 };
   /* P_progressive-mount — a freshly opened long session mounts its older rows
      over a few idle frames; search the whole transcript, not just the tail. */
-  try { window.__socratesFlushMessageRows?.(); } catch (_) { /* list not mounted */ }
+  try { flushDeferredMessageRows(); } catch { /* empty-catch: intentional — search mounted rows if progressive flush fails. */ }
   const needle = _findQuery.toLowerCase();
   const textNodes: Text[] = [];
   const bodies = list.querySelectorAll('.msg-body');

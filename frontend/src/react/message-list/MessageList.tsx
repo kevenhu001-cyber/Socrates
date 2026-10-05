@@ -8,6 +8,7 @@ import {
 } from '../chatRuntime.bridge';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { MessageItem } from './MessageItem';
+import { registerDeferredMessageRowsFlusher } from './deferredRows';
 import type { LegacyChatMessage } from '../types/domain';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 
@@ -172,17 +173,6 @@ function pinToBottom(list: HTMLElement): void {
   state.frame = requestAnimationFrame(step);
 }
 
-let flushAllRows: (() => void) | null = null;
-
-/**
- * Mount every deferred history row synchronously. Callers that walk the
- * transcript DOM as a whole (find-in-session) use this so they never miss rows
- * that have not been prepended yet.
- */
-export function flushDeferredMessageRows(): void {
-  if (flushAllRows) flushAllRows();
-}
-
 function MessageList() {
   const visibleMessages = useSyncExternalStore(
     subscribeToChatRuntime,
@@ -275,7 +265,9 @@ function MessageList() {
       if (host && host.scrollTop < NEAR_TOP_PX) expand(false);
     };
     if (host) host.addEventListener('scroll', onScroll, { passive: true });
-    flushAllRows = () => { flushSync(() => expand(true)); };
+    const unregisterFlusher = registerDeferredMessageRowsFlusher(
+      () => { flushSync(() => expand(true)); },
+    );
     return () => {
       cancelled = true;
       if (idleHandle !== null) {
@@ -283,7 +275,7 @@ function MessageList() {
         else window.clearTimeout(idleHandle);
       }
       if (host) host.removeEventListener('scroll', onScroll);
-      flushAllRows = null;
+      unregisterFlusher();
     };
     /* Keyed on the floor only: streaming commits re-render this list many
        times a second, and re-arming on each would keep pushing the idle
@@ -355,7 +347,6 @@ export function mountMessageList(): { root: Root | null } {
   root.render(<ErrorBoundary><MessageList /></ErrorBoundary>);
   setMsgListMounted(true);
 
-  window.__socratesFlushMessageRows = flushDeferredMessageRows;
   window.__socratesReleaseMsgListReact = () => {
     try { root.unmount(); } catch (e) { reportSwallow(e, 'MessageList.releaseMsgListReact.unmount'); /* already unmounted */ }
     setMsgListMounted(false);

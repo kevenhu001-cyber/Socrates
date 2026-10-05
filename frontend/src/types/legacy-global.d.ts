@@ -70,9 +70,6 @@ declare global {
     __socratesShareMsgListTakeover?: boolean;
     /** Unmounts the React message list so legacy code may own #msgList. */
     __socratesReleaseMsgListReact?: () => void;
-    /** P_progressive-mount — mount every deferred history row now. */
-    __socratesFlushMessageRows?: () => void;
-
     /**
      * Bumped by main.js when lazily-loaded KaTeX finally arrives. The
      * declarative turn renderer caches settled prose HTML per turn, so this

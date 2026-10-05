@@ -99,3 +99,38 @@ test('find bar sits above the top bar and keeps every typed character', async ({
   await page.evaluate(() => document.getElementById('chatView')?.classList.add('hidden'));
   await expect(page.locator('#findBar')).toBeHidden();
 });
+
+test('find flushes deferred history rows before searching the transcript', async ({ page }) => {
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.waitForTimeout(400);
+
+  const messages = Array.from({ length: 30 }, (_, index) => ({
+    clientId: `find-history-${index}`,
+    role: 'assistant',
+    rawText: `Deferred transcript marker ${index}`,
+    html: `<p>Deferred transcript marker ${index}</p>`,
+  }));
+  await page.evaluate((history) => {
+    Object.defineProperty(window, 'requestIdleCallback', {
+      configurable: true,
+      value: () => 1,
+    });
+    Object.defineProperty(window, 'cancelIdleCallback', {
+      configurable: true,
+      value: () => {},
+    });
+    window.stateStore.dispatch({ type: 'session/replace-messages', payload: history });
+    window.__socratesReactChatBridge.publish({ type: 'state-synced', reason: 'find-deferred-test' });
+    document.getElementById('topicSetup')?.classList.add('hidden');
+    document.getElementById('chatView')?.classList.remove('hidden');
+  }, messages);
+
+  await expect(page.locator('#msgList .msg')).toHaveCount(12);
+  await page.evaluate(() => window.openFindInSession());
+  await page.locator('#findInput').fill('Deferred transcript marker 0');
+
+  await expect(page.locator('#msgList .msg')).toHaveCount(30);
+  await expect(page.locator('#msgList mark.find-hl')).toHaveCount(1);
+});
