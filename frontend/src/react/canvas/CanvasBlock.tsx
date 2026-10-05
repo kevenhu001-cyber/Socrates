@@ -1,7 +1,8 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
 import type { LegacyChatMessage } from '../types/domain';
-import { getLegacyGlobalValue } from '../legacy/gateway.ts';
+import { setComposerMarkdown } from '../composer-input/controller.ts';
+import { persistCanvasEdit } from './canvasState.ts';
 import { sanitizeHtml } from './sanitize';
 import { copyToClipboard } from './clipboard';
 import { useTranslation } from './useTranslation';
@@ -14,13 +15,6 @@ interface CanvasBlockProps {
   originalText: string;
 }
 
-interface MutableState {
-  messages?: Array<{
-    canvasId?: string | null;
-    editedText?: string | null;
-  }>;
-}
-
 /**
  * P_canvas-mode — ChatGPT-style editable reply surface.
  *
@@ -30,8 +24,8 @@ interface MutableState {
  *   │  The assistant's reply, sanitized HTML     │
  *   │  rendered into a contentEditable inner     │
  *   │  div. Editing toggles the accent ring and  │
- *   │  persists editedText onto the message      │
- *   │  entry so it survives reload.              │
+ *   │  writes editedText through the session     │
+ *   │  state action.                              │
  *   └────────────────────────────────────────────┘
  *
  * The legacy pipeline writes the canvas wrapper via wrapForCanvas in
@@ -64,10 +58,7 @@ export function CanvasBlock({ message, html, canvasId, originalText }: CanvasBlo
       const dom = innerRef.current?.innerHTML ?? '';
       const safe = sanitizeHtml(dom);
       if (innerRef.current) innerRef.current.innerHTML = safe;
-      const state = getLegacyGlobalValue('state', null as MutableState | null);
-      const entry = state?.messages?.find((m) => m && m.canvasId === canvasId);
-      if (entry) entry.editedText = safe;
-      setHasEdited(true);
+      setHasEdited(persistCanvasEdit(canvasId, safe));
       setMode('view-edited');
     } else {
       setMode('edit');
@@ -97,24 +88,10 @@ export function CanvasBlock({ message, html, canvasId, originalText }: CanvasBlo
   const iterate = useCallback(() => {
     const text = innerRef.current?.innerText ?? '';
     if (!text.trim()) return;
-    /* P_iterate-as-follow-up — surface the canvas content back into the
-       composer as the next user turn. Wire through the existing
-       legacyActions bridge rather than adding a new module boundary. */
-    type ComposerActions = { setMarkdown?: (surface: 'chat' | 'topic', text: string) => void; };
-    const actions = getLegacyGlobalValue(
-      'legacyActions',
-      null as { composer?: ComposerActions } | null,
-    )?.composer;
-    if (actions && typeof actions.setMarkdown === 'function') {
-      actions.setMarkdown('chat', text);
-    } else {
-      /* Fallback: drop into the topic composer as a markdown textarea. */
-      const ta = document.getElementById('chatInput') as HTMLTextAreaElement | null;
-      if (ta) {
-        ta.value = text;
-        ta.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-    }
+    /* Reuse the active rich composer API so markdown is parsed as editor
+       content and the controller can retain the draft if the editor is
+       between surfaces or temporarily unmounted. */
+    setComposerMarkdown('chat', text);
   }, []);
 
   const fullscreen = useCallback(() => {

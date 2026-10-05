@@ -162,7 +162,7 @@ export interface LegacyChatMessage {
   outputMode?: 'chat' | 'canvas' | null;
   canvasId?: string | null;
   /* User-edited HTML inside the canvas block. Sanitized via DOMPurify
-     before write; persisted on state.messages[idx] for reload durability. */
+     before write; stored on the in-memory session message entry. */
   editedText?: string | null;
   /* Inline SVG of the active extension (chip icon in the canvas header). */
   _extensionIcon?: string | null;

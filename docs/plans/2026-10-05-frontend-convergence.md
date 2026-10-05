@@ -74,3 +74,14 @@ both the successful reset and cancel paths.
 In-session search and the progressive React message list now share an explicit
 typed flusher module. This removes their ad hoc `window.__socratesFlushMessageRows`
 global while preserving the flush-before-search behavior and cleanup on unmount.
+
+## Fifth increment
+
+Canvas edits now update message state through the session reducer and publish a
+chat snapshot refresh, instead of mutating a message through `window.state`.
+Canvas “Iterate” now writes markdown through the rich composer controller,
+removing its undeclared `legacyActions.composer.setMarkdown` lookup and direct
+textarea fallback. Focused coverage protects reducer persistence and the edit
+and iterate flow. `editedText` is not in the current session save payload or
+message-table schema, so this only guarantees reducer-backed in-memory state;
+surviving reloads needs a separate persistence change.
