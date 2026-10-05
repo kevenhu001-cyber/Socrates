@@ -39,8 +39,7 @@ async function mountRunningCard(page, { tool = 'code_interpreter', input = { cod
     // clickable (the composer/topic-setup shell hides #msgList otherwise).
     try {
       window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-      document.getElementById('topicSetup')?.classList.add('hidden');
-      document.getElementById('chatView')?.classList.remove('hidden');
+      window.__testActivateMainView('chatView');
     } catch (_) {}
     const list = document.getElementById('msgList');
     const wrap = document.createElement('div');

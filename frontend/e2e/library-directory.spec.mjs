@@ -50,10 +50,10 @@ test('file previews replace reasoning in the shared detail and ignore stale cont
   });
   await page.evaluate(() => window.__socratesThinkingPanelBridge.publish({ type: 'panel-open' }));
   await expect(page.locator('[data-thinking-panel="1"]')).toBeVisible();
-  await page.evaluate(() => window.openLibraryItem('f1', 'text', 'files'));
+  await row(page, 'country_risk_data.csv').locator('.library-file-icon').click();
   await expect(page.locator('[data-thinking-panel="1"]')).toHaveCount(0);
   await expect(page.locator('.detail-heading h2')).toHaveText('country_risk_data.csv');
-  await page.evaluate(() => window.openLibraryItem('f4', 'docx', 'files'));
+  await row(page, 'lab_report.docx').locator('.library-file-icon').click();
   await expect(page.locator('.library-file-preview-text')).toHaveText('Current file response');
   const firstCompleted = page.waitForResponse(/\/files\/f1\/content/);
   releaseFirst();

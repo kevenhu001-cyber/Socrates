@@ -9,6 +9,21 @@ import { stateStore } from '../state/store.js';
 var _titleGenQueued=false;
 var _titleGenSession=null;
 var _titleGenRetryAfter=0;
+
+/** A cheap local fallback so every session gets a short title even when the
+ *  provider is unavailable. Keeps Chinese under ~8 chars and English under
+ *  ~6 words so the Recents row never wraps. */
+function fallbackTitle(topic){
+  var clean=String(topic||"").replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/<think>[\s\S]*$/gi,"").trim();
+  if(!clean)return "";
+  if(/[\u4e00-\u9fff]/.test(clean)){
+    var chars=Array.from(clean).slice(0,8);
+    return chars.join("").replace(/[\s，。！？；：""''（）]+$/g,"");
+  }
+  var words=clean.split(/\s+/).slice(0,6);
+  return words.join(" ").replace(/[\s.,;:!?"'""]+$/g,"");
+}
+
 export function generateSessionTitle(){
   var sessionId=stateStore.read("currentSessionId");
   if(!hasUsableActive()||_titleGenQueued||window.stateStore.read("sessionTitle"))return;

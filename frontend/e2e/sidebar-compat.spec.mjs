@@ -1,8 +1,7 @@
 // e2e/sidebar-compat.spec.mjs — Batch 2 of the React + TypeScript migration
 // Spec: when the app boots with ?react=1, the sidebar nav buttons and
-// recents filter chips are owned by React. The legacy entry points
-// (openNav, onRecentsFilterChipClick) still drive the behaviour; React
-// renders the visible UI via the typed bridge.
+// recents filter chips are owned by React. Both navigation and filter
+// state are held by typed stores and have no published snapshot aliases.
 
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
@@ -20,58 +19,30 @@ test('Sidebar React mode hydrates #sidebarNav and #recentsFilterChips', async ({
   const chips = page.locator('#recentsFilterChips');
   await expect(chips).not.toHaveAttribute('data-mounted-by', /.+/);
 
-  // Both bridges installed.
+  // Both state domains are typed stores; recents has no window snapshot.
   const bridges = await page.evaluate(() => ({
-    nav: typeof window.__socratesSidebarNavBridge === 'object' && window.__socratesSidebarNavBridge !== null,
+    nav: '__socratesSidebarNavBridge' in window,
     filter: typeof window.__socratesRecentsFilterBridge === 'object' && window.__socratesRecentsFilterBridge !== null,
   }));
-  expect(bridges).toEqual({ nav: true, filter: true });
-
-  // The landing surface selects New chat, including the initial bridge snapshot.
-  const initialNav = await page.evaluate(() => {
-    const s = window.__socratesSidebarNavBridge?.getSnapshot();
-    return s ? { activeNav: s.activeNav, hasRevision: typeof s.revision === 'number' } : null;
-  });
-  expect(initialNav).toEqual({ activeNav: 'new', hasRevision: true });
+  expect(bridges).toEqual({ nav: false, filter: false });
 });
 
-test('Sidebar React nav buttons call window.openNav and reflect active state', async ({ page }) => {
+test('Sidebar React nav buttons navigate and reflect active state', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  // Intercept window.__socratesLegacy.navigation.openNav so we can confirm
-  // React clicks dispatch through the typed bridge.
-  await page.evaluate(() => {
-    window.__openNavCalls = [];
-    const original = window.__socratesLegacy.navigation.openNav;
-    window.__socratesLegacy.navigation.openNav = (key) => {
-      window.__openNavCalls.push(key);
-      if (typeof original === 'function') original(key);
-    };
-  });
-
-  // Click the Library nav button. The legacy `openLibrary()` calls into
-  // the workspace route /library, so the button click should reach it.
+  // React calls the typed navigation service directly.
   await page.locator('#navPlugins').click();
-
-  const calls = await page.evaluate(() => window.__openNavCalls);
-  expect(calls).toContain('plugins');
-
-  // Bridge snapshot reflects the active nav.
-  const after = await page.evaluate(() => {
-    const s = window.__socratesSidebarNavBridge?.getSnapshot();
-    return s?.activeNav;
-  });
-  expect(after).toBe('plugins');
+  await expect(page).toHaveURL(/\/plugins$/);
 
   // The Plugins button should now have the .active class (React re-renders).
   const pluginsBtn = page.locator('#navPlugins');
   await expect(pluginsBtn).toHaveClass(/active/);
 });
 
-test('Sidebar React recents filter bridge remains wired while the compact drawer hides chips', async ({ page }) => {
+test('typed recents filter updates while the compact drawer hides chips', async ({ page }) => {
   await mockAuthedApp(page);
   /* The reference drawer shows a flat recents list, so the legacy chips
      remain mounted for compatibility but are visually hidden. */
@@ -84,46 +55,38 @@ test('Sidebar React recents filter bridge remains wired while the compact drawer
     if (sidebar?.classList.contains('collapsed')) window.toggleSidebar?.();
   });
   await page.waitForTimeout(400);
-
-  // Stub the chip-click handler on the bridge so we can capture the call.
-  await page.evaluate(() => {
-    window.__chipCalls = [];
-    const original = window.__socratesLegacy.sessions.onRecentsFilterChipClick;
-    window.__socratesLegacy.sessions.onRecentsFilterChipClick = (value) => {
-      window.__chipCalls.push(value);
-      if (typeof original === 'function') original(value);
-    };
-  });
+  await page.evaluate(() => localStorage.setItem('socrates-recents-filter', 'algebra'));
+  await page.reload();
+  await waitForAppShell(page);
 
   // React should always render the "All" chip first.
   const allChip = page.locator('#recentsFilterChips .recents-filter-chip-btn[data-filter="all"]').first();
   await expect(allChip).toBeAttached();
-  await expect(allChip).toHaveClass(/active/);
+  await expect(allChip).not.toHaveClass(/active/);
 
   await expect(allChip).toBeHidden();
-  // Dispatch through the mounted button to check the bridge without making
-  // a hidden control user-facing again.
+  // Exercise the mounted control without making it visible in the drawer.
   await allChip.evaluate((button) => button.click());
-  const calls = await page.evaluate(() => window.__chipCalls);
-  expect(calls).toContain('all');
-
-  // Bridge snapshot reflects the filter (clicking 'all' should clear it).
-  const filterAfter = await page.evaluate(() => {
-    const s = window.__socratesRecentsFilterBridge?.getSnapshot();
-    return s?.filter;
-  });
+  const filterAfter = await page.evaluate(() => localStorage.getItem('socrates-recents-filter'));
   expect(filterAfter).toBeNull();
+  await expect(allChip).toHaveClass(/active/);
 });
 
 test('React recents chips refresh after project and session caches change', async ({ page }) => {
   await mockAuthedApp(page);
+  await page.route(/\/api\/(v2\/)?projects(?:\?|$)/, (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ projects: [{ id: 'project-algebra', name: 'Algebra project' }] }),
+    });
+  });
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  await expect.poll(() => page.evaluate(() => Array.isArray(window.__projectsCache))).toBe(true);
+  await expect(page.locator('#recentsFilterChips [data-filter="project:project-algebra"]')).toContainText('Algebra project');
   await page.evaluate(() => {
-    window.__projectsCache = [{ id: 'project-algebra', name: 'Algebra project' }];
     window.SERVER_SESSIONS = [
       { id: 'session-1', tags: ['algebra', 'practice'] },
       { id: 'session-2', tags: ['algebra'] },
@@ -142,7 +105,6 @@ test('Recents fetches project filter data once while the request is pending', as
   const projectsGate = new Promise((resolve) => { releaseProjects = resolve; });
 
   await mockAuthedApp(page);
-  await page.addInitScript(() => { window.__projectsCache = undefined; });
   await page.route('**/api/**', async (route) => {
     if (new URL(route.request().url()).pathname.endsWith('/projects')) {
       projectRequestCount += 1;
@@ -181,8 +143,8 @@ test('Sidebar React mode always loads (no ?react=1 flag needed)', async ({ page 
   await expect(chips).not.toHaveAttribute('data-mounted-by', /.+/);
 
   const installed = await page.evaluate(() => ({
-    nav: typeof window.__socratesSidebarNavBridge === 'object' && window.__socratesSidebarNavBridge !== null,
+    nav: '__socratesSidebarNavBridge' in window,
     filter: typeof window.__socratesRecentsFilterBridge === 'object' && window.__socratesRecentsFilterBridge !== null,
   }));
-  expect(installed).toEqual({ nav: true, filter: true });
+  expect(installed).toEqual({ nav: false, filter: false });
 });

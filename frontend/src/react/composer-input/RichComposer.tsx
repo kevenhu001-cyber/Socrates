@@ -10,15 +10,14 @@ import { Markdown } from '@tiptap/markdown';
 import DOMPurify from 'dompurify';
 
 import {
-  COMPOSER_SURFACE_EVENT,
   notifyComposerChange,
-  readComposerSurface,
+  isComposerSurfaceTransitioning,
   registerComposer,
-  type ComposerSurface,
-} from './controller';
+} from '../../composer/controller.ts';
+import type { ComposerSurface, ComposerExtensionToken } from '../../composer/types.ts';
+import { useComposerSurface } from './useComposerSurface';
 import { ExtensionToken } from './extensionToken';
 import { useAutoHeight } from './useAutoHeight';
-import type { ComposerExtensionToken } from './types';
 import { addComposerFiles } from '../../attachments/render.js';
 import { getLegacyActions, i18n, isWebSearchOn } from '../legacy/gateway.ts';
 import {
@@ -31,22 +30,6 @@ interface RichComposerProps {
   onSubmit: () => void;
   showToolbar?: boolean;
   onEscape?: () => void;
-}
-
-/* P_composer-single — one editor serves every surface, so the surface is
-   live view state, not a mount prop. placeComposerForView dispatches the
-   event whenever the shell moves; the placeholder, plugin chips, controller
-   registration and data-surface all follow it without remounting the
-   editor (draft, undo history and focus survive the flip). */
-function useComposerSurface(): ComposerSurface {
-  const [surface, setSurface] = useState<ComposerSurface>(() => readComposerSurface());
-  useEffect(() => {
-    const sync = () => setSurface(readComposerSurface());
-    sync();
-    document.addEventListener(COMPOSER_SURFACE_EVENT, sync);
-    return () => document.removeEventListener(COMPOSER_SURFACE_EVENT, sync);
-  }, []);
-  return surface;
 }
 
 function ToolbarButton({
@@ -672,13 +655,14 @@ export function RichComposer({ placeholder, onSubmit, onEscape, showToolbar = fa
     },
     onUpdate: ({ editor: current }) => {
       const activeToken = syncExtensionMetadata(current);
-      if (tokenWasPresent.current && !activeToken) {
+      const switchingSurface = isComposerSurfaceTransitioning();
+      if (!switchingSurface && tokenWasPresent.current && !activeToken) {
         tokenWasPresent.current = false;
         onRemoveExtension('');
       } else {
         tokenWasPresent.current = activeToken;
       }
-      notifyComposerChange(surface, current.getMarkdown());
+      if (!switchingSurface) notifyComposerChange(surface, current.getMarkdown());
       /* Tiptap calls onUpdate in the same task as the DOM mutation. Measure
          and lock immediately so a delete/paste cannot paint its unanimated
          intrinsic height before the next frame. */

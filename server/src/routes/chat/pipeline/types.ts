@@ -35,7 +35,7 @@ export type ToolResult = {
   stderr?: string;
   exitCode?: number | null;
   durationMs?: number;
-  artifactFileIds?: Array<{ name?: string; mimeType?: string | null }>;
+  artifactFileIds?: Array<{ id?: string; name?: string; mimeType?: string | null }>;
   executionId?: string | null;
   visualization?: { template?: string; title?: string } | null;
   plan?: { title?: string; steps?: unknown[] } | null;

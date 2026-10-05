@@ -49,8 +49,7 @@ async function bootChat(page) {
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-think', role: 'user', rawText: 'Think it through', html: null }] });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     window.__thinkTurnPromise = window.askChatTurn('Think it through');
   });
 }

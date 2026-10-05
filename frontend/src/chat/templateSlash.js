@@ -13,7 +13,7 @@ import {
   setComposerExtensionToken,
   setComposerMarkdown,
   subscribeComposer,
-} from '../react/composer-input/controller.ts';
+} from '../composer/controller.ts';
 import { loadPromptTemplates } from './promptTemplates.js';
 import { esc } from '../render/helpers.js';
 import { updateComposerBtn } from '../ui/topicSetup.js';

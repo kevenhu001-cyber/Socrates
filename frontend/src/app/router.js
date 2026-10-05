@@ -6,8 +6,8 @@
    - Session-id query params (?chat= / ?exam=) stay in session/store.js —
      those key off sessions, not views.
    - Auth redirect params (?next= / ?redirect=) stay in auth/boot.js.
-   Navigation orchestration (openNav, syncWorkspaceRoute) stays in
-   sidebar/nav.js and imports the table + write helpers from here. */
+   Navigation orchestration (openNav, syncWorkspaceRoute) lives in the
+   typed sidebar/navigation.service.ts owner. */
 
 export var WORKSPACE_ROUTES = {
   library: "/library",

@@ -43,9 +43,7 @@ declare global {
   interface Window {
     __socratesSessionListBridge?: SessionListBridge;
     getRecents?: () => ReadonlyArray<{ id: string; title?: string; topic?: string; updated_at?: number; updatedAt?: number; created_at?: number; createdAt?: number; total_q?: number; totalQ?: number; mode?: string; phase?: string; kind?: string; pinned?: boolean; tags?: string[]; archivedAt?: number | null }>;
-    getRecentsFilter?: () => string | null;
     getSessionLabel?: (id: string) => string;
-    setRecentsFilter?: (val: string | null) => void;
     setRecentsSearch?: (q: string) => void;
     openTagEditor?: (id: string, e: MouseEvent) => void;
     actuallyDeleteSession?: (id: string, e: MouseEvent) => void;
@@ -54,6 +52,5 @@ declare global {
     loadSession?: (id: string) => void;
     SERVER_SESSIONS_FETCH_FAILED?: boolean;
     retryRecentsFetch?: () => void;
-    clearRecentsFilter?: () => void;
   }
 }

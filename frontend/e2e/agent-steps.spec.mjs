@@ -47,8 +47,7 @@ test('the workspace agent streams its steps into the chat', async ({ page }) => 
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '22222222-2222-4222-8222-222222222222' });
     window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-1', role: 'user', rawText: 'Do the workspace task', html: null }] });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     await window.askChatTurn('Do the workspace task');
   });
 

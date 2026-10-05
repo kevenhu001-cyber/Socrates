@@ -1,8 +1,4 @@
-/**
- * React subscribes to settings visibility, provider view data, field errors,
- * and save state through one immutable snapshot. The legacy settings service
- * publishes sanitized provider metadata but never renders into React hosts.
- */
+/** Settings-only presentation state. Provider configuration has its own domain store. */
 
 import { createImmutableBridge, useBridge } from '../../lib/bridge';
 import type { SettingsBridge, SettingsSnapshot } from './types';
@@ -19,9 +15,6 @@ const factoryBridge = createImmutableBridge<SettingsSnapshot, Action>({
   initial: {
     open: false,
     externalApiOn: true,
-    providers: [],
-    providerErrors: {},
-    saving: false,
     revision: 0,
   },
   reducer: (state, action) => ({ ...state, ...action }),

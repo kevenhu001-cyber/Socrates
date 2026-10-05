@@ -41,7 +41,7 @@ import { seedSyncedMessages } from './persistence.js';
 import { toggleShareBtn } from '../ui/share.js';
 import { activateMainView } from '../ui/mainViewController.js';
 import { updateComposerBtn } from '../ui/topicSetup.js';
-import { clearComposer } from '../react/composer-input/controller.ts';
+import { clearComposer } from '../composer/controller.ts';
 import { updateChatStats } from '../chat/stats.js';
 import { updateKB } from '../ui/knowledgePanel.js';
 import { reportSwallow } from '../util/reportSwallow.ts';

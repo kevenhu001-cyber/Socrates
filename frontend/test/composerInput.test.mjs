@@ -5,13 +5,17 @@ import {
   clearComposer,
   focusComposer,
   getComposerHandle,
+  getComposerExtensionToken,
   getComposerMarkdown,
   getComposerSelection,
+  activateComposerSurface,
   insertComposerText,
   registerComposer,
+  resetComposerControllerState,
+  readComposerSurface,
   setComposerMarkdown,
-  swapComposerSurface,
-} from '../src/react/composer-input/controller.ts';
+  setComposerExtensionToken,
+} from '../src/composer/controller.ts';
 import { tiptapJSONToMarkdown } from '../src/react/composer-input/markdown.ts';
 
 test('rich composer serializes supported formatting to markdown', () => {
@@ -68,22 +72,20 @@ test('selected workflow tokens stay visual and never enter the markdown payload'
   assert.equal(markdown, 'Compare the evidence\\.');
 });
 
-/* P_composer-single — one live editor for the whole app (in node, with
-   no DOM, the active surface is always 'topic'). Reads/writes naming the
-   active surface hit the live handle; ones naming the inactive surface
-   read/write its stash. swapComposerSurface parks the live draft under
-   the surface being left and installs the arriving one — the two-box
-   behaviour, without two boxes. */
-test('composer controller serves one live handle with per-surface stash', () => {
+/* One mounted editor serves both UI surfaces while typed lifecycle state
+   keeps their draft and token values independent. */
+test('composer controller serves one live handle with per-surface drafts and tokens', () => {
+  resetComposerControllerState();
   let value = '';
+  let token = null;
   let focused = false;
   const dispose = registerComposer('topic', {
     getMarkdown: () => value,
     setMarkdown: (next) => { value = next; },
     insertText: (next) => { value += next; },
     clear: () => { value = ''; },
-    setExtensionToken: () => {},
-    getExtensionToken: () => null,
+    setExtensionToken: (next) => { token = next; },
+    getExtensionToken: () => token,
     focus: () => { focused = true; },
     getSelection: () => ({ from: 2, to: 4 }),
     isVisible: () => true,
@@ -92,6 +94,8 @@ test('composer controller serves one live handle with per-surface stash', () => 
 
   setComposerMarkdown('topic', 'hello');
   insertComposerText('topic', ' world');
+  const topicToken = { key: 'topic', title: 'Topic', icon: 'topic-icon' };
+  setComposerExtensionToken('topic', topicToken);
   focusComposer('topic');
   assert.equal(getComposerMarkdown('topic'), 'hello world');
   assert.equal(focused, true);
@@ -102,22 +106,26 @@ test('composer controller serves one live handle with per-surface stash', () => 
   assert.equal(getComposerMarkdown('chat'), 'cached reply');
   assert.equal(getComposerMarkdown('topic'), 'hello world');
 
-  /* Flipping installs the arriving draft and parks the live one. In
-     node there is no view DOM so the active surface stays 'topic': the
-     installed draft is therefore readable through 'topic' (live) while
-     the parked one waits in the 'chat' stash. */
-  swapComposerSurface('topic', 'chat');
-  assert.equal(getComposerMarkdown('topic'), 'cached reply');
-  assert.equal(getComposerMarkdown('chat'), '');
-  /* ...and flipping back restores the parked draft identically. */
-  swapComposerSurface('chat', 'topic');
-  assert.equal(getComposerMarkdown('topic'), 'hello world');
+  activateComposerSurface('chat');
+  assert.equal(readComposerSurface(), 'chat');
   assert.equal(getComposerMarkdown('chat'), 'cached reply');
+  assert.equal(getComposerMarkdown('topic'), 'hello world');
+  assert.equal(token, null);
+  const chatToken = { key: 'chat', title: 'Chat', icon: 'chat-icon' };
+  setComposerExtensionToken('chat', chatToken);
+
+  activateComposerSurface('topic');
+  assert.equal(getComposerMarkdown('topic'), 'hello world');
+  assert.deepEqual(token, topicToken);
+  assert.deepEqual(getComposerExtensionToken('chat'), chatToken);
+  activateComposerSurface('chat');
+  assert.equal(getComposerMarkdown('chat'), 'cached reply');
+  assert.deepEqual(token, chatToken);
 
   clearComposer('chat');
   assert.equal(getComposerMarkdown('chat'), '');
   assert.equal(getComposerMarkdown('topic'), 'hello world');
   dispose();
   assert.equal(getComposerHandle('topic'), null);
+  resetComposerControllerState();
 });
-

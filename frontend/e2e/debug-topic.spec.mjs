@@ -80,8 +80,7 @@ test('DEBUG: chat composer — focus + one line must NOT change wrap height', as
   await setup(page, { width: 390, height: 844 })(page);
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
   });
   await page.waitForTimeout(150);
   const before = await snapshotWrap(page, '#composerInputWrap');
@@ -117,8 +116,7 @@ test('DEBUG: chat composer — multiline content must grow smoothly', async ({ p
   await setup(page, { width: 390, height: 844 })(page);
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     window.__samples = [];
     const wrap = document.getElementById('composerInputWrap');
     const editor = wrap.querySelector('.rich-composer-editor');

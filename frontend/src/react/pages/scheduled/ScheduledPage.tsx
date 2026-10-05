@@ -2,11 +2,9 @@ import { createRoot, type Root } from 'react-dom/client';
 import { useMemo, useState, type ReactNode } from 'react';
 
 import { t as _t } from '../../legacy/gateway.ts';
-import {
-  installScheduledBridge,
-  useScheduledDispatch,
-  useScheduledSnapshot,
-} from './scheduled.bridge';
+import { useScheduledStore } from './scheduled.store';
+import { openScheduledTaskForm } from '../workspace/workspace.dialogs';
+import { deleteScheduledTask, runScheduledTask, toggleScheduledTask } from './scheduled.service';
 
 const PANEL_ID = 'scheduledPanel';
 
@@ -121,8 +119,14 @@ function PlusGlyph() {
 }
 
 function ScheduledPage() {
-  const snap = useScheduledSnapshot();
-  const dispatch = useScheduledDispatch();
+  const snap = useScheduledStore();
+  const dispatch = {
+    create: (initialPrompt?: string) => openScheduledTaskForm(undefined, initialPrompt),
+    edit: (id: string) => openScheduledTaskForm(id),
+    toggle: toggleScheduledTask,
+    run: runScheduledTask,
+    remove: deleteScheduledTask,
+  };
   const tasks = snap.tasks;
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState<'all' | 'active'>('all');
@@ -278,8 +282,6 @@ let root: Root | null = null;
 export function mountScheduledPage(): void {
   const panel = document.getElementById(PANEL_ID);
   if (!panel) return;
-
-  installScheduledBridge();
 
   if (!root) {
     root = createRoot(panel);

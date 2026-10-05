@@ -4,7 +4,7 @@
 // The sidebar overlays the main content when wider than 18rem.
 //
 // `syncSidebarBtns` (still defined in main.js) and `toggleSidebar`
-// (sidebar/index.js) are imported lazily to avoid a hard dep cycle:
+// (sidebar resize bindings) are imported lazily to avoid a hard dep cycle:
 // the resize listener below calls syncSidebarBtns only after the
 // module has wired up.
 

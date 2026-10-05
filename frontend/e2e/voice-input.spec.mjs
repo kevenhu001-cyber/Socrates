@@ -94,9 +94,7 @@ async function enterChat(page) {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Voice input check' });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '55555555-5555-4555-8555-555555555555' });
-    document.getElementById('topicSetup')?.classList.add('hidden');
-    document.getElementById('mainInner')?.classList.add('hidden');
-    document.getElementById('chatView')?.classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     document.body.dataset.conversationActive = 'true';
   });
   await page.waitForTimeout(300);

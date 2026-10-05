@@ -1,49 +1,34 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import { i18n } from '../legacy/gateway.ts';
-import type { LegacySettings } from '../legacy/types';
+import {
+  addProvider as addProviderConfig,
+  removeProvider as removeProviderConfig,
+  saveProviderConfig,
+  setActiveProvider,
+  updateProviderField,
+} from '../../config/providerConfig.service';
 import type {
-  SettingsProviderDraft,
   SettingsProviderErrors,
   SettingsProviderField,
   SettingsProviderSnapshot,
 } from './types';
 
-function keepKnownProviderDrafts<T>(drafts: Record<string, T>, providerIds: Set<string>): Record<string, T> {
-  const entries = Object.entries(drafts).filter(([id]) => providerIds.has(id));
-  return entries.length === Object.keys(drafts).length ? drafts : Object.fromEntries(entries) as Record<string, T>;
-}
-
-function removeProviderDraft<T>(drafts: Record<string, T>, id: string): Record<string, T> {
-  if (!Object.prototype.hasOwnProperty.call(drafts, id)) return drafts;
-  const next = { ...drafts };
-  delete next[id];
-  return next;
-}
-
-function removeSavedProviderDrafts<T>(drafts: Record<string, T>, ids: string[]): Record<string, T> {
-  return ids.reduce((current, id) => removeProviderDraft(current, id), drafts);
-}
-
 interface ProviderListProps {
   id: string;
   providers: SettingsProviderSnapshot[];
   providerErrors: SettingsProviderErrors;
-  providerDrafts: Record<string, SettingsProviderDraft>;
-  keyDrafts: Record<string, string>;
   externalApiOn: boolean;
   language: 'zh' | 'en';
   onFieldChange: (id: string, field: SettingsProviderField, value: string | boolean) => void;
-  onKeyDraftChange: (id: string, value: string) => void;
+  onKeyRef: (id: string, element: HTMLInputElement | null) => void;
   onLabelRef: (id: string, element: HTMLInputElement | null) => void;
   onSetActive: (id: string) => void;
   onRemove: (id: string) => void;
 }
 
 interface ProviderListState {
-  keyDrafts: Record<string, string>;
-  providerDrafts: Record<string, SettingsProviderDraft>;
   onFieldChange: ProviderListProps['onFieldChange'];
-  onKeyDraftChange: ProviderListProps['onKeyDraftChange'];
+  onKeyRef: ProviderListProps['onKeyRef'];
   onLabelRef: ProviderListProps['onLabelRef'];
   onSetActive: ProviderListProps['onSetActive'];
   onRemove: ProviderListProps['onRemove'];
@@ -51,59 +36,41 @@ interface ProviderListState {
   saveProviders: () => Promise<void>;
 }
 
-export function useProviderListState(settings: LegacySettings, providers: SettingsProviderSnapshot[]): ProviderListState {
-  const [keyDrafts, setKeyDrafts] = useState<Record<string, string>>({});
-  const [providerDrafts, setProviderDrafts] = useState<Record<string, SettingsProviderDraft>>({});
+export function useProviderListState(): ProviderListState {
   const labelRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const keyRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  useEffect(() => {
-    const providerIds = new Set(providers.map((provider) => provider.id));
-    setKeyDrafts((current) => keepKnownProviderDrafts(current, providerIds));
-    setProviderDrafts((current) => keepKnownProviderDrafts(current, providerIds));
-  }, [providers]);
-
-  const onFieldChange: ProviderListState['onFieldChange'] = (id, field, value) => {
-    if (field !== 'key') {
-      setProviderDrafts((current) => ({
-        ...current,
-        [id]: { ...current[id], [field]: value } as SettingsProviderDraft,
-      }));
-    }
-    void settings.updateProviderField(id, field, value);
-  };
-  const onKeyDraftChange = (id: string, value: string) => {
-    setKeyDrafts((current) => ({ ...current, [id]: value }));
-  };
+  const onFieldChange: ProviderListState['onFieldChange'] = updateProviderField;
   const onLabelRef = (id: string, element: HTMLInputElement | null) => {
     labelRefs.current[id] = element;
   };
-  const onSetActive = (id: string) => { void settings.setActiveProvider(id); };
+  const onKeyRef = (id: string, element: HTMLInputElement | null) => {
+    keyRefs.current[id] = element;
+  };
+  const onSetActive = (id: string) => { void setActiveProvider(id); };
   const onRemove = async (id: string) => {
-    if (!(await settings.removeProvider(id))) return;
-    setKeyDrafts((current) => removeProviderDraft(current, id));
-    setProviderDrafts((current) => removeProviderDraft(current, id));
+    await removeProviderConfig(id);
   };
   const addProvider = async () => {
-    const id = await settings.addProvider();
+    const id = addProviderConfig();
     if (id) requestAnimationFrame(() => labelRefs.current[id]?.focus());
   };
   const saveProviders = async () => {
-    const result = await settings.saveSettings();
-    setKeyDrafts((current) => removeSavedProviderDrafts(current, result.savedIds));
-    setProviderDrafts((current) => removeSavedProviderDrafts(current, result.savedIds));
+    const result = await saveProviderConfig();
+    result.savedIds.forEach((id) => {
+      if (keyRefs.current[id]) keyRefs.current[id]!.value = '';
+    });
   };
 
-  return { keyDrafts, providerDrafts, onFieldChange, onKeyDraftChange, onLabelRef, onSetActive, onRemove, addProvider, saveProviders };
+  return { onFieldChange, onLabelRef, onKeyRef, onSetActive, onRemove, addProvider, saveProviders };
 }
 
 interface ProviderRowProps {
   provider: SettingsProviderSnapshot;
-  draft: SettingsProviderDraft;
   errors: SettingsProviderErrors[string];
-  keyDraft: string;
   language: 'zh' | 'en';
   onFieldChange: ProviderListProps['onFieldChange'];
-  onKeyDraftChange: ProviderListProps['onKeyDraftChange'];
+  onKeyRef: ProviderListProps['onKeyRef'];
   onLabelRef: ProviderListProps['onLabelRef'];
   onSetActive: ProviderListProps['onSetActive'];
   onRemove: ProviderListProps['onRemove'];
@@ -114,7 +81,8 @@ interface ProviderTextFieldProps {
   field: 'label' | 'url' | 'key' | 'model';
   label: string;
   placeholder: string;
-  value: string;
+  value?: string;
+  defaultValue?: string;
   error?: string;
   type?: 'text' | 'password';
   autoComplete?: string;
@@ -133,6 +101,7 @@ function ProviderTextField({
   autoComplete,
   inputRef,
   onChange,
+  defaultValue,
 }: ProviderTextFieldProps) {
   const descriptionId = `provider-${id}-${field}-error`;
   return (
@@ -147,7 +116,7 @@ function ProviderTextField({
         aria-invalid={Boolean(error)}
         aria-describedby={error ? descriptionId : undefined}
         placeholder={placeholder}
-        value={value}
+        {...(value === undefined ? { defaultValue } : { value })}
         onChange={(event) => onChange(event.target.value)}
       />
       {error ? <span id={descriptionId} className="settings-field-error" role="alert">{error}</span> : null}
@@ -174,12 +143,10 @@ function providerKeyPlaceholder(provider: SettingsProviderSnapshot): string {
 
 function ProviderRow({
   provider,
-  draft,
   errors,
-  keyDraft,
   language,
   onFieldChange,
-  onKeyDraftChange,
+  onKeyRef,
   onLabelRef,
   onSetActive,
   onRemove,
@@ -193,7 +160,7 @@ function ProviderRow({
           field="label"
           label={i18n('provider.placeholderLabel', 'Label')}
           placeholder={i18n('provider.placeholderLabel', 'Label')}
-          value={draft.label ?? provider.label}
+          value={provider.label}
           error={errors.label}
           inputRef={(element) => onLabelRef(provider.id, element)}
           onChange={(value) => onFieldChange(provider.id, 'label', value)}
@@ -203,7 +170,7 @@ function ProviderRow({
           field="url"
           label={i18n('provider.placeholderUrl', 'Base URL')}
           placeholder={i18n('provider.placeholderUrl', 'Base URL')}
-          value={draft.url ?? provider.url}
+          value={provider.url}
           error={errors.url}
           onChange={(value) => onFieldChange(provider.id, 'url', value)}
         />
@@ -214,14 +181,12 @@ function ProviderRow({
             field="key"
             label={i18n('provider.placeholderKey', 'API key')}
             placeholder={providerKeyPlaceholder(provider)}
-            value={keyDraft}
+            defaultValue=""
             error={errors.key}
             type="password"
             autoComplete="new-password"
-            onChange={(value) => {
-              onKeyDraftChange(provider.id, value);
-              onFieldChange(provider.id, 'key', value);
-            }}
+            inputRef={(element) => onKeyRef(provider.id, element)}
+            onChange={(value) => onFieldChange(provider.id, 'key', value)}
           />
         </form>
         <ProviderTextField
@@ -229,14 +194,14 @@ function ProviderRow({
           field="model"
           label={i18n('provider.placeholderModel', 'Model ID')}
           placeholder={i18n('provider.placeholderModel', 'Model ID')}
-          value={draft.model ?? provider.model}
+          value={provider.model}
           onChange={(value) => onFieldChange(provider.id, 'model', value)}
         />
         <label className="provider-multimodal" title={i18n('provider.multimodalHint', 'Multimodal (vision-capable)')}>
           <input
             type="checkbox"
             data-field="vision"
-            checked={draft.vision ?? provider.vision}
+            checked={provider.vision}
             onChange={(event) => onFieldChange(provider.id, 'vision', event.target.checked)}
           />
           <span>{i18n('provider.multimodal', 'Multimodal (vision-capable)')}</span>
@@ -253,12 +218,10 @@ export function ProviderList({
   id,
   providers,
   providerErrors,
-  providerDrafts,
-  keyDrafts,
   externalApiOn,
   language,
   onFieldChange,
-  onKeyDraftChange,
+  onKeyRef,
   onLabelRef,
   onSetActive,
   onRemove,
@@ -272,12 +235,10 @@ export function ProviderList({
         <ProviderRow
           key={provider.id}
           provider={provider}
-          draft={providerDrafts[provider.id] || {}}
           errors={providerErrors[provider.id] || {}}
-          keyDraft={keyDrafts[provider.id] || ''}
           language={language}
           onFieldChange={onFieldChange}
-          onKeyDraftChange={onKeyDraftChange}
+          onKeyRef={onKeyRef}
           onLabelRef={onLabelRef}
           onSetActive={onSetActive}
           onRemove={onRemove}

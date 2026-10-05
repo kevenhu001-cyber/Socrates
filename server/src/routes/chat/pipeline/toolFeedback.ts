@@ -17,9 +17,13 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
     lines.push(`[exit_code: ${result.exitCode ?? 'n/a'}]`);
     lines.push(`[duration_ms: ${result.durationMs ?? 'n/a'}]`);
     const artifactList = (result.artifactFileIds || [])
-      .map(a => `${a.name}${a.mimeType ? ` (${a.mimeType})` : ''}`)
+      .map(a => `${a.name}${a.mimeType ? ` (${a.mimeType})` : ''}${a.id ? ` [id:${a.id}]` : ''}`)
       .join(', ');
     lines.push(`[artifacts: ${artifactList || 'none'}]`);
+    if ((result.artifactFileIds || []).some(a => /^image\//i.test(a.mimeType || ''))) {
+      lines.push('');
+      lines.push('Image artifacts are NOT rendered automatically. To show an image to the user, reference it with markdown: `![description](/api/files/<fileId>/raw)` using the id above. Otherwise describe the result in prose.');
+    }
     if (result.status !== 'completed') {
       lines.push(`[error_code: ${result.errorCode || result.errorMessage || 'execution_failed'}]`);
       lines.push(`[retryable: ${result.retryable === false ? 'no' : 'yes'}]`);

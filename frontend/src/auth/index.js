@@ -25,7 +25,7 @@ import { syncExtensionsUI } from '../pickers.js';
 
 import { syncSidebarForMode } from '../config/providers.js';
 
-import { syncWorkspaceRoute } from '../sidebar/nav.js';
+import { syncWorkspaceRoute } from '../sidebar/navigation.service.ts';
 
 import { toggleShareBtn } from '../ui/share.js';
 
@@ -305,9 +305,6 @@ export async function afterAuthEnter(){
   window.renderRecents&&window.renderRecents();
   window.renderMistakes&&window.renderMistakes();
   window.updateMistakesBadge&&window.updateMistakesBadge();
-  /* Compatibility name only: the lazy adapter publishes provider data to
-     the React owner and does not render DOM. */
-  window.renderProviderList&&window.renderProviderList();
   window.syncModelPills&&window.syncModelPills();
   syncExtensionsUI&&syncExtensionsUI();
   window.syncAppModeUI&&window.syncAppModeUI();

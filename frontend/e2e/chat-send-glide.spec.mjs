@@ -82,8 +82,7 @@ async function bootChat(page, messageCount) {
   await page.evaluate((count) => {
     window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
     window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '77777777-7777-4777-8777-777777777777' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     for (let i = 0; i < count; i += 1) {
       window.addMessage(i % 2 ? 'assistant' : 'user', `Glide history ${i + 1}: ${'context '.repeat(i % 2 ? 40 : 10)}`);
     }

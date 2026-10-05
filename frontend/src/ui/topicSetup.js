@@ -1,5 +1,5 @@
 // src/ui/topicSetup.js — Phase C-2.3 extraction
-import { getComposerMarkdown, getVisibleComposerSurface } from '../react/composer-input/controller.ts';
+import { getComposerMarkdown, getVisibleComposerSurface } from '../composer/controller.ts';
 // Small helpers for the single composer:
 //
 //   autoResize(el)        — retained for older secondary textareas.

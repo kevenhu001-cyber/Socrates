@@ -11,6 +11,7 @@ const EMPTY_PROJECTS: ProjectList = Object.freeze([]);
 const listeners = new Set<() => void>();
 let projects: ProjectList | null = null;
 let projectsRequest: Promise<ProjectList> | null = null;
+let projectsRevision = 0;
 
 function normalizeProjects(value: unknown): ProjectList {
   if (!Array.isArray(value)) return EMPTY_PROJECTS;
@@ -34,6 +35,7 @@ export function hasCachedProjects(): boolean {
 }
 
 export function setCachedProjects(value: unknown): ProjectList {
+  projectsRevision += 1;
   projects = value == null ? null : normalizeProjects(value);
   listeners.forEach((listener) => listener());
   return projects ?? EMPTY_PROJECTS;
@@ -46,10 +48,15 @@ export function subscribeToProjectCache(listener: () => void): () => void {
 
 function requestProjects(fetcher: ProjectFetcher): Promise<ProjectList> {
   if (projectsRequest) return projectsRequest;
+  const requestRevision = projectsRevision;
 
   projectsRequest = Promise.resolve()
     .then(fetcher)
     .then((result) => {
+      /* A local create/edit/delete may finish while this fetch is in flight.
+         Keep that newer typed cache value instead of replacing it with the
+         stale response that started before the mutation. */
+      if (projectsRevision !== requestRevision) return getCachedProjects();
       const rows = result && typeof result === 'object' && 'projects' in result
         ? (result as { projects?: unknown }).projects
         : undefined;
@@ -71,17 +78,4 @@ export function loadCachedProjects(fetcher: ProjectFetcher): Promise<ProjectList
 /** Refresh the cache when a user explicitly opens a project picker or page. */
 export function refreshCachedProjects(fetcher: ProjectFetcher): Promise<ProjectList> {
   return requestProjects(fetcher);
-}
-
-if (typeof window !== 'undefined') {
-  const descriptor = Object.getOwnPropertyDescriptor(window, '__projectsCache');
-  const initialValue = (window as any).__projectsCache;
-  if (Array.isArray(initialValue)) projects = normalizeProjects(initialValue);
-  if (!descriptor || descriptor.configurable) {
-    Object.defineProperty(window, '__projectsCache', {
-      configurable: true,
-      get: () => projects ?? undefined,
-      set: (value: unknown) => { setCachedProjects(value); },
-    });
-  }
 }

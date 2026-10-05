@@ -58,8 +58,7 @@ async function startControllableStream(page) {
     window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
     window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: sessionId });
     window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [{ clientId: 'user-order', role: 'user', rawText: '天气', html: null }] });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     window.__orderTurnPromise = window.askChatTurn('天气');
   });
   return page.locator('.msg.assistant').last().locator('.msg-body');

@@ -1,29 +1,19 @@
-export {
-  installComposerInputBridge,
-  getComposerInputSnapshot,
-  subscribeToComposerInput,
-  useComposerInputSnapshot,
-  useIsStreaming,
-  useIsTopicSetup,
-} from './composerInput.bridge';
 export { RichComposer } from './RichComposer';
 export {
   composerController,
   clearComposer,
   focusComposer,
+  getComposerExtensionToken,
   getComposerMarkdown,
   getComposerSelection,
   getVisibleComposerSurface,
   insertComposerText,
   readComposerSurface,
   setComposerMarkdown,
+  setComposerExtensionToken,
   subscribeComposer,
-  swapComposerSurface,
-  COMPOSER_SURFACE_EVENT,
-} from './controller';
+  activateComposerSurface,
+  clearComposerDrafts,
+} from '../../composer/controller.ts';
 export { tiptapJSONToMarkdown } from './markdown';
-export type {
-  ComposerInputSnapshot,
-  ComposerInputBridge,
-  ComposerExtensionToken,
-} from './types';
+export type { ComposerExtensionToken, ComposerSurface } from '../../composer/types.ts';

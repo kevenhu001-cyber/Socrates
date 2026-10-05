@@ -57,8 +57,7 @@ async function prepareDelayedStream(page, options = {}) {
       earlier.push({ clientId: 'pre-' + i, role: 'assistant', rawText: text, html: `<p>${text}</p>`, type: null });
     }
     window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-stream', role: 'user', rawText: 'Stream smoothly', html: null }, ...earlier] });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
 
     const list = document.getElementById('msgList');
     /* Start the turn first, then wait for the send-time anchor to settle: while
@@ -197,8 +196,7 @@ test('streaming respects an intentional scroll-away', async ({ page }) => {
 test('markdown h3 heading is visually distinct from body text', async ({ page }) => {
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
   });
   await page.evaluate(() => {
     window.addMessage?.('assistant',

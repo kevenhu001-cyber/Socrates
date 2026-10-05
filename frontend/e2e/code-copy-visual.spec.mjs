@@ -77,8 +77,7 @@ async function bootChatWithCodeBlock(page) {
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     try { window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId }); } catch (_) {}
     window.stateStore.dispatch({ type: "state/set", key: "messages", value: [] });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
 
     window.addMessage('user', 'Show me a snippet.');
     window.addMessage('assistant', payload.md);

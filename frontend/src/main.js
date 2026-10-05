@@ -99,7 +99,7 @@ initLinkFavicons();
 /* P_has-invalidation — shell visibility flags on <html> replace ancestor-level
    :has() rules that re-styled the whole app on every DOM insertion. */
 installLayoutStateMirror();
-import { toggleSidebar } from './sidebar/index.js';
+import { toggleSidebar } from './sidebar/sidebar.service.ts';
 
 
 import { initTheme, loadDisplayPrefs, mountDisplayPrefsListeners } from './displayPrefs.js';
@@ -307,8 +307,6 @@ initChatComposerReserve();
 /* P2.2 — filter chip state. `null` = all; otherwise a tag
    string. Persisted in localStorage so the user's last filter
    survives a reload. */
-var RECENTS_FILTER_KEY="socrates-recents-filter";
-try{window.RECENTS_FILTER_KEY=RECENTS_FILTER_KEY}catch(_){}
 
 /* P2.2 — set of tag strings the user has ever used. Powers
    the autocomplete suggestions in the tag editor popover. */
@@ -708,8 +706,6 @@ import {
    message list. */
 
 
-/* P_main-split — Wave 2c: settings + provider management extracted to ui/settings.js. */
-
 /* ============================================================
    API CALL (replaces mock when enabled)
    ============================================================ */
@@ -808,16 +804,6 @@ try{window.incognitoOn=false;}catch(_){}
    storage, etc.) live there and are imported by main.js as a side effect.
    This block keeps only what main.js owns locally. */
 
-/* P_apiconfig-bridge — apiConfig / appMode / webSearchOn / thinkingOn
-   are declared with `var` further up in main.js (line 10401 etc.)
-   but legacy callers + several module scripts (chat/api.js line 83,
-   pickers.js syncModelPills/syncChatModel, ui/usage.js, …) read them
-   via `window.apiConfig`. The old Phase-A block ended with
-   `window.apiConfig = apiConfig;` and a small handful of state var
-   mirrors. Restoring those four lines here. CRITICAL: callers MUST
-   mutate the object in place (apiConfig.activeId = …) rather than
-   reassign `apiConfig = {...}`, otherwise the window ref drifts and
-   the model picker silently sticks on "Add a model". */
 /* ─── Expose all onclick-required functions on window —── */
 /* ─── Inline-handler bridge ───
    Bulk restore for the 119 `window.X = X` bindings that lived in
@@ -830,16 +816,8 @@ try{window.incognitoOn=false;}catch(_){}
    handlers resolve via [[Resolve]] → window.X → this block.
    ─────────────────────────────────────────────────────────── */
 
-/* P_bulk-restore-2026-07-07 — three Phase-A/B regression repairs.
-   These were deleted in the move to windowExports.js but main.js
-   still emits inline `onclick="X()"` strings that reference them
-   (and auth/boot.js reads window.BEAGLE_BUILT_IN to consume the
-   /api/config beagleKey/beagleModel payloads). Without these,
-   clicking Skip on a diagnostic question, closing template mode,
-   or letting boot.js write back the beagle model would all
-   ReferenceError. main.js-local `var`s/functions, so we re-bind
-   at the tail of the bridge block above rather than
-   windowExports.js. */
+/* P_bulk-restore-2026-07-07 — main.js-local inline-handler functions
+   remain bound here so main.js can keep its local ownership. */
 /* Exposed so windowExports.js composeAction (撰写或编辑) can activate a
    Writing/Editing template on demand, injecting its system prompt. */
 /* Mirror of setActiveTemplate — RichComposer's extension-token remove

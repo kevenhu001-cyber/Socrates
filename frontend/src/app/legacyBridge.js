@@ -19,10 +19,10 @@ import { syncSidebarBtns, toggleSidebarView } from '../ui/sidebarChrome.js';
 import { loadSession } from '../session/loader.js';
 import { toggleKBDetail } from '../ui/knowledgeDetail.js';
 import { refreshApiConfig } from '../config/providers.js';
-import { refreshServerSessions, retryRecentsFetch, actuallyDeleteSession, archiveSession, restoreSession, confirmPurgeSession, getArchivedSessions } from '../session/recents.js';
+import { refreshServerSessions, retryRecentsFetch, actuallyDeleteSession, archiveSession, restoreSession, confirmPurgeSession, getArchivedSessions, flushRecentsReconcile } from '../session/recents.js';
 import { renderRecents } from '../ui/recentsView.js';
-import { openNav } from '../sidebar/nav.js';
-import { closeConfirm } from '../ui/confirm.js';
+import { openNav } from '../sidebar/navigation.service.ts';
+import { closeConfirm, showConfirm } from '../ui/confirm.js';
 import { deleteUserMessage, sendFeedback, restorePersistedMessageExtras } from '../ui/messageActions.ts';
 import { buildAssistantHtml as renderAssistantHTML } from '../render/assistantHtml.ts';
 import { showToast } from '../ui/toast.js';
@@ -37,15 +37,13 @@ import { editUserMessage, regenerateAssistantMessage, branchFromMessage } from '
 import { toggleReadAloud } from '../ui/readAloud.js';
 import { selectShareVis, copyShareLink } from '../ui/share.js';
 import { closeCheatsheet } from '../ui/cheatsheet.js';
-import { clearRecentsFilter } from '../sidebar/index.js';
+import { toggleSidebar } from '../sidebar/sidebar.service.ts';
 import { toggleDisplayPrefs } from '../displayPrefs.js';
 import { openStorageModal, closeStorageModal } from '../ui/storage.js';
 import { openPromptTemplatesModal, closePromptTemplatesModal } from '../ui/promptTemplates.js';
 import { toggleExtensionByKey } from '../pickers.js';
 import { openCmdKResult } from '../ui/cmdK.js';
-/* ui/settings.js + ui/dangerConfirms.js are lazy — the bridge entries
-   below dynamic-import them on click so the settings overlay graph
-   (~24KB) stays out of the entry chunk. */
+/* ui/dangerConfirms.js is lazy — confirm actions import it on demand. */
 import { processPendingMermaid, processPendingViz, reclaimVizCards, schedulePendingMermaid } from '../render/vizStubs.js';
 import { wireCodeBlockHeaders, wireMsgBodyImages } from '../render/postRender.js';
 import { mountVisualization, disposeVisualizations, disposeVisualization } from '../render/vizStubs.js';
@@ -117,17 +115,6 @@ function _loadWebSearch() {
   }
   return _webSearchImport;
 }
-var _settingsImport = null;
-function _loadSettings() {
-  if (!_settingsImport) {
-    _settingsImport = import('../ui/settings.js');
-    _settingsImport.catch(function (err) {
-      _settingsImport = null;
-      console.error('[settings] failed to load', err);
-    });
-  }
-  return _settingsImport;
-}
 var _dangerImport = null;
 function _loadDangerConfirms() {
   if (!_dangerImport) {
@@ -184,7 +171,7 @@ window.__socratesLegacy = {
   navigation: {
     resetApp: window.resetApp,
     startNewChat: window.startNewChat,
-    toggleSidebar: window.toggleSidebar,
+    toggleSidebar,
     openNav,
     openSettings: window.openSettings,
     closeSettings: window.closeSettings,
@@ -203,27 +190,16 @@ window.__socratesLegacy = {
     toggleIncognito: toggleIncognito,
     signOut: signOut,
   },
-  settings: {
-    toggleAPI: function () { return _loadSettings().then(function (m) { return m.toggleAPI(); }); },
-    addProvider: function () { return _loadSettings().then(function (m) { return m.addProvider(); }); },
-    removeProvider: function (id) { return _loadSettings().then(function (m) { return m.removeProvider(id); }); },
-    setActiveProvider: function (id) { return _loadSettings().then(function (m) { return m.setActiveProvider(id); }); },
-    updateProviderField: function (id, field, value) { return _loadSettings().then(function (m) { return m.updateProviderField(id, field, value); }); },
-    clearSettings: function () { return _loadSettings().then(function (m) { return m.clearSettings(); }); },
-    saveSettings: function () { return _loadSettings().then(function (m) { return m.saveSettings(); }); },
-  },
   confirm: {
     closeConfirm,
+    showConfirm,
   },
   sessions: {
+    flushRecentsReconcile,
     updateSessionMetadata,
     loadSession,
-    setRecentsFilter: window.setRecentsFilter,
-    getRecentsFilter: window.getRecentsFilter,
     setRecentsSearch: setRecentsSearch,
     retryRecentsFetch: retryRecentsFetch,
-    clearRecentsFilter: clearRecentsFilter,
-    onRecentsFilterChipClick: window.onRecentsFilterChipClick,
     openTagEditor: openTagEditor,
     deleteSession: actuallyDeleteSession,
     archiveSession: archiveSession,
@@ -273,35 +249,6 @@ window.__socratesLegacy = {
     confirmClearSettings: function () { return _loadDangerConfirms().then(function (m) { return m.confirmClearSettings(); }); },
     confirmDeleteAccount: function () { return _loadDangerConfirms().then(function (m) { return m.confirmDeleteAccount(); }); },
     setLang: window.setLang,
-  },
-  workspace: {
-    switchLibraryTab: window.switchLibraryTab,
-    filterLibrary: window.filterLibrary,
-    openLibraryItem: window.openLibraryItem,
-    toggleLibrarySelect: window.toggleLibrarySelect,
-    toggleSelectAllLibrary: window.toggleSelectAllLibrary,
-    deleteSelectedLibrary: window.deleteSelectedLibrary,
-    startLibraryRename: window.startLibraryRename,
-    cancelLibraryRename: window.cancelLibraryRename,
-    saveLibraryRename: window.saveLibraryRename,
-    deleteLibraryFile: window.deleteLibraryFile,
-    renameArtifact: window.renameArtifact,
-    openCreateProject: window.openCreateProject,
-    openEditProject: window.openEditProject,
-    openProjectWorkspace: window.openProjectWorkspace,
-    connectProjectConnector: window.connectProjectConnector,
-    refreshProjectConnector: window.refreshProjectConnector,
-    openProjectConnectorForm: window.openProjectConnectorForm,
-    exitPluginsView: window.exitPluginsView,
-    openArxivSearch: window.openArxivSearch,
-    openZoteroLibrary: window.openZoteroLibrary,
-  },
-  scheduled: {
-    openCreateScheduledTask: window.openCreateScheduledTask,
-    openEditScheduledTask: window.openEditScheduledTask,
-    toggleScheduledTask: window.toggleScheduledTask,
-    runScheduledTask: window.runScheduledTask,
-    deleteScheduledTask: window.deleteScheduledTask,
   },
   postRender: {
     processPendingMermaid: processPendingMermaid,

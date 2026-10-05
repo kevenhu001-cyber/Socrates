@@ -295,8 +295,7 @@ test('a visualization stays visible across the running → result transition', a
       key: 'messages',
       value: [{ clientId: 'lifecycle-live-user', role: 'user', rawText: 'Run both', html: null }],
     });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     window.__turnPromise = window.askChatTurn('Run both');
   });
   await page.waitForFunction(() => typeof window.__outPushFrame === 'function', null, { timeout: 15_000 });

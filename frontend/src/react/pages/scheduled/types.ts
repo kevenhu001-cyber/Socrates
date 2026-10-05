@@ -13,27 +13,3 @@ export interface ScheduledTask {
   runPolicy?: Record<string, unknown>;
   notificationConfig?: Record<string, unknown>;
 }
-
-export interface ScheduledSnapshot {
-  tasks: ReadonlyArray<ScheduledTask>;
-  loading: boolean;
-  error: string | null;
-  revision: number;
-}
-
-export interface ScheduledBridge {
-  getSnapshot: () => ScheduledSnapshot;
-  publish: (snapshot: Omit<ScheduledSnapshot, 'revision'>) => void;
-  subscribe: (listener: () => void) => () => void;
-}
-
-declare global {
-  interface Window {
-    __socratesScheduledBridge?: ScheduledBridge;
-    openCreateScheduledTask?: (initialPrompt?: string) => void;
-    openEditScheduledTask?: (id: string) => void;
-    toggleScheduledTask?: (id: string, pause: boolean) => void;
-    runScheduledTask?: (id: string) => void;
-    deleteScheduledTask?: (id: string) => void;
-  }
-}

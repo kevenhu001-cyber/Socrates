@@ -16,7 +16,7 @@ import {
   getComposerMarkdown,
   getVisibleComposerSurface,
   setComposerExtensionToken,
-} from '../react/composer-input/controller';
+} from '../composer/controller.ts';
 import { startSearchProgress } from '../ui/searchProgress.js';
 import type {
   AgentRunEvent,

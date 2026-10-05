@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react';
 import { ListFilter } from 'lucide-react';
 
 import { getCurrentLang, getLegacyActions, t as _t } from '../../legacy/gateway.ts';
-import { installWorkspaceBridge, useWorkspaceSnapshot, useWorkspaceDispatch } from './workspace.bridge';
+import { useWorkspaceSnapshot, useWorkspaceDispatch } from './workspace.hooks';
 import { getConnectorIconMarkup } from '../../../connector-icons';
 import { PluginDetailView } from './PluginDetailView';
 import { WorkspaceLoadingView } from './WorkspaceLoadingView';
@@ -921,8 +921,6 @@ export function mountWorkspacePage(page: string): void {
   const panelId = page === 'library' ? 'libraryPanel' : page === 'projects' ? 'spacesPanel' : 'pluginsPanel';
   const panel = document.getElementById(panelId);
   if (!panel) return;
-
-  installWorkspaceBridge();
 
   let root = roots.get(page);
   if (!root) {

@@ -24,8 +24,13 @@ export function isInlineSearchTool(name: string): boolean {
   return SEARCH_TOOLS.has(name);
 }
 
-const READ_TOOLS = new Set(['Read', 'Glob', 'Grep']);
+const READ_TOOLS = new Set(['Read', 'Glob', 'Grep', 'read_attachment']);
 const WRITE_TOOLS = new Set(['Write', 'Edit', 'Bash']);
+const CONNECTOR_TOOLS = new Set([
+  'oc_github', 'oc_gmail', 'oc_googlecalendar', 'oc_todoist', 'oc_gitlab', 'oc_qq_mail',
+  'github_identity', 'gmail_search', 'google_calendar_list_events', 'todoist_list_tasks',
+  'gitlab_identity', 'qq_mail_search',
+]);
 
 export function toolCategory(name: string): string {
   if (SEARCH_TOOLS.has(name)) return 'search';
@@ -34,8 +39,11 @@ export function toolCategory(name: string): string {
   if (name === 'render_visualization') return 'visual';
   if (name === 'create_plan') return 'plan';
   if (name === 'create_spec') return 'spec';
-  if (name === 'workspace_agent') return 'agent';
+  if (name === 'workspace_agent' || name === 'initialize_workspace') return 'agent';
   if (READ_TOOLS.has(name)) return 'read';
   if (WRITE_TOOLS.has(name)) return 'write';
+  if (name === 'save_memory') return 'memory';
+  if (name === 'create_site') return 'site';
+  if (CONNECTOR_TOOLS.has(name) || /^oc_/.test(name)) return 'connector';
   return 'other';
 }

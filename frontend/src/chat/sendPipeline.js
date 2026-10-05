@@ -24,7 +24,7 @@ import {
   clearComposer,
   focusComposer,
   getComposerMarkdown,
-} from '../react/composer-input/controller.ts';
+} from '../composer/controller.ts';
 import { selectedComposerPlugins } from '../react/composer/pluginSelection.ts';
 import { serializeSelectedPluginContext } from '../react/composer/pluginCatalog.ts';
 import {

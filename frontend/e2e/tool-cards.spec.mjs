@@ -60,8 +60,7 @@ test('live chat shows an inline tool status instead of a tool card', async ({ pa
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '11111111-1111-4111-8111-111111111111' });
     window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-1', role: 'user', rawText: 'Run the tools', html: null }] });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     await window.askChatTurn('Run the tools');
   });
 
@@ -109,8 +108,7 @@ test('tool activity lands behind its paragraph without splitting it', async ({ p
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-boundary', role: 'user', rawText: 'Check it', html: null }] });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     await window.askChatTurn('Check it');
   });
 
@@ -194,8 +192,7 @@ test('live chat shows a Searching label while the model is searching', async ({ 
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-2', role: 'user', rawText: 'Look something up', html: null }] });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     window.__searchTurnPromise = window.askChatTurn('Look something up');
   });
 
@@ -258,8 +255,7 @@ test('code execution switches from executing to data analysis without thinking o
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-code', role: 'user', rawText: 'Run code', html: null }] });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     window.__codeTurnPromise = window.askChatTurn('Run code');
   });
 
@@ -299,8 +295,7 @@ test('Tutor streams the same native tools and sends the tutor mode contract', as
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     window.stateStore.dispatch({ type: "state/set", key: "currentNode", value: 0 });
     window.stateStore.dispatch({ type: "state/set", key: "kbNodes", value: [{ name: 'Evidence', status: 'blank', questions: 0 }] });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     await window.askNextQuestion();
   });
 
@@ -342,8 +337,7 @@ test('live chat shows only the latest tool card during a burst but persists ever
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-burst', role: 'user', rawText: 'Run three tools', html: null }] });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     await window.askChatTurn('Run three tools');
   });
 
@@ -389,8 +383,7 @@ test('consecutive same-category tools aggregate under one collapsible header', a
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-group', role: 'user', rawText: 'Search twice', html: null }] });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     await window.askChatTurn('Search twice');
   });
 
@@ -458,8 +451,7 @@ test('a failed member marks the grouped run and keeps its own error detail', asy
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-fail', role: 'user', rawText: 'Search', html: null }] });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     await window.askChatTurn('Search');
   });
 

@@ -58,9 +58,6 @@ declare global {
     };
     resetState?: () => void;
 
-    /** Cache of project list entries read by RecentsFilterChips. */
-    __projectsCache?: unknown[];
-
     /** Array of active session summaries read by SessionList. */
     SERVER_SESSIONS?: unknown[];
 
@@ -99,8 +96,6 @@ declare global {
 
     __socratesReactChatBridge?: unknown;
     __socratesMessageListBridge?: unknown;
-    __socratesSidebarNavBridge?: unknown;
-    __socratesRecentsFilterBridge?: unknown;
     __socratesCmdK?: unknown;
     __socratesFindInSession?: unknown;
     __socratesSettingsBridge?: unknown;
@@ -111,13 +106,10 @@ declare global {
     __socratesCheatsheetBridge?: unknown;
     __socratesMorePopoverBridge?: unknown;
     __socratesComposerToolsBridge?: unknown;
-    __socratesComposerInputBridge?: unknown;
     __socratesAttachmentsBridge?: unknown;
     __socratesPromptTemplatesBridge?: unknown;
     __socratesSidebarChromeBridge?: unknown;
     __socratesSessionListBridge?: unknown;
-    __socratesWorkspaceBridge?: unknown;
-    __socratesScheduledBridge?: unknown;
 
     // ── Legacy inline handler functions (windowExports.js) ──────────
 

@@ -1,5 +1,5 @@
 import { createImmutableBridge, useBridge } from '../../lib/bridge/index.ts';
-import type { ComposerSurface } from '../composer-input/controller';
+import type { ComposerSurface } from '../../composer/types.ts';
 import type { PluginCatalogEntry } from './pluginCatalog';
 
 export interface ComposerPluginSelection {

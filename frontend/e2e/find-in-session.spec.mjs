@@ -79,8 +79,7 @@ test('find bar sits above the top bar and keeps every typed character', async ({
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(() => {
-    document.getElementById('topicSetup')?.classList.add('hidden');
-    document.getElementById('chatView')?.classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     const list = document.getElementById('msgList');
     if (list) list.innerHTML = '<div class="msg assistant"><div class="msg-body">导数描述函数的变化率。</div></div>';
   });
@@ -123,8 +122,7 @@ test('find flushes deferred history rows before searching the transcript', async
     });
     window.stateStore.dispatch({ type: 'session/replace-messages', payload: history });
     window.__socratesReactChatBridge.publish({ type: 'state-synced', reason: 'find-deferred-test' });
-    document.getElementById('topicSetup')?.classList.add('hidden');
-    document.getElementById('chatView')?.classList.remove('hidden');
+    window.__testActivateMainView('chatView');
   }, messages);
 
   await expect(page.locator('#msgList .msg')).toHaveCount(12);

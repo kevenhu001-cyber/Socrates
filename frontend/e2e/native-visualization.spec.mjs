@@ -28,8 +28,7 @@ async function renderLn(page) {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '99999999-9999-4999-8999-999999999999' });
     window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-ln', role: 'user', rawText: 'draw y = ln(x)', html: null }] });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     await window.askChatTurn('draw y = ln(x)');
   });
   /* P_inline-tools — live chat renders each tool call as a compact

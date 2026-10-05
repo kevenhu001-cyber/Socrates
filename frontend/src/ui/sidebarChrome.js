@@ -3,7 +3,7 @@
  * tab switching, sidebar view toggle. Zero-behavior-change lift.
  * Recents/mistakes render surfaces resolve via window.* (main.js-owned).
  */
-import { toggleSidebar } from '../sidebar/index.js';
+import { toggleSidebar } from '../sidebar/sidebar.service.ts';
 import { renderKnowledgeView } from './knowledgeView.js';
 
 export var sidebarOpen = true;
@@ -25,7 +25,7 @@ export function syncSidebarBtns() {
   var ob = document.getElementById('sidebarOpenBtn');
   var cb = document.getElementById('sidebarCloseBtn');
   /* Derive from the DOM (.collapsed) — toggleSidebar() lives in
-     sidebar/index.js and can't write this module's `sidebarOpen`
+     sidebar/sidebar.service.ts and can't write this module's `sidebarOpen`
      var, so reading the var here would desync after the first toggle. */
   var s = document.getElementById('sidebar');
   var open = s ? !s.classList.contains('collapsed') : sidebarOpen;

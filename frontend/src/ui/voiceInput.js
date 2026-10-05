@@ -1,4 +1,4 @@
-import { getComposerMarkdown, insertComposerText } from '../react/composer-input/controller.ts';
+import { getComposerMarkdown, insertComposerText } from '../composer/controller.ts';
 import { showToast } from './toast.js';
 
 let activeSession = null;

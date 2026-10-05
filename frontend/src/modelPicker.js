@@ -14,7 +14,7 @@
  *     trigger:   document.getElementById('modelPickerTrigger'),
  *     menu:      document.getElementById('modelPickerMenu'),
  *     getItems:  () => providers,                            // [{id,label,model,...}]
- *     activeId:  () => apiConfig.activeId,
+ *     activeId:  () => providerConfig.activeId,
  *     onPick:    (id) => setActiveProvider(id),
  *     onManage:  () => openSettings(),                      // closes picker first
  *     allowFilter: false,                                   // show search box if many items

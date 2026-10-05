@@ -82,8 +82,7 @@ async function bootChat(page) {
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-latency', role: 'user', rawText: 'Keep me responsive', html: null }] });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     // Kick off a turn; the held stub keeps it streaming.
     window.__latencyTurnPromise = window.askChatTurn('Keep me responsive');
   });

@@ -9,11 +9,8 @@ import {
   subscribeToProjectCache,
 } from '../../projects/projectCache.ts';
 import { t } from '../legacy/gateway.ts';
-import {
-  useRecentsFilter,
-  useRecentsFilterCommands,
-  useRecentsFilterSnapshot,
-} from './sidebar.bridge';
+import { onRecentsFilterChipClick, hydrateRecentsFilterState } from '../../sidebar/sidebar.service';
+import { useSidebarStore } from '../../sidebar/sidebar.store';
 
 const TARGET_ID = 'recentsFilterChips';
 
@@ -121,9 +118,9 @@ function ChipButton({
 }
 
 function RecentsFilterChips() {
-  useRecentsFilterSnapshot(); // subscribe so re-renders fire on filter change
-  const filter = useRecentsFilter();
-  const { pick } = useRecentsFilterCommands();
+  const filter = useSidebarStore((state) => state.recentsFilter);
+  useSidebarStore((state) => state.recentsVersion);
+  const pick = onRecentsFilterChipClick;
   const projects = useSyncExternalStore(
     subscribeToProjectCache,
     getProjectCacheSnapshot,
@@ -177,6 +174,7 @@ export function hydrateRecentsFilterChips(): RecentsChipsHandle | null {
     throw new Error('Recents filter chips React runtime was initialized more than once.');
   }
 
+  hydrateRecentsFilterState();
   const root = createRoot(target);
   root.render(<RecentsFilterChips />);
   markHostMountedBy(target, 'recents-filter-chips');

@@ -886,6 +886,11 @@ export function appendInlineArtifact(fileId, mimeType, outEl, displayName) {
   const t = window.t || function (k) { return k; };
   const out = outEl || document.querySelector(".msg.assistant .agent-tool-card:last-child .agent-tool-out");
   if (!out || !fileId) return;
+  /* P_artifact-image-defer — generated images are no longer rendered
+     automatically. The assistant must explicitly reference them in
+     prose (e.g. `![description](/api/files/<id>/raw)`) so the user only
+     sees images the model chooses to show. */
+  if ((mimeType || "").indexOf("image/") === 0) return;
   const url = "/api/files/" + encodeURIComponent(fileId) + "/raw";
   const selectorId = (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(String(fileId)) : String(fileId).replace(/[^a-zA-Z0-9_-]/g, '');
   /* P_artifact-doc-wide-dedup — a single artifact fileId should

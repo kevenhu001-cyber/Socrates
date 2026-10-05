@@ -7,7 +7,7 @@
    handler (delegate.js). Centralize the focus/Esc behavior here so a single
    helper consistent across:
      - #cmdKOverlay   (cmdK.js → closeCmdK)
-     - #settingsOverlay (settings.js → closeSettings; React owns title)
+     - #settingsOverlay (typed settings service → closeSettings; React owns title)
      - #shareOverlay  (share.js → closeShareModal)
      - #usageOverlay  (usage.js → closeUsageModal)
      - #profileOverlay (profile.js → closeProfile)

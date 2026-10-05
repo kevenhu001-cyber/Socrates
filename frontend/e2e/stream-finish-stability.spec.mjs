@@ -87,8 +87,7 @@ async function startStream(page, deltas, { delay = 25, finishDelay = 2600 } = {}
     };
     window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
     window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '66666666-6666-4666-8666-666666666666' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     window.__finishStabilityTurn = window.askChatTurn('讲讲判别式');
   }, { deltas, delay, finishDelay });
 }

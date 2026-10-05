@@ -8,8 +8,7 @@ async function enterChat(page) {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Composer check' });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '44444444-4444-4444-8444-444444444444' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
   });
   await page.waitForTimeout(300);
 }

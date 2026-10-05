@@ -11,6 +11,7 @@ import { installSessionListBridge, setCurrentSessionId } from './sessionList.bri
 import { useSessionListSnapshot, formatRelativeTime } from './sessionList.bridge';
 import { detailCache } from '../../session/detailCache.js';
 import { refreshCachedProjects } from '../../projects/projectCache.ts';
+import { clearRecentsFilter, setRecentsFilter } from '../../sidebar/sidebar.service';
 import type { SessionItem } from './types';
 
 const SHARE_ICON =
@@ -185,7 +186,7 @@ function SessionRowBase({ session, isActive, onPick, onArchive, onDelete, onDrag
                 className="recent-tag-pill"
                 onClick={(e) => {
                   e.stopPropagation();
-                  getLegacyActions().sessions.setRecentsFilter(tag);
+                  setRecentsFilter(tag);
                 }}
                 title={t('session.filterByTag').replace('{tag}', tag)}
               >#{tag}</button>
@@ -437,7 +438,7 @@ function SessionListInner() {
             href="#"
             onClick={(e) => {
               e.preventDefault();
-              sessionActions.clearRecentsFilter();
+              clearRecentsFilter();
             }}
           >{t('session.clearFilter')}</a> {t('session.showAllHint')}
         </EmptyState>

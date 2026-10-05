@@ -1,26 +1,5 @@
 export { hydrateSidebarNav } from './SidebarNav';
 export { hydrateRecentsFilterChips } from './RecentsFilterChips';
-export {
-  installSidebarNavBridge,
-  getSidebarNavSnapshot,
-  subscribeToSidebarNav,
-  publishSidebarNav,
-  useSidebarNavSnapshot,
-  useActiveNav,
-  useSidebarNavCommands,
-  installRecentsFilterBridge,
-  getRecentsFilterSnapshot,
-  subscribeToRecentsFilter,
-  publishRecentsFilter,
-  useRecentsFilterSnapshot,
-  useRecentsFilter,
-  useRecentsFilterCommands,
-  seedSidebarBridgesFromLegacy,
-} from './sidebar.bridge';
-export type {
-  SidebarNavBridge,
-  SidebarNavSnapshot,
-  SidebarNavKey,
-  RecentsFilterBridge,
-  RecentsFilterSnapshot,
-} from './types';
+export { useSidebarStore } from '../../sidebar/sidebar.store';
+export { setRecentsFilter, getRecentsFilter, clearRecentsFilter, onRecentsFilterChipClick, toggleSidebar, refreshRecentsFilterChipData } from '../../sidebar/sidebar.service';
+export type { SidebarNavKey } from './types';

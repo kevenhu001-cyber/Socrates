@@ -632,9 +632,9 @@
              container so the layout reserves space without hard-coding demo
              items in markup. -->
         <div class="topic-composer-slot composer-slot" id="topicComposerSlot">
-        <!-- P_composer-single — ONE composer shell for the whole app. It is
-             parked here on landing and moved to #chatComposerSlot whenever
-             a conversation view activates (see placeComposerForView); the
+        <!-- P_composer-single — ONE composer shell for the whole app. The
+             typed Composer controller places it here on landing and into
+             #chatComposerSlot when a conversation view activates; the
              editor, draft, focus and chips travel with it, so the input box
              never rebuilds between surfaces. -->
         <div class="composer-input-wrap composer-shell" id="composerInputWrap">
@@ -799,7 +799,7 @@
                chat-view's top edge. The CSS rule `.chat-input-bar >
                .new-reply-pill` keys off this parent. -->
           <div class="new-reply-pill" id="newReplyPill" role="button" tabindex="0" aria-label="Jump to new reply" data-i18n-aria="chrome.jumpToNewReply">↓ New reply</div>
-          <!-- P_composer-single — parking slot for the single composer shell. It lives in #topicComposerSlot on landing and is moved here whenever a conversation view activates (see placeComposerForView). -->
+          <!-- P_composer-single — typed Composer controller places the single shell here for a conversation. -->
           <div class="chat-composer-slot composer-slot" id="chatComposerSlot"></div>
         </div>
       </div>

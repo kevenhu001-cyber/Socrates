@@ -38,8 +38,7 @@ for (const { spec, content, actions, tableRows } of CASES) {
       window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
       window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '99999999-9999-4999-8999-999999999999' });
       window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [{ clientId: 'u', role: 'user', rawText: 'draw', html: null }] });
-      document.getElementById('topicSetup').classList.add('hidden');
-      document.getElementById('chatView').classList.remove('hidden');
+      window.__testActivateMainView('chatView');
       await window.askChatTurn('draw');
     });
     const card = page.locator('.visualization-card').last();

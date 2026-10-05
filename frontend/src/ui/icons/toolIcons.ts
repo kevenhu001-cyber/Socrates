@@ -62,6 +62,10 @@ export const STROKE_ICONS: Record<string, string> = {
   repo: icon('<circle cx="6.4" cy="5.2" r="1.8"/><circle cx="6.4" cy="14.8" r="1.8"/><circle cx="13.6" cy="5.2" r="1.8"/><path d="M6.4 7v6"/><path d="M13.6 7v.7a5.2 5.2 0 0 1-5.2 5.2"/>'),
   /* Two interlocking link arcs. */
   mcp: icon('<path d="M8.6 11.4 7.2 12.8a2.7 2.7 0 0 1-3.8-3.8l2.4-2.4a2.7 2.7 0 0 1 3.8 0"/><path d="m11.4 8.6 1.4-1.4a2.7 2.7 0 0 1 3.8 3.8l-2.4 2.4a2.7 2.7 0 0 1-3.8 0"/>'),
+  /* Bookmark flag — memory / saved fact. */
+  memory: icon('<path d="M5.5 3.4h9a1.6 1.6 0 0 1 1.6 1.6v12.5l-6.1-3.6-6.1 3.6V5a1.6 1.6 0 0 1 1.6-1.6Z"/>'),
+  /* Browser window — site / page creation. */
+  site: icon('<rect x="2.9" y="4.2" width="14.2" height="11.6" rx="2.4"/><path d="M3.4 7.8h13.3"/><circle cx="5.5" cy="6" r=".7" fill="currentColor" stroke="none"/><circle cx="7.9" cy="6" r=".7" fill="currentColor" stroke="none"/>'),
   /* Sliders — the generic "some tool ran" mark. */
   tool: icon('<path d="M3.5 7.1h3M9.9 7.1h6.6"/><circle cx="8.2" cy="7.1" r="1.7"/><path d="M3.5 12.9h6.6M13.4 12.9h3.1"/><circle cx="11.8" cy="12.9" r="1.7"/>'),
   /* Run of several operations — a chain of steps read top-to-bottom: two
@@ -105,6 +109,12 @@ export function agentStepIcon(kind: string): string {
   return STROKE_ICONS.command;
 }
 
+const CONNECTOR_NAMES = new Set([
+  'oc_github', 'oc_gmail', 'oc_googlecalendar', 'oc_todoist', 'oc_gitlab', 'oc_qq_mail',
+  'github_identity', 'gmail_search', 'google_calendar_list_events', 'todoist_list_tasks',
+  'gitlab_identity', 'qq_mail_search',
+]);
+
 export function toolIcon(name: string): string {
 
   switch (name) {
@@ -126,7 +136,6 @@ export function toolIcon(name: string): string {
     case 'create_spec':
       return STROKE_ICONS.spec;
     case 'workspace_agent':
-      return STROKE_ICONS.agent;
     case 'initialize_workspace':
       return STROKE_ICONS.agent;
     case 'github_list_repos':
@@ -135,13 +144,19 @@ export function toolIcon(name: string): string {
     case 'Read':
     case 'Glob':
     case 'Grep':
+    case 'read_attachment':
       return STROKE_ICONS.read;
     case 'Write':
     case 'Edit':
       return STROKE_ICONS.fileChange;
     case 'Bash':
       return STROKE_ICONS.command;
+    case 'save_memory':
+      return STROKE_ICONS.memory;
+    case 'create_site':
+      return STROKE_ICONS.site;
     default:
+      if (CONNECTOR_NAMES.has(name) || /^oc_/.test(name)) return STROKE_ICONS.mcp;
       return STROKE_ICONS.tool;
   }
 }
@@ -168,6 +183,9 @@ export function categoryIcon(category: string): string {
     case 'agent': return STROKE_ICONS.agent;
     case 'read': return STROKE_ICONS.read;
     case 'write': return STROKE_ICONS.fileChange;
+    case 'memory': return STROKE_ICONS.memory;
+    case 'site': return STROKE_ICONS.site;
+    case 'connector': return STROKE_ICONS.mcp;
     default: return STROKE_ICONS.runGroup;
   }
 }

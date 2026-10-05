@@ -178,8 +178,7 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
 
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    document.getElementById('topicSetup')?.classList.add('hidden');
-    document.getElementById('chatView')?.classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     document.body.dataset.conversationActive = 'true';
   });
   await expect(page.locator('#composerInputWrap')).toBeVisible();

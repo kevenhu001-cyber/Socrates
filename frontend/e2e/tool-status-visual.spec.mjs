@@ -60,8 +60,7 @@ test('deferred tool shows a clean single status line, no orphan dots', async ({ 
       type: 'state/set', key: 'messages',
       value: [{ clientId: 'user-defer', role: 'user', rawText: '演示一下', html: null }],
     });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     window.__deferPromise = window.askChatTurn('演示一下');
   });
 
@@ -141,8 +140,7 @@ test('cursor trails the whole turn, below a tool row mounted last', async ({ pag
       type: 'state/set', key: 'messages',
       value: [{ clientId: 'user-tail', role: 'user', rawText: '写文件', html: null }],
     });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     window.__tailPromise = window.askChatTurn('写文件');
   });
 

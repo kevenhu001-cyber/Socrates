@@ -1,35 +1,20 @@
-export type SettingsProviderField = 'label' | 'url' | 'key' | 'model' | 'vision';
-export type SettingsProviderErrorField = Exclude<SettingsProviderField, 'vision'>;
+import type {
+  ProviderConfig,
+  ProviderConfigErrors,
+  ProviderErrorField,
+  ProviderField,
+  ProviderSaveResult,
+} from '../../config/providerConfig.types';
 
-export interface SettingsProviderSnapshot {
-  id: string;
-  label: string;
-  url: string;
-  model: string;
-  vision: boolean;
-  isBuiltIn: boolean;
-  isActive: boolean;
-  hasKey: boolean;
-}
-
-export type SettingsProviderDraft = Partial<Pick<SettingsProviderSnapshot, 'label' | 'url' | 'model' | 'vision'>>;
-
-export type SettingsProviderErrors = Record<
-  string,
-  Partial<Record<SettingsProviderErrorField, string>>
->;
-
-export interface SettingsProviderSaveResult {
-  savedIds: string[];
-  failedIds: string[];
-}
+export type SettingsProviderField = ProviderField;
+export type SettingsProviderErrorField = ProviderErrorField;
+export type SettingsProviderSnapshot = ProviderConfig & { isActive: boolean };
+export type SettingsProviderErrors = ProviderConfigErrors;
+export type SettingsProviderSaveResult = ProviderSaveResult;
 
 export interface SettingsSnapshot {
   open: boolean;
   externalApiOn: boolean;
-  providers: SettingsProviderSnapshot[];
-  providerErrors: SettingsProviderErrors;
-  saving: boolean;
   revision: number;
 }
 

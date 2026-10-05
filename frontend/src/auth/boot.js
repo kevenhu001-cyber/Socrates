@@ -4,10 +4,11 @@
    - /api/config probe (for built-in Beagle key)
    - /api/auth/me retry loop (3 attempts, 500ms backoff)
    - Branching to gate or app shell
-   Reads main.js globals via window (BEAGLE_BUILT_IN, CURRENT_USER,
-   apiFetch, etc.). */
+   Reads auth/session bootstrap values via window (CURRENT_USER,
+   SERVER_HAS_BEAGLE_KEY, apiFetch, etc.). */
 
 import { apiFetch, makeApiError } from '../util/api.js';
+import { setBuiltInProviderModel } from '../config/providerConfig.service.ts';
 import { showToast } from '../ui/toast.js';
 import { openMobileTargetFromUrl } from '../native/mobileWebSessionBridge.js';
 
@@ -66,8 +67,7 @@ export async function authBoot(){
     await csrfReady;
     history.replaceState(null,"",location.pathname+(params.get("next")?"?next="+encodeURIComponent(params.get("next")):""));
     try{
-      const BEAGLE_BUILT_IN=window.BEAGLE_BUILT_IN;
-      if(BEAGLE_BUILT_IN&&!BEAGLE_BUILT_IN.key){BEAGLE_BUILT_IN.key="local";BEAGLE_BUILT_IN.model="local";}
+      setBuiltInProviderModel("local");
       window.SERVER_HAS_BEAGLE_KEY=true;
     }catch(e){reportSwallow(e, 'auth/boot.adoptPreflight.localConfig');}
     var devUser={id:"local-dev",name:"Local Dev",email:"dev@local",plan:"local",isLocal:true};
@@ -165,11 +165,7 @@ export async function authBoot(){
          The raw key is never sent to the client, so cfg.beagleKey
          is intentionally absent. Only update model when the server
          explicitly provides one. */
-      const BEAGLE_BUILT_IN = window.BEAGLE_BUILT_IN;
-      if(BEAGLE_BUILT_IN){
-        if(typeof cfg.beagleKey==="string")BEAGLE_BUILT_IN.key=cfg.beagleKey;
-        if(typeof cfg.beagleModel==="string")BEAGLE_BUILT_IN.model=cfg.beagleModel;
-      }
+      if(typeof cfg.beagleModel==="string")setBuiltInProviderModel(cfg.beagleModel);
       cfgOk=true;
     }
     /* P_privacy-leak — bridge the server-side capability hint to

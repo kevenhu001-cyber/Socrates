@@ -12,7 +12,7 @@
 import { registry } from './registry';
 import { installAgentRunBridge } from './agentRunStore';
 import { buildExtensionContext } from './context';
-import { getVisibleComposerSurface } from '../react/composer-input/controller';
+import { getVisibleComposerSurface } from '../composer/controller.ts';
 
 import { writeExtension } from './modules/write';
 import { exploreExtension } from './modules/explore';

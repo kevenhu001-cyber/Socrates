@@ -8,8 +8,8 @@ import { stateStore } from '../state/store.js';
 import { showToast } from '../ui/toast.js';
 import { turnState } from './turnState.js';
 import { buildUserContentParts } from './history.js';
-import { clearPendingTurn, interruptChatTurn, loadPendingTurn } from './turnClient.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
+export { setChatStopState, handleSendClick, stopChatResponse, interruptPendingTurn } from './composerTurn.ts';
 
 function _t(key) {
   try {
@@ -82,85 +82,4 @@ export function resendLastUserMessage() {
   }
   try { showToast(_t('toast.noRetryTarget')); } catch (e) {reportSwallow(e, 'chat/turnUi.resendLastUserMessage'); }
   return false;
-}
-
-/* Morph the primary button into a red Stop button during streaming,
-   or restore it to the normal send arrow when idle. React owns
-   #composerPrimaryBtnContent and re-renders the icon from dataset.stop,
-   so this function only toggles the dataset + CSS class.
-
-   P_composer-primary-split (2026-10-04) — the idle glyph is the send
-   arrow, not a voice waveform: dictation belongs to #composerMicBtn.
-   updateComposerBtn reads dataset.stop / .chat-stop here to decide the
-   accessible name ("Stop generating" vs "Send") and to keep the button
-   enabled while a turn is live, so a draft-less stream can still be
-   stopped. */
-export function setChatStopState(active) {
-  var btn = document.getElementById('composerPrimaryBtn');
-  if (!btn) return;
-  if (active) {
-    btn.classList.add('chat-stop');
-    btn.dataset.stop = '1';
-  } else {
-    btn.classList.remove('chat-stop');
-    btn.dataset.stop = '0';
-  }
-  /* React owns #composerPrimaryBtnContent and re-renders the icon from dataset.stop. */
-}
-
-/* Wrapper for the send/stop button click. When a stream is active,
-   clicking stops it; otherwise it sends the message. */
-export function handleSendClick() {
-  var btn = document.getElementById('composerPrimaryBtn');
-  if (btn && btn.dataset.stop === '1') {
-    /* M2 Stop semantics — aborting the socket only detaches the feed
-       when the turn is bound; flip the server turn to interrupted so
-       the detached worker stops instead of running to completion. */
-    try{ interruptPendingTurn(); }catch (e) {reportSwallow(e, 'chat/turnUi.handleSendClick'); }
-    if (turnState.activeChatCtl) {
-      turnState.activeChatCtl.abort();
-    }
-    if (window._activeChatAbort) {
-      try { window._activeChatAbort('user-stop'); } catch (e) {reportSwallow(e, 'chat/turnUi.handleSendClick#2'); }
-    }
-  } else {
-    /* submitChatMessage snapshots and commits the draft before its first
-       await, then blurs during that same synchronous phase. Reading first is
-       important: on mobile a focus-driven layout change can otherwise race
-       Tiptap's selection transaction and leave only the morph animation. */
-    if (typeof window.submitChatMessage === 'function') {
-      window.submitChatMessage(null, { blurAfterSend: true });
-    }
-  }
-}
-
-export function stopChatResponse() {
-  try{ interruptPendingTurn(); }catch (e) {reportSwallow(e, 'chat/turnUi.stopChatResponse'); }
-  if (turnState.activeChatCtl && typeof turnState.activeChatCtl.abort === 'function') {
-    turnState.activeChatCtl.abort();
-  }
-  if (window._activeChatAbort) {
-    try { window._activeChatAbort('user-stop'); } catch (e) {reportSwallow(e, 'chat/turnUi.stopChatResponse#2'); }
-  }
-}
-
-/* Best-effort Stop propagation for bound turns. Reads the pending-turn
-   pointer for the active session and flips the server row; the worker
-   polls the row and aborts the upstream call. Fire-and-forget: socket
-   abort below already detaches the feed. Every path that abandons an
-   in-flight answer (Stop, a newer send, edit, regenerate) calls this
-   before aborting the stream — closing the socket alone leaves a bound
-   turn generating on the server. */
-export function interruptPendingTurn() {
-  var sid = null;
-  try{ sid = stateStore.read('currentSessionId') || null; }catch (e) {reportSwallow(e, 'chat/turnUi.interruptPendingTurn'); }
-  if (!sid) return;
-  var pending = null;
-  try{ pending = loadPendingTurn(sid); }catch (e) {reportSwallow(e, 'chat/turnUi.interruptPendingTurn#2'); }
-  if (!pending || !pending.turnId) return;
-  try{ clearPendingTurn(sid); }catch (e) {reportSwallow(e, 'chat/turnUi.interruptPendingTurn#3'); }
-  try{
-    var p = interruptChatTurn(pending.turnId);
-    if (p && typeof p.catch === 'function') p.catch(function(e){ reportSwallow(e, 'chat/turnUi.interruptPendingTurn.reject'); });
-  }catch (e) {reportSwallow(e, 'chat/turnUi.interruptPendingTurn.guard'); }
 }

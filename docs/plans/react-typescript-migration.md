@@ -81,13 +81,14 @@ below.
       data-attribute guard so the two never collide.
 - [x] Sidebar nav buttons + recents filter chips ported to React/TS
       (`frontend/src/react/sidebar/` + `frontend/e2e/sidebar-compat.spec.mjs`).
-      Legacy `src/sidebar/nav.js` and `src/sidebar/index.js` keep state
-      ownership; React renders the nav buttons and chip bar via typed
-      bridges (`window.__socratesSidebarNavBridge`,
-      `window.__socratesRecentsFilterBridge`). Legacy `setActiveNav`,
-      `setRecentsFilter`, and `renderRecentsFilterChips` still fire; the
-      last one is guarded by a data attribute so React's tree isn't
-      clobbered. The "More" popover remains legacy (deferred).
+      Typed navigation/sidebar stores and services own destination state,
+      route/history handling, drawer dismissal, recents filtering, and
+      actions. `src/sidebar/index.js` and the old nav/recents bridges are
+      removed. Workspace and scheduled page data/actions and their dialogs
+      are typed; destination page adapters live in
+      `src/sidebar/navigation.adapters.ts`. `src/sidebar/nav.js` retains the
+      connector OAuth return context and local icon/slash-command adapters.
+      The "More" popover remains legacy.
 - [x] Composer "+" tools menu ported to React/TS
       (`frontend/src/react/composer/` +
       `frontend/e2e/composer-tools-compat.spec.mjs`). Legacy
@@ -130,15 +131,16 @@ below.
 - [x] Composer input, send, and stop actions — send button content
       (`#sendBtnContent`) and start button content (`#startBtnContent`)
       are now rendered by React/TS, showing the appropriate SVG icon
-      (arrow vs stop square) based on stream status. The textarea,
-      effort picker, and topic-setup/chat-input lifecycle remain legacy
-      (deferred — the textarea is tightly coupled to `autoResize`,
-      `updateSendBtn`, `handleChatKey`, and streaming).
+      (arrow vs stop square) based on stream status. A typed Composer store
+      and controller now own the single Tiptap editor, active surface, topic
+      and chat drafts, extension tokens, and send/stop/reset commands. The
+      existing effort picker remains a separate legacy UI owner.
 - [x] Settings modal ported to React/TS (`frontend/src/react/settings/`).
-      React owns the overlay and its interactive surface. A typed settings
-      snapshot carries visibility, provider summaries, validation state, and
-      the external-API toggle; the legacy module retains preference state and
-      provider/API operations but no longer writes settings DOM.
+      React owns the overlay and its interactive surface. Provider state and
+      provider API operations now live in a typed provider store/service;
+      Settings keeps modal and external-API presentation state. Provider
+      snapshots expose key presence without plaintext credentials, and the
+      old `window.apiConfig` and `window.renderProviderList` aliases are gone.
 - [x] Account, library, scheduled tasks, and plugins — all migrated as
       part of the workspace/scheduled page React components
       (`frontend/src/react/pages/workspace/`, `frontend/src/react/pages/scheduled/`).

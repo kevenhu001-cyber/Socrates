@@ -8,7 +8,6 @@
 // Each domain should be migrated out of this file as its functions are
 // extracted into standalone TypeScript modules (C5).
 
-import type { SettingsProviderField, SettingsProviderSaveResult } from '../settings/types';
 
 export interface LegacyMessages {
   editUserMessage(messageId: string): void;
@@ -47,34 +46,20 @@ export interface LegacyNavigation {
   signOut(): void;
 }
 
-/* Settings configuration actions exposed to the React-owned SettingsModal.
-   The legacy module retains provider API/config operations, not DOM writes. */
-export interface LegacySettings {
-  toggleAPI(): Promise<void>;
-  addProvider(): Promise<string | null>;
-  removeProvider(id: string): Promise<boolean>;
-  setActiveProvider(id: string): Promise<void>;
-  updateProviderField(id: string, field: SettingsProviderField, value: string | boolean): Promise<void>;
-  clearSettings(): Promise<void>;
-  saveSettings(): Promise<SettingsProviderSaveResult>;
-}
-
 /* M4 step 4.5c — confirm-dialog actions, called from React's
    ConfirmDialog.tsx (which owns the overlay skeleton). Backed by
    ui/confirm.js exports. */
 export interface LegacyConfirm {
   closeConfirm(resolveWith?: boolean): void;
+  showConfirm(title: string, message: string, danger?: boolean): Promise<boolean>;
 }
 
 export interface LegacySessions {
+  flushRecentsReconcile(): Promise<void> | void;
   updateSessionMetadata(id: string, patch: { title?: string; pinned?: boolean; projectId?: string }): Promise<void>;
   loadSession(sessionId: string): Promise<void> | void;
-  setRecentsFilter(filter: string | null): void;
-  getRecentsFilter?(): string | null;
   setRecentsSearch(query: string): void;
   retryRecentsFetch(): void;
-  clearRecentsFilter(): void;
-  onRecentsFilterChipClick(value: string): void;
   openTagEditor(sessionId: string, event?: Event): void;
   deleteSession(sessionId: string, event?: Event): Promise<void> | void;
   /** Soft-hide into Storage (30-day retention); not a hard delete. */
@@ -132,37 +117,6 @@ export interface LegacyProfile {
   confirmClearSettings(): void;
   confirmDeleteAccount(): void;
   setLang(lang: string): void;
-}
-
-export interface LegacyWorkspace {
-  switchLibraryTab(tab: string): void;
-  filterLibrary(query: string): void;
-  openLibraryItem(id: string, kind: string, collection?: string): void;
-  toggleLibrarySelect(id: string, checked: boolean): void;
-  toggleSelectAllLibrary(checked: boolean): void;
-  deleteSelectedLibrary(): void;
-  startLibraryRename(id: string, key: string): void;
-  cancelLibraryRename(): void;
-  saveLibraryRename(input: HTMLInputElement): void;
-  deleteLibraryFile(id: string): void;
-  renameArtifact(id: string): void;
-  openCreateProject(): void;
-  openEditProject(id: string): void;
-  openProjectWorkspace(id: string): void;
-  connectProjectConnector(id: string): void;
-  refreshProjectConnector(id: string): void;
-  openProjectConnectorForm(id: string): void;
-  exitPluginsView(): void;
-  openArxivSearch(): void;
-  openZoteroLibrary(): void;
-}
-
-export interface LegacyScheduled {
-  openCreateScheduledTask(initialPrompt?: string): void;
-  openEditScheduledTask(id: string): void;
-  toggleScheduledTask(id: string, pause: boolean): void;
-  runScheduledTask(id: string): void;
-  deleteScheduledTask(id: string): void;
 }
 
 export interface LegacyPostRender {
@@ -265,15 +219,12 @@ export interface LegacyLiveTurn {
 export interface LegacyActions {
   messages: LegacyMessages;
   navigation: LegacyNavigation;
-  settings: LegacySettings;
   confirm: LegacyConfirm;
   sessions: LegacySessions;
   composer: LegacyComposer;
   cmdK: LegacyCmdK;
   share: LegacyShare;
   profile: LegacyProfile;
-  workspace: LegacyWorkspace;
-  scheduled: LegacyScheduled;
   postRender: LegacyPostRender;
   render: LegacyRender;
   thinking?: LegacyThinking;

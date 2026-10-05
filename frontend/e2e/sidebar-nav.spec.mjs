@@ -42,6 +42,24 @@ test('Plugins is a direct sidebar destination', async ({ page }) => {
   await expect(page.locator('#pluginsPanel .plugins-panel-tabs')).toHaveCount(0);
 });
 
+test('direct workspace routes restore navigation and browser history', async ({ page }) => {
+  await gotoAndSettle(page, '/projects');
+  await waitForAppShell(page);
+  await expect(page.locator('.projects-directory')).toBeVisible();
+  await expect(page.locator('#navProjects')).toHaveClass(/active/);
+
+  await page.locator('#navLibrary').click();
+  await expect(page).toHaveURL(/\/library$/);
+  await expect(page.locator('.library-directory')).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(/\/projects$/);
+  await expect(page.locator('.projects-directory')).toBeVisible();
+  await expect(page.locator('#navProjects')).toHaveClass(/active/);
+  await page.goForward();
+  await expect(page).toHaveURL(/\/library$/);
+  await expect(page.locator('#navLibrary')).toHaveClass(/active/);
+});
+
 test('workspace destinations replace the chat landing instead of stacking under it', async ({ page }) => {
   /* Regression: the forced `#topicSetup { display:flex !important }` landing
      rules used to outrank `.hidden`, so selecting a sidebar page left the
@@ -74,9 +92,15 @@ test('Projects has one keyboard action and keeps creation in its directory', asy
 
 test('phone workspace destinations hide the landing too', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.evaluate(() => window.openNav('plugins'));
+  await page.evaluate(() => {
+    if (document.getElementById('sidebar')?.classList.contains('collapsed')) window.toggleSidebar();
+  });
+  await expect(page.locator('#sidebar')).not.toHaveClass(/collapsed/);
+  await page.locator('#navPlugins').click();
   await expect(page.locator('#pluginsPanel')).toBeInViewport();
   await expect(page.locator('#topicSetup')).toBeHidden();
+  await expect(page.locator('#sidebar')).toHaveClass(/collapsed/);
+  await expect(page.locator('#sidebarBackdrop')).not.toHaveClass(/show/);
 });
 
 test('desktop share control renders its svg, not the text label', async ({ page }) => {

@@ -1,7 +1,7 @@
 // Direct listeners for the few static shell controls that sit outside React
 // roots. This is intentionally an explicit element map, not an action-string
 // interpreter or a document-wide event dispatcher.
-import { readComposerSurface } from '../react/composer-input/controller.ts';
+import { readComposerSurface } from '../composer/controller.ts';
 
 let mounted = false;
 

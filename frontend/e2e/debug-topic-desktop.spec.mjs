@@ -54,8 +54,7 @@ test('DEBUG: chat composer on DESKTOP — focus + 1 line behavior', async ({ pag
 
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
   });
   await page.waitForTimeout(150);
   const baseline = await snapshotWrap(page, '#composerInputWrap');

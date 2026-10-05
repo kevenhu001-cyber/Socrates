@@ -422,7 +422,7 @@ import {
   clearComposer,
   getComposerMarkdown,
   getVisibleComposerSurface,
-} from '../react/composer-input/controller.ts';
+} from '../composer/controller.ts';
 import { callAPI } from '../chat/api.js';
 import { apiFetch } from '../util/api.js';
 import { publishAgentRun } from '../extensions/agentRunStore.ts';

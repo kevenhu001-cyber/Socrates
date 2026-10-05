@@ -3,7 +3,7 @@ import { i18n, getLegacyActions } from '../../legacy/gateway.ts';
 import { focusComposer } from '../../composer-input';
 import { toggleComposerPlugin } from '../../composer/pluginSelection';
 import { getConnectorIconMarkup } from '../../../connector-icons';
-import type { useWorkspaceDispatch } from './workspace.bridge';
+import type { useWorkspaceDispatch } from './workspace.hooks';
 
 export interface WorkspacePluginBasic {
   id: string;

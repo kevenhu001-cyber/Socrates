@@ -41,8 +41,7 @@ async function prepareStream(page, options = {}) {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '77777777-7777-4777-8777-777777777777' });
     window.stateStore.dispatch({ type: "state/set", key: "messages", value: [] });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
 
     for (let i = 0; i < 10; i += 1) {
       window.addMessage(i % 2 ? 'assistant' : 'user', `Earlier message ${i}: ${'context '.repeat(20)}`);

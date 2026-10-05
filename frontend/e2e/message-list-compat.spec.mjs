@@ -13,8 +13,7 @@ test('message list renders user messages through React', async ({ page }) => {
      inside chatView; force it visible so Playwright sees the
      elements as visible. */
   await page.evaluate(() => {
-    document.getElementById('topicSetup')?.classList.add('hidden');
-    document.getElementById('chatView')?.classList.remove('hidden');
+    window.__testActivateMainView('chatView');
   });
 
   await expect(page.locator('#msgList')).not.toHaveAttribute('data-mounted-by', /.+/);
@@ -50,8 +49,7 @@ test('message list renders assistant messages with toolbar and model label', asy
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    document.getElementById('topicSetup')?.classList.add('hidden');
-    document.getElementById('chatView')?.classList.remove('hidden');
+    window.__testActivateMainView('chatView');
   });
 
   await page.evaluate(() => {
@@ -91,8 +89,7 @@ test('message list snapshots react to message-added events', async ({ page }) =>
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    document.getElementById('topicSetup')?.classList.add('hidden');
-    document.getElementById('chatView')?.classList.remove('hidden');
+    window.__testActivateMainView('chatView');
   });
 
   await page.evaluate(() => {
@@ -124,8 +121,7 @@ test('message list toolbar copy button reads rawText and triggers toast', async 
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    document.getElementById('topicSetup')?.classList.add('hidden');
-    document.getElementById('chatView')?.classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     window.__messageListSpecToast = null;
     const showToastMock = (msg) => { window.__messageListSpecToast = msg; };
     window.showToast = showToastMock;
@@ -154,8 +150,7 @@ test('message list toolbar action buttons dispatch to legacy window globals', as
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    document.getElementById('topicSetup')?.classList.add('hidden');
-    document.getElementById('chatView')?.classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     window.__msgSpecEditCalls = [];
     window.__msgSpecFeedbackCalls = [];
     const editMock = (id) => { window.__msgSpecEditCalls.push(id); };
@@ -224,8 +219,7 @@ test('streaming bubble is removed at finish and React renders the finalized entr
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    document.getElementById('topicSetup')?.classList.add('hidden');
-    document.getElementById('chatView')?.classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     const bridge = window.__socratesReactChatBridge;
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '22222222-2222-4222-8222-222222222222' });

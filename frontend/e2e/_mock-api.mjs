@@ -20,7 +20,7 @@ const MOCK_USER = {
 const MOCK_CFG = {
   hasBeagleKey: true,
   // Don't send beagleKey to client (server-only). Smoke test relies on
-  // BEAGLE_BUILT_IN being wireable client-side via the existing fallback path.
+  // The built-in provider availability is wireable through /api/config.
 };
 
 const MOCK_SESSIONS = { sessions: [] };
@@ -111,7 +111,13 @@ export async function mockAuthedApp(page, options = {}) {
       return;
     }
     if (apiUrl.includes('/api/api-key')) {
-      await route.fulfill(jsonResponse(MOCK_API_KEYS));
+      if (req.method() === 'GET') {
+        await route.fulfill(jsonResponse(options.apiKeys || MOCK_API_KEYS));
+      } else if (req.method() === 'POST') {
+        await route.fulfill(jsonResponse({ id: 'smoke-provider-1' }, 201));
+      } else {
+        await route.fulfill(jsonResponse({ ok: true }));
+      }
       return;
     }
     if (apiUrl.includes('/api/memories') || apiUrl.includes('/api/usage') ||

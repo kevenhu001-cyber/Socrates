@@ -120,7 +120,43 @@ renders from starting duplicate `/api/projects` requests.
 
 Project summaries now have one typed cache owner with subscriptions and
 single-flight initial loading. Recents chips, project actions, session loading,
-and the workspace page read or update that cache; `window.__projectsCache`
-remains a compatibility alias for older callers. Failed workspace refreshes
-keep the last successful project list so recents chips do not disappear during
-a transient network error.
+and the workspace page read or update that cache; the unused
+`window.__projectsCache` compatibility alias is removed. Failed workspace
+refreshes keep the last successful project list so recents chips do not
+disappear during a transient network error.
+
+## Eleventh increment
+
+Provider configuration now has a typed store and service that own provider
+rows, active selection, validation, persistence, and activation rollback.
+Settings keeps only modal and external-API presentation state. Provider
+snapshots expose `hasKey` rather than credentials; key drafts live in the
+provider service and the key input is uncontrolled so React does not retain a
+second copy. Authentication, exam selection, model pickers, effort labels,
+chat configuration, and clear-settings actions read or update the typed
+provider domain. `window.apiConfig`, the provider-list snapshot bridge, and
+the retired `window.renderProviderList` publisher are removed. Settings
+coverage now checks visible rows and API payloads rather than reaching into a
+global configuration object.
+
+## Twelfth increment
+
+Composer lifecycle ownership now sits in the typed Composer store/controller:
+the active surface, separate topic/chat drafts, extension tokens, editor
+commands, and send/stop/reset dispatches no longer depend on the legacy surface
+swap observer or bridge. One Tiptap instance remains mounted across topic and
+chat surfaces. Focused coverage exercises surface changes, draft/token
+retention, send, stop, keyboard submit, and reset.
+
+## Thirteenth increment
+
+Sidebar destination state, route/history handling, recents filtering, and
+drawer dismissal now belong to typed navigation/sidebar stores and services.
+Library, Projects, Plugins, and Scheduled pages use typed stores/services for
+loading and actions; their project, connector, scheduled-task, and library
+detail dialogs are invoked directly from React owners. The old sidebar nav and
+recents snapshot bridges, scheduled/workspace page bridges, `sidebar/index.js`,
+and page-specific dialog/action aliases are removed. Shared confirmation and
+Recents operations remain available through typed legacy actions for their
+other callers. Focused route, drawer, workspace CRUD, preview, and scheduled-
+page coverage protects the existing destinations, ordering, and return paths.

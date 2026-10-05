@@ -18,20 +18,18 @@
 //   → Phase C:  remaining 148 self-defined functions in main.js will
 //               be migrated to their own modules and added here
 //               incrementally. Until then, main.js keeps a small
-//               self-bridge for state vars (apiConfig / appMode / etc.)
+//               self-bridge for state vars (appMode / etc.)
 //               and functions not yet extracted.
 
 /* ─── auth/boot.js — boot-time flags ─── */
 import { SERVER_HAS_BEAGLE_KEY } from './auth/boot.js';
 window.SERVER_HAS_BEAGLE_KEY = SERVER_HAS_BEAGLE_KEY;
 
-/* ─── config/providers.js — MUST come first (apiConfig consumed by every other module) ─── */
-import { apiConfig, appMode, webSearchOn, extensiveThinkingOn, BEAGLE_BUILT_IN, isReasoningProvider, syncAppModeUI, setAppMode, thinkingOn } from './config/providers.js';
-window.apiConfig = apiConfig;
+/* ─── config/providers.js ─── */
+import { appMode, webSearchOn, extensiveThinkingOn, isReasoningProvider, syncAppModeUI, setAppMode, thinkingOn } from './config/providers.js';
 window.appMode = appMode;
 window.webSearchOn = webSearchOn;
 window.extensiveThinkingOn = extensiveThinkingOn;
-window.BEAGLE_BUILT_IN = BEAGLE_BUILT_IN;
 window.isReasoningProvider = isReasoningProvider;
 window.syncAppModeUI = syncAppModeUI;
 window.setAppMode = setAppMode;
@@ -78,13 +76,9 @@ window.hideGate = hideGate;
 window.showGate = showGate;
 window.showAuthSignin = showAuthSignin;
 
-/* ─── sidebar/index.js ─── */
-import { toggleSidebar, setRecentsFilter, getRecentsFilter, clearRecentsFilter, onRecentsFilterChipClick } from './sidebar/index.js';
+/* ─── typed sidebar service ─── */
+import { toggleSidebar } from './sidebar/sidebar.service.ts';
 window.toggleSidebar = toggleSidebar;
-window.setRecentsFilter = setRecentsFilter;
-window.getRecentsFilter = getRecentsFilter;
-window.clearRecentsFilter = clearRecentsFilter;
-window.onRecentsFilterChipClick = onRecentsFilterChipClick;
 
 /* ─── pickers.js ─── */
 /* Extension toggles / picker menus are wired module-locally; only the
@@ -95,16 +89,12 @@ import {
   syncModelPills,
   syncChatModel,
   toggleWebSearch,
-  markProvidersFetched,
 } from './pickers.js';
 window.getActiveProvider = getActiveProvider;
 window.syncModelPills = syncModelPills;
 window.syncChatModel = syncChatModel;
 window.toggleWebSearch = toggleWebSearch;
-window.markProvidersFetched = markProvidersFetched;
-
-// Settings provider snapshots publish through a lazy window adapter so the
-// zero-dependency provider config module does not import the settings surface.
+// Settings loads its React surface lazily through the typed service below.
 
 /* ─── ui/cheatsheet.js ─── */
 import { closeCheatsheet, openCheatsheet } from './ui/cheatsheet.js';
@@ -118,7 +108,7 @@ window.openCheatsheet = openCheatsheet;
 window.closeCheatsheet = closeCheatsheet;
 
 /* ─── sidebar/nav.js (PR-A of the sidebar overhaul) ─── */
-import { openNav, setActiveNav } from './sidebar/nav.js';
+import { openNav, setActiveNav } from './sidebar/navigation.service.ts';
 /* `openNav` drives navigation from the imperative callers below — the
    React sidebar (react/sidebar/SidebarNav.tsx), the more-popover, the
    keyboard shortcuts, the home surface and the native bridge. index.html
@@ -129,10 +119,9 @@ import { openNav, setActiveNav } from './sidebar/nav.js';
    cycle). */
 window.openNav = openNav;
 window.setActiveNav = setActiveNav;
-/* PR-B/C/D/E — panel inline handlers. nav.js defines these on
-   window.* directly, but we re-affirm the bridge here so the
-   export audit trail is complete. */
-import './sidebar/nav.js';
+/* Destination adapters load the existing pages and register them with the
+   typed navigation service. The React sidebar talks to that service directly. */
+import './sidebar/navigation.adapters.ts';
 
 /* ─── sidebar/morePopover.js (PR-A) ─── */
 import { closeMorePopover } from './sidebar/morePopover.js';
@@ -158,7 +147,7 @@ window.findNext = findNext;
 window.findPrev = findPrev;
 
 /* ─── ui/storage.js ─── */
-/* Consumers (settings.js, React panels) import the storage modal
+/* Consumers (React panels) import the storage modal
    directly; the bare import only keeps evaluation order. */
 import './ui/storage.js';
 
@@ -190,14 +179,12 @@ function _loadVoiceInput() {
 }
 window.toggleSpeechInput = function (surface) { return _loadVoiceInput().then(function (m) { return m.toggleSpeechInput(surface); }); };
 window.stopSpeechInput = function () { if (_voiceImport) return _voiceImport.then(function (m) { return m.stopSpeechInput(); }); };
-/* ─── ui/settings.js ───
-   Lazy: the settings surface loads only when opened. React owns its DOM;
-   this adapter lets the earlier-loaded provider module publish fresh data
-   without importing the settings feature or creating a cycle. */
+/* ─── Settings React surface ───
+   Lazy: Settings and its provider domain load only when opened. */
 var _settingsImport = null;
 function _loadSettingsModule() {
   if (!_settingsImport) {
-    _settingsImport = import('./ui/settings.js');
+    _settingsImport = import('./react/settings/settings.service.ts');
     _settingsImport.catch(function (err) {
       _settingsImport = null;
       console.error('[settings] failed to load', err);
@@ -207,7 +194,6 @@ function _loadSettingsModule() {
 }
 window.openSettings = function () { return _loadSettingsModule().then(function (m) { return m.openSettings(); }); };
 window.closeSettings = function () { if (_settingsImport) return _settingsImport.then(function (m) { return m.closeSettings(); }); };
-window.renderProviderList = function () { if (_settingsImport) return _settingsImport.then(function (m) { return m.publishSettingsProviders(); }); };
 
 /* ─── ui/share.js ─── */
 /* Copy/load handlers are wired module-locally inside ui/share.js and by

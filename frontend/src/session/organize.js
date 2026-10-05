@@ -5,7 +5,7 @@
 import { stateStore } from '../state/store.js';
 import { serverCache } from './serverCache.js';
 import { findServerSessionIndex, getKnownTags, getRecents, flushRecentsReconcile } from './recents.js';
-import { getRecentsFilter } from '../sidebar/index.js';
+import { getRecentsFilter } from '../sidebar/sidebar.service.ts';
 import { filterRecentsByChip } from '../ui/recentsHelpers.js';
 import { getCachedProjects } from '../projects/projectCache.ts';
 import { apiFetch } from '../util/api.js';

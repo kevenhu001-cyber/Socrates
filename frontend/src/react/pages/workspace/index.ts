@@ -1,14 +1,9 @@
 export { mountWorkspacePage, unmountWorkspacePage } from './WorkspacePage';
-export {
-  installWorkspaceBridge,
-  getWorkspaceSnapshot,
-  subscribeToWorkspace,
-  useWorkspaceSnapshot,
-  useWorkspaceDispatch,
-} from './workspace.bridge';
+export { useWorkspaceSnapshot, useWorkspaceDispatch } from './workspace.hooks';
+export { useWorkspaceStore } from './workspace.store';
+export { loadLibraryData, loadProjectsData, loadPluginsData } from './workspace.service';
 export type {
   WorkspaceSnapshot,
-  WorkspaceBridge,
   LibraryItem,
   ProjectItem,
   PluginItem,

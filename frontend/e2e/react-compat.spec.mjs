@@ -24,8 +24,7 @@ test('React compatibility mode preserves the legacy application shell', async ({
      toggles #composerPrimaryBtn.active; React's SendButtonContent reads it). */
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
   });
   await page.locator('#composerRoot .rich-composer-editor').first().fill('compat arrow');
   await expect(page.locator('#composerPrimaryBtnContent .icon-arrow')).toHaveCount(1);

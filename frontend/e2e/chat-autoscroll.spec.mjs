@@ -61,8 +61,7 @@ async function bootStreamingChat(page) {
   await page.evaluate(async () => {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '88888888-8888-4888-8888-888888888888' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
 
     /* A tall transcript so the scroller overflows. These go through
        state.messages rather than appendChild: #msgList is React-owned, so a
@@ -195,8 +194,7 @@ async function bootSendableChat(page) {
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '99999999-9999-4999-8999-999999999999' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     for (let i = 0; i < 30; i += 1) {
       window.addMessage(i % 2 ? 'assistant' : 'user', `Anchor history ${i + 1}: ${'context '.repeat(12)}`);
     }

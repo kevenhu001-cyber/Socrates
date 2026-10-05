@@ -187,8 +187,7 @@ test('mobile plus menu opens without expanding the chat composer', async ({ page
 
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
   });
 
   const wrap = page.locator('#composerInputWrap');
@@ -284,8 +283,7 @@ test('desktop workflow selection embeds a themed token in the editable content',
 
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
   });
   const chatEditor = page.locator('#composerRoot .rich-composer-editor');
   const chatToken = chatEditor.locator('.composer-extension-token');

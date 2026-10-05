@@ -57,8 +57,7 @@ test('mobile send places the submitted prompt and thinking state at the viewport
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Mobile scroll smoke' });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '22222222-2222-4222-8222-222222222222' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     document.documentElement.style.setProperty('--keyboard-inset', '280px');
 
     for (let i = 0; i < 24; i += 1) {
@@ -187,8 +186,7 @@ test('Tutor button send uses the same top anchor while the reply streams', async
     window.stateStore.dispatch({ type: 'state/set', key: 'kbNodes', value: [
       { name: 'A concept', status: 'fuzzy', questions: 1 },
     ] });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     document.body.dataset.conversationActive = 'true';
     window.appMode = 'tutor';
 
@@ -265,8 +263,7 @@ test('mobile first turn stays at the transcript top when the viewport grows', as
     window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
     window.stateStore.dispatch({ type: 'state/set', key: 'topic', value: 'First turn top smoke' });
     window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '77777777-7777-4777-8777-777777777777' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     document.body.dataset.conversationActive = 'true';
     window.appMode = 'chat';
     window.submitChatMessage('First prompt');
@@ -312,8 +309,7 @@ test('a sent prompt keeps its top offset across viewport changes', async ({ page
     window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
     window.stateStore.dispatch({ type: 'state/set', key: 'topic', value: 'Viewport growth smoke' });
     window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '33333333-3333-4333-8333-333333333333' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     document.body.dataset.conversationActive = 'true';
     for (let i = 0; i < 30; i += 1) {
       window.addMessage(i % 2 ? 'assistant' : 'user', `Reserve follow history ${i + 1}: ${'context '.repeat(12)}`);
@@ -423,8 +419,7 @@ test('retry replaces the failed answer and resumes at the visible error position
     window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Retry viewport smoke' });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     for (let i = 0; i < 18; i += 1) {
       window.addMessage(i % 2 ? 'assistant' : 'user', `Retry history ${i + 1}`);
     }
@@ -508,8 +503,7 @@ test('retry replays the failed turn content including attachments', async ({ pag
     window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
     window.stateStore.dispatch({ type: 'state/set', key: 'topic', value: 'Retry content smoke' });
     window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '55555555-5555-4555-8555-555555555555' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     window.appMode = 'chat';
     /* Mutate the shared live array in place — window.attachments must keep
        its identity across modules. */
@@ -571,8 +565,7 @@ test('the live turn keeps exactly one row while deltas arrive', async ({ page })
     window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Streaming ownership' });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '33333333-3333-4333-8333-333333333333' });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: window.stateStore.read("currentSessionId") });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     window.addMessage('user', 'Keep the next streamed answer visible.');
     /* Drive the real streaming path: the entry goes into state.messages and
        React draws the only bubble. Hand-mounting a legacy bubble here would
@@ -620,8 +613,7 @@ test('send button plays the sent glyph, then settles on the stop state', async (
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
     window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '33333333-3333-4333-8333-333333333333' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     /* Record every class flip on the button and whether the glyph pair was
        rendered while it lasted. */
     const btn = document.getElementById('composerPrimaryBtn');

@@ -326,13 +326,23 @@ export function toolOutputsOf(call: ToolCallRecord | null | undefined): ToolOutp
   return legacyToolOutputs(call);
 }
 
-/** The outputs an attachment host renders: charts and saved files. */
+/** The outputs an attachment host renders: charts and saved files.
+ *  Image artifacts (PNG/JPEG/WebP/GIF/SVG) are intentionally excluded — the
+ *  assistant must reference them explicitly in prose, e.g.
+ *  `![description](/api/files/<fileId>/raw)`, so the user only sees images
+ *  the model chooses to show. */
+const IMAGE_MIME_RE = /^image\//i;
 export function attachmentOutputsOf(
   call: ToolCallRecord | null | undefined,
 ): Array<VisualizationOutput | ArtifactOutput> {
   return toolOutputsOf(call).filter(
-    (output): output is VisualizationOutput | ArtifactOutput =>
-      output.kind === 'visualization' || output.kind === 'artifact',
+    (output): output is VisualizationOutput | ArtifactOutput => {
+      if (output.kind === 'visualization') return true;
+      if (output.kind === 'artifact') {
+        return !output.mimeType || !IMAGE_MIME_RE.test(output.mimeType);
+      }
+      return false;
+    },
   );
 }
 

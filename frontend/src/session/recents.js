@@ -16,7 +16,7 @@ import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { resetShareToken, toggleShareBtn } from '../ui/share.js';
 import { showConfirm } from '../ui/confirm.js';
 import { showToast } from '../ui/toast.js';
-import { clearComposer } from '../react/composer-input/controller.ts';
+import { clearComposer } from '../composer/controller.ts';
 import { clearComposerPlugins } from '../react/composer/pluginSelection.ts';
 import { clearLegacyMsgListChildren } from '../ui/messageListDom.js';
 import { updateComposerBtn } from '../ui/topicSetup.js';

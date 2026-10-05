@@ -31,7 +31,7 @@ import { generateId } from '../util/ids.js';
 import { pushChatIdToURL, setChatIdInURL } from '../session/store.js';
 import { syncChatModel, getActiveProvider } from '../pickers.js';
 import { activateMainView } from '../ui/mainViewController.js';
-import { placeComposerForView } from '../ui/mainViewController.js';
+import { activateComposerSurface } from '../composer/controller.ts';
 import { updateComposerBtn } from '../ui/topicSetup.js';
 import { publishReactChatRuntime, } from '../ui/reactBridge.js';
 import { publishThinkingTurnStart } from '../ui/messageSnapshot.js';
@@ -42,7 +42,7 @@ import {
   clearComposer,
   getComposerMarkdown,
   focusComposer,
-} from '../react/composer-input/controller.ts';
+} from '../composer/controller.ts';
 import {
   clearComposerPlugins,
   copyComposerPlugins,
@@ -401,10 +401,9 @@ export async function startSession(){
     if(dv){dv.classList.add("hidden");dv.innerHTML="";}
     var ts=document.getElementById("topicSetup");
     if(ts)ts.classList.remove("hidden");
-    /* P_composer-single — this path bypasses activateMainView, so park
-       the shell explicitly or it stays stranded under the hidden chat
-       view while landing is visible. */
-    try{ placeComposerForView("topicSetup", document); }catch (e) { /* best effort */ reportSwallow(e, 'chat/sessionBootstrap.diagLoadingHTML#3'); }
+    /* This direct view flip must update the typed composer owner before the
+       landing editor receives focus. */
+    try{ activateComposerSurface("topic", document); }catch (e) { /* best effort */ reportSwallow(e, 'chat/sessionBootstrap.diagLoadingHTML#3'); }
     clearComposerPlugins("topic");
     clearComposerPlugins("chat");
     focusComposer("topic");

@@ -3,7 +3,8 @@ import { createRoot, type Root } from 'react-dom/client';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 
 import { getLegacyActions, t as _t } from '../legacy/gateway.ts';
-import { seedSidebarBridgesFromLegacy, useActiveNav, useSidebarNavCommands } from './sidebar.bridge';
+import { openNav } from '../../sidebar/navigation.service';
+import { useNavigationStore } from '../../sidebar/navigation.store';
 import type { SidebarNavKey } from './types';
 
 const NAV_ID = 'sidebarNav';
@@ -92,8 +93,7 @@ function navButtonId(key: SidebarNavKey | 'new' | 'skills'): string {
 }
 
 function SidebarNav() {
-  const active = useActiveNav();
-  const { open } = useSidebarNavCommands();
+  const active = useNavigationStore((state) => state.activeDestination);
 
   return (
     <>
@@ -121,7 +121,7 @@ function SidebarNav() {
               } else if (button.key === 'skills') {
                 getLegacyActions().navigation.openPromptTemplatesModal();
               } else if (button.key !== null) {
-                open(button.key);
+                openNav(button.key);
               }
             }}
           >
@@ -163,8 +163,7 @@ export interface SidebarNavHandle {
  * openAdmin), so the admin surface is not advertised in the nav.
  *
  * Callers claim the element through the module-private ownership registry.
- * The React buttons re-publish active state through the bridge, while legacy
- * selectors keep working because the buttons remain inside the same host.
+ * React reads active destination state from the typed navigation store.
  */
 export function hydrateSidebarNav(): SidebarNavHandle | null {
   const nav = document.getElementById(NAV_ID);
@@ -172,8 +171,6 @@ export function hydrateSidebarNav(): SidebarNavHandle | null {
   if (hostIsMountedBy(nav, 'sidebar-nav')) {
     throw new Error('Sidebar nav React runtime was initialized more than once.');
   }
-
-  seedSidebarBridgesFromLegacy();
 
   const root = createRoot(nav);
   root.render(<SidebarNav />);

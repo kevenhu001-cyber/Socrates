@@ -45,8 +45,7 @@ async function startMockedTurn(page) {
     window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [
       { clientId: 'user-announce', role: 'user', rawText: 'Announce this turn', html: null },
     ] });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     window.__announceTurn = window.askChatTurn('Announce this turn');
   });
 }

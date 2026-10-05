@@ -62,9 +62,7 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
   await page.screenshot({ path: 'test-results/socrates-mobile-unified-landing.png', fullPage: true });
 
   await page.evaluate(() => {
-    document.getElementById('topicSetup')?.classList.add('hidden');
-    document.getElementById('mainInner')?.classList.add('hidden');
-    document.getElementById('chatView')?.classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     document.body.dataset.conversationActive = 'true';
   });
   await expect(page.locator('#composerInputWrap')).toBeVisible();
@@ -89,26 +87,27 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
    must exercise the post-login shell without depending on a real account. */
 test('mobile composer keeps model selector and reference controls discoverable', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await mockAuthedApp(page, { lang: 'zh' });
-  await gotoAndSettle(page, '/');
-  await waitForAppShell(page);
-
-  await page.evaluate(() => {
-    window.apiConfig.activeId = 'luna';
-    window.apiConfig.providers = [{
+  await mockAuthedApp(page, {
+    lang: 'zh',
+    apiKeys: { providers: [{
       id: 'luna',
       label: '5.6 Luna',
       model: 'luna-1',
       url: 'https://models.example.test/v1',
-      isBuiltIn: false,
-    }];
+      isMultimodal: false,
+      hasKey: true,
+      isActive: true,
+    }], activeId: 'luna' },
+  });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+
+  await page.evaluate(() => {
     window.syncEffortUI?.();
     window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
     window.stateStore.dispatch({ type: 'state/set', key: 'topic', value: 'Mobile reference check' });
     window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '66666666-6666-4666-8666-666666666666' });
-    document.getElementById('topicSetup')?.classList.add('hidden');
-    document.getElementById('mainInner')?.classList.add('hidden');
-    document.getElementById('chatView')?.classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     document.body.dataset.conversationActive = 'true';
   });
   await page.waitForTimeout(250);

@@ -71,8 +71,7 @@ async function bootChatTurn(page) {
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-stop', role: 'user', rawText: 'Stop me mid-stream', html: null }] });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     window.__stopTurnPromise = window.askChatTurn('Stop me mid-stream');
   });
 }
@@ -213,8 +212,7 @@ for (const ending of ['abort', 'error']) {
         phase: 'chat', currentSessionId: '88888888-8888-4888-8888-888888888888',
         messages: [{ clientId: 'owner-user', role: 'user', rawText: 'Keep the new turn active' }],
       } });
-      document.getElementById('topicSetup').classList.add('hidden');
-      document.getElementById('chatView').classList.remove('hidden');
+      window.__testActivateMainView('chatView');
       window.__oldOwner = await window.addStreamingMessage({ clientId: 'owner-old' });
       window.__newOwner = await window.addStreamingMessage({ clientId: 'owner-new' });
     });

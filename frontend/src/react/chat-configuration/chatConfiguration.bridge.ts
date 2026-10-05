@@ -1,5 +1,5 @@
 import { createImmutableBridge, useBridge } from '../../lib/bridge/index.ts';
-import { apiConfig } from '../../config/providers.js';
+import { getProviderConfigSnapshot } from '../../config/providerConfig.store.ts';
 import { getStoredReasoningEffort, getStoredResponseSpeed } from '../../config/chatPreferences.ts';
 import { restingRect } from '../../ui/pressFeedback.js';
 import type { ChatConfigurationBridge, ChatConfigurationSnapshot, ChatProviderOption } from './types';
@@ -51,11 +51,18 @@ export function openChatConfiguration(trigger?: HTMLElement | null): void {
   const rect = trigger ? restingRect(trigger) : null;
   openTrigger = trigger || null;
   openTrigger?.setAttribute('aria-expanded', 'true');
-  const providers = apiConfig.providers as ChatProviderOption[];
+  const providerConfig = getProviderConfigSnapshot();
+  const providers: ChatProviderOption[] = providerConfig.providers.map((provider) => ({
+    id: provider.id,
+    label: provider.label,
+    model: provider.model,
+    url: provider.url,
+    isBuiltIn: provider.isBuiltIn,
+  }));
   installChatConfigurationBridge().publish({
     open: true,
-    providers: Array.isArray(providers) ? providers.map((provider) => ({ ...provider })) : [],
-    activeId: String(apiConfig.activeId || ''),
+    providers,
+    activeId: String(providerConfig.activeId || ''),
     effort: getStoredReasoningEffort(),
     speed: getStoredResponseSpeed(),
     anchorRect: rect

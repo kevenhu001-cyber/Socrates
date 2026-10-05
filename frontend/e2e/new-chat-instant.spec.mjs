@@ -31,8 +31,7 @@ test('new chat switches instantly while a session save is in flight', async ({ p
       { clientId: 'u1', role: 'user', rawText: '什么是导数', html: null },
       { clientId: 'a1', role: 'assistant', rawText: '导数描述变化率。', html: '<p>导数描述变化率。</p>' },
     ] });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
   });
   await expect.poll(() => posted.length).toBe(1);
 

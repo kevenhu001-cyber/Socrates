@@ -5,7 +5,10 @@ import { flushSync } from 'react-dom';
 
 import { getApiFetch, getCurrentLang, getCurrentUser, getLegacyActions, i18n } from '../legacy/gateway.ts';
 import { installSettingsBridge, useSettingsSnapshot } from './settings.bridge';
+import { closeSettings, toggleExternalApi } from './settings.service';
 import { ProviderList, useProviderListState } from './ProviderList';
+import { useProviderConfigStore } from '../../config/providerConfig.store';
+import { confirmClearSettings } from '../../ui/dangerConfirms.js';
 import { useProfileDispatch, useProfileSnapshot } from '../profileModal/profileModal.bridge';
 import { getAvailablePresets, getTonePreset, setTonePreset } from '../../config/tonePresets.js';
 import { trapFocus, setModalOpen } from '../../ui/modalA11y.js';
@@ -24,6 +27,7 @@ const SAVE_BTN_ID = 'saveSettingsBtn';
 
 function SettingsModal() {
   const snap = useSettingsSnapshot();
+  const providerConfig = useProviderConfigStore((state) => state);
   const overlayRef = useRef<HTMLDivElement>(null);
   const [section, setSection] = useState('general');
   useEffect(() => {
@@ -79,7 +83,11 @@ function SettingsModal() {
   ];
 
   const legacy = getLegacyActions();
-  const providerState = useProviderListState(legacy.settings, snap.providers);
+  const providers = providerConfig.providers.map((provider) => ({
+    ...provider,
+    isActive: provider.id === providerConfig.activeId || (!providerConfig.activeId && provider.isBuiltIn),
+  }));
+  const providerState = useProviderListState();
   const tonePresets = getAvailablePresets();
 
   /* Esc-to-close + focus management, replacing the legacy
@@ -91,7 +99,7 @@ function SettingsModal() {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') {
         e.stopPropagation();
-        legacy.navigation.closeSettings();
+        closeSettings();
       } else if (e.key === 'Tab') {
         trapFocus(e, overlay);
       }
@@ -119,7 +127,7 @@ function SettingsModal() {
 
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
-      legacy.navigation.closeSettings();
+      closeSettings();
     }
   };
 
@@ -142,7 +150,7 @@ function SettingsModal() {
             aria-label={label('关闭', 'Close')}
             data-i18n-aria="common.close"
             data-initial-focus="true"
-            onClick={() => legacy.navigation.closeSettings()}
+            onClick={closeSettings}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <path d="M18 6 6 18M6 6l12 12" />
@@ -436,7 +444,7 @@ function SettingsModal() {
               <p>Choose whether Socrates may use your own API credentials.</p>
             </div>
             <div className="settings-card settings-card--toggle">
-              <div className="stg-toggle" id="stgToggle" onClick={() => legacy.settings.toggleAPI()}>
+              <div className="stg-toggle" id="stgToggle" onClick={toggleExternalApi}>
                 <span className="settings-label stg-toggle-label">{i18n('settings.useExternalApi', 'Use External API')}</span>
                 <div className={`stg-toggle-track${snap.externalApiOn ? ' on' : ''}`} id={TRACK_ID}>
                   <div className="stg-toggle-knob" />
@@ -461,14 +469,12 @@ function SettingsModal() {
               </span>
               <ProviderList
                 id={PROVIDER_LIST_ID}
-                providers={snap.providers}
-                providerErrors={snap.providerErrors}
-                providerDrafts={providerState.providerDrafts}
-                keyDrafts={providerState.keyDrafts}
+                providers={providers}
+                providerErrors={providerConfig.errors}
                 externalApiOn={snap.externalApiOn}
                 language={lang}
                 onFieldChange={providerState.onFieldChange}
-                onKeyDraftChange={providerState.onKeyDraftChange}
+                onKeyRef={providerState.onKeyRef}
                 onLabelRef={providerState.onLabelRef}
                 onSetActive={providerState.onSetActive}
                 onRemove={providerState.onRemove}
@@ -496,14 +502,14 @@ function SettingsModal() {
           </section>
 
           <div className="settings-actions">
-            <button className="settings-btn danger" id="clearSettingsBtn" onClick={() => legacy.settings.clearSettings()}>
+            <button className="settings-btn danger" id="clearSettingsBtn" onClick={confirmClearSettings}>
               {i18n('settings.clearAll', 'Clear all')}
             </button>
-            <button className="settings-btn secondary" id="cancelSettingsBtn" onClick={() => legacy.navigation.closeSettings()}>
+            <button className="settings-btn secondary" id="cancelSettingsBtn" onClick={closeSettings}>
               {i18n('common.cancel', 'Cancel')}
             </button>
-            <button className="settings-btn primary" id={SAVE_BTN_ID} disabled={snap.saving} onClick={() => void providerState.saveProviders()}>
-              {snap.saving ? i18n('settings.saving', 'Saving…') : i18n('settings.save', 'Save')}
+            <button className="settings-btn primary" id={SAVE_BTN_ID} disabled={providerConfig.saving} onClick={() => void providerState.saveProviders()}>
+              {providerConfig.saving ? i18n('settings.saving', 'Saving…') : i18n('settings.save', 'Save')}
             </button>
           </div>
           </div>

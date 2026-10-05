@@ -52,8 +52,7 @@ async function startStream(page, { deltas, gapMs = 400, smooth = true, holdOpenM
     window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [
       { clientId: 'user-smooth', role: 'user', rawText: 'Go', html: null },
     ] });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     window.__smoothPromise = window.askChatTurn('Go');
   }, { deltas, gapMs, smooth, holdOpenMs });
 }

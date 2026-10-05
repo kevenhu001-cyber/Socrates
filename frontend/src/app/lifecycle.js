@@ -7,20 +7,19 @@ import { stateStore, resetState } from '../state/store.js';
 import { turnState } from '../chat/turnState.js';
 import { saveState } from '../session/saveState.js';
 import { serverCache } from '../session/serverCache.js';
-import { apiConfig, appMode, setAppMode, syncAppModeUI, syncSidebarForMode, LAST_ACTIVE_ID_KEY } from '../config/providers.js';
+import { appMode, setAppMode, syncAppModeUI, syncSidebarForMode, LAST_ACTIVE_ID_KEY } from '../config/providers.js';
+import { resetProviderConfigForUser } from '../config/providerConfig.service.ts';
 import { apiFetch } from '../util/api.js';
 import { showGate, showAuthSignin } from '../auth/index.js';
 import { showConfirm } from '../ui/confirm.js';
 import { showToast } from '../ui/toast.js';
-import { clearComposer, focusComposer } from '../react/composer-input/controller.ts';
-import { clearComposerPlugins } from '../react/composer/pluginSelection.ts';
+import { startNewComposerSession, resetComposerForNewSession, focusComposerForNewSession } from '../react/composer-input/lifecycle.ts';
 import { clearLegacyMsgListChildren } from '../ui/messageListDom.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { publishThinkingTurnStart } from '../ui/messageSnapshot.js';
 import { resetShareToken, toggleShareBtn } from '../ui/share.js';
 import { clearSessionRouteInURL } from '../session/store.js';
 import { scrollContainer } from '../ui/scroll.js';
-import { updateComposerBtn } from '../ui/topicSetup.js';
 import { saveCurrentSession, saveSessionBeforeReset } from '../session/persistence.js';
 import { syncModelPills } from '../pickers.js';
 import { renderUserFooter } from '../ui/profile.js';
@@ -30,7 +29,7 @@ import { renderUserFooter } from '../ui/profile.js';
 import { resetCmdKSearchState } from '../ui/cmdK.js';
 import { renderGreeting } from '../ui/greeting.js';
 import { activateMainView } from '../ui/mainViewController.js';
-import { setActiveNav } from '../sidebar/nav.js';
+import { setActiveNav } from '../sidebar/navigation.service.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 function _t(key, fallback) {
@@ -50,9 +49,6 @@ function _renderMistakes() {
 }
 function _updateMistakesBadge() {
   try { if (typeof window !== 'undefined' && typeof window.updateMistakesBadge === 'function') window.updateMistakesBadge(); } catch (e) { reportSwallow(e, 'app/lifecycle._updateMistakesBadge'); }
-}
-function _publishSettingsProviders() {
-  try { if (typeof window !== 'undefined' && typeof window.renderProviderList === 'function') window.renderProviderList(); } catch (e) { reportSwallow(e, 'app/lifecycle._publishSettingsProviders'); }
 }
 function _syncSidebarBtns() {
   try { if (typeof window !== 'undefined' && typeof window.syncSidebarBtns === 'function') window.syncSidebarBtns(); } catch (e) { reportSwallow(e, 'app/lifecycle._syncSidebarBtns'); }
@@ -85,7 +81,7 @@ var AUTH_GRACE_MS = 3000;
    switch immediately. The confirm is kept only where work would be lost —
    a reply that is still streaming, or an exam in progress. */
 export function startNewChat(){
-  return resetApp({ confirmActiveSession: false });
+  return startNewComposerSession(resetApp);
 }
 
 export async function resetApp(options){
@@ -177,14 +173,11 @@ export async function resetApp(options){
      triggered a React re-read before renderRecents / scroll reset /
      sidebar sync had run — the duplicate was wasteful and the
      interim state was incomplete. */
-  clearComposer("topic");
-  clearComposerPlugins("topic");
-  clearComposerPlugins("chat");
+  resetComposerForNewSession();
   document.getElementById("kbContent").innerHTML='<div class="kb-empty">'+(typeof t==="function"?_t("tutor.kbTopicFirst"):"Set a topic to build your knowledge map.")+'</div>';
   /* Task 3.3 — clear the teaching-plan view on full reset so a
      previous session's plan doesn't linger in the sidebar. */
   var _tpc2=document.getElementById("teachingPlanContent");if(_tpc2)_tpc2.innerHTML="";
-  updateComposerBtn();
   _renderRecents();
   _renderMistakes();
   _updateMistakesBadge();
@@ -212,11 +205,8 @@ export async function resetApp(options){
     try { window.syncConversationActive(); } catch (e) { reportSwallow(e, 'app/lifecycle.resetApp.syncConversationActive'); }
   }
   publishReactChatRuntime({type:"state-synced",reason:"session-reset"});
-  /* Focus the topic input immediately so the user can start typing without delay. */
-  try { focusComposer("topic"); } catch (e) { reportSwallow(e, 'app/lifecycle.resetApp.focusComposer'); }
-  requestAnimationFrame(function(){
-    try { focusComposer("topic"); } catch (e) { reportSwallow(e, 'app/lifecycle.resetApp.focusComposerRAF'); }
-  });
+  /* Focus the topic editor immediately and after React commits its surface. */
+  focusComposerForNewSession();
   return true;
 }
 
@@ -278,7 +268,7 @@ export function handleAuthExpired(cause){
     try{turnState.pendingChatContent=null}catch(e){reportSwallow(e,'app/lifecycle.handleAuthExpired.clearPendingChat');}
     /* P_bleed-auth-expired — same comprehensive wipe as signOut(). A
        401 may fire mid-session; without clearing serverCache.sessions /
-       apiConfig / _cmdKIndex, the sign-in gate's flash of
+       providerConfig / _cmdKIndex, the sign-in gate's flash of
        stale sidebar or model-picker data could briefly show the
        previous user's sessions before the next signin's fetch
        resolves. */
@@ -327,7 +317,7 @@ export function clearPerUserClientState(){
   /* P_recents-fetch-fail — reset the fetch-failed flag on user switch
      so the new user doesn't inherit the previous user's failure state. */
   try{serverCache.fetchFailed=false}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.fetchFailed');}
-  try{apiConfig.activeId=null;apiConfig.providers=[]}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.apiConfig');}
+  try{resetProviderConfigForUser()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.providerConfig');}
   try{resetCmdKSearchState()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.cmdKIndex');}
   /* exam.js is lazy — if it was never imported its save state is already
      pristine, so only reset when the module is actually loaded. */
@@ -363,7 +353,6 @@ export function clearPerUserClientState(){
   try{if(typeof renderRecents==="function")_renderRecents()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.renderRecents');}
   try{if(typeof renderMistakes==="function")_renderMistakes()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.renderMistakes');}
   try{if(typeof updateMistakesBadge==="function")_updateMistakesBadge()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.updateMistakesBadge');}
-  try{_publishSettingsProviders()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.publishSettingsProviders');}
   try{if(typeof syncModelPills==="function")syncModelPills()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.syncModelPills');}
 }
 
@@ -405,7 +394,7 @@ export async function signOut(){
   /* P_bleed-signout — wipe every per-user cache so the next user on
       this browser starts from a clean slate. Clears _userMemories /
       geo info / turnState.pendingChatContent (in-memory) AND the full module-
-      level set (serverCache.sessions, apiConfig, _cmdKIndex, …)
+      level set (serverCache.sessions, providerConfig, _cmdKIndex, …)
       plus localStorage entries that survive sign-out. */
   clearPerUserClientState();
   try{window.CURRENT_USER=null;}catch(e){reportSwallow(e,'app/lifecycle.signOut.clearCurrentUser');}

@@ -141,6 +141,16 @@ test('plugin center filters public/personal apps and scheduled templates prefill
   await expect(page.locator('#taskForm')).toBeVisible();
   await expect(page.locator('#taskForm input[name="title"]')).toHaveValue(/daily briefing/i);
   await expect(page.locator('#taskForm textarea[name="prompt"]')).toHaveValue(/daily briefing/i);
+  const scheduledRequest = page.waitForRequest((request) =>
+    request.method() === 'POST' && /\/api\/(v2\/)?scheduled-tasks(?:\?|$)/.test(request.url()),
+  );
+  await page.locator('#taskForm button[type="submit"]').click();
+  expect((await scheduledRequest).postDataJSON()).toMatchObject({
+    title: expect.stringMatching(/daily briefing/i),
+    prompt: expect.stringMatching(/daily briefing/i),
+    frequency: 'once',
+  });
+  await expect(page.locator('#workspaceDialog')).toBeHidden();
 });
 
 test('OpenConnector apps the hosted runtime does not serve yet render disabled', async ({ page }) => {
@@ -216,13 +226,14 @@ test('connected apps open manage or credential dialogs, disconnect works', async
 
   await page.locator('#navPlugins').click();
   await expect(page.locator('.plugin-directory')).toBeVisible();
-  await page.evaluate(() => { window.showConfirm = async () => true; });
 
   /* OAuth app without a credential form gets the manage dialog. */
   await page.locator('[data-connector-id="oc_slack"] button.plugin-directory-icon-action').click();
   await expect(page.locator('#workspaceDialog [data-action="disconnect"]')).toBeVisible();
   await expect(page.locator('#workspaceDialog input').first()).toHaveValue(/connected.*Study org/);
   await page.locator('#workspaceDialog [data-action="disconnect"]').click();
+  await expect(page.locator('#confirmDialog')).not.toHaveClass(/hidden/);
+  await page.locator('#confirmOkBtn').click();
   await expect.poll(() => deleteSeen).toContain('/oc_slack/connection');
   await expect(page.locator('#workspaceDialog')).toHaveClass(/hidden/);
 

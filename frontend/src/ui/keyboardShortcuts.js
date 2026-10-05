@@ -8,18 +8,17 @@ import { stateStore } from '../state/store.js';
 import { showToast } from './toast.js';
 import { openCheatsheet, closeCheatsheet } from './cheatsheet.js';
 import { toggleTheme } from '../displayPrefs.js';
-import { toggleSidebar } from '../sidebar/index.js';
-import { openNav } from '../sidebar/nav.js';
+import { toggleSidebar } from '../sidebar/sidebar.service.ts';
+import { openNav } from '../sidebar/navigation.service.ts';
 import { openShareModal, closeShareModal } from './share.js';
 /* closeUsageModal resolves via window.* — ui/usage.js is lazy-loaded and
    the overlay can only be visible after the module mounted. */
 import { closeStorageModal } from './storage.js';
 import { closePromptTemplatesModal } from './promptTemplates.js';
-/* closeSettings resolves via window.* — ui/settings.js is lazy-loaded
-   and the overlay can only be visible after the module mounted. */
+/* Settings is a lazy React surface; the stable close command stays on window. */
 import { closeProfile, openProfile, toggleProfileWebSearch } from './profile.js';
 import { isFindOpen } from './findInSession.js';
-import { getComposerMarkdown, setComposerMarkdown, focusComposer } from '../react/composer-input/controller.ts';
+import { getComposerMarkdown, setComposerMarkdown, focusComposer } from '../composer/controller.ts';
 import { findLastUserMessage } from '../render/markdown.js';
 
 export function installKeyboardShortcuts() {

@@ -1,7 +1,7 @@
 import { Node, mergeAttributes } from '@tiptap/core';
 import DOMPurify from 'dompurify';
 
-import type { ComposerExtensionToken } from './types';
+import type { ComposerExtensionToken } from '../../composer/types.ts';
 
 export interface ExtensionTokenOptions {
   onRemove: (key: string) => void;

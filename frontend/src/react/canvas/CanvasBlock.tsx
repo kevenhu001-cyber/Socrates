@@ -1,7 +1,7 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
 import type { LegacyChatMessage } from '../types/domain';
-import { setComposerMarkdown } from '../composer-input/controller.ts';
+import { setComposerMarkdown } from '../../composer/controller.ts';
 import { persistCanvasEdit } from './canvasState.ts';
 import { sanitizeHtml } from './sanitize';
 import { copyToClipboard } from './clipboard';

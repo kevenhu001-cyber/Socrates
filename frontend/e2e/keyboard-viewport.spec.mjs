@@ -49,8 +49,7 @@ test('in-flow composer and transcript follow the normalized keyboard inset on mo
 
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
   });
 
   const composer = page.locator('#chatInputBar');
@@ -142,8 +141,7 @@ test('mobile composer follows a keyboard inset continuously without a position f
 
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     document.documentElement.style.setProperty('--keyboard-inset', '0px');
   });
   await page.waitForTimeout(350);
@@ -187,8 +185,7 @@ test('resize-mode keyboard follows the native layout reflow with no JS compensat
 
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     document.documentElement.style.setProperty('--keyboard-inset', '0px');
   });
 
@@ -242,8 +239,7 @@ test('resize-mode keyboard restores exactly with no stuck inset or height', asyn
 
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
   });
 
   const editor = page.locator('#composerRoot .rich-composer-editor').first();
@@ -281,8 +277,7 @@ test('a second input line expands the mobile composer and keeps the latest messa
 
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     for (let index = 0; index < 18; index += 1) {
       window.addMessage(
         'assistant',
@@ -341,8 +336,7 @@ test('desktop answer bottom remains above the composer', async ({ page }) => {
 
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     window.addMessage(
       'assistant',
       Array.from(
@@ -384,8 +378,7 @@ test('conversation transcript remains independently scrollable', async ({ page }
 
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     for (let index = 0; index < 32; index += 1) {
       window.addMessage(
         index % 2 ? 'assistant' : 'user',
@@ -430,8 +423,7 @@ test('a growing composer keeps the latest message visible and the transcript pin
 
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     for (let index = 0; index < 18; index += 1) {
       window.addMessage(
         index % 2 ? 'assistant' : 'user',
@@ -486,8 +478,7 @@ test('late growth in the latest answer follows pinned readers but preserves manu
 
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     for (let index = 0; index < 20; index += 1) {
       window.addMessage(
         index % 2 ? 'assistant' : 'user',

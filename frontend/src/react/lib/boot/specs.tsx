@@ -25,9 +25,8 @@ import { mountMessageList } from '../../message-list';
 import { WorkflowLayer } from '../../extensions/WorkflowLayer';
 import { installThinkingPanelBridge, mountThinkingPanel } from '../../thinking-panel';
 import { getLegacyActions, i18n } from '../../legacy/gateway.ts';
-import { readComposerSurface } from '../../composer-input/controller';
+import { handleComposerEscape, submitComposer } from '../../composer-input/lifecycle';
 import { hydrateAttachmentChipsRows } from '../../attachments/AttachmentChipsRow';
-import { installWorkspaceBridge } from '../../pages/workspace/workspace.bridge';
 
 import { NewReplyPill, PrimaryButton } from './indicatorComponents';
 
@@ -104,7 +103,7 @@ export function mountRegistryList(): MountSpec[] {
     /* 4. Workspace pages — the registry tags each panel as React-owned;
        the nav mounts them on demand through pageMounts.ts. */
     { hostId: 'scheduledPanel', label: 'scheduled-page', mount: () => undefined },
-    { hostId: 'libraryPanel', label: 'workspace-page', mount: () => { installWorkspaceBridge(); } },
+    { hostId: 'libraryPanel', label: 'workspace-page', mount: () => undefined },
     /* /admin operator console — the React page owns #adminPanel when
        the sidebar routes to it. */
     { hostId: 'adminPanel', label: 'admin-page', mount: () => undefined },
@@ -141,22 +140,17 @@ export function mountRegistryList(): MountSpec[] {
        that chunk leaves the first-paint preload graph; the shell's composer
        area keeps its reserved height until the component mounts moments
        after reveal.
-       P_composer-single — ONE editor for the whole app. The shell moves
-       between the landing slot and the chat slot (see placeComposerForView)
-       while this root stays mounted, so the draft, focus and chips travel
-       with it. Submit/escape branch on the live surface at call time, so no
-       remount is ever needed when the view flips. */
+       P_composer-single — ONE editor for the whole app. The typed controller
+       owns the surface state and slot placement while this root stays
+       mounted, preserving each draft, token, focus and chip. The typed
+       lifecycle commands branch on the live surface, so the editor does not
+       remount when the view flips. */
     { hostId: 'composerRoot', label: 'rich-composer', mount: (host) => {
       void import('../../composer-input').then(({ RichComposer }) => {
         createRoot(host).render(<ErrorBoundary><RichComposer
           placeholder={i18n('topic.inputPlaceholder', 'What would you like to explore?')}
-          onSubmit={() => (readComposerSurface() === 'chat'
-            ? legacyComposer.submitChatMessage()
-            : legacyComposer.startSession())}
-          onEscape={() => {
-            if (readComposerSurface() !== 'chat') return;
-            legacyComposer.stopChatResponse();
-          }} /></ErrorBoundary>);
+          onSubmit={() => submitComposer(legacyComposer)}
+          onEscape={() => handleComposerEscape(legacyComposer)} /></ErrorBoundary>);
       });
     } },
     { hostId: 'workflowLayerReactRoot', label: 'workflow-layer',

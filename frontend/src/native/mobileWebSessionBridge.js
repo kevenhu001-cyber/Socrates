@@ -1,5 +1,5 @@
 import { openPromptTemplatesModal } from '../ui/promptTemplates.js';
-import { openNav } from '../sidebar/nav.js';
+import { openNav } from '../sidebar/navigation.service.ts';
 import { toggleDisplayPrefs } from '../displayPrefs.js';
 import { openCheatsheet } from '../ui/cheatsheet.js';
 /*

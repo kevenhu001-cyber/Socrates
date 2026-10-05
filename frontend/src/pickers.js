@@ -6,19 +6,14 @@
 
 import { esc } from './render/helpers.js';
 import { webSearchOn, setWebSearchOn } from './config/providers.js';
+import { getProviderConfigSnapshot, getActiveProvider as getActiveProviderConfig, setActiveProvider, setActiveProviderLocal } from './config/providerConfig.service.ts';
+import { subscribeToProviderConfig } from './config/providerConfig.store.ts';
 import { stateStore } from './state/store.js';
-import { openNav } from './sidebar/nav.js';
-
-/* P_init-sync — providers가 서버에서 로드되었는지 추적.
-   syncModelPills()가 providers=[] 상태에서 "Add a model"을 렌더링하지 않고
-   중립 상태를 표시하도록 함. refreshApiConfig()가 완료되면 true 설정. */
-var _providersFetched=false;
-function markProvidersFetched(){_providersFetched=true;}
+import { openNav } from './sidebar/navigation.service.ts';
 
 /* ── getActiveProvider — closely tied to model picker ── */
 function getActiveProvider(){
-  if(!window.apiConfig||!window.apiConfig.activeId)return null;
-  return (window.apiConfig.providers||[]).find(function(p){return p.id===window.apiConfig.activeId})||null;
+  return getActiveProviderConfig();
 }
 
 /* ─── Model glyph — visual fingerprint per provider ─────────────────
@@ -194,11 +189,10 @@ function renderProviderItemsHTML(providers, activeId){
    ============================================================ */
 function pickActiveProviderById(id){
   if(!id)return;
-  import('./ui/settings.js').then(function (m) {
-    m.setActiveProvider(id);
+  Promise.resolve(setActiveProvider(id)).then(function () {
     closeModelPicker();
     syncChatModel();
-  }).catch(function (err) { console.error('[pickers] settings failed to load', err); });
+  });
 }
 function toggleModelPicker(){
   var p=document.getElementById("modelPicker");
@@ -226,14 +220,11 @@ function syncModelPills(){
   var menu=document.getElementById("modelPickerMenu");
   var trigger=document.getElementById("modelPickerTrigger");
   if(!picker||!label||!menu||!trigger)return;
-  /* P_init-order — on cold start, window.apiConfig may not be set yet
-     (main.js exports it after calling syncModelPills during module
-     init). Guard against undefined so a missing config doesn't blow
-     up the entire boot sequence. */
+  var providerConfig = getProviderConfigSnapshot();
   /* P_init-sync — providers가 아직 로드되지 않았으면 중립 상태 표시.
      "Add a model"은 서버 응답 후 진짜 빈 상태일 때만 노출. */
-  var providers=(window.apiConfig&&window.apiConfig.providers)||[];
-  if(!_providersFetched && !providers.length){
+  var providers=providerConfig.providers||[];
+  if(!providerConfig.fetched && !providers.length){
     label.textContent="Model";
     label.title="";
     trigger.classList.remove("has-model");
@@ -241,14 +232,16 @@ function syncModelPills(){
     _syncChatModelInternal();
     return;
   }
-  var active=providers.find(function(p){return p&&p.id===window.apiConfig.activeId});
+  var activeId = providerConfig.activeId;
+  var active=providers.find(function(p){return p&&p.id===activeId});
   /* P_model-autofallback — if no activeId is set but the providers
-     list includes BEAGLE_BUILT_IN, auto-select it so the model
+     list includes the configured built-in provider, auto-select it so the model
      picker never shows "Pick a model" on cold boot. */
-  if(!active && window.BEAGLE_BUILT_IN){
-    var beagle = providers.find(function(p){return p && p.id === window.BEAGLE_BUILT_IN.id});
+  if(!active){
+    var beagle = providers.find(function(p){return p && p.id === 'beagle-built-in'});
     if(beagle){
-      window.apiConfig.activeId = beagle.id;
+      setActiveProviderLocal(beagle.id);
+      activeId = beagle.id;
       active = beagle;
     }
   }
@@ -261,7 +254,7 @@ function syncModelPills(){
     label.title="";
     trigger.classList.remove("has-model");
   }
-  var html = renderProviderItemsHTML(providers, window.apiConfig.activeId);
+  var html = renderProviderItemsHTML(providers, activeId);
   if (html) {
     html += '<div class="model-picker-divider"></div>';
   }
@@ -287,6 +280,11 @@ document.addEventListener("keydown",function(e){
     closeModelPicker();
     e.stopPropagation();
   }
+});
+
+subscribeToProviderConfig(function () {
+  syncModelPills();
+  syncChatModel();
 });
 /* Event delegation on model picker menu items */
 document.addEventListener("click", function(e){
@@ -359,9 +357,10 @@ function toggleChatModelMenu(){
   var trigger=document.getElementById("chatModel");
   if(trigger)trigger.classList.add("menu-open");
   if(trigger)trigger.setAttribute("aria-expanded","true");
-  var providers=window.apiConfig.providers||[];
+  var providerConfig = getProviderConfigSnapshot();
+  var providers=providerConfig.providers||[];
   /* Reuse the shared renderProviderItemsHTML to avoid duplication */
-  var html = renderProviderItemsHTML(providers, window.apiConfig.activeId);
+  var html = renderProviderItemsHTML(providers, providerConfig.activeId);
   if (html) {
     html += '<div class="model-picker-divider"></div>';
   }
@@ -609,9 +608,7 @@ export {
   closeExtensionsPicker,
   toggleWebSearch,
   syncWebSearchUI,
-  markProvidersFetched,
 };
 export { EXTENSIONS };
 
-/* ui/settings.js is lazy (windowExports proxies) — setActiveProvider is
-   dynamic-imported inside pickActiveProviderById below. */
+/* Provider selection is owned by config/providerConfig.service.ts. */

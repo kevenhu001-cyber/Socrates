@@ -79,3 +79,52 @@ test('projects directory empty state keeps the same compact chrome', async ({ pa
   const titleBox = await page.locator('#projects-directory-title').boundingBox();
   expect(titleBox?.height ?? 0).toBeLessThanOrEqual(40);
 });
+
+test('typed project actions create, edit, and open a workspace from API data', async ({ page }) => {
+  await mockAuthedApp(page, { lang: 'en' });
+  await page.route('**/api/**', async (route) => {
+    const request = route.request();
+    const pathname = new URL(request.url()).pathname.replace('/api/v2', '/api');
+    if (!pathname.startsWith('/api/projects')) { await route.fallback(); return; }
+    if (request.method() === 'GET' && pathname === '/api/projects') {
+      await route.fulfill({ json: PROJECTS });
+      return;
+    }
+    const body = request.postDataJSON?.() || {};
+    if (request.method() === 'POST') {
+      await route.fulfill({ json: { project: { id: 'project-new', ...body } }, status: 201 });
+      return;
+    }
+    if (request.method() === 'PATCH') {
+      await route.fulfill({ json: { project: { id: 'project-new', ...body } } });
+      return;
+    }
+    await route.fulfill({ json: { ok: true } });
+  });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.locator('#navProjects').click();
+
+  await page.locator('.projects-directory .workspace-create-button').click();
+  const form = page.locator('#projectForm');
+  await form.locator('[name="name"]').fill('Reading project');
+  await form.locator('[name="description"]').fill('Texts and notes');
+  const createRequest = page.waitForRequest((request) => request.method() === 'POST' && /\/api\/(v2\/)?projects(?:\?|$)/.test(request.url()));
+  const createResponse = page.waitForResponse((response) => response.request().method() === 'POST' && /\/api\/(v2\/)?projects(?:\?|$)/.test(response.url()));
+  await form.locator('button[type="submit"]').click();
+  expect((await createRequest).postDataJSON()).toMatchObject({ name: 'Reading project', description: 'Texts and notes' });
+  expect(await (await createResponse).json()).toMatchObject({ project: { id: 'project-new', name: 'Reading project' } });
+  await expect(page.locator('.msg-toast').filter({ hasText: 'Project created' })).toBeVisible();
+
+  const project = page.locator('.project-row', { hasText: 'Reading project' });
+  await expect(project).toBeVisible();
+  await project.locator('.workspace-icon-action').click();
+  await expect(page.locator('#projectForm [name="name"]')).toHaveValue('Reading project');
+  await page.locator('#projectForm [name="name"]').fill('Reading and writing');
+  await page.locator('#projectForm button[type="submit"]').click();
+  await expect(page.locator('.project-row', { hasText: 'Reading and writing' })).toBeVisible();
+
+  await page.locator('.project-main', { hasText: 'Reading and writing' }).click();
+  await expect(page.locator('#workspaceDialog .project-workspace-actions')).toBeVisible();
+  await expect(page.locator('#projectRunHistory')).toBeVisible();
+});

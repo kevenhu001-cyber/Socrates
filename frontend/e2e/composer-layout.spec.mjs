@@ -54,9 +54,7 @@ for (const width of [1024, 1280]) {
     await boot(page, { width });
     await page.evaluate(() => {
       window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-      document.getElementById('topicSetup')?.classList.add('hidden');
-      document.getElementById('mainInner')?.classList.add('hidden');
-      document.getElementById('chatView')?.classList.remove('hidden');
+      window.__testActivateMainView('chatView');
       document.body.dataset.conversationActive = 'true';
     });
     await page.waitForTimeout(300);

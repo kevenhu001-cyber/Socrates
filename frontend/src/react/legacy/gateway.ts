@@ -153,6 +153,15 @@ export function getApiFetch(): ApiFetchFn | null {
   return typeof fn === 'function' ? (fn as ApiFetchFn) : null;
 }
 
+/** Project context still consumed by the legacy session startup path. */
+export function setNextProjectId(projectId: string | null): void {
+  (window as any)._nextProjectId = projectId;
+}
+
+export function setActiveProject(project: Record<string, unknown> | null): void {
+  (window as any).__activeProject = project;
+}
+
 /** The signed-in user record published by the legacy auth layer, or null. */
 export function getCurrentUser<T = Record<string, any>>(): T | null {
   return (((window as any).CURRENT_USER) ?? null) as T | null;

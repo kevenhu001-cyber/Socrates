@@ -13,6 +13,7 @@ import { reportSwallow } from './util/reportSwallow.ts';
 import { toggleShareBtn } from './ui/share.js';
 import { prefersReducedMotion } from './ui/motion.js';
 import { activateMainView } from './ui/mainViewController.js';
+import { getProviderConfigSnapshot, setActiveProviderLocal } from './config/providerConfig.service.ts';
 
 /* ── module-level state ── */
 var _examSelectedTypes = { mc: true, fb: true, sa: false };
@@ -192,11 +193,12 @@ export function renderExamForm() {
   /* Build provider options for the custom dropdown */
   var provItems = [];
   var activeId = "";
-  if (Array.isArray(window.apiConfig.providers)) {
-    window.apiConfig.providers.forEach(function (p) {
+  var providerConfig = getProviderConfigSnapshot();
+  if (Array.isArray(providerConfig.providers)) {
+    providerConfig.providers.forEach(function (p) {
       if (!p || !p.id) return;
       provItems.push({ id: p.id, label: p.label || p.model || p.id });
-      if (p.id === window.apiConfig.activeId) activeId = p.id;
+      if (p.id === providerConfig.activeId) activeId = p.id;
     });
   }
   var activeLabel = activeId
@@ -423,17 +425,20 @@ export function startExamGeneration() {
     examDifficulty:difficulty,
     examInstructions:instructions,
     examTypes:types.slice(),
-    _examPrevActiveId:window.apiConfig.activeId
+    _examPrevActiveId:getProviderConfigSnapshot().activeId
   }});
-  if (chosenModel && Array.isArray(window.apiConfig.providers)) {
-    var chosenProv = window.apiConfig.providers.find(function (p) { return p && p.id === chosenModel; });
+  var providerConfig = getProviderConfigSnapshot();
+  if (chosenModel && Array.isArray(providerConfig.providers)) {
+    var chosenProv = providerConfig.providers.find(function (p) { return p && p.id === chosenModel; });
     if (chosenProv) {
-      window.apiConfig.activeId = chosenModel;
+      setActiveProviderLocal(chosenModel);
+      try { window.syncModelPills&&window.syncModelPills(); } catch (e) { reportSwallow(e, 'exam.startExamGeneration.syncModelPills'); }
+      try { window.syncChatModel&&window.syncChatModel(); } catch (e) { reportSwallow(e, 'exam.startExamGeneration.syncChatModel'); }
       /* The built-in Beagle provider (id "beagle-built-in") is a client-only
          pseudo-provider — it has no DB row, so its id is not a UUID. Sending a
          PATCH /api/api-key/beagle-built-in hits the server's UUID guard and
          404s (harmless but noisy). Activation for the built-in is purely a
-         client-side apiConfig.activeId change; only persist for real DB rows. */
+         client-side provider store change; only persist for real DB rows. */
       if (!chosenProv.isBuiltIn && chosenModel !== "beagle-built-in") {
         try { window.apiFetch("/api/api-key/" + encodeURIComponent(chosenModel), { method: "PATCH", body: { isActive: true } }).catch(function (e) { reportSwallow(e, 'exam.startExamGeneration.persistActiveModel'); }) } catch (e) { reportSwallow(e, 'exam.startExamGeneration.persistActiveModel.guard'); }
       }
@@ -441,7 +446,8 @@ export function startExamGeneration() {
   }
   _setExamTitle(topic);
   var meta = document.getElementById("examViewMeta");
-  var provLabel = (Array.isArray(window.apiConfig.providers) ? window.apiConfig.providers.find(function (p) { return p && p.id === window.apiConfig.activeId }) : null) || {};
+  providerConfig = getProviderConfigSnapshot();
+  var provLabel = (Array.isArray(providerConfig.providers) ? providerConfig.providers.find(function (p) { return p && p.id === providerConfig.activeId }) : null) || {};
   if (meta) meta.textContent = count + " " + _examUiL("questions · ", "题 · ") + (provLabel.label || provLabel.model || "") + " · " + difficulty;
   var body = _examBody();
   body.innerHTML = '<div class="exam-loading" id="examGenStatus">' +
@@ -460,10 +466,13 @@ export function startExamGeneration() {
 function restoreExamActiveProvider() {
   var prev = window.stateStore.read("_examPrevActiveId");
   if (!prev) return;
-  if (window.apiConfig.activeId === prev) return;
-  var prevProv = Array.isArray(window.apiConfig.providers) ? window.apiConfig.providers.find(function (p) { return p && p.id === prev }) : null;
+  var providerConfig = getProviderConfigSnapshot();
+  if (providerConfig.activeId === prev) return;
+  var prevProv = Array.isArray(providerConfig.providers) ? providerConfig.providers.find(function (p) { return p && p.id === prev }) : null;
   if (prevProv) {
-    window.apiConfig.activeId = prev;
+    setActiveProviderLocal(prev);
+    try { window.syncModelPills&&window.syncModelPills(); } catch (e) { reportSwallow(e, 'exam.restoreExamActiveProvider.syncModelPills'); }
+    try { window.syncChatModel&&window.syncChatModel(); } catch (e) { reportSwallow(e, 'exam.restoreExamActiveProvider.syncChatModel'); }
     /* Skip the PATCH for the built-in provider — its id isn't a UUID and the
        server would 404. See startExamGeneration for the full rationale. */
     if (!prevProv.isBuiltIn && prev !== "beagle-built-in") {

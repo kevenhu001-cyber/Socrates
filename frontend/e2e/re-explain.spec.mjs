@@ -23,8 +23,7 @@ async function bootChat(page, streamBodies) {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Branch repro' });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '55555555-5555-4555-8555-555555555555' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     window.addMessage('user', 'Explain how derivatives work.');
     window.addMessage('assistant', 'A derivative measures change: $f\'(x)$.');
   });

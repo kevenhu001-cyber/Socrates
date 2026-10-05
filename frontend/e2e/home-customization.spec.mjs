@@ -105,8 +105,7 @@ test('light conversation is readable and find opens at the upper right', async (
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    document.getElementById('topicSetup')?.classList.add('hidden');
-    document.getElementById('chatView')?.classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     document.getElementById('findBtn')?.classList.remove('hidden');
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Readability check' });

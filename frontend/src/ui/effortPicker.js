@@ -1,5 +1,6 @@
 import { getStoredReasoningEffort } from '../config/chatPreferences.ts';
 import { openChatConfiguration } from '../react/chat-configuration/chatConfiguration.bridge.ts';
+import { getProviderConfigSnapshot, subscribeToProviderConfig } from '../config/providerConfig.store.ts';
 /* ui/effortPicker.js — the composer "思考强度" pill.
  *
  * P_chatgpt-landing (v3). The pill is a fixed-label trigger (思考强度 ⌄)
@@ -52,7 +53,7 @@ function _labelFor(v) {
 }
 
 function _activeModelLabel() {
-  var cfg = window.apiConfig || {};
+  var cfg = getProviderConfigSnapshot();
   var providers = Array.isArray(cfg.providers) ? cfg.providers : [];
   var active = providers.find(function (p) { return p && p.id === cfg.activeId; });
   if (!active) return "";
@@ -102,6 +103,7 @@ export function syncEffortUI() {
 }
 
 if (typeof document !== "undefined") {
+  subscribeToProviderConfig(syncEffortUI);
   document.addEventListener("click", function (event) {
     var switcher = event.target && event.target.closest && event.target.closest("#topModelSwitcher");
     if (!switcher) return;

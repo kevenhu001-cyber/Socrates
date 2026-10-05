@@ -7,17 +7,13 @@
  * Touches the following globals:
  *   - showConfirm (ui/confirm.js)
  *   - apiFetch, t, renderRecents, resetApp, showGate, showAuthSignin, resetState,
- *     renderUserFooter, closeProfile, publishSettingsProviders, syncModelPills, syncSettingsUI,
- *     CURRENT_USER, apiConfig (mutate in place!), webSearchOn, BEAGLE_BUILT_IN,
- *     LAST_ACTIVE_ID_KEY
+ *     renderUserFooter, closeProfile, CURRENT_USER, webSearchOn
  */
 
 import { stateStore } from '../state/store.js';
 import { showConfirm } from './confirm.js';
 
-import { LAST_ACTIVE_ID_KEY } from '../config/providers.js';
-
-import { syncSettingsUI, publishSettingsProviders } from './settings.js';
+import { clearProviderConfig } from '../config/providerConfig.service.ts';
 
 import { renderUserFooter } from './profile.js';
 
@@ -35,28 +31,7 @@ function confirmClearCache() {
 function confirmClearSettings() {
   showConfirm(window.t("confirm.clearApiSettings.title"), window.t("confirm.clearApiSettings.msg"), false).then(function (yes) {
     if (yes !== true) { return; }
-    if (!window.CURRENT_USER) { return; }
-    var apiConfig = window.apiConfig;
-    var deletePromises = [];
-    for (var i = 0; i < apiConfig.providers.length; i++) {
-      var p = apiConfig.providers[i];
-      if (p.isBuiltIn || p.id === "beagle-built-in") { continue; }
-      if (p.id.indexOf("new-") === 0) { continue; }
-      deletePromises.push(
-        window.apiFetch("/api/api-key/" + encodeURIComponent(p.id), { method: "DELETE" })
-          .catch(function(){})
-      );
-    }
-    Promise.all(deletePromises).then(function(){
-      apiConfig.activeId = null;
-      apiConfig.providers = [Object.assign({}, window.BEAGLE_BUILT_IN)];
-      try { localStorage.removeItem("socrates-provider-keys"); } catch { /* ignore */ }
-      try { localStorage.removeItem(LAST_ACTIVE_ID_KEY); } catch { /* ignore */ }
-      publishSettingsProviders();
-      window.syncModelPills();
-      syncSettingsUI();
-      window.closeProfile();
-    }).catch(function(){});
+    clearProviderConfig().then(function(){ window.closeProfile(); }).catch(function(){ /* clear provider config is best effort */ });
   }).catch(function(){});
 }
 

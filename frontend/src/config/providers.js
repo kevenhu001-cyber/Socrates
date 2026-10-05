@@ -1,21 +1,10 @@
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { getProviderConfigSnapshot, refreshProviderConfig } from './providerConfig.service.ts';
+import { LAST_ACTIVE_ID_KEY, saveLastActiveId, loadLastActiveId } from './providerConfig.service.ts';
 /* config/providers.js — Wave 3 of main-js-split plan.
- * Provider configuration: apiConfig, BEAGLE_BUILT_IN, webSearchOn, appMode,
- * and helper functions for reasoning/model detection.
+ * App preferences and helper functions for reasoning/model detection.
  * Extracted from main.js L9169-L9566 + refreshApiConfig at L9291.
- *
- * CRITICAL: apiConfig is mutated in place by callers (apiConfig.activeId = ...),
- * NEVER reassigned (apiConfig = {...}). See window.apiConfig bridge comment.
  */
-
-/* P_privacy-leak — do NOT put a real or fake model name in the default.
- * The built-in "Beagle" provider is an alias; the actual upstream model
- * is operator-configured server-side and must never be hinted at in
- * the public client bundle. The model field is intentionally empty
- * (server uses provider.model from the DB regardless of what's here).
- * Reasoning/vision flags stay on (Beagle supports both by default). */
-var BEAGLE_BUILT_IN = { id: "beagle-built-in", label: "Beagle", url: "/api/minimax/v1", model: "", vision: true, isBuiltIn: true, key: "" };
-var apiConfig = { activeId: null, providers: [] };
 /* Web search is off by default. A stored explicit preference still wins;
  * see the post-init block below that runs after appMode is loaded. */
 var webSearchOn = false;
@@ -62,9 +51,10 @@ function setWebSearchOn(value) {
 }
 
 function _isReasoningForActive() {
-  var active = apiConfig.activeId;
+  var config = getProviderConfigSnapshot();
+  var active = config.activeId;
   if (!active) return false;
-  var p = (apiConfig.providers || []).find(function (x) { return x && x.id === active; });
+  var p = config.providers.find(function (x) { return x && x.id === active; });
   if (!p) return false;
   if (p.isBuiltIn) return !!window.BEAGLE_IS_REASONING;
   var m = (p.model || "").toLowerCase();
@@ -77,16 +67,18 @@ function isReasoningProvider() {
 }
 
 function hasUsableActive() {
-  var active = apiConfig.activeId;
+  var config = getProviderConfigSnapshot();
+  var active = config.activeId;
   if (!active) return false;
-  var p = (apiConfig.providers || []).find(function (x) { return x && x.id === active; });
+  var p = config.providers.find(function (x) { return x && x.id === active; });
   return !!p;
 }
 
 function isMiniMaxProvider() {
-  var active = apiConfig.activeId;
+  var config = getProviderConfigSnapshot();
+  var active = config.activeId;
   if (!active) return false;
-  var p = (apiConfig.providers || []).find(function (x) { return x && x.id === active; });
+  var p = config.providers.find(function (x) { return x && x.id === active; });
   return p ? /minimax/.test((p.model || "").toLowerCase()) : false;
 }
 
@@ -151,107 +143,10 @@ function syncSidebarForMode() {
   tutorOnly.forEach(function (el) { el.style.display = appMode === "tutor" ? "" : "none"; });
 }
 
-async function refreshApiConfig() {
-  var CURRENT_USER = window.CURRENT_USER;
-  if (!CURRENT_USER) {
-    apiConfig.activeId = null;
-    apiConfig.providers = [];
-    try { if (typeof window.markProvidersFetched === "function") window.markProvidersFetched(); } catch (e) {reportSwallow(e, 'config/providers.refreshApiConfig'); }
-    try { window.syncModelPills(); } catch (e) {reportSwallow(e, 'config/providers.refreshApiConfig#2'); }
-    try { window.renderProviderList(); } catch (e) {reportSwallow(e, 'config/providers.refreshApiConfig#3'); }
-    try { if (typeof window.syncEffortUI === "function") window.syncEffortUI(); } catch (e) {reportSwallow(e, 'config/providers.refreshApiConfig#4'); }
-    return apiConfig;
-  }
-  try {
-    var r = await window.apiFetch("/api/api-key");
-    /* The API deliberately never returns plaintext keys.  Normalise its
-       safe wire shape once at the boundary so the rest of the UI can keep
-       using the established provider contract (`vision`, masked `key`).
-       Previously `isMultimodal` / `hasKey` were left untranslated, which
-       made saved models look unconfigured and silently lost their vision
-       capability after every refresh. */
-    var rows = Array.isArray(r && r.providers) ? r.providers.map(function (p) {
-      p = p || {};
-      var label = String(p.label || "").trim();
-      var model = String(p.model || "").trim();
-      return Object.assign({}, p, {
-        label: label,
-        model: model,
-        /* A non-secret sentinel lets settings render the masked-key state
-           without ever putting a credential back in browser memory. */
-        key: p.hasKey === true ? "__configured__" : "",
-        vision: p.vision === true || p.isMultimodal === true,
-      });
-    }) : [];
-    var serverBeagleModel = null;
-    var serverBeagleRow = rows.find(function (p) { return p.id === BEAGLE_BUILT_IN.id; });
-    if (serverBeagleRow) serverBeagleModel = serverBeagleRow.model;
-    rows = rows.filter(function (p) { return p.id !== BEAGLE_BUILT_IN.id; });
-    if (serverBeagleModel) BEAGLE_BUILT_IN.model = serverBeagleModel;
-    var lastId = null;
-    try { lastId = localStorage.getItem(LAST_ACTIVE_ID_KEY); } catch (e) {reportSwallow(e, 'config/providers.refreshApiConfig#5'); }
-    var activeId = null;
-    /* Priority 1: user's last selection from localStorage.
-       This ensures the user's preference survives page refresh,
-       even for providers (like beagle-built-in) not tracked
-       by the server's isActive flag. */
-    if (lastId) {
-      if (lastId === BEAGLE_BUILT_IN.id && window.SERVER_HAS_BEAGLE_KEY) {
-        activeId = lastId;
-      } else if (rows.some(function (p) { return p.id === lastId; })) {
-        activeId = lastId;
-      }
-    }
-    /* Priority 2: server's isActive flag (sync from other devices). */
-    if (!activeId) {
-      var serverActive = rows.find(function (p) { return p.isActive; });
-      if (serverActive) activeId = serverActive.id;
-    }
-    /* Priority 3: built-in Beagle if available. */
-    if (!activeId && window.SERVER_HAS_BEAGLE_KEY) { activeId = BEAGLE_BUILT_IN.id; }
-    /* Priority 4: first user provider. */
-    if (!activeId && rows.length > 0) { activeId = rows[0].id; }
-    apiConfig.activeId = activeId;
-    /* Do not expose Beagle as a selectable fallback when the server has no
-       configured built-in key.  The old unconditional insertion made the
-       picker show a plausible-but-unusable model and could replace a saved
-       selection with it on cold start. */
-    apiConfig.providers = (window.SERVER_HAS_BEAGLE_KEY ? [BEAGLE_BUILT_IN] : []).concat(rows);
-    try { if (typeof window.markProvidersFetched === "function") window.markProvidersFetched(); } catch (e) {reportSwallow(e, 'config/providers.refreshApiConfig#6'); }
-    try { window.syncModelPills(); } catch (e) {reportSwallow(e, 'config/providers.refreshApiConfig#7'); }
-    try { window.renderProviderList(); } catch (e) {reportSwallow(e, 'config/providers.refreshApiConfig#8'); }
-    try { window.syncChatModel(); } catch (e) {reportSwallow(e, 'config/providers.refreshApiConfig#9'); }
-    try { if (typeof window.syncEffortUI === "function") window.syncEffortUI(); } catch (e) {reportSwallow(e, 'config/providers.refreshApiConfig#10'); }
-    return apiConfig;
-  } catch {
-    apiConfig.activeId = null;
-    apiConfig.providers = [];
-    try { if (typeof window.markProvidersFetched === "function") window.markProvidersFetched(); } catch (e) {reportSwallow(e, 'config/providers.refreshApiConfig#11'); }
-    return apiConfig;
-  }
-}
-
-var LAST_ACTIVE_ID_KEY = "socrates-last-active-id";
-
-function saveLastActiveId(id) {
-  try {
-    if (!id || id === "null" || id === "undefined") {
-      localStorage.removeItem(LAST_ACTIVE_ID_KEY);
-      return;
-    }
-    localStorage.setItem(LAST_ACTIVE_ID_KEY, String(id));
-  } catch (e) {reportSwallow(e, 'config/providers.saveLastActiveId', 'expected'); }
-}
-
-function loadLastActiveId() {
-  try {
-    var value = localStorage.getItem(LAST_ACTIVE_ID_KEY);
-    return value && value !== "null" && value !== "undefined" ? value : null;
-  } catch { return null; }
-}
+var refreshApiConfig = refreshProviderConfig;
 
 export {
-  BEAGLE_BUILT_IN, apiConfig, webSearchOn, setWebSearchOn, extensiveThinkingOn, appMode, thinkingOn,
+  webSearchOn, setWebSearchOn, extensiveThinkingOn, appMode, thinkingOn,
   isReasoningProvider, hasUsableActive,
   isMiniMaxProvider, ensureSessionShape,
   syncAppModeUI, syncSidebarForMode, setAppMode,
