@@ -115,3 +115,12 @@ wrapper are removed. `ui/recentsView.js` now loads project filter data and
 notifies the React owner; it no longer imports or passes render-only chip data
 to a retired legacy surface. An in-flight guard prevents repeated recents
 renders from starting duplicate `/api/projects` requests.
+
+## Tenth increment
+
+Project summaries now have one typed cache owner with subscriptions and
+single-flight initial loading. Recents chips, project actions, session loading,
+and the workspace page read or update that cache; `window.__projectsCache`
+remains a compatibility alias for older callers. Failed workspace refreshes
+keep the last successful project list so recents chips do not disappear during
+a transient network error.

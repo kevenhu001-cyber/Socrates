@@ -12,6 +12,7 @@ import { turnState } from '../chat/turnState.js';
 import { quietTurn } from '../chat/turnUi.js';
 import { buildUserContentParts } from '../chat/history.js';
 import { apiFetch } from '../util/api.js';
+import { refreshCachedProjects } from '../projects/projectCache.ts';
 import { ensureSessionShape, setAppMode, syncSidebarForMode } from '../config/providers.js';
 import { syncChatModel } from '../pickers.js';
 import { pushChatIdToURL, pushExamIdToURL } from './store.js';
@@ -347,10 +348,9 @@ export async function loadSession(id){
       else sessionStorage.removeItem("socrates-active-assistant");
     } catch (e) {reportSwallow(e, 'session/loader.loadSession~4', 'expected'); }
     if(s.projectId){
-      apiFetch("/api/projects").then(function(r){
-        var rows=(r&&r.projects)||[];
+      refreshCachedProjects(function(){ return apiFetch("/api/projects"); }).then(function(rows){
         window.__activeProject=rows.filter(function(p){return p.id===s.projectId})[0]||null;
-      }).catch(function(){});
+      }).catch(function(){ return null; });
     }else{ window.__activeProject=null; }
     /* P_context-race — currentSessionId and URL are set DEFERRED
        after messages are rebuilt below. Setting currentSessionId before
@@ -928,4 +928,3 @@ export async function reattachPendingTurn(sessionId){
    appendLocalMemory / clearLocalMemory) 已抽到 src/storage/localMemory.js,
    顶部 import。
    ============================================================ */
-

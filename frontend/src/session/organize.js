@@ -7,6 +7,7 @@ import { serverCache } from './serverCache.js';
 import { findServerSessionIndex, getKnownTags, getRecents, flushRecentsReconcile } from './recents.js';
 import { getRecentsFilter } from '../sidebar/index.js';
 import { filterRecentsByChip } from '../ui/recentsHelpers.js';
+import { getCachedProjects } from '../projects/projectCache.ts';
 import { apiFetch } from '../util/api.js';
 import { esc } from '../render/helpers.js';
 import { showToast } from '../ui/toast.js';
@@ -190,7 +191,7 @@ export function _onProjectDrop(event, projectId){
 
 /* Move a session to a project. */
 export function moveSessionToProject(sessionId, projectId){
-  var projects = window.__projectsCache || [];
+  var projects = getCachedProjects();
   var project = projects.filter(function(p){ return p.id === projectId; })[0];
   if(!project) return;
   /* Update the session on the server. */
@@ -331,7 +332,7 @@ export function _publishSessionList(){
 
 
 export function cycleActiveProject(){
-  var projects = window.__projectsCache || [];
+  var projects = getCachedProjects();
   if(!projects.length) return;
   var current = stateStore.read("currentProjectId");
   var idx = -1;

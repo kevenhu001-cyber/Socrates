@@ -54,7 +54,6 @@ declare global {
     loadSession?: (id: string) => void;
     SERVER_SESSIONS_FETCH_FAILED?: boolean;
     retryRecentsFetch?: () => void;
-    __projectsCache?: ReadonlyArray<{ id: string; name: string }>;
     clearRecentsFilter?: () => void;
   }
 }

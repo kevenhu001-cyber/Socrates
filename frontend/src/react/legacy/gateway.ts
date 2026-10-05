@@ -134,17 +134,6 @@ export function isExtensiveThinkingOn(): boolean {
   return Boolean((window as any).extensiveThinkingOn);
 }
 
-/** Cached projects used by the recents filter chips. */
-export function getCachedProjects(): ReadonlyArray<{ id: string; name: string }> {
-  const projects = (window as any).__projectsCache;
-  if (!Array.isArray(projects)) return [];
-  return projects.filter((project: unknown): project is { id: string; name: string } => {
-    if (!project || typeof project !== 'object') return false;
-    const candidate = project as { id?: unknown; name?: unknown };
-    return typeof candidate.id === 'string' && typeof candidate.name === 'string';
-  });
-}
-
 /** Active UI language code tracked by the legacy i18n layer (defaults to zh). */
 export function getCurrentLang(): 'zh' | 'en' {
   return (window as any)._currentLang === 'en' ? 'en' : 'zh';

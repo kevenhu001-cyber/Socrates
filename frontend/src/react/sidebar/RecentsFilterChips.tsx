@@ -1,9 +1,14 @@
 import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
 import { createRoot, type Root } from 'react-dom/client';
+import { useSyncExternalStore } from 'react';
 
 import { getKnownTagsFromSessions } from '../../ui/recentsHelpers.js';
 import { serverCache } from '../../session/serverCache.js';
-import { getCachedProjects, t } from '../legacy/gateway.ts';
+import {
+  getProjectCacheSnapshot,
+  subscribeToProjectCache,
+} from '../../projects/projectCache.ts';
+import { t } from '../legacy/gateway.ts';
 import {
   useRecentsFilter,
   useRecentsFilterCommands,
@@ -31,20 +36,15 @@ interface AllChip {
 
 type ChipDescriptor = (AllChip | ProjectChip | TagChip) & { active: boolean };
 
-function readProjects(): ReadonlyArray<{ id: string; name: string }> {
-  return getCachedProjects();
-}
-
 function readTags(): string[] {
   return getKnownTagsFromSessions(serverCache.sessions).slice(0, 8);
 }
 
-function buildChips(currentFilter: string | null): ChipDescriptor[] {
+function buildChips(currentFilter: string | null, projects: ReadonlyArray<{ id: string; name: string }>): ChipDescriptor[] {
   const chips: ChipDescriptor[] = [];
   const activeAll = !currentFilter || currentFilter === 'all';
   chips.push({ kind: 'all', active: activeAll });
 
-  const projects = readProjects();
   projects.forEach((project) => {
     const value = `project:${project.id}`;
     chips.push({
@@ -124,7 +124,12 @@ function RecentsFilterChips() {
   useRecentsFilterSnapshot(); // subscribe so re-renders fire on filter change
   const filter = useRecentsFilter();
   const { pick } = useRecentsFilterCommands();
-  const chips = buildChips(filter);
+  const projects = useSyncExternalStore(
+    subscribeToProjectCache,
+    getProjectCacheSnapshot,
+    getProjectCacheSnapshot,
+  ) ?? [];
+  const chips = buildChips(filter, projects);
 
   const projectChips = chips.filter((c) => c.kind === 'project');
   const tagChips = chips.filter((c) => c.kind === 'tag');

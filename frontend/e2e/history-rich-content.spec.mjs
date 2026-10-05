@@ -26,6 +26,7 @@ test('loading an old conversation rebuilds scaffold widgets and visualizations',
         id: SESSION_ID,
         topic: 'Rich history',
         title: 'Rich history',
+        projectId: 'project-restore',
         domain: 'math',
         mode: 'chat',
         kind: 'chat',
@@ -56,6 +57,13 @@ test('loading an old conversation rebuilds scaffold widgets and visualizations',
       }),
     });
   });
+  await page.route(/\/api\/(?:v2\/)?projects(?:\?.*)?$/, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ projects: [{ id: 'project-restore', name: 'Restored project' }] }),
+    });
+  });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
@@ -63,6 +71,7 @@ test('loading an old conversation rebuilds scaffold widgets and visualizations',
   // full-suite load the call can race boot completion. Wait for it first.
   await page.waitForFunction(() => typeof window.loadSession === 'function', null, { timeout: 15_000 });
   await page.evaluate((id) => window.loadSession(id), SESSION_ID);
+  await expect.poll(() => page.evaluate(() => window.__activeProject?.id)).toBe('project-restore');
 
   await expect(page.locator('#msgList .msg')).toHaveCount(2);
   await expect(page.locator('.inline-definition-term')).toHaveText('Parabola');

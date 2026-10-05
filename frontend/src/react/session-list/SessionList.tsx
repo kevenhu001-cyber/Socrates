@@ -10,6 +10,7 @@ import { ErrorBoundary } from '../ErrorBoundary';
 import { installSessionListBridge, setCurrentSessionId } from './sessionList.bridge';
 import { useSessionListSnapshot, formatRelativeTime } from './sessionList.bridge';
 import { detailCache } from '../../session/detailCache.js';
+import { refreshCachedProjects } from '../../projects/projectCache.ts';
 import type { SessionItem } from './types';
 
 const SHARE_ICON =
@@ -295,9 +296,14 @@ function SessionRowBase({ session, isActive, onPick, onArchive, onDelete, onDrag
             onClick={() => {
               setActionsOpen(false);
               setActionsOpen(true);
-              getApiFetch()?.('/api/projects').then((result: { projects?: Array<{ id: string; name: string }> }) => {
-                setProjects(result.projects || []);
-              }).catch(() => setError(copy('项目加载失败，请重试', 'Could not load projects. Try again.')));
+              const fetchApi = getApiFetch();
+              if (!fetchApi) {
+                setError(copy('项目加载失败，请重试', 'Could not load projects. Try again.'));
+                return;
+              }
+              void refreshCachedProjects(() => fetchApi('/api/projects'))
+                .then((rows) => setProjects([...rows]))
+                .catch(() => setError(copy('项目加载失败，请重试', 'Could not load projects. Try again.')));
             }}
           >
             <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: PROJECT_ICON }} />

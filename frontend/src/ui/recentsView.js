@@ -4,6 +4,7 @@
  * the window.renderRecents bridge in main.js stays as the public entry.
  */
 import { _publishSessionList } from '../session/organize.js';
+import { hasCachedProjects, loadCachedProjects } from '../projects/projectCache.ts';
 import { refreshRecentsFilterChipData } from '../react/sidebar/sidebar.bridge.ts';
 import { apiFetch } from '../util/api.js';
 
@@ -34,10 +35,9 @@ export function doRenderRecents() {
 var __projectsFetchState = 'idle';
 
 export function refreshRecentsFilterData() {
-  if (!Array.isArray(window.__projectsCache) && __projectsFetchState === 'idle') {
+  if (!hasCachedProjects() && __projectsFetchState === 'idle') {
     __projectsFetchState = 'pending';
-    apiFetch('/api/projects').then(function (r) {
-      window.__projectsCache = (r && r.projects) || [];
+    loadCachedProjects(function () { return apiFetch('/api/projects'); }).then(function () {
       __projectsFetchState = 'ready';
       refreshRecentsFilterChipData();
     }).catch(function () {
