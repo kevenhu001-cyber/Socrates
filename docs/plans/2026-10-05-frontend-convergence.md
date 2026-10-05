@@ -92,3 +92,10 @@ The composer tools menu no longer reads the active extension and mode flags
 through the generic `getLegacyGlobalValue` escape hatch. Named gateway
 accessors document the shape of each legacy value while preserving the menu's
 existing active-mode precedence.
+
+## Seventh increment
+
+The chat configuration bridge now reads the live `apiConfig` export from its
+owning provider module. This removes its generic global lookup and duplicate
+`Window.apiConfig` declaration while keeping the published popover snapshot
+copied from the same provider object the legacy client updates in place.

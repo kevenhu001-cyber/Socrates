@@ -1,5 +1,5 @@
 import { createImmutableBridge, useBridge } from '../../lib/bridge/index.ts';
-import { getLegacyGlobalValue } from '../legacy/gateway.ts';
+import { apiConfig } from '../../config/providers.js';
 import { getStoredReasoningEffort, getStoredResponseSpeed } from '../../config/chatPreferences.ts';
 import { restingRect } from '../../ui/pressFeedback.js';
 import type { ChatConfigurationBridge, ChatConfigurationSnapshot, ChatProviderOption } from './types';
@@ -7,7 +7,6 @@ import type { ChatConfigurationBridge, ChatConfigurationSnapshot, ChatProviderOp
 declare global {
   interface Window {
     __socratesChatConfigurationBridge?: ChatConfigurationBridge;
-    apiConfig?: { activeId?: string; providers?: ChatProviderOption[] };
     syncEffortUI?: () => void;
     openSettings?: () => void;
   }
@@ -47,16 +46,16 @@ export function openChatConfiguration(trigger?: HTMLElement | null): void {
     closeChatConfiguration();
     return;
   }
-  const config = getLegacyGlobalValue('apiConfig', {} as { activeId?: string; providers?: ChatProviderOption[] });
   returnFocus = trigger || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
   /* The trigger is still mid-press when its click opens the popover. */
   const rect = trigger ? restingRect(trigger) : null;
   openTrigger = trigger || null;
   openTrigger?.setAttribute('aria-expanded', 'true');
+  const providers = apiConfig.providers as ChatProviderOption[];
   installChatConfigurationBridge().publish({
     open: true,
-    providers: Array.isArray(config.providers) ? config.providers.map((provider) => ({ ...provider })) : [],
-    activeId: String(config.activeId || ''),
+    providers: Array.isArray(providers) ? providers.map((provider) => ({ ...provider })) : [],
+    activeId: String(apiConfig.activeId || ''),
     effort: getStoredReasoningEffort(),
     speed: getStoredResponseSpeed(),
     anchorRect: rect
