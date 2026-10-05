@@ -413,17 +413,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    specificity shape as the parity/baseline owners so they win the tie.
    ========================================================================== */
 @media (min-width: 769px) {
-  body:not([data-conversation-active="true"]):not(.workspace-active)
-    #appShell#appShell#appShell
-    #topicDisclaimer {
-    left: 276px !important;
-    right: 0 !important;
-    width: min(768px, calc(100% - 32px)) !important;
-    max-width: 768px !important;
-    margin-inline: auto !important;
-    font-size: 14px !important;
-    line-height: 18px !important;
-  }
 
   #appShell#appShell#appShell .home-quick-action {
     min-height: 52px !important;

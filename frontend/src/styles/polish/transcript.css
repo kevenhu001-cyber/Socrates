@@ -126,17 +126,16 @@
 #appShell#appShell .msg-body pre code { background: transparent; color: inherit; padding: 0; }
 }
 
-/* Micro-interaction: Checkmark pop animation on copy */
+/* Copy feedback uses the shared short fade without changing icon geometry. */
 #appShell .msg-toolbar-btn[aria-label="Copied"] svg {
-  animation: checkmarkPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  animation: checkmarkPop var(--ui-duration-fast) var(--ui-ease-out) forwards;
 }
 #appShell .msg-toolbar-btn[aria-label="Copied"] {
   color: rgb(16 163 127);
 }
 @keyframes checkmarkPop {
-  0% { transform: scale(0.7); }
-  60% { transform: scale(1.22); }
-  100% { transform: scale(1); }
+  from { opacity: 0.4; }
+  to { opacity: 1; }
 }
 
 /* Edit-in-place textarea and actions bar */

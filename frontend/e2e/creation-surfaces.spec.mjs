@@ -51,6 +51,10 @@ test('assistant can be created and started from More', async ({ page }) => {
   await page.getByRole('menuitem', { name: 'Assistants' }).click();
   await expect(page.locator('#assistantsPanel')).toBeVisible();
   await page.getByRole('button', { name: 'Create assistant' }).click();
+  await expect(page.locator('#assistantsPanel [data-creation-list]')).toHaveCount(0);
+  await expect(page.locator('.creation-editor-backdrop')).toHaveCount(0);
+  await expect(page.locator('.creation-editor')).toBeVisible();
+  await page.screenshot({ path: 'test-results/creation-editor-page.png' });
   await page.locator('.creation-editor [name=title]').fill('Math coach');
   await page.locator('.creation-editor [name=instructions]').fill('Explain one step at a time.');
   await page.locator('.creation-editor [name=starter]').fill('Help me with algebra');

@@ -1,3 +1,5 @@
+import { openDetailSurface, closeDetailSurface } from './detailSurface.ts';
+
 const copy = {
   zh: { images: '图片', assistants: '助手', sites: '站点', createImage: '创建图片', createAssistant: '创建助手', createSite: '创建网站', imagePrompt: '描述你想创建的图片', sitePrompt: '描述你想创建的站点', generateSite: '生成页面', imageModel: '图片模型', create: '创建', retry: '重试', save: '保存', cancel: '取消', delete: '删除', edit: '编辑', use: '开始聊天', publish: '发布', unpublish: '取消发布', preview: '预览', name: '名称', description: '简介', instructions: '指令', starter: '开场白', code: 'HTML 源码', emptyImages: '还没有图片。描述一个画面开始创建。', emptyAssistants: '还没有助手。创建一个适合你的专属助手。', emptySites: '还没有站点。创建一个页面并发布。', loading: '正在加载…', error: '加载失败，请重试。', search: '搜索', searchSites: '搜索站点', siteBanner: '把你的想法变成网站', siteBannerBody: '用 Socrates 创建并发布网站。', sharedWith: '共享对象', gridView: '网格视图', listView: '列表视图', imageUnavailable: '请在设置中配置支持图片生成的模型，或在服务端设置 IMAGE_MODEL。', private: '仅自己', unlisted: '知道链接的人', public: '公开', copied: '链接已复制', confirmDelete: '确定删除？', noPrompt: '请输入图片描述。' },
   en: { images: 'Images', assistants: 'Assistants', sites: 'Sites', createImage: 'Create an image', createAssistant: 'Create assistant', createSite: 'Create site', imagePrompt: 'Describe the image you want to create', sitePrompt: 'Describe the site you want to create', generateSite: 'Generate page', imageModel: 'Image model', create: 'Create', retry: 'Retry', save: 'Save', cancel: 'Cancel', delete: 'Delete', edit: 'Edit', use: 'Start chat', publish: 'Publish', unpublish: 'Unpublish', preview: 'Preview', name: 'Name', description: 'Description', instructions: 'Instructions', starter: 'Conversation starter', code: 'HTML source', emptyImages: 'No images yet. Describe a scene to get started.', emptyAssistants: 'No assistants yet. Create one for your work.', emptySites: 'No sites yet. Create and publish a page.', loading: 'Loading…', error: 'Could not load. Try again.', search: 'Search', searchSites: 'Search sites', siteBanner: 'Turn your ideas into websites', siteBannerBody: 'Create and publish websites with Socrates.', sharedWith: 'Shared with', gridView: 'Grid view', listView: 'List view', imageUnavailable: 'Configure an image-capable model in Settings or set IMAGE_MODEL on the server.', private: 'Only me', unlisted: 'Anyone with the link', public: 'Public', copied: 'Link copied', confirmDelete: 'Delete this item?', noPrompt: 'Enter an image description.' },
@@ -66,15 +68,19 @@ function editorMarkup(name) {
   if (name === 'assistants') {
     let config = {};
     try { config = JSON.parse(item?.source || '{}'); } catch { /* empty draft */ }
-    return `<div class="creation-editor-backdrop"><form class="creation-editor" data-editor="assistants"><header><h2>${item ? t('edit') : t('createAssistant')}</h2><button type="button" data-action="close" aria-label="${t('cancel')}">×</button></header><label>${t('name')}<input name="title" maxlength="120" required value="${esc(item?.title)}"></label><label>${t('description')}<input name="description" maxlength="240" value="${esc(config.description)}"></label><label>${t('instructions')}<textarea name="instructions" rows="7" required>${esc(config.instructions)}</textarea></label><label>${t('starter')}<input name="starter" maxlength="300" value="${esc(config.starter)}"></label><footer><button type="button" data-action="close">${t('cancel')}</button><button class="creation-primary" type="submit" ${state.busy ? 'disabled' : ''}>${t('save')}</button></footer></form></div>`;
+    return `<div class="creation-editor-page"><form class="creation-editor" data-editor="assistants"><header><h2>${item ? t('edit') : t('createAssistant')}</h2><button type="button" data-action="close" aria-label="${t('cancel')}">×</button></header><label>${t('name')}<input name="title" maxlength="120" required value="${esc(item?.title)}"></label><label>${t('description')}<input name="description" maxlength="240" value="${esc(config.description)}"></label><label>${t('instructions')}<textarea name="instructions" rows="7" required>${esc(config.instructions)}</textarea></label><label>${t('starter')}<input name="starter" maxlength="300" value="${esc(config.starter)}"></label><footer><button type="button" data-action="close">${t('cancel')}</button><button class="creation-primary" type="submit" ${state.busy ? 'disabled' : ''}>${t('save')}</button></footer></form></div>`;
   }
-  return `<div class="creation-editor-backdrop"><form class="creation-editor creation-site-editor" data-editor="sites"><header><h2>${item ? t('edit') : t('createSite')}</h2><button type="button" data-action="close" aria-label="${t('cancel')}">×</button></header><label>${t('name')}<input name="title" maxlength="120" required value="${esc(item?.title)}"></label><div class="creation-generation"><textarea name="prompt" rows="2" placeholder="${t('sitePrompt')}" aria-label="${t('sitePrompt')}"></textarea><button type="button" data-action="generate-site">${t('generateSite')}</button></div><label>${t('code')}<textarea name="source" rows="12" required spellcheck="false">${esc(item?.source || '<!doctype html>\n<html lang="zh"><meta charset="utf-8"><title>Socrates Site</title><style>body{font-family:system-ui;max-width:720px;margin:10vh auto;padding:24px}</style><h1>我的站点</h1><p>在这里开始创作。</p></html>')}</textarea></label><div class="creation-publish-controls"><label>${t('publish')}<select name="visibility"><option value="private" ${!item || item.visibility === 'private' ? 'selected' : ''}>${t('private')}</option><option value="unlisted" ${item?.visibility === 'unlisted' ? 'selected' : ''}>${t('unlisted')}</option><option value="public" ${item?.visibility === 'public' ? 'selected' : ''}>${t('public')}</option></select></label><button type="button" data-action="preview-draft">${t('preview')}</button></div><footer><button type="button" data-action="close">${t('cancel')}</button><button class="creation-primary" type="submit" ${state.busy ? 'disabled' : ''}>${t('save')}</button></footer></form></div>`;
+  return `<div class="creation-editor-page"><form class="creation-editor creation-site-editor" data-editor="sites"><header><h2>${item ? t('edit') : t('createSite')}</h2><button type="button" data-action="close" aria-label="${t('cancel')}">×</button></header><label>${t('name')}<input name="title" maxlength="120" required value="${esc(item?.title)}"></label><div class="creation-generation"><textarea name="prompt" rows="2" placeholder="${t('sitePrompt')}" aria-label="${t('sitePrompt')}"></textarea><button type="button" data-action="generate-site">${t('generateSite')}</button></div><label>${t('code')}<textarea name="source" rows="12" required spellcheck="false">${esc(item?.source || '<!doctype html>\n<html lang="zh"><meta charset="utf-8"><title>Socrates Site</title><style>body{font-family:system-ui;max-width:720px;margin:10vh auto;padding:24px}</style><h1>我的站点</h1><p>在这里开始创作。</p></html>')}</textarea></label><div class="creation-publish-controls"><label>${t('publish')}<select name="visibility"><option value="private" ${!item || item.visibility === 'private' ? 'selected' : ''}>${t('private')}</option><option value="unlisted" ${item?.visibility === 'unlisted' ? 'selected' : ''}>${t('unlisted')}</option><option value="public" ${item?.visibility === 'public' ? 'selected' : ''}>${t('public')}</option></select></label><button type="button" data-action="preview-draft">${t('preview')}</button></div><footer><button type="button" data-action="close">${t('cancel')}</button><button class="creation-primary" type="submit" ${state.busy ? 'disabled' : ''}>${t('save')}</button></footer></form></div>`;
 }
 
 function render(name) {
   ensurePanels();
   const el = panel(name);
   if (!el) return;
+  if (name !== 'images' && state.editor?.type === name) {
+    el.innerHTML = editorMarkup(name);
+    return;
+  }
   el.innerHTML = header(name) + (name === 'images' ? imageComposer() : '') + `<div data-creation-list>${listMarkup(name)}</div>` + editorMarkup(name);
 }
 
@@ -92,6 +98,7 @@ async function handleClick(name, event) {
   const button = event.target.closest('[data-action]');
   if (!button) return;
   const action = button.dataset.action;
+  if (['close', 'edit', 'new'].includes(action)) closeDetailSurface('site-preview');
   const item = state[name].find((entry) => entry.id === button.dataset.id);
   if (action === 'retry') return load(name);
   if (action === 'site-view') { state.siteView = button.dataset.view === 'grid' ? 'grid' : 'list'; return render(name); }
@@ -129,17 +136,13 @@ async function handleClick(name, event) {
   if (action === 'preview' && item) {
     const frame = document.createElement('iframe');
     frame.className = 'creation-preview-frame'; frame.title = item.title; frame.setAttribute('sandbox', ''); frame.srcdoc = item.source;
-    const overlay = document.createElement('div'); overlay.className = 'creation-preview-overlay';
-    const close = document.createElement('button'); close.textContent = '×'; close.setAttribute('aria-label', t('cancel')); close.onclick = () => overlay.remove();
-    overlay.append(close, frame); document.body.append(overlay);
+    openDetailSurface({ owner: 'site-preview', title: frame.title, closeLabel: t('cancel'), content: frame });
   }
   if (action === 'view-image' && item) window.open(imageUrl(item.id), '_blank', 'noopener');
   if (action === 'preview-draft') {
     const source = panel(name).querySelector('textarea[name="source"]')?.value || '';
     const frame = document.createElement('iframe'); frame.className = 'creation-preview-frame'; frame.title = t('preview'); frame.setAttribute('sandbox', ''); frame.srcdoc = source;
-    const overlay = document.createElement('div'); overlay.className = 'creation-preview-overlay';
-    const close = document.createElement('button'); close.textContent = '×'; close.setAttribute('aria-label', t('cancel')); close.onclick = () => overlay.remove();
-    overlay.append(close, frame); document.body.append(overlay);
+    openDetailSurface({ owner: 'site-preview', title: frame.title, closeLabel: t('cancel'), content: frame });
   }
   if (action === 'generate-site') {
     const form = panel(name).querySelector('.creation-site-editor');

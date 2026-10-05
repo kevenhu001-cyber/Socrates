@@ -86,8 +86,6 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
 .chat-config-pop button { border-radius: 10px; }
 .chat-config-pop input[type="range"] { accent-color: #1687f8; }
 
-.sidebar-more-popover,
-
 @media (min-width: 769px) {
   .composer-tools-desktop-items { display: block; }
   .composer-tools-mobile-items { display: none; }

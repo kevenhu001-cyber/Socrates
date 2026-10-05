@@ -168,3 +168,19 @@
   }
   body #appShell #pluginWorkspaceTabs { display: none; }
 }
+
+/* Desktop footer stays inside the main pane as navigation/details resize it. */
+@media (min-width: 769px) {
+  #appShell #topicDisclaimer {
+    display: block;
+    position: absolute;
+    inset-inline: var(--ui-space-lg);
+    bottom: var(--ui-space-md);
+    width: auto;
+    max-width: none;
+    margin: 0;
+    transform: none;
+    font-size: var(--ui-font-size-sm);
+    line-height: var(--ui-line-height-normal);
+  }
+}

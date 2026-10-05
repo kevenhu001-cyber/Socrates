@@ -1,6 +1,7 @@
 import { setConversationChrome } from './topBarState.js';
 import { swapComposerSurface } from '../react/composer-input/controller.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { closeDetailSurface } from './detailSurface.ts';
 
 export const CORE_VIEW_IDS = ['topicSetup', 'diagnosticView', 'chatView'];
 
@@ -132,12 +133,15 @@ export function placeComposerForView(viewId, doc) {
 export function activateMainView(viewId, doc) {
   var d = resolveDocument(doc);
   if (!d || !VIEW_IDS.has(viewId)) return false;
+  var target = d.getElementById(viewId);
+  if (!target) return false;
+  if (d.documentElement.dataset.mainView !== viewId) closeDetailSurface(undefined, d, false);
+  d.documentElement.dataset.mainView = viewId;
 
   setHidden(d, CORE_VIEW_IDS, true);
   setHidden(d, MAIN_PAGE_IDS, true);
   resetShellState(d);
 
-  var target = d.getElementById(viewId);
   if (target) target.classList.remove('hidden');
   syncChatPageGate(d);
   /* The single composer shell rides along: park it in the incoming view's

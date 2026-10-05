@@ -32,7 +32,7 @@
  * MAX_DISTANCE the motion is capped (don't drag the user through a 1.5 s
  * scroll when their finger wants the bottom).
  *
- * The easing curve is the project's standard cubic-bezier(.22,1,.36,1)
+ * The easing curve is the project's standard cubic-bezier(0.16,1,0.3,1)
  * (a snappy ease-out) — applied to all callers so every motion in the
  * chat surface shares the same character and they stay in lockstep.
  */
@@ -48,7 +48,7 @@ export const MOTION_VELOCITY_PX_PER_S = 1800;
 export const MOTION_MIN_DURATION_MS = 90;
 export const MOTION_MAX_DURATION_MS = 520;
 export const MOTION_SNAP_DISTANCE_PX = 24;
-export const MOTION_EASING = 'cubic-bezier(.22,1,.36,1)';
+export const MOTION_EASING = 'cubic-bezier(0.16,1,0.3,1)';
 
 /* Compute a {duration, easing, distance} plan for a motion of the given
  * pixel distance. Pass a non-finite or negative distance to receive a
@@ -131,10 +131,9 @@ export function planSendGlide(distance, viewportHeight) {
   return { duration, ease: long ? easeInOutCubic : easeOutQuint, distance: d, snap: false, long };
 }
 
-/* Interpolate an easing function at progress `t` in [0,1]. The default
- * easing `cubic-bezier(.22,1,.36,1)` is approximated here as an ease-out
- * quint for manual frame loops; Web Animations API consumers should
- * pass the string easing directly to WAAPI rather than calling this. */
+/* Quintic easing primitive for callers that explicitly choose it.
+ * Manual frame loops using the shared house curve use easeOutHouse;
+ * Web Animations consumers use MOTION_EASING directly. */
 export function easeOutQuint(t) {
   if (t <= 0) return 0;
   if (t >= 1) return 1;

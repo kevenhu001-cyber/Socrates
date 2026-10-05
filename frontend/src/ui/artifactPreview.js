@@ -1,11 +1,6 @@
 import { STROKE_ICONS } from './icons/toolIcons.js';
+import { openDetailSurface, closeDetailSurface } from './detailSurface.ts';
 
-let drawer = null;
-let backdrop = null;
-let previewBody = null;
-let previewTitle = null;
-let previewMeta = null;
-let lastFocus = null;
 let initialized = false;
 
 function translate(key, fallback) {
@@ -17,77 +12,18 @@ function translate(key, fallback) {
   }
 }
 
-function ensurePreview() {
-  if (drawer && drawer.isConnected) return drawer;
-  backdrop = document.createElement('button');
-  backdrop.type = 'button';
-  backdrop.className = 'artifact-preview-backdrop';
-  backdrop.setAttribute('aria-label', translate('artifact.close', 'Close artifact preview'));
-  backdrop.addEventListener('click', closeArtifactPreview);
-
-  drawer = document.createElement('aside');
-  drawer.className = 'artifact-preview-drawer';
-  drawer.setAttribute('role', 'dialog');
-  drawer.setAttribute('aria-modal', 'true');
-  drawer.setAttribute('aria-labelledby', 'artifactPreviewTitle');
-  drawer.innerHTML =
-    '<header class="artifact-preview-header">'
-    + '<span class="artifact-preview-header-icon" aria-hidden="true">' + STROKE_ICONS.library + '</span>'
-    + '<div class="artifact-preview-heading">'
-    + '<h2 id="artifactPreviewTitle"></h2>'
-    + '<p class="artifact-preview-meta"></p>'
-    + '</div>'
-    + '<button type="button" class="artifact-preview-close"></button>'
-    + '</header>'
-    + '<div class="artifact-preview-body"></div>';
-  previewTitle = drawer.querySelector('#artifactPreviewTitle');
-  previewMeta = drawer.querySelector('.artifact-preview-meta');
-  previewBody = drawer.querySelector('.artifact-preview-body');
-  const close = drawer.querySelector('.artifact-preview-close');
-  close.textContent = translate('common.close', 'Close');
-  close.setAttribute('aria-label', translate('artifact.close', 'Close artifact preview'));
-  close.addEventListener('click', closeArtifactPreview);
-  document.body.appendChild(backdrop);
-  document.body.appendChild(drawer);
-  return drawer;
-}
-
 export function closeArtifactPreview() {
-  if (!drawer) return;
-  drawer.classList.remove('is-open');
-  if (backdrop) backdrop.classList.remove('is-open');
-  document.body.classList.remove('artifact-preview-open');
-  window.setTimeout(function () {
-    if (previewBody && !drawer.classList.contains('is-open')) previewBody.replaceChildren();
-  }, 180);
-  try { if (lastFocus && lastFocus.focus) lastFocus.focus(); } catch (_) { /* ignore */ }
+  closeDetailSurface('artifact');
 }
 
 export function openArtifactPreview(options) {
   const opts = options || {};
   const url = String(opts.url || '').trim();
   if (!url) return;
-  ensurePreview();
-  lastFocus = document.activeElement;
-  previewTitle.textContent = String(opts.name || translate('artifact.title', 'Artifact'));
   const mime = String(opts.mimeType || 'application/octet-stream');
   const kind = mime.indexOf('image/') === 0 ? 'image' : mime.indexOf('text/html') === 0 ? 'html' : 'file';
-  drawer.dataset.artifactType = kind;
-  const headerIcon = drawer.querySelector('.artifact-preview-header-icon');
-  if (headerIcon) {
-    headerIcon.innerHTML = kind === 'image'
-      ? STROKE_ICONS.read
-      : kind === 'html'
-        ? STROKE_ICONS.code
-        : STROKE_ICONS.library;
-  }
-  previewMeta.textContent = kind === 'html'
-    ? translate('artifact.htmlMeta', 'Sandboxed HTML preview')
-    : kind === 'image'
-      ? translate('artifact.imageMeta', 'Image preview')
-      : mime;
-  previewBody.replaceChildren();
-
+  const previewBody = document.createElement('div');
+  previewBody.className = 'artifact-preview-body';
   if (mime.indexOf('image/') === 0) {
     const image = document.createElement('img');
     image.className = 'artifact-preview-image';
@@ -115,20 +51,19 @@ export function openArtifactPreview(options) {
     previewBody.appendChild(fallback);
   }
 
-  drawer.classList.add('is-open');
-  backdrop.classList.add('is-open');
-  document.body.classList.add('artifact-preview-open');
-  window.setTimeout(function () {
-    try { drawer.querySelector('.artifact-preview-close').focus(); } catch (_) { /* ignore */ }
-  }, 0);
+  openDetailSurface({
+    owner: 'artifact',
+    title: String(opts.name || translate('artifact.title', 'Artifact')),
+    meta: kind === 'html' ? translate('artifact.htmlMeta', 'Sandboxed HTML preview')
+      : kind === 'image' ? translate('artifact.imageMeta', 'Image preview') : mime,
+    closeLabel: translate('artifact.close', 'Close artifact preview'),
+    content: previewBody,
+  });
 }
 
 export function initArtifactPreview() {
   if (initialized || typeof document === 'undefined') return;
   initialized = true;
-  document.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape' && drawer && drawer.classList.contains('is-open')) closeArtifactPreview();
-  });
   document.addEventListener('click', function (event) {
     const target = event.target && event.target.closest
       ? event.target.closest('[data-artifact-preview], .msg.assistant .msg-body img:not(.exec-artifact-image):not(.site-link-favicon)')

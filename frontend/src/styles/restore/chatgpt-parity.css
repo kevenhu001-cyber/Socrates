@@ -53,29 +53,6 @@
     letter-spacing: 0 !important;
   }
 
-  body:not([data-conversation-active="true"]):not(.workspace-active) #appShell#appShell#appShell #topicDisclaimer {
-    position: fixed;
-    right: 16px !important;
-    bottom: 12px;
-    left: 276px !important;
-    display: block !important;
-    width: auto !important;
-    max-width: none !important;
-    margin: 0 !important;
-    transform: none !important;
-    color: var(--chatgpt-faint) !important;
-    font-family: var(--chatgpt-font);
-    font-size: 12px !important;
-    line-height: 18px !important;
-    text-align: center;
-  }
-
-  /* P_has-invalidation — see ui/layoutStateMirror.js. */
-  :where(:root[data-sidebar-collapsed]) body:not([data-conversation-active="true"]):not(.workspace-active):not(#_n):not(._n)
-    #appShell#appShell#appShell #topicDisclaimer {
-    left: 16px !important;
-  }
-
   /* Compact add-content popover. */
   body #composerToolsMenu.composer-tools-menu {
     width: 220px !important;

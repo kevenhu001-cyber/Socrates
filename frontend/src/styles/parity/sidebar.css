@@ -616,3 +616,8 @@
 #appShell .recent-item input[name="title"] { width: 100%; min-width: 0; box-sizing: border-box; border: 1px solid var(--ui-border-strong); border-radius: var(--ui-radius-control); background: var(--ui-bg-control); color: var(--ui-text-primary); font: inherit; padding: 4px; }
 
 #appShell #sidebar.collapsed #sidebarUserRow .sidebar-account-trigger { justify-content: center; padding: 4px; }
+
+/* The shell reserves one detail column; renderers cannot resize the main pane. */
+html[data-detail-open="true"][data-detail-layout="docked"] #appShell .main {
+  margin-inline-end: var(--ui-detail-width);
+}

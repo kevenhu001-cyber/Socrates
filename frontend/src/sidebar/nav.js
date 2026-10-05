@@ -7,6 +7,7 @@ import { mountWorkspacePage, mountScheduledPage, mountAdminPage } from "../react
 import { loadSession } from "../session/loader.js";
 import { workspaceForPath, pushWorkspaceRoute, pushHomeRoute, replaceRoute } from "../app/router.js";
 import { reportSwallow } from "../util/reportSwallow.ts";
+import { openLibraryDetail } from "../ui/libraryDetail.js";
 /* creationSurfaces.js (~20KB) is lazy — images/assistants/sites panels
    only need it when the user opens one. openCreation() below awaits the
    module before showing the (created-on-demand) panel. */
@@ -968,7 +969,7 @@ function libraryPreviewHeader(title, subtitle) {
 function openLibraryArtifactPreview(item) {
   var title = item && (item.title || item.name) || t("library.untitled", "Untitled");
   var source = item && item.source || "";
-  showDialog(libraryPreviewHeader(title, t("library.preview.artifactSource", "Created item source")) + '<pre class="library-file-preview-text library-artifact-source">' + esc(source) + '</pre>', "library-file-preview-card");
+  openLibraryDetail(title, t("library.preview.artifactSource", "Created item source"), '<pre class="library-file-preview-text library-artifact-source">' + esc(source) + '</pre>', t("dialog.close", "Close"));
 }
 
 async function loadLibraryFileContent(id) {
@@ -977,12 +978,12 @@ async function loadLibraryFileContent(id) {
   try {
     var result = await api("/api/files/" + encodeURIComponent(id) + "/content");
     var currentBody = byId("libraryFilePreviewBody");
-    if (!currentBody) return;
+    if (currentBody !== body) return;
     if (!result || result.ok === false) throw new Error(result && result.error || t("library.preview.failed", "Could not load this file."));
     currentBody.innerHTML = '<pre class="library-file-preview-text">' + esc(result.text || "") + '</pre>' + (result.truncated ? '<p class="workspace-note library-file-preview-note">' + t("library.preview.truncated", "Only the first part of this file is shown.") + '</p>' : '');
   } catch (error) {
     var failedBody = byId("libraryFilePreviewBody");
-    if (!failedBody) return;
+    if (failedBody !== body) return;
     failedBody.innerHTML = '<div class="workspace-empty library-file-preview-error"><strong>' + t("library.preview.failed", "Could not load this file.") + '</strong><span>' + esc(error && error.message || "") + '</span></div>';
   }
 }
@@ -1024,7 +1025,7 @@ window.openLibraryItem = function (id, kind, collection) {
     body = '<div id="libraryFilePreviewBody" class="library-file-preview-loading">' + t("library.preview.loading", "Loading file content…") + '</div>';
   }
 
-  showDialog(libraryPreviewHeader(name, mime || t("library.preview.file", "File")) + body, "library-file-preview-card");
+  openLibraryDetail(name, mime || t("library.preview.file", "File"), body, t("dialog.close", "Close"));
   if (!isMedia) loadLibraryFileContent(file.id);
 };
 window.openLibraryUpload = function () { var input = byId("libraryUploadInput"); if (input) input.click(); };

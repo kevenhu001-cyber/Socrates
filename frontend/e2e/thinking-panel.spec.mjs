@@ -114,7 +114,7 @@ test('thinking drawer closes via Escape and backdrop click', async ({ page }) =>
   await page.evaluate(() => window.__finishThinkingStream());
 });
 
-test('thinking panel is a 40% bottom sheet on mobile', async ({ page }) => {
+test('thinking detail occupies the mobile viewport without nesting sheets', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await installReasoningStream(page, { immediate: true });
   await bootChat(page);
@@ -127,8 +127,8 @@ test('thinking panel is a 40% bottom sheet on mobile', async ({ page }) => {
   await expect(panel).toBeVisible();
   const box = await panel.boundingBox();
   expect(box).not.toBeNull();
-  expect(box.height).toBeGreaterThan(0.38 * 844);
-  expect(box.height).toBeLessThan(0.42 * 844);
+  expect(box.height).toBeGreaterThan(0.98 * 844);
+  expect(box.height).toBeLessThanOrEqual(844);
   expect(box.y + box.height).toBeGreaterThan(840);
 
   await panel.locator('.thinking-panel-close').click();

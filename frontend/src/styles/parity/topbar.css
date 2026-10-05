@@ -200,3 +200,11 @@
     min-height: 36px;
   }
 }
+
+/* Workspace pages own their context; the chat model selector stays in chat. */
+html[data-main-view$="Panel"] #appShell #topModelSwitcher,
+html[data-main-view$="Panel"] #appShell #mobileMode,
+html[data-main-view$="Panel"] #appShell #mobileIncognitoBtn,
+html[data-main-view$="Panel"] #appShell #mobileNewChatBtn {
+  display: none;
+}

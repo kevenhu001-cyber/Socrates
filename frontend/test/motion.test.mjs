@@ -75,7 +75,7 @@ test('planMotion returns snap for non-finite / negative input', () => {
 
 test('planMotion uses the project standard easing by default', () => {
   assert.equal(planMotion(200).easing, MOTION_EASING);
-  assert.equal(MOTION_EASING, 'cubic-bezier(.22,1,.36,1)');
+  assert.equal(MOTION_EASING, 'cubic-bezier(0.16,1,0.3,1)');
 });
 
 test('planMotionForUser collapses to a snap under prefers-reduced-motion', () => {
