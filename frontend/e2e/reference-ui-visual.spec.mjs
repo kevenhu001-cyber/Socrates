@@ -87,8 +87,8 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
     };
   });
   expect(mobileGeometry.composer?.width).toBeGreaterThanOrEqual(320);
-  /* Reference phone capsule is a two-row 89px stack (editor row 1, controls row 2). */
-  expect(mobileGeometry.composer?.height).toBe(89);
+  /* Reference phone capsule is a two-row 85px stack (editor row 1, controls row 2). */
+  expect(mobileGeometry.composer?.height).toBe(85);
   expect((mobileGeometry.composer?.y ?? 0) + (mobileGeometry.composer?.height ?? 0)).toBeLessThanOrEqual(769);
   expect(mobileGeometry.plus?.width).toBe(36);
   expect(mobileGeometry.send?.width).toBe(36);
@@ -111,9 +111,10 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   expect(toolsBox?.width).toBeLessThanOrEqual(260);
   expect(toolsBox?.height).toBeGreaterThanOrEqual(300);
   expect(toolsBox?.height).toBeLessThanOrEqual(368);
-  /* The sheet is flush with the capsule's 12px page inset. */
-  expect(toolsBox?.x).toBeGreaterThanOrEqual(11);
-  expect(toolsBox?.x).toBeLessThanOrEqual(13);
+  /* The sheet is flush with the capsule's 16px page gutter
+     (--ui-mobile-page-gutter in styles/tokens.css). */
+  expect(toolsBox?.x).toBeGreaterThanOrEqual(14);
+  expect(toolsBox?.x).toBeLessThanOrEqual(18);
   expect(Math.abs(
     ((toolsBox?.y ?? 0) + (toolsBox?.height ?? 0))
       - ((mobileGeometry.composer?.y ?? 0) + (mobileGeometry.composer?.height ?? 0)),
@@ -153,7 +154,10 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
       rowIcon: box('.plugin-directory-row .workspace-row-icon'),
     };
   });
-  expect(pluginGeometry.search?.height).toBe(42);
+  /* 36px search per docs/ref/mobile-reference-2026-10-04.md
+     ("Directories | 36px search, 40px tabs/app icons, 60px file rows"),
+     owned by polish/mobile-directories.css. */
+  expect(pluginGeometry.search?.height).toBe(36);
   expect((pluginGeometry.installedLabel?.y ?? 0) + (pluginGeometry.installedLabel?.height ?? 0)).toBeLessThanOrEqual(pluginGeometry.installedIcon?.y ?? 0);
   expect(pluginGeometry.installedIcon?.width).toBe(40);
   expect(pluginGeometry.tabs?.y).toBeGreaterThan(315);
@@ -182,7 +186,7 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   const chatComposerBox = await page.locator('#composerInputWrap').boundingBox();
   const chatEditorBox = await page.locator('#composerRoot').boundingBox();
   const chatToolsBox = await page.locator('#composerToolsBtn').boundingBox();
-  expect(chatComposerBox?.height).toBe(89);
+  expect(chatComposerBox?.height).toBe(85);
   expect(chatToolsBox?.width).toBe(36);
   await page.screenshot({ path: 'test-results/socrates-reference-mobile-chat-composer-390x769.png', fullPage: true });
 

@@ -45,11 +45,16 @@ test('mobile conversation home matches the compact dark reference layout', async
 
   expect(geometry.left?.width).toBe(44);
   expect(geometry.left?.height).toBe(44);
+  /* The new-chat action is a landing top-bar button, so it takes the same
+     44px tactile chip as the hamburger (restore/chat-surface.css). */
   expect(geometry.right?.width).toBe(44);
   expect(geometry.composer?.width).toBeGreaterThanOrEqual(320);
-  /* Empty-home mobile composer uses the reference's two-row 89px stack
-     (editor on row 1, add/dictation/send controls on row 2). */
-  expect(geometry.composer?.height).toBe(89);
+  /* Empty-home mobile composer uses the reference's two-row 85px stack
+     (editor on row 1, add/dictation/send controls on row 2). The height
+     follows the owner's padding/row-gap/editor metrics — see
+     docs/ref/mobile-reference-2026-10-04.md and the arithmetic in
+     e2e/mobile-composer-reference.spec.mjs. */
+  expect(geometry.composer?.height).toBe(85);
   expect(geometry.composer?.bottom).toBeLessThanOrEqual((geometry.viewportHeight ?? 844) - 16);
   /* The empty-state capsule pins to the bottom action band: its foot rests
      on the safe-area inset above the viewport bottom, not in the old
@@ -68,7 +73,7 @@ test('mobile conversation home matches the compact dark reference layout', async
      middle on phones. The previous absolute + dual left/right inset could
      land sub-pixel off when the parent's 16px padding and the viewport
      settled (URL-bar collapse, soft keyboard); the absolute box anchored
-     at 35% of the surface always lands the line on the reference hero
+     at 40.5% of the surface always lands the line on the reference hero
      position regardless of those shifts. */
   const centering = await page.evaluate(() => {
     const greet = document.querySelector('#topicTitle.greeting');
@@ -93,7 +98,7 @@ test('mobile conversation home matches the compact dark reference layout', async
      greeting's parent flex column. */
   expect(Math.abs(centering.x + centering.width / 2 - centering.viewportWidth / 2))
     .toBeLessThanOrEqual(1);
-  const expectedCenterY = (centering.surfaceTop ?? 0) + (centering.surfaceHeight ?? 0) * 0.35;
+  const expectedCenterY = (centering.surfaceTop ?? 0) + (centering.surfaceHeight ?? 0) * 0.405;
   expect(Math.abs(centering.centerY - expectedCenterY))
     .toBeLessThanOrEqual(1);
 
@@ -174,6 +179,16 @@ test('mobile conversation home matches the compact dark reference layout', async
   await page.screenshot({ path: 'test-results/socrates-mobile-reference-implementation.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(180);
+
+  /* The phone rail hides the effort chip only for the default level, so
+     pick a non-default one here — otherwise there is no chip to track
+     through focus and multiline growth, which is what this block checks.
+     Set before the height baseline so any layout effect is absorbed. */
+  await page.evaluate(() => {
+    localStorage.setItem('socrates-reasoning-effort', 'high');
+    window.syncEffortUI?.();
+  });
+  await expect(composer.locator('.effort-picker')).toBeVisible();
 
   /* Focus is geometry-neutral; the second row appears only after the draft
      actually renders on more than one line. */

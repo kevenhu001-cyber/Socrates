@@ -658,9 +658,15 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 @media (max-width: 768px) {
 
   /* Landing top-bar buttons are 44px tactile chips; the in-conversation
-     header keeps its existing 40px unframed utilities. */
+     header keeps its existing 40px unframed utilities.
+     #mobileNewChatBtn belongs to this set: it sits in the same landing
+     header as the hamburger, and polish/mobile-shell.css sizes it at 40px
+     with no !important, so leaving it out of this list rendered the two
+     header actions at different sizes (44 vs 40) and different weights on
+     the phone landing. e2e/mobile-home-visual.spec.mjs asserts both at 44. */
   body:not([data-conversation-active="true"]) #appShell#appShell #sidebarOpenBtn,
-  body:not([data-conversation-active="true"]) #appShell#appShell #mobileIncognitoBtn {
+  body:not([data-conversation-active="true"]) #appShell#appShell #mobileIncognitoBtn,
+  body:not([data-conversation-active="true"]) #appShell#appShell #mobileNewChatBtn {
     width: 44px !important;
     min-width: 44px !important;
     height: 44px !important;
