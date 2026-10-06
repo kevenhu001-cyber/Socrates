@@ -1,16 +1,13 @@
 // Live-chat tool-call path no longer renders an agent-tool-card.
 // The model announces what it is doing with an inline status label
-// (Searching / Coding / Data Processing), and any image artifact
-// produced by the run shows up inline in the message body. Web search
-// results are still parsed by the streaming controller (so the
-// inline artifact dedup logic gets exercised) but no collapsible
-// card wraps them.
+// (Searching / Coding / Data Processing); tool-specific SVGs identify
+// the active operation. Generated images stay hidden unless the assistant
+// explicitly cites one in its markdown response.
 //
 // This file keeps three regression checks:
 //   1. The inline status label appears during the tool_use event and
 //      is removed once the model's reply starts streaming.
-//   2. Image artifacts render inline in the message body, not inside
-//      a tool card (the card path doesn't exist anymore).
+//   2. Running search and code rows show their specific SVG glyphs.
 //   3. The search result parser still treats javascript: URLs as
 //      non-clickable (defence against the model emitting unsafe URLs).
 //
@@ -83,6 +80,36 @@ test('live chat shows an inline tool status instead of a tool card', async ({ pa
   await expect(searchRow.locator('.tool-inline-src[href]')).toHaveCount(1);
   await expect(searchRow.locator('.tool-inline-src-date')).toHaveText('2026-07-15');
   await expect(searchRow.locator('.tool-inline-src-engine')).toHaveText('bing');
+});
+
+test('live Python image artifacts stay hidden until cited in assistant markdown', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.route('**/api/**/files/plot-1/raw**', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'image/png', body: ONE_PIXEL_PNG });
+  });
+  await page.route('**/api/**/chat/stream', async (route) => {
+    const stream = [
+      'event: tool_use\ndata: [{"id":"code-plot","name":"code_interpreter","input":{"language":"python","code":"plt.plot([1,2],[3,4])"}}]\n\n',
+      'event: tool_result\ndata: {"id":"code-plot","name":"code_interpreter","ok":true,"status":"completed","output":"saved plot.png","artifacts":[{"id":"plot-1","mimeType":"image/png","name":"plot.png"}]}\n\n',
+      'data: {"choices":[{"delta":{"content":"The plot is ready."}}]}\n\n',
+      'data: [DONE]\n\n',
+    ].join('');
+    await route.fulfill({ status: 200, contentType: 'text/event-stream', body: stream });
+  });
+
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.evaluate(async () => {
+    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '88888888-8888-4888-8888-888888888888' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [{ clientId: 'user-image', role: 'user', rawText: 'Make a plot', html: null }] });
+    window.__testActivateMainView('chatView');
+    await window.askChatTurn('Make a plot');
+  });
+
+  const bubble = page.locator('.msg.assistant').last();
+  await expect(bubble.locator('.tool-inline[data-tcid="code-plot"]')).toHaveAttribute('data-state', 'done');
+  await expect(bubble.locator('.exec-artifact, .exec-artifact-image')).toHaveCount(0);
 });
 
 test('tool activity lands behind its paragraph without splitting it', async ({ page }) => {
@@ -200,6 +227,8 @@ test('live chat shows a Searching label while the model is searching', async ({ 
   await expect(row).toBeVisible();
   await expect(row.locator('.tool-inline-label')).toContainText('Searching');
   await expect(row.locator('.tool-inline-label')).toHaveClass(/shimmer-text/);
+  await expect(row.locator('.tool-inline-tool-icon svg circle')).toHaveCount(1);
+  await expect(row.locator('.tool-inline-tool-icon svg path')).toHaveCount(1);
   await expect(page.locator('.msg.assistant .thinking-status')).toHaveCount(0);
   await expect(row).toHaveAttribute('data-state', 'running');
 
@@ -262,6 +291,7 @@ test('code execution switches from executing to data analysis without thinking o
   const bubble = page.locator('.msg.assistant').last();
   const row = bubble.locator('.tool-inline[data-tcid="live-code"]').last();
   await expect(row.locator('.tool-inline-label')).toContainText('Executing code');
+  await expect(row.locator('.tool-inline-tool-icon svg path')).toHaveCount(3);
   await expect(bubble.locator('.thinking-status')).toHaveCount(0);
   await page.evaluate(() => window.__sendCodeProgress());
   await expect(row.locator('.tool-inline-label')).toContainText('Analyzing data');

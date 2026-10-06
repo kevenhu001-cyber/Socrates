@@ -138,3 +138,29 @@ test('attachment outputs keep charts and files but leave text in the row', () =>
   assert.deepEqual(attachmentOutputsOf(null), []);
   assert.deepEqual(toolOutputsOf(undefined), []);
 });
+
+test('image artifacts stay out of automatic attachments for both output protocols', () => {
+  const legacy = attachmentOutputsOf({
+    id: 'call-6',
+    name: 'code_interpreter',
+    visualization: VIZ,
+    artifacts: [
+      { id: 'png', mimeType: 'image/png' },
+      { id: 'svg', mimeType: 'image/svg+xml' },
+      { id: 'csv', mimeType: 'text/csv' },
+    ],
+  });
+  const normalized = attachmentOutputsOf({
+    id: 'call-7',
+    name: 'code_interpreter',
+    outputs: [
+      { kind: 'artifact', fileId: 'jpeg', mimeType: 'image/jpeg' },
+      { kind: 'artifact', fileId: 'pdf', mimeType: 'application/pdf' },
+    ],
+  });
+
+  assert.deepEqual(legacy.map((output) => output.kind === 'artifact' ? output.fileId : output.kind), [
+    'visualization', 'csv',
+  ]);
+  assert.deepEqual(normalized.map((output) => output.kind === 'artifact' ? output.fileId : output.kind), ['pdf']);
+});

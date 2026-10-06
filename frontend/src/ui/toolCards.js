@@ -890,7 +890,7 @@ export function appendInlineArtifact(fileId, mimeType, outEl, displayName) {
      automatically. The assistant must explicitly reference them in
      prose (e.g. `![description](/api/files/<id>/raw)`) so the user only
      sees images the model chooses to show. */
-  if ((mimeType || "").indexOf("image/") === 0) return;
+  if (/^image\//i.test(mimeType || "")) return;
   const url = "/api/files/" + encodeURIComponent(fileId) + "/raw";
   const selectorId = (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(String(fileId)) : String(fileId).replace(/[^a-zA-Z0-9_-]/g, '');
   /* P_artifact-doc-wide-dedup — a single artifact fileId should
