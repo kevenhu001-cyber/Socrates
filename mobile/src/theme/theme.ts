@@ -14,8 +14,8 @@ export type ThemeMode = 'light' | 'dark';
  *
  * The flat field names are retained for component compatibility, but their
  * values now resolve directly to the shared web roles. ThemeProvider applies
- * the web app's pure-black page canvas at runtime; the permanent desktop
- * shell gives the navigation rail its separate deep-gray surface.
+ * the web app's shared charcoal page canvas at runtime; the permanent desktop
+ * shell gives the navigation rail its separate raised surface.
  */
 
 export interface Palette {

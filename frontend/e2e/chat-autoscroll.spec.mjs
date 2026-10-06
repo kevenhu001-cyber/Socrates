@@ -143,6 +143,41 @@ test('pinned reader stays at the bottom while content streams', async ({ page })
   await page.evaluate(() => window.__streamPromise);
 });
 
+test('a pinned reader follows repeated stream growth without losing the newest content', async ({ page }) => {
+  await bootStreamingChat(page);
+  await page.evaluate(() => {
+    window.__scrollSampleActive = true;
+    window.__scrollTopSamples = [];
+    const list = document.getElementById('msgList');
+    const sample = () => {
+      if (!window.__scrollSampleActive) return;
+      window.__scrollTopSamples.push(list.scrollTop);
+      requestAnimationFrame(sample);
+    };
+    sample();
+  });
+
+  for (let i = 0; i < 8; i += 1) {
+    await page.evaluate((index) => {
+      window.__pushDelta(`Growth packet ${index}: the answer continues with enough text to wrap and extend the transcript. `.repeat(6) + '\n\n');
+    }, i);
+    await page.waitForTimeout(70);
+  }
+  await expect.poll(() => distanceFromBottom(page)).toBeLessThanOrEqual(4);
+  const tops = await page.evaluate(() => {
+    window.__scrollSampleActive = false;
+    return window.__scrollTopSamples;
+  });
+  expect(tops.length).toBeGreaterThan(12);
+  for (let i = 1; i < tops.length; i += 1) {
+    expect(tops[i], `frame ${i} moved away from the newest content`).toBeGreaterThanOrEqual(tops[i - 1] - 1);
+  }
+  expect(Math.max(...tops) - Math.min(...tops)).toBeGreaterThan(24);
+
+  await page.evaluate(() => window.__finishStream());
+  await page.evaluate(() => window.__streamPromise);
+});
+
 test('upward gesture stops auto-scroll and shows the new-reply pill; clicking it re-pins', async ({ page }) => {
   await bootStreamingChat(page);
 

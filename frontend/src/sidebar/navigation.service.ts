@@ -1,6 +1,6 @@
 import { pushHomeRoute, pushWorkspaceRoute, workspaceForPath } from '../app/router.js';
 import { activateMainView, getVisibleCoreView } from '../ui/mainViewController.js';
-import { setActiveDestination } from './navigation.store';
+import { setActiveDestination } from './navigation.store.ts';
 import type { SidebarNavKey } from '../react/sidebar/types';
 
 type NavigationDestination = Exclude<SidebarNavKey, null>;

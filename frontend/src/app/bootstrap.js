@@ -48,6 +48,7 @@ export function bootstrapApp(options) {
     startNewChat: options.startNewChat,
     toggleIncognito: options.toggleIncognito,
     openFind: options.openFind,
+    openSummary: options.openSummary,
     openShare: options.openShare,
     openSettings: window.openSettings,
     startSession: options.startSession,

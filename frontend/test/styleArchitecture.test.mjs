@@ -29,11 +29,13 @@ test('the stylesheet entry does not reconnect historical parity layers', async (
 });
 
 test('migrated workspace panels are single React-owned page hosts', async () => {
-  const [html, workspacePage, pageMounts, navJs, mainJs] = await Promise.all([
+  const [html, workspacePage, pageMounts, navJs, navService, navAdapters, mainJs] = await Promise.all([
     read('index.html'),
     read('src/react/pages/workspace/WorkspacePage.tsx'),
     read('src/react/lib/boot/pageMounts.ts'),
     read('src/sidebar/nav.js'),
+    read('src/sidebar/navigation.service.ts'),
+    read('src/sidebar/navigation.adapters.ts'),
     read('src/main.js'),
   ]);
   assert.equal(html.includes('id="libraryList"'), false, 'legacy inner Library host must stay removed');
@@ -51,15 +53,18 @@ test('migrated workspace panels are single React-owned page hosts', async () => 
      matching the visual order (transcript first). */
   assert.match(html, /<div class="chat-page hidden" id="chatPage">\s*<div class="msg-list" id="msgList"><\/div>\s*<div class="chat-view chat-view-lifted hidden" id="chatView">/);
   assert.match(workspacePage, /page === 'library' \? 'libraryPanel' : page === 'projects' \? 'spacesPanel' : 'pluginsPanel'/);
-  /* Page mounting is a module API — sidebar navigation imports
-     pageMounts.ts directly; the window.__socratesMount* compat globals
-     must not come back. */
+  /* Page mounting is a module API. The adapter module imports pageMounts.ts,
+     while nav.js routes through navigation.service; window.__socratesMount*
+     compatibility globals must not come back. */
   assert.match(pageMounts, /library: 'libraryPanel'/);
   assert.match(pageMounts, /projects: 'spacesPanel'/);
   assert.match(pageMounts, /plugins: 'pluginsPanel'/);
-  assert.match(navJs, /from ["']\.\.\/react\/lib\/boot\/pageMounts\.ts["']/);
+  assert.match(navJs, /from ["']\.\/navigation\.service\.ts["']/);
+  assert.match(navAdapters, /from ["']\.\.\/react\/lib\/boot\/pageMounts\.ts["']/);
+  assert.match(navService, /adapters\[destination\]\?\.\(\)/);
   for (const global of ['__socratesMountWorkspace', '__socratesMountScheduled', '__socratesMountAdmin', '__socratesNavRenderScheduled']) {
     assert.equal(navJs.includes(global), false, `${global} compat global must stay removed`);
+    assert.equal(navAdapters.includes(global), false, `${global} compat global must stay removed`);
     assert.equal(pageMounts.includes(global), false, `${global} compat global must stay removed`);
   }
   /* The fallback-shell compatibility layer went away with the last static

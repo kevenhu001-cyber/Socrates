@@ -8,28 +8,12 @@
  * stable: do not introduce per-mode drift between tokens.ts and the
  * hex table; if either changes, regenerate both.
  *
- * Source: `frontend/src/styles.css` — the `[data-theme=socrates][data-mode=…]`
- * blocks, which are what the web app actually paints. `styles/themes.css`
- * (the `--ui-*` namespace) is an M1 forward-port that does NOT match the
- * rendered result and must not be used as the reference.
+ * Source: the canonical HSL palettes in `frontend/src/ui/tokens.ts`.
+ * This table keeps their exact hex equivalents for React Native, which
+ * does not parse the HSL triplet strings used by CSS and shared tokens.
  *
- * Role mapping — the web app aliases its raw ramps at `:root`:
- *   --surface-page:    var(--bg-100)   -> bg.page
- *   --surface-raised:  var(--bg-200)   -> bg.raised
- *   --surface-overlay: var(--bg-000)   -> bg.overlay   (cards, modals, composer, user bubble)
- *   --surface-hover:   var(--bg-300)   -> bg.hover
- *   --surface-input:   var(--bg-000)   -> bg.overlay
- *   --text-primary:    var(--text-100) -> text.primary
- *   --text-secondary:  var(--text-400) -> text.tertiary
- *   --text-tertiary:   var(--text-500) -> text.muted
- *   --border-default:  var(--border-300) -> border.default
- *   --accent:          var(--accent-000) -> accent.strong
- *   --accent-bg:       var(--accent-900) -> accent.soft
- *
- * Consequence worth remembering: in dark mode `bg.overlay` (#0d0d0d) is
- * DARKER than `bg.page` (#212121). Cards sit below the page on the
- * lightness ramp; in light mode the relationship flips (#ffffff over
- * #fafafa). Getting this backwards inverts the entire UI.
+ * The returned table is a direct HSL-to-hex projection of the canonical
+ * frontend palette; native surfaces share its mode-specific color roles.
  */
 
 import {
@@ -70,77 +54,67 @@ export interface ThemePaletteHex extends Omit<ThemePalette, 'accent' | 'bg' | 't
 
 const darkHex: ThemePaletteHex = {
   mode: 'dark',
-  /* --accent-000 / --accent-900 — monochrome */
+  /* Monochrome accent values from the shared frontend HSL palette. */
   accent: {
-    strong: '#ffffff',
-    soft: '#333333',
-    surface: '#333333',
+    strong: '#f0f0f0',
+    soft: '#2e2e2e',
+    surface: '#2e2e2e',
   },
-  /* --bg-100 / --bg-200 / --bg-000 / --bg-300 / --bg-400 */
+  /* HSL-to-hex equivalents of `frontend/src/ui/tokens.ts`. */
   bg: {
-    /* Web phone canvas is #000 (chat-surface.css:31-44, mobile-parity.css:530);
-     * desktop web stays #212121 — Android matches the phone reference frame. */
-    page: '#000000',
-    raised: '#292929',
-    overlay: '#0d0d0d',
-    hover: '#363636',
-    sunken: '#050505',
+    page: '#141414',
+    raised: '#1c1c1c',
+    overlay: '#292929',
+    hover: '#2b2b2b',
+    sunken: '#0d0d0d',
   },
-  /* --text-100 / --text-200 / --text-400 / --text-500 */
-  /* Web conversation tokens: --conversation-text #f5f5f5 /
-   * --conversation-text-muted #a9a9a9 (chat-surface.css:16-17). */
   text: {
-    primary: '#f5f5f5',
-    secondary: '#cccccc',
-    tertiary: '#a6a6a6',
-    muted: '#a9a9a9',
-    disabled: '#8c8c8c',
+    primary: '#e8e8e8',
+    secondary: '#c2c2c2',
+    tertiary: '#9c9c9c',
+    muted: '#808080',
+    disabled: '#616161',
   },
-  /* --border-100 / --border-300 / --border-400 */
   border: {
-    subtle: '#383838',
-    default: '#383838',
-    strong: '#383838',
+    subtle: '#262626',
+    default: '#303030',
+    strong: '#404040',
   },
-  /* hsl(0 65% 62%) / hsl(145 50% 50%) */
-  danger: '#dd5f5f',
-  success: '#40bf75',
-  muted: '#8c8c8c',
-  /* glyph color on the now-white active send button */
-  onAccent: '#141414',
+  danger: '#ff6966',
+  success: '#3fdec1',
+  muted: '#808080',
+  onAccent: '#000000',
 };
 
 const lightHex: ThemePaletteHex = {
   mode: 'light',
   accent: {
-    strong: '#1a1a1a',
-    soft: '#e6e6e6',
-    surface: '#e6e6e6',
+    strong: '#0d0d0d',
+    soft: '#e8e8e8',
+    surface: '#e8e8e8',
   },
   bg: {
-    /* Web phone light canvas is #fff (chat-surface.css:57). */
     page: '#ffffff',
-    raised: '#f2f2f2',
+    raised: '#fafafa',
     overlay: '#ffffff',
-    hover: '#e8e8e8',
+    hover: '#f2f2f2',
     sunken: '#ffffff',
   },
   text: {
-    /* Web conversation tokens: #171717 / #717171 (chat-surface.css:61-62). */
-    primary: '#171717',
-    secondary: '#454545',
-    tertiary: '#707070',
-    muted: '#717171',
-    disabled: '#858585',
+    primary: '#0d0d0d',
+    secondary: '#5c5c5c',
+    tertiary: '#6e6e6e',
+    muted: '#737373',
+    disabled: '#b5b5b5',
   },
   border: {
-    subtle: '#e0e0e0',
-    default: '#c2c2c2',
-    strong: '#b3b3b3',
+    subtle: '#f0f0f0',
+    default: '#e6e6e6',
+    strong: '#cccccc',
   },
-  danger: '#b82e2e',
-  success: '#2d865c',
-  muted: '#858585',
+  danger: '#d72319',
+  success: '#027e6b',
+  muted: '#737373',
   onAccent: '#ffffff',
 };
 

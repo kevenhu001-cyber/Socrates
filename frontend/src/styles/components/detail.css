@@ -123,6 +123,46 @@
   scrollbar-width:thin;
   scrollbar-color:var(--ui-text-tertiary) transparent;
 }
+.thinking-history-list{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  width:100%;
+  min-width:0;
+  margin:0;
+  padding:4px 0 12px;
+  list-style:none;
+}
+.thinking-history-turn{
+  overflow:hidden;
+  border:1px solid var(--ui-border-subtle);
+  border-radius:var(--ui-radius-lg);
+  background:var(--ui-bg-raised);
+}
+.thinking-history-turn.is-streaming{border-color:var(--ui-border-default)}
+.thinking-history-trigger{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  width:100%;
+  min-height:52px;
+  padding:10px 14px;
+  border:0;
+  background:transparent;
+  color:var(--ui-text-primary);
+  text-align:left;
+  cursor:pointer;
+}
+.thinking-history-trigger:hover{background:var(--ui-bg-hover-ghost)}
+.thinking-history-trigger:focus-visible{outline:2px solid var(--ui-border-strong);outline-offset:-2px}
+.thinking-history-heading{display:grid;flex:1;min-width:0;gap:3px}
+.thinking-history-question{overflow:hidden;font-size:calc(13px * var(--app-font-scale,1));font-weight:var(--ui-font-weight-medium);text-overflow:ellipsis;white-space:nowrap}
+.thinking-history-state{overflow:hidden;color:var(--ui-text-tertiary);font-size:calc(11px * var(--app-font-scale,1));text-overflow:ellipsis;white-space:nowrap}
+.thinking-history-chevron,.thinking-history-chevron svg{display:block;width:16px;height:16px;flex:0 0 16px;color:var(--ui-text-tertiary);transition:transform .16s var(--ui-ease-out)}
+.thinking-history-turn.is-expanded .thinking-history-chevron{transform:rotate(180deg)}
+.thinking-history-detail{padding:0 14px 12px}
+.thinking-history-answer{margin:0 0 10px;color:var(--ui-text-secondary);font-size:calc(13px * var(--app-font-scale,1));line-height:1.55;overflow-wrap:anywhere}
+.thinking-history-turn .thinking-summary-timeline{padding-bottom:2px}
 .thinking-summary-timeline{
   position:relative;
   display:flex;
@@ -273,6 +313,8 @@
   .detail-surface.thinking-panel .thinking-summary-marker{background:var(--ui-bg-surface)}
   .thinking-summary-item{gap:8px}
   .thinking-summary-body{padding:12px 8px calc(20px + env(safe-area-inset-bottom, 0px))}
+  .thinking-history-trigger{padding:10px 12px}
+  .thinking-history-detail{padding:0 12px 10px}
 }
 @keyframes thinking-sheet-enter{
   from{opacity:0;transform:translateY(16px)}

@@ -340,3 +340,41 @@ test('cancelScrollAnimation stops an in-flight glide', async () => {
     stub.restore();
   }
 });
+
+test('smoothScrollToBottom retargets one active follow without restarting its glide', async () => {
+  const stub = makeFrameStub({ scrollHeight: 10000, clientHeight: 800 });
+  try {
+    const mod = await import('../src/ui/scroll.js');
+    const first = mod.smoothScrollToBottom(stub.list, { smooth: true, retarget: true });
+    for (let i = 0; i < 5; i += 1) stub.frame();
+    const beforeRetarget = stub.list.scrollTop;
+    stub.list.scrollHeight = 15800;
+    const second = mod.smoothScrollToBottom(stub.list, { smooth: true, retarget: true });
+    assert.strictEqual(second, first, 'the existing follow owns one continuous animation');
+    assert.equal(stub.list.dataset.autoScrolling, 'true');
+    const tops = stub.run();
+    await first;
+    assert.ok(tops.every((top, index) => index === 0 || top >= tops[index - 1] - 0.5));
+    assert.equal(stub.list.scrollTop, 15000);
+    assert.ok(beforeRetarget > 0);
+    assert.equal(stub.list.dataset.autoScrolling, undefined);
+  } finally {
+    stub.restore();
+  }
+});
+
+test('a superseding scroll preserves the auto-scrolling marker after cancelling the previous glide', async () => {
+  const stub = makeFrameStub();
+  try {
+    const mod = await import('../src/ui/scroll.js');
+    const first = mod.velocityScrollTo(stub.list, 20000, { plan: { duration: 800 } });
+    stub.frame();
+    const second = mod.velocityScrollTo(stub.list, 30000, { plan: { duration: 800 } });
+    assert.equal(stub.list.dataset.autoScrolling, 'true');
+    mod.cancelScrollAnimation(stub.list);
+    await Promise.all([first, second]);
+    assert.equal(stub.list.dataset.autoScrolling, undefined);
+  } finally {
+    stub.restore();
+  }
+});

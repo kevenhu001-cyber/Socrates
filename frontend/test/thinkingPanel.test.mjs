@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   installThinkingPanelBridge,
 } from '../src/react/thinking-panel/thinkingPanel.bridge.ts';
+import { buildSummaryHistory } from '../src/react/thinking-panel/summaryHistory.ts';
 
 /* The store targets the browser, but every window access happens inside
    functions (install / publish), so pointing window at the Node global
@@ -151,4 +152,41 @@ test('ThinkingPanel ignores stale tool activity for a different message id', () 
   assert.strictEqual(bridge.getSnapshot(), before);
   assert.equal(bridge.getSnapshot().messageId, 'current');
   assert.equal(bridge.getSnapshot().activities.length, 1);
+});
+
+test('summary history reconstructs every assistant turn without exposing reasoning', () => {
+  const history = buildSummaryHistory([
+    { clientId: 'user-1', role: 'user', rawText: 'First question' },
+    {
+      clientId: 'assistant-1',
+      role: 'assistant',
+      rawText: '<think>private inline thought</think>First answer is ready.',
+      reasoningContent: 'private reasoning field',
+      toolCalls: [{ id: 'search-1', name: 'web_search', input: { query: 'first query' }, status: 'done', output: 'ok' }],
+    },
+    { clientId: 'user-2', role: 'user', rawText: 'Second question' },
+    {
+      clientId: 'assistant-2',
+      role: 'assistant',
+      type: 'streaming',
+      rawText: 'Second answer is arriving.',
+      toolCalls: [],
+    },
+  ], {
+    open: true,
+    messageId: 'assistant-2',
+    activities: [{ id: 'live-search', toolName: 'web_search', label: 'Searching "second query"…', state: 'running' }],
+    streaming: true,
+    revision: 1,
+    lastEvent: 'tool-activity',
+  });
+
+  assert.equal(history.length, 2);
+  assert.equal(history[0].question, 'First question');
+  assert.match(history[0].answerPreview, /First answer is ready/);
+  assert.doesNotMatch(history[0].answerPreview, /private/);
+  assert.match(history[0].activities[0].label, /first query/);
+  assert.equal(history[1].question, 'Second question');
+  assert.equal(history[1].streaming, true);
+  assert.match(history[1].activities[0].label, /second query/);
 });

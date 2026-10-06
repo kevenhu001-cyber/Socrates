@@ -3,16 +3,14 @@ import { createRoot } from 'react-dom/client';
 import { createPortal } from 'react-dom';
 import { openDetailSurface, closeDetailSurface } from '../../ui/detailSurface.ts';
 import { STROKE_ICONS, toolIcon } from '../../ui/icons/toolIcons.js';
-
+import { getChatRuntimeSnapshot, subscribeToChatRuntime } from '../chatRuntime.bridge';
+import type { LegacyChatMessage } from '../types/domain';
 import {
   getThinkingPanelSnapshot,
   subscribeToThinkingPanel,
 } from './thinkingPanel.bridge';
-import type { ThinkingPanelActivity, ThinkingPanelSnapshot } from './types';
-
-type TimelineRow =
-  | { id: string; kind: 'summary' | 'thinking'; label: string }
-  | (ThinkingPanelActivity & { kind: 'tool' });
+import type { ThinkingPanelActivity } from './types';
+import { buildSummaryHistory, type SummaryHistoryTurn } from './summaryHistory';
 
 function translate(key: string, fallback: string): string {
   try {
@@ -25,38 +23,90 @@ function translate(key: string, fallback: string): string {
   return fallback;
 }
 
-function buildTimeline(snapshot: ThinkingPanelSnapshot): TimelineRow[] {
-  const hasOpenActivity = snapshot.activities.some((activity) => (
-    activity.state === 'running' || activity.state === 'awaiting'
-  ));
-  const hasActivity = snapshot.activities.length > 0;
-  const rows: TimelineRow[] = [{
-    id: 'summary-start',
-    kind: 'summary',
-    label: snapshot.streaming || hasActivity
-      ? translate('think.summaryPreparing', 'Reviewing your question and preparing an answer.')
-      : translate('think.summaryComplete', 'Response ready.'),
-  }];
-  for (const activity of snapshot.activities) {
-    rows.push({ ...activity, kind: 'tool' });
-  }
-  if (hasActivity && !hasOpenActivity) {
-    rows.push({
-      id: 'summary-follow-up',
-      kind: 'summary',
-      label: snapshot.streaming
-        ? translate('think.summaryReview', 'Reviewing the gathered information and preparing an answer.')
-        : translate('think.summaryComplete', 'Response ready.'),
-    });
-  }
-  if (snapshot.streaming && !hasOpenActivity) {
-    rows.push({ id: 'thinking', kind: 'thinking', label: translate('common.thinkingLabel', 'Thinking') });
-  }
-  return rows;
-}
-
 function activityIcon(toolName: string): string {
   return toolName === 'web_search' ? STROKE_ICONS.fetch : toolIcon(toolName);
+}
+
+function SummaryHistoryTurnView({
+  turn,
+  number,
+  latest,
+}: {
+  turn: SummaryHistoryTurn;
+  number: number;
+  latest: boolean;
+}) {
+  const [expanded, setExpanded] = useState(latest || turn.streaming);
+  const hasOpenActivity = turn.activities.some((activity) => (
+    activity.state === 'running' || activity.state === 'awaiting'
+  ));
+  const showThinking = turn.streaming && !hasOpenActivity;
+  const title = turn.question || translate('think.historyTurn', 'Turn {n}').replace('{n}', String(number));
+
+  useEffect(() => {
+    if (turn.streaming) setExpanded(true);
+  }, [turn.streaming]);
+
+  return (
+    <li className={`thinking-history-turn${turn.streaming ? ' is-streaming' : ''}${expanded ? ' is-expanded' : ''}`} data-message-id={turn.id}>
+      <button
+        type="button"
+        className="thinking-history-trigger"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((value) => !value)}
+      >
+        <span className="thinking-history-heading">
+          <span className="thinking-history-question">{title}</span>
+          <span className="thinking-history-state">
+            {turn.streaming
+              ? translate('think.historyWorking', 'Working on this answer')
+              : translate('think.summaryComplete', 'Response ready.')}
+          </span>
+        </span>
+        <span
+          className="thinking-history-chevron"
+          aria-hidden="true"
+          dangerouslySetInnerHTML={{ __html: STROKE_ICONS.chevronDown }}
+        />
+      </button>
+      {expanded ? (
+        <div className="thinking-history-detail">
+          {turn.answerPreview ? <p className="thinking-history-answer">{turn.answerPreview}</p> : null}
+          {turn.activities.length || showThinking ? (
+            <ol className="thinking-summary-timeline">
+              {turn.activities.map((activity: ThinkingPanelActivity) => {
+                const active = activity.state === 'running' || activity.state === 'awaiting';
+                const icon = activityIcon(activity.toolName);
+                return (
+                  <li
+                    key={activity.id}
+                    className={`thinking-summary-item${active ? ' is-active' : ` is-${activity.state}`}`}
+                    data-kind="tool"
+                    data-state={activity.state}
+                  >
+                    <span className="thinking-summary-marker" aria-hidden="true">
+                      {icon ? <span className="thinking-summary-icon" dangerouslySetInnerHTML={{ __html: icon }} /> : null}
+                    </span>
+                    <span className={`thinking-summary-label${active ? ' shimmer-text' : ''}`}>
+                      {activity.label}
+                    </span>
+                  </li>
+                );
+              })}
+              {showThinking ? (
+                <li className="thinking-summary-item is-active" data-kind="thinking" aria-current="step">
+                  <span className="thinking-summary-marker" aria-hidden="true"><span className="thinking-spinner" /></span>
+                  <span className="thinking-summary-label shimmer-text">
+                    {translate('common.thinkingLabel', 'Thinking')}
+                  </span>
+                </li>
+              ) : null}
+            </ol>
+          ) : null}
+        </div>
+      ) : null}
+    </li>
+  );
 }
 
 export function ThinkingPanel() {
@@ -65,18 +115,31 @@ export function ThinkingPanel() {
     getThinkingPanelSnapshot,
     getThinkingPanelSnapshot,
   );
+  const runtime = useSyncExternalStore(
+    subscribeToChatRuntime,
+    getChatRuntimeSnapshot,
+    getChatRuntimeSnapshot,
+  );
   const content = useMemo(() => document.createElement('div'), []);
   const bodyRef = useRef<HTMLDivElement | null>(null);
 
   const [pinned, setPinned] = useState(true);
   const open = snapshot.open;
-  const timeline = useMemo(() => buildTimeline(snapshot), [snapshot.activities, snapshot.streaming]);
+  const history = useMemo(
+    () => open ? buildSummaryHistory(runtime.messages as ReadonlyArray<LegacyChatMessage>, snapshot) : [],
+    [open, runtime.messages, snapshot],
+  );
+
+  useEffect(() => {
+    const trigger = document.getElementById('summaryBtn');
+    if (trigger) trigger.setAttribute('aria-expanded', String(open));
+  }, [open]);
 
   useLayoutEffect(() => {
     if (!open) return undefined;
     openDetailSurface({
       owner: 'thinking',
-      title: translate('think.panelTitle', 'Summary'),
+      title: translate('think.historyTitle', 'Summary history'),
       closeLabel: translate('think.closePanel', 'Close summary'),
       content,
       onClose: () => window.__socratesThinkingPanelBridge?.publish({ type: 'panel-close' }),
@@ -90,7 +153,7 @@ export function ThinkingPanel() {
     const reduce = typeof window.matchMedia === 'function'
       && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     body.scrollTo({ top: body.scrollHeight, behavior: reduce ? 'auto' : 'smooth' });
-  }, [timeline, pinned]);
+  }, [history, pinned]);
 
   if (!open) return null;
 
@@ -100,40 +163,29 @@ export function ThinkingPanel() {
       className="thinking-summary-body"
       role="log"
       aria-live="polite"
-      aria-label={translate('think.panelTitle', 'Summary')}
+      aria-label={translate('think.historyTitle', 'Summary history')}
       onScroll={() => {
         const body = bodyRef.current;
         if (!body) return;
         setPinned(body.scrollHeight - body.scrollTop - body.clientHeight <= 48);
       }}
     >
-      <ol className="thinking-summary-timeline">
-        {timeline.map((row) => {
-          const icon = row.kind === 'tool' ? activityIcon(row.toolName) : '';
-          const active = row.kind === 'thinking'
-            || (row.kind === 'tool' && (row.state === 'running' || row.state === 'awaiting'));
-          return (
-            <li
-              key={row.id}
-              className={`thinking-summary-item${row.kind === 'thinking' ? ' is-active' : row.kind === 'tool' ? ` is-${row.state}` : ''}`}
-              data-kind={row.kind}
-              data-state={row.kind === 'tool' ? row.state : undefined}
-              aria-current={row.kind === 'thinking' ? 'step' : undefined}
-            >
-              <span className="thinking-summary-marker" aria-hidden="true">
-                {row.kind === 'thinking'
-                  ? <span className="thinking-spinner" />
-                  : icon
-                    ? <span className="thinking-summary-icon" dangerouslySetInnerHTML={{ __html: icon }} />
-                    : null}
-              </span>
-              <span key={row.label} className={`thinking-summary-label${active ? ' shimmer-text' : ''}`}>
-                {row.label}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
+      {history.length ? (
+        <ol className="thinking-history-list">
+          {history.map((turn, index) => (
+            <SummaryHistoryTurnView
+              key={turn.id}
+              turn={turn}
+              number={index + 1}
+              latest={index === history.length - 1}
+            />
+          ))}
+        </ol>
+      ) : (
+        <p className="thinking-panel-empty">
+          {translate('think.historyEmpty', 'Summaries will appear after an answer is ready.')}
+        </p>
+      )}
     </div>,
     content
   );

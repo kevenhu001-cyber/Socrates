@@ -59,7 +59,7 @@ test('scrollMainToBottom follows a pinned reader without force', () => {
   list.scrollTop = 1400;
   setScrolledAway(false);
   withDocument(list, () => scrollMainToBottom({}));
-  assert.equal(list.scrollTop, 2000);
+  assert.equal(list.scrollTop, 1400);
 });
 
 test('scrollMainToBottom ignores an unpinned reader without force', () => {

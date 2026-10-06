@@ -129,6 +129,8 @@ export function cancelScrollAnimation(list){
 export function velocityScrollTo(list, targetTop, opts){
   if(!list)return Promise.resolve();
   const o = opts || {};
+  const active = activeScrollAnims && activeScrollAnims.get(list);
+  if (o.retarget === true && active && active.retargetKey === 'bottom-follow') return active.promise;
   const startTop = list.scrollTop;
   /* `opts.target` — a live target. Re-read every frame (and clamped to the
      reachable range) so a layout that settles mid-glide (a React commit, a
@@ -157,19 +159,22 @@ export function velocityScrollTo(list, targetTop, opts){
   const snap = reduced || o.smooth === false || absDistance <= 24 ||
     typeof requestAnimationFrame !== 'function' ||
     !!(injectedPlan && (injectedPlan.snap || !(injectedPlan.duration > 0)));
-  const previous = list.dataset.autoScrolling;
-  list.dataset.autoScrolling = 'true';
-  const settle = function(){
-    try {
-      if (previous === undefined) delete list.dataset.autoScrolling;
-      else list.dataset.autoScrolling = previous;
-    } catch(_){ /* detached node */ }
-  };
   const cancelActive = function(){
     cancelScrollAnimationFor(list);
   };
+  const beginAutoScrolling = function(){
+    const previous = list.dataset.autoScrolling;
+    list.dataset.autoScrolling = 'true';
+    return function(){
+      try {
+        if (previous === undefined) delete list.dataset.autoScrolling;
+        else list.dataset.autoScrolling = previous;
+      } catch(_){ /* detached node */ }
+    };
+  };
   if (snap) {
     cancelActive();
+    const settle = beginAutoScrolling();
     list.scrollTop = liveTarget ? resolveTarget() : targetTop;
     settle();
     return Promise.resolve();
@@ -183,7 +188,10 @@ export function velocityScrollTo(list, targetTop, opts){
   const ease = typeof plan.ease === 'function' ? plan.ease : easeOutHouse;
   const direction = distance > 0 ? 1 : -1;
   cancelActive();
-  return new Promise(function(resolve){
+  const settle = beginAutoScrolling();
+  let resolvePromise;
+  const promise = new Promise(function(resolve){ resolvePromise = resolve; });
+  {
     let startedAt = 0;
     let handle = 0;
     let cancelled = false;
@@ -207,7 +215,7 @@ export function velocityScrollTo(list, targetTop, opts){
       list.removeEventListener('scroll', onScroll);
       if (activeScrollAnims) activeScrollAnims.delete(list);
       settle();
-      resolve();
+      resolvePromise();
     }
     list.addEventListener('scroll', onScroll, { passive: true });
 
@@ -253,11 +261,14 @@ export function velocityScrollTo(list, targetTop, opts){
       lastWrittenTop = list.scrollTop;
       handle = requestAnimationFrame(tick);
     };
-    handle = requestAnimationFrame(tick);
     if (activeScrollAnims) activeScrollAnims.set(list, {
       cancel: stop,
+      retargetKey: o.retarget === true ? 'bottom-follow' : null,
+      promise,
     });
-  });
+    handle = requestAnimationFrame(tick);
+  }
+  return promise;
 }
 
 /* Glide the scrollable chat container to its current bottom using the
@@ -267,13 +278,20 @@ export function velocityScrollTo(list, targetTop, opts){
    path and consistent cancellation semantics.
 
    `opts.smooth` defaults to true; setting it to false forces an
-   instant snap (used by streaming chunks where a smooth scroll per
-   chunk would queue an unending animation chain). */
+   instant snap. Set `retarget: true` for repeated bottom updates so
+   one live animation follows the moving scroll boundary. */
 export function smoothScrollToBottom(list, opts){
   if(!list)return Promise.resolve();
-  const target = list.scrollHeight;
+  const o=opts||{};
+  const retarget=o.retarget===true;
+  const target=retarget
+    ?Math.max(0,list.scrollHeight-list.clientHeight)
+    :list.scrollHeight;
   if(typeof target !== 'number' || !isFinite(target)) return Promise.resolve();
-  return velocityScrollTo(list, target, opts);
+  return velocityScrollTo(list,target,retarget?{
+    ...o,
+    target:function(){return Math.max(0,(list.scrollHeight||0)-(list.clientHeight||0))}
+  }:o);
 }
 
 /* Keep a reader who was pinned to the bottom of the transcript
@@ -547,12 +565,9 @@ export function initChatComposerReserve(options){
     contentFrame=requestAnimationFrame(function(){
       contentFrame=0;
       if(shouldFollow&&!userScrolledAway()){
-        /* Use the browser-native smooth-scroll pipeline. Streaming renders
-           fire this multiple times per second; smoothScrollToBottom() will
-           restart the underlying smooth scroll on each call, which the
-           platform collapses into a single ongoing motion toward the new
-           bottom. */
-        smoothScrollToBottom(list,{smooth:true});
+        /* Keep one bottom-follow animation active; its live target moves with
+           streamed content instead of restarting the easing curve per update. */
+        smoothScrollToBottom(list,{smooth:true,retarget:true});
       }
       rememberMetrics();
     });
@@ -681,10 +696,9 @@ export function scrollMainToBottom(opts){
      scrollDecision.ts. */
   var distanceFromBottom=sc.scrollHeight-sc.scrollTop-sc.clientHeight;
   if(opts.force||shouldAutoScroll(distanceFromBottom,stateStore.read("_userScrolledAway"))){
-    /* Delegate to smoothScrollToBottom() so the same browser-native
-       scrollTo({behavior}) pipeline handles send, keyboard-open, and
-       content-growth follow. */
-    smoothScrollToBottom(sc,{smooth:opts.smooth!==false});
+    /* Share one bottom-follow owner across ordinary pinned-reader updates;
+       the send-time turn anchor is guarded above. */
+    smoothScrollToBottom(sc,{smooth:opts.smooth!==false,retarget:!opts.force&&opts.smooth!==false});
   }
 }
 

@@ -1,1 +1,1 @@
-ALTER TABLE "prompts" ADD COLUMN "system_prompt" text;
+ALTER TABLE "prompts" ADD COLUMN IF NOT EXISTS "system_prompt" text;

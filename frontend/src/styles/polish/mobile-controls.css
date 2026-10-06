@@ -105,6 +105,20 @@
     min-width: var(--ui-hit-area);
     min-height: var(--ui-hit-area);
   }
+  #appShell .summary-btn {
+    min-width: var(--ui-control-touch);
+    height: var(--ui-control-touch);
+    min-height: var(--ui-control-touch);
+    padding: 0 8px;
+    border: 0;
+    border-radius: var(--ui-radius-pill);
+    background: transparent;
+    color: var(--ui-text-secondary);
+    font-size: 12px;
+    box-shadow: none;
+  }
+  #appShell .summary-btn svg { width: 16px; height: 16px; }
+  #appShell .summary-btn:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
 
   /* ── Message toolbar buttons — 32 visual + 40 hit area ── */
   #appShell .msg-toolbar { gap: 4px; height: 32px; }
@@ -155,6 +169,10 @@
   #appShell .msg.user .msg-body {
     border-radius: var(--ui-radius-bubble, 18px);
   }
+}
+@media (max-width: 360px) {
+  #appShell .summary-btn { width: var(--ui-control-touch); padding: 0; }
+  #appShell .summary-btn .summary-btn-label { display: none; }
 }
 
 /* ── Drawer nav geometry contract (moved from restore/fixes.css) ── */

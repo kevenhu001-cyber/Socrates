@@ -905,6 +905,12 @@ bootstrapApp({
   startNewChat: startNewChat,
   toggleIncognito: toggleIncognito,
   openFind: openFindInSession,
+  openSummary: function(){
+    var bridge=window.__socratesThinkingPanelBridge;
+    if(!bridge||typeof bridge.publish!=="function")return;
+    var open=typeof bridge.getSnapshot==="function"&&bridge.getSnapshot().open;
+    bridge.publish({type:open?"panel-close":"panel-open",messageId:null});
+  },
   openShare: openShareModal,
   openSettings: window.openSettings,
   startSession: startSession,
