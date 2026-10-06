@@ -87,7 +87,9 @@ export function ThinkingPanel() {
   useEffect(() => {
     const body = bodyRef.current;
     if (!body || !pinned) return;
-    body.scrollTop = body.scrollHeight;
+    const reduce = typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    body.scrollTo({ top: body.scrollHeight, behavior: reduce ? 'auto' : 'smooth' });
   }, [timeline, pinned]);
 
   if (!open) return null;
@@ -108,6 +110,8 @@ export function ThinkingPanel() {
       <ol className="thinking-summary-timeline">
         {timeline.map((row) => {
           const icon = row.kind === 'tool' ? activityIcon(row.toolName) : '';
+          const active = row.kind === 'thinking'
+            || (row.kind === 'tool' && (row.state === 'running' || row.state === 'awaiting'));
           return (
             <li
               key={row.id}
@@ -117,9 +121,15 @@ export function ThinkingPanel() {
               aria-current={row.kind === 'thinking' ? 'step' : undefined}
             >
               <span className="thinking-summary-marker" aria-hidden="true">
-                {icon ? <span className="thinking-summary-icon" dangerouslySetInnerHTML={{ __html: icon }} /> : null}
+                {row.kind === 'thinking'
+                  ? <span className="thinking-spinner" />
+                  : icon
+                    ? <span className="thinking-summary-icon" dangerouslySetInnerHTML={{ __html: icon }} />
+                    : null}
               </span>
-              <span className="thinking-summary-label">{row.label}</span>
+              <span key={row.label} className={`thinking-summary-label${active ? ' shimmer-text' : ''}`}>
+                {row.label}
+              </span>
             </li>
           );
         })}
