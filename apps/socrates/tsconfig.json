@@ -1,0 +1,75 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "moduleResolution": "Bundler",
+    "module": "ESNext",
+    "allowImportingTsExtensions": true,
+    "ignoreDeprecations": "6.0",
+    "customConditions": [
+      "react-native"
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@socrates/api": [
+        "../../packages/api/src/index.ts"
+      ],
+      "@socrates/chat": [
+        "../../packages/chat/src/index.ts"
+      ],
+      "@socrates/contracts": [
+        "../../packages/contracts/src/index.ts"
+      ],
+      "@socrates/core": [
+        "../../packages/core/src/index.ts"
+      ],
+      "@socrates/platform": [
+        "../../packages/platform/src/index.ts"
+      ],
+      "@socrates/settings": [
+        "../../packages/settings/src/index.ts"
+      ],
+      "@socrates/theme": [
+        "../../packages/theme/src/index.ts"
+      ],
+      "@socrates/ui": [
+        "../../packages/ui/src/index.tsx"
+      ],
+      "react": [
+        "node_modules/@types/react/index.d.ts"
+      ],
+      "react/jsx-runtime": [
+        "node_modules/@types/react/jsx-runtime.d.ts"
+      ],
+      "react-native": [
+        "node_modules/react-native"
+      ],
+      "react-native-reanimated": [
+        "node_modules/react-native-reanimated"
+      ],
+      "zustand": [
+        "node_modules/zustand/index.d.ts"
+      ],
+      "@socrates/auth": [
+        "../../packages/auth/src/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "../../packages/api/src/**/*.ts",
+    "../../packages/chat/src/**/*.ts",
+    "../../packages/platform/src/**/*.ts",
+    "../../packages/settings/src/**/*.ts",
+    "../../packages/ui/src/**/*.tsx",
+    "../../packages/auth/src/**/*.ts"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "../../packages/*/src/*.test.ts",
+    "node_modules"
+  ]
+}

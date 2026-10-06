@@ -1,0 +1,1 @@
+{"name":"@socrates/settings","private":true,"version":"0.1.0","type":"module","main":"./src/index.ts","types":"./src/index.ts","dependencies":{"@socrates/platform":"file:../platform","zustand":"5.0.8"},"peerDependencies":{"react":"^19.0.0"}}

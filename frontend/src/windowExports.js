@@ -399,21 +399,12 @@ import './ui/greeting.js';
 import { installWindowExtensionDelegates } from './extensions/index.ts';
 installWindowExtensionDelegates();
 
-/* Mirror toggle-style state onto the quick-action chips (查找资料 reflects
-   webSearchOn; 深度研究 reflects window.deepResearchOn). The 深度思考 chip
-   was removed — deep thinking is now tied to the reasoning-effort picker
-   (High = deep thinking). */
-window.syncQuickChips = function () {
-  var research = document.getElementById("quickResearchChip");
-  if (research) research.classList.toggle("active", !!window.webSearchOn);
-  var deep = document.getElementById("quickDeepResearchChip");
-  if (deep) deep.classList.toggle("active", !!window.deepResearchOn);
-};
-if (typeof document !== "undefined") {
-  var _syncChips = function () { try { window.syncQuickChips(); } catch (_) {} };
-  window.addEventListener("DOMContentLoaded", _syncChips);
-  if (document.readyState !== "loading") _syncChips();
-}
+/* ─── extensions/chipSync.ts — quick-action chip mirror (M4)
+    DOM ownership lives in extensions/chipSync.ts; this bridge only keeps
+    the legacy `window.syncQuickChips` alias for extensions/context.ts. ─── */
+import { syncQuickChips, mountChipSyncListeners } from './extensions/chipSync.ts';
+window.syncQuickChips = function () { syncQuickChips(); };
+mountChipSyncListeners();
 
 
 /* ─── ui/effortPicker.js — reasoning-effort (高/中/低) selector

@@ -1,0 +1,1 @@
+{"name":"@socrates/api","private":true,"version":"0.1.0","type":"module","main":"./src/index.ts","types":"./src/index.ts","dependencies":{"@socrates/contracts":"file:../contracts","@socrates/core":"file:../core","@socrates/platform":"file:../platform"}}

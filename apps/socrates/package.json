@@ -1,0 +1,40 @@
+{
+  "name": "@socrates/app",
+  "private": true,
+  "version": "0.1.0",
+  "main": "expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "web": "expo start --web",
+    "android": "expo run:android",
+    "typecheck": "tsc --noEmit",
+    "export:web": "expo export --platform web"
+  },
+  "dependencies": {
+    "@socrates/api": "file:../../packages/api",
+    "@socrates/chat": "file:../../packages/chat",
+    "@socrates/contracts": "file:../../packages/contracts",
+    "@socrates/core": "file:../../packages/core",
+    "@socrates/platform": "file:../../packages/platform",
+    "@socrates/settings": "file:../../packages/settings",
+    "@socrates/theme": "file:../../packages/theme",
+    "@socrates/ui": "file:../../packages/ui",
+    "expo": "~57.0.27",
+    "expo-secure-store": "~57.0.4",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-reanimated": "4.5.1",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-web": "~0.21.0",
+    "react-native-webview": "13.16.1",
+    "zustand": "5.0.8",
+    "@socrates/auth": "file:../../packages/auth"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.0",
+    "babel-preset-expo": "~57.0.0",
+    "typescript": "~6.0.3"
+  }
+}

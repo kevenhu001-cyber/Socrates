@@ -42,24 +42,29 @@ function isEmbeddedNativeWebView(){
   }catch(_){return false}
 }
 
-/* ── Gate display helpers ── */
+/* ── Gate display helpers ──
+   DOM ownership lives in ./shell.ts (root-injectable, unit-testable);
+   these exports stay as thin delegates so windowExports.js + e2e keep
+   working while form handlers migrate in later M4 increments. */
 
-export function hideGate(){
-  var g=document.getElementById("authGate");if(g)g.classList.add("hidden");
-  var s=document.getElementById("appShell");if(s)s.classList.remove("hidden");
+import { setGateVisible, setBootState, showView, switchTab as shellSwitchTab, focusTab, clearTabSelection, setError as shellSetError, getValue, isChecked, setValue, setText, setVisible, focusId, setButton } from './shell.ts';
+
+export function hideGate(root){
+  var r = root || document;
+  setGateVisible(r, true);
   /* P0.6 — also flip the pre-boot data attribute so the CSS rules
      in <head> take over. From this point on, showGate()/hideGate()
      are the single source of truth for which view is on top. */
-  try{document.documentElement.dataset.bootState="app"}catch(e){reportSwallow(e, 'auth/index.hideGate.bootState'); }
+  try{setBootState(r, "app")}catch(e){reportSwallow(e, 'auth/index.hideGate.bootState'); }
   syncCookieConsentPlacement(false);
 }
 
-export function showGate(){
+export function showGate(root){
+  var r = root || document;
   /* Flip bootState first so the CSS rule hiding #authGate while
      data-boot-state="checking" is removed before we try to show it. */
-  try{document.documentElement.dataset.bootState="auth"}catch(e){reportSwallow(e, 'auth/index.showGate.bootState'); }
-  var g=document.getElementById("authGate");if(g)g.classList.remove("hidden");
-  var s=document.getElementById("appShell");if(s)s.classList.add("hidden");
+  try{setBootState(r, "auth")}catch(e){reportSwallow(e, 'auth/index.showGate.bootState'); }
+  setGateVisible(r, false);
   syncCookieConsentPlacement(true);
   /* A normal browser reaches the auth gate during first paint and during
    * local login flows.  Only tell the native shell that its cookie expired
@@ -68,74 +73,52 @@ export function showGate(){
   if(isEmbeddedNativeWebView())notifyEmbeddedAuthExpired();
 }
 
-export function showAuthView(id){
-  ["authSigninView","authRegisterView","authVerifySentView","authVerifyFailedView","authVerifiedView","authForgotPasswordView","authForgotSentView","authResetPasswordView","authResetSuccessView","authCodeLoginView"].forEach(function(v){
-    var el=document.getElementById(v);if(el)el.classList.add("hidden");
-  });
-  var el=document.getElementById(id);if(el)el.classList.remove("hidden");
+export function showAuthView(id, root){
+  showView(root || document, id);
 }
 
 export function showAuthSignin(){switchAuthTab("signin")}
 export function showAuthRegister(){switchAuthTab("register")}
 
-export function switchAuthTab(tab){
-  document.querySelectorAll(".auth-tab").forEach(function(t){
-    var active=t.getAttribute("data-tab")===tab;
-    t.classList.toggle("active",active);
-    t.setAttribute("aria-selected",active?"true":"false");
-    t.setAttribute("tabindex",active?"0":"-1");
-  });
-  showAuthView(tab==="signin"?"authSigninView":"authRegisterView");
+export function switchAuthTab(tab, root){
+  shellSwitchTab(root || document, tab);
 }
 
 /* Roving-tab keyboard behavior for the auth tablist. Kept as a public
  * bridge action so the declarative event map and the runtime window surface
  * share one implementation. */
-export function focusAuthTab(el,e){
+export function focusAuthTab(el,e,root){
   if(!e||["ArrowLeft","ArrowUp","ArrowRight","ArrowDown","Home","End"].indexOf(e.key)===-1)return;
-  var tabs=Array.from(document.querySelectorAll(".auth-tab"));
-  var current=tabs.indexOf(el);
-  if(current<0||!tabs.length)return;
-  var next=current;
-  if(e.key==="Home")next=0;
-  else if(e.key==="End")next=tabs.length-1;
-  else if(e.key==="ArrowLeft"||e.key==="ArrowUp")next=(current-1+tabs.length)%tabs.length;
-  else if(e.key==="ArrowRight"||e.key==="ArrowDown")next=(current+1)%tabs.length;
-  e.preventDefault();
-  tabs[next].focus();
-  switchAuthTab(tabs[next].getAttribute("data-tab"));
+  if(focusTab(root || document, el, e.key)) e.preventDefault();
 }
 
-function clearAuthTabSelection(){
-  document.querySelectorAll(".auth-tab").forEach(function(t){
-    t.classList.remove("active");
-    t.setAttribute("aria-selected","false");
-    t.setAttribute("tabindex","-1");
-  });
+function clearAuthTabSelection(root){
+  clearTabSelection(root || document);
 }
 
-export function setAuthError(viewId,msg){
-  var el=document.getElementById(viewId);
-  if(el)el.textContent=msg||"";
+export function setAuthError(viewId,msg,root){
+  shellSetError(root || document, viewId, msg);
 }
 
 /* ── Forgot password / code-login views ── */
 
-export function showAuthForgotPassword(){
-  document.getElementById("authForgotEmail").value=document.getElementById("authSigninEmail").value;
-  showAuthView("authForgotPasswordView");
-  clearAuthTabSelection();
+export function showAuthForgotPassword(root){
+  var r = root || document;
+  setValue(r, "authForgotEmail", getValue(r, "authSigninEmail"));
+  showAuthView("authForgotPasswordView", r);
+  clearAuthTabSelection(r);
 }
 
-export function showAuthCodeLogin(){
-  document.getElementById("authCodeEmail").value=document.getElementById("authSigninEmail").value;
-  document.getElementById("authCodeCodeWrap").classList.add("hidden");
-  document.getElementById("authCodeSendBtn").classList.remove("hidden");
-  document.getElementById("authCodeLoginBtn").classList.add("hidden");
-  document.getElementById("authCodeResendWrap").classList.add("hidden");
-  document.getElementById("authCodeError").textContent="";
-  showAuthView("authCodeLoginView");
-  clearAuthTabSelection();
+export function showAuthCodeLogin(root){
+  var r = root || document;
+  setValue(r, "authCodeEmail", getValue(r, "authSigninEmail"));
+  setVisible(r, "authCodeCodeWrap", false);
+  setVisible(r, "authCodeSendBtn", true);
+  setVisible(r, "authCodeLoginBtn", false);
+  setVisible(r, "authCodeResendWrap", false);
+  setText(r, "authCodeError", "");
+  showAuthView("authCodeLoginView", r);
+  clearAuthTabSelection(r);
 }
 
 /* The auth gate is still static markup, but it owns its own interactions.
@@ -361,13 +344,14 @@ export function revealAppAndHydrate(onHydrated){
 
 /* ── Submit handlers ── */
 
-export async function submitAuthSignin(){
-  var email=document.getElementById("authSigninEmail").value.trim();
-  var password=document.getElementById("authSigninPassword").value;
-  var guest=document.getElementById("authGuestCheckbox").checked;
-  setAuthError("authSigninError","");
-  if(!email||!password)return setAuthError("authSigninError","Please enter your email and password.");
-  var btn=document.getElementById("authSigninBtn");btn.disabled=true;btn.textContent=t("auth.signingIn");
+export async function submitAuthSignin(root){
+  var r = root || document;
+  var email=getValue(r, "authSigninEmail").trim();
+  var password=getValue(r, "authSigninPassword");
+  var guest=isChecked(r, "authGuestCheckbox");
+  setAuthError("authSigninError","",r);
+  if(!email||!password)return setAuthError("authSigninError","Please enter your email and password.",r);
+  setButton(r, "authSigninBtn", true, t("auth.signingIn"));
   var markAuthSuccess=window.markAuthSuccess;
   try{
     var r=await apiFetch("/api/auth/login",{method:"POST",_authEndpoint:true,body:{email,password}});
@@ -391,59 +375,59 @@ export async function submitAuthSignin(){
     }
     revealAppAndHydrate();
   }catch(e){
-    showGate();
+    showGate(r);
     if(e.status===403 && e.code==="UNVERIFIED"){
-      document.getElementById("authVerifyEmail").textContent=email;
-      try{document.getElementById("authResendEmail").value=email}catch(e){reportSwallow(e, 'auth/index.submitAuthSignin.prefillResendEmail'); }
-      showAuthView("authVerifySentView");
+      setText(r, "authVerifyEmail", email);
+      try{setValue(r, "authResendEmail", email)}catch(e){reportSwallow(e, 'auth/index.submitAuthSignin.prefillResendEmail'); }
+      showAuthView("authVerifySentView", r);
       return;
     }
-    setAuthError("authSigninError",e.status===401?t("auth.wrongCredentials"):(t("auth.loginFailedPrefix")+e.message));
+    setAuthError("authSigninError",e.status===401?t("auth.wrongCredentials"):(t("auth.loginFailedPrefix")+e.message),r);
   }finally{
-    btn.disabled=false;btn.textContent=t("auth.signIn");
+    setButton(r, "authSigninBtn", false, t("auth.signIn"));
   }
 }
 
-export async function submitAuthRegister(){
-  var email=document.getElementById("authRegisterEmail").value.trim();
-  var password=document.getElementById("authRegisterPassword").value;
-  setAuthError("authRegisterError","");
-  if(!email)return setAuthError("authRegisterError",t("auth.pleaseEnterEmail"));
-  if(!password||password.length<8)return setAuthError("authRegisterError",t("auth.passwordTooShort"));
-  var btn=document.getElementById("authRegisterBtn");btn.disabled=true;btn.textContent=t("auth.sending");
+export async function submitAuthRegister(root){
+  var r = root || document;
+  var email=getValue(r, "authRegisterEmail").trim();
+  var password=getValue(r, "authRegisterPassword");
+  setAuthError("authRegisterError","",r);
+  if(!email)return setAuthError("authRegisterError",t("auth.pleaseEnterEmail"),r);
+  if(!password||password.length<8)return setAuthError("authRegisterError",t("auth.passwordTooShort"),r);
+  setButton(r, "authRegisterBtn", true, t("auth.sending"));
   try{
     /* The server stores the registration as pending and sends a
        verification email. No account or session is created until
        the user clicks the link in the email. */
     await apiFetch("/api/auth/register",{method:"POST",_authEndpoint:true,body:{email,password}});
     /* Always show the "verification sent" view — no auto-login. */
-    document.getElementById("authVerifyEmail").textContent=email;
-    var resendEl=document.getElementById("authResendEmail");
-    if(resendEl)resendEl.value=email;
-    showAuthView("authVerifySentView");
-    clearAuthTabSelection();
+    setText(r, "authVerifyEmail", email);
+    setValue(r, "authResendEmail", email);
+    showAuthView("authVerifySentView", r);
+    clearAuthTabSelection(r);
   }catch(e){
-    setAuthError("authRegisterError",e.status===409?"That email is already registered. Try signing in.":e.message);
+    setAuthError("authRegisterError",e.status===409?"That email is already registered. Try signing in.":e.message,r);
   }finally{
-    btn.disabled=false;btn.textContent=t("auth.sendVerificationLink");
+    setButton(r, "authRegisterBtn", false, t("auth.sendVerificationLink"));
   }
 }
 
-export async function resendVerification(){
-  var emailEl=document.getElementById("authResendEmail");
-  var email=emailEl?emailEl.value.trim():"";
+export async function resendVerification(root){
+  var r = root || document;
+  var email=getValue(r, "authResendEmail").trim();
   if(!email)return;
-  setAuthError("authVerifyFailedError","");
+  setAuthError("authVerifyFailedError","",r);
   try{
     /* Dedicated resend endpoint — never send a hard-coded password
        to /register (it would let anyone who knows the email log in
        with that password if the account is later activated). */
     var body={email};
     await apiFetch("/api/auth/resend-verification",{method:"POST",body:body});
-    document.getElementById("authVerifyEmail").textContent=email;
-    showAuthView("authVerifySentView");
+    setText(r, "authVerifyEmail", email);
+    showAuthView("authVerifySentView", r);
   }catch(e){
-    setAuthError("authVerifyFailedError",e.message);
+    setAuthError("authVerifyFailedError",e.message,r);
   }
 }
 
@@ -479,76 +463,80 @@ export async function submitAuthVerify(token){
       title=t("auth.verifyFailedExpiredTitle");
       msg=t("auth.verifyFailedMsg");
     }
-    document.getElementById("authVerifyFailedTitle").textContent=title;
-    document.getElementById("authVerifyFailedMsg").textContent=msg;
+    setText(document, "authVerifyFailedTitle", title);
+    setText(document, "authVerifyFailedMsg", msg);
     showAuthView("authVerifyFailedView");
   }
 }
 
-export async function submitAuthForgotPassword(){
-  var email=document.getElementById("authForgotEmail").value.trim();
-  setAuthError("authForgotError","");
-  if(!email)return setAuthError("authForgotError",t("auth.pleaseEnterEmail"));
-  var btn=document.getElementById("authForgotBtn");btn.disabled=true;btn.textContent=t("auth.sending");
+export async function submitAuthForgotPassword(root){
+  var r = root || document;
+  var email=getValue(r, "authForgotEmail").trim();
+  setAuthError("authForgotError","",r);
+  if(!email)return setAuthError("authForgotError",t("auth.pleaseEnterEmail"),r);
+  setButton(r, "authForgotBtn", true, t("auth.sending"));
   try{
     await apiFetch("/api/auth/forgot-password",{method:"POST",_authEndpoint:true,body:{email}});
-    document.getElementById("authForgotSentEmail").textContent=email;
-    showAuthView("authForgotSentView");
+    setText(r, "authForgotSentEmail", email);
+    showAuthView("authForgotSentView", r);
   }catch(e){
-    setAuthError("authForgotError",e.message);
+    setAuthError("authForgotError",e.message,r);
   }finally{
-    btn.disabled=false;btn.textContent=t("auth.sendResetLink");
+    setButton(r, "authForgotBtn", false, t("auth.sendResetLink"));
   }
 }
 
-export async function submitAuthResetPassword(){
-  var password=document.getElementById("authResetPassword").value;
-  var confirm=document.getElementById("authResetConfirm").value;
-  setAuthError("authResetError","");
-  if(!password||password.length<8)return setAuthError("authResetError",t("auth.passwordTooShort"));
-  if(password!==confirm)return setAuthError("authResetError",t("auth.passwordsDontMatch"));
-  var btn=document.getElementById("authResetBtn");btn.disabled=true;btn.textContent=t("auth.resetting");
+export async function submitAuthResetPassword(root){
+  var r = root || document;
+  var password=getValue(r, "authResetPassword");
+  var confirm=getValue(r, "authResetConfirm");
+  setAuthError("authResetError","",r);
+  if(!password||password.length<8)return setAuthError("authResetError",t("auth.passwordTooShort"),r);
+  if(password!==confirm)return setAuthError("authResetError",t("auth.passwordsDontMatch"),r);
+  setButton(r, "authResetBtn", true, t("auth.resetting"));
   try{
     await apiFetch("/api/auth/reset-password",{method:"POST",body:{token:window.__resetToken,password}});
-    showAuthView("authResetSuccessView");
+    showAuthView("authResetSuccessView", r);
   }catch(e){
-    setAuthError("authResetError",e.message);
+    setAuthError("authResetError",e.message,r);
   }finally{
-    btn.disabled=false;btn.textContent=t("auth.resetPassword");
+    setButton(r, "authResetBtn", false, t("auth.resetPassword"));
   }
 }
 
-export async function submitAuthSendCode(){
-  var email=document.getElementById("authCodeEmail").value.trim();
-  setAuthError("authCodeError","");
-  if(!email)return setAuthError("authCodeError",t("auth.pleaseEnterEmail"));
-  var btn=document.getElementById("authCodeSendBtn");btn.disabled=true;btn.textContent=t("auth.sending");
+export async function submitAuthSendCode(root){
+  var r = root || document;
+  var email=getValue(r, "authCodeEmail").trim();
+  setAuthError("authCodeError","",r);
+  if(!email)return setAuthError("authCodeError",t("auth.pleaseEnterEmail"),r);
+  setButton(r, "authCodeSendBtn", true, t("auth.sending"));
   try{
     await apiFetch("/api/auth/send-code",{method:"POST",_authEndpoint:true,body:{email}});
-    document.getElementById("authCodeCodeWrap").classList.remove("hidden");
-    document.getElementById("authCodeSentEmail").textContent=email;
-    document.getElementById("authCodeSentMsg").classList.remove("hidden");
-    document.getElementById("authCodeSendBtn").classList.add("hidden");
-    document.getElementById("authCodeLoginBtn").classList.remove("hidden");
-    document.getElementById("authCodeResendWrap").classList.remove("hidden");
-    document.getElementById("authCodeInput").focus();
+    setVisible(r, "authCodeCodeWrap", true);
+    setText(r, "authCodeSentEmail", email);
+    setVisible(r, "authCodeSentMsg", true);
+    setVisible(r, "authCodeSendBtn", false);
+    setVisible(r, "authCodeLoginBtn", true);
+    setVisible(r, "authCodeResendWrap", true);
+    focusId(r, "authCodeInput");
   }catch(e){
-    setAuthError("authCodeError",e.message);
+    setAuthError("authCodeError",e.message,r);
   }finally{
-    btn.disabled=false;btn.textContent=t("auth.sendCode");
+    setButton(r, "authCodeSendBtn", false, t("auth.sendCode"));
   }
 }
 
-export async function submitAuthLoginWithCode(){
-  var email=document.getElementById("authCodeEmail").value.trim();
-  var code=document.getElementById("authCodeInput").value.trim().toUpperCase();
-  var guest=document.getElementById("authCodeGuestCheckbox").checked;
-  setAuthError("authCodeError","");
+export async function submitAuthLoginWithCode(root){
+  var r = root || document;
+  var email=getValue(r, "authCodeEmail").trim();
+  var code=getValue(r, "authCodeInput").trim().toUpperCase();
+  var guest=isChecked(r, "authCodeGuestCheckbox");
+  setAuthError("authCodeError","",r);
   /* Login codes are eight unambiguous alphanumeric characters
      (server/lib/crypto.ts). Keep the client validator in lockstep so it
      never rejects a valid code before it reaches the server. */
-  if(!/^[A-HJ-KM-NP-Z2-9]{8}$/.test(code))return setAuthError("authCodeError","Please enter the 8-character code.");
-  var btn=document.getElementById("authCodeLoginBtn");btn.disabled=true;btn.textContent=t("auth.loggingIn");
+  if(!/^[A-HJ-KM-NP-Z2-9]{8}$/.test(code))return setAuthError("authCodeError","Please enter the 8-character code.",r);
+  setButton(r, "authCodeLoginBtn", true, t("auth.loggingIn"));
   var markAuthSuccess=window.markAuthSuccess;
   try{
     var r=await apiFetch("/api/auth/login-with-code",{method:"POST",_authEndpoint:true,body:{email,code}});
@@ -562,14 +550,14 @@ export async function submitAuthLoginWithCode(){
     if(guest)try{localStorage.setItem("socrates-guest","1")}catch(e){reportSwallow(e, 'auth/index.submitAuthLoginWithCode.markGuest'); }
     revealAppAndHydrate();
   }catch(e){
-    setAuthError("authCodeError",e.message);
+    setAuthError("authCodeError",e.message,r);
   }finally{
-    btn.disabled=false;btn.textContent=t("auth.logIn");
+    setButton(r, "authCodeLoginBtn", false, t("auth.logIn"));
   }
 }
 
-export async function resendAuthCode(){
-  var email=document.getElementById("authCodeEmail").value.trim();
+export async function resendAuthCode(root){
+  var email=getValue(root || document, "authCodeEmail").trim();
   if(!email)return;
   try{
     await apiFetch("/api/auth/send-code",{method:"POST",_authEndpoint:true,body:{email}});

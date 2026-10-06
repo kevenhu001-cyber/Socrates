@@ -32,6 +32,8 @@ mobile/dist/
 mobile/dist-visual/
 mobile/dist-web/
 mobile/scripts/visual/out/
+apps/socrates/dist/
+apps/socrates/.expo/
 
 # ── OS files ──
 .DS_Store

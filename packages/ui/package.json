@@ -1,0 +1,1 @@
+{"name":"@socrates/ui","private":true,"version":"0.1.0","type":"module","main":"./src/index.tsx","types":"./src/index.tsx","dependencies":{"@socrates/contracts":"file:../contracts","@socrates/theme":"file:../theme"},"peerDependencies":{"react":"^19.0.0","react-native":"^0.86.0","react-native-reanimated":"^4.0.0"}}

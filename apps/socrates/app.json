@@ -1,0 +1,1 @@
+{"expo":{"name":"Socrates Universal","slug":"socrates-universal","version":"0.1.0","scheme":"socrates","orientation":"default","userInterfaceStyle":"automatic","web":{"bundler":"metro"},"android":{"package":"com.topodrive.socrates.universal"},"plugins":["expo-secure-store"],"extra":{"apiBaseUrl":"https://app.topodrive.top/api/v2"}}}
