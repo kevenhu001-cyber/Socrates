@@ -107,7 +107,7 @@ test('phone row menu shows tag/archive/delete and archive POSTs from a real clic
   await expect(overflow).toBeVisible();
   await overflow.click();
 
-  const menu = row.locator('.recent-item-menu');
+  const menu = page.locator('#appShell > .recent-item-menu');
   await expect(menu).toBeVisible();
   await expect(row).toHaveClass(/actions-open/);
 
@@ -128,19 +128,16 @@ test('phone row menu shows tag/archive/delete and archive POSTs from a real clic
       return { opacity: cs.opacity, display: cs.display, w: Math.round(r.width), h: Math.round(r.height) };
     };
     const menuCs = getComputedStyle(el);
-    const rowEl = el.closest('.recent-item');
-    const rowCs = rowEl ? getComputedStyle(rowEl) : null;
     return {
-      menu: { display: menuCs.display, z: menuCs.zIndex },
-      rowZ: rowCs?.zIndex ?? null,
+      menu: { display: menuCs.display, position: menuCs.position, z: menuCs.zIndex },
       tag: pick('.recent-item-tag-btn'),
       archive: pick('.recent-item-archive'),
       del: pick('.recent-item-del'),
     };
   });
   expect(styles.menu.display).toBe('flex');
+  expect(styles.menu.position).toBe('fixed');
   expect(Number(styles.menu.z)).toBeGreaterThanOrEqual(100);
-  expect(Number(styles.rowZ)).toBeGreaterThanOrEqual(100);
   for (const key of ['tag', 'archive', 'del']) {
     expect(styles[key], key).not.toBeNull();
     expect(Number(styles[key].opacity), `${key} opacity`).toBe(1);

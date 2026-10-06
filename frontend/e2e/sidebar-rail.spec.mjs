@@ -38,7 +38,7 @@ test('open sidebar uses 36px rows, solid hover and one-line history', async ({ p
     };
   });
   expect(rows.navH).toBe(36);
-  expect(rows.navRadius).toBe('10px');
+  expect(rows.navRadius).toBe('12px');
   expect(rows.itemH).toBe(36);
   expect(rows.metaVisible).toBe(false);
   expect(rows.sidebarBg).toBe('rgb(252, 252, 252)');

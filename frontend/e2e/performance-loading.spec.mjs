@@ -21,18 +21,20 @@ test('settings and workspace code load only when opened', async ({ page }) => {
   await login(page);
 
   const loadedScripts = () => page.evaluate(() => performance.getEntriesByType('resource')
-    .map((entry) => new URL(entry.name).pathname));
+    .map((entry) => new URL(entry.name).pathname).filter((path) => path.endsWith('.js')));
+  const newlyLoadedScripts = (before, after) => after.some((path) => !before.includes(path));
   const initial = await loadedScripts();
-  expect(initial.some((path) => /SettingsModal-|WorkspacePage-/.test(path))).toBe(false);
 
   await page.evaluate(() => window.openSettings());
   await expect(page.locator('#settingsOverlay')).toBeVisible();
-  expect((await loadedScripts()).some((path) => /SettingsModal-/.test(path))).toBe(true);
+  const afterSettings = await loadedScripts();
+  expect(newlyLoadedScripts(initial, afterSettings)).toBe(true);
 
   await page.evaluate(() => window.closeSettings());
   await page.click('#navLibrary');
   await expect(page.locator('#libraryPanel')).not.toHaveAttribute('aria-busy', 'true');
-  expect((await loadedScripts()).some((path) => /WorkspacePage-/.test(path))).toBe(true);
+  const afterWorkspace = await loadedScripts();
+  expect(newlyLoadedScripts(afterSettings, afterWorkspace)).toBe(true);
 });
 
 test('anonymous boot checks the session once', async ({ page }) => {

@@ -236,7 +236,7 @@ test('live chat shows a Searching label while the model is searching', async ({ 
   await expect(row).toHaveAttribute('data-state', 'done');
   /* P_declarative-tool-run — the settled row names its object and moves the
      count to meta: "Found 1 web results" said nothing about which search. */
-  await expect(row.locator('.tool-inline-label')).toContainText('Searched "weather today"');
+  await expect(row.locator('.tool-inline-label')).toContainText('Searched for “weather today”');
   await expect(row.locator('.tool-inline-meta')).toContainText('1 source');
 });
 
@@ -439,7 +439,7 @@ test('consecutive same-category tools aggregate under one collapsible header', a
   await expect(group.locator('.tool-inline[data-tcid="group-a"]')).toHaveCount(1);
   await expect(group.locator('.tool-inline[data-tcid="group-b"]')).toHaveCount(1);
   await expect(group.locator('.tool-inline[data-tcid="group-a"] .tool-inline-label'))
-    .toHaveText('Searched "alpha"');
+    .toHaveText('Searched for “alpha”');
   /* The aggregate answers "what did I learn" in one place: the merged source
      list is the group's own detail, not a per-row dump. */
   const aggregate = group.locator('.tool-run-list > .tool-inline-detail');

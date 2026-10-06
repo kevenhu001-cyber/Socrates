@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-test('zh UI localizes live with the bundled Plus Jakarta Sans face', async ({ page }) => {
+test('zh UI localizes live with the bundled Inter face', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -18,7 +18,7 @@ test('zh UI localizes live with the bundled Plus Jakarta Sans face', async ({ pa
      without a reload and without losing the draft. */
   await page.evaluate(() => window.setLang('zh'));
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh');
-  await expect(editor).toHaveAttribute('aria-label', '问问 Socrates');
+  await expect(editor).toHaveAttribute('aria-label', '有问题，随便问');
 
   const zhState = await editor.evaluate((el) => {
     const p = el.querySelector('p.is-editor-empty:first-child');
@@ -27,8 +27,8 @@ test('zh UI localizes live with the bundled Plus Jakarta Sans face', async ({ pa
     return { content: before.content, fontFamily: before.fontFamily };
   });
   expect(zhState).not.toBeNull();
-  expect(zhState.content).toContain('问问 Socrates');
-  expect(zhState.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('Plus Jakarta Sans');
+  expect(zhState.content).toContain('有问题，随便问');
+  expect(zhState.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('Inter');
   expect(zhState.fontFamily).toContain('Noto Sans SC');
   expect(zhState.fontFamily).toContain('Inter');
   expect(zhState.fontFamily).not.toContain('Microsoft YaHei');
@@ -40,10 +40,10 @@ test('zh UI localizes live with the bundled Plus Jakarta Sans face', async ({ pa
     const p = el.querySelector('p.is-editor-empty:first-child');
     return p ? getComputedStyle(p, '::before').fontFamily : '';
   });
-  expect(enFont).toContain('Plus Jakarta Sans');
+  expect(enFont).toContain('Inter');
 });
 
-test('landing greeting has no leading logo and keeps the western Plus Jakarta Sans face in Chinese UI', async ({ page }) => {
+test('landing greeting has no leading logo and keeps the western Inter face in Chinese UI', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -56,13 +56,13 @@ test('landing greeting has no leading logo and keeps the western Plus Jakarta Sa
      assertion only has to prove that a localized greeting rendered so the
      CJK font fallback is measured against real Chinese glyphs. */
   const greeting = page.locator('#topicTitle');
-  await expect(greeting).toHaveText(/今天有什么计划|想做点什么|在想什么|我们从哪里开始|准备好了就开始|想聊点什么|有什么我能帮忙的|开始吧/);
+  await expect(greeting).toHaveText(/今天有什么计划|想做点什么|在想什么|我们从哪里开始|准备好了就开始|想聊点什么|有什么我能帮忙的|开始吧|我们先从哪里开始呢？/);
   const zhStyle = await greeting.evaluate((el) => ({
     fontFamily: getComputedStyle(el).fontFamily,
     paddingLeft: getComputedStyle(el).paddingLeft,
     beforeContent: getComputedStyle(el, '::before').content,
   }));
-  expect(zhStyle.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('Plus Jakarta Sans');
+  expect(zhStyle.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('Inter');
   expect(zhStyle.fontFamily).toContain('Noto Sans SC');
   expect(zhStyle.fontFamily).toContain('Inter');
   expect(zhStyle.fontFamily).not.toContain('Microsoft YaHei');
@@ -71,5 +71,5 @@ test('landing greeting has no leading logo and keeps the western Plus Jakarta Sa
 
   await page.evaluate(() => window.setLang('en'));
   const enFont = await greeting.evaluate((el) => getComputedStyle(el).fontFamily);
-  expect(enFont.split(',')[0].replace(/["']/g, '').trim()).toBe('Plus Jakarta Sans');
+  expect(enFont.split(',')[0].replace(/["']/g, '').trim()).toBe('Inter');
 });

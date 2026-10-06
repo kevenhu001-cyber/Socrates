@@ -108,7 +108,7 @@ test('React chat store observes legacy message and stream lifecycle', async ({ p
   await page.evaluate(() => window.__reactChatStreamPromise);
 
   await expect(page.locator('#composerPrimaryBtn')).toHaveAttribute('data-stop', '0');
-  await expect(page.locator('#composerPrimaryBtnContent path')).toHaveCount(1);
+  await expect(page.locator('#composerPrimaryBtnContent .icon-voice')).toHaveCount(1);
   await expect(page.locator('#composerPrimaryBtnContent rect')).toHaveCount(0);
 
   const result = await page.evaluate(() => {

@@ -4,6 +4,7 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test('capture composer and tool UI at desktop and mobile breakpoints', async ({ page }) => {
   await mockAuthedApp(page);
+  await page.addInitScript(() => localStorage.setItem('socrates-reasoning-effort', 'high'));
   await page.route('**/api/**/chat/stream', async (route) => {
     const stream = [
       'event: tool_use\ndata: [{"id":"search-visual","name":"web_search","input":{"query":"Socratic learning"}}]\n\n',
@@ -37,7 +38,7 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   // informative without expanding it.
   const toolRow = page.locator('.msg.assistant .tool-inline[data-tcid="search-visual"]');
   await expect(toolRow).toBeVisible();
-  await expect(toolRow.locator('.tool-inline-label').first()).toHaveText('Searched "Socratic learning"');
+  await expect(toolRow.locator('.tool-inline-label').first()).toHaveText('Searched for “Socratic learning”');
   await expect(toolRow.locator('.tool-inline-meta')).toHaveText('2 sources');
   // tool-run-group and agent-tool-card are now share/history-only —
   // they must NOT be created in the live chat path.

@@ -10,7 +10,7 @@ test('reference home keeps its bottom composer and phone configuration usable', 
   await waitForAppShell(page);
   await page.evaluate(() => document.fonts.ready);
   const composer = page.locator('#composerInputWrap');
-  await expect(composer).toHaveCSS('background-color', 'rgb(33, 33, 33)');
+  await expect(composer).toHaveCSS('background-color', 'rgb(28, 28, 28)');
   await expect(page.locator('#composerPrimaryBtn .icon-voice')).toBeVisible();
   const rect = await composer.boundingBox();
   expect(rect.x).toBe(16);

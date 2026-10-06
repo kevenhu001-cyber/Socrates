@@ -1,7 +1,7 @@
 import { hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
 import React, { useCallback, useEffect, useRef, useState, memo } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Pin } from 'lucide-react';
+import { Pin, Tag } from 'lucide-react';
 
 import { getLegacyActions, getLegacyActionsOrNull, t } from '../legacy/gateway.ts';
 import { AnchoredMenu } from '../menu/AnchoredMenu';
@@ -98,7 +98,7 @@ interface SessionRowProps {
   onDragEnd: (e: React.DragEvent) => void;
 }
 
-function SessionRowBase({ session, isActive, onPick, onArchive, onDelete, onDragStart, onDragEnd }: SessionRowProps) {
+function SessionRowBase({ session, isActive, onPick, onTag, onArchive, onDelete, onDragStart, onDragEnd }: SessionRowProps) {
   const ml = modeLabel(session);
   const meta = buildMeta(session);
   const sid = safeId(session.id);
@@ -246,6 +246,17 @@ function SessionRowBase({ session, isActive, onPick, onArchive, onDelete, onDrag
           >
             <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: RENAME_ICON }} />
             <span className="recent-item-action-text">{t('session.ctxRename')}</span>
+          </button>
+          <button
+            className="btn-icon recent-item-menu-row recent-item-tag-btn"
+            type="button"
+            role="menuitem"
+            title={t('session.editTags')}
+            aria-label={t('session.editTags')}
+            onClick={(e) => { setActionsOpen(false); onTag(session.id, e); }}
+          >
+            <span className="recent-item-action-icon"><Tag strokeWidth={1.8} aria-hidden="true" /></span>
+            <span className="recent-item-action-text">{t('session.editTags')}</span>
           </button>
           <div className="recent-item-menu-divider" />
           <button

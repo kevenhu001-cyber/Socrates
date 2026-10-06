@@ -15,7 +15,7 @@ const REFERENCE_CONNECTORS = [
   { id: 'microsoft', name: 'Microsoft', authType: 'oauth', connection: { status: 'connected' } },
   { id: 'vercel', name: 'Vercel', authType: 'oauth', connection: { status: 'connected' } },
   { id: 'discord', name: 'Discord', description: 'Chat and community integration', authType: 'oauth', connection: null },
-  { id: 'asana', name: 'Asana', description: 'Manage projects and tasks', authType: 'oauth', connection: null },
+  { id: 'asana', name: 'Asana', description: 'Manage projects, tasks, and team workflows', authType: 'oauth', connection: null },
   { id: 'airtable', name: 'Airtable', description: 'Connect bases and workflows', authType: 'oauth', connection: null },
   { id: 'jira', name: 'Jira', description: 'Track bugs and manage sprints', authType: 'oauth', connection: null },
   { id: 'cloudflare', name: 'Cloudflare', description: 'Manage DNS and workers', authType: 'oauth', connection: null },
@@ -126,7 +126,7 @@ test('capture all 5 reference replica screens on mobile OLED', async ({ page }) 
   await expect(firstItem).toBeVisible();
   const dotsBtn = firstItem.locator('.recent-item-overflow');
   await dotsBtn.click();
-  await expect(firstItem.locator('.recent-item-menu')).toBeVisible();
+  await expect(page.locator('#appShell > .recent-item-menu')).toBeVisible();
   await page.waitForTimeout(150);
   await page.screenshot({ path: 'test-results/replica-3-mobile-context-menu.png' });
 
@@ -202,7 +202,7 @@ test('capture plugin detail screen on desktop OLED', async ({ page }) => {
   await expect(page.locator('.plugin-detail-view')).toBeVisible();
   await expect(page.locator('#plugin-detail-title')).toHaveText('Asana');
   // Verify '关于此插件' has rich intro text
-  const asanaDesc = await page.locator('.plugin-detail-desc').textContent();
+  const asanaDesc = await page.locator('.plugin-detail-desc').first().textContent();
   expect(asanaDesc?.length).toBeGreaterThan(30);
   await page.waitForTimeout(200);
   await page.screenshot({ path: 'test-results/replica-desktop-plugin-detail-asana.png' });
@@ -219,8 +219,13 @@ test('verify loading animation on plugins and projects pages', async ({ page }) 
       body: JSON.stringify({ configured: true, connectors: REFERENCE_CONNECTORS }),
     });
   });
+  let releaseProjects;
+  let notifyProjectsRequest;
+  const projectsRequestStarted = new Promise((resolve) => { notifyProjectsRequest = resolve; });
+  const projectsResponse = new Promise((resolve) => { releaseProjects = resolve; });
   await page.route('**/api/**projects*', async (route) => {
-    await new Promise((r) => setTimeout(r, 600));
+    notifyProjectsRequest();
+    await projectsResponse;
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -244,10 +249,12 @@ test('verify loading animation on plugins and projects pages', async ({ page }) 
 
   // 2. Projects Loading State
   await page.evaluate(() => document.getElementById('navProjects')?.click());
+  await projectsRequestStarted;
   await expect(page.locator('.workspace-loading-projects')).toBeVisible();
   await expect(page.locator('.workspace-loading-projects .workspace-loading-spinner-ring')).toBeVisible();
   await page.waitForTimeout(150);
   await page.screenshot({ path: 'test-results/loading-animation-projects.png' });
+  releaseProjects();
 
   // Settle to projects directory
   await expect(page.locator('.projects-directory')).toBeVisible({ timeout: 5000 });

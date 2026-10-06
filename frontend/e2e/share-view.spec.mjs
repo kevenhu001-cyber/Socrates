@@ -189,7 +189,7 @@ test('a shared turn lays its tool rows out declaratively, read-only', async ({ p
 
   await body.locator('.tool-run-summary').click();
   await expect(body.locator('.tool-inline-label')).toHaveText([
-    'Searched "inverse square law"',
+    'Searched for “inverse square law”',
     'Read arxiv.org',
   ]);
   await body.locator('.tool-inline[data-tcid="shared-search"] summary').click();

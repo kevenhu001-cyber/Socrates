@@ -83,7 +83,7 @@ test('archive from Recents row soft-hides the session and surfaces it in Storage
   const overflow = row.locator('.recent-item-overflow');
   await row.hover();
   await overflow.click();
-  const menu = row.locator('.recent-item-menu');
+  const menu = page.locator('#appShell > .recent-item-menu');
   await expect(menu).toBeVisible();
   const archiveBtn = menu.locator('.recent-item-archive');
   await expect(archiveBtn).toHaveAttribute('data-archive-session', '1');
