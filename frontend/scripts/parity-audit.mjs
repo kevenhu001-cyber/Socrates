@@ -228,10 +228,7 @@ const SCENARIOS = {
       s.dispatch({ type: 'state/set', key: 'topic', value: '贝叶斯定理' });
       s.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' });
       s.dispatch({ type: 'state/set', key: 'messages', value: messages });
-      document.getElementById('topicSetup')?.classList.add('hidden');
-      document.getElementById('mainInner')?.classList.add('hidden');
-      document.getElementById('chatView')?.classList.remove('hidden');
-      document.body.dataset.conversationActive = 'true';
+      window.__testActivateMainView('chatView');
       window.__socratesReactChatBridge?.publish({ type: 'state-synced', reason: 'parity-audit' });
     }, FIXTURE_MESSAGES);
     await page.waitForTimeout(800);

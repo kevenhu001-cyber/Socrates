@@ -13,7 +13,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -43,7 +43,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -79,7 +79,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -96,7 +96,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -126,7 +126,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -143,7 +143,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -173,7 +173,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -190,7 +190,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -220,7 +220,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -237,7 +237,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -267,7 +267,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -284,7 +284,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -304,7 +304,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -314,7 +314,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -340,7 +340,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -350,7 +350,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -367,7 +367,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -387,7 +387,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -397,7 +397,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -414,7 +414,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -434,7 +434,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -444,7 +444,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -461,7 +461,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -481,7 +481,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -491,7 +491,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -508,7 +508,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -528,7 +528,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -538,7 +538,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -555,7 +555,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -585,7 +585,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -621,7 +621,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -638,7 +638,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -668,7 +668,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -685,7 +685,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -715,7 +715,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -732,7 +732,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -762,7 +762,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -779,7 +779,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -809,7 +809,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -826,7 +826,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -846,7 +846,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -856,7 +856,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -882,7 +882,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -892,7 +892,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -909,7 +909,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -929,7 +929,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -939,7 +939,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -956,7 +956,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -976,7 +976,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -986,7 +986,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -1003,7 +1003,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -1023,7 +1023,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -1033,7 +1033,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -1050,7 +1050,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -1070,7 +1070,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -1080,7 +1080,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -1097,7 +1097,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -1127,7 +1127,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -1163,7 +1163,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -1180,7 +1180,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -1210,7 +1210,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -1227,7 +1227,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -1257,7 +1257,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -1274,7 +1274,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -1304,7 +1304,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -1321,7 +1321,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -1351,7 +1351,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -1368,7 +1368,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -1388,7 +1388,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -1398,7 +1398,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -1424,7 +1424,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -1434,7 +1434,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -1451,7 +1451,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -1471,7 +1471,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -1481,7 +1481,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -1498,7 +1498,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -1518,7 +1518,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -1528,7 +1528,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -1545,7 +1545,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -1565,7 +1565,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -1575,7 +1575,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -1592,7 +1592,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -1612,7 +1612,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -1622,7 +1622,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -1639,7 +1639,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -1669,7 +1669,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -1705,7 +1705,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -1722,7 +1722,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -1752,7 +1752,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -1769,7 +1769,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -1799,7 +1799,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -1816,7 +1816,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -1846,7 +1846,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -1863,7 +1863,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -1893,7 +1893,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -1910,7 +1910,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -1930,7 +1930,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -1940,7 +1940,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -1966,7 +1966,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -1976,7 +1976,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -1993,7 +1993,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -2013,7 +2013,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -2023,7 +2023,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -2040,7 +2040,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -2060,7 +2060,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -2070,7 +2070,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -2087,7 +2087,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -2107,7 +2107,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -2117,7 +2117,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -2134,7 +2134,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 768,
@@ -2154,7 +2154,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 470,
+    "w": 469,
     "h": 36
    },
    "sidebar": {
@@ -2164,7 +2164,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -2181,7 +2181,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 684,
@@ -2211,7 +2211,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -2247,7 +2247,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -2264,7 +2264,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 684,
@@ -2294,7 +2294,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -2311,7 +2311,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 684,
@@ -2341,7 +2341,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -2358,7 +2358,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 684,
@@ -2388,7 +2388,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -2405,7 +2405,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 684,
@@ -2435,7 +2435,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -2452,7 +2452,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 684,
@@ -2472,7 +2472,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 386,
+    "w": 385,
     "h": 36
    },
    "sidebar": {
@@ -2482,7 +2482,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -2508,7 +2508,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 466,
+    "w": 465,
     "h": 36
    },
    "sidebar": {
@@ -2518,7 +2518,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -2535,7 +2535,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 684,
@@ -2555,7 +2555,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 386,
+    "w": 385,
     "h": 36
    },
    "sidebar": {
@@ -2565,7 +2565,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -2582,7 +2582,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 684,
@@ -2602,7 +2602,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 386,
+    "w": 385,
     "h": 36
    },
    "sidebar": {
@@ -2612,7 +2612,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -2629,7 +2629,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 684,
@@ -2649,7 +2649,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 386,
+    "w": 385,
     "h": 36
    },
    "sidebar": {
@@ -2659,7 +2659,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -2676,7 +2676,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 684,
@@ -2696,7 +2696,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 386,
+    "w": 385,
     "h": 36
    },
    "sidebar": {
@@ -2706,7 +2706,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -2723,7 +2723,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 684,
@@ -2753,7 +2753,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -2789,7 +2789,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -2806,7 +2806,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 684,
@@ -2836,7 +2836,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -2853,7 +2853,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 684,
@@ -2883,7 +2883,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -2900,7 +2900,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 684,
@@ -2930,7 +2930,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -2947,7 +2947,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 684,
@@ -2977,7 +2977,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -2994,7 +2994,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 684,
@@ -3014,7 +3014,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 386,
+    "w": 385,
     "h": 36
    },
    "sidebar": {
@@ -3024,7 +3024,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -3050,7 +3050,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 466,
+    "w": 465,
     "h": 36
    },
    "sidebar": {
@@ -3060,7 +3060,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -3077,7 +3077,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 684,
@@ -3097,7 +3097,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 386,
+    "w": 385,
     "h": 36
    },
    "sidebar": {
@@ -3107,7 +3107,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -3124,7 +3124,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 684,
@@ -3144,7 +3144,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 386,
+    "w": 385,
     "h": 36
    },
    "sidebar": {
@@ -3154,7 +3154,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -3171,7 +3171,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 684,
@@ -3191,7 +3191,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 386,
+    "w": 385,
     "h": 36
    },
    "sidebar": {
@@ -3201,7 +3201,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
@@ -3218,7 +3218,7 @@
     "h": 160
    },
    "disclaimer": {
-    "h": 28
+    "h": 31
    },
    "composer": {
     "w": 684,
@@ -3238,7 +3238,7 @@
     "h": 36
    },
    "composerEditor": {
-    "w": 386,
+    "w": 385,
     "h": 36
    },
    "sidebar": {
@@ -3248,7 +3248,7 @@
    },
    "sidebarItem": {
     "h": 36,
-    "style.borderRadius": "10px",
+    "style.borderRadius": "12px",
     "style.fontSize": "14px"
    },
    "topbar": {
