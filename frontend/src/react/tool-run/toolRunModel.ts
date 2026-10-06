@@ -13,6 +13,7 @@
  */
 
 import {toolCategory} from '../../render/toolCategory.js';
+import {visualizationSpecOf} from '../../render/visualizationSpec.ts';
 import {isParagraphStart, snapToolOffsetOutOfBlock, toolRowAnchorOffset} from '../../render/streaming.js';
 import type {AgentPlanData, AgentStepData} from '../../ui/agentSteps.js';
 import {isTerminalToolPhase, summarizeToolRuns, type ToolRun} from '../../chat/toolRunState.js';
@@ -28,6 +29,8 @@ import {
   toolRunLabel,
   translate,
 } from './labels.js';
+
+export {visualizationSpecOf};
 
 export type ToolRunState = 'running' | 'done' | 'error' | 'stopped' | 'awaiting';
 
@@ -180,26 +183,6 @@ export interface ToolCallRecord extends ToolCallLike {
 }
 
 /* ── tool output protocol ──────────────────────────────────────────────── */
-
-/**
- * The v1 visualization spec a call carries, from whichever field the writer
- * used: `visualization` (the runtime's normalized result) or, while the call
- * is still streaming, the `render_visualization` arguments themselves.
- */
-export function visualizationSpecOf(
-  call: ToolCallRecord | null | undefined,
-): Record<string, unknown> | null {
-  if (!call) return null;
-  const persisted = call.visualization;
-  if (persisted && typeof persisted === 'object' && persisted.version === 1) {
-    return persisted as unknown as Record<string, unknown>;
-  }
-  if (call.name === 'render_visualization' && call.input && typeof call.input === 'object') {
-    const input = call.input as Record<string, unknown>;
-    if (input.version === 1) return input;
-  }
-  return null;
-}
 
 function outputId(toolCallId: string, kind: ToolOutput['kind'], discriminator: string): string {
   return `${toolCallId}:${kind}:${discriminator}`;

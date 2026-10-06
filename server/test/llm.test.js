@@ -358,6 +358,31 @@ describe('streamChatCompletion: tool_calls', () => {
     assert.equal(tools[0].function.arguments, '{"q":"docs"}');
   });
 
+  test('assigns a stable id to a legacy function_call that omits tool ids', async () => {
+    globalThis.fetch = mock.fn(async () =>
+      makeSseResponse([
+        { choices: [{ delta: { function_call: { name: 'render_visualization', arguments: '{"version":1}' } } }] },
+        { choices: [{ delta: {}, finish_reason: 'function_call' }] },
+        sseDone(),
+      ]),
+    );
+    const tools = [];
+    const deltas = [];
+    await streamChatCompletion(
+      { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'render_visualization' } }] },
+      () => {}, () => {}, () => {}, () => {},
+      (tc) => tools.push(tc),
+      (delta) => deltas.push(delta),
+    );
+
+    assert.equal(tools.length, 1);
+    assert.ok(tools[0].id, 'tool_use needs a server-generated id when the provider omits one');
+    const finalDelta = deltas.at(-1);
+    assert.equal(finalDelta.final, true);
+    assert.equal(finalDelta.id, tools[0].id, 'the final arguments delta must correlate with tool_use');
+    assert.equal(finalDelta.arguments, tools[0].function.arguments);
+  });
+
   test('gives each id its own slot when the provider omits `index`', async () => {
     /* Regression: without `index` every entry fell into slot 0, so the
        second call overwrote the first and one of the two vanished. */

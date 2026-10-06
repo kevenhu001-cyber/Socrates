@@ -49,6 +49,8 @@ interface ToolCallEntry {
   isError: boolean;
   artifacts: Array<{ id: string; mimeType: string | null; name: string | null }>;
   executionId?: string;
+  status?: string;
+  durationMs?: number;
   visualization?: unknown;
   results?: unknown[];
   /** Structured error layers mirrored from the tool_result payload so the
@@ -1275,6 +1277,10 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     setRun(entry, terminalPhase, { endedAt: Date.now(), durationMs: result.durationMs || 0 });
     entry.output = display;
     entry.isError = result.ok === false;
+    if (typeof result.status === 'string' && result.status) entry.status = result.status;
+    if (typeof result.durationMs === 'number' && Number.isFinite(result.durationMs)) {
+      entry.durationMs = Math.max(0, result.durationMs);
+    }
     /* P_error-layering — the declarative row renders userMessage / error /
        stderr / errorCode as separate layers, but they were never copied
        onto the record, so the card fell back to `output` (which carries

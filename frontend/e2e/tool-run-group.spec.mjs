@@ -188,9 +188,9 @@ test('a run of three searches collapses under one header, with the live row outs
   await expect(first.locator('.tool-run-list > .tool-inline-detail [data-kind="sources"] .tool-inline-src-title'))
     .toHaveCount(3);
   await expect(first.locator('.tool-inline[data-tcid="s1"] .tool-inline-label'))
-    .toHaveText('Searched "alpha theory"');
+    .toHaveText('Searched for “alpha theory”');
   await expect(first.locator('.tool-inline[data-tcid="s2"] .tool-inline-label'))
-    .toHaveText('Searched "beta theory"');
+    .toHaveText('Searched for “beta theory”');
   /* Every nested row is marked so the stylesheet can tighten its rhythm. */
   await expect(first.locator('.tool-run-list .tool-inline[data-tcid="s1"]'))
     .toHaveAttribute('data-nested', '1');

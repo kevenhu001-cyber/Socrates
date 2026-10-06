@@ -571,7 +571,7 @@ body.workspace-active #appShell .main-page {
    OpenConnector actions remain the source of truth.
    -------------------------------------------------------------------------- */
 [data-mode="dark"] {
-  /* The supplied baseline uses a true-black canvas with a charcoal
+  /* The supplied baseline uses a charcoal canvas with a subtly raised
      composer/active-surface layer. Keep light mode's existing tokens intact. */
   --cg-page: var(--ui-bg-page);
   --cg-rail: var(--ui-bg-sidebar);
@@ -716,11 +716,9 @@ body.workspace-active #appShell .main-page {
 
 @media (max-width: 768px) {
   [data-mode="dark"] {
-    /* P_mobile-black-canvas — the mobile home page collapses onto a
-       true black canvas so the pill composer stands out cleanly without
-       any charcoal-on-charcoal bleed. Desktop keeps its slightly
-       lighter #212121 reading surface; mobile drops to #000 to match
-       the reference's near-black phone surface. */
+    /* P_mobile-charcoal-canvas — mobile and desktop share the same page
+       token. The composer uses the raised surface step so it remains distinct
+       without introducing a second dark palette. */
     --cg-page: var(--ui-bg-page);
     --cg-rail: var(--ui-bg-sidebar);
   }
@@ -732,9 +730,8 @@ body.workspace-active #appShell .main-page {
 
   /* P_mobile-canvas-fade — the legacy conversation layer fades
      .chat-input-bar into the canvas colour. Land the fade on the active
-     --cg-page (pure black on the dark phone canvas, white in light mode)
-     so the safe-area strip below the composer matches the page instead of
-     forcing a black band under a white light-mode page. */
+     --cg-page so the safe-area strip below the composer matches the page
+     in both modes. */
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .chat-input-bar {
     background: linear-gradient(to bottom, transparent, var(--cg-page) 24px) !important;
   }
@@ -1169,8 +1166,8 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    clip the chips above the border.  The empty-editor variant is intentionally
    explicit; a text draft still uses the measured multiline rules above. */
 
-/* The reference directory is a quiet list on the black canvas; only the
-   connector tile carries a raised surface.  Keep rows borderless at rest and
+/* The reference directory is a quiet list on the charcoal canvas; only the
+   connector tile carries a raised surface. Keep rows borderless at rest and
    reserve the soft fill for pointer/keyboard feedback. */
 
 /* The transcript composer keeps a slightly smaller idle pill than the

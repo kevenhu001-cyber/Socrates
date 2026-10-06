@@ -438,6 +438,29 @@ test('the agent result latches the terminal phase and duration on the data', () 
   runtime.dispose();
 });
 
+test('visualization results retain terminal metadata and spec for session saves', () => {
+  const { message, runtime } = agentRuntimeHarness();
+  const spec = {
+    version: 1,
+    template: 'bar',
+    title: 'Market values',
+    accessibilitySummary: 'A bar chart of market values.',
+    payload: { categories: ['A'], series: [{ name: 'Value', data: [1] }] },
+  };
+  runtime.recordToolUse({ id: 'viz-1', name: 'render_visualization', input: spec });
+  runtime.recordToolResult({
+    id: 'viz-1', name: 'render_visualization', ok: true, status: 'completed',
+    output: 'Visualization ready', visualization: spec, durationMs: 900,
+  });
+
+  const entry = message.toolCalls.find((call) => call.id === 'viz-1');
+  assert.equal(entry.status, 'completed');
+  assert.equal(entry.durationMs, 900);
+  assert.deepEqual(entry.visualization, spec);
+  assert.deepEqual(entry.input, spec);
+  runtime.dispose();
+});
+
 test('a failed agent run marks the entry failed on the data', () => {
   const { message, runtime } = agentRuntimeHarness();
   runtime.recordToolUse({ id: 'agent-1', name: 'workspace_agent', input: {} });

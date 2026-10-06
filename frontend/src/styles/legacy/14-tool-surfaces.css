@@ -257,15 +257,15 @@ a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-
   --tool-activity-danger-bg:hsl(0 55% 44%/.08);
 }
 [data-theme=socrates][data-mode=dark]{
-  --tool-activity-bg:hsl(0 0% 9%);
-  --tool-activity-border:hsl(0 0% 100%/.07);
-  --tool-activity-text:hsl(0 0% 94%);
-  --tool-activity-row:hsl(0 0% 61%);
-  --tool-activity-row-hover:hsl(0 0% 82%);
-  --tool-activity-focus:hsl(0 0% 100%/.48);
-  --tool-activity-code-bg:hsl(0 0% 100%/.055);
-  --tool-activity-danger:hsl(0 58% 72%);
-  --tool-activity-danger-bg:hsl(0 58% 50%/.16);
+  --tool-activity-bg:var(--ui-bg-raised);
+  --tool-activity-border:var(--ui-border-subtle);
+  --tool-activity-text:var(--ui-text-primary);
+  --tool-activity-row:var(--ui-text-tertiary);
+  --tool-activity-row-hover:var(--ui-text-secondary);
+  --tool-activity-focus:var(--ui-border-strong);
+  --tool-activity-code-bg:var(--ui-bg-page);
+  --tool-activity-danger:var(--ui-danger);
+  --tool-activity-danger-bg:color-mix(in srgb,var(--ui-danger) 16%,var(--ui-bg-raised));
 }
 
 .msg.assistant .msg-body:has(.tool-inline),

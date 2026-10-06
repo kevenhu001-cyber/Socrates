@@ -10,6 +10,7 @@ import { stateStore } from '../state/store.js';
 import { apiFetch } from '../util/api.js';
 import { showToast } from './toast.js';
 import { buildAssistantHtml } from '../render/assistantHtml.ts';
+import { visualizationSpecOf } from '../render/visualizationSpec.ts';
 import { formatMsg } from '../render/markdown.js';
 import { wireCodeBlockHeaders, wireMsgBodyImages } from '../render/postRender.js';
 import { publishReactChatRuntime } from './reactBridge.js';
@@ -110,6 +111,7 @@ export interface ToolCallEntry {
   input?: unknown;
   output?: unknown;
   isError?: boolean;
+  status?: string;
   visualization?: { version?: number; [key: string]: unknown };
   artifacts?: Array<{ id: string; mimeType?: string; name?: string }>;
 }
@@ -238,15 +240,7 @@ export function restorePersistedMessageExtras(
   for (let tci = 0; tci < calls.length; tci++) {
     const tc = calls[tci];
     if (!tc || !tc.name) continue;
-    const vizSpec =
-      tc.visualization && tc.visualization.version === 1
-        ? tc.visualization
-        : tc.name === 'render_visualization' &&
-            typeof tc.input === 'object' &&
-            tc.input !== null &&
-            (tc.input as { version?: number }).version === 1
-          ? (tc.input as { version?: number; [key: string]: unknown })
-          : null;
+    const vizSpec = visualizationSpecOf(tc);
     /* P_inline-restore — when the rebuilt HTML already carries the
        settled inline tool row (data-tcid), don't append a duplicate
        card at the bubble bottom; instead re-seat the tool's visual

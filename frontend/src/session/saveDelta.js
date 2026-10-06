@@ -42,13 +42,28 @@ function fnv1a(s) {
   return h >>> 0;
 }
 
+function toolCallsFingerprint(value) {
+  var calls = Array.isArray(value) ? value : [];
+  var serialized;
+  try { serialized = JSON.stringify(calls); } catch (_) { serialized = String(calls); }
+  return serialized.length + ':' + fnv1a(serialized).toString(36);
+}
+
+function sameToolCalls(previous, current) {
+  if (previous === current) return true;
+  if (!Array.isArray(previous) || !Array.isArray(current) || previous.length !== current.length) return false;
+  for (var i = 0; i < previous.length; i++) if (previous[i] !== current[i]) return false;
+  return true;
+}
+
 export function messageFingerprint(m) {
   if (!m) return '';
   var clientId = m.clientId || m.id || '';
   var raw = m.rawText || '';
+  var calls = Array.isArray(m.toolCalls) ? m.toolCalls : [];
   return clientId + ':' + raw.length + ':' + fnv1a(raw).toString(36)
     + ':' + (m.html || '').length + ':' + (m.type || '')
-    + ':' + ((m.toolCalls && m.toolCalls.length) || 0);
+    + ':' + calls.length + ':' + toolCallsFingerprint(calls);
 }
 
 /** Fingerprint an arbitrary tutor-state value (teachingPlan, boundariesHistory). */
@@ -76,22 +91,26 @@ export function createFingerprintCache(cap) {
       var raw = m.rawText || '';
       var type = m.type || '';
       var htmlLen = (m.html || '').length;
-      var tools = ((m.toolCalls && m.toolCalls.length) || 0);
+      var calls = Array.isArray(m.toolCalls) ? m.toolCalls : null;
+      var tools = calls ? calls.length : 0;
       /* Every field the fingerprint covers must also be part of the
          memo comparison, not just rawText. A message that gains its
          rendered html, or flips from a streaming placeholder to a
          finalized assistant row, keeps the same rawText — and V8 hands
          back the SAME string reference, so a rawText-only check would
          happily return the stale fingerprint and silently drop the
-         update. `htmlLen` is O(1), so the guard costs nothing. */
+         update. Tool-call entries are replaced on result updates; comparing
+         member identities also covers shallow-copied arrays in save snapshots. */
       var hit = cache.get(clientId);
-      if (hit && hit.raw === raw && hit.type === type && hit.htmlLen === htmlLen && hit.tools === tools) {
+      if (hit && hit.raw === raw && hit.type === type && hit.htmlLen === htmlLen
+          && hit.tools === tools && sameToolCalls(hit.calls, calls)) {
         return hit.fp;
       }
+      var toolsSig = toolCallsFingerprint(calls);
       var fp = clientId + ':' + raw.length + ':' + fnv1a(raw).toString(36)
-        + ':' + htmlLen + ':' + type + ':' + tools;
+        + ':' + htmlLen + ':' + type + ':' + tools + ':' + toolsSig;
       if (cache.size > max) cache.clear();
-      cache.set(clientId, { raw: raw, type: type, htmlLen: htmlLen, tools: tools, fp: fp });
+      cache.set(clientId, { raw: raw, type: type, htmlLen: htmlLen, tools: tools, calls: calls, fp: fp });
       return fp;
     },
   };

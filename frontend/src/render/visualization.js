@@ -663,7 +663,8 @@ export async function mountVisualization(spec, host, options) {
   // Synchronous dedup: check DOM first, then the per-host in-memory map to
   // guard against concurrent calls that yield the event loop between the
   // DOM check and host.appendChild.
-  var existing = host.querySelector('[data-visualization-id="' + cardId + '"]');
+  var existing = Array.from(host.querySelectorAll('.visualization-card[data-visualization-id]'))
+    .find(function (candidate) { return candidate.dataset.visualizationId === cardId; });
   if (existing) return existing;
   var mounting = _mountingFor(host);
   if (mounting.has(cardId)) {

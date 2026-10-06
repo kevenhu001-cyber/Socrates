@@ -91,6 +91,37 @@ test('a row that gains its rendered html is treated as dirty', () => {
   assert.equal(delta.length, 1, 'an html-only change must still be transmitted');
 });
 
+test('a completed visualization result is dirty even when text and call count are unchanged', () => {
+  const fp = createFingerprintCache();
+  const synced = new Map();
+  const spec = {
+    version: 1,
+    template: 'bar',
+    title: 'Market values',
+    accessibilitySummary: 'A bar chart of market values.',
+    payload: { categories: ['A'], series: [{ name: 'Value', data: [1] }] },
+  };
+  const pending = msg('viz-message', 'Chart incoming.', {
+    type: 'assistant',
+    toolCalls: [{ id: 'viz-1', name: 'render_visualization', input: spec, output: null }],
+  });
+  seedSynced(synced, [pending], fp);
+  const completed = msg('viz-message', 'Chart incoming.', {
+    type: 'assistant',
+    toolCalls: [{
+      ...pending.toolCalls[0],
+      output: 'Visualization ready',
+      status: 'completed',
+      durationMs: 900,
+      visualization: spec,
+    }],
+  });
+
+  const delta = messageDelta(synced, [completed], fp);
+  assert.equal(delta.length, 1, 'tool output/spec changes must be persisted without a prose change');
+  assert.equal(delta[0].toolCalls[0].visualization.title, 'Market values');
+});
+
 test('the watermark only advances when the caller commits', () => {
   const fp = createFingerprintCache();
   const synced = new Map();

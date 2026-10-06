@@ -93,6 +93,16 @@ test('a non-v1 spec is never handed to a renderer', () => {
   assert.deepEqual(toolOutputsOf({ id: 'x', name: 'Read', visualization: { version: 2 } }), []);
 });
 
+test('a rejected visualization does not mount the unvalidated input as an output', () => {
+  assert.deepEqual(toolOutputsOf({
+    id: 'bad-viz',
+    name: 'render_visualization',
+    input: VIZ,
+    status: 'failed',
+    isError: true,
+  }), []);
+});
+
 test('persisted outputs win over legacy fields and are validated entry by entry', () => {
   const outputs = toolOutputsOf({
     id: 'call-4',

@@ -37,22 +37,22 @@
   --tool-card-danger-soft-strong:hsl(0 58% 46%/.18)
 }
 [data-theme=socrates][data-mode=dark]{
-  --tool-card-bg:hsl(0 0% 16%/.78);
-  --tool-card-bg-hover:hsl(0 0% 22%/.9);
-  --tool-card-bg-sunken:hsl(0 0% 7%/.46);
-  --tool-card-surface:hsl(0 0% 11%/.96);
-  --tool-card-border:hsl(0 0% 100%/.14);
-  --tool-card-border-strong:hsl(0 0% 100%/.26);
-  --tool-card-text:hsl(0 0% 92%);
-  --tool-card-text-muted:hsl(0 0% 72%);
-  --tool-card-text-subtle:hsl(0 0% 54%);
-  --tool-card-icon:hsl(0 0% 70%);
-  --tool-card-icon-hover:hsl(0 0% 94%);
-  --tool-card-focus:hsl(0 0% 100%/.44);
-  --tool-card-shadow:0 8px 24px hsl(0 0% 0%/.28);
-  --tool-card-danger:hsl(0 58% 70%);
-  --tool-card-danger-soft:hsl(0 58% 48%/.18);
-  --tool-card-danger-soft-strong:hsl(0 58% 48%/.28)
+  --tool-card-bg:var(--ui-bg-raised);
+  --tool-card-bg-hover:var(--ui-bg-hover);
+  --tool-card-bg-sunken:var(--ui-bg-page);
+  --tool-card-surface:var(--ui-bg-surface);
+  --tool-card-border:var(--ui-border-subtle);
+  --tool-card-border-strong:var(--ui-border-default);
+  --tool-card-text:var(--ui-text-primary);
+  --tool-card-text-muted:var(--ui-text-secondary);
+  --tool-card-text-subtle:var(--ui-text-tertiary);
+  --tool-card-icon:var(--ui-text-tertiary);
+  --tool-card-icon-hover:var(--ui-text-primary);
+  --tool-card-focus:var(--ui-border-strong);
+  --tool-card-shadow:var(--ui-shadow-popover);
+  --tool-card-danger:var(--ui-danger);
+  --tool-card-danger-soft:color-mix(in srgb,var(--ui-danger) 12%,var(--ui-bg-page));
+  --tool-card-danger-soft-strong:color-mix(in srgb,var(--ui-danger) 22%,var(--ui-bg-page))
 }
 
 /* Menus and card surfaces */

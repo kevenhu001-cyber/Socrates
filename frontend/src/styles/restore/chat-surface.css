@@ -372,12 +372,10 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
   }
 }
 
-/* Sidebar surface: the socrates dark theme token resolves to pure black in an
-   older layer, which reads as a hole next to the #212121 page. Keep the rail
-   one step off the page in both modes. */
+/* Sidebar surface stays one neutral step above the charcoal page. */
 @media (max-width: 768px) {
 [data-mode="dark"] #appShell#appShell .sidebar {
-  background: #171717 !important;
+  background: var(--ui-bg-sidebar) !important;
 }
 }
 @media (max-width: 768px) {
@@ -409,8 +407,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
     margin: 0 auto 22px !important;
   }
 
-  /* Desktop keeps the hard color for the page so the conversation surface is
-     not a pure-black band; phones stay on the #000 canvas. The literal
+  /* Desktop and phone surfaces share the charcoal page token. The literal
      repins were retired — themes.css's bridge owns --conversation-page. */
 }
 

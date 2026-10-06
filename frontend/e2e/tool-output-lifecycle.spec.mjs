@@ -279,6 +279,18 @@ test('two visualizations in one run mount once each, in call order', async ({ pa
   expect(probe.removed).toEqual([]);
 });
 
+test('visualization mount safely handles CSS-special tool-call ids', async ({ page }) => {
+  const callId = 'viz"]provider';
+  const body = await openAssistantFixture(page, [
+    userMessage(),
+    assistantMessage([vizCall(callId, 'Escaped provider id')]),
+  ]);
+
+  const card = body.locator('.visualization-card');
+  await expect(card).toHaveCount(1);
+  await expect(card).toContainText('Escaped provider id');
+});
+
 /* ── live transition ──────────────────────────────────────────────────── */
 
 test('a visualization stays visible across the running → result transition', async ({ page }) => {
@@ -506,6 +518,21 @@ test('a broken spec falls back alone and does not take the turn down', async ({ 
   await expect(good).toBeVisible();
   await expect(good.locator('svg path')).not.toHaveCount(0);
   await expect(body.locator('.tool-run-prose')).toContainText('Lead paragraph.');
+});
+
+test('a rejected visualization shows the tool error without mounting its input spec', async ({ page }) => {
+  const rejected = {
+    id: 'bad-viz',
+    name: 'render_visualization',
+    input: BAD_SPEC,
+    output: 'Invalid visualization spec',
+    isError: true,
+    status: 'failed',
+    textOffset: 0,
+  };
+  const body = await openAssistantFixture(page, [userMessage(), assistantMessage([rejected])]);
+  await expect(body.locator('.tool-inline[data-tcid="bad-viz"]')).toHaveAttribute('data-error', '1');
+  await expect(body.locator('.visualization-card')).toHaveCount(0);
 });
 
 /* ── teardown and renderer retry ──────────────────────────────────────── */

@@ -4,6 +4,7 @@
  *
  * Supports: any OpenAI-compatible API (OpenAI, Anthropic via proxy, MiniMax, etc.)
  */
+import { randomUUID } from 'node:crypto';
 
 /* Streaming completions have no server-owned deadline. They continue until
  * the provider settles or the caller explicitly aborts (for example, Stop). */
@@ -667,15 +668,21 @@ export async function streamChatCompletion(
       } catch { /* skip */ }
     }
 
+    const shouldDispatchTools = isToolFinishReason(finishReason) || finishReason == null || finishReason === 'length';
+    const finalizedToolCalls = Array.from(toolCallAcc.values()).map((entry) => ({
+      ...entry,
+      id: entry.id || (shouldDispatchTools ? `call_${randomUUID()}` : undefined),
+    }));
+
     /* P_tool_stream_finalize — emit a final tool_call_delta so the
        client gets the last few bytes that were throttled out by
        _emitToolDelta's time/size guard. Without this, the UI may
        show a code body that's 1-3 characters short of the final
        argument string until the next onToolUse frame arrives. */
     if (typeof onToolCallDelta === 'function') {
-      for (const [idx, entry] of toolCallAcc.entries()) {
+      for (const entry of finalizedToolCalls) {
         try { onToolCallDelta({
-          index: idx,
+          index: entry.__index,
           id: entry.id,
           name: entry.function.name,
           arguments: entry.function.arguments,
@@ -696,9 +703,9 @@ export async function streamChatCompletion(
        'stop'/'content_filter' finishes are honoured literally: a model
        that closed in prose is not invited to run the calls it may have
        streamed speculatively. */
-    if (toolCallAcc.size > 0 && typeof onToolUse === 'function') {
-      if (isToolFinishReason(finishReason) || finishReason == null || finishReason === 'length') {
-        for (const tc of toolCallAcc.values()) {
+    if (finalizedToolCalls.length > 0 && typeof onToolUse === 'function') {
+      if (shouldDispatchTools) {
+        for (const tc of finalizedToolCalls) {
           /* Hand out the protocol shape only — the accumulator's slot index
              and stream-mode state must not leak into the tool-call object
              the pipeline echoes back to the provider. */

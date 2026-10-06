@@ -278,7 +278,7 @@
    Neutral theme + interaction stability
 
    The shell above is intentionally compact, but its legacy cascade still
-   supplied pure-black canvas values and hover transforms to a few controls.
+   supplied near-black canvas values and hover transforms to a few controls.
    These final tokens make the whole app read as one quiet surface system:
    light mode stays airy, dark mode has visible depth, and interaction feedback
    is communicated by color rather than movement.

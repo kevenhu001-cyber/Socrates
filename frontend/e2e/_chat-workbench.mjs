@@ -28,9 +28,7 @@ export async function prepareChatWorkbench(page, options = {}) {
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     if (window.stateStore.read("session")) window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     window.stateStore.dispatch({ type: "state/set", key: "messages", value: Array.isArray(messages) ? messages : [] });
-    document.getElementById('topicSetup')?.classList.add('hidden');
-    document.getElementById('mainInner')?.classList.add('hidden');
-    document.getElementById('chatView')?.classList.remove('hidden');
+    window.__testActivateMainView('chatView');
     document.body.dataset.conversationActive = 'true';
     window.__socratesReactChatBridge?.publish({ type: 'state-synced', reason: 'workbench-fixture' });
   }, {

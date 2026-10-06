@@ -289,9 +289,9 @@
 }
 
 /* Toasts. The legacy skin painted them with --bg-000, which is the page
-   colour itself (pure black on the black dark page), and the error variant
-   with a 12% red wash that let the transcript show through the text. Both
-   now sit on the raised overlay surface like every other floating card. */
+   colour itself, and the error variant with a 12% red wash that let the
+   transcript show through the text. Both now sit on the raised overlay
+   surface like every other floating card. */
 #appShell .msg-toast, .msg-toast {
   border-radius: var(--ui-radius-control, 8px);
   border-color: var(--ui-border-subtle);

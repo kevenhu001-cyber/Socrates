@@ -82,7 +82,7 @@
        frame is not white. The bundled CSS overrides this once it loads.
        The two values mirror `resolveBackground()` in src/ui/tokens.ts;
        the JS adapter in src/ui/tokens.js exports the same strings. */
-    document.documentElement.style.backgroundColor = initialMode === "light" ? '#ffffff' : '#000000';
+    document.documentElement.style.backgroundColor = initialMode === "light" ? '#ffffff' : '#141414';
   }
 })();
 </script>
@@ -487,7 +487,7 @@
           <div class="display-prefs-row">
             <div class="display-prefs-label"><span data-i18n-key="chrome.darkModeBg">Dark mode BG</span></div>
             <div class="display-prefs-bg-picker">
-              <input type="color" id="displayPrefsBgDark" value="#000000" title="Dark mode page background" data-i18n-title="chrome.darkModePageBg">
+              <input type="color" id="displayPrefsBgDark" value="#141414" title="Dark mode page background" data-i18n-title="chrome.darkModePageBg">
               <button type="button" class="display-prefs-bg-reset" id="displayPrefsBgDarkReset" title="Reset dark mode to theme default" data-i18n-title="chrome.resetDarkBg">↺</button>
             </div>
           </div>

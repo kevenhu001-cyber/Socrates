@@ -92,9 +92,8 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   expect((mobileGeometry.composer?.y ?? 0) + (mobileGeometry.composer?.height ?? 0)).toBeLessThanOrEqual(769);
   expect(mobileGeometry.plus?.width).toBe(36);
   expect(mobileGeometry.send?.width).toBe(36);
-  /* The reference phone surface is true black — --ui-bg-page is #000 and
-     the mobile layer pins .main-content to it. */
-  expect(mobileGeometry.background).toBe('rgb(0, 0, 0)');
+  /* The mobile canvas shares the charcoal page surface with desktop. */
+  expect(mobileGeometry.background).toBe('rgb(20, 20, 20)');
 
   await page.locator('#composerToolsBtn').click();
   const toolsMenu = page.locator('#composerToolsMenu');

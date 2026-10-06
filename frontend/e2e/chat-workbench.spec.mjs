@@ -49,13 +49,10 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
   expect(contract.page).not.toBe('');
   expect(contract.surface).not.toBe('');
   expect(contract.mainBackgroundImage).toBe('none');
-  /* The sidebar is page-colored and separated by a hairline, not by a
-     second fill (docs/ref/chatgpt-parity.md). Dark therefore pins both to
-     #000; only light deviates, keeping the sidebar a band against the page
-     so the two read as distinct. Assert the relationship rather than one
-     absolute value so both modes stay covered. */
-  expect(contract.pageBackground).not.toBe('rgba(0, 0, 0, 0)');
-  expect(contract.sidebarBackground).toBe(contract.pageBackground);
+  /* The charcoal page and slightly brighter reference sidebar are adjacent
+     neutral steps separated by a hairline. */
+  expect(contract.pageBackground).toBe('rgb(20, 20, 20)');
+  expect(contract.sidebarBackground).toBe('rgb(30, 30, 30)');
   expect(contract.sidebarBorder).not.toBe('0px');
   expect(contract.topbarHeight).toBeGreaterThanOrEqual(50);
 
