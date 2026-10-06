@@ -67,20 +67,12 @@ export function fireFeedback(
     }
 }
 
-/** Send feedback with optimistic toolbar highlighting. */
+/** Send feedback and acknowledge the action. */
 export function sendFeedback(
   messageId: string,
   rating: string,
-  bar?: Element | null,
 ): void {
   fireFeedback(messageId, rating, null);
-  /* Optimistic UI: highlight the chosen button, dim the other. */
-  if (bar) {
-    const up = bar.querySelector('[data-action="thumbs-up"]');
-    const down = bar.querySelector('[data-action="thumbs-down"]');
-    if (up) up.classList.toggle('active', rating === 'up');
-    if (down) down.classList.toggle('active', rating === 'down');
-  }
   showToast(rating === 'up' ? 'Thanks for the feedback' : "Got it — we'll improve");
 }
 

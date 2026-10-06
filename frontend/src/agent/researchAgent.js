@@ -14,6 +14,7 @@
 import { stateStore } from '../state/store.js';
 import { showToast } from '../ui/toast.js';
 import { fetchPagesForContext } from '../chat/webLinks.js';
+import { fetchWebContext } from '../chat/webSearch.js';
 
 /* Start a deep research session. Returns a Promise that resolves
    when the research is complete and the report has been posted. */
@@ -206,16 +207,14 @@ function _heuristicPlan(query) {
    `sources` contains snippets; the reading phase fetches only the
    deduplicated URLs selected for the report. */
 async function _searchTopic(query) {
-  if (typeof window.fetchWebContext === "function") {
-    try {
-      var res = await window.fetchWebContext(query, { background: false });
-      if (res && res.ok && Array.isArray(res.sources)) {
-        return res.sources.slice(0, 5).map(function (p) {
-          return { url: p.url, title: p.title, snippet: p.snippet, content: p.snippet };
-        });
-      }
-    } catch { /* search failed */ }
-  }
+  try {
+    var res = await fetchWebContext(query, { background: false });
+    if (res && res.ok && Array.isArray(res.sources)) {
+      return res.sources.slice(0, 5).map(function (p) {
+        return { url: p.url, title: p.title, snippet: p.snippet, content: p.snippet };
+      });
+    }
+  } catch { /* search failed */ }
   return [];
 }
 
@@ -409,12 +408,6 @@ function launchDeepResearch() {
   }
   /* Start the research. */
   startDeepResearch(query);
-}
-
-/* Export for window bridge. */
-if (typeof window !== "undefined") {
-  window.startDeepResearch = startDeepResearch;
-  window.launchDeepResearch = launchDeepResearch;
 }
 
 export { startDeepResearch, launchDeepResearch };

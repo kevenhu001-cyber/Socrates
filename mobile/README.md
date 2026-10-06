@@ -1,6 +1,8 @@
-# Socrates universal React Native client
+# Socrates frozen React Native client
 
-`mobile/` is the Expo + React Native application. Native React Native
+`mobile/` is frozen. Do not add features, visual parity work, or refactors here. Only release-blocking security, crash, or data-loss fixes are allowed; new Universal App work belongs in `apps/socrates/` and `packages/`.
+
+`mobile/` is the existing Expo + React Native application. Native React Native
 navigation is now the primary Android entry point: authentication, home,
 chat, tutor mode, library, exams, search, settings, sharing, and artifact
 preview are rendered with native components. The complex workspace and HTML
