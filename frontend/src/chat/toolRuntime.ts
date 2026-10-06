@@ -186,7 +186,7 @@ interface ToolRuntimeOptions {
   updateMessage: (patch: Pick<ToolMessage, 'toolCalls' | '_toolRunRev'>) => void;
   /** Accepted for compatibility; ignored — nothing is mounted. */
   ensureToolContainer?: () => HTMLElement;
-  onToolActivity?: () => void;
+  onToolActivity?: (toolName?: string) => void;
   /** Accepted for compatibility; ignored — retry buttons live in React. */
   onSearchRetry?: (query: string) => void;
   requestAnimationFrame?: (callback: () => void) => number;
@@ -908,7 +908,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     /* onToolActivity may retire the live status through an immutable message
      * update. Re-read the active entry afterwards so toolCalls never land on
      * the superseded object captured before that update. */
-    onToolActivity();
+    onToolActivity(call.name);
     const message = activeMessage();
     if (!message) return null;
     const requestedId = String(call.id || ('tc-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8)));

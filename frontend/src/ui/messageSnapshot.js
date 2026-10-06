@@ -31,7 +31,8 @@ export function setReactLiveStatus(message, status) {
       && previous.label === status.label
       && previous.state === status.state
       && previous.error === status.error
-      && previous.elapsedSec === status.elapsedSec) return;
+      && previous.elapsedSec === status.elapsedSec
+      && previous.toolName === status.toolName) return;
 
   const messageId = String(message.clientId || message.id || '');
   const updated = updateMessageSnapshot(message, {

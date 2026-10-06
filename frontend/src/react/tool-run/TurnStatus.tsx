@@ -6,15 +6,15 @@
  * so a turn can never show two "working on it" lines at once.
  *
  * P_thinking-unified — every live phase (waiting for the first token,
- * streaming reasoning, tool-running, retrying) renders the SAME markup:
- * one `span.thinking-status` pill with the shared 14px spinner and a flat
- * label. Only the label text (and the quiet elapsed cue) changes between
- * phases, so React updates the text in place: no remount, no box change,
- * no visible jump when the first token lands or reasoning starts. The
+ * streaming reasoning, tool-running, retrying) renders the SAME pill shape:
+ * one `span.thinking-status` with a flat label. Waiting/thinking/retrying
+ * use the shared 14px spinner; a deferred tool uses its tool-specific glyph.
+ * The box stays stable when the first token lands or reasoning starts. The
  * error / stopped phases keep their own block — they replace the answer,
  * not continue it.
  */
 import { getLegacyActions, i18n } from '../legacy/gateway.ts';
+import { toolIcon } from '../../ui/icons/toolIcons.js';
 import type { LiveTurnStatus } from '../types/domain';
 
 export interface TurnStatusProps {
@@ -68,7 +68,9 @@ function StatusLine({ status, messageId }: TurnStatusProps) {
       onClick={onOpen}
       onKeyDown={clickable ? panelKeyHandler(messageId) : undefined}
     >
-      <ThinkingSpinner />
+      {status.phase === 'tool-running' && status.toolName
+        ? <span className="tool-inline-tool-icon" aria-hidden="true" dangerouslySetInnerHTML={{ __html: toolIcon(status.toolName) }} />
+        : <ThinkingSpinner />}
       <span className="thinking-status-label" aria-live="polite">
         {status.label}
       </span>

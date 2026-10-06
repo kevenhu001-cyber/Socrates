@@ -504,7 +504,7 @@ export function addStreamingMessage(opts){
          (those never pass through the finish() write-back above). */
       return _roff;
     },
-    onToolActivity:function(){
+    onToolActivity:function(toolName){
       /* P_tool-order-defer — the row may be deferred behind an unfinished
          paragraph (it mounts once the paragraph completes). Until then this
          status line is the only visible proof of work; AssistantTurn hides
@@ -513,7 +513,7 @@ export function addStreamingMessage(opts){
       noteStreamGrowth();
       var _cur=statusChrome.liveMessage()&&statusChrome.liveMessage()._liveStatus;
       if(!_cur||(_cur.phase!=="error"&&_cur.phase!=="retrying")){
-        setLiveStatus({phase:"tool-running",label:_t("tool.running")});
+        setLiveStatus({phase:"tool-running",label:_t("tool.running"),toolName:toolName||(_cur&&_cur.toolName)});
       }
       hideThinkCtl();
       /* A tool call counts as first visible activity, so retire the

@@ -50,11 +50,11 @@ function RowHead({ view, elapsedMs }: { view: ToolRunView; elapsedMs: number }) 
   const running = view.state === 'running';
   return (
     <>
-      <span className="tool-inline-tool-icon" aria-hidden="true">
-        {running
-          ? <span className="tool-inline-spinner" />
-          : <span dangerouslySetInnerHTML={{ __html: toolIcon(view.name) }} />}
-      </span>
+      <span
+        className="tool-inline-tool-icon"
+        aria-hidden="true"
+        dangerouslySetInnerHTML={{ __html: toolIcon(view.name) }}
+      />
       <span
         className={`tool-inline-label${running ? ' shimmer-text' : ''}${view.mono ? ' is-mono' : ''}`}
         title={view.label}

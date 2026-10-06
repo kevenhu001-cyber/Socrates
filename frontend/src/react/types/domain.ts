@@ -219,6 +219,7 @@ export interface LegacyChatMessage {
  */
 export interface LiveTurnStatus {
   phase: 'waiting' | 'thinking' | 'retrying' | 'error' | 'stopped' | 'tool-running';
+  toolName?: string;
   /** Already-translated copy — the writer knows the app language. */
   label?: string;
   /** Pill state: '' keeps the shimmer, 'done' / 'error' stop it. */
