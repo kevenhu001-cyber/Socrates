@@ -503,16 +503,30 @@ function extensionIsSafe(source, allowScripts) {
   return true;
 }
 
+function standaloneSvgSource(source) {
+  var normalized = String(source || '').replace(/^\uFEFF?\s*<\?xml[^?]*\?>\s*/i, '').trim();
+  if (!/^<svg\b/i.test(normalized)) return '';
+  if (!/<\/svg>\s*$/i.test(normalized) && !/^<svg\b[^>]*\/>\s*$/i.test(normalized)) return '';
+  return normalized;
+}
+
 function renderExtension(spec, cardId) {
-  var source = spec.payload.source;
+  var source = String(spec.payload.source || '');
   var allowScripts = spec.template === 'interactive_simulation';
   if (!extensionIsSafe(source, allowScripts)) return '<div class="visualization-fallback">此扩展内容未通过本地安全检查。标题和数据摘要仍可用。</div>';
   var nonce = 'viz-' + cardId + '-' + Math.random().toString(36).slice(2);
   var csp = "default-src 'none'; img-src data: blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; font-src https: data:; form-action 'none'; base-uri 'none'";
   /* P_perf-self-host — sandboxed extension iframes use the platform font
      stack instead of blocking on fonts.googleapis.com. */
-  var fontPreload =
-    '<style>body{font-family:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;margin:0;padding:0}</style>';
+  var svgSource = spec.template === 'svg_illustration' ? standaloneSvgSource(source) : '';
+  var renderSource = svgSource
+    ? '<img class="visualization-svg-illustration" alt="' + esc(spec.accessibilitySummary) + '" src="data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgSource) + '">'
+    : source.replace(/^\uFEFF?\s*<\?xml[^?]*\?>\s*/i, '');
+  var fontPreload = '<style>body{font-family:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;margin:0;padding:0}'
+    + (spec.template === 'svg_illustration'
+      ? 'html,body{width:100%;height:100%;margin:0;padding:0;overflow:hidden;background:transparent}body{display:grid;place-items:center;background:transparent}svg{max-width:100%;max-height:100%}.visualization-svg-illustration{display:block;max-width:100%;max-height:100%;object-fit:contain}'
+      : '')
+    + '</style>';
   /* P_ext-viz-error — an interactive_simulation script throwing inside
      the sandbox used to be invisible: the iframe stayed silent and the
      card looked permanently empty. Report error/unhandledrejection to
@@ -524,7 +538,7 @@ function renderExtension(spec, cardId) {
     'window.addEventListener("unhandledrejection",function(e){post({type:"socrates-viz-error",cardId:' + JSON.stringify(cardId) + ',nonce:' + JSON.stringify(nonce) + ',message:String((e&&e.reason&&(e.reason.message||e.reason))||"unhandled rejection").slice(0,300)})});' +
     'post({type:"socrates-viz-ready",cardId:' + JSON.stringify(cardId) + ',nonce:' + JSON.stringify(nonce) + '})' +
     '})()<\/script>';
-  var documentSource = '<!doctype html><meta http-equiv="Content-Security-Policy" content="' + csp + '">' + fontPreload + headScript + source;
+  var documentSource = '<!doctype html><meta http-equiv="Content-Security-Policy" content="' + csp + '">' + fontPreload + headScript + renderSource;
   return '<iframe class="visualization-extension" sandbox="allow-scripts" title="' + esc(spec.title) + '" data-card-id="' + esc(cardId) + '" data-nonce="' + esc(nonce) + '" srcdoc="' + esc(documentSource) + '"></iframe>';
 }
 

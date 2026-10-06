@@ -9,10 +9,11 @@ const S = (template, payload) => ({ version: 1, template, title: 'T ' + template
 const nodes = [{ id: 'a', label: 'Start' }, { id: 'b', label: 'Middle' }, { id: 'c', label: 'End' }];
 const edges = [{ from: 'a', to: 'b', label: 'go' }, { from: 'b', to: 'c' }];
 const CASES = [
-  { spec: S('radar', { categories: ['a', 'b', 'c', 'd'], series: [{ name: 'x', data: [1, 2, 3, 4] }] }), content: 'svg *', actions: ['table', 'reset', 'download', 'fullscreen'] },
+  { spec: { ...S('radar', { categories: ['a', 'b', 'c', 'd'], series: [{ name: 'x', data: [1, 2, 3, 4] }] }), caption: 'Optional explanatory note.' }, content: 'svg *', actions: ['table', 'reset', 'download', 'fullscreen'] },
   { spec: S('flowchart', { nodes, edges }), content: 'svg *', actions: ['table', 'download', 'fullscreen'] },
   { spec: S('timeline', { items: [{ label: '1900', detail: 'x' }, { label: '1950', detail: 'y' }] }), content: 'svg *', actions: ['table', 'download', 'fullscreen'], tableRows: 2 },
   { spec: S('interactive_simulation', { source: '<div id="x">hi</div><script>document.getElementById("x").textContent="ok"</script>' }), content: 'iframe[data-ready="true"]', actions: ['fullscreen'] },
+  { spec: S('svg_illustration', { source: '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800"><rect width="1200" height="800" fill="#336699"/><circle cx="600" cy="400" r="160" fill="#fff"/></svg>' }), content: 'iframe[data-ready="true"]', actions: ['fullscreen'] },
   { spec: S('geometry_3d', { objects: [{ type: 'box' }, { type: 'sphere', position: [2, 0, 0] }] }), content: 'canvas', actions: ['reset', 'download', 'fullscreen'] },
 ];
 
@@ -45,6 +46,25 @@ for (const { spec, content, actions, tableRows } of CASES) {
     await expect(card).toBeVisible({ timeout: 15000 });
     await expect(card.locator('.visualization-stage ' + content).first()).toBeAttached({ timeout: 15000 });
     await expect(card.locator('.visualization-fallback')).toHaveCount(0);
+    if (spec.caption) {
+      await expect(card.locator('h3')).toHaveText(spec.title);
+      await expect(card.locator('.visualization-header .visualization-caption')).toHaveCount(0);
+      await expect(card.locator('.visualization-figure > .visualization-caption')).toHaveText(spec.caption);
+    }
+    if (spec.template === 'svg_illustration') {
+      const illustration = card.frameLocator('iframe.visualization-extension').locator('img.visualization-svg-illustration');
+      await expect(illustration).toHaveCount(1);
+      await expect(illustration).toHaveAttribute('alt', spec.accessibilitySummary);
+      const bounds = await illustration.evaluate((image) => {
+        const rect = image.getBoundingClientRect();
+        return { width: rect.width, height: rect.height, viewportWidth: window.innerWidth, viewportHeight: window.innerHeight };
+      });
+      expect(bounds.width).toBeGreaterThan(0);
+      expect(bounds.height).toBeGreaterThan(0);
+      expect(bounds.width).toBeLessThanOrEqual(bounds.viewportWidth + 1);
+      expect(bounds.height).toBeLessThanOrEqual(bounds.viewportHeight + 1);
+      await card.screenshot({ path: 'test-results/svg-illustration-fit.png' });
+    }
 
     const visible = await card.locator('[data-viz-action]').evaluateAll((els) => els.filter((b) => !b.hidden).map((b) => b.dataset.vizAction));
     expect(visible).toEqual(actions);

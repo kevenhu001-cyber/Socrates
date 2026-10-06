@@ -58,11 +58,42 @@ test('visual spec repairs common function and graph aliases', () => {
   assert.equal(graph.spec.payload.edges[0].from, 'a');
 });
 
+test('caption is optional and remains separate from the chart title', () => {
+  const withCaption = validateVisualizationSpec({
+    ...lnSpec,
+    title: 'Monthly revenue',
+    caption: 'Values are adjusted for inflation.',
+  });
+  const withoutCaption = validateVisualizationSpec(lnSpec);
+
+  assert.equal(withCaption.ok, true);
+  assert.equal(withCaption.spec.title, 'Monthly revenue');
+  assert.equal(withCaption.spec.caption, 'Values are adjusted for inflation.');
+  assert.equal(withoutCaption.ok, true);
+  assert.equal(withoutCaption.spec.caption, undefined);
+  assert.equal(VISUALIZATION_TOOL.function.parameters.required.includes('caption'), false);
+  assert.match(VISUALIZATION_TOOL.function.parameters.properties.caption.description, /optional note displayed beneath/i);
+});
+
 test('visual tool returns structured field errors instead of a Python fallback', () => {
   const result = executeVisualization({ ...lnSpec, payload: { functions: [{ expression: '' }] } });
   assert.equal(result.status, 'failed');
   assert.equal(result.errorCode, 'visual_spec_invalid');
   assert.ok(Array.isArray(result.detail));
+});
+
+test('static SVG illustrations accept standalone XML documents', () => {
+  const source = '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800"><rect width="1200" height="800"/></svg>';
+  const result = validateVisualizationSpec({
+    version: 1,
+    template: 'svg_illustration',
+    title: 'Circle',
+    accessibilitySummary: 'A circle illustration.',
+    payload: { source },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.spec.payload.source, source);
 });
 
 test('visual spec caps graph nodes and extension source', () => {
