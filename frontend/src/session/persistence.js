@@ -203,7 +203,8 @@ function doSave(){
   stateStore.dispatch({type:"state/set",key:"currentSessionId",value:sessionId});
   toggleShareBtn();
   /* Kick off AI title generation based on the user's first input. */
-  if(!stateStore.read("sessionTitle"))generateSessionTitle();
+  generateSessionTitle();
+  payload.title=stateStore.read("sessionTitle")||payload.title;
   /* Mark Cmd-K search index dirty instead of rebuilding during interaction. */
   markCmdKIndexDirty();
   /* Fire-and-forget write to server. The local SERVER_SESSIONS cache is

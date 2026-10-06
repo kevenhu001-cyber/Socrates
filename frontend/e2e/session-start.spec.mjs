@@ -70,6 +70,59 @@ test('typing into topic input enables the Start button; clicking does not throw'
   expect(realErrors, `startSession() threw:\n${realErrors.join('\n')}`).toEqual([]);
 });
 
+test('the first prompt is saved under a short title in Recents', async ({ page }) => {
+  const topic = '理解机器学习基本概念以及应用';
+  let savedSession = null;
+  await mockAuthedApp(page);
+  await page.route('**/api/**/sessions**', async (route) => {
+    const request = route.request();
+    const url = request.url().replace('/api/v2/', '/api/');
+    if (request.method() === 'POST' && /\/api\/sessions(?:\?|$)/.test(url)) {
+      const payload = request.postDataJSON();
+      const now = new Date().toISOString();
+      savedSession = {
+        id: payload.id,
+        title: payload.title,
+        topic: payload.topic,
+        mode: payload.mode,
+        phase: payload.phase,
+        updatedAt: now,
+        createdAt: now,
+      };
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(savedSession),
+      });
+    }
+    if (request.method() === 'GET') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ sessions: savedSession ? [savedSession] : [] }),
+      });
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+  });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+
+  await page.evaluate(async (firstPrompt) => {
+    window.stateStore.dispatch({ type: 'state/set', key: 'topic', value: firstPrompt });
+    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: null });
+    window.stateStore.dispatch({ type: 'state/set', key: 'sessionTitle', value: null });
+    window.stateStore.dispatch({
+      type: 'session/replace-messages',
+      payload: [{ clientId: 'first-prompt', role: 'user', rawText: firstPrompt, html: null }],
+    });
+    await window.saveCurrentSession();
+  }, topic);
+
+  expect(savedSession?.title).toBe('理解机器学习基本');
+  await expect(page.locator('.recent-item-text').first()).toHaveText('理解机器学习基本');
+});
+
 test('pressing Enter in the topic input starts the session', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
