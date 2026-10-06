@@ -5,48 +5,8 @@
  * Supports: any OpenAI-compatible API (OpenAI, Anthropic via proxy, MiniMax, etc.)
  */
 
-/* LLM streaming budgets.
- *
- * LLM_TOTAL_TIMEOUT_MS — hard ceiling on the entire upstream request.
- *   0 (default) = no ceiling; set it when a deployment needs a hard cap so
- *   a stuck upstream cannot hold a worker forever. Kept off by default
- *   because a reasoning model may legitimately think for minutes.
- *
- * LLM_SILENCE_TIMEOUT_MS — aborts the upstream fetch when NO bytes arrive
- *   for this many ms. Defaults to 120 s: a live reasoning stream emits
- *   deltas continuously, so 2 min of total silence means a dead
- *   connection, not deep thought. Set to 0 to disable. The watchdog is
- *   deliberately armed only AFTER the first chunk (see P_silence_fix
- *   below), so it does not bound the initial thinking latency.
- *
- * LLM_FIRST_BYTE_TIMEOUT_MS — bounds the wait for the FIRST byte,
- *   covering both the POST and the initial thinking burst. Defaults to
- *   180 s, comfortably above the 60–120 s that reasoning models
- *   (DeepSeek R1, QwQ, MiniMax reasoning variants) routinely take
- *   before their first token. Without it, a provider that accepts the
- *   socket but never emits a byte holds the request forever when
- *   LLM_TOTAL_TIMEOUT_MS is 0. Set to 0 to disable. */
-function readTimeoutEnv(name: string, fallback: number): number {
-  const raw = process.env[name];
-  if (raw == null || raw === '') return fallback;
-  const parsed = Number.parseInt(raw, 10);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
-}
-const LLM_TOTAL_TIMEOUT_MS = readTimeoutEnv('LLM_TOTAL_TIMEOUT_MS', 0);
-const LLM_SILENCE_TIMEOUT_MS = readTimeoutEnv('LLM_SILENCE_TIMEOUT_MS', 120000);
-/* Read per call rather than cached at module load, so a deployment can
- * tune the budget without restarting the process. */
-function llmFirstByteTimeoutMs(): number {
-  return readTimeoutEnv('LLM_FIRST_BYTE_TIMEOUT_MS', 180000);
-}
-
-/** Aborts when any of the given signals aborts; never aborts on its own. */
-function combineSignals(...candidates: Array<AbortSignal | null | undefined>): AbortSignal {
-  const signals = candidates.filter((item): item is AbortSignal => item != null);
-  if (signals.length === 0) return new AbortController().signal;
-  if (signals.length === 1) return signals[0];
-  return AbortSignal.any(signals);
-}
+/* Streaming completions have no server-owned deadline. They continue until
+ * the provider settles or the caller explicitly aborts (for example, Stop). */
 /* P_provider-max-tokens — 32K was larger than the output budget accepted by
  * a number of OpenAI-compatible gateways.  Keep the public request ceiling
  * at 32K, but use a conservative default when the caller did not choose a
@@ -376,35 +336,6 @@ export async function streamChatCompletion(
 ) {
   const { apiBase, apiKey, signal, tools } = opts;
 
-  const totalSignal = LLM_TOTAL_TIMEOUT_MS > 0 ? AbortSignal.timeout(LLM_TOTAL_TIMEOUT_MS) : null;
-  const silenceController = new AbortController();
-  let silenceTimer: ReturnType<typeof setTimeout> | null = null;
-  const armSilenceTimer = () => {
-    if (LLM_SILENCE_TIMEOUT_MS <= 0) return;
-    if (silenceTimer) clearTimeout(silenceTimer);
-    silenceTimer = setTimeout(() => {
-      try { silenceController.abort('silence-timeout'); } catch { /* ignore */ }
-    }, LLM_SILENCE_TIMEOUT_MS);
-  };
-  /* The first-byte budget covers the POST + initial thinking latency,
-   * where the silence watchdog is intentionally not armed. A separate
-   * controller keeps the abort classifiable as "provider never
-   * responded" rather than a mid-stream stall. */
-  const firstByteMs = llmFirstByteTimeoutMs();
-  const firstByteController = new AbortController();
-  let firstByteTimer: ReturnType<typeof setTimeout> | null = null;
-  if (firstByteMs > 0) {
-    firstByteTimer = setTimeout(() => {
-      try { firstByteController.abort('first-byte-timeout'); } catch { /* ignore */ }
-    }, firstByteMs);
-  }
-  const mergedSignal = combineSignals(
-    signal,
-    totalSignal,
-    LLM_SILENCE_TIMEOUT_MS > 0 ? silenceController.signal : null,
-    firstByteMs > 0 ? firstByteController.signal : null,
-  );
-
   try {
     if (Array.isArray(tools) && tools.length > 0) {
       /* P_privacy-leak — don't log the upstream model name. The
@@ -442,7 +373,7 @@ export async function streamChatCompletion(
               'Accept-Encoding': 'identity',
             },
             body: JSON.stringify(variant.body),
-            signal: mergedSignal,
+            signal,
           });
           if (response.ok) {
             successfulVariant = variant;
@@ -532,15 +463,6 @@ export async function streamChatCompletion(
     const _toolSlotById = new Map<string, number>();
     let _nextToolSlot = 0;
     let _lastToolSlot = -1;
-    /* P_silence_fix — do NOT arm the silence watchdog before the first
-       read. Reasoning models (DeepSeek R1, QwQ, MiniMax reasoning variants)
-       routinely think for 60-120 s before emitting their first token. Arming
-       the watchdog before the first reader.read() would count that initial
-       thinking latency against the silence budget and abort the stream
-       prematurely. Instead, we arm AFTER the first chunk arrives, and
-       re-arm after every subsequent chunk. */
-    let _firstChunkArrived = false;
-
     /* P_tool_stream_emit — throttle the tool_call_delta emission so a
        high-frequency upstream doesn't flood the SSE channel. We coalesce
        the per-delta callbacks to at most one per ~30 ms (or every 64
@@ -616,21 +538,6 @@ export async function streamChatCompletion(
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      /* P_silence_fix — arm the watchdog on the first real chunk
-         (not before). The initial thinking burst is bounded by the
-         first-byte timer instead, which is cleared here. After the
-         first chunk, the watchdog guards against genuine mid-stream
-         stalls. */
-      if (!_firstChunkArrived) {
-        _firstChunkArrived = true;
-        if (firstByteTimer) { clearTimeout(firstByteTimer); firstByteTimer = null; }
-        armSilenceTimer();
-      } else {
-        /* Reset the silence timer: we just got bytes, the connection
-           is alive. If the model stalls for >LLM_SILENCE_TIMEOUT_MS
-           with no bytes between chunks, we'll time out. */
-        armSilenceTimer();
-      }
       if (!value || value.byteLength === 0) continue;
 
       buffer += decoder.decode(value, { stream: true });
@@ -760,9 +667,6 @@ export async function streamChatCompletion(
       } catch { /* skip */ }
     }
 
-    if (silenceTimer) clearTimeout(silenceTimer);
-    if (firstByteTimer) clearTimeout(firstByteTimer);
-
     /* P_tool_stream_finalize — emit a final tool_call_delta so the
        client gets the last few bytes that were throttled out by
        _emitToolDelta's time/size guard. Without this, the UI may
@@ -807,43 +711,14 @@ export async function streamChatCompletion(
 
     onDone({ finishReason, usage: providerUsage });
   } catch (err) {
-    if (silenceTimer) clearTimeout(silenceTimer);
-    if (firstByteTimer) clearTimeout(firstByteTimer);
-    /* Classify by the controllers' signals, not `err.name`: undici
-       rejects with the RAW abort reason, which for our string reasons
-       ('silence-timeout', 'first-byte-timeout', 'turn_interrupted') is a
-       bare string with no .name, and AbortSignal.timeout() rejects with a
-       TimeoutError — neither matches 'AbortError'. Matching on the name
-       is why every timeout and client disconnect surfaced upstream as
-       "LLM error: undefined". */
-    if (signal && signal.aborted) {
-      onDone({ finishReason: null }); // Caller aborted (disconnect / Stop) — clean close
-    } else if (firstByteController.signal.aborted) {
-      onError(new Error(`LLM request timed out: no response bytes for ${firstByteMs / 1000} s`));
-    } else if (silenceController.signal.aborted) {
-      onError(new Error(`LLM stream stalled: no data for ${LLM_SILENCE_TIMEOUT_MS / 1000} s`));
-    } else if (totalSignal && totalSignal.aborted) {
-      onError(new Error(`LLM request timed out after ${LLM_TOTAL_TIMEOUT_MS / 1000} s`));
-    } else if (mergedSignal.aborted || (err as Error | undefined)?.name === 'AbortError') {
-      /* An abort we cannot attribute to a configured deadline — treat it
-         as a closed connection rather than an upstream failure. */
+    if ((signal && signal.aborted) || (err as Error | undefined)?.name === 'AbortError') {
       onDone({ finishReason: null });
     } else {
-      /* fetch/undici can reject with a raw abort-reason string or another
-         non-Error value; normalize so onError always receives a real
-         Error and "LLM error: undefined" cannot recur. */
       const normalized = err instanceof Error
         ? err
         : new Error(typeof err === 'string' && err.length > 0 ? err : 'LLM request failed');
       onError(normalized);
     }
-  } finally {
-    /* The early-error returns above (`!response.ok`, empty body, aborted
-     * signal) skip both clear sites; a live first-byte timer would pin the
-     * event loop for its full duration. This is the single guaranteed
-     * cleanup point for every exit path. */
-    if (silenceTimer) clearTimeout(silenceTimer);
-    if (firstByteTimer) clearTimeout(firstByteTimer);
   }
 }
 
@@ -859,13 +734,6 @@ export async function streamChatCompletion(
 export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
   const { apiBase, apiKey, signal, tools } = opts;
 
-  /* Only the caller's signal and the optional operator-configured total
-     deadline bound this request; there is no implicit server-side cap. */
-  const mergedSignal = combineSignals(
-    signal,
-    LLM_TOTAL_TIMEOUT_MS > 0 ? AbortSignal.timeout(LLM_TOTAL_TIMEOUT_MS) : null,
-  );
-
   let response: Response | undefined;
   const variants = requestBodyVariants(opts, false);
   let successfulVariant: (typeof variants)[number] | null = null;
@@ -879,7 +747,7 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
         'Accept-Encoding': 'identity',
       },
       body: JSON.stringify(variant.body),
-      signal: mergedSignal,
+      signal,
     });
     if (response.ok) {
       successfulVariant = variant;

@@ -222,7 +222,7 @@ function doneLabel(call: ToolCallLike): RunLabel {
     const n = resultCount(call);
     const q = queryOf(call.input);
     if (n > 0) meta.push(n === 1 ? translate('tool.nSourceOne', '1 source') : tf('tool.nSources', '{n} sources', { n }));
-    if (q) return { text: tf('tool.searchedFor', 'Searched "{query}"', { query: clip(q) }), meta };
+    if (q) return { text: tf('tool.searchedFor', 'Searched for “{query}”', { query: clip(q) }), meta };
     return {
       text: n > 0
         ? tf('tool.searchDone', 'Found {n} web results', { n })

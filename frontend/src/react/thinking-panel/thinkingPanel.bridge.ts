@@ -1,36 +1,9 @@
-/**
- * Thinking panel bridge — M2 single-bridge migration.
- *
- * Carries the reasoning text stream that the side panel / bottom sheet
- * renders. The legacy `chat/toolRuntime.ts` publishers call
- * `window.__socratesThinkingPanelBridge.publish(event)`
- * and `.publishThinkingDelta(messageId, text)` for high-frequency
- * reasoning updates.
- *
- * Why this bridge does not use `createImmutableBridge` directly
- *  - The reasoning stream coalesces within an animation frame but
- *    keeps the LAST text rather than the last action, and the
- *    `thinkingPanel.test.mjs` regression suite asserts the exact
- *    RAF-throttle + last-text-wins behaviour.
- *  - `publishThinkingDelta(messageId, text)` is a parallel write
- *    surface (the stream controller's hot path) that needs to share
- *    the same commit queue as `publish(...)`. The factory has one
- *    pending-action slot; we need a separate text slot.
- *  - We keep the custom RAF loop here and still expose the
- *    factory-shaped bridge interface (`getSnapshot`, `dispatch`,
- *    `subscribe`) so React hooks can use `useBridge(bridge)`.
- *
- * M2 conventions
- *  - `dispatch` and `publish` both route through the same RAF loop;
- *    `publish` is the legacy alias retained for pre-React callers.
- *  - `publishThinkingDelta` is preserved verbatim — it is a
- *    documented hot-path entry on the legacy bridge.
- *  - React subscribers use `useBridge(bridge)` directly.
- */
-
 import type { ImmutableBridge } from '../../lib/bridge/createImmutableBridge.ts';
 import { useBridge } from '../../lib/bridge/useBridge.ts';
+import { toolRunLabel } from '../tool-run/labels.js';
+import type { ToolCallLike } from '../tool-run/labels.js';
 import type {
+  ThinkingPanelActivity,
   ThinkingPanelBridge,
   ThinkingPanelEvent,
   ThinkingPanelSnapshot,
@@ -38,10 +11,13 @@ import type {
 
 type Listener = () => void;
 
+type ToolActivityEvent = Extract<ThinkingPanelEvent, { type: 'tool-activity' }>;
+
+const EMPTY_ACTIVITIES: readonly ThinkingPanelActivity[] = Object.freeze([]);
 const IDLE: ThinkingPanelSnapshot = Object.freeze({
   open: false,
   messageId: null,
-  text: '',
+  activities: EMPTY_ACTIVITIES,
   streaming: false,
   revision: 0,
   lastEvent: 'turn-start',
@@ -50,8 +26,22 @@ const IDLE: ThinkingPanelSnapshot = Object.freeze({
 let snapshot: ThinkingPanelSnapshot = IDLE;
 const listeners = new Set<Listener>();
 
-let pendingDelta: { messageId: string; text: string } | null = null;
-let pendingDeltaFrame: number | null = null;
+function activityFromEvent(event: ToolActivityEvent): ThinkingPanelActivity {
+  const call: ToolCallLike = {
+    id: event.id,
+    name: event.name,
+    input: event.input,
+    output: event.output,
+    results: event.results,
+    status: event.status,
+  };
+  return Object.freeze({
+    id: event.id,
+    toolName: event.name,
+    label: toolRunLabel(call, event.state).text,
+    state: event.state,
+  });
+}
 
 function commit(event: ThinkingPanelEvent): void {
   let next: Omit<ThinkingPanelSnapshot, 'revision'>;
@@ -60,34 +50,44 @@ function commit(event: ThinkingPanelEvent): void {
       next = {
         open: snapshot.open,
         messageId: event.messageId,
-        text: '',
-        streaming: true,
-        lastEvent: event.type,
-      };
-      break;
-    case 'thinking-delta':
-      next = {
-        open: snapshot.open,
-        messageId: event.messageId,
-        text: event.text,
+        activities: snapshot.messageId === event.messageId ? snapshot.activities : EMPTY_ACTIVITIES,
         streaming: true,
         lastEvent: event.type,
       };
       break;
     case 'thinking-end':
+      if (snapshot.messageId !== null && event.messageId !== snapshot.messageId) return;
       next = {
         open: snapshot.open,
-        messageId: snapshot.messageId ?? event.messageId,
-        text: snapshot.text,
+        messageId: event.messageId,
+        activities: snapshot.activities,
         streaming: false,
         lastEvent: event.type,
       };
       break;
+    case 'tool-activity': {
+      if (snapshot.messageId !== null && event.messageId !== snapshot.messageId) return;
+      const activities = snapshot.messageId === event.messageId
+        ? snapshot.activities.slice()
+        : [];
+      const item = activityFromEvent(event);
+      const index = activities.findIndex((activity) => activity.id === item.id);
+      if (index >= 0) activities[index] = item;
+      else activities.push(item);
+      next = {
+        open: snapshot.open,
+        messageId: event.messageId,
+        activities: Object.freeze(activities),
+        streaming: event.state === 'done' || event.state === 'error',
+        lastEvent: event.type,
+      };
+      break;
+    }
     case 'panel-open':
       next = {
         open: true,
         messageId: event.messageId ?? snapshot.messageId,
-        text: snapshot.text,
+        activities: snapshot.activities,
         streaming: snapshot.streaming,
         lastEvent: event.type,
       };
@@ -96,7 +96,7 @@ function commit(event: ThinkingPanelEvent): void {
       next = {
         open: false,
         messageId: snapshot.messageId,
-        text: snapshot.text,
+        activities: snapshot.activities,
         streaming: snapshot.streaming,
         lastEvent: event.type,
       };
@@ -105,7 +105,7 @@ function commit(event: ThinkingPanelEvent): void {
       next = {
         open: false,
         messageId: null,
-        text: '',
+        activities: EMPTY_ACTIVITIES,
         streaming: false,
         lastEvent: event.type,
       };
@@ -118,51 +118,8 @@ function commit(event: ThinkingPanelEvent): void {
   listeners.forEach((listener) => listener());
 }
 
-function flushPendingDelta(): void {
-  if (!pendingDelta) return;
-  const delta = pendingDelta;
-  pendingDelta = null;
-  if (pendingDeltaFrame != null) {
-    const raf = typeof requestAnimationFrame === 'function'
-      ? requestAnimationFrame
-      : null;
-    if (raf) cancelAnimationFrame(pendingDeltaFrame);
-    pendingDeltaFrame = null;
-  }
-  commit({ type: 'thinking-delta', messageId: delta.messageId, text: delta.text });
-}
-
-function schedulePendingDelta(): void {
-  if (pendingDeltaFrame != null) return;
-  const raf = typeof requestAnimationFrame === 'function'
-    ? requestAnimationFrame
-    : null;
-  if (raf) {
-    pendingDeltaFrame = raf(flushPendingDelta);
-  } else {
-    pendingDeltaFrame = window.setTimeout(flushPendingDelta, 100) as unknown as number;
-  }
-}
-
 function publish(event: ThinkingPanelEvent): void {
-  if (event.type === 'thinking-delta') {
-    if (snapshot.messageId !== null && event.messageId !== snapshot.messageId) return;
-    if (event.messageId === snapshot.messageId && event.text === snapshot.text) return;
-    pendingDelta = { messageId: event.messageId, text: event.text };
-    schedulePendingDelta();
-    return;
-  }
-  if (event.type === 'thinking-end'
-    && snapshot.messageId !== null
-    && event.messageId !== snapshot.messageId) {
-    return;
-  }
-  if (pendingDelta) flushPendingDelta();
   commit(event);
-}
-
-function publishThinkingDelta(messageId: string, text: string): void {
-  publish({ type: 'thinking-delta', messageId, text });
 }
 
 function getSnapshot(): ThinkingPanelSnapshot {
@@ -176,32 +133,17 @@ function subscribe(listener: Listener): () => void {
   };
 }
 
-const thinkingPanelBridge: ImmutableBridge<
-  ThinkingPanelSnapshot,
-  ThinkingPanelEvent
-> & {
+const thinkingPanelBridge: ImmutableBridge<ThinkingPanelSnapshot, ThinkingPanelEvent> & {
   publish: (event: ThinkingPanelEvent) => void;
-  publishThinkingDelta: (messageId: string, text: string) => void;
   __resetForTests: () => void;
 } = {
   getSnapshot,
   dispatch: publish,
   publish,
-  publishThinkingDelta,
   subscribe,
-  flush: () => {
-    if (pendingDelta) flushPendingDelta();
-  },
+  flush: () => {},
   __resetForTests: () => {
     snapshot = IDLE;
-    pendingDelta = null;
-    if (pendingDeltaFrame != null) {
-      const raf = typeof requestAnimationFrame === 'function'
-        ? requestAnimationFrame
-        : null;
-      if (raf) cancelAnimationFrame(pendingDeltaFrame);
-      pendingDeltaFrame = null;
-    }
     listeners.forEach((listener) => listener());
   },
 };
@@ -217,7 +159,6 @@ export function installThinkingPanelBridge(): ThinkingPanelBridge {
     return {
       getSnapshot: thinkingPanelBridge.getSnapshot,
       publish: thinkingPanelBridge.publish,
-      publishThinkingDelta: thinkingPanelBridge.publishThinkingDelta,
       subscribe: thinkingPanelBridge.subscribe,
     };
   }
@@ -227,7 +168,6 @@ export function installThinkingPanelBridge(): ThinkingPanelBridge {
   const bridge: ThinkingPanelBridge = {
     getSnapshot: thinkingPanelBridge.getSnapshot,
     publish: thinkingPanelBridge.publish,
-    publishThinkingDelta: thinkingPanelBridge.publishThinkingDelta,
     subscribe: thinkingPanelBridge.subscribe,
   };
   window.__socratesThinkingPanelBridge = bridge;
@@ -242,10 +182,7 @@ export function subscribeToThinkingPanel(listener: Listener): () => void {
   return installThinkingPanelBridge().subscribe(listener);
 }
 
-export const thinkingPanelImmutableBridge: ImmutableBridge<
-  ThinkingPanelSnapshot,
-  ThinkingPanelEvent
-> = thinkingPanelBridge;
+export const thinkingPanelImmutableBridge: ImmutableBridge<ThinkingPanelSnapshot, ThinkingPanelEvent> = thinkingPanelBridge;
 
 export function useThinkingPanelSnapshot(): ThinkingPanelSnapshot {
   return useBridge(thinkingPanelBridge);

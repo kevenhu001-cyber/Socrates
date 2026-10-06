@@ -39,6 +39,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-on-accent: #000;
   --ui-accent-strong: #ffffff;
   --ui-danger: #ff6764;
+  --ui-thinking-accent: hsl(18 48% 50%);
   --ui-success: #42dec2;
   --ui-avatar-bg: rgb(16 163 127);
   --ui-bg-composer: #212121;
@@ -98,6 +99,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-on-accent: #fff;
   --ui-accent-strong: #0d0d0d;
   --ui-danger: #d8241a;
+  --ui-thinking-accent: hsl(18 48% 42%);
   --ui-success: #027c6a;
   --ui-avatar-bg: rgb(16 163 127);
   --ui-bg-composer: #fff;

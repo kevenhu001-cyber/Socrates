@@ -3,8 +3,8 @@
  * Unit tests for src/services/llm.js — the SSE chat-completion
  * proxy. This module is a security boundary (user-supplied API
  * keys, model output, tool-call dispatch) and the streaming
- * pipeline has multiple subtle branches: silence watchdog, abort
- * cascade, tool_call delta throttling, finish_reason dispatch.
+ * pipeline has multiple subtle branches: caller aborts, tool_call
+ * delta throttling, and finish_reason dispatch.
  *
  * We stub globalThis.fetch with an in-memory SSE stream so the
  * tests don't require network. Node 20+ provides Response /
@@ -498,73 +498,43 @@ describe('streamChatCompletion: tool_calls', () => {
   });
 });
 
-describe('streamChatCompletion: first-byte timeout', () => {
-  test('errors when the provider accepts the POST but never emits a byte', async () => {
-    /* The silence watchdog is deliberately armed only after the first
-       chunk (reasoning models think for a while); without a separate
-       first-byte budget a silent upstream would hold the request
-       forever. LLM_FIRST_BYTE_TIMEOUT_MS is read per call, so the
-       test can shrink it via env. */
-    const prev = process.env.LLM_FIRST_BYTE_TIMEOUT_MS;
-    process.env.LLM_FIRST_BYTE_TIMEOUT_MS = '50';
-    try {
-      globalThis.fetch = mock.fn(async (_url, init) => new Response(
-        new ReadableStream({
-          start(controller) {
-            /* Honour the caller's abort: the stream stays silent forever
-               until the first-byte timer fires, then errors the reader. */
-            init.signal.addEventListener('abort', () => {
-              const err = new Error('aborted');
-              err.name = 'AbortError';
-              controller.error(err);
-            });
-          },
-        }),
-        { status: 200, headers: { 'Content-Type': 'text/event-stream' } },
-      ));
-      const errors = [];
-      await streamChatCompletion(
-        BASE_OPTS, () => {}, () => {}, (err) => errors.push(err),
-      );
-      assert.equal(errors.length, 1);
-      assert.match(errors[0].message, /no response bytes/i);
-    } finally {
-      if (prev === undefined) delete process.env.LLM_FIRST_BYTE_TIMEOUT_MS;
-      else process.env.LLM_FIRST_BYTE_TIMEOUT_MS = prev;
-    }
-  });
+describe('streamChatCompletion: long reasoning waits', () => {
+  test('does not add a deadline while waiting for reasoning or response bytes', async () => {
+    const originalSetTimeout = globalThis.setTimeout;
+    const scheduledTimers = [];
+    const callerSignal = new AbortController().signal;
+    let requestSignal;
+    globalThis.setTimeout = (callback, delay, ...args) => {
+      scheduledTimers.push(delay);
+      return originalSetTimeout(callback, delay, ...args);
+    };
+    globalThis.fetch = mock.fn(async (_url, init) => {
+      requestSignal = init.signal;
+      return makeSseResponse([
+        { choices: [{ delta: { reasoning_content: 'private reasoning' } }] },
+        { choices: [{ delta: { content: 'answer' }, finish_reason: 'stop' }] },
+        sseDone(),
+      ]);
+    });
 
-  test('classifies a first-byte timeout even when the reader rejects with the RAW string reason', async () => {
-    /* undici aborts a body read by rejecting reader.read() with the raw
-       abort reason — for our string reasons ('first-byte-timeout') that
-       is a bare string with no .name, which is exactly why production
-       logged "LLM error: undefined". Replicate the real semantics: error
-       the stream with signal.reason, not an AbortError. */
-    const prev = process.env.LLM_FIRST_BYTE_TIMEOUT_MS;
-    process.env.LLM_FIRST_BYTE_TIMEOUT_MS = '50';
     try {
-      globalThis.fetch = mock.fn(async (_url, init) => new Response(
-        new ReadableStream({
-          start(controller) {
-            init.signal.addEventListener('abort', () => {
-              controller.error(init.signal.reason);
-            });
-          },
-        }),
-        { status: 200, headers: { 'Content-Type': 'text/event-stream' } },
-      ));
-      const errors = [];
-      const dones = [];
+      const reasoning = [];
+      const chunks = [];
+      let error = null;
       await streamChatCompletion(
-        BASE_OPTS, () => {}, (d) => dones.push(d), (err) => errors.push(err),
+        { ...BASE_OPTS, signal: callerSignal },
+        (chunk) => chunks.push(chunk),
+        () => {},
+        (err) => { error = err; },
+        (delta) => reasoning.push(delta),
       );
-      assert.equal(errors.length, 1);
-      assert.ok(errors[0] instanceof Error, 'expected a real Error, got ' + typeof errors[0]);
-      assert.match(errors[0].message, /no response bytes/i);
-      assert.equal(dones.length, 0);
+      assert.equal(error, null);
+      assert.deepEqual(reasoning, ['private reasoning']);
+      assert.deepEqual(chunks, ['answer']);
+      assert.strictEqual(requestSignal, callerSignal, 'only caller cancellation should reach fetch');
+      assert.deepEqual(scheduledTimers, [], 'the LLM stream must not arm an autonomous timeout');
     } finally {
-      if (prev === undefined) delete process.env.LLM_FIRST_BYTE_TIMEOUT_MS;
-      else process.env.LLM_FIRST_BYTE_TIMEOUT_MS = prev;
+      globalThis.setTimeout = originalSetTimeout;
     }
   });
 });

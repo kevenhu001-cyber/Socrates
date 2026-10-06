@@ -1,13 +1,18 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createPortal } from 'react-dom';
-import { openDetailSurface, closeDetailSurface, updateDetailSurface } from '../../ui/detailSurface.ts';
+import { openDetailSurface, closeDetailSurface } from '../../ui/detailSurface.ts';
+import { STROKE_ICONS, toolIcon } from '../../ui/icons/toolIcons.js';
 
 import {
   getThinkingPanelSnapshot,
   subscribeToThinkingPanel,
 } from './thinkingPanel.bridge';
-import { getLegacyActions } from '../legacy/gateway.ts';
+import type { ThinkingPanelActivity, ThinkingPanelSnapshot } from './types';
+
+type TimelineRow =
+  | { id: string; kind: 'summary' | 'thinking'; label: string }
+  | (ThinkingPanelActivity & { kind: 'tool' });
 
 function translate(key: string, fallback: string): string {
   try {
@@ -20,40 +25,38 @@ function translate(key: string, fallback: string): string {
   return fallback;
 }
 
-function wordCountLabel(count: number): string {
-  if (count === 1) {
-    return translate('think.wordCountOne', '1 word');
+function buildTimeline(snapshot: ThinkingPanelSnapshot): TimelineRow[] {
+  const hasOpenActivity = snapshot.activities.some((activity) => (
+    activity.state === 'running' || activity.state === 'awaiting'
+  ));
+  const hasActivity = snapshot.activities.length > 0;
+  const rows: TimelineRow[] = [{
+    id: 'summary-start',
+    kind: 'summary',
+    label: snapshot.streaming || hasActivity
+      ? translate('think.summaryPreparing', 'Reviewing your question and preparing an answer.')
+      : translate('think.summaryComplete', 'Response ready.'),
+  }];
+  for (const activity of snapshot.activities) {
+    rows.push({ ...activity, kind: 'tool' });
   }
-  return translate('think.wordCount', '{n} words').replace('{n}', String(count));
+  if (hasActivity && !hasOpenActivity) {
+    rows.push({
+      id: 'summary-follow-up',
+      kind: 'summary',
+      label: snapshot.streaming
+        ? translate('think.summaryReview', 'Reviewing the gathered information and preparing an answer.')
+        : translate('think.summaryComplete', 'Response ready.'),
+    });
+  }
+  if (snapshot.streaming && !hasOpenActivity) {
+    rows.push({ id: 'thinking', kind: 'thinking', label: translate('common.thinkingLabel', 'Thinking') });
+  }
+  return rows;
 }
 
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-/* Render the reasoning trace with the same markdown pipeline as
-   assistant bubbles (progressive while streaming, final when
-   settled) instead of dumping raw markdown source. Memoized on the
-   text value so a re-publish with identical text never re-parses.
-   A renderer failure falls back to escaped plain text — the panel
-   must never blank on a long trace. */
-function useThinkingHtml(text: string, streaming: boolean): { __html: string } {
-  return useMemo(() => {
-    if (!text.trim()) return { __html: '' };
-    try {
-      const render = getLegacyActions().render;
-      const paint = streaming && render.renderAssistantProgressive
-        ? render.renderAssistantProgressive
-        : render.renderAssistantHTML;
-      return { __html: paint(text) };
-    } catch (_) {
-      return { __html: escapeHtml(text) };
-    }
-  }, [text, streaming]);
+function activityIcon(toolName: string): string {
+  return toolName === 'web_search' ? STROKE_ICONS.fetch : toolIcon(toolName);
 }
 
 export function ThinkingPanel() {
@@ -67,14 +70,14 @@ export function ThinkingPanel() {
 
   const [pinned, setPinned] = useState(true);
   const open = snapshot.open;
-  const html = useThinkingHtml(snapshot.text, snapshot.streaming);
+  const timeline = useMemo(() => buildTimeline(snapshot), [snapshot.activities, snapshot.streaming]);
 
   useLayoutEffect(() => {
     if (!open) return undefined;
     openDetailSurface({
       owner: 'thinking',
-      title: translate('think.panelTitle', 'Thought process'),
-      closeLabel: translate('think.closePanel', 'Close thinking panel'),
+      title: translate('think.panelTitle', 'Summary'),
+      closeLabel: translate('think.closePanel', 'Close summary'),
       content,
       onClose: () => window.__socratesThinkingPanelBridge?.publish({ type: 'panel-close' }),
     });
@@ -82,38 +85,45 @@ export function ThinkingPanel() {
   }, [open, content]);
 
   useEffect(() => {
-    if (open) updateDetailSurface('thinking', wordCountLabel(snapshot.text.length));
-  }, [open, snapshot.text.length]);
-
-  /* Live auto-scroll: follow the reasoning text while streaming, but only
-     when the user is already pinned to the bottom. */
-  useEffect(() => {
     const body = bodyRef.current;
-    if (!body || !snapshot.streaming || !pinned) return;
+    if (!body || !pinned) return;
     body.scrollTop = body.scrollHeight;
-  }, [snapshot.text, snapshot.streaming, pinned]);
+  }, [timeline, pinned]);
 
   if (!open) return null;
 
   return createPortal(
     <div
       ref={bodyRef}
-      className="thinking-panel-body"
+      className="thinking-summary-body"
       role="log"
       aria-live="polite"
+      aria-label={translate('think.panelTitle', 'Summary')}
       onScroll={() => {
         const body = bodyRef.current;
         if (!body) return;
         setPinned(body.scrollHeight - body.scrollTop - body.clientHeight <= 48);
       }}
     >
-      {snapshot.text ? (
-        <div className="thinking-panel-text is-rich" dangerouslySetInnerHTML={html} />
-      ) : (
-        <p className="thinking-panel-empty">
-          {translate('think.panelEmpty', 'The model has not started thinking yet.')}
-        </p>
-      )}
+      <ol className="thinking-summary-timeline">
+        {timeline.map((row) => {
+          const icon = row.kind === 'tool' ? activityIcon(row.toolName) : '';
+          return (
+            <li
+              key={row.id}
+              className={`thinking-summary-item${row.kind === 'thinking' ? ' is-active' : row.kind === 'tool' ? ` is-${row.state}` : ''}`}
+              data-kind={row.kind}
+              data-state={row.kind === 'tool' ? row.state : undefined}
+              aria-current={row.kind === 'thinking' ? 'step' : undefined}
+            >
+              <span className="thinking-summary-marker" aria-hidden="true">
+                {icon ? <span className="thinking-summary-icon" dangerouslySetInnerHTML={{ __html: icon }} /> : null}
+              </span>
+              <span className="thinking-summary-label">{row.label}</span>
+            </li>
+          );
+        })}
+      </ol>
     </div>,
     content
   );

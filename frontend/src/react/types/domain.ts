@@ -166,8 +166,8 @@ export interface LegacyChatMessage {
   editedText?: string | null;
   /* Inline SVG of the active extension (chip icon in the canvas header). */
   _extensionIcon?: string | null;
-  /* Chain-of-thought text from `reasoning_content`, kept on the entry so a
-     reload can rebuild the thinking block. */
+  /* Provider reasoning retained for session persistence; the UI renders only
+     high-level activity summaries, never this text. */
   reasoningContent?: string | null;
   /**
    * Bumped by chat/toolRuntime.ts on every tool-lifecycle mutation. The

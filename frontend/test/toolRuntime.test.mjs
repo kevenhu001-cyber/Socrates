@@ -527,6 +527,35 @@ test('a terminal result publishes, so the row stops spinning', () => {
   }
 });
 
+test('tool lifecycle publishes summary-only activity to the thinking panel', () => {
+  const activities = [];
+  const message = { clientId: 'msg-summary-1', toolCalls: [] };
+  window.__socratesThinkingPanelBridge = { publish: (event) => activities.push(event) };
+  const runtime = createRuntime({
+    body: makeBody(),
+    stillOwnsSlot: () => true,
+    getMessage: () => message,
+    updateMessage(patch) { Object.assign(message, patch); },
+    onInlineTool: () => 0,
+    EventSource: null,
+  });
+
+  try {
+    runtime.recordToolUse({ id: 'search-summary-1', name: 'web_search', input: { query: 'public query' } });
+    runtime.recordToolResult({
+      id: 'search-summary-1', name: 'web_search', ok: true, status: 'completed',
+      input: { query: 'public query' }, results: [{ title: 'Source' }],
+    });
+
+    const toolEvents = activities.filter((event) => event.type === 'tool-activity');
+    assert.deepEqual(toolEvents.map((event) => event.state), ['running', 'done']);
+    assert.ok(toolEvents.every((event) => event.messageId === 'msg-summary-1'));
+  } finally {
+    runtime.dispose();
+    delete window.__socratesThinkingPanelBridge;
+  }
+});
+
 test('cancelling a turn publishes the stopped state', () => {
   const h = publishHarness(3);
   try {

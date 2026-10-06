@@ -6,11 +6,15 @@ import {
 } from '../src/react/thinking-panel/thinkingPanel.bridge.ts';
 
 /* The store targets the browser, but every window access happens inside
-   functions (install / throttled publish), so pointing window at the Node
-   global keeps the module testable without a DOM. */
+   functions (install / publish), so pointing window at the Node global
+   keeps the module testable without a DOM. */
 globalThis.window = globalThis;
 
-const tick = () => new Promise((resolve) => setTimeout(resolve, 130));
+const bridge = installThinkingPanelBridge();
+
+function reset() {
+  bridge.publish({ type: 'turn-start' });
+}
 
 test('ThinkingPanel bridge installs once and starts closed', () => {
   const first = installThinkingPanelBridge();
@@ -21,94 +25,130 @@ test('ThinkingPanel bridge installs once and starts closed', () => {
     {
       open: first.getSnapshot().open,
       messageId: first.getSnapshot().messageId,
-      text: first.getSnapshot().text,
+      activities: first.getSnapshot().activities,
       streaming: first.getSnapshot().streaming,
     },
-    { open: false, messageId: null, text: '', streaming: false },
+    { open: false, messageId: null, activities: [], streaming: false },
   );
 });
 
-test('ThinkingPanel publishes throttled reasoning deltas to the snapshot', async () => {
-  const bridge = installThinkingPanelBridge();
+test('ThinkingPanel stores summarized tool activity without reasoning text', () => {
+  reset();
   bridge.publish({ type: 'thinking-start', messageId: 'msg-1' });
   bridge.publish({ type: 'panel-open', messageId: 'msg-1' });
+  bridge.publish({
+    type: 'tool-activity',
+    messageId: 'msg-1',
+    id: 'search-1',
+    name: 'web_search',
+    input: { query: '2026 Nobel Prize in Physics' },
+    state: 'running',
+  });
 
-  bridge.publishThinkingDelta('msg-1', 'first draft');
-  bridge.publishThinkingDelta('msg-1', 'first draft + second pass');
-  assert.equal(bridge.getSnapshot().text, '', 'delta must be throttled');
-
-  await tick();
   const snapshot = bridge.getSnapshot();
   assert.equal(snapshot.open, true);
   assert.equal(snapshot.messageId, 'msg-1');
-  assert.equal(snapshot.text, 'first draft + second pass', 'latest delta wins');
-  assert.equal(snapshot.streaming, true);
+  assert.equal(snapshot.streaming, false, 'the tool owns the active timeline row');
+  assert.equal(snapshot.activities.length, 1);
+  assert.equal(snapshot.activities[0].id, 'search-1');
+  assert.equal(snapshot.activities[0].toolName, 'web_search');
+  assert.match(snapshot.activities[0].label, /2026 Nobel Prize in Physics/);
+  assert.equal(snapshot.activities[0].state, 'running');
+  assert.deepEqual(Object.keys(snapshot.activities[0]).sort(), ['id', 'label', 'state', 'toolName']);
+  assert.equal('text' in snapshot, false, 'the snapshot must not carry chain-of-thought text');
 });
 
-test('ThinkingPanel keeps final text after thinking-end', () => {
-  const bridge = installThinkingPanelBridge();
+test('ThinkingPanel updates a tool summary when execution completes', () => {
+  reset();
   bridge.publish({ type: 'thinking-start', messageId: 'msg-2' });
-  bridge.publish({ type: 'panel-open', messageId: 'msg-2' });
-  bridge.publishThinkingDelta('msg-2', 'final reasoning');
-  bridge.publish({ type: 'thinking-end', messageId: 'msg-2' });
+  bridge.publish({
+    type: 'tool-activity',
+    messageId: 'msg-2',
+    id: 'search-2',
+    name: 'web_search',
+    input: { query: 'Nobel Prize predictions' },
+    results: [{ title: 'Prediction' }],
+    state: 'done',
+  });
+
+  const snapshot = bridge.getSnapshot();
+  assert.equal(snapshot.streaming, true, 'the model resumes after a tool result');
+  assert.equal(snapshot.activities.length, 1, 'completion updates rather than duplicates the row');
+  assert.match(snapshot.activities[0].label, /Nobel Prize predictions/);
+  assert.equal(snapshot.activities[0].state, 'done');
+});
+
+test('ThinkingPanel keeps the summary after thinking-end', () => {
+  reset();
+  bridge.publish({ type: 'thinking-start', messageId: 'msg-3' });
+  bridge.publish({ type: 'panel-open', messageId: 'msg-3' });
+  bridge.publish({
+    type: 'tool-activity',
+    messageId: 'msg-3',
+    id: 'fetch-3',
+    name: 'web_fetch',
+    input: { url: 'https://example.test/article' },
+    state: 'done',
+  });
+  bridge.publish({ type: 'thinking-end', messageId: 'msg-3' });
 
   const snapshot = bridge.getSnapshot();
   assert.equal(snapshot.streaming, false);
-  assert.equal(snapshot.text, 'final reasoning');
-  assert.equal(snapshot.open, true, 'open panel stays readable after stream end');
+  assert.equal(snapshot.activities.length, 1);
+  assert.equal(snapshot.activities[0].state, 'done');
+  assert.equal(snapshot.open, true);
 });
 
 test('ThinkingPanel turn-start closes and resets the snapshot', () => {
-  const bridge = installThinkingPanelBridge();
-  bridge.publish({ type: 'thinking-start', messageId: 'msg-3' });
-  bridge.publish({ type: 'panel-open', messageId: 'msg-3' });
-  bridge.publishThinkingDelta('msg-3', 'old turn reasoning');
+  reset();
+  bridge.publish({ type: 'thinking-start', messageId: 'msg-4' });
+  bridge.publish({ type: 'panel-open', messageId: 'msg-4' });
+  bridge.publish({
+    type: 'tool-activity', messageId: 'msg-4', id: 'old-tool', name: 'web_search',
+    input: { query: 'old turn' }, state: 'running',
+  });
   bridge.publish({ type: 'turn-start' });
 
   const snapshot = bridge.getSnapshot();
   assert.equal(snapshot.open, false);
   assert.equal(snapshot.messageId, null);
-  assert.equal(snapshot.text, '');
+  assert.deepEqual(snapshot.activities, []);
   assert.equal(snapshot.streaming, false);
 });
 
-test('ThinkingPanel panel-close keeps the buffered text for later turns', () => {
-  const bridge = installThinkingPanelBridge();
-  bridge.publish({ type: 'thinking-start', messageId: 'msg-4' });
-  bridge.publishThinkingDelta('msg-4', 'buffered text');
+test('ThinkingPanel panel-close keeps activity summaries for reopening', () => {
+  reset();
+  bridge.publish({ type: 'thinking-start', messageId: 'msg-5' });
+  bridge.publish({
+    type: 'tool-activity', messageId: 'msg-5', id: 'tool-5', name: 'web_search',
+    input: { query: 'buffered activity' }, state: 'done',
+  });
   bridge.publish({ type: 'panel-close' });
 
   const closed = bridge.getSnapshot();
   assert.equal(closed.open, false);
-  assert.equal(closed.text, 'buffered text');
+  assert.equal(closed.activities.length, 1);
+  assert.match(closed.activities[0].label, /buffered activity/);
 
-  bridge.publish({ type: 'panel-open', messageId: 'msg-4' });
-  assert.equal(bridge.getSnapshot().open, true);
-  assert.equal(bridge.getSnapshot().text, 'buffered text');
-});
-
-test('ThinkingPanel merges reasoning + inline think text passed by the stream', () => {
-  const bridge = installThinkingPanelBridge();
-  bridge.publish({ type: 'thinking-start', messageId: 'msg-5' });
-  bridge.publishThinkingDelta(
-    'msg-5',
-    'reasoning_content here\n\n—— 正文内思考 ——\n\ninline think content',
-  );
   bridge.publish({ type: 'panel-open', messageId: 'msg-5' });
-
-  const snapshot = bridge.getSnapshot();
-  assert.match(snapshot.text, /reasoning_content here/);
-  assert.match(snapshot.text, /inline think content/);
+  assert.equal(bridge.getSnapshot().open, true);
+  assert.equal(bridge.getSnapshot().activities.length, 1);
 });
 
-test('ThinkingPanel ignores stale deltas for a different message id', () => {
-  const bridge = installThinkingPanelBridge();
+test('ThinkingPanel ignores stale tool activity for a different message id', () => {
+  reset();
   bridge.publish({ type: 'thinking-start', messageId: 'current' });
-  bridge.publishThinkingDelta('current', 'current reasoning');
-  bridge.publishThinkingDelta('stale', 'stale reasoning');
-  bridge.publish({ type: 'thinking-end', messageId: 'current' });
+  bridge.publish({
+    type: 'tool-activity', messageId: 'current', id: 'current-tool', name: 'web_search',
+    input: { query: 'current' }, state: 'running',
+  });
+  const before = bridge.getSnapshot();
+  bridge.publish({
+    type: 'tool-activity', messageId: 'stale', id: 'stale-tool', name: 'web_search',
+    input: { query: 'stale' }, state: 'done',
+  });
 
-  const snapshot = bridge.getSnapshot();
-  assert.equal(snapshot.messageId, 'current');
-  assert.equal(snapshot.text, 'current reasoning');
+  assert.strictEqual(bridge.getSnapshot(), before);
+  assert.equal(bridge.getSnapshot().messageId, 'current');
+  assert.equal(bridge.getSnapshot().activities.length, 1);
 });

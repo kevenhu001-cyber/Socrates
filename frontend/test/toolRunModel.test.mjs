@@ -179,6 +179,18 @@ test('an empty thinking span yields no think segment', () => {
   assert.deepEqual(layout.map((s) => s.kind), ['text', 'text']);
 });
 
+test('live layout can omit private thinking spans from visible prose', () => {
+  const layout = buildTurnLayout('before <think>private chain</think> after', [], {
+    inlineThink: false,
+    deferOpenParagraph: true,
+  });
+  assert.deepEqual(layout.filter((segment) => segment.kind === 'text').map((segment) => segment.text), [
+    'before ',
+    ' after',
+  ]);
+  assert.equal(layout.some((segment) => segment.kind === 'think' && segment.text === 'private chain'), true);
+});
+
 test('thinking between two calls still separates their runs', () => {
   const layout = buildTurnLayout('A\n\n<think>t</think>\n\nB', [
     call({ id: 'a', textOffset: 1 }),
@@ -241,7 +253,7 @@ test('search rows name the query and put the source count in meta', () => {
     output: '2 results',
     durationMs: 1840,
   });
-  assert.equal(view.label, 'Searched "transformer architecture improvements 2025"');
+  assert.equal(view.label, 'Searched for “transformer architecture improvements 2025”');
   assert.deepEqual(view.meta, ['2 sources', '1.8s']);
 });
 
@@ -257,7 +269,7 @@ test('a long query is clipped to one label line', () => {
     'done',
   );
   assert.ok(label.text.length < 70, `label too long: ${label.text.length}`);
-  assert.ok(label.text.endsWith('…"') || label.text.endsWith('…'), label.text);
+  assert.ok(label.text.endsWith('…”') || label.text.endsWith('…'), label.text);
 });
 
 test('failed rows name what failed and expose a retry only for search', () => {

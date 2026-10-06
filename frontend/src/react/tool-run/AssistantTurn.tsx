@@ -43,9 +43,9 @@ export interface AssistantTurnProps {
   /** Share / replay: no Retry, no approval affordances. */
   readOnly?: boolean;
   /**
-   * The turn is still streaming: paint prose with the streaming-safe renderer,
-   * keep `<think>` inline so the live thinking block shows, and split the last
-   * text segment into a settled prefix plus a re-parsed tail.
+   * The turn is still streaming: paint public prose with the streaming-safe
+   * renderer, omit `<think>` spans, and split the last text segment into a
+   * settled prefix plus a re-parsed tail.
    */
   live?: boolean;
 }
@@ -326,7 +326,7 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
   // layout on each published render so labels, states, and sentence-safe split
   // points cannot be trapped behind stale object identity.
   const segments: TurnSegment[] = buildTurnLayout(rawText, calls, {
-    inlineThink: isLive,
+    inlineThink: false,
     deferOpenParagraph: isLive,
   });
   const { settled, tail } = useProseRenderer(isLive);
@@ -392,12 +392,9 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
             </Fragment>
           );
         }
-        /* With `inlineThink` (a live turn) think spans stay in the text
-           segments and the streaming renderer draws the collapsible itself.
-           This branch is only reachable on a finalized turn, where provider
-           scratch work must not appear in the answer at all — the segment
-           still consumed its span of rawText, which is what keeps the prose
-           around it in order. */
+        /* Think segments consume their rawText range so the surrounding
+           public prose keeps its order, but private model text is never
+           mounted in the visible transcript. */
         return null;
       })}
       {/* One status line per turn, after the rows: main.js writes what the

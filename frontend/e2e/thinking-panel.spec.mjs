@@ -25,7 +25,7 @@ function installReasoningStream(page, { immediate = true } = {}) {
       ));
       window.__finishThinkingStream = () => {
         controllerRef.enqueue(encoder.encode(
-          'data: {"choices":[{"delta":{"content":"这是最终回答。"}}]}\n\n',
+          'data: {"choices":[{"delta":{"content":"<think>inline private thought</think>这是最终回答。"}}]}\n\n',
         ));
         controllerRef.enqueue(encoder.encode('data: [DONE]\n\n'));
         controllerRef.close();
@@ -54,7 +54,7 @@ async function bootChat(page) {
   });
 }
 
-test('clicking the Thinking pill opens the right drawer and streams live reasoning', async ({ page }) => {
+test('clicking the Thinking pill opens a summary sheet without exposing reasoning', async ({ page }) => {
   await installReasoningStream(page, { immediate: true });
   await bootChat(page);
 
@@ -78,14 +78,38 @@ test('clicking the Thinking pill opens the right drawer and streams live reasoni
 
   const panel = page.locator('[data-thinking-panel="1"]');
   await expect(panel).toBeVisible();
-  await expect(panel.locator('.thinking-panel-text')).toContainText('先判断需要查询哪些信息。');
+  await expect(panel.locator('.detail-heading h2')).toHaveText(/Summary|摘要/);
+  await expect(panel.locator('.thinking-summary-timeline')).toBeVisible();
+  await expect(panel.locator('.thinking-summary-item[data-kind="thinking"]')).toBeVisible();
+  await expect(panel).not.toContainText('先判断需要查询哪些信息。');
 
   await page.evaluate(() => window.__sendReasoning('然后对比多个来源。'));
-  await expect(panel.locator('.thinking-panel-text')).toContainText('然后对比多个来源。');
+  await expect(panel).not.toContainText('然后对比多个来源。');
+  await expect(page.locator('.msg.assistant').last()).not.toContainText('然后对比多个来源。');
+
+  await page.evaluate(() => {
+    const bridge = window.__socratesThinkingPanelBridge;
+    bridge.publish({
+      type: 'tool-activity',
+      messageId: bridge.getSnapshot().messageId,
+      id: 'search-summary-e2e',
+      name: 'web_search',
+      input: { query: '2026 Nobel Prize in Physics predictions' },
+      results: [{ title: 'Prediction overview' }],
+      state: 'done',
+    });
+  });
+  const toolRow = panel.locator('.thinking-summary-item[data-kind="tool"]');
+  await expect(toolRow).toContainText('2026 Nobel Prize in Physics predictions');
+  await expect(toolRow).toHaveAttribute('data-state', 'done');
+  await expect(panel.locator('.thinking-summary-item[data-kind="thinking"]')).toBeVisible();
 
   await page.evaluate(() => window.__finishThinkingStream());
   await expect(pill).toHaveCount(0);
-  await expect(panel.locator('.thinking-panel-text')).toContainText('然后对比多个来源。');
+  await expect(panel.locator('.thinking-summary-item[data-kind="thinking"]')).toHaveCount(0);
+  await expect(panel).not.toContainText('然后对比多个来源。');
+  await expect(panel).not.toContainText('inline private thought');
+  await expect(page.locator('.msg.assistant').last()).not.toContainText('inline private thought');
 
   await panel.locator('.thinking-panel-close').click();
   await expect(panel).toHaveCount(0);
@@ -113,7 +137,7 @@ test('thinking drawer closes via Escape and backdrop click', async ({ page }) =>
   await page.evaluate(() => window.__finishThinkingStream());
 });
 
-test('thinking detail occupies the mobile viewport without nesting sheets', async ({ page }) => {
+test('thinking summary opens as a mobile bottom sheet', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await installReasoningStream(page, { immediate: true });
   await bootChat(page);
@@ -126,9 +150,24 @@ test('thinking detail occupies the mobile viewport without nesting sheets', asyn
   await expect(panel).toBeVisible();
   const box = await panel.boundingBox();
   expect(box).not.toBeNull();
-  expect(box.height).toBeGreaterThan(0.98 * 844);
-  expect(box.height).toBeLessThanOrEqual(844);
+  expect(box.height).toBeGreaterThan(0.45 * 844);
+  expect(box.height).toBeLessThanOrEqual(0.82 * 844);
   expect(box.y + box.height).toBeGreaterThan(840);
+  await expect(panel.locator('.thinking-summary-timeline')).toBeVisible();
+  await page.evaluate(() => {
+    const bridge = window.__socratesThinkingPanelBridge;
+    bridge.publish({
+      type: 'tool-activity',
+      messageId: bridge.getSnapshot().messageId,
+      id: 'mobile-search-summary',
+      name: 'web_search',
+      input: { query: '2026 Nobel Prize in Physics predictions' },
+      results: [{ title: 'Prediction overview' }],
+      state: 'done',
+    });
+  });
+  await expect(panel.locator('.thinking-summary-item[data-kind="tool"]')).toContainText('Nobel Prize');
+  await page.screenshot({ path: 'test-results/thinking-summary-sheet-mobile.png' });
 
   await panel.locator('.thinking-panel-close').click();
   await expect(panel).toHaveCount(0);
@@ -150,10 +189,14 @@ test('the thinking placeholder is clickable before reasoning arrives', async ({ 
 
   const panel = page.locator('[data-thinking-panel="1"]');
   await expect(panel).toBeVisible();
-  await expect(panel.locator('.thinking-panel-empty')).toBeVisible();
+  await expect(panel.locator('.detail-heading h2')).toHaveText(/Summary|摘要/);
+  await expect(panel.locator('.thinking-summary-timeline')).toBeVisible();
+  await expect(panel.locator('.thinking-summary-item[data-kind="thinking"]')).toBeVisible();
 
   await page.evaluate(() => window.__sendReasoning('稍等，我先整理思路。'));
-  await expect(panel.locator('.thinking-panel-text')).toContainText('稍等');
+  await expect(panel).not.toContainText('稍等，我先整理思路。');
+  await expect(page.locator('.msg.assistant').last()).not.toContainText('稍等，我先整理思路。');
   await page.evaluate(() => window.__finishThinkingStream());
-  await expect(panel.locator('.thinking-panel-text')).toContainText('稍等');
+  await expect(panel).not.toContainText('稍等，我先整理思路。');
+  await expect(panel).not.toContainText('inline private thought');
 });

@@ -33,12 +33,10 @@ export function timeoutMiddleware(req: Request, res: Response, next: NextFunctio
     if (res.headersSent) {
       /* P_sse_timeout_exempt — SSE responses (chat stream, execution
        * progress, status subscribe, …) are legitimately long-lived and
-       * manage their own lifecycle (optional env-gated LLM budgets in
-       * llm.ts, heartbeats in lib/sse.ts). Destroying the socket at
-       * 120s cut every reply longer than the global budget mid-stream;
-       * the frontend's stall-retry then masked it as a flaky reconnect.
-       * Detect by Content-Type instead of a path allow-list so every
-       * present and future SSE route is covered automatically. */
+       * manage their own cancellation lifecycle. Chat keepalives keep the
+       * socket warm during long reasoning pauses. Detect by Content-Type
+       * instead of a path allow-list so every present and future SSE route
+       * is covered automatically. */
       const ct = String(res.getHeader('Content-Type') || '');
       if (ct.includes('text/event-stream')) return;
       /* Headers already sent — we can't change the status code, but

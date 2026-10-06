@@ -1,10 +1,9 @@
 /**
  * chat/thinkExtract.ts — inline thinking text helpers for streaming turns.
  *
- * Extracted from the addStreamingMessage closure in main.js. The right
- * drawer shows both reasoning_content deltas and inline <think> blocks;
- * these pure helpers keep the panel's text snapshot in sync with the live
- * stream without slowing the markdown renderer.
+ * Extracted from the addStreamingMessage closure in main.js. These pure
+ * helpers parse provider reasoning and inline <think> blocks; the visible
+ * summary surface deliberately does not render their raw text.
  */
 
 /** Default divider between reasoning_content and inline <think> text. */

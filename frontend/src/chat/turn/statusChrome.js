@@ -4,9 +4,8 @@
  * The waiting dot, the reasoning pill, the retry notice and the timeout
  * error block collapse into one field — `message._liveStatus` — drawn by
  * react/tool-run/TurnStatus, so a turn cannot show two "working on it"
- * lines. This module owns that field's mutations and the thinking-panel
- * mirror publishes that keep the right drawer in sync with the live
- * stream.
+ * lines. This module owns that field's mutations and the lifecycle
+ * publishes that keep the summary sheet aligned with the live turn.
  *
  * Extracted from chat/streamingTurn.js during the 2026-10 addStreamingMessage
  * split. The helpers here are tight callbacks over the shared message
@@ -17,7 +16,6 @@
 import { stateStore } from '../../state/store.js';
 import { setReactLiveStatus } from '../../ui/messageSnapshot.js';
 import { publishThinkingPanelEvent } from '../../ui/messageSnapshot.js';
-import { combineThinkingText, extractThinkText } from '../thinkExtract.ts';
 
 /**
  * Build the live-status chrome bound to one turn's state.
@@ -32,10 +30,7 @@ import { combineThinkingText, extractThinkText } from '../thinkExtract.ts';
  *   stampWaiting: (sec: number) => void,
  *   stampThinking: () => void,
  *   publishThinkingPanelStart: () => void,
- *   publishThinkingPanelLive: () => void,
  *   publishThinkingPanelEnd: () => void,
- *   combinedThinkingText: () => string,
- *   extractThinkText: (raw: string) => string,
  * }}
  */
 export function createStatusChrome(state) {
@@ -103,29 +98,10 @@ export function createStatusChrome(state) {
     });
   }
 
-  /* P_thinking-panel — the right drawer shows both reasoning_content
-     deltas and inline <think> blocks. These helpers keep the panel's
-     text snapshot in sync with the live stream without slowing the
-     markdown renderer (the bridge throttles + dedupes commits). */
-  function combinedThinkingText() {
-    return combineThinkingText(state.fullReasoning, state.full);
-  }
-
-  function extractThinkTextFromRaw(raw) {
-    return extractThinkText(raw);
-  }
-
+  /* P_thinking-panel — the panel snapshot carries only lifecycle state and
+     tool summaries; model reasoning text is not sent to its renderer. */
   function publishThinkingPanelStart() {
     publishThinkingPanelEvent({ type: "thinking-start", messageId: state.clientId });
-  }
-
-  function publishThinkingPanelLive() {
-    try {
-      var bridge = window.__socratesThinkingPanelBridge;
-      if (bridge && typeof bridge.publishThinkingDelta === "function") {
-        bridge.publishThinkingDelta(state.clientId, combinedThinkingText());
-      }
-    } catch (_) { /* panel bridge missing */ }
   }
 
   function publishThinkingPanelEnd() {
@@ -140,9 +116,6 @@ export function createStatusChrome(state) {
     stampWaiting,
     stampThinking,
     publishThinkingPanelStart,
-    publishThinkingPanelLive,
     publishThinkingPanelEnd,
-    combinedThinkingText,
-    extractThinkText: extractThinkTextFromRaw,
   };
 }

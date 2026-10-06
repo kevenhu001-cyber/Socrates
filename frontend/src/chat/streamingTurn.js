@@ -182,8 +182,7 @@ export function addStreamingMessage(opts){
     ownsMessageSlot: function(){return false},
     patchOwnedMessage: function(){return null},
     _publishThinkingPanelEnd: function(){},
-    _publishThinkingPanelStart: function(){},
-    _publishThinkingPanelLive: function(){},
+
     // Only turnState owns the active controller and global streaming flags.
     ret: null,
     /* utilities */
@@ -199,11 +198,8 @@ export function addStreamingMessage(opts){
   var _smooth=_smoothStreamEnabled();
   var _visibleLen=0;
   var _playbackState="idle";
-  /* P_reasoning-persist — accumulate reasoning_content deltas so we
-     can save them to stateStore.read("messages") at finish() and include them in
-     the session-save payload. Without this, chain-of-thought text
-     from DeepSeek / QwQ / o1-style models is rendered in the DOM
-     during streaming but lost on reload. */
+  /* P_reasoning-persist — accumulate reasoning_content deltas so they can
+     be included in the session-save payload and restored with the turn. */
 
   /* Thinking pill (for chat-mode reasoning_content). Data-only: the status
      line is written to `message._liveStatus` and drawn by TurnStatus. */
@@ -213,9 +209,8 @@ export function addStreamingMessage(opts){
      session-slot guards are owned by the helpers above; status chrome
      only mirrors state, it does not own it. */
   var statusChrome=createStatusChrome(state);
-  state._publishThinkingPanelStart=statusChrome.publishThinkingPanelStart;
-  state._publishThinkingPanelLive=statusChrome.publishThinkingPanelLive;
   state._publishThinkingPanelEnd=statusChrome.publishThinkingPanelEnd;
+  if(_appMode()==="chat")statusChrome.publishThinkingPanelStart();
 
   /* P_session-stream-dispose — when resetApp() or loadSession() aborts
      an in-flight stream, already-queued delta chunks from the response
@@ -374,19 +369,16 @@ export function addStreamingMessage(opts){
        be running on this very tick. Bail before touching stateStore.read("messages"). */
     if(state.finished||state._disposed)return;
 
-    /* AssistantTurn paints this turn's prose from `rawText`, so this
-       pass only mirrors the data and keeps the thinking panel fed.
-       Viewport position is owned by chat/turnAnchor.ts.
-       P_smooth-stream — the visible text is the played prefix, not the whole
-       arrived buffer, so an upstream burst/stall reaches the reader as a
-       steady reveal. `_playbackState` rides along for the cursor animation. */
+    /* AssistantTurn paints this turn's prose from `rawText`; this pass only
+       mirrors the visible buffer. Viewport position is owned by
+       chat/turnAnchor.ts. P_smooth-stream — the visible text is the played
+       prefix, not the whole arrived buffer, so an upstream burst/stall reaches
+       the reader as a steady reveal. `_playbackState` rides along for the
+       cursor animation. */
     if(stillOwnsSlot()){
       var _visible=state._smooth?state.full.slice(0,_visibleLen):state.full;
       patchOwnedMessage({rawText:_visible,_playbackState:_playbackState},true);
       publishReactChatRuntime({type:"stream-delta",messageId:clientId,textLength:_visible.length});
-    }
-    if(state.fullReasoning||statusChrome.extractThinkText(state.full)){
-      statusChrome.publishThinkingPanelLive();
     }
   }
   /* P_smooth-stream — the playback player decouples arrival from playback.
@@ -619,16 +611,14 @@ export function addStreamingMessage(opts){
       }
     },
     /* Append reasoning deltas (DeepSeek R1 / QwQ style
-       reasoning_content). Accumulated for the thinking panel and the
-       session save; the status line is stamped by ensureThinkCtl. */
+       reasoning_content). Kept for session persistence; the status line
+       is stamped by ensureThinkCtl. */
     appendThinking:function(delta){
       /* P_session-stream-dispose — same guard as append().
          P_session-cross-talk — stillOwnsSlot() closes the race window. */
       if(!stillOwnsSlot())return;
       if(typeof delta==="string"){
-        if(!state.fullReasoning)state._publishThinkingPanelStart();
         state.fullReasoning+=delta;
-        statusChrome.publishThinkingPanelLive();
       }
       if(state.toolRuntime&&typeof state.toolRuntime.hasActiveTools==="function"&&state.toolRuntime.hasActiveTools())return;
       try{ensureThinkCtl().append(delta||"")}catch(e){reportSwallow(e, 'streamingTurn._preRev1.appendDelta'); }

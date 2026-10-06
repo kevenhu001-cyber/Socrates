@@ -345,8 +345,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Global request timeout — mounted after body parsing so slow requests
-// have a hard cap. SSE and chat have their own per-stream timeout via
-// AbortController; this catches everything else (DB, file I/O, etc.).
+// have a hard cap. SSE responses manage cancellation through their owning
+// turn or execution lifecycle; this catches everything else (DB, file I/O, etc.).
 app.use(timeoutMiddleware);
 
 // CORS — allow same-origin (app behind same-domain nginx) + dev.

@@ -43,7 +43,7 @@ export function setReactLiveStatus(message, status) {
   publishReactChatRuntime({ type: 'tool-run-updated', messageId });
 }
 
-/** Publish a thinking-panel lifecycle event without making the panel mandatory. */
+/** Publish a thinking-panel event without making the panel mandatory. */
 export function publishThinkingPanelEvent(event) {
   try {
     const bridge = window.__socratesThinkingPanelBridge;
