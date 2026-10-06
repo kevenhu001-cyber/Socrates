@@ -115,6 +115,7 @@ test('plugin center filters public/personal apps and scheduled templates prefill
   await expect(page.locator('.plugin-directory')).toBeVisible();
   // The public scope is the default, matching the reference design.
   await expect(page.locator('.plugin-directory-row')).toHaveCount(3);
+  await page.screenshot({ path: 'test-results/plugin-directory-reference-desktop.png', fullPage: true });
 
   const appSearch = page.locator('.plugin-directory-search input');
   await appSearch.fill('gmail');

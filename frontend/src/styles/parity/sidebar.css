@@ -499,6 +499,26 @@
   letter-spacing: 0.02em;
   vertical-align: 1px;
 }
+
+@media (min-width: 769px) {
+  #appShell #sidebarNav .sidebar-nav-btn,
+  #appShell #sidebar .recent-item {
+    border-radius: var(--ui-radius-lg);
+    transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease;
+  }
+
+  #appShell #sidebarNav .sidebar-nav-btn svg,
+  #appShell #sidebar .recent-item svg {
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.75px;
+  }
+
+  #appShell #sidebar .sidebar-scroll-area {
+    scrollbar-color: var(--ui-text-disabled) transparent;
+    scrollbar-width: thin;
+  }
+}
 /* Recents header icons are a phone-drawer affordance; desktop keeps the
    bare "Recents" label. */
 #appShell .recents-header-actions { display: none; }

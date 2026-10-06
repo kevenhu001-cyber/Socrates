@@ -19,7 +19,7 @@ body #composerToolsMenu.composer-tools-menu {
   max-height: min(44dvh, 336px);
   overflow-y: auto;
   overscroll-behavior: contain;
-  border-radius: 20px;
+  border-radius: var(--ui-radius-2xl);
   animation: none;
 }
 body #composerToolsMenu.composer-tools-menu::before { display: none; }
@@ -59,7 +59,13 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
   background: var(--ui-bg-surface);
   color: var(--ui-text-secondary);
 }
-#composerToolsMenu .composer-tools-icon svg { width: 22px; height: 22px; stroke-width: 1.8; }
+#composerToolsMenu .composer-tools-icon svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 #composerToolsMenu .composer-tools-copy > span { color: inherit; font-size: 16px; font-weight: 400; }
 #composerToolsMenu .composer-tools-copy small,
 #composerToolsMenu .composer-tools-item kbd { display: none; }

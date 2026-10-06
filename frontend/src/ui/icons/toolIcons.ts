@@ -31,11 +31,11 @@ function icon(body: string): string {
 /* One shared document silhouette (folded top-right corner) so `read`
    and `spec` are recognisably the same object with different marks on
    it, instead of two unrelated drawings. */
-const DOC = '<path d="M11.6 3.4H7a2.1 2.1 0 0 0-2.1 2.1v9a2.1 2.1 0 0 0 2.1 2.1h6a2.1 2.1 0 0 0 2.1-2.1V6.9Z"/><path d="M11.6 3.4v3.5h3.5"/>';
+const DOC = '<path d="M11.6 3.4H7a2.4 2.4 0 0 0-2.4 2.4v8.4a2.4 2.4 0 0 0 2.4 2.4h6a2.4 2.4 0 0 0 2.4-2.4V6.9Z"/><path d="M11.6 3.4v3.5h3.5"/>';
 
 export const STROKE_ICONS: Record<string, string> = {
   /* Terminal: rounded frame, prompt caret, cursor rule. */
-  command: icon('<rect x="2.9" y="3.7" width="14.2" height="12.6" rx="3.2"/><path d="m6.7 8.4 1.9 1.9-1.9 1.9"/><path d="M10.7 12.2h2.9"/>'),
+  command: icon('<rect x="2.9" y="3.7" width="14.2" height="12.6" rx="3.8"/><path d="m6.7 8.4 1.9 1.9-1.9 1.9"/><path d="M10.7 12.2h2.9"/>'),
   /* Pencil: one closed body, one collar line marking the ferrule. */
   fileChange: icon('<path d="M4.1 15.9l.8-3.2 8-8a1.85 1.85 0 0 1 2.6 2.6l-8 8z"/><path d="m11.7 5.5 2.6 2.6"/>'),
   /* Document with body copy. */
@@ -65,7 +65,7 @@ export const STROKE_ICONS: Record<string, string> = {
   /* Bookmark flag — memory / saved fact. */
   memory: icon('<path d="M5.5 3.4h9a1.6 1.6 0 0 1 1.6 1.6v12.5l-6.1-3.6-6.1 3.6V5a1.6 1.6 0 0 1 1.6-1.6Z"/>'),
   /* Browser window — site / page creation. */
-  site: icon('<rect x="2.9" y="4.2" width="14.2" height="11.6" rx="2.4"/><path d="M3.4 7.8h13.3"/><circle cx="5.5" cy="6" r=".7" fill="currentColor" stroke="none"/><circle cx="7.9" cy="6" r=".7" fill="currentColor" stroke="none"/>'),
+  site: icon('<rect x="2.9" y="4.2" width="14.2" height="11.6" rx="3"/><path d="M3.4 7.8h13.3"/><circle cx="5.5" cy="6" r=".7" fill="currentColor" stroke="none"/><circle cx="7.9" cy="6" r=".7" fill="currentColor" stroke="none"/>'),
   /* Sliders — the generic "some tool ran" mark. */
   tool: icon('<path d="M3.5 7.1h3M9.9 7.1h6.6"/><circle cx="8.2" cy="7.1" r="1.7"/><path d="M3.5 12.9h6.6M13.4 12.9h3.1"/><circle cx="11.8" cy="12.9" r="1.7"/>'),
   /* Run of several operations — a chain of steps read top-to-bottom: two
@@ -79,7 +79,7 @@ export const STROKE_ICONS: Record<string, string> = {
      Shared with the inline rows so a settled row's mark carries the
      same stroke weight as the tool glyph it replaces. */
   check: icon('<path d="m4.8 10.3 3.4 3.4 7.2-7.6"/>'),
-  stop: icon('<rect x="6.2" y="6.2" width="7.6" height="7.6" rx="2.1"/>'),
+  stop: icon('<rect x="6.2" y="6.2" width="7.6" height="7.6" rx="2.7"/>'),
   alert: icon('<path d="M10 5.2v5.3"/><circle cx="10" cy="14" r=".95" fill="currentColor" stroke="none"/>'),
 
   /* ── chevrons ───────────────────────────────────────────────────
