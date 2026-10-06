@@ -17,6 +17,17 @@ describe('attachmentIconName', () => {
     expect(attachmentIconName({ kind: 'file', name: 'clip', mime: 'video/mp4' })).toBe('play-outline');
   });
 
+  it('gives EPUB and RTF their own glyphs', () => {
+    expect(attachmentIconName({ kind: 'document', docKind: 'epub', name: 'book.epub', mime: '' })).toBe('book-outline');
+    expect(attachmentIconName({ kind: 'document', docKind: 'rtf', name: 'note.rtf', mime: '' })).toBe('journal-outline');
+  });
+
+  it('maps OpenDocument kinds onto their Office cousins', () => {
+    expect(attachmentIconName({ kind: 'document', docKind: 'odt', name: 'a.odt', mime: '' })).toBe('document-text-outline');
+    expect(attachmentIconName({ kind: 'document', docKind: 'ods', name: 'a.ods', mime: '' })).toBe('grid-outline');
+    expect(attachmentIconName({ kind: 'document', docKind: 'odp', name: 'a.odp', mime: '' })).toBe('easel-outline');
+  });
+
   it('classifies code and text files by extension', () => {
     expect(attachmentIconName({ kind: 'file', name: 'app.tsx', mime: '' })).toBe('code-slash-outline');
     expect(attachmentIconName({ kind: 'file', name: 'notes.md', mime: '' })).toBe('document-outline');

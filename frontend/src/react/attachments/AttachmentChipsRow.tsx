@@ -39,6 +39,16 @@ interface ChipProps {
 /* ChatGPT/Vercel-style meta label: the document/extension tag plus the
    size ("PDF · 2.3 MB"), "Uploading… 42%" while in flight, or a plain
    "Upload failed" the retry button clears. */
+/* Legacy .ppt has no server-side text extractor (.doc/.xls parse now,
+ * like ODT/ODS/ODP) — the model only ever sees its metadata. Surfaced
+ * on the chip so the user learns this before asking about the contents,
+ * not after. */
+const LEGACY_UNREADABLE = new Set(['ppt']);
+
+function isLegacyUnreadable(entry: AttachmentEntry): boolean {
+  return LEGACY_UNREADABLE.has(String(entry.docKind || '').toLowerCase());
+}
+
 function kindLabel(entry: AttachmentEntry): string {
   if (entry.docKind) return String(entry.docKind).toUpperCase();
   const name = String(entry.name || '');
@@ -67,13 +77,16 @@ function Chip({ entry, onRemove, onRetry }: ChipProps) {
   const imgSrc = imgCandidates[0];
   const isImage = entry.kind === 'image' && !!imgSrc;
   const progress = Math.min(Math.max(entry.progress ?? 0, 0), 100);
-  const meta = entry.pending
+  const baseMeta = entry.pending
     ? `${i18n('chat.attach.uploading', 'Uploading')}… ${Math.round(progress)}%`
     : entry.error
       ? i18n('chat.attach.failed', 'Upload failed')
       : entry.truncated
         ? i18n('chat.attach.truncated', '(truncated)')
         : `${kindLabel(entry)}${entry.size ? ` · ${formatAttachmentSize(entry.size)}` : ''}`;
+  const meta = !entry.pending && !entry.error && isLegacyUnreadable(entry)
+    ? `${baseMeta} · ${i18n('chat.attach.metadataOnly', 'metadata only — convert to DOCX/XLSX/PPTX or PDF to make it readable')}`
+    : baseMeta;
 
   return (
     <div

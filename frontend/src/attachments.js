@@ -41,9 +41,11 @@ export const MAX_FILE_BYTES = 25 * 1024 * 1024;   // 25 MB / file (server cap)
 export const MAX_IMAGE_BYTES = 4 * 1024 * 1024;   // 4 MB / image for INLINE dataUrl
 export const MAX_TOTAL_ATTACHMENTS = 6;
 /* How long a send waits for in-flight uploads before giving up and
-   marking the attachment incomplete. A 25 MB file on a slow link can
-   take a while; 2 minutes is generous without being unbounded. */
-export const ATTACHMENT_READY_TIMEOUT_MS = 120_000;
+   marking the attachment incomplete. Must match XHR_TIMEOUT_MS below:
+   aborting at 120s while XHR allows 300s would kill a healthy 25 MB
+   upload on a slow link just before it lands. */
+export const XHR_TIMEOUT_MS = 300_000; // 5 min — 25 MB on a slow link
+export const ATTACHMENT_READY_TIMEOUT_MS = XHR_TIMEOUT_MS;
 /* P_image-payload-alignment — the server caps every image payload at
    2,000,000 dataUrl chars (chat image_url Zod schema + persisted
    attachment schema). Anything above that is rejected with a 400/413
@@ -73,6 +75,9 @@ const ACCEPTED_DOC_MIMES = new Set([
   'application/msword', 'application/vnd.ms-excel', 'application/vnd.ms-powerpoint',
   'application/epub+zip',
   'application/rtf', 'text/rtf',
+  'application/vnd.oasis.opendocument.text',
+  'application/vnd.oasis.opendocument.spreadsheet',
+  'application/vnd.oasis.opendocument.presentation',
 ]);
 const ACCEPTED_MEDIA_MIMES = new Set([
   'video/mp4', 'video/webm', 'video/quicktime',
@@ -101,7 +106,10 @@ const TEXT_FILE_EXTENSIONS = new Set([
   '.ex', '.exs', '.erl', '.hrl', '.clj', '.cljs', '.hs', '.ml', '.fs', '.vb', '.ps1',
   '.bat', '.cmd', '.ipynb', '.diff', '.patch', '.gitignore', '.dockerignore', '.proto',
 ]);
-const DOC_FILE_EXTENSIONS = new Set(['.pdf', '.docx', '.xlsx', '.pptx', '.epub', '.rtf']);
+const DOC_FILE_EXTENSIONS = new Set(['.pdf', '.docx', '.xlsx', '.pptx', '.epub', '.rtf', '.odt', '.ods', '.odp']);
+/* .doc/.xls now parse server-side (word-extractor / SheetJS) so they
+   classify as documents; only .ppt stays metadata-only ('file'). */
+const READABLE_LEGACY_EXTENSIONS = new Set(['.doc', '.xls']);
 const LEGACY_OFFICE_EXTENSIONS = new Set(['.doc', '.xls', '.ppt']);
 const MEDIA_FILE_EXTENSIONS = new Set(['.mp4', '.webm', '.mov', '.mp3', '.wav', '.m4a', '.ogg', '.flac', '.aac']);
 
@@ -259,6 +267,11 @@ async function compressImageFile(file, onProgress) {
   return compressWithLegacyCanvas(file, onProgress);
 }
 
+/* Pixel-bomb guard — a few-MB PNG can decode to 10000×10000+.
+   Capping decoded pixels keeps the tab alive; the file reference
+   upload still lets the model read it via read_attachment. */
+const MAX_IMAGE_PIXELS = 36_000_000; // ~6000×6000
+
 /** OffscreenCanvas path — decode + encode away from the main thread. */
 async function compressWithOffscreenCanvas(file, onProgress) {
   let bitmap;
@@ -270,6 +283,7 @@ async function compressWithOffscreenCanvas(file, onProgress) {
   const srcW = bitmap.width;
   const srcH = bitmap.height;
   if (!srcW || !srcH) { bitmap.close(); return null; }
+  if (srcW * srcH > MAX_IMAGE_PIXELS) { bitmap.close(); return null; }
   try {
     const EDGE_STEPS = [2048, 1600, 1280, 1024, 800];
     const QUALITY_STEPS = [0.85, 0.75, 0.6, 0.45];
@@ -328,7 +342,7 @@ async function compressWithLegacyCanvas(file, onProgress) {
   }
   const srcW = img.naturalWidth || img.width || 0;
   const srcH = img.naturalHeight || img.height || 0;
-  if (!srcW || !srcH) {
+  if (!srcW || !srcH || srcW * srcH > MAX_IMAGE_PIXELS) {
     if (sourceUrl) {
       try { URL.revokeObjectURL(sourceUrl); } catch (e) { reportSwallow(e, 'attachments.compressWithLegacyCanvas.revokeSourceUrl'); /* noop */ }
     }
@@ -431,6 +445,7 @@ function classify(file) {
   const ext = extOf(file.name);
   if (TEXT_FILE_EXTENSIONS.has(ext)) return 'text';
   if (DOC_FILE_EXTENSIONS.has(ext)) return 'document';
+  if (READABLE_LEGACY_EXTENSIONS.has(ext)) return 'document';
   if (MEDIA_FILE_EXTENSIONS.has(ext) || LEGACY_OFFICE_EXTENSIONS.has(ext)) return 'file';
   return null;
 }
@@ -447,9 +462,15 @@ function docKindFromFile(file) {
   if (m === 'application/vnd.ms-powerpoint') return 'ppt';
   if (m === 'application/epub+zip') return 'epub';
   if (m === 'application/rtf' || m === 'text/rtf') return 'rtf';
+  if (m === 'application/msword') return 'doc';
+  if (m === 'application/vnd.ms-excel') return 'xls';
+  if (m === 'application/vnd.ms-powerpoint') return 'ppt';
+  if (m === 'application/vnd.oasis.opendocument.text') return 'odt';
+  if (m === 'application/vnd.oasis.opendocument.spreadsheet') return 'ods';
+  if (m === 'application/vnd.oasis.opendocument.presentation') return 'odp';
   /* Extension fallback. */
   const name = String((file && file.name) || '').toLowerCase();
-  for (const k of ['pdf', 'docx', 'xlsx', 'pptx', 'doc', 'xls', 'ppt', 'epub', 'rtf']) {
+  for (const k of ['pdf', 'docx', 'xlsx', 'pptx', 'doc', 'xls', 'ppt', 'epub', 'rtf', 'odt', 'ods', 'odp']) {
     if (name.endsWith('.' + k)) return k;
   }
   return 'document';
@@ -508,7 +529,7 @@ function uploadAttachmentFile(file, onProgress, onXhr) {
        dev stub both strip it back to /api/files. */
     xhr.open('POST', '/api/v2/files');
     if (csrf) xhr.setRequestHeader('X-CSRF-Token', csrf);
-    xhr.timeout = 300000; // 5 min — 25 MB on a slow link
+    xhr.timeout = XHR_TIMEOUT_MS;
     xhr.send(fd);
   });
 }
@@ -571,10 +592,15 @@ async function prepareAttachment(entry, file, reportProgress) {
 
     entry.pending = false;
     entry.progress = 100;
-    /* The blob thumbnail was only needed until the durable file (or the
-       inline dataUrl) existed — the chip now renders from
-       /api/files/:id/raw or dataUrl. */
-    if (entry.thumbnailUrl) {
+
+    const usable = !!(uploadOutcome && uploadOutcome.fileId) || !!entry.dataUrl;
+    /* Keep the blob thumbnail while the entry is unusable (weak-net
+       abort / timeout with no fileId and no dataUrl): it is the only
+       image source the error chip has, so revoking it here would drop
+       the photo to a generic kind icon. Usable entries render from
+       /api/files/:id/raw or dataUrl, so the blob can be freed.
+       Lifetime of a kept thumbnail still ends at remove/reset/retry. */
+    if (usable && entry.thumbnailUrl) {
       try { URL.revokeObjectURL(entry.thumbnailUrl); } catch (e) { reportSwallow(e, 'attachments.prepareAttachment.revokeThumbnail'); /* noop */ }
       entry.thumbnailUrl = undefined;
     }

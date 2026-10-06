@@ -23,13 +23,26 @@ function assetName(asset: NativeFileAsset, fallback: string) {
   return asset.name || asset.fileName || fallback;
 }
 
-function imageAttachment(asset: NativeFileAsset): Attachment {
+const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'avif']);
+
+function isImageAsset(asset: NativeFileAsset): boolean {
+  if (asset.mimeType?.toLowerCase().startsWith('image/')) return true;
+  const name = asset.name || asset.fileName || '';
+  const ext = (name.toLowerCase().split('.').pop() || '').trim();
+  return IMAGE_EXTENSIONS.has(ext);
+}
+
+async function imageAttachment(asset: NativeFileAsset, sessionId?: string | null): Promise<Attachment> {
   const mime = imageMime(asset);
   const encoded = asset.base64 || '';
   if (!encoded) throw new Error(tSync('chat.imageReadFailed'));
+  // Estimate the dataUrl length BEFORE allocating the concatenated string:
+  // a ~1.5 MB base64 payload already expands past the server's 2M-char
+  // image_url cap, and building the string first would peak memory.
+  const prefixLen = encoded.startsWith('data:') ? 0 : `data:${mime};base64,`.length;
+  if (encoded.length + prefixLen > MAX_IMAGE_DATA_URL_CHARS) throw new Error(tSync('chat.imageTooLarge'));
   const dataUrl = encoded.startsWith('data:') ? encoded : `data:${mime};base64,${encoded}`;
-  if (dataUrl.length > MAX_IMAGE_DATA_URL_CHARS) throw new Error(tSync('chat.imageTooLarge'));
-  return {
+  const attachment: Attachment = {
     id: id('image'),
     kind: 'image',
     name: assetName(asset, 'image'),
@@ -37,6 +50,25 @@ function imageAttachment(asset: NativeFileAsset): Attachment {
     dataUrl,
     size: asset.fileSize || asset.size || 0,
   };
+  // Durable copy: web uploads every file AND keeps the inline dataUrl for
+  // multimodal turns. Without a fileId the image vanishes after reload
+  // (no re-read via read_attachment). Best-effort — an upload failure
+  // keeps the inline-only fallback for this turn.
+  if (asset.uri) {
+    try {
+      const uploaded = await filesApi.upload({
+        uri: asset.uri,
+        name: assetName(asset, 'image'),
+        mimeType: mime,
+        size: asset.size || asset.fileSize,
+      }, sessionId || undefined);
+      attachment.id = uploaded.id;
+      (attachment as { fileId?: string }).fileId = uploaded.id;
+    } catch {
+      // Inline-only fallback stays usable for this turn.
+    }
+  }
+  return attachment;
 }
 
 async function documentAttachment(asset: NativeFileAsset, sessionId?: string | null): Promise<Attachment> {
@@ -77,6 +109,9 @@ export async function pickChatAttachment(source: ChatAttachmentSource, sessionId
       : await native.capturePhoto();
   const asset = result.assets?.[0];
   if (result.canceled || !asset) return null;
-  if (source !== 'file' || asset.mimeType?.startsWith('image/') || asset.base64) return imageAttachment(asset);
+  // Classify by source + type/extension — never by base64 presence
+  // (DocumentPicker assets carry no base64, but a future picker change
+  // must not turn a PDF into a corrupt image/jpeg).
+  if (source !== 'file' || isImageAsset(asset)) return imageAttachment(asset, sessionId);
   return documentAttachment(asset, sessionId);
 }

@@ -245,6 +245,19 @@ export const writeLimiter = rateLimit({
   message: jsonLimit('TOO_MANY_REQUESTS', 'Write rate limit exceeded.'),
 });
 
+/* Uploads share writeLimiter's window in older builds, so an upload
+ * flood starved chat sends (and chat spam blocked uploads). A separate
+ * bucket — 60/min/user covers 6-attachment turns with retry headroom
+ * while bounding disk-write abuse independently of message writes. */
+export const uploadLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  keyGenerator: (req) => req.userId || req.ip!,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: jsonLimit('TOO_MANY_REQUESTS', 'Upload rate limit exceeded.'),
+});
+
 /* P_vision-limit — /api/vision/describe costs a 150-300 ms mmx CLI
    spawn + an upstream vision quota unit per call. Authenticated
    users could otherwise burn through the shared MiniMax vision

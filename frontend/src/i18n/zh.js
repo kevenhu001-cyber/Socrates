@@ -118,6 +118,7 @@ export const zh = {
     "chat.attach.uploadTimeout":"上传超时。",
     "chat.attach.cancelled":"上传已取消。",
     "chat.attach.truncated":"（已截断）",
+    "chat.attach.metadataOnly":"仅元数据——请转为 DOCX/XLSX/PPTX 或 PDF 以便读取内容",
     /* P_attachments-multimodal — see matching en block. */
     "provider.multimodal":"多模态（支持图像理解）",
     "provider.multimodalHint":"允许将图片附件发送给此模型",

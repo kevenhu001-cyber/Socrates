@@ -24,7 +24,14 @@ export function attachmentIconName(attachment: Pick<Attachment, 'kind' | 'docKin
   if (['xlsx', 'xls'].includes(docKind) || extension === 'xls' || extension === 'xlsx') return 'grid-outline';
   if (['pptx', 'ppt'].includes(docKind) || extension === 'ppt' || extension === 'pptx') return 'easel-outline';
   if (docKind === 'pdf' || mime === 'application/pdf' || extension === 'pdf') return 'document-text-outline';
-  if (docKind === 'epub' || docKind === 'rtf') return 'document-outline';
+  // EPUB reads as a book, RTF as a formatted note — both previously fell
+  // through to the generic document glyph. ODF maps onto its closest
+  // Office cousin, mirroring web pickIcon.
+  if (docKind === 'epub' || extension === 'epub') return 'book-outline';
+  if (docKind === 'rtf' || extension === 'rtf') return 'journal-outline';
+  if (docKind === 'ods' || extension === 'ods') return 'grid-outline';
+  if (docKind === 'odp' || extension === 'odp') return 'easel-outline';
+  if (docKind === 'odt' || extension === 'odt') return 'document-text-outline';
 
   if (attachment.kind === 'image' || mime.startsWith('image/')) return 'image-outline';
   if (mime.startsWith('audio/') || mime.startsWith('video/')
@@ -38,8 +45,9 @@ export function attachmentIconName(attachment: Pick<Attachment, 'kind' | 'docKin
   if ([
     'py', 'js', 'jsx', 'ts', 'tsx', 'mjs', 'cjs', 'java', 'kt', 'kts', 'swift',
     'go', 'rs', 'rb', 'php', 'c', 'cc', 'cpp', 'cxx', 'h', 'hpp', 'm', 'mm',
-    'cs', 'scala', 'sh', 'bash', 'zsh', 'sql', 'r', 'lua', 'pl', 'dart', 'ex',
+    'cs', 'scala', 'sh', 'bash', 'zsh', 'fish', 'sql', 'r', 'lua', 'pl', 'dart', 'ex',
     'exs', 'elm', 'clj', 'html', 'htm', 'xml', 'vue', 'svelte', 'yaml', 'yml', 'toml',
+    'css', 'scss', 'less', 'ipynb', 'diff', 'patch', 'proto', 'ps1', 'bat', 'cmd',
   ].includes(extension)) {
     return 'code-slash-outline';
   }
@@ -64,6 +72,11 @@ export function AttachmentChip({ attachment, onRemove, progress, pending, error 
   const isImage = attachment.kind === 'image' && Boolean(attachment.dataUrl);
   const iconColor = colors.voiceBlue; // web uses a single soft blue across kinds
   const showProgress = typeof progress === 'number' && progress >= 0;
+  // Legacy .ppt has no text extractor (.doc/.xls parse server-side now,
+  // like ODT/ODS/ODP) — flag it the way web does so the user learns it
+  // before asking about the contents.
+  const legacyKind = String(attachment.docKind || '').toLowerCase();
+  const isLegacyUnreadable = legacyKind === 'ppt';
 
   return (
     <View
@@ -92,6 +105,11 @@ export function AttachmentChip({ attachment, onRemove, progress, pending, error 
       </Text>
       {attachment.truncated && !pending ? (
         <Text style={[styles.meta, { color: colors.textSubtle, fontFamily: typography.body }]}>(truncated)</Text>
+      ) : null}
+      {isLegacyUnreadable && !pending ? (
+        <Text style={[styles.meta, { color: colors.textSubtle, fontFamily: typography.body }]}>
+          {t('chat.attach.metadataOnly')}
+        </Text>
       ) : null}
       {onRemove ? (
         <AnimatedPressable

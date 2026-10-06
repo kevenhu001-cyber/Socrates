@@ -56,6 +56,17 @@ const TEXT_ICON =
   '<line x1="8" y1="17" x2="14" y2="17"/>' +
   '</svg>';
 
+/* EPUB — open-book glyph (two facing pages) so it reads as a book,
+ * not a plain text file. RTF keeps the document outline with its own
+ * three-letter tag at the PDF tag size. */
+const EPUB_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<path d="M12 6c-2-1.5-5-2-8-2v14c3 0 6 0.5 8 2 2-1.5 5-2 8-2V4c-3 0-6 0.5-8 2z"/>' +
+  '<line x1="12" y1="6" x2="12" y2="20"/>' +
+  '</svg>';
+const RTF_ICON =
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_OUTLINE}<text x="12" y="16" text-anchor="middle" font-size="6.5" font-weight="700" font-family="ui-sans-serif,system-ui,sans-serif" fill="currentColor" stroke="none">RTF</text></svg>`;
+
 /* Code — angular brackets framing a slash. Matches the `< />` glyph
  * the user requested in the reference image. */
 const CODE_ICON =
@@ -92,9 +103,11 @@ const CODE_EXTENSIONS = new Set([
   'py', 'js', 'jsx', 'ts', 'tsx', 'mjs', 'cjs',
   'java', 'kt', 'kts', 'swift', 'go', 'rs', 'rb',
   'php', 'c', 'cc', 'cpp', 'cxx', 'h', 'hpp', 'm', 'mm',
-  'cs', 'scala', 'sh', 'bash', 'zsh', 'sql', 'r',
+  'cs', 'scala', 'sh', 'bash', 'zsh', 'fish', 'sql', 'r',
   'lua', 'pl', 'dart', 'ex', 'exs', 'elm', 'clj',
   'html', 'htm', 'xml', 'vue', 'svelte', 'yaml', 'yml', 'toml',
+  'css', 'scss', 'less', 'ipynb', 'diff', 'patch', 'proto',
+  'ps1', 'bat', 'cmd',
 ]);
 const TEXT_EXTENSIONS = new Set(['txt', 'md', 'markdown', 'rst', 'log', 'json', 'csv', 'tsv']);
 
@@ -119,7 +132,12 @@ function pickIcon(entry: IconSource): string {
   if (docKind === 'xlsx' || docKind === 'xls') return EXCEL_ICON;
   if (docKind === 'pptx' || docKind === 'ppt') return POWERPOINT_ICON;
   if (docKind === 'pdf') return PDF_ICON;
-  if (docKind === 'epub' || docKind === 'rtf') return TEXT_ICON;
+  if (docKind === 'epub') return EPUB_ICON;
+  if (docKind === 'rtf') return RTF_ICON;
+  /* OpenDocument maps onto its closest Office cousin. */
+  if (docKind === 'ods') return EXCEL_ICON;
+  if (docKind === 'odp') return POWERPOINT_ICON;
+  if (docKind === 'odt') return TEXT_ICON;
 
   const mime = String(entry.mime || '').toLowerCase();
   if (mime.startsWith('image/')) return IMAGE_ICON;

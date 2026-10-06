@@ -589,7 +589,17 @@ export function RichComposer({ placeholder, onSubmit, onEscape, showToolbar = fa
         FORBID_ATTR: ['style', 'onerror', 'onclick'],
       }),
       handlePaste: (_view, event) => {
+        // Screenshots from the OS clipboard usually arrive via
+        // clipboardData.items (kind === 'file'), with .files empty —
+        // checking only .files drops the most common paste case.
         const files = Array.from(event.clipboardData?.files ?? []);
+        const items = event.clipboardData?.items ? Array.from(event.clipboardData.items) : [];
+        for (const item of items) {
+          if (item.kind === 'file' && typeof item.getAsFile === 'function') {
+            const f = item.getAsFile();
+            if (f && !files.includes(f)) files.push(f);
+          }
+        }
         if (!files.length) return false;
         event.preventDefault();
         void addComposerFiles(files, 'paste');

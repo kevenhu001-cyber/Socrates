@@ -1,5 +1,7 @@
 # Frontend → React Native 完全改造方案
 
+> **⚠️ 历史分析（2026-09-27）** — 本文是对"把 `frontend/` 整体改造为 RN 应用"这一**被否决方案**的可行性评估，结论是继续 `mobile/` 路线（另见 `docs/adr/0001-spa-react-alignment.md` 与已被搁置的 `unification-plan.md`）。文中行数、进度等数字均以撰文时代码为准（如 "10k 行 main.js"——现已拆分至 ~925 行），**勿按当前代码理解，勿按此方案动工**。
+
 ## 执行摘要
 
 **目标：** 将 `frontend/` (10k行 legacy JS + React/TS) 改造为 React Native 应用

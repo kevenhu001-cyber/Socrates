@@ -1,14 +1,17 @@
 /**
  * Document text extraction endpoint.
  *
- * Accepts multipart uploads of PDF / DOCX / XLSX / PPTX / EPUB / RTF
- * and returns the extracted plain-text body. The original file is NOT
+ * Accepts multipart uploads of PDF / DOCX / XLSX / PPTX / EPUB / RTF /
+ * DOC / XLS / ODT / ODS / ODP and returns the extracted plain-text
+ * body. The original file is NOT
  * persisted — only the extracted text comes back. Same security
  * posture as before: keeps /api/files quota policy unchanged and
  * avoids "delete after extract" cleanup.
  *
  * Limits:
- *   - writeLimiter (120/min/user) — CPU work counts against it.
+ *   - uploadLimiter (60/min/user) — CPU work counts against the upload bucket.
+ *   - Legacy .ppt has no extractor and stays rejected here (metadata-only
+ *     via /api/files, same as read_attachment).
  *   - 25 MB upload cap (matches /api/files MAX_SIZE).
  *   - Output text capped at MAX_TEXT_BYTES (200 KB) so a single
  *     large spreadsheet cannot blow the LLM prompt budget.
@@ -33,7 +36,7 @@ import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs/promises';
 import { requireAuth } from '../middleware/auth.js';
-import { writeLimiter } from '../middleware/rateLimit.js';
+import { uploadLimiter } from '../middleware/rateLimit.js';
 import { BadRequest, PayloadTooLarge } from '../lib/errors.js';
 import { extractText as dispatch, SUPPORTED_MIMES } from '../services/fileParsers/index.js';
 
@@ -69,6 +72,11 @@ function normalizeMime(raw: string, originalName: string) {
     if (ext === '.pptx') return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
     if (ext === '.epub') return 'application/epub+zip';
     if (ext === '.rtf') return 'application/rtf';
+    if (ext === '.doc') return 'application/msword';
+    if (ext === '.xls') return 'application/vnd.ms-excel';
+    if (ext === '.odt') return 'application/vnd.oasis.opendocument.text';
+    if (ext === '.ods') return 'application/vnd.oasis.opendocument.spreadsheet';
+    if (ext === '.odp') return 'application/vnd.oasis.opendocument.presentation';
   }
   return m;
 }
@@ -89,6 +97,11 @@ const upload = multer({
       'application/vnd.openxmlformats-officedocument.presentationml.presentation',
       'application/epub+zip',
       'application/rtf', 'text/rtf',
+      'application/msword',
+      'application/vnd.ms-excel',
+      'application/vnd.oasis.opendocument.text',
+      'application/vnd.oasis.opendocument.spreadsheet',
+      'application/vnd.oasis.opendocument.presentation',
     ];
     if (allowed.includes(mime)) return cb(null, true);
     cb(new BadRequest(`Unsupported file type: ${file.mimetype}`));
@@ -101,7 +114,7 @@ const router = Router();
  * POST /api/files/extract — accept a PDF/Office document, return
  *   { ok, text, truncated, meta, name, kind }
  */
-router.post('/extract', requireAuth, writeLimiter, (req, res, next) => {
+router.post('/extract', requireAuth, uploadLimiter, (req, res, next) => {
   upload.single('file')(req, res, async (multerErr: (Error & { code?: string }) | null) => {
     const cleanup = () => (req as any).file?.path
       ? fs.unlink((req as any).file.path).catch(() => {})
@@ -183,6 +196,11 @@ function kindFromMime(mime: string) {
   if (mime === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') return 'pptx';
   if (mime === 'application/epub+zip') return 'epub';
   if (mime === 'application/rtf' || mime === 'text/rtf') return 'rtf';
+  if (mime === 'application/msword') return 'doc';
+  if (mime === 'application/vnd.ms-excel') return 'xls';
+  if (mime === 'application/vnd.oasis.opendocument.text') return 'odt';
+  if (mime === 'application/vnd.oasis.opendocument.spreadsheet') return 'ods';
+  if (mime === 'application/vnd.oasis.opendocument.presentation') return 'odp';
   return 'document';
 }
 

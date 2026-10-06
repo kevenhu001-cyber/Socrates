@@ -35,7 +35,7 @@ scripts/
 | `restart-server.sh` | 自包含 |
 | `rotate-secrets.sh` | `scripts/backup-secrets.sh` 内部调用 |
 | `clean-local-artifacts.sh` | `scripts/README.md`（本文）引用方式说明 |
-| `test-deploy-flow.sh` | `.github/workflows/build-apk.yml:189`（**CI 强约束**） |
+| `test-deploy-flow.sh` | `.github/workflows/build-apk.yml`（`bash scripts/test-deploy-flow.sh` 步骤，**CI 强约束**） |
 
 **严禁把上表脚本移入子目录**。如需调整，先改所有调用点 + 更新 CI 流水线。
 

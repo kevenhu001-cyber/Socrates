@@ -29,7 +29,8 @@ tools-rust/
     ├── socrates-protocol/      # SSE event serde models + tool-run phase state machine
     ├── socrates-format/        # truncate_lines / LiveBuffer / group_tool_calls / categorize
     ├── socrates-stream/        # StreamController + AdaptiveChunkingPolicy
-    └── socrates-wasm/          # wasm-bindgen bindings (cdylib) over the three above
+    ├── socrates-fetch/         # socrates-fetchd JSONL worker for the server web_fetch path
+    └── socrates-wasm/          # wasm-bindgen bindings (cdylib) over protocol/format/stream
 ```
 
 Each crate owns its own `Cargo.toml` and its `tests/` module under `src/`.
@@ -174,7 +175,7 @@ The regular `npm run lint`, `npm run typecheck`, `npm run test:unit`, and
 
 - `frontend/src/main.js` message-flow rewire onto `StreamController` /
   `ChunkingPolicy`. The top-level stream path is tightly coupled with the
-  `textOffset` inline-insert mechanism across a 9546-line entry file;
+  `textOffset` inline-insert mechanism across the ~925-line entry file;
   v1 only delivers the WASM API plus its tests. See [v2 roadmap](#v2-roadmap).
 - General server-side Rust-ification remains deferred; `server/` keeps its
   existing TypeScript stack outside the fetch and extraction canaries.

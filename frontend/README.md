@@ -15,7 +15,7 @@ explicit migration boundaries; React does not own every user-facing flow yet.
 | Rendering | `src/render/` | Markdown, code blocks, diagrams, visualizations, and artifacts |
 | Legacy UI modules | `src/ui/`, `src/sidebar/` | Existing DOM behaviors and adapters used during migration |
 | Extensions | `src/extensions/` | Shared declarations and dispatch for composer workflows |
-| Localization | `src/i18n.js` | English and Chinese dictionaries and language switching |
+| Localization | `src/i18n.js`, `src/i18n/` | English dictionary in `i18n.js`; Chinese split into `i18n/zh.js`; language switching |
 | Styles | `src/styles/index.css` | The only CSS entry point and the cascade manifest |
 | Browser checks | `e2e/`, `playwright*.config.mjs` | Focused Playwright flows and responsive checks |
 

@@ -86,6 +86,10 @@
 }
 #appShell .library-row-menu button { padding: 8px 10px; border: 0; border-radius: var(--ui-radius-sm); background: transparent; color: var(--ui-text-primary); font: inherit; text-align: left; cursor: pointer; }
 #appShell .library-row-menu button:hover { background: var(--ui-bg-hover); }
+/* The Download entry is an <a download> so the bytes save directly —
+ * styled exactly like its button siblings. */
+#appShell .library-row-menu .library-row-menu-link { display: block; padding: 8px 10px; border-radius: var(--ui-radius-sm); color: var(--ui-text-primary); font: inherit; text-align: left; text-decoration: none; cursor: pointer; }
+#appShell .library-row-menu .library-row-menu-link:hover { background: var(--ui-bg-hover); }
 #appShell .library-row .library-mobile-meta { color: var(--ui-text-tertiary); }
 #appShell .scheduled-recommendation-add { visibility: visible; }
 

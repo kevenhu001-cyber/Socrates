@@ -52,7 +52,7 @@ test('extension sets cover the upload allow-list categories', () => {
   for (const ext of ['.py', '.ts', '.csv', '.md', '.json']) {
     assert.ok(TEXT_FILE_EXTENSIONS.has(ext), `TEXT_FILE_EXTENSIONS missing ${ext}`);
   }
-  for (const ext of ['.pdf', '.docx', '.xlsx', '.pptx', '.epub', '.rtf']) {
+  for (const ext of ['.pdf', '.docx', '.xlsx', '.pptx', '.epub', '.rtf', '.odt', '.ods', '.odp']) {
     assert.ok(DOCUMENT_FILE_EXTENSIONS.has(ext), `DOCUMENT_FILE_EXTENSIONS missing ${ext}`);
   }
   for (const ext of ['.mp4', '.mp3', '.wav']) {

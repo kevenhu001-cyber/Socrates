@@ -2,7 +2,7 @@
 
 > 日期:2026-08-01
 > 范围:`frontend/src/` 的扩展(Extensions)子系统
-> 状态:设计评审稿 —— 评审通过后按本文档实施
+> 状态:**已实施** —— 脚手架已落地为 `frontend/src/extensions/`(`index.ts` / `registry.ts` / `types.ts` / `context.ts` / `modules/`),下文表格中的"现状"描述的是实施前代码,行号与归属以撰文时为准
 
 ## 1. 现状与问题
 

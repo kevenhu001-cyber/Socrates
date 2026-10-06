@@ -220,8 +220,8 @@ sequenceDiagram
 | --- | --- | --- |
 | Web SPA | React/TypeScript + 遗留 JS 兼容层，Vite 构建 | [`frontend/`](frontend/) — ~99% 迁移完成，所有 UI 层由 React 驱动 |
 | Markdown | `marked` 4.3 + 自定义渐进渲染器 | 见[自定义渲染管线](#自定义渲染管线) |
-| 数学公式 | `katex` 0.16.9 (CDN, SRI 固定) | 显示模式 + 行内模式 |
-| 代码高亮 | `highlight.js`（完成时延迟加载） | |
+| 数学公式 | `katex` 0.16.9（vendored，见 [`frontend/src/vendor-files/katex/`](frontend/src/vendor-files/katex/)） | 显示模式 + 行内模式 |
+| 代码高亮 | `highlight.js`（vendored，完成时延迟加载） | [`frontend/src/vendor-files/highlight.min.js`](frontend/src/vendor-files/highlight.min.js) |
 | 搜索 | `fuse.js` 用于 Cmd-K 面板 | |
 | 认证 | Cookie (`sid`) + CSRF 双重提交 | 见 `server/src/middleware/auth.ts` |
 | 后端 | TypeScript, Express 5, Node.js ESM | [`server/src/`](server/src/) |
@@ -239,7 +239,7 @@ sequenceDiagram
 | 跨端核心 | SSE 分帧、聊天事件路由、会话纯函数 | [`packages/core/`](packages/core/) |
 | CI | GitHub Actions: RN 类型检查、测试、Web 基线和 APK | [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml) |
 | 边缘 | nginx 反向代理 + 静态文件服务 | [deploy.sh](deploy.sh) |
-| CDN 依赖 | `cdn.jsdelivr.net` (KaTeX, marked) — 全部 SRI 固定 | |
+| vendored 前端库 | KaTeX + highlight.js + Plotly + Mermaid + ECharts（UMD，位于 [`frontend/src/vendor-files/`](frontend/src/vendor-files/)）；marked + DOMPurify + fuse.js 走 npm —— 无 CDN 回退 | 见 `frontend/src/vendor-files/README.md` |
 
 ## 仓库布局
 
@@ -248,15 +248,17 @@ Socrates/
 ├── frontend/               # Vite SPA (React/TS + 遗留 JS)
 │   ├── index.html
 │   ├── src/
-│   │   ├── main.js         # 状态/事件主干 (~8k 行)
-│   │   ├── styles.css      # 全部 CSS (~3800 行)
-│   │   ├── state.js        # 响应式状态对象
-│   │   ├── i18n.js         # I18N 字典
+│   │   ├── main.js         # 状态/事件主干 (~925 行)
+│   │   ├── styles/         # 全部 CSS —— index.css 入口、themes.css、
+│   │   │                   #  legacy/ 切片、parity/ 各面所有者
+│   │   ├── state/          # 分领域状态桥（session、kb、ui……）
+│   │   ├── store/          # createDomainStore 工厂 + index hooks
+│   │   ├── i18n.js         # I18N 字典（en）+ 语言切换
+│   │   ├── i18n/zh.js      # zh 字典（从 i18n.js 拆出）
 │   │   ├── windowExports.js# 遗留 window.* 兼容垫片
 │   │   ├── types/          # TypeScript 类型定义
-│   │   ├── react/          # React/TS UI 层 (23 个模块)
+│   │   ├── react/          # React/TS UI 层 (~34 个模块)
 │   │   │   ├── bootstrap.tsx
-│   │   │   ├── chatRuntimeStore.ts
 │   │   │   ├── useChatRuntime.ts
 │   │   │   ├── message-list/
 │   │   │   ├── session-list/
@@ -264,17 +266,22 @@ Socrates/
 │   │   │   ├── composer/
 │   │   │   ├── cmdk/
 │   │   │   ├── settings/
+│   │   │   ├── pages/
 │   │   │   ├── legacy/     # 类型化桥接 (gateway.ts)
 │   │   │   └── ...
+│   │   ├── app/            # 启动装配 + legacyBridge.js
 │   │   ├── ui/             # 遗留 UI 模块
-│   │   │   ├── delegate.js # 全局事件委托
+│   │   │   ├── legacyShellListeners.js # 显式 shell 元素映射
 │   │   │   └── ...
-│   │   ├── render/         # Markdown 渲染器
+│   │   ├── render/         # Markdown 渲染器（markdown.ts 承载
+│   │   │                   #  formatMsg / formatMsgProgressive）
 │   │   ├── chat/           # 对话逻辑
 │   │   ├── session/
 │   │   ├── sidebar/
 │   │   ├── storage/
 │   │   ├── auth/
+│   │   ├── extensions/     # 输入区扩展声明
+│   │   ├── vendor-files/   # vendored UMD 库（KaTeX、hljs、Plotly……）
 │   │   └── ...
 │   ├── dist/               # 构建产物 (gitignored)
 │   ├── e2e/                # Playwright e2e 测试
@@ -288,7 +295,8 @@ Socrates/
 │   ├── drizzle/            # 数据库迁移
 │   └── src/
 │       ├── index.js        # 稳定的生产兼容入口
-│       ├── index.runtime.ts # 运行时入口
+│       ├── index.runtime.ts # 精简启动编排（~64 行）
+│       ├── boot/           # startup.ts / lifecycle.ts 启动阶段
 │       ├── app.ts          # Express 应用、中间件
 │       ├── db/             # Drizzle schema、迁移、客户端
 │       ├── lib/            # 错误处理、加密
@@ -305,8 +313,17 @@ Socrates/
 ├── prompts/
 │   └── teacher-mode.md     # 苏格拉底教师提示词（原样）
 ├── docs/
+│   ├── adr/                # 架构决策记录
 │   ├── api/openapi.yaml    # 完整 REST + SSE API 规范
-│   └── assets/hero.svg     # README 英雄图片
+│   ├── audits/             # 带日期的审计/复盘快照
+│   ├── plans/              # 设计与迁移计划
+│   ├── ref/                # 参考抓取与操作手册
+│   ├── assets/hero.svg     # README 英雄图片
+│   └── STRUCTURE.md        # docs/ 落点约定
+├── capacitor/              # 遗留 Capacitor WebView 壳（冻结）
+├── tools-rust/             # Rust 机制库（native + WASM）
+├── ops/nginx/              # CSP + 性能 nginx 片段
+├── scripts/                # 运维与 CI 工具脚本
 ├── deploy.sh               # nginx 部署脚本
 ├── README.md               # 英文版
 └── README.zh.md            # 中文版
@@ -385,6 +402,9 @@ APK/AAB 使用
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | 否 | — | 邮箱验证和密码重置必需 |
 | `FCM_SERVER_KEY` | 否 | — | Android 客户端推送通知 |
 | `BEAGLE_BUILT_IN.key` | 否 | 空 | 覆盖内置提供商密钥（优先级高于 `BEAGLE_SYSTEM_KEY`） |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | 否 | — | **开启 tracing**：OTLP/HTTP collector 地址（如 `http://collector:4318`）。未设置则不加载 SDK —— 见 [`server/src/lib/telemetry.ts`](server/src/lib/telemetry.ts) |
+| `OTEL_SERVICE_NAME` | 否 | `socrates-api` | 导出 span 的服务名 |
+| `OTEL_TRACES_SAMPLER_ARG` | 否 | `1.0` | tracing 开启时的采样率 |
 
 用户在"账号 → API 密钥"中自行配置提供商，后端不会记录明文密钥。
 
@@ -394,8 +414,8 @@ Socrates 内置**两套** Markdown 渲染器，根据模型是否完成回复切
 
 | 渲染器 | 位置 | 使用时机 |
 | --- | --- | --- |
-| `formatMsgProgressive` | `frontend/src/main.js` | 流式输出中，每帧执行。逐行状态机，不依赖 `marked` |
-| `formatMsg` | `frontend/src/main.js` | `finish()` 时、重新打开已保存消息、复制/导出时。完整管线：`marked` + KaTeX + highlight.js + viz iframe + 推理块处理 |
+| `formatMsgProgressive` | `frontend/src/render/markdown.ts` | 流式输出中，每帧执行。逐行状态机，不依赖 `marked` |
+| `formatMsg` | `frontend/src/render/markdown.ts` | `finish()` 时、重新打开已保存消息、复制/导出时。完整管线：`marked` + KaTeX + highlight.js + viz iframe + 推理块处理 |
 
 核心设计原则：
 
@@ -465,7 +485,7 @@ Android 客户端由 GitHub Actions 自动构建，产物可在 Actions 页下�
 - **API 密钥** — 静态加密存储，SPA 仅显示掩码预览（`sk-…abcd`），代理仅在单次请求期间内存中持有密钥
 - **Viz iframe** — 沙箱隔离（`sandbox="allow-scripts"`，默认不含 `allow-same-origin`），恶意 HTML 无法接触父 DOM 或用户 cookie
 - **文档上传** — 非图片文件通过 `Content-Disposition: attachment` 强制下载；HTML/XHTML 上传在 multer 层面拦截
-- **CSP** — 生产环境建议在 nginx 层配置，SPA 未内置
+- **CSP** — 已内置并从单一来源生成：`server/src/app.ts` 通过 helmet 为每个响应设置策略，`ops/nginx/csp-spa.conf` 为 nginx 服务的 SPA 文档携带同一策略；两者连同 `index.html` 两个内联脚本的 `script-src` hash 均由 `scripts/gen-csp-hashes.mjs` 生成，`frontend/` 的 `npm run lint` 会在漂移时失败。`object-src` 与 `frame-ancestors` 为 `'none'`；`script-src` 保留 `'unsafe-inline'` 是有意的权衡 —— viz iframe（`srcdoc`）继承父文档 CSP，而模型生成的可视化脚本天然是内联的；iframe 一旦改走真实同源 URL（如 `/s/:token` 的模式）即可收紧
 - **邮箱验证** — 创建首条对话前必需，按 IP 限制速率
 
 ## 仓库可见性

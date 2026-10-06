@@ -129,6 +129,10 @@ export function openLibraryItem(id: string, _kind: string, collection?: string):
   const name = file.name || i18n('library.untitled', 'Untitled');
   const mime = String(file.mimeType || '').toLowerCase();
   const rawUrl = '/api/v2/files/' + encodeURIComponent(file.id) + '/raw?inline=1';
+  // Direct download for the original bytes: documents force-download via
+  // Content-Disposition server-side; the `download` attribute covers the
+  // inline-served kinds (images/PDF/media) so every preview can be saved.
+  const downloadUrl = '/api/v2/files/' + encodeURIComponent(file.id) + '/raw';
   const isMedia = mime.startsWith('image/') || mime === 'application/pdf' || mime.startsWith('video/') || mime.startsWith('audio/');
   let body: string;
   if (mime.startsWith('image/')) {
@@ -143,7 +147,8 @@ export function openLibraryItem(id: string, _kind: string, collection?: string):
     body = '<div id="libraryFilePreviewBody" class="library-file-preview-loading">' + i18n('library.preview.loading', 'Loading file content…') + '</div>';
   }
 
-  openLibraryDetail(name, mime || i18n('library.preview.file', 'File'), body, i18n('dialog.close', 'Close'));
+  const downloadRow = `<div class="library-file-download"><a class="workspace-row-action" href="${escapeHtml(downloadUrl)}" download="${escapeHtml(name)}">${escapeHtml(i18n('library.download', 'Download original'))}</a></div>`;
+  openLibraryDetail(name, mime || i18n('library.preview.file', 'File'), downloadRow + body, i18n('dialog.close', 'Close'));
   if (!isMedia) void loadLibraryFileContent(file.id);
 }
 

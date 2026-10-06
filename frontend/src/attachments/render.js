@@ -30,7 +30,20 @@ function _publishAttachments(){
 }
 
 /* Rejections surface per-file through addFiles' onRejected callback
-   (showToast) so a slow in-flight upload never delays them. */
+   (showToast) so a slow in-flight upload never delays them. Identical
+   messages inside a short window collapse into one toast — selecting
+   six over-quota files used to fire six identical toasts. */
+let _lastToastMsg = '';
+let _lastToastAt = 0;
+function dedupToast(msg) {
+  const text = String(msg || '');
+  if (!text) return;
+  const now = Date.now();
+  if (text === _lastToastMsg && now - _lastToastAt < 2000) return;
+  _lastToastMsg = text;
+  _lastToastAt = now;
+  showToast(text);
+}
 
 /* P_multi-input-attachment — every composer that wants attachments
    registers itself here. setupAttachmentInput pushes onto the list;
@@ -75,10 +88,10 @@ export function retryComposerAttachment(id){
 export async function addComposerFiles(files, source){
   const list = Array.from(files || []);
   if(!list.length) return { added:0, rejected:[] };
-  const res = await addFiles(list, renderAndRefresh, updateProgressOnly, showToast);
+  const res = await addFiles(list, renderAndRefresh, updateProgressOnly, dedupToast);
   refreshAllSendBtns();
   if(source === "paste" && res.added > 0){
-    showToast(res.added + " file" + (res.added > 1 ? "s" : "") + " pasted");
+    dedupToast(res.added + " file" + (res.added > 1 ? "s" : "") + " pasted");
   }
   return res;
 }
@@ -168,7 +181,7 @@ export function setupAttachmentInput(opts){
   };
   input.onchange = async function(){
     if(!input.files || !input.files.length) return;
-    const res = await addFiles(input.files, renderAndRefresh, updateProgressOnly, showToast);
+    const res = await addFiles(input.files, renderAndRefresh, updateProgressOnly, dedupToast);
     refreshAllSendBtns();
     if(res.rejected && res.rejected.length){
       if(btn) {
@@ -194,7 +207,7 @@ export function setupAttachmentInput(opts){
   wrap.addEventListener("drop", async function(e){
     const dt = e.dataTransfer;
     if(!dt || !dt.files || !dt.files.length) return;
-    await addFiles(dt.files, renderAndRefresh, updateProgressOnly, showToast);
+    await addFiles(dt.files, renderAndRefresh, updateProgressOnly, dedupToast);
   });
 
   /* P_paste-attach — clipboard paste handler for the composer.
@@ -202,11 +215,13 @@ export function setupAttachmentInput(opts){
      intercept it and send through addFiles() instead of dropping raw
      base64 text into the textarea. Text-only pastes pass through
      unchanged. */
-  if(textarea){
-    textarea.addEventListener("paste", async function(e){
-      const items = e.clipboardData && e.clipboardData.items;
-      if(!items || !items.length) return;
-      const files = [];
+  async function handlePasteFiles(e){
+    const items = e.clipboardData && e.clipboardData.items;
+    // TipTap/ProseMirror path (React composer) owns files when present —
+    // only act when the event also carries direct File objects and no
+    // editor handled it (legacy textarea-less composer, non-React mode).
+    const files = [];
+    if(items && items.length){
       for(let i = 0; i < items.length; i++){
         const item = items[i];
         if(item.kind === "file" && item.getAsFile){
@@ -214,14 +229,26 @@ export function setupAttachmentInput(opts){
           if(f) files.push(f);
         }
       }
-      if(!files.length) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const res = await addFiles(files, renderAndRefresh, updateProgressOnly, showToast);
-      if(res.added > 0){
-        showToast(res.added + " file" + (res.added > 1 ? "s" : "") + " pasted");
-      }
-    });
+    } else if(e.clipboardData && e.clipboardData.files && e.clipboardData.files.length){
+      for(let i = 0; i < e.clipboardData.files.length; i++) files.push(e.clipboardData.files[i]);
+    }
+    if(!files.length) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const res = await addFiles(files, renderAndRefresh, updateProgressOnly, dedupToast);
+    refreshAllSendBtns();
+    if(res.added > 0){
+      dedupToast(res.added + " file" + (res.added > 1 ? "s" : "") + " pasted");
+    }
+  }
+  if(textarea){
+    textarea.addEventListener("paste", handlePasteFiles);
+  } else {
+    // P_paste-attach-fallback — the single composer is a contenteditable
+    // (TipTap) with no textarea id, and non-React mode has no editor
+    // handlePaste. Listen on the wrap so clipboard images still attach
+    // instead of falling through as unrenderable blobs.
+    wrap.addEventListener("paste", handlePasteFiles);
   }
 }
 
@@ -251,7 +278,7 @@ function mediaInput(kind){
   else input.multiple = true;
   input.addEventListener("change", async function(){
     if(!input.files || !input.files.length) return;
-    await addFiles(input.files, renderAndRefresh, updateProgressOnly, showToast);
+    await addFiles(input.files, renderAndRefresh, updateProgressOnly, dedupToast);
     refreshAllSendBtns();
   });
   document.body.appendChild(input);
@@ -338,7 +365,7 @@ function wireDocumentDrag(){
     if(!dt || !dt.files || !dt.files.length) return;
     e.preventDefault();
     e.stopPropagation();
-    await addFiles(dt.files, renderAndRefresh, updateProgressOnly, showToast);
+    await addFiles(dt.files, renderAndRefresh, updateProgressOnly, dedupToast);
   });
 }
 

@@ -11,6 +11,7 @@
 | `docs/assets/` | **品牌与插图** | README 用的 hero 图、logo 衍生品。 |
 | `docs/audits/` | **审计/复盘/合规报告** | 一次性或周期性的"现状评估 + 改前/改后"对比。例如 `audit-report.md`、`p0.1-edit-regenerate-audit.md`、`2026-09-20-structural-review.md`。**新审计默认落在 `docs/audits/`。** 命名约定：`YYYY-MM-DD-<scope>-<topic>.md`。 |
 | `docs/plans/` | **设计、计划、迁移路线** | 仍在推进的迁移（`react-typescript-migration`、`rn-migration`、`unification-plan`）；待实施的重构设计；roadmap。**新计划默认落在 `docs/plans/`。** 命名约定：`YYYY-MM-DD-<topic>.md`（无年月前缀亦可，表示长期计划）。 |
+| `docs/ref/` | **外部基准参考与操作手册** | 第三方产品抓取/对比基线（`chatgpt-parity.md`、`mobile-reference-*.md`）、可复跑的度量手册（`frontend-performance.md`）。命名约定：参照物 + 捕获日期，如 `mobile-reference-2026-10-04.md`。 |
 | `docs/STRUCTURE.md` | 自身（你正在读） | — |
 
 ## 根目录只放 `STRUCTURE.md`

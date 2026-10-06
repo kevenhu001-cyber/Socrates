@@ -121,9 +121,11 @@ emits them, a knowledge map sidebar on the left, and a status /
 stats footer at the bottom. All user-facing surfaces are React-driven;
 the legacy JS modules (`main.js` etc.) act as a state/event backbone
 that React reads from through typed bridge objects
-(`window.__socrates*Bridge`). A small `window.*` compatibility shim
-(`windowExports.js`) and a global event delegation layer
-(`src/ui/delegate.js`) support the remaining inline-handler pattern.
+(`window.__socrates*Bridge`, `window.__socratesLegacy`). A small
+`window.*` compatibility shim (`windowExports.js`) and an explicit
+element-map listener module (`src/ui/legacyShellListeners.js`) cover
+the few static shell controls that sit outside React roots; the former
+document-wide delegation layer (`src/ui/delegate.js`) has been removed.
 Production is reachable at
 <https://app.topodrive.top/>; the project-local [`deploy.sh`](deploy.sh)
 builds and copies the bundle into the nginx web root.
@@ -324,15 +326,17 @@ Socrates/
 ├── frontend/               # Vite SPA (React/TS + legacy JS)
 │   ├── index.html
 │   ├── src/
-│   │   ├── main.js         # State/event backbone (~930 lines)
-│   │   ├── styles.css      # All CSS (~12k lines)
-│   │   ├── state.js        # Reactive state object
-│   │   ├── i18n.js         # I18N dictionary
+│   │   ├── main.js         # State/event backbone (~925 lines)
+│   │   ├── styles/         # All CSS — index.css entry, themes.css,
+│   │   │                   #  legacy/ slices, parity/ surface owners
+│   │   ├── state/          # Domain state bridges (session, kb, ui, ...)
+│   │   ├── store/          # createDomainStore factory + index hooks
+│   │   ├── i18n.js         # I18N dictionary (en) + language switching
+│   │   ├── i18n/zh.js      # zh dictionary (split out of i18n.js)
 │   │   ├── windowExports.js# Legacy window.* compat shim
 │   │   ├── types/          # TypeScript type definitions
-│   │   ├── react/          # React/TS UI layers (23 modules)
+│   │   ├── react/          # React/TS UI layers (~34 modules)
 │   │   │   ├── bootstrap.tsx
-│   │   │   ├── chatRuntimeStore.ts
 │   │   │   ├── useChatRuntime.ts
 │   │   │   ├── message-list/
 │   │   │   ├── session-list/
@@ -340,17 +344,22 @@ Socrates/
 │   │   │   ├── composer/
 │   │   │   ├── cmdk/
 │   │   │   ├── settings/
+│   │   │   ├── pages/
 │   │   │   ├── legacy/     # Typed bridge (gateway.ts)
 │   │   │   └── ...
+│   │   ├── app/            # Boot wiring + legacyBridge.js
 │   │   ├── ui/             # Legacy UI modules
-│   │   │   ├── delegate.js # Global event delegation
+│   │   │   ├── legacyShellListeners.js # Explicit shell element map
 │   │   │   └── ...
-│   │   ├── render/         # Markdown renderers
+│   │   ├── render/         # Markdown renderers (markdown.ts hosts
+│   │   │                   #  formatMsg / formatMsgProgressive)
 │   │   ├── chat/           # Chat logic
 │   │   ├── session/
 │   │   ├── sidebar/
 │   │   ├── storage/
 │   │   ├── auth/
+│   │   ├── extensions/     # Composer extension declarations
+│   │   ├── vendor-files/   # Vendored UMD libs (KaTeX, hljs, Plotly, ...)
 │   │   └── ...
 │   ├── dist/               # Built bundle (gitignored)
 │   ├── e2e/                # Playwright e2e tests
@@ -364,7 +373,8 @@ Socrates/
 │   ├── drizzle/            # Migrations
 │   └── src/
 │       ├── index.js        # Stable production compatibility shim
-│       ├── index.runtime.ts # Runtime entry point
+│       ├── index.runtime.ts # Thin boot sequencer (~64 lines)
+│       ├── boot/           # startup.ts / lifecycle.ts boot stages
 │       ├── app.ts          # Express app, middleware wiring
 │       ├── db/             # Drizzle schema, migrations, client
 │       ├── lib/            # errors, crypto helpers
@@ -381,8 +391,17 @@ Socrates/
 ├── prompts/
 │   └── teacher-mode.md     # The Socratic system prompt (verbatim)
 ├── docs/
+│   ├── adr/                # Architecture decision records
 │   ├── api/openapi.yaml    # Full REST + SSE API spec
-│   └── assets/hero.svg     # README hero image
+│   ├── audits/             # Dated audit/review snapshots
+│   ├── plans/              # Design & migration plans
+│   ├── ref/                # Reference captures & playbooks
+│   ├── assets/hero.svg     # README hero image
+│   └── STRUCTURE.md        # docs/ placement convention
+├── capacitor/              # Legacy Capacitor WebView shell (frozen)
+├── tools-rust/             # Rust mechanism library (native + WASM)
+├── ops/nginx/              # CSP + performance nginx snippets
+├── scripts/                # Operator & CI utility scripts
 ├── deploy.sh               # nginx copy + reload helper
 ├── README.md               # English
 └── README.zh.md            # 中文
@@ -443,10 +462,12 @@ npm test -- --watch=false
 
 The CI workflow at [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml)
 checks RN, Web, and server compatibility, then builds a debug Android APK.
-Actions rather than on a developer workstation. Trigger a debug build with
+Native Android builds run on GitHub Actions rather than on a developer
+workstation. Trigger a debug build with
 `gh workflow run build-apk.yml --ref <branch> -f build_profile=debug`; use
-[`release-clients.yml`](.github/workflows/release-clients.yml) for a signed APK/AAB
-and versioned Windows release.
+[`release-clients.yml`](.github/workflows/release-clients.yml) for a signed
+Android AAB/APK plus the desktop web bundle (the Expo `export:web` output —
+there is no native Windows app since `build-windows.yml` was removed).
 See [`docs/plans/rn-migration.md`](docs/plans/rn-migration.md) for the phase plan and
 acceptance checklist.
 
@@ -483,8 +504,8 @@ based on whether the model has finished its turn:
 
 | Renderer | Where | Used when |
 | --- | --- | --- |
-| `formatMsgProgressive` | [`frontend/src/main.js`](frontend/src/main.js) | Mid-stream, every animation frame. Line-by-line state machine, no `marked` dependency, handles ATX headings, lists, code fences, blockquotes, HRs, and inline `**bold**` / `*italic*` / `` `code` `` / `[link](url)`. |
-| `formatMsg` | [`frontend/src/main.js`](frontend/src/main.js) | At `finish()` time, when the user re-opens a saved message, or when copying/exporting. Full pipeline: `marked` + KaTeX + highlight.js + viz iframe + think-block handling. |
+| `formatMsgProgressive` | [`frontend/src/render/markdown.ts`](frontend/src/render/markdown.ts) | Mid-stream, every animation frame. Line-by-line state machine, no `marked` dependency, handles ATX headings, lists, code fences, blockquotes, HRs, and inline `**bold**` / `*italic*` / `` `code` `` / `[link](url)`. |
+| `formatMsg` | [`frontend/src/render/markdown.ts`](frontend/src/render/markdown.ts) | At `finish()` time, when the user re-opens a saved message, or when copying/exporting. Full pipeline: `marked` + KaTeX + highlight.js + viz iframe + think-block handling. |
 
 The key design rules:
 
@@ -600,8 +621,8 @@ just a matter of running more processes behind the same nginx.
 The Android client is built by
 [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml).
 [`.github/workflows/release-clients.yml`](.github/workflows/release-clients.yml) for
-versioned releases: it verifies, signs, checksums, and attaches Android/Windows
-artifacts to a GitHub Release. Google Play publishing is opt-in and requires a service
+versioned releases: it verifies, signs, checksums, and attaches Android and
+desktop-web artifacts to a GitHub Release. Google Play publishing is opt-in and requires a service
 account secret. See [`docs/audits/client-release.md`](docs/audits/client-release.md) for the complete
 workflow and secret contract.
 

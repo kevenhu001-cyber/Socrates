@@ -103,7 +103,7 @@ export const TEXT_FILE_EXTENSIONS = new Set([
   '.ex', '.exs', '.erl', '.hrl', '.clj', '.cljs', '.hs', '.ml', '.fs', '.vb', '.ps1',
   '.bat', '.cmd', '.ipynb', '.diff', '.patch', '.gitignore', '.dockerignore', '.proto',
 ]);
-export const DOCUMENT_FILE_EXTENSIONS = new Set(['.pdf', '.docx', '.xlsx', '.pptx', '.epub', '.rtf']);
+export const DOCUMENT_FILE_EXTENSIONS = new Set(['.pdf', '.docx', '.xlsx', '.pptx', '.epub', '.rtf', '.odt', '.ods', '.odp']);
 export const LEGACY_OFFICE_EXTENSIONS = new Set(['.doc', '.xls', '.ppt']);
 export const MEDIA_FILE_EXTENSIONS = new Set(['.mp4', '.webm', '.mov', '.mp3', '.wav', '.m4a', '.ogg', '.flac', '.aac']);
 
@@ -245,7 +245,7 @@ async function extractFile(file: FileRow, question?: string): Promise<Extracted>
         `This file type (${mime || 'unknown'}) has no readable text representation. ` +
         `Only metadata is available: name "${file.name}", ${formatBytes(file.size)}. ` +
         'If the user needs its contents analyzed, ask them to convert it to a supported ' +
-        'document format (PDF, DOCX, XLSX, PPTX, EPUB, RTF, plain text, or an image).',
+        'document format (PDF, DOCX, XLSX, PPTX, DOC, XLS, ODT, ODS, ODP, EPUB, RTF, plain text, or an image).',
     };
   } catch (err) {
     if (err instanceof AttachmentReadError) throw err;

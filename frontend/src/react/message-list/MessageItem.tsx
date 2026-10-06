@@ -189,6 +189,14 @@ function MessageItemBase({ message, textLength: _textLength }: MessageItemProps)
             const key = `${attachment.id ?? attachment.name ?? 'attachment'}-${index}`;
             const isImage = attachment.kind === 'image'
               || attachment.dataUrl?.startsWith('data:image/');
+            /* Legacy Office rows carry metadata only (no extractor) —
+             * hover explains why the model can't quote them. */
+            const legacyKind = String(attachment.docKind || '').toLowerCase();
+            const legacyNotice = ['ppt'].includes(legacyKind)
+              ? (t('chat.attach.metadataOnly') !== 'chat.attach.metadataOnly'
+                ? String(t('chat.attach.metadataOnly'))
+                : 'metadata only — convert to DOCX/XLSX/PPTX or PDF to make it readable')
+              : undefined;
             /* P_file-attachments — the durable file is the canonical
                source: /api/v2/files/:id/raw serves the original upload
                for thumbnails and click-through, so history reloads and
@@ -210,11 +218,12 @@ function MessageItemBase({ message, textLength: _textLength }: MessageItemProps)
                 href={fileUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                title={legacyNotice || (attachment.name ?? undefined)}
               >
                 {inner}
               </a>
             ) : (
-              <span className="attachment-chip" key={key}>
+              <span className="attachment-chip" key={key} title={legacyNotice}>
                 {inner}
               </span>
             );

@@ -4,7 +4,7 @@ import { getDb } from '../db/index.js';
 import { files, sessions } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { resourceScope } from '../middleware/scopes.js';
-import { writeLimiter } from '../middleware/rateLimit.js';
+import { uploadLimiter } from '../middleware/rateLimit.js';
 import { NotFound, BadRequest, PayloadTooLarge } from '../lib/errors.js';
 import multer from 'multer';
 import crypto from 'node:crypto';
@@ -18,6 +18,7 @@ import {
   LEGACY_OFFICE_EXTENSIONS,
   MEDIA_FILE_EXTENSIONS,
   TEXTUAL_APPLICATION_MIMES,
+  formatBytes,
 } from '../services/attachmentReader.js';
 import { isUuid } from '../lib/validate.js';
 
@@ -74,6 +75,10 @@ const ALLOWED_EXACT_MIMES = new Set([
   'application/msword', 'application/vnd.ms-excel', 'application/vnd.ms-powerpoint',
   'application/epub+zip',
   'application/rtf', 'text/rtf',
+  /* OpenDocument — parsed by the hand-rolled ODF extractors. */
+  'application/vnd.oasis.opendocument.text',
+  'application/vnd.oasis.opendocument.spreadsheet',
+  'application/vnd.oasis.opendocument.presentation',
 ]);
 
 const upload = multer({
@@ -255,18 +260,40 @@ async function getUserStorageBytes(userId: string, tx?: unknown) {
 /* POST /api/files — upload file
  *
  * SECURITY:
- *   - writeLimiter caps total user writes (sessions + messages +
- *     uploads) to 120/min, defending against an upload-flood attack.
+ *   - uploadLimiter caps uploads at 60/min/user in a bucket separate
+ *     from session/message writes, so an upload flood cannot starve
+ *     chat sends (and vice versa).
  *   - We enforce a per-user storage quota (USER_QUOTA_BYTES) so a
  *     single user cannot exhaust the disk. The check happens AFTER
  *     multer saves the file (multer can't pre-check quota), but we
  *     delete the on-disk file and roll back if the user is over.
  */
-router.post('/', writeLimiter, upload.single('file'), async (req, res, next) => {
+router.post('/', uploadLimiter, (req, res, next) => {
+  upload.single('file')(req, res, async (multerErr: (Error & { code?: string }) | null) => {
   try {
+    if (multerErr) {
+      // Multer may leave a truncated file on disk when the client aborts
+      // or exceeds LIMIT_FILE_SIZE — remove it so partial bytes never linger.
+      const partial = (req as any).file?.path as string | undefined;
+      if (partial) await fs.unlink(partial).catch(() => {});
+      if ((multerErr as { code?: string }).code === 'LIMIT_FILE_SIZE') {
+        return next(new PayloadTooLarge(`File exceeds the ${MAX_SIZE / 1024 / 1024} MB limit`));
+      }
+      return next(multerErr);
+    }
     if (!(req as any).file) throw new BadRequest('No file provided');
 
     const file = (req as any).file;
+    // Client-supplied MIME is never trusted blindly: reject active
+    // content masquerading as an allowed type (e.g. `<svg` bytes labelled
+    // image/png). Text/code formats have no magic, so only binary kinds
+    // and active-content sniffing are enforced here.
+    try {
+      await assertSafeContent(file.path, String(file.mimetype || ''), String(file.originalname || ''));
+    } catch (sigErr) {
+      await fs.unlink(file.path).catch(() => {});
+      throw sigErr;
+    }
     const sha256 = await hashFileStreaming(file.path);
 
     /* Optional session link: an attachment uploaded from a chat composer
@@ -297,12 +324,12 @@ router.post('/', writeLimiter, upload.single('file'), async (req, res, next) => 
         const usedBytes = await getUserStorageBytes(req.userId!, tx);
         if (usedBytes + file.size > USER_QUOTA_BYTES) {
           throw new PayloadTooLarge(
-            `Storage quota exceeded. You have used ${usedBytes} bytes; this upload would exceed the ${USER_QUOTA_BYTES}-byte limit.`
+            `Storage quota exceeded. You have used ${formatBytes(usedBytes)}; this upload (${formatBytes(file.size)}) would exceed the ${formatBytes(USER_QUOTA_BYTES)} limit.`
           );
         }
         const [row] = await tx.insert(files).values({
           userId: req.userId!,
-          name: file.originalname,
+          name: sanitizeFileName(file.originalname) || 'file',
           mimeType: file.mimetype,
           size: file.size,
           kind: mimeKind(file.mimetype, file.originalname),
@@ -314,9 +341,10 @@ router.post('/', writeLimiter, upload.single('file'), async (req, res, next) => 
       });
     } catch (err) {
       // Roll back the on-disk file if the quota check or insert failed.
-      if (err instanceof PayloadTooLarge) {
-        await fs.unlink(file.path).catch(() => {});
-      }
+      // Any failure after multer saved the file must unlink — otherwise a
+      // DB outage leaves orphan bytes that count against no quota row
+      // and are never reaped.
+      if (file?.path) await fs.unlink(file.path).catch(() => {});
       throw err;
     }
     if (!record) {
@@ -329,6 +357,7 @@ router.post('/', writeLimiter, upload.single('file'), async (req, res, next) => 
       size: record.size, kind: record.kind, sha256: record.sha256,
     });
   } catch (err) { next(err); }
+  });
 });
 
 /* GET /api/files/:id — file metadata */
@@ -343,6 +372,70 @@ router.get('/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+const MAX_NAME_LENGTH = 255;
+
+/** Display names are never a path: strip directories, control chars, and overlong input. */
+function sanitizeFileName(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const base = path.basename(raw.trim()).replace(/[\u0000-\u001f\u007f]/g, '');
+  if (!base || base === '.' || base === '..' || base.length > MAX_NAME_LENGTH) return null;
+  return base;
+}
+
+/* Reject active content masquerading as an allowed binary type, without
+ * breaking text/code uploads (which have no magic bytes). Reads only the
+ * head of the file. Throws BadRequest on mismatch. */
+async function assertSafeContent(storagePath: string, mime: string, originalName: string): Promise<void> {
+  const m = String(mime || '').toLowerCase();
+  const needsCheck = m.startsWith('image/') || m === 'application/pdf'
+    || m === 'application/octet-stream' || m === 'binary/octet-stream' || !m
+    || m.startsWith('video/') || m.startsWith('audio/')
+    || m === 'application/msword' || m === 'application/vnd.ms-excel'
+    || m.startsWith('application/vnd.oasis.opendocument');
+  if (!needsCheck) return;
+  let head = '';
+  try {
+    head = (await readHead(storagePath, 4096)).toString('latin1');
+  } catch {
+    return;
+  }
+  const trimmed = head.replace(/^[\u0000-\u0020]*/, '').slice(0, 512).toLowerCase();
+  // Active content signatures are never valid file bytes for our allow-list.
+  if (trimmed.startsWith('<!doctype html') || trimmed.startsWith('<html')
+    || trimmed.startsWith('<script') || trimmed.startsWith('<svg')
+    || trimmed.startsWith('<?xml')) {
+    // <?xml alone is ambiguous (svg vs. plain xml data) — only reject when
+    // the payload also carries svg/html markers.
+    if (trimmed.includes('<svg') || trimmed.includes('<html') || trimmed.includes('<script')) {
+      throw new BadRequest(`Unsupported file type: content does not match ${m || 'unknown type'}`);
+    }
+    if (m.startsWith('image/') || m === 'application/pdf') {
+      throw new BadRequest(`Unsupported file type: content does not match ${m}`);
+    }
+  }
+  if (m === 'application/pdf' && !head.startsWith('%PDF')) {
+    throw new BadRequest('Unsupported file type: content does not match application/pdf');
+  }
+  if (m === 'image/png' && !head.startsWith('\u0089PNG')) {
+    throw new BadRequest('Unsupported file type: content does not match image/png');
+  }
+  if ((m === 'image/jpeg') && !(head.startsWith('\u00ff\u00d8\u00ff'))) {
+    throw new BadRequest('Unsupported file type: content does not match image/jpeg');
+  }
+  if (m === 'image/gif' && !(head.startsWith('GIF87a') || head.startsWith('GIF89a'))) {
+    throw new BadRequest('Unsupported file type: content does not match image/gif');
+  }
+  /* Office binaries: OLE compound magic (D0 CF 11 E0) for legacy
+     .doc/.xls; ZIP magic (PK) for OpenDocument containers. */
+  if ((m === 'application/msword' || m === 'application/vnd.ms-excel')
+      && !head.startsWith('ÐÏ\x11à')) {
+    throw new BadRequest(`Unsupported file type: content does not match ${m}`);
+  }
+  if (m.startsWith('application/vnd.oasis.opendocument') && !head.startsWith('PK')) {
+    throw new BadRequest(`Unsupported file type: content does not match ${m}`);
+  }
+}
+
 /* PATCH /api/files/:id — rename file */
 router.patch('/:id', async (req, res, next) => {
   try {
@@ -351,8 +444,8 @@ router.patch('/:id', async (req, res, next) => {
       .where(and(eq(files.id, req.params.id), eq(files.userId, req.userId!)))
       .limit(1);
     if (!file) throw new NotFound('File not found');
-    const name = typeof req.body.name === 'string' ? req.body.name.trim() : null;
-    if (!name) throw new BadRequest('name is required');
+    const name = sanitizeFileName(req.body?.name);
+    if (!name) throw new BadRequest('name is required (1-255 chars, no path separators)');
     await db.update(files).set({ name }).where(eq(files.id, req.params.id));
     return res.json({ id: file.id, name });
   } catch (err) { next(err); }
@@ -386,6 +479,9 @@ function mimeKind(mime: string, name?: string) {
   if (m === 'application/vnd.ms-powerpoint') return 'ppt';
   if (m === 'application/epub+zip') return 'epub';
   if (m === 'application/rtf' || m === 'text/rtf') return 'rtf';
+  if (m === 'application/vnd.oasis.opendocument.text') return 'odt';
+  if (m === 'application/vnd.oasis.opendocument.spreadsheet') return 'ods';
+  if (m === 'application/vnd.oasis.opendocument.presentation') return 'odp';
   if (m.startsWith('text/') || TEXTUAL_APPLICATION_MIMES.has(m)) return 'text';
   /* octet-stream uploads are classified by extension so a .py or .csv
      file still lands in the 'text' bucket the reader can serve. */

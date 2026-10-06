@@ -127,6 +127,7 @@ var I18N={
     "chat.attach.uploadTimeout":"Upload timed out.",
     "chat.attach.cancelled":"Upload cancelled.",
     "chat.attach.truncated":"(truncated)",
+    "chat.attach.metadataOnly":"metadata only — convert to DOCX/XLSX/PPTX or PDF to make it readable",
     /* P_attachments-multimodal — UI strings for the user-controlled
      * multimodal checkbox on the API key editor row (provider.*) and
      * the rejected-image toast in the chat composer (attach.*). The
