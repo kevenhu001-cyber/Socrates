@@ -65,7 +65,7 @@ jobs:
           packages: platform-tools
 
       - name: Set up Gradle cache
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Install pinned Android SDK components
         run: |

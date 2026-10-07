@@ -44,7 +44,7 @@ jobs:
       - uses: android-actions/setup-android@v4
         with:
           packages: platform-tools
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Validate preview API configuration
         run: |
           node -e 'const u = new URL(process.env.EXPO_PUBLIC_API_BASE_URL); if (u.protocol !== "https:" || u.username || u.password || u.search || u.hash) throw new Error("Preview requires an HTTPS API URL without credentials or query");'

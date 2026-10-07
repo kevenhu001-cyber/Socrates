@@ -290,7 +290,7 @@ jobs:
           # needed by the pinned component install below.
           packages: platform-tools
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Install pinned Android SDK components
         run: |
@@ -489,7 +489,7 @@ jobs:
           # needed by the pinned component install below.
           packages: platform-tools
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Free runner disk space
         run: |
