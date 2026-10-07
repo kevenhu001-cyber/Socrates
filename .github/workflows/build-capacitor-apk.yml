@@ -92,7 +92,7 @@ jobs:
           (cd android && chmod +x gradlew && ./gradlew :app:assembleDebug --no-daemon --console=plain)
 
       - name: Upload Capacitor debug APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: socrates-capacitor-debug-${{ inputs.backend_target }}-${{ github.sha }}
           path: capacitor/android/app/build/outputs/apk/debug/app-debug.apk

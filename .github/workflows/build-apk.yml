@@ -216,7 +216,7 @@ jobs:
         run: npx expo export --platform web --output-dir ../desktop/dist
 
       - name: Upload desktop web bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: socrates-desktop-web-${{ github.sha }}
           path: desktop/dist
@@ -227,7 +227,7 @@ jobs:
         run: tar -czf "desktop/socrates-desktop-web-${GITHUB_SHA}.tar.gz" -C desktop/dist .
 
       - name: Upload desktop release bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: socrates-desktop-web-package-${{ github.sha }}
           path: desktop/socrates-desktop-web-${{ github.sha }}.tar.gz
@@ -381,7 +381,7 @@ jobs:
           fi
 
       - name: Upload Android artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: socrates-android-${{ env.BUILD_PROFILE }}-${{ env.APP_VERSION }}-${{ github.sha }}
           path: mobile/dist
@@ -449,7 +449,7 @@ jobs:
 
       - name: Upload EXE installer
         if: steps.electron-shell.outputs.present == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: socrates-desktop-exe-${{ github.sha }}
           path: desktop/electron/release/*.exe
@@ -563,7 +563,7 @@ jobs:
 
       - name: Upload Detox artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: socrates-android-device-smoke-${{ github.sha }}
           path: mobile/e2e-artifacts
