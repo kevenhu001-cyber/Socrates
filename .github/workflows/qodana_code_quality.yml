@@ -28,7 +28,7 @@ jobs:
         # no bare `v2026.2` ref, and a non-existent ref fails the job before the
         # scan starts. Keep this on the same 2026.2 line as the `linter:` image
         # tag in qodana.yaml.
-        uses: JetBrains/qodana-action@v2026.2.1
+        uses: JetBrains/qodana-action@v2026.2.2
         env:
           # The provisioned secret carries the JetBrains-generated suffix —
           # `gh secret list` shows QODANA_TOKEN_1699681199 and nothing else.
