@@ -53,6 +53,9 @@
       ],
       "@socrates/auth": [
         "../../packages/auth/src/index.ts"
+      ],
+      "marked": [
+        "node_modules/marked/lib/marked.d.ts"
       ]
     }
   },

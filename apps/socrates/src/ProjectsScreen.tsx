@@ -37,6 +37,7 @@ export function ProjectsScreen({
   onRetry(): void;
 }) {
   const p = getThemePaletteHex(mode);
+  const [operationError, setOperationError] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -48,9 +49,12 @@ export function ProjectsScreen({
   const create = async () => {
     if (!canCreate) return;
     setCreating(true);
+    setOperationError(null);
     try {
       await onCreateProject(draft.trim());
       setDraft('');
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : 'Operation failed');
     } finally {
       setCreating(false);
     }
@@ -60,9 +64,12 @@ export function ProjectsScreen({
     const name = editName.trim();
     if (!name || busyId) return;
     setBusyId(id);
+    setOperationError(null);
     try {
       await onRenameProject(id, name);
       setEditingId(null);
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : 'Operation failed');
     } finally {
       setBusyId(null);
     }
@@ -71,9 +78,12 @@ export function ProjectsScreen({
   const commitDelete = async (id: string) => {
     if (busyId) return;
     setBusyId(id);
+    setOperationError(null);
     try {
       await onDeleteProject(id);
       if (confirmDeleteId === id) setConfirmDeleteId(null);
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : 'Operation failed');
     } finally {
       setBusyId(null);
     }
@@ -97,6 +107,7 @@ export function ProjectsScreen({
       </View>
 
       <View style={styles.body}>
+        {operationError ? <Text accessibilityRole="alert" style={[styles.status, { color: p.danger }]}>{operationError}</Text> : null}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={pickMode ? 'Remove from project' : 'All chats'}
@@ -118,6 +129,12 @@ export function ProjectsScreen({
               <Text style={[styles.chipText, { color: p.text.primary }]}>Retry</Text>
             </Pressable>
           </View>
+        ) : null}
+
+        {!loading && !error && !projects.length ? (
+          <Text style={[styles.status, { color: p.text.muted }]}>
+            No projects yet. Create a project to organize your sessions.
+          </Text>
         ) : null}
 
         <FlatList
@@ -171,6 +188,7 @@ export function ProjectsScreen({
                     )}
                     {confirmDeleteId === item.id ? (
                       <>
+                        <Text style={[styles.rowSub, { color: p.danger }]}>Permanently delete this project and its conversations, files and artifacts?</Text>
                         <Pressable accessibilityRole="button" accessibilityLabel={`Confirm delete ${item.name}`} disabled={busy} onPress={() => void commitDelete(item.id)} style={styles.miniBtn}>
                           <Text style={[styles.miniBtnText, { color: p.danger }]}>{busy ? '…' : 'Delete?'}</Text>
                         </Pressable>

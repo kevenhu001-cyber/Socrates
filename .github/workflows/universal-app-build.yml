@@ -1,0 +1,91 @@
+name: Universal App preview artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_base_url:
+        description: API URL embedded in the preview (replace staging.invalid when staging exists)
+        type: string
+        required: true
+        default: https://staging.invalid/api/v2
+  workflow_call:
+    inputs:
+      api_base_url:
+        type: string
+        required: false
+        default: https://staging.invalid/api/v2
+
+permissions:
+  contents: read
+
+# Do not use the caller's workflow name: a reusable workflow cancelling its
+# caller can abort the release graph while it waits for this job.
+concurrency:
+  group: universal-preview-${{ github.ref }}-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EXPO_PUBLIC_API_BASE_URL: ${{ inputs.api_base_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/socrates/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Validate preview API configuration
+        run: |
+          node -e 'const u = new URL(process.env.EXPO_PUBLIC_API_BASE_URL); if (u.protocol !== "https:" || u.username || u.password || u.search || u.hash) throw new Error("Preview requires an HTTPS API URL without credentials or query");'
+      - name: Install and verify Universal App
+        working-directory: apps/socrates
+        run: |
+          npm ci --ignore-scripts --include=dev
+          npm run typecheck
+          npm run test:shared
+          node ../../scripts/check-packages-dom.mjs
+      - name: Export and verify Web preview
+        working-directory: apps/socrates
+        run: |
+          npm run export:web
+          node scripts/check-api-bundle.mjs
+          mkdir -p preview-artifacts
+          tar -czf preview-artifacts/socrates-universal-web-preview.tar.gz -C dist .
+      - name: Generate Android project
+        working-directory: apps/socrates
+        run: npx expo prebuild --platform android --clean --no-install
+      - name: Install Android toolchain
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;27.1.12297006'
+      - name: Build standalone Android preview
+        working-directory: apps/socrates/android
+        # Expo's generated release variant embeds JS; its default debug key
+        # deliberately identifies a test artifact, never a store upgrade.
+        run: ./gradlew :app:assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,x86_64
+      - name: Verify and checksum artifacts
+        working-directory: apps/socrates
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk preview-artifacts/socrates-universal-preview.apk
+          AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -1)
+          "$AAPT" dump badging preview-artifacts/socrates-universal-preview.apk > preview-artifacts/android-manifest.txt
+          grep -q "name='com.topodrive.socrates.universal'" preview-artifacts/android-manifest.txt
+          unzip -l preview-artifacts/socrates-universal-preview.apk | grep -q 'assets/index.android.bundle'
+          (cd preview-artifacts && sha256sum *.apk *.tar.gz > SHA256SUMS.txt)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: socrates-universal-preview-${{ github.sha }}
+          path: apps/socrates/preview-artifacts
+          if-no-files-found: error
+          retention-days: 14

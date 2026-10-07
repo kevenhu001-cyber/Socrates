@@ -1,1 +1,37 @@
-{"expo":{"name":"Socrates Universal","slug":"socrates-universal","version":"0.1.0","scheme":"socrates","orientation":"default","userInterfaceStyle":"automatic","web":{"bundler":"metro"},"android":{"package":"com.topodrive.socrates.universal"},"plugins":["expo-secure-store"],"extra":{"apiBaseUrl":"https://app.topodrive.top/api/v2"}}}
+{
+  "expo": {
+    "name": "Socrates Universal",
+    "slug": "socrates-universal",
+    "version": "0.1.0",
+    "scheme": "socrates",
+    "orientation": "default",
+    "userInterfaceStyle": "automatic",
+    "web": {
+      "bundler": "metro"
+    },
+    "android": {
+      "package": "com.topodrive.socrates.universal",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "../../assets/buildResources/icon_android_foreground_1024.png",
+        "backgroundColor": "#ffffff"
+      },
+      "softwareKeyboardLayoutMode": "resize"
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "image": "../../assets/buildResources/icon_android_1024.png",
+          "imageWidth": 160,
+          "backgroundColor": "#ffffff",
+          "dark": {
+            "backgroundColor": "#131313"
+          }
+        }
+      ]
+    ],
+    "icon": "../../assets/buildResources/icon_android_1024.png"
+  }
+}

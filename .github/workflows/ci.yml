@@ -426,6 +426,13 @@ jobs:
         run: npm ci --include=dev
         working-directory: apps/socrates
 
+      - name: Universal App typecheck and shared tests
+        run: |
+          npm run typecheck
+          npm run test:shared
+          node ../../scripts/check-packages-dom.mjs
+        working-directory: apps/socrates
+
       - name: Install Playwright dependencies
         run: npm ci --include=dev
         working-directory: frontend

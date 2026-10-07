@@ -1,4 +1,4 @@
-import type { ChatRequest, ChatSseHandlers, MobileTokenPair, Project, Session, User } from '@socrates/contracts';
+import type { ChatRequest, ChatSseHandlers, MobileTokenPair, Project, SearchHit, Session, User } from '@socrates/contracts';
 import { consumeSseBuffer, dispatchChatSseFrame } from '@socrates/core';
 import type { KeyValueStore } from '@socrates/platform';
 
@@ -15,36 +15,189 @@ export class ApiError extends Error {
   }
 }
 
-export function createApiClient(input: { baseUrl: string; fetch: FetchLike; storage: KeyValueStore }) {
+/* Access tokens are short-lived; refresh a little early so a request that
+ * starts valid does not expire mid-flight. Mirrors the frozen mobile
+ * client's 30 s skew. */
+const REFRESH_SKEW_MS = 30_000;
+/* Credential-issuing endpoints never trigger a transparent refresh: a 401
+ * from login/refresh/logout is the real answer, not an expired bearer. */
+const MOBILE_AUTH_PATH = '/auth/mobile/';
+
+export function createApiClient(input: {
+  baseUrl: string;
+  fetch: FetchLike;
+  storage: KeyValueStore;
+  /** Called once when a refresh attempt is rejected — the stored session is
+   * dead and the app should return to the signed-out state. */
+  onAuthLost?: () => void;
+}) {
   const tokenKey = 'socrates.auth.tokens';
-  const readTokens = async (): Promise<TokenState> => JSON.parse(await input.storage.get(tokenKey) || '{}') as TokenState;
-  const writeTokens = (tokens: TokenState) => input.storage.set(tokenKey, JSON.stringify(tokens));
-  const clearTokens = () => input.storage.remove(tokenKey);
+  let generation = 0;
+  let mutations: Promise<unknown> = Promise.resolve();
+  const mutate = <T>(action: () => Promise<T>): Promise<T> => {
+    const pending = mutations.then(action);
+    mutations = pending.catch(() => undefined);
+    return pending;
+  };
+  const readTokens = async (): Promise<TokenState> => {
+    await mutations;
+    const raw = await input.storage.get(tokenKey);
+    try { return raw ? JSON.parse(raw) as TokenState : {}; }
+    catch { return {}; }
+  };
+  const invalidateSession = () => {
+    generation++;
+    refreshInFlight = null;
+    return mutate(() => input.storage.remove(tokenKey));
+  };
+  const isMobileAuthUrl = (url: string) => new URL(url).pathname.includes(MOBILE_AUTH_PATH);
+  const expiresSoon = (tokens: TokenState) => {
+    const at = Date.parse(tokens.expiresAt || '');
+    return Number.isFinite(at) && at - Date.now() <= REFRESH_SKEW_MS;
+  };
+
+  let refreshInFlight: Promise<boolean> | null = null;
+  const refresh = (): Promise<boolean> => {
+    if (refreshInFlight) return refreshInFlight;
+    const epoch = generation;
+    const pending = (async () => {
+      const current = await readTokens();
+      if (epoch !== generation || !current.refreshToken) return false;
+      const response = await input.fetch(`${input.baseUrl}${MOBILE_AUTH_PATH}refresh`, {
+        method: 'POST',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: current.refreshToken }),
+      });
+      if (epoch !== generation) return false;
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          const invalidating = invalidateSession();
+          const invalidated = generation;
+          await invalidating;
+          if (generation === invalidated) input.onAuthLost?.();
+          return false;
+        }
+        throw new ApiError(response.status, `Session refresh failed (${response.status}). Please retry.`);
+      }
+      const tokens = await response.json() as TokenState;
+      if (!tokens.accessToken || !tokens.refreshToken) throw new ApiError(502, 'Invalid session refresh response');
+      return mutate(async () => {
+        if (epoch !== generation) return false;
+        await input.storage.set(tokenKey, JSON.stringify(tokens));
+        return true;
+      });
+    })();
+    refreshInFlight = pending;
+    void pending.finally(() => { if (refreshInFlight === pending) refreshInFlight = null; }).catch(() => undefined);
+    return pending;
+  };
+  const authorizedInit = (init: RequestInit, tokens: TokenState): RequestInit => {
+    const headers = new Headers(init.headers);
+    if (tokens.accessToken) headers.set('Authorization', `Bearer ${tokens.accessToken}`);
+    else headers.delete('Authorization');
+    return { ...init, headers };
+  };
+  const fetchWithAuth = async (url: string, init: RequestInit = {}): Promise<Response> => {
+    const epoch = generation;
+    const checkCurrent = () => {
+      if (epoch !== generation) throw new ApiError(401, 'Session changed');
+      if (init.signal?.aborted) throw new ApiError(499, 'Request canceled');
+    };
+    let tokens = await readTokens();
+    const authEndpoint = isMobileAuthUrl(url);
+    if (!authEndpoint && tokens.refreshToken && expiresSoon(tokens)) {
+      if (!await refresh()) throw new ApiError(401, 'Session expired');
+      tokens = await readTokens();
+    }
+    checkCurrent();
+    let response = await input.fetch(url, authorizedInit(init, tokens));
+    checkCurrent();
+    if (response.status === 401 && tokens.refreshToken && !authEndpoint) {
+      const latest = await readTokens();
+      // A late 401 from an old bearer reuses the already rotated token.
+      const rotated = latest.accessToken && latest.accessToken !== tokens.accessToken;
+      if (rotated || await refresh()) {
+        checkCurrent();
+        response = await input.fetch(url, authorizedInit(init, await readTokens()));
+        checkCurrent();
+      }
+    }
+    if (response.status === 401 && !authEndpoint && tokens.accessToken && epoch === generation) {
+      const invalidating = invalidateSession();
+      const invalidated = generation;
+      await invalidating;
+      if (generation === invalidated) input.onAuthLost?.();
+    }
+    return response;
+  };
+
   const request = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
-    const tokens = await readTokens();
     const headers = new Headers(init.headers);
     headers.set('Accept', 'application/json');
     if (init.body) headers.set('Content-Type', 'application/json');
-    if (tokens.accessToken) headers.set('Authorization', `Bearer ${tokens.accessToken}`);
-    const response = await input.fetch(`${input.baseUrl}${path}`, { ...init, headers });
+    const response = await fetchWithAuth(`${input.baseUrl}${path}`, { ...init, headers });
     const text = await response.text();
-    const body = text ? JSON.parse(text) as unknown : null;
+    let body: unknown = null;
+    if (text) {
+      try { body = JSON.parse(text) as unknown; }
+      catch { if (response.ok) throw new ApiError(502, 'Invalid API response'); }
+    }
     if (!response.ok) throw new ApiError(response.status, (body as { message?: string } | null)?.message || `HTTP ${response.status}`, body);
     return body as T;
   };
+  const chatUrl = (sessionId?: string) => `${input.baseUrl}/chat/stream${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ''}`;
+  const listSessionPage = (extra: string, cursor: string | null) =>
+    request<{ sessions: Session[]; nextCursor?: string | null }>(`/sessions?limit=50${extra}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+  const listAllSessions = async (extra: string) => {
+    const sessions: Session[] = [];
+    let cursor: string | null = null;
+    const seen = new Set<string>();
+    do {
+      const page = await listSessionPage(extra, cursor);
+      sessions.push(...page.sessions);
+      cursor = page.nextCursor || null;
+      if (cursor && seen.has(cursor)) throw new ApiError(502, 'Session pagination did not advance');
+      if (cursor) seen.add(cursor);
+    } while (cursor);
+    return sessions;
+  };
   return {
     request,
+    refresh,
+    fetchWithAuth,
+    invalidateSession,
     auth: {
       me: async () => (await request<{ user: User }>('/auth/me')).user,
       login: async (email: string, password: string) => {
+        const epoch = ++generation;
+        refreshInFlight = null;
         const result = await request<{ user: User } & MobileTokenPair>('/auth/mobile/login', { method: 'POST', body: JSON.stringify({ email, password }) });
-        await writeTokens(result);
+        await mutate(async () => {
+          if (epoch !== generation) throw new ApiError(401, 'Session changed');
+          await input.storage.set(tokenKey, JSON.stringify(result));
+        });
         return result.user;
       },
-      logout: async () => { try { await request('/auth/mobile/logout', { method: 'POST' }); } finally { await clearTokens(); } },
+      logout: async () => {
+        generation++;
+        refreshInFlight = null;
+        const tokens = await mutate(async () => {
+          const raw = await input.storage.get(tokenKey);
+          await input.storage.remove(tokenKey);
+          try { return JSON.parse(raw || '{}') as TokenState; } catch { return {}; }
+        });
+        await input.fetch(`${input.baseUrl}/auth/mobile/logout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken: tokens.refreshToken }),
+        });
+      },
     },
     sessions: {
-      list: async () => (await request<{ sessions: Session[] }>('/sessions?limit=50')).sessions,
+      list: () => listAllSessions(''),
+      /* Archived rows are excluded from the default list; the sidebar
+       * Archived section pages them separately (same cursor contract). */
+      listArchived: () => listAllSessions('&archived=true'),
       get: (id: string) => request<Session>(`/sessions/${encodeURIComponent(id)}`),
       save: (session: Session) => request<Session>('/sessions', { method: 'POST', body: JSON.stringify(session) }),
       // Subset of the server PATCH allowlist used by the Universal App.
@@ -53,6 +206,9 @@ export function createApiClient(input: { baseUrl: string; fetch: FetchLike; stor
         request<Session>(`/sessions/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch) }),
       archive: (id: string) => request<{ ok: true }>(`/sessions/${encodeURIComponent(id)}/archive`, { method: 'POST' }),
       unarchive: (id: string) => request<{ ok: true }>(`/sessions/${encodeURIComponent(id)}/archive`, { method: 'DELETE' }),
+      /* DELETE purges the session and every row referencing it (messages,
+       * files, artifacts, runs). Server replies 204 with an empty body. */
+      remove: (id: string) => request<void>(`/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' }),
     },
     projects: {
       list: async () => (await request<{ projects: Project[] }>('/projects')).projects,
@@ -62,7 +218,28 @@ export function createApiClient(input: { baseUrl: string; fetch: FetchLike; stor
         request<Project>(`/projects/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch) }),
       remove: (id: string) => request<void>(`/projects/${encodeURIComponent(id)}`, { method: 'DELETE' }),
     },
-    chatUrl: (sessionId?: string) => `${input.baseUrl}/chat/stream${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ''}`,
+    chat: {
+      /* Chat goes through fetchWithAuth so a stream attempt refreshes and
+       * retries once on 401 instead of surfacing a stale-bearer error. */
+      stream: async (args: { sessionId?: string; request: ChatRequest; handlers: ChatSseHandlers; signal?: AbortSignal }) => {
+        const response = await fetchWithAuth(chatUrl(args.sessionId), {
+          method: 'POST',
+          headers: { Accept: 'text/event-stream', 'Content-Type': 'application/json' },
+          body: JSON.stringify(args.request),
+          signal: args.signal,
+        });
+        if (!response.ok) throw new ApiError(response.status, `Stream failed (${response.status})`);
+        await readChatStream(response, args.handlers);
+      },
+    },
+    search: {
+      /* Cmd-K backend (POST /api/search): full-text hits over sessions +
+       * messages. Snippets may carry <mark> highlights; rendering strips
+       * them — the transport never executes markup. */
+      content: (input: { q: string; scope?: 'all' | 'sessions' | 'messages'; limit?: number }) =>
+        request<{ hits: SearchHit[] }>('/search', { method: 'POST', body: JSON.stringify(input) }),
+    },
+    chatUrl,
     readTokens,
   };
 }
@@ -72,14 +249,31 @@ export async function readChatStream(response: Response, handlers: ChatSseHandle
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    buffer = consumeSseBuffer(buffer, (frame) => dispatchChatSseFrame(frame, handlers));
+  let complete = false;
+  let streamError: string | null = null;
+  const tracked: ChatSseHandlers = {
+    ...handlers,
+    onDone: () => { complete = true; },
+    onError: (message) => { streamError = message; },
+  };
+  try {
+    while (!complete && !streamError) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      buffer = consumeSseBuffer(buffer, (frame) => {
+        if (!complete && !streamError) dispatchChatSseFrame(frame, tracked);
+      });
+    }
+    buffer += decoder.decode();
+    if (!complete && !streamError && buffer.trim()) dispatchChatSseFrame(buffer, tracked);
+    if (streamError) throw new ApiError(502, streamError);
+    if (!complete) throw new ApiError(502, 'Connection closed before the response finished. Please retry.');
+    handlers.onDone?.();
+  } finally {
+    try { await reader.cancel(); } catch { /* reader may already be aborted */ }
+    reader.releaseLock();
   }
-  buffer += decoder.decode();
-  if (buffer.trim()) dispatchChatSseFrame(buffer, handlers);
 }
 
 export async function startChatStream(input: { url: string; request: ChatRequest; fetch: FetchLike; token?: string; handlers: ChatSseHandlers; signal?: AbortSignal }) {

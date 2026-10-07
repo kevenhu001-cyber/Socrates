@@ -5,7 +5,7 @@ import { defineConfig, devices } from '@playwright/test';
 // mobile-composer server (:4174) so the two gates never collide.
 export default defineConfig({
   testDir: './e2e',
-  testMatch: 'universal-app.spec.mjs',
+  testMatch: 'universal-*.spec.mjs',
   fullyParallel: false,
   workers: 1,
   timeout: 90_000,

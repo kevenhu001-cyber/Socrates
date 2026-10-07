@@ -24,35 +24,35 @@ export interface AuthState {
 }
 
 const USER_KEY = 'socrates.auth.user';
+let generation = 0;
 
 export const useAuthStore = create<AuthState>((set) => ({
   status: 'signed-out',
   user: null,
-  setUser: (user) => set({ user, status: user ? 'signed-in' : 'signed-out' }),
+  setUser: (user) => { generation++; set({ user, status: user ? 'signed-in' : 'signed-out' }); },
   setStatus: (status) => set({ status }),
   restore: async (storage, fetchMe) => {
-    set({ status: 'restoring' });
+    const epoch = ++generation;
+    set({ user: null, status: 'restoring' });
     try {
-      const cached = await storage.get(USER_KEY);
-      if (cached) {
-        try {
-          const user = JSON.parse(cached) as User;
-          set({ user, status: 'signed-in' });
-          return;
-        } catch { /* fall through to fetchMe */ }
-      }
       const user = await fetchMe();
+      if (epoch !== generation) return;
       await storage.set(USER_KEY, JSON.stringify(user));
-      set({ user, status: 'signed-in' });
+      if (epoch === generation) set({ user, status: 'signed-in' });
     } catch {
-      set({ user: null, status: 'signed-out' });
+      // Cached identity alone is not proof of a valid credential.
+      if (epoch === generation) set({ user: null, status: 'signed-out' });
     }
   },
   signOut: async (storage, doLogout) => {
-    try { await doLogout?.(); } catch { /* logout is best-effort */ }
-    await storage.remove(USER_KEY);
-    await storage.remove('socrates.auth.tokens');
+    const epoch = ++generation;
     set({ user: null, status: 'signed-out' });
+    // The injected client invalidates its generation synchronously and owns
+    // credential rotation; local cleanup happens before waiting on logout.
+    const logout = doLogout?.();
+    await storage.remove(USER_KEY);
+    if (!doLogout && epoch === generation) await storage.remove('socrates.auth.tokens');
+    try { await logout; } catch { /* logout is best-effort; local state is already cleared */ }
   },
 }));
 

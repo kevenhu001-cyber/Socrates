@@ -45,6 +45,11 @@ on:
           - debug
           - release
         default: debug
+      build_universal_preview:
+        description: Also build the Universal App standalone preview (not a store release)
+        required: false
+        type: boolean
+        default: false
       run_verification:
         description: Run frontend, server, and mobile checks before packaging
         required: true
@@ -67,6 +72,11 @@ on:
         required: false
         type: string
         default: release
+      build_universal_preview:
+        description: Also build the Universal App standalone preview (not a store release)
+        required: false
+        type: boolean
+        default: false
       run_verification:
         description: Run frontend, server, and mobile checks before packaging
         required: false
@@ -116,6 +126,10 @@ env:
   RN_ARCHITECTURES: 'arm64-v8a,armeabi-v7a,x86,x86_64'
 
 jobs:
+  universal-preview:
+    if: inputs.build_universal_preview && !inputs.device_smoke_only
+    uses: ./.github/workflows/universal-app-build.yml
+
   verify:
     name: Verify shared clients and API contract
     if: >-
@@ -141,10 +155,12 @@ jobs:
 
       - name: Verify Expo client
         working-directory: mobile
+        # check:parity retired from CI: mobile/ is frozen (mobile/FROZEN.md)
+        # so the webBaseline pin can never move again; the script stays
+        # runnable locally for audits.
         run: |
           npm ci
           npm run typecheck
-          npm run check:parity
           npm run check:theme
           npm test
           npx expo-doctor

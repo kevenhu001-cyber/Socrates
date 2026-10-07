@@ -7,3 +7,4 @@
 - 新工作一律去 `apps/socrates/` + `packages/`（Universal App，RN + Expo + RN Web + Zustand + Reanimated）。
 - `frontend/` 是当前唯一的视觉/功能基准；`apps/socrates/` 达到基准前不扩大迁移范围。
 - 仍可运行既有校验（`npm run typecheck`、`npm test`），但仅用于上述允许的修复。
+- CI parity pin retired: `npm run check:parity` was removed from `build-apk.yml` on 2026-10-07 — a frozen baseline can never track `frontend/` HEAD again. The script remains for manual audits only.

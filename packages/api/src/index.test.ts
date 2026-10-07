@@ -68,6 +68,40 @@ test('sessions.archive/unarchive hit the archive endpoints', async () => {
   assert.equal(calls[1].init?.method, 'DELETE');
 });
 
+test('sessions.remove sends DELETE and tolerates the 204 empty body', async () => {
+  const calls: Array<{ url: string; init?: RequestInit }> = [];
+  const fetch = (async (url: string, init?: RequestInit) => {
+    calls.push({ url, init });
+    return new Response(null, { status: 204 });
+  }) as typeof globalThis.fetch;
+  const api = createApiClient({ baseUrl: 'https://test/api/v2', fetch, storage: createMemoryStore() });
+  await api.sessions.remove('s1');
+  assert.equal(calls[0].init?.method, 'DELETE');
+  assert.match(calls[0].url, /\/sessions\/s1$/);
+});
+
+test('sessions.listArchived pages the archived filter', async () => {
+  const { fetch, calls } = mockFetch({
+    '/sessions?limit=50&archived=true': { status: 200, body: { sessions: [{ id: 'a1' }], nextCursor: null } },
+  });
+  const api = createApiClient({ baseUrl: 'https://test/api/v2', fetch, storage: createMemoryStore() });
+  const archived = await api.sessions.listArchived();
+  assert.deepEqual(archived.map((s) => s.id), ['a1']);
+  assert.match(calls[0].url, /archived=true/);
+});
+
+test('search.content posts the query and returns hits', async () => {
+  const { fetch, calls } = mockFetch({
+    'POST /search': { status: 200, body: { hits: [{ kind: 'session', id: 's1', sessionId: 's1', title: 'Math' }] } },
+  });
+  const api = createApiClient({ baseUrl: 'https://test/api/v2', fetch, storage: createMemoryStore() });
+  const result = await api.search.content({ q: 'math' });
+  assert.equal(result.hits.length, 1);
+  assert.equal(result.hits[0].sessionId, 's1');
+  assert.equal(calls[0].init?.method, 'POST');
+  assert.match((calls[0].init?.body as string) || '', /math/);
+});
+
 test('API errors surface as ApiError with status', async () => {
   const { fetch } = mockFetch({ '/projects': { status: 401, body: { message: 'Unauthorized' } } });
   const api = createApiClient({ baseUrl: 'https://test/api/v2', fetch, storage: createMemoryStore() });

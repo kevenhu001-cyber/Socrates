@@ -3,8 +3,10 @@ import { test, expect } from '@playwright/test';
 /**
  * Universal App smoke (apps/socrates web export). Self-contained: every
  * server call is routed to a mock, so it runs offline in CI. Covers the
- * migration modules Chat/Sidebar/Auth/Settings/Library-Projects:
- * boot → projects list → rename → move session → filter → archive → delete.
+ * migration modules Chat/Sidebar/Auth/Settings/Library-Projects/Search:
+ * boot → projects list → rename → move session → filter → archive →
+ * archived restore → search (local + server <mark> stripping) →
+ * session delete → project delete.
  *
  * Served by `npm run test:universal` (export + serve + this spec). Do NOT
  * point it at the frozen mobile shell — that has its own rn-web-smoke.spec.
@@ -36,10 +38,23 @@ test('universal app manages projects and sessions end to end', async ({ page }) 
     status: 200, contentType: 'application/json',
     body: JSON.stringify({ sessions }),
   }));
-  await page.route('**/api/v2/sessions/s1', (route) => route.fulfill({
+  await page.route('**/api/v2/sessions?limit=50&archived=true', (route) => route.fulfill({
     status: 200, contentType: 'application/json',
-    body: JSON.stringify({ ...sessions[0], messages: [{ clientId: 'a0', role: 'assistant', rawText: 'Lets solve x+2=5.' }] }),
+    body: JSON.stringify({ sessions: [], nextCursor: null }),
   }));
+  await page.route('**/api/v2/search', (route) => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ hits: [
+      { kind: 'message', id: 7, sessionId: 's1', snippet: 'Lets solve <mark>x+2=5</mark> today', updatedAt: null, rank: 1 },
+    ] }),
+  }));
+  await page.route('**/api/v2/sessions/s1', (route) => {
+    if (route.request().method() === 'DELETE') return route.fulfill({ status: 204, body: '' });
+    return route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({ ...sessions[0], messages: [{ clientId: 'a0', role: 'assistant', rawText: 'Lets solve x+2=5.' }] }),
+    });
+  });
   await page.route('**/api/v2/sessions/s2', (route) => {
     if (route.request().method() === 'PATCH') {
       return route.fulfill({
@@ -134,6 +149,36 @@ test('universal app manages projects and sessions end to end', async ({ page }) 
   await settle();
   await openSessionMenu();
   await page.getByRole('button', { name: 'Archive HW 1' }).click();
+  await expect(page.getByRole('button', { name: 'HW 1', exact: true })).toHaveCount(0);
+
+  // Archived section lists HW 1; restoring brings it back to the sidebar.
+  if (!(await page.getByRole('button', { name: 'Show archived conversations (1)' }).isVisible())) {
+    await page.getByRole('button', { name: 'Toggle sidebar' }).click();
+    await settle();
+  }
+  await page.getByRole('button', { name: 'Show archived conversations (1)' }).click();
+  await expect(page.getByRole('button', { name: 'Restore HW 1' })).toBeVisible();
+  await page.getByRole('button', { name: 'Restore HW 1' }).click();
+  await settle();
+  await expectRowVisible('HW 1');
+
+  // Search: instant local title hit plus the server message hit whose
+  // <mark> highlight must render as literal text. Opening jumps to chat.
+  await page.getByRole('button', { name: 'Open search' }).click();
+  await page.getByLabel('Search conversations').fill('hw');
+  await expect(page.getByRole('button', { name: 'Open HW 1' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Open message in conversation' })).toBeVisible();
+  await expect(page.getByText('<mark>')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Open HW 1' }).click();
+  await settle();
+  await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible();
+
+  // Delete HW 1 from the session menu (two-tap confirm purges everywhere).
+  await selectRow('HW 1');
+  await settle();
+  await openSessionMenu();
+  await page.getByRole('button', { name: 'Delete HW 1' }).click();
+  await page.getByRole('button', { name: 'Confirm delete HW 1' }).click();
   await expect(page.getByRole('button', { name: 'HW 1', exact: true })).toHaveCount(0);
 
   // Delete Physics (two-tap confirm).

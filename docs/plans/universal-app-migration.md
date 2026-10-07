@@ -183,3 +183,55 @@ mobile/            # 冻结，仅安全/crash/data-loss 修复
   `frontend/scripts/run-universal-smoke.mjs`（export → :4175 node 静态 serve → spec → 退出码透传）。
   现有 job 未动；YAML 已校验，待一次真实 CI 运行确认。
 - 下轮建议：session 删除/purge、archived 列表入口、projects 空态引导文案对齐 `frontend/` 基准。
+
+## 13. 进展（第六轮，2026-10-07）
+
+- 工作区核对：10-07 审计（`docs/audits/2026-10-07-universal-app-evidence.md`）的
+  U-01/U-02/U-04/U-05/U-06/U-07/U-08/U-09/U-10/U-11/U-12/U-13 已在未提交工作区中
+  修好（`turn.ts` 先 save 取 UUID 再流式、turn 绑定、`transport.native.ts` 走
+  `expo/fetch`、staging 改直接 `process.env` 读取、refresh 仅 401/403 清凭据 +
+  generation 隔离、推理/tool 全事件进 store、EOF 非正常关闭抛错、CI 加
+  typecheck+shared+DOM 门禁、sessions 分页 + `reconcileSessions` 原子操作）；
+  U-03 项目删除语义已按服务端级联删除为准（`removeProject` 直接过滤会话，
+  旧“移到 unfiled”注释是错的，服务端 `projects.ts` 事务内删会话/消息/附件/作品）。
+- 本轮新增（第 12 轮建议的第一、二项 + 空态第三项）：
+  - `packages/api` 加 `sessions.remove`（DELETE，容忍 204 空 body；单测覆盖）。
+  - `packages/chat` 加 `deleteSession(id, projectFilter)` 原子 purge（删行 +
+  可见会话回退；单测覆盖）。归档仍走 `archiveSession`。
+  - App 会话菜单加 `🗑 Delete session` 两步确认（防误删；文案明示 purge 范围；
+  流式中/切账户时守卫；`confirmDelete` 随菜单关闭、返回键、账户重置清理）。
+  - `ProjectsScreen` 空态加基准文案（`sidebar.spaces.empty` 中英同源：
+  “No projects yet. Create a project to organize your sessions.”）。
+- 验证：`apps typecheck` 0、`test:shared` 全绿（含新增 2 项）、DOM-free 通过；
+  `export:web` + `frontend npm run test:universal` 双端（desktop + Pixel 7）4/4 通过。
+- 下轮建议：archived 列表入口 + unarchive（API 已有，store/UI 缺）、消息完整
+  markdown/代码/推理隔离渲染（U-09 后半）、Search 模块迁入（顺序第 6 个模块）。
+
+## 14. 进展（第七轮，2026-10-07）
+
+- archived 列表入口 + unarchive（第 12 轮建议的剩余项）：
+  - `packages/api` 加 `sessions.listArchived`（`archived=true` 分页，与 `list`
+  共用游标循环）；`packages/chat` 加 `unarchiveSession(id, fallback)`（已知行
+  清 flag，未持有行插入服务端取回的行，消息仍懒加载）。
+  - `@socrates/ui` Sidebar 加 Archived 可折叠区（默认收起、无挂载动画、
+  空态“No archived conversations.”）；App 在 `syncLibrary` 同取 archived、
+  归档时本地追加、恢复时调 `unarchive` + 清单 + `select`，退出/切账户清空。
+- 消息渲染（U-09 后半）确认：`MessageContent`（markdown/代码块+复制/表格/
+  引用/列表/推理折叠/附件/工具卡/引用链接，HTML 只当字面文本）早已接进
+  `ChatMessageList`，`turn.ts` 推理与正文分字段保存；`universal-chat` smoke
+  覆盖 heading/代码/复制/推理开关/工具卡，无新增代码，只做回归确认。
+- Search 模块（顺序第 6 个）迁入：
+  - `contracts` 加 `SearchHit`；`packages/api` 加 `search.content`
+  （POST /api/search，snippet 的 `<mark>` 只由渲染层剥除）。
+  - 新建 `apps/socrates/src/SearchScreen.tsx`（本地标题即时过滤 + 服务端
+  300ms 防抖 + stale 丢弃；guest 仅本地；空/载入/错误态）。
+  - App 加 🔍 入口 + `search` 屏 + `openSearchSession`（未持有行先
+  `sessions.get` 插入再 `select`，账户 epoch 守卫；返回键回 chat）。
+- 回归：`universal-app` smoke 扩展 archived 恢复、搜索（本地 hit +
+  server `<mark>` 剥除断言）、会话删除两步确认；修过一次过宽文本断言
+  （strict mode 命中标题+摘要两处，收紧到 message-hit 按钮）。
+- 验证：`apps typecheck` 0、`test:shared` 全绿（api 10/chat 9 含新增
+  listArchived/search/unarchive 用例）、DOM-free 通过；
+  `export:web` + `test:universal` 双端 4/4 通过。
+- 下轮建议：Settings 全量 UI（provider/model/tone/usage/profile）、Auth 全流程
+  （注册/验证/忘记密码/code-login）、附件/语音/中文/outbox；桌面工程化最后。

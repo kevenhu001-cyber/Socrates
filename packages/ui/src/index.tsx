@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { memo, useState } from 'react';
+import { MessageContent, type MessageActions } from './MessageContent';
 import type { Message, Session } from '@socrates/contracts';
 import { getThemePaletteHex } from '@socrates/theme';
 import type { ThemeMode } from '@socrates/theme';
@@ -26,14 +27,23 @@ export function Sidebar({
   onSelect,
   onNewChat,
   mode = 'light',
+  archived = [],
+  onSelectArchived,
 }: {
   sessions: Session[];
   activeId: string | null;
   onSelect(id: string): void;
   onNewChat(): void;
   mode?: UiMode;
+  /** Server-fetched archived rows; rendered in a collapsed section so the
+   * main list stays a pure visible-session navigator. */
+  archived?: Session[];
+  /** Restores and opens an archived session; defaults to plain select. */
+  onSelectArchived?(id: string): void;
 }) {
   const p = paletteFor(mode);
+  const [archivedOpen, setArchivedOpen] = useState(false);
+  const openArchived = onSelectArchived || onSelect;
   return (
     <View style={[styles.sidebar, { backgroundColor: p.bg.raised, borderRightColor: p.border.default }]}>
       <Text style={[styles.brand, { color: p.text.primary }]}>Socrates</Text>
@@ -57,37 +67,58 @@ export function Sidebar({
           </Pressable>
         )}
       />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={archivedOpen ? 'Hide archived conversations' : `Show archived conversations (${archived.length})`}
+        accessibilityState={{ expanded: archivedOpen }}
+        onPress={() => setArchivedOpen((open) => !open)}
+        style={styles.archivedToggle}
+      >
+        <Text style={[styles.section, { color: p.text.muted }]}>{archivedOpen ? '▾' : '▸'} Archived ({archived.length})</Text>
+      </Pressable>
+      {archivedOpen ? (
+        archived.length ? (
+          <FlatList
+            data={archived}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Restore ${item.title || item.topic || 'Untitled'}`}
+                onPress={() => openArchived(item.id)}
+                style={styles.session}
+              >
+                <Text numberOfLines={1} style={[styles.sessionTitle, { color: p.text.muted }]}>
+                  {item.title || item.topic || 'Untitled'}
+                </Text>
+              </Pressable>
+            )}
+          />
+        ) : (
+          <Text style={[styles.archivedEmpty, { color: p.text.muted }]}>No archived conversations.</Text>
+        )
+      ) : null}
     </View>
   );
 }
 
-function MessageRow({ message, mode = 'light' }: { message: Message; mode?: UiMode }) {
+const MessageRow = memo(function MessageRow({ message, mode = 'light', onCopyText }: { message: Message; mode?: UiMode } & MessageActions) {
   const p = paletteFor(mode);
-  const text = message.rawText || message.content || '';
-  return (
-    <Animated.View layout={LinearTransition} style={[styles.message, message.role === 'user' && { ...styles.userMessage, backgroundColor: p.bg.hover }]}>
-      <Text selectable style={[styles.messageText, { color: p.text.primary }]}>
-        {text || '…'}
-      </Text>
-      {message.toolCalls?.map((tool) => (
-        <View key={tool.id} style={[styles.tool, { borderColor: p.border.default }]}>
-          <Text style={[styles.toolName, { color: p.text.primary }]}>{tool.name}</Text>
-          <Text style={[styles.toolText, { color: p.text.muted }]}>{tool.output || tool.argumentsText || 'Running…'}</Text>
-        </View>
-      ))}
-    </Animated.View>
-  );
-}
+  return <Animated.View layout={LinearTransition} style={[styles.message, message.role === 'user' && { ...styles.userMessage, backgroundColor: p.bg.hover }]}>
+    <MessageContent message={message} mode={mode} onCopyText={onCopyText} />
+  </Animated.View>;
+});
 
 export function ChatMessageList({
   messages,
   mode = 'light',
   emptyText = 'How can I help you learn today?',
+  onCopyText,
 }: {
   messages: Message[];
   mode?: UiMode;
   emptyText?: string;
-}) {
+} & MessageActions) {
   const p = paletteFor(mode);
   if (!messages.length) {
     return (
@@ -101,7 +132,7 @@ export function ChatMessageList({
       contentContainerStyle={styles.messages}
       data={messages}
       keyExtractor={(item, index) => item.id || item.clientId || String(index)}
-      renderItem={({ item }) => <MessageRow message={item} mode={mode} />}
+      renderItem={({ item }) => <MessageRow message={item} mode={mode} onCopyText={onCopyText} />}
     />
   );
 }
@@ -134,7 +165,7 @@ export function Composer({
           placeholder="Message Socrates"
           placeholderTextColor={p.text.muted}
           style={[styles.input, { color: p.text.primary }]}
-          onSubmitEditing={() => enabled && onSend()}
+          onSubmitEditing={() => enabled && !streaming && onSend()}
         />
         <Pressable
           accessibilityRole="button"
@@ -156,6 +187,8 @@ const styles = StyleSheet.create({
   newChat: { borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 20 },
   newChatText: { fontWeight: '600' },
   section: { fontSize: 12, paddingHorizontal: 10, paddingBottom: 6 },
+  archivedToggle: { paddingVertical: 8 },
+  archivedEmpty: { fontSize: 13, paddingHorizontal: 10, paddingBottom: 8 },
   session: { padding: 10, borderRadius: 9 },
   sessionTitle: {},
   messages: { width: '100%', maxWidth: 768, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 36, paddingBottom: 120, gap: 24 },

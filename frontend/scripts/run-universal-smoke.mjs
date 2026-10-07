@@ -30,7 +30,9 @@ const MIME = {
 };
 
 console.log('[universal] exporting web bundle…');
-execSync('npm run export:web', { cwd: app, stdio: 'inherit' });
+const apiBaseUrl = process.env.UNIVERSAL_API_BASE_URL || 'http://127.0.0.1:4176/api/v2';
+execSync('npm run export:web', { cwd: app, stdio: 'inherit', env: { ...process.env, EXPO_PUBLIC_API_BASE_URL: apiBaseUrl } });
+execSync('node scripts/check-api-bundle.mjs', { cwd: app, stdio: 'inherit', env: { ...process.env, EXPO_PUBLIC_API_BASE_URL: apiBaseUrl } });
 
 const server = createServer(async (req, res) => {
   try {

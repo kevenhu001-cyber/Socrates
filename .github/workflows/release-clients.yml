@@ -10,6 +10,11 @@ on:
         description: Existing or new release tag (for example v2.1.0)
         required: true
         type: string
+      include_universal_preview:
+        description: Attach an additional Universal App preview; keep the existing store client
+        required: false
+        type: boolean
+        default: false
       publish_google_play:
         description: Upload the Android AAB to Google Play production track
         required: true
@@ -89,6 +94,32 @@ jobs:
           generate_release_notes: true
           prerelease: ${{ contains(needs.validate-release.outputs.tag, '-') }}
           files: release-assets/*
+
+  universal-preview:
+    name: Build optional Universal App preview
+    needs: validate-release
+    if: github.event_name == 'workflow_dispatch' && inputs.include_universal_preview
+    uses: ./.github/workflows/universal-app-build.yml
+
+  publish-universal-preview:
+    name: Attach Universal preview to release
+    needs: [validate-release, universal-preview, publish-github]
+    if: github.event_name == 'workflow_dispatch' && inputs.include_universal_preview
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: socrates-universal-preview-${{ github.sha }}
+          path: universal-preview
+      - name: Attach separate preview assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.validate-release.outputs.tag }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          mv universal-preview/SHA256SUMS.txt universal-preview/UNIVERSAL-SHA256SUMS.txt
+          mv universal-preview/android-manifest.txt universal-preview/universal-android-manifest.txt
+          gh release upload "$RELEASE_TAG" --repo "$REPOSITORY" universal-preview/*
 
   publish-google-play:
     name: Publish Android bundle to Google Play

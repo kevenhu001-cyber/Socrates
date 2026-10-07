@@ -186,6 +186,19 @@ export interface Project {
   updatedAt?: string | null;
 }
 
+/** POST /api/search hit: a matching session or a matching message. */
+export interface SearchHit {
+  kind: 'session' | 'message';
+  id: string | number;
+  sessionId: string;
+  title?: string | null;
+  topic?: string | null;
+  /** ts_headline excerpt; may contain <mark> highlights. */
+  snippet?: string | null;
+  updatedAt?: string | null;
+  rank?: number | null;
+}
+
 export type ScheduledFrequency = 'once' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'custom';
 export type ScheduledStatus = 'pending' | 'active' | 'paused' | 'completed' | 'failed';
 

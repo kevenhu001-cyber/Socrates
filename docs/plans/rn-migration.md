@@ -1,4 +1,11 @@
-# React Native 全量迁移路线与验收基线
+# 历史文档：旧 mobile React Native 迁移路线
+
+> **2026-10-06 起已冻结。** 本文描述旧 `mobile/` 的历史实现与验收，
+> 勾选项不适用于新 Universal App，也不表示新客户端已验收。
+> 当前主应用位于 `apps/socrates/` + `packages/`，进展与签收以
+> [Universal App 迁移路线](universal-app-migration.md) 为准。
+> 旧客户端仅允许 release-blocking 安全、崩溃、数据丢失修复，见
+> [冻结说明](../../mobile/FROZEN.md)。以下保留历史记录。
 
 ## 目标
 

@@ -1,3 +1,5 @@
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 import {
   buildChatHistory,
   buildUserContentParts,
@@ -28,11 +30,11 @@ describe('@socrates/core', () => {
     dispatchChatSseFrame('event: error\ndata: {"message":"No connection"}\n\n', handlers);
     dispatchChatSseFrame('data: [DONE]\n\n', handlers);
 
-    expect(content).toEqual(['Hello']);
-    expect(reasoning).toEqual(['Think']);
-    expect(tools).toEqual([{ step: 1 }]);
-    expect(errors).toEqual(['No connection']);
-    expect(done).toBe(1);
+    assert.deepEqual(content, ['Hello']);
+    assert.deepEqual(reasoning, ['Think']);
+    assert.deepEqual(tools, [{ step: 1 }]);
+    assert.deepEqual(errors, ['No connection']);
+    assert.equal(done, 1);
   });
 
   /* ─── SSE contract: full event-name table ─────────────────────────── */
@@ -62,19 +64,19 @@ describe('@socrates/core', () => {
     dispatchChatSseFrame('event: execution_start\ndata: {"execId":"e1"}\n\n', handlers);
     dispatchChatSseFrame('event: tool_approval\ndata: {"runId":"r1","approvalId":"a1"}\n\n', handlers);
 
-    expect(captured.toolUse).toEqual([{ id: 'a' }]);
-    expect(captured.toolResult).toEqual([{ id: 'a', output: 'done' }]);
-    expect(captured.toolProgress).toEqual([{ step: 2 }]);
-    expect(captured.toolCallDelta).toEqual([{ args: 'x' }]);
-    expect(captured.executionStart).toEqual([{ execId: 'e1' }]);
-    expect(captured.toolApproval).toEqual([{ runId: 'r1', approvalId: 'a1' }]);
+    assert.deepEqual(captured.toolUse, [{ id: 'a' }]);
+    assert.deepEqual(captured.toolResult, [{ id: 'a', output: 'done' }]);
+    assert.deepEqual(captured.toolProgress, [{ step: 2 }]);
+    assert.deepEqual(captured.toolCallDelta, [{ args: 'x' }]);
+    assert.deepEqual(captured.executionStart, [{ execId: 'e1' }]);
+    assert.deepEqual(captured.toolApproval, [{ runId: 'r1', approvalId: 'a1' }]);
   });
 
   it('falls back to "Stream failed" when the error payload has no message', () => {
     const errors: string[] = [];
     const handlers = { onError: (value: string) => errors.push(value) };
     dispatchChatSseFrame('event: error\ndata: {}\n\n', handlers);
-    expect(errors).toEqual(['Stream failed']);
+    assert.deepEqual(errors, ['Stream failed']);
   });
 
   it('prefers error.message over error.error over a bare string', () => {
@@ -85,7 +87,7 @@ describe('@socrates/core', () => {
     dispatchChatSseFrame('event: error\ndata: {"message":"primary-message"}\n\n', handlers);
     dispatchChatSseFrame('event: error\ndata: "bare-string"\n\n', handlers);
 
-    expect(errors).toEqual(['inner-error', 'primary-message', 'bare-string']);
+    assert.deepEqual(errors, ['inner-error', 'primary-message', 'bare-string']);
   });
 
   it('routes content and reasoning_content deltas independently in the same frame', () => {
@@ -99,8 +101,8 @@ describe('@socrates/core', () => {
       'data: {"choices":[{"delta":{"content":"A","reasoning_content":"R"}}]}\n\n',
       handlers,
     );
-    expect(content).toEqual(['A']);
-    expect(reasoning).toEqual(['R']);
+    assert.deepEqual(content, ['A']);
+    assert.deepEqual(reasoning, ['R']);
   });
 
   it('ignores empty data frames and unknown event names without calling onError', () => {
@@ -112,8 +114,8 @@ describe('@socrates/core', () => {
     };
     dispatchChatSseFrame('event: telemetry\ndata: {"foo":1}\n\n', handlers);
     dispatchChatSseFrame('data: \n\n', handlers);
-    expect(errors).toEqual([]);
-    expect(done).toBe(0);
+    assert.deepEqual(errors, []);
+    assert.equal(done, 0);
   });
 
   /* ─── SSE contract: consumeSseBuffer ──────────────────────────────── */
@@ -121,13 +123,13 @@ describe('@socrates/core', () => {
   it('handles CRLF and LF line endings interchangeably', () => {
     const frames: string[] = [];
     const rest1 = consumeSseBuffer('data: a\r\n\r\ndata: b\n\n', (f) => frames.push(f));
-    expect(frames).toEqual(['data: a', 'data: b']);
-    expect(rest1).toBe('');
+    assert.deepEqual(frames, ['data: a', 'data: b']);
+    assert.equal(rest1, '');
 
     const frames2: string[] = [];
     const rest2 = consumeSseBuffer('data: a\r\n\r\ndata: b', (f) => frames2.push(f));
-    expect(frames2).toEqual(['data: a']);
-    expect(rest2).toBe('data: b');
+    assert.deepEqual(frames2, ['data: a']);
+    assert.equal(rest2, 'data: b');
   });
 
   it('emits every complete frame across multiple dispatchChatSseFrame calls', () => {
@@ -137,19 +139,19 @@ describe('@socrates/core', () => {
     };
     dispatchChatSseFrame('data: {"choices":[{"delta":{"content":"X"}}]}\n\n', handlers);
     dispatchChatSseFrame('data: {"choices":[{"delta":{"content":"Y"}}]}\n\n', handlers);
-    expect(events).toEqual(['delta:X', 'delta:Y']);
+    assert.deepEqual(events, ['delta:X', 'delta:Y']);
   });
 
   it('keeps incomplete SSE frames and creates normalized draft sessions', () => {
     const frames: string[] = [];
     const rest = consumeSseBuffer('data: one\n\ndata: two', (frame) => frames.push(frame));
-    expect(frames).toEqual(['data: one']);
-    expect(rest).toBe('data: two');
+    assert.deepEqual(frames, ['data: one']);
+    assert.equal(rest, 'data: two');
 
     const session = createDraftSession('session-1', 'tutor');
-    expect(session.kind).toBe('tutor');
-    expect(session.messages).toEqual([]);
-    expect(messageText({ rawText: '', content: 'fallback' })).toBe('fallback');
+    assert.equal(session.kind, 'tutor');
+    assert.deepEqual(session.messages, []);
+    assert.equal(messageText({ rawText: '', content: 'fallback' }), 'fallback');
   });
 
   it('reconstructs image and parsed document attachments as model content parts', () => {
@@ -157,7 +159,7 @@ describe('@socrates/core', () => {
       { id: 'image-1', kind: 'image', name: 'diagram.png', mime: 'image/png', size: 12, dataUrl: 'data:image/png;base64,abc' },
       { id: 'pdf-1', kind: 'pdf', name: 'notes.pdf', mime: 'application/pdf', size: 24, text: 'A long explanation.' },
     ]);
-    expect(content).toEqual([
+    assert.deepEqual(content, [
       { type: 'text', text: 'Describe these' },
       { type: 'image_url', image_url: { url: 'data:image/png;base64,abc', detail: 'auto' } },
       { type: 'text', text: '[Parsed PDF: notes.pdf]\nA long explanation.' },
@@ -174,14 +176,14 @@ describe('@socrates/core', () => {
       } : {}),
     }));
     const history = buildChatHistory(messages, { maxTurns: 2, maxChars: 20 });
-    expect(history).toHaveLength(4);
-    expect(history.at(-1)).toEqual({
+    assert.equal((history).length, 4);
+    assert.deepEqual(history.at(-1), {
       role: 'user',
       content: [
         { type: 'text', text: 'Question 64' },
         { type: 'text', text: '[Parsed file: source.txt]\nsource body' },
       ],
     });
-    expect(history.some((entry) => typeof entry.content === 'string' && entry.content.includes('<think>'))).toBe(false);
+    assert.equal(history.some((entry) => typeof entry.content === 'string' && entry.content.includes('<think>')), false);
   });
 });

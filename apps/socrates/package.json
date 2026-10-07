@@ -8,10 +8,13 @@
     "web": "expo start --web",
     "android": "expo run:android",
     "typecheck": "tsc --noEmit",
-    "export:web": "expo export --platform web"
+    "export:web": "expo export --platform web",
+    "test:shared": "node scripts/run-shared-tests.mjs",
+    "export:android": "expo export --platform android"
   },
   "dependencies": {
     "@socrates/api": "file:../../packages/api",
+    "@socrates/auth": "file:../../packages/auth",
     "@socrates/chat": "file:../../packages/chat",
     "@socrates/contracts": "file:../../packages/contracts",
     "@socrates/core": "file:../../packages/core",
@@ -20,8 +23,12 @@
     "@socrates/theme": "file:../../packages/theme",
     "@socrates/ui": "file:../../packages/ui",
     "expo": "~57.0.27",
+    "expo-clipboard": "~57.0.2",
     "expo-secure-store": "~57.0.4",
+    "expo-splash-screen": "~57.0.9",
     "expo-status-bar": "~57.0.1",
+    "expo-system-ui": "~57.0.4",
+    "marked": "13.0.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
@@ -29,8 +36,7 @@
     "react-native-safe-area-context": "~5.7.0",
     "react-native-web": "~0.21.0",
     "react-native-webview": "13.16.1",
-    "zustand": "5.0.8",
-    "@socrates/auth": "file:../../packages/auth"
+    "zustand": "5.0.8"
   },
   "devDependencies": {
     "@types/react": "~19.2.0",
