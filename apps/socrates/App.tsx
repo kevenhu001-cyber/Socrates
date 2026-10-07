@@ -2,20 +2,28 @@ import 'react-native-reanimated';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import type { AccountUsage, Project, ProviderKey, Session } from '@socrates/contracts';
+import type { AccountUsage, ExamData, Project, ProviderKey, Session } from '@socrates/contracts';
 import { isLocalSessionId, runChatTurn, useChatStore, visibleSessions as getVisibleSessions } from '@socrates/chat';
 import { persistUser } from '@socrates/auth';
 import { useAuthStore } from '@socrates/auth';
 import { useSettingsStore } from '@socrates/settings';
 import { getThemePaletteHex } from '@socrates/theme';
-import { ChatMessageList, Composer, Sidebar } from '@socrates/ui';
+import { ChatMessageList, Composer, ExamView, Sidebar, buildEmbeddedDocument, paletteForDocument, parseExamQuestions, storedFileIdFromRawUrl, type ArtifactDescriptor } from '@socrates/ui';
 import { api, streamConversation } from './src/runtime';
 import { storage } from './src/storage';
 import { copyText } from './src/clipboard';
 import { capturePhoto, extractPickedDocument, pickDocument, pickImages, supportsCamera } from './src/attachments';
+import { persistStagedAttachment } from './src/attachmentUpload';
 import { stagedToMessageAttachment, type PickedFile, type StagedAttachment } from './src/attachmentModels';
 import { listenOnce, listenSupported, speakText, stopSpeaking } from './src/speech';
 import { AuthGate } from './src/AuthGate';
+import { ArtifactViewer } from './src/ArtifactViewer';
+import { FilePreview } from './src/FilePreview';
+import { FilesScreen } from './src/FilesScreen';
+import { ExamSetupScreen, type ExamRunState, type ExamSetupInput } from './src/ExamSetupScreen';
+import { buildExamData, generateExamQuestions } from './src/examGeneration';
+import { useFileImages } from './src/useFileImages';
+import type { FileAccessTarget, FileImageSource, StoredFileRef } from './src/fileAccess';
 import { SettingsScreen } from './src/SettingsScreen';
 import { ProjectsScreen } from './src/ProjectsScreen';
 import { SearchScreen } from './src/SearchScreen';
@@ -31,7 +39,7 @@ function SocratesApp() {
   const [authPending, setAuthPending] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authNotice, setAuthNotice] = useState<string | null>(null);
-  const [screen, setScreen] = useState<'chat' | 'settings' | 'projects' | 'search' | 'providers'>('chat');
+  const [screen, setScreen] = useState<'chat' | 'settings' | 'projects' | 'search' | 'providers' | 'files' | 'exam-setup'>('chat');
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
   const [projectsError, setProjectsError] = useState<string | null>(null);
@@ -48,6 +56,9 @@ function SocratesApp() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [staged, setStaged] = useState<StagedAttachment[]>([]);
+  const [artifact, setArtifact] = useState<ArtifactDescriptor | null>(null);
+  const [previewFile, setPreviewFile] = useState<StoredFileRef | null>(null);
+  const [examRun, setExamRun] = useState<ExamRunState>({ running: false, progress: null, error: null });
   const [listening, setListening] = useState(false);
   const listenStop = useRef<(() => void) | null>(null);
   const sessions = useChatStore((state) => state.sessions);
@@ -73,6 +84,110 @@ function SocratesApp() {
   const syncEpoch = useRef(0);
   const loadingDetails = useRef(new Set<string>());
   const chatError = useChatStore((state) => state.error);
+  // Stored files: resolve transcript raw-URLs into platform image sources and
+  // preview/download through the authenticated file library.
+  const fileTarget = useMemo<FileAccessTarget>(() => ({
+    rawUrl: (id) => api.files.rawUrl(id),
+    fetch: api.fetchWithAuth,
+    readToken: async () => (await api.readTokens()).accessToken,
+  }), []);
+  const fileImages = useFileImages(active?.messages, fileTarget);
+  const resolveImage = useCallback((src: string): FileImageSource | null => {
+    const id = storedFileIdFromRawUrl(src);
+    return id ? fileImages[id] ?? null : null;
+  }, [fileImages]);
+  const openAttachment = useCallback((attachment: { fileId?: string; name: string; mime: string; size: number; kind: string }) => {
+    if (attachment.fileId) setPreviewFile({ id: attachment.fileId, name: attachment.name, mimeType: attachment.mime, size: attachment.size, kind: attachment.kind });
+  }, []);
+  // HTML tool artifacts render in the island; the bytes are fetched with the
+  // same authenticated raw endpoint and wrapped in the sandbox shell.
+  const openStoredArtifact = useCallback((file: { id: string; mimeType?: string | null; name?: string | null }) => {
+    const title = file.name || 'Artifact';
+    const artifactId = `artifact-file-${file.id}`;
+    setArtifact({
+      id: artifactId,
+      kind: 'html',
+      title,
+      summary: '',
+      document: () => '',
+      loadDocument: async () => {
+        const response = await api.files.fetchRaw(file.id);
+        if (!response.ok) throw new Error(`File request failed (${response.status})`);
+        return buildEmbeddedDocument({ artifactId, kind: 'html', title, source: await response.text(), palette: paletteForDocument(theme) });
+      },
+    });
+  }, [theme]);
+  const listFiles = useCallback(() => api.files.list(), []);
+  const removeFile = useCallback((id: string) => api.files.remove(id), []);
+  const loadFilePreview = useCallback((id: string) => api.files.preview(id), []);
+  // Exam sessions carry client-generated questions + answers in examData;
+  // answering and grading stay local, persistence is debounced and the store
+  // is patched immediately so a session switch never loses answers.
+  const examData = active?.kind === 'exam' ? (active.examData as ExamData | null | undefined) ?? null : null;
+  const examQuestions = useMemo(() => parseExamQuestions(examData), [examData]);
+  const isExam = examQuestions.length > 0;
+  const examSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const persistExam = useCallback((sessionId: string, data: ExamData, immediate: boolean) => {
+    useChatStore.getState().patchSession(sessionId, { kind: 'exam', examData: data });
+    if (examSaveTimer.current) clearTimeout(examSaveTimer.current);
+    const save = () => {
+      examSaveTimer.current = null;
+      void api.sessions.patch(sessionId, { kind: 'exam', examData: data }).catch(() => undefined);
+    };
+    if (immediate) save();
+    else examSaveTimer.current = setTimeout(save, 700);
+  }, []);
+  // New-exam flow: generate one question per streaming call, then persist the
+  // resulting exam session (kind='exam' + examData) like the web baseline.
+  const examAbort = useRef<AbortController | null>(null);
+  const startExamGeneration = useCallback(async (input: ExamSetupInput) => {
+    const owner = useAuthStore.getState().user;
+    if (!owner || owner.isGuest) { setExamRun({ running: false, progress: null, error: appStringsNow().guestSendBlocked }); return; }
+    examAbort.current?.abort();
+    const controller = new AbortController();
+    examAbort.current = controller;
+    const epoch = accountEpoch.current;
+    setExamRun({ running: true, progress: { done: 0, total: input.count, phase: 'generating' }, error: null });
+    try {
+      const { questions, lang } = await generateExamQuestions(input, {
+        signal: controller.signal,
+        onProgress: (progress) => {
+          if (epoch === accountEpoch.current) setExamRun((prev) => ({ ...prev, progress: { done: progress.done, total: progress.total, phase: progress.phase } }));
+        },
+      });
+      if (epoch !== accountEpoch.current) return;
+      const examData = buildExamData(input, questions, lang);
+      const id = `session-${Date.now()}`;
+      const draft: Session = { id, title: input.topic, topic: input.topic, mode: 'chat', phase: 'chat', kind: 'exam', examData, messages: [] };
+      const store = useChatStore.getState();
+      store.setSessions([draft, ...store.sessions]);
+      store.selectSession(id);
+      examAbort.current = null;
+      setExamRun({ running: false, progress: null, error: null });
+      setScreen('chat');
+      try {
+        const saved = await api.sessions.save(draft);
+        if (epoch === accountEpoch.current) useChatStore.getState().adoptSessionId(id, saved);
+      } catch { /* the exam stays local until the next library sync */ }
+    } catch {
+      if (controller.signal.aborted) {
+        if (epoch === accountEpoch.current) setExamRun({ running: false, progress: null, error: null });
+        return;
+      }
+      if (epoch === accountEpoch.current) setExamRun({ running: false, progress: null, error: appStringsNow().examGenerateFailed });
+    }
+  }, []);
+  const cancelExamGeneration = useCallback(() => {
+    examAbort.current?.abort();
+    examAbort.current = null;
+    setExamRun({ running: false, progress: null, error: null });
+  }, []);
+  const closeExamSetup = useCallback(() => {
+    examAbort.current?.abort();
+    examAbort.current = null;
+    setExamRun({ running: false, progress: null, error: null });
+    setScreen('chat');
+  }, []);
 
   const syncLibrary = useCallback(async () => {
     const owner = useAuthStore.getState().user;
@@ -109,6 +224,11 @@ function SocratesApp() {
       setAccountUsage(null); setUsageLoading(false); setUsageError(null);
       setProviders([]); setProvidersLoading(false); setProvidersError(null);
       setAuthNotice(null);
+      setArtifact(null);
+      setPreviewFile(null);
+      examAbort.current?.abort();
+      examAbort.current = null;
+      setExamRun({ running: false, progress: null, error: null });
       setProjectFilter(null); setMovePickSession(null); setMenuOpen(false); setConfirmDelete(false); setScreen('chat');
       useChatStore.getState().reset();
       useChatStore.getState().setSessions(initialSessions);
@@ -203,7 +323,22 @@ function SocratesApp() {
         await runChatTurn({
           sessionId, turnId: `turn-${Date.now()}`, text, attachments: messageAttachments.length ? messageAttachments : undefined, signal: controller.signal,
           isCurrent: () => epoch === accountEpoch.current,
-          save: (session) => api.sessions.save(session), stream: streamConversation,
+          save: (session) => api.sessions.save(session),
+          // Upload each staged file with the now-known server session id so it
+          // lands in the file library and stays readable by the model.
+          persistAttachments: async (serverSessionId) => {
+            if (!messageAttachments.length || epoch !== accountEpoch.current) return undefined;
+            const tokens = await api.readTokens();
+            return Promise.all(messageAttachments.map(async (attachment) => {
+              const row = snapshot.find((item) => item.localId === attachment.id);
+              if (!row) return attachment;
+              try {
+                const fileId = await persistStagedAttachment(row, { url: api.files.uploadUrl(), token: tokens.accessToken, fetch: api.fetchWithAuth }, serverSessionId);
+                return fileId ? { ...attachment, fileId } : attachment;
+              } catch { return attachment; }
+            }));
+          },
+          stream: streamConversation,
         });
       } finally {
         if (streamAbort.current === controller) streamAbort.current = null;
@@ -629,6 +764,29 @@ function SocratesApp() {
       onClose={() => setScreen('chat')}
     /></SafeAreaView>;
   }
+  if (screen === 'exam-setup') {
+    return <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg.page }]}><StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} /><ExamSetupScreen
+      mode={theme}
+      running={examRun.running}
+      progress={examRun.progress}
+      error={examRun.error}
+      onStart={(input) => void startExamGeneration(input)}
+      onCancel={cancelExamGeneration}
+      onClose={closeExamSetup}
+    /></SafeAreaView>;
+  }
+  if (screen === 'files') {
+    return <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg.page }]}><StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} />
+      <FilesScreen
+        mode={theme}
+        list={listFiles}
+        remove={removeFile}
+        onOpen={(file) => setPreviewFile(file)}
+        onClose={() => setScreen('chat')}
+      />
+      {previewFile ? <FilePreview file={previewFile} mode={theme} language={language} target={fileTarget} loadPreview={loadFilePreview} onClose={() => setPreviewFile(null)} /> : null}
+    </SafeAreaView>;
+  }
 
   return <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg.page }]}><StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} />
     <KeyboardAvoidingView style={styles.shell} behavior={Platform.OS === 'ios' ? 'padding' : undefined} enabled={Platform.OS !== 'web'}>
@@ -637,6 +795,7 @@ function SocratesApp() {
         activeId={activeId}
         onSelect={select}
         onNewChat={createSession}
+        onNewExam={user && !user.isGuest ? () => setScreen('exam-setup') : undefined}
         mode={theme}
         language={language}
         archived={archived}
@@ -654,6 +813,7 @@ function SocratesApp() {
           )}
           <Pressable accessibilityRole="button" accessibilityLabel={s.openSearch} onPress={() => setScreen('search')} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>🔍</Text></Pressable>
           <Pressable accessibilityRole="button" accessibilityLabel={s.openProjects} onPress={() => setScreen('projects')} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>📁</Text></Pressable>
+          {user && !user.isGuest ? <Pressable accessibilityRole="button" accessibilityLabel={s.openFiles} onPress={() => { setMenuOpen(false); setScreen('files'); }} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>📎</Text></Pressable> : null}
           <Pressable accessibilityRole="button" accessibilityLabel={s.toggleTheme} onPress={toggleTheme} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>{theme === 'dark' ? '☾' : '☀'}</Text></Pressable>
           <Pressable accessibilityRole="button" accessibilityLabel={s.openSettings} onPress={openSettings} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>⚙</Text></Pressable>
           {active ? (
@@ -697,27 +857,42 @@ function SocratesApp() {
           </View>
         ) : null}
         {chatError ? <Text accessibilityRole="alert" style={{ color: palette.danger, padding: 12 }}>{chatError}</Text> : null}
-        <ChatMessageList messages={active?.messages || []} mode={theme} language={language} onCopyText={copyText} onSpeakText={speak} />
-        <Composer
-          value={draft}
-          streaming={status === 'sending' || status === 'streaming'}
-          onChangeText={useChatStore.getState().setDraft}
-          onSend={send}
-          onStop={stop}
-          mode={theme}
-          language={language}
-          attachments={staged.map((s) => ({ id: s.localId, name: s.name }))}
-          canCapturePhoto={supportsCamera}
-          voiceInputSupported={listenSupported()}
-          listening={listening}
-          onPickImages={() => void onPickImages()}
-          onTakePhoto={() => void onTakePhoto()}
-          onPickFile={() => void onPickFile()}
-          onRemoveAttachment={removeStaged}
-          onToggleListen={toggleListen}
-        />
+        {isExam && examData && active ? (
+          <ExamView
+            key={active.id}
+            examData={examData}
+            mode={theme}
+            language={language}
+            onChange={(data, immediate) => persistExam(active.id, data, immediate)}
+            onSubmit={(data) => persistExam(active.id, data, true)}
+          />
+        ) : (
+          <>
+            <ChatMessageList messages={active?.messages || []} mode={theme} language={language} onCopyText={copyText} onSpeakText={speak} onOpenArtifact={setArtifact} onOpenStoredArtifact={openStoredArtifact} resolveImage={resolveImage} onOpenFile={openAttachment} />
+            <Composer
+              value={draft}
+              streaming={status === 'sending' || status === 'streaming'}
+              onChangeText={useChatStore.getState().setDraft}
+              onSend={send}
+              onStop={stop}
+              mode={theme}
+              language={language}
+              attachments={staged.map((s) => ({ id: s.localId, name: s.name }))}
+              canCapturePhoto={supportsCamera}
+              voiceInputSupported={listenSupported()}
+              listening={listening}
+              onPickImages={() => void onPickImages()}
+              onTakePhoto={() => void onTakePhoto()}
+              onPickFile={() => void onPickFile()}
+              onRemoveAttachment={removeStaged}
+              onToggleListen={toggleListen}
+            />
+          </>
+        )}
       </View>
     </KeyboardAvoidingView>
+    <ArtifactViewer artifact={artifact} mode={theme} language={language} onClose={() => setArtifact(null)} />
+    {previewFile ? <FilePreview file={previewFile} mode={theme} language={language} target={fileTarget} loadPreview={loadFilePreview} onClose={() => setPreviewFile(null)} /> : null}
   </SafeAreaView>;
 }
 export default function App() {

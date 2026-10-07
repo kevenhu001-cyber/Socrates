@@ -82,6 +82,30 @@ export interface Attachment {
   fileId?: string;
 }
 
+/** GET /api/files row — a durable upload in the user's file library. */
+export interface StoredFile {
+  id: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  kind: string;
+  sha256?: string | null;
+  sessionId?: string | null;
+  uploadedAt?: string | null;
+}
+
+/** GET /api/files/:id/content — capped, text-only preview of a stored file. */
+export interface StoredFilePreview {
+  ok: boolean;
+  id: string;
+  name: string;
+  mimeType: string;
+  kind: string;
+  text: string;
+  truncated: boolean;
+  meta?: Record<string, JsonValue>;
+}
+
 export interface ToolCall {
   id: string;
   name: string;

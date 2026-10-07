@@ -1,11 +1,20 @@
 import React, { memo, useState } from 'react';
-import { MessageContent, type MessageActions } from './MessageContent';
+import { MessageContent, type MessageActions } from './MessageContent.tsx';
 import type { Message, Session } from '@socrates/contracts';
 import { getThemePaletteHex } from '@socrates/theme';
 import type { ThemeMode } from '@socrates/theme';
 import { uiStrings, type UiLanguage } from './strings';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+
+export { artifactFromFence, artifactsFromToolCalls, islandKindForLang, parseArtifactBridgeMessage, type ArtifactDescriptor } from './artifacts';
+export { buildEmbeddedDocument } from './artifactDocument';
+export { buildVisualizationDocument, isVisualizationSpec, paletteForDocument, visualizationSpecOf, visualizationSummary, type VisualizationSpec } from './visualization';
+export { fileKindLabel, formatFileSize, isImageMime, storedFileIdFromRawUrl, storedFileIdsInText } from './fileMeta';
+export { toolArtifacts, toolDurationLabel, toolInputPreview, toolLabel, toolState, type ToolArtifactRef } from './toolModel';
+export { ExamView } from './ExamView.tsx';
+export { detectExamLanguage, examAnswersOf, examGenerationPrompt, examProgress, examPromptTypes, gradeExam, missingExamAnswers, parseExamQuestionResponse, parseExamQuestions, type ExamQuestion, type ExamQuestionType } from './examModel';
+export type { MessageActions } from './MessageContent.tsx';
 
 // Legacy light-only export kept for compat; new code should pass mode
 // explicitly (frontend baseline supports light + dark).
@@ -27,6 +36,7 @@ export function Sidebar({
   activeId,
   onSelect,
   onNewChat,
+  onNewExam,
   mode = 'light',
   language = 'en',
   archived = [],
@@ -36,6 +46,8 @@ export function Sidebar({
   activeId: string | null;
   onSelect(id: string): void;
   onNewChat(): void;
+  /** Opens the exam setup flow; hidden when omitted (guest). */
+  onNewExam?(): void;
   mode?: UiMode;
   language?: UiLanguage;
   /** Server-fetched archived rows; rendered in a collapsed section so the
@@ -55,6 +67,9 @@ export function Sidebar({
       <Pressable accessibilityRole="button" accessibilityLabel={t.newChat} onPress={onNewChat} style={[styles.newChat, { borderColor: p.border.default }]}>
         <Text style={[styles.newChatText, { color: p.text.primary }]}>{t.newChat}</Text>
       </Pressable>
+      {onNewExam ? <Pressable accessibilityRole="button" accessibilityLabel={t.newExam} onPress={onNewExam} style={[styles.newChat, { borderColor: p.border.default }]}>
+        <Text style={[styles.newChatText, { color: p.text.primary }]}>🗒 {t.newExam}</Text>
+      </Pressable> : null}
       <Text style={[styles.section, { color: p.text.muted }]}>{t.conversations}</Text>
       <FlatList
         data={sessions}
@@ -67,7 +82,7 @@ export function Sidebar({
             style={[styles.session, item.id === activeId && { backgroundColor: p.bg.hover }]}
           >
             <Text numberOfLines={1} style={[styles.sessionTitle, { color: p.text.primary }]}>
-              {titleOf(item)}
+              {item.kind === 'exam' ? '🗒 ' : ''}{titleOf(item)}
             </Text>
           </Pressable>
         )}
@@ -107,10 +122,10 @@ export function Sidebar({
   );
 }
 
-const MessageRow = memo(function MessageRow({ message, mode = 'light', language = 'en', onCopyText, onSpeakText }: { message: Message; mode?: UiMode; language?: UiLanguage } & MessageActions) {
+const MessageRow = memo(function MessageRow({ message, mode = 'light', language = 'en', onCopyText, onSpeakText, onOpenArtifact, onOpenStoredArtifact, resolveImage, onOpenFile }: { message: Message; mode?: UiMode; language?: UiLanguage } & MessageActions) {
   const p = paletteFor(mode);
   return <Animated.View layout={LinearTransition} style={[styles.message, message.role === 'user' && { ...styles.userMessage, backgroundColor: p.bg.hover }]}>
-    <MessageContent message={message} mode={mode} language={language} onCopyText={onCopyText} onSpeakText={onSpeakText} />
+    <MessageContent message={message} mode={mode} language={language} onCopyText={onCopyText} onSpeakText={onSpeakText} onOpenArtifact={onOpenArtifact} onOpenStoredArtifact={onOpenStoredArtifact} resolveImage={resolveImage} onOpenFile={onOpenFile} />
   </Animated.View>;
 });
 
@@ -121,6 +136,10 @@ export function ChatMessageList({
   emptyText,
   onCopyText,
   onSpeakText,
+  onOpenArtifact,
+  onOpenStoredArtifact,
+  resolveImage,
+  onOpenFile,
 }: {
   messages: Message[];
   mode?: UiMode;
@@ -141,7 +160,7 @@ export function ChatMessageList({
       contentContainerStyle={styles.messages}
       data={messages}
       keyExtractor={(item, index) => item.id || item.clientId || String(index)}
-      renderItem={({ item }) => <MessageRow message={item} mode={mode} language={language} onCopyText={onCopyText} onSpeakText={onSpeakText} />}
+      renderItem={({ item }) => <MessageRow message={item} mode={mode} language={language} onCopyText={onCopyText} onSpeakText={onSpeakText} onOpenArtifact={onOpenArtifact} onOpenStoredArtifact={onOpenStoredArtifact} resolveImage={resolveImage} onOpenFile={onOpenFile} />}
     />
   );
 }

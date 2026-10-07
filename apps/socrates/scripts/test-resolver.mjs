@@ -5,6 +5,9 @@ import { resolve as resolvePath } from 'node:path';
 const root = fileURLToPath(new URL('../../../', import.meta.url));
 const appRequire = createRequire(new URL('../package.json', import.meta.url));
 export async function resolve(specifier, context, nextResolve) {
+  // Windows drive-letter entry points reach hooks as bare paths; the ESM
+  // loader reads `C:` as an unsupported URL scheme unless converted first.
+  if (/^[a-zA-Z]:[\\/]/.test(specifier)) return nextResolve(pathToFileURL(specifier).href, context);
   if (specifier.startsWith('@socrates/')) {
     const directory = resolvePath(root, 'packages', specifier.slice('@socrates/'.length));
     const pkg = JSON.parse(readFileSync(resolvePath(directory, 'package.json'), 'utf8'));

@@ -27,6 +27,8 @@ export interface ChatState {
   applyToolCall(toolCall: ToolCall): void;
   beginTurn(sessionId: string, turnId: string, text: string, attachments?: Message['attachments']): boolean;
   updateTurn(turnId: string, update: (message: Message) => Message): void;
+  /** Attach durable file ids to the turn's user message after upload. */
+  setTurnAttachments(turnId: string, attachments: Message['attachments']): void;
   finishTurn(turnId: string, error?: string | null): void;
   setStatus(status: ChatStatus, error?: string | null): void;
 }
@@ -107,6 +109,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
   updateTurn: (turnId, update) => set((state) => state.turnId !== turnId ? {} : ({
     sessions: updateSession(state, state.turnSessionId, (s) => ({ ...s, messages: s.messages?.map((m) => m.clientId === turnId ? update(m) : m) })),
+  })),
+  setTurnAttachments: (turnId, attachments) => set((state) => state.turnId !== turnId ? {} : ({
+    sessions: updateSession(state, state.turnSessionId, (s) => ({ ...s, messages: s.messages?.map((m) => m.clientId === `${turnId}-user` ? { ...m, attachments } : m) })),
   })),
   finishTurn: (turnId, error = null) => set((state) => state.turnId === turnId ? { turnId: null, turnSessionId: null, status: error ? 'error' : 'idle', error } : {}),
   setStatus: (status, error = null) => set({ status, error }),

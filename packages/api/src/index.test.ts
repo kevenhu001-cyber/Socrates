@@ -150,6 +150,43 @@ test('providers list, activate, create and remove hit /api-key', async () => {
   assert.deepEqual(calls.map((c) => c.init?.method || 'GET'), ['GET', 'POST', 'PATCH', 'DELETE']);
 });
 
+test('files.list/preview/remove/fetchRaw cover the file library surface', async () => {
+  const { fetch, calls } = mockFetch({
+    'GET /files?limit=50': { status: 200, body: { files: [{ id: 'f1', name: 'a.txt', mimeType: 'text/plain', size: 3, kind: 'text' }], nextCursor: null } },
+    'GET /files/f1/content': { status: 200, body: { ok: true, id: 'f1', name: 'a.txt', mimeType: 'text/plain', kind: 'text', text: 'abc', truncated: false } },
+  });
+  const api = createApiClient({ baseUrl: 'https://test/api/v2', fetch, storage: createMemoryStore() });
+  const page = await api.files.list();
+  assert.deepEqual(page.files.map((f) => f.id), ['f1']);
+  const preview = await api.files.preview('f1');
+  assert.equal(preview.text, 'abc');
+  assert.match(calls[0].url, /\/files\?limit=50$/);
+  assert.match(calls[1].url, /\/files\/f1\/content$/);
+
+  const removes: string[] = [];
+  const removeFetch = (async (url: string, init?: RequestInit) => {
+    removes.push(`${init?.method || 'GET'} ${url}`);
+    return new Response(null, { status: 204 });
+  }) as typeof globalThis.fetch;
+  const deleteApi = createApiClient({ baseUrl: 'https://test/api/v2', fetch: removeFetch, storage: createMemoryStore() });
+  await deleteApi.files.remove('f1');
+  assert.match(removes[0], /DELETE .*\/files\/f1$/);
+  assert.equal(deleteApi.files.rawUrl('f 1'), 'https://test/api/v2/files/f%201/raw');
+});
+
+test('files.fetchRaw returns the authenticated raw response', async () => {
+  const raw = new Uint8Array([137, 80, 78, 71]);
+  const bytesFetch = (async (url: string, init?: RequestInit) => {
+    assert.match(url, /\/files\/f1\/raw$/);
+    assert.equal(init?.method || 'GET', 'GET');
+    return new Response(raw, { status: 200, headers: { 'Content-Type': 'image/png' } });
+  }) as typeof globalThis.fetch;
+  const api = createApiClient({ baseUrl: 'https://test/api/v2', fetch: bytesFetch, storage: createMemoryStore() });
+  const response = await api.files.fetchRaw('f1');
+  assert.equal(response.ok, true);
+  assert.equal((await response.arrayBuffer()).byteLength, 4);
+});
+
 test('API errors surface as ApiError with status', async () => {
   const { fetch } = mockFetch({ '/projects': { status: 401, body: { message: 'Unauthorized' } } });
   const api = createApiClient({ baseUrl: 'https://test/api/v2', fetch, storage: createMemoryStore() });

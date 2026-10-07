@@ -1,4 +1,4 @@
-import type { AccountUsage, ChatRequest, ChatSseHandlers, FileExtractResult, MobileTokenPair, Project, ProviderKey, SearchHit, Session, User } from '@socrates/contracts';
+import type { AccountUsage, ChatRequest, ChatSseHandlers, FileExtractResult, MobileTokenPair, Project, ProviderKey, SearchHit, Session, StoredFile, StoredFilePreview, User } from '@socrates/contracts';
 import { consumeSseBuffer, dispatchChatSseFrame } from '@socrates/core';
 import type { KeyValueStore } from '@socrates/platform';
 
@@ -241,8 +241,9 @@ export function createApiClient(input: {
       get: (id: string) => request<Session>(`/sessions/${encodeURIComponent(id)}`),
       save: (session: Session) => request<Session>('/sessions', { method: 'POST', body: JSON.stringify(session) }),
       // Subset of the server PATCH allowlist used by the Universal App.
-      // projectId moves a session between projects (null = unfiled).
-      patch: (id: string, patch: Partial<Pick<Session, 'title' | 'topic' | 'pinned' | 'projectId'>>) =>
+      // projectId moves a session between projects (null = unfiled);
+      // kind/examData persist the exam surface (answers + submitted).
+      patch: (id: string, patch: Partial<Pick<Session, 'title' | 'topic' | 'pinned' | 'projectId' | 'kind' | 'examData'>>) =>
         request<Session>(`/sessions/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch) }),
       archive: (id: string) => request<{ ok: true }>(`/sessions/${encodeURIComponent(id)}/archive`, { method: 'POST' }),
       unarchive: (id: string) => request<{ ok: true }>(`/sessions/${encodeURIComponent(id)}/archive`, { method: 'DELETE' }),
@@ -298,6 +299,22 @@ export function createApiClient(input: {
         return parsed;
       },
       extractUrl: () => `${input.baseUrl}/files/extract`,
+      /* POST /api/files — durable upload (multipart `file` + optional
+       * `sessionId`). The web path posts a FormData body through
+       * fetchWithAuth; the native path uses FileSystem.uploadAsync with this
+       * URL and a raw bearer token (RN fetch cannot stream file bodies). */
+      uploadUrl: () => `${input.baseUrl}/files`,
+      /* File library (GET /api/files) + text preview + delete. `fetchRaw`
+       * returns the authenticated raw response so callers can build a blob
+       * URL (web) or stream it to a cache file (native); `rawUrl` is for
+       * consumers that attach their own Authorization header (native Image /
+       * FileSystem.downloadAsync). */
+      list: (cursor?: string | null, limit = 50) =>
+        request<{ files: StoredFile[]; nextCursor?: string | null }>(`/files?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`),
+      preview: (id: string) => request<StoredFilePreview>(`/files/${encodeURIComponent(id)}/content`),
+      remove: (id: string) => request<void>(`/files/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+      rawUrl: (id: string) => `${input.baseUrl}/files/${encodeURIComponent(id)}/raw`,
+      fetchRaw: (id: string) => fetchWithAuth(`${input.baseUrl}/files/${encodeURIComponent(id)}/raw`),
     },
     providers: {
       /* Model providers (server-held keys — the client sends a key once

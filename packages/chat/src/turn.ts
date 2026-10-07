@@ -10,6 +10,10 @@ export async function runChatTurn(input: {
   signal: AbortSignal;
   isCurrent(): boolean;
   save(session: Session): Promise<Session>;
+  /** Persists the turn's attachments once the server session id is known,
+   * returning the enriched attachment list (durable file ids). Never lets a
+   * failed upload abort the turn. */
+  persistAttachments?(sessionId: string): Promise<Message['attachments'] | undefined>;
   stream(args: { sessionId: string; messages: Message[]; handlers: ChatSseHandlers; signal: AbortSignal }): Promise<void>;
 }) {
   const store = useChatStore;
@@ -43,6 +47,12 @@ export async function runChatTurn(input: {
         if (value.output !== undefined && typeof value.output !== 'string') call.output = JSON.stringify(value.output);
         call.progressPhase = call.isError ? 'failed' : 'completed';
         for (const key of ['plan', 'spec', 'visualization'] as const) if (value[key] !== undefined) call[key] = value[key];
+        if (typeof value.durationMs === 'number') call.durationMs = value.durationMs;
+        if (typeof value.executionId === 'string') call.executionId = value.executionId;
+        if (typeof value.retryable === 'boolean') call.retryable = value.retryable;
+        // Live frames send bare file-id strings; persisted rows carry
+        // {id, mimeType, name}. toolModel normalizes both.
+        if (Array.isArray(value.artifacts)) call.artifacts = value.artifacts as unknown as ToolCall['artifacts'];
       }
       if (Array.isArray(value.results)) call.results = value.results as ToolCall['results'];
       return { ...m, toolCalls: mergeToolCall((m.toolCalls || []).filter((t) => !previousId || previousId === id || t.id !== previousId), call) };
@@ -57,7 +67,16 @@ export async function runChatTurn(input: {
     ready = true;
     if (input.signal.aborted) throw new Error('Request canceled');
     store.getState().setStatus('streaming');
-    const persisted = session()!;
+    let persisted = session()!;
+    if (input.persistAttachments) {
+      try {
+        const withFiles = await input.persistAttachments(persisted.id);
+        if (withFiles && current()) {
+          store.getState().setTurnAttachments(input.turnId, withFiles);
+          persisted = session() ?? persisted;
+        }
+      } catch { /* attachment persistence must never abort the turn */ }
+    }
     await input.stream({
       sessionId: persisted.id,
       messages: (persisted.messages || []).filter((m) => m.clientId !== input.turnId),

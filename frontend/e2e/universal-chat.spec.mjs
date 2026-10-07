@@ -45,6 +45,8 @@ test('universal chat refreshes, saves, isolates streams and restores server hist
       res.write('data: {"choices":[{"delta":{"reasoning_content":"Reasoning only"}}]}\n\n');
       res.write('event: tool_use\ndata: [{"id":"tool-1","name":"web_search","input":{"query":"algebra"}}]\n\n');
       res.write('event: tool_result\ndata: {"id":"tool-1","ok":true,"output":"Found result"}\n\n');
+      res.write('event: tool_use\ndata: [{"id":"viz-1","name":"render_visualization","input":{"version":1,"template":"bar","title":"Bar demo","accessibilitySummary":"Two bars","payload":{"categories":["A","B"],"series":[{"data":[1,2]}]}}}]\n\n');
+      res.write('event: tool_result\ndata: {"id":"viz-1","ok":true,"output":"Visualization ready","visualization":{"version":1,"template":"bar","title":"Bar demo","accessibilitySummary":"Two bars","payload":{"categories":["A","B"],"series":[{"data":[1,2]}]}}}\n\n');
       res.write('data: {"choices":[{"delta":{"content":"First chunk"}}]}\n\n');
       return;
     }
@@ -56,7 +58,11 @@ test('universal chat refreshes, saves, isolates streams and restores server hist
   try {
     await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
     await page.addInitScript(() => {
-      if (!localStorage.getItem('socrates.auth.tokens')) localStorage.setItem('socrates.auth.tokens', JSON.stringify({ accessToken: 'expired', refreshToken: 'old-refresh', expiresAt: '2000-01-01' }));
+      // Runs in every frame, including the sandboxed artifact island where
+      // storage is intentionally unreachable.
+      try {
+        if (!localStorage.getItem('socrates.auth.tokens')) localStorage.setItem('socrates.auth.tokens', JSON.stringify({ accessToken: 'expired', refreshToken: 'old-refresh', expiresAt: '2000-01-01' }));
+      } catch { /* sandboxed frame */ }
     });
     await page.goto('/');
     await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible();
@@ -91,6 +97,17 @@ test('universal chat refreshes, saves, isolates streams and restores server hist
     await page.getByRole('button', { name: 'Copy code' }).click();
     await expect(page.getByText('Copied', { exact: true })).toBeVisible();
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('const answer = 42;');
+    // Visualization tool results render a card; the heavy document lives in
+    // the sandboxed island and posts back over the artifact bridge.
+    const artifactButton = page.getByRole('button', { name: 'Open Bar demo in the artifact island' });
+    await expect(artifactButton).toBeVisible();
+    await artifactButton.click();
+    const island = page.frameLocator('iframe[title^="Artifact"]');
+    await expect(island.getByRole('heading', { name: 'Bar demo' })).toBeVisible();
+    await expect(island.locator('.artifact-summary')).toHaveText('Two bars');
+    await expect(island.locator('svg')).toBeVisible();
+    await page.getByRole('button', { name: 'Close preview' }).click();
+    await expect(page.getByRole('button', { name: 'Close preview' })).toHaveCount(0);
     // Read-aloud renders per assistant message and never throws page-side.
     await page.getByRole('button', { name: 'Listen to this message' }).first().click();
     await expect(errors).toEqual([]);

@@ -85,3 +85,32 @@ test('turn attachments ride on the user message and persist with the turn', asyn
   });
   assert.equal(saved[1].messages![0].attachments?.[0].name, 'notes.txt');
 });
+test('persistAttachments enriches the user message before streaming', async () => {
+  prepare(); const streamed: Array<string | undefined> = []; let serverId = '';
+  await runChatTurn({
+    sessionId: 'session-a', turnId: 't', text: 'Read this',
+    attachments: [{ id: 'f1', kind: 'document', name: 'report.pdf', mime: 'application/pdf', size: 3 }],
+    signal: new AbortController().signal, isCurrent: () => true,
+    save: async (s) => ({ ...s, id: 'server' }),
+    persistAttachments: async (sessionId) => {
+      serverId = sessionId;
+      return [{ id: 'f1', kind: 'document', name: 'report.pdf', mime: 'application/pdf', size: 3, fileId: 'file-1' }];
+    },
+    stream: async ({ messages }) => {
+      streamed.push(messages.find((m) => m.clientId === 't-user')?.attachments?.[0].fileId);
+    },
+  });
+  assert.equal(serverId, 'server');
+  assert.deepEqual(streamed, ['file-1']);
+});
+test('a failed attachment upload leaves the turn intact', async () => {
+  prepare(); let streamed = false;
+  await runChatTurn({
+    sessionId: 'session-a', turnId: 't', text: 'Read this', signal: new AbortController().signal, isCurrent: () => true,
+    save: async (s) => ({ ...s, id: 'server' }),
+    persistAttachments: async () => { throw new Error('upload down'); },
+    stream: async () => { streamed = true; },
+  });
+  assert.equal(streamed, true);
+  assert.equal(useChatStore.getState().status, 'idle');
+});

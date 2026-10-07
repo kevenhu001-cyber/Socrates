@@ -54,7 +54,11 @@ const server = createServer(async (req, res) => {
 
 await new Promise((resolve) => server.listen(PORT, '127.0.0.1', resolve));
 console.log(`[universal] serving ${dist} on :${PORT}`);
-const child = spawn('npx', ['playwright', 'test', '--config=playwright.universal.config.mjs'], {
+// Invoke the local Playwright CLI through node: spawning `npx.cmd` throws
+// EINVAL on Windows (Node >= 20 refuses .cmd/.bat without a shell), and a
+// shell would need different quoting per platform.
+const playwrightCli = join(frontend, 'node_modules', '@playwright', 'test', 'cli.js');
+const child = spawn(process.execPath, [playwrightCli, 'test', '--config=playwright.universal.config.mjs'], {
   cwd: frontend,
   stdio: 'inherit',
   env: { ...process.env, UNIVERSAL_BASE_URL: `http://127.0.0.1:${PORT}` },
