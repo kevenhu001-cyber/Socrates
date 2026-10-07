@@ -87,7 +87,7 @@ jobs:
           (cd release-assets && find . -type f ! -name 'SHA256SUMS.txt' -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt)
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.validate-release.outputs.tag }}
           name: Socrates ${{ needs.validate-release.outputs.tag }}
