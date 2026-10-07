@@ -83,7 +83,7 @@ jobs:
           grep -q "name='com.topodrive.socrates.universal'" preview-artifacts/android-manifest.txt
           unzip -l preview-artifacts/socrates-universal-preview.apk | grep -q 'assets/index.android.bundle'
           (cd preview-artifacts && sha256sum *.apk *.tar.gz > SHA256SUMS.txt)
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: socrates-universal-preview-${{ github.sha }}
           path: apps/socrates/preview-artifacts
