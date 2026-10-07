@@ -3,7 +3,9 @@ import { Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View
 import { getThemePaletteHex, type ThemeMode } from '@socrates/theme';
 import type { Attachment, Message, ToolCall } from '@socrates/contracts';
 import type { Token, Tokens } from 'marked';
-import { parseMessageContent, plainText, safeImage, safeLink } from './messageContent';
+import { parseAssistantSegments, parseMessageContent, plainText, safeImage, safeLink } from './messageContent';
+import { paletteForDocument } from './visualization';
+import { buildMathDocument } from './artifactDocument';
 import { artifactFromFence, artifactsFromToolCalls, type ArtifactDescriptor } from './artifacts';
 import { fileKindLabel, formatFileSize } from './fileMeta';
 import { toolArtifacts, toolDurationLabel, toolFailureText, toolInputPreview, toolInputText, toolLabel, toolOutputText, toolSearchResults, toolState } from './toolModel';
@@ -53,6 +55,13 @@ function Inline({ tokens, p, resolveImage }: { tokens: Token[]; p: Palette; reso
 
 function CodeBlock({ token, p, t, onCopyText }: { token: Tokens.Code; p: Palette; t: UiStrings } & MessageActions) {
   const [notice, setNotice] = useState('');
+  // Long dumps collapse: the first screenful stays visible, the rest is
+  // one tap away. FlatList rows with thousand-line <Text> nodes scroll
+  // and measure badly on low-end devices.
+  const lines = token.text.split('\n');
+  const collapsible = lines.length > 40;
+  const [expanded, setExpanded] = useState(false);
+  const shown = expanded || !collapsible ? token.text : lines.slice(0, 30).join('\n');
   const copy = async () => {
     try { await onCopyText?.(token.text); setNotice(t.copied); }
     catch { setNotice(t.copyFailed); }
@@ -62,7 +71,10 @@ function CodeBlock({ token, p, t, onCopyText }: { token: Tokens.Code; p: Palette
       <Text style={{ color: p.text.muted }}>{token.lang || t.code}</Text>
       {onCopyText ? <Pressable accessibilityRole="button" accessibilityLabel={t.copyCode} onPress={() => void copy()}><Text style={{ color: p.text.secondary }}>{notice || t.copyCode}</Text></Pressable> : null}
     </View>
-    <ScrollView horizontal><Text selectable style={[styles.codeText, styles.mono, { color: p.text.primary }]}>{token.text}</Text></ScrollView>
+    <ScrollView horizontal><Text selectable style={[styles.codeText, styles.mono, { color: p.text.primary }]}>{shown}</Text></ScrollView>
+    {collapsible ? <Pressable accessibilityRole="button" accessibilityLabel={expanded ? t.codeCollapse : t.codeExpand(lines.length - 30)} accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} style={[styles.codeToggle, { borderColor: p.border.default }]}>
+      <Text style={{ color: p.accent.strong }}>{expanded ? t.codeCollapse : t.codeExpand(lines.length - 30)}</Text>
+    </Pressable> : null}
   </View>;
 }
 
@@ -76,6 +88,33 @@ function ArtifactCard({ artifact, p, t, onOpenArtifact }: { artifact: ArtifactDe
     {onOpenArtifact ? <Pressable accessibilityRole="button" accessibilityLabel={t.openArtifact(artifact.title)} onPress={() => onOpenArtifact(artifact)} style={[styles.artifactOpen, { borderColor: p.border.strong }]}>
       <Text style={{ color: p.accent.strong, fontWeight: '600' }}>{t.openInIsland}</Text>
     </Pressable> : null}
+  </View>;
+}
+
+function MathCard({ tex, index, mode, p, t, onOpenArtifact }: { tex: string; index: number; mode: ThemeMode; p: Palette; t: UiStrings } & MessageActions) {
+  const open = () => onOpenArtifact?.({
+    id: `math-${index}`,
+    kind: 'math',
+    title: t.formula,
+    summary: tex.slice(0, 160),
+    document: () => buildMathDocument({ artifactId: `math-${index}`, title: t.formula, tex, display: true, palette: paletteForDocument(mode) }),
+  });
+  return <View style={[styles.math, { borderColor: p.border.default, backgroundColor: p.bg.sunken }]}>
+    <View style={styles.artifactHeader}>
+      <Text numberOfLines={1} style={{ color: p.text.primary, fontWeight: '600', flex: 1 }}>∑ {t.formula}</Text>
+      <Text style={{ color: p.text.muted, fontSize: 12, textTransform: 'uppercase' }}>TeX</Text>
+    </View>
+    <Text selectable style={[styles.mono, styles.mathTex, { color: p.text.secondary }]}>{tex}</Text>
+    {onOpenArtifact ? <Pressable accessibilityRole="button" accessibilityLabel={t.openArtifact(t.formula)} onPress={open} style={[styles.artifactOpen, { borderColor: p.border.strong }]}>
+      <Text style={{ color: p.accent.strong, fontWeight: '600' }}>{t.openInIsland}</Text>
+    </Pressable> : null}
+  </View>;
+}
+
+function NotesSection({ notes, p, t }: { notes: Array<{ id: string; text: string }>; p: Palette; t: UiStrings }) {
+  return <View style={{ gap: 4 }}>
+    <Text style={{ color: p.text.muted, fontWeight: '600' }}>{t.notesTitle}</Text>
+    {notes.map((note, i) => <Text key={`${note.id}-${i}`} selectable style={[styles.text, { color: p.text.secondary }]}>{`[${i + 1}] ${note.text}`}</Text>)}
   </View>;
 }
 
@@ -167,6 +206,12 @@ export const MessageContent = memo(function MessageContent({ message, mode, lang
   const t = uiStrings(language);
   const content = useMemo(() => parseMessageContent(message), [message.rawText, message.content, message.reasoningContent]);
   const artifacts = useMemo(() => artifactsFromToolCalls(message.toolCalls, mode), [message.toolCalls, mode]);
+  // Assistant pipeline (strip [1] noise → footnote Notes → display-math
+  // cards). User messages keep whatever was typed, verbatim.
+  const segments = useMemo(
+    () => message.role === 'assistant' ? parseAssistantSegments(content.text) : null,
+    [message.role, content.text],
+  );
   const [showReasoning, setShowReasoning] = useState(false);
   const speakable = message.role === 'assistant' && content.text.trim().length > 0 ? content.text : null;
   const editable = message.role === 'user' && content.text.trim().length > 0;
@@ -176,7 +221,11 @@ export const MessageContent = memo(function MessageContent({ message, mode, lang
       <Pressable accessibilityRole="button" accessibilityLabel={t.toggleReasoning} accessibilityState={{ expanded: showReasoning }} onPress={() => setShowReasoning(!showReasoning)}><Text style={{ color: p.text.muted }}>{t.reasoning} {showReasoning ? '⌃' : '⌄'}</Text></Pressable>
       {showReasoning ? <Text selectable style={[styles.text, { color: p.text.secondary }]}>{content.reasoning}</Text> : null}
     </View> : null}
-    {message.role === 'user' ? <Text selectable style={[styles.text, { color: p.text.primary }]}>{content.text}</Text> : content.tokens.length ? <Blocks tokens={content.tokens} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} /> : <Text style={{ color: p.text.muted }}>{t.thinking}</Text>}
+    {message.role === 'user' ? <Text selectable style={[styles.text, { color: p.text.primary }]}>{content.text}</Text> : segments && segments.length ? <>{segments.map((segment, i) => {
+      if (segment.kind === 'math') return <MathCard key={i} tex={segment.tex} index={i} mode={mode} p={p} t={t} onOpenArtifact={onOpenArtifact} />;
+      if (segment.kind === 'notes') return <NotesSection key={i} notes={segment.notes} p={p} t={t} />;
+      return <Blocks key={i} tokens={segment.tokens} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} />;
+    })}</> : content.tokens.length ? <Blocks tokens={content.tokens} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} /> : <Text style={{ color: p.text.muted }}>{t.thinking}</Text>}
     {speakable && onSpeakText ? (
       <Pressable accessibilityRole="button" accessibilityLabel={t.listenMessage} onPress={() => onSpeakText(speakable)} style={styles.speakRow}>
         <Text style={{ color: p.text.muted }}>{t.listen}</Text>
@@ -229,6 +278,7 @@ const styles = StyleSheet.create({
   code: { borderWidth: 1, borderRadius: 12, overflow: 'hidden', marginVertical: 8 },
   codeHeader: { padding: 10, flexDirection: 'row', justifyContent: 'space-between', gap: 16 },
   codeText: { padding: 12, lineHeight: 22 },
+  codeToggle: { padding: 10, alignItems: 'center', borderTopWidth: StyleSheet.hairlineWidth },
   quote: { paddingLeft: 12, borderLeftWidth: 3, marginVertical: 8 },
   list: { marginVertical: 4 }, listRow: { flexDirection: 'row', gap: 6 },
   tableRow: { flexDirection: 'row' }, tableCell: { width: 160, padding: 8, borderWidth: StyleSheet.hairlineWidth },
@@ -241,6 +291,8 @@ const styles = StyleSheet.create({
   artifact: { padding: 12, borderWidth: 1, borderRadius: 12, gap: 8 },
   artifactHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   artifactOpen: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  math: { padding: 12, borderWidth: 1, borderRadius: 12, gap: 8, marginVertical: 8 },
+  mathTex: { lineHeight: 22 },
   attachment: { padding: 10, borderWidth: 1, borderRadius: 12, gap: 8 },
   attachmentImage: { width: '100%', maxHeight: 220, borderRadius: 8 },
   attachmentRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },

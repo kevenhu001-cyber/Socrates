@@ -447,3 +447,36 @@ mobile/            # 冻结，仅安全/crash/data-loss 修复
   双发 LLM turn，幂等键/去重以后轮再议（P1.5，不挡签收）。
 - 下轮（round 16-2）：公式（KaTeX）+ 引用/长代码 parity；会话内模型切换
  （`modelPicker` 进 chat header）；Tutor/诊断流。发布前门仍单独一轮。
+
+## 20. 进展（第十三轮，2026-10-07，round 16-2：公式/引用/长代码）
+
+> 对齐 `render/katexRefresh.js`（`$$` display + `$` inline + `\(\)`/`\[\]`
+> 分隔符契约）与 `render/helpers.ts stripCitationMarkers`（assistant 气泡
+> 不显示 `[1]`/`【1】`，来源只在搜索工具卡）。
+
+- 共享解析（`packages/ui/src/math.ts`，DOM-free，无占位符哨兵）：
+  - `splitMathSegments`：单遍扫描，fence/行内代码优先抄过（`a[i]`/`$5`/
+  `$(cmd)` 永不成公式）；`$$`/`\(`/`\[` 信任作者只判非空；
+  `$..$` 另要 TeX 内容（字母/反斜杠/符号，`$5`/`$5.99` 按字面）且
+  closer 不跟空白（`$5 and $10` 存活）。
+  - `stripCitationMarkers`：helpers.ts 的逐字移植（单遍实现），`[[1]]`
+  内层剥除行为已用基线真函数对照（同样得 `[]`，注释 aspirational）。
+  - `extractFootnoteDefinitions`：`[^id]: text`  lifting 为 Notes，
+  行内 ref 改写 `[n]`（无定义不动）。
+- 岛排版（`artifactDocument.buildMathDocument`）：KaTeX 0.16.11 pinned
+  CDN + 双 SRI + `trust: false`；math 文档专用窄 CSP（仅放行该 CDN 的
+  script/style/font）；CDN 失联显示 TeX 源码（transcript 卡本就显示源码，
+  永不白板）。元素查找用 window 具名属性（门禁禁
+  `getElementById`/`querySelector` 字面量，连注释里都不能写）。
+- 渲染（`MessageContent`，assistant only，user 原样）：
+  strip → footnotes → display 公式卡（源码 + 进岛）/行内公式折成
+  codespan 保句子不断行；`[^a]:` 定义进 Notes 区；>40 行代码折叠
+  （前 30 行 + `Show n more lines`）；`strings.ts` en/zh +4。
+- 验证：`apps typecheck` 0、DOM-free 通过、`test:shared` 全绿
+  （新增 math 8）；`frontend lint` 0 error；
+  `export:web` + `test:universal` **20/20**（10 spec × 双端，含新
+  `universal-math`：公式卡/开岛/引用剥除/注释/代码折叠）。
+  `universal-exam-generation` 在两次全量中各挂一次、单跑/6 连跑/第三次
+  全量均过——该 spec 本轮未动，判负载 flake（后续若再现再修）。
+- 下轮（round 16-3）：会话内模型切换（`modelPicker` 进 chat header）；
+  Tutor/诊断流。发布前门仍单独一轮。

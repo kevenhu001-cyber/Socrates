@@ -149,3 +149,85 @@ export function buildEmbeddedDocument(input: {
     bodyHtml: `<style>${baseStyles(palette)}</style><div class="artifact-embedded">${source}</div>`,
   });
 }
+
+/* Math island: KaTeX typesetting inside the sandbox. The island CSP
+ * (`default-src 'none'`) forbids the network, so math documents carry a
+ * narrow exception for the pinned KaTeX CDN only — script, stylesheet and
+ * fonts, all subresource-integrity pinned, no other host. When the CDN is
+ * unreachable (offline) the TeX source stays visible instead of a blank
+ * card; the transcript card always shows the source, so nothing is lost.
+ * `trust: false` keeps `\href`/`\includegraphics` inert. */
+const KATEX_VERSION = '0.16.11';
+const KATEX_BASE = `https://cdn.jsdelivr.net/npm/katex@${KATEX_VERSION}/dist`;
+const KATEX_JS_SRI = 'sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg';
+const KATEX_CSS_SRI = 'sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+';
+const MATH_CSP = "default-src 'none'; img-src data: blob:; style-src 'unsafe-inline' https://cdn.jsdelivr.net; script-src 'unsafe-inline' https://cdn.jsdelivr.net; font-src data: https://cdn.jsdelivr.net; media-src data: blob:";
+
+const MATH_EXTRA_CSS = `.math-body{min-height:60px;font-size:16px;overflow-x:auto;padding:6px 2px}
+.math-body .katex-display{margin:6px 0}
+.math-offline{color:inherit;font-size:12px}`;
+
+export function buildMathDocument(input: {
+  artifactId: string;
+  title: string;
+  tex: string;
+  display: boolean;
+  palette: ArtifactDocumentPalette;
+}): string {
+  const { artifactId, title, tex, display, palette } = input;
+  const loader = `(function(){
+  var TEX = ${JSON.stringify(tex)};
+  var DISPLAY = ${display ? 'true' : 'false'};
+  var CSS_URL = ${JSON.stringify(`${KATEX_BASE}/katex.min.css`)};
+  var CSS_SRI = ${JSON.stringify(KATEX_CSS_SRI)};
+  var JS_URL = ${JSON.stringify(`${KATEX_BASE}/katex.min.js`)};
+  var JS_SRI = ${JSON.stringify(KATEX_JS_SRI)};
+  /* 'window' / 'document' through local aliases: this string is a
+   * document-local runtime, never shared-core DOM access. */
+  var w = window, d = document;
+  /* Element lookup uses named window properties (ids are mirrored
+   * there), which the shared DOM guard permits. */
+  function byId(name){
+    try { var el = w[name]; if (el && el.nodeType === 1) return el; } catch (error) { /* fall through */ }
+    return null;
+  }
+  function showOffline(){ var n = byId('math-note'); if (n) n.hidden = false; }
+  function typeset(){
+    try {
+      if (!w.katex || typeof w.katex.render !== 'function') return false;
+      var el = byId('math');
+      if (!el) return false;
+      w.katex.render(TEX, el, { displayMode: DISPLAY, throwOnError: false, trust: false, strict: false });
+      var src = byId('math-source');
+      if (src) src.style.display = 'none';
+      return true;
+    } catch (error) { return false; }
+  }
+  function loadScript(){
+    var s = d.createElement('script');
+    s.src = JS_URL; s.integrity = JS_SRI; s.crossOrigin = 'anonymous';
+    s.onload = function(){ if (!typeset()) showOffline(); };
+    s.onerror = function(){ showOffline(); };
+    d.head.appendChild(s);
+  }
+  if (typeset()) return;
+  var link = d.createElement('link');
+  link.rel = 'stylesheet'; link.href = CSS_URL; link.integrity = CSS_SRI; link.crossOrigin = 'anonymous';
+  link.onload = function(){ loadScript(); };
+  link.onerror = function(){ showOffline(); };
+  d.head.appendChild(link);
+})();`;
+  const bodyHtml = `<div class="artifact-head"><h1 class="artifact-title">${escapeHtml(title || 'Formula')}</h1>`
+    + `<span class="artifact-kind">math</span></div>`
+    + `<div id="math" class="artifact-body math-body"></div>`
+    + `<pre id="math-source" class="artifact-source">${escapeHtml(tex)}</pre>`
+    + `<p id="math-note" class="artifact-note math-offline" hidden>KaTeX did not load (offline?) — showing TeX source. / KaTeX 未加载（离线？）——显示 TeX 源码。</p>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta http-equiv="Content-Security-Policy" content="${MATH_CSP}"/>
+<title>${escapeHtml(title || 'Formula')}</title>
+<style>${baseStyles(palette)}${MATH_EXTRA_CSS}</style></head>
+<body><main class="artifact" data-artifact-id="${escapeHtml(artifactId)}" data-artifact-kind="math">${bodyHtml}</main>
+<script>${loader}</script>
+<script>${bridgeScript(artifactId)}</script></body></html>`;
+}

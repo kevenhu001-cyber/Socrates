@@ -9,6 +9,8 @@ import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-na
 
 export { artifactFromFence, artifactsFromToolCalls, islandKindForLang, parseArtifactBridgeMessage, type ArtifactDescriptor } from './artifacts';
 export { buildEmbeddedDocument } from './artifactDocument';
+export { buildMathDocument } from './artifactDocument';
+export { extractFootnoteDefinitions, splitMathSegments, stripCitationMarkers, type ContentSegment, type Footnote } from './math';
 export { buildVisualizationDocument, isVisualizationSpec, paletteForDocument, visualizationSpecOf, visualizationSummary, type VisualizationSpec } from './visualization';
 export { fileKindLabel, formatFileSize, isImageMime, storedFileIdFromRawUrl, storedFileIdsInText } from './fileMeta';
 export { toolArtifacts, toolDurationLabel, toolInputPreview, toolLabel, toolState, type ToolArtifactRef } from './toolModel';
