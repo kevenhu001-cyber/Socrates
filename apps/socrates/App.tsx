@@ -2,13 +2,13 @@ import 'react-native-reanimated';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import type { AccountUsage, ExamData, Message, Project, ProviderKey, Session, TutorData } from '@socrates/contracts';
+import type { AccountUsage, Assistant, ExamData, Message, Project, ProviderKey, Session, TutorData } from '@socrates/contracts';
 import { buildBranchSession, createMessageOutbox, findRegenerateTarget, isLocalSessionId, runChatTurn, useChatStore, visibleSessions as getVisibleSessions } from '@socrates/chat';
 import { persistUser } from '@socrates/auth';
 import { useAuthStore } from '@socrates/auth';
 import { useSettingsStore } from '@socrates/settings';
 import { getThemePaletteHex } from '@socrates/theme';
-import { ChatMessageList, Composer, DiagView, ExamView, ModelPicker, Sidebar, activeProviderOf, applyDiagnosticResults, buildColdStartNodes, buildEmbeddedDocument, buildTeachingPlanFromKB, isSubstantiveAnswer, nextTeachingStage, paletteForDocument, parseExamQuestions, storedFileIdFromRawUrl, syncCurrentNodeFromTeachingPlan, type ArtifactDescriptor, type DiagQuestion } from '@socrates/ui';
+import { AssistantPicker, ChatMessageList, Composer, DiagView, ExamView, ModelPicker, Sidebar, activeAssistantOf, activeProviderOf, applyDiagnosticResults, assistantConfigOf, buildColdStartNodes, buildEmbeddedDocument, buildTeachingPlanFromKB, isSubstantiveAnswer, nextTeachingStage, paletteForDocument, parseExamQuestions, storedFileIdFromRawUrl, syncCurrentNodeFromTeachingPlan, type ArtifactDescriptor, type DiagQuestion, type PracticeSubmission, type QuizPick } from '@socrates/ui';
 import { api, streamConversation } from './src/runtime';
 import { storage } from './src/storage';
 import { copyText } from './src/clipboard';
@@ -30,6 +30,7 @@ import { SettingsScreen } from './src/SettingsScreen';
 import { ProjectsScreen } from './src/ProjectsScreen';
 import { SearchScreen } from './src/SearchScreen';
 import { ProvidersScreen } from './src/ProvidersScreen';
+import { AssistantsScreen, type AssistantDraft } from './src/AssistantsScreen';
 import { appStrings, appStringsNow } from './src/strings';
 
 const initialSessions: Session[] = [{ id: 'welcome', title: 'Welcome to Socrates', topic: 'Universal app', mode: 'chat', phase: 'chat', messages: [{ clientId: 'welcome-assistant', role: 'assistant', rawText: 'How can I help you learn today?' }] }];
@@ -44,6 +45,21 @@ function uuidScope(id: string | null | undefined): string | null {
 function messageKey(message: { clientId?: string | null; id?: string }): string | null {
   return message.clientId || message.id || null;
 }
+/** Assistant config → the `source` JSON string the artifacts API stores. */
+function assistantSource(entry: AssistantDraft): string {
+  return JSON.stringify({ description: entry.description, instructions: entry.instructions, starter: entry.starter });
+}
+/** App-strings key for a teaching stage (baseline `tutor.stageX` labels). */
+function stageLabelKey(stage: string | null | undefined): 'stageMotivate' | 'stageDefine' | 'stageDevelop' | 'stageIllustrate' | 'stageExercise' | 'stageCheck' {
+  switch (stage) {
+    case 'define': return 'stageDefine';
+    case 'develop': return 'stageDevelop';
+    case 'illustrate': return 'stageIllustrate';
+    case 'exercise': return 'stageExercise';
+    case 'check': return 'stageCheck';
+    default: return 'stageMotivate';
+  }
+}
 
 function SocratesApp() {
   const { width } = useWindowDimensions();
@@ -52,7 +68,7 @@ function SocratesApp() {
   const [authPending, setAuthPending] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authNotice, setAuthNotice] = useState<string | null>(null);
-  const [screen, setScreen] = useState<'chat' | 'settings' | 'projects' | 'search' | 'providers' | 'files' | 'exam-setup' | 'tutor-setup'>('chat');
+  const [screen, setScreen] = useState<'chat' | 'settings' | 'projects' | 'search' | 'providers' | 'files' | 'assistants' | 'exam-setup' | 'tutor-setup'>('chat');
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
   const [projectsError, setProjectsError] = useState<string | null>(null);
@@ -67,6 +83,10 @@ function SocratesApp() {
   const [providersLoading, setProvidersLoading] = useState(false);
   const [providersError, setProvidersError] = useState<string | null>(null);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
+  const [assistants, setAssistants] = useState<Assistant[]>([]);
+  const [assistantsLoading, setAssistantsLoading] = useState(false);
+  const [assistantsError, setAssistantsError] = useState<string | null>(null);
+  const [assistantMenuOpen, setAssistantMenuOpen] = useState(false);
   /** Where the providers screen returns to (settings entry vs chat menu). */
   const [providersReturn, setProvidersReturn] = useState<'settings' | 'chat'>('settings');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -105,6 +125,7 @@ function SocratesApp() {
   const activeProject = useMemo(() => projects.find((p) => p.id === projectFilter) || null, [projects, projectFilter]);
   const activeModel = useMemo(() => activeProviderOf(providers), [providers]);
   const activeModelLabel = activeModel ? (activeModel.label || activeModel.model || 'Model') : s.openModelMenu;
+  const activeAssistant = useMemo(() => activeAssistantOf(assistants, active?.assistantId), [assistants, active?.assistantId]);
   const streamAbort = useRef<AbortController | null>(null);
   const accountEpoch = useRef(0);
   const syncEpoch = useRef(0);
@@ -359,6 +380,23 @@ function SocratesApp() {
     } catch { /* the plan stays local until the next turn save */ }
   }, []);
 
+  // Personas are loaded with the library so the header chip can name the
+  // bound assistant right after a reload; failures stay off the main sync
+  // path (the picker screen surfaces them with a retry).
+  const loadAssistants = useCallback(async () => {
+    const owner = useAuthStore.getState().user;
+    if (!owner || owner.isGuest) { setAssistants([]); return; }
+    const epoch = accountEpoch.current;
+    setAssistantsLoading(true); setAssistantsError(null);
+    try {
+      const rows = await api.assistants.list();
+      if (epoch === accountEpoch.current) setAssistants(rows);
+    } catch (error) {
+      if (epoch === accountEpoch.current) setAssistantsError(error instanceof Error ? error.message : appStringsNow().assistantsLoadFailed);
+    } finally {
+      if (epoch === accountEpoch.current) setAssistantsLoading(false);
+    }
+  }, []);
   const syncLibrary = useCallback(async () => {
     const owner = useAuthStore.getState().user;
     if (!owner || owner.isGuest) return;
@@ -366,6 +404,7 @@ function SocratesApp() {
     const sync = ++syncEpoch.current;
     const current = () => epoch === accountEpoch.current && sync === syncEpoch.current;
     setProjectsLoading(true); setProjectsError(null);
+    void loadAssistants();
     try {
       const [fetchedProjects, fetchedSessions, fetchedArchived] = await Promise.all([
         api.projects.list(), api.sessions.list(), api.sessions.listArchived(),
@@ -379,7 +418,7 @@ function SocratesApp() {
     } finally {
       if (current()) setProjectsLoading(false);
     }
-  }, []);
+  }, [loadAssistants]);
 
   useEffect(() => {
     const reset = () => {
@@ -393,6 +432,7 @@ function SocratesApp() {
       setArchived([]);
       setAccountUsage(null); setUsageLoading(false); setUsageError(null);
       setProviders([]); setProvidersLoading(false); setProvidersError(null);
+      setAssistants([]); setAssistantsLoading(false); setAssistantsError(null);
       setAuthNotice(null);
       setArtifact(null);
       setPreviewFile(null);
@@ -404,6 +444,7 @@ function SocratesApp() {
       setTutorRun({ running: false, progress: null, error: null });
       setProjectFilter(null); setMovePickSession(null); setMenuOpen(false); setConfirmDelete(false); setScreen('chat');
       setModelMenuOpen(false); setProvidersReturn('settings');
+      setAssistantMenuOpen(false);
       setEditingId(null); draftBackup.current = null; setOfflineNotice(false);
       useChatStore.getState().reset();
       useChatStore.getState().setSessions(initialSessions);
@@ -488,11 +529,16 @@ function SocratesApp() {
     }
     void drainOutbox();
   }, [drainOutbox]);
-  const send = useCallback(() => {
+  // One composer/synthetic turn. `origin` decides attachment staging, draft
+  // handling and the tutor stage machine: composer sends snapshot the
+  // staged files and let beginTurn clear the draft; quiz/practice proxies
+  // keep the draft and never advance a stage from their own answer text.
+  const submitTurn = useCallback((rawText: string, origin: 'composer' | 'quiz' | 'practice') => {
     const store = useChatStore.getState();
-    const text = store.draft.trim();
-    const snapshot = staged;
-    if ((!text && !snapshot.length) || store.turnId) return;
+    const text = rawText.trim();
+    const snapshot = origin === 'composer' ? staged : [];
+    if (!text && !snapshot.length) return;
+    if (store.turnId) return;
     const owner = useAuthStore.getState().user;
     if (!owner || owner.isGuest) { store.setStatus('error', appStringsNow().guestSendBlocked); return; }
     if (store.activeSessionId && loadingDetails.current.has(store.activeSessionId)) {
@@ -500,13 +546,16 @@ function SocratesApp() {
     }
     stopSpeaking();
     listenStop.current?.(); listenStop.current = null; setListening(false);
+    const previousDraft = store.draft;
     void (async () => {
-      let messageAttachments;
-      try {
-        messageAttachments = await resolveStaged();
-      } catch (error) {
-        useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().prepareAttachmentsFailed);
-        return;
+      let messageAttachments: Message['attachments'] | undefined;
+      if (origin === 'composer') {
+        try {
+          messageAttachments = await resolveStaged();
+        } catch (error) {
+          useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().prepareAttachmentsFailed);
+          return;
+        }
       }
       const live = useChatStore.getState();
       if (live.turnId) return;
@@ -518,13 +567,20 @@ function SocratesApp() {
         live.selectSession(sessionId);
       }
       const epoch = accountEpoch.current;
-      setStaged((prev) => prev.filter((s) => !snapshot.some((taken) => taken.localId === s.localId)));
-      // Tutor stage machine: a substantive free-form answer advances one
-      // stage and stops at check (the quiz-driven stage).
+      if (snapshot.length) setStaged((prev) => prev.filter((s) => !snapshot.some((taken) => taken.localId === s.localId)));
+      // Tutor stage machine, mirroring the baseline sendPipeline._dispatchTurn:
+      // every tutor turn at exercise bumps the attempt count, and a
+      // substantive free-form answer — quiz picks excluded — advances one
+      // stage and stops at check. Quiz picks apply their own transition in
+      // onQuizPick, so a wrong pick at exercise counts in both places,
+      // exactly like the web baseline.
       const turnSession = useChatStore.getState().sessions.find((s) => s.id === sessionId);
-      if (turnSession?.mode === 'tutor' && isSubstantiveAnswer(text)) {
+      if (turnSession?.mode === 'tutor') {
         const stage = turnSession.teachingStage || 'motivate';
-        if (stage !== 'check') {
+        if (stage === 'exercise') {
+          useChatStore.getState().patchSession(sessionId, { practiceAttempts: (turnSession.practiceAttempts || 0) + 1 });
+        }
+        if (origin !== 'quiz' && isSubstantiveAnswer(text) && stage !== 'check') {
           const next = nextTeachingStage(stage);
           useChatStore.getState().patchSession(sessionId, {
             teachingStage: next.stage,
@@ -535,7 +591,7 @@ function SocratesApp() {
       // Upload each staged file with the now-known server session id so it
       // lands in the file library and stays readable by the model.
       const persist = async (serverSessionId: string) => {
-        if (!messageAttachments.length || epoch !== accountEpoch.current) return undefined;
+        if (!messageAttachments?.length || epoch !== accountEpoch.current) return undefined;
         const tokens = await api.readTokens();
         return Promise.all(messageAttachments.map(async (attachment) => {
           const row = snapshot.find((item) => item.localId === attachment.id);
@@ -546,9 +602,44 @@ function SocratesApp() {
           } catch { return attachment; }
         }));
       };
-      await runTurn(sessionId, text, messageAttachments.length ? messageAttachments : undefined, persist);
+      await runTurn(sessionId, text, messageAttachments?.length ? messageAttachments : undefined, persist);
     })();
+    // Synthetic sends run from the transcript; the composer draft stays
+    // exactly as the learner typed it (beginTurn cleared it synchronously).
+    if (origin !== 'composer') useChatStore.getState().setDraft(previousDraft);
   }, [projectFilter, staged, resolveStaged, runTurn]);
+  const send = useCallback(() => { submitTurn(useChatStore.getState().draft, 'composer'); }, [submitTurn]);
+  // Quiz proxy (baseline handleQuizPick + mountQuizWidget): a correct or
+  // undeclared pick is terminal for the card and spends no model turn; only
+  // a wrong pick with a declared answer asks the tutor to diagnose.
+  const onQuizPick = useCallback((pick: QuizPick) => {
+    const store = useChatStore.getState();
+    const sessionId = store.activeSessionId;
+    if (!sessionId) return;
+    const session = store.sessions.find((s) => s.id === sessionId);
+    if (!session || session.mode !== 'tutor' || store.turnId) return;
+    const stage = session.teachingStage || 'motivate';
+    const attempts = session.practiceAttempts || 0;
+    const right = pick.isRight && !!pick.correct;
+    if (stage === 'exercise') {
+      store.patchSession(sessionId, right ? { teachingStage: 'check', practiceAttempts: 0 } : { practiceAttempts: attempts + 1 });
+    } else if (stage === 'check') {
+      store.patchSession(sessionId, { practiceAttempts: right ? 0 : attempts + 1 });
+    }
+    if (!pick.correct || pick.isRight) return;
+    submitTurn(`I chose ${pick.picked}. ${pick.pickedText} (Result: incorrect, correct is ${pick.correct}.)`, 'quiz');
+  }, [submitTurn]);
+  // Practice proxy (baseline mountPracticeWidget): submit always sends the
+  // `[Practice attempt]` turn; a self-check hit also resets the attempts.
+  const onPracticeSubmit = useCallback((submission: PracticeSubmission) => {
+    const store = useChatStore.getState();
+    const sessionId = store.activeSessionId;
+    if (!sessionId) return;
+    const session = store.sessions.find((s) => s.id === sessionId);
+    if (!session || session.mode !== 'tutor' || store.turnId) return;
+    if (submission.correct && submission.isRight) store.patchSession(sessionId, { practiceAttempts: 0 });
+    submitTurn(`${appStringsNow().practicePrefix}${submission.answer}`, 'practice');
+  }, [submitTurn]);
   // Attachments: pickers produce staged rows; documents resolve to text
   // at send time (server extract), images/text ride along directly.
   const stagePicked = useCallback((picked: PickedFile[]) => {
@@ -1000,6 +1091,61 @@ function SocratesApp() {
       useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().modelActivateFailed);
     }
   }, [activateProvider]);
+  // Assistants mirror the server rows. Binding writes the session (PATCH
+  // first, then the epoch-guarded mirror; local ids stay local until the
+  // next save). Deleting unbinds store sessions so a later save never
+  // posts a dangling assistantId.
+  const openAssistantMenu = useCallback(() => { setAssistantMenuOpen(true); void loadAssistants(); }, [loadAssistants]);
+  const bindAssistant = useCallback(async (id: string | null) => {
+    setAssistantMenuOpen(false);
+    const store = useChatStore.getState();
+    const sessionId = store.activeSessionId;
+    if (!sessionId) return;
+    const epoch = accountEpoch.current;
+    try {
+      if (!isLocalSessionId(sessionId)) await api.sessions.patch(sessionId, { assistantId: id });
+      if (epoch !== accountEpoch.current) return;
+      useChatStore.getState().patchSession(sessionId, { assistantId: id });
+    } catch (error) {
+      useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().assistantBoundFailed);
+    }
+  }, []);
+  const createAssistant = useCallback(async (entry: AssistantDraft) => {
+    const epoch = accountEpoch.current;
+    const created = await api.assistants.create({ title: entry.title, source: assistantSource(entry) });
+    if (epoch === accountEpoch.current) setAssistants((prev) => [created, ...prev]);
+  }, []);
+  const updateAssistant = useCallback(async (id: string, entry: AssistantDraft) => {
+    const epoch = accountEpoch.current;
+    const updated = await api.assistants.update(id, { title: entry.title, source: assistantSource(entry) });
+    if (epoch === accountEpoch.current) setAssistants((prev) => prev.map((row) => row.id === id ? updated : row));
+  }, []);
+  const deleteAssistant = useCallback(async (id: string) => {
+    const epoch = accountEpoch.current;
+    await api.assistants.remove(id);
+    if (epoch !== accountEpoch.current) return;
+    setAssistants((prev) => prev.filter((row) => row.id !== id));
+    const store = useChatStore.getState();
+    for (const session of store.sessions) {
+      if (session.assistantId !== id) continue;
+      store.patchSession(session.id, { assistantId: null });
+      if (!isLocalSessionId(session.id)) void api.sessions.patch(session.id, { assistantId: null }).catch(() => undefined);
+    }
+  }, []);
+  // "Start chat" mirrors the baseline Assistants surface: a fresh chat
+  // bound to the persona with its starter text waiting in the composer.
+  const useAssistant = useCallback((assistant: Assistant) => {
+    const config = assistantConfigOf(assistant);
+    const id = `session-${Date.now()}`;
+    const store = useChatStore.getState();
+    const draftSession: Session = { id, title: assistant.title || 'New chat', topic: '', mode: 'chat', phase: 'chat', assistantId: assistant.id, messages: [] };
+    if (projectFilter) draftSession.projectId = projectFilter;
+    store.setSessions([draftSession, ...store.sessions]);
+    store.setDraft(config.starter || '');
+    store.selectSession(id);
+    setScreen('chat');
+    if (compact) setSidebarOpen(false);
+  }, [projectFilter, compact]);
   const changePassword = useCallback(async (oldPassword: string, newPassword: string) => {
     await api.auth.changePassword(oldPassword, newPassword);
   }, []);
@@ -1028,6 +1174,7 @@ function SocratesApp() {
   useEffect(() => {
     const listener = BackHandler.addEventListener('hardwareBackPress', () => {
       if (modelMenuOpen) { setModelMenuOpen(false); return true; }
+      if (assistantMenuOpen) { setAssistantMenuOpen(false); return true; }
       if (menuOpen) { setMenuOpen(false); setConfirmDelete(false); return true; }
       if (screen === 'providers') { setScreen(providersReturn); return true; }
       if (screen !== 'chat') { setMovePickSession(null); setScreen('chat'); return true; }
@@ -1035,7 +1182,7 @@ function SocratesApp() {
       return false;
     });
     return () => listener.remove();
-  }, [compact, menuOpen, modelMenuOpen, providersReturn, screen, sidebarOpen]);
+  }, [assistantMenuOpen, compact, menuOpen, modelMenuOpen, providersReturn, screen, sidebarOpen]);
   const toggleTheme = useCallback(() => {
     const next = useSettingsStore.getState().theme === 'dark' ? 'light' : 'dark';
     void useSettingsStore.getState().update({ theme: next }, storage);
@@ -1123,6 +1270,21 @@ function SocratesApp() {
       onRetry={() => void loadProviders()}
     /></SafeAreaView>;
   }
+  if (screen === 'assistants') {
+    return <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg.page }]}><StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} /><AssistantsScreen
+      mode={theme}
+      assistants={assistants}
+      boundId={active?.assistantId ?? null}
+      loading={assistantsLoading}
+      error={assistantsError}
+      onClose={() => setScreen('chat')}
+      onRetry={() => void loadAssistants()}
+      onCreate={(entry) => createAssistant(entry)}
+      onUpdate={(id, entry) => updateAssistant(id, entry)}
+      onDelete={(id) => deleteAssistant(id)}
+      onUse={(assistant) => useAssistant(assistant)}
+    /></SafeAreaView>;
+  }
   if (screen === 'search') {
     const canServerSearch = !!user && !user.isGuest;
     return <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg.page }]}><StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} /><SearchScreen
@@ -1202,9 +1364,19 @@ function SocratesApp() {
           ) : null}
         </View>
         {user && !user.isGuest ? (
-          <Pressable accessibilityRole="button" accessibilityLabel={s.openModelMenu} onPress={openModelMenu} style={[styles.modelChip, { borderColor: palette.border.default, backgroundColor: palette.bg.hover }]}>
-            <Text numberOfLines={1} style={[styles.modelChipText, { color: palette.text.secondary }]}>🤖 {activeModelLabel} ▾</Text>
-          </Pressable>
+          <View style={styles.chipRow}>
+            <Pressable accessibilityRole="button" accessibilityLabel={s.openModelMenu} onPress={openModelMenu} style={[styles.modelChip, { borderColor: palette.border.default, backgroundColor: palette.bg.hover }]}>
+              <Text numberOfLines={1} style={[styles.modelChipText, { color: palette.text.secondary }]}>🤖 {activeModelLabel} ▾</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={s.openAssistantMenu} onPress={openAssistantMenu} style={[styles.modelChip, { borderColor: palette.border.default, backgroundColor: palette.bg.hover }]}>
+              <Text numberOfLines={1} style={[styles.modelChipText, { color: palette.text.secondary }]}>🎭 {activeAssistant ? (activeAssistant.title || s.assistantTitle) : s.openAssistantMenu} ▾</Text>
+            </Pressable>
+            {active?.mode === 'tutor' ? (
+              <View style={[styles.modelChip, { borderColor: palette.border.default, backgroundColor: palette.bg.hover }]}>
+                <Text numberOfLines={1} style={[styles.modelChipText, { color: palette.text.secondary }]}>🎓 {s[stageLabelKey(active.teachingStage)]}{active.practicePhase ? ` · ${active.practicePhase === 'transfer' ? s.practiceTransfer : s.practiceFoundation} ·${active.practiceAttempts || 0}` : ''}</Text>
+              </View>
+            ) : null}
+          </View>
         ) : null}
         {menuOpen && active ? (
           <View style={[styles.menuSheet, { backgroundColor: palette.bg.raised, borderColor: palette.border.default }]}>
@@ -1270,7 +1442,7 @@ function SocratesApp() {
           />
         ) : (
           <>
-            <ChatMessageList messages={active?.messages || []} mode={theme} language={language} onCopyText={copyText} onSpeakText={speak} onEditMessage={user && !user.isGuest ? (message) => startEdit(messageKey(message) || '', message.rawText || '') : undefined} onRegenerateMessage={user && !user.isGuest ? (message) => void regenerate(messageKey(message) || '') : undefined} onBranchMessage={(message) => void branchFrom(messageKey(message) || '')} onOpenArtifact={setArtifact} onOpenStoredArtifact={openStoredArtifact} resolveImage={resolveImage} onOpenFile={openAttachment} />
+            <ChatMessageList messages={active?.messages || []} mode={theme} language={language} onCopyText={copyText} onSpeakText={speak} onEditMessage={user && !user.isGuest ? (message) => startEdit(messageKey(message) || '', message.rawText || '') : undefined} onRegenerateMessage={user && !user.isGuest ? (message) => void regenerate(messageKey(message) || '') : undefined} onBranchMessage={(message) => void branchFrom(messageKey(message) || '')} onOpenArtifact={setArtifact} onOpenStoredArtifact={openStoredArtifact} resolveImage={resolveImage} onOpenFile={openAttachment} onQuizPick={onQuizPick} onPracticeSubmit={onPracticeSubmit} />
             {editingId ? <View style={[styles.editBanner, { borderColor: palette.border.default }]}>
               <Text style={[styles.editBannerText, { color: palette.text.secondary }]}>{s.editingMessage}</Text>
               <Pressable accessibilityRole="button" accessibilityLabel={s.cancelEdit} onPress={cancelEdit} style={styles.editCancel}>
@@ -1310,6 +1482,16 @@ function SocratesApp() {
       onManage={() => { setModelMenuOpen(false); setProvidersReturn('chat'); setScreen('providers'); void loadProviders(); }}
       onClose={() => setModelMenuOpen(false)}
     />
+    <AssistantPicker
+      assistants={assistants}
+      activeId={active?.assistantId ?? null}
+      open={assistantMenuOpen}
+      mode={theme}
+      language={language}
+      onPick={(id) => void bindAssistant(id)}
+      onManage={() => { setAssistantMenuOpen(false); setScreen('assistants'); void loadAssistants(); }}
+      onClose={() => setAssistantMenuOpen(false)}
+    />
     {previewFile ? <FilePreview file={previewFile} mode={theme} language={language} target={fileTarget} loadPreview={loadFilePreview} onClose={() => setPreviewFile(null)} /> : null}
   </SafeAreaView>;
 }
@@ -1324,7 +1506,8 @@ const styles = StyleSheet.create({
   header: { height: 56, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, borderBottomWidth: StyleSheet.hairlineWidth },
   menu: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 10 },
   menuText: { fontSize: 20 },
-  modelChip: { alignSelf: 'flex-start', marginHorizontal: 14, marginTop: 8, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, maxWidth: '70%' },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 14, marginTop: 8 },
+  modelChip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, maxWidth: '70%' },
   modelChipText: { fontSize: 13, fontWeight: '600' },
   title: { flex: 1, textAlign: 'center', marginRight: 8, fontWeight: '600' },
   filterChip: { flex: 1, marginRight: 8, borderWidth: 1, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6, alignItems: 'center' },

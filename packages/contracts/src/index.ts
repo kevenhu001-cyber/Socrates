@@ -212,6 +212,25 @@ export interface Session extends TutorState {
   streamingReasoning?: string | null;
 }
 
+/** GET /api/creations/items/assistants row — a user-authored persona.
+ * `source` is a JSON string `{description?, instructions, starter?}`;
+ * only the owner's rows are ever returned. */
+export interface Assistant {
+  id: string;
+  title: string;
+  source: string;
+  version?: number;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+
+/** Parsed form of `Assistant.source` (create/update always writes JSON). */
+export interface AssistantConfig {
+  description?: string;
+  instructions: string;
+  starter?: string;
+}
+
 export interface Project {
   id: string;
   name: string;

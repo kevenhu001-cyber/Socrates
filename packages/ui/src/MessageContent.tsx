@@ -1,18 +1,38 @@
 import React, { memo, useMemo, useState } from 'react';
-import { Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { getThemePaletteHex, type ThemeMode } from '@socrates/theme';
 import type { Attachment, Message, ToolCall } from '@socrates/contracts';
 import type { Token, Tokens } from 'marked';
-import { parseAssistantSegments, parseMessageContent, plainText, safeImage, safeLink } from './messageContent';
+import { parseAssistantSegments, parseMessageContent, parseRichText, plainText, safeImage, safeLink } from './messageContent';
 import { paletteForDocument } from './visualization';
 import { buildMathDocument } from './artifactDocument';
 import { artifactFromFence, artifactsFromToolCalls, type ArtifactDescriptor } from './artifacts';
 import { fileKindLabel, formatFileSize } from './fileMeta';
+import { practiceAnswerMatches, type ParsedPractice, type ParsedQuiz, type QuizOption } from './scaffolds';
 import { toolArtifacts, toolDurationLabel, toolFailureText, toolInputPreview, toolInputText, toolLabel, toolOutputText, toolSearchResults, toolState } from './toolModel';
 import { uiStrings, type UiLanguage, type UiStrings } from './strings';
 
 type Palette = ReturnType<typeof getThemePaletteHex>;
 export type ResolvedImageSource = { uri: string; headers?: Record<string, string> };
+/** One quiz pick: the host applies stage transitions and (only when a
+ * correct answer is declared and the pick is wrong) a synthetic turn. */
+export type QuizPick = {
+  q: string;
+  options: QuizOption[];
+  picked: string;
+  pickedText: string;
+  correct: string | null;
+  isRight: boolean;
+};
+/** One practice submission: mirrors the baseline — a synthetic
+ * `[Practice attempt]` turn always goes out; hosts may also reset the
+ * attempt counter on a self-check hit. */
+export type PracticeSubmission = {
+  problem: string;
+  answer: string;
+  correct: string | null;
+  isRight: boolean | null;
+};
 export type MessageActions = {
   onCopyText?: (text: string) => Promise<void>;
   onSpeakText?: (text: string) => void;
@@ -30,6 +50,9 @@ export type MessageActions = {
   /** HTML tool artifacts open in the sandboxed island (bytes fetched by the
    * platform layer). */
   onOpenStoredArtifact?: (file: { id: string; mimeType?: string | null; name?: string | null }) => void;
+  /** Tutor scaffold proxies: absent handlers leave the widgets inert. */
+  onQuizPick?: (pick: QuizPick) => void;
+  onPracticeSubmit?: (submission: PracticeSubmission) => void;
 };
 const openLink = (url: string) => { const safe = safeLink(url); if (safe) void Linking.openURL(safe).catch(() => undefined); };
 
@@ -145,6 +168,108 @@ function Blocks({ tokens, p, t, mode, onCopyText, onOpenArtifact, resolveImage }
   })}</>;
 }
 
+/** Field text for tutor widgets: markdown + the same math transform the
+ * transcript pipeline applies (inline TeX as codespan, display TeX as an
+ * island card). */
+function RichText({ text, mode, p, t, resolveImage, onOpenArtifact }: { text: string; mode: ThemeMode; p: Palette; t: UiStrings } & MessageActions) {
+  const parts = useMemo(() => parseRichText(text), [text]);
+  return <>{parts.map((part, i) => part.kind === 'math'
+    ? <MathCard key={i} tex={part.tex} index={i} mode={mode} p={p} t={t} onOpenArtifact={onOpenArtifact} />
+    : <Blocks key={i} tokens={part.tokens} p={p} t={t} mode={mode} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} />)}</>;
+}
+
+/** Interactive quiz proxy (baseline `mountQuizWidget` + `handleQuizPick`):
+ * first pick locks the card, marks the selection, shows the feedback line,
+ * and hands the pick to the host for stage effects / a synthetic turn. */
+function TutorQuizCard({ quiz, p, t, mode, onQuizPick }: { quiz: ParsedQuiz; p: Palette; t: UiStrings; mode: ThemeMode } & MessageActions) {
+  const [picked, setPicked] = useState<string | null>(null);
+  const isRight = !!quiz.correct && picked === quiz.correct;
+  const feedback = picked === null ? null
+    : quiz.correct
+      ? (isRight ? t.quizCorrect(quiz.correct) : t.quizWrong(quiz.correct))
+      : t.quizRecorded(picked);
+  const pick = (option: QuizOption) => {
+    if (picked !== null) return;
+    setPicked(option.letter);
+    onQuizPick?.({ q: quiz.q, options: quiz.options, picked: option.letter, pickedText: option.text, correct: quiz.correct, isRight: !!quiz.correct && option.letter === quiz.correct });
+  };
+  return <View style={[styles.scaffold, { borderColor: p.border.default, backgroundColor: p.bg.sunken }]}>
+    <View style={{ gap: 4 }}><RichText text={quiz.q} mode={mode} p={p} t={t} /></View>
+    <View style={{ gap: 6 }}>
+      {quiz.options.map((option) => {
+        const selected = picked === option.letter;
+        const showCorrect = picked !== null && !!quiz.correct && option.letter === quiz.correct;
+        return <Pressable
+          key={option.letter}
+          accessibilityRole="button"
+          accessibilityLabel={t.quizPick(option.letter, quiz.q)}
+          accessibilityState={{ selected, disabled: picked !== null }}
+          disabled={picked !== null}
+          onPress={() => pick(option)}
+          style={[styles.quizOption, { borderColor: showCorrect ? p.accent.strong : selected ? p.danger : p.border.default }, selected && { backgroundColor: p.bg.hover }]}
+        >
+          <Text style={{ color: p.text.muted, fontWeight: '700' }}>{option.letter}.</Text>
+          <View style={{ flex: 1 }}><RichText text={option.text} mode={mode} p={p} t={t} /></View>
+          {selected ? <Text style={{ color: isRight ? p.accent.strong : p.danger }}>{isRight ? '✓' : '✗'}</Text> : null}
+        </Pressable>;
+      })}
+    </View>
+    {feedback ? <Text style={{ color: picked !== null && quiz.correct && !isRight ? p.danger : p.text.secondary }}>{feedback}</Text> : null}
+  </View>;
+}
+
+/** Interactive practice proxy (baseline `mountPracticeWidget`): optional
+ * hint, optional Reveal (when `correct` is declared), submit always sends
+ * the `[Practice attempt]` turn; self-check feedback stays local. */
+function TutorPracticeCard({ practice, p, t, mode, onPracticeSubmit }: { practice: ParsedPractice; p: Palette; t: UiStrings; mode: ThemeMode } & MessageActions) {
+  const [answer, setAnswer] = useState('');
+  const [hintOpen, setHintOpen] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [feedback, setFeedback] = useState<{ bad: boolean; text: string } | null>(null);
+  const submit = () => {
+    const value = answer.trim();
+    if (!value) { setFeedback({ bad: true, text: t.practiceEmpty }); return; }
+    if (sent) return;
+    setSent(true);
+    const isRight = practice.correct ? practiceAnswerMatches(value, practice.correct) : null;
+    onPracticeSubmit?.({ problem: practice.problem, answer: value, correct: practice.correct, isRight });
+    if (!practice.correct) { setFeedback({ bad: false, text: t.practiceSent }); return; }
+    setFeedback({ bad: !isRight, text: isRight ? t.practiceSelfCorrect : t.practiceSelfWrong(practice.correct) });
+  };
+  const reveal = () => {
+    if (sent || !practice.correct) return;
+    setSent(true);
+    setFeedback({ bad: false, text: practice.correct });
+  };
+  return <View style={[styles.scaffold, { borderColor: p.border.default, backgroundColor: p.bg.sunken }]}>
+    <Text style={{ color: p.text.muted, fontWeight: '600' }}>{practice.title}</Text>
+    <View style={{ gap: 4 }}><RichText text={practice.problem} mode={mode} p={p} t={t} /></View>
+    {practice.hint ? <Pressable accessibilityRole="button" accessibilityLabel={hintOpen ? t.hideHint : t.showHint} accessibilityState={{ expanded: hintOpen }} onPress={() => setHintOpen(!hintOpen)}>
+      <Text style={{ color: p.accent.strong }}>{hintOpen ? t.hideHint : t.showHint}</Text>
+    </Pressable> : null}
+    {hintOpen && practice.hint ? <View style={{ gap: 4 }}><RichText text={practice.hint} mode={mode} p={p} t={t} /></View> : null}
+    <TextInput
+      accessibilityLabel={t.practicePlaceholder}
+      multiline
+      editable={!sent}
+      value={answer}
+      onChangeText={setAnswer}
+      placeholder={t.practicePlaceholder}
+      placeholderTextColor={p.text.muted}
+      style={[styles.practiceInput, { borderColor: p.border.default, color: p.text.primary }]}
+    />
+    <View style={styles.practiceActions}>
+      {practice.correct ? <Pressable accessibilityRole="button" accessibilityLabel={t.revealAnswer} disabled={sent} onPress={reveal} style={[styles.scaffoldBtn, { borderColor: p.border.default, opacity: sent ? 0.4 : 1 }]}>
+        <Text style={{ color: p.text.secondary }}>{t.revealAnswer}</Text>
+      </Pressable> : null}
+      <Pressable accessibilityRole="button" accessibilityLabel={t.submitAnswer} disabled={sent} onPress={submit} style={[styles.scaffoldBtn, { borderColor: p.border.strong, opacity: sent ? 0.4 : 1 }]}>
+        <Text style={{ color: p.accent.strong, fontWeight: '600' }}>{t.submitAnswer}</Text>
+      </Pressable>
+    </View>
+    {feedback ? <Text style={{ color: feedback.bad ? p.danger : p.text.secondary }}>{feedback.text}</Text> : null}
+  </View>;
+}
+
 function ToolCard({ tool, p, t, resolveImage, onOpenStoredArtifact, onOpenFile }: { tool: ToolCall; p: Palette; t: UiStrings } & MessageActions) {
   const [expanded, setExpanded] = useState(false);
   const state = toolState(tool);
@@ -201,7 +326,7 @@ function ToolCard({ tool, p, t, resolveImage, onOpenStoredArtifact, onOpenFile }
   </View>;
 }
 
-export const MessageContent = memo(function MessageContent({ message, mode, language = 'en', onCopyText, onSpeakText, onEditMessage, onRegenerateMessage, onBranchMessage, onOpenArtifact, onOpenStoredArtifact, resolveImage, onOpenFile }: { message: Message; mode: ThemeMode; language?: UiLanguage } & MessageActions) {
+export const MessageContent = memo(function MessageContent({ message, mode, language = 'en', onCopyText, onSpeakText, onEditMessage, onRegenerateMessage, onBranchMessage, onOpenArtifact, onOpenStoredArtifact, resolveImage, onOpenFile, onQuizPick, onPracticeSubmit }: { message: Message; mode: ThemeMode; language?: UiLanguage } & MessageActions) {
   const p = getThemePaletteHex(mode);
   const t = uiStrings(language);
   const content = useMemo(() => parseMessageContent(message), [message.rawText, message.content, message.reasoningContent]);
@@ -224,6 +349,12 @@ export const MessageContent = memo(function MessageContent({ message, mode, lang
     {message.role === 'user' ? <Text selectable style={[styles.text, { color: p.text.primary }]}>{content.text}</Text> : segments && segments.length ? <>{segments.map((segment, i) => {
       if (segment.kind === 'math') return <MathCard key={i} tex={segment.tex} index={i} mode={mode} p={p} t={t} onOpenArtifact={onOpenArtifact} />;
       if (segment.kind === 'notes') return <NotesSection key={i} notes={segment.notes} p={p} t={t} />;
+      if (segment.kind === 'quiz') return <TutorQuizCard key={i} quiz={segment.quiz} mode={mode} p={p} t={t} onQuizPick={onQuizPick} />;
+      if (segment.kind === 'practice') return <TutorPracticeCard key={i} practice={segment.practice} mode={mode} p={p} t={t} onPracticeSubmit={onPracticeSubmit} />;
+      if (segment.kind === 'scaffoldFallback') return <View key={i} style={[styles.scaffold, { borderColor: p.border.default }]}>
+        <Text style={{ color: p.text.muted, fontWeight: '600' }}>{t.scaffoldFallback}</Text>
+        <Text selectable style={[styles.mono, { color: p.text.secondary }]}>{segment.text}</Text>
+      </View>;
       return <Blocks key={i} tokens={segment.tokens} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} />;
     })}</> : content.tokens.length ? <Blocks tokens={content.tokens} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} /> : <Text style={{ color: p.text.muted }}>{t.thinking}</Text>}
     {speakable && onSpeakText ? (
@@ -300,4 +431,9 @@ const styles = StyleSheet.create({
   turnActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
   turnAction: { paddingVertical: 4 },
   image: { width: 260, maxWidth: '100%', height: 180 },
+  scaffold: { padding: 12, borderWidth: 1, borderRadius: 12, gap: 10, marginVertical: 6 },
+  quizOption: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
+  practiceInput: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, minHeight: 64, fontSize: 15, textAlignVertical: 'top' },
+  practiceActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8 },
+  scaffoldBtn: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
 });

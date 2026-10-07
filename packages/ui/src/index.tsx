@@ -17,7 +17,10 @@ export { toolArtifacts, toolDurationLabel, toolInputPreview, toolLabel, toolStat
 export { ExamView } from './ExamView.tsx';
 export { DiagView } from './DiagView.tsx';
 export { ModelPicker } from './ModelPicker.tsx';
+export { AssistantPicker } from './AssistantPicker.tsx';
 export { activeProviderOf, filterProviders, providerRowLabel, sortProvidersBuiltInFirst, type ProviderRowLabel } from './modelPicker';
+export { activeAssistantOf, assistantConfigOf, assistantRowLabel, filterAssistants, type AssistantRowLabel } from './assistantPicker';
+export { decodeEntities, parsePracticeInner, parseQuizInner, practiceAnswerMatches, splitTutorScaffolds, stripTags, type ParsedPractice, type ParsedQuiz, type QuizOption, type ScaffoldSegment } from './scaffolds';
 export {
   applyDiagnosticResults, BASELINE_LEVEL, buildColdStartNodes, buildDiagPrompt, buildTeachingPlanFromKB,
   buildTutorVoice, cleanTopicDomain, DIAG_ASPECTS, diagError, diagnosticPointsForNode,
@@ -28,7 +31,7 @@ export {
   type DiagQuestion, type TeachingPlan, type TeachingStage, type TeachingSubtopic,
 } from './tutor';
 export { detectExamLanguage, examAnswersOf, examGenerationPrompt, examProgress, examPromptTypes, gradeExam, missingExamAnswers, parseExamQuestionResponse, parseExamQuestions, type ExamQuestion, type ExamQuestionType } from './examModel';
-export type { MessageActions } from './MessageContent.tsx';
+export type { MessageActions, PracticeSubmission, QuizPick } from './MessageContent.tsx';
 
 // Legacy light-only export kept for compat; new code should pass mode
 // explicitly (frontend baseline supports light + dark).
@@ -142,10 +145,10 @@ export function Sidebar({
   );
 }
 
-const MessageRow = memo(function MessageRow({ message, mode = 'light', language = 'en', onCopyText, onSpeakText, onEditMessage, onRegenerateMessage, onBranchMessage, onOpenArtifact, onOpenStoredArtifact, resolveImage, onOpenFile }: { message: Message; mode?: UiMode; language?: UiLanguage } & MessageActions) {
+const MessageRow = memo(function MessageRow({ message, mode = 'light', language = 'en', onCopyText, onSpeakText, onEditMessage, onRegenerateMessage, onBranchMessage, onOpenArtifact, onOpenStoredArtifact, resolveImage, onOpenFile, onQuizPick, onPracticeSubmit }: { message: Message; mode?: UiMode; language?: UiLanguage } & MessageActions) {
   const p = paletteFor(mode);
   return <Animated.View layout={LinearTransition} style={[styles.message, message.role === 'user' && { ...styles.userMessage, backgroundColor: p.bg.hover }]}>
-    <MessageContent message={message} mode={mode} language={language} onCopyText={onCopyText} onSpeakText={onSpeakText} onEditMessage={onEditMessage} onRegenerateMessage={onRegenerateMessage} onBranchMessage={onBranchMessage} onOpenArtifact={onOpenArtifact} onOpenStoredArtifact={onOpenStoredArtifact} resolveImage={resolveImage} onOpenFile={onOpenFile} />
+    <MessageContent message={message} mode={mode} language={language} onCopyText={onCopyText} onSpeakText={onSpeakText} onEditMessage={onEditMessage} onRegenerateMessage={onRegenerateMessage} onBranchMessage={onBranchMessage} onOpenArtifact={onOpenArtifact} onOpenStoredArtifact={onOpenStoredArtifact} resolveImage={resolveImage} onOpenFile={onOpenFile} onQuizPick={onQuizPick} onPracticeSubmit={onPracticeSubmit} />
   </Animated.View>;
 });
 
@@ -163,6 +166,8 @@ export function ChatMessageList({
   onOpenStoredArtifact,
   resolveImage,
   onOpenFile,
+  onQuizPick,
+  onPracticeSubmit,
 }: {
   messages: Message[];
   mode?: UiMode;
@@ -183,7 +188,7 @@ export function ChatMessageList({
       contentContainerStyle={styles.messages}
       data={messages}
       keyExtractor={(item, index) => item.id || item.clientId || String(index)}
-      renderItem={({ item }) => <MessageRow message={item} mode={mode} language={language} onCopyText={onCopyText} onSpeakText={onSpeakText} onEditMessage={onEditMessage} onRegenerateMessage={onRegenerateMessage} onBranchMessage={onBranchMessage} onOpenArtifact={onOpenArtifact} onOpenStoredArtifact={onOpenStoredArtifact} resolveImage={resolveImage} onOpenFile={onOpenFile} />}
+      renderItem={({ item }) => <MessageRow message={item} mode={mode} language={language} onCopyText={onCopyText} onSpeakText={onSpeakText} onEditMessage={onEditMessage} onRegenerateMessage={onRegenerateMessage} onBranchMessage={onBranchMessage} onOpenArtifact={onOpenArtifact} onOpenStoredArtifact={onOpenStoredArtifact} resolveImage={resolveImage} onOpenFile={onOpenFile} onQuizPick={onQuizPick} onPracticeSubmit={onPracticeSubmit} />}
     />
   );
 }

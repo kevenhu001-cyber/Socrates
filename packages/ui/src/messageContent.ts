@@ -1,6 +1,7 @@
 import { marked, type Token } from 'marked';
 import type { Message } from '@socrates/contracts';
 import { extractFootnoteDefinitions, splitMathSegments, stripCitationMarkers, type Footnote } from './math.ts';
+import { splitTutorScaffolds, type ParsedPractice, type ParsedQuiz } from './scaffolds.ts';
 
 export { plainText, safeImage, safeLink } from './urlSafety';
 
@@ -16,7 +17,10 @@ export function parseMessageContent(message: Pick<Message, 'rawText' | 'content'
 export type RichSegment =
   | { kind: 'prose'; tokens: Token[] }
   | { kind: 'math'; tex: string }
-  | { kind: 'notes'; notes: Footnote[] };
+  | { kind: 'notes'; notes: Footnote[] }
+  | { kind: 'quiz'; quiz: ParsedQuiz }
+  | { kind: 'practice'; practice: ParsedPractice }
+  | { kind: 'scaffoldFallback'; text: string };
 
 /* Inline math stays inside the prose flow: `$x$` becomes a codespan so
  * the sentence keeps its shape and the TeX source stays readable (a tap
@@ -27,8 +31,9 @@ function inlineMathAsCode(tex: string): string {
 }
 
 /** Assistant pipeline: strip `[1]` citation noise (sources live in the
- * tool card), lift footnote definitions into Notes, split display math
- * into island cards. User messages keep whatever was typed. */
+ * tool card), lift footnote definitions into Notes, split tutor
+ * quiz/practice scaffolds into widget segments, split display math into
+ * island cards. User messages keep whatever was typed. */
 export function parseAssistantSegments(rawText: string): RichSegment[] {
   const { body, notes } = extractFootnoteDefinitions(stripCitationMarkers(rawText));
   const out: RichSegment[] = [];
@@ -37,7 +42,45 @@ export function parseAssistantSegments(rawText: string): RichSegment[] {
     if (prose !== '') out.push({ kind: 'prose', tokens: marked.lexer(prose, { gfm: true, breaks: true }) });
     prose = '';
   };
-  for (const part of splitMathSegments(body)) {
+  const pushText = (text: string) => {
+    for (const part of splitMathSegments(text)) {
+      if (part.kind === 'math') {
+        if (part.display) {
+          flushProse();
+          out.push({ kind: 'math', tex: part.tex });
+        } else {
+          prose += inlineMathAsCode(part.tex);
+        }
+      } else {
+        prose += part.text;
+      }
+    }
+  };
+  for (const part of splitTutorScaffolds(body)) {
+    if (part.kind === 'quiz') { flushProse(); out.push({ kind: 'quiz', quiz: part.quiz }); }
+    else if (part.kind === 'practice') { flushProse(); out.push({ kind: 'practice', practice: part.practice }); }
+    else if (part.kind === 'fallback') { flushProse(); out.push({ kind: 'scaffoldFallback', text: part.text }); }
+    else pushText(part.text);
+  }
+  flushProse();
+  if (notes.length) out.push({ kind: 'notes', notes });
+  return out;
+}
+
+export type RichTextSegment =
+  | { kind: 'prose'; tokens: Token[] }
+  | { kind: 'math'; tex: string };
+
+/** Same math transform as the assistant pipeline, for standalone field
+ * text (tutor widget questions, problems and hints). */
+export function parseRichText(text: string): RichTextSegment[] {
+  const out: RichTextSegment[] = [];
+  let prose = '';
+  const flushProse = () => {
+    if (prose !== '') out.push({ kind: 'prose', tokens: marked.lexer(prose, { gfm: true, breaks: true }) });
+    prose = '';
+  };
+  for (const part of splitMathSegments(text)) {
     if (part.kind === 'math') {
       if (part.display) {
         flushProse();
@@ -50,6 +93,5 @@ export function parseAssistantSegments(rawText: string): RichSegment[] {
     }
   }
   flushProse();
-  if (notes.length) out.push({ kind: 'notes', notes });
   return out;
 }

@@ -536,3 +536,65 @@ mobile/            # 冻结，仅安全/crash/data-loss 修复
   exam-generation 缺失的就绪门。属测试预算问题，非产品缺陷。
 - 下一轮（round 16-4）：`assistantId` 人格绑定（session 级 + picker UI）；
   Tutor 教学 UI 加深（阶段指示、quiz/practice 控件代理）。发布前门单独一轮。
+
+## 22. 进展（第十五轮，2026-10-07，round 16-4：assistantId 绑定 + Tutor 教学 UI）
+
+> A 切片对齐 `ui/creationSurfaces.js`（Assistants 创建面）、`chat/api.js` 的
+> assistantId 透传、`session/persistence.js` + `session/loader.js` 的
+> sessionStorage 镜像语义；B 切片对齐 `render/widgetParsers.ts` +
+> `render/assistantHtml.ts`（首块成控件、余块退化为正文）+
+> `render/widgets.js`（quiz/practice 行为）+
+> `tutor/policy.js shouldRequestTutorAfterQuiz` + `sendPipeline` 的
+> exercise 计数与阶段推进。
+
+- `assistantId` 人格绑定：
+  - `contracts`：`Assistant`（id/title/source 原始 JSON/version/时间）+
+    `AssistantConfig`；`packages/api`：`assistants.list/create/update/remove`
+    （`/creations/items/assistants`，DELETE 幂等）+ `sessions.patch` 放开
+    `assistantId`（服务端 PATCH 白名单本已特殊处理该列）。
+  - `assistantPicker.ts`（DOM-free）：`source` JSON 解析（坏行降级不抛）、
+    行标签（title + description 副标题）、active 解析、标题/描述过滤。
+  - `AssistantPicker.tsx`：transcript 上底部 sheet，行 + `No assistant`
+    解绑行 + ≥4 行筛选 + Manage 入口（对齐 ModelPicker 手感；「解绑行」为
+    App 端新增，基线无 chat 内切换器，服务端 PATCH `null` 已支持）。
+  - `AssistantsScreen.tsx`：基线创建面 1:1（名称/描述/指令/开场白、
+    删除二次确认、`Start chat`）；`Start chat` = 新建绑定人格的本地会话 +
+    开场白进草稿 + 回聊天页（基线 resetApp+starter 的可观察等价）。
+  - App：header 第二枚 chip（`🎭 <名称> ▾`，guest 隐藏）；绑定走
+    「PATCH 成功才镜像」（本地 id 只改本地，随下次 save 落库）；删除人格
+    时把所有本地已持有的会话解绑（内存 + 服务端 best-effort），避免下次
+    save 带悬空 assistantId 被 400；`syncLibrary` 并行拉取人格列表（失败
+    不阻塞主同步），老会话不含该字段由详情懒加载补齐。
+  - `runtime.streamConversation` 显式带 `assistantId`（本地未落库会话也
+    携带；服务端仍保留 session 行兜底）。
+- Tutor 教学 UI：
+  - `scaffolds.ts`（DOM-free）：`<quiz>`/`<practice>` 解析（仅首块成控件、
+    余块只留题干/题干正文、坏块 fallback、`correct` 属性、
+    `practiceAnswerMatches` 归一化）；解析不做围栏感知（与基线正则一致）。
+  - `messageContent.ts`：`parseAssistantSegments` 先切 scaffold 段再走
+    既有公式/脚注管线；新增 `parseRichText` 供控件字段复用同一数学变换。
+  - `MessageContent.tsx`：`TutorQuizCard`（首答锁定、选项对错标记、
+    反馈行、正确项/已选项高亮）与 `TutorPracticeCard`（提示开关、
+    `correct` 时 Reveal + 自检反馈、提交后锁定）；`onQuizPick`/
+    `onPracticeSubmit` 回调可缺省（控件惰性）。
+  - App：发送管线改 `submitTurn(text, origin)`（composer 快照附件并清草稿；
+    quiz/practice 保留用户草稿、不过附件管线）；tutor 阶段机与基线
+    `_dispatchTurn` 对齐——exercise 回合一律 attempts+1、quiz origin 不推进、
+    其余实质作答推一阶段（practice 长答可推进，同基线）；`onQuizPick`
+    复刻 `handleQuizPick`（exercise 对→check+清零 / 错→+1；check 对→清零
+    / 错→+1；仅「声明了正确项且选错」才发 `I chose …` 合成回合，其余
+    仅在卡片内反馈）；`onPracticeSubmit` 恒发 `practicePrefix+answer`
+    合成回合（前缀随语言），自检命中清零 attempts。
+  - header 第三枚 chip（tutor 会话）：`🎓 阶段` + 练习 phase/attempts
+    （`Intuition … Check`、`Foundation/Transfer ·N`）。
+- 验证：`apps typecheck` 0、DOM-free 通过、`test:shared` 全绿（新增
+  scaffolds 6 + assistantPicker 3 + api 2，messageContent +1）；
+  `frontend lint` 0 error；`export:web` + `test:universal` **28/28**
+  （14 spec × 双端，含新 `universal-assistant`、`universal-tutor-widgets`）。
+- 已知差异（可解释）：首块之外 scaffold 以 markdown 渲染（基线转义为纯文本）；
+  `universal-app.spec` 补 `/creations/items/assistants` 路由 mock（boot 现在
+  会拉人格列表）。
+- 下一轮（round 16-5，发布前门）：Windows/macOS storage 适配
+  （Credential Locker/Keychain 替换内存占位）、EAS/包名决策、staging 联调 +
+  真机签收（返回键/键盘/安全区/弱网）；候选加深：错题本、
+  teaching plan 进度条、assistant 编辑入口。

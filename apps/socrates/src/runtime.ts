@@ -64,6 +64,11 @@ export async function streamConversation(input: {
       { role: 'system', content: system },
       ...historyMessages,
     ],
+    // Session-bound persona: sent explicitly like the web baseline (it
+    // reads the active assistant from session storage), so local sessions
+    // that have not been saved yet still carry it. The server falls back
+    // to the session row when omitted.
+    ...(session?.assistantId ? { assistantId: session.assistantId } : {}),
   };
   return api.chat.stream({
     sessionId: input.sessionId,

@@ -1,4 +1,4 @@
-import type { AccountUsage, ChatRequest, ChatSseHandlers, FileExtractResult, MobileTokenPair, Project, ProviderKey, SearchHit, Session, StoredFile, StoredFilePreview, User } from '@socrates/contracts';
+import type { AccountUsage, Assistant, ChatRequest, ChatSseHandlers, FileExtractResult, MobileTokenPair, Project, ProviderKey, SearchHit, Session, StoredFile, StoredFilePreview, User } from '@socrates/contracts';
 import { consumeSseBuffer, dispatchChatSseFrame } from '@socrates/core';
 import type { KeyValueStore } from '@socrates/platform';
 
@@ -242,8 +242,9 @@ export function createApiClient(input: {
       save: (session: Session) => request<Session>('/sessions', { method: 'POST', body: JSON.stringify(session) }),
       // Subset of the server PATCH allowlist used by the Universal App.
       // projectId moves a session between projects (null = unfiled);
-      // kind/examData persist the exam surface (answers + submitted).
-      patch: (id: string, patch: Partial<Pick<Session, 'title' | 'topic' | 'pinned' | 'projectId' | 'kind' | 'examData'>>) =>
+      // kind/examData persist the exam surface (answers + submitted);
+      // assistantId binds (or null clears) the session's persona.
+      patch: (id: string, patch: Partial<Pick<Session, 'title' | 'topic' | 'pinned' | 'projectId' | 'kind' | 'examData' | 'assistantId'>>) =>
         request<Session>(`/sessions/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch) }),
       archive: (id: string) => request<{ ok: true }>(`/sessions/${encodeURIComponent(id)}/archive`, { method: 'POST' }),
       unarchive: (id: string) => request<{ ok: true }>(`/sessions/${encodeURIComponent(id)}/archive`, { method: 'DELETE' }),
@@ -258,6 +259,20 @@ export function createApiClient(input: {
       update: (id: string, patch: Partial<Pick<Project, 'name' | 'description' | 'color' | 'icon' | 'systemPrompt'>>) =>
         request<Project>(`/projects/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch) }),
       remove: (id: string) => request<void>(`/projects/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    },
+    assistants: {
+      /* User-authored personas (GET /api/creations/items/assistants). The
+       * session's assistantId binds one to a conversation; the server
+       * injects its instructions as a response-behavior block on every
+       * turn. Config lives in a JSON `source` string — parse with
+       * `assistantConfigOf` from @socrates/ui. */
+      list: async () => (await request<{ items: Assistant[] }>('/creations/items/assistants')).items,
+      create: (entry: { title: string; source: string }) =>
+        request<Assistant>('/creations/items/assistants', { method: 'POST', body: JSON.stringify(entry) }),
+      update: (id: string, entry: { title?: string; source?: string }) =>
+        request<Assistant>(`/creations/items/assistants/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(entry) }),
+      /* DELETE is idempotent server-side (unknown ids answer 204). */
+      remove: (id: string) => request<void>(`/creations/items/assistants/${encodeURIComponent(id)}`, { method: 'DELETE' }),
     },
     messages: {
       /* Edit a user turn in place. `discardFollowing` mirrors the local

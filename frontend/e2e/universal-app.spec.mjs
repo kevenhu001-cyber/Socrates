@@ -52,6 +52,10 @@ test('universal app manages projects and sessions end to end', async ({ page }) 
   await page.route('**/api/v2/api-key', (route) => route.fulfill({
     status: 200, contentType: 'application/json', body: JSON.stringify({ providers: [] }),
   }));
+  // Library sync also loads the user's assistant personas (chat-header chip).
+  await page.route('**/api/v2/creations/items/assistants', (route) => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({ items: [] }),
+  }));
   await page.route('**/api/v2/account/usage', (route) => route.fulfill({
     status: 200, contentType: 'application/json',
     body: JSON.stringify({

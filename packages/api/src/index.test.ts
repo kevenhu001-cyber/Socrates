@@ -210,6 +210,36 @@ test('messages.remove deletes one explicit row, session-scoped', async () => {
   assert.match(removes[0], /DELETE .*\/messages\/m1\?sessionId=s1$/);
 });
 
+test('assistants list/create/update/remove hit /creations/items/assistants', async () => {
+  const { fetch, calls } = mockFetch({
+    '/creations/items/assistants': { status: 200, body: { items: [{ id: 'a1', title: 'Tutor', source: '{"instructions":"Be kind"}' }] } },
+    'POST /creations/items/assistants': { status: 201, body: { id: 'a2', title: 'Coach', source: '{}' } },
+    'PATCH /creations/items/assistants/a2': { status: 200, body: { id: 'a2', title: 'Renamed', source: '{}' } },
+    'DELETE /creations/items/assistants/a2': { status: 200, body: null },
+  });
+  const api = createApiClient({ baseUrl: 'https://test/api/v2', fetch, storage: createMemoryStore() });
+  const items = await api.assistants.list();
+  assert.equal(items.length, 1);
+  assert.equal(items[0].title, 'Tutor');
+  const created = await api.assistants.create({ title: 'Coach', source: '{}' });
+  assert.equal(created.id, 'a2');
+  const updated = await api.assistants.update('a2', { title: 'Renamed' });
+  assert.equal(updated.title, 'Renamed');
+  await api.assistants.remove('a2');
+  assert.deepEqual(calls.map((c) => c.init?.method || 'GET'), ['GET', 'POST', 'PATCH', 'DELETE']);
+  assert.match((calls[1].init?.body as string) || '', /Coach/);
+});
+
+test('sessions.patch binds an assistant to the session', async () => {
+  const { fetch, calls } = mockFetch({ 'PATCH /sessions/s1': { status: 200, body: { id: 's1', assistantId: 'a1' } } });
+  const api = createApiClient({ baseUrl: 'https://test/api/v2', fetch, storage: createMemoryStore() });
+  const updated = await api.sessions.patch('s1', { assistantId: 'a1' });
+  assert.equal(updated.assistantId, 'a1');
+  assert.equal(JSON.parse((calls[0].init?.body as string) || '{}').assistantId, 'a1');
+  await api.sessions.patch('s1', { assistantId: null });
+  assert.equal(JSON.parse((calls[1].init?.body as string) || '{}').assistantId, null);
+});
+
 test('API errors surface as ApiError with status', async () => {
   const { fetch } = mockFetch({ '/projects': { status: 401, body: { message: 'Unauthorized' } } });
   const api = createApiClient({ baseUrl: 'https://test/api/v2', fetch, storage: createMemoryStore() });
