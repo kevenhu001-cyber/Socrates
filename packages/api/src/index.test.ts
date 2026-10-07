@@ -102,6 +102,54 @@ test('search.content posts the query and returns hits', async () => {
   assert.match((calls[0].init?.body as string) || '', /math/);
 });
 
+test('account.usage returns profile and counters', async () => {
+  const { fetch, calls } = mockFetch({
+    '/account/usage': { status: 200, body: { user: { id: 'u1', email: 't@e.c', displayName: 'T' }, usage: { sessionCount: 3, providerCount: 1, graphNodes: 0, beagleUsed: 10, beagleLimit: 100 } } },
+  });
+  const api = createApiClient({ baseUrl: 'https://test/api/v2', fetch, storage: createMemoryStore() });
+  const result = await api.account.usage();
+  assert.equal(result.user.email, 't@e.c');
+  assert.equal(result.usage.sessionCount, 3);
+  assert.match(calls[0].url, /\/account\/usage$/);
+});
+
+test('files.extract posts multipart and returns text; failures surface', async () => {
+  const seen: Array<{ url: string; init?: RequestInit }> = [];
+  const okFetch = (async (url: string, init?: RequestInit) => {
+    seen.push({ url, init });
+    return new Response(JSON.stringify({ ok: true, text: 'parsed', truncated: false, kind: 'pdf' }), { status: 200 });
+  }) as typeof globalThis.fetch;
+  const api = createApiClient({ baseUrl: 'https://test/api/v2', fetch: okFetch, storage: createMemoryStore() });
+  const form = new FormData();
+  form.append('file', new Blob(['%PDF']), 'notes.pdf');
+  const result = await api.files.extract(form);
+  assert.equal(result.text, 'parsed');
+  assert.match(seen[0].url, /\/files\/extract$/);
+  assert.ok(seen[0].init?.body instanceof FormData);
+  const badFetch = (async () => new Response(JSON.stringify({ ok: false, error: 'Could not parse pdf: boom' }), { status: 200 })) as typeof globalThis.fetch;
+  const badApi = createApiClient({ baseUrl: 'https://test/api/v2', fetch: badFetch, storage: createMemoryStore() });
+  await assert.rejects(() => badApi.files.extract(new FormData()), /Could not parse pdf/);
+});
+
+test('providers list, activate, create and remove hit /api-key', async () => {
+  const { fetch, calls } = mockFetch({
+    '/api-key': { status: 200, body: { providers: [{ id: 'k1', label: 'Beagle', url: 'https://x', model: 'm', isActive: true, isBuiltIn: true, hasKey: true }] } },
+    'POST /api-key': { status: 201, body: { id: 'k2', label: 'Custom', url: 'https://y', model: 'n', isActive: true } },
+    'PATCH /api-key/k1': { status: 200, body: { id: 'k1', isActive: true } },
+    'DELETE /api-key/k2': { status: 200, body: null },
+  });
+  const api = createApiClient({ baseUrl: 'https://test/api/v2', fetch, storage: createMemoryStore() });
+  const providers = await api.providers.list();
+  assert.equal(providers.length, 1);
+  assert.equal(providers[0].hasKey, true);
+  const created = await api.providers.create({ url: 'https://y', model: 'n', key: 'secret-key' });
+  assert.equal(created.id, 'k2');
+  const activated = await api.providers.patch('k1', { isActive: true });
+  assert.equal(activated.isActive, true);
+  await api.providers.remove('k2');
+  assert.deepEqual(calls.map((c) => c.init?.method || 'GET'), ['GET', 'POST', 'PATCH', 'DELETE']);
+});
+
 test('API errors surface as ApiError with status', async () => {
   const { fetch } = mockFetch({ '/projects': { status: 401, body: { message: 'Unauthorized' } } });
   const api = createApiClient({ baseUrl: 'https://test/api/v2', fetch, storage: createMemoryStore() });

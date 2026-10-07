@@ -25,7 +25,7 @@ export interface ChatState {
   appendMessage(message: Message, sessionId?: string): void;
   appendDelta(text: string): void;
   applyToolCall(toolCall: ToolCall): void;
-  beginTurn(sessionId: string, turnId: string, text: string): boolean;
+  beginTurn(sessionId: string, turnId: string, text: string, attachments?: Message['attachments']): boolean;
   updateTurn(turnId: string, update: (message: Message) => Message): void;
   finishTurn(turnId: string, error?: string | null): void;
   setStatus(status: ChatStatus, error?: string | null): void;
@@ -93,13 +93,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const state = get();
     if (state.turnId) state.updateTurn(state.turnId, (m) => ({ ...m, toolCalls: mergeToolCall(m.toolCalls || [], tool) }));
   },
-  beginTurn: (sessionId, turnId, text) => {
+  beginTurn: (sessionId, turnId, text, attachments) => {
     if (get().turnId || !get().sessions.some((s) => s.id === sessionId)) return false;
     set((state) => ({
       turnId, turnSessionId: sessionId, status: 'sending', error: null, draft: '',
       sessions: updateSession(state, sessionId, (s) => ({ ...s, messages: [
         ...s.messages || [],
-        { clientId: `${turnId}-user`, role: 'user', rawText: text },
+        { clientId: `${turnId}-user`, role: 'user', rawText: text, ...(attachments?.length ? { attachments } : {}) },
         { clientId: turnId, role: 'assistant', rawText: '', reasoningContent: '' },
       ] })),
     }));

@@ -73,3 +73,15 @@ test('tool call argument snapshots replace rather than repeat cumulative text', 
   } });
   assert.equal(useChatStore.getState().sessions[0].messages?.[1].toolCalls?.[0].argumentsText, '{"q":"x"}');
 });
+test('turn attachments ride on the user message and persist with the turn', async () => {
+  prepare(); const saved: Session[] = [];
+  await runChatTurn({ sessionId: 'session-a', turnId: 't', text: 'Read this', attachments: [{ id: 'f1', kind: 'text', name: 'notes.txt', mime: 'text/plain', size: 3, text: 'abc' }], signal: new AbortController().signal, isCurrent: () => true,
+    save: async (s) => { saved.push(structuredClone(s)); return { ...s, id: 'server' }; },
+    stream: async ({ messages, handlers }) => {
+      const user = messages.find((m) => m.clientId === 't-user');
+      assert.equal(user?.attachments?.[0].text, 'abc');
+      handlers.onDelta?.('done');
+    },
+  });
+  assert.equal(saved[1].messages![0].attachments?.[0].name, 'notes.txt');
+});

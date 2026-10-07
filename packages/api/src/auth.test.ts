@@ -57,6 +57,35 @@ test('login never proactively refreshes an expired prior session', async () => {
   const api = createApiClient({ baseUrl: 'https://test/api/v2', storage, fetch: async (url) => { urls.push(url); return json({ ...rotated, user: { id: 'b' } }); } });
   await api.auth.login('b@test', 'password'); assert.equal(urls.length, 1); assert.ok(urls[0].endsWith('/login'));
 });
+test('code login exchanges the emailed code for a stored token pair', async () => {
+  const storage = createMemoryStore(); const urls: string[] = [];
+  const api = createApiClient({ baseUrl: 'https://test/api/v2', storage, fetch: async (url, init) => {
+    urls.push(url);
+    if (url.endsWith('/auth/send-code')) return json({ ok: true });
+    return json({ ...rotated, user: { id: 'c', email: 'c@test', displayName: 'C' } });
+  } });
+  await api.auth.sendCode('c@test');
+  const user = await api.auth.loginWithCode('c@test', 'ABCDEFGH');
+  assert.equal(user.id, 'c'); assert.equal((await api.readTokens()).accessToken, 'new-access');
+  assert.ok(urls.some((u) => u.endsWith('/auth/send-code')) && urls.some((u) => u.endsWith('/mobile/login-with-code')));
+});
+test('register and forgot-password surface {ok} without touching tokens', async () => {
+  const storage = createMemoryStore({ [key]: JSON.stringify(old) });
+  const api = createApiClient({ baseUrl: 'https://test/api/v2', storage, fetch: async () => json({ ok: true }) });
+  assert.deepEqual(await api.auth.register('n@test', 'password123'), { ok: true });
+  assert.deepEqual(await api.auth.resendVerification('n@test'), { ok: true });
+  assert.deepEqual(await api.auth.forgotPassword('n@test'), { ok: true });
+  assert.deepEqual(await api.readTokens(), old);
+});
+test('wrong old password never rotates or clears the live session', async () => {
+  const storage = createMemoryStore({ [key]: JSON.stringify(old) }); let lost = 0; let refreshes = 0;
+  const api = createApiClient({ baseUrl: 'https://test/api/v2', storage, fetch: async (url) => {
+    if (url.endsWith('/refresh')) { refreshes++; return json(rotated); }
+    return json({ message: 'Current password is incorrect' }, 401);
+  }, onAuthLost: () => lost++ });
+  await assert.rejects(api.auth.changePassword('wrong', 'new-password-1'), (e: ApiError) => e.status === 401);
+  assert.equal(refreshes, 0); assert.equal(lost, 0); assert.deepEqual(await api.readTokens(), old);
+});
 test('stream 401 refreshes and retries once then dispatches done', async () => {
   const storage = createMemoryStore({ [key]: JSON.stringify(old) }); let done = 0; let attempts = 0;
   const api = createApiClient({ baseUrl: 'https://test/api/v2', storage, fetch: async (url) => {

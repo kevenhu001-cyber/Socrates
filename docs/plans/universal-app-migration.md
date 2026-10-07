@@ -235,3 +235,80 @@ mobile/            # 冻结，仅安全/crash/data-loss 修复
   `export:web` + `test:universal` 双端 4/4 通过。
 - 下轮建议：Settings 全量 UI（provider/model/tone/usage/profile）、Auth 全流程
   （注册/验证/忘记密码/code-login）、附件/语音/中文/outbox；桌面工程化最后。
+
+## 15. 进展（第八轮，2026-10-07）
+
+- Settings 全量 phase 1（无密钥面；provider 密钥与计费动作留网页基线）：
+  - `packages/settings` 加 `tone` + 5 预设全文（与 `tonePresets.js` 逐字同源，
+  只管 persona/voice，不管结构与安全）+ 持久化/非法值回退；单测覆盖。
+  - `contracts` 加 `AccountUsage`；`packages/api` 加 `account.usage`
+  （GET /api/account/usage 只读；`/api/v2` 重写已在服务端确认）。
+  - `runtime.streamConversation` 每次把当前 tone voice 作 system 首条发出去
+  （与网页端 `toneVoiceSuffix` 同行为；持久化会话仍只存 user/assistant）。
+  - `SettingsScreen` 加 Assistant tone 五项选择 + Account 区（身份/会话数/
+  provider 数/知识节点/本月 token），guest 仅本地偏好，加 ScrollView；
+  App 进设置屏即取 usage（epoch 守卫），返回键行为不变。
+  - 另修 Settings 返回键缺 `accessibilityRole="button"`（与 Projects 屏不一致）。
+- 护栏修补：`check-packages-dom` 把 `document.`/`window.` 误判 prose 句号
+  （preset 文案 "professional document. You…"）收紧为真正的属性访问
+  (`\.[A-Za-z_$]`)，并用探针确认仍能抓住 `document.getElementById`。
+- 回归：`universal-chat` smoke 在 mock 服务端加契约（system 首条必须含
+  scholar voice，否则 400）；`universal-app` smoke 加设置往返（tone 选中 →
+  localStorage 持久化 → reload 仍在 + profile/usage 可见）。
+- 验证：`apps typecheck` 0、`test:shared` 全绿（含 tone/account 新增用例）、
+  DOM-free 通过；`export:web` + `test:universal` 双端 4/4 通过。
+- 下轮建议：Auth 全流程（注册/验证/忘记密码/code-login）、附件（文件/相册/
+  相机）+ 语音、中文 i18n 接线；provider/model 密钥管理需单独设计（密钥输入
+  面，不宜与普通设置同批）。
+
+## 16. 进展（第九轮，2026-10-07）
+
+- Auth 全流程（无服务端改动，全部落在 mobile 已有端点 + web 共享端点）：
+  - `api.auth` 加 `sendCode`/`loginWithCode`（generation 保护写 token）、
+  `register`/`resendVerification`/`forgotPassword`/`changePassword`；
+  凭据类端点全部加入 refresh 豁免（错码/错旧密码只报错，绝不旋转或清会话，
+  单测锁定）。
+  - `AuthGate` 四模式（密码/code/register/forgot）+ notice 通道；App 侧
+  handlers + Settings 内改密码表单；`universal-auth` 新 smoke（register/
+  forgot 提示 → code 登录进应用 + token 落盘）。
+- 附件（模型可读即签收，文件库持久化后置）：
+  - 新依赖 `expo-document-picker/image-picker/file-system/speech`（SDK57 对齐）。
+  - `attachmentModels`（kind 判定/25MB 上限/转 Message）+ 双端 picker
+  （web input 直读 + send 时 `/files/extract`；native 相册/相机 base64、
+  txt 直读、文档 `uploadAsync` 同端点）。
+  - `chat.beginTurn/runChatTurn` 透传 attachments（单测锁定落盘与请求携带）；
+  Composer Chips + 同行附件/麦克风按钮（chips 仅暂存时展开，避免遮挡消息）。
+- 语音：`speech.*` 平台分层（native `expo-speech` 朗读；web SpeechSynthesis +
+  SpeechRecognition）；assistant 消息 🔊 按钮 + composer 🎤（平台无能力自动
+  隐藏）；web 朗读 30s 兜底不 hanging。
+- 中文 i18n 接线：`packages/ui/src/strings.ts`（组件字典 + `language` prop，
+  默认英文零破坏）+ `apps/.../strings.ts`（五屏 + 回调错误文案，settings
+  language 驱动热切换）；smoke 加 zh/en 往返（助手语气/退出登录可见 + 持久化）。
+- 修过：mic 在桌面 Chromium 真实存在（改断言为可见）、AuthGate Email 严格
+  匹配、附件栏垫高遮挡工具卡（按钮收进 composer 同行）。
+- 验证：`apps typecheck` 0、`test:shared` 全绿（auth 15 含凭据豁免、api 12
+  含 extract、chat 10 含附件）、DOM-free 通过；`export:web` +
+  `test:universal` 双端 6/6 通过。
+- 下轮建议：provider/model 密钥管理单独设计；Editor/Canvas 岛、桌面工程化；
+  真机签收（返回键/键盘/安全区/网络切换）+ staging 联调仍是发布前门。
+
+## 17. 进展（第十轮，2026-10-07）
+
+- Provider/model 管理（密钥只发一次，服务端加密持有）：
+  - `contracts.ProviderKey` + `api.providers`（list/create/patch/remove 走
+  `/api-key`，返回只有 hasKey/keyHint）。
+  - 新建 `ProvidersScreen`（列表/点选激活/新增表单 label+url+model+key+
+  vision 开关/两步删除；built-in 行不提供删除）。
+  - App `providers` 屏 + epoch 守卫的镜像更新（激活互斥/新增即活跃/删除过滤）；
+  Settings 加 Models & keys 入口（活跃 model 副标题，guest 隐藏）；
+  providers 返回键回设置屏。
+  - 中英字典同步（19 个 key）。
+- 修过：删活跃供应商后无活跃行是服务端一致行为（spec 改断 `○ Custom`）；
+  旧 spec 补 `/api-key` 空列表 mock（settings 打开即取 providers，
+  未 mock 会在控制台留下 refused 噪声）；空副标题只显示 ›。
+- 验证：`apps typecheck` 0、`test:shared` 全绿（api 13 含 providers、
+  auth 15、chat 10）、DOM-free 通过；`export:web` + `test:universal`
+  双端 8/8 通过（含新 providers spec）。
+- 下轮建议：附件文件库持久化（sessionId 关联上传）、Editor/Canvas 岛
+  （需先有消息 viz 数据流，否则无内容可渲染）、桌面工程化；真机 +
+  staging 联调仍是发布前门（本机无 SDK/设备与 staging 凭据，只能做准备）。

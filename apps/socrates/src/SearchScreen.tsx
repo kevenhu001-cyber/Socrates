@@ -3,6 +3,7 @@ import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-na
 import type { SearchHit, Session } from '@socrates/contracts';
 import type { ThemeMode } from '@socrates/theme';
 import { getThemePaletteHex } from '@socrates/theme';
+import { useAppStrings } from './strings';
 
 // Search screen — migration module 6 (Chat → Sidebar/Nav → Auth → Settings
 // → Library/Projects → Search → …). Pure RN UI; App.tsx owns fetching.
@@ -30,6 +31,7 @@ export function SearchScreen({
   onClose(): void;
 }) {
   const p = getThemePaletteHex(mode);
+  const s = useAppStrings();
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<SearchHit[]>([]);
   const [searching, setSearching] = useState(false);
@@ -55,7 +57,7 @@ export function SearchScreen({
         setHits(result); setSearching(false);
       }).catch((failure) => {
         if (requestId.current !== id) return;
-        setError(failure instanceof Error ? failure.message : 'Search failed'); setSearching(false);
+        setError(failure instanceof Error ? failure.message : s.searchFailed); setSearching(false);
       });
     }, 300);
     return () => clearTimeout(timer);
@@ -65,14 +67,14 @@ export function SearchScreen({
   return (
     <View style={[styles.wrap, { backgroundColor: p.bg.page }]}>
       <View style={[styles.header, { borderBottomColor: p.border.default }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back to chat" onPress={onClose} style={styles.back}>
+        <Pressable accessibilityRole="button" accessibilityLabel={s.backToChat} onPress={onClose} style={styles.back}>
           <Text style={[styles.backText, { color: p.text.primary }]}>‹</Text>
         </Pressable>
         <TextInput
-          accessibilityLabel="Search conversations"
+          accessibilityLabel={s.searchPlaceholder}
           value={query}
           onChangeText={setQuery}
-          placeholder="Search conversations"
+          placeholder={s.searchPlaceholder}
           placeholderTextColor={p.text.muted}
           autoFocus
           style={[styles.input, { borderColor: p.border.default, color: p.text.primary }]}
@@ -80,35 +82,35 @@ export function SearchScreen({
       </View>
       <View style={styles.body}>
         {!showResults ? (
-          <Text style={[styles.status, { color: p.text.muted }]}>Type at least 2 characters to search titles, topics and messages.</Text>
+          <Text style={[styles.status, { color: p.text.muted }]}>{s.searchHint}</Text>
         ) : (
           <FlatList
             data={[
-              ...local.map((s) => ({ key: `local-${s.id}`, kind: 'local' as const, session: s })),
+              ...local.map((sess) => ({ key: `local-${sess.id}`, kind: 'local' as const, session: sess })),
               ...hits.map((h, i) => ({ key: `hit-${h.kind}-${h.id}-${i}`, kind: 'hit' as const, hit: h })),
             ]}
             keyExtractor={(item) => item.key}
             ListEmptyComponent={
               searching ? (
-                <Text style={[styles.status, { color: p.text.muted }]}>Searching…</Text>
+                <Text style={[styles.status, { color: p.text.muted }]}>{s.searching}</Text>
               ) : error ? (
                 <Text accessibilityRole="alert" style={[styles.status, { color: p.danger }]}>{error}</Text>
               ) : (
-                <Text style={[styles.status, { color: p.text.muted }]}>No results for “{query.trim()}”.</Text>
+                <Text style={[styles.status, { color: p.text.muted }]}>{s.noResultsFor(query.trim())}</Text>
               )
             }
             renderItem={({ item }) => {
               if (item.kind === 'local') {
-                const s = item.session;
+                const sess = item.session;
                 return (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`Open ${s.title || s.topic || 'Untitled'}`}
-                    onPress={() => onOpenSession(s.id)}
+                    accessibilityLabel={s.openConversation(sess.title || sess.topic || s.untitled)}
+                    onPress={() => onOpenSession(sess.id)}
                     style={[styles.row, { borderColor: p.border.default }]}
                   >
-                    <Text numberOfLines={1} style={[styles.rowTitle, { color: p.text.primary }]}>{s.title || s.topic || 'Untitled'}</Text>
-                    <Text style={[styles.rowSub, { color: p.text.muted }]}>Conversation</Text>
+                    <Text numberOfLines={1} style={[styles.rowTitle, { color: p.text.primary }]}>{sess.title || sess.topic || s.untitled}</Text>
+                    <Text style={[styles.rowSub, { color: p.text.muted }]}>{s.conversationKind}</Text>
                   </Pressable>
                 );
               }
@@ -116,17 +118,17 @@ export function SearchScreen({
               return (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Open ${h.kind === 'session' ? h.title || h.topic || 'conversation' : 'message in conversation'}`}
+                  accessibilityLabel={h.kind === 'session' ? s.openConversation(h.title || h.topic || 'conversation') : s.openMessageMatch}
                   onPress={() => onOpenSession(h.sessionId)}
                   style={[styles.row, { borderColor: p.border.default }]}
                 >
                   <Text numberOfLines={1} style={[styles.rowTitle, { color: p.text.primary }]}>
-                    {h.kind === 'session' ? h.title || h.topic || 'Untitled' : `Message · ${stripSearchMarks(h.snippet || '').slice(0, 80)}`}
+                    {h.kind === 'session' ? h.title || h.topic || s.untitled : `Message · ${stripSearchMarks(h.snippet || '').slice(0, 80)}`}
                   </Text>
                   {h.snippet ? (
                     <Text numberOfLines={2} style={[styles.rowSub, { color: p.text.secondary }]}>{stripSearchMarks(h.snippet)}</Text>
                   ) : null}
-                  <Text style={[styles.rowSub, { color: p.text.muted }]}>{h.kind === 'session' ? 'Conversation' : 'Message match'}</Text>
+                  <Text style={[styles.rowSub, { color: p.text.muted }]}>{h.kind === 'session' ? s.conversationKind : s.messageMatchKind}</Text>
                 </Pressable>
               );
             }}

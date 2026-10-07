@@ -1,4 +1,4 @@
-import type { ChatRequest, ChatSseHandlers, MobileTokenPair, Project, SearchHit, Session, User } from '@socrates/contracts';
+import type { AccountUsage, ChatRequest, ChatSseHandlers, FileExtractResult, MobileTokenPair, Project, ProviderKey, SearchHit, Session, User } from '@socrates/contracts';
 import { consumeSseBuffer, dispatchChatSseFrame } from '@socrates/core';
 import type { KeyValueStore } from '@socrates/platform';
 
@@ -20,8 +20,20 @@ export class ApiError extends Error {
  * client's 30 s skew. */
 const REFRESH_SKEW_MS = 30_000;
 /* Credential-issuing endpoints never trigger a transparent refresh: a 401
- * from login/refresh/logout is the real answer, not an expired bearer. */
+ * from login/refresh/logout is the real answer, not an expired bearer.
+ * The same holds for the web credential endpoints the Universal App calls
+ * directly (code/register/forgot/password): a wrong code or old password
+ * must surface as an error, never rotate or clear the live session. */
 const MOBILE_AUTH_PATH = '/auth/mobile/';
+const CREDENTIAL_PATHS = [
+  '/auth/send-code',
+  '/auth/login-with-code',
+  '/auth/register',
+  '/auth/resend-verification',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+  '/auth/password',
+];
 
 export function createApiClient(input: {
   baseUrl: string;
@@ -50,7 +62,10 @@ export function createApiClient(input: {
     refreshInFlight = null;
     return mutate(() => input.storage.remove(tokenKey));
   };
-  const isMobileAuthUrl = (url: string) => new URL(url).pathname.includes(MOBILE_AUTH_PATH);
+  const isCredentialUrl = (url: string) => {
+    const path = new URL(url).pathname;
+    return path.includes(MOBILE_AUTH_PATH) || CREDENTIAL_PATHS.some((suffix) => path.endsWith(suffix));
+  };
   const expiresSoon = (tokens: TokenState) => {
     const at = Date.parse(tokens.expiresAt || '');
     return Number.isFinite(at) && at - Date.now() <= REFRESH_SKEW_MS;
@@ -104,7 +119,7 @@ export function createApiClient(input: {
       if (init.signal?.aborted) throw new ApiError(499, 'Request canceled');
     };
     let tokens = await readTokens();
-    const authEndpoint = isMobileAuthUrl(url);
+    const authEndpoint = isCredentialUrl(url);
     if (!authEndpoint && tokens.refreshToken && expiresSoon(tokens)) {
       if (!await refresh()) throw new ApiError(401, 'Session expired');
       tokens = await readTokens();
@@ -178,6 +193,31 @@ export function createApiClient(input: {
         });
         return result.user;
       },
+      /* Passwordless: code is emailed via the shared /auth/send-code
+       * (no auth needed), then exchanged for a mobile token pair. */
+      sendCode: (email: string) =>
+        request<{ ok: boolean }>('/auth/send-code', { method: 'POST', body: JSON.stringify({ email }) }),
+      loginWithCode: async (email: string, code: string) => {
+        const epoch = ++generation;
+        refreshInFlight = null;
+        const result = await request<{ user: User } & MobileTokenPair>('/auth/mobile/login-with-code', { method: 'POST', body: JSON.stringify({ email, code }) });
+        await mutate(async () => {
+          if (epoch !== generation) throw new ApiError(401, 'Session changed');
+          await input.storage.set(tokenKey, JSON.stringify(result));
+        });
+        return result.user;
+      },
+      /* Registration only creates a pending account and emails a
+       * verification link (web link — the user signs in here afterwards).
+       * Same anti-enumeration shape for forgot-password. */
+      register: (email: string, password: string) =>
+        request<{ ok: boolean }>('/auth/register', { method: 'POST', body: JSON.stringify({ email, password }) }),
+      resendVerification: (email: string) =>
+        request<{ ok: boolean }>('/auth/resend-verification', { method: 'POST', body: JSON.stringify({ email }) }),
+      forgotPassword: (email: string) =>
+        request<{ ok: boolean }>('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+      changePassword: (oldPassword: string, newPassword: string) =>
+        request<{ ok: boolean }>('/auth/password', { method: 'POST', body: JSON.stringify({ oldPassword, newPassword }) }),
       logout: async () => {
         generation++;
         refreshInFlight = null;
@@ -238,6 +278,38 @@ export function createApiClient(input: {
        * them — the transport never executes markup. */
       content: (input: { q: string; scope?: 'all' | 'sessions' | 'messages'; limit?: number }) =>
         request<{ hits: SearchHit[] }>('/search', { method: 'POST', body: JSON.stringify(input) }),
+    },
+    account: {
+      /* Settings profile + usage (GET /api/account/usage). Read-only:
+       * provider keys and billing actions stay on the web baseline. */
+      usage: () => request<AccountUsage>('/account/usage'),
+    },
+    files: {
+      /* Document text extraction (multipart `file` field). Goes through
+       * fetchWithAuth so an expired bearer refreshes transparently; the
+       * native picker uses FileSystem.uploadAsync with the same endpoint
+       * (see filesExtractUrl) because RN fetch cannot stream file bodies. */
+      extract: async (body: FormData) => {
+        const response = await fetchWithAuth(`${input.baseUrl}/files/extract`, { method: 'POST', body });
+        const parsed = await response.json().catch(() => null) as FileExtractResult | null;
+        if (!response.ok || !parsed || parsed.ok === false) {
+          throw new ApiError(response.status, parsed?.error || `Extraction failed (${response.status})`, parsed);
+        }
+        return parsed;
+      },
+      extractUrl: () => `${input.baseUrl}/files/extract`,
+    },
+    providers: {
+      /* Model providers (server-held keys — the client sends a key once
+       * over TLS and thereafter only sees hasKey/keyHint). Activating one
+       * deactivates the rest server-side; built-in rows are never deleted
+       * from this client (they are the fallback when nothing is active). */
+      list: async () => (await request<{ providers: ProviderKey[] }>('/api-key')).providers,
+      create: (entry: { label?: string; url: string; model: string; key: string; isMultimodal?: boolean }) =>
+        request<ProviderKey>('/api-key', { method: 'POST', body: JSON.stringify(entry) }),
+      patch: (id: string, patch: Partial<Pick<ProviderKey, 'label' | 'url' | 'model' | 'isActive' | 'isMultimodal'>> & { key?: string }) =>
+        request<ProviderKey>(`/api-key/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+      remove: (id: string) => request<void>(`/api-key/${encodeURIComponent(id)}`, { method: 'DELETE' }),
     },
     chatUrl,
     readTokens,

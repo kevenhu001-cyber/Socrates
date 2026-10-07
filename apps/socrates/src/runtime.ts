@@ -2,6 +2,7 @@ import { createApiClient } from '@socrates/api';
 import { transportFetch } from './transport';
 import { buildChatHistory } from '@socrates/core';
 import { useAuthStore } from '@socrates/auth';
+import { toneVoice, useSettingsStore } from '@socrates/settings';
 import type { ChatRequest, ChatSseHandlers, Message } from '@socrates/contracts';
 import { storage } from './storage';
 
@@ -22,11 +23,17 @@ export async function streamConversation(input: {
   handlers: ChatSseHandlers;
   signal: AbortSignal;
 }) {
+  // Tone parity with the web baseline: the selected preset's voice always
+  // leads the model-facing history as the system message (the persisted
+  // session keeps user/assistant turns only — same split as runChatTurn).
+  const history = buildChatHistory(input.messages.filter((message) => message.role !== 'tool'), { maxChars: 200_000 });
   const request: ChatRequest = {
     mode: 'chat',
     sessionId: input.sessionId,
-    messages: buildChatHistory(input.messages.filter((message) => message.role !== 'tool'), { maxChars: 200_000 })
-      .map(({ role, content }) => ({ role, content })),
+    messages: [
+      { role: 'system', content: toneVoice(useSettingsStore.getState().tone) },
+      ...history.map(({ role, content }) => ({ role, content })),
+    ],
   };
   return api.chat.stream({
     sessionId: input.sessionId,

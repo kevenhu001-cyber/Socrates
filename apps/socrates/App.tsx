@@ -2,7 +2,7 @@ import 'react-native-reanimated';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import type { Project, Session } from '@socrates/contracts';
+import type { AccountUsage, Project, ProviderKey, Session } from '@socrates/contracts';
 import { isLocalSessionId, runChatTurn, useChatStore, visibleSessions as getVisibleSessions } from '@socrates/chat';
 import { persistUser } from '@socrates/auth';
 import { useAuthStore } from '@socrates/auth';
@@ -12,10 +12,15 @@ import { ChatMessageList, Composer, Sidebar } from '@socrates/ui';
 import { api, streamConversation } from './src/runtime';
 import { storage } from './src/storage';
 import { copyText } from './src/clipboard';
+import { capturePhoto, extractPickedDocument, pickDocument, pickImages, supportsCamera } from './src/attachments';
+import { stagedToMessageAttachment, type PickedFile, type StagedAttachment } from './src/attachmentModels';
+import { listenOnce, listenSupported, speakText, stopSpeaking } from './src/speech';
 import { AuthGate } from './src/AuthGate';
 import { SettingsScreen } from './src/SettingsScreen';
 import { ProjectsScreen } from './src/ProjectsScreen';
 import { SearchScreen } from './src/SearchScreen';
+import { ProvidersScreen } from './src/ProvidersScreen';
+import { appStrings, appStringsNow } from './src/strings';
 
 const initialSessions: Session[] = [{ id: 'welcome', title: 'Welcome to Socrates', topic: 'Universal app', mode: 'chat', phase: 'chat', messages: [{ clientId: 'welcome-assistant', role: 'assistant', rawText: 'How can I help you learn today?' }] }];
 
@@ -25,7 +30,8 @@ function SocratesApp() {
   const [sidebarOpen, setSidebarOpen] = useState(!compact);
   const [authPending, setAuthPending] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [screen, setScreen] = useState<'chat' | 'settings' | 'projects' | 'search'>('chat');
+  const [authNotice, setAuthNotice] = useState<string | null>(null);
+  const [screen, setScreen] = useState<'chat' | 'settings' | 'projects' | 'search' | 'providers'>('chat');
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
   const [projectsError, setProjectsError] = useState<string | null>(null);
@@ -33,8 +39,17 @@ function SocratesApp() {
   /** Session id awaiting a move target; opens the projects screen in pick mode. */
   const [movePickSession, setMovePickSession] = useState<string | null>(null);
   const [archived, setArchived] = useState<Session[]>([]);
+  const [accountUsage, setAccountUsage] = useState<AccountUsage | null>(null);
+  const [usageLoading, setUsageLoading] = useState(false);
+  const [usageError, setUsageError] = useState<string | null>(null);
+  const [providers, setProviders] = useState<ProviderKey[]>([]);
+  const [providersLoading, setProvidersLoading] = useState(false);
+  const [providersError, setProvidersError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [staged, setStaged] = useState<StagedAttachment[]>([]);
+  const [listening, setListening] = useState(false);
+  const listenStop = useRef<(() => void) | null>(null);
   const sessions = useChatStore((state) => state.sessions);
   const activeId = useChatStore((state) => state.activeSessionId);
   const draft = useChatStore((state) => state.draft);
@@ -42,6 +57,8 @@ function SocratesApp() {
   const authStatus = useAuthStore((state) => state.status);
   const user = useAuthStore((state) => state.user);
   const theme = useSettingsStore((state) => state.theme);
+  const language = useSettingsStore((state) => state.language);
+  const s = appStrings(language);
   const palette = useMemo(() => getThemePaletteHex(theme), [theme]);
   const active = useMemo(() => sessions.find((session) => session.id === activeId) || null, [activeId, sessions]);
   const visibleSessions = useMemo(
@@ -73,7 +90,7 @@ function SocratesApp() {
       setArchived(fetchedArchived);
       useChatStore.getState().reconcileSessions(fetchedSessions);
     } catch (error) {
-      if (current()) setProjectsError(error instanceof Error ? error.message : 'Sync failed');
+      if (current()) setProjectsError(error instanceof Error ? error.message : appStringsNow().syncFailed);
     } finally {
       if (current()) setProjectsLoading(false);
     }
@@ -83,9 +100,15 @@ function SocratesApp() {
     const reset = () => {
       accountEpoch.current++; syncEpoch.current++;
       streamAbort.current?.abort(); streamAbort.current = null;
+      listenStop.current?.(); listenStop.current = null; setListening(false);
+      stopSpeaking();
       loadingDetails.current.clear();
+      setStaged([]);
       setProjects([]); setProjectsLoading(false); setProjectsError(null);
       setArchived([]);
+      setAccountUsage(null); setUsageLoading(false); setUsageError(null);
+      setProviders([]); setProvidersLoading(false); setProvidersError(null);
+      setAuthNotice(null);
       setProjectFilter(null); setMovePickSession(null); setMenuOpen(false); setConfirmDelete(false); setScreen('chat');
       useChatStore.getState().reset();
       useChatStore.getState().setSessions(initialSessions);
@@ -115,7 +138,7 @@ function SocratesApp() {
         if (current.turnSessionId === id || current.sessions.find((s) => s.id === id)?.messages?.length) return;
         current.patchSession(id, { ...detail, messages: detail.messages ?? [] });
       }).catch((error) => {
-        if (epoch === accountEpoch.current) useChatStore.getState().setStatus('error', error instanceof Error ? error.message : 'Could not load conversation');
+        if (epoch === accountEpoch.current) useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().couldNotLoadConversation);
       }).finally(() => { if (epoch === accountEpoch.current) loadingDetails.current.delete(id); });
     }
   }, [compact]);
@@ -127,45 +150,211 @@ function SocratesApp() {
     store.setSessions([draftSession, ...store.sessions]);
     select(id);
   }, [select, projectFilter]);
+  const resolveStaged = useCallback(async () => {
+    const out = [];
+    for (const item of staged) {
+      if (item.stagedKind === 'document' && item.text === undefined) {
+        const tokens = await api.readTokens();
+        const extracted = await extractPickedDocument(
+          { name: item.name, mime: item.mime, size: item.size, stagedKind: item.stagedKind, ...(item.nativeUri ? { nativeUri: item.nativeUri } : {}), ...(item.webFile ? { webFile: item.webFile } : {}) },
+          { endpoint: api.files.extractUrl(), token: tokens.accessToken, fetch: api.fetchWithAuth },
+        );
+        out.push(stagedToMessageAttachment({ ...item, text: extracted.text, truncated: extracted.truncated, docKind: extracted.kind }));
+      } else {
+        out.push(stagedToMessageAttachment(item));
+      }
+    }
+    return out;
+  }, [staged]);
   const send = useCallback(() => {
     const store = useChatStore.getState();
     const text = store.draft.trim();
-    if (!text || store.turnId) return;
+    const snapshot = staged;
+    if ((!text && !snapshot.length) || store.turnId) return;
     const owner = useAuthStore.getState().user;
-    if (!owner || owner.isGuest) { store.setStatus('error', 'Sign in to send messages. Guest conversations stay on this device.'); return; }
+    if (!owner || owner.isGuest) { store.setStatus('error', appStringsNow().guestSendBlocked); return; }
     if (store.activeSessionId && loadingDetails.current.has(store.activeSessionId)) {
-      store.setStatus('error', 'Conversation is loading. Please try again in a moment.'); return;
+      store.setStatus('error', appStringsNow().conversationLoading); return;
     }
-    let sessionId = store.activeSessionId;
-    if (!sessionId) {
-      sessionId = `session-${Date.now()}`;
-      store.setSessions([{ id: sessionId, title: text.slice(0, 80), topic: '', mode: 'chat', phase: 'chat', projectId: projectFilter, messages: [] }, ...store.sessions]);
-      store.selectSession(sessionId);
+    stopSpeaking();
+    listenStop.current?.(); listenStop.current = null; setListening(false);
+    void (async () => {
+      let messageAttachments;
+      try {
+        messageAttachments = await resolveStaged();
+      } catch (error) {
+        useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().prepareAttachmentsFailed);
+        return;
+      }
+      const live = useChatStore.getState();
+      if (live.turnId) return;
+      let sessionId = live.activeSessionId;
+      const titleSource = text || snapshot[0]?.name || 'Attachment';
+      if (!sessionId) {
+        sessionId = `session-${Date.now()}`;
+        live.setSessions([{ id: sessionId, title: titleSource.slice(0, 80), topic: '', mode: 'chat', phase: 'chat', projectId: projectFilter, messages: [] }, ...live.sessions]);
+        live.selectSession(sessionId);
+      }
+      const epoch = accountEpoch.current;
+      const controller = new AbortController();
+      streamAbort.current = controller;
+      setStaged((prev) => prev.filter((s) => !snapshot.some((taken) => taken.localId === s.localId)));
+      try {
+        await runChatTurn({
+          sessionId, turnId: `turn-${Date.now()}`, text, attachments: messageAttachments.length ? messageAttachments : undefined, signal: controller.signal,
+          isCurrent: () => epoch === accountEpoch.current,
+          save: (session) => api.sessions.save(session), stream: streamConversation,
+        });
+      } finally {
+        if (streamAbort.current === controller) streamAbort.current = null;
+      }
+    })();
+  }, [projectFilter, staged, resolveStaged]);
+  // Attachments: pickers produce staged rows; documents resolve to text
+  // at send time (server extract), images/text ride along directly.
+  const stagePicked = useCallback((picked: PickedFile[]) => {
+    setStaged((prev) => [
+      ...prev,
+      ...picked.map((file, index) => ({
+        localId: `staged-${Date.now()}-${index}`,
+        name: file.name, mime: file.mime, size: file.size, stagedKind: file.stagedKind,
+        ...(file.dataUrl ? { dataUrl: file.dataUrl } : {}),
+        ...(file.text !== undefined ? { text: file.text } : {}),
+        ...(file.nativeUri ? { nativeUri: file.nativeUri } : {}),
+        ...(file.webFile ? { webFile: file.webFile } : {}),
+      } as StagedAttachment)),
+    ]);
+  }, []);
+  const onPickImages = useCallback(async () => {
+    try {
+      stagePicked(await pickImages());
+    } catch (error) {
+      useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().pickImagesFailed);
     }
-    const epoch = accountEpoch.current;
-    const controller = new AbortController();
-    streamAbort.current = controller;
-    void runChatTurn({
-      sessionId, turnId: `turn-${Date.now()}`, text, signal: controller.signal,
-      isCurrent: () => epoch === accountEpoch.current,
-      save: (session) => api.sessions.save(session), stream: streamConversation,
-    }).finally(() => { if (streamAbort.current === controller) streamAbort.current = null; });
-  }, [projectFilter]);
+  }, [stagePicked]);
+  const onTakePhoto = useCallback(async () => {
+    try {
+      const photo = await capturePhoto();
+      if (photo) stagePicked([photo]);
+    } catch (error) {
+      useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().takePhotoFailed);
+    }
+  }, [stagePicked]);
+  const onPickFile = useCallback(async () => {
+    try {
+      const file = await pickDocument();
+      if (file) stagePicked([file]);
+    } catch (error) {
+      useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().pickFileFailed);
+    }
+  }, [stagePicked]);
+  const removeStaged = useCallback((id: string) => {
+    setStaged((prev) => prev.filter((s) => s.localId !== id));
+  }, []);
   const stop = useCallback(() => { streamAbort.current?.abort(); }, []);
+  const speak = useCallback((text: string) => {
+    void speakText(text).catch((error) => {
+      useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().speechFailed);
+    });
+  }, []);
+  const toggleListen = useCallback(() => {
+    if (listening) {
+      listenStop.current?.(); listenStop.current = null; setListening(false);
+      return;
+    }
+    void listenOnce({
+      onResult: (text, final) => {
+        if (final) {
+          if (text) useChatStore.getState().setDraft(text);
+          listenStop.current = null; setListening(false);
+        }
+      },
+      onError: (message) => {
+        listenStop.current = null; setListening(false);
+        useChatStore.getState().setStatus('error', message);
+      },
+    }).then((stop) => {
+      listenStop.current = stop; setListening(true);
+    }).catch((error) => {
+      useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().voiceInputFailed);
+    });
+  }, [listening]);
   const login = useCallback(async (email: string, password: string) => {
     setAuthPending(true);
-    setAuthError(null);
+    setAuthError(null); setAuthNotice(null);
     try {
       const loggedIn = await api.auth.login(email, password);
       await persistUser(storage, loggedIn);
       useAuthStore.getState().setUser(loggedIn);
       void syncLibrary();
     } catch (error) {
-      setAuthError(error instanceof Error ? error.message : 'Sign in failed');
+      setAuthError(error instanceof Error ? error.message : appStringsNow().signInFailed);
     } finally {
       setAuthPending(false);
     }
   }, [syncLibrary]);
+  const loginWithCode = useCallback(async (email: string, code: string) => {
+    setAuthPending(true);
+    setAuthError(null); setAuthNotice(null);
+    try {
+      const loggedIn = await api.auth.loginWithCode(email, code);
+      await persistUser(storage, loggedIn);
+      useAuthStore.getState().setUser(loggedIn);
+      void syncLibrary();
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : appStringsNow().codeSignInFailed);
+    } finally {
+      setAuthPending(false);
+    }
+  }, [syncLibrary]);
+  const sendCode = useCallback(async (email: string) => {
+    setAuthPending(true);
+    setAuthError(null); setAuthNotice(null);
+    try {
+      await api.auth.sendCode(email);
+      setAuthNotice(appStringsNow().codeSent);
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : appStringsNow().codeSendFailed);
+    } finally {
+      setAuthPending(false);
+    }
+  }, []);
+  const register = useCallback(async (email: string, password: string) => {
+    setAuthPending(true);
+    setAuthError(null); setAuthNotice(null);
+    try {
+      await api.auth.register(email, password);
+      setAuthNotice(appStringsNow().registered);
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : appStringsNow().registerFailed);
+    } finally {
+      setAuthPending(false);
+    }
+  }, []);
+  const resendVerification = useCallback(async (email: string) => {
+    setAuthPending(true);
+    setAuthError(null); setAuthNotice(null);
+    try {
+      await api.auth.resendVerification(email);
+      setAuthNotice(appStringsNow().resent);
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : appStringsNow().resendFailed);
+    } finally {
+      setAuthPending(false);
+    }
+  }, []);
+  const forgotPassword = useCallback(async (email: string) => {
+    setAuthPending(true);
+    setAuthError(null); setAuthNotice(null);
+    try {
+      await api.auth.forgotPassword(email);
+      setAuthNotice(appStringsNow().resetSent);
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : appStringsNow().resetSendFailed);
+    } finally {
+      setAuthPending(false);
+    }
+  }, []);
   const continueAsGuest = useCallback(() => {
     useAuthStore.getState().setUser({ id: 'guest', email: '', displayName: 'Guest', isGuest: true });
   }, []);
@@ -186,7 +375,7 @@ function SocratesApp() {
     if (epoch === accountEpoch.current) setProjects((prev) => prev.map((p) => p.id === id ? updated : p));
   }, []);
   const deleteProject = useCallback(async (id: string) => {
-    if (useChatStore.getState().sessions.some((s) => s.id === useChatStore.getState().turnSessionId && s.projectId === id)) throw new Error('Stop the response before deleting this project.');
+    if (useChatStore.getState().sessions.some((s) => s.id === useChatStore.getState().turnSessionId && s.projectId === id)) throw new Error(appStringsNow().stopBeforeDeleteProject);
     const epoch = accountEpoch.current;
     await api.projects.remove(id);
     if (epoch !== accountEpoch.current) return;
@@ -199,14 +388,14 @@ function SocratesApp() {
     const epoch = accountEpoch.current;
     const owner = useAuthStore.getState().user;
     try {
-      if (useChatStore.getState().turnSessionId === id) throw new Error('Stop the response before archiving this conversation.');
+      if (useChatStore.getState().turnSessionId === id) throw new Error(appStringsNow().stopBeforeArchive);
       if (!isLocalSessionId(id) && owner && !owner.isGuest) await api.sessions.archive(id);
       if (epoch !== accountEpoch.current) return;
       const row = useChatStore.getState().sessions.find((s) => s.id === id);
       useChatStore.getState().archiveSession(id, projectFilter);
       if (row) setArchived((prev) => prev.some((s) => s.id === id) ? prev : [{ ...row, archivedAt: new Date().toISOString() }, ...prev]);
     } catch (error) {
-      if (epoch === accountEpoch.current) useChatStore.getState().setStatus('error', error instanceof Error ? error.message : 'Archive failed');
+      if (epoch === accountEpoch.current) useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().archiveFailed);
     }
   }, [projectFilter]);
   // Restore opens the conversation again: server unarchive for server ids,
@@ -223,7 +412,7 @@ function SocratesApp() {
       setArchived((prev) => prev.filter((s) => s.id !== id));
       select(id);
     } catch (error) {
-      if (epoch === accountEpoch.current) useChatStore.getState().setStatus('error', error instanceof Error ? error.message : 'Restore failed');
+      if (epoch === accountEpoch.current) useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().restoreFailed);
     }
   }, [archived, select]);
   // Delete purges the session everywhere (mirrors DELETE /sessions/:id which
@@ -233,13 +422,13 @@ function SocratesApp() {
     const epoch = accountEpoch.current;
     const owner = useAuthStore.getState().user;
     try {
-      if (useChatStore.getState().turnSessionId === id) throw new Error('Stop the response before deleting this conversation.');
+      if (useChatStore.getState().turnSessionId === id) throw new Error(appStringsNow().stopBeforeDelete);
       if (!isLocalSessionId(id) && owner && !owner.isGuest) await api.sessions.remove(id);
       if (epoch !== accountEpoch.current) return;
       useChatStore.getState().deleteSession(id, projectFilter);
       setArchived((prev) => prev.filter((s) => s.id !== id));
     } catch (error) {
-      if (epoch === accountEpoch.current) useChatStore.getState().setStatus('error', error instanceof Error ? error.message : 'Delete failed');
+      if (epoch === accountEpoch.current) useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().deleteFailed);
     } finally {
       if (epoch === accountEpoch.current) setConfirmDelete(false);
     }
@@ -258,6 +447,59 @@ function SocratesApp() {
     const next = useChatStore.getState().selectProject(id);
     if (next) select(next);
   }, [select]);
+  // Settings profile + usage snapshot, loaded on entering the screen.
+  // Guest stays local-only; stale responses are dropped by account epoch.
+  const loadUsage = useCallback(async () => {
+    const owner = useAuthStore.getState().user;
+    if (!owner || owner.isGuest) { setAccountUsage(null); setUsageError(null); return; }
+    const epoch = accountEpoch.current;
+    setUsageLoading(true); setUsageError(null);
+    try {
+      const result = await api.account.usage();
+      if (epoch === accountEpoch.current) setAccountUsage(result);
+    } catch (error) {
+      if (epoch === accountEpoch.current) setUsageError(error instanceof Error ? error.message : appStringsNow().couldNotLoadUsage);
+    } finally {
+      if (epoch === accountEpoch.current) setUsageLoading(false);
+    }
+  }, []);
+  // Providers mirror the server truth: activation deactivates the rest
+  // server-side, creation arrives active, deletion is local + server.
+  const loadProviders = useCallback(async () => {
+    const owner = useAuthStore.getState().user;
+    if (!owner || owner.isGuest) { setProviders([]); return; }
+    const epoch = accountEpoch.current;
+    setProvidersLoading(true); setProvidersError(null);
+    try {
+      const rows = await api.providers.list();
+      if (epoch === accountEpoch.current) setProviders(rows);
+    } catch (error) {
+      if (epoch === accountEpoch.current) setProvidersError(error instanceof Error ? error.message : appStringsNow().syncFailed);
+    } finally {
+      if (epoch === accountEpoch.current) setProvidersLoading(false);
+    }
+  }, []);
+  const openProviders = useCallback(() => { setScreen('providers'); void loadProviders(); }, [loadProviders]);
+  const openSettings = useCallback(() => { setScreen('settings'); void loadUsage(); void loadProviders(); }, [loadUsage, loadProviders]);
+  const activateProvider = useCallback(async (id: string) => {
+    const epoch = accountEpoch.current;
+    await api.providers.patch(id, { isActive: true });
+    if (epoch === accountEpoch.current) setProviders((prev) => prev.map((row) => ({ ...row, isActive: row.id === id })));
+  }, []);
+  const createProvider = useCallback(async (entry: { label: string; url: string; model: string; key: string; isMultimodal: boolean }) => {
+    const epoch = accountEpoch.current;
+    const created = await api.providers.create(entry);
+    if (epoch !== accountEpoch.current) return;
+    setProviders((prev) => [{ ...created, isActive: true }, ...prev.map((row) => ({ ...row, isActive: false }))]);
+  }, []);
+  const deleteProvider = useCallback(async (id: string) => {
+    const epoch = accountEpoch.current;
+    await api.providers.remove(id);
+    if (epoch === accountEpoch.current) setProviders((prev) => prev.filter((row) => row.id !== id));
+  }, []);
+  const changePassword = useCallback(async (oldPassword: string, newPassword: string) => {
+    await api.auth.changePassword(oldPassword, newPassword);
+  }, []);
   // Search hits may point at sessions the store never held (archived rows
   // are excluded from the default list). Fetch-then-insert keeps the open
   // path identical to sidebar select, including lazy detail on next select.
@@ -267,7 +509,7 @@ function SocratesApp() {
       const store = useChatStore.getState();
       if (!store.sessions.some((s) => s.id === id)) {
         const owner = useAuthStore.getState().user;
-        if (!owner || owner.isGuest) throw new Error('Sign in to open this conversation.');
+        if (!owner || owner.isGuest) throw new Error(appStringsNow().signInToOpen);
         const detail = await api.sessions.get(id);
         if (epoch !== accountEpoch.current) return;
         const current = useChatStore.getState();
@@ -277,12 +519,13 @@ function SocratesApp() {
       setScreen('chat');
       select(id);
     } catch (error) {
-      if (epoch === accountEpoch.current) useChatStore.getState().setStatus('error', error instanceof Error ? error.message : 'Could not open conversation');
+      if (epoch === accountEpoch.current) useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().couldNotOpenConversation);
     }
   }, [select]);
   useEffect(() => {
     const listener = BackHandler.addEventListener('hardwareBackPress', () => {
       if (menuOpen) { setMenuOpen(false); setConfirmDelete(false); return true; }
+      if (screen === 'providers') { setScreen('settings'); return true; }
       if (screen !== 'chat') { setMovePickSession(null); setScreen('chat'); return true; }
       if (compact && sidebarOpen) { setSidebarOpen(false); return true; }
       return false;
@@ -295,14 +538,39 @@ function SocratesApp() {
   }, []);
 
   if (authStatus === 'restoring') {
-    return <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg.page }]}><View style={styles.center}><Text style={{ color: palette.text.muted }}>Restoring session…</Text></View></SafeAreaView>;
+    return <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg.page }]}><View style={styles.center}><Text style={{ color: palette.text.muted }}>{s.restoring}</Text></View></SafeAreaView>;
   }
   if (!user) {
-    return <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg.page }]}><StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} /><AuthGate mode={theme} pending={authPending} error={authError} onLogin={(email, password) => void login(email, password)} onGuest={continueAsGuest} /></SafeAreaView>;
+    return <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg.page }]}><StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} /><AuthGate
+      mode={theme}
+      pending={authPending}
+      error={authError}
+      notice={authNotice}
+      onLogin={(email, password) => void login(email, password)}
+      onSendCode={(email) => void sendCode(email)}
+      onLoginWithCode={(email, code) => void loginWithCode(email, code)}
+      onRegister={(email, password) => void register(email, password)}
+      onResendVerification={(email) => void resendVerification(email)}
+      onForgotPassword={(email) => void forgotPassword(email)}
+      onGuest={continueAsGuest}
+    /></SafeAreaView>;
   }
 
   if (screen === 'settings') {
-    return <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg.page }]}><StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} /><SettingsScreen mode={theme} onClose={() => setScreen('chat')} onSignOut={() => { signOut(); setScreen('chat'); }} /></SafeAreaView>;
+    const activeProvider = providers.find((row) => row.isActive) || null;
+    return <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg.page }]}><StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} /><SettingsScreen
+      mode={theme}
+      profile={user && !user.isGuest ? { displayName: user.displayName, email: user.email, tier: user.tier } : null}
+      usage={accountUsage}
+      usageLoading={usageLoading}
+      usageError={usageError}
+      onRetryUsage={() => void loadUsage()}
+      onChangePassword={(oldPassword, newPassword) => changePassword(oldPassword, newPassword)}
+      activeProvider={user && !user.isGuest ? activeProvider?.model || activeProvider?.label || '' : null}
+      onOpenProviders={openProviders}
+      onClose={() => setScreen('chat')}
+      onSignOut={() => { signOut(); setScreen('chat'); }}
+    /></SafeAreaView>;
   }
 
   if (screen === 'projects') {
@@ -325,7 +593,7 @@ function SocratesApp() {
             setMovePickSession(null);
             setScreen('chat');
           }).catch((error) => {
-            setProjectsError(error instanceof Error ? error.message : 'Move failed');
+            setProjectsError(error instanceof Error ? error.message : appStringsNow().moveFailed);
           });
         } else {
           selectProject(targetId);
@@ -338,6 +606,19 @@ function SocratesApp() {
     /></SafeAreaView>;
   }
 
+  if (screen === 'providers') {
+    return <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg.page }]}><StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} /><ProvidersScreen
+      mode={theme}
+      providers={providers}
+      loading={providersLoading}
+      error={providersError}
+      onClose={() => setScreen('settings')}
+      onActivate={(id) => activateProvider(id)}
+      onCreate={(entry) => createProvider(entry)}
+      onDelete={(id) => deleteProvider(id)}
+      onRetry={() => void loadProviders()}
+    /></SafeAreaView>;
+  }
   if (screen === 'search') {
     const canServerSearch = !!user && !user.isGuest;
     return <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg.page }]}><StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} /><SearchScreen
@@ -357,48 +638,49 @@ function SocratesApp() {
         onSelect={select}
         onNewChat={createSession}
         mode={theme}
+        language={language}
         archived={archived}
         onSelectArchived={(id) => void unarchiveSession(id)}
       /> : null}
       <View style={[styles.main, { backgroundColor: palette.bg.page }]}>
         <View style={[styles.header, { borderBottomColor: palette.border.default }]}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Toggle sidebar" onPress={() => setSidebarOpen((open) => !open)} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>☰</Text></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={s.toggleSidebar} onPress={() => setSidebarOpen((open) => !open)} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>☰</Text></Pressable>
           {projectFilter ? (
-            <Pressable accessibilityRole="button" accessibilityLabel={`Clear project filter ${activeProject?.name || ''}`} onPress={() => setProjectFilter(null)} style={[styles.filterChip, { borderColor: palette.border.default, backgroundColor: palette.bg.hover }]}>
+            <Pressable accessibilityRole="button" accessibilityLabel={s.clearProjectFilter(activeProject?.name || '')} onPress={() => setProjectFilter(null)} style={[styles.filterChip, { borderColor: palette.border.default, backgroundColor: palette.bg.hover }]}>
               <Text numberOfLines={1} style={[styles.filterText, { color: palette.text.primary }]}>📁 {activeProject?.name || 'Project'} ✕</Text>
             </Pressable>
           ) : (
-            <Text numberOfLines={1} style={[styles.title, { color: palette.text.primary }]}>{active?.title || 'Socrates'}</Text>
+            <Text numberOfLines={1} style={[styles.title, { color: palette.text.primary }]}>{s.appTitle(active?.title || '')}</Text>
           )}
-          <Pressable accessibilityRole="button" accessibilityLabel="Open search" onPress={() => setScreen('search')} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>🔍</Text></Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel="Open projects" onPress={() => setScreen('projects')} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>📁</Text></Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel="Toggle theme" onPress={toggleTheme} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>{theme === 'dark' ? '☾' : '☀'}</Text></Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel="Open settings" onPress={() => setScreen('settings')} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>⚙</Text></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={s.openSearch} onPress={() => setScreen('search')} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>🔍</Text></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={s.openProjects} onPress={() => setScreen('projects')} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>📁</Text></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={s.toggleTheme} onPress={toggleTheme} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>{theme === 'dark' ? '☾' : '☀'}</Text></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={s.openSettings} onPress={openSettings} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>⚙</Text></Pressable>
           {active ? (
-            <Pressable accessibilityRole="button" accessibilityLabel="Session actions" onPress={() => { setConfirmDelete(false); setMenuOpen((open) => !open); }} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>⋯</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={s.sessionActions} onPress={() => { setConfirmDelete(false); setMenuOpen((open) => !open); }} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>⋯</Text></Pressable>
           ) : null}
         </View>
         {menuOpen && active ? (
           <View style={[styles.menuSheet, { backgroundColor: palette.bg.raised, borderColor: palette.border.default }]}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Move ${active.title || 'session'} to project`}
+              accessibilityLabel={s.moveSessionTo(active.title || 'session')}
               onPress={() => { setMenuOpen(false); setConfirmDelete(false); setMovePickSession(active.id); setScreen('projects'); }}
               style={styles.menuItem}
             >
-              <Text style={[styles.menuItemText, { color: palette.text.primary }]}>📁 Move to project</Text>
+              <Text style={[styles.menuItemText, { color: palette.text.primary }]}>{s.moveToProject}</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Archive ${active.title || 'session'}`}
+              accessibilityLabel={s.archiveSessionOf(active.title || 'session')}
               onPress={() => { setMenuOpen(false); setConfirmDelete(false); void archiveSession(active.id); }}
               style={styles.menuItem}
             >
-              <Text style={[styles.menuItemText, { color: palette.text.primary }]}>📦 Archive session</Text>
+              <Text style={[styles.menuItemText, { color: palette.text.primary }]}>{s.archiveSession}</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={confirmDelete ? `Confirm delete ${active.title || 'session'}` : `Delete ${active.title || 'session'}`}
+              accessibilityLabel={confirmDelete ? s.confirmDeleteSessionOf(active.title || 'session') : s.deleteSessionOf(active.title || 'session')}
               onPress={() => {
                 if (confirmDelete) { setMenuOpen(false); void deleteSession(active.id); }
                 else setConfirmDelete(true);
@@ -406,17 +688,34 @@ function SocratesApp() {
               style={styles.menuItem}
             >
               <Text style={[styles.menuItemText, { color: palette.danger }]}>
-                {confirmDelete ? '🗑 Tap again to permanently delete (messages, files, artifacts)' : '🗑 Delete session'}
+                {confirmDelete ? s.confirmDeleteSession : s.deleteSession}
               </Text>
             </Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close session menu" onPress={() => { setMenuOpen(false); setConfirmDelete(false); }} style={styles.menuItem}>
-              <Text style={[styles.menuItemText, { color: palette.text.muted }]}>Cancel</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel={s.closeSessionMenu} onPress={() => { setMenuOpen(false); setConfirmDelete(false); }} style={styles.menuItem}>
+              <Text style={[styles.menuItemText, { color: palette.text.muted }]}>{s.cancel}</Text>
             </Pressable>
           </View>
         ) : null}
         {chatError ? <Text accessibilityRole="alert" style={{ color: palette.danger, padding: 12 }}>{chatError}</Text> : null}
-        <ChatMessageList messages={active?.messages || []} mode={theme} onCopyText={copyText} />
-        <Composer value={draft} streaming={status === 'sending' || status === 'streaming'} onChangeText={useChatStore.getState().setDraft} onSend={send} onStop={stop} mode={theme} />
+        <ChatMessageList messages={active?.messages || []} mode={theme} language={language} onCopyText={copyText} onSpeakText={speak} />
+        <Composer
+          value={draft}
+          streaming={status === 'sending' || status === 'streaming'}
+          onChangeText={useChatStore.getState().setDraft}
+          onSend={send}
+          onStop={stop}
+          mode={theme}
+          language={language}
+          attachments={staged.map((s) => ({ id: s.localId, name: s.name }))}
+          canCapturePhoto={supportsCamera}
+          voiceInputSupported={listenSupported()}
+          listening={listening}
+          onPickImages={() => void onPickImages()}
+          onTakePhoto={() => void onTakePhoto()}
+          onPickFile={() => void onPickFile()}
+          onRemoveAttachment={removeStaged}
+          onToggleListen={toggleListen}
+        />
       </View>
     </KeyboardAvoidingView>
   </SafeAreaView>;

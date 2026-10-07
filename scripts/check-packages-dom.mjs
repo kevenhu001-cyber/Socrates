@@ -11,8 +11,10 @@ import { join } from 'node:path';
 const ROOT = new URL('..', import.meta.url).pathname;
 const PACKAGES = ['core', 'contracts', 'api', 'chat', 'auth', 'settings', 'platform', 'theme', 'ui'];
 const BANNED = [
-  /\bdocument\s*\./,
-  /\bwindow\s*\./,
+  // Property access only (`.<ident>`) — prose like "a professional
+  // document. You use …" in content strings must not trip the gate.
+  /\bdocument\.[A-Za-z_$]/,
+  /\bwindow\.[A-Za-z_$]/,
   /\blocalStorage\b/,
   /\bsessionStorage\b/,
   /from\s+['"]react-dom['"]/,

@@ -36,6 +36,10 @@ test('universal chat refreshes, saves, isolates streams and restores server hist
     }
     if (url.pathname.endsWith('/chat/stream')) {
       if (!records.has(payload.sessionId) || payload.sessionId !== a) return json({ message: 'Invalid or unowned session ID' }, 400);
+      // Tone parity: the default scholar voice leads as the system message.
+      if (payload.messages?.[0]?.role !== 'system' || !String(payload.messages[0].content).includes('scholar')) {
+        return json({ message: 'Missing tone system prompt' }, 400);
+      }
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
       stream = res;
       res.write('data: {"choices":[{"delta":{"reasoning_content":"Reasoning only"}}]}\n\n');
@@ -87,6 +91,9 @@ test('universal chat refreshes, saves, isolates streams and restores server hist
     await page.getByRole('button', { name: 'Copy code' }).click();
     await expect(page.getByText('Copied', { exact: true })).toBeVisible();
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('const answer = 42;');
+    // Read-aloud renders per assistant message and never throws page-side.
+    await page.getByRole('button', { name: 'Listen to this message' }).first().click();
+    await expect(errors).toEqual([]);
     await page.screenshot({ path: `test-results/universal-chat-restored-${encodeURIComponent(testInfo.project.name)}.png`, fullPage: false });
     await page.getByRole('button', { name: 'Open projects' }).click();
     await page.getByRole('button', { name: 'Delete Owned project' }).click();

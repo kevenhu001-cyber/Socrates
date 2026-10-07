@@ -3,6 +3,7 @@ import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-na
 import type { Project } from '@socrates/contracts';
 import type { ThemeMode } from '@socrates/theme';
 import { getThemePaletteHex } from '@socrates/theme';
+import { useAppStrings } from './strings';
 
 // Projects/Library screen — migration module 5 (Chat/Composer → Sidebar/Nav
 // → Auth → Settings → Library/Projects → …). Pure RN UI; data comes from
@@ -37,6 +38,7 @@ export function ProjectsScreen({
   onRetry(): void;
 }) {
   const p = getThemePaletteHex(mode);
+  const s = useAppStrings();
   const [operationError, setOperationError] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [creating, setCreating] = useState(false);
@@ -54,7 +56,7 @@ export function ProjectsScreen({
       await onCreateProject(draft.trim());
       setDraft('');
     } catch (error) {
-      setOperationError(error instanceof Error ? error.message : 'Operation failed');
+      setOperationError(error instanceof Error ? error.message : s.operationFailed);
     } finally {
       setCreating(false);
     }
@@ -69,7 +71,7 @@ export function ProjectsScreen({
       await onRenameProject(id, name);
       setEditingId(null);
     } catch (error) {
-      setOperationError(error instanceof Error ? error.message : 'Operation failed');
+      setOperationError(error instanceof Error ? error.message : s.operationFailed);
     } finally {
       setBusyId(null);
     }
@@ -83,7 +85,7 @@ export function ProjectsScreen({
       await onDeleteProject(id);
       if (confirmDeleteId === id) setConfirmDeleteId(null);
     } catch (error) {
-      setOperationError(error instanceof Error ? error.message : 'Operation failed');
+      setOperationError(error instanceof Error ? error.message : s.operationFailed);
     } finally {
       setBusyId(null);
     }
@@ -94,12 +96,12 @@ export function ProjectsScreen({
     onClose();
   };
 
-  const headerTitle = pickMode ? `Move “${pickMode.sessionTitle}” to…` : 'Projects';
+  const headerTitle = pickMode ? s.moveSessionTitle(pickMode.sessionTitle) : s.projectsTitle;
 
   return (
     <View style={[styles.wrap, { backgroundColor: p.bg.page }]}>
       <View style={[styles.header, { borderBottomColor: p.border.default }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back to chat" onPress={onClose} style={styles.back}>
+        <Pressable accessibilityRole="button" accessibilityLabel={s.backToChat} onPress={onClose} style={styles.back}>
           <Text style={[styles.backText, { color: p.text.primary }]}>‹</Text>
         </Pressable>
         <Text numberOfLines={1} style={[styles.title, { color: p.text.primary }]}>{headerTitle}</Text>
@@ -110,30 +112,30 @@ export function ProjectsScreen({
         {operationError ? <Text accessibilityRole="alert" style={[styles.status, { color: p.danger }]}>{operationError}</Text> : null}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={pickMode ? 'Remove from project' : 'All chats'}
+          accessibilityLabel={pickMode ? s.unfiled : s.allChats}
           accessibilityState={{ selected: !pickMode && activeProjectId === null }}
           onPress={() => pick(null)}
           style={[styles.row, { borderColor: p.border.default }, !pickMode && activeProjectId === null && { backgroundColor: p.bg.hover }]}
         >
-          <Text style={[styles.rowTitle, { color: p.text.primary }]}>{pickMode ? 'No project (unfiled)' : 'All chats'}</Text>
-          <Text style={[styles.rowSub, { color: p.text.muted }]}>{pickMode ? 'Remove the session from its project' : 'No project filter'}</Text>
+          <Text style={[styles.rowTitle, { color: p.text.primary }]}>{pickMode ? s.unfiled : s.allChats}</Text>
+          <Text style={[styles.rowSub, { color: p.text.muted }]}>{pickMode ? s.unfiledHint : s.noProjectFilter}</Text>
         </Pressable>
 
         {loading && !projects.length ? (
-          <Text style={[styles.status, { color: p.text.muted }]}>Loading projects…</Text>
+          <Text style={[styles.status, { color: p.text.muted }]}>{s.loadingProjects}</Text>
         ) : null}
         {error ? (
           <View style={styles.errorBox}>
             <Text style={[styles.status, { color: p.danger }]}>{error}</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel="Retry loading projects" onPress={() => onRetry()} style={[styles.chip, { borderColor: p.border.default }]}>
-              <Text style={[styles.chipText, { color: p.text.primary }]}>Retry</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel={s.retryLoadingProjects} onPress={() => onRetry()} style={[styles.chip, { borderColor: p.border.default }]}>
+              <Text style={[styles.chipText, { color: p.text.primary }]}>{s.retry}</Text>
             </Pressable>
           </View>
         ) : null}
 
         {!loading && !error && !projects.length ? (
           <Text style={[styles.status, { color: p.text.muted }]}>
-            No projects yet. Create a project to organize your sessions.
+            {s.noProjectsYet}
           </Text>
         ) : null}
 
@@ -149,7 +151,7 @@ export function ProjectsScreen({
               >
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={pickMode ? `Move to ${item.name}` : `Project ${item.name}`}
+                  accessibilityLabel={pickMode ? s.moveTo(item.name) : s.projectLabel(item.name)}
                   accessibilityState={{ selected: !pickMode && item.id === activeProjectId }}
                   onPress={() => { if (!isEditing) pick(item.id); }}
                 >
@@ -157,7 +159,7 @@ export function ProjectsScreen({
                     <View style={[styles.dot, { backgroundColor: item.color || p.text.muted }]} />
                     {isEditing ? (
                       <TextInput
-                        accessibilityLabel={`Rename ${item.name}`}
+                        accessibilityLabel={s.renameInput(item.name)}
                         value={editName}
                         onChangeText={setEditName}
                         placeholderTextColor={p.text.muted}
@@ -174,30 +176,30 @@ export function ProjectsScreen({
                   <View style={styles.rowActions}>
                     {isEditing ? (
                       <>
-                        <Pressable accessibilityRole="button" accessibilityLabel={`Save name for ${item.name}`} disabled={busy} onPress={() => void commitRename(item.id)} style={styles.miniBtn}>
+                        <Pressable accessibilityRole="button" accessibilityLabel={s.saveNameOf(item.name)} disabled={busy} onPress={() => void commitRename(item.id)} style={styles.miniBtn}>
                           <Text style={[styles.miniBtnText, { color: p.text.primary }]}>✓</Text>
                         </Pressable>
-                        <Pressable accessibilityRole="button" accessibilityLabel="Cancel rename" onPress={() => setEditingId(null)} style={styles.miniBtn}>
+                        <Pressable accessibilityRole="button" accessibilityLabel={s.cancelRename} onPress={() => setEditingId(null)} style={styles.miniBtn}>
                           <Text style={[styles.miniBtnText, { color: p.text.muted }]}>✕</Text>
                         </Pressable>
                       </>
                     ) : (
-                      <Pressable accessibilityRole="button" accessibilityLabel={`Rename ${item.name}`} onPress={() => { setEditName(item.name); setEditingId(item.id); setConfirmDeleteId(null); }} style={styles.miniBtn}>
+                      <Pressable accessibilityRole="button" accessibilityLabel={s.renameOf(item.name)} onPress={() => { setEditName(item.name); setEditingId(item.id); setConfirmDeleteId(null); }} style={styles.miniBtn}>
                         <Text style={[styles.miniBtnText, { color: p.text.muted }]}>✎</Text>
                       </Pressable>
                     )}
                     {confirmDeleteId === item.id ? (
                       <>
-                        <Text style={[styles.rowSub, { color: p.danger }]}>Permanently delete this project and its conversations, files and artifacts?</Text>
-                        <Pressable accessibilityRole="button" accessibilityLabel={`Confirm delete ${item.name}`} disabled={busy} onPress={() => void commitDelete(item.id)} style={styles.miniBtn}>
+                        <Text style={[styles.rowSub, { color: p.danger }]}>{s.deleteProjectWarning}</Text>
+                        <Pressable accessibilityRole="button" accessibilityLabel={s.confirmDeleteOf(item.name)} disabled={busy} onPress={() => void commitDelete(item.id)} style={styles.miniBtn}>
                           <Text style={[styles.miniBtnText, { color: p.danger }]}>{busy ? '…' : 'Delete?'}</Text>
                         </Pressable>
-                        <Pressable accessibilityRole="button" accessibilityLabel="Cancel delete" onPress={() => setConfirmDeleteId(null)} style={styles.miniBtn}>
+                        <Pressable accessibilityRole="button" accessibilityLabel={s.cancelDelete} onPress={() => setConfirmDeleteId(null)} style={styles.miniBtn}>
                           <Text style={[styles.miniBtnText, { color: p.text.muted }]}>✕</Text>
                         </Pressable>
                       </>
                     ) : (
-                      <Pressable accessibilityRole="button" accessibilityLabel={`Delete ${item.name}`} onPress={() => { setConfirmDeleteId(item.id); setEditingId(null); }} style={styles.miniBtn}>
+                      <Pressable accessibilityRole="button" accessibilityLabel={s.deleteOf(item.name)} onPress={() => { setConfirmDeleteId(item.id); setEditingId(null); }} style={styles.miniBtn}>
                         <Text style={[styles.miniBtnText, { color: p.text.muted }]}>🗑</Text>
                       </Pressable>
                     )}
@@ -211,17 +213,17 @@ export function ProjectsScreen({
         {!pickMode ? (
           <View style={[styles.createBox, { borderColor: p.border.default }]}>
             <TextInput
-              accessibilityLabel="New project name"
+              accessibilityLabel={s.newProjectName}
               value={draft}
               onChangeText={setDraft}
-              placeholder="New project name"
+              placeholder={s.newProjectName}
               placeholderTextColor={p.text.muted}
               style={[styles.input, { borderColor: p.border.default, color: p.text.primary }]}
               onSubmitEditing={() => void create()}
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Create project"
+              accessibilityLabel={s.createProject}
               disabled={!canCreate}
               onPress={() => void create()}
               style={[styles.createBtn, { backgroundColor: p.text.primary, opacity: canCreate ? 1 : 0.4 }]}

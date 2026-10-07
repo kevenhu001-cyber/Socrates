@@ -48,6 +48,18 @@ test('universal app manages projects and sessions end to end', async ({ page }) 
       { kind: 'message', id: 7, sessionId: 's1', snippet: 'Lets solve <mark>x+2=5</mark> today', updatedAt: null, rank: 1 },
     ] }),
   }));
+  // Settings also loads providers for the Models & keys entry subtitle.
+  await page.route('**/api/v2/api-key', (route) => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({ providers: [] }),
+  }));
+  await page.route('**/api/v2/account/usage', (route) => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({
+      user: { id: 'u1', email: 't@e.c', displayName: 'T', tier: 'diophantus' },
+      plan: { name: 'Diophantus' },
+      usage: { sessionCount: 2, providerCount: 1, graphNodes: 5, beagleUsed: 1200, beagleLimit: 1000000 },
+    }),
+  }));
   await page.route('**/api/v2/sessions/s1', (route) => {
     if (route.request().method() === 'DELETE') return route.fulfill({ status: 204, body: '' });
     return route.fulfill({
@@ -173,6 +185,30 @@ test('universal app manages projects and sessions end to end', async ({ page }) 
   await settle();
   await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible();
 
+  // Settings: tone presets, profile and server usage snapshot. Picking a
+  // tone persists it to storage across a reload.
+  await page.getByRole('button', { name: 'Open settings' }).click();
+  await expect(page.getByText('Assistant tone')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Friendly tone' })).toBeVisible();
+  await expect(page.getByText('t@e.c')).toBeVisible();
+  await expect(page.getByText('1,200 / 1,000,000')).toBeVisible();
+  await page.getByRole('button', { name: 'Friendly tone' }).click();
+  expect(await page.evaluate(() => localStorage.getItem('socrates.settings'))).toMatch(/"tone":"friendly"/);
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible({ timeout: 20000 });
+  await page.getByRole('button', { name: 'Open settings' }).click();
+  expect(await page.evaluate(() => localStorage.getItem('socrates.settings'))).toMatch(/"tone":"friendly"/);
+  await page.getByRole('button', { name: 'Back to chat' }).click();
+  await settle();
+
+  // Composer attachment entry points render; the native-only camera stays
+  // hidden on web (no OS dialog is opened). Desktop Chromium ships
+  // SpeechRecognition, so voice input renders there too.
+  await expect(page.getByRole('button', { name: 'Attach photos' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Attach a file' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Take a photo' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Start voice input' })).toBeVisible();
+
   // Delete HW 1 from the session menu (two-tap confirm purges everywhere).
   await selectRow('HW 1');
   await settle();
@@ -187,6 +223,17 @@ test('universal app manages projects and sessions end to end', async ({ page }) 
   await page.getByRole('button', { name: 'Delete Physics' }).click();
   await page.getByRole('button', { name: 'Confirm delete Physics' }).click();
   await expect(page.getByRole('button', { name: 'Project Physics' })).toHaveCount(0);
+
+  // Language switch re-labels the app without a reload, then back.
+  await page.getByRole('button', { name: 'Back to chat' }).click();
+  await settle();
+  await page.getByRole('button', { name: 'Open settings' }).click();
+  await page.getByRole('button', { name: 'zh language' }).click();
+  await expect(page.getByText('助手语气')).toBeVisible();
+  await expect(page.getByRole('button', { name: '退出登录' })).toBeVisible();
+  await page.getByRole('button', { name: '英文' }).click();
+  await expect(page.getByText('Assistant tone')).toBeVisible();
+  await expect(await page.evaluate(() => localStorage.getItem('socrates.settings'))).toMatch(/"language":"en"/);
 
   expect(pageErrors, pageErrors.join('\n')).toEqual([]);
   expect(consoleErrors, consoleErrors.join('\n')).toEqual([]);

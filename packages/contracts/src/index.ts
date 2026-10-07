@@ -199,6 +199,46 @@ export interface SearchHit {
   rank?: number | null;
 }
 
+/** GET /api/account/usage: profile + plan + counters for the Settings screen. */
+export interface AccountUsage {
+  user: User;
+  plan?: { name?: string | null; [key: string]: JsonValue | undefined } | null;
+  usage: {
+    sessionCount: number;
+    providerCount: number;
+    graphNodes: number;
+    beagleUsed: number;
+    beagleLimit: number;
+  };
+}
+
+/** POST /api/files/extract: server-side document text extraction. */
+export interface FileExtractResult {
+  ok: boolean;
+  text: string;
+  truncated: boolean;
+  meta?: Record<string, JsonValue>;
+  name?: string;
+  kind?: string;
+  error?: string;
+  errorCode?: string;
+}
+
+/** GET /api/api-key row: a model provider. Secrets never leave the server
+ * (`hasKey` boolean + `keyHint` only); activating one deactivates the rest. */
+export interface ProviderKey {
+  id: string;
+  label: string;
+  url: string;
+  model: string;
+  keyHint?: string | null;
+  isActive?: boolean;
+  isBuiltIn?: boolean;
+  isMultimodal?: boolean;
+  hasKey?: boolean;
+  createdAt?: string | null;
+}
+
 export type ScheduledFrequency = 'once' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'custom';
 export type ScheduledStatus = 'pending' | 'active' | 'paused' | 'completed' | 'failed';
 

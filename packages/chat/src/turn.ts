@@ -6,13 +6,14 @@ export async function runChatTurn(input: {
   sessionId: string;
   turnId: string;
   text: string;
+  attachments?: Message['attachments'];
   signal: AbortSignal;
   isCurrent(): boolean;
   save(session: Session): Promise<Session>;
   stream(args: { sessionId: string; messages: Message[]; handlers: ChatSseHandlers; signal: AbortSignal }): Promise<void>;
 }) {
   const store = useChatStore;
-  if (!store.getState().beginTurn(input.sessionId, input.turnId, input.text)) return;
+  if (!store.getState().beginTurn(input.sessionId, input.turnId, input.text, input.attachments)) return;
   const current = () => input.isCurrent() && store.getState().turnId === input.turnId;
   const session = () => store.getState().sessions.find((s) => s.id === store.getState().turnSessionId);
   let ready = false;

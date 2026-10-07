@@ -3,6 +3,7 @@ import { MessageContent, type MessageActions } from './MessageContent';
 import type { Message, Session } from '@socrates/contracts';
 import { getThemePaletteHex } from '@socrates/theme';
 import type { ThemeMode } from '@socrates/theme';
+import { uiStrings, type UiLanguage } from './strings';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -27,6 +28,7 @@ export function Sidebar({
   onSelect,
   onNewChat,
   mode = 'light',
+  language = 'en',
   archived = [],
   onSelectArchived,
 }: {
@@ -35,6 +37,7 @@ export function Sidebar({
   onSelect(id: string): void;
   onNewChat(): void;
   mode?: UiMode;
+  language?: UiLanguage;
   /** Server-fetched archived rows; rendered in a collapsed section so the
    * main list stays a pure visible-session navigator. */
   archived?: Session[];
@@ -42,39 +45,41 @@ export function Sidebar({
   onSelectArchived?(id: string): void;
 }) {
   const p = paletteFor(mode);
+  const t = uiStrings(language);
   const [archivedOpen, setArchivedOpen] = useState(false);
   const openArchived = onSelectArchived || onSelect;
+  const titleOf = (item: Session) => item.title || item.topic || t.untitled;
   return (
     <View style={[styles.sidebar, { backgroundColor: p.bg.raised, borderRightColor: p.border.default }]}>
-      <Text style={[styles.brand, { color: p.text.primary }]}>Socrates</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel="New chat" onPress={onNewChat} style={[styles.newChat, { borderColor: p.border.default }]}>
-        <Text style={[styles.newChatText, { color: p.text.primary }]}>New chat</Text>
+      <Text style={[styles.brand, { color: p.text.primary }]}>{t.brand}</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel={t.newChat} onPress={onNewChat} style={[styles.newChat, { borderColor: p.border.default }]}>
+        <Text style={[styles.newChatText, { color: p.text.primary }]}>{t.newChat}</Text>
       </Pressable>
-      <Text style={[styles.section, { color: p.text.muted }]}>Conversations</Text>
+      <Text style={[styles.section, { color: p.text.muted }]}>{t.conversations}</Text>
       <FlatList
         data={sessions}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={item.title || item.topic || 'Untitled'}
+            accessibilityLabel={titleOf(item)}
             onPress={() => onSelect(item.id)}
             style={[styles.session, item.id === activeId && { backgroundColor: p.bg.hover }]}
           >
             <Text numberOfLines={1} style={[styles.sessionTitle, { color: p.text.primary }]}>
-              {item.title || item.topic || 'Untitled'}
+              {titleOf(item)}
             </Text>
           </Pressable>
         )}
       />
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={archivedOpen ? 'Hide archived conversations' : `Show archived conversations (${archived.length})`}
+        accessibilityLabel={archivedOpen ? t.hideArchived : t.showArchived(archived.length)}
         accessibilityState={{ expanded: archivedOpen }}
         onPress={() => setArchivedOpen((open) => !open)}
         style={styles.archivedToggle}
       >
-        <Text style={[styles.section, { color: p.text.muted }]}>{archivedOpen ? '▾' : '▸'} Archived ({archived.length})</Text>
+        <Text style={[styles.section, { color: p.text.muted }]}>{archivedOpen ? '▾' : '▸'} {archivedOpen ? t.hideArchived : t.showArchived(archived.length)}</Text>
       </Pressable>
       {archivedOpen ? (
         archived.length ? (
@@ -84,46 +89,50 @@ export function Sidebar({
             renderItem={({ item }) => (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Restore ${item.title || item.topic || 'Untitled'}`}
+                accessibilityLabel={t.restoreSession(titleOf(item))}
                 onPress={() => openArchived(item.id)}
                 style={styles.session}
               >
                 <Text numberOfLines={1} style={[styles.sessionTitle, { color: p.text.muted }]}>
-                  {item.title || item.topic || 'Untitled'}
+                  {titleOf(item)}
                 </Text>
               </Pressable>
             )}
           />
         ) : (
-          <Text style={[styles.archivedEmpty, { color: p.text.muted }]}>No archived conversations.</Text>
+          <Text style={[styles.archivedEmpty, { color: p.text.muted }]}>{t.noArchived}</Text>
         )
       ) : null}
     </View>
   );
 }
 
-const MessageRow = memo(function MessageRow({ message, mode = 'light', onCopyText }: { message: Message; mode?: UiMode } & MessageActions) {
+const MessageRow = memo(function MessageRow({ message, mode = 'light', language = 'en', onCopyText, onSpeakText }: { message: Message; mode?: UiMode; language?: UiLanguage } & MessageActions) {
   const p = paletteFor(mode);
   return <Animated.View layout={LinearTransition} style={[styles.message, message.role === 'user' && { ...styles.userMessage, backgroundColor: p.bg.hover }]}>
-    <MessageContent message={message} mode={mode} onCopyText={onCopyText} />
+    <MessageContent message={message} mode={mode} language={language} onCopyText={onCopyText} onSpeakText={onSpeakText} />
   </Animated.View>;
 });
 
 export function ChatMessageList({
   messages,
   mode = 'light',
-  emptyText = 'How can I help you learn today?',
+  language = 'en',
+  emptyText,
   onCopyText,
+  onSpeakText,
 }: {
   messages: Message[];
   mode?: UiMode;
+  language?: UiLanguage;
   emptyText?: string;
 } & MessageActions) {
   const p = paletteFor(mode);
+  const t = uiStrings(language);
   if (!messages.length) {
     return (
       <View style={styles.empty}>
-        <Text style={[styles.emptyText, { color: p.text.muted }]}>{emptyText}</Text>
+        <Text style={[styles.emptyText, { color: p.text.muted }]}>{emptyText ?? t.emptyChat}</Text>
       </View>
     );
   }
@@ -132,7 +141,7 @@ export function ChatMessageList({
       contentContainerStyle={styles.messages}
       data={messages}
       keyExtractor={(item, index) => item.id || item.clientId || String(index)}
-      renderItem={({ item }) => <MessageRow message={item} mode={mode} onCopyText={onCopyText} />}
+      renderItem={({ item }) => <MessageRow message={item} mode={mode} language={language} onCopyText={onCopyText} onSpeakText={onSpeakText} />}
     />
   );
 }
@@ -144,6 +153,16 @@ export function Composer({
   onSend,
   onStop,
   mode = 'light',
+  language = 'en',
+  attachments = [],
+  canCapturePhoto = false,
+  voiceInputSupported = false,
+  listening = false,
+  onPickImages,
+  onTakePhoto,
+  onPickFile,
+  onRemoveAttachment,
+  onToggleListen,
 }: {
   value: string;
   streaming?: boolean;
@@ -151,25 +170,76 @@ export function Composer({
   onSend(): void;
   onStop(): void;
   mode?: UiMode;
+  language?: UiLanguage;
+  /** Staged files (chips with remove); picking stays in the host app. */
+  attachments?: Array<{ id: string; name: string }>;
+  canCapturePhoto?: boolean;
+  voiceInputSupported?: boolean;
+  listening?: boolean;
+  onPickImages?(): void;
+  onTakePhoto?(): void;
+  onPickFile?(): void;
+  onRemoveAttachment?(id: string): void;
+  onToggleListen?(): void;
 }) {
   const p = paletteFor(mode);
-  const enabled = value.trim().length > 0;
+  const t = uiStrings(language);
+  const enabled = value.trim().length > 0 || attachments.length > 0;
+  const attachButtons = (
+    <>
+      {onPickImages ? (
+        <Pressable accessibilityRole="button" accessibilityLabel={t.attachPhotos} onPress={onPickImages} style={styles.attachBtn}>
+          <Text style={{ color: p.text.secondary }}>🖼</Text>
+        </Pressable>
+      ) : null}
+      {onPickFile ? (
+        <Pressable accessibilityRole="button" accessibilityLabel={t.attachFile} onPress={onPickFile} style={styles.attachBtn}>
+          <Text style={{ color: p.text.secondary }}>📄</Text>
+        </Pressable>
+      ) : null}
+      {canCapturePhoto && onTakePhoto ? (
+        <Pressable accessibilityRole="button" accessibilityLabel={t.takePhoto} onPress={onTakePhoto} style={styles.attachBtn}>
+          <Text style={{ color: p.text.secondary }}>📷</Text>
+        </Pressable>
+      ) : null}
+      {voiceInputSupported && onToggleListen ? (
+        <Pressable accessibilityRole="button" accessibilityLabel={listening ? t.stopVoiceInput : t.startVoiceInput} accessibilityState={{ expanded: listening }} onPress={onToggleListen} style={styles.attachBtn}>
+          <Text style={{ color: listening ? p.danger : p.text.secondary }}>🎤</Text>
+        </Pressable>
+      ) : null}
+    </>
+  );
   return (
     <View style={[styles.composerWrap, { backgroundColor: p.bg.page }]}>
+      {attachments.length > 0 ? (
+        <View style={[styles.attachBar, { backgroundColor: p.bg.page }]}>
+          {attachments.map((attachment) => (
+            <View key={attachment.id} style={[styles.chip, { borderColor: p.border.default }]}>
+              <Text numberOfLines={1} style={[styles.chipText, { color: p.text.secondary }]}>📎 {attachment.name}</Text>
+              {onRemoveAttachment ? (
+                <Pressable accessibilityRole="button" accessibilityLabel={t.removeAttachment(attachment.name)} onPress={() => onRemoveAttachment(attachment.id)} style={styles.chipX}>
+                  <Text style={[styles.chipText, { color: p.text.muted }]}>✕</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ))}
+        </View>
+      ) : null}
       <View style={[styles.composer, { borderColor: p.border.default, backgroundColor: p.bg.page }]}>
+        {attachButtons}
         <TextInput
-          accessibilityLabel="Message Socrates"
+          accessibilityLabel={t.messagePlaceholder}
           multiline
           value={value}
           onChangeText={onChangeText}
-          placeholder="Message Socrates"
+          placeholder={t.messagePlaceholder}
           placeholderTextColor={p.text.muted}
           style={[styles.input, { color: p.text.primary }]}
           onSubmitEditing={() => enabled && !streaming && onSend()}
         />
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={streaming ? 'Stop generating' : 'Send message'}
+          accessibilityLabel={streaming ? t.stopGenerating : t.sendMessage}
           disabled={!streaming && !enabled}
           onPress={streaming ? onStop : onSend}
           style={[styles.send, { backgroundColor: p.text.primary }, !streaming && !enabled && styles.sendDisabled]}
@@ -202,6 +272,11 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 16, textAlign: 'center' },
   composerWrap: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 16 },
   composer: { maxWidth: 768, width: '100%', alignSelf: 'center', flexDirection: 'row', alignItems: 'flex-end', borderWidth: 1, borderRadius: 24, padding: 8, paddingLeft: 16 },
+  attachBar: { maxWidth: 768, width: '100%', alignSelf: 'center', paddingHorizontal: 16, paddingTop: 8, gap: 8 },
+  attachBtn: { width: 34, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 10 },
+  chip: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, gap: 8 },
+  chipText: { fontSize: 13, fontWeight: '600', flexShrink: 1 },
+  chipX: { paddingHorizontal: 6, paddingVertical: 2 },
   input: { flex: 1, minHeight: 36, maxHeight: 180, fontSize: 16, paddingVertical: 8 },
   send: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   sendDisabled: { opacity: 0.25 },
