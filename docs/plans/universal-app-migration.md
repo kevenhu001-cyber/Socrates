@@ -480,3 +480,59 @@ mobile/            # 冻结，仅安全/crash/data-loss 修复
   全量均过——该 spec 本轮未动，判负载 flake（后续若再现再修）。
 - 下轮（round 16-3）：会话内模型切换（`modelPicker` 进 chat header）；
   Tutor/诊断流。发布前门仍单独一轮。
+
+## 21. 进展（第十四轮，2026-10-07，round 16-3：模型快切 + Tutor/诊断）
+
+> A 切片对齐 `modelPicker.js`（header 版选择器）与
+> `providerConfig.service.ts setActiveProvider`（PATCH 成功才镜像、失败回滚）。
+> B 切片移植 tutor 冷启动链：`tutor/*`、`chat/teachingPlan.js`、
+> `chat/diagnosticGenerator.js`、`chat/diagnosticParser.js`、
+> `chat/diagnosticResults.js`、`chat/mockDiagnostic.js aiGenerate`、
+> `chat/socraticDirectives.js` + `sendPipeline` 的实质答案推进。
+
+- 模型快切：
+  - `packages/ui/src/modelPicker.ts`（DOM-free）：built-in 优先排序、active
+  解析、label/model/url 过滤、行标签规则（model 不同于 name 才做副标题，
+  否则 custom 行给 url）——与 `bindModelPicker` 的 item 语义逐条对齐。
+  - `ModelPicker.tsx`：transcript 上底部 sheet（backdrop 关闭、≥4 行显示筛选框、
+  Manage 入口、选中 ✓）。
+  - App：header 模型 chip（`🤖 <active> ▾`，guest 隐藏）；`pickModel` 复用
+  `activateProvider`（PATCH 成功才镜像，失败保留原 active 并显错）；
+  Providers 返回源 `providersReturn`（settings 入口回 settings、chat 菜单回 chat）；
+  BackHandler 优先消费 model 菜单。
+  - strings：ui +7（`modelTitle/chooseModel/filterModels/useModel/manageModels/
+  closeModelPicker/noModels/noModelMatches`）、app +2。
+- Tutor 冷启动：
+  - `packages/ui/src/tutor.ts`（DOM-free）：阶段机（motivate→…→check，进 exercise
+  重置练习计数）、`isSubstantiveAnswer`（>40 字/词，quiz/practice origin 不计）、
+  `buildDiagPrompt`（5 aspect 1:1 固定 KB、`{questionNumber}/{questionCount}/
+  {aspect}` 模板、语言名、searchContext 显式参数）、`parseDiagResponse` +
+  `normalizeDiagQuestions` + `extractDiagQuestionsBalanced`（字符串感知平衡
+  括号兜底；store 写 `lastCallError` 改为模块级 `diagError()`）、
+  `buildColdStartNodes`/`cleanTopicDomain`（5 节点骨架）、
+  `buildTeachingPlanFromKB`/`syncCurrentNodeFromTeachingPlan`（blank 优先）、
+  `applyDiagnosticResults`（答案折 baseline，绝不当 mastery）、
+  `diagnosticPointsForNode`（诊断知识点回灌教学）、`buildTutorVoice`
+  （阶段 + 基础锚 + 本轮 scope；web-only 后缀链留基线）。
+  - `contracts`：`TutorData`（本地诊断 Q&A）+ `Session.tutorData`。提交后
+  kbNodes/teachingStage/teachingPlan 走全量 save（服务端已支持这些列）；
+  诊断 Q&A 与基线一样只留本地，save 路径剥除未知 key。
+  - `DiagView.tsx`：A/B/C 级别选项逐卡作答、计数、提交门禁（对齐 ExamView）。
+  - App：`tutor-setup` 屏（topic + 3/5 题、逐题进度 + 取消）、
+  `generateDiagQuestions`（每问一次 `/chat/stream`，首问失败即弃、后续跳过）、
+  tutor 会话（kind='tutor' + 冷启动 KB + 本地 tutorData）、提交折 KB/plan/stage
+  + 全量 save best-effort、`runtime.streamConversation` tutor 分支
+  （`mode:'tutor'`，system 换成 buildTutorVoice 而非 tone voice）、发送时按
+  `isSubstantiveAnswer` 推进阶段、侧栏 `onNewTutor`（guest 隐藏）+ 🎓 前缀、
+  窄屏进 setup 自动收侧栏。
+- 验证：`apps typecheck` 0、DOM-free 通过、`test:shared` 全绿
+  （新增 tutor 15 + modelPicker 4）；`frontend lint` 0 error；
+  `export:web` + `test:universal` **24/24**（12 spec × 双端，含新
+  `universal-model`、`universal-tutor`），连跑三次全量稳定。
+- flake 溯源（实证）：exam 类 spec 在满载下轮流挂一条（desktop→mobile→desktop），
+  隔离必过，快照停在 boot 中段（侧栏默认折叠）。根因：就绪断言用默认 10s，
+  满载 boot 超出预算；`app.spec`/`providers.spec` 本就带 `{timeout:20000}` 故
+  从不挂。按仓库既有写法把 10 个 spec 的就绪门统一改 20s，并补
+  exam-generation 缺失的就绪门。属测试预算问题，非产品缺陷。
+- 下一轮（round 16-4）：`assistantId` 人格绑定（session 级 + picker UI）；
+  Tutor 教学 UI 加深（阶段指示、quiz/practice 控件代理）。发布前门单独一轮。

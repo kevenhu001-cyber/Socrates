@@ -61,7 +61,7 @@ test('universal exam renders questions, saves answers and grades locally', async
       } catch { /* sandboxed frame */ }
     });
     await page.goto('/');
-    await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible({ timeout: 20000 });
     await openExam();
 
     // Questions render in place of the transcript/composer.

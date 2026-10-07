@@ -15,6 +15,18 @@ export { buildVisualizationDocument, isVisualizationSpec, paletteForDocument, vi
 export { fileKindLabel, formatFileSize, isImageMime, storedFileIdFromRawUrl, storedFileIdsInText } from './fileMeta';
 export { toolArtifacts, toolDurationLabel, toolInputPreview, toolLabel, toolState, type ToolArtifactRef } from './toolModel';
 export { ExamView } from './ExamView.tsx';
+export { DiagView } from './DiagView.tsx';
+export { ModelPicker } from './ModelPicker.tsx';
+export { activeProviderOf, filterProviders, providerRowLabel, sortProvidersBuiltInFirst, type ProviderRowLabel } from './modelPicker';
+export {
+  applyDiagnosticResults, BASELINE_LEVEL, buildColdStartNodes, buildDiagPrompt, buildTeachingPlanFromKB,
+  buildTutorVoice, cleanTopicDomain, DIAG_ASPECTS, diagError, diagnosticPointsForNode,
+  extractDiagQuestionsBalanced,
+  fromBasicsDirective, isSubstantiveAnswer, nextTeachingStage, normalizeDiagQuestions,
+  parseDiagResponse, stageInstruction, syncCurrentNodeFromTeachingPlan, TEACHING_STAGES,
+  tutorTurnDirective, type ColdStartNode, type DiagAnswerState, type DiagLevel, type DiagOption,
+  type DiagQuestion, type TeachingPlan, type TeachingStage, type TeachingSubtopic,
+} from './tutor';
 export { detectExamLanguage, examAnswersOf, examGenerationPrompt, examProgress, examPromptTypes, gradeExam, missingExamAnswers, parseExamQuestionResponse, parseExamQuestions, type ExamQuestion, type ExamQuestionType } from './examModel';
 export type { MessageActions } from './MessageContent.tsx';
 
@@ -39,6 +51,7 @@ export function Sidebar({
   onSelect,
   onNewChat,
   onNewExam,
+  onNewTutor,
   mode = 'light',
   language = 'en',
   archived = [],
@@ -50,6 +63,8 @@ export function Sidebar({
   onNewChat(): void;
   /** Opens the exam setup flow; hidden when omitted (guest). */
   onNewExam?(): void;
+  /** Opens the tutor setup flow; hidden when omitted (guest). */
+  onNewTutor?(): void;
   mode?: UiMode;
   language?: UiLanguage;
   /** Server-fetched archived rows; rendered in a collapsed section so the
@@ -72,6 +87,9 @@ export function Sidebar({
       {onNewExam ? <Pressable accessibilityRole="button" accessibilityLabel={t.newExam} onPress={onNewExam} style={[styles.newChat, { borderColor: p.border.default }]}>
         <Text style={[styles.newChatText, { color: p.text.primary }]}>🗒 {t.newExam}</Text>
       </Pressable> : null}
+      {onNewTutor ? <Pressable accessibilityRole="button" accessibilityLabel={t.newTutor} onPress={onNewTutor} style={[styles.newChat, { borderColor: p.border.default }]}>
+        <Text style={[styles.newChatText, { color: p.text.primary }]}>🎓 {t.newTutor}</Text>
+      </Pressable> : null}
       <Text style={[styles.section, { color: p.text.muted }]}>{t.conversations}</Text>
       <FlatList
         data={sessions}
@@ -84,7 +102,7 @@ export function Sidebar({
             style={[styles.session, item.id === activeId && { backgroundColor: p.bg.hover }]}
           >
             <Text numberOfLines={1} style={[styles.sessionTitle, { color: p.text.primary }]}>
-              {item.kind === 'exam' ? '🗒 ' : ''}{titleOf(item)}
+              {item.kind === 'exam' ? '🗒 ' : item.kind === 'tutor' ? '🎓 ' : ''}{titleOf(item)}
             </Text>
           </Pressable>
         )}

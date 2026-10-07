@@ -65,7 +65,7 @@ test('universal chat refreshes, saves, isolates streams and restores server hist
       } catch { /* sandboxed frame */ }
     });
     await page.goto('/');
-    await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible({ timeout: 20000 });
     async function row(name) {
       const target = page.getByRole('button', { name, exact: true });
       if (!await target.isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();

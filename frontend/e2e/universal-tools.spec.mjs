@@ -80,7 +80,7 @@ test('universal tool cards render search results, output and stored artifacts', 
       } catch { /* sandboxed frame */ }
     });
     await page.goto('/');
-    await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible({ timeout: 20000 });
     const target = page.getByRole('button', { name: 'Tool conversation', exact: true });
     if (!await target.isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
     await target.click();

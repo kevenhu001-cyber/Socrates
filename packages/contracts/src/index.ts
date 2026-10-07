@@ -172,6 +172,18 @@ export interface ExamData {
   results?: JsonValue;
 }
 
+/** Cold-start diagnostic Q&A for a tutor session. Local-only: the web
+ * baseline never persists diagQuestions/diagAnswers server-side either —
+ * after submit only kbNodes/teachingPlan/teachingStage travel (all
+ * server-supported). The session save path strips unknown keys. */
+export interface TutorData {
+  [key: string]: JsonValue | undefined;
+  questions?: JsonValue[];
+  /** question index -> chosen option index */
+  answers?: JsonObject;
+  submitted?: boolean;
+}
+
 export interface Session extends TutorState {
   id: string;
   title?: string | null;
@@ -181,6 +193,7 @@ export interface Session extends TutorState {
   phase?: 'topic' | 'diagnostic' | 'chat' | string;
   kind?: 'chat' | 'tutor' | 'exam' | string;
   examData?: ExamData | null;
+  tutorData?: TutorData | null;
   projectId?: string | null;
   assistantId?: string | null;
   pinned?: boolean;

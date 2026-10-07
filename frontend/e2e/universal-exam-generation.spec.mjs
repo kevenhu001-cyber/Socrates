@@ -57,6 +57,9 @@ test('universal exam generation creates and persists an exam session', async ({ 
       } catch { /* sandboxed frame */ }
     });
     await page.goto('/');
+    // Wait for the signed-in chat shell before touching the sidebar:
+    // under full-suite load the restore/sync can still be in flight.
+    await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible({ timeout: 20000 });
     const newExam = page.getByRole('button', { name: 'New exam' });
     if (!await newExam.isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
     await expect(newExam).toBeVisible();
@@ -78,7 +81,9 @@ test('universal exam generation creates and persists an exam session', async ({ 
     expect(saves[0].kind).toBe('exam');
     expect(saves[0].title).toBe('Cell biology');
     expect(saves[0].examData.questions.length).toBe(3);
-    await expect(page.getByRole('button', { name: 'Cell biology', exact: true })).toBeVisible();
+    const freshRow = page.getByRole('button', { name: 'Cell biology', exact: true });
+    if (!await freshRow.isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
+    await expect(freshRow).toBeVisible();
 
     // Reload restores the exam from the server row.
     await page.reload();

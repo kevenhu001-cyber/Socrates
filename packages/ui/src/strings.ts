@@ -70,6 +70,20 @@ function en() {
     examCorrectAnswer: 'Correct answer',
     examExplanation: 'Explanation',
     examSaved: 'Saved',
+    modelTitle: 'Model',
+    chooseModel: 'Choose model',
+    filterModels: 'Filter models…',
+    useModel: (name: string) => `Use ${name}`,
+    manageModels: 'Manage models & keys',
+    closeModelPicker: 'Close model picker',
+    noModels: 'No models yet.',
+    noModelMatches: 'No matches.',
+    diagTitle: 'Quick diagnostic',
+    diagAnsweredOf: (n: number, total: number) => `${n} / ${total} answered`,
+    diagOption: (question: string, letter: string) => `Answer ${letter} for ${question}`,
+    diagSubmit: 'Start learning',
+    diagMissing: 'Answer every question before continuing.',
+    newTutor: 'New tutor',
   };
 }
 
@@ -139,6 +153,20 @@ const zh: UiStrings = {
   examCorrectAnswer: '正确答案',
   examExplanation: '解释',
   examSaved: '已保存',
+  modelTitle: '模型',
+  chooseModel: '选择模型',
+  filterModels: '筛选模型…',
+  useModel: (name: string) => `使用 ${name}`,
+  manageModels: '管理模型与密钥',
+  closeModelPicker: '关闭模型选择器',
+  noModels: '暂无模型。',
+  noModelMatches: '无匹配。',
+  diagTitle: '快速诊断',
+  diagAnsweredOf: (n: number, total: number) => `已答 ${n} / ${total}`,
+  diagOption: (question: string, letter: string) => `第${letter}项：${question}`,
+  diagSubmit: '开始学习',
+  diagMissing: '请先完成所有题目再继续。',
+  newTutor: '新辅导',
 };
 
 export function uiStrings(language: UiLanguage = 'en'): UiStrings {

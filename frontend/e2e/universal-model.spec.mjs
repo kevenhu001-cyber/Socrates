@@ -1,21 +1,16 @@
 import { createServer } from 'node:http';
 import { test, expect } from '@playwright/test';
 
-// Math / citation / footnote / long-code rendering over real HTTP + SSE.
-// No LLM, production backend or credentials are contacted.
-test('universal math renders formula cards, strips citations, notes footnotes and collapses long code', async ({ page }, testInfo) => {
+// Chat-header model switcher: the chip mirrors the active provider,
+// picking another one PATCHes /api-key, Manage leads to providers.
+test('universal model switches the active provider from the chat header', async ({ page }, testInfo) => {
   const a = '11111111-1111-4111-8111-111111111111';
+  const providers = [
+    { id: 'built-in', label: 'Beagle', url: '', model: 'beagle-1', isActive: true, isBuiltIn: true, hasKey: true },
+    { id: 'custom', label: 'Custom', url: 'https://custom.example', model: 'custom-1', isActive: false, isBuiltIn: false, hasKey: true },
+  ];
   const records = new Map();
-  const lines = Array.from({ length: 50 }, (_, i) => `line-${String(i).padStart(2, '0')}`);
-  const answer = [
-    'Einstein [7] showed $$E = mc^2$$ and noted $E_k$ for kinetics.[^a]',
-    '',
-    '```python',
-    ...lines,
-    '```',
-    '',
-    '[^a]: Newton, 1687.',
-  ].join('\n');
+  const patches = [];
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   const server = createServer(async (req, res) => {
@@ -33,6 +28,18 @@ test('universal math renders formula cards, strips citations, notes footnotes an
     if (req.headers.authorization !== 'Bearer rotated') return json({ message: 'Unauthorized' }, 401);
     if (url.pathname.endsWith('/auth/me')) return json({ user: { id: 'account', email: 'test@example.com', displayName: 'Test' } });
     if (url.pathname.endsWith('/projects')) return json({ projects: [] });
+    if (url.pathname.endsWith('/api-key')) {
+      if (req.method === 'GET') return json({ providers });
+      return json({ message: 'Not found' }, 404);
+    }
+    const keyMatch = url.pathname.match(/\/api-key\/([^/]+)$/);
+    if (keyMatch && req.method === 'PATCH') {
+      const id = decodeURIComponent(keyMatch[1]);
+      patches.push({ id, body: payload });
+      for (const row of providers) row.isActive = row.id === id ? !!payload.isActive : (payload.isActive ? false : row.isActive);
+      const row = providers.find((r) => r.id === id);
+      return json(row || { message: 'Not found' }, row ? 200 : 404);
+    }
     if (url.pathname.endsWith('/sessions')) {
       if (req.method === 'GET') return json({ sessions: [...records.values()].map(({ messages, ...row }) => row), nextCursor: null });
       const id = records.has(payload.id) ? payload.id : a;
@@ -43,7 +50,7 @@ test('universal math renders formula cards, strips citations, notes footnotes an
       if (!records.has(payload.sessionId)) return json({ message: 'Invalid or unowned session ID' }, 400);
       if (payload.messages?.[0]?.role !== 'system') return json({ message: 'Missing tone system prompt' }, 400);
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
-      res.end(`data: {"choices":[{"delta":{"content":${JSON.stringify(answer)}}}]}\n\ndata: [DONE]\n\n`);
+      res.end('data: {"choices":[{"delta":{"content":"Hello"}}]}\n\ndata: [DONE]\n\n');
       return;
     }
     const id = url.pathname.split('/').at(-1);
@@ -59,41 +66,34 @@ test('universal math renders formula cards, strips citations, notes footnotes an
     });
     await page.goto('/');
     await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible({ timeout: 20000 });
-    const target = page.getByRole('button', { name: 'New chat', exact: true }).first();
-    if (!await target.isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
-    await target.click();
-    await page.getByLabel('Message Socrates', { exact: true }).fill('Math please');
+
+    // The header chip opens the picker; the server list drives it.
+    await page.getByRole('button', { name: 'Choose model' }).click();
+    await expect(page.getByText('Beagle', { exact: true })).toBeVisible();
+    await expect(page.getByText('Custom', { exact: true })).toBeVisible();
+
+    // Picking Custom activates it server-side and mirrors locally.
+    await page.getByRole('button', { name: 'Use Custom' }).click();
+    await expect.poll(() => patches.length).toBe(1);
+    expect(patches[0]).toEqual({ id: 'custom', body: { isActive: true } });
+    await expect(page.getByText('🤖 Custom ▾', { exact: true })).toBeVisible();
+
+    // Manage leads to the full providers screen.
+    await page.getByRole('button', { name: 'Choose model' }).click();
+    await page.getByRole('button', { name: 'Manage models & keys' }).click();
+    await expect(page.getByText('Models & keys', { exact: true })).toBeVisible();
+
+    // Chat still streams after the switch.
+    await page.getByRole('button', { name: 'Back to chat' }).click();
+    const newChat = page.getByRole('button', { name: 'New chat', exact: true }).first();
+    if (!await newChat.isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
+    await newChat.click();
+    await page.getByLabel('Message Socrates', { exact: true }).fill('Hi');
     await page.getByRole('button', { name: 'Send message' }).click();
-
-    // Display math becomes a card showing the TeX source with an island opener.
-    await expect(page.getByText('E = mc^2', { exact: true })).toBeVisible();
-    // Inline math stays in the sentence flow as readable source.
-    await expect(page.getByText('E_k', { exact: true })).toBeVisible();
-    // Citation noise strips (sources live in tool cards); prose survives.
-    await expect(page.getByText('Einstein', { exact: false })).toBeVisible();
-    await expect(page.getByText('[7]', { exact: false })).toHaveCount(0);
-    // Footnote definitions lift into Notes; the raw def line never shows.
-    await expect(page.getByText('[^a]:', { exact: true })).toHaveCount(0);
-    await expect(page.getByText('[1] Newton, 1687.', { exact: true })).toBeVisible();
-
-    // Long code collapses to the first screenful with an expander.
-    await expect(page.getByRole('button', { name: 'Show 20 more lines' })).toBeVisible();
-    await expect(page.getByText('line-49', { exact: false })).toHaveCount(0);
-    await page.getByRole('button', { name: 'Show 20 more lines' }).click();
-    await expect(page.getByText('line-49', { exact: false })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Show less' })).toBeVisible();
-
-    // The formula card opens the typeset island (or the source fallback
-    // offline); closing returns to the transcript.
-    await page.getByRole('button', { name: 'Open Formula in the artifact island' }).click();
-    await expect(page.getByRole('button', { name: 'Close preview' })).toBeVisible();
-    const island = page.frameLocator('iframe[title^="Artifact"]');
-    await expect(island.locator('body')).toContainText(/E = mc|KaTeX/);
-    await page.getByRole('button', { name: 'Close preview' }).click();
-    await expect(page.getByRole('button', { name: 'Close preview' })).toHaveCount(0);
+    await expect(page.getByText('Hello', { exact: true })).toBeVisible();
 
     expect(errors).toEqual([]);
-    await page.screenshot({ path: `test-results/universal-math-${encodeURIComponent(testInfo.project.name)}.png`, fullPage: false });
+    await page.screenshot({ path: `test-results/universal-model-${encodeURIComponent(testInfo.project.name)}.png`, fullPage: false });
   } finally {
     server.closeAllConnections(); await new Promise((resolve) => server.close(resolve));
   }

@@ -2,13 +2,13 @@ import 'react-native-reanimated';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import type { AccountUsage, ExamData, Message, Project, ProviderKey, Session } from '@socrates/contracts';
+import type { AccountUsage, ExamData, Message, Project, ProviderKey, Session, TutorData } from '@socrates/contracts';
 import { buildBranchSession, createMessageOutbox, findRegenerateTarget, isLocalSessionId, runChatTurn, useChatStore, visibleSessions as getVisibleSessions } from '@socrates/chat';
 import { persistUser } from '@socrates/auth';
 import { useAuthStore } from '@socrates/auth';
 import { useSettingsStore } from '@socrates/settings';
 import { getThemePaletteHex } from '@socrates/theme';
-import { ChatMessageList, Composer, ExamView, Sidebar, buildEmbeddedDocument, paletteForDocument, parseExamQuestions, storedFileIdFromRawUrl, type ArtifactDescriptor } from '@socrates/ui';
+import { ChatMessageList, Composer, DiagView, ExamView, ModelPicker, Sidebar, activeProviderOf, applyDiagnosticResults, buildColdStartNodes, buildEmbeddedDocument, buildTeachingPlanFromKB, isSubstantiveAnswer, nextTeachingStage, paletteForDocument, parseExamQuestions, storedFileIdFromRawUrl, syncCurrentNodeFromTeachingPlan, type ArtifactDescriptor, type DiagQuestion } from '@socrates/ui';
 import { api, streamConversation } from './src/runtime';
 import { storage } from './src/storage';
 import { copyText } from './src/clipboard';
@@ -21,7 +21,9 @@ import { ArtifactViewer } from './src/ArtifactViewer';
 import { FilePreview } from './src/FilePreview';
 import { FilesScreen } from './src/FilesScreen';
 import { ExamSetupScreen, type ExamRunState, type ExamSetupInput } from './src/ExamSetupScreen';
+import { TutorSetupScreen, type TutorRunState, type TutorSetupInput } from './src/TutorSetupScreen';
 import { buildExamData, generateExamQuestions } from './src/examGeneration';
+import { generateDiagQuestions } from './src/tutorGeneration';
 import { useFileImages } from './src/useFileImages';
 import type { FileAccessTarget, FileImageSource, StoredFileRef } from './src/fileAccess';
 import { SettingsScreen } from './src/SettingsScreen';
@@ -50,7 +52,7 @@ function SocratesApp() {
   const [authPending, setAuthPending] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authNotice, setAuthNotice] = useState<string | null>(null);
-  const [screen, setScreen] = useState<'chat' | 'settings' | 'projects' | 'search' | 'providers' | 'files' | 'exam-setup'>('chat');
+  const [screen, setScreen] = useState<'chat' | 'settings' | 'projects' | 'search' | 'providers' | 'files' | 'exam-setup' | 'tutor-setup'>('chat');
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
   const [projectsError, setProjectsError] = useState<string | null>(null);
@@ -64,12 +66,16 @@ function SocratesApp() {
   const [providers, setProviders] = useState<ProviderKey[]>([]);
   const [providersLoading, setProvidersLoading] = useState(false);
   const [providersError, setProvidersError] = useState<string | null>(null);
+  const [modelMenuOpen, setModelMenuOpen] = useState(false);
+  /** Where the providers screen returns to (settings entry vs chat menu). */
+  const [providersReturn, setProvidersReturn] = useState<'settings' | 'chat'>('settings');
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [staged, setStaged] = useState<StagedAttachment[]>([]);
   const [artifact, setArtifact] = useState<ArtifactDescriptor | null>(null);
   const [previewFile, setPreviewFile] = useState<StoredFileRef | null>(null);
   const [examRun, setExamRun] = useState<ExamRunState>({ running: false, progress: null, error: null });
+  const [tutorRun, setTutorRun] = useState<TutorRunState>({ running: false, progress: null, error: null });
   /** User turn being edited: the composer draft holds the new text and
    * Send commits the edit instead of starting a fresh turn. */
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -97,6 +103,8 @@ function SocratesApp() {
     [sessions, projectFilter],
   );
   const activeProject = useMemo(() => projects.find((p) => p.id === projectFilter) || null, [projects, projectFilter]);
+  const activeModel = useMemo(() => activeProviderOf(providers), [providers]);
+  const activeModelLabel = activeModel ? (activeModel.label || activeModel.model || 'Model') : s.openModelMenu;
   const streamAbort = useRef<AbortController | null>(null);
   const accountEpoch = useRef(0);
   const syncEpoch = useRef(0);
@@ -172,6 +180,32 @@ function SocratesApp() {
   const examData = active?.kind === 'exam' ? (active.examData as ExamData | null | undefined) ?? null : null;
   const examQuestions = useMemo(() => parseExamQuestions(examData), [examData]);
   const isExam = examQuestions.length > 0;
+  // Tutor sessions carry the local diagnostic Q&A in tutorData until the
+  // learner submits; afterwards the transcript teaches from the KB plan.
+  const tutorData = active?.kind === 'tutor' ? (active.tutorData as TutorData | null | undefined) ?? null : null;
+  const tutorQuestions = useMemo(
+    () => (Array.isArray(tutorData?.questions) ? (tutorData.questions as unknown as DiagQuestion[]) : []),
+    [tutorData],
+  );
+  const tutorAnswers = useMemo(() => {
+    const raw = tutorData?.answers as Record<string, unknown> | undefined;
+    const out: Record<number, number> = {};
+    if (raw) {
+      for (const [key, value] of Object.entries(raw)) {
+        const question = Number(key);
+        if (Number.isInteger(question) && typeof value === 'number') out[question] = value;
+      }
+    }
+    return out;
+  }, [tutorData]);
+  const showDiagnostic = !!active && tutorQuestions.length > 0 && tutorData?.submitted !== true;
+  const persistDiagnosticAnswers = useCallback((sessionId: string, answers: Record<number, number>) => {
+    const current = useChatStore.getState().sessions.find((s) => s.id === sessionId);
+    if (!current || current.kind !== 'tutor') return;
+    useChatStore.getState().patchSession(sessionId, {
+      tutorData: { questions: current.tutorData?.questions, answers: answers as unknown as TutorData['answers'], submitted: false },
+    });
+  }, []);
   const examSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const persistExam = useCallback((sessionId: string, data: ExamData, immediate: boolean) => {
     useChatStore.getState().patchSession(sessionId, { kind: 'exam', examData: data });
@@ -234,6 +268,96 @@ function SocratesApp() {
     setExamRun({ running: false, progress: null, error: null });
     setScreen('chat');
   }, []);
+  // Tutor flow: generate one diagnostic question per streaming call, then
+  // persist a tutor session (cold-start KB + local diag Q&A) like the web
+  // baseline's cold start. Teaching starts after the learner submits.
+  const tutorAbort = useRef<AbortController | null>(null);
+  const startTutorGeneration = useCallback(async (input: TutorSetupInput) => {
+    const owner = useAuthStore.getState().user;
+    if (!owner || owner.isGuest) { setTutorRun({ running: false, progress: null, error: appStringsNow().guestSendBlocked }); return; }
+    tutorAbort.current?.abort();
+    const controller = new AbortController();
+    tutorAbort.current = controller;
+    const epoch = accountEpoch.current;
+    setTutorRun({ running: true, progress: { done: 0, total: input.count, phase: 'generating' }, error: null });
+    try {
+      const { questions } = await generateDiagQuestions(
+        { topic: input.topic, count: input.count, language: useSettingsStore.getState().language },
+        {
+          signal: controller.signal,
+          onProgress: (progress) => {
+            if (epoch === accountEpoch.current) setTutorRun((prev) => ({ ...prev, progress: { done: progress.done, total: progress.total, phase: progress.phase } }));
+          },
+        },
+      );
+      if (epoch !== accountEpoch.current) return;
+      const id = `session-${Date.now()}`;
+      const tutorData: TutorData = {
+        questions: questions as unknown as TutorData['questions'],
+        answers: {},
+        submitted: false,
+      };
+      const draft: Session = {
+        id, title: input.topic, topic: input.topic, mode: 'tutor', phase: 'chat', kind: 'tutor',
+        tutorData, kbNodes: buildColdStartNodes(input.topic) as unknown as Session['kbNodes'],
+        teachingStage: 'motivate', currentNode: 0, messages: [],
+      };
+      const store = useChatStore.getState();
+      store.setSessions([draft, ...store.sessions]);
+      store.selectSession(id);
+      tutorAbort.current = null;
+      setTutorRun({ running: false, progress: null, error: null });
+      setScreen('chat');
+      try {
+        const saved = await api.sessions.save(draft);
+        if (epoch === accountEpoch.current) useChatStore.getState().adoptSessionId(id, saved);
+      } catch { /* the tutor session stays local until the next library sync */ }
+    } catch {
+      if (controller.signal.aborted) {
+        if (epoch === accountEpoch.current) setTutorRun({ running: false, progress: null, error: null });
+        return;
+      }
+      if (epoch === accountEpoch.current) setTutorRun({ running: false, progress: null, error: appStringsNow().tutorGenerateFailed });
+    }
+  }, []);
+  const cancelTutorGeneration = useCallback(() => {
+    tutorAbort.current?.abort();
+    tutorAbort.current = null;
+    setTutorRun({ running: false, progress: null, error: null });
+  }, []);
+  const closeTutorSetup = useCallback(() => {
+    tutorAbort.current?.abort();
+    tutorAbort.current = null;
+    setTutorRun({ running: false, progress: null, error: null });
+    setScreen('chat');
+  }, []);
+  // Diagnostic submit: fold answers into the KB baseline, build the
+  // teaching plan, and persist the full session (kbNodes/plan/stage are
+  // server-supported; the Q&A itself stays local, like the baseline).
+  const submitDiagnostic = useCallback(async (sessionId: string, answers: Record<number, number>) => {
+    const store = useChatStore.getState();
+    const session = store.sessions.find((s) => s.id === sessionId);
+    const questions = ((session?.tutorData?.questions as unknown as DiagQuestion[]) || []);
+    if (!session || !questions.length) return;
+    const kbNodes = applyDiagnosticResults({
+      kbNodes: ((session.kbNodes as unknown as Parameters<typeof applyDiagnosticResults>[0]['kbNodes']) || []),
+      diagQuestions: questions,
+      diagAnswers: questions.map((_, i) => answers[i]),
+    });
+    const teachingPlan = buildTeachingPlanFromKB(kbNodes);
+    const synced = teachingPlan ? syncCurrentNodeFromTeachingPlan(teachingPlan, kbNodes) : null;
+    store.patchSession(sessionId, {
+      kbNodes: kbNodes as unknown as Session['kbNodes'],
+      teachingPlan: (synced ? synced.teachingPlan : teachingPlan) as unknown as Session['teachingPlan'],
+      currentNode: synced ? synced.currentNode : 0,
+      teachingStage: 'motivate',
+      tutorData: { questions: session.tutorData?.questions, answers: answers as unknown as TutorData['answers'], submitted: true },
+    });
+    try {
+      const updated = useChatStore.getState().sessions.find((s) => s.id === sessionId);
+      if (updated) await api.sessions.save(updated);
+    } catch { /* the plan stays local until the next turn save */ }
+  }, []);
 
   const syncLibrary = useCallback(async () => {
     const owner = useAuthStore.getState().user;
@@ -275,7 +399,11 @@ function SocratesApp() {
       examAbort.current?.abort();
       examAbort.current = null;
       setExamRun({ running: false, progress: null, error: null });
+      tutorAbort.current?.abort();
+      tutorAbort.current = null;
+      setTutorRun({ running: false, progress: null, error: null });
       setProjectFilter(null); setMovePickSession(null); setMenuOpen(false); setConfirmDelete(false); setScreen('chat');
+      setModelMenuOpen(false); setProvidersReturn('settings');
       setEditingId(null); draftBackup.current = null; setOfflineNotice(false);
       useChatStore.getState().reset();
       useChatStore.getState().setSessions(initialSessions);
@@ -391,6 +519,19 @@ function SocratesApp() {
       }
       const epoch = accountEpoch.current;
       setStaged((prev) => prev.filter((s) => !snapshot.some((taken) => taken.localId === s.localId)));
+      // Tutor stage machine: a substantive free-form answer advances one
+      // stage and stops at check (the quiz-driven stage).
+      const turnSession = useChatStore.getState().sessions.find((s) => s.id === sessionId);
+      if (turnSession?.mode === 'tutor' && isSubstantiveAnswer(text)) {
+        const stage = turnSession.teachingStage || 'motivate';
+        if (stage !== 'check') {
+          const next = nextTeachingStage(stage);
+          useChatStore.getState().patchSession(sessionId, {
+            teachingStage: next.stage,
+            ...(next.resetPractice ? { practiceAttempts: 0, practicePhase: 'foundation' } : {}),
+          });
+        }
+      }
       // Upload each staged file with the now-known server session id so it
       // lands in the file library and stays readable by the model.
       const persist = async (serverSessionId: string) => {
@@ -828,7 +969,10 @@ function SocratesApp() {
       if (epoch === accountEpoch.current) setProvidersLoading(false);
     }
   }, []);
-  const openProviders = useCallback(() => { setScreen('providers'); void loadProviders(); }, [loadProviders]);
+  const openProviders = useCallback(() => { setProvidersReturn('settings'); setScreen('providers'); void loadProviders(); }, [loadProviders]);
+  // Chat-header quick switch: same server activation as the providers
+  // screen, without leaving the transcript.
+  const openModelMenu = useCallback(() => { setModelMenuOpen(true); void loadProviders(); }, [loadProviders]);
   const openSettings = useCallback(() => { setScreen('settings'); void loadUsage(); void loadProviders(); }, [loadUsage, loadProviders]);
   const activateProvider = useCallback(async (id: string) => {
     const epoch = accountEpoch.current;
@@ -846,6 +990,16 @@ function SocratesApp() {
     await api.providers.remove(id);
     if (epoch === accountEpoch.current) setProviders((prev) => prev.filter((row) => row.id !== id));
   }, []);
+  // The mirror update inside activateProvider only lands after the PATCH
+  // succeeds, so a failure keeps the previous active row; surface it.
+  const pickModel = useCallback(async (id: string) => {
+    setModelMenuOpen(false);
+    try {
+      await activateProvider(id);
+    } catch (error) {
+      useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().modelActivateFailed);
+    }
+  }, [activateProvider]);
   const changePassword = useCallback(async (oldPassword: string, newPassword: string) => {
     await api.auth.changePassword(oldPassword, newPassword);
   }, []);
@@ -873,14 +1027,15 @@ function SocratesApp() {
   }, [select]);
   useEffect(() => {
     const listener = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (modelMenuOpen) { setModelMenuOpen(false); return true; }
       if (menuOpen) { setMenuOpen(false); setConfirmDelete(false); return true; }
-      if (screen === 'providers') { setScreen('settings'); return true; }
+      if (screen === 'providers') { setScreen(providersReturn); return true; }
       if (screen !== 'chat') { setMovePickSession(null); setScreen('chat'); return true; }
       if (compact && sidebarOpen) { setSidebarOpen(false); return true; }
       return false;
     });
     return () => listener.remove();
-  }, [compact, menuOpen, screen, sidebarOpen]);
+  }, [compact, menuOpen, modelMenuOpen, providersReturn, screen, sidebarOpen]);
   const toggleTheme = useCallback(() => {
     const next = useSettingsStore.getState().theme === 'dark' ? 'light' : 'dark';
     void useSettingsStore.getState().update({ theme: next }, storage);
@@ -961,7 +1116,7 @@ function SocratesApp() {
       providers={providers}
       loading={providersLoading}
       error={providersError}
-      onClose={() => setScreen('settings')}
+      onClose={() => setScreen(providersReturn)}
       onActivate={(id) => activateProvider(id)}
       onCreate={(entry) => createProvider(entry)}
       onDelete={(id) => deleteProvider(id)}
@@ -989,6 +1144,17 @@ function SocratesApp() {
       onClose={closeExamSetup}
     /></SafeAreaView>;
   }
+  if (screen === 'tutor-setup') {
+    return <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg.page }]}><StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} /><TutorSetupScreen
+      mode={theme}
+      running={tutorRun.running}
+      progress={tutorRun.progress}
+      error={tutorRun.error}
+      onStart={(input) => void startTutorGeneration(input)}
+      onCancel={cancelTutorGeneration}
+      onClose={closeTutorSetup}
+    /></SafeAreaView>;
+  }
   if (screen === 'files') {
     return <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg.page }]}><StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} />
       <FilesScreen
@@ -1009,7 +1175,8 @@ function SocratesApp() {
         activeId={activeId}
         onSelect={select}
         onNewChat={createSession}
-        onNewExam={user && !user.isGuest ? () => setScreen('exam-setup') : undefined}
+        onNewExam={user && !user.isGuest ? () => { if (compact) setSidebarOpen(false); setScreen('exam-setup'); } : undefined}
+        onNewTutor={user && !user.isGuest ? () => { if (compact) setSidebarOpen(false); setScreen('tutor-setup'); } : undefined}
         mode={theme}
         language={language}
         archived={archived}
@@ -1034,6 +1201,11 @@ function SocratesApp() {
             <Pressable accessibilityRole="button" accessibilityLabel={s.sessionActions} onPress={() => { setConfirmDelete(false); setMenuOpen((open) => !open); }} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>⋯</Text></Pressable>
           ) : null}
         </View>
+        {user && !user.isGuest ? (
+          <Pressable accessibilityRole="button" accessibilityLabel={s.openModelMenu} onPress={openModelMenu} style={[styles.modelChip, { borderColor: palette.border.default, backgroundColor: palette.bg.hover }]}>
+            <Text numberOfLines={1} style={[styles.modelChipText, { color: palette.text.secondary }]}>🤖 {activeModelLabel} ▾</Text>
+          </Pressable>
+        ) : null}
         {menuOpen && active ? (
           <View style={[styles.menuSheet, { backgroundColor: palette.bg.raised, borderColor: palette.border.default }]}>
             <Pressable
@@ -1077,7 +1249,17 @@ function SocratesApp() {
           </Pressable>
         </View> : null}
         {offlineNotice ? <Text style={[styles.noticeText, { color: palette.text.muted }]}>{s.savedOffline}</Text> : null}
-        {isExam && examData && active ? (
+        {showDiagnostic && active ? (
+          <DiagView
+            key={active.id}
+            questions={tutorQuestions}
+            answers={tutorAnswers}
+            mode={theme}
+            language={language}
+            onChange={(answers) => persistDiagnosticAnswers(active.id, answers)}
+            onSubmit={(answers) => void submitDiagnostic(active.id, answers)}
+          />
+        ) : isExam && examData && active ? (
           <ExamView
             key={active.id}
             examData={examData}
@@ -1118,6 +1300,16 @@ function SocratesApp() {
       </View>
     </KeyboardAvoidingView>
     <ArtifactViewer artifact={artifact} mode={theme} language={language} onClose={() => setArtifact(null)} />
+    <ModelPicker
+      providers={providers}
+      activeId={activeModel?.id ?? null}
+      open={modelMenuOpen}
+      mode={theme}
+      language={language}
+      onPick={(id) => void pickModel(id)}
+      onManage={() => { setModelMenuOpen(false); setProvidersReturn('chat'); setScreen('providers'); void loadProviders(); }}
+      onClose={() => setModelMenuOpen(false)}
+    />
     {previewFile ? <FilePreview file={previewFile} mode={theme} language={language} target={fileTarget} loadPreview={loadFilePreview} onClose={() => setPreviewFile(null)} /> : null}
   </SafeAreaView>;
 }
@@ -1132,6 +1324,8 @@ const styles = StyleSheet.create({
   header: { height: 56, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, borderBottomWidth: StyleSheet.hairlineWidth },
   menu: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 10 },
   menuText: { fontSize: 20 },
+  modelChip: { alignSelf: 'flex-start', marginHorizontal: 14, marginTop: 8, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, maxWidth: '70%' },
+  modelChipText: { fontSize: 13, fontWeight: '600' },
   title: { flex: 1, textAlign: 'center', marginRight: 8, fontWeight: '600' },
   filterChip: { flex: 1, marginRight: 8, borderWidth: 1, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6, alignItems: 'center' },
   filterText: { fontSize: 14, fontWeight: '600' },
