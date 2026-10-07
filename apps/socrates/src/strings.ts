@@ -202,6 +202,12 @@ function en() {
     examGenerating: 'Generating…',
     examProgressText: (done: number, total: number) => `${done} / ${total} questions`,
     examGenerateFailed: 'Could not generate the exam. Try again.',
+    editingMessage: 'Editing message — Send resends it',
+    cancelEdit: 'Cancel edit',
+    savedOffline: 'Saved locally — will sync when back online',
+    editFailed: 'Could not edit the message',
+    regenerateFailed: 'Could not regenerate the reply',
+    branchFailed: 'Could not create the branch',
   };
 }
 
@@ -401,6 +407,12 @@ const zh: AppStrings = {
     examGenerating: '正在出题…',
     examProgressText: (done: number, total: number) => `已生成 ${done} / ${total} 题`,
     examGenerateFailed: '出题失败，请重试。',
+    editingMessage: '正在编辑消息，发送即重发',
+    cancelEdit: '取消编辑',
+    savedOffline: '已保存到本地，联网后同步',
+    editFailed: '编辑消息失败',
+    regenerateFailed: '重新生成失败',
+    branchFailed: '创建分支失败',
 };
 
 export function appStrings(language: AppLanguage = 'en'): AppStrings {

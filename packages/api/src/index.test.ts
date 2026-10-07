@@ -187,6 +187,29 @@ test('files.fetchRaw returns the authenticated raw response', async () => {
   assert.equal((await response.arrayBuffer()).byteLength, 4);
 });
 
+test('messages.patch rewrites a turn without regenerating server-side', async () => {
+  const { fetch, calls } = mockFetch({ 'PATCH /messages/m1?sessionId=s1': { status: 200, body: { ok: true } } });
+  const api = createApiClient({ baseUrl: 'https://test/api/v2', fetch, storage: createMemoryStore() });
+  const result = await api.messages.patch('m1', { content: 'revised', discardFollowing: true }, 's1');
+  assert.equal(result.ok, true);
+  assert.equal(calls[0].init?.method, 'PATCH');
+  const body = JSON.parse((calls[0].init?.body as string) || '{}');
+  assert.equal(body.content, 'revised');
+  assert.equal(body.regenerate, false);
+  assert.equal(body.discardFollowing, true);
+});
+
+test('messages.remove deletes one explicit row, session-scoped', async () => {
+  const removes: string[] = [];
+  const removeFetch = (async (url: string, init?: RequestInit) => {
+    removes.push(`${init?.method || 'GET'} ${url}`);
+    return new Response(JSON.stringify({ ok: true }), { status: 200 });
+  }) as typeof globalThis.fetch;
+  const api = createApiClient({ baseUrl: 'https://test/api/v2', fetch: removeFetch, storage: createMemoryStore() });
+  await api.messages.remove('m1', 's1');
+  assert.match(removes[0], /DELETE .*\/messages\/m1\?sessionId=s1$/);
+});
+
 test('API errors surface as ApiError with status', async () => {
   const { fetch } = mockFetch({ '/projects': { status: 401, body: { message: 'Unauthorized' } } });
   const api = createApiClient({ baseUrl: 'https://test/api/v2', fetch, storage: createMemoryStore() });

@@ -259,6 +259,20 @@ export function createApiClient(input: {
         request<Project>(`/projects/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch) }),
       remove: (id: string) => request<void>(`/projects/${encodeURIComponent(id)}`, { method: 'DELETE' }),
     },
+    messages: {
+      /* Edit a user turn in place. `discardFollowing` mirrors the local
+       * rewind on the server (drops every later row so a reload never
+       * resurfaces the stale reply); the Universal App re-asks locally
+       * through the normal stream, so `regenerate` stays false and the
+       * server must NOT also generate a reply. `sessionId` scopes the
+       * ownership check to the session the op was queued against (an
+       * outbox drain can run while another session is active). */
+      patch: (id: string, body: { content: string; regenerate?: false; discardFollowing?: boolean }, sessionId?: string | null) =>
+        request<{ ok: boolean }>(`/messages/${encodeURIComponent(id)}${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ''}`, { method: 'PATCH', body: JSON.stringify({ regenerate: false, ...body }) }),
+      /* Remove one explicit row (outbox replay of a dropped tail). */
+      remove: (id: string, sessionId?: string | null) =>
+        request<void>(`/messages/${encodeURIComponent(id)}${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ''}`, { method: 'DELETE' }),
+    },
     chat: {
       /* Chat goes through fetchWithAuth so a stream attempt refreshes and
        * retries once on 401 instead of surfacing a stale-bearer error. */

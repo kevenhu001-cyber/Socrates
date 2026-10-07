@@ -14,6 +14,12 @@ export type ResolvedImageSource = { uri: string; headers?: Record<string, string
 export type MessageActions = {
   onCopyText?: (text: string) => Promise<void>;
   onSpeakText?: (text: string) => void;
+  /** Rewind to this user turn with new text and re-ask (edit). */
+  onEditMessage?: (message: Message) => void;
+  /** Rewind to the user turn behind this reply and re-ask (regenerate). */
+  onRegenerateMessage?: (message: Message) => void;
+  /** Fork the conversation at this message into a new session. */
+  onBranchMessage?: (message: Message) => void;
   onOpenArtifact?: (artifact: ArtifactDescriptor) => void;
   /** Platform resolver for server-relative image sources (file raw URLs);
    * returns null to fall back to the safe inline check. */
@@ -156,13 +162,15 @@ function ToolCard({ tool, p, t, resolveImage, onOpenStoredArtifact, onOpenFile }
   </View>;
 }
 
-export const MessageContent = memo(function MessageContent({ message, mode, language = 'en', onCopyText, onSpeakText, onOpenArtifact, onOpenStoredArtifact, resolveImage, onOpenFile }: { message: Message; mode: ThemeMode; language?: UiLanguage } & MessageActions) {
+export const MessageContent = memo(function MessageContent({ message, mode, language = 'en', onCopyText, onSpeakText, onEditMessage, onRegenerateMessage, onBranchMessage, onOpenArtifact, onOpenStoredArtifact, resolveImage, onOpenFile }: { message: Message; mode: ThemeMode; language?: UiLanguage } & MessageActions) {
   const p = getThemePaletteHex(mode);
   const t = uiStrings(language);
   const content = useMemo(() => parseMessageContent(message), [message.rawText, message.content, message.reasoningContent]);
   const artifacts = useMemo(() => artifactsFromToolCalls(message.toolCalls, mode), [message.toolCalls, mode]);
   const [showReasoning, setShowReasoning] = useState(false);
   const speakable = message.role === 'assistant' && content.text.trim().length > 0 ? content.text : null;
+  const editable = message.role === 'user' && content.text.trim().length > 0;
+  const regenerable = message.role === 'assistant' && content.text.trim().length > 0;
   return <View style={{ gap: 8 }}>
     {content.reasoning ? <View style={[styles.reasoning, { borderColor: p.border.default }]}>
       <Pressable accessibilityRole="button" accessibilityLabel={t.toggleReasoning} accessibilityState={{ expanded: showReasoning }} onPress={() => setShowReasoning(!showReasoning)}><Text style={{ color: p.text.muted }}>{t.reasoning} {showReasoning ? '⌃' : '⌄'}</Text></Pressable>
@@ -173,6 +181,25 @@ export const MessageContent = memo(function MessageContent({ message, mode, lang
       <Pressable accessibilityRole="button" accessibilityLabel={t.listenMessage} onPress={() => onSpeakText(speakable)} style={styles.speakRow}>
         <Text style={{ color: p.text.muted }}>{t.listen}</Text>
       </Pressable>
+    ) : null}
+    {(editable && onEditMessage) || (regenerable && onRegenerateMessage) || onBranchMessage ? (
+      <View style={styles.turnActions}>
+        {editable && onEditMessage ? (
+          <Pressable accessibilityRole="button" accessibilityLabel={t.editMessage} onPress={() => onEditMessage(message)} style={styles.turnAction}>
+            <Text style={{ color: p.text.muted }}>✏️ {t.editMessage}</Text>
+          </Pressable>
+        ) : null}
+        {regenerable && onRegenerateMessage ? (
+          <Pressable accessibilityRole="button" accessibilityLabel={t.regenerateMessage} onPress={() => onRegenerateMessage(message)} style={styles.turnAction}>
+            <Text style={{ color: p.text.muted }}>↻ {t.regenerateMessage}</Text>
+          </Pressable>
+        ) : null}
+        {onBranchMessage ? (
+          <Pressable accessibilityRole="button" accessibilityLabel={t.branchMessage} onPress={() => onBranchMessage(message)} style={styles.turnAction}>
+            <Text style={{ color: p.text.muted }}>⑂ {t.branchMessage}</Text>
+          </Pressable>
+        ) : null}
+      </View>
     ) : null}
     {message.attachments?.map((attachment) => {
       const inline = attachment.kind === 'image' && attachment.dataUrl ? safeImage(attachment.dataUrl) : null;
@@ -218,5 +245,7 @@ const styles = StyleSheet.create({
   attachmentImage: { width: '100%', maxHeight: 220, borderRadius: 8 },
   attachmentRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   speakRow: { alignSelf: 'flex-start', paddingVertical: 4 },
+  turnActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
+  turnAction: { paddingVertical: 4 },
   image: { width: 260, maxWidth: '100%', height: 180 },
 });

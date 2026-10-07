@@ -103,6 +103,30 @@ test('persistAttachments enriches the user message before streaming', async () =
   assert.equal(serverId, 'server');
   assert.deepEqual(streamed, ['file-1']);
 });
+test('rewindSession edits a user turn locally and returns the dropped tail', () => {
+  prepare();
+  const s = useChatStore.getState();
+  s.appendMessage({ clientId: 'u1', role: 'user', rawText: 'first' }, 'session-a');
+  s.appendMessage({ clientId: 'a1', role: 'assistant', rawText: 'reply one' }, 'session-a');
+  s.appendMessage({ clientId: 'u2', role: 'user', rawText: 'second' }, 'session-a');
+  s.appendMessage({ clientId: 'a2', role: 'assistant', rawText: 'reply two' }, 'session-a');
+  const dropped = useChatStore.getState().rewindSession('session-a', 'u1', 'first, revised');
+  assert.deepEqual(dropped?.map((m) => m.clientId), ['a1', 'u2', 'a2']);
+  const kept = useChatStore.getState().sessions[0].messages!;
+  assert.deepEqual(kept.map((m) => m.clientId), ['u1']);
+  assert.equal(kept[0].rawText, 'first, revised');
+});
+
+test('rewindSession without text only drops the tail; unknown anchors return null', () => {
+  prepare();
+  const s = useChatStore.getState();
+  s.appendMessage({ clientId: 'u1', role: 'user', rawText: 'first' }, 'session-a');
+  s.appendMessage({ clientId: 'a1', role: 'assistant', rawText: 'reply' }, 'session-a');
+  const dropped = useChatStore.getState().rewindSession('session-a', 'u1');
+  assert.deepEqual(dropped?.map((m) => m.clientId), ['a1']);
+  assert.equal(useChatStore.getState().rewindSession('session-a', 'missing'), null);
+  assert.equal(useChatStore.getState().rewindSession('nope', 'u1'), null);
+});
 test('a failed attachment upload leaves the turn intact', async () => {
   prepare(); let streamed = false;
   await runChatTurn({

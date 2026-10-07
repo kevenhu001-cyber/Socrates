@@ -2,8 +2,8 @@ import 'react-native-reanimated';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import type { AccountUsage, ExamData, Project, ProviderKey, Session } from '@socrates/contracts';
-import { isLocalSessionId, runChatTurn, useChatStore, visibleSessions as getVisibleSessions } from '@socrates/chat';
+import type { AccountUsage, ExamData, Message, Project, ProviderKey, Session } from '@socrates/contracts';
+import { buildBranchSession, createMessageOutbox, findRegenerateTarget, isLocalSessionId, runChatTurn, useChatStore, visibleSessions as getVisibleSessions } from '@socrates/chat';
 import { persistUser } from '@socrates/auth';
 import { useAuthStore } from '@socrates/auth';
 import { useSettingsStore } from '@socrates/settings';
@@ -32,6 +32,17 @@ import { appStrings, appStringsNow } from './src/strings';
 
 const initialSessions: Session[] = [{ id: 'welcome', title: 'Welcome to Socrates', topic: 'Universal app', mode: 'chat', phase: 'chat', messages: [{ clientId: 'welcome-assistant', role: 'assistant', rawText: 'How can I help you learn today?' }] }];
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** Server-owned ids only: the messages API scopes ops by session, and a
+ * drain can run while another session is active — never send a local
+ * `session-*` id as the scope. */
+function uuidScope(id: string | null | undefined): string | null {
+  return id && UUID_RE.test(id) ? id : null;
+}
+function messageKey(message: { clientId?: string | null; id?: string }): string | null {
+  return message.clientId || message.id || null;
+}
+
 function SocratesApp() {
   const { width } = useWindowDimensions();
   const compact = width < 760;
@@ -59,6 +70,13 @@ function SocratesApp() {
   const [artifact, setArtifact] = useState<ArtifactDescriptor | null>(null);
   const [previewFile, setPreviewFile] = useState<StoredFileRef | null>(null);
   const [examRun, setExamRun] = useState<ExamRunState>({ running: false, progress: null, error: null });
+  /** User turn being edited: the composer draft holds the new text and
+   * Send commits the edit instead of starting a fresh turn. */
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const draftBackup = useRef<string | null>(null);
+  /** Set when an edit/regenerate could not reach the server and its ops
+   * are waiting in the outbox; cleared once the queue drains. */
+  const [offlineNotice, setOfflineNotice] = useState(false);
   const [listening, setListening] = useState(false);
   const listenStop = useRef<(() => void) | null>(null);
   const sessions = useChatStore((state) => state.sessions);
@@ -120,6 +138,34 @@ function SocratesApp() {
   const listFiles = useCallback(() => api.files.list(), []);
   const removeFile = useCallback((id: string) => api.files.remove(id), []);
   const loadFilePreview = useCallback((id: string) => api.files.preview(id), []);
+  // Failed edit/regenerate mutations wait here (durable, storage-backed)
+  // and replay as explicit per-row ops — never as a replayed
+  // discardFollowing, which would eat turns made after the reconnect.
+  const outbox = useMemo(() => createMessageOutbox({
+    storage,
+    // Outbox replay rewrites the text only; the stale rows are queued as
+    // explicit deletes alongside, so discardFollowing stays false here.
+    patchMessage: (sessionId, id, content) => api.messages.patch(id, { content, discardFollowing: false }, sessionId),
+    deleteMessage: (sessionId, id) => api.messages.remove(id, sessionId),
+    isOnline: () => typeof navigator === 'undefined' || navigator.onLine !== false,
+  }), []);
+  const drainOutbox = useCallback(async () => {
+    try {
+      await outbox.drainMessageOutbox();
+      setOfflineNotice((await outbox.pendingOpCount()) > 0);
+    } catch { /* the queue survives; never surface drain noise */ }
+  }, [outbox]);
+  // Drain on boot and whenever the platform reports it is back online.
+  // (Native has no window: the drain after every turn + send covers it.)
+  useEffect(() => {
+    void drainOutbox();
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      const onOnline = () => { void drainOutbox(); };
+      window.addEventListener('online', onOnline);
+      return () => window.removeEventListener('online', onOnline);
+    }
+    return undefined;
+  }, [drainOutbox]);
   // Exam sessions carry client-generated questions + answers in examData;
   // answering and grading stay local, persistence is debounced and the store
   // is patched immediately so a session switch never loses answers.
@@ -230,6 +276,7 @@ function SocratesApp() {
       examAbort.current = null;
       setExamRun({ running: false, progress: null, error: null });
       setProjectFilter(null); setMovePickSession(null); setMenuOpen(false); setConfirmDelete(false); setScreen('chat');
+      setEditingId(null); draftBackup.current = null; setOfflineNotice(false);
       useChatStore.getState().reset();
       useChatStore.getState().setSessions(initialSessions);
       useChatStore.getState().selectSession('welcome');
@@ -286,6 +333,33 @@ function SocratesApp() {
     }
     return out;
   }, [staged]);
+  // One streaming turn: shared by fresh sends, edits, regenerates and
+  // retries. The caller owns the local rewind; this only streams the
+  // re-ask and drains the outbox afterwards.
+  const runTurn = useCallback(async (
+    sessionId: string,
+    text: string,
+    messageAttachments: Message['attachments'],
+    persistAttachments?: (serverSessionId: string) => Promise<Message['attachments'] | undefined>,
+  ) => {
+    const epoch = accountEpoch.current;
+    const controller = new AbortController();
+    streamAbort.current = controller;
+    try {
+      await runChatTurn({
+        sessionId, turnId: `turn-${Date.now()}`, text,
+        attachments: messageAttachments?.length ? messageAttachments : undefined,
+        signal: controller.signal,
+        isCurrent: () => epoch === accountEpoch.current,
+        save: (session) => api.sessions.save(session),
+        ...(persistAttachments ? { persistAttachments } : {}),
+        stream: streamConversation,
+      });
+    } finally {
+      if (streamAbort.current === controller) streamAbort.current = null;
+    }
+    void drainOutbox();
+  }, [drainOutbox]);
   const send = useCallback(() => {
     const store = useChatStore.getState();
     const text = store.draft.trim();
@@ -316,35 +390,24 @@ function SocratesApp() {
         live.selectSession(sessionId);
       }
       const epoch = accountEpoch.current;
-      const controller = new AbortController();
-      streamAbort.current = controller;
       setStaged((prev) => prev.filter((s) => !snapshot.some((taken) => taken.localId === s.localId)));
-      try {
-        await runChatTurn({
-          sessionId, turnId: `turn-${Date.now()}`, text, attachments: messageAttachments.length ? messageAttachments : undefined, signal: controller.signal,
-          isCurrent: () => epoch === accountEpoch.current,
-          save: (session) => api.sessions.save(session),
-          // Upload each staged file with the now-known server session id so it
-          // lands in the file library and stays readable by the model.
-          persistAttachments: async (serverSessionId) => {
-            if (!messageAttachments.length || epoch !== accountEpoch.current) return undefined;
-            const tokens = await api.readTokens();
-            return Promise.all(messageAttachments.map(async (attachment) => {
-              const row = snapshot.find((item) => item.localId === attachment.id);
-              if (!row) return attachment;
-              try {
-                const fileId = await persistStagedAttachment(row, { url: api.files.uploadUrl(), token: tokens.accessToken, fetch: api.fetchWithAuth }, serverSessionId);
-                return fileId ? { ...attachment, fileId } : attachment;
-              } catch { return attachment; }
-            }));
-          },
-          stream: streamConversation,
-        });
-      } finally {
-        if (streamAbort.current === controller) streamAbort.current = null;
-      }
+      // Upload each staged file with the now-known server session id so it
+      // lands in the file library and stays readable by the model.
+      const persist = async (serverSessionId: string) => {
+        if (!messageAttachments.length || epoch !== accountEpoch.current) return undefined;
+        const tokens = await api.readTokens();
+        return Promise.all(messageAttachments.map(async (attachment) => {
+          const row = snapshot.find((item) => item.localId === attachment.id);
+          if (!row) return attachment;
+          try {
+            const fileId = await persistStagedAttachment(row, { url: api.files.uploadUrl(), token: tokens.accessToken, fetch: api.fetchWithAuth }, serverSessionId);
+            return fileId ? { ...attachment, fileId } : attachment;
+          } catch { return attachment; }
+        }));
+      };
+      await runTurn(sessionId, text, messageAttachments.length ? messageAttachments : undefined, persist);
     })();
-  }, [projectFilter, staged, resolveStaged]);
+  }, [projectFilter, staged, resolveStaged, runTurn]);
   // Attachments: pickers produce staged rows; documents resolve to text
   // at send time (server extract), images/text ride along directly.
   const stagePicked = useCallback((picked: PickedFile[]) => {
@@ -387,6 +450,157 @@ function SocratesApp() {
     setStaged((prev) => prev.filter((s) => s.localId !== id));
   }, []);
   const stop = useCallback(() => { streamAbort.current?.abort(); }, []);
+  // Queue one half of a failed server sync for replay: every dropped row
+  // as an explicit delete plus (for edits) the rewritten text as a patch.
+  // Never a replayed discardFollowing — it would eat turns made after
+  // the reconnect. Shows the offline notice; the re-ask still runs locally.
+  const queueSyncFailure = useCallback(async (
+    sessionId: string, anchorKey: string, newText: string | null, dropped: Message[],
+  ) => {
+    const sid = uuidScope(sessionId);
+    for (const row of dropped) {
+      const key = messageKey(row);
+      if (key) await outbox.queueMessageOp(sid, key, 'delete');
+    }
+    if (newText !== null) await outbox.queueMessageOp(sid, anchorKey, 'patch', newText);
+    setOfflineNotice(true);
+  }, [outbox]);
+  const syncAnchor = useCallback(async (
+    sessionId: string, anchorKey: string, content: string, dropped: Message[],
+  ): Promise<boolean> => {
+    try {
+      await api.messages.patch(anchorKey, { content, discardFollowing: true }, uuidScope(sessionId));
+      return true;
+    } catch (error) {
+      // A just-created local message may not have a server row yet: the
+      // local rewind stays authoritative and the next save persists it.
+      if ((error as { status?: number })?.status === 404) return true;
+      await queueSyncFailure(sessionId, anchorKey, content, dropped);
+      return false;
+    }
+  }, [queueSyncFailure]);
+  // Edit: rewrite the user turn locally, mirror it server-side, then
+  // re-ask. Starts only after the PATCH settles: discardFollowing drops
+  // server rows created at/after this turn, so a delete landing after the
+  // fresh reply was saved would wipe the new answer.
+  const commitEdit = useCallback(async (anchorId: string, revised: string) => {
+    const store = useChatStore.getState();
+    const sessionId = store.activeSessionId;
+    const session = store.sessions.find((s) => s.id === sessionId);
+    const anchor = session?.messages?.find((m) => messageKey(m) === anchorId);
+    const next = revised.trim();
+    if (!sessionId || !anchor || !next || (anchor.rawText || '').trim() === next) return;
+    const owner = useAuthStore.getState().user;
+    if (!owner || owner.isGuest) { store.setStatus('error', appStringsNow().guestSendBlocked); return; }
+    if (store.turnId) return;
+    setEditingId(null);
+    draftBackup.current = null;
+    // Abort any in-flight stream so the new turn isn't racing the old one.
+    streamAbort.current?.abort();
+    const dropped = store.rewindSession(sessionId, anchorId, next);
+    if (!dropped) return;
+    const anchorKey = messageKey(anchor) || anchorId;
+    try {
+      await syncAnchor(sessionId, anchorKey, next, dropped);
+      await runTurn(sessionId, next, anchor.attachments?.length ? anchor.attachments : undefined);
+    } catch (error) {
+      store.setStatus('error', error instanceof Error ? error.message : appStringsNow().editFailed);
+    }
+  }, [runTurn, syncAnchor]);
+  const startEdit = useCallback((anchorId: string, text: string) => {
+    const store = useChatStore.getState();
+    if (store.turnId) return;
+    if (draftBackup.current === null) draftBackup.current = store.draft;
+    setEditingId(anchorId);
+    store.setDraft(text);
+  }, []);
+  const cancelEdit = useCallback(() => {
+    setEditingId(null);
+    if (draftBackup.current !== null) {
+      useChatStore.getState().setDraft(draftBackup.current);
+      draftBackup.current = null;
+    }
+  }, []);
+  // Regenerate: same rewind, text unchanged — only the stale tail needs
+  // server cleanup, so a failure queues deletes only, never a text patch.
+  const regenerate = useCallback(async (assistantId: string) => {
+    const store = useChatStore.getState();
+    const sessionId = store.activeSessionId;
+    const session = store.sessions.find((s) => s.id === sessionId);
+    if (!sessionId || !session || store.turnId) return;
+    const owner = useAuthStore.getState().user;
+    if (!owner || owner.isGuest) { store.setStatus('error', appStringsNow().guestSendBlocked); return; }
+    const target = findRegenerateTarget(session.messages || [], assistantId);
+    const userText = (target?.rawText || '').trim();
+    const userKey = target ? messageKey(target) : null;
+    if (!target || !userText || !userKey) return;
+    streamAbort.current?.abort();
+    const dropped = store.rewindSession(sessionId, userKey);
+    if (!dropped) return;
+    try {
+      try {
+        await api.messages.patch(userKey, { content: userText, discardFollowing: true }, uuidScope(sessionId));
+      } catch (error) {
+        if ((error as { status?: number })?.status !== 404) {
+          await queueSyncFailure(sessionId, userKey, null, dropped);
+        }
+      }
+      await runTurn(sessionId, userText, target.attachments?.length ? target.attachments : undefined);
+    } catch (error) {
+      store.setStatus('error', error instanceof Error ? error.message : appStringsNow().regenerateFailed);
+    }
+  }, [queueSyncFailure, runTurn]);
+  // Retry: the last turn failed (or was stopped) — drop its partial tail
+  // and replay the last user turn. No server cleanup: the failed reply was
+  // never confirmed saved, and the final save upserts the replay.
+  const retryTurn = useCallback(async () => {
+    const store = useChatStore.getState();
+    if (store.turnId || store.status !== 'error') return;
+    const sessionId = store.activeSessionId;
+    const session = store.sessions.find((s) => s.id === sessionId);
+    if (!sessionId || !session) return;
+    const owner = useAuthStore.getState().user;
+    if (!owner || owner.isGuest) { store.setStatus('error', appStringsNow().guestSendBlocked); return; }
+    const messages = session.messages || [];
+    let target: Message | null = null;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'user' && (messages[i].rawText || '').trim()) { target = messages[i]; break; }
+    }
+    const text = (target?.rawText || '').trim();
+    const key = target ? messageKey(target) : null;
+    if (!target || !text || !key) return;
+    streamAbort.current?.abort();
+    if (!store.rewindSession(sessionId, key)) return;
+    try {
+      await runTurn(sessionId, text, target.attachments?.length ? target.attachments : undefined);
+    } catch (error) {
+      store.setStatus('error', error instanceof Error ? error.message : appStringsNow().regenerateFailed);
+    }
+  }, [runTurn]);
+  // Branch: fork the transcript at the anchor into a fresh local session
+  // (kept as a `session-*` id so library sync preserves it until saved).
+  const branchFrom = useCallback(async (anchorId: string) => {
+    const store = useChatStore.getState();
+    const session = store.sessions.find((s) => s.id === store.activeSessionId);
+    if (!session || store.turnId) return;
+    const forked = buildBranchSession(session, anchorId, { id: `session-${Date.now()}` });
+    if (!forked) return;
+    const epoch = accountEpoch.current;
+    store.setSessions([forked, ...store.sessions]);
+    store.selectSession(forked.id);
+    setScreen('chat');
+    try {
+      const saved = await api.sessions.save(forked);
+      if (epoch === accountEpoch.current) store.adoptSessionId(forked.id, saved);
+    } catch { /* the branch stays local until the next library sync */ }
+    void drainOutbox();
+  }, [drainOutbox]);
+  // Edit mode Send: the composer draft holds the revised turn — committing
+  // rewinds and re-asks instead of starting a fresh turn.
+  const commitEditSend = useCallback(() => {
+    if (!editingId) return;
+    void commitEdit(editingId, useChatStore.getState().draft);
+  }, [editingId, commitEdit]);
   const speak = useCallback((text: string) => {
     void speakText(text).catch((error) => {
       useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().speechFailed);
@@ -856,7 +1070,13 @@ function SocratesApp() {
             </Pressable>
           </View>
         ) : null}
-        {chatError ? <Text accessibilityRole="alert" style={{ color: palette.danger, padding: 12 }}>{chatError}</Text> : null}
+        {chatError ? <View style={styles.errorRow}>
+          <Text accessibilityRole="alert" style={[styles.errorText, { color: palette.danger }]}>{chatError}</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel={s.retry} onPress={() => void retryTurn()} style={[styles.retryChip, { borderColor: palette.border.default }]}>
+            <Text style={{ color: palette.text.primary }}>↻ {s.retry}</Text>
+          </Pressable>
+        </View> : null}
+        {offlineNotice ? <Text style={[styles.noticeText, { color: palette.text.muted }]}>{s.savedOffline}</Text> : null}
         {isExam && examData && active ? (
           <ExamView
             key={active.id}
@@ -868,12 +1088,18 @@ function SocratesApp() {
           />
         ) : (
           <>
-            <ChatMessageList messages={active?.messages || []} mode={theme} language={language} onCopyText={copyText} onSpeakText={speak} onOpenArtifact={setArtifact} onOpenStoredArtifact={openStoredArtifact} resolveImage={resolveImage} onOpenFile={openAttachment} />
+            <ChatMessageList messages={active?.messages || []} mode={theme} language={language} onCopyText={copyText} onSpeakText={speak} onEditMessage={user && !user.isGuest ? (message) => startEdit(messageKey(message) || '', message.rawText || '') : undefined} onRegenerateMessage={user && !user.isGuest ? (message) => void regenerate(messageKey(message) || '') : undefined} onBranchMessage={(message) => void branchFrom(messageKey(message) || '')} onOpenArtifact={setArtifact} onOpenStoredArtifact={openStoredArtifact} resolveImage={resolveImage} onOpenFile={openAttachment} />
+            {editingId ? <View style={[styles.editBanner, { borderColor: palette.border.default }]}>
+              <Text style={[styles.editBannerText, { color: palette.text.secondary }]}>{s.editingMessage}</Text>
+              <Pressable accessibilityRole="button" accessibilityLabel={s.cancelEdit} onPress={cancelEdit} style={styles.editCancel}>
+                <Text style={{ color: palette.text.primary }}>{s.cancel}</Text>
+              </Pressable>
+            </View> : null}
             <Composer
               value={draft}
               streaming={status === 'sending' || status === 'streaming'}
               onChangeText={useChatStore.getState().setDraft}
-              onSend={send}
+              onSend={editingId ? commitEditSend : send}
               onStop={stop}
               mode={theme}
               language={language}
@@ -912,5 +1138,12 @@ const styles = StyleSheet.create({
   menuSheet: { borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 4 },
   menuItem: { paddingHorizontal: 20, paddingVertical: 12 },
   menuItemText: { fontSize: 16 },
+  errorRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 8 },
+  errorText: { flex: 1 },
+  retryChip: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  noticeText: { paddingHorizontal: 12, paddingBottom: 4, fontSize: 13 },
+  editBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 12, marginBottom: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderRadius: 12 },
+  editBannerText: { flex: 1, fontSize: 13 },
+  editCancel: { paddingHorizontal: 8, paddingVertical: 4 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });

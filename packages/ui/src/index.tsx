@@ -122,10 +122,10 @@ export function Sidebar({
   );
 }
 
-const MessageRow = memo(function MessageRow({ message, mode = 'light', language = 'en', onCopyText, onSpeakText, onOpenArtifact, onOpenStoredArtifact, resolveImage, onOpenFile }: { message: Message; mode?: UiMode; language?: UiLanguage } & MessageActions) {
+const MessageRow = memo(function MessageRow({ message, mode = 'light', language = 'en', onCopyText, onSpeakText, onEditMessage, onRegenerateMessage, onBranchMessage, onOpenArtifact, onOpenStoredArtifact, resolveImage, onOpenFile }: { message: Message; mode?: UiMode; language?: UiLanguage } & MessageActions) {
   const p = paletteFor(mode);
   return <Animated.View layout={LinearTransition} style={[styles.message, message.role === 'user' && { ...styles.userMessage, backgroundColor: p.bg.hover }]}>
-    <MessageContent message={message} mode={mode} language={language} onCopyText={onCopyText} onSpeakText={onSpeakText} onOpenArtifact={onOpenArtifact} onOpenStoredArtifact={onOpenStoredArtifact} resolveImage={resolveImage} onOpenFile={onOpenFile} />
+    <MessageContent message={message} mode={mode} language={language} onCopyText={onCopyText} onSpeakText={onSpeakText} onEditMessage={onEditMessage} onRegenerateMessage={onRegenerateMessage} onBranchMessage={onBranchMessage} onOpenArtifact={onOpenArtifact} onOpenStoredArtifact={onOpenStoredArtifact} resolveImage={resolveImage} onOpenFile={onOpenFile} />
   </Animated.View>;
 });
 
@@ -136,6 +136,9 @@ export function ChatMessageList({
   emptyText,
   onCopyText,
   onSpeakText,
+  onEditMessage,
+  onRegenerateMessage,
+  onBranchMessage,
   onOpenArtifact,
   onOpenStoredArtifact,
   resolveImage,
@@ -160,7 +163,7 @@ export function ChatMessageList({
       contentContainerStyle={styles.messages}
       data={messages}
       keyExtractor={(item, index) => item.id || item.clientId || String(index)}
-      renderItem={({ item }) => <MessageRow message={item} mode={mode} language={language} onCopyText={onCopyText} onSpeakText={onSpeakText} onOpenArtifact={onOpenArtifact} onOpenStoredArtifact={onOpenStoredArtifact} resolveImage={resolveImage} onOpenFile={onOpenFile} />}
+      renderItem={({ item }) => <MessageRow message={item} mode={mode} language={language} onCopyText={onCopyText} onSpeakText={onSpeakText} onEditMessage={onEditMessage} onRegenerateMessage={onRegenerateMessage} onBranchMessage={onBranchMessage} onOpenArtifact={onOpenArtifact} onOpenStoredArtifact={onOpenStoredArtifact} resolveImage={resolveImage} onOpenFile={onOpenFile} />}
     />
   );
 }

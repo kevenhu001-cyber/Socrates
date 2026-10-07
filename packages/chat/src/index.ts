@@ -1,5 +1,6 @@
 import type { Message, Session, ToolCall } from '@socrates/contracts';
 import { create } from 'zustand';
+import { applyEdit, rollbackAfter } from './edit.ts';
 
 export type ChatStatus = 'idle' | 'sending' | 'streaming' | 'error';
 export interface ChatState {
@@ -29,6 +30,10 @@ export interface ChatState {
   updateTurn(turnId: string, update: (message: Message) => Message): void;
   /** Attach durable file ids to the turn's user message after upload. */
   setTurnAttachments(turnId: string, attachments: Message['attachments']): void;
+  /** Rewind a session to a user turn (edit: rewrite + drop the tail;
+   * regenerate: unchanged text, drop the tail). Returns the dropped
+   * messages so the caller can queue explicit server deletes. */
+  rewindSession(sessionId: string, anchorClientId: string, newText?: string): Message[] | null;
   finishTurn(turnId: string, error?: string | null): void;
   setStatus(status: ChatStatus, error?: string | null): void;
 }
@@ -113,6 +118,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setTurnAttachments: (turnId, attachments) => set((state) => state.turnId !== turnId ? {} : ({
     sessions: updateSession(state, state.turnSessionId, (s) => ({ ...s, messages: s.messages?.map((m) => m.clientId === `${turnId}-user` ? { ...m, attachments } : m) })),
   })),
+  rewindSession: (sessionId, anchorClientId, newText) => {
+    const session = get().sessions.find((s) => s.id === sessionId);
+    if (!session) return null;
+    const messages = session.messages || [];
+    const rolled = newText === undefined
+      ? rollbackAfter(messages, anchorClientId)
+      : applyEdit(messages, anchorClientId, newText);
+    if (!rolled) return null;
+    set((state) => ({ sessions: updateSession(state, sessionId, (s) => ({ ...s, messages: rolled.kept })) }));
+    return rolled.dropped;
+  },
   finishTurn: (turnId, error = null) => set((state) => state.turnId === turnId ? { turnId: null, turnSessionId: null, status: error ? 'error' : 'idle', error } : {}),
   setStatus: (status, error = null) => set({ status, error }),
 }));
@@ -132,3 +148,6 @@ export function visibleSessions(sessions: Session[], projectId: string | null = 
 }
 export const selectActiveSession = (state: ChatState) => state.sessions.find((s) => s.id === state.activeSessionId) || null;
 export { runChatTurn } from './turn.ts';
+export { applyEdit, applyRegenerate, buildBranchSession, findRegenerateTarget, rollbackAfter, type Rollback } from './edit.ts';
+export { createMessageOutbox, OUTBOX_MAX_OPS, OUTBOX_STORAGE_KEY, type MessageOutbox, type OutboxDeps, type OutboxOp, type OutboxOpType } from './outbox.ts';
+export { STREAM_MAX_ATTEMPTS, STREAM_RETRYABLE_STATUS, isRetryableStatus, offlineGuard, shouldRetryInterruptedStream, type StreamRetryDecision } from './retry.ts';

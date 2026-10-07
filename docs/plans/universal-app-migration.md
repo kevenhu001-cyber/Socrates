@@ -312,3 +312,138 @@ mobile/            # 冻结，仅安全/crash/data-loss 修复
 - 下轮建议：附件文件库持久化（sessionId 关联上传）、Editor/Canvas 岛
   （需先有消息 viz 数据流，否则无内容可渲染）、桌面工程化；真机 +
   staging 联调仍是发布前门（本机无 SDK/设备与 staging 凭据，只能做准备）。
+
+## 18. 进展（第十一轮，2026-10-07，rounds 11-15 合批）
+
+> 对应提交 `b99a27fc`（`0969d03a..b99a27fc`，56 文件 +3620/-94）。
+> 把第十轮预告的三项（文件库持久化、Editor/Canvas 岛所需 viz 数据流、
+> 桌面前的 Agent/Tools + Exam）一次合批落地。
+
+- 可视化 / 岛（`§4` 不可跨平台组件的正式实现）：
+  - `packages/ui/src/visualization.ts`（306 行，DOM-free）：v1 spec 契约
+  （`version/template/title/caption/accessibilitySummary/payload`，与
+  `server/src/services/visualization.ts` 同形）+ 自包含内联 SVG/HTML 渲染
+  （普通图表本地画，`svg_illustration`/`interactive_simulation` 按源原样嵌入），
+  重型依赖（ECharts/Mermaid/Plotly/Three.js）绝不进共享核心。
+  - `packages/ui/src/artifactDocument.ts`（151 行）：沙箱岛文档壳
+  （`buildEmbeddedDocument`/`buildArtifactDocument`/HTML 转义/调色板注入）。
+  - `packages/ui/src/artifacts.ts`（158 行）：栅栏（html/mermaid/three/viz）
+  提取 + `ToolCall.artifacts` 归一 + `ArtifactBridgeMessage` 解析
+  （ready/resize/openLink/copy/share/error）+ `isWebViewIsland` 注册表。
+  - `apps/socrates/src/ArtifactIsland.{web,android,native,windows,macos}.tsx`
+  + `artifactBridge.ts` + `ArtifactViewer.tsx`（96 行）：Web 真隔离 iframe
+  （取代旧 `react-native-webview` 在 Web 的占位），Android/native 走 WebView，
+  Windows/macOS 有界 fallback；`share.*.ts` 接分享/复制闭环。
+  - `MessageContent` 转录卡只显示摘要 + “打开”，重文档进岛，不进消息列表。
+- 文件库（附件落库闭环）：
+  - `contracts` 加 `StoredFile`/`StoredFilePreview`（对齐 `GET /api/files`
+  与 `/files/:id/content` 文本预览截断契约）。
+  - `packages/api` 加 `files.uploadUrl/list/preview/remove/rawUrl/fetchRaw`
+  （`uploadUrl` 专供 native `uploadAsync` 取裸 token 上传；`fetchRaw` 供 Web
+  组 blob URL / native 落缓存文件；原始字节只经 `/files/:id/raw` 读取）。
+  - `attachmentUpload.{web,native}.ts`：发送时带 `sessionId` 落库
+  （Web FormData 经 `fetchWithAuth`，native 经 `FileSystem.uploadAsync`），
+  失败绝不中断 turn（`turn.ts` 新增 `persistAttachments` 钩子 +
+  `chat.setTurnAttachments` 回填 `fileId`）。
+  - `fileAccess.{web,native}.ts` + `useFileImages.ts`：transcript 里
+  `/files/:id/raw` 图片与附件卡经鉴权解析（Web blob URL / 原生 headers），
+  可预览/下载；`fileMeta.ts`（kind 标签/二进制尺寸/URL→id）+ `urlSafety.ts`。
+  - 新建 `FilesScreen.tsx`（106 行：列表/文本预览/删除/重试）+
+  `FilePreview.tsx`（96 行浮层），侧栏 “打开文件” 进入文件库。
+- 工具卡（Agent/Tools，顺序第 7 个模块主体）：
+  - `packages/ui/src/toolModel.ts`（184 行，DOM-free，对齐 `toolCards.js`
+  数据模型）：标签映射/单行输入预览/状态（running/completed/failed）/
+  耗时/搜索结果（去重 + `safeLink` 过滤）/产物归一（live 字符串 id 与
+  持久化 `{id,mimeType,name}` 双形）。
+  - `MessageContent` 工具卡展开态：参数、stdout+stderr、来源卡
+  （标题/域/摘要/日期）、产物图片内联（经鉴权 raw 解析）、HTML 产物
+  在岛中打开、其余文件进文件预览。
+  - `turn.ts` 保留实时 `artifacts`/`durationMs`/`executionId`/`retryable`，
+  与持久化行同形渲染。
+- 考试面（Exam，`frontend/src/exam.js` 1130 行的移植）：
+  - `packages/ui/src/examModel.ts`（247 行，DOM-free）：题型解析
+  （选择/填空/简答）、本地判分、答案归一、出题 prompt 与响应解析
+  （fence/thinking/prose 兼容）。
+  - `packages/ui/src/ExamView.tsx`（136 行）：作答/交卷门禁/本地判分与解析。
+  - `apps/.../ExamSetupScreen.tsx`（162 行）+ `examGeneration.ts`（109 行）：
+  App 内出题，逐题经 `/chat/stream` 生成（可取消、进度 `generating/parsed/
+  retrying/completed` 可见），建成 `kind='exam'` 会话并 `sessions.save` 落库；
+  答案防抖经 `sessions.patch`（本轮 `patch` 白名单新增 `kind`/`examData`）持久化，
+  重开即恢复判分；会话列表 🗒 标记，Sidebar 新增 `onNewExam`（guest 隐藏）。
+- 测试/工程：
+  - 新增 5 个共享单测（`visualization/artifacts/fileMeta/toolModel/examModel`）
+  与 4 个 Playwright（`universal-{tools,files,exam,exam-generation}`），
+  `universal-chat` 补工具卡/viz 断言。
+  - Windows 兼容：`run-shared-tests.mjs`/`test-resolver.mjs`（drive-letter
+  转 fileURL）+ `run-universal-smoke.mjs`（经 node 直调 playwright cli，
+  避开 `npx.cmd` EINVAL）。
+  - 中英字典同步（app + ui `strings.ts` 共约 130 key 增量）。
+- 修过：Web 岛容器由 `react-native-webview` 换真 iframe（旧实现 Web 直接
+  返回 unsupported）；live `artifacts` 裸字符串与持久化行双形归一
+  （`toolModel` 统一吃）；出题进度 `retrying` 相与取消竞争（abort 即停，
+  不写半题）。
+- 验证：`apps typecheck` 0、DOM-free 通过、`test:shared` 全绿
+  （含新增 examModel 9/fileMeta 4/toolModel 7/visualization 5/messageContent 3）；
+  `export:web` + `test:universal` 以 8 个 spec（app/auth/chat/providers +
+  新增 tools/files/exam/exam-generation）双端（desktop + Pixel 7）为准，
+  以 CI `universal-app` job 结果为签收依据。
+- 下轮建议（第十六轮候选，按 §6 剩余 + 基线差距排序）：
+  1. 消息级 parity：编辑/重发/分支（对 `frontend/src/chat/editBranch.js`）
+  + 停止后重试 + 离线 outbox（对 `session/mutationOutbox.js`/`offline.js`/
+  `beacon.js`，当前失败只进 error、无队列、无断网续发）。
+  2. 渲染 parity：公式（KaTeX，`render/katexRefresh.js`，当前 HTML 只当字面
+  文本）+ 引用/脚注与长代码性能（对照 `render/{markdown,viz}.js`）。
+  3. 会话内模型切换：`modelPicker` 进 chat header（当前选模型要绕到
+  Settings → Providers，不符合基线手感）。
+  4. Tutor/诊断流（`teachingPlan/diagnosticGenerator`，exam 已有，tutor 缺）
+  与知识/记忆入口，放在桌面工程化之前。
+  5. 发布前门（单独一轮）：windows/macos storage 接 Credential Locker/
+  Keychain（当前 memory 占位）、EAS 与包名决策
+  （`com.topodrive.socrates.universal` vs 现发布包名）、staging 联调 +
+  真机签收（返回键/键盘/安全区/网络切换）。
+
+## 19. 进展（第十二轮，2026-10-07，round 16-1：编辑/重发/分支/离线 outbox）
+
+> 对齐 `frontend/src/chat/editBranch.js` + `session/mutationOutbox.js` +
+> `chat/offline.ts` 的纯语义；DOM 专属一律不移植（行内 textarea 编辑器、
+> `createStreamRetryViewport` 视口锚点——Universal 用 FlatList 锚点重播代替、
+> `beacon.js` keepalive——Universal 用 turn 后保存 + outbox 代替）。
+
+- 纯域（`packages/chat`，DOM-free）：
+  - `edit.ts`：`rollbackAfter`（锚点保留/尾部上报）/`applyEdit`（仅 user
+  锚点、空文本/无变化拒绝）/`findRegenerateTarget` + `applyRegenerate`
+  （回退到回复背后的 user turn）/`buildBranchSession`（附件按 20 截断，
+  exam/archive/流式字段不 fork，`branchedFrom` 落点）。
+  - `outbox.ts`：storage 注入的 `createMessageOutbox`
+  （`queueMessageOp`/`pendingOpCount`/`drainMessageOutbox`，500 cap 新胜旧、
+  单飞、逐 op 落盘、404 丢弃、非 404 停排；重放只发 `discardFollowing:
+  false` 的 patch + 逐行 delete，绝不重放 prune）。
+  - `retry.ts`：`STREAM_MAX_ATTEMPTS` = 6、`STREAM_RETRYABLE_STATUS`
+  （524 终局，其余 5xx/429/408/425 可重试）、navigator 守卫的
+  `offlineGuard`、`shouldRetryInterruptedStream`（有可见输出即不可重播）。
+  - store 加 `rewindSession(sessionId, anchor, newText?)`（返回 dropped 供
+  outbox 排队），`api.messages` 加 `patch`（`content/regenerate:false/
+  discardFollowing`，`sessionId` 仅 UUID 才做 scope）与 `remove`。
+- UI（`@socrates/ui`，handler 缺席即隐藏，guest 不传 handler）：
+  `MessageContent` 用户行 ✏️ / assistant 行 ↻ / 双行 ⑂，
+  `ChatMessageList` 透传；`strings.ts` en/zh +3（类型级 key 相等）。
+- App：`runTurn` 抽取（send/编辑/重发/重试共用，turn 后 drain）；
+  `editingId` 复用 Composer（banner + 取消 + draft 备份恢复，Send 改走
+  `commitEditSend`）；`commitEdit`（PATCH settle 后重问，404 视为本地行，
+  非 404 双半入队 + offlineNotice，本地照常重问）、`regenerate`（文本不变，
+  失败只排 deletes）、`retryTurn`（error 态重播最后 user turn，
+  error 行 ↻ Retry）、`branchFrom`（`session-*` 本地 fork + save
+  best-effort，sync 前一直保留）；outbox 经 storage 注入，drain 点 =
+  turn 后 + boot + `online` 事件（native 无 window，走 turn 后 drain 覆盖）。
+- 验证：`apps typecheck` 0、DOM-free 通过、`test:shared` 全绿
+  （新增 edit 9/outbox 6/retry 4/api-messages 2/rewind 2）；
+  `frontend lint` 0 error；`export:web` + `test:universal` **18/18**
+  （9 spec × desktop/Pixel 7，含新 `universal-edit`：改写/PATCH 断言/
+  重发/分支切片/中段掐流→Retry→重播）。
+- 实证（Chromium 零字节掐流静默重放）：首字节前掐断，Chromium 换连接
+  无形重发小 POST（Playwright request 监听不可见，服务端计两次），turn
+  照常成功、boring 无错。e2e 改用“写半截再掐”（首字节上路后传输层无法
+  重放）；零字节 case 由单测覆盖传输语义。生产含义：首字节前失败可能
+  双发 LLM turn，幂等键/去重以后轮再议（P1.5，不挡签收）。
+- 下轮（round 16-2）：公式（KaTeX）+ 引用/长代码 parity；会话内模型切换
+ （`modelPicker` 进 chat header）；Tutor/诊断流。发布前门仍单独一轮。
