@@ -2,13 +2,14 @@ import 'react-native-reanimated';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { useFonts } from 'expo-font';
 import type { AccountUsage, Assistant, ExamData, Message, Project, ProviderKey, Session, TutorData } from '@socrates/contracts';
 import { buildBranchSession, createMessageOutbox, findRegenerateTarget, isLocalSessionId, runChatTurn, useChatStore, visibleSessions as getVisibleSessions } from '@socrates/chat';
 import { persistUser } from '@socrates/auth';
 import { useAuthStore } from '@socrates/auth';
 import { useSettingsStore } from '@socrates/settings';
-import { getThemePaletteHex } from '@socrates/theme';
-import { AssistantPicker, ChatMessageList, Composer, DiagView, ExamView, ModelPicker, Sidebar, activeAssistantOf, activeProviderOf, applyDiagnosticResults, assistantConfigOf, buildColdStartNodes, buildEmbeddedDocument, buildTeachingPlanFromKB, isSubstantiveAnswer, nextTeachingStage, paletteForDocument, parseExamQuestions, storedFileIdFromRawUrl, syncCurrentNodeFromTeachingPlan, type ArtifactDescriptor, type DiagQuestion, type PracticeSubmission, type QuizPick } from '@socrates/ui';
+import { fontFamily, getThemePaletteHex } from '@socrates/theme';
+import { AssistantPicker, ChatMessageList, Composer, DiagView, ExamView, Icon, ModelPicker, Sidebar, activeAssistantOf, activeProviderOf, applyDiagnosticResults, assistantConfigOf, buildColdStartNodes, buildEmbeddedDocument, buildTeachingPlanFromKB, isSubstantiveAnswer, nextTeachingStage, paletteForDocument, parseExamQuestions, storedFileIdFromRawUrl, syncCurrentNodeFromTeachingPlan, uiStrings, type ArtifactDescriptor, type DiagQuestion, type PracticeSubmission, type QuizPick, type SidebarNavItem } from '@socrates/ui';
 import { api, streamConversation } from './src/runtime';
 import { storage } from './src/storage';
 import { copyText } from './src/clipboard';
@@ -16,6 +17,7 @@ import { capturePhoto, extractPickedDocument, pickDocument, pickImages, supports
 import { persistStagedAttachment } from './src/attachmentUpload';
 import { stagedToMessageAttachment, type PickedFile, type StagedAttachment } from './src/attachmentModels';
 import { listenOnce, listenSupported, speakText, stopSpeaking } from './src/speech';
+import { FONTS } from './src/fonts';
 import { AuthGate } from './src/AuthGate';
 import { ArtifactViewer } from './src/ArtifactViewer';
 import { FilePreview } from './src/FilePreview';
@@ -63,7 +65,7 @@ function stageLabelKey(stage: string | null | undefined): 'stageMotivate' | 'sta
 
 function SocratesApp() {
   const { width } = useWindowDimensions();
-  const compact = width < 760;
+  const compact = width <= 768;
   const [sidebarOpen, setSidebarOpen] = useState(!compact);
   const [authPending, setAuthPending] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -114,6 +116,10 @@ function SocratesApp() {
   const theme = useSettingsStore((state) => state.theme);
   const language = useSettingsStore((state) => state.language);
   const s = appStrings(language);
+  // Shared UI strings + the baseline font stacks, so the shell chrome uses
+  // the same copy and typography as the baseline SPA.
+  const t = uiStrings(language);
+  const fam = (weight: 'regular' | 'medium' | 'semibold' | 'bold' = 'regular') => ({ fontFamily: fontFamily(weight, language) });
   const palette = useMemo(() => getThemePaletteHex(theme), [theme]);
   const active = useMemo(() => sessions.find((session) => session.id === activeId) || null, [activeId, sessions]);
   const visibleSessions = useMemo(
@@ -1330,6 +1336,33 @@ function SocratesApp() {
     </SafeAreaView>;
   }
 
+  /* Keep every desktop destination visible in the baseline nav order. */
+  const navItems: SidebarNavItem[] = [
+    { key: 'new', label: t.newChat, icon: 'new-chat', onPress: createSession },
+    { key: 'library', label: t.navLibrary, icon: 'library', active: (screen as string) === 'files', onPress: () => { if (compact) setSidebarOpen(false); setScreen('files'); } },
+    { key: 'projects', label: t.navProjects, accessibilityLabel: t.openProjects, icon: 'projects', active: (screen as string) === 'projects', onPress: () => { if (compact) setSidebarOpen(false); setScreen('projects'); } },
+    { key: 'scheduled', label: t.navScheduled, icon: 'scheduled', onPress: () => undefined },
+    { key: 'plugins', label: t.navPlugins, icon: 'plugins', onPress: () => undefined },
+    { key: 'sites', label: t.navSites, icon: 'sites', badge: t.newBadge, onPress: () => undefined },
+    {
+      key: 'more',
+      label: t.navMore,
+      icon: 'more',
+      onPress: () => undefined,
+      menu: [
+        { label: s.assistantTitle, onPress: () => { if (compact) setSidebarOpen(false); setScreen('assistants'); } },
+        { label: s.openProviders, onPress: () => { if (compact) setSidebarOpen(false); setProvidersReturn('chat'); setScreen('providers'); void loadProviders(); } },
+        { label: t.newExam, onPress: () => { if (compact) setSidebarOpen(false); setScreen('exam-setup'); } },
+        { label: t.newTutor, onPress: () => { if (compact) setSidebarOpen(false); setScreen('tutor-setup'); } },
+      ],
+    },
+  ];
+  const sidebarUser = user ? {
+    initials: (user.displayName || user.email || '?').split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase(),
+    name: user.displayName || user.email || t.brand,
+    plan: user.tier ? user.tier[0].toUpperCase() + user.tier.slice(1) : accountUsage?.plan?.name || '',
+  } : null;
+
   return <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg.page }]}><StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} />
     <KeyboardAvoidingView style={styles.shell} behavior={Platform.OS === 'ios' ? 'padding' : undefined} enabled={Platform.OS !== 'web'}>
       {sidebarOpen ? <Sidebar
@@ -1337,83 +1370,73 @@ function SocratesApp() {
         activeId={activeId}
         onSelect={select}
         onNewChat={createSession}
-        onNewExam={user && !user.isGuest ? () => { if (compact) setSidebarOpen(false); setScreen('exam-setup'); } : undefined}
-        onNewTutor={user && !user.isGuest ? () => { if (compact) setSidebarOpen(false); setScreen('tutor-setup'); } : undefined}
+        nav={navItems}
+        onOpenSearch={() => { if (compact) setSidebarOpen(false); setScreen('search'); }}
+        user={sidebarUser}
+        themeIcon={theme === 'dark' ? 'moon' : 'sun'}
+        onToggleTheme={toggleTheme}
+        onOpenDisplaySettings={openSettings}
+        onOpenSettings={openSettings}
+        onToggleSidebar={() => { if (compact) setSidebarOpen(false); else setSidebarOpen((open) => !open); }}
+        logoSource={require('./assets/logo.png')}
+        sessionActions={{
+          archive: (id) => void archiveSession(id),
+          unarchive: (id) => void unarchiveSession(id),
+          remove: (id) => void deleteSession(id),
+          move: (id) => { setMovePickSession(id); setScreen('projects'); },
+        }}
         mode={theme}
         language={language}
+        compact={compact}
         archived={archived}
         onSelectArchived={(id) => void unarchiveSession(id)}
       /> : null}
-      <View style={[styles.main, { backgroundColor: palette.bg.page }]}>
-        <View style={[styles.header, { borderBottomColor: palette.border.default }]}>
-          <Pressable accessibilityRole="button" accessibilityLabel={s.toggleSidebar} onPress={() => setSidebarOpen((open) => !open)} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>☰</Text></Pressable>
-          {projectFilter ? (
-            <Pressable accessibilityRole="button" accessibilityLabel={s.clearProjectFilter(activeProject?.name || '')} onPress={() => setProjectFilter(null)} style={[styles.filterChip, { borderColor: palette.border.default, backgroundColor: palette.bg.hover }]}>
-              <Text numberOfLines={1} style={[styles.filterText, { color: palette.text.primary }]}>📁 {activeProject?.name || 'Project'} ✕</Text>
+      <View style={[styles.main, compact && styles.mainCompact, { backgroundColor: palette.bg.page }]}>
+        {/* Baseline topbar: fixed brand/model switcher and conversation actions. */}
+        <View style={[styles.topbar, compact && styles.topbarCompact]}>
+          <View style={[styles.topbarLeft, compact && styles.topbarLeftCompact]}>
+            {!sidebarOpen ? (
+              <Pressable accessibilityRole="button" accessibilityLabel={s.toggleSidebar} onPress={() => setSidebarOpen(true)} style={styles.topbarBtn}>
+                <Icon name={compact ? 'hamburger' : 'panel'} size={20} color={palette.text.primary} />
+              </Pressable>
+            ) : null}
+            <Pressable accessibilityRole="button" accessibilityLabel={s.openModelMenu} onPress={openModelMenu} style={[styles.modelSwitcher, compact && styles.modelSwitcherCompact]}>
+              <Text numberOfLines={1} style={[styles.modelName, compact && styles.modelNameCompact, { color: palette.text.primary }, fam('semibold')]}>{t.brand}</Text>
+              <Text numberOfLines={1} style={[styles.modelSub, compact && styles.modelSubCompact, { color: palette.text.tertiary }, fam()]}>{activeModelLabel}</Text>
+              <Icon name="caret" size={16} color={palette.text.tertiary} />
             </Pressable>
-          ) : (
-            <Text numberOfLines={1} style={[styles.title, { color: palette.text.primary }]}>{s.appTitle(active?.title || '')}</Text>
-          )}
-          <Pressable accessibilityRole="button" accessibilityLabel={s.openSearch} onPress={() => setScreen('search')} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>🔍</Text></Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel={s.openProjects} onPress={() => setScreen('projects')} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>📁</Text></Pressable>
-          {user && !user.isGuest ? <Pressable accessibilityRole="button" accessibilityLabel={s.openFiles} onPress={() => { setMenuOpen(false); setScreen('files'); }} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>📎</Text></Pressable> : null}
-          <Pressable accessibilityRole="button" accessibilityLabel={s.toggleTheme} onPress={toggleTheme} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>{theme === 'dark' ? '☾' : '☀'}</Text></Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel={s.openSettings} onPress={openSettings} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>⚙</Text></Pressable>
-          {active ? (
-            <Pressable accessibilityRole="button" accessibilityLabel={s.sessionActions} onPress={() => { setConfirmDelete(false); setMenuOpen((open) => !open); }} style={styles.menu}><Text style={[styles.menuText, { color: palette.text.primary }]}>⋯</Text></Pressable>
-          ) : null}
-        </View>
-        {user && !user.isGuest ? (
-          <View style={styles.chipRow}>
-            <Pressable accessibilityRole="button" accessibilityLabel={s.openModelMenu} onPress={openModelMenu} style={[styles.modelChip, { borderColor: palette.border.default, backgroundColor: palette.bg.hover }]}>
-              <Text numberOfLines={1} style={[styles.modelChipText, { color: palette.text.secondary }]}>🤖 {activeModelLabel} ▾</Text>
-            </Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel={s.openAssistantMenu} onPress={openAssistantMenu} style={[styles.modelChip, { borderColor: palette.border.default, backgroundColor: palette.bg.hover }]}>
-              <Text numberOfLines={1} style={[styles.modelChipText, { color: palette.text.secondary }]}>🎭 {activeAssistant ? (activeAssistant.title || s.assistantTitle) : s.openAssistantMenu} ▾</Text>
-            </Pressable>
+            {/* Tutor runs surface their teaching stage next to the model
+                switcher (app-specific state, hidden in plain chat). */}
             {active?.mode === 'tutor' ? (
-              <View style={[styles.modelChip, { borderColor: palette.border.default, backgroundColor: palette.bg.hover }]}>
-                <Text numberOfLines={1} style={[styles.modelChipText, { color: palette.text.secondary }]}>🎓 {s[stageLabelKey(active.teachingStage)]}{active.practicePhase ? ` · ${active.practicePhase === 'transfer' ? s.practiceTransfer : s.practiceFoundation} ·${active.practiceAttempts || 0}` : ''}</Text>
+              <View style={styles.stageChip}>
+                <Text numberOfLines={1} style={[styles.stageChipText, { color: palette.text.secondary }, fam('medium')]}>🎓 {s[stageLabelKey(active.teachingStage)]}{active.practicePhase ? ` · ${active.practicePhase === 'transfer' ? s.practiceTransfer : s.practiceFoundation} ·${active.practiceAttempts || 0}` : ''}</Text>
               </View>
             ) : null}
           </View>
-        ) : null}
-        {menuOpen && active ? (
-          <View style={[styles.menuSheet, { backgroundColor: palette.bg.raised, borderColor: palette.border.default }]}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={s.moveSessionTo(active.title || 'session')}
-              onPress={() => { setMenuOpen(false); setConfirmDelete(false); setMovePickSession(active.id); setScreen('projects'); }}
-              style={styles.menuItem}
-            >
-              <Text style={[styles.menuItemText, { color: palette.text.primary }]}>{s.moveToProject}</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={s.archiveSessionOf(active.title || 'session')}
-              onPress={() => { setMenuOpen(false); setConfirmDelete(false); void archiveSession(active.id); }}
-              style={styles.menuItem}
-            >
-              <Text style={[styles.menuItemText, { color: palette.text.primary }]}>{s.archiveSession}</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={confirmDelete ? s.confirmDeleteSessionOf(active.title || 'session') : s.deleteSessionOf(active.title || 'session')}
-              onPress={() => {
-                if (confirmDelete) { setMenuOpen(false); void deleteSession(active.id); }
-                else setConfirmDelete(true);
-              }}
-              style={styles.menuItem}
-            >
-              <Text style={[styles.menuItemText, { color: palette.danger }]}>
-                {confirmDelete ? s.confirmDeleteSession : s.deleteSession}
-              </Text>
-            </Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel={s.closeSessionMenu} onPress={() => { setMenuOpen(false); setConfirmDelete(false); }} style={styles.menuItem}>
-              <Text style={[styles.menuItemText, { color: palette.text.muted }]}>{s.cancel}</Text>
-            </Pressable>
+          <View style={styles.topbarRight}>
+            {projectFilter ? (
+              <Pressable accessibilityRole="button" accessibilityLabel={s.clearProjectFilter(activeProject?.name || '')} onPress={() => setProjectFilter(null)} style={[styles.filterChip, compact && styles.filterChipCompact]}>
+                <Text numberOfLines={1} style={[styles.filterText, { color: palette.text.primary }, fam('medium')]}>📁 {activeProject?.name || 'Project'} ✕</Text>
+              </Pressable>
+            ) : null}
+            {active ? (
+              <>
+                {!(compact && projectFilter) ? (
+                  <Pressable accessibilityRole="button" accessibilityLabel={t.artifactSummary} onPress={() => undefined} style={styles.summaryBtn}>
+                  <Icon name="summary" size={compact ? 16 : 18} color={palette.text.primary} />
+                  <Text style={[styles.summaryText, compact && styles.summaryTextCompact, { color: palette.text.primary }, fam('medium')]}>{t.artifactSummary}</Text>
+                  </Pressable>
+                ) : null}
+                <Pressable accessibilityRole="button" accessibilityLabel={t.findInConversation} onPress={() => setScreen('search')} style={styles.topbarBtn}>
+                  <Icon name="search" size={18} color={palette.text.primary} />
+                </Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel={t.shareConversation} onPress={() => undefined} style={styles.topbarBtn}>
+                  <Icon name="share" size={18} color={palette.text.primary} />
+                </Pressable>
+              </>
+            ) : null}
           </View>
-        ) : null}
+        </View>
         {chatError ? <View style={styles.errorRow}>
           <Text accessibilityRole="alert" style={[styles.errorText, { color: palette.danger }]}>{chatError}</Text>
           <Pressable accessibilityRole="button" accessibilityLabel={s.retry} onPress={() => void retryTurn()} style={[styles.retryChip, { borderColor: palette.border.default }]}>
@@ -1442,7 +1465,7 @@ function SocratesApp() {
           />
         ) : (
           <>
-            <ChatMessageList messages={active?.messages || []} mode={theme} language={language} onCopyText={copyText} onSpeakText={speak} onEditMessage={user && !user.isGuest ? (message) => startEdit(messageKey(message) || '', message.rawText || '') : undefined} onRegenerateMessage={user && !user.isGuest ? (message) => void regenerate(messageKey(message) || '') : undefined} onBranchMessage={(message) => void branchFrom(messageKey(message) || '')} onOpenArtifact={setArtifact} onOpenStoredArtifact={openStoredArtifact} resolveImage={resolveImage} onOpenFile={openAttachment} onQuizPick={onQuizPick} onPracticeSubmit={onPracticeSubmit} />
+            <ChatMessageList style={styles.list} compact={compact} messages={active?.messages || []} mode={theme} language={language} onCopyText={copyText} onSpeakText={speak} onEditMessage={user && !user.isGuest ? (message) => startEdit(messageKey(message) || '', message.rawText || '') : undefined} onRegenerateMessage={user && !user.isGuest ? (message) => void regenerate(messageKey(message) || '') : undefined} onBranchMessage={(message) => void branchFrom(messageKey(message) || '')} onOpenArtifact={setArtifact} onOpenStoredArtifact={openStoredArtifact} resolveImage={resolveImage} onOpenFile={openAttachment} onQuizPick={onQuizPick} onPracticeSubmit={onPracticeSubmit} />
             {editingId ? <View style={[styles.editBanner, { borderColor: palette.border.default }]}>
               <Text style={[styles.editBannerText, { color: palette.text.secondary }]}>{s.editingMessage}</Text>
               <Pressable accessibilityRole="button" accessibilityLabel={s.cancelEdit} onPress={cancelEdit} style={styles.editCancel}>
@@ -1450,6 +1473,7 @@ function SocratesApp() {
               </Pressable>
             </View> : null}
             <Composer
+              compact={compact}
               value={draft}
               streaming={status === 'sending' || status === 'streaming'}
               onChangeText={useChatStore.getState().setDraft}
@@ -1496,25 +1520,41 @@ function SocratesApp() {
   </SafeAreaView>;
 }
 export default function App() {
-  return <SafeAreaProvider><SocratesApp /></SafeAreaProvider>;
+  // Baseline typography: the SPA ships Inter (+ Noto Sans SC for CJK) from
+  // @fontsource; the app loads the same faces before the first paint so
+  // every text node measures identically.
+  const [fontsLoaded] = useFonts(FONTS);
+  return <SafeAreaProvider>{fontsLoaded ? <SocratesApp /> : null}</SafeAreaProvider>;
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   shell: { flex: 1, flexDirection: 'row' },
-  main: { flex: 1 },
-  header: { height: 56, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, borderBottomWidth: StyleSheet.hairlineWidth },
-  menu: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 10 },
-  menuText: { fontSize: 20 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 14, marginTop: 8 },
-  modelChip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, maxWidth: '70%' },
-  modelChipText: { fontSize: 13, fontWeight: '600' },
-  title: { flex: 1, textAlign: 'center', marginRight: 8, fontWeight: '600' },
-  filterChip: { flex: 1, marginRight: 8, borderWidth: 1, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6, alignItems: 'center' },
-  filterText: { fontSize: 14, fontWeight: '600' },
-  menuSheet: { borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 4 },
-  menuItem: { paddingHorizontal: 20, paddingVertical: 12 },
-  menuItemText: { fontSize: 16 },
+  main: { flex: 1, paddingBottom: 20 },
+  mainCompact: { paddingBottom: 16 },
+  list: { flex: 1 },
+  /* Baseline topbar (parity/topbar.css): borderless 52px bar on the page
+     color, model switcher at the left, ghost icon actions at the right. */
+  topbar: { height: 52, minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingHorizontal: 8 },
+  topbarCompact: { height: 56, minHeight: 56 },
+  topbarLeft: { flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 0, flexShrink: 1 },
+  topbarLeftCompact: { flex: 1 },
+  topbarRight: { flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 'auto' },
+  topbarBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 18 },
+  summaryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 36, minWidth: 48, paddingHorizontal: 10, borderRadius: 18 },
+  summaryText: { fontSize: 14, lineHeight: 20 },
+  summaryTextCompact: { fontSize: 12, lineHeight: 16 },
+  modelSwitcher: { flexDirection: 'row', alignItems: 'center', gap: 6, maxWidth: 360, height: 36, paddingLeft: 10, paddingRight: 8, borderRadius: 10, minWidth: 0 },
+  modelName: { fontSize: 18, lineHeight: 28, flexShrink: 1 },
+  modelSub: { fontSize: 18, lineHeight: 28, flexShrink: 1 },
+  modelSwitcherCompact: { flex: 1, height: 36, maxWidth: '100%' },
+  modelNameCompact: { fontSize: 15, lineHeight: 24, flexShrink: 0 },
+  modelSubCompact: { fontSize: 13, lineHeight: 20, flexShrink: 1 },
+  filterChip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, maxWidth: '40%' },
+  filterChipCompact: { maxWidth: 88, flexShrink: 1 },
+  filterText: { fontSize: 13, lineHeight: 18 },
+  stageChip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, maxWidth: '45%' },
+  stageChipText: { fontSize: 13, lineHeight: 18 },
   errorRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 8 },
   errorText: { flex: 1 },
   retryChip: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },

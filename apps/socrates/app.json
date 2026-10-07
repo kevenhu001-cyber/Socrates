@@ -35,7 +35,8 @@
             "backgroundColor": "#131313"
           }
         }
-      ]
+      ],
+      "expo-font"
     ],
     "icon": "../../assets/buildResources/icon_android_1024.png"
   }

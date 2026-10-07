@@ -24,12 +24,16 @@ test('universal chat refreshes, saves, isolates streams and restores server hist
     if (req.headers.authorization !== 'Bearer rotated') return json({ message: 'Unauthorized' }, 401);
     if (url.pathname.endsWith('/auth/me')) return json({ user: { id: 'account', email: 'test@example.com', displayName: 'Test' } });
     if (url.pathname.endsWith('/projects')) return json({ projects: [{ id: p, name: 'Owned project' }] });
+    if (url.pathname.endsWith('/creations/items/assistants')) return json({ items: [] });
     if (url.pathname.endsWith(`/projects/${p}`) && req.method === 'DELETE') {
       for (const [id, session] of records) if (session.projectId === p) records.delete(id);
       res.writeHead(204); res.end(); return;
     }
     if (url.pathname.endsWith('/sessions')) {
-      if (req.method === 'GET') return json({ sessions: [...records.values()].map(({ messages, ...row }) => row), nextCursor: null });
+      if (req.method === 'GET') {
+        const sessions = url.searchParams.get('archived') === 'true' ? [] : [...records.values()].map(({ messages, ...row }) => row);
+        return json({ sessions, nextCursor: null });
+      }
       const id = records.has(payload.id) ? payload.id : a;
       records.set(id, { ...payload, id, title: id === a ? 'Saved conversation' : payload.title });
       saved.push(structuredClone(records.get(id))); return json({ id, title: records.get(id).title });
@@ -65,14 +69,14 @@ test('universal chat refreshes, saves, isolates streams and restores server hist
       } catch { /* sandboxed frame */ }
     });
     await page.goto('/');
-    await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
     async function row(name) {
       const target = page.getByRole('button', { name, exact: true });
       if (!await target.isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
       await target.click();
     }
     await row('New chat');
-    await page.getByLabel('Message Socrates', { exact: true }).fill('Question');
+    await page.getByLabel('Ask Socrates', { exact: true }).fill('Question');
     await page.getByRole('button', { name: 'Send message' }).click();
     await expect(page.getByText('First chunk', { exact: true })).toBeVisible();
     expect(refreshes).toBe(1); expect(saved[0].id).toBe(a);
@@ -112,7 +116,12 @@ test('universal chat refreshes, saves, isolates streams and restores server hist
     await page.getByRole('button', { name: 'Listen to this message' }).first().click();
     await expect(errors).toEqual([]);
     await page.screenshot({ path: `test-results/universal-chat-restored-${encodeURIComponent(testInfo.project.name)}.png`, fullPage: false });
-    await page.getByRole('button', { name: 'Open projects' }).click();
+    // Projects live behind the sidebar nav row (baseline chrome).
+    const navProjects = page.getByRole('button', { name: 'Open projects' });
+    if (!(await navProjects.isVisible())) {
+      await page.getByRole('button', { name: 'Toggle sidebar' }).click();
+    }
+    await navProjects.click();
     await page.getByRole('button', { name: 'Delete Owned project' }).click();
     await expect(page.getByText('Permanently delete this project and its conversations, files and artifacts?')).toBeVisible();
     await page.getByRole('button', { name: 'Confirm delete Owned project' }).click();

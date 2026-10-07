@@ -85,7 +85,7 @@ test('universal edit rewrites a turn, regenerates, branches and retries a failed
       } catch { /* sandboxed frame */ }
     });
     await page.goto('/');
-    await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
     async function row(name) {
       // Session rows can share their name with the sidebar action (a fresh
       // session keeps the 'New chat' title): the row always sorts last.
@@ -93,7 +93,7 @@ test('universal edit rewrites a turn, regenerates, branches and retries a failed
       if (!await target.isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
       await target.click();
     }
-    const composer = page.getByLabel('Message Socrates', { exact: true });
+    const composer = page.getByLabel('Ask Socrates', { exact: true });
     const send = page.getByRole('button', { name: 'Send message' });
     // The composer swaps Send/Stop with the turn: Send visible means idle.
     const idle = () => expect(send).toBeVisible();

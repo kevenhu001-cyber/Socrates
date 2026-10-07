@@ -75,10 +75,18 @@ test('universal tutor renders quiz and practice widgets', async ({ page }, testI
       } catch { /* sandboxed frame */ }
     });
     await page.goto('/');
-    await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
 
+    // New tutor lives in the sidebar's More menu (baseline chrome).
+    async function openMore() {
+      const more = page.getByRole('button', { name: 'More' });
+      if (!(await more.isVisible())) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
+      await more.click();
+    }
+
+    await openMore();
     const newTutor = page.getByRole('button', { name: 'New tutor', exact: true });
-    if (!await newTutor.isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
+    await expect(newTutor).toBeVisible();
     await newTutor.click();
     await page.getByLabel('Topic', { exact: true }).fill('Algebra');
     await page.getByRole('button', { name: '3 questions' }).click();
@@ -92,7 +100,7 @@ test('universal tutor renders quiz and practice widgets', async ({ page }, testI
     // substantive answers (motivate → define → develop → illustrate → exercise).
     await expect(page.getByText('🎓 Intuition')).toBeVisible();
     for (let i = 1; i <= 4; i++) {
-      await page.getByLabel('Message Socrates', { exact: true }).fill(`ramp-${i} this is a sufficiently long free-form answer for the stage machine.`);
+      await page.getByLabel('Ask Socrates', { exact: true }).fill(`ramp-${i} this is a sufficiently long free-form answer for the stage machine.`);
       await page.getByRole('button', { name: 'Send message' }).click();
       await expect(page.getByText(i === 4 ? 'What is 2+2?' : `Stage reply ${i}`, { exact: true })).toBeVisible();
     }

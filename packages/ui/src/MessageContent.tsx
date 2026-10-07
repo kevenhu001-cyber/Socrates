@@ -1,6 +1,6 @@
 import React, { memo, useMemo, useState } from 'react';
 import { Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { getThemePaletteHex, type ThemeMode } from '@socrates/theme';
+import { fontFamily, getThemePaletteHex, type FontWeight, type ThemeMode } from '@socrates/theme';
 import type { Attachment, Message, ToolCall } from '@socrates/contracts';
 import type { Token, Tokens } from 'marked';
 import { parseAssistantSegments, parseMessageContent, parseRichText, plainText, safeImage, safeLink } from './messageContent';
@@ -42,6 +42,11 @@ export type MessageActions = {
   onRegenerateMessage?: (message: Message) => void;
   /** Fork the conversation at this message into a new session. */
   onBranchMessage?: (message: Message) => void;
+  onDeleteMessage?: (message: Message) => void;
+  onShareMessage?: (message: Message) => void;
+  onThumbsUpMessage?: (message: Message) => void;
+  onThumbsDownMessage?: (message: Message) => void;
+  onReExplainMessage?: (message: Message) => void;
   onOpenArtifact?: (artifact: ArtifactDescriptor) => void;
   /** Platform resolver for server-relative image sources (file raw URLs);
    * returns null to fall back to the safe inline check. */
@@ -76,7 +81,7 @@ function Inline({ tokens, p, resolveImage }: { tokens: Token[]; p: Palette; reso
   })}</>;
 }
 
-function CodeBlock({ token, p, t, onCopyText }: { token: Tokens.Code; p: Palette; t: UiStrings } & MessageActions) {
+function CodeBlock({ token, p, t, onCopyText, font }: { token: Tokens.Code; p: Palette; t: UiStrings; font?: { fontFamily: string }; compact?: boolean } & MessageActions) {
   const [notice, setNotice] = useState('');
   // Long dumps collapse: the first screenful stays visible, the rest is
   // one tap away. FlatList rows with thousand-line <Text> nodes scroll
@@ -94,7 +99,7 @@ function CodeBlock({ token, p, t, onCopyText }: { token: Tokens.Code; p: Palette
       <Text style={{ color: p.text.muted }}>{token.lang || t.code}</Text>
       {onCopyText ? <Pressable accessibilityRole="button" accessibilityLabel={t.copyCode} onPress={() => void copy()}><Text style={{ color: p.text.secondary }}>{notice || t.copyCode}</Text></Pressable> : null}
     </View>
-    <ScrollView horizontal><Text selectable style={[styles.codeText, styles.mono, { color: p.text.primary }]}>{shown}</Text></ScrollView>
+    <ScrollView horizontal><Text selectable style={[font, styles.codeText, styles.mono, { color: p.text.primary }]}>{shown}</Text></ScrollView>
     {collapsible ? <Pressable accessibilityRole="button" accessibilityLabel={expanded ? t.codeCollapse : t.codeExpand(lines.length - 30)} accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} style={[styles.codeToggle, { borderColor: p.border.default }]}>
       <Text style={{ color: p.accent.strong }}>{expanded ? t.codeCollapse : t.codeExpand(lines.length - 30)}</Text>
     </Pressable> : null}
@@ -141,20 +146,20 @@ function NotesSection({ notes, p, t }: { notes: Array<{ id: string; text: string
   </View>;
 }
 
-function Blocks({ tokens, p, t, mode, onCopyText, onOpenArtifact, resolveImage }: { tokens: Token[]; p: Palette; t: UiStrings; mode: ThemeMode } & MessageActions) {
+function Blocks({ tokens, p, t, mode, onCopyText, onOpenArtifact, resolveImage, font, lang = 'en', compact = false }: { tokens: Token[]; p: Palette; t: UiStrings; mode: ThemeMode; font?: { fontFamily: string }; lang?: UiLanguage; compact?: boolean } & MessageActions) {
   return <>{tokens.map((b, i) => {
     if (b.type === 'space' || b.type === 'def') return null;
     if (b.type === 'code') {
       const code = b as Tokens.Code;
       const artifact = onOpenArtifact ? artifactFromFence({ lang: code.lang, text: code.text, mode, index: i }) : null;
       if (artifact) return <ArtifactCard key={i} artifact={artifact} p={p} t={t} onOpenArtifact={onOpenArtifact} />;
-      return <CodeBlock key={i} token={code} p={p} t={t} onCopyText={onCopyText} />;
+      return <CodeBlock key={i} token={code} p={p} t={t} onCopyText={onCopyText} font={font} compact={compact} />;
     }
     if (b.type === 'hr') return <View key={i} style={{ height: StyleSheet.hairlineWidth, backgroundColor: p.border.default, marginVertical: 12 }} />;
-    if (b.type === 'blockquote') return <View key={i} style={[styles.quote, { borderColor: p.border.strong }]}><Blocks tokens={b.tokens || []} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} /></View>;
+    if (b.type === 'blockquote') return <View key={i} style={[styles.quote, { borderColor: p.border.strong }]}><Blocks tokens={b.tokens || []} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} font={font} lang={lang} compact={compact} /></View>;
     if (b.type === 'list') return <View key={i} style={styles.list}>{b.items.map((item: Tokens.ListItem, index: number) => <View key={index} style={styles.listRow}>
-      <Text style={[styles.text, { color: p.text.muted, width: 26 }]}>{item.task ? item.checked ? '☑' : '☐' : b.ordered ? `${Number(b.start) + index}.` : '•'}</Text>
-      <View style={{ flex: 1 }}><Blocks tokens={item.tokens || []} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} /></View>
+      <Text style={[styles.text, { color: p.text.muted, width: 26 }, font]}>{item.task ? item.checked ? '☑' : '☐' : b.ordered ? `${Number(b.start) + index}.` : '•'}</Text>
+      <View style={{ flex: 1 }}><Blocks tokens={item.tokens || []} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} font={font} lang={lang} compact={compact} /></View>
     </View>)}</View>;
     if (b.type === 'table') {
       const table = b as Tokens.Table;
@@ -162,7 +167,7 @@ function Blocks({ tokens, p, t, mode, onCopyText, onOpenArtifact, resolveImage }
         {[table.header, ...table.rows].map((row, index) => <View key={index} style={styles.tableRow}>{row.map((cell, col) => <Text key={col} selectable style={[styles.tableCell, { color: p.text.primary, borderColor: p.border.default, fontWeight: index === 0 ? '700' : '400' }]}><Inline tokens={cell.tokens} p={p} resolveImage={resolveImage} /></Text>)}</View>)}
       </View></ScrollView>;
     }
-    return <Text key={i} selectable accessibilityRole={b.type === 'heading' ? 'header' : undefined} style={[styles.text, { color: p.text.primary }, b.type === 'heading' ? { fontWeight: '700', fontSize: Math.max(17, 28 - b.depth * 2), marginTop: 10 } : undefined]}>
+    return <Text key={i} selectable accessibilityRole={b.type === 'heading' ? 'header' : undefined} style={[styles.text, { color: p.text.primary }, font, compact && styles.textCompact, b.type === 'heading' ? { fontFamily: fontFamily('semibold', lang), fontSize: Math.max(17, 28 - b.depth * 2), marginTop: 10 } : undefined]}>
       {'tokens' in b && b.tokens ? <Inline tokens={b.tokens || []} p={p} resolveImage={resolveImage} /> : plainText(('text' in b ? b.text : '') || b.raw || '')}
     </Text>;
   })}</>;
@@ -171,11 +176,11 @@ function Blocks({ tokens, p, t, mode, onCopyText, onOpenArtifact, resolveImage }
 /** Field text for tutor widgets: markdown + the same math transform the
  * transcript pipeline applies (inline TeX as codespan, display TeX as an
  * island card). */
-function RichText({ text, mode, p, t, resolveImage, onOpenArtifact }: { text: string; mode: ThemeMode; p: Palette; t: UiStrings } & MessageActions) {
+function RichText({ text, mode, p, t, resolveImage, onOpenArtifact, font }: { text: string; mode: ThemeMode; p: Palette; t: UiStrings; font?: { fontFamily: string } } & MessageActions) {
   const parts = useMemo(() => parseRichText(text), [text]);
   return <>{parts.map((part, i) => part.kind === 'math'
     ? <MathCard key={i} tex={part.tex} index={i} mode={mode} p={p} t={t} onOpenArtifact={onOpenArtifact} />
-    : <Blocks key={i} tokens={part.tokens} p={p} t={t} mode={mode} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} />)}</>;
+    : <Blocks key={i} tokens={part.tokens} p={p} t={t} mode={mode} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} font={font} />)}</>;
 }
 
 /** Interactive quiz proxy (baseline `mountQuizWidget` + `handleQuizPick`):
@@ -326,7 +331,7 @@ function ToolCard({ tool, p, t, resolveImage, onOpenStoredArtifact, onOpenFile }
   </View>;
 }
 
-export const MessageContent = memo(function MessageContent({ message, mode, language = 'en', onCopyText, onSpeakText, onEditMessage, onRegenerateMessage, onBranchMessage, onOpenArtifact, onOpenStoredArtifact, resolveImage, onOpenFile, onQuizPick, onPracticeSubmit }: { message: Message; mode: ThemeMode; language?: UiLanguage } & MessageActions) {
+export const MessageContent = memo(function MessageContent({ message, mode, language = 'en', compact = false, onCopyText, onSpeakText, onEditMessage, onRegenerateMessage, onBranchMessage, onOpenArtifact, onOpenStoredArtifact, resolveImage, onOpenFile, onQuizPick, onPracticeSubmit }: { message: Message; mode: ThemeMode; language?: UiLanguage; compact?: boolean } & MessageActions) {
   const p = getThemePaletteHex(mode);
   const t = uiStrings(language);
   const content = useMemo(() => parseMessageContent(message), [message.rawText, message.content, message.reasoningContent]);
@@ -338,15 +343,13 @@ export const MessageContent = memo(function MessageContent({ message, mode, lang
     [message.role, content.text],
   );
   const [showReasoning, setShowReasoning] = useState(false);
-  const speakable = message.role === 'assistant' && content.text.trim().length > 0 ? content.text : null;
-  const editable = message.role === 'user' && content.text.trim().length > 0;
-  const regenerable = message.role === 'assistant' && content.text.trim().length > 0;
+  const font = { fontFamily: fontFamily('regular', language) };
   return <View style={{ gap: 8 }}>
     {content.reasoning ? <View style={[styles.reasoning, { borderColor: p.border.default }]}>
       <Pressable accessibilityRole="button" accessibilityLabel={t.toggleReasoning} accessibilityState={{ expanded: showReasoning }} onPress={() => setShowReasoning(!showReasoning)}><Text style={{ color: p.text.muted }}>{t.reasoning} {showReasoning ? '⌃' : '⌄'}</Text></Pressable>
       {showReasoning ? <Text selectable style={[styles.text, { color: p.text.secondary }]}>{content.reasoning}</Text> : null}
     </View> : null}
-    {message.role === 'user' ? <Text selectable style={[styles.text, { color: p.text.primary }]}>{content.text}</Text> : segments && segments.length ? <>{segments.map((segment, i) => {
+    {message.role === 'user' ? <Text selectable style={[styles.text, styles.userText, compact && styles.userTextCompact, { color: p.text.primary }, font]}>{content.text}</Text> : segments && segments.length ? <>{segments.map((segment, i) => {
       if (segment.kind === 'math') return <MathCard key={i} tex={segment.tex} index={i} mode={mode} p={p} t={t} onOpenArtifact={onOpenArtifact} />;
       if (segment.kind === 'notes') return <NotesSection key={i} notes={segment.notes} p={p} t={t} />;
       if (segment.kind === 'quiz') return <TutorQuizCard key={i} quiz={segment.quiz} mode={mode} p={p} t={t} onQuizPick={onQuizPick} />;
@@ -355,32 +358,8 @@ export const MessageContent = memo(function MessageContent({ message, mode, lang
         <Text style={{ color: p.text.muted, fontWeight: '600' }}>{t.scaffoldFallback}</Text>
         <Text selectable style={[styles.mono, { color: p.text.secondary }]}>{segment.text}</Text>
       </View>;
-      return <Blocks key={i} tokens={segment.tokens} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} />;
-    })}</> : content.tokens.length ? <Blocks tokens={content.tokens} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} /> : <Text style={{ color: p.text.muted }}>{t.thinking}</Text>}
-    {speakable && onSpeakText ? (
-      <Pressable accessibilityRole="button" accessibilityLabel={t.listenMessage} onPress={() => onSpeakText(speakable)} style={styles.speakRow}>
-        <Text style={{ color: p.text.muted }}>{t.listen}</Text>
-      </Pressable>
-    ) : null}
-    {(editable && onEditMessage) || (regenerable && onRegenerateMessage) || onBranchMessage ? (
-      <View style={styles.turnActions}>
-        {editable && onEditMessage ? (
-          <Pressable accessibilityRole="button" accessibilityLabel={t.editMessage} onPress={() => onEditMessage(message)} style={styles.turnAction}>
-            <Text style={{ color: p.text.muted }}>✏️ {t.editMessage}</Text>
-          </Pressable>
-        ) : null}
-        {regenerable && onRegenerateMessage ? (
-          <Pressable accessibilityRole="button" accessibilityLabel={t.regenerateMessage} onPress={() => onRegenerateMessage(message)} style={styles.turnAction}>
-            <Text style={{ color: p.text.muted }}>↻ {t.regenerateMessage}</Text>
-          </Pressable>
-        ) : null}
-        {onBranchMessage ? (
-          <Pressable accessibilityRole="button" accessibilityLabel={t.branchMessage} onPress={() => onBranchMessage(message)} style={styles.turnAction}>
-            <Text style={{ color: p.text.muted }}>⑂ {t.branchMessage}</Text>
-          </Pressable>
-        ) : null}
-      </View>
-    ) : null}
+      return <Blocks key={i} tokens={segment.tokens} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} font={font} lang={language} compact={compact} />;
+    })}</> : content.tokens.length ? <Blocks tokens={content.tokens} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} font={font} lang={language} compact={compact} /> : <Text style={[styles.text, { color: p.text.muted }, font, compact && styles.textCompact]}>{t.thinking}</Text>}
     {message.attachments?.map((attachment) => {
       const inline = attachment.kind === 'image' && attachment.dataUrl ? safeImage(attachment.dataUrl) : null;
       const rawSrc = attachment.fileId ? `/api/files/${attachment.fileId}/raw` : '';
@@ -404,7 +383,12 @@ export const MessageContent = memo(function MessageContent({ message, mode, lang
   </View>;
 });
 const styles = StyleSheet.create({
-  text: { fontSize: 16, lineHeight: 25, marginBottom: 4 },
+  text: { fontSize: 16, lineHeight: 28, marginBottom: 12 },
+  userText: { marginBottom: 0 },
+  userTextCompact: { fontSize: 16.875, lineHeight: 27.84375, letterSpacing: -0.1 },
+  /* ≤768px baseline: 15px at --app-font-scale 1.125 with 1.65 line-height
+     (styles/components/chat.css mobile block). */
+  textCompact: { fontSize: 16.875, lineHeight: 27.8438, marginBottom: 10 },
   mono: { fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', fontSize: 14 },
   code: { borderWidth: 1, borderRadius: 12, overflow: 'hidden', marginVertical: 8 },
   codeHeader: { padding: 10, flexDirection: 'row', justifyContent: 'space-between', gap: 16 },
@@ -427,9 +411,6 @@ const styles = StyleSheet.create({
   attachment: { padding: 10, borderWidth: 1, borderRadius: 12, gap: 8 },
   attachmentImage: { width: '100%', maxHeight: 220, borderRadius: 8 },
   attachmentRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  speakRow: { alignSelf: 'flex-start', paddingVertical: 4 },
-  turnActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
-  turnAction: { paddingVertical: 4 },
   image: { width: 260, maxWidth: '100%', height: 180 },
   scaffold: { padding: 12, borderWidth: 1, borderRadius: 12, gap: 10, marginVertical: 6 },
   quizOption: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },

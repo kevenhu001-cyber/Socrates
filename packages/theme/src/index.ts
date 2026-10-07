@@ -11,3 +11,4 @@
 
 export * from './tokens';
 export * from './rn';
+export * from './fonts';

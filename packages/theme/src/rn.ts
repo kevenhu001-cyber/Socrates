@@ -71,7 +71,7 @@ const darkHex: ThemePaletteHex = {
   text: {
     primary: '#e8e8e8',
     secondary: '#c2c2c2',
-    tertiary: '#9c9c9c',
+    tertiary: '#9b9b9b',
     muted: '#808080',
     disabled: '#616161',
   },
@@ -125,6 +125,72 @@ export const palettesHex: Readonly<Record<ThemeMode, ThemePaletteHex>> = {
 
 export function getThemePaletteHex(mode: ThemeMode): ThemePaletteHex {
   return palettesHex[mode];
+}
+
+/**
+ * Surface colors that the SPA declares as free-standing CSS variables in
+ * `frontend/src/styles/themes.css` (`--ui-bg-sidebar`, `--ui-bg-bubble`,
+ * `--ui-bg-composer`, `--ui-composer-border`, `--ui-bg-control`,
+ * `--ui-bg-hover-ghost`, `--ui-bg-chip`, `--ui-avatar-bg`,
+ * `--ui-text-placeholder`). Ported verbatim so RN surfaces paint the
+ * exact baseline color; keep in sync with themes.css when it changes.
+ */
+export interface UiSurfaceHex {
+  /** Sidebar column (`--ui-bg-sidebar`). */
+  readonly sidebar: string;
+  /** User message bubble (`--ui-bg-bubble`). */
+  readonly bubble: string;
+  /** User message bubble on ≤768px (renders one step lighter in dark). */
+  readonly bubbleStrong: string;
+  /** Composer card (`--ui-bg-composer`). */
+  readonly composer: string;
+  /** Composer hairline (`--ui-composer-border`). */
+  readonly composerBorder: string;
+  /** Circular control fill — avatar, phone composer rail (`--ui-bg-control`). */
+  readonly control: string;
+  /** Quiet hover wash on icon buttons (`--ui-bg-hover-ghost`). */
+  readonly hoverGhost: string;
+  /** Chip fill (`--ui-bg-chip`). */
+  readonly chip: string;
+  /** Avatar disc (`--ui-avatar-bg`). */
+  readonly avatar: string;
+  /** Placeholder text (`--ui-text-placeholder`). */
+  readonly placeholder: string;
+}
+
+const darkSurfaces: UiSurfaceHex = {
+  sidebar: '#1e1e1e',
+  bubble: '#202020',
+  bubbleStrong: '#2e2e2e',
+  composer: '#1c1c1c',
+  composerBorder: 'rgba(255, 255, 255, 0.14)',
+  control: '#303030',
+  hoverGhost: 'rgba(255, 255, 255, 0.08)',
+  chip: 'rgba(255, 255, 255, 0.07)',
+  avatar: '#303030',
+  placeholder: '#808080',
+};
+
+const lightSurfaces: UiSurfaceHex = {
+  sidebar: '#fcfcfc',
+  bubble: '#f3f3f3',
+  bubbleStrong: '#f3f3f3',
+  composer: '#ffffff',
+  composerBorder: 'rgba(0, 0, 0, 0.20)',
+  control: '#e8e8e8',
+  hoverGhost: 'rgba(0, 0, 0, 0.05)',
+  chip: 'rgba(0, 0, 0, 0.05)',
+  avatar: '#737373',
+  placeholder: '#8f8f8f',
+};
+
+const surfacesHex: Readonly<Record<ThemeMode, UiSurfaceHex>> = {
+  dark: darkSurfaces,
+  light: lightSurfaces,
+};
+
+export function getUiSurfaceHex(mode: ThemeMode): UiSurfaceHex {
+  return surfacesHex[mode];
 }
 
 /** Drop-in replacement for mobile's existing `Palette` shape so the

@@ -59,10 +59,19 @@ test('universal providers list, activate, add and delete', async ({ page }) => {
   });
 
   await page.goto('/', { waitUntil: 'domcontentloaded' });
-  await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible({ timeout: 20000 });
+  await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
 
-  // Settings entry shows the active model; opening loads the list.
-  await page.getByRole('button', { name: 'Open settings' }).click();
+  // Settings entry shows the active model; opening loads the list. The
+  // settings gear lives in the sidebar footer (baseline chrome).
+  async function openSettings() {
+    const gear = page.getByRole('button', { name: 'Open settings' });
+    if (!(await gear.isVisible())) {
+      await page.getByRole('button', { name: 'Toggle sidebar' }).click();
+    }
+    await gear.click();
+  }
+
+  await openSettings();
   await expect(page.getByRole('button', { name: 'Models & keys' })).toBeVisible();
   await expect(page.getByText('beagle ›')).toBeVisible();
   await page.getByRole('button', { name: 'Models & keys' }).click();

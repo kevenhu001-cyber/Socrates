@@ -59,9 +59,16 @@ test('universal exam generation creates and persists an exam session', async ({ 
     await page.goto('/');
     // Wait for the signed-in chat shell before touching the sidebar:
     // under full-suite load the restore/sync can still be in flight.
-    await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
+    // New exam lives in the sidebar's More menu (baseline chrome).
+    async function openMore() {
+      const more = page.getByRole('button', { name: 'More' });
+      if (!(await more.isVisible())) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
+      await more.click();
+    }
+
+    await openMore();
     const newExam = page.getByRole('button', { name: 'New exam' });
-    if (!await newExam.isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
     await expect(newExam).toBeVisible();
     await newExam.click();
     await expect(page.getByText('Generate exam')).toBeVisible();

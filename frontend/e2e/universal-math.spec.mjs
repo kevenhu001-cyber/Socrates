@@ -58,11 +58,11 @@ test('universal math renders formula cards, strips citations, notes footnotes an
       } catch { /* sandboxed frame */ }
     });
     await page.goto('/');
-    await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
     const target = page.getByRole('button', { name: 'New chat', exact: true }).first();
     if (!await target.isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
     await target.click();
-    await page.getByLabel('Message Socrates', { exact: true }).fill('Math please');
+    await page.getByLabel('Ask Socrates', { exact: true }).fill('Math please');
     await page.getByRole('button', { name: 'Send message' }).click();
 
     // Display math becomes a card showing the TeX source with an island opener.

@@ -66,11 +66,19 @@ test('universal tutor generates a diagnostic, grades the baseline and teaches', 
       } catch { /* sandboxed frame */ }
     });
     await page.goto('/');
-    await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
 
-    // Tutor setup: topic + 3 diagnostic questions.
+    // Tutor setup: topic + 3 diagnostic questions. New tutor lives in the
+    // sidebar's More menu (baseline chrome).
+    async function openMore() {
+      const more = page.getByRole('button', { name: 'More' });
+      if (!(await more.isVisible())) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
+      await more.click();
+    }
+
+    await openMore();
     const newTutor = page.getByRole('button', { name: 'New tutor', exact: true });
-    if (!await newTutor.isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
+    await expect(newTutor).toBeVisible();
     await newTutor.click();
     await page.getByLabel('Topic', { exact: true }).fill('Algebra');
     await page.getByRole('button', { name: '3 questions' }).click();
@@ -87,7 +95,7 @@ test('universal tutor generates a diagnostic, grades the baseline and teaches', 
     // The diagnostic view yields to the transcript; teaching continues.
     await expect(page.getByText('Quick diagnostic', { exact: true })).toHaveCount(0);
     expect(genCalls).toBe(3);
-    await page.getByLabel('Message Socrates', { exact: true }).fill('Teach me please, this is a long enough free-form answer.');
+    await page.getByLabel('Ask Socrates', { exact: true }).fill('Teach me please, this is a long enough free-form answer.');
     await page.getByRole('button', { name: 'Send message' }).click();
     await expect(page.getByText('Taught reply', { exact: true })).toBeVisible();
     const teaching = streams.find((s) => !s.system.includes('diagnostic tutor'));

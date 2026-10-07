@@ -61,7 +61,7 @@ test('universal exam renders questions, saves answers and grades locally', async
       } catch { /* sandboxed frame */ }
     });
     await page.goto('/');
-    await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
     await openExam();
 
     // Questions render in place of the transcript/composer.
@@ -69,7 +69,7 @@ test('universal exam renders questions, saves answers and grades locally', async
     await expect(page.getByRole('button', { name: 'A. 4' })).toBeVisible();
     await expect(page.getByLabel('Answer for question 2')).toBeVisible();
     await expect(page.getByLabel('Answer for question 3')).toBeVisible();
-    await expect(page.getByPlaceholder('Message Socrates')).toHaveCount(0);
+    await expect(page.getByPlaceholder('Ask Socrates')).toHaveCount(0);
 
     // Submit gate, then answer all three (one wrong on purpose).
     await page.getByRole('button', { name: 'Submit exam' }).click();
@@ -95,7 +95,7 @@ test('universal exam renders questions, saves answers and grades locally', async
     await page.reload();
     await openExam();
     await expect(page.getByText('2 / 3 · 67% correct')).toBeVisible();
-    await expect(page.getByPlaceholder('Message Socrates')).toHaveCount(0);
+    await expect(page.getByPlaceholder('Ask Socrates')).toHaveCount(0);
     expect(errors).toEqual([]);
     await page.screenshot({ path: `test-results/universal-exam-${encodeURIComponent(testInfo.project.name)}.png`, fullPage: false });
   } finally {

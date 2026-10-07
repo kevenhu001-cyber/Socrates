@@ -62,10 +62,18 @@ test('universal files list stored uploads, preview, delete and open from the tra
       } catch { /* sandboxed frame */ }
     });
     await page.goto('/');
-    await expect(page.getByRole('button', { name: 'Open files' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
 
-    // Library: list, text preview, delete.
-    await page.getByRole('button', { name: 'Open files' }).click();
+    // The file library is the sidebar's Library nav row (baseline chrome).
+    async function openLibrary() {
+      const row = page.getByRole('button', { name: 'Library' });
+      if (!(await row.isVisible())) {
+        await page.getByRole('button', { name: 'Toggle sidebar' }).click();
+      }
+      await row.click();
+    }
+
+    await openLibrary();
     await expect(page.getByText('plot.png')).toBeVisible();
     await expect(page.getByText('notes.txt')).toBeVisible();
     await page.getByRole('button', { name: 'notes.txt', exact: true }).click();

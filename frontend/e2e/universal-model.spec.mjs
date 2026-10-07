@@ -65,18 +65,19 @@ test('universal model switches the active provider from the chat header', async 
       } catch { /* sandboxed frame */ }
     });
     await page.goto('/');
-    await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
 
-    // The header chip opens the picker; the server list drives it.
+    // The header switcher opens the picker; the server list drives it.
     await page.getByRole('button', { name: 'Choose model' }).click();
-    await expect(page.getByText('Beagle', { exact: true })).toBeVisible();
-    await expect(page.getByText('Custom', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Use Beagle' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Use Custom' })).toBeVisible();
 
     // Picking Custom activates it server-side and mirrors locally.
     await page.getByRole('button', { name: 'Use Custom' }).click();
     await expect.poll(() => patches.length).toBe(1);
     expect(patches[0]).toEqual({ id: 'custom', body: { isActive: true } });
-    await expect(page.getByText('🤖 Custom ▾', { exact: true })).toBeVisible();
+    // The baseline topbar switcher carries the app name + active model.
+    await expect(page.getByRole('button', { name: 'Choose model' })).toContainText('Custom');
 
     // Manage leads to the full providers screen.
     await page.getByRole('button', { name: 'Choose model' }).click();
@@ -88,7 +89,7 @@ test('universal model switches the active provider from the chat header', async 
     const newChat = page.getByRole('button', { name: 'New chat', exact: true }).first();
     if (!await newChat.isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
     await newChat.click();
-    await page.getByLabel('Message Socrates', { exact: true }).fill('Hi');
+    await page.getByLabel('Ask Socrates', { exact: true }).fill('Hi');
     await page.getByRole('button', { name: 'Send message' }).click();
     await expect(page.getByText('Hello', { exact: true })).toBeVisible();
 

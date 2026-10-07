@@ -81,7 +81,7 @@ test('universal assistant binds a persona to the session', async ({ page }, test
       } catch { /* sandboxed frame */ }
     });
     await page.goto('/');
-    await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
 
     const toggleSidebar = async () => {
       if (!await page.getByRole('button', { name: 'New chat' }).isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
@@ -106,7 +106,7 @@ test('universal assistant binds a persona to the session', async ({ page }, test
     await expect(page.getByText('🎭 Coach ▾')).toHaveCount(0);
     await openPicker();
     await page.getByRole('button', { name: 'Use Coach' }).click();
-    await page.getByLabel('Message Socrates', { exact: true }).fill('Hello persona');
+    await page.getByLabel('Ask Socrates', { exact: true }).fill('Hello persona');
     await page.getByRole('button', { name: 'Send message' }).click();
     await expect(page.getByText('Assistant reply', { exact: true }).first()).toBeVisible();
     expect(savePayloads.at(-1)?.assistantId).toBe('a1');
@@ -124,7 +124,7 @@ test('universal assistant binds a persona to the session', async ({ page }, test
     await expect(page.getByRole('button', { name: 'Start chat with Tutor' })).toBeVisible();
     await page.getByRole('button', { name: 'Start chat with Tutor' }).click();
     await expect(page.getByText('🎭 Tutor ▾')).toBeVisible();
-    await expect(page.getByLabel('Message Socrates', { exact: true })).toHaveValue('Let us begin!');
+    await expect(page.getByLabel('Ask Socrates', { exact: true })).toHaveValue('Let us begin!');
     await openPicker();
     await page.getByRole('button', { name: 'Manage assistants' }).click();
     await page.getByRole('button', { name: 'Delete Tutor' }).click();

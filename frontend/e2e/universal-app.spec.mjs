@@ -96,7 +96,7 @@ test('universal app manages projects and sessions end to end', async ({ page }) 
   }));
 
   await page.goto('/', { waitUntil: 'domcontentloaded' });
-  await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible({ timeout: 20000 });
+  await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
 
   // Compact viewports (mobile project) start with the sidebar closed.
   // Settle after every screen/sidebar transition: the sidebar mounts
@@ -105,6 +105,17 @@ test('universal app manages projects and sessions end to end', async ({ page }) 
   async function settle() {
     await page.evaluate(() => (document.fonts ? document.fonts.ready : null)).catch(() => {});
     await page.waitForTimeout(400);
+  }
+
+  // The baseline chrome keeps navigation in the sidebar (parity/sidebar.css):
+  // open the drawer first on phones, then use the nav rows.
+  async function openSidebar() {
+    const toggle = page.getByRole('button', { name: 'Toggle sidebar' });
+    const nav = page.getByRole('button', { name: 'Open projects' });
+    if (!(await nav.isVisible()) && (await toggle.isVisible())) {
+      await toggle.click();
+      await settle();
+    }
   }
 
   async function selectRow(name) {
@@ -127,11 +138,17 @@ test('universal app manages projects and sessions end to end', async ({ page }) 
     await expect(row).toBeVisible();
   }
 
-  async function openSessionMenu() {
-    await page.getByRole('button', { name: 'Session actions' }).click();
+  async function openSessionMenu(title) {
+    const actions = page.getByRole('button', { name: `Session actions for ${title}` });
+    if (!(await actions.isVisible())) {
+      const toggle = page.getByRole('button', { name: 'Toggle sidebar' });
+      if (await toggle.isVisible()) { await toggle.click(); await settle(); }
+    }
+    await actions.click();
   }
 
   // Projects list + rename.
+  await openSidebar();
   await page.getByRole('button', { name: 'Open projects' }).click();
   await settle();
   await expect(page.getByRole('button', { name: 'Project Math' })).toBeVisible();
@@ -145,13 +162,14 @@ test('universal app manages projects and sessions end to end', async ({ page }) 
   await settle();
   await selectRow('Free chat');
   await settle();
-  await openSessionMenu();
+  await openSessionMenu('Free chat');
   await page.getByRole('button', { name: 'Move Free chat to project' }).click();
   await expect(page.getByText('Move “Free chat” to…')).toBeVisible();
   await page.getByRole('button', { name: 'Move to Maths' }).click();
-  await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible();
 
   // Filter to Maths: both sessions visible, nothing else.
+  await openSidebar();
   await page.getByRole('button', { name: 'Open projects' }).click();
   await settle();
   await page.getByRole('button', { name: 'Project Maths' }).click();
@@ -163,7 +181,7 @@ test('universal app manages projects and sessions end to end', async ({ page }) 
   // Archive HW 1 from the session menu: select it first, then archive.
   await selectRow('HW 1');
   await settle();
-  await openSessionMenu();
+  await openSessionMenu('HW 1');
   await page.getByRole('button', { name: 'Archive HW 1' }).click();
   await expect(page.getByRole('button', { name: 'HW 1', exact: true })).toHaveCount(0);
 
@@ -178,19 +196,21 @@ test('universal app manages projects and sessions end to end', async ({ page }) 
   await settle();
   await expectRowVisible('HW 1');
 
+
   // Search: instant local title hit plus the server message hit whose
   // <mark> highlight must render as literal text. Opening jumps to chat.
-  await page.getByRole('button', { name: 'Open search' }).click();
+  await page.getByRole('button', { name: 'Find in conversation' }).click();
   await page.getByLabel('Search conversations').fill('hw');
   await expect(page.getByRole('button', { name: 'Open HW 1' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Open message in conversation' })).toBeVisible();
   await expect(page.getByText('<mark>')).toHaveCount(0);
   await page.getByRole('button', { name: 'Open HW 1' }).click();
   await settle();
-  await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible();
 
   // Settings: tone presets, profile and server usage snapshot. Picking a
   // tone persists it to storage across a reload.
+  await openSidebar();
   await page.getByRole('button', { name: 'Open settings' }).click();
   await expect(page.getByText('Assistant tone')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Friendly tone' })).toBeVisible();
@@ -199,7 +219,8 @@ test('universal app manages projects and sessions end to end', async ({ page }) 
   await page.getByRole('button', { name: 'Friendly tone' }).click();
   expect(await page.evaluate(() => localStorage.getItem('socrates.settings'))).toMatch(/"tone":"friendly"/);
   await page.reload();
-  await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible({ timeout: 20000 });
+  await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
+  await openSidebar();
   await page.getByRole('button', { name: 'Open settings' }).click();
   expect(await page.evaluate(() => localStorage.getItem('socrates.settings'))).toMatch(/"tone":"friendly"/);
   await page.getByRole('button', { name: 'Back to chat' }).click();
@@ -207,21 +228,25 @@ test('universal app manages projects and sessions end to end', async ({ page }) 
 
   // Composer attachment entry points render; the native-only camera stays
   // hidden on web (no OS dialog is opened). Desktop Chromium ships
-  // SpeechRecognition, so voice input renders there too.
+  // SpeechRecognition, so voice input renders there too. The attach items
+  // live behind the composer's + menu, exactly like the baseline shell.
+  await page.getByRole('button', { name: 'Add photos and files' }).click();
   await expect(page.getByRole('button', { name: 'Attach photos' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Attach a file' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Take a photo' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Add photos and files' }).click();
   await expect(page.getByRole('button', { name: 'Start voice input' })).toBeVisible();
 
   // Delete HW 1 from the session menu (two-tap confirm purges everywhere).
   await selectRow('HW 1');
   await settle();
-  await openSessionMenu();
+  await openSessionMenu('HW 1');
   await page.getByRole('button', { name: 'Delete HW 1' }).click();
   await page.getByRole('button', { name: 'Confirm delete HW 1' }).click();
   await expect(page.getByRole('button', { name: 'HW 1', exact: true })).toHaveCount(0);
 
   // Delete Physics (two-tap confirm).
+  await openSidebar();
   await page.getByRole('button', { name: 'Open projects' }).click();
   await settle();
   await page.getByRole('button', { name: 'Delete Physics' }).click();
@@ -231,6 +256,7 @@ test('universal app manages projects and sessions end to end', async ({ page }) 
   // Language switch re-labels the app without a reload, then back.
   await page.getByRole('button', { name: 'Back to chat' }).click();
   await settle();
+  await openSidebar();
   await page.getByRole('button', { name: 'Open settings' }).click();
   await page.getByRole('button', { name: 'zh language' }).click();
   await expect(page.getByText('助手语气')).toBeVisible();

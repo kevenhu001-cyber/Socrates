@@ -64,7 +64,7 @@ test('universal auth gate registers, recovers and signs in with a code', async (
   await expect(page.getByText('Code sent — check your email, then enter it above.')).toBeVisible();
   await page.getByLabel('Login code').fill('ABCDEFGH');
   await page.getByRole('button', { name: 'Verify & sign in' }).click();
-  await expect(page.getByRole('button', { name: 'Open projects' })).toBeVisible({ timeout: 20000 });
+  await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
   expect(await page.evaluate(() => localStorage.getItem('socrates.auth.tokens'))).toMatch(/fresh/);
 
   expect(pageErrors, pageErrors.join('\n')).toEqual([]);

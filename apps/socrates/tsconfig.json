@@ -48,6 +48,9 @@
       "react-native-reanimated": [
         "node_modules/react-native-reanimated"
       ],
+      "react-native-svg": [
+        "node_modules/react-native-svg"
+      ],
       "zustand": [
         "node_modules/zustand/index.d.ts"
       ],
