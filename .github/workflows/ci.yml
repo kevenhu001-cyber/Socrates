@@ -400,3 +400,47 @@ jobs:
       # decoupling) also lives in packages/core with no DOM/rAF dependency.
       - name: Playback clock tests
         run: node --experimental-strip-types --test packages/core/src/streamPlayer.test.ts
+
+  universal-app:
+    name: Universal App web smoke
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: |
+            apps/socrates/package-lock.json
+            frontend/package-lock.json
+
+      # The Universal App (apps/socrates + packages/) is the mobile/
+      # successor: same Sidebar/Chat/Composer/Settings/Projects on Web
+      # (RN Web) and Android. This gate exports the web bundle and runs
+      # the self-contained mock-server spec (no backend needed).
+      - name: Install Universal App dependencies
+        run: npm ci --include=dev
+        working-directory: apps/socrates
+
+      - name: Install Playwright dependencies
+        run: npm ci --include=dev
+        working-directory: frontend
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend
+
+      - name: Universal App smoke tests
+        run: npm run test:universal
+        working-directory: frontend
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: universal-app-report
+          path: frontend/test-results

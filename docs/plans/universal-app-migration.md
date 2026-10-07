@@ -148,3 +148,38 @@ mobile/            # 冻结，仅安全/crash/data-loss 修复
 - 下轮建议：Settings 持久化 e2e（localStorage 回读）、Library/Projects 列表迁入 Universal App（第 5 个模块）、
   给 `apps/socrates` 加 `rn-web` smoke spec（自建 dist serve + guest 流，现有 `rn-web-smoke.spec.mjs`
   测的是冻结 mobile 壳，不可复用）。
+
+## 11. 进展（第四轮，2026-10-06）
+
+- `packages/api` 加 `projects.list/create/update/remove`（对齐 `server/src/routes/projects.ts`；
+  附带把 `ApiError` 改为显式字段声明——原参数属性语法跑不过 `node --strip-types` 单测）。
+  `packages/api/src/index.test.ts` 5/5（list/create/PATCH 编码/DELETE/ApiError status）。
+  `packages/api/node_modules` 只放 `@socrates/*` symlink（无实体包，见第 10 轮铁律）。
+- Universal App Library/Projects（第 5 个模块）：新建 `src/ProjectsScreen.tsx`（列表 + 选项目过滤 +
+  name-only 新建 + 离线错误/重试）；`App.tsx` 加 `projects` 屏、登录/恢复后 `syncLibrary`
+  （projects + sessions 列表合并，绝不覆盖已有消息的本地会话）、server 会话的懒详情加载
+  （本地 id 免请求）、header 项目过滤 chip、新建会话自动归属当前过滤项目、登出重置。
+- 验收：`export:web` + mock 登录态 smoke（projects 列表 → 选 Math → sidebar 只剩 HW 1 →
+  正文懒加载出详情消息），零 pageerror，截图确认。修过一个过滤不一致（sidebar 过滤而正文仍 welcome）：
+  选项目时自动切到该项目首个会话。
+- 下轮建议：project 改名/删除、session 归档/改项目、给 Universal App 自建 `rn-web` smoke spec
+ （mock 登录 + projects，全绿后作为 CI 门禁；冻结 mobile 的旧 spec 不可复用）。
+
+## 12. 进展（第五轮，2026-10-06）
+
+- `packages/api`：`sessions.patch`（title/topic/pinned/projectId 子集）、`archive`/`unarchive`
+  （对齐 `POST|DELETE /sessions/:id/archive`；归档要求 UUID，本地 id 只做本地标记）。
+  单测 7/7。
+- 会话操作 UX 定稿：archive/move 收进 App header 溢出菜单（`⋯` → Move to project / Archive），
+  全端统一；`@socrates/ui` Sidebar 回归纯导航（曾短暂给 active 行加 📁📦 按钮，已 revert）。
+- 真事故复盘（spec 门禁 90s 超时×N）：Sidebar 的 `entering={FadeIn}/exiting={FadeOut}`
+  使 RN Web 在挂载期 tap 取消（pointerdown/up 间行位移）+ Playwright stability 永不等到。
+  修法：Sidebar 去挂载动画（MessageRow 的 LinearTransition 保留）；spec 对过渡后操作加
+  `fonts.ready + 400ms` settle。另修：spec 非精确 label 撞车（`exact: true`）、compact 下
+  select 关 sidebar 导致 action 不可达（header 菜单天然解决）、s1 懒加载 mock 缺口。
+  最终双端（desktop 1280 + Pixel 7）~10s 全绿。
+- CI 门禁：`ci.yml` 新增 `universal-app` job（apps/frontend 双 `npm ci` + Chromium +
+  `npm run test:universal` + test-results artifact），新 runner 脚本
+  `frontend/scripts/run-universal-smoke.mjs`（export → :4175 node 静态 serve → spec → 退出码透传）。
+  现有 job 未动；YAML 已校验，待一次真实 CI 运行确认。
+- 下轮建议：session 删除/purge、archived 列表入口、projects 空态引导文案对齐 `frontend/` 基准。

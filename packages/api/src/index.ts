@@ -1,4 +1,4 @@
-import type { ChatRequest, ChatSseHandlers, MobileTokenPair, Session, User } from '@socrates/contracts';
+import type { ChatRequest, ChatSseHandlers, MobileTokenPair, Project, Session, User } from '@socrates/contracts';
 import { consumeSseBuffer, dispatchChatSseFrame } from '@socrates/core';
 import type { KeyValueStore } from '@socrates/platform';
 
@@ -6,7 +6,13 @@ export type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
 export type TokenState = Partial<MobileTokenPair>;
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string, public body?: unknown) { super(message); }
+  status: number;
+  body?: unknown;
+  constructor(status: number, message: string, body?: unknown) {
+    super(message);
+    this.status = status;
+    this.body = body;
+  }
 }
 
 export function createApiClient(input: { baseUrl: string; fetch: FetchLike; storage: KeyValueStore }) {
@@ -41,6 +47,20 @@ export function createApiClient(input: { baseUrl: string; fetch: FetchLike; stor
       list: async () => (await request<{ sessions: Session[] }>('/sessions?limit=50')).sessions,
       get: (id: string) => request<Session>(`/sessions/${encodeURIComponent(id)}`),
       save: (session: Session) => request<Session>('/sessions', { method: 'POST', body: JSON.stringify(session) }),
+      // Subset of the server PATCH allowlist used by the Universal App.
+      // projectId moves a session between projects (null = unfiled).
+      patch: (id: string, patch: Partial<Pick<Session, 'title' | 'topic' | 'pinned' | 'projectId'>>) =>
+        request<Session>(`/sessions/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+      archive: (id: string) => request<{ ok: true }>(`/sessions/${encodeURIComponent(id)}/archive`, { method: 'POST' }),
+      unarchive: (id: string) => request<{ ok: true }>(`/sessions/${encodeURIComponent(id)}/archive`, { method: 'DELETE' }),
+    },
+    projects: {
+      list: async () => (await request<{ projects: Project[] }>('/projects')).projects,
+      create: (input: Pick<Project, 'name'> & Partial<Pick<Project, 'description' | 'color' | 'icon' | 'systemPrompt'>>) =>
+        request<Project>('/projects', { method: 'POST', body: JSON.stringify(input) }),
+      update: (id: string, patch: Partial<Pick<Project, 'name' | 'description' | 'color' | 'icon' | 'systemPrompt'>>) =>
+        request<Project>(`/projects/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+      remove: (id: string) => request<void>(`/projects/${encodeURIComponent(id)}`, { method: 'DELETE' }),
     },
     chatUrl: (sessionId?: string) => `${input.baseUrl}/chat/stream${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ''}`,
     readTokens,

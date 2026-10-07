@@ -2,7 +2,7 @@ import React from 'react';
 import type { Message, Session } from '@socrates/contracts';
 import { getThemePaletteHex } from '@socrates/theme';
 import type { ThemeMode } from '@socrates/theme';
-import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
+import Animated, { LinearTransition } from 'react-native-reanimated';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 // Legacy light-only export kept for compat; new code should pass mode
@@ -15,6 +15,11 @@ function paletteFor(mode: UiMode = 'light') {
   return getThemePaletteHex(mode);
 }
 
+// Pure navigation: rows only select. Session actions (archive/move) live in
+// the App header overflow menu so they work on every viewport — and so the
+// sidebar stays animation-free: mount entering/exiting animations caused
+// tap cancellations on RN Web (row shifts between pointerdown/up) plus
+// Playwright stability flake. Message rows keep their LinearTransition.
 export function Sidebar({
   sessions,
   activeId,
@@ -30,7 +35,7 @@ export function Sidebar({
 }) {
   const p = paletteFor(mode);
   return (
-    <Animated.View entering={FadeIn} exiting={FadeOut} style={[styles.sidebar, { backgroundColor: p.bg.raised, borderRightColor: p.border.default }]}>
+    <View style={[styles.sidebar, { backgroundColor: p.bg.raised, borderRightColor: p.border.default }]}>
       <Text style={[styles.brand, { color: p.text.primary }]}>Socrates</Text>
       <Pressable accessibilityRole="button" accessibilityLabel="New chat" onPress={onNewChat} style={[styles.newChat, { borderColor: p.border.default }]}>
         <Text style={[styles.newChatText, { color: p.text.primary }]}>New chat</Text>
@@ -52,7 +57,7 @@ export function Sidebar({
           </Pressable>
         )}
       />
-    </Animated.View>
+    </View>
   );
 }
 

@@ -37,7 +37,8 @@
     "debug:shoot": "node debug/shoot.mjs",
     "debug:probe": "node debug/probe.mjs",
     "debug:interactive": "node debug/interactive.mjs",
-    "lint:packages-dom": "node ../scripts/check-packages-dom.mjs"
+    "lint:packages-dom": "node ../scripts/check-packages-dom.mjs",
+    "test:universal": "node scripts/run-universal-smoke.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
