@@ -1,8 +1,10 @@
 import type { KeyValueStore } from '@socrates/platform';
 
-// macOS (React Native macOS): same placeholder as Windows — in-memory until
-// a Keychain adapter lands. Platform differences stay in these
-// *.windows.ts / *.macos.ts files; packages/ remain DOM-free.
+// DORMANT — macOS is out of scope as of 2026-10-07 (round 16-5): the
+// supported targets are Android / Web / iOS only, and this repo has no
+// React Native macOS native tree, so no build resolves this file. Kept as
+// a placeholder in case desktop is re-opened; no work is planned here.
+// See docs/plans/universal-app-migration.md §5 + §23.
 import { createMemoryStore } from '@socrates/platform';
 
 export const storage: KeyValueStore = createMemoryStore();

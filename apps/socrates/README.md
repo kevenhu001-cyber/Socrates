@@ -22,8 +22,8 @@ src/storage.ts             # 默认 memory（测试/SSR 安全）
 src/storage.web.ts         # localStorage 适配（Web）
 src/storage.native.ts      # SecureStore（Android/iOS 默认）
 src/storage.android.ts     # Android 显式适配
-src/storage.windows.ts     # Windows 占位（memory → Credential Locker）
-src/storage.macos.ts       # macOS 占位（memory → Keychain）
+src/storage.windows.ts     # Windows 占位（DORMANT：桌面已出局范围，见计划 §23）
+src/storage.macos.ts       # macOS 占位（DORMANT：桌面已出局范围，见计划 §23）
 src/ArtifactIsland.*.tsx   # TipTap/tldraw/viz/Mermaid/Three.js 的 WebView 岛
 src/ArtifactViewer.tsx     # 岛预览面板 + ArtifactBridgeMessage(ready/resize/openLink/copy/share/error) 闭环
 src/artifactBridge.ts      # 各端岛适配器共享的 props / 协议类型

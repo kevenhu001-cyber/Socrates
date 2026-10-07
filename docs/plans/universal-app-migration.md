@@ -58,13 +58,19 @@ TipTap、tldraw、HTML/Viz、Mermaid、Three.js 暂时保留为 Web/局部 WebVi
   （Web/Android 用 `react-native-webview`；Windows/macOS 用有界 fallback）
 - 协议：`ArtifactBridgeMessage`（ready/resize/openLink/copy/share/error）
 
-## 5. 桌面端
+## 5. 桌面端（2026-10-07 起出局范围）
 
-- Windows：React Native Windows；macOS：React Native macOS。
-- 平台功能通过 `*.web.ts` / `*.android.ts` / `*.windows.ts` / `*.macos.ts`
-  做少量适配（storage/clipboard/network/push/speech/statusbar）。
-- 当前占位：`storage.windows.ts` / `storage.macos.ts` 用 memory store，
-  后续换 Credential Locker / Keychain，不碰 `packages/`。
+- **决定（round 16-5，2026-10-07）：不再做 Windows / macOS 原生目标**，
+  发布范围收敛为 Android / Web / iOS。桌面需求由 Expo Web 导出承担
+  （`release-clients.yml` 的 “Windows release” 本就是 web bundle，
+  localStorage 持久化已可用）；`*.windows.ts` / `*.macos.ts` 适配文件保留
+  为休眠占位，不再投入，`storage.windows.ts` / `storage.macos.ts` 原定的
+  Credential Locker / Keychain 适配随之作废。
+- 平台适配机制不变：`*.web.ts` / `*.android.ts` / `*.native.ts`（iOS 走
+  native）做少量差异（storage/clipboard/network/speech/statusbar），
+  不碰 `packages/`。
+- 若未来重新打开桌面：补 RN Windows / RN macOS 原生工程树后才谈 storage
+  落地（PasswordVault / Keychain），届时恢复本节计划。
 
 ## 6. 逐模块替换旧前端（顺序）
 
@@ -598,3 +604,34 @@ mobile/            # 冻结，仅安全/crash/data-loss 修复
   （Credential Locker/Keychain 替换内存占位）、EAS/包名决策、staging 联调 +
   真机签收（返回键/键盘/安全区/弱网）；候选加深：错题本、
   teaching plan 进度条、assistant 编辑入口。
+
+## 23. 进展（第十六轮，2026-10-07，round 16-5：范围收敛 + 发布决策落地）
+
+> 发布前门里可本地闭环的两个决策切片；staging 联调与真机签收仍开放
+>（见下）。原定的 storage 原生适配随桌面出局而作废（§5 已改写）。
+
+- **范围**：放弃 Windows/macOS 原生目标，只交付 Android / Web / iOS。
+  §5 改写；`storage.windows.ts` / `storage.macos.ts` 注释与 apps README
+  标记 DORMANT（原定 Credential Locker/Keychain 计划作废）；桌面需求由
+  Expo Web 导出承担（localStorage 持久化，`release-clients.yml` 本就
+  发的是 web bundle）。
+- **包名（覆盖升级路径）**：`app.json` 从
+  `com.topodrive.socrates.universal` 改为 **`com.topodrive.socrates`**
+  （与冻结的 mobile 2.0.1/versionCode 3 同包名），`versionCode 1 → 4`、
+  `version 0.1.0 → 2.1.0`——Android 只检查 versionCode 严格递增，
+  versionName 不低于 2.0.1 避免观感降级。EAS 从 app.json 派生包名，
+  `eas.json` 无需改动（preview 的 staging URL 仍是 `staging.invalid`
+  占位）。
+- **iOS 首次纳入**：`ios.bundleIdentifier = com.topodrive.socrates`；
+  plugins 补 `expo-document-picker` / `expo-image-picker`（相机 + 相册
+  用法字符串，对齐 mobile 配置）。语音输入在原生端本就
+  `listenSupported() === false`（无识别器），不涉及麦克风/识别权限；
+  expo-speech TTS 免权限。
+- **验证**：`apps typecheck` 0；`export:web` ok；`export:android` ok
+  （本机 Windows 默认 `%TEMP%` 拦截 hermesc 写临时文件，需
+  `TMP=$PWD/.hermes-tmp` 覆盖后通过——环境问题，与配置无关）；
+  `test:shared` **208/208**。
+- **未做/阻塞**：staging 联调（等真实 staging 地址替换
+  `staging.invalid`）；真机签收（返回键/键盘/安全区/弱网）与 iOS 真机
+  构建（需 Apple 账号 / EAS）均超出本机能力。
+- 下一轮候选：错题本、teaching plan 进度条、assistant 快捷编辑入口。

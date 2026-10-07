@@ -1,9 +1,10 @@
 import type { KeyValueStore } from '@socrates/platform';
 
-// Windows (React Native Windows): SecureStore is unavailable, so persist to
-// the in-memory store for now. A future *.windows.ts adapter can swap this
-// for Credential Locker / DPAPI without touching shared packages.
-// See docs/plans/universal-app-migration.md §7.
+// DORMANT — Windows is out of scope as of 2026-10-07 (round 16-5): the
+// supported targets are Android / Web / iOS only, and this repo has no
+// React Native Windows native tree, so no build resolves this file. Kept as
+// a placeholder in case desktop is re-opened; no work is planned here.
+// See docs/plans/universal-app-migration.md §5 + §23.
 import { createMemoryStore } from '@socrates/platform';
 
 export const storage: KeyValueStore = createMemoryStore();

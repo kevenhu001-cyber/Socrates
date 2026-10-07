@@ -2,7 +2,7 @@
   "expo": {
     "name": "Socrates Universal",
     "slug": "socrates-universal",
-    "version": "0.1.0",
+    "version": "2.1.0",
     "scheme": "socrates",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
@@ -10,16 +10,21 @@
       "bundler": "metro"
     },
     "android": {
-      "package": "com.topodrive.socrates.universal",
-      "versionCode": 1,
+      "package": "com.topodrive.socrates",
+      "versionCode": 4,
       "adaptiveIcon": {
         "foregroundImage": "../../assets/buildResources/icon_android_foreground_1024.png",
         "backgroundColor": "#ffffff"
       },
       "softwareKeyboardLayoutMode": "resize"
     },
+    "ios": {
+      "bundleIdentifier": "com.topodrive.socrates"
+    },
     "plugins": [
       "expo-secure-store",
+      "expo-document-picker",
+      "expo-image-picker",
       [
         "expo-splash-screen",
         {
