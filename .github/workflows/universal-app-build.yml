@@ -51,7 +51,7 @@ jobs:
       - name: Install and verify Universal App
         working-directory: apps/socrates
         run: |
-          npm ci --ignore-scripts --include=dev
+          npm ci --ignore-scripts --include=dev --prefer-offline --no-audit --no-fund
           npm run typecheck
           npm run test:shared
           node ../../scripts/check-packages-dom.mjs
@@ -73,7 +73,7 @@ jobs:
         working-directory: apps/socrates/android
         # Expo's generated release variant embeds JS; its default debug key
         # deliberately identifies a test artifact, never a store upgrade.
-        run: ./gradlew :app:assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,x86_64
+        run: ./gradlew :app:assembleRelease --build-cache --no-daemon -PreactNativeArchitectures=arm64-v8a,x86_64
       - name: Verify and checksum artifacts
         working-directory: apps/socrates
         run: |
@@ -89,3 +89,6 @@ jobs:
           path: apps/socrates/preview-artifacts
           if-no-files-found: error
           retention-days: 14
+          # The payload is dominated by an APK and tar.gz; avoid a second
+          # compression pass inside the artifact ZIP.
+          compression-level: 0

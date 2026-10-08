@@ -54,7 +54,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-          cache: gradle
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
@@ -64,6 +63,8 @@ jobs:
           # needed by the pinned component install below.
           packages: platform-tools
 
+      # setup-gradle is the single Gradle cache owner for this job; using both
+      # setup-java cache:gradle and setup-gradle causes duplicate restores/saves.
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v4
 
@@ -78,7 +79,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: mobile
-        run: npm ci
+        run: npm ci --prefer-offline --no-audit --no-fund
 
       - name: Verify mobile client
         if: github.event_name == 'push' || inputs.run_tests
@@ -103,7 +104,7 @@ jobs:
           # sits on the splash screen. Release embeds the bundle via
           # `export:embed` and signs with the debug keystore when no
           # ANDROID_KEYSTORE_* env is provided.
-          ./gradlew :app:assembleRelease --no-daemon --console=plain \
+          ./gradlew :app:assembleRelease --build-cache --no-daemon --console=plain \
             -PreactNativeArchitectures="$RN_ARCHITECTURES"
 
       - name: Verify and package APK
@@ -119,6 +120,7 @@ jobs:
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)
           "$APKSIGNER" verify --verbose --print-certs "mobile/dist/$APK_NAME"
           (cd mobile && npm run verify:apk -- "dist/$APK_NAME")
+          sha256sum "mobile/dist/$APK_NAME" > "mobile/dist/$APK_NAME.sha256"
 
           echo "APK_NAME=$APK_NAME" >> "$GITHUB_ENV"
           {
@@ -137,3 +139,6 @@ jobs:
             mobile/dist/${{ env.APK_NAME }}.sha256
           if-no-files-found: error
           retention-days: 30
+          # APK is already a ZIP container; recompressing it wastes CPU for
+          # negligible size reduction.
+          compression-level: 0

@@ -11,17 +11,22 @@ on:
     branches:
       - main
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+
 jobs:
   qodana:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
-      contents: write
+      contents: read
       pull-requests: write
       checks: write
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
       - name: 'Qodana Scan'
         # Upstream publishes dotted tags only (v2026.2.0, v2026.2.1) — there is
@@ -35,8 +40,9 @@ jobs:
           # A plain QODANA_TOKEN reference here would 401 on every scan.
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_1699681199 }}
         with:
-          # When pr-mode is set to true, Qodana analyzes only the files that have been changed
-          pr-mode: false
+          # PRs only need changed-file feedback; main/manual runs remain full
+          # scans so repository-wide quality debt is still continuously checked.
+          pr-mode: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
           use-caches: true
           post-pr-comment: true
           use-annotations: true

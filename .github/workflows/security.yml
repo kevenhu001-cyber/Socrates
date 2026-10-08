@@ -23,7 +23,9 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'push' }}
+  # Superseded pushes/PR revisions should not consume runners. Manual and
+  # scheduled security audits are intentional snapshots and are never cancelled.
+  cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -47,20 +49,6 @@ jobs:
         uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # If this job fails on its first run, the fix is NOT to relax it.
-      # Unlike a stale CVE, a committed credential is immediately
-      # actionable: rotate the credential first (scripts/rotate-secrets.sh),
-      # then, only for a confirmed false positive, record the finding
-      # fingerprint in a `.gitleaksignore` file at the repo root with a
-      # one-line reason. Deleting or soft-failing this job would recreate
-      # exactly the `continue-on-error: true` pattern that let the
-      # dependency backlog accumulate unnoticed.
-      #
-      # Pre-flight at the time this gate was added: a heuristic scan of all
-      # 919 reachable commits for OpenAI/GitHub/AWS key shapes and PEM
-      # private-key headers found no credential-shaped strings, so the gate
-      # was expected to start green.
 
   codeql:
     name: CodeQL (${{ matrix.language }})
@@ -92,7 +80,7 @@ jobs:
           queries: security-extended
 
       # No build step: the JS/TS extractor works from source. Skipping
-      # autobuild avoids failing on the four independent npm projects.
+      # autobuild avoids failing on the independent npm projects.
       - uses: github/codeql-action/analyze@v3
         with:
           category: /language:${{ matrix.language }}
@@ -118,12 +106,8 @@ jobs:
 
       # A real gate: no continue-on-error. It runs through
       # scripts/audit-ratchet.mjs rather than bare `npm audit` because the
-      # repo inherited a backlog — a gate that is red on every run from day
-      # one gets ignored exactly like the `continue-on-error: true` audit it
-      # replaces. The ratchet fails on any NEW high/critical advisory, and
-      # also fails when a baselined one stops reproducing, so the accepted
-      # list can only shrink. Every accepted entry carries a written reason
-      # in scripts/audit.baseline.json.
+      # repo inherited a backlog. The ratchet fails on any NEW high/critical
+      # advisory, and also fails when a baselined one stops reproducing.
       - name: Dependency audit ratchet
         working-directory: .
         run: node scripts/audit-ratchet.mjs ${{ matrix.project }}
@@ -137,23 +121,53 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          # A cold SBOM build still benefits from npm tarball reuse.
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            server/package-lock.json
+            mobile/package-lock.json
+
+      # The SBOM is deterministic for these three lockfiles and the pinned
+      # CycloneDX generator. Cache the generated documents themselves so the
+      # common case can skip three npm installs and generation entirely.
+      - name: Restore generated SBOMs
+        id: sbom-cache
+        uses: actions/cache@v4
+        with:
+          path: sbom
+          key: >-
+            ${{ runner.os }}-sbom-cdx-6.0.1-v1-${{
+              hashFiles('frontend/package-lock.json', 'server/package-lock.json', 'mobile/package-lock.json')
+            }}
+
+      - name: Install CycloneDX CLI once
+        if: steps.sbom-cache.outputs.cache-hit != 'true'
+        run: npm install --global @cyclonedx/cyclonedx-npm@6.0.1 --prefer-offline --no-audit --no-fund
 
       # An SBOM per client is the prerequisite for answering "are we
       # affected by CVE-X" without re-resolving trees by hand, and for
       # signing releases later. Generated from the lockfiles so it reflects
       # what actually installs.
       - name: Generate CycloneDX SBOMs
+        if: steps.sbom-cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p sbom
           for project in frontend server mobile; do
             echo "::group::$project"
-            (cd "$project" && npm ci --ignore-scripts --no-audit --no-fund)
-            npx --yes @cyclonedx/cyclonedx-npm@6.0.1 \
+            (cd "$project" && npm ci --ignore-scripts --prefer-offline --no-audit --no-fund)
+            cyclonedx-npm \
               --output-format JSON \
               --output-file "sbom/${project}.cdx.json" \
               "$project/package-lock.json"
             echo "::endgroup::"
           done
+
+      - name: Verify SBOM cache/generation output
+        run: |
+          test -s sbom/frontend.cdx.json
+          test -s sbom/server.cdx.json
+          test -s sbom/mobile.cdx.json
 
       - uses: actions/upload-artifact@v7
         with:

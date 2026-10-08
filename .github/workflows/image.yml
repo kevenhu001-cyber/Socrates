@@ -32,7 +32,9 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  # Only the newest push/PR revision matters. Manual image builds are explicit
+  # snapshots and are allowed to finish.
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 env:
   REGISTRY: ghcr.io
@@ -60,9 +62,8 @@ jobs:
 
       - uses: docker/setup-buildx-action@v4
 
-      # Only authenticate for pushes. A pull_request from a fork has no
-      # package-write permission, so those runs build and verify without
-      # pushing — the verification is the valuable part on a PR anyway.
+      # Only authenticate for pushes/manual runs. A pull_request from a fork
+      # has no package-write permission, so those runs build and verify locally.
       - name: Log in to GHCR
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
@@ -84,7 +85,14 @@ jobs:
 
       # Build context is the repository ROOT: src/lib/prompts.ts resolves the
       # shipped prompts relative to the repo root, so prompts/ must sit beside
-      # server/ inside the image.
+      # server/ inside the image. A named GHA scope prevents unrelated Buildx
+      # workflows from evicting/cache-keying against this image's layers.
+      #
+      # PR verification uses the Docker exporter (`load: true`). Buildx cannot
+      # load the attestation manifest list into the classic Docker image store,
+      # so provenance/SBOM attestations are emitted only for pushed images.
+      # main/manual images still retain both attestations and the later signed
+      # provenance step.
       - name: Build
         id: build
         uses: docker/build-push-action@v6
@@ -95,15 +103,15 @@ jobs:
           load: ${{ github.event_name == 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          provenance: true
-          sbom: true
+          cache-from: type=gha,scope=socrates-api
+          cache-to: type=gha,mode=max,scope=socrates-api
+          provenance: ${{ github.event_name != 'pull_request' }}
+          sbom: ${{ github.event_name != 'pull_request' }}
 
       # Boot the image against a real Postgres and require /api/health to
-      # report a live database connection. A "it builds" check would pass on an
-      # image that is missing prompts/ or a production dependency and only
-      # fails on the first chat turn.
+      # report a live database connection. The API is bound to loopback for
+      # health polling so CI can use the runner's curl instead of pulling and
+      # starting a fresh curlimages/curl container for every retry.
       - name: Verify the image actually runs
         env:
           TAG: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
@@ -113,6 +121,12 @@ jobs:
           IMAGE="$LOCAL_TAG"
           if [ "${{ github.event_name }}" != "pull_request" ]; then IMAGE="$TAG"; fi
           echo "verifying $IMAGE"
+
+          cleanup() {
+            docker rm -f api pg >/dev/null 2>&1 || true
+            docker network rm socrates-verify >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
 
           docker network create socrates-verify
           docker run -d --name pg --network socrates-verify \
@@ -127,24 +141,21 @@ jobs:
 
           # Migrations ship inside the image and are runnable with plain node
           # (tsconfig.build.json compiles src/db/migrate.ts to
-          # dist/db/migrate.js), so no tsx is needed in the runtime layer. This
-          # step is what proves the drizzle/ files are present AND readable by
-          # the `node` user: a mode-600 migration on the build host used to
-          # produce the misleading error "No file ./drizzle/0016_*.sql found".
+          # dist/db/migrate.js), so no tsx is needed in the runtime layer.
           docker run --rm --network socrates-verify \
             -e DATABASE_URL="$DB_URL" \
             -e SESSION_SECRET=ci-verify-only-not-a-production-secret \
             --entrypoint node "$IMAGE" dist/db/migrate.js
 
           docker run -d --name api --network socrates-verify \
+            -p 127.0.0.1:8080:8080 \
             -e DATABASE_URL="$DB_URL" \
             -e SESSION_SECRET=ci-verify-only-not-a-production-secret \
             -e PORT=8080 "$IMAGE"
 
           ok=0
           for i in $(seq 1 60); do
-            body="$(docker run --rm --network socrates-verify curlimages/curl:latest \
-                     -s http://api:8080/api/health || true)"
+            body="$(curl -fsS http://127.0.0.1:8080/api/health 2>/dev/null || true)"
             case "$body" in *'"ok":true'*) ok=1; echo "health: $body"; break;; esac
             sleep 2
           done
@@ -172,9 +183,6 @@ jobs:
           who="$(docker run --rm --entrypoint sh "$IMAGE" -c 'id -un')"
           [ "$who" = "node" ] || { echo "::error::image runs as $who, expected node"; exit 1; }
 
-          docker rm -f api pg >/dev/null 2>&1 || true
-          docker network rm socrates-verify >/dev/null 2>&1 || true
-
       - name: Install cosign
         if: github.event_name != 'pull_request'
         uses: sigstore/cosign-installer@v3
@@ -182,11 +190,6 @@ jobs:
       # Keyless signing: the signature is bound to this workflow's OIDC
       # identity, so "which workflow at which commit produced this digest" is
       # verifiable without managing a private key.
-      #
-      # Verify with:
-      #   cosign verify ghcr.io/<owner>/socrates-api@sha256:... \
-      #     --certificate-identity-regexp '.*' \
-      #     --certificate-oidc-issuer https://token.actions.githubusercontent.com
       - name: Sign the digest
         if: github.event_name != 'pull_request'
         env:

@@ -37,7 +37,9 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'push' }}
+  # A new PR revision supersedes the old one just as surely as a new push.
+  # Manual runs are explicit snapshots and are allowed to finish.
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 permissions:
   contents: read
@@ -178,6 +180,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     defaults:
       run:
         working-directory: frontend
@@ -191,7 +194,21 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      - run: npm ci --include=dev
+      - name: Restore Rust WASM cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin/wasm-bindgen
+            ~/.cargo/bin/wasm-bindgen-test-runner
+            ~/.cargo/bin/wasm2es6js
+            tools-rust/target
+          key: ${{ runner.os }}-${{ runner.arch }}-rust-wasm-v1-${{ hashFiles('tools-rust/Cargo.lock') }}-wasm-bindgen-0.2.126
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-rust-wasm-v1-
+
+      - run: npm ci --include=dev --prefer-offline --no-audit --no-fund
 
       - name: Build Rust WASM support
         run: |
@@ -200,7 +217,9 @@ jobs:
           # crates.io directly, and the mirror has timed out in CI.
           rm -f ../tools-rust/.cargo/config.toml
           rustup target add wasm32-unknown-unknown
-          cargo install wasm-bindgen-cli --version 0.2.126 --locked
+          if ! wasm-bindgen --version 2>/dev/null | grep -qx 'wasm-bindgen 0.2.126'; then
+            cargo install wasm-bindgen-cli --version 0.2.126 --locked
+          fi
           npm run build:wasm
 
       - name: Lint
@@ -286,6 +305,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: server
@@ -331,7 +351,7 @@ jobs:
           cache: 'npm'
           cache-dependency-path: server/package-lock.json
 
-      - run: npm ci --include=dev
+      - run: npm ci --include=dev --prefer-offline --no-audit --no-fund
 
       - name: TypeScript check
         run: npx tsc --noEmit
@@ -370,6 +390,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Restore Rust protocol cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            tools-rust/target
+          key: ${{ runner.os }}-${{ runner.arch }}-rust-protocol-v1-${{ hashFiles('tools-rust/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-rust-protocol-v1-
+
       # socrates-protocol holds the ToolRun phase state machine whose
       # TypeScript twin lives in packages/core. Its unit tests never
       # ran in CI before; no wasm target needed for this crate.
@@ -406,6 +437,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@v4
@@ -423,7 +455,7 @@ jobs:
       # (RN Web) and Android. This gate exports the web bundle and runs
       # the self-contained mock-server spec (no backend needed).
       - name: Install Universal App dependencies
-        run: npm ci --include=dev
+        run: npm ci --include=dev --prefer-offline --no-audit --no-fund
         working-directory: apps/socrates
 
       - name: Universal App typecheck and shared tests
@@ -434,7 +466,7 @@ jobs:
         working-directory: apps/socrates
 
       - name: Install Playwright dependencies
-        run: npm ci --include=dev
+        run: npm ci --include=dev --prefer-offline --no-audit --no-fund
         working-directory: frontend
 
       - name: Install Playwright Chromium
