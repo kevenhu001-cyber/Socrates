@@ -21,8 +21,10 @@ on:
         type: boolean
         default: false
 
+# Default to read-only. Only the two jobs that actually mutate a GitHub release
+# request contents:write, which also keeps the reusable build job least-privileged.
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -32,6 +34,7 @@ jobs:
   validate-release:
     name: Validate release tag
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       tag: ${{ steps.release.outputs.tag }}
     steps:
@@ -62,6 +65,7 @@ jobs:
     name: Publish GitHub release assets
     needs: [validate-release, build]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: write
     steps:
@@ -106,8 +110,11 @@ jobs:
     needs: [validate-release, universal-preview, publish-github]
     if: github.event_name == 'workflow_dispatch' && inputs.include_universal_preview
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: socrates-universal-preview-${{ github.sha }}
           path: universal-preview
@@ -126,6 +133,7 @@ jobs:
     needs: [validate-release, build]
     if: github.event_name == 'workflow_dispatch' && inputs.publish_google_play
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
