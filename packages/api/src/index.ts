@@ -1,4 +1,4 @@
-import type { AccountUsage, Assistant, ChatRequest, ChatSseHandlers, FileExtractResult, MobileTokenPair, Project, ProviderKey, SearchHit, Session, SessionShare, ShareVisibility, StoredFile, StoredFilePreview, User } from '@socrates/contracts';
+import type { AccountUsage, Assistant, ChatRequest, ChatSseHandlers, FileExtractResult, Mistake, MobileTokenPair, Project, ProviderKey, SearchHit, Session, SessionShare, ShareVisibility, StoredFile, StoredFilePreview, User } from '@socrates/contracts';
 import { consumeSseBuffer, dispatchChatSseFrame } from '@socrates/core';
 import type { KeyValueStore } from '@socrates/platform';
 
@@ -255,6 +255,14 @@ export function createApiClient(input: {
       createShare: (id: string, visibility: ShareVisibility) =>
         request<{ token: string; url: string; visibility: ShareVisibility | 'unlisted' }>(`/sessions/${encodeURIComponent(id)}/share`, { method: 'POST', body: JSON.stringify({ visibility }) }),
       revokeShare: (id: string) => request<void>(`/sessions/${encodeURIComponent(id)}/share`, { method: 'DELETE' }),
+    },
+    mistakes: {
+      /* Baseline `ui/mistakeBook.js persistMistake`: every recorded mistake
+       * is also mirrored to the mistakes table (POST /api/mistakes) for the
+       * classroom hotspot views; the session `mistakes` array stays the
+       * book's source of truth. `sessionId` must be a server UUID or null. */
+      create: (input: { sessionId: string | null; nodeName: string | null; questionContent: string; userAnswer: string | null; correctAnswer: string | null; source: 'quiz' | 'practice' }) =>
+        request<Mistake>('/mistakes', { method: 'POST', body: JSON.stringify(input) }),
     },
     projects: {
       list: async () => (await request<{ projects: Project[] }>('/projects')).projects,

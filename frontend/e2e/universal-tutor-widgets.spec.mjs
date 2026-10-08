@@ -26,6 +26,20 @@ async function openMistakesView(page) {
   if (openedSearch) await page.getByRole('button', { name: 'Search chats', exact: true }).first().click();
 }
 
+// The Mistakes toolbar button (and its badge) sits behind the search toggle
+// on the phone drawer; open it just long enough to read the badge.
+async function expectMistakesBadge(page, text) {
+  const badge = page.locator('[data-testid="socrates-mistakes-badge"]');
+  const compact = await page.evaluate(() => window.innerWidth <= 768);
+  let openedSearch = false;
+  if (compact && !(await page.getByRole('button', { name: 'Mistakes', exact: true }).isVisible().catch(() => false))) {
+    await page.getByRole('button', { name: 'Search chats', exact: true }).first().click();
+    openedSearch = true;
+  }
+  await expect(badge).toHaveText(text);
+  if (openedSearch) await page.getByRole('button', { name: 'Search chats', exact: true }).first().click();
+}
+
 // Tutor teaching UI: the stage chip tracks the stage machine, and the
 // quiz/practice scaffold proxies lock on pick, show baseline feedback,
 // send the synthetic turns (quiz wrong / practice submit) and apply the
@@ -168,15 +182,18 @@ test('universal tutor renders quiz and practice widgets', async ({ page }, testI
     if (testInfo.project.name === 'mobile') await closeSidebarIfOpen(page);
 
     // Practice proxy: hint toggle, submit sends the "[Practice attempt]"
-    // turn and a self-check hit shows the local feedback line.
+    // turn and a self-check miss shows the local feedback line (and lands
+    // in the mistake book; the redo below covers the self-check hit). The
+    // parsed <title> is never rendered, matching the baseline card.
+    await expect(page.getByText('Try it', { exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: 'Show hint' }).click();
     await expect(page.getByText('Subtract 1.')).toBeVisible();
-    await page.getByLabel('Type your answer…').fill('x=5');
+    await page.getByLabel('Type your answer…').fill('x=4');
     await page.getByRole('button', { name: 'Submit', exact: true }).click();
-    await expect(page.getByText('Correct!')).toBeVisible();
+    await expect(page.getByText('Not quite. The correct answer is: x=5')).toBeVisible();
     await expect(page.getByText('Practice feedback', { exact: true })).toBeVisible();
     expect(chatStreams.at(-1)).toContain('[Practice attempt]');
-    expect(chatStreams.at(-1)).toContain('x=5');
+    expect(chatStreams.at(-1)).toContain('x=4');
 
     // A correct pick is terminal: feedback shows, the card locks and no
     // model turn goes out. The chip cannot reach the "Check" stage here:
@@ -187,6 +204,62 @@ test('universal tutor renders quiz and practice widgets', async ({ page }, testI
     await page.getByRole('button', { name: 'Answer A for What is 3+3?' }).click();
     await expect(page.getByText('Correct (A).')).toBeVisible();
     expect(chatStreams.length).toBe(streamCount);
+
+    // Mistake book actions: the badge counts unresolved rows, the filters
+    // split resolved/unresolved, Redo bumps "Redone once" and hands back a
+    // fresh card (appended for practice, remounted in place for a quiz whose
+    // card is still in the transcript), and a right pick on the redone quiz
+    // conquers it, removing the row.
+    const mistakesPanelNow = () => page.locator('[data-testid="socrates-mistakes-panel"]');
+    const quizRow = () => mistakesPanelNow().locator('[data-testid^="socrates-mistake-card-"]').filter({ hasText: 'What is 2+2?' });
+    const practiceRow = () => mistakesPanelNow().locator('[data-testid^="socrates-mistake-card-"]').filter({ hasText: 'x+1=6' });
+    const reopenMistakes = async () => {
+      if (testInfo.project.name !== 'mobile') return;
+      await ensureSidebarOpen(page);
+      if (!(await mistakesPanelNow().isVisible().catch(() => false))) await openMistakesView(page);
+    };
+    if (testInfo.project.name === 'mobile') await ensureSidebarOpen(page);
+    await openMistakesView(page);
+    await expectMistakesBadge(page, '2');
+    await expect(mistakesPanelNow().locator('[data-testid^="socrates-mistake-card-"]')).toHaveCount(2);
+    await page.locator('[data-testid="socrates-mistakes-filter-resolved"]').click();
+    await expect(page.locator('[data-testid="socrates-mistakes-filter-empty"]')).toBeVisible();
+    await expect(mistakesPanelNow().locator('[data-testid^="socrates-mistake-card-"]')).toHaveCount(0);
+    await page.locator('[data-testid="socrates-mistakes-filter-unresolved"]').click();
+    await expect(mistakesPanelNow().locator('[data-testid^="socrates-mistake-card-"]')).toHaveCount(2);
+    await page.locator('[data-testid="socrates-mistakes-filter-all"]').click();
+    await expect(mistakesPanelNow().locator('[data-testid^="socrates-mistake-card-"]')).toHaveCount(2);
+
+    // Practice redo: count line + an appended fresh practice card.
+    await expect(practiceRow().getByText('Redone once', { exact: true })).toHaveCount(0);
+    await practiceRow().getByRole('button', { name: 'Redo', exact: true }).click();
+    await expect(practiceRow().getByText('Redone once', { exact: true })).toBeVisible();
+    await expectMistakesBadge(page, '2');
+    if (testInfo.project.name === 'mobile') await closeSidebarIfOpen(page);
+    const redoCard = page.locator('[data-testid^="socrates-mistake-redo-card-"]');
+    await expect(redoCard).toHaveCount(1);
+    await expect(redoCard.getByText('— Redoing a question you got wrong —', { exact: true })).toBeVisible();
+    await redoCard.getByLabel('Type your answer…').fill('x=5');
+    await redoCard.getByRole('button', { name: 'Submit', exact: true }).click();
+    await expect(redoCard.getByText('Correct!', { exact: true })).toBeVisible();
+    await expect(page.getByText('Practice feedback', { exact: true })).toHaveCount(2);
+
+    // Quiz redo: the original card remounts unlocked; a right pick conquers.
+    // (The phone drawer remounts on reopen and comes back on Recents.)
+    await reopenMistakes();
+    await quizRow().getByRole('button', { name: 'Redo', exact: true }).click();
+    await expect(quizRow().getByText('Redone once', { exact: true })).toBeVisible();
+    if (testInfo.project.name === 'mobile') await closeSidebarIfOpen(page);
+    await expect(page.getByText('Not quite. The correct answer is B.')).toHaveCount(0);
+    const conquerStreams = chatStreams.length;
+    await page.getByRole('button', { name: 'Answer B for What is 2+2?' }).click();
+    await expect(page.getByText('Correct (B).')).toBeVisible();
+    expect(chatStreams.length).toBe(conquerStreams);
+    await reopenMistakes();
+    await expect(quizRow()).toHaveCount(0);
+    await expect(practiceRow()).toHaveCount(1);
+    await expectMistakesBadge(page, '1');
+    if (testInfo.project.name === 'mobile') await closeSidebarIfOpen(page);
 
     expect(errors).toEqual([]);
     await page.screenshot({ path: `test-results/universal-tutor-widgets-${encodeURIComponent(testInfo.project.name)}.png`, fullPage: false });

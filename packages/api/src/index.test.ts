@@ -273,3 +273,12 @@ test('API errors surface as ApiError with status', async () => {
     return true;
   });
 });
+
+test('mistakes.create mirrors a recorded mistake to POST /mistakes', async () => {
+  const { fetch, calls } = mockFetch({ 'POST /mistakes': { status: 201, body: { id: 'mk1', questionContent: 'Q' } } });
+  const api = createApiClient({ baseUrl: 'https://test/api/v2', fetch, storage: createMemoryStore() });
+  const created = await api.mistakes.create({ sessionId: null, nodeName: 'Algebra', questionContent: 'Q', userAnswer: 'A', correctAnswer: 'B', source: 'quiz' });
+  assert.equal(created.id, 'mk1');
+  assert.equal(calls[0].init?.method, 'POST');
+  assert.deepEqual(JSON.parse(String(calls[0].init?.body)), { sessionId: null, nodeName: 'Algebra', questionContent: 'Q', userAnswer: 'A', correctAnswer: 'B', source: 'quiz' });
+});

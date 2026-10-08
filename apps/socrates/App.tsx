@@ -3,13 +3,13 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BackHandler, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
-import type { AccountUsage, Assistant, ExamData, Message, Mistake, Project, ProviderKey, Session, TutorData } from '@socrates/contracts';
+import type { AccountUsage, Assistant, ExamData, Message, Project, ProviderKey, Session, TutorData } from '@socrates/contracts';
 import { buildBranchSession, createMessageOutbox, findRegenerateTarget, isLocalSessionId, runChatTurn, useChatStore, visibleSessions as getVisibleSessions } from '@socrates/chat';
 import { persistUser } from '@socrates/auth';
 import { useAuthStore } from '@socrates/auth';
 import { useSettingsStore } from '@socrates/settings';
 import { fontStyle, getThemePaletteHex } from '@socrates/theme';
-import { AssistantPicker, ChatMessageList, Composer, DiagView, ExamView, Icon, IconRendererProvider, ModelPicker, Sidebar, activeProviderOf, applyDiagnosticResults, assistantConfigOf, buildColdStartNodes, buildEmbeddedDocument, buildPracticeMistake, buildQuizMistake, buildTeachingPlanFromKB, findMessageMatches, paletteForDocument, parseExamQuestions, prependMistake, storedFileIdFromRawUrl, syncCurrentNodeFromTeachingPlan, tutorProgressForTurn, uiStrings, type ArtifactDescriptor, type BoundarySnapshot, type DiagQuestion, type KnowledgeBoundaryNode, type PracticeSubmission, type QuizPick, type SidebarNavItem, type TeachingPlan, type TutorProgressNode } from '@socrates/ui';
+import { AssistantPicker, ChatMessageList, Composer, DiagView, ExamView, Icon, IconRendererProvider, ModelPicker, Sidebar, activeProviderOf, applyDiagnosticResults, assistantConfigOf, buildColdStartNodes, assignMistakeQuizSlot, buildEmbeddedDocument, buildTeachingPlanFromKB, bumpMistakeRedo, findMessageMatches, messageQuizSlotId, mistakeRedoPlan, normalizeMistakes, paletteForDocument, parseExamQuestions, practiceMistakeFor, prependMistake, quizMistakeFor, removeMistakesForQuizSlot, storedFileIdFromRawUrl, syncCurrentNodeFromTeachingPlan, tutorProgressForTurn, uiStrings, type ArtifactDescriptor, type BookMistake, type BoundarySnapshot, type DiagQuestion, type KnowledgeBoundaryNode, type MistakeRedoItem, type PracticeSubmission, type QuizPick, type SidebarNavItem, type TeachingPlan, type TutorProgressNode } from '@socrates/ui';
 import { api, appWebOrigin, streamConversation } from './src/runtime';
 import { storage } from './src/storage';
 import { copyText } from './src/clipboard';
@@ -51,6 +51,26 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * `session-*` id as the scope. */
 function uuidScope(id: string | null | undefined): string | null {
   return id && UUID_RE.test(id) ? id : null;
+}
+/** Baseline recordMistake context: session topic + current KB node. */
+function mistakeContextOf(session: Session): { topic: string; node: string; nodeIdx: number | null } {
+  const nodeIdx = typeof session.currentNode === 'number' ? session.currentNode : null;
+  const node = nodeIdx !== null ? (session.kbNodes as Array<{ name?: string }> | undefined)?.[nodeIdx]?.name : undefined;
+  return { topic: session.topic || '', node: node || '', nodeIdx };
+}
+/** Baseline persistMistake: best-effort mirror to POST /api/mistakes for a
+ * signed-in account (the session array stays the source of truth). */
+function mirrorMistake(sessionId: string, mistake: BookMistake): void {
+  const owner = useAuthStore.getState().user;
+  if (!owner || owner.isGuest) return;
+  void api.mistakes.create({
+    sessionId: uuidScope(sessionId),
+    nodeName: mistake.node || null,
+    questionContent: mistake.q || '',
+    userAnswer: mistake.userAnswer,
+    correctAnswer: mistake.correct,
+    source: mistake.type === 'practice' ? 'practice' : 'quiz',
+  }).catch(() => { /* Mirror only; the session save carries the book. */ });
 }
 function messageKey(message: { clientId?: string | null; id?: string }): string | null {
   return message.clientId || message.id || null;
@@ -147,6 +167,20 @@ function SocratesApp() {
   const fam = (weight: 'regular' | 'medium' | 'semibold' | 'bold' = 'regular') => fontStyle(weight, language, Platform.OS === 'web');
   const palette = useMemo(() => getThemePaletteHex(theme), [theme]);
   const active = useMemo(() => sessions.find((session) => session.id === activeId) || null, [activeId, sessions]);
+  // Mistake book: rows read in the baseline record shape; redo cards and
+  // in-place quiz remounts are transcript-local (baseline appends DOM that a
+  // session switch discards), so they follow the active session only.
+  const activeMistakes = useMemo(() => active?.mode === 'tutor' ? normalizeMistakes(active.mistakes) : [], [active]);
+  const [redo, setRedo] = useState<{ sessionId: string | null; items: MistakeRedoItem[]; resets: Record<string, number> }>({ sessionId: null, items: [], resets: {} });
+  useEffect(() => {
+    setRedo((prev) => {
+      if (prev.sessionId === activeId) return prev;
+      // A local id adopted to its server UUID is the same transcript; any
+      // other switch drops the local redo cards.
+      const adopted = !!prev.sessionId && !useChatStore.getState().sessions.some((session) => session.id === prev.sessionId);
+      return adopted ? { ...prev, sessionId: activeId } : { sessionId: activeId, items: [], resets: {} };
+    });
+  }, [activeId]);
   const findMatches = useMemo(() => findMessageMatches(active?.messages || [], findQuery), [active?.messages, findQuery]);
   const visibleSessions = useMemo(
     () => {
@@ -815,10 +849,22 @@ function SocratesApp() {
     } else if (stage === 'check') {
       store.patchSession(sessionId, { practiceAttempts: right ? 0 : attempts + 1 });
     }
+    if (right && pick.slotId) {
+      // Conquer path (baseline removeMistakeForQuizSlot): a right pick on a
+      // slot a mistake was recorded against removes it, then saves.
+      const book = normalizeMistakes(session.mistakes);
+      const remaining = removeMistakesForQuizSlot(book, pick.slotId);
+      if (remaining !== book) persistTutorPatch(sessionId, { mistakes: remaining as unknown as Session['mistakes'] });
+    }
     if (!pick.correct || pick.isRight) return;
-    const nodeName = typeof session.currentNode === 'number' ? (session.kbNodes as Array<{ name?: string }> | undefined)?.[session.currentNode]?.name : undefined;
-    const quizMistake = buildQuizMistake({ sessionId, nodeName, question: pick.q, picked: pick.picked, pickedText: pick.pickedText, correct: pick.correct });
-    if (quizMistake) store.patchSession(sessionId, { mistakes: prependMistake((session.mistakes as unknown as Mistake[] | undefined) || [], quizMistake) as unknown as Session['mistakes'] });
+    const quizMistake = quizMistakeFor(
+      { q: pick.q, options: pick.options, picked: pick.picked, correct: pick.correct, slotId: pick.slotId },
+      mistakeContextOf(session),
+    );
+    if (quizMistake) {
+      store.patchSession(sessionId, { mistakes: prependMistake(normalizeMistakes(session.mistakes), quizMistake) as unknown as Session['mistakes'] });
+      mirrorMistake(sessionId, quizMistake);
+    }
     submitTurn(`I chose ${pick.picked}. ${pick.pickedText} (Result: incorrect, correct is ${pick.correct}.)`, 'quiz');
   }, [submitTurn]);
   // Practice proxy (baseline mountPracticeWidget): submit always sends the
@@ -830,13 +876,50 @@ function SocratesApp() {
     const session = store.sessions.find((s) => s.id === sessionId);
     if (!session || session.mode !== 'tutor' || store.turnId) return;
     if (submission.correct && submission.isRight) store.patchSession(sessionId, { practiceAttempts: 0 });
-    if (submission.correct && submission.isRight === false) {
-      const nodeName = typeof session.currentNode === 'number' ? (session.kbNodes as Array<{ name?: string }> | undefined)?.[session.currentNode]?.name : undefined;
-      const practiceMistake = buildPracticeMistake({ sessionId, nodeName, problem: submission.problem, answer: submission.answer, correct: submission.correct });
-      if (practiceMistake) store.patchSession(sessionId, { mistakes: prependMistake((session.mistakes as unknown as Mistake[] | undefined) || [], practiceMistake) as unknown as Session['mistakes'] });
+    const practiceMistake = practiceMistakeFor(submission, mistakeContextOf(session));
+    if (practiceMistake) {
+      store.patchSession(sessionId, { mistakes: prependMistake(normalizeMistakes(session.mistakes), practiceMistake) as unknown as Session['mistakes'] });
+      mirrorMistake(sessionId, practiceMistake);
     }
     submitTurn(`${appStringsNow().practicePrefix}${submission.answer}`, 'practice');
   }, [submitTurn]);
+  // Mistake-book Redo (baseline handleMistakeRedo): bump redoCount and save;
+  // a quiz whose original card is still in the transcript remounts in place,
+  // otherwise a fresh card is appended (practice rows always append) and a
+  // quiz row is re-pointed at the new slot so a right pick conquers it.
+  const onRedoMistake = useCallback((mistakeId: string) => {
+    const store = useChatStore.getState();
+    const sessionId = store.activeSessionId;
+    if (!sessionId) return;
+    const session = store.sessions.find((s) => s.id === sessionId);
+    if (!session || session.mode !== 'tutor') return;
+    const bumped = bumpMistakeRedo(normalizeMistakes(session.mistakes), mistakeId);
+    if (!bumped.mistake) return;
+    const plan = mistakeRedoPlan(bumped.mistake);
+    if (plan.kind === 'quiz' && plan.slotId && (session.messages || []).some((message) => message.role === 'assistant' && messageQuizSlotId(message) === plan.slotId)) {
+      persistTutorPatch(sessionId, { mistakes: bumped.list as unknown as Session['mistakes'] });
+      const slot = plan.slotId;
+      setRedo((prev) => {
+        const resets = prev.sessionId === sessionId ? prev.resets : {};
+        return { sessionId, items: prev.sessionId === sessionId ? prev.items : [], resets: { ...resets, [slot]: (resets[slot] || 0) + 1 } };
+      });
+      return;
+    }
+    const redoId = `redo-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+    let item: MistakeRedoItem;
+    let list = bumped.list;
+    if (plan.kind === 'quiz') {
+      const slotId = `${redoId}:quiz`;
+      list = assignMistakeQuizSlot(list, mistakeId, slotId);
+      item = { id: redoId, kind: 'quiz', q: plan.q, options: plan.options, correct: plan.correct, slotId };
+    } else {
+      item = { id: redoId, kind: 'practice', problem: plan.problem, correct: plan.correct };
+    }
+    persistTutorPatch(sessionId, { mistakes: list as unknown as Session['mistakes'] });
+    setRedo((prev) => prev.sessionId === sessionId
+      ? { ...prev, items: [...prev.items, item] }
+      : { sessionId, items: [item], resets: {} });
+  }, [persistTutorPatch]);
   // Attachments: pickers produce staged rows; documents resolve to text
   // at send time (server extract), images/text ride along directly.
   const stagePicked = useCallback((picked: PickedFile[]) => {
@@ -1605,7 +1688,8 @@ function SocratesApp() {
         onUpdateKnowledgeNode={updateKnowledgeNode}
         onSaveKnowledgeSnapshot={saveKnowledgeSnapshot}
         onJumpToKnowledgeNode={jumpToKnowledgeNode}
-        mistakes={active?.mode === 'tutor' ? ((active.mistakes as unknown as Mistake[] | undefined) || []) : []}
+        mistakes={activeMistakes}
+        onRedoMistake={onRedoMistake}
       /> : null}
       {compact && sidebarOpen ? (
         <Pressable
@@ -1690,7 +1774,7 @@ function SocratesApp() {
           />
         ) : (
           <>
-            <ChatMessageList style={styles.list} compact={compact} messages={active?.messages || []} mode={theme} language={language} findQuery={findOpen ? findQuery : ''} activeFindIndex={activeFindIndex} onCopyText={copyText} onSpeakText={speak} onShareMessage={() => openShare()} onEditMessage={user && !user.isGuest ? (message) => startEdit(messageKey(message) || '', message.rawText || '') : undefined} onRegenerateMessage={user && !user.isGuest ? (message) => void regenerate(messageKey(message) || '') : undefined} onBranchMessage={(message) => void branchFrom(messageKey(message) || '')} onOpenArtifact={setArtifact} onOpenStoredArtifact={openStoredArtifact} resolveImage={resolveImage} onOpenFile={openAttachment} onQuizPick={onQuizPick} onPracticeSubmit={onPracticeSubmit} />
+            <ChatMessageList style={styles.list} compact={compact} messages={active?.messages || []} mode={theme} language={language} findQuery={findOpen ? findQuery : ''} activeFindIndex={activeFindIndex} onCopyText={copyText} onSpeakText={speak} onShareMessage={() => openShare()} onEditMessage={user && !user.isGuest ? (message) => startEdit(messageKey(message) || '', message.rawText || '') : undefined} onRegenerateMessage={user && !user.isGuest ? (message) => void regenerate(messageKey(message) || '') : undefined} onBranchMessage={(message) => void branchFrom(messageKey(message) || '')} onOpenArtifact={setArtifact} onOpenStoredArtifact={openStoredArtifact} resolveImage={resolveImage} onOpenFile={openAttachment} onQuizPick={onQuizPick} onPracticeSubmit={onPracticeSubmit} redoItems={redo.sessionId === activeId ? redo.items : undefined} quizSlotResets={redo.sessionId === activeId ? redo.resets : undefined} />
             {editingId ? <View style={[styles.editBanner, { borderColor: palette.border.default }]}>
               <Text style={[styles.editBannerText, { color: palette.text.secondary }]}>{s.editingMessage}</Text>
               <Pressable accessibilityRole="button" accessibilityLabel={s.cancelEdit} onPress={cancelEdit} style={styles.editCancel}>

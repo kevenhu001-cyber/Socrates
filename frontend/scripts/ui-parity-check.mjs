@@ -72,6 +72,22 @@ const TUTOR_FIXTURE = {
   boundariesHistory: [
     { date: '2026-10-01', at: 1790812800000, summary: 'I 1 · F 1 · B 1', counts: { internalized: 1, fuzzy: 1, blank: 1 } },
   ],
+  /* Mistake book rows in the baseline `ui/mistakeBook.js` record shape.
+   * Timestamps are relative to the run so the relative-time meta reads the
+   * same ("3h ago" / "Yesterday") on both shells. */
+  mistakes: [
+    {
+      id: 'm-fixture-quiz', type: 'quiz', topic: 'Algebra', node: 'Practical applications of Algebra', nodeIdx: 1,
+      q: 'Which expression models three more than x?',
+      options: [{ letter: 'A', text: '3x' }, { letter: 'B', text: 'x + 3' }, { letter: 'C', text: 'x - 3' }],
+      correct: 'B', userAnswer: 'A', judgedAnswer: null, timestamp: Date.now() - (3 * 3600 + 300) * 1000, redoCount: 1, quizSlotId: null,
+    },
+    {
+      id: 'm-fixture-practice', type: 'practice', topic: 'Algebra', node: 'Practical applications of Algebra', nodeIdx: 1,
+      q: 'Solve 2x + 1 = 7.', options: [], correct: 'x = 3', userAnswer: 'x = 4', judgedAnswer: 'x = 3',
+      timestamp: Date.now() - 26 * 3600 * 1000, redoCount: 0, quizSlotId: null,
+    },
+  ],
 };
 const TUTOR_FIXTURE_SESSION = {
   id: 's1', title: TUTOR_FIXTURE.title, topic: TUTOR_FIXTURE.topic,
@@ -130,6 +146,7 @@ async function mockUniversal(page, { tutor = false } = {}) {
       practiceAttempts: TUTOR_FIXTURE.practiceAttempts,
       currentNode: TUTOR_FIXTURE.currentNode,
       boundariesHistory: TUTOR_FIXTURE.boundariesHistory,
+      mistakes: TUTOR_FIXTURE.mistakes,
     } : {}),
   }));
   await page.route('**/api/v2/search', (route) => fulfill(route, { hits: [] }));
@@ -1166,7 +1183,7 @@ async function shotTutorBaseline(browser, viewport) {
         if (!el) return null;
         const box = el.getBoundingClientRect();
         const style = getComputedStyle(el);
-        return { x: box.x, y: box.y, w: box.width, h: box.height, display: style.display, gap: style.gap, padding: style.padding, margin: style.margin, fontSize: style.fontSize, lineHeight: style.lineHeight, color: style.color, bg: style.backgroundColor, opacity: style.opacity, filter: style.filter, backdropFilter: style.backdropFilter, text: (el.textContent || '').trim().slice(0, 100) };
+        return { x: box.x, y: box.y, w: box.width, h: box.height, display: style.display, gap: style.gap, padding: style.padding, margin: style.margin, fontSize: style.fontSize, lineHeight: style.lineHeight, color: style.color, bg: style.backgroundColor, opacity: style.opacity, filter: style.filter, backdropFilter: style.backdropFilter, transform: style.transform, willChange: style.willChange, zIndex: style.zIndex, position: style.position, boxShadow: style.boxShadow, text: (el.textContent || '').trim().slice(0, 100) };
       };
       const metrics = Object.fromEntries([
         'sidebar:#sidebar', 'backdrop:#sidebarBackdrop', 'plan:#teachingPlanContent .teaching-plan', 'planTitle:#teachingPlanContent .teaching-plan-title', 'planProgress:#teachingPlanContent .teaching-plan-progress', 'planProgressText:#teachingPlanContent .teaching-plan-progress-text', 'planRow:#teachingPlanContent .teaching-plan-subtopic', 'transcript:#msgList',
@@ -1175,6 +1192,20 @@ async function shotTutorBaseline(browser, viewport) {
       ].map((entry) => { const [key, selector] = entry.split(':'); return [key, measure(selector)]; }));
       const row = document.querySelector('#teachingPlanContent .teaching-plan-subtopic');
       metrics.planRowChildren = [...(row?.children || [])].map((el) => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el); return { cls: el.className, x: r.x, y: r.y, w: r.width, h: r.height, fontSize: s.fontSize, lineHeight: s.lineHeight, padding: s.padding, text: (el.textContent || '').trim() }; });
+      metrics.userTextLeaves = (() => {
+        const root = document.querySelector("#msgList .msg.user");
+        if (!root) return null;
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        const out = [];
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+          if (!node.textContent.trim()) continue;
+          const range = document.createRange(); range.selectNodeContents(node);
+          const rects = [...range.getClientRects()].map((r) => [+r.x.toFixed(2), +r.y.toFixed(2), +r.width.toFixed(2), +r.height.toFixed(2)]);
+          const el = node.parentElement; const st = getComputedStyle(el); const box = el.getBoundingClientRect();
+          out.push({ text: node.textContent.slice(0, 60), rects, box: [box.x, box.y, box.width, box.height], fontSize: st.fontSize, letterSpacing: st.letterSpacing, wordSpacing: st.wordSpacing, fontFamily: st.fontFamily.slice(0, 30), fontFeature: st.fontFeatureSettings, textRendering: st.textRendering, padding: st.padding, whiteSpace: st.whiteSpace, wordBreak: st.wordBreak, overflowWrap: st.overflowWrap, parentW: el.parentElement && el.parentElement.getBoundingClientRect().width });
+        }
+        return out;
+      })();
       metrics.transcriptRows = [...document.querySelectorAll('#msgList > .msg')].map((el) => { const r = el.getBoundingClientRect(); return { role: el.classList.contains('user') ? 'user' : 'assistant', x: r.x, y: r.y, w: r.width, h: r.height, text: (el.textContent || '').trim().slice(0, 70) }; });
       return metrics;
     });
@@ -1214,8 +1245,32 @@ async function shotTutorBaseline(browser, viewport) {
     const r = document.querySelector('#kbContent .kb-node-detail[data-node-idx="1"]')?.getBoundingClientRect();
     return r ? { x: r.x, y: r.y, w: r.width, h: r.height } : null;
   });
+  // Mistake book view (filter bar + cards + tab badge).
+  await page.evaluate(() => window.toggleSidebarView('mistakes'));
+  await page.locator('#mistakesList .mistake-card').first().waitFor({ state: 'visible', timeout: 5000 });
+  await page.evaluate(() => { const panel = document.querySelector('#mistakesPanel'); if (panel) panel.scrollTop = 0; });
+  await settle(page);
+  await page.mouse.move(0, 0);
+  const mistakes = await page.screenshot({ animations: 'disabled' });
+  if (process.env.PARITY_VERBOSE === '1') {
+    const mistakeMetrics = await page.evaluate(() => {
+      const measure = (el) => {
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        const s = getComputedStyle(el);
+        return { cls: el.className && el.className.baseVal === undefined ? el.className : '', x: +r.x.toFixed(2), y: +r.y.toFixed(2), w: +r.width.toFixed(2), h: +r.height.toFixed(2), fontSize: s.fontSize, lineHeight: s.lineHeight, fontWeight: s.fontWeight, letterSpacing: s.letterSpacing, textTransform: s.textTransform, color: s.color, bg: s.backgroundColor, border: `${s.borderTopWidth} ${s.borderTopColor} / L ${s.borderLeftWidth} ${s.borderLeftColor} / B ${s.borderBottomWidth} ${s.borderBottomColor}`, display: s.display, ff: s.fontFamily.slice(0, 24), radius: s.borderRadius, padding: s.padding, margin: s.margin, gap: s.gap, opacity: s.opacity, text: (el.children.length ? '' : (el.textContent || '').trim().slice(0, 60)) };
+      };
+      const walk = (el, depth, out) => { if (!el || depth > 6) return; out.push({ depth, ...measure(el) }); [...el.children].forEach((child) => walk(child, depth + 1, out)); };
+      const out = [];
+      walk(document.querySelector('#mistakesPanel'), 0, out);
+      out.push({ depth: -1, ...measure(document.querySelector('#mistakesTabBadge')) });
+      out.push({ depth: -1, ...measure(document.querySelector('#tabMistakes')) });
+      return out;
+    });
+    console.log(`[mistakes baseline metrics ${viewport.name}] ${JSON.stringify(mistakeMetrics)}`);
+  }
   await context.close();
-  return { overview, detail, detailBox, metrics: tutorMetrics };
+  return { overview, detail, detailBox, mistakes, metrics: tutorMetrics };
 }
 
 async function shotTutorUniversal(browser, viewport) {
@@ -1255,7 +1310,7 @@ async function shotTutorUniversal(browser, viewport) {
         if (!el) return null;
         const box = el.getBoundingClientRect();
         const style = getComputedStyle(el);
-        return { x: box.x, y: box.y, w: box.width, h: box.height, display: style.display, gap: style.gap, padding: style.padding, margin: style.margin, fontSize: style.fontSize, lineHeight: style.lineHeight, color: style.color, bg: style.backgroundColor, opacity: style.opacity, filter: style.filter, backdropFilter: style.backdropFilter, text: (el.textContent || '').trim().slice(0, 100) };
+        return { x: box.x, y: box.y, w: box.width, h: box.height, display: style.display, gap: style.gap, padding: style.padding, margin: style.margin, fontSize: style.fontSize, lineHeight: style.lineHeight, color: style.color, bg: style.backgroundColor, opacity: style.opacity, filter: style.filter, backdropFilter: style.backdropFilter, transform: style.transform, willChange: style.willChange, zIndex: style.zIndex, position: style.position, boxShadow: style.boxShadow, text: (el.textContent || '').trim().slice(0, 100) };
       };
       const metrics = Object.fromEntries([
         'sidebar:#socrates-sidebar', 'backdrop:#socrates-sidebar-backdrop', 'transcript:#socrates-message-list', 'scroll:#socrates-sidebar-recents', 'plan:[data-testid="socrates-teaching-plan"]', 'planTitle:[data-testid="socrates-teaching-plan-title"]', 'planProgress:[data-testid="socrates-teaching-plan-progress"]', 'planProgressText:[data-testid="socrates-teaching-plan-progress-text"]', 'planRow:[data-testid="socrates-teaching-plan-row-0"]',
@@ -1264,6 +1319,20 @@ async function shotTutorUniversal(browser, viewport) {
       ].map((entry) => { const [key, selector] = entry.split(':'); return [key, measure(selector)]; }));
       const row = document.querySelector('[data-testid="socrates-teaching-plan-row-0"]');
       metrics.planRowChildren = [...(row?.children || [])].map((el) => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el); return { id: el.id, cls: el.className, x: r.x, y: r.y, w: r.width, h: r.height, fontSize: s.fontSize, lineHeight: s.lineHeight, padding: s.padding, text: (el.textContent || '').trim() }; });
+      metrics.userTextLeaves = (() => {
+        const root = document.querySelector("[id^='socrates-message-user-']");
+        if (!root) return null;
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        const out = [];
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+          if (!node.textContent.trim()) continue;
+          const range = document.createRange(); range.selectNodeContents(node);
+          const rects = [...range.getClientRects()].map((r) => [+r.x.toFixed(2), +r.y.toFixed(2), +r.width.toFixed(2), +r.height.toFixed(2)]);
+          const el = node.parentElement; const st = getComputedStyle(el); const box = el.getBoundingClientRect();
+          out.push({ text: node.textContent.slice(0, 60), rects, box: [box.x, box.y, box.width, box.height], fontSize: st.fontSize, letterSpacing: st.letterSpacing, wordSpacing: st.wordSpacing, fontFamily: st.fontFamily.slice(0, 30), fontFeature: st.fontFeatureSettings, textRendering: st.textRendering, padding: st.padding, whiteSpace: st.whiteSpace, wordBreak: st.wordBreak, overflowWrap: st.overflowWrap, parentW: el.parentElement && el.parentElement.getBoundingClientRect().width });
+        }
+        return out;
+      })();
       metrics.transcriptRows = [...document.querySelectorAll('#socrates-message-list [id^="socrates-message-row-"]')].map((el) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, text: (el.textContent || '').trim().slice(0, 70) }; });
       return metrics;
     });
@@ -1284,8 +1353,38 @@ async function shotTutorUniversal(browser, viewport) {
     const r = document.querySelector('[data-testid="socrates-kb-detail"]')?.getBoundingClientRect();
     return r ? { x: r.x, y: r.y, w: r.width, h: r.height } : null;
   });
+  // Mistake book view (filter bar + cards + tab badge).
+  if (viewport.width < 768) {
+    await page.getByRole('button', { name: 'Search chats', exact: true }).first().click();
+  }
+  await page.getByRole('button', { name: /^Mistakes/ }).first().click();
+  if (viewport.width < 768) {
+    await page.getByRole('button', { name: 'Search chats', exact: true }).first().click();
+  }
+  await page.getByTestId('socrates-mistakes-panel').waitFor({ state: 'visible', timeout: 5000 });
+  await page.evaluate(() => { const scroller = document.querySelector('#socrates-sidebar-recents'); if (scroller) scroller.scrollTop = 0; });
+  await settle(page);
+  await page.mouse.move(0, 0);
+  const mistakes = await page.screenshot({ animations: 'disabled' });
+  if (process.env.PARITY_VERBOSE === '1') {
+    const mistakeMetrics = await page.evaluate(() => {
+      const measure = (el) => {
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        const s = getComputedStyle(el);
+        return { tid: el.getAttribute('data-testid') || '', x: +r.x.toFixed(2), y: +r.y.toFixed(2), w: +r.width.toFixed(2), h: +r.height.toFixed(2), fontSize: s.fontSize, lineHeight: s.lineHeight, fontWeight: s.fontWeight, letterSpacing: s.letterSpacing, textTransform: s.textTransform, color: s.color, bg: s.backgroundColor, border: `${s.borderTopWidth} ${s.borderTopColor} / L ${s.borderLeftWidth} ${s.borderLeftColor} / B ${s.borderBottomWidth} ${s.borderBottomColor}`, display: s.display, ff: s.fontFamily.slice(0, 24), radius: s.borderRadius, padding: s.padding, margin: s.margin, gap: s.gap, opacity: s.opacity, text: (el.children.length ? '' : (el.textContent || '').trim().slice(0, 60)) };
+      };
+      const walk = (el, depth, out) => { if (!el || depth > 7) return; out.push({ depth, ...measure(el) }); [...el.children].forEach((child) => walk(child, depth + 1, out)); };
+      const out = [];
+      walk(document.querySelector('[data-testid="socrates-mistakes-panel"]'), 0, out);
+      out.push({ depth: -1, ...measure(document.querySelector('[data-testid="socrates-mistakes-badge"]')) });
+      out.push({ depth: -1, ...measure(document.querySelector('[data-testid="socrates-mistakes-tab"]')) });
+      return out;
+    });
+    console.log(`[mistakes universal metrics ${viewport.name}] ${JSON.stringify(mistakeMetrics)}`);
+  }
   await context.close();
-  return { overview, detail, detailBox, metrics: tutorMetrics };
+  return { overview, detail, detailBox, mistakes, metrics: tutorMetrics };
 }
 
 async function main() {
@@ -1601,7 +1700,7 @@ async function main() {
         const bottom = Math.min(viewport.height, Math.ceil(Math.max(a.y + a.h, b.y + b.h)));
         if (right > x && bottom > y) tutorZones.push({ name, x, y, right, bottom });
       }
-      for (const state of ['overview', 'detail']) {
+      for (const state of ['overview', 'detail', 'mistakes']) {
         // Detail panels sit at different scroll offsets per shell, so crop to
         // the panel boxes (same origin) instead of comparing scroll position.
         // Height mismatch is reported alongside, not hidden: only the shared
@@ -1621,7 +1720,7 @@ async function main() {
         const strictPixels = process.env.PARITY_PIXEL_STRICT === '1';
         const pixelPass = pixels.differentPixels === 0;
         if (strictPixels && !pixelPass) failures += 1;
-        lines.push(`\n===== tutor knowledge ${state} · ${viewport.name} ${viewport.width}x${viewport.height} =====`);
+        lines.push(`\n===== tutor ${state === 'mistakes' ? 'mistake book' : `knowledge ${state}`} · ${viewport.name} ${viewport.width}x${viewport.height} =====`);
         lines.push(`  [${strictPixels ? (pixelPass ? 'PASS' : 'FAIL') : 'INFO'}] pixel diff exact ${pixels.differentPixels} (${pixels.exactPct}%) · Δ>12 ${pixels.changedOver12} (${pixels.changedPct}%) · Δ>48 ${pixels.strongOver48} · mean Δ${pixels.meanDelta}${strictPixels ? ' (strict)' : ''}`);
         if (process.env.PARITY_VERBOSE === '1') lines.push(`  [INFO] tutor element zones ${JSON.stringify(pixels.elementDiffs)} strong samples=${JSON.stringify(pixels.strongSamples)}`);
         if (process.env.PARITY_VERBOSE === '1' && viewport.width <= 768) lines.push(`  [INFO] mobile diff split sidebar=${pixels.sidebarDiff} outsideDrawer=${pixels.outsideDrawerDiff} areas=${JSON.stringify(pixels.outsideDrawerRegions)} samples=${JSON.stringify(pixels.outsideDrawerSamples)}`);

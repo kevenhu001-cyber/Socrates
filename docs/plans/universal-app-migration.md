@@ -811,3 +811,60 @@ mobile/            # 冻结，仅安全/crash/data-loss 修复
 - **下一步**：徽章文本宽 4px 之谜（同文件同计算样式，canvas 本体一致，
   DOM Range 差 41.5 vs 37.5）、历史行残差、mobile 抽屉头 + 遮罩、composer
   1px。严格门禁仍失败，parity 保持“进行中”。
+
+## 31. 进展（第二十四轮，2026-10-08，round 16-13：错题本重做/攻克 + 手机抽屉对齐）
+
+> 错题本从“只收录”补到基线 `ui/mistakeBook.js` 的完整闭环（筛选、重做、攻克），
+> 并清掉两项实测的手机抽屉色差。严格像素门禁仍未全过，parity 保持“进行中”。
+
+- **错题本移植**（对照 `frontend/src/ui/mistakeBook.js`）：`packages/ui/src/mistakes.ts`
+  改为基线记录形状（`id/type/topic/node/nodeIdx/q/options/correct/userAnswer/
+  judgedAnswer/timestamp/redoCount/quizSlotId`），提供 `normalizeMistakes`、
+  `quizMistakeFor`/`practiceMistakeFor`、`bumpMistakeRedo`、`mistakeRedoPlan`、
+  `assignMistakeQuizSlot`、`removeMistakesForQuizSlot` 等纯函数，单测同步扩充。
+  Sidebar 错题视图补齐 全部/未攻克/已攻克 筛选、错题卡（类型/主题/相对时间、
+  选项对错标记、`已重做 n 次`）、Redo 按钮与工具栏角标。
+- **重做/攻克**：Redo 递增 `redoCount` 并保存；原测验卡仍在转录中时按 slot
+  原地重挂为新卡，否则（以及所有练习题）在转录尾部追加
+  “— Redoing a question you got wrong —” 横幅 + 新卡，测验题改指向新 slot。
+  在同一 slot 上答对即按基线 `removeMistakeForQuizSlot` 移除该错题（攻克）。
+  与基线一致，不提供独立的“标记攻克”按钮。登录账户另 best-effort 镜像
+  `POST /mistakes`（`packages/api` 新增 `mistakes.create` + 测试），会话数组仍是
+  唯一数据源。
+- **角标口径（决定）**：角标显示**未攻克**数量（基线显示总数）。因为攻克即
+  移除，两者只在历史数据含已攻克行时不同；保留未攻克口径。
+- **练习卡标题**：基线 `mountPracticeWidget` 与流式卡都解析 `<title>` 但从不渲染，
+  默认 “Practice” 标题从 Universal 练习卡删除。
+- **手机抽屉对齐**（探针取证）：基线 ≤768px 抽屉右边框为
+  `--ui-border-default`（dark 10% 白，light 10% 黑），New chat 行与行 hover 为
+  半透明洗色（dark 10% 白 / light 5% 黑，`restore/fixes.css`）；Universal 原为
+  6% 白边框与不透明 `#292929`。compact 下改为相同的半透明值，桌面不变。
+  另：手机抽屉阴影移除、手机用户气泡最大宽度 72%（前一段已做）。
+- **像素（普通模式，exact 差异像素）**：
+
+  | 状态 | 本轮前 | 本轮后 |
+  |---|---|---|
+  | workbench desktop / mobile | 1 / 0 | 1 / 0 |
+  | tutor overview desktop | 330（新 fixture） | 108 |
+  | tutor detail desktop | 2769 | 2769 |
+  | mistake book desktop | 87,610 | 1 |
+  | tutor overview mobile | 39,345 | 7,703 |
+  | tutor detail mobile | 25,010 | 24,936 |
+  | mistake book mobile | 114,648 | 7,429 |
+
+  抽屉色修正单项贡献：mobile overview `17,404 → 7,703`、mobile mistake book
+  `17,130 → 7,429`。严格模式（`PARITY_PIXEL_STRICT=1`）**7 failures**，仅 workbench
+  mobile 通过。
+- **验证**：`apps/socrates` typecheck 通过；`test:shared` **227/227**（25 文件）；
+  `export:web` 通过（`EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:4176/api/v2`，
+  `check-api-bundle` 通过）；`check-packages-dom` OK；`frontend npm run lint`
+  **0 errors / 629 warnings**；完整 Universal Playwright 桌面 + 手机 **28/28**
+  （`UNIVERSAL_PORT=4187`，因单命令 120 秒限制分 4 批运行）；
+  `ui-parity-check.mjs` 普通模式 0 failures；`git diff --check` 通过。
+  `universal-tutor-widgets` 新增断言：角标 2→1、筛选（已攻克为空态）、练习 Redo
+  显示 `Redone once` 并追加新卡且答对、测验 Redo 原地重挂、答对后错题行移除。
+- **已知差异**：手机抽屉关闭后重开会回到 Recents 视图（Sidebar 重挂，基线 DOM
+  常驻保留视图）；mobile detail 24,936 与 mobile overview/mistake book 约 7.4k
+  残差（抽屉头 + 遮罩 subtle 差）；desktop detail 2769；composer 1px。
+- **下一步**：抽屉视图状态提升到 App 以跨开合保留；抽屉头 / 遮罩逐像素对照；
+  detail 面板残差。严格门禁仍失败，parity 保持“进行中”。

@@ -1,6 +1,6 @@
 import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { MessageContent, type MessageActions } from './MessageContent.tsx';
-import type { Message, Mistake, Session } from '@socrates/contracts';
+import { MessageContent, MistakeRedoCard, type MessageActions, type MistakeRedoItem } from './MessageContent.tsx';
+import type { Message, Session } from '@socrates/contracts';
 import { fontStyle, getThemePaletteHex, getUiSurfaceHex, type FontWeight, type ThemeMode } from '@socrates/theme';
 import { uiStrings, type UiLanguage } from './strings';
 import Animated, { LinearTransition } from 'react-native-reanimated';
@@ -18,7 +18,8 @@ export { extractFootnoteDefinitions, splitMathSegments, stripCitationMarkers, ty
 export { buildVisualizationDocument, isVisualizationSpec, paletteForDocument, visualizationSpecOf, visualizationSummary, type VisualizationSpec } from './visualization';
 export { fileKindLabel, formatFileSize, isImageMime, storedFileIdFromRawUrl, storedFileIdsInText } from './fileMeta';
 export { countFindMatches, findMessageMatches, type FindMessageMatch } from './findMessages';
-export { buildPracticeMistake, buildQuizMistake, prependMistake, unresolvedMistakeCount, type PracticeMistakeInput, type QuizMistakeInput } from './mistakes';
+export { assignMistakeQuizSlot, bumpMistakeRedo, createMistake, filterMistakes, formatMistakeTime, isMistakeResolved, mistakeRedoPlan, mistakesBadgeText, mistakesEmptyState, normalizeMistakes, practiceMistakeFor, prependMistake, quizMistakeFor, removeMistakesForQuizSlot, unresolvedMistakeCount, type BookMistake, type BookMistakeOption, type MistakeFilter, type MistakeRedoPlan } from './mistakes';
+import { filterMistakes, formatMistakeTime, isMistakeResolved, mistakeOptionTag, mistakesBadgeText, mistakesEmptyState, type BookMistake, type MistakeFilter } from './mistakes';
 export { toolArtifacts, toolDurationLabel, toolInputPreview, toolLabel, toolState, type ToolArtifactRef } from './toolModel';
 export { ExamView } from './ExamView.tsx';
 export { DiagView } from './DiagView.tsx';
@@ -38,7 +39,8 @@ export {
   type TutorProgressNode, type TutorProgressPatch, type TutorProgressState,
 } from './tutor';
 export { detectExamLanguage, examAnswersOf, examGenerationPrompt, examProgress, examPromptTypes, gradeExam, missingExamAnswers, parseExamQuestionResponse, parseExamQuestions, type ExamQuestion, type ExamQuestionType } from './examModel';
-export type { MessageActions, PracticeSubmission, QuizPick } from './MessageContent.tsx';
+export type { MessageActions, MistakeRedoItem, PracticeSubmission, QuizPick } from './MessageContent.tsx';
+export { messageQuizSlotId } from './MessageContent.tsx';
 export { uiStrings, type UiLanguage, type UiStrings } from './strings';
 export { KnowledgeBoundaryPanel, type BoundarySnapshot, type KnowledgeBoundaryNode } from './KnowledgeBoundaryPanel';
 export { KNOWLEDGE_GRAPH_HEIGHT, KNOWLEDGE_GRAPH_WIDTH, knowledgeNodeRadius, layoutKnowledgeGraph, type KnowledgeGraphNode, type KnowledgeGraphPoint } from './knowledgeGraph';
@@ -171,28 +173,123 @@ function TeachingPlanPanel({ plan, stage, substantiveCount, mode, language, comp
   );
 }
 
-/** Tutor-only mistake book (baseline `#mistakesPanel` + `#mistakesList`):
- * title row plus the empty state, or one row per collected mistake. */
-function MistakesPanel({ mistakes, mode, language, compact }: { mistakes: Mistake[]; mode: UiMode; language: UiLanguage; compact: boolean }) {
+/* Mistake book colors: the baseline card/tag rules use fixed HSL values
+ * (styles/legacy/10-tutor-scaffolds.css + 12-tutor-inline-tools.css); these
+ * are their computed rgb(a) forms, measured in the SPA. */
+const MISTAKE_RGB = {
+  card: 'rgba(49,12,12,0.35)', cardBorder: 'rgba(122,31,31,0.4)', cardEdge: 'rgb(209,71,71)',
+  type: 'rgba(122,31,31,0.4)', typeText: 'rgb(230,153,153)',
+  wrong: 'rgba(204,51,51,0.14)', wrongText: 'rgb(230,153,153)', wrongLetter: 'rgb(214,92,92)',
+  correct: 'rgba(57,172,105,0.12)', correctText: 'rgb(159,223,186)', correctLetter: 'rgb(83,198,131)',
+  badge: 'rgba(204,51,51,0.18)', badgeText: 'rgb(224,133,133)',
+} as const;
+
+/** Tutor-only mistake book (baseline `#mistakesPanel`: tutorSocratic
+ * `renderMistakeFilterBar` + `ui/mistakeBook.js renderMistakes`): filter
+ * bar, title row, then the empty line or one card per row (meta, question,
+ * tagged options, redo count, Redo). */
+function MistakesPanel({ mistakes, filter, onFilter, onRedo, mode, language, compact }: { mistakes: BookMistake[]; filter: MistakeFilter; onFilter(filter: MistakeFilter): void; onRedo?(id: string): void; mode: UiMode; language: UiLanguage; compact: boolean }) {
   const p = paletteFor(mode);
+  const legacy = getTutorLegacyPalette(mode);
   const t = uiStrings(language);
   const rows = Array.isArray(mistakes) ? mistakes : [];
+  const empty = mistakesEmptyState(rows, filter);
+  const visible = empty ? [] : filterMistakes(rows, filter);
+  const now = Date.now();
+  const metaLine = sidebarTutorLineHeight(compact);
+  const appScale = WEB_TUTOR_SCALE;
+  const sbScale = WEB_SIDEBAR_TUTOR_SCALE;
+  const filters: Array<{ key: MistakeFilter; label: string }> = [
+    { key: 'all', label: t.mistakeFilterAll },
+    { key: 'unresolved', label: t.mistakeFilterUnresolved },
+    { key: 'resolved', label: t.mistakeFilterResolved },
+  ];
+  const strongText = mode === 'dark' ? '#ededed' : legacy.text.primary;
+  const resolvedTag = mode === 'dark'
+    ? { bg: 'rgba(64,191,117,0.22)', fg: 'rgb(140,217,172)' }
+    : { bg: 'rgba(57,172,105,0.18)', fg: 'rgb(64,191,117)' };
   return (
-    <View testID="socrates-mistakes-panel" style={styles.mistakesPanel}>
-      <Text testID="socrates-mistakes-title" style={[styles.recentsTitle, compact && styles.recentsTitleCompact, { color: p.text.tertiary }, fam(language)]}>{t.mistakeBook}</Text>
-      {rows.length === 0 ? (
+    <View testID="socrates-mistakes-panel" style={[styles.mistakesPanel, !compact && styles.mistakesPanelWide]}>
+      <View testID="socrates-mistakes-filter" style={[styles.mistakeFilterBar, { borderBottomColor: tutorRgba(legacy.border, 0.08) }]}>
+        {filters.map((item) => {
+          const active = filter === item.key;
+          return (
+            <Pressable
+              key={item.key}
+              testID={`socrates-mistakes-filter-${item.key}`}
+              accessibilityRole="button"
+              accessibilityLabel={item.label}
+              accessibilityState={{ selected: active }}
+              onPress={() => onFilter(item.key)}
+              style={[styles.mistakeFilterBtn, active && { backgroundColor: tutorRgba(legacy.bg.raised, 0.5) }]}
+            >
+              <Text style={[styles.mistakeFilterText, { color: active ? strongText : legacy.text.caption, fontSize: 11 * appScale, lineHeight: Platform.OS === 'web' ? 15 : undefined }, fam(language)]}>{item.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      <View style={compact ? styles.mistakesHeaderCompact : styles.mistakesHeader}>
+        <Text testID="socrates-mistakes-title" style={[compact ? styles.mistakesTitleCompact : styles.mistakesTitle, { color: compact ? p.text.muted : p.text.tertiary }, fam(language, compact ? 'medium' : 'regular')]}>{t.mistakeBook}</Text>
+      </View>
+      {empty ? (
         <View style={styles.mistakesEmpty}>
-          <Text style={[styles.mistakesEmptyText, { color: p.text.muted }, fam(language)]}>{t.mistakesEmpty}</Text>
-          <Text style={[styles.mistakesEmptyText, { color: p.text.muted }, fam(language)]}>{t.mistakesEmptyHint}</Text>
+          {empty === 'empty' ? <>
+            <Text style={[styles.mistakesEmptyText, { color: p.text.muted }, fam(language)]}>{t.mistakesEmpty}</Text>
+            <Text style={[styles.mistakesEmptyText, { color: p.text.muted }, fam(language)]}>{t.mistakesEmptyHint}</Text>
+          </> : <Text testID="socrates-mistakes-filter-empty" style={[styles.mistakesEmptyText, { color: p.text.muted }, fam(language)]}>{empty === 'filterResolved' ? t.mistakesFilterEmptyResolved : t.mistakesFilterEmptyOther}</Text>}
         </View>
-      ) : rows.map((mistake) => (
-        <View key={mistake.id} style={styles.mistakeRow}>
-          <Text numberOfLines={2} style={[styles.mistakeQuestion, { color: p.text.primary }, fam(language)]}>{mistake.questionContent}</Text>
-          <Text numberOfLines={1} style={[styles.mistakeMeta, { color: p.text.muted }, fam(language)]}>
-            {`${mistake.source === 'practice' ? t.mistakeTypePractice : t.mistakeTypeQuiz}${mistake.nodeName ? ` · ${mistake.nodeName}` : ''}`}
-          </Text>
+      ) : (
+        <View testID="socrates-mistakes-list">
+          {visible.map((mistake) => {
+            const resolved = isMistakeResolved(mistake);
+            const typeLabel = mistake.type === 'practice' ? t.mistakeTypePractice : mistake.type === 'quiz' ? t.mistakeTypeQuiz : mistake.type;
+            return (
+              <View
+                key={mistake.id}
+                testID={`socrates-mistake-card-${mistake.id}`}
+                style={[
+                  styles.mistakeCard,
+                  { backgroundColor: MISTAKE_RGB.card, borderColor: MISTAKE_RGB.cardBorder, borderLeftColor: MISTAKE_RGB.cardEdge },
+                  resolved && { opacity: 0.6, backgroundColor: tutorRgba(legacy.bg.raised, 0.4), borderColor: tutorRgba(legacy.border, 0.15), borderLeftColor: tutorRgba(legacy.border, 0.15) },
+                ]}
+              >
+                <View style={styles.mistakeMetaRow}>
+                  <Text style={[styles.mistakeType, { color: MISTAKE_RGB.typeText, backgroundColor: MISTAKE_RGB.type, fontSize: 10 * sbScale, lineHeight: metaLine, letterSpacing: 10 * sbScale * 0.06 }, fam(language, 'semibold')]}>{typeLabel}</Text>
+                  <Text style={[{ color: legacy.text.caption, fontSize: 10 * sbScale, lineHeight: metaLine }, fam(language, 'medium')]}>{mistake.topic}</Text>
+                  <Text style={[styles.mistakeTime, { color: legacy.text.muted, fontSize: 10 * sbScale, lineHeight: metaLine }, fam(language)]}>{formatMistakeTime(mistake.timestamp, now)}</Text>
+                  {resolved ? <Text testID="socrates-mistake-conquered" style={[styles.mistakeConquered, { color: resolvedTag.fg, backgroundColor: resolvedTag.bg, fontSize: 10 * appScale, lineHeight: metaLine, letterSpacing: 10 * appScale * 0.04 }, fam(language, 'semibold')]}>{t.mistakeConquered}</Text> : null}
+                </View>
+                <Text style={[styles.mistakeQ, { color: legacy.text.primary, fontSize: 12 * sbScale, lineHeight: 12 * sbScale * 1.5 }, resolved && { textDecorationLine: 'line-through', textDecorationColor: tutorRgba(legacy.text.muted, 0.4) }, fam(language)]}>{mistake.q}</Text>
+                <View style={styles.mistakeOpts}>
+                  {(mistake.options || []).map((option) => {
+                    const tag = mistakeOptionTag(mistake, option.letter);
+                    const fg = tag === 'correct' ? MISTAKE_RGB.correctText : tag === 'wrong' ? MISTAKE_RGB.wrongText : legacy.text.tertiary;
+                    const letterFill = tag === 'correct' ? MISTAKE_RGB.correctLetter : tag === 'wrong' ? MISTAKE_RGB.wrongLetter : null;
+                    return (
+                      <View key={option.letter} style={[styles.mistakeOpt, tag === 'correct' && { backgroundColor: MISTAKE_RGB.correct }, tag === 'wrong' && { backgroundColor: MISTAKE_RGB.wrong }]}>
+                        <View style={[styles.mistakeOptLetter, { borderColor: letterFill || legacy.text.muted }, letterFill ? { backgroundColor: letterFill } : null]}>
+                          <Text style={[{ color: letterFill ? '#ffffff' : legacy.text.caption, fontSize: 9 * sbScale, lineHeight: 9 * sbScale * 1.4 }, fam(language, 'semibold')]}>{option.letter}</Text>
+                        </View>
+                        <Text style={[styles.mistakeOptText, { color: fg, fontSize: 11.5 * sbScale, lineHeight: 11.5 * sbScale * 1.4 }, fam(language)]}>{option.text}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+                {mistake.redoCount ? <Text testID="socrates-mistake-redo-count" style={[styles.mistakeRedoCount, { color: legacy.text.muted, fontSize: 10 * sbScale, lineHeight: metaLine }, fam(language)]}>{t.mistakeRedone(mistake.redoCount)}</Text> : null}
+                <Pressable
+                  testID={`socrates-mistake-redo-${mistake.id}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={t.mistakeRedo}
+                  onPress={() => onRedo?.(mistake.id)}
+                  style={[styles.mistakeRedoBtn, { backgroundColor: tutorRgba(legacy.accent, 0.12), borderColor: tutorRgba(legacy.accent, 0.3) }]}
+                >
+                  <Text style={[styles.mistakeRedoText, { color: legacy.accent, fontSize: 11 * sbScale, lineHeight: Platform.OS === 'web' ? 14 : undefined }, fam(language, 'medium')]}>{t.mistakeRedo}</Text>
+                </Pressable>
+              </View>
+            );
+          })}
         </View>
-      ))}
+      )}
     </View>
   );
 }
@@ -231,6 +328,7 @@ export function Sidebar({
   onSaveKnowledgeSnapshot,
   onJumpToKnowledgeNode,
   mistakes = [],
+  onRedoMistake,
   mode = 'light',
   language = 'en',
   compact = false,
@@ -270,8 +368,11 @@ export function Sidebar({
   onUpdateKnowledgeNode?(index: number, patch: Partial<KnowledgeBoundaryNode>): void;
   onSaveKnowledgeSnapshot?(): void;
   onJumpToKnowledgeNode?(index: number): void;
-  /** Tutor-only mistake book rows (baseline `#mistakesList`). */
-  mistakes?: Mistake[];
+  /** Tutor-only mistake book rows (baseline `#mistakesList`), already
+   *  normalized to the baseline record shape (`normalizeMistakes`). */
+  mistakes?: BookMistake[];
+  /** Redo action on a card (baseline `handleMistakeRedo`). */
+  onRedoMistake?(id: string): void;
   mode?: UiMode;
   language?: UiLanguage;
   /** ≤768px: the 254px drawer. */
@@ -285,8 +386,14 @@ export function Sidebar({
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [sidebarView, setSidebarView] = useState<SidebarView>('recents');
+  const [mistakeFilter, setMistakeFilter] = useState<MistakeFilter>('all');
+  const mistakesBadge = tutorActive ? mistakesBadgeText(mistakes) : '';
   const [compactSearchOpen, setCompactSearchOpen] = useState(false);
   const [hoverId, setHoverId] = useState<string | null>(null);
+  /* Phone drawer rows: the baseline (restore/fixes.css, ≤768px) paints the
+   * New-chat row — and every row's hover — as a translucent wash over the
+   * rail (10% white in dark, 5% black in light), not the opaque hover token. */
+  const compactNavWash = mode === 'dark' ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.05)';
   useEffect(() => { if (!tutorActive) setSidebarView('recents'); }, [tutorActive]);
   const titleOf = (item: Session) => item.title || item.topic || t.untitled;
   const recentModeColor = (item: Session) => {
@@ -323,7 +430,7 @@ export function Sidebar({
     else onSelect(id);
   };
   return (
-    <View nativeID="socrates-sidebar" style={[styles.sidebar, compact && styles.sidebarCompact, { backgroundColor: s.sidebar, borderRightColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.10)' }]}>
+    <View nativeID="socrates-sidebar" style={[styles.sidebar, compact && styles.sidebarCompact, { backgroundColor: s.sidebar, borderRightColor: mode === 'dark' ? (compact ? 'rgba(255, 255, 255, 0.10)' : 'rgba(255, 255, 255, 0.06)') : 'rgba(0, 0, 0, 0.10)' }]}>
       {/* Header: logo · new chat · toggle; search stays in the nav row below. */}
       <View style={[styles.header, compact && styles.headerCompact]}>
         <View style={[styles.logo, compact && styles.logoCompact]}>
@@ -367,7 +474,7 @@ export function Sidebar({
                 if (item.menu) setNavMenu((key) => (key === item.key ? null : item.key));
                 item.onPress();
               }}
-              style={[styles.navRow, compact && styles.navRowCompact, compact && item.key === 'new' && { backgroundColor: p.bg.hover }, (item.active || hoverId === item.key || navMenu === item.key) && { backgroundColor: p.bg.hover }]}
+              style={[styles.navRow, compact && styles.navRowCompact, hoverId === item.key && { backgroundColor: compact ? compactNavWash : p.bg.hover }, (item.active || navMenu === item.key) && { backgroundColor: p.bg.hover }, compact && item.key === 'new' && { backgroundColor: compactNavWash }]}
               onHoverIn={() => setHoverId(item.key)}
               onHoverOut={() => setHoverId((id) => (id === item.key ? null : id))}
             >
@@ -411,12 +518,18 @@ export function Sidebar({
           </Pressable>
           <Pressable
             accessibilityRole="button"
+            testID="socrates-mistakes-tab"
             accessibilityLabel={t.mistakes}
             accessibilityState={{ selected: sidebarView === 'mistakes' }}
             onPress={() => setSidebarView((view) => view === 'mistakes' ? 'recents' : 'mistakes')}
             style={[styles.sidebarViewBtn, compact && styles.sidebarViewBtnCompact, sidebarView === 'mistakes' && { backgroundColor: s.surface }]}
           >
             <Icon name="bookmark" size={compact ? 18 : 17} color={sidebarView === 'mistakes' ? p.text.primary : p.text.tertiary} />
+            {mistakesBadge ? (
+              <View testID="socrates-mistakes-badge" style={[styles.mistakesBadge, { backgroundColor: MISTAKE_RGB.badge }]}>
+                <Text style={[{ color: MISTAKE_RGB.badgeText, fontSize: 10 * WEB_TUTOR_SCALE, lineHeight: 14, textAlign: 'center' }, fam(language, 'semibold')]}>{mistakesBadge}</Text>
+              </View>
+            ) : null}
           </Pressable>
         </View>
       ) : onOpenSearch && (!compact || compactSearchOpen) ? (
@@ -436,7 +549,7 @@ export function Sidebar({
         ]}
       >
         {sidebarView === 'mistakes' && tutorActive ? (
-          <MistakesPanel mistakes={mistakes} mode={mode} language={language} compact={compact} />
+          <MistakesPanel mistakes={mistakes} filter={mistakeFilter} onFilter={setMistakeFilter} onRedo={onRedoMistake} mode={mode} language={language} compact={compact} />
         ) : sidebarView === 'knowledge' && tutorActive ? <>
           <TeachingPlanPanel plan={teachingPlan} stage={teachingStage} substantiveCount={substantiveCount} mode={mode} language={language} compact={compact} />
           <KnowledgeBoundaryPanel
@@ -679,6 +792,7 @@ export function ChatMessageList({
   style,
   findQuery = '',
   activeFindIndex = -1,
+  redoItems,
   ...actions
 }: {
   messages: Message[];
@@ -692,10 +806,17 @@ export function ChatMessageList({
   /** Current in-transcript query and zero-based active hit. */
   findQuery?: string;
   activeFindIndex?: number;
+  /** Mistake-book redos appended after the transcript (local-only). */
+  redoItems?: MistakeRedoItem[];
 } & MessageActions) {
   const p = paletteFor(mode);
   const t = uiStrings(language);
   const listRef = useRef<FlatList<Message>>(null);
+  const redoCount = redoItems?.length || 0;
+  useEffect(() => {
+    // Baseline appends the redo card and scrolls the transcript to it.
+    if (redoCount) requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
+  }, [redoCount]);
   const matches = useMemo(() => findMessageMatches(messages, findQuery), [messages, findQuery]);
   const findOffsets = useMemo(() => {
     let offset = 0;
@@ -727,6 +848,7 @@ export function ChatMessageList({
       keyExtractor={(item, index) => item.id || item.clientId || String(index)}
       onScrollToIndexFailed={({ index }) => listRef.current?.scrollToOffset({ offset: Math.max(0, index * 120), animated: true })}
       renderItem={({ item, index }) => <MessageRow message={item} mode={mode} language={language} compact={compact} first={index === 0} previousRole={index > 0 ? messages[index - 1].role : undefined} findQuery={findQuery} findStartIndex={findOffsets[index] || 0} activeFindIndex={activeFindIndex} {...actions} />}
+      ListFooterComponent={redoCount ? <>{redoItems!.map((item) => <MistakeRedoCard key={item.id} item={item} mode={mode} language={language} onQuizPick={actions.onQuizPick} onPracticeSubmit={actions.onPracticeSubmit} />)}</> : undefined}
     />
   );
 }
@@ -880,8 +1002,10 @@ const styles = StyleSheet.create({
   sidebar: { width: SIDEBAR_WIDTH, height: '100%', padding: 0, borderRightWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
   sidebarCompact: {
     position: 'absolute', top: 0, bottom: 0, left: 0, width: SIDEBAR_WIDTH_COMPACT,
+    /* No drop shadow: components/sidebar.css declares `4px 0 28px` but the
+       mobile cascade resolves #sidebar to `box-shadow: none` (measured
+       computed style, 390×844). Elevation stays for Android stacking. */
     zIndex: 90, elevation: 8,
-    shadowColor: '#000000', shadowOffset: { width: 4, height: 0 }, shadowOpacity: 0.25, shadowRadius: 28,
   },
   header: { height: HEADER_HEIGHT, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8 },
   headerCompact: { height: HEADER_HEIGHT_COMPACT, alignItems: 'flex-start', paddingHorizontal: 4, paddingTop: 10, paddingBottom: 16 },
@@ -954,12 +1078,34 @@ const styles = StyleSheet.create({
   teachingPlanStatus: { fontSize: 9, textTransform: 'uppercase', flexShrink: 0 },
   teachingPlanDepth: { fontSize: 9, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, letterSpacing: 0.3, flexShrink: 0, fontVariant: ['tabular-nums'] },
   teachingPlanEmpty: { paddingHorizontal: 10, paddingVertical: 6, fontSize: 12, lineHeight: 18 },
-  mistakesPanel: { paddingHorizontal: 4, paddingTop: 4, paddingBottom: 10, gap: 2 },
+  /* #mistakesPanel: flex column, gap 1; desktop `padding: 0 8px` (2px past
+     the shared 6px recents gutter), drawer 0. */
+  mistakesPanel: { gap: 1 },
+  mistakesPanelWide: { marginHorizontal: 2 },
+  mistakeFilterBar: { flexDirection: 'row', gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderBottomWidth: 0.5 },
+  mistakeFilterBtn: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 6 },
+  mistakeFilterText: { fontSize: 11 },
+  mistakesHeader: { paddingTop: 20, paddingBottom: 6, paddingHorizontal: 10 },
+  mistakesTitle: { fontSize: 14, lineHeight: 20, textTransform: 'uppercase', letterSpacing: 0.84 },
+  mistakesHeaderCompact: { height: 30, justifyContent: 'center', paddingLeft: 10, paddingRight: 4 },
+  mistakesTitleCompact: { fontSize: 13, lineHeight: 20 },
   mistakesEmpty: { paddingHorizontal: 12, paddingVertical: 32, gap: 0, alignItems: 'center' },
   mistakesEmptyText: { fontSize: 11, lineHeight: 17.6, textAlign: 'center' },
-  mistakeRow: { gap: 2, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8 },
-  mistakeQuestion: { fontSize: 13, lineHeight: 18 },
-  mistakeMeta: { fontSize: 11, lineHeight: 15 },
+  mistakeCard: { marginHorizontal: 4, marginBottom: 8, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10, borderWidth: 0.5, borderLeftWidth: 3 },
+  mistakeMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
+  mistakeType: { textTransform: 'uppercase', paddingVertical: 1, paddingHorizontal: 6, borderRadius: 4 },
+  mistakeTime: { marginLeft: 'auto' },
+  mistakeConquered: { textTransform: 'uppercase', paddingVertical: 1, paddingHorizontal: 8, borderRadius: 99, marginLeft: 'auto' },
+  mistakeQ: { marginBottom: 8 },
+  mistakeOpts: { gap: 3, marginBottom: 8 },
+  mistakeOpt: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 5, paddingHorizontal: 8, borderRadius: 6 },
+  mistakeOptLetter: { width: 18, height: 18, borderRadius: 9, borderWidth: 1, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  mistakeOptText: { flexShrink: 1 },
+  mistakeRedoCount: { marginBottom: 6 },
+  mistakeRedoBtn: { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 6, borderWidth: 0.5, alignItems: 'center' },
+  mistakeRedoText: { textAlign: 'center' },
+  /* .sidebar-view-btn .tab-badge: absolute top/right -3, 16 tall pill. */
+  mistakesBadge: { position: 'absolute', top: -3, right: -3, minWidth: 16, height: 16, paddingHorizontal: 4, borderRadius: 8, alignItems: 'center' },
   footer: { flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6, borderTopWidth: StyleSheet.hairlineWidth, minHeight: 59 },
   footerCompact: { padding: 8, gap: 0 },
   userRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minWidth: 0, paddingVertical: 4, paddingHorizontal: 6, borderRadius: 10 },
@@ -978,7 +1124,11 @@ const styles = StyleSheet.create({
   msgUser: { alignItems: 'flex-end' },
   /* ≤768px the bubble switches to --ui-bg-bubble-strong and 15px radius. */
   bubble: { maxWidth: '70%', borderRadius: 18, paddingHorizontal: 16, paddingVertical: 10 },
-  bubbleCompact: { maxWidth: '88%', borderRadius: 15 },
+  /* ≤768px: polish/transcript.css `#appShell#appShell .msg.user .msg-body
+     { max-width: min(72%, 560px) }` outranks components/chat.css 88%
+     (measured SPA bubble 257.75 = 72% of the 358px row at 390×844; the
+     560 cap never binds at ≤768). */
+  bubbleCompact: { maxWidth: '72%', borderRadius: 15 },
   messagesCompact: { paddingHorizontal: 16, paddingTop: 20 },
   toolbar: { flexDirection: 'row', alignItems: 'center', gap: 0, height: 28, marginTop: 4 },
   toolbarCompact: { height: 32, marginTop: 6, gap: 4 },
