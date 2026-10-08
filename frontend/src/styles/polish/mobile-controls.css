@@ -6,17 +6,14 @@
 
 @media (max-width: 768px) {
 
-  /* ── Sidebar drawer width — single value, capped at 90vw so a sliver of
-     the page stays visible behind it like the reference drawer. ── */
+  /* The drawer width comes from mobile-sidebar.css (80vw, capped at 330px);
+     retain a hard viewport bound here for very narrow devices. */
   #appShell .sidebar {
     max-width: min(var(--ui-sidebar-mobile), 90vw);
   }
 
-  /* ── Sidebar header icon-btn — 32px visual, 40px invisible hit ring.
-     Both polish/sidebar.css and restore/chatgpt-ui.css intended 32px for
-     these quiet chrome actions, but this layer's earlier 44px pin won the
-     cascade and read as a heavy block next to the logo. The ::before ring
-     keeps the ≥40 touch baseline without enlarging the painted box. ── */
+  /* Sidebar header controls use 40px visuals, with the pseudo-element
+     extending their touch target to 48px. */
   #appShell .sidebar-header .icon-btn,
   #appShell .sidebar-header .btn-icon {
     color: var(--ui-text-secondary);
@@ -28,8 +25,7 @@
     inset: -4px;
   }
 
-  /* ── Sidebar nav rows — 40px pitch, 10px radius (reference drawer rows
-     measure ~40px, not 44) ──
+  /* ── Sidebar nav rows — 48px pitch, matching the reference drawer ──
      Layout and typography are defined by mobile-sidebar.css. */
   #appShell .sidebar-nav-btn .nav-label {
     line-height: var(--ui-hit-area);
@@ -42,7 +38,7 @@
     padding: 0 14px;
   }
 
-  /* ── Sidebar recents — 40px pitch, 10px radius; the right pad is 6px so
+  /* ── Sidebar recents — 48px pitch, 10px radius; the right pad is 6px so
      the ··· glyph shares the reference drawer's ~16px trailing inset ── */
   #appShell .recent-item-overflow {
     /* The ··· is the drawer's quiet trailing affordance — one step below

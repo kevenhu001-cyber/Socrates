@@ -33,6 +33,11 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-text-tertiary: #9b9b9b;
   --ui-text-muted: #808080;
   --ui-text-disabled: #626262;
+  /* The dark reference drawer paints its glyphs and labels true-white rather
+     than the muted #e8e8e8 body text, so the phone drawer reads as a distinct
+     surface. Declared here to keep the hardcoded white out of the polish
+     layer, where the css-debt hex ratchet would count it as new debt. */
+  --ui-sidebar-glyph: #ffffff;
   --ui-border-subtle: rgb(255 255 255 / 6%);
   --ui-border-default: rgb(255 255 255 / 10%);
   --ui-border-strong: rgb(255 255 255 / 16%);
