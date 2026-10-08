@@ -54,6 +54,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
+permissions:
+  contents: read
+
 jobs:
   server-tooling:
     name: Server tool-calling
@@ -71,7 +74,7 @@ jobs:
           cache: 'npm'
           cache-dependency-path: server/package-lock.json
 
-      - run: npm ci --include=dev
+      - run: npm ci --include=dev --prefer-offline --no-audit --no-fund
 
       - name: TypeScript check
         run: npx tsc --noEmit
@@ -88,7 +91,10 @@ jobs:
             test/codexCommand.test.js \
             test/chat-helpers.test.js
 
-      - name: Full server suite
+      # Manual runs are occasionally used as a deeper diagnostic. Push/PR
+      # runs stay focused because ci.yml already owns the complete server gate.
+      - name: Full server suite (manual diagnostic)
+        if: github.event_name == 'workflow_dispatch'
         run: npm test
 
   frontend-agent-ui:
@@ -107,7 +113,21 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      - run: npm ci --include=dev
+      - name: Restore Rust WASM cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin/wasm-bindgen
+            ~/.cargo/bin/wasm-bindgen-test-runner
+            ~/.cargo/bin/wasm2es6js
+            tools-rust/target
+          key: ${{ runner.os }}-${{ runner.arch }}-rust-wasm-v1-${{ hashFiles('tools-rust/Cargo.lock') }}-wasm-bindgen-0.2.126
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-rust-wasm-v1-
+
+      - run: npm ci --include=dev --prefer-offline --no-audit --no-fund
 
       # The chat runtime loads a Rust/WASM mechanism library at runtime and
       # falls back to TypeScript when it is absent, so the unit tests do not
@@ -117,11 +137,12 @@ jobs:
         run: |
           # tools-rust/.cargo/config.toml points cargo at the rsproxy.cn
           # mirror, which exists for the local dev network and stalls
-          # intermittently from hosted runners (observed: transfer-too-slow
-          # timeouts on crates.io fetches). Runners reach crates.io directly.
+          # intermittently from hosted runners. Hosted runners use crates.io.
           rm -f ../tools-rust/.cargo/config.toml
           rustup target add wasm32-unknown-unknown
-          cargo install wasm-bindgen-cli --version 0.2.126 --locked
+          if ! wasm-bindgen --version 2>/dev/null | grep -qx 'wasm-bindgen 0.2.126'; then
+            cargo install wasm-bindgen-cli --version 0.2.126 --locked
+          fi
           npm run build:wasm
 
       - name: TypeScript check
@@ -136,7 +157,10 @@ jobs:
             test/toolInlineErrors.test.mjs \
             test/toolRunState.test.mjs
 
-      - name: Full unit suite
+      # The complete unit suite is already a blocking job in ci.yml. Keep it
+      # available for manual diagnostics without paying for it on every PR.
+      - name: Full unit suite (manual diagnostic)
+        if: github.event_name == 'workflow_dispatch'
         run: npm run test:unit
 
       - name: Build
