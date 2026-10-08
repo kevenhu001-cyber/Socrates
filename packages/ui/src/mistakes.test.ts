@@ -47,14 +47,18 @@ test('incorrect practice attempts land without options and keep the attempt', ()
   assert.match(mistake!.id, /^m-[0-9a-z]+-[0-9a-z]{1,4}$/);
 });
 
-test('prepend is newest-first and the badge counts unresolved rows', () => {
+test('prepend is newest-first; unresolved count and baseline badge have distinct semantics', () => {
   const first = createMistake({ type: 'quiz', q: 'Q1', options: OPTIONS, correct: 'B', userAnswer: 'A' }, { id: 'a' });
   const second = createMistake({ type: 'quiz', q: 'Q2', options: OPTIONS, correct: 'B', userAnswer: 'A' }, { id: 'b' });
   const list = prependMistake(prependMistake([], first), second);
   assert.deepEqual(list.map((m) => m.q), ['Q2', 'Q1']);
   assert.equal(unresolvedMistakeCount(list), 2);
   assert.equal(mistakesBadgeText(list), '2');
-  assert.equal(mistakesBadgeText([{ ...first, resolved: true }]), '');
+  const mixed = [{ ...first, resolved: true }, second];
+  assert.equal(unresolvedMistakeCount(mixed), 1);
+  // Baseline updateMistakesBadge renders mistakes.length, resolved included.
+  assert.equal(mistakesBadgeText(mixed), '2');
+  assert.equal(mistakesBadgeText([{ ...first, resolved: true }]), '1');
   assert.equal(mistakesBadgeText([]), '');
 });
 
