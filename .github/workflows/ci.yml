@@ -37,7 +37,9 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'push' }}
+  # A new PR revision supersedes the old one just as surely as a new push.
+  # Manual runs are explicit snapshots and are allowed to finish.
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 permissions:
   contents: read
@@ -178,6 +180,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     defaults:
       run:
         working-directory: frontend
@@ -205,7 +208,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-rust-wasm-v1-
 
-      - run: npm ci --include=dev
+      - run: npm ci --include=dev --prefer-offline --no-audit --no-fund
 
       - name: Build Rust WASM support
         run: |
@@ -302,6 +305,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: server
@@ -347,7 +351,7 @@ jobs:
           cache: 'npm'
           cache-dependency-path: server/package-lock.json
 
-      - run: npm ci --include=dev
+      - run: npm ci --include=dev --prefer-offline --no-audit --no-fund
 
       - name: TypeScript check
         run: npx tsc --noEmit
@@ -433,6 +437,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@v4
@@ -450,7 +455,7 @@ jobs:
       # (RN Web) and Android. This gate exports the web bundle and runs
       # the self-contained mock-server spec (no backend needed).
       - name: Install Universal App dependencies
-        run: npm ci --include=dev
+        run: npm ci --include=dev --prefer-offline --no-audit --no-fund
         working-directory: apps/socrates
 
       - name: Universal App typecheck and shared tests
@@ -461,7 +466,7 @@ jobs:
         working-directory: apps/socrates
 
       - name: Install Playwright dependencies
-        run: npm ci --include=dev
+        run: npm ci --include=dev --prefer-offline --no-audit --no-fund
         working-directory: frontend
 
       - name: Install Playwright Chromium
