@@ -3,14 +3,14 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BackHandler, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
-import type { AccountUsage, Assistant, ExamData, Message, Project, ProviderKey, Session, TutorData } from '@socrates/contracts';
+import type { AccountUsage, Assistant, ExamData, Message, Mistake, Project, ProviderKey, Session, TutorData } from '@socrates/contracts';
 import { buildBranchSession, createMessageOutbox, findRegenerateTarget, isLocalSessionId, runChatTurn, useChatStore, visibleSessions as getVisibleSessions } from '@socrates/chat';
 import { persistUser } from '@socrates/auth';
 import { useAuthStore } from '@socrates/auth';
 import { useSettingsStore } from '@socrates/settings';
-import { fontFamily, getThemePaletteHex } from '@socrates/theme';
-import { AssistantPicker, ChatMessageList, Composer, DiagView, ExamView, Icon, ModelPicker, Sidebar, activeAssistantOf, activeProviderOf, applyDiagnosticResults, assistantConfigOf, buildColdStartNodes, buildEmbeddedDocument, buildTeachingPlanFromKB, isSubstantiveAnswer, nextTeachingStage, paletteForDocument, parseExamQuestions, storedFileIdFromRawUrl, syncCurrentNodeFromTeachingPlan, uiStrings, type ArtifactDescriptor, type DiagQuestion, type PracticeSubmission, type QuizPick, type SidebarNavItem } from '@socrates/ui';
-import { api, streamConversation } from './src/runtime';
+import { fontStyle, getThemePaletteHex } from '@socrates/theme';
+import { AssistantPicker, ChatMessageList, Composer, DiagView, ExamView, Icon, IconRendererProvider, ModelPicker, Sidebar, activeProviderOf, applyDiagnosticResults, assistantConfigOf, buildColdStartNodes, buildEmbeddedDocument, buildPracticeMistake, buildQuizMistake, buildTeachingPlanFromKB, findMessageMatches, paletteForDocument, parseExamQuestions, prependMistake, storedFileIdFromRawUrl, syncCurrentNodeFromTeachingPlan, tutorProgressForTurn, uiStrings, type ArtifactDescriptor, type BoundarySnapshot, type DiagQuestion, type KnowledgeBoundaryNode, type PracticeSubmission, type QuizPick, type SidebarNavItem, type TeachingPlan, type TutorProgressNode } from '@socrates/ui';
+import { api, appWebOrigin, streamConversation } from './src/runtime';
 import { storage } from './src/storage';
 import { copyText } from './src/clipboard';
 import { capturePhoto, extractPickedDocument, pickDocument, pickImages, supportsCamera } from './src/attachments';
@@ -31,6 +31,13 @@ import type { FileAccessTarget, FileImageSource, StoredFileRef } from './src/fil
 import { SettingsScreen } from './src/SettingsScreen';
 import { ProjectsScreen } from './src/ProjectsScreen';
 import { SearchScreen } from './src/SearchScreen';
+import { installWebTextDefaults } from './src/webTextDefaults';
+import { FindBar } from './src/FindBar';
+import { ShareDialog, type ShareDialogVisibility } from './src/ShareDialog';
+import { ModelCaret } from './src/ModelCaret';
+import { ModelSwitcherBrand } from './src/ModelSwitcherBrand';
+import { SidebarLogoText, SidebarNavLabelBadge } from './src/SidebarText';
+import { webIconRenderer } from './src/iconRenderer';
 import { ProvidersScreen } from './src/ProvidersScreen';
 import { AssistantsScreen, type AssistantDraft } from './src/AssistantsScreen';
 import { appStrings, appStringsNow } from './src/strings';
@@ -38,6 +45,7 @@ import { appStrings, appStringsNow } from './src/strings';
 const initialSessions: Session[] = [{ id: 'welcome', title: 'Welcome to Socrates', topic: 'Universal app', mode: 'chat', phase: 'chat', messages: [{ clientId: 'welcome-assistant', role: 'assistant', rawText: 'How can I help you learn today?' }] }];
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /** Server-owned ids only: the messages API scopes ops by session, and a
  * drain can run while another session is active — never send a local
  * `session-*` id as the scope. */
@@ -51,18 +59,23 @@ function messageKey(message: { clientId?: string | null; id?: string }): string 
 function assistantSource(entry: AssistantDraft): string {
   return JSON.stringify({ description: entry.description, instructions: entry.instructions, starter: entry.starter });
 }
-/** App-strings key for a teaching stage (baseline `tutor.stageX` labels). */
-function stageLabelKey(stage: string | null | undefined): 'stageMotivate' | 'stageDefine' | 'stageDevelop' | 'stageIllustrate' | 'stageExercise' | 'stageCheck' {
-  switch (stage) {
-    case 'define': return 'stageDefine';
-    case 'develop': return 'stageDevelop';
-    case 'illustrate': return 'stageIllustrate';
-    case 'exercise': return 'stageExercise';
-    case 'check': return 'stageCheck';
-    default: return 'stageMotivate';
-  }
+/** Rebuild restored Tutor ordering the same way the SPA session loader does.
+ * The saved plan can lag behind node status changes; the knowledge plan is
+ * blank-first and its first unfinished node owns the resumed Tutor position. */
+function normalizeRestoredTutorSession(session: Session): Session {
+  if (session.mode !== 'tutor' || !Array.isArray(session.kbNodes) || session.kbNodes.length === 0) return session;
+  const nodes = session.kbNodes as unknown as TutorProgressNode[];
+  const plan = buildTeachingPlanFromKB(nodes);
+  const synced = plan ? syncCurrentNodeFromTeachingPlan(plan, nodes) : null;
+  return {
+    ...session,
+    teachingPlan: (synced?.teachingPlan ?? plan ?? session.teachingPlan) as Session['teachingPlan'],
+    currentNode: synced?.currentNode ?? session.currentNode ?? 0,
+    substantiveCount: 0,
+    practicePhase: session.practicePhase || 'foundation',
+    practiceAttempts: session.practiceAttempts || 0,
+  };
 }
-
 function SocratesApp() {
   const { width } = useWindowDimensions();
   const compact = width <= 768;
@@ -89,6 +102,17 @@ function SocratesApp() {
   const [assistantsLoading, setAssistantsLoading] = useState(false);
   const [assistantsError, setAssistantsError] = useState<string | null>(null);
   const [assistantMenuOpen, setAssistantMenuOpen] = useState(false);
+  const [findOpen, setFindOpen] = useState(false);
+  const [findQuery, setFindQuery] = useState('');
+  const [activeFindIndex, setActiveFindIndex] = useState(-1);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareSessionId, setShareSessionId] = useState<string | null>(null);
+  const [shareVisibility, setShareVisibility] = useState<ShareDialogVisibility>('public');
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [shareUrl, setShareUrl] = useState('');
+  const [shareStatus, setShareStatus] = useState('');
+  const [shareError, setShareError] = useState('');
+  const [shareBusy, setShareBusy] = useState(false);
   /** Where the providers screen returns to (settings entry vs chat menu). */
   const [providersReturn, setProvidersReturn] = useState<'settings' | 'chat'>('settings');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -116,12 +140,14 @@ function SocratesApp() {
   const theme = useSettingsStore((state) => state.theme);
   const language = useSettingsStore((state) => state.language);
   const s = appStrings(language);
+  useEffect(() => { installWebTextDefaults(theme); }, [language, theme]);
   // Shared UI strings + the baseline font stacks, so the shell chrome uses
   // the same copy and typography as the baseline SPA.
   const t = uiStrings(language);
-  const fam = (weight: 'regular' | 'medium' | 'semibold' | 'bold' = 'regular') => ({ fontFamily: fontFamily(weight, language) });
+  const fam = (weight: 'regular' | 'medium' | 'semibold' | 'bold' = 'regular') => fontStyle(weight, language, Platform.OS === 'web');
   const palette = useMemo(() => getThemePaletteHex(theme), [theme]);
   const active = useMemo(() => sessions.find((session) => session.id === activeId) || null, [activeId, sessions]);
+  const findMatches = useMemo(() => findMessageMatches(active?.messages || [], findQuery), [active?.messages, findQuery]);
   const visibleSessions = useMemo(
     () => {
       return getVisibleSessions(sessions, projectFilter);
@@ -131,11 +157,12 @@ function SocratesApp() {
   const activeProject = useMemo(() => projects.find((p) => p.id === projectFilter) || null, [projects, projectFilter]);
   const activeModel = useMemo(() => activeProviderOf(providers), [providers]);
   const activeModelLabel = activeModel ? (activeModel.label || activeModel.model || 'Model') : s.openModelMenu;
-  const activeAssistant = useMemo(() => activeAssistantOf(assistants, active?.assistantId), [assistants, active?.assistantId]);
   const streamAbort = useRef<AbortController | null>(null);
   const accountEpoch = useRef(0);
   const syncEpoch = useRef(0);
   const loadingDetails = useRef(new Set<string>());
+  const tutorSaveQueues = useRef(new Map<string, Promise<void>>());
+  const tutorSaveAliases = useRef(new Map<string, string>());
   const chatError = useChatStore((state) => state.error);
   // Stored files: resolve transcript raw-URLs into platform image sources and
   // preview/download through the authenticated file library.
@@ -327,7 +354,7 @@ function SocratesApp() {
       const draft: Session = {
         id, title: input.topic, topic: input.topic, mode: 'tutor', phase: 'chat', kind: 'tutor',
         tutorData, kbNodes: buildColdStartNodes(input.topic) as unknown as Session['kbNodes'],
-        teachingStage: 'motivate', currentNode: 0, messages: [],
+        teachingStage: 'motivate', currentNode: 0, substantiveCount: 0, messages: [],
       };
       const store = useChatStore.getState();
       store.setSessions([draft, ...store.sessions]);
@@ -378,6 +405,7 @@ function SocratesApp() {
       teachingPlan: (synced ? synced.teachingPlan : teachingPlan) as unknown as Session['teachingPlan'],
       currentNode: synced ? synced.currentNode : 0,
       teachingStage: 'motivate',
+      substantiveCount: 0,
       tutorData: { questions: session.tutorData?.questions, answers: answers as unknown as TutorData['answers'], submitted: true },
     });
     try {
@@ -385,6 +413,61 @@ function SocratesApp() {
       if (updated) await api.sessions.save(updated);
     } catch { /* the plan stays local until the next turn save */ }
   }, []);
+
+  const persistTutorPatch = useCallback((sessionId: string, patch: Partial<Session>) => {
+    const store = useChatStore.getState();
+    store.patchSession(sessionId, patch);
+    const owner = useAuthStore.getState().user;
+    if (!owner || owner.isGuest) return;
+    const epoch = accountEpoch.current;
+    const previous = tutorSaveQueues.current.get(sessionId) || Promise.resolve();
+    const save = previous.catch(() => undefined).then(async () => {
+      if (epoch !== accountEpoch.current) return;
+      const resolvedId = tutorSaveAliases.current.get(sessionId) || sessionId;
+      const latestStore = useChatStore.getState();
+      const latest = latestStore.sessions.find((session) => session.id === resolvedId)
+        || latestStore.sessions.find((session) => session.id === sessionId);
+      if (!latest) return;
+      const saved = await api.sessions.save(latest);
+      if (epoch !== accountEpoch.current) return;
+      const current = useChatStore.getState().sessions.find((session) => session.id === latest.id);
+      if (current) useChatStore.getState().adoptSessionId(latest.id, { ...saved, ...current, id: saved.id });
+      tutorSaveAliases.current.set(sessionId, saved.id);
+    }).catch(() => { /* Keep the local Tutor edit; the next turn retries its session save. */ });
+    tutorSaveQueues.current.set(sessionId, save);
+    void save.then(() => {
+      if (tutorSaveQueues.current.get(sessionId) === save) tutorSaveQueues.current.delete(sessionId);
+    });
+  }, []);
+
+  const updateKnowledgeNode = useCallback((index: number, patch: Partial<KnowledgeBoundaryNode>) => {
+    const session = active;
+    if (!session || session.mode !== 'tutor') return;
+    const nodes = ((session.kbNodes || []) as unknown as KnowledgeBoundaryNode[]).map((node, nodeIndex) => (
+      nodeIndex === index ? { ...node, ...patch } : node
+    ));
+    persistTutorPatch(session.id, { kbNodes: nodes as unknown as Session['kbNodes'] });
+  }, [active, persistTutorPatch]);
+
+  const saveKnowledgeSnapshot = useCallback(() => {
+    const session = active;
+    if (!session || session.mode !== 'tutor') return;
+    const nodes = (session.kbNodes || []) as unknown as KnowledgeBoundaryNode[];
+    const counts = { internalized: 0, fuzzy: 0, blank: 0 };
+    for (const node of nodes) {
+      if (node.status === 'internalized') counts.internalized += 1;
+      else if (node.status === 'fuzzy') counts.fuzzy += 1;
+      else counts.blank += 1;
+    }
+    const snapshot: BoundarySnapshot & { counts: typeof counts } = {
+      date: new Date().toISOString().slice(0, 10),
+      at: Date.now(),
+      summary: `I ${counts.internalized} · F ${counts.fuzzy} · B ${counts.blank}`,
+      counts,
+    };
+    const history = [...(session.boundariesHistory || []), snapshot as unknown as NonNullable<Session['boundariesHistory']>[number]].slice(-30);
+    persistTutorPatch(session.id, { boundariesHistory: history });
+  }, [active, persistTutorPatch]);
 
   // Personas are loaded with the library so the header chip can name the
   // bound assistant right after a reload; failures stay off the main sync
@@ -451,6 +534,8 @@ function SocratesApp() {
       setProjectFilter(null); setMovePickSession(null); setMenuOpen(false); setConfirmDelete(false); setScreen('chat');
       setModelMenuOpen(false); setProvidersReturn('settings');
       setAssistantMenuOpen(false);
+      setFindOpen(false); setFindQuery(''); setActiveFindIndex(-1);
+      setShareOpen(false); setShareSessionId(null); setShareToken(null); setShareUrl(''); setShareStatus(''); setShareError(''); setShareBusy(false);
       setEditingId(null); draftBackup.current = null; setOfflineNotice(false);
       useChatStore.getState().reset();
       useChatStore.getState().setSessions(initialSessions);
@@ -478,12 +563,96 @@ function SocratesApp() {
         if (epoch !== accountEpoch.current) return;
         const current = useChatStore.getState();
         if (current.turnSessionId === id || current.sessions.find((s) => s.id === id)?.messages?.length) return;
-        current.patchSession(id, { ...detail, messages: detail.messages ?? [] });
+        current.patchSession(id, normalizeRestoredTutorSession({ ...detail, messages: detail.messages ?? [] }));
       }).catch((error) => {
         if (epoch === accountEpoch.current) useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().couldNotLoadConversation);
       }).finally(() => { if (epoch === accountEpoch.current) loadingDetails.current.delete(id); });
     }
   }, [compact]);
+  useEffect(() => {
+    setFindOpen(false);
+    setFindQuery('');
+    setActiveFindIndex(-1);
+  }, [activeId]);
+  const openFind = useCallback(() => {
+    setFindQuery('');
+    setActiveFindIndex(-1);
+    setFindOpen(true);
+  }, []);
+  const nextFind = useCallback(() => {
+    setActiveFindIndex((current) => findMatches.length ? (current < 0 ? 0 : (current + 1) % findMatches.length) : -1);
+  }, [findMatches.length]);
+  const previousFind = useCallback(() => {
+    setActiveFindIndex((current) => findMatches.length ? (current < 0 ? findMatches.length - 1 : (current - 1 + findMatches.length) % findMatches.length) : -1);
+  }, [findMatches.length]);
+  const closeFind = useCallback(() => {
+    setFindOpen(false);
+    setFindQuery('');
+    setActiveFindIndex(-1);
+  }, []);
+  useEffect(() => {
+    if (screen !== 'chat') closeFind();
+  }, [screen, closeFind]);
+  const openShare = useCallback(() => {
+    if (!active) return;
+    setShareOpen(true);
+    setShareVisibility('public');
+    setShareSessionId(null);
+    setShareToken(null);
+    setShareUrl('');
+    setShareStatus(appStringsNow().shareSaving);
+    setShareError('');
+    setShareBusy(true);
+    void (async () => {
+      try {
+        let sessionId = uuidScope(active.id);
+        if (!sessionId) {
+          const saved = await api.sessions.save(active);
+          useChatStore.getState().adoptSessionId(active.id, saved);
+          sessionId = uuidScope(saved.id);
+        }
+        if (!sessionId) throw new Error(appStringsNow().shareNone);
+        setShareSessionId(sessionId);
+        setShareStatus('');
+      } catch (error) {
+        setShareError(error instanceof Error ? error.message : appStringsNow().shareCreateFailed);
+        setShareStatus('');
+      } finally {
+        setShareBusy(false);
+      }
+    })();
+  }, [active]);
+  const createShare = useCallback(async () => {
+    if (!shareSessionId || shareBusy) return;
+    setShareBusy(true); setShareError(''); setShareStatus(appStringsNow().shareCreating);
+    try {
+      const result = await api.sessions.createShare(shareSessionId, shareVisibility);
+      const origin = Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : appWebOrigin;
+      const url = `${origin}?share=${encodeURIComponent(result.token)}`;
+      setShareToken(result.token); setShareUrl(url); setShareStatus(appStringsNow().shareReady);
+    } catch (error) {
+      setShareError(`${appStringsNow().shareCreateFailed}: ${error instanceof Error ? error.message : 'network error'}`);
+      setShareStatus('');
+    } finally { setShareBusy(false); }
+  }, [shareBusy, shareSessionId, shareVisibility]);
+  const copyShare = useCallback(async () => {
+    if (!shareUrl || shareBusy) return;
+    setShareBusy(true); setShareError(''); setShareStatus(appStringsNow().shareCopying);
+    try { await copyText(shareUrl); setShareStatus(appStringsNow().shareCopied); }
+    catch (error) { setShareError(`${appStringsNow().shareCopyFailed}: ${error instanceof Error ? error.message : 'clipboard unavailable'}`); setShareStatus(''); }
+    finally { setShareBusy(false); }
+  }, [shareBusy, shareUrl]);
+  const revokeShare = useCallback(async () => {
+    if (!shareSessionId || !shareToken || shareBusy) return;
+    setShareBusy(true); setShareError(''); setShareStatus(appStringsNow().shareRevoking);
+    try {
+      await api.sessions.revokeShare(shareSessionId);
+      setShareToken(null); setShareUrl(''); setShareStatus(appStringsNow().shareNoLink);
+    } catch (error) {
+      setShareError(`${appStringsNow().shareRevokeFailed}: ${error instanceof Error ? error.message : 'network error'}`);
+      setShareStatus('');
+    } finally { setShareBusy(false); }
+  }, [shareBusy, shareSessionId, shareToken]);
   const createSession = useCallback(() => {
     const id = `session-${Date.now()}`;
     const store = useChatStore.getState();
@@ -516,13 +685,14 @@ function SocratesApp() {
     text: string,
     messageAttachments: Message['attachments'],
     persistAttachments?: (serverSessionId: string) => Promise<Message['attachments'] | undefined>,
+    assistantPrompt?: string,
   ) => {
     const epoch = accountEpoch.current;
     const controller = new AbortController();
     streamAbort.current = controller;
     try {
       await runChatTurn({
-        sessionId, turnId: `turn-${Date.now()}`, text,
+        sessionId, turnId: `turn-${Date.now()}`, text, ...(assistantPrompt ? { assistantPrompt } : {}),
         attachments: messageAttachments?.length ? messageAttachments : undefined,
         signal: controller.signal,
         isCurrent: () => epoch === accountEpoch.current,
@@ -535,6 +705,20 @@ function SocratesApp() {
     }
     void drainOutbox();
   }, [drainOutbox]);
+  const jumpToKnowledgeNode = useCallback((index: number) => {
+    if (!active || active.mode !== 'tutor') return;
+    const store = useChatStore.getState();
+    if (store.turnId) return;
+    const nodes = (active.kbNodes || []) as unknown as KnowledgeBoundaryNode[];
+    const node = nodes[index];
+    if (!node) return;
+    store.patchSession(active.id, { currentNode: index, substantiveCount: 0 });
+    const hasHistory = (active.messages || []).some((message) => message.role === 'assistant' && !!(message.rawText || message.content));
+    const assistantPrompt = hasHistory
+      ? 'Continue the lesson from where we left off.'
+      : `I'm ready to begin. Please teach me about ${node.name || active.topic}.`;
+    void runTurn(active.id, '', undefined, undefined, assistantPrompt);
+  }, [active, runTurn]);
   // One composer/synthetic turn. `origin` decides attachment staging, draft
   // handling and the tutor stage machine: composer sends snapshot the
   // staged files and let beginTurn clear the draft; quiz/practice proxies
@@ -582,17 +766,16 @@ function SocratesApp() {
       // exactly like the web baseline.
       const turnSession = useChatStore.getState().sessions.find((s) => s.id === sessionId);
       if (turnSession?.mode === 'tutor') {
-        const stage = turnSession.teachingStage || 'motivate';
-        if (stage === 'exercise') {
-          useChatStore.getState().patchSession(sessionId, { practiceAttempts: (turnSession.practiceAttempts || 0) + 1 });
-        }
-        if (origin !== 'quiz' && isSubstantiveAnswer(text) && stage !== 'check') {
-          const next = nextTeachingStage(stage);
-          useChatStore.getState().patchSession(sessionId, {
-            teachingStage: next.stage,
-            ...(next.resetPractice ? { practiceAttempts: 0, practicePhase: 'foundation' } : {}),
-          });
-        }
+        const progress = tutorProgressForTurn({
+          teachingStage: turnSession.teachingStage,
+          substantiveCount: turnSession.substantiveCount,
+          practiceAttempts: turnSession.practiceAttempts,
+          practicePhase: turnSession.practicePhase,
+          currentNode: turnSession.currentNode,
+          kbNodes: (turnSession.kbNodes || []) as unknown as TutorProgressNode[],
+          teachingPlan: (turnSession.teachingPlan as unknown as TeachingPlan | null) ?? null,
+        }, text, origin);
+        useChatStore.getState().patchSession(sessionId, progress.patch as Partial<Session>);
       }
       // Upload each staged file with the now-known server session id so it
       // lands in the file library and stays readable by the model.
@@ -633,6 +816,9 @@ function SocratesApp() {
       store.patchSession(sessionId, { practiceAttempts: right ? 0 : attempts + 1 });
     }
     if (!pick.correct || pick.isRight) return;
+    const nodeName = typeof session.currentNode === 'number' ? (session.kbNodes as Array<{ name?: string }> | undefined)?.[session.currentNode]?.name : undefined;
+    const quizMistake = buildQuizMistake({ sessionId, nodeName, question: pick.q, picked: pick.picked, pickedText: pick.pickedText, correct: pick.correct });
+    if (quizMistake) store.patchSession(sessionId, { mistakes: prependMistake((session.mistakes as unknown as Mistake[] | undefined) || [], quizMistake) as unknown as Session['mistakes'] });
     submitTurn(`I chose ${pick.picked}. ${pick.pickedText} (Result: incorrect, correct is ${pick.correct}.)`, 'quiz');
   }, [submitTurn]);
   // Practice proxy (baseline mountPracticeWidget): submit always sends the
@@ -644,6 +830,11 @@ function SocratesApp() {
     const session = store.sessions.find((s) => s.id === sessionId);
     if (!session || session.mode !== 'tutor' || store.turnId) return;
     if (submission.correct && submission.isRight) store.patchSession(sessionId, { practiceAttempts: 0 });
+    if (submission.correct && submission.isRight === false) {
+      const nodeName = typeof session.currentNode === 'number' ? (session.kbNodes as Array<{ name?: string }> | undefined)?.[session.currentNode]?.name : undefined;
+      const practiceMistake = buildPracticeMistake({ sessionId, nodeName, problem: submission.problem, answer: submission.answer, correct: submission.correct });
+      if (practiceMistake) store.patchSession(sessionId, { mistakes: prependMistake((session.mistakes as unknown as Mistake[] | undefined) || [], practiceMistake) as unknown as Session['mistakes'] });
+    }
     submitTurn(`${appStringsNow().practicePrefix}${submission.answer}`, 'practice');
   }, [submitTurn]);
   // Attachments: pickers produce staged rows; documents resolve to text
@@ -1066,6 +1257,17 @@ function SocratesApp() {
       if (epoch === accountEpoch.current) setProvidersLoading(false);
     }
   }, []);
+  // The baseline hydrates its active provider before the first conversation
+  // render. Load it as soon as account restoration completes so the header
+  // does not sit on "Choose model" until the user opens the model picker.
+  useEffect(() => {
+    if (!user || user.isGuest) {
+      setProviders([]);
+      setProvidersError(null);
+      return;
+    }
+    void loadProviders();
+  }, [user, loadProviders]);
   const openProviders = useCallback(() => { setProvidersReturn('settings'); setScreen('providers'); void loadProviders(); }, [loadProviders]);
   // Chat-header quick switch: same server activation as the providers
   // screen, without leaving the transcript.
@@ -1168,7 +1370,7 @@ function SocratesApp() {
         const detail = await api.sessions.get(id);
         if (epoch !== accountEpoch.current) return;
         const current = useChatStore.getState();
-        if (!current.sessions.some((s) => s.id === id)) current.setSessions([detail, ...current.sessions]);
+        if (!current.sessions.some((s) => s.id === id)) current.setSessions([normalizeRestoredTutorSession(detail), ...current.sessions]);
       }
       if (epoch !== accountEpoch.current) return;
       setScreen('chat');
@@ -1350,6 +1552,7 @@ function SocratesApp() {
       icon: 'more',
       onPress: () => undefined,
       menu: [
+        ...(user && !user.isGuest ? [{ label: s.openAssistantMenu, onPress: () => { if (compact) setSidebarOpen(false); openAssistantMenu(); } }] : []),
         { label: s.assistantTitle, onPress: () => { if (compact) setSidebarOpen(false); setScreen('assistants'); } },
         { label: s.openProviders, onPress: () => { if (compact) setSidebarOpen(false); setProvidersReturn('chat'); setScreen('providers'); void loadProviders(); } },
         { label: t.newExam, onPress: () => { if (compact) setSidebarOpen(false); setScreen('exam-setup'); } },
@@ -1374,11 +1577,13 @@ function SocratesApp() {
         onOpenSearch={() => { if (compact) setSidebarOpen(false); setScreen('search'); }}
         user={sidebarUser}
         themeIcon={theme === 'dark' ? 'moon' : 'sun'}
-        onToggleTheme={toggleTheme}
-        onOpenDisplaySettings={openSettings}
-        onOpenSettings={openSettings}
+        onToggleTheme={() => { if (compact) setSidebarOpen(false); toggleTheme(); }}
+        onOpenDisplaySettings={() => { if (compact) setSidebarOpen(false); openSettings(); }}
+        onOpenSettings={() => { if (compact) setSidebarOpen(false); openSettings(); }}
         onToggleSidebar={() => { if (compact) setSidebarOpen(false); else setSidebarOpen((open) => !open); }}
         logoSource={require('./assets/logo.png')}
+        logoTextRenderer={SidebarLogoText}
+        navLabelBadgeRenderer={SidebarNavLabelBadge}
         sessionActions={{
           archive: (id) => void archiveSession(id),
           unarchive: (id) => void unarchiveSession(id),
@@ -1390,30 +1595,50 @@ function SocratesApp() {
         compact={compact}
         archived={archived}
         onSelectArchived={(id) => void unarchiveSession(id)}
+        tutorActive={active?.mode === 'tutor'}
+        teachingPlan={active?.mode === 'tutor' ? (active.teachingPlan as unknown as TeachingPlan | null) ?? null : null}
+        teachingStage={active?.mode === 'tutor' ? active.teachingStage ?? null : null}
+        substantiveCount={active?.mode === 'tutor' ? active.substantiveCount ?? 0 : 0}
+        knowledgeNodes={active?.mode === 'tutor' ? (active.kbNodes || []) as unknown as KnowledgeBoundaryNode[] : []}
+        currentNode={active?.mode === 'tutor' ? active.currentNode ?? -1 : -1}
+        boundariesHistory={active?.mode === 'tutor' ? (active.boundariesHistory || []) as unknown as BoundarySnapshot[] : []}
+        onUpdateKnowledgeNode={updateKnowledgeNode}
+        onSaveKnowledgeSnapshot={saveKnowledgeSnapshot}
+        onJumpToKnowledgeNode={jumpToKnowledgeNode}
+        mistakes={active?.mode === 'tutor' ? ((active.mistakes as unknown as Mistake[] | undefined) || []) : []}
       /> : null}
-      <View style={[styles.main, compact && styles.mainCompact, { backgroundColor: palette.bg.page }]}>
+      {compact && sidebarOpen ? (
+        <Pressable
+          nativeID="socrates-sidebar-backdrop"
+          accessibilityRole="button"
+          accessibilityLabel={s.toggleSidebar}
+          onPress={() => setSidebarOpen(false)}
+          style={[styles.sidebarBackdrop, { backgroundColor: theme === 'dark' ? 'rgba(0, 0, 0, 0.55)' : 'rgba(0, 0, 0, 0.4)' }]}
+        />
+      ) : null}
+      <View nativeID="socrates-main" style={[styles.main, compact && styles.mainCompact, { backgroundColor: palette.bg.page }]}>
         {/* Baseline topbar: fixed brand/model switcher and conversation actions. */}
         <View style={[styles.topbar, compact && styles.topbarCompact]}>
           <View style={[styles.topbarLeft, compact && styles.topbarLeftCompact]}>
             {!sidebarOpen ? (
-              <Pressable accessibilityRole="button" accessibilityLabel={s.toggleSidebar} onPress={() => setSidebarOpen(true)} style={styles.topbarBtn}>
-                <Icon name={compact ? 'hamburger' : 'panel'} size={20} color={palette.text.primary} />
+              <Pressable accessibilityRole="button" accessibilityLabel={s.toggleSidebar} onPress={() => setSidebarOpen(true)} style={[styles.topbarBtn, compact && styles.topbarCircleCompact]}>
+                <Icon name={compact ? 'sidebar-toggle' : 'panel'} size={compact ? 24 : 20} color={compact ? palette.text.tertiary : palette.text.primary} />
               </Pressable>
             ) : null}
             <Pressable accessibilityRole="button" accessibilityLabel={s.openModelMenu} onPress={openModelMenu} style={[styles.modelSwitcher, compact && styles.modelSwitcherCompact]}>
-              <Text numberOfLines={1} style={[styles.modelName, compact && styles.modelNameCompact, { color: palette.text.primary }, fam('semibold')]}>{t.brand}</Text>
-              <Text numberOfLines={1} style={[styles.modelSub, compact && styles.modelSubCompact, { color: palette.text.tertiary }, fam()]}>{activeModelLabel}</Text>
-              <Icon name="caret" size={16} color={palette.text.tertiary} />
+              <ModelSwitcherBrand label={t.brand} color={palette.text.primary} compact={compact} language={language} />
+              <Text nativeID="socrates-model-subtitle" testID="socrates-model-subtitle" numberOfLines={1} style={[styles.modelSub, compact && styles.modelSubCompact, { color: palette.text.tertiary }, fam()]}>{activeModelLabel}</Text>
+              <ModelCaret size={compact ? 14 : 16} color={palette.text.tertiary} />
             </Pressable>
-            {/* Tutor runs surface their teaching stage next to the model
-                switcher (app-specific state, hidden in plain chat). */}
-            {active?.mode === 'tutor' ? (
-              <View style={styles.stageChip}>
-                <Text numberOfLines={1} style={[styles.stageChipText, { color: palette.text.secondary }, fam('medium')]}>🎓 {s[stageLabelKey(active.teachingStage)]}{active.practicePhase ? ` · ${active.practicePhase === 'transfer' ? s.practiceTransfer : s.practiceFoundation} ·${active.practiceAttempts || 0}` : ''}</Text>
-              </View>
-            ) : null}
           </View>
-          <View style={styles.topbarRight}>
+          <View style={[styles.topbarRight, compact && styles.topbarRightCompact]}>
+            {/* The baseline keeps the phone's new-chat action in the right
+                header group while a conversation is open and on the landing. */}
+            {compact && screen === 'chat' && !sidebarOpen ? (
+              <Pressable accessibilityRole="button" accessibilityLabel={t.newChat} onPress={() => void createSession()} style={[styles.topbarBtn, styles.topbarCircleCompact]}>
+                <Icon name="compose" size={24} color={palette.text.primary} />
+              </Pressable>
+            ) : null}
             {projectFilter ? (
               <Pressable accessibilityRole="button" accessibilityLabel={s.clearProjectFilter(activeProject?.name || '')} onPress={() => setProjectFilter(null)} style={[styles.filterChip, compact && styles.filterChipCompact]}>
                 <Text numberOfLines={1} style={[styles.filterText, { color: palette.text.primary }, fam('medium')]}>📁 {activeProject?.name || 'Project'} ✕</Text>
@@ -1422,17 +1647,17 @@ function SocratesApp() {
             {active ? (
               <>
                 {!(compact && projectFilter) ? (
-                  <Pressable accessibilityRole="button" accessibilityLabel={t.artifactSummary} onPress={() => undefined} style={styles.summaryBtn}>
-                  <Icon name="summary" size={compact ? 16 : 18} color={palette.text.primary} />
-                  <Text style={[styles.summaryText, compact && styles.summaryTextCompact, { color: palette.text.primary }, fam('medium')]}>{t.artifactSummary}</Text>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t.artifactSummary} onPress={() => undefined} style={[styles.summaryBtn, compact && styles.summaryBtnCompact]}>
+                  <Icon name="summary" size={compact ? 16 : 18} color={compact ? palette.text.secondary : palette.text.primary} />
+                  <Text nativeID="socrates-topbar-summary-label" testID="socrates-topbar-summary-label" style={[styles.summaryText, compact && styles.summaryTextCompact, { color: compact ? palette.text.secondary : palette.text.primary }, fam(compact ? 'regular' : 'medium')]}>{t.artifactSummary}</Text>
                   </Pressable>
                 ) : null}
-                <Pressable accessibilityRole="button" accessibilityLabel={t.findInConversation} onPress={() => setScreen('search')} style={styles.topbarBtn}>
-                  <Icon name="search" size={18} color={palette.text.primary} />
+                <Pressable accessibilityRole="button" accessibilityLabel={t.findInConversation} onPress={openFind} style={[styles.topbarBtn, compact && styles.topbarBtnCompact]}>
+                  <Icon name="search" size={compact ? 24 : 18} color={compact ? palette.text.tertiary : palette.text.primary} />
                 </Pressable>
-                <Pressable accessibilityRole="button" accessibilityLabel={t.shareConversation} onPress={() => undefined} style={styles.topbarBtn}>
-                  <Icon name="share" size={18} color={palette.text.primary} />
-                </Pressable>
+                {user && !user.isGuest ? <Pressable accessibilityRole="button" accessibilityLabel={t.shareConversation} onPress={openShare} style={[styles.topbarBtn, compact && styles.topbarBtnCompact]}>
+                  <Icon name="share" size={compact ? 24 : 18} color={compact ? palette.text.tertiary : palette.text.primary} />
+                </Pressable> : null}
               </>
             ) : null}
           </View>
@@ -1465,7 +1690,7 @@ function SocratesApp() {
           />
         ) : (
           <>
-            <ChatMessageList style={styles.list} compact={compact} messages={active?.messages || []} mode={theme} language={language} onCopyText={copyText} onSpeakText={speak} onEditMessage={user && !user.isGuest ? (message) => startEdit(messageKey(message) || '', message.rawText || '') : undefined} onRegenerateMessage={user && !user.isGuest ? (message) => void regenerate(messageKey(message) || '') : undefined} onBranchMessage={(message) => void branchFrom(messageKey(message) || '')} onOpenArtifact={setArtifact} onOpenStoredArtifact={openStoredArtifact} resolveImage={resolveImage} onOpenFile={openAttachment} onQuizPick={onQuizPick} onPracticeSubmit={onPracticeSubmit} />
+            <ChatMessageList style={styles.list} compact={compact} messages={active?.messages || []} mode={theme} language={language} findQuery={findOpen ? findQuery : ''} activeFindIndex={activeFindIndex} onCopyText={copyText} onSpeakText={speak} onShareMessage={() => openShare()} onEditMessage={user && !user.isGuest ? (message) => startEdit(messageKey(message) || '', message.rawText || '') : undefined} onRegenerateMessage={user && !user.isGuest ? (message) => void regenerate(messageKey(message) || '') : undefined} onBranchMessage={(message) => void branchFrom(messageKey(message) || '')} onOpenArtifact={setArtifact} onOpenStoredArtifact={openStoredArtifact} resolveImage={resolveImage} onOpenFile={openAttachment} onQuizPick={onQuizPick} onPracticeSubmit={onPracticeSubmit} />
             {editingId ? <View style={[styles.editBanner, { borderColor: palette.border.default }]}>
               <Text style={[styles.editBannerText, { color: palette.text.secondary }]}>{s.editingMessage}</Text>
               <Pressable accessibilityRole="button" accessibilityLabel={s.cancelEdit} onPress={cancelEdit} style={styles.editCancel}>
@@ -1517,6 +1742,34 @@ function SocratesApp() {
       onClose={() => setAssistantMenuOpen(false)}
     />
     {previewFile ? <FilePreview file={previewFile} mode={theme} language={language} target={fileTarget} loadPreview={loadFilePreview} onClose={() => setPreviewFile(null)} /> : null}
+    <FindBar
+      open={findOpen}
+      query={findQuery}
+      count={findMatches.length}
+      activeIndex={activeFindIndex}
+      compact={compact}
+      mode={theme}
+      language={language}
+      onChange={(value) => { setFindQuery(value); setActiveFindIndex(value.trim() ? 0 : -1); }}
+      onPrevious={previousFind}
+      onNext={nextFind}
+      onClose={closeFind}
+    />
+    <ShareDialog
+      open={shareOpen}
+      visibility={shareVisibility}
+      url={shareUrl}
+      busy={shareBusy}
+      status={shareStatus}
+      error={shareError}
+      mode={theme}
+      language={language}
+      onSelectVisibility={setShareVisibility}
+      onCopy={() => void copyShare()}
+      onCreate={() => void createShare()}
+      onRevoke={() => void revokeShare()}
+      onClose={() => setShareOpen(false)}
+    />
   </SafeAreaView>;
 }
 export default function App() {
@@ -1524,37 +1777,49 @@ export default function App() {
   // @fontsource; the app loads the same faces before the first paint so
   // every text node measures identically.
   const [fontsLoaded] = useFonts(FONTS);
-  return <SafeAreaProvider>{fontsLoaded ? <SocratesApp /> : null}</SafeAreaProvider>;
+  return <SafeAreaProvider><IconRendererProvider renderer={webIconRenderer}>{fontsLoaded ? <SocratesApp /> : null}</IconRendererProvider></SafeAreaProvider>;
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  shell: { flex: 1, flexDirection: 'row' },
+  shell: { flex: 1, flexDirection: 'row', position: 'relative' },
   main: { flex: 1, paddingBottom: 20 },
-  mainCompact: { paddingBottom: 16 },
+  /* parity: the phone chat column gives `.chat-input-bar` a 16px bottom
+     pad, and the composer slot adds its own 6px — 22px under the shell,
+     which is what the SPA measures at 390x844. */
+  mainCompact: { paddingBottom: 16, zIndex: 0 },
+  sidebarBackdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, zIndex: 80 },
   list: { flex: 1 },
   /* Baseline topbar (parity/topbar.css): borderless 52px bar on the page
      color, model switcher at the left, ghost icon actions at the right. */
   topbar: { height: 52, minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingHorizontal: 8 },
   topbarCompact: { height: 56, minHeight: 56 },
   topbarLeft: { flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 0, flexShrink: 1 },
-  topbarLeftCompact: { flex: 1 },
+  topbarLeftCompact: { flex: 1, gap: 8 },
   topbarRight: { flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 'auto' },
+  topbarRightCompact: { gap: 8 },
   topbarBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 18 },
+  /* polish/mobile-shell.css: the phone header's toggle and new-chat circles
+     are 40px (layout/app-shell.css) while find/share and the summary pill
+     take --ui-control-touch (44px). Glyphs step to 24px on the phone and
+     the groups gap 8px (parity/topbar.css keeps 4px only at ≥769px). */
+  topbarBtnCompact: { width: 44, minWidth: 44, height: 44, minHeight: 44, borderRadius: 22 },
+  topbarCircleCompact: { width: 40, minWidth: 40, height: 40, minHeight: 40, borderRadius: 20 },
   summaryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 36, minWidth: 48, paddingHorizontal: 10, borderRadius: 18 },
+  summaryBtnCompact: { height: 44, minWidth: 44, minHeight: 44, paddingHorizontal: 8, borderRadius: 22, gap: 0, alignItems: 'stretch', justifyContent: 'flex-start' },
   summaryText: { fontSize: 14, lineHeight: 20 },
-  summaryTextCompact: { fontSize: 12, lineHeight: 16 },
+  summaryTextCompact: { fontSize: 12, lineHeight: 20 },
   modelSwitcher: { flexDirection: 'row', alignItems: 'center', gap: 6, maxWidth: 360, height: 36, paddingLeft: 10, paddingRight: 8, borderRadius: 10, minWidth: 0 },
-  modelName: { fontSize: 18, lineHeight: 28, flexShrink: 1 },
+  modelName: { fontSize: 18, lineHeight: 28, fontWeight: '600', flexShrink: 1 },
   modelSub: { fontSize: 18, lineHeight: 28, flexShrink: 1 },
-  modelSwitcherCompact: { flex: 1, height: 36, maxWidth: '100%' },
-  modelNameCompact: { fontSize: 15, lineHeight: 24, flexShrink: 0 },
-  modelSubCompact: { fontSize: 13, lineHeight: 20, flexShrink: 1 },
+  /* parity/topbar.css phone block: flex 1 1 0, height 36, padding 0 4px,
+     gap 4px, name 600/15/24, model 13 tertiary, caret 14. */
+  modelSwitcherCompact: { flex: 1, height: 36, maxWidth: '100%', gap: 4, paddingLeft: 4, paddingRight: 4, overflow: 'hidden' },
+  modelNameCompact: { fontSize: 15, lineHeight: 24, fontWeight: '600', flexShrink: 0 },
+  modelSubCompact: { fontSize: 13, lineHeight: 24, flexShrink: 1 },
   filterChip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, maxWidth: '40%' },
   filterChipCompact: { maxWidth: 88, flexShrink: 1 },
   filterText: { fontSize: 13, lineHeight: 18 },
-  stageChip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, maxWidth: '45%' },
-  stageChipText: { fontSize: 13, lineHeight: 18 },
   errorRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 8 },
   errorText: { flex: 1 },
   retryChip: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },

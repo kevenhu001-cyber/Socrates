@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { test, expect } from '@playwright/test';
+import { ensureSidebarOpen } from './_universal-helpers.mjs';
 
 // Chat-header model switcher: the chip mirrors the active provider,
 // picking another one PATCHes /api-key, Manage leads to providers.
@@ -41,7 +42,7 @@ test('universal model switches the active provider from the chat header', async 
       return json(row || { message: 'Not found' }, row ? 200 : 404);
     }
     if (url.pathname.endsWith('/sessions')) {
-      if (req.method === 'GET') return json({ sessions: [...records.values()].map(({ messages, ...row }) => row), nextCursor: null });
+      if (req.method === 'GET') return json({ sessions: url.searchParams.get('archived') === 'true' ? [] : [...records.values()].map(({ messages, ...row }) => row), nextCursor: null });
       const id = records.has(payload.id) ? payload.id : a;
       records.set(id, { ...payload, id });
       return json({ id, title: records.get(id).title });
@@ -86,8 +87,8 @@ test('universal model switches the active provider from the chat header', async 
 
     // Chat still streams after the switch.
     await page.getByRole('button', { name: 'Back to chat' }).click();
-    const newChat = page.getByRole('button', { name: 'New chat', exact: true }).first();
-    if (!await newChat.isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
+    await ensureSidebarOpen(page);
+    const newChat = page.getByRole('button', { name: 'New chat', exact: true });
     await newChat.click();
     await page.getByLabel('Ask Socrates', { exact: true }).fill('Hi');
     await page.getByRole('button', { name: 'Send message' }).click();

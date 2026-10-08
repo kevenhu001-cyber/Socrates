@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { test, expect } from '@playwright/test';
+import { ensureSidebarOpen } from './_universal-helpers.mjs';
 
 // Exam generation: the app asks the model once per question through
 // /chat/stream, parses the JSON, then persists the exam as a session.
@@ -44,7 +45,7 @@ test('universal exam generation creates and persists an exam session', async ({ 
       records.set(record.id, record);
       return json({ id: record.id, title: record.title, topic: record.topic, kind: record.kind, examData: record.examData, mode: record.mode, phase: record.phase });
     }
-    if (url.pathname.endsWith('/sessions') && req.method === 'GET') return json({ sessions: [...records.values()].map(({ messages, examData, ...row }) => ({ ...row, kind: row.kind })), nextCursor: null });
+    if (url.pathname.endsWith('/sessions') && req.method === 'GET') return json({ sessions: url.searchParams.get('archived') === 'true' ? [] : [...records.values()].map(({ messages, examData, ...row }) => ({ ...row, kind: row.kind })), nextCursor: null });
     const id = url.pathname.split('/').at(-1);
     if (records.has(id)) return json(records.get(id));
     return json({ message: 'Not found' }, 404);
@@ -62,8 +63,8 @@ test('universal exam generation creates and persists an exam session', async ({ 
     await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
     // New exam lives in the sidebar's More menu (baseline chrome).
     async function openMore() {
+      await ensureSidebarOpen(page);
       const more = page.getByRole('button', { name: 'More' });
-      if (!(await more.isVisible())) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
       await more.click();
     }
 
@@ -89,18 +90,27 @@ test('universal exam generation creates and persists an exam session', async ({ 
     expect(saves[0].title).toBe('Cell biology');
     expect(saves[0].examData.questions.length).toBe(3);
     const freshRow = page.getByRole('button', { name: 'Cell biology', exact: true });
-    if (!await freshRow.isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
+    await ensureSidebarOpen(page);
     await expect(freshRow).toBeVisible();
 
     // Reload restores the exam from the server row.
     await page.reload();
     const row = page.getByRole('button', { name: 'Cell biology', exact: true });
-    if (!await row.isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
+    // Wait for rehydration, then open the sidebar only when this viewport
+    // starts collapsed.
+    await ensureSidebarOpen(page);
+    await expect(row).toBeVisible({ timeout: 15_000 });
     await row.click();
     await expect(page.getByText('Question 1 / 3')).toBeVisible();
     expect(errors).toEqual([]);
     await page.screenshot({ path: `test-results/universal-exam-generation-${encodeURIComponent(testInfo.project.name)}.png`, fullPage: false });
   } finally {
-    await new Promise((resolve) => server.close(resolve));
+    await new Promise((resolve) => {
+      server.close(resolve);
+      // The mobile browser can keep an API keep-alive socket open after the
+      // final screenshot; force-close it so teardown cannot consume the test
+      // timeout after all assertions have passed.
+      server.closeAllConnections();
+    });
   }
 });

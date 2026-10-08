@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { test, expect } from '@playwright/test';
+import { ensureSidebarOpen } from './_universal-helpers.mjs';
 
 // Math / citation / footnote / long-code rendering over real HTTP + SSE.
 // No LLM, production backend or credentials are contacted.
@@ -34,7 +35,7 @@ test('universal math renders formula cards, strips citations, notes footnotes an
     if (url.pathname.endsWith('/auth/me')) return json({ user: { id: 'account', email: 'test@example.com', displayName: 'Test' } });
     if (url.pathname.endsWith('/projects')) return json({ projects: [] });
     if (url.pathname.endsWith('/sessions')) {
-      if (req.method === 'GET') return json({ sessions: [...records.values()].map(({ messages, ...row }) => row), nextCursor: null });
+      if (req.method === 'GET') return json({ sessions: url.searchParams.get('archived') === 'true' ? [] : [...records.values()].map(({ messages, ...row }) => row), nextCursor: null });
       const id = records.has(payload.id) ? payload.id : a;
       records.set(id, { ...payload, id });
       return json({ id, title: records.get(id).title });
@@ -59,8 +60,8 @@ test('universal math renders formula cards, strips citations, notes footnotes an
     });
     await page.goto('/');
     await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
-    const target = page.getByRole('button', { name: 'New chat', exact: true }).first();
-    if (!await target.isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
+    await ensureSidebarOpen(page);
+    const target = page.getByRole('button', { name: 'New chat', exact: true });
     await target.click();
     await page.getByLabel('Ask Socrates', { exact: true }).fill('Math please');
     await page.getByRole('button', { name: 'Send message' }).click();

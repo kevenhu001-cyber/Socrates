@@ -65,7 +65,7 @@ const darkHex: ThemePaletteHex = {
     page: '#141414',
     raised: '#1c1c1c',
     overlay: '#292929',
-    hover: '#2b2b2b',
+    hover: '#292929',
     sunken: '#0d0d0d',
   },
   text: {
@@ -73,15 +73,15 @@ const darkHex: ThemePaletteHex = {
     secondary: '#c2c2c2',
     tertiary: '#9b9b9b',
     muted: '#808080',
-    disabled: '#616161',
+    disabled: '#626262',
   },
   border: {
     subtle: '#262626',
     default: '#303030',
     strong: '#404040',
   },
-  danger: '#ff6966',
-  success: '#3fdec1',
+  danger: '#ff6764',
+  success: '#42dec2',
   muted: '#808080',
   onAccent: '#000000',
 };
@@ -97,7 +97,7 @@ const lightHex: ThemePaletteHex = {
     page: '#ffffff',
     raised: '#fafafa',
     overlay: '#ffffff',
-    hover: '#f2f2f2',
+    hover: '#f3f3f3',
     sunken: '#ffffff',
   },
   text: {
@@ -112,8 +112,8 @@ const lightHex: ThemePaletteHex = {
     default: '#e6e6e6',
     strong: '#cccccc',
   },
-  danger: '#d72319',
-  success: '#027e6b',
+  danger: '#d8241a',
+  success: '#027c6a',
   muted: '#737373',
   onAccent: '#ffffff',
 };
@@ -144,10 +144,16 @@ export interface UiSurfaceHex {
   readonly bubbleStrong: string;
   /** Composer card (`--ui-bg-composer`). */
   readonly composer: string;
-  /** Composer hairline (`--ui-composer-border`). */
+  /** Composer hairline (desktop `--ui-composer-border`). */
   readonly composerBorder: string;
+  /** Composer hairline on ≤768px (themes.css phone override, 7%). */
+  readonly composerBorderCompact: string;
   /** Circular control fill — avatar, phone composer rail (`--ui-bg-control`). */
   readonly control: string;
+  /** Circular control fill on ≤768px (`--ui-bg-control`, dark phone step 56). */
+  readonly controlCompact: string;
+  /** Selected control fill — active sidebar view button (`--ui-bg-surface`). */
+  readonly surface: string;
   /** Quiet hover wash on icon buttons (`--ui-bg-hover-ghost`). */
   readonly hoverGhost: string;
   /** Chip fill (`--ui-bg-chip`). */
@@ -164,7 +170,10 @@ const darkSurfaces: UiSurfaceHex = {
   bubbleStrong: '#2e2e2e',
   composer: '#1c1c1c',
   composerBorder: 'rgba(255, 255, 255, 0.14)',
+  composerBorderCompact: 'rgba(255, 255, 255, 0.07)',
   control: '#303030',
+  controlCompact: '#383838',
+  surface: '#212121',
   hoverGhost: 'rgba(255, 255, 255, 0.08)',
   chip: 'rgba(255, 255, 255, 0.07)',
   avatar: '#303030',
@@ -177,7 +186,10 @@ const lightSurfaces: UiSurfaceHex = {
   bubbleStrong: '#f3f3f3',
   composer: '#ffffff',
   composerBorder: 'rgba(0, 0, 0, 0.20)',
+  composerBorderCompact: 'rgba(0, 0, 0, 0.20)',
   control: '#e8e8e8',
+  controlCompact: '#e8e8e8',
+  surface: '#f3f3f3',
   hoverGhost: 'rgba(0, 0, 0, 0.05)',
   chip: 'rgba(0, 0, 0, 0.05)',
   avatar: '#737373',

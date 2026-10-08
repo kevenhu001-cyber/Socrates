@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { test, expect } from '@playwright/test';
+import { ensureSidebarOpen } from './_universal-helpers.mjs';
 
 // Real HTTP chunks exercise fetch/SSE, UUID adoption and persistence. No LLM,
 // production backend or credentials are contacted by this contract server.
@@ -38,6 +39,11 @@ test('universal chat refreshes, saves, isolates streams and restores server hist
       records.set(id, { ...payload, id, title: id === a ? 'Saved conversation' : payload.title });
       saved.push(structuredClone(records.get(id))); return json({ id, title: records.get(id).title });
     }
+    if (url.pathname === `/api/v2/sessions/${a}/share`) {
+      if (req.method === 'POST') return json({ token: 'shared-token', url: '/a/shared-token', visibility: payload.visibility || 'public' }, 201);
+      if (req.method === 'DELETE') { res.writeHead(204); res.end(); return; }
+      return json({ token: null, visibility: 'private' });
+    }
     if (url.pathname.endsWith('/chat/stream')) {
       if (!records.has(payload.sessionId) || payload.sessionId !== a) return json({ message: 'Invalid or unowned session ID' }, 400);
       // Tone parity: the default scholar voice leads as the system message.
@@ -71,14 +77,17 @@ test('universal chat refreshes, saves, isolates streams and restores server hist
     await page.goto('/');
     await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
     async function row(name) {
+      await ensureSidebarOpen(page);
       const target = page.getByRole('button', { name, exact: true });
-      if (!await target.isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
       await target.click();
     }
     await row('New chat');
     await page.getByLabel('Ask Socrates', { exact: true }).fill('Question');
     await page.getByRole('button', { name: 'Send message' }).click();
     await expect(page.getByText('First chunk', { exact: true })).toBeVisible();
+    if (await page.evaluate(() => window.innerWidth <= 768)) {
+      await expect(page.getByRole('button', { name: 'New chat', exact: true })).toBeVisible();
+    }
     expect(refreshes).toBe(1); expect(saved[0].id).toBe(a);
     await row('Other conversation');
     await expect(page.getByText('Other answer', { exact: true })).toBeVisible();
@@ -94,6 +103,22 @@ test('universal chat refreshes, saves, isolates streams and restores server hist
     await expect(page.getByRole('heading', { name: 'Structured answer' })).toBeVisible();
     await expect(page.getByText('const answer = 42;', { exact: true })).toBeVisible();
     await expect(page.getByText('Reasoning only', { exact: true })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Find in conversation' }).click();
+    await page.getByRole('textbox', { name: 'Find in conversation' }).fill('chunk');
+    await expect(page.getByText('1/2', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Next match' }).click();
+    await expect(page.getByText('2/2', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Close find' }).click();
+    await page.getByRole('button', { name: 'Share conversation' }).first().click();
+    await expect(page.getByText('Share conversation', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Create share link' }).click();
+    await expect(page.getByRole('textbox', { name: 'Share link' })).toHaveValue(/\?share=shared-token/);
+    await page.getByRole('button', { name: 'Copy', exact: true }).last().click();
+    await expect(page.getByText('Link copied to clipboard.', { exact: true })).toBeVisible();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toContain('?share=shared-token');
+    await page.getByRole('button', { name: /Revoke share link/ }).click();
+    await expect(page.getByText('No active share link', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Close share dialog' }).last().click();
     await page.getByRole('button', { name: 'Toggle reasoning' }).click();
     await expect(page.getByText('Reasoning only', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Toggle web_search details' }).click();
@@ -113,14 +138,12 @@ test('universal chat refreshes, saves, isolates streams and restores server hist
     await page.getByRole('button', { name: 'Close preview' }).click();
     await expect(page.getByRole('button', { name: 'Close preview' })).toHaveCount(0);
     // Read-aloud renders per assistant message and never throws page-side.
-    await page.getByRole('button', { name: 'Listen to this message' }).first().click();
+    await page.getByRole('button', { name: 'Read aloud' }).first().click();
     await expect(errors).toEqual([]);
     await page.screenshot({ path: `test-results/universal-chat-restored-${encodeURIComponent(testInfo.project.name)}.png`, fullPage: false });
     // Projects live behind the sidebar nav row (baseline chrome).
     const navProjects = page.getByRole('button', { name: 'Open projects' });
-    if (!(await navProjects.isVisible())) {
-      await page.getByRole('button', { name: 'Toggle sidebar' }).click();
-    }
+    await ensureSidebarOpen(page);
     await navProjects.click();
     await page.getByRole('button', { name: 'Delete Owned project' }).click();
     await expect(page.getByText('Permanently delete this project and its conversations, files and artifacts?')).toBeVisible();

@@ -154,6 +154,8 @@ export interface TutorState {
   currentExampleIdx?: number | null;
   practiceAttempts?: number | null;
   practicePhase?: string | null;
+  /** Local Tutor depth counter; the web baseline keeps this in its client store. */
+  substantiveCount?: number | null;
   teachingPlan?: JsonValue;
   boundariesHistory?: JsonValue[];
   mistakeFilter?: string | null;
@@ -210,6 +212,15 @@ export interface Session extends TutorState {
   mistakes?: JsonValue[];
   streamingText?: string | null;
   streamingReasoning?: string | null;
+}
+
+export type ShareVisibility = 'public' | 'private';
+
+/** Share settings returned by GET /api/sessions/:id/share. */
+export interface SessionShare {
+  token: string | null;
+  visibility: ShareVisibility | 'unlisted';
+  url?: string | null;
 }
 
 /** GET /api/creations/items/assistants row — a user-authored persona.

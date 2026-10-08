@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { test, expect } from '@playwright/test';
+import { ensureSidebarOpen } from './_universal-helpers.mjs';
 
 // Assistant (persona) binding: picker sheet + session-level assistantId on
 // save/stream/PATCH, plus the Assistants screen behind Manage (create, use
@@ -51,7 +52,7 @@ test('universal assistant binds a persona to the session', async ({ page }, test
       return json(updated);
     }
     if (url.pathname.endsWith('/sessions')) {
-      if (req.method === 'GET') return json({ sessions: [...records.values()].map(({ messages, ...row }) => row), nextCursor: null });
+      if (req.method === 'GET') return json({ sessions: url.searchParams.get('archived') === 'true' ? [] : [...records.values()].map(({ messages, ...row }) => row), nextCursor: null });
       savePayloads.push(payload);
       const id = /^[0-9a-f-]{36}$/.test(payload.id || '') ? payload.id : uuid();
       records.set(id, { ...payload, id });
@@ -83,27 +84,26 @@ test('universal assistant binds a persona to the session', async ({ page }, test
     await page.goto('/');
     await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
 
-    const toggleSidebar = async () => {
-      if (!await page.getByRole('button', { name: 'New chat' }).isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
+    const openPicker = async () => {
+      await ensureSidebarOpen(page);
+      await page.getByRole('button', { name: 'More', exact: true }).click();
+      await page.getByRole('button', { name: 'Choose assistant', exact: true }).click();
     };
-    const openPicker = async () => page.getByRole('button', { name: 'Choose assistant' }).first().click();
-    await toggleSidebar();
+    await ensureSidebarOpen(page);
 
     // Server-owned session: binding PATCHes the row, then mirrors locally.
-    await page.getByRole('button', { name: 'Saved chat' }).click();
+    await page.getByRole('button', { name: 'Saved chat', exact: true }).click();
     await openPicker();
     await expect(page.getByRole('button', { name: 'Use Coach' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Use No assistant' })).toBeVisible();
     await page.getByRole('button', { name: 'Use Coach' }).click();
     await expect.poll(() => patchPayloads.length).toBe(1);
     expect(patchPayloads[0]).toMatchObject({ id: savedSessionId, payload: { assistantId: 'a1' } });
-    await expect(page.getByText('🎭 Coach ▾')).toBeVisible();
 
     // A fresh chat starts unbound (session-level binding, parity with the web
     // baseline clearing the active assistant on reset).
-    await toggleSidebar();
-    await page.getByRole('button', { name: 'New chat' }).click();
-    await expect(page.getByText('🎭 Coach ▾')).toHaveCount(0);
+    await ensureSidebarOpen(page);
+    await page.getByRole('button', { name: 'New chat', exact: true }).click();
     await openPicker();
     await page.getByRole('button', { name: 'Use Coach' }).click();
     await page.getByLabel('Ask Socrates', { exact: true }).fill('Hello persona');
@@ -123,7 +123,6 @@ test('universal assistant binds a persona to the session', async ({ page }, test
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Start chat with Tutor' })).toBeVisible();
     await page.getByRole('button', { name: 'Start chat with Tutor' }).click();
-    await expect(page.getByText('🎭 Tutor ▾')).toBeVisible();
     await expect(page.getByLabel('Ask Socrates', { exact: true })).toHaveValue('Let us begin!');
     await openPicker();
     await page.getByRole('button', { name: 'Manage assistants' }).click();

@@ -2,9 +2,11 @@
  * the web baseline's tutor stack without its store/DOM:
  *
  * - stage machine (`stageInstruction`, `nextTeachingStage`,
- *   `isSubstantiveAnswer`) from `chat/socraticDirectives.js` +
- *   `chat/sendPipeline.js` (a substantive free-form answer advances one
- *   stage; quiz/practice origins never do);
+ *   `isSubstantiveAnswer`, `tutorProgressForTurn`) from
+ *   `chat/socraticDirectives.js` + `chat/sendPipeline.js` (quiz turns use
+ *   their widget transition; practice can advance the stage but does not
+ *   count toward free-form depth; three substantive answers at/after
+ *   exercise internalize and advance the current node);
  * - diagnostic generation contract (`DIAG_ASPECTS`, `buildDiagPrompt`)
  *   from `chat/diagnosticGenerator.js` — the search-context line becomes
  *   an explicit parameter instead of a store read;
@@ -531,6 +533,119 @@ export function syncCurrentNodeFromTeachingPlan(
     teachingPlan: nextPlan,
     currentNode: matchedIdx >= 0 ? matchedIdx : Math.min(firstActive, kbNodes.length - 1),
   };
+}
+
+export interface TutorProgressNode {
+  name?: string;
+  status?: string;
+  questions?: number;
+  [key: string]: unknown;
+}
+
+export interface TutorProgressState {
+  teachingStage?: TeachingStage | null;
+  substantiveCount?: number | null;
+  practiceAttempts?: number | null;
+  practicePhase?: string | null;
+  currentNode?: number | null;
+  kbNodes?: TutorProgressNode[] | null;
+  teachingPlan?: TeachingPlan | null;
+}
+
+export type TutorProgressPatch = Partial<TutorProgressState> & { currentExampleIdx?: number };
+
+/** Apply the baseline tutor turn counters and node-completion threshold.
+ * `composer` is the baseline's untagged free-form turn; synthetic origins
+ * keep their separate quiz/practice behavior. */
+export function tutorProgressForTurn(
+  state: TutorProgressState,
+  text: string,
+  origin: 'composer' | 'quiz' | 'practice',
+): { patch: TutorProgressPatch; masteredNode?: string; nextNode?: string } {
+  const patch: TutorProgressPatch = {};
+  const before = state.teachingStage || 'motivate';
+  const trimmed = String(text || '').trim();
+  const substantive = trimmed.length > 40 && trimmed.split(/\s+/).length > 8;
+  const kbNodes = Array.isArray(state.kbNodes) ? state.kbNodes : [];
+  const currentNodeIdx = Math.max(0, Math.min(state.currentNode ?? 0, kbNodes.length - 1));
+  let stage = before;
+  let count = Math.max(0, state.substantiveCount || 0);
+  let attempts = Math.max(0, state.practiceAttempts || 0);
+
+  if (before === 'exercise') {
+    attempts += 1;
+    patch.practiceAttempts = attempts;
+  }
+  if (substantive && origin !== 'quiz' && before !== 'check') {
+    const next = nextTeachingStage(before);
+    stage = next.stage;
+    patch.teachingStage = stage;
+    if (next.resetPractice) {
+      attempts = 0;
+      patch.practiceAttempts = 0;
+      patch.practicePhase = 'foundation';
+    }
+  }
+  if (substantive && origin === 'composer') {
+    count += 1;
+    patch.substantiveCount = count;
+  }
+
+  const stageOrder = TEACHING_STAGES;
+  const reachedExercise = stageOrder.indexOf(stage) >= stageOrder.indexOf('exercise');
+  if (origin !== 'composer' || count < 3 || !reachedExercise || !kbNodes[currentNodeIdx]) return { patch };
+
+  const currentNode = kbNodes[currentNodeIdx];
+  const updatedNodes = kbNodes.map((node, index) => index === currentNodeIdx
+    ? { ...node, status: 'internalized', questions: (node.questions || 0) + 1 }
+    : node);
+  patch.kbNodes = updatedNodes;
+  patch.substantiveCount = 0;
+
+  let updatedPlan = state.teachingPlan;
+  let currentPlanIdx = -1;
+  if (updatedPlan?.subtopics?.length) {
+    currentPlanIdx = updatedPlan.subtopics.findIndex((subtopic) => subtopic.name === currentNode.name);
+    const subtopics = updatedPlan.subtopics.map((subtopic) => subtopic.name === currentNode.name
+      ? { ...subtopic, status: 'internalized' }
+      : subtopic);
+    updatedPlan = { ...updatedPlan, subtopics };
+    patch.teachingPlan = updatedPlan;
+  }
+
+  let nextPlanIdx = -1;
+  if (updatedPlan?.subtopics?.length) {
+    const startAt = currentPlanIdx >= 0 ? currentPlanIdx + 1 : 0;
+    for (let index = startAt; index < updatedPlan.subtopics.length; index++) {
+      if (updatedPlan.subtopics[index].status !== 'internalized') { nextPlanIdx = index; break; }
+    }
+  }
+  let nextNodeIdx = nextPlanIdx >= 0
+    ? updatedNodes.findIndex((node) => node.name === updatedPlan?.subtopics[nextPlanIdx]?.name)
+    : -1;
+  // Match the baseline safety net when the plan is missing or names drift.
+  if (nextNodeIdx < 0) {
+    for (let index = currentNodeIdx + 1; index < updatedNodes.length; index++) {
+      if (updatedNodes[index].status !== 'internalized') { nextNodeIdx = index; break; }
+    }
+  }
+
+  if (nextNodeIdx >= 0) {
+    const nextName = updatedNodes[nextNodeIdx].name || '';
+    const nextPlanPosition = updatedPlan?.subtopics.findIndex((subtopic) => subtopic.name === nextName) ?? -1;
+    if (updatedPlan && nextPlanPosition >= 0) {
+      updatedPlan = { ...updatedPlan, currentSubtopicIdx: nextPlanPosition };
+      patch.teachingPlan = updatedPlan;
+    }
+    patch.currentNode = nextNodeIdx;
+    patch.teachingStage = 'motivate';
+    patch.currentExampleIdx = 0;
+    patch.practiceAttempts = 0;
+    patch.practicePhase = 'foundation';
+    return { patch, masteredNode: currentNode.name, nextNode: nextName };
+  }
+
+  return { patch, masteredNode: currentNode.name };
 }
 
 export interface DiagAnswerState {

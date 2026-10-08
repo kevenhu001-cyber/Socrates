@@ -58,7 +58,9 @@ console.log(`[universal] serving ${dist} on :${PORT}`);
 // EINVAL on Windows (Node >= 20 refuses .cmd/.bat without a shell), and a
 // shell would need different quoting per platform.
 const playwrightCli = join(frontend, 'node_modules', '@playwright', 'test', 'cli.js');
-const child = spawn(process.execPath, [playwrightCli, 'test', '--config=playwright.universal.config.mjs'], {
+// Forward optional Playwright paths/flags so developers can follow the
+// repository's incremental-test rule without exporting or serving by hand.
+const child = spawn(process.execPath, [playwrightCli, 'test', '--config=playwright.universal.config.mjs', ...process.argv.slice(2)], {
   cwd: frontend,
   stdio: 'inherit',
   env: { ...process.env, UNIVERSAL_BASE_URL: `http://127.0.0.1:${PORT}` },

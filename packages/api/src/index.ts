@@ -1,4 +1,4 @@
-import type { AccountUsage, Assistant, ChatRequest, ChatSseHandlers, FileExtractResult, MobileTokenPair, Project, ProviderKey, SearchHit, Session, StoredFile, StoredFilePreview, User } from '@socrates/contracts';
+import type { AccountUsage, Assistant, ChatRequest, ChatSseHandlers, FileExtractResult, MobileTokenPair, Project, ProviderKey, SearchHit, Session, SessionShare, ShareVisibility, StoredFile, StoredFilePreview, User } from '@socrates/contracts';
 import { consumeSseBuffer, dispatchChatSseFrame } from '@socrates/core';
 import type { KeyValueStore } from '@socrates/platform';
 
@@ -251,6 +251,10 @@ export function createApiClient(input: {
       /* DELETE purges the session and every row referencing it (messages,
        * files, artifacts, runs). Server replies 204 with an empty body. */
       remove: (id: string) => request<void>(`/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+      share: (id: string) => request<SessionShare>(`/sessions/${encodeURIComponent(id)}/share`),
+      createShare: (id: string, visibility: ShareVisibility) =>
+        request<{ token: string; url: string; visibility: ShareVisibility | 'unlisted' }>(`/sessions/${encodeURIComponent(id)}/share`, { method: 'POST', body: JSON.stringify({ visibility }) }),
+      revokeShare: (id: string) => request<void>(`/sessions/${encodeURIComponent(id)}/share`, { method: 'DELETE' }),
     },
     projects: {
       list: async () => (await request<{ projects: Project[] }>('/projects')).projects,

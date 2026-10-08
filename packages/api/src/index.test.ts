@@ -68,6 +68,30 @@ test('sessions.archive/unarchive hit the archive endpoints', async () => {
   assert.equal(calls[1].init?.method, 'DELETE');
 });
 
+test('sessions.share/createShare/revokeShare use the owned-session share routes', async () => {
+  const { fetch, calls } = mockFetch({
+    '/sessions/s%201/share': { status: 200, body: { token: 'old-token', visibility: 'private' } },
+    'POST /sessions/s%201/share': { status: 201, body: { token: 'new-token', url: '/a/new-token', visibility: 'public' } },
+  });
+  const api = createApiClient({ baseUrl: 'https://test/api/v2', fetch, storage: createMemoryStore() });
+  const current = await api.sessions.share('s 1');
+  assert.equal(current.token, 'old-token');
+  assert.equal(current.visibility, 'private');
+  const created = await api.sessions.createShare('s 1', 'public');
+  assert.equal(created.token, 'new-token');
+  assert.equal(JSON.parse((calls[1].init?.body as string) || '{}').visibility, 'public');
+  assert.deepEqual(calls.map((call) => call.init?.method || 'GET'), ['GET', 'POST']);
+
+  const deletes: string[] = [];
+  const deleteFetch = (async (url: string, init?: RequestInit) => {
+    deletes.push(`${init?.method || 'GET'} ${url}`);
+    return new Response(null, { status: 204 });
+  }) as typeof globalThis.fetch;
+  const deleteApi = createApiClient({ baseUrl: 'https://test/api/v2', fetch: deleteFetch, storage: createMemoryStore() });
+  await deleteApi.sessions.revokeShare('s 1');
+  assert.match(deletes[0], /DELETE .*\/sessions\/s%201\/share$/);
+});
+
 test('sessions.remove sends DELETE and tolerates the 204 empty body', async () => {
   const calls: Array<{ url: string; init?: RequestInit }> = [];
   const fetch = (async (url: string, init?: RequestInit) => {

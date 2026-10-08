@@ -10,6 +10,7 @@ import { storage } from './storage';
 
 // Expo statically substitutes direct public env reads in Web/native bundles.
 const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://app.topodrive.top/api/v2';
+export const appWebOrigin = new URL(baseUrl).origin;
 export const api = createApiClient({
   baseUrl,
   fetch: transportFetch,

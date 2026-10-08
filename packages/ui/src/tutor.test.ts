@@ -19,6 +19,7 @@ import {
   parseDiagResponse,
   stageInstruction,
   syncCurrentNodeFromTeachingPlan,
+  tutorProgressForTurn,
   tutorTurnDirective,
 } from './tutor.ts';
 
@@ -96,6 +97,49 @@ test('teaching plans go blank-first and track the node', () => {
   const synced = syncCurrentNodeFromTeachingPlan(plan, kbNodes)!;
   assert.equal(synced.currentNode, 0);
   assert.equal(buildTeachingPlanFromKB([]), null);
+});
+
+test('Tutor depth gate internalizes the completed node and follows the next plan gap', () => {
+  const kbNodes = [
+    { name: 'Foundations', status: 'blank', questions: 0 },
+    { name: 'Applications', status: 'blank', questions: 0 },
+  ];
+  const teachingPlan = buildTeachingPlanFromKB(kbNodes)!;
+  const result = tutorProgressForTurn({
+    teachingStage: 'exercise', substantiveCount: 2, practiceAttempts: 1,
+    currentNode: 0, kbNodes, teachingPlan,
+  }, 'I can explain the concept, connect it with earlier definitions, justify each step, and apply it to another example.', 'composer');
+
+  assert.equal(result.masteredNode, 'Foundations');
+  assert.equal(result.nextNode, 'Applications');
+  assert.equal(result.patch.currentNode, 1);
+  assert.equal(result.patch.teachingStage, 'motivate');
+  assert.equal(result.patch.substantiveCount, 0);
+  assert.equal(result.patch.practiceAttempts, 0);
+  assert.equal(result.patch.kbNodes?.[0].status, 'internalized');
+  assert.equal(result.patch.kbNodes?.[0].questions, 1);
+  assert.equal(result.patch.teachingPlan?.subtopics[0].status, 'internalized');
+  assert.equal(result.patch.teachingPlan?.currentSubtopicIdx, 1);
+});
+
+test('Tutor depth gate waits for exercise and ignores quiz-origin depth', () => {
+  const kbNodes = [{ name: 'Foundations', status: 'blank', questions: 0 }];
+  const teachingPlan = buildTeachingPlanFromKB(kbNodes)!;
+  const answer = 'I can explain the concept, connect it with earlier definitions, justify each step, and apply it to another example.';
+  const early = tutorProgressForTurn({
+    teachingStage: 'develop', substantiveCount: 2, currentNode: 0, kbNodes, teachingPlan,
+  }, answer, 'composer');
+  assert.equal(early.patch.teachingStage, 'illustrate');
+  assert.equal(early.patch.substantiveCount, 3);
+  assert.equal(early.patch.kbNodes, undefined);
+
+  const quiz = tutorProgressForTurn({
+    teachingStage: 'exercise', substantiveCount: 2, practiceAttempts: 0, currentNode: 0, kbNodes, teachingPlan,
+  }, answer, 'quiz');
+  assert.equal(quiz.patch.teachingStage, undefined);
+  assert.equal(quiz.patch.substantiveCount, undefined);
+  assert.equal(quiz.patch.practiceAttempts, 1);
+  assert.equal(quiz.patch.kbNodes, undefined);
 });
 
 test('diagnostic answers fold into node baselines', () => {

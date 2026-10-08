@@ -1,6 +1,6 @@
 import React, { memo, useMemo, useState } from 'react';
 import { Image, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { fontFamily, getThemePaletteHex, type FontWeight, type ThemeMode } from '@socrates/theme';
+import { fontStyle, getThemePaletteHex, type FontWeight, type ThemeMode } from '@socrates/theme';
 import type { Attachment, Message, ToolCall } from '@socrates/contracts';
 import type { Token, Tokens } from 'marked';
 import { parseAssistantSegments, parseMessageContent, parseRichText, plainText, safeImage, safeLink } from './messageContent';
@@ -13,6 +13,7 @@ import { toolArtifacts, toolDurationLabel, toolFailureText, toolInputPreview, to
 import { uiStrings, type UiLanguage, type UiStrings } from './strings';
 
 type Palette = ReturnType<typeof getThemePaletteHex>;
+type FindRenderContext = { query: string; nextIndex: number; activeIndex: number };
 export type ResolvedImageSource = { uri: string; headers?: Record<string, string> };
 /** One quiz pick: the host applies stage transitions and (only when a
  * correct answer is declared and the pick is wrong) a synthetic turn. */
@@ -61,27 +62,47 @@ export type MessageActions = {
 };
 const openLink = (url: string) => { const safe = safeLink(url); if (safe) void Linking.openURL(safe).catch(() => undefined); };
 
-function Inline({ tokens, p, resolveImage }: { tokens: Token[]; p: Palette; resolveImage?: (src: string) => ResolvedImageSource | null }) {
+function findText(text: string, context: FindRenderContext | undefined): React.ReactNode {
+  if (!context?.query) return text;
+  const needle = context.query.toLocaleLowerCase();
+  const lower = text.toLocaleLowerCase();
+  const parts: React.ReactNode[] = [];
+  let cursor = 0;
+  let offset = lower.indexOf(needle);
+  while (offset >= 0) {
+    if (offset > cursor) parts.push(text.slice(cursor, offset));
+    const active = context.nextIndex === context.activeIndex;
+    parts.push(<Text key={`find-${context.nextIndex}`} style={active ? styles.findActive : styles.findMark}>{text.slice(offset, offset + needle.length)}</Text>);
+    context.nextIndex++;
+    cursor = offset + needle.length;
+    offset = lower.indexOf(needle, cursor);
+  }
+  if (cursor === 0) return text;
+  if (cursor < text.length) parts.push(text.slice(cursor));
+  return <>{parts}</>;
+}
+
+function Inline({ tokens, p, resolveImage, find }: { tokens: Token[]; p: Palette; resolveImage?: (src: string) => ResolvedImageSource | null; find?: FindRenderContext }) {
   return <>{tokens.map((t, i) => {
-    if (t.type === 'strong' || t.type === 'em' || t.type === 'del') return <Text key={i} style={t.type === 'strong' ? { fontWeight: '700' } : t.type === 'em' ? { fontStyle: 'italic' } : { textDecorationLine: 'line-through' }}><Inline tokens={t.tokens || []} p={p} resolveImage={resolveImage} /></Text>;
-    if (t.type === 'codespan') return <Text key={i} style={[styles.mono, { backgroundColor: p.bg.hover }]}>{plainText(t.text)}</Text>;
+    if (t.type === 'strong' || t.type === 'em' || t.type === 'del') return <Text key={i} style={t.type === 'strong' ? { fontWeight: '700' } : t.type === 'em' ? { fontStyle: 'italic' } : { textDecorationLine: 'line-through' }}><Inline tokens={t.tokens || []} p={p} resolveImage={resolveImage} find={find} /></Text>;
+    if (t.type === 'codespan') return <Text key={i} style={[styles.mono, { backgroundColor: p.bg.hover }]}>{findText(plainText(t.text), find)}</Text>;
     if (t.type === 'br') return <Text key={i}>{'\n'}</Text>;
     if (t.type === 'link') {
       const url = safeLink(t.href);
-      return <Text key={i} accessibilityRole={url ? 'link' : undefined} onPress={url ? () => openLink(url) : undefined} style={url ? { color: p.accent.strong, textDecorationLine: 'underline' } : undefined}><Inline tokens={t.tokens || []} p={p} resolveImage={resolveImage} /></Text>;
+      return <Text key={i} accessibilityRole={url ? 'link' : undefined} onPress={url ? () => openLink(url) : undefined} style={url ? { color: p.accent.strong, textDecorationLine: 'underline' } : undefined}><Inline tokens={t.tokens || []} p={p} resolveImage={resolveImage} find={find} /></Text>;
     }
     if (t.type === 'image') {
       const safe = safeImage(t.href);
       const resolved = resolveImage?.(t.href) ?? (safe ? { uri: safe } : null);
-      return resolved ? <Image key={i} accessibilityLabel={t.text || 'Image'} source={resolved} style={styles.image} resizeMode="contain" /> : <Text key={i}>{plainText(t.text || '')}</Text>;
+      return resolved ? <Image key={i} accessibilityLabel={t.text || 'Image'} source={resolved} style={styles.image} resizeMode="contain" /> : <Text key={i}>{findText(plainText(t.text || ''), find)}</Text>;
     }
-    if ('tokens' in t && t.tokens) return <Inline key={i} tokens={t.tokens || []} p={p} resolveImage={resolveImage} />;
+    if ('tokens' in t && t.tokens) return <Inline key={i} tokens={t.tokens || []} p={p} resolveImage={resolveImage} find={find} />;
     // HTML is selectable literal text: assistant markup never executes here.
-    return <Text key={i}>{plainText(('text' in t ? t.text : '') || t.raw || '')}</Text>;
+    return <Text key={i}>{findText(plainText(('text' in t ? t.text : '') || t.raw || ''), find)}</Text>;
   })}</>;
 }
 
-function CodeBlock({ token, p, t, onCopyText, font }: { token: Tokens.Code; p: Palette; t: UiStrings; font?: { fontFamily: string }; compact?: boolean } & MessageActions) {
+function CodeBlock({ token, p, t, onCopyText, font, find }: { token: Tokens.Code; p: Palette; t: UiStrings; font?: { fontFamily: string }; compact?: boolean; find?: FindRenderContext } & MessageActions) {
   const [notice, setNotice] = useState('');
   // Long dumps collapse: the first screenful stays visible, the rest is
   // one tap away. FlatList rows with thousand-line <Text> nodes scroll
@@ -99,7 +120,7 @@ function CodeBlock({ token, p, t, onCopyText, font }: { token: Tokens.Code; p: P
       <Text style={{ color: p.text.muted }}>{token.lang || t.code}</Text>
       {onCopyText ? <Pressable accessibilityRole="button" accessibilityLabel={t.copyCode} onPress={() => void copy()}><Text style={{ color: p.text.secondary }}>{notice || t.copyCode}</Text></Pressable> : null}
     </View>
-    <ScrollView horizontal><Text selectable style={[font, styles.codeText, styles.mono, { color: p.text.primary }]}>{shown}</Text></ScrollView>
+    <ScrollView horizontal><Text selectable style={[font, styles.codeText, styles.mono, { color: p.text.primary }]}>{findText(shown, find)}</Text></ScrollView>
     {collapsible ? <Pressable accessibilityRole="button" accessibilityLabel={expanded ? t.codeCollapse : t.codeExpand(lines.length - 30)} accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} style={[styles.codeToggle, { borderColor: p.border.default }]}>
       <Text style={{ color: p.accent.strong }}>{expanded ? t.codeCollapse : t.codeExpand(lines.length - 30)}</Text>
     </Pressable> : null}
@@ -139,36 +160,37 @@ function MathCard({ tex, index, mode, p, t, onOpenArtifact }: { tex: string; ind
   </View>;
 }
 
-function NotesSection({ notes, p, t }: { notes: Array<{ id: string; text: string }>; p: Palette; t: UiStrings }) {
+function NotesSection({ notes, p, t, find }: { notes: Array<{ id: string; text: string }>; p: Palette; t: UiStrings; find?: FindRenderContext }) {
   return <View style={{ gap: 4 }}>
     <Text style={{ color: p.text.muted, fontWeight: '600' }}>{t.notesTitle}</Text>
-    {notes.map((note, i) => <Text key={`${note.id}-${i}`} selectable style={[styles.text, { color: p.text.secondary }]}>{`[${i + 1}] ${note.text}`}</Text>)}
+    {notes.map((note, i) => <Text key={`${note.id}-${i}`} selectable style={[styles.text, { color: p.text.secondary }]}>{findText(`[${i + 1}] ${note.text}`, find)}</Text>)}
   </View>;
 }
 
-function Blocks({ tokens, p, t, mode, onCopyText, onOpenArtifact, resolveImage, font, lang = 'en', compact = false }: { tokens: Token[]; p: Palette; t: UiStrings; mode: ThemeMode; font?: { fontFamily: string }; lang?: UiLanguage; compact?: boolean } & MessageActions) {
-  return <>{tokens.map((b, i) => {
-    if (b.type === 'space' || b.type === 'def') return null;
+function Blocks({ tokens, p, t, mode, onCopyText, onOpenArtifact, resolveImage, font, lang = 'en', compact = false, find, nativeIdPrefix = 'socrates-richtext', path = '' }: { tokens: Token[]; p: Palette; t: UiStrings; mode: ThemeMode; font?: { fontFamily: string }; lang?: UiLanguage; compact?: boolean; find?: FindRenderContext; nativeIdPrefix?: string; path?: string } & MessageActions) {
+  const visibleTokens = tokens.filter((token) => token.type !== 'space' && token.type !== 'def');
+  return <>{visibleTokens.map((b, i) => {
+    const last = i === visibleTokens.length - 1;
     if (b.type === 'code') {
       const code = b as Tokens.Code;
       const artifact = onOpenArtifact ? artifactFromFence({ lang: code.lang, text: code.text, mode, index: i }) : null;
       if (artifact) return <ArtifactCard key={i} artifact={artifact} p={p} t={t} onOpenArtifact={onOpenArtifact} />;
-      return <CodeBlock key={i} token={code} p={p} t={t} onCopyText={onCopyText} font={font} compact={compact} />;
+      return <CodeBlock key={i} token={code} p={p} t={t} onCopyText={onCopyText} font={font} compact={compact} find={find} />;
     }
     if (b.type === 'hr') return <View key={i} style={{ height: StyleSheet.hairlineWidth, backgroundColor: p.border.default, marginVertical: 12 }} />;
-    if (b.type === 'blockquote') return <View key={i} style={[styles.quote, { borderColor: p.border.strong }]}><Blocks tokens={b.tokens || []} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} font={font} lang={lang} compact={compact} /></View>;
+    if (b.type === 'blockquote') return <View key={i} style={[styles.quote, { borderColor: p.border.strong }]}><Blocks tokens={b.tokens || []} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} font={font} lang={lang} compact={compact} find={find} nativeIdPrefix={nativeIdPrefix} path={`${path}${i}-`} /></View>;
     if (b.type === 'list') return <View key={i} style={styles.list}>{b.items.map((item: Tokens.ListItem, index: number) => <View key={index} style={styles.listRow}>
       <Text style={[styles.text, { color: p.text.muted, width: 26 }, font]}>{item.task ? item.checked ? '☑' : '☐' : b.ordered ? `${Number(b.start) + index}.` : '•'}</Text>
-      <View style={{ flex: 1 }}><Blocks tokens={item.tokens || []} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} font={font} lang={lang} compact={compact} /></View>
+      <View style={{ flex: 1 }}><Blocks tokens={item.tokens || []} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} font={font} lang={lang} compact={compact} find={find} nativeIdPrefix={nativeIdPrefix} path={`${path}${i}-${index}-`} /></View>
     </View>)}</View>;
     if (b.type === 'table') {
       const table = b as Tokens.Table;
       return <ScrollView key={i} horizontal style={{ marginVertical: 8 }}><View>
-        {[table.header, ...table.rows].map((row, index) => <View key={index} style={styles.tableRow}>{row.map((cell, col) => <Text key={col} selectable style={[styles.tableCell, { color: p.text.primary, borderColor: p.border.default, fontWeight: index === 0 ? '700' : '400' }]}><Inline tokens={cell.tokens} p={p} resolveImage={resolveImage} /></Text>)}</View>)}
+        {[table.header, ...table.rows].map((row, index) => <View key={index} style={styles.tableRow}>{row.map((cell, col) => <Text key={col} selectable style={[styles.tableCell, { color: p.text.primary, borderColor: p.border.default, fontWeight: index === 0 ? '700' : '400' }]}><Inline tokens={cell.tokens} p={p} resolveImage={resolveImage} find={find} /></Text>)}</View>)}
       </View></ScrollView>;
     }
-    return <Text key={i} selectable accessibilityRole={b.type === 'heading' ? 'header' : undefined} style={[styles.text, { color: p.text.primary }, font, compact && styles.textCompact, b.type === 'heading' ? { fontFamily: fontFamily('semibold', lang), fontSize: Math.max(17, 28 - b.depth * 2), marginTop: 10 } : undefined]}>
-      {'tokens' in b && b.tokens ? <Inline tokens={b.tokens || []} p={p} resolveImage={resolveImage} /> : plainText(('text' in b ? b.text : '') || b.raw || '')}
+    return <Text key={i} nativeID={`${nativeIdPrefix}-${path}${i}`} selectable accessibilityRole={b.type === 'heading' ? 'header' : undefined} style={[styles.text, { color: p.text.primary }, font, compact && styles.textCompact, compact && styles.textCompactTracking, last && styles.textLast, b.type === 'heading' ? { ...fontStyle('semibold', lang, Platform.OS === 'web'), fontSize: Math.max(17, 28 - b.depth * 2), marginTop: 10 } : undefined]}>
+      {'tokens' in b && b.tokens ? <Inline tokens={b.tokens || []} p={p} resolveImage={resolveImage} find={find} /> : findText(plainText(('text' in b ? b.text : '') || b.raw || ''), find)}
     </Text>;
   })}</>;
 }
@@ -331,8 +353,9 @@ function ToolCard({ tool, p, t, resolveImage, onOpenStoredArtifact, onOpenFile }
   </View>;
 }
 
-export const MessageContent = memo(function MessageContent({ message, mode, language = 'en', compact = false, onCopyText, onSpeakText, onEditMessage, onRegenerateMessage, onBranchMessage, onOpenArtifact, onOpenStoredArtifact, resolveImage, onOpenFile, onQuizPick, onPracticeSubmit }: { message: Message; mode: ThemeMode; language?: UiLanguage; compact?: boolean } & MessageActions) {
+export const MessageContent = memo(function MessageContent({ message, mode, language = 'en', compact = false, findQuery = '', findStartIndex = 0, activeFindIndex = -1, onCopyText, onSpeakText, onEditMessage, onRegenerateMessage, onBranchMessage, onOpenArtifact, onOpenStoredArtifact, resolveImage, onOpenFile, onQuizPick, onPracticeSubmit }: { message: Message; mode: ThemeMode; language?: UiLanguage; compact?: boolean; findQuery?: string; findStartIndex?: number; activeFindIndex?: number } & MessageActions) {
   const p = getThemePaletteHex(mode);
+  const userTextColor = compact ? '#ffffff' : p.text.primary;
   const t = uiStrings(language);
   const content = useMemo(() => parseMessageContent(message), [message.rawText, message.content, message.reasoningContent]);
   const artifacts = useMemo(() => artifactsFromToolCalls(message.toolCalls, mode), [message.toolCalls, mode]);
@@ -343,23 +366,26 @@ export const MessageContent = memo(function MessageContent({ message, mode, lang
     [message.role, content.text],
   );
   const [showReasoning, setShowReasoning] = useState(false);
-  const font = { fontFamily: fontFamily('regular', language) };
+  const font = fontStyle('regular', language, Platform.OS === 'web');
+  const messageId = (message.clientId || message.id || 'message').replace(/[^A-Za-z0-9_-]/g, '-');
+  const nativeIdPrefix = `socrates-message-assistant-${messageId}`;
+  const find: FindRenderContext | undefined = findQuery.trim() ? { query: findQuery.trim(), nextIndex: findStartIndex, activeIndex: activeFindIndex } : undefined;
   return <View style={{ gap: 8 }}>
     {content.reasoning ? <View style={[styles.reasoning, { borderColor: p.border.default }]}>
       <Pressable accessibilityRole="button" accessibilityLabel={t.toggleReasoning} accessibilityState={{ expanded: showReasoning }} onPress={() => setShowReasoning(!showReasoning)}><Text style={{ color: p.text.muted }}>{t.reasoning} {showReasoning ? '⌃' : '⌄'}</Text></Pressable>
       {showReasoning ? <Text selectable style={[styles.text, { color: p.text.secondary }]}>{content.reasoning}</Text> : null}
     </View> : null}
-    {message.role === 'user' ? <Text selectable style={[styles.text, styles.userText, compact && styles.userTextCompact, { color: p.text.primary }, font]}>{content.text}</Text> : segments && segments.length ? <>{segments.map((segment, i) => {
+    {message.role === 'user' ? <Text nativeID={`socrates-message-user-${messageId}`} selectable style={[styles.text, styles.userText, compact && styles.userTextCompact, { color: userTextColor }, font]}>{findText(content.text, find)}</Text> : segments && segments.length ? <>{segments.map((segment, i) => {
       if (segment.kind === 'math') return <MathCard key={i} tex={segment.tex} index={i} mode={mode} p={p} t={t} onOpenArtifact={onOpenArtifact} />;
-      if (segment.kind === 'notes') return <NotesSection key={i} notes={segment.notes} p={p} t={t} />;
+      if (segment.kind === 'notes') return <NotesSection key={i} notes={segment.notes} p={p} t={t} find={find} />;
       if (segment.kind === 'quiz') return <TutorQuizCard key={i} quiz={segment.quiz} mode={mode} p={p} t={t} onQuizPick={onQuizPick} />;
       if (segment.kind === 'practice') return <TutorPracticeCard key={i} practice={segment.practice} mode={mode} p={p} t={t} onPracticeSubmit={onPracticeSubmit} />;
       if (segment.kind === 'scaffoldFallback') return <View key={i} style={[styles.scaffold, { borderColor: p.border.default }]}>
         <Text style={{ color: p.text.muted, fontWeight: '600' }}>{t.scaffoldFallback}</Text>
-        <Text selectable style={[styles.mono, { color: p.text.secondary }]}>{segment.text}</Text>
+        <Text selectable style={[styles.mono, { color: p.text.secondary }]}>{findText(segment.text, find)}</Text>
       </View>;
-      return <Blocks key={i} tokens={segment.tokens} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} font={font} lang={language} compact={compact} />;
-    })}</> : content.tokens.length ? <Blocks tokens={content.tokens} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} font={font} lang={language} compact={compact} /> : <Text style={[styles.text, { color: p.text.muted }, font, compact && styles.textCompact]}>{t.thinking}</Text>}
+      return <Blocks key={i} tokens={segment.tokens} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} font={font} lang={language} compact={compact} find={find} nativeIdPrefix={`${nativeIdPrefix}-segment-${i}`} />;
+    })}</> : content.tokens.length ? <Blocks tokens={content.tokens} p={p} t={t} mode={mode} onCopyText={onCopyText} onOpenArtifact={onOpenArtifact} resolveImage={resolveImage} font={font} lang={language} compact={compact} find={find} nativeIdPrefix={nativeIdPrefix} /> : <Text nativeID={`${nativeIdPrefix}-thinking`} style={[styles.text, { color: p.text.muted }, font, compact && styles.textCompact]}>{t.thinking}</Text>}
     {message.attachments?.map((attachment) => {
       const inline = attachment.kind === 'image' && attachment.dataUrl ? safeImage(attachment.dataUrl) : null;
       const rawSrc = attachment.fileId ? `/api/files/${attachment.fileId}/raw` : '';
@@ -383,12 +409,16 @@ export const MessageContent = memo(function MessageContent({ message, mode, lang
   </View>;
 });
 const styles = StyleSheet.create({
+  findMark: { backgroundColor: 'rgba(255, 216, 77, 0.6)' },
+  findActive: { backgroundColor: 'rgba(255, 153, 60, 0.92)', color: '#171717' },
   text: { fontSize: 16, lineHeight: 28, marginBottom: 12 },
+  textLast: { marginBottom: 0 },
   userText: { marginBottom: 0 },
-  userTextCompact: { fontSize: 16.875, lineHeight: 27.84375, letterSpacing: -0.1 },
+  userTextCompact: { fontSize: 16.875, lineHeight: 27.84375, letterSpacing: -0.10125 },
   /* ≤768px baseline: 15px at --app-font-scale 1.125 with 1.65 line-height
      (styles/components/chat.css mobile block). */
   textCompact: { fontSize: 16.875, lineHeight: 27.8438, marginBottom: 10 },
+  textCompactTracking: { letterSpacing: -0.10125 },
   mono: { fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', fontSize: 14 },
   code: { borderWidth: 1, borderRadius: 12, overflow: 'hidden', marginVertical: 8 },
   codeHeader: { padding: 10, flexDirection: 'row', justifyContent: 'space-between', gap: 16 },

@@ -225,5 +225,5 @@
     background: var(--ui-bg-hover-ghost);
     color: var(--ui-text-primary);
   }
-  #appShell #msgList .msg-toolbar-btn svg { width: 18px; height: 18px; }
+  #appShell #msgList .msg-toolbar-btn svg { width: 18px; height: 18px; shape-rendering: crispEdges; }
 }

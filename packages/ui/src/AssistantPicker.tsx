@@ -5,10 +5,10 @@ import { getThemePaletteHex, type ThemeMode } from '@socrates/theme';
 import { filterAssistants, assistantRowLabel } from './assistantPicker';
 import { uiStrings, type UiLanguage } from './strings';
 
-/* Chat-header assistant switcher: a sheet over the transcript listing the
- * user's personas with the bound one checked, plus a "No assistant" row to
- * unbind and a Manage entry into the full assistants screen. Binding stays
- * in the host app (session PATCH with an epoch-guarded mirror update); this
+/* Session assistant picker: a sheet over the transcript listing the user's
+ * personas with the bound one checked, plus a "No assistant" row to unbind
+ * and a Manage entry into the full assistants screen. Binding stays in the
+ * host app (session PATCH with an epoch-guarded mirror update); this
  * component only collects the pick. The filter box appears at 4+ rows,
  * mirroring the model picker. */
 export function AssistantPicker({ assistants, activeId, open, mode = 'light', language = 'en', onPick, onManage, onClose }: {

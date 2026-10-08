@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { test, expect } from '@playwright/test';
+import { ensureSidebarOpen } from './_universal-helpers.mjs';
 
 // Contract server for the file library: list, authenticated raw fetch, text
 // preview and delete. No production backend or credentials are contacted.
@@ -49,7 +50,7 @@ test('universal files list stored uploads, preview, delete and open from the tra
       res.writeHead(204); res.end();
       return;
     }
-    if (url.pathname.endsWith('/sessions') && req.method === 'GET') return json({ sessions: [...records.values()].map(({ messages, ...row }) => row), nextCursor: null });
+    if (url.pathname.endsWith('/sessions') && req.method === 'GET') return json({ sessions: url.searchParams.get('archived') === 'true' ? [] : [...records.values()].map(({ messages, ...row }) => row), nextCursor: null });
     const id = url.pathname.split('/').at(-1);
     if (records.has(id)) return json(records.get(id));
     return json({ message: 'Not found' }, 404);
@@ -66,10 +67,8 @@ test('universal files list stored uploads, preview, delete and open from the tra
 
     // The file library is the sidebar's Library nav row (baseline chrome).
     async function openLibrary() {
+      await ensureSidebarOpen(page);
       const row = page.getByRole('button', { name: 'Library' });
-      if (!(await row.isVisible())) {
-        await page.getByRole('button', { name: 'Toggle sidebar' }).click();
-      }
       await row.click();
     }
 
@@ -86,8 +85,8 @@ test('universal files list stored uploads, preview, delete and open from the tra
 
     // Transcript: the file-backed attachment and markdown image resolve.
     await page.getByRole('button', { name: 'Back to chat' }).click();
+    await ensureSidebarOpen(page);
     const target = page.getByRole('button', { name: 'File conversation', exact: true });
-    if (!await target.isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
     await target.click();
     await expect(page.getByRole('button', { name: 'Open plot.png' })).toBeVisible();
     await expect.poll(() => rawRequests).toBeGreaterThan(0);
@@ -101,6 +100,11 @@ test('universal files list stored uploads, preview, delete and open from the tra
     expect(errors).toEqual([]);
     await page.screenshot({ path: `test-results/universal-files-${encodeURIComponent(testInfo.project.name)}.png`, fullPage: false });
   } finally {
-    await new Promise((resolve) => server.close(resolve));
+    await new Promise((resolve) => {
+      server.close(resolve);
+      // The mobile browser may keep an API keep-alive socket open after the
+      // final screenshot; close it so a completed test cannot time out in teardown.
+      server.closeAllConnections();
+    });
   }
 });

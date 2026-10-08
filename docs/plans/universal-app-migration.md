@@ -566,7 +566,7 @@ mobile/            # 冻结，仅安全/crash/data-loss 修复
   - `AssistantsScreen.tsx`：基线创建面 1:1（名称/描述/指令/开场白、
     删除二次确认、`Start chat`）；`Start chat` = 新建绑定人格的本地会话 +
     开场白进草稿 + 回聊天页（基线 resetApp+starter 的可观察等价）。
-  - App：header 第二枚 chip（`🎭 <名称> ▾`，guest 隐藏）；绑定走
+  - App：助手选择器从「More」菜单打开，不占用基线顶栏空间；绑定走
     「PATCH 成功才镜像」（本地 id 只改本地，随下次 save 落库）；删除人格
     时把所有本地已持有的会话解绑（内存 + 服务端 best-effort），避免下次
     save 带悬空 assistantId 被 400；`syncLibrary` 并行拉取人格列表（失败
@@ -634,4 +634,180 @@ mobile/            # 冻结，仅安全/crash/data-loss 修复
 - **未做/阻塞**：staging 联调（等真实 staging 地址替换
   `staging.invalid`）；真机签收（返回键/键盘/安全区/弱网）与 iOS 真机
   构建（需 Apple 账号 / EAS）均超出本机能力。
-- 下一轮候选：错题本、teaching plan 进度条、assistant 快捷编辑入口。
+- 已覆盖：assistant 编辑入口由 `AssistantsScreen` 提供创建/编辑/删除；下一轮候选保留错题本与 teaching plan 进度条。
+
+## 24. 进展（第十七轮，2026-10-08，round 16-6：会话查找/分享 + UI parity 持续验证）
+
+> 先修测试中的过期无障碍名称，再跑触及的 Universal E2E；几何和测得的样式对齐，但严格截图仍有非零差异，不能签收为 pixel-perfect 或完整功能 parity。
+
+- **会话内查找**：`packages/ui` 的 `findMessageMatches` 为消息生成稳定匹配索引；`FindBar` 支持大小写无关查找、前后跳转、定位当前消息与清除；消息正文按匹配位置高亮。切换会话和离开 chat 时清空查询状态。
+- **会话分享**：`ShareDialog` 支持 public/private 可见性、创建链接、复制、撤销；本地会话先保存并接管服务端 UUID；新增 `sessions.createShare/revokeShare` API 与 contracts 测试。Web 使用当前 origin，原生端使用配置的 Web origin。
+- **手机顶栏与绘制基准**：恢复 active conversation 的新建对话按钮，顺序与 SPA 一致；修正模型切换器的紧凑 padding 和 caret 固定尺寸。正文手机字距为 `-0.10125px`。Universal Web 的 `color-scheme` 现在随 dark/light 主题同步；会话溢出菜单使用独立的 SVG glyph，使最近会话操作点与 SPA 对齐。
+- **Tutor 教学计划视图**：知识侧栏现在保留每个子主题的掌握状态，并在当前项显示阶段和 `n/3` 深入回答计数；计数跟随本地 Tutor 会话更新。对齐基线的行信息结构，尚未移植 `kbContent` 知识图谱/边界详情，也未完成达到阈值后的节点掌握、排序切换和完整复习流程。
+- **回归修复**：sidebar smoke helper 统一等待可见后再点击，修复 archive fixture 返回空列表；多个 smoke 用例共用 helper；`universal-chat` 加入发出消息后手机新建按钮仍可见的断言。修正过期 accessible names：`Listen to this message` → `Read aloud`、`Edit and resend` → `Edit message`；修正 `universal-app` 把聊天内查找误当成会话搜索的测试步骤。`universal-exam-generation`、`universal-files`、`universal-tools` 的 mock API teardown 主动关闭残留 keep-alive 连接，避免断言和截图完成后测试进程超时。Parity fixture 匹配 provider、tier、session UUID、find/share 顶栏状态和当前会话行，并检查 model brand、model/caret 几何及文字溢出。
+- **验证**：`apps/socrates` typecheck、Web export、`test:shared` **208/208** 通过；修复 teardown 后，文件和工具两个手机用例 **2/2** 通过；完整 Universal Playwright 桌面 + 手机 **28/28** 通过。`ui-parity-check.mjs` 的 recents fixture 一致，几何、字体度量和可见 SVG 定义检查无差异；普通模式下非像素门禁为 0 failures。
+- **像素差异（未签收）**：在 16-6 的基线上继续对齐 sidebar logo、`New` 徽标和模型品牌文字，并移除 RNW 聊天列表与最近会话列表的 identity transform；Inter 字体文件哈希一致。相同 Chromium、desktop `1440×900` 和 mobile `390×844` fixture 上，严格差分从桌面 `9 / 1,296,000` 收敛到 `1 / 1,296,000`（`0.0001%`），手机 `0 / 329,160`；桌面 `Δ>12`、`Δ>48` 均为 `0`。两边给消息工具 SVG 加 `crispEdges` 后，8 个曲线像素残差消失；当前仅剩 composer 右上圆角 `(1233,842)` 的 RGB `32` vs `33`。尝试只调 RN Web 圆角至 `28.5px` 没有消除该像素且破坏 28px 几何门禁，已回滚。严格桌面门禁仍失败，故不能签收 pixel-perfect。当前 fixture 只覆盖一个聊天状态；全屏覆盖、Android 真机和 iOS 签收仍未完成，因此也不能据此保证所有页面的像素级一致或全功能等价。
+- **回归修复与验证**：`universal-exam` 手机用例完成截图后，mock server 的 keep-alive 连接未关闭，导致 teardown 耗尽 90 秒用例超时；加入 `closeAllConnections()` 后，单项手机用例 2.3 秒通过。完整 Universal Playwright 桌面 + 手机 **28/28**、`test:shared` **208/208**、`apps/socrates` typecheck 和 Web export 通过。此次计划视图修改后，再次运行 `test:shared`（全绿）、`apps/socrates` typecheck（通过）、`frontend npm run lint`（0 errors，629 warnings）和 Tutor 桌面/手机 E2E **2/2**；新增 E2E 验证 `0/3 → 1/3`。4175 有现存项目预览服务时，回归使用 `UNIVERSAL_PORT=4187`，未中断旧服务。严格截图产物保存在 `frontend/test-results/ui-parity/`。
+- **下一步**：先解决 composer 圆角最后 1 个像素，再扩充不同聊天状态、页面和交互状态的截图基线；并补齐 Tutor 节点掌握/切换和知识图谱交互，再进行 Android 真机安全区、字体、键盘和返回键验收。真实 staging 地址和 iOS 真机签收仍是发布前门。未完成这些门禁前，不标记 UI 或功能 parity 完成。
+
+## 25. 进展（第十八轮，2026-10-08，round 16-7：Tutor 节点推进验收）
+
+- **测试修复优先**：Tutor E2E 的完成断言原本多发了一个自由回答。第 4 个总回答已达到练习阶段和深度阈值，正确地完成当前节点并把下一节点重置到 `Intuition · 0/3`；第 5 个回答会开始推进下一节点，所以旧断言错误地期待 `0/3`。将验收停在节点切换后，并明确检查 `Internalized`、计划进度 `1 / 5 (20%)`、`0/3` 和 `Intuition`。桌面 + 手机 Tutor E2E **2/2** 通过。
+- **Tutor 行为推进**：`tutorProgressForTurn` 已覆盖基线门槛：仅 composer 的实质回答计入深度；达到 exercise 且深度至少 3 后将节点标为 internalized；按排序后的 teaching plan 选下一个未完成节点，并重置阶段、例题索引、练习次数和深度。共享单测覆盖提前完成、quiz 不计深度、节点状态和计划索引更新。知识图谱、节点详情/置信度/笔记、快照历史，以及基线完成节点后的过渡消息和自动追问仍待补齐。
+- **移动端抽屉 parity**：侧栏改成覆盖式抽屉，主聊天列保持全宽，遮罩可关闭抽屉；Tutor E2E 检查遮罩、主列宽度、点遮罩关闭、打开知识面板及回到 composer 的流程。此前手机上侧栏会压缩聊天列，这轮修复恢复了基线抽屉体验。
+- **严格视觉门禁**：复跑同一 Chromium chat fixture，desktop `1440×900` 仍为 **1 / 1,296,000** 不同像素（`(1233,842)`，RGB `32` vs `33`，`Δ>12=0`，`Δ>48=0`）；mobile `390×844` 为 **0 / 329,160**。尝试仅用于诊断的圆角微调会引入更多差异，未保留到产品代码。当前只能确认这一个 fixture，不能据此宣称全站 pixel-perfect。
+- **验证**：`apps/socrates npm run typecheck` 通过；`apps/socrates npm run test:shared` **210/210** 通过；`frontend npm run lint` **0 errors / 629 warnings**；本轮受影响的 Tutor + chat 桌面/手机 E2E **4/4**；`git diff --check` 通过。E2E 使用 `UNIVERSAL_PORT=4187`，因为默认本地环回监听在受限环境中返回 `EPERM`；显式允许本地测试进程后通过。
+- **下一步**：补齐 Tutor 知识边界图、可编辑节点详情和快照/跳转交互；继续定位 composer 最后一个像素差异并扩大真实截图状态矩阵。之后再做 staging 联调、Android 真机和 iOS 签收。严格像素门禁与跨页/跨设备功能覆盖完成前，不将 parity 标记为完成。
+
+## 26. 进展（第十九轮，2026-10-08，round 16-8：Tutor 知识边界交互）
+
+- **先修测试**：知识面板加入后，`Internalized` 同时出现在教学计划和知识边界分组里，旧 E2E 的唯一文本定位器变成多元素。测试改为定位第一个计划状态，并把互动细节放在节点推进断言后，避免“跳转”产生的自动追问污染前面的回复计数。
+- **知识边界**：新增 DOM-free 确定性知识图谱布局函数，移植基线的 320×240、160 轮力导向布局、问题数半径与顺序连线；节点颜色区分内化/模糊/未探测，透明度映射 confidence。RN 共用侧栏现在显示图谱、状态分组、问题/验证计数、最后更新时间和存档按钮。
+- **节点详情**：图谱节点和列表项均可打开同一详情面板；支持 1–5 置信度（再次点击当前值归零）、只读系统笔记、最多 500 字个人笔记（500ms 防抖保存）、最近 8 条快照历史。快照结构与基线一致，保存最多 30 条；session 本地先更新，已登录账户再按会话串行 best-effort 保存，服务端响应保留仍在更新的本地字段，避免并发回包覆盖笔记。
+- **节点跳转**：跳转设置 `currentNode`、清零 `substantiveCount` 并自动发起该节点的下一条 Tutor 提问。`packages/chat` 增加 assistant-only turn：模型请求可携带内部用户提示，但该提示不会进入可见聊天记录，也不清除草稿；新增共享测试覆盖此契约。
+- **严格像素检查**：复测 workbench chat fixture，mobile `390×844` 为 `0 / 329,160` 差异像素；desktop `1440×900` 仍有 `1 / 1,296,000` 差异（composer 右上角圆弧的单个通道差 1，`Δ>12=0`、`Δ>48=0`）。试验 RN Web `28.1px` 圆角未消除桌面残差，手机新增 100 个差异像素且圆角检查失败，已撤回到 28px。严格门禁仍失败，且只覆盖 workbench chat fixture；Tutor 图谱/详情及其他页面还没有 SPA 对照截图，不能宣称全站像素级一致。
+- **验证**：`apps/socrates npm run typecheck` 通过；`apps/socrates npm run test:shared` 全绿；`frontend npm run lint` 为 0 errors / 629 warnings；Tutor 桌面 + 手机 E2E **2/2** 通过，覆盖图谱节点、笔记持久化、置信度、快照、节点跳转与自动追问；`git diff --check` 通过。严格 parity 复测保存在 `frontend/test-results/ui-parity/`，其桌面门禁仍报告 1 个像素差异。
+- **下一步**：定位最后一个圆角栅格差异；把 parity fixture 扩展到 Tutor 教学计划、图谱、详情/编辑和手机抽屉，并增加不同主题与转录状态；随后补 Android 真机和 iOS 签收、staging 联调。全页截图门禁与功能路径覆盖完成前，UI/功能 parity 仍为进行中。
+
+## 27. 进展（第二十轮，2026-10-08，round 16-9：Tutor parity 差异定位）
+
+> 本轮定位 + 落地一项对齐：阶段徽标去 emoji（产品 1 行 + E2E 3 行），全量回归通过。
+
+- **workbench fixture 现状不变**：desktop `1 / 1,296,000`（composer 右上圆角单通道差 1，
+  `Δ>12=0`）、mobile `0 / 329,160`。转录区与顶栏在 Tutor desktop fixture 下同样
+  **0 差异**——Tutor 的像素差全部落在侧栏内。
+- **Tutor fixture 分区取证**（`PARITY_SAVE_SHOTS=1` + 像素带统计）：
+  - desktop overview `6490`：侧栏头 y280–348 工具栏区 `2233`、计划区 `1869`、知识区
+    `2387`；导航 y52–280 为 `0`。detail `23809`：计划区 `12667`、知识区 `8908`（节点
+    详情面板展开态）。
+  - mobile overview/detail 各 `52254`：抽屉顶部 y0–346 占 `14573`、抽屉内计划/知识
+    约 `1706/4875`，其余 `31100` 在抽屉右侧透出的转录带（`Δ>12` 仅 `1279`，多为
+    1–12 通道的遮罩/抗锯齿 subtle 差）。
+- **逐项定性**：
+  1. 教学计划阶段徽标：Universal 为 `🎓 Development`，基线 `tutorSocratic.js`
+     `stageLabel()` 无 emoji（`Development`）。试改去掉 emoji 后 desktop overview
+     `6490 → 4954`（`-1536`）、mobile 各 `-1019`——方向有效。
+  2. 教学计划阶段徽标的 `🎓` 前缀与基线 `stageLabel()`（纯文本）不一致。按像素级
+     一致的要求，该 emoji 已从产品侧删除（`TeachingPlanPanel` 改为纯
+     `t[planStageKey(stage)]`，与基线逐字一致），3 处 E2E 断言同步改为按新增
+     `data-testid="socrates-teaching-plan-stage"` 精确匹配 `Intuition`
+    （`universal-tutor.spec.mjs:153`、`universal-tutor-widgets.spec.mjs:120,130`；
+     顶栏无阶段徽标，原 `getByText('🎓 Intuition')` 只可能命中侧栏芯片）。
+     全量 Universal **28/28**、`test:shared` 全绿、`typecheck`/`lint` 0 errors 下复测：
+     desktop overview `6490 → 4954`、detail `23809 → 23140`、mobile 各
+     `52254 → 51235`。不保留可解释差异口径——像素门禁即唯一标准。
+  3. 移动端导航排序：Universal compact 排序
+     （new/library/scheduled/plugins/projects/sites/more）与基线
+     `polish/mobile-sidebar.css`（后于 `mobile-controls.css` 生效，tier=descartes
+     时 Images 隐藏、Sites 显示）完全一致——**排序不是差异源**，之前怀疑不成立。
+     抽屉顶部差主要来自 phone header（Universal 紧凑头为搜索+关闭，基线为
+     sidebarOpenBtn 结构）与工具栏，待下轮逐行取证。
+  4. 快照按钮/图谱容器在探针层面的 `display/fontSize/color` 差多为 RNW
+     `Pressable>Text` 与基线原生 `<button>` 的结构性度量差，可见文本（`Save
+     snapshot` 11px muted、图谱标题/说明）实际一致；kb 容器高度差（767 vs 601）
+     来自基线快照历史等长尾内容，属内容量差而非样式差。
+- **验证**：`apps typecheck` 通过、`test:shared` 全绿（24 文件 0 fail）、全量
+  Universal desktop+mobile **28/28** 通过、`frontend lint` 0 errors、
+  `git diff --check` 通过。净改动：`packages/ui/src/index.tsx` 1 行（去 emoji +
+  加 testID）、2 个 E2E 共 3 行断言。
+- **下一步**：对抽屉头/phone header 与 search/knowledge 工具栏做元素级对照
+  （图标 glyph、内边距、选中态），node-detail 面板逐块对照后再谈阈值；composer
+  1px 与本轮 Tutor 差在严格门禁（`PARITY_PIXEL_STRICT=1`，当前 5 failures）下
+  仍失败，parity 结论保持“进行中”，不签收。
+
+## 28. 进展（第二十一轮，2026-10-08，round 16-10：工具栏对齐 + 错题本最小切片）
+
+> 不接受可解释差异口径后，工具栏的 Mistakes 缺口只能由真实功能补上。本轮即
+> 错题本的第一片：入口 + 空态/列表视图 + 答错收录接线（重做/攻克动作后置）。
+
+- **根因取证**（双端探针实测，非猜测）：基线工具栏为搜索框（w171）+ Knowledge
+  36×36（`--ui-bg-surface` 选中底）+ Mistakes 36×36；Universal 只有 Knowledge
+  32×32（`p.bg.hover` 底）且行 gap/radius 不一致。图标几何两边逐字相同
+  （3 圆 + 连线，stroke 2），差的是尺寸/位置/底色。
+- **对齐**：`surface` token 进 `UiSurfaceHex`（dark `#212121` / light `#f3f3f3`，
+  与 `--ui-bg-surface` 同源）；选中底改用它；按钮 32→36（compact 保持 44，与
+  基线手机端 hit-area 一致）；图标 compact ? 18 : 17（基线桌面 17/手机 18）；
+  行 gap 4→2；搜索框 radius 12→10（透明底，workbench 无影响）。
+- **错题本切片**（真实功能，非占位）：
+  - `packages/ui/src/mistakes.ts`（DOM-free）：`buildQuizMistake`/
+    `buildPracticeMistake`（收录条件与基线 `render/widgets.js` 一致：declared
+    correct + 答错才落袋）+ `prependMistake`（newest-first）+
+    `unresolvedMistakeCount`（badge 口径）；`mistakes.test.ts` 4 用例。
+  - `Sidebar` 新增 `mistakes` 视图：toolbar 加 bookmark 按钮（与基线同形），
+    面板标题 `Mistake Book` + 空态（与 `mistakes.empty/emptyHint` 同文）+ 行
+    （题干 + 测验/练习·节点）。中英字典同步（`mistakes/mistakeBook/
+    mistakesEmpty/mistakesEmptyHint/mistakeTypeQuiz/mistakeTypePractice`）。
+  - App 接线：答错 quiz（与合成回合同门）/答错 practice 即记入当前会话
+    `mistakes`（随会话 save 持久化，contracts 已有该列）；传 `mistakes` 给
+    Sidebar（仅 tutor 会话）。
+- **效果**：desktop overview `4954 → 2721`（工具栏区 **2233 → 0**，清零），
+  detail `23140 → 20907`；mobile fixture 因截图时工具栏隐藏而无变化
+  （仍 `51235`，主体是抽屉头 + 遮罩 subtle 差，下一轮目标）。workbench 保持
+  桌面 1px / 手机 0。
+- **验证**：全量 Universal **28/28**（含新增错题空态/收录断言）、`test:shared`
+  全绿（25 文件，含新增 `mistakes.test.ts`）、`apps typecheck` 通过、
+  `frontend lint` 0 errors（i18n 中英 key 相等）、`git diff --check` 通过。
+- **下一步**：mobile 抽屉头（phone header 结构差）+ 右侧遮罩 subtle 差；desktop
+  计划区残差 333、知识区 2387、composer 313；错题重做/攻克动作。严格门禁仍
+  失败，parity 保持“进行中”。
+
+## 29. 进展（第二十二轮，2026-10-08，round 16-11：图谱渲染对齐）
+
+> 方法：双端探针取计算样式 + SVG 标记逐项对照，只改实测差，不猜。
+
+- **坐标取整**：基线 `toFixed(1)`，Universal 全精度——`graphCoord` 取整后
+  应用于边/圆/文本坐标与半径（与基线一致，先 round 半径再算文本 y）。
+- **填充色精确值**（浏览器计算值取证）：internalized `#40bf80→#40BF75`
+  （`hsl(145 50% 50%)` 实为 rgb(64,191,117)，B 通道差 11）、fuzzy
+  `#e8c259→#E9BE53`（实测 rgb(233,190,83)）；blank `#808080` 两边一致不动。
+  附带把 `tutorTheme.success` 同步为 `#40BF75`（唯一消费处即 done 标记）。
+- **caption 缩放**：sidebar 区 caption 应为 `10×1.035=10.35`（`--sidebar-
+  font-scale = app×0.92`），不是 `10×1.125`——11.25 会换行并把图谱下推；
+  改用 `WEB_SIDEBAR_TUTOR_SCALE`。
+- **外框**：实测已是 x20/y748/w219 两边一致；`aspectRatio 1.3293`（外宽/
+  外高比）原本正确，一度误改为 4/3 又 revert——教训：先量后改。
+- **计划标记**：done 色随 success 修正；字族改为基线 mono 栈（Web 专用，
+  native 保持原样）；标题字距 `0.6→10×1.035×0.06=0.621`（逐字累积消除
+  中段字形错位）。`--text-500` 取证为 50%，muted token 不动。
+- **效果**：desktop overview `795 → 108`（Δ>12 仅 15；工具栏/转录/顶栏/
+  kb-head 全部 0，kb-graph 残 448 中仅 73 强，plan 残 62）；desktop detail
+  `20551 → 20520`（详情面板是独立大项，未动）；mobile 各 `-450` 左右
+  （`51235 → 48841/48844`）。workbench 保持桌面 1px / 手机 0。
+- **验证**：全量 Universal **28/28**、`test:shared` 全绿（25 文件）、
+  `apps typecheck` 通过、`frontend lint` 0 errors、`git diff --check` 通过。
+- **下一步**：detail 面板逐块对照（1.5% 级）；mobile 抽屉头 + 遮罩；composer
+  1px；错题重做/攻克。严格门禁仍失败，parity 保持“进行中”。
+
+## 30. 进展（第二十三轮，2026-10-08，round 16-12：详情面板内容对齐）
+
+> 本轮最大教训在 harness：detail 面板在两边都在首屏之外，之前 20520 的
+> “差异”基本是滚动噪声；一度修出的双端 0 是屏外空裁剪的假阳性。最终方案：
+> 底部滚动保证面板入屏 + 按面板盒裁剪对比（`compareScreenshots` 新增 crop
+> 参数），并上报双方面板尺寸（当前 desktop 243×356/358，mobile 225×344/358）。
+
+- **滚动机制取证**：SPA 是 `#knowledgePanel` 自身滚动（flex:1+overflow），
+  不是其父容器；面板顶因 max-scroll 钳制永远到不了视口顶（SPA 止于 462，
+  UNI 止于 381），且 Universal 点按节点会自动滚 13px（SPA 不动）——滚动对齐
+  不可能精确，裁剪对比才是正解。
+- **详情内容逐项对齐**（全部探针取计算值，无猜测）：容器底/边
+  （`#1a1a1a99` + `border-300/0.18`）、徽标色（internalized `#79D29E` /
+  fuzzy `#EDCC78` + 同源半透明底，blank 沿用 hover）、徽标去大写（基线渲染
+  `Fuzzy`原文）、go 按钮字号 12.375 + accent 改 legacy 白、labels 字号
+  11.25/字距 0.675、置信点选中改 legacy 白、系统笔记 14.0625/1.55 +
+  tertiary 色、输入框底改 `#1f1f1f` + 边 0.15 + 字号行高、历史行
+  12.9375/1.5 + caption 色 + 日期字号/marginRight 6、行高补齐（labels/badge/
+  go/history 的 RNW 缺省行高是 -6px/行的系统性来源）、去掉展开行
+  hover 底与 currentMark 竖条（基线均无）、sectionCount 改 app 缩放、
+  sectionTitle padding 10→12、questionCount 改 sidebar 缩放、verifiedTag
+  色值字号修正。
+- **事故**：一块 python 批量改写后文件出现不可见的语法损坏（肉眼/hex 正常，
+  tsc/esbuild 同报 311 列错），二分到历史块后用 edit 工具逐段重写恢复。
+  教训：TSX 禁止批量脚本改写，改完立即 typecheck。
+- **效果**：desktop detail `20520 → 2769`（对齐后 real diff；另有 head 行高
+  2px 一项就占 -74%），mobile detail `48794 → 24916`；overview 保持 108，
+  workbench 保持 1px/0。
+- **验证**：全量 Universal **28/28**、`test:shared` 全绿（25 文件）、
+  `apps typecheck` 通过、`frontend lint` 0 errors、`git diff --check` 通过。
+- **下一步**：徽章文本宽 4px 之谜（同文件同计算样式，canvas 本体一致，
+  DOM Range 差 41.5 vs 37.5）、历史行残差、mobile 抽屉头 + 遮罩、composer
+  1px。严格门禁仍失败，parity 保持“进行中”。

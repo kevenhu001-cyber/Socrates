@@ -24,6 +24,26 @@ test('session creation failure does not call stream and keeps unsaved messages w
   await runChatTurn({ sessionId: 'session-a', turnId: 't', text: 'Question', signal: new AbortController().signal, isCurrent: () => true, save: async () => { throw new Error('Offline'); }, stream: async () => { streamed = true; } });
   assert.equal(streamed, false); assert.equal(useChatStore.getState().error, 'Offline'); assert.equal(useChatStore.getState().sessions[0].messages![0].rawText, 'Question');
 });
+test('assistant-only Tutor turn sends a private prompt and keeps it out of the transcript', async () => {
+  prepare();
+  useChatStore.getState().patchSession('session-a', { mode: 'tutor' });
+  useChatStore.getState().setDraft('keep my draft');
+  const saved: Session[] = [];
+  await runChatTurn({
+    sessionId: 'session-a', turnId: 'assistant-turn', text: '', assistantPrompt: 'Continue the lesson from where we left off.',
+    signal: new AbortController().signal, isCurrent: () => true,
+    save: async (session) => { saved.push(structuredClone(session)); return { ...session, id: 'server' }; },
+    stream: async ({ messages, handlers }) => {
+      assert.deepEqual(messages.map((message) => [message.role, message.rawText]), [['user', 'Continue the lesson from where we left off.']]);
+      handlers.onDelta?.('Next question');
+    },
+  });
+  const transcript = useChatStore.getState().sessions[0].messages!;
+  assert.deepEqual(transcript.map((message) => [message.role, message.rawText]), [['assistant', 'Next question']]);
+  assert.equal(useChatStore.getState().draft, 'keep my draft');
+  assert.equal(saved[0].messages?.length, 1);
+  assert.equal(saved[1].messages?.length, 1);
+});
 test('stopped turn saves partial answer before becoming idle', async () => {
   prepare(); const controller = new AbortController(); const saved: Session[] = [];
   await runChatTurn({ sessionId: 'session-a', turnId: 't', text: 'Question', signal: controller.signal, isCurrent: () => true, save: async (s) => { saved.push(structuredClone(s)); return { ...s, id: 'server' }; }, stream: async ({ handlers }) => { handlers.onDelta?.('partial'); controller.abort(); controller.signal.throwIfAborted(); } });
@@ -63,6 +83,16 @@ test('metadata reconciliation preserves loaded messages, removes vanished server
   s.reconcileSessions([{ ...row('b'), title: 'Renamed', pinned: true }, { ...row('c'), updatedAt: '2026-10-07' }]);
   assert.equal(useChatStore.getState().sessions[0].id, 'b'); assert.equal(useChatStore.getState().sessions[0].messages![0].rawText, 'loaded'); assert.equal(useChatStore.getState().sessions[0].title, 'Renamed');
   assert.equal(visibleSessions(useChatStore.getState().sessions, 'empty').length, 0);
+});
+test('metadata reconciliation merges a remote welcome row with its local seed', () => {
+  const s = useChatStore.getState(); s.reset();
+  s.setSessions([{ ...row('welcome'), title: 'Welcome to Socrates', messages: [{ role: 'assistant', rawText: 'How can I help?' }] }]);
+  s.selectSession('welcome');
+  s.reconcileSessions([{ ...row('welcome'), title: 'Welcome to Socrates', updatedAt: '2026-10-08' }]);
+  const welcomes = useChatStore.getState().sessions.filter((session) => session.id === 'welcome');
+  assert.equal(welcomes.length, 1);
+  assert.equal(welcomes[0].messages?.[0].rawText, 'How can I help?');
+  assert.equal(useChatStore.getState().activeSessionId, 'welcome');
 });
 
 test('tool call argument snapshots replace rather than repeat cumulative text', async () => {

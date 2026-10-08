@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { test, expect } from '@playwright/test';
+import { ensureSidebarOpen } from './_universal-helpers.mjs';
 
 // Tool-card fidelity contract server: persisted search results, interpreter
 // output/stderr, stored-file artifacts (image stays inline, HTML opens in the
@@ -67,7 +68,7 @@ test('universal tool cards render search results, output and stored artifacts', 
       res.end(htmlDoc);
       return;
     }
-    if (url.pathname.endsWith('/sessions') && req.method === 'GET') return json({ sessions: [...records.values()].map(({ messages, ...row }) => row), nextCursor: null });
+    if (url.pathname.endsWith('/sessions') && req.method === 'GET') return json({ sessions: url.searchParams.get('archived') === 'true' ? [] : [...records.values()].map(({ messages, ...row }) => row), nextCursor: null });
     const id = url.pathname.split('/').at(-1);
     if (records.has(id)) return json(records.get(id));
     return json({ message: 'Not found' }, 404);
@@ -81,8 +82,8 @@ test('universal tool cards render search results, output and stored artifacts', 
     });
     await page.goto('/');
     await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
+    await ensureSidebarOpen(page);
     const target = page.getByRole('button', { name: 'Tool conversation', exact: true });
-    if (!await target.isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
     await target.click();
 
     // Search card: label, preview, status + duration, results when expanded.
@@ -118,6 +119,11 @@ test('universal tool cards render search results, output and stored artifacts', 
     expect(errors).toEqual([]);
     await page.screenshot({ path: `test-results/universal-tools-${encodeURIComponent(testInfo.project.name)}.png`, fullPage: false });
   } finally {
-    await new Promise((resolve) => server.close(resolve));
+    await new Promise((resolve) => {
+      server.close(resolve);
+      // Raw artifact responses can leave a mobile keep-alive connection open
+      // after the final screenshot; close it before awaiting server shutdown.
+      server.closeAllConnections();
+    });
   }
 });

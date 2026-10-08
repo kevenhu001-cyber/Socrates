@@ -15,7 +15,7 @@
  * Shape tuples: p=path, c=circle(cx,cy,r), r=rect(x,y,w,h,rx),
  * l=line(x1,y1,x2,y2), pl=polyline(points).
  */
-import React from 'react';
+import React, { createContext, useContext } from 'react';
 import Svg, { Circle, Line, Path, Polyline, Rect } from 'react-native-svg';
 
 type Shape =
@@ -57,7 +57,17 @@ export const GLYPHS = {
     ['l', 5, 12, 19, 12],
     ['l', 5, 17, 19, 17],
   ]),
+  /** Phone SPA sidebar toggle (frontend/index.html #sidebarOpenBtn). */
+  'sidebar-toggle': box(24, 2.2, [
+    ['p', 'M6 9h12'],
+    ['p', 'M6 15h8'],
+  ]),
   search: box(24, 2, [['c', 11, 11, 7], ['p', 'm21 21-4.3-4.3']]),
+  knowledge: box(24, 2, [
+    ['c', 5.5, 6, 2.1], ['c', 18, 7.5, 2.1], ['c', 12, 18, 2.1],
+    ['p', 'M7.5 6.5h8.4M6.7 7.9l4.6 8.2M16.7 9.4l-3.9 6.9'],
+  ]),
+  bookmark: box(24, 2, [['p', 'M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z']]),
 
   /* ── Sidebar nav (SidebarNav.tsx order: new · library · projects · scheduled · plugins · sites · more) ── */
   library: box(24, 1.75, [
@@ -79,10 +89,16 @@ export const GLYPHS = {
     ['r', 3, 14, 7, 7, 1.5],
     ['r', 14, 14, 7, 7, 1.5],
   ]),
-  more: box(24, 2, [
+  more: box(24, 1.75, [
     ['c', 5, 12, 1.4],
     ['c', 12, 12, 1.4],
     ['c', 19, 12, 1.4],
+  ]),
+  /** Recent-session overflow action; the SPA uses slightly larger dots here. */
+  'session-more': box(24, 1.75, [
+    ['c', 5, 12, 1.5],
+    ['c', 12, 12, 1.5],
+    ['c', 19, 12, 1.5],
   ]),
 
   /* ── Sidebar footer ─────────────────────────────────────────────────── */
@@ -111,6 +127,10 @@ export const GLYPHS = {
     ['c', 12, 11, 4],
     ['c', 12, 12, 10],
   ]),
+  /** Phone top-bar new-chat circle (index.html `#mobileNewChatBtn`). */
+  compose: box(24, 1.8, [
+    ['p', 'M9 3.5a9 9 0 0 1 9.2 2.3M20.6 9a9 9 0 0 1-2.5 9.2M15 20.5a9 9 0 0 1-6-.6L4 21l1.1-5a9 9 0 0 1-.6-7M6.3 5.5 9 3.5'],
+  ]),
   share: box(24, 2, [
     ['p', 'M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8'],
     ['pl', '16 6 12 2 8 6'],
@@ -121,6 +141,7 @@ export const GLYPHS = {
     ['p', 'M9 6h11M4 12h1m4 0h11M4 18h1m4 0h11'],
   ], true, false),
   caret: box(24, 2, [['p', 'M6 9l6 6 6-6']]),
+  'model-caret': box(16, 1.6, [['p', 'm4.5 6.5 3.5 3.5 3.5-3.5']]),
 
   /* ── Composer ───────────────────────────────────────────────────────── */
   plus: box(24, 2, [['p', 'M12 5v14M5 12h14']], true, false),
@@ -195,21 +216,36 @@ export interface IconProps {
   name: IconName;
   /** Rendered box in px; also the CSS-forced size in the baseline (18/20/16). */
   size?: number;
+  /** Optional non-square SVG box for baseline icons with a squashed viewBox. */
+  width?: number;
+  height?: number;
   /** Baseline icons use `currentColor`; RN needs the resolved color. */
   color: string;
+  /** Optional per-surface stroke override (the message toolbar uses 1.7). */
+  strokeWidth?: number;
+}
+
+export type IconRenderer = React.ComponentType<IconProps>;
+
+const IconRendererContext = createContext<IconRenderer | null>(null);
+
+export function IconRendererProvider({ renderer, children }: { renderer: IconRenderer | null; children: React.ReactNode }) {
+  return <IconRendererContext.Provider value={renderer}>{children}</IconRendererContext.Provider>;
 }
 
 /** One baseline glyph, verbatim geometry. */
-export function Icon({ name, size = 20, color }: IconProps) {
+export function Icon({ name, size = 20, width, height, color, strokeWidth }: IconProps) {
+  const Renderer = useContext(IconRendererContext);
+  if (Renderer) return <Renderer name={name} size={size} width={width} height={height} color={color} strokeWidth={strokeWidth} />;
   const g = GLYPHS[name];
   return (
     <Svg
-      width={size}
-      height={size}
+      width={width ?? size}
+      height={height ?? size}
       viewBox={`0 0 ${g.vb} ${g.vb}`}
       fill="none"
       stroke={color}
-      strokeWidth={g.sw}
+      strokeWidth={strokeWidth ?? g.sw}
       strokeLinecap={g.cap ? 'round' : 'butt'}
       strokeLinejoin={g.join ? 'round' : 'miter'}
     >

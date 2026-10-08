@@ -26,7 +26,7 @@ export interface ChatState {
   appendMessage(message: Message, sessionId?: string): void;
   appendDelta(text: string): void;
   applyToolCall(toolCall: ToolCall): void;
-  beginTurn(sessionId: string, turnId: string, text: string, attachments?: Message['attachments']): boolean;
+  beginTurn(sessionId: string, turnId: string, text: string, attachments?: Message['attachments'], assistantOnly?: boolean): boolean;
   updateTurn(turnId: string, update: (message: Message) => Message): void;
   /** Attach durable file ids to the turn's user message after upload. */
   setTurnAttachments(turnId: string, attachments: Message['attachments']): void;
@@ -46,7 +46,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   reconcileSessions: (rows) => set((state) => {
     const existing = new Map(state.sessions.map((s) => [s.id, s]));
     const remoteIds = new Set(rows.map((s) => s.id));
-    const local = state.sessions.filter((s) => isLocalSessionId(s.id) || (s.id === state.turnSessionId && !remoteIds.has(s.id)));
+    const local = state.sessions.filter((s) => !remoteIds.has(s.id) && (isLocalSessionId(s.id) || s.id === state.turnSessionId));
     const sessions = sortSessions([...local, ...rows.map((row) => ({ ...existing.get(row.id), ...row, messages: existing.get(row.id)?.messages ?? [] }))]);
     return { sessions, activeSessionId: sessions.some((s) => s.id === state.activeSessionId) ? state.activeSessionId : sessions[0]?.id ?? null };
   }),
@@ -100,13 +100,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const state = get();
     if (state.turnId) state.updateTurn(state.turnId, (m) => ({ ...m, toolCalls: mergeToolCall(m.toolCalls || [], tool) }));
   },
-  beginTurn: (sessionId, turnId, text, attachments) => {
+  beginTurn: (sessionId, turnId, text, attachments, assistantOnly = false) => {
     if (get().turnId || !get().sessions.some((s) => s.id === sessionId)) return false;
     set((state) => ({
-      turnId, turnSessionId: sessionId, status: 'sending', error: null, draft: '',
+      turnId, turnSessionId: sessionId, status: 'sending', error: null, draft: assistantOnly ? state.draft : '',
       sessions: updateSession(state, sessionId, (s) => ({ ...s, messages: [
         ...s.messages || [],
-        { clientId: `${turnId}-user`, role: 'user', rawText: text, ...(attachments?.length ? { attachments } : {}) },
+        ...(assistantOnly ? [] : [{ clientId: `${turnId}-user`, role: 'user' as const, rawText: text, ...(attachments?.length ? { attachments } : {}) }]),
         { clientId: turnId, role: 'assistant', rawText: '', reasoningContent: '' },
       ] })),
     }));

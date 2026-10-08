@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { test, expect } from '@playwright/test';
+import { ensureSidebarOpen } from './_universal-helpers.mjs';
 
 // Edit / regenerate / branch / retry over real HTTP + SSE. The contract
 // server owns sessions, message PATCH/DELETE and scripted streams; no LLM,
@@ -31,7 +32,7 @@ test('universal edit rewrites a turn, regenerates, branches and retries a failed
     if (url.pathname.endsWith('/auth/me')) return json({ user: { id: 'account', email: 'test@example.com', displayName: 'Test' } });
     if (url.pathname.endsWith('/projects')) return json({ projects: [] });
     if (url.pathname.endsWith('/sessions')) {
-      if (req.method === 'GET') return json({ sessions: [...records.values()].map(({ messages, ...row }) => row), nextCursor: null });
+      if (req.method === 'GET') return json({ sessions: url.searchParams.get('archived') === 'true' ? [] : [...records.values()].map(({ messages, ...row }) => row), nextCursor: null });
       const id = records.has(payload.id) ? payload.id : uuid();
       records.set(id, { ...payload, id });
       return json({ id, title: records.get(id).title });
@@ -87,10 +88,10 @@ test('universal edit rewrites a turn, regenerates, branches and retries a failed
     await page.goto('/');
     await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
     async function row(name) {
+      await ensureSidebarOpen(page);
       // Session rows can share their name with the sidebar action (a fresh
       // session keeps the 'New chat' title): the row always sorts last.
       const target = page.getByRole('button', { name, exact: true }).last();
-      if (!await target.isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
       await target.click();
     }
     const composer = page.getByLabel('Ask Socrates', { exact: true });
@@ -106,7 +107,7 @@ test('universal edit rewrites a turn, regenerates, branches and retries a failed
     await idle();
 
     // Edit: the turn text lands in the composer; Send rewrites + re-asks.
-    await page.getByRole('button', { name: 'Edit and resend' }).first().click();
+    await page.getByRole('button', { name: 'Edit message' }).first().click();
     await expect(composer).toHaveValue('First question');
     await composer.fill('Edited question');
     await send.click();
@@ -129,8 +130,10 @@ test('universal edit rewrites a turn, regenerates, branches and retries a failed
     // session keeps its 'New chat' title, so the fork is unambiguous.
     await page.getByRole('button', { name: 'Branch from here' }).first().click();
     await row('New chat (branch)');
-    await expect(page.getByText('Edited question', { exact: true })).toBeVisible();
-    await expect(page.getByText('Regenerated answer', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Edited question', { exact: true }).first()).toBeVisible();
+    // Branching at the assistant reply keeps that anchor and its preceding
+    // user turn in the forked transcript.
+    await expect(page.getByText('Regenerated answer', { exact: true })).toBeVisible();
 
     // Back in the main session, a stream that dies without [DONE] surfaces
     // the error row with Retry; retrying replays the last user turn.

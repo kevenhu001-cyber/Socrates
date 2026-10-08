@@ -1,5 +1,18 @@
 import { createServer } from 'node:http';
 import { test, expect } from '@playwright/test';
+import { closeSidebarIfOpen, ensureSidebarOpen } from './_universal-helpers.mjs';
+
+async function openKnowledgeView(page) {
+  const knowledge = page.getByRole('button', { name: 'Knowledge', exact: true });
+  const compact = await page.evaluate(() => window.innerWidth <= 768);
+  let openedSearch = false;
+  if (compact && !(await knowledge.isVisible().catch(() => false))) {
+    await page.getByRole('button', { name: 'Search chats', exact: true }).first().click();
+    openedSearch = true;
+  }
+  await knowledge.click();
+  if (openedSearch) await page.getByRole('button', { name: 'Search chats', exact: true }).first().click();
+}
 
 // Tutor cold start: setup generates a per-question diagnostic over the
 // stream, answering folds into the KB baseline, and teaching continues
@@ -37,7 +50,7 @@ test('universal tutor generates a diagnostic, grades the baseline and teaches', 
     if (url.pathname.endsWith('/auth/me')) return json({ user: { id: 'account', email: 'test@example.com', displayName: 'Test' } });
     if (url.pathname.endsWith('/projects')) return json({ projects: [] });
     if (url.pathname.endsWith('/sessions')) {
-      if (req.method === 'GET') return json({ sessions: [...records.values()].map(({ messages, ...row }) => row), nextCursor: null });
+      if (req.method === 'GET') return json({ sessions: url.searchParams.get('archived') === 'true' ? [] : [...records.values()].map(({ messages, ...row }) => row), nextCursor: null });
       const id = records.has(payload.id) ? payload.id : uuid();
       records.set(id, { ...payload, id });
       return json({ id, title: records.get(id).title });
@@ -71,8 +84,8 @@ test('universal tutor generates a diagnostic, grades the baseline and teaches', 
     // Tutor setup: topic + 3 diagnostic questions. New tutor lives in the
     // sidebar's More menu (baseline chrome).
     async function openMore() {
+      await ensureSidebarOpen(page);
       const more = page.getByRole('button', { name: 'More' });
-      if (!(await more.isVisible())) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
       await more.click();
     }
 
@@ -95,15 +108,73 @@ test('universal tutor generates a diagnostic, grades the baseline and teaches', 
     // The diagnostic view yields to the transcript; teaching continues.
     await expect(page.getByText('Quick diagnostic', { exact: true })).toHaveCount(0);
     expect(genCalls).toBe(3);
+    await ensureSidebarOpen(page);
+    if (testInfo.project.name === 'mobile') {
+      await expect(page.locator('#socrates-sidebar-backdrop')).toBeVisible();
+      const mainBox = await page.locator('#socrates-main').boundingBox();
+      expect(mainBox?.x).toBe(0);
+      expect(mainBox?.width).toBeGreaterThan(380);
+      await page.locator('#socrates-sidebar-backdrop').click({ position: { x: 370, y: 400 } });
+      await expect(page.getByRole('button', { name: 'Toggle sidebar', exact: true })).toBeVisible();
+      await ensureSidebarOpen(page);
+    }
+    await openKnowledgeView(page);
+    await expect(page.getByText('Teaching plan', { exact: true })).toBeVisible();
+    await expect(page.getByText('0 / 5 (0%)', { exact: true })).toBeVisible();
+    await expect(page.getByText('0/3', { exact: true })).toBeVisible();
+    await expect(page.getByText('Knowledge Boundary', { exact: true })).toBeVisible();
+    await openKnowledgeView(page);
+    if (testInfo.project.name === 'mobile') await closeSidebarIfOpen(page);
     await page.getByLabel('Ask Socrates', { exact: true }).fill('Teach me please, this is a long enough free-form answer.');
     await page.getByRole('button', { name: 'Send message' }).click();
     await expect(page.getByText('Taught reply', { exact: true })).toBeVisible();
+    if (testInfo.project.name === 'mobile') await ensureSidebarOpen(page);
+    await openKnowledgeView(page);
+    await expect(page.getByText('1/3', { exact: true })).toBeVisible();
+    await page.screenshot({ path: `test-results/universal-tutor-knowledge-${encodeURIComponent(testInfo.project.name)}.png`, fullPage: false });
+    await openKnowledgeView(page);
+    if (testInfo.project.name === 'mobile') await closeSidebarIfOpen(page);
+    const substantiveAnswers = [
+      'I can explain the concept, connect it with earlier definitions, justify each step, and apply it to another example.',
+      'My reasoning follows from the definition, and I can show how each assumption leads to the result in context.',
+      'This approach works because the key properties remain true across the example, so the conclusion follows clearly.',
+    ];
+    let replyCount = 1;
+    for (const answer of substantiveAnswers) {
+      await page.getByLabel('Ask Socrates', { exact: true }).fill(answer);
+      await page.getByRole('button', { name: 'Send message' }).click();
+      await expect(page.getByText('Taught reply', { exact: true })).toHaveCount(++replyCount);
+    }
+    if (testInfo.project.name === 'mobile') await ensureSidebarOpen(page);
+    await openKnowledgeView(page);
+    await expect(page.getByText('1 / 5 (20%)', { exact: true })).toBeVisible();
+    await expect(page.getByText('0/3', { exact: true })).toBeVisible();
+    await expect(page.getByText('Internalized', { exact: true }).first()).toBeVisible();
+    await expect(page.locator('[data-testid="socrates-teaching-plan-stage"]')).toHaveText('Intuition');
+    await openKnowledgeView(page);
+    if (testInfo.project.name === 'mobile') await closeSidebarIfOpen(page);
     const teaching = streams.find((s) => !s.system.includes('diagnostic tutor'));
     expect(teaching?.mode).toBe('tutor');
     expect(teaching?.system).toMatch(/Socratic tutor/);
 
     expect(errors).toEqual([]);
     await page.screenshot({ path: `test-results/universal-tutor-${encodeURIComponent(testInfo.project.name)}.png`, fullPage: false });
+    if (testInfo.project.name === 'mobile') await ensureSidebarOpen(page);
+    await openKnowledgeView(page);
+    await page.getByRole('button', { name: 'Basic concepts of Algebra', exact: true }).first().click();
+    await expect(page.getByRole('textbox', { name: 'Your note' })).toBeVisible();
+    await page.getByRole('button', { name: 'Set confidence to 3' }).click();
+    await page.getByRole('textbox', { name: 'Your note' }).fill('Remember this foundation.');
+    await expect.poll(() => [...records.values()].some((session) => session.kbNodes?.[0]?.user_note === 'Remember this foundation.')).toBe(true);
+    await page.getByRole('button', { name: 'Save snapshot', exact: true }).click();
+    await expect(page.getByText('Snapshot history', { exact: true }).first()).toBeVisible();
+    await page.screenshot({ path: `test-results/universal-tutor-detail-${encodeURIComponent(testInfo.project.name)}.png`, fullPage: false });
+    await page.getByRole('button', { name: 'Practical applications of Algebra', exact: true }).first().click();
+    await page.getByRole('button', { name: 'Jump the chat to this knowledge point' }).click();
+    await expect(page.getByText('Taught reply', { exact: true })).toHaveCount(++replyCount);
+    expect(streams.at(-1)?.mode).toBe('tutor');
+    expect([...records.values()].some((session) => session.currentNode === 2)).toBe(true);
+    expect(errors).toEqual([]);
   } finally {
     server.closeAllConnections(); await new Promise((resolve) => server.close(resolve));
   }

@@ -6,6 +6,8 @@ export async function runChatTurn(input: {
   sessionId: string;
   turnId: string;
   text: string;
+  /** Private model-facing user prompt for an assistant-only turn (Tutor next-question). */
+  assistantPrompt?: string;
   attachments?: Message['attachments'];
   signal: AbortSignal;
   isCurrent(): boolean;
@@ -17,7 +19,7 @@ export async function runChatTurn(input: {
   stream(args: { sessionId: string; messages: Message[]; handlers: ChatSseHandlers; signal: AbortSignal }): Promise<void>;
 }) {
   const store = useChatStore;
-  if (!store.getState().beginTurn(input.sessionId, input.turnId, input.text, input.attachments)) return;
+  if (!store.getState().beginTurn(input.sessionId, input.turnId, input.text, input.attachments, !!input.assistantPrompt)) return;
   const current = () => input.isCurrent() && store.getState().turnId === input.turnId;
   const session = () => store.getState().sessions.find((s) => s.id === store.getState().turnSessionId);
   let ready = false;
@@ -77,9 +79,11 @@ export async function runChatTurn(input: {
         }
       } catch { /* attachment persistence must never abort the turn */ }
     }
+    const messages = (persisted.messages || []).filter((m) => m.clientId !== input.turnId);
+    if (input.assistantPrompt) messages.push({ role: 'user', rawText: input.assistantPrompt });
     await input.stream({
       sessionId: persisted.id,
-      messages: (persisted.messages || []).filter((m) => m.clientId !== input.turnId),
+      messages,
       signal: input.signal,
       handlers: {
         onDelta: (delta) => update((m) => ({ ...m, rawText: `${m.rawText || ''}${delta}` })),

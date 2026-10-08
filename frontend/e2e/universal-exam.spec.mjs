@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { test, expect } from '@playwright/test';
+import { ensureSidebarOpen } from './_universal-helpers.mjs';
 
 // Exam surface contract server: a client-generated exam stored on the
 // session (kind=exam + examData). Answers persist through PATCH and grading
@@ -43,15 +44,15 @@ test('universal exam renders questions, saves answers and grades locally', async
       Object.assign(record, payload);
       return json(record);
     }
-    if (url.pathname.endsWith('/sessions') && req.method === 'GET') return json({ sessions: [{ id: record.id, title: record.title, topic: record.topic, mode: record.mode, phase: record.phase, kind: record.kind, projectId: null }], nextCursor: null });
+    if (url.pathname.endsWith('/sessions') && req.method === 'GET') return json({ sessions: url.searchParams.get('archived') === 'true' ? [] : [{ id: record.id, title: record.title, topic: record.topic, mode: record.mode, phase: record.phase, kind: record.kind, projectId: null }], nextCursor: null });
     const id = url.pathname.split('/').at(-1);
     if (id === a) return json(record);
     return json({ message: 'Not found' }, 404);
   });
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(4176, '127.0.0.1', resolve); });
   const openExam = async () => {
+    await ensureSidebarOpen(page);
     const target = page.getByRole('button', { name: 'Exam conversation', exact: true });
-    if (!await target.isVisible()) await page.getByRole('button', { name: 'Toggle sidebar' }).click();
     await target.click();
   };
   try {
@@ -99,6 +100,11 @@ test('universal exam renders questions, saves answers and grades locally', async
     expect(errors).toEqual([]);
     await page.screenshot({ path: `test-results/universal-exam-${encodeURIComponent(testInfo.project.name)}.png`, fullPage: false });
   } finally {
-    await new Promise((resolve) => server.close(resolve));
+    await new Promise((resolve) => {
+      server.close(resolve);
+      // Mobile browsers can keep an API keep-alive socket open after the
+      // final screenshot; force-close it so teardown cannot consume timeout.
+      server.closeAllConnections();
+    });
   }
 });

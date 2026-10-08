@@ -199,7 +199,8 @@ test('universal app manages projects and sessions end to end', async ({ page }) 
 
   // Search: instant local title hit plus the server message hit whose
   // <mark> highlight must render as literal text. Opening jumps to chat.
-  await page.getByRole('button', { name: 'Find in conversation' }).click();
+  await openSidebar();
+  await page.getByRole('button', { name: 'Search chats' }).click();
   await page.getByLabel('Search conversations').fill('hw');
   await expect(page.getByRole('button', { name: 'Open HW 1' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Open message in conversation' })).toBeVisible();
