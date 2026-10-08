@@ -87,10 +87,10 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
   width: min(254px, calc(100vw - 32px));
   max-height: min(60dvh, 420px);
   padding: 8px;
-  border-radius: 18px;
+  border-radius: var(--ui-radius-lg);
 }
-.chat-config-pop button { border-radius: 10px; }
-.chat-config-pop input[type="range"] { accent-color: #1687f8; }
+.chat-config-pop button { border-radius: var(--ui-radius-control); }
+.chat-config-pop input[type="range"] { accent-color: var(--ui-link); }
 
 @media (min-width: 769px) {
   .composer-tools-desktop-items { display: block; }

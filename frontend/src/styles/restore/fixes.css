@@ -404,35 +404,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    light palette. */
 
 /* ==========================================================================
-   2026-09-24 — desktop disclaimer + suggestion rows (Playwright + CDP).
-
-   Measured on chatgpt.com landing (1536x868): the legal footer is a 768px
-   column centred under the composer at 14px, and the AI suggestion rows are
-   52px tall, radius 8px, 16px/24px text in the full-contrast body colour —
-   not the muted 14px the baseline layer ships. Both rules carry the same
-   specificity shape as the parity/baseline owners so they win the tie.
-   ========================================================================== */
-@media (min-width: 769px) {
-
-  #appShell#appShell#appShell .home-quick-action {
-    min-height: 52px !important;
-    padding: 14px 10px 14px 8px !important;
-    border-radius: 8px !important;
-    color: var(--cg-text) !important;
-  }
-
-  #appShell#appShell#appShell .home-quick-action .home-quick-action-copy {
-    color: var(--cg-text) !important;
-    font-size: 16px !important;
-    line-height: 24px !important;
-  }
-
-  #appShell#appShell#appShell .home-quick-actions {
-    width: min(100%, 768px);
-  }
-}
-
-/* ==========================================================================
    Phone capsule — 2026-09-24 CDP re-measure shows the reference is a two-row
    stack (editor on row 1, add/dictation/send controls on row 2): box
    [12,428,376,89], radius 26px, min-height 52px, 12px page insets, drop
@@ -451,7 +422,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 
   /* The reference keeps 12px of page inset on both sides of the capsule. */
 
-  #appShell#appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .attachment-chips {
+  #appShell#appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips) .attachment-chips {
     grid-column: 1 / -1 !important;
     grid-row: 1 !important;
   }

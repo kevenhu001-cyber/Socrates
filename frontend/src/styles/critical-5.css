@@ -1,8 +1,11 @@
 /* critical-5.css — first-paint slice 5/5 (render-blocking).
  *
- * P_perf-css-split — auth gate (logged-out first paint) and mobile layout
- * (phone first paint). Kept blocking: deferring auth.css would flash an
- * unstyled sign-in card, and deferring mobile.css would flash the desktop
- * layout on phones. See critical-1.css for the contract. */
+ * P_perf-css-split — auth gate (logged-out first paint), landing shortcuts
+ * (desktop home first paint), and mobile layout (phone first paint).
+ * Kept blocking: deferring auth.css would flash an unstyled sign-in card,
+ * deferring home.css would flash unstyled landing rows on desktop, and
+ * deferring mobile.css would flash the desktop layout on phones. See
+ * critical-1.css for the contract. */
 @import './polish/auth.css';
+@import './polish/home.css';
 @import './polish/mobile.css';

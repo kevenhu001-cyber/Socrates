@@ -33,7 +33,7 @@
   color: var(--ui-text-muted);
   transition: background-color var(--ui-duration-fast, 0.12s) ease,
               color var(--ui-duration-fast, 0.12s) ease,
-              transform var(--ui-duration-fast, 0.12s) ease;
+              opacity var(--ui-duration-fast, 0.12s) ease;
 }
 }
 @media (max-width: 768px) {
@@ -42,7 +42,7 @@
   color: var(--ui-text-primary);
 }
 #appShell .msg-toolbar-btn:active {
-  transform: scale(0.92);
+  opacity: var(--press-opacity, var(--ui-press-opacity-sm, 0.72));
   background: var(--ui-bg-hover);
   color: var(--ui-text-primary);
 }
@@ -179,7 +179,7 @@
   font-weight: 500;
   cursor: pointer;
   border: none;
-  transition: opacity 0.15s ease, background-color 0.15s ease;
+  transition: opacity var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;
 }
 #appShell .msg-edit-cancel {
   background: rgba(128, 128, 128, 0.22);
@@ -250,9 +250,9 @@
   inset: 0;
   border-radius: 50%;
   background: hsl(var(--text-200));
-  animation: streamCursorPulse 1.2s ease-in-out infinite;
+  animation: streamCursorPulse var(--ui-duration-pulse, 1.2s) ease-in-out infinite;
 }
-#appShell .stream-cursor.is-starved::before { animation-duration: 2s; }
+#appShell .stream-cursor.is-starved::before { animation-duration: var(--ui-duration-pulse-slow, 1.6s); }
 #appShell .stream-cursor.is-settling { opacity: 0; pointer-events: none; }
 /* P_stream-cursor-flow — the dot trails the turn after the prose blocks. As
    an inline-block there it opened a line box of its own (~34px) that vanished

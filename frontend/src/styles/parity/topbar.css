@@ -43,14 +43,14 @@
     line-height: 24px;
     white-space: nowrap;
     cursor: pointer;
-    transition: background-color var(--ui-duration-hover, 0.12s) ease, transform 0.1s ease;
+    transition: background-color var(--ui-duration-hover, 0.12s) ease, opacity var(--ui-duration-hover, 0.12s) ease;
   }
   body[data-conversation-active="true"] #appShell #topModelSwitcher:hover {
     background: var(--ui-bg-hover);
   }
   body[data-conversation-active="true"] #appShell #topModelSwitcher:active {
     background: var(--ui-bg-hover);
-    transform: scale(0.96);
+    opacity: var(--press-opacity, var(--ui-press-opacity, 0.82));
   }
   body[data-conversation-active="true"] #appShell .top-model-switcher-name {
     font-weight: 600;

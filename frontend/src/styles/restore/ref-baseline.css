@@ -448,7 +448,7 @@ body.workspace-active #appShell .main-page {
     letter-spacing: -0.01em !important;
   }
 
-  #appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer > div {
+  #appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips) .rich-composer > div {
     display: flex !important;
     align-items: center !important;
     width: 100% !important;
@@ -649,70 +649,7 @@ body.workspace-active #appShell .main-page {
      apply to .scheduled-directory-head, so its header keeps matching them. */
 }
 
-/* Functional landing shortcuts shown when the server has no AI-generated
-   starter block. They mirror the supplied reference's quiet icon rows while
-   delegating to the existing upload/write/research extensions. */
-#appShell .home-quick-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin: 24px auto 0;
-}
-
-/* The previous "hide quick-actions when AI suggestions are ready" rule
-   was removed together with the homeSuggestionsWrap container; the
-   quick-actions row is now the only landing shortcut. */
-
-#appShell .home-quick-action {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-height: 40px;
-  padding: 7px 10px;
-  gap: 12px;
-  border: 0;
-  border-radius: 8px;
-  color: var(--cg-text-secondary);
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-}
-
-#appShell .home-quick-action:hover,
-#appShell .home-quick-action:focus-visible {
-  color: var(--cg-text);
-  background: var(--cg-surface-hover);
-  outline: none;
-}
-
-#appShell .home-quick-action-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 22px;
-  width: 22px;
-  height: 22px;
-  color: var(--cg-text-muted);
-}
-
-#appShell .home-quick-action-icon svg {
-  width: 18px;
-  height: 18px;
-}
-
-#appShell .home-quick-action-copy {
-  display: block;
-  min-width: 0;
-  color: var(--cg-text-secondary);
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 22px;
-}
-
-#appShell .home-quick-action:hover .home-quick-action-copy,
-#appShell .home-quick-action:focus-visible .home-quick-action-copy {
-  color: var(--cg-text);
-}
+/* Landing shortcut styling lives in polish/home.css. */
 
 @media (max-width: 768px) {
   [data-mode="dark"] {
@@ -723,10 +660,7 @@ body.workspace-active #appShell .main-page {
     --cg-rail: var(--ui-bg-sidebar);
   }
 
-  /* .home-quick-actions used to be display:none !important here. It is the
-     mobile quick-action column that mobile-parity.css owns (imported after
-     this file), so the two contradicted each other for ~1px of cascade.
-     The row is live again since 2026-10-04. */
+  /* Phone visibility is handled by polish/mobile-shell.css. */
 
   /* P_mobile-canvas-fade — the legacy conversation layer fades
      .chat-input-bar into the canvas colour. Land the fade on the active
@@ -903,82 +837,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 }
 }
 
-#appShell .home-quick-action {
-  position: relative;
-  padding-right: 44px;
-}
-
-/* P_a11y-nested-controls — the row used to BE the button, with the dismiss
-   affordance as a `span[role="button"]` nested inside it. An interactive
-   control inside another is invalid HTML and unrepresentable for assistive
-   tech: the outer button swallows the inner activation, and a screen reader
-   announces one control where the UI has two.
-
-   The row is now a plain flex container holding two sibling real buttons.
-   The primary takes the icon + copy and inherits the row's flex geometry, so
-   the painted result is identical; the dismiss stays absolutely positioned
-   against the row. Both breakpoints' gap values are mirrored here because
-   the primary is now the element holding icon and copy. */
-#appShell .home-quick-action-primary {
-  display: flex;
-  flex: 1 1 auto;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-#appShell .home-quick-action {
-  cursor: pointer;
-}
-
-#appShell .home-quick-action-copy span {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-#appShell .home-quick-action-dismiss {
-  position: absolute;
-  top: 50%;
-  right: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  color: var(--cg-text-secondary);
-  border-radius: 50%;
-  transform: translateY(-50%);
-  cursor: pointer;
-}
-
-#appShell .home-quick-action-dismiss svg {
-  width: 18px;
-  height: 18px;
-  stroke-width: 1.8;
-}
-
-#appShell .home-quick-action-dismiss:hover,
-#appShell .home-quick-action-dismiss:focus-visible {
-  color: var(--cg-text);
-  background: var(--cg-surface-hover);
-  outline: none;
-}
-
-#appShell .home-quick-action[hidden] {
-  display: none !important;
-}
-
 #appShell .workspace-search-field,
 #appShell .plugin-directory-search {
   border-color: var(--cg-border-strong);
@@ -1092,16 +950,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 
 
 
-  /* Only the quick-actions row remains on landing; the home-suggestions-wrap
-     container was removed from index.html. */
-
-
-  #appShell .home-quick-action {
-    min-height: 52px !important;
-    padding: 10px 44px 10px 14px !important;
-    border-radius: 10px !important;
-  }
-
   /* .scheduled-directory dropped: it is not a chat-column surface and now
      shares the 1040px directory column with the plugin and site pages. */
   body.workspace-active #appShell .main-page:not(#sitesPanel) {
@@ -1138,7 +986,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
     /* `--ref-menu` is declared on #appShell, but the menu is a body child;
        fall back to the opaque surface token so it never paints transparent. */
     background: var(--ref-menu, var(--cg-surface)) !important;
-    box-shadow: 0 18px 48px rgb(0 0 0 / 32%) !important;
+    box-shadow: var(--ui-shadow-popover) !important;
   }
 }
 
@@ -1148,10 +996,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   --ref-control: #f1f1ef;
   --ref-icon: #1f1f1f;
   --ref-muted: #757575;
-}
-
-[data-mode="light"] #appShell .home-quick-action-dismiss {
-  color: var(--cg-text-secondary);
 }
 
 [data-mode="light"] #appShell .plugin-directory-row,

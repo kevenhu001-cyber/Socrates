@@ -45,6 +45,7 @@ import { initChatComposerReserve } from './ui/scroll.js';
 import { initKeyboardLift } from './ui/keyboard/index.ts';
 import { initTopicFocusAssist } from './ui/topicFocusAssist.js';
 import './ui/composerAnim.js';
+import { installComposerShapeMirror } from './ui/composerShape.js';
 import { installKeyboardShortcuts } from './ui/keyboardShortcuts.js';
 import { isNativeApp, setupNativeBridge } from './native/capacitorBridge.js';
 import { initSidebarDrag } from './ui/sidebarResize.js';
@@ -100,6 +101,10 @@ initLinkFavicons();
 /* P_has-invalidation — shell visibility flags on <html> replace ancestor-level
    :has() rules that re-styled the whole app on every DOM insertion. */
 installLayoutStateMirror();
+/* Composer shape flags (.has-plugin-chips/.has-attachments) replace the
+   :has() hot path in parity/composer-unified.css — same invalidation win,
+   scoped to the single composer shell. */
+installComposerShapeMirror();
 import { toggleSidebar } from './sidebar/sidebar.service.ts';
 
 

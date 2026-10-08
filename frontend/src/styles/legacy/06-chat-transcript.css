@@ -153,9 +153,8 @@
 
 
 @keyframes badgeSwap{
-  0%{transform:scale(.92);opacity:.5;filter:blur(1px)}
-  60%{transform:scale(1.04);opacity:1;filter:blur(0)}
-  100%{transform:scale(1);opacity:1;filter:blur(0)}
+  0%{opacity:.5}
+  100%{opacity:1}
 }
 /* P_chatgpt-top — the top-bar container class, still used by the plugin
    workspace tabs (#pluginWorkspaceTabs). The centered Chat/Tutor pill that

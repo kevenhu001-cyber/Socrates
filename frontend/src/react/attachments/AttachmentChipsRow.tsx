@@ -1,5 +1,5 @@
 import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
 import {
@@ -10,6 +10,7 @@ import {
   useAttachmentsSnapshot,
 } from './attachments.bridge';
 import { getAttachmentIcon } from './fileIcons';
+import { syncComposerShellFlags } from '../../ui/composerShape.js';
 import { t as _t } from '../legacy/gateway.ts';
 import { formatAttachmentSize } from '../../attachments.js';
 import type { AttachmentEntry } from './types';
@@ -175,6 +176,19 @@ function ChipsRow({ targetId }: ChipsRowProps) {
     } else {
       el.classList.add('hidden');
     }
+  }, [attachments.length, targetId]);
+  /* Shape flags before paint: the shell grid must already be two-row when
+     the chips paint, otherwise the first frame flashes single-row. */
+  useLayoutEffect(() => {
+    try {
+      const el = document.getElementById(targetId);
+      const shell = el && el.closest ? el.closest('.composer-shell') : null;
+      if (shell) syncComposerShellFlags(shell);
+      else {
+        const fallback = document.getElementById('composerInputWrap');
+        if (fallback) syncComposerShellFlags(fallback);
+      }
+    } catch (_) { /* detached shell */ }
   }, [attachments.length, targetId]);
 
   const chips = useMemo(

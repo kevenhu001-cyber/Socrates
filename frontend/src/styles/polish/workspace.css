@@ -50,7 +50,7 @@
     min-height: 36px;
     margin-top: 10px;
     padding: 0 18px;
-    border-radius: 999px;
+    border-radius: var(--ui-radius-pill);
     font-size: 13px;
   }
 }
@@ -463,7 +463,7 @@
   font-size: 14.5px;
   font-weight: 500;
   cursor: pointer;
-  transition: color 0.15s ease, background 0.15s ease;
+  transition: color var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;
 }
 
 #appShell .plugin-detail-back-btn:hover {
@@ -597,7 +597,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.15s ease;
+  transition: opacity var(--ui-duration-fast) ease;
 }
 
 #appShell .plugin-detail-btn-primary:hover:not(:disabled) {
@@ -623,7 +623,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s ease;
+  transition: background-color var(--ui-duration-fast) ease;
 }
 
 #appShell .plugin-detail-btn-secondary:hover {
@@ -675,7 +675,7 @@
   color: var(--ui-text-primary);
   text-align: left;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background-color var(--ui-duration-fast) ease, border-color var(--ui-duration-fast) ease;
 }
 
 #appShell .plugin-detail-prompt-card:hover {
@@ -764,8 +764,8 @@
 }
 
 @keyframes workspaceBreathe {
-  0%, 100% { transform: scale(0.85); opacity: 0.5; }
-  50% { transform: scale(1.15); opacity: 1; }
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
 }
 
 @keyframes workspaceSkeletonPulse {
@@ -808,7 +808,7 @@
   border-radius: var(--ui-radius-full);
   border: 2px solid var(--ui-border-subtle);
   border-top-color: var(--ui-text-primary);
-  animation: workspaceSpin 0.9s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+  animation: workspaceSpin var(--ui-duration-spin, 0.9s) cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
 }
 
 #appShell .workspace-loading-spinner-dot {
@@ -817,7 +817,7 @@
   height: 6px;
   border-radius: var(--ui-radius-full);
   background: var(--ui-text-primary);
-  animation: workspaceBreathe 1.8s ease-in-out infinite;
+  animation: workspaceBreathe var(--ui-duration-pulse-slow, 1.6s) ease-in-out infinite;
 }
 
 #appShell .workspace-loading-banner-text {
@@ -842,7 +842,7 @@
   flex-direction: column;
   gap: 18px;
   width: 100%;
-  animation: workspaceSkeletonPulse 1.8s ease-in-out infinite;
+  animation: workspaceSkeletonPulse var(--ui-duration-pulse-slow, 1.6s) ease-in-out infinite;
 }
 
 #appShell .workspace-skeleton-strip {

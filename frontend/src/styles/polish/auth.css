@@ -12,7 +12,7 @@
 
 .auth-card {
   border: 1px solid var(--ui-border-subtle);
-  border-radius: 16px;
+  border-radius: var(--ui-radius-xl);
   background: var(--ui-bg-dialog);
   box-shadow: var(--ui-shadow-modal);
 }
@@ -35,7 +35,7 @@
 
 .auth-input {
   border: 1px solid var(--ui-border-default);
-  border-radius: 10px;
+  border-radius: var(--ui-radius-control);
   background: var(--cg-rail);
   color: var(--cg-text);
   transition: border-color var(--ui-duration-fast) ease, box-shadow var(--ui-duration-fast) ease;
@@ -46,14 +46,14 @@
 }
 
 .auth-btn {
-  border-radius: 10px;
+  border-radius: var(--ui-radius-control);
   font-weight: 500;
   transition: filter var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;
 }
 .auth-btn.primary:hover { filter: brightness(0.92); }
 .auth-btn.secondary {
   border: 1px solid var(--ui-border-default);
-  border-radius: 10px;
+  border-radius: var(--ui-radius-control);
   color: var(--ui-text-secondary);
 }
 .auth-btn.secondary:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
@@ -63,4 +63,4 @@
 .auth-foot a, .auth-inline-link { color: var(--ui-text-secondary); }
 .auth-foot a:hover, .auth-inline-link:hover { color: var(--ui-text-primary); }
 
-.auth-error { border-radius: 8px; }
+.auth-error { border-radius: var(--ui-radius-control); }

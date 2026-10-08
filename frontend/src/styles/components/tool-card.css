@@ -4,7 +4,7 @@
 .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-run-summary {
   min-height: 38px;
   padding: 5px 0 5px 10px;
-  border-radius: 10px;
+  border-radius: var(--ui-radius-row);
   gap: 9px;
   color: var(--tool-card-text-muted);
   transition: background-color .16s ease, color .16s ease;
@@ -131,7 +131,7 @@
   max-width: 40%;
   padding: 4px 8px;
   border: 1px solid hsl(var(--border-300) / .4);
-  border-radius: 999px;
+  border-radius: var(--ui-radius-pill);
   color: hsl(var(--text-400));
   font-size: 10px;
   line-height: 1.25;
@@ -168,7 +168,7 @@
   align-items: center;
   justify-content: center;
   border: 1px solid hsl(var(--border-300) / .4);
-  border-radius: 10px;
+  border-radius: var(--ui-radius-control);
   background: hsl(var(--bg-100) / .72);
   color: hsl(var(--text-400));
   transition: color .14s ease, background-color .14s ease, border-color .14s ease;
@@ -327,5 +327,5 @@
 .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-run-summary {
   min-height: 30px;
   padding: 3px 4px;
-  border-radius: 7px;
+  border-radius: var(--ui-radius-control);
 }

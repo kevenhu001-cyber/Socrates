@@ -157,7 +157,7 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
    modal-overlay / modal-card / modal-head conventions above; adds the
    two-section form layout and the admin gate error styling. */
 .admin-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
-.admin-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;width:90%;max-width:520px;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:slideUp .2s var(--ease-out)}
+.admin-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;width:90%;max-width:520px;max-height:85vh;overflow-y:auto;box-shadow:var(--ui-shadow-dialog);animation:slideUp .2s var(--ease-out)}
 .admin-body{padding:0 18px 18px;display:flex;flex-direction:column;gap:20px}
 .admin-section{display:flex;flex-direction:column;gap:12px;padding-top:20px;border-top:0.5px solid hsl(var(--border-300)/0.15)}
 .admin-section:first-child{border-top:0;padding-top:14px}
@@ -188,7 +188,7 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 .admin-console{display:flex;flex-direction:column;gap:24px}
 .admin-console-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:16px;border-bottom:0.5px solid hsl(var(--border-300)/0.15)}
 .admin-console-head h2{font-size:20px;font-weight:650;color:hsl(var(--text-100));margin:0;letter-spacing:-0.01em}
-.admin-login{max-width:400px;margin:64px auto;padding:28px;display:flex;flex-direction:column;gap:14px;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.25)}
+.admin-login{max-width:400px;margin:64px auto;padding:28px;display:flex;flex-direction:column;gap:14px;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;box-shadow:var(--ui-shadow-dialog)}
 .admin-login h2{font-size:20px;font-weight:650;color:hsl(var(--text-100));margin:0;letter-spacing:-0.01em}
 .admin-login .admin-hint{margin-bottom:4px}
 .admin-login label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:500;color:hsl(var(--text-300))}
@@ -232,7 +232,7 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 /* profile modal */
 .profile-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
 .profile-overlay.hidden{display:none}
-.profile-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;width:90%;max-width:360px;max-height:85vh;box-shadow:0 8px 32px rgba(0,0,0,.5);display:flex;flex-direction:column}
+.profile-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;width:90%;max-width:360px;max-height:85vh;box-shadow:var(--ui-shadow-dialog);display:flex;flex-direction:column}
 .profile-header{display:flex;flex-direction:column;align-items:center;padding:28px 20px 20px;gap:12px;background:hsl(var(--bg-100))}
 .profile-avatar{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:calc(24px * var(--app-font-scale, 1));font-weight:600;background:hsl(var(--text-200));color:hsl(var(--bg-100));flex-shrink:0}
 

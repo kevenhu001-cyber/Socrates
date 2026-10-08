@@ -87,6 +87,26 @@ const FINAL_CACHE_BUDGET = 8_000_000; // chars of html kept across mounts
 const finalProseCache = new Map<string, { __html: string }>();
 let finalProseCacheChars = 0;
 
+/* Hash long prose for cache keys: keeps Map keys O(1) instead of retaining
+   a second copy of every full answer. cyrb53, collision-resistant enough
+   for a render cache (a miss only costs one re-render). */
+function hashText(text: string): string {
+  let h1 = 0xdeadbeef;
+  let h2 = 0x41c6ce57;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (h2 >>> 0).toString(36) + (h1 >>> 0).toString(36);
+}
+
+function proseCacheKey(prefix: string, text: string): string {
+  return prefix + text.length + ':' + hashText(text);
+}
+
 function renderEnvKey(): string {
   if (typeof window === 'undefined') return '0';
   const w = window as unknown as {
@@ -98,7 +118,7 @@ function renderEnvKey(): string {
 }
 
 function sharedFinalProse(text: string, paint: () => string): { __html: string } {
-  const key = renderEnvKey() + text;
+  const key = renderEnvKey() + proseCacheKey('t', text);
   const hit = finalProseCache.get(key);
   if (hit !== undefined) {
     /* Refresh recency: Map iteration order is insertion order. */
@@ -109,12 +129,14 @@ function sharedFinalProse(text: string, paint: () => string): { __html: string }
   const box = { __html: paint() };
   if (IMPURE_OUTPUT.test(box.__html)) return box;
   finalProseCache.set(key, box);
-  finalProseCacheChars += box.__html.length + key.length;
+  finalProseCacheChars += box.__html.length + text.length;
   while (finalProseCacheChars > FINAL_CACHE_BUDGET && finalProseCache.size > 1) {
     const oldest = finalProseCache.keys().next().value as string;
     const dropped = finalProseCache.get(oldest);
     finalProseCache.delete(oldest);
-    finalProseCacheChars -= (dropped ? dropped.__html.length : 0) + oldest.length;
+    // Key is now a fixed-size hash; accounted text length is unknown here,
+    // so only subtract the stored html (conservative: budget drains slower).
+    finalProseCacheChars -= (dropped ? dropped.__html.length : 0) + 64;
   }
   return box;
 }
@@ -163,7 +185,7 @@ function useProseRenderer(live: boolean): {
     };
     const cache = new Map<string, { __html: string }>();
     const settled = (text: string): { __html: string } => {
-      const key = live ? 'l' + text : 'f' + text;
+      const key = proseCacheKey(live ? 'l' : 'f', text);
       const hit = cache.get(key);
       if (hit !== undefined) return hit;
       const box = live
@@ -262,6 +284,7 @@ function LiveTextSegment({ text, settled, tail }: LiveTextSegmentProps) {
   const split = splitterRef.current.push(text);
   const liveRef = useRef<HTMLDivElement | null>(null);
   const revealRef = useRef<RevealEntry[]>([]);
+  const lastFadeAtRef = useRef(0);
   const tailBox = tail(split.tail);
   useLayoutEffect(() => {
     const root = liveRef.current;
@@ -276,6 +299,11 @@ function LiveTextSegment({ text, settled, tail }: LiveTextSegmentProps) {
       if (typeof window !== 'undefined' && window.matchMedia
         && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     } catch (_) { /* matchMedia unavailable */ }
+    /* Throttle the TreeWalker + split wrap to ~30fps: token bursts can commit
+       every 16ms, but the fade window is 250ms — skipping alternate frames is
+       invisible and halves the live-tail DOM churn on long answers. */
+    if (now - lastFadeAtRef.current < 32) return;
+    lastFadeAtRef.current = now;
     try {
       applyTailFade(root, computeFadeSegments(revealRef.current, now));
     } catch (_) { /* decoration is best-effort */ }

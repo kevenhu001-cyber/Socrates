@@ -277,14 +277,14 @@
   /* No !important: this already wins by order + specificity, and an
      important infinite loop would beat every prefers-reduced-motion rule
      except restore/'s #appShell-scoped guard. */
-  animation:calm-status-breathe 2.2s ease-in-out infinite;
+  animation:calm-status-breathe var(--ui-duration-pulse-slow, 1.6s) ease-in-out infinite;
 }
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-label.shimmer-text,
 .agent-tool-card[data-tool-state="running"] .agent-tool-name{
   background:none!important;
   color:hsl(var(--text-300))!important;
   -webkit-text-fill-color:currentColor!important;
-  animation:calm-status-text 2.2s ease-in-out infinite;
+  animation:calm-status-text var(--ui-duration-pulse-slow, 1.6s) ease-in-out infinite;
 }
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail{
   margin-top:5px!important;
@@ -308,8 +308,8 @@
 .msg.assistant .agent-tool-card[data-tool-state="running"] .agent-tool-status{visibility:hidden}
 
 @keyframes calm-status-breathe{
-  0%,100%{opacity:.38;transform:scale(.78)}
-  50%{opacity:.9;transform:scale(1)}
+  0%,100%{opacity:.38}
+  50%{opacity:.9}
 }
 @keyframes calm-status-text{
   0%,100%{opacity:.62}

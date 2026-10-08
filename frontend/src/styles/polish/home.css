@@ -1,0 +1,138 @@
+/*
+ * polish/home.css — quiet landing shortcuts.
+ * The actions remain easy to discover without competing with the greeting
+ * and composer; secondary controls appear only when the row is engaged.
+ */
+
+@media (min-width: 769px) {
+  #appShell .home-quick-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: min(100%, var(--ui-content-chat));
+    margin: 20px auto 0;
+  }
+
+  #appShell .home-quick-action {
+    position: relative;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 44px;
+    padding: 4px 44px 4px 10px;
+    gap: 12px;
+    border: 0;
+    border-radius: var(--ui-radius-row);
+    background: transparent;
+    color: var(--ui-text-secondary);
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--ui-duration-hover) ease,
+                color var(--ui-duration-hover) ease;
+  }
+
+  #appShell .home-quick-action:hover,
+  #appShell .home-quick-action:focus-within {
+    background: var(--ui-bg-hover);
+    color: var(--ui-text-primary);
+  }
+
+  #appShell .home-quick-action-primary {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  #appShell .home-quick-action-icon {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 20px;
+    width: 20px;
+    height: 20px;
+    color: var(--ui-text-muted);
+  }
+
+  #appShell .home-quick-action-icon svg {
+    display: block;
+    width: 18px;
+    height: 18px;
+  }
+
+  #appShell .home-quick-action-copy {
+    display: block;
+    min-width: 0;
+    color: inherit;
+    font-size: var(--ui-text-ui);
+    font-weight: 400;
+    line-height: var(--ui-text-ui-line);
+  }
+
+  #appShell .home-quick-action-copy span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #appShell .home-quick-action-dismiss {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--ui-text-secondary);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-50%);
+    transition: opacity var(--ui-duration-fast) ease,
+                background-color var(--ui-duration-fast) ease,
+                color var(--ui-duration-fast) ease;
+  }
+
+  #appShell .home-quick-action:hover .home-quick-action-dismiss,
+  #appShell .home-quick-action:focus-within .home-quick-action-dismiss {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  #appShell .home-quick-action-dismiss svg {
+    display: block;
+    width: 18px;
+    height: 18px;
+  }
+
+  #appShell .home-quick-action-dismiss:hover,
+  #appShell .home-quick-action-dismiss:focus-visible {
+    background: var(--ui-bg-hover-ghost);
+    color: var(--ui-text-primary);
+  }
+
+  #appShell .home-quick-action-dismiss:focus-visible {
+    outline: 2px solid var(--ui-border-strong);
+    outline-offset: 1px;
+  }
+
+  #appShell .home-quick-action[hidden] { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #appShell .home-quick-action,
+  #appShell .home-quick-action-dismiss { transition: none; }
+}

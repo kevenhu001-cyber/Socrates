@@ -34,7 +34,7 @@
 #appShell .workspace-row,
 #appShell .connector-row,
 #appShell .library-row,
-#appShell .project-row { border-radius: 10px; }
+#appShell .project-row { border-radius: var(--ui-radius-row); }
 #appShell .workspace-row:hover,
 #appShell .connector-row:hover,
 #appShell .library-row:hover,
@@ -321,7 +321,7 @@
   min-height: 36px;
   margin-top: 10px;
   padding: 0 18px;
-  border-radius: 999px;
+  border-radius: var(--ui-radius-pill);
   font-size: 13px;
 }
 
@@ -423,7 +423,7 @@
 #appShell .workspace-field textarea,
 #appShell .workspace-field select {
   border: 1px solid var(--ui-border-default);
-  border-radius: 10px;
+  border-radius: var(--ui-radius-control);
   background: var(--ui-bg-surface);
   color: var(--ui-text-primary);
   box-shadow: none;
@@ -498,7 +498,7 @@
     align-self: start;
     min-height: 40px;
     padding: 0 16px;
-    border-radius: 999px;
+    border-radius: var(--ui-radius-pill);
   }
   #appShell .scheduled-directory .workspace-search-field {
     grid-column: 1 / -1;

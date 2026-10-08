@@ -19,6 +19,7 @@ import { useComposerSurface } from './useComposerSurface';
 import { ExtensionToken } from './extensionToken';
 import { useAutoHeight } from './useAutoHeight';
 import { addComposerFiles } from '../../attachments/render.js';
+import { syncComposerShellFlags } from '../../ui/composerShape.js';
 import { getLegacyActions, i18n, isWebSearchOn } from '../legacy/gateway.ts';
 import {
   removeComposerPlugin,
@@ -176,6 +177,12 @@ function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
   const snapshot = useComposerPluginSelectionSnapshot();
   const webSearchOn = useWebSearchOn();
   const plugins = snapshot[surface];
+  useLayoutEffect(() => {
+    try {
+      const host = document.getElementById('composerInputWrap');
+      if (host) syncComposerShellFlags(host);
+    } catch (_) { /* detached shell */ }
+  }, [plugins.length, webSearchOn, surface]);
   if (!plugins.length && !webSearchOn) return null;
 
   const visiblePlugins = plugins.slice(0, 4);
@@ -879,6 +886,20 @@ export function RichComposer({ placeholder, onSubmit, onEscape, showToolbar = fa
     if (!editor) return;
     editor.view.dom.setAttribute('aria-label', activePlaceholder);
   }, [editor, activePlaceholder]);
+
+  /* JS-owned shape flags (ui/composerShape.js): mirror plugin-chip presence
+     onto .has-plugin-chips so CSS avoids :has() on the hot path. The global
+     MutationObserver mirror covers attachment chips + fallback; this effect
+     stamps the flag synchronously with the chips commit. */
+  useLayoutEffect(() => {
+    if (!editor) return;
+    try {
+      const wrap = editor.view.dom.closest
+        ? editor.view.dom.closest('.composer-shell')
+        : null;
+      if (wrap) syncComposerShellFlags(wrap);
+    } catch (_) { /* detached editor */ }
+  }, [editor, webSearchOn, surface]);
 
   if (!editor) return null;
   return (

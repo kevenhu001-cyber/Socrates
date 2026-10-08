@@ -11,17 +11,17 @@
 
 #appShell .top-bar .toggle-sidebar,
 #appShell .top-bar .icon-btn {
-  transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease, transform 0.1s ease;
+  transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease, opacity var(--ui-duration-fast) ease;
 }
 
 #appShell .top-bar .mobile-newchat-btn {
-  transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease, transform 0.1s ease;
+  transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease, opacity var(--ui-duration-fast) ease;
 }
 
 #appShell .top-bar .toggle-sidebar:active,
 #appShell .top-bar .mobile-newchat-btn:active,
 #appShell .top-bar .icon-btn:active {
-  transform: scale(0.92);
+  opacity: var(--press-opacity, var(--ui-press-opacity-sm, 0.72));
 }
 }
 

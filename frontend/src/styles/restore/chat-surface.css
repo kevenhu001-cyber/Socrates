@@ -228,7 +228,7 @@ body #composerToolsMenu {
   border-radius: 20px !important;
   background: var(--conversation-control) !important;
   color: var(--conversation-text);
-  box-shadow: 0 18px 48px rgb(0 0 0 / 40%) !important;
+  box-shadow: var(--ui-shadow-popover) !important;
 }
 
 body #composerToolsMenu .composer-tools-item:hover,
@@ -526,7 +526,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
   border-radius: 22px;
   background: var(--chat-control);
   color: var(--chat-text);
-  box-shadow: 0 18px 48px rgb(0 0 0 / 40%);
+  box-shadow: var(--ui-shadow-popover);
   animation: chat-config-pop-in 160ms ease both;
 }
 

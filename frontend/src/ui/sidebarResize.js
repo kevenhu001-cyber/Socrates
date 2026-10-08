@@ -17,6 +17,8 @@ let sidebarWidthPx = SIDEBAR_DEFAULT_PX;
 let dragging = false;
 let startX = 0;
 let startW = 0;
+let pendingWidthRAF = 0;
+let pendingWidth = 0;
 
 export function loadSidebarWidth(){
   try{
@@ -63,12 +65,20 @@ export function initSidebarDrag(){
     let w = startW + dx;
     if(w < SIDEBAR_MIN_PX) w = SIDEBAR_MIN_PX;
     if(w > SIDEBAR_MAX_PX) w = SIDEBAR_MAX_PX;
-    sidebarWidthPx = w;
-    applySidebarWidth();
+    // Coalesce rapid mousemove/touchmove into one style write per frame:
+    // each --app-sidebar-width write re-lays-out the whole shell.
+    pendingWidth = w;
+    if(pendingWidthRAF) return;
+    pendingWidthRAF = requestAnimationFrame(function(){
+      pendingWidthRAF = 0;
+      sidebarWidthPx = pendingWidth;
+      applySidebarWidth();
+    });
   }
   function onUp(){
     if(!dragging) return;
     dragging = false;
+    if(pendingWidthRAF){ cancelAnimationFrame(pendingWidthRAF); pendingWidthRAF = 0; sidebarWidthPx = pendingWidth; applySidebarWidth(); }
     handle.classList.remove("dragging");
     document.body.classList.remove("sidebar-resizing");
     saveSidebarWidth();

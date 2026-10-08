@@ -81,6 +81,7 @@ const ORDERED_MANIFESTS = {
     './overlays.css',
     './workspace.css',
     './auth.css',
+    './home.css',
     './mobile.css',
     './press.css',
     './buttons.css',

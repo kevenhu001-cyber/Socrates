@@ -4,8 +4,6 @@
  * this layer refines surrounding tools and desktop greeting details.
  */
 
-/* Capsule focus: brighten the hairline one step, no glow. */
-
 /* Bundled brand face on the hero line and composer text. The parity layer
    dropped these to the generic system stack (--chatgpt-font) while the rest
    of the app renders Plus Jakarta Sans via --cg-font; the bundled face is
@@ -164,7 +162,7 @@ body #composerToolsMenu .composer-tools-item kbd {
   background: transparent;
   color: var(--ui-text-muted);
   cursor: pointer;
-  transition: background-color .15s var(--ease-out, ease), color .15s ease, transform .12s ease;
+  transition: background-color .15s var(--ease-out, ease), color .15s ease, opacity .15s ease;
 }
 #appShell .voice-recording-cancel:hover,
 #appShell .voice-recording-cancel:focus-visible {
@@ -189,7 +187,7 @@ body #composerToolsMenu .composer-tools-item kbd {
   border: 1.5px solid currentColor;
   border-radius: 50%;
   opacity: 0;
-  animation: polishVoiceRing 1.6s cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
+  animation: polishVoiceRing var(--ui-duration-pulse-slow, 1.6s) cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
 }
 @keyframes polishVoiceRing {
   0% { transform: scale(0.6); opacity: 0.5; }
@@ -217,9 +215,9 @@ body #composerToolsMenu .composer-tools-item kbd {
   min-height: 2px;
 }
 
-/* Confirm — keep the inverted 36px circle; a slight hover grow instead of
-   only a shade change. */
-#appShell .voice-recording-stop:hover { transform: scale(1.05); }
+/* Confirm — keep the inverted 36px circle; paint-only hover (no geometry
+   change, per the press contract in polish/press.css). */
+#appShell .voice-recording-stop:hover { opacity: 0.88; }
 
 @media (prefers-reduced-motion: reduce) {
   #appShell .voice-recording-indicator::after { animation: none; }

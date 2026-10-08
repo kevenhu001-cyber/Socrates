@@ -37,13 +37,9 @@
  *     mobile-parity.css + fixes.css (mobile centering).
  *   Landing #topicSetup / greeting      chat-surface.css + chatgpt-parity.css
  *     (desktop); mobile-parity.css (<=768px). .topic-sub/.cg-history are
- *     hidden by layout/app-shell.css. .home-quick-actions is NOT hidden:
- *     the three landing shortcuts were pinned to display:none by four
- *     conflicting rules across app-shell/chat-surface/ref-baseline/fixes
- *     until 2026-10-04, leaving a ~410px dead band under the composer while
- *     its markup, i18n and ui/homeSurface.js handlers stayed live. Row and
- *     row geometry live here in ref-baseline.css, desktop 52px/r8/16px
- *     sizing in fixes.css, and the <=768px column in mobile-parity.css.
+ *     hidden by layout/app-shell.css. Desktop shortcut styling is now owned
+ *     by polish/home.css; mobile-parity.css keeps the legacy <=768px geometry
+ *     while polish/mobile-shell.css hides the shortcut block on phones.
  *   Composer frame (#topic/#composerInputWrap)  chatgpt-parity.css (desktop
  *     grid, 52px/28px radius) + chat-surface.css (multiline); editor
  *     internals (.composer-editor-root/.tiptap) components/composer.css.

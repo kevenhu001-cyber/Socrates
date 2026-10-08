@@ -164,9 +164,9 @@
   width: 134px;
   padding: 5px;
   border: 1px solid var(--chatgpt-line);
-  border-radius: 10px;
+  border-radius: var(--ui-radius-row);
   background: var(--chatgpt-menu);
-  box-shadow: 0 10px 28px rgb(0 0 0 / 22%);
+  box-shadow: var(--ui-shadow-popover);
 }
 #appShell #sitesPanel .creation-site-row-menu button { text-align: left; color: var(--chatgpt-text); }
 #appShell #sitesPanel .creation-site-row-menu button:hover { background: var(--chatgpt-hover); }

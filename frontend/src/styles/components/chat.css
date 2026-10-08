@@ -54,7 +54,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   max-width: min(76%, 680px);
   padding: 10px 16px;
   border: 0;
-  border-radius: 15px;
+  border-radius: var(--ui-radius-bubble);
   background: var(--ui-bg-bubble);
   box-shadow: none;
 }
@@ -115,11 +115,11 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
    and the turn anchor reads — is never size-contained. `auto` in
    contain-intrinsic-size keeps each row's last remembered height so the
    scrollbar does not jitter when a row re-enters the viewport.
-   Desktop only: on phones the keyboard open/close resizes the viewport while
-   a send is anchoring the transcript (chat-send "top offset across viewport
-   changes"), and rows that were never painted report the 240px intrinsic
-   guess during that reflow, which the anchor hold cannot correct per-frame.
-   Message virtualization (P2) is the mobile-safe version of this win. */
+   Mobile pilot (2026-10-08): same rule with smaller intrinsics, newest
+   three rows + anchored rows excluded, and fully disabled while the
+   keyboard is opening/closing or a send anchor is settling — those windows
+   re-measure the transcript every frame and an unpainted row would report
+   the intrinsic guess. Message virtualization (P2) remains the full fix. */
 @media (min-width: 769px) {
   /* P_cv-remembered-size — `auto` only has a remembered size to fall back on
      once the browser has recorded one, and it records it only while the
@@ -153,5 +153,25 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   #appShell #msgList > .msg.user:nth-last-child(n + 3):not(.turn-viewport-anchor) {
     content-visibility: auto;
     contain-intrinsic-size: auto 90px;
+  }
+}
+
+/* Mobile pilot: settled rows skip off-screen layout, except the live tail,
+   the newest three rows (send anchor measures them), anchored rows, and
+   any window where the transcript is being re-measured per frame. */
+@media (max-width: 768px) {
+  #appShell #msgList > .msg.assistant {
+    contain-intrinsic-size: auto 200px;
+  }
+  #appShell #msgList > .msg.user {
+    contain-intrinsic-size: auto 64px;
+  }
+  html:not([data-keyboard-phase="opening"]):not([data-keyboard-phase="closing"]) #appShell #msgList:not([data-turn-anchor-settling="true"]) > .msg.assistant[data-stream-settled="true"]:nth-last-child(n + 4):not(.turn-viewport-anchor) {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 200px;
+  }
+  html:not([data-keyboard-phase="opening"]):not([data-keyboard-phase="closing"]) #appShell #msgList:not([data-turn-anchor-settling="true"]) > .msg.user:nth-last-child(n + 4):not(.turn-viewport-anchor) {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 64px;
   }
 }

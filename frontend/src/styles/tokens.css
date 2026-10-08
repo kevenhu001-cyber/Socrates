@@ -92,6 +92,12 @@
   --ui-duration-overlay: 160ms;
   --ui-ease-standard: ease;
   --ui-overlay-enter-scale: 0.98;
+  /* Pulse rhythm — one cadence for all breathing indicators (cursor,
+     status dots, skeletons) so the app never shows two competing tempos.
+     Spin keeps its own faster lane for progress rings. */
+  --ui-duration-pulse: 1200ms;
+  --ui-duration-pulse-slow: 1600ms;
+  --ui-duration-spin: 900ms;
 
   /* Press feedback (styles/polish/press.css + ui/pressFeedback.js). Every
      control keeps fixed geometry and acknowledges a press through paint

@@ -141,12 +141,10 @@
   #appShell #topicSetup .topic-title.greeting {
     position: static;
     margin: 0 0 48px;
-    /* Reference hero is 24px/28px. Measured 2026-10-04 at 1440x900: the
-       restore-layer `.topic-title.greeting` clamp still wins and computes
-       to 27px, so the canonical 24px declaration below is NOT the shipped
-       value yet. See docs/ref/chatgpt-parity.md P1 item 5. */
     font-size: calc(24px * var(--app-font-scale, 1));
     line-height: 1.25;
+    letter-spacing: -0.02em;
+    font-weight: 400;
   }
 }
 

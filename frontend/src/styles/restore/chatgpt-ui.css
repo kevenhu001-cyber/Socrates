@@ -428,9 +428,9 @@ body,
   max-height: min(50vh, 620px);
   overflow-y: auto;
   border: 1px solid var(--cg-border-strong) !important;
-  border-radius: 18px !important;
+  border-radius: var(--ui-radius-xl) !important;
   background: var(--cg-surface) !important;
-  box-shadow: 0 20px 60px rgb(0 0 0 / 38%), 0 1px 0 rgb(255 255 255 / 4%) inset !important;
+  box-shadow: var(--ui-shadow-dialog) !important;
   color: var(--cg-text);
 }
 
@@ -1027,7 +1027,7 @@ body.workspace-active #appShell .workspace-row:hover {
     border: 0 !important;
     border-top: 1px solid var(--cg-border-strong) !important;
     border-radius: 20px 20px 0 0 !important;
-    box-shadow: 0 -18px 52px rgb(0 0 0 / 42%) !important;
+    box-shadow: var(--ui-shadow-popover) !important;
   }
 
   #composerToolsMenu::before {

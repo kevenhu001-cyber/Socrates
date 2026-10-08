@@ -81,9 +81,16 @@
   transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
 }
 
-/* Two-row layout: a real multi-line draft, or any tool / plugin chip. */
+/* A quiet focus cue keeps the capsule readable without a bright outer glow. */
+#appShell .composer-shell:not(.voice-recording-active):focus-within {
+  border-color: var(--ui-border-strong);
+}
+
+/* Two-row layout: a real multi-line draft, or any tool / plugin chip.
+   Shape flags are JS-owned (ui/composerShape.js toggles .has-plugin-chips /
+   .has-attachments); no :has() on the hot path. */
 #appShell .composer-shell.composer-multiline:not(.voice-recording-active),
-#appShell .composer-shell:has(.composer-plugin-chips):not(.voice-recording-active) {
+#appShell .composer-shell.has-plugin-chips:not(.voice-recording-active) {
   grid-template-areas:
     "editor editor editor editor editor"
     "plus   chips  effort mic    send";
@@ -91,7 +98,7 @@
 }
 
 /* Attachments add a full-width row on top. */
-#appShell .composer-shell:has(> .attachment-chips:not(.hidden)):not(.voice-recording-active) {
+#appShell .composer-shell.has-attachments:not(.voice-recording-active) {
   grid-template-areas:
     "files  files  files  files  files"
     "editor editor editor editor editor"
@@ -134,7 +141,7 @@
   scrollbar-width: thin;
 }
 #appShell .composer-shell.composer-multiline .rich-composer-editor,
-#appShell .composer-shell:has(.composer-plugin-chips) .rich-composer-editor {
+#appShell .composer-shell.has-plugin-chips .rich-composer-editor {
   padding: 4px 12px 10px;
 }
 #appShell .composer-shell .rich-composer-editor[contenteditable="false"] { opacity: 0.65; cursor: not-allowed; }
@@ -419,7 +426,7 @@
      user could set reasoning effort from chat but not before their first
      message, while the desktop landing could. The 4-track row fit fine
      anyway: 36 + 36 + 36 fixed controls leave ~160px for the chip strip. */
-  #appShell .composer-shell:has(.composer-plugin-chips):not(.voice-recording-active) {
+  #appShell .composer-shell.has-plugin-chips:not(.voice-recording-active) {
     grid-template-areas:
       "editor editor editor editor editor"
       "plus   chips  effort mic    send";
@@ -431,12 +438,12 @@
     border-radius: var(--ui-radius-composer-desktop);
     box-shadow: var(--ui-composer-shadow);
   }
-  #appShell .composer-shell:has(> .attachment-chips:not(.hidden)):not(.voice-recording-active) {
+  #appShell .composer-shell.has-attachments:not(.voice-recording-active) {
     padding-top: 12px;
   }
   #appShell .composer-shell .rich-composer-editor,
   #appShell .composer-shell.composer-multiline .rich-composer-editor,
-  #appShell .composer-shell:has(.composer-plugin-chips) .rich-composer-editor {
+  #appShell .composer-shell.has-plugin-chips .rich-composer-editor {
     min-height: 24px;
     max-height: 220px;
     padding: 0 8px;
@@ -484,10 +491,10 @@
      same pattern applied to msg-toolbar-btn. */
   #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn) {
     position: relative;
-    transition: transform var(--ui-duration-fast, 0.12s) ease, background-color var(--ui-duration-fast, 0.12s) ease;
+    transition: background-color var(--ui-duration-fast, 0.12s) ease, opacity var(--ui-duration-fast, 0.12s) ease;
   }
   #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn):active {
-    transform: scale(0.92);
+    opacity: var(--press-opacity, var(--ui-press-opacity-sm, 0.72));
   }
   #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn)::before {
     content: "";
