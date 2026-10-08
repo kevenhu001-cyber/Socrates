@@ -41,7 +41,14 @@ test('universal account menu mirrors the baseline entries and closes outside', a
   await expect(menu.getByRole('menuitem', { name: 'Help', exact: true })).toHaveCount(0);
   await expect(page.getByTestId('socrates-account-menu-identity')).toBeVisible();
 
-  // Outside press (anywhere else in the sidebar) closes the menu.
+  // The real outside boundary is the document, not the sidebar box: clicking
+  // the transcript/main column must close the anchored menu as well.
+  await page.locator('#socrates-main').click({ position: { x: 40, y: 160 } });
+  await expect(menu).toHaveCount(0);
+
+  // Sidebar-local outside press still closes through the same React backdrop.
+  await trigger.click();
+  await expect(menu).toBeVisible();
   await page.getByTestId('socrates-sidebar-account-backdrop').click({ position: { x: 20, y: 120 } });
   await expect(menu).toHaveCount(0);
 
