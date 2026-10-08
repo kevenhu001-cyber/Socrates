@@ -89,3 +89,6 @@ jobs:
           path: apps/socrates/preview-artifacts
           if-no-files-found: error
           retention-days: 14
+          # The payload is dominated by an APK and tar.gz; avoid a second
+          # compression pass inside the artifact ZIP.
+          compression-level: 0
