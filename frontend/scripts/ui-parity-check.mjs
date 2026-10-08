@@ -104,6 +104,32 @@ const MIME = {
  * expression evaluated in both shells right before the tutor overview shot;
  * the JSON result lands in test-results/ui-parity/probe-<label>.json. */
 async function runProbe(page, label) {
+  if (process.env.PARITY_LAYERS === '1') {
+    const cdp = await page.context().newCDPSession(page);
+    let tree = null;
+    cdp.on('LayerTree.layerTreeDidChange', (e) => { if (e.layers) tree = e.layers; });
+    await cdp.send('LayerTree.enable');
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    await page.waitForTimeout(300);
+    const layers = (tree || []).filter((l) => l.drawsContent).map((l) => ({ id: l.layerId, node: l.backendNodeId, x: l.offsetX, y: l.offsetY, w: l.width, h: l.height, t: l.transform }));
+    for (const l of layers) if (l.node) { try { const d = await cdp.send('DOM.describeNode', { backendNodeId: l.node }); l.desc = `${d.node.nodeName}#${(d.node.attributes || []).join(' ').slice(0, 120)}`; } catch {} try { l.why = (await cdp.send('LayerTree.compositingReasons', { layerId: l.id })).compositingReasonIds; } catch {} }
+    await mkdir(join(frontend, 'test-results', 'ui-parity'), { recursive: true });
+    await writeFile(join(frontend, 'test-results', 'ui-parity', `layers-${label}.json`), JSON.stringify(layers, null, 1));
+  }
+  if (process.env.PARITY_FONTS_SELECTOR) {
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('DOM.enable'); await cdp.send('CSS.enable');
+    const { root } = await cdp.send('DOM.getDocument', { depth: -1 });
+    const out = [];
+    for (const sel of process.env.PARITY_FONTS_SELECTOR.split('||')) {
+      const { nodeIds } = await cdp.send('DOM.querySelectorAll', { nodeId: root.nodeId, selector: sel });
+      for (const nodeId of nodeIds.slice(0, 3)) {
+        try { out.push({ sel, fonts: (await cdp.send('CSS.getPlatformFontsForNode', { nodeId })).fonts }); } catch (error) { out.push({ sel, error: String(error) }); }
+      }
+    }
+    await mkdir(join(frontend, 'test-results', 'ui-parity'), { recursive: true });
+    await writeFile(join(frontend, 'test-results', 'ui-parity', `fonts-${label}.json`), JSON.stringify(out, null, 1));
+  }
   if (!process.env.PARITY_PROBE_JS) return;
   const source = await readFile(process.env.PARITY_PROBE_JS, 'utf8');
   const result = await page.evaluate(source).catch((error) => ({ error: String(error) }));
@@ -666,7 +692,9 @@ const UNIVERSAL_PROBE = () => {
       .filter((label) => label === 'Welcome to Socrates' || label === 'Workbench fixture'),
     recentRows,
     recentsTitle: of(byText('Recents')),
-    footerBtn: of(footer ? footer.querySelector('[role="button"]') : null),
+    /* SPA counterpart is `.icon-btn` (a quick-action icon), so skip the
+     * account trigger that now wraps the identity row. */
+    footerBtn: of(footer ? footer.querySelector('[role="button"]:not([data-testid="socrates-sidebar-account-trigger"])') : null),
     sidebarFooter: of(footer),
     avatar: of(avatar),
     userName: of(name),
@@ -1250,6 +1278,7 @@ async function shotTutorBaseline(browser, viewport) {
   });
   await settle(page);
   await page.mouse.move(0, 0);
+  await runProbe(page, `spa-detail-${viewport.name}`);
   const detail = await page.screenshot({ animations: 'disabled' });
   // The panel's scroll offset differs per shell, so the comparison crops to
   // the panel box (see main) instead of comparing scroll positions.
@@ -1361,6 +1390,7 @@ async function shotTutorUniversal(browser, viewport) {
   });
   await settle(page);
   await page.mouse.move(0, 0);
+  await runProbe(page, `uni-detail-${viewport.name}`);
   const detail = await page.screenshot({ animations: 'disabled' });
   const detailBox = await page.evaluate(() => {
     const r = document.querySelector('[data-testid="socrates-kb-detail"]')?.getBoundingClientRect();
@@ -1405,7 +1435,7 @@ async function main() {
     cwd: frontend, env: { ...process.env, SMOKE_PORT: String(BASE_PORT) }, stdio: 'ignore',
   });
   const rnSrv = await serveStatic(universalDist, RN_PORT);
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ args: (process.env.PARITY_CHROME_ARGS || "").split(" ").filter(Boolean) });
   let failures = 0;
   const lines = [];
   try {

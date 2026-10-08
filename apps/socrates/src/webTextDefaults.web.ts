@@ -1,6 +1,9 @@
 import { WEB_FONT_FAMILY } from '@socrates/theme';
 
-const EXPO_FACES: Readonly<Record<string, { family: string; weight: string }>> = {
+/* Symbols the SPA takes from fontsource subset 109 (see `src/fonts.ts`). */
+const NOTO_SUBSET_109_SYMBOLS = 'U+a5,U+2192,U+2605';
+
+const EXPO_FACES: Readonly<Record<string, { family: string; weight: string; unicodeRange?: string }>> = {
   Inter_400Regular: { family: 'Inter', weight: '400' },
   Inter_500Medium: { family: 'Inter', weight: '500' },
   Inter_600SemiBold: { family: 'Inter', weight: '600' },
@@ -8,6 +11,9 @@ const EXPO_FACES: Readonly<Record<string, { family: string; weight: string }>> =
   NotoSansSC_400Regular: { family: 'Noto Sans SC', weight: '400' },
   NotoSansSC_500Medium: { family: 'Noto Sans SC', weight: '500' },
   NotoSansSC_600SemiBold: { family: 'Noto Sans SC', weight: '600' },
+  NotoSansSC109_400Regular: { family: 'Noto Sans SC', weight: '400', unicodeRange: NOTO_SUBSET_109_SYMBOLS },
+  NotoSansSC109_500Medium: { family: 'Noto Sans SC', weight: '500', unicodeRange: NOTO_SUBSET_109_SYMBOLS },
+  NotoSansSC109_600SemiBold: { family: 'Noto Sans SC', weight: '600', unicodeRange: NOTO_SUBSET_109_SYMBOLS },
 };
 
 /** Register Expo's static assets with the same CSS family/weight descriptors
@@ -25,6 +31,7 @@ export function installWebTextDefaults(theme: 'dark' | 'light' = 'dark'): void {
       if (!mapped) continue;
       face.style.setProperty('font-family', `"${mapped.family}"`);
       face.style.setProperty('font-weight', mapped.weight);
+      if (mapped.unicodeRange) face.style.setProperty('unicode-range', mapped.unicodeRange);
     }
   }
   const root = document.documentElement;
@@ -123,6 +130,8 @@ export function installWebTextDefaults(theme: 'dark' | 'light' = 'dark'): void {
        detail subtree; the textarea's plaintext bidi becomes normal too. */
     [data-testid="socrates-kb-detail"],
     [data-testid="socrates-kb-detail"] *,
+    [data-testid="socrates-kb-file-list"],
+    [data-testid="socrates-kb-file-list"] *,
     [data-testid="socrates-mistakes-panel"],
     [data-testid="socrates-mistakes-panel"] * {
       white-space: normal !important;
@@ -130,6 +139,9 @@ export function installWebTextDefaults(theme: 'dark' | 'light' = 'dark'): void {
       unicode-bidi: normal !important;
       position: static !important;
     }
+    /* The SPA note is a plain <textarea> (resize: vertical) whose grip is
+       painted in the corner; RNW resets TextInput to resize: none. */
+    [data-testid="socrates-kb-detail"] textarea { resize: vertical !important; }
     #socrates-sidebar-user-name { text-align: left !important; }
     #socrates-model-name,
     #socrates-model-subtitle { text-align: center !important; }

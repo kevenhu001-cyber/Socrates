@@ -1,6 +1,6 @@
 import 'react-native-reanimated';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BackHandler, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { BackHandler, KeyboardAvoidingView, Linking, Platform, Pressable, StatusBar, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import type { AccountUsage, Assistant, ExamData, Message, Project, ProviderKey, Session, TutorData } from '@socrates/contracts';
@@ -1675,6 +1675,13 @@ function SocratesApp() {
         onToggleTheme={() => { if (compact) setSidebarOpen(false); toggleTheme(); }}
         onOpenDisplaySettings={() => { if (compact) setSidebarOpen(false); openSettings(); }}
         onOpenSettings={() => { if (compact) setSidebarOpen(false); openSettings(); }}
+        /* Account menu (baseline SidebarFooter): Upgrade plan is the same
+           pricing link; Profile opens Settings, where the Universal profile
+           lives; Sign out only for a signed-in (non-guest) account. Help is
+           the SPA keyboard cheatsheet, which Universal does not have. */
+        onUpgradePlan={() => { void Linking.openURL(PRICING_URL); }}
+        onOpenProfile={() => { if (compact) setSidebarOpen(false); openSettings(); }}
+        onSignOut={user && !user.isGuest ? () => { if (compact) setSidebarOpen(false); signOut(); } : undefined}
         onToggleSidebar={() => { if (compact) setSidebarOpen(false); else setSidebarOpen((open) => !open); }}
         logoSource={require('./assets/logo.png')}
         logoTextRenderer={SidebarLogoText}
@@ -1718,7 +1725,7 @@ function SocratesApp() {
           style={[styles.sidebarBackdrop, { backgroundColor: theme === 'dark' ? 'rgba(0, 0, 0, 0.55)' : 'rgba(0, 0, 0, 0.4)' }]}
         />
       ) : null}
-      <View nativeID="socrates-main" style={[styles.main, compact && styles.mainCompact, { backgroundColor: palette.bg.page }]}>
+      <View nativeID="socrates-main" style={[styles.main, compact ? styles.mainCompact : Platform.OS === 'web' && styles.mainDesktopWebLayer, { backgroundColor: palette.bg.page }]}>
         {/* Baseline topbar: fixed brand/model switcher and conversation actions. */}
         <View style={[styles.topbar, compact && styles.topbarCompact]}>
           <View style={[styles.topbarLeft, compact && styles.topbarLeftCompact]}>
@@ -1882,10 +1889,22 @@ export default function App() {
   return <SafeAreaProvider><IconRendererProvider renderer={webIconRenderer}>{fontsLoaded ? <SocratesApp /> : null}</IconRendererProvider></SafeAreaProvider>;
 }
 
+/** Baseline `SidebarFooter.tsx` upgrade link. */
+const PRICING_URL = 'https://topodrive.top/pricing';
+
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   shell: { flex: 1, flexDirection: 'row', position: 'relative' },
+  /* parity (web): the SPA's `.main-bg` carries `will-change: transform`, so
+     Chrome promotes `#mainContent` to its own composited layer (reason:
+     Overlap) whose origin is the column's left edge. Rasterising the
+     composer's rounded border in a layer at that origin is what produces
+     the baseline's anti-aliased edge (probe: (1233,842) RGB 32 vs 33 when
+     painted into the root layer). `translateZ(0)` gives the Universal
+     column the same layer origin. Desktop web only: the phone shell
+     measures 0 without it and 62 with it. */
   main: { flex: 1, paddingBottom: 20 },
+  mainDesktopWebLayer: { transform: 'translateZ(0)' },
   /* parity: the phone chat column gives `.chat-input-bar` a 16px bottom
      pad, and the composer slot adds its own 6px — 22px under the shell,
      which is what the SPA measures at 390x844. */

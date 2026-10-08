@@ -933,3 +933,74 @@ mobile/            # 冻结，仅安全/crash/data-loss 修复
   26,344（面板高度 / 滚动位置）；desktop detail 2,861；desktop 1px（composer）。
 - **下一步**：详情面板高度差（356.3 vs 343.8）与滚动落点；账户菜单补齐其余条目；
   desktop detail 残差。严格门禁仍失败，parity 保持“进行中”。
+
+## 33. 进展（第二十六轮，2026-10-08，round 16-15：composer 合成层 + 知识列表重建 + 账户菜单）
+
+> 处理 16-14 记下的三类残差：desktop 1px（composer）、desktop / mobile 知识详情
+> 大面积差异、账户菜单条目缺失。本轮结束时**严格像素门禁 8 态全部为 0**
+> （`PARITY_PIXEL_STRICT=1`，0 failures），普通模式同样 0 failures。仅限当前
+> parity fixture（1440×900 / 390×844，两条消息的 workbench + tutor 三态）；
+> fixture 之外的界面与交互不在此结论内。
+
+- **composer 1px（desktop）**：用 `PARITY_LAYERS=1`（CDP LayerTree）取证，基线
+  `.main-bg` 带 `will-change: transform`，Chrome 因 Overlap 把 `#mainContent` 提升为
+  独立合成层，原点在列左缘；composer 圆角边框在该层内光栅化，抗锯齿结果与画进
+  根层不同（探针 (1233,842) RGB 32 vs 33）。给 `#socrates-main` 加 **仅桌面 web** 的
+  `transform: translateZ(0)`，得到同样的层原点。手机不加：不加为 0，加了反而 62。
+- **知识文件列表重建**：按基线 `renderKnowledgeBoundaryFile`（tutorSocratic.js）重写
+  `KnowledgeBoundaryPanel` 的文件视图——Internalized / Fuzzy / Not yet explored 分节
+  标题（新键 `kbSection*`，0.06em 字距）、`.kb-node` / `.kb-node-name` flex 行、
+  桌面 20px 行盒 / 手机继承 1.5 行高；详情面板按基线 `toggleKBDetail` 插在快照历史
+  之后；状态徽标大写；`→ Go` 标签行高对齐；知识视图底部 padding 10 → 12（基线
+  `#knowledgePanel` 上下各 12）。文件列表子树加入 web 文本默认值覆盖
+  （white-space / unicode-bidi / position 与 detail 子树同一套）。
+- **字体子集 109**：探针（`PARITY_FONTS_SELECTOR`，CDP `getPlatformFontsForNode`）
+  显示 `→ Go` 在 Universal 落到 DejaVu Sans（窄 1.64px）。基线拆分的
+  `@fontsource/noto-sans-sc` 对 U+2192（→）、U+A5（¥）、U+2605（★）加载 subset
+  109，而现有 chinese-simplified 文件不含这些字形。新增
+  `apps/socrates/assets/fonts/NotoSansSC-109-{400,500,600}.woff2`，web 端以同一
+  `Noto Sans SC` family + `unicode-range: U+a5,U+2192,U+2605` 注册。
+- **详情备注 textarea**：基线是原生 `<textarea>`（`resize: vertical`），右下角画出
+  拖拽柄；RNW 把 TextInput 重置为 `resize: none`。在 detail 子树里恢复
+  `resize: vertical`——这是上一次中间测量里两个 detail 态各剩 18 像素的原因，本轮
+  复测后归零。
+- **账户菜单补齐**：桌面与手机页脚的身份行现在都是账户触发器
+  （`socrates-sidebar-account-trigger`）。菜单按基线 `SidebarFooter.tsx` +
+  `AnchoredMenu`：身份行（→ Settings）、Upgrade plan（打开
+  `https://topodrive.top/pricing`）、Personalization、Profile（→ Settings，Universal
+  的资料在设置里）、Settings、分隔线、Sign out（**仅已登录非访客**）；点击菜单外
+  （侧栏内透明遮罩）关闭。**Help 未接入**：基线 Help 打开的是 SPA 快捷键速查表，
+  Universal 没有对应界面，`onOpenHelp` 入口保留但 App 不传，所以不显示。
+- **E2E / 工具**：新增 `frontend/e2e/universal-account-menu.spec.mjs`。
+  `ui-parity-check.mjs`：Universal 探针的 `footerBtn` 跳过账户触发器（基线对应物是
+  `.icon-btn` 快捷图标，触发器包住身份行后会被误选，导致上次 `footerBtn.size`
+  失败）；新增仅诊断用的 `PARITY_LAYERS` / `PARITY_FONTS_SELECTOR` /
+  `PARITY_CHROME_ARGS` 开关与 detail 截图前的 probe 调用，默认关闭，不改变比较逻辑。
+- **像素（exact 差异像素，严格模式）**：
+
+  | 状态 | 16-14 | 16-15 | 严格模式 |
+  |---|---|---|---|
+  | workbench desktop | 1 | 0 | PASS |
+  | workbench mobile | 0 | 0 | PASS |
+  | tutor overview desktop | 1 | 0 | PASS |
+  | tutor detail desktop | 2,861 | 0 | PASS |
+  | mistake book desktop | 1 | 0 | PASS |
+  | tutor overview mobile | 0 | 0 | PASS |
+  | tutor detail mobile | 26,344 | 0 | PASS |
+  | mistake book mobile | 0 | 0 | PASS |
+
+  全部 8 态 Δ>12 0、Δ>48 0、mean Δ0。16-14 记下的 mobile detail “面板高度
+  356.3 vs 343.8 / 滚动落点”在知识列表按基线结构重建后一并消失，没有单独改滚动。
+- **验证（最终代码）**：`apps/socrates` typecheck 通过；`test:shared` **227/227**；
+  `export:web`（`EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:4176/api/v2`）+
+  `check-api-bundle` 通过；`check-packages-dom` OK；`frontend npm run lint`
+  **0 errors / 629 warnings**；完整 Universal Playwright 桌面 + 手机 **30/30**
+  （15 个 spec，含 universal-tutor / universal-tutor-widgets / universal-account-menu，
+  `UNIVERSAL_PORT=4187`，单 worker）；parity 普通模式 0 failures、严格模式
+  0 failures；`git diff --check` 通过。
+- **已知差异 / 风险**：账户菜单无 Help（缺快捷键速查表）；Profile 指向 Settings 而非
+  独立资料页；严格 0 只覆盖 parity fixture 的 8 个截图态，菜单展开态、其它主题 /
+  语言、其它视口未做像素比对；`translateZ(0)` 是对 Chrome 合成行为的对齐，换浏览器
+  或 Chrome 版本可能需要重新取证。
+- **下一步**：把严格模式纳入常规 parity 门禁；考虑为账户菜单展开态、浅色主题、
+  中文界面补 fixture；Help / 快捷键速查表是否移植待定。

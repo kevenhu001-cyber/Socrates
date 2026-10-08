@@ -309,6 +309,10 @@ export function Sidebar({
   onToggleTheme,
   onOpenDisplaySettings,
   onOpenSettings,
+  onUpgradePlan,
+  onOpenProfile,
+  onOpenHelp,
+  onSignOut,
   onToggleSidebar,
   /** Brand logo (host supplies the asset so the package stays require-free). */
   logoSource,
@@ -353,6 +357,12 @@ export function Sidebar({
   onToggleTheme?(): void;
   onOpenDisplaySettings?(): void;
   onOpenSettings?(): void;
+  /** Account menu entries (baseline `SidebarFooter.tsx`); each row is shown
+   *  only when the host supports it. */
+  onUpgradePlan?(): void;
+  onOpenProfile?(): void;
+  onOpenHelp?(): void;
+  onSignOut?(): void;
   /** Header toggle: collapses the rail on desktop, closes the drawer on phones. */
   onToggleSidebar?(): void;
   logoSource?: { uri: string };
@@ -467,6 +477,48 @@ export function Sidebar({
     if (archivedRow) onSelectArchived?.(id);
     else onSelect(id);
   };
+  /* Baseline account menu (`SidebarFooter.tsx` + `AnchoredMenu`): identity
+   * row → profile, Upgrade plan, Personalization, Profile, Settings, Help,
+   * Sign out (signed-in only), with dividers; closes on any outside press. */
+  const closeAccountMenu = () => setAccountMenuOpen(false);
+  const accountEntries: Array<{ key: string; label: string; icon: IconName; onPress(): void; trailing?: boolean } | 'divider'> = [
+    ...(onUpgradePlan ? [{ key: 'upgrade', label: t.accountUpgradePlan, icon: 'sparkles' as const, onPress: onUpgradePlan }] : []),
+    ...(onOpenDisplaySettings ? [{ key: 'personalization', label: t.accountPersonalization, icon: 'sliders-horizontal' as const, onPress: onOpenDisplaySettings }] : []),
+    ...(onOpenProfile ? [{ key: 'profile', label: t.accountProfile, icon: 'user' as const, onPress: onOpenProfile }] : []),
+    ...(onOpenSettings ? [{ key: 'settings', label: t.accountSettings, icon: 'settings' as const, onPress: onOpenSettings }] : []),
+    ...(onOpenHelp || onSignOut ? ['divider' as const] : []),
+    ...(onOpenHelp ? [{ key: 'help', label: t.accountHelp, icon: 'life-buoy' as const, onPress: onOpenHelp, trailing: true }] : []),
+    ...(onSignOut ? [{ key: 'signout', label: t.accountSignOut, icon: 'log-out' as const, onPress: onSignOut }] : []),
+  ];
+  const accountMenu = (
+    <View testID="socrates-sidebar-account-menu" accessibilityRole="menu" accessibilityLabel={t.accountMenu} style={[styles.accountMenu, { backgroundColor: p.bg.overlay, borderColor: p.border.subtle }]}>
+      {onOpenProfile ? (
+        <>
+          <Pressable testID="socrates-account-menu-identity" accessibilityRole="menuitem" accessibilityLabel={[user?.name || t.brand, user?.plan || ''].filter(Boolean).join(' · ')} onPress={() => { closeAccountMenu(); onOpenProfile(); }} style={styles.accountMenuItem}>
+            <View style={[styles.avatarPhone, { backgroundColor: mode === 'dark' ? '#383838' : '#737373' }]}>
+              <Text style={[styles.avatarTextPhone, fam(language, 'semibold')]}>{user?.initials || '?'}</Text>
+            </View>
+            <View style={styles.accountMenuIdentity}>
+              <Text numberOfLines={1} style={[styles.accountMenuText, { color: p.text.primary }, fam(language)]}>{user?.name || t.brand}</Text>
+              {user?.plan ? <Text numberOfLines={1} style={[styles.userPlanPhone, { color: p.text.muted }, fam(language)]}>{user.plan}</Text> : null}
+            </View>
+            <Icon name="chevron-right" size={16} color={p.text.muted} />
+          </Pressable>
+          <View style={[styles.accountMenuDivider, { backgroundColor: p.border.subtle }]} />
+        </>
+      ) : null}
+      {accountEntries.map((entry, index) => entry === 'divider' ? (
+        <View key={`divider-${index}`} style={[styles.accountMenuDivider, { backgroundColor: p.border.subtle }]} />
+      ) : (
+        <Pressable key={entry.key} testID={`socrates-account-menu-${entry.key}`} accessibilityRole="menuitem" accessibilityLabel={entry.label} onPress={() => { closeAccountMenu(); entry.onPress(); }} style={styles.accountMenuItem}>
+          <Icon name={entry.icon} size={18} color={p.text.primary} />
+          <Text style={[styles.accountMenuText, styles.accountMenuLabel, { color: p.text.primary }, fam(language)]}>{entry.label}</Text>
+          {entry.trailing ? <Icon name="chevron-right" size={16} color={p.text.muted} /> : null}
+        </Pressable>
+      ))}
+    </View>
+  );
+
   return (
     <View nativeID="socrates-sidebar" style={[styles.sidebar, compact && styles.sidebarCompact, { backgroundColor: s.sidebar, borderRightColor: mode === 'dark' ? (compact ? 'rgba(255, 255, 255, 0.10)' : 'rgba(255, 255, 255, 0.06)') : 'rgba(0, 0, 0, 0.10)' }]}>
       {/* Header: logo · new chat · toggle; search stays in the nav row below. */}
@@ -723,24 +775,15 @@ export function Sidebar({
         </>}
       </ScrollView>
 
+      {/* AnchoredMenu closes on any pointerdown outside it: a transparent
+         layer over the rest of the sidebar while the menu is open. */}
+      {accountMenuOpen ? <Pressable testID="socrates-sidebar-account-backdrop" accessibilityLabel={t.closeAccountMenu} onPress={closeAccountMenu} style={styles.accountBackdrop} /> : null}
       {/* Phone footer (baseline SidebarFooter.tsx at ≤768px): only the account
          trigger is painted — the quick-action icons are display:none
          (polish/sidebar.css) — and tapping it opens the account menu above. */}
       {compact ? (
-        <View style={styles.footerPhone}>
-          {accountMenuOpen ? (
-            <View testID="socrates-sidebar-account-menu" style={[styles.accountMenu, { backgroundColor: p.bg.overlay, borderColor: p.border.subtle }]}>
-              {[
-                onOpenDisplaySettings ? { key: 'personalization', label: t.accountPersonalization, icon: 'sliders' as const, onPress: onOpenDisplaySettings } : null,
-                onOpenSettings ? { key: 'settings', label: t.accountSettings, icon: 'gear' as const, onPress: onOpenSettings } : null,
-              ].filter((entry): entry is NonNullable<typeof entry> => entry !== null).map((entry) => (
-                <Pressable key={entry.key} accessibilityRole="menuitem" accessibilityLabel={entry.label} onPress={() => { setAccountMenuOpen(false); entry.onPress(); }} style={styles.accountMenuItem}>
-                  <Icon name={entry.icon} size={18} color={p.text.primary} />
-                  <Text style={[styles.accountMenuText, { color: p.text.primary }, fam(language)]}>{entry.label}</Text>
-                </Pressable>
-              ))}
-            </View>
-          ) : null}
+        <View style={[styles.footerPhone, accountMenuOpen && styles.footerMenuOpen]}>
+          {accountMenuOpen ? accountMenu : null}
           <Pressable
             accessibilityRole="button"
             testID="socrates-sidebar-account-trigger"
@@ -759,8 +802,16 @@ export function Sidebar({
           </Pressable>
         </View>
       ) : (
-      <View style={[styles.footer, { borderTopColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)' }]}>
-        <View style={styles.userRow}>
+      <View style={[styles.footer, accountMenuOpen && styles.footerMenuOpen, { borderTopColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)' }]}>
+        {accountMenuOpen ? accountMenu : null}
+        <Pressable
+          accessibilityRole="button"
+          testID="socrates-sidebar-account-trigger"
+          accessibilityLabel={[user?.name || t.brand, user?.plan || ''].filter(Boolean).join(' · ')}
+          accessibilityState={{ expanded: accountMenuOpen }}
+          onPress={() => setAccountMenuOpen((open) => !open)}
+          style={styles.userRow}
+        >
           <View style={[styles.avatar, { backgroundColor: s.avatar }]}>
             <Text nativeID="socrates-sidebar-user-avatar-text" style={[styles.avatarText, fam(language, 'semibold')]}>{user?.initials || '?'}</Text>
           </View>
@@ -768,7 +819,7 @@ export function Sidebar({
             <Text nativeID="socrates-sidebar-user-name" testID="socrates-sidebar-user-name" numberOfLines={1} style={[styles.userName, { color: p.text.primary }, fam(language, 'medium')]}>{user?.name || t.brand}</Text>
             <Text nativeID="socrates-sidebar-user-plan" numberOfLines={1} style={[styles.userPlan, { color: p.text.muted }, fam(language)]}>{user?.plan || ''}</Text>
           </View>
-        </View>
+        </Pressable>
         <View style={styles.footerActions}>
           {onToggleTheme ? (
             <Pressable accessibilityRole="button" accessibilityLabel={t.toggleTheme} onPress={onToggleTheme} style={styles.footerBtn}><Icon name={themeIcon} size={16} color={p.text.secondary} /></Pressable>
@@ -1128,13 +1179,14 @@ const styles = StyleSheet.create({
   searchRowCompact: { height: 44, borderRadius: 10 },
   recents: { flex: 1, paddingHorizontal: 6, paddingBottom: 8 },
   recentsContent: { paddingBottom: 8 },
+  /* Baseline `#knowledgePanel` padding is 12px top and bottom (probe). */
   recentsKnowledge: { paddingHorizontal: 0, paddingBottom: 0 },
-  knowledgeContent: { gap: 6, paddingHorizontal: 8, paddingTop: 12, paddingBottom: 10 },
+  knowledgeContent: { gap: 6, paddingHorizontal: 8, paddingTop: 12, paddingBottom: 12 },
   /* Phone: baseline `.knowledge-panel` is the 241px box inside `.sidebar-inner`
    * (x6–247, padding 12px 8px) and clips overflow there, e.g. the plan row's
    * count pill. */
   recentsKnowledgeCompact: { marginHorizontal: 6 },
-  knowledgeContentCompact: { gap: 6, paddingHorizontal: 8, paddingTop: 12, paddingBottom: 10 },
+  knowledgeContentCompact: { gap: 6, paddingHorizontal: 8, paddingTop: 12, paddingBottom: 12 },
   archivedToggle: { height: 32, justifyContent: 'center', paddingHorizontal: 10, borderRadius: 8 },
   recentsTitle: { fontSize: 14, lineHeight: 20, paddingTop: 20, paddingBottom: 6, paddingHorizontal: 10, textTransform: 'uppercase', letterSpacing: 0.84 },
   recentsTitleCompact: { letterSpacing: 0 },
@@ -1211,6 +1263,11 @@ const styles = StyleSheet.create({
   userPlanPhone: { fontSize: 13, lineHeight: 18 },
   accountMenu: { position: 'absolute', left: 0, bottom: 58, width: 242, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, zIndex: 20 },
   accountMenuItem: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 40, minHeight: 40 },
+  accountMenuIdentity: { flex: 1, minWidth: 0 },
+  accountMenuLabel: { flex: 1 },
+  accountMenuDivider: { height: StyleSheet.hairlineWidth, marginVertical: 6 },
+  accountBackdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, zIndex: 20 },
+  footerMenuOpen: { zIndex: 21 },
   accountMenuText: { fontSize: 14, lineHeight: 20 },
   userRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minWidth: 0, paddingVertical: 4, paddingHorizontal: 6, borderRadius: 10 },
   avatar: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
