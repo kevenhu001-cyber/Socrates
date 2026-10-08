@@ -167,17 +167,16 @@ export function filterMistakes(list: BookMistake[], filter: MistakeFilter): Book
   return list.slice();
 }
 
-/** Tab badge count: unresolved rows. The baseline badge prints
- * `mistakes.length`; since the baseline never sets `resolved` itself the two
- * agree for every row either client writes. */
+/** Unresolved count is useful for filter/status reads, but the baseline tab
+ * badge itself is the total mistake-book size (resolved rows included). */
 export function unresolvedMistakeCount(list: Array<BookMistake | { resolved?: unknown; isResolved?: unknown }>): number {
   return list.filter((mistake) => !isMistakeResolved(mistake)).length;
 }
 
-/** Badge text: empty (badge hidden, `.tab-badge:empty`) at zero. */
+/** Baseline `updateMistakesBadge`: show total rows, regardless of filter or
+ * resolved state; empty means the badge is hidden (`.tab-badge:empty`). */
 export function mistakesBadgeText(list: BookMistake[]): string {
-  const count = unresolvedMistakeCount(list);
-  return count > 0 ? String(count) : '';
+  return list.length > 0 ? String(list.length) : '';
 }
 
 /** Which empty line the panel shows, or null when rows are visible. */
