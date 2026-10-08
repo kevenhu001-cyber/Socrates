@@ -87,6 +87,12 @@ jobs:
       # shipped prompts relative to the repo root, so prompts/ must sit beside
       # server/ inside the image. A named GHA scope prevents unrelated Buildx
       # workflows from evicting/cache-keying against this image's layers.
+      #
+      # PR verification uses the Docker exporter (`load: true`). Buildx cannot
+      # load the attestation manifest list into the classic Docker image store,
+      # so provenance/SBOM attestations are emitted only for pushed images.
+      # main/manual images still retain both attestations and the later signed
+      # provenance step.
       - name: Build
         id: build
         uses: docker/build-push-action@v6
@@ -99,8 +105,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=socrates-api
           cache-to: type=gha,mode=max,scope=socrates-api
-          provenance: true
-          sbom: true
+          provenance: ${{ github.event_name != 'pull_request' }}
+          sbom: ${{ github.event_name != 'pull_request' }}
 
       # Boot the image against a real Postgres and require /api/health to
       # report a live database connection. The API is bound to loopback for
