@@ -338,6 +338,13 @@ if [[ ! -f "$BACKEND_CANDIDATE/index.runtime.js" ]]; then
   echo "ERROR: backend build did not produce index.runtime.js" >&2
   exit 1
 fi
+# P_deploy-swap-verify — stamp the candidate with its source identity so the
+# post-swap check below can prove the new tree is what actually landed. (A
+# swap that silently leaves stale bytes behind is worse than a loud failure:
+# every gate would keep passing against the old code.)
+DEPLOY_SOURCE_DIR="$(dirname "$(readlink -f "$0")")"
+BACKEND_BUILD_ID="$(git -C "$DEPLOY_SOURCE_DIR" rev-parse HEAD 2>/dev/null || echo unknown)-$(date +%s)"
+echo "$BACKEND_BUILD_ID" > "$BACKEND_CANDIDATE/.build-id"
 
 # ─── 0.4. Database migrations ─────────────────────────────────────────
 # The backend code expects columns / tables that only exist after the
@@ -677,6 +684,16 @@ fi
 mv "$BACKEND_CANDIDATE" "$BACKEND_DIST"
 BACKEND_CANDIDATE=""
 BACKEND_SWAPPED=1
+# P_deploy-swap-verify — prove the swap landed before restarting onto it.
+# If dist/ does not carry this build's stamp, stop LOUDLY instead of serving
+# stale code behind green gates.
+if [[ "$(cat "$BACKEND_DIST/.build-id" 2>/dev/null)" != "$BACKEND_BUILD_ID" ]]; then
+  echo "ERROR: backend swap verification failed — dist/.build-id does not match this build ($BACKEND_BUILD_ID)" >&2
+  echo "       dist/ was NOT updated; refusing to restart onto an unverified tree." >&2
+  BACKEND_SWAPPED=0
+  exit 1
+fi
+echo "Backend swap verified (build $BACKEND_BUILD_ID)"
 # The candidate was produced by tsc under sudo, so it lands as root:root.
 # The systemd unit runs as User=ubuntu and would otherwise get
 # ERR_MODULE_NOT_FOUND on dist/index.runtime.js because the directory
