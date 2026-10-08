@@ -2,6 +2,7 @@ import { WEB_FONT_FAMILY } from '@socrates/theme';
 
 /* Symbols the SPA takes from fontsource subset 109 (see `src/fonts.ts`). */
 const NOTO_SUBSET_109_SYMBOLS = 'U+a5,U+2192,U+2605';
+let accountMenuOutsidePointerInstalled = false;
 
 const EXPO_FACES: Readonly<Record<string, { family: string; weight: string; unicodeRange?: string }>> = {
   Inter_400Regular: { family: 'Inter', weight: '400' },
@@ -16,10 +17,28 @@ const EXPO_FACES: Readonly<Record<string, { family: string; weight: string; unic
   NotoSansSC109_600SemiBold: { family: 'Noto Sans SC', weight: '600', unicodeRange: NOTO_SUBSET_109_SYMBOLS },
 };
 
+/** RNW renders the account menu inside the sidebar, so its local backdrop
+ * cannot see a pointer press in the main transcript. Mirror AnchoredMenu's
+ * document-level outside-pointer behavior on Web and close through the
+ * existing React backdrop (which owns the actual state transition). */
+function installAccountMenuOutsidePointer(): void {
+  if (accountMenuOutsidePointerInstalled || typeof document === 'undefined') return;
+  accountMenuOutsidePointerInstalled = true;
+  document.addEventListener('pointerdown', (event) => {
+    const menu = document.querySelector('[data-testid="socrates-sidebar-account-menu"]');
+    if (!menu) return;
+    const target = event.target;
+    if (target instanceof Element && target.closest('[data-testid="socrates-sidebar-account-menu"], [data-testid="socrates-sidebar-account-trigger"]')) return;
+    const backdrop = document.querySelector('[data-testid="socrates-sidebar-account-backdrop"]');
+    if (backdrop instanceof HTMLElement) backdrop.click();
+  }, true);
+}
+
 /** Register Expo's static assets with the same CSS family/weight descriptors
  * as the SPA, then match its inherited Web text rasterization defaults. */
 export function installWebTextDefaults(theme: 'dark' | 'light' = 'dark'): void {
   if (typeof document === 'undefined') return;
+  installAccountMenuOutsidePointer();
   const expoFonts = document.getElementById('expo-generated-fonts') as HTMLStyleElement | null;
   const rules = expoFonts?.sheet?.cssRules;
   if (rules) {
