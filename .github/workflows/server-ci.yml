@@ -46,6 +46,7 @@ jobs:
   check:
     name: Syntax & lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     defaults:
       run:
@@ -65,9 +66,10 @@ jobs:
       # --ignore-scripts: package.json sets `allowScripts: { "*": true }`,
       # so a transitive postinstall runs arbitrary code. A typecheck does
       # not need any of it, and CI is the last place to hand out that
-      # privilege for free.
+      # privilege for free. Prefer the restored npm cache and skip install-time
+      # audit/funding network calls; security.yml owns the blocking audit.
       - name: Install dependencies
-        run: npm ci --ignore-scripts
+        run: npm ci --ignore-scripts --prefer-offline --no-audit --no-fund
 
       - name: Typecheck
         run: npm run lint
