@@ -33,6 +33,7 @@ jobs:
   build:
     name: Build Capacitor debug APK (${{ inputs.backend_target }})
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -115,3 +116,4 @@ jobs:
           path: capacitor/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
+          compression-level: 0
