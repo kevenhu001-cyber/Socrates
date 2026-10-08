@@ -5,11 +5,31 @@ import test from 'node:test';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('the app exposes one stylesheet entry', async () => {
+test('the app exposes the split stylesheet bundle in cascade order', async () => {
   const html = await read('index.html');
   const links = [...html.matchAll(/<link\s+rel="stylesheet"\s+href="([^"]+)"/g)]
     .map((match) => match[1]);
-  assert.deepEqual(links, ['/src/styles/index.css']);
+  // P_perf-css-split — the 955 KB single entry is delivered as ordered
+  // slices (critical-* render-blocking, below-fold leaves via
+  // media=print swap). Order reproduces styles/index.css file-for-file
+  // (machine-checked by check-css-debt.mjs); themes.css still closes
+  // the cascade exactly once and last.
+  assert.deepEqual(links, [
+    '/src/styles/critical-1.css',
+    '/src/styles/legacy/02-modals-library.css',
+    '/src/styles/legacy/03-workspace-panels.css',
+    '/src/styles/critical-2.css',
+    '/src/styles/legacy/08-exam.css',
+    '/src/styles/critical-3.css',
+    '/src/styles/restore/creation-surfaces.css',
+    '/src/styles/critical-4.css',
+    '/src/styles/polish/overlays.css',
+    '/src/styles/polish/workspace.css',
+    '/src/styles/critical-5.css',
+    '/src/styles/polish/press.css',
+    '/src/styles/critical-6.css',
+    '/src/styles/themes.css',
+  ]);
 });
 
 test('the stylesheet entry does not reconnect historical parity layers', async () => {
