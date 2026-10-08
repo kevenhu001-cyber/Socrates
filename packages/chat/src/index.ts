@@ -114,7 +114,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   deleteSession: (id, projectFilter = null) => set((state) => {
     // The server purge is immediate. Locally, if this was the active row, keep
     // one hidden transition copy so active-id observers can distinguish the
-    // purge from adoptSessionId; the next explicit navigation/reconcile drops it.
+    // purge from adoptSessionId; the next explicit session navigation or
+    // reconciliation drops it.
     const previous = stripTransitionRows(state.sessions);
     const remaining = previous.filter((s) => s.id !== id);
     const next = visibleSessions(remaining, projectFilter)[0];
@@ -123,10 +124,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
   }),
   selectProject: (id) => {
     const state = get();
-    const sessions = stripTransitionRows(state.sessions);
-    const list = visibleSessions(sessions, id);
+    // Project fallback may run synchronously right after removeProject. Keep a
+    // transition row until an explicit session selection/reconcile so React
+    // active-id observers still see that the departed id was not adopted.
+    const list = visibleSessions(state.sessions, id);
     const selected = list.some((s) => s.id === state.activeSessionId) ? state.activeSessionId : list[0]?.id ?? null;
-    set({ sessions, activeSessionId: selected });
+    set({ activeSessionId: selected });
     return selected;
   },
   selectSession: (activeSessionId) => set((state) => ({ sessions: stripTransitionRows(state.sessions), activeSessionId })),
