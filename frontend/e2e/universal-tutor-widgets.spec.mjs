@@ -151,6 +151,14 @@ test('universal tutor renders quiz and practice widgets', async ({ page }, testI
     await expect(emptyPanel.getByText('No mistakes yet.', { exact: true })).toBeVisible();
     await openKnowledgeView(page);
     await expect(page.locator('[data-testid="socrates-teaching-plan-stage"]')).toHaveText('Intuition');
+    // Closing and reopening the phone drawer keeps the Knowledge view
+    // (baseline sidebar DOM stays mounted; the view is not reset to Recents).
+    if (testInfo.project.name === 'mobile') {
+      await closeSidebarIfOpen(page);
+      await ensureSidebarOpen(page);
+      await expect(page.locator('[data-testid="socrates-teaching-plan-stage"]')).toHaveText('Intuition');
+      await expect(page.locator('#socrates-sidebar-recents-title')).toHaveCount(0);
+    }
     await openKnowledgeView(page);
     if (testInfo.project.name === 'mobile') await closeSidebarIfOpen(page);
     for (let i = 1; i <= 4; i++) {
@@ -213,10 +221,13 @@ test('universal tutor renders quiz and practice widgets', async ({ page }, testI
     const mistakesPanelNow = () => page.locator('[data-testid="socrates-mistakes-panel"]');
     const quizRow = () => mistakesPanelNow().locator('[data-testid^="socrates-mistake-card-"]').filter({ hasText: 'What is 2+2?' });
     const practiceRow = () => mistakesPanelNow().locator('[data-testid^="socrates-mistake-card-"]').filter({ hasText: 'x+1=6' });
+    // Baseline keeps the sidebar DOM mounted, so closing and reopening the
+    // phone drawer comes back on the same view (Mistakes), not Recents.
     const reopenMistakes = async () => {
       if (testInfo.project.name !== 'mobile') return;
       await ensureSidebarOpen(page);
-      if (!(await mistakesPanelNow().isVisible().catch(() => false))) await openMistakesView(page);
+      await expect(mistakesPanelNow()).toBeVisible();
+      await expect(page.locator('#socrates-sidebar-recents-title')).toHaveCount(0);
     };
     if (testInfo.project.name === 'mobile') await ensureSidebarOpen(page);
     await openMistakesView(page);
@@ -245,7 +256,6 @@ test('universal tutor renders quiz and practice widgets', async ({ page }, testI
     await expect(page.getByText('Practice feedback', { exact: true })).toHaveCount(2);
 
     // Quiz redo: the original card remounts unlocked; a right pick conquers.
-    // (The phone drawer remounts on reopen and comes back on Recents.)
     await reopenMistakes();
     await quizRow().getByRole('button', { name: 'Redo', exact: true }).click();
     await expect(quizRow().getByText('Redone once', { exact: true })).toBeVisible();

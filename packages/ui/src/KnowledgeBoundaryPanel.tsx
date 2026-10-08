@@ -48,7 +48,7 @@ function statusColor(status: KnowledgeStatus, muted: string): string {
 
 /** Baseline rounds every graph coordinate to 1 decimal (`toFixed(1)`). */
 function graphCoord(value: number): number {
-  return Math.round(value * 10) / 10;
+  return Number(value.toFixed(1));
 }
 
 function shortNodeName(value: string, fallback: string): string {
@@ -90,8 +90,12 @@ function Graph({
       <Text testID="socrates-kb-graph-caption" style={[styles.graphCaption, { color: p.text.muted, fontSize: 10 * WEB_SIDEBAR_TUTOR_SCALE, lineHeight: tutorLineHeight(compact) }, fontStyle('regular', language, Platform.OS === 'web')]}>{t.knowledgeGraphCaption}</Text>
       <View
         testID="socrates-kb-graph-frame"
-        style={[styles.graphFrame, { borderWidth: Platform.OS === 'web' ? 1 : StyleSheet.hairlineWidth, aspectRatio: Platform.OS === 'web' ? 1.3293 : 4 / 3, backgroundColor: `${legacy.bg.raised}66`, borderColor: tutorRgba(legacy.border, 0.3) }]}
+        style={[styles.graphFrame, { borderWidth: Platform.OS === 'web' ? 1 : StyleSheet.hairlineWidth, backgroundColor: `${legacy.bg.raised}66`, borderColor: tutorRgba(legacy.border, 0.3) }]}
       >
+        {/* Baseline `svg.kb-graph` is height:auto with a 1px border, so its
+            content box (not the border box) is 320:240 — e.g. 201×151.25 on
+            the phone drawer, 219×164.75 on desktop. */}
+        <View style={styles.graphCanvas}>
         <Svg width="100%" height="100%" viewBox={`0 0 ${KNOWLEDGE_GRAPH_WIDTH} ${KNOWLEDGE_GRAPH_HEIGHT}`} preserveAspectRatio="xMidYMid meet">
           {nodes.slice(0, -1).map((_, index) => (
             <Line
@@ -107,7 +111,8 @@ function Graph({
           {nodes.map((node, index) => {
             const point = points[index];
             const status = normalizedStatus(node.status);
-            const radius = graphCoord(knowledgeNodeRadius(node));
+            const rawRadius = knowledgeNodeRadius(node);
+            const radius = graphCoord(rawRadius);
             const confidence = Math.max(0, Math.min(5, typeof node.confidence_score === 'number' ? node.confidence_score : 0));
             const active = index === currentNode;
             return (
@@ -123,7 +128,8 @@ function Graph({
                 />
                 <SvgText
                   x={graphCoord(point.x)}
-                  y={graphCoord(point.y + radius + 9)}
+                  /* Baseline: `(pos.y + r + 9).toFixed(1)` with the unrounded r. */
+                  y={graphCoord(point.y + rawRadius + 9)}
                   textAnchor="middle"
                   fontSize={9}
                   fill={legacy.text.caption}
@@ -134,6 +140,7 @@ function Graph({
             );
           })}
         </Svg>
+        </View>
         {nodes.map((node, index) => {
           const point = points[index];
           return (
@@ -342,7 +349,8 @@ const styles = StyleSheet.create({
   snapshotText: { fontSize: 10 },
   graphWrap: { marginBottom: 12, paddingHorizontal: 12 },
   graphCaption: { fontSize: 10, marginBottom: 6 },
-  graphFrame: { width: '100%', aspectRatio: 4 / 3, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderRadius: 10 },
+  graphFrame: { width: '100%', overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderRadius: 10 },
+  graphCanvas: { width: '100%', aspectRatio: KNOWLEDGE_GRAPH_WIDTH / KNOWLEDGE_GRAPH_HEIGHT },
   graphHitArea: { position: 'absolute', width: 44, height: 44, marginLeft: -22, marginTop: -22, borderRadius: 22, backgroundColor: 'transparent' },
   empty: { textAlign: 'center', fontSize: 12, lineHeight: 19, paddingHorizontal: 12, paddingVertical: 28 },
   sectionTitle: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingTop: 6, paddingBottom: 2 },

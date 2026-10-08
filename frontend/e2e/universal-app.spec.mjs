@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openSidebarSettings } from './_universal-helpers.mjs';
 
 /**
  * Universal App smoke (apps/socrates web export). Self-contained: every
@@ -212,7 +213,7 @@ test('universal app manages projects and sessions end to end', async ({ page }) 
   // Settings: tone presets, profile and server usage snapshot. Picking a
   // tone persists it to storage across a reload.
   await openSidebar();
-  await page.getByRole('button', { name: 'Open settings' }).click();
+  await openSidebarSettings(page);
   await expect(page.getByText('Assistant tone')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Friendly tone' })).toBeVisible();
   await expect(page.getByText('t@e.c')).toBeVisible();
@@ -222,7 +223,7 @@ test('universal app manages projects and sessions end to end', async ({ page }) 
   await page.reload();
   await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
   await openSidebar();
-  await page.getByRole('button', { name: 'Open settings' }).click();
+  await openSidebarSettings(page);
   expect(await page.evaluate(() => localStorage.getItem('socrates.settings'))).toMatch(/"tone":"friendly"/);
   await page.getByRole('button', { name: 'Back to chat' }).click();
   await settle();
@@ -258,7 +259,7 @@ test('universal app manages projects and sessions end to end', async ({ page }) 
   await page.getByRole('button', { name: 'Back to chat' }).click();
   await settle();
   await openSidebar();
-  await page.getByRole('button', { name: 'Open settings' }).click();
+  await openSidebarSettings(page);
   await page.getByRole('button', { name: 'zh language' }).click();
   await expect(page.getByText('助手语气')).toBeVisible();
   await expect(page.getByRole('button', { name: '退出登录' })).toBeVisible();

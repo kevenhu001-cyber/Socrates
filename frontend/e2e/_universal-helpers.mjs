@@ -23,3 +23,15 @@ export async function closeSidebarIfOpen(page) {
   const close = page.getByRole('button', { name: 'Close sidebar', exact: true });
   if (await close.isVisible().catch(() => false)) await close.click();
 }
+
+// Settings entry in the sidebar footer: a gear on desktop; on phones the
+// baseline footer is only the account trigger, whose menu holds Settings.
+export async function openSidebarSettings(page) {
+  const gear = page.getByRole('button', { name: 'Open settings', exact: true });
+  if (await gear.isVisible().catch(() => false)) {
+    await gear.click();
+    return;
+  }
+  await page.getByTestId('socrates-sidebar-account-trigger').click();
+  await page.getByRole('menuitem', { name: 'Settings', exact: true }).click();
+}

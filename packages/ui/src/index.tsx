@@ -116,7 +116,7 @@ export interface SidebarSessionActions {
   move?(id: string): void;
 }
 
-type SidebarView = 'recents' | 'knowledge' | 'mistakes';
+export type SidebarView = 'recents' | 'knowledge' | 'mistakes';
 
 function planStageKey(stage: TeachingStage | null | undefined): 'planStageMotivate' | 'planStageDefine' | 'planStageDevelop' | 'planStageIllustrate' | 'planStageExercise' | 'planStageCheck' {
   switch (stage) {
@@ -329,6 +329,12 @@ export function Sidebar({
   onJumpToKnowledgeNode,
   mistakes = [],
   onRedoMistake,
+  view: controlledView,
+  onViewChange,
+  mistakeFilter: controlledMistakeFilter,
+  onMistakeFilterChange,
+  compactSearchOpen: controlledSearchOpen,
+  onCompactSearchOpenChange,
   mode = 'light',
   language = 'en',
   compact = false,
@@ -373,6 +379,17 @@ export function Sidebar({
   mistakes?: BookMistake[];
   /** Redo action on a card (baseline `handleMistakeRedo`). */
   onRedoMistake?(id: string): void;
+  /** Controlled sidebar view (Recents / Knowledge / Mistakes). The baseline
+   *  sidebar DOM is persistent, so the view survives drawer close/reopen and
+   *  session switches; hosts that unmount the drawer own the state here. */
+  view?: SidebarView;
+  onViewChange?(view: SidebarView): void;
+  /** Controlled mistake-book filter (baseline persists it per session). */
+  mistakeFilter?: MistakeFilter;
+  onMistakeFilterChange?(filter: MistakeFilter): void;
+  /** Controlled phone search-row toggle (baseline `#sidebar.search-open`). */
+  compactSearchOpen?: boolean;
+  onCompactSearchOpenChange?(open: boolean): void;
   mode?: UiMode;
   language?: UiLanguage;
   /** ≤768px: the 254px drawer. */
@@ -385,16 +402,37 @@ export function Sidebar({
   const [navMenu, setNavMenu] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
-  const [sidebarView, setSidebarView] = useState<SidebarView>('recents');
-  const [mistakeFilter, setMistakeFilter] = useState<MistakeFilter>('all');
+  const [localView, setLocalView] = useState<SidebarView>('recents');
+  const [localMistakeFilter, setLocalMistakeFilter] = useState<MistakeFilter>('all');
+  const storedView = controlledView ?? localView;
+  /* Non-tutor sessions hide the tutor views (baseline `.tutor-only`) without
+   * forgetting the chosen view, so returning to a tutor session restores it. */
+  const sidebarView: SidebarView = tutorActive ? storedView : 'recents';
+  const toggleSidebarView = (next: 'knowledge' | 'mistakes') => {
+    const value: SidebarView = storedView === next ? 'recents' : next;
+    if (controlledView === undefined) setLocalView(value);
+    onViewChange?.(value);
+  };
+  const mistakeFilter = controlledMistakeFilter ?? localMistakeFilter;
+  const setMistakeFilter = (value: MistakeFilter) => {
+    if (controlledMistakeFilter === undefined) setLocalMistakeFilter(value);
+    onMistakeFilterChange?.(value);
+  };
   const mistakesBadge = tutorActive ? mistakesBadgeText(mistakes) : '';
-  const [compactSearchOpen, setCompactSearchOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [localSearchOpen, setLocalSearchOpen] = useState(false);
+  /* Baseline `#sidebar.search-open` is a class on the persistent drawer, so the
+   * phone search row stays as it was across drawer close/reopen. */
+  const compactSearchOpen = controlledSearchOpen ?? localSearchOpen;
+  const setCompactSearchOpen = (open: boolean) => {
+    if (controlledSearchOpen === undefined) setLocalSearchOpen(open);
+    onCompactSearchOpenChange?.(open);
+  };
   const [hoverId, setHoverId] = useState<string | null>(null);
   /* Phone drawer rows: the baseline (restore/fixes.css, ≤768px) paints the
    * New-chat row — and every row's hover — as a translucent wash over the
    * rail (10% white in dark, 5% black in light), not the opaque hover token. */
   const compactNavWash = mode === 'dark' ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.05)';
-  useEffect(() => { if (!tutorActive) setSidebarView('recents'); }, [tutorActive]);
   const titleOf = (item: Session) => item.title || item.topic || t.untitled;
   const recentModeColor = (item: Session) => {
     const kind = item.kind === 'exam' ? 'exam' : item.mode === 'chat' || item.phase === 'chat' ? 'chat' : 'tutor';
@@ -441,12 +479,12 @@ export function Sidebar({
         </View>
         <View style={[styles.headerActions, compact && styles.headerActionsCompact]}>
           {compact ? <Pressable accessibilityRole="button" accessibilityLabel={t.searchChats} accessibilityState={{ expanded: compactSearchOpen }} onPress={() => {
-            if (tutorActive) setCompactSearchOpen((open) => !open);
+            if (tutorActive) setCompactSearchOpen(!compactSearchOpen);
             else onOpenSearch?.();
-          }} style={[styles.headerBtn, styles.headerBtnCompact]}><Icon name="search" size={20} color={p.text.secondary} /></Pressable>
+          }} style={[styles.headerBtn, styles.headerBtnCompact]}><Icon name="search-header" size={20} color={p.text.secondary} /></Pressable>
             : <Pressable accessibilityRole="button" accessibilityLabel={t.startNewChat} onPress={onNewChat} style={styles.headerBtn}><Icon name="new-chat" size={20} color={p.text.secondary} strokeWidth={2} /></Pressable>}
           {onToggleSidebar ? (
-            <Pressable accessibilityRole="button" accessibilityLabel={compact ? t.closeSidebar : t.closeSidebar} onPress={() => { if (compact) setCompactSearchOpen(false); onToggleSidebar(); }} style={[styles.headerBtn, compact && styles.headerBtnCompact]}><Icon name={compact ? 'close' : 'panel'} size={20} color={p.text.secondary} /></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={compact ? t.closeSidebar : t.closeSidebar} onPress={onToggleSidebar} style={[styles.headerBtn, compact && styles.headerBtnCompact]}><Icon name={compact ? 'close' : 'panel'} size={20} color={p.text.secondary} /></Pressable>
           ) : null}
         </View>
       </View>
@@ -478,7 +516,14 @@ export function Sidebar({
               onHoverIn={() => setHoverId(item.key)}
               onHoverOut={() => setHoverId((id) => (id === item.key ? null : id))}
             >
-              <Icon name={item.icon} size={20} color={p.text.primary} />
+              {compact ? (
+                /* Baseline phone rows (polish/mobile-controls.css): a 22px icon
+                 * cell, 1.8 stroke, and the glyph at 0.92 opacity
+                 * (restore/chatgpt-ui.css); the label lands 47px in. */
+                <View style={styles.navIconCompact}>
+                  <Icon name={item.icon} size={20} color={p.text.primary} strokeWidth={1.8} />
+                </View>
+              ) : <Icon name={item.icon} size={20} color={p.text.primary} />}
               {item.badge && NavLabelBadgeRenderer
                 ? <NavLabelBadgeRenderer label={item.label} badge={item.badge} color={p.text.primary} badgeColor={p.text.tertiary} borderColor={mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'} itemKey={item.key} language={language} compact={compact} />
                 : <Text numberOfLines={1} style={[styles.rowLabel, { color: p.text.primary }, fam(language)]}>{item.label}</Text>}
@@ -511,7 +556,7 @@ export function Sidebar({
             accessibilityRole="button"
             accessibilityLabel={t.knowledge}
             accessibilityState={{ selected: sidebarView === 'knowledge' }}
-            onPress={() => setSidebarView((view) => view === 'knowledge' ? 'recents' : 'knowledge')}
+            onPress={() => toggleSidebarView('knowledge')}
             style={[styles.sidebarViewBtn, compact && styles.sidebarViewBtnCompact, sidebarView === 'knowledge' && { backgroundColor: s.surface }]}
           >
             <Icon name="knowledge" size={compact ? 18 : 17} color={sidebarView === 'knowledge' ? p.text.primary : p.text.tertiary} />
@@ -521,7 +566,7 @@ export function Sidebar({
             testID="socrates-mistakes-tab"
             accessibilityLabel={t.mistakes}
             accessibilityState={{ selected: sidebarView === 'mistakes' }}
-            onPress={() => setSidebarView((view) => view === 'mistakes' ? 'recents' : 'mistakes')}
+            onPress={() => toggleSidebarView('mistakes')}
             style={[styles.sidebarViewBtn, compact && styles.sidebarViewBtnCompact, sidebarView === 'mistakes' && { backgroundColor: s.surface }]}
           >
             <Icon name="bookmark" size={compact ? 18 : 17} color={sidebarView === 'mistakes' ? p.text.primary : p.text.tertiary} />
@@ -542,7 +587,7 @@ export function Sidebar({
       {/* Recents */}
       <ScrollView
         nativeID="socrates-sidebar-recents"
-        style={[styles.recents, sidebarView === 'knowledge' && tutorActive && styles.recentsKnowledge]}
+        style={[styles.recents, sidebarView === 'knowledge' && tutorActive && styles.recentsKnowledge, sidebarView === 'knowledge' && tutorActive && compact && styles.recentsKnowledgeCompact]}
         contentContainerStyle={[
           styles.recentsContent,
           sidebarView === 'knowledge' && tutorActive && (compact ? styles.knowledgeContentCompact : styles.knowledgeContent),
@@ -678,8 +723,43 @@ export function Sidebar({
         </>}
       </ScrollView>
 
-      {/* Footer: account row + quick actions */}
-      <View style={[styles.footer, compact && styles.footerCompact, { borderTopColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)' }]}>
+      {/* Phone footer (baseline SidebarFooter.tsx at ≤768px): only the account
+         trigger is painted — the quick-action icons are display:none
+         (polish/sidebar.css) — and tapping it opens the account menu above. */}
+      {compact ? (
+        <View style={styles.footerPhone}>
+          {accountMenuOpen ? (
+            <View testID="socrates-sidebar-account-menu" style={[styles.accountMenu, { backgroundColor: p.bg.overlay, borderColor: p.border.subtle }]}>
+              {[
+                onOpenDisplaySettings ? { key: 'personalization', label: t.accountPersonalization, icon: 'sliders' as const, onPress: onOpenDisplaySettings } : null,
+                onOpenSettings ? { key: 'settings', label: t.accountSettings, icon: 'gear' as const, onPress: onOpenSettings } : null,
+              ].filter((entry): entry is NonNullable<typeof entry> => entry !== null).map((entry) => (
+                <Pressable key={entry.key} accessibilityRole="menuitem" accessibilityLabel={entry.label} onPress={() => { setAccountMenuOpen(false); entry.onPress(); }} style={styles.accountMenuItem}>
+                  <Icon name={entry.icon} size={18} color={p.text.primary} />
+                  <Text style={[styles.accountMenuText, { color: p.text.primary }, fam(language)]}>{entry.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            testID="socrates-sidebar-account-trigger"
+            accessibilityLabel={[user?.name || t.brand, user?.plan || ''].filter(Boolean).join(' · ')}
+            accessibilityState={{ expanded: accountMenuOpen }}
+            onPress={() => setAccountMenuOpen((open) => !open)}
+            style={styles.accountTrigger}
+          >
+            <View style={[styles.avatarPhone, { backgroundColor: mode === 'dark' ? '#383838' : '#737373' }]}>
+              <Text nativeID="socrates-sidebar-user-avatar-text" style={[styles.avatarTextPhone, fam(language, 'semibold')]}>{user?.initials || '?'}</Text>
+            </View>
+            <View style={styles.identityPhone}>
+              <Text nativeID="socrates-sidebar-user-name" testID="socrates-sidebar-user-name" numberOfLines={1} style={[styles.userNamePhone, { color: p.text.primary }, fam(language)]}>{user?.name || t.brand}</Text>
+              <Text nativeID="socrates-sidebar-user-plan" numberOfLines={1} style={[styles.userPlanPhone, { color: p.text.muted }, fam(language)]}>{user?.plan || ''}</Text>
+            </View>
+          </Pressable>
+        </View>
+      ) : (
+      <View style={[styles.footer, { borderTopColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)' }]}>
         <View style={styles.userRow}>
           <View style={[styles.avatar, { backgroundColor: s.avatar }]}>
             <Text nativeID="socrates-sidebar-user-avatar-text" style={[styles.avatarText, fam(language, 'semibold')]}>{user?.initials || '?'}</Text>
@@ -689,7 +769,7 @@ export function Sidebar({
             <Text nativeID="socrates-sidebar-user-plan" numberOfLines={1} style={[styles.userPlan, { color: p.text.muted }, fam(language)]}>{user?.plan || ''}</Text>
           </View>
         </View>
-        <View style={[styles.footerActions, compact && styles.footerActionsCompact]}>
+        <View style={styles.footerActions}>
           {onToggleTheme ? (
             <Pressable accessibilityRole="button" accessibilityLabel={t.toggleTheme} onPress={onToggleTheme} style={styles.footerBtn}><Icon name={themeIcon} size={16} color={p.text.secondary} /></Pressable>
           ) : null}
@@ -701,6 +781,7 @@ export function Sidebar({
           ) : null}
         </View>
       </View>
+      )}
     </View>
   );
 }
@@ -1008,14 +1089,15 @@ const styles = StyleSheet.create({
     zIndex: 90, elevation: 8,
   },
   header: { height: HEADER_HEIGHT, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8 },
-  headerCompact: { height: HEADER_HEIGHT_COMPACT, alignItems: 'flex-start', paddingHorizontal: 4, paddingTop: 10, paddingBottom: 16 },
+  /* Baseline phone header: `.sidebar-inner` 0 6px + `#sidebarHeader` 10px 4px 16px. */
+  headerCompact: { height: HEADER_HEIGHT_COMPACT, alignItems: 'flex-start', paddingHorizontal: 10, paddingTop: 10, paddingBottom: 16 },
   logo: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 40, paddingHorizontal: 8, borderRadius: 10, minWidth: 0 },
   logoCompact: { height: 32, paddingHorizontal: 6, borderRadius: 0 },
   logoImg: { width: 24, height: 24, borderRadius: 6 },
   logoImgCompact: { width: 20, height: 20, borderRadius: 0 },
   logoText: { fontSize: 15, lineHeight: 20, letterSpacing: -0.45 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  headerActionsCompact: { gap: 0, marginRight: 8 },
+  headerActionsCompact: { gap: 2 },
   headerBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
   headerBtnCompact: { width: 32, height: 32, borderRadius: 8 },
   nav: { paddingHorizontal: 6, paddingBottom: 8, gap: 0 },
@@ -1027,7 +1109,11 @@ const styles = StyleSheet.create({
   /* ≥769px rows use --ui-radius-lg (12px); the phone drawer keeps
      --ui-radius-row (10px) — parity/sidebar.css:504 + tokens.css. */
   navRow: { flexDirection: 'row', alignItems: 'center', gap: 6, width: '100%', height: ROW_HEIGHT, minHeight: ROW_HEIGHT, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 },
-  navRowCompact: { height: 40, minHeight: 40, paddingVertical: 0, borderRadius: 10 },
+  /* Baseline phone rows are `<button>`s with a 1px transparent border: the
+   * content starts 17px in, and the painted rounded background is clipped
+   * through the border box (its corner anti-aliasing differs without it). */
+  navRowCompact: { height: 40, minHeight: 40, paddingVertical: 0, borderRadius: 10, gap: 8, borderWidth: 1, borderColor: 'transparent' },
+  navIconCompact: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center', opacity: 0.92 },
   /* Anchor `rowMenu`'s absolute top/right to the More row itself. The
      z-index has to out-rank the recents ScrollView (z:0 + transform
      stacking context) so the dropdown paints on top of the active
@@ -1044,7 +1130,11 @@ const styles = StyleSheet.create({
   recentsContent: { paddingBottom: 8 },
   recentsKnowledge: { paddingHorizontal: 0, paddingBottom: 0 },
   knowledgeContent: { gap: 6, paddingHorizontal: 8, paddingTop: 12, paddingBottom: 10 },
-  knowledgeContentCompact: { gap: 6, paddingHorizontal: 14, paddingTop: 12, paddingBottom: 10 },
+  /* Phone: baseline `.knowledge-panel` is the 241px box inside `.sidebar-inner`
+   * (x6–247, padding 12px 8px) and clips overflow there, e.g. the plan row's
+   * count pill. */
+  recentsKnowledgeCompact: { marginHorizontal: 6 },
+  knowledgeContentCompact: { gap: 6, paddingHorizontal: 8, paddingTop: 12, paddingBottom: 10 },
   archivedToggle: { height: 32, justifyContent: 'center', paddingHorizontal: 10, borderRadius: 8 },
   recentsTitle: { fontSize: 14, lineHeight: 20, paddingTop: 20, paddingBottom: 6, paddingHorizontal: 10, textTransform: 'uppercase', letterSpacing: 0.84 },
   recentsTitleCompact: { letterSpacing: 0 },
@@ -1069,7 +1159,9 @@ const styles = StyleSheet.create({
   teachingPlanTitle: { fontSize: 10, fontWeight: '600', letterSpacing: 10 * WEB_SIDEBAR_TUTOR_SCALE * 0.06, textTransform: 'uppercase', paddingHorizontal: 8, paddingTop: 4, paddingBottom: 6 },
   teachingPlanProgress: { gap: 4, paddingHorizontal: 10, paddingTop: 2, paddingBottom: 8 },
   teachingPlanTrack: { height: 4, borderRadius: 99, overflow: 'hidden' },
-  teachingPlanFill: { height: '100%', borderRadius: 99 },
+  /* Baseline `.teaching-plan-progress-fill` is square-ended; only the track's
+   * radius + overflow:hidden rounds its left end. */
+  teachingPlanFill: { height: '100%' },
   teachingPlanProgressText: { fontSize: 10, textAlign: 'right', fontVariant: ['tabular-nums'] },
   teachingPlanRow: { minHeight: 32, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
   teachingPlanMarker: { width: 38, flexShrink: 0, fontSize: 10 },
@@ -1107,7 +1199,19 @@ const styles = StyleSheet.create({
   /* .sidebar-view-btn .tab-badge: absolute top/right -3, 16 tall pill. */
   mistakesBadge: { position: 'absolute', top: -3, right: -3, minWidth: 16, height: 16, paddingHorizontal: 4, borderRadius: 8, alignItems: 'center' },
   footer: { flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6, borderTopWidth: StyleSheet.hairlineWidth, minHeight: 59 },
-  footerCompact: { padding: 8, gap: 0 },
+  /* Phone footer, measured on the baseline drawer: 241×58 box at x6/y780
+   * (`.sidebar-inner` 0 6px 6px + `#sidebarFooter` padding 8, no painted
+   * top border), a 42px trigger, 24px avatar, 15/21 name + 13/18 plan. */
+  footerPhone: { marginHorizontal: 6, marginBottom: 6, padding: 8, height: 58 },
+  accountTrigger: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 42, minWidth: 0 },
+  avatarPhone: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  avatarTextPhone: { color: '#ffffff', fontSize: 10, lineHeight: 10, letterSpacing: 0.2 },
+  identityPhone: { flexDirection: 'column', gap: 1, minWidth: 0, flexShrink: 1 },
+  userNamePhone: { fontSize: 15, lineHeight: 21 },
+  userPlanPhone: { fontSize: 13, lineHeight: 18 },
+  accountMenu: { position: 'absolute', left: 0, bottom: 58, width: 242, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, zIndex: 20 },
+  accountMenuItem: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 40, minHeight: 40 },
+  accountMenuText: { fontSize: 14, lineHeight: 20 },
   userRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minWidth: 0, paddingVertical: 4, paddingHorizontal: 6, borderRadius: 10 },
   avatar: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: '#ffffff', fontSize: 12, lineHeight: 12, letterSpacing: 0.24 },
@@ -1115,7 +1219,6 @@ const styles = StyleSheet.create({
   userName: { fontSize: 13, lineHeight: 17 },
   userPlan: { fontSize: 12, lineHeight: 16 },
   footerActions: { flexDirection: 'row', alignItems: 'center', gap: 0 },
-  footerActionsCompact: { gap: 4, flexShrink: 0 },
   footerBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
 
   /* Transcript */

@@ -100,6 +100,17 @@ const MIME = {
   '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.woff': 'font/woff', '.woff2': 'font/woff2', '.ttf': 'font/ttf',
 };
 
+/* Element-level diagnosis: PARITY_PROBE_JS names a file whose body is an
+ * expression evaluated in both shells right before the tutor overview shot;
+ * the JSON result lands in test-results/ui-parity/probe-<label>.json. */
+async function runProbe(page, label) {
+  if (!process.env.PARITY_PROBE_JS) return;
+  const source = await readFile(process.env.PARITY_PROBE_JS, 'utf8');
+  const result = await page.evaluate(source).catch((error) => ({ error: String(error) }));
+  await mkdir(join(frontend, 'test-results', 'ui-parity'), { recursive: true });
+  await writeFile(join(frontend, 'test-results', 'ui-parity', `probe-${label}.json`), JSON.stringify(result, null, 1));
+}
+
 function serveStatic(dist, port) {
   const server = createServer(async (req, res) => {
     try {
@@ -1226,6 +1237,7 @@ async function shotTutorBaseline(browser, viewport) {
   await page.locator('#kbContent .kb-graph').waitFor({ state: 'visible', timeout: 10000 });
   await settle(page);
   await page.mouse.move(0, 0);
+  await runProbe(page, `spa-overview-${viewport.name}`);
   const overview = await page.screenshot({ animations: 'disabled' });
   await page.locator('#kbContent .kb-graph-node[data-node-idx="1"]').click();
   await page.locator('#kbContent .kb-node-detail[data-node-idx="1"]').waitFor({ state: 'visible', timeout: 5000 });
@@ -1339,6 +1351,7 @@ async function shotTutorUniversal(browser, viewport) {
     console.log(`[tutor universal metrics ${viewport.name}] ${JSON.stringify(tutorMetrics)}`);
   }
   await page.mouse.move(0, 0);
+  await runProbe(page, `uni-overview-${viewport.name}`);
   const overview = await page.screenshot({ animations: 'disabled' });
   await page.locator('[aria-label="Practical applications of Algebra"]').first().click();
   await page.getByRole('textbox', { name: 'Your note' }).waitFor({ state: 'visible', timeout: 5000 });

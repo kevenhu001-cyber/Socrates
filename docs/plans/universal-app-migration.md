@@ -868,3 +868,68 @@ mobile/            # 冻结，仅安全/crash/data-loss 修复
   残差（抽屉头 + 遮罩 subtle 差）；desktop detail 2769；composer 1px。
 - **下一步**：抽屉视图状态提升到 App 以跨开合保留；抽屉头 / 遮罩逐像素对照；
   detail 面板残差。严格门禁仍失败，parity 保持“进行中”。
+
+## 32. 进展（第二十五轮，2026-10-08，round 16-14：抽屉视图保持 + 手机抽屉像素对齐）
+
+> 解决上一轮记下的“手机抽屉重开回到 Recents”差异，并把手机抽屉头、导航行、
+> 页脚、知识视图逐项对到基线探针数值。手机 overview / 错题本两态普通与严格
+> 像素均为 0；mobile detail 反而小幅回退，严格门禁仍有 5 项失败，parity 保持“进行中”。
+
+- **抽屉状态提升**：基线 sidebar DOM 常驻，视图（Recents/Knowledge/Mistakes）与
+  `#sidebar.search-open` 跨抽屉开合保留；Universal 手机抽屉关闭即卸载，所以把
+  `view` / `compactSearchOpen` 提升到 `App.tsx`，Sidebar 改为可受控（未传时仍走
+  内部 state）。非 tutor 会话只是隐藏 tutor 视图（显示 Recents），不再把已选视图
+  重置，回到 tutor 会话即恢复。错题筛选按基线 `kb.mistakeFilter` 改为**按会话**
+  存在 `session.mistakeFilter`（默认 `all`），随下一次会话保存一起提交（与基线
+  `persistence.js` 一致，切换筛选本身不单独触发保存）。关闭按钮不再顺手收起搜索行。
+- **手机抽屉像素**（探针取证，桌面不变）：抽屉头左右 padding 10（`.sidebar-inner`
+  0 6px + `#sidebarHeader` 4px）、按钮间距 2；头部搜索改用新 glyph
+  `search-header`（基线 `SidebarHeader.tsx` 的短尾 `m20 20-4-4`）；导航行加 1px
+  透明边框（内容 17px 起、圆角背景经边框盒裁切）、22px 图标格、1.8 描边、0.92
+  不透明度、gap 8；`New` 徽标与桌面同一 `.nav-new-badge` 盒（2px 6px、6px 间距、
+  14px 行高），label 容器继承 14/20 字体；知识视图为 `.sidebar-inner` 内 241px 盒
+  （左右各缩 6、内边距 8）并裁切溢出；教学计划进度条填充改为方头（只靠轨道圆角）。
+- **知识图谱框**：基线 `svg.kb-graph` 为 `height:auto` + 1px 边框，所以是**内容盒**
+  320:240（手机 201×151.25、桌面 219×164.75）；原来对边框盒取 1.3293 近似比例，
+  改为边框内再包一层 `aspectRatio = 320/240` 的画布。坐标取整改为
+  `Number(v.toFixed(1))`，节点标签 y 按基线用未取整的 r 计算。
+- **手机页脚 + 账户菜单**：基线 ≤768px 页脚只绘制账户触发器（快捷图标
+  `display:none`），241×58、24px 头像、15/21 名称 + 13/18 套餐；点击弹出账户菜单。
+  **菜单目前只有“个性化 / 设置”两项**（新增 `accountPersonalization` /
+  `accountSettings`，zh/en 键数一致 205/205）；基线 SPA 菜单里的 **Upgrade plan、
+  Profile、Help、Sign out 尚未移植**，手机上主题切换也随快捷图标一起不再出现在
+  页脚（基线同样隐藏）。菜单不响应点击外部关闭（关抽屉即卸载）。
+- **E2E / 工具**：新增 `openSidebarSettings`（桌面点齿轮，手机走账户菜单 → Settings），
+  app / providers spec 改用它；`universal-tutor-widgets` 手机断言改为“关抽屉再开仍在
+  Knowledge / Mistakes 视图、无 Recents 标题”，删掉旧的“重开回 Recents”容错。
+  `ui-parity-check.mjs` 新增 `PARITY_PROBE_JS`（在两端 tutor overview 截图前执行
+  探针表达式，结果写 `test-results/ui-parity/probe-<label>.json`），默认不启用。
+- **像素（exact 差异像素；“本轮前”为在本机 stash 本轮改动后重导出 16-13 实测）**：
+
+  | 状态 | 本轮前 | 本轮后 | 严格模式 |
+  |---|---|---|---|
+  | workbench desktop | 1 | 1 | FAIL |
+  | workbench mobile | 0 | 0 | PASS |
+  | tutor overview desktop | 108 | 1 | FAIL |
+  | tutor detail desktop | 2,861 | 2,861 | FAIL |
+  | mistake book desktop | 1 | 1 | FAIL |
+  | tutor overview mobile | 7,703 | 0 | PASS |
+  | tutor detail mobile | 24,936 | 26,344 | FAIL |
+  | mistake book mobile | 7,429 | 0 | PASS |
+
+  注：上一节表里 desktop detail 记为 2,769，本机重测 16-13 为 2,861，以重测为准。
+  普通模式 0 failures；严格模式（`PARITY_PIXEL_STRICT=1`）**5 failures**（3 项 PASS）。
+- **mobile detail 回退**：exact 24,936 → 26,344（Δ>12 12,860 → 12,830、Δ>48
+  7,854 → 7,849、mean 13.62 → 13.6，强差异略降）。定位为详情面板的滚动位置：
+  Universal 面板高 356.3、基线 343.8，点节点后滚动落点不同导致整块错位；本轮
+  未修。
+- **验证**：`apps/socrates` typecheck 通过；`test:shared` **227/227**；`export:web`
+  通过（`EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:4176/api/v2`，`check-api-bundle`
+  通过）；`check-packages-dom` OK；`frontend npm run lint` **0 errors / 629 warnings**；
+  完整 Universal Playwright 桌面 + 手机 **28/28**（`UNIVERSAL_PORT=4187`，默认单
+  worker、分 4 批）；`git diff --check` 通过。另：试用 `--workers=4` 时
+  `universal-assistant` mobile 失败一次，单独重跑通过，按并行偶发记录。
+- **已知差异**：账户菜单缺 Upgrade plan / Profile / Help / Sign out；mobile detail
+  26,344（面板高度 / 滚动位置）；desktop detail 2,861；desktop 1px（composer）。
+- **下一步**：详情面板高度差（356.3 vs 343.8）与滚动落点；账户菜单补齐其余条目；
+  desktop detail 残差。严格门禁仍失败，parity 保持“进行中”。

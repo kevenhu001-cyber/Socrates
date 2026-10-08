@@ -9,7 +9,7 @@ import { persistUser } from '@socrates/auth';
 import { useAuthStore } from '@socrates/auth';
 import { useSettingsStore } from '@socrates/settings';
 import { fontStyle, getThemePaletteHex } from '@socrates/theme';
-import { AssistantPicker, ChatMessageList, Composer, DiagView, ExamView, Icon, IconRendererProvider, ModelPicker, Sidebar, activeProviderOf, applyDiagnosticResults, assistantConfigOf, buildColdStartNodes, assignMistakeQuizSlot, buildEmbeddedDocument, buildTeachingPlanFromKB, bumpMistakeRedo, findMessageMatches, messageQuizSlotId, mistakeRedoPlan, normalizeMistakes, paletteForDocument, parseExamQuestions, practiceMistakeFor, prependMistake, quizMistakeFor, removeMistakesForQuizSlot, storedFileIdFromRawUrl, syncCurrentNodeFromTeachingPlan, tutorProgressForTurn, uiStrings, type ArtifactDescriptor, type BookMistake, type BoundarySnapshot, type DiagQuestion, type KnowledgeBoundaryNode, type MistakeRedoItem, type PracticeSubmission, type QuizPick, type SidebarNavItem, type TeachingPlan, type TutorProgressNode } from '@socrates/ui';
+import { AssistantPicker, ChatMessageList, Composer, DiagView, ExamView, Icon, IconRendererProvider, ModelPicker, Sidebar, activeProviderOf, applyDiagnosticResults, assistantConfigOf, buildColdStartNodes, assignMistakeQuizSlot, buildEmbeddedDocument, buildTeachingPlanFromKB, bumpMistakeRedo, findMessageMatches, messageQuizSlotId, mistakeRedoPlan, normalizeMistakes, paletteForDocument, parseExamQuestions, practiceMistakeFor, prependMistake, quizMistakeFor, removeMistakesForQuizSlot, storedFileIdFromRawUrl, syncCurrentNodeFromTeachingPlan, tutorProgressForTurn, uiStrings, type ArtifactDescriptor, type BookMistake, type BoundarySnapshot, type DiagQuestion, type KnowledgeBoundaryNode, type MistakeRedoItem, type PracticeSubmission, type MistakeFilter, type QuizPick, type SidebarNavItem, type SidebarView, type TeachingPlan, type TutorProgressNode } from '@socrates/ui';
 import { api, appWebOrigin, streamConversation } from './src/runtime';
 import { storage } from './src/storage';
 import { copyText } from './src/clipboard';
@@ -100,6 +100,11 @@ function SocratesApp() {
   const { width } = useWindowDimensions();
   const compact = width <= 768;
   const [sidebarOpen, setSidebarOpen] = useState(!compact);
+  /* The baseline sidebar DOM never unmounts, so its Recents/Knowledge/Mistakes
+   * view survives drawer close/reopen and session switches. The drawer here
+   * unmounts on close, so the view lives above it. */
+  const [sidebarView, setSidebarView] = useState<SidebarView>('recents');
+  const [sidebarSearchOpen, setSidebarSearchOpen] = useState(false);
   const [authPending, setAuthPending] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authNotice, setAuthNotice] = useState<string | null>(null);
@@ -171,6 +176,13 @@ function SocratesApp() {
   // in-place quiz remounts are transcript-local (baseline appends DOM that a
   // session switch discards), so they follow the active session only.
   const activeMistakes = useMemo(() => active?.mode === 'tutor' ? normalizeMistakes(active.mistakes) : [], [active]);
+  /* Baseline: `kb.mistakeFilter` is restored per session on load and saved
+   * with the session (persistence.js), defaulting to `all`. */
+  const activeMistakeFilter: MistakeFilter = active?.mistakeFilter === 'unresolved' || active?.mistakeFilter === 'resolved' ? active.mistakeFilter : 'all';
+  const setActiveMistakeFilter = useCallback((filter: MistakeFilter) => {
+    const store = useChatStore.getState();
+    if (store.activeSessionId) store.patchSession(store.activeSessionId, { mistakeFilter: filter });
+  }, []);
   const [redo, setRedo] = useState<{ sessionId: string | null; items: MistakeRedoItem[]; resets: Record<string, number> }>({ sessionId: null, items: [], resets: {} });
   useEffect(() => {
     setRedo((prev) => {
@@ -1690,6 +1702,12 @@ function SocratesApp() {
         onJumpToKnowledgeNode={jumpToKnowledgeNode}
         mistakes={activeMistakes}
         onRedoMistake={onRedoMistake}
+        view={sidebarView}
+        onViewChange={setSidebarView}
+        mistakeFilter={activeMistakeFilter}
+        onMistakeFilterChange={setActiveMistakeFilter}
+        compactSearchOpen={sidebarSearchOpen}
+        onCompactSearchOpenChange={setSidebarSearchOpen}
       /> : null}
       {compact && sidebarOpen ? (
         <Pressable

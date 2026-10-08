@@ -63,6 +63,8 @@ export const GLYPHS = {
     ['p', 'M6 15h8'],
   ]),
   search: box(24, 2, [['c', 11, 11, 7], ['p', 'm21 21-4.3-4.3']]),
+  /** Phone drawer header search (SidebarHeader.tsx SEARCH_ICON: shorter tail). */
+  'search-header': box(24, 2, [['c', 11, 11, 7], ['p', 'm20 20-4-4']]),
   knowledge: box(24, 2, [
     ['c', 5.5, 6, 2.1], ['c', 18, 7.5, 2.1], ['c', 12, 18, 2.1],
     ['p', 'M7.5 6.5h8.4M6.7 7.9l4.6 8.2M16.7 9.4l-3.9 6.9'],
