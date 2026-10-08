@@ -44,12 +44,27 @@ jobs:
             frontend/package-lock.json
             capacitor/package-lock.json
 
+      - name: Restore Rust WASM cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin/wasm-bindgen
+            ~/.cargo/bin/wasm-bindgen-test-runner
+            ~/.cargo/bin/wasm2es6js
+            tools-rust/target
+          key: ${{ runner.os }}-${{ runner.arch }}-rust-wasm-v1-${{ hashFiles('tools-rust/Cargo.lock') }}-wasm-bindgen-0.2.126
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-rust-wasm-v1-
+
       - uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: temurin
-          cache: gradle
 
+      # setup-gradle owns the Gradle User Home/build-cache lifecycle. Avoid a
+      # second overlapping setup-java Gradle cache restore/save.
       - uses: gradle/actions/setup-gradle@v4
 
       - uses: android-actions/setup-android@v4
@@ -67,19 +82,21 @@ jobs:
       - name: Install frontend dependencies and build
         working-directory: frontend
         run: |
-          npm ci
+          npm ci --prefer-offline --no-audit --no-fund
           # The Vite bundle imports ../../wasm/socrates_wasm.js — build it or
           # the bundle fails at rollup resolution. The rsproxy crates mirror
           # is dev-network only; runners reach crates.io directly.
           rm -f ../tools-rust/.cargo/config.toml
           rustup target add wasm32-unknown-unknown
-          cargo install wasm-bindgen-cli --version 0.2.126 --locked
+          if ! wasm-bindgen --version 2>/dev/null | grep -qx 'wasm-bindgen 0.2.126'; then
+            cargo install wasm-bindgen-cli --version 0.2.126 --locked
+          fi
           npm run build:wasm
           npm run build
 
       - name: Install Capacitor dependencies
         working-directory: capacitor
-        run: npm ci
+        run: npm ci --prefer-offline --no-audit --no-fund
 
       - name: Sync and build debug APK
         working-directory: capacitor
@@ -89,7 +106,7 @@ jobs:
           npx cap sync android
           # gradlew uses the CWD as the project root — the Gradle build lives
           # in capacitor/android, not capacitor/.
-          (cd android && chmod +x gradlew && ./gradlew :app:assembleDebug --no-daemon --console=plain)
+          (cd android && chmod +x gradlew && ./gradlew :app:assembleDebug --build-cache --no-daemon --console=plain)
 
       - name: Upload Capacitor debug APK
         uses: actions/upload-artifact@v7
