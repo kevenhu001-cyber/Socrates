@@ -11,6 +11,7 @@ import { fileKindLabel, formatFileSize } from './fileMeta';
 import { practiceAnswerMatches, type ParsedPractice, type ParsedQuiz, type QuizOption } from './scaffolds';
 import { toolArtifacts, toolDurationLabel, toolFailureText, toolInputPreview, toolInputText, toolLabel, toolOutputText, toolSearchResults, toolState } from './toolModel';
 import { uiStrings, type UiLanguage, type UiStrings } from './strings';
+import { getTutorLegacyPalette } from './tutorTheme';
 
 type Palette = ReturnType<typeof getThemePaletteHex>;
 type FindRenderContext = { query: string; nextIndex: number; activeIndex: number };
@@ -24,6 +25,10 @@ export type QuizPick = {
   pickedText: string;
   correct: string | null;
   isRight: boolean;
+  /** Stable card slot (`<message id>:quiz`, or a redo card's slot): a
+   * wrong pick records it on the mistake, a later right pick on the same
+   * slot conquers the mistake (baseline `quizSlotId`). */
+  slotId?: string | null;
 };
 /** One practice submission: mirrors the baseline — a synthetic
  * `[Practice attempt]` turn always goes out; hosts may also reset the
@@ -59,7 +64,15 @@ export type MessageActions = {
   /** Tutor scaffold proxies: absent handlers leave the widgets inert. */
   onQuizPick?: (pick: QuizPick) => void;
   onPracticeSubmit?: (submission: PracticeSubmission) => void;
+  /** Redo-in-place counters per quiz slot: bumping a slot remounts that
+   * card fresh (baseline `handleMistakeRedo` replaces the original card). */
+  quizSlotResets?: Record<string, number>;
 };
+
+/** Slot id of the (single) interactive quiz card in a message. */
+export function messageQuizSlotId(message: Pick<Message, 'clientId' | 'id'>): string {
+  return `${message.clientId || message.id || 'message'}:quiz`;
+}
 const openLink = (url: string) => { const safe = safeLink(url); if (safe) void Linking.openURL(safe).catch(() => undefined); };
 
 function findText(text: string, context: FindRenderContext | undefined): React.ReactNode {
@@ -208,7 +221,7 @@ function RichText({ text, mode, p, t, resolveImage, onOpenArtifact, font }: { te
 /** Interactive quiz proxy (baseline `mountQuizWidget` + `handleQuizPick`):
  * first pick locks the card, marks the selection, shows the feedback line,
  * and hands the pick to the host for stage effects / a synthetic turn. */
-function TutorQuizCard({ quiz, p, t, mode, onQuizPick }: { quiz: ParsedQuiz; p: Palette; t: UiStrings; mode: ThemeMode } & MessageActions) {
+function TutorQuizCard({ quiz, slotId = null, p, t, mode, onQuizPick }: { quiz: ParsedQuiz; slotId?: string | null; p: Palette; t: UiStrings; mode: ThemeMode } & MessageActions) {
   const [picked, setPicked] = useState<string | null>(null);
   const isRight = !!quiz.correct && picked === quiz.correct;
   const feedback = picked === null ? null
@@ -218,7 +231,7 @@ function TutorQuizCard({ quiz, p, t, mode, onQuizPick }: { quiz: ParsedQuiz; p: 
   const pick = (option: QuizOption) => {
     if (picked !== null) return;
     setPicked(option.letter);
-    onQuizPick?.({ q: quiz.q, options: quiz.options, picked: option.letter, pickedText: option.text, correct: quiz.correct, isRight: !!quiz.correct && option.letter === quiz.correct });
+    onQuizPick?.({ q: quiz.q, options: quiz.options, picked: option.letter, pickedText: option.text, correct: quiz.correct, isRight: !!quiz.correct && option.letter === quiz.correct, slotId });
   };
   return <View style={[styles.scaffold, { borderColor: p.border.default, backgroundColor: p.bg.sunken }]}>
     <View style={{ gap: 4 }}><RichText text={quiz.q} mode={mode} p={p} t={t} /></View>
@@ -269,7 +282,9 @@ function TutorPracticeCard({ practice, p, t, mode, onPracticeSubmit }: { practic
     setFeedback({ bad: false, text: practice.correct });
   };
   return <View style={[styles.scaffold, { borderColor: p.border.default, backgroundColor: p.bg.sunken }]}>
-    <Text style={{ color: p.text.muted, fontWeight: '600' }}>{practice.title}</Text>
+    {/* No title row: the baseline (render/widgets.js mountPracticeWidget and
+        the streaming card in render/markdown.ts) parses <title> but never
+        renders it, so the default "Practice" heading never appears there. */}
     <View style={{ gap: 4 }}><RichText text={practice.problem} mode={mode} p={p} t={t} /></View>
     {practice.hint ? <Pressable accessibilityRole="button" accessibilityLabel={hintOpen ? t.hideHint : t.showHint} accessibilityState={{ expanded: hintOpen }} onPress={() => setHintOpen(!hintOpen)}>
       <Text style={{ color: p.accent.strong }}>{hintOpen ? t.hideHint : t.showHint}</Text>
@@ -353,7 +368,26 @@ function ToolCard({ tool, p, t, resolveImage, onOpenStoredArtifact, onOpenFile }
   </View>;
 }
 
-export const MessageContent = memo(function MessageContent({ message, mode, language = 'en', compact = false, findQuery = '', findStartIndex = 0, activeFindIndex = -1, onCopyText, onSpeakText, onEditMessage, onRegenerateMessage, onBranchMessage, onOpenArtifact, onOpenStoredArtifact, resolveImage, onOpenFile, onQuizPick, onPracticeSubmit }: { message: Message; mode: ThemeMode; language?: UiLanguage; compact?: boolean; findQuery?: string; findStartIndex?: number; activeFindIndex?: number } & MessageActions) {
+/** A redo appended to the transcript (baseline `handleMistakeRedo` when the
+ * original card is gone, and always for practice rows): the muted banner
+ * line over a fresh quiz or practice widget. Local-only, never persisted. */
+export type MistakeRedoItem =
+  | { id: string; kind: 'quiz'; q: string; options: QuizOption[]; correct: string | null; slotId: string }
+  | { id: string; kind: 'practice'; problem: string; correct: string | null };
+
+export function MistakeRedoCard({ item, mode, language = 'en', onQuizPick, onPracticeSubmit }: { item: MistakeRedoItem; mode: ThemeMode; language?: UiLanguage } & MessageActions) {
+  const p = getThemePaletteHex(mode);
+  const t = uiStrings(language);
+  const scale = Platform.OS === 'web' ? 1.125 : 1;
+  return <View testID={`socrates-mistake-redo-card-${item.id}`} style={styles.redoCard}>
+    <Text style={[{ color: getTutorLegacyPalette(mode).text.muted, fontSize: 12 * scale, marginBottom: 6 }, fontStyle('regular', language, Platform.OS === 'web')]}>{t.mistakeRedoBanner}</Text>
+    {item.kind === 'quiz'
+      ? <TutorQuizCard quiz={{ q: item.q, options: item.options, correct: item.correct }} slotId={item.slotId} mode={mode} p={p} t={t} onQuizPick={onQuizPick} />
+      : <TutorPracticeCard practice={{ title: '', problem: item.problem, hint: '', correct: item.correct }} mode={mode} p={p} t={t} onPracticeSubmit={onPracticeSubmit} />}
+  </View>;
+}
+
+export const MessageContent = memo(function MessageContent({ message, mode, language = 'en', compact = false, findQuery = '', findStartIndex = 0, activeFindIndex = -1, onCopyText, onSpeakText, onEditMessage, onRegenerateMessage, onBranchMessage, onOpenArtifact, onOpenStoredArtifact, resolveImage, onOpenFile, onQuizPick, onPracticeSubmit, quizSlotResets }: { message: Message; mode: ThemeMode; language?: UiLanguage; compact?: boolean; findQuery?: string; findStartIndex?: number; activeFindIndex?: number } & MessageActions) {
   const p = getThemePaletteHex(mode);
   const userTextColor = compact ? '#ffffff' : p.text.primary;
   const t = uiStrings(language);
@@ -378,7 +412,10 @@ export const MessageContent = memo(function MessageContent({ message, mode, lang
     {message.role === 'user' ? <Text nativeID={`socrates-message-user-${messageId}`} selectable style={[styles.text, styles.userText, compact && styles.userTextCompact, { color: userTextColor }, font]}>{findText(content.text, find)}</Text> : segments && segments.length ? <>{segments.map((segment, i) => {
       if (segment.kind === 'math') return <MathCard key={i} tex={segment.tex} index={i} mode={mode} p={p} t={t} onOpenArtifact={onOpenArtifact} />;
       if (segment.kind === 'notes') return <NotesSection key={i} notes={segment.notes} p={p} t={t} find={find} />;
-      if (segment.kind === 'quiz') return <TutorQuizCard key={i} quiz={segment.quiz} mode={mode} p={p} t={t} onQuizPick={onQuizPick} />;
+      if (segment.kind === 'quiz') {
+        const slotId = messageQuizSlotId(message);
+        return <TutorQuizCard key={`${i}:${quizSlotResets?.[slotId] || 0}`} quiz={segment.quiz} slotId={slotId} mode={mode} p={p} t={t} onQuizPick={onQuizPick} />;
+      }
       if (segment.kind === 'practice') return <TutorPracticeCard key={i} practice={segment.practice} mode={mode} p={p} t={t} onPracticeSubmit={onPracticeSubmit} />;
       if (segment.kind === 'scaffoldFallback') return <View key={i} style={[styles.scaffold, { borderColor: p.border.default }]}>
         <Text style={{ color: p.text.muted, fontWeight: '600' }}>{t.scaffoldFallback}</Text>
@@ -443,6 +480,7 @@ const styles = StyleSheet.create({
   attachmentRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   image: { width: 260, maxWidth: '100%', height: 180 },
   scaffold: { padding: 12, borderWidth: 1, borderRadius: 12, gap: 10, marginVertical: 6 },
+  redoCard: { marginTop: 20 },
   quizOption: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
   practiceInput: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, minHeight: 64, fontSize: 15, textAlignVertical: 'top' },
   practiceActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8 },

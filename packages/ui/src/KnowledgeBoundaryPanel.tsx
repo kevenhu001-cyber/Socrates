@@ -11,6 +11,23 @@ type UiMode = 'light' | 'dark';
 const WEB_APP_TUTOR_SCALE = Platform.OS === 'web' ? 1.125 : 1;
 const WEB_SIDEBAR_TUTOR_SCALE = Platform.OS === 'web' ? 1.035 : 1;
 
+/* Detail labels + status badge: the baseline's ≤768px rules drop the 20px
+ * line box to the inherited 1.5 ratio (probe: 11.25px → 16.875px line on the
+ * phone drawer, 20px on desktop). */
+function detailTextLineHeight(compact: boolean): number {
+  return Platform.OS === 'web' && compact ? 10 * WEB_APP_TUTOR_SCALE * 1.5 : 20;
+}
+
+/* File-view rows: 20px line box on desktop, inherited 1.5 ratio in the
+ * phone drawer (probe: 12.42px → 18.63px; history 13.5px → 20.25px). */
+function fileRowLineHeight(compact: boolean): number {
+  return Platform.OS === 'web' && compact ? 12 * WEB_SIDEBAR_TUTOR_SCALE * 1.5 : 20;
+}
+
+function fileHistoryLineHeight(compact: boolean): number {
+  return Platform.OS === 'web' && compact ? 12 * WEB_APP_TUTOR_SCALE * 1.5 : 20;
+}
+
 function tutorLineHeight(compact: boolean): number | undefined {
   if (Platform.OS !== 'web') return undefined;
   return compact ? 15.525 : 20;
@@ -48,7 +65,7 @@ function statusColor(status: KnowledgeStatus, muted: string): string {
 
 /** Baseline rounds every graph coordinate to 1 decimal (`toFixed(1)`). */
 function graphCoord(value: number): number {
-  return Math.round(value * 10) / 10;
+  return Number(value.toFixed(1));
 }
 
 function shortNodeName(value: string, fallback: string): string {
@@ -90,8 +107,12 @@ function Graph({
       <Text testID="socrates-kb-graph-caption" style={[styles.graphCaption, { color: p.text.muted, fontSize: 10 * WEB_SIDEBAR_TUTOR_SCALE, lineHeight: tutorLineHeight(compact) }, fontStyle('regular', language, Platform.OS === 'web')]}>{t.knowledgeGraphCaption}</Text>
       <View
         testID="socrates-kb-graph-frame"
-        style={[styles.graphFrame, { borderWidth: Platform.OS === 'web' ? 1 : StyleSheet.hairlineWidth, aspectRatio: Platform.OS === 'web' ? 1.3293 : 4 / 3, backgroundColor: `${legacy.bg.raised}66`, borderColor: tutorRgba(legacy.border, 0.3) }]}
+        style={[styles.graphFrame, { borderWidth: Platform.OS === 'web' ? 1 : StyleSheet.hairlineWidth, backgroundColor: `${legacy.bg.raised}66`, borderColor: tutorRgba(legacy.border, 0.3) }]}
       >
+        {/* Baseline `svg.kb-graph` is height:auto with a 1px border, so its
+            content box (not the border box) is 320:240 — e.g. 201×151.25 on
+            the phone drawer, 219×164.75 on desktop. */}
+        <View style={styles.graphCanvas}>
         <Svg width="100%" height="100%" viewBox={`0 0 ${KNOWLEDGE_GRAPH_WIDTH} ${KNOWLEDGE_GRAPH_HEIGHT}`} preserveAspectRatio="xMidYMid meet">
           {nodes.slice(0, -1).map((_, index) => (
             <Line
@@ -107,7 +128,8 @@ function Graph({
           {nodes.map((node, index) => {
             const point = points[index];
             const status = normalizedStatus(node.status);
-            const radius = graphCoord(knowledgeNodeRadius(node));
+            const rawRadius = knowledgeNodeRadius(node);
+            const radius = graphCoord(rawRadius);
             const confidence = Math.max(0, Math.min(5, typeof node.confidence_score === 'number' ? node.confidence_score : 0));
             const active = index === currentNode;
             return (
@@ -123,7 +145,8 @@ function Graph({
                 />
                 <SvgText
                   x={graphCoord(point.x)}
-                  y={graphCoord(point.y + radius + 9)}
+                  /* Baseline: `(pos.y + r + 9).toFixed(1)` with the unrounded r. */
+                  y={graphCoord(point.y + rawRadius + 9)}
                   textAnchor="middle"
                   fontSize={9}
                   fill={legacy.text.caption}
@@ -134,6 +157,7 @@ function Graph({
             );
           })}
         </Svg>
+        </View>
         {nodes.map((node, index) => {
           const point = points[index];
           return (
@@ -199,6 +223,10 @@ export function KnowledgeBoundaryPanel({
 
   const toggleDetails = (index: number) => setExpandedIndex((current) => current === index ? null : index);
   const confidenceOf = (node: KnowledgeBoundaryNode) => Math.max(0, Math.min(5, typeof node.confidence_score === 'number' ? node.confidence_score : 0));
+  const detailStatus = normalizedStatus(selectedNode?.status);
+  const sectionLabel = (status: KnowledgeStatus) => status === 'internalized'
+    ? t.kbSectionInternalized
+    : status === 'fuzzy' ? t.kbSectionFuzzy : t.kbSectionBlank;
   const statusLabel = (status: KnowledgeStatus) => status === 'internalized'
     ? t.planStatusInternalized
     : status === 'fuzzy' ? t.planStatusFuzzy : t.planStatusBlank;
@@ -224,107 +252,119 @@ export function KnowledgeBoundaryPanel({
       ) : (
         <>
           <Graph nodes={nodes} currentNode={currentNode} mode={mode} language={language} compact={compact} onSelect={toggleDetails} />
+          {/* Baseline `renderKnowledgeBoundaryFile` (tutorSocratic.js): plain,
+              non-interactive rows — name (+ verified tag) for internalized,
+              name + [系统]/[我] note columns for fuzzy, name for blank — then
+              the secondary "Snapshot history" list. Only the graph opens the
+              detail panel. Geometry from SPA computed-style probes. */}
+          <View testID="socrates-kb-file-list">
           {(['internalized', 'fuzzy', 'blank'] as KnowledgeStatus[]).map((status) => {
             const entries = sections[status];
             if (!entries.length) return null;
             return (
               <View key={status}>
                 <View style={styles.sectionTitle}>
-                  <Text style={[styles.sectionText, { color: p.text.muted, fontSize: 10 * WEB_SIDEBAR_TUTOR_SCALE, lineHeight: tutorLineHeight(compact) }, fontStyle('medium', language, Platform.OS === 'web')]}>{statusLabel(status)}</Text>
-                  <Text style={[styles.sectionCount, { color: p.text.muted, backgroundColor: p.bg.hover, fontSize: 10 * WEB_APP_TUTOR_SCALE, lineHeight: tutorLineHeight(compact) }, fontStyle('medium', language, Platform.OS === 'web')]}>{entries.length}</Text>
+                  <Text style={[styles.sectionText, { color: p.text.muted, fontSize: 10 * WEB_SIDEBAR_TUTOR_SCALE, lineHeight: tutorLineHeight(compact) }, fontStyle('medium', language, Platform.OS === 'web')]}>{sectionLabel(status)}</Text>
+                  <Text style={[styles.sectionCount, { color: p.text.muted, backgroundColor: p.bg.hover, fontSize: 10 * WEB_APP_TUTOR_SCALE, lineHeight: detailTextLineHeight(compact) }, fontStyle('medium', language, Platform.OS === 'web')]}>{entries.length}</Text>
                 </View>
-                {entries.map(({ node, index }) => {
-                  const expanded = index === expandedIndex;
-                  const statusFill = statusColor(status, p.text.muted);
-                  return (
-                    <View key={`${index}:${node.name || ''}`}>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={node.name || t.knowledgeNodeFallback(index + 1)}
-                        accessibilityState={{ selected: expanded, expanded }}
-                        onPress={() => toggleDetails(index)}
-                        style={[styles.nodeRow]}
-                      >
-                        <View style={[styles.nodeDot, { backgroundColor: statusFill }]} />
-                        <Text numberOfLines={1} style={[styles.nodeName, { color: legacy.text.secondary, fontSize: 12 * WEB_SIDEBAR_TUTOR_SCALE, lineHeight: tutorLineHeight(compact) }, fontStyle('medium', language, Platform.OS === 'web')]}>
-                          {node.name || t.knowledgeNodeFallback(index + 1)}
-                          {status === 'internalized' ? <Text style={[styles.verifiedTag, { color: '#53C683', backgroundColor: 'rgba(57,172,105,0.12)', fontSize: 10 * WEB_APP_TUTOR_SCALE }, fontStyle('medium', language, Platform.OS === 'web')]}>{` ${t.verifiedCount(node.verifiedCount || node.questions || 0)}`}</Text> : null}
-                        </Text>
-                        {node.questions ? <Text style={[styles.questionCount, { color: p.text.muted, fontSize: 10 * WEB_SIDEBAR_TUTOR_SCALE }, fontStyle('regular', language, Platform.OS === 'web')]}>{t.nodeQuestions(node.questions)}</Text> : null}
-                      </Pressable>
-                      {expanded ? (
-                        <View testID="socrates-kb-detail" style={[styles.detail, { backgroundColor: `${legacy.bg.card}99`, borderColor: tutorRgba(legacy.border, 0.18) }]}>
-                          <View style={styles.detailHead}>
-                            <Text style={[styles.statusBadge, { color: status === 'internalized' ? '#79D29E' : status === 'fuzzy' ? '#EDCC78' : legacy.text.caption, backgroundColor: status === 'internalized' ? 'rgba(64,191,117,0.18)' : status === 'fuzzy' ? 'rgba(233,190,83,0.18)' : p.bg.hover, fontSize: 10 * WEB_APP_TUTOR_SCALE, letterSpacing: 10 * WEB_APP_TUTOR_SCALE * 0.08 }, fontStyle('semibold', language, Platform.OS === 'web')]}>{statusLabel(status)}</Text>
-                            <Pressable accessibilityRole="button" accessibilityLabel={t.goToNode} onPress={() => onJumpToNode(index)} style={[styles.goButton, { backgroundColor: `${legacy.accent}1f`, borderColor: `${legacy.accent}4d` }]}>
-                              <Text style={[styles.goText, { color: legacy.accent, fontSize: 11 * WEB_APP_TUTOR_SCALE }, fontStyle('regular', language, Platform.OS === 'web')]}>{t.go}</Text>
-                            </Pressable>
-                          </View>
-                          <View style={styles.detailRow}>
-                            <Text style={[styles.detailLabel, { color: p.text.muted, fontSize: 10 * WEB_APP_TUTOR_SCALE, letterSpacing: 10 * WEB_APP_TUTOR_SCALE * 0.06 }, fontStyle('semibold', language, Platform.OS === 'web')]}>{t.confidence}</Text>
-                            <View style={styles.confidenceRow}>
-                              {[1, 2, 3, 4, 5].map((value) => {
-                                const selected = value <= confidenceOf(node);
-                                return (
-                                  <Pressable
-                                    key={value}
-                                    accessibilityRole="button"
-                                    accessibilityLabel={t.confidenceSet(value)}
-                                    accessibilityState={{ selected }}
-                                    onPress={() => onUpdateNode(index, { confidence_score: confidenceOf(node) === value ? 0 : value })}
-                                    style={[styles.confidenceDot, { borderColor: p.text.muted, backgroundColor: selected ? legacy.accent : 'transparent', ...(selected ? { borderColor: legacy.accent } : {}) }]}
-                                  />
-                                );
-                              })}
-                            </View>
-                          </View>
-                          <View style={styles.detailRow}>
-                            <Text style={[styles.detailLabel, { color: p.text.muted, fontSize: 10 * WEB_APP_TUTOR_SCALE, letterSpacing: 10 * WEB_APP_TUTOR_SCALE * 0.06 }, fontStyle('semibold', language, Platform.OS === 'web')]}>{t.systemNote}</Text>
-                            <Text style={[styles.systemNote, { color: node.system_note ? legacy.text.tertiary : p.text.muted, fontSize: 12.5 * WEB_APP_TUTOR_SCALE, lineHeight: 12.5 * WEB_APP_TUTOR_SCALE * 1.55 }, fontStyle('regular', language, Platform.OS === 'web')]}>{node.system_note || t.noSystemNote}</Text>
-                          </View>
-                          <View style={styles.detailRow}>
-                            <Text style={[styles.detailLabel, { color: p.text.muted, fontSize: 10 * WEB_APP_TUTOR_SCALE, letterSpacing: 10 * WEB_APP_TUTOR_SCALE * 0.06 }, fontStyle('semibold', language, Platform.OS === 'web')]}>{t.yourNote}</Text>
-                            <TextInput
-                              accessibilityLabel={t.yourNote}
-                              multiline
-                              numberOfLines={3}
-                              maxLength={500}
-                              placeholder={t.notePlaceholder}
-                              placeholderTextColor={p.text.muted}
-                              value={noteDraft}
-                              onChangeText={setNoteDraft}
-                              onEndEditing={() => { if (noteDraft !== selectedNote) onUpdateNode(index, { user_note: noteDraft }); }}
-                              style={[styles.noteInput, { color: p.text.primary, backgroundColor: legacy.bg.raised, borderColor: tutorRgba(legacy.border, 0.15), fontSize: 12.5 * WEB_APP_TUTOR_SCALE, lineHeight: 12.5 * WEB_APP_TUTOR_SCALE * 1.5 }, fontStyle('regular', language, Platform.OS === 'web')]}
-                            />
-                          </View>
-                          <View style={styles.detailRow}>
-                            <Text style={[styles.detailLabel, { color: p.text.muted, fontSize: 10 * WEB_APP_TUTOR_SCALE, letterSpacing: 10 * WEB_APP_TUTOR_SCALE * 0.06 }, fontStyle('semibold', language, Platform.OS === 'web')]}>{t.snapshotHistory}</Text>
-                            {history.length ? (
-                              <View style={styles.historyList}>
-                                {history.slice(-8).reverse().map((snapshot, historyIndex) => (
-                                  <Text key={`${snapshot.at || snapshot.date || 'snapshot'}-${historyIndex}`} style={[styles.historyItem, { color: legacy.text.caption, fontSize: 11.5 * WEB_APP_TUTOR_SCALE, lineHeight: 11.5 * WEB_APP_TUTOR_SCALE * 1.5 }, fontStyle('regular', language, Platform.OS === 'web')]}>
-                                    <Text style={{ color: p.text.muted, marginRight: 6, fontSize: 11.5 * WEB_APP_TUTOR_SCALE }}>{dateOf(snapshot)}</Text>{snapshot.summary || ''}
-                                  </Text>
-                                ))}
-                              </View>
-                            ) : <Text style={[styles.historyEmpty, { color: p.text.muted, fontSize: 11.5 * WEB_APP_TUTOR_SCALE }, fontStyle('regular', language, Platform.OS === 'web')]}>{t.noSnapshotHistory}</Text>}
-                          </View>
-                        </View>
-                      ) : null}
+                {entries.map(({ node, index }) => (
+                  <View key={`${index}:${node.name || ''}`} testID={`socrates-kb-node-${index}`} style={styles.fileNode}>
+                    <View style={styles.fileNodeName}>
+                      <Text style={[styles.fileNodeNameText, { color: legacy.text.primary, fontSize: 12 * WEB_SIDEBAR_TUTOR_SCALE, lineHeight: fileRowLineHeight(compact) }, fontStyle('medium', language, Platform.OS === 'web')]}>{node.name || t.knowledgeNodeFallback(index + 1)}</Text>
+                      {status === 'internalized' ? <Text style={[styles.verifiedTag, { color: '#53C683', backgroundColor: 'rgba(57,172,105,0.12)', fontSize: 10 * WEB_APP_TUTOR_SCALE, lineHeight: detailTextLineHeight(compact) }, fontStyle('medium', language, Platform.OS === 'web')]}>{t.verifiedCount(node.verifiedCount || node.questions || 0)}</Text> : null}
                     </View>
-                  );
-                })}
+                    {status === 'fuzzy' && node.system_note ? (
+                      <Text style={[styles.fileNodeNote, { color: legacy.text.tertiary, borderLeftColor: tutorRgba(legacy.border, 0.2), fontSize: 12 * WEB_APP_TUTOR_SCALE, lineHeight: 12 * WEB_APP_TUTOR_SCALE * 1.5 }, fontStyle('regular', language, Platform.OS === 'web')]}>
+                        <Text style={[styles.fileNodeTag, { color: legacy.accent, fontSize: 10 * WEB_APP_TUTOR_SCALE, lineHeight: 10 * WEB_APP_TUTOR_SCALE * 1.5 }, fontStyle('semibold', language, Platform.OS === 'web')]}>[系统]</Text>{` ${node.system_note}`}
+                      </Text>
+                    ) : null}
+                    {status === 'fuzzy' && node.user_note ? (
+                      <Text style={[styles.fileNodeNote, { color: legacy.text.tertiary, borderLeftColor: tutorRgba(legacy.border, 0.2), fontSize: 12 * WEB_APP_TUTOR_SCALE, lineHeight: 12 * WEB_APP_TUTOR_SCALE * 1.5 }, fontStyle('regular', language, Platform.OS === 'web')]}>
+                        <Text style={[styles.fileNodeTag, { color: legacy.text.caption, fontSize: 10 * WEB_APP_TUTOR_SCALE, lineHeight: 10 * WEB_APP_TUTOR_SCALE * 1.5 }, fontStyle('semibold', language, Platform.OS === 'web')]}>[我]</Text>{` ${node.user_note}`}
+                      </Text>
+                    ) : null}
+                  </View>
+                ))}
               </View>
             );
           })}
           {history.length ? (
-            <View style={styles.snapshotHistory}>
-              <Text style={[styles.sectionText, { color: p.text.muted }, fontStyle('medium', language, Platform.OS === 'web')]}>{t.snapshotHistory}</Text>
-              {history.slice(-8).reverse().map((snapshot, index) => (
-                <Text key={`${snapshot.at || snapshot.date || 'snapshot'}-${index}`} style={[styles.historyItem, { color: p.text.secondary }, fontStyle('regular', language, Platform.OS === 'web')]}>
-                  <Text style={{ color: p.text.muted }}>{dateOf(snapshot)}  </Text>{snapshot.summary || ''}
-                </Text>
-              ))}
+            <>
+              <View style={styles.sectionTitle}>
+                <Text style={[styles.sectionText, { color: p.text.muted, fontSize: 10 * WEB_SIDEBAR_TUTOR_SCALE, lineHeight: tutorLineHeight(compact) }, fontStyle('medium', language, Platform.OS === 'web')]}>{t.snapshotHistory}</Text>
+              </View>
+              <View style={styles.fileHistoryList}>
+                {history.slice(-8).reverse().map((snapshot, index) => (
+                  <View key={`${snapshot.at || snapshot.date || 'snapshot'}-${index}`} style={styles.fileHistoryItem}>
+                    <Text style={[styles.fileHistoryDate, { color: p.text.muted, fontSize: 12 * WEB_APP_TUTOR_SCALE, lineHeight: fileHistoryLineHeight(compact) }, fontStyle('regular', language, Platform.OS === 'web')]}>{snapshot.date || ''}</Text>
+                    <Text style={[styles.fileHistorySummary, { color: legacy.text.caption, fontSize: 12 * WEB_APP_TUTOR_SCALE, lineHeight: fileHistoryLineHeight(compact) }, fontStyle('regular', language, Platform.OS === 'web')]}>{snapshot.summary || ''}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          ) : null}
+          </View>
+          {/* Baseline `toggleKBDetail` inserts the panel after a
+              `.kb-node[data-node-idx]` row, but the tutor file view's rows
+              carry no `data-node-idx`, so it is appended at the end of
+              `#kbContent` — after the snapshot history list. */}
+          {selectedNode && expandedIndex !== null ? (
+            <View testID="socrates-kb-detail" style={[styles.detail, { backgroundColor: `${legacy.bg.card}99`, borderColor: tutorRgba(legacy.border, 0.18) }]}>
+              <View style={styles.detailHead}>
+                <Text style={[styles.statusBadge, { color: detailStatus === 'internalized' ? '#79D29E' : detailStatus === 'fuzzy' ? '#EDCC78' : legacy.text.caption, backgroundColor: detailStatus === 'internalized' ? 'rgba(64,191,117,0.18)' : detailStatus === 'fuzzy' ? 'rgba(233,190,83,0.18)' : p.bg.hover, fontSize: 10 * WEB_APP_TUTOR_SCALE, letterSpacing: 10 * WEB_APP_TUTOR_SCALE * 0.08, lineHeight: detailTextLineHeight(compact) }, fontStyle('semibold', language, Platform.OS === 'web')]}>{statusLabel(detailStatus)}</Text>
+                <Pressable accessibilityRole="button" accessibilityLabel={t.goToNode} onPress={() => onJumpToNode(expandedIndex)} style={[styles.goButton, { backgroundColor: `${legacy.accent}1f`, borderColor: `${legacy.accent}4d` }]}>
+                  <Text style={[styles.goText, { color: legacy.accent, fontSize: 11 * WEB_APP_TUTOR_SCALE }, fontStyle('regular', language, Platform.OS === 'web')]}>{t.go}</Text>
+                </Pressable>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: p.text.muted, fontSize: 10 * WEB_APP_TUTOR_SCALE, letterSpacing: 10 * WEB_APP_TUTOR_SCALE * 0.06, lineHeight: detailTextLineHeight(compact) }, fontStyle('semibold', language, Platform.OS === 'web')]}>{t.confidence}</Text>
+                <View style={styles.confidenceRow}>
+                  {[1, 2, 3, 4, 5].map((value) => {
+                    const selected = value <= confidenceOf(selectedNode);
+                    return (
+                      <Pressable
+                        key={value}
+                        accessibilityRole="button"
+                        accessibilityLabel={t.confidenceSet(value)}
+                        accessibilityState={{ selected }}
+                        onPress={() => onUpdateNode(expandedIndex, { confidence_score: confidenceOf(selectedNode) === value ? 0 : value })}
+                        style={[styles.confidenceDot, { borderColor: p.text.muted, backgroundColor: selected ? legacy.accent : 'transparent', ...(selected ? { borderColor: legacy.accent } : {}) }]}
+                      />
+                    );
+                  })}
+                </View>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: p.text.muted, fontSize: 10 * WEB_APP_TUTOR_SCALE, letterSpacing: 10 * WEB_APP_TUTOR_SCALE * 0.06, lineHeight: detailTextLineHeight(compact) }, fontStyle('semibold', language, Platform.OS === 'web')]}>{t.systemNote}</Text>
+                <Text style={[styles.systemNote, { color: selectedNode.system_note ? legacy.text.tertiary : p.text.muted, fontSize: 12.5 * WEB_APP_TUTOR_SCALE, lineHeight: 12.5 * WEB_APP_TUTOR_SCALE * 1.55 }, fontStyle('regular', language, Platform.OS === 'web')]}>{selectedNode.system_note || t.noSystemNote}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: p.text.muted, fontSize: 10 * WEB_APP_TUTOR_SCALE, letterSpacing: 10 * WEB_APP_TUTOR_SCALE * 0.06, lineHeight: detailTextLineHeight(compact) }, fontStyle('semibold', language, Platform.OS === 'web')]}>{t.yourNote}</Text>
+                <TextInput
+                  accessibilityLabel={t.yourNote}
+                  multiline
+                  numberOfLines={3}
+                  maxLength={500}
+                  placeholder={t.notePlaceholder}
+                  placeholderTextColor={p.text.muted}
+                  value={noteDraft}
+                  onChangeText={setNoteDraft}
+                  onEndEditing={() => { if (noteDraft !== selectedNote) onUpdateNode(expandedIndex, { user_note: noteDraft }); }}
+                  style={[styles.noteInput, { color: p.text.primary, backgroundColor: legacy.bg.raised, borderColor: tutorRgba(legacy.border, 0.15), fontSize: 12.5 * WEB_APP_TUTOR_SCALE, lineHeight: 12.5 * WEB_APP_TUTOR_SCALE * 1.5 }, fontStyle('regular', language, Platform.OS === 'web')]}
+                />
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: p.text.muted, fontSize: 10 * WEB_APP_TUTOR_SCALE, letterSpacing: 10 * WEB_APP_TUTOR_SCALE * 0.06, lineHeight: detailTextLineHeight(compact) }, fontStyle('semibold', language, Platform.OS === 'web')]}>{t.snapshotHistory}</Text>
+                {history.length ? (
+                  <View style={styles.historyList}>
+                    {history.slice(-8).reverse().map((snapshot, historyIndex) => (
+                      <Text key={`${snapshot.at || snapshot.date || 'snapshot'}-${historyIndex}`} style={[styles.historyItem, { color: legacy.text.caption, fontSize: 11.5 * WEB_APP_TUTOR_SCALE, lineHeight: 11.5 * WEB_APP_TUTOR_SCALE * 1.5 }, fontStyle('regular', language, Platform.OS === 'web')]}>
+                        <Text style={{ color: p.text.muted, marginRight: 6, fontSize: 11.5 * WEB_APP_TUTOR_SCALE }}>{dateOf(snapshot)}</Text>{snapshot.summary || ''}
+                      </Text>
+                    ))}
+                  </View>
+                ) : <Text style={[styles.historyEmpty, { color: p.text.muted, fontSize: 11.5 * WEB_APP_TUTOR_SCALE }, fontStyle('regular', language, Platform.OS === 'web')]}>{t.noSnapshotHistory}</Text>}
+              </View>
             </View>
           ) : null}
         </>
@@ -342,23 +382,36 @@ const styles = StyleSheet.create({
   snapshotText: { fontSize: 10 },
   graphWrap: { marginBottom: 12, paddingHorizontal: 12 },
   graphCaption: { fontSize: 10, marginBottom: 6 },
-  graphFrame: { width: '100%', aspectRatio: 4 / 3, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderRadius: 10 },
+  graphFrame: { width: '100%', overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderRadius: 10 },
+  graphCanvas: { width: '100%', aspectRatio: KNOWLEDGE_GRAPH_WIDTH / KNOWLEDGE_GRAPH_HEIGHT },
   graphHitArea: { position: 'absolute', width: 44, height: 44, marginLeft: -22, marginTop: -22, borderRadius: 22, backgroundColor: 'transparent' },
   empty: { textAlign: 'center', fontSize: 12, lineHeight: 19, paddingHorizontal: 12, paddingVertical: 28 },
   sectionTitle: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingTop: 6, paddingBottom: 2 },
-  sectionText: { fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.6 },
+  /* Baseline `.kb-section-title`: 0.06em of the sidebar-scaled 10px. */
+  sectionText: { fontSize: 10, textTransform: 'uppercase', letterSpacing: 10 * WEB_SIDEBAR_TUTOR_SCALE * 0.06 },
   sectionCount: { fontSize: 10, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 6 },
-  nodeRow: { minHeight: 32, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8 },
-  nodeDot: { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
-  nodeName: { flex: 1, minWidth: 0, fontSize: 12 },
-  questionCount: { fontSize: 10, flexShrink: 0 },
-  currentMark: { width: 2, height: 16, borderRadius: 1, marginLeft: 1 },
-  verifiedTag: { fontSize: 9, overflow: 'hidden', borderRadius: 5 },
+  /* `.kb-node` / `.kb-node-name` are CSS flex rows whose items keep the
+     CSS defaults (shrink 1, min-width:auto) — RNW defaults to shrink 0 /
+     min-width 0, so both are restored for identical column widths. */
+  fileNode: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8 },
+  fileNodeName: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1, minWidth: 'auto' },
+  fileNodeNameText: { flexShrink: 1, minWidth: 'auto' },
+  verifiedTag: { flexShrink: 1, minWidth: 'auto', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 5 },
+  fileNodeNote: { flexShrink: 1, minWidth: 'auto', marginTop: 4, paddingTop: 4, paddingBottom: 2, paddingLeft: 6, borderLeftWidth: 2 },
+  fileNodeTag: { marginRight: 4, letterSpacing: 0.45 },
+  fileHistoryList: { paddingTop: 4, paddingHorizontal: 12, paddingBottom: 8, gap: 4 },
+  fileHistoryItem: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+  fileHistoryDate: { width: 90, flexShrink: 0, fontVariant: ['tabular-nums'] },
+  fileHistorySummary: { flexGrow: 1, flexShrink: 1, flexBasis: '0%', fontVariant: ['tabular-nums'] },
   detail: { marginTop: 4, marginBottom: 10, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 12, borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, gap: 10 },
   detailHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  statusBadge: { fontSize: 10, lineHeight: 20, letterSpacing: 0.8, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, overflow: 'hidden' },
+  statusBadge: { fontSize: 10, lineHeight: 20, letterSpacing: 0.8, textTransform: 'uppercase', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, overflow: 'hidden' },
   goButton: { paddingHorizontal: 9, paddingVertical: 3, borderWidth: StyleSheet.hairlineWidth, borderRadius: 6 },
-  goText: { fontSize: 11, lineHeight: 18 },
+  /* Web keeps the inherited `line-height: normal` like the SPA's `<button>`:
+     the → glyph comes from Noto Sans SC, whose taller normal line box makes
+     the button 26px and sets the baseline (an explicit 18px line put the
+     label 1px high). */
+  goText: Platform.OS === 'web' ? { fontSize: 11 } : { fontSize: 11, lineHeight: 18 },
   detailRow: { gap: 4 },
   detailLabel: { fontSize: 10, lineHeight: 20, letterSpacing: 0.6, textTransform: 'uppercase' },
   confidenceRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -368,5 +421,4 @@ const styles = StyleSheet.create({
   historyList: { gap: 3 },
   historyItem: { fontSize: 11, lineHeight: 17 },
   historyEmpty: { fontSize: 11, lineHeight: 16 },
-  snapshotHistory: { gap: 5, paddingHorizontal: 10, paddingVertical: 6 },
 });

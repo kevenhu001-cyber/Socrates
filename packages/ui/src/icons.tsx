@@ -63,6 +63,8 @@ export const GLYPHS = {
     ['p', 'M6 15h8'],
   ]),
   search: box(24, 2, [['c', 11, 11, 7], ['p', 'm21 21-4.3-4.3']]),
+  /** Phone drawer header search (SidebarHeader.tsx SEARCH_ICON: shorter tail). */
+  'search-header': box(24, 2, [['c', 11, 11, 7], ['p', 'm20 20-4-4']]),
   knowledge: box(24, 2, [
     ['c', 5.5, 6, 2.1], ['c', 18, 7.5, 2.1], ['c', 12, 18, 2.1],
     ['p', 'M7.5 6.5h8.4M6.7 7.9l4.6 8.2M16.7 9.4l-3.9 6.9'],
@@ -208,6 +210,37 @@ export const GLYPHS = {
     ['p', 'M16 9a5 5 0 0 1 0 6'],
     ['p', 'M19.364 18.364a9 9 0 0 0 0-12.728'],
   ]),
+
+  /* ── Account menu (baseline `SidebarFooter.tsx`, lucide-react 1.52) ──── */
+  /** lucide `sparkles` — Upgrade plan. */
+  sparkles: box(24, 2, [
+    ['p', 'M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z'],
+    ['p', 'M20 2v4'],
+    ['p', 'M22 4h-4'],
+    ['c', 4, 20, 2],
+  ]),
+  /** lucide `sliders-horizontal` — Personalization. */
+  'sliders-horizontal': box(24, 2, [
+    ['p', 'M10 5H3'], ['p', 'M12 19H3'], ['p', 'M14 3v4'], ['p', 'M16 17v4'], ['p', 'M21 12h-9'],
+    ['p', 'M21 19h-5'], ['p', 'M21 5h-7'], ['p', 'M8 10v4'], ['p', 'M8 12H3'],
+  ]),
+  /** lucide `settings` — Settings. */
+  settings: box(24, 2, [
+    ['p', 'M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915'],
+    ['c', 12, 12, 3],
+  ]),
+  /** lucide `life-buoy` — Help. */
+  'life-buoy': box(24, 2, [
+    ['c', 12, 12, 10],
+    ['p', 'm4.93 4.93 4.24 4.24'], ['p', 'm14.83 9.17 4.24-4.24'], ['p', 'm14.83 14.83 4.24 4.24'], ['p', 'm9.17 14.83-4.24 4.24'],
+    ['c', 12, 12, 4],
+  ]),
+  /** lucide `log-out` — Sign out. */
+  'log-out': box(24, 2, [
+    ['p', 'm16 17 5-5-5-5'], ['p', 'M21 12H9'], ['p', 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'],
+  ]),
+  /** lucide `chevron-right` — identity row / Help trailing chevron. */
+  'chevron-right': box(24, 2, [['p', 'm9 18 6-6-6-6']]),
 } as const;
 
 export type IconName = keyof typeof GLYPHS;

@@ -1,6 +1,10 @@
 import { WEB_FONT_FAMILY } from '@socrates/theme';
 
-const EXPO_FACES: Readonly<Record<string, { family: string; weight: string }>> = {
+/* Symbols the SPA takes from fontsource subset 109 (see `src/fonts.ts`). */
+const NOTO_SUBSET_109_SYMBOLS = 'U+a5,U+2192,U+2605';
+let accountMenuOutsidePointerInstalled = false;
+
+const EXPO_FACES: Readonly<Record<string, { family: string; weight: string; unicodeRange?: string }>> = {
   Inter_400Regular: { family: 'Inter', weight: '400' },
   Inter_500Medium: { family: 'Inter', weight: '500' },
   Inter_600SemiBold: { family: 'Inter', weight: '600' },
@@ -8,12 +12,33 @@ const EXPO_FACES: Readonly<Record<string, { family: string; weight: string }>> =
   NotoSansSC_400Regular: { family: 'Noto Sans SC', weight: '400' },
   NotoSansSC_500Medium: { family: 'Noto Sans SC', weight: '500' },
   NotoSansSC_600SemiBold: { family: 'Noto Sans SC', weight: '600' },
+  NotoSansSC109_400Regular: { family: 'Noto Sans SC', weight: '400', unicodeRange: NOTO_SUBSET_109_SYMBOLS },
+  NotoSansSC109_500Medium: { family: 'Noto Sans SC', weight: '500', unicodeRange: NOTO_SUBSET_109_SYMBOLS },
+  NotoSansSC109_600SemiBold: { family: 'Noto Sans SC', weight: '600', unicodeRange: NOTO_SUBSET_109_SYMBOLS },
 };
+
+/** RNW renders the account menu inside the sidebar, so its local backdrop
+ * cannot see a pointer press in the main transcript. Mirror AnchoredMenu's
+ * document-level outside-pointer behavior on Web and close through the
+ * existing React backdrop (which owns the actual state transition). */
+function installAccountMenuOutsidePointer(): void {
+  if (accountMenuOutsidePointerInstalled || typeof document === 'undefined') return;
+  accountMenuOutsidePointerInstalled = true;
+  document.addEventListener('pointerdown', (event) => {
+    const menu = document.querySelector('[data-testid="socrates-sidebar-account-menu"]');
+    if (!menu) return;
+    const target = event.target;
+    if (target instanceof Element && target.closest('[data-testid="socrates-sidebar-account-menu"], [data-testid="socrates-sidebar-account-trigger"]')) return;
+    const backdrop = document.querySelector('[data-testid="socrates-sidebar-account-backdrop"]');
+    if (backdrop instanceof HTMLElement) backdrop.click();
+  }, true);
+}
 
 /** Register Expo's static assets with the same CSS family/weight descriptors
  * as the SPA, then match its inherited Web text rasterization defaults. */
 export function installWebTextDefaults(theme: 'dark' | 'light' = 'dark'): void {
   if (typeof document === 'undefined') return;
+  installAccountMenuOutsidePointer();
   const expoFonts = document.getElementById('expo-generated-fonts') as HTMLStyleElement | null;
   const rules = expoFonts?.sheet?.cssRules;
   if (rules) {
@@ -25,6 +50,7 @@ export function installWebTextDefaults(theme: 'dark' | 'light' = 'dark'): void {
       if (!mapped) continue;
       face.style.setProperty('font-family', `"${mapped.family}"`);
       face.style.setProperty('font-weight', mapped.weight);
+      if (mapped.unicodeRange) face.style.setProperty('unicode-range', mapped.unicodeRange);
     }
   }
   const root = document.documentElement;
@@ -123,6 +149,8 @@ export function installWebTextDefaults(theme: 'dark' | 'light' = 'dark'): void {
        detail subtree; the textarea's plaintext bidi becomes normal too. */
     [data-testid="socrates-kb-detail"],
     [data-testid="socrates-kb-detail"] *,
+    [data-testid="socrates-kb-file-list"],
+    [data-testid="socrates-kb-file-list"] *,
     [data-testid="socrates-mistakes-panel"],
     [data-testid="socrates-mistakes-panel"] * {
       white-space: normal !important;
@@ -130,6 +158,9 @@ export function installWebTextDefaults(theme: 'dark' | 'light' = 'dark'): void {
       unicode-bidi: normal !important;
       position: static !important;
     }
+    /* The SPA note is a plain <textarea> (resize: vertical) whose grip is
+       painted in the corner; RNW resets TextInput to resize: none. */
+    [data-testid="socrates-kb-detail"] textarea { resize: vertical !important; }
     #socrates-sidebar-user-name { text-align: left !important; }
     #socrates-model-name,
     #socrates-model-subtitle { text-align: center !important; }

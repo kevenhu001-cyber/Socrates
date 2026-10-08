@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openSidebarSettings } from './_universal-helpers.mjs';
 
 /**
  * Universal App providers smoke (apps/socrates web export). Exercises the
@@ -65,10 +66,11 @@ test('universal providers list, activate, add and delete', async ({ page }) => {
   // settings gear lives in the sidebar footer (baseline chrome).
   async function openSettings() {
     const gear = page.getByRole('button', { name: 'Open settings' });
-    if (!(await gear.isVisible())) {
+    const trigger = page.getByTestId('socrates-sidebar-account-trigger');
+    if (!(await gear.isVisible()) && !(await trigger.isVisible())) {
       await page.getByRole('button', { name: 'Toggle sidebar' }).click();
     }
-    await gear.click();
+    await openSidebarSettings(page);
   }
 
   await openSettings();

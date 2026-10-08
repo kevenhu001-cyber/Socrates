@@ -58,14 +58,36 @@ test('project removal deletes its conversations; archive/filter chooses visible 
   prepare(); const s = useChatStore.getState(); s.archiveSession('session-a', 'p'); assert.equal(useChatStore.getState().activeSessionId, null);
   s.removeProject('p'); assert.deepEqual(useChatStore.getState().sessions.map((s) => s.id), ['b']); assert.equal(s.selectProject('empty'), null);
 });
-test('session purge removes the row and falls back to the filter-visible session', () => {
+test('session purge hides the departing active row for one transition boundary, then drops it', () => {
   prepare(); const s = useChatStore.getState();
   s.deleteSession('session-a', 'p');
-  assert.deepEqual(useChatStore.getState().sessions.map((s) => s.id), ['b']);
+  assert.deepEqual(visibleSessions(useChatStore.getState().sessions).map((session) => session.id), ['b']);
+  assert.ok(useChatStore.getState().sessions.find((session) => session.id === 'session-a')?.archivedAt);
   assert.equal(useChatStore.getState().activeSessionId, null);
-  s.selectSession('b'); s.deleteSession('b', null);
+  // Explicit navigation cleans the hidden transition row.
+  s.selectSession('b');
+  assert.deepEqual(useChatStore.getState().sessions.map((session) => session.id), ['b']);
+  s.deleteSession('b', null);
+  assert.deepEqual(visibleSessions(useChatStore.getState().sessions), []);
+  assert.ok(useChatStore.getState().sessions.find((session) => session.id === 'b')?.archivedAt);
+  assert.equal(useChatStore.getState().activeSessionId, null);
+  s.selectSession(null);
   assert.deepEqual(useChatStore.getState().sessions, []);
-  assert.equal(useChatStore.getState().activeSessionId, null);
+});
+test('destructive reconciliation retains the old active id, while real adoption removes it', () => {
+  const s = useChatStore.getState(); s.reset();
+  s.setSessions([row('server-a'), row('server-b')]); s.selectSession('server-a');
+  s.reconcileSessions([row('server-b')]);
+  assert.equal(useChatStore.getState().activeSessionId, 'server-b');
+  assert.ok(useChatStore.getState().sessions.some((session) => session.id === 'server-a'));
+  assert.deepEqual(visibleSessions(useChatStore.getState().sessions).map((session) => session.id), ['server-b']);
+  s.selectSession('server-b');
+  assert.equal(useChatStore.getState().sessions.some((session) => session.id === 'server-a'), false);
+
+  s.setSessions([row('session-local'), row('server-b')]); s.selectSession('session-local');
+  s.adoptSessionId('session-local', row('11111111-1111-4111-8111-111111111111'));
+  assert.equal(useChatStore.getState().activeSessionId, '11111111-1111-4111-8111-111111111111');
+  assert.equal(useChatStore.getState().sessions.some((session) => session.id === 'session-local'), false);
 });
 test('unarchive clears the flag on known rows and inserts fetched archived rows', () => {
   prepare(); const s = useChatStore.getState();

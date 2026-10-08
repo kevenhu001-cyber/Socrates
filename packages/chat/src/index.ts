@@ -38,58 +38,101 @@ export interface ChatState {
   setStatus(status: ChatStatus, error?: string | null): void;
 }
 
+/* Universal keeps transcript-local ephemeral UI (for example mistake-book
+ * redo cards) keyed by the active session id. A local→server adoption is the
+ * one legitimate transition where the old id disappears at the same moment
+ * activeSessionId changes. Destructive transitions (delete/project removal/
+ * remote reconciliation) therefore retain the departing active row for one
+ * navigation boundary, hidden from visibleSessions. That prevents consumers
+ * from mistaking a destructive removal for id adoption. The marker is a
+ * Symbol so it can never leak into persisted session JSON. */
+const TRANSITION_RETIRED = Symbol('transition-retired-session');
+type TransitionSession = Session & { [TRANSITION_RETIRED]?: true };
+const TRANSITION_RETIRED_AT = '1970-01-01T00:00:00.000Z';
+
+function stripTransitionRows(sessions: Session[]): Session[] {
+  return sessions.filter((session) => !(session as TransitionSession)[TRANSITION_RETIRED]);
+}
+
+function retainDepartingActive(previous: Session[], oldActiveId: string | null, next: Session[], nextActiveId: string | null): Session[] {
+  if (!oldActiveId || oldActiveId === nextActiveId || next.some((session) => session.id === oldActiveId)) return next;
+  const departed = previous.find((session) => session.id === oldActiveId);
+  if (!departed) return next;
+  const transition: TransitionSession = {
+    ...departed,
+    archivedAt: departed.archivedAt || TRANSITION_RETIRED_AT,
+    [TRANSITION_RETIRED]: true,
+  };
+  return [...next, transition];
+}
+
 const emptyState = { sessions: [] as Session[], activeSessionId: null, draft: '', status: 'idle' as ChatStatus, error: null, turnId: null, turnSessionId: null };
 export const useChatStore = create<ChatState>((set, get) => ({
   ...emptyState,
   reset: () => set({ ...emptyState, sessions: [] }),
   setSessions: (sessions) => set({ sessions }),
   reconcileSessions: (rows) => set((state) => {
-    const existing = new Map(state.sessions.map((s) => [s.id, s]));
+    const previous = stripTransitionRows(state.sessions);
+    const existing = new Map(previous.map((s) => [s.id, s]));
     const remoteIds = new Set(rows.map((s) => s.id));
-    const local = state.sessions.filter((s) => !remoteIds.has(s.id) && (isLocalSessionId(s.id) || s.id === state.turnSessionId));
-    const sessions = sortSessions([...local, ...rows.map((row) => ({ ...existing.get(row.id), ...row, messages: existing.get(row.id)?.messages ?? [] }))]);
-    return { sessions, activeSessionId: sessions.some((s) => s.id === state.activeSessionId) ? state.activeSessionId : sessions[0]?.id ?? null };
+    const local = previous.filter((s) => !remoteIds.has(s.id) && (isLocalSessionId(s.id) || s.id === state.turnSessionId));
+    const reconciled = sortSessions([...local, ...rows.map((row) => ({ ...existing.get(row.id), ...row, messages: existing.get(row.id)?.messages ?? [] }))]);
+    const activeSessionId = reconciled.some((s) => s.id === state.activeSessionId) ? state.activeSessionId : reconciled[0]?.id ?? null;
+    return { sessions: retainDepartingActive(previous, state.activeSessionId, reconciled, activeSessionId), activeSessionId };
   }),
   patchSession: (id, patch) => set((state) => ({ sessions: state.sessions.map((s) => s.id === id ? { ...s, ...patch } : s) })),
   adoptSessionId: (id, saved) => set((state) => ({
     // Save replies contain scalar metadata only, never replace local messages.
-    sessions: state.sessions.map((s) => s.id === id ? { ...s, ...saved, messages: s.messages } : s),
+    // Deliberately do NOT retain the old id here: disappearance is the signal
+    // that this is a real local→server adoption, not a destructive transition.
+    sessions: stripTransitionRows(state.sessions).map((s) => s.id === id ? { ...s, ...saved, messages: s.messages } : s),
     activeSessionId: state.activeSessionId === id ? saved.id : state.activeSessionId,
     turnSessionId: state.turnSessionId === id ? saved.id : state.turnSessionId,
   })),
   removeProject: (id) => set((state) => {
-    const sessions = state.sessions.filter((s) => s.projectId !== id);
-    return { sessions, activeSessionId: sessions.some((s) => s.id === state.activeSessionId) ? state.activeSessionId : sessions.find((s) => !s.archivedAt)?.id ?? null };
+    const previous = stripTransitionRows(state.sessions);
+    const remaining = previous.filter((s) => s.projectId !== id);
+    const activeSessionId = remaining.some((s) => s.id === state.activeSessionId) ? state.activeSessionId : remaining.find((s) => !s.archivedAt)?.id ?? null;
+    return { sessions: retainDepartingActive(previous, state.activeSessionId, remaining, activeSessionId), activeSessionId };
   }),
   archiveSession: (id, projectFilter = null) => set((state) => {
-    const sessions = state.sessions.map((s) => s.id === id ? { ...s, archivedAt: new Date().toISOString() } : s);
+    const previous = stripTransitionRows(state.sessions);
+    const sessions = previous.map((s) => s.id === id ? { ...s, archivedAt: new Date().toISOString() } : s);
     const next = visibleSessions(sessions, projectFilter)[0];
     return { sessions, activeSessionId: state.activeSessionId === id ? next?.id ?? null : state.activeSessionId };
   }),
   unarchiveSession: (id, fallback) => set((state) => {
     // Restoring clears the flag on a known row; a server-fetched archived
     // row that was never in the store is inserted (messages lazy-load).
-    const known = state.sessions.some((s) => s.id === id);
+    const previous = stripTransitionRows(state.sessions);
+    const known = previous.some((s) => s.id === id);
     const sessions = known
-      ? state.sessions.map((s) => s.id === id ? { ...s, archivedAt: null } : s)
-      : fallback ? [...state.sessions, { ...fallback, archivedAt: null }] : state.sessions;
+      ? previous.map((s) => s.id === id ? { ...s, archivedAt: null } : s)
+      : fallback ? [...previous, { ...fallback, archivedAt: null }] : previous;
     return { sessions };
   }),
   deleteSession: (id, projectFilter = null) => set((state) => {
-    // Purge removes the row everywhere (mirrors DELETE /sessions/:id which
-    // wipes messages/files/artifacts/runs); never leave a tombstone behind.
-    const sessions = state.sessions.filter((s) => s.id !== id);
-    const next = visibleSessions(sessions, projectFilter)[0];
-    return { sessions, activeSessionId: state.activeSessionId === id ? next?.id ?? null : state.activeSessionId };
+    // The server purge is immediate. Locally, if this was the active row, keep
+    // one hidden transition copy so active-id observers can distinguish the
+    // purge from adoptSessionId; the next explicit session navigation or
+    // reconciliation drops it.
+    const previous = stripTransitionRows(state.sessions);
+    const remaining = previous.filter((s) => s.id !== id);
+    const next = visibleSessions(remaining, projectFilter)[0];
+    const activeSessionId = state.activeSessionId === id ? next?.id ?? null : state.activeSessionId;
+    return { sessions: retainDepartingActive(previous, state.activeSessionId, remaining, activeSessionId), activeSessionId };
   }),
   selectProject: (id) => {
     const state = get();
+    // Project fallback may run synchronously right after removeProject. Keep a
+    // transition row until an explicit session selection/reconcile so React
+    // active-id observers still see that the departed id was not adopted.
     const list = visibleSessions(state.sessions, id);
     const selected = list.some((s) => s.id === state.activeSessionId) ? state.activeSessionId : list[0]?.id ?? null;
     set({ activeSessionId: selected });
     return selected;
   },
-  selectSession: (activeSessionId) => set({ activeSessionId }),
+  selectSession: (activeSessionId) => set((state) => ({ sessions: stripTransitionRows(state.sessions), activeSessionId })),
   setDraft: (draft) => set({ draft }),
   appendMessage: (message, sessionId) => set((state) => ({ sessions: updateSession(state, sessionId ?? state.activeSessionId, (s) => ({ ...s, messages: [...s.messages || [], message] })) })),
   appendDelta: (text) => {

@@ -811,3 +811,196 @@ mobile/            # 冻结，仅安全/crash/data-loss 修复
 - **下一步**：徽章文本宽 4px 之谜（同文件同计算样式，canvas 本体一致，
   DOM Range 差 41.5 vs 37.5）、历史行残差、mobile 抽屉头 + 遮罩、composer
   1px。严格门禁仍失败，parity 保持“进行中”。
+
+## 31. 进展（第二十四轮，2026-10-08，round 16-13：错题本重做/攻克 + 手机抽屉对齐）
+
+> 错题本从“只收录”补到基线 `ui/mistakeBook.js` 的完整闭环（筛选、重做、攻克），
+> 并清掉两项实测的手机抽屉色差。严格像素门禁仍未全过，parity 保持“进行中”。
+
+- **错题本移植**（对照 `frontend/src/ui/mistakeBook.js`）：`packages/ui/src/mistakes.ts`
+  改为基线记录形状（`id/type/topic/node/nodeIdx/q/options/correct/userAnswer/
+  judgedAnswer/timestamp/redoCount/quizSlotId`），提供 `normalizeMistakes`、
+  `quizMistakeFor`/`practiceMistakeFor`、`bumpMistakeRedo`、`mistakeRedoPlan`、
+  `assignMistakeQuizSlot`、`removeMistakesForQuizSlot` 等纯函数，单测同步扩充。
+  Sidebar 错题视图补齐 全部/未攻克/已攻克 筛选、错题卡（类型/主题/相对时间、
+  选项对错标记、`已重做 n 次`）、Redo 按钮与工具栏角标。
+- **重做/攻克**：Redo 递增 `redoCount` 并保存；原测验卡仍在转录中时按 slot
+  原地重挂为新卡，否则（以及所有练习题）在转录尾部追加
+  “— Redoing a question you got wrong —” 横幅 + 新卡，测验题改指向新 slot。
+  在同一 slot 上答对即按基线 `removeMistakeForQuizSlot` 移除该错题（攻克）。
+  与基线一致，不提供独立的“标记攻克”按钮。登录账户另 best-effort 镜像
+  `POST /mistakes`（`packages/api` 新增 `mistakes.create` + 测试），会话数组仍是
+  唯一数据源。
+- **角标口径（决定）**：角标显示**未攻克**数量（基线显示总数）。因为攻克即
+  移除，两者只在历史数据含已攻克行时不同；保留未攻克口径。
+- **练习卡标题**：基线 `mountPracticeWidget` 与流式卡都解析 `<title>` 但从不渲染，
+  默认 “Practice” 标题从 Universal 练习卡删除。
+- **手机抽屉对齐**（探针取证）：基线 ≤768px 抽屉右边框为
+  `--ui-border-default`（dark 10% 白，light 10% 黑），New chat 行与行 hover 为
+  半透明洗色（dark 10% 白 / light 5% 黑，`restore/fixes.css`）；Universal 原为
+  6% 白边框与不透明 `#292929`。compact 下改为相同的半透明值，桌面不变。
+  另：手机抽屉阴影移除、手机用户气泡最大宽度 72%（前一段已做）。
+- **像素（普通模式，exact 差异像素）**：
+
+  | 状态 | 本轮前 | 本轮后 |
+  |---|---|---|
+  | workbench desktop / mobile | 1 / 0 | 1 / 0 |
+  | tutor overview desktop | 330（新 fixture） | 108 |
+  | tutor detail desktop | 2769 | 2769 |
+  | mistake book desktop | 87,610 | 1 |
+  | tutor overview mobile | 39,345 | 7,703 |
+  | tutor detail mobile | 25,010 | 24,936 |
+  | mistake book mobile | 114,648 | 7,429 |
+
+  抽屉色修正单项贡献：mobile overview `17,404 → 7,703`、mobile mistake book
+  `17,130 → 7,429`。严格模式（`PARITY_PIXEL_STRICT=1`）**7 failures**，仅 workbench
+  mobile 通过。
+- **验证**：`apps/socrates` typecheck 通过；`test:shared` **227/227**（25 文件）；
+  `export:web` 通过（`EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:4176/api/v2`，
+  `check-api-bundle` 通过）；`check-packages-dom` OK；`frontend npm run lint`
+  **0 errors / 629 warnings**；完整 Universal Playwright 桌面 + 手机 **28/28**
+  （`UNIVERSAL_PORT=4187`，因单命令 120 秒限制分 4 批运行）；
+  `ui-parity-check.mjs` 普通模式 0 failures；`git diff --check` 通过。
+  `universal-tutor-widgets` 新增断言：角标 2→1、筛选（已攻克为空态）、练习 Redo
+  显示 `Redone once` 并追加新卡且答对、测验 Redo 原地重挂、答对后错题行移除。
+- **已知差异**：手机抽屉关闭后重开会回到 Recents 视图（Sidebar 重挂，基线 DOM
+  常驻保留视图）；mobile detail 24,936 与 mobile overview/mistake book 约 7.4k
+  残差（抽屉头 + 遮罩 subtle 差）；desktop detail 2769；composer 1px。
+- **下一步**：抽屉视图状态提升到 App 以跨开合保留；抽屉头 / 遮罩逐像素对照；
+  detail 面板残差。严格门禁仍失败，parity 保持“进行中”。
+
+## 32. 进展（第二十五轮，2026-10-08，round 16-14：抽屉视图保持 + 手机抽屉像素对齐）
+
+> 解决上一轮记下的“手机抽屉重开回到 Recents”差异，并把手机抽屉头、导航行、
+> 页脚、知识视图逐项对到基线探针数值。手机 overview / 错题本两态普通与严格
+> 像素均为 0；mobile detail 反而小幅回退，严格门禁仍有 5 项失败，parity 保持“进行中”。
+
+- **抽屉状态提升**：基线 sidebar DOM 常驻，视图（Recents/Knowledge/Mistakes）与
+  `#sidebar.search-open` 跨抽屉开合保留；Universal 手机抽屉关闭即卸载，所以把
+  `view` / `compactSearchOpen` 提升到 `App.tsx`，Sidebar 改为可受控（未传时仍走
+  内部 state）。非 tutor 会话只是隐藏 tutor 视图（显示 Recents），不再把已选视图
+  重置，回到 tutor 会话即恢复。错题筛选按基线 `kb.mistakeFilter` 改为**按会话**
+  存在 `session.mistakeFilter`（默认 `all`），随下一次会话保存一起提交（与基线
+  `persistence.js` 一致，切换筛选本身不单独触发保存）。关闭按钮不再顺手收起搜索行。
+- **手机抽屉像素**（探针取证，桌面不变）：抽屉头左右 padding 10（`.sidebar-inner`
+  0 6px + `#sidebarHeader` 4px）、按钮间距 2；头部搜索改用新 glyph
+  `search-header`（基线 `SidebarHeader.tsx` 的短尾 `m20 20-4-4`）；导航行加 1px
+  透明边框（内容 17px 起、圆角背景经边框盒裁切）、22px 图标格、1.8 描边、0.92
+  不透明度、gap 8；`New` 徽标与桌面同一 `.nav-new-badge` 盒（2px 6px、6px 间距、
+  14px 行高），label 容器继承 14/20 字体；知识视图为 `.sidebar-inner` 内 241px 盒
+  （左右各缩 6、内边距 8）并裁切溢出；教学计划进度条填充改为方头（只靠轨道圆角）。
+- **知识图谱框**：基线 `svg.kb-graph` 为 `height:auto` + 1px 边框，所以是**内容盒**
+  320:240（手机 201×151.25、桌面 219×164.75）；原来对边框盒取 1.3293 近似比例，
+  改为边框内再包一层 `aspectRatio = 320/240` 的画布。坐标取整改为
+  `Number(v.toFixed(1))`，节点标签 y 按基线用未取整的 r 计算。
+- **手机页脚 + 账户菜单**：基线 ≤768px 页脚只绘制账户触发器（快捷图标
+  `display:none`），241×58、24px 头像、15/21 名称 + 13/18 套餐；点击弹出账户菜单。
+  **菜单目前只有“个性化 / 设置”两项**（新增 `accountPersonalization` /
+  `accountSettings`，zh/en 键数一致 205/205）；基线 SPA 菜单里的 **Upgrade plan、
+  Profile、Help、Sign out 尚未移植**，手机上主题切换也随快捷图标一起不再出现在
+  页脚（基线同样隐藏）。菜单不响应点击外部关闭（关抽屉即卸载）。
+- **E2E / 工具**：新增 `openSidebarSettings`（桌面点齿轮，手机走账户菜单 → Settings），
+  app / providers spec 改用它；`universal-tutor-widgets` 手机断言改为“关抽屉再开仍在
+  Knowledge / Mistakes 视图、无 Recents 标题”，删掉旧的“重开回 Recents”容错。
+  `ui-parity-check.mjs` 新增 `PARITY_PROBE_JS`（在两端 tutor overview 截图前执行
+  探针表达式，结果写 `test-results/ui-parity/probe-<label>.json`），默认不启用。
+- **像素（exact 差异像素；“本轮前”为在本机 stash 本轮改动后重导出 16-13 实测）**：
+
+  | 状态 | 本轮前 | 本轮后 | 严格模式 |
+  |---|---|---|---|
+  | workbench desktop | 1 | 1 | FAIL |
+  | workbench mobile | 0 | 0 | PASS |
+  | tutor overview desktop | 108 | 1 | FAIL |
+  | tutor detail desktop | 2,861 | 2,861 | FAIL |
+  | mistake book desktop | 1 | 1 | FAIL |
+  | tutor overview mobile | 7,703 | 0 | PASS |
+  | tutor detail mobile | 24,936 | 26,344 | FAIL |
+  | mistake book mobile | 7,429 | 0 | PASS |
+
+  注：上一节表里 desktop detail 记为 2,769，本机重测 16-13 为 2,861，以重测为准。
+  普通模式 0 failures；严格模式（`PARITY_PIXEL_STRICT=1`）**5 failures**（3 项 PASS）。
+- **mobile detail 回退**：exact 24,936 → 26,344（Δ>12 12,860 → 12,830、Δ>48
+  7,854 → 7,849、mean 13.62 → 13.6，强差异略降）。定位为详情面板的滚动位置：
+  Universal 面板高 356.3、基线 343.8，点节点后滚动落点不同导致整块错位；本轮
+  未修。
+- **验证**：`apps/socrates` typecheck 通过；`test:shared` **227/227**；`export:web`
+  通过（`EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:4176/api/v2`，`check-api-bundle`
+  通过）；`check-packages-dom` OK；`frontend npm run lint` **0 errors / 629 warnings**；
+  完整 Universal Playwright 桌面 + 手机 **28/28**（`UNIVERSAL_PORT=4187`，默认单
+  worker、分 4 批）；`git diff --check` 通过。另：试用 `--workers=4` 时
+  `universal-assistant` mobile 失败一次，单独重跑通过，按并行偶发记录。
+- **已知差异**：账户菜单缺 Upgrade plan / Profile / Help / Sign out；mobile detail
+  26,344（面板高度 / 滚动位置）；desktop detail 2,861；desktop 1px（composer）。
+- **下一步**：详情面板高度差（356.3 vs 343.8）与滚动落点；账户菜单补齐其余条目；
+  desktop detail 残差。严格门禁仍失败，parity 保持“进行中”。
+
+## 33. 进展（第二十六轮，2026-10-08，round 16-15：composer 合成层 + 知识列表重建 + 账户菜单）
+
+> 处理 16-14 记下的三类残差：desktop 1px（composer）、desktop / mobile 知识详情
+> 大面积差异、账户菜单条目缺失。本轮结束时**严格像素门禁 8 态全部为 0**
+> （`PARITY_PIXEL_STRICT=1`，0 failures），普通模式同样 0 failures。仅限当前
+> parity fixture（1440×900 / 390×844，两条消息的 workbench + tutor 三态）；
+> fixture 之外的界面与交互不在此结论内。
+
+- **composer 1px（desktop）**：用 `PARITY_LAYERS=1`（CDP LayerTree）取证，基线
+  `.main-bg` 带 `will-change: transform`，Chrome 因 Overlap 把 `#mainContent` 提升为
+  独立合成层，原点在列左缘；composer 圆角边框在该层内光栅化，抗锯齿结果与画进
+  根层不同（探针 (1233,842) RGB 32 vs 33）。给 `#socrates-main` 加 **仅桌面 web** 的
+  `transform: translateZ(0)`，得到同样的层原点。手机不加：不加为 0，加了反而 62。
+- **知识文件列表重建**：按基线 `renderKnowledgeBoundaryFile`（tutorSocratic.js）重写
+  `KnowledgeBoundaryPanel` 的文件视图——Internalized / Fuzzy / Not yet explored 分节
+  标题（新键 `kbSection*`，0.06em 字距）、`.kb-node` / `.kb-node-name` flex 行、
+  桌面 20px 行盒 / 手机继承 1.5 行高；详情面板按基线 `toggleKBDetail` 插在快照历史
+  之后；状态徽标大写；`→ Go` 标签行高对齐；知识视图底部 padding 10 → 12（基线
+  `#knowledgePanel` 上下各 12）。文件列表子树加入 web 文本默认值覆盖
+  （white-space / unicode-bidi / position 与 detail 子树同一套）。
+- **字体子集 109**：探针（`PARITY_FONTS_SELECTOR`，CDP `getPlatformFontsForNode`）
+  显示 `→ Go` 在 Universal 落到 DejaVu Sans（窄 1.64px）。基线拆分的
+  `@fontsource/noto-sans-sc` 对 U+2192（→）、U+A5（¥）、U+2605（★）加载 subset
+  109，而现有 chinese-simplified 文件不含这些字形。新增
+  `apps/socrates/assets/fonts/NotoSansSC-109-{400,500,600}.woff2`，web 端以同一
+  `Noto Sans SC` family + `unicode-range: U+a5,U+2192,U+2605` 注册。
+- **详情备注 textarea**：基线是原生 `<textarea>`（`resize: vertical`），右下角画出
+  拖拽柄；RNW 把 TextInput 重置为 `resize: none`。在 detail 子树里恢复
+  `resize: vertical`——这是上一次中间测量里两个 detail 态各剩 18 像素的原因，本轮
+  复测后归零。
+- **账户菜单补齐**：桌面与手机页脚的身份行现在都是账户触发器
+  （`socrates-sidebar-account-trigger`）。菜单按基线 `SidebarFooter.tsx` +
+  `AnchoredMenu`：身份行（→ Settings）、Upgrade plan（打开
+  `https://topodrive.top/pricing`）、Personalization、Profile（→ Settings，Universal
+  的资料在设置里）、Settings、分隔线、Sign out（**仅已登录非访客**）；点击菜单外
+  （侧栏内透明遮罩）关闭。**Help 未接入**：基线 Help 打开的是 SPA 快捷键速查表，
+  Universal 没有对应界面，`onOpenHelp` 入口保留但 App 不传，所以不显示。
+- **E2E / 工具**：新增 `frontend/e2e/universal-account-menu.spec.mjs`。
+  `ui-parity-check.mjs`：Universal 探针的 `footerBtn` 跳过账户触发器（基线对应物是
+  `.icon-btn` 快捷图标，触发器包住身份行后会被误选，导致上次 `footerBtn.size`
+  失败）；新增仅诊断用的 `PARITY_LAYERS` / `PARITY_FONTS_SELECTOR` /
+  `PARITY_CHROME_ARGS` 开关与 detail 截图前的 probe 调用，默认关闭，不改变比较逻辑。
+- **像素（exact 差异像素，严格模式）**：
+
+  | 状态 | 16-14 | 16-15 | 严格模式 |
+  |---|---|---|---|
+  | workbench desktop | 1 | 0 | PASS |
+  | workbench mobile | 0 | 0 | PASS |
+  | tutor overview desktop | 1 | 0 | PASS |
+  | tutor detail desktop | 2,861 | 0 | PASS |
+  | mistake book desktop | 1 | 0 | PASS |
+  | tutor overview mobile | 0 | 0 | PASS |
+  | tutor detail mobile | 26,344 | 0 | PASS |
+  | mistake book mobile | 0 | 0 | PASS |
+
+  全部 8 态 Δ>12 0、Δ>48 0、mean Δ0。16-14 记下的 mobile detail “面板高度
+  356.3 vs 343.8 / 滚动落点”在知识列表按基线结构重建后一并消失，没有单独改滚动。
+- **验证（最终代码）**：`apps/socrates` typecheck 通过；`test:shared` **227/227**；
+  `export:web`（`EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:4176/api/v2`）+
+  `check-api-bundle` 通过；`check-packages-dom` OK；`frontend npm run lint`
+  **0 errors / 629 warnings**；完整 Universal Playwright 桌面 + 手机 **30/30**
+  （15 个 spec，含 universal-tutor / universal-tutor-widgets / universal-account-menu，
+  `UNIVERSAL_PORT=4187`，单 worker）；parity 普通模式 0 failures、严格模式
+  0 failures；`git diff --check` 通过。
+- **已知差异 / 风险**：账户菜单无 Help（缺快捷键速查表）；Profile 指向 Settings 而非
+  独立资料页；严格 0 只覆盖 parity fixture 的 8 个截图态，菜单展开态、其它主题 /
+  语言、其它视口未做像素比对；`translateZ(0)` 是对 Chrome 合成行为的对齐，换浏览器
+  或 Chrome 版本可能需要重新取证。
+- **下一步**：把严格模式纳入常规 parity 门禁；考虑为账户菜单展开态、浅色主题、
+  中文界面补 fixture；Help / 快捷键速查表是否移植待定。
