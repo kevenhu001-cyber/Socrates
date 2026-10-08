@@ -42,6 +42,11 @@ export const TURN_ANCHOR_TOP_OFFSET = 12;
 /* The active turn never reserves less than this much answer room. */
 export const TURN_ANCHOR_MIN_RESERVE = 120;
 
+/* The user-bubble fade never runs longer than this, even when the send
+   glide itself travels further. The prompt must read as arrived within a
+   few frames of the submit; a far glide continues alone after the fade. */
+export const BUBBLE_FADE_MAX_MS = 240;
+
 /* Air kept below the reserved answer room before the composer. */
 export const TURN_ANCHOR_BOTTOM_GAP = 24;
 
@@ -685,10 +690,10 @@ export function scheduleActiveTurnToTop(
       /* The settle window runs just long enough for the keyboard/composer
          transition to finish; the hold's ResizeObserver keeps correcting
          drift past that. A shorter window means content-follow can pick
-         up the streaming answer sooner, so the user-bubble fade (380ms)
-         hands off to the camera follow with no visible dead zone on a
-         typical 180-220ms glide. */
-      settleNormalTurnAnchor(targetOffset, Date.now() + 220, done);
+         up the streaming answer sooner, so the user-bubble fade (capped
+         at BUBBLE_FADE_MAX_MS) hands off to the camera follow with no
+         visible dead zone on a typical 120-200ms glide. */
+      settleNormalTurnAnchor(targetOffset, Date.now() + 140, done);
     };
     /* P_send-glide — whatever the reader was looking at (the bottom, one
        screen up, or the first message of a long session), glide the whole
@@ -711,11 +716,10 @@ export function scheduleActiveTurnToTop(
     }
     /* Tie the user-bubble fade to the glide duration — the bubble lands
        on full opacity at the exact frame the camera lands on its target,
-       so the user reads a single coordinated arrival. Without this link
-       the bubble's opacity reaches 1 on a fixed clock (independent of
-       glide distance), so a 180ms glide finishes long before the bubble
-       does and a 900ms glide finishes long after — both read as a
-       disconnect between the prompt moving up and "settling in". A snap
+       so the user reads a single coordinated arrival. The fade is capped
+       so a far glide (up to SEND_GLIDE_MAX_MS) never leaves the prompt
+       dimmed while the camera is still travelling — beyond the cap the
+       bubble is already settled and the motion continues alone. A snap
        plan has no motion to coordinate with, so the bubble stays fully
        present instead of starting a fade that outlives the scroll. */
     if (!retryViewport && !plan.snap) {
@@ -726,7 +730,7 @@ export function scheduleActiveTurnToTop(
       if (promptBubble) {
         promptBubble.style.setProperty(
           '--bubble-fade-duration',
-          plan.duration + 'ms',
+          Math.min(plan.duration, BUBBLE_FADE_MAX_MS) + 'ms',
         );
         promptBubble.dataset.bubbleArriving = 'true';
       }

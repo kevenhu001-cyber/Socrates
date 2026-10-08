@@ -109,10 +109,10 @@ export function planMotionForUser(distance, opts) {
  * distance in its first tenth, which over thousands of pixels is
  * exactly the jump we are trying to avoid; ease-in-out accelerates
  * from rest, cruises, and lands soft on the prompt. */
-export const SEND_GLIDE_MIN_MS = 180;
-export const SEND_GLIDE_MAX_MS = 900;
-export const SEND_GLIDE_BASE_MS = 220;
-export const SEND_GLIDE_PER_DOUBLING_MS = 160;
+export const SEND_GLIDE_MIN_MS = 120;
+export const SEND_GLIDE_MAX_MS = 600;
+export const SEND_GLIDE_BASE_MS = 150;
+export const SEND_GLIDE_PER_DOUBLING_MS = 120;
 /* Distances up to this many viewports keep the ease-out curve. */
 export const SEND_GLIDE_LONG_VIEWPORTS = 1.5;
 

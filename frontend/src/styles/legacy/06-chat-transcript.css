@@ -320,14 +320,14 @@ body.admin-active #topicDisclaimer{display:none!important}
 /* The submitted prompt is already being moved by turnAnchor's single
    transcript scroll glide, so transform stays at none. The bubble's
    opacity ramp is **tied to the glide duration** — turnAnchor stamps
-   `--bubble-fade-duration` (== planSendGlide duration, 180-900ms) on the
-   just-sent user bubble, then sets `data-bubble-arriving` so this rule
-   kicks in. The bubble's fade ends at the exact frame the camera
-   arrives at the top, so the user reads a single coordinated landing
-   instead of "bubble pops in, then camera glides, then bubble fades,
-   then camera lands, then content-follow". History loads / prepended
-   pages / retries never set the attribute, so they keep opacity:1 from
-   the first frame.
+   `--bubble-fade-duration` (== planSendGlide duration capped at 240ms)
+   on the just-sent user bubble, then sets `data-bubble-arriving` so
+   this rule kicks in. The bubble reaches full opacity within the first
+   part of the glide, so the prompt reads as arrived even while a far
+   glide is still travelling, instead of "bubble pops in, then camera
+   glides, then bubble fades, then camera lands, then content-follow".
+   History loads / prepended pages / retries never set the attribute,
+   so they keep opacity:1 from the first frame.
    `animation:none` on the base rule matters: it stops the base .msg
    `msgIn` reveal from REPLAYING when `data-bubble-arriving` is removed
    at landing — a finished named animation restarts from 0 the moment

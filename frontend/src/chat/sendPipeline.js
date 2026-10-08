@@ -176,11 +176,15 @@ export async function submitChatMessage(textOverride,opts){
   var userClientId=null;
   if(isComposerSubmit){
     /* The arrow lifts off and the stop glyph settles in while the prompt
-       is committed (ui/sendGlyph.js). */
+       is committed (ui/sendGlyph.js). The composer clears synchronously
+       with the user bubble — before the placeholder resolves — so a cold
+       streamingTurn chunk fetch never leaves a stale draft on screen. The
+       turn payload was already snapshotted above, so clearing early is
+       safe; the placeholder still lands after the user row. */
     playSendGlyph();
     userClientId=addMessage("user",text,null,null,immediateAttList);
-    await precreateChatTurn();
     clearComposer("chat");updateComposerBtn();
+    await precreateChatTurn();
     /* Click-send (opts.blurAfterSend) ends the typing session: drop the
        editor focus so the composer collapses out of its focus-within
        visuals. Enter-send keeps the classic keep-typing flow by

@@ -108,11 +108,11 @@ test('mobile send places the submitted prompt and thinking state at the viewport
     requestAnimationFrame(sample);
   }));
   expect(sendFrames.length).toBeGreaterThan(0);
-  /* The submitted bubble fades from 0.4 to 1 across the same window as
+  /* The submitted bubble fades from 0.4 to 1 within the first part of
      the turn-anchor glide — turnAnchor stamps the user bubble with
-     `--bubble-fade-duration: <planSendGlide duration>` (180-900ms) and
-     `data-bubble-arriving`, so the bubble reaches full opacity at the
-     exact frame the camera lands. Some frames sit below 0.99 mid-fade;
+     `--bubble-fade-duration: min(<planSendGlide duration>, 240ms)` and
+     `data-bubble-arriving`, so the bubble reads as arrived even while a
+     far glide is still travelling. Some frames sit below 0.99 mid-fade;
      assert that opacity eventually reaches 0.99 within the sampled
      window and that no transform/visibility regresses — spatial motion
      stays owned by turnAnchor. */
