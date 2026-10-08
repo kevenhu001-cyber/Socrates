@@ -10,7 +10,7 @@
    sit white-on-white with a shadow in light. */
 html[data-theme="socrates"][data-mode],
 html[data-theme="socrates"][data-mode]:lang(zh) {
-  --font-sans: "Inter", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: "Inter", "Noto Sans SC", "Plus Jakarta Sans", sans-serif;
   --cg-font: var(--font-sans);
 }
 [data-mode="dark"] {

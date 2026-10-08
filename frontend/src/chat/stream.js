@@ -303,7 +303,13 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
       resp=await apiFetchRaw("/api/chat/stream",{
         method:"POST",
         body:apiBody,
-        signal:ac.signal
+        signal:ac.signal,
+        /* P_stream-priority — the stream is the content the user is actively
+           waiting on; mark it high so it wins bandwidth over background
+           subresources (fonts, images, viz chunks) on constrained links.
+           Chromium honours `priority`; other engines ignore the unknown
+           option harmlessly. */
+        priority:"high"
       });
     }catch(e){
       var eStatus=e&&e.status;

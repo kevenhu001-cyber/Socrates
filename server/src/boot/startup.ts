@@ -18,6 +18,7 @@
  */
 
 import { initDb } from '../db/index.js';
+import { getLlmDispatcher, startLlmKeepWarmWorker } from '../services/llm.js';
 
 /** ── 1. Production-only secret validation ──
  * Without SESSION_SECRET the api_keys table is encrypted with a public
@@ -161,7 +162,8 @@ function warmLlmProvider(): void {
             stream: false,
           }),
           signal: AbortSignal.timeout(60000),
-        });
+          dispatcher: getLlmDispatcher(),
+        } as unknown as RequestInit);
         if (resp.ok) {
           console.log(`[llm-warmup] Provider warmed in ${Date.now() - start}ms`);
         } else {
@@ -228,6 +230,7 @@ export function startBackgroundTasks(): void {
   warmPyodidePool();
   sweepStaleScratchDirs();
   warmLlmProvider();
+  startLlmKeepWarmWorker();
   startSchedulerDaemon();
   recoverAgentRuns();
   startMonitor();

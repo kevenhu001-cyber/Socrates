@@ -17,6 +17,7 @@
    contract, not this comment. */
 import './batchStorage.js';
 /* ─── Module imports (Phase 2 split) ─── */
+window.__SOCRATES_RELEASE_TAG__ = '20261008-speed-opt';
 /* P_perf-self-host — bundle the former CDN globals (marked, DOMPurify,
    katex, hljs, Fuse) before any consumer module evaluates. */
 import './vendor/init.js';

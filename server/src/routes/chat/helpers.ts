@@ -164,13 +164,45 @@ async function resolveRagContext(
 
   try {
     const { searchSessionChunksHybrid, sessionOwnedBy } = await import('../../services/chunkIndex.js');
+    /* P_ttfb-rag-timeout — the hybrid search's vector leg burns a remote
+     * embedding call, which on a flaky cross-border link can park the turn
+     * for seconds before the first token. RAG is best-effort recall: race
+     * the retrieval against a short budget (default 2s, CHAT_RAG_TIMEOUT_MS,
+     * capped at 10s) and degrade to no injection on timeout — the same
+     * outcome as an empty index. The orphaned retrieval still settles in
+     * the background; a late success is simply unused by this turn. */
+    const rawTimeout = Number(process.env.CHAT_RAG_TIMEOUT_MS);
+    const timeoutMs = Number.isFinite(rawTimeout) && rawTimeout > 0
+      ? Math.min(10_000, Math.floor(rawTimeout))
+      : 2000;
     /* The ownership check gates what is INJECTED, not what is read: the
        search is scoped to the session id and its hits are discarded unless
        the caller owns the session, so both can run at once. */
-    const [owned, hits] = await Promise.all([
+    const retrieval = Promise.all([
       sessionOwnedBy(ragSessionId, userId),
       searchSessionChunksHybrid(ragSessionId, query, { limit: RAG_MAX_HITS }),
     ]);
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let timed: Awaited<typeof retrieval> | null;
+    try {
+      timed = await Promise.race([
+        retrieval,
+        new Promise<null>((resolve) => {
+          timer = setTimeout(() => resolve(null), timeoutMs);
+          timer.unref?.();
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+    /* A timed-out race leaves `retrieval` pending; attach a no-op catch so
+       a late rejection is never reported as unhandled. */
+    retrieval.catch(() => {});
+    if (!timed) {
+      console.warn('[chat] RAG context injection timed out after', timeoutMs, 'ms; continuing without recall');
+      return null;
+    }
+    const [owned, hits] = timed;
     if (!owned) return null;
     if (!hits.length) return null;
     const blocks: string[] = [];

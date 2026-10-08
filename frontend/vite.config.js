@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import { fileURLToPath } from 'node:url';
 import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { gzipSync } from 'node:zlib';
+import { gzipSync, brotliCompressSync, constants as zlibConstants } from 'node:zlib';
 import { join, resolve } from 'node:path';
 
 function getBuildId() {
@@ -275,15 +275,26 @@ function createPrecompressedAssetsPlugin() {
     apply: 'build',
     closeBundle() {
       const distDir = join(process.cwd(), 'dist');
+      const compressAndWrite = (file) => {
+        const raw = readFileSync(file);
+        writeFileSync(file + '.gz', gzipSync(raw, { level: 9 }));
+        try {
+          writeFileSync(file + '.br', brotliCompressSync(raw, {
+            params: {
+              [zlibConstants.BROTLI_PARAM_QUALITY]: 11,
+            },
+          }));
+        } catch (_) {}
+      };
       try {
         for (const file of walk(join(distDir, 'assets'))) {
-          writeFileSync(file + '.gz', gzipSync(readFileSync(file), { level: 9 }));
+          compressAndWrite(file);
         }
-        /* The SPA entry too — deploy.sh installs it as index.<TS>.html.gz
-           next to the versioned file so nginx gzip_static can serve the
-           compressed document (location / needs gzip_static on). */
+        /* The SPA entry too — deploy.sh installs it as index.<TS>.html.gz / .br
+           next to the versioned file so nginx gzip_static/brotli_static can serve
+           the compressed document. */
         const indexHtml = join(distDir, 'index.html');
-        writeFileSync(indexHtml + '.gz', gzipSync(readFileSync(indexHtml), { level: 9 }));
+        compressAndWrite(indexHtml);
       } catch (error) {
         if (error && error.code !== 'ENOENT') throw error;
       }
@@ -344,6 +355,25 @@ export default defineConfig({
   define: { __SOCRATES_BUILD_ID__: JSON.stringify(getBuildId()) },
   root: '.',
   publicDir: 'public',
+  /* P_perf-woff2-only — modern browsers universally support WOFF2.
+     @fontsource packages declare both .woff2 and .woff in each @font-face rule,
+     which forces Vite to emit hundreds of redundant .woff files (~15MB extra
+     uncompressed disk footprint). PostCSS strips format('woff') before Vite
+     resolves asset URLs so only compact WOFF2 slices are bundled and transferred. */
+  css: {
+    postcss: {
+      plugins: [
+        {
+          postcssPlugin: 'strip-woff-fallback',
+          Declaration(decl) {
+            if (decl.prop === 'src' && decl.value.includes('.woff')) {
+              decl.value = decl.value.replace(/,\s*url\([^)]+\.woff\)\s*format\([^\)]+\)/g, '');
+            }
+          },
+        },
+      ],
+    },
+  },
   resolve: {
     alias: {
       '@socrates/contracts': fileURLToPath(new URL('../packages/contracts/src/index.ts', import.meta.url)),
@@ -354,6 +384,21 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     cssCodeSplit: true,
+    /* P_perf-no-css-data-urls — small below-fold stylesheets (deferred-*
+       leaves) reach the build as plain assets, not CSS entries, so the
+       default 4 KB inline budget would emit them as data: URLs. Two
+       reasons to forbid that: Content-Security-Policy style-src allows
+       'self' + 'unsafe-inline' but NOT data: (a data: stylesheet is
+       blocked in production and the surface silently loses its styles —
+       caught by e2e/landing-light-visual's console-error gate), and a
+       data: blob in HTML is uncacheable bytes on every load. Fonts and
+       images keep the default budget (their filePath never ends in
+       .css, so the woff2 slices inlined into the critical CSS are
+       unaffected). */
+    assetsInlineLimit: (filePath) => {
+      if (typeof filePath === 'string' && filePath.endsWith('.css')) return false;
+      return undefined;
+    },
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -381,10 +426,16 @@ export default defineConfig({
             if (f.includes('/node_modules/tldraw/') || f.includes('/node_modules/@tldraw/')) {
               return 'vendor-tldraw';
             }
+            if (f.includes('/node_modules/three/')) {
+              return 'vendor-three';
+            }
             if (f.includes('/node_modules/@lobehub/')) {
               return 'vendor-icons';
             }
             return;
+          }
+          if (f.includes('connector-icons') || f.includes('/assets/connector-icons/')) {
+            return 'vendor-connector-icons';
           }
         },
         entryFileNames: 'assets/[name]-[hash].js',

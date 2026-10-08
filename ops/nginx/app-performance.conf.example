@@ -1,3 +1,9 @@
+# Server-level prerequisites (in the `server {}` block, not here):
+#   listen 443 ssl http2;            # multiplexed asset download, single TLS handshake
+#   listen 443 quic reuseport;       # HTTP/3 — big win on lossy mobile / cross-border links
+#   add_header Alt-Svc 'h3=":443"';  # advertise HTTP/3
+# TLS 1.3 + a domestic CDN (EdgeOne) in front is what makes first paint fast
+# on China mobile networks; every location below assumes that setup.
 location /api/v2/ {
     rewrite ^/api/v2/(.*) /api/$1 break;
     proxy_pass http://127.0.0.1:3037;
@@ -7,6 +13,15 @@ location /api/v2/ {
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_set_header Connection "";
+    # P_perf-sse-nat — SSE streams idle for minutes while a reasoning model
+    # thinks; carrier-grade NAT (common on mobile) drops idle TCP without
+    # traffic. Kernel keepalive probes hold the socket through the silence
+    # alongside the app-level :keepalive comments (server/src/lib/sse.js).
+    proxy_socket_keepalive on;
+    # P_perf-sse-nodelay — push small SSE frames immediately instead of
+    # coalescing them (mirrors the origin's TCP_NODELAY in
+    # server/src/index.runtime.ts). Characters flow instead of clumping.
+    tcp_nodelay on;
     proxy_buffering off;
     proxy_cache off;
     proxy_read_timeout 300s;
@@ -21,6 +36,17 @@ location /assets/ {
     add_header Access-Control-Allow-Origin "*" always;
     etag on;
     gzip_static on;
+    brotli_static on;
+    # Vary on encoding so a shared edge cache never serves br bytes to a
+    # gzip-only client (or vice versa) after the first MISS populates it.
+    gzip_vary on;
+    # Hashed-immutable assets are re-read constantly and never change:
+    # cache their descriptors instead of stat()ing disk per request.
+    open_file_cache max=2000 inactive=60s;
+    open_file_cache_valid 60s;
+    open_file_cache_min_uses 2;
+    # Static hits are noise at this volume; errors still go to error_log.
+    access_log off;
     try_files $uri =404;
 }
 
@@ -56,6 +82,7 @@ location ~ ^/index\.[0-9]+\.html$ {
     add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
     add_header Cache-Control "no-cache, no-store, must-revalidate" always;
     gzip_static on;
+    brotli_static on;
     include /etc/nginx/snippets/socrates-csp-spa.conf;
 }
 

@@ -94,10 +94,15 @@ test('a large burst is revealed gradually, not dumped in one frame', async ({ pa
 });
 
 test('freshly revealed text fades in with opacity only, as inline runs', async ({ page }) => {
+  /* Stimulus is sized for the current playback cadence (base ~140 cps): a
+     single short delta drains in ~250 ms, inside one fade window, so the
+     poll below can miss the spans entirely. A sustained multi-delta stream
+     keeps reveals (and therefore fade runs) observable for seconds. */
+  const para = 'Streaming text fades in softly at the tail, the way chatgpt.com reveals an answer while it is written. ';
   await startStream(page, {
-    deltas: ['Streaming text fades in softly at the tail, the way chatgpt.com reveals an answer while it is written.'],
-    gapMs: 200,
-    holdOpenMs: 4000,
+    deltas: [para, para, para, para, para],
+    gapMs: 250,
+    holdOpenMs: 6000,
   });
   const live = page.locator('.msg.assistant').last().locator('.tool-run-prose.is-live');
   await expect(live).toBeVisible();

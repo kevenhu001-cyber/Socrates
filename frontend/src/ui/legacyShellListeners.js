@@ -21,7 +21,6 @@ export function mountLegacyShellListeners(actions) {
   click('mobileIncognitoBtn', actions.toggleIncognito);
   click('mobileNewChatBtn', actions.startNewChat);
   click('findBtn', actions.openFind);
-  click('summaryBtn', actions.openSummary);
   click('shareBtn', actions.openShare);
   click('apiSettingsBtn', actions.openSettings);
   bind(document, 'socrates:open-settings', actions.openSettings);

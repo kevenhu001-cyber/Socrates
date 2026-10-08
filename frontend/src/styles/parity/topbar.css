@@ -12,9 +12,6 @@
  */
 
 #appShell #topModelSwitcher { display: none; }
-#appShell .summary-btn { display: none; }
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .summary-btn { display: inline-flex; }
-html[data-main-view$="Panel"] #appShell .summary-btn { display: none; }
 
 @media (max-width: 768px) {
   body[data-conversation-active="true"] #appShell .top-bar-left {
@@ -158,8 +155,7 @@ html[data-main-view$="Panel"] #appShell .summary-btn { display: none; }
 
   /* ── Right actions ───────────────────────────────────────────────────── */
   #appShell #shareBtn,
-  #appShell #findBtn,
-  .summary-btn {
+  #appShell #findBtn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -178,13 +174,10 @@ html[data-main-view$="Panel"] #appShell .summary-btn { display: none; }
     transition: background-color var(--ui-duration-hover) ease;
   }
   #appShell #findBtn { width: 36px; padding: 0; }
-  #appShell .summary-btn { width: auto; min-width: 48px; padding: 0 10px; }
   #appShell #shareBtn:hover,
-  #appShell #findBtn:hover,
-  .summary-btn:hover { background: var(--ui-bg-hover); }
+  #appShell #findBtn:hover { background: var(--ui-bg-hover); }
   #appShell #shareBtn svg,
-  #appShell #findBtn svg,
-  .summary-btn svg { width: 18px; height: 18px; }
+  #appShell #findBtn svg { width: 18px; height: 18px; }
   #appShell #shareBtn.hidden,
   #appShell #findBtn.hidden { display: none; }
   /* Icon-only on desktop (sidebar-nav.spec contract). */

@@ -1,0 +1,15 @@
+/* critical-1.css — first-paint slice 1/5 (render-blocking).
+ *
+ * P_perf-css-split — the 955 KB single stylesheet blocked first paint on
+ * parse + transfer. It is now delivered as ordered slices: `critical-*`
+ * slices stay render-blocking, `deferred-*` slices load with media=print
+ * (lowest fetch priority, applied on load). The <link> order in
+ * frontend/index.html reproduces styles/index.css file-for-file, so the
+ * cascade is byte-identical to the single-file build; check-css-debt.mjs
+ * machine-checks that equivalence (see the load-order check there).
+ *
+ * This slice: structural tokens + legacy foundation + sidebar compat.
+ * Everything here styles the boot shell / auth gate / app chrome. */
+@import './tokens.css';
+@import './legacy/00-foundations.css';
+@import './legacy/01-sidebar.css';

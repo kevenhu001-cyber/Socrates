@@ -47,14 +47,17 @@ export interface PlaybackConfig {
 }
 
 export const DEFAULT_PLAYBACK_CONFIG: PlaybackConfig = {
-  /* Tuned toward chatgpt.com's reading cadence: a shallow buffer still reads
-     briskly (~90 cps ≈ 3–4 CJK words per frame-second), and a deep burst
-     catches up within ~1–2 s instead of trailing the network by several. */
-  baseCps: 90,
-  maxCps: 600,
-  catchUpPending: 400,
-  drainBoost: 2.2,
-  starveAfterMs: 320,
+  /* Conservative smoothing-first cadence: the baseline reveals slow
+     arrivals immediately, while bursts ramp to a modest ceiling instead
+     of dumping — the buffer exists to iron out upstream fluctuation, not
+     to race it. Transport-level clumping (Nagle, proxy buffering) is
+     fixed at the socket layer (index.runtime.ts, nginx tcp_nodelay), so
+     the clock only ever smooths real upstream burstiness. */
+  baseCps: 140,
+  maxCps: 800,
+  catchUpPending: 250,
+  drainBoost: 2.5,
+  starveAfterMs: 280,
 };
 
 export interface TickResult {

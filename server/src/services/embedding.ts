@@ -18,6 +18,7 @@
  * enrichment instead of persisting garbage into the HNSW index.
  */
 import { eq, desc } from 'drizzle-orm';
+import { getLlmDispatcher } from './llm.js';
 import { getDb } from '../db/index.js';
 import { embeddingConfig } from '../db/schema.js';
 import { decrypt, encryptionKey } from '../lib/crypto.js';
@@ -184,7 +185,8 @@ export async function embedTexts(
       },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(EMBED_TIMEOUT_MS),
-    });
+      dispatcher: getLlmDispatcher(),
+    } as unknown as RequestInit);
     if (!upstream.ok) {
       const detail = await upstream.text().catch(() => '');
       console.warn(`[embedding] upstream ${upstream.status}: ${detail.slice(0, 200)}`);

@@ -44,6 +44,17 @@ async function main() {
     console.log(`[server] Listening on http://0.0.0.0:${PORT} (${process.env.NODE_ENV || 'development'})`);
   });
 
+  /* P_sse-nodelay — Node leaves Nagle's algorithm ON by default: small SSE
+   * deltas (often 50–300 bytes) sit in the send buffer up to ~200 ms waiting
+   * to coalesce with an ACK, so characters reach the browser in clumps
+   * instead of flowing. Disable Nagle on every inbound socket. Bulk
+   * responses (assets, JSON bodies) are unaffected at any meaningful scale,
+   * and the upstream LLM pool already runs with noDelay for the same
+   * reason (services/llm.ts). */
+  server.on('connection', (socket) => {
+    try { socket.setNoDelay(true); } catch { /* socket closed already */ }
+  });
+
   installShutdown(server);
   installProcessSafetyNets();
 

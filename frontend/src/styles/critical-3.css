@@ -1,0 +1,36 @@
+/* critical-3.css — first-paint slice 3/5 (render-blocking).
+ *
+ * P_perf-css-split — viz/markdown, tutor scaffolds, agent/tool surfaces,
+ * thinking activity, fonts, base, app shell, chat/composer components,
+ * feature surfaces, restore compat (minus creation-surfaces, deferred),
+ * and the canonical desktop surface owners (parity/*). Transcript bubbles,
+ * tool cards, and the composer all paint from this slice.
+ * See critical-1.css for the contract. */
+@import './legacy/09-viz-markdown.css';
+@import './legacy/10-tutor-scaffolds.css';
+@import './legacy/11-agent-tools.css';
+@import './legacy/12-tutor-inline-tools.css';
+@import './legacy/13-composer-rich.css';
+@import './legacy/14-tool-surfaces.css';
+@import './legacy/15-thinking-activity.css';
+@import './legacy/16-final-contract.css';
+@import './foundations/fonts.css';
+@import './foundations/base.css';
+@import './layout/app-shell.css';
+@import './components/sidebar.css';
+@import './components/composer.css';
+@import './components/chat.css';
+@import './components/input.css';
+@import './components/menu.css';
+@import './components/detail.css';
+@import './features/surfaces.css';
+@import './components/tool-card.css';
+@import './features/tool-surfaces.css';
+@import './features/thinking-activity.css';
+@import './restore/chatgpt-ui.css';
+@import './restore/chatgpt-v2.css';
+@import './restore/ref-baseline.css';
+@import './restore/mobile-parity.css';
+@import './restore/chat-surface.css';
+@import './restore/chatgpt-parity.css';
+@import './restore/fixes.css';

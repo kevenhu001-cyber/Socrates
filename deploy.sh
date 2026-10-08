@@ -126,7 +126,7 @@ backup_previous() {
   $SUDO mkdir -p "$web_root/.previous"
   # Stable-name files (e.g. /var/www/topodrive.top/index.html) copy as
   # themselves; versioned files (index.<TS>.html) keep their timestamp.
-  for f in "$web_root"/index*.html "$web_root"/index*.html.gz "$web_root"/status*.html; do
+  for f in "$web_root"/index*.html "$web_root"/index*.html.gz "$web_root"/index*.html.br "$web_root"/status*.html; do
     [[ -f "$f" ]] || continue
     $SUDO cp -a "$f" "$web_root/.previous/$(basename "$f")"
   done
@@ -481,7 +481,7 @@ else
   for f in "$DIST_DIR"/*; do
     [[ -f "$f" ]] || continue
     fname=$(basename "$f")
-    [[ "$fname" == "index.html" || "$fname" == "index.html.gz" ]] && continue
+    [[ "$fname" == "index.html" || "$fname" == "index.html.gz" || "$fname" == "index.html.br" ]] && continue
     $SUDO install -m 644 -o www-data -g www-data "$f" "$APP_WEB_ROOT/$fname"
   done
 
@@ -491,6 +491,11 @@ else
   # `gzip_static on` in the HTML-serving location).
   if [[ -f "$DIST_DIR/index.html.gz" ]]; then
     $SUDO install -m 644 -o www-data -g www-data "$DIST_DIR/index.html.gz" "$APP_WEB_ROOT/$APP_FILE.gz"
+  fi
+  # brotli sibling for the versioned entry — nginx brotli_static serves
+  # index.<TS>.html.br when the client accepts brotli.
+  if [[ -f "$DIST_DIR/index.html.br" ]]; then
+    $SUDO install -m 644 -o www-data -g www-data "$DIST_DIR/index.html.br" "$APP_WEB_ROOT/$APP_FILE.br"
   fi
 
   # Repoint the nginx SPA fallback at the freshly deployed versioned file.
@@ -1050,6 +1055,41 @@ EOF
   if ! $SUDO find "$APP_WEB_ROOT/assets" -type f -mtime +"$ASSET_RETENTION_DAYS" -delete; then
     echo "WARNING: old asset cleanup failed; retained assets remain available" >&2
   fi
+  # P_edge-warmup — warm Cloudflare edge cache for the new versioned HTML and newly deployed assets
+  (
+    domain="https://app.topodrive.top"
+    curl -s -o /dev/null -A "Cloudflare-Edge-Warmer" "$domain/" || true
+    if [[ -n "$APP_FILE" && -f "$APP_WEB_ROOT/$APP_FILE" ]]; then
+      asset_paths=$(grep -oE '/assets/[a-zA-Z0-9_.-]+\.(js|css|woff2)' "$APP_WEB_ROOT/$APP_FILE" | sort -u)
+      for p in $asset_paths; do
+        curl -s -o /dev/null -H "Accept-Encoding: gzip, br" "$domain$p" || true
+      done
+      # P_edge-warmup-fonts — webfonts are referenced from the entry CSS, not
+      # the HTML, so the loop above never warms them and each slice's first
+      # visitor pays the origin round trip (painful on high-RTT China links).
+      # Warm the slices every visitor needs: latin first, then Noto Sans SC
+      # 400 (the default CJK weight). Capped and best-effort — this whole
+      # probe runs backgrounded and never fails the deploy.
+      for css in $asset_paths; do
+        case "$css" in
+          *.css)
+            css_body=$(curl -s --max-time 8 -H "Accept-Encoding: gzip" "$domain$css" || true)
+            if [[ -n "$css_body" ]]; then
+              font_list=$(echo "$css_body" | grep -oE '/assets/[a-zA-Z0-9_.-]+\.woff2' | sort -u)
+              echo "$font_list" | grep 'latin' | head -8 | while IFS= read -r font; do
+                [[ -n "$font" ]] || continue
+                curl -s -o /dev/null "$domain$font" || true
+              done
+              echo "$font_list" | grep 'noto-sans-sc' | grep -- '-400-' | head -6 | while IFS= read -r font; do
+                [[ -n "$font" ]] || continue
+                curl -s -o /dev/null "$domain$font" || true
+              done
+            fi
+            ;;
+        esac
+      done
+    fi
+  ) &>/dev/null &
 else
   rollback_backend
   GATE_RESULTS+=("  state: NOT updated (gate failed — last known-good preserved)")

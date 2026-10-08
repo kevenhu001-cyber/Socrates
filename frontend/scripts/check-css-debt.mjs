@@ -207,6 +207,88 @@ function checkCascadeOrder() {
   return problems;
 }
 
+/* ---------- 1b. split-load order ---------- */
+/* P_perf-css-split — the single render-blocking stylesheet is delivered as
+ * ordered slices (critical-* blocking, deferred-* via media=print swap).
+ * The <link> order in frontend/index.html must reproduce the flattened
+ * styles/index.css file-for-file: any shuffle silently flips cascade
+ * winners. styles/index.css stays the canonical manifest (still checked
+ * above); this check pins the HTML to it. */
+function checkHtmlLoadOrder() {
+  const problems = [];
+  const flatExpected = [];
+  for (const spec of importsIn(join(STYLES, 'index.css'))) {
+    const key = spec.replace(/^\.\//, '');
+    const nested = ORDERED_MANIFESTS[key];
+    if (nested) {
+      const dir = key.slice(0, key.lastIndexOf('/') + 1);
+      for (const sub of nested) flatExpected.push(dir + sub.replace(/^\.\//, ''));
+    } else {
+      flatExpected.push(key);
+    }
+  }
+  const html = readFileSync(join(FRONTEND, 'index.html'), 'utf8');
+  const linkRe = /<link\s+rel="stylesheet"\s+href="\/src\/styles\/([^"]+)"([^>]*)>/g;
+  const flatActual = [];
+  let m;
+  let linkIndex = 0;
+  let deferredCount = 0;
+  while ((m = linkRe.exec(html)) !== null) {
+    linkIndex += 1;
+    const manifest = m[1];
+    const attrs = m[2] || '';
+    /* A link is either a slice manifest (critical-*.css, expanded below)
+     * or a self-contained leaf (no @import — the below-fold files). Both
+     * contribute their files in document order. */
+    const isManifest = manifest !== 'themes.css' && importsIn(join(STYLES, manifest)).length > 0;
+    const isDeferred = !isManifest && manifest !== 'themes.css' || /^deferred-/.test(manifest);
+    if (isDeferred) {
+      deferredCount += 1;
+      if (!/media="print"/.test(attrs) || !/onload="this\.media='all'"/.test(attrs)) {
+        problems.push(`<link> #${linkIndex} (${manifest}) must load non-blocking via media="print" onload="this.media='all'"`);
+      }
+    } else if (/media=/.test(attrs)) {
+      problems.push(`<link> #${linkIndex} (${manifest}) is a critical slice and must stay render-blocking (no media=)`);
+    }
+    if (manifest === 'themes.css') {
+      flatActual.push('themes.css');
+      continue;
+    }
+    const nested = importsIn(join(STYLES, manifest));
+    if (nested.length === 0) {
+      /* Self-contained leaf linked directly. A leaf must stay @import-free:
+       * Vite asset-handles non-entry stylesheet links instead of resolving
+       * their imports, which would ship raw @import text to the browser. */
+      const leafText = stripComments(readFileSync(join(STYLES, manifest), 'utf8'));
+      if (/@import\s+['"]/.test(leafText)) {
+        problems.push(`${manifest} is linked directly but contains @import — only slice manifests may carry imports`);
+      } else {
+        flatActual.push(manifest);
+      }
+    } else {
+      for (const spec of nested) {
+        flatActual.push(spec.replace(/^\.\//, ''));
+      }
+    }
+  }
+  if (deferredCount === 0) problems.push('no below-fold stylesheet links found in index.html — the css split regressed to a single blocking bundle');
+  if (flatActual.filter((f) => f === 'themes.css').length !== 1) {
+    problems.push('themes.css must close the cascade exactly once as the final <link>');
+  } else if (flatActual[flatActual.length - 1] !== 'themes.css') {
+    problems.push('themes.css must be the final stylesheet <link>');
+  }
+  if (flatActual.length !== flatExpected.length) {
+    problems.push(`split-bundle file count changed (expected ${flatExpected.length}, found ${flatActual.length}) — styles/index.css and the index.html slices drifted`);
+  }
+  const length = Math.max(flatActual.length, flatExpected.length);
+  for (let i = 0; i < length; i += 1) {
+    if (flatActual[i] !== flatExpected[i]) {
+      problems.push(`cascade position #${i + 1} must be '${flatExpected[i] ?? '(none)'}' (found '${flatActual[i] ?? '(none)'}')`);
+    }
+  }
+  return problems;
+}
+
 /* ---------- 2. debt ratchet ---------- */
 function collectCounts() {
   const totals = { live: {}, frozen: {} };
@@ -238,6 +320,7 @@ function main() {
 
   const failures = [
     ...orderProblems.map((p) => `cascade: ${p}`),
+    ...checkHtmlLoadOrder().map((p) => `load order: ${p}`),
     ...themeOwnershipProblems().map((p) => `theme ownership: ${p}`),
   ];
 
