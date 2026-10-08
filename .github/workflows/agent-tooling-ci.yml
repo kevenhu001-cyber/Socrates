@@ -49,6 +49,9 @@ on:
       - 'frontend/src/ui/agent*'
       - 'frontend/test/**'
       - 'frontend/e2e/agent-steps.spec.mjs'
+      # Workflow-only edits should exercise this focused lane too; otherwise a
+      # syntax/runtime regression can only be discovered after merge/manual run.
+      - '.github/workflows/agent-tooling-ci.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
