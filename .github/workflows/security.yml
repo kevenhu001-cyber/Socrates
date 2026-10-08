@@ -121,15 +121,28 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          # SBOM generation installs all three lockfiles. Persist the npm
-          # package cache across runs instead of redownloading every tarball.
+          # A cold SBOM build still benefits from npm tarball reuse.
           cache: npm
           cache-dependency-path: |
             frontend/package-lock.json
             server/package-lock.json
             mobile/package-lock.json
 
+      # The SBOM is deterministic for these three lockfiles and the pinned
+      # CycloneDX generator. Cache the generated documents themselves so the
+      # common case can skip three npm installs and generation entirely.
+      - name: Restore generated SBOMs
+        id: sbom-cache
+        uses: actions/cache@v4
+        with:
+          path: sbom
+          key: >-
+            ${{ runner.os }}-sbom-cdx-6.0.1-v1-${{
+              hashFiles('frontend/package-lock.json', 'server/package-lock.json', 'mobile/package-lock.json')
+            }}
+
       - name: Install CycloneDX CLI once
+        if: steps.sbom-cache.outputs.cache-hit != 'true'
         run: npm install --global @cyclonedx/cyclonedx-npm@6.0.1 --prefer-offline --no-audit --no-fund
 
       # An SBOM per client is the prerequisite for answering "are we
@@ -137,6 +150,7 @@ jobs:
       # signing releases later. Generated from the lockfiles so it reflects
       # what actually installs.
       - name: Generate CycloneDX SBOMs
+        if: steps.sbom-cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p sbom
           for project in frontend server mobile; do
@@ -148,6 +162,12 @@ jobs:
               "$project/package-lock.json"
             echo "::endgroup::"
           done
+
+      - name: Verify SBOM cache/generation output
+        run: |
+          test -s sbom/frontend.cdx.json
+          test -s sbom/server.cdx.json
+          test -s sbom/mobile.cdx.json
 
       - uses: actions/upload-artifact@v7
         with:
