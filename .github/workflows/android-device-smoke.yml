@@ -30,6 +30,9 @@ env:
   ANDROID_BUILD_TOOLS: '35.0.0'
   ANDROID_NDK_VERSION: '27.1.12297006'
   DETOX_AVD_NAME: 'socrates_api_35'
+  # Detox owns the Gradle command; this enables the reusable local build cache
+  # without having to modify Detox's generated command line.
+  GRADLE_OPTS: '-Dorg.gradle.caching=true'
 
 jobs:
   android-device-smoke:
@@ -52,20 +55,17 @@ jobs:
 
       - uses: android-actions/setup-android@v4
         with:
-          # `tools` is an obsolete SDK package and is no longer present in
-          # Google's repository. Keep the runner setup limited to the package
-          # needed by the pinned component install below.
           packages: platform-tools
 
+      # This lane deliberately deletes Gradle caches before emulator boot to
+      # reclaim disk. Restore shared caches for the build, but do not spend time
+      # trying to save an emptied cache in the post step.
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
 
       - name: Free runner disk space
         run: |
-          # GitHub's ubuntu-latest image ships large toolchains we do not need
-          # here. Removing them before the Detox build/emulator avoids the
-          # recurring 'No space left on device' failures on this lane. Keep the
-          # Android SDK in /usr/local/lib/android intact because setup-android
-          # has already pointed ANDROID_HOME at it.
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /opt/ghc
           sudo rm -rf /opt/hostedtoolcache/Swift
@@ -84,7 +84,7 @@ jobs:
 
       - name: Install mobile dependencies
         working-directory: mobile
-        run: npm ci
+        run: npm ci --prefer-offline --no-audit --no-fund
 
       - name: Generate Detox-enabled Android project
         working-directory: mobile
