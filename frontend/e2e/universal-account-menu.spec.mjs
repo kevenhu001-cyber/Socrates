@@ -8,7 +8,7 @@ import { ensureSidebarOpen } from './_universal-helpers.mjs';
  * outside closes it. Help (the SPA keyboard cheatsheet) has no Universal
  * counterpart and is intentionally absent. Every call is mocked.
  */
-test('universal account menu mirrors the baseline entries and closes outside', async ({ page }) => {
+test('universal account menu mirrors the baseline entries and closes outside', async ({ page }, testInfo) => {
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
   let logoutCalls = 0;
@@ -33,6 +33,7 @@ test('universal account menu mirrors the baseline entries and closes outside', a
 
   const trigger = page.getByTestId('socrates-sidebar-account-trigger');
   const menu = page.getByTestId('socrates-sidebar-account-menu');
+  const backdrop = page.getByTestId('socrates-sidebar-account-backdrop');
   await trigger.click();
   await expect(menu).toBeVisible();
   for (const name of ['Upgrade plan', 'Personalization', 'Profile', 'Settings', 'Sign out']) {
@@ -41,15 +42,22 @@ test('universal account menu mirrors the baseline entries and closes outside', a
   await expect(menu.getByRole('menuitem', { name: 'Help', exact: true })).toHaveCount(0);
   await expect(page.getByTestId('socrates-account-menu-identity')).toBeVisible();
 
-  // The real outside boundary is the document, not the sidebar box: clicking
-  // the transcript/main column must close the anchored menu as well.
-  await page.locator('#socrates-main').click({ position: { x: 40, y: 160 } });
+  // Desktop/tablet expose the document outside boundary directly, so a click in
+  // the transcript exercises the document-level closer. On phone the open
+  // drawer intentionally covers the main column with its backdrop; that
+  // backdrop is the real user-reachable outside boundary and must win hit
+  // testing instead of forcing a click through it.
+  if (testInfo.project.name === 'mobile') {
+    await backdrop.click({ position: { x: 20, y: 120 } });
+  } else {
+    await page.locator('#socrates-main').click({ position: { x: 40, y: 160 } });
+  }
   await expect(menu).toHaveCount(0);
 
   // Sidebar-local outside press still closes through the same React backdrop.
   await trigger.click();
   await expect(menu).toBeVisible();
-  await page.getByTestId('socrates-sidebar-account-backdrop').click({ position: { x: 20, y: 120 } });
+  await backdrop.click({ position: { x: 20, y: 120 } });
   await expect(menu).toHaveCount(0);
 
   // Upgrade plan opens the same pricing page as the SPA link.
