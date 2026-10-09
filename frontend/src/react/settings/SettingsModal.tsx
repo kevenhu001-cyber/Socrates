@@ -1,520 +1,61 @@
-import { hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
-
-import { getApiFetch, getCurrentLang, getCurrentUser, getLegacyActions, i18n } from '../legacy/gateway.ts';
-import { installSettingsBridge, useSettingsSnapshot } from './settings.bridge';
-import { closeSettings, toggleExternalApi } from './settings.service';
-import { ProviderList, useProviderListState } from './ProviderList';
-import { useProviderConfigStore } from '../../config/providerConfig.store';
-import { confirmClearSettings } from '../../ui/dangerConfirms.js';
-import { useProfileDispatch, useProfileSnapshot } from '../profileModal/profileModal.bridge';
-import { getAvailablePresets, getTonePreset, setTonePreset } from '../../config/tonePresets.js';
-import { trapFocus, setModalOpen } from '../../ui/modalA11y.js';
-import {
-  displayPrefs, setDisplayFont, setDisplayWidth, toggleGrid,
-  setBackgroundDark, setBackgroundLight, resetBackgroundDark, resetBackgroundLight,
-  DISPLAY_FONT_STEPS, DISPLAY_WIDTH_STEPS, FONT_LABELS, WIDTH_LABELS,
-} from '../../displayPrefs.js';
-import { getAllMemories, removeMemory, setMemory, clearAllMemories } from '../../storage/memoryStore.js';
-
-const OVERLAY_ID = 'settingsOverlay';
-const TRACK_ID = 'stgToggleTrack';
-const PROVIDER_LIST_ID = 'providerList';
-const TONE_OPTIONS_ID = 'tonePresetOptions';
-const SAVE_BTN_ID = 'saveSettingsBtn';
+import { hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
+import { useSettingsSnapshot, installSettingsBridge } from './settings.bridge';
+import { closeSettings } from './settings.service';
+import { SettingsHeader, SettingsNavigation } from './SettingsModalChrome';
+import { SettingsPanes } from './SettingsPanes';
+import { useSettingsDialogA11y } from './useSettingsDialogA11y';
+import { useSettingsNavigation } from './useSettingsNavigation';
+import { useSettingsPreferences } from './useSettingsPreferences';
 
 function SettingsModal() {
-  const snap = useSettingsSnapshot();
-  const providerConfig = useProviderConfigStore((state) => state);
+  const snapshot = useSettingsSnapshot();
   const overlayRef = useRef<HTMLDivElement>(null);
-  const [section, setSection] = useState('general');
-  useEffect(() => {
-    const select = (event: Event) => {
-      const value = (event as CustomEvent<string>).detail;
-      if (['general', 'personalization', 'account'].includes(value)) setSection(value);
-    };
-    document.addEventListener('socrates:settings-section', select);
-    return () => document.removeEventListener('socrates:settings-section', select);
-  }, []);
-  const [query, setQuery] = useState('');
-  const [uiLang, setUiLang] = useState(() => getCurrentLang());
-  const [saveError, setSaveError] = useState('');
-  const [selectedTone, setSelectedTone] = useState(() => getTonePreset());
-  const [imageModel, setImageModel] = useState(() => {
-    try { return localStorage.getItem('socrates-image-model') || ''; } catch { return ''; }
-  });
-  const [voiceLanguage, setVoiceLanguage] = useState(() => localStorage.getItem('socrates-voice-language') || 'auto');
-  const [memories, setMemories] = useState<Array<{ id: string; key: string; value: string }>>(() => {
-    try { return getAllMemories(); } catch { return []; }
-  });
-  const [newMemoryKey, setNewMemoryKey] = useState('');
-  const [newMemoryVal, setNewMemoryVal] = useState('');
-  const [customInstructions, setCustomInstructions] = useState(() => {
-    try { return localStorage.getItem('socrates-custom-instructions') || ''; } catch { return ''; }
-  });
-  const profile = useProfileSnapshot();
-  const profileActions = useProfileDispatch();
-  /* displayPrefs is a live module binding — mirror it into state so the
-     segmented controls re-render when a step is picked. */
-  const [disp, setDisp] = useState(() => ({ ...displayPrefs }));
-  const applyDisp = (mutate: () => void) => { mutate(); setDisp({ ...displayPrefs }); };
-  const lang = uiLang;
-  const label = (zh: string, en: string) => lang === 'zh' ? zh : en;
-  const savePreference = async (patch: Record<string, unknown>) => {
-    try {
-      const api = getApiFetch();
-      if (!api) throw new Error('apiFetch unavailable');
-      const result = await api('/api/users/me/preferences', { method: 'PATCH', body: patch });
-      const user = getCurrentUser<{ preferences?: unknown }>();
-      if (user) user.preferences = result.preferences;
-      setSaveError('');
-    } catch {
-      setSaveError(label('偏好已保存在此设备；账户同步暂不可用。', 'Saved on this device; account sync is unavailable.'));
-    }
-  };
-  const categories = [
-    ['general', label('通用', 'General')], ['display', label('外观', 'Display')],
-    ['notifications', label('通知', 'Notifications')],
-    ['personalization', label('个性化', 'Personalization')], ['models', label('模型与语音', 'Models & voice')],
-    ['apps', label('应用与连接', 'Apps & connections')], ['data', label('数据管理', 'Data controls')],
-    ['account', label('账户', 'Account')],
-  ];
+  const preferences = useSettingsPreferences();
+  const navigation = useSettingsNavigation(preferences.label);
+  useSettingsDialogA11y(snapshot.open, overlayRef);
 
-  const legacy = getLegacyActions();
-  const providers = providerConfig.providers.map((provider) => ({
-    ...provider,
-    isActive: provider.id === providerConfig.activeId || (!providerConfig.activeId && provider.isBuiltIn),
-  }));
-  const providerState = useProviderListState();
-  const tonePresets = getAvailablePresets();
-
-  /* Esc-to-close + focus management, replacing the legacy
-     installModalA11y({ overlayId: 'settingsOverlay' }) registration
-     (which ran before React mounted and would have found no element). */
-  useEffect(() => {
-    const overlay = overlayRef.current;
-    if (!overlay) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        closeSettings();
-      } else if (e.key === 'Tab') {
-        trapFocus(e, overlay);
-      }
-    }
-    overlay.addEventListener('keydown', onKey, true);
-    return () => overlay.removeEventListener('keydown', onKey, true);
-  }, [legacy]);
-
-  useEffect(() => {
-    if (!snap.open) return;
-    setModalOpen(OVERLAY_ID, true);
-    const t1 = window.setTimeout(() => {
-      const explicit = overlayRef.current?.querySelector('[data-initial-focus]') as
-        | HTMLElement
-        | null;
-      if (explicit) {
-        try { explicit.focus({ preventScroll: true }); } catch (_err) { /* focus is best-effort */ }
-      }
-    }, 50);
-    return () => {
-      window.clearTimeout(t1);
-      setModalOpen(OVERLAY_ID, false);
-    };
-  }, [snap.open]);
-
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      closeSettings();
-    }
+  const handleOverlayClick = (event: React.MouseEvent) => {
+    if (event.target === event.currentTarget) closeSettings();
   };
 
   return (
     <div
       ref={overlayRef}
-      className={`settings-overlay${snap.open ? '' : ' hidden'}`}
-      id={OVERLAY_ID}
+      className={'settings-overlay' + (snapshot.open ? '' : ' hidden')}
+      id="settingsOverlay"
       role="dialog"
       aria-modal="true"
       aria-labelledby="settingsTitle"
       onClick={handleOverlayClick}
     >
-      <div className="settings-modal settings-modal--full" onClick={(e) => e.stopPropagation()}>
-        <div className="settings-header">
-          <span className="settings-title" id="settingsTitle">{label('设置', 'Settings')}</span>
-          <button
-            className="settings-close"
-            id="settingsCloseBtn"
-            aria-label={label('关闭', 'Close')}
-            data-i18n-aria="common.close"
-            data-initial-focus="true"
-            onClick={closeSettings}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+      <div className="settings-modal settings-modal--full" onClick={(event) => event.stopPropagation()}>
+        <SettingsHeader label={preferences.label} onClose={closeSettings} />
         <div className="settings-shell">
-          <aside className="settings-nav" aria-label={label('设置分类', 'Settings categories')}>
-            <input type="search" placeholder={label('搜索设置', 'Search settings')} aria-label={label('搜索设置', 'Search settings')} value={query} onChange={(event) => setQuery(event.target.value)} />
-            {categories.filter(([, name]) => name.toLowerCase().includes(query.toLowerCase())).map(([key, name]) => (
-              <button key={key} data-section={key} className={section === key ? 'active' : ''} onClick={() => setSection(key)}>{name}</button>
-            ))}
-          </aside>
-        <div className="settings-body">
-          <section className="settings-pane" hidden={section !== 'general'}>
-            <h2>{label('通用', 'General')}</h2>
-            <label className="settings-choice">{label('外观', 'Appearance')}
-              <select value={document.documentElement.getAttribute('data-theme-preference') || 'system'} onChange={(event) => {
-                document.querySelector<HTMLElement>(`[data-theme-option="${event.target.value}"]`)?.click();
-                void savePreference({ theme: event.target.value });
-              }}>
-                <option value="system">{label('跟随系统', 'System')}</option><option value="light">{label('浅色', 'Light')}</option><option value="dark">{label('深色', 'Dark')}</option>
-              </select>
-            </label>
-            <label className="settings-choice">{label('语言', 'Language')}
-              <select value={lang} onChange={(event) => { setUiLang(event.target.value as 'zh' | 'en'); getLegacyActions().profile.setLang(event.target.value); void savePreference({ language: event.target.value }); }}>
-                <option value="zh">中文</option><option value="en">English</option>
-              </select>
-            </label>
-          </section>
-          <section className="settings-pane" hidden={section !== 'display'}>
-            <h2>{label('外观', 'Display')}</h2>
-            <div className="settings-field">
-              <span className="settings-label">{label('文字大小', 'Text size')}</span>
-              <div className="display-prefs-segs" role="group" aria-label={label('文字大小', 'Text size')}>
-                {DISPLAY_FONT_STEPS.map((step, i) => (
-                  <button key={step} type="button" className={`display-prefs-seg${disp.font === step ? ' on' : ''}`} aria-pressed={disp.font === step} onClick={() => applyDisp(() => setDisplayFont(step))}>{FONT_LABELS[i]}</button>
-                ))}
-              </div>
-            </div>
-            <div className="settings-field">
-              <span className="settings-label">{label('内容宽度', 'Content width')}</span>
-              <div className="display-prefs-segs" role="group" aria-label={label('内容宽度', 'Content width')}>
-                {DISPLAY_WIDTH_STEPS.map((step, i) => (
-                  <button key={step} type="button" className={`display-prefs-seg${disp.width === step ? ' on' : ''}`} aria-pressed={disp.width === step} onClick={() => applyDisp(() => setDisplayWidth(step))}>{WIDTH_LABELS[i]}</button>
-                ))}
-              </div>
-            </div>
-            <label className="settings-choice">{label('对话背景网格', 'Conversation grid')}
-              <button type="button" className={`stg-toggle-track${disp.showGrid !== false ? ' on' : ''}`} role="switch" aria-checked={disp.showGrid !== false} onClick={() => applyDisp(() => toggleGrid())}>
-                <span className="stg-toggle-knob" />
-              </button>
-            </label>
-            <div className="settings-field">
-              <span className="settings-label">{label('自定义背景色', 'Custom background')}</span>
-              <div className="settings-bg-pickers">
-                <label className="settings-bg-picker">
-                  <input type="color" value={disp.darkBg || '#09090b'} onChange={(event) => applyDisp(() => setBackgroundDark(event.target.value))} />
-                  <span>{label('深色', 'Dark')}</span>
-                </label>
-                <button type="button" className="settings-btn secondary" onClick={() => applyDisp(() => resetBackgroundDark())}>{label('重置', 'Reset')}</button>
-                <label className="settings-bg-picker">
-                  <input type="color" value={disp.lightBg || '#ffffff'} onChange={(event) => applyDisp(() => setBackgroundLight(event.target.value))} />
-                  <span>{label('浅色', 'Light')}</span>
-                </label>
-                <button type="button" className="settings-btn secondary" onClick={() => applyDisp(() => resetBackgroundLight())}>{label('重置', 'Reset')}</button>
-              </div>
-            </div>
-          </section>
-          <section className="settings-pane" hidden={section !== 'notifications'}>
-            <h2>{label('通知', 'Notifications')}</h2>
-            {/* Push delivery is FCM-backed and Android-only — the web SPA
-               registers no push token and has no service worker, so a
-               toggle here would claim to control something it cannot.
-               The Android client owns the switch (mobile preferences
-               `notifications`); this pane just says so. */}
-            <p>{label(
-              '推送通知仅在 Android 客户端可用。请在手机端的应用设置中开关通知。',
-              'Push notifications are available in the Android app only. Turn them on or off in the app settings on your phone.',
-            )}</p>
-          </section>
-          <section className="settings-pane" hidden={section !== 'apps'}>
-            <h2>{label('应用与连接', 'Apps & connections')}</h2>
-            <p>{label('管理已连接的插件与服务。', 'Manage connected plugins and services.')}</p>
-            <button className="settings-btn secondary" onClick={() => { legacy.navigation.closeSettings(); legacy.navigation.openNav('plugins'); }}>{label('打开插件', 'Open plugins')}</button>
-          </section>
-          <section className="settings-pane" hidden={section !== 'data'}>
-            <h2>{label('数据管理', 'Data controls')}</h2>
-            <p>{label('你的文件和作品保存在资料库，可随时逐项删除。', 'Your files and artifacts are in Library, where you can remove them individually.')}</p>
-            <button className="settings-btn secondary" onClick={() => { legacy.navigation.closeSettings(); legacy.navigation.openNav('library'); }}>{label('打开资料库', 'Open library')}</button>
-          </section>
-          <section className="settings-pane" hidden={section !== 'account'}>
-            <h2>{label('账户', 'Account')}</h2>
-            <section className="settings-section">
-              <div className="settings-account-card">
-                <span className="user-avatar settings-account-avatar">{profile.user.initials || '?'}</span>
-                <div className="settings-account-id">
-                  <input
-                    className="settings-account-name"
-                    type="text"
-                    maxLength={50}
-                    defaultValue={profile.user.displayName}
-                    placeholder={label('你的名字', 'Your name')}
-                    aria-label={label('显示名称', 'Display name')}
-                    onBlur={(e) => profileActions.saveName(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                  />
-                  <span className="settings-account-email">{profile.user.email || label('访客模式', 'Guest session')}</span>
-                </div>
-                <span className={`tier-badge tier-${profile.user.tier}`}>{profile.user.tier.charAt(0).toUpperCase() + profile.user.tier.slice(1)}</span>
-              </div>
-            </section>
-            <section className="settings-section">
-              <div className="settings-section-head"><h3>{label('账户详情', 'Account details')}</h3></div>
-              <div className="settings-choice"><span>{label('加入时间', 'Joined')}</span><span className="settings-choice-value">{profile.user.joinedAt || '—'}</span></div>
-              <div className="settings-choice"><span>{label('邮箱验证', 'Email verified')}</span><span className={`settings-choice-value${profile.user.verifiedAt ? ' is-yes' : ''}`}>{profile.user.verifiedAt ? label('已验证', 'Verified') : label('未验证', 'Not verified')}</span></div>
-              <div className="settings-choice"><span>{label('用户 ID', 'User ID')}</span><span className="settings-choice-value settings-mono">{profile.user.userId || '—'}</span></div>
-              <div className="settings-choice"><span>{label('续期', 'Renewal')}</span><span className="settings-choice-value">{profile.user.subEnd || '—'}</span></div>
-            </section>
-            <section className="settings-section">
-              <div className="settings-section-head"><h3>{label('数据与用量', 'Data & usage')}</h3></div>
-              <div className="settings-choice"><span>{label('Token 用量', 'Token usage')}</span>
-                <button type="button" className="settings-btn secondary" onClick={() => profileActions.openUsage()}>{label('查看', 'View')}</button></div>
-              <div className="settings-choice"><span>{label('已归档会话', 'Archived sessions')}</span>
-                <button type="button" className="settings-btn secondary" onClick={() => profileActions.openStorage()}>{label('管理', 'Manage')}</button></div>
-            </section>
-            <section className="settings-section">
-              <div className="settings-section-head"><h3>{label('会话', 'Session')}</h3></div>
-              <div className="settings-choice"><span>{label('退出当前设备上的登录状态', 'End the session on this device')}</span>
-                <button type="button" className="settings-btn secondary" onClick={() => profileActions.signOut()}>{label('退出登录', 'Sign out')}</button></div>
-            </section>
-            <section className="settings-section settings-danger-zone">
-              <div className="settings-section-head"><h3>{label('危险区', 'Danger zone')}</h3></div>
-              <div className="settings-choice"><span className="settings-danger-text">{label('永久删除账户及全部数据', 'Permanently delete your account and all data')}</span>
-                <button type="button" className="settings-btn danger" onClick={() => profileActions.deleteAccount()}>{label('删除账户', 'Delete account')}</button></div>
-            </section>
-          </section>
-          <section className="settings-pane" hidden={section !== 'personalization'}>
-            <h2>{label('个性化', 'Personalization')}</h2>
-
-            <section className="settings-section">
-              <div className="settings-section-head">
-                <h3>{label('助手语调风格', 'Tone & voice')}</h3>
-                <p>{label('选择助手的说话风格。', 'Choose how Socrates speaks in a session.')}</p>
-              </div>
-              <div className="tone-preset-options" id={TONE_OPTIONS_ID}>
-                {tonePresets.map((preset) => {
-                  const active = selectedTone === preset.id;
-                  const presetLabel = lang === 'zh' ? preset.labelZh || preset.label : preset.label;
-                  const presetDescription = lang === 'zh' ? preset.descriptionZh || preset.description : preset.description;
-                  return (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      className={`tone-preset-btn${active ? ' active' : ''}`}
-                      data-tone={preset.id}
-                      aria-pressed={active}
-                      onClick={() => {
-                        setTonePreset(preset.id);
-                        setSelectedTone(preset.id);
-                      }}
-                    >
-                      <span className="tone-preset-label">{presetLabel}</span>
-                      <span className="tone-preset-desc">{presetDescription}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-
-            <section className="settings-section">
-              <div className="settings-section-head">
-                <h3>{label('自定义指令', 'Custom instructions')}</h3>
-                <p>{label('希望助手了解你什么，或者以怎样的风格与格式回答。', 'What would you like the assistant to know about you to provide better responses.')}</p>
-              </div>
-              <textarea
-                className="settings-textarea"
-                rows={3}
-                value={customInstructions}
-                placeholder={label('例如：我是高中物理老师，喜欢结构化、带有举例说明的清晰回答。', 'e.g. I am a physics student; prefer concise, step-by-step explanations with examples.')}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setCustomInstructions(val);
-                  try { localStorage.setItem('socrates-custom-instructions', val); } catch (_) {}
-                  void savePreference({ customInstructions: val });
-                }}
-              />
-            </section>
-
-            <section className="settings-section">
-              <div className="settings-section-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <h3>{label('跨会话记忆', 'Memory')}</h3>
-                  <p>{label('助手在对话中自动沉淀的关于你的背景与偏好。', 'Things the assistant has learned about you across conversations.')}</p>
-                </div>
-                {memories.length > 0 && (
-                  <button
-                    type="button"
-                    className="settings-btn-mini danger"
-                    onClick={() => {
-                      if (!window.confirm(label('确定要清空全部已保存的记忆吗？', 'Are you sure you want to clear all memories?'))) return;
-                      clearAllMemories();
-                      setMemories([]);
-                    }}
-                  >
-                    {label('清空全部', 'Clear all')}
-                  </button>
-                )}
-              </div>
-
-              <div className="settings-memory-list">
-                {memories.length === 0 ? (
-                  <div className="settings-empty-hint">
-                    {label('暂无已保存的记忆。在对话中助手会自动记住关键偏好，你也可以在此手动添加。', 'No saved memories yet. The assistant learns details as you chat, or you can add them below.')}
-                  </div>
-                ) : (
-                  memories.map((m) => (
-                    <div key={m.id} className="settings-memory-item">
-                      <div className="settings-memory-content">
-                        <span className="settings-memory-key">{m.key}</span>
-                        <span className="settings-memory-val">{m.value}</span>
-                      </div>
-                      <button
-                        type="button"
-                        className="settings-memory-del-btn"
-                        aria-label={label('删除记忆', 'Delete memory')}
-                        title={label('删除记忆', 'Delete memory')}
-                        onClick={() => {
-                          removeMemory(m.id);
-                          setMemories(getAllMemories());
-                          try {
-                            getApiFetch()?.(`/api/memory/${m.id}`, { method: 'DELETE' })?.catch(() => {});
-                          } catch (_) {}
-                        }}
-                      >
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              <form
-                className="settings-memory-add-form"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!newMemoryVal.trim()) return;
-                  const k = newMemoryKey.trim() || 'fact';
-                  setMemory(k, newMemoryVal.trim());
-                  setMemories(getAllMemories());
-                  try {
-                    getApiFetch()?.('/api/memory', {
-                      method: 'POST',
-                      body: { text: `${k}: ${newMemoryVal.trim()}` },
-                    })?.catch(() => {});
-                  } catch (_) {}
-                  setNewMemoryKey('');
-                  setNewMemoryVal('');
-                }}
-              >
-                <input
-                  type="text"
-                  className="settings-input settings-memory-key-input"
-                  placeholder={label('标签 (如偏好)', 'Key (e.g. preference)')}
-                  value={newMemoryKey}
-                  onChange={(e) => setNewMemoryKey(e.target.value)}
-                />
-                <input
-                  type="text"
-                  className="settings-input settings-memory-val-input"
-                  placeholder={label('记忆内容 (如喜欢用 TypeScript)', 'Value (e.g. prefers TypeScript)')}
-                  value={newMemoryVal}
-                  onChange={(e) => setNewMemoryVal(e.target.value)}
-                />
-                <button type="submit" className="settings-btn secondary" disabled={!newMemoryVal.trim()}>
-                  {label('添加', 'Add')}
-                </button>
-              </form>
-            </section>
-          </section>
-          <div className="settings-pane" hidden={section !== 'models'}>
-          <div className="settings-hero">
-            <div>
-              <h2 className="settings-hero-title">{label('模型与语音', 'Models & voice')}</h2>
-              <p className="settings-hero-subtitle">{label('配置对话和图片模型。语音输入使用浏览器麦克风。', 'Configure chat and image models. Voice input uses your browser microphone.')}</p>
-            </div>
+          <SettingsNavigation
+            categories={navigation.categories}
+            label={preferences.label}
+            query={navigation.query}
+            section={navigation.section}
+            onQueryChange={navigation.setQuery}
+            onSectionChange={navigation.setSection}
+          />
+          <div className="settings-body">
+            <SettingsPanes
+              section={navigation.section}
+              language={preferences.language}
+              externalApiOn={snapshot.externalApiOn}
+              label={preferences.label}
+              savePreference={preferences.savePreference}
+              reportSaveError={preferences.reportSaveError}
+              onLanguageChange={preferences.changeLanguage}
+            />
           </div>
-          <section className="settings-section">
-            <div className="settings-section-head">
-              <h3>Connection</h3>
-              <p>Choose whether Socrates may use your own API credentials.</p>
-            </div>
-            <div className="settings-card settings-card--toggle">
-              <div className="stg-toggle" id="stgToggle" onClick={toggleExternalApi}>
-                <span className="settings-label stg-toggle-label">{i18n('settings.useExternalApi', 'Use External API')}</span>
-                <div className={`stg-toggle-track${snap.externalApiOn ? ' on' : ''}`} id={TRACK_ID}>
-                  <div className="stg-toggle-knob" />
-                </div>
-              </div>
-            </div>
-          </section>
-          <section className="settings-section">
-            <div className="settings-section-head">
-              <h3>Model providers</h3>
-              <p>Add a provider or choose the active model.</p>
-            </div>
-            <div className="settings-field">
-              <div className="settings-label-row">
-                <span className="settings-label">{i18n('settings.models', 'Models')}</span>
-                <button className="settings-btn-mini" id="addProviderBtn" type="button" onClick={() => void providerState.addProvider()}>
-                  {i18n('settings.addProvider', '+ Add')}
-                </button>
-              </div>
-              <span className="settings-hint">
-                {i18n('settings.providerHint', 'Configure one or more providers. Click the circle to set one as active.')}
-              </span>
-              <ProviderList
-                id={PROVIDER_LIST_ID}
-                providers={providers}
-                providerErrors={providerConfig.errors}
-                externalApiOn={snap.externalApiOn}
-                language={lang}
-                onFieldChange={providerState.onFieldChange}
-                onKeyRef={providerState.onKeyRef}
-                onLabelRef={providerState.onLabelRef}
-                onSetActive={providerState.onSetActive}
-                onRemove={providerState.onRemove}
-              />
-            </div>
-          </section>
-          <div id="stgStatus" />
-          <section className="settings-section">
-            <div className="settings-section-head">
-              <h3>{label('图片模型', 'Image model')}</h3>
-              <p>{label('填写当前图片服务支持的模型 ID。', 'Enter the model ID supported by your image provider.')}</p>
-            </div>
-            <div className="settings-field">
-              <input className="settings-input" value={imageModel} placeholder="gpt-image-1" onChange={(event) => { setImageModel(event.target.value); localStorage.setItem('socrates-image-model', event.target.value); }} />
-              <button className="settings-btn secondary" onClick={() => void savePreference({ imageModel })}>{label('同步图片模型', 'Sync image model')}</button>
-            </div>
-          </section>
-          <section className="settings-section">
-            <div className="settings-section-head"><h3>{label('语音输入语言', 'Voice input language')}</h3></div>
-            <label className="settings-choice">{label('识别语言', 'Recognition language')}
-              <select value={voiceLanguage} onChange={(event) => { setVoiceLanguage(event.target.value); localStorage.setItem('socrates-voice-language', event.target.value); void savePreference({ voiceLanguage: event.target.value }); }}>
-                <option value="auto">{label('自动', 'Automatic')}</option><option value="zh-CN">中文</option><option value="en-US">English</option>
-              </select>
-            </label>
-          </section>
-
-          <div className="settings-actions">
-            <button className="settings-btn danger" id="clearSettingsBtn" onClick={confirmClearSettings}>
-              {i18n('settings.clearAll', 'Clear all')}
-            </button>
-            <button className="settings-btn secondary" id="cancelSettingsBtn" onClick={closeSettings}>
-              {i18n('common.cancel', 'Cancel')}
-            </button>
-            <button className="settings-btn primary" id={SAVE_BTN_ID} disabled={providerConfig.saving} onClick={() => void providerState.saveProviders()}>
-              {providerConfig.saving ? i18n('settings.saving', 'Saving…') : i18n('settings.save', 'Save')}
-            </button>
-          </div>
-          </div>
-          {saveError ? <p className="settings-save-error" role="status">{saveError}</p> : null}
-        </div>
+          {preferences.saveError
+            ? <p className="settings-save-error" role="status">{preferences.saveError}</p>
+            : null}
         </div>
       </div>
     </div>
@@ -532,10 +73,8 @@ export function mountSettingsModal(): void {
     container.id = 'settingsModalReactRoot';
     document.body.appendChild(container);
   }
-
   if (hostIsMountedBy(container, 'settings-modal')) return;
   markHostMountedBy(container, 'settings-modal');
-
   installSettingsBridge();
   const root = createRoot(container);
   flushSync(() => root.render(<SettingsModal />));
