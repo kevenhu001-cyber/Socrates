@@ -6,9 +6,8 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
    app-owned surfaces at the same mobile and desktop sizes as the supplied
    references without committing generated artefacts to the repository. */
 
-/* Local standard: the phone drawer is `--ui-sidebar-mobile` (254px), so the
-   off-canvas edge sits at -254. (Remote's 350px drawer is not adopted.) */
-const MOBILE_DRAWER = 254;
+/* Reference phone drawer is 80vw capped at 330px: 312px at 390px. */
+const MOBILE_DRAWER = 312;
 const REFERENCE_CONNECTORS = [
   { id: 'gmail', name: 'Gmail', description: 'Read and manage Gmail.', capabilities: ['Mail'], authType: 'oauth', connection: { status: 'initiated', displayName: 'Study inbox' } },
   { id: 'github', name: 'GitHub', description: 'Triage PRs, issues, CI, and publish flows.', capabilities: ['Repositories', 'Issues'], authType: 'oauth', connection: { status: 'connected', displayName: 'Study org' } },

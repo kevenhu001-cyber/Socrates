@@ -1,5 +1,5 @@
 import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
 import {
@@ -9,146 +9,10 @@ import {
   useAttachmentsRetry,
   useAttachmentsSnapshot,
 } from './attachments.bridge';
-import { getAttachmentIcon } from './fileIcons';
+import { AttachmentChip } from './AttachmentChip';
 import { syncComposerShellFlags } from '../../ui/composerShape.js';
-import { t as _t } from '../legacy/gateway.ts';
-import { formatAttachmentSize } from '../../attachments.js';
-import type { AttachmentEntry } from './types';
-
-function i18n(key: string, fallback: string): string {
-  const v = _t(key);
-  return v !== key ? v : fallback;
-}
 
 const CHIPS_ID = 'composerAttachmentChips';
-
-const SPINNER_HTML = '<span class="thinking-ring thinking-ring-sm" aria-hidden="true"></span>';
-const REMOVE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>';
-const RETRY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>';
-
-function truncateName(name: string): string {
-  if (!name) return 'file';
-  return name.length > 60 ? name.slice(0, 57) + '…' : name;
-}
-
-interface ChipProps {
-  entry: AttachmentEntry;
-  onRemove: (id: string) => void;
-  onRetry: (id: string) => void;
-}
-
-/* ChatGPT/Vercel-style meta label: the document/extension tag plus the
-   size ("PDF · 2.3 MB"), "Uploading… 42%" while in flight, or a plain
-   "Upload failed" the retry button clears. */
-/* Legacy .ppt has no server-side text extractor (.doc/.xls parse now,
- * like ODT/ODS/ODP) — the model only ever sees its metadata. Surfaced
- * on the chip so the user learns this before asking about the contents,
- * not after. */
-const LEGACY_UNREADABLE = new Set(['ppt']);
-
-function isLegacyUnreadable(entry: AttachmentEntry): boolean {
-  return LEGACY_UNREADABLE.has(String(entry.docKind || '').toLowerCase());
-}
-
-function kindLabel(entry: AttachmentEntry): string {
-  if (entry.docKind) return String(entry.docKind).toUpperCase();
-  const name = String(entry.name || '');
-  const dot = name.lastIndexOf('.');
-  if (dot > 0) {
-    const ext = name.slice(dot + 1);
-    if (ext.length >= 1 && ext.length <= 5) return ext.toUpperCase();
-  }
-  return String(entry.kind || 'file').toUpperCase();
-}
-
-function Chip({ entry, onRemove, onRetry }: ChipProps) {
-  /* P_perf-blob-url — prefer thumbnailUrl (URL.createObjectURL) for
-     the chip <img> source. It's O(1) and the browser lazily decodes
-     only what the tile needs. Once the upload resolves, the durable
-     /api/v2/files/:id/raw URL (then the inline dataUrl) takes over so
-     the chip survives composer resets and reloads. */
-  const fileUrl = entry.fileId ? `/api/v2/files/${entry.fileId}/raw` : undefined;
-  /* Fallback chain: blob thumbnail → durable raw file → inline dataUrl.
-     A source that 404s/decode-fails is blacklisted and the next
-     candidate takes over; when nothing loads the kind icon tile shows
-     instead of a broken-image glyph. */
-  const [badSrc, setBadSrc] = useState<string | null>(null);
-  const imgCandidates = [entry.thumbnailUrl, fileUrl, entry.dataUrl]
-    .filter((s): s is string => !!s && s !== badSrc);
-  const imgSrc = imgCandidates[0];
-  const isImage = entry.kind === 'image' && !!imgSrc;
-  const progress = Math.min(Math.max(entry.progress ?? 0, 0), 100);
-  const baseMeta = entry.pending
-    ? `${i18n('chat.attach.uploading', 'Uploading')}… ${Math.round(progress)}%`
-    : entry.error
-      ? i18n('chat.attach.failed', 'Upload failed')
-      : entry.truncated
-        ? i18n('chat.attach.truncated', '(truncated)')
-        : `${kindLabel(entry)}${entry.size ? ` · ${formatAttachmentSize(entry.size)}` : ''}`;
-  const meta = !entry.pending && !entry.error && isLegacyUnreadable(entry)
-    ? `${baseMeta} · ${i18n('chat.attach.metadataOnly', 'metadata only — convert to DOCX/XLSX/PPTX or PDF to make it readable')}`
-    : baseMeta;
-
-  return (
-    <div
-      className={`attachment-chip${isImage ? ' is-image' : ''}${entry.error ? ' error' : ''}${entry.pending ? ' pending' : ''}`}
-      data-id={entry.id}
-      title={entry.error || entry.name || undefined}
-    >
-      {/* Visual tile — thumbnail for images, kind-tinted icon tile for
-          documents; the pending veil + spinner sit on top of it. */}
-      <span className="attachment-chip-visual" data-kind={entry.docKind || entry.kind || 'file'}>
-        {isImage ? (
-          <img
-            className="attachment-chip-thumb"
-            src={imgSrc}
-            alt={entry.name ?? ''}
-            onError={() => setBadSrc(imgSrc ?? null)}
-          />
-        ) : (
-          <span
-            className="attachment-chip-icon"
-            aria-hidden="true"
-            dangerouslySetInnerHTML={{ __html: getAttachmentIcon(entry) }}
-          />
-        )}
-        {entry.pending ? (
-          <span className="attachment-chip-veil" aria-hidden="true">
-            <span dangerouslySetInnerHTML={{ __html: SPINNER_HTML }} />
-          </span>
-        ) : null}
-      </span>
-
-      {isImage ? null : (
-        <span className="attachment-chip-info">
-          <span className="attachment-chip-name">{truncateName(entry.name ?? 'file')}</span>
-          <span className="attachment-chip-meta">{meta}</span>
-        </span>
-      )}
-
-      {/* Failed uploads offer an explicit retry — the entry still holds
-          its File handle so the user never re-picks the file. */}
-      {entry.error && !entry.pending ? (
-        <button
-          type="button"
-          className="attachment-chip-retry"
-          aria-label={i18n('chat.attach.retry.aria', 'Retry upload')}
-          title={entry.error}
-          onClick={() => onRetry(entry.id)}
-          dangerouslySetInnerHTML={{ __html: RETRY_ICON }}
-        />
-      ) : null}
-
-      <button
-        type="button"
-        className="attachment-chip-remove"
-        aria-label={i18n('chat.attach.remove.aria', 'Remove attachment')}
-        onClick={() => onRemove(entry.id)}
-        dangerouslySetInnerHTML={{ __html: REMOVE_ICON }}
-      />
-    </div>
-  );
-}
 
 interface ChipsRowProps {
   targetId: string;
@@ -194,7 +58,7 @@ function ChipsRow({ targetId }: ChipsRowProps) {
   const chips = useMemo(
     () =>
       attachments.map((entry) => (
-        <Chip key={entry.id} entry={entry} onRemove={onRemove} onRetry={onRetry} />
+        <AttachmentChip key={entry.id} entry={entry} onRemove={onRemove} onRetry={onRetry} />
       )),
     [attachments, onRemove, onRetry],
   );

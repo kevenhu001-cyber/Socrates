@@ -4,11 +4,10 @@ import type { ChangeEvent, KeyboardEvent } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
 import { installFindInSessionBridge, subscribeToFindInSession, getFindInSessionSnapshot } from './find.bridge';
-import { runHighlightQuery, navigateNext, navigatePrev, closeHighlights } from './findHighlight';
+import { closeFindInSession, findNext, findPrev, onFindInput } from './findInSession.actions';
+import { FIND_BAR_ID } from './findInSession.constants';
+import { FindInSessionControls } from './FindInSessionControls';
 import type { FindInSessionSnapshot } from './types';
-
-const FIND_BAR_ID = 'findBar';
-const FIND_INPUT_ID = 'findInput';
 
 function FindInSession() {
   const [snapshot, setSnapshot] = useState<FindInSessionSnapshot>(getFindInSessionSnapshot);
@@ -19,8 +18,6 @@ function FindInSession() {
      React restore the stale value after each keystroke — fast typing and
      IME (pinyin) composition lost characters. */
   const [inputValue, setInputValue] = useState(snapshot.query);
-  const queryRef = useRef(snapshot.query);
-  queryRef.current = snapshot.query;
 
   useEffect(() => {
     if (!snapshot.isOpen) setInputValue('');
@@ -50,7 +47,7 @@ function FindInSession() {
     if (!snapshot.isOpen) return undefined;
     const chatView = document.getElementById('chatView');
     if (!chatView) return undefined;
-    const sync = () => { if (chatView.classList.contains('hidden')) closeFind(); };
+    const sync = () => { if (chatView.classList.contains('hidden')) closeFindInSession(); };
     const observer = new MutationObserver(sync);
     observer.observe(chatView, { attributes: true, attributeFilter: ['class'] });
     sync();
@@ -70,35 +67,30 @@ function FindInSession() {
 
   const handleInput = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
-    const q = e.target.value.trim();
-    queryRef.current = q;
-    const result = runHighlightQuery(q);
-    publishFind({ isOpen: true, query: q, ...result });
+    onFindInput(e.target.value);
   }, []);
 
   const handleKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Escape') {
       e.preventDefault();
-      closeFind();
+      closeFindInSession();
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      const result = e.shiftKey ? navigatePrev() : navigateNext();
-      publishFind({ isOpen: true, query: queryRef.current, ...result });
+      if (e.shiftKey) findPrev();
+      else findNext();
     }
   }, []);
 
   const handlePrev = useCallback(() => {
-    const result = navigatePrev();
-    publishFind({ isOpen: true, query: queryRef.current, ...result });
+    findPrev();
   }, []);
 
   const handleNext = useCallback(() => {
-    const result = navigateNext();
-    publishFind({ isOpen: true, query: queryRef.current, ...result });
+    findNext();
   }, []);
 
   const handleClose = useCallback(() => {
-    closeFind();
+    closeFindInSession();
   }, []);
 
   const countLabel = snapshot.query
@@ -106,104 +98,20 @@ function FindInSession() {
     : '';
 
   return (
-    <>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="find-bar-icon" aria-hidden="true">
-        <circle cx="11" cy="11" r="7" />
-        <path d="m21 21-4.3-4.3" />
-      </svg>
-      <input
-        ref={inputRef}
-        type="text"
-        id={FIND_INPUT_ID}
-        name="findInput"
-        data-i18n-placeholder="find.placeholder"
-        data-i18n-aria="find.placeholder"
-        aria-label="Find in conversation"
-        placeholder="Find in conversation…"
-        autoComplete="off"
-        spellCheck={false}
-        value={inputValue}
-        onChange={handleInput}
-        onKeyDown={handleKeyDown}
-      />
-      <span className="find-count" id="findCount" aria-live="polite">
-        {countLabel}
-      </span>
-      <button className="find-nav-btn" type="button" onClick={handlePrev} title="Previous match" aria-label="Previous match" data-i18n-title="chrome.previousMatch" data-i18n-aria="chrome.previousMatch">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M18 15l-6-6-6 6" />
-        </svg>
-      </button>
-      <button className="find-nav-btn" type="button" onClick={handleNext} title="Next match" aria-label="Next match" data-i18n-title="chrome.nextMatch" data-i18n-aria="chrome.nextMatch">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M6 9l6 6 6-6" />
-        </svg>
-      </button>
-      <button className="find-close-btn" type="button" onClick={handleClose} title="Close find" aria-label="Close find" data-i18n-title="chrome.closeFind" data-i18n-aria="chrome.closeFind">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M18 6 6 18M6 6l12 12" />
-        </svg>
-      </button>
-    </>
+    <FindInSessionControls
+      inputRef={inputRef}
+      value={inputValue}
+      countLabel={countLabel}
+      onChange={handleInput}
+      onKeyDown={handleKeyDown}
+      onPrevious={handlePrev}
+      onNext={handleNext}
+      onClose={handleClose}
+    />
   );
 }
 
-// --- bridge / window-level helpers (used by legacy code) ---
-
-function publishFind(state: { isOpen: boolean; query: string; matchCount: number; activeIndex: number }): void {
-  const bridge = installFindInSessionBridge();
-  bridge.publish(state);
-}
-
-export function openFindInSession(): void {
-  publishFind({ isOpen: true, query: '', matchCount: 0, activeIndex: -1 });
-  /* Reveal and focus synchronously, inside the click gesture: mobile
-     browsers only raise the soft keyboard for a focus() that happens
-     during the user activation, not in a later effect tick. */
-  document.getElementById(FIND_BAR_ID)?.classList.remove('hidden');
-  const input = document.getElementById(FIND_INPUT_ID) as HTMLInputElement | null;
-  input?.focus();
-}
-
-export function closeFindInSession(): void {
-  closeHighlights();
-  publishFind({ isOpen: false, query: '', matchCount: 0, activeIndex: -1 });
-}
-
-export function isFindOpen(): boolean {
-  return getFindInSessionSnapshot().isOpen;
-}
-
-export function onFindInput(value: string): void {
-  const q = (value || '').trim();
-  const result = runHighlightQuery(q);
-  publishFind({ isOpen: true, query: q, ...result });
-}
-
-export function onFindKey(ev: KeyboardEvent): void {
-  if (ev.key === 'Escape') {
-    ev.preventDefault();
-    closeFindInSession();
-  } else if (ev.key === 'Enter') {
-    ev.preventDefault();
-    const result = ev.shiftKey ? navigatePrev() : navigateNext();
-    publishFind({ isOpen: true, query: getFindInSessionSnapshot().query, ...result });
-  }
-}
-
-export function findNext(): void {
-  const result = navigateNext();
-  publishFind({ isOpen: true, query: getFindInSessionSnapshot().query, ...result });
-}
-
-export function findPrev(): void {
-  const result = navigatePrev();
-  publishFind({ isOpen: true, query: getFindInSessionSnapshot().query, ...result });
-}
-
-function closeFind(): void {
-  closeFindInSession();
-}
+export { openFindInSession, closeFindInSession, onFindInput, onFindKey, findNext, findPrev, isFindOpen } from './findInSession.actions';
 
 export interface FindInSessionReactRootHandle {
   root: Root;
