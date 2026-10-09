@@ -1,331 +1,33 @@
 /**
- * react/tool-run/AssistantTurn.tsx — one assistant answer, laid out declaratively.
- *
- * The turn is `rawText` sliced at each tool call's recorded `textOffset`, with
- * the rows spliced in at their split points. That layout rule existed three
- * times — inline while streaming, again as `outerHTML` baked into message.html
- * at finish(), and a third time in rebuildAssistantHtmlWithInlineTools() for
- * history and shared turns. This is now the only copy.
- *
- * Prose still goes through the legacy markdown renderer (it owns the
- * viz/mermaid placeholder registration that postRender fills in later); only
- * the tool rows changed hands. A `live` turn takes the streaming-safe variant
- * of that renderer and re-parses only the unfinished tail, which is the same
- * stable-prefix strategy the old imperative painter used — so a half-arrived
- * formula never leaks raw LaTeX, and completed blocks keep their DOM nodes.
+ * One assistant answer, composed from public prose, tool runs, and turn status.
+ * Parsing, prose caching, and streaming-tail decoration live in focused modules.
  */
-import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-
-import { createSettledSplitter } from '../../render/streaming.js';
-import {
-  applyTailFade,
-  computeFadeSegments,
-  recordReveal,
-  type RevealEntry,
-} from '../../render/tailReveal.js';
-import { getLegacyActions } from '../legacy/gateway.ts';
+import { useEffect, useRef, useState } from 'react';
 import {
   buildTurnLayout,
-  stripLegacyToolHtml,
-  toolRunView,
   type ToolCallRecord,
   type TurnSegment,
 } from './toolRunModel.js';
-import { ToolRunAttachments } from './ToolRunAttachments.js';
-import { ToolRunGroup } from './ToolRunGroup.js';
-import { ToolRunRow } from './ToolRunRow.js';
 import { ToolRunSheetProvider } from './ToolRunSheet.js';
 import { TurnStatus } from './TurnStatus.js';
+import { TurnSegmentContent } from './TurnSegmentContent';
+import { useProseRenderer } from './proseRenderer';
 import type { LegacyChatMessage } from '../types/domain';
 
 export interface AssistantTurnProps {
   message: LegacyChatMessage;
   /** Share / replay: no Retry, no approval affordances. */
   readOnly?: boolean;
-  /**
-   * The turn is still streaming: paint public prose with the streaming-safe
-   * renderer, omit `<think>` spans, and split the last text segment into a
-   * settled prefix plus a re-parsed tail.
-   */
+  /** Paint public prose with the streaming renderer and split the live tail. */
   live?: boolean;
 }
 
-/** The typing frontier. P_smooth-stream — one soft dot for every playback
- *  state; only its pulse speed follows the clock:
- *  - playing / draining : steady pulse (upstream is feeding / we are flushing)
- *  - starved            : slower pulse — upstream stalled with an empty
- *                         buffer; "still connected", never fabricated text
- *  The 300ms finish fade is a CSS concern on the settled bubble
- *  (P_finish-stream-boundary). Styles: polish/transcript.css. */
 function StreamCursor({ state, settling }: { state?: string; settling?: boolean }) {
   const stateClass = state === 'starved' ? ' is-starved' : '';
   const settleClass = settling ? ' is-settling' : '';
-  return <span className={`stream-cursor${stateClass}${settleClass}`} aria-hidden="true">▍</span>;
+  return <span className={'stream-cursor' + stateClass + settleClass} aria-hidden="true">▍</span>;
 }
 
-/**
- * P_prose-cache — finalized prose shared across mounts.
- *
- * The per-instance cache below dies with the component, and every session
- * switch remounts every row, so re-opening a conversation used to re-run
- * marked + KaTeX + DOMPurify for EVERY assistant turn — 2.4 s of the 3.2 s
- * commit in the 2026-09-27 switch profile of a 200-message session (4x CPU).
- * Rendering is a pure function of (text, renderer capabilities), so the result
- * can outlive the component, keyed on everything the output depends on:
- * the KaTeX revision, the UI language (scaffold labels) and whether
- * highlight.js has loaded.
- *
- * Output that is NOT pure is never cached: viz / mermaid cards and scaffold
- * widget slots register their payload in a module queue as a side effect of
- * rendering (render/viz.js, scheduleWidgetMounts), and the post-render pass
- * drains that queue. Replaying cached markup would leave those placeholders
- * with nothing queued to fill them, so such text is re-rendered every mount
- * exactly as before.
- */
-const IMPURE_OUTPUT = /class="viz"|-slot"|canvas-block/;
-const FINAL_CACHE_BUDGET = 8_000_000; // chars of html kept across mounts
-const finalProseCache = new Map<string, { __html: string }>();
-let finalProseCacheChars = 0;
-
-/* Hash long prose for cache keys: keeps Map keys O(1) instead of retaining
-   a second copy of every full answer. cyrb53, collision-resistant enough
-   for a render cache (a miss only costs one re-render). */
-function hashText(text: string): string {
-  let h1 = 0xdeadbeef;
-  let h2 = 0x41c6ce57;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text.charCodeAt(i);
-    h1 = Math.imul(h1 ^ ch, 2654435761);
-    h2 = Math.imul(h2 ^ ch, 1597334677);
-  }
-  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-  return (h2 >>> 0).toString(36) + (h1 >>> 0).toString(36);
-}
-
-function proseCacheKey(prefix: string, text: string): string {
-  return prefix + text.length + ':' + hashText(text);
-}
-
-function renderEnvKey(): string {
-  if (typeof window === 'undefined') return '0';
-  const w = window as unknown as {
-    __socratesMathRenderRev?: number;
-    _currentLang?: string;
-    hljs?: unknown;
-  };
-  return `${w.__socratesMathRenderRev || 0}|${w._currentLang || ''}|${w.hljs ? 1 : 0}|`;
-}
-
-function sharedFinalProse(text: string, paint: () => string): { __html: string } {
-  const key = renderEnvKey() + proseCacheKey('t', text);
-  const hit = finalProseCache.get(key);
-  if (hit !== undefined) {
-    /* Refresh recency: Map iteration order is insertion order. */
-    finalProseCache.delete(key);
-    finalProseCache.set(key, hit);
-    return hit;
-  }
-  const box = { __html: paint() };
-  if (IMPURE_OUTPUT.test(box.__html)) return box;
-  finalProseCache.set(key, box);
-  finalProseCacheChars += box.__html.length + text.length;
-  while (finalProseCacheChars > FINAL_CACHE_BUDGET && finalProseCache.size > 1) {
-    const oldest = finalProseCache.keys().next().value as string;
-    const dropped = finalProseCache.get(oldest);
-    finalProseCache.delete(oldest);
-    // Key is now a fixed-size hash; accounted text length is unknown here,
-    // so only subtract the stored html (conservative: budget drains slower).
-    finalProseCacheChars -= (dropped ? dropped.__html.length : 0) + 64;
-  }
-  return box;
-}
-
-/** Test hook: forget every shared render. */
-export function __resetSharedProseCache(): void {
-  finalProseCache.clear();
-  finalProseCacheChars = 0;
-}
-
-/**
- * A finalized turn's prose can still carry tool-row markup when the message
- * was stored before this renderer existed, so every text segment passes through
- * stripLegacyToolHtml — but rendering markdown is expensive enough that the
- * per-call cost is worth a cache keyed on the source text.
- *
- * The cache hands back the same `{__html}` OBJECT, not just an equal string:
- * React treats a fresh `dangerouslySetInnerHTML` literal as a changed prop and
- * rewrites innerHTML, so a per-frame `{__html: settledText}` literal would blow
- * away and re-create every already-settled block on every streamed token —
- * losing the stable-prefix behaviour this renderer exists to keep.
- */
-function useProseRenderer(live: boolean): {
-  settled: (text: string) => { __html: string };
-  tail: (text: string) => { __html: string };
-} {
-  return useMemo(() => {
-    const legacy = getLegacyActions().render;
-    const final = legacy.renderAssistantHTML;
-    const progressive = legacy.renderAssistantProgressive;
-    /* A runtime without the streaming variant (an older bridge, a unit-test
-       harness) still renders — formatMsg's assumptions only bite mid-stream.
-       `complete` is true for text that can no longer grow (settled blocks,
-       segments closed off by a tool row): the streaming renderer then applies
-       its end-of-input rules too, so the block paints exactly what the final
-       renderer paints at finish instead of changing shape there. */
-    const paint = (text: string, complete: boolean): string => {
-      const clean = stripLegacyToolHtml(text);
-      if (!clean.trim()) return '';
-      try {
-        return live && progressive ? progressive(clean, { complete }) : final(clean);
-      } catch (_) {
-        /* A markdown failure in one segment must not blank the whole answer. */
-        return '';
-      }
-    };
-    const cache = new Map<string, { __html: string }>();
-    const settled = (text: string): { __html: string } => {
-      const key = proseCacheKey(live ? 'l' : 'f', text);
-      const hit = cache.get(key);
-      if (hit !== undefined) return hit;
-      const box = live
-        ? { __html: paint(text, true) }
-        : sharedFinalProse(text, () => paint(text, true));
-      /* Evict the oldest half rather than clear(): a wholesale clear hands
-         every still-mounted settled div a fresh {__html} object on the next
-         render, and React rewrites all of their innerHTML in one frame —
-         a visible flicker on very long answers. Map preserves insertion
-         order, so the first keys are the coldest. */
-      if (cache.size > 200) {
-        let drop = Math.ceil(cache.size / 2);
-        for (const oldKey of cache.keys()) {
-          if (drop <= 0) break;
-          cache.delete(oldKey);
-          drop -= 1;
-        }
-      }
-      cache.set(key, box);
-      return box;
-    };
-    /* The unfinished tail is memoized on the LAST painted text rather than
-       fully cached: it changes on every delta, but commits triggered by
-       unrelated state (a tool-row update, a status stamp, another message)
-       used to hand React a fresh {__html} object for identical text. React
-       treats that as a changed prop and rewrites the live region's
-       innerHTML — re-parsing the markdown AND rebuilding every math/code
-       node in it. Returning the same box keeps the DOM untouched. */
-    let lastTailText: string | null = null;
-    let lastTailBox: { __html: string } | null = null;
-    const tail = (text: string): { __html: string } => {
-      if (lastTailBox !== null && text === lastTailText) return lastTailBox;
-      lastTailText = text;
-      lastTailBox = { __html: paint(text, false) };
-      return lastTailBox;
-    };
-    return { settled, tail };
-    /* `mathRev` is read, not passed: it is a counter the legacy boot bumps when
-       lazily-loaded KaTeX becomes available, and the only way a *settled*
-       segment can still need repainting is the renderer's own capabilities
-       changing under it. Keyed on it so the cache below is rebuilt fresh. */
-  }, [live, typeof window === 'undefined' ? 0 : window.__socratesMathRenderRev || 0]);
-}
-
-interface LiveTextSegmentProps {
-  text: string;
-  settled: (text: string) => { __html: string };
-  tail: (text: string) => { __html: string };
-}
-
-/**
- * The still-growing last text segment of a live turn. The splitter peels
- * off completed markdown blocks one at a time, so each settles into its
- * own keyed div whose cached `{__html}` object keeps the same identity —
- * React then never rewrites that DOM. Only the open tail is re-parsed per
- * commit. This replaced the single-div prefix swap, which re-rendered the
- * whole settled region (and rebuilt every KaTeX/code/viz node in it) each
- * time a paragraph boundary arrived.
- *
- * The splitter is held in a ref, not state: it is a pure parse-side index
- * whose output fully determines the render. A push() during an abandoned
- * concurrent render simply replays on the next pass (same text → same
- * result), so no commit/effect dance is needed.
- */
-/**
- * P_smooth-stream tail reveal — freshly revealed text fades in (opacity only).
- *
- * The tail HTML is rebuilt by React whenever it grows, so the fade is anchored
- * to reveal TIME rather than to DOM nodes (render/tailReveal.ts): after each
- * commit we record the visible length, then wrap the ranges still inside the
- * fade window in inline spans with a negative animation-delay. A rebuilt span
- * resumes its fade where it was instead of restarting — no shimmer — and only
- * the last text node is touched, never code, formulas, or settled prose.
- */
-function SettledBlock({ html }: { html: { __html: string } }) {
-  const ref = useRef<HTMLDivElement | null>(null);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    try {
-      getLegacyActions().postRender?.wireCodeBlockHeaders?.(el);
-    } catch (_) {}
-  }, [html]);
-  return (
-    <div
-      ref={ref}
-      className="tool-run-prose is-settled"
-      dangerouslySetInnerHTML={html}
-    />
-  );
-}
-
-function LiveTextSegment({ text, settled, tail }: LiveTextSegmentProps) {
-  const splitterRef = useRef<ReturnType<typeof createSettledSplitter> | null>(null);
-  if (!splitterRef.current) splitterRef.current = createSettledSplitter();
-  const split = splitterRef.current.push(text);
-  const liveRef = useRef<HTMLDivElement | null>(null);
-  const revealRef = useRef<RevealEntry[]>([]);
-  const lastFadeAtRef = useRef(0);
-  const tailBox = tail(split.tail);
-  useLayoutEffect(() => {
-    const root = liveRef.current;
-    if (!root) return;
-    /* Measure BEFORE wrapping: spans do not change textContent, but the
-       history must describe what the renderer painted. */
-    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
-    revealRef.current = recordReveal(revealRef.current, (root.textContent || '').length, now);
-    /* prefers-reduced-motion: leave the DOM plain (the CSS also disables the
-       animation, but skipping the wrap avoids the per-commit churn entirely). */
-    try {
-      if (typeof window !== 'undefined' && window.matchMedia
-        && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    } catch (_) { /* matchMedia unavailable */ }
-    /* Throttle the TreeWalker + split wrap to ~30fps: token bursts can commit
-       every 16ms, but the fade window is 250ms — skipping alternate frames is
-       invisible and halves the live-tail DOM churn on long answers. */
-    if (now - lastFadeAtRef.current < 32) return;
-    lastFadeAtRef.current = now;
-    try {
-      applyTailFade(root, computeFadeSegments(revealRef.current, now));
-    } catch (_) { /* decoration is best-effort */ }
-  }, [tailBox]);
-  return (
-    <>
-      {split.blocks.map((block, index) => (
-        <SettledBlock
-          key={index}
-          html={settled(block)}
-        />
-      ))}
-      <div
-        ref={liveRef}
-        className="tool-run-prose is-live"
-        dangerouslySetInnerHTML={tailBox}
-      />
-    </>
-  );
-}
-
-/** The last text segment of a live turn is the only one still growing. */
 function lastTextIndex(segments: TurnSegment[]): number {
   for (let index = segments.length - 1; index >= 0; index--) {
     if (segments[index].kind === 'text') return index;
@@ -333,9 +35,31 @@ function lastTextIndex(segments: TurnSegment[]): number {
   return -1;
 }
 
+function segmentKey(segment: TurnSegment, index: number): string {
+  if (segment.kind === 'text') return 'text-' + segment.start + '-' + index;
+  if (segment.kind === 'group') {
+    const first = segment.members.length ? segment.members[0] : segment.running[0];
+    return 'group-' + (first ? first.id : index) + '-' + index;
+  }
+  if (segment.kind === 'tool') return 'tool-' + segment.call.id;
+  return 'think-' + index;
+}
+
+function shouldShowStatus(
+  phase: string | undefined,
+  live: boolean,
+  hasMountedRow: boolean,
+): boolean {
+  if (!phase) return false;
+  const terminalFailure = phase === 'error' || phase === 'stopped';
+  if (!live && !terminalFailure) return false;
+  if (live && phase === 'tool-running' && hasMountedRow) return false;
+  return true;
+}
+
 export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
   const rawText = typeof message.rawText === 'string' ? message.rawText : '';
-  const calls = Array.isArray(message.toolCalls) ? (message.toolCalls as ToolCallRecord[]) : [];
+  const calls = Array.isArray(message.toolCalls) ? message.toolCalls as ToolCallRecord[] : [];
   const isLive = Boolean(live);
   const [isSettling, setIsSettling] = useState(false);
   const wasLiveRef = useRef(isLive);
@@ -343,104 +67,43 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
   useEffect(() => {
     if (wasLiveRef.current && !isLive) {
       setIsSettling(true);
-      const timer = setTimeout(() => {
-        setIsSettling(false);
-      }, 300);
+      const timer = setTimeout(() => setIsSettling(false), 300);
       return () => clearTimeout(timer);
     }
     wasLiveRef.current = isLive;
   }, [isLive]);
-  // toolCalls[] is mutated in place as rows settle. Rebuild this small, pure
-  // layout on each published render so labels, states, and sentence-safe split
-  // points cannot be trapped behind stale object identity.
-  const segments: TurnSegment[] = buildTurnLayout(rawText, calls, {
+
+  /* Tool-call records mutate in place as rows settle; rebuild this pure layout
+     on each published render so states and sentence-safe offsets stay current. */
+  const segments = buildTurnLayout(rawText, calls, {
     inlineThink: false,
     deferOpenParagraph: isLive,
   });
-  const { settled, tail } = useProseRenderer(isLive);
+  const prose = useProseRenderer(isLive);
   const growingIndex = isLive ? lastTextIndex(segments) : -1;
-  /* P_tool-order-defer — the tool-running line is the stand-in for rows
-     still deferred behind an unfinished paragraph. Once the real row
-     mounts, the line retires so the two never appear together. */
   const hasMountedRow = segments.some(
     (segment) => segment.kind === 'tool' || segment.kind === 'group',
   );
   const liveStatus = message._liveStatus;
-  const showStatus = !!liveStatus
-    && (isLive || liveStatus.phase === 'error' || liveStatus.phase === 'stopped')
-    && !(isLive && liveStatus.phase === 'tool-running' && hasMountedRow);
-  /* Approvals and retries are filed against the message the row belongs to. */
+  const showStatus = shouldShowStatus(liveStatus?.phase, isLive, hasMountedRow);
   const messageId = String(message.clientId || message.id || '');
 
   return (
     <ToolRunSheetProvider>
-      {segments.map((segment, index) => {
-        if (segment.kind === 'text') {
-          if (index !== growingIndex) {
-            return (
-              <div
-                key={`text-${segment.start}-${index}`}
-                className="tool-run-prose"
-                dangerouslySetInnerHTML={settled(segment.text)}
-              />
-            );
-          }
-          /* Still arriving: completed markdown blocks mount once into keyed
-             divs and only the open block is re-parsed. While a block stays
-             unterminated — an unclosed fence or formula — it remains part of
-             the tail. The typing cursor lives below, at the end of the turn
-             (see below), never in here. */
-          return (
-            <LiveTextSegment
-              key={`text-${segment.start}-${index}`}
-              text={segment.text}
-              settled={settled}
-              tail={tail}
-            />
-          );
-        }
-        if (segment.kind === 'group') {
-          const first = segment.members.length ? segment.members[0] : segment.running[0];
-          return (
-            <ToolRunGroup
-              key={`group-${first ? first.id : index}-${index}`}
-              segment={segment}
-              messageId={messageId}
-              readOnly={readOnly}
-            />
-          );
-        }
-        if (segment.kind === 'tool') {
-          /* buildTurnLayout folds every run into a group, so this is the
-             defensive path for a layout change that keeps single rows. */
-          return (
-            <Fragment key={`tool-${segment.call.id}`}>
-              <ToolRunRow view={toolRunView(segment.call)} messageId={messageId} readOnly={readOnly} />
-              <ToolRunAttachments call={segment.call} />
-            </Fragment>
-          );
-        }
-        /* Think segments consume their rawText range so the surrounding
-           public prose keeps its order, but private model text is never
-           mounted in the visible transcript. */
-        return null;
-      })}
-      {/* One status line per turn, after the rows: main.js writes what the
-          assistant is doing into `message._liveStatus` and this is the only
-          place that draws it. A finalized turn keeps the field only when the
-          turn ended broken (a timeout, or a Stop with nothing to save), and
-          then the line IS part of the answer. */}
+      {segments.map((segment, index) => (
+        <TurnSegmentContent
+          key={segmentKey(segment, index)}
+          segment={segment}
+          index={index}
+          growingIndex={growingIndex}
+          messageId={messageId}
+          readOnly={readOnly}
+          prose={prose}
+        />
+      ))}
       {showStatus && liveStatus ? (
         <TurnStatus status={liveStatus} messageId={messageId} />
       ) : null}
-      {/* The typing frontier trails the WHOLE turn, not the last prose
-          segment: when a tool row is the latest thing (fired at the end,
-          nothing after it yet), a cursor inside the prose would paint
-          ABOVE the row. While the status line shows, its spinner already
-          carries the "alive" signal, so the cursor stays hidden there.
-          On a settled turn (P_finish-stream-boundary) the cursor is also
-          dropped from the rendered tree — its only role was the typing
-          cue, and the parent CSS animates the toolbar in alongside. */}
       {(isLive || isSettling) && !showStatus ? (
         <StreamCursor state={message._playbackState} settling={!isLive && isSettling} />
       ) : null}
