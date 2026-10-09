@@ -8,6 +8,7 @@
  *
  * What used to live in this single function and where it went during the
  * 2026-10 split:
+ *   finish/drain/persistence/status-release lifecycle — chat/turn/finishLifecycle.js
  *   finish-time viewport capture + RAF settle — chat/turn/finishViewport.js
  *   live-status chrome + thinking-panel publishes — chat/turn/statusChrome.js
  *   finish-time single formatMsg pass + canvas mode writeback — chat/turn/finishRender.js
@@ -16,7 +17,7 @@
  */
 import { stateStore } from '../state/store.js';
 import { turnState, streamRetryViewport } from './turnState.js';
-import { setChatStopState, markTurnInProgress, markTurnEnded, quietTurn } from './turnUi.js';
+import { setChatStopState, markTurnInProgress, quietTurn } from './turnUi.js';
 import { registerLiveTurnRuntime, claimLiveSearchRetry } from './liveTurn.js';
 import { generateId } from '../util/ids.js';
 import { hideNewReplyPill } from '../ui/scrollPill.js';
@@ -30,19 +31,14 @@ import {
   TURN_ANCHOR_TOP_OFFSET,
 } from './turnAnchor.ts';
 import { createToolRuntime } from './toolRuntime.js';
-import { esc } from '../render/helpers.js';
-import { stripChatArtifacts } from '../util/stripChatArtifacts.js';
 import { scrollContainer, isPinnedToBottom } from '../ui/scroll.js';
-import { announceTranscript } from '../ui/liveRegion.js';
-import { saveCurrentSession } from '../session/persistence.js';
-import { updateChatStats } from './stats.js';
-import { appendLocalMemory } from '../storage/localMemory.js';
 import { createStatusChrome } from './turn/statusChrome.js';
 import { createFinishRender } from './turn/finishRender.js';
 import { createFinishViewport } from './turn/finishViewport.js';
 import { createAbortPath } from './turn/abortPath.js';
 import { createErrorPath } from './turn/errorPath.js';
 import { createMessageOwnership } from './turn/messageOwnership.js';
+import { createFinishLifecycle } from './turn/finishLifecycle.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 function _t(key, fallback) {
@@ -177,6 +173,7 @@ export function addStreamingMessage(opts){
     thinkCtl: null,
     inlineToolRows: [],
     _streamScheduler: null,
+    _finishContinuation: null,
     /* runtime singletons (filled in below) */
     toolRuntime: null,
     cancelScheduledRender: function(){},
@@ -373,10 +370,9 @@ export function addStreamingMessage(opts){
      push(delta) only fills the buffer; onFrame reveals the played prefix at
      an adaptive rate via doRender(). onStateChange feeds the cursor animation.
      onDone fires after finish()'s beginDrain() flushes the buffer — that is
-     where the one-shot final render runs (set into _finishContinuation).
+     where the one-shot final render runs (set into state._finishContinuation).
      The rAF seam is bound to the shared `pendingRender` slot so
      cancelScheduledRender() teardown cancels a player-queued frame. */
-  var _finishContinuation=null;
   var _streamPlayer=createStreamPlayer({
     onFrame:function(_visibleText,_frame){
       _visibleLen=_visibleText.length;
@@ -393,8 +389,8 @@ export function addStreamingMessage(opts){
       }
     },
     onDone:function(){
-      var _cont=_finishContinuation;
-      _finishContinuation=null;
+      var _cont=state._finishContinuation;
+      state._finishContinuation=null;
       if(typeof _cont==="function"){try{_cont()}catch(e){reportSwallow(e, 'streamingTurn.doRender.finishContinuation'); }}
     },
     now:function(){return performance.now()},
@@ -534,6 +530,7 @@ export function addStreamingMessage(opts){
   var abortPath=createAbortPath(state);
   var finishRender=createFinishRender(state);
   var finishViewport=createFinishViewport(state);
+  var finishLifecycle=createFinishLifecycle(state,ownerSessionId,finishRender,finishViewport);
 
   var ret={
     getClientId:function(){return clientId},
@@ -622,152 +619,7 @@ export function addStreamingMessage(opts){
       noteStreamGrowth();
       setLiveStatus({phase:"retrying",label:_retryLabel,clickable:false});
     },
-    finish:function(){
-      /* P_session-stream-dispose — once an abort() has fired, never
-         let a late natural-finish callback (the LLM may flush a
-         final "data: [DONE]" right before ac.abort propagates) write
-         to stateStore.read("messages"). Set _disposed=true on natural completion
-         too, so any queued microtask racing the close can't sneak in
-         a stale write between finish()'s reads of `full` and the
-         actual stateStore.read("messages")[msgIdx].html assignment. */
-      if(state._disposed)return;
-      /* P_session-cross-talk — verify slot ownership BEFORE flipping
-         _disposed/finished. If the user switched sessions while the
-         stream was wrapping up, the natural [DONE] frame would
-         otherwise: (1) write the old session's `full` into the new
-         session's stateStore.read("messages")[msgIdx].html, (2) call
-         saveCurrentSession() which persists the old answer under the
-         NEW session's id, and (3) appendLocalMemory("assistant", full)
-         polluting the new session's memory. Abandon silently instead.
-         We don't call abort() here because loadSession already called
-         it; we just refuse to commit the stale write. */
-      if(stateStore.read("currentSessionId")!==ownerSessionId
-         || msgIdx<0
-         || !stateStore.read("messages")[msgIdx]
-         || stateStore.read("messages")[msgIdx].clientId!==clientId){
-        state.finished=true;
-        state._disposed=true;
-        /* Still tear down timers / SSE so nothing leaks. */
-        if(_elapsedTick)clearInterval(_elapsedTick);
-        cancelScheduledRender();
-        toolRuntime.dispose();
-        publishReactChatRuntime({
-          type:"stream-aborted",
-          messageId:clientId,
-          textLength:state.full.length,
-          reason:"session-replaced"
-        });
-        return;
-      }
-      if(state.finished)return;
-      /* P_smooth-stream — turn end. With smooth streaming on and buffered
-         text still unplayed, DRAIN it first: beginDrain() flushes the
-         remaining buffer at a boosted rate, and the one-shot final render
-         runs in the player's onDone (below, via _finishContinuation) so the
-         reader never sees the tail snap to full before the fade. When there
-         is nothing left to play (or _smooth is off), flush synchronously and
-         run the finish body inline exactly as before. */
-      if(_smooth&&_streamPlayer.playedLen()<_streamPlayer.totalLen()){
-        _finishContinuation=_finishBody;
-        _streamPlayer.beginDrain();
-        return;
-      }
-      _streamPlayer.flushNow();
-      _finishBody();
-
-      function _finishBody(){
-      if(state.finished)return;
-      state.finished=true;
-      state._disposed=true;
-      state._publishThinkingPanelEnd();
-      toolRuntime.dispose();
-      if(_elapsedTick)clearInterval(_elapsedTick);
-      cancelScheduledRender();
-      /* P1.2 — single formatMsg pass at finish time, written to
-         stateStore.read("messages")[i].html. React has painted this turn from
-         rawText + toolCalls all along, so the final render is only the
-         `html` string that history reload and session save read — nothing
-         touches the detached shell. */
-      /* P_finish-crossfade — the patch + stream-finished publish below
-         rebuild the bubble's DOM in one commit (final html replaces the
-         live-tail paint, streaming chrome retires, scaffold previews become
-         widget slots, think blocks collapse). Wrapped in a scoped view
-         transition, the row morphs through a short native cross-fade instead
-         of snapping. The update callback also runs finishAfterRender(), whose
-         anchor capture reads the still-old DOM — inside the transition the
-         new frame is captured two frames later, so the reads stay correct. */
-      var _renderResult;
-      try{
-        _renderResult=finishRender.run();
-      } catch {
-        console.log("[finish] render error");
-        var fb="<p>"+esc(stripChatArtifacts(state.full).replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/<think>[\s\S]*$/gi,""))+"</p>";
-        var _preRevE=(stateStore.read("messages")[msgIdx]&&stateStore.read("messages")[msgIdx]._toolRunRev)||0;
-        patchOwnedMessage({
-          html:fb,rawText:state.full,
-          type:"assistant",
-          reasoningContent:state.fullReasoning||null,
-          _streamSettled:true,
-          _toolRunRev:_preRevE+1,
-        });
-      }
-      finishAfterRender();
-      publishReactChatRuntime({
-        type: "stream-finished",
-        messageId: clientId,
-        textLength: state.full.length,
-      });
-
-      function finishAfterRender(){
-        /* Post-render wiring (mermaid, viz, code headers, images) runs in
-           MessageItem's useLayoutEffect on the React body after each
-           commit — running the same hooks here would re-render them on a
-           throwaway detached shell. */
-        /* Streaming AI bubbles skip addMessage(). React owns #msgList and the
-           React MessageToolbar component renders the same action buttons
-           from the snapshot, so the legacy toolbar path is unreachable. */
-        try{appendLocalMemory("assistant",state.full)}catch(e){reportSwallow(e, 'streamingTurn.finishAfterRender.appendLocalMemory'); }
-        /* a11y — the transcript has no live region during streaming (a
-           token-cadence announcer floods AT queues), so surface the
-           completed reply once here. `visibleFinal` is the prose with
-           think blocks / chat artifacts stripped; it is skipped when the
-           render path threw and the var was never assigned. */
-        var _visibleFinal=_renderResult?_renderResult.visibleFinal:null;
-        try{
-          if(typeof _visibleFinal==="string"&&_visibleFinal.trim()){
-            announceTranscript(_visibleFinal);
-          }
-        }catch(e){reportSwallow(e, 'streamingTurn.finishAfterRender.announceTranscript'); }
-        if(stateStore.read("phase")==="chat"||(stateStore.read("topic")&&stateStore.read("kbNodes").length)){
-          saveCurrentSession();
-        }
-        updateChatStats();
-        /* P0.0 — only reset the global streaming flags if THIS
-         * controller is still the active one. When the user
-         * interrupts a stream with a new message, a fresh
-         * addStreamingMessage has already flipped turnState.chatStreaming
-         * back to true; the old controller's teardown must not
-         * clobber that, or the next "Stop" click would think no
-         * stream is running. */
-        if(turnState.activeChatCtl===ret){
-          turnState.chatStreaming=false;
-          try{setChatStopState(false)}catch(e){reportSwallow(e, 'streamingTurn.finishAfterRender.setChatStopState'); }
-          try{markTurnEnded()}catch(e){reportSwallow(e, 'streamingTurn.finishAfterRender.markTurnEnded'); }
-          /* P1.4 — clearing the global abort handle on natural finish
-             keeps the closure (and DOM refs) eligible for GC. */
-          turnState.activeChatCtl=null;
-        }
-        /* The final pass changes the answer's height (a running row folds
-           into its group, the status line retires, KaTeX resolves), and
-           neither scrollTop nor distance-from-bottom survives that. Capture
-           row identity + viewport offset instead, and re-assert it below.
-           Done by chat/turn/finishViewport.js — see that module for the
-           full rationale and the per-branch intent comments. */
-        finishViewport.capture();
-        finishViewport.settle();
-      }
-      } /* end _finishBody */
-    },
+    finish: finishLifecycle.finish,
     abort: abortPath.abort,
     /* Show an inline error state with a retry button so the user can
        recover from a transient failure (network, 429, 5xx) without
