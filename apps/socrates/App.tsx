@@ -8,7 +8,7 @@ import { buildBranchSession, createMessageOutbox, findRegenerateTarget, isLocalS
 import { useAuthStore } from '@socrates/auth';
 import { useSettingsStore } from '@socrates/settings';
 import { fontStyle, getThemePaletteHex } from '@socrates/theme';
-import { AssistantPicker, ChatMessageList, Composer, DiagView, ExamView, Icon, IconRendererProvider, ModelPicker, Sidebar, activeProviderOf, assistantConfigOf, assignMistakeQuizSlot, buildEmbeddedDocument, bumpMistakeRedo, findMessageMatches, messageQuizSlotId, mistakeRedoPlan, normalizeMistakes, paletteForDocument, practiceMistakeFor, prependMistake, quizMistakeFor, removeMistakesForQuizSlot, storedFileIdFromRawUrl, uiStrings, type ArtifactDescriptor, type BookMistake, type BoundarySnapshot, type KnowledgeBoundaryNode, type MistakeRedoItem, type PracticeSubmission, type MistakeFilter, type QuizPick, type SidebarNavItem, type SidebarView, type TeachingPlan } from '@socrates/ui';
+import { AssistantPicker, ChatMessageList, Composer, DiagView, ExamView, Icon, IconRendererProvider, ModelPicker, Sidebar, activeProviderOf, assistantConfigOf, buildEmbeddedDocument, findMessageMatches, paletteForDocument, storedFileIdFromRawUrl, uiStrings, type ArtifactDescriptor, type BoundarySnapshot, type KnowledgeBoundaryNode, type SidebarNavItem, type SidebarView, type TeachingPlan } from '@socrates/ui';
 import { api, appWebOrigin } from './src/runtime';
 import { storage } from './src/storage';
 import { copyText } from './src/clipboard';
@@ -41,37 +41,11 @@ import { useLearningSetup } from './src/useLearningSetup';
 import { useSessionActions } from './src/useSessionActions';
 import { useStagedAttachments } from './src/useStagedAttachments';
 import { useChatTurn } from './src/useChatTurn';
+import { useTutorProgress } from './src/useTutorProgress';
+import { uuidScope } from './src/sessionIdentity';
 
 const initialSessions: Session[] = [{ id: 'welcome', title: 'Welcome to Socrates', topic: 'Universal app', mode: 'chat', phase: 'chat', messages: [{ clientId: 'welcome-assistant', role: 'assistant', rawText: 'How can I help you learn today?' }] }];
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/** Server-owned ids only: the messages API scopes ops by session, and a
- * drain can run while another session is active — never send a local
- * `session-*` id as the scope. */
-function uuidScope(id: string | null | undefined): string | null {
-  return id && UUID_RE.test(id) ? id : null;
-}
-/** Baseline recordMistake context: session topic + current KB node. */
-function mistakeContextOf(session: Session): { topic: string; node: string; nodeIdx: number | null } {
-  const nodeIdx = typeof session.currentNode === 'number' ? session.currentNode : null;
-  const node = nodeIdx !== null ? (session.kbNodes as Array<{ name?: string }> | undefined)?.[nodeIdx]?.name : undefined;
-  return { topic: session.topic || '', node: node || '', nodeIdx };
-}
-/** Baseline persistMistake: best-effort mirror to POST /api/mistakes for a
- * signed-in account (the session array stays the source of truth). */
-function mirrorMistake(sessionId: string, mistake: BookMistake): void {
-  const owner = useAuthStore.getState().user;
-  if (!owner || owner.isGuest) return;
-  void api.mistakes.create({
-    sessionId: uuidScope(sessionId),
-    nodeName: mistake.node || null,
-    questionContent: mistake.q || '',
-    userAnswer: mistake.userAnswer,
-    correctAnswer: mistake.correct,
-    source: mistake.type === 'practice' ? 'practice' : 'quiz',
-  }).catch(() => { /* Mirror only; the session save carries the book. */ });
-}
 function messageKey(message: { clientId?: string | null; id?: string }): string | null {
   return message.clientId || message.id || null;
 }
@@ -165,27 +139,6 @@ function SocratesApp() {
   const fam = (weight: 'regular' | 'medium' | 'semibold' | 'bold' = 'regular') => fontStyle(weight, language, Platform.OS === 'web');
   const palette = useMemo(() => getThemePaletteHex(theme), [theme]);
   const active = useMemo(() => sessions.find((session) => session.id === activeId) || null, [activeId, sessions]);
-  // Mistake book: rows read in the baseline record shape; redo cards and
-  // in-place quiz remounts are transcript-local (baseline appends DOM that a
-  // session switch discards), so they follow the active session only.
-  const activeMistakes = useMemo(() => active?.mode === 'tutor' ? normalizeMistakes(active.mistakes) : [], [active]);
-  /* Baseline: `kb.mistakeFilter` is restored per session on load and saved
-   * with the session (persistence.js), defaulting to `all`. */
-  const activeMistakeFilter: MistakeFilter = active?.mistakeFilter === 'unresolved' || active?.mistakeFilter === 'resolved' ? active.mistakeFilter : 'all';
-  const setActiveMistakeFilter = useCallback((filter: MistakeFilter) => {
-    const store = useChatStore.getState();
-    if (store.activeSessionId) store.patchSession(store.activeSessionId, { mistakeFilter: filter });
-  }, []);
-  const [redo, setRedo] = useState<{ sessionId: string | null; items: MistakeRedoItem[]; resets: Record<string, number> }>({ sessionId: null, items: [], resets: {} });
-  useEffect(() => {
-    setRedo((prev) => {
-      if (prev.sessionId === activeId) return prev;
-      // A local id adopted to its server UUID is the same transcript; any
-      // other switch drops the local redo cards.
-      const adopted = !!prev.sessionId && !useChatStore.getState().sessions.some((session) => session.id === prev.sessionId);
-      return adopted ? { ...prev, sessionId: activeId } : { sessionId: activeId, items: [], resets: {} };
-    });
-  }, [activeId]);
   const findMatches = useMemo(() => findMessageMatches(active?.messages || [], findQuery), [active?.messages, findQuery]);
   const visibleSessions = useMemo(
     () => {
@@ -200,8 +153,6 @@ function SocratesApp() {
   const accountEpoch = useRef(0);
   const syncEpoch = useRef(0);
   const loadingDetails = useRef(new Set<string>());
-  const tutorSaveQueues = useRef(new Map<string, Promise<void>>());
-  const tutorSaveAliases = useRef(new Map<string, string>());
   const chatError = useChatStore((state) => state.error);
   // Stored files: resolve transcript raw-URLs into platform image sources and
   // preview/download through the authenticated file library.
@@ -267,6 +218,18 @@ function SocratesApp() {
     resolveStaged,
     stopComposerAudio,
   });
+  const {
+    activeMistakes,
+    activeMistakeFilter,
+    setActiveMistakeFilter,
+    redo,
+    updateKnowledgeNode,
+    saveKnowledgeSnapshot,
+    jumpToKnowledgeNode,
+    onQuizPick,
+    onPracticeSubmit,
+    onRedoMistake,
+  } = useTutorProgress({ active, activeId, accountEpoch, runTurn, submitTurn });
   // Drain on boot and whenever the platform reports it is back online.
   // (Native has no window: the drain after every turn + send covers it.)
   useEffect(() => {
@@ -321,61 +284,6 @@ function SocratesApp() {
     setProjectFilter,
     setSidebarOpen,
   });
-
-  const persistTutorPatch = useCallback((sessionId: string, patch: Partial<Session>) => {
-    const store = useChatStore.getState();
-    store.patchSession(sessionId, patch);
-    const owner = useAuthStore.getState().user;
-    if (!owner || owner.isGuest) return;
-    const epoch = accountEpoch.current;
-    const previous = tutorSaveQueues.current.get(sessionId) || Promise.resolve();
-    const save = previous.catch(() => undefined).then(async () => {
-      if (epoch !== accountEpoch.current) return;
-      const resolvedId = tutorSaveAliases.current.get(sessionId) || sessionId;
-      const latestStore = useChatStore.getState();
-      const latest = latestStore.sessions.find((session) => session.id === resolvedId)
-        || latestStore.sessions.find((session) => session.id === sessionId);
-      if (!latest) return;
-      const saved = await api.sessions.save(latest);
-      if (epoch !== accountEpoch.current) return;
-      const current = useChatStore.getState().sessions.find((session) => session.id === latest.id);
-      if (current) useChatStore.getState().adoptSessionId(latest.id, { ...saved, ...current, id: saved.id });
-      tutorSaveAliases.current.set(sessionId, saved.id);
-    }).catch(() => { /* Keep the local Tutor edit; the next turn retries its session save. */ });
-    tutorSaveQueues.current.set(sessionId, save);
-    void save.then(() => {
-      if (tutorSaveQueues.current.get(sessionId) === save) tutorSaveQueues.current.delete(sessionId);
-    });
-  }, []);
-
-  const updateKnowledgeNode = useCallback((index: number, patch: Partial<KnowledgeBoundaryNode>) => {
-    const session = active;
-    if (!session || session.mode !== 'tutor') return;
-    const nodes = ((session.kbNodes || []) as unknown as KnowledgeBoundaryNode[]).map((node, nodeIndex) => (
-      nodeIndex === index ? { ...node, ...patch } : node
-    ));
-    persistTutorPatch(session.id, { kbNodes: nodes as unknown as Session['kbNodes'] });
-  }, [active, persistTutorPatch]);
-
-  const saveKnowledgeSnapshot = useCallback(() => {
-    const session = active;
-    if (!session || session.mode !== 'tutor') return;
-    const nodes = (session.kbNodes || []) as unknown as KnowledgeBoundaryNode[];
-    const counts = { internalized: 0, fuzzy: 0, blank: 0 };
-    for (const node of nodes) {
-      if (node.status === 'internalized') counts.internalized += 1;
-      else if (node.status === 'fuzzy') counts.fuzzy += 1;
-      else counts.blank += 1;
-    }
-    const snapshot: BoundarySnapshot & { counts: typeof counts } = {
-      date: new Date().toISOString().slice(0, 10),
-      at: Date.now(),
-      summary: `I ${counts.internalized} · F ${counts.fuzzy} · B ${counts.blank}`,
-      counts,
-    };
-    const history = [...(session.boundariesHistory || []), snapshot as unknown as NonNullable<Session['boundariesHistory']>[number]].slice(-30);
-    persistTutorPatch(session.id, { boundariesHistory: history });
-  }, [active, persistTutorPatch]);
 
   // Personas are loaded with the library so the header chip can name the
   // bound assistant right after a reload; failures stay off the main sync
@@ -550,108 +458,6 @@ function SocratesApp() {
       setShareStatus('');
     } finally { setShareBusy(false); }
   }, [shareBusy, shareSessionId, shareToken]);
-  const jumpToKnowledgeNode = useCallback((index: number) => {
-    if (!active || active.mode !== 'tutor') return;
-    const store = useChatStore.getState();
-    if (store.turnId) return;
-    const nodes = (active.kbNodes || []) as unknown as KnowledgeBoundaryNode[];
-    const node = nodes[index];
-    if (!node) return;
-    store.patchSession(active.id, { currentNode: index, substantiveCount: 0 });
-    const hasHistory = (active.messages || []).some((message) => message.role === 'assistant' && !!(message.rawText || message.content));
-    const assistantPrompt = hasHistory
-      ? 'Continue the lesson from where we left off.'
-      : `I'm ready to begin. Please teach me about ${node.name || active.topic}.`;
-    void runTurn(active.id, '', undefined, undefined, assistantPrompt);
-  }, [active, runTurn]);
-  // Quiz proxy (baseline handleQuizPick + mountQuizWidget): a correct or
-  // undeclared pick is terminal for the card and spends no model turn; only
-  // a wrong pick with a declared answer asks the tutor to diagnose.
-  const onQuizPick = useCallback((pick: QuizPick) => {
-    const store = useChatStore.getState();
-    const sessionId = store.activeSessionId;
-    if (!sessionId) return;
-    const session = store.sessions.find((s) => s.id === sessionId);
-    if (!session || session.mode !== 'tutor' || store.turnId) return;
-    const stage = session.teachingStage || 'motivate';
-    const attempts = session.practiceAttempts || 0;
-    const right = pick.isRight && !!pick.correct;
-    if (stage === 'exercise') {
-      store.patchSession(sessionId, right ? { teachingStage: 'check', practiceAttempts: 0 } : { practiceAttempts: attempts + 1 });
-    } else if (stage === 'check') {
-      store.patchSession(sessionId, { practiceAttempts: right ? 0 : attempts + 1 });
-    }
-    if (right && pick.slotId) {
-      // Conquer path (baseline removeMistakeForQuizSlot): a right pick on a
-      // slot a mistake was recorded against removes it, then saves.
-      const book = normalizeMistakes(session.mistakes);
-      const remaining = removeMistakesForQuizSlot(book, pick.slotId);
-      if (remaining !== book) persistTutorPatch(sessionId, { mistakes: remaining as unknown as Session['mistakes'] });
-    }
-    if (!pick.correct || pick.isRight) return;
-    const quizMistake = quizMistakeFor(
-      { q: pick.q, options: pick.options, picked: pick.picked, correct: pick.correct, slotId: pick.slotId },
-      mistakeContextOf(session),
-    );
-    if (quizMistake) {
-      store.patchSession(sessionId, { mistakes: prependMistake(normalizeMistakes(session.mistakes), quizMistake) as unknown as Session['mistakes'] });
-      mirrorMistake(sessionId, quizMistake);
-    }
-    submitTurn(`I chose ${pick.picked}. ${pick.pickedText} (Result: incorrect, correct is ${pick.correct}.)`, 'quiz');
-  }, [submitTurn]);
-  // Practice proxy (baseline mountPracticeWidget): submit always sends the
-  // `[Practice attempt]` turn; a self-check hit also resets the attempts.
-  const onPracticeSubmit = useCallback((submission: PracticeSubmission) => {
-    const store = useChatStore.getState();
-    const sessionId = store.activeSessionId;
-    if (!sessionId) return;
-    const session = store.sessions.find((s) => s.id === sessionId);
-    if (!session || session.mode !== 'tutor' || store.turnId) return;
-    if (submission.correct && submission.isRight) store.patchSession(sessionId, { practiceAttempts: 0 });
-    const practiceMistake = practiceMistakeFor(submission, mistakeContextOf(session));
-    if (practiceMistake) {
-      store.patchSession(sessionId, { mistakes: prependMistake(normalizeMistakes(session.mistakes), practiceMistake) as unknown as Session['mistakes'] });
-      mirrorMistake(sessionId, practiceMistake);
-    }
-    submitTurn(`${appStringsNow().practicePrefix}${submission.answer}`, 'practice');
-  }, [submitTurn]);
-  // Mistake-book Redo (baseline handleMistakeRedo): bump redoCount and save;
-  // a quiz whose original card is still in the transcript remounts in place,
-  // otherwise a fresh card is appended (practice rows always append) and a
-  // quiz row is re-pointed at the new slot so a right pick conquers it.
-  const onRedoMistake = useCallback((mistakeId: string) => {
-    const store = useChatStore.getState();
-    const sessionId = store.activeSessionId;
-    if (!sessionId) return;
-    const session = store.sessions.find((s) => s.id === sessionId);
-    if (!session || session.mode !== 'tutor') return;
-    const bumped = bumpMistakeRedo(normalizeMistakes(session.mistakes), mistakeId);
-    if (!bumped.mistake) return;
-    const plan = mistakeRedoPlan(bumped.mistake);
-    if (plan.kind === 'quiz' && plan.slotId && (session.messages || []).some((message) => message.role === 'assistant' && messageQuizSlotId(message) === plan.slotId)) {
-      persistTutorPatch(sessionId, { mistakes: bumped.list as unknown as Session['mistakes'] });
-      const slot = plan.slotId;
-      setRedo((prev) => {
-        const resets = prev.sessionId === sessionId ? prev.resets : {};
-        return { sessionId, items: prev.sessionId === sessionId ? prev.items : [], resets: { ...resets, [slot]: (resets[slot] || 0) + 1 } };
-      });
-      return;
-    }
-    const redoId = `redo-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
-    let item: MistakeRedoItem;
-    let list = bumped.list;
-    if (plan.kind === 'quiz') {
-      const slotId = `${redoId}:quiz`;
-      list = assignMistakeQuizSlot(list, mistakeId, slotId);
-      item = { id: redoId, kind: 'quiz', q: plan.q, options: plan.options, correct: plan.correct, slotId };
-    } else {
-      item = { id: redoId, kind: 'practice', problem: plan.problem, correct: plan.correct };
-    }
-    persistTutorPatch(sessionId, { mistakes: list as unknown as Session['mistakes'] });
-    setRedo((prev) => prev.sessionId === sessionId
-      ? { ...prev, items: [...prev.items, item] }
-      : { sessionId, items: [item], resets: {} });
-  }, [persistTutorPatch]);
   const stop = useCallback(() => { streamAbort.current?.abort(); }, []);
   // Queue one half of a failed server sync for replay: every dropped row
   // as an explicit delete plus (for edits) the rewritten text as a patch.
