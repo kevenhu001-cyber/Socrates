@@ -13,26 +13,10 @@
 import { apiFetch } from '../util/api.js';
 import { notifyEmbeddedAuthExpired } from '../native/mobileWebSessionBridge.js';
 import { syncCookieConsentPlacement } from '../cookieConsent.js';
-import { stateStore } from '../state/store.js';
-import { drainMessageOutbox } from '../session/mutationOutbox.js';
-import { getChatIdFromURL, getExamIdFromURL, setChatIdInURL, setExamIdInURL } from '../session/store.js';
-import { loadSession } from '../session/loader.js';
-
-import { loadUserMemories, renderUserFooter } from '../ui/profile.js';
-
-import { syncExtensionsUI } from '../pickers.js';
-
-import { syncSidebarForMode } from '../config/providers.js';
-
-import { syncWorkspaceRoute } from '../sidebar/navigation.service.ts';
-
-import { toggleShareBtn } from '../ui/share.js';
-
-/* Settings is lazy; a named window adapter publishes refreshed provider
-   metadata only when its React surface has been mounted. */
-
-import { renderGreeting } from '../ui/greeting.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { afterAuthEnter } from './postAuth.js';
+
+export { afterAuthEnter };
 
 function isEmbeddedNativeWebView(){
   try{
@@ -185,139 +169,6 @@ export function mountAuthListeners(){
     cleanups.splice(0).forEach(function(cleanup){cleanup()});
     if(gate.dataset.authListenersMounted==="1")delete gate.dataset.authListenersMounted;
   };
-}
-
-/* ── Post-auth hydration ──
-   Runs after a successful signin/register/verify/code-login. Loads
-   the user's projects, sessions, providers, memories, etc. Reads
-   main.js globals via window. */
-export async function afterAuthEnter(){
-  toggleShareBtn&&toggleShareBtn();
-  /* P_bleed-v2 — wipe the previous user's module-level caches
-     BEFORE we start fetching the new user's data. Without this,
-     the brief window between hideGate() and the completion of
-     refreshServerSessions / refreshApiConfig would show the
-     previous user's sessions in the sidebar or providers in the
-     model picker. clearPerUserClientState also re-renders the
-     affected UI surfaces (renderRecents and provider snapshot) so
-     the empty state appears immediately. */
-  if(typeof window.clearPerUserClientState==="function"){
-    try{window.clearPerUserClientState()}catch(e){ reportSwallow(e, 'auth/index.clearPerUserClientState');/* ignore */}
-  }
-  /* P0.1 A4 — replay any message edit/delete queued while the previous
-     session was offline. The `online` listener cannot cover this: signing
-     in on an already-connected machine never fires `online`, so without
-     this the queue would sit until the next reload. Ownership is enforced
-     server-side, so a queue left behind by a different user on this
-     browser is rejected and dropped rather than applied. */
-  try{ drainMessageOutbox().then(function(n){
-    if(n>0){try{if(typeof window.saveCurrentSession==="function")window.saveCurrentSession()}catch(e){reportSwallow(e, 'auth/index.drainOutbox.saveCurrentSession'); }}
-  }); }catch(e){ reportSwallow(e, 'auth/index.drainOutbox.guard'); /* replay is best effort */ }
-  /* Run the localStorage -> server migration once if there's anything to bring. */
-  try{
-    var localApi=localStorage.getItem("socrates-api");
-    var localSessions=localStorage.getItem("socrates-sessions-v2");
-    var payload={};
-    var hasAny=false;
-    if(localSessions){try{var arr=JSON.parse(localSessions);if(Array.isArray(arr)&&arr.length){payload.localSessions=arr;hasAny=true}}catch(e){reportSwallow(e, 'auth/index.migrate.parseSessions'); }}
-    if(localApi){try{var o=JSON.parse(localApi);if(o&&o.providers&&o.providers.length){var p=o.providers.find(function(x){return x.id===o.activeId})||o.providers[0];if(p&&p.key){payload.localApi={label:p.label,url:p.url,model:p.model,key:p.key};hasAny=true}}}catch(e){reportSwallow(e, 'auth/index.migrate.parseApi'); }}
-    if(hasAny){
-      try{
-        await apiFetch("/api/migrate",{method:"POST",body:payload});
-        try{localStorage.removeItem("socrates-sessions-v2")}catch(e){reportSwallow(e, 'auth/index.migrate.clearSessions', 'expected'); }
-        try{localStorage.removeItem("socrates-api")}catch(e){reportSwallow(e, 'auth/index.migrate.clearApi', 'expected'); }
-      }catch(e){ reportSwallow(e, 'auth/index.migrate.post'); /* migrate failed */}
-    }
-  }catch(e){ reportSwallow(e, 'auth/index.migrate.setup'); /* migrate setup failed */}
-  /* Boot-time data fetch helper — calls a `fn` once; if it throws
-     an ApiError(401) DURING the post-login grace window
-     (isInAuthGraceWindow), the brand-new `sid` cookie may not have
-     reached the browser's cookie jar yet, which would silently
-     leave the model picker and Recents list empty. Retry once
-     after ~500 ms to give the cookie time to commit. Outside the
-     grace window, a 401 means the session is genuinely gone and
-     we let the error bubble so handleAuthExpired() can show the
-     sign-in gate.
-
-     Reused for any future "data needed immediately after sign-in"
-     endpoint (mistakes, memories, projects, …). */
-  async function bootFetch(label, fn){
-    if(typeof fn!=="function")return null;
-    try{
-      var r=await fn();
-      return r;
-    }catch(e){
-      var isGrace=typeof window.isInAuthGraceWindow==="function" && window.isInAuthGraceWindow();
-      if(!isGrace || !e || e.status!==401) throw e;
-      await new Promise(function(res){setTimeout(res,500)});
-      try{
-        var r2=await fn();
-        return r2;
-      }catch(e2){
-        /* Re-throw so handleAuthExpired() can take over — better
-           than showing the user an empty picker while their real
-           session is still alive. */
-        throw e2;
-      }
-    }
-  }
-  /* Pull the user's server-side chat sessions into the local cache. */
-  /* Load the user's saved API providers and model configs.
-     Wrap the call so the `await` waits for the returned Promise;
-     bootFetch retries 401s during the grace window so the model
-     picker isn't left empty when the sid cookie is still settling. */
-  /* Load the user's saved memories for long-term context. AWAIT this
-     so the first chat request the user fires after sign-in sees their
-     own memories (and not the previous user's, which would otherwise
-     be visible during the fire-and-forget window). loadUserMemories
-     also clears _userMemories before fetching, so awaiting is safe
-     even if the request fails. */
-  await Promise.all([
-    bootFetch("refreshServerSessions", window.refreshServerSessions),
-    bootFetch("refreshApiConfig", window.refreshApiConfig),
-    loadUserMemories().catch(function(){/* handled inside */}),
-  ]);
-  /* Update sidebar footer with user info. */
-  renderUserFooter&&renderUserFooter();
-  /* Once the user object is available, paint the personalized greeting. */
-  try {
-    if (typeof renderGreeting === "function") renderGreeting();
-  } catch (e) { reportSwallow(e, 'auth/index.hydrate.greeting'); /* first-paint helpers — never block sign-in */ }
-  /* Re-render sidebar lists now that the cache is fresh. */
-  window.renderRecents&&window.renderRecents();
-  window.renderMistakes&&window.renderMistakes();
-  window.updateMistakesBadge&&window.updateMistakesBadge();
-  window.syncModelPills&&window.syncModelPills();
-  syncExtensionsUI&&syncExtensionsUI();
-  window.syncAppModeUI&&window.syncAppModeUI();
-  syncSidebarForMode&&syncSidebarForMode();
-  /* If the URL carries a chat session ID, load it. Otherwise, stay on the
-     main page (topic setup) — no session exists until the user clicks Begin.
-     P_exam-route — exam sessions live under a different query key
-     (?exam=<uuid>) so a pasted chat link can't accidentally open an exam
-     and vice versa. Both keys share the /api/sessions/<id> endpoint, so
-     loadSession() handles either via its existing kind==='exam' branch. */
-  var chatId=getChatIdFromURL();
-  var examId=getExamIdFromURL();
-  if(chatId){
-    try{await loadSession(chatId)}catch {/* failed to load session */
-      stateStore.dispatch({type:'state/set',key:'currentSessionId',value:null});
-      setChatIdInURL(null);
-    }
-  }else if(examId){
-    try{await loadSession(examId)}catch {/* failed to load session */
-      stateStore.dispatch({type:'state/set',key:'currentSessionId',value:null});
-      setExamIdInURL(null);
-    }
-  }
-  /* Trigger initial data load. */
-  if(typeof window.initialLoad==="function")window.initialLoad();
-  else{
-    /* Fallback: re-render whatever the current view is. */
-    if(typeof window.renderRecents==="function")window.renderRecents();
-    if(typeof window.renderMistakes==="function"){window.renderMistakes();window.updateMistakesBadge&&window.updateMistakesBadge()}
-  }
-  syncWorkspaceRoute&&syncWorkspaceRoute();
 }
 
 /* Reveal the app shell first, then hydrate user data in the background.
