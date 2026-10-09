@@ -13,13 +13,11 @@
  */
 import { useEffect, useState } from 'react';
 
-import { STROKE_ICONS, toolIcon } from '../../ui/icons/toolIcons.js';
-import { formatSeconds } from './labels.js';
-import { ToolRunAgentSteps } from './ToolRunAgentSteps.js';
 import { ToolRunApproval } from './ToolRunApproval.js';
-import { ToolRunDetail } from './ToolRunDetail.js';
+import { LiveToolRunRow } from './LiveToolRunRow.js';
+import { SettledToolRunRow } from './SettledToolRunRow.js';
 import { useToolRunSheet } from './ToolRunSheetContext.js';
-import type { ToolRunState, ToolRunView } from './toolRunModel';
+import type { ToolRunView } from './toolRunModel';
 import { useElapsed } from './useElapsed.js';
 
 export interface ToolRunRowProps {
@@ -36,64 +34,16 @@ export interface ToolRunRowProps {
   sheetMode?: boolean;
 }
 
-function metaParts(view: ToolRunView, elapsedMs: number): string {
-  const parts = view.meta.slice();
-  if (view.state === 'running') {
-    const elapsed = formatSeconds(elapsedMs);
-    if (elapsed) parts.push(elapsed);
-  }
-  return parts.join(' · ');
-}
-
-function RowHead({ view, elapsedMs }: { view: ToolRunView; elapsedMs: number }) {
-  const meta = metaParts(view, elapsedMs);
-  const running = view.state === 'running';
-  return (
-    <>
-      <span
-        className="tool-inline-tool-icon"
-        aria-hidden="true"
-        dangerouslySetInnerHTML={{ __html: toolIcon(view.name) }}
-      />
-      <span
-        className={`tool-inline-label${running ? ' shimmer-text' : ''}${view.mono ? ' is-mono' : ''}`}
-        title={view.label}
-      >
-        {view.label}
-      </span>
-      {meta ? <span className="tool-inline-meta is-visible">{meta}</span> : null}
-      {running ? null : (
-        <span
-          className="tool-inline-chev"
-          aria-hidden="true"
-          dangerouslySetInnerHTML={{ __html: STROKE_ICONS.chevronRight }}
-        />
-      )}
-    </>
-  );
-}
-
-/** The chevron only earns its place when opening the row reveals something. */
-function isExpandable(view: ToolRunView): boolean {
-  return view.sections.length > 0 || view.tech.length > 0 || !!view.retry;
-}
-
-/** What a settled agent-run section reports as its outcome. */
-function runSectionState(state: ToolRunState): 'done' | 'failed' | 'cancelled' {
-  if (state === 'error') return 'failed';
-  if (state === 'stopped') return 'cancelled';
-  return 'done';
-}
-
 export function ToolRunRow({ view, startedAt, messageId, readOnly, nested, sheetMode }: ToolRunRowProps) {
   const [open, setOpen] = useState(false);
   const toolSheet = useToolRunSheet();
+  const { sheet, refreshTool } = toolSheet;
   useEffect(() => {
-    const activeSheet = toolSheet.sheet;
+    const activeSheet = sheet;
     if (activeSheet?.kind === 'tool' && activeSheet.id === view.id && activeSheet.view !== view) {
-      toolSheet.refreshTool(view);
+      refreshTool(view);
     }
-  }, [toolSheet.sheet, toolSheet.refreshTool, view]);
+  }, [refreshTool, sheet, view]);
   /* A call blocked on approval is still in flight — it keeps the live shape and
      the spinner, because the run has not ended, it is waiting for the reader. */
   const inFlight = view.state === 'running' || view.state === 'awaiting';
@@ -113,68 +63,26 @@ export function ToolRunRow({ view, startedAt, messageId, readOnly, nested, sheet
 
   if (inFlight) {
     return (
-      <>
-        <div
-          className="tool-inline is-live"
-          data-tcid={view.id}
-          data-tool={view.name}
-          data-state="running"
-          data-nested={nested ? '1' : undefined}
-          data-react-owned="1"
-          aria-busy="true"
-        >
-          <div className="tool-inline-head">
-            <RowHead view={view} elapsedMs={elapsedMs} />
-          </div>
-          {view.livePreview ? (
-            <pre className="tool-inline-code-preview" aria-hidden="true">{view.livePreview}</pre>
-          ) : null}
-          {view.liveOutput ? (
-            <pre className="tool-inline-code-preview is-output" aria-hidden="true">{view.liveOutput}</pre>
-          ) : null}
-          {approval}
-        </div>
-        {view.agentRun ? <ToolRunAgentSteps run={view.agentRun} live /> : null}
-      </>
+      <LiveToolRunRow view={view} elapsedMs={elapsedMs} nested={nested}>
+        {approval}
+      </LiveToolRunRow>
     );
   }
 
   return (
-    <>
-      <details
-        className="tool-inline"
-        data-tcid={view.id}
-        data-tool={view.name}
-        data-state={view.state}
-        data-nested={nested ? '1' : undefined}
-        data-react-owned="1"
-        data-error={view.state === 'error' ? '1' : undefined}
-        data-expandable={isExpandable(view) ? '1' : undefined}
-        open={expanded}
-        onToggle={(event) => setOpen((event.currentTarget as HTMLDetailsElement).open)}
-      >
-        <summary
-          className="tool-inline-head"
-          aria-haspopup={toolSheet.isNarrowViewport && !sheetMode ? 'dialog' : undefined}
-          onClick={(event) => {
-            if (sheetMode || !toolSheet.isNarrowViewport) return;
-            event.preventDefault();
-            toolSheet.openTool(view, messageId, readOnly, event.currentTarget);
-          }}
-        >
-          <RowHead view={view} elapsedMs={elapsedMs} />
-        </summary>
-        {approval}
-        {expanded ? <ToolRunDetail view={view} readOnly={readOnly} /> : null}
-      </details>
-      {view.agentRun ? (
-        <ToolRunAgentSteps
-          run={view.agentRun}
-          live={false}
-          state={runSectionState(view.state)}
-        />
-      ) : null}
-    </>
+    <SettledToolRunRow
+      view={view}
+      elapsedMs={elapsedMs}
+      expanded={expanded}
+      readOnly={readOnly}
+      nested={nested}
+      sheetMode={sheetMode}
+      isNarrowViewport={toolSheet.isNarrowViewport}
+      onOpenChange={setOpen}
+      onOpenTool={(target) => toolSheet.openTool(view, messageId, readOnly, target)}
+    >
+      {approval}
+    </SettledToolRunRow>
   );
 }
 

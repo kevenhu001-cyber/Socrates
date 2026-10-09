@@ -21,19 +21,17 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 
-import { categoryIcon, STROKE_ICONS } from '../../ui/icons/toolIcons.js';
 import { formatSeconds } from './labels.js';
 import { ToolRunAttachments } from './ToolRunAttachments.js';
 import {
   groupOutputCalls,
   groupViewOf,
   runStartedAt,
-  toolRunView,
   type ToolRunState,
   type TurnSegment,
 } from './toolRunModel.js';
-import { ToolRunDetail } from './ToolRunDetail.js';
-import { ToolRunRow } from './ToolRunRow.js';
+import { ToolRunGroupSummary } from './ToolRunGroupSummary.js';
+import { ToolRunRows } from './ToolRunRows.js';
 import { toolRunGroupId, useToolRunSheet } from './ToolRunSheetContext.js';
 import { useElapsed } from './useElapsed.js';
 
@@ -48,25 +46,8 @@ const CSS_STATE: Record<ToolRunState, string> = {
   stopped: 'cancelled',
 };
 
-/**
- * The mark on the aggregate line.
- *
- * A failed run reports the failure with the shared alert glyph — the category
- * is the least useful thing to know about a run that did not work. Everything
- * else shows what kind of work happened, so the eye can skip or stop before it
- * reads the label.
- *
- * The category comes from the *segment*, not from `view.category`: the view
- * reports the first member's category (which is what `data-category` has always
- * carried), while the segment resolves a run whose members disagree to `mixed`.
- * An icon is a claim about the whole run, so it has to use the honest one.
- */
-function summaryIcon(state: ToolRunState, category: string): string {
-  if (state === 'error') return STROKE_ICONS.alert;
-  return categoryIcon(category);
-}
-
-export interface ToolRunGroupProps {  segment: GroupSegment;
+export interface ToolRunGroupProps {
+  segment: GroupSegment;
   /** Passed down so a member row can file an approval against its turn. */
   messageId?: string;
   /** Share / history-replay surfaces hide the actions that mutate state. */
@@ -80,12 +61,13 @@ export function ToolRunGroup({ segment, messageId, readOnly }: ToolRunGroupProps
   const showsHeader = view.showsHeader;
   const groupId = toolRunGroupId(segment);
   const sheetOpen = toolSheet.sheet?.kind === 'group' && toolSheet.sheet.id === groupId;
+  const { sheet, refreshGroup } = toolSheet;
   useEffect(() => {
-    const activeSheet = toolSheet.sheet;
+    const activeSheet = sheet;
     if (activeSheet?.kind === 'group' && activeSheet.id === groupId && activeSheet.segment !== segment) {
-      toolSheet.refreshGroup(segment);
+      refreshGroup(segment);
     }
-  }, [groupId, segment, toolSheet.sheet, toolSheet.refreshGroup]);
+  }, [groupId, refreshGroup, segment, sheet]);
   const inFlight = showsHeader && (view.state === 'running' || view.state === 'awaiting');
   const startedAt = showsHeader && segment.running.length ? runStartedAt(segment.running[0]) : 0;
   // Hooks first: the single-member shortcut below must not make one conditional.
@@ -107,88 +89,51 @@ export function ToolRunGroup({ segment, messageId, readOnly }: ToolRunGroupProps
     <ToolRunAttachments key={`output-${call.id}`} call={call} />
   ));
 
-  /* A run of one is just a row — no aggregate header. */
-  if (!showsHeader) {
-    const single = segment.members.concat(segment.running);
-    return (
-      <>
-        {single.map((call) => (
-          <ToolRunRow
-            key={call.id}
-            view={toolRunView(call)}
-            startedAt={runStartedAt(call)}
-            messageId={messageId}
-            readOnly={readOnly}
-          />
-        ))}
-        {outputs}
-      </>
-    );
-  }
-
   return (
     <>
-      <section
-        className={`tool-run-group${open ? ' open' : ''}`}
-        data-state={CSS_STATE[view.state]}
-        data-category={view.category}
-      >
-        <button
-          type="button"
-          className="tool-run-summary"
-          aria-haspopup={toolSheet.isNarrowViewport ? 'dialog' : undefined}
-          aria-expanded={toolSheet.isNarrowViewport ? sheetOpen : open}
-          onClick={(event) => {
-            if (toolSheet.isNarrowViewport) {
-              toolSheet.openGroup(segment, messageId, readOnly, event.currentTarget);
-              return;
-            }
-            setOpen((value) => !value);
-          }}
+      {showsHeader ? (
+        <section
+          className={`tool-run-group${open ? ' open' : ''}`}
+          data-state={CSS_STATE[view.state]}
+          data-category={view.category}
         >
-          <span
-            className="tool-run-summary-icon"
-            aria-hidden="true"
-            dangerouslySetInnerHTML={{ __html: summaryIcon(view.state, segment.category) }}
+          <ToolRunGroupSummary
+            view={view}
+            category={segment.category}
+            inFlight={inFlight}
+            meta={meta}
+            isNarrowViewport={toolSheet.isNarrowViewport}
+            sheetOpen={sheetOpen}
+            open={open}
+            onToggle={(button) => {
+              if (toolSheet.isNarrowViewport) {
+                toolSheet.openGroup(segment, messageId, readOnly, button);
+                return;
+              }
+              setOpen((value) => !value);
+            }}
           />
-          <span className={`tool-run-summary-label${inFlight ? ' shimmer-text' : ''}`}>
-            {view.headerLabel}
-          </span>
-          {meta.length ? <span className="tool-run-summary-meta">{meta.join(' · ')}</span> : null}
-          <span
-            className="tool-run-summary-chev"
-            aria-hidden="true"
-            dangerouslySetInnerHTML={{ __html: STROKE_ICONS.chevronDown }}
-          />
-        </button>
-
-        <div className="tool-run-list" hidden={toolSheet.isNarrowViewport || !open}>
-          {open ? <ToolRunDetail view={view} readOnly={readOnly} /> : null}
-          {segment.members.map((call, index) => (
-            <ToolRunRow
-              key={call.id}
-              view={view.members[index]}
-              startedAt={runStartedAt(call)}
-              messageId={messageId}
-              readOnly={readOnly}
-              nested
-            />
-          ))}
-        </div>
-
-        {/* Live lines stay outside the collapsed aggregate. */}
-        {segment.running.map((call, index) => (
-          <ToolRunRow
-            key={call.id}
-            view={view.running[index]}
-            startedAt={runStartedAt(call)}
+          <ToolRunRows
+            segment={segment}
+            view={view}
+            grouped
+            open={open}
+            isNarrowViewport={toolSheet.isNarrowViewport}
             messageId={messageId}
             readOnly={readOnly}
-            nested
           />
-        ))}
-      </section>
-
+        </section>
+      ) : (
+        <ToolRunRows
+          segment={segment}
+          view={view}
+          grouped={false}
+          open={open}
+          isNarrowViewport={toolSheet.isNarrowViewport}
+          messageId={messageId}
+          readOnly={readOnly}
+        />
+      )}
       {outputs}
     </>
   );
