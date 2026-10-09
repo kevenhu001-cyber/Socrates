@@ -10,10 +10,19 @@
  *   - `totalLen`  — how many characters have ARRIVED from upstream (fed by push)
  *   - `playedLen` — how many characters are VISIBLE (advanced by tick)
  *
- * `playedLen` chases `totalLen` at an adaptive characters-per-second rate that
- * rises with the buffer depth (`pending = totalLen - playedLen`): a deep buffer
- * plays faster to catch up, a shallow one plays near a comfortable reading
- * cadence, and both are clamped so a burst never re-manifests as a visual jump.
+ * `playedLen` chases `totalLen` at an adaptive characters-per-second rate.
+ *
+ * P_udp-smoothing — the original cadence derived the rate from buffer DEPTH
+ * alone (`computeCps(pending)`). Depth is a lagging, indirect proxy for
+ * upstream speed: a provider stall drains the buffer, which pinned the rate
+ * at `baseCps`; the next burst refilled it past `catchUpPending` and slammed
+ * the rate to `maxCps`. The reader saw exactly the upstream flicker we set out
+ * to hide — fast/slow/fast. The clock now also measures the upstream ARRIVAL
+ * rate (chars/second observed on push) and low-pass filters it into an EMA.
+ * The visual rate tracks that smoothed arrival rate, so the reveal holds a
+ * near-constant cadence and drifts instead of snapping. Buffer depth still
+ * contributes, as a secondary term that only engages when the buffer actually
+ * runs deep (real catch-up), so a burst is still capped.
  *
  * This module is deliberately free of rAF, DOM, timers, and React — Web,
  * Android, and desktop clients drive it with their own frame loop and clock.
@@ -44,20 +53,44 @@ export interface PlaybackConfig {
    * turns this into a pulse / ellipsis; content is never fabricated.
    */
   starveAfterMs: number;
+  /**
+   * EMA weight applied to each upstream arrival-rate sample. Lower = steadier
+   * reveal and slower to track a genuine change of pace; higher = more
+   * responsive but noisier. 0 disables the smoothed-arrival term entirely and
+   * restores the pure buffer-depth cadence.
+   */
+  arrivalEmaAlpha: number;
+  /** Ignore arrival samples shorter than this, so one frame cannot spike the EMA. */
+  arrivalSampleMinMs: number;
+  /** Lower/upper clamp on the smoothed arrival rate before it drives the clock. */
+  minSmoothedCps: number;
+  maxSmoothedCps: number;
 }
 
 export const DEFAULT_PLAYBACK_CONFIG: PlaybackConfig = {
-  /* Conservative smoothing-first cadence: the baseline reveals slow
-     arrivals immediately, while bursts ramp to a modest ceiling instead
-     of dumping — the buffer exists to iron out upstream fluctuation, not
-     to race it. Transport-level clumping (Nagle, proxy buffering) is
-     fixed at the socket layer (index.runtime.ts, nginx tcp_nodelay), so
-     the clock only ever smooths real upstream burstiness. */
+  /* P_udp-smoothing — the visual rate now follows the SMOOTHED upstream
+     arrival rate rather than raw buffer depth. `baseCps` / `maxCps` bound the
+     smoothed rate so a fast provider still reveals at a readable, human
+     cadence and a slow one can never crawl below the floor. Buffer depth
+     contributes only through `catchUpPending`, as a secondary catch-up term.
+     Transport-level clumping (Nagle, proxy buffering) is fixed at the socket
+     layer (index.runtime.ts, nginx tcp_nodelay), so the clock only smooths
+     real upstream burstiness. */
   baseCps: 140,
   maxCps: 800,
   catchUpPending: 250,
   drainBoost: 2.5,
   starveAfterMs: 280,
+  /* Smoothing constants. alpha is the EMA weight for each arrival sample:
+     lower = steadier output, slower to track a genuine change of pace.
+     windowMs discards samples shorter than one frame so a single-frame
+     delta cannot spike the estimate. */
+  arrivalEmaAlpha: 0.12,
+  arrivalSampleMinMs: 120,
+  /* Clamp the smoothed arrival rate into this band before it drives the
+     clock, so one pathological sample cannot pin the reveal rate. */
+  minSmoothedCps: 24,
+  maxSmoothedCps: 1600,
 };
 
 export interface TickResult {
@@ -93,18 +126,46 @@ function clampConfig(config: Partial<PlaybackConfig> | undefined): PlaybackConfi
   c.catchUpPending = Math.max(1, c.catchUpPending);
   c.drainBoost = Math.max(1, c.drainBoost);
   c.starveAfterMs = Math.max(0, c.starveAfterMs);
+  c.arrivalEmaAlpha = Math.min(1, Math.max(0, c.arrivalEmaAlpha));
+  c.arrivalSampleMinMs = Math.max(0, c.arrivalSampleMinMs);
+  c.minSmoothedCps = Math.max(1, c.minSmoothedCps);
+  c.maxSmoothedCps = Math.max(c.minSmoothedCps, c.maxSmoothedCps);
   return c;
 }
 
 /**
- * Adaptive rate: baseCps when the buffer is empty, ramping linearly to maxCps
- * as pending reaches catchUpPending, then held at maxCps. Monotonic in
- * `pending` and always within [baseCps, maxCps] (before the drain boost).
+ * P_udp-smoothing — the reveal rate is now driven primarily by the SMOOTHED
+ * upstream arrival rate, with buffer depth kept as a secondary catch-up term.
+ *
+ * Two terms, both bounded by [baseCps, maxCps]:
+ *   - arrival term: when the smoothed arrival rate is known, follow it
+ *     directly so the reveal tracks the provider's real pace without its
+ *     instantaneous jitter.
+ *   - depth term: only pushes toward maxCps once the buffer is genuinely deep,
+ *     so a genuine backlog still drains and a burst is still capped.
+ *
+ * When no arrival sample has been taken yet (smoothed is null) the rate falls
+ * back to the historical buffer-depth behaviour, so the very first frame
+ * behaves exactly as before.
  */
-export function computeCps(pending: number, config: PlaybackConfig, draining: boolean): number {
+export function computeCps(
+  pending: number,
+  config: PlaybackConfig,
+  draining: boolean,
+  smoothedArrivalCps?: number | null,
+): number {
   const p = Math.max(0, pending);
-  const ratio = Math.min(1, p / config.catchUpPending);
-  let cps = config.baseCps + (config.maxCps - config.baseCps) * ratio;
+  const depthRatio = Math.min(1, p / config.catchUpPending);
+  let cps: number;
+  if (smoothedArrivalCps == null) {
+    cps = config.baseCps + (config.maxCps - config.baseCps) * depthRatio;
+  } else {
+    const s = Math.min(config.maxSmoothedCps, Math.max(config.minSmoothedCps, smoothedArrivalCps));
+    /* Follow the smoothed arrival rate, then let a deep buffer add catch-up
+       headroom on top of it (still clamped, so a burst cannot exceed maxCps). */
+    const target = s + (config.maxCps - s) * depthRatio;
+    cps = Math.min(config.maxCps, Math.max(config.baseCps, target));
+  }
   if (draining) cps *= config.drainBoost;
   return cps;
 }
@@ -127,9 +188,29 @@ export function createPlaybackClock(
   let lastActiveMs = startMs;
   let draining = false;
   let started = false;
+  /* P_udp-smoothing — low-pass filter over the upstream ARRIVAL rate.
+     `smoothedArrivalCps` stays null until the first valid sample so the
+     opening frame keeps the historical buffer-depth cadence. */
+  let smoothedArrivalCps: number | null = null;
+  /** `total` at the previous arrival sample, for the per-sample char delta. */
+  let sampledTotal = 0;
 
   function pending(): number {
     return total - played;
+  }
+
+  /** Feed one arrival sample into the EMA. Ignores sub-threshold intervals. */
+  function sampleArrival(nowMs: number): void {
+    const dt = nowMs - lastActiveMs;
+    const added = total - sampledTotal;
+    sampledTotal = total;
+    if (added <= 0) return;
+    if (dt < cfg.arrivalSampleMinMs) return;
+    const instant = (added * 1000) / dt;
+    if (!Number.isFinite(instant) || instant <= 0) return;
+    smoothedArrivalCps = smoothedArrivalCps == null
+      ? instant
+      : smoothedArrivalCps + cfg.arrivalEmaAlpha * (instant - smoothedArrivalCps);
   }
 
   function currentState(nowMs: number): PlaybackState {
@@ -153,9 +234,13 @@ export function createPlaybackClock(
     tick(nowMs: number): TickResult {
       const dtMs = Math.max(0, nowMs - lastTickMs);
       lastTickMs = nowMs;
+      /* Sample the upstream rate before advancing, using the elapsed time
+         since the previous arrival, so a burst that arrived between frames
+         contributes its real cadence rather than a synthetic one. */
+      sampleArrival(nowMs);
       const before = played;
       if (pending() > 0) {
-        const cps = computeCps(pending(), cfg, draining);
+        const cps = computeCps(pending(), cfg, draining, smoothedArrivalCps);
         carry += (cps * dtMs) / 1000;
         const step = Math.floor(carry);
         if (step > 0) {
@@ -171,7 +256,9 @@ export function createPlaybackClock(
         carry = 0;
       }
       const state = currentState(nowMs);
-      const cps = pending() > 0 ? computeCps(total - before, cfg, draining) : 0;
+      const cps = pending() > 0
+        ? computeCps(total - before, cfg, draining, smoothedArrivalCps)
+        : 0;
       return { playedLen: played, revealed: played - before, cps, state };
     },
     beginDrain(): void {
