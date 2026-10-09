@@ -12,14 +12,10 @@
 // module (and run all its `window.X = X` statements).
 //
 // Migration status:
-//   ✓ Phase A:  displayPrefs / cheatsheet / scroll / localMemory /
-//               stripMarkdown / socratic-prompt — moved to modules,
-//               bridge lives here.
-//   → Phase C:  remaining 148 self-defined functions in main.js will
-//               be migrated to their own modules and added here
-//               incrementally. Until then, main.js keeps a small
-//               self-bridge for state vars (appMode / etc.)
-//               and functions not yet extracted.
+//   main.js is now the startup composition root. Feature modules own the
+//   implementations; this file and app/legacyBridge.js retain compatibility
+//   aliases for inline markup and callers that have not migrated yet.
+//   Prefer direct module imports or typed bridges for new callers.
 
 /* ─── auth/boot.js — boot-time flags ─── */
 import { SERVER_HAS_BEAGLE_KEY } from './auth/boot.js';

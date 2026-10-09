@@ -3,29 +3,24 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BackHandler, KeyboardAvoidingView, Linking, Platform, Pressable, StatusBar, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
-import type { AccountUsage, Assistant, ExamData, Message, Project, ProviderKey, Session, TutorData } from '@socrates/contracts';
-import { buildBranchSession, createMessageOutbox, findRegenerateTarget, isLocalSessionId, runChatTurn, useChatStore, visibleSessions as getVisibleSessions } from '@socrates/chat';
-import { persistUser } from '@socrates/auth';
+import type { AccountUsage, Assistant, Message, Project, ProviderKey, Session } from '@socrates/contracts';
+import { buildBranchSession, createMessageOutbox, findRegenerateTarget, isLocalSessionId, useChatStore, visibleSessions as getVisibleSessions } from '@socrates/chat';
 import { useAuthStore } from '@socrates/auth';
 import { useSettingsStore } from '@socrates/settings';
 import { fontStyle, getThemePaletteHex } from '@socrates/theme';
-import { AssistantPicker, ChatMessageList, Composer, DiagView, ExamView, Icon, IconRendererProvider, ModelPicker, Sidebar, activeProviderOf, applyDiagnosticResults, assistantConfigOf, buildColdStartNodes, assignMistakeQuizSlot, buildEmbeddedDocument, buildTeachingPlanFromKB, bumpMistakeRedo, findMessageMatches, messageQuizSlotId, mistakeRedoPlan, normalizeMistakes, paletteForDocument, parseExamQuestions, practiceMistakeFor, prependMistake, quizMistakeFor, removeMistakesForQuizSlot, storedFileIdFromRawUrl, syncCurrentNodeFromTeachingPlan, tutorProgressForTurn, uiStrings, type ArtifactDescriptor, type BookMistake, type BoundarySnapshot, type DiagQuestion, type KnowledgeBoundaryNode, type MistakeRedoItem, type PracticeSubmission, type MistakeFilter, type QuizPick, type SidebarNavItem, type SidebarView, type TeachingPlan, type TutorProgressNode } from '@socrates/ui';
-import { api, appWebOrigin, streamConversation } from './src/runtime';
+import { AssistantPicker, ChatMessageList, Composer, DiagView, ExamView, Icon, IconRendererProvider, ModelPicker, Sidebar, activeProviderOf, assistantConfigOf, assignMistakeQuizSlot, buildEmbeddedDocument, bumpMistakeRedo, findMessageMatches, messageQuizSlotId, mistakeRedoPlan, normalizeMistakes, paletteForDocument, practiceMistakeFor, prependMistake, quizMistakeFor, removeMistakesForQuizSlot, storedFileIdFromRawUrl, uiStrings, type ArtifactDescriptor, type BookMistake, type BoundarySnapshot, type KnowledgeBoundaryNode, type MistakeRedoItem, type PracticeSubmission, type MistakeFilter, type QuizPick, type SidebarNavItem, type SidebarView, type TeachingPlan } from '@socrates/ui';
+import { api, appWebOrigin } from './src/runtime';
 import { storage } from './src/storage';
 import { copyText } from './src/clipboard';
-import { capturePhoto, extractPickedDocument, pickDocument, pickImages, supportsCamera } from './src/attachments';
-import { persistStagedAttachment } from './src/attachmentUpload';
-import { stagedToMessageAttachment, type PickedFile, type StagedAttachment } from './src/attachmentModels';
+import { supportsCamera } from './src/attachments';
 import { listenOnce, listenSupported, speakText, stopSpeaking } from './src/speech';
 import { FONTS } from './src/fonts';
 import { AuthGate } from './src/AuthGate';
 import { ArtifactViewer } from './src/ArtifactViewer';
 import { FilePreview } from './src/FilePreview';
 import { FilesScreen } from './src/FilesScreen';
-import { ExamSetupScreen, type ExamRunState, type ExamSetupInput } from './src/ExamSetupScreen';
-import { TutorSetupScreen, type TutorRunState, type TutorSetupInput } from './src/TutorSetupScreen';
-import { buildExamData, generateExamQuestions } from './src/examGeneration';
-import { generateDiagQuestions } from './src/tutorGeneration';
+import { ExamSetupScreen } from './src/ExamSetupScreen';
+import { TutorSetupScreen } from './src/TutorSetupScreen';
 import { useFileImages } from './src/useFileImages';
 import type { FileAccessTarget, FileImageSource, StoredFileRef } from './src/fileAccess';
 import { SettingsScreen } from './src/SettingsScreen';
@@ -41,6 +36,11 @@ import { webIconRenderer } from './src/iconRenderer';
 import { ProvidersScreen } from './src/ProvidersScreen';
 import { AssistantsScreen, type AssistantDraft } from './src/AssistantsScreen';
 import { appStrings, appStringsNow } from './src/strings';
+import { useAuthentication } from './src/useAuthentication';
+import { useLearningSetup } from './src/useLearningSetup';
+import { useSessionActions } from './src/useSessionActions';
+import { useStagedAttachments } from './src/useStagedAttachments';
+import { useChatTurn } from './src/useChatTurn';
 
 const initialSessions: Session[] = [{ id: 'welcome', title: 'Welcome to Socrates', topic: 'Universal app', mode: 'chat', phase: 'chat', messages: [{ clientId: 'welcome-assistant', role: 'assistant', rawText: 'How can I help you learn today?' }] }];
 
@@ -79,23 +79,6 @@ function messageKey(message: { clientId?: string | null; id?: string }): string 
 function assistantSource(entry: AssistantDraft): string {
   return JSON.stringify({ description: entry.description, instructions: entry.instructions, starter: entry.starter });
 }
-/** Rebuild restored Tutor ordering the same way the SPA session loader does.
- * The saved plan can lag behind node status changes; the knowledge plan is
- * blank-first and its first unfinished node owns the resumed Tutor position. */
-function normalizeRestoredTutorSession(session: Session): Session {
-  if (session.mode !== 'tutor' || !Array.isArray(session.kbNodes) || session.kbNodes.length === 0) return session;
-  const nodes = session.kbNodes as unknown as TutorProgressNode[];
-  const plan = buildTeachingPlanFromKB(nodes);
-  const synced = plan ? syncCurrentNodeFromTeachingPlan(plan, nodes) : null;
-  return {
-    ...session,
-    teachingPlan: (synced?.teachingPlan ?? plan ?? session.teachingPlan) as Session['teachingPlan'],
-    currentNode: synced?.currentNode ?? session.currentNode ?? 0,
-    substantiveCount: 0,
-    practicePhase: session.practicePhase || 'foundation',
-    practiceAttempts: session.practiceAttempts || 0,
-  };
-}
 function SocratesApp() {
   const { width } = useWindowDimensions();
   const compact = width <= 768;
@@ -105,9 +88,6 @@ function SocratesApp() {
    * unmounts on close, so the view lives above it. */
   const [sidebarView, setSidebarView] = useState<SidebarView>('recents');
   const [sidebarSearchOpen, setSidebarSearchOpen] = useState(false);
-  const [authPending, setAuthPending] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [authNotice, setAuthNotice] = useState<string | null>(null);
   const [screen, setScreen] = useState<'chat' | 'settings' | 'projects' | 'search' | 'providers' | 'files' | 'assistants' | 'exam-setup' | 'tutor-setup'>('chat');
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
@@ -142,11 +122,18 @@ function SocratesApp() {
   const [providersReturn, setProvidersReturn] = useState<'settings' | 'chat'>('settings');
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [staged, setStaged] = useState<StagedAttachment[]>([]);
+  const {
+    staged,
+    onPickImages,
+    onTakePhoto,
+    onPickFile,
+    removeStaged,
+    consumeStaged,
+    clearStaged,
+    resolveStaged,
+  } = useStagedAttachments();
   const [artifact, setArtifact] = useState<ArtifactDescriptor | null>(null);
   const [previewFile, setPreviewFile] = useState<StoredFileRef | null>(null);
-  const [examRun, setExamRun] = useState<ExamRunState>({ running: false, progress: null, error: null });
-  const [tutorRun, setTutorRun] = useState<TutorRunState>({ running: false, progress: null, error: null });
   /** User turn being edited: the composer draft holds the new text and
    * Send commits the edit instead of starting a fresh turn. */
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -156,6 +143,12 @@ function SocratesApp() {
   const [offlineNotice, setOfflineNotice] = useState(false);
   const [listening, setListening] = useState(false);
   const listenStop = useRef<(() => void) | null>(null);
+  const stopComposerAudio = useCallback(() => {
+    stopSpeaking();
+    listenStop.current?.();
+    listenStop.current = null;
+    setListening(false);
+  }, []);
   const sessions = useChatStore((state) => state.sessions);
   const activeId = useChatStore((state) => state.activeSessionId);
   const draft = useChatStore((state) => state.draft);
@@ -263,6 +256,17 @@ function SocratesApp() {
       setOfflineNotice((await outbox.pendingOpCount()) > 0);
     } catch { /* the queue survives; never surface drain noise */ }
   }, [outbox]);
+  const { runTurn, submitTurn, send } = useChatTurn({
+    accountEpoch,
+    streamAbort,
+    loadingDetails,
+    drainOutbox,
+    projectFilter,
+    staged,
+    consumeStaged,
+    resolveStaged,
+    stopComposerAudio,
+  });
   // Drain on boot and whenever the platform reports it is back online.
   // (Native has no window: the drain after every turn + send covers it.)
   useEffect(() => {
@@ -274,191 +278,49 @@ function SocratesApp() {
     }
     return undefined;
   }, [drainOutbox]);
-  // Exam sessions carry client-generated questions + answers in examData;
-  // answering and grading stay local, persistence is debounced and the store
-  // is patched immediately so a session switch never loses answers.
-  const examData = active?.kind === 'exam' ? (active.examData as ExamData | null | undefined) ?? null : null;
-  const examQuestions = useMemo(() => parseExamQuestions(examData), [examData]);
-  const isExam = examQuestions.length > 0;
-  // Tutor sessions carry the local diagnostic Q&A in tutorData until the
-  // learner submits; afterwards the transcript teaches from the KB plan.
-  const tutorData = active?.kind === 'tutor' ? (active.tutorData as TutorData | null | undefined) ?? null : null;
-  const tutorQuestions = useMemo(
-    () => (Array.isArray(tutorData?.questions) ? (tutorData.questions as unknown as DiagQuestion[]) : []),
-    [tutorData],
-  );
-  const tutorAnswers = useMemo(() => {
-    const raw = tutorData?.answers as Record<string, unknown> | undefined;
-    const out: Record<number, number> = {};
-    if (raw) {
-      for (const [key, value] of Object.entries(raw)) {
-        const question = Number(key);
-        if (Number.isInteger(question) && typeof value === 'number') out[question] = value;
-      }
-    }
-    return out;
-  }, [tutorData]);
-  const showDiagnostic = !!active && tutorQuestions.length > 0 && tutorData?.submitted !== true;
-  const persistDiagnosticAnswers = useCallback((sessionId: string, answers: Record<number, number>) => {
-    const current = useChatStore.getState().sessions.find((s) => s.id === sessionId);
-    if (!current || current.kind !== 'tutor') return;
-    useChatStore.getState().patchSession(sessionId, {
-      tutorData: { questions: current.tutorData?.questions, answers: answers as unknown as TutorData['answers'], submitted: false },
-    });
-  }, []);
-  const examSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const persistExam = useCallback((sessionId: string, data: ExamData, immediate: boolean) => {
-    useChatStore.getState().patchSession(sessionId, { kind: 'exam', examData: data });
-    if (examSaveTimer.current) clearTimeout(examSaveTimer.current);
-    const save = () => {
-      examSaveTimer.current = null;
-      void api.sessions.patch(sessionId, { kind: 'exam', examData: data }).catch(() => undefined);
-    };
-    if (immediate) save();
-    else examSaveTimer.current = setTimeout(save, 700);
-  }, []);
-  // New-exam flow: generate one question per streaming call, then persist the
-  // resulting exam session (kind='exam' + examData) like the web baseline.
-  const examAbort = useRef<AbortController | null>(null);
-  const startExamGeneration = useCallback(async (input: ExamSetupInput) => {
-    const owner = useAuthStore.getState().user;
-    if (!owner || owner.isGuest) { setExamRun({ running: false, progress: null, error: appStringsNow().guestSendBlocked }); return; }
-    examAbort.current?.abort();
-    const controller = new AbortController();
-    examAbort.current = controller;
-    const epoch = accountEpoch.current;
-    setExamRun({ running: true, progress: { done: 0, total: input.count, phase: 'generating' }, error: null });
-    try {
-      const { questions, lang } = await generateExamQuestions(input, {
-        signal: controller.signal,
-        onProgress: (progress) => {
-          if (epoch === accountEpoch.current) setExamRun((prev) => ({ ...prev, progress: { done: progress.done, total: progress.total, phase: progress.phase } }));
-        },
-      });
-      if (epoch !== accountEpoch.current) return;
-      const examData = buildExamData(input, questions, lang);
-      const id = `session-${Date.now()}`;
-      const draft: Session = { id, title: input.topic, topic: input.topic, mode: 'chat', phase: 'chat', kind: 'exam', examData, messages: [] };
-      const store = useChatStore.getState();
-      store.setSessions([draft, ...store.sessions]);
-      store.selectSession(id);
-      examAbort.current = null;
-      setExamRun({ running: false, progress: null, error: null });
-      setScreen('chat');
-      try {
-        const saved = await api.sessions.save(draft);
-        if (epoch === accountEpoch.current) useChatStore.getState().adoptSessionId(id, saved);
-      } catch { /* the exam stays local until the next library sync */ }
-    } catch {
-      if (controller.signal.aborted) {
-        if (epoch === accountEpoch.current) setExamRun({ running: false, progress: null, error: null });
-        return;
-      }
-      if (epoch === accountEpoch.current) setExamRun({ running: false, progress: null, error: appStringsNow().examGenerateFailed });
-    }
-  }, []);
-  const cancelExamGeneration = useCallback(() => {
-    examAbort.current?.abort();
-    examAbort.current = null;
-    setExamRun({ running: false, progress: null, error: null });
-  }, []);
-  const closeExamSetup = useCallback(() => {
-    examAbort.current?.abort();
-    examAbort.current = null;
-    setExamRun({ running: false, progress: null, error: null });
-    setScreen('chat');
-  }, []);
-  // Tutor flow: generate one diagnostic question per streaming call, then
-  // persist a tutor session (cold-start KB + local diag Q&A) like the web
-  // baseline's cold start. Teaching starts after the learner submits.
-  const tutorAbort = useRef<AbortController | null>(null);
-  const startTutorGeneration = useCallback(async (input: TutorSetupInput) => {
-    const owner = useAuthStore.getState().user;
-    if (!owner || owner.isGuest) { setTutorRun({ running: false, progress: null, error: appStringsNow().guestSendBlocked }); return; }
-    tutorAbort.current?.abort();
-    const controller = new AbortController();
-    tutorAbort.current = controller;
-    const epoch = accountEpoch.current;
-    setTutorRun({ running: true, progress: { done: 0, total: input.count, phase: 'generating' }, error: null });
-    try {
-      const { questions } = await generateDiagQuestions(
-        { topic: input.topic, count: input.count, language: useSettingsStore.getState().language },
-        {
-          signal: controller.signal,
-          onProgress: (progress) => {
-            if (epoch === accountEpoch.current) setTutorRun((prev) => ({ ...prev, progress: { done: progress.done, total: progress.total, phase: progress.phase } }));
-          },
-        },
-      );
-      if (epoch !== accountEpoch.current) return;
-      const id = `session-${Date.now()}`;
-      const tutorData: TutorData = {
-        questions: questions as unknown as TutorData['questions'],
-        answers: {},
-        submitted: false,
-      };
-      const draft: Session = {
-        id, title: input.topic, topic: input.topic, mode: 'tutor', phase: 'chat', kind: 'tutor',
-        tutorData, kbNodes: buildColdStartNodes(input.topic) as unknown as Session['kbNodes'],
-        teachingStage: 'motivate', currentNode: 0, substantiveCount: 0, messages: [],
-      };
-      const store = useChatStore.getState();
-      store.setSessions([draft, ...store.sessions]);
-      store.selectSession(id);
-      tutorAbort.current = null;
-      setTutorRun({ running: false, progress: null, error: null });
-      setScreen('chat');
-      try {
-        const saved = await api.sessions.save(draft);
-        if (epoch === accountEpoch.current) useChatStore.getState().adoptSessionId(id, saved);
-      } catch { /* the tutor session stays local until the next library sync */ }
-    } catch {
-      if (controller.signal.aborted) {
-        if (epoch === accountEpoch.current) setTutorRun({ running: false, progress: null, error: null });
-        return;
-      }
-      if (epoch === accountEpoch.current) setTutorRun({ running: false, progress: null, error: appStringsNow().tutorGenerateFailed });
-    }
-  }, []);
-  const cancelTutorGeneration = useCallback(() => {
-    tutorAbort.current?.abort();
-    tutorAbort.current = null;
-    setTutorRun({ running: false, progress: null, error: null });
-  }, []);
-  const closeTutorSetup = useCallback(() => {
-    tutorAbort.current?.abort();
-    tutorAbort.current = null;
-    setTutorRun({ running: false, progress: null, error: null });
-    setScreen('chat');
-  }, []);
-  // Diagnostic submit: fold answers into the KB baseline, build the
-  // teaching plan, and persist the full session (kbNodes/plan/stage are
-  // server-supported; the Q&A itself stays local, like the baseline).
-  const submitDiagnostic = useCallback(async (sessionId: string, answers: Record<number, number>) => {
-    const store = useChatStore.getState();
-    const session = store.sessions.find((s) => s.id === sessionId);
-    const questions = ((session?.tutorData?.questions as unknown as DiagQuestion[]) || []);
-    if (!session || !questions.length) return;
-    const kbNodes = applyDiagnosticResults({
-      kbNodes: ((session.kbNodes as unknown as Parameters<typeof applyDiagnosticResults>[0]['kbNodes']) || []),
-      diagQuestions: questions,
-      diagAnswers: questions.map((_, i) => answers[i]),
-    });
-    const teachingPlan = buildTeachingPlanFromKB(kbNodes);
-    const synced = teachingPlan ? syncCurrentNodeFromTeachingPlan(teachingPlan, kbNodes) : null;
-    store.patchSession(sessionId, {
-      kbNodes: kbNodes as unknown as Session['kbNodes'],
-      teachingPlan: (synced ? synced.teachingPlan : teachingPlan) as unknown as Session['teachingPlan'],
-      currentNode: synced ? synced.currentNode : 0,
-      teachingStage: 'motivate',
-      substantiveCount: 0,
-      tutorData: { questions: session.tutorData?.questions, answers: answers as unknown as TutorData['answers'], submitted: true },
-    });
-    try {
-      const updated = useChatStore.getState().sessions.find((s) => s.id === sessionId);
-      if (updated) await api.sessions.save(updated);
-    } catch { /* the plan stays local until the next turn save */ }
-  }, []);
+  const onReturnToChat = useCallback(() => setScreen('chat'), []);
+  const {
+    examRun,
+    tutorRun,
+    examData,
+    examQuestions,
+    isExam,
+    tutorData,
+    tutorQuestions,
+    tutorAnswers,
+    showDiagnostic,
+    persistDiagnosticAnswers,
+    persistExam,
+    startExamGeneration,
+    cancelExamGeneration,
+    closeExamSetup,
+    startTutorGeneration,
+    cancelTutorGeneration,
+    closeTutorSetup,
+    submitDiagnostic,
+    reset: resetLearningSetup,
+  } = useLearningSetup({ active, accountEpoch, onReturnToChat });
+  const {
+    select,
+    createSession,
+    archiveSession,
+    unarchiveSession,
+    deleteSession,
+    moveSessionToProject,
+    selectProject,
+    openSearchSession,
+  } = useSessionActions({
+    accountEpoch,
+    archived,
+    compact,
+    loadingDetails,
+    projectFilter,
+    onReturnToChat,
+    setArchived,
+    setConfirmDelete,
+    setProjectFilter,
+    setSidebarOpen,
+  });
 
   const persistTutorPatch = useCallback((sessionId: string, patch: Partial<Session>) => {
     const store = useChatStore.getState();
@@ -554,6 +416,20 @@ function SocratesApp() {
       if (current()) setProjectsLoading(false);
     }
   }, [loadAssistants]);
+  const {
+    pending: authPending,
+    error: authError,
+    notice: authNotice,
+    clearNotice: clearAuthNotice,
+    login,
+    loginWithCode,
+    sendCode,
+    register,
+    resendVerification,
+    forgotPassword,
+    continueAsGuest,
+    signOut,
+  } = useAuthentication(syncLibrary);
 
   useEffect(() => {
     const reset = () => {
@@ -562,21 +438,16 @@ function SocratesApp() {
       listenStop.current?.(); listenStop.current = null; setListening(false);
       stopSpeaking();
       loadingDetails.current.clear();
-      setStaged([]);
+      clearStaged();
       setProjects([]); setProjectsLoading(false); setProjectsError(null);
       setArchived([]);
       setAccountUsage(null); setUsageLoading(false); setUsageError(null);
       setProviders([]); setProvidersLoading(false); setProvidersError(null);
       setAssistants([]); setAssistantsLoading(false); setAssistantsError(null);
-      setAuthNotice(null);
+      clearAuthNotice();
       setArtifact(null);
       setPreviewFile(null);
-      examAbort.current?.abort();
-      examAbort.current = null;
-      setExamRun({ running: false, progress: null, error: null });
-      tutorAbort.current?.abort();
-      tutorAbort.current = null;
-      setTutorRun({ running: false, progress: null, error: null });
+      resetLearningSetup();
       setProjectFilter(null); setMovePickSession(null); setMenuOpen(false); setConfirmDelete(false); setScreen('chat');
       setModelMenuOpen(false); setProvidersReturn('settings');
       setAssistantMenuOpen(false);
@@ -594,27 +465,7 @@ function SocratesApp() {
     void useSettingsStore.getState().hydrate(storage);
     void useAuthStore.getState().restore(storage, () => api.auth.me()).then(() => void syncLibrary());
     return () => { unsubscribe(); accountEpoch.current++; streamAbort.current?.abort(); };
-  }, [syncLibrary]);
-  const select = useCallback((id: string) => {
-    const store = useChatStore.getState();
-    store.selectSession(id);
-    if (compact) setSidebarOpen(false);
-    // Lazy detail: list rows carry no messages; fetch once for server ids.
-    const session = store.sessions.find((s) => s.id === id);
-    const authed = useAuthStore.getState().user;
-    if (session && !(session.messages?.length) && !isLocalSessionId(id) && authed && !authed.isGuest) {
-      const epoch = accountEpoch.current;
-      loadingDetails.current.add(id);
-      void api.sessions.get(id).then((detail) => {
-        if (epoch !== accountEpoch.current) return;
-        const current = useChatStore.getState();
-        if (current.turnSessionId === id || current.sessions.find((s) => s.id === id)?.messages?.length) return;
-        current.patchSession(id, normalizeRestoredTutorSession({ ...detail, messages: detail.messages ?? [] }));
-      }).catch((error) => {
-        if (epoch === accountEpoch.current) useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().couldNotLoadConversation);
-      }).finally(() => { if (epoch === accountEpoch.current) loadingDetails.current.delete(id); });
-    }
-  }, [compact]);
+  }, [clearAuthNotice, resetLearningSetup, syncLibrary]);
   useEffect(() => {
     setFindOpen(false);
     setFindQuery('');
@@ -699,58 +550,6 @@ function SocratesApp() {
       setShareStatus('');
     } finally { setShareBusy(false); }
   }, [shareBusy, shareSessionId, shareToken]);
-  const createSession = useCallback(() => {
-    const id = `session-${Date.now()}`;
-    const store = useChatStore.getState();
-    const draftSession: Session = { id, title: 'New chat', topic: '', mode: 'chat', phase: 'chat', messages: [] };
-    if (projectFilter) draftSession.projectId = projectFilter;
-    store.setSessions([draftSession, ...store.sessions]);
-    select(id);
-  }, [select, projectFilter]);
-  const resolveStaged = useCallback(async () => {
-    const out = [];
-    for (const item of staged) {
-      if (item.stagedKind === 'document' && item.text === undefined) {
-        const tokens = await api.readTokens();
-        const extracted = await extractPickedDocument(
-          { name: item.name, mime: item.mime, size: item.size, stagedKind: item.stagedKind, ...(item.nativeUri ? { nativeUri: item.nativeUri } : {}), ...(item.webFile ? { webFile: item.webFile } : {}) },
-          { endpoint: api.files.extractUrl(), token: tokens.accessToken, fetch: api.fetchWithAuth },
-        );
-        out.push(stagedToMessageAttachment({ ...item, text: extracted.text, truncated: extracted.truncated, docKind: extracted.kind }));
-      } else {
-        out.push(stagedToMessageAttachment(item));
-      }
-    }
-    return out;
-  }, [staged]);
-  // One streaming turn: shared by fresh sends, edits, regenerates and
-  // retries. The caller owns the local rewind; this only streams the
-  // re-ask and drains the outbox afterwards.
-  const runTurn = useCallback(async (
-    sessionId: string,
-    text: string,
-    messageAttachments: Message['attachments'],
-    persistAttachments?: (serverSessionId: string) => Promise<Message['attachments'] | undefined>,
-    assistantPrompt?: string,
-  ) => {
-    const epoch = accountEpoch.current;
-    const controller = new AbortController();
-    streamAbort.current = controller;
-    try {
-      await runChatTurn({
-        sessionId, turnId: `turn-${Date.now()}`, text, ...(assistantPrompt ? { assistantPrompt } : {}),
-        attachments: messageAttachments?.length ? messageAttachments : undefined,
-        signal: controller.signal,
-        isCurrent: () => epoch === accountEpoch.current,
-        save: (session) => api.sessions.save(session),
-        ...(persistAttachments ? { persistAttachments } : {}),
-        stream: streamConversation,
-      });
-    } finally {
-      if (streamAbort.current === controller) streamAbort.current = null;
-    }
-    void drainOutbox();
-  }, [drainOutbox]);
   const jumpToKnowledgeNode = useCallback((index: number) => {
     if (!active || active.mode !== 'tutor') return;
     const store = useChatStore.getState();
@@ -765,85 +564,6 @@ function SocratesApp() {
       : `I'm ready to begin. Please teach me about ${node.name || active.topic}.`;
     void runTurn(active.id, '', undefined, undefined, assistantPrompt);
   }, [active, runTurn]);
-  // One composer/synthetic turn. `origin` decides attachment staging, draft
-  // handling and the tutor stage machine: composer sends snapshot the
-  // staged files and let beginTurn clear the draft; quiz/practice proxies
-  // keep the draft and never advance a stage from their own answer text.
-  const submitTurn = useCallback((rawText: string, origin: 'composer' | 'quiz' | 'practice') => {
-    const store = useChatStore.getState();
-    const text = rawText.trim();
-    const snapshot = origin === 'composer' ? staged : [];
-    if (!text && !snapshot.length) return;
-    if (store.turnId) return;
-    const owner = useAuthStore.getState().user;
-    if (!owner || owner.isGuest) { store.setStatus('error', appStringsNow().guestSendBlocked); return; }
-    if (store.activeSessionId && loadingDetails.current.has(store.activeSessionId)) {
-      store.setStatus('error', appStringsNow().conversationLoading); return;
-    }
-    stopSpeaking();
-    listenStop.current?.(); listenStop.current = null; setListening(false);
-    const previousDraft = store.draft;
-    void (async () => {
-      let messageAttachments: Message['attachments'] | undefined;
-      if (origin === 'composer') {
-        try {
-          messageAttachments = await resolveStaged();
-        } catch (error) {
-          useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().prepareAttachmentsFailed);
-          return;
-        }
-      }
-      const live = useChatStore.getState();
-      if (live.turnId) return;
-      let sessionId = live.activeSessionId;
-      const titleSource = text || snapshot[0]?.name || 'Attachment';
-      if (!sessionId) {
-        sessionId = `session-${Date.now()}`;
-        live.setSessions([{ id: sessionId, title: titleSource.slice(0, 80), topic: '', mode: 'chat', phase: 'chat', projectId: projectFilter, messages: [] }, ...live.sessions]);
-        live.selectSession(sessionId);
-      }
-      const epoch = accountEpoch.current;
-      if (snapshot.length) setStaged((prev) => prev.filter((s) => !snapshot.some((taken) => taken.localId === s.localId)));
-      // Tutor stage machine, mirroring the baseline sendPipeline._dispatchTurn:
-      // every tutor turn at exercise bumps the attempt count, and a
-      // substantive free-form answer — quiz picks excluded — advances one
-      // stage and stops at check. Quiz picks apply their own transition in
-      // onQuizPick, so a wrong pick at exercise counts in both places,
-      // exactly like the web baseline.
-      const turnSession = useChatStore.getState().sessions.find((s) => s.id === sessionId);
-      if (turnSession?.mode === 'tutor') {
-        const progress = tutorProgressForTurn({
-          teachingStage: turnSession.teachingStage,
-          substantiveCount: turnSession.substantiveCount,
-          practiceAttempts: turnSession.practiceAttempts,
-          practicePhase: turnSession.practicePhase,
-          currentNode: turnSession.currentNode,
-          kbNodes: (turnSession.kbNodes || []) as unknown as TutorProgressNode[],
-          teachingPlan: (turnSession.teachingPlan as unknown as TeachingPlan | null) ?? null,
-        }, text, origin);
-        useChatStore.getState().patchSession(sessionId, progress.patch as Partial<Session>);
-      }
-      // Upload each staged file with the now-known server session id so it
-      // lands in the file library and stays readable by the model.
-      const persist = async (serverSessionId: string) => {
-        if (!messageAttachments?.length || epoch !== accountEpoch.current) return undefined;
-        const tokens = await api.readTokens();
-        return Promise.all(messageAttachments.map(async (attachment) => {
-          const row = snapshot.find((item) => item.localId === attachment.id);
-          if (!row) return attachment;
-          try {
-            const fileId = await persistStagedAttachment(row, { url: api.files.uploadUrl(), token: tokens.accessToken, fetch: api.fetchWithAuth }, serverSessionId);
-            return fileId ? { ...attachment, fileId } : attachment;
-          } catch { return attachment; }
-        }));
-      };
-      await runTurn(sessionId, text, messageAttachments?.length ? messageAttachments : undefined, persist);
-    })();
-    // Synthetic sends run from the transcript; the composer draft stays
-    // exactly as the learner typed it (beginTurn cleared it synchronously).
-    if (origin !== 'composer') useChatStore.getState().setDraft(previousDraft);
-  }, [projectFilter, staged, resolveStaged, runTurn]);
-  const send = useCallback(() => { submitTurn(useChatStore.getState().draft, 'composer'); }, [submitTurn]);
   // Quiz proxy (baseline handleQuizPick + mountQuizWidget): a correct or
   // undeclared pick is terminal for the card and spends no model turn; only
   // a wrong pick with a declared answer asks the tutor to diagnose.
@@ -932,47 +652,6 @@ function SocratesApp() {
       ? { ...prev, items: [...prev.items, item] }
       : { sessionId, items: [item], resets: {} });
   }, [persistTutorPatch]);
-  // Attachments: pickers produce staged rows; documents resolve to text
-  // at send time (server extract), images/text ride along directly.
-  const stagePicked = useCallback((picked: PickedFile[]) => {
-    setStaged((prev) => [
-      ...prev,
-      ...picked.map((file, index) => ({
-        localId: `staged-${Date.now()}-${index}`,
-        name: file.name, mime: file.mime, size: file.size, stagedKind: file.stagedKind,
-        ...(file.dataUrl ? { dataUrl: file.dataUrl } : {}),
-        ...(file.text !== undefined ? { text: file.text } : {}),
-        ...(file.nativeUri ? { nativeUri: file.nativeUri } : {}),
-        ...(file.webFile ? { webFile: file.webFile } : {}),
-      } as StagedAttachment)),
-    ]);
-  }, []);
-  const onPickImages = useCallback(async () => {
-    try {
-      stagePicked(await pickImages());
-    } catch (error) {
-      useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().pickImagesFailed);
-    }
-  }, [stagePicked]);
-  const onTakePhoto = useCallback(async () => {
-    try {
-      const photo = await capturePhoto();
-      if (photo) stagePicked([photo]);
-    } catch (error) {
-      useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().takePhotoFailed);
-    }
-  }, [stagePicked]);
-  const onPickFile = useCallback(async () => {
-    try {
-      const file = await pickDocument();
-      if (file) stagePicked([file]);
-    } catch (error) {
-      useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().pickFileFailed);
-    }
-  }, [stagePicked]);
-  const removeStaged = useCallback((id: string) => {
-    setStaged((prev) => prev.filter((s) => s.localId !== id));
-  }, []);
   const stop = useCallback(() => { streamAbort.current?.abort(); }, []);
   // Queue one half of a failed server sync for replay: every dropped row
   // as an explicit delete plus (for edits) the rewritten text as a patch.
@@ -1152,89 +831,6 @@ function SocratesApp() {
       useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().voiceInputFailed);
     });
   }, [listening]);
-  const login = useCallback(async (email: string, password: string) => {
-    setAuthPending(true);
-    setAuthError(null); setAuthNotice(null);
-    try {
-      const loggedIn = await api.auth.login(email, password);
-      await persistUser(storage, loggedIn);
-      useAuthStore.getState().setUser(loggedIn);
-      void syncLibrary();
-    } catch (error) {
-      setAuthError(error instanceof Error ? error.message : appStringsNow().signInFailed);
-    } finally {
-      setAuthPending(false);
-    }
-  }, [syncLibrary]);
-  const loginWithCode = useCallback(async (email: string, code: string) => {
-    setAuthPending(true);
-    setAuthError(null); setAuthNotice(null);
-    try {
-      const loggedIn = await api.auth.loginWithCode(email, code);
-      await persistUser(storage, loggedIn);
-      useAuthStore.getState().setUser(loggedIn);
-      void syncLibrary();
-    } catch (error) {
-      setAuthError(error instanceof Error ? error.message : appStringsNow().codeSignInFailed);
-    } finally {
-      setAuthPending(false);
-    }
-  }, [syncLibrary]);
-  const sendCode = useCallback(async (email: string) => {
-    setAuthPending(true);
-    setAuthError(null); setAuthNotice(null);
-    try {
-      await api.auth.sendCode(email);
-      setAuthNotice(appStringsNow().codeSent);
-    } catch (error) {
-      setAuthError(error instanceof Error ? error.message : appStringsNow().codeSendFailed);
-    } finally {
-      setAuthPending(false);
-    }
-  }, []);
-  const register = useCallback(async (email: string, password: string) => {
-    setAuthPending(true);
-    setAuthError(null); setAuthNotice(null);
-    try {
-      await api.auth.register(email, password);
-      setAuthNotice(appStringsNow().registered);
-    } catch (error) {
-      setAuthError(error instanceof Error ? error.message : appStringsNow().registerFailed);
-    } finally {
-      setAuthPending(false);
-    }
-  }, []);
-  const resendVerification = useCallback(async (email: string) => {
-    setAuthPending(true);
-    setAuthError(null); setAuthNotice(null);
-    try {
-      await api.auth.resendVerification(email);
-      setAuthNotice(appStringsNow().resent);
-    } catch (error) {
-      setAuthError(error instanceof Error ? error.message : appStringsNow().resendFailed);
-    } finally {
-      setAuthPending(false);
-    }
-  }, []);
-  const forgotPassword = useCallback(async (email: string) => {
-    setAuthPending(true);
-    setAuthError(null); setAuthNotice(null);
-    try {
-      await api.auth.forgotPassword(email);
-      setAuthNotice(appStringsNow().resetSent);
-    } catch (error) {
-      setAuthError(error instanceof Error ? error.message : appStringsNow().resetSendFailed);
-    } finally {
-      setAuthPending(false);
-    }
-  }, []);
-  const continueAsGuest = useCallback(() => {
-    useAuthStore.getState().setUser({ id: 'guest', email: '', displayName: 'Guest', isGuest: true });
-  }, []);
-  const signOut = useCallback(() => {
-    void useAuthStore.getState().signOut(storage, () => api.auth.logout());
-
-  }, []);
   const createProject = useCallback(async (name: string) => {
     const epoch = accountEpoch.current;
     const project = await api.projects.create({ name });
@@ -1257,69 +853,6 @@ function SocratesApp() {
     if (projectFilter === id) setProjectFilter(null);
     else useChatStore.getState().selectProject(projectFilter);
   }, [projectFilter]);
-  const archiveSession = useCallback(async (id: string) => {
-    const epoch = accountEpoch.current;
-    const owner = useAuthStore.getState().user;
-    try {
-      if (useChatStore.getState().turnSessionId === id) throw new Error(appStringsNow().stopBeforeArchive);
-      if (!isLocalSessionId(id) && owner && !owner.isGuest) await api.sessions.archive(id);
-      if (epoch !== accountEpoch.current) return;
-      const row = useChatStore.getState().sessions.find((s) => s.id === id);
-      useChatStore.getState().archiveSession(id, projectFilter);
-      if (row) setArchived((prev) => prev.some((s) => s.id === id) ? prev : [{ ...row, archivedAt: new Date().toISOString() }, ...prev]);
-    } catch (error) {
-      if (epoch === accountEpoch.current) useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().archiveFailed);
-    }
-  }, [projectFilter]);
-  // Restore opens the conversation again: server unarchive for server ids,
-  // local reinsert for rows the store never held (fresh login), then select
-  // so the transcript lazy-loads its detail.
-  const unarchiveSession = useCallback(async (id: string) => {
-    const epoch = accountEpoch.current;
-    const owner = useAuthStore.getState().user;
-    try {
-      const row = archived.find((s) => s.id === id) || useChatStore.getState().sessions.find((s) => s.id === id) || null;
-      if (!isLocalSessionId(id) && owner && !owner.isGuest) await api.sessions.unarchive(id);
-      if (epoch !== accountEpoch.current) return;
-      useChatStore.getState().unarchiveSession(id, row || undefined);
-      setArchived((prev) => prev.filter((s) => s.id !== id));
-      select(id);
-    } catch (error) {
-      if (epoch === accountEpoch.current) useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().restoreFailed);
-    }
-  }, [archived, select]);
-  // Delete purges the session everywhere (mirrors DELETE /sessions/:id which
-  // wipes messages/files/artifacts/runs). Local-only ids never hit the
-  // network; the welcome row is just hidden like an archive.
-  const deleteSession = useCallback(async (id: string) => {
-    const epoch = accountEpoch.current;
-    const owner = useAuthStore.getState().user;
-    try {
-      if (useChatStore.getState().turnSessionId === id) throw new Error(appStringsNow().stopBeforeDelete);
-      if (!isLocalSessionId(id) && owner && !owner.isGuest) await api.sessions.remove(id);
-      if (epoch !== accountEpoch.current) return;
-      useChatStore.getState().deleteSession(id, projectFilter);
-      setArchived((prev) => prev.filter((s) => s.id !== id));
-    } catch (error) {
-      if (epoch === accountEpoch.current) useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().deleteFailed);
-    } finally {
-      if (epoch === accountEpoch.current) setConfirmDelete(false);
-    }
-  }, [projectFilter]);
-  const moveSessionToProject = useCallback(async (sessionId: string, targetId: string | null) => {
-    const epoch = accountEpoch.current;
-    const owner = useAuthStore.getState().user;
-    if (!isLocalSessionId(sessionId) && owner && !owner.isGuest) await api.sessions.patch(sessionId, { projectId: targetId });
-    if (epoch !== accountEpoch.current) return;
-    useChatStore.getState().patchSession(sessionId, { projectId: targetId });
-    const next = useChatStore.getState().selectProject(projectFilter);
-    if (next) select(next);
-  }, [projectFilter, select]);
-  const selectProject = useCallback((id: string | null) => {
-    setProjectFilter(id);
-    const next = useChatStore.getState().selectProject(id);
-    if (next) select(next);
-  }, [select]);
   // Settings profile + usage snapshot, loaded on entering the screen.
   // Guest stays local-only; stale responses are dropped by account epoch.
   const loadUsage = useCallback(async () => {
@@ -1452,28 +985,6 @@ function SocratesApp() {
   const changePassword = useCallback(async (oldPassword: string, newPassword: string) => {
     await api.auth.changePassword(oldPassword, newPassword);
   }, []);
-  // Search hits may point at sessions the store never held (archived rows
-  // are excluded from the default list). Fetch-then-insert keeps the open
-  // path identical to sidebar select, including lazy detail on next select.
-  const openSearchSession = useCallback(async (id: string) => {
-    const epoch = accountEpoch.current;
-    try {
-      const store = useChatStore.getState();
-      if (!store.sessions.some((s) => s.id === id)) {
-        const owner = useAuthStore.getState().user;
-        if (!owner || owner.isGuest) throw new Error(appStringsNow().signInToOpen);
-        const detail = await api.sessions.get(id);
-        if (epoch !== accountEpoch.current) return;
-        const current = useChatStore.getState();
-        if (!current.sessions.some((s) => s.id === id)) current.setSessions([normalizeRestoredTutorSession(detail), ...current.sessions]);
-      }
-      if (epoch !== accountEpoch.current) return;
-      setScreen('chat');
-      select(id);
-    } catch (error) {
-      if (epoch === accountEpoch.current) useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().couldNotOpenConversation);
-    }
-  }, [select]);
   useEffect(() => {
     const listener = BackHandler.addEventListener('hardwareBackPress', () => {
       if (modelMenuOpen) { setModelMenuOpen(false); return true; }

@@ -13,12 +13,9 @@ import { stripChatArtifacts } from '../util/stripChatArtifacts.js';
 import { sanitizeUrls } from '../util/safe.js';
 import { ensureKatex, onKatexReady } from '../vendor/lazy.js';
 import { stateStore } from '../state/store.js';
-/* M4 — bundled DOMPurify fallback. The CDN <script> in index.html is
-   still preferred (shared global, SRI-pinned), but if it fails to load
-   (offline, blocked CDN, flaky network) sanitisation used to silently
-   degrade to sanitizeUrls — which only rewrites URLs and lets
-   <img onerror=…>-style XSS through. The npm copy (same 3.2.4 version)
-   guarantees a real sanitiser is always present. */
+/* M4 — bundled DOMPurify fallback. vendor/init.js exposes the bundled copy
+   as a legacy global, while this import keeps a module-local copy available
+   if that global is missing or replaced. */
 import bundledDomPurify from 'dompurify';
 
 /* ── DOMPurify configuration ──────────────────────────────────────
@@ -56,20 +53,22 @@ interface DomPurifyLike {
   sanitize: (html: string, config?: unknown) => string;
 }
 
-/* Apply DOMPurify (CDN global first, bundled copy as fallback); only
-   if both are unusable fall back to sanitizeUrls. */
+/* Try the shared global and bundled copy. If neither can sanitize, fail
+   closed by returning escaped text: sanitizeUrls only rewrites URL
+   attributes and is not an HTML/XSS sanitizer. */
 export function sanitizeHtml(html: string): string {
-  const dp = (globalThis as { DOMPurify?: DomPurifyLike }).DOMPurify
-    ?? (bundledDomPurify as unknown as DomPurifyLike);
-  if (typeof dp !== 'undefined' && typeof dp.sanitize === 'function') {
+  const bundled = bundledDomPurify as unknown as DomPurifyLike;
+  const globalPurify = (globalThis as { DOMPurify?: DomPurifyLike }).DOMPurify;
+  const candidates = globalPurify === bundled ? [bundled] : [globalPurify, bundled];
+  for (const dp of candidates) {
+    if (!dp || typeof dp.sanitize !== 'function') continue;
     try {
       return dp.sanitize(html, PURIFY_CONFIG);
     } catch (e) {
-      console.warn('[sanitizeHtml] DOMPurify failed, falling back:', e && (e as Error).message);
-      return sanitizeUrls(html);
+      console.warn('[sanitizeHtml] DOMPurify instance failed:', e && (e as Error).message);
     }
   }
-  return sanitizeUrls(html);
+  return escHTML(html);
 }
 
 /* Stream-time scaffold plugins. */

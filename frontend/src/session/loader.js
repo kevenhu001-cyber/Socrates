@@ -237,6 +237,272 @@ export function setCurrentSessionId(id, silent){
   if(!silent) publishReactChatRuntime({type:"state-synced",reason:"session-id-changed"});
 }
 
+/* Translate one persisted API row into the transcript shape consumed by the
+   React-owned message list. Keeping this mapping out of loadSession makes the
+   session orchestration easier to read and gives the wire-format boundary one
+   place to evolve. */
+function restoreSessionMessage(m){
+  /* Keep the stable clientId for DOM/state and retain the database UUID
+     separately. Replacing clientId with m.id makes the next save insert a
+     duplicate row and causes message actions to lose their client identity. */
+  var clientId = m.clientId || m.id || ("loaded-"+generateId());
+  var html = "";
+  if (m.role === "assistant" && m.rawText) {
+    /* Rebuild assistant markup from the canonical source, never from the
+       stored snapshot. This lets current renderers restore old conversations. */
+    html = m.html || "";
+    if(!html){
+      try { html = buildAssistantHtml(m.rawText); }
+      catch (_) { html = formatMsg(m.rawText); }
+    }
+  } else {
+    html = m.html || (m.rawText ? formatMsg(m.rawText) : "");
+  }
+  if (typeof html === "string" && html.indexOf("think-block") !== -1) {
+    html = html.replace(/<details class="think-block[\s\S]*?<\/details>/gi, "");
+  }
+  return {
+    clientId: clientId,
+    serverId: m.id || null,
+    role: m.role,
+    rawText: m.rawText || "",
+    html: html,
+    type: m.type || null,
+    restoredFromHistory: true,
+    /* The API uses the camelCase schema key. Keep the snake_case fallback
+       for any legacy payloads. */
+    reasoningContent: m.reasoningContent || m.reasoning_content || null,
+    attachments: Array.isArray(m.attachments) ? m.attachments : [],
+    toolCalls: Array.isArray(m.toolCalls) ? m.toolCalls.map(function(tc){
+      return {
+        id: String(tc.id || ''),
+        name: String(tc.name || ''),
+        input: tc.input == null ? null : tc.input,
+        output: tc.output == null ? null : tc.output,
+        isError: tc.isError === true,
+        artifacts: Array.isArray(tc.artifacts) ? tc.artifacts.map(function(a){
+          return { id: String(a.id || ''), mimeType: a.mimeType || null, name: a.name || null };
+        }) : [],
+        results: Array.isArray(tc.results) ? tc.results.slice(0, 20) : [],
+        /* Preserve the split offset and versioned visualization spec so
+           inline tool layout survives a reload. */
+        textOffset: typeof tc.textOffset === "number" ? tc.textOffset : undefined,
+        visualization: (tc.visualization && tc.visualization.version === 1) ? tc.visualization : undefined,
+        /* Keep the normalized output list when present. The renderer
+           validates entries and can fall back to legacy output fields. */
+        outputs: Array.isArray(tc.outputs) ? tc.outputs : undefined,
+        /* Terminal fields drive the restored tool row's state and error UI. */
+        status: tc.status == null ? null : String(tc.status),
+        durationMs: typeof tc.durationMs === "number" ? tc.durationMs : undefined,
+        error: tc.error == null ? null : tc.error,
+        errorCode: tc.errorCode == null ? null : tc.errorCode,
+        retryable: typeof tc.retryable === "boolean" ? tc.retryable : undefined,
+        userMessage: tc.userMessage == null ? undefined : tc.userMessage,
+        stderr: tc.stderr == null ? undefined : tc.stderr,
+        detail: tc.detail == null ? undefined : tc.detail,
+      };
+    }) : [],
+    actions: null
+  };
+}
+
+/* The server save can lag behind a refresh. Restore assistant messages that
+   were already mirrored locally but have not reached the session response. */
+function restoreLocalAssistantFallback(session){
+  try{
+    var localRecord=loadLocalMemory(session.id);
+    var serverMessages=Array.isArray(session.messages)?session.messages:[];
+    if(!localRecord||!Array.isArray(localRecord.messages)||localRecord.messages.length<=serverMessages.length)return;
+    var extras=localRecord.messages.slice(serverMessages.length);
+    for(var i=0;i<extras.length;i++){
+      var message=extras[i];
+      if(!message||!message.content||message.role!=="assistant")continue;
+      stateStore.dispatch({type:"session/append-message",payload:{
+        clientId:"local-recovered-"+generateId(),
+        role:"assistant",
+        rawText:message.content,
+        html:buildAssistantHtml(message.content),
+        type:"assistant",
+        reasoningContent:null,
+        attachments:[],
+        toolCalls:[],
+        actions:null
+      }});
+    }
+    publishReactChatRuntime({ type: "state-synced", reason: "local-recovered-react" });
+  }catch (e) {reportSwallow(e, 'session/loader.restoreLocalAssistantFallback'); }
+}
+
+/* Show server-persisted partial output after a refresh and attach its retry
+   action to the React-owned message list. */
+function restoreInterruptedResponse(session, msgList){
+  if(!session.streamingText)return;
+  var partialText=session.streamingText||"(partial content)";
+  var partialRendered;
+  try{partialRendered=formatMsg(partialText)}catch(_){partialRendered="<p>"+esc(partialText)+"</p>"}
+  var partialHtml='<div class="msg-content">'+partialRendered+'</div>'+
+    '<div class="msg-error" style="margin-top:8px">'+
+      '<span class="msg-error-text">(response interrupted — tap Retry to continue)</span>'+
+      '<button type="button" class="msg-retry-btn stream-retry-btn" data-stream-retry>Retry</button>'+
+    '</div>';
+  var partialClientId="stream-recovered-"+Date.now();
+  var partialIdx=stateStore.dispatch({type:"session/append-message",payload:{
+    role:"assistant",
+    clientId:partialClientId,
+    rawText:partialText,
+    html:partialHtml,
+    type:"assistant",
+  }});
+  var retryDelegated=function(ev){
+    var target=ev.target;
+    if(!(target && target.matches && target.matches("[data-stream-retry]")))return;
+    msgList.removeEventListener("click",retryDelegated);
+    stateStore.dispatch({
+      type:"session/remove-message-at",index:partialIdx,clientId:partialClientId
+    });
+    apiFetch("/api/sessions/"+encodeURIComponent(session.id),{
+      method:"PATCH",
+      body:{streamingText:null,streamingReasoning:null},
+    }).catch(function(){});
+    var lastUserEntry=null;
+    var lastUserMessage=null;
+    var messages=stateStore.read("messages");
+    for(var i=messages.length-1;i>=0;i--){
+      if(messages[i]&&messages[i].role==="user"){
+        lastUserEntry=messages[i];
+        lastUserMessage=lastUserEntry.rawText||lastUserEntry.content;
+        break;
+      }
+    }
+    if(lastUserMessage&&typeof window.askChatTurn==="function"){
+      /* askChatTurn slices this user turn out of history; carry multimodal
+         parts explicitly so retry preserves its attachments. */
+      var lastUserParts=null;
+      try{lastUserParts=buildUserContentParts(lastUserMessage,lastUserEntry&&lastUserEntry.attachments);}catch(_){lastUserParts=null;}
+      quietTurn(window.askChatTurn(lastUserMessage,lastUserParts));
+    }else{
+      showToast(_t("toast.noRetryTarget"));
+    }
+  };
+  msgList.addEventListener("click",retryDelegated);
+  /* Avoid showing the same server-side partial message on the next reload. */
+  apiFetch("/api/sessions/"+encodeURIComponent(session.id),{
+    method:"PATCH",
+    body:{streamingText:null,streamingReasoning:null},
+  }).catch(function(){});
+}
+
+/* Build the local fast-path history from server rows only when no local copy
+   exists, and defer the work until the browser is idle. */
+function mirrorSessionHistory(session){
+  if(loadLocalMemory(session.id))return;
+  var sync=function(){
+    try{
+      var record={topic:session.topic||"",ts:Date.now(),messages:[]};
+      (session.messages||[]).forEach(function(message){
+        var text="";
+        if(message.rawText){
+          text=message.rawText;
+        }else if(message.html){
+          text=message.html.replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
+        }
+        text=text.replace(/^Thinking\.\.\.\s*/i,"").replace(/^Thinking\s*/i,"").trim();
+        if(!text)return;
+        record.messages.push({role:message.role,content:text});
+      });
+      if(record.messages.length)batchSetItem(_memKey(session.id),JSON.stringify(record));
+    }catch (e) { /* mirror failed */ reportSwallow(e, 'session/loader.mirrorSessionHistory'); }
+  };
+  if(typeof requestIdleCallback==="function"){
+    requestIdleCallback(sync,{timeout:2000});
+  }else{
+    setTimeout(sync,100);
+  }
+}
+
+function syncRestoredTutorPlan(){
+  var nodes=stateStore.read("kbNodes");
+  if(_appMode()==="chat"||!nodes||!nodes.length)return;
+  stateStore.dispatch({
+    type:"state/set",key:"teachingPlan",value:buildTeachingPlanFromKB(stateView())
+  });
+  var planSync=syncCurrentNodeFromTeachingPlan(stateView());
+  if(planSync)stateStore.dispatch({type:"state/batch",patch:planSync});
+}
+
+/* A cache-hit paints immediately; this background fetch refreshes it and
+   starts a normal load only when the server's session has changed. */
+function revalidateCachedSession(id, session, cachedDetail, abortController){
+  if(!cachedDetail||session.kind==="exam"||detailCache.isFresh(cachedDetail))return;
+  var paintedSignature=cachedDetail.sig;
+  Promise.resolve().then(function(){
+    return apiFetch("/api/sessions/"+encodeURIComponent(id), { signal: abortController.signal });
+  }).then(function(fresh){
+    if(!fresh||abortController.signal.aborted||saveState.loadSessionId!==id)return;
+    if(stateStore.read("currentSessionId")!==id)return;
+    detailCache.store(id,fresh);
+    if(detailCache.signature(fresh)!==paintedSignature){
+      detailCache.invalidate(id);
+      loadSession(id);
+    }
+  }).catch(function(){});
+}
+
+/* Keep stale-load races inert, preserve the previous transcript for transient
+   failures, and clear only genuinely missing sessions from the visible view. */
+function handleSessionLoadFailure(id, error, abortController, historyRebuildStarted, previousMessages){
+  if(abortController.signal.aborted||saveState.loadSessionId!==id)return;
+  if(historyRebuildStarted&&previousMessages){
+    try{
+      stateStore.dispatch({type:"session/replace-messages",payload:previousMessages});
+      publishReactChatRuntime({type:"state-synced",reason:"session-load-failed"});
+    }catch (e) {reportSwallow(e, 'session/loader.handleSessionLoadFailure.restore'); }
+  }
+
+  var status=(error&&typeof error.status==="number")?error.status:0;
+  if(status!==404){
+    console.warn('[loadSession] transient error loading session', id, 'status=' + status, error && error.message);
+    showToast(_t("session.loadFailed").replace("{msg}",error&&error.message||"temporary error"));
+    return;
+  }
+
+  showToast(_t("session.notFound"));
+  /* The server rejects malformed UUIDs before querying the database, so a
+     non-UUID cache id may be a stale alias for a session that still exists.
+     Remove only a well-formed id; recents reconciliation can repair aliases. */
+  var isUuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id||"");
+  try{
+    if(isUuid){
+      for(var i=0;i<serverCache.sessions.length;i++){
+        if(serverCache.sessions[i].id===id){
+          serverCache.sessions.splice(i,1);
+          break;
+        }
+      }
+    }
+  }catch (e) {reportSwallow(e, 'session/loader.handleSessionLoadFailure.removeMissing'); }
+
+  var isUrlMatch=typeof location!=="undefined"&&location.search.indexOf("chat="+encodeURIComponent(id))>=0;
+  if(stateStore.read("currentSessionId")===id||!stateStore.read("currentSessionId")||isUrlMatch){
+    try{
+      if(/[?&]chat=/i.test(location.search)){
+        var url=new URL(location.href);
+        url.searchParams.delete("chat");
+        history.replaceState(history.state,"",url.pathname+(url.search?url.search.replace(/^\?/,"?"):"")+url.hash);
+      }
+    }catch (e) {reportSwallow(e, 'session/loader.handleSessionLoadFailure.clearUrl'); }
+    try{
+      clearLegacyMsgListChildren();
+      stateStore.dispatch({type:"state/batch",patch:{
+        currentSessionId:null,topic:"",kbNodes:[],phase:"topic"
+      }});
+      stateStore.dispatch({type:"session/replace-messages",payload:[]});
+      publishReactChatRuntime({type:"state-synced",reason:"session-not-found"});
+      activateMainView("topicSetup", document);
+    }catch (e) {reportSwallow(e, 'session/loader.handleSessionLoadFailure.resetView'); }
+  }
+}
+
 export async function loadSession(id){
   /* Guard: if the context menu is open for this session, suppress
      navigation (synthetic click from mobile long-press). */
@@ -417,199 +683,17 @@ export async function loadSession(id){
        msgList.appendChild, and viz/mermaid/code-block post-process)
        was reachable only when the message list was not migrated,
        which is no longer possible after the always-on React runtime. */
-    var restoredMessages=[];
-    s.messages.forEach(function(m){
-      /* P_message-id-contract — keep the stable clientId for DOM/state and
-         retain the database UUID separately. Replacing clientId with m.id
-         makes the next session save insert a duplicate row and causes
-         message actions to lose their client identity. */
-      var _rrClientId = m.clientId || m.id || ("loaded-"+generateId());
-      var restoredHtml = "";
-      if (m.role === "assistant" && m.rawText) {
-        /* P_declarative-tool-run — rebuild from the canonical source, never
-           from the stored snapshot: react/tool-run splices this turn's rows in
-           from toolCalls[].textOffset, so `html` only carries prose — and
-           re-rendering is what lets current scaffold / widget / visualization
-           renderers apply to conversations saved before they existed. Turns
-           whose calls predate recorded offsets simply render no rows; the
-           classic cards still come back through
-           restorePersistedMessageExtras(message.restoredFromHistory).
-           P_history-slice — but do it in background slices (see below):
-           running N×buildAssistantHtml inside this task made session loads
-           a single long task followed by an all-at-once pop-in. The stored
-           snapshot paints instantly; the canonical rebuild patches each
-           message a few frames later. */
-        restoredHtml = m.html || "";
-        if(!restoredHtml){
-          try { restoredHtml = buildAssistantHtml(m.rawText); }
-          catch (_) { restoredHtml = formatMsg(m.rawText); }
-        }
-      } else {
-        restoredHtml = m.html || (m.rawText ? formatMsg(m.rawText) : "");
-      }
-      if (typeof restoredHtml === "string" && restoredHtml.indexOf("think-block") !== -1) {
-        restoredHtml = restoredHtml.replace(/<details class="think-block[\s\S]*?<\/details>/gi, "");
-      }
-      restoredMessages.push({
-        clientId: _rrClientId,
-        serverId: m.id || null,
-        role: m.role,
-        rawText: m.rawText || "",
-        /* Rebuild assistant markup from its canonical source instead of
-           replaying a frozen HTML snapshot. This lets current scaffold,
-           visualization and widget renderers restore old conversations. */
-        html: restoredHtml,
-        type: m.type || null,
-        restoredFromHistory: true,
-        /* AUDIT-fix — the server returns Drizzle rows whose property
-           name is the camelCase schema key `reasoningContent` (the
-           snake_case `reasoning_content` is only the SQL column name),
-           so reading m.reasoning_content always yielded null and the
-           thinking pill was silently dropped on every session reload.
-           Keep the snake_case fallback for any legacy payloads. */
-        reasoningContent: m.reasoningContent || m.reasoning_content || null,
-        attachments: Array.isArray(m.attachments) ? m.attachments : [],
-        toolCalls: Array.isArray(m.toolCalls) ? m.toolCalls.map(function(tc){
-          return {
-            id: String(tc.id || ''),
-            name: String(tc.name || ''),
-            input: tc.input == null ? null : tc.input,
-            output: tc.output == null ? null : tc.output,
-            isError: tc.isError === true,
-            artifacts: Array.isArray(tc.artifacts) ? tc.artifacts.map(function(a){
-              return { id: String(a.id || ''), mimeType: a.mimeType || null, name: a.name || null };
-            }) : [],
-            results: Array.isArray(tc.results) ? tc.results.slice(0, 20) : [],
-            /* P_inline-restore — keep the split offset + viz spec so the
-               inline layout and charts survive a reload round-trip. */
-            textOffset: typeof tc.textOffset === "number" ? tc.textOffset : undefined,
-            visualization: (tc.visualization && tc.visualization.version === 1) ? tc.visualization : undefined,
-            /* PR4 protocol — carry the normalized output list when the writer
-               emitted it. `toolOutputsOf` validates each entry and falls back
-               to the legacy fields when the payload is empty/malformed, so an
-               old or partial record still renders. */
-            outputs: Array.isArray(tc.outputs) ? tc.outputs : undefined,
-            /* P_declarative-tool-run — and keep the terminal fields. The
-               declarative renderer derives a row's state from them, so a
-               dropped status/durationMs made every restored call look like it
-               was still running, and a failed call lose its error text. */
-            status: tc.status == null ? null : String(tc.status),
-            durationMs: typeof tc.durationMs === "number" ? tc.durationMs : undefined,
-            error: tc.error == null ? null : tc.error,
-            errorCode: tc.errorCode == null ? null : tc.errorCode,
-            retryable: typeof tc.retryable === "boolean" ? tc.retryable : undefined,
-            userMessage: tc.userMessage == null ? undefined : tc.userMessage,
-            stderr: tc.stderr == null ? undefined : tc.stderr,
-            detail: tc.detail == null ? undefined : tc.detail,
-          };
-        }) : [],
-        actions: null
-      });
-    });
+    var restoredMessages=s.messages.map(restoreSessionMessage);
     stateStore.dispatch({type:"session/replace-messages",payload:restoredMessages});
     /* P_incremental-save — these rows are exactly what the server just
        handed us, so record them in the save watermark. Without this the
        first save after every session switch would re-upload the whole
        transcript and the delta would only ever help mid-conversation. */
     seedSyncedMessages(s.id, restoredMessages);
-    /* P_recover-local-fallback — if the server response is missing
-       the last assistant message (because the user refreshed before
-       saveCurrentSession()'s async POST completed), try to recover it
-       from the localStorage mirror that appendLocalMemory writes
-       synchronously in finishAfterRender().
-
-       Count server messages vs localStorage messages; if localStorage
-       has more, the extras are unpersisted and we push them onto
-       stateStore.read("messages") and re-render via the bridge. */
-    try{
-      var _localRec=loadLocalMemory(s.id);
-      if(_localRec&&Array.isArray(_localRec.messages)&&_localRec.messages.length>(s.messages||[]).length){
-        var _serverCount=(s.messages||[]).length;
-        var _extras=_localRec.messages.slice(_serverCount);
-        for(var _ei=0;_ei<_extras.length;_ei++){
-          var _em=_extras[_ei];
-          if(!_em||!_em.content)continue;
-          if(_em.role!=="assistant")continue;
-          stateStore.dispatch({type:"session/append-message",payload:{
-            clientId:"local-recovered-"+generateId(),
-            role:"assistant",
-            rawText:_em.content,
-            html:buildAssistantHtml(_em.content),
-            type:"assistant",
-            reasoningContent:null,
-            attachments:[],
-            toolCalls:[],
-            actions:null
-          }});
-        }
-        publishReactChatRuntime({ type: "state-synced", reason: "local-recovered-react" });
-      }
-    }catch (e) {reportSwallow(e, 'session/loader.loadSession~5'); }
-    /* P_streaming-survival — if the server has saved streaming_text
-       (the previous stream was interrupted before completion), surface
-       it as a partial assistant message with a Retry button so the
-       user can resume the interrupted response. State push is
-       authoritative; React re-renders the bubble from snapshot. The
-       retry click is delegated on msgList (React-owned) because the
-       button DOM is owned by React after the next paint. */
-    if(s.streamingText){
-      var partialText=s.streamingText||"(partial content)";
-      var partialRendered;
-      try{partialRendered=formatMsg(partialText)}catch(_){partialRendered="<p>"+esc(partialText)+"</p>"}
-      var partialHtml='<div class="msg-content">'+partialRendered+'</div>'+
-        '<div class="msg-error" style="margin-top:8px">'+
-          '<span class="msg-error-text">(response interrupted — tap Retry to continue)</span>'+
-          '<button type="button" class="msg-retry-btn stream-retry-btn" data-stream-retry>Retry</button>'+
-        '</div>';
-      var partialClientId="stream-recovered-"+Date.now();
-      var partialIdx2=stateStore.dispatch({type:"session/append-message",payload:{
-        role:"assistant",
-        clientId:partialClientId,
-        rawText:partialText,
-        html:partialHtml,
-        type:"assistant",
-      }});
-      /* Delegate the retry click on the React-owned msgList so the
-         React-rendered button works without us touching the DOM. */
-      var retryDelegated=function(ev){
-        var t=ev.target;
-        if(!(t && t.matches && t.matches("[data-stream-retry]")))return;
-        msgList.removeEventListener("click",retryDelegated);
-        stateStore.dispatch({
-          type:"session/remove-message-at",index:partialIdx2,clientId:partialClientId
-        });
-        apiFetch("/api/sessions/"+encodeURIComponent(s.id),{
-          method:"PATCH",
-          body:{streamingText:null,streamingReasoning:null},
-        }).catch(function(){});
-        var lastUserEntry=null;
-        var lastUserMsg=null;
-        for(var ui=stateStore.read("messages").length-1;ui>=0;ui--){
-          if(stateStore.read("messages")[ui]&&stateStore.read("messages")[ui].role==="user"){
-            lastUserEntry=stateStore.read("messages")[ui];
-            lastUserMsg=lastUserEntry.rawText||lastUserEntry.content;
-            break;
-          }
-        }
-        if(lastUserMsg&&typeof window.askChatTurn==="function"){
-          /* The recovered bubble is removed first, so askChatTurn slices
-             this user turn out of history; carry its rebuilt multimodal
-             parts explicitly or the retry loses attachments. */
-          var lastUserParts=null;
-          try{lastUserParts=buildUserContentParts(lastUserMsg,lastUserEntry&&lastUserEntry.attachments);}catch(_){lastUserParts=null;}
-          quietTurn(window.askChatTurn(lastUserMsg,lastUserParts));
-        }else{
-          showToast(_t("toast.noRetryTarget"));
-        }
-      };
-      msgList.addEventListener("click",retryDelegated);
-      /* Clear the server-side streaming_text so a second reload
-         doesn't show the same partial content again. */
-      apiFetch("/api/sessions/"+encodeURIComponent(s.id),{
-        method:"PATCH",
-        body:{streamingText:null,streamingReasoning:null},
-      }).catch(function(){});
-    }
+    /* The local mirror may contain assistant output not yet persisted by the
+       server; an interrupted server stream also gets an inline retry action. */
+    restoreLocalAssistantFallback(s);
+    restoreInterruptedResponse(s,msgList);
     /* P_context-race — currentSessionId and URL are set HERE, AFTER
        stateStore.read("messages") has been fully rebuilt. Setting them earlier
        (before the forEach rebuild loop) left a window where
@@ -627,53 +711,14 @@ export async function loadSession(id){
        reload mid-stream). Fire-and-forget: the bubble owns its slot and
        goes inert on session switch via stillOwnsSlot. */
     try{ void reattachPendingTurn(s.id); }catch (e) {reportSwallow(e, 'session/loader.loadSession~6'); }
-    /* Mirror the server history into the localStorage cache so the
-       next chat turn can read it via extractHistory() (fast path) instead
-       of falling back to the slower DOM scrape. Skip if the local cache
-       already has something (don't clobber a fresher copy). */
-    if(!loadLocalMemory(s.id)){
-      var _idleSync=function(){
-        try{
-          var rec={topic:s.topic||"",ts:Date.now(),messages:[]};
-          (s.messages||[]).forEach(function(m){
-            var txt="";
-            if(m.rawText){
-              txt=m.rawText;
-            }else if(m.html){
-              txt=m.html.replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
-            }
-            txt=txt.replace(/^Thinking\.\.\.\s*/i,"").replace(/^Thinking\s*/i,"").trim();
-            if(!txt)return;
-            rec.messages.push({role:m.role,content:txt});
-          });
-          if(rec.messages.length)batchSetItem(_memKey(s.id),JSON.stringify(rec));
-        }catch (e) { /* mirror failed */ reportSwallow(e, 'session/loader.loadSession~7'); }
-      };
-      if(typeof requestIdleCallback==="function"){
-        requestIdleCallback(_idleSync,{timeout:2000});
-      }else{
-        setTimeout(_idleSync,100);
-      }
-    }
+    mirrorSessionHistory(s);
     if(_appMode()!=="chat"||(s.kbNodes&&s.kbNodes.length>0)) updateKB();
     updateChatStats();
     _renderRecents();
     _renderMistakes();
     _updateMistakesBadge();
-    /* P_node-sync — rebuild the teaching plan from the restored kbNodes
-       so the sorted order matches the current node states. The saved
-       plan snapshot may be stale (e.g., nodes were internalized after
-       the plan was last saved). Then sync currentNode with the plan's
-       first non-internalized sub-topic, matching proceedToTeaching. */
-    if(_appMode()!=="chat"&&stateStore.read("kbNodes")&&stateStore.read("kbNodes").length){
-      stateStore.dispatch({
-        type:"state/set",key:"teachingPlan",value:buildTeachingPlanFromKB(stateView())
-      });
-      var restoredPlanSync=syncCurrentNodeFromTeachingPlan(stateView());
-      if(restoredPlanSync){
-        stateStore.dispatch({type:"state/batch",patch:restoredPlanSync});
-      }
-    }
+    /* Rebuild the tutor plan from restored node state before publishing. */
+    syncRestoredTutorPlan();
     publishReactChatRuntime({type:"state-synced",reason:"session-loaded"});
     /* P_history-slice (retired) — this used to re-run buildAssistantHtml over
        every restored assistant turn in background slices and patch the result
@@ -683,115 +728,9 @@ export async function loadSession(id){
        of each switch, re-rendered every row once more as the patches landed,
        and changed each row's html fingerprint, so the first save after every
        switch re-uploaded the whole transcript instead of a delta. */
-    /* P2 reconcile — a cache-hit paint may be stale. Fetch the live detail in
-       the background; refresh the cache always, and re-run loadSession (cache
-       bypassed) only when the server copy actually differs. No-op on a miss
-       (that fetch already stored the current copy), for exam sessions, and for
-       an entry this tab fetched less than REVALIDATE_AFTER_MS ago. */
-    if(_cachedDetail && s.kind!=="exam" && !detailCache.isFresh(_cachedDetail)){
-      var _paintedSig=_cachedDetail.sig;
-      Promise.resolve().then(function(){
-        return apiFetch("/api/sessions/"+encodeURIComponent(id), { signal: currentLoadAbort.signal });
-      }).then(function(fresh){
-        if(!fresh || (currentLoadAbort && currentLoadAbort.signal.aborted) || saveState.loadSessionId!==id) return;
-        if(stateStore.read("currentSessionId")!==id) return;
-        detailCache.store(id, fresh);
-        if(detailCache.signature(fresh)!==_paintedSig){
-          detailCache.invalidate(id);
-          loadSession(id);
-        }
-      }).catch(function(){});
-    }
+    revalidateCachedSession(id,s,_cachedDetail,currentLoadAbort);
   }catch(e){
-    /* P_stale-loadSession — if a newer loadSession was requested
-       while this one was in-flight, the error (if any) belongs to
-       the stale request; don't disrupt the newer session's state. */
-    if((currentLoadAbort && currentLoadAbort.signal.aborted) || saveState.loadSessionId!==id) return;
-    /* Preserve the last stable conversation when a legacy record cannot be
-       rendered.  The server copy remains untouched; this only prevents a
-       transient client rendering failure from blanking the current view. */
-    if(historyRebuildStarted && previousMessages){
-      try{
-        stateStore.dispatch({type:"session/replace-messages",payload:previousMessages});
-        publishReactChatRuntime({type:"state-synced",reason:"session-load-failed"});
-      }catch (e) {reportSwallow(e, 'session/loader.loadSession~8'); }
-    }
-    
-    /* Distinguish session-not-found (404) from transient errors
-       (429 rate limit, 5xx server error, network failure) so we
-       don't show "Link expired" and blow away the UI on every hiccup.
-       For transient errors, just show a toast and keep the current
-       view intact — the user can try again later. */
-    var errStatus = (e && typeof e.status === 'number') ? e.status : 0;
-    var isNotFound = (errStatus === 404);
-    
-    if (!isNotFound) {
-      /* Transient error — don't destroy the current session UI.
-         Silently log and return so the user stays where they are. */
-      console.warn('[loadSession] transient error loading session', id, 'status=' + errStatus, e && e.message);
-      showToast(_t("session.loadFailed").replace("{msg}", e && e.message || "temporary error"));
-      return;
-    }
-    
-    showToast(_t("session.notFound"));
-    /* The URL had ?chat=<id> pointing to a session that doesn't exist
-       on the server (404). This happens when the user bookmarks a
-       chat link on one device, then opens it on another device where
-       the session never synced; or after a long absence, server-side
-       pruning, or DB reset. Either way, the URL is now stale and
-       confusing the user — clear it and let them start a new topic
-       rather than showing a blank chat panel.
-       
-        P_loadSession-404 — also clean up when the failing session
-        matches the URL even if another session is already loaded,
-        so clicking a stale/deleted entry in Recents gives visual
-        feedback instead of silently doing nothing.
-
-        P_404-splice-guard — only splice when `id` is a well-formed
-        UUID. A 404 can ALSO be returned by GET /api/sessions/:id when
-        the id is NOT a UUID (the server's uuid guard rejects the
-        format before even hitting the DB). That happens whenever the
-        client's cached `s.id` drifted from the server's canonical id
-        (e.g. an older session saved with a non-UUID client id, or a
-        generateId() fallback that wasn't a UUID). In that case the
-        session is STILL valid server-side under a different id — it is
-        NOT "deleted", so removing it from serverCache.sessions would make a
-        real history entry vanish from Recents the moment the user
-        clicks it ("点开历史会话就从列表消失"). For malformed ids we skip
-        the splice and re-sync from the server instead, which corrects
-        the stale cache. */
-    var _idIsUuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id||"");
-    try{
-      if(_idIsUuid){
-        for(var si=0; si<serverCache.sessions.length; si++){
-          if(serverCache.sessions[si].id===id){
-            serverCache.sessions.splice(si,1);
-            break;
-          }
-        }
-      }
-    }catch (e) {reportSwallow(e, 'session/loader.loadSession~9'); }
-
-    var isUrlMatch=typeof location!=="undefined"&&location.search.indexOf("chat="+encodeURIComponent(id))>=0;
-    if(stateStore.read("currentSessionId")===id||!stateStore.read("currentSessionId")||isUrlMatch){
-      /* Only if no other session was loaded in the meantime. */
-      try{
-        if(/[?&]chat=/i.test(location.search)){
-          var u=new URL(location.href);
-          u.searchParams.delete("chat");
-          history.replaceState(history.state,"",u.pathname+(u.search?u.search.replace(/^\?/,"?"):"")+u.hash);
-        }
-      }catch (e) {reportSwallow(e, 'session/loader.loadSession~10'); }
-      try{
-        clearLegacyMsgListChildren();
-        stateStore.dispatch({type:"state/batch",patch:{
-          currentSessionId:null,topic:"",kbNodes:[],phase:"topic"
-        }});
-        stateStore.dispatch({type:"session/replace-messages",payload:[]});
-        publishReactChatRuntime({type:"state-synced",reason:"session-not-found"});
-        activateMainView("topicSetup", document);
-      }catch (e) {reportSwallow(e, 'session/loader.loadSession~11'); }
-    }
+    handleSessionLoadFailure(id,e,currentLoadAbort,historyRebuildStarted,previousMessages);
   } finally {
     if(saveState.loadSessionId===id){
       saveState.loadingSession = false;
