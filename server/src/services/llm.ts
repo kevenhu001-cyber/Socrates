@@ -167,6 +167,83 @@ export class LlmProviderError extends Error {
   }
 }
 
+/* ─── P_rpm-backoff — retry policy for upstream failures ────────────────────
+ *
+ * A multi-step turn is many POSTs against one provider key: the tool loop
+ * re-calls the model per hop, and retrieval / compression / summary each add
+ * their own. So the odds that *some* hop meets an exhausted RPM window scale
+ * with the number of steps — which is why this used to read as "multi-step
+ * turns always 429".
+ *
+ * The old policy treated a 429 like a hiccup: 3 attempts with 1 s / 2 s
+ * waits, i.e. ~3 s of total patience. An RPM window is normally ~60 s, so the
+ * retries all landed inside the same exhausted window and the turn died with
+ * the error the user sees. Rate limiting is therefore given its own, much
+ * longer schedule; transient 5xx keeps a short one because those clear in
+ * seconds.
+ *
+ * 500 is retryable here but 524 is not (it means the gateway gave up waiting
+ * for a response that is still running upstream — replaying it would double
+ * the bill). This mirrors the client's own STREAM_RETRYABLE_STATUS set.
+ */
+const RATE_LIMIT_STATUS = 429;
+const TRANSIENT_RETRYABLE_STATUS = new Set([408, 425, 500, 502, 503, 504, 520, 522]);
+
+/** Attempts for a rate-limited request: initial + 4 retries. */
+const RATE_LIMIT_ATTEMPTS = 5;
+/** Attempts for a transient upstream failure: initial + 2 retries. */
+const TRANSIENT_ATTEMPTS = 3;
+
+/** Ceiling on an upstream Retry-After we are willing to sit through. */
+const RETRY_AFTER_CEILING_MS = 30_000;
+
+function isRetryableUpstreamStatus(status: number): boolean {
+  return status === RATE_LIMIT_STATUS || TRANSIENT_RETRYABLE_STATUS.has(status);
+}
+
+export function attemptsForUpstreamStatus(status: number): number {
+  return status === RATE_LIMIT_STATUS ? RATE_LIMIT_ATTEMPTS : TRANSIENT_ATTEMPTS;
+}
+
+/**
+ * Delay before the next attempt. A provider-sent `Retry-After` wins — it is
+ * the only number that actually describes the window we are locked out of —
+ * but it is capped so a hostile or misconfigured gateway cannot park a turn
+ * indefinitely. Without one we escalate, with jitter: several tool hops
+ * running per turn would otherwise retry in lockstep against the same
+ * exhausted window and burn the remaining attempts simultaneously.
+ */
+export function upstreamRetryDelayMs(status: number, attempt: number, retryAfterHeader: string | null): number {
+  const retryAfterSec = Number.parseFloat(retryAfterHeader || '');
+  if (Number.isFinite(retryAfterSec) && retryAfterSec > 0) {
+    return Math.min(Math.round(retryAfterSec * 1000), RETRY_AFTER_CEILING_MS);
+  }
+  if (status === RATE_LIMIT_STATUS) {
+    /* 2 s, 4 s, 8 s, 16 s — ~30 s of patience, which outlasts a typical RPM
+     * window instead of racing it. */
+    return Math.min(2000 * 2 ** attempt, 20_000) + Math.floor(Math.random() * 500);
+  }
+  return (attempt === 0 ? 800 : 1600) + Math.floor(Math.random() * 400);
+}
+
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    /* Named AbortError so the callers' existing `name === 'AbortError'`
+       guard treats a cancelled backoff as a cancellation, not as another
+       provider failure worth retrying. */
+    const aborted = () => reject(Object.assign(new Error('LLM request aborted'), { name: 'AbortError' }));
+    if (signal?.aborted) {
+      aborted();
+      return;
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', aborted);
+      resolve();
+    }, ms);
+    signal?.addEventListener('abort', aborted, { once: true });
+  });
+}
+
 function normalizeProviderMessages(messages: ChatCompletionRequestOptions['messages']) {
   /* OpenAI permits null assistant content alongside tool_calls. Several
    * compatibility layers do not, and reject the entire second tool hop with
@@ -469,16 +546,22 @@ export async function streamChatCompletion(
        exponential backoff BEFORE any byte is streamed downstream, so a
        rate-limited request gets a second chance instead of ending the
        turn. We never retry mid-stream: once streaming has started the
-       caller has already forwarded content to the client. */
-    const RETRYABLE_STATUS = new Set([429, 502, 503]);
-    const MAX_LLM_ATTEMPTS = 3; // initial + 2 retries
+       caller has already forwarded content to the client.
+
+       P_rpm-backoff: the attempt budget is now chosen per failure kind — a
+       429 gets five attempts over ~30 s so the retry outlasts the RPM
+       window instead of colliding with it. See upstreamRetryDelayMs. */
     let lastError: Error | null = null;
     const variants = requestBodyVariants(opts, true);
     let successfulVariant: (typeof variants)[number] | null = null;
     for (let variantIndex = 0; variantIndex < variants.length; variantIndex++) {
       const variant = variants[variantIndex];
       let tryNextVariant = false;
-      for (let attempt = 0; attempt < MAX_LLM_ATTEMPTS; attempt++) {
+      /* The budget depends on how the provider answers, which we only know
+         once we have asked, so it is read per attempt rather than fixed up
+         front: a turn that first meets a 503 (3 attempts) and then a 429
+         (5) spends the longer budget it now needs. */
+      for (let attempt = 0; ; attempt++) {
         if (signal && signal.aborted) {
           onError(new Error('LLM request aborted'));
           return;
@@ -519,18 +602,19 @@ export async function streamChatCompletion(
             }
             break;
           }
-          if (!RETRYABLE_STATUS.has(response.status)) break;
-          /* Rate-limited / transient failure — wait and retry. Honour the
-             upstream Retry-After header when one was sent (bounded at 20 s
-             so a hostile or misconfigured gateway cannot park the turn),
-             otherwise fall back to jittered backoff — with several tool
-             hops running per turn, fixed sleeps make concurrent turns
-             retry in lockstep against the same exhausted RPM window. */
-          const retryAfterSec = Number.parseFloat(response.headers.get('retry-after') || '');
-          const backoffMs = Number.isFinite(retryAfterSec) && retryAfterSec > 0
-            ? Math.min(Math.round(retryAfterSec * 1000), 20_000)
-            : (attempt === 0 ? 1000 : 2000) + Math.floor(Math.random() * 400);
-          await new Promise<void>((resolve) => setTimeout(resolve, backoffMs));
+          if (!isRetryableUpstreamStatus(response.status)) break;
+          /* Rate-limited / transient failure — wait and retry with a delay
+             sized to the failure kind (see upstreamRetryDelayMs). */
+          const total = attemptsForUpstreamStatus(response.status);
+          if (attempt >= total - 1) break;
+          const delayMs = upstreamRetryDelayMs(response.status, attempt, response.headers.get('retry-after'));
+          console.warn('[LLM] upstream ' + response.status + '; retrying', JSON.stringify({
+            attempt: attempt + 1,
+            of: total,
+            delayMs,
+            variantIndex,
+          }));
+          await sleep(delayMs, signal);
           if (signal && signal.aborted) {
             onError(new Error('LLM request aborted'));
             return;
@@ -538,8 +622,8 @@ export async function streamChatCompletion(
         } catch (err) {
           if ((err as Error).name === 'AbortError') throw err; // let the outer catch classify it
           lastError = err as Error;
-          if (attempt < MAX_LLM_ATTEMPTS - 1) {
-            await new Promise<void>((resolve) => setTimeout(resolve, 1000));
+          if (attempt < TRANSIENT_ATTEMPTS - 1) {
+            await sleep(1000);
             continue;
           }
           throw err;
@@ -866,36 +950,62 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
   let successfulVariant: (typeof variants)[number] | null = null;
   for (let variantIndex = 0; variantIndex < variants.length; variantIndex++) {
     const variant = variants[variantIndex];
-    markLlmActivity();
-    response = await fetch(`${apiBase}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-        'Accept-Encoding': 'identity',
-      },
-      body: JSON.stringify(variant.body),
-      signal,
-      dispatcher: getLlmDispatcher(),
-    } as unknown as RequestInit);
-    if (response.ok) {
-      successfulVariant = variant;
-      break;
-    }
-    const errBody = await response.text().catch(() => '');
-    if (response.status === 400 && variantIndex < variants.length - 1) {
-      console.warn('[LLM] provider rejected optional request fields; retrying with compatibility payload', JSON.stringify({
-        status: response.status,
-        toolCount: Array.isArray(tools) ? tools.length : 0,
-        maxTokens: variant.body.max_tokens,
+    /* P_rpm-backoff — this path had no retry at all, so a single transient
+       429 failed the whole call. That matters because it is not only the
+       user-facing completion: retrieval (queryExpander), history
+       compression and the turn summary all come through here, once per
+       turn, and each was a chance to lose the turn to a rate limit the
+       streaming path would simply have ridden out. */
+    for (let attempt = 0; ; attempt++) {
+      if (signal && signal.aborted) throw new Error('LLM request aborted');
+      markLlmActivity();
+      try {
+        response = await fetch(`${apiBase}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+            'Accept-Encoding': 'identity',
+          },
+          body: JSON.stringify(variant.body),
+          signal,
+          dispatcher: getLlmDispatcher(),
+        } as unknown as RequestInit);
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') throw err;
+        if (attempt >= TRANSIENT_ATTEMPTS - 1) throw err;
+        await sleep(1000, signal);
+        continue;
+      }
+      if (response.ok) {
+        successfulVariant = variant;
+        break;
+      }
+      const errBody = await response.text().catch(() => '');
+      if (response.status === 400 && variantIndex < variants.length - 1) {
+        console.warn('[LLM] provider rejected optional request fields; retrying with compatibility payload', JSON.stringify({
+          status: response.status,
+          toolCount: Array.isArray(tools) ? tools.length : 0,
+          maxTokens: variant.body.max_tokens,
+        }));
+        break;
+      }
+      if (!isRetryableUpstreamStatus(response.status)
+          || attempt >= attemptsForUpstreamStatus(response.status) - 1) {
+        const { ApiError } = await import('../lib/errors.js');
+        /* Forward the upstream status code so the client sees 429 (quota),
+           401 (bad key), etc. instead of a generic 500. The error handler
+           serialises ApiError with the correct HTTP status. */
+        throw new ApiError(response.status, 'LLM_API_ERROR', `LLM API error ${response.status}: ${errBody.slice(0, 200)}`);
+      }
+      const delayMs = upstreamRetryDelayMs(response.status, attempt, response.headers.get('retry-after'));
+      console.warn('[LLM] upstream ' + response.status + ' on the non-streaming path; retrying', JSON.stringify({
+        attempt: attempt + 1,
+        delayMs,
       }));
-      continue;
+      await sleep(delayMs, signal);
     }
-    const { ApiError } = await import('../lib/errors.js');
-    /* Forward the upstream status code so the client sees 429 (quota),
-       401 (bad key), etc. instead of a generic 500. The error handler
-       serialises ApiError with the correct HTTP status. */
-    throw new ApiError(response.status, 'LLM_API_ERROR', `LLM API error ${response.status}: ${errBody.slice(0, 200)}`);
+    if (response?.ok) break;
   }
   if (!response?.ok) throw new Error('LLM API request failed');
 

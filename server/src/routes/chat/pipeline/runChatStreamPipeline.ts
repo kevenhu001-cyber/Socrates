@@ -956,11 +956,16 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
         },
         {
           timeoutMs: 8_000,
-          complete: async (prompt) => {
+          complete: async (prompt, signal) => {
             const res = await callChatCompletion({
               apiBase: provider.url,
               apiKey: provider.keyPlaintext as string,
               model: provider.model,
+              /* The summary is decoration on an answer the reader already
+                 has. Its signal is what keeps a rate-limited provider from
+                 spending its whole retry budget holding the closing frame
+                 open — the 8 s ceiling is only real if we hand it down. */
+              signal,
               messages: [
                 { role: 'system', content: TURN_SUMMARY_SYSTEM_PROMPT },
                 { role: 'user', content: prompt },

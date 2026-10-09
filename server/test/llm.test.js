@@ -646,8 +646,14 @@ describe('tool-call compatibility helpers', () => {
 
 describe('streamChatCompletion: error & edge cases', () => {
   test('forwards upstream 4xx as onError', async () => {
+    /* Retry-After keeps this fast: it is the only delay input the backoff
+       trusts verbatim, so the retries still all run, just without sleeping
+       through a real rate-limit window. */
     globalThis.fetch = mock.fn(async () =>
-      makeJsonResponse({ error: 'rate_limited' }, 429),
+      new Response(JSON.stringify({ error: 'rate_limited' }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json', 'Retry-After': '0.001' },
+      }),
     );
     let error = null;
     let done = null;
@@ -664,7 +670,7 @@ describe('streamChatCompletion: error & edge cases', () => {
 
   test('forwards upstream 5xx as onError', async () => {
     globalThis.fetch = mock.fn(async () =>
-      new Response('upstream dead', { status: 502 }),
+      new Response('upstream dead', { status: 502, headers: { 'Retry-After': '0.001' } }),
     );
     let error = null;
     await streamChatCompletion({ ...BASE_OPTS }, () => {}, () => {}, (e) => { error = e; });
@@ -676,6 +682,60 @@ describe('streamChatCompletion: error & edge cases', () => {
     let error = null;
     await streamChatCompletion({ ...BASE_OPTS }, () => {}, () => {}, (e) => { error = e; });
     assert.match(error.message, /empty body/);
+  });
+
+  /* P_rpm-backoff — a multi-step turn spends one provider request per tool
+     hop, so it is the flow most likely to meet an exhausted RPM window. The
+     budget has to outlast that window rather than race it. */
+  test('a 429 clears and the turn completes', async () => {
+    let calls = 0;
+    globalThis.fetch = mock.fn(async () => {
+      calls += 1;
+      if (calls <= 2) {
+        return new Response(JSON.stringify({ error: 'rate_limited' }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json', 'Retry-After': '0.001' },
+        });
+      }
+      return makeSseResponse([
+        sseChunk({ choices: [{ delta: { content: 'recovered' }, finish_reason: 'stop' }] }),
+        sseDone(),
+      ]);
+    });
+    const chunks = [];
+    let error = null;
+    await streamChatCompletion(
+      { ...BASE_OPTS },
+      (c) => chunks.push(c),
+      () => {},
+      (e) => { error = e; },
+    );
+    assert.equal(error, null, 'a transient 429 must not end the turn');
+    assert.equal(chunks.join(''), 'recovered');
+    assert.equal(calls, 3);
+  });
+
+  test('a 429 gets a longer attempt budget than a transient 5xx', async () => {
+    const countFor = async (status) => {
+      globalThis.fetch = mock.fn(async () =>
+        new Response('nope', { status, headers: { 'Retry-After': '0.001' } }));
+      await streamChatCompletion({ ...BASE_OPTS }, () => {}, () => {}, () => {});
+      return globalThis.fetch.mock.callCount();
+    };
+    const rateLimited = await countFor(429);
+    const transient = await countFor(503);
+    assert.ok(rateLimited > transient,
+      `429 (${rateLimited}) must outlast 503 (${transient}) — otherwise the retry ` +
+      'dies inside the same RPM window it was meant to outlast');
+    assert.equal(rateLimited, 5);
+    assert.equal(transient, 3);
+  });
+
+  test('a non-retryable status is attempted exactly once', async () => {
+    globalThis.fetch = mock.fn(async () => makeJsonResponse({ error: 'bad key' }, 401));
+    await streamChatCompletion({ ...BASE_OPTS }, () => {}, () => {}, () => {});
+    assert.equal(globalThis.fetch.mock.callCount(), 1,
+      'retrying a 401 only burns the budget and delays the real error');
   });
 
   test('skips malformed JSON frames without throwing', async () => {
@@ -754,6 +814,39 @@ describe('callChatCompletion', () => {
     assert.equal(result.reasoning_content, undefined);
   });
 
+  /* P_rpm-backoff — this path had no retry, so a transient 429 failed the
+     retrieval / compression / summary call outright. */
+  test('retries a transient 429 instead of throwing', async () => {
+    let calls = 0;
+    globalThis.fetch = mock.fn(async () => {
+      calls += 1;
+      if (calls === 1) {
+        return new Response(JSON.stringify({ error: 'rate_limited' }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json', 'Retry-After': '0.001' },
+        });
+      }
+      return makeJsonResponse({ choices: [{ message: { content: 'ok' } }] });
+    });
+    const result = await callChatCompletion({ ...BASE_OPTS });
+    assert.equal(result.content, 'ok');
+    assert.equal(calls, 2);
+  });
+
+  test('surfaces a 429 once the budget is spent', async () => {
+    globalThis.fetch = mock.fn(async () =>
+      new Response(JSON.stringify({ error: 'rate_limited' }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json', 'Retry-After': '0.001' },
+      }),
+    );
+    await assert.rejects(
+      () => callChatCompletion({ ...BASE_OPTS }),
+      /LLM API error 429/,
+    );
+    assert.equal(globalThis.fetch.mock.callCount(), 5);
+  });
+
   test('returns reasoning_content when present (DeepSeek-style)', async () => {
     globalThis.fetch = mock.fn(async () =>
       makeJsonResponse({
@@ -781,7 +874,9 @@ describe('callChatCompletion', () => {
 
   test('throws ApiError carrying the upstream status on 4xx/5xx', async () => {
     globalThis.fetch = mock.fn(async () =>
-      new Response('{"error":"quota exceeded"}', { status: 429 }),
+      /* Retry-After collapses the backoff so the test exercises the real
+         retry path without sleeping out a production rate-limit window. */
+      new Response('{"error":"quota exceeded"}', { status: 429, headers: { 'Retry-After': '0.001' } }),
     );
     let err = null;
     try {
