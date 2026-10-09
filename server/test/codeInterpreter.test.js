@@ -44,6 +44,29 @@ describe('codeInterpreter.execute — input guard rails', () => {
     assert.equal(typeof os.tmpdir(), 'string');
   });
 
+  /* P_worker-embedded-python-escapes — the Python setup scripts in
+   * pyodideWorker.ts are JS template literals. A lone `\r` (or `\n`)
+   * escape inside one evaluates to a real CR/LF byte. Python treats CR
+   * as a line terminator, so a CR inside a comment splits the line and
+   * raises IndentationError during boot — every code_interpreter run
+   * then fails with pyodide_worker_boot_failed. This exact regression
+   * (a `\r` in a P_live-stdout comment) broke worker boot for all users
+   * until the escape was doubled (`\\r`). Escaped `\\r` / `\\n` are the
+   * only acceptable forms — they stay literal text in the Python source. */
+  test('embedded Python in pyodideWorker.ts contains no lone CR/LF escapes', async () => {
+    const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src/services/pyodideWorker.ts');
+    const workerSource = await fsPromises.readFile(source, 'utf8');
+    // A raw CR byte anywhere in the file would corrupt any Python block.
+    assert.doesNotMatch(workerSource, /\r/);
+    for (const block of workerSource.matchAll(/pyodide\.runPython\((`[\s\S]*?`)/g)) {
+      assert.doesNotMatch(
+        block[1],
+        /(?<!\\)\\[rn]/,
+        `pyodideWorker.ts runPython block contains an unescaped \\r/\\n escape (evaluates to a line terminator in Python): ${block[1].slice(0, 100)}…`,
+      );
+    }
+  });
+
   test('rejects sources larger than MAX_CODE_CHARS without touching the pool', async () => {
     const huge = 'x'.repeat(400_000);
     const res = await codeInterpreter.execute({ userId: '00000000-0000-4000-8000-000000000001', sessionId: null, code: huge, language: 'python' });

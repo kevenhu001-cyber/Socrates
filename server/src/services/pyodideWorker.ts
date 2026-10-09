@@ -292,7 +292,7 @@ class _CappedStream:
         # so a flush-only hook left the "live output" stream silent
         # for the entire run. Emit when a line completes, or when the
         # pending delta grows past ~4 KB (covers unterminated writes
-        # and \r progress-bar spam without a per-update SSE storm).
+        # and \\r progress-bar spam without a per-update SSE storm).
         if '\\n' in s or self._pending_bytes >= 4096:
             self._emit_delta()
         return bs
