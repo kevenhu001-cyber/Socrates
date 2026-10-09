@@ -2,8 +2,8 @@
    SSE consumer for /api/chat/stream and the built-in Beagle proxy.
    Per-attempt request and stream handling lives in streamAttempt.js;
    this module owns provider validation, retry policy, and turn cleanup.
-   UI rendering, bubble management, and _activeChatAbort coordination stay
-   in main.js's addStreamingMessage.
+   Bubble rendering and turn-controller setup live in the lazy
+   streamingTurn.js module; message submission stays in sendPipeline.js.
    Reads main.js globals via window.* (state, getActiveProvider,
    offlineGuard, etc.). */
 
