@@ -52,10 +52,24 @@ export function __resetEmbeddingConfigCache(): void {
   invalidateEmbeddingConfigCache();
 }
 
+/* P_embed-killswitch — the vector layer costs one remote embedding call on
+   the retrieval path of every turn (chat/helpers.ts races it against a 2s
+   budget before the first token), so operators can disable it without a
+   migration or a DB write. Set EMBEDDING_DISABLED=1 to short-circuit to
+   null — the hybrid search then falls back to BM25 keyword retrieval,
+   which is the correctness contract anyway. Unset it to re-enable. */
+function embeddingDisabled(): boolean {
+  const raw = process.env.EMBEDDING_DISABLED;
+  if (!raw) return false;
+  const v = String(raw).trim().toLowerCase();
+  return v !== '0' && v !== 'false' && v !== 'off' && v !== 'no';
+}
+
 /* Read the active embedding config. Returns null when no row is
    active or the stored key cannot be decrypted — both cases the
    caller treats as "vector layer disabled". */
 export async function getActiveEmbeddingConfig(): Promise<EmbeddingProviderConfig | null> {
+  if (embeddingDisabled()) return null;
   const now = Date.now();
   if (cfgCache && now - cfgCache.at < CFG_TTL_MS) return cfgCache.value;
   /* Collapse concurrent misses into one query — the indexing loop used

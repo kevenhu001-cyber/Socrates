@@ -655,6 +655,12 @@ Environment=WORKSPACE_ROOT=${CODEX_HOME}/workspaces
 Environment=PI_AGENT_ENABLED=${PI_AGENT_ENABLED_VALUE}
 Environment="PI_AGENT_BIN=${PI_AGENT_BIN_RESOLVED}"
 Environment=PATH=${PI_AGENT_BIN_DIR:+${PI_AGENT_BIN_DIR}:}/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# P_embed-killswitch — the vector layer costs one remote embedding call per
+# turn on the retrieval path (chat/helpers.ts races it against a 2s budget
+# before the first token). Set EMBEDDING_DISABLED=1 to fall back to BM25-only
+# retrieval. The provider row, its key, and the 3k+ existing vectors are all
+# left intact — unset this and restart to bring the vector layer back.
+Environment=EMBEDDING_DISABLED=${EMBEDDING_DISABLED:-1}
 ReadWritePaths=${CODEX_HOME}
 ReadWritePaths=/home/ubuntu/.pi
 EOF
