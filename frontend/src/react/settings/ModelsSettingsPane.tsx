@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { i18n } from '../legacy/gateway.ts';
-import { ProviderList, useProviderListState } from './ProviderList';
+import { ProviderList } from './ProviderList';
+import { useProviderListState } from './useProviderListState';
 import { useProviderConfigStore } from '../../config/providerConfig.store';
 import { confirmClearSettings } from '../../ui/dangerConfirms.js';
 import { closeSettings, toggleExternalApi } from './settings.service';
