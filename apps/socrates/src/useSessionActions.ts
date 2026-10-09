@@ -23,7 +23,6 @@ interface UseSessionActionsOptions {
   projectFilter: string | null;
   onReturnToChat: () => void;
   setArchived: Dispatch<SetStateAction<Session[]>>;
-  setConfirmDelete: Dispatch<SetStateAction<boolean>>;
   setProjectFilter: Dispatch<SetStateAction<string | null>>;
   setSidebarOpen: Dispatch<SetStateAction<boolean>>;
 }
@@ -53,7 +52,6 @@ export function useSessionActions({
   projectFilter,
   onReturnToChat,
   setArchived,
-  setConfirmDelete,
   setProjectFilter,
   setSidebarOpen,
 }: UseSessionActionsOptions) {
@@ -140,10 +138,8 @@ export function useSessionActions({
       if (epoch === accountEpoch.current) {
         useChatStore.getState().setStatus('error', error instanceof Error ? error.message : appStringsNow().deleteFailed);
       }
-    } finally {
-      if (epoch === accountEpoch.current) setConfirmDelete(false);
     }
-  }, [accountEpoch, projectFilter, setArchived, setConfirmDelete]);
+  }, [accountEpoch, projectFilter, setArchived]);
 
   const moveSessionToProject = useCallback(async (sessionId: string, targetId: string | null) => {
     const epoch = accountEpoch.current;

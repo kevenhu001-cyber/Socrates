@@ -4,10 +4,10 @@ import { KeyboardAvoidingView, Linking, Platform, StatusBar, Text, View, useWind
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import type { Session } from '@socrates/contracts';
-import { createMessageOutbox, useChatStore, visibleSessions as getVisibleSessions } from '@socrates/chat';
+import { useChatStore, visibleSessions as getVisibleSessions } from '@socrates/chat';
 import { useAuthStore } from '@socrates/auth';
 import { useSettingsStore } from '@socrates/settings';
-import { fontStyle, getThemePaletteHex } from '@socrates/theme';
+import { getThemePaletteHex } from '@socrates/theme';
 import { IconRendererProvider, activeProviderOf, uiStrings, type ArtifactDescriptor, type BoundarySnapshot, type KnowledgeBoundaryNode, type SidebarView, type TeachingPlan } from '@socrates/ui';
 import { api } from './src/runtime';
 import { storage } from './src/storage';
@@ -43,6 +43,7 @@ import { useFileAccess } from './src/useFileAccess';
 import { useAppLifecycle } from './src/useAppLifecycle';
 import { useProjectRouteActions } from './src/useProjectRouteActions';
 import { useCatalogActions } from './src/useCatalogActions';
+import { useOutboxSync } from './src/useOutboxSync';
 
 const initialSessions: Session[] = [{ id: 'welcome', title: 'Welcome to Socrates', topic: 'Universal app', mode: 'chat', phase: 'chat', messages: [{ clientId: 'welcome-assistant', role: 'assistant', rawText: 'How can I help you learn today?' }] }];
 
@@ -67,8 +68,6 @@ function SocratesApp() {
   const [assistantMenuOpen, setAssistantMenuOpen] = useState(false);
   /** Where the providers screen returns to (settings entry vs chat menu). */
   const [providersReturn, setProvidersReturn] = useState<'settings' | 'chat'>('settings');
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const {
     staged,
     onPickImages,
@@ -80,9 +79,6 @@ function SocratesApp() {
     resolveStaged,
   } = useStagedAttachments();
   const [artifact, setArtifact] = useState<ArtifactDescriptor | null>(null);
-  /** Set when an edit/regenerate could not reach the server and its ops
-   * are waiting in the outbox; cleared once the queue drains. */
-  const [offlineNotice, setOfflineNotice] = useState(false);
   const { listening, voiceInputSupported, stopComposerAudio, speak, toggleListen, reset: resetVoiceInput } = useVoiceInput();
   const sessions = useChatStore((state) => state.sessions);
   const activeId = useChatStore((state) => state.activeSessionId);
@@ -97,7 +93,6 @@ function SocratesApp() {
   // Shared UI strings + the baseline font stacks, so the shell chrome uses
   // the same copy and typography as the baseline SPA.
   const t = uiStrings(language);
-  const fam = (weight: 'regular' | 'medium' | 'semibold' | 'bold' = 'regular') => fontStyle(weight, language, Platform.OS === 'web');
   const palette = useMemo(() => getThemePaletteHex(theme), [theme]);
   const active = useMemo(() => sessions.find((session) => session.id === activeId) || null, [activeId, sessions]);
   const {
@@ -192,23 +187,7 @@ function SocratesApp() {
   const activeModel = useMemo(() => activeProviderOf(providers), [providers]);
   const activeModelLabel = activeModel ? (activeModel.label || activeModel.model || 'Model') : s.openModelMenu;
   const chatError = useChatStore((state) => state.error);
-  // Failed edit/regenerate mutations wait here (durable, storage-backed)
-  // and replay as explicit per-row ops — never as a replayed
-  // discardFollowing, which would eat turns made after the reconnect.
-  const outbox = useMemo(() => createMessageOutbox({
-    storage,
-    // Outbox replay rewrites the text only; the stale rows are queued as
-    // explicit deletes alongside, so discardFollowing stays false here.
-    patchMessage: (sessionId, id, content) => api.messages.patch(id, { content, discardFollowing: false }, sessionId),
-    deleteMessage: (sessionId, id) => api.messages.remove(id, sessionId),
-    isOnline: () => typeof navigator === 'undefined' || navigator.onLine !== false,
-  }), []);
-  const drainOutbox = useCallback(async () => {
-    try {
-      await outbox.drainMessageOutbox();
-      setOfflineNotice((await outbox.pendingOpCount()) > 0);
-    } catch { /* the queue survives; never surface drain noise */ }
-  }, [outbox]);
+  const { outbox, drainOutbox, offlineNotice, setOfflineNotice, resetNotice: resetOutboxNotice } = useOutboxSync();
   const { runTurn, submitTurn, send } = useChatTurn({
     accountEpoch,
     streamAbort,
@@ -232,25 +211,12 @@ function SocratesApp() {
     onPracticeSubmit,
     onRedoMistake,
   } = useTutorProgress({ active, activeId, accountEpoch, runTurn, submitTurn });
-  // Drain on boot and whenever the platform reports it is back online.
-  // (Native has no window: the drain after every turn + send covers it.)
-  useEffect(() => {
-    void drainOutbox();
-    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
-      const onOnline = () => { void drainOutbox(); };
-      window.addEventListener('online', onOnline);
-      return () => window.removeEventListener('online', onOnline);
-    }
-    return undefined;
-  }, [drainOutbox]);
   const onReturnToChat = useCallback(() => setScreen('chat'), []);
   const {
     examRun,
     tutorRun,
     examData,
-    examQuestions,
     isExam,
-    tutorData,
     tutorQuestions,
     tutorAnswers,
     showDiagnostic,
@@ -282,7 +248,6 @@ function SocratesApp() {
     projectFilter,
     onReturnToChat,
     setArchived,
-    setConfirmDelete,
     setProjectFilter,
     setSidebarOpen,
   });
@@ -365,16 +330,16 @@ function SocratesApp() {
     setArtifact(null);
     resetFileAccess();
     resetLearningSetup();
-    setProjectFilter(null); setMovePickSession(null); setMenuOpen(false); setConfirmDelete(false); setScreen('chat');
+    setProjectFilter(null); setMovePickSession(null); setScreen('chat');
     setModelMenuOpen(false); setProvidersReturn('settings');
     setAssistantMenuOpen(false);
     closeFind();
     resetShare();
-    resetMessageActions(); setOfflineNotice(false);
+    resetMessageActions(); resetOutboxNotice();
     useChatStore.getState().reset();
     useChatStore.getState().setSessions(initialSessions);
     useChatStore.getState().selectSession('welcome');
-  }, [clearAuthNotice, clearStaged, closeFind, resetAccountUsage, resetCatalog, resetFileAccess, resetLearningSetup, resetMessageActions, resetProjectLibrary, resetShare, resetVoiceInput]);
+  }, [clearAuthNotice, clearStaged, closeFind, resetAccountUsage, resetCatalog, resetFileAccess, resetLearningSetup, resetMessageActions, resetOutboxNotice, resetProjectLibrary, resetShare, resetVoiceInput]);
   useAppLifecycle({ accountEpoch, streamAbort, user, resetAccountState, syncLibrary, loadProviders, resetProviders });
   const stop = useCallback(() => { streamAbort.current?.abort(); }, []);
   const { navItems, sidebarUser } = useSidebarNavigation({
@@ -394,15 +359,12 @@ function SocratesApp() {
   useHardwareBackNavigation({
     modelMenuOpen,
     assistantMenuOpen,
-    menuOpen,
     providersReturn,
     screen,
     compact,
     sidebarOpen,
     setModelMenuOpen,
     setAssistantMenuOpen,
-    setMenuOpen,
-    setConfirmDelete,
     setMovePickSession,
     setScreen,
     setSidebarOpen,

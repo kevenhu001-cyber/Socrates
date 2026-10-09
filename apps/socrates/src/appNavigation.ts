@@ -9,15 +9,12 @@ export type AppScreen = 'chat' | 'settings' | 'projects' | 'search' | 'providers
 interface HardwareBackOptions {
   modelMenuOpen: boolean;
   assistantMenuOpen: boolean;
-  menuOpen: boolean;
   providersReturn: 'settings' | 'chat';
   screen: AppScreen;
   compact: boolean;
   sidebarOpen: boolean;
   setModelMenuOpen: (open: boolean) => void;
   setAssistantMenuOpen: (open: boolean) => void;
-  setMenuOpen: (open: boolean) => void;
-  setConfirmDelete: (open: boolean) => void;
   setMovePickSession: (id: string | null) => void;
   setScreen: Dispatch<SetStateAction<AppScreen>>;
   setSidebarOpen: Dispatch<SetStateAction<boolean>>;
@@ -27,15 +24,12 @@ interface HardwareBackOptions {
 export function useHardwareBackNavigation({
   modelMenuOpen,
   assistantMenuOpen,
-  menuOpen,
   providersReturn,
   screen,
   compact,
   sidebarOpen,
   setModelMenuOpen,
   setAssistantMenuOpen,
-  setMenuOpen,
-  setConfirmDelete,
   setMovePickSession,
   setScreen,
   setSidebarOpen,
@@ -44,14 +38,13 @@ export function useHardwareBackNavigation({
     const listener = BackHandler.addEventListener('hardwareBackPress', () => {
       if (modelMenuOpen) { setModelMenuOpen(false); return true; }
       if (assistantMenuOpen) { setAssistantMenuOpen(false); return true; }
-      if (menuOpen) { setMenuOpen(false); setConfirmDelete(false); return true; }
       if (screen === 'providers') { setScreen(providersReturn); return true; }
       if (screen !== 'chat') { setMovePickSession(null); setScreen('chat'); return true; }
       if (compact && sidebarOpen) { setSidebarOpen(false); return true; }
       return false;
     });
     return () => listener.remove();
-  }, [assistantMenuOpen, compact, menuOpen, modelMenuOpen, providersReturn, screen, sidebarOpen, setAssistantMenuOpen, setConfirmDelete, setMenuOpen, setModelMenuOpen, setMovePickSession, setScreen, setSidebarOpen]);
+  }, [assistantMenuOpen, compact, modelMenuOpen, providersReturn, screen, sidebarOpen, setAssistantMenuOpen, setModelMenuOpen, setMovePickSession, setScreen, setSidebarOpen]);
 }
 
 interface SidebarNavigationOptions {
