@@ -342,12 +342,10 @@ import { updateKB } from './ui/knowledgePanel.js';
 window.updateKB = updateKB;
 
 /* ─── exam.js — Generate Exam extension ───
-   exam.js (~57KB) is lazy: it only downloads when the exam view is
-   actually opened (sidebar exam nav / openExamModal / exam session
-   restore). window.__loadExamModule dedupes the import, mounts the
-   delegated listeners once, and exposes the module for conditional
-   resets (lifecycle.clearPerUserClientState). Callers fire-and-forget
-   through the proxies; the view opens on the next microtask. */
+   The exam view stays lazy and loads only when opened (sidebar exam nav,
+   openExamModal or exam-session restore). Its domain flows live under
+   src/exam/. window.__loadExamModule dedupes the import, mounts delegated
+   listeners once, and exposes it for account-change resets. */
 var _examImport = null;
 function _loadExamModule() {
   if (!_examImport) {

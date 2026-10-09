@@ -1,95 +1,86 @@
-/* ─── Exam View Module (standalone page) ───
-   Extracted from main.js section "Exam view".
-   Cross-module dependencies accessed via window.*
+/* ─── Exam View Composition ───
+   Owns delegated view events and the form view; generation, persistence,
+   navigation and result rendering live under ./exam/.
    ============================================================ */
 
 import { esc } from './render/helpers.js';
-import { formatMsg } from './render/markdown.js';
-import { callAPIStream } from './chat/stream.js';
 import { stateStore } from './state/store.js';
-import { pushChatIdToURL, pushExamIdToURL, setExamIdInURL } from './session/store.js';
+import { pushChatIdToURL, setExamIdInURL } from './session/store.js';
 import { reportSwallow } from './util/reportSwallow.ts';
 
-import { toggleShareBtn } from './ui/share.js';
-import { prefersReducedMotion } from './ui/motion.js';
 import { activateMainView } from './ui/mainViewController.js';
-import { getProviderConfigSnapshot, setActiveProviderLocal } from './config/providerConfig.service.ts';
-import { detectExamLang, parseExamArrayJSON, parseSingleExamQuestion } from './exam/parsing.js';
+import { getProviderConfigSnapshot } from './config/providerConfig.service.ts';
+import { parseExamArrayJSON, parseSingleExamQuestion } from './exam/parsing.js';
 import {
   examNavCurrentIdx, examNavJump, examNavStep, refreshExamNavTally, renderExamNav, syncExamNav,
 } from './exam/navigation.js';
 import { renderExamResults } from './exam/results.js';
+import {
+  appendExamErrorCard, cancelExamGeneration, finishExamGeneration, paintQuestionCard,
+  renderAllQuestions, replaceStreamingCardWithQuestion, restoreExamActiveProvider,
+  runExamGeneration, selectExamOpt,
+} from './exam/generation.js';
+import {
+  doSaveExamSession, resetExamSaveState, saveExamSession, setExamAnswer,
+  scheduleExamAnswerSave, submitExam,
+} from './exam/persistence.js';
+import {
+  examBody as _examBody, examFooter as _examFooter, examUiL as _examUiL, setExamTitle as _setExamTitle,
+} from './exam/ui.js';
 
 export { parseExamArrayJSON, parseSingleExamQuestion };
 export { examNavCurrentIdx, examNavJump, examNavStep, refreshExamNavTally, renderExamNav, syncExamNav };
 export { renderExamResults };
+export {
+  appendExamErrorCard, cancelExamGeneration, doSaveExamSession, finishExamGeneration,
+  paintQuestionCard, renderAllQuestions, replaceStreamingCardWithQuestion,
+  resetExamSaveState, saveExamSession, scheduleExamAnswerSave, selectExamOpt, setExamAnswer, submitExam,
+};
 
 /* ── module-level state ── */
 var _examSelectedTypes = { mc: true, fb: true, sa: false };
 var _examDifficulty = "intermediate";
-var _examAnswerSaveTimer = null;
-var _examSaveInFlight = null;
-var _examSaveDirty = false;
 var _examListenersMounted = false;
 
-/* Cancels the debounced autosave as well as the in-flight marker — a timer
-   armed by the previous account must not fire after a user switch.
-   Called from app/lifecycle.js via clearPerUserClientState(). */
-export function resetExamSaveState() {
-  if (_examAnswerSaveTimer) clearTimeout(_examAnswerSaveTimer);
-  _examAnswerSaveTimer = null;
-  _examSaveInFlight = null;
-  _examSaveDirty = false;
+const EXAM_COMMANDS = {
+  close: () => closeExamView(),
+  form: () => renderExamForm(),
+  generate: () => startExamGeneration(),
+  cancel: () => cancelExamGeneration(),
+  submit: () => submitExam(),
+  'toggle-model': () => toggleExamModelMenu(),
+  'select-model': (target) => selectExamModel(target.dataset.mid || ""),
+  'toggle-type': (target) => toggleExamType(target.dataset.type || ""),
+  difficulty: (target) => selectExamDifficulty(target.dataset.diff || "intermediate"),
+  count: (target) => adjustExamCount(Number(target.dataset.delta || 0)),
+  'answer-option': (target) => selectExamOpt(Number(target.dataset.eidx), Number(target.dataset.oidx)),
+  'nav-step': (target) => examNavStep(Number(target.dataset.delta || 0)),
+  'nav-jump': (target) => examNavJump(Number(target.dataset.navIdx || 0)),
+};
+
+function handleExamClick(event) {
+  const view = event.currentTarget;
+  const target = event.target.closest && event.target.closest("[data-exam-command]");
+  if (!target || !view.contains(target)) return;
+  const handler = EXAM_COMMANDS[target.getAttribute("data-exam-command")];
+  if (handler) handler(target);
+}
+
+function handleExamInput(event) {
+  const view = event.currentTarget;
+  const input = event.target.closest && event.target.closest(".exam-q-fill-input[data-eidx]");
+  if (!input || !view.contains(input)) return;
+  setExamAnswer(Number(input.dataset.eidx), input.value);
+  refreshExamNavTally();
+  scheduleExamAnswerSave();
 }
 
 export function mountExamListeners() {
   var view = document.getElementById("examView");
   if (!view || _examListenersMounted) return;
   _examListenersMounted = true;
-  view.addEventListener("click", function (event) {
-    var target = event.target.closest && event.target.closest("[data-exam-command]");
-    if (!target || !view.contains(target)) return;
-    var command = target.getAttribute("data-exam-command");
-    if (command === "close") closeExamView();
-    else if (command === "form") renderExamForm();
-    else if (command === "generate") startExamGeneration();
-    else if (command === "cancel") cancelExamGeneration();
-    else if (command === "submit") submitExam();
-    else if (command === "toggle-model") toggleExamModelMenu();
-    else if (command === "select-model") selectExamModel(target.dataset.mid || "");
-    else if (command === "toggle-type") toggleExamType(target.dataset.type || "");
-    else if (command === "difficulty") selectExamDifficulty(target.dataset.diff || "intermediate");
-    else if (command === "count") adjustExamCount(Number(target.dataset.delta || 0));
-    else if (command === "answer-option") selectExamOpt(Number(target.dataset.eidx), Number(target.dataset.oidx));
-    else if (command === "nav-step") examNavStep(Number(target.dataset.delta || 0));
-    else if (command === "nav-jump") examNavJump(Number(target.dataset.navIdx || 0));
-  });
-  view.addEventListener("input", function (event) {
-    var input = event.target.closest && event.target.closest(".exam-q-fill-input[data-eidx]");
-    if (!input || !view.contains(input)) return;
-    setExamAnswer(Number(input.dataset.eidx), input.value);
-    refreshExamNavTally();
-    scheduleExamAnswerSave();
-  });
-}
-
-export function setExamAnswer(index, value) {
-  var answers = Object.assign({}, stateStore.read('examAnswers') || {});
-  answers[index] = value;
-  stateStore.dispatch({ type: 'state/set', key: 'examAnswers', value: answers });
-}
-
-/* ── helpers ── */
-function _examBody() { return document.getElementById("examViewBody"); }
-function _examFooter() { return document.getElementById("examViewFooter"); }
-function _examTitle() { return document.getElementById("examViewTitle"); }
-function _examUiIsZh() { return window._currentLang === "zh"; }
-function _examUiL(en, zh) { return _examUiIsZh() ? zh : en; }
-function _setExamTitle(title) {
-  var viewTitle = _examTitle();
-  var barTitle = document.getElementById("examTitleBar");
-  if (viewTitle) viewTitle.textContent = title;
-  if (barTitle) barTitle.textContent = title;
+  view.addEventListener("click", handleExamClick);
+  view.addEventListener("input", handleExamInput);
 }
 
 /* ── open / close ── */
@@ -385,470 +376,61 @@ export function adjustExamCount(delta) {
 }
 
 export function startExamGeneration() {
-  var topic = document.getElementById("examTopic").value.trim();
-  if (!topic) { document.getElementById("examTopic").focus(); return; }
-  /* P_exam-noprovider — 생성 전에 활성 모델이 있는지 확인. 없으면 로딩만 보여주고 실패하는 것보다 여기서 바로 알림. */
-  var _activeProvider = typeof window.getActiveProvider === "function" ? window.getActiveProvider() : null;
-  if (!_activeProvider) {
-    var _msg = _examUiL("Add and select a model in Settings first", "请先在设置中添加并选择一个模型");
-    const emptyBody = _examBody();
-    if (emptyBody) emptyBody.innerHTML = '<div class="exam-empty" style="padding:40px;text-align:center;color:hsl(var(--text-500))">' + esc(_msg) + '</div>';
-    var footer = _examFooter();
-    if (footer) footer.innerHTML = '<button class="exam-btn primary" data-exam-command="form">' + _examUiL("Back", "返回") + '</button>';
-    return;
-  }
-  var count = Math.max(1, Math.min(50, parseInt(document.getElementById("examCount").value, 10) || 5));
-  var difficulty = _examDifficulty || "intermediate";
-  var instructions = document.getElementById("examInstructions").value.trim() || "";
-  var modelSel = document.getElementById("examModel");
-  var chosenModel = modelSel ? modelSel.value : "";
-  var types = [];
-  if (_examSelectedTypes.mc) types.push("multiple-choice");
-  if (_examSelectedTypes.fb) types.push("fill-blank");
-  if (_examSelectedTypes.sa) types.push("short-answer");
-  if (!types.length) { types = ["multiple-choice", "fill-blank", "short-answer"]; }
-  var typeStr = types.join(", ");
-  var lang = detectExamLang(topic);
-  stateStore.dispatch({type:'state/batch',patch:{
-    examCancel:false,
-    examQuestions:[],
-    examAnswers:{},
-    examSubmitted:false,
-    examTopic:topic,
-    examCount:count,
-    examLang:lang,
-    examDifficulty:difficulty,
-    examInstructions:instructions,
-    examTypes:types.slice(),
-    _examPrevActiveId:getProviderConfigSnapshot().activeId
-  }});
-  var providerConfig = getProviderConfigSnapshot();
-  if (chosenModel && Array.isArray(providerConfig.providers)) {
-    var chosenProv = providerConfig.providers.find(function (p) { return p && p.id === chosenModel; });
-    if (chosenProv) {
-      setActiveProviderLocal(chosenModel);
-      try { window.syncModelPills&&window.syncModelPills(); } catch (e) { reportSwallow(e, 'exam.startExamGeneration.syncModelPills'); }
-      try { window.syncChatModel&&window.syncChatModel(); } catch (e) { reportSwallow(e, 'exam.startExamGeneration.syncChatModel'); }
-      /* The built-in Beagle provider (id "beagle-built-in") is a client-only
-         pseudo-provider — it has no DB row, so its id is not a UUID. Sending a
-         PATCH /api/api-key/beagle-built-in hits the server's UUID guard and
-         404s (harmless but noisy). Activation for the built-in is purely a
-         client-side provider store change; only persist for real DB rows. */
-      if (!chosenProv.isBuiltIn && chosenModel !== "beagle-built-in") {
-        try { window.apiFetch("/api/api-key/" + encodeURIComponent(chosenModel), { method: "PATCH", body: { isActive: true } }).catch(function (e) { reportSwallow(e, 'exam.startExamGeneration.persistActiveModel'); }) } catch (e) { reportSwallow(e, 'exam.startExamGeneration.persistActiveModel.guard'); }
-      }
-    }
-  }
-  _setExamTitle(topic);
-  var meta = document.getElementById("examViewMeta");
-  providerConfig = getProviderConfigSnapshot();
-  var provLabel = (Array.isArray(providerConfig.providers) ? providerConfig.providers.find(function (p) { return p && p.id === providerConfig.activeId }) : null) || {};
-  if (meta) meta.textContent = count + " " + _examUiL("questions · ", "题 · ") + (provLabel.label || provLabel.model || "") + " · " + difficulty;
-  var body = _examBody();
-  body.innerHTML = '<div class="exam-loading" id="examGenStatus">' +
-    '<span class="loading"><span></span><span></span><span></span></span>' +
-    '<div class="exam-loading-msg" id="examGenMsg">' + _examUiL("Generating your exam…", "正在生成考卷…") + '</div>' +
-    '<div class="exam-progress"><div class="exam-progress-bar"><div class="exam-progress-fill" id="examGenProgressFill"></div></div>' +
-    '<div class="exam-progress-step" id="examGenProgressStep"><span class="exam-progress-spin"></span>' + _examUiL("Preparing…", "准备出题…") + '</div></div>' +
-    '<div class="exam-loading-sub" id="examGenSubMsg">' + _examUiL("The AI is preparing your questions — this usually takes a few seconds.", "AI 正在为您出题，请稍候片刻") + '</div>' +
-    '</div>';
-  _examFooter().innerHTML = '<button class="exam-btn secondary" data-exam-command="cancel">' + _examUiL("Cancel", "取消") + '</button>';
-  /* Fire-and-forget on purpose: progress, failure and completion are all
-     painted from inside generateAllQuestions(). */
-  void generateAllQuestions(topic, count, difficulty, typeStr, instructions, lang);
-}
-
-function restoreExamActiveProvider() {
-  var prev = window.stateStore.read("_examPrevActiveId");
-  if (!prev) return;
-  var providerConfig = getProviderConfigSnapshot();
-  if (providerConfig.activeId === prev) return;
-  var prevProv = Array.isArray(providerConfig.providers) ? providerConfig.providers.find(function (p) { return p && p.id === prev }) : null;
-  if (prevProv) {
-    setActiveProviderLocal(prev);
-    try { window.syncModelPills&&window.syncModelPills(); } catch (e) { reportSwallow(e, 'exam.restoreExamActiveProvider.syncModelPills'); }
-    try { window.syncChatModel&&window.syncChatModel(); } catch (e) { reportSwallow(e, 'exam.restoreExamActiveProvider.syncChatModel'); }
-    /* Skip the PATCH for the built-in provider — its id isn't a UUID and the
-       server would 404. See startExamGeneration for the full rationale. */
-    if (!prevProv.isBuiltIn && prev !== "beagle-built-in") {
-      try { window.apiFetch("/api/api-key/" + encodeURIComponent(prev), { method: "PATCH", body: { isActive: true } }).catch(function (e) { reportSwallow(e, 'exam.restoreExamActiveProvider.deactivatePrevModel'); }) } catch (e) { reportSwallow(e, 'exam.restoreExamActiveProvider.deactivatePrevModel.guard'); }
-    }
-  }
-  stateStore.dispatch({type:'state/set',key:'_examPrevActiveId',value:null});
-}
-
-export function cancelExamGeneration() {
-  stateStore.dispatch({type:'state/set',key:'examCancel',value:true});
-  restoreExamActiveProvider();
-  var body = _examBody();
-  body.innerHTML = '<div class="exam-empty">' + (_examUiL("Generation cancelled", "已取消出题") + '.</div>');
-  _examFooter().innerHTML = '<button class="exam-btn primary" data-exam-command="form">' + _examUiL("Try again", "重新出题") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _examUiL("Close", "关闭") + '</button>';
-  _setExamTitle(_examUiL("Cancelled", "已取消"));
-}
-
-async function generateAllQuestions(topic, count, difficulty, typeStr, instructions, lang) {
-  var allowedTypes = typeStr.split(", ");
-  var questions = [];
-  var previousTexts = [];
-
-  function updateProgress(i, msg) {
-    var fill = document.getElementById("examGenProgressFill");
-    var stepEl = document.getElementById("examGenProgressStep");
-    var subEl = document.getElementById("examGenSubMsg");
-    var pct = count > 0 ? Math.round(92 * i / count) : 0;
-    if (fill) fill.style.width = pct + "%";
-    if (stepEl) stepEl.innerHTML = '<span class="exam-progress-spin"></span>' + msg;
-    if (subEl && i < count) {
-      subEl.textContent = _examUiIsZh()
-        ? "正在生成第 " + (i + 1) + " / " + count + " 题…"
-        : "Generating question " + (i + 1) + " of " + count + "…";
-    }
-  }
-
-  function failExam(errMsg, detail) {
-    restoreExamActiveProvider();
-    var bodyE = _examBody();
-    bodyE.innerHTML = '<div class="exam-empty"><strong>' + esc(errMsg) + '</strong>' + (detail ? '<div style="margin-top:10px;font-size:13px;color:hsl(var(--text-500));line-height:1.5">' + esc(detail) + '</div>' : '') + '</div>';
-    _examFooter().innerHTML = '<button class="exam-btn primary" data-exam-command="form">' + _examUiL("Try again", "重新出题") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _examUiL("Close", "关闭") + '</button>';
-  }
-
-  for (var i = 0; i < count; i++) {
-    if (window.stateStore.read("examCancel")) { restoreExamActiveProvider(); return; }
-    var qType = allowedTypes[i % allowedTypes.length] || "multiple-choice";
-    updateProgress(i, _examUiIsZh()
-      ? "正在生成第 " + (i + 1) + " 题…"
-      : "Generating question " + (i + 1) + "…");
-
-    var prevBlock = previousTexts.length
-      ? "Already generated:\n" + previousTexts.map(function (t, idx) { return (idx + 1) + ". " + t }).join("\n")
-      : "This is the first question.";
-
-    var prompt = "Generate ONE exam question as a JSON object.\n" +
-      "Topic: " + topic + ".\n" +
-      "Difficulty: " + difficulty + ".\n" +
-      "Question type: " + qType + ".\n" +
-      "Language: " + lang + ".\n" +
-      "This is question " + (i + 1) + " of " + count + ".\n" +
-      "CRITICAL: EVERY field (q, opts[*].text, answer, answers[*], explanation) MUST be written in " + lang + ".\n" +
-      "Return ONLY the JSON — no markdown, no preamble, no commentary.\n" +
-      "The question object must have: q (string), type (\"" + qType + "\").\n" +
-      "For multiple-choice add opts:[{letter,text}] (4 options A-D) and answer (correct letter).\n" +
-      "For fill-blank add answers:[string] (acceptable fills).\n" +
-      "For short-answer add answer (key facts).\n" +
-      "Always add explanation (string). Use Markdown + $LaTeX$ in q text.\n\n" +
-      (instructions ? "Specifics: " + instructions + "\n" : "") +
-      "Previously generated questions (DO NOT repeat the same topic angle):\n" + prevBlock;
-    var msgs = [{ role: "system", content: prompt }, { role: "user", content: "Generate question " + (i + 1) + " now." }];
-    /* Generate via the STREAMING path (same as the main chat), not the
-       non-streaming /api/minimax proxy. The built-in Beagle is a reasoning
-       model that regularly takes 2-4 minutes to think; a non-streaming call
-       leaves the CDN waiting with no bytes and it returns a 524 origin
-       timeout at ~100s. The streaming endpoint flushes SSE immediately
-       (SSE_PRIME) so the connection stays alive and deltas arrive as the
-       model produces them. We accumulate the full text and parse the JSON
-       once the stream completes.
-       Token budget follows the system config (window.MAX_TOKENS_CHAT,
-       normally undefined) so the backend/model default applies — no
-       hardcoded cap. */
-    var tokens = window.MAX_TOKENS_CHAT;
-    /* A thrown stream error (network drop, abort) is folded into the
-       "no response" branch below. The caller fires this function without
-       awaiting it, so an escaped rejection would leave the panel stuck on
-       the loading card and surface only as an unhandled rejection. */
-    var result = null;
-    var streamErr = null;
-    try {
-      result = await callAPIStream(msgs, tokens, function () { });
-    } catch (err) {
-      streamErr = err;
-    }
-    if (window.stateStore.read("examCancel")) return;
-    var text = typeof result === "string" ? result : (result && (result.text || result.content)) || "";
-    if (!text || !text.trim()) {
-      var errReason = (streamErr && streamErr.message) || window.stateStore.read("lastCallError") || _examUiL("no response", "模型无响应");
-      if (i === 0) {
-        failExam(_examUiL("Generation failed — no response", "生成失败：模型无响应"), errReason);
-        return;
-      }
-      updateProgress(i, _examUiL("Failed", "生成失败"));
-      await new Promise(function (r) { setTimeout(r, 300) });
-      continue;
-    }
-    var q = parseSingleExamQuestion(text);
-    if (!q) {
-      if (i === 0) {
-        failExam(_examUiL("Parse failed — unexpected format", "解析失败：模型返回格式异常"), _examUiL("Try again or switch model", "请重试或更换模型"));
-        return;
-      }
-      updateProgress(i, _examUiL("Parse failed", "解析失败"));
-      await new Promise(function (r) { setTimeout(r, 300) });
-      continue;
-    }
-    q._idx = questions.length;
-    questions.push(q);
-    previousTexts.push(q.q);
-  }
-  restoreExamActiveProvider();
-  if (window.stateStore.read("examCancel")) return;
-  questions.forEach(function (q) {
-    stateStore.dispatch({
-      type:'state/set',key:'examQuestions',
-      value:window.stateStore.read("examQuestions").concat([q])
-    });
-  });
-  if (window.stateStore.read("examQuestions").length === 0) {
-    failExam(_examUiL("Generation failed — no questions", "生成失败：没有成功生成任何题目"));
-    return;
-  }
-  renderAllQuestions();
-  finishExamGeneration();
-}
-
-export function renderAllQuestions() {
-  var body = _examBody();
-  if (!body) return;
-  body.innerHTML = '<div id="examQuestionsContainer"></div>';
-  var cont = document.getElementById("examQuestionsContainer");
-  if (!cont) return;
-  window.stateStore.read("examQuestions").forEach(function (q, idx) {
-    var ph = document.createElement("div");
-    ph.className = "exam-q-card";
-    ph.id = "examQ" + idx;
-    cont.appendChild(ph);
-    paintQuestionCard(idx, q, ph);
+  return runExamGeneration({
+    difficulty: _examDifficulty,
+    selectedTypes: Object.assign({}, _examSelectedTypes),
   });
 }
 
-export function paintQuestionCard(idx, q, container) {
-  var savedAnswer = (window.stateStore.read("examAnswers") || {})[idx];
-  var typeLabels = {
-    "multiple-choice": _examUiL("Multiple choice", "选择题"),
-    "fill-blank": _examUiL("Fill blank", "填空题"),
-    "short-answer": _examUiL("Short answer", "简答题"),
-    "error": _examUiL("Failed", "生成失败")
-  };
-  var html = '<div class="exam-q-num">' + _examUiL("Question", "题目") + ' ' + (idx + 1) + ' / ' + window.stateStore.read("examQuestions").length + ' <span class="exam-q-type">' + esc(typeLabels[q.type] || q.type) + '</span></div>';
-  html += '<div class="exam-q-text">' + formatMsg(q.q) + '</div>';
-  if (q.type === "multiple-choice" && q.opts) {
-    html += '<div class="exam-q-opts">';
-    q.opts.forEach(function (o, oi) {
-      html += '<button class="exam-q-opt' + (savedAnswer === oi ? ' selected' : '') + '" data-eidx="' + idx + '" data-oidx="' + oi + '" data-exam-command="answer-option">';
-      html += '<span class="exam-q-opt-letter">' + esc(o.letter) + '</span>';
-      html += '<span class="exam-q-opt-text">' + formatMsg(o.text) + '</span>';
-      html += '</button>';
-    });
-    html += '</div>';
-  } else if (q.type === "fill-blank") {
-    html += '<input class="exam-q-fill-input" data-eidx="' + idx + '" name="examAnswer' + idx + '" aria-label="' + _examUiL("Answer for question ", "第 ") + (idx + 1) + _examUiL("", " 题答案") + '" value="' + esc(savedAnswer == null ? "" : savedAnswer) + '" placeholder="' + _examUiL("Type your answer…", "输入你的答案…") + '">';
-  } else if (q.type === "short-answer") {
-    html += '<textarea class="exam-q-fill-input" data-eidx="' + idx + '" name="examAnswer' + idx + '" aria-label="' + _examUiL("Answer for question ", "第 ") + (idx + 1) + _examUiL("", " 题答案") + '" placeholder="' + _examUiL("Type your answer…", "输入你的答案…") + '" rows="3" style="min-height:80px;resize:vertical">' + esc(savedAnswer == null ? "" : savedAnswer) + '</textarea>';
-  }
-  container.innerHTML = html;
-}
-
-export function replaceStreamingCardWithQuestion(i, q) {
-  var ph = document.getElementById("examQ" + i);
-  if (!ph) return;
-  paintQuestionCard(q._idx, q, ph);
-  renderExamNav();
-}
-
-export function appendExamErrorCard(i, msg) {
-  var ph = document.createElement("div");
-  ph.className = "exam-q-card";
-  ph.id = "examQ" + i;
-  ph.innerHTML = '<div class="exam-q-num">' + _examUiL("Question", "题目") + ' ' + (i + 1) + ' — <span class="exam-result-wrong">' + _examUiL("Failed", "生成失败") + '</span></div><div class="exam-q-text" style="color:hsl(0 60% 55%)">' + esc(msg) + '</div>';
-  stateStore.dispatch({
-    type:'state/set',key:'examQuestions',
-    value:window.stateStore.read("examQuestions").concat([{ q:"[failed]",type:"error",explanation:"",_idx:i }])
-  });
-  var cont = document.getElementById("examQuestionsContainer");
-  if (cont) cont.appendChild(ph);
-  renderExamNav();
-}
-
-export function selectExamOpt(qidx, oidx) {
-  if (window.stateStore.read("examSubmitted")) return;
-  setExamAnswer(qidx,oidx);
-  var btns = document.querySelectorAll('.exam-q-opt[data-eidx="' + qidx + '"]');
-  btns.forEach(function (b, i) { b.classList.toggle("selected", i === oidx); });
-  renderExamNav();
-  saveExamSession();
-}
-
-export function finishExamGeneration() {
-  var st = document.getElementById("examGenStatus");
-  if (st) st.style.display = "none";
-  var valid = window.stateStore.read("examQuestions").filter(function (q) { return q.type !== "error"; });
-  var footer = _examFooter();
-  var _L = _examUiL;
-  if (window.stateStore.read("examCancel")) {
-    footer.innerHTML = '<button class="exam-btn primary" data-exam-command="form">' + _L("Start New Exam", "新考试") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _L("Close", "关闭") + '</button>';
-    renderExamNav();
-    return;
-  }
-  if (valid.length > 0) {
-    footer.innerHTML = '<button class="exam-btn primary" data-exam-command="submit">' + _L("Submit for Grading", "提交批改") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _L("Close", "关闭") + '</button>';
-  } else {
-    footer.innerHTML = '<button class="exam-btn primary" data-exam-command="form">' + _L("Try Again", "重新出题") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _L("Close", "关闭") + '</button>';
-  }
-  renderExamNav();
-  saveExamSession();
-}
-
-export function scheduleExamAnswerSave() {
-  if (_examAnswerSaveTimer) clearTimeout(_examAnswerSaveTimer);
-  _examAnswerSaveTimer = setTimeout(function () {
-    _examAnswerSaveTimer = null;
-    saveExamSession();
-  }, 800);
-}
-
-export function submitExam() {
-  var qs = window.stateStore.read("examQuestions");
-  var ans = window.stateStore.read("examAnswers");
-  var validQs = qs.filter(function (q) { return q.type !== "error"; });
-  if (!validQs.length) return;
-  var missing = [];
-  validQs.forEach(function (q, i) {
-    if (q.type === "multiple-choice" && ans[i] === undefined) missing.push(i + 1);
-    if ((q.type === "fill-blank" || q.type === "short-answer") && (!ans[i] || String(ans[i]).trim() === "")) missing.push(i + 1);
-  });
-  if (missing.length) {
-    var el = document.querySelector('.exam-q-card#examQ' + (missing[0] - 1));
-    if (el) el.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "center" });
-    return;
-  }
-  stateStore.dispatch({type:'state/set',key:'examSubmitted',value:true});
-  saveExamSession();
-  renderExamResults();
-}
-
-function saveExamSession() {
-  if (!window.CURRENT_USER) return;
-  if (!window.stateStore.read("examTopic")) return;
-  if (!window.stateStore.read("_examInView")) return;
-  if (window.stateStore.read("examReadOnly")) return;
-  if (_examSaveInFlight) {
-    _examSaveDirty = true;
-    return;
-  }
-  _examSaveDirty = false;
-  doSaveExamSession();
-}
-
-function doSaveExamSession() {
-  var body = {
-    kind: "exam",
-    topic: window.stateStore.read("examTopic"),
-    title: window.stateStore.read("examTopic"),
-    domain: window.stateStore.read("examTopic"),
-    /* P_exam-mode — previously hardcoded to "chat" regardless of
-       the active user mode. A tutor-mode session that branched into
-       an exam would save as "chat", and on reload loadSession would
-       see mode="chat" and set chat-style UI. Use window.appMode
-       (which setAppMode() keeps in sync) so the session preserves
-       its originating mode. */
-    mode: window.appMode || "chat",
-    phase: "chat",
-    examData: {
-      topic: window.stateStore.read("examTopic"),
-      difficulty: window.stateStore.read("examDifficulty") || "intermediate",
-      count: window.stateStore.read("examCount"),
-      lang: window.stateStore.read("examLang") || "English",
-      types: Array.isArray(window.stateStore.read("examTypes")) ? window.stateStore.read("examTypes") : [],
-      questions: window.stateStore.read("examQuestions").map(function (q) {
-        var c = { q: q.q, type: q.type, explanation: q.explanation || "" };
-        if (q.opts) c.opts = q.opts;
-        if (q.answer !== undefined) c.answer = q.answer;
-        if (q.answers) c.answers = q.answers;
-        return c;
-      }),
-      answers: window.stateStore.read("examAnswers") || {},
-      submitted: !!window.stateStore.read("examSubmitted"),
-      generatedAt: Date.now(),
-    },
-  };
-  if (window.stateStore.read("currentSessionId")) {
-    body.id = window.stateStore.read("currentSessionId");
-  }
-  _examSaveInFlight = window.apiFetch("/api/sessions", { method: "POST", body: body })
-    .then(function (r) {
-      if (r && r.id) {
-        stateStore.dispatch({type:'state/set',key:'currentSessionId',value:r.id});
-        try { pushExamIdToURL(r.id) } catch (e) { reportSwallow(e, 'exam.doSaveExamSession.pushExamId'); }
-      }
-      /* P_recents-amplify — flush(), not schedule(): a brand-new exam row has
-         to be in the sidebar the moment the save returns. */
-      return window.flushRecentsReconcile().then(function () {
-        try { window.renderRecents() } catch (e) { reportSwallow(e, 'exam.doSaveExamSession.renderRecents'); }
-        try { toggleShareBtn() } catch (e) { reportSwallow(e, 'exam.doSaveExamSession.toggleShareBtn'); }
-      });
-    })
-    .catch(function (e) {
-      console.warn("[exam] save failed:", e && e.message);
-    })
-    .then(function () {
-      _examSaveInFlight = null;
-      if (_examSaveDirty) {
-        _examSaveDirty = false;
-        doSaveExamSession();
-      }
-    });
-}
-
-/* Repaint dynamic exam chrome when the application language changes.
-   Generated question text remains in the language requested from the model,
-   while labels, controls, placeholders and results follow the UI language.
-   Form values and in-progress answers are preserved across the repaint. */
-export function refreshExamI18n() {
-  if (!window.stateStore.read("_examInView")) return;
+function refreshExamFormI18n() {
   var form = document.querySelector(".exam-form-container");
-  if (form) {
-    var snapshot = {
-      topic: (document.getElementById("examTopic") || {}).value || "",
-      instructions: (document.getElementById("examInstructions") || {}).value || "",
-      count: (document.getElementById("examCount") || {}).value || "5",
-      model: (document.getElementById("examModel") || {}).value || "",
-      difficulty: _examDifficulty,
-      types: Object.assign({}, _examSelectedTypes)
-    };
-    renderExamForm();
-    var topic = document.getElementById("examTopic");
-    var instructions = document.getElementById("examInstructions");
-    var count = document.getElementById("examCount");
-    var countDisplay = document.getElementById("examCountDisplay");
-    if (topic) topic.value = snapshot.topic;
-    if (instructions) instructions.value = snapshot.instructions;
-    if (count) count.value = snapshot.count;
-    if (countDisplay) countDisplay.textContent = snapshot.count;
-    _examDifficulty = snapshot.difficulty;
-    document.querySelectorAll("#examDifficultySeg .exam-seg-btn").forEach(function (btn) {
-      btn.classList.toggle("active", btn.getAttribute("data-diff") === snapshot.difficulty);
-    });
-    _examSelectedTypes = snapshot.types;
-    document.querySelectorAll("#examTypePicker .exam-form-toggle-card").forEach(function (btn) {
-      var active = !!snapshot.types[btn.getAttribute("data-type")];
-      btn.classList.toggle("active", active);
-      btn.setAttribute("aria-pressed", String(active));
-    });
-    if (snapshot.model) selectExamModel(snapshot.model);
-    return;
-  }
-  if (window.stateStore.read("examSubmitted")) {
-    renderExamResults();
-    return;
-  }
-  if (Array.isArray(window.stateStore.read("examQuestions")) && window.stateStore.read("examQuestions").length) {
-    renderAllQuestions();
-    renderExamNav();
-    var footer = _examFooter();
-    var valid = window.stateStore.read("examQuestions").some(function (q) { return q.type !== "error"; });
-    footer.innerHTML = valid
-      ? '<button class="exam-btn primary" data-exam-command="submit">' + _examUiL("Submit for Grading", "提交批改") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _examUiL("Close", "关闭") + '</button>'
-      : '<button class="exam-btn primary" data-exam-command="form">' + _examUiL("Try Again", "重新出题") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _examUiL("Close", "关闭") + '</button>';
-    return;
-  }
+  if (!form) return false;
+  var snapshot = {
+    topic: (document.getElementById("examTopic") || {}).value || "",
+    instructions: (document.getElementById("examInstructions") || {}).value || "",
+    count: (document.getElementById("examCount") || {}).value || "5",
+    model: (document.getElementById("examModel") || {}).value || "",
+    difficulty: _examDifficulty,
+    types: Object.assign({}, _examSelectedTypes)
+  };
+  renderExamForm();
+  var topic = document.getElementById("examTopic");
+  var instructions = document.getElementById("examInstructions");
+  var count = document.getElementById("examCount");
+  var countDisplay = document.getElementById("examCountDisplay");
+  if (topic) topic.value = snapshot.topic;
+  if (instructions) instructions.value = snapshot.instructions;
+  if (count) count.value = snapshot.count;
+  if (countDisplay) countDisplay.textContent = snapshot.count;
+  _examDifficulty = snapshot.difficulty;
+  document.querySelectorAll("#examDifficultySeg .exam-seg-btn").forEach(function (btn) {
+    btn.classList.toggle("active", btn.getAttribute("data-diff") === snapshot.difficulty);
+  });
+  _examSelectedTypes = snapshot.types;
+  document.querySelectorAll("#examTypePicker .exam-form-toggle-card").forEach(function (btn) {
+    var active = !!snapshot.types[btn.getAttribute("data-type")];
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-pressed", String(active));
+  });
+  if (snapshot.model) selectExamModel(snapshot.model);
+  return true;
+}
+
+function refreshExamQuestionsI18n() {
+  var questions = window.stateStore.read("examQuestions");
+  if (!Array.isArray(questions) || !questions.length) return false;
+  renderAllQuestions();
+  renderExamNav();
+  var footer = _examFooter();
+  if (!footer) return true;
+  var valid = questions.some(function (q) { return q.type !== "error"; });
+  footer.innerHTML = valid
+    ? '<button class="exam-btn primary" data-exam-command="submit">' + _examUiL("Submit for Grading", "提交批改") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _examUiL("Close", "关闭") + '</button>'
+    : '<button class="exam-btn primary" data-exam-command="form">' + _examUiL("Try Again", "重新出题") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _examUiL("Close", "关闭") + '</button>';
+  return true;
+}
+
+function refreshExamGenerationI18n() {
   var genMsg = document.getElementById("examGenMsg");
   var genStep = document.getElementById("examGenProgressStep");
   var genSub = document.getElementById("examGenSubMsg");
@@ -861,5 +443,16 @@ export function refreshExamI18n() {
   }
 }
 
-
-export { saveExamSession, doSaveExamSession };
+/* Repaint dynamic exam chrome when the application language changes.
+   Generated question text remains in the language requested from the model,
+   while labels, controls, placeholders and results follow the UI language. */
+export function refreshExamI18n() {
+  if (!window.stateStore.read("_examInView")) return;
+  if (refreshExamFormI18n()) return;
+  if (window.stateStore.read("examSubmitted")) {
+    renderExamResults();
+    return;
+  }
+  if (refreshExamQuestionsI18n()) return;
+  refreshExamGenerationI18n();
+}

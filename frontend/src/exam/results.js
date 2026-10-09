@@ -1,15 +1,6 @@
 import { esc } from '../render/helpers.js';
 import { formatMsg } from '../render/markdown.js';
-
-function _examBody() { return document.getElementById('examViewBody'); }
-function _examFooter() { return document.getElementById('examViewFooter'); }
-function _examUiL(en, zh) { return window._currentLang === 'zh' ? zh : en; }
-function _setExamTitle(title) {
-  const viewTitle = document.getElementById('examViewTitle');
-  const barTitle = document.getElementById('examTitleBar');
-  if (viewTitle) viewTitle.textContent = title;
-  if (barTitle) barTitle.textContent = title;
-}
+import { examBody as _examBody, examFooter as _examFooter, examUiL as _examUiL, setExamTitle as _setExamTitle } from './ui.js';
 
 function resultTypeLabel(type, translate) {
   const labels = {

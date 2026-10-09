@@ -1,7 +1,5 @@
 import { prefersReducedMotion } from '../ui/motion.js';
-
-function _examBody() { return document.getElementById('examViewBody'); }
-function _examUiL(en, zh) { return window._currentLang === 'zh' ? zh : en; }
+import { examBody as _examBody, examUiL as _examUiL } from './ui.js';
 
 export function renderExamNav() {
   if (!window.stateStore.read("_examInView")) return;
