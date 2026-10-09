@@ -8,114 +8,12 @@ import {
   getProjectCacheSnapshot,
   subscribeToProjectCache,
 } from '../../projects/projectCache.ts';
-import { t } from '../legacy/gateway.ts';
 import { onRecentsFilterChipClick, hydrateRecentsFilterState } from '../../sidebar/sidebar.service';
 import { useSidebarStore } from '../../sidebar/sidebar.store';
+import { RecentsFilterChip } from './RecentsFilterChip';
+import { buildChips } from './recentsFilterChips.model';
 
 const TARGET_ID = 'recentsFilterChips';
-
-interface ProjectChip {
-  kind: 'project';
-  id: string;
-  name: string;
-  value: string;
-}
-
-interface TagChip {
-  kind: 'tag';
-  value: string;
-  label: string;
-}
-
-interface AllChip {
-  kind: 'all';
-}
-
-type ChipDescriptor = (AllChip | ProjectChip | TagChip) & { active: boolean };
-
-function readTags(): string[] {
-  return getKnownTagsFromSessions(serverCache.sessions).slice(0, 8);
-}
-
-function buildChips(currentFilter: string | null, projects: ReadonlyArray<{ id: string; name: string }>): ChipDescriptor[] {
-  const chips: ChipDescriptor[] = [];
-  const activeAll = !currentFilter || currentFilter === 'all';
-  chips.push({ kind: 'all', active: activeAll });
-
-  projects.forEach((project) => {
-    const value = `project:${project.id}`;
-    chips.push({
-      kind: 'project',
-      id: project.id,
-      name: project.name,
-      value,
-      active: currentFilter === value,
-    });
-  });
-
-  const tags = readTags();
-  const tagSet = new Set(tags);
-  if (
-    currentFilter &&
-    currentFilter.indexOf('project:') !== 0 &&
-    !tagSet.has(currentFilter)
-  ) {
-    tags.push(currentFilter);
-  }
-  tags.forEach((tag) => {
-    chips.push({ kind: 'tag', value: tag, label: `#${tag}`, active: currentFilter === tag });
-  });
-
-  return chips;
-}
-
-function ChipButton({
-  chip,
-  onPick,
-}: {
-  chip: ChipDescriptor;
-  onPick: (value: string) => void;
-}) {
-  if (chip.kind === 'all') {
-    return (
-      <button
-        type="button"
-        className={`recents-filter-chip-btn${chip.active ? ' active' : ''}`}
-        data-filter="all"
-        aria-pressed={chip.active}
-        onClick={() => onPick('all')}
-      >
-        <span data-i18n-key="sidebar.all">{t('sidebar.all')}</span>
-      </button>
-    );
-  }
-  if (chip.kind === 'project') {
-    return (
-      <button
-        type="button"
-        className={`recents-filter-chip-btn${chip.active ? ' active' : ''}`}
-        data-filter={chip.value}
-        aria-pressed={chip.active}
-        aria-label={t('session.filterByTag').replace('{tag}', chip.name)}
-        onClick={() => onPick(chip.value)}
-      >
-        <span className="recents-filter-chip-icon">●</span>
-        {chip.name}
-      </button>
-    );
-  }
-  return (
-    <button
-      type="button"
-      className={`recents-filter-chip-btn${chip.active ? ' active' : ''}`}
-      data-filter={chip.value}
-      aria-pressed={chip.active}
-      onClick={() => onPick(chip.value)}
-    >
-      {chip.label}
-    </button>
-  );
-}
 
 function RecentsFilterChips() {
   const filter = useSidebarStore((state) => state.recentsFilter);
@@ -126,7 +24,8 @@ function RecentsFilterChips() {
     getProjectCacheSnapshot,
     getProjectCacheSnapshot,
   ) ?? [];
-  const chips = buildChips(filter, projects);
+  const tags = getKnownTagsFromSessions(serverCache.sessions);
+  const chips = buildChips(filter, projects, tags);
 
   const projectChips = chips.filter((c) => c.kind === 'project');
   const tagChips = chips.filter((c) => c.kind === 'tag');
@@ -134,12 +33,12 @@ function RecentsFilterChips() {
 
   return (
     <>
-      {allChip ? <ChipButton chip={allChip} onPick={pick} /> : null}
+      {allChip ? <RecentsFilterChip chip={allChip} onPick={pick} /> : null}
       {projectChips.length > 0 ? (
         <>
           <span className="recents-filter-chips-sep" />
           {projectChips.map((chip) => (
-            <ChipButton key={chip.value} chip={chip} onPick={pick} />
+            <RecentsFilterChip key={chip.value} chip={chip} onPick={pick} />
           ))}
         </>
       ) : null}
@@ -147,7 +46,7 @@ function RecentsFilterChips() {
         <>
           <span className="recents-filter-chips-sep" />
           {tagChips.map((chip) => (
-            <ChipButton key={chip.value} chip={chip} onPick={pick} />
+            <RecentsFilterChip key={chip.value} chip={chip} onPick={pick} />
           ))}
         </>
       ) : null}
