@@ -34,84 +34,29 @@
 
 import { apiFetch } from './util/api.js';
 import { reportSwallow } from './util/reportSwallow.ts';
+import { classifyAttachmentFile, docKindFromFile } from './attachments/fileTypes.js';
+import { compressImageFile, readFileAsDataUrl } from './attachments/imageCompression.js';
+import { createBuildMessageContent } from './attachments/messageContent.js';
+import {
+  ATTACHMENT_READY_TIMEOUT_MS,
+  MAX_FILE_BYTES,
+  MAX_IMAGE_BYTES,
+  MAX_IMAGE_DATAURL_CHARS,
+  MAX_IMAGE_SOURCE_BYTES_BEFORE_DATAURL,
+  MAX_TOTAL_ATTACHMENTS,
+  XHR_TIMEOUT_MS,
+} from './attachments/limits.js';
 
-/* Limits — kept as named constants so the UI can show "max 6" hints
- * and the renderer can refuse oversized inputs without re-checking. */
-export const MAX_FILE_BYTES = 25 * 1024 * 1024;   // 25 MB / file (server cap)
-export const MAX_IMAGE_BYTES = 4 * 1024 * 1024;   // 4 MB / image for INLINE dataUrl
-export const MAX_TOTAL_ATTACHMENTS = 6;
-/* How long a send waits for in-flight uploads before giving up and
-   marking the attachment incomplete. Must match XHR_TIMEOUT_MS below:
-   aborting at 120s while XHR allows 300s would kill a healthy 25 MB
-   upload on a slow link just before it lands. */
-export const XHR_TIMEOUT_MS = 300_000; // 5 min — 25 MB on a slow link
-export const ATTACHMENT_READY_TIMEOUT_MS = XHR_TIMEOUT_MS;
-/* P_image-payload-alignment — the server caps every image payload at
-   2,000,000 dataUrl chars (chat image_url Zod schema + persisted
-   attachment schema). Anything above that is rejected with a 400/413
-   the user perceives as "no response after uploading an image".
-   Images whose dataUrl exceeds this target are re-encoded through a
-   canvas (downscale + quality steps) until they fit. */
-export const MAX_IMAGE_DATAURL_CHARS = 1_900_000; // safety margin under 2,000,000
-/* A base64 data URL expands the source by roughly 4/3. Keep images below
-   this conservative source-size threshold on the cheap FileReader path;
-   larger images go straight from File/Blob to the image decoder so we do
-   not allocate a large source data URL only to decode it again. */
-export const MAX_IMAGE_SOURCE_BYTES_BEFORE_DATAURL = Math.floor(
-  (MAX_IMAGE_DATAURL_CHARS - 64) * 3 / 4,
-);
-
-const ACCEPTED_IMAGE_MIMES = new Set([
-  'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/avif',
-]);
-/* Office / document formats — persisted via POST /api/v2/files and read
-   back by the model through read_attachment (mammoth / SheetJS /
-   PPTX / epub / rtf2text / pdf-parse on the server). */
-const ACCEPTED_DOC_MIMES = new Set([
-  'application/pdf',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'application/msword', 'application/vnd.ms-excel', 'application/vnd.ms-powerpoint',
-  'application/epub+zip',
-  'application/rtf', 'text/rtf',
-  'application/vnd.oasis.opendocument.text',
-  'application/vnd.oasis.opendocument.spreadsheet',
-  'application/vnd.oasis.opendocument.presentation',
-]);
-const ACCEPTED_MEDIA_MIMES = new Set([
-  'video/mp4', 'video/webm', 'video/quicktime',
-  'audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/webm', 'audio/ogg',
-  'audio/mp4', 'audio/x-m4a', 'audio/aac', 'audio/flac',
-]);
-/* application/* types that are really plain text — kept in sync with
-   server/src/services/attachmentReader.ts. */
-const TEXTUAL_APPLICATION_MIMES = new Set([
-  'application/json', 'application/xml', 'application/javascript',
-  'application/x-javascript', 'application/typescript', 'application/x-typescript',
-  'application/yaml', 'application/x-yaml', 'application/x-sh',
-  'application/sql', 'application/graphql', 'application/x-httpd-php',
-  'application/toml', 'application/ld+json', 'application/x-ndjson', 'application/jsonl',
-]);
-/* Extension fallbacks for files the browser labels as
-   application/octet-stream (code files on Windows, drag-and-drop with
-   no mime sniffing). Mirrors the server-side sets. */
-const TEXT_FILE_EXTENSIONS = new Set([
-  '.txt', '.md', '.markdown', '.csv', '.tsv', '.log', '.json', '.jsonl', '.ndjson',
-  '.xml', '.yaml', '.yml', '.toml', '.ini', '.cfg', '.conf', '.env', '.tex', '.bib',
-  '.py', '.pyw', '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.java', '.c', '.h',
-  '.cpp', '.cc', '.cxx', '.hpp', '.hh', '.cs', '.go', '.rs', '.rb', '.php', '.swift',
-  '.kt', '.kts', '.m', '.mm', '.scala', '.sh', '.bash', '.zsh', '.fish', '.pl', '.pm',
-  '.lua', '.r', '.jl', '.sql', '.css', '.scss', '.less', '.vue', '.svelte', '.dart',
-  '.ex', '.exs', '.erl', '.hrl', '.clj', '.cljs', '.hs', '.ml', '.fs', '.vb', '.ps1',
-  '.bat', '.cmd', '.ipynb', '.diff', '.patch', '.gitignore', '.dockerignore', '.proto',
-]);
-const DOC_FILE_EXTENSIONS = new Set(['.pdf', '.docx', '.xlsx', '.pptx', '.epub', '.rtf', '.odt', '.ods', '.odp']);
-/* .doc/.xls now parse server-side (word-extractor / SheetJS) so they
-   classify as documents; only .ppt stays metadata-only ('file'). */
-const READABLE_LEGACY_EXTENSIONS = new Set(['.doc', '.xls']);
-const LEGACY_OFFICE_EXTENSIONS = new Set(['.doc', '.xls', '.ppt']);
-const MEDIA_FILE_EXTENSIONS = new Set(['.mp4', '.webm', '.mov', '.mp3', '.wav', '.m4a', '.ogg', '.flac', '.aac']);
+export {
+  ATTACHMENT_READY_TIMEOUT_MS,
+  MAX_FILE_BYTES,
+  MAX_IMAGE_BYTES,
+  MAX_IMAGE_DATAURL_CHARS,
+  MAX_IMAGE_SOURCE_BYTES_BEFORE_DATAURL,
+  MAX_TOTAL_ATTACHMENTS,
+  XHR_TIMEOUT_MS,
+} from './attachments/limits.js';
+export { attachmentPointerLine, formatAttachmentSize } from './attachments/messageContent.js';
 
 /* Pending attachments for the current turn. The store is
  * deliberately not React-ish / observable — main.js calls
@@ -160,22 +105,6 @@ function currentSessionId() {
   return '';
 }
 
-export function formatAttachmentSize(bytes) {
-  const n = Number(bytes) || 0;
-  if (n >= 1024 * 1024) return (n / (1024 * 1024)).toFixed(1) + ' MB';
-  if (n >= 1024) return Math.round(n / 1024) + ' KB';
-  return n + ' B';
-}
-
-/** The model-facing pointer line one attached file contributes to the
- * user message content. The routing hint + tool schema on the server
- * teach the model to call read_attachment with this fileId. */
-export function attachmentPointerLine(a) {
-  const name = String((a && a.name) || 'file');
-  const mime = String((a && a.mime) || 'application/octet-stream');
-  return `[Attached file: "${name}" (${mime}, ${formatAttachmentSize(a && a.size)}) — fileId: ${a.fileId}. Call read_attachment with this fileId to read its contents.]`;
-}
-
 /** Clear the pending attachments list. Called after submit + on cancel. */
 export function resetAttachments() {
   /* Revoke blob URLs before clearing so the browser can GC the
@@ -220,187 +149,6 @@ export function waitForAttachmentsReady(list, timeoutMs) {
   ]).finally(() => { if (timer) clearTimeout(timer); });
 }
 
-/**
- * Read a File into a base64 dataUrl via FileReader.
- * Calls onProgress(percent) as the read progresses.
- * Returns { dataUrl, size }.
- */
-function readFileAsDataUrl(file, onProgress) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(reader.error || new Error('FileReader failed'));
-    reader.onload = () => resolve({ dataUrl: String(reader.result || ''), size: file.size });
-    if (typeof onProgress === 'function') {
-      reader.onprogress = (e) => {
-        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
-      };
-    }
-    reader.readAsDataURL(file);
-  });
-}
-
-/**
- * P_image-payload-alignment — re-encode an oversized image through a
- * canvas until its dataUrl fits MAX_IMAGE_DATAURL_CHARS. The source is a
- * File/Blob, not a pre-built data URL, so large images do not pay for a
- * full base64 allocation followed by fetch(dataUrl) and a second decode.
- * Walks a downscale ladder (longest edge) and, per size, a quality ladder;
- * tries WebP first and falls back to JPEG when the browser encodes WebP as
- * PNG (Safari < 14 returns a PNG dataUrl from toDataURL). Transparency is
- * flattened onto white because JPEG has no alpha. Non-DOM environments
- * reject the oversized source with a clear message instead of silently
- * sending an oversized payload. Animated GIFs are flattened to their first
- * frame — a static image the model can see beats a 400 the user can't.
- *
- * P_perf-offscreen — uses createImageBitmap + OffscreenCanvas when
- * available so the decode and encode both run off the main thread.
- * Falls back to the legacy Image() + canvas approach otherwise.
- */
-async function compressImageFile(file, onProgress) {
-  if (!file) return null;
-  const hasOffscreen = typeof OffscreenCanvas !== 'undefined';
-  const hasCreateImageBitmap = typeof createImageBitmap === 'function';
-  if (hasOffscreen && hasCreateImageBitmap) {
-    const offscreen = await compressWithOffscreenCanvas(file, onProgress);
-    if (offscreen) return offscreen;
-  }
-  return compressWithLegacyCanvas(file, onProgress);
-}
-
-/* Pixel-bomb guard — a few-MB PNG can decode to 10000×10000+.
-   Capping decoded pixels keeps the tab alive; the file reference
-   upload still lets the model read it via read_attachment. */
-const MAX_IMAGE_PIXELS = 36_000_000; // ~6000×6000
-
-/** OffscreenCanvas path — decode + encode away from the main thread. */
-async function compressWithOffscreenCanvas(file, onProgress) {
-  let bitmap;
-  try {
-    bitmap = await createImageBitmap(file);
-  } catch (_) {
-    return null;
-  }
-  const srcW = bitmap.width;
-  const srcH = bitmap.height;
-  if (!srcW || !srcH) { bitmap.close(); return null; }
-  if (srcW * srcH > MAX_IMAGE_PIXELS) { bitmap.close(); return null; }
-  try {
-    const EDGE_STEPS = [2048, 1600, 1280, 1024, 800];
-    const QUALITY_STEPS = [0.85, 0.75, 0.6, 0.45];
-    for (let edgeIndex = 0; edgeIndex < EDGE_STEPS.length; edgeIndex++) {
-      const edge = EDGE_STEPS[edgeIndex];
-      const scale = Math.min(1, edge / Math.max(srcW, srcH));
-      const w = Math.max(1, Math.round(srcW * scale));
-      const h = Math.max(1, Math.round(srcH * scale));
-      const canvas = new OffscreenCanvas(w, h);
-      const ctx = canvas.getContext('2d');
-      if (!ctx) continue;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, w, h);
-      ctx.drawImage(bitmap, 0, 0, w, h);
-      for (let qualityIndex = 0; qualityIndex < QUALITY_STEPS.length; qualityIndex++) {
-        const q = QUALITY_STEPS[qualityIndex];
-        try {
-          const blob = await canvas.convertToBlob({ type: 'image/webp', quality: q });
-          const out = await blobToDataUrl(blob, onProgress);
-          if (out && out.length <= MAX_IMAGE_DATAURL_CHARS) return out;
-        } catch (e) { reportSwallow(e, 'attachments.compressWithOffscreenCanvas.qualityStep'); /* try next quality */ }
-        if (typeof onProgress === 'function') {
-          const completed = edgeIndex * QUALITY_STEPS.length + qualityIndex + 1;
-          onProgress(Math.min(90, 20 + Math.round(completed * 70 / (EDGE_STEPS.length * QUALITY_STEPS.length))));
-        }
-      }
-    }
-    return null;
-  } finally {
-    bitmap.close();
-  }
-}
-
-/** Legacy canvas fallback — the encode itself is synchronous on the main thread. */
-async function compressWithLegacyCanvas(file, onProgress) {
-  if (typeof document === 'undefined' || typeof Image === 'undefined'
-      || typeof document.createElement !== 'function') {
-    return null;
-  }
-  let sourceUrl = '';
-  let img;
-  try {
-    if (typeof URL === 'undefined' || typeof URL.createObjectURL !== 'function') return null;
-    sourceUrl = URL.createObjectURL(file);
-    img = await new Promise((resolve, reject) => {
-      const el = new Image();
-      el.onload = () => resolve(el);
-      el.onerror = () => reject(new Error('image decode failed'));
-      el.src = sourceUrl;
-    });
-  } catch (_) {
-    if (sourceUrl) {
-      try { URL.revokeObjectURL(sourceUrl); } catch (e) { reportSwallow(e, 'attachments.compressWithLegacyCanvas.revokeSourceUrl'); /* noop */ }
-    }
-    return null;
-  }
-  const srcW = img.naturalWidth || img.width || 0;
-  const srcH = img.naturalHeight || img.height || 0;
-  if (!srcW || !srcH || srcW * srcH > MAX_IMAGE_PIXELS) {
-    if (sourceUrl) {
-      try { URL.revokeObjectURL(sourceUrl); } catch (e) { reportSwallow(e, 'attachments.compressWithLegacyCanvas.revokeSourceUrl'); /* noop */ }
-    }
-    return null;
-  }
-  try {
-    const EDGE_STEPS = [2048, 1600, 1280, 1024, 800];
-    const QUALITY_STEPS = [0.85, 0.75, 0.6, 0.45];
-    for (let edgeIndex = 0; edgeIndex < EDGE_STEPS.length; edgeIndex++) {
-      const edge = EDGE_STEPS[edgeIndex];
-      const scale = Math.min(1, edge / Math.max(srcW, srcH));
-      const w = Math.max(1, Math.round(srcW * scale));
-      const h = Math.max(1, Math.round(srcH * scale));
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext && canvas.getContext('2d');
-      if (!ctx) return null;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, w, h);
-      ctx.drawImage(img, 0, 0, w, h);
-      for (let qualityIndex = 0; qualityIndex < QUALITY_STEPS.length; qualityIndex++) {
-        const q = QUALITY_STEPS[qualityIndex];
-        let out = '';
-        try { out = canvas.toDataURL('image/webp', q); } catch (_) { out = ''; }
-        if (!out.startsWith('data:image/webp')) {
-          try { out = canvas.toDataURL('image/jpeg', q); } catch (_) { out = ''; }
-        }
-        if (out && out.length <= MAX_IMAGE_DATAURL_CHARS) return out;
-        if (typeof onProgress === 'function') {
-          const completed = edgeIndex * QUALITY_STEPS.length + qualityIndex + 1;
-          onProgress(Math.min(90, 20 + Math.round(completed * 70 / (EDGE_STEPS.length * QUALITY_STEPS.length))));
-        }
-      }
-    }
-    return null;
-  } finally {
-    if (sourceUrl) {
-      try { URL.revokeObjectURL(sourceUrl); } catch (e) { reportSwallow(e, 'attachments.compressWithLegacyCanvas.revokeSourceUrl'); /* noop */ }
-    }
-  }
-}
-
-/** Convert a Blob to a base64 dataUrl string. */
-function blobToDataUrl(blob, onProgress) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ''));
-    reader.onerror = () => reject(reader.error || new Error('blobToDataUrl failed'));
-    if (typeof onProgress === 'function') {
-      reader.onprogress = (e) => {
-        if (e.lengthComputable) onProgress(Math.min(99, 90 + Math.round((e.loaded / e.total) * 9)));
-      };
-    }
-    reader.readAsDataURL(blob);
-  });
-}
-
 /** Generate a short id for chip keying. */
 function shortId() {
   // crypto.randomUUID exists in evergreen browsers + Node 19+;
@@ -411,69 +159,6 @@ function shortId() {
     }
   } catch (e) { reportSwallow(e, 'attachments.shortId.cryptoRandomUUID'); /* fall through */ }
   return 'att-' + Math.random().toString(36).slice(2, 10);
-}
-
-function extOf(name) {
-  const n = String(name || '').toLowerCase();
-  const i = n.lastIndexOf('.');
-  return i >= 0 ? n.slice(i) : '';
-}
-
-function isTextLikeMime(mime) {
-  if (mime.startsWith('text/')) {
-    /* HTML/XHTML are XSS-rejected at upload; RTF is a document. */
-    return mime !== 'text/html' && mime !== 'text/xhtml' && mime !== 'text/rtf' && mime !== 'image/svg+xml';
-  }
-  return TEXTUAL_APPLICATION_MIMES.has(mime);
-}
-
-/** Decide whether `file` should be classified as image/text/document/file.
- * Unknown or unsafe MIMEs return null — the caller skips them with a toast. */
-function classify(file) {
-  if (!file) return null;
-  const m = String(file.type || '').toLowerCase();
-  /* Active-content types are rejected by the upload endpoint too — deny
-     early so the toast matches what the server would say. */
-  if (m === 'text/html' || m === 'application/xhtml+xml' || m === 'image/svg+xml') return null;
-  if (ACCEPTED_IMAGE_MIMES.has(m)) return 'image';
-  if (ACCEPTED_DOC_MIMES.has(m)) return 'document';
-  if (isTextLikeMime(m)) return 'text';
-  if (ACCEPTED_MEDIA_MIMES.has(m)) return 'file';
-  /* Fallback: classify by extension when the browser couldn't determine
-     the MIME (common with drag-and-drop on Windows / some download
-     managers — they arrive as application/octet-stream or ''). */
-  const ext = extOf(file.name);
-  if (TEXT_FILE_EXTENSIONS.has(ext)) return 'text';
-  if (DOC_FILE_EXTENSIONS.has(ext)) return 'document';
-  if (READABLE_LEGACY_EXTENSIONS.has(ext)) return 'document';
-  if (MEDIA_FILE_EXTENSIONS.has(ext) || LEGACY_OFFICE_EXTENSIONS.has(ext)) return 'file';
-  return null;
-}
-
-/** Map a classified document to the kind label used in the chip + parts. */
-function docKindFromFile(file) {
-  const m = String((file && file.type) || '').toLowerCase();
-  if (m === 'application/pdf') return 'pdf';
-  if (m === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return 'docx';
-  if (m === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') return 'xlsx';
-  if (m === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') return 'pptx';
-  if (m === 'application/msword') return 'doc';
-  if (m === 'application/vnd.ms-excel') return 'xls';
-  if (m === 'application/vnd.ms-powerpoint') return 'ppt';
-  if (m === 'application/epub+zip') return 'epub';
-  if (m === 'application/rtf' || m === 'text/rtf') return 'rtf';
-  if (m === 'application/msword') return 'doc';
-  if (m === 'application/vnd.ms-excel') return 'xls';
-  if (m === 'application/vnd.ms-powerpoint') return 'ppt';
-  if (m === 'application/vnd.oasis.opendocument.text') return 'odt';
-  if (m === 'application/vnd.oasis.opendocument.spreadsheet') return 'ods';
-  if (m === 'application/vnd.oasis.opendocument.presentation') return 'odp';
-  /* Extension fallback. */
-  const name = String((file && file.name) || '').toLowerCase();
-  for (const k of ['pdf', 'docx', 'xlsx', 'pptx', 'doc', 'xls', 'ppt', 'epub', 'rtf', 'odt', 'ods', 'odp']) {
-    if (name.endsWith('.' + k)) return k;
-  }
-  return 'document';
 }
 
 /**
@@ -541,84 +226,84 @@ function uploadAttachmentFile(file, onProgress, onXhr) {
  * is usable (fileId OR a readable inline image) or { error } when the
  * model would get nothing from it.
  */
+function waitForAttachmentPaint() {
+  return new Promise((resolve) => {
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(resolve);
+    else setTimeout(resolve, 0);
+  });
+}
+
+function abortHandleForXhr(entry, xhr) {
+  entry._abort = () => {
+    try { xhr.abort(); }
+    catch (error) { reportSwallow(error, 'attachments.prepareAttachment.xhrAbort'); }
+  };
+}
+
+async function loadInlineImageData(file, reportProgress) {
+  const progress = (percent) => reportProgress(70 + Math.round(percent * 0.3));
+  try {
+    if (file.size > MAX_IMAGE_SOURCE_BYTES_BEFORE_DATAURL) {
+      return await compressImageFile(file, progress);
+    }
+    const read = await readFileAsDataUrl(file, progress);
+    return read.dataUrl;
+  } catch (_) {
+    return '';
+  }
+}
+
+async function prepareInlineImage(entry, file, reportProgress) {
+  const dataUrl = await loadInlineImageData(file, reportProgress);
+  if (!dataUrl || dataUrl.length > MAX_IMAGE_DATAURL_CHARS) return;
+  entry.dataUrl = dataUrl;
+  const match = /^data:([^;,]+)/.exec(dataUrl);
+  if (match) entry.mime = match[1];
+  /* Approximate decoded byte size from the base64 body. */
+  entry.size = Math.round((dataUrl.length - (dataUrl.indexOf(',') + 1)) * 3 / 4);
+}
+
+function finalizeAttachment(entry, uploadOutcome) {
+  entry.pending = false;
+  entry.progress = 100;
+  const usable = !!(uploadOutcome && uploadOutcome.fileId) || !!entry.dataUrl;
+  /* Keep failed-upload thumbnails so the error chip still shows the file. */
+  if (usable && entry.thumbnailUrl) {
+    try { URL.revokeObjectURL(entry.thumbnailUrl); }
+    catch (error) { reportSwallow(error, 'attachments.prepareAttachment.revokeThumbnail'); }
+    entry.thumbnailUrl = undefined;
+  }
+  if (uploadOutcome && uploadOutcome.fileId) {
+    entry.fileId = uploadOutcome.fileId;
+    if (uploadOutcome.mimeType) entry.mime = uploadOutcome.mimeType;
+    return { ok: true };
+  }
+  if (entry.dataUrl) return { ok: true };
+  return { ok: false, error: (uploadOutcome && uploadOutcome.error) || 'Upload failed' };
+}
+
 async function prepareAttachment(entry, file, reportProgress) {
   const wantsInlineImage = entry.kind === 'image'
     && activeProviderSupportsImages()
     && file.size <= MAX_IMAGE_BYTES;
   try {
-    /* Let the pending chip paint before encode/decode work starts. */
-    await new Promise((resolve) => {
-      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(resolve);
-      else setTimeout(resolve, 0);
-    });
-
+    await waitForAttachmentPaint();
     let uploadOutcome = null;
-    const jobs = [];
-    jobs.push(uploadAttachmentFile(file, function (pct) {
-      reportProgress(wantsInlineImage ? Math.min(70, Math.round(pct * 0.7)) : pct);
-    }, function (xhr) {
-      /* Live abort handle — removeAttachment cancels a still-running
-         transfer so an unwanted chip does not finish writing a files
-         row nobody references. */
-      entry._abort = function () { try { xhr.abort(); } catch (e) { reportSwallow(e, 'attachments.prepareAttachment.xhrAbort'); /* noop */ } };
-    }).then(function (outcome) { uploadOutcome = outcome; }));
-
+    const uploadJob = uploadAttachmentFile(
+      file,
+      (percent) => reportProgress(wantsInlineImage ? Math.min(70, Math.round(percent * 0.7)) : percent),
+      (xhr) => abortHandleForXhr(entry, xhr),
+    ).then((outcome) => { uploadOutcome = outcome; });
+    const jobs = [uploadJob];
     if (entry.kind === 'image' && wantsInlineImage) {
-      jobs.push((async function () {
-        let dataUrl = '';
-        try {
-          if (file.size > MAX_IMAGE_SOURCE_BYTES_BEFORE_DATAURL) {
-            dataUrl = await compressImageFile(file, function (pct) {
-              reportProgress(70 + Math.round(pct * 0.3));
-            });
-          } else {
-            const read = await readFileAsDataUrl(file, function (pct) {
-              reportProgress(70 + Math.round(pct * 0.3));
-            });
-            dataUrl = read.dataUrl;
-          }
-        } catch (_) { dataUrl = ''; }
-        if (dataUrl && dataUrl.length <= MAX_IMAGE_DATAURL_CHARS) {
-          entry.dataUrl = dataUrl;
-          const m = /^data:([^;,]+)/.exec(dataUrl);
-          if (m) entry.mime = m[1];
-          /* Approximate decoded byte size from the base64 body. */
-          entry.size = Math.round((dataUrl.length - (dataUrl.indexOf(',') + 1)) * 3 / 4);
-        }
-      })());
+      jobs.push(prepareInlineImage(entry, file, reportProgress));
     }
-
     await Promise.all(jobs);
-
+    return finalizeAttachment(entry, uploadOutcome);
+  } catch (error) {
     entry.pending = false;
     entry.progress = 100;
-
-    const usable = !!(uploadOutcome && uploadOutcome.fileId) || !!entry.dataUrl;
-    /* Keep the blob thumbnail while the entry is unusable (weak-net
-       abort / timeout with no fileId and no dataUrl): it is the only
-       image source the error chip has, so revoking it here would drop
-       the photo to a generic kind icon. Usable entries render from
-       /api/files/:id/raw or dataUrl, so the blob can be freed.
-       Lifetime of a kept thumbnail still ends at remove/reset/retry. */
-    if (usable && entry.thumbnailUrl) {
-      try { URL.revokeObjectURL(entry.thumbnailUrl); } catch (e) { reportSwallow(e, 'attachments.prepareAttachment.revokeThumbnail'); /* noop */ }
-      entry.thumbnailUrl = undefined;
-    }
-
-    if (uploadOutcome && uploadOutcome.fileId) {
-      entry.fileId = uploadOutcome.fileId;
-      if (uploadOutcome.mimeType) entry.mime = uploadOutcome.mimeType;
-      return { ok: true };
-    }
-    /* Upload failed but a multimodal image still has its inline dataUrl:
-       the model sees the image this turn; the attachment just won't be
-       re-readable from storage after reload. */
-    if (entry.dataUrl) return { ok: true };
-    return { ok: false, error: (uploadOutcome && uploadOutcome.error) || 'Upload failed' };
-  } catch (err) {
-    entry.pending = false;
-    entry.progress = 100;
-    return { ok: false, error: (err && err.message) || 'read failed' };
+    return { ok: false, error: (error && error.message) || 'read failed' };
   }
 }
 
@@ -650,99 +335,103 @@ async function prepareAttachment(entry, file, reportProgress) {
  *   upload (the promise only resolves after every job settles).
  * @returns {Promise<{added:number, rejected:string[]}>}
  */
-export async function addFiles(fileList, onUpdate, onProgress, onRejected) {
-  const files = Array.from(fileList || []);
-  const result = { added: 0, rejected: [] };
-  function reject(msg) {
-    result.rejected.push(msg);
-    if (onRejected) {
-      try { onRejected(msg); } catch (e) { reportSwallow(e, 'attachments.reject.onRejected'); /* toast is best-effort */ }
-    }
-  }
-  /* U/perf — coalesce per-tick progress into one repaint per animation
-     frame. Upload progress events fire far faster than the browser can
-     usefully re-render every chip; rAF (setTimeout fallback in non-DOM
-     envs) de-bounces those into at most one callback per frame. Final
-     states still call onUpdate() directly below, so the terminal chip
-     is always accurate and the public API is unchanged. */
-  let _progressRaf = 0;
-  const _rafFn = (typeof requestAnimationFrame === 'function')
-    ? requestAnimationFrame : function (cb) { return setTimeout(cb, 16); };
-  function notifyProgress() {
-    if (_progressRaf) return;
-    _progressRaf = _rafFn(function () {
-      _progressRaf = 0;
+function createRejectReporter(result, onRejected) {
+  return (message) => {
+    result.rejected.push(message);
+    if (!onRejected) return;
+    try { onRejected(message); }
+    catch (error) { reportSwallow(error, 'attachments.reject.onRejected'); }
+  };
+}
+
+function createProgressNotifier(onUpdate, onProgress) {
+  /* Coalesce frequent upload progress events into at most one render per frame. */
+  let pendingFrame = 0;
+  const scheduleFrame = typeof requestAnimationFrame === 'function'
+    ? requestAnimationFrame
+    : (callback) => setTimeout(callback, 16);
+  return () => {
+    if (pendingFrame) return;
+    pendingFrame = scheduleFrame(() => {
+      pendingFrame = 0;
       if (onProgress) onProgress();
       else if (onUpdate) onUpdate();
     });
+  };
+}
+
+function inspectFile(file, reject) {
+  if (attachments.length >= MAX_TOTAL_ATTACHMENTS) {
+    reject(`${file.name || 'file'}: ${_t('chat.attach.maxReached', `max ${MAX_TOTAL_ATTACHMENTS} attachments per turn`)}`);
+    return null;
   }
+  const signature = `${file.name || ''}|${file.size}`;
+  if (attachments.some((attachment) => attachment && attachment._sig === signature)) {
+    reject(`${file.name || 'file'}: ${_t('chat.attach.duplicate', 'already attached')}`);
+    return null;
+  }
+  const kind = classifyAttachmentFile(file);
+  if (!kind) {
+    reject(`${file.name || 'file'}: ${_t('chat.attach.unsupported', 'unsupported file type')}`);
+    return null;
+  }
+  if (file.size > MAX_FILE_BYTES) {
+    reject(`${file.name}: ${_t('chat.attach.fileTooLarge', `file exceeds ${MAX_FILE_BYTES / 1024 / 1024} MB limit`)}`);
+    return null;
+  }
+  return { kind, signature };
+}
+
+function createPendingEntry(file, { kind, signature }) {
+  const entry = {
+    id: shortId(), kind, pending: true, progress: 0,
+    name: file.name || 'file',
+    mime: file.type || 'application/octet-stream',
+    size: file.size,
+    /* Private fields support dedupe, retry, abort, and send-time ownership. */
+    _sig: signature,
+    _file: file,
+  };
+  if (kind === 'document') entry.docKind = docKindFromFile(file);
+  if (kind === 'image'
+      && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+    try { entry.thumbnailUrl = URL.createObjectURL(file); }
+    catch (error) { reportSwallow(error, 'attachments.addFiles.createThumbnail'); }
+  }
+  return entry;
+}
+
+function trackAttachmentJob(entry, file, result, notifyProgress, onUpdate, reject) {
+  const onFileProgress = (percent) => {
+    entry.progress = percent;
+    notifyProgress();
+  };
+  const job = prepareAttachment(entry, file, onFileProgress).then((outcome) => {
+    if (outcome && outcome.error) {
+      entry.error = outcome.error;
+      /* A removed chip is deliberate cancellation, not a user rejection. */
+      if (attachments.includes(entry)) reject(`${file.name}: ${outcome.error}`);
+    } else {
+      result.added += 1;
+    }
+    if (onUpdate) onUpdate();
+  });
+  READY_PROMISES.set(entry.id, job.finally(() => { READY_PROMISES.delete(entry.id); }));
+  return job;
+}
+
+export async function addFiles(fileList, onUpdate, onProgress, onRejected) {
+  const result = { added: 0, rejected: [] };
+  const reject = createRejectReporter(result, onRejected);
+  const notifyProgress = createProgressNotifier(onUpdate, onProgress);
   const jobs = [];
-  for (const file of files) {
-    if (attachments.length >= MAX_TOTAL_ATTACHMENTS) {
-      reject(`${file.name || 'file'}: ${_t('chat.attach.maxReached', `max ${MAX_TOTAL_ATTACHMENTS} attachments per turn`)}`);
-      continue;
-    }
-    /* Dedup — re-picking or re-dropping the same file would otherwise
-       queue a second chip and a second files row for identical bytes.
-       Keyed on name+size only: lastModified varies between picker
-       invocations for the same file in some environments. */
-    const sig = `${file.name || ''}|${file.size}`;
-    if (attachments.some((a) => a && a._sig === sig)) {
-      reject(`${file.name || 'file'}: ${_t('chat.attach.duplicate', 'already attached')}`);
-      continue;
-    }
-    const kind = classify(file);
-    if (!kind) {
-      reject(`${file.name || 'file'}: ${_t('chat.attach.unsupported', 'unsupported file type')}`);
-      continue;
-    }
-    if (file.size > MAX_FILE_BYTES) {
-      reject(`${file.name}: ${_t('chat.attach.fileTooLarge', `file exceeds ${MAX_FILE_BYTES / 1024 / 1024} MB limit`)}`);
-      continue;
-    }
-    const pendingId = shortId();
-    const entry = {
-      id: pendingId, kind: kind, pending: true, progress: 0,
-      name: file.name || 'file',
-      mime: file.type || 'application/octet-stream',
-      size: file.size,
-      /* Private (never persisted — attachmentList whitelists fields):
-         _sig dedups re-adds; _file powers retry; _abort cancels the
-         live upload; _sent marks entries already claimed by a turn. */
-      _sig: sig,
-      _file: file,
-    };
-    if (kind === 'document') entry.docKind = docKindFromFile(file);
-    if (kind === 'image'
-        && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
-      /* P_perf-blob-url — the chip thumbnail appears instantly from the
-         local blob while the upload runs; revoked once the durable
-         file (or inline dataUrl) exists. */
-      try { entry.thumbnailUrl = URL.createObjectURL(file); } catch (e) { reportSwallow(e, 'attachments.notifyProgress.createThumbUrl'); /* noop */ }
-    }
+  for (const file of Array.from(fileList || [])) {
+    const fileInfo = inspectFile(file, reject);
+    if (!fileInfo) continue;
+    const entry = createPendingEntry(file, fileInfo);
     attachments.push(entry);
     if (onUpdate) onUpdate();
-
-    const job = prepareAttachment(entry, file, function (pct) {
-      entry.progress = pct;
-      notifyProgress();
-    }).then(function (outcome) {
-      if (outcome && outcome.error) {
-        entry.error = outcome.error;
-        /* A chip the user removed mid-upload settles here with
-           'cancelled' — deliberate intent, not a rejection to surface.
-           Everything else on a still-attached chip gets an error toast
-           and the chip's retry affordance. */
-        if (attachments.includes(entry)) {
-          reject(`${file.name}: ${outcome.error}`);
-        }
-      } else {
-        result.added++;
-      }
-      if (onUpdate) onUpdate();
-    });
-    READY_PROMISES.set(pendingId, job.finally(function () { READY_PROMISES.delete(pendingId); }));
-    jobs.push(job);
+    jobs.push(trackAttachmentJob(entry, file, result, notifyProgress, onUpdate, reject));
   }
   await Promise.all(jobs);
   return result;
@@ -797,7 +486,7 @@ export function removeAttachment(id) {
        leaves the row for the usual orphan-adoption path. apiFetch adds
        the /api/v2 prefix, credentials, and CSRF header itself. */
     apiFetch(`/api/files/${encodeURIComponent(entry.fileId)}`, { method: 'DELETE' })
-      .catch(() => {});
+      .catch((error) => reportSwallow(error, 'attachments.removeAttachment.deleteOrphan'));
   }
   _revokeBlobUrls([entry]);
   attachments.splice(idx, 1);
@@ -831,119 +520,10 @@ export function retryAttachment(id, onUpdate) {
   return true;
 }
 
-/**
- * Build the outgoing message payload from the user's text + pending
- * attachments. Returns:
- *   - rawText: the user's original text only (attachment chips in the
- *     bubble provide the visual representation).
- *   - parts: array of content parts for the LLM —
- *       · image_url for images when the provider is multimodal,
- *       · an [Attached file: … fileId: X] pointer text part for every
- *         uploaded file (the model reads it via read_attachment),
- *       · legacy [Parsed …] text for old inline-payload rows.
- *   - attachmentList: the metadata array persisted on the message row
- *     (fileId, name, mime, size, kind — never a pre-parsed text dump).
- *
- * P_attachments-ready — waits for in-flight uploads first so a send
- * clicked during a pending upload still ships the fileId.
- *
- * If there are no attachments we return `{ rawText: text, parts: text,
- * attachmentList: [] }` so callers can treat the result uniformly.
- */
-export async function buildMessageContent(text, attachmentSnapshot) {
-  const t = String(text || '');
-  /* A send click may clear the live composer immediately so the input can
-     collapse in the same frame as the user bubble appears. Accept an
-     immutable per-turn snapshot to keep the asynchronous upload wait
-     independent from the next draft's attachments. */
-  const turnAttachments = Array.isArray(attachmentSnapshot)
-    ? attachmentSnapshot.slice()
-    : attachments.slice();
-  if (!turnAttachments.length) {
-    return { rawText: t, parts: t, attachmentList: [] };
-  }
-  /* Claim every entry for this turn — snapshotAttachments() already does
-     this for the main send paths; marking here too keeps any future
-     caller that passes a live-array slice from racing a chip remove. */
-  for (const a of turnAttachments) {
-    if (a) { a.sent = true; a._file = null; }
-  }
+const buildMessageContent = createBuildMessageContent({
+  getAttachments: () => attachments,
+  waitForReady: waitForAttachmentsReady,
+  supportsImages: activeProviderSupportsImages,
+});
 
-  /* Entries may still be uploading (pending:true). Wait for their jobs
-     before assembling parts — dropping the fileId would leave the model
-     a pointer it cannot resolve and the user a dead chip after reload.
-     Entries still pending when the window closes get their XHR aborted:
-     the parts below already describe them as unfinished, and letting the
-     upload land after the turn commits would write a files row that no
-     message ever references. */
-  await waitForAttachmentsReady(turnAttachments, ATTACHMENT_READY_TIMEOUT_MS);
-  for (const a of turnAttachments) {
-    if (a && a.pending && typeof a._abort === 'function') {
-      try { a._abort(); } catch (e) { reportSwallow(e, 'attachments.buildMessageContent.abortStale'); /* noop */ }
-    }
-  }
-
-  const multimodal = activeProviderSupportsImages();
-  const parts = [];
-  if (t) parts.push({ type: 'text', text: t });
-  for (const a of turnAttachments) {
-    if (!a) continue;
-    if (a.pending) {
-      /* Still pending after the ready window — tell the model honestly
-         rather than emitting a dangling fileId. */
-      parts.push({ type: 'text', text: `[Attached file: "${a.name || 'file'}" did not finish uploading in time. Tell the user you could not read it and suggest retrying.]` });
-      continue;
-    }
-    if (a.kind === 'image' && a.dataUrl && multimodal) {
-      /* No `detail` field: the allowed set differs per provider and
-         MiniMax rejects "auto" outright with a 400. Omitting it lets
-         the upstream use its default resolution. */
-      parts.push({ type: 'image_url', image_url: { url: a.dataUrl } });
-    }
-    if (a.fileId) {
-      parts.push({ type: 'text', text: attachmentPointerLine(a) });
-      continue;
-    }
-    if (a.error) {
-      parts.push({ type: 'text', text: `[Attached file: "${a.name || 'file'}" failed to upload (${a.error}). Tell the user you cannot read it and suggest retrying.]` });
-      continue;
-    }
-    /* Legacy inline payloads (older rows persisted with text/dataUrl but
-       no fileId) keep flowing so history rebuilds stay lossless. */
-    if ((a.kind === 'text' || a.kind === 'document' || a.kind === 'pdf') && a.text) {
-      const label = a.docKind
-        ? `[Parsed ${String(a.docKind).toUpperCase()}: ${a.name || 'file'}]`
-        : `[Parsed file: ${a.name || 'file'}]`;
-      parts.push({ type: 'text', text: `${label}\n${a.text}` });
-      continue;
-    }
-    if (a.kind === 'image' && a.dataUrl && !multimodal) {
-      parts.push({ type: 'text', text: `[User attached an image "${a.name || 'image'}" but it could not be uploaded, so you cannot view it. Tell the user and suggest re-uploading.]` });
-    }
-  }
-
-  /* Persisted metadata only — fileId + display fields. The server strips
-     unknown keys anyway, but keeping the persisted shape explicit makes
-     the contract obvious and keeps thumbnailUrl/pending/progress out of
-     the session row. */
-  const attachmentList = turnAttachments.slice(0, MAX_TOTAL_ATTACHMENTS).map((a) => ({
-    id: a.id,
-    kind: a.kind,
-    docKind: a.docKind,
-    name: a.name,
-    mime: a.mime,
-    fileId: a.fileId,
-    /* P_file-attachments — once a durable fileId exists the base64 copy
-       is redundant: the chip/history thumbnail renders from
-       /api/files/:id/raw and the model re-reads via read_attachment.
-       Keeping it anyway would write ~2 MB into every session save.
-       Only upload-failed fallback images keep the inline payload. */
-    dataUrl: a.fileId ? undefined : a.dataUrl,
-    text: a.text,
-    truncated: a.truncated,
-    size: a.size,
-    error: a.error || (a.pending ? 'upload_incomplete' : undefined),
-  }));
-
-  return { rawText: t, parts, attachmentList };
-}
+export { buildMessageContent };
