@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { saveChatPreferences, type ReasoningEffort, type ResponseSpeed } from '../../config/chatPreferences';
@@ -10,37 +11,14 @@ import {
   installChatConfigurationBridge,
   useChatConfigurationSnapshot,
 } from './chatConfiguration.bridge';
+import { EffortPanel, ModelPickerPanel, SpeedPanel } from './ChatConfigurationPanels';
 import type { ChatConfigurationAnchor } from './types';
 
 type View = 'main' | 'effort' | 'speed';
 
-const EFFORT_STOPS: ReasoningEffort[] = ['low', 'medium', 'high'];
-
-function effortLabel(value: ReasoningEffort): string {
-  return i18n(`effort.${value}`, value);
-}
-
-function speedLabel(value: ResponseSpeed): string {
-  return i18n(`chatconfig.speed.${value}`, value === 'fast' ? 'Fast' : 'Standard');
-}
-
-function CheckIcon() {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>;
-}
-
-function ChevronIcon({ back = false }: { back?: boolean }) {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={back ? 'm15 18-6-6 6-6' : 'm9 18 6-6-6-6'} /></svg>;
-}
-
-function providerName(provider: { label?: string; model?: string }): string {
-  return provider.label && provider.label !== 'Default'
-    ? provider.label
-    : provider.model || provider.label || i18n('chatconfig.model', 'Model');
-}
-
 /* Anchored like the ChatGPT composer popover: a compact card floating above
    the trigger pill, centred on it and clamped into the visual viewport. */
-function popoverStyle(anchor: ChatConfigurationAnchor | null): React.CSSProperties {
+function popoverStyle(anchor: ChatConfigurationAnchor | null): CSSProperties {
   const viewport = window.visualViewport;
   const viewportTop = viewport ? Math.max(0, viewport.offsetTop || 0) : 0;
   const viewportHeight = viewport ? viewport.height : window.innerHeight;
@@ -52,13 +30,9 @@ function popoverStyle(anchor: ChatConfigurationAnchor | null): React.CSSProperti
   }
   const center = anchor.left + anchor.width / 2;
   const left = Math.max(8, Math.min(center - width / 2, viewportWidth - width - 8));
-  /* Prefer opening above the pill; fall below only when the trigger sits in
-     the top quarter of the viewport. */
   if (anchor.top - viewportTop > 200) {
     return { left, bottom: Math.max(8, viewportBottom - anchor.top + 8), width };
   }
-  /* Header triggers (the top-left model switcher) drop a left-aligned menu,
-     like chatgpt.com's model picker. */
   if (anchor.left < viewportWidth / 2 && anchor.top - viewportTop < 80) {
     return { left: Math.max(8, Math.min(anchor.left, viewportWidth - width - 8)), top: anchor.bottom + 6, width };
   }
@@ -131,76 +105,32 @@ export function ChatConfiguration() {
     getLegacyActions().navigation.openSettings();
   };
 
-  const sliderIndex = EFFORT_STOPS.indexOf(effort);
-
   return (
     <div ref={popRef} className="chat-config-pop" role="dialog" aria-label={i18n('chatconfig.title', 'Chat settings')} style={popoverStyle(snapshot.anchorRect)}>
       {view === 'main' ? (
-        <>
-          <div role="listbox" aria-label={i18n('chatconfig.models', 'Models')}>
-            {snapshot.providers.length ? snapshot.providers.map((provider, index) => (
-              <button key={provider.id} type="button" className="chat-config-row" role="option" aria-selected={snapshot.activeId === provider.id} data-initial-focus={index === 0 ? 'true' : undefined} onClick={() => pickModel(provider.id)}>
-                <span>
-                  <strong>{providerName(provider)}</strong>
-                  {provider.model && provider.model !== providerName(provider) ? <small>{provider.model}</small> : null}
-                </span>
-                {snapshot.activeId === provider.id ? <CheckIcon /> : null}
-              </button>
-            )) : <div className="chat-config-empty">{i18n('chatconfig.noModels', 'No models yet.')}</div>}
-          </div>
-          <div className="chat-config-divider" />
-          <button type="button" className="chat-config-row" onClick={() => setView('effort')}>
-            <span><strong>{i18n('chatconfig.effort', 'Reasoning effort')}</strong></span>
-            <span className="chat-config-value">{effortLabel(effort)}<ChevronIcon /></span>
-          </button>
-          <button type="button" className="chat-config-row" onClick={() => setView('speed')}>
-            <span><strong>{i18n('chatconfig.speed', 'Speed')}</strong></span>
-            <span className="chat-config-value">{speedLabel(speed)}<ChevronIcon /></span>
-          </button>
-          <button type="button" className="chat-config-row" onClick={openSettings}>
-            <span><strong>{i18n('chatconfig.manageModels', 'Manage models')}</strong></span>
-          </button>
-        </>
+        <ModelPickerPanel
+          providers={snapshot.providers}
+          activeId={snapshot.activeId}
+          effort={effort}
+          speed={speed}
+          onPickModel={pickModel}
+          onOpenEffort={() => setView('effort')}
+          onOpenSpeed={() => setView('speed')}
+          onOpenSettings={openSettings}
+        />
       ) : null}
-
       {view === 'effort' ? (
-        <>
-          <button type="button" className="chat-config-row" data-initial-focus="true" onClick={() => setView('main')}>
-            <span><strong>{effortLabel(effort)}</strong></span>
-            <span className="chat-config-value"><ChevronIcon /></span>
-          </button>
-          <div className="chat-config-slider">
-            <input
-              type="range"
-              min={0}
-              max={EFFORT_STOPS.length - 1}
-              step={1}
-              value={sliderIndex < 0 ? 1 : sliderIndex}
-              aria-label={i18n('chatconfig.effort', 'Reasoning effort')}
-              onChange={(event) => commitPreferences(EFFORT_STOPS[Number(event.target.value)], speed)}
-            />
-            <div className="chat-config-slider-dots" aria-hidden="true"><span /><span /><span /></div>
-          </div>
-        </>
+        <EffortPanel effort={effort} speed={speed} onBack={() => setView('main')} onCommit={commitPreferences} />
       ) : null}
-
       {view === 'speed' ? (
-        <div role="listbox" aria-label={i18n('chatconfig.speed', 'Speed')}>
-          <button type="button" className="chat-config-row" role="option" aria-selected={speed === 'standard'} data-initial-focus="true" onClick={() => { commitPreferences(effort, 'standard'); setView('main'); }}>
-            <span>
-              <strong>{speedLabel('standard')}</strong>
-              <small>{i18n('chatconfig.speed.standardHint', 'Works with every configured model')}</small>
-            </span>
-            {speed === 'standard' ? <CheckIcon /> : null}
-          </button>
-          <button type="button" className="chat-config-row" role="option" aria-selected={speed === 'fast'} onClick={() => { commitPreferences(effort, 'fast'); setView('main'); }}>
-            <span>
-              <strong>{speedLabel('fast')}</strong>
-              <small>{i18n('chatconfig.speed.fastHint', 'Prefers low-latency service; falls back automatically')}</small>
-            </span>
-            {speed === 'fast' ? <CheckIcon /> : null}
-          </button>
-        </div>
+        <SpeedPanel
+          effort={effort}
+          speed={speed}
+          onCommit={(nextEffort, nextSpeed) => {
+            commitPreferences(nextEffort, nextSpeed);
+            setView('main');
+          }}
+        />
       ) : null}
     </div>
   );
