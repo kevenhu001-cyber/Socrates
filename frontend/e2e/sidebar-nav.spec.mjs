@@ -208,9 +208,9 @@ test('phone drawer keeps nav glyphs aligned and account menu in view', async ({ 
   }));
   expect(rows).toHaveLength(7);
   for (const row of rows) {
-    // Mobile drawer rows are 40px tall — the reference chatgpt.com drawer
-    // measures ~40px per row (polish/mobile-controls.css).
-    expect(row.height).toBe(40);
+    // Keep the full 48px phone touch target declared by the mobile sidebar
+    // owner; the older 40px assertion no longer matches the drawer geometry.
+    expect(row.height).toBe(48);
     expect(Math.abs(row.glyphCenter - row.labelCenter)).toBeLessThanOrEqual(2);
   }
   // Portaled account menus stay inside the phone viewport.
