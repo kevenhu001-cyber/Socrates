@@ -54,6 +54,20 @@ test('settings modal opens with React-owned providers and tones, and closes', as
   await expect(friendlyTone).toHaveAttribute('aria-pressed', 'true');
   await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-tone'))).toBe('friendly');
 
+  const instructions = overlay.locator('.settings-textarea');
+  await instructions.fill('Use concise examples.');
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-custom-instructions')))
+    .toBe('Use concise examples.');
+
+  await overlay.locator('.settings-memory-key-input').fill('preference');
+  await overlay.locator('.settings-memory-val-input').fill('prefers TypeScript');
+  await overlay.locator('.settings-memory-add-form button[type="submit"]').click();
+  const memory = overlay.locator('.settings-memory-item');
+  await expect(memory).toContainText('preference');
+  await expect(memory).toContainText('prefers TypeScript');
+  await memory.locator('.settings-memory-del-btn').click();
+  await expect(overlay.locator('.settings-memory-item')).toHaveCount(0);
+
   // Close via the React close button.
   await overlay.locator('#settingsCloseBtn').click();
   await expect(overlay).toBeHidden();

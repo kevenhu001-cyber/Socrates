@@ -36,11 +36,14 @@ export interface MessageToolbarCallbacks {
 
 export interface MessageItemProps {
   message: LegacyChatMessage;
-  /** Streaming bubbles are owned by legacy DOM and not rendered through
-   *  this component. Finalized bubbles (entry.html present, type !==
-   *  'streaming') pass through. */
-  finalized: boolean;
-  callbacks: MessageToolbarCallbacks;
+  /** Length of mutable streamed text, used to invalidate the memoized row. */
+  textLength: number;
+  /** Revision bumped when in-place tool state changes. */
+  toolRevision: number;
+  /** Global math-render revision from the legacy KaTeX renderer. */
+  mathRevision?: number;
+  /** Per-message math/render revision from legacy renderers. */
+  renderRevision?: number;
 }
 
 declare global {
