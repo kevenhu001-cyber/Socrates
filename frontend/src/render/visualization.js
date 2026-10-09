@@ -9,6 +9,8 @@ import { ensureEcharts } from '../vendor/lazy.js';
 import { parseFunctionExpression, sampleFunction } from './visualizationMath.js';
 import { categoryAxisLayout, formatCategoryLabel, truncateLabel } from './visualizationLabels.js';
 import { optionForChart, VIZ_FONT_FAMILY } from './visualizationOptions.js';
+import { dispatchExtensionRepair, renderExtension } from './visualizationExtensions.js';
+import { renderStructureVisualization, renderVisualizationTable } from './visualizationStatic.js';
 export { parseFunctionExpression, sampleFunction, categoryAxisLayout, formatCategoryLabel };
 
 var echartsPromise = null;
@@ -87,64 +89,6 @@ function palette() {
   };
 }
 
-function dataRows(spec) {
-  var payload = spec.payload || {};
-  if (spec.template === 'function') {
-    var fns = payload.functions || [];
-    if (!fns.length) return [];
-    return [[vizT('viz.table.function', 'Function'), vizT('viz.table.expression', 'Expression'), vizT('viz.table.domain', 'Domain')]]
-      .concat(fns.map(function (fn) { return [fn.label || fn.expression, fn.expression, fn.domain ? fn.domain.join(' to ') : vizT('viz.table.autoDomain', 'Automatic domain')]; }));
-  }
-  if (!payload.series) {
-    var items = payload.items || payload.nodes || [];
-    if (!items.length) return [];
-    return [[vizT('viz.table.item', 'Item'), vizT('viz.table.value', 'Value'), vizT('viz.table.detail', 'Detail')]]
-      .concat(items.map(function (item) { return [item.label, item.value != null ? item.value : '', item.detail || '']; }));
-  }
-  var rows = [['Category'].concat(payload.series.map(function (series) { return series.name || 'Series'; }))];
-  var max = Math.max.apply(null, payload.series.map(function (series) { return series.data.length; }));
-  for (var index = 0; index < max; index++) rows.push([payload.categories && payload.categories[index] != null ? payload.categories[index] : index + 1].concat(payload.series.map(function (series) { var value = series.data[index]; return Array.isArray(value) ? value.join(', ') : (value && typeof value === 'object' ? JSON.stringify(value) : value); })));
-  return rows;
-}
-
-function renderTable(spec) {
-  var rows = dataRows(spec);
-  if (!rows.length) return '';
-  var header = rows[0], body = rows.slice(1, 121);
-  return '<div class="visualization-table-wrap" tabindex="0"><table class="visualization-table"><thead><tr>' + header.map(function (cell) { return '<th>' + esc(cell) + '</th>'; }).join('') + '</tr></thead><tbody>' + body.map(function (row) { return '<tr>' + row.map(function (cell) { return '<td>' + esc(cell) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
-}
-
-function renderStructure(spec) {
-  var payload = spec.payload || {}, nodes = payload.nodes || payload.items || [], edges = payload.edges || [];
-  var width = 760, height = Math.max(260, 130 + Math.ceil(nodes.length / 3) * 95);
-  var positions = {};
-  nodes.forEach(function (node, index) { positions[node.id || String(index)] = { x: 110 + (index % 3) * 270, y: 70 + Math.floor(index / 3) * 100 }; });
-  /* P_viz-per-instance-marker — every rendered structure diagram
-     used to define `<marker id="visual-arrow">` at the SVG root.
-     When two diagrams render in the same DOM, the second's
-     `marker-end="url(#visual-arrow)"` resolves to the FIRST
-     diagram's marker (collision on the global id). Give each
-     diagram a per-instance marker id, derived from a monotonically
-     increasing counter so re-renders don't collide either. */
-  var markerId = 'visual-arrow-' + (++visualCounter);
-  /* P_viz-svg-attrs — inline attributes guarantee the diagram renders
-     correctly when exported as a standalone SVG (XMLSerializer) where
-     the page's CSS classes are unavailable. text-anchor/dominant-baseline
-     center labels inside nodes regardless of external styles. */
-  var svg = '<svg class="visualization-diagram" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + width + ' ' + height + '" role="img" aria-label="' + esc(spec.accessibilitySummary) + '" style="font-family:' + VIZ_FONT_FAMILY + '"><defs><marker id="' + markerId + '" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="currentColor"/></marker></defs>';
-  edges.forEach(function (edge) { var a = positions[edge.from], b = positions[edge.to]; if (!a || !b) return; svg += '<path class="visualization-edge" fill="none" stroke="currentColor" stroke-width="1.4" d="M' + (a.x + 75) + ' ' + a.y + ' C' + (a.x + 130) + ' ' + a.y + ', ' + (b.x - 130) + ' ' + b.y + ', ' + (b.x - 75) + ' ' + b.y + '" marker-end="url(#' + markerId + ')"/><text class="visualization-edge-label" text-anchor="middle" dominant-baseline="middle" x="' + ((a.x + b.x) / 2) + '" y="' + ((a.y + b.y) / 2 - 8) + '">' + esc(edge.label || '') + '</text>'; });
-  nodes.forEach(function (node, index) { var point = positions[node.id || String(index)]; svg += '<g class="visualization-node"><title>' + esc([node.label, node.detail].filter(Boolean).join(' — ')) + '</title><rect x="' + (point.x - 78) + '" y="' + (point.y - 28) + '" width="156" height="56" rx="10" fill="currentColor" fill-opacity="0.06" stroke="currentColor" stroke-opacity="0.22" stroke-width="1.4"/><text text-anchor="middle" dominant-baseline="middle" x="' + point.x + '" y="' + (point.y - 4) + '">' + esc(truncateLabel(node.label, 22)) + '</text>' + (node.detail ? '<text class="visualization-node-detail" text-anchor="middle" dominant-baseline="middle" x="' + point.x + '" y="' + (point.y + 15) + '">' + esc(truncateLabel(node.detail, 28)) + '</text>' : '') + '</g>'; });
-  return svg + '</svg>';
-}
-
-/* P_extension-safety — block only the actually-dangerous patterns:
-   - <script>, <iframe>, <object>, <embed>, <form> tags;
-   - inline event handlers (onclick, onerror, …);
-   - outbound scripts/fetch/websocket;
-   - dangerous URL schemes on attributes (javascript:, vbscript:,
-     data:text/html). We previously also rejected any href/src
-     starting with `https:`, which broke legitimate CDN images and
-     external CSS imports inside svg_illustration templates. */
 /* P_viz-retry — mountVisualization has a dedup path keyed on
    `data-visualization-id`. The previous retry button just called
    `mountVisualization(spec, host, options)` which short-circuited
@@ -166,100 +110,6 @@ function remountVisualization(spec, host, options, currentCard) {
     siblings.forEach(function (el) { disposeCard(el); });
   }
   return mountVisualization(spec, host, opts);
-}
-
-/* P_interactive-sim-scripts — `interactive_simulation` would be a
-   contradiction if it rejected <script>: an "interactive" template
-   that can never run code fails validation on every genuinely
-   interactive submission, then burns the retry budget. Inline
-   scripts + event handlers are therefore allowed for that template
-   — the iframe runs opaque-origin (sandbox="allow-scripts" only),
-   CSP connect-src 'none', no popups, so a script cannot reach the
-   parent, the network, or cookies. Same containment the fenced
-   ```viz blocks already rely on. `svg_illustration` stays
-   script-free: it is static art and gains nothing from executing. */
-function extensionIsSafe(source, allowScripts) {
-  var src = String(source || '');
-  var tagBan = allowScripts
-    ? /<(?:iframe|object|embed|form)\b/i
-    : /<(?:script|iframe|object|embed|form)\b/i;
-  if (tagBan.test(src)) return false;
-  if (!allowScripts && /\son\w+\s*=/i.test(src)) return false;
-  if (/\b(?:fetch|xmlhttprequest|websocket|sendbeacon|eventsource)\b/i.test(src)) return false;
-  var attrRe = /\b(?:src|href|action|formaction|xlink:href)\s*=\s*["']?\s*([^\s"'>]+)/gi;
-  var match;
-  while ((match = attrRe.exec(src)) !== null) {
-    var value = String(match[1] || '').trim();
-    if (/^(?:javascript|vbscript|livescript|mocha|data\s*:\s*text\/html)/i.test(value)) return false;
-  }
-  return true;
-}
-
-function standaloneSvgSource(source) {
-  var normalized = String(source || '').replace(/^\uFEFF?\s*<\?xml[^?]*\?>\s*/i, '').trim();
-  if (!/^<svg\b/i.test(normalized)) return '';
-  if (!/<\/svg>\s*$/i.test(normalized) && !/^<svg\b[^>]*\/>\s*$/i.test(normalized)) return '';
-  return normalized;
-}
-
-function renderExtension(spec, cardId) {
-  var source = String(spec.payload.source || '');
-  var allowScripts = spec.template === 'interactive_simulation';
-  if (!extensionIsSafe(source, allowScripts)) return '<div class="visualization-fallback">此扩展内容未通过本地安全检查。标题和数据摘要仍可用。</div>';
-  var nonce = 'viz-' + cardId + '-' + Math.random().toString(36).slice(2);
-  var csp = "default-src 'none'; img-src data: blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; font-src https: data:; form-action 'none'; base-uri 'none'";
-  /* P_perf-self-host — sandboxed extension iframes use the platform font
-     stack instead of blocking on fonts.googleapis.com. */
-  var svgSource = spec.template === 'svg_illustration' ? standaloneSvgSource(source) : '';
-  var renderSource = svgSource
-    ? '<img class="visualization-svg-illustration" alt="' + esc(spec.accessibilitySummary) + '" src="data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgSource) + '">'
-    : source.replace(/^\uFEFF?\s*<\?xml[^?]*\?>\s*/i, '');
-  var fontPreload = '<style>body{font-family:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;margin:0;padding:0}'
-    + (spec.template === 'svg_illustration'
-      ? 'html,body{width:100%;height:100%;margin:0;padding:0;overflow:hidden;background:transparent}body{display:grid;place-items:center;background:transparent}svg{max-width:100%;max-height:100%}.visualization-svg-illustration{display:block;max-width:100%;max-height:100%;object-fit:contain}'
-      : '')
-    + '</style>';
-  /* P_ext-viz-error — an interactive_simulation script throwing inside
-     the sandbox used to be invisible: the iframe stayed silent and the
-     card looked permanently empty. Report error/unhandledrejection to
-     the parent (nonce-tagged, same handshake as socrates-viz-ready) so
-     the card can surface a diagnostic and a repair affordance. */
-  var headScript = '<script>(function(){' +
-    'function post(m){try{window.parent.postMessage(m,"*")}catch(e){}}' +
-    'window.addEventListener("error",function(e){post({type:"socrates-viz-error",cardId:' + JSON.stringify(cardId) + ',nonce:' + JSON.stringify(nonce) + ',message:String((e&&e.message)||"runtime error").slice(0,300)})});' +
-    'window.addEventListener("unhandledrejection",function(e){post({type:"socrates-viz-error",cardId:' + JSON.stringify(cardId) + ',nonce:' + JSON.stringify(nonce) + ',message:String((e&&e.reason&&(e.reason.message||e.reason))||"unhandled rejection").slice(0,300)})});' +
-    'post({type:"socrates-viz-ready",cardId:' + JSON.stringify(cardId) + ',nonce:' + JSON.stringify(nonce) + '})' +
-    '})()<\/script>';
-  var documentSource = '<!doctype html><meta http-equiv="Content-Security-Policy" content="' + csp + '">' + fontPreload + headScript + renderSource;
-  return '<iframe class="visualization-extension" sandbox="allow-scripts" title="' + esc(spec.title) + '" data-card-id="' + esc(cardId) + '" data-nonce="' + esc(nonce) + '" srcdoc="' + esc(documentSource) + '"></iframe>';
-}
-
-/* P_viz-fix-loop — model-facing repair request for a client-side
-   render failure. Rides the existing `tool-retry` CustomEvent
-   (detail.prompt → verbatim next-turn message). The model already has
-   the full spec in context from its own tool call, so the prompt only
-   carries template/title + the error. */
-function extensionRepairPrompt(spec, errMsg) {
-  var msg = 'The render_visualization card "' + String((spec && spec.title) || '').slice(0, 80)
-    + '" (template: ' + (spec && spec.template) + ') failed to render in the client: '
-    + String(errMsg || 'render error').slice(0, 300)
-    + '. Call render_visualization once more with a corrected spec — fix the payload, or switch to a simpler built-in template (chart/graph templates are more reliable than extension templates).';
-  /* GeoGebra is the only renderer loaded from a third-party CDN. When
-     the CDN itself is unreachable, retrying the same template cannot
-     help — tell the model to express the construction with a
-     self-hosted template instead. */
-  if (/geogebra|deployggb/i.test(String(errMsg || ''))) {
-    msg += ' GeoGebra\'s CDN is unreachable from this client, so math_construction cannot work right now — rebuild the figure with the `geometry` or `function` template instead.';
-  }
-  return msg;
-}
-
-function dispatchExtensionRepair(card, spec, errMsg) {
-  if (!card || typeof card.dispatchEvent !== 'function') return;
-  card.dispatchEvent(new CustomEvent('tool-retry', {
-    bubbles: true,
-    detail: { tool: 'render_visualization', prompt: extensionRepairPrompt(spec, errMsg) },
-  }));
 }
 
 function downloadDataUrl(name, dataUrl) {
@@ -379,7 +229,7 @@ export async function mountVisualization(spec, host, options) {
   var actionReset = vizT('viz.action.reset', 'Reset view');
   var actionDownload = vizT('viz.action.download', 'Download PNG');
   var actionFullscreen = vizT('viz.action.fullscreen', 'Fullscreen');
-  card.innerHTML = '<header class="visualization-header"><div><h3>' + esc(spec.title) + '</h3></div><div class="visualization-actions"><button type="button" data-viz-action="table" aria-expanded="false" aria-label="' + esc(actionTable) + '" title="' + esc(actionTable) + '">' + esc(actionTable) + '</button><button type="button" data-viz-action="reset" aria-label="' + esc(actionReset) + '" title="' + esc(actionReset) + '">' + esc(actionReset) + '</button><button type="button" data-viz-action="download" aria-label="' + esc(actionDownload) + '" title="' + esc(actionDownload) + '">' + esc(actionDownload) + '</button><button type="button" data-viz-action="fullscreen" aria-label="' + esc(actionFullscreen) + '" title="' + esc(actionFullscreen) + '">' + esc(actionFullscreen) + '</button></div></header><div class="visualization-summary sr-only">' + esc(spec.accessibilitySummary) + '</div><figure class="visualization-figure"><div class="visualization-stage"></div>' + (spec.caption ? '<figcaption class="visualization-caption">' + esc(spec.caption) + '</figcaption>' : '') + '</figure><div class="visualization-data" hidden>' + renderTable(spec) + '</div>';
+  card.innerHTML = '<header class="visualization-header"><div><h3>' + esc(spec.title) + '</h3></div><div class="visualization-actions"><button type="button" data-viz-action="table" aria-expanded="false" aria-label="' + esc(actionTable) + '" title="' + esc(actionTable) + '">' + esc(actionTable) + '</button><button type="button" data-viz-action="reset" aria-label="' + esc(actionReset) + '" title="' + esc(actionReset) + '">' + esc(actionReset) + '</button><button type="button" data-viz-action="download" aria-label="' + esc(actionDownload) + '" title="' + esc(actionDownload) + '">' + esc(actionDownload) + '</button><button type="button" data-viz-action="fullscreen" aria-label="' + esc(actionFullscreen) + '" title="' + esc(actionFullscreen) + '">' + esc(actionFullscreen) + '</button></div></header><div class="visualization-summary sr-only">' + esc(spec.accessibilitySummary) + '</div><figure class="visualization-figure"><div class="visualization-stage"></div>' + (spec.caption ? '<figcaption class="visualization-caption">' + esc(spec.caption) + '</figcaption>' : '') + '</figure><div class="visualization-data" hidden>' + renderVisualizationTable(spec, esc, vizT) + '</div>';
   host.appendChild(card);
   mounting.delete(cardId);
   try { if (typeof renderMathInElement === 'function') renderMathInElement(card, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }] }); } catch (_) {}
@@ -467,7 +317,7 @@ export async function mountVisualization(spec, host, options) {
         };
       }
     } else if (extension) {
-      stage.innerHTML = renderExtension(spec, cardId);
+      stage.innerHTML = renderExtension(spec, cardId, esc);
       var frame = stage.querySelector('iframe');
       var receiveExtensionMsg = function (event) {
         var data = event.data || {};
@@ -502,7 +352,7 @@ export async function mountVisualization(spec, host, options) {
       window.addEventListener('message', receiveExtensionMsg);
       card._visualizationCleanup = function () { window.removeEventListener('message', receiveExtensionMsg); };
     } else {
-      stage.innerHTML = renderStructure(spec);
+      stage.innerHTML = renderStructureVisualization(spec, 'visual-arrow-' + (++visualCounter), esc, VIZ_FONT_FAMILY, truncateLabel);
       chart = svgStageChart(stage);
     }
     if (isCancelled()) { disposeCard(card); return null; }
