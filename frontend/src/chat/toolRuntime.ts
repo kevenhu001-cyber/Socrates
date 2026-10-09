@@ -17,6 +17,10 @@
  *   inline rows / cards / approval panels / agent hosts — react/tool-run
  *   row copy — react/tool-run/labels.ts (single source)
  *   category table — render/toolCategory.ts (single source)
+ *   snapshot projection — chat/toolRuntime/projection.ts
+ *   progress and tool-use event lifecycles — chat/toolRuntime/progress.ts, toolUse.ts
+ *   approval and agent event lifecycles — chat/toolRuntime/approvals.ts, agentFrames.ts
+ *   terminal result projection and write-back — chat/toolRuntime/resultProjection.ts, resultRuntime.ts
  */
 /* Type-only: the event shape is owned by the React store, but this module is
    loaded straight from Node by test/toolRuntime.test.mjs, so the runtime
@@ -29,14 +33,20 @@ import { publishThinkingPanelEvent } from '../ui/messageSnapshot.js';
 import {
   TOOL_RUN_PHASES,
   isTerminalToolPhase,
-  phaseFromProgress,
   transitionToolRun,
 } from './toolRunState.js';
 import type { ToolRun } from './toolRunState.js';
-import { createLiveOutputBuffer, renderLivePreview } from './liveOutput.js';
 import type { LiveOutputBufferHandle } from './liveOutput.js';
-import { apiFetch } from '../util/api.js';
 import { copyToolData, mergeToolCalls } from './toolRuntime/projection.js';
+import { createAgentFrameRuntime } from './toolRuntime/agentFrames.js';
+import type { AgentPlanFrame, AgentStepFrame } from './toolRuntime/agentFrames.js';
+import { createApprovalRuntime } from './toolRuntime/approvals.js';
+import type { ToolApproval } from './toolRuntime/approvals.js';
+import { createToolUseRuntime } from './toolRuntime/toolUse.js';
+import { createToolResultRuntime } from './toolRuntime/resultRuntime.js';
+import type { ToolResultInput } from './toolRuntime/resultProjection.js';
+import { createProgressRuntime } from './toolRuntime/progress.js';
+export type { AgentPlanFrame, AgentStepFrame } from './toolRuntime/agentFrames.js';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -106,46 +116,11 @@ interface ToolMessage {
   _orphanAgentFrames?: Record<string, Array<AgentStepFrame | AgentPlanFrame>>;
 }
 
-/** `event: agent_step` — one projected Codex step (see server projection). */
-export interface AgentStepFrame extends AgentStepData {
-  type: 'step';
-  /** Tool call id of the workspace_agent call this step belongs to. */
-  id: string;
-  runId?: string;
-}
-
-/** `event: agent_plan` — the Codex todo list for the run. */
-export interface AgentPlanFrame extends AgentPlanData {
-  type: 'plan';
-  id: string;
-  runId?: string;
-}
-
 interface ToolProgress {
   id: string;
   phase: string;
   elapsedMs?: number;
   chunk?: string;
-}
-
-interface ToolApproval {
-  id?: string;
-  runId: string;
-  approvalId: string;
-  requestId?: string;
-  kind?: string;
-  reason?: string | null;
-  command?: string | null;
-  cwd?: string | null;
-  changes?: unknown;
-  availableDecisions?: string[];
-  status?: string;
-  /**
-   * Feedback for the decision the reader just took, kept on the data so a
-   * declarative panel can show "Saving your decision…" / "Approved" / an error
-   * without owning a DOM node.
-   */
-  ui?: { text: string; state?: string; disabled?: boolean };
 }
 
 interface ToolCallDelta {
@@ -161,25 +136,7 @@ interface ExecutionEvent {
   executionId: string;
 }
 
-interface ToolResult {
-  id: string;
-  ok?: boolean;
-  status?: string;
-  output?: string;
-  stderr?: string;
-  error?: string;
-  errorCode?: string | null;
-  userMessage?: string;
-  artifacts?: Array<unknown>;
-  durationMs?: number;
-  executionId?: string;
-  name?: string;
-  query?: string;
-  results?: unknown[];
-  visualization?: { version: number; [key: string]: unknown } | null;
-  detail?: unknown;
-  retryable?: boolean;
-}
+type ToolResult = ToolResultInput;
 
 interface ToolRuntimeOptions {
   /** Accepted for compatibility; ignored — nothing is mounted. */
@@ -274,21 +231,6 @@ function findEntry(message: ToolMessage | null, id: string): ToolCallEntry | nul
     if (message.toolCalls[i].id === id) return message.toolCalls[i];
   }
   return null;
-}
-
-function normalizeArtifacts(
-  artifacts: unknown,
-): Array<{ id: string; mimeType: string | null; name: string | null }> {
-  if (!Array.isArray(artifacts)) return [];
-  return artifacts.slice(0, 20).map(function (artifact: unknown) {
-    if (typeof artifact === 'string') return { id: artifact, mimeType: null, name: null };
-    const a = artifact as { id?: string; mimeType?: string; name?: string } | null;
-    return {
-      id: String((a && a.id) || ''),
-      mimeType: (a && a.mimeType) || null,
-      name: (a && a.name) || null,
-    };
-  }).filter(function (artifact) { return !!artifact.id; });
 }
 
 function getRun(entry: ToolCallEntry | null): ToolRun | null {
@@ -494,109 +436,6 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     });
   }
 
-  function setApprovalUi(approvalId: string, text: string, state?: string, disabled = true): void {
-    /* Record the transition on the entry: the declarative row paints its
-       status line from `approval.ui`. */
-    const message = activeMessage();
-    const calls = message && Array.isArray(message.toolCalls) ? message.toolCalls : [];
-    for (const entry of calls) {
-      if (!entry || !entry.approval || String(entry.approval.approvalId) !== String(approvalId)) continue;
-      entry.approval = { ...entry.approval, ui: { text, state, disabled } };
-    }
-    if (message) notifyToolRun(message);
-  }
-
-  async function submitApprovalAction(
-    approval: ToolApproval,
-    entryId: string,
-    decision: string,
-  ): Promise<void> {
-    if (!approval || !approval.runId || !approval.approvalId) return;
-    setApprovalUi(approval.approvalId, translate('tool.sendingApproval', 'Saving your decision…'));
-    try {
-      if (decision === 'stop') {
-        await apiFetch('/api/agent-runs/' + encodeURIComponent(approval.runId) + '/interrupt', { method: 'POST', body: {} });
-        setApprovalUi(approval.approvalId, translate('tool.runStopped', 'Stop requested'), 'stopped');
-        return;
-      }
-      await apiFetch('/api/agent-runs/' + encodeURIComponent(approval.runId) + '/approvals/' + encodeURIComponent(approval.approvalId), {
-        method: 'POST',
-        body: { decision },
-      });
-      setApprovalUi(
-        approval.approvalId,
-        decision === 'decline'
-          ? translate('tool.approvalDeclined', 'Declined')
-          : translate('tool.approvalAccepted', 'Approved'),
-        decision === 'decline' ? 'declined' : 'accepted',
-      );
-      const message = activeMessage();
-      const entry = findEntry(message, entryId);
-      if (entry) entry.approval = { ...entry.approval, ...approval, status: decision };
-      notifyToolRun(message);
-      if (decision !== 'decline') {
-        const startedAt = Date.now();
-        const poll = async (): Promise<void> => {
-          if (Date.now() - startedAt > 120_000) return;
-          try {
-            const response = await apiFetch('/api/agent-runs/' + encodeURIComponent(approval.runId));
-            const run = response && response.run;
-            if (run && ['completed', 'failed', 'interrupted', 'disconnected'].includes(String(run.status))) {
-              recordToolResult({
-                id: entryId,
-                name: entry ? entry.name : 'workspace_agent',
-                ok: run.status === 'completed',
-                status: run.status,
-                output: run.summary || '',
-                error: run.error || null,
-                artifacts: response.artifacts || [],
-              });
-              return;
-            }
-          } catch (_) { /* a refresh/reconnect can retry on the next tick */ }
-          window.setTimeout(() => { void poll(); }, 900);
-        };
-        window.setTimeout(() => { void poll(); }, 900);
-      }
-    } catch (err) {
-      setApprovalUi(
-        approval.approvalId,
-        (err as Error).message || translate('tool.approvalFailed', 'Could not save the decision. Try again.'),
-        undefined,
-        false,
-      );
-      throw err;
-    }
-  }
-
-  /**
-   * Answer a pending approval for one tool call. Exposed for the declarative
-   * row, whose buttons are React elements with their own handlers.
-   * Rejects with the transport error after recording it in
-   * `approval.ui`, so the caller can restore focus.
-   */
-  async function decideApproval(toolCallId: string, decision: string): Promise<void> {
-    const message = activeMessage();
-    const entry = findEntry(message, String(toolCallId || ''));
-    if (!entry || !entry.approval || !decision) return;
-    await submitApprovalAction(entry.approval, entry.id, decision);
-  }
-
-  function renderApproval(approval: ToolApproval): void {
-    const message = activeMessage();
-    if (!message || !approval || !approval.runId || !approval.approvalId) return;
-    let entry = findEntry(message, String(approval.id || ''));
-    if (!entry) {
-      /* The normal path carries the tool call id in `id`; keep a small
-       * fallback scan for harnesses that only provide runId/requestId. */
-      const calls = Array.isArray(message.toolCalls) ? message.toolCalls : [];
-      entry = calls.find((candidate) => candidate.approval && candidate.approval.runId === approval.runId) || null;
-    }
-    if (!entry) return;
-    entry.approval = { ...approval, status: approval.status || 'pending' };
-    notifyToolRun(message);
-  }
-
   /* Orphan/pending queues are keyed by tool-call id and only grow while
    * the matching tool_use is in flight. Cap both dimensions so a turn that
    * emits thousands of pre-use frames (reconnect storm, runaway upstream)
@@ -628,31 +467,63 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     if (list.length > ORPHAN_LIST_CAP) list.splice(0, list.length - ORPHAN_LIST_CAP);
   }
 
-  function renderProgress(progress: ToolProgress, skipQueuedDrain?: boolean): void {
-    const message = activeMessage();
-    if (!message || !progress || !progress.id) return;
-    const entry = findEntry(message, progress.id);
-    if (!entry) {
-      pushOrphan(message, '_orphanProgress', progress.id, progress as never);
-      return;
-    }
-    entry._progressPhase = progress.phase;
-    setRun(entry, phaseFromProgress(progress), { elapsedMs: progress.elapsedMs || 0 });
-    /* Keep the bounded output buffer on the entry: the declarative row
-       paints its live tail from `_liveOutput`, so a run whose row is
-       collapsed in a group (or not mounted yet) still has what it printed
-       when it appears. */
-    if (progress.chunk && (progress.phase === 'stdout' || progress.phase === 'stderr' || progress.phase === 'timeout_warning')) {
-      const buffer = entry._liveBuffer || (entry._liveBuffer = createLiveOutputBuffer());
-      buffer.push(progress.phase === 'timeout_warning' ? '\n[' + progress.chunk + ']\n' : progress.chunk);
-      entry._liveOutput = renderLivePreview(buffer.preview());
-    }
-    notifyToolRun(message, true);
-    if (!skipQueuedDrain && entry._pendingProgress && entry._pendingProgress.length) {
-      const queued = entry._pendingProgress.splice(0);
-      for (let i = 0; i < queued.length; i++) renderProgress(queued[i], true);
-    }
-  }
+  const progressRuntime = createProgressRuntime({
+    activeMessage,
+    findEntry,
+    pushOrphan: (message, id, progress) => pushOrphan(message, '_orphanProgress', id, progress as never),
+    setRun: (entry, phase, patch) => setRun(entry, phase, patch),
+    notifyToolRun,
+  });
+  const renderProgress = progressRuntime.renderProgress;
+
+  const resultRuntime = createToolResultRuntime({
+    activeMessage,
+    executionConnections,
+    closeConnection,
+    findEntry,
+    setPreparing: (entry) => { setRun(entry, TOOL_RUN_PHASES.preparing); },
+    recordRowOffset,
+    getRun,
+    isTerminalToolPhase,
+    renderProgress,
+    setRun: (entry, phase, patch) => setRun(entry, phase, patch),
+    publishToolSummary,
+    notifyToolRun,
+    translate,
+  });
+  const agentFrames = createAgentFrameRuntime({
+    activeMessage,
+    findEntry,
+    onToolActivity: () => onToolActivity(),
+    notifyToolRun,
+  });
+  const approvalRuntime = createApprovalRuntime({
+    activeMessage,
+    findEntry,
+    notifyToolRun,
+    pushOrphan,
+    recordToolResult: resultRuntime.recordToolResult,
+    translate,
+  });
+
+  const toolUseRuntime = createToolUseRuntime({
+    activeMessage,
+    findEntry,
+    onToolActivity,
+    copyToolData,
+    getRun,
+    isTerminalToolPhase,
+    setPreparing: (entry) => { setRun(entry, TOOL_RUN_PHASES.preparing); },
+    pendingDeltas,
+    pushPending: (entry, key, value) => pushPending(entry, key, value as never),
+    recordRowOffset,
+    renderProgress,
+    renderApproval: approvalRuntime.renderApproval,
+    drainAgentFrames: agentFrames.drainAgentFrames,
+    connectExecution,
+    publishToolSummary,
+    notifyToolRun,
+  });
 
   function flushDeltas(): void {
     deltaFrame = null;
@@ -713,7 +584,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
          _toolResultApplied. Budget + grace is the safe bound. */
       connection.timer = setTimeout(function () {
         if (!disposed) {
-          recordToolResult({
+          resultRuntime.recordToolResult({
             id: toolCallId,
             ok: false,
             status: 'failed',
@@ -738,7 +609,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       source.addEventListener('result', function (event: MessageEvent) {
         try {
           const data = JSON.parse(event.data) as ToolResult;
-          recordToolResult({
+          resultRuntime.recordToolResult({
             id: toolCallId,
             ok: data.status === 'completed',
             status: data.status,
@@ -758,7 +629,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
         try {
           const data = event.data ? JSON.parse(event.data) as { error?: string } : null;
           if (data && data.error) {
-            recordToolResult({ id: toolCallId, ok: false, status: 'failed', output: '', error: data.error, artifacts: [] });
+            resultRuntime.recordToolResult({ id: toolCallId, ok: false, status: 'failed', output: '', error: data.error, artifacts: [] });
           }
         } catch (_) { /* ignore */ }
         closeConnection(connection);
@@ -766,243 +637,6 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     } catch (_) {
       console.log('[execution-sse] failed');
     }
-  }
-
-  function recordToolUse(call: {
-    id?: string;
-    name?: string;
-    input?: unknown;
-    executionId?: string;
-  }): null {
-    if (!call || !call.name || !activeMessage()) return null;
-    /* onToolActivity may retire the live status through an immutable message
-     * update. Re-read the active entry afterwards so toolCalls never land on
-     * the superseded object captured before that update. */
-    onToolActivity(call.name);
-    const message = activeMessage();
-    if (!message) return null;
-    const requestedId = String(call.id || ('tc-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8)));
-    const existing = findEntry(message, requestedId);
-    if (existing) {
-      existing.name = String(call.name || existing.name);
-      if (call.input != null) existing.input = copyToolData(call.input);
-      if (call.executionId) {
-        existing.executionId = call.executionId;
-        if (!getRun(existing) || !isTerminalToolPhase(getRun(existing)!.phase)) {
-          connectExecution(call.executionId, existing.id);
-        }
-      }
-      publishToolSummary(message, existing, 'running');
-      notifyToolRun(message);
-      return null;
-    }
-    const entry: ToolCallEntry = {
-      id: requestedId,
-      name: String(call.name),
-      input: call.input == null ? null : copyToolData(call.input),
-      output: null,
-      isError: false,
-      artifacts: [],
-    };
-    setRun(entry, TOOL_RUN_PHASES.preparing);
-
-    if (pendingDeltas.length) {
-      const kept: ToolCallDelta[] = [];
-      for (let i = 0; i < pendingDeltas.length; i++) {
-        const delta = pendingDeltas[i];
-        if (delta && delta.id === entry.id) {
-          pushPending(entry, '_pendingDeltas', delta as never);
-        } else {
-          kept.push(delta);
-        }
-      }
-      pendingDeltas.length = 0;
-      for (let i = 0; i < kept.length; i++) pendingDeltas.push(kept[i]);
-      if (entry._pendingDeltas && entry._pendingDeltas.length) {
-        const latest = entry._pendingDeltas[entry._pendingDeltas.length - 1];
-        if (latest && latest.arguments) {
-          if (!entry.input || typeof entry.input !== 'object') entry.input = {};
-          if (!(entry.input as Record<string, unknown>).__raw) (entry.input as Record<string, unknown>).__raw = latest.arguments;
-        }
-      }
-    }
-
-    if (!Array.isArray(message.toolCalls)) message.toolCalls = [];
-    message.toolCalls.push(entry);
-    /* Record the split point on the data the moment it is chosen (see
-       recordRowOffset): the declarative renderer lays the row out from it. */
-    recordRowOffset(entry);
-
-    const orphanDeltas = message._orphanDeltas?.[entry.id];
-    if (orphanDeltas) {
-      delete message._orphanDeltas![entry.id];
-    }
-    if (Array.isArray(orphanDeltas) && orphanDeltas.length) {
-      for (const d of orphanDeltas) pushPending(entry, '_pendingDeltas', d as never);
-    }
-    if (entry._pendingDeltas && entry._pendingDeltas.length) {
-      const queuedDeltas = entry._pendingDeltas.splice(0);
-      for (let deltaIndex = 0; deltaIndex < queuedDeltas.length; deltaIndex++) {
-        if (queuedDeltas[deltaIndex].arguments) entry.argumentsText = queuedDeltas[deltaIndex].arguments;
-      }
-      notifyToolRun(message);
-    }
-    if (entry._pendingProgress && entry._pendingProgress.length) {
-      const queuedProgress = entry._pendingProgress.splice(0);
-      for (let progressIndex = 0; progressIndex < queuedProgress.length; progressIndex++) renderProgress(queuedProgress[progressIndex], true);
-    }
-    const orphanProgress = message._orphanProgress?.[entry.id];
-    if (orphanProgress) delete message._orphanProgress![entry.id];
-    if (Array.isArray(orphanProgress)) {
-      for (let progressIndex = 0; progressIndex < orphanProgress.length; progressIndex++) {
-        renderProgress(orphanProgress[progressIndex], true);
-      }
-    }
-    const orphanApprovals = message._orphanApprovals?.[entry.id];
-    if (orphanApprovals) delete message._orphanApprovals![entry.id];
-    if (Array.isArray(orphanApprovals)) {
-      for (let approvalIndex = 0; approvalIndex < orphanApprovals.length; approvalIndex++) {
-        renderApproval({ ...orphanApprovals[approvalIndex], id: entry.id });
-      }
-    }
-    /* Codex can emit its first step before the tool_use frame lands. */
-    drainAgentFrames(entry, message);
-    if (call.name === 'code_interpreter' && call.executionId) {
-      entry.executionId = call.executionId;
-      connectExecution(call.executionId, entry.id);
-    }
-    publishToolSummary(message, entry, 'running');
-    notifyToolRun(message);
-    return null;
-  }
-
-  /* ── Codex agent steps ──────────────────────────────────────────
-     The workspace agent streams its own activity: each Codex thread item
-     arrives as an `agent_step` frame and its todo list as `agent_plan`.
-     Both are stored on the tool call so history replay and the share view
-     can rebuild them without the live stream; react/tool-run renders them. */
-
-  /** Resolve the entry an agent frame belongs to, tolerating a missing id. */
-  function agentEntryFor(message: ToolMessage, frameId: string): ToolCallEntry | null {
-    const direct = frameId ? findEntry(message, frameId) : null;
-    if (direct) return direct;
-    const calls = Array.isArray(message.toolCalls) ? message.toolCalls : [];
-    for (let index = calls.length - 1; index >= 0; index--) {
-      if (calls[index] && calls[index].name === 'workspace_agent' && !calls[index]._toolResultApplied) {
-        return calls[index];
-      }
-    }
-    return null;
-  }
-
-  function bufferAgentFrame(message: ToolMessage, frame: AgentStepFrame | AgentPlanFrame): void {
-    if (!message._orphanAgentFrames) message._orphanAgentFrames = {};
-    const key = String(frame.id || 'workspace_agent');
-    if (!message._orphanAgentFrames[key]) message._orphanAgentFrames[key] = [];
-    /* Bounded: a long run must not grow this buffer without limit. */
-    if (message._orphanAgentFrames[key].length < 200) message._orphanAgentFrames[key].push(frame);
-  }
-
-  function recordAgentStep(frame: AgentStepFrame): void {
-    let message = activeMessage();
-    if (!message || !frame || !frame.stepId) return;
-    const entry = agentEntryFor(message, String(frame.id || ''));
-    if (!entry) {
-      bufferAgentFrame(message, frame);
-      return;
-    }
-    onToolActivity();
-    message = activeMessage();
-    const liveEntry = message ? agentEntryFor(message, String(frame.id || '')) : null;
-    if (!message || !liveEntry) return;
-    if (frame.runId) liveEntry.runId = String(frame.runId);
-    /* Persisted shape: plain data only, keyed by stepId so the started and
-       completed events collapse into one entry. */
-    const stored: AgentStepData = {
-      stepId: String(frame.stepId),
-      kind: frame.kind,
-      title: frame.title ?? null,
-      detail: frame.detail ?? null,
-      command: frame.command ?? null,
-      status: frame.status,
-      exitCode: frame.exitCode ?? null,
-      durationMs: frame.durationMs ?? null,
-      diffStat: frame.diffStat ?? null,
-      output: frame.output ?? null,
-    };
-    if (!Array.isArray(liveEntry.steps)) liveEntry.steps = [];
-    const existingIndex = liveEntry.steps.findIndex((candidate) => candidate.stepId === stored.stepId);
-    /* Bounded, in reading order: a run that reports more than this keeps the
-       steps the reader saw first, and the session route caps what persists.
-       Containers on an entry are REPLACED, never mutated in place — the
-       projection cache detects change by identity (see projectToolEntry). */
-    if (existingIndex >= 0) {
-      const next = liveEntry.steps.slice(0);
-      next[existingIndex] = stored;
-      liveEntry.steps = next;
-    } else if (liveEntry.steps.length < 60) {
-      liveEntry.steps = [...liveEntry.steps, stored];
-    }
-    notifyToolRun(message);
-  }
-
-  function recordAgentPlan(frame: AgentPlanFrame): void {
-    let message = activeMessage();
-    if (!message || !frame || !Array.isArray(frame.steps) || frame.steps.length === 0) return;
-    const entry = agentEntryFor(message, String(frame.id || ''));
-    if (!entry) {
-      bufferAgentFrame(message, frame);
-      return;
-    }
-    onToolActivity();
-    message = activeMessage();
-    const liveEntry = message ? agentEntryFor(message, String(frame.id || '')) : null;
-    if (!message || !liveEntry) return;
-    if (frame.runId) liveEntry.runId = String(frame.runId);
-    liveEntry.plan = { steps: frame.steps.slice(0, 40), explanation: frame.explanation ?? null };
-    notifyToolRun(message);
-  }
-
-  /** Replay frames that arrived before their tool_use landed. */
-  function drainAgentFrames(entry: ToolCallEntry, message: ToolMessage): void {
-    const buckets = message._orphanAgentFrames;
-    if (!buckets) return;
-    const queued = [
-      ...(buckets[entry.id] || []),
-      ...(entry.name === 'workspace_agent' ? (buckets.workspace_agent || []) : []),
-    ];
-    delete buckets[entry.id];
-    if (entry.name === 'workspace_agent') delete buckets.workspace_agent;
-    for (const frame of queued) {
-      if (frame.type === 'plan') recordAgentPlan({ ...frame, id: entry.id });
-      else recordAgentStep({ ...frame, id: entry.id });
-    }
-  }
-
-  function recordToolApproval(approval: ToolApproval): void {
-    const message = activeMessage();
-    if (!message || !approval || !approval.runId || !approval.approvalId) return;
-    let entry: ToolCallEntry | null = approval.id ? findEntry(message, String(approval.id)) : null;
-    if (!entry && Array.isArray(message.toolCalls)) {
-      /* A provider adapter may omit the presentation id. Attach the approval
-       * to the most recent active workspace-agent call in this message. */
-      for (let index = message.toolCalls.length - 1; index >= 0; index--) {
-        const candidate = message.toolCalls[index];
-        if (candidate && candidate.name === 'workspace_agent' && !candidate._toolResultApplied) {
-          entry = candidate;
-          break;
-        }
-      }
-    }
-    if (!entry) {
-      pushOrphan(message, '_orphanApprovals', String(approval.id || approval.runId), approval as never);
-      return;
-    }
-    const normalized = { ...approval, id: entry.id };
-    entry.approval = normalized;
-    /* Publish: the declarative row renders the panel from entry.approval. */
-    notifyToolRun(message);
-    renderApproval(normalized);
   }
 
   function recordToolProgress(progress: ToolProgress): void {
@@ -1028,144 +662,6 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       notifyToolRun(message);
     }
     connectExecution(event.executionId, event.id);
-  }
-
-  function recordToolResult(result: ToolResult): void {
-    const message = activeMessage();
-    if (!message || !result || !result.id) return;
-    /* The main chat SSE is authoritative. If an explicitly enabled
-       execution EventSource is still open, close it before applying the
-       terminal result so it cannot replay the same result a moment later. */
-    Array.from(executionConnections.values()).forEach(function (connection) {
-      if (connection.key.indexOf(String(result.id) + ':') === 0) closeConnection(connection);
-    });
-    let entry = findEntry(message, result.id);
-    if (!entry) {
-      entry = {
-        id: String(result.id),
-        name: result.name || 'tool',
-        input: null,
-        output: null,
-        isError: false,
-        artifacts: [],
-      };
-      if (!Array.isArray(message.toolCalls)) message.toolCalls = [];
-      message.toolCalls.push(entry);
-      setRun(entry, TOOL_RUN_PHASES.preparing);
-      /* A synthetic entry records where the message text currently ends.
-         Persist the split point directly — a result can land after
-         finish()'s inlineToolRows write-back loop has already run, and
-         without textOffset the row would be lost on history replay. */
-      const mountedOffset = recordRowOffset(entry);
-      if (mountedOffset != null) entry.textOffset = mountedOffset;
-    }
-
-    if (getRun(entry) && isTerminalToolPhase(getRun(entry)!.phase) && entry._toolResultApplied) return;
-
-    if (result.executionId && !entry.executionId) {
-      entry.executionId = result.executionId;
-    }
-    if (entry._pendingProgress && entry._pendingProgress.length) {
-      const queuedProgress = entry._pendingProgress.splice(0);
-      for (let progressIndex = 0; progressIndex < queuedProgress.length; progressIndex++) renderProgress(queuedProgress[progressIndex], true);
-    }
-
-    const awaitingApproval = result.status === 'awaiting_approval';
-    const duration = result.durationMs != null && result.durationMs > 0
-      ? ' [' + (result.durationMs / 1000).toFixed(1) + 's]'
-      : '';
-    let display: string;
-    if (awaitingApproval) {
-      display = translate('tool.codexApprovalCopy', 'Review the action before it continues.');
-    } else if (result.ok === false) {
-      const errorMessage = result.userMessage || result.error || result.errorCode || result.output || 'failed';
-      display = errorMessage + duration;
-      if ((result.name || entry.name) === 'code_interpreter') {
-        const stderr = String(result.stderr || '') + String(result.error || '');
-        /* P_pyerror-hints — when the model gets a Python exception
-           back, a one-line hint about the failure mode cuts redundant
-           "retry with the same broken code" attempts. */
-        if (/SyntaxError|IndentationError/i.test(stderr)) {
-          display += '\n\nHint: Python refused to parse the source — fix the syntax / indentation in the same run, no need to retry the whole flow.';
-        } else if (/ModuleNotFoundError/i.test(stderr)) {
-          display += "\n\nHint: packages in the Pyodide distribution (scipy, sympy, scikit-learn, networkx, pillow…) auto-install on `import` — just import them. For a PyPI-only wheel use `import micropip, asyncio; asyncio.run(micropip.install('pkg'))` in the same run.";
-        } else if (/FileNotFoundError|No such file or directory/i.test(stderr)) {
-          display += '\n\nHint: the scratch dir is session-scoped and persists across every code call in this conversation. Each run prints a `[scratch]` header listing the files currently in /artifacts — read it before guessing a path.';
-        } else if (/PermissionError|IsADirectoryError|NotADirectoryError/i.test(stderr)) {
-          display += '\n\nHint: the path is a directory or not writable. Write to a fresh filename inside /artifacts.';
-        } else if (/NameError/i.test(stderr)) {
-          display += '\n\nHint: a variable / function name is not defined. Either import it or define it earlier in the same run.';
-        } else if (/TypeError/i.test(stderr)) {
-          display += '\n\nHint: a value was passed to an operation with the wrong type. Check the call signature before retrying.';
-        } else if (/ValueError/i.test(stderr)) {
-          display += '\n\nHint: the value passed to a function is the right type but out of range or the wrong shape.';
-        } else if (/IndexError/i.test(stderr)) {
-          display += '\n\nHint: list/sequence index is out of range. Guard with `if i < len(xs):` or use a try/except.';
-        } else if (/KeyError/i.test(stderr)) {
-          display += '\n\nHint: dict lookup failed. Use `.get(key, default)` or `if key in d:` before indexing.';
-        } else if (/ZeroDivisionError/i.test(stderr)) {
-          display += '\n\nHint: division by zero. Add a guard for the denominator.';
-        }
-      }
-    } else {
-      display = (result.output || '(no output)') + (result.stderr ? '\n[stderr]\n' + result.stderr : '') + duration;
-    }
-
-    const terminalPhase = awaitingApproval
-      ? TOOL_RUN_PHASES.running
-      : result.ok === false
-      ? (result.status === 'timeout'
-        ? TOOL_RUN_PHASES.timed_out
-        : result.status === 'cancelled' ? TOOL_RUN_PHASES.cancelled : TOOL_RUN_PHASES.failed)
-      : TOOL_RUN_PHASES.succeeded;
-    setRun(entry, terminalPhase, { endedAt: Date.now(), durationMs: result.durationMs || 0 });
-    entry.output = display;
-    entry.isError = result.ok === false;
-    if (typeof result.status === 'string' && result.status) entry.status = result.status;
-    if (typeof result.durationMs === 'number' && Number.isFinite(result.durationMs)) {
-      entry.durationMs = Math.max(0, result.durationMs);
-    }
-    /* P_error-layering — the declarative row renders userMessage / error /
-       stderr / errorCode as separate layers, but they were never copied
-       onto the record, so the card fell back to `output` (which carries
-       model-facing hint text). Store the structured fields so the UI
-       shows the user layer and the hint stays out of view. */
-    if (result.userMessage != null) entry.userMessage = result.userMessage;
-    if (result.error != null) entry.error = result.error;
-    if (result.stderr) entry.stderr = result.stderr;
-    if (result.errorCode !== undefined) entry.errorCode = result.errorCode ?? null;
-    if (result.detail !== undefined) entry.detail = result.detail ?? null;
-    if (typeof result.retryable === 'boolean') entry.retryable = result.retryable;
-    entry.results = Array.isArray(result.results) ? result.results.slice(0, 20) : [];
-    if (result.visualization && result.visualization.version === 1) {
-      entry.input = result.visualization;
-      entry.visualization = result.visualization;
-    }
-    if (Array.isArray(result.artifacts)) entry.artifacts = normalizeArtifacts(result.artifacts);
-    /* P_artifact-summary-in-context — the model can't see the PNG the
-       run produced unless we tell it explicitly. */
-    if (entry.artifacts && entry.artifacts.length) {
-      const artifactLines = ['[artifacts]'];
-      for (let aIdx = 0; aIdx < entry.artifacts.length; aIdx++) {
-        const a = entry.artifacts[aIdx];
-        const aName = a.name || a.id || 'artifact';
-        const aMime = a.mimeType || 'application/octet-stream';
-        artifactLines.push('- ' + aName + ' (' + aMime + ', id=' + a.id + ')');
-      }
-      entry.output = entry.output ? entry.output + '\n\n' + artifactLines.join('\n') : artifactLines.join('\n');
-    }
-    /* Everything the row reads (output / isError / results / artifacts /
-       visualization) is on the entry by now, so this is the repaint point
-       for the terminal state. Latch the result before publishing so the
-       frozen snapshot contains the complete terminal transition. */
-    if (!awaitingApproval) entry._toolResultApplied = true;
-    const activityState: SummaryToolState = awaitingApproval
-      ? 'awaiting'
-      : result.ok === false
-        ? result.status === 'cancelled' ? 'stopped' : 'error'
-        : 'done';
-    publishToolSummary(message, entry, activityState, result.status);
-    notifyToolRun(message);
   }
 
   function dispose(): void {
@@ -1220,15 +716,15 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
 
   return {
     hasActiveTools,
-    recordToolUse,
+    recordToolUse: toolUseRuntime.recordToolUse,
     recordToolProgress,
     recordToolCallDelta,
     recordExecutionStart,
-    recordToolResult,
-    recordToolApproval,
-    decideApproval,
-    recordAgentStep,
-    recordAgentPlan,
+    recordToolResult: resultRuntime.recordToolResult,
+    recordToolApproval: approvalRuntime.recordToolApproval,
+    decideApproval: approvalRuntime.decideApproval,
+    recordAgentStep: agentFrames.recordAgentStep,
+    recordAgentPlan: agentFrames.recordAgentPlan,
     noteTextDelta,
     cancel,
     dispose,
