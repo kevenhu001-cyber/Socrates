@@ -255,6 +255,33 @@ function handleStubbedApi(req, res, next, localPath) {
         return void readBody(req).then(() => send(res, 200, { ok: true, stub: true }));
 }
 
+/* P_perf-css-preload — Vite injects `modulepreload` for entry JS but nothing
+   for stylesheets. The SPA entry pulls in 8 render-blocking CSS files, and on
+   a cross-border link each one costs a full RTT (measured 0.6–1.8s TTFB per
+   file from Europe) that the parser pays serially before first paint. A
+   `<link rel="preload" as="style">` lets the browser start those fetches while
+   it is still parsing the document, so they overlap instead of stacking.
+   `onload` flips to `onload="this.rel='stylesheet'"` so the resource stays
+   non-blocking, matching how the modulepreload hints already behave. */
+function createCssPreloadPlugin() {
+  return {
+    name: 'socrates-css-preload',
+    enforce: 'post',
+    transformIndexHtml: {
+      order: 'post',
+      handler(html, ctx) {
+        if (!ctx.bundle) return html;
+        const css = Object.keys(ctx.bundle).filter((f) => f.endsWith('.css'));
+        if (!css.length) return html;
+        const tags = css
+          .map((f) => `<link rel="preload" as="style" href="/${f}" onload="this.onload=null;this.rel='stylesheet'">`)
+          .join('\n    ');
+        return html.replace('</head>', `    ${tags}\n  </head>`);
+      },
+    },
+  };
+}
+
 /* P_perf-gzip-static — production nginx serves /assets/ with
    `gzip_static on` (ops/nginx/app-performance.conf.example), which only
    picks up pre-compressed `<file>.gz` siblings. Vite does not emit them,
@@ -471,6 +498,7 @@ export default defineConfig({
     createLocalApiStubPlugin(),
     // createObfuscatorPlugin(),
     createPrecompressedAssetsPlugin(),
+    createCssPreloadPlugin(),
   ],
   server: {
     port: 5173,
