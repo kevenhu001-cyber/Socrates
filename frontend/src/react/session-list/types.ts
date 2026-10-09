@@ -1,3 +1,5 @@
+import type { MouseEvent as ReactMouseEvent, RefObject } from 'react';
+
 /**
  * Shared contracts for the session-list (recents) React migration boundary.
  *
@@ -37,6 +39,28 @@ export interface SessionListBridge {
   getSnapshot: () => SessionListSnapshot;
   publish: (snapshot: Omit<SessionListSnapshot, 'revision'>) => void;
   subscribe: (listener: () => void) => () => void;
+}
+
+export interface SessionProjectOption {
+  id: string;
+  name: string;
+}
+
+export interface SessionRowMenuProps {
+  session: SessionItem;
+  anchor: RefObject<HTMLElement | null>;
+  open: boolean;
+  projects: SessionProjectOption[] | null;
+  saving: boolean;
+  onClose: () => void;
+  onBack: () => void;
+  onChooseProject: (projectId: string) => void;
+  onRename: (event: ReactMouseEvent) => void;
+  onTag: (event: ReactMouseEvent) => void;
+  onPin: () => void;
+  onArchive: (event: ReactMouseEvent) => void;
+  onDelete: (event: ReactMouseEvent) => void;
+  onMoveToProject: () => void;
 }
 
 declare global {
