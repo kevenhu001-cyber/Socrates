@@ -1,65 +1,33 @@
 import { reportSwallow } from '../util/reportSwallow.ts';
-// @ts-nocheck
-/**
- * apiFetch + apiFetchRaw + retryApiFetch — the single point of
- * contact with the Socrates backend.
- *
- *  - Always includes credentials so the sid cookie travels.
- *  - Attaches X-CSRF-Token for state-changing requests.
- *  - No response timeout at all. The request is only aborted when the
- *    caller passes opts.signal (user stop / session switch). Reasoning
- *    models may think for an unbounded amount of time, so the client
- *    must never decide on its own that a response took too long.
- *  - Normalises both `fetch()` throws (network / CORS / offline) and
- *    non-2xx responses into a single ApiError shape.
- *  - Exposes opts.signal so callers can chain their own AbortController.
- *
- * Returns parsed JSON on success, throws ApiError on failure.
- *
- * Auth-expiry / CSRF-replay behaviour is delegated through
- * `installAuthHooks({ on401, isInGraceWindow })` so this module
- * doesn't have a hard dependency on main.js's UI primitives
- * (showGate / showAuthSignin). The entry point calls the hook
- * function once at boot.
- */
+import { authExpiryIsSuppressed, notifyUnauthorized, refreshCsrfToken } from './api/auth.js';
+import { createRetryApiFetch } from './api/retry.js';
+import { linkAbortSignal, prepareApiRequest } from './api/request.js';
 
-/* P_cdn-bypass — the CDN (Tencent EdgeOne) has cached stale responses
- * for /api/ paths and ignores Cache-Control headers. Use /api/v2/ prefix
- * which the CDN has never seen, so every request hits the origin fresh.
- * Nginx rewrites /api/v2/* → /api/* before proxying to the backend. */
-const API_PREFIX = '/api/v2';
-
-let _on401 = null;
-let _isInGraceWindow = () => false;
-
-export function installAuthHooks({ on401, isInGraceWindow }) {
-  if (on401) _on401 = on401;
-  if (isInGraceWindow) _isInGraceWindow = isInGraceWindow;
-}
+export { installAuthHooks } from './api/auth.js';
+export { getCsrfToken } from './api/request.js';
 
 /**
- * Unified ApiError shape — every apiFetch rejection is normalised
- * to this:
- *   { status, code, message, body, retried }
+ * ApiError shape shared by JSON and streaming calls:
+ * { status, code, message, body, retried }
  *
- * `status` is 0 for network / abort; `code` is the server's
- * `code` field (e.g. "TOO_MANY_REQUESTS") when available.
+ * The API client keeps request normalization, auth recovery, response
+ * parsing, and retry policy in focused modules while preserving these
+ * stable public entry points.
  */
 export function makeApiError(status, message, body, code, retried) {
-  const err = new Error(message);
-  err.status = status;
-  err.code = code;
-  err.body = body;
-  err.retried = retried || 0;
-  err.isApiError = true;
-  return err;
+  const error = new Error(message);
+  error.status = status;
+  error.code = code;
+  error.body = body;
+  error.retried = retried || 0;
+  error.isApiError = true;
+  return error;
 }
 
-/* A response whose body the caller will read incrementally (SSE). */
-function isEventStreamResponse(r) {
+function isEventStreamResponse(response) {
   try {
-    const type = r && r.headers && typeof r.headers.get === 'function'
-      ? String(r.headers.get('content-type') || '')
+    const type = response && response.headers && typeof response.headers.get === 'function'
+      ? String(response.headers.get('content-type') || '')
       : '';
     return /text\/event-stream/i.test(type);
   } catch (_) {
@@ -67,221 +35,122 @@ function isEventStreamResponse(r) {
   }
 }
 
-export function getCsrfToken() {
-  const m = document.cookie.match(/\bcsrf=([^;]+)/);
-  return m ? m[1] : null;
+async function throwRawResponseError(response) {
+  let text = '';
+  let body = null;
+  try { text = await response.text(); }
+  catch (error) { reportSwallow(error, 'util/api.rawError.readBody'); }
+  try { if (text) body = JSON.parse(text); }
+  catch (error) { reportSwallow(error, 'util/api.rawError.parseBody'); }
+  const message = (body && body.message)
+    || (body && body.detail)
+    || (body && body.error)
+    || text
+    || response.statusText
+    || ('HTTP ' + response.status);
+  throw makeApiError(response.status, String(message).slice(0, 200), body, (body && body.code) || null, 0);
 }
 
-/**
- * Like apiFetch, but returns the raw Response so streaming callers
- * (SSE, chunked) can consume the body themselves. Adds the same
- * CSRF header, credentials, 401 → on401, and 403 → refresh+yield+
- * replay-once behaviour.
- *
- * Use this for /api/chat/stream, /api/search, /api/fetch-batch.
- * For ordinary JSON endpoints, use apiFetch.
- */
-export async function apiFetchRaw(path, opts = {}) {
-  /* P_cdn-bypass — prepend /api/v2 prefix to bypass stale CDN cache.
-     Idempotent: if the path is already /api/v2/* (or starts with the
-     prefix from a wrapper), don't double-prepend into /api/v2/v2/*. */
-  if (!path.startsWith(API_PREFIX + '/')) path = path.replace(/^\/api\//, API_PREFIX + '/');
-  opts.credentials = 'include';
-  if (!opts.headers) opts.headers = {};
-  if (opts.body && typeof opts.body !== 'string' && !(opts.body instanceof FormData)) {
-    opts.body = JSON.stringify(opts.body);
-    opts.headers['Content-Type'] = 'application/json';
-  }
-  const method = (opts.method || 'GET').toUpperCase();
-  if (method !== 'GET' && method !== 'HEAD') {
-    const t = getCsrfToken();
-    if (t) opts.headers['X-CSRF-Token'] = t;
-  }
-  const controller = new AbortController();
-  /* P_abort_listener_cleanup — the listener we add to opts.signal
-     captures `controller`. Once a plain response is back it is dead
-     weight, and callers that re-use a long-lived signal would grow the
-     listener chain, so it is detached as soon as the call ends.
-     P_stream-abort-link — except for an event stream: its body is read
-     long after fetch() resolves, and `controller` is what the browser
-     cancels the body (and the connection) with. Detaching at the headers
-     turned every later Stop / supersede into a UI-only abort while the
-     socket kept downloading, and the server kept generating. Streaming
-     callers pass a per-attempt signal, so the `{ once: true }` listener
-     goes away with it. */
-  let onCallerAbort = null;
-  if (opts.signal) {
-    if (opts.signal.aborted) { try { controller.abort(); } catch (e) {reportSwallow(e, 'util/api.apiFetchRaw'); } }
-    else {
-      onCallerAbort = () => { try { controller.abort(); } catch (e) {reportSwallow(e, 'util/api.apiFetchRaw#2'); } };
-      opts.signal.addEventListener('abort', onCallerAbort, { once: true });
-    }
-  }
-  let r;
+function makeJsonResponseError(response, body) {
+  const message = (body && (body.message || body.detail || body.title || body.error)) || ('HTTP ' + response.status);
+  const error = makeApiError(
+    response.status,
+    typeof message === 'string' ? message : ('HTTP ' + response.status),
+    body,
+    body && body.code,
+    0,
+  );
   try {
-    r = await fetch(path, Object.assign({}, opts, { signal: controller.signal }));
-  } catch {
-    if (opts.signal && onCallerAbort) {
-      try { opts.signal.removeEventListener('abort', onCallerAbort); } catch (e) {reportSwallow(e, 'util/api.apiFetchRaw#3'); }
-    }
+    const requestId = response.headers && typeof response.headers.get === 'function'
+      ? response.headers.get('X-Request-Id')
+      : null;
+    if (requestId) error.requestId = requestId;
+  } catch (caught) { reportSwallow(caught, 'util/api.jsonError.requestId'); }
+  return error;
+}
+
+/** Return a raw Response for SSE and other incrementally-read bodies. */
+export async function apiFetchRaw(path, opts = {}) {
+  const request = prepareApiRequest(path, opts);
+  const linkedSignal = linkAbortSignal(opts.signal, 'util/api.apiFetchRaw');
+  let response;
+  try {
+    response = await fetch(request.path, Object.assign({}, request.opts, {
+      signal: linkedSignal.controller.signal,
+    }));
+  } catch (_) {
+    linkedSignal.detach();
     throw makeApiError(0, '网络异常，请检查连接后重试', null, 'NETWORK', 0);
   }
-  if (opts.signal && onCallerAbort && !(r.ok && isEventStreamResponse(r))) {
-    try { opts.signal.removeEventListener('abort', onCallerAbort); } catch (e) {reportSwallow(e, 'util/api.apiFetchRaw#4'); }
-  }
-  if (!r.ok) {
-    if (r.status === 401 && !opts._authEndpoint && !_isInGraceWindow()) {
-      try { _on401 && _on401('apiFetchRaw:' + method + ' ' + path); } catch (e) {reportSwallow(e, 'util/api.apiFetchRaw#5'); }
-    } else if (r.status === 403 && !opts._csrfRetried && method !== 'GET' && method !== 'HEAD') {
-      try { await fetch('/api/v2/auth/csrf-token', { credentials: 'include' }); } catch (e) {reportSwallow(e, 'util/api.apiFetchRaw#6'); }
-      await new Promise((res) => setTimeout(res, 0));
-      return apiFetchRaw(path, Object.assign({}, opts, { _csrfRetried: true }));
+
+  /* Keep the caller listener attached while an SSE body is being consumed;
+     for every other response the fetch is complete and cleanup is safe. */
+  if (!(response.ok && isEventStreamResponse(response))) linkedSignal.detach();
+
+  if (!response.ok) {
+    if (response.status === 401 && !opts._authEndpoint && !authExpiryIsSuppressed()) {
+      notifyUnauthorized('apiFetchRaw', request.method, request.path);
+    } else if (shouldRefreshCsrf(response, opts, request.method)) {
+      await refreshCsrfToken(undefined, 'util/api.apiFetchRaw');
+      return apiFetchRaw(request.path, Object.assign({}, opts, { _csrfRetried: true }));
     }
-    let txt = '';
-    let parsedBody = null;
-    try { txt = await r.text(); } catch (e) {reportSwallow(e, 'util/api.apiFetchRaw#7'); }
-    try { if (txt) parsedBody = JSON.parse(txt); } catch (e) {reportSwallow(e, 'util/api.apiFetchRaw#8'); }
-    const msg = (parsedBody && parsedBody.message) || (parsedBody && parsedBody.detail) || (parsedBody && parsedBody.error) || txt || r.statusText || ('HTTP ' + r.status);
-    throw makeApiError(r.status, String(msg).slice(0, 200), parsedBody, (parsedBody && parsedBody.code) || null, 0);
+    await throwRawResponseError(response);
   }
-  return r;
+  return response;
 }
 
+/** Fetch and parse a JSON API response. */
 export async function apiFetch(path, opts = {}) {
-  /* P_cdn-bypass — prepend /api/v2 prefix to bypass stale CDN cache.
-     Idempotent: see apiFetchRaw. */
-  if (!path.startsWith(API_PREFIX + '/')) path = path.replace(/^\/api\//, API_PREFIX + '/');
-  opts.credentials = 'include';
-  if (!opts.headers) opts.headers = {};
-  if (opts.body && typeof opts.body !== 'string' && !(opts.body instanceof FormData)) {
-    opts.body = JSON.stringify(opts.body);
-    opts.headers['Content-Type'] = 'application/json';
-  }
-  const method = (opts.method || 'GET').toUpperCase();
-  if (method !== 'GET' && method !== 'HEAD') {
-    const token = getCsrfToken();
-    if (token) opts.headers['X-CSRF-Token'] = token;
-  }
-  /* P_cache-busting — append a cache nonce to GET requests so CDN
-   * edge caches (e.g. Tencent EdgeOne) always fetch fresh content
-   * from the origin. Without this, a CDN that cached an early
-   * empty response from /api/sessions will keep serving it even
-   * after the backend has real data, because the CDN doesn't
-   * re-validate until the cached entry's TTL expires. The server
-   * now sets Cache-Control: no-cache but the old cached entry
-   * persists in the CDN until purged. A unique query param makes
-   * every URL a new cache key, bypassing the stale entry.
-   * The server ignores the `cb` param (no signing covers query).
-   *
-   * NOTE: Use `cb=` (not `_t=`) to avoid Chromium's Tracking
-   * Prevention, which blocks requests with timestamp-like query
-   * parameters (e.g. `_t=`, `_ts=`, `timestamp=`) as suspected
-   * fingerprinting vectors. */
-  if (method === 'GET') {
-    const sep = path.indexOf('?') >= 0 ? '&' : '?';
-    path = path + sep + 'cb=' + Date.now();
-    opts.cache = 'no-store';
-    opts.headers['Cache-Control'] = 'no-store';
-    opts.headers['Pragma'] = 'no-cache';
-  }
+  const request = prepareApiRequest(path, opts, { cacheBustGet: true });
   const userSignal = opts.signal || null;
-  const controller = new AbortController();
-  // Track the abort listener so we can detach it after the call completes,
-  // preventing listener accumulation when a long-lived signal is reused.
-  let onUserAbort = null;
-  if (userSignal) {
-    if (userSignal.aborted) { try { controller.abort(); } catch (e) {reportSwallow(e, 'util/api.apiFetch'); } }
-    else {
-      onUserAbort = () => { try { controller.abort(); } catch (e) {reportSwallow(e, 'util/api.apiFetch#2'); } };
-      userSignal.addEventListener('abort', onUserAbort, { once: true });
-    }
-  }
-  let r;
+  const linkedSignal = linkAbortSignal(userSignal, 'util/api.apiFetch');
+  let response;
   try {
-    r = await fetch(path, Object.assign({}, opts, { signal: controller.signal }));
-  } catch (e) {
-    if (userSignal && onUserAbort) {
-      try { userSignal.removeEventListener('abort', onUserAbort); } catch (e) {reportSwallow(e, 'util/api.apiFetch#3'); }
-    }
-    const aborted = e && (e.name === 'AbortError' || controller.signal.aborted);
+    response = await fetch(request.path, Object.assign({}, request.opts, {
+      signal: linkedSignal.controller.signal,
+    }));
+  } catch (caught) {
+    const aborted = caught && (caught.name === 'AbortError' || linkedSignal.controller.signal.aborted);
     throw makeApiError(
       0,
       aborted ? '请求被取消' : '网络异常，请检查连接后重试',
       null,
       aborted ? 'ABORTED' : 'NETWORK',
-      0
+      0,
     );
   } finally {
-    if (userSignal && onUserAbort) {
-      try { userSignal.removeEventListener('abort', onUserAbort); } catch (e) {reportSwallow(e, 'util/api.apiFetch#4'); }
-    }
+    linkedSignal.detach();
   }
-  let text;
-  try { text = await r.text(); } catch {
-    throw makeApiError(r.status || 0, '响应读取失败', null, 'READ_BODY', 0);
+
+  const body = await readJsonBody(response);
+  if (response.ok) return body;
+
+  const error = makeJsonResponseError(response, body);
+  if (response.status === 401 && !opts._authEndpoint && !authExpiryIsSuppressed()) {
+    notifyUnauthorized('apiFetch', request.method, request.path);
+  } else if (shouldRefreshCsrf(response, opts, request.method)) {
+    /* Use a fresh signal so a user stop on the original request cannot
+       prevent CSRF refresh and turn the replay into another 403. */
+    const refreshController = new AbortController();
+    await refreshCsrfToken(refreshController.signal, 'util/api.apiFetch');
+    return apiFetch(request.path, Object.assign({}, opts, { _csrfRetried: true }));
   }
-  let json = null;
-  try { json = text ? JSON.parse(text) : null; } catch (e) {reportSwallow(e, 'util/api.apiFetch#5'); }
-  if (!r.ok) {
-    /* M3 — surface the server's message/code. The validation error shape
-       is {code:'VALIDATION_ERROR', message:'Request validation failed'} —
-       the old lookup (detail/title/error only) discarded `message` and
-       every 400 rendered as the opaque 'HTTP 400'. */
-    const msg = (json && (json.message || json.detail || json.title || json.error)) || ('HTTP ' + r.status);
-    const err = makeApiError(r.status, typeof msg === 'string' ? msg : ('HTTP ' + r.status), json, json && json.code, 0);
-    try {
-      const rid = r.headers && typeof r.headers.get === 'function' ? r.headers.get('X-Request-Id') : null;
-      if (rid) err.requestId = rid;
-    } catch (e) {reportSwallow(e, 'util/api.apiFetch#6'); }
-    if (r.status === 401 && !opts._authEndpoint && !_isInGraceWindow()) {
-      try { _on401 && _on401('apiFetch:' + method + ' ' + path); } catch (e) {reportSwallow(e, 'util/api.apiFetch#7'); }
-    } else if (r.status === 403 && !opts._csrfRetried && method !== 'GET' && method !== 'HEAD') {
-      // Use a fresh AbortController for the CSRF refresh — the original
-      // controller may already be aborted by a user stop, which would
-      // silently fail the CSRF token fetch and leave the retry without a
-      // valid token, causing a permanent 403 loop.
-      const csrfController = new AbortController();
-      try { await fetch('/api/v2/auth/csrf-token', { credentials: 'include', signal: csrfController.signal }); } catch (e) {reportSwallow(e, 'util/api.apiFetch#8'); }
-      await new Promise((res) => setTimeout(res, 0));
-      return apiFetch(path, Object.assign({}, opts, { _csrfRetried: true }));
-    }
-    throw err;
-  }
-  return json;
+  throw error;
 }
 
-/**
- * Retry wrapper. Retries on:
- *   - status 0 (network / abort)
- *   - status 408 / 429 / 5xx
- * Linear backoff with light jitter. Aborted requests are NOT
- * retried. Caller can override retries (default 2) and
- * backoffMs (default 400).
- */
-export async function retryApiFetch(path, opts, retryOpts) {
-  retryOpts = retryOpts || {};
-  const retries = typeof retryOpts.retries === 'number' ? retryOpts.retries : 2;
-  const backoffMs = typeof retryOpts.backoffMs === 'number' ? retryOpts.backoffMs : 400;
-  const userSignal = opts && opts.signal;
-  let attempt = 0;
-  while (true) {
-    try {
-      return await apiFetch(path, opts);
-    } catch (e) {
-      const retryable = e && (
-        e.status === 0 || e.status === 408 || e.status === 429 ||
-        (e.status >= 500 && e.status < 600)
-      );
-      if (!retryable || attempt >= retries) throw e;
-      if (userSignal && userSignal.aborted) throw e;
-      attempt++;
-      e.retried = attempt;
-      /* P_retry-jitter — the previous jitter of ±40ms was too small
-         to spread concurrent retries from parallel requests (Bug 13).
-         With jitter proportional to backoffMs, N requests that fail
-         simultaneously spread their retries over a wider window. */
-      const wait = backoffMs * attempt + Math.floor(Math.random() * backoffMs);
-      await new Promise((res) => setTimeout(res, wait));
-    }
+function shouldRefreshCsrf(response, opts, method) {
+  return response.status === 403 && !opts._csrfRetried && method !== 'GET' && method !== 'HEAD';
+}
+
+async function readJsonBody(response) {
+  let text;
+  try { text = await response.text(); }
+  catch (_) { throw makeApiError(response.status || 0, '响应读取失败', null, 'READ_BODY', 0); }
+  try { return text ? JSON.parse(text) : null; }
+  catch (error) {
+    reportSwallow(error, 'util/api.jsonResponse.parseBody');
+    return null;
   }
 }
+
+export const retryApiFetch = createRetryApiFetch(apiFetch);
