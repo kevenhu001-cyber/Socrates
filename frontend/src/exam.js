@@ -14,6 +14,9 @@ import { toggleShareBtn } from './ui/share.js';
 import { prefersReducedMotion } from './ui/motion.js';
 import { activateMainView } from './ui/mainViewController.js';
 import { getProviderConfigSnapshot, setActiveProviderLocal } from './config/providerConfig.service.ts';
+import { detectExamLang, parseExamArrayJSON, parseSingleExamQuestion } from './exam/parsing.js';
+
+export { parseExamArrayJSON, parseSingleExamQuestion };
 
 /* ── module-level state ── */
 var _examSelectedTypes = { mc: true, fb: true, sa: false };
@@ -375,20 +378,6 @@ export function adjustExamCount(delta) {
   if (display) display.textContent = String(next);
 }
 
-function detectExamLang(topic) {
-  if (!topic) return "English";
-  if (/[一-鿿]/.test(topic)) return "Chinese";
-  if (/[぀-ゟ゠-ヿ]/.test(topic)) return "Japanese";
-  if (/[가-힯]/.test(topic)) return "Korean";
-  if (/[Ѐ-ӿ]/.test(topic)) return "Russian";
-  if (/[؀-ۿ]/.test(topic)) return "Arabic";
-  if (/[ऀ-ॿ]/.test(topic)) return "Hindi";
-  if (/[Ͱ-Ͽ]/.test(topic)) return "Greek";
-  if (/[֐-׿]/.test(topic)) return "Hebrew";
-  if (/[฀-๿]/.test(topic)) return "Thai";
-  return "English";
-}
-
 export function startExamGeneration() {
   var topic = document.getElementById("examTopic").value.trim();
   if (!topic) { document.getElementById("examTopic").focus(); return; }
@@ -607,77 +596,6 @@ async function generateAllQuestions(topic, count, difficulty, typeStr, instructi
   }
   renderAllQuestions();
   finishExamGeneration();
-}
-
-export function parseSingleExamQuestion(text) {
-  try {
-    var raw = String(text || "").replace(/```(?:json|JSON)?\s*/g, "").replace(/\s*```/g, "").replace(/<(?:thinking|think)>[\s\S]*?(<\/(?:thinking|think)>|$)/gi, "").replace(/\[(?:thinking|think)\][\s\S]*?(\[\/(?:thinking|think)\]|$)/gi, "").trim();
-    var idx = 0, end = raw.lastIndexOf("}");
-    if (end < 0) return null;
-    while (idx <= end) {
-      var start = raw.indexOf("{", idx);
-      if (start < 0 || start >= end) return null;
-      var jsonStr = raw.slice(start, end + 1);
-      try {
-        var parsed = JSON.parse(jsonStr);
-        if (parsed && typeof parsed.q === "string" && parsed.type) {
-          if (parsed.type !== "multiple-choice" && parsed.type !== "fill-blank" && parsed.type !== "short-answer") parsed.type = "fill-blank";
-          if (!parsed.explanation) parsed.explanation = "";
-          return parsed;
-        }
-      } catch (e) { reportSwallow(e, 'exam.parseSingleExamQuestion.innerSlice'); }
-      idx = start + 1;
-    }
-    return null;
-  } catch (_) { return null }
-}
-
-export function parseExamArrayJSON(text) {
-  if (!text || typeof text !== "string") return null;
-  var clean = text.replace(/```(?:json|JSON)?\s*/g, "").replace(/\s*```/g, "").replace(/<(?:thinking|think)>[\s\S]*?(<\/(?:thinking|think)>|$)/gi, "").replace(/\[(?:thinking|think)\][\s\S]*?(\[\/(?:thinking|think)\]|$)/gi, "").trim();
-  try {
-    var direct = JSON.parse(clean);
-    if (direct && Array.isArray(direct.questions)) return direct;
-    if (Array.isArray(direct)) return { questions: direct };
-  } catch (e) { reportSwallow(e, 'exam.parseExamArrayJSON.directParse'); }
-  function findBalanced(s, openCh, closeCh) {
-    var start = -1, depth = 0, inStr = false, escape = false, quote = null;
-    for (var i = 0; i < s.length; i++) {
-      var ch = s[i];
-      if (inStr) {
-        if (escape) { escape = false; continue }
-        if (ch === "\\") { escape = true; continue }
-        if (ch === quote) { inStr = false; quote = null }
-        continue;
-      }
-      if (ch === '"' || ch === "'") { inStr = true; quote = ch; continue }
-      if (ch === openCh) {
-        if (depth === 0) start = i;
-        depth++;
-      } else if (ch === closeCh) {
-        depth--;
-        if (depth === 0 && start >= 0) return s.slice(start, i + 1);
-      }
-    }
-    return null;
-  }
-  var objSlice = findBalanced(clean, "{", "}");
-  if (objSlice) {
-    try {
-      var parsed = JSON.parse(objSlice);
-      if (parsed && Array.isArray(parsed.questions)) return parsed;
-      if (Array.isArray(parsed)) return { questions: parsed };
-    } catch (e) { reportSwallow(e, 'exam.findBalanced.bracedSlice'); }
-  }
-  var arrSlice = findBalanced(clean, "[", "]");
-  if (arrSlice) {
-    try {
-      var arr = JSON.parse(arrSlice);
-      if (Array.isArray(arr)) return { questions: arr };
-    } catch (e) { reportSwallow(e, 'exam.findBalanced.bracketSlice'); }
-  }
-  console.warn("[exam] parseExamArrayJSON failed. Raw response (first 800 chars):", text.slice(0, 800));
-  return null;
 }
 
 export function renderAllQuestions() {
