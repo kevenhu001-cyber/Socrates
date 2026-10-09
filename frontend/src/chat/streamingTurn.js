@@ -42,6 +42,7 @@ import { createFinishRender } from './turn/finishRender.js';
 import { createFinishViewport } from './turn/finishViewport.js';
 import { createAbortPath } from './turn/abortPath.js';
 import { createErrorPath } from './turn/errorPath.js';
+import { createMessageOwnership } from './turn/messageOwnership.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 function _t(key, fallback) {
@@ -241,23 +242,10 @@ export function addStreamingMessage(opts){
      OUR placeholder (by clientId), so no cross-session pollution is
      possible even in the race window. */
   var ownerSessionId=stateStore.read("currentSessionId")||null;
-  function ownsMessageSlot(){
-    if(stateStore.read("currentSessionId")!==ownerSessionId)return false;
-    if(msgIdx<0||!stateStore.read("messages")[msgIdx])return false;
-    if(stateStore.read("messages")[msgIdx].clientId!==clientId)return false;
-    return true;
-  }
-  function stillOwnsSlot(){
-    if(state._disposed||state.finished)return false;
-    return ownsMessageSlot();
-  }
-  function patchOwnedMessage(patch,deferNotify){
-    if(!ownsMessageSlot())return null;
-    return stateStore.dispatch({
-      type:"session/update-message",index:msgIdx,clientId:clientId,
-      patch:patch,deferNotify:deferNotify===true
-    });
-  }
+  var messageOwnership=createMessageOwnership(state,ownerSessionId,stateStore);
+  var ownsMessageSlot=messageOwnership.ownsMessageSlot;
+  var stillOwnsSlot=messageOwnership.stillOwnsSlot;
+  var patchOwnedMessage=messageOwnership.patchOwnedMessage;
   state.ownsMessageSlot=ownsMessageSlot;
   state.patchOwnedMessage=patchOwnedMessage;
   var pendingRender=null;
