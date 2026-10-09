@@ -2,14 +2,28 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { JSDOM } from 'jsdom';
 import { marked } from 'marked';
 import {
   getStreamRenderInterval,
   isStableMarkdownPrefix,
   splitStreamingMarkdown,
 } from '../src/render/streaming.js';
-import { formatMsg, formatMsgProgressive as renderProgressive, stripMarkdown } from '../src/render/markdown.js';
-import { stripChatArtifacts } from '../src/util/stripChatArtifacts.js';
+
+/* DOMPurify is bundled by Vite (no CDN global) and only exposes `.sanitize`
+   when `window.document` exists — otherwise it reports isSupported:false and
+   sanitizeHtml() fails closed to escHTML(), escaping every tag. Stand up a DOM
+   before importing markdown.js so these renders match the browser. Same
+   pattern as test/messageOps.test.mjs. */
+const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost/' });
+globalThis.window = dom.window;
+globalThis.document = dom.window.document;
+for (const key of ['Element', 'Node', 'NodeFilter', 'DocumentFragment', 'HTMLElement', 'HTMLTemplateElement']) {
+  if (globalThis[key] === undefined) globalThis[key] = dom.window[key];
+}
+
+const { formatMsg, formatMsgProgressive: renderProgressive, stripMarkdown } = await import('../src/render/markdown.js');
+const { stripChatArtifacts } = await import('../src/util/stripChatArtifacts.js');
 
 /* Load the vendored KaTeX UMD into a bare VM context and hand it back,
    mirroring how lazy.js injects it into the page. Tests that need real

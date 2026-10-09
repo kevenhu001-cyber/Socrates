@@ -12,10 +12,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { JSDOM } from 'jsdom';
 import { marked } from 'marked';
 
-import { formatMsg, formatMsgProgressive, replaceInlineDollarMath, _looksLikeNumericMath } from '../src/render/markdown.js';
-import { fixHeadingMarkers } from '../src/render/helpers.js';
+/* DOMPurify is bundled by Vite (no CDN global) and only exposes `.sanitize`
+   when `window.document` exists — otherwise it reports isSupported:false and
+   sanitizeHtml() fails closed to escHTML(), which would escape every tag and
+   make these assertions meaningless. Stand up a DOM before importing the
+   renderers so they run under the same conditions as the browser. Same
+   pattern as test/messageOps.test.mjs. */
+const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost/' });
+globalThis.window = dom.window;
+globalThis.document = dom.window.document;
+for (const key of ['Element', 'Node', 'NodeFilter', 'DocumentFragment', 'HTMLElement', 'HTMLTemplateElement']) {
+  if (globalThis[key] === undefined) globalThis[key] = dom.window[key];
+}
+
+const { formatMsg, formatMsgProgressive, replaceInlineDollarMath, _looksLikeNumericMath } = await import('../src/render/markdown.js');
+const { fixHeadingMarkers } = await import('../src/render/helpers.js');
 
 function loadRealKatex() {
   const code = readFileSync(new URL('../src/vendor-files/katex/katex.min.js', import.meta.url), 'utf8');
@@ -37,8 +51,25 @@ function withRenderers(fn) {
   }
 }
 
-/** TeX sources KaTeX rendered, in order. */
-const formulas = (html) => [...html.matchAll(/<annotation encoding="application\/x-tex">([\s\S]*?)<\/annotation>/g)].map((m) => m[1]);
+/** TeX sources KaTeX rendered, in order.
+ *
+ *  KaTeX emits `<annotation encoding="application/x-tex">…</annotation>` as a
+ *  sibling of the visible HTML, but DOMPurify strips that tag (it is not in the
+ *  allow-list) — in the browser too, not just here. The MathML block keeps the
+ *  raw TeX as its trailing text node, so read the source from there instead.
+ */
+const formulas = (html) => {
+  const doc = new dom.window.DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
+  return [...doc.querySelectorAll('math')].map((math) => {
+    // The structured MathML children come first; the raw TeX source is the
+    // text that follows the last child element inside <math>.
+    let source = '';
+    for (const node of math.childNodes) {
+      if (node.nodeType === dom.window.Node.TEXT_NODE) source += node.nodeValue;
+    }
+    return source.trim();
+  });
+};
 const both = (src) => ({
   final: formatMsg(src),
   live: formatMsgProgressive(src, { complete: true }),
