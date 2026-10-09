@@ -16,163 +16,13 @@ import {
   waitForAIRetry,
 } from './retryPolicy.ts';
 import { consumeSseBuffer } from '../../../packages/core/src/index.ts';
-import { notifySpeedFallbackOnce } from './speedFallback.js';
-import { createChatTurn, getChatTurn, subscribeChatTurnEvents } from './turnClient.ts';
+import { createChatTurn } from './turnClient.ts';
+import { recoverDetachedTurn } from './detachedTurnRecovery.js';
+import { createStreamFrameProcessor, makeStreamError } from './streamFrameProcessor.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 function setLastCallError(value){
   stateStore.dispatch({type:'state/set',key:'lastCallError',value:value});
-}
-
-async function recoverDetachedTurn(turnId, context) {
-  var full = context.currentFull || "";
-  var onDelta = context.onDelta;
-  var onThinking = context.onThinking;
-  var opts = context.opts;
-  var signal = context.signal;
-
-  var subAbort = new AbortController();
-  var abortBridge = function() {
-    try { subAbort.abort("user-abort"); } catch (e) { reportSwallow(e, 'chat/stream.recoverDetachedTurn.abortBridge'); }
-  };
-  if (signal) {
-    if (signal.aborted) return null;
-    signal.addEventListener("abort", abortBridge, { once: true });
-  }
-
-  // 1. Initial status check
-  try {
-    var initial = await getChatTurn(turnId);
-    if (initial && initial.turn) {
-      if (initial.turn.status === "completed") {
-        var completedText = initial.turn.fullText || "";
-        if (completedText.length > full.length) {
-          var remaining = completedText.slice(full.length);
-          full = completedText;
-          try { if (typeof onDelta === "function") onDelta(remaining); } catch (e) { reportSwallow(e, 'chat/stream.recoverDetachedTurn.onDelta.remaining'); }
-        }
-        return { text: full, html: null, widgets: [] };
-      }
-      if (initial.turn.status === "failed" || initial.turn.status === "interrupted") {
-        return null;
-      }
-    }
-  } catch (e) { reportSwallow(e, 'chat/stream.recoverDetachedTurn.initialCheck'); }
-
-  // 2. Subscribe and poll
-  var done = false;
-  var failed = false;
-  var maxSeq = 0;
-
-  function handleFrame(frame) {
-    if (!frame) return;
-    try {
-      var data = frame.data || {};
-      if (frame.event === "content" && typeof data.delta === "string") {
-        full += data.delta;
-        try { if (typeof onDelta === "function") onDelta(data.delta); } catch (e) { reportSwallow(e, 'chat/stream.handleFrame.onDelta'); }
-      } else if (frame.event === "reasoning" && typeof data.delta === "string") {
-        try { if (typeof onThinking === "function") onThinking(data.delta); } catch (e) { reportSwallow(e, 'chat/stream.handleFrame.onThinking'); }
-      } else if (frame.event === "tool_use") {
-        var calls = Array.isArray(data) ? data : (data.calls || [data]);
-        if (opts && typeof opts.onToolUse === "function") {
-          try { opts.onToolUse(calls); } catch (e) { reportSwallow(e, 'chat/stream.handleFrame.onToolUse'); }
-        }
-      } else if (frame.event === "tool_result") {
-        if (opts && typeof opts.onToolResult === "function") {
-          try { opts.onToolResult(data); } catch (e) { reportSwallow(e, 'chat/stream.handleFrame.onToolResult'); }
-        }
-      } else if (frame.event === "turn_done") {
-        done = true;
-        try { subAbort.abort("done"); } catch (e) { reportSwallow(e, 'chat/stream.handleFrame.abortDone'); }
-      } else if (frame.event === "turn_failed") {
-        failed = true;
-        try { subAbort.abort("failed"); } catch (e) { reportSwallow(e, 'chat/stream.handleFrame.abortFailed'); }
-      }
-      if (typeof frame.sequence === "number" && frame.sequence > maxSeq) {
-        maxSeq = frame.sequence;
-      }
-    } catch (e) { reportSwallow(e, 'chat/stream.handleFrame.outer'); }
-  }
-
-  var attempts = 0;
-  while (!done && !failed && attempts < 30) {
-    if (signal && signal.aborted) break;
-    attempts++;
-    try {
-      var check = await getChatTurn(turnId);
-      if (check && check.turn && check.turn.status === "completed") {
-        var finalFull = check.turn.fullText || full;
-        if (finalFull.length > full.length) {
-          try { if (typeof onDelta === "function") onDelta(finalFull.slice(full.length)); } catch (e) { reportSwallow(e, 'chat/stream.recoverDetachedTurn.onDelta.final'); }
-          full = finalFull;
-        }
-        return { text: full, html: null, widgets: [] };
-      }
-      if (check && check.turn && (check.turn.status === "failed" || check.turn.status === "interrupted")) {
-        return null;
-      }
-    } catch (e) { reportSwallow(e, 'chat/stream.recoverDetachedTurn.pollCheck'); }
-
-    try {
-      await subscribeChatTurnEvents(turnId, maxSeq, subAbort.signal, {
-        onEvent: handleFrame,
-        onDone: function() {},
-        onError: function() {}
-      });
-    } catch (e) { reportSwallow(e, 'chat/stream.recoverDetachedTurn.subscribe'); }
-
-    if (done) {
-      return { text: full, html: null, widgets: [] };
-    }
-    if (failed) {
-      return null;
-    }
-    await new Promise(function(resolve) { setTimeout(resolve, 800); });
-  }
-
-  if (done) {
-    return { text: full, html: null, widgets: [] };
-  }
-  return null;
-}
-
-/* P_log-gating — DEV-only diagnostics. Tool-event frames used to be
-   parsed inside bare `catch (e) {reportSwallow(e, 'chat/stream.handleFrame'); }` blocks, so a malformed tool_use /
-   tool_call_delta frame vanished without a trace and the tool card
-   simply never updated. Surface those parse failures in development;
-   production stays quiet (the predicate is a build-time constant, so
-   the warn path tree-shakes out of the bundle). */
-var DEV=(typeof import.meta!=='undefined'&&import.meta.env&&import.meta.env.DEV)===true;
-function warnBadFrame(evName,err){
-  if(!DEV)return;
-  try{console.warn('[stream] failed to handle '+evName+' frame:',err&&err.message||err)}catch(e){reportSwallow(e,'chat/stream.warnBadFrame');}
-}
-
-/* P_think-tail-hold — length of the longest suffix of `s` that could still
-   grow into an opening `<think>` tag in the next chunk ("<", "<t", …
-   "<think"). Only that much visible text has to wait for the next delta.
-   The scanner used to hold back the last 7 characters of EVERY delta, so the
-   typing frontier always lagged and the final characters of an answer only
-   appeared together with the finish re-render. */
-var THINK_OPEN_TAG="<think>";
-function pendingThinkOpenLength(s){
-  for(var n=Math.min(s.length,THINK_OPEN_TAG.length-1);n>0;n--){
-    if(s.slice(-n)===THINK_OPEN_TAG.slice(0,n))return n;
-  }
-  return 0;
-}
-
-/* Format a Retry-After-seconds value as a short human phrase.
-   Used by the 429 toast so the message reads "Try again in 2 min"
-   rather than the raw 178s. Anything below 60s collapses to seconds
-   so a sub-minute cooldown doesn't read as "0 min". */
-function makeStreamError(message,status,body) {
-  var error=new Error(String(message||'stream request failed'));
-  if(status!=null)error.status=Number(status);
-  if(body!=null)error.body=body;
-  if(body&&body.code)error.code=body.code;
-  return error;
 }
 
 function bindAbortSignal(parent,child){
@@ -360,400 +210,16 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
     var reader=resp.body.getReader();
     var decoder=new TextDecoder("utf-8");
     var buf="";
-    var full="";
-    var formattedHtml=null;
-    /* P_inline_think — M3 (the default built-in provider) emits chain-of-
-       thought as inline <think>...</think> tags inside delta.content,
-       NOT as a separate reasoning_content field. Without this parser
-       the thinking pill would never light up for the default provider.
-       The state machine holds a tail buffer (thinkTail) so a tag split
-       across two chunks ("<th" + "ink>...") is reassembled before
-       we decide where the content belongs. */
-    var thinkOpen=false;        // currently inside a <think> block
-    var thinkTail="";           // unflushed tail of the current delta
-    var thinkBuf="";            // accumulated think content since the last flush
-    var hasWarnedMissingThinking=false;  // one-shot warn when onThinking is missing
     var cancelled=false;
     var bytesReceived=0;
     var gotAnyData=false;
-    /* A retry is safe only before anything semantically visible reaches the
-       caller. Retrying after text/reasoning/tool events have already mutated
-       the bubble replays the whole turn and duplicates both prose and tools. */
-    var semanticActivity=false;
-    var streamError=null;
-    /* Flush visible tail text at semantic boundaries, while retaining a
-       trailing prefix that may still become an opening think tag. If the
-       stream ends first, that unresolved prefix is dropped instead of being
-       exposed as literal parser markup. */
-    var flushVisibleThinkTail=function(){
-      if(thinkOpen||!thinkTail.length)return;
-      var keepPrefix=pendingThinkOpenLength(thinkTail);
-      var visibleLength=thinkTail.length-keepPrefix;
-      if(visibleLength<=0)return;
-      var visibleTail=thinkTail.slice(0,visibleLength);
-      thinkTail=thinkTail.slice(visibleLength);
-      full+=visibleTail;
-      try{if(onDelta){onDelta(visibleTail,full)}}catch(deltaErr){
-        console.warn("[API stream] onDelta threw:",deltaErr&&deltaErr.message);
-      }
-    };
-    /* Parse ONE SSE frame (the text between two "\n\n" delimiters, or the
-       leftover buffer flushed at stream end). Extracted so the same logic
-       runs for both the delimited frames in the read loop AND the final
-       frame the upstream may close without a trailing "\n\n". Frame-level
-       early-exits use `return`; the inner <think> scanner keeps its own
-       continue/break. */
-    var processFrame=function(frame){
-          var lines=frame.split("\n");
-          var dataParts=[];
-          var evName=null;
-          for(var li=0;li<lines.length;li++){
-            var line=lines[li];
-            if(line.indexOf("data:")===0){
-              dataParts.push(line.slice(5).trim());
-            }else if(line.indexOf("event:")===0){
-              /* Capture the named event so we can route tool_use / tool_result
-                 frames to the caller's callbacks. */
-              var ev=line.slice(6).trim();
-              if(ev)evName=ev;
-            }
-          }
-          /* Route tool-calling events before touching the data: payload.
-             The backend emits `event: tool_use` and `event: tool_result`
-             with a single JSON data: line per frame. */
-          if(evName==="tool_use"){
-            semanticActivity=true;
-            if(opts&&typeof opts.onToolUse==="function"&&dataParts.length){
-              /* The inline-think scanner keeps up to seven visible chars in
-                 thinkTail so an opening `<think>` tag can span deltas. A
-                 tool_use is a hard split-point boundary: commit ordinary
-                 text before asking the turn controller to record textOffset,
-                 but keep a trailing prefix of `<think>` intact so a tag may
-                 still continue after this event frame. */
-              flushVisibleThinkTail();
-              try{opts.onToolUse(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("tool_use",e)}
-            }
-            return;
-          }
-          if(evName==="tool_result"){
-            semanticActivity=true;
-            if(opts&&typeof opts.onToolResult==="function"&&dataParts.length){
-              try{opts.onToolResult(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("tool_result",e)}
-            }
-            return;
-          }
-          /* P_codex-approval — the unified runtime projects Codex's
-             server-initiated approval request into the same chat stream.
-             Keep it separate from tool_result so the inline card can stay
-             actionable while the backend turn is paused. */
-          if(evName==="tool_approval"){
-            semanticActivity=true;
-            if(opts&&typeof opts.onToolApproval==="function"&&dataParts.length){
-              try{opts.onToolApproval(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("tool_approval",e)}
-            }
-            return;
-          }
-          /* P_codex-steps — the workspace agent streams its own activity:
-             one `agent_step` per Codex thread item (command run, file
-             edited, file read, web search, MCP call) and `agent_plan` for
-             its todo list. They are routed separately from tool_progress so
-             the chat can render a step list in the reading flow while the
-             legacy progress channel stays byte-compatible for older
-             clients. */
-          if(evName==="agent_step"){
-            semanticActivity=true;
-            if(opts&&typeof opts.onAgentStep==="function"&&dataParts.length){
-              try{opts.onAgentStep(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("agent_step",e)}
-            }
-            return;
-          }
-          if(evName==="agent_plan"){
-            semanticActivity=true;
-            if(opts&&typeof opts.onAgentPlan==="function"&&dataParts.length){
-              try{opts.onAgentPlan(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("agent_plan",e)}
-            }
-            return;
-          }
-          /* P_prep-parallel — the server created (or re-bound) the detached
-             turn from clientTurn and reports its id. Not semantic output:
-             a retry before any content is still safe. */
-          if(evName==="turn_bound"){
-            if(dataParts.length){
-              try{
-                var _tb=JSON.parse(dataParts.join("\n"));
-                if(_tb&&typeof _tb.turnId==="string"){
-                  activeBoundTurnId=_tb.turnId;
-                  if(opts&&typeof opts.onTurnBound==="function")opts.onTurnBound(_tb.turnId);
-                }
-              }catch(e){warnBadFrame("turn_bound",e)}
-            }
-            return;
-          }
-          if(evName==="preference_fallback"){
-            if(dataParts.length){
-              try{
-                var fallback=JSON.parse(dataParts.join("\n"));
-                if(fallback&&fallback.preference==="response_speed")notifySpeedFallbackOnce();
-              }catch(e){warnBadFrame("preference_fallback",e)}
-            }
-            return;
-          }
-          /* P_error_event — retain the structured upstream error until the
-             attempt has closed. If no semantic output was emitted, the
-             shared retry policy can replay the request safely. */
-          if(evName==="error"&&dataParts.length){
-            try{
-              var errData=JSON.parse(dataParts.join("\n"));
-              streamError=makeStreamError(errData.error||errData.message||JSON.stringify(errData),errData.status,errData);
-            }catch(_){
-              streamError=makeStreamError(dataParts.join(" ").slice(0,200));
-            }
-            return;
-          }
-          /* P_progress — incremental tool events. The backend emits
-             these between tool_use and tool_result to stream
-             stdout/stderr and phase markers. Routing is per-call so
-             the caller can update the matching .agent-tool-card
-             with a spinner + live text. */
-          if(evName==="tool_progress"){
-            semanticActivity=true;
-            if(opts&&typeof opts.onToolProgress==="function"&&dataParts.length){
-              try{opts.onToolProgress(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("tool_progress",e)}
-            }
-            return;
-          }
-          /* P_execution_sse — execution_start carries the executionId
-             that the frontend uses to connect to the independent
-             execution SSE endpoint for real-time progress. */
-          if(evName==="execution_start"){
-            semanticActivity=true;
-            if(opts&&typeof opts.onExecutionStart==="function"&&dataParts.length){
-              try{opts.onExecutionStart(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("execution_start",e)}
-            }
-            return;
-          }
-          /* P_tool_stream — forward the live tool_call_delta frames
-             from the backend to the caller's onToolCallDelta. The
-             backend emits these as the upstream streams
-             delta.tool_calls — typically the in-progress JSON for
-             the tool's arguments (e.g. Python source). The frontend
-             uses them to render the code in the tool card
-             progressively, not as a single reveal at finish_reason. */
-          if(evName==="tool_call_delta"){
-            semanticActivity=true;
-            if(opts&&typeof opts.onToolCallDelta==="function"&&dataParts.length){
-              try{opts.onToolCallDelta(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("tool_call_delta",e)}
-            }
-            return;
-          }
-          if(dataParts.length===0)return;
-          var payload=dataParts.join("\n");
-          if(!payload||payload==="[DONE]")return;
-          /* Backend sends __FORMATTED__ as the final event with server-rendered HTML */
-          if(payload==="__FORMATTED__"){
-            /* The next frame's first data: line contains the JSON */
-            return;
-          }
-          /* Server-side pre-formatted HTML response detection. Only
-             match when the parsed JSON object actually has a STRING
-             `html` key — not when the substring "html" happens to
-             appear in the message content (e.g. a ```html fenced
-             canvas block whose JSON-serialised delta contains the
-             literal characters "html" inside the content string).
-             The previous indexOf-based check falsely routed those
-             frames through the formattedHtml path, leaving `text`
-             empty and the user staring at "response interrupted".
-             Parse the JSON and look for an actual `html` property. */
-          if(formattedHtml===null&&payload.indexOf("{")===0){
-            try{
-              const jsonProbe=JSON.parse(payload);
-              if(jsonProbe&&typeof jsonProbe.html==="string"){
-                formattedHtml=jsonProbe;
-                semanticActivity=true;
-                return;
-              }
-            }catch (e) {reportSwallow(e, 'chat/stream.callAPIStream#4'); }
-          }
-          /* Some upstreams send "event: error" frames; surface them. */
-          try{
-            var obj=JSON.parse(payload);
-            if(obj.error){
-              streamError=makeStreamError(typeof obj.error==="string"?obj.error:(obj.error.message||"upstream error"),obj.status,obj);
-              return;
-            }
-            var delta=obj.choices&&obj.choices[0]&&obj.choices[0].delta&&obj.choices[0].delta.content;
-            /* Reasoning field (DeepSeek R1 / QwQ / o1-style): some
-               upstreams surface the chain-of-thought as a separate
-               `reasoning_content` field on the delta. Route it to the
-               thinking pill (if the caller subscribed). */
-            var reasoning=obj.choices&&obj.choices[0]&&obj.choices[0].delta&&obj.choices[0].delta.reasoning_content;
-            if(typeof reasoning==="string"&&reasoning.length>0){
-              semanticActivity=true;
-              if(typeof onThinking==="function"){
-                try{onThinking(reasoning)}catch (e) {reportSwallow(e, 'chat/stream.callAPIStream#5'); }
-              }
-            }
-            /* P_inline_think — split delta on <think>/</think> boundaries.
-               The default built-in provider (M3) puts its chain-of-thought
-               inside the content stream as inline <think>...</think>
-               tags. We scan the accumulated delta (thinkTail + delta)
-               for these tags and route only the content OUTSIDE the
-               tags to onDelta. Inside-tag content goes to onThinking so
-               the thinking pill lights up on every device, not just
-               ones that happen to use DeepSeek-style reasoning_content. */
-            if(typeof delta==="string"&&delta.length>0){
-              semanticActivity=true;
-              if(!thinkOpen){
-                /* Not currently inside a think block. Look for the
-                   opening tag. thinkTail holds any partial tag that
-                   might be split between this chunk and the next. */
-                var probe=thinkTail+delta;
-                var openIdx=probe.indexOf("<think>");
-                if(openIdx===-1){
-                  /* No opening tag in sight. Flush everything except a
-                     trailing partial "<think" (P_think-tail-hold): only a
-                     suffix that is a prefix of the tag can still become
-                     one in the next chunk. */
-                  var safeLen=probe.length-pendingThinkOpenLength(probe);
-                  var safeStr=probe.slice(0,safeLen);
-                  thinkTail=probe.slice(safeLen);
-                  if(safeStr.length>0){
-                    full+=safeStr;
-                    try{if(onDelta){onDelta(safeStr,full)}}catch(deltaErr){
-                      console.warn("[API stream] onDelta threw:",deltaErr&&deltaErr.message);
-                    }
-                  }
-                }else{
-                  /* Found <think>. Flush everything BEFORE it via
-                     onDelta, then mark thinkOpen and start buffering
-                     the content AFTER <think> for onThinking. */
-                  var before=probe.slice(0,openIdx);
-                  var afterOpen=probe.slice(openIdx+"<think>".length);
-                  thinkTail="";
-                  if(before.length>0){
-                    full+=before;
-                    try{if(onDelta){onDelta(before,full)}}catch(deltaErr){
-                      console.warn("[API stream] onDelta threw:",deltaErr&&deltaErr.message);
-                    }
-                  }
-                  thinkOpen=true;
-                  thinkBuf="";
-                  /* Now process the afterOpen tail through the
-                     thinkOpen branch below by re-entering with
-                     thinkOpen=true. We do that by appending
-                     afterOpen to thinkBuf and falling through. */
-                  delta=afterOpen;
-                  /* Fall through to the thinkOpen block. */
-                }
-              }
-              if(thinkOpen){
-                /* Inside a think block. Scan for the closing tag,
-                   flushing thinkBuf to onThinking in slices between
-                   tags. */
-                var probe2=thinkTail+delta;
-                var closeIdx=probe2.indexOf("</think>");
-                while(closeIdx!==-1){
-                  var inside=probe2.slice(0,closeIdx);
-                  thinkBuf+=inside;
-                  if(thinkBuf.length>0&&typeof onThinking==="function"){
-                    try{onThinking(thinkBuf)}catch (e) {reportSwallow(e, 'chat/stream.callAPIStream#6'); }
-                  }
-                  thinkBuf="";
-                  thinkOpen=false;
-                  /* Everything after </think> is normal content. A second
-                     <think> can open in the same chunk (back-to-back
-                     thinking blocks). When it does, reprocess the whole
-                     remainder through the not-in-think branch BEFORE
-                     emitting anything: emitting the head first and
-                     reprocessing after would emit the head twice and
-                     scramble the order (reads as swallowed/garbled
-                     first chars). Checking `after` itself also catches
-                     a tag straddling the 7-char hold boundary. */
-                  var after=probe2.slice(closeIdx+"</think>".length);
-                  if(after.indexOf("<think>")!==-1){
-                    var remaining=after;
-                    thinkTail="";
-                    if(remaining.length>0){
-                      /* Recurse into the "not in think" branch. */
-                      var oi2=remaining.indexOf("<think>");
-                      if(oi2===-1){
-                        var sl2=remaining.length-pendingThinkOpenLength(remaining);
-                        var sf2=remaining.slice(0,sl2);
-                        thinkTail=remaining.slice(sl2);
-                        if(sf2.length>0){
-                          full+=sf2;
-                          try{if(onDelta){onDelta(sf2,full)}}catch(deltaErr){
-                            console.warn("[API stream] onDelta threw:",deltaErr&&deltaErr.message);
-                          }
-                        }
-                      }else{
-                        var bf=remaining.slice(0,oi2);
-                        var ao=remaining.slice(oi2+"<think>".length);
-                        if(bf.length>0){
-                          full+=bf;
-                          try{if(onDelta){onDelta(bf,full)}}catch(deltaErr){
-                            console.warn("[API stream] onDelta threw:",deltaErr&&deltaErr.message);
-                          }
-                        }
-                        thinkOpen=true;
-                        thinkBuf="";
-                        delta=ao;
-                        probe2=thinkTail+delta;
-                        closeIdx=probe2.indexOf("</think>");
-                        continue;
-                      }
-                    }
-                    break;
-                  }
-                  /* Keep a trailing partial "<think" in case the tag
-                     completes at the start of the next chunk. */
-                  var keepLen=pendingThinkOpenLength(after);
-                  thinkTail=after.slice(after.length-keepLen);
-                  var bodyStr=after.slice(0,after.length-keepLen);
-                  if(bodyStr.length>0){
-                    full+=bodyStr;
-                    try{if(onDelta){onDelta(bodyStr,full)}}catch(deltaErr){
-                      console.warn("[API stream] onDelta threw:",deltaErr&&deltaErr.message);
-                    }
-                  }
-                  break;
-                }
-                if(thinkOpen){
-                  /* No closing tag yet in this chunk. Buffer the
-                     full probe into thinkBuf but keep a 7-char
-                     tail in case </think> arrives split.
-                     Flush thinkBuf to onThinking every ~200 chars
-                     so the user sees live progress instead of
-                     waiting for the full think block to close. */
-                  thinkBuf+=probe2.slice(0,Math.max(0,probe2.length-7));
-                  thinkTail=probe2.slice(Math.max(0,probe2.length-7));
-                  if(typeof onThinking==="function"&&thinkBuf.length>=200){
-                    try{onThinking(thinkBuf)}catch (e) {reportSwallow(e, 'chat/stream.callAPIStream#7'); }
-                    thinkBuf="";
-                  }
-                }
-              }
-            }
-            /* P_fix_think_warn — surface misconfigured callers. The
-               main chat path passes onThinking to light up the
-               thinking pill; if it is missing while we are clearly
-               receiving reasoning content, warn once per stream so
-               the bug shows up in the console without flooding it. */
-            if(!hasWarnedMissingThinking&&typeof delta==="string"&&(thinkOpen||thinkBuf.length>0)&&typeof onThinking!=="function"){
-              hasWarnedMissingThinking=true;
-              try{console.warn("[API stream] inline <think> detected but caller did not provide onThinking; thinking pill will not light up. Pass an onThinking callback in callAPIStream(...,onThinking,opts).")}catch (e) {reportSwallow(e, 'chat/stream.callAPIStream#8'); }
-            }
-          }catch {
-            /* Could be a final [DONE] or unknown frame; ignore unless the
-               payload looks like a truncated JSON error event (has "error"
-               as a JSON key, not just the word "error" in prose). */
-            if((payload.indexOf('"error"')>=0||payload.indexOf("'error'")>=0)
-               && /error|fail|unavailable/i.test(payload)){
-              streamError=makeStreamError(payload.slice(0,200));
-
-            }
-          }
-    };
+    var frameProcessor=createStreamFrameProcessor({
+      opts:opts,
+      onDelta:onDelta,
+      onThinking:onThinking,
+      onActiveTurnBound:function(turnId){activeBoundTurnId=turnId;},
+    });
+    var processFrame=frameProcessor.processFrame;
     try{
       while(true){
         var step=await reader.read();
@@ -790,26 +256,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
         buf="";
         processFrame(_finalFrame);
       }
-      /* P_inline_think — if the stream ended mid-think (e.g. truncated
-         by max_tokens), flush whatever thinking content we accumulated
-         so the user at least sees the partial reasoning rather than
-         silently dropping it. */
-      if(thinkOpen&&typeof onThinking==="function"){
-        var remainingThink=thinkBuf+thinkTail;
-        if(remainingThink.length>0){
-          semanticActivity=true;
-          try{onThinking(remainingThink)}catch (e) {reportSwallow(e, 'chat/stream.callAPIStream#10'); }
-        }
-        thinkBuf="";
-        thinkTail="";
-        thinkOpen=false;
-      }else if(!thinkOpen&&thinkTail.length>0){
-        /* P_truncation_fix — the same scanner tail is flushed at tool_use.
-           Real answer text is committed, but a still-incomplete opening-tag
-           prefix is intentionally not rendered as prose. */
-        flushVisibleThinkTail();
-        thinkTail="";
-      }
+      frameProcessor.finish();
     }catch(e){
       console.error("[API stream] read error:",e);
       if(e&&(e.name==="AbortError"||e.code===20)){
@@ -821,7 +268,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
         var attemptError=makeStreamError("stream was interrupted before it completed");
         attemptError.reason=ac.signal.reason;
         if(!isUserAbort(e,ac.signal)&&!isUserAbort(e,turnAbort.signal)
-           &&!semanticActivity&&await waitForRetry(attempt,attemptError)){
+           &&!frameProcessor.semanticActivity&&await waitForRetry(attempt,attemptError)){
           lastErr=attemptError;
           console.warn("[API stream]",attemptError.message+", retrying before visible output");
           try{await reader.cancel()}catch (e) {reportSwallow(e, 'chat/stream.callAPIStream#11'); }
@@ -833,12 +280,12 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
            text already streamed, so the bubble cleans up silently
            instead of showing an error. */
         if(isUserAbort(e,ac.signal)||isUserAbort(e,turnAbort.signal)
-           ||(!semanticActivity&&(!ac.signal.reason||ac.signal.reason==="user-stop"))){
+           ||(!frameProcessor.semanticActivity&&(!ac.signal.reason||ac.signal.reason==="user-stop"))){
           /* A named user stop is preferred. The no-reason fallback keeps
              compatibility with browsers that expose AbortError without the
              custom reason attached. */
           finishTurn();
-          return {text:full||"",html:formattedHtml&&formattedHtml.html||null,widgets:formattedHtml&&formattedHtml.widgets||[],cancelled:true};
+          return {text:frameProcessor.full||"",html:frameProcessor.formattedHtml&&frameProcessor.formattedHtml.html||null,widgets:frameProcessor.formattedHtml&&frameProcessor.formattedHtml.widgets||[],cancelled:true};
         }
         setLastCallError(lastErr||attemptError.message);
       }else{
@@ -861,7 +308,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
           try {
             console.info("[API stream] connection dropped, recovering from detached turn:", turnToRecover);
             var recovered = await recoverDetachedTurn(turnToRecover, {
-              currentFull: full,
+              currentFull: frameProcessor.full,
               onDelta: onDelta,
               onThinking: onThinking,
               opts: opts,
@@ -893,9 +340,9 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
     try{resp.body&&resp.body.cancel&&resp.body.cancel().catch(function(e){ reportSwallow(e, 'chat/stream.callAPIStream.cancelReject'); })}catch (e) {reportSwallow(e, 'chat/stream.callAPIStream.cancelGuard'); }
     resp=null;
     reader=null;
-    if(streamError){
-      if(!semanticActivity&&await waitForRetry(attempt,streamError)){
-        lastErr=streamError;
+    if(frameProcessor.streamError){
+      if(!frameProcessor.semanticActivity&&await waitForRetry(attempt,frameProcessor.streamError)){
+        lastErr=frameProcessor.streamError;
         unbindAttempt();
         continue;
       }
@@ -903,7 +350,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
         finishTurn();
         return {text:"",html:null,widgets:[],cancelled:true};
       }
-      setLastCallError(streamError.message||'stream request failed');
+      setLastCallError(frameProcessor.streamError.message||'stream request failed');
       finishTurn();
       return null;
     }
@@ -912,7 +359,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
        P_silence_fix — preserve any real error already captured from
        event:error SSE frames instead of overwriting it with the
        generic "empty stream". */
-    if(!gotAnyData&&!full&&!formattedHtml){
+    if(!gotAnyData&&!frameProcessor.full&&!frameProcessor.formattedHtml){
       lastErr=makeStreamError("empty stream ("+bytesReceived+" bytes received)");
       if(await waitForRetry(attempt,lastErr)){
         console.warn("[API stream]",lastErr.message+", retrying");
@@ -927,7 +374,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
       finishTurn();
       return null;
     }
-    if(!full&&!formattedHtml){
+    if(!frameProcessor.full&&!frameProcessor.formattedHtml){
       lastErr=makeStreamError("empty stream (server returned no content)");
       if(await waitForRetry(attempt,lastErr)){
         console.warn("[API stream]",lastErr.message+", retrying");
@@ -946,7 +393,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
        a future "session-switch" or "user-stop" call doesn't fire
        a closure that pins this call's AbortController. */
     finishTurn();
-    return {text:full,html:formattedHtml&&formattedHtml.html||null,widgets:formattedHtml&&formattedHtml.widgets||[],cancelled:false};
+    return {text:frameProcessor.full,html:frameProcessor.formattedHtml&&frameProcessor.formattedHtml.html||null,widgets:frameProcessor.formattedHtml&&frameProcessor.formattedHtml.widgets||[],cancelled:false};
   }
   /* All six attempts failed with the same retryable condition.
      Ensure lastCallError is always set even if lastErr is
