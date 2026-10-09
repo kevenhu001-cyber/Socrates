@@ -36,6 +36,9 @@ export function SummaryHistoryTurnView({
         aria-expanded={expanded}
         onClick={() => setExpanded((value) => !value)}
       >
+        {/* P_summary-parity — the question is the first row of the same rail
+            the steps use, so it carries a marker and joins the connector. */}
+        <span className="thinking-summary-marker" data-kind="question" aria-hidden="true" />
         <span className="thinking-history-heading">
           <span className="thinking-history-question">{title}</span>
           <span className="thinking-history-state">

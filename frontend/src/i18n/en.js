@@ -909,7 +909,7 @@ export const en = {
     "think.wordCountOne":"1 word",
     "think.toggle":"Toggle thinking",
     "think.panelTitle":"Summary",
-    "think.historyTitle":"Summary history",
+    "think.historyTitle":"Summary",
     "think.historyButton":"Summary",
     "think.openHistory":"View summary history",
     "think.historyTurn":"Turn {n}",

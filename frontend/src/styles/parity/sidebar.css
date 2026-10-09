@@ -71,44 +71,50 @@
     align-items: center;
     justify-content: space-between;
     box-sizing: border-box;
-    height: 52px;
+    height: 56px;
     margin: 0;
     padding: 0 8px;
   }
+  /* P_sidebar-parity — 图1 leads the drawer with a large wordmark rather
+     than a logo chip. Give it the room and weight to read as the rail's
+     title; the 24px mark stays as the anchor to the left. */
   #appShell #sidebarHeader .sidebar-logo {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     min-width: 0;
-    height: 36px;
+    height: 40px;
     padding: 0 8px;
     border-radius: var(--ui-radius-row);
     color: var(--ui-text-primary);
     font-family: var(--font-sans);
-    font-size: 15px;
-    font-weight: 600;
-    line-height: 20px;
+    font-size: 20px;
+    font-weight: 650;
+    line-height: 26px;
+    letter-spacing: -0.015em;
     white-space: nowrap;
   }
-  #appShell #sidebarHeader .sidebar-logo-img { width: 24px; height: 24px; border-radius: var(--ui-radius-sm); }
+  #appShell #sidebarHeader .sidebar-logo-img { width: 26px; height: 26px; border-radius: var(--ui-radius-sm); }
   #appShell #sidebarHeader .sidebar-logo > span { font: inherit; }
   #appShell #sidebarHeader .cg-sidebar-caret { display: none; }
   #appShell #sidebarHeader > div:last-child,
   #appShell #sidebarHeader .sidebar-header-actions {
     display: flex;
     align-items: center;
-    gap: 0;
+    gap: 2px;
   }
   #appShell #sidebarSearchBtn { display: none; }
+  /* P_sidebar-parity — 图1's two header affordances are standalone circles,
+     not the squared icon-btn the rest of the app uses. */
   #appShell #newChatBtn,
   #appShell #sidebarCloseBtn {
     display: inline-grid;
     place-items: center;
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     padding: 0;
     border: 0;
-    border-radius: var(--ui-radius-md);
+    border-radius: 50%;
     background: transparent;
     color: var(--ui-text-secondary);
     cursor: pointer;
@@ -129,7 +135,23 @@
     flex-direction: column;
     gap: 0;
     margin: 0;
-    padding: 0 6px 8px;
+    /* P_sidebar-parity — the reference rail breathes between destinations:
+       a little air above, more below, instead of one packed list. Only the
+       nav block gets it; the conversation list below stays dense. */
+    padding: 4px 6px 8px;
+  }
+  /* P_sidebar-parity — hairline between the destination block and the
+     conversation history, inset to the icon gutter so it reads as a
+     divider between two lists rather than a full-bleed rule. */
+  #appShell #sidebar .sidebar-nav-sep {
+    flex: 0 0 auto;
+    height: 1px;
+    margin: 4px 10px 8px;
+    border: 0;
+    background: var(--ui-sidebar-border);
+  }
+  #appShell #sidebar.collapsed .sidebar-nav-sep {
+    margin-inline: 8px;
   }
   #appShell #sidebarNav .sidebar-nav-btn,
   #appShell #sidebar .recent-item {
@@ -381,6 +403,49 @@
   }
   #appShell #sidebarUserRow:hover { background: var(--ui-bg-hover); }
   #appShell #sidebarFooter .sidebar-footer-actions { display: flex; align-items: center; gap: 0; }
+
+  /* P_sidebar-parity — 图1 closes the drawer on a single full-width blue
+     pill. It is the one solid brand surface here, so it reads as the
+     drawer's primary action; the account row above keeps its neutral
+     treatment. Sits below the account row, not beside it, so the pill can
+     take the full column width. */
+  #appShell .sidebar-footer-account-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  #appShell .sidebar-upgrade-pill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 36px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: var(--ui-radius-pill);
+    background: var(--ui-brand-fill);
+    color: var(--ui-on-brand-fill);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 18px;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color var(--ui-duration-hover) ease;
+  }
+  #appShell .sidebar-upgrade-pill:hover,
+  #appShell .sidebar-upgrade-pill:focus-visible {
+    background: var(--ui-brand-fill-hover);
+    color: var(--ui-on-brand-fill);
+  }
+  #appShell .sidebar-upgrade-pill:focus-visible {
+    outline: 2px solid var(--ui-brand-fill);
+    outline-offset: 2px;
+  }
+  /* The collapsed rail is icon-width, so the pill's label has nowhere to
+     go — the account trigger already carries the identity there. */
+  #appShell #sidebar.collapsed .sidebar-upgrade-pill { display: none; }
+
   #appShell #sidebarFooter .icon-btn {
     display: inline-grid;
     place-items: center;

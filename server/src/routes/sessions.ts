@@ -980,6 +980,9 @@ router.get('/:id', async (req, res, next) => {
       tokenCount: messages.tokenCount,
       clientId: messages.clientId,
       reasoningContent: messages.reasoningContent,
+      /* P_turn-summary — the model's retrospective, so a reloaded session
+         shows the same Summary sheet the live turn produced. */
+      summary: messages.summary,
       attachments: messages.attachments,
       toolCalls: messages.toolCalls,
       agentRunId: messages.agentRunId,

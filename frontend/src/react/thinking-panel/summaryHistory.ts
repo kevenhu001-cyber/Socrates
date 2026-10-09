@@ -7,6 +7,10 @@ import type { ThinkingPanelActivity, ThinkingPanelSnapshot } from './types';
 type SummaryMessage = LegacyChatMessage & {
   toolCalls?: readonly ToolCallRecord[];
   _toolRunRev?: number;
+  /* P_turn-summary — the model's own one-line retrospective, sent after the
+     answer and persisted on the message. Preferred over a sliced preview
+     because it describes the WORK, not the answer. */
+  summary?: string;
 };
 
 export interface SummaryHistoryTurn {
@@ -33,6 +37,12 @@ function compact(text: string, limit: number): string {
 }
 
 function answerPreview(message: SummaryMessage): string {
+  /* P_turn-summary — the model's own retrospective wins: it describes the
+     work (what was searched, run, or concluded) rather than re-quoting the
+     answer. Fall back to the mechanical first-sentence slice when the
+     summary never arrived (generation failed, or an older persisted turn). */
+  const modelSummary = typeof message.summary === 'string' ? message.summary.trim() : '';
+  if (modelSummary) return compact(modelSummary, 220);
   if (message.type === 'streaming') return '';
   const source = typeof message.rawText === 'string' ? message.rawText : '';
   if (!source) return '';

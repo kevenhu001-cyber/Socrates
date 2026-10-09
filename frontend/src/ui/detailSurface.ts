@@ -26,7 +26,13 @@ function syncLayout(doc: Document, surface: Surface) {
   const app = doc.getElementById('appShell');
   const sidebar = doc.getElementById('sidebar');
   const available = (doc.defaultView?.innerWidth ?? 0) - (sidebar?.getBoundingClientRect().width ?? 0);
-  const docked = available >= 1060;
+  /* P_summary-parity — the Summary sheet is a bottom sheet at every width
+     (see detail.css), matching the reference. Only the artifact drawer docks
+     into a reserved column on wide screens, so `thinking` never takes the
+     docked branch: that would both reserve a right-hand column the sheet
+     does not use and skip the backdrop the sheet relies on. */
+  const owner = surface.active?.owner;
+  const docked = owner !== 'thinking' && available >= 1060;
   doc.documentElement.dataset.detailLayout = docked ? 'docked' : 'modal';
   surface.panel.setAttribute('aria-modal', String(!docked));
   surface.backdrop.hidden = docked;

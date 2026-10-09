@@ -543,6 +543,20 @@ export function addStreamingMessage(opts){
     recordToolApproval:toolRuntime.recordToolApproval,
     recordAgentStep:toolRuntime.recordAgentStep,
     recordAgentPlan:toolRuntime.recordAgentPlan,
+    /* P_turn-summary — the server's one-line retrospective of the work, sent
+       on the same stream after the answer text. Patch it onto the message so
+       the ⏱ status row and the Summary sheet read the model's own summary
+       instead of a mechanical first-sentence slice.
+
+       This must live on `ret` (the controller turnController holds as `ctl`),
+       not on the createToolRuntime options above — a summary is not tool
+       state, and toolRuntime only re-exports the methods it returns, so an
+       option it never returns is silently unreachable. */
+    recordTurnSummary:function(text){
+      var value=String(text||"").trim();
+      if(!value)return;
+      patchOwnedMessage({summary:value},false);
+    },
     append:function(delta){
       /* P_session-stream-dispose — primary entry-point guard. The
          stream.js reader keeps draining already-buffered SSE chunks

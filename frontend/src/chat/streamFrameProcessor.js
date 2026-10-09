@@ -14,6 +14,10 @@ const CALLBACK_BY_EVENT = Object.freeze({
   tool_progress: 'onToolProgress',
   execution_start: 'onExecutionStart',
   tool_call_delta: 'onToolCallDelta',
+  /* P_turn-summary — the model's one-line retrospective of the work it did,
+     sent after the answer text and before [DONE]. Feeds the ⏱ status row
+     and the Summary sheet. */
+  turn_summary: 'onTurnSummary',
 });
 
 const DEV = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) === true;

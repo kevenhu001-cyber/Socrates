@@ -163,14 +163,20 @@ export const messages = pgTable('messages', {
      session save/load and is included in the LLM context on the next
      chat turn. */
   reasoningContent: text('reasoning_content'),
+  /* P_turn-summary — the model's own one-line retrospective of the work it
+     did on this turn (what was found / run / concluded), which the Summary
+     sheet and the status row render. Distinct from `rawText`: that is the
+     ANSWER, this is a description OF the work. Generated off the response
+     path by services/turnSummary.ts, so a failed generation leaves it null
+     and the UI falls back to the answer's first sentence. */
+  summary: text('summary'),
   /* P_attachments — array of {id, kind, name, mime, dataUrl?, text?, size, truncated?}
      representing images (dataUrl inlined), text files (text body), and PDFs
      (server-extracted text). Persisted so a session reload restores the
      thumbnails and parsed text without re-uploading. */
   attachments: jsonb('attachments').default([]),
   /* P_tool-history — array of {id, name, input, output, isError, artifacts}
-     representing tool calls the assistant made on this turn (web_search,
-     code_interpreter, etc). Persisted so a session reload re-renders the
+     representing tool calls the assistant made on this turn (web_search,     code_interpreter, etc). Persisted so a session reload re-renders the
      tool cards under the message instead of silently dropping them after
      the live stream ends. Default to [] so existing rows read back as
      "no tool calls" without a migration rewrite. */

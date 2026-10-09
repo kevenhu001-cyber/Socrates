@@ -63,6 +63,12 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-tool-chip-hover-bg: rgb(2 5 98);
   --ui-tool-chip-hover-text: rgb(218 230 253);
   --ui-link: rgb(129 166 249);
+  /* P_sidebar-parity — 图1's footer pill is the one solid brand surface in
+     the drawer, so it needs a real fill, not a tint. Dark mode keeps the
+     lifted blue so white text clears WCAG AA on the fill. */
+  --ui-brand-fill: rgb(29 78 216);
+  --ui-brand-fill-hover: rgb(37 99 235);
+  --ui-on-brand-fill: rgb(255 255 255);
   --ui-bg-code: var(--ui-bg-raised);
   /* Phone code blocks keep a distinct header band in dark mode. */
   --ui-bg-code-header: var(--ui-bg-control);
@@ -129,6 +135,11 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-tool-chip-hover-bg: rgb(237 243 254);
   --ui-tool-chip-hover-text: rgb(36 81 218);
   --ui-link: rgb(36 81 218);
+  /* P_sidebar-parity — see the dark-mode note; light mode matches --ui-link
+     so the pill and every inline link read as the same blue. */
+  --ui-brand-fill: rgb(36 81 218);
+  --ui-brand-fill-hover: rgb(29 78 216);
+  --ui-on-brand-fill: rgb(255 255 255);
   --ui-bg-code: var(--ui-bg-raised);
   /* Light code blocks are one card, like the desktop transcript. */
   --ui-bg-code-header: var(--ui-bg-code);

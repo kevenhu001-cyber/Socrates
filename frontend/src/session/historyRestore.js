@@ -58,6 +58,9 @@ export function restoreSessionMessage(m){
     /* The API uses the camelCase schema key. Keep the snake_case fallback
        for any legacy payloads. */
     reasoningContent: m.reasoningContent || m.reasoning_content || null,
+    /* P_turn-summary — carry the persisted retrospective so the Summary
+       sheet reads the same after a reload as it did live. */
+    summary: m.summary || null,
     attachments: Array.isArray(m.attachments) ? m.attachments : [],
     toolCalls: Array.isArray(m.toolCalls) ? m.toolCalls.map(function(tc){
       return {

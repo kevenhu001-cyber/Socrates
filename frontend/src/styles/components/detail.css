@@ -133,34 +133,39 @@
   padding:4px 0 12px;
   list-style:none;
 }
+/* P_summary-parity — the reference Summary sheet is one flat timeline, not a
+   stack of cards: a small dot per row, a hairline rail between rows, and no
+   container borders. The question is the first row and the tool / thinking
+   steps continue the same rail, so a turn reads as one connected thread. */
 .thinking-history-turn{
-  overflow:hidden;
-  border:1px solid var(--ui-border-subtle);
-  border-radius:var(--ui-radius-lg);
-  background:var(--ui-bg-raised);
+  border:0;
+  border-radius:0;
+  background:transparent;
 }
-.thinking-history-turn.is-streaming{border-color:var(--ui-border-default)}
+.thinking-history-turn.is-streaming{border-color:transparent}
 .thinking-history-trigger{
-  display:flex;
+  display:grid;
+  grid-template-columns:16px minmax(0,1fr) 16px;
   align-items:center;
-  gap:12px;
+  gap:10px;
   width:100%;
-  min-height:52px;
-  padding:10px 14px;
+  min-height:36px;
+  padding:8px 0;
   border:0;
   background:transparent;
   color:var(--ui-text-primary);
   text-align:left;
   cursor:pointer;
 }
-.thinking-history-trigger:hover{background:var(--ui-bg-hover-ghost)}
-.thinking-history-trigger:focus-visible{outline:2px solid var(--ui-border-strong);outline-offset:-2px}
-.thinking-history-heading{display:grid;flex:1;min-width:0;gap:3px}
-.thinking-history-question{overflow:hidden;font-size:calc(13px * var(--app-font-scale,1));font-weight:var(--ui-font-weight-medium);text-overflow:ellipsis;white-space:nowrap}
-.thinking-history-state{overflow:hidden;color:var(--ui-text-tertiary);font-size:calc(11px * var(--app-font-scale,1));text-overflow:ellipsis;white-space:nowrap}
+.thinking-history-trigger:hover{background:transparent}
+.thinking-history-trigger:focus-visible{outline:2px solid var(--ui-border-strong);outline-offset:-2px;border-radius:var(--ui-radius-row)}
+/* The question row carries its own dot so it joins the rail. */
+.thinking-history-heading{display:flex;flex-direction:column;flex:1;min-width:0;gap:3px}
+.thinking-history-question{overflow:hidden;font-size:calc(14px * var(--app-font-scale,1));font-weight:var(--ui-font-weight-medium);color:var(--ui-text-primary);text-overflow:ellipsis;white-space:nowrap}
+.thinking-history-state{overflow:hidden;color:var(--ui-text-tertiary);font-size:calc(12px * var(--app-font-scale,1));text-overflow:ellipsis;white-space:nowrap}
 .thinking-history-chevron,.thinking-history-chevron svg{display:block;width:16px;height:16px;flex:0 0 16px;color:var(--ui-text-tertiary);transition:transform .16s var(--ui-ease-out)}
 .thinking-history-turn.is-expanded .thinking-history-chevron{transform:rotate(180deg)}
-.thinking-history-detail{padding:0 14px 12px}
+.thinking-history-detail{padding:0}
 .thinking-history-answer{margin:0 0 10px;color:var(--ui-text-secondary);font-size:calc(13px * var(--app-font-scale,1));line-height:1.55;overflow-wrap:anywhere}
 .thinking-history-turn .thinking-summary-timeline{padding-bottom:2px}
 .thinking-summary-timeline{
@@ -214,6 +219,18 @@
   background:var(--ui-text-tertiary);
   content:"";
 }
+/* P_summary-parity — the reference rail uses one warm accent dot for the row
+   that is happening right now and a quiet dot for everything already done.
+   `--ui-thinking-accent` is the theme's warm accent, so this follows both the
+   reference and the design system instead of adding a literal. */
+.thinking-summary-item.is-active .thinking-summary-marker::before{
+  background:var(--ui-thinking-accent);
+}
+.thinking-history-trigger .thinking-summary-marker::before{
+  width:6px;
+  height:6px;
+  background:var(--ui-text-tertiary);
+}
 .thinking-summary-item[data-kind="tool"] .thinking-summary-marker::before,
 .thinking-summary-item[data-kind="thinking"] .thinking-summary-marker::before{
   content:none;
@@ -260,63 +277,90 @@
 @keyframes thinking-summary-icon-in{
   from{opacity:0;transform:scale(.6)}
 }
-@media (max-width:768px){
+/* P_summary-parity — the Summary sheet is a bottom sheet at every width,
+   matching the reference: rounded top corners, a grab handle, a centred
+   title, and the close button on the LEFT. Previously this lived inside the
+   max-width:768px block only, so desktop got the generic right-hand drawer.
+   syncLayout() forces the modal branch for this owner, which is what keeps
+   the reserved detail column from being applied. */
+.detail-surface.thinking-panel{
+  inset:auto 0 0;
+  width:100%;
+  height:48dvh;
+  min-height:340px;
+  max-height:82dvh;
+  padding:0;
+  overflow:hidden;
+  border:1px solid var(--ui-border-subtle);
+  border-bottom:0;
+  border-radius:calc(var(--ui-radius-composer) + var(--ui-radius-lg)) calc(var(--ui-radius-composer) + var(--ui-radius-lg)) 0 0;
+  background:var(--ui-bg-surface);
+  animation:thinking-sheet-enter var(--ui-duration-overlay) var(--ui-ease-out) both;
+}
+.detail-surface.thinking-panel::before{
+  position:absolute;
+  top:9px;
+  left:50%;
+  width:48px;
+  height:6px;
+  border-radius:var(--ui-radius-pill);
+  background:var(--ui-border-strong);
+  content:"";
+  transform:translateX(-50%);
+}
+.detail-surface.thinking-panel .detail-header{
+  position:relative;
+  justify-content:center;
+  min-height:78px;
+  padding:27px 20px 10px;
+  border-bottom:0;
+}
+.detail-surface.thinking-panel .detail-heading{
+  position:absolute;
+  right:64px;
+  left:64px;
+  text-align:center;
+}
+.detail-surface.thinking-panel .detail-heading h2{
+  font-size:20px;
+  font-weight:var(--ui-font-weight-semibold);
+}
+.detail-surface.thinking-panel .detail-meta{display:none}
+.detail-surface.thinking-panel .detail-close{
+  position:absolute;
+  top:30px;
+  left:16px;
+  color:var(--ui-text-primary);
+}
+.detail-surface.thinking-panel .thinking-summary-marker{background:var(--ui-bg-surface)}
+.thinking-summary-item{gap:8px}
+.thinking-summary-body{padding:12px 8px calc(20px + env(safe-area-inset-bottom, 0px))}
+.thinking-history-trigger{padding:10px 12px}
+.thinking-history-detail{padding:0 12px 10px}
+/* Wide screens get the reference's wider measure and a taller sheet, since
+   there is room for it; phones keep the compact sheet above. */
+@media (min-width:769px){
   .detail-surface.thinking-panel{
-    inset:auto 0 0;
-    width:100%;
-    height:48dvh;
-    min-height:340px;
-    max-height:82dvh;
-    padding:0;
-    overflow:hidden;
-    border:1px solid var(--ui-border-subtle);
-    border-bottom:0;
-    border-radius:calc(var(--ui-radius-composer) + var(--ui-radius-lg)) calc(var(--ui-radius-composer) + var(--ui-radius-lg)) 0 0;
-    background:var(--ui-bg-surface);
-    animation:thinking-sheet-enter var(--ui-duration-overlay) var(--ui-ease-out) both;
-  }
-  .detail-surface.thinking-panel::before{
-    position:absolute;
-    top:9px;
     left:50%;
-    width:48px;
-    height:6px;
-    border-radius:var(--ui-radius-pill);
-    background:var(--ui-border-strong);
-    content:"";
+    width:min(680px,calc(100vw - 48px));
+    height:min(520px,62dvh);
     transform:translateX(-50%);
   }
-  .detail-surface.thinking-panel .detail-header{
-    position:relative;
-    justify-content:center;
-    min-height:78px;
-    padding:27px 20px 10px;
-    border-bottom:0;
-  }
-  .detail-surface.thinking-panel .detail-heading{
-    position:absolute;
-    right:64px;
-    left:64px;
-    text-align:center;
-  }
-  .detail-surface.thinking-panel .detail-heading h2{
-    font-size:20px;
-    font-weight:var(--ui-font-weight-semibold);
-  }
-  .detail-surface.thinking-panel .detail-meta{display:none}
-  .detail-surface.thinking-panel .detail-close{
-    position:absolute;
-    top:30px;
-    left:16px;
-    color:var(--ui-text-primary);
-  }
-  .detail-surface.thinking-panel .thinking-summary-marker{background:var(--ui-bg-surface)}
-  .thinking-summary-item{gap:8px}
-  .thinking-summary-body{padding:12px 8px calc(20px + env(safe-area-inset-bottom, 0px))}
-  .thinking-history-trigger{padding:10px 12px}
-  .thinking-history-detail{padding:0 12px 10px}
+  .detail-surface.thinking-panel::before{top:12px}
+  .detail-surface.thinking-panel .detail-header{min-height:84px;padding:30px 24px 12px}
+  .detail-surface.thinking-panel .detail-close{top:34px;left:20px}
+  .thinking-summary-body{padding:16px 24px calc(24px + env(safe-area-inset-bottom, 0px))}
 }
 @keyframes thinking-sheet-enter{
   from{opacity:0;transform:translateY(16px)}
   to{opacity:1;transform:translateY(0)}
+}
+/* Wide screens animate from below without the centring transform fighting
+   the keyframe, so the centred sheet gets its own entrance. */
+@media (min-width:769px){
+  @keyframes thinking-sheet-enter-wide{
+    from{opacity:0;transform:translate(-50%,16px)}
+    to{opacity:1;transform:translate(-50%,0)}
+  }
+  .detail-surface.thinking-panel{animation-name:thinking-sheet-enter-wide}
 }

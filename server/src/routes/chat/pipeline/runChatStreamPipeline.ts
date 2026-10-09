@@ -23,7 +23,8 @@ import {chatTurns, messages, sessions} from '../../../db/schema.js';
 import {publishChatTurnEvent, setChatTurnStatus, subscribeToChatTurn} from '../../../services/chatTurns.js';
 import {sanitizeStoredHtml, sanitizePlainText} from '../../../lib/sanitize.js';
 import {indexMessageChunks} from '../../../services/chunkIndex.js';
-import {streamChatCompletion} from '../../../services/llm.js';
+import {generateTurnSummary, TURN_SUMMARY_SYSTEM_PROMPT} from '../../../services/turnSummary.js';
+import {callChatCompletion, streamChatCompletion} from '../../../services/llm.js';
 import {
   MAX_TOOL_ARGUMENT_CHARS,
   normalizeToolCalls,
@@ -933,6 +934,51 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
     return;
   }
 
+  /* P_turn-summary — ask the model for a one-line retrospective of the work
+   * it just did, which the Summary sheet and the ⏱ status row render.
+   *
+   * It runs here — after the answer is fully streamed but before [DONE] — so
+   * the summary arrives on the same SSE stream and needs no second round
+   * trip. The reader already has the complete answer at this point, so the
+   * only cost is a bounded wait on the closing frame; on timeout or failure
+   * we finish without it and the client falls back to the mechanical
+   * first-sentence preview it used before. */
+  let turnSummary: string | null = null;
+  if (provider.url && provider.keyPlaintext && (fullText || executedToolCalls.length > 0)) {
+    const lastUser = [...finalMessages].reverse().find((m) => m.role === 'user');
+    const question = typeof lastUser?.content === 'string' ? lastUser.content.slice(0, 500) : '';
+    try {
+      turnSummary = await generateTurnSummary(
+        {
+          question,
+          answer: fullText.slice(0, 4000),
+          toolCalls: executedToolCalls.map((c) => ({ name: c.name, isError: c.isError })),
+        },
+        {
+          timeoutMs: 8_000,
+          complete: async (prompt) => {
+            const res = await callChatCompletion({
+              apiBase: provider.url,
+              apiKey: provider.keyPlaintext as string,
+              model: provider.model,
+              messages: [
+                { role: 'system', content: TURN_SUMMARY_SYSTEM_PROMPT },
+                { role: 'user', content: prompt },
+              ],
+              maxTokens: 120,
+              temperature: 0.3,
+            });
+            return res.content;
+          },
+        },
+      );
+    } catch (err) {
+      /* Decorative only — never let this affect the answer. */
+      console.warn('[chat/stream] turn summary skipped:', (err as Error).message);
+    }
+  }
+  if (turnSummary) emitter.event('turn_summary', { summary: turnSummary });
+
   /* Done — record usage, clear streaming text, and close the stream.
    * Both chat_turns and sessions.messages are now persisted server-side
    * so client disconnection mid-stream never drops dialogue history. */
@@ -986,6 +1032,10 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
         html: safeContent,
         rawText: safeRaw,
         reasoningContent: fullReasoning || null,
+        /* P_turn-summary — persisted so a session reload still shows the
+           model's retrospective instead of recomputing a first-sentence
+           slice. Null when generation failed; the client falls back. */
+        summary: turnSummary,
         toolCalls: executedToolCalls,
         model: provider.model,
         clientId: assistantClientId,
@@ -997,6 +1047,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
           html: safeContent,
           rawText: safeRaw,
           reasoningContent: fullReasoning || null,
+          summary: turnSummary,
           toolCalls: executedToolCalls,
           model: provider.model,
         },

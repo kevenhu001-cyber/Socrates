@@ -331,6 +331,15 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
       if(!d)return;
       if(typeof ctl.recordToolCallDelta==="function")ctl.recordToolCallDelta(d);
     },
+    /* P_turn-summary — the model's one-line retrospective arrives after the
+       answer text, so hand it to the streaming controller to patch onto the
+       message the same way a tool result is patched on. The tutor path keeps
+       its own copy in toolCallbacks.js. */
+    onTurnSummary:function(payload){
+      var text = payload && typeof payload === "string" ? payload : (payload && payload.summary);
+      if(!text||!ctl||typeof ctl.recordTurnSummary!=="function")return;
+      ctl.recordTurnSummary(String(text));
+    },
     clientTurn:_clientTurn,
     onTurnBound:_onTurnBound,
   });

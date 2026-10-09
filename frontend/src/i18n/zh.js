@@ -208,7 +208,7 @@ export const zh = {
     "sidebar.nav.exam":"考试",
     "sidebar.nav.incognito":"无痕对话",
     "sidebar.nav.more":"更多",
-    "sidebar.upgrade":"重新订阅 Plus",
+    "sidebar.upgrade":"升级 Plus",
     /* PR-A — More popover items */
     "sidebar.more.settings":"API 设置",
     "sidebar.more.skills":"技能与快捷键",
@@ -886,7 +886,7 @@ export const zh = {
     "think.wordCountOne":"1 字",
     "think.toggle":"展开或收起思考过程",
     "think.panelTitle":"摘要",
-    "think.historyTitle":"摘要历史",
+    "think.historyTitle":"Summary",
     "think.historyButton":"摘要",
     "think.openHistory":"查看摘要历史",
     "think.historyTurn":"第 {n} 轮",

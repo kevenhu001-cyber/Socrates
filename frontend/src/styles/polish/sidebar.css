@@ -298,11 +298,11 @@
 #appShell .sidebar-footer .icon-btn svg { width: 17px; height: 17px; }
 }
 
-/* Free-tier "升级" pill at the footer row's right edge — the reference
-   drawer's upgrade affordance. Phones only; desktop keeps plan changes
-   inside the profile surface. Rendered by React SidebarFooter solely for
-   the diophantus tier. */
-#appShell .sidebar-upgrade-pill { display: none; }
+/* Free-tier upgrade pill. The drawer styling is owned by
+   styles/parity/sidebar.css (P_sidebar-parity — 图1's blue pill); the rules
+   below only cover the phone presentation, where the pill spans the drawer
+   foot instead of sitting under the account row. Rendered by React
+   SidebarFooter solely for the diophantus tier. */
 @media (max-width: 768px) {
 #appShell .sidebar-upgrade-pill {
   border: 1px solid var(--ui-border-default);
