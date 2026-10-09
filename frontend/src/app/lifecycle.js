@@ -1,61 +1,28 @@
-/* app/lifecycle.js — extracted from main.js (B6 batch).
- * App lifecycle: reset, incognito, auth gate/expiry, sign-out,
- * app-mode switching, mode badge. Zero-behavior-change lift.
- * Render/list surfaces still owned by main.js resolve via window.*.
+/* app/lifecycle.js — application lifecycle entrypoint.
+ * Incognito, auth expiry and sign-out live here; reset, user-scoped cleanup,
+ * and Chat/Tutor transitions are delegated to focused modules below.
+ * Render/list surfaces still owned by the legacy shell resolve via window.*.
  */
-import { stateStore, resetState } from '../state/store.js';
+import { resetState } from '../state/store.js';
 import { turnState } from '../chat/turnState.js';
 import { saveState } from '../session/saveState.js';
-import { serverCache } from '../session/serverCache.js';
-import { appMode, setAppMode, syncAppModeUI, syncSidebarForMode, LAST_ACTIVE_ID_KEY } from '../config/providers.js';
-import { resetProviderConfigForUser } from '../config/providerConfig.service.ts';
 import { apiFetch } from '../util/api.js';
 import { showGate, showAuthSignin } from '../auth/index.js';
-import { showConfirm } from '../ui/confirm.js';
 import { showToast } from '../ui/toast.js';
-import { startNewComposerSession, resetComposerForNewSession, focusComposerForNewSession } from '../react/composer-input/lifecycle.ts';
-import { clearLegacyMsgListChildren } from '../ui/messageListDom.js';
+import { startNewComposerSession } from '../react/composer-input/lifecycle.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
-import { publishThinkingTurnStart } from '../ui/messageSnapshot.js';
-import { resetShareToken, toggleShareBtn } from '../ui/share.js';
-import { clearSessionRouteInURL } from '../session/store.js';
-import { scrollContainer } from '../ui/scroll.js';
-import { saveCurrentSession, saveSessionBeforeReset } from '../session/persistence.js';
-import { syncModelPills } from '../pickers.js';
+import { resetShareToken } from '../ui/share.js';
+import { saveCurrentSession } from '../session/persistence.js';
 import { renderUserFooter } from '../ui/profile.js';
-/* cross-session KB module removed — the kbCrossBody panel it fed was
-   deleted with the cross-session knowledge section; nothing calls
-   loadAndRenderCrossSessionKB any more. */
-import { resetCmdKSearchState } from '../ui/cmdK.js';
-import { renderGreeting } from '../ui/greeting.js';
-import { activateMainView } from '../ui/mainViewController.js';
-import { setActiveNav } from '../sidebar/navigation.service.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { resetApp } from './lifecycle/reset.js';
+import { clearPerUserClientState } from './lifecycle/clientState.js';
+import { clearUserMemories, getUserMemories } from './lifecycle/userMemory.js';
+import { translateLifecycleText as _t } from './lifecycle/helpers.js';
+import { toggleAppMode } from './lifecycle/mode.js';
 
-function _t(key, fallback) {
-  try {
-    if (typeof window !== 'undefined' && typeof window.t === 'function') {
-      var v = window.t(key);
-      if (v && v !== key) return v;
-    }
-  } catch (e) { reportSwallow(e, 'app/lifecycle._t'); }
-  return fallback != null ? fallback : key;
-}
-function _renderRecents() {
-  try { if (typeof window !== 'undefined' && typeof window.renderRecents === 'function') window.renderRecents(); } catch (e) { reportSwallow(e, 'app/lifecycle._renderRecents'); }
-}
-function _renderMistakes() {
-  try { if (typeof window !== 'undefined' && typeof window.renderMistakes === 'function') window.renderMistakes(); } catch (e) { reportSwallow(e, 'app/lifecycle._renderMistakes'); }
-}
-function _updateMistakesBadge() {
-  try { if (typeof window !== 'undefined' && typeof window.updateMistakesBadge === 'function') window.updateMistakesBadge(); } catch (e) { reportSwallow(e, 'app/lifecycle._updateMistakesBadge'); }
-}
-function _syncSidebarBtns() {
-  try { if (typeof window !== 'undefined' && typeof window.syncSidebarBtns === 'function') window.syncSidebarBtns(); } catch (e) { reportSwallow(e, 'app/lifecycle._syncSidebarBtns'); }
-}
-function _clearActiveTemplate() {
-  try { if (typeof window !== 'undefined' && typeof window.clearActiveTemplate === 'function') window.clearActiveTemplate(); } catch (e) { reportSwallow(e, 'app/lifecycle._clearActiveTemplate'); }
-}
+export { resetApp, clearPerUserClientState, clearUserMemories, getUserMemories, toggleAppMode };
+
 
 /* P_mobile-topbar — incognito flag. Mirrored to window for the save guard. */
 var incognitoOn = false;
@@ -64,12 +31,6 @@ try { window.incognitoOn = false; } catch (e) { reportSwallow(e, 'app/lifecycle.
 /* Cross-module CURRENT_USER — single source is window.CURRENT_USER (mirrored
    below); no module-local copy so readers never drift. */
 try { if (typeof window !== 'undefined' && window.CURRENT_USER === undefined) window.CURRENT_USER = null; } catch (e) { reportSwallow(e, 'app/lifecycle.currentUserMirror'); }
-
-/* Cached user memories (see configurePromptSuffixes wiring in main.js).
-   Centralized here so auth/sign-out clears hit the same array the getter reads. */
-var _userMemories = [];
-export function getUserMemories() { return _userMemories; }
-export function clearUserMemories() { try { _userMemories = []; } catch (e) { reportSwallow(e, 'app/lifecycle.clearUserMemories'); } }
 
 /* Post-auth grace window (see isInAuthGraceWindow). */
 var _lastAuthSuccessAt = 0;
@@ -82,132 +43,6 @@ var AUTH_GRACE_MS = 3000;
    a reply that is still streaming, or an exam in progress. */
 export function startNewChat(){
   return startNewComposerSession(resetApp);
-}
-
-export async function resetApp(options){
-  var confirmActiveSession = !(options && options.confirmActiveSession === false);
-  /* React owns #msgList and always leaves a wrapper element inside it,
-     so DOM child count no longer signals an active session — use state.
-     P_exam-confirm — also fire the "Start a new session?" confirm when
-     the user is sitting in the exam panel (or has generated/submitted
-     an exam). The exam lives on its own state fields (`_examInView`,
-     `examTopic`, `examQuestions`, `examSubmitted`) that the original
-     chat-only guard did not check, so clicking 新聊天/新会话 from the
-     exam page used to skip straight to topicSetup with no warning.
-     The dialog text ("会保存到「最近」") is still accurate — exam
-     sessions are persisted to Recents via saveExamSession. */
-  var _examWasOpen = !!stateStore.read("_examInView")
-    || document.body.classList.contains("exam-active");
-  var _examDirty = _examWasOpen
-    || (typeof stateStore.read("examTopic") === "string" && stateStore.read("examTopic").length > 0
-        && Array.isArray(stateStore.read("examQuestions")) && stateStore.read("examQuestions").length > 0)
-    || !!stateStore.read("examSubmitted");
-  var _hasActiveSession = stateStore.read("topic")||stateStore.read("kbNodes").length>0||(Array.isArray(stateStore.read("messages"))&&stateStore.read("messages").length>0);
-  var _needsConfirm = _examDirty || (_hasActiveSession && (confirmActiveSession || turnState.chatStreaming));
-  if(_needsConfirm){
-    var ok=await showConfirm(_t("confirm.newSession.title"),_t("confirm.newSession.msg"),false);
-    if(!ok){ window._nextProjectId=null; return false; }
-  }
-  publishThinkingTurnStart();
-  /* Persist the current conversation without waiting on the network.
-     If a save is already in flight, the state is snapshotted now and
-     posted as soon as that request settles, so the new-session switch
-     never stalls behind a POST + session-list roundtrip. */
-  saveSessionBeforeReset();
-  try { sessionStorage.removeItem('socrates-active-assistant'); } catch (e) { reportSwallow(e, 'app/lifecycle.resetApp.clearActiveAssistant'); }
-  /* P5.8 — clear the active prompt template. A new session
-     is a fresh context; carrying over "summarize mode" from
-     the previous chat would silently shape the first
-     response of the new session. */
-  _clearActiveTemplate();
-  /* Abort any in-flight chat stream so its callbacks don't write to
-     stateStore.read("messages") after we reset them. */
-  if(window._activeChatAbort){try{window._activeChatAbort("session-reset")}catch(e){reportSwallow(e,'app/lifecycle.resetApp.abortActive');}}
-  if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(e){reportSwallow(e,'app/lifecycle.resetApp.abortTurnState');}}
-  turnState.activeChatCtl=null;
-  window._activeChatAbort=null;
-  turnState.chatStreaming=false;
-  turnState.chatStopMode=false;
-  resetShareToken();
-  /* AUDIT-fix — drop any assembled-but-unsent multimodal payload from
-     the previous session. askChatTurn() prefers turnState.pendingChatContent
-     over its own text argument, so a stale value here (e.g. an image
-     parts array from the last send) would be replayed as the first
-     turn of the new session — the re-explain branch path
-     (branchFromMessage → resetApp → askChatTurn) hit exactly this. */
-  try{turnState.pendingChatContent=null}catch(e){reportSwallow(e,'app/lifecycle.resetApp.clearPendingChat');}
-  try{turnState.pendingAttachments=null}catch(e){reportSwallow(e,'app/lifecycle.resetApp.clearPendingAttachments');}
-  resetState();
-  /* Preserve a project selected immediately before a fresh chat. */
-  if(window._nextProjectId){
-    stateStore.dispatch({
-      type:"state/set",key:"currentProjectId",value:window._nextProjectId
-    });
-    window._nextProjectId=null;
-  }
-
-  toggleShareBtn();
-  /* Go back to the main page — no chat session yet.
-     P_exam-nav — also drop the ?exam=<uuid> URL and clear the
-     #examView body + exam-only top bar elements so resetApp from
-     inside an exam view (via the +New chat button or sidebar) lands
-     on a clean topicSetup page instead of leaving the exam panel
-     visible behind it. */
-  /* P_url-single-write — one replaceState drops both ?chat= and ?exam=.
-     Previously two consecutive calls each rewrote the same URL. */
-  clearSessionRouteInURL();
-  activateMainView("topicSetup", document);
-  /* Reset the React nav snapshot as well as the main pane. Otherwise a
-     directory stays highlighted after any new-chat entry point. */
-  setActiveNav(null);
-  try { renderGreeting(); } catch (e) { reportSwallow(e, 'app/lifecycle.resetApp.renderGreeting'); }
-  if (_examWasOpen) {
-    var _examBody = document.getElementById("examViewBody");
-    if (_examBody) _examBody.innerHTML = "";
-  }
-  clearLegacyMsgListChildren();
-  /* P_app-reset-sync — the sole publishReactChatRuntime call for
-     resetApp() is at the end (reason:"session-reset") after all
-     DOM state and bridge metadata have been refreshed. Previously
-     there was a premature "app-reset" call here (Bug 11) that
-     triggered a React re-read before renderRecents / scroll reset /
-     sidebar sync had run — the duplicate was wasteful and the
-     interim state was incomplete. */
-  resetComposerForNewSession();
-  document.getElementById("kbContent").innerHTML='<div class="kb-empty">'+(typeof t==="function"?_t("tutor.kbTopicFirst"):"Set a topic to build your knowledge map.")+'</div>';
-  /* Task 3.3 — clear the teaching-plan view on full reset so a
-     previous session's plan doesn't linger in the sidebar. */
-  var _tpc2=document.getElementById("teachingPlanContent");if(_tpc2)_tpc2.innerHTML="";
-  _renderRecents();
-  _renderMistakes();
-  _updateMistakesBadge();
-  scrollContainer().scrollTop=0;
-  /* Mobile: close the drawer if it's open, and persist so a
-     subsequent refresh doesn't re-open it. */
-  if(window.innerWidth<768){
-    var sb=document.getElementById("sidebar");
-    var bd=document.getElementById("sidebarBackdrop");
-    if(sb&&!sb.classList.contains("collapsed")){
-      sb.classList.add("collapsed");
-      try{window.sidebarOpen=false;}catch(e){reportSwallow(e,'app/lifecycle.resetApp.sidebarOpenFlag');}
-      if(bd)bd.classList.remove("show");
-      try{localStorage.setItem("socrates-sb","0")}catch (e) {reportSwallow(e, 'app/lifecycle.resetApp'); }
-    }
-  }
-  _syncSidebarBtns();
-  /* P_hide-mode-switch-in-conversation — re-sync the conversation-
-     active body attribute after a reset so the top-bar Chat/Tutor
-     switch reappears for the new session. The MutationObserver in
-     mobileModeSwitch.js will already have fired when msgList was
-     cleared (line above), this is belt-and-suspenders for the
-     stateStore.read("topic") / stateStore.read("phase") / stateStore.read("kbNodes") fields. */
-  if (typeof window.syncConversationActive === 'function') {
-    try { window.syncConversationActive(); } catch (e) { reportSwallow(e, 'app/lifecycle.resetApp.syncConversationActive'); }
-  }
-  publishReactChatRuntime({type:"state-synced",reason:"session-reset"});
-  /* Focus the topic editor immediately and after React commits its surface. */
-  focusComposerForNewSession();
-  return true;
 }
 
 export function syncIncognitoBtn(){
@@ -311,51 +146,6 @@ export function handleAuthExpired(cause){
   }catch(e){/* handleAuthExpired failed */ reportSwallow(e,'app/lifecycle.handleAuthExpired.outer');}
 }
 
-export function clearPerUserClientState(){
-  /* In-memory module-level caches. */
-  try{if(Array.isArray(serverCache.sessions))serverCache.sessions.length=0}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.serverCache');}
-  /* P_recents-fetch-fail — reset the fetch-failed flag on user switch
-     so the new user doesn't inherit the previous user's failure state. */
-  try{serverCache.fetchFailed=false}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.fetchFailed');}
-  try{resetProviderConfigForUser()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.providerConfig');}
-  try{resetCmdKSearchState()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.cmdKIndex');}
-  /* exam.js is lazy — if it was never imported its save state is already
-     pristine, so only reset when the module is actually loaded. */
-  try{var _em=(typeof window!=="undefined")&&window.__examModule;if(_em&&typeof _em.resetExamSaveState==="function")_em.resetExamSaveState()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.examSave');}
-  try{clearUserMemories()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.userMemories');}
-  try{if(turnState.pendingChatContent!==undefined)turnState.pendingChatContent=null}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.pendingChat');}
-  /* P_locale-ghost — `state.locale` was never a real field (the real
-     language selector is window._currentLang, managed by i18n.js).
-     The previous `window.state.locale=null` here only triggered the
-     state/store.js Proxy's "unknown flat key, setting on root: locale"
-     warning on every signin / user switch. Removed. */
-  /* Persisted caches. */
-  try{localStorage.removeItem("socrates-sessions-v2")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.sessionsCache','expected');}
-  try{localStorage.removeItem("socrates-api")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.apiCache','expected');}
-  try{localStorage.removeItem("socrates-guest")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.guestCache','expected');}
-  try{localStorage.removeItem("socrates-projects")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.projectsCache','expected');}
-  try{localStorage.removeItem("socrates-recents-filter")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.recentsFilterCache','expected');}
-  try{localStorage.removeItem("socrates-provider-keys")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.providerKeysCache','expected');}
-  try{localStorage.removeItem("socrates-websearch")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.websearchCache','expected');}
-  /* P_tutor-leak — socrates-appmode is a per-user preference but it
-     was never wiped on signOut. A user who once toggled tutor mode
-     leaves it set to "tutor" in localStorage; the next person to
-     sign in on the same browser inherits tutor mode without ever
-     touching the toggle. Clear it (and the runtime mirror) so the
-     new session starts in the documented default of "chat". */
-  try{localStorage.removeItem("socrates-appmode")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.appmodeCache','expected');}
-  /* AUDIT-fix — reset the module binding so the next user starts in
-      chat mode. setAppMode() syncs window.appMode internally. */
-  try{setAppMode("chat")}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.setAppMode');}
-  try{localStorage.removeItem(LAST_ACTIVE_ID_KEY)}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.lastActiveId','expected');}
-  /* Re-render so the cleared state is visible immediately, not on
-     the next user-driven re-render. */
-  try{if(typeof renderRecents==="function")_renderRecents()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.renderRecents');}
-  try{if(typeof renderMistakes==="function")_renderMistakes()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.renderMistakes');}
-  try{if(typeof updateMistakesBadge==="function")_updateMistakesBadge()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.updateMistakesBadge');}
-  try{if(typeof syncModelPills==="function")syncModelPills()}catch(e){reportSwallow(e,'app/lifecycle.clearPerUser.syncModelPills');}
-}
-
 export async function signOut(){
   try{await apiFetch("/api/auth/logout",{method:"POST"})}catch(e){reportSwallow(e,'app/lifecycle.signOut.apiLogout');}
   /* Clear browser cookies on the current domain. The server already
@@ -414,57 +204,4 @@ export async function signOut(){
   try{turnState.pendingAttachments=null}catch(e){reportSwallow(e,'app/lifecycle.signOut.clearPendingAttachments');}
   showGate();
   renderUserFooter();
-}
-
-export async function toggleAppMode(targetMode){
-  /* Segmented controls pass their exact destination; legacy callers without
-     an argument (for example the in-conversation banner) retain toggle
-     behaviour. Clicking the already-selected tab is intentionally a no-op. */
-  var nextMode=(targetMode==="chat"||targetMode==="tutor")
-    ? targetMode
-    : (appMode === "tutor" ? "chat" : "tutor");
-  if(nextMode===appMode){
-    syncAppModeUI();
-    return;
-  }
-  /* Mid-session switch: confirm before discarding the live session. */
-  var msgList=document.getElementById("msgList");
-  var hasRealMsgs=msgList&&Array.from(msgList.children).some(function(c){return !c.hasAttribute('data-react-message-list-empty');});
-  var inSession=stateStore.read("topic")||stateStore.read("kbNodes")&&stateStore.read("kbNodes").length>0||(stateStore.read("phase")==="chat")||hasRealMsgs;
-  if(inSession){
-    var next=_t(nextMode==="tutor"?"tutor.modeTutor":"tutor.modeChat");
-    var ok=await showConfirm(_t("confirm.switchMode.title").replace("{mode}",next),
-      _t("confirm.switchMode.msg"),
-      false);
-    if(!ok)return;
-    /* P_save-before-mode-switch — await save completion before
-       resetting, so the session is fully persisted when the user
-       comes back to it in the other mode. Previously (Bug 8) this
-       was fire-and-forget, and resetApp could clear state while
-       doSave() was still in flight, causing the saved payload to
-       capture empty/partial state. */
-    var _sp = saveCurrentSession();
-    if(_sp){try{await _sp}catch(e){reportSwallow(e,'app/lifecycle.toggleAppMode.saveCurrent');}}
-    /* The user already confirmed the switch above, so skip resetApp()'s own
-       "start a new session?" prompt (it would otherwise fire a second dialog
-       for the same session). Awaited: resetApp() is async and the mode must
-       not flip until the reset has run — and if an exam-dirty confirm inside
-       it is cancelled, the switch is abandoned rather than applied on top of
-       the un-reset session. */
-    var _resetOk = await resetApp({ confirmActiveSession: false });
-    if(_resetOk===false)return;
-  }
-  /* P_tutor-sync — select the requested module-level mode directly (not
-     window.appMode, which could be stale). setAppMode() also synchronizes
-     the legacy window binding. */
-  setAppMode(nextMode);
-  try{localStorage.setItem("socrates-appmode",appMode)}catch (e) {reportSwallow(e, 'app/lifecycle.toggleAppMode'); }
-  syncAppModeUI();
-  syncSidebarForMode();
-  /* v3.0 design — re-render the mode banner after a switch so the
-     label and switch-button text flip. */
-  if(typeof tutorSocratic==="object"&&tutorSocratic
-     &&typeof tutorSocratic.renderModeBanner==="function"){
-    try{tutorSocratic.renderModeBanner()}catch(e){reportSwallow(e,'app/lifecycle.toggleAppMode.renderModeBanner');}
-  }
 }
