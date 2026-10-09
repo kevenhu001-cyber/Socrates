@@ -58,6 +58,18 @@ import type {ChatStreamPipelineContext, PreparedCall, ToolCall, ToolCallDelta,} 
 
 export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Promise<void> {
   const { req, res, prep, sessionIdFromQuery, projectIdFromBody, turnId } = ctx;
+  /* P_ttfb-metric — anchor for the time-to-first-token breakdown. Logged once
+     per turn when the first content/reasoning delta reaches the client, so
+     upstream-slow vs. pipeline-slow can be told apart in production instead of
+     guessed at. Cheap: one Date.now() at entry plus one log line per turn. */
+  const ttfbStart = Date.now();
+  let ttfbReported = false;
+  const reportTtfb = (kind: 'content' | 'reasoning') => {
+    if (ttfbReported) return;
+    ttfbReported = true;
+    const ms = Date.now() - ttfbStart;
+    if (ms > 250) console.log(`[ttfb] first-${kind} ${ms}ms turn=${turnId || '-'} model=${prep.payload.provider?.model || '-'}`);
+  };
   const { messages: finalMessages, provider, safeExtraBody, mode, temperature, maxTokens, reasoning_effort, responseSpeed } = prep.payload;
   /* P_prep-parallel — prefer the tool context the route shell started
      alongside ownership/turn/prep; direct pipeline callers (tests) that
@@ -518,6 +530,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
         fullText += chunk;
         iterContent += chunk;
         completionTokens = estimateTokens(fullText);
+        reportTtfb('content');
         emitter.content(chunk);
       },
       // onDone — capture finish_reason so the loop can dispatch, and the
@@ -539,6 +552,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
       (reasoning: string) => {
         fullReasoning += reasoning;
         iterReasoning += reasoning;
+        reportTtfb('reasoning');
         emitter.reasoning(reasoning);
       },
       // onToolUse — accumulate tool calls for this iteration. Flush
