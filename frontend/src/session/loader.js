@@ -9,34 +9,24 @@ import { stateStore } from '../state/store.js';
 import { saveState } from './saveState.js';
 import { serverCache } from './serverCache.js';
 import { turnState } from '../chat/turnState.js';
-import { quietTurn } from '../chat/turnUi.js';
-import { buildUserContentParts } from '../chat/history.js';
 import { apiFetch } from '../util/api.js';
 import { refreshCachedProjects } from '../projects/projectCache.ts';
 import { ensureSessionShape, setAppMode, syncSidebarForMode } from '../config/providers.js';
 import { syncChatModel } from '../pickers.js';
 import { pushChatIdToURL, pushExamIdToURL } from './store.js';
-import { loadLocalMemory, _memKey } from '../storage/localMemory.js';
-import { batchSetItem } from '../batchStorage.js';
 import { clearLegacyMsgListChildren } from '../ui/messageListDom.js';
-import { formatMsg } from '../render/markdown.js';
-import { esc } from '../render/helpers.js';
-import { buildAssistantHtml } from '../render/assistantHtml.ts';
 import { buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan } from '../chat/teachingPlan.js';
 import { stateView } from '../tutor/diagnosticFlow.js';
-import { generateId } from '../util/ids.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { showToast } from '../ui/toast.js';
-import {
-  bumpPendingSeq,
-  clearPendingTurn,
-  createChatTurn,
-  getChatTurn,
-  loadPendingTurn,
-  savePendingTurn,
-  subscribeChatTurnEvents,
-} from '../chat/turnClient.ts';
 import { detailCache } from './detailCache.js';
+import {
+  restoreSessionMessage,
+  restoreLocalAssistantFallback,
+  restoreInterruptedResponse,
+  mirrorSessionHistory,
+} from './historyRestore.js';
+import { reattachPendingTurn } from './pendingTurnRestore.js';
 import { seedSyncedMessages } from './persistence.js';
 import { toggleShareBtn } from '../ui/share.js';
 import { activateMainView } from '../ui/mainViewController.js';
@@ -45,6 +35,8 @@ import { clearComposer } from '../composer/controller.ts';
 import { updateChatStats } from '../chat/stats.js';
 import { updateKB } from '../ui/knowledgePanel.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
+
+export { reattachPendingTurn };
 
 function _t(key, fallback) {
   try {
@@ -235,189 +227,6 @@ export function setCurrentSessionId(id, silent){
   stateStore.dispatch({type:"state/set",key:"currentSessionId",value:id});
   try{window._currentSessionId=id;}catch (e) {reportSwallow(e, 'session/loader.setCurrentSessionId'); }
   if(!silent) publishReactChatRuntime({type:"state-synced",reason:"session-id-changed"});
-}
-
-/* Translate one persisted API row into the transcript shape consumed by the
-   React-owned message list. Keeping this mapping out of loadSession makes the
-   session orchestration easier to read and gives the wire-format boundary one
-   place to evolve. */
-function restoreSessionMessage(m){
-  /* Keep the stable clientId for DOM/state and retain the database UUID
-     separately. Replacing clientId with m.id makes the next save insert a
-     duplicate row and causes message actions to lose their client identity. */
-  var clientId = m.clientId || m.id || ("loaded-"+generateId());
-  var html = "";
-  if (m.role === "assistant" && m.rawText) {
-    /* Rebuild assistant markup from the canonical source, never from the
-       stored snapshot. This lets current renderers restore old conversations. */
-    html = m.html || "";
-    if(!html){
-      try { html = buildAssistantHtml(m.rawText); }
-      catch (_) { html = formatMsg(m.rawText); }
-    }
-  } else {
-    html = m.html || (m.rawText ? formatMsg(m.rawText) : "");
-  }
-  if (typeof html === "string" && html.indexOf("think-block") !== -1) {
-    html = html.replace(/<details class="think-block[\s\S]*?<\/details>/gi, "");
-  }
-  return {
-    clientId: clientId,
-    serverId: m.id || null,
-    role: m.role,
-    rawText: m.rawText || "",
-    html: html,
-    type: m.type || null,
-    restoredFromHistory: true,
-    /* The API uses the camelCase schema key. Keep the snake_case fallback
-       for any legacy payloads. */
-    reasoningContent: m.reasoningContent || m.reasoning_content || null,
-    attachments: Array.isArray(m.attachments) ? m.attachments : [],
-    toolCalls: Array.isArray(m.toolCalls) ? m.toolCalls.map(function(tc){
-      return {
-        id: String(tc.id || ''),
-        name: String(tc.name || ''),
-        input: tc.input == null ? null : tc.input,
-        output: tc.output == null ? null : tc.output,
-        isError: tc.isError === true,
-        artifacts: Array.isArray(tc.artifacts) ? tc.artifacts.map(function(a){
-          return { id: String(a.id || ''), mimeType: a.mimeType || null, name: a.name || null };
-        }) : [],
-        results: Array.isArray(tc.results) ? tc.results.slice(0, 20) : [],
-        /* Preserve the split offset and versioned visualization spec so
-           inline tool layout survives a reload. */
-        textOffset: typeof tc.textOffset === "number" ? tc.textOffset : undefined,
-        visualization: (tc.visualization && tc.visualization.version === 1) ? tc.visualization : undefined,
-        /* Keep the normalized output list when present. The renderer
-           validates entries and can fall back to legacy output fields. */
-        outputs: Array.isArray(tc.outputs) ? tc.outputs : undefined,
-        /* Terminal fields drive the restored tool row's state and error UI. */
-        status: tc.status == null ? null : String(tc.status),
-        durationMs: typeof tc.durationMs === "number" ? tc.durationMs : undefined,
-        error: tc.error == null ? null : tc.error,
-        errorCode: tc.errorCode == null ? null : tc.errorCode,
-        retryable: typeof tc.retryable === "boolean" ? tc.retryable : undefined,
-        userMessage: tc.userMessage == null ? undefined : tc.userMessage,
-        stderr: tc.stderr == null ? undefined : tc.stderr,
-        detail: tc.detail == null ? undefined : tc.detail,
-      };
-    }) : [],
-    actions: null
-  };
-}
-
-/* The server save can lag behind a refresh. Restore assistant messages that
-   were already mirrored locally but have not reached the session response. */
-function restoreLocalAssistantFallback(session){
-  try{
-    var localRecord=loadLocalMemory(session.id);
-    var serverMessages=Array.isArray(session.messages)?session.messages:[];
-    if(!localRecord||!Array.isArray(localRecord.messages)||localRecord.messages.length<=serverMessages.length)return;
-    var extras=localRecord.messages.slice(serverMessages.length);
-    for(var i=0;i<extras.length;i++){
-      var message=extras[i];
-      if(!message||!message.content||message.role!=="assistant")continue;
-      stateStore.dispatch({type:"session/append-message",payload:{
-        clientId:"local-recovered-"+generateId(),
-        role:"assistant",
-        rawText:message.content,
-        html:buildAssistantHtml(message.content),
-        type:"assistant",
-        reasoningContent:null,
-        attachments:[],
-        toolCalls:[],
-        actions:null
-      }});
-    }
-    publishReactChatRuntime({ type: "state-synced", reason: "local-recovered-react" });
-  }catch (e) {reportSwallow(e, 'session/loader.restoreLocalAssistantFallback'); }
-}
-
-/* Show server-persisted partial output after a refresh and attach its retry
-   action to the React-owned message list. */
-function restoreInterruptedResponse(session, msgList){
-  if(!session.streamingText)return;
-  var partialText=session.streamingText||"(partial content)";
-  var partialRendered;
-  try{partialRendered=formatMsg(partialText)}catch(_){partialRendered="<p>"+esc(partialText)+"</p>"}
-  var partialHtml='<div class="msg-content">'+partialRendered+'</div>'+
-    '<div class="msg-error" style="margin-top:8px">'+
-      '<span class="msg-error-text">(response interrupted — tap Retry to continue)</span>'+
-      '<button type="button" class="msg-retry-btn stream-retry-btn" data-stream-retry>Retry</button>'+
-    '</div>';
-  var partialClientId="stream-recovered-"+Date.now();
-  var partialIdx=stateStore.dispatch({type:"session/append-message",payload:{
-    role:"assistant",
-    clientId:partialClientId,
-    rawText:partialText,
-    html:partialHtml,
-    type:"assistant",
-  }});
-  var retryDelegated=function(ev){
-    var target=ev.target;
-    if(!(target && target.matches && target.matches("[data-stream-retry]")))return;
-    msgList.removeEventListener("click",retryDelegated);
-    stateStore.dispatch({
-      type:"session/remove-message-at",index:partialIdx,clientId:partialClientId
-    });
-    apiFetch("/api/sessions/"+encodeURIComponent(session.id),{
-      method:"PATCH",
-      body:{streamingText:null,streamingReasoning:null},
-    }).catch(function(){});
-    var lastUserEntry=null;
-    var lastUserMessage=null;
-    var messages=stateStore.read("messages");
-    for(var i=messages.length-1;i>=0;i--){
-      if(messages[i]&&messages[i].role==="user"){
-        lastUserEntry=messages[i];
-        lastUserMessage=lastUserEntry.rawText||lastUserEntry.content;
-        break;
-      }
-    }
-    if(lastUserMessage&&typeof window.askChatTurn==="function"){
-      /* askChatTurn slices this user turn out of history; carry multimodal
-         parts explicitly so retry preserves its attachments. */
-      var lastUserParts=null;
-      try{lastUserParts=buildUserContentParts(lastUserMessage,lastUserEntry&&lastUserEntry.attachments);}catch(_){lastUserParts=null;}
-      quietTurn(window.askChatTurn(lastUserMessage,lastUserParts));
-    }else{
-      showToast(_t("toast.noRetryTarget"));
-    }
-  };
-  msgList.addEventListener("click",retryDelegated);
-  /* Avoid showing the same server-side partial message on the next reload. */
-  apiFetch("/api/sessions/"+encodeURIComponent(session.id),{
-    method:"PATCH",
-    body:{streamingText:null,streamingReasoning:null},
-  }).catch(function(){});
-}
-
-/* Build the local fast-path history from server rows only when no local copy
-   exists, and defer the work until the browser is idle. */
-function mirrorSessionHistory(session){
-  if(loadLocalMemory(session.id))return;
-  var sync=function(){
-    try{
-      var record={topic:session.topic||"",ts:Date.now(),messages:[]};
-      (session.messages||[]).forEach(function(message){
-        var text="";
-        if(message.rawText){
-          text=message.rawText;
-        }else if(message.html){
-          text=message.html.replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
-        }
-        text=text.replace(/^Thinking\.\.\.\s*/i,"").replace(/^Thinking\s*/i,"").trim();
-        if(!text)return;
-        record.messages.push({role:message.role,content:text});
-      });
-      if(record.messages.length)batchSetItem(_memKey(session.id),JSON.stringify(record));
-    }catch (e) { /* mirror failed */ reportSwallow(e, 'session/loader.mirrorSessionHistory'); }
-  };
-  if(typeof requestIdleCallback==="function"){
-    requestIdleCallback(sync,{timeout:2000});
-  }else{
-    setTimeout(sync,100);
-  }
 }
 
 function syncRestoredTutorPlan(){
@@ -738,132 +547,9 @@ export async function loadSession(id){
   }
 }
 
-/* M2 async — re-attach a detached turn after reload/reconnect.
- * Cases:
- *   completed + fullText → append once (deduped by exact rawText) so
- *     the answer the server finished while we were gone is visible.
- *   failed/interrupted  → drop the pointer; the in-place error affordance
- *     from the original tab (or streamingText recovery) owns the UX.
- *   open                → open a live bubble and tail events from lastSeq.
- * All paths are best-effort and session-scoped: if the user switches
- * sessions mid-tail the subscription aborts and the bubble's
- * stillOwnsSlot guard keeps the writes inert. */
-export async function reattachPendingTurn(sessionId){
-  var pending=null;
-  try{ pending=loadPendingTurn(sessionId); }catch(_){ return; }
-  if(!pending||(!pending.turnId && !pending.clientTurnId))return;
-  var snapshot=null;
-  try{
-    if(pending.turnId){
-      snapshot=await getChatTurn(pending.turnId);
-    }else if(pending.clientTurnId){
-      var resTurn=await createChatTurn({ clientTurnId: pending.clientTurnId, sessionId: sessionId });
-      if(resTurn && resTurn.turn && resTurn.turn.id){
-        pending.turnId=resTurn.turn.id;
-        savePendingTurn(sessionId, { turnId: pending.turnId, clientTurnId: pending.clientTurnId, lastSeq: 0 });
-        snapshot=await getChatTurn(pending.turnId);
-      }
-    }
-  }
-  catch(_){ try{clearPendingTurn(sessionId)}catch (e) {reportSwallow(e, 'session/loader.loadSession~12'); } return; }
-  if(!snapshot||!snapshot.turn)return;
-  var turn=snapshot.turn;
-  if(turn.sessionId&&turn.sessionId!==sessionId){ try{clearPendingTurn(sessionId)}catch (e) {reportSwallow(e, 'session/loader.loadSession~13'); } return; }
-  if(stateStore.read("currentSessionId")!==sessionId)return;
-  if(turn.status==="completed"){
-    try{
-      var full=turn.fullText||"";
-      if(full){
-        var msgs=stateStore.read("messages")||[];
-        var already=false;
-        for(var i=0;i<msgs.length;i++){
-          if(msgs[i]&&msgs[i].role==="assistant"&&msgs[i].rawText===full){already=true;break}
-        }
-        if(!already&&typeof window.addMessage==="function"){
-          window.addMessage("assistant",full);
-          try{publishReactChatRuntime({type:"state-synced",reason:"pending-turn-completed"});}catch (e) {reportSwallow(e, 'session/loader.loadSession~14'); }
-        }
-      }
-    }catch (e) {reportSwallow(e, 'session/loader.loadSession~15'); }
-    try{clearPendingTurn(sessionId)}catch (e) {reportSwallow(e, 'session/loader.loadSession~16'); }
-    return;
-  }
-  if(turn.status==="failed"||turn.status==="interrupted"){
-    try{clearPendingTurn(sessionId)}catch (e) {reportSwallow(e, 'session/loader.loadSession~17'); }
-    return;
-  }
-  if(typeof window.addStreamingMessage!=="function")return;
-  var ctl=await window.addStreamingMessage({onRetry:function(){
-    try{
-      var lastUserEntry=null;
-      var lastUser=null;
-      var list=stateStore.read("messages")||[];
-      for(var ui=list.length-1;ui>=0;ui--){
-        if(list[ui]&&list[ui].role==="user"){
-          lastUserEntry=list[ui];
-          lastUser=lastUserEntry.rawText||null;
-          break;
-        }
-      }
-      if(lastUser&&typeof window.askChatTurn==="function"){
-        /* Same slicing hazard as the recovered-stream retry above: carry
-           the stored multimodal parts through the replay. */
-        var lastUserParts=null;
-        try{lastUserParts=buildUserContentParts(lastUser,lastUserEntry&&lastUserEntry.attachments);}catch(_){lastUserParts=null;}
-        quietTurn(window.askChatTurn(lastUser,lastUserParts));
-      }
-    }catch (e) {reportSwallow(e, 'session/loader.loadSession~18'); }
-  }});
-  var subAbort=new AbortController();
-  var maxSeq=Number(pending.lastSeq)||0;
-  function applyFrame(frame){
-    if(!frame||stateStore.read("currentSessionId")!==sessionId){
-      try{subAbort.abort("session-switch")}catch (e) {reportSwallow(e, 'session/loader.loadSession~19'); }
-      return;
-    }
-    try{
-      var data=frame.data||{};
-      if(frame.event==="content"&&typeof data.delta==="string")ctl.append(data.delta);
-      else if(frame.event==="reasoning"&&typeof data.delta==="string")ctl.appendThinking(data.delta);
-      else if(frame.event==="tool_use"){
-        var _calls=Array.isArray(data)?data:(data.calls||[data]);
-        for(var ci=0;ci<_calls.length;ci++){ try{ctl.recordToolUse(_calls[ci])}catch (e) {reportSwallow(e, 'session/loader.loadSession~20'); } }
-      }
-      else if(frame.event==="tool_result")ctl.recordToolResult(data);
-      else if(frame.event==="tool_approval"&&typeof ctl.recordToolApproval==="function")ctl.recordToolApproval(data);
-      else if(frame.event==="tool_progress"&&ctl.recordToolProgress)ctl.recordToolProgress(data);
-      else if(frame.event==="execution_start"&&ctl.recordExecutionStart)ctl.recordExecutionStart(data);
-      else if(frame.event==="agent_step"&&typeof ctl.recordAgentStep==="function")ctl.recordAgentStep(data);
-      else if(frame.event==="agent_plan"&&typeof ctl.recordAgentPlan==="function")ctl.recordAgentPlan(data);
-      else if(frame.event==="turn_done"){ ctl.finish(); try{clearPendingTurn(sessionId)}catch (e) {reportSwallow(e, 'session/loader.loadSession~21'); } try{subAbort.abort("done")}catch (e) {reportSwallow(e, 'session/loader.loadSession~22'); } return; }
-      else if(frame.event==="turn_failed"){
-        try{
-          if(turn.fullText||ctl)ctl.finish();
-        }catch (e) {reportSwallow(e, 'session/loader.loadSession~23'); }
-        try{clearPendingTurn(sessionId)}catch (e) {reportSwallow(e, 'session/loader.loadSession~24'); }
-        try{subAbort.abort("done")}catch (e) {reportSwallow(e, 'session/loader.loadSession~25'); }
-        return;
-      }
-      if(typeof frame.sequence==="number"&&frame.sequence>maxSeq){
-        maxSeq=frame.sequence;
-        try{bumpPendingSeq(sessionId,maxSeq)}catch (e) {reportSwallow(e, 'session/loader.loadSession~26'); }
-      }
-    }catch (e) {reportSwallow(e, 'session/loader.loadSession~27'); }
-  }
-  try{
-    var replay=(snapshot.events||[]);
-    for(var r=0;r<replay.length;r++)applyFrame(replay[r]);
-    if(stateStore.read("currentSessionId")!==sessionId){try{subAbort.abort("session-switch")}catch (e) {reportSwallow(e, 'session/loader.loadSession~28'); }return}
-    await subscribeChatTurnEvents(pending.turnId,maxSeq,subAbort.signal,{
-      onEvent:applyFrame,
-      onError:function(){},
-    });
-  }catch (e) {reportSwallow(e, 'session/loader.loadSession~29'); }
-}
-
 /* ============================================================
    CLIENT-SIDE CONVERSATION MEMORY
    K 区段(LOCAL_MEMORY_MAX / _memKey / loadLocalMemory /
-   appendLocalMemory / clearLocalMemory) 已抽到 src/storage/localMemory.js,
-   顶部 import。
+   appendLocalMemory / clearLocalMemory) 已抽到 src/storage/localMemory.js。
+   Session history restore reads and writes the mirror in historyRestore.js。
    ============================================================ */
