@@ -20,9 +20,9 @@ test('Tutor follow-ups reference the foundation instead of restating it', () => 
   assert.doesNotMatch(continuation, /CRITICAL.*TWO PRINCIPLES/i);
 });
 
-test('Tutor turn scope limits scaffold count by teaching stage', () => {
-  assert.match(tutorTurnDirective('illustrate', false), /at most two example scaffolds/i);
-  assert.match(tutorTurnDirective('exercise', false), /exactly one practice scaffold/i);
-  assert.match(tutorTurnDirective('check', false), /exactly one quiz scaffold/i);
-  assert.match(tutorTurnDirective('motivate', true), /no more than one closing question/i);
+test('Tutor turn scope keeps each teaching stage focused', () => {
+  assert.match(tutorTurnDirective('illustrate', false), /two is enough/i);
+  assert.match(tutorTurnDirective('exercise', false), /wait for the student's attempt/i);
+  assert.match(tutorTurnDirective('check', false), /one short quiz/i);
+  assert.match(tutorTurnDirective('motivate', true), /at most one closing question/i);
 });

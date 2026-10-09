@@ -61,10 +61,10 @@ describe('production prompt contracts', () => {
     assert.ok(prompt);
     /* Tutor-only mechanics that belong to this mode: teaching cards,
        tool routing, math KaTeX compatibility, one-practice-per-reply. */
-    assert.match(prompt, /教学卡片/);
+    assert.match(prompt, /Teaching cards/);
     assert.match(prompt, /KaTeX/);
     assert.match(prompt, /begin\{aligned\}/);
-    assert.match(prompt, /一次只出一道题/);
+    assert.match(prompt, /One practice or quiz per reply/);
     /* Visualization routing is owned once by the server's
        appendToolRoutingHints helper (routes/chat/helpers.ts) and is appended
        only when the matching native tool is available. teacher-mode must not

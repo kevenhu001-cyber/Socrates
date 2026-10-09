@@ -13,7 +13,6 @@ import { handleChatApiResult } from './format.js';
 import { offlineGuard } from './offline.js';
 import {
   appendClientContextMessages,
-  beagleSuffix,
   thinkingSuffix,
   toneVoiceSuffix,
 } from './promptSuffixes.ts';
@@ -190,7 +189,7 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
   var chatPrompt = _effortHigh ? CHAT_SYSTEM_PROMPT : CHAT_CONCISE_PROMPT;
   var thinkSuffix = _effortHigh ? thinkingSuffix() : "";
   var toneSuffix = toneVoiceSuffix();
-  var msgs=[{role:"system",content:"[Assistant mode instructions]\n"+langDir+chatPrompt+toneSuffix+beagleSuffix()+thinkSuffix}];
+  var msgs=[{role:"system",content:"[Assistant mode instructions]\n"+langDir+chatPrompt+toneSuffix+thinkSuffix}];
   msgs=appendClientContextMessages(msgs);
   /* P5.8 — active prompt template: inject the template's
      specialized system prompt as a fresh system message so
@@ -219,7 +218,7 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
        example.com 的首页" but we couldn't extract a URL. Inject a
        short hint to the model so it asks for the full URL with an
        http(s):// prefix instead of guessing. */
-    var hintText=userMsg+"\n\n[System] The user appears to be referring to a website, but no complete URL was provided in this turn (the system only auto-fetches text that contains a full http(s):// link or a recognizable bare domain like example.com / www.foo.bar). Reply briefly asking them to paste the full URL — including the https:// prefix — so you can read the page. Do NOT invent or guess the page contents.";
+    var hintText=userMsg+"\n\n[System] The user appears to be referring to a website, but no complete URL was provided in this turn (the system only auto-fetches text that contains a full http(s):// link or a recognizable bare domain like example.com / www.foo.bar). Reply briefly asking them to paste the full URL, including the https:// prefix, so you can read the page. Do NOT invent or guess the page contents.";
     msgs.push({role:"user",content:Array.isArray(userContent)?userContent.concat({type:"text",text:hintText}):hintText});
   }else{
     msgs.push({role:"user",content:userContent});

@@ -15,7 +15,6 @@ globalThis.localStorage.setItem('socrates-reasoning-effort', 'high');
 
 const {
   appendClientContextMessages,
-  beagleSuffix,
   configurePromptSuffixes,
   memoriesSuffix,
   projectContextSuffix,
@@ -25,10 +24,6 @@ const {
 const { setTonePreset } = await import('../src/config/tonePresets.js');
 const { setAppMode } = await import('../src/config/providers.js');
 const { stateStore } = await import('../src/state/store.js');
-
-test('beagleSuffix stays a no-op for legacy call sites', () => {
-  assert.equal(beagleSuffix(), '');
-});
 
 test('toneVoiceSuffix is empty for the default preset', () => {
   setTonePreset('default');

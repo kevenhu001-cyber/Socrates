@@ -121,14 +121,6 @@ export function toneVoiceSuffix(): string {
   return '\n\n## VOICE (tone and register)\n' + voice + '\n';
 }
 
-/** No-op kept so legacy call sites compose the system message the same way. */
-export function beagleSuffix(): string {
-  /* The full Beagle behavior spec (identity, tool routing, response
-     style) is injected server-side by minimaxProxy.ts from
-     prompts/beagle.md — see server/src/lib/prompts.ts. */
-  return '';
-}
-
 /** Suffix telling the model whether to emit visible thinking. */
 export function thinkingSuffix(): string {
   const highTutorGuidance =

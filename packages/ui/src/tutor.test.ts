@@ -42,7 +42,7 @@ test('only substantive free-form answers advance the stage', () => {
 test('foundation directives carry the baseline contract', () => {
   assert.ok(fromBasicsDirective({ status: 'fuzzy' }).includes('ALWAYS START FROM THE FOUNDATION'));
   assert.ok(fromBasicsDirective(null, { continuation: true }).includes('FOUNDATION ANCHOR'));
-  assert.ok(tutorTurnDirective('exercise', true).includes('exactly one practice'));
+  assert.ok(tutorTurnDirective('exercise', true).includes('practice problem'));
   assert.ok(BASELINE_LEVEL.includes('baseline'));
 });
 

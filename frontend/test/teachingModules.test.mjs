@@ -66,11 +66,11 @@ test('socraticDirectives: stageInstruction is stable per teaching stage', () => 
 test('socraticDirectives: fromBasicsDirective depth cue and continuation are stable', () => {
   assert.equal(
     BASELINE_LEVEL,
-    'baseline (not mastery) — depth cue only, always start from the core definition',
+    'baseline (not mastery), depth cue only, always start from the core definition',
   );
 
   const cold = fromBasicsDirective({ status: 'fuzzy' }, {});
-  assert.match(cold, /^CRITICAL — TWO PRINCIPLES/);
+  assert.match(cold, /^CRITICAL, TWO PRINCIPLES/);
   assert.match(cold, /diagnostic for this sub-topic is 'fuzzy'/);
   assert.match(cold, /ALWAYS START FROM THE FOUNDATION/);
 
@@ -80,20 +80,20 @@ test('socraticDirectives: fromBasicsDirective depth cue and continuation are sta
   const continuation = fromBasicsDirective({ status: 'fuzzy' }, { continuation: true });
   assert.match(continuation, /^FOUNDATION ANCHOR FOR THIS FOLLOW-UP/);
   assert.match(continuation, /already been introduced/);
-  assert.doesNotMatch(continuation, /CRITICAL — TWO PRINCIPLES/);
+  assert.doesNotMatch(continuation, /CRITICAL, TWO PRINCIPLES/);
 });
 
 test('socraticDirectives: tutorTurnDirective scope wording is stable by stage and first-turn flag', () => {
   const firstMotivate = tutorTurnDirective('motivate', true);
   assert.match(firstMotivate, /This is the opening turn for the current sub-topic\./);
-  assert.match(firstMotivate, /no more than one closing question/);
+  assert.match(firstMotivate, /at most one closing question/);
 
   const contExercise = tutorTurnDirective('exercise', false);
   assert.match(contExercise, /This is a continuation turn\./);
-  assert.match(contExercise, /exactly one practice scaffold/);
+  assert.match(contExercise, /wait for the student's attempt/);
 
-  assert.match(tutorTurnDirective('illustrate', false), /at most two example scaffolds/);
-  assert.match(tutorTurnDirective('check', false), /exactly one quiz scaffold/);
+  assert.match(tutorTurnDirective('illustrate', false), /two is enough/);
+  assert.match(tutorTurnDirective('check', false), /one short quiz/);
   // Every directive states that turn-scope rules override generic defaults.
   assert.match(tutorTurnDirective('unknown', false), /TURN-SCOPE RULES\./);
 });

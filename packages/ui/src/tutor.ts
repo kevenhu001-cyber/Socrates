@@ -44,7 +44,7 @@ export function stageInstruction(stage: string): string {
   }
 }
 
-export const BASELINE_LEVEL = 'baseline (not mastery) — depth cue only, always start from the core definition';
+export const BASELINE_LEVEL = 'baseline (not mastery), depth cue only, always start from the core definition';
 
 export function fromBasicsDirective(node: { status?: string } | null | undefined, opts?: { continuation?: boolean }): string {
   const status = (node && node.status) || 'unknown';
@@ -53,13 +53,13 @@ export function fromBasicsDirective(node: { status?: string } | null | undefined
     return 'FOUNDATION ANCHOR FOR THIS FOLLOW-UP:\n'
       + 'The core definition has already been introduced in the conversation. Refer back to it in at most one sentence when it helps, but do not restate the definition, derivation, examples, or summary. Only revisit the foundation in detail if the student\'s answer shows a specific misconception.\n\n';
   }
-  return 'CRITICAL — TWO PRINCIPLES YOU MUST FOLLOW FOR THIS SUB-TOPIC:\n'
+  return 'CRITICAL, TWO PRINCIPLES YOU MUST FOLLOW FOR THIS SUB-TOPIC:\n'
     + 'Principle 1 (DEPTH ONLY): The cold-start diagnostic for this sub-topic is \'' + status
     + '\'. This result tells you ONLY how detailed your explanation should be:\n'
     + '  - \'fuzzy\' / \'internalized\' (some familiarity): fewer examples (1-2), less scaffolding, faster pace, less repetition of basics.\n'
     + '  - \'blank\' (no familiarity): more examples (3+), more analogies, more scaffolding, slower pace, more emphasis on definitions.\n'
     + '  The diagnostic does NOT mean the student has mastered anything.\n'
-    + 'Principle 2 (ALWAYS START FROM THE FOUNDATION): Regardless of the diagnostic result — fuzzy, blank, or skipped — '
+    + 'Principle 2 (ALWAYS START FROM THE FOUNDATION): Regardless of the diagnostic result (fuzzy, blank, or skipped), '
     + 'you MUST begin this sub-topic from the most essential, foundational core definition and build up layer by layer. '
     + 'Never start from a mid-level detail, application, or shortcut. Never assume the student already knows the core definition '
     + 'even if the diagnostic said \'fuzzy\'.\n\n';
@@ -72,28 +72,28 @@ export function tutorTurnDirective(stage: string, isFirst: boolean): string {
   let scope: string;
   switch (stage) {
     case 'motivate':
-      scope = 'Use 2-4 focused paragraphs, one concrete intuition, and no more than one closing question. Do not emit example, practice, or quiz scaffolds yet.';
+      scope = 'Give a short, engaging motivation with one concrete intuition and at most one closing question, and leave it at that; hold off on definitions, worked examples, and exercises until the next stage.';
       break;
     case 'define':
-      scope = 'Use 3-5 focused paragraphs and at most one definition or key-point scaffold. Do not repeat the motivation or previously established foundation.';
+      scope = 'Teach the precise definition with the essential first steps of a derivation, building on the motivation already shown. Keep the turn focused on this and do not reopen what is already established.';
       break;
     case 'develop':
-      scope = 'Use 3-6 focused paragraphs and at most one example scaffold. Add new reasoning only; do not replay earlier examples or conclusions.';
+      scope = 'Add the next layer of the concept and one worked example when it helps. Advance new reasoning only; do not replay earlier examples or conclusions.';
       break;
     case 'illustrate':
-      scope = 'Use at most two example scaffolds in this turn. Keep the surrounding explanation brief and do not restate the whole lesson.';
+      scope = 'Work through a small, clearly progressing set of examples (usually two is enough), with brief surrounding explanation, and do not restate the lesson so far.';
       break;
     case 'exercise':
-      scope = 'Use 1-2 short setup paragraphs and exactly one practice scaffold. Stop after presenting it and wait for the student\'s attempt.';
+      scope = 'Set up one transfer practice problem in a couple of short sentences, then stop and wait for the student\'s attempt.';
       break;
     case 'check':
-      scope = 'Keep the response concise. Give brief feedback and exactly one quiz scaffold, with no new example or practice scaffold.';
+      scope = 'Keep the reply concise: brief feedback and one short quiz, with no new example or practice problem.';
       break;
     default:
       scope = 'Keep this turn focused on one new idea and avoid repeating material already visible in the conversation.';
   }
-  return 'TURN-SCOPE RULES. These rules override generic textbook length defaults above. ' + opening + ' ' + scope
-    + ' Never pad with synonyms, repeated definitions, repeated derivation steps, or a second conclusion. Every paragraph must add new information.';
+  return 'TURN-SCOPE RULES. These rules override any generic length or formatting defaults above. ' + opening + ' ' + scope
+    + ' Never pad with synonyms, repeated definitions, repeated derivation steps, or a second conclusion. Every new idea should be expressed plainly and in the shape that fits the stage best.';
 }
 
 /** One step along motivate → … → check; stops at check. Entering
@@ -723,7 +723,7 @@ export function buildTutorVoice(input: {
     : '';
   const lesson = input.isFirst
     ? `${anchor}${points}You are beginning the '${stage}' stage for sub-topic: ${input.nodeName || input.topic}. `
-      + `START at this stage — do not run earlier stages. ${stageInstruction(stage)}`
+      + `START at this stage; do not run earlier stages. ${stageInstruction(stage)}`
     : `${anchor}${points}Current teaching stage: ${stage}. Sub-topic: ${input.nodeName || input.topic}. `
       + `Advance the lesson according to the stage: ${stageInstruction(stage)} `
       + 'Connect new material to what was already taught. Do NOT restart from the beginning.';
