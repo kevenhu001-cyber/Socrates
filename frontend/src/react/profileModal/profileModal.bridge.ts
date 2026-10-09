@@ -9,7 +9,7 @@
 
 import { createImmutableBridge, useBridge, useBridgeSelector } from '../../lib/bridge';
 import { getLegacyActions } from '../legacy/gateway.ts';
-import type { ProfileBridge, ProfileSnapshot } from './types';
+import type { ProfileBridge, ProfileDispatch, ProfileSnapshot } from './types';
 
 declare global {
   interface Window {
@@ -79,7 +79,7 @@ export function useIsProfileOpen(): boolean {
   return useBridgeSelector(factoryBridge, (snapshot) => snapshot.isOpen);
 }
 
-export function useProfileDispatch() {
+export function useProfileDispatch(): ProfileDispatch {
   const nav = getLegacyActions().navigation;
   const profile = getLegacyActions().profile;
   return {

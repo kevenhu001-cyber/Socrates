@@ -178,6 +178,9 @@ export interface LegacyChatMessage {
    * entirely), so this never reaches a persisted payload.
    */
   _toolRunRev?: number;
+  /** Revisions from the legacy math renderer, read by the memoized message row. */
+  _katexRenderedRev?: number;
+  _renderRev?: number;
   /**
    * The one live status line for this turn, written by main.js while the
    * stream is in flight. Previously three DOM surfaces competed for it (the
