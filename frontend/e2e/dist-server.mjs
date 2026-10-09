@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const distDir = resolve(__dirname, '..', 'dist');
 const port = Number(process.env.SMOKE_PORT || 4173);
+const apiPort = Number(process.env.SMOKE_API_PORT || 4176);
 
 const types = {
   '.html': 'text/html; charset=utf-8',
@@ -63,7 +64,7 @@ function productionCsp() {
 const CSP = productionCsp();
 if (CSP) console.log(`[dist-server] serving the production CSP (${CSP.length} chars)`);
 
-const server = http.createServer((req, res) => {
+function serveStatic(req, res) {
   try {
     const pathname = decodeURIComponent((req.url || '/').split('?')[0]);
     let fp = resolve(distDir, '.' + pathname);
@@ -85,6 +86,33 @@ const server = http.createServer((req, res) => {
   } catch (e) {
     res.writeHead(500).end(String(e));
   }
+}
+
+function proxyApiRequest(req, res) {
+  const upstream = http.request({
+    hostname: '127.0.0.1',
+    port: apiPort,
+    path: req.url,
+    method: req.method,
+    headers: { ...req.headers, host: `127.0.0.1:${apiPort}` },
+  }, (apiRes) => {
+    res.writeHead(apiRes.statusCode || 502, apiRes.headers);
+    apiRes.pipe(res);
+  });
+  upstream.on('error', () => {
+    // Specs without a mock API keep the static server's previous SPA fallback.
+    if (!res.headersSent) serveStatic(req, res);
+  });
+  req.pipe(upstream);
+}
+
+const server = http.createServer((req, res) => {
+  const pathname = (req.url || '/').split('?')[0];
+  if (pathname.startsWith('/api/')) {
+    proxyApiRequest(req, res);
+    return;
+  }
+  serveStatic(req, res);
 });
 
 server.listen(port, '127.0.0.1', () => {

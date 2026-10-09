@@ -15,8 +15,14 @@ import { prefersReducedMotion } from './ui/motion.js';
 import { activateMainView } from './ui/mainViewController.js';
 import { getProviderConfigSnapshot, setActiveProviderLocal } from './config/providerConfig.service.ts';
 import { detectExamLang, parseExamArrayJSON, parseSingleExamQuestion } from './exam/parsing.js';
+import {
+  examNavCurrentIdx, examNavJump, examNavStep, refreshExamNavTally, renderExamNav, syncExamNav,
+} from './exam/navigation.js';
+import { renderExamResults } from './exam/results.js';
 
 export { parseExamArrayJSON, parseSingleExamQuestion };
+export { examNavCurrentIdx, examNavJump, examNavStep, refreshExamNavTally, renderExamNav, syncExamNav };
+export { renderExamResults };
 
 /* ── module-level state ── */
 var _examSelectedTypes = { mc: true, fb: true, sa: false };
@@ -690,117 +696,6 @@ export function finishExamGeneration() {
   saveExamSession();
 }
 
-function renderExamNav() {
-  if (!window.stateStore.read("_examInView")) return;
-  var body = _examBody();
-  if (!body) return;
-  var existing = document.getElementById("examNavBar");
-  if (existing) existing.parentNode.removeChild(existing);
-  var total = window.stateStore.read("examQuestions").length;
-  if (total === 0) return;
-  var isSubmitted = !!window.stateStore.read("examSubmitted");
-  var answeredKeys = Object.keys(window.stateStore.read("examAnswers") || {}).filter(function (k) {
-    var v = window.stateStore.read("examAnswers")[k];
-    if (v === undefined || v === null) return false;
-    if (typeof v === "string") return v.trim().length > 0;
-    return true;
-  });
-  var answered = answeredKeys.length;
-  var L = _examUiL;
-  var html = '<div class="exam-nav-bar" id="examNavBar" style="display:flex;">';
-  html += '<button class="exam-nav-btn" id="examNavPrev" data-exam-command="nav-step" data-delta="-1" aria-label="' + L("Previous question", "上一题") + '">‹</button>';
-  html += '<div class="exam-nav-counter" id="examNavCounter">';
-  html += '<span class="exam-nav-current" id="examNavCurrent">1</span>';
-  html += '<span class="exam-nav-sep">/</span>';
-  html += '<span class="exam-nav-total">' + total + '</span>';
-  if (!isSubmitted) {
-    html += '<span class="exam-nav-progress" id="examNavProgress">· ' + answered + ' ' + L("answered", "已答") + '</span>';
-  }
-  html += '</div>';
-  html += '<button class="exam-nav-btn" id="examNavNext" data-exam-command="nav-step" data-delta="1" aria-label="' + L("Next question", "下一题") + '">›</button>';
-  html += '</div>';
-  html += '<div class="exam-nav-pills" id="examNavPills">';
-  for (var j = 0; j < total; j++) {
-    var isAns = answeredKeys.indexOf(String(j)) >= 0;
-    var isCur = (j === examNavCurrentIdx());
-    var cls = "exam-nav-pill" + (isCur ? " current" : "") + (isAns ? " answered" : "");
-    var lbl = (j + 1) + (isAns ? " \u00B7" : "");
-    html += '<button class="' + cls + '" data-nav-idx="' + j + '" data-exam-command="nav-jump">' + lbl + '</button>';
-  }
-  html += '</div>';
-  var first = body.firstChild;
-  var navWrap = document.createElement("div");
-  navWrap.innerHTML = html;
-  while (navWrap.firstChild) body.insertBefore(navWrap.firstChild, first);
-  syncExamNav();
-}
-
-function examNavCurrentIdx() {
-  var cont = document.getElementById("examQuestionsContainer");
-  if (!cont) return 0;
-  var cards = cont.querySelectorAll(".exam-q-card[id^='examQ']");
-  if (!cards.length) return 0;
-  var closest = 0, bestDist = Infinity;
-  var top0 = cont.getBoundingClientRect().top;
-  cards.forEach(function (c, i) {
-    var d = Math.abs(c.getBoundingClientRect().top - top0);
-    if (d < bestDist) { bestDist = d; closest = i; }
-  });
-  return closest;
-}
-
-export function examNavJump(idx) {
-  var el = document.getElementById("examQ" + idx);
-  if (!el) return;
-  el.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "start" });
-  setTimeout(syncExamNav, 300);
-}
-
-export function examNavStep(dir) {
-  var i = examNavCurrentIdx();
-  var total = window.stateStore.read("examQuestions").length;
-  if (total === 0) return;
-  var next = Math.max(0, Math.min(total - 1, i + dir));
-  examNavJump(next);
-}
-
-function syncExamNav() {
-  var i = examNavCurrentIdx();
-  var total = window.stateStore.read("examQuestions").length;
-  var cur = document.getElementById("examNavCurrent");
-  if (cur) cur.textContent = (i + 1);
-  var prev = document.getElementById("examNavPrev");
-  var next = document.getElementById("examNavNext");
-  if (prev) prev.disabled = (i <= 0);
-  if (next) next.disabled = (i >= total - 1);
-  var pills = document.querySelectorAll("#examNavPills .exam-nav-pill");
-  pills.forEach(function (p, j) {
-    p.classList.toggle("current", j === i);
-  });
-}
-
-export function refreshExamNavTally() {
-  var total = window.stateStore.read("examQuestions").length;
-  if (total === 0) return;
-  var answered = Object.keys(window.stateStore.read("examAnswers") || {}).filter(function (k) {
-    var v = window.stateStore.read("examAnswers")[k];
-    if (v === undefined || v === null) return false;
-    if (typeof v === "string") return v.trim().length > 0;
-    return true;
-  });
-  var prog = document.getElementById("examNavProgress");
-  if (prog) {
-    prog.textContent = "· " + answered.length + " " + _examUiL("answered", "已答");
-  }
-  var pills = document.querySelectorAll("#examNavPills .exam-nav-pill");
-  pills.forEach(function (p) {
-    var j = parseInt(p.getAttribute("data-nav-idx"), 10);
-    var isAns = answered.indexOf(String(j)) >= 0;
-    p.classList.toggle("answered", isAns);
-    if (isAns && p.textContent.indexOf("\u00B7") < 0) p.textContent = (j + 1) + " \u00B7";
-  });
-}
-
 export function scheduleExamAnswerSave() {
   if (_examAnswerSaveTimer) clearTimeout(_examAnswerSaveTimer);
   _examAnswerSaveTimer = setTimeout(function () {
@@ -902,78 +797,6 @@ function doSaveExamSession() {
     });
 }
 
-export function renderExamResults() {
-  var qs = window.stateStore.read("examQuestions");
-  var ans = window.stateStore.read("examAnswers");
-  var body = _examBody();
-  var footer = _examFooter();
-  var _L = _examUiL;
-  _setExamTitle(_L("Exam Results", "考试结果") + ": " + window.stateStore.read("examTopic"));
-  var correct = 0, total = 0;
-  var resultDetails = [];
-  qs.forEach(function (q, i) {
-    if (q.type === "error") return;
-    total++;
-    var isCorrect = false;
-    if (q.type === "multiple-choice") {
-      var sel = ans[i];
-      if (sel !== undefined && q.opts && q.opts[sel]) isCorrect = q.opts[sel].letter === q.answer;
-    } else if (q.type === "fill-blank") {
-      const ua = String(ans[i] || "").trim().toLowerCase();
-      isCorrect = (q.answers || []).some(function (a) { return ua === String(a).trim().toLowerCase(); });
-    } else if (q.type === "short-answer") {
-      const ua = String(ans[i] || "").trim().toLowerCase();
-      var expected = String(q.answer || "").trim().toLowerCase();
-      var keywords = expected.split(/[,\s]+/).filter(function (k) { return k.length > 3 });
-      isCorrect = keywords.length === 0 || keywords.some(function (k) { return ua.indexOf(k) >= 0; });
-    }
-    if (isCorrect) correct++;
-    resultDetails.push({ q: q, ans: ans[i], isCorrect: isCorrect });
-  });
-  var pct = total > 0 ? Math.round(correct / total * 100) : 0;
-  var html = '<div class="exam-score"><div class="exam-score-val"><span class="score-correct">' + correct + '</span><span class="score-total">/ ' + total + '</span></div><div class="exam-score-lbl">' + pct + ' ' + _L("correct", "正确") + '</div></div>';
-  resultDetails.forEach(function (rd, i) {
-    var q = rd.q;
-    var isCorrect = rd.isCorrect;
-    var cls = isCorrect ? "correct" : "wrong";
-    html += '<div class="exam-q-card">';
-    var resultTypeLabels = {
-      "multiple-choice": _L("Multiple choice", "选择题"),
-      "fill-blank": _L("Fill blank", "填空题"),
-      "short-answer": _L("Short answer", "简答题")
-    };
-    html += '<div class="exam-q-num">' + _L("Question", "题目") + ' ' + (i + 1) + ' — <span class="exam-result-' + (isCorrect ? "correct" : "wrong") + '">' + (isCorrect ? _L("Correct", "正确") : _L("Incorrect", "错误")) + '</span><span class="exam-q-type">' + esc(resultTypeLabels[q.type] || q.type) + '</span></div>';
-    html += '<div class="exam-q-text">' + formatMsg(q.q) + '</div>';
-    if (q.type === "multiple-choice" && q.opts) {
-      html += '<div class="exam-q-opts">';
-      q.opts.forEach(function (o, oi) {
-        var selected = rd.ans === oi;
-        var isAns = o.letter === q.answer;
-        var oc = "exam-q-opt";
-        if (isAns) oc += " correct";
-        if (selected && !isAns) oc += " wrong";
-        if (selected) oc += " selected";
-        html += '<div class="' + oc + '"><span class="exam-q-opt-letter">' + esc(o.letter) + '</span><span class="exam-q-opt-text">' + formatMsg(o.text) + '</span></div>';
-      });
-      html += '</div>';
-    } else if (q.type === "fill-blank") {
-      const ic = "exam-q-fill-input" + (isCorrect ? " correct" : " wrong");
-      html += '<input class="' + ic + '" value="' + esc(rd.ans || "") + '" readonly>';
-      if (!isCorrect) html += '<div style="font-size:calc(12px * var(--app-font-scale, 1));color:hsl(145 40% 45%);margin-top:4px">' + _L("Correct answer", "正确答案") + ': <strong>' + esc((q.answers || []).join(", ")) + '</strong></div>';
-    } else if (q.type === "short-answer") {
-      const ic = "exam-q-fill-input" + (isCorrect ? " correct" : " wrong");
-      html += '<textarea class="' + ic + '" readonly rows="2">' + esc(rd.ans || "") + '</textarea>';
-      if (!isCorrect) html += '<div style="font-size:calc(12px * var(--app-font-scale, 1));color:hsl(145 40% 45%);margin-top:4px">' + _L("Expected", "期望答案") + ': <strong>' + esc(q.answer || "") + '</strong></div>';
-    }
-    if (q.explanation) {
-      html += '<div class="exam-q-result ' + cls + '"><span class="label">' + _L("Explanation", "解释") + ':</span><div class="explain">' + formatMsg(q.explanation) + '</div></div>';
-    }
-    html += '</div>';
-  });
-  body.innerHTML = html;
-  footer.innerHTML = '<button class="exam-btn success" data-exam-command="form">' + _L("New Exam", "新考试") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _L("Close", "关闭") + '</button>';
-}
-
 /* Repaint dynamic exam chrome when the application language changes.
    Generated question text remains in the language requested from the model,
    while labels, controls, placeholders and results follow the UI language.
@@ -1039,10 +862,4 @@ export function refreshExamI18n() {
 }
 
 
-export {
-  renderExamNav,
-  examNavCurrentIdx,
-  syncExamNav,
-  saveExamSession,
-  doSaveExamSession,
-};
+export { saveExamSession, doSaveExamSession };

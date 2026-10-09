@@ -22,9 +22,10 @@ test('universal exam generation creates and persists an exam session', async ({ 
     let body = ''; for await (const chunk of req) body += chunk;
     const payload = body ? JSON.parse(body) : {};
     const json = (value, status = 200) => { res.writeHead(status, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(value)); };
-    if (url.pathname.endsWith('/auth/mobile/refresh')) return json({ accessToken: 'rotated', refreshToken: 'next-refresh', expiresAt: new Date(Date.now() + 600_000).toISOString() });
-    if (req.headers.authorization !== 'Bearer rotated') return json({ message: 'Unauthorized' }, 401);
     if (url.pathname.endsWith('/auth/me')) return json({ user: { id: 'account', email: 'test@example.com', displayName: 'Test' } });
+    if (url.pathname.endsWith('/auth/csrf-token')) return json({ csrfToken: 'test-csrf' });
+    if (url.pathname.endsWith('/config')) return json({ hasBeagleKey: true, beagleModel: 'test-model' });
+    if (url.pathname.endsWith('/api-key') && req.method === 'GET') return json({ providers: [] });
     if (url.pathname.endsWith('/projects')) return json({ projects: [] });
     if (url.pathname.endsWith('/files') && req.method === 'GET') return json({ files: [], nextCursor: null });
     if (url.pathname.endsWith('/chat/stream')) {
@@ -45,23 +46,24 @@ test('universal exam generation creates and persists an exam session', async ({ 
       records.set(record.id, record);
       return json({ id: record.id, title: record.title, topic: record.topic, kind: record.kind, examData: record.examData, mode: record.mode, phase: record.phase });
     }
-    if (url.pathname.endsWith('/sessions') && req.method === 'GET') return json({ sessions: url.searchParams.get('archived') === 'true' ? [] : [...records.values()].map(({ messages, examData, ...row }) => ({ ...row, kind: row.kind })), nextCursor: null });
+    if (url.pathname.endsWith('/sessions') && req.method === 'GET') return json({ sessions: [...records.values()].map(({ messages, examData, ...row }) => ({ ...row, kind: row.kind })), nextCursor: null });
     const id = url.pathname.split('/').at(-1);
     if (records.has(id)) return json(records.get(id));
     return json({ message: 'Not found' }, 404);
   });
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(4176, '127.0.0.1', resolve); });
   try {
-    await page.addInitScript(() => {
-      try {
-        if (!localStorage.getItem('socrates.auth.tokens')) localStorage.setItem('socrates.auth.tokens', JSON.stringify({ accessToken: 'expired', refreshToken: 'old-refresh', expiresAt: '2000-01-01' }));
-      } catch { /* sandboxed frame */ }
-    });
+    async function dismissCookieConsent() {
+      const consent = page.getByRole('button', { name: 'Essential only' });
+      if (await consent.isVisible().catch(() => false)) await consent.click();
+    }
+    await page.addInitScript(() => localStorage.setItem('socrates-lang-app', 'en'));
     await page.goto('/');
     // Wait for the signed-in chat shell before touching the sidebar:
     // under full-suite load the restore/sync can still be in flight.
-    await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
-    // New exam lives in the sidebar's More menu (baseline chrome).
+    await expect(page.getByRole('button', { name: 'Model and reasoning' })).toBeVisible({ timeout: 20000 });
+    await dismissCookieConsent();
+    // Exam lives in the sidebar's More menu.
     async function openMore() {
       await ensureSidebarOpen(page);
       const more = page.getByRole('button', { name: 'More' });
@@ -69,13 +71,12 @@ test('universal exam generation creates and persists an exam session', async ({ 
     }
 
     await openMore();
-    const newExam = page.getByRole('button', { name: 'New exam' });
-    await expect(newExam).toBeVisible();
-    await newExam.click();
-    await expect(page.getByText('Generate exam')).toBeVisible();
-    await page.getByLabel('Topic').fill('Cell biology');
-    await page.getByRole('button', { name: '3 questions' }).click();
-    await page.getByRole('button', { name: 'Generate' }).click();
+    await page.getByRole('menuitem', { name: 'Exam', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Build a focused practice exam' })).toBeVisible();
+    await page.locator('#examTopic').fill('Cell biology');
+    await page.getByRole('button', { name: 'Fewer' }).click();
+    await page.getByRole('button', { name: 'Fewer' }).click();
+    await page.getByRole('button', { name: 'Generate Exam', exact: true }).click();
 
     // Progress then the finished exam session.
     await expect(page.getByText('Question 1 / 3')).toBeVisible();
@@ -89,13 +90,14 @@ test('universal exam generation creates and persists an exam session', async ({ 
     expect(saves[0].kind).toBe('exam');
     expect(saves[0].title).toBe('Cell biology');
     expect(saves[0].examData.questions.length).toBe(3);
-    const freshRow = page.getByRole('button', { name: 'Cell biology', exact: true });
+    const freshRow = page.getByRole('complementary').getByText('Cell biology', { exact: true });
     await ensureSidebarOpen(page);
     await expect(freshRow).toBeVisible();
 
     // Reload restores the exam from the server row.
     await page.reload();
-    const row = page.getByRole('button', { name: 'Cell biology', exact: true });
+    await dismissCookieConsent();
+    const row = page.getByRole('complementary').getByText('Cell biology', { exact: true });
     // Wait for rehydration, then open the sidebar only when this viewport
     // starts collapsed.
     await ensureSidebarOpen(page);
