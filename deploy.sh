@@ -1074,6 +1074,13 @@ EOF
   fi
   # P_edge-warmup — warm Cloudflare edge cache for the new versioned HTML and newly deployed assets
   (
+    # P_warmup-no-trap — this probe runs backgrounded AFTER a green deploy
+    # and must never trigger handle_deploy_error: under `set -E` the ERR
+    # trap is inherited by subshells, so one benign zero-match grep below
+    # (combined with inherited pipefail) would roll back the just-deployed
+    # backend ~10s after success. Best-effort by construction from here on.
+    trap - ERR
+    set +e
     domain="https://app.topodrive.top"
     curl -s -o /dev/null -A "Cloudflare-Edge-Warmer" "$domain/" || true
     if [[ -n "$APP_FILE" && -f "$APP_WEB_ROOT/$APP_FILE" ]]; then

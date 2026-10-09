@@ -1,18 +1,17 @@
 
 import { getLegacyActions, t } from '../legacy/gateway.ts';
+import { sidebarIcons } from '../../sidebar/sidebarIcons';
 import { useUserInfo } from './sidebarChrome.bridge';
 
-const NEW_CHAT_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+const NEW_CHAT_ICON = sidebarIcons.newChat;
 
 /* Desktop shows chatgpt.com's panel glyph (the button toggles the rail);
    the phone drawer keeps the ×. styles/parity/sidebar.css picks one. */
 const CLOSE_ICON =
-  '<svg class="sidebar-toggle-panel" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><rect x="2.75" y="3.75" width="14.5" height="12.5" rx="2.5"/><path d="M7.25 3.75v12.5"/></svg>'
-  + '<svg class="sidebar-toggle-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+  sidebarIcons.panel.replace('<svg ', '<svg class="sidebar-toggle-panel" ')
+  + sidebarIcons.close.replace('<svg ', '<svg class="sidebar-toggle-close" ');
 
-const SEARCH_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>';
+const SEARCH_ICON = sidebarIcons.search;
 
 export function SidebarHeader() {
   // Subscribe to the chrome bridge so the header re-renders on user change
