@@ -6,10 +6,9 @@
    markAuthSuccess, CURRENT_USER, apiFetch, etc.) so this module
    remains independent.
 
-   The authBoot IIFE (initial /api/auth/me check) and the
-   handleAuthExpired callback STAY in main.js because they wire
-   installAuthHooks() at boot and depend on the surrounding boot
-   sequence. */
+   The initial /api/auth/me sequence lives in ./boot.js; the auth-expired
+   callback stays with the application lifecycle because it coordinates
+   session teardown before returning the user to this gate. */
 
 import { apiFetch } from '../util/api.js';
 import { notifyEmbeddedAuthExpired } from '../native/mobileWebSessionBridge.js';
