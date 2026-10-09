@@ -58,4 +58,12 @@ test('auth gate interactions are owned by the auth module', async ({ page }) => 
   await page.locator('#authSigninTab').press('ArrowRight');
   await expect(page.locator('#authRegisterTab')).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('#authRegisterTab')).toHaveAttribute('tabindex', '0');
+
+  await page.locator('#authSigninTab').click();
+  await page.fill('#authSigninEmail', 'login@example.test');
+  await page.fill('#authSigninPassword', 'correct-horse-battery');
+  await page.locator('#authSigninView').evaluate((form) => {
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+  });
+  await expect(page.locator('#authGate')).toBeHidden();
 });

@@ -1,6 +1,6 @@
 /* ── Authentication gate ──
    All UI for the auth gate: hide/show, tab switching, view switching,
-   error display, and the various submit*Auth* form handlers.
+   error display, and interaction listeners. Form handlers live in ./forms.js.
 
    Extracted from main.js. Reads main.js globals via window (state,
    markAuthSuccess, CURRENT_USER, apiFetch, etc.) so this module
@@ -10,11 +10,11 @@
    callback stays with the application lifecycle because it coordinates
    session teardown before returning the user to this gate. */
 
-import { apiFetch } from '../util/api.js';
 import { notifyEmbeddedAuthExpired } from '../native/mobileWebSessionBridge.js';
 import { syncCookieConsentPlacement } from '../cookieConsent.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { afterAuthEnter } from './postAuth.js';
+import { createAuthFormHandlers } from './forms.js';
 
 export { afterAuthEnter };
 
@@ -28,9 +28,9 @@ function isEmbeddedNativeWebView(){
 /* ── Gate display helpers ──
    DOM ownership lives in ./shell.ts (root-injectable, unit-testable);
    these exports stay as thin delegates so windowExports.js + e2e keep
-   working while form handlers migrate in later M4 increments. */
+   working while the gate markup remains in index.html. */
 
-import { setGateVisible, setBootState, showView, switchTab as shellSwitchTab, focusTab, clearTabSelection, setError as shellSetError, getValue, isChecked, setValue, setText, setVisible, focusId, setButton } from './shell.ts';
+import { setGateVisible, setBootState, showView, switchTab as shellSwitchTab, focusTab, clearTabSelection, setError as shellSetError, getValue, setValue, setText, setVisible } from './shell.ts';
 
 export function hideGate(root){
   var r = root || document;
@@ -192,224 +192,26 @@ export function revealAppAndHydrate(onHydrated){
     .then(function(){ if(typeof onHydrated==="function")try{onHydrated()}catch(e){reportSwallow(e, 'auth/index.hydrate.onHydrated'); } });
 }
 
-/* ── Submit handlers ── */
+/* Form actions are kept in a feature module so this file remains the gate's
+   view and interaction owner. The dependency factory avoids a cycle from
+   forms back into this module. */
+const authFormHandlers = createAuthFormHandlers({
+  showGate,
+  showAuthView,
+  setAuthError,
+  clearAuthTabSelection,
+  revealAppAndHydrate,
+  translate: (key) => window.t(key),
+});
 
-export async function submitAuthSignin(root){
-  var r = root || document;
-  var email=getValue(r, "authSigninEmail").trim();
-  var password=getValue(r, "authSigninPassword");
-  var guest=isChecked(r, "authGuestCheckbox");
-  setAuthError("authSigninError","",r);
-  if(!email||!password)return setAuthError("authSigninError","Please enter your email and password.",r);
-  setButton(r, "authSigninBtn", true, t("auth.signingIn"));
-  var markAuthSuccess=window.markAuthSuccess;
-  try{
-    var r=await apiFetch("/api/auth/login",{method:"POST",_authEndpoint:true,body:{email,password}});
-    if(guest)try{localStorage.setItem("socrates-guest","1")}catch(e){reportSwallow(e, 'auth/index.submitAuthSignin.markGuest'); }
-    markAuthSuccess&&markAuthSuccess();
-    try{
-      var me=await apiFetch("/api/auth/me",{_authEndpoint:true});
-      window.setCurrentUser((me&&me.user)?me.user:r.user);
-    }catch(_){
-      /* /me is the source of truth for the user object (tier,
-         preferences, etc.). If it fails after a successful login,
-         something is wrong with the new session — fall back to
-         the login response but DON'T proceed into the app until
-         we've at least confirmed the session is alive on a retry. */
-      window.setCurrentUser(r.user);
-      try{
-        await new Promise(function(r2){setTimeout(r2,150)});
-        var me2=await apiFetch("/api/auth/me",{_authEndpoint:true});
-        if(me2&&me2.user)window.setCurrentUser(me2.user);
-      }catch(e){ reportSwallow(e, 'auth/index.submitAuthSignin.recheckMe'); /* still nothing — proceed with what we have */ }
-    }
-    revealAppAndHydrate();
-  }catch(e){
-    showGate(r);
-    if(e.status===403 && e.code==="UNVERIFIED"){
-      setText(r, "authVerifyEmail", email);
-      try{setValue(r, "authResendEmail", email)}catch(e){reportSwallow(e, 'auth/index.submitAuthSignin.prefillResendEmail'); }
-      showAuthView("authVerifySentView", r);
-      return;
-    }
-    setAuthError("authSigninError",e.status===401?t("auth.wrongCredentials"):(t("auth.loginFailedPrefix")+e.message),r);
-  }finally{
-    setButton(r, "authSigninBtn", false, t("auth.signIn"));
-  }
-}
-
-export async function submitAuthRegister(root){
-  var r = root || document;
-  var email=getValue(r, "authRegisterEmail").trim();
-  var password=getValue(r, "authRegisterPassword");
-  setAuthError("authRegisterError","",r);
-  if(!email)return setAuthError("authRegisterError",t("auth.pleaseEnterEmail"),r);
-  if(!password||password.length<8)return setAuthError("authRegisterError",t("auth.passwordTooShort"),r);
-  setButton(r, "authRegisterBtn", true, t("auth.sending"));
-  try{
-    /* The server stores the registration as pending and sends a
-       verification email. No account or session is created until
-       the user clicks the link in the email. */
-    await apiFetch("/api/auth/register",{method:"POST",_authEndpoint:true,body:{email,password}});
-    /* Always show the "verification sent" view — no auto-login. */
-    setText(r, "authVerifyEmail", email);
-    setValue(r, "authResendEmail", email);
-    showAuthView("authVerifySentView", r);
-    clearAuthTabSelection(r);
-  }catch(e){
-    setAuthError("authRegisterError",e.status===409?"That email is already registered. Try signing in.":e.message,r);
-  }finally{
-    setButton(r, "authRegisterBtn", false, t("auth.sendVerificationLink"));
-  }
-}
-
-export async function resendVerification(root){
-  var r = root || document;
-  var email=getValue(r, "authResendEmail").trim();
-  if(!email)return;
-  setAuthError("authVerifyFailedError","",r);
-  try{
-    /* Dedicated resend endpoint — never send a hard-coded password
-       to /register (it would let anyone who knows the email log in
-       with that password if the account is later activated). */
-    var body={email};
-    await apiFetch("/api/auth/resend-verification",{method:"POST",body:body});
-    setText(r, "authVerifyEmail", email);
-    showAuthView("authVerifySentView", r);
-  }catch(e){
-    setAuthError("authVerifyFailedError",e.message,r);
-  }
-}
-
-export async function submitAuthVerify(token){
-  /* Show the "verifying…" state immediately, while we hit the API. */
-  showAuthView("authVerifiedView");
-  clearAuthTabSelection();
-  var markAuthSuccess=window.markAuthSuccess;
-  try{
-    var r=await apiFetch("/api/auth/verify?token="+encodeURIComponent(token));
-    /* Verification creates the user account (from pending registration)
-       and starts a session. Adopt the canonical user object from the
-       response or /me to enter the app. */
-    markAuthSuccess&&markAuthSuccess();
-    try{
-      var me=await apiFetch("/api/auth/me",{_authEndpoint:true});
-      window.setCurrentUser((me&&me.user)?me.user:((r&&r.user)?r.user:null));
-    }catch(_){
-      window.setCurrentUser((r&&r.user)?r.user:null);
-      if(window.CURRENT_USER){
-        try{
-          await new Promise(function(r2){setTimeout(r2,150)});
-          var me2=await apiFetch("/api/auth/me",{_authEndpoint:true});
-          if(me2&&me2.user)window.setCurrentUser(me2.user);
-        }catch(e){ reportSwallow(e, 'auth/index.submitAuthLoginWithCode.recheckMe'); /* fall through with what we have */ }
-      }
-    }
-    revealAppAndHydrate();
-  }catch(e){
-    var title=t("auth.verifyFailedTitle");
-    var msg=t("auth.verifyFailedMsg");
-    if(e.status===400&&e.code==="EXPIRED"){
-      title=t("auth.verifyFailedExpiredTitle");
-      msg=t("auth.verifyFailedMsg");
-    }
-    setText(document, "authVerifyFailedTitle", title);
-    setText(document, "authVerifyFailedMsg", msg);
-    showAuthView("authVerifyFailedView");
-  }
-}
-
-export async function submitAuthForgotPassword(root){
-  var r = root || document;
-  var email=getValue(r, "authForgotEmail").trim();
-  setAuthError("authForgotError","",r);
-  if(!email)return setAuthError("authForgotError",t("auth.pleaseEnterEmail"),r);
-  setButton(r, "authForgotBtn", true, t("auth.sending"));
-  try{
-    await apiFetch("/api/auth/forgot-password",{method:"POST",_authEndpoint:true,body:{email}});
-    setText(r, "authForgotSentEmail", email);
-    showAuthView("authForgotSentView", r);
-  }catch(e){
-    setAuthError("authForgotError",e.message,r);
-  }finally{
-    setButton(r, "authForgotBtn", false, t("auth.sendResetLink"));
-  }
-}
-
-export async function submitAuthResetPassword(root){
-  var r = root || document;
-  var password=getValue(r, "authResetPassword");
-  var confirm=getValue(r, "authResetConfirm");
-  setAuthError("authResetError","",r);
-  if(!password||password.length<8)return setAuthError("authResetError",t("auth.passwordTooShort"),r);
-  if(password!==confirm)return setAuthError("authResetError",t("auth.passwordsDontMatch"),r);
-  setButton(r, "authResetBtn", true, t("auth.resetting"));
-  try{
-    await apiFetch("/api/auth/reset-password",{method:"POST",body:{token:window.__resetToken,password}});
-    showAuthView("authResetSuccessView", r);
-  }catch(e){
-    setAuthError("authResetError",e.message,r);
-  }finally{
-    setButton(r, "authResetBtn", false, t("auth.resetPassword"));
-  }
-}
-
-export async function submitAuthSendCode(root){
-  var r = root || document;
-  var email=getValue(r, "authCodeEmail").trim();
-  setAuthError("authCodeError","",r);
-  if(!email)return setAuthError("authCodeError",t("auth.pleaseEnterEmail"),r);
-  setButton(r, "authCodeSendBtn", true, t("auth.sending"));
-  try{
-    await apiFetch("/api/auth/send-code",{method:"POST",_authEndpoint:true,body:{email}});
-    setVisible(r, "authCodeCodeWrap", true);
-    setText(r, "authCodeSentEmail", email);
-    setVisible(r, "authCodeSentMsg", true);
-    setVisible(r, "authCodeSendBtn", false);
-    setVisible(r, "authCodeLoginBtn", true);
-    setVisible(r, "authCodeResendWrap", true);
-    focusId(r, "authCodeInput");
-  }catch(e){
-    setAuthError("authCodeError",e.message,r);
-  }finally{
-    setButton(r, "authCodeSendBtn", false, t("auth.sendCode"));
-  }
-}
-
-export async function submitAuthLoginWithCode(root){
-  var r = root || document;
-  var email=getValue(r, "authCodeEmail").trim();
-  var code=getValue(r, "authCodeInput").trim().toUpperCase();
-  var guest=isChecked(r, "authCodeGuestCheckbox");
-  setAuthError("authCodeError","",r);
-  /* Login codes are eight unambiguous alphanumeric characters
-     (server/lib/crypto.ts). Keep the client validator in lockstep so it
-     never rejects a valid code before it reaches the server. */
-  if(!/^[A-HJ-KM-NP-Z2-9]{8}$/.test(code))return setAuthError("authCodeError","Please enter the 8-character code.",r);
-  setButton(r, "authCodeLoginBtn", true, t("auth.loggingIn"));
-  var markAuthSuccess=window.markAuthSuccess;
-  try{
-    var r=await apiFetch("/api/auth/login-with-code",{method:"POST",_authEndpoint:true,body:{email,code}});
-    markAuthSuccess&&markAuthSuccess();
-    try{
-      var me=await apiFetch("/api/auth/me",{_authEndpoint:true});
-      window.setCurrentUser((me&&me.user)?me.user:r.user);
-    }catch(_){
-      window.setCurrentUser(r.user);
-    }
-    if(guest)try{localStorage.setItem("socrates-guest","1")}catch(e){reportSwallow(e, 'auth/index.submitAuthLoginWithCode.markGuest'); }
-    revealAppAndHydrate();
-  }catch(e){
-    setAuthError("authCodeError",e.message,r);
-  }finally{
-    setButton(r, "authCodeLoginBtn", false, t("auth.logIn"));
-  }
-}
-
-export async function resendAuthCode(root){
-  var email=getValue(root || document, "authCodeEmail").trim();
-  if(!email)return;
-  try{
-    await apiFetch("/api/auth/send-code",{method:"POST",_authEndpoint:true,body:{email}});
-  }catch(e){ reportSwallow(e, 'auth/index.sendAuthCode'); /* swallow — user can retry from the UI */ }
-}
+export const {
+  submitAuthSignin,
+  submitAuthRegister,
+  resendVerification,
+  submitAuthVerify,
+  submitAuthForgotPassword,
+  submitAuthResetPassword,
+  submitAuthSendCode,
+  submitAuthLoginWithCode,
+  resendAuthCode,
+} = authFormHandlers;
