@@ -70,6 +70,135 @@ test('typing into topic input enables the Start button; clicking does not throw'
   expect(realErrors, `startSession() threw:\n${realErrors.join('\n')}`).toEqual([]);
 });
 
+test('Tutor start can skip boundary questions and enter the teaching chat', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.route('**/api/v2/minimax/v1/chat/completions', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        choices: [{ message: { content: '["Linear algebra concepts","Vector spaces","Matrices","Linear transformations","Applications"]' } }],
+      }),
+    });
+  });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.evaluate(() => {
+    window.toggleAppMode('tutor');
+    window.getActiveProvider = () => ({
+      id: 'test-provider', label: 'Test', model: 'test-model', isBuiltIn: true, key: 'test-key',
+    });
+  });
+  expect(await page.evaluate(() => window.appMode)).toBe('tutor');
+
+  const topicInput = page.locator('#composerRoot .rich-composer-editor').first();
+  await topicInput.fill('Foundations of linear algebra');
+  await topicInput.press('Enter');
+
+  const pageErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(String(error)));
+  const explorationDialog = page.locator('#tutorExplorationDialog');
+  await expect(explorationDialog).toBeVisible();
+  await explorationDialog.locator('.tutor-explore-skip').click();
+  const startupState = await page.evaluate(() => ({
+    mode: window.appMode,
+    phase: window.stateStore.read('phase'),
+    mainView: document.documentElement.dataset.mainView,
+    visibleViews: ['topicSetup', 'diagnosticView', 'chatView']
+      .filter((id) => !document.getElementById(id)?.classList.contains('hidden')),
+  }));
+  expect(startupState, `Tutor startup failed: ${pageErrors.join('\n')}`).toMatchObject({ mode: 'tutor' });
+  expect(['diagnosticView', 'chatView']).toContain(startupState.mainView);
+  await expect(page.locator('#chatView'), `Tutor startup errors: ${pageErrors.join('\n')}`)
+    .toBeVisible({ timeout: 15_000 });
+
+  const session = await page.evaluate(() => ({
+    mode: window.appMode,
+    topic: window.stateStore.read('topic'),
+    phase: window.stateStore.read('phase'),
+    sessionId: window.stateStore.read('currentSessionId'),
+  }));
+  expect(session).toMatchObject({
+    mode: 'tutor',
+    topic: 'Foundations of linear algebra',
+    phase: 'chat',
+  });
+  expect(session.sessionId).toBeTruthy();
+});
+
+test('canceling Tutor topic analysis prevents the pending start from entering chat', async ({ page }) => {
+  await mockAuthedApp(page);
+  let releaseModelResponse;
+  const modelResponseGate = new Promise((resolve) => { releaseModelResponse = resolve; });
+  await page.route('**/api/v2/minimax/v1/chat/completions', async (route) => {
+    await modelResponseGate;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        choices: [{ message: { content: '["Linear algebra concepts","Vector spaces","Matrices","Linear transformations","Applications"]' } }],
+      }),
+    });
+  });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.evaluate(() => {
+    window.toggleAppMode('tutor');
+    window.getActiveProvider = () => ({
+      id: 'test-provider', label: 'Test', model: 'test-model', isBuiltIn: true, key: 'test-key',
+    });
+  });
+
+  const modelRequests = [];
+  page.on('request', (request) => {
+    if (/chat\/completions|\/api\/chat/.test(request.url())) modelRequests.push(request.url());
+  });
+  const topicInput = page.locator('#composerRoot .rich-composer-editor').first();
+  await topicInput.fill('Linear algebra cancellation');
+  await topicInput.press('Enter');
+  const explorationDialog = page.locator('#tutorExplorationDialog');
+  await expect(explorationDialog).toBeVisible();
+  await explorationDialog.locator('.tutor-explore-skip').click();
+  const diagnosticState = await page.evaluate(() => ({
+    mode: window.appMode,
+    mainView: document.documentElement.dataset.mainView,
+    visibleViews: ['topicSetup', 'diagnosticView', 'chatView']
+      .filter((id) => !document.getElementById(id)?.classList.contains('hidden')),
+  }));
+  expect(diagnosticState, `unexpected Tutor state; model requests: ${modelRequests.join(', ')}`)
+    .toMatchObject({ mode: 'tutor', mainView: 'diagnosticView' });
+  expect(modelRequests, 'Tutor topic analysis should be waiting on the mocked model response').not.toHaveLength(0);
+  await expect(page.locator('#diagnosticView .diag-cancel-btn')).toBeVisible();
+  await page.locator('#diagnosticView .diag-cancel-btn').click();
+  await expect(page.locator('#topicSetup')).toBeVisible();
+
+  releaseModelResponse();
+  await page.waitForTimeout(250);
+  const state = await page.evaluate(() => ({
+    phase: window.stateStore.read('phase'),
+    topic: window.stateStore.read('topic'),
+    sessionId: window.stateStore.read('currentSessionId'),
+    mainView: document.documentElement.dataset.mainView,
+    diagCancel: window.stateStore.read('diagCancel'),
+  }));
+  expect(state).toEqual({
+    phase: 'topic', topic: '', sessionId: null, mainView: 'topicSetup', diagCancel: true,
+  });
+
+  const nextTopic = 'A fresh tutor session after cancel';
+  await topicInput.fill(nextTopic);
+  await topicInput.press('Enter');
+  const nextExplorationDialog = page.locator('#tutorExplorationDialog');
+  await expect(nextExplorationDialog).toBeVisible();
+  await nextExplorationDialog.locator('.tutor-explore-skip').click();
+  await expect(page.locator('#chatView')).toBeVisible({ timeout: 15_000 });
+  expect(await page.evaluate(() => ({
+    phase: window.stateStore.read('phase'),
+    topic: window.stateStore.read('topic'),
+    diagCancel: window.stateStore.read('diagCancel'),
+  }))).toEqual({ phase: 'chat', topic: nextTopic, diagCancel: false });
+});
+
 test('the first prompt is saved under a short title in Recents', async ({ page }) => {
   const topic = '理解机器学习基本概念以及应用';
   let savedSession = null;
