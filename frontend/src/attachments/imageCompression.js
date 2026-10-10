@@ -2,8 +2,8 @@ import { MAX_IMAGE_DATAURL_CHARS } from './limits.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 const MAX_IMAGE_PIXELS = 36_000_000; // ~6000×6000 decoded pixels
-const EDGE_STEPS = [2048, 1600, 1280, 1024, 800];
-const QUALITY_STEPS = [0.85, 0.75, 0.6, 0.45];
+const EDGE_STEPS = [2048, 1440, 960];
+const QUALITY_STEPS = [0.8, 0.6];
 
 /** Keep the aspect ratio and avoid enlarging an already-small image. */
 export function scaledImageDimensions(width, height, maxEdge) {
@@ -64,6 +64,8 @@ async function compressWithOffscreenCanvas(file, onProgress) {
     return null;
   }
 
+  const maxBlobBytes = Math.floor((MAX_IMAGE_DATAURL_CHARS - 64) * 3 / 4);
+
   try {
     for (let edgeIndex = 0; edgeIndex < EDGE_STEPS.length; edgeIndex += 1) {
       const { width, height } = scaledImageDimensions(sourceWidth, sourceHeight, EDGE_STEPS[edgeIndex]);
@@ -77,8 +79,10 @@ async function compressWithOffscreenCanvas(file, onProgress) {
       for (let qualityIndex = 0; qualityIndex < QUALITY_STEPS.length; qualityIndex += 1) {
         try {
           const blob = await canvas.convertToBlob({ type: 'image/webp', quality: QUALITY_STEPS[qualityIndex] });
-          const dataUrl = await blobToDataUrl(blob, onProgress);
-          if (dataUrl && dataUrl.length <= MAX_IMAGE_DATAURL_CHARS) return dataUrl;
+          if (blob && blob.size <= maxBlobBytes) {
+            const dataUrl = await blobToDataUrl(blob, onProgress);
+            if (dataUrl && dataUrl.length <= MAX_IMAGE_DATAURL_CHARS) return dataUrl;
+          }
         } catch (error) {
           reportSwallow(error, 'attachments.compressWithOffscreenCanvas.qualityStep');
         }

@@ -2,7 +2,6 @@ import { useState } from 'react';
 
 import { getAttachmentIcon } from './fileIcons';
 import { t as translate } from '../legacy/gateway.ts';
-import { formatAttachmentSize } from '../../attachments.js';
 import type { AttachmentEntry } from './types';
 
 interface AttachmentChipProps {
@@ -31,34 +30,82 @@ function isLegacyUnreadable(entry: AttachmentEntry): boolean {
   return LEGACY_UNREADABLE.has(String(entry.docKind || '').toLowerCase());
 }
 
-function kindLabel(entry: AttachmentEntry): string {
-  if (entry.docKind) return String(entry.docKind).toUpperCase();
-  const name = String(entry.name || '');
+function getExtension(name: string | undefined): string {
+  if (!name) return '';
   const dot = name.lastIndexOf('.');
-  if (dot > 0) {
-    const ext = name.slice(dot + 1);
-    if (ext.length >= 1 && ext.length <= 5) return ext.toUpperCase();
-  }
-  return String(entry.kind || 'file').toUpperCase();
+  if (dot < 0 || dot === name.length - 1) return '';
+  return name.slice(dot + 1).toLowerCase();
+}
+
+const DOC_EXTS = new Set(['doc', 'docx', 'rtf', 'odt', 'pages']);
+const SHEET_EXTS = new Set(['xls', 'xlsx', 'csv', 'tsv', 'ods', 'numbers']);
+const SLIDE_EXTS = new Set(['ppt', 'pptx', 'odp', 'keynote']);
+const CODE_EXTS = new Set([
+  'py', 'js', 'jsx', 'ts', 'tsx', 'html', 'css', 'json', 'yaml', 'yml',
+  'c', 'cpp', 'rs', 'go', 'java', 'sh', 'sql', 'toml', 'md', 'xml',
+]);
+const TEXT_EXTS = new Set(['txt', 'log']);
+
+const PDF_KEYS = new Set(['pdf', 'application/pdf']);
+
+function isDoc(docKind: string, ext: string, kind?: string): boolean {
+  return DOC_EXTS.has(docKind) || DOC_EXTS.has(ext) || kind === 'document';
+}
+
+function isPdf(docKind: string, ext: string, mime: string): boolean {
+  return PDF_KEYS.has(docKind) || PDF_KEYS.has(ext) || PDF_KEYS.has(mime);
+}
+
+function resolveKindKey(docKind: string, ext: string, mime: string, kind?: string): string {
+  if (isPdf(docKind, ext, mime)) return 'pdf';
+  if (isDoc(docKind, ext, kind)) return 'document';
+  if (SHEET_EXTS.has(docKind) || SHEET_EXTS.has(ext)) return 'spreadsheet';
+  if (SLIDE_EXTS.has(docKind) || SLIDE_EXTS.has(ext)) return 'presentation';
+  if (mime.startsWith('image/')) return 'image';
+  if (mime.startsWith('audio/') || mime.startsWith('video/')) return 'media';
+  if (CODE_EXTS.has(ext) || kind === 'code') return 'code';
+  if (TEXT_EXTS.has(ext) || mime.startsWith('text/')) return 'text';
+  return 'file';
+}
+
+const KIND_FALLBACKS: Record<string, string> = {
+  pdf: 'PDF',
+  document: '文档',
+  spreadsheet: '电子表格',
+  presentation: '演示文稿',
+  image: '图片',
+  media: '媒体',
+  code: '代码',
+  text: '文本',
+  file: '文件',
+};
+
+function kindCategory(entry: AttachmentEntry): string {
+  const docKind = String(entry.docKind || '').toLowerCase();
+  const ext = getExtension(entry.name);
+  const mime = String(entry.mime || '').toLowerCase();
+  const key = resolveKindKey(docKind, ext, mime, entry.kind);
+  return i18n(`chat.attach.type.${key}`, KIND_FALLBACKS[key] || '文件');
 }
 
 function attachmentMeta(entry: AttachmentEntry): string {
   const progress = Math.min(Math.max(entry.progress ?? 0, 0), 100);
-  const baseMeta = entry.pending
-    ? entry.stage === 'processing'
-      ? i18n('chat.attach.processing', 'Saving…')
-      : entry.stage === 'queued'
-      ? `${i18n('chat.attach.queued', 'Queued')}… ${Math.round(progress)}%`
-      : `${i18n('chat.attach.uploading', 'Uploading')}… ${Math.round(progress)}%`
-    : entry.error
-      ? i18n('chat.attach.failed', 'Upload failed')
-      : entry.truncated
-        ? i18n('chat.attach.truncated', '(truncated)')
-        : `${kindLabel(entry)}${entry.size ? ` · ${formatAttachmentSize(entry.size)}` : ''}`;
-  const meta = !entry.pending && !entry.error && isLegacyUnreadable(entry)
-    ? `${baseMeta} · ${i18n('chat.attach.metadataOnly', 'metadata only — convert to DOCX/XLSX/PPTX or PDF to make it readable')}`
-    : baseMeta;
-  return meta;
+  if (entry.pending) {
+    if (entry.stage === 'processing') return i18n('chat.attach.processing', '正在保存…');
+    if (entry.stage === 'queued') return `${i18n('chat.attach.queued', '排队中')}… ${Math.round(progress)}%`;
+    return `${i18n('chat.attach.uploading', '上传中')}… ${Math.round(progress)}%`;
+  }
+  if (entry.error) {
+    return i18n('chat.attach.failed', '上传失败');
+  }
+  if (entry.truncated) {
+    return i18n('chat.attach.truncated', '（已截断）');
+  }
+  const category = kindCategory(entry);
+  if (isLegacyUnreadable(entry)) {
+    return `${category} · ${i18n('chat.attach.metadataOnly', '仅元数据')}`;
+  }
+  return category;
 }
 
 interface AttachmentChipVisualProps {
@@ -82,7 +129,7 @@ function AttachmentChipVisual({ entry, imageSrc, isImage, onImageError }: Attach
       ) : (
         <span className="attachment-chip-icon" aria-hidden="true" dangerouslySetInnerHTML={{ __html: getAttachmentIcon(entry) }} />
       )}
-      {entry.pending ? (
+      {entry.pending && isImage ? (
         <span className="attachment-chip-veil" aria-hidden="true">
           <span dangerouslySetInnerHTML={{ __html: SPINNER_HTML }} />
         </span>

@@ -126,6 +126,15 @@ export const en = {
     "chat.attach.cancelled":"Upload cancelled.",
     "chat.attach.truncated":"(truncated)",
     "chat.attach.metadataOnly":"metadata only — convert to DOCX/XLSX/PPTX or PDF to make it readable",
+    "chat.attach.type.document":"Document",
+    "chat.attach.type.spreadsheet":"Spreadsheet",
+    "chat.attach.type.presentation":"Presentation",
+    "chat.attach.type.pdf":"PDF",
+    "chat.attach.type.code":"Code",
+    "chat.attach.type.text":"Text",
+    "chat.attach.type.image":"Image",
+    "chat.attach.type.media":"Media",
+    "chat.attach.type.file":"File",
     /* P_attachments-multimodal — UI strings for the user-controlled
      * multimodal checkbox on the API key editor row (provider.*) and
      * the rejected-image toast in the chat composer (attach.*). The

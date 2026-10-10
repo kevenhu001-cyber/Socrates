@@ -117,28 +117,31 @@ test.afterEach(async () => {
 });
 
 test('at most MAX_CONCURRENT_UPLOADS transfers start; the rest queue visibly', async () => {
-  assert.equal(MAX_CONCURRENT_UPLOADS, 2);
+  assert.equal(MAX_CONCURRENT_UPLOADS, 3);
   const restore = installFakeXhr();
   try {
-    const files = [textFile('a.txt'), textFile('b.txt'), textFile('c.txt'), textFile('d.txt')];
+    const files = [
+      textFile('a.txt'), textFile('b.txt'), textFile('c.txt'),
+      textFile('d.txt'), textFile('e.txt'), textFile('f.txt'),
+    ];
     const pending = addFiles(files, () => {}, () => {}, () => {});
     await sleep(60);
 
     assert.equal(FakeXHR.instances.length, MAX_CONCURRENT_UPLOADS);
-    assert.equal(attachments.length, 4);
+    assert.equal(attachments.length, 6);
     const queued = attachments.filter((a) => a.stage === 'queued');
     const uploading = attachments.filter((a) => a.stage === 'uploading');
-    assert.equal(queued.length, 2);
-    assert.equal(uploading.length, 2);
+    assert.equal(queued.length, 3);
+    assert.equal(uploading.length, 3);
     for (const q of queued) {
       assert.equal(q.pending, true);
       assert.equal(q.progress, 0);
     }
 
     await settleAllGenerations(2);
-    assert.equal(FakeXHR.instances.length, 4);
+    assert.equal(FakeXHR.instances.length, 6);
     const result = await pending;
-    assert.equal(result.added, 4);
+    assert.equal(result.added, 6);
     assert.deepEqual(result.rejected, []);
     for (const a of attachments) {
       assert.equal(a.pending, false);
@@ -182,27 +185,27 @@ test('removing a queued chip dequeues it and never hangs addFiles', async () => 
   try {
     const rejections = [];
     const pending = addFiles(
-      [textFile('q1.txt'), textFile('q2.txt'), textFile('q3.txt')],
+      [textFile('q1.txt'), textFile('q2.txt'), textFile('q3.txt'), textFile('q4.txt')],
       () => {},
       () => {},
       (msg) => { rejections.push(msg); },
     );
     await sleep(60);
-    assert.equal(FakeXHR.instances.length, 2);
+    assert.equal(FakeXHR.instances.length, 3);
     const queued = attachments.find((a) => a.stage === 'queued');
     assert.ok(queued);
 
     assert.equal(removeAttachment(queued.id), true);
     // The dequeued job settles as cancelled: no XHR ever opened for it.
-    assert.equal(FakeXHR.instances.length, 2);
+    assert.equal(FakeXHR.instances.length, 3);
 
     await settleAllOk();
     const result = await pending;
-    assert.equal(result.added, 2);
+    assert.equal(result.added, 3);
     // Deliberate cancellation is not a user-facing rejection.
     assert.deepEqual(rejections, []);
     assert.deepEqual(result.rejected, []);
-    assert.equal(attachments.length, 2);
+    assert.equal(attachments.length, 3);
   } finally {
     restore();
   }

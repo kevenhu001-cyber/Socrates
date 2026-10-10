@@ -27,53 +27,42 @@ import type { AttachmentEntry } from './types';
    (optional id, ReadonlyArray rows) can drive it. */
 export type IconSource = Pick<AttachmentEntry, 'kind' | 'docKind' | 'mime' | 'name'>;
 
-const DOC_OUTLINE =
+const DOC_PATH =
   '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>' +
   '<polyline points="14 2 14 8 20 8"/>';
 
-/* Office letters — the model document outline with a single capital
- * letter centred in the body. The 12 11 baseline avoids descender
- * clipping; the 6 16 cap height keeps the letter visually balanced
- * inside the 20×20 doc body. */
-const OFFICE_LETTER = (letter: string) =>
-  `<text x="12" y="16" text-anchor="middle" font-size="9" font-weight="700" font-family="ui-sans-serif,system-ui,sans-serif" fill="currentColor" stroke="none">${letter}</text>`;
+const OFFICE_BADGE = (color: string, letter: string) =>
+  `<rect x="3" y="10" width="10" height="9" rx="1.5" fill="${color}" stroke="none"/>` +
+  `<text x="8" y="17" text-anchor="middle" font-size="7" font-weight="800" font-family="ui-sans-serif,system-ui,sans-serif" fill="#ffffff" stroke="none">${letter}</text>`;
 
 const WORD_ICON =
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_OUTLINE}${OFFICE_LETTER('W')}</svg>`;
+  `<svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_PATH}${OFFICE_BADGE('#2563eb', 'W')}</svg>`;
 const EXCEL_ICON =
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_OUTLINE}${OFFICE_LETTER('X')}</svg>`;
+  `<svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_PATH}${OFFICE_BADGE('#16a34a', 'X')}</svg>`;
 const POWERPOINT_ICON =
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_OUTLINE}${OFFICE_LETTER('P')}</svg>`;
-/* PDF uses three short letters; smaller font and tighter baseline
- * so all three fit on one line. */
+  `<svg viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_PATH}${OFFICE_BADGE('#ea580c', 'P')}</svg>`;
 const PDF_ICON =
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_OUTLINE}<text x="12" y="16" text-anchor="middle" font-size="6.5" font-weight="700" font-family="ui-sans-serif,system-ui,sans-serif" fill="currentColor" stroke="none">PDF</text></svg>`;
+  `<svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_PATH}${OFFICE_BADGE('#dc2626', 'P')}</svg>`;
 
 const TEXT_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-  DOC_OUTLINE +
+  '<svg viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  DOC_PATH +
   '<line x1="8" y1="13" x2="16" y2="13"/>' +
-  '<line x1="8" y1="17" x2="14" y2="17"/>' +
+  '<line x1="8" y1="17" x2="13" y2="17"/>' +
   '</svg>';
 
-/* EPUB — open-book glyph (two facing pages) so it reads as a book,
- * not a plain text file. RTF keeps the document outline with its own
- * three-letter tag at the PDF tag size. */
 const EPUB_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
   '<path d="M12 6c-2-1.5-5-2-8-2v14c3 0 6 0.5 8 2 2-1.5 5-2 8-2V4c-3 0-6 0.5-8 2z"/>' +
   '<line x1="12" y1="6" x2="12" y2="20"/>' +
   '</svg>';
-const RTF_ICON =
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_OUTLINE}<text x="12" y="16" text-anchor="middle" font-size="6.5" font-weight="700" font-family="ui-sans-serif,system-ui,sans-serif" fill="currentColor" stroke="none">RTF</text></svg>`;
+const RTF_ICON = WORD_ICON;
 
-/* Code — angular brackets framing a slash. Matches the `< />` glyph
- * the user requested in the reference image. */
 const CODE_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-  '<polyline points="8 7 3 12 8 17"/>' +
-  '<polyline points="16 7 21 12 16 17"/>' +
-  '<line x1="14" y1="5" x2="10" y2="19"/>' +
+  '<svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  DOC_PATH +
+  '<polyline points="8 13 6 15 8 17" stroke-width="1.8"/>' +
+  '<polyline points="12 13 14 15 12 17" stroke-width="1.8"/>' +
   '</svg>';
 
 const IMAGE_ICON =
@@ -84,16 +73,14 @@ const IMAGE_ICON =
   '</svg>';
 
 const FILE_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-  DOC_OUTLINE +
+  '<svg viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  DOC_PATH +
   '</svg>';
 
-/* Media — play triangle inside the document outline, for audio/video
-   attachments (kind 'file'). */
 const MEDIA_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-  DOC_OUTLINE +
-  '<polygon points="10 11 15 14 10 17 10 11" fill="currentColor" stroke="none"/>' +
+  '<svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  DOC_PATH +
+  '<polygon points="9 12 14 15 9 18 9 12" fill="#8b5cf6" stroke="none"/>' +
   '</svg>';
 
 /* File-extension → category lookup. Lower-cased, dotted forms only.

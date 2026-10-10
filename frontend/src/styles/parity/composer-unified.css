@@ -531,68 +531,246 @@
   #appShell .composer-shell.voice-recording-active { width: 100%; max-width: none; border-radius: 26px; }
 }
 
-/* Composer attachments: horizontal image tiles and document cards. */
+/* Composer attachments: horizontal image tiles and document cards (ChatGPT-style). */
 .composer-shell .attachment-chips {
   display: flex;
   flex-wrap: nowrap;
-  gap: 12px;
+  gap: 8px;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
   scroll-snap-type: x proximity;
+  padding: 8px 12px 6px 12px;
 }
-#appShell .composer-shell > .attachment-chips { padding: 8px 8px 8px 2px; }
+#appShell .composer-shell > .attachment-chips {
+  padding: 8px 12px 6px 12px;
+}
+
 .composer-shell .attachment-chip {
+  position: relative;
   box-sizing: border-box;
-  flex: 0 0 256px;
-  max-width: min(256px, 75vw);
-  height: 72px;
-  padding: 12px 32px 12px 12px;
-  gap: 12px;
+  flex: 0 0 auto;
+  min-width: 160px;
+  max-width: min(230px, 75vw);
+  height: 56px;
+  padding: 8px 30px 8px 10px;
+  gap: 10px;
   border-radius: var(--ui-radius-xl);
   background: var(--ui-bg-surface);
+  border: 1px solid var(--ui-border-subtle);
+  box-shadow: 0 1px 2px hsl(0 0% 0% / 0.04);
   scroll-snap-align: start;
+  display: flex;
+  align-items: center;
 }
+
 .composer-shell .attachment-chip-visual {
+  position: relative;
   width: 36px;
-  height: 40px;
-  background: transparent;
+  height: 36px;
+  min-width: 36px;
   border-radius: var(--ui-radius-control);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ui-bg-raised);
 }
-.composer-shell .attachment-chip-icon svg { width: 26px; height: 26px; }
-.composer-shell .attachment-chip-info { gap: 5px; flex: 1; }
+
+.composer-shell .attachment-chip-visual[data-kind="docx"],
+.composer-shell .attachment-chip-visual[data-kind="doc"],
+.composer-shell .attachment-chip-visual[data-kind="word"] {
+  background: hsl(217 91% 60% / 0.1);
+}
+.composer-shell .attachment-chip-visual[data-kind="pdf"] {
+  background: hsl(0 84% 60% / 0.1);
+}
+.composer-shell .attachment-chip-visual[data-kind="xlsx"],
+.composer-shell .attachment-chip-visual[data-kind="xls"],
+.composer-shell .attachment-chip-visual[data-kind="excel"],
+.composer-shell .attachment-chip-visual[data-kind="csv"] {
+  background: hsl(142 71% 45% / 0.1);
+}
+.composer-shell .attachment-chip-visual[data-kind="pptx"],
+.composer-shell .attachment-chip-visual[data-kind="ppt"],
+.composer-shell .attachment-chip-visual[data-kind="powerpoint"] {
+  background: hsl(25 95% 53% / 0.1);
+}
+.composer-shell .attachment-chip-visual[data-kind="code"] {
+  background: hsl(239 84% 67% / 0.1);
+}
+
+.composer-shell .attachment-chip-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.composer-shell .attachment-chip-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.composer-shell .attachment-chip-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
 .composer-shell .attachment-chip-name {
-  max-width: none;
-  font-size: calc(14px * var(--app-font-scale, 1));
+  max-width: 100%;
+  font-size: calc(13px * var(--app-font-scale, 1));
   font-weight: var(--ui-font-weight-semibold, 600);
+  line-height: 1.25;
+  color: var(--ui-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.composer-shell .attachment-chip-meta { font-size: calc(12px * var(--app-font-scale, 1)); }
-.composer-shell .attachment-chip.is-image { flex-basis: 72px; width: 72px; padding: 0; }
+.composer-shell .attachment-chip-meta {
+  font-size: calc(11.5px * var(--app-font-scale, 1));
+  line-height: 1.25;
+  color: var(--ui-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Image chip: square tile with covered thumbnail */
+.composer-shell .attachment-chip.is-image {
+  flex: 0 0 56px;
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  max-width: 56px;
+  padding: 0;
+  overflow: hidden;
+}
 .composer-shell .attachment-chip.is-image .attachment-chip-visual {
-  width: 100%; height: 100%; border-radius: inherit;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: transparent;
 }
+.composer-shell .attachment-chip.is-image .attachment-chip-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  display: block;
+}
+
+/* Close button: solid dark circular badge inside top-right corner */
 .composer-shell .attachment-chip-remove {
-  width: 24px; height: 24px; top: -5px; right: -5px;
-  opacity: 1;
-  background: var(--ui-text-primary);
-  color: var(--ui-bg-surface);
-  border: 2px solid var(--ui-bg-surface);
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
   border-radius: var(--ui-radius-pill);
+  background: hsl(0 0% 10% / 0.85);
+  color: hsl(var(--always-white));
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  z-index: 3;
+  opacity: 1;
+  transition: opacity var(--ui-duration-fast, 120ms) ease, transform var(--ui-duration-fast, 120ms) ease;
 }
-.composer-shell .attachment-chip-remove::before { content: ''; position: absolute; inset: -4px; }
-.composer-shell .attachment-chip-remove svg { width: 12px; height: 12px; }
+.composer-shell .attachment-chip-remove:hover {
+  background: hsl(0 0% 0%);
+  transform: scale(1.08);
+}
+.composer-shell .attachment-chip.is-image .attachment-chip-remove {
+  top: 4px;
+  right: 4px;
+}
+.composer-shell .attachment-chip-remove svg {
+  width: 10px;
+  height: 10px;
+}
 .composer-shell .attachment-chip-remove:focus-visible,
 .composer-shell .attachment-chip-retry:focus-visible {
-  outline: 2px solid var(--ui-text-primary); outline-offset: 3px;
+  outline: 2px solid var(--ui-text-primary);
+  outline-offset: 2px;
 }
-.composer-shell .attachment-chip-progress { bottom: 4px; }
-.composer-shell .attachment-chip-progress-fill { background: var(--ui-text-primary); }
-.composer-shell .attachment-chip-pct { right: 8px; bottom: 10px; }
-.composer-shell .attachment-chip.error { border-color: var(--ui-danger); }
-.composer-shell .attachment-chip.error .attachment-chip-meta { color: var(--ui-danger); }
-.composer-shell .attachment-chip-retry {
-  position: absolute; right: 8px; bottom: 8px;
-  width: 28px; height: 28px;
-  background: var(--ui-bg-surface); color: var(--ui-danger);
+
+/* Progress indicator */
+.composer-shell .attachment-chip-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2.5px;
+  border-radius: 0 0 var(--ui-radius-xl) var(--ui-radius-xl);
+  background: var(--ui-border-subtle);
+  overflow: hidden;
+  pointer-events: none;
+}
+.composer-shell .attachment-chip.is-image .attachment-chip-progress {
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
   border-radius: var(--ui-radius-pill);
+  background: hsl(0 0% 100% / 0.3);
+}
+.composer-shell .attachment-chip-progress-fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: var(--ui-text-primary);
+  transition: width 120ms linear;
+}
+.composer-shell .attachment-chip.is-image .attachment-chip-progress-fill {
+  background: hsl(var(--always-white));
+}
+.composer-shell .attachment-chip-pct {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: 2px 6px;
+  border-radius: var(--ui-radius-pill);
+  background: hsl(0 0% 0% / 0.65);
+  color: hsl(var(--always-white));
+  font-size: calc(11px * var(--app-font-scale, 1));
+  font-weight: var(--ui-font-weight-medium, 500);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Error state & retry */
+.composer-shell .attachment-chip.error {
+  border-color: var(--ui-danger);
+}
+.composer-shell .attachment-chip.error .attachment-chip-meta {
+  color: var(--ui-danger);
+}
+.composer-shell .attachment-chip-retry {
+  position: absolute;
+  right: 28px;
+  top: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-surface);
+  color: var(--ui-danger);
+  border: 1px solid var(--ui-danger);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  z-index: 3;
+}
+.composer-shell .attachment-chip-retry svg {
+  width: 11px;
+  height: 11px;
 }
