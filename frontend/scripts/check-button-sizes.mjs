@@ -39,15 +39,23 @@ const FROZEN_DIRS = new Set(['legacy', 'restore']);
 const LADDER = new Set([32, 40, 44]);
 
 /*
- * A selector is an interactive control when EITHER:
+ * A selector is an interactive control when ANY of:
  *
  *   - it targets a bare `button` element, or
- *   - one of its class names ENDS in a control word.
+ *   - one of its class names ENDS in a control word, or
+ *   - one of its ID names ENDS in a control word.
  *
- * Class names are read as whole tokens (`.foo-bar-btn` → `foo-bar-btn`) and
- * the decision is made on the LAST hyphen/underscore segment. Testing the
- * last segment is what keeps `.composer-plugin-chip-icon` (an icon inside a
- * chip) out while `.library-settings-btn` (a button) is in.
+ * The ID arm is not optional. The topbar is built entirely from IDs
+ * (#topModelSwitcher, #findBtn) and #pluginWorkspaceTabs, so a class-only
+ * matcher silently misses the highest-traffic controls on the page while
+ * reporting a clean baseline.
+ *
+ * Names are read as whole tokens (`.foo-bar-btn` → `foo-bar-btn`) and the
+ * decision is made on the LAST hyphen/underscore segment. Testing the last
+ * segment is what keeps `.composer-plugin-chip-icon` (an icon inside a chip)
+ * out while `.library-settings-btn` (a button) is in — and what catches
+ * `#topModelSwitcher` (ends in "Switcher", not a control) alongside
+ * `#findBtn` (ends in "Btn").
  *
  * Note the trailing `s`: this codebase pluralises (`plugin-directory-tabs`,
  * `scheduled-filter-tabs`).
@@ -55,7 +63,24 @@ const LADDER = new Set([32, 40, 44]);
 const CONTROL_LAST_SEGMENT =
   /(?:^|[-_])(btn|button|tab|chip|pill|toggle|switch|remove|close|retry|cancel|clear|dismiss)s?$/i;
 
+/*
+ * IDs get a deliberately looser test than classes.
+ *
+ * Classes are reusable and numerous, so they use the exact last-segment rule
+ * above — that is what keeps `.composer-plugin-chip-icon` out.
+ *
+ * IDs are unique element handles and there are few of them, so a false
+ * positive costs one line in a human-reviewed report while a false negative
+ * is a silently unguarded control. The looser `contains` test is what catches
+ * camelCase ids, which the segmented rule cannot see: `#findBtn` and
+ * `#pluginWorkspaceTabs` end in `Btn`/`Tabs` with no `-` or `_` before the
+ * control word, and `#topModelSwitcher` ends in `Switcher`.
+ */
+const CONTROL_SUBSTRING =
+  /(btn|button|tab|chip|pill|toggle|switch|remove|close|retry|cancel|clear|dismiss)/i;
+
 const CLASS_TOKEN = /\.([A-Za-z0-9_-]+)/g;
+const ID_TOKEN = /#([A-Za-z0-9_-]+)/g;
 const BARE_BUTTON = /(^|[\s,>+~])button\b/i;
 
 function isControlSelector(selector) {
@@ -64,6 +89,10 @@ function isControlSelector(selector) {
   let m;
   while ((m = CLASS_TOKEN.exec(selector)) !== null) {
     if (CONTROL_LAST_SEGMENT.test(m[1])) return true;
+  }
+  ID_TOKEN.lastIndex = 0;
+  while ((m = ID_TOKEN.exec(selector)) !== null) {
+    if (CONTROL_SUBSTRING.test(m[1])) return true;
   }
   return false;
 }
