@@ -15,8 +15,10 @@
 
 @media (min-width: 769px) {
   #appShell #msgList {
-    --prose-size: calc(var(--ui-text-body) * var(--app-type-scale));
-    --prose-line: calc(var(--ui-text-body-line) * var(--app-type-scale));
+    /* --ui-text-body already carries --app-type-scale (tokens.css), so
+       multiplying here would scale the prose twice. */
+    --prose-size: var(--ui-text-body);
+    --prose-line: var(--ui-text-body-line);
     box-sizing: border-box;
     width: 100%;
     max-width: none;

@@ -72,14 +72,19 @@
   --ui-content-chat: calc(768px * var(--app-width-scale, 1));
   --ui-safe-bottom: max(16px, env(safe-area-inset-bottom, 0px));
 
-  /* Typography — sizes */
-  --ui-font-size-xxs: 0.75rem;
-  --ui-font-size-xs: 0.8125rem;
-  --ui-font-size-sm: 0.875rem;
-  --ui-font-size-md: 1rem;
-  --ui-font-size-lg: 1.125rem;
-  --ui-font-size-xl: 1.25rem;
-  --ui-font-size-xxl: 1.5rem;
+  /* Typography — sizes.
+     Each rung is the reference size at the default display step (M) and
+     scales with the user's text-size preference through --app-type-scale
+     (1 at M, <1 at S, >1 at L/XL). Without this the tokens were a dead
+     end — every surface on the scale stayed put while the transcript and
+     the landing greeting grew, so the preference only half applied. */
+  --ui-font-size-xxs: calc(0.75rem * var(--app-type-scale));
+  --ui-font-size-xs: calc(0.8125rem * var(--app-type-scale));
+  --ui-font-size-sm: calc(0.875rem * var(--app-type-scale));
+  --ui-font-size-md: calc(1rem * var(--app-type-scale));
+  --ui-font-size-lg: calc(1.125rem * var(--app-type-scale));
+  --ui-font-size-xl: calc(1.25rem * var(--app-type-scale));
+  --ui-font-size-xxl: calc(1.5rem * var(--app-type-scale));
 
   /* Typography — weights */
   --ui-font-weight-regular: 400;
@@ -127,12 +132,13 @@
   --ui-press-tint: color-mix(in srgb, var(--ui-bg-hover), var(--ui-text-primary) 8%);
 
   /* chatgpt.com type scale: 14px UI chrome, 16px/28px transcript and
-     composer, 24px/28px landing greeting. */
-  --ui-text-ui: 14px;
-  --ui-text-ui-line: 20px;
-  --ui-text-body: 16px;
-  --ui-text-body-line: 28px;
-  --ui-text-hero: 24px;
+     composer, 24px/28px landing greeting. Like the --ui-font-size-* rungs
+     these track the text-size preference via --app-type-scale. */
+  --ui-text-ui: calc(14px * var(--app-type-scale));
+  --ui-text-ui-line: calc(20px * var(--app-type-scale));
+  --ui-text-body: calc(16px * var(--app-type-scale));
+  --ui-text-body-line: calc(28px * var(--app-type-scale));
+  --ui-text-hero: calc(24px * var(--app-type-scale));
   /* 1 at the default display step (M = --app-font-scale 1.125), so the
      default renders the reference sizes and S/L/XL scale around them. */
   --app-type-scale: calc(var(--app-font-scale, 1.125) / 1.125);
