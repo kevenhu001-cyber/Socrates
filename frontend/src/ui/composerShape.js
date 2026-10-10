@@ -48,10 +48,12 @@ export function syncComposerShellFlags(root) {
         hasFiles = (chips.textContent || '').trim().length > 0;
       }
     } catch (_) { /* detached node */ }
-    if (hasPlugins) shell.classList.add('has-plugin-chips');
-    else shell.classList.remove('has-plugin-chips');
-    if (hasFiles) shell.classList.add('has-attachments');
-    else shell.classList.remove('has-attachments');
+    /* toggle(name, force) is a true no-op when the class already matches, so
+       it emits no MutationRecord. add()/remove() always mutate the attribute
+       (even for an existing/absent token) and would re-trigger the document
+       observer below every frame — an idle feedback loop. */
+    shell.classList.toggle('has-plugin-chips', hasPlugins);
+    shell.classList.toggle('has-attachments', hasFiles);
   }
 }
 
