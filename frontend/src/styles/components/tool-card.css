@@ -59,7 +59,7 @@
 
 .tool-run-sheet-backdrop {
   position: fixed;
-  z-index: 1600;
+  z-index: var(--ui-z-sheet);
   inset: 0;
   display: flex;
   align-items: flex-end;

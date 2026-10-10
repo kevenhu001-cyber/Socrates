@@ -75,7 +75,7 @@
   position: absolute;
   right: 0;
   top: 100%;
-  z-index: 30;
+  z-index: var(--ui-z-menu);
   display: grid;
   min-width: 126px;
   padding: 5px;

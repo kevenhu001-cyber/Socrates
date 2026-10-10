@@ -139,10 +139,18 @@
 
   /* Layering */
   --ui-z-header: 20;
+  /* Persistent chrome that sits above the header but below any overlay:
+     the sidebar column, and the anchored dropdown menus it and the content
+     toolbars open. */
+  --ui-z-panel: 30;
+  --ui-z-menu: 40;
   --ui-z-backdrop: 80;
   --ui-z-drawer: 90;
   --ui-z-popover: 200;
   --ui-z-modal: 400;
+  /* A full-screen sheet launched from a tool card must cover a modal
+     (--ui-z-modal) and the modal+10 bump, so it keeps its own top rung. */
+  --ui-z-sheet: 1600;
 
   /* Standard border alpha so component CSS can blend the
      `--ui-border-*` token with a single, consistent opacity. */

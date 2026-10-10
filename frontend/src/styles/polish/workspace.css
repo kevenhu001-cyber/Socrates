@@ -202,7 +202,7 @@
   position: absolute;
   right: 0;
   top: calc(100% + 4px);
-  z-index: 30;
+  z-index: var(--ui-z-menu);
   min-width: 120px;
   padding: 4px;
   border-radius: var(--ui-radius-lg);
@@ -295,7 +295,7 @@
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  z-index: 40;
+  z-index: var(--ui-z-menu);
   min-width: 148px;
   padding: 4px;
   display: flex;

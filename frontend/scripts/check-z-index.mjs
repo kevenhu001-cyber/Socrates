@@ -5,10 +5,13 @@
  * The stacking contract lives in styles/tokens.css:
  *
  *   --ui-z-header:    20
+ *   --ui-z-panel:     30
+ *   --ui-z-menu:      40
  *   --ui-z-backdrop:  80
  *   --ui-z-drawer:    90
  *   --ui-z-popover:  200
  *   --ui-z-modal:    400
+ *   --ui-z-sheet:   1600
  *
  * A literal `z-index` in a live sheet is a stacking decision made in the
  * dark. Small integers (0–9) are legitimate *local* stacking inside one
@@ -136,7 +139,7 @@ function main() {
   } else if (hits.length > baseline.offenders) {
     failures.push(
       `off-token z-index values: ${hits.length} > baseline ${baseline.offenders} (+${hits.length - baseline.offenders}). ` +
-        `Use --ui-z-header (20) / --ui-z-backdrop (80) / --ui-z-drawer (90) / --ui-z-popover (200) / --ui-z-modal (400), ` +
+        `Use --ui-z-header (20) / --ui-z-panel (30) / --ui-z-menu (40) / --ui-z-backdrop (80) / --ui-z-drawer (90) / --ui-z-popover (200) / --ui-z-modal (400) / --ui-z-sheet (1600), ` +
         `or a calc() of one. Local stacking (0–9) is allowed.`,
     );
   }
@@ -153,7 +156,7 @@ function main() {
     // informational paths above already printed
   } else {
     console.log(
-      `z-index check passed (${hits.length}/${baseline.offenders} off-token declarations across ${scanned} live sheets; token rungs 20/80/90/200/400).`,
+      `z-index check passed (${hits.length}/${baseline.offenders} off-token declarations across ${scanned} live sheets; token rungs 20/30/40/80/90/200/400/1600).`,
     );
   }
 }
