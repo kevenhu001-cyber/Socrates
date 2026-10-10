@@ -35,6 +35,35 @@ if [[ ! "$ASSET_RETENTION_DAYS" =~ ^[0-9]+$ ]]; then
   exit 1
 fi
 
+# ─── Transient proxy bypass ──────────────────────────────────────
+# The deploy gate probes public URLs. A locally configured HTTP(S)_PROXY
+# (e.g. a Clash/privoxy sidecar) routes those probes through an egress
+# that Cloudflare answers with a 403 challenge, so the gate misreads a
+# healthy site as down. Detect a proxy in the environment and temporarily
+# unset it for this process only — the parent shell keeps its proxy; the
+# values are restored on exit. Set DEPLOY_BYPASS_PROXY=0 to keep using a
+# proxy throughout the run (e.g. on hosts that need it to reach npm).
+DEPLOY_BYPASS_PROXY="${DEPLOY_BYPASS_PROXY:-1}"
+if [[ "$DEPLOY_BYPASS_PROXY" == "1" ]]; then
+  PROXY_VARS=(HTTP_PROXY HTTPS_PROXY ALL_PROXY http_proxy https_proxy all_proxy)
+  DEPLOY_PROXY_RESTORE=()
+  for proxy_var in "${PROXY_VARS[@]}"; do
+    if [[ -n "${!proxy_var:-}" ]]; then
+      DEPLOY_PROXY_RESTORE+=("$proxy_var=${!proxy_var}")
+      unset "$proxy_var"
+    fi
+  done
+  if (( ${#DEPLOY_PROXY_RESTORE[@]} > 0 )); then
+    echo "deploy: proxy detected — temporarily bypassing for this run (restored on exit)" >&2
+  fi
+  restore_deploy_proxy() {
+    local assignment
+    for assignment in "${DEPLOY_PROXY_RESTORE[@]}"; do
+      export "$assignment"
+    done
+  }
+fi
+
 # The app nginx config is normally a symlink from sites-enabled to
 # sites-available, but older hosts have used a copied file instead. Keep the
 # active config and its source config aligned when both exist.
@@ -274,7 +303,7 @@ cleanup_backend_candidate() {
       ;;
   esac
 }
-trap cleanup_backend_candidate EXIT
+trap 'cleanup_backend_candidate; restore_deploy_proxy' EXIT
 
 rollback_backend() {
   if [[ "$BACKEND_SWAPPED" != "1" ]]; then
