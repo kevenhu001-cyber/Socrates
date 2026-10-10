@@ -7,18 +7,9 @@
  * legacy feature views keep their existing layout contracts.
  */
 
-:root {
-  --chatgpt-font: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --chatgpt-page: var(--ui-bg-page);
-  --chatgpt-rail: var(--ui-bg-sidebar);
-  --chatgpt-surface: var(--ui-bg-surface);
-  --chatgpt-menu: var(--ui-bg-overlay);
-  --chatgpt-hover: var(--ui-bg-hover);
-  --chatgpt-text: var(--ui-text-primary);
-  --chatgpt-muted: var(--ui-text-tertiary);
-  --chatgpt-faint: var(--ui-text-muted);
-  --chatgpt-line: var(--ui-border-default);
-}
+/* The --chatgpt-* family is owned by the compatibility bridge in themes.css
+   (imported last), so the duplicate :root block that used to live here was
+   dead on arrival — removed 2026-10-10. */
 
 #appShell,
 #composerToolsMenu {

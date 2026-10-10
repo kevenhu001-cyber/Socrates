@@ -570,17 +570,9 @@ body.workspace-active #appShell .main-page {
    only change presentation; the existing navigation, directory data and
    OpenConnector actions remain the source of truth.
    -------------------------------------------------------------------------- */
-[data-mode="dark"] {
-  /* The supplied baseline uses a charcoal canvas with a subtly raised
-     composer/active-surface layer. Keep light mode's existing tokens intact. */
-  --cg-page: var(--ui-bg-page);
-  --cg-rail: var(--ui-bg-sidebar);
-  --cg-surface: var(--ui-bg-surface);
-  --cg-surface-raised: var(--ui-bg-control);
-  --cg-surface-hover: var(--ui-bg-hover);
-  --cg-border: var(--ui-border-default);
-  --cg-border-strong: var(--ui-border-strong);
-}
+/* The --cg-* palette names that used to be pinned here are owned by the
+   themes.css bridge (imported last), so this duplicate block was dead —
+   removed 2026-10-10. */
 
 @media (min-width: 769px) {
 
@@ -652,13 +644,9 @@ body.workspace-active #appShell .main-page {
 /* Landing shortcut styling lives in polish/home.css. */
 
 @media (max-width: 768px) {
-  [data-mode="dark"] {
-    /* P_mobile-charcoal-canvas — mobile and desktop share the same page
-       token. The composer uses the raised surface step so it remains distinct
-       without introducing a second dark palette. */
-    --cg-page: var(--ui-bg-page);
-    --cg-rail: var(--ui-bg-sidebar);
-  }
+  /* P_mobile-charcoal-canvas — the --cg-page/--cg-rail pins that used to live
+     here are owned by the themes.css bridge; mobile and desktop share the
+     same page token. */
 
   /* Phone visibility is handled by polish/mobile-shell.css. */
 

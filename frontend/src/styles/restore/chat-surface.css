@@ -9,14 +9,9 @@
  * ======================================================================== */
 
 :root {
-  --conversation-page: var(--ui-bg-page);
-  --conversation-surface: var(--ui-bg-surface);
-  --conversation-control: var(--ui-bg-control);
-  --conversation-control-hover: color-mix(in srgb, var(--ui-bg-control), var(--ui-text-primary) 8%);
-  --conversation-border: var(--ui-border-default);
-  --conversation-text: var(--ui-text-primary);
-  --conversation-text-muted: var(--ui-text-tertiary);
-  --conversation-user: var(--ui-bg-bubble);
+  /* Palette members of the --conversation-* family are owned by the
+     compatibility bridge in themes.css; only the geometry members are
+     declared here. */
   --conversation-radius: 28px;
   --conversation-control-size: 40px;
   --conversation-content-width: 768px;
@@ -29,9 +24,6 @@
    and mobile drawer treatment. */
 @media (min-width: 769px) {
   html[data-theme="socrates"][data-mode="dark"] {
-    --conversation-page: var(--ui-bg-page);
-    --cg-page: var(--ui-bg-page);
-    --cg-rail: var(--ui-bg-sidebar);
     --cowork-page: 0 0% 0%;
     --cowork-sidebar: 0 0% 10%;
   }
@@ -44,17 +36,6 @@
     background: var(--ui-bg-page) !important;
     background-color: var(--ui-bg-page) !important;
   }
-}
-
-[data-mode="light"] {
-  --conversation-page: var(--ui-bg-page);
-  --conversation-surface: var(--ui-bg-surface);
-  --conversation-control: var(--ui-bg-control);
-  --conversation-control-hover: color-mix(in srgb, var(--ui-bg-control), var(--ui-text-primary) 8%);
-  --conversation-border: var(--ui-border-default);
-  --conversation-text: var(--ui-text-primary);
-  --conversation-text-muted: var(--ui-text-tertiary);
-  --conversation-user: var(--ui-bg-bubble);
 }
 
 body,

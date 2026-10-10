@@ -8,12 +8,9 @@
  */
 
 :root {
-  /* Latin sans order follows the design system (src/styles.css):
-     Plus Jakarta Sans is the primary western face, Inter the fallback.
-     An Inter-first stack here silently demoted the bundled brand face
-     across every surface this layer owns (caught by
-     placeholder-localization.spec). */
-  --cg-font: "Plus Jakarta Sans", Inter, "Noto Sans SC", "PingFang SC", "Segoe UI", system-ui, sans-serif;
+  /* --cg-font is owned by the themes.css bridge (Inter-first, asserted by
+     placeholder-localization.spec); the Plus-Jakarta-first copy that used to
+     live here was dead — removed 2026-10-10. */
   --cg-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   --cg-radius-sm: 8px;
   --cg-radius-md: 14px;
@@ -1106,19 +1103,8 @@ body.workspace-active #appShell .workspace-row:hover {
    composer row, broad page gutters, and list rows separated by hairlines.
    These final rules intentionally own those surfaces as one design system. */
 
-[data-mode="light"] {
-  --cg-page: var(--ui-bg-page);
-  --cg-rail: var(--ui-bg-sidebar);
-  --cg-surface: var(--ui-bg-surface);
-  --cg-surface-raised: var(--ui-bg-raised);
-  --cg-surface-hover: var(--ui-bg-hover);
-  --cg-border: var(--ui-border-default);
-  --cg-border-strong: var(--ui-border-strong);
-  --cg-text: var(--ui-text-primary);
-  --cg-text-secondary: var(--ui-text-secondary);
-  --cg-text-muted: var(--ui-text-muted);
-  --cg-text-faint: var(--ui-text-disabled);
-}
+/* The --cg-* palette names that used to be pinned here are owned by the
+   themes.css bridge — removed 2026-10-10. */
 
 @media (max-width: 768px) {
 
