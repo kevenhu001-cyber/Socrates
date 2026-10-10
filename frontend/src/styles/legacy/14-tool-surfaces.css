@@ -190,7 +190,10 @@ a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-
 
 @media(max-width:768px){
   .tool-inline-detail{padding-left:10px}
-  .composer-tools-menu{border-radius:20px 20px 0 0}
+  /* The phone plus-menu used to be styled as a bottom sheet here
+     (border-radius:20px 20px 0 0). It is a floating card anchored to the
+     composer, and restore/fixes.css pins its geometry with !important, so
+     that declaration never applied — it only contradicted the real shape. */
 }
 
 /* Composer tools refresh: a calmer ChatGPT-style capability switcher.

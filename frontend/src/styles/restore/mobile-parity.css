@@ -178,25 +178,23 @@
 
   /* ─────────────────────────────────────────────────────────────
    * 4. Conversation — dark user bubble, centered disclaimer.
+   *
+   * The bubble surface, ink, links and inline code now resolve through
+   * the --ui-* palette (the same tokens the desktop transcript uses in
+   * parity/transcript.css), so the phone bubble follows a theme or a
+   * custom page background instead of the hardcoded greys that used to
+   * sit here. The base + [data-mode="dark"] pairs are gone: chat-surface.css
+   * already carries the !important token rules at equal-or-higher
+   * specificity, so a second literal pair here only shadowed them.
    * ───────────────────────────────────────────────────────────── */
-  #appShell#appShell .msg.user .msg-body {
-    background: hsl(0 0% 8%) !important;
-    color: hsl(0 0% 100%) !important;
-  }
-
-  [data-mode="dark"] #appShell#appShell .msg.user .msg-body {
-    background: hsl(0 0% 18%) !important;
-    color: hsl(0 0% 100%) !important;
-  }
-
   #appShell#appShell .msg.user .msg-body a {
-    color: hsl(0 0% 100%) !important;
+    color: inherit;
     text-decoration: underline;
   }
 
   #appShell#appShell .msg.user .msg-body code {
-    background: hsl(0 0% 100% / 14%) !important;
-    color: hsl(0 0% 100%) !important;
+    background: var(--ui-bg-chip) !important;
+    color: var(--ui-text-primary) !important;
   }
 
   /* ─────────────────────────────────────────────────────────────

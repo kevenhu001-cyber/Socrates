@@ -38,10 +38,25 @@
   --ui-radius-bubble: 18px;
   --ui-radius-pill: 999px;
 
-  /* Controls and responsive shell */
+  /* Controls and responsive shell.
+     The ladder is the source of truth for interactive-control height.
+     32/40/44 are the original rungs; 36 and 42 were added because they are
+     what the shipped desktop density actually is — the topbar switcher/find/
+     share buttons, the Library toolbar and the directory tabs all sit at
+     36px, and every workspace search pill at 42px. They were literals in six
+     files, which put them permanently one edit away from drifting apart.
+     Naming them keeps `npm run lint:button-sizes` honest: it treats these as
+     on-ladder, so a new literal is still blocked, but a deliberate change is
+     a one-line edit here instead of a baseline bump. */
   --ui-control-sm: 32px;
   --ui-control-md: 40px;
   --ui-control-touch: 44px;
+  /* Desktop chrome density — the row height of the topbar buttons, the
+     directory tab rails and the Library toolbar. */
+  --ui-control-desktop: 36px;
+  /* Workspace search field / pill. Taller than a toolbar button because it
+     carries placeholder text, and identical across every directory page. */
+  --ui-control-search: 42px;
   /* Semantic alias for "mobile tap target": same value as
      --ui-control-touch but lets mobile-controls.css and buttons.css
      read intent (touch hit area) rather than reusing a generic "touch"

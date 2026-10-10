@@ -161,6 +161,21 @@ const METRICS = {
   hexColor: /#[0-9a-fA-F]{3,8}\b/g,
   literalRadius: /border-radius:\s*(?:[0-9.]+px|var\([^)]*\)\s+[0-9.]+px)/g,
   stackedId: countStackedIdSelectors,
+  /*
+   * Literal px font-size.
+   *
+   * This was the largest unguarded surface: ~190 live declarations spread over
+   * 19 distinct sizes, including 11.5/12.5/13.5/14.5px half-steps that no
+   * scale explains. tokens.css publishes a type scale (xxs→xxl, plus the
+   * parity steps --ui-text-ui/body/hero), so a literal means that surface is
+   * not on the scale and will not track the user's font-size preference.
+   *
+   * Counting is per-declaration, so `font-size: 12px` and `font-size:
+   * calc(11px * var(--app-font-scale))` are both hits — the calc form is
+   * still a literal step, just one that scales. Deliberate, documented
+   * exceptions (a hero, a one-off) should be deleted rather than baselined.
+   */
+  literalFontSize: /font-size:\s*(?:\d+(?:\.\d+)?px|calc\(\s*\d+(?:\.\d+)?px)/g,
 };
 
 /* ---------- 1. cascade order ---------- */

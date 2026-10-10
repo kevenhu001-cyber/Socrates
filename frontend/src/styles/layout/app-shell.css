@@ -82,7 +82,7 @@
   z-index: 3;
   display: flex;
   width: 184px;
-  height: 36px;
+  height: var(--ui-control-desktop);
   padding: 2px;
   transform: translate(-50%, -50%);
   border: 0;
@@ -112,13 +112,16 @@
 @media (min-width: 769px) {
 
 
-
 #appShell #topicSetup .topic-title.greeting {
   display: block;
   animation: none;
   padding: 0;
   color: var(--ui-text-primary);
-  font-family: "Plus Jakarta Sans", "Inter", "Noto Sans SC", sans-serif;
+  /* No font-family here on purpose. This rule used to open with
+     "Plus Jakarta Sans" while polish/composer.css pins the greeting to
+     --cg-font (the bundled Inter) at four-#appShell specificity, so the
+     declaration never applied — it only made the shell look like it had a
+     second typeface. One face, declared once, in themes.css. */
   font-weight: 400;
   letter-spacing: -.02em;
   text-align: center;

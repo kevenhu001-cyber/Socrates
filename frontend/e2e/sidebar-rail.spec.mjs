@@ -38,7 +38,11 @@ test('open sidebar uses 36px rows, solid hover and one-line history', async ({ p
     };
   });
   expect(rows.navH).toBe(36);
-  expect(rows.navRadius).toBe('12px');
+  /* --ui-radius-row (10px), the documented row step in polish/buttons.css and
+     the value the phone drawer uses. This asserted 12px while
+     parity/sidebar.css carried a second, later --ui-radius-lg declaration for
+     the same selectors; removing that duplicate makes the rail 10px again. */
+  expect(rows.navRadius).toBe('10px');
   expect(rows.itemH).toBe(36);
   expect(rows.metaVisible).toBe(false);
   expect(rows.sidebarBg).toBe('rgb(252, 252, 252)');

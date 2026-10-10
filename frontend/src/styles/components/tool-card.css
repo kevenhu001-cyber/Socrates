@@ -162,8 +162,11 @@
 
 .tool-run-sheet-close {
   display: inline-flex;
-  width: 34px;
-  height: 34px;
+  /* --ui-control-sm (32px) — the same rung as the transcript's action
+     buttons, and on the size ladder. A literal 34px here made the sheet's
+     only close control 2px off every other button in the app. */
+  width: var(--ui-control-sm);
+  height: var(--ui-control-sm);
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;

@@ -87,9 +87,11 @@
     padding-left: 0;
   }
 
+  /* One workspace title size across every directory page — see the Scheduled
+     head in features/surfaces.css. Library and Sites are both 28px/36px. */
   #appShell .projects-directory .workspace-page-head h1 {
     position: static;
-    font-size: 27px;
+    font-size: 28px;
     line-height: 36px;
     z-index: auto;
   }
@@ -126,8 +128,8 @@
     grid-column: 1 / -1;
     grid-row: 2;
     width: 100%;
-    height: 42px;
-    min-height: 42px;
+    height: var(--ui-control-search);
+    min-height: var(--ui-control-search);
     border-radius: var(--ui-radius-pill);
   }
 }
@@ -181,7 +183,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 36px;
+  height: var(--ui-control-desktop);
   padding: 0 14px;
   border-radius: var(--ui-radius-pill);
   background: var(--ui-bg-control);
@@ -225,15 +227,20 @@
   background: var(--ui-bg-hover);
 }
 
+/* Ghost square, matching .library-tool-btn / .library-view-btn in the same
+   toolbar row. This button used to be a filled pill (--ui-bg-control + a
+   hairline border), so one 36px row mixed two filled pills with two
+   transparent squares and read as two different toolbars. The filled pill is
+   reserved for the row's primary action (.library-new-pill). */
 #appShell .library-settings-btn {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--ui-radius-pill);
-  background: var(--ui-bg-control);
-  border: 1px solid var(--ui-border-default);
-  color: var(--ui-text-secondary);
+  width: var(--ui-control-desktop);
+  height: var(--ui-control-desktop);
+  border: 0;
+  background: transparent;
+  color: var(--ui-text-tertiary);
+  border-radius: var(--ui-radius-control);
   cursor: pointer;
 }
 
@@ -259,8 +266,8 @@
 #appShell .library-tool-btn {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: var(--ui-control-desktop);
+  height: var(--ui-control-desktop);
   border: 0;
   background: transparent;
   color: var(--ui-text-secondary);
@@ -338,11 +345,12 @@
 #appShell .library-view-btn {
   display: grid;
   place-items: center;
-  /* 36px, matching .library-settings-btn and .library-tool-btn — this button
-     sits in the same toolbar row, and a 34px box beside 36px siblings reads
-     as a rendering bug rather than a density choice. */
-  width: 36px;
-  height: 36px;
+  /* --ui-control-desktop, matching .library-settings-btn and
+     .library-tool-btn — this button sits in the same toolbar row, and a 34px
+     box beside 36px siblings reads as a rendering bug rather than a density
+     choice. */
+  width: var(--ui-control-desktop);
+  height: var(--ui-control-desktop);
   border: 0;
   background: transparent;
   color: var(--ui-text-tertiary);
@@ -366,7 +374,7 @@
 #appShell .library-search-pill {
   flex: 1;
   min-width: 0;
-  min-height: 42px;
+  min-height: var(--ui-control-search);
   padding: 0 14px;
   border-radius: var(--ui-radius-pill);
 }
@@ -386,7 +394,11 @@
 
 #appShell .library-chip {
   flex: 0 0 auto;
-  height: 34px;
+  /* --ui-control-desktop, the same rung as the .plugin-directory-tabs /
+     .scheduled-filter-tabs pills this chip row sits beside. It was a literal
+     34px — the exact "renders 2px shorter than its siblings" bug the
+     .library-view-btn note above calls out. */
+  height: var(--ui-control-desktop);
   padding: 0 16px;
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-pill);
@@ -409,7 +421,12 @@
   border-color: var(--ui-border-default);
 }
 
-/* File type squircle icons */
+/* File type squircle icons. The fill comes from the --ui-file-* palette in
+   themes.css (one token per type, mapped onto --ui-file-color by the
+   .library-file-* classes there), so the desktop tile and the phone row icon
+   — which already paints --ui-file-color as its glyph — are the same hue for
+   the same file type. These used to be eight hardcoded Tailwind rgb() values
+   that no theme could reach. */
 #appShell .library-file-icon {
   display: grid;
   place-items: center;
@@ -417,24 +434,16 @@
   height: 44px;
   min-width: 44px;
   border-radius: var(--ui-radius-lg);
-  color: rgb(255 255 255);
+  background: var(--ui-file-color, var(--ui-bg-control));
+  color: hsl(var(--always-white));
   flex: 0 0 44px;
 }
 
 #appShell .library-file-icon svg {
   width: 22px;
   height: 22px;
-  stroke: rgb(255 255 255);
+  stroke: hsl(var(--always-white));
 }
-
-#appShell .library-file-image { background: rgb(244 63 94); }
-#appShell .library-file-html { background: rgb(20 184 166); }
-#appShell .library-file-doc { background: rgb(59 130 246); }
-#appShell .library-file-code { background: rgb(168 85 247); }
-#appShell .library-file-table { background: rgb(34 197 94); }
-#appShell .library-file-video { background: rgb(239 68 68); }
-#appShell .library-file-audio { background: rgb(245 158 11); }
-#appShell .library-file-file { background: rgb(100 116 139); }
 
 /* ------------------------------------------------------------------ */
 /*  Plugin Detail Page                                                */
@@ -588,7 +597,7 @@
 
 #appShell .plugin-detail-btn-primary {
   flex: 1 1 auto;
-  height: 42px;
+  height: var(--ui-control-search);
   padding: 0 20px;
   border-radius: var(--ui-radius-pill);
   background: var(--ui-text-primary);
@@ -614,7 +623,7 @@
 
 #appShell .plugin-detail-btn-secondary {
   flex: 0 0 auto;
-  height: 42px;
+  height: var(--ui-control-search);
   padding: 0 18px;
   border-radius: var(--ui-radius-pill);
   background: var(--cg-surface-raised);

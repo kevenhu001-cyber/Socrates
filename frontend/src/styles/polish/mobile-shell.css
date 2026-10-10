@@ -37,19 +37,6 @@
   }
   #appShell #mobileModeTrigger svg { width: 16px; height: 16px; }
   #appShell #mobileModeMenu { left: 0; right: auto; transform: none; width: min(260px, calc(100vw - 72px)); }
-  :root[data-user-tier="diophantus"] body:not(.workspace-active) #appShell #mobileUpgradeBtn {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    height: 32px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: var(--ui-link);
-    font-size: 14px;
-    font-weight: 500;
-  }
-  #appShell #mobileUpgradeBtn svg { width: 20px; height: 20px; }
   #appShell .main-content, #appShell .main-inner { padding: 0; }
   #appShell #topicSetup {
     position: relative;
@@ -83,11 +70,9 @@
   }
   #appShell .home-quick-actions { display: none; }
   body.workspace-active #appShell #mobileMode { display: none; }
-  body.workspace-active #appShell #mobileUpgradeBtn,
   body.workspace-active #appShell .mobile-newchat-btn { display: none; }
 }
 @media (max-width: 359px) {
   #appShell #mobileMode { left: 48px; }
   #appShell #mobileModeTrigger { font-size: 16px; }
-  :root[data-user-tier="diophantus"] body:not(.workspace-active) #appShell #mobileUpgradeBtn { font-size: 12px; }
 }

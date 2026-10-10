@@ -147,10 +147,12 @@
     background-color: var(--ui-bg-surface);   /* was #1b1b1b */
   }
 
-  /* ── User bubble mobile — align to chatgpt-aligned radius ── */
-  #appShell .msg.user .msg-body {
-    border-radius: var(--ui-radius-bubble, 18px);
-  }
+  /* ── User bubble mobile ──
+     The phone bubble's radius, surface and ink all come from the shared
+     tokens now (--ui-radius-bubble / --conversation-user /
+     --conversation-text in restore/chat-surface.css), so there is nothing
+     left to restate here — a second declaration at this specificity only
+     lost to that layer's !important rules. */
 }
 
 /* ── Drawer nav geometry contract (moved from restore/fixes.css) ── */
@@ -225,7 +227,10 @@
   #appShell #sidebarHeader .sidebar-logo > span, #appShell #sidebarHeader .cg-sidebar-caret { display: none; }
   #appShell #sidebarHeader .btn-icon svg { width: 20px; height: 20px; }
   #appShell .recent-item.active { box-shadow: none; background: var(--ui-bg-hover); }
-  #appShell #sidebarUserRow .tier-badge { font-size: 13px; line-height: 18px; }
+  /* The tier badge size is owned by polish/mobile-sidebar.css:78 (14px, set
+     with .user-plan). This block used to restate it as 13px on the same
+     selector; mobile-sidebar.css imports later, so the 13px never shipped —
+     the phone drawer just carried two declared sizes for one label. */
   #appShell .sidebar-account-menu .user-plan { color: var(--ui-text-muted); }
   #appShell .sidebar-account-menu .user-avatar { place-items: center; background: var(--ui-avatar-bg); color: var(--ui-text-primary); }
   #appShell .sidebar-account-menu .user-identity { display: flex; flex-direction: column; }

@@ -275,7 +275,12 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   #appShell .recent-item-menu .recent-item-menu-row { min-height: 40px; height: 40px; padding: 0 6px; font-size: 14px; }
   #appShell .recent-item-menu .recent-item-action-icon, #appShell .recent-item-menu .recent-item-action-icon svg { width: 18px; height: 18px; flex-basis: 18px; }
 }
-#appShell .sidebar-account-menu .tier-badge { padding: 0; background: transparent; color: var(--ui-text-muted); font-size: 13px; font-weight: 400; line-height: 18px; text-transform: none; }
+/* One size for the plan label everywhere on desktop: 12px, the same as
+   #sidebarUserRow .tier-badge in parity/sidebar.css:662. The account menu is
+   opened from that row, so the badge read two different sizes depending on
+   whether the menu was open. Mobile keeps its own 14px step
+   (polish/mobile-sidebar.css:78), which is a separate density. */
+#appShell .sidebar-account-menu .tier-badge { padding: 0; background: transparent; color: var(--ui-text-muted); font-size: 12px; font-weight: 400; line-height: 16px; text-transform: none; }
 @media (max-width: 768px) {
   #appShell .recent-item-menu .recent-item-action-text { font-size: 14px; }
 }

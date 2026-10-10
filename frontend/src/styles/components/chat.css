@@ -91,7 +91,6 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   }
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg.user .msg-body {
     max-width: 88%;
-    border-radius: 24px;
   }
 }
 

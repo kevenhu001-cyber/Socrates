@@ -266,7 +266,11 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
   /* max-width/padding moved on — polish/transcript.css owns the phone
      bubble's 72%/560px cap and 10px 16px padding. */
   border: 0;
-  border-radius: 15px;
+  /* One bubble radius on every breakpoint: --ui-radius-bubble (18px), the
+     value parity/transcript.css pins on desktop and chat-workbench.spec.mjs
+     asserts. A literal 15px here is what made the phone bubble a different
+     shape from the desktop one. */
+  border-radius: var(--ui-radius-bubble);
   background: var(--conversation-user) !important;
   color: var(--conversation-text) !important;
   box-shadow: none;

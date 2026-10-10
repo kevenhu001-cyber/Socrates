@@ -72,6 +72,11 @@
   border-bottom: none;
   border-top-left-radius: var(--ui-radius-lg);
   border-top-right-radius: var(--ui-radius-lg);
+  /* legacy/09 pins the language label to calc(10.5px * scale), which the
+     desktop owner (parity/transcript.css) overrides to 12px but this phone
+     block never did — so the label rendered 10.5px on phones and 12px
+     everywhere else. */
+  font-size: 12px;
   /* legacy/09 dims the header to .85 until :hover — a state touch never
      reaches, so the label and copy action stayed below AA on phones. */
   opacity: 1;

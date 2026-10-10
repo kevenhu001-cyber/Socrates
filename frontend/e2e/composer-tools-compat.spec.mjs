@@ -216,12 +216,15 @@ test('mobile plus menu opens without expanding the chat composer', async ({ page
     };
   });
   // Mobile presents the menu as a floating card over the composer's left
-  // half, with a solid surface and a full outline.
+  // half, with a solid surface and a full outline. The corner radius is the
+  // shared popover step (--ui-radius-lg, 12px) documented in
+  // styles/polish/overlays.css — the "+" menu used to be 20px here and
+  // 16px on desktop while every other popover was 12px.
   expect(mobileMenuStyle.background).not.toBe('rgba(0, 0, 0, 0)');
   expect(mobileMenuStyle.border).toBe('1px');
   expect(mobileMenuStyle.shadow).not.toBe('none');
-  expect(mobileMenuStyle.radius).toBe('20px');
-  expect(mobileMenuStyle.bottomRadius).toBe('20px');
+  expect(mobileMenuStyle.radius).toBe('12px');
+  expect(mobileMenuStyle.bottomRadius).toBe('12px');
   // Wait for the entrance animation to settle before measuring geometry.
   await menu.evaluate((element) => Promise.all(element.getAnimations().map((a) => a.finished)));
   const sheetBox = await menu.boundingBox();

@@ -164,9 +164,11 @@
 @media (max-width: 768px) {
 #appShell .recents-time-label {
   /* Matches parity/sidebar.css: small labels use the secondary step so they
-     clear WCAG AA on the light sidebar rail. */
+     clear WCAG AA on the light sidebar rail, and keep its 12px size. The phone
+     drawer used to drop to 11px here while the desktop rail stayed at 12px,
+     so the same "Today" group header changed size with the viewport. */
   color: var(--ui-text-secondary);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.04em;
 }
@@ -298,21 +300,12 @@
 #appShell .sidebar-footer .icon-btn svg { width: 17px; height: 17px; }
 }
 
-/* Free-tier upgrade pill. The drawer styling is owned by
-   styles/parity/sidebar.css (P_sidebar-parity — 图1's blue pill); the rules
-   below only cover the phone presentation, where the pill spans the drawer
-   foot instead of sitting under the account row. Rendered by React
-   SidebarFooter solely for the diophantus tier. */
+/* Free-tier upgrade pill — removed. The sidebar drawer footer no longer
+   carries an Upgrade button; the pricing entry point lives in the account
+   menu (SidebarFooter.tsx "Upgrade plan"), which reads the same on desktop
+   and phone instead of the two competing presentations the pill had
+   (solid blue in parity/sidebar.css, outlined here). */
 @media (max-width: 768px) {
-#appShell .sidebar-upgrade-pill {
-  border: 1px solid var(--ui-border-default);
-  background: var(--ui-bg-surface);
-  color: var(--ui-text-primary);
-  text-decoration: none;
-  text-align: center;
-}
-#appShell .sidebar-upgrade-pill:hover,
-#appShell .sidebar-upgrade-pill:focus-visible { background: var(--ui-bg-hover); }
 #appShell #navAssistants,
 #appShell #navSites,
 #appShell #navExam,

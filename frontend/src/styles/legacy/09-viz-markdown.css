@@ -443,7 +443,10 @@
 .katex .mathnormal{font-style:normal !important}
 
 @media(max-width:768px){.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:30;background:hsl(var(--bg-000));box-shadow:0 0 0 1px hsl(var(--always-black)/0.2),0 8px 40px hsl(var(--always-black)/0.4);transform:translateX(0);transition:transform .3s cubic-bezier(0.4,0,0.2,1),box-shadow .3s cubic-bezier(0.4,0,0.2,1);will-change:transform}.sidebar.collapsed{width:18rem;min-width:18rem;transform:translateX(-100%);box-shadow:none}.sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}.sidebar .sidebar-inner{opacity:1;transition:opacity .25s var(--ease-out)}.chat-input-bar{padding-top:6px}}
-.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:80;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);animation:fadeIn .15s forwards}
+/* The dim and the blur both come from tokens now (components/sidebar.css
+   owns the live rule). The 50% literal plus a 4px blur here meant the drawer
+   scrim dimmed and fogged differently from every dialog behind it. */
+.sidebar-backdrop{display:none;position:fixed;inset:0;background:var(--ui-backdrop);z-index:80;-webkit-backdrop-filter:none;backdrop-filter:none;animation:fadeIn .15s forwards}
 .sidebar-backdrop.show{display:block}
 
 /* Auth gate */

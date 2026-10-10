@@ -235,7 +235,6 @@ export const en = {
     "sidebar.nav.exam":"Exam",
     "sidebar.nav.incognito":"Incognito chat",
     "sidebar.nav.more":"More",
-    "sidebar.upgrade":"Upgrade",
     /* PR-A — More popover items */
     "sidebar.more.settings":"API settings",
     "sidebar.more.skills":"Skills & shortcuts",

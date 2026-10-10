@@ -131,7 +131,6 @@
    `.msg-body .code-block-header`.
    ───────────────────────────────────────────────────────────────────────── */
 :root{
-  --chat-bubble-radius:20px;
   --chat-bubble-pad-y:10px;
   --chat-bubble-pad-x:16px;
   --chat-msg-gap:20px;               /* vertical rhythm between turns */
@@ -145,12 +144,12 @@
 }
 
 /* Message rhythm + bubbles. `.msg-list` already sets a 12px gap higher up;
-   this promotes it to the roomier ChatGPT rhythm. Bubble surface/radius stay
-   on the brand `--bg-*` token so themes adapt automatically. */
+   this promotes it to the roomier ChatGPT rhythm. The bubble radius is NOT
+   re-declared here: --ui-radius-bubble (themes.css/tokens.css) is the single
+   value, applied by parity/transcript.css on desktop and
+   restore/chat-surface.css on phones. A third literal radius in this file is
+   what let the same bubble read as 20px, 15px and 18px at once. */
 .msg-list{gap:var(--chat-msg-gap)}
-.msg.user .msg-body{
-  border-radius:var(--chat-bubble-radius);
-}
 .msg.assistant .msg-body{
   max-width:100%;
   line-height:var(--chat-assistant-line-height);

@@ -51,34 +51,15 @@
 }
 }
 
-/* Free-tier "升级" pill: top-bar entry on every viewport <= 768px for
-   free-tier accounts so the upgrade is one tap away. The sidebar drawer
-   footer (polish/sidebar.css .sidebar-upgrade-pill) carries the same
-   link as a redundant entry point once the drawer is open. */
-#appShell .mobile-upgrade-pill { display: none; }
-@media (max-width: 768px) {
-:root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill {
-  border: 1px solid var(--ui-border-default);
-  background: var(--ui-bg-surface);
-  color: var(--ui-text-primary);
-  text-decoration: none;
-  white-space: nowrap;
-}
-:root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill svg { width: 14px; height: 14px; color: var(--ui-tool-chip-text); }
-:root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill:hover,
-:root[data-user-tier="diophantus"] #appShell .mobile-upgrade-pill:focus-visible { background: var(--ui-bg-hover); }
-}
-
+/* Free-tier "升级" pill — removed. The mobile top bar no longer carries an
+   Upgrade button; the pricing entry point is the account menu's "Upgrade
+   plan" item, identical on desktop and phone. */
 @media (max-width: 768px) {
   #appShell #pluginWorkspaceTabs,
 body #appShell #pluginWorkspaceTabs,
 body.plugins-active #appShell #pluginWorkspaceTabs,
 body.workspace-active #appShell #pluginWorkspaceTabs,
-body.workspace-active #appShell #mobileUpgradeBtn,
-body.workspace-active #appShell .mobile-upgrade-pill,
 body.workspace-active #appShell .mobile-newchat-btn,
-body.plugins-active #appShell #mobileUpgradeBtn,
-body.plugins-active #appShell .mobile-upgrade-pill,
 body.plugins-active #appShell .mobile-newchat-btn {
     display: none;
   }
@@ -119,6 +100,5 @@ body.plugins-active #appShell .mobile-newchat-btn {
 /* Phone mode menu reuses the existing functional dropdown. */
 @media (max-width: 768px) {
   #appShell #mobileModeTrigger { background: transparent; border: 0; box-shadow: none; color: var(--ui-text-primary); }
-  :root[data-user-tier="diophantus"] #appShell #mobileUpgradeBtn { background: transparent; border: 0; color: var(--ui-link); }
   body.workspace-active #appShell #mobileMode { display: none; }
 }

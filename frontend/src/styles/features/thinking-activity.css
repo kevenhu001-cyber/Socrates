@@ -121,7 +121,10 @@
   align-items:center;
   gap:6px;
   max-width:100%;
-  min-height:28px;
+  /* --ui-control-sm (32px), the rung the message toolbar beside it uses.
+     A literal 28px left the only control in the turn header two steps
+     shorter than every other button in the transcript. */
+  min-height:var(--ui-control-sm);
   padding:3px 8px 3px 6px;
   margin-bottom:8px;
   border:0;

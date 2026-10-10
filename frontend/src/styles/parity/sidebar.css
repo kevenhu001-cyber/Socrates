@@ -105,13 +105,18 @@
   }
   #appShell #sidebarSearchBtn { display: none; }
   /* P_sidebar-parity — 图1's two header affordances are standalone circles,
-     not the squared icon-btn the rest of the app uses. */
+     not the squared icon-btn the rest of the app uses. They share
+     --ui-control-sm (32px) with the footer's icon buttons so every icon
+     control in the rail is one size; only the shape differs (circle here,
+     8px square in the footer). They used to be a literal 34px, which put
+     them off the control ladder and 2px away from their own footer
+     siblings. */
   #appShell #newChatBtn,
   #appShell #sidebarCloseBtn {
     display: inline-grid;
     place-items: center;
-    width: 34px;
-    height: 34px;
+    width: var(--ui-control-sm);
+    height: var(--ui-control-sm);
     padding: 0;
     border: 0;
     border-radius: 50%;
@@ -415,36 +420,6 @@
     align-items: stretch;
     gap: 8px;
   }
-  #appShell .sidebar-upgrade-pill {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    min-height: 36px;
-    padding: 0 14px;
-    border: 0;
-    border-radius: var(--ui-radius-pill);
-    background: var(--ui-brand-fill);
-    color: var(--ui-on-brand-fill);
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 18px;
-    text-decoration: none;
-    white-space: nowrap;
-    transition: background-color var(--ui-duration-hover) ease;
-  }
-  #appShell .sidebar-upgrade-pill:hover,
-  #appShell .sidebar-upgrade-pill:focus-visible {
-    background: var(--ui-brand-fill-hover);
-    color: var(--ui-on-brand-fill);
-  }
-  #appShell .sidebar-upgrade-pill:focus-visible {
-    outline: 2px solid var(--ui-brand-fill);
-    outline-offset: 2px;
-  }
-  /* The collapsed rail is icon-width, so the pill's label has nowhere to
-     go — the account trigger already carries the identity there. */
-  #appShell #sidebar.collapsed .sidebar-upgrade-pill { display: none; }
 
   #appShell #sidebarFooter .icon-btn {
     display: inline-grid;
@@ -566,9 +541,12 @@
 }
 
 @media (min-width: 769px) {
+  /* Row radius is declared once, above, as --ui-radius-row (10px). It used to
+     be re-stated here as --ui-radius-lg (12px) for the same selectors, which
+     silently won by order and made the desktop rail a different shape from
+     the phone drawer (polish/mobile-sidebar.css keeps the 10px row). */
   #appShell #sidebarNav .sidebar-nav-btn,
   #appShell #sidebar .recent-item {
-    border-radius: var(--ui-radius-lg);
     transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease;
   }
 

@@ -484,7 +484,11 @@ body.admin-active #topicDisclaimer{display:none!important}
 .profile-instructions-state{font-size:11px;color:hsl(var(--text-500));font-style:italic}
 .profile-instructions-state.saved{color:hsl(var(--accent-000))}
 .profile-instructions-state.pending{color:hsl(var(--text-500))}
-.cmd-k-overlay{position:fixed;inset:0;background:hsl(var(--always-black)/0.55);z-index:900;display:flex;align-items:flex-start;justify-content:center;padding-top:min(18vh,140px);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+/* The dim and the blur both come from tokens now (features/surfaces.css sets
+   the backdrop, polish/overlays.css clears the blur). The legacy literals
+   55% + blur(4px) could still win on desktop because the polish owner rides
+   a lazy chunk — so they are removed here rather than overridden there. */
+.cmd-k-overlay{position:fixed;inset:0;background:var(--ui-backdrop);z-index:900;display:flex;align-items:flex-start;justify-content:center;padding-top:min(18vh,140px);-webkit-backdrop-filter:none;backdrop-filter:none}
 .cmd-k-overlay.hidden{display:none}
 /* P0.2 — in-session find bar. Floats at the top-right of the viewport:
    .chat-view only spans the composer's height now, so anchoring there

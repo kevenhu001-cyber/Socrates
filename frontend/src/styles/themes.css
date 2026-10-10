@@ -12,6 +12,13 @@ html[data-theme="socrates"][data-mode],
 html[data-theme="socrates"][data-mode]:lang(zh) {
   --font-sans: "Inter", "Noto Sans SC", "Plus Jakarta Sans", sans-serif;
   --cg-font: var(--font-sans);
+  /* One typeface. The display face used to be Newsreader (legacy/00), which
+     still leaked into the auth card title and the workspace dialog title
+     while every other surface had already converged on Inter. Aliasing it
+     here — at the same specificity as the legacy declaration, and later in
+     the cascade — retires the second face without touching the legacy
+     slices. The bundled Newsreader files stay for now. */
+  --font-display: var(--font-sans);
 }
 [data-mode="dark"] {
   color-scheme: dark;
@@ -63,12 +70,6 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-tool-chip-hover-bg: rgb(2 5 98);
   --ui-tool-chip-hover-text: rgb(218 230 253);
   --ui-link: rgb(129 166 249);
-  /* P_sidebar-parity — 图1's footer pill is the one solid brand surface in
-     the drawer, so it needs a real fill, not a tint. Dark mode keeps the
-     lifted blue so white text clears WCAG AA on the fill. */
-  --ui-brand-fill: rgb(29 78 216);
-  --ui-brand-fill-hover: rgb(37 99 235);
-  --ui-on-brand-fill: rgb(255 255 255);
   --ui-bg-code: var(--ui-bg-raised);
   /* Phone code blocks keep a distinct header band in dark mode. */
   --ui-bg-code-header: var(--ui-bg-control);
@@ -135,11 +136,6 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-tool-chip-hover-bg: rgb(237 243 254);
   --ui-tool-chip-hover-text: rgb(36 81 218);
   --ui-link: rgb(36 81 218);
-  /* P_sidebar-parity — see the dark-mode note; light mode matches --ui-link
-     so the pill and every inline link read as the same blue. */
-  --ui-brand-fill: rgb(36 81 218);
-  --ui-brand-fill-hover: rgb(29 78 216);
-  --ui-on-brand-fill: rgb(255 255 255);
   --ui-bg-code: var(--ui-bg-raised);
   /* Light code blocks are one card, like the desktop transcript. */
   --ui-bg-code-header: var(--ui-bg-code);
@@ -180,9 +176,24 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
  * ------------------------------------------------------------------------- */
 
 :root {
-  --ui-file-image: rgb(233 110 174);
-  --ui-file-document: rgb(38 135 233);
-  --ui-file-table: rgb(56 184 109);
+  /* Library file-type colours. One token per category (the categories come
+     from react/pages/workspace/libraryFileTypes.tsx), mapped onto
+     --ui-file-color by the .library-file-* classes below.
+     Each value has to work in THREE roles, so the steps are chosen rather
+     than copied: a filled desktop tile with a white glyph, a glyph on the
+     light phone tile (--ui-bg-surface), and a glyph on the dark phone tile.
+     Every one of them clears 3:1 in all three (the previous desktop set was
+     Tailwind-500 rgb() literals inside polish/workspace.css — white on
+     amber was ~2:1 — and the phone row only had tokens for three of the
+     eight categories, so the rest fell back to plain ink). */
+  --ui-file-image: rgb(225 29 72);    /* rose-600  */
+  --ui-file-html: rgb(13 148 136);    /* teal-600  */
+  --ui-file-doc: rgb(37 99 235);      /* blue-600  */
+  --ui-file-code: rgb(147 51 234);    /* purple-600*/
+  --ui-file-table: rgb(21 128 61);    /* green-700 */
+  --ui-file-video: rgb(220 38 38);    /* red-600   */
+  --ui-file-audio: rgb(180 83 9);     /* amber-700 */
+  --ui-file-file: rgb(100 116 139);   /* slate-500 */
   --ui-shadow-menu: var(--ui-shadow-popover);
   --ui-shadow-modal: var(--ui-shadow-dialog);
   --ui-shadow-toast: 0 6px 22px rgb(0 0 0 / 14%);
@@ -209,9 +220,18 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --conversation-text-secondary: var(--conversation-text-muted);
 }
 
+/* File-type colour per category — the desktop tile fills with it
+   (polish/workspace.css), the phone row icon paints its glyph with it
+   (polish/mobile-directories.css). Same hue, same file type, both
+   breakpoints. */
 .library-file-image { --ui-file-color: var(--ui-file-image); }
-.library-file-doc { --ui-file-color: var(--ui-file-document); }
+.library-file-html { --ui-file-color: var(--ui-file-html); }
+.library-file-doc { --ui-file-color: var(--ui-file-doc); }
+.library-file-code { --ui-file-color: var(--ui-file-code); }
 .library-file-table { --ui-file-color: var(--ui-file-table); }
+.library-file-video { --ui-file-color: var(--ui-file-video); }
+.library-file-audio { --ui-file-color: var(--ui-file-audio); }
+.library-file-file { --ui-file-color: var(--ui-file-file); }
 
 /* chat-surface pins --conversation-page/--cg-page/--cg-rail at
    html[data-theme][data-mode] (0,2,1); the remap lives at the same

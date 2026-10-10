@@ -120,8 +120,8 @@ body #composerToolsMenu .composer-tools-item kbd {
     font-size: 12px;
   }
   body #composerToolsMenu .composer-tools-plugin-state small { font-size: 11px; }
-  body #composerToolsMenu .composer-tools-footer-search { min-height: 34px; }
-  body #composerToolsMenu .composer-tools-footer-search input { min-height: 30px; }
+  /* Footer search geometry (34px) is owned by components/menu.css, which
+     now matches this row height instead of being silently overridden here. */
 }
 
 /* Attachment chips inside the capsule — the card radius (12px) matches
@@ -143,26 +143,28 @@ body #composerToolsMenu .composer-tools-item kbd {
    tightens rhythm toward the shell's control language. */
 #appShell .voice-recording-bar {
   gap: 10px;
-  height: 44px;
+  height: var(--ui-hit-area);
   padding: 0 2px 0 4px;
 }
 
-/* Discard — quiet ghost circle at the leading edge. */
+/* Discard — quiet ghost circle at the leading edge. --ui-control-sm (32px),
+   the same rung as the toolbar icon buttons; it was a literal 30px, 6px
+   smaller than the confirm circle it sits beside. */
 #appShell .voice-recording-cancel {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  min-width: 30px;
-  flex: 0 0 30px;
+  width: var(--ui-control-sm);
+  height: var(--ui-control-sm);
+  min-width: var(--ui-control-sm);
+  flex: 0 0 var(--ui-control-sm);
   padding: 0;
   border: 0;
   border-radius: 50%;
   background: transparent;
   color: var(--ui-text-muted);
   cursor: pointer;
-  transition: background-color .15s var(--ease-out, ease), color .15s ease, opacity .15s ease;
+  transition: background-color .15s var(--ui-ease-out), color .15s ease, opacity .15s ease;
 }
 #appShell .voice-recording-cancel:hover,
 #appShell .voice-recording-cancel:focus-visible {

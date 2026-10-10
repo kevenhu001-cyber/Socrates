@@ -2,15 +2,17 @@
   "totals": {
     "live": {
       "important": 20,
-      "hexColor": 45,
-      "literalRadius": 29,
-      "stackedId": 46
+      "hexColor": 41,
+      "literalRadius": 7,
+      "stackedId": 46,
+      "literalFontSize": 189
     },
     "frozen": {
-      "important": 764,
-      "hexColor": 114,
-      "literalRadius": 354,
-      "stackedId": 64
+      "important": 741,
+      "hexColor": 113,
+      "literalRadius": 345,
+      "stackedId": 61,
+      "literalFontSize": 559
     }
   },
   "generatedBy": "check-css-debt.mjs --update"

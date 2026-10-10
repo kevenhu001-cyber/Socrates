@@ -53,16 +53,15 @@
     letter-spacing: 0 !important;
   }
 
-  /* Compact add-content popover. */
+  /* Compact add-content popover. Only the row inset lives here now.
+     The width / border / radius / background / shadow !important pins that
+     used to sit in this rule fought the live owner (components/menu.css +
+     polish/overlays.css): they held the desktop card at 220px, borderless
+     and 16px, while the phone card was 236px, hairline and 20px, and every
+     other popover in the app was 12px. Dropping them lets one shape win on
+     both breakpoints. */
   body #composerToolsMenu.composer-tools-menu {
-    width: 220px !important;
-    min-width: 220px !important;
-    max-width: min(220px, calc(100vw - 16px)) !important;
     padding: 6px 0;
-    border: 0 !important;
-    border-radius: 16px !important;
-    background: var(--chatgpt-menu) !important;
-    box-shadow: var(--ui-shadow-popover) !important;
   }
 
   #composerToolsMenu .composer-tools-desktop-items,

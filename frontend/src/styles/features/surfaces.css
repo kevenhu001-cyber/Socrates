@@ -119,7 +119,7 @@
    active pill rather than a boxed segmented control. */
 #appShell .plugin-directory-tabs { display: flex; align-items: center; gap: 8px; margin: 0 0 28px; overflow-x: auto; scrollbar-width: none; }
 #appShell .plugin-directory-tabs::-webkit-scrollbar { display: none; }
-#appShell .plugin-directory-tabs button { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; min-height: 36px; padding: 0 16px; border: 0; border-radius: var(--ui-radius-pill); background: transparent; color: var(--ui-text-secondary); font-size: 14px; white-space: nowrap; }
+#appShell .plugin-directory-tabs button { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; min-height: var(--ui-control-desktop); padding: 0 16px; border: 0; border-radius: var(--ui-radius-pill); background: transparent; color: var(--ui-text-secondary); font-size: 14px; white-space: nowrap; }
 #appShell .plugin-directory-tabs button:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
 #appShell .plugin-directory-tabs button.active { background: var(--ui-bg-raised); color: var(--ui-text-primary); font-weight: var(--ui-font-weight-semibold); }
 #appShell .plugin-directory-tab-count { color: var(--ui-text-tertiary); font-size: 13px; font-weight: var(--ui-font-weight-regular); }
@@ -161,7 +161,7 @@
   display: flex;
   align-items: center;
   flex: 0 0 auto;
-  min-height: 36px;
+  min-height: var(--ui-control-desktop);
   padding: 0 16px;
   border: 0;
   border-radius: var(--ui-radius-pill);
@@ -368,7 +368,7 @@
 /* Labelled Connect / Manage action, matching the reference outlined pill
    buttons. Transparent fill keeps the control legible on the raised card in
    both themes, where a filled surface would step the wrong way. */
-#appShell .plugin-directory-icon-action { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto; min-height: 32px; height: 32px; padding: 0 12px; border: 1px solid var(--ui-border-default); border-radius: var(--ui-radius-pill); background: transparent; color: var(--ui-text-primary); font-size: 13px; font-weight: var(--ui-font-weight-medium); white-space: nowrap; transition: background-color var(--ui-duration-fast) ease, border-color var(--ui-duration-fast) ease; }
+#appShell .plugin-directory-icon-action { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto; /* 36px — the rung every other pill in this directory uses (the tab rail, the Library new pill). It was 32px here and 34px in the desktop block below, so the Connect/Manage action read 2px shorter than the row it sits in. */ min-height: var(--ui-control-sm); height: var(--ui-control-sm); padding: 0 12px; border: 1px solid var(--ui-border-default); border-radius: var(--ui-radius-pill); background: transparent; color: var(--ui-text-primary); font-size: 13px; font-weight: var(--ui-font-weight-medium); white-space: nowrap; transition: background-color var(--ui-duration-fast) ease, border-color var(--ui-duration-fast) ease; }
 #appShell .plugin-directory-icon-action svg { width: 16px; height: 16px; flex: 0 0 16px; }
 #appShell .plugin-directory-icon-action:hover { background: var(--ui-bg-hover); border-color: var(--ui-border-strong); }
 #appShell .plugin-directory-icon-action:disabled { border-color: var(--ui-border-subtle); color: var(--ui-text-disabled); cursor: not-allowed; }
@@ -390,7 +390,7 @@
      Plugin directory rendered a taller search than every other directory.
      Mobile keeps its own 36px density, pinned by polish/mobile-directories.css
      against docs/ref/mobile-reference-2026-10-04.md — do not align the two. */
-  #appShell .plugin-directory-search { flex: 1 1 auto; min-width: 0; min-height: 42px; border-radius: var(--ui-radius-pill); background: var(--ui-bg-surface); }
+  #appShell .plugin-directory-search { flex: 1 1 auto; min-width: 0; min-height: var(--ui-control-search); border-radius: var(--ui-radius-pill); background: var(--ui-bg-surface); }
   #appShell .plugin-directory-search input { min-height: 40px; font-size: 15px; }
   #appShell .plugin-directory-add-btn { width: 44px; height: 44px; border-radius: var(--ui-radius-pill); }
   #appShell .plugin-installed-strip { min-height: 56px; margin-bottom: 22px; }
@@ -419,7 +419,7 @@
   #appShell .plugin-directory-row .connector-icon svg { width: 24px; height: 24px; }
   #appShell .plugin-directory-card-desc { grid-column: 2 / 4; grid-row: 2; font-size: 12px; line-height: 1.4; }
   #appShell .plugin-directory-card-title-row strong { font-size: 15px; font-weight: var(--ui-font-weight-medium); }
-  #appShell .plugin-directory-icon-action { min-height: 34px; height: 34px; border-radius: var(--ui-radius-pill); }
+  #appShell .plugin-directory-icon-action { min-height: var(--ui-control-sm); height: var(--ui-control-sm); border-radius: var(--ui-radius-pill); }
 }
 
 #appShell .workspace-search-field,
@@ -488,10 +488,14 @@
     display: block;
     padding-left: 0;
   }
+  /* Workspace page titles share one size. Library (polish/workspace.css) and
+     Sites (features/surfaces.css:350) already sit at 28px/36px; Projects and
+     Scheduled used to sit a step below at 27px, which read as a rendering
+     accident rather than a hierarchy. */
   #appShell .scheduled-directory .workspace-page-head h1 {
     position: static;
     margin: 0;
-    font-size: 27px;
+    font-size: 28px;
     line-height: 36px;
     z-index: auto;
   }
@@ -509,8 +513,8 @@
     grid-column: 1 / -1;
     grid-row: 2;
     width: 100%;
-    height: 42px;
-    min-height: 42px;
+    height: var(--ui-control-search);
+    min-height: var(--ui-control-search);
     border-radius: var(--ui-radius-pill);
   }
   #appShell .scheduled-filter-tabs { margin: 0 -16px 18px; padding: 0 16px; }

@@ -4,11 +4,13 @@
  *
  * The button size contract lives in styles/tokens.css:
  *
- *   --ui-control-sm: 32px     dense / inline affordances
- *   --ui-control-md: 40px     default (the `.btn` / `.btn-icon` default)
- *   --ui-control-touch: 44px  mobile + primary touch targets
+ *   --ui-control-sm:      32px     dense / inline affordances
+ *   --ui-control-md:      40px     default (the `.btn` / `.btn-icon` default)
+ *   --ui-control-touch:   44px     mobile + primary touch targets
+ *   --ui-control-desktop: 36px     desktop chrome row (topbar, tabs, toolbar)
+ *   --ui-control-search:  42px     workspace search fields and pills
  *
- * Every interactive control should reach for one of those three. When a
+ * Every interactive control should reach for one of those five. When a
  * surface instead writes a literal `height: 38px` on a button, it is off
  * the ladder: it will not match the button beside it, and the drift is
  * invisible until someone screenshots two surfaces side by side.
@@ -35,8 +37,20 @@ const UPDATE = process.argv.includes('--update');
 /* Frozen historical zones — same split as check-css-debt.mjs. */
 const FROZEN_DIRS = new Set(['legacy', 'restore']);
 
-/* The canonical ladder. A literal matching one of these is not debt. */
-const LADDER = new Set([32, 40, 44]);
+/* The canonical ladder. A literal matching one of these is not debt.
+ *
+ * 32/40/44 are the original rungs (tokens.css --ui-control-sm/md/touch).
+ * 36/42 joined them once they were promoted to named tokens, because they are
+ * the density the shipped desktop chrome actually uses:
+ *
+ *   --ui-control-desktop: 36px   topbar switcher / find / share, the directory
+ *                                tab rails, the Library toolbar
+ *   --ui-control-search:  42px   every workspace search field and pill
+ *
+ * Promoting a value into this set is the alternative to growing the baseline.
+ * It keeps `lint:button-sizes` failing on *new* literals while making a
+ * deliberate change a one-line edit in tokens.css. */
+const LADDER = new Set([32, 40, 44, 36, 42]);
 
 /*
  * A selector is an interactive control when ANY of:

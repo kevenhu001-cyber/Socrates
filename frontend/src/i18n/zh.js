@@ -219,7 +219,6 @@ export const zh = {
     "sidebar.nav.exam":"考试",
     "sidebar.nav.incognito":"无痕对话",
     "sidebar.nav.more":"更多",
-    "sidebar.upgrade":"升级 Plus",
     /* PR-A — More popover items */
     "sidebar.more.settings":"API 设置",
     "sidebar.more.skills":"技能与快捷键",

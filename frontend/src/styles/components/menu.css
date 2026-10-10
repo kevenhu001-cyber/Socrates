@@ -19,7 +19,13 @@ body #composerToolsMenu.composer-tools-menu {
   max-height: min(44dvh, 336px);
   overflow-y: auto;
   overscroll-behavior: contain;
-  border-radius: var(--ui-radius-2xl);
+  /* One popover shape for every floating surface: 12px, the value
+     polish/overlays.css documents for menus and popovers. This card was
+     --ui-radius-2xl (20px) here, 16px !important in
+     restore/chatgpt-parity.css on desktop and 20px again in the phone
+     block below — three radii for one menu, none of them the documented
+     one. */
+  border-radius: var(--ui-radius-lg);
   animation: none;
 }
 body #composerToolsMenu.composer-tools-menu::before { display: none; }
@@ -36,7 +42,11 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
   padding: 5px 8px;
   gap: 12px;
   border: 0;
-  border-radius: 12px;
+  /* 8px on every row and every breakpoint. The literal 12px that used to
+     sit here only reached the phone rows (.composer-tools-mobile-item is
+     not in polish/composer.css's selector), so the same menu drew 8px rows
+     on desktop and 12px rows on phones. */
+  border-radius: var(--ui-radius-control);
   background: transparent;
   color: var(--ui-text-primary);
   font-size: 16px;
@@ -96,10 +106,15 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
   .composer-tools-desktop-items { display: block; }
   .composer-tools-mobile-items { display: none; }
   body #composerToolsMenu.composer-tools-menu { width: 252px; min-width: 252px; }
+  /* The footer search is 34px so it shares a row height with the desktop
+     "+" cards above it (polish/composer.css:88-92, also 34px). It used to be
+     38px here while polish/composer.css set 34px on the same selector; polish
+     won by import order, so the 38px never shipped — the popover had two
+     declared heights for one control. */
   #composerToolsMenu .composer-tools-footer-search {
     display: flex;
     align-items: center;
-    min-height: 38px;
+    min-height: 34px;
     margin-top: 6px;
     padding: 4px 10px;
     border-top: 1px solid var(--ui-border-subtle);
@@ -107,6 +122,7 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
   #composerToolsMenu .composer-tools-footer-search input {
     width: 100%;
     min-width: 0;
+    min-height: 30px;
     border: 0;
     outline: 0;
     background: transparent;
@@ -125,7 +141,7 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
     min-width: 236px;
     height: min(48dvh, 234px);
     max-height: min(48dvh, 234px);
-    border-radius: 20px;
+    border-radius: var(--ui-radius-lg);
   }
   [data-mode="dark"] body #composerToolsMenu.composer-tools-menu { background: var(--ui-bg-surface); }
   #composerToolsMenu .composer-tools-item,
@@ -134,7 +150,6 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
     min-height: 44px;
     padding: 4px 8px;
     gap: 12px;
-    border-radius: 12px;
   }
   #composerToolsMenu .composer-tools-icon {
     width: 36px;

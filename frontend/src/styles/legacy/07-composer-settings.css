@@ -160,8 +160,11 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
    covered by the input when the composer becomes tall. */
 .disclaimer{position:absolute;left:50%;bottom:calc(8px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:max-content;max-width:calc(100% - 32px);text-align:center;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));padding:6px 12px 4px;line-height:1.4;pointer-events:none;z-index:0}
 
-/* settings modal */
-.settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
+/* settings modal. The dim comes from --ui-backdrop (40% light / 55% dark)
+   rather than a literal: this sheet loads in the index bundle while the
+   polish owner that also sets it rides a lazy chunk, so a literal here could
+   win by load order and put the dark-mode 55% on a light canvas. */
+.settings-overlay{position:fixed;inset:0;background:var(--ui-backdrop);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
 .settings-overlay.hidden{display:none}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .settings-modal{background:hsl(var(--bg-000));width:90%;max-width:440px;max-height:85vh;overflow-y:auto}
@@ -169,7 +172,7 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 /* Admin modal — system model + embedding provider config. Shares the
    modal-overlay / modal-card / modal-head conventions above; adds the
    two-section form layout and the admin gate error styling. */
-.admin-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
+.admin-modal-overlay{position:fixed;inset:0;background:var(--ui-backdrop);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
 .admin-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;width:90%;max-width:520px;max-height:85vh;overflow-y:auto;box-shadow:var(--ui-shadow-dialog);animation:slideUp .2s var(--ease-out)}
 .admin-body{padding:0 18px 18px;display:flex;flex-direction:column;gap:20px}
 .admin-section{display:flex;flex-direction:column;gap:12px;padding-top:20px;border-top:0.5px solid hsl(var(--border-300)/0.15)}
@@ -243,7 +246,7 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 .provider-list.collapsed{display:none}
 
 /* profile modal */
-.profile-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
+.profile-overlay{position:fixed;inset:0;background:var(--ui-backdrop);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
 .profile-overlay.hidden{display:none}
 .profile-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;width:90%;max-width:360px;max-height:85vh;box-shadow:var(--ui-shadow-dialog);display:flex;flex-direction:column}
 .profile-header{display:flex;flex-direction:column;align-items:center;padding:28px 20px 20px;gap:12px;background:hsl(var(--bg-100))}
@@ -288,7 +291,9 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 [data-theme=socrates][data-mode=dark] .profile-status-badge.yes{background:hsl(145 30% 16%);color:hsl(145 50% 65%);border:0.5px solid hsl(145 40% 35%/0.6)}
 [data-theme=socrates][data-mode=dark] .profile-status-badge.no{background:hsl(0 30% 18%);color:hsl(0 55% 70%);border:0.5px solid hsl(0 40% 38%/0.6)}
 .profile-id-text{font-size:calc(11px * var(--app-font-scale, 1));font-family:var(--font-mono);color:hsl(var(--text-400));word-break:break-all}  
-.confirm-dialog{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;display:flex;align-items:center;justify-content:center;animation:fadeIn .12s}
+/* The confirm scrim used to be a 65% literal — the darkest of every dialog.
+   Converged on the shared token so all dialogs dim by the same amount. */
+.confirm-dialog{position:fixed;inset:0;background:var(--ui-backdrop);z-index:200;display:flex;align-items:center;justify-content:center;animation:fadeIn .12s}
 .confirm-dialog.hidden{display:none}
 .confirm-box{background:hsl(var(--bg-000));width:90%;max-width:320px;padding:24px 20px 16px}
 .confirm-title{font-size:calc(15px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100));margin-bottom:8px;text-align:center}
@@ -308,7 +313,7 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 .stg-toggle-track.on .stg-toggle-knob{left:18px}
 
 /* Usage modal — heatmap */
-.usage-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
+.usage-overlay{position:fixed;inset:0;background:var(--ui-backdrop);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
 .usage-overlay.hidden{display:none}
 .usage-modal{background:hsl(var(--bg-000));width:min(720px,94vw);max-height:88vh;display:flex;flex-direction:column}
 .usage-header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:0.5px solid hsl(var(--border-300)/0.08);flex-shrink:0}

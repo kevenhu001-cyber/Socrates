@@ -222,21 +222,6 @@ test('phone drawer keeps nav glyphs aligned and account menu in view', async ({ 
   await page.screenshot({ path: 'test-results/socrates-reference-mobile-account-390x769.png' });
 });
 
-test('mobile free-tier upgrade pill stays in the top bar at 390px', async ({ page }) => {
-  // Regression guard for the WIP that hid the pill below 560px. The
-  // bridge defaults `tier: 'diophantus'` so this test stays effective
-  // without an explicit user override, but we set it for clarity.
-  await mockAuthedApp(page, { user: { tier: 'diophantus' } });
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.evaluate(() => { document.documentElement.dataset.userTier = 'diophantus'; });
-  await gotoAndSettle(page, '/');
-  await waitForAppShell(page);
-  const pill = page.locator('#mobileUpgradeBtn');
-  await expect(pill).toBeVisible();
-  await expect(pill).toHaveAttribute('href', /pricing/);
-  await expect(pill).toHaveAttribute('aria-label', /\S+/);
-});
-
 test('Admin console is a standalone /admin page with no sidebar entry', async ({ page }) => {
   // The operator console is deliberately not advertised in the nav —
   // it is reached only through the standalone route.

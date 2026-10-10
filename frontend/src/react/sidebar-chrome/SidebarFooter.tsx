@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { ChevronRight, CircleUserRound, LifeBuoy, LogOut, Settings, Sparkles, SlidersHorizontal } from 'lucide-react';
 import { useUserInfo } from './sidebarChrome.bridge';
-import { getCurrentLang, getLegacyActions, i18n } from '../legacy/gateway.ts';
+import { getCurrentLang, getLegacyActions } from '../legacy/gateway.ts';
 import { AnchoredMenu } from '../menu/AnchoredMenu';
 
 export function SidebarFooter() {
@@ -25,7 +25,6 @@ export function SidebarFooter() {
       aria-expanded={open} title={user.displayName} aria-label={[user.displayName, tier].filter(Boolean).join(' · ')} onClick={() => setOpen(!open)}>
       {identity}
     </button>
-    {free && <a className="sidebar-upgrade-pill" href="https://topodrive.top/pricing">{i18n('sidebar.upgrade', 'Upgrade')}</a>}
     {open && <AnchoredMenu anchor={anchor} onClose={close} above className="sidebar-account-menu">
       <button type="button" role="menuitem" className="account-menu-identity" onClick={() => { close(); getLegacyActions().navigation.openProfile(); }}>{identity}<ChevronRight /></button>
       <hr />

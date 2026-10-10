@@ -14,27 +14,34 @@
 /* Voice recording surface — the input becomes one calm, full-width audio
    strip while the browser captures speech. The original editor, tool row and
    send controls stay mounted for restoration, but are hidden as a group so
-   the composer never jumps to a different page-level position. */
+   the composer never jumps to a different page-level position.
+
+   Every colour here resolves through the --ui-* palette, so the strip is the
+   same ink as the composer it sits in and follows a theme change or a custom
+   page background. It used to be a hardcoded monochrome pair (hsl(0 0% 10%)
+   on light, hsl(0 0% 92%) on dark) with a full [data-mode="dark"] override
+   block to invert it — which also made the stop circle a slightly different
+   near-white/near-black from the token-driven send button beside it. Height
+   lives in polish/composer.css. */
 #appShell .voice-recording-bar {
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
   min-width: 0;
-  height: 40px;
-  color: hsl(0 0% 10%);
+  color: var(--ui-text-primary);
 }
 #appShell .voice-recording-indicator {
   width: 9px;
   height: 9px;
   flex: 0 0 9px;
   border-radius: 50%;
-  background: hsl(0 0% 10%);
-  box-shadow: 0 0 0 4px hsl(0 0% 0% / .1);
+  background: currentColor;
+  box-shadow: 0 0 0 4px var(--ui-bg-hover-ghost);
   animation: voiceRecordingPulse var(--ui-duration-pulse, 1.2s) ease-in-out infinite;
 }
 @keyframes voiceRecordingPulse {
-  50% { opacity: 0.6; box-shadow: 0 0 0 7px hsl(0 0% 0% / 0); }
+  50% { opacity: 0.6; box-shadow: 0 0 0 7px transparent; }
 }
 #appShell .voice-recording-copy {
   display: flex;
@@ -48,13 +55,13 @@
 }
 #appShell .voice-recording-label {
   overflow: hidden;
-  color: hsl(0 0% 10%);
+  color: inherit;
   font: 600 13px/18px var(--font-sans);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 #appShell .voice-recording-timer {
-  color: hsl(0 0% 42%);
+  color: var(--ui-text-muted);
   font: 500 11px/15px var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
@@ -62,7 +69,7 @@
   display: none;
   overflow: hidden;
   max-width: 180px;
-  color: hsl(0 0% 42%);
+  color: var(--ui-text-muted);
   font: 400 11px/15px var(--font-sans);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -84,9 +91,13 @@
   height: var(--voice-bar-height, 4px);
   flex: 1 1 2px;
   border-radius: var(--ui-radius-pill);
-  background: hsl(0 0% 10% / .86);
+  background: currentColor;
+  opacity: .86;
   transition: height .08s linear, opacity .12s ease;
 }
+/* Confirm — the same inverted circle as the composer's send button
+   (parity/composer-unified.css): --ui-text-primary fill, --ui-bg-page ink,
+   no border, paint-only hover. */
 #appShell .voice-recording-stop {
   display: inline-flex;
   align-items: center;
@@ -97,41 +108,14 @@
   min-height: 36px;
   flex: 0 0 36px;
   padding: 0;
-  border: 1px solid hsl(0 0% 0% / .12);
+  border: 0;
   border-radius: 50%;
-  background: hsl(0 0% 10%);
-  color: #fff;
+  background: var(--ui-text-primary);
+  color: var(--ui-bg-page);
   cursor: pointer;
-  transition: background-color .15s var(--ease-out), color .15s var(--ease-out), opacity .15s var(--ease-out);
+  transition: background-color .15s var(--ui-ease-out), color .15s var(--ui-ease-out), opacity .15s var(--ui-ease-out);
 }
-#appShell .voice-recording-stop:hover,
-#appShell .voice-recording-stop:focus-visible { background: hsl(0 0% 24%); color: #fff; }
-#appShell .voice-recording-stop:focus-visible { outline: 2px solid hsl(0 0% 0% / .58); outline-offset: 2px; }
 #appShell .voice-recording-stop svg { display: block; width: 16px; height: 16px; }
-
-/* Neutral recording surface in dark mode: stay black with an inverted
-   monochrome control set instead of leaking the light-mode white surface
-   into the dark workbench. */
-[data-mode="dark"] #appShell .voice-recording-bar { color: hsl(0 0% 92%); }
-[data-mode="dark"] #appShell .voice-recording-indicator {
-  background: hsl(0 0% 92%);
-  box-shadow: 0 0 0 4px hsl(0 0% 100% / .1);
-  animation-name: voiceRecordingPulseDark;
-}
-@keyframes voiceRecordingPulseDark {
-  50% { opacity: 0.6; box-shadow: 0 0 0 7px hsl(0 0% 100% / 0); }
-}
-[data-mode="dark"] #appShell .voice-recording-label { color: hsl(0 0% 92%); }
-[data-mode="dark"] #appShell .voice-recording-timer { color: hsl(0 0% 100% / .54); }
-[data-mode="dark"] #appShell .voice-recording-wave > span { background: hsl(0 0% 92% / .88); }
-[data-mode="dark"] #appShell .voice-recording-stop {
-  border-color: hsl(0 0% 100% / .12);
-  background: hsl(0 0% 92%);
-  color: hsl(0 0% 10%);
-}
-[data-mode="dark"] #appShell .voice-recording-stop:hover,
-[data-mode="dark"] #appShell .voice-recording-stop:focus-visible { background: #fff; color: #000; }
-[data-mode="dark"] #appShell .voice-recording-stop:focus-visible { outline-color: hsl(0 0% 100% / .7); }
 
 @media (prefers-reduced-motion: reduce) {
   #appShell .voice-recording-indicator { animation: none; }
