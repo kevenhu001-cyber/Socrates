@@ -34,6 +34,8 @@ export interface ToolRunView {
   mono: boolean;
   /** Trailing dim facts: result counts, test summary, duration. */
   meta: string[];
+  /** Hosts this call read, rendered as dim provenance chips. */
+  hosts?: string[];
   sections: DetailSection[];
   tech: TechSection[];
   /** Present when the row is retryable — drives the Retry button. */

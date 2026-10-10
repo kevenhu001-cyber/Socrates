@@ -290,6 +290,12 @@
 /* P_thinking-unified — ONE live-status language from the first request to
    the settled line: minimalist ChatGPT-style 14px indicator + flat label,
    identical in waiting placeholder, reasoning pill, and in-bubble summary. */
+/* P_wave-status — the box is now a wave host, not a ring. It keeps its
+   14px slot and its class name (thinking-panel.spec and
+   tool-status-visual.spec locate the indicator by it) but the ring, the
+   ::after dot and their two keyframes are gone: a 14px arc that tints down
+   to 40% opacity — which is how a live status is styled — simply vanishes,
+   while a travelling wave stays legible at that opacity. */
 .thinking-spinner{
   display:inline-flex;
   align-items:center;
@@ -298,25 +304,8 @@
   width:14px;
   height:14px;
   flex:0 0 14px;
-  border-radius:50%;
-  box-sizing:border-box;
-  border:1.5px solid hsl(var(--text-400)/0.18);
-  border-top-color:hsl(var(--text-200));
-  border-right-color:hsl(var(--text-200)/0.65);
-  animation:ringSpin .9s cubic-bezier(.4,0,.2,1) infinite;
+  color:hsl(var(--text-300));
   vertical-align:middle;
-}
-.thinking-spinner::after{
-  content:"";
-  position:absolute;
-  inset:2.5px;
-  border-radius:50%;
-  background:hsl(var(--text-300)/0.35);
-  animation:thinkingDotPulse 1.8s ease-in-out infinite;
-}
-@keyframes thinkingDotPulse{
-  0%,100%{transform:scale(0.6);opacity:0.3}
-  50%{transform:scale(0.95);opacity:0.85}
 }
 .thinking-status[data-state="done"] .thinking-spinner,
 .thinking-status[data-state="error"] .thinking-spinner,

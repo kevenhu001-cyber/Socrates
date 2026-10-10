@@ -770,16 +770,6 @@
 /*  Workspace Loading & Skeletons                                     */
 /* ------------------------------------------------------------------ */
 
-@keyframes workspaceSpin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@keyframes workspaceBreathe {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
-}
-
 @keyframes workspaceSkeletonPulse {
   0%, 100% { opacity: 0.35; }
   50% { opacity: 0.75; }
@@ -805,31 +795,25 @@
   border: 1px solid var(--ui-border-subtle);
 }
 
+/* P_wave-page — the box is sized for the 44px wave, and the ring class name
+   survives only as the box the wave sits in (the concentric ring + dot that
+   used to occupy it are gone: two objects spinning at two tempos beside
+   each other read as two different things loading, and only one was). */
 #appShell .workspace-loading-spinner-box {
   position: relative;
-  width: 32px;
-  height: 32px;
-  flex: 0 0 32px;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
   display: grid;
   place-items: center;
+  color: var(--ui-text-primary);
 }
 
 #appShell .workspace-loading-spinner-ring {
-  width: 30px;
-  height: 30px;
-  border-radius: var(--ui-radius-full);
-  border: 2px solid var(--ui-border-subtle);
-  border-top-color: var(--ui-text-primary);
-  animation: workspaceSpin var(--ui-duration-spin, 0.9s) cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
-}
-
-#appShell .workspace-loading-spinner-dot {
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  border-radius: var(--ui-radius-full);
-  background: var(--ui-text-primary);
-  animation: workspaceBreathe var(--ui-duration-pulse-slow, 1.6s) ease-in-out infinite;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
 }
 
 #appShell .workspace-loading-banner-text {

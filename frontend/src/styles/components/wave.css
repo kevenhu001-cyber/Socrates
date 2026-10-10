@@ -1,0 +1,100 @@
+/*
+ * components/wave.css — the left-to-right wave loader.
+ *
+ * One shape, three sizes: a 14px inline wave for a tool row, a 20px wave for
+ * the turn status line, and a 44px wave for a full-page loading state. Every
+ * size is the same element with a modifier, so a wave never needs its own
+ * markup or its own keyframes — only its geometry changes.
+ *
+ * Why a wave and not a ring: a ring is a single rotating object, so it reads
+ * as "something is spinning somewhere". A travelling band reads as "this row
+ * is working", which is what an inline tool row actually means. It also
+ * survives being tinted down to the same opacity as the surrounding prose —
+ * a spinning ring at 40% opacity just disappears.
+ *
+ * Contract:
+ *   - Geometry only. Colour comes from `currentColor` so a wave inherits the
+ *     row's state colour (running / danger / accent) with no extra rules.
+ *   - One keyframe for every bar. The stagger is data (`--ui-wave-delay`
+ *     set per bar), never a rule per bar.
+ *   - The wave is decorative: the markup marks it aria-hidden and it is
+ *     always paired with a text label, so it never announces anything.
+ */
+
+.wave {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-wave-bar-gap);
+  height: var(--ui-wave-bar-height);
+  color: inherit;
+  /* Bars are the only paint; the wave keeps a fixed footprint so the row
+     cannot reflow when it appears or disappears. */
+  flex: 0 0 auto;
+  vertical-align: middle;
+}
+
+.wave-bar {
+  width: var(--ui-wave-bar-width);
+  height: 100%;
+  border-radius: var(--ui-radius-pill);
+  background: currentColor;
+  transform-origin: center;
+  animation: wave-bar-swell var(--ui-wave-duration) var(--ui-ease-standard) infinite;
+  animation-delay: var(--ui-wave-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+@keyframes wave-bar-swell {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scaleY(0.42);
+  }
+  /* The lit column: opacity climbs as the band passes, then falls again.
+     Only scaleY animates, so a bar never changes width and the row cannot
+     reflow mid-animation. */
+  18%,
+  82% {
+    opacity: 0.28;
+    transform: scaleY(0.55);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+/* ── Sizes ─────────────────────────────────────────────────────────────
+   A wave's size is its footprint, not its font: the inline variant has to
+   sit inside the 17px tool-icon slot, and the page variant has to be the
+   loudest thing on an otherwise empty screen. Both reuse one keyframe. */
+
+.wave-inline {
+  --ui-wave-bar-width: 2.5px;
+  --ui-wave-bar-gap: 2.5px;
+  --ui-wave-bar-height: 14px;
+}
+
+.wave-md {
+  --ui-wave-bar-width: 3px;
+  --ui-wave-bar-gap: 3px;
+  --ui-wave-bar-height: 20px;
+}
+
+.wave-lg {
+  --ui-wave-bar-width: 5px;
+  --ui-wave-bar-gap: 6px;
+  --ui-wave-bar-height: 44px;
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────
+   The wave is the app's loudest progress cue, so it must not be the one
+   cue that survives a reduced-motion preference. It stops travelling and
+   holds a static bar: still recognisably "working", zero motion. */
+@media (prefers-reduced-motion: reduce) {
+  .wave-bar {
+    animation: none;
+    opacity: 0.5;
+    transform: scaleY(0.8);
+  }
+}

@@ -229,6 +229,10 @@ export function toolRunView(call: ToolCallRecord): ToolRunView {
     label: label.text,
     mono: !!label.mono,
     meta,
+    /* Only a settled row names its sources: a running row has nothing
+       confirmed yet, and a half-read host list would name a source the
+       answer may end up discarding. */
+    hosts: state === 'running' ? undefined : label.hosts,
     sections: [],
     tech: [],
   };

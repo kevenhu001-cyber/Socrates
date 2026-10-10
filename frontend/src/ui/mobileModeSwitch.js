@@ -47,6 +47,34 @@ export function syncMobileModeSwitch() {
   document.querySelectorAll("#mobileModeMenu .mobile-mode-item").forEach(function (item) {
     item.classList.toggle("active", item.getAttribute("data-mode") === mode);
   });
+  syncTopModeSwitch(mode);
+}
+
+/* P_mode-segment-top — the desktop header's segmented control. It reads the
+   same `appMode` the dropdown does, so the two can never disagree: both are
+   written from here, and both call the same toggleAppMode. The active class
+   and `data-active` are kept in sync because the class styles the label and
+   the attribute positions the sliding thumb. */
+function syncTopModeSwitch(mode) {
+  var group = document.getElementById("topModeSwitch");
+  if (!group) return;
+  group.setAttribute("data-active", mode);
+  var options = group.querySelectorAll(".top-mode-switch-option");
+  for (var i = 0; i < options.length; i += 1) {
+    var active = options[i].getAttribute("data-mode") === mode;
+    options[i].classList.toggle("is-active", active);
+    options[i].setAttribute("aria-selected", active ? "true" : "false");
+    /* Roving tabindex: a tablist is one tab stop, and arrow keys move
+       between its tabs. Without this, Tab walks both buttons separately
+       and the control is two stops where it should be one. */
+    options[i].setAttribute("tabindex", active ? "0" : "-1");
+  }
+}
+
+/** Select a mode from the header pill (or an arrow key on it). */
+function selectTopMode(mode) {
+  if (mode === _currentMode()) return;
+  selectAppMode(mode);
 }
 
 export function toggleMobileModeMenu() {
@@ -127,15 +155,30 @@ export function syncConversationActive() {
 }
 
 function _applyModeSwitchVisibility(hidden) {
-  /* #mobileMode is the only mode switch left in the shell, so this is a
-     direct lookup rather than a selector LIST (a list has no id fast path in
-     Blink and walks the whole document — tens of thousands of nodes once a
-     long transcript is mounted). */
+  /* Both mode controls are hidden for the duration of a live conversation:
+     the phone dropdown (#mobileMode) and the desktop header pill
+     (#topModeSwitch). They read the same appMode and sit on opposite
+     viewports, so hiding one without the other would leave a control the
+     reader can click that can only destroy the conversation in progress.
+
+     Each is a direct id lookup rather than a selector LIST (a list has no id
+     fast path in Blink and walks the whole document — tens of thousands of
+     nodes once a long transcript is mounted). */
   var el = document.getElementById("mobileMode");
-  if (!el) return;
-  try {
-    el.style.setProperty("display", hidden ? "none" : "", "important");
-  } catch (_) {}
+  if (el) {
+    try {
+      el.style.setProperty("display", hidden ? "none" : "", "important");
+    } catch (_) {}
+  }
+  var top = document.getElementById("topModeSwitch");
+  if (top) {
+    try {
+      /* The header pill is normally laid out by parity/topbar.css, which also
+         hides it on phones. An inline `display:none !important` beats that
+         media query without a second owner for the same rule. */
+      top.style.setProperty("display", hidden ? "none" : "", "important");
+    } catch (_) {}
+  }
 }
 
 /* P_hide-mode-switch-in-conversation — wire a MutationObserver on
@@ -170,6 +213,35 @@ if (typeof document !== "undefined") {
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") _setOpen(false);
   });
+
+  /* P_mode-segment-top — the header pill is a tablist, so it gets the two
+     behaviours a tablist owes its users: click, and arrow-key traversal.
+     Handled by delegation on the group so the markup can re-render its
+     buttons without re-binding. */
+  var topSwitch = document.getElementById("topModeSwitch");
+  if (topSwitch) {
+    topSwitch.addEventListener("click", function (e) {
+      var option = e.target.closest(".top-mode-switch-option");
+      if (!option) return;
+      selectTopMode(option.getAttribute("data-mode"));
+    });
+    topSwitch.addEventListener("keydown", function (e) {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      var options = Array.prototype.slice.call(topSwitch.querySelectorAll(".top-mode-switch-option"));
+      var index = options.findIndex(function (node) {
+        return node.getAttribute("data-mode") === _currentMode();
+      });
+      if (index < 0) return;
+      /* Wrap around: a two-position control has nowhere to go, so reversing
+         direction keeps both arrows meaningful instead of dead-ending. */
+      var next = (index + (e.key === "ArrowRight" ? 1 : options.length - 1)) % options.length;
+      var target = options[next];
+      if (target.focus) target.focus();
+      selectTopMode(target.getAttribute("data-mode"));
+    });
+  }
+
   window.addEventListener("DOMContentLoaded", function () {
     try { syncMobileModeSwitch(); } catch (_) {}
     try { syncConversationActive(); } catch (_) {}

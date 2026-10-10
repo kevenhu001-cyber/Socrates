@@ -36,6 +36,12 @@ export interface RunLabel {
   mono?: boolean;
   /** Trailing facts (result counts, test summary) rendered dim after the label. */
   meta?: string[];
+  /**
+   * Hosts this call read, rendered as dim chips between the label and the
+   * meta. A row that says "已搜索「x」" tells you what was asked; the chips
+   * tell you where the answer came from, which is the part worth checking.
+   */
+  hosts?: string[];
 }
 
 export function translate(key: string, fallback: string): string {
@@ -120,6 +126,37 @@ export function hostOf(url: string): string {
 export function resultCount(call: ToolCallLike | null | undefined): number {
   if (!call) return 0;
   return Array.isArray(call.results) ? call.results.length : 0;
+}
+
+/**
+ * Distinct hosts a search actually read, in first-seen order.
+ *
+ * The row's headline names the query ("已搜索「x」"), which says what was
+ * asked but not where the answer came from — and for a sourced answer the
+ * provenance is the part a reader wants to check. Search results carry their
+ * source host, so the row can name them without asking the server for
+ * anything it does not already send.
+ *
+ * Counted by host, not by result: two results from one domain are one site
+ * the answer leaned on, and saying "已搜索 2 个网站" when only one domain was
+ * read would overstate the work.
+ */
+export function resultHosts(call: ToolCallLike | null | undefined): string[] {
+  if (!call || !Array.isArray(call.results)) return [];
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const row of call.results) {
+    if (!row || typeof row !== 'object') continue;
+    const record = row as Record<string, unknown>;
+    const host = hostOf(String(record.url || record.link || record.href || ''));
+    if (!host || seen.has(host)) continue;
+    seen.add(host);
+    out.push(host);
+    /* One or two hosts is a fact, five is a list — beyond that the row is
+       narrating, and the sources section already holds the full set. */
+    if (out.length >= 2) break;
+  }
+  return out;
 }
 
 const IMAGE_EXTENSIONS = /\.(png|jpe?g|gif|webp|svg|bmp|ico)$/i;
@@ -304,12 +341,13 @@ function doneLabel(call: ToolCallLike): RunLabel {
     const n = resultCount(call);
     const q = queryOf(call.input);
     if (n > 0) meta.push(n === 1 ? translate('tool.nSourceOne', '1 source') : tf('tool.nSources', '{n} sources', { n }));
-    if (q) return { text: tf('tool.searchedFor', 'Searched for “{query}”', { query: clip(q) }), meta };
+    if (q) return { text: tf('tool.searchedFor', 'Searched for “{query}”', { query: clip(q) }), meta, hosts: resultHosts(call) };
     return {
       text: n > 0
         ? tf('tool.searchDone', 'Found {n} web results', { n })
         : translate('tool.searchEmpty', 'No web results found'),
       meta,
+      hosts: resultHosts(call),
     };
   }
   if (name === 'web_fetch' || name === 'WebFetch') {

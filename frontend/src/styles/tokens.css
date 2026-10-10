@@ -119,6 +119,20 @@
   --ui-duration-pulse-slow: 1600ms;
   --ui-duration-spin: 900ms;
 
+  /* Wave loader (styles/components/wave.css + react/wave/Wave.tsx).
+     A left-to-right band of bars whose lit column travels across the row and
+     wraps, so "work is happening" reads as motion rather than as a frozen
+     skeleton. The cadence sits on the pulse lane (not the faster spin lane)
+     so a wave never competes with the stream cursor for the same tempo. */
+  --ui-wave-duration: 1400ms;
+  --ui-wave-bar-count: 5;
+  --ui-wave-bar-width: 3px;
+  --ui-wave-bar-gap: 3px;
+  /* Height of the tallest bar; shorter bars scale off this. */
+  --ui-wave-bar-height: 14px;
+  /* Lit-column keyframe: dim → mid → lit → mid → dim. */
+  --ui-wave-step: 0%;
+
   /* Press feedback (styles/polish/press.css + ui/pressFeedback.js). Every
      control keeps fixed geometry and acknowledges a press through paint
      only; compact icon controls dim slightly further than wide buttons so

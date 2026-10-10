@@ -13,6 +13,103 @@
 
 #appShell #topModelSwitcher { display: none; }
 
+/* ── Centered mode switch ────────────────────────────────────────────────
+   P_mode-segment-top — a two-position pill centered in the header track,
+   matching the reference's 聊天/工作 control. The thumb is a single element
+   that slides between the two positions rather than a per-option background:
+   two independently-tinted buttons cannot animate the transition between
+   them, so the control snaps instead of sliding.
+
+   The bar is a three-part flex row (left · center · right). The control is
+   absolutely centered rather than a third flex child: the two groups either
+   side are variable-width (the left one carries the model switcher, whose
+   label changes with the active model), so a centered flex child would sit
+   wherever the leftovers put it. It is hidden on phones — #mobileMode is the
+   phone equivalent and two mode controls on one screen would be the same
+   answer twice — and hidden once a conversation is running, because picking
+   a mode mid-answer can only destroy the answer in progress. That last rule
+   is applied inline from _applyModeSwitchVisibility() so it cannot lose a
+   specificity fight with the workspace/exam/admin chrome. */
+#appShell .top-mode-switch {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 2px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-chip);
+  isolation: isolate;
+}
+
+#appShell .top-mode-switch-thumb {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-segment-active);
+  box-shadow: var(--ui-shadow-menu);
+  transform: translateX(0);
+  transition: transform var(--ui-duration-normal) var(--ui-ease-out);
+  z-index: -1;
+}
+/* The thumb tracks the selected option rather than the other way round: it
+   slides one option-width to the right. Driven by a class, not a CSS
+   variable, so the two positions can differ if the labels ever do. */
+#appShell .top-mode-switch[data-active="tutor"] .top-mode-switch-thumb {
+  transform: translateX(100%);
+}
+
+#appShell .top-mode-switch-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* The 36px desktop density rung — the same step as the model switcher
+     and the library toolbar, not the 40px mobile rung. */
+  height: var(--ui-control-desktop);
+  min-width: 72px;
+  margin: 0;
+  padding: 0 var(--ui-space-md);
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: transparent;
+  color: var(--ui-text-secondary);
+  font: inherit;
+  font-size: var(--ui-text-ui);
+  font-weight: 500;
+  line-height: var(--ui-text-ui-line);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--ui-duration-hover) ease;
+}
+#appShell .top-mode-switch-option:hover { color: var(--ui-text-primary); }
+#appShell .top-mode-switch-option.is-active { color: var(--ui-text-primary); }
+#appShell .top-mode-switch-option:focus-visible {
+  outline: 2px solid var(--ui-focus-ring);
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  /* The phone drawer owns the mode switch (#mobileMode). */
+  #appShell .top-mode-switch { display: none; }
+}
+
+/* P_mode-segment-top — the chat header owns this control, and the workspace /
+   exam / admin views own their own. Those views already hide #mobileMode in
+   legacy/06-chat-transcript.css; the pill needs the same treatment or it
+   floats over a Plugins or Library page, which has no session mode to
+   switch. No !important: the body:is() prefix plus the #appShell id already
+   outranks the bare `#appShell .top-mode-switch` display above it, and the
+   chat runtime never toggles a .hidden class on this element. */
+body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-switch {
+  display: none;
+}
+
 @media (max-width: 768px) {
   body[data-conversation-active="true"] #appShell .top-bar-left {
     flex: 1 1 0 !important;

@@ -590,6 +590,19 @@
            the element stayed empty and hidden since 2026-09. -->
       <span class="exam-title-bar hidden" id="examTitleBar" data-exam-only="true"></span>
     </div>
+    <!-- P_mode-segment-top — the centered 聊天/辅导 segmented control.
+         chatgpt.com puts a two-position mode switch in the middle of the
+         header; this is the same control for Socrates' two session modes.
+         It is a tablist (two mutually exclusive views of the same surface),
+         not navigation, so it lives outside .top-bar-left — the bar is a
+         three-part flex row and the control centers in its own track.
+         Selecting a mode mid-conversation asks for confirmation first
+         (app/lifecycle/mode.js), which is why it is a button per mode. -->
+    <div class="top-mode-switch" id="topModeSwitch" role="tablist" data-i18n-aria="chrome.sessionMode" aria-label="Session mode">
+      <span class="top-mode-switch-thumb" id="topModeSwitchThumb" aria-hidden="true"></span>
+      <button type="button" class="top-mode-switch-option is-active" id="topModeChat" role="tab" aria-selected="true" data-mode="chat" data-i18n-key="tutor.modeChat">聊天</button>
+      <button type="button" class="top-mode-switch-option" id="topModeTutor" role="tab" aria-selected="false" data-mode="tutor" data-i18n-key="tutor.modeTutor">辅导</button>
+    </div>
     <div class="top-bar-right">
       <!-- Mobile top-right control (reference capsule): a single circular
            "new chat" button. Incognito moved into the sidebar 更多 popover

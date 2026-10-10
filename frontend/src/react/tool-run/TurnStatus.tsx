@@ -15,6 +15,7 @@
  */
 import { getLegacyActions, i18n } from '../legacy/gateway.ts';
 import { toolIcon } from '../../ui/icons/toolIcons.js';
+import { Wave } from '../wave/Wave.js';
 import type { LiveTurnStatus } from '../types/domain';
 
 export interface TurnStatusProps {
@@ -40,11 +41,17 @@ function panelKeyHandler(messageId: string) {
   };
 }
 
-/** The shared live-status icon: one quiet 14px arc (P_thinking-unified).
+/** The shared live-status icon: the wave (P_wave-status).
  *  The waiting line, the reasoning pill and the in-bubble "Thinking"
- *  summary all use it, so nothing re-themes when the first token lands. */
+ *  summary all use it, so nothing re-themes when the first token lands.
+ *  `.thinking-spinner` stays on the box because tool-status-visual.spec
+ *  and thinking-panel.spec both locate the indicator by that name. */
 function ThinkingSpinner() {
-  return <span className="thinking-spinner" aria-hidden="true" />;
+  return (
+    <span className="thinking-spinner" aria-hidden="true">
+      <Wave size="inline" count={4} />
+    </span>
+  );
 }
 
 function StatusLine({ status, messageId }: TurnStatusProps) {

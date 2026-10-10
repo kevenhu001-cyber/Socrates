@@ -194,6 +194,32 @@
   color:hsl(var(--text-500));
   font:11px/1.3 var(--font-mono);
 }
+/* P_tool-hosts — provenance chips. A settled search row names the domains it
+   actually read, between the label and the right-aligned meta. Two hosts
+   maximum (resultHosts caps it); they wrap under the label rather than
+   truncating it, because a clipped "www.stats.go…" is worse than no host
+   at all — and the full source list is one click away in the detail. */
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-hosts{
+  display:flex;
+  flex:0 1 auto;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:4px;
+  min-width:0;
+  margin-left:2px;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-host{
+  max-width:22ch;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  padding:0 5px;
+  border-radius:var(--ui-radius-xs, 4px);
+  background:var(--ui-bg-chip, hsl(var(--bg-200)));
+  color:var(--tool-activity-row);
+  font-size:var(--ui-font-size-xxs);
+  line-height:16px;
+}
 /* P_tool-chevron-single — this rule used to draw a CSS border triangle
    (border-width:0 1.4px 1.4px 0 on a 9×9 box, rotate(45deg)) INSIDE the
    same span that already carries the chevron SVG, and it never hid that

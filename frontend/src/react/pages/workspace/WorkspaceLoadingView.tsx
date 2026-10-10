@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { Wave } from '../../wave/Wave.js';
+
 export interface WorkspaceLoadingViewProps {
   page: string;
 }
@@ -20,11 +22,20 @@ export function WorkspaceLoadingView({ page }: WorkspaceLoadingViewProps) {
 
   return (
     <div className={`workspace-surface workspace-loading-surface workspace-loading-${page}`} aria-busy="true" aria-live="polite">
-      {/* Central OLED Loading Indicator */}
+      {/* P_wave-page — the page loader is the one loading state big enough to
+          carry a real animation, so it gets the travelling wave. It replaced a
+          concentric ring + dot: two objects spinning at two tempos beside each
+          other, which read as two different things loading. The wave is a
+          single left-to-right band, matching the inline wave on a tool row so
+          "loading" looks identical at every scale. */}
       <div className="workspace-loading-banner">
         <div className="workspace-loading-spinner-box">
-          <div className="workspace-loading-spinner-ring" />
-          <div className="workspace-loading-spinner-dot" />
+          {/* The `workspace-loading-spinner-ring` class stays on the box: it
+              is the loading-state hook chatgpt-oled-replicas.spec asserts, and
+              a 44px wave is still "a spinner is showing" to that contract. */}
+          <div className="workspace-loading-spinner-ring">
+            <Wave size="lg" count={5} />
+          </div>
         </div>
         <div className="workspace-loading-banner-text">
           <strong>{title}</strong>
