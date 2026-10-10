@@ -445,6 +445,71 @@ export function fixHeadingMarkers(s: string): string {
   return lines.join('\n');
 }
 
+/* Weak models frequently emit bold the way Chinese IMEs type it:
+    (`＊＊标题＊＊`, `＿＿标题＿＿`) or with a stray ASCII space just
+    inside the markers (`** 标题**`, `**标题 **`, `__ 标题 __`).
+    CommonMark parses none of those — the run leaks into the answer as
+    literal `**` / `＿＿`, which reads as "加粗没有被渲染" on phrases
+    like `**基尔霍夫电流定律（KCL）**`. Normalize the fullwidth runs to
+    ASCII and trim the inner spaces so marked sees a valid emphasis
+    pair. Fenced code and `inline code` are skipped so shell globs and
+    `**` samples never change; only CLOSED pairs are touched, so a live
+    tail with an unclosed `**` keeps waiting for its closer instead of
+    flashing bold for one frame. Idempotent, so it is safe to run on
+    every streaming frame. Single fullwidth `＊` (e.g. `2＊3` typed as
+    multiplication) is left alone — only runs of 2+ can be bold. */
+export function fixEmphasisMarkers(s: string): string {
+  const stash: string[] = [];
+  const keep = (m: string): string => {
+    const id = stash.length;
+    stash.push(m);
+    return '\u0001EM' + id + '\u0001';
+  };
+  const lines = String(s ?? '').replace(/`[^`\n]+`/g, keep).split('\n');
+  let inFence = false;
+  let fenceChar = '';
+  let inMath = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const fence = line.match(/^[ \t]{0,3}(`{3,}|~{3,})/);
+    if (fence) {
+      const ch = fence[1].charAt(0);
+      if (!inFence) { inFence = true; fenceChar = ch; }
+      else if (ch === fenceChar) { inFence = false; fenceChar = ''; }
+      continue;
+    }
+    if (inFence) continue;
+    /* Same display-math tracking as fixHeadingMarkers: only lines that
+       START inside the region are skipped. */
+    const dollarRun = (line.match(/\$\$/g) || []).length;
+    const bracketDelta =
+      (line.match(/\\\[/g) || []).length - (line.match(/\\\]/g) || []).length;
+    const wasMath = inMath;
+    if (dollarRun % 2 === 1 || bracketDelta !== 0) inMath = !inMath;
+    if (wasMath) continue;
+
+    let out = line;
+    out = out.replace(/＊{2,}/g, (m) => '*'.repeat(m.length));
+    out = out.replace(/＿{2,}/g, (m) => '_'.repeat(m.length));
+    /* No lookbehind (older WebViews lack it): the (^|[^*]) prefix keeps
+       `***` triples out and is re-emitted verbatim. */
+    out = out.replace(/(^|[^*])\*\*(?!\*)([^*\n]*?\S[^*\n]*?)\*\*(?!\*)/g,
+      (m, pre: string, inner: string) => {
+        const trimmed = inner.replace(/^[ \t]+/, '').replace(/[ \t]+$/, '');
+        if (!trimmed || trimmed === inner) return m;
+        return pre + '**' + trimmed + '**';
+      });
+    out = out.replace(/(^|[^_])__(?!_)([^_\n]*?\S[^_\n]*?)__(?!_)/g,
+      (m, pre: string, inner: string) => {
+        const trimmed = inner.replace(/^[ \t]+/, '').replace(/[ \t]+$/, '');
+        if (!trimmed || trimmed === inner) return m;
+        return pre + '__' + trimmed + '__';
+      });
+    lines[i] = out;
+  }
+  return lines.join('\n').replace(/\u0001EM(\d+)\u0001/g, (_m, id: string) => stash[Number(id)]);
+}
+
 /* Detect and fix a GFM table separator row.
    See the comment in preprocessMarkdown for the full description.
    Idempotent. */

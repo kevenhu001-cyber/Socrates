@@ -5,7 +5,7 @@
    skips non-idempotent rules.
    Both imported by render/markdown.js. */
 
-import { _autoWrapBareBracketMath, fixHeadingMarkers, fixMarkdownTableSeparators } from './helpers.js';
+import { _autoWrapBareBracketMath, fixEmphasisMarkers, fixHeadingMarkers, fixMarkdownTableSeparators } from './helpers.js';
 
 /* A line that is nothing but `$…$` is almost always a display formula the
    model forgot to double up (weak models put `$x^2$` on its own line), so it
@@ -67,6 +67,7 @@ export function preprocessMarkdown(t: string | null | undefined): string {
   s = _protectInlineCode(s);
 
   s = fixHeadingMarkers(s);
+  s = fixEmphasisMarkers(s);
 
   s = s.replace(/\\\[([\s\S]+?)\\\]/g, function (m) {
     return _stash('\\[' + m.slice(2, -2).trim() + '\\]');
@@ -179,6 +180,7 @@ export function preprocessMarkdownForStreaming(
   s = s.replace(/`[^`\n]+`/g, function (m) { return _stash(m); });
 
   s = fixHeadingMarkers(s);
+  s = fixEmphasisMarkers(s);
 
   s = s.replace(/\\\[([\s\S]+?)\\\]/g, function (m) {
     return _stash('\\[' + m.slice(2, -2).trim() + '\\]');
