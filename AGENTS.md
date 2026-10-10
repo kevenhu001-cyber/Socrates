@@ -43,6 +43,7 @@
 | `check-react-globals.mjs` | React components read the store through `store/index.ts` hooks, not `window.stateStore` |
 | `check-css-debt.mjs` | `!important` / hex colors / literal radii / stacked IDs stay at or below their frozen counts |
 | `check-button-sizes.mjs` | Interactive controls reach the size ladder (`--ui-control-sm` 32 / `md` 40 / `touch` 44) instead of a literal px height; off-ladder count stays at or below its baseline (also `lint:button-sizes`) |
+| `check-z-index.mjs` | Live sheets use the `--ui-z-*` rungs (20/80/90/200/400) instead of literal `z-index` ≥ 10 (local 0–9 allowed); off-token count stays at or below its baseline (also `lint:z-index`) |
 | `check-empty-catch.mjs` | Every empty `catch` carries a reasoned `empty-catch: intentional — …` marker (AST-based, so strings/regexes never count) |
 | `check-composer-css.mjs` | Exactly one owner for composer CSS: `styles/parity/composer-unified.css` |
 | `check-surface-ownership.mjs` | Sidebar / topbar / transcript each have one desktop owner under `styles/parity/` |

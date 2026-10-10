@@ -77,7 +77,7 @@
 @media (min-width: 769px) {
   #appShell .top-bar {
     position: relative;
-    z-index: 20;
+    z-index: var(--ui-z-header);
     display: flex;
     flex: 0 0 auto;
     align-items: center;
