@@ -385,14 +385,19 @@
   #appShell .plugin-directory-heading h2 { margin-bottom: 6px; font-size: 28px; letter-spacing: -.02em; }
   #appShell .plugin-directory-desc { margin: 0; color: var(--ui-text-secondary); font-size: 15px; line-height: 1.5; }
   #appShell .plugin-directory-tools { gap: 10px; width: 100%; }
-  #appShell .plugin-directory-search { flex: 1 1 auto; min-width: 0; min-height: 46px; border-radius: var(--ui-radius-pill); background: var(--ui-bg-surface); }
-  #appShell .plugin-directory-search input { min-height: 44px; font-size: 15px; }
+  /* Desktop search pill = the shared 42px workspace search field (same box as
+     .library-search-pill / .workspace-search-field). It was 46px here, so the
+     Plugin directory rendered a taller search than every other directory.
+     Mobile keeps its own 36px density, pinned by polish/mobile-directories.css
+     against docs/ref/mobile-reference-2026-10-04.md — do not align the two. */
+  #appShell .plugin-directory-search { flex: 1 1 auto; min-width: 0; min-height: 42px; border-radius: var(--ui-radius-pill); background: var(--ui-bg-surface); }
+  #appShell .plugin-directory-search input { min-height: 40px; font-size: 15px; }
   #appShell .plugin-directory-add-btn { width: 44px; height: 44px; border-radius: var(--ui-radius-pill); }
   #appShell .plugin-installed-strip { min-height: 56px; margin-bottom: 22px; }
   #appShell .plugin-installed-icons { gap: 9px; }
   #appShell .plugin-installed-icons .workspace-row-icon { width: 42px; height: 42px; border-radius: var(--ui-radius-lg); }
   #appShell .plugin-directory-tabs { gap: 3px; margin-bottom: 26px; }
-  #appShell .plugin-directory-tabs button { min-height: 38px; padding-inline: 17px; }
+  #appShell .plugin-directory-tabs button { min-height: 36px; padding-inline: 17px; }
   #appShell .plugin-directory-section { margin-bottom: 34px; }
   #appShell .plugin-directory-section h3 { margin-bottom: 13px; font-size: 16px; }
   #appShell .plugin-directory-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px 42px; }

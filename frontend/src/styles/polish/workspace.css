@@ -338,8 +338,11 @@
 #appShell .library-view-btn {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  /* 36px, matching .library-settings-btn and .library-tool-btn — this button
+     sits in the same toolbar row, and a 34px box beside 36px siblings reads
+     as a rendering bug rather than a density choice. */
+  width: 36px;
+  height: 36px;
   border: 0;
   background: transparent;
   color: var(--ui-text-tertiary);
