@@ -74,7 +74,7 @@ body.plugins-active #appShell .mobile-newchat-btn {
 }
 #appShell #pluginWorkspaceTabs .plugin-workspace-tab {
   border-radius: var(--ui-radius-pill);
-  font-size: 13px;
+  font-size: var(--ui-font-size-xs);
   font-weight: 450;
   color: var(--ui-text-tertiary);
   transition: color var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;

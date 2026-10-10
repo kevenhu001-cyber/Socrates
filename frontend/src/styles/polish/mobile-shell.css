@@ -31,7 +31,7 @@
     border: 0;
     background: transparent;
     color: var(--ui-text-primary);
-    font-size: 18px;
+    font-size: var(--ui-font-size-lg);
     font-weight: 600;
     line-height: 24px;
   }
@@ -74,5 +74,5 @@
 }
 @media (max-width: 359px) {
   #appShell #mobileMode { left: 48px; }
-  #appShell #mobileModeTrigger { font-size: 16px; }
+  #appShell #mobileModeTrigger { font-size: var(--ui-font-size-md); }
 }

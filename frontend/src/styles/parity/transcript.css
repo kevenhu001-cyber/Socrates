@@ -127,7 +127,7 @@
     background: var(--ui-bg-code);
     color: var(--ui-text-tertiary);
     font-family: var(--font-sans);
-    font-size: 12px;
+    font-size: var(--ui-font-size-xxs);
     line-height: 16px;
     opacity: 1;
   }

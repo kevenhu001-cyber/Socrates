@@ -46,7 +46,7 @@ button { -webkit-tap-highlight-color: transparent; }
   border-radius: var(--ui-radius-md, 8px);
   background: var(--ui-bg-overlay, #fff);
   color: var(--ui-text-primary, #111);
-  font-size: 14px;
+  font-size: var(--ui-font-size-sm);
   text-decoration: none;
   box-shadow: var(--ui-shadow-menu, 0 8px 28px rgb(0 0 0 / 20%));
   transform: translateY(-200%);

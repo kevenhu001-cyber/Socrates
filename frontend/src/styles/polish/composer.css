@@ -117,7 +117,7 @@ body #composerToolsMenu .composer-tools-item kbd {
   }
   body #composerToolsMenu .composer-tools-plugin-state {
     padding: 8px 10px;
-    font-size: 12px;
+    font-size: var(--ui-font-size-xxs);
   }
   body #composerToolsMenu .composer-tools-plugin-state small { font-size: 11px; }
   /* Footer search geometry (34px) is owned by components/menu.css, which
@@ -132,7 +132,7 @@ body #composerToolsMenu .composer-tools-item kbd {
 
 /* Under-composer disclaimer: quiet centered microcopy. */
 #appShell .disclaimer {
-  font-size: 12px;
+  font-size: var(--ui-font-size-xxs);
   letter-spacing: 0;
 }
 
@@ -205,7 +205,7 @@ body #composerToolsMenu .composer-tools-item kbd {
   min-width: 0;
   max-width: none;
 }
-#appShell .voice-recording-label { font-size: 13px; }
+#appShell .voice-recording-label { font-size: var(--ui-font-size-xs); }
 #appShell .voice-recording-live { flex-basis: 100%; }
 
 /* Waveform — slimmer bars on a tighter grid; the JS envelope already

@@ -88,7 +88,7 @@
     border-radius: var(--ui-radius-row);
     color: var(--ui-text-primary);
     font-family: var(--font-sans);
-    font-size: 20px;
+    font-size: var(--ui-font-size-xl);
     font-weight: 650;
     line-height: 26px;
     letter-spacing: -0.015em;
@@ -311,7 +311,7 @@
   #appShell #sidebar .recents-time-label {
     padding: 12px 10px 4px;
     color: var(--ui-text-muted);
-    font-size: 12px;
+    font-size: var(--ui-font-size-xxs);
     font-weight: 500;
     line-height: 16px;
   }
@@ -597,7 +597,7 @@
   border-radius: 50%;
   background: var(--ui-avatar-bg);
   color: rgb(255 255 255);
-  font-size: 12px;
+  font-size: var(--ui-font-size-xxs);
   font-weight: 600;
   line-height: 1;
   letter-spacing: 0.02em;
@@ -615,7 +615,7 @@
   max-width: 100%;
   overflow: hidden;
   color: var(--ui-text-primary);
-  font-size: 13px;
+  font-size: var(--ui-font-size-xs);
   font-weight: 500;
   line-height: 17px;
   text-overflow: ellipsis;
@@ -626,7 +626,7 @@
   align-items: center;
   min-width: 0;
   color: var(--ui-text-muted);
-  font-size: 12px;
+  font-size: var(--ui-font-size-xxs);
   line-height: 16px;
 }
 #appShell #sidebarUserRow .tier-badge {
@@ -636,7 +636,7 @@
   overflow: hidden;
   background: transparent;
   color: var(--ui-text-muted);
-  font-size: 12px;
+  font-size: var(--ui-font-size-xxs);
   font-weight: 400;
   line-height: 16px;
   letter-spacing: 0;

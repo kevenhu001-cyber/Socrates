@@ -48,7 +48,7 @@
   min-height: 40px;
   padding: 7px 10px;
   gap: 10px;
-  font-size: 14px;
+  font-size: var(--ui-font-size-sm);
   color: var(--ui-text-primary);
 }
 .chat-config-row:hover,
@@ -56,12 +56,12 @@
 .chat-config-row small,
 .chat-config-value { color: var(--ui-text-tertiary); }
 .chat-config-divider { background: var(--ui-border-default); }
-.chat-config-row strong { font-size: 14px; }
+.chat-config-row strong { font-size: var(--ui-font-size-sm); }
 .chat-config-row small { font-size: 11.5px; }
 .chat-config-row > svg { width: 17px; height: 17px; }
 .chat-config-value svg { width: 15px; height: 15px; }
 .chat-config-divider { margin: 3px 8px; }
-.chat-config-empty { padding: 16px 12px; font-size: 13px; }
+.chat-config-empty { padding: 16px 12px; font-size: var(--ui-font-size-xs); }
 .chat-config-slider { padding: 4px 6px 10px; }
 
 /* Menu rows: 8px radius everywhere, quiet hover. */
@@ -240,20 +240,20 @@
 .settings-account-name:focus { box-shadow: var(--ui-focus-ring); }
 .settings-account-email {
   color: var(--ui-text-muted);
-  font-size: 13px;
+  font-size: var(--ui-font-size-xs);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .settings-choice-value {
   color: var(--ui-text-secondary);
-  font-size: 13px;
+  font-size: var(--ui-font-size-xs);
   text-align: right;
 }
 .settings-choice-value.is-yes { color: var(--ui-success); }
 .settings-mono {
   font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 12px;
+  font-size: var(--ui-font-size-xxs);
 }
 .settings-danger-zone .settings-section-head h3 { color: var(--ui-danger); }
 .settings-danger-text { color: var(--ui-danger); }
@@ -292,7 +292,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: var(--ui-font-size-xs);
   color: var(--ui-text-secondary);
 }
 .settings-bg-picker input[type="color"] {
@@ -369,7 +369,7 @@
   flex-shrink: 0;
 }
 .settings-memory-val {
-  font-size: 13px;
+  font-size: var(--ui-font-size-xs);
   color: hsl(var(--text-100));
   overflow: hidden;
   text-overflow: ellipsis;

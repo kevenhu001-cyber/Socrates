@@ -113,7 +113,7 @@
    swallowed by the drawer's layer. */
 @media (max-width: 768px) {
 #appShell .sidebar-search input {
-  font-size: 13px;
+  font-size: var(--ui-font-size-xs);
   color: var(--ui-text-primary);
   background: color-mix(in srgb, var(--ui-text-primary) 1%, transparent);
   transform: translateZ(0);
@@ -168,7 +168,7 @@
      drawer used to drop to 11px here while the desktop rail stayed at 12px,
      so the same "Today" group header changed size with the viewport. */
   color: var(--ui-text-secondary);
-  font-size: 12px;
+  font-size: var(--ui-font-size-xxs);
   font-weight: 500;
   letter-spacing: 0.04em;
 }

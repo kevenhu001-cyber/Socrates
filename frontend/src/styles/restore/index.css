@@ -60,8 +60,10 @@
  * features/surfaces.css purely by cascade order (restore/ is imported after
  * features/), which left the canonical owner dead. Only genuinely shared
  * selectors (e.g. .workspace-icon-action, .plugin-directory-search svg) are
- * still declared here; mobile-parity.css keeps the ≤768px reference
- * geometry (42px pill search, 40px connector tiles) the smoke specs assert.
+ * still declared here; the ≤768px directory geometry (36px search, 40px
+ * tabs/tiles) is now owned by polish/mobile-directories.css and asserted by
+ * the smoke specs (this comment previously named mobile-parity.css and a
+ * 42px pill that no longer exists).
  *
  * Rule: visual parity tweaks go in fixes.css; feature-page styles in
  * creation-surfaces.css; do not ADD rules to the historical files 1-6.

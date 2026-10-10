@@ -72,17 +72,17 @@
   #appShell #sidebarFooter { flex: 0 0 auto; padding: 8px; border-top: 1px solid var(--ui-border-subtle); gap: 0; }
   #appShell #sidebarUserRow { display: block; width: 100%; padding: 0; flex: 0 0 auto; }
   #appShell .sidebar-footer-account-wrap { display: flex; flex-direction: column; width: 100%; gap: 12px; }
-  #appShell #sidebarUserRow .sidebar-account-trigger { display: flex; align-items: center; justify-content: flex-start; width: 100%; height: 42px; padding: 0; gap: 8px; font-size: 14px; }
+  #appShell #sidebarUserRow .sidebar-account-trigger { display: flex; align-items: center; justify-content: flex-start; width: 100%; height: 42px; padding: 0; gap: 8px; font-size: var(--ui-font-size-sm); }
   #appShell #sidebarUserRow .user-avatar { display: grid; place-items: center; flex: 0 0 24px; width: 24px; height: 24px; border-radius: 50%; font-size: 10px; }
-  #appShell #sidebarUserRow .user-name { font-size: 16px; line-height: 22px; font-weight: 400; }
-  #appShell #sidebarUserRow .user-plan, #appShell #sidebarUserRow .tier-badge { font-size: 14px; line-height: 18px; color: var(--ui-text-muted); }
+  #appShell #sidebarUserRow .user-name { font-size: var(--ui-font-size-md); line-height: 22px; font-weight: 400; }
+  #appShell #sidebarUserRow .user-plan, #appShell #sidebarUserRow .tier-badge { font-size: var(--ui-font-size-sm); line-height: 18px; color: var(--ui-text-muted); }
   #appShell .sidebar-account-menu { width: 242px; padding: 14px 16px; }
-  #appShell .sidebar-account-menu :is(button, a) { height: 40px; min-height: 40px; font-size: 14px; }
+  #appShell .sidebar-account-menu :is(button, a) { height: 40px; min-height: 40px; font-size: var(--ui-font-size-sm); }
   #appShell .sidebar-account-menu .account-menu-identity { height: 44px; gap: 8px; }
   #appShell .sidebar-account-menu .user-avatar { display: grid; place-items: center; width: 24px; height: 24px; flex: 0 0 24px; font-size: 10px; border-radius: 50%; background: var(--ui-avatar-bg); }
   #appShell .sidebar-account-menu .user-identity { display: flex; flex-direction: column; }
   #appShell .sidebar-account-menu .user-name { font-size: 15px; font-weight: 400; }
-  #appShell .sidebar-account-menu .user-plan { font-size: 13px; color: var(--ui-text-muted); }
+  #appShell .sidebar-account-menu .user-plan { font-size: var(--ui-font-size-xs); color: var(--ui-text-muted); }
 
   /* Match the dark reference's true-white drawer glyphs and labels. The
      ancestor pair is written once and reused via :is() — repeating

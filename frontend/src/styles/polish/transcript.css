@@ -76,7 +76,7 @@
      desktop owner (parity/transcript.css) overrides to 12px but this phone
      block never did — so the label rendered 10.5px on phones and 12px
      everywhere else. */
-  font-size: 12px;
+  font-size: var(--ui-font-size-xxs);
   /* legacy/09 dims the header to .85 until :hover — a state touch never
      reaches, so the label and copy action stayed below AA on phones. */
   opacity: 1;
@@ -180,7 +180,7 @@
   justify-content: center;
   padding: 5px 14px;
   border-radius: var(--ui-radius-pill);
-  font-size: 13px;
+  font-size: var(--ui-font-size-xs);
   font-weight: 500;
   cursor: pointer;
   border: none;
@@ -344,7 +344,7 @@
   padding: 0 2px;
   border-radius: var(--ui-radius-sm, 6px);
   color: var(--tool-activity-row);
-  font-size: 12px;
+  font-size: var(--ui-font-size-xxs);
   font-weight: 500;
   cursor: pointer;
   list-style: none;

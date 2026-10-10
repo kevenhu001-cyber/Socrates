@@ -61,7 +61,7 @@
     overflow: hidden;
     color: var(--ui-text-tertiary);
     font-weight: 400;
-    font-size: 13px;
+    font-size: var(--ui-font-size-xs);
     text-overflow: ellipsis;
   }
   body[data-conversation-active="true"] #appShell .top-model-switcher-model:empty { display: none; }
@@ -126,7 +126,7 @@
     background: transparent;
     color: var(--ui-text-primary);
     font: inherit;
-    font-size: 18px;
+    font-size: var(--ui-font-size-lg);
     line-height: 28px;
     white-space: nowrap;
     cursor: pointer;

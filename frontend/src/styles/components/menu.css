@@ -49,7 +49,7 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
   border-radius: var(--ui-radius-control);
   background: transparent;
   color: var(--ui-text-primary);
-  font-size: 16px;
+  font-size: var(--ui-font-size-md);
   font-weight: 400;
 }
 
@@ -76,7 +76,7 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-#composerToolsMenu .composer-tools-copy > span { color: inherit; font-size: 16px; font-weight: 400; }
+#composerToolsMenu .composer-tools-copy > span { color: inherit; font-size: var(--ui-font-size-md); font-weight: 400; }
 #composerToolsMenu .composer-tools-copy small,
 #composerToolsMenu .composer-tools-item kbd { display: none; }
 
@@ -128,7 +128,7 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
     background: transparent;
     color: var(--ui-text-primary);
     font: inherit;
-    font-size: 13px;
+    font-size: var(--ui-font-size-xs);
   }
 }
 
@@ -158,6 +158,6 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
   }
   [data-mode="dark"] #composerToolsMenu .composer-tools-icon { background: var(--ui-bg-control); }
   #composerToolsMenu .composer-tools-icon svg { width: 22px; height: 22px; }
-  #composerToolsMenu .composer-tools-copy > span { font-size: 16px; }
+  #composerToolsMenu .composer-tools-copy > span { font-size: var(--ui-font-size-md); }
   #composerToolsMenu .composer-tools-footer-search { display: none; }
 }

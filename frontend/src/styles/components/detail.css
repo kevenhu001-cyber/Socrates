@@ -357,7 +357,7 @@
   text-align:center;
 }
 .detail-surface.thinking-panel .detail-heading h2{
-  font-size:20px;
+  font-size:var(--ui-font-size-xl);
   font-weight:var(--ui-font-weight-semibold);
 }
 .detail-surface.thinking-panel .detail-meta{display:none}

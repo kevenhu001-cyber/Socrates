@@ -107,7 +107,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   border-radius: var(--ui-radius-row);
   background: transparent;
   color: var(--ui-text-primary);
-  font-size: 14px;
+  font-size: var(--ui-font-size-sm);
   text-align: left;
   opacity: 1;
   cursor: pointer;
@@ -175,7 +175,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 }
 }
 @media (max-width: 768px) {
-#appShell .sidebar-search input { color: var(--ui-text-primary); font-size: 14px; }
+#appShell .sidebar-search input { color: var(--ui-text-primary); font-size: var(--ui-font-size-sm); }
 }
 @media (max-width: 768px) {
 #appShell .sidebar-search input::placeholder { color: var(--ui-text-placeholder); }
@@ -264,7 +264,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 #appShell .sidebar-account-trigger { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; padding: 6px; border: 0; border-radius: var(--ui-radius-row); background: transparent; color: var(--ui-text-primary); text-align: left; font: inherit; cursor: pointer; }
 #appShell .sidebar-account-trigger:hover, #appShell .sidebar-account-trigger[aria-expanded="true"] { background: var(--ui-bg-hover); }
 #appShell .sidebar-account-menu { z-index: var(--ui-z-popover, 200); width: 242px; max-width: calc(100vw - 12px); box-sizing: border-box; padding: 12px 16px; border: 1px solid var(--ui-border-subtle); border-radius: var(--ui-radius-2xl); background: var(--ui-bg-overlay); color: var(--ui-text-primary); box-shadow: var(--ui-shadow-popover); }
-#appShell .sidebar-account-menu :is(button, a) { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 0 4px; border: 0; border-radius: var(--ui-radius-control); background: transparent; color: inherit; font: inherit; font-size: 14px; text-align: left; text-decoration: none; cursor: pointer; }
+#appShell .sidebar-account-menu :is(button, a) { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 0 4px; border: 0; border-radius: var(--ui-radius-control); background: transparent; color: inherit; font: inherit; font-size: var(--ui-font-size-sm); text-align: left; text-decoration: none; cursor: pointer; }
 #appShell .sidebar-account-menu :is(button, a):hover { background: var(--ui-bg-hover); }
 #appShell .sidebar-account-menu svg { width: 20px; height: 20px; flex: 0 0 20px; }
 #appShell .sidebar-account-menu hr { border: 0; border-top: 1px solid var(--ui-border-strong); margin: 12px 0 8px; }
@@ -272,7 +272,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 #appShell .sidebar-account-menu .account-menu-trailing, #appShell .sidebar-account-menu .account-menu-identity > svg { margin-left: auto; }
 @media (max-width: 768px) {
   #appShell .recent-item-menu { min-width: 158px; width: 158px; gap: 0; padding: 14px; border-radius: var(--ui-radius-2xl); background: var(--ui-bg-overlay); }
-  #appShell .recent-item-menu .recent-item-menu-row { min-height: 40px; height: 40px; padding: 0 6px; font-size: 14px; }
+  #appShell .recent-item-menu .recent-item-menu-row { min-height: 40px; height: 40px; padding: 0 6px; font-size: var(--ui-font-size-sm); }
   #appShell .recent-item-menu .recent-item-action-icon, #appShell .recent-item-menu .recent-item-action-icon svg { width: 18px; height: 18px; flex-basis: 18px; }
 }
 /* One size for the plan label everywhere on desktop: 12px, the same as
@@ -280,7 +280,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
    opened from that row, so the badge read two different sizes depending on
    whether the menu was open. Mobile keeps its own 14px step
    (polish/mobile-sidebar.css:78), which is a separate density. */
-#appShell .sidebar-account-menu .tier-badge { padding: 0; background: transparent; color: var(--ui-text-muted); font-size: 12px; font-weight: 400; line-height: 16px; text-transform: none; }
+#appShell .sidebar-account-menu .tier-badge { padding: 0; background: transparent; color: var(--ui-text-muted); font-size: var(--ui-font-size-xxs); font-weight: 400; line-height: 16px; text-transform: none; }
 @media (max-width: 768px) {
-  #appShell .recent-item-menu .recent-item-action-text { font-size: 14px; }
+  #appShell .recent-item-menu .recent-item-action-text { font-size: var(--ui-font-size-sm); }
 }

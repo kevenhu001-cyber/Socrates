@@ -80,7 +80,7 @@
 .prompt-templates-body{padding:18px 20px 20px;gap:10px}
 .prompt-row{gap:12px;padding:12px 14px;border:1px solid var(--tool-card-border);border-radius:var(--tool-card-radius);background:var(--tool-card-bg)}
 .prompt-row:hover{background:var(--tool-card-bg-hover);border-color:var(--tool-card-border-strong)}
-.prompt-row-icon{display:grid;place-items:center;width:26px;height:26px;font-size:16px;color:var(--tool-card-icon);filter:grayscale(1)}
+.prompt-row-icon{display:grid;place-items:center;width:26px;height:26px;font-size:var(--ui-font-size-md);color:var(--tool-card-icon);filter:grayscale(1)}
 .prompt-row-icon svg{width:18px;height:18px;color:currentColor}
 .prompt-row-main{gap:3px}
 .prompt-row-title{font-size:var(--tool-card-title-size);font-weight:var(--tool-card-title-weight);color:var(--tool-card-text);gap:8px}

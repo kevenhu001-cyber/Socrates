@@ -37,12 +37,12 @@
     gap: 9px;
   }
   #appShell .projects-directory .workspace-empty strong {
-    font-size: 16px;
+    font-size: var(--ui-font-size-md);
     font-weight: 550;
     letter-spacing: -0.01em;
   }
   #appShell .projects-directory .workspace-empty > span {
-    font-size: 13px;
+    font-size: var(--ui-font-size-xs);
     line-height: 1.55;
     color: var(--ui-text-tertiary);
   }
@@ -51,7 +51,7 @@
     margin-top: 10px;
     padding: 0 18px;
     border-radius: var(--ui-radius-pill);
-    font-size: 13px;
+    font-size: var(--ui-font-size-xs);
   }
 }
 
@@ -120,7 +120,7 @@
        converges on the 40px density Library already uses. */
     min-height: 40px !important;
     padding: 0 16px;
-    font-size: 16px;
+    font-size: var(--ui-font-size-md);
     font-weight: 500;
   }
 
@@ -165,7 +165,7 @@
 
 #appShell .library-desktop-desc {
   margin: 4px 0 0;
-  font-size: 14px;
+  font-size: var(--ui-font-size-sm);
   color: var(--ui-text-tertiary);
 }
 
@@ -189,7 +189,7 @@
   background: var(--ui-bg-control);
   border: 1px solid var(--ui-border-default);
   color: var(--ui-text-primary);
-  font-size: 14px;
+  font-size: var(--ui-font-size-sm);
   font-weight: 500;
   cursor: pointer;
 }
@@ -218,7 +218,7 @@
   border-radius: var(--ui-radius-row);
   background: transparent;
   color: var(--ui-text-primary);
-  font-size: 14px;
+  font-size: var(--ui-font-size-sm);
   text-align: left;
   cursor: pointer;
 }
@@ -315,7 +315,7 @@
   background: transparent;
   color: var(--ui-text-secondary);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--ui-font-size-xs);
   text-align: left;
   cursor: pointer;
 }
@@ -404,7 +404,7 @@
   border-radius: var(--ui-radius-pill);
   background: transparent;
   color: var(--ui-text-secondary);
-  font-size: 14px;
+  font-size: var(--ui-font-size-sm);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -549,7 +549,7 @@
   padding: 2px 8px;
   border-radius: var(--ui-radius-pill);
   background: var(--ui-bg-control);
-  font-size: 12px;
+  font-size: var(--ui-font-size-xxs);
   color: var(--ui-text-secondary);
 }
 
@@ -575,7 +575,7 @@
 #appShell .plugin-detail-status-pill {
   display: inline-flex;
   align-items: center;
-  font-size: 12px;
+  font-size: var(--ui-font-size-xxs);
   color: var(--ui-text-tertiary);
 }
 
@@ -628,7 +628,7 @@
   border-radius: var(--ui-radius-pill);
   background: var(--cg-surface-raised);
   color: var(--ui-text-primary);
-  font-size: 14px;
+  font-size: var(--ui-font-size-sm);
   font-weight: 500;
   border: 1px solid var(--ui-border-default);
   cursor: pointer;
@@ -696,14 +696,14 @@
 }
 
 #appShell .plugin-detail-prompt-text {
-  font-size: 14px;
+  font-size: var(--ui-font-size-sm);
   line-height: 1.4;
   color: var(--ui-text-primary);
 }
 
 #appShell .plugin-detail-prompt-arrow {
   color: var(--ui-text-tertiary);
-  font-size: 14px;
+  font-size: var(--ui-font-size-sm);
   flex-shrink: 0;
 }
 
@@ -720,7 +720,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 14px;
+  font-size: var(--ui-font-size-sm);
   color: var(--ui-text-secondary);
   line-height: 1.4;
 }
@@ -845,7 +845,7 @@
 }
 
 #appShell .workspace-loading-banner-text span {
-  font-size: 13px;
+  font-size: var(--ui-font-size-xs);
   color: var(--ui-text-tertiary);
 }
 
@@ -1052,7 +1052,7 @@
   }
 
   #appShell .plugin-detail-title-row h2 {
-    font-size: 20px;
+    font-size: var(--ui-font-size-xl);
   }
 }
 
