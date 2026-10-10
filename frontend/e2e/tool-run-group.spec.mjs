@@ -362,7 +362,11 @@ test('answer prose keeps its recorded order around the rows, with no baked-in du
          to a row that has a chart or file, and the history-recovery pass may
          add one for the same call. Neither is part of the answer's flow. */
       if (node.classList.contains('tool-inline-attachments')) continue;
-      if (node.classList.contains('tool-run-prose')) {
+      /* The turn-summary pill leads every assistant turn (it opens the
+         thinking panel); it is chrome, not part of the prose flow. */
+      if (node.classList.contains('turn-summary-pill')) {
+        order.push('pill');
+      } else if (node.classList.contains('tool-run-prose')) {
         order.push(`text:${(node.textContent || '').trim()}`);
       } else if (node.classList.contains('tool-run-group')) {
         order.push(`group:${node.dataset.category}`);
@@ -375,6 +379,7 @@ test('answer prose keeps its recorded order around the rows, with no baked-in du
     return order;
   });
   expect(layout).toEqual([
+    'pill',
     'group:search',
     'text:Lead paragraph.',
     'row:f1',
