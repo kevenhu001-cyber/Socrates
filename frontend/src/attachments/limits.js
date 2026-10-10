@@ -7,9 +7,17 @@ export const MAX_TOTAL_ATTACHMENTS = 6;
 export const XHR_TIMEOUT_MS = 300_000;
 export const ATTACHMENT_READY_TIMEOUT_MS = XHR_TIMEOUT_MS;
 
+/* Upload concurrency: at most this many prepareAttachment jobs (XHR +
+   optional image encode) run at once. Extra files wait as queued stubs
+   instead of opening N parallel transfers that jank the main thread. */
+export const MAX_CONCURRENT_UPLOADS = 2;
+
 /* Keep below the server's 2,000,000-character inline image payload cap. */
 export const MAX_IMAGE_DATAURL_CHARS = 1_900_000;
 /* Base64 expands input by about 4/3; larger files decode directly from Blob. */
 export const MAX_IMAGE_SOURCE_BYTES_BEFORE_DATAURL = Math.floor(
   (MAX_IMAGE_DATAURL_CHARS - 64) * 3 / 4,
 );
+
+/* Fail a transfer that stops making progress, while allowing slow active uploads. */
+export const UPLOAD_IDLE_TIMEOUT_MS = 30_000;

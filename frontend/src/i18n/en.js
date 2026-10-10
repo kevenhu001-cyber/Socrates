@@ -118,6 +118,8 @@ export const en = {
     "chat.attach.duplicate":"This file is already attached.",
     "chat.attach.retry.aria":"Retry upload",
     "chat.attach.uploading":"Uploading",
+    "chat.attach.processing":"Saving…",
+    "chat.attach.queued":"Queued",
     "chat.attach.failed":"Upload failed",
     "chat.attach.networkError":"Network error during upload.",
     "chat.attach.uploadTimeout":"Upload timed out.",

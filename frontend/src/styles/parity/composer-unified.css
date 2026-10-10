@@ -530,3 +530,69 @@
 @media (max-width: 768px) {
   #appShell .composer-shell.voice-recording-active { width: 100%; max-width: none; border-radius: 26px; }
 }
+
+/* Composer attachments: horizontal image tiles and document cards. */
+.composer-shell .attachment-chips {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 12px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scroll-snap-type: x proximity;
+}
+#appShell .composer-shell > .attachment-chips { padding: 8px 8px 8px 2px; }
+.composer-shell .attachment-chip {
+  box-sizing: border-box;
+  flex: 0 0 256px;
+  max-width: min(256px, 75vw);
+  height: 72px;
+  padding: 12px 32px 12px 12px;
+  gap: 12px;
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-surface);
+  scroll-snap-align: start;
+}
+.composer-shell .attachment-chip-visual {
+  width: 36px;
+  height: 40px;
+  background: transparent;
+  border-radius: var(--ui-radius-control);
+}
+.composer-shell .attachment-chip-icon svg { width: 26px; height: 26px; }
+.composer-shell .attachment-chip-info { gap: 5px; flex: 1; }
+.composer-shell .attachment-chip-name {
+  max-width: none;
+  font-size: calc(14px * var(--app-font-scale, 1));
+  font-weight: var(--ui-font-weight-semibold, 600);
+}
+.composer-shell .attachment-chip-meta { font-size: calc(12px * var(--app-font-scale, 1)); }
+.composer-shell .attachment-chip.is-image { flex-basis: 72px; width: 72px; padding: 0; }
+.composer-shell .attachment-chip.is-image .attachment-chip-visual {
+  width: 100%; height: 100%; border-radius: inherit;
+}
+.composer-shell .attachment-chip-remove {
+  width: 24px; height: 24px; top: -5px; right: -5px;
+  opacity: 1;
+  background: var(--ui-text-primary);
+  color: var(--ui-bg-surface);
+  border: 2px solid var(--ui-bg-surface);
+  border-radius: var(--ui-radius-pill);
+}
+.composer-shell .attachment-chip-remove::before { content: ''; position: absolute; inset: -4px; }
+.composer-shell .attachment-chip-remove svg { width: 12px; height: 12px; }
+.composer-shell .attachment-chip-remove:focus-visible,
+.composer-shell .attachment-chip-retry:focus-visible {
+  outline: 2px solid var(--ui-text-primary); outline-offset: 3px;
+}
+.composer-shell .attachment-chip-progress { bottom: 4px; }
+.composer-shell .attachment-chip-progress-fill { background: var(--ui-text-primary); }
+.composer-shell .attachment-chip-pct { right: 8px; bottom: 10px; }
+.composer-shell .attachment-chip.error { border-color: var(--ui-danger); }
+.composer-shell .attachment-chip.error .attachment-chip-meta { color: var(--ui-danger); }
+.composer-shell .attachment-chip-retry {
+  position: absolute; right: 8px; bottom: 8px;
+  width: 28px; height: 28px;
+  background: var(--ui-bg-surface); color: var(--ui-danger);
+  border-radius: var(--ui-radius-pill);
+}

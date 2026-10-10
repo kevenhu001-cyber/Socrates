@@ -72,6 +72,19 @@
 .attachment-chip-veil .thinking-ring::before,.attachment-chip-veil .thinking-ring::after{border-color:transparent;border-top-color:#fff;border-right-color:rgb(255 255 255/0.6)}
 .attachment-chip-veil .thinking-ring::after{border-top-color:rgb(255 255 255/0.7);border-left-color:rgb(255 255 255/0.4)}
 .attachment-chip.pending{border-color:var(--ui-border-default)}
+/* P_attachments-progress — determinate upload progress on every pending
+   chip: a hairline bar pinned to the chip's bottom edge, plus a % badge
+   on image chips (their name+meta column stays hidden, so the veil
+   spinner alone used to be the only signal). Token radii only — the
+   css-debt ratchet forbids new literal px border-radius values. */
+.attachment-chip-progress{position:absolute;left:8px;right:8px;bottom:5px;height:3px;border-radius:var(--ui-radius-pill);background:hsl(var(--bg-300));overflow:hidden;pointer-events:none}
+.attachment-chip.is-image .attachment-chip-progress{left:6px;right:6px}
+.attachment-chip-progress-fill{display:block;height:100%;width:0;border-radius:inherit;background:hsl(var(--accent-000));transition:width 120ms linear}
+@media (prefers-reduced-motion:reduce){.attachment-chip-progress-fill{transition:none}}
+.attachment-chip-pct{position:absolute;right:6px;bottom:9px;padding:1px 6px;border-radius:var(--ui-radius-pill);background:hsl(0 0% 10%/0.72);color:hsl(var(--always-white));font-size:calc(10px * var(--app-font-scale, 1));font-variant-numeric:tabular-nums;line-height:1.5;pointer-events:none}
+/* A pending upload is cancelled through the remove disc — keep it
+   discoverable instead of hover-only while the transfer runs. */
+.attachment-chip.pending .attachment-chip-remove{opacity:1}
 /* Error: red hairline + red meta; the retry affordance stays inline. */
 .attachment-chip.error{border-color:hsl(0 72% 55%/0.55)}
 .attachment-chip.error .attachment-chip-meta{color:hsl(0 72% 60%)}

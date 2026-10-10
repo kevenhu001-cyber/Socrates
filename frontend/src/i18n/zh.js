@@ -113,6 +113,8 @@ export const zh = {
     "chat.attach.duplicate":"该文件已附加。",
     "chat.attach.retry.aria":"重试上传",
     "chat.attach.uploading":"上传中",
+    "chat.attach.processing":"正在保存…",
+    "chat.attach.queued":"排队中",
     "chat.attach.failed":"上传失败",
     "chat.attach.networkError":"上传时网络错误。",
     "chat.attach.uploadTimeout":"上传超时。",

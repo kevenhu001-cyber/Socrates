@@ -45,7 +45,11 @@ function kindLabel(entry: AttachmentEntry): string {
 function attachmentMeta(entry: AttachmentEntry): string {
   const progress = Math.min(Math.max(entry.progress ?? 0, 0), 100);
   const baseMeta = entry.pending
-    ? `${i18n('chat.attach.uploading', 'Uploading')}… ${Math.round(progress)}%`
+    ? entry.stage === 'processing'
+      ? i18n('chat.attach.processing', 'Saving…')
+      : entry.stage === 'queued'
+      ? `${i18n('chat.attach.queued', 'Queued')}… ${Math.round(progress)}%`
+      : `${i18n('chat.attach.uploading', 'Uploading')}… ${Math.round(progress)}%`
     : entry.error
       ? i18n('chat.attach.failed', 'Upload failed')
       : entry.truncated
@@ -67,9 +71,10 @@ interface AttachmentChipVisualProps {
 function AttachmentChipVisual({ entry, imageSrc, isImage, onImageError }: AttachmentChipVisualProps) {
   return (
     <span className="attachment-chip-visual" data-kind={entry.docKind || entry.kind || 'file'}>
-      {isImage ? (
+      {isImage && imageSrc ? (
         <img
           className="attachment-chip-thumb"
+          decoding="async"
           src={imageSrc}
           alt={entry.name ?? ''}
           onError={onImageError}
@@ -86,6 +91,46 @@ function AttachmentChipVisual({ entry, imageSrc, isImage, onImageError }: Attach
   );
 }
 
+function pendingProgressLabel(entry: AttachmentEntry, progress: number): string {
+  const pct = `${Math.round(progress)}%`;
+  if (entry.stage === 'processing') return i18n('chat.attach.processing', 'Saving…');
+  return entry.stage === 'queued'
+    ? `${i18n('chat.attach.queued', 'Queued')} ${pct}`
+    : `${i18n('chat.attach.uploading', 'Uploading')} ${pct}`;
+}
+
+function pendingProgressbarProps(entry: AttachmentEntry, progress: number, label: string) {
+  return entry.pending
+    ? {
+        role: 'progressbar',
+        'aria-valuemin': 0,
+        'aria-valuemax': 100,
+        'aria-valuenow': Math.round(progress),
+        'aria-label': `${entry.name ?? 'file'} — ${label}`,
+      }
+    : {};
+}
+
+/* Determinate upload progress for a pending chip: a hairline bar for
+   every kind, plus a % badge on image chips (their name+meta column
+   stays hidden, so the veil spinner alone used to be the only signal). */
+function AttachmentChipProgress({ entry, progress, isImage }: {
+  entry: AttachmentEntry;
+  progress: number;
+  isImage: boolean;
+}) {
+  if (!entry.pending) return null;
+  return (
+    <>
+      {isImage ? (
+        <span className="attachment-chip-pct" aria-hidden="true">{`${Math.round(progress)}%`}</span>
+      ) : null}
+      <span className="attachment-chip-progress" {...pendingProgressbarProps(entry, progress, pendingProgressLabel(entry, progress))}>
+        <span className="attachment-chip-progress-fill" style={{ width: `${progress}%` }} />
+      </span>
+    </>
+  );
+}
 function AttachmentChipActions({ entry, onRemove, onRetry }: AttachmentChipProps) {
   return (
     <>
@@ -116,18 +161,20 @@ export function AttachmentChip({ entry, onRemove, onRetry }: AttachmentChipProps
   const fileUrl = entry.fileId ? `/api/v2/files/${entry.fileId}/raw` : undefined;
   /* Try blob thumbnail → durable raw file → inline dataUrl; blacklist a
      failed source so the next candidate can take over. */
-  const [badSrc, setBadSrc] = useState<string | null>(null);
+  const [badSources, setBadSources] = useState<string[]>([]);
   const imageSrc = [entry.thumbnailUrl, fileUrl, entry.dataUrl]
-    .find((source) => !!source && source !== badSrc);
-  const isImage = entry.kind === 'image' && !!imageSrc;
+    .find((source) => !!source && !badSources.includes(source));
+  const isImage = entry.kind === 'image';
+  const progress = entry.pending ? Math.min(Math.max(entry.progress ?? 0, 0), 100) : 0;
 
   return (
     <div
       className={`attachment-chip${isImage ? ' is-image' : ''}${entry.error ? ' error' : ''}${entry.pending ? ' pending' : ''}`}
       data-id={entry.id}
       title={entry.error || entry.name || undefined}
+      aria-label={isImage ? `${entry.name ?? 'Image'} — ${attachmentMeta(entry)}` : undefined}
     >
-      <AttachmentChipVisual entry={entry} imageSrc={imageSrc} isImage={isImage} onImageError={() => setBadSrc(imageSrc ?? null)} />
+      <AttachmentChipVisual entry={entry} imageSrc={imageSrc} isImage={isImage} onImageError={() => setBadSources((sources) => [...sources, imageSrc ?? ''])} />
 
       {isImage ? null : (
         <span className="attachment-chip-info">
@@ -135,6 +182,8 @@ export function AttachmentChip({ entry, onRemove, onRetry }: AttachmentChipProps
           <span className="attachment-chip-meta">{attachmentMeta(entry)}</span>
         </span>
       )}
+
+      <AttachmentChipProgress entry={entry} progress={progress} isImage={isImage} />
 
       <AttachmentChipActions entry={entry} onRemove={onRemove} onRetry={onRetry} />
     </div>

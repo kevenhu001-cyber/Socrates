@@ -22,6 +22,12 @@ export interface AttachmentEntry {
   size?: number;
   pending?: boolean;
   progress?: number;
+  /** Upload lifecycle for the chip: queued (waiting for a concurrency
+      slot) → uploading → done / error. Set by src/attachments.js. */
+  stage?: 'queued' | 'uploading' | 'processing' | 'done' | 'error';
+  /** Byte counts from XHR upload progress events (length-computable only). */
+  loaded?: number;
+  total?: number;
   truncated?: boolean;
   error?: string;
   dataUrl?: string;
