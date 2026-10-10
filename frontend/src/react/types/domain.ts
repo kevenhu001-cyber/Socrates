@@ -203,6 +203,10 @@ export interface LegacyChatMessage {
    * 'done'/'idle' otherwise. Not persisted.
    */
   _playbackState?: 'idle' | 'playing' | 'starved' | 'draining' | 'done';
+  /** One-line model retrospective persisted on the message. */
+  summary?: string | null;
+  /** In-flight step extracted from active reasoning stream. */
+  _liveStep?: string;
 }
 
 /**
@@ -236,6 +240,12 @@ export interface LiveTurnStatus {
   /** Timeout / failure copy shown in place of the answer. */
   error?: string | null;
   retryable?: boolean;
+  /** Active snippet or excerpt from the model's live train of thought. */
+  thoughtSnippet?: string;
+  /** Extracted active step / sub-goal being tackled. */
+  stepSummary?: string;
+  /** Active micro-detail or sub-progress explanation. */
+  detail?: string;
 }
 
 export interface ChatRuntimeSnapshot {

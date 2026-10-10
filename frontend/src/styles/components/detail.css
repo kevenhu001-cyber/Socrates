@@ -226,14 +226,49 @@
 .thinking-summary-item.is-active .thinking-summary-marker::before{
   background:var(--ui-thinking-accent);
 }
+.thinking-summary-item.is-active[data-kind="thinking"] .thinking-summary-marker::before{
+  background:var(--ui-thinking-accent);
+  box-shadow:0 0 8px hsl(28 90% 55% / 0.5);
+}
 .thinking-history-trigger .thinking-summary-marker::before{
   width:6px;
   height:6px;
   background:var(--ui-text-tertiary);
 }
-.thinking-summary-item[data-kind="tool"] .thinking-summary-marker::before,
-.thinking-summary-item[data-kind="thinking"] .thinking-summary-marker::before{
+.thinking-summary-item[data-kind="tool"] .thinking-summary-marker::before{
   content:none;
+}
+.thinking-summary-item[data-kind="target"] .thinking-summary-label{
+  color:var(--ui-text-primary);
+  font-weight:var(--ui-font-weight-medium);
+}
+.thinking-turn-tabs{
+  display:flex;
+  gap:6px;
+  overflow-x:auto;
+  padding:2px 0 12px;
+  margin-bottom:8px;
+  border-bottom:1px solid var(--ui-border-subtle);
+}
+.thinking-turn-tab{
+  padding:3px 10px;
+  border:0;
+  border-radius:var(--ui-radius-sm);
+  background:hsl(var(--bg-300)/0.4);
+  color:var(--ui-text-tertiary);
+  font-size:calc(12px * var(--app-font-scale, 1));
+  cursor:pointer;
+  white-space:nowrap;
+  transition:all .15s ease;
+}
+.thinking-turn-tab:hover{
+  background:hsl(var(--bg-300)/0.75);
+  color:var(--ui-text-primary);
+}
+.thinking-turn-tab.is-active{
+  background:var(--ui-bg-surface-active);
+  color:var(--ui-text-primary);
+  font-weight:var(--ui-font-weight-medium);
 }
 .thinking-summary-icon,
 .thinking-summary-icon svg{

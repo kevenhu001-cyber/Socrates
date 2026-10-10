@@ -14,8 +14,7 @@
  * re-binding its own copies.
  */
 import { stateStore } from '../../state/store.js';
-import { setReactLiveStatus } from '../../ui/messageSnapshot.js';
-import { publishThinkingPanelEvent } from '../../ui/messageSnapshot.js';
+import { setReactLiveStatus, publishThinkingPanelEvent } from '../../ui/messageSnapshot.js';
 
 /**
  * Build the live-status chrome bound to one turn's state.
@@ -64,11 +63,13 @@ export function createStatusChrome(state) {
   }
 
   function waitingCopyFor(sec) {
-    if (sec >= 45) return state.t("think.stillWorking");
-    if (sec >= 20) return state.t("think.organizingAnswer");
-    if (sec >= 8) return state.t("think.reviewingContext");
+    if (sec >= 45) return state.t("think.stillWorking", "仍在深入推理，请稍候…");
+    if (sec >= 20) return state.t("think.organizingAnswer", "正在组织推导与回答内容…");
+    if (sec >= 8) return state.t("think.reviewingContext", "正在检索上下文与相关记忆…");
+    if (sec >= 3) return state.t("think.preparing", "正在构思生成方案…");
     return _waitingLabel;
   }
+
 
   function stampWaiting(sec) {
     if (!state.reactLive || statusIsBusy()) return;
@@ -93,7 +94,8 @@ export function createStatusChrome(state) {
   function stampThinking() {
     if (!state.reactLive || statusIsBusy()) return;
     setLiveStatus({
-      phase: "thinking", label: state.t("think.thinking"),
+      phase: "thinking",
+      label: state.t("think.thinking", "正在深度思考…"),
       clickable: state.appMode() === "chat"
     });
   }

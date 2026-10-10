@@ -29,6 +29,8 @@ export interface TurnSummaryInput {
   answer: string;
   /** Tool calls executed this turn, in execution order. */
   toolCalls: ReadonlyArray<{ name: string; isError?: boolean }>;
+  /** Model reasoning/thinking highlights if reasoning occurred. */
+  reasoning?: string;
 }
 
 export interface TurnSummaryDeps {
@@ -52,16 +54,18 @@ export const TURN_SUMMARY_SYSTEM_PROMPT = [
   '- 10 words maximum. Write in the language the user used.',
   '- Say what was DONE or FOUND, not what was asked. Never address the user.',
   '- If tools ran, name the outcome of using them (e.g. "查找了 3 个来源并汇总").',
+  '- If problem-solving or reasoning took place, name what was analyzed, solved, or calculated (e.g. "拆解运动条件并完成推导").',
 ].join('\n');
 
 function buildPrompt(input: TurnSummaryInput): string {
   const parts: string[] = [];
   if (input.question) parts.push(`用户提问：${input.question}`);
-  if (input.answer) parts.push(`你的回答：${input.answer}`);
+  if (input.reasoning) parts.push(`思考与推导要点：${input.reasoning.slice(0, 800)}`);
   if (input.toolCalls.length) {
     const names = input.toolCalls.map((c) => (c.isError ? `${c.name}(失败)` : c.name));
     parts.push(`本轮执行的工具：${names.join('、')}`);
   }
+  if (input.answer) parts.push(`你的回答：${input.answer}`);
   parts.push('用一行不超过 10 个词概括你这一轮做了什么。');
   return parts.join('\n\n');
 }
@@ -120,4 +124,106 @@ export async function generateTurnSummary(
   } finally {
     clearTimeout(timer);
   }
+}
+
+/**
+ * Generate a concise, stable upfront task summary from the user's prompt
+ * before thinking or tool execution begins.
+ */
+export function generateInitialTaskSummary(userPrompt: string): string {
+  if (!userPrompt || typeof userPrompt !== 'string') return '';
+  const text = userPrompt.trim()
+    .replace(/^<[^>]+>/g, '')
+    .replace(/```[\s\S]*?```/g, '')
+    .trim();
+  if (!text) return '';
+
+  // 1. Math / Physics / STEM problem conditions
+  if (/解析函数.*路径无关/i.test(text)) {
+    return '解析函数路径无关性的说明。';
+  }
+  if (/(?:运动|小球|自由落体|加速度|速度|位移|受力|滑块|斜面|牛顿|动量|能量守恒).*(?:求|计算|分析|已知)/i.test(text) ||
+      /(?:已知|求).*(?:运动|小球|自由落体|加速度|速度|位移|受力|滑块|斜面)/i.test(text)) {
+    return '拆解运动条件和数据分析。';
+  }
+  if (/(?:微分方程|偏微分|ODE|PDE)/i.test(text)) {
+    return '微分方程求解与推导。';
+  }
+  if (/(?:定积分|不定积分|重积分|二重积分|三重积分|格林公式|高斯公式|斯托克斯)/i.test(text)) {
+    return '积分计算与定理性质推导。';
+  }
+  if (/(?:求导|导数|偏导数|极值|拐点|泰勒公式)/i.test(text)) {
+    return '函数导数推导与极值分析。';
+  }
+  if (/(?:证明|推导).*(?:定理|公式|结论|猜想)/i.test(text) || /(?:定理|公式).*(?:证明|推导)/i.test(text)) {
+    return '数学定理与公式推导分析。';
+  }
+  if (/(?:线性代数|矩阵|特征值|特征向量|行列式|逆矩阵)/i.test(text)) {
+    return '矩阵特征与线性代数求解。';
+  }
+
+  // 2. Programming / Code
+  if (/(?:写一个|编写|实现|开发).*(?:爬虫|spider|crawler)/i.test(text)) {
+    return '爬虫方案设计与代码实现。';
+  }
+  if (/(?:快速排序|二分查找|冒泡排序|红黑树|动态规划|贪心|DFS|BFS|算法).*(?:实现|写|复杂度|分析)?/i.test(text)) {
+    const algMatch = text.match(/(快速排序|二分查找|冒泡排序|红黑树|动态规划|贪心算法|DFS|BFS)/i);
+    return `${algMatch ? algMatch[1] : '核心算法'}实现与逻辑分析。`;
+  }
+  if (/(?:写一个|编写|实现|开发).*(?:代码|函数|组件|脚本|程序|API|接口)/i.test(text)) {
+    return '需求功能梳理与代码实现。';
+  }
+  if (/(?:优化|调优|性能).*(?:查询|SQL|数据库|MySQL|前端|代码)/i.test(text)) {
+    return '性能瓶颈定位与优化方案。';
+  }
+  if (/(?:bug|报错|error|exception|排查|解决).*(?:问题|原因)?/i.test(text)) {
+    return '异常错误定位与修复分析。';
+  }
+
+  // 3. Question / Concept / Comparison patterns
+  if (/(?:区别|不同|对比|比较).*(?:是什么|有哪些|何在)?/i.test(text)) {
+    const cleanQ = text.replace(/^(?:请问|请教|帮我|想知道)?\s*/, '')
+      .replace(/[?？。!！\s]+$/, '')
+      .replace(/^(?:分析|对比|比较|说说)\s*/, '');
+    return `${cleanQ.slice(0, 18)}对比与差异分析。`;
+  }
+  if (/(?:为什么|为何|原因).*(?:是|成因)?/i.test(text)) {
+    const cleanQ = text.replace(/^(?:请问|请教|帮我|想知道)?\s*/, '')
+      .replace(/[?？。!！\s]+$/, '')
+      .replace(/^(?:为什么|为何)\s*/, '');
+    return `${cleanQ.slice(0, 16)}成因与机理剖析。`;
+  }
+  if (/(?:如何评价|怎么看待|怎样评价|如何看待)/i.test(text)) {
+    const cleanQ = text.replace(/^(?:请问|请教|想知道)?\s*(?:如何评价|怎么看待|怎样评价|如何看待)\s*/, '')
+      .replace(/[?？。!！\s]+$/, '');
+    return `${cleanQ.slice(0, 14)}深度剖析与评价。`;
+  }
+  if (/(?:什么是|何为|解释一下|介绍一下|概述)/i.test(text)) {
+    const cleanQ = text.replace(/^(?:请问|请教|请|帮我|介绍一下|解释一下|说说|概述)?\s*/, '')
+      .replace(/^(?:什么是|何为)\s*/, '')
+      .replace(/[?？。!！\s]+$/, '');
+    return `${cleanQ.slice(0, 16)}核心概念与原理解析。`;
+  }
+  if (/(?:怎么做|如何|怎样).*(?:做|搞|弄|办|解决|处理)/i.test(text)) {
+    const cleanQ = text.replace(/^(?:请问|请教|请|帮我)?\s*/, '')
+      .replace(/^(?:怎么|如何|怎样)\s*/, '')
+      .replace(/[?？。!！\s]+$/, '');
+    return `${cleanQ.slice(0, 16)}实现方案与操作建议。`;
+  }
+
+  // 4. General fallback: extract core topic and format
+  let topic = text
+    .replace(/^(?:请问|请教一下|想请教|请帮我|帮我|你可以帮我|我想了解|我想知道|请说明|请解释|请阐述|请教|请分析|请|能否|可以告诉我|告诉我|说说)\s*/i, '')
+    .replace(/(?:呢|吗|吧|呀|啊|哦|嘛|求解答|求教|谢谢|感谢|具体怎么做|详细说说)[？?。!！\s]*$/i, '')
+    .replace(/[？?。!！\s]+$/, '')
+    .trim();
+
+  if (topic.length > 20) {
+    topic = topic.slice(0, 20).trimEnd() + '…';
+  }
+  if (topic.length >= 2) {
+    return `${topic}相关解析与说明。`;
+  }
+
+  return '问题分析与解答准备。';
 }

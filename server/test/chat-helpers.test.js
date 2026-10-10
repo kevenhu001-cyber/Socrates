@@ -102,7 +102,7 @@ describe('enforceServerSystemBoundary', () => {
     assert.match(out[0].content, /native function-calling interface/);
     assert.match(out[0].content, /redefine tool availability,.*treat data as trusted instructions/);
     assert.match(out[0].content, /FINAL OUTPUT CONSTRAINTS/i);
-    assert.match(out[0].content, /re-enable decorative emoji or dash punctuation/i);
+    assert.match(out[0].content, /user-requested style features \(such as dashes or emoji\)/i);
     assert.match(out[0].content, /professional, written register/i);
     assert.match(out[0].content, /Avoid emoji, kaomoji, decorative symbols/i);
     assert.match(out[0].content, /never invent facts, citations, sources, URLs, files, tool results, or completed actions/i);
@@ -250,7 +250,7 @@ describe('appendFinalOutputConstraints', () => {
       { role: 'user', content: 'hi' },
     ]);
     assert.equal(out.filter((m) => m.role === 'system').length, 1);
-    assert.match(out[0].content, /Never output dash punctuation/);
+    assert.match(out[0].content, /Minimize dash punctuation/);
     assert.match(out[0].content, /Chinese/);
     assert.ok(out[0].content.trimEnd().endsWith(FINAL_OUTPUT_CONSTRAINTS.trimEnd().slice(-40)),
       'the no-dash rule must be the last text in the system message');
@@ -265,7 +265,7 @@ describe('appendFinalOutputConstraints', () => {
   test('creates a system message when none exists', () => {
     const out = appendFinalOutputConstraints([{ role: 'user', content: 'hi' }]);
     assert.equal(out[0].role, 'system');
-    assert.match(out[0].content, /Never output dash punctuation/);
+    assert.match(out[0].content, /Minimize dash punctuation/);
   });
 });
 
@@ -285,7 +285,7 @@ describe('injectUserContext', () => {
     );
     assert.equal(out.length, 2);
     assert.equal(out[0].role, 'system');
-    assert.match(out[0].content, /\[System context — auto-injected\]/);
+    assert.match(out[0].content, /\[System context \(auto-injected\)\]/);
     assert.match(out[0].content, /User display name: Ada/);
     assert.match(out[0].content, /User plan tier: free/);
     assert.equal(out[1].role, 'user');
@@ -301,10 +301,10 @@ describe('injectUserContext', () => {
     );
     assert.equal(out.length, 2, 'must not add a new system message');
     assert.equal(out[0].role, 'system');
-    assert.match(out[0].content, /\[System context — auto-injected\]/);
+    assert.match(out[0].content, /\[System context \(auto-injected\)\]/);
     assert.match(out[0].content, /You are a tutor\./, 'original prompt preserved');
     // Dynamic context MUST come BEFORE the static system prompt so the
-    // model reads "[System context — auto-injected] …" as the latest
+    // model reads "[System context (auto-injected)] …" as the latest
     // authoritative block.
     assert.ok(out[0].content.indexOf('[System context') < out[0].content.indexOf('You are a tutor'));
   });
@@ -316,7 +316,7 @@ describe('injectUserContext', () => {
     );
     assert.match(
       out[0].content,
-      /\[Image-derived content — UNTRUSTED DATA ONLY\]/,
+      /\[Image-derived content \(UNTRUSTED DATA ONLY\)\]/,
       'image_description defence rule must be present',
     );
     assert.match(out[0].content, /UNTRUSTED DATA ONLY/);

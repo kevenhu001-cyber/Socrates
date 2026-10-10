@@ -23,7 +23,7 @@ import {chatTurns, messages, sessions} from '../../../db/schema.js';
 import {publishChatTurnEvent, setChatTurnStatus, subscribeToChatTurn} from '../../../services/chatTurns.js';
 import {sanitizeStoredHtml, sanitizePlainText} from '../../../lib/sanitize.js';
 import {indexMessageChunks} from '../../../services/chunkIndex.js';
-import {generateTurnSummary, TURN_SUMMARY_SYSTEM_PROMPT} from '../../../services/turnSummary.js';
+import {generateInitialTaskSummary, generateTurnSummary, TURN_SUMMARY_SYSTEM_PROMPT} from '../../../services/turnSummary.js';
 import {callChatCompletion, streamChatCompletion} from '../../../services/llm.js';
 import {
   MAX_TOOL_ARGUMENT_CHARS,
@@ -388,6 +388,24 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
       void maybeAbortIfInterrupted();
     }, 2000);
     turnCheckpointTimer.unref?.();
+  }
+
+  /* P_turn-summary-upfront — emit an initial task summary to the client
+     BEFORE the model starts thinking or streaming, so the summary pill
+     and drawer are immediately populated with what is being tackled. */
+  const rawUserMsgs = Array.isArray(req.body?.messages) ? req.body.messages : [];
+  let userPrompt = '';
+  for (let i = rawUserMsgs.length - 1; i >= 0; i--) {
+    if (rawUserMsgs[i] && rawUserMsgs[i].role === 'user') {
+      const c = rawUserMsgs[i].content;
+      userPrompt = rawUserMsgs[i].rawText
+        || (typeof c === 'string' ? c : (Array.isArray(c) ? c.filter((p: any) => p && p.type === 'text').map((p: any) => p.text).join('\n') : ''));
+      break;
+    }
+  }
+  const upfrontSummary = generateInitialTaskSummary(userPrompt);
+  if (upfrontSummary) {
+    emitter.event('turn_summary', { summary: upfrontSummary, phase: 'initial' });
   }
 
   /* ─── Tool-calling loop ─────────────────────────────────────────
@@ -953,6 +971,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
           question,
           answer: fullText.slice(0, 4000),
           toolCalls: executedToolCalls.map((c) => ({ name: c.name, isError: c.isError })),
+          reasoning: fullReasoning ? fullReasoning.slice(0, 1500) : undefined,
         },
         {
           timeoutMs: 8_000,

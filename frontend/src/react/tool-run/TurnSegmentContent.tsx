@@ -64,6 +64,9 @@ export function TurnSegmentContent({
     );
   }
 
-  /* Think segments consume public-text offsets but are never mounted. */
+  if (segment.kind === 'think') {
+    return null;
+  }
+
   return null;
 }

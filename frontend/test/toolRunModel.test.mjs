@@ -610,3 +610,74 @@ test('stripLegacyToolHtml short-circuits html that has no tool rows', () => {
     globalThis.DOMParser = saved;
   }
 });
+
+/* ── fine-grained tool labels and live previews ────────────────────────── */
+
+test('read_attachment distinguishes images from documents in running and done states', () => {
+  const imageCall = {
+    id: 'att-1',
+    name: 'read_attachment',
+    input: { fileName: 'chart.png', question: '请解释此图中的数据' },
+  };
+  const runningImage = toolRunLabel(imageCall, 'running');
+  assert.match(runningImage.text, /chart\.png/);
+  assert.match(runningImage.text, /Recognizing image|正在识别图片/);
+
+  const doneImage = toolRunLabel({ ...imageCall, output: 'ok' }, 'done');
+  assert.match(doneImage.text, /chart\.png/);
+  assert.match(doneImage.text, /Recognized image|已识别图片/);
+
+  const docCall = {
+    id: 'att-2',
+    name: 'read_attachment',
+    input: { fileName: 'manual.pdf' },
+  };
+  const runningDoc = toolRunLabel(docCall, 'running');
+  assert.match(runningDoc.text, /manual\.pdf/);
+  assert.match(runningDoc.text, /Reading attachment|正在读取附件/);
+
+  const doneDoc = toolRunLabel({ ...docCall, output: 'ok' }, 'done');
+  assert.match(doneDoc.text, /manual\.pdf/);
+  assert.match(doneDoc.text, /Read attachment|已读取附件/);
+});
+
+test('render_visualization includes chart template and title', () => {
+  const chartCall = {
+    id: 'viz-1',
+    name: 'render_visualization',
+    input: { template: 'line', title: '月度销售趋势' },
+  };
+  const running = toolRunLabel(chartCall, 'running');
+  assert.match(running.text, /折线图/);
+  assert.match(running.text, /月度销售趋势/);
+
+  const done = toolRunLabel({ ...chartCall, output: 'ok' }, 'done');
+  assert.match(done.text, /折线图/);
+  assert.match(done.text, /月度销售趋势/);
+});
+
+test('code_interpreter distinguishes drafting from executing and analyzing', () => {
+  const draftingCall = {
+    id: 'py-1',
+    name: 'code_interpreter',
+    input: {},
+    argumentsText: 'import numpy as np',
+  };
+  const draftingLabel = toolRunLabel(draftingCall, 'running');
+  assert.match(draftingLabel.text, /Drafting Python code|正在编写 Python 代码/);
+
+  const executingCall = {
+    ...draftingCall,
+    _run: { phase: 'running' },
+  };
+  const executingLabel = toolRunLabel(executingCall, 'running');
+  assert.match(executingLabel.text, /Executing code|正在执行代码/);
+
+  const analyzingCall = {
+    ...executingCall,
+    _progressPhase: 'stdout',
+  };
+  const analyzingLabel = toolRunLabel(analyzingCall, 'running');
+  assert.match(analyzingLabel.text, /Analyzing data|正在数据分析/);
+});
+

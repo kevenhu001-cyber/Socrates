@@ -28,59 +28,54 @@ function icon(body: string): string {
   return `${OPEN}${body}</svg>`;
 }
 
-/* One shared document silhouette (folded top-right corner) so `read`
-   and `spec` are recognisably the same object with different marks on
-   it, instead of two unrelated drawings. */
-const DOC = '<path d="M11.6 3.4H7a2.4 2.4 0 0 0-2.4 2.4v8.4a2.4 2.4 0 0 0 2.4 2.4h6a2.4 2.4 0 0 0 2.4-2.4V6.9Z"/><path d="M11.6 3.4v3.5h3.5"/>';
+/* Apple SF Symbols-inspired document silhouette:
+   Continuous rounded squircle corners (rx=2.6) with a softly filleted folded top-right flap. */
+const DOC = '<path d="M6.8 3.2h4.6l4.4 4.4v6.6a2.6 2.6 0 0 1-2.6 2.6H6.8A2.6 2.6 0 0 1 4.2 14.2V5.8A2.6 2.6 0 0 1 6.8 3.2Z"/><path d="M11.4 3.4v3a1.2 1.2 0 0 0 1.2 1.2h3"/>';
 
 export const STROKE_ICONS: Record<string, string> = {
-  /* Terminal: rounded frame, prompt caret, cursor rule. */
-  command: icon('<rect x="2.9" y="3.7" width="14.2" height="12.6" rx="3.8"/><path d="m6.7 8.4 1.9 1.9-1.9 1.9"/><path d="M10.7 12.2h2.9"/>'),
-  /* Pencil: one closed body, one collar line marking the ferrule. */
-  fileChange: icon('<path d="M4.1 15.9l.8-3.2 8-8a1.85 1.85 0 0 1 2.6 2.6l-8 8z"/><path d="m11.7 5.5 2.6 2.6"/>'),
-  /* Document with body copy. */
-  read: icon(`${DOC}<path d="M7.9 10.9h4.2M7.9 13.3h2.8"/>`),
-  /* Document with an approval mark. */
-  spec: icon(`${DOC}<path d="m7.9 11.4 1.5 1.5 3-3.2"/>`),
-  /* Magnifier. Handle leaves the circle exactly on the 45° diagonal. */
-  search: icon('<circle cx="8.9" cy="8.9" r="5.4"/><path d="m12.7 12.7 3.8 3.8"/>'),
-  /* Globe: equator plus one meridian, so "the web" reads at 14px. */
-  fetch: icon('<circle cx="10" cy="10" r="6.5"/><path d="M3.5 10h13"/><path d="M10 3.5c1.75 1.85 2.7 4.05 2.7 6.5S11.75 14.65 10 16.5C8.25 14.65 7.3 12.45 7.3 10S8.25 5.35 10 3.5Z"/>'),
-  /* `</>` — angle brackets plus the slash that makes it code, not a
-     pair of chevrons. */
-  code: icon('<path d="m7 6.2-3.5 3.8L7 13.8"/><path d="m13 6.2 3.5 3.8-3.5 3.8"/><path d="m11.2 4.9-2.4 10.2"/>'),
-  /* Axis pair with three columns. */
-  visual: icon('<path d="M3.6 3.4v11.7a1.3 1.3 0 0 0 1.3 1.3h11.5"/><path d="M7.7 13.4V9.5M11 13.4V6.3M14.3 13.4v-2.6"/>'),
-  /* Checklist: two ticked rows. */
-  plan: icon('<path d="m3.5 6 1.4 1.4L7.6 4.7"/><path d="m3.5 13.5 1.4 1.4 2.7-2.8"/><path d="M10.2 6.1h6.3M10.2 13.6h6.3"/>'),
-  /* Twin spark — the agent/model mark. Large spark leads, small spark
-     trails at the lower right. */
-  agent: icon('<path d="M9.6 2.9c.55 3.15 1.95 4.55 5.1 5.1-3.15.55-4.55 1.95-5.1 5.1-.55-3.15-1.95-4.55-5.1-5.1 3.15-.55 4.55-1.95 5.1-5.1Z"/><path d="M14.5 12.4c.26 1.47.91 2.12 2.38 2.38-1.47.26-2.12.91-2.38 2.38-.26-1.47-.91-2.12-2.38-2.38 1.47-.26 2.12-.91 2.38-2.38Z"/>'),
-  /* Open book / shelf. */
-  library: icon('<path d="M15.4 3.3H7.1a2.2 2.2 0 0 0-2.2 2.2v9.1a2.2 2.2 0 0 1 2.2-2.2h8.3z"/><path d="M4.9 14.6a2.2 2.2 0 0 0 2.2 2.2h8.3v-4.4"/>'),
-  /* Git branch: trunk with one fork. */
-  repo: icon('<circle cx="6.4" cy="5.2" r="1.8"/><circle cx="6.4" cy="14.8" r="1.8"/><circle cx="13.6" cy="5.2" r="1.8"/><path d="M6.4 7v6"/><path d="M13.6 7v.7a5.2 5.2 0 0 1-5.2 5.2"/>'),
-  /* Two interlocking link arcs. */
-  mcp: icon('<path d="M8.6 11.4 7.2 12.8a2.7 2.7 0 0 1-3.8-3.8l2.4-2.4a2.7 2.7 0 0 1 3.8 0"/><path d="m11.4 8.6 1.4-1.4a2.7 2.7 0 0 1 3.8 3.8l-2.4 2.4a2.7 2.7 0 0 1-3.8 0"/>'),
-  /* Bookmark flag — memory / saved fact. */
-  memory: icon('<path d="M5.5 3.4h9a1.6 1.6 0 0 1 1.6 1.6v12.5l-6.1-3.6-6.1 3.6V5a1.6 1.6 0 0 1 1.6-1.6Z"/>'),
-  /* Browser window — site / page creation. */
-  site: icon('<rect x="2.9" y="4.2" width="14.2" height="11.6" rx="3"/><path d="M3.4 7.8h13.3"/><circle cx="5.5" cy="6" r=".7" fill="currentColor" stroke="none"/><circle cx="7.9" cy="6" r=".7" fill="currentColor" stroke="none"/>'),
-  /* Sliders — the generic "some tool ran" mark. */
-  tool: icon('<path d="M3.5 7.1h3M9.9 7.1h6.6"/><circle cx="8.2" cy="7.1" r="1.7"/><path d="M3.5 12.9h6.6M13.4 12.9h3.1"/><circle cx="11.8" cy="12.9" r="1.7"/>'),
-  /* Run of several operations — a chain of steps read top-to-bottom: two
-     nodes on one rail, each with its own line of work to the right. This
-     is the aggregate header's mark, so it has to say "a sequence of
-     actions happened here" at 18px without borrowing `plan`'s ticks
-     (intent) or `tool`'s sliders (one unnamed call). */
-  runGroup: icon('<circle cx="5.5" cy="6.1" r="1.9"/><circle cx="5.5" cy="14.1" r="1.9"/><path d="M5.5 8v4.2"/><path d="M9.8 6.1h6.7M9.8 14.1h4.3"/>'),
+  /* Terminal: Apple terminal squircle screen, rounded prompt chevron, pill cursor. */
+  command: icon('<rect x="2.6" y="3.6" width="14.8" height="12.8" rx="3.8"/><path d="m6.4 8.2 2.2 1.8-2.2 1.8"/><path d="M10.8 12.2h2.8"/>'),
+  /* Pencil: Apple SF Symbols pencil with rounded eraser cap, soft collar and tapered tip. */
+  fileChange: icon('<path d="M13.8 3.6a1.9 1.9 0 0 1 2.6 2.6L7.6 15l-3.8 1.2 1.2-3.8z"/><path d="m11.8 5.6 2.6 2.6"/>'),
+  /* Document with body copy: smooth rounded document with two soft pill lines. */
+  read: icon(`${DOC}<path d="M7.4 11.2h5.2M7.4 13.8h3.4"/>`),
+  /* Document with an approval mark: smooth rounded document with curved Apple checkmark. */
+  spec: icon(`${DOC}<path d="m7.2 12.2 1.8 1.8 4.2-4.4"/>`),
+  /* Magnifier: concentric circular lens, smooth 45° handle with rounded pill end. */
+  search: icon('<circle cx="8.8" cy="8.8" r="5.2"/><path d="m12.6 12.6 3.9 3.9"/>'),
+  /* Globe: Apple SF Symbols globe with spherical equator and smooth meridian ellipse. */
+  fetch: icon('<circle cx="10" cy="10" r="6.6"/><path d="M3.4 10h13.2"/><path d="M10 3.4c2.4 2 3.8 4.1 3.8 6.6s-1.4 4.6-3.8 6.6c-2.4-2-3.8-4.1-3.8-6.6s1.4-4.6 3.8-6.6Z"/>'),
+  /* Code: Apple < / > with rounded chevrons and elegant forward slash. */
+  code: icon('<path d="m6.8 6.5-3.3 3.5 3.3 3.5"/><path d="m13.2 6.5 3.3 3.5-3.3 3.5"/><path d="m11.4 4.8-2.8 10.4"/>'),
+  /* Visual: Apple Health/Stocks-inspired bar chart with full pill/capsule columns on baseline. */
+  visual: icon('<path d="M3.2 16.6h13.6"/><rect x="4.6" y="9.8" width="2.8" height="6.8" rx="1.4"/><rect x="8.6" y="5.2" width="2.8" height="11.4" rx="1.4"/><rect x="12.6" y="7.8" width="2.8" height="8.8" rx="1.4"/>'),
+  /* Plan: Apple checklist with soft rounded checkmarks and pill task lines. */
+  plan: icon('<path d="m3.6 6.8 1.8 1.8 3.2-3.4"/><path d="m3.6 13.6 1.8 1.8 3.2-3.4"/><path d="M11.2 6.8h5.4M11.2 13.6h5.4"/>'),
+  /* Agent: Apple Intelligence signature 4-point sparkles with continuous cubic bezier curvature. */
+  agent: icon('<path d="M8.6 3.4C8.6 6.6 11.1 9.2 14.4 9.2 11.1 9.2 8.6 11.8 8.6 15 8.6 11.8 6.1 9.2 2.8 9.2 6.1 9.2 8.6 6.6 8.6 3.4Z"/><path d="M15.2 12c0 1.4 1.1 2.6 2.4 2.6-1.3 0-2.4 1.2-2.4 2.6 0-1.4-1.1-2.6-2.4-2.6 1.3 0 2.4-1.2 2.4-2.6Z"/>'),
+  /* Library: Apple book.closed with rounded cover and spine crease. */
+  library: icon('<path d="M5.8 3.5h8.4a2.4 2.4 0 0 1 2.4 2.4v10.3H6.8A2.6 2.6 0 0 1 4.2 13.6V5.1a1.6 1.6 0 0 1 1.6-1.6Z"/><path d="M7.2 3.5v12.7"/>'),
+  /* Repo: Apple git branch with circular nodes and smooth bezier branch curve. */
+  repo: icon('<circle cx="6.2" cy="5.2" r="1.8"/><circle cx="6.2" cy="14.8" r="1.8"/><circle cx="13.8" cy="6.2" r="1.8"/><path d="M6.2 7v6"/><path d="M13.8 8c-3 0-5.2 1.6-7.6 4.2"/>'),
+  /* MCP: Apple link with interlocking rounded capsule links and 45° orientation. */
+  mcp: icon('<path d="m8.8 11.2-1.6 1.6a2.8 2.8 0 0 1-4-4l1.6-1.6a2.8 2.8 0 0 1 4 0"/><path d="m11.2 8.8 1.6-1.6a2.8 2.8 0 0 1 4 4l-1.6 1.6a2.8 2.8 0 0 1-4 0"/><path d="m7.8 12.2 4.4-4.4"/>'),
+  /* Memory: Apple bookmark with rounded squircle top and filleted ribbon tail. */
+  memory: icon('<path d="M5.8 3.4h8.4a2.4 2.4 0 0 1 2.4 2.4v10.6a.8.8 0 0 1-1.3.6L10 13.6l-5.3 3.4a.8.8 0 0 1-1.3-.6V5.8A2.4 2.4 0 0 1 5.8 3.4Z"/>'),
+  /* Site: Apple macwindow with rounded frame, titlebar divider and 3 macOS traffic light dots. */
+  site: icon('<rect x="2.6" y="3.8" width="14.8" height="12.4" rx="3.6"/><path d="M2.6 7.6h14.8"/><circle cx="5.2" cy="5.7" r=".75" fill="currentColor" stroke="none"/><circle cx="7.4" cy="5.7" r=".75" fill="currentColor" stroke="none"/><circle cx="9.6" cy="5.7" r=".75" fill="currentColor" stroke="none"/>'),
+  /* Tool: Apple slider.horizontal.2 with rounded rails and circular thumb knobs. */
+  tool: icon('<path d="M3.4 7h2.8m3.6 0h6.8"/><circle cx="8" cy="7" r="1.8"/><path d="M3.4 13h6.8m3.6 0h2.8"/><circle cx="12" cy="13" r="1.8"/>'),
+  /* RunGroup: Apple-style step sequence with rounded track nodes and task pills. */
+  runGroup: icon('<circle cx="5.6" cy="6.2" r="1.8"/><circle cx="5.6" cy="13.8" r="1.8"/><path d="M5.6 8v4"/><path d="M9.6 6.2h7M9.6 13.8h4.8"/>'),
+  /* Photo / Image: Apple photo with rounded squircle frame, sun and mountain crests. */
+  image: icon('<rect x="2.8" y="3.8" width="14.4" height="12.4" rx="3.4"/><circle cx="7" cy="7.8" r="1.3"/><path d="m3.4 14.6 4.8-4.8a1.2 1.2 0 0 1 1.7 0l6.7 6.4"/><path d="m12.6 12.4 1.5-1.5a1.2 1.2 0 0 1 1.7 0l.8.8"/>'),
 
   /* ── status glyphs ──────────────────────────────────────────────
      Shared with the inline rows so a settled row's mark carries the
      same stroke weight as the tool glyph it replaces. */
-  check: icon('<path d="m4.8 10.3 3.4 3.4 7.2-7.6"/>'),
-  stop: icon('<rect x="6.2" y="6.2" width="7.6" height="7.6" rx="2.7"/>'),
-  alert: icon('<path d="M10 5.2v5.3"/><circle cx="10" cy="14" r=".95" fill="currentColor" stroke="none"/>'),
+  check: icon('<path d="m4.8 10.4 3.4 3.4 7-7.2"/>'),
+  stop: icon('<rect x="5.8" y="5.8" width="8.4" height="8.4" rx="2.8"/>'),
+  alert: icon('<circle cx="10" cy="10" r="6.8"/><path d="M10 6.4v4"/><circle cx="10" cy="13.2" r=".85" fill="currentColor" stroke="none"/>'),
 
   /* ── chevrons ───────────────────────────────────────────────────
      Exact 45° arms, span 6.4 → 13.6 on both axes, midpoint (10,10).
@@ -96,8 +91,8 @@ export const STROKE_ICONS: Record<string, string> = {
      Shaft on the centre axis, head arms on the same 45° as the
      chevrons so an arrow and a chevron never look like two different
      line weights when they sit in the same row. */
-  arrowUp: icon('<path d="M10 16.2V4.4"/><path d="m5.6 8.8 4.4-4.4 4.4 4.4"/>'),
-  arrowDown: icon('<path d="M10 3.8v11.8"/><path d="m5.6 11.2 4.4 4.4 4.4-4.4"/>'),
+  arrowUp: icon('<path d="M10 16.2V4.2M5.8 8.4 10 4.2l4.2 4.2"/>'),
+  arrowDown: icon('<path d="M10 3.8v12M5.8 11.6 10 15.8l4.2-4.2"/>'),
 };
 
 export function agentStepIcon(kind: string): string {
@@ -155,6 +150,9 @@ export function toolIcon(name: string): string {
       return STROKE_ICONS.memory;
     case 'create_site':
       return STROKE_ICONS.site;
+    case 'image':
+    case 'read_image':
+      return STROKE_ICONS.image;
     default:
       if (CONNECTOR_NAMES.has(name) || /^oc_/.test(name)) return STROKE_ICONS.mcp;
       return STROKE_ICONS.tool;
@@ -186,6 +184,7 @@ export function categoryIcon(category: string): string {
     case 'memory': return STROKE_ICONS.memory;
     case 'site': return STROKE_ICONS.site;
     case 'connector': return STROKE_ICONS.mcp;
+    case 'image': return STROKE_ICONS.image;
     default: return STROKE_ICONS.runGroup;
   }
 }

@@ -10,6 +10,7 @@ import {
 } from './toolRunModel.js';
 import { ToolRunSheetProvider } from './ToolRunSheet.js';
 import { TurnStatus } from './TurnStatus.js';
+import { TurnSummaryPill } from './TurnSummaryPill';
 import { TurnSegmentContent } from './TurnSegmentContent';
 import { useProseRenderer } from './proseRenderer';
 import type { LegacyChatMessage } from '../types/domain';
@@ -90,6 +91,11 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
 
   return (
     <ToolRunSheetProvider>
+      <TurnSummaryPill
+        message={message}
+        live={isLive}
+        messageId={messageId}
+      />
       {segments.map((segment, index) => (
         <TurnSegmentContent
           key={segmentKey(segment, index)}

@@ -46,6 +46,11 @@ export const executeReadAttachment: ToolExecutor = async (
   }
 
   try {
+    emitter.event('tool_progress', {
+      id: call.id,
+      phase: 'reading',
+      chunk: '正在读取与分析附件内容…',
+    });
     const page = await readAttachmentForUser({
       fileId,
       userId: req.userId,

@@ -97,3 +97,92 @@
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail-empty{color:hsl(var(--text-500))}
 .msg.assistant .msg-body:has(.tool-inline) a.tool-inline-src{color:hsl(var(--text-300));text-decoration-color:hsl(var(--text-500)/.6)}
 .msg.assistant .msg-body:has(.tool-inline) a.tool-inline-src:hover{color:hsl(var(--text-100));background:transparent}
+
+/* Live train-of-thought snippet & micro-progress detail in the status line */
+.thinking-status-snippet{
+  max-width:min(340px,46vw);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:calc(12px * var(--app-font-scale, 1));
+  color:hsl(var(--text-400));
+  font-style:italic;
+  opacity:.9;
+}
+.thinking-status-detail{
+  font-size:calc(12px * var(--app-font-scale, 1));
+  color:hsl(var(--text-400));
+  margin-left:2px;
+}
+
+/* P_turn-summary — in-bubble summary pill at the top of an assistant turn */
+.turn-summary-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  max-width:100%;
+  min-height:28px;
+  padding:3px 8px 3px 6px;
+  margin-bottom:8px;
+  border:0;
+  border-radius:var(--ui-radius-sm);
+  background:transparent;
+  color:var(--ui-text-tertiary);
+  font-size:calc(13px * var(--app-font-scale, 1));
+  line-height:1.4;
+  cursor:pointer;
+  user-select:none;
+  text-align:left;
+  transition:color .15s ease,background-color .15s ease;
+}
+.turn-summary-pill:hover{
+  color:var(--ui-text-primary);
+  background:hsl(var(--bg-300)/0.45);
+}
+.turn-summary-pill:focus-visible{
+  outline:1.5px solid hsl(var(--accent-000)/0.65);
+  outline-offset:1px;
+}
+.turn-summary-pill:active{
+  background:hsl(var(--bg-300));
+}
+.turn-summary-icon{
+  display:block;
+  width:14px;
+  height:14px;
+  flex:0 0 14px;
+  color:currentColor;
+  opacity:.85;
+}
+.turn-summary-pill.is-live .turn-summary-icon{
+  animation:turnSummaryPulse 2.4s ease-in-out infinite;
+}
+@keyframes turnSummaryPulse{
+  0%,100%{opacity:.6;transform:scale(0.96)}
+  50%{opacity:1;transform:scale(1.04)}
+}
+.turn-summary-label{
+  display:inline-block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  max-width:min(520px,78vw);
+  font-family:var(--font-sans);
+  font-weight:400;
+  color:inherit;
+}
+.turn-summary-chevron{
+  display:block;
+  width:12px;
+  height:12px;
+  flex:0 0 12px;
+  color:currentColor;
+  opacity:.6;
+  transition:transform .16s ease,opacity .16s ease;
+}
+.turn-summary-pill:hover .turn-summary-chevron{
+  opacity:.95;
+  transform:translateX(1px);
+}
+
+

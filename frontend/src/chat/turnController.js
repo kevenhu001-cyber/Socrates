@@ -240,11 +240,14 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
      and double the React commit work). */
   var ctl=precreatedCtl;
   if(!ctl){
-    ctl=await _addStreamingMessage({onRetry:function(){
-      /* Carry this turn's immutable content directly so retrying an older
-         multimodal turn can never pick up a newer draft's attachments. */
-      quietTurn(retryTurn());
-    }});
+    ctl=await _addStreamingMessage({
+      userPrompt: userMsg,
+      onRetry:function(){
+        /* Carry this turn's immutable content directly so retrying an older
+           multimodal turn can never pick up a newer draft's attachments. */
+        quietTurn(retryTurn());
+      }
+    });
   }
   /* M1 async — bind the turn to a detached server-side run so a socket drop
      mid-turn leaves a resumable run. The pending pointer survives reloads;

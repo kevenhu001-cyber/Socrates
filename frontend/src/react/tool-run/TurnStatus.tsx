@@ -74,6 +74,11 @@ function StatusLine({ status, messageId }: TurnStatusProps) {
       <span className="thinking-status-label" aria-live="polite">
         {status.label}
       </span>
+      {status.detail ? (
+        <span className="thinking-status-detail">
+          {status.detail}
+        </span>
+      ) : null}
     </span>
   );
 }

@@ -69,7 +69,7 @@ test('deferred tool shows a clean single status line, no orphan dots', async ({ 
   await page.evaluate(() => window.__pushToolUse());
   // The deferred state: status line visible, NO mounted tool row yet.
   await expect(bubble.locator('.tool-inline')).toHaveCount(0);
-  await expect(bubble).toContainText('工具运行中');
+  await expect(bubble).toContainText(/正在更新文件|工具运行中/);
   await expect(bubble.locator('.thinking-status .tool-inline-tool-icon svg path')).toHaveCount(2);
   await expect(bubble.locator('.thinking-status .thinking-spinner')).toHaveCount(0);
 

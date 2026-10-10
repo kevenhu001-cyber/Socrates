@@ -16,9 +16,12 @@ type SummaryMessage = LegacyChatMessage & {
 export interface SummaryHistoryTurn {
   id: string;
   question: string;
+  summary?: string;
   answerPreview: string;
   streaming: boolean;
   activities: readonly ThinkingPanelActivity[];
+  activeStep?: string;
+  hasThinking?: boolean;
 }
 
 type CachedText = { source: string; value: string };
@@ -43,6 +46,10 @@ function answerPreview(message: SummaryMessage): string {
      summary never arrived (generation failed, or an older persisted turn). */
   const modelSummary = typeof message.summary === 'string' ? message.summary.trim() : '';
   if (modelSummary) return compact(modelSummary, 220);
+  const liveStep = typeof (message as { _liveStep?: unknown })._liveStep === 'string'
+    ? ((message as { _liveStep?: string })._liveStep || '').trim()
+    : '';
+  if (liveStep) return compact(liveStep, 220);
   if (message.type === 'streaming') return '';
   const source = typeof message.rawText === 'string' ? message.rawText : '';
   if (!source) return '';
@@ -110,14 +117,25 @@ export function buildSummaryHistory(
       || (liveSnapshot.messageId === id && liveSnapshot.streaming);
     const activities = activitiesFor(message, id, liveSnapshot);
     const hasText = typeof message.rawText === 'string' && message.rawText.length > 0;
-    if (!streaming && !hasText && activities.length === 0) continue;
+    const hasThinking = Boolean(
+      (typeof message.reasoningContent === 'string' && message.reasoningContent.trim().length > 0)
+      || (liveSnapshot.messageId === id && liveSnapshot.streaming)
+    );
+    if (!streaming && !hasText && activities.length === 0 && !hasThinking) continue;
+    const activeStep = typeof (message as { _liveStep?: unknown })._liveStep === 'string'
+      ? (message as { _liveStep?: string })._liveStep
+      : undefined;
+    const summary = typeof message.summary === 'string' && message.summary.trim() ? message.summary.trim() : undefined;
     assistantNumber += 1;
     history.push({
       id,
       question,
+      summary,
       answerPreview: answerPreview(message),
       streaming,
       activities,
+      activeStep,
+      hasThinking,
     });
     question = '';
   }

@@ -1,4 +1,4 @@
-import {toolCategory} from '../../render/toolCategory.js';
+import { isInlineSearchTool, toolCategory } from '../../render/toolCategory.js';
 import {
   basename,
   clip,
@@ -300,7 +300,66 @@ export function approvalViewOf(call: ToolCallRecord): ApprovalView | null {
   };
 }
 
-/** Commands and code are the two things worth watching while they stream in. */
+function extractFieldFromJson(argsJson: string, ...keys: string[]): string {
+  const raw = String(argsJson || '').trim();
+  if (!raw) return '';
+  for (const candidate of [raw, raw + '"}', raw + '}', raw + '"}}', raw + '"}']) {
+    try {
+      const parsed = JSON.parse(candidate) as Record<string, unknown>;
+      if (parsed && typeof parsed === 'object') {
+        for (const k of keys) {
+          const v = parsed[k];
+          if (typeof v === 'string' && v.trim()) return v.trim();
+        }
+      }
+    } catch (_) { /* keep trying */ }
+  }
+  return '';
+}
+
+export function extractVisualizationPreview(argsJson: string, input?: unknown): string {
+  let parsed: Record<string, unknown> | null = null;
+  if (input && typeof input === 'object' && Object.keys(input).length > 0) {
+    parsed = input as Record<string, unknown>;
+  } else if (argsJson.trim()) {
+    for (const candidate of [argsJson, argsJson + '"}', argsJson + '}', argsJson + '"}}', argsJson + '"}']) {
+      try {
+        const candidateObj = JSON.parse(candidate);
+        if (candidateObj && typeof candidateObj === 'object') {
+          parsed = candidateObj as Record<string, unknown>;
+          break;
+        }
+      } catch (_) { /* keep trying */ }
+    }
+  }
+  if (!parsed) {
+    const raw = argsJson.trim().replace(/^\s*\{?\s*"[a-z_]+?"\s*:\s*"?/i, '');
+    return raw.length >= 3 ? clip(raw, 120) : '';
+  }
+  const template = String(parsed.template || parsed.type || '');
+  const title = String(parsed.title || parsed.caption || '');
+  const lines: string[] = [];
+  if (template) lines.push(`图表类型: ${template}`);
+  if (title) lines.push(`标题: ${title}`);
+  if (parsed.description) lines.push(`描述: ${clip(String(parsed.description), 80)}`);
+  return lines.join('\n');
+}
+
+export function extractQueryPreview(argsJson: string): string {
+  return extractFieldFromJson(argsJson, 'query', 'q', 'search_query', 'pattern');
+}
+
+export function extractAttachmentPreview(argsJson: string, input?: unknown): string {
+  const rec = (input && typeof input === 'object' ? input : {}) as Record<string, unknown>;
+  const file = String(rec.fileName || rec.filename || rec.name || rec.file_name || '') || extractFieldFromJson(argsJson, 'fileName', 'filename', 'name', 'file_name');
+  const q = String(rec.question || '') || extractFieldFromJson(argsJson, 'question');
+  if (file) {
+    return q ? `附件: ${clip(file, 40)}\n分析目标: ${clip(q, 80)}` : `附件: ${clip(file, 60)}`;
+  }
+  return q ? `分析目标: ${clip(q, 80)}` : '';
+}
+
+/** Commands, code, visualization specs, and searches are worth watching while streaming in. */
 function livePreviewOf(call: ToolCallRecord): string {
   const streamed = typeof call.argumentsText === 'string' ? call.argumentsText : '';
   const category = toolCategory(call.name);
@@ -311,6 +370,16 @@ function livePreviewOf(call: ToolCallRecord): string {
   if (category === 'code' || call.name === 'Bash') {
     if (!streamed.trim()) return '';
     return extractCodePreview(streamed);
+  }
+  if (call.name === 'render_visualization') {
+    return extractVisualizationPreview(streamed, call.input);
+  }
+  if (isInlineSearchTool(call.name)) {
+    const q = queryOf(call.input) || extractQueryPreview(streamed);
+    if (q) return `搜索关键词: ${clip(q, 80)}`;
+  }
+  if (call.name === 'read_attachment') {
+    return extractAttachmentPreview(streamed, call.input);
   }
   return '';
 }

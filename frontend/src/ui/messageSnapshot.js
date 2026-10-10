@@ -32,7 +32,9 @@ export function setReactLiveStatus(message, status) {
       && previous.state === status.state
       && previous.error === status.error
       && previous.elapsedSec === status.elapsedSec
-      && previous.toolName === status.toolName) return;
+      && previous.toolName === status.toolName
+      && previous.thoughtSnippet === status.thoughtSnippet
+      && previous.detail === status.detail) return;
 
   const messageId = String(message.clientId || message.id || '');
   const updated = updateMessageSnapshot(message, {

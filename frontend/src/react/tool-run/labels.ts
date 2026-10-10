@@ -122,6 +122,67 @@ export function resultCount(call: ToolCallLike | null | undefined): number {
   return Array.isArray(call.results) ? call.results.length : 0;
 }
 
+const IMAGE_EXTENSIONS = /\.(png|jpe?g|gif|webp|svg|bmp|ico)$/i;
+
+export function isImageAttachment(fileName?: string, mimeType?: string): boolean {
+  if (mimeType && mimeType.startsWith('image/')) return true;
+  if (!fileName) return false;
+  return IMAGE_EXTENSIONS.test(fileName);
+}
+
+export function attachmentInfo(call: ToolCallLike): { fileName: string; isImage: boolean } {
+  const input = (call && call.input && typeof call.input === 'object' ? call.input : {}) as Record<string, unknown>;
+  const rawFile = strField(input, 'fileName', 'filename', 'name', 'file_name')
+    || (typeof (call as Record<string, unknown>).fileName === 'string' ? ((call as Record<string, unknown>).fileName as string) : '')
+    || '';
+  const mimeType = strField(input, 'mimeType', 'mime_type')
+    || (typeof (call as Record<string, unknown>).mimeType === 'string' ? ((call as Record<string, unknown>).mimeType as string) : '');
+  const base = basename(rawFile) || rawFile;
+  return {
+    fileName: base,
+    isImage: isImageAttachment(base, mimeType),
+  };
+}
+
+const CHART_TYPE_NAMES: Record<string, string> = {
+  function: '函数图像',
+  line: '折线图',
+  area: '面积图',
+  bar: '柱状图',
+  scatter: '散点图',
+  pie: '饼图',
+  histogram: '直方图',
+  heatmap: '热力图',
+  radar: '雷达图',
+  boxplot: '箱线图',
+  flowchart: '流程图',
+  sequence: '时序图',
+  state: '状态图',
+  tree: '树状图',
+  mindmap: '思维导图',
+  network: '拓扑图',
+  timeline: '时间线',
+  comparison: '对比图',
+  process: '流程架构图',
+  number_line: '数轴',
+  geometry: '几何图示',
+  concept_map: '概念图',
+  svg_illustration: '示意图',
+  interactive_simulation: '交互仿真',
+  paper_chart: '统计图表',
+  math_construction: '几何构造',
+  geometry_3d: '3D 模型',
+  whiteboard: '白板演练',
+};
+
+export function chartInfo(call: ToolCallLike): { type: string; title: string } {
+  const input = (call && call.input && typeof call.input === 'object' ? call.input : {}) as Record<string, unknown>;
+  const template = strField(input, 'template', 'type');
+  const type = CHART_TYPE_NAMES[template] || (template ? template + '图' : translate('tool.actionVisual', '图表'));
+  const title = strField(input, 'title', 'caption', 'name');
+  return { type, title };
+}
+
 /* A test/build one-liner is worth surfacing in the row; a page dump isn't.
    Match only summary shapes so we never promote an arbitrary first line. */
 const PASSED_RE = /(\d+)\s+passed/i;
@@ -172,17 +233,38 @@ function runningLabel(call: ToolCallLike): RunLabel {
     return { text: translate('tool.actionFetch', 'Reading the page…') };
   }
   if (name === 'code_interpreter' || name === 'Code') {
-    /* Once the sandbox has printed something, "executing" is stale: the wait       is on the analysis, and the reader sees that. `tool_progress` records
+    /* Once the sandbox has printed something, "executing" is stale: the wait
+       is on the analysis, and the reader sees that. `tool_progress` records
        the last phase on the entry, which is what the legacy DOM writer used
        to upgrade its own label from. */
     const phase = String(call._progressPhase || '');
     if (phase === 'stdout' || phase === 'stderr') {
       return { text: translate('tool.actionAnalyze', 'Analyzing data…') };
     }
+    const runPhase = (call as Record<string, unknown>)._run && ((call as Record<string, unknown>)._run as Record<string, unknown>).phase;
+    if (runPhase === 'running') {
+      return { text: translate('tool.actionCode', 'Executing code…') };
+    }
+    if (call.argumentsText && !call.output && !call._progressPhase) {
+      return { text: translate('tool.actionDraftPython', 'Drafting Python code…') };
+    }
     return { text: translate('tool.actionCode', 'Executing code…') };
   }
   if (name === 'render_visualization') {
-    return { text: translate('tool.actionVisual', 'Creating a chart') };
+    const { type, title } = chartInfo(call);
+    if (title) {
+      return { text: tf('tool.creatingChartWithTitle', 'Creating {type}: “{title}”…', { type, title: clip(title, 24) }) };
+    }
+    return { text: tf('tool.creatingChart', 'Creating {type}…', { type }) };
+  }
+  if (name === 'read_attachment') {
+    const { fileName, isImage } = attachmentInfo(call);
+    if (isImage) {
+      if (fileName) return { text: tf('tool.recognizingImage', 'Recognizing image {file}…', { file: clip(fileName, 32) }) };
+      return { text: translate('tool.actionRecognizeImage', 'Recognizing image…') };
+    }
+    if (fileName) return { text: tf('tool.readingAttachment', 'Reading attachment {file}…', { file: clip(fileName, 32) }) };
+    return { text: translate('tool.actionRead', 'Reading files') };
   }
   if (name === 'workspace_agent') {
     return { text: translate('tool.actionCodex', 'Working in the workspace…') };
@@ -241,7 +323,20 @@ function doneLabel(call: ToolCallLike): RunLabel {
     return { text: translate('tool.ranCode', 'Ran Python'), meta };
   }
   if (name === 'render_visualization') {
-    return { text: translate('tool.doneVisual', 'Created a chart') };
+    const { type, title } = chartInfo(call);
+    if (title) {
+      return { text: tf('tool.createdChartWithTitle', 'Created {type}: “{title}”', { type, title: clip(title, 24) }) };
+    }
+    return { text: tf('tool.createdChart', 'Created {type}', { type }) };
+  }
+  if (name === 'read_attachment') {
+    const { fileName, isImage } = attachmentInfo(call);
+    if (isImage) {
+      if (fileName) return { text: tf('tool.recognizedImage', 'Recognized image {file}', { file: clip(fileName, 32) }) };
+      return { text: translate('tool.actionRecognizeImage', 'Recognized image') };
+    }
+    if (fileName) return { text: tf('tool.readAttachment', 'Read attachment {file}', { file: clip(fileName, 32) }) };
+    return { text: translate('tool.doneRead', 'Read files') };
   }
   if (name === 'workspace_agent') {
     return { text: translate('tool.doneCodex', 'Workspace run') };
