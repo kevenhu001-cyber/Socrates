@@ -49,6 +49,12 @@ or behaviour was modified, and every validation gate passes.
 | `src/lib/bridge/useBridge.ts` | 47 | `useBridge(bridge)` — full snapshot via `useSyncExternalStore`. `useBridgeSelector(bridge, selector, isEqual?)` — sliced snapshot via `useSyncExternalStoreWithSelector` |
 | `src/lib/bridge/index.ts` | 21 | Barrel export for the factory, the `ImmutableBridge` and `CreateImmutableBridgeOptions` types, and both hooks |
 
+> **Post-M1 cleanup (2026-10-10):** the comment-only M1 placeholder stubs that
+> were never `@import`ed or linked — `components/{button,chip,popover}.css`,
+> `layout/{chat-view,modal}.css`, `vendor/{katex,highlight}.css` — were deleted
+> as dead files. The rules they were reserved for live in the `legacy/` slices
+> and the canonical owners under `components/` / `polish/`.
+
 ## 3. Modified files
 
 | Path | Change |

@@ -1,8 +1,0 @@
-/*
- * styles/components/button.css
- *
- * M1 placeholder. Will own the button + pill + chip-button rules
- * shared by every interactive surface. The rules currently live in
- * `styles/legacy/` slices; do not duplicate selectors until the main sheet
- * is trimmed.
- */
