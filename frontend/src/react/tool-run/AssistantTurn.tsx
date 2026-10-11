@@ -24,6 +24,11 @@ export interface AssistantTurnProps {
   live?: boolean;
 }
 
+/* Keep the cursor mounted just long enough for the shared fast opacity fade.
+ * The old 300 ms settle window overlapped the toolbar transition and made a
+ * finished turn feel delayed even after all content was already present. */
+const STREAM_SETTLE_MS = 120;
+
 function StreamCursor({ state, settling }: { state?: string; settling?: boolean }) {
   const stateClass = state === 'starved' ? ' is-starved' : '';
   const settleClass = settling ? ' is-settling' : '';
@@ -69,7 +74,8 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
   useEffect(() => {
     if (wasLiveRef.current && !isLive) {
       setIsSettling(true);
-      const timer = setTimeout(() => setIsSettling(false), 300);
+      const timer = setTimeout(() => setIsSettling(false), STREAM_SETTLE_MS);
+      wasLiveRef.current = isLive;
       return () => clearTimeout(timer);
     }
     wasLiveRef.current = isLive;
