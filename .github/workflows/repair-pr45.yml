@@ -1,0 +1,71 @@
+name: Repair PR45 generated metadata
+
+on:
+  push:
+    branches:
+      - refactor/chat-runtime-immutable-snapshots-20261011
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/chat-runtime-immutable-snapshots-20261011
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Generate security and Drizzle repairs
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd server
+          npm ci --include=dev --prefer-offline --no-audit --no-fund
+
+          # npm's xlsx@0.18.5 is abandoned and carries known parser CVEs.
+          # Install the fixed SheetJS CE release from the vendor's authoritative CDN.
+          npm uninstall xlsx --package-lock-only --ignore-scripts
+          npm install --package-lock-only --ignore-scripts --save-exact \
+            https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz
+
+          # 0040_messages_turn_summary.sql was hand-written idempotently, but its
+          # Drizzle journal/snapshot metadata was never committed. Let drizzle-kit
+          # build the exact snapshot, discard its non-idempotent SQL twin, and
+          # point the generated journal entry at the existing migration.
+          npm run db:generate
+          generated_sql="$(find drizzle -maxdepth 1 -type f -name '0040_*.sql' ! -name '0040_messages_turn_summary.sql' -print -quit)"
+          test -n "$generated_sql"
+          rm "$generated_sql"
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const path = 'drizzle/meta/_journal.json';
+          const journal = JSON.parse(readFileSync(path, 'utf8'));
+          const entry = journal.entries.find((item) => item.idx === 40);
+          if (!entry) throw new Error('drizzle-kit did not create journal entry 0040');
+          entry.tag = '0040_messages_turn_summary';
+          writeFileSync(path, `${JSON.stringify(journal, null, 2)}\n`);
+          NODE
+
+          node scripts/check-drizzle-drift.mjs
+          node ../scripts/audit-ratchet.mjs server
+          cd ..
+
+          # This workflow is intentionally one-shot; the repair commit removes it.
+          rm .github/workflows/repair-pr45.yml
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git status --short
+          git commit -m 'fix(ci): repair server security and migration metadata'
+          git push origin HEAD:refactor/chat-runtime-immutable-snapshots-20261011
