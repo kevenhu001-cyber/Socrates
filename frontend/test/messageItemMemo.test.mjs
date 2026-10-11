@@ -3,65 +3,60 @@ import assert from 'node:assert/strict';
 
 import { areMessageItemsEqual } from '../src/react/message-list/messageItemMemo.ts';
 
-function props(message = {}) {
-  return {
-    message: {
-      id: 'message-1',
-      clientId: 'client-1',
-      role: 'assistant',
-      rawText: 'Answer',
-      html: '<p>Answer</p>',
-      ...message,
-    },
-    textLength: 6,
-    toolRevision: 0,
-    mathRevision: 0,
-    renderRevision: 0,
-  };
+function message(overrides = {}) {
+  return Object.freeze({
+    id: 'message-1',
+    clientId: 'client-1',
+    role: 'assistant',
+    rawText: 'Answer',
+    html: '<p>Answer</p>',
+    ...overrides,
+  });
 }
 
-test('message item comparator skips an unchanged mutable message', () => {
-  const current = props();
+function props(messageSnapshot = message(), mathRevision = 0) {
+  return { message: messageSnapshot, mathRevision };
+}
+
+test('message item comparator reuses an unchanged immutable snapshot', () => {
+  const snapshot = message();
+  const current = props(snapshot);
   assert.equal(areMessageItemsEqual(current, { ...current }), true);
 });
 
-test('message item comparator detects revisions outside message identity', () => {
-  const current = props();
-  assert.equal(areMessageItemsEqual(current, { ...current, textLength: 7 }), false);
-  assert.equal(areMessageItemsEqual(current, { ...current, toolRevision: 1 }), false);
-  assert.equal(areMessageItemsEqual(current, { ...current, mathRevision: 1 }), false);
-  assert.equal(areMessageItemsEqual(current, { ...current, renderRevision: 1 }), false);
+test('message item comparator still observes the external math revision', () => {
+  const snapshot = message();
+  assert.equal(areMessageItemsEqual(props(snapshot, 0), props(snapshot, 1)), false);
 });
 
-test('message item comparator detects changed rendered content', () => {
-  const current = props();
-  assert.equal(areMessageItemsEqual(current, props({ html: '<p>Updated</p>' })), false);
-  assert.equal(areMessageItemsEqual(current, props({ toolCalls: [{ id: 'tool-1' }] })), false);
-  assert.equal(areMessageItemsEqual(current, props({ attachments: [{ id: 'file-1', kind: 'image' }] })), false);
-});
+test('a new immutable message snapshot always invalidates the row', () => {
+  const current = props(message());
+  const next = props(message());
 
-test('process content invalidates a row without requiring an answer delta', () => {
-  const current = props({ _taskSummary: 'Preparing the answer.' });
-  assert.equal(areMessageItemsEqual(current, props({ _taskSummary: 'Checking sources.' })), false);
-  assert.equal(areMessageItemsEqual(current, props({ _taskSummary: 'Preparing the answer.', summary: 'Checked sources.' })), false);
-  assert.equal(areMessageItemsEqual(current, props({ _taskSummary: 'Preparing the answer.', reasoningContent: 'private reasoning' })), false);
-  assert.equal(areMessageItemsEqual(current, props({ _taskSummary: 'Preparing the answer.' })), true);
-  assert.equal(areMessageItemsEqual(props({ reasoningContent: 'private first thought' }), props({ reasoningContent: 'private next thought' })), true);
-});
-
-test('message item comparator accepts a new object with the same rendered state', () => {
-  const current = props();
-  const next = props();
   assert.notEqual(current.message, next.message);
-  assert.equal(areMessageItemsEqual(current, next), true);
+  assert.equal(areMessageItemsEqual(current, next), false);
 });
 
-test('message item comparator detects renderer revisions and anchor fields', () => {
-  const current = props({ _katexRenderedRev: 0, _turnViewportTarget: 24 });
-  const next = props({ _katexRenderedRev: 1, _turnViewportTarget: 24 });
-  assert.equal(areMessageItemsEqual(current, next), false);
+test('render, tool, process, and anchor changes invalidate through snapshot identity', () => {
+  const currentMessage = message({
+    _taskSummary: 'Preparing the answer.',
+    _turnViewportTarget: 24,
+  });
+  const changes = [
+    message({ html: '<p>Updated</p>' }),
+    message({ toolCalls: [{ id: 'tool-1', name: 'web_search' }] }),
+    message({ attachments: [{ id: 'file-1', kind: 'image' }] }),
+    message({ _taskSummary: 'Checking sources.' }),
+    message({ summary: 'Checked sources.' }),
+    message({ reasoningContent: 'private reasoning' }),
+    message({ _turnViewportTarget: 32 }),
+    message({ _katexRenderedRev: 1 }),
+  ];
 
-  const currentAnchor = props({ _turnViewportTarget: 24 });
-  const nextAnchor = props({ _turnViewportTarget: 32 });
-  assert.equal(areMessageItemsEqual(currentAnchor, nextAnchor), false);
+  for (const changedMessage of changes) {
+    assert.equal(
+      areMessageItemsEqual(props(currentMessage), props(changedMessage)),
+      false,
+    );
+  }
 });
