@@ -56,7 +56,7 @@ jobs:
           writeFileSync(path, `${JSON.stringify(journal, null, 2)}\n`);
           NODE
 
-          node scripts/check-drizzle-drift.mjs
+          node ../scripts/check-drizzle-drift.mjs
           node ../scripts/audit-ratchet.mjs server
           cd ..
 
