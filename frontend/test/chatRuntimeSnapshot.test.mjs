@@ -80,7 +80,23 @@ test('an already-frozen domain message crosses the snapshot boundary zero-copy',
   assert.equal(published.toolCalls[0].input, input);
 });
 
-test('reconciliation advances only changed message identities', () => {
+test('immutable domain identity advances even when the legacy event id is stale', () => {
+  const before = Object.freeze({
+    clientId: 'm-domain', role: 'assistant', rawText: 'before',
+  });
+  const previous = reconcileMessageSnapshots([], [before], null);
+  const after = Object.freeze({
+    clientId: 'm-domain', role: 'assistant', rawText: 'after',
+  });
+
+  const next = reconcileMessageSnapshots(previous, [after], new Set(['wrong-id']));
+
+  assert.equal(previous[0], before);
+  assert.equal(next[0], after);
+  assert.equal(next[0].rawText, 'after');
+});
+
+test('reconciliation advances only changed mutable message identities', () => {
   const firstSource = {
     clientId: 'm-1', role: 'assistant', type: 'streaming', rawText: 'one', toolCalls: [],
   };
@@ -114,7 +130,7 @@ test('reconciliation advances only changed message identities', () => {
   assert.equal(next[2].rawText, 'three');
 });
 
-test('either clientId or persisted id invalidates the same message snapshot', () => {
+test('either clientId or persisted id invalidates the same mutable message snapshot', () => {
   const source = {
     clientId: 'client-1', id: 'persisted-1', role: 'assistant', rawText: 'before',
   };
@@ -144,7 +160,7 @@ test('either clientId or persisted id invalidates the same message snapshot', ()
   assert.equal(byClientId[1], byPersistedId[1]);
 });
 
-test('messages without a stable id are never structurally reused by index', () => {
+test('mutable messages without a stable id are never structurally reused by index', () => {
   const source = { role: 'assistant', rawText: 'before' };
   const previous = reconcileMessageSnapshots([], [source], null);
   source.rawText = 'after';
