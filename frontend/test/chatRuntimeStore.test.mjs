@@ -1,9 +1,7 @@
 /* test/chatRuntimeStore.test.mjs — the publish → snapshot contract the React
    message list depends on.
-   P_tool-declarative-refresh added the part this guards: the legacy pipeline
-   mutates message objects in place, so a commit must produce a NEW snapshot
-   revision (and re-read state.messages) for a tool-row state change or a
-   streamed character to be visible to React at all. */
+   Session messages are immutable domain snapshots; runtime publishes decide
+   when React observes the latest store identity and stream lifecycle state. */
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
@@ -162,6 +160,32 @@ test('a terminal event flushes pending work before it commits', () => {
   assert.equal(snap.messages[0].rawText, 'complete answer');
   runFrames();
   assert.equal(bridge.getSnapshot().stream.status, 'completed', 'the frame commits nothing late');
+});
+
+test('retry replacement removes the failed row and clears its terminal stream state', () => {
+  const bridge = freshBridge();
+  stateStore.dispatch({
+    type: 'session/replace-messages',
+    payload: [message('m-retry', 'partial answer')],
+  });
+  bridge.publish({
+    type: 'stream-failed', messageId: 'm-retry', textLength: 14, error: 'upstream reset',
+  });
+  assert.equal(bridge.getSnapshot().stream.status, 'failed');
+
+  stateStore.dispatch({
+    type: 'session/remove-message-at', index: 0, clientId: 'm-retry',
+  });
+  bridge.publish({
+    type: 'stream-retry-replaced', messageId: 'm-retry', messageIndex: 0,
+  });
+
+  const after = bridge.getSnapshot();
+  assert.equal(after.messageCount, 0);
+  assert.equal(after.messages.length, 0);
+  assert.equal(after.stream.status, 'idle');
+  assert.equal(after.stream.messageId, null);
+  assert.equal(after.lastEvent, 'stream-retry-replaced');
 });
 
 test('the bridge is a singleton, so legacy and React share one commit queue', () => {
