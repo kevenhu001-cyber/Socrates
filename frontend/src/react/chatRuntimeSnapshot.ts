@@ -15,23 +15,43 @@ function messageIdentityKeys(message: LegacyChatMessage): ReadonlyArray<string> 
   return keys;
 }
 
-function freezeRecords(
-  records: ReadonlyArray<Record<string, unknown>> | undefined,
-): ReadonlyArray<Record<string, unknown>> | undefined {
-  if (!records) return records;
-  return Object.freeze(records.map((record) => Object.freeze({ ...record })));
+/**
+ * Tool payloads are JSON-shaped, but several React renderers read nested input,
+ * result, detail, and visualization fields. Clone + freeze that whole graph so
+ * a legacy writer cannot mutate data React has already observed.
+ */
+function freezeToolData<T>(value: T, seen = new WeakMap<object, unknown>()): T {
+  if (value === null || typeof value !== 'object') return value;
+
+  const source = value as object;
+  const cached = seen.get(source);
+  if (cached !== undefined) return cached as T;
+
+  if (Array.isArray(value)) {
+    const copy: unknown[] = [];
+    seen.set(source, copy);
+    value.forEach((item) => copy.push(freezeToolData(item, seen)));
+    return Object.freeze(copy) as T;
+  }
+
+  const copy: Record<string, unknown> = {};
+  seen.set(source, copy);
+  Object.entries(value as Record<string, unknown>).forEach(([key, item]) => {
+    copy[key] = freezeToolData(item, seen);
+  });
+  return Object.freeze(copy) as T;
 }
 
 function freezeToolCall(call: ToolCall): ToolCall {
   return Object.freeze({
     ...call,
-    _run: call._run ? Object.freeze({ ...call._run }) : call._run,
-    results: freezeRecords(call.results),
-    artifacts: call.artifacts
-      ? Object.freeze(call.artifacts.map((artifact) => Object.freeze({ ...artifact })))
-      : call.artifacts,
+    input: freezeToolData(call.input),
+    detail: freezeToolData(call.detail),
+    _run: call._run ? freezeToolData(call._run) : call._run,
+    results: call.results ? freezeToolData(call.results) : call.results,
+    artifacts: call.artifacts ? freezeToolData(call.artifacts) : call.artifacts,
     visualization: call.visualization
-      ? Object.freeze({ ...call.visualization })
+      ? freezeToolData(call.visualization)
       : call.visualization,
   });
 }
