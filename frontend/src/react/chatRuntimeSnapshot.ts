@@ -18,7 +18,7 @@ function messageIdentityKeys(message: LegacyChatMessage): ReadonlyArray<string> 
 /**
  * Tool payloads are JSON-shaped, but several React renderers read nested input,
  * result, detail, and visualization fields. Clone + freeze that whole graph so
- * a legacy writer cannot mutate data React has already observed.
+ * a genuinely mutable boundary cannot change data React has already observed.
  */
 function freezeToolData<T>(value: T, seen = new WeakMap<object, unknown>()): T {
   if (value === null || typeof value !== 'object') return value;
@@ -57,14 +57,17 @@ function freezeToolCall(call: ToolCall): ToolCall {
 }
 
 /**
- * Cut the React rendering boundary away from legacy mutable state.
+ * Cut the React rendering boundary away from mutable callers without paying for
+ * a second deep copy on the normal state-store path.
  *
- * The runtime is still allowed to mutate its own message objects in place,
- * but a published snapshot owns fresh/frozen containers for every rendered
- * nested collection. React therefore never holds the object that legacy code
- * will mutate on the next token/tool update.
+ * `createDomainStore` recursively freezes session snapshots and memoizes frozen
+ * subtrees. Therefore a frozen message read from `stateStore` is already the
+ * immutable graph React needs and can cross this boundary zero-copy. Direct or
+ * legacy mutable inputs still take the defensive clone/freeze path below.
  */
 export function snapshotMessage(message: LegacyChatMessage): LegacyChatMessage {
+  if (Object.isFrozen(message)) return message;
+
   return Object.freeze({
     ...message,
     actions: message.actions
@@ -92,7 +95,8 @@ export function snapshotMessage(message: LegacyChatMessage): LegacyChatMessage {
  * not a stable identity when rows are inserted or removed.
  *
  * Passing `null` for changedMessageIds is the state-sync escape hatch: every
- * message is snapshotted because an external writer may have changed anything.
+ * message crosses `snapshotMessage`, while already-frozen domain rows retain
+ * their canonical identity and mutable callers are defensively snapshotted.
  */
 export function reconcileMessageSnapshots(
   previous: ReadonlyArray<LegacyChatMessage>,
