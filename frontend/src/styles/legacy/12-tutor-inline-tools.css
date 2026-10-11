@@ -362,11 +362,8 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 .tool-inline-spinner{
   display:inline-block;width:14px;height:14px;border-radius:50%;
   border:1.6px solid currentColor;border-right-color:transparent;
-  animation:tool-inline-spin .9s cubic-bezier(.45,.05,.55,.95) infinite;
+  animation:loadingSpin var(--ui-duration-spin, .9s) cubic-bezier(.45,.05,.55,.95) infinite;
   transition:opacity var(--crossfade-duration) ease;
-}
-@keyframes tool-inline-spin{
-  to{transform:rotate(360deg)}
 }
 /* Elapsed chip: collapsed while hidden so it reserves no width; JS adds
    .is-visible after a few seconds in flight (or on settle) and the chip
@@ -661,7 +658,7 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
   color:hsl(var(--text-400));
 }
 .tool-run-summary-icon svg{width:100%;height:100%;display:block}
-.tool-run-group[data-state="running"] .tool-run-summary-icon{color:hsl(var(--text-300));animation:search-progress-dot 1.6s ease-in-out infinite}
+.tool-run-group[data-state="running"] .tool-run-summary-icon{color:hsl(var(--text-300));animation:search-progress-dot var(--ui-duration-pulse, 1.2s) ease-in-out infinite}
 .tool-run-group[data-state="complete"] .tool-run-summary-icon{color:hsl(var(--text-400))}
 .tool-run-group[data-state="error"] .tool-run-summary-icon{color:hsl(0 55% 50%)}
 .tool-run-group[data-state="cancelled"] .tool-run-summary-icon{color:hsl(var(--text-500))}
@@ -677,4 +674,3 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
 .tool-run-list .agent-tool-name{font-size:calc(13px * var(--app-font-scale,1))}
 .tool-run-list .agent-tool-input{font-family:var(--font-sans);font-size:calc(12px * var(--app-font-scale,1));opacity:1}
 .agent-tool-card[data-tool-state="cancelled"]{border-color:hsl(35 58% 48%/.34)}
-

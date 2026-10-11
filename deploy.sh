@@ -288,7 +288,77 @@ install_spa_csp() {
   return $rc
 }
 
-# Build the backend into a candidate directory and only swap it into place
+# ─── Brand-asset caching for the SPA vhost ─────────────────────────────
+#
+# Why this lives in deploy.sh: /logo.png and /favicon.png used to fall
+# through to `location /`, whose add_header pins
+# `Cache-Control: no-cache, no-store, must-revalidate` — correct for the
+# HTML document, wrong for a 2 KB PNG that the boot shell preloads and
+# paints in its very first frame. Verified against production on
+# 2026-10-11: `curl -sI https://app.topodrive.top/logo.png` answered
+# `no-store` with `cf-cache-status: BYPASS`, so every single page load
+# re-fetched it from the origin.
+#
+# ops/nginx/app-performance.conf.example has carried the right block since
+# it was written, but nothing ever installs it, and a hand-written vhost
+# that predates it never picks it up. This ships it structurally, the same
+# way install_spa_csp does:
+#   - Editing is BACKUP-FIRST and `nginx -t` runs against the result
+#     immediately; on any failure the original config is restored before
+#     returning non-zero, so a bad edit can never reach `nginx -s reload`.
+#   - Idempotent per FILE: a vhost that already serves any of those
+#     filenames from a location of its own is left byte-identical, so this
+#     is a no-op over a config that already follows the example.
+#   - ops/nginx/insert-static-cache.awk puts the block inside the server{}
+#     block that owns the managed SPA fallback, so a file shared by several
+#     vhosts is never edited in the wrong one.
+install_static_root_cache() {
+  local repo_root="${FRONTEND_DIR%/frontend}"
+  local awk_script="$repo_root/ops/nginx/insert-static-cache.awk"
+  local conf backup tmp rc=0
+
+  if [[ ! -f "$awk_script" ]]; then
+    echo "WARNING: $awk_script missing — brand assets keep inheriting location /'s no-store policy." >&2
+    return 0
+  fi
+
+  for conf in "${APP_NGINX_CONFIGS[@]}"; do
+    [[ -f "$conf" ]] || continue
+
+    tmp="$(mktemp)"
+    if ! $SUDO awk -f "$awk_script" "$conf" > "$tmp" 2>/dev/null; then
+      echo "WARNING: could not compute the brand-asset location for $conf (unexpected structure)." >&2
+      echo "         Add it manually from ops/nginx/app-performance.conf.example." >&2
+      rm -f "$tmp"
+      continue
+    fi
+
+    # Nothing to do: already wired.
+    if $SUDO cmp -s "$tmp" "$conf"; then
+      rm -f "$tmp"
+      continue
+    fi
+
+    backup="${conf}.pre-static-cache.$$"
+    $SUDO cp -a "$conf" "$backup"
+    $SUDO install -m 644 "$tmp" "$conf"
+    rm -f "$tmp"
+
+    if ! $SUDO nginx -t >/dev/null 2>&1; then
+      echo "ERROR: nginx rejected the config after adding the brand-asset location;" >&2
+      echo "       restoring $conf unchanged." >&2
+      $SUDO cp -a "$backup" "$conf"
+      $SUDO rm -f "$backup"
+      rc=1
+      continue
+    fi
+
+    $SUDO rm -f "$backup"
+    echo "  static:  brand-asset location wired into $conf"
+  done
+
+  return $rc
+}
 # immediately before restart. Keep one known-good dist tree for rollback.
 BACKEND_DIST="$SERVER_DIR/dist"
 BACKEND_PREVIOUS="$SERVER_DIR/dist.previous"
@@ -758,6 +828,13 @@ fi
 # "nginx is broken".
 if ! install_spa_csp; then
   echo "WARNING: SPA CSP snippet could not be wired; continuing without it." >&2
+fi
+
+# Same contract: idempotent, backup-first, self-restoring. A non-zero return
+# means "brand assets still inherit location /'s no-store policy", not
+# "nginx is broken" — the warning below is the only consequence.
+if ! install_static_root_cache; then
+  echo "WARNING: brand-asset caching could not be wired; continuing." >&2
 fi
 
 if ! $SUDO nginx -t >/dev/null 2>&1; then

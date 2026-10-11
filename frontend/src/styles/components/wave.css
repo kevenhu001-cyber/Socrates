@@ -41,7 +41,6 @@
   transform-origin: center;
   animation: wave-bar-swell var(--ui-wave-duration) var(--ui-ease-standard) infinite;
   animation-delay: var(--ui-wave-delay, 0ms);
-  will-change: opacity, transform;
 }
 
 @keyframes wave-bar-swell {

@@ -5,6 +5,9 @@ import { hasUsableActive, webSearchOn } from '../config/providers.js';
 import { loadLocalMemory } from '../storage/localMemory.js';
 import { stateStore } from '../state/store.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { shouldRefreshSearch } from './webSearchPolicy.js';
+
+export { shouldRefreshSearch };
 
 function tr(key) { return typeof window.t === 'function' ? window.t(key) : key; }
 
@@ -19,7 +22,6 @@ function tr(key) { return typeof window.t === 'function' ? window.t(key) : key; 
    - Old context is KEPT in window.stateStore.read("searchContext") until the new fetch
      resolves, so a slow refresh never causes a turn to ship without
      grounding. */
-var SEARCH_REFRESH_EVERY=5;
 /* Hard cap on /api/web-search POSTs per single fetchWebContext call.
    Each query variant + the retry (if all fail) consumes one. This
    caps the total backend search volume and prevents runaway costs
@@ -462,17 +464,6 @@ export async function rewriteQueryForSearch(rawText){
     console.log("[rewriter] failed");
     return null;
   }
-}
-
-/* Returns true if we should kick off a background re-fetch. Called
-   from every prompt builder. The rule: every 5 user turns we refresh,
-   unless we just refreshed within the last 30s. */
-export function shouldRefreshSearch(){
-  if(!webSearchOn)return false;
-  var last=window.stateStore.read("searchContextAt")||0;
-  if(Date.now()-last<30000)return false;
-  if(!window.stateStore.read("searchContextQuery"))return false;
-  return (window.stateStore.read("totalQ")%SEARCH_REFRESH_EVERY)===0;
 }
 
 /* Update the small pill in the chat header. `count=0` for loading/err. */

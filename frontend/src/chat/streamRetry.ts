@@ -14,6 +14,7 @@ export function shouldRetryInterruptedStream(decision: StreamRetryDecision): boo
 
 import { stateStore } from '../state/store.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
+import { smoothScrollToBottom } from '../ui/scroll.js';
 
 /** A captured viewport offset for one message row. */
 export interface RetryViewportSnapshot {
@@ -197,7 +198,7 @@ export function createStreamRetryViewport(): StreamRetryViewport {
         return;
       }
       if (keepPinned) {
-        list.scrollTop = list.scrollHeight;
+        smoothScrollToBottom(list, { smooth: false, owner: 'retry' });
         stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
       }
       const row = list.querySelector('[data-client-id="' + clientId + '"]');

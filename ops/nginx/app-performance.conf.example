@@ -51,6 +51,15 @@ location /assets/ {
 }
 
 # Static root assets (logo, favicon, robots, webmanifest)
+#
+# NOTE (2026-10-11): deploy.sh now installs this block itself
+# (install_static_root_cache → ops/nginx/insert-static-cache.awk), because a
+# hand-written vhost that predates it kept answering
+#     curl -sI https://app.topodrive.top/logo.png
+#     cache-control: no-cache, no-store, must-revalidate   ← location /'s policy
+# which re-fetched the boot shell's first-frame image from the origin on every
+# page load. If your vhost already serves these filenames from a location of
+# its own, the installer leaves it byte-identical — do not add a second copy.
 location ~* ^/(?:favicon\.png|logo\.png|robots\.txt|site\.webmanifest)$ {
     add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
     add_header Cache-Control "public, max-age=604800, stale-while-revalidate=86400" always;

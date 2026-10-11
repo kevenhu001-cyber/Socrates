@@ -33,7 +33,7 @@ export function createFinishLifecycle(state, ownerSessionId, finishRender, finis
     }
     if (state.finished) return;
 
-    const player = state._streamScheduler;
+    const player = state._streamPlayer;
     if (state._smooth && player.playedLen() < player.totalLen()) {
       state._finishContinuation = finishBody;
       player.beginDrain();

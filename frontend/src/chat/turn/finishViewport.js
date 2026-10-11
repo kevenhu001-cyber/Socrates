@@ -15,6 +15,7 @@
  */
 import { stateStore } from '../../state/store.js';
 import { updateMessageSnapshot } from '../../ui/messageSnapshot.js';
+import { writeScrollTop } from '../../ui/scrollCoordinator.ts';
 
 /**
  * Build the finish-viewport capture/settle pair bound to one turn's DOM.
@@ -188,7 +189,7 @@ export function createFinishViewport(state) {
             }
           }
         }
-        _fvScroller.scrollTop = _fvScroller.scrollHeight;
+        writeScrollTop(_fvScroller, _fvScroller.scrollHeight, 'finish');
         /* Layout-shift scroll events during the handoff may
            have flipped this flag; the reader never left the
            bottom, so undo the corruption. */
@@ -199,7 +200,7 @@ export function createFinishViewport(state) {
            different: React/legacy height deltas move the visible
            paragraph even when scrollTop itself is unchanged, so
            let the row-anchor branches below preserve content. */
-        _fvScroller.scrollTop = _finishViewport.scrollTop;
+        writeScrollTop(_fvScroller, _finishViewport.scrollTop, 'finish');
       } else if (_finishViewport.streamRowId &&
         Number.isFinite(_finishViewport.streamRowOffset)) {
         var _fvStreamRow = state.list.querySelector(
@@ -237,12 +238,16 @@ export function createFinishViewport(state) {
               }
             }
           }
-          _fvScroller.scrollTop += _fvStreamDelta;
+          writeScrollTop(_fvScroller, _fvScroller.scrollTop + _fvStreamDelta, 'finish');
         }
       } else if (_finishViewport.anchorNode && _finishViewport.anchorNode.isConnected) {
         var _fvExactNow = _finishViewport.anchorNode.getBoundingClientRect().top -
           _fvScroller.getBoundingClientRect().top;
-        _fvScroller.scrollTop += _fvExactNow - _finishViewport.anchorOffset;
+        writeScrollTop(
+          _fvScroller,
+          _fvScroller.scrollTop + _fvExactNow - _finishViewport.anchorOffset,
+          'finish'
+        );
       } else if (_finishViewport.anchorId) {
         var _fvCurrent = null;
         var _fvCurrentRows = state.list.querySelectorAll('.msg[data-client-id]');
@@ -254,12 +259,16 @@ export function createFinishViewport(state) {
         if (_fvCurrent) {
           var _fvNow = _fvCurrent.getBoundingClientRect().top -
             _fvScroller.getBoundingClientRect().top;
-          _fvScroller.scrollTop += _fvNow - _finishViewport.anchorOffset;
+          writeScrollTop(
+            _fvScroller,
+            _fvScroller.scrollTop + _fvNow - _finishViewport.anchorOffset,
+            'finish'
+          );
         } else {
-          _fvScroller.scrollTop = _finishViewport.scrollTop;
+          writeScrollTop(_fvScroller, _finishViewport.scrollTop, 'finish');
         }
       } else {
-        _fvScroller.scrollTop = _finishViewport.scrollTop;
+        writeScrollTop(_fvScroller, _finishViewport.scrollTop, 'finish');
       }
     };
     var _fvFrames = 0;

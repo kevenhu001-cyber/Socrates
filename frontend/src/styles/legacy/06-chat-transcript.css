@@ -315,7 +315,11 @@ body.admin-active #topicDisclaimer{display:none!important}
 }
 
 .msg-list{display:flex;flex-direction:column;flex:1;overflow-anchor:none}
-.msg{animation:msgIn .22s var(--ease-out);padding:6px 0}
+.msg{animation:none;padding:6px 0}
+/* Only a live assistant row gets an entrance reveal. Keeping the default
+   state static prevents restored history and progressively-mounted rows from
+   replaying the same fade as the transcript is reconciled. */
+.msg.assistant:not([data-stream-settled="true"]){animation:msgIn .22s var(--ease-out)}
 /* The submitted prompt is already being moved by turnAnchor's single
    transcript scroll glide, so transform stays at none. The bubble's
    opacity ramp is **tied to the glide duration** — turnAnchor stamps

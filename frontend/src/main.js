@@ -111,11 +111,24 @@ if (isNativeApp()) {
   var ml=document.getElementById("msgList");
   if(!ml)return;
   var timer=null;
+  var ticking=false;
+  /* P_perf-scrollbar — scroll fires per frame while velocityScrollTo drives
+     scrollTop (and per wheel tick while the reader scrolls). Coalesce the
+     class write + timer reset to one rAF so rapid events share a single DOM
+     touch; passive because the handler never cancels the scroll. */
+  var raf=typeof requestAnimationFrame==="function"
+    ?requestAnimationFrame
+    :function(cb){return setTimeout(cb,16)};
   ml.addEventListener("scroll",function(){
-    ml.classList.add("scrollbar-visible");
-    clearTimeout(timer);
-    timer=setTimeout(function(){ml.classList.remove("scrollbar-visible")},1500);
-  });
+    if(ticking)return;
+    ticking=true;
+    raf(function(){
+      ticking=false;
+      if(!ml.classList.contains("scrollbar-visible"))ml.classList.add("scrollbar-visible");
+      clearTimeout(timer);
+      timer=setTimeout(function(){ml.classList.remove("scrollbar-visible")},1500);
+    });
+  },{passive:true});
 })();
 initChatComposerReserve();
 

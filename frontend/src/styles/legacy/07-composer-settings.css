@@ -117,7 +117,7 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
    are hidden; no markup changes needed. */
 .loading{display:block;width:16px;height:16px;position:relative;margin:0 auto}
 .loading span{display:none}
-.loading::before{content:"";display:block;width:100%;height:100%;border-radius:50%;border:2px solid hsl(var(--border-300)/0.20);border-top-color:hsl(var(--accent-000));animation:loadingSpin 1.2s cubic-bezier(.65,0,.35,1) infinite;will-change:transform;box-sizing:border-box}
+.loading::before{content:"";display:block;width:100%;height:100%;border-radius:50%;border:2px solid hsl(var(--border-300)/0.20);border-top-color:hsl(var(--accent-000));animation:loadingSpin var(--ui-duration-spin, .9s) cubic-bezier(.65,0,.35,1) infinite;box-sizing:border-box}
 
 /* Pulse-ring variant — concentric expanding rings, good for larger
    loading blocks that need a bolder visual. */
@@ -357,4 +357,3 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 .usage-breakdown td:last-child{text-align:right;font-weight:500}
 .usage-breakdown tr:hover td{background:hsl(var(--bg-100))}
 .usage-loading{display:flex;align-items:center;justify-content:center;padding:40px 20px;color:hsl(var(--text-400));font-size:calc(13px * var(--app-font-scale, 1));gap:8px}
-

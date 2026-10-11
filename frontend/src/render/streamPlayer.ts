@@ -1,6 +1,6 @@
 /* Web playback player — the rAF seam around the pure core clock.
  *
- * This replaces the old coalescing streamScheduler. Instead of accumulating
+ * This replaces the old coalescing scheduler. Instead of accumulating
  * network deltas and painting the WHOLE arrived text at a throttled cadence,
  * the player decouples the two streams:
  *
@@ -11,7 +11,7 @@
  *                  string even when upstream bursts or stalls.
  *
  * The `now` and `raf` seams are injected so the frame loop can be driven
- * deterministically in tests, mirroring streamScheduler.ts. A generation
+ * deterministically in tests. A generation
  * guard drops frames queued before dispose(), so a turn torn down by a
  * session switch never paints into the new container.
  */

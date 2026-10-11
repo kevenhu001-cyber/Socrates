@@ -13,13 +13,17 @@
 <link rel="icon" type="image/png" href="/favicon.png">
 <!-- P_perf-resource-hints — the boot shell paints /logo.png in its very
      first frame; preloading it here (before the render-blocking CSS) saves
-     the round trip the parser would otherwise spend discovering it. The
-     dns-prefetch covers the only cross-origin script host (GeoGebra viz
-     embeds). Preconnect is deliberately NOT used there: most sessions never
-     mount a viz card, and on restricted networks an eager TLS handshake to
-     an unused host only burns round trips. -->
+     the round trip the parser would otherwise spend discovering it.
+     No cross-origin host is touched at boot: fonts, KaTeX, mermaid,
+     plotly, echarts and highlight.js are all bundled (see
+     src/vendor/lazy.js). The one third-party script host left in the app
+     is GeoGebra's CDN, and it is resolved lazily — only when a
+     math_construction card actually mounts
+     (src/render/visualizationAdapters.js). An eager dns-prefetch used to
+     sit here and burned a lookup on every page load for a host the vast
+     majority of sessions never use; behind a network that drops the
+     packets that lookup is not free either. -->
 <link rel="preload" as="image" href="/logo.png" fetchpriority="high">
-<link rel="dns-prefetch" href="https://www.geogebra.org">
 <meta http-equiv="X-DNS-Prefetch-Control" content="on">
 <!-- P_perf-boot-prefetch — fire the three boot GETs the moment the parser
      reaches <head>, so /api/auth/me + /api/v2/config (+ the CSRF prime)

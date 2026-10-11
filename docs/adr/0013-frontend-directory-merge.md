@@ -10,7 +10,7 @@
 `frontend/src/` 当前有 **27 个一级子目录**。其中：
 
 - `state/`（reactive state，bridges.ts 等） vs `store/`（createDomainStore.ts + index.ts）vs `lib/`（socratesWasm.js + `lib/bridge/`）—— 三处都涉及"状态管理"，但分散在不同语义名后。
-- `chat/`（api.js, agentStream.js, diagnosticParser.js 等）vs `render/`（assistantHtml.ts, canvasWrap.ts, helpers.ts 等）vs `state/`—— 实际处理"消息流"时要在 3 个目录间跳转。
+- `chat/`（api.js, streamingTurn.js, diagnosticParser.js 等）vs `render/`（assistantHtml.ts, canvasWrap.ts, helpers.ts 等）vs `state/`—— 实际处理"消息流"时要在 3 个目录间跳转。
 - `util/`（api.js, colors.js, ids.js, safe.js）vs `types/`（legacy-global.d.ts, svg-raw.d.ts）—— 都是跨切面工具，但拆两个目录。
 - `ui/` 内又有 `ui/icons/`, `ui/keyboard/` 子目录；`react/` 内 25+ feature-folder 子目录（含 `react/sidebar` vs `react/sidebar-chrome`，定位模糊）。
 

@@ -1,5 +1,6 @@
 import { planMotionForUser, easeOutHouse } from './motion.js';
 import { isPinnedToBottom, shouldAutoScroll, SCROLL_SLACK } from './scrollDecision.ts';
+import { beginScrollOwner, endScrollOwner, writeScrollTop } from './scrollCoordinator.ts';
 import { stateStore } from '../state/store.js';
 
 /* Re-export the pure auto-scroll decision predicates through scroll.js so
@@ -129,6 +130,7 @@ export function cancelScrollAnimation(list){
 export function velocityScrollTo(list, targetTop, opts){
   if(!list)return Promise.resolve();
   const o = opts || {};
+  const owner = o.owner || 'content';
   const active = activeScrollAnims && activeScrollAnims.get(list);
   if (o.retarget === true && active && active.retargetKey === 'bottom-follow') return active.promise;
   const startTop = list.scrollTop;
@@ -151,6 +153,8 @@ export function velocityScrollTo(list, targetTop, opts){
   if (!isFinite(distance) || distance === 0) {
     return Promise.resolve();
   }
+  const ownerToken = beginScrollOwner(list, owner);
+  if (ownerToken == null) return Promise.resolve();
   const absDistance = Math.abs(distance);
   const reduced = prefersReducedMotion();
   /* `opts.plan` — a caller-planned motion ({duration, ease, snap}), e.g.
@@ -175,8 +179,9 @@ export function velocityScrollTo(list, targetTop, opts){
   if (snap) {
     cancelActive();
     const settle = beginAutoScrolling();
-    list.scrollTop = liveTarget ? resolveTarget() : targetTop;
+    writeScrollTop(list, liveTarget ? resolveTarget() : targetTop, owner);
     settle();
+    endScrollOwner(list, ownerToken);
     return Promise.resolve();
   }
   const plan = injectedPlan || planMotionForUser(absDistance, o.motion);
@@ -214,6 +219,7 @@ export function velocityScrollTo(list, targetTop, opts){
       if (handle) cancelAnimationFrame(handle);
       list.removeEventListener('scroll', onScroll);
       if (activeScrollAnims) activeScrollAnims.delete(list);
+      endScrollOwner(list, ownerToken);
       settle();
       resolvePromise();
     }
@@ -236,7 +242,7 @@ export function velocityScrollTo(list, targetTop, opts){
       if (!startedAt) startedAt = now;
       const elapsed = now - startedAt;
       if (elapsed >= duration) {
-        list.scrollTop = liveTarget ? resolveTarget() : targetTop;
+        writeScrollTop(list, liveTarget ? resolveTarget() : targetTop, owner);
         stop();
         return;
       }
@@ -257,7 +263,7 @@ export function velocityScrollTo(list, targetTop, opts){
       /* Read the value back after writing: the browser clamps scrollTop to
          the real maximum, so the "last value we wrote" must be the clamped
          position or our own scroll event would look like a foreign write. */
-      list.scrollTop = next;
+      writeScrollTop(list, next, owner);
       lastWrittenTop = list.scrollTop;
       handle = requestAnimationFrame(tick);
     };
@@ -667,11 +673,11 @@ export function scrollToBottomIfPinned(){
     var sc2=scrollContainer();
     if(!sc2)return;
     if(wasPinned){
-      sc2.scrollTop=sc2.scrollHeight;
+      writeScrollTop(sc2, sc2.scrollHeight, 'content');
     }else{
       /* Even if not pinned, keep the relative position stable. */
       var ratio=sc.scrollTop/Math.max(1,sc.scrollHeight-sc.clientHeight);
-      sc2.scrollTop=Math.round(ratio*(sc2.scrollHeight-sc2.clientHeight));
+      writeScrollTop(sc2, Math.round(ratio*(sc2.scrollHeight-sc2.clientHeight)), 'history');
     }
   });
 }

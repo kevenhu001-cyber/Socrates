@@ -16,6 +16,7 @@ import { stateStore } from '../state/store.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { updateMessageSnapshot } from '../ui/messageSnapshot.js';
 import { velocityScrollTo, cancelScrollAnimation } from '../ui/scroll.js';
+import { writeScrollTop } from '../ui/scrollCoordinator.ts';
 import { suppressScrollPositionIntent, hideNewReplyPill } from '../ui/scrollPill.js';
 import { planSendGlide } from '../ui/motion.js';
 import { getKeyboardLift } from '../ui/keyboard/index.ts';
@@ -150,7 +151,7 @@ export function removeSupersededStub(clientId: string): void {
     const drift = ref.getBoundingClientRect().top - refTop;
     if (Math.abs(drift) > 0.5) {
       suppressScrollPositionIntent(200);
-      list.scrollTop = Math.max(0, list.scrollTop + drift);
+      writeScrollTop(list, Math.max(0, list.scrollTop + drift), 'turn');
     }
   }
   const messages = stateStore.read('messages') as MessageEntry[];
@@ -255,7 +256,7 @@ function alignPromptToOffset(
   const next = Math.max(0, Math.min(maxScroll, Math.round(promptRow.offsetTop - targetOffset)));
   if (Math.abs(next - list.scrollTop) <= 0.5) return;
   suppressScrollPositionIntent(200);
-  list.scrollTop = next;
+  writeScrollTop(list, next, 'turn');
 }
 
 function holdTurnViewport(): void {
@@ -472,7 +473,7 @@ export function scheduleActiveTurnToTop(
       const drift = promptRow.getBoundingClientRect().top - promptTopBefore;
       if (Math.abs(drift) > 0.5) {
         suppressScrollPositionIntent(200);
-        list.scrollTop = Math.max(0, list.scrollTop + drift);
+        writeScrollTop(list, Math.max(0, list.scrollTop + drift), 'turn');
       }
     }
     for (const id of stubIds) {
@@ -539,7 +540,7 @@ export function scheduleActiveTurnToTop(
     if (Math.abs(delta) > 1) {
       const maxScroll = Math.max(0, list.scrollHeight - list.clientHeight);
       const nextTop = Math.max(0, Math.min(maxScroll, list.scrollTop + delta));
-      if (Math.abs(nextTop - list.scrollTop) > 0.5) list.scrollTop = nextTop;
+      if (Math.abs(nextTop - list.scrollTop) > 0.5) writeScrollTop(list, nextTop, 'turn');
     }
     if (Date.now() < deadline) {
       requestAnimationFrame(function () {
@@ -614,7 +615,7 @@ export function scheduleActiveTurnToTop(
        Retries stay an instant, exact restore of the failed answer's visible
        offset — they are not a fresh send and must not animate. */
     if (retryViewport) {
-      list.scrollTop = target;
+      writeScrollTop(list, target, 'retry');
       requestAnimationFrame(function settleRetryAnchor(attempt: number) {
         const current = row();
         if (!current) return;
@@ -624,7 +625,7 @@ export function scheduleActiveTurnToTop(
         if (Math.abs(delta) > 1) {
           const maxScroll = Math.max(0, list.scrollHeight - list.clientHeight);
           const nextTop = Math.max(0, Math.min(maxScroll, list.scrollTop + delta));
-          if (Math.abs(nextTop - list.scrollTop) > 0.5) list.scrollTop = nextTop;
+          if (Math.abs(nextTop - list.scrollTop) > 0.5) writeScrollTop(list, nextTop, 'retry');
         }
         if (attempt < 2) {
           requestAnimationFrame(function () {
@@ -735,7 +736,7 @@ export function scheduleActiveTurnToTop(
         promptBubble.dataset.bubbleArriving = 'true';
       }
     }
-    velocityScrollTo(list, target, { smooth: true, target: promptTarget, plan }).then(() => {
+    velocityScrollTo(list, target, { smooth: true, owner: 'turn', target: promptTarget, plan }).then(() => {
       if (!list.isConnected) { clearSettling(); return; }
       /* The CSS animation is `both` so the bubble holds opacity:1 even
          after we drop the attribute; removing it just stops a future

@@ -90,12 +90,13 @@
 }
 }
 
-/* legacy/01-sidebar.css gives .sidebar backdrop-filter: blur(12px) for the
-   translucent desktop rail. On the mobile drawer the background is opaque
-   (--ui-bg-sidebar: #000), so the blur is invisible — but the backdrop
-   compositing context still triggers the WebKit quirk where the blinking
-   caret inside a backdrop-filtered fixed element never paints. Drop it on
-   mobile only; desktop keeps the glass look. */
+/* legacy/01-sidebar.css used to give .sidebar backdrop-filter: blur(12px)
+   for a translucent desktop rail (removed — see P_perf-no-sidebar-blur:
+   the rail is opaque now, so there is nothing to blur on either
+   viewport). The mobile override below stays as a belt-and-braces guard
+   so any future translucency cannot reintroduce the WebKit quirk where
+   the blinking caret inside a backdrop-filtered fixed element never
+   paints. */
 @media (max-width: 768px) {
 #appShell .sidebar {
   -webkit-backdrop-filter: none;

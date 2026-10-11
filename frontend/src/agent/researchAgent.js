@@ -14,7 +14,7 @@
 import { stateStore } from '../state/store.js';
 import { showToast } from '../ui/toast.js';
 import { fetchPagesForContext } from '../chat/webLinks.js';
-import { fetchWebContext } from '../chat/webSearch.js';
+import { loadWebSearch } from '../chat/webSearchLoader.js';
 
 /* Start a deep research session. Returns a Promise that resolves
    when the research is complete and the report has been posted. */
@@ -208,7 +208,14 @@ function _heuristicPlan(query) {
    deduplicated URLs selected for the report. */
 async function _searchTopic(query) {
   try {
-    var res = await fetchWebContext(query, { background: false });
+    /* Keep the public bridge injectable for extensions/tests. In the normal
+       browser path it is the same shared web-search loader; the fallback
+       keeps this module usable in a non-bridge host as well. */
+    const fetchContext = typeof window !== 'undefined' &&
+      typeof window.fetchWebContext === 'function'
+      ? window.fetchWebContext
+      : (await loadWebSearch()).fetchWebContext;
+    var res = await fetchContext(query, { background: false });
     if (res && res.ok && Array.isArray(res.sources)) {
       return res.sources.slice(0, 5).map(function (p) {
         return { url: p.url, title: p.title, snippet: p.snippet, content: p.snippet };

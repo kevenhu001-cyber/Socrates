@@ -16,9 +16,29 @@ function parsedUrl(rawUrl) {
   }
 }
 
+/* P_perf-local-favicon — the error fallback used to point at
+   https://www.google.com/s2/favicons?domain_url=… . That host is
+   unreachable from mainland China, so on a restricted network every
+   link whose own /favicon.ico failed (which is most foreign links)
+   fired a second request that hung until the browser's own timeout —
+   and an <img> that never settles keeps the page's loading indicator
+   spinning long after the transcript is readable. Render a monogram
+   from the hostname instead: same-origin bytes, no round trip, and it
+   still identifies the site. */
 function fallbackFavicon(url) {
-  return 'https://www.google.com/s2/favicons?domain_url='
-    + encodeURIComponent(url.origin) + '&sz=64';
+  const host = String((url && url.hostname) || '').replace(/^www\./i, '');
+  const letter = /^[a-z0-9]/i.test(host) ? host.charAt(0).toUpperCase() : '?';
+  /* Stable hue per host so the same site keeps the same colour. */
+  let hue = 7;
+  for (let index = 0; index < host.length; index++) {
+    hue = (hue * 31 + host.charCodeAt(index)) % 360;
+  }
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'
+    + '<rect width="64" height="64" rx="14" fill="hsl(' + hue + ',56%,45%)"/>'
+    + '<text x="32" y="45" font-family="system-ui,sans-serif" font-size="34"'
+    + ' font-weight="600" fill="#ffffff" text-anchor="middle">' + letter + '</text>'
+    + '</svg>';
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 }
 
 export function createLinkFavicon(rawUrl) {
@@ -34,7 +54,19 @@ export function createLinkFavicon(rawUrl) {
   image.referrerPolicy = 'no-referrer';
   image.src = url.origin + '/favicon.ico';
   image.dataset.fallback = fallbackFavicon(url);
+  /* P_perf-local-favicon — a dropped SYN never fires `error`, so the
+     origin attempt can hang for minutes behind a network that silently
+     discards the packets. Swap to the local monogram after a short
+     watchdog; if the real icon lands afterwards the browser still
+     paints it, and aborting the dead request frees the connection. */
+  let settled = false;
+  const watchdog = setTimeout(function () {
+    if (!settled) image.src = image.dataset.fallback;
+  }, 2500);
+  const settle = function () { settled = true; clearTimeout(watchdog); };
+  image.addEventListener('load', settle);
   image.addEventListener('error', function onError() {
+    settle();
     if (image.dataset.fallback) {
       const next = image.dataset.fallback;
       delete image.dataset.fallback;

@@ -192,11 +192,14 @@
 .main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
 body.sidebar-resizing .main{transition:none!important}
 @media(min-width:769px){.sidebar.collapsed~.main{padding-left:0}}
-/* P_perf-main-bg — Promote the chat-area background to its own
-   composited layer so the clip-path circle(150%) rasterizes once
-   and isn't invalidated alongside .main's layout passes (e.g. during
-   sidebar collapse). */
-.main-bg{position:absolute;inset:0;pointer-events:none;z-index:0;background-color:hsl(var(--bg-100));background-image:linear-gradient(to right,hsl(var(--bg-200)) 1px,transparent 1px),linear-gradient(to bottom,hsl(var(--bg-200)) 1px,transparent 1px);background-size:32px 32px;clip-path:circle(150% at 50% 50%);opacity:0.5;will-change:transform;transform:translateZ(0)}
+/* P_perf-main-bg — the grid is a static backdrop: no clip mask, no pinned
+   compositor layer. The previous clip-path:circle(150%) clipped nothing
+   (a 150% radius covers the whole box) while forcing a mask layer, and
+   the permanent will-change:transform + translateZ(0) pinned a
+   full-viewport GPU surface that had to be re-rasterized on every .main
+   relayout (sidebar collapse, keyboard inset, composer growth) without
+   ever moving. Plain absolute positioning paints once and stays cached. */
+.main-bg{position:absolute;inset:0;pointer-events:none;z-index:0;background-color:hsl(var(--bg-100));background-image:linear-gradient(to right,hsl(var(--bg-200)) 1px,transparent 1px),linear-gradient(to bottom,hsl(var(--bg-200)) 1px,transparent 1px);background-size:32px 32px;opacity:0.5}
 html[data-show-grid="false"] .main-bg{background-image:none}
 .top-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;position:relative;z-index:5}
 .top-bar-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1;overflow:hidden}

@@ -204,7 +204,7 @@ export function addStreamingMessage(opts){
     _elapsedTick: null,
     thinkCtl: null,
     inlineToolRows: [],
-    _streamScheduler: null,
+    _streamPlayer: null,
     _finishContinuation: null,
     /* runtime singletons (filled in below) */
     toolRuntime: null,
@@ -275,16 +275,12 @@ export function addStreamingMessage(opts){
   state.ownsMessageSlot=ownsMessageSlot;
   state.patchOwnedMessage=patchOwnedMessage;
   var pendingRender=null;
-  var pendingRenderTimer=null;
   function cancelScheduledRender(){
     if(pendingRender){cancelAnimationFrame(pendingRender);pendingRender=null}
-    if(pendingRenderTimer){clearTimeout(pendingRenderTimer);pendingRenderTimer=null}
-    /* Task 2.4 — clear the coalescing scheduler's internal "scheduled"
-       latch too, so a frame cancelled here doesn't leave the scheduler
-       believing a flush is still pending (which would drop the next
-       push). Guarded because cancelScheduledRender() can run during the
-       first delta before _streamScheduler is assigned. */
-    if(state._streamScheduler){state._streamScheduler.dispose()}
+    /* Invalidate the shared playback driver's generation too. This is
+       important when a queued frame survives cancelAnimationFrame long
+       enough to enter the browser callback queue. */
+    if(state._streamPlayer){state._streamPlayer.dispose()}
   }
   state.cancelScheduledRender=cancelScheduledRender;
   var suppressedThinkCtl={append:function(){},finalize:function(){},remove:function(){}};
@@ -426,9 +422,7 @@ export function addStreamingMessage(opts){
     now:function(){return performance.now()},
     raf:function(cb){pendingRender=requestAnimationFrame(cb)}
   });
-  /* Legacy alias so cancelScheduledRender()'s teardown (which disposes the
-     stream driver) keeps working unchanged. */
-  state._streamScheduler=_streamPlayer;
+  state._streamPlayer=_streamPlayer;
   state._smooth=_smooth;
 
   /* First delta renders immediately so the user sees content right away */

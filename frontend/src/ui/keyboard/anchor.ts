@@ -19,6 +19,7 @@
 
 import { decideKeyboardAnchorAction, KEYBOARD_PIN_SLACK } from '../scrollDecision.ts';
 import { smoothScrollToBottom } from '../scroll.js';
+import { writeScrollTop } from '../scrollCoordinator.ts';
 import { getLastScrollIntentAt, suppressScrollPositionIntent } from '../scrollPill.js';
 import { stateStore } from '../../state/store.js';
 
@@ -128,7 +129,7 @@ export class TranscriptAnchor {
       /* A programmatic compensation write must not be read by the
          scroll-intent listener as the reader leaving the bottom. */
       suppressScrollPositionIntent(150);
-      list.scrollTop = action.top;
+      writeScrollTop(list, action.top, 'keyboard');
     }
   }
 

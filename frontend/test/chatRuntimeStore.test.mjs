@@ -96,6 +96,31 @@ test('stream and tool-run publishes coalesce to one commit per frame', () => {
   assert.equal(bridge.getSnapshot().stream.textLength, 5, 'the last delta wins');
 });
 
+test('tool updates for multiple messages still produce one snapshot commit', () => {
+  const bridge = freshBridge();
+  stateStore.dispatch({
+    type: 'session/replace-messages',
+    payload: [message('m-tool-1', ''), message('m-tool-2', '')],
+  });
+  const start = bridge.getSnapshot().revision;
+
+  stateStore.dispatch({
+    type: 'session/update-message', index: 0, clientId: 'm-tool-1',
+    patch: { _toolRunRev: 1 },
+  });
+  stateStore.dispatch({
+    type: 'session/update-message', index: 1, clientId: 'm-tool-2',
+    patch: { _toolRunRev: 1 },
+  });
+  bridge.publish({ type: 'tool-run-updated', messageId: 'm-tool-1' });
+  bridge.publish({ type: 'tool-run-updated', messageId: 'm-tool-2' });
+
+  runFrames();
+  assert.equal(bridge.getSnapshot().revision, start + 1);
+  assert.equal(bridge.getSnapshot().messages[0]._toolRunRev, 1);
+  assert.equal(bridge.getSnapshot().messages[1]._toolRunRev, 1);
+});
+
 test('stream-delta commits are paced by the adaptive render interval', async () => {
   const bridge = freshBridge();
   stateStore.dispatch({ type: 'session/replace-messages', payload: [message('m-pace', '')] });

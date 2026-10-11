@@ -43,6 +43,7 @@ import { openStorageModal, closeStorageModal } from '../ui/storage.js';
 import { openPromptTemplatesModal, closePromptTemplatesModal } from '../ui/promptTemplates.js';
 import { toggleExtensionByKey } from '../pickers.js';
 import { openCmdKResult } from '../ui/cmdK.js';
+import { loadWebSearch } from '../chat/webSearchLoader.js';
 /* ui/dangerConfirms.js is lazy — confirm actions import it on demand. */
 import { processPendingMermaid, processPendingViz, reclaimVizCards, schedulePendingMermaid } from '../render/vizStubs.js';
 import { wireCodeBlockHeaders, wireMsgBodyImages } from '../render/postRender.js';
@@ -103,17 +104,6 @@ function _loadStreamingTurn() {
   }
   return _streamingImport;
 }
-var _webSearchImport = null;
-function _loadWebSearch() {
-  if (!_webSearchImport) {
-    _webSearchImport = import('../chat/webSearch.js');
-    _webSearchImport.catch(function (err) {
-      _webSearchImport = null;
-      console.error('[webSearch] failed to load', err);
-    });
-  }
-  return _webSearchImport;
-}
 var _dangerImport = null;
 function _loadDangerConfirms() {
   if (!_dangerImport) {
@@ -135,7 +125,7 @@ window.addMessage = addMessage;
 window.askNextQuestion = askNextQuestion;
 window.saveCurrentSession = saveCurrentSession;
 window.fetchWebContext = function (query, opts) {
-  return _loadWebSearch().then(function (m) { return m.fetchWebContext(query, opts); });
+  return loadWebSearch().then(function (m) { return m.fetchWebContext(query, opts); });
 };
 window.openAttachmentPicker = openAttachmentPicker;
 window.openMediaPicker = openMediaPicker;

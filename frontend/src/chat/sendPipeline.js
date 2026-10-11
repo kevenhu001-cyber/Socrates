@@ -1,8 +1,10 @@
 /* chat/sendPipeline.js — public entry point for submitting a chat turn. */
 import { turnState } from './turnState.js';
-import { fetchWebContext, shouldRefreshSearch } from './webSearch.js';
+import { loadWebSearch } from './webSearchLoader.js';
+import { shouldRefreshSearch } from './webSearchPolicy.js';
 import { shouldAutoSearchTutor } from '../tutor/policy.js';
 import { stateStore } from '../state/store.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 import {
   assembleSendPayload,
   captureSendInput,
@@ -22,7 +24,9 @@ function refreshTutorWebContext(text) {
   const topic = stateStore.read('topic');
   if (!isWebSearchOn() || !topic || !shouldRefreshSearch()) return;
   if (!shouldAutoSearchTutor(topic + ' ' + text)) return;
-  fetchWebContext(topic + ' ' + text, { background: true });
+  void loadWebSearch()
+    .then(({ fetchWebContext }) => fetchWebContext(topic + ' ' + text, { background: true }))
+    .catch((error) => reportSwallow(error, 'chat/sendPipeline.refreshTutorWebContext'));
 }
 
 export async function submitChatMessage(textOverride, options) {

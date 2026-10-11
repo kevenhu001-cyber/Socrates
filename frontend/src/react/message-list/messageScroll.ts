@@ -1,4 +1,5 @@
 import type { ScrollAnchor } from './progressiveMount';
+import { writeScrollTop } from '../../ui/scrollCoordinator.ts';
 
 const MSG_LIST_ID = 'msgList';
 const STICKY_MS = 4000;
@@ -8,6 +9,8 @@ interface Sticky {
   expected: number;
   until: number;
   frame: number;
+  timer: ReturnType<typeof setTimeout> | null;
+  resizeObserver: ResizeObserver | null;
 }
 
 let sticky: Sticky | null = null;
@@ -19,6 +22,8 @@ export function scrollHost(): HTMLElement | null {
 
 export function releaseSticky(): void {
   if (sticky?.frame) cancelAnimationFrame(sticky.frame);
+  if (sticky?.timer != null) clearTimeout(sticky.timer);
+  sticky?.resizeObserver?.disconnect();
   sticky = null;
 }
 
@@ -31,7 +36,7 @@ export function isSticky(list: HTMLElement): boolean {
 }
 
 export function stickTo(list: HTMLElement): void {
-  list.scrollTop = list.scrollHeight;
+  writeScrollTop(list, list.scrollHeight, 'content');
   if (sticky) sticky.expected = list.scrollTop;
 }
 
@@ -43,10 +48,17 @@ export function pinToBottom(list: HTMLElement): void {
     }
     intentBound = list;
   }
-  const state: Sticky = { list, expected: 0, until: performance.now() + STICKY_MS, frame: 0 };
+  const state: Sticky = {
+    list,
+    expected: 0,
+    until: performance.now() + STICKY_MS,
+    frame: 0,
+    timer: null,
+    resizeObserver: null,
+  };
   sticky = state;
   stickTo(list);
-  const step = () => {
+  const maintain = () => {
     if (sticky !== state) return;
     state.frame = 0;
     if (!list.isConnected || performance.now() > state.until) {
@@ -58,12 +70,25 @@ export function pinToBottom(list: HTMLElement): void {
       return;
     }
     if (list.scrollHeight - list.scrollTop - list.clientHeight > 1) stickTo(list);
-    state.frame = requestAnimationFrame(step);
   };
-  state.frame = requestAnimationFrame(step);
+  /* History replacement can grow as images, fonts, or deferred rows settle.
+     Observe those real geometry changes instead of polling scrollTop on every
+     frame for four seconds. The old loop competed with the send glide and the
+     content-follow observer even when the list was unchanged. */
+  if (typeof ResizeObserver === 'function') {
+    state.resizeObserver = new ResizeObserver(maintain);
+    state.resizeObserver.observe(list);
+  } else {
+    /* Older WebViews get one best-effort follow-up frame, not a permanent
+       fallback loop. */
+    state.frame = requestAnimationFrame(maintain);
+  }
+  state.timer = setTimeout(() => {
+    if (sticky === state) releaseSticky();
+  }, STICKY_MS);
 }
 
 export function correctScrollAnchor(anchor: ScrollAnchor, host: HTMLElement): void {
   if (anchor.pinned) stickTo(host);
-  else host.scrollTop = anchor.top + (host.scrollHeight - anchor.height);
+  else writeScrollTop(host, anchor.top + (host.scrollHeight - anchor.height), 'history');
 }

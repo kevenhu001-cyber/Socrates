@@ -304,9 +304,11 @@ function flushPendingToolRuns(): void {
   }
   const ids = [...pendingToolRuns];
   pendingToolRuns = null;
-  for (const messageId of ids) {
-    commit({ type: 'tool-run-updated', messageId });
-  }
+  /* Every commit re-reads and clones the complete legacy message array. The
+     message id is useful for the event contract, but the snapshot contains
+     all tool rows, so committing once is enough even when several turns
+     changed before this frame. */
+  commit({ type: 'tool-run-updated', messageId: ids[0] });
 }
 
 function publish(event: ChatRuntimeEvent): void {

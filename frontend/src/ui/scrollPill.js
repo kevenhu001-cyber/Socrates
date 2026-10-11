@@ -8,7 +8,7 @@
 // user is currently within `SCROLL_SLACK` of the bottom. This flag is
 // read by addStreamingMessage (in main.js) to decide whether to auto
 // snap-to-bottom.
-import { scrollContainer } from './scroll.js';
+import { scrollContainer, smoothScrollToBottom } from './scroll.js';
 import { stateStore } from '../state/store.js';
 
 const SCROLL_SLACK = 64;   /* pixels from bottom considered "pinned" */
@@ -174,7 +174,7 @@ export function wireScrollPill(){
     while(t && t !== document.body){
       if(t.id === "newReplyPill"){
         const sc = scrollContainer();
-        if(sc) sc.scrollTop = sc.scrollHeight;
+        if(sc) smoothScrollToBottom(sc, { smooth: false, owner: 'user' });
         upIntentAt = 0;
         markUserScrollIntent();
         stateStore.dispatch({type:'state/set',key:'_userScrolledAway',value:false});

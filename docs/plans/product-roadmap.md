@@ -54,7 +54,7 @@
 | --- | --- | --- |
 | 会话内查找（Ctrl-F） | 不存在。仅有全局 Cmd-K（`ui/cmdK.js`） | 新建当前会话内查找面板 |
 | 力导向知识图谱 | 线性 `.kb-node` 列表（`ui/knowledgeDetail.js`） | 升级为力导向图 |
-| Agent 分屏视图 | Agent 内联渲染于 `#msgList`（`chat/agentStream.js`） | 左右分屏：对话 + 工具 Tab |
+| Agent 分屏视图 | Agent/Deep Research 共用 React transcript 与 tool-run surfaces（`chat/streamingTurn.js`、`react/tool-run/`、`ui/agentSteps.ts`），暂无独立分屏 | 左右分屏：对话 + 工具 Tab |
 | 国际化收尾 | `t()`/`tr()` 基建已在 `i18n.js`（约 1100 行字典） | 替换残余硬编码英文 |
 
 ---
@@ -141,7 +141,7 @@
 
 ### P1.3 Agent 分屏视图 —— ❌ 未开始（2026-09-30 重估：建议降级）
 
-**现状**：Agent 模式内联渲染于 `#msgList`（`chat/agentStream.js` `beginAgentTextStream`），工具卡片（`ui/toolCards.js`，1100 行）与运行时（`chat/toolRuntime.js`）嵌在消息气泡内，**无独立分屏**。
+**现状**：Agent/Deep Research 复用普通 React transcript（`chat/streamingTurn.js`）与 tool-run surfaces（`react/tool-run/`、`ui/agentSteps.ts`），工具状态和报告都在统一消息流中展示，**无独立分屏**。
 
 **重估结论：建议降级，不作为下一项。** 理由：
 

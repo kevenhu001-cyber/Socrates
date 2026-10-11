@@ -11,7 +11,7 @@ import { buildMessageContent, resetAttachments } from '../../attachments.js';
 import { renderAttachmentChips } from '../../attachments/render.js';
 import { updateComposerBtn } from '../../ui/topicSetup.js';
 import { syncChatModel, getActiveProvider } from '../../pickers.js';
-import { fetchWebContext } from '../webSearch.js';
+import { loadWebSearch } from '../webSearchLoader.js';
 import { generateTopicKBNodes } from '../topicKbNodes.js';
 import { generateDiagnosticQuestions } from '../diagnosticGenerator.js';
 import { updateChatStats } from '../stats.js';
@@ -223,7 +223,8 @@ async function prepareKnowledgeNodes(context) {
 function startTutorWebSearch(topic) {
   if (!isWebSearchOn() || !shouldAutoSearchTutor(topic)) return;
   try {
-    fetchWebContext(topic, {})
+    void loadWebSearch()
+      .then(({ fetchWebContext }) => fetchWebContext(topic, {}))
       .then((result) => {
         stateStore.dispatch({
           type: 'state/set',

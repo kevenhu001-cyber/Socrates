@@ -36,8 +36,11 @@
   border-radius:var(--tool-card-radius);
   background:var(--tool-card-surface);
   box-shadow:var(--tool-card-shadow);
-  -webkit-backdrop-filter:blur(14px);
-  backdrop-filter:blur(14px);
+  /* The workflow is an in-flow progress row. A mostly opaque themed surface keeps
+     updates cheap while the transcript is scrolling; blur here only adds a
+     full-card backdrop repaint to every frame. */
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
   -webkit-user-select:none;
   user-select:none;
 }
@@ -46,7 +49,7 @@
   width:8px;height:8px;flex:0 0 auto;border-radius:50%;
   background:hsl(var(--accent-000));
   box-shadow:0 0 0 3px hsl(var(--accent-000)/.12);
-  animation:search-progress-dot 1.1s ease-in-out infinite;
+  animation:search-progress-dot var(--ui-duration-pulse, 1.2s) ease-in-out infinite;
 }
 .agent-stepper-done .agent-stepper-status,
 .agent-stepper-failed .agent-stepper-status{animation:none}

@@ -280,7 +280,7 @@ body.composer-tools-open::after{
 
 }
 .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card[data-tool-state="running"] .agent-tool-state-icon::before{
-  animation:exec-artifact-spin .9s linear infinite;
+  animation:loadingSpin var(--ui-duration-spin, .9s) linear infinite;
 }
 .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card:not([data-tool-state="running"]) .agent-tool-state-icon::before{
   animation:none;
