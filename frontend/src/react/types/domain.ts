@@ -233,19 +233,11 @@ export interface LiveTurnStatus {
   state?: '' | 'done' | 'error';
   /** appMode at turn start — styles the waiting dot's chat-mode variant. */
   mode?: string;
-  /** True when clicking the line opens the thinking panel. */
-  clickable?: boolean;
-  /** Elapsed whole seconds, for the quiet "12s" cue on the waiting dot. */
+  /** Elapsed whole seconds, shown only after the status has run for a while. */
   elapsedSec?: number;
   /** Timeout / failure copy shown in place of the answer. */
   error?: string | null;
   retryable?: boolean;
-  /** Active snippet or excerpt from the model's live train of thought. */
-  thoughtSnippet?: string;
-  /** Extracted active step / sub-goal being tackled. */
-  stepSummary?: string;
-  /** Active micro-detail or sub-progress explanation. */
-  detail?: string;
 }
 
 export interface ChatRuntimeSnapshot {

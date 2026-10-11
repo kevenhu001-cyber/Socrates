@@ -19,7 +19,7 @@
  *  - `MountSpec` is `{ hostId, label, mount, ensureHost? }`. The
  *    optional `ensureHost(document)` lets specs that need to lazily
  *    create their own host (storage modal, cheatsheet, prompt
- *    templates, workflow layer, thinking panel) do so before the
+ *    templates, workflow layer) do so before the
  *    registry looks the host up by id.
  *  - `runMountRegistry(document)` walks the spec list and dispatches
  *    each entry, recording which specs mounted and which were skipped

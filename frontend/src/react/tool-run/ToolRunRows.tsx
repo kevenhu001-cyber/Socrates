@@ -9,7 +9,6 @@ export function ToolRunRows({
   view,
   grouped,
   open,
-  isNarrowViewport,
   messageId,
   readOnly,
 }: {
@@ -17,7 +16,6 @@ export function ToolRunRows({
   view: ToolRunGroupView;
   grouped: boolean;
   open: boolean;
-  isNarrowViewport: boolean;
   messageId?: string;
   readOnly?: boolean;
 }) {
@@ -40,9 +38,9 @@ export function ToolRunRows({
 
   return (
     <>
-      <div className="tool-run-list" hidden={isNarrowViewport || !open}>
+      <div className="tool-run-list" hidden={!open}>
         {open ? <ToolRunDetail view={view} readOnly={readOnly} /> : null}
-        {segment.members.map((call, index) => (
+        {segment.members.map((call, index) => view.members[index].state === 'error' || view.members[index].approval ? null : (
           <ToolRunRow
             key={call.id}
             view={view.members[index]}
@@ -54,6 +52,10 @@ export function ToolRunRows({
         ))}
       </div>
 
+      {/* Failures and decisions remain visible even when the group is closed. */}
+      {segment.members.map((call, index) => view.members[index].state === 'error' || view.members[index].approval ? (
+        <ToolRunRow key={call.id} view={view.members[index]} startedAt={runStartedAt(call)} messageId={messageId} readOnly={readOnly} nested />
+      ) : null)}
       {/* Live lines stay outside the collapsed aggregate. */}
       {segment.running.map((call, index) => (
         <ToolRunRow

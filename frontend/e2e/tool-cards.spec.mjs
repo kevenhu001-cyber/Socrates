@@ -226,7 +226,8 @@ test('live chat shows a Searching label while the model is searching', async ({ 
   const row = page.locator('.msg.assistant .tool-inline[data-tcid="late-search"]').last();
   await expect(row).toBeVisible();
   await expect(row.locator('.tool-inline-label')).toContainText('Searching');
-  await expect(row.locator('.tool-inline-label')).toHaveClass(/shimmer-text/);
+  await expect(row.locator('.tool-inline-label')).not.toHaveClass(/shimmer-text/);
+  expect(await row.locator('.tool-inline-label').evaluate((node) => getComputedStyle(node).animationName)).toBe('none');
   await expect(row.locator('.tool-inline-tool-icon svg circle')).toHaveCount(1);
   await expect(row.locator('.tool-inline-tool-icon svg path')).toHaveCount(1);
   await expect(page.locator('.msg.assistant .thinking-status')).toHaveCount(0);

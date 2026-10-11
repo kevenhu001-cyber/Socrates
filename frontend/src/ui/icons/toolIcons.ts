@@ -1,98 +1,90 @@
-/**
- * Tool / step icon set.
+/** Tool/activity SVGs from lucide-react v1.52.0.
+ * Official icon paths shared by React and legacy renderers.
  *
- * One line language, applied without exception:
- *   • 20×20 viewBox, so every glyph shares one optical size.
- *   • a single 1.5px stroke, round caps and round joins.
- *   • drawn inside a 13.6px-wide safe area (x/y 3.2 → 16.8) so glyphs
- *     of different silhouettes still look the same weight next to each
- *     other in a row.
- *   • as few subpaths as the idea allows; no fills except the two
- *     deliberate dots, which set `stroke="none"` so they do not inherit
- *     the outline weight.
- *   • monochrome `currentColor` only — light/dark themes and the quiet
- *     grey of inline tool rows keep owning every color decision.
+ * ISC License
  *
- * The chevrons are the load-bearing detail: they are the expand /
- * collapse affordance on every tool row, source card and agent step, so
- * they are laid out on exact 45° arms that are centred on the 20×20 box
- * (span 6.4 → 13.6 on both axes, midpoint 10,10). That makes all four
- * rotations optically identical and keeps a CSS `rotate()` from
- * drifting the glyph off-centre — the previous arms were 43° and sat
- * ~0.15px low, which is what made the arrows look hand-drawn.
+ * Copyright (c) 2026 Lucide Icons and Contributors
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ *
+ * ---
+ *
+ * The following Lucide icons are derived from the Feather project:
+ *
+ * airplay, alert-circle, alert-octagon, alert-triangle, aperture, arrow-down-circle, arrow-down-left, arrow-down-right, arrow-down, arrow-left-circle, arrow-left, arrow-right-circle, arrow-right, arrow-up-circle, arrow-up-left, arrow-up-right, arrow-up, at-sign, calendar, cast, check, chevron-down, chevron-left, chevron-right, chevron-up, chevrons-down, chevrons-left, chevrons-right, chevrons-up, circle, clipboard, clock, code, columns, command, compass, corner-down-left, corner-down-right, corner-left-down, corner-left-up, corner-right-down, corner-right-up, corner-up-left, corner-up-right, crosshair, database, divide-circle, divide-square, dollar-sign, download, external-link, feather, frown, hash, headphones, help-circle, info, italic, key, layout, life-buoy, link-2, link, loader, lock, log-in, log-out, maximize, meh, minimize, minimize-2, minus-circle, minus-square, minus, monitor, moon, more-horizontal, more-vertical, move, music, navigation-2, navigation, octagon, pause-circle, percent, plus-circle, plus-square, plus, power, radio, rss, search, server, share, shopping-bag, sidebar, smartphone, smile, square, table-2, tablet, target, terminal, trash-2, trash, triangle, tv, type, upload, x-circle, x-octagon, x-square, x, zoom-in, zoom-out
+ *
+ * The MIT License (MIT) (for the icons listed above)
+ *
+ * Copyright (c) 2013-present Cole Bemis
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
  */
 
-const OPEN = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+const OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
 
 function icon(body: string): string {
-  return `${OPEN}${body}</svg>`;
+  return OPEN + body + '</svg>';
 }
 
-/* Apple SF Symbols-inspired document silhouette:
-   Continuous rounded squircle corners (rx=2.6) with a softly filleted folded top-right flap. */
-const DOC = '<path d="M6.8 3.2h4.6l4.4 4.4v6.6a2.6 2.6 0 0 1-2.6 2.6H6.8A2.6 2.6 0 0 1 4.2 14.2V5.8A2.6 2.6 0 0 1 6.8 3.2Z"/><path d="M11.4 3.4v3a1.2 1.2 0 0 0 1.2 1.2h3"/>';
-
 export const STROKE_ICONS: Record<string, string> = {
-  /* Terminal: Apple terminal squircle screen, rounded prompt chevron, pill cursor. */
-  command: icon('<rect x="2.6" y="3.6" width="14.8" height="12.8" rx="3.8"/><path d="m6.4 8.2 2.2 1.8-2.2 1.8"/><path d="M10.8 12.2h2.8"/>'),
-  /* Pencil: Apple SF Symbols pencil with rounded eraser cap, soft collar and tapered tip. */
-  fileChange: icon('<path d="M13.8 3.6a1.9 1.9 0 0 1 2.6 2.6L7.6 15l-3.8 1.2 1.2-3.8z"/><path d="m11.8 5.6 2.6 2.6"/>'),
-  /* Document with body copy: smooth rounded document with two soft pill lines. */
-  read: icon(`${DOC}<path d="M7.4 11.2h5.2M7.4 13.8h3.4"/>`),
-  /* Document with an approval mark: smooth rounded document with curved Apple checkmark. */
-  spec: icon(`${DOC}<path d="m7.2 12.2 1.8 1.8 4.2-4.4"/>`),
-  /* Magnifier: concentric circular lens, smooth 45° handle with rounded pill end. */
-  search: icon('<circle cx="8.8" cy="8.8" r="5.2"/><path d="m12.6 12.6 3.9 3.9"/>'),
-  /* Globe: Apple SF Symbols globe with spherical equator and smooth meridian ellipse. */
-  fetch: icon('<circle cx="10" cy="10" r="6.6"/><path d="M3.4 10h13.2"/><path d="M10 3.4c2.4 2 3.8 4.1 3.8 6.6s-1.4 4.6-3.8 6.6c-2.4-2-3.8-4.1-3.8-6.6s1.4-4.6 3.8-6.6Z"/>'),
-  /* Code: Apple < / > with rounded chevrons and elegant forward slash. */
-  code: icon('<path d="m6.8 6.5-3.3 3.5 3.3 3.5"/><path d="m13.2 6.5 3.3 3.5-3.3 3.5"/><path d="m11.4 4.8-2.8 10.4"/>'),
-  /* Visual: Apple Health/Stocks-inspired bar chart with full pill/capsule columns on baseline. */
-  visual: icon('<path d="M3.2 16.6h13.6"/><rect x="4.6" y="9.8" width="2.8" height="6.8" rx="1.4"/><rect x="8.6" y="5.2" width="2.8" height="11.4" rx="1.4"/><rect x="12.6" y="7.8" width="2.8" height="8.8" rx="1.4"/>'),
-  /* Plan: Apple checklist with soft rounded checkmarks and pill task lines. */
-  plan: icon('<path d="m3.6 6.8 1.8 1.8 3.2-3.4"/><path d="m3.6 13.6 1.8 1.8 3.2-3.4"/><path d="M11.2 6.8h5.4M11.2 13.6h5.4"/>'),
-  /* Agent: Apple Intelligence signature 4-point sparkles with continuous cubic bezier curvature. */
-  agent: icon('<path d="M8.6 3.4C8.6 6.6 11.1 9.2 14.4 9.2 11.1 9.2 8.6 11.8 8.6 15 8.6 11.8 6.1 9.2 2.8 9.2 6.1 9.2 8.6 6.6 8.6 3.4Z"/><path d="M15.2 12c0 1.4 1.1 2.6 2.4 2.6-1.3 0-2.4 1.2-2.4 2.6 0-1.4-1.1-2.6-2.4-2.6 1.3 0 2.4-1.2 2.4-2.6Z"/>'),
-  /* Library: Apple book.closed with rounded cover and spine crease. */
-  library: icon('<path d="M5.8 3.5h8.4a2.4 2.4 0 0 1 2.4 2.4v10.3H6.8A2.6 2.6 0 0 1 4.2 13.6V5.1a1.6 1.6 0 0 1 1.6-1.6Z"/><path d="M7.2 3.5v12.7"/>'),
-  /* Repo: Apple git branch with circular nodes and smooth bezier branch curve. */
-  repo: icon('<circle cx="6.2" cy="5.2" r="1.8"/><circle cx="6.2" cy="14.8" r="1.8"/><circle cx="13.8" cy="6.2" r="1.8"/><path d="M6.2 7v6"/><path d="M13.8 8c-3 0-5.2 1.6-7.6 4.2"/>'),
-  /* MCP: Apple link with interlocking rounded capsule links and 45° orientation. */
-  mcp: icon('<path d="m8.8 11.2-1.6 1.6a2.8 2.8 0 0 1-4-4l1.6-1.6a2.8 2.8 0 0 1 4 0"/><path d="m11.2 8.8 1.6-1.6a2.8 2.8 0 0 1 4 4l-1.6 1.6a2.8 2.8 0 0 1-4 0"/><path d="m7.8 12.2 4.4-4.4"/>'),
-  /* Memory: Apple bookmark with rounded squircle top and filleted ribbon tail. */
-  memory: icon('<path d="M5.8 3.4h8.4a2.4 2.4 0 0 1 2.4 2.4v10.6a.8.8 0 0 1-1.3.6L10 13.6l-5.3 3.4a.8.8 0 0 1-1.3-.6V5.8A2.4 2.4 0 0 1 5.8 3.4Z"/>'),
-  /* Site: Apple macwindow with rounded frame, titlebar divider and 3 macOS traffic light dots. */
-  site: icon('<rect x="2.6" y="3.8" width="14.8" height="12.4" rx="3.6"/><path d="M2.6 7.6h14.8"/><circle cx="5.2" cy="5.7" r=".75" fill="currentColor" stroke="none"/><circle cx="7.4" cy="5.7" r=".75" fill="currentColor" stroke="none"/><circle cx="9.6" cy="5.7" r=".75" fill="currentColor" stroke="none"/>'),
-  /* Tool: Apple slider.horizontal.2 with rounded rails and circular thumb knobs. */
-  tool: icon('<path d="M3.4 7h2.8m3.6 0h6.8"/><circle cx="8" cy="7" r="1.8"/><path d="M3.4 13h6.8m3.6 0h2.8"/><circle cx="12" cy="13" r="1.8"/>'),
-  /* RunGroup: Apple-style step sequence with rounded track nodes and task pills. */
-  runGroup: icon('<circle cx="5.6" cy="6.2" r="1.8"/><circle cx="5.6" cy="13.8" r="1.8"/><path d="M5.6 8v4"/><path d="M9.6 6.2h7M9.6 13.8h4.8"/>'),
-  /* Photo / Image: Apple photo with rounded squircle frame, sun and mountain crests. */
-  image: icon('<rect x="2.8" y="3.8" width="14.4" height="12.4" rx="3.4"/><circle cx="7" cy="7.8" r="1.3"/><path d="m3.4 14.6 4.8-4.8a1.2 1.2 0 0 1 1.7 0l6.7 6.4"/><path d="m12.6 12.4 1.5-1.5a1.2 1.2 0 0 1 1.7 0l.8.8"/>'),
-
-  /* ── status glyphs ──────────────────────────────────────────────
-     Shared with the inline rows so a settled row's mark carries the
-     same stroke weight as the tool glyph it replaces. */
-  check: icon('<path d="m4.8 10.4 3.4 3.4 7-7.2"/>'),
-  stop: icon('<rect x="5.8" y="5.8" width="8.4" height="8.4" rx="2.8"/>'),
-  alert: icon('<circle cx="10" cy="10" r="6.8"/><path d="M10 6.4v4"/><circle cx="10" cy="13.2" r=".85" fill="currentColor" stroke="none"/>'),
-
-  /* ── chevrons ───────────────────────────────────────────────────
-     Exact 45° arms, span 6.4 → 13.6 on both axes, midpoint (10,10).
-     All four are the same drawing rotated, so a CSS `rotate()` on the
-     down glyph produces pixel-identical results to using the
-     dedicated one. */
-  chevronDown: icon('<path d="m6.4 8.2 3.6 3.6 3.6-3.6"/>'),
-  chevronUp: icon('<path d="m6.4 11.8 3.6-3.6 3.6 3.6"/>'),
-  chevronRight: icon('<path d="m8.2 6.4 3.6 3.6-3.6 3.6"/>'),
-  chevronLeft: icon('<path d="m11.8 6.4-3.6 3.6 3.6 3.6"/>'),
-
-  /* ── arrows ─────────────────────────────────────────────────────
-     Shaft on the centre axis, head arms on the same 45° as the
-     chevrons so an arrow and a chevron never look like two different
-     line weights when they sit in the same row. */
-  arrowUp: icon('<path d="M10 16.2V4.2M5.8 8.4 10 4.2l4.2 4.2"/>'),
-  arrowDown: icon('<path d="M10 3.8v12M5.8 11.6 10 15.8l4.2-4.2"/>'),
+  command: icon("<path d=\"M12 19h8\"/><path d=\"m4 17 6-6-6-6\"/>"),
+  fileChange: icon("<path d=\"M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z\"/><path d=\"m15 5 4 4\"/>"),
+  read: icon("<path d=\"M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z\"/><path d=\"M14 2v5a1 1 0 0 0 1 1h5\"/><path d=\"M10 9H8\"/><path d=\"M16 13H8\"/><path d=\"M16 17H8\"/>"),
+  spec: icon("<path d=\"M10.5 22H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.706.706l3.588 3.588A2.4 2.4 0 0 1 20 8v6\"/><path d=\"M14 2v5a1 1 0 0 0 1 1h5\"/><path d=\"m14 20 2 2 4-4\"/>"),
+  search: icon("<path d=\"m21 21-4.34-4.34\"/><circle cx=\"11\" cy=\"11\" r=\"8\"/>"),
+  fetch: icon("<circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20\"/><path d=\"M2 12h20\"/>"),
+  code: icon("<path d=\"m18 16 4-4-4-4\"/><path d=\"m6 8-4 4 4 4\"/><path d=\"m14.5 4-5 16\"/>"),
+  visual: icon("<path d=\"M5 21v-6\"/><path d=\"M12 21V3\"/><path d=\"M19 21V9\"/>"),
+  plan: icon("<path d=\"M13 5h8\"/><path d=\"M13 12h8\"/><path d=\"M13 19h8\"/><path d=\"m3 17 2 2 4-4\"/><path d=\"m3 7 2 2 4-4\"/>"),
+  agent: icon("<path d=\"M12 8V4H8\"/><rect width=\"16\" height=\"12\" x=\"4\" y=\"8\" rx=\"2\"/><path d=\"M2 14h2\"/><path d=\"M20 14h2\"/><path d=\"M15 13v2\"/><path d=\"M9 13v2\"/>"),
+  library: icon("<path d=\"M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20\"/>"),
+  repo: icon("<path d=\"M15 6a9 9 0 0 0-9 9V3\"/><circle cx=\"18\" cy=\"6\" r=\"3\"/><circle cx=\"6\" cy=\"18\" r=\"3\"/>"),
+  mcp: icon("<path d=\"M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\"/><path d=\"M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\"/>"),
+  memory: icon("<path d=\"M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z\"/>"),
+  site: icon("<rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\"/><path d=\"M3 9h18\"/><path d=\"M9 21V9\"/>"),
+  tool: icon("<path d=\"M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z\"/>"),
+  runGroup: icon("<path d=\"M3 5h.01\"/><path d=\"M3 12h.01\"/><path d=\"M3 19h.01\"/><path d=\"M8 5h13\"/><path d=\"M8 12h13\"/><path d=\"M8 19h13\"/>"),
+  image: icon("<rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\" ry=\"2\"/><circle cx=\"9\" cy=\"9\" r=\"2\"/><path d=\"m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21\"/>"),
+  check: icon("<path d=\"M20 6 9 17l-5-5\"/>"),
+  stop: icon("<rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\"/>"),
+  alert: icon("<circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"12\" x2=\"12\" y1=\"8\" y2=\"12\"/><line x1=\"12\" x2=\"12.01\" y1=\"16\" y2=\"16\"/>"),
+  /* The process marker. Deliberately a dotted outline rather than a filled
+     or spark glyph: the pill sits above the answer, so it has to read as
+     "there was work here" without competing with the prose below it. */
+  process: icon("<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 8v4\"/><path d=\"M12 16h.01\"/>"),
+  chevronDown: icon("<path d=\"m6 9 6 6 6-6\"/>"),
+  chevronUp: icon("<path d=\"m18 15-6-6-6 6\"/>"),
+  chevronRight: icon("<path d=\"m9 18 6-6-6-6\"/>"),
+  chevronLeft: icon("<path d=\"m15 18-6-6 6-6\"/>"),
+  arrowUp: icon("<path d=\"m5 12 7-7 7 7\"/><path d=\"M12 19V5\"/>"),
+  arrowDown: icon("<path d=\"M12 5v14\"/><path d=\"m19 12-7 7-7-7\"/>"),
 };
 
 export function agentStepIcon(kind: string): string {

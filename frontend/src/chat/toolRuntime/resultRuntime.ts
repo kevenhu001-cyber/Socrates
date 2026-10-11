@@ -30,8 +30,6 @@ interface ResultConnection {
   key: string;
 }
 
-type SummaryToolState = 'running' | 'done' | 'error' | 'stopped' | 'awaiting';
-
 interface ToolResultRuntimeOptions<
   TEntry extends ResultToolEntry,
   TMessage extends ResultMessage<TEntry>,
@@ -47,12 +45,12 @@ interface ToolResultRuntimeOptions<
   isTerminalToolPhase: (phase: string) => boolean;
   renderProgress: (progress: { id: string; phase: string; elapsedMs?: number; chunk?: string }, skipQueuedDrain?: boolean) => void;
   setRun: (entry: TEntry, phase: string, patch?: Partial<ToolRun>) => ToolRun | null;
-  publishToolSummary: (message: TMessage, entry: TEntry, state: SummaryToolState, status?: string) => void;
+
   notifyToolRun: (message: TMessage | null) => void;
   translate: (key: string, fallback: string) => string;
 }
 
-/** Own terminal-result idempotency, field mapping and summary publication. */
+/** Own terminal-result idempotency, field mapping and snapshot publication. */
 export function createToolResultRuntime<
   TEntry extends ResultToolEntry,
   TMessage extends ResultMessage<TEntry>,
@@ -109,7 +107,7 @@ export function createToolResultRuntime<
     /* Awaiting approval remains active; other results are latched before
        publishing so the frozen snapshot contains the terminal transition. */
     if (!projection.awaitingApproval) entry._toolResultApplied = true;
-    options.publishToolSummary(message, entry, projection.activityState, result.status);
+
     options.notifyToolRun(message);
   }
 

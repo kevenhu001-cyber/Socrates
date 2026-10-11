@@ -22,7 +22,6 @@ import { CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT } from './systemPrompts.js';
 import { extractHttpUrls, fetchPagesForContext, looksLikeUserMentionedSite } from './webLinks.js';
 import { renderLinkPreviews, renderNoUrlHint } from '../ui/linkPreviews.js';
 import { getReasoningEffort } from '../ui/effortPicker.js';
-import { publishThinkingTurnStart } from '../ui/messageSnapshot.js';
 import { publishActiveWorkflowEvent, publishActiveWorkflowFinish, publishWorkspaceAgentEvent } from './toolCallbacks.js';
 import { clearPendingTurn, newClientTurnId, savePendingTurn } from './turnClient.ts';
 import { addMessage } from './messages.js';
@@ -49,7 +48,7 @@ function _addAnchoredAssistant(text) {
 }
 
 export async function askChatTurn(userText,pendingOverride,precreatedController){
-  publishThinkingTurnStart();
+
   /* startSession can create the first assistant placeholder before any
      network work so the transition never opens onto an empty transcript.
      Claim it before the normal "supersede previous turn" cleanup; otherwise

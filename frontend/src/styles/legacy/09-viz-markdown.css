@@ -367,55 +367,6 @@
 /* Tables and formulas are rendered only once the splitter has closed them
    (isStableMarkdownPrefix): they appear whole, with no per-glyph animation. */
 
-/* Think block — cream/gold redesign.
-   - Collapsed by default (the markup no longer carries `open` once
-     streaming completes) so chain-of-thought doesn't push the real
-     answer down the page.
-   - A 3px gold left stripe gives the block its own visual identity
-      Minimal think-block: thin border, neutral colours, no accent stripe,
-      no gradient, no animations, no decorative icons. */
-.think-block{margin:4px 0;border-radius:7px;border:none;background:transparent}
-/* PERF: was `will-change:contents` — a no-op hint no browser promotes.
-   `contain:layout style` is the real win: it stops the think text
-   growing every stream frame from re-laying-out the whole message. */
-.think-block-streaming{contain:layout style}
-
-.think-summary{display:inline-flex;align-items:center;gap:8px;min-height:26px;padding:4px 6px;font-size:calc(13px * var(--app-font-scale,1));font-weight:400;color:hsl(var(--text-300));cursor:pointer;-webkit-user-select:none;user-select:none;list-style:none;border-radius:7px;transition:color .15s ease,background-color .15s ease}
-.think-summary::-webkit-details-marker{display:none}
-.think-summary::marker{display:none;content:""}
-.think-summary:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300)/0.55)}
-.think-summary:focus-visible{outline:1.5px solid hsl(var(--text-500)/0.3);outline-offset:-1px;border-radius:7px}
-
-.think-summary-label{font-family:var(--font-sans);font-style:normal;font-weight:400;color:inherit}
-
-.think-summary-meta{font-size:calc(11px * var(--app-font-scale,1));color:hsl(var(--text-500))}
-.think-summary-meta::before{content:"·";margin:0 4px}
-
-.think-summary-chevron{margin-left:auto;width:6px;height:6px;flex-shrink:0;border-right:1.2px solid currentColor;border-bottom:1.2px solid currentColor;transform:rotate(45deg);opacity:.6;color:hsl(var(--text-400));transition:transform .18s var(--ease-out)}
-.think-block[open]>.think-summary .think-summary-chevron{transform:rotate(-135deg)}
-
-/* think-content: tight spacing for chain-of-thought prose.
-   white-space:pre-line collapses runs of whitespace but keeps
-   single \n as a soft break, so the model’s intermittent blank
-   lines don’t inflate into huge gaps. Per-element margins below
-   override the prose defaults so p/ul/ol/pre sit close together
-   while still respecting list/heading rhythm. */
-.think-content{padding:2px 10px 10px;font-size:calc(12.5px * var(--app-font-scale,1));line-height:1.55;color:hsl(var(--text-400));white-space:pre-line;word-wrap:break-word;overflow-wrap:anywhere}
-.think-content>p{margin:0 0 0.4em}
-.think-content>p:last-child{margin-bottom:0}
-.think-content>ul,.think-content>ol{margin:0 0 0.4em;padding-left:1.4em}
-.think-content>ul li,.think-content>ol li{margin:0 0 0.15em}
-.think-content>pre{margin:0 0 0.5em;padding:6px 8px;border-radius:4px;background:hsl(var(--bg-300)/0.4);overflow-x:auto}
-.think-content>pre:last-child{margin-bottom:0}
-.think-content>h1,.think-content>h2,.think-content>h3,.think-content>h4{margin:0.6em 0 0.25em;font-size:calc(13px * var(--app-font-scale,1));font-weight:600;color:hsl(var(--text-300))}
-.think-content code{font-family:var(--font-mono);font-size:0.92em;background:hsl(var(--bg-300)/0.35);padding:0 3px;border-radius:3px}
-.think-content a{color:hsl(var(--accent-000))}
-
-/* Tool cards area inside think-block — collapses/expands with the
-   thinking block and appears after the reasoning text. */
-.think-tools{padding:2px 10px 10px}
-.think-tools .agent-tool-card{margin-top:4px}
-
 /* KaTeX dark theme overrides */
 .katex{font-size:1.05em}
 /* UI-align: KaTeX display scroll — the horizontal scrollbar stays

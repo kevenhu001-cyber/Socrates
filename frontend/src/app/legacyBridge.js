@@ -51,7 +51,6 @@ import { appendInlineArtifact } from '../ui/toolCards.js';
 import { formatMsgProgressive } from '../render/markdown.js';
 import { stripCitationMarkers } from '../render/helpers.js';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.js';
-import { publishThinkingPanelEvent } from '../ui/messageSnapshot.js';
 import { retryLiveTurn, decideLiveApproval } from '../chat/liveTurn.js';
 import { startSession } from '../chat/sessionBootstrap.js';
 import { submitChatMessage } from '../chat/sendPipeline.js';
@@ -304,16 +303,7 @@ window.__socratesLegacy = {
       return formatMsgProgressive(stripCitationMarkers(stripChatArtifacts(String(rawText || ''))), opts);
     },
   },
-  /* P_react-live-turn — the two surfaces a declarative turn has to hand back:
-     the reasoning panel (the status line is clickable, but the panel is a
-     drawer React does not own) and the live turn's controls. Both are thin
-     routes into the streaming closure; see the registries above
-     addStreamingMessage for why the closure, not the row, has to act. */
-  thinking: {
-    openPanel: function (messageId) {
-      publishThinkingPanelEvent({ type: "panel-open", messageId: messageId || null });
-    },
-  },
+  /* Live controls remain owned by the streaming pipeline. */
   liveTurn: {
     retry: function (messageId) {
       return retryLiveTurn(messageId);

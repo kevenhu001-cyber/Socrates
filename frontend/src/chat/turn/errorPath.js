@@ -33,10 +33,9 @@ import { publishReactChatRuntime } from '../../ui/reactBridge.js';
 export function createErrorPath(state) {
   function replaceWithError(errMsg, onRetry) {
     if (state.finished) return;
-    /* Mark this turn finished and publish the thinking-end signal first so a
+    /* Mark this turn finished first so a
        late natural finish callback finds _disposed/finished flipped. */
     state.finished = true;
-    state._publishThinkingPanelEnd();
     state.toolRuntime.cancel();
     if (state._elapsedTick) clearInterval(state._elapsedTick);
     state.cancelScheduledRender();

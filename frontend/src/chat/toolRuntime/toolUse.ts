@@ -68,7 +68,7 @@ interface ToolUseRuntimeOptions<
   renderApproval: (approval: ToolApproval) => void;
   drainAgentFrames: (entry: TEntry, message: TMessage) => void;
   connectExecution: (executionId: string, toolCallId: string) => void;
-  publishToolSummary: (message: TMessage, entry: TEntry, state: 'running') => void;
+
   notifyToolRun: (message: TMessage | null) => void;
 }
 
@@ -87,7 +87,7 @@ function updateExistingEntry<TEntry extends ToolUseEntry, TMessage extends ToolU
       options.connectExecution(call.executionId, entry.id);
     }
   }
-  options.publishToolSummary(message, entry, 'running');
+
   options.notifyToolRun(message);
 }
 
@@ -196,7 +196,7 @@ export function createToolUseRuntime<
       entry.executionId = call.executionId;
       options.connectExecution(call.executionId, entry.id);
     }
-    options.publishToolSummary(message, entry, 'running');
+
     options.notifyToolRun(message);
     return null;
   }

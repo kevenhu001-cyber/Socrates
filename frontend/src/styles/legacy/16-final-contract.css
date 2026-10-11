@@ -241,30 +241,30 @@
   box-shadow:none!important;
 }
 
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline:not([data-nested="1"]){
+.msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline:not([data-nested="1"]){
   margin:10px 0!important;
   background:transparent!important;
 }
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline-head{
+.msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline-head{
   min-height:28px!important;
   gap:8px!important;
   padding:0 2px!important;
   border:0!important;
   background:transparent!important;
 }
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline-tool-icon{
+.msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline-tool-icon{
   width:18px!important;
   height:18px!important;
   flex-basis:18px!important;
   color:hsl(var(--text-400));
 }
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline-label{
+.msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline-label{
   font-size:13.5px!important;
   font-weight:440!important;
   letter-spacing:-.005em;
 }
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-meta{visibility:hidden}
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline-spinner{
+.msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-meta{visibility:hidden}
+.msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline-spinner{
   width:7px!important;
   height:7px!important;
   border:0!important;
@@ -272,20 +272,20 @@
   background:currentColor;
   opacity:.7;
 }
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-spinner{
+.msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-spinner{
   /* No !important: this already wins by order + specificity, and an
      important infinite loop would beat every prefers-reduced-motion rule
      except restore/'s #appShell-scoped guard. */
   animation:calm-status-breathe var(--ui-duration-pulse-slow, 1.6s) ease-in-out infinite;
 }
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-label.shimmer-text,
+.msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-label.shimmer-text,
 .agent-tool-card[data-tool-state="running"] .agent-tool-name{
   background:none!important;
   color:hsl(var(--text-300))!important;
   -webkit-text-fill-color:currentColor!important;
   animation:calm-status-text var(--ui-duration-pulse-slow, 1.6s) ease-in-out infinite;
 }
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail{
+.msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline-detail{
   margin-top:5px!important;
   border-left-color:hsl(var(--border-300)/.34)!important;
 }
@@ -374,46 +374,46 @@
 /* Screenshot-faithful activity rows: a short icon-and-label line only.
    Details still open on click, without card chrome or a duration column;
    expandable rows keep a quiet disclosure glyph. */
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline:not([data-nested="1"]){
+.msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline:not([data-nested="1"]){
   margin:12px 0!important;
 }
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline-head{
+.msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline-head{
   width:max-content!important;
   max-width:100%;
   min-height:26px!important;
   gap:9px!important;
   color:hsl(var(--text-500))!important;
 }
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline-tool-icon{
+.msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline-tool-icon{
   width:18px!important;
   height:18px!important;
   flex-basis:18px!important;
   opacity:.9;
 }
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline-tool-icon svg{
+.msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline-tool-icon svg{
   width:17px!important;
   height:17px!important;
   stroke-width:1.55!important;
 }
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline-label{
+.msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline-label{
   font-size:13.5px!important;
   font-weight:430!important;
   line-height:1.45!important;
   color:inherit!important;
 }
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline-meta{
+.msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline-meta{
   display:none!important;
 }
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline:not([data-expandable="1"]) .tool-inline-chev{
+.msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline:not([data-expandable="1"]) .tool-inline-chev{
   display:none;
 }
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-expandable="1"] .tool-inline-chev{
+.msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline[data-expandable="1"] .tool-inline-chev{
   display:inline-flex;
 }
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-label.shimmer-text{
+.msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-label.shimmer-text{
   color:hsl(var(--text-400))!important;
 }
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="done"] .tool-inline-label{
+.msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline[data-state="done"] .tool-inline-label{
   color:hsl(var(--text-500))!important;
 }
 

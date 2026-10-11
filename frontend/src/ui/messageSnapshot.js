@@ -30,11 +30,10 @@ export function setReactLiveStatus(message, status) {
       && previous.phase === status.phase
       && previous.label === status.label
       && previous.state === status.state
+      && previous.mode === status.mode
       && previous.error === status.error
       && previous.elapsedSec === status.elapsedSec
-      && previous.toolName === status.toolName
-      && previous.thoughtSnippet === status.thoughtSnippet
-      && previous.detail === status.detail) return;
+      && previous.toolName === status.toolName) return;
 
   const messageId = String(message.clientId || message.id || '');
   const updated = updateMessageSnapshot(message, {
@@ -43,17 +42,4 @@ export function setReactLiveStatus(message, status) {
   }, true);
   if (!updated) return;
   publishReactChatRuntime({ type: 'tool-run-updated', messageId });
-}
-
-/** Publish a thinking-panel event without making the panel mandatory. */
-export function publishThinkingPanelEvent(event) {
-  try {
-    const bridge = window.__socratesThinkingPanelBridge;
-    if (bridge && typeof bridge.publish === 'function') bridge.publish(event);
-  } catch (_) { /* optional React panel */ }
-}
-
-/** Notify the thinking panel that a new turn has started. */
-export function publishThinkingTurnStart() {
-  publishThinkingPanelEvent({ type: 'turn-start' });
 }

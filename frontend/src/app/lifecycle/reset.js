@@ -4,7 +4,6 @@ import { showConfirm } from '../../ui/confirm.js';
 import { resetComposerForNewSession, focusComposerForNewSession } from '../../react/composer-input/lifecycle.ts';
 import { clearLegacyMsgListChildren } from '../../ui/messageListDom.js';
 import { publishReactChatRuntime } from '../../ui/reactBridge.js';
-import { publishThinkingTurnStart } from '../../ui/messageSnapshot.js';
 import { resetShareToken, toggleShareBtn } from '../../ui/share.js';
 import { clearSessionRouteInURL } from '../../session/store.js';
 import { scrollContainer } from '../../ui/scroll.js';
@@ -66,7 +65,7 @@ function abortActiveChat() {
 }
 
 function prepareCurrentSessionForReset() {
-  publishThinkingTurnStart();
+
   saveSessionBeforeReset();
   try { sessionStorage.removeItem('socrates-active-assistant'); }
   catch (error) { reportSwallow(error, 'app/lifecycle.resetApp.clearActiveAssistant'); }

@@ -19,7 +19,7 @@
  * controls `.tool-run-list` — collapsing a run may hide its arguments and
  * stdout, never its result.
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { formatSeconds } from './labels.js';
 import { ToolRunAttachments } from './ToolRunAttachments.js';
@@ -32,8 +32,8 @@ import {
 } from './toolRunModel.js';
 import { ToolRunGroupSummary } from './ToolRunGroupSummary.js';
 import { ToolRunRows } from './ToolRunRows.js';
-import { toolRunGroupId, useToolRunSheet } from './ToolRunSheetContext.js';
 import { useElapsed } from './useElapsed.js';
+import { useExpandedToolIds } from './ToolRunDisclosure';
 
 type GroupSegment = Extract<TurnSegment, { kind: 'group' }>;
 
@@ -55,19 +55,11 @@ export interface ToolRunGroupProps {
 }
 
 export function ToolRunGroup({ segment, messageId, readOnly }: ToolRunGroupProps) {
-  const [open, setOpen] = useState(false);
-  const toolSheet = useToolRunSheet();
+  const [userOpen, setUserOpen] = useState<boolean | null>(null);
+  const expandedTools = useExpandedToolIds();
+  const open = userOpen ?? segment.members.some((call) => expandedTools?.has(call.id));
   const view = useMemo(() => groupViewOf(segment), [segment]);
   const showsHeader = view.showsHeader;
-  const groupId = toolRunGroupId(segment);
-  const sheetOpen = toolSheet.sheet?.kind === 'group' && toolSheet.sheet.id === groupId;
-  const { sheet, refreshGroup } = toolSheet;
-  useEffect(() => {
-    const activeSheet = sheet;
-    if (activeSheet?.kind === 'group' && activeSheet.id === groupId && activeSheet.segment !== segment) {
-      refreshGroup(segment);
-    }
-  }, [groupId, refreshGroup, segment, sheet]);
   const inFlight = showsHeader && (view.state === 'running' || view.state === 'awaiting');
   const startedAt = showsHeader && segment.running.length ? runStartedAt(segment.running[0]) : 0;
   // Hooks first: the single-member shortcut below must not make one conditional.
@@ -78,6 +70,7 @@ export function ToolRunGroup({ segment, messageId, readOnly }: ToolRunGroupProps
     const elapsed = formatSeconds(elapsedMs);
     if (elapsed) meta.push(elapsed);
   }
+  const aggregated = view.members.length > 0 || view.running.length > 0;
 
   /* Tool OUTPUTS render as a sibling of the rows region, in the group's own
      fragment — never inside the subtree whose shape changes when a run crosses
@@ -96,29 +89,25 @@ export function ToolRunGroup({ segment, messageId, readOnly }: ToolRunGroupProps
           className={`tool-run-group${open ? ' open' : ''}`}
           data-state={CSS_STATE[view.state]}
           data-category={view.category}
+          /* Failures and approvals are drawn OUTSIDE the collapsed list, so a
+             run made only of those has nothing left to collapse. Marking it
+             lapsed lets the stylesheet drop the member indent and put those
+             rows back at the transcript's left edge — without it a single
+             failed call sat indented under a header it never needed. */
+          data-aggregated={aggregated ? '1' : undefined}
         >
           <ToolRunGroupSummary
             view={view}
             category={segment.category}
-            inFlight={inFlight}
             meta={meta}
-            isNarrowViewport={toolSheet.isNarrowViewport}
-            sheetOpen={sheetOpen}
             open={open}
-            onToggle={(button) => {
-              if (toolSheet.isNarrowViewport) {
-                toolSheet.openGroup(segment, messageId, readOnly, button);
-                return;
-              }
-              setOpen((value) => !value);
-            }}
+            onToggle={() => setUserOpen(!open)}
           />
           <ToolRunRows
             segment={segment}
             view={view}
             grouped
             open={open}
-            isNarrowViewport={toolSheet.isNarrowViewport}
             messageId={messageId}
             readOnly={readOnly}
           />
@@ -129,7 +118,6 @@ export function ToolRunGroup({ segment, messageId, readOnly }: ToolRunGroupProps
           view={view}
           grouped={false}
           open={open}
-          isNarrowViewport={toolSheet.isNarrowViewport}
           messageId={messageId}
           readOnly={readOnly}
         />

@@ -196,15 +196,6 @@ export interface LegacyRender {
 }
 
 /**
- * The right-hand reasoning panel. Legacy owns the panel's event channel
- * (`window.__socratesThinkingPanelBridge`); a declarative turn's status line
- * asks for it through here instead of reaching for window directly.
- */
-export interface LegacyThinking {
-  openPanel(messageId: string | null): void;
-}
-
-/**
  * Live-turn controls that a declarative render needs to hand back to the
  * streaming pipeline: retrying a turn that failed before its first token,
  * and answering a tool-approval request the run is blocked on.
@@ -227,7 +218,6 @@ export interface LegacyActions {
   profile: LegacyProfile;
   postRender: LegacyPostRender;
   render: LegacyRender;
-  thinking?: LegacyThinking;
   liveTurn?: LegacyLiveTurn;
 }
 

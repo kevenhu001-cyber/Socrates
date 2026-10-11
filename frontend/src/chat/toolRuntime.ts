@@ -29,7 +29,6 @@
 import type { ChatRuntimeEvent } from '../react/types/domain';
 
 import type { AgentPlanData, AgentStepData } from '../ui/agentSteps.js';
-import { publishThinkingPanelEvent } from '../ui/messageSnapshot.js';
 import {
   TOOL_RUN_PHASES,
   isTerminalToolPhase,
@@ -180,8 +179,6 @@ interface ExecutionConnection {
   source: EventSource;
   timer: ReturnType<typeof setTimeout>;
 }
-
-type SummaryToolState = 'running' | 'done' | 'error' | 'stopped' | 'awaiting';
 
 export interface ToolRuntime {
   hasActiveTools: () => boolean;
@@ -340,27 +337,6 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     return getMessage() || null;
   }
 
-  function publishToolSummary(
-    message: ToolMessage | null,
-    entry: ToolCallEntry,
-    state: SummaryToolState,
-    status?: string,
-  ): void {
-    const messageId = String(message?.clientId || message?.id || '');
-    if (!messageId) return;
-    publishThinkingPanelEvent({
-      type: 'tool-activity',
-      messageId,
-      id: entry.id,
-      name: entry.name,
-      input: entry.input,
-      output: entry.output,
-      results: entry.results,
-      status,
-      state,
-    });
-  }
-
   /* Publish detached tool snapshots before announcing the UI revision.
      Mutable queues, buffers and event payloads stay private to this runtime. */
   function commitToolRunSnapshot(message: ToolMessage | null): void {
@@ -487,7 +463,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     isTerminalToolPhase,
     renderProgress,
     setRun: (entry, phase, patch) => setRun(entry, phase, patch),
-    publishToolSummary,
+
     notifyToolRun,
     translate,
   });
@@ -521,7 +497,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     renderApproval: approvalRuntime.renderApproval,
     drainAgentFrames: agentFrames.drainAgentFrames,
     connectExecution,
-    publishToolSummary,
+
     notifyToolRun,
   });
 
@@ -658,7 +634,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       entry.executionId = event.executionId;
       if (getRun(entry) && isTerminalToolPhase(getRun(entry)!.phase)) return;
       setRun(entry, TOOL_RUN_PHASES.running);
-      publishToolSummary(message, entry, 'running');
+
       notifyToolRun(message);
     }
     connectExecution(event.executionId, event.id);
@@ -705,7 +681,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
         const entry = message.toolCalls[i];
         if (!entry || (getRun(entry) && isTerminalToolPhase(getRun(entry)!.phase))) continue;
         setRun(entry, TOOL_RUN_PHASES.cancelled, { endedAt: Date.now() });
-        publishToolSummary(message, entry, 'stopped', 'cancelled');
+
       }
       /* Runs settle as stopped, not spinning: the declarative renderer reads
          run.phase off the entry, so the cancel has to publish. */

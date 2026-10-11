@@ -30,22 +30,17 @@ async function openArtifact(page) {
   await expect(page.locator('.detail-surface')).toBeVisible();
 }
 
-test('reasoning and artifact replace each other in one docked detail shell', async ({ page }) => {
+test('artifact preview uses the docked detail shell without covering chat', async ({ page }) => {
   await boot(page);
-  await page.evaluate(() => window.__socratesThinkingPanelBridge.publish({ type: 'panel-open' }));
-  await expect(page.locator('[data-thinking-panel="1"]')).toBeVisible();
   await openArtifact(page);
-  await expect(page.locator('[data-thinking-panel="1"]')).toHaveCount(0);
   await expect(page.locator('.detail-surface')).toHaveCount(1);
+  await expect(page.locator('.artifact-preview-image')).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-detail-layout', 'docked');
   const bounds = await page.evaluate(() => ({ main: document.querySelector('.main').getBoundingClientRect().right, detail: document.querySelector('.detail-surface').getBoundingClientRect().left }));
   expect(bounds.main).toBeLessThanOrEqual(bounds.detail + 1);
   const footer = await page.locator('#topicDisclaimer').boundingBox();
   expect(footer.x + footer.width).toBeLessThanOrEqual(bounds.detail + 1);
   await page.screenshot({ path: 'test-results/detail-surface-desktop.png' });
-  await page.evaluate(() => window.__socratesThinkingPanelBridge.publish({ type: 'panel-open' }));
-  await expect(page.locator('[data-thinking-panel="1"]')).toBeVisible();
-  await expect(page.locator('.artifact-preview-image')).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(page.locator('.detail-root')).toBeHidden();
 });

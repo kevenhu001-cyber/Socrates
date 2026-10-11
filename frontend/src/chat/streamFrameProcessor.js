@@ -15,8 +15,8 @@ const CALLBACK_BY_EVENT = Object.freeze({
   execution_start: 'onExecutionStart',
   tool_call_delta: 'onToolCallDelta',
   /* P_turn-summary — the model's one-line retrospective of the work it did,
-     sent after the answer text and before [DONE]. Feeds the ⏱ status row
-     and the Summary sheet. */
+     sent after the answer text and before [DONE]. Feeds the per-turn
+     disclosure in the assistant message. */
   turn_summary: 'onTurnSummary',
 });
 

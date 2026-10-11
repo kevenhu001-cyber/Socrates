@@ -26,12 +26,10 @@ interface ArtifactSummary {
   name: string | null;
 }
 
-type SummaryToolState = 'running' | 'done' | 'error' | 'stopped' | 'awaiting';
-
 export interface ToolResultProjection {
   awaitingApproval: boolean;
   runPhase: string;
-  activityState: SummaryToolState;
+
   entryPatch: Record<string, unknown>;
 }
 
@@ -93,12 +91,6 @@ function runPhaseForResult(result: ToolResultInput, awaitingApproval: boolean): 
   if (result.status === 'timeout') return TOOL_RUN_PHASES.timed_out;
   if (result.status === 'cancelled') return TOOL_RUN_PHASES.cancelled;
   return TOOL_RUN_PHASES.failed;
-}
-
-function summaryStateForResult(result: ToolResultInput, awaitingApproval: boolean): SummaryToolState {
-  if (awaitingApproval) return 'awaiting';
-  if (result.ok !== false) return 'done';
-  return result.status === 'cancelled' ? 'stopped' : 'error';
 }
 
 function optionalResultFields(result: ToolResultInput): Record<string, unknown> {
@@ -169,7 +161,7 @@ export function projectToolResult(
   return {
     awaitingApproval,
     runPhase: runPhaseForResult(result, awaitingApproval),
-    activityState: summaryStateForResult(result, awaitingApproval),
+
     entryPatch: buildEntryPatch(result, display, existingArtifacts),
   };
 }

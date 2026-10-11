@@ -5,7 +5,7 @@
  * error block collapse into one field — `message._liveStatus` — drawn by
  * react/tool-run/TurnStatus, so a turn cannot show two "working on it"
  * lines. This module owns that field's mutations and the lifecycle
- * publishes that keep the summary sheet aligned with the live turn.
+ * updates that keep the inline activity summary aligned with the live turn.
  *
  * Extracted from chat/streamingTurn.js during the 2026-10 addStreamingMessage
  * split. The helpers here are tight callbacks over the shared message
@@ -14,7 +14,7 @@
  * re-binding its own copies.
  */
 import { stateStore } from '../../state/store.js';
-import { setReactLiveStatus, publishThinkingPanelEvent } from '../../ui/messageSnapshot.js';
+import { setReactLiveStatus } from '../../ui/messageSnapshot.js';
 
 /**
  * Build the live-status chrome bound to one turn's state.
@@ -28,8 +28,6 @@ import { setReactLiveStatus, publishThinkingPanelEvent } from '../../ui/messageS
  *   clearLiveStatus: () => void,
  *   stampWaiting: (sec: number) => void,
  *   stampThinking: () => void,
- *   publishThinkingPanelStart: () => void,
- *   publishThinkingPanelEnd: () => void,
  * }}
  */
 export function createStatusChrome(state) {
@@ -62,15 +60,6 @@ export function createStatusChrome(state) {
     if (!statusIsBusy()) setLiveStatus(null);
   }
 
-  function waitingCopyFor(sec) {
-    if (sec >= 45) return state.t("think.stillWorking", "仍在深入推理，请稍候…");
-    if (sec >= 20) return state.t("think.organizingAnswer", "正在组织推导与回答内容…");
-    if (sec >= 8) return state.t("think.reviewingContext", "正在检索上下文与相关记忆…");
-    if (sec >= 3) return state.t("think.preparing", "正在构思生成方案…");
-    return _waitingLabel;
-  }
-
-
   function stampWaiting(sec) {
     if (!state.reactLive || statusIsBusy()) return;
     /* Reasoning owns the line once it starts. Reasoning deltas re-stamp
@@ -86,8 +75,8 @@ export function createStatusChrome(state) {
        changes rarely and predictably, instead of ticking every second. */
     var _elapsedQ = sec >= 12 ? Math.max(10, Math.floor(sec / 5) * 5) : undefined;
     setLiveStatus({
-      phase: "waiting", label: waitingCopyFor(sec), mode: state.appMode(),
-      clickable: state.appMode() === "chat", elapsedSec: _elapsedQ
+      phase: "waiting", label: _waitingLabel, mode: state.appMode(),
+      elapsedSec: _elapsedQ
     });
   }
 
@@ -96,18 +85,7 @@ export function createStatusChrome(state) {
     setLiveStatus({
       phase: "thinking",
       label: state.t("think.thinking", "正在深度思考…"),
-      clickable: state.appMode() === "chat"
     });
-  }
-
-  /* P_thinking-panel — the panel snapshot carries only lifecycle state and
-     tool summaries; model reasoning text is not sent to its renderer. */
-  function publishThinkingPanelStart() {
-    publishThinkingPanelEvent({ type: "thinking-start", messageId: state.clientId });
-  }
-
-  function publishThinkingPanelEnd() {
-    publishThinkingPanelEvent({ type: "thinking-end", messageId: state.clientId });
   }
 
   return {
@@ -117,7 +95,5 @@ export function createStatusChrome(state) {
     clearLiveStatus,
     stampWaiting,
     stampThinking,
-    publishThinkingPanelStart,
-    publishThinkingPanelEnd,
   };
 }

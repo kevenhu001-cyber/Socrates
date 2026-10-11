@@ -48,7 +48,6 @@ export function createAbortPath(state) {
     if (state.finished) return;
     state.finished = true;
     state._disposed = true;
-    state._publishThinkingPanelEnd();
     if (state._elapsedTick) clearInterval(state._elapsedTick);
     state.cancelScheduledRender();
     /* Restore the send button — but only if no new stream has

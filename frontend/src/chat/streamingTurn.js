@@ -10,7 +10,7 @@
  * 2026-10 split:
  *   finish/drain/persistence/status-release lifecycle — chat/turn/finishLifecycle.js
  *   finish-time viewport capture + RAF settle — chat/turn/finishViewport.js
- *   live-status chrome + thinking-panel publishes — chat/turn/statusChrome.js
+ *   live-status chrome and per-turn status publication — chat/turn/statusChrome.js
  *   finish-time single formatMsg pass + canvas mode writeback — chat/turn/finishRender.js
  *   user-stop (abort) body — chat/turn/abortPath.js
  *   replaceWithError body — chat/turn/errorPath.js
@@ -211,7 +211,6 @@ export function addStreamingMessage(opts){
     cancelScheduledRender: function(){},
     ownsMessageSlot: function(){return false},
     patchOwnedMessage: function(){return null},
-    _publishThinkingPanelEnd: function(){},
 
     // Only turnState owns the active controller and global streaming flags.
     ret: null,
@@ -239,8 +238,6 @@ export function addStreamingMessage(opts){
      session-slot guards are owned by the helpers above; status chrome
      only mirrors state, it does not own it. */
   var statusChrome=createStatusChrome(state);
-  state._publishThinkingPanelEnd=statusChrome.publishThinkingPanelEnd;
-  if(_appMode()==="chat")statusChrome.publishThinkingPanelStart();
 
   /* P_session-stream-dispose — when resetApp() or loadSession() aborts
      an in-flight stream, already-queued delta chunks from the response
@@ -301,8 +298,7 @@ export function addStreamingMessage(opts){
     remove:function(){clearLiveStatus()},
     setLabel:function(text,state2){
       if(statusIsBusy())return;
-      setLiveStatus({phase:"thinking",label:String(text||""),
-        state:state2||"",clickable:_appMode()==="chat"});
+      setLiveStatus({phase:"thinking",label:String(text||""),state:state2||""});
     }
   };
   function hideThinkCtl(){
@@ -675,7 +671,7 @@ export function addStreamingMessage(opts){
       if(!stillOwnsSlot())return;
       var _retryLabel="Retrying · "+notice.retryNumber+"/"+notice.maxRetries+" · 5s";
       noteStreamGrowth();
-      setLiveStatus({phase:"retrying",label:_retryLabel,clickable:false});
+      setLiveStatus({phase:"retrying",label:_retryLabel});
     },
     finish: finishLifecycle.finish,
     abort: abortPath.abort,

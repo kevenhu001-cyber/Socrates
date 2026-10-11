@@ -162,7 +162,9 @@ test('a run of three searches collapses under one header, with the live row outs
   const chev = await first.locator('.tool-run-summary-chev').boundingBox();
   expect(chev.width).toBeGreaterThanOrEqual(12);
   const head = await first.locator('.tool-run-summary').boundingBox();
-  expect(chev.x + chev.width).toBeCloseTo(head.x + head.width, -1);
+  const trailingGap = head.x + head.width - (chev.x + chev.width);
+  expect(trailingGap).toBeGreaterThanOrEqual(0);
+  expect(trailingGap).toBeLessThanOrEqual(9); // 8px token padding + fractional layout tolerance
 
   /* Collapsed by default. The member rows exist (expanding must not have to
      build them) but nothing under the hidden aggregate body is on screen. */
@@ -323,7 +325,7 @@ test('a lone call gets no aggregate header, and its failure keeps a visible Retr
       window.__retryEvents.push(event.detail);
     });
   });
-  await row.locator('.tool-inline-retry').click();
+  await body.locator('.tool-inline-retry').click();
   const seen = await page.evaluate(() => window.__retryEvents);
   expect(seen).toHaveLength(1);
   expect(seen[0]).toMatchObject({ toolId: 'f1', tool: 'web_search', errorCode: 'SEARCH_TIMEOUT' });
@@ -362,9 +364,9 @@ test('answer prose keeps its recorded order around the rows, with no baked-in du
          to a row that has a chart or file, and the history-recovery pass may
          add one for the same call. Neither is part of the answer's flow. */
       if (node.classList.contains('tool-inline-attachments')) continue;
-      /* The turn-summary pill leads every assistant turn (it opens the
-         thinking panel); it is chrome, not part of the prose flow. */
-      if (node.classList.contains('turn-summary-pill')) {
+      /* The turn-summary disclosure leads every assistant turn; it is
+         chrome, not part of the prose flow. */
+      if (node.classList.contains('turn-summary')) {
         order.push('pill');
       } else if (node.classList.contains('tool-run-prose')) {
         order.push(`text:${(node.textContent || '').trim()}`);
@@ -383,6 +385,8 @@ test('answer prose keeps its recorded order around the rows, with no baked-in du
     'group:search',
     'text:Lead paragraph.',
     'row:f1',
+    'other:tool-inline-error',
+    'other:tool-inline-error-actions',
     'text:Middle paragraph.',
     'group:write',
     'text:Tail paragraph.',
@@ -395,62 +399,20 @@ test('answer prose keeps its recorded order around the rows, with no baked-in du
   await expect(body).not.toContainText('baked row');
 });
 
-test('a narrow viewport browses a tool group in one sheet and restores focus on close', async ({ page }) => {
-  test.setTimeout(90_000);
+test('a narrow viewport expands tools in the message without a sheet', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const body = await loadFixtureSession(page);
   const group = body.locator('.tool-run-group').first();
   const trigger = group.locator('.tool-run-summary');
-  const sheet = page.locator('[data-tool-run-sheet="1"]');
-
   await trigger.click();
-  await expect(sheet).toBeVisible();
-  await expect(sheet).toHaveAttribute('data-kind', 'group');
-  await expect(sheet.locator('.tool-run-sheet-close')).toBeFocused();
-  await expect(sheet.locator('.tool-run-sheet-meta')).not.toContainText(/\d{3,}m/);
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
-  /* Mobile does not open the old inline list under the chat bubble. */
-  await expect(group.locator('.tool-run-list')).toHaveAttribute('hidden', '');
-  await expect(sheet.locator('.tool-inline[data-tcid="s1"]')).toHaveCount(1);
-  await expect(body.locator('.tool-inline[data-tcid="s3"]')).toBeVisible();
-  await expect(sheet.locator('.tool-inline[data-tcid="s3"]')).toHaveCount(0);
-  await sheet.screenshot({ path: 'test-results/tool-run-mobile-sheet.png' });
-
-  /* Member details open inside this sheet instead of nesting another modal. */
-  const member = sheet.locator('.tool-inline[data-tcid="s1"]');
-  await member.locator('summary').click();
-  await expect(member).toHaveAttribute('open', '');
-  await expect(member.locator('.tool-inline-src-title')).toHaveCount(2);
-
-  await sheet.locator('.tool-run-sheet-close').click();
-  await expect(sheet).toHaveCount(0);
-  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
-  expect(await trigger.evaluate((element) => document.activeElement === element)).toBe(true);
-
-  /* Escape and backdrop close use the same focus-restoring path. */
+  await expect(group.locator('.tool-run-list')).toBeVisible();
+  const row = group.locator('.tool-inline[data-tcid="s1"]');
+  await row.locator('summary').click();
+  await expect(row.locator('.tool-inline-src-title')).toHaveCount(2);
+  await expect(page.locator('.tool-run-sheet')).toHaveCount(0);
   await trigger.click();
-  await expect(sheet).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(sheet).toHaveCount(0);
-  expect(await trigger.evaluate((element) => document.activeElement === element)).toBe(true);
-
-  await trigger.click();
-  await expect(sheet).toBeVisible();
-  await page.locator('[data-tool-run-sheet-backdrop="1"]').click({ position: { x: 8, y: 8 } });
-  await expect(sheet).toHaveCount(0);
-  expect(await trigger.evaluate((element) => document.activeElement === element)).toBe(true);
-
-  /* A lone failed call opens the detail sheet directly, without a group page. */
-  const singleTrigger = body.locator('.tool-inline[data-tcid="f1"] summary');
-  await singleTrigger.click();
-  await expect(sheet).toBeVisible();
-  await expect(sheet).toHaveAttribute('data-kind', 'tool');
-  await expect(sheet.locator('.tool-run-sheet-title')).toContainText('Search failed: delta theory');
-  await expect(sheet.locator('[data-kind="error"] .tool-inline-detail-value'))
-    .toContainText('Search upstream timed out after 30s');
-  await sheet.locator('.tool-run-sheet-close').click();
-  await expect(sheet).toHaveCount(0);
-  expect(await singleTrigger.evaluate((element) => document.activeElement === element)).toBe(true);
+  await expect(group.locator('.tool-run-list')).toBeHidden();
 });
 
 test('the turn keeps one column for its rows and prose at body width', async ({ page }) => {
@@ -500,7 +462,7 @@ test('the turn keeps one column for its rows and prose at body width', async ({ 
    preview and wrote it into the row's collapsed body, where nobody could see
    it. History cannot stream, so this is the one spec in the file that drives a
    real SSE. */
-test('a running code call paints its program and stdout outside any collapsible', async ({ page }) => {
+test('a running code call streams details on demand and retains expansion on completion', async ({ page }) => {
   await page.addInitScript(() => {
     const nativeFetch = window.fetch.bind(window);
     const encoder = new TextEncoder();
@@ -559,11 +521,13 @@ test('a running code call paints its program and stdout outside any collapsible'
     window.__streamArgs();
   });
   const preview = row.locator('.tool-inline-code-preview').first();
+  await expect(preview).toHaveCount(0);
+  await row.locator('summary').click();
   await expect(preview).toBeVisible();
   await expect(preview).toContainText('step_39(data)');
   /* Outside every collapsible — the row itself is a plain div while in flight,
      which is the whole point of the live shape. */
-  expect(await preview.evaluate((el) => Boolean(el.closest('details')))).toBe(false);
+  expect(await preview.evaluate((el) => Boolean(el.closest('details')))).toBe(true);
 
   const box = await preview.evaluate((el) => {
     const style = getComputedStyle(el);
@@ -610,4 +574,70 @@ test('a running code call paints its program and stdout outside any collapsible'
   /* A settled row reports results, not the stream it came from: the program now
      sits behind Technical details and the output in the result section. */
   await expect(row.locator('.tool-inline-code-preview')).toHaveCount(0);
+  await expect(row).toHaveAttribute('open', '');
+  await expect(row.locator('[data-kind=output]')).toContainText('all steps ran');
+});
+
+test('a pending approval stays visible outside a collapsed tool row', async ({ page }) => {
+  await page.addInitScript(() => {
+    const nativeFetch = window.fetch.bind(window);
+    const encoder = new TextEncoder();
+    const frame = (event, data) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+    let push = null;
+    window.fetch = (input, init) => {
+      const url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+      if (!url.includes('/chat/stream')) return nativeFetch(input, init);
+      const stream = new ReadableStream({ start(controller) {
+        push = (event, data) => controller.enqueue(encoder.encode(frame(event, data)));
+        push('tool_use', [{ id: 'approval-tool', name: 'workspace_agent', input: { command: 'npm test' } }]);
+        window.__requestToolApproval = () => push('tool_approval', {
+          id: 'approval-tool', runId: 'run-approval', approvalId: 'approval-123',
+          kind: 'commandExecution', command: 'npm test', cwd: '/workspace',
+          reason: 'Validate the project', status: 'pending',
+        });
+      } });
+      return Promise.resolve(new Response(stream, {
+        status: 200,
+        headers: { 'Content-Type': 'text/event-stream' },
+      }));
+    };
+  });
+  await mockAuthedApp(page);
+  await page.addInitScript(() => localStorage.setItem('socrates-lang-app', 'en'));
+  const decisions = [];
+  await page.route(/\/api\/(?:v2\/)?agent-runs\/run-approval\/approvals\/approval-123(?:\?.*)?$/, async (route) => {
+    decisions.push({ method: route.request().method(), body: route.request().postDataJSON() });
+    await route.fulfill({ json: { ok: true } });
+  });
+  await page.route(/\/api\/(?:v2\/)?agent-runs\/run-approval(?:\?.*)?$/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ json: { run: { status: 'completed', summary: 'Command approved and completed.' }, artifacts: [] } });
+    } else {
+      await route.fallback();
+    }
+  });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.evaluate(() => {
+    const sessionId = '66666666-6666-4666-8666-666666666666';
+    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: sessionId });
+    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [{ clientId: 'user-approval', role: 'user', rawText: 'Run the tests', html: null }] });
+    window.__testActivateMainView('chatView');
+    window.__approvalTurnPromise = window.askChatTurn('Run the tests');
+  });
+
+  const row = page.locator('.msg.assistant').last().locator('.tool-inline[data-tcid="approval-tool"]');
+  await expect(row).toHaveAttribute('data-state', 'running');
+  await page.evaluate(() => window.__requestToolApproval());
+  const prompt = page.locator('.tool-inline-approval');
+  await expect(row).toHaveAttribute('data-state', 'awaiting');
+  await expect(prompt).toBeVisible();
+  await expect(row).not.toHaveAttribute('open', '');
+  await expect(prompt.getByRole('button', { name: 'Allow once' })).toBeVisible();
+  await expect(prompt.getByRole('button', { name: 'Decline' })).toBeVisible();
+
+  await prompt.locator('[data-approval-action="accept"]').click();
+  await expect(prompt.locator('.tool-inline-approval-status')).toHaveText('Approved');
+  expect(decisions).toEqual([{ method: 'POST', body: { decision: 'accept' } }]);
 });

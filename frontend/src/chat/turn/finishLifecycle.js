@@ -47,7 +47,6 @@ export function createFinishLifecycle(state, ownerSessionId, finishRender, finis
     if (state.finished) return;
     state.finished = true;
     state._disposed = true;
-    state._publishThinkingPanelEnd();
     state.toolRuntime.dispose();
     if (state._elapsedTick) clearInterval(state._elapsedTick);
     state.cancelScheduledRender();

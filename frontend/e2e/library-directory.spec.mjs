@@ -38,7 +38,7 @@ test.beforeEach(async ({ page }) => {
 
 const row = (page, name) => page.locator('.library-row', { hasText: name });
 
-test('file previews replace reasoning in the shared detail and ignore stale content responses', async ({ page }) => {
+test('file previews share the detail shell and ignore stale content responses', async ({ page }) => {
   let releaseFirst;
   const firstResponse = new Promise((resolve) => { releaseFirst = resolve; });
   await page.route(/\/files\/f1\/content/, async (route) => {
@@ -48,21 +48,12 @@ test('file previews replace reasoning in the shared detail and ignore stale cont
   await page.route(/\/files\/f4\/content/, async (route) => {
     await route.fulfill({ json: { ok: true, text: 'Current file response' } });
   });
-  await page.evaluate(() => window.__socratesThinkingPanelBridge.publish({ type: 'panel-open' }));
-  await expect(page.locator('[data-thinking-panel="1"]')).toBeVisible();
-  /* The thinking panel is a MODAL bottom sheet: .detail-backdrop is a
-     fixed, full-viewport dismiss button, so a real pointer click on a row
-     behind the sheet is (correctly) swallowed by the backdrop. The point of
-     this test is the ownership hand-off on the shared detail surface — open
-     a file while the reasoning sheet still owns it — not hit-testing, so
-     dispatch the row's own click handler programmatically. fdb6dfb5 turned
-     the pre-refactor window.openLibraryItem() call into a .click() and this
-     is the fallout; dispatching the DOM click keeps the original intent
-     without reintroducing a window global. */
+  /* Dispatch the row icon click directly so the test can focus on detail
+     ownership and the stale-response race rather than row hit testing. */
   const openRow = (name) =>
     row(page, name).locator('.library-file-icon').evaluate((el) => el.click());
   await openRow('country_risk_data.csv');
-  await expect(page.locator('[data-thinking-panel="1"]')).toHaveCount(0);
+  await expect(page.locator('.detail-surface')).toBeVisible();
   await expect(page.locator('.detail-heading h2')).toHaveText('country_risk_data.csv');
   await openRow('lab_report.docx');
   await expect(page.locator('.library-file-preview-text')).toHaveText('Current file response');

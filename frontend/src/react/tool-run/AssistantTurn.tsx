@@ -5,10 +5,11 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   buildTurnLayout,
+  toolRunStateOf,
   type ToolCallRecord,
   type TurnSegment,
 } from './toolRunModel.js';
-import { ToolRunSheetProvider } from './ToolRunSheet.js';
+import { ToolRunDisclosureProvider } from './ToolRunDisclosure';
 import { TurnStatus } from './TurnStatus.js';
 import { TurnSummaryPill } from './TurnSummaryPill';
 import { TurnSegmentContent } from './TurnSegmentContent';
@@ -49,12 +50,12 @@ function segmentKey(segment: TurnSegment, index: number): string {
 function shouldShowStatus(
   phase: string | undefined,
   live: boolean,
-  hasMountedRow: boolean,
+  hasRunningRow: boolean,
 ): boolean {
   if (!phase) return false;
   const terminalFailure = phase === 'error' || phase === 'stopped';
   if (!live && !terminalFailure) return false;
-  if (live && phase === 'tool-running' && hasMountedRow) return false;
+  if (live && !terminalFailure && hasRunningRow && phase !== 'retrying') return false;
   return true;
 }
 
@@ -82,19 +83,21 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
   });
   const prose = useProseRenderer(isLive);
   const growingIndex = isLive ? lastTextIndex(segments) : -1;
-  const hasMountedRow = segments.some(
-    (segment) => segment.kind === 'tool' || segment.kind === 'group',
+  const hasRunningRow = segments.some((segment) =>
+    segment.kind === 'group' ? segment.running.length > 0
+      : segment.kind === 'tool' && ['running', 'awaiting'].includes(toolRunStateOf(segment.call)),
   );
   const liveStatus = message._liveStatus;
-  const showStatus = shouldShowStatus(liveStatus?.phase, isLive, hasMountedRow);
+  const showStatus = shouldShowStatus(liveStatus?.phase, isLive, hasRunningRow);
   const messageId = String(message.clientId || message.id || '');
 
   return (
-    <ToolRunSheetProvider>
+    <ToolRunDisclosureProvider>
       <TurnSummaryPill
         message={message}
         live={isLive}
         messageId={messageId}
+        status={showStatus && liveStatus && !['error', 'stopped'].includes(liveStatus.phase) ? liveStatus : undefined}
       />
       {segments.map((segment, index) => (
         <TurnSegmentContent
@@ -107,13 +110,13 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
           prose={prose}
         />
       ))}
-      {showStatus && liveStatus ? (
-        <TurnStatus status={liveStatus} messageId={messageId} />
+      {showStatus && liveStatus && ['error', 'stopped'].includes(liveStatus.phase) ? (
+        <TurnStatus status={liveStatus} messageId={messageId} readOnly={readOnly} />
       ) : null}
-      {(isLive || isSettling) && !showStatus ? (
+      {(isLive || isSettling) && !showStatus && !hasRunningRow ? (
         <StreamCursor state={message._playbackState} settling={!isLive && isSettling} />
       ) : null}
-    </ToolRunSheetProvider>
+    </ToolRunDisclosureProvider>
   );
 }
 

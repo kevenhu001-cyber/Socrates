@@ -70,23 +70,15 @@ test('deferred tool shows a clean single status line, no orphan dots', async ({ 
   // The deferred state: status line visible, NO mounted tool row yet.
   await expect(bubble.locator('.tool-inline')).toHaveCount(0);
   await expect(bubble).toContainText(/正在更新文件|工具运行中/);
-  await expect(bubble.locator('.thinking-status .tool-inline-tool-icon svg path')).toHaveCount(2);
+  await expect(bubble.locator('.thinking-status .tool-inline-tool-icon svg')).toHaveCount(1);
   await expect(bubble.locator('.thinking-status .thinking-spinner')).toHaveCount(0);
 
   // No orphaned stream cursor next to the status icon: while the live
   // status line shows, it owns the "alive" signal.
   await expect(bubble.locator('.stream-cursor')).toHaveCount(0);
 
-  // The status trailer must not touch the prose above it.
-  const gap = await bubble.evaluate((el) => {
-    const status = el.querySelector('.thinking-status');
-    const paras = el.querySelectorAll('.tool-run-prose p');
-    if (!status || !paras.length) return -1;
-    const s = status.getBoundingClientRect();
-    const p = paras[paras.length - 1].getBoundingClientRect();
-    return s.top - p.bottom;
-  });
-  expect(gap).toBeGreaterThanOrEqual(4);
+  // The unified progress heading is above the answer, with no duplicate trailer.
+  await expect(bubble.locator('.turn-summary > .thinking-status')).toBeVisible();
 
   await page.waitForTimeout(400);
   await bubble.screenshot({ path: 'test-results/tool-status-deferred.png' });
@@ -97,13 +89,13 @@ test('deferred tool shows a clean single status line, no orphan dots', async ({ 
   const row = bubble.locator('.tool-inline[data-tcid="w-defer"]');
   await expect(row).toHaveCount(1);
   await expect(bubble.locator('.thinking-status')).toHaveCount(0);
-  await expect(bubble.locator('.stream-cursor')).toHaveCount(1);
+  await expect(bubble.locator('.stream-cursor')).toHaveCount(0);
   await expect(row.locator('.tool-inline-label')).toContainText('demo.txt');
   await page.waitForTimeout(400);
   await bubble.screenshot({ path: 'test-results/tool-status-mounted.png' });
 });
 
-test('cursor trails the whole turn, below a tool row mounted last', async ({ page }) => {
+test('an active tool at the turn tail owns progress without an extra cursor', async ({ page }) => {
   await page.addInitScript(() => {
     const nativeFetch = window.fetch.bind(window);
     const encoder = new TextEncoder();
@@ -154,20 +146,8 @@ test('cursor trails the whole turn, below a tool row mounted last', async ({ pag
   const row = bubble.locator('.tool-inline[data-tcid="w-tail"]');
   await expect(row).toHaveCount(1);
 
-  // Exactly one cursor, and it sits BELOW the row — never stranded
-  // between the prose and the tool call.
-  const cursor = bubble.locator('.stream-cursor');
-  await expect(cursor).toHaveCount(1);
-  const boxes = await page.evaluate(() => {
-    const rowEl = document.querySelector('.tool-inline[data-tcid="w-tail"]');
-    const cursorEl = document.querySelector('.msg.assistant .msg-body > .stream-cursor');
-    if (!rowEl || !cursorEl) return null;
-    const r = rowEl.getBoundingClientRect();
-    const c = cursorEl.getBoundingClientRect();
-    return { rowBottom: r.bottom, cursorTop: c.top };
-  });
-  expect(boxes).not.toBeNull();
-  expect(boxes.cursorTop).toBeGreaterThanOrEqual(boxes.rowBottom - 2);
+  await expect(row).toHaveAttribute('data-state', 'running');
+  await expect(bubble.locator('.stream-cursor, .thinking-status')).toHaveCount(0);
   await page.waitForTimeout(400);
   await bubble.screenshot({ path: 'test-results/tool-status-cursor-below-row.png' });
 });

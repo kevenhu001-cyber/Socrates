@@ -13,7 +13,7 @@
  */
 import { STROKE_ICONS } from '../../ui/icons/toolIcons.js';
 import { translate } from './labels.js';
-import { RetryButton, ResultSection, TechSectionBlock } from './ToolRunDetailSections.js';
+import { ResultSection, TechSectionBlock } from './ToolRunDetailSections.js';
 import type { ToolRunView } from './toolRunModel';
 
 export interface ToolRunDetailProps {
@@ -22,7 +22,7 @@ export interface ToolRunDetailProps {
   readOnly?: boolean;
 }
 
-export function ToolRunDetail({ view, readOnly }: ToolRunDetailProps) {
+export function ToolRunDetail({ view }: ToolRunDetailProps) {
   const hasResults = view.sections.length > 0;
   return (
     <div className="tool-inline-detail">
@@ -34,7 +34,6 @@ export function ToolRunDetail({ view, readOnly }: ToolRunDetailProps) {
           <div className="tool-inline-detail-empty">{translate('tool.noDetails', 'No additional details.')}</div>
         </section>
       ) : null}
-      <RetryButton view={view} readOnly={readOnly} />
       {view.tech.length ? (
         <details className="tool-inline-tech">
           <summary className="tool-inline-tech-summary">

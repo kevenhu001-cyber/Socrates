@@ -1,5 +1,5 @@
 import { STROKE_ICONS, toolIcon } from '../../ui/icons/toolIcons.js';
-import { formatSeconds } from './labels.js';
+import { formatSeconds, translate } from './labels.js';
 import type { ToolRunView } from './toolRunModel.js';
 
 export function ToolRunRowHead({ view, elapsedMs }: { view: ToolRunView; elapsedMs: number }) {
@@ -9,7 +9,6 @@ export function ToolRunRowHead({ view, elapsedMs }: { view: ToolRunView; elapsed
     if (elapsed) parts.push(elapsed);
   }
   const meta = parts.join(' · ');
-  const running = view.state === 'running';
   const hosts = view.hosts || [];
 
   return (
@@ -20,7 +19,7 @@ export function ToolRunRowHead({ view, elapsedMs }: { view: ToolRunView; elapsed
         dangerouslySetInnerHTML={{ __html: toolIcon(view.name) }}
       />
       <span
-        className={`tool-inline-label${running ? ' shimmer-text' : ''}${view.mono ? ' is-mono' : ''}`}
+        className={`tool-inline-label${view.mono ? ' is-mono' : ''}`}
         title={view.label}
       >
         {view.label}
@@ -35,14 +34,19 @@ export function ToolRunRowHead({ view, elapsedMs }: { view: ToolRunView; elapsed
           ))}
         </span>
       ) : null}
+      <span className="sr-only" role="status">
+        {view.state === 'awaiting' ? translate('tool.awaitingApproval', 'Waiting for your decision')
+          : view.state === 'running' ? translate('tool.statusRunning', 'Running')
+            : view.state === 'error' ? translate('tool.statusFailed', 'Failed')
+              : view.state === 'stopped' ? translate('tool.statusStopped', 'Stopped')
+                : translate('tool.statusDone', 'Done')}
+      </span>
       {meta ? <span className="tool-inline-meta is-visible">{meta}</span> : null}
-      {running ? null : (
-        <span
-          className="tool-inline-chev"
-          aria-hidden="true"
-          dangerouslySetInnerHTML={{ __html: STROKE_ICONS.chevronRight }}
-        />
-      )}
+      <span
+        className="tool-inline-chev"
+        aria-hidden="true"
+        dangerouslySetInnerHTML={{ __html: STROKE_ICONS.chevronRight }}
+      />
     </>
   );
 }

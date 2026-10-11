@@ -183,9 +183,10 @@ test('a shared turn lays its tool rows out declaratively, read-only', async ({ p
   const order = await body.evaluate((el) => Array.from(el.children).map((node) => (
     node.classList.contains('tool-run-prose')
       ? 'text:' + (node.textContent || '').replace(/\s+/g, ' ').trim()
-      : node.classList.contains('tool-run-group') ? 'group' : 'other'
+      : node.classList.contains('turn-summary') ? 'summary'
+        : node.classList.contains('tool-run-group') ? 'group' : 'other'
   )));
-  expect(order).toEqual(['group', 'text:' + oneLine(SHARED_RAW)]);
+  expect(order).toEqual(['summary', 'group', 'text:' + oneLine(SHARED_RAW)]);
 
   await body.locator('.tool-run-summary').click();
   await expect(body.locator('.tool-inline-label')).toHaveText([

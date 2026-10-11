@@ -1,4 +1,4 @@
-/** One reusable detail shell for React reasoning and legacy previews. */
+/** Reusable detail shell for artifact previews. */
 type DetailOptions = {
   owner: string;
   title: string;
@@ -26,13 +26,7 @@ function syncLayout(doc: Document, surface: Surface) {
   const app = doc.getElementById('appShell');
   const sidebar = doc.getElementById('sidebar');
   const available = (doc.defaultView?.innerWidth ?? 0) - (sidebar?.getBoundingClientRect().width ?? 0);
-  /* P_summary-parity — the Summary sheet is a bottom sheet at every width
-     (see detail.css), matching the reference. Only the artifact drawer docks
-     into a reserved column on wide screens, so `thinking` never takes the
-     docked branch: that would both reserve a right-hand column the sheet
-     does not use and skip the backdrop the sheet relies on. */
-  const owner = surface.active?.owner;
-  const docked = owner !== 'thinking' && available >= 1060;
+  const docked = available >= 1060;
   doc.documentElement.dataset.detailLayout = docked ? 'docked' : 'modal';
   surface.panel.setAttribute('aria-modal', String(!docked));
   surface.backdrop.hidden = docked;
@@ -108,15 +102,9 @@ export function openDetailSurface(options: DetailOptions, doc: Document = docume
   if (previous && previous.owner !== options.owner) previous.onClose?.();
   surface.root.hidden = false;
   surface.panel.dataset.detailOwner = options.owner;
-  surface.panel.className = 'detail-surface' + (options.owner === 'thinking' ? ' thinking-panel' : ' artifact-preview-drawer');
-  surface.close.className = 'detail-close' + (options.owner === 'thinking' ? ' thinking-panel-close' : ' artifact-preview-close');
+  surface.panel.className = 'detail-surface artifact-preview-drawer';
+  surface.close.className = 'detail-close artifact-preview-close';
   surface.backdrop.className = 'detail-backdrop';
-  surface.panel.removeAttribute('data-thinking-panel');
-  surface.backdrop.removeAttribute('data-thinking-panel-backdrop');
-  if (options.owner === 'thinking') {
-    surface.panel.dataset.thinkingPanel = '1';
-    surface.backdrop.dataset.thinkingPanelBackdrop = '1';
-  }
   surface.title.textContent = options.title;
   surface.meta.textContent = options.meta ?? '';
   surface.meta.hidden = !options.meta;
@@ -142,9 +130,7 @@ export function closeDetailSurface(owner?: string, doc: Document = document, res
   surface.active = null;
   surface.root.hidden = true;
   surface.panel.className = 'detail-surface';
-  surface.panel.removeAttribute('data-thinking-panel');
   surface.panel.removeAttribute('data-detail-owner');
-  surface.backdrop.removeAttribute('data-thinking-panel-backdrop');
   surface.body.replaceChildren();
   delete doc.documentElement.dataset.detailOpen;
   delete doc.documentElement.dataset.detailLayout;

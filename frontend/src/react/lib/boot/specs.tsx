@@ -23,7 +23,6 @@ import { mountSidebarChrome } from '../../sidebar-chrome';
 import { mountSessionList } from '../../session-list';
 import { mountMessageList } from '../../message-list';
 import { WorkflowLayer } from '../../extensions/WorkflowLayer';
-import { installThinkingPanelBridge, mountThinkingPanel } from '../../thinking-panel';
 import { getLegacyActions, i18n } from '../../legacy/gateway.ts';
 import { handleComposerEscape, submitComposer } from '../../composer-input/lifecycle';
 import { hydrateAttachmentChipsRows } from '../../attachments/AttachmentChipsRow';
@@ -134,7 +133,7 @@ export function mountRegistryList(): MountSpec[] {
        Recents list stays empty. */
     { hostId: 'recentsList', label: 'session-list',
       mount: () => mountSessionList() },
-    /* 6. Global React roots — composer, message list, workflow layer, thinking panel.
+    /* 6. Global React roots — composer, message list, workflow layer.
        P_perf-composer-lazy — RichComposer pulls the whole tiptap/prosemirror
        editor chain (vendor-editor, ~460 KB). Mount it via dynamic import so
        that chunk leaves the first-paint preload graph; the shell's composer
@@ -156,8 +155,6 @@ export function mountRegistryList(): MountSpec[] {
     { hostId: 'workflowLayerReactRoot', label: 'workflow-layer',
       ensureHost: ensureWorkflowHost,
       mount: (host) => { createRoot(host).render(<ErrorBoundary><WorkflowLayer /></ErrorBoundary>); } },
-    { hostId: 'thinkingPanelReactRoot', label: 'thinking-panel',
-      ensureHost: (doc) => { installThinkingPanelBridge(); return ensureBodyChild(doc, 'thinkingPanelReactRoot'); },
-      mount: (host) => mountThinkingPanel(host) },
+
   ];
 }
