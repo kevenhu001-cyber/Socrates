@@ -89,10 +89,10 @@ export function snapshotMessage(message: LegacyChatMessage): LegacyChatMessage {
 /**
  * Reconcile a newly-read message list with the previous React snapshot.
  *
- * Production session rows come from `createDomainStore`, so object identity is
- * authoritative: a newly frozen row means the store changed it and React must
- * observe it even if a legacy notification carried the wrong id. Stable frozen
- * rows are reused at zero cost.
+ * The production session-domain list is recursively frozen as one graph. Its
+ * list identity is therefore already the canonical immutable transcript
+ * snapshot, so it crosses this boundary O(1) with no per-message scan, map, or
+ * allocation on streaming frames.
  *
  * `changedMessageIds` remains only as the compatibility invalidation signal for
  * genuinely mutable callers. Those callers can identify a row by either its
@@ -104,6 +104,8 @@ export function reconcileMessageSnapshots(
   legacy: ReadonlyArray<LegacyChatMessage>,
   changedMessageIds: ReadonlySet<string> | null,
 ): ReadonlyArray<LegacyChatMessage> {
+  if (Object.isFrozen(legacy)) return legacy;
+
   const previousByKey = new Map<string, LegacyChatMessage>();
   previous.forEach((message) => {
     messageIdentityKeys(message).forEach((key) => previousByKey.set(key, message));
@@ -115,9 +117,7 @@ export function reconcileMessageSnapshots(
       .map((key) => previousByKey.get(key))
       .find((candidate): candidate is LegacyChatMessage => candidate !== undefined);
 
-    if (Object.isFrozen(message)) {
-      return previousMessage === message && previousMessage ? previousMessage : message;
-    }
+    if (Object.isFrozen(message)) return message;
 
     const changed = changedMessageIds === null
       || keys.length === 0
