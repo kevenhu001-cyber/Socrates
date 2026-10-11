@@ -7,6 +7,7 @@ import {
   summarizeToolRuns,
   transitionToolRun,
 } from '../src/chat/toolRunState.ts';
+import { agentRunStateOf } from '../src/react/tool-run/toolRunState.ts';
 
 test('tool run state keeps the first terminal SSE result', () => {
   const running = { id: 'run-1', phase: TOOL_RUN_PHASES.running };
@@ -28,4 +29,12 @@ test('tool run summaries distinguish active, completed, and failed work', () => 
     { phase: TOOL_RUN_PHASES.failed },
   ]);
   assert.deepEqual(summary, { total: 3, active: 1, succeeded: 1, failed: 1, cancelled: 0, timed_out: 0 });
+});
+
+test('agent run state follows the enclosing tool lifecycle', () => {
+  assert.equal(agentRunStateOf('running'), undefined, 'live work owns its transient status');
+  assert.equal(agentRunStateOf('awaiting'), undefined, 'approval waits are still live');
+  assert.equal(agentRunStateOf('error'), 'failed');
+  assert.equal(agentRunStateOf('stopped'), 'cancelled');
+  assert.equal(agentRunStateOf('done'), 'done');
 });
