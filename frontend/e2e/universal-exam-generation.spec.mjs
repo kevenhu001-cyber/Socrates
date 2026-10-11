@@ -61,7 +61,7 @@ test('universal exam generation creates and persists an exam session', async ({ 
     await page.goto('/');
     // Wait for the signed-in chat shell before touching the sidebar:
     // under full-suite load the restore/sync can still be in flight.
-    await expect(page.getByRole('button', { name: 'Model and reasoning' })).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
     await dismissCookieConsent();
     // Exam lives in the sidebar's More menu.
     async function openMore() {
