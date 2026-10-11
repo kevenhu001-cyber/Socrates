@@ -2,9 +2,9 @@
  * Chat runtime bridge — M2 single-bridge migration.
  *
  * Carries the runtime snapshot that the React message list, the chat
- * composer, and the send-button indicator all subscribe to. Legacy writers
- * may still mutate `state.messages` in place, but the bridge cuts an immutable
- * snapshot boundary before React observes those objects.
+ * composer, and the send-button indicator all subscribe to. The session
+ * domain now publishes recursively frozen message rows; this bridge adds the
+ * stream lifecycle snapshot and keeps a defensive path for compatibility data.
  *
  * Why this bridge does not use `createImmutableBridge` directly
  *  - The factory coalesces dispatches per animation frame, but only
@@ -151,6 +151,11 @@ function streamFromEvent(
         status: 'failed',
         textLength: event.textLength,
       });
+    case 'stream-retry-replaced':
+      /* The failed row was removed from session state immediately before this
+         event. Clear its terminal stream record until the replacement stream
+         publishes its own stream-started event. */
+      return IDLE_STREAM;
     case 'message-added':
       return snapshot.stream;
     case 'tool-run-updated':
@@ -333,8 +338,8 @@ function publish(event: ChatRuntimeEvent): void {
     return;
   }
 
-  // Preserve lifecycle ordering when a terminal event lands before the
-  // animation frame scheduled for the final delta.
+  // Preserve lifecycle ordering when a terminal or replacement event lands
+  // before the animation frame scheduled for the final delta/tool update.
   flushPendingDelta();
   flushPendingToolRuns();
   commit(event);
