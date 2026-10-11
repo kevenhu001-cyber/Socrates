@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 const repoRoot = new URL('../../', import.meta.url);
 const read = (relativePath) => readFileSync(new URL(relativePath, repoRoot), 'utf8');
 
-const css = read('frontend/src/styles/legacy/00-foundations.css');
+const legacyCss = read('frontend/src/styles/legacy/00-foundations.css');
 const webJsTokens = read('frontend/src/ui/tokens.js');
 const webCssTokens = read('frontend/src/styles/tokens.css');
 const frontendTokens = read('frontend/src/ui/tokens.ts');
@@ -15,16 +15,16 @@ const themeCss = read('frontend/src/styles/themes.css');
 const expected = {
   dark: {
     vars: {
-      'bg-000': '0 0% 5%',
-      'bg-100': '0 0% 13%',
-      'bg-200': '0 0% 16%',
-      'bg-300': '0 0% 21%',
+      'bg-000': '0 0% 8%',
+      'bg-100': '0 0% 10%',
+      'bg-200': '0 0% 12%',
+      'bg-300': '0 0% 16%',
       'bg-400': '0 0% 2%',
-      'text-100': '0 0% 100%',
-      'text-200': '0 0% 80%',
-      'text-400': '0 0% 65%',
-      'text-500': '0 0% 55%',
-      'border-300': '0 0% 22%',
+      'text-100': '0 0% 91%',
+      'text-200': '0 0% 77%',
+      'text-400': '0 0% 58%',
+      'text-500': '0 0% 50%',
+      'border-300': '0 0% 20%',
       'accent-000': '0 0% 100%',
       'accent-900': '0 0% 20%',
       'oncolor-100': '0 0% 8%',
@@ -75,15 +75,15 @@ const expected = {
   light: {
     vars: {
       'bg-000': '0 0% 100%',
-      'bg-100': '0 0% 98%',
-      'bg-200': '0 0% 95%',
-      'bg-300': '0 0% 91%',
+      'bg-100': '0 0% 99%',
+      'bg-200': '0 0% 98%',
+      'bg-300': '0 0% 95%',
       'bg-400': '0 0% 100%',
-      'text-100': '0 0% 13%',
-      'text-200': '0 0% 27%',
-      'text-400': '0 0% 44%',
-      'text-500': '0 0% 52%',
-      'border-300': '0 0% 76%',
+      'text-100': '0 0% 5%',
+      'text-200': '0 0% 24%',
+      'text-400': '0 0% 43%',
+      'text-500': '0 0% 45%',
+      'border-300': '0 0% 80%',
       'accent-000': '0 0% 10%',
       'accent-900': '0 0% 90%',
       'oncolor-100': '0 0% 100%',
@@ -135,11 +135,30 @@ function fail(message) {
   throw new Error(`Theme drift: ${message}`);
 }
 
-function cssVariables(mode) {
-  const match = css.match(new RegExp(`\\[data-theme=socrates\\]\\[data-mode=${mode}\\]\\{([^}]*)\\}`));
-  if (!match) fail(`missing ${mode} CSS palette block`);
+function parseVariables(block) {
   return Object.fromEntries(
-    [...match[1].matchAll(/--([\w-]+):([^;]+);?/g)].map(([, name, value]) => [name, value]),
+    [...block.matchAll(/--([\w-]+):\s*([^;]+);?/g)].map(([, name, value]) => [name, value.trim()]),
+  );
+}
+
+function cssVariables(mode) {
+  // themes.css owns the canonical HSL compatibility ramp. Keep merging the
+  // small legacy foundation block because it still owns bg-400/accent/oncolor
+  // aliases that older surfaces consume.
+  const canonicalBlocks = [...themeCss.matchAll(
+    new RegExp(`html\\[data-theme="socrates"\\]\\[data-mode="${mode}"\\] \\{([^}]*)\\}`, 'g'),
+  )];
+  if (canonicalBlocks.length === 0) fail(`missing ${mode} canonical CSS palette block`);
+
+  const legacyMatch = legacyCss.match(
+    new RegExp(`\\[data-theme=socrates\\]\\[data-mode=${mode}\\]\\{([^}]*)\\}`),
+  );
+  if (!legacyMatch) fail(`missing ${mode} legacy CSS palette block`);
+
+  return Object.assign(
+    {},
+    parseVariables(legacyMatch[1]),
+    ...canonicalBlocks.map((match) => parseVariables(match[1])),
   );
 }
 
