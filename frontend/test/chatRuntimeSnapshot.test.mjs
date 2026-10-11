@@ -63,6 +63,23 @@ test('a published message snapshot is isolated from later legacy mutations', () 
   assert.ok(Object.isFrozen(published.toolCalls[0].visualization.axis));
 });
 
+test('an already-frozen domain message crosses the snapshot boundary zero-copy', () => {
+  const input = Object.freeze({ query: 'immutable' });
+  const call = Object.freeze({ id: 't-1', name: 'web_search', input });
+  const source = Object.freeze({
+    clientId: 'm-frozen',
+    role: 'assistant',
+    rawText: 'answer',
+    toolCalls: Object.freeze([call]),
+  });
+
+  const published = snapshotMessage(source);
+
+  assert.equal(published, source);
+  assert.equal(published.toolCalls, source.toolCalls);
+  assert.equal(published.toolCalls[0].input, input);
+});
+
 test('reconciliation advances only changed message identities', () => {
   const firstSource = {
     clientId: 'm-1', role: 'assistant', type: 'streaming', rawText: 'one', toolCalls: [],
@@ -138,7 +155,7 @@ test('messages without a stable id are never structurally reused by index', () =
   assert.equal(next[0].rawText, 'after');
 });
 
-test('state sync snapshots every row even when ids are unchanged', () => {
+test('state sync snapshots every mutable row even when ids are unchanged', () => {
   const source = { clientId: 'm-1', role: 'assistant', rawText: 'before' };
   const previous = reconcileMessageSnapshots([], [source], null);
   source.rawText = 'after';
