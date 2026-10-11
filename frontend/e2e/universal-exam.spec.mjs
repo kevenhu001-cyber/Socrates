@@ -62,7 +62,7 @@ test('universal exam renders questions, saves answers and grades locally', async
     }
     await page.addInitScript(() => localStorage.setItem('socrates-lang-app', 'en'));
     await page.goto('/');
-    await expect(page.getByRole('button', { name: 'Model and reasoning' })).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('button', { name: 'Choose model' })).toBeVisible({ timeout: 20000 });
     await dismissCookieConsent();
     await openExam();
 
