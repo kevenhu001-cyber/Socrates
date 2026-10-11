@@ -87,16 +87,17 @@ export function snapshotMessage(message: LegacyChatMessage): LegacyChatMessage {
 }
 
 /**
- * Reconcile a newly-read legacy list with the previous immutable snapshot.
- * Only messages named by the event receive a new object identity. Runtime
- * publishers can identify the same row by either its transient `clientId` or
- * its persisted `id`, so both aliases participate in lookup and invalidation.
- * Messages without either id are conservatively re-snapshotted: an index is
- * not a stable identity when rows are inserted or removed.
+ * Reconcile a newly-read message list with the previous React snapshot.
  *
- * Passing `null` for changedMessageIds is the state-sync escape hatch: every
- * message crosses `snapshotMessage`, while already-frozen domain rows retain
- * their canonical identity and mutable callers are defensively snapshotted.
+ * Production session rows come from `createDomainStore`, so object identity is
+ * authoritative: a newly frozen row means the store changed it and React must
+ * observe it even if a legacy notification carried the wrong id. Stable frozen
+ * rows are reused at zero cost.
+ *
+ * `changedMessageIds` remains only as the compatibility invalidation signal for
+ * genuinely mutable callers. Those callers can identify a row by either its
+ * transient `clientId` or persisted `id`; rows without a stable id are always
+ * re-snapshotted rather than being incorrectly matched by array index.
  */
 export function reconcileMessageSnapshots(
   previous: ReadonlyArray<LegacyChatMessage>,
@@ -113,10 +114,14 @@ export function reconcileMessageSnapshots(
     const previousMessage = keys
       .map((key) => previousByKey.get(key))
       .find((candidate): candidate is LegacyChatMessage => candidate !== undefined);
+
+    if (Object.isFrozen(message)) {
+      return previousMessage === message && previousMessage ? previousMessage : message;
+    }
+
     const changed = changedMessageIds === null
       || keys.length === 0
       || keys.some((key) => changedMessageIds.has(key));
-
     if (!changed && previousMessage) return previousMessage;
     return snapshotMessage(message);
   });
