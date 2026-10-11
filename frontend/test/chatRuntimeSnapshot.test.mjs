@@ -15,11 +15,13 @@ test('a published message snapshot is isolated from later legacy mutations', () 
     toolCalls: [{
       id: 't-1',
       name: 'web_search',
+      input: { query: 'before', filters: { kind: 'docs' } },
       phase: 'running',
+      detail: { request: { attempt: 1 } },
       _run: { phase: 'running', durationMs: 10 },
-      results: [{ title: 'before' }],
+      results: [{ title: 'before', metadata: { rank: 1 } }],
       artifacts: [{ id: 'artifact-1', name: 'before.txt' }],
-      visualization: { kind: 'bar' },
+      visualization: { kind: 'bar', axis: { label: 'before' } },
     }],
     _liveStatus: { phase: 'tool-running', label: 'Searching' },
   };
@@ -28,24 +30,37 @@ test('a published message snapshot is isolated from later legacy mutations', () 
 
   source.rawText = 'mutated later';
   source.attachments[0].name = 'changed.txt';
+  source.toolCalls[0].input.filters.kind = 'web';
   source.toolCalls[0].phase = 'succeeded';
+  source.toolCalls[0].detail.request.attempt = 2;
   source.toolCalls[0]._run.phase = 'done';
   source.toolCalls[0].results[0].title = 'after';
+  source.toolCalls[0].results[0].metadata.rank = 2;
   source.toolCalls[0].artifacts[0].name = 'after.txt';
   source.toolCalls[0].visualization.kind = 'line';
+  source.toolCalls[0].visualization.axis.label = 'after';
   source._liveStatus.label = 'Done';
 
   assert.equal(published.rawText, 'hello');
   assert.equal(published.attachments[0].name, 'note.txt');
+  assert.equal(published.toolCalls[0].input.filters.kind, 'docs');
   assert.equal(published.toolCalls[0].phase, 'running');
+  assert.equal(published.toolCalls[0].detail.request.attempt, 1);
   assert.equal(published.toolCalls[0]._run.phase, 'running');
   assert.equal(published.toolCalls[0].results[0].title, 'before');
+  assert.equal(published.toolCalls[0].results[0].metadata.rank, 1);
   assert.equal(published.toolCalls[0].artifacts[0].name, 'before.txt');
   assert.equal(published.toolCalls[0].visualization.kind, 'bar');
+  assert.equal(published.toolCalls[0].visualization.axis.label, 'before');
   assert.equal(published._liveStatus.label, 'Searching');
   assert.ok(Object.isFrozen(published));
   assert.ok(Object.isFrozen(published.toolCalls));
   assert.ok(Object.isFrozen(published.toolCalls[0]));
+  assert.ok(Object.isFrozen(published.toolCalls[0].input));
+  assert.ok(Object.isFrozen(published.toolCalls[0].input.filters));
+  assert.ok(Object.isFrozen(published.toolCalls[0].detail.request));
+  assert.ok(Object.isFrozen(published.toolCalls[0].results[0].metadata));
+  assert.ok(Object.isFrozen(published.toolCalls[0].visualization.axis));
 });
 
 test('reconciliation advances only changed message identities', () => {
