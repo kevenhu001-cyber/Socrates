@@ -2,9 +2,12 @@
  * ui/viewTransitions.ts
  *
  * Tiny wrapper around `document.startViewTransition` (Chrome/Edge 111+,
- * Safari 18+). Used by startSession() to coalesce the topic-setup
- * → chat-view swap into one browser-native cross-fade so the user
- * sees a single frame instead of the intermediate class-toggle flash.
+ * Safari 18+). Used for page/surface swaps where a browser-native cross-fade
+ * avoids exposing intermediate shell state.
+ *
+ * Message streaming no longer uses element-scoped View Transitions: a live
+ * bubble changes too frequently for snapshot/morph work to be a sensible hot
+ * path. Finish-state polish is handled by lightweight opacity transitions.
  *
  * On browsers without View Transitions the callback runs immediately —
  * behavior stays identical to the pre-wrapper code path.
@@ -63,68 +66,4 @@ export function withViewTransition(update: () => void): void {
 /** Test-only — does the current browser support View Transitions. */
 export function hasViewTransitions(): boolean {
   return detect();
-}
-
-let swapSeq = 0;
-
-/**
- * Cross-fade ONE element through a DOM rewrite (e.g. a streaming bubble's
- * finish() swap, where the whole markdown body is re-rendered and spliced).
- *
- * The element gets a temporary `view-transition-name`; a `vt-scoped-swap`
- * class on <html> (see styles.css) suppresses the root snapshot's own
- * cross-fade, so only the named row morphs — size and position interpolate
- * while its content fades — instead of the entire viewport flashing.
- *
- * `update` runs inside the transition's update phase; afterwards we wait two
- * frames before letting the browser capture the new state, so a store-driven
- * React commit has landed by capture time even when it did not flush
- * synchronously inside `update`.
- *
- * Falls back to running `update` immediately when the API is missing, the
- * element is gone, or the user prefers reduced motion.
- */
-export function withElementSwapTransition(el: HTMLElement | null, update: () => void): void {
-  const start =
-    typeof document !== 'undefined' && typeof document.startViewTransition === 'function'
-      ? document.startViewTransition.bind(document)
-      : undefined;
-  let reduce = false;
-  try {
-    reduce =
-      typeof window !== 'undefined' &&
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  } catch (_) { /* matchMedia unavailable — treat as no preference */ }
-  if (!start || !el || !el.isConnected || reduce) {
-    update();
-    return;
-  }
-  const rootEl = document.documentElement;
-  const name = 'msg-swap-' + (++swapSeq);
-  const cleanup = () => {
-    try { el.style.viewTransitionName = ''; } catch (_) { /* element may be detached */ }
-    rootEl.classList.remove('vt-scoped-swap');
-  };
-  try {
-    el.style.viewTransitionName = name;
-    rootEl.classList.add('vt-scoped-swap');
-    const vt = start(() => {
-      update();
-      return new Promise<void>((resolve) => {
-        const raf = typeof requestAnimationFrame === 'function'
-          ? requestAnimationFrame
-          : (cb: FrameRequestCallback) => setTimeout(cb, 0) as unknown as number;
-        raf(() => raf(() => resolve()));
-        /* rAF is throttled to ~never in hidden tabs — cap the wait so the
-           transition cannot stall on a paused frame pump. */
-        setTimeout(resolve, 120);
-      });
-    });
-    vt.updateCallbackDone.catch(() => { /* update threw — swap falls back to instant */ });
-    vt.finished.then(cleanup, cleanup);
-  } catch (_) {
-    cleanup();
-    update();
-  }
 }

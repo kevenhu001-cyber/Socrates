@@ -10,7 +10,8 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
  *   2. an upstream STALL with an empty buffer shows the starved cursor (one
  *      slowed dot) rather than freezing or fabricating content;
  *   3. the kill switch restores the old "paint everything" behaviour;
- *   4. new text fades in (opacity only), and a settled block never re-animates.
+ *   4. live prose relies on paced publication, not post-commit per-token DOM
+ *      animation wrappers, and settled blocks remain stable.
  */
 
 async function startStream(page, { deltas, gapMs = 400, smooth = true, holdOpenMs = 0 }) {
@@ -93,12 +94,8 @@ test('a large burst is revealed gradually, not dumped in one frame', async ({ pa
   ), { timeout: 12000 }).toBeGreaterThanOrEqual(big.length - 2);
 });
 
-test('freshly revealed text fades in with opacity only, as inline runs', async ({ page }) => {
-  /* Stimulus is sized for the current playback cadence (base ~140 cps): a
-     single short delta drains in ~250 ms, inside one fade window, so the
-     poll below can miss the spans entirely. A sustained multi-delta stream
-     keeps reveals (and therefore fade runs) observable for seconds. */
-  const para = 'Streaming text fades in softly at the tail, the way chatgpt.com reveals an answer while it is written. ';
+test('live prose uses paced publication without post-commit fade wrappers', async ({ page }) => {
+  const para = 'Streaming text stays smooth because playback is paced before React paints the live tail. ';
   await startStream(page, {
     deltas: [para, para, para, para, para],
     gapMs: 250,
@@ -106,25 +103,17 @@ test('freshly revealed text fades in with opacity only, as inline runs', async (
   });
   const live = page.locator('.msg.assistant').last().locator('.tool-run-prose.is-live');
   await expect(live).toBeVisible();
-  // While the tail is still being revealed, fade runs exist …
-  await expect.poll(() => page.evaluate(
-    () => document.querySelectorAll('.tool-run-prose.is-live .stream-fade').length,
-  ), { timeout: 4000 }).toBeGreaterThan(0);
-  // … and they never move or blur the glyphs, nor break the line box.
-  const style = await page.evaluate(() => {
-    const el = document.querySelector('.tool-run-prose.is-live .stream-fade');
-    if (!el) return null;
-    const cs = getComputedStyle(el);
-    return { display: cs.display, transform: cs.transform, filter: cs.filter, delay: el.style.animationDelay };
-  });
-  expect(style).not.toBeNull();
-  expect(style.display).toBe('inline');
-  expect(style.transform).toBe('none');
-  expect(style.filter).toBe('none');
-  // Anchored to reveal time: a rebuilt tail resumes the fade mid-way.
-  expect(style.delay).toMatch(/^-?\d+(\.\d+)?ms$/);
-  // The old per-glyph wrapper is gone.
-  expect(await page.locator('.stream-char').count()).toBe(0);
+  await expect(live).toContainText('Streaming text stays smooth');
+
+  // The hot path must not walk React's committed DOM and wrap newly revealed
+  // text in animation spans. Playback pacing is the only text-reveal mechanism.
+  expect(await page.locator('.tool-run-prose.is-live .stream-fade').count()).toBe(0);
+  expect(await page.locator('.tool-run-prose.is-live .stream-char').count()).toBe(0);
+
+  // No animation should be attached inside the prose subtree itself; the
+  // independent stream cursor may still pulse outside this node.
+  const animations = await live.evaluate((el) => el.getAnimations({ subtree: true }).length);
+  expect(animations).toBe(0);
 });
 
 test('a paragraph that settles mid-stream does not replay an entrance animation', async ({ page }) => {

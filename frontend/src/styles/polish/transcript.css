@@ -247,7 +247,7 @@
   color: transparent;
   font-size: 0;
   line-height: 0;
-  transition: opacity 300ms ease-out;
+  transition: opacity var(--ui-duration-fast, 0.12s) var(--ui-ease-out, ease-out);
 }
 #appShell .stream-cursor::before {
   content: "";
@@ -317,4 +317,16 @@
    (legacy/agent-card) nesting keeps its step. */
 #appShell .msg.assistant .msg-body:not(.is-declarative):has(.tool-run-group) .tool-inline[data-nested="1"] {
   margin-left: 16px;
+}
+
+/* P_perf-finish-motion — finishing a streamed turn is a micro interaction,
+   not a page transition. Cursor-out and toolbar-in use the same fast token
+   instead of stacking 150/180/300 ms clocks. */
+#appShell .msg.assistant[data-stream-settled] .msg-toolbar {
+  transition: opacity var(--ui-duration-fast, 0.12s) var(--ui-ease-out, ease-out);
+}
+@media (prefers-reduced-motion: reduce) {
+  #appShell :is(.stream-cursor, .msg.assistant[data-stream-settled] .msg-toolbar) {
+    transition: none;
+  }
 }
