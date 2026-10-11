@@ -82,6 +82,47 @@ test('reconciliation advances only changed message identities', () => {
   assert.equal(next[2].rawText, 'three');
 });
 
+test('either clientId or persisted id invalidates the same message snapshot', () => {
+  const source = {
+    clientId: 'client-1', id: 'persisted-1', role: 'assistant', rawText: 'before',
+  };
+  const stableSource = {
+    clientId: 'client-2', id: 'persisted-2', role: 'assistant', rawText: 'stable',
+  };
+  const previous = reconcileMessageSnapshots([], [source, stableSource], null);
+
+  source.rawText = 'changed through persisted id';
+  const byPersistedId = reconcileMessageSnapshots(
+    previous,
+    [source, stableSource],
+    new Set(['persisted-1']),
+  );
+  assert.notEqual(byPersistedId[0], previous[0]);
+  assert.equal(byPersistedId[0].rawText, 'changed through persisted id');
+  assert.equal(byPersistedId[1], previous[1]);
+
+  source.rawText = 'changed through client id';
+  const byClientId = reconcileMessageSnapshots(
+    byPersistedId,
+    [source, stableSource],
+    new Set(['client-1']),
+  );
+  assert.notEqual(byClientId[0], byPersistedId[0]);
+  assert.equal(byClientId[0].rawText, 'changed through client id');
+  assert.equal(byClientId[1], byPersistedId[1]);
+});
+
+test('messages without a stable id are never structurally reused by index', () => {
+  const source = { role: 'assistant', rawText: 'before' };
+  const previous = reconcileMessageSnapshots([], [source], null);
+  source.rawText = 'after';
+
+  const next = reconcileMessageSnapshots(previous, [source], new Set(['unrelated-id']));
+
+  assert.notEqual(next[0], previous[0]);
+  assert.equal(next[0].rawText, 'after');
+});
+
 test('state sync snapshots every row even when ids are unchanged', () => {
   const source = { clientId: 'm-1', role: 'assistant', rawText: 'before' };
   const previous = reconcileMessageSnapshots([], [source], null);
