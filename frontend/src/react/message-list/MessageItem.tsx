@@ -98,7 +98,7 @@ function isRenderable(message: LegacyChatMessage, live: boolean): boolean {
 
 function MessageItemBase({ message }: MessageItemProps) {
   const role = messageRole(message);
-  /* The streaming pipeline and React share this mutable message entry. */
+  /* chatRuntime.bridge gives React an immutable snapshot for this row. */
   const isLive = isLiveAssistant(message, role);
   const clientId = messageClientId(message);
   const bodyRef = useRef<HTMLDivElement | null>(null);
@@ -147,8 +147,6 @@ function MessageItemBase({ message }: MessageItemProps) {
   );
 }
 
-/* Legacy writers mutate messages in place, so these scalar revisions signal
-   changes that reference equality cannot observe. */
 const MessageItem = memo(MessageItemBase, areMessageItemsEqual);
 
 export { MessageItem };
