@@ -247,7 +247,7 @@
   color: transparent;
   font-size: 0;
   line-height: 0;
-  transition: opacity 300ms ease-out;
+  transition: opacity var(--ui-duration-fast, 0.12s) var(--ui-ease-out, ease-out);
 }
 #appShell .stream-cursor::before {
   content: "";
@@ -320,20 +320,13 @@
 }
 
 /* P_perf-finish-motion — finishing a streamed turn is a micro interaction,
-   not a page transition. Use the shared fast duration for both halves of the
-   handoff so cursor-out + toolbar-in complete together instead of stacking
-   150/180/300 ms clocks. */
-#appShell .stream-cursor,
-#appShell .msg.assistant[data-stream-settled] .stream-cursor {
-  transition: opacity var(--ui-duration-fast, 0.12s) var(--ui-ease-out, ease-out);
-}
+   not a page transition. Cursor-out and toolbar-in use the same fast token
+   instead of stacking 150/180/300 ms clocks. */
 #appShell .msg.assistant[data-stream-settled] .msg-toolbar {
   transition: opacity var(--ui-duration-fast, 0.12s) var(--ui-ease-out, ease-out);
 }
 @media (prefers-reduced-motion: reduce) {
-  #appShell .stream-cursor,
-  #appShell .msg.assistant[data-stream-settled] .stream-cursor,
-  #appShell .msg.assistant[data-stream-settled] .msg-toolbar {
+  #appShell :is(.stream-cursor, .msg.assistant[data-stream-settled] .msg-toolbar) {
     transition: none;
   }
 }
