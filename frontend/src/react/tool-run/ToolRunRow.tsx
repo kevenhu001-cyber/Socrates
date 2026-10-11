@@ -4,7 +4,7 @@ import { ToolRunDetail } from './ToolRunDetail.js';
 import { RetryButton } from './ToolRunDetailSections.js';
 import { ToolRunRowHead } from './ToolRunRowHead.js';
 import { useToolRunDisclosure } from './ToolRunDisclosure';
-import type { ToolRunView } from './toolRunModel';
+import { agentRunStateOf, type ToolRunView } from './toolRunModel';
 import { useElapsed } from './useElapsed.js';
 
 export interface ToolRunRowProps {
@@ -20,11 +20,6 @@ export function ToolRunRow({ view, startedAt, messageId, readOnly, nested }: Too
   const inFlight = view.state === 'running' || view.state === 'awaiting';
   const elapsedMs = useElapsed(startedAt || 0, inFlight);
   const error = view.sections.find((section) => section.kind === 'error');
-  const agentState = view.state === 'error'
-    ? 'failed'
-    : view.state === 'stopped'
-      ? 'cancelled'
-      : 'done';
 
   return (
     <>
@@ -59,7 +54,7 @@ export function ToolRunRow({ view, startedAt, messageId, readOnly, nested }: Too
         <ToolRunAgentSteps
           run={view.agentRun}
           live={inFlight}
-          state={inFlight ? undefined : agentState}
+          state={agentRunStateOf(view.state)}
         />
       ) : null}
       {error?.kind === 'error' ? <p className="tool-inline-error" role="alert">{error.text.trim().split('\n')[0].slice(0, 180)}</p> : null}
