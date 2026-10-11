@@ -1,9 +1,18 @@
 import type { LegacyChatMessage, ToolCall } from './types/domain';
 
-function messageKey(message: LegacyChatMessage, index: number): string {
-  if (typeof message.clientId === 'string' && message.clientId.length > 0) return message.clientId;
-  if (typeof message.id === 'string' && message.id.length > 0) return message.id;
-  return `idx-${index}`;
+function messageIdentityKeys(message: LegacyChatMessage): ReadonlyArray<string> {
+  const keys: string[] = [];
+  if (typeof message.clientId === 'string' && message.clientId.length > 0) {
+    keys.push(message.clientId);
+  }
+  if (
+    typeof message.id === 'string'
+    && message.id.length > 0
+    && !keys.includes(message.id)
+  ) {
+    keys.push(message.id);
+  }
+  return keys;
 }
 
 function freezeRecords(
@@ -56,9 +65,11 @@ export function snapshotMessage(message: LegacyChatMessage): LegacyChatMessage {
 
 /**
  * Reconcile a newly-read legacy list with the previous immutable snapshot.
- * Only message ids named by the event receive a new object identity. This is
- * what lets React.memo use normal reference equality without repainting the
- * complete transcript on every streaming frame.
+ * Only messages named by the event receive a new object identity. Runtime
+ * publishers can identify the same row by either its transient `clientId` or
+ * its persisted `id`, so both aliases participate in lookup and invalidation.
+ * Messages without either id are conservatively re-snapshotted: an index is
+ * not a stable identity when rows are inserted or removed.
  *
  * Passing `null` for changedMessageIds is the state-sync escape hatch: every
  * message is snapshotted because an external writer may have changed anything.
@@ -69,20 +80,20 @@ export function reconcileMessageSnapshots(
   changedMessageIds: ReadonlySet<string> | null,
 ): ReadonlyArray<LegacyChatMessage> {
   const previousByKey = new Map<string, LegacyChatMessage>();
-  previous.forEach((message, index) => {
-    previousByKey.set(messageKey(message, index), message);
+  previous.forEach((message) => {
+    messageIdentityKeys(message).forEach((key) => previousByKey.set(key, message));
   });
 
-  const next = legacy.map((message, index) => {
-    const key = messageKey(message, index);
-    const previousMessage = previousByKey.get(key);
-    if (
-      changedMessageIds !== null
-      && !changedMessageIds.has(key)
-      && previousMessage
-    ) {
-      return previousMessage;
-    }
+  const next = legacy.map((message) => {
+    const keys = messageIdentityKeys(message);
+    const previousMessage = keys
+      .map((key) => previousByKey.get(key))
+      .find((candidate): candidate is LegacyChatMessage => candidate !== undefined);
+    const changed = changedMessageIds === null
+      || keys.length === 0
+      || keys.some((key) => changedMessageIds.has(key));
+
+    if (!changed && previousMessage) return previousMessage;
     return snapshotMessage(message);
   });
 
