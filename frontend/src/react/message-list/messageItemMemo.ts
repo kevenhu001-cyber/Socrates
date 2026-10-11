@@ -17,7 +17,12 @@ function sameRenderPayload(previous: LiveFields, next: LiveFields): boolean {
     && previous.toolCalls === next.toolCalls
     && previous.attachments === next.attachments
     && previous.outputMode === next.outputMode
-    && previous.canvasId === next.canvasId;
+    && previous.canvasId === next.canvasId
+    // Public process content can update while the answer text is unchanged.
+    && previous.summary === next.summary
+    && previous._taskSummary === next._taskSummary
+    // The UI observes whether reasoning happened, never its private text.
+    && Boolean(previous.reasoningContent?.trim()) === Boolean(next.reasoningContent?.trim());
 }
 
 function sameMessageState(previous: LiveFields, next: LiveFields): boolean {

@@ -1,30 +1,21 @@
 import type { LegacyChatMessage } from '../types/domain';
-import { tf, toolRunLabel, translate } from './labels.js';
-import { toolRunStateOf, type ToolCallRecord } from './toolRunModel.ts';
+import { translate } from './labels.js';
 
 /** Only public summaries and tool facts enter the presentation model. */
-export function turnSummaryOf(message: LegacyChatMessage, live: boolean) {
-  const calls = Array.isArray(message.toolCalls) ? message.toolCalls as ToolCallRecord[] : [];
+export function turnSummaryOf(message: LegacyChatMessage, live: boolean, showsStatus = Boolean(message._liveStatus)) {
   const summary = typeof message.summary === 'string' ? message.summary.trim() : '';
+  const task = live && typeof message._taskSummary === 'string' ? message._taskSummary.trim() : '';
   const hasThinking = Boolean(message.reasoningContent?.trim());
-  const activities = calls.map((call) => {
-    const state = toolRunStateOf(call);
-    return { id: call.id, name: call.name, state, label: toolRunLabel(call, state).text };
-  });
-  const label = calls.length || !hasThinking
-    ? translate('think.process', 'Process')
-    : translate('think.complete', 'Thought complete');
-  const fallback = calls.length
-    ? tf('think.summaryTools', 'Tools used: {n}.', { n: calls.length })
-    : hasThinking
-      ? translate('think.summaryThinking', 'Thinking complete.')
-      : translate('think.noSummary', 'No activity summary is available.');
+  const label = hasThinking && !live
+    ? translate('think.complete', 'Thought complete')
+    : translate('think.process', 'Process');
   return {
-    hasWork: Boolean(summary || hasThinking || calls.length || (live && message._liveStatus)),
+    // Tool rows already own execution facts. A task preview alone must not
+    // leave a process disclosure above a completed, ordinary answer.
+    hasWork: Boolean(summary || hasThinking || (live && showsStatus)),
     label,
-    summary: summary || (live
+    summary: summary || task || (live
       ? translate('think.waitingForResponse', 'Waiting for the response.')
-      : fallback),
-    activities,
+      : translate('think.summaryThinking', 'Thinking complete.')),
   };
 }

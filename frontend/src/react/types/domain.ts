@@ -205,6 +205,8 @@ export interface LegacyChatMessage {
   _playbackState?: 'idle' | 'playing' | 'starved' | 'draining' | 'done';
   /** One-line model retrospective persisted on the message. */
   summary?: string | null;
+  /** Initial task preview, shown only during this stream and never persisted. */
+  _taskSummary?: string;
   /** In-flight step extracted from active reasoning stream. */
   _liveStep?: string;
 }

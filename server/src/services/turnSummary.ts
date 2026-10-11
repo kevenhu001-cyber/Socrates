@@ -1,25 +1,9 @@
 /**
  * turnSummary — one-line "what the assistant just did" for a finished turn.
  *
- * The reader sees this line under the answer (the ⏱ row in the reference
- * UI) and it is the first entry inside the Summary sheet. Until now the
- * panel reused a mechanical first-sentence slice of the answer, which
- * describes the ANSWER but not the WORK — with a tool-using turn it said
- * nothing about what ran.
- *
- * P_summary-model — this asks the model itself for a short retrospective
- * line, because only it knows what it decided to do. Two rules keep it
- * cheap and safe:
- *   1. It runs AFTER `emitter.finish()`, off the response path, so it can
- *      never delay a first token. A failure degrades to null and the UI
- *      falls back to the previous mechanical preview.
- *   2. It is a cheap non-streaming call with a hard timeout, and its output
- *      is treated as untrusted text: stripped of control characters and
- *      capped, never injected into the conversation.
- *
- * Providers vary wildly in how well they follow a "one line, no markdown"
- * instruction, so the parser tolerates a bulleted or multi-sentence reply
- * and takes the first usable sentence rather than trusting the format.
+ * The live pipeline uses completedActivitySummary: execution facts never
+ * require another provider request before the turn can finish. The optional
+ * model summarizer remains available for callers outside that critical path.
  */
 
 export interface TurnSummaryInput {
@@ -31,6 +15,20 @@ export interface TurnSummaryInput {
   toolCalls: ReadonlyArray<{ name: string; isError?: boolean }>;
   /** Model reasoning/thinking highlights if reasoning occurred. */
   reasoning?: string;
+}
+
+/** Describe only observed work, without inventing a reasoning transcript. */
+export function completedActivitySummary(input: {
+  question: string;
+  toolCalls: ReadonlyArray<{ isError?: boolean }>;
+  hasReasoning: boolean;
+}): string | null {
+  const chinese = /\p{Script=Han}/u.test(input.question);
+  const total = input.toolCalls.length;
+  if (!total) return input.hasReasoning ? (chinese ? '已完成分析' : 'Analysis complete') : null;
+  const failed = input.toolCalls.filter((call) => call.isError).length;
+  if (chinese) return `执行了 ${total} 项工具操作${failed ? `，${failed} 项失败` : ''}`;
+  return `Ran ${total} tool ${total === 1 ? 'action' : 'actions'}${failed ? `; ${failed} failed` : ''}`;
 }
 
 export interface TurnSummaryDeps {

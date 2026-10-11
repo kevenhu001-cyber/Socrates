@@ -177,7 +177,7 @@ export function addStreamingMessage(opts){
     rawText:"",
     html:null,
     type:"streaming",
-    summary: _initialSummary || undefined,
+    _taskSummary: _initialSummary || undefined,
     actions:null,
     _turnAnchorMinHeight: _initialReserve > 0 ? _initialReserve : undefined,
     _turnAnchorMode: _initialReserve > 0 ? 'turn' : undefined,
@@ -575,19 +575,16 @@ export function addStreamingMessage(opts){
     recordToolApproval:toolRuntime.recordToolApproval,
     recordAgentStep:toolRuntime.recordAgentStep,
     recordAgentPlan:toolRuntime.recordAgentPlan,
-    /* P_turn-summary — the server's one-line retrospective of the work, sent
-       on the same stream after the answer text. Patch it onto the message so
-       the ⏱ status row and the Summary sheet read the model's own summary
-       instead of a mechanical first-sentence slice.
-
-       This must live on `ret` (the controller turnController holds as `ctl`),
-       not on the createToolRuntime options above — a summary is not tool
-       state, and toolRuntime only re-exports the methods it returns, so an
-       option it never returns is silently unreachable. */
-    recordTurnSummary:function(text){
+    /* Task previews describe planned work; only completed summaries belong
+       in the persisted retrospective. Keep both on the owned message. */
+    recordTurnSummary:function(text,phase){
+      if(!stillOwnsSlot())return;
       var value=String(text||"").trim();
       if(!value)return;
-      patchOwnedMessage({summary:value},false);
+      patchOwnedMessage(phase==="initial"?{_taskSummary:value}:{summary:value},false);
+      // Process frames can arrive without text or tool deltas. Refresh the
+      // coalesced activity snapshot without changing the stream's state.
+      publishReactChatRuntime({type:"tool-run-updated",messageId:clientId});
     },
     append:function(delta){
       /* P_session-stream-dispose — primary entry-point guard. The

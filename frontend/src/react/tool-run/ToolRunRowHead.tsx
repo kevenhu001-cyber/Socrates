@@ -24,6 +24,11 @@ export function ToolRunRowHead({ view, elapsedMs }: { view: ToolRunView; elapsed
       >
         {view.label}
       </span>
+      <span
+        className="tool-inline-chev"
+        aria-hidden="true"
+        dangerouslySetInnerHTML={{ __html: STROKE_ICONS.chevronRight }}
+      />
       {/* Provenance between the label and the meta. It sits left of the meta
           (which is right-aligned via margin-left:auto) so the two never
           collide, and it wraps off rather than truncating the label. */}
@@ -42,11 +47,6 @@ export function ToolRunRowHead({ view, elapsedMs }: { view: ToolRunView; elapsed
                 : translate('tool.statusDone', 'Done')}
       </span>
       {meta ? <span className="tool-inline-meta is-visible">{meta}</span> : null}
-      <span
-        className="tool-inline-chev"
-        aria-hidden="true"
-        dangerouslySetInnerHTML={{ __html: STROKE_ICONS.chevronRight }}
-      />
     </>
   );
 }

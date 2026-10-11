@@ -23,8 +23,8 @@ import {chatTurns, messages, sessions} from '../../../db/schema.js';
 import {publishChatTurnEvent, setChatTurnStatus, subscribeToChatTurn} from '../../../services/chatTurns.js';
 import {sanitizeStoredHtml, sanitizePlainText} from '../../../lib/sanitize.js';
 import {indexMessageChunks} from '../../../services/chunkIndex.js';
-import {generateInitialTaskSummary, generateTurnSummary, TURN_SUMMARY_SYSTEM_PROMPT} from '../../../services/turnSummary.js';
-import {callChatCompletion, streamChatCompletion} from '../../../services/llm.js';
+import {completedActivitySummary, generateInitialTaskSummary} from '../../../services/turnSummary.js';
+import {streamChatCompletion} from '../../../services/llm.js';
 import {
   MAX_TOOL_ARGUMENT_CHARS,
   normalizeToolCalls,
@@ -952,55 +952,13 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
     return;
   }
 
-  /* P_turn-summary — ask the model for a one-line retrospective of the work
-   * it just did, which the Summary sheet and the ⏱ status row render.
-   *
-   * It runs here — after the answer is fully streamed but before [DONE] — so
-   * the summary arrives on the same SSE stream and needs no second round
-   * trip. The reader already has the complete answer at this point, so the
-   * only cost is a bounded wait on the closing frame; on timeout or failure
-   * we finish without it and the client falls back to the mechanical
-   * first-sentence preview it used before. */
-  let turnSummary: string | null = null;
-  if (provider.url && provider.keyPlaintext && (fullText || executedToolCalls.length > 0)) {
-    const lastUser = [...finalMessages].reverse().find((m) => m.role === 'user');
-    const question = typeof lastUser?.content === 'string' ? lastUser.content.slice(0, 500) : '';
-    try {
-      turnSummary = await generateTurnSummary(
-        {
-          question,
-          answer: fullText.slice(0, 4000),
-          toolCalls: executedToolCalls.map((c) => ({ name: c.name, isError: c.isError })),
-          reasoning: fullReasoning ? fullReasoning.slice(0, 1500) : undefined,
-        },
-        {
-          timeoutMs: 8_000,
-          complete: async (prompt, signal) => {
-            const res = await callChatCompletion({
-              apiBase: provider.url,
-              apiKey: provider.keyPlaintext as string,
-              model: provider.model,
-              /* The summary is decoration on an answer the reader already
-                 has. Its signal is what keeps a rate-limited provider from
-                 spending its whole retry budget holding the closing frame
-                 open — the 8 s ceiling is only real if we hand it down. */
-              signal,
-              messages: [
-                { role: 'system', content: TURN_SUMMARY_SYSTEM_PROMPT },
-                { role: 'user', content: prompt },
-              ],
-              maxTokens: 120,
-              temperature: 0.3,
-            });
-            return res.content;
-          },
-        },
-      );
-    } catch (err) {
-      /* Decorative only — never let this affect the answer. */
-      console.warn('[chat/stream] turn summary skipped:', (err as Error).message);
-    }
-  }
+  /* Retrospectives use observed execution facts. Never keep generation
+     active after the answer merely to await a decorative provider call. */
+  const turnSummary = completedActivitySummary({
+    question: userPrompt,
+    toolCalls: executedToolCalls,
+    hasReasoning: Boolean(fullReasoning.trim()),
+  });
   if (turnSummary) emitter.event('turn_summary', { summary: turnSummary });
 
   /* Done — record usage, clear streaming text, and close the stream.

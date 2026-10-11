@@ -1335,12 +1335,12 @@
       },
       "ChatStreamEvent": {
         "type": "object",
-        "description": "Single SSE frame. Wire format: `event: <event>\\ndata: <json>\\n\\n`.",
+        "description": "Single SSE frame. Wire format: `event: <event>\\ndata: <json>\\n\\n`. Optional turn_summary data contains {summary, phase: initial} for a transient task preview, or {summary} for a completed activity retrospective based on execution facts. Plain answers may omit the retrospective; completion never waits for a separate summary model request.",
         "required": ["event", "data"],
         "properties": {
           "event": {
             "type": "string",
-            "enum": ["start", "token", "tool", "preference_fallback", "complete", "error"]
+            "enum": ["start", "token", "tool", "preference_fallback", "turn_summary", "complete", "error"]
           },
           "data": { "type": "object", "additionalProperties": true }
         }

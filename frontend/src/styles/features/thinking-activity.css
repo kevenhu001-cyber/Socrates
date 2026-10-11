@@ -64,7 +64,7 @@
 .turn-summary {
   --ts-rail: var(--ui-border-subtle);
   --ts-quiet: var(--ui-text-tertiary);
-  --ts-live: var(--ui-thinking-accent);
+  --ts-live: var(--ui-text-secondary);
   min-width: 0;
   margin: 0 0 var(--ui-space-sm);
   border: 0;
@@ -74,13 +74,13 @@
   display: flex;
   align-items: center;
   gap: var(--ui-space-sm);
-  width: 100%;
+  width: fit-content;
   max-width: 100%;
   min-height: var(--ui-control-sm);
-  padding: 2px var(--ui-space-sm);
+  padding: 2px 0;
   margin: 0;
   border: 0;
-  border-radius: var(--ui-radius-sm);
+  border-radius: 0;
   background: transparent;
   color: var(--ui-text-tertiary);
   font: 400 var(--ui-font-size-xs) / 1.5 var(--font-sans);
@@ -93,35 +93,21 @@
 .turn-summary-pill::marker { content: ''; }
 .turn-summary > .turn-summary-pill:hover {
   color: var(--ui-text-primary);
-  background: var(--ui-bg-hover-ghost);
 }
 .turn-summary > .turn-summary-pill:focus-visible {
   outline: 2px solid var(--ui-border-strong);
   outline-offset: 1px;
 }
 .turn-summary[open] > .turn-summary-pill {
-  color: var(--ui-text-primary);
-  background: var(--ui-bg-raised);
+  color: var(--ui-text-secondary);
 }
 .turn-summary-label {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* Settled marker. The same fixed slot the tool glyph uses, so when the live
-   line hands off to a real row nothing shifts. */
-.turn-summary-marker {
-  display: inline-flex;
-  width: 15px;
-  height: 15px;
-  flex: 0 0 15px;
-  align-items: center;
-  justify-content: center;
-  color: var(--ui-text-tertiary);
-}
-.turn-summary-marker svg { display: block; width: 100%; height: 100%; }
 .turn-summary-chevron {
   display: inline-flex;
   width: 14px;
@@ -149,6 +135,20 @@
   animation: tool-row-breathe var(--ui-duration-pulse-slow, 1.6s) ease-in-out infinite;
 }
 .turn-summary-pill.thinking-status:hover { color: var(--ts-live); }
+/* Text supplies the liveness cue during waiting/reasoning, which have no
+   tool glyph. Only theme tokens colour the subtle moving highlight. */
+.thinking-status .thinking-status-label {
+  background: linear-gradient(110deg, var(--ts-live) 35%, var(--ui-text-primary) 50%, var(--ts-live) 65%);
+  background-size: 250% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: thought-shimmer var(--ui-duration-pulse-slow, 1.6s) linear infinite;
+}
+@keyframes thought-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
 .thinking-status-detail {
   flex: 0 0 auto;
   color: var(--ts-quiet);
@@ -162,9 +162,9 @@
 .msg.assistant .msg-body.is-declarative .thinking-summary .turn-summary-detail {
   display: flex;
   flex-direction: column;
-  gap: var(--ui-space-md);
-  margin: var(--ui-space-xxs) 0 var(--ui-space-md) var(--ui-space-sm);
-  padding: var(--ui-space-sm) 0 var(--ui-space-xs) var(--ui-space-md);
+  gap: var(--ui-space-sm);
+  margin: 0 0 var(--ui-space-sm);
+  padding: var(--ui-space-xxs) 0 var(--ui-space-xxs) var(--ui-space-md);
   border-inline-start: 1px solid var(--ts-rail);
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xs);
@@ -176,32 +176,6 @@
   color: inherit;
   white-space: pre-wrap;
 }
-/* What the turn actually did: one line per call, in order, each with the
-   glyph its row will show — so the list and the transcript below it are
-   visually the same list. */
-.msg.assistant .msg-body.is-declarative .thinking-summary .turn-summary-activities {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ui-space-xs);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.msg.assistant .msg-body.is-declarative .thinking-summary .turn-summary-activities li {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--ui-space-sm);
-  min-width: 0;
-  margin: 0;
-  color: inherit;
-}
-.msg.assistant .msg-body.is-declarative .thinking-summary .turn-summary-activities li[data-state="running"] {
-  color: var(--ts-live);
-}
-.msg.assistant .msg-body.is-declarative .thinking-summary .turn-summary-activities li[data-state="error"] {
-  color: var(--ui-danger);
-}
-.turn-summary-activities .tool-inline-tool-icon { margin-top: 1px; }
 .turn-summary .tool-inline-tool-icon,
 .turn-summary .tool-inline-tool-icon svg {
   display: block;
@@ -219,4 +193,9 @@
   .turn-summary > .turn-summary-pill,
   .turn-summary-chevron { transition: none; }
   .turn-summary-pill.thinking-status .tool-inline-tool-icon { animation: none; opacity: .8; }
+  .thinking-status .thinking-status-label {
+    animation: none;
+    background: none;
+    color: var(--ts-live);
+  }
 }

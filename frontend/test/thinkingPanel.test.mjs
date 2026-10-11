@@ -22,23 +22,23 @@ test('model summary stays in details rather than the short heading', () => {
   assert.equal(view.summary, 'Checked sources and compared the findings.');
 });
 
-test('live and persisted calls produce the same activity facts', () => {
+test('tool-only turns leave execution facts to the tool rows', () => {
   const call = { id: 'search', name: 'web_search', input: { query: 'public query' } };
   const message = { role: 'assistant', toolCalls: [call], _liveStatus: { phase: 'tool-running', label: 'Searching' } };
   const running = turnSummaryOf(message, true);
-  assert.equal(running.activities[0].state, 'running');
+  assert.equal(running.hasWork, true);
   const settled = turnSummaryOf({ ...message, toolCalls: [{ ...call, output: 'Found a source', status: 'completed', isError: false }] }, false);
-  assert.equal(settled.activities[0].state, 'done');
-  assert.equal(settled.activities[0].id, running.activities[0].id);
-  assert.equal(settled.summary, 'Tools used: 1.');
+  assert.equal(settled.hasWork, false);
+  assert.equal('activities' in settled, false);
 });
 
-test('summaries stay scoped to their own messages and preserve failure states', () => {
-  const failed = turnSummaryOf({ role: 'assistant', toolCalls: [{ id: 'bad', name: 'web_search', isError: true, error: 'Timeout', status: 'failed' }] }, false);
-  assert.equal(failed.activities[0].state, 'error');
+test('task previews cannot become completed activity summaries', () => {
+  const preview = { role: 'assistant', _taskSummary: 'Preparing a comparison.', _liveStatus: { phase: 'waiting', label: 'Working' } };
+  assert.equal(turnSummaryOf(preview, true).summary, 'Preparing a comparison.');
+  assert.equal(turnSummaryOf(preview, false).hasWork, false);
   const other = turnSummaryOf({ role: 'assistant', summary: 'Other turn.' }, false);
-  assert.deepEqual(other.activities, []);
   assert.equal(other.summary, 'Other turn.');
+  assert.equal(turnSummaryOf({ ...preview, summary: 'Compared the sources.' }, false).summary, 'Compared the sources.');
 });
 
 test('waiting and retrying have a disclosure before reasoning arrives', () => {

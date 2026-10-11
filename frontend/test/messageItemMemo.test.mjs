@@ -40,6 +40,15 @@ test('message item comparator detects changed rendered content', () => {
   assert.equal(areMessageItemsEqual(current, props({ attachments: [{ id: 'file-1', kind: 'image' }] })), false);
 });
 
+test('process content invalidates a row without requiring an answer delta', () => {
+  const current = props({ _taskSummary: 'Preparing the answer.' });
+  assert.equal(areMessageItemsEqual(current, props({ _taskSummary: 'Checking sources.' })), false);
+  assert.equal(areMessageItemsEqual(current, props({ _taskSummary: 'Preparing the answer.', summary: 'Checked sources.' })), false);
+  assert.equal(areMessageItemsEqual(current, props({ _taskSummary: 'Preparing the answer.', reasoningContent: 'private reasoning' })), false);
+  assert.equal(areMessageItemsEqual(current, props({ _taskSummary: 'Preparing the answer.' })), true);
+  assert.equal(areMessageItemsEqual(props({ reasoningContent: 'private first thought' }), props({ reasoningContent: 'private next thought' })), true);
+});
+
 test('message item comparator accepts a new object with the same rendered state', () => {
   const current = props();
   const next = props();

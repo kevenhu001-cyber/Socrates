@@ -2269,6 +2269,11 @@ paths:
         wrapper. The stream shares the authenticated chat rate-limit bucket.
         A successful priority-service fallback emits `preference_fallback`
         before content frames.
+        Optional `turn_summary` frames carry `{summary, phase: initial}` for
+        a transient task preview, or `{summary}` for a completed activity
+        retrospective. Completed summaries use observed execution facts and
+        do not require another model request before the closing frame. Plain
+        answers without reasoning or tools may omit the retrospective.
   /api/agent/run:
     post:
       tags: [agents]

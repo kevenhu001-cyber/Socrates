@@ -131,7 +131,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-shadow-popover: 0 8px 12px rgb(0 0 0 / 8%), 0 0 1px rgb(0 0 0 / 62%);
   --ui-shadow-dialog: 0 24px 64px rgb(0 0 0 / 22%), 0 4px 16px rgb(0 0 0 / 12%);
   --ui-composer-border: rgb(0 0 0 / 13%);
-  --ui-composer-shadow: 0 1px 2px rgb(0 0 0 / 3%), 0 8px 24px rgb(0 0 0 / 3%);
+  --ui-composer-shadow: 0 1px 2px rgb(0 0 0 / 3%);
   --ui-tool-chip-text: rgb(53 102 240);
   --ui-tool-chip-hover-bg: rgb(237 243 254);
   --ui-tool-chip-hover-text: rgb(36 81 218);

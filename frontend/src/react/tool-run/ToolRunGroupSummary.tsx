@@ -2,11 +2,8 @@ import { STROKE_ICONS, categoryIcon } from '../../ui/icons/toolIcons.js';
 import type { ToolRunGroupView, ToolRunState } from './toolRunModel.js';
 
 /**
- * A settled run closes with a check; a failed one with an alert. This is the
- * one moment a green-ish confirmation is worth spending colour on: the reader
- * needs to know at a glance that the work the model did before answering
- * actually finished. While running the category glyph stands in, so the slot
- * never empties and the label never jumps.
+ * The monochrome check marks settled work; an alert still marks failure.
+ * Running work retains its category glyph in the same slot.
  */
 function summaryIcon(state: ToolRunState, category: string): string {
   if (state === 'error') return STROKE_ICONS.alert;
@@ -42,12 +39,12 @@ export function ToolRunGroupSummary({
       <span className="tool-run-summary-label">
         {view.headerLabel}
       </span>
-      {meta.length ? <span className="tool-run-summary-meta">{meta.join(' · ')}</span> : null}
       <span
         className="tool-run-summary-chev"
         aria-hidden="true"
         dangerouslySetInnerHTML={{ __html: STROKE_ICONS.chevronDown }}
       />
+      {meta.length ? <span className="tool-run-summary-meta">{meta.join(' · ')}</span> : null}
     </button>
   );
 }

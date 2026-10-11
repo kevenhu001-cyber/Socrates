@@ -14,8 +14,8 @@ export interface TurnSummaryPillProps {
  * The one line that says a turn did work, at the top of the answer.
  *
  * Closed, it is a label and nothing else — no panel, no overlay, no icon
- * slot competing with the answer. The summary sentence and the per-call
- * activity list live inside the body, so a long sentence collapses to one
+ * slot competing with the answer. The public summary lives inside the body,
+ * while execution facts remain in the ordered tool rows, so a long summary collapses to one
  * line instead of pushing the answer down.
  *
  * While the turn is live the same element doubles as the phase line, and it
@@ -24,7 +24,7 @@ export interface TurnSummaryPillProps {
  */
 export function TurnSummaryPill({ message, live, messageId, status }: TurnSummaryPillProps) {
   const [open, setOpen] = useState(false);
-  const view = turnSummaryOf(message, Boolean(live));
+  const view = turnSummaryOf(message, Boolean(live), Boolean(status));
   if (!view.hasWork) return null;
   const elapsed = status?.elapsedSec && status.elapsedSec >= 12 ? `${status.elapsedSec}s` : '';
   const liveTool = status?.phase === 'tool-running' && status.toolName;
@@ -42,12 +42,10 @@ export function TurnSummaryPill({ message, live, messageId, status }: TurnSummar
         data-mode={status?.mode}
         data-state={status?.state || undefined}
       >
-        {/* Settled turns carry a quiet marker glyph; a live turn carries the
-            running tool's own glyph instead, or nothing while it waits. */}
+        {/* Only a deferred live tool needs a glyph. Settled thought headings
+            remain plain text; their chevron is the disclosure affordance. */}
         {liveTool ? (
           <span className="tool-inline-tool-icon" aria-hidden="true" dangerouslySetInnerHTML={{ __html: toolIcon(status!.toolName!) }} />
-        ) : !status ? (
-          <span className="turn-summary-marker" aria-hidden="true" dangerouslySetInnerHTML={{ __html: STROKE_ICONS.process }} />
         ) : null}
         <span className="turn-summary-label thinking-status-label" aria-live="polite" aria-atomic="true">
           {status?.label || view.label}
@@ -58,16 +56,6 @@ export function TurnSummaryPill({ message, live, messageId, status }: TurnSummar
       {open ? (
         <div className="turn-summary-detail">
           <p className="turn-summary-text">{view.summary}</p>
-          {view.activities.length ? (
-            <ol className="turn-summary-activities">
-              {view.activities.map((activity) => (
-                <li key={activity.id} data-state={activity.state}>
-                  <span className="tool-inline-tool-icon" aria-hidden="true" dangerouslySetInnerHTML={{ __html: toolIcon(activity.name) }} />
-                  <span>{activity.label}</span>
-                </li>
-              ))}
-            </ol>
-          ) : null}
         </div>
       ) : null}
     </details>

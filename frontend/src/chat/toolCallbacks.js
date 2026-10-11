@@ -83,7 +83,7 @@ export function toolCallbacksForStream(ctl) {
     onTurnSummary: function (payload) {
       var text = payload && typeof payload === 'string' ? payload : (payload && payload.summary);
       if (!text || !ctl || typeof ctl.recordTurnSummary !== 'function') return;
-      ctl.recordTurnSummary(String(text));
+      ctl.recordTurnSummary(String(text), payload && payload.phase);
     },
   };
 }

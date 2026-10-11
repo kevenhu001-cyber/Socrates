@@ -25,6 +25,11 @@ async function installStream(page, immediate = true) {
       ref.enqueue(encoder.encode('data: [DONE]\n\n'));
       ref.close();
     };
+    window.__finishPlain = () => {
+      window.__pushThinkingFrame('', { choices: [{ delta: { content: 'A direct answer.' } }] });
+      ref.enqueue(encoder.encode('data: [DONE]\n\n'));
+      ref.close();
+    };
   }, immediate);
 }
 
@@ -68,6 +73,8 @@ test('one inline disclosure updates during reasoning and remains open on complet
   await expect(bubble.locator('.thinking-spinner, .turn-summary-sparkle')).toHaveCount(0);
   await trigger.click();
   await expect(disclosure.locator('.turn-summary-detail')).toBeVisible();
+  await page.evaluate(() => window.__pushThinkingFrame('turn_summary', { summary: 'Preparing the comparison.', phase: 'initial' }));
+  await expect(disclosure.locator('.turn-summary-text')).toHaveText('Preparing the comparison.');
   await page.evaluate(() => window.__pushThinkingFrame('', { choices: [{ delta: { reasoning_content: 'another private thought' } }] }));
   await expect(bubble).not.toContainText('private');
   await page.evaluate(() => window.__finishThinking());
@@ -97,7 +104,7 @@ test('waiting disclosure works with native keyboard controls and does not reset 
   await page.evaluate(() => window.__finishThinking());
 });
 
-test('tool status owns live progress, while the summary lists message-scoped activity', async ({ page }) => {
+test('tool status owns live progress without a duplicate activity list', async ({ page }) => {
   const bubble = await startTurn(page);
   await bubble.locator('.turn-summary > summary').click();
   await page.evaluate(() => window.__pushThinkingFrame('tool_use', [{ id: 'search-inline', name: 'web_search', input: { query: 'public query' } }]));
@@ -105,13 +112,70 @@ test('tool status owns live progress, while the summary lists message-scoped act
   await expect(row).toHaveAttribute('data-state', 'running');
   await expect(bubble.locator('.thinking-status')).toHaveCount(0);
   await expect(bubble.locator('.stream-cursor')).toHaveCount(0);
-  await expect(bubble.locator('.turn-summary-activities li')).toContainText('public query');
+  await expect(bubble.locator('.turn-summary-activities')).toHaveCount(0);
+  await expect(bubble.getByText('Searching "public query"…', { exact: true })).toHaveCount(1);
   await page.evaluate(() => window.__pushThinkingFrame('tool_result', { id: 'search-inline', name: 'web_search', ok: true, output: 'Found a source', results: [{ title: 'Source', url: 'https://example.test' }], status: 'completed' }));
   await expect(row).toHaveAttribute('data-state', 'done');
-  await expect(bubble.locator('.turn-summary-activities li')).toHaveAttribute('data-state', 'done');
+  await expect(bubble.locator('.tool-inline')).toHaveCount(1);
   await expect(bubble).not.toContainText('private');
   await page.evaluate(() => window.__finishThinking());
 });
+
+test('a task preview does not leave a thought header on a plain answer', async ({ page }) => {
+  const bubble = await startTurn(page, false);
+  await page.evaluate(() => window.__pushThinkingFrame('turn_summary', { summary: 'Preparing an answer.', phase: 'initial' }));
+  await bubble.locator('.turn-summary > summary').click();
+  await expect(bubble.locator('.turn-summary-text')).toHaveText('Preparing an answer.');
+  await page.evaluate(() => window.__finishPlain());
+  await expect(bubble).toContainText('A direct answer.');
+  await expect(bubble.locator('.turn-summary')).toHaveCount(0);
+});
+
+for (const mobile of [false, true]) {
+  test(`compact process and tool rows: ${mobile ? 'mobile dark' : 'desktop light'}`, async ({ page }) => {
+    await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 });
+    const errors = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    await boot(page, [
+      { clientId: 'user-example', role: 'user', rawText: '帮我比较这两种方案。' },
+      {
+        clientId: 'answer-example', role: 'assistant',
+        rawText: '两种方案各有适用条件。方案 A 更容易开始，方案 B 更适合需要精细控制的场景。\n\n建议先用方案 A 验证需求，再根据实际结果决定是否切换。',
+        reasoningContent: 'private reasoning', summary: '已查阅资料并对比了适用条件。',
+        toolCalls: [{ id: 'search-example', name: 'web_search', input: { query: '两种方案的适用条件' }, status: 'completed', textOffset: 0, results: [{ title: '方案说明与适用条件', url: 'https://example.test/guide' }] }],
+      },
+    ], { theme: mobile ? 'dark' : 'light', lang: 'zh' });
+    await expect(page).toHaveTitle(/Socrates/i);
+    const bubble = page.locator('.msg.assistant').last();
+    const tool = bubble.locator('.tool-inline');
+    await expect(tool).toHaveCount(1);
+    await expect(bubble.locator('.turn-summary > summary')).toHaveText('思考完成');
+    const arrowGap = await tool.evaluate((node) => {
+      const label = node.querySelector('.tool-inline-label').getBoundingClientRect();
+      return node.querySelector('.tool-inline-chev').getBoundingClientRect().left - label.right;
+    });
+    expect(arrowGap).toBeLessThanOrEqual(10);
+    await bubble.scrollIntoViewIfNeeded();
+    if (mobile) await page.screenshot({ path: 'test-results/activity-mobile-dark-closed.png' });
+    else await page.screenshot({ path: 'test-results/activity-desktop-light-closed.png' });
+    await bubble.locator('.turn-summary > summary').click();
+    await tool.locator('summary').click();
+    await expect(bubble.locator('.turn-summary-text')).toHaveText('已查阅资料并对比了适用条件。');
+    await expect(tool.locator('.tool-inline-src')).toBeVisible();
+    await expect(bubble.locator('.turn-summary-activities')).toHaveCount(0);
+    for (const control of [bubble.locator('.turn-summary > summary'), tool.locator(':scope > summary')]) {
+      await expect(control).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    }
+    const sourceSection = tool.locator('.tool-inline-detail-section[data-kind="sources"]');
+    await expect(sourceSection).toHaveCSS('box-shadow', 'none');
+    await expect(sourceSection).toHaveCSS('border-top-width', '0px');
+    await expect(sourceSection).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(page.locator('vite-error-overlay')).toHaveCount(0);
+    expect(errors).toEqual([]);
+    if (mobile) await page.screenshot({ path: 'test-results/activity-mobile-dark-open.png' });
+    else await page.screenshot({ path: 'test-results/activity-desktop-light-open.png' });
+  });
+}
 
 for (const theme of ['light', 'dark']) {
   for (const mobile of [false, true]) {
@@ -131,7 +195,7 @@ for (const theme of ['light', 'dark']) {
       const first = bubbles.nth(0);
       const second = bubbles.nth(1);
       const trigger = first.locator('.turn-summary > summary');
-      await expect(trigger).toHaveText('处理过程');
+      await expect(trigger).toHaveText('思考完成');
       await expect(first.locator('.turn-summary-detail')).toHaveCount(0);
       await expect(second.locator('.turn-summary > summary')).toHaveText('思考完成');
       await trigger.click();
@@ -143,6 +207,14 @@ for (const theme of ['light', 'dark']) {
       const sizing = await trigger.evaluate((node) => ({ height: node.getBoundingClientRect().height, animation: getComputedStyle(node).animationName }));
       expect(sizing.height).toBeGreaterThanOrEqual(mobile ? 44 : 32);
       expect(sizing.animation).toBe('none');
+      const spacing = await trigger.evaluate((node) => {
+        const label = node.querySelector('.turn-summary-label').getBoundingClientRect();
+        const arrow = node.querySelector('.turn-summary-chevron').getBoundingClientRect();
+        return { gap: arrow.left - label.right, width: node.getBoundingClientRect().width };
+      });
+      expect(spacing.gap).toBeLessThanOrEqual(10);
+      expect(spacing.width).toBeLessThan(180);
+      await expect(first.locator('.turn-summary-activities')).toHaveCount(0);
       const overflow = await first.evaluate((node) => node.scrollWidth - node.clientWidth);
       expect(overflow).toBeLessThanOrEqual(1);
       await first.scrollIntoViewIfNeeded();

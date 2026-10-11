@@ -157,14 +157,13 @@ test('a run of three searches collapses under one header, with the live row outs
   await expect(first.locator('.tool-run-summary-meta')).toContainText('3 actions');
   await expect(first).toHaveAttribute('data-state', 'running');
   await expect(first).toHaveAttribute('data-category', 'search');
-  /* The header is a control, so it has to look like one: the chevron sits at the
-     right edge of the line. */
+  /* The chevron sits next to the label, while metadata stays at the far edge. */
   const chev = await first.locator('.tool-run-summary-chev').boundingBox();
   expect(chev.width).toBeGreaterThanOrEqual(12);
-  const head = await first.locator('.tool-run-summary').boundingBox();
-  const trailingGap = head.x + head.width - (chev.x + chev.width);
-  expect(trailingGap).toBeGreaterThanOrEqual(0);
-  expect(trailingGap).toBeLessThanOrEqual(9); // 8px token padding + fractional layout tolerance
+  const label = await first.locator('.tool-run-summary-label').boundingBox();
+  const labelGap = chev.x - (label.x + label.width);
+  expect(labelGap).toBeGreaterThanOrEqual(0);
+  expect(labelGap).toBeLessThanOrEqual(9); // 8px token gap + fractional layout tolerance
 
   /* Collapsed by default. The member rows exist (expanding must not have to
      build them) but nothing under the hidden aggregate body is on screen. */
@@ -381,7 +380,6 @@ test('answer prose keeps its recorded order around the rows, with no baked-in du
     return order;
   });
   expect(layout).toEqual([
-    'pill',
     'group:search',
     'text:Lead paragraph.',
     'row:f1',

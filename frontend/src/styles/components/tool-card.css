@@ -17,8 +17,8 @@
  *          between two paragraphs.
  *   rail   an expanded body hangs off a 1px rule, so a run of rows reads as
  *          one indented block instead of a stack of cards.
- *   panel  result bodies sit on one raised surface with a hairline.
- *   state  colour is the only status cue, and the only place colour is spent.
+ *   detail result bodies continue along the rail with no nested cards.
+ *   state  motion marks running work; failure retains its colour cue.
  *
  * Results are deliberately OUTSIDE every collapsible the reader would have to
  * open twice, and tool OUTPUT is not tool STATUS: a chart or a saved file
@@ -41,7 +41,7 @@
      depths and a run of rows reads as one indented block hanging off the
      run above it. */
   --tc-group-step: 24px;
-  --tc-indent: 14px;
+  --tc-indent: var(--ui-space-md);
   --tc-rail-w: 1px;
   /* Where a member's text starts, measured from the run's left edge. Every
      member row — settled inside the collapsed list or still in flight
@@ -52,10 +52,9 @@
   --tc-glyph: 15px;
   --tc-chevron: 14px;
   --tc-rail: var(--ui-border-subtle);
-  --tc-panel: var(--ui-bg-raised);
   --tc-idle: var(--ui-text-secondary);
   --tc-quiet: var(--ui-text-tertiary);
-  --tc-live: var(--ui-thinking-accent);
+  --tc-live: var(--ui-text-secondary);
 }
 
 /* ── Row ─────────────────────────────────────────────────────────────── */
@@ -85,9 +84,9 @@
   width: 100%;
   max-width: 100%;
   min-height: var(--tc-row-height);
-  padding: 2px var(--ui-space-sm);
+  padding: 2px 0;
   border: 0;
-  border-radius: var(--ui-radius-sm);
+  border-radius: 0;
   background: transparent;
   color: var(--tc-idle);
   font: 400 var(--ui-font-size-xs) / 1.5 var(--font-sans);
@@ -100,7 +99,7 @@
 .tool-inline-head::marker { content: ''; }
 .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-head:hover,
 .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-run-summary:hover {
-  background: var(--ui-bg-hover-ghost);
+  background: transparent;
   color: var(--ui-text-primary);
 }
 .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-head:focus-visible,
@@ -109,13 +108,12 @@
   outline-offset: 1px;
   border-radius: var(--ui-radius-sm);
 }
-/* An open head keeps its tint, so once a body has grown below it the
-   disclosure reads as "this block is mine". */
+/* Expansion changes the arrow, without turning a text row into a button. */
 .msg.assistant .msg-body.is-declarative .tool-inline[open] > .tool-inline-head,
 .msg.assistant .msg-body.is-declarative .tool-run-group.open .tool-run-summary,
 .msg.assistant .msg-body.is-declarative .tool-run-summary[aria-expanded="true"] {
-  background: var(--ui-bg-raised);
-  color: var(--ui-text-primary);
+  background: transparent;
+  color: var(--ui-text-secondary);
 }
 
 /* ── Glyph slot ────────────────────────────────────────────────────────
@@ -151,10 +149,9 @@
 .msg.assistant .msg-body.is-declarative .tool-inline[data-state="awaiting"] .tool-inline-tool-icon {
   color: var(--tc-live);
 }
-/* The one place a confirmation colour is worth spending: the reader has to
-   know at a glance that the work behind the answer actually finished. */
+/* A quiet check confirms completion without competing with the answer. */
 .msg.assistant .msg-body.is-declarative .tool-run-summary-icon.is-done {
-  color: var(--ui-success);
+  color: var(--ui-text-tertiary);
 }
 .msg.assistant .msg-body.is-declarative .tool-inline[data-state="error"] .tool-inline-tool-icon,
 .msg.assistant .msg-body.is-declarative .tool-run-group[data-state="error"] .tool-run-summary-icon {
@@ -175,7 +172,7 @@
    recoverable on hover. */
 .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-label,
 .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-run-summary-label {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
   color: inherit;
@@ -193,7 +190,7 @@
   flex: 0 1 auto;
   min-width: 0;
   max-width: none;
-  margin: 0;
+  margin: 0 0 0 auto;
   overflow: hidden;
   opacity: 1;
   color: var(--tc-quiet);
@@ -217,10 +214,10 @@
 .msg.assistant .msg-body.is-declarative .tool-inline-host {
   max-width: 22ch;
   overflow: hidden;
-  padding: 0 6px;
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-pill);
-  background: var(--ui-bg-chip);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--tc-quiet);
   font-size: var(--ui-font-size-xxs);
   line-height: 1.7;
@@ -344,23 +341,19 @@
   margin-inline-start: 0;
 }
 
-/* ── Result panel ──────────────────────────────────────────────────────
-   All results on ONE raised surface. The alternative — a card per section —
-   is what made the old tool UI read as a dashboard stacked inside a
-   chat bubble. */
+/* Results and code continue along the rail without nested surfaces. */
 .msg.assistant .msg-body.is-declarative .tool-inline-detail-section {
   min-width: 0;
   margin: 0;
-  padding: var(--ui-space-sm) var(--ui-space-md) 0;
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-md);
-  background: var(--tc-panel);
+  padding: var(--ui-space-xxs) 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
-/* The panel's own bottom padding lives on its last child, so a group of
-   result sections reads as ONE surface instead of several stacked cards
-   with a seam between them. */
+/* Keep the end of the detail close to its last line. */
 .msg.assistant .msg-body.is-declarative .tool-inline-detail-section:last-child {
-  padding-bottom: var(--ui-space-sm);
+  padding-bottom: var(--ui-space-xxs);
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-detail-section + .tool-inline-detail-section {
   margin-top: var(--ui-space-xxs);
@@ -369,9 +362,9 @@
   margin: 0 0 var(--ui-space-xxs);
   color: var(--ui-text-tertiary);
   font-size: var(--ui-font-size-xxs);
-  font-weight: 600;
-  letter-spacing: .06em;
-  text-transform: uppercase;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-detail-value,
 .msg.assistant .msg-body.is-declarative .tool-inline-code-preview {
@@ -379,11 +372,11 @@
   max-width: 100%;
   max-height: 180px;
   margin: 0;
-  padding: var(--ui-space-sm) var(--ui-space-md);
+  padding: 0;
   overflow: auto;
   border: 0;
-  border-radius: var(--ui-radius-sm);
-  background: var(--ui-bg-page);
+  border-radius: 0;
+  background: transparent;
   color: var(--ui-text-secondary);
   font: 400 var(--ui-font-size-xs) / 1.6 var(--font-mono);
   white-space: pre-wrap;
@@ -438,8 +431,8 @@
   gap: var(--tc-gap);
   min-width: 0;
   margin: 0;
-  padding: 2px var(--ui-space-sm);
-  border-radius: var(--ui-radius-sm);
+  padding: 2px 0;
+  border-radius: 0;
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xs);
   text-decoration: none;
@@ -447,7 +440,7 @@
 }
 .msg.assistant .msg-body.is-declarative a.tool-inline-src:hover,
 .msg.assistant .msg-body.is-declarative a.tool-inline-src:focus-visible {
-  background: var(--ui-bg-hover-ghost);
+  background: transparent;
   color: var(--ui-text-primary);
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-src-title {
@@ -502,8 +495,8 @@
   gap: var(--ui-space-xs);
   min-height: 22px;
   max-width: max-content;
-  padding: 0 var(--ui-space-sm);
-  border-radius: var(--ui-radius-pill);
+  padding: 0;
+  border-radius: 0;
   color: var(--tc-quiet);
   font-size: var(--ui-font-size-xxs);
   font-weight: 500;
@@ -519,7 +512,7 @@
   content: '';
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-tech-summary:hover {
-  background: var(--ui-bg-hover-ghost);
+  background: transparent;
   color: var(--ui-text-secondary);
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-tech-summary:focus-visible {
@@ -597,6 +590,22 @@
   align-items: center;
   gap: var(--ui-space-xs);
   margin: var(--ui-space-xs) 0 0;
+}
+/* Secondary actions are quiet text links with a full touch target. */
+.msg.assistant .msg-body.is-declarative .tool-inline-retry,
+.msg.assistant .msg-body.is-declarative .tool-inline-action {
+  padding: 0 var(--ui-space-xs);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-weight: 400;
+}
+.msg.assistant .msg-body.is-declarative .tool-inline-retry:hover,
+.msg.assistant .msg-body.is-declarative .tool-inline-action:hover {
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 /* ── Approval ──────────────────────────────────────────────────────────
@@ -686,12 +695,13 @@
     min-height: var(--ui-control-touch);
   }
   .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-head {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
   }
   .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-label {
-    flex: 1 1 60%;
-    white-space: normal;
-    overflow-wrap: anywhere;
+    flex: 0 1 auto;
+  }
+  .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-hosts {
+    display: none;
   }
 }
 

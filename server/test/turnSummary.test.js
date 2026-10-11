@@ -1,6 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeSummary, generateTurnSummary, generateInitialTaskSummary, TURN_SUMMARY_SYSTEM_PROMPT } from '../src/services/turnSummary.js';
+import { completedActivitySummary, normalizeSummary, generateTurnSummary, generateInitialTaskSummary, TURN_SUMMARY_SYSTEM_PROMPT } from '../src/services/turnSummary.js';
+
+test('completed activity skips ordinary answers and reports observed reasoning only', () => {
+  assert.equal(completedActivitySummary({ question: 'Hello', toolCalls: [], hasReasoning: false }), null);
+  assert.equal(completedActivitySummary({ question: 'Compare these', toolCalls: [], hasReasoning: true }), 'Analysis complete');
+  assert.equal(completedActivitySummary({ question: '比较这些资料', toolCalls: [], hasReasoning: true }), '已完成分析');
+});
+
+test('completed activity includes failed operations instead of claiming success', () => {
+  assert.equal(completedActivitySummary({ question: 'Search', toolCalls: [{}, { isError: true }], hasReasoning: false }), 'Ran 2 tool actions; 1 failed');
+  assert.equal(completedActivitySummary({ question: '查资料', toolCalls: [{ isError: true }], hasReasoning: true }), '执行了 1 项工具操作，1 项失败');
+  assert.equal(completedActivitySummary({ question: 'Read this', toolCalls: [{}], hasReasoning: false }), 'Ran 1 tool action');
+});
 
 test('normalizeSummary strips the wrappers models reach for', () => {
   assert.equal(normalizeSummary('查找了 3 个来源并汇总'), '查找了 3 个来源并汇总');
