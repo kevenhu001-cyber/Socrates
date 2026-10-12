@@ -359,6 +359,57 @@ install_static_root_cache() {
 
   return $rc
 }
+
+# ─── Edge-cache policy for the static SPA document ─────────────────────
+# The SPA HTML is public and contains no user-specific data. Its asset URLs
+# are content-hashed and the deploy keeps old assets during the retention
+# window, so a short edge TTL is safe and removes a full origin round trip on
+# every cold navigation. This matters especially when the hostname is behind
+# a CDN whose nearest POP is outside the user's region.
+install_spa_cache_policy() {
+  local repo_root="${FRONTEND_DIR%/frontend}"
+  local awk_script="$repo_root/ops/nginx/insert-spa-cache.awk"
+  local conf backup tmp rc=0
+
+  if [[ ! -f "$awk_script" ]]; then
+    echo "WARNING: $awk_script missing — SPA HTML keeps its old cache policy." >&2
+    return 0
+  fi
+
+  for conf in "${APP_NGINX_CONFIGS[@]}"; do
+    [[ -f "$conf" ]] || continue
+
+    tmp="$(mktemp)"
+    if ! $SUDO awk -f "$awk_script" "$conf" > "$tmp" 2>/dev/null; then
+      echo "WARNING: could not compute the SPA cache policy for $conf." >&2
+      rm -f "$tmp"
+      continue
+    fi
+
+    if $SUDO cmp -s "$tmp" "$conf"; then
+      rm -f "$tmp"
+      continue
+    fi
+
+    backup="${conf}.pre-spa-cache.$$"
+    $SUDO cp -a "$conf" "$backup"
+    $SUDO install -m 644 "$tmp" "$conf"
+    rm -f "$tmp"
+
+    if ! $SUDO nginx -t >/dev/null 2>&1; then
+      echo "ERROR: nginx rejected the SPA cache policy; restoring $conf unchanged." >&2
+      $SUDO cp -a "$backup" "$conf"
+      $SUDO rm -f "$backup"
+      rc=1
+      continue
+    fi
+
+    $SUDO rm -f "$backup"
+    echo "  cache:   SPA HTML edge policy wired into $conf"
+  done
+
+  return $rc
+}
 # immediately before restart. Keep one known-good dist tree for rollback.
 BACKEND_DIST="$SERVER_DIR/dist"
 BACKEND_PREVIOUS="$SERVER_DIR/dist.previous"
@@ -835,6 +886,10 @@ fi
 # "nginx is broken" — the warning below is the only consequence.
 if ! install_static_root_cache; then
   echo "WARNING: brand-asset caching could not be wired; continuing." >&2
+fi
+
+if ! install_spa_cache_policy; then
+  echo "WARNING: SPA HTML edge caching could not be wired; continuing." >&2
 fi
 
 if ! $SUDO nginx -t >/dev/null 2>&1; then

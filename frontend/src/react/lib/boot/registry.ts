@@ -21,9 +21,9 @@
  *    create their own host (storage modal, cheatsheet, prompt
  *    templates, workflow layer) do so before the
  *    registry looks the host up by id.
- *  - `runMountRegistry(document)` walks the spec list and dispatches
- *    each entry, recording which specs mounted and which were skipped
- *    (host missing, already mounted).
+ *  - `runMountRegistry(document, options?)` walks the spec list and
+ *    dispatches each selected entry, recording which specs mounted and
+ *    which were skipped (filtered, host missing, already mounted).
  *
  * Ownership semantics
  *  - The registry records mounted hosts in a module-private WeakMap.
@@ -65,16 +65,28 @@ export interface MountRegistryResult {
   skipped: MountSpec[];
 }
 
+export interface MountRegistryOptions {
+  /** Restrict a pass to the lightweight/visible labels requested by the caller. */
+  labels?: ReadonlySet<string>;
+}
+
 /**
  * Walk every spec in declaration order, find (or create) the host
  * element, skip hosts that already have a `mountedBy` label (idempotent
  * re-runs), call the spec's `mount(host)`, then record the ownership label.
  */
-export function runMountRegistry(document: Document): MountRegistryResult {
+export function runMountRegistry(
+  document: Document,
+  options: MountRegistryOptions = {},
+): MountRegistryResult {
   const mounted: MountSpec[] = [];
   const skipped: MountSpec[] = [];
 
   for (const spec of mountRegistry) {
+    if (options.labels && !options.labels.has(spec.label)) {
+      skipped.push(spec);
+      continue;
+    }
     if (spec.ensureHost) {
       spec.ensureHost(document);
     }

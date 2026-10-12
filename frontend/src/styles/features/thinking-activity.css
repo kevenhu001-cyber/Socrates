@@ -176,6 +176,22 @@
   color: inherit;
   white-space: pre-wrap;
 }
+.msg.assistant .msg-body.is-declarative .thinking-summary .turn-summary-thinking-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-xs);
+  margin: 0;
+  color: inherit;
+}
+.msg.assistant .msg-body.is-declarative .thinking-summary .turn-summary-thinking-text {
+  margin: 0;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: var(--ui-text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 .turn-summary .tool-inline-tool-icon,
 .turn-summary .tool-inline-tool-icon svg {
   display: block;

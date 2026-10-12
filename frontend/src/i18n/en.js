@@ -918,6 +918,8 @@ export const en = {
     "think.preparing":"Preparing the response plan…",
     "think.process":"Process",
     "think.complete":"Thought complete",
+    "think.thoughtDuration":"Thought for {sec}s",
+    "think.summary":"Thought summary",
     "think.summaryTools":"Tools used: {n}.",
     "think.summaryThinking":"Thinking complete.",
     "think.noSummary":"No activity summary is available.",

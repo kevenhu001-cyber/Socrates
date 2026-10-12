@@ -38,10 +38,9 @@ export function bootstrapApp(options) {
   }
 
   /* streamingTurn stays out of the entry chunk (saves parse+eval on the
-     critical path) but every session needs it on first send — kick the
-     fetch now so the module is warm before any interaction; the send
-     path then serves the controller synchronously. */
-  try { if (typeof window.__loadStreamingTurn === 'function') window.__loadStreamingTurn(); } catch (_) { /* prefetch is best effort */ }
+     critical path). Warm it from the post-load idle queue below instead of
+     spending a connection on a hidden auth page; authenticated sessions
+     still get the same warm-on-idle behavior before the first send. */
 
   mountLegacyShellListeners({
     toggleSidebar: options.toggleSidebar,

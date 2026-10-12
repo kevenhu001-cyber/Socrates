@@ -796,8 +796,13 @@ export async function streamChatCompletion(
              thinking pill and persist it on the assistant message
              for the next turn. */
           if (typeof onReasoning === 'function') {
-            const reasoning = delta.reasoning_content;
-            if (typeof reasoning === 'string' && reasoning.length > 0) {
+            const rawReasoning = delta.reasoning_content ?? (delta as any).reasoning ?? (delta as any).thinking;
+            const reasoning = typeof rawReasoning === 'string'
+              ? rawReasoning
+              : (rawReasoning && typeof rawReasoning === 'object' && typeof (rawReasoning as any).text === 'string')
+                ? (rawReasoning as any).text
+                : '';
+            if (reasoning.length > 0) {
               try { onReasoning(reasoning); } catch { /* ignore */ }
             }
           }
@@ -851,8 +856,13 @@ export async function streamChatCompletion(
         const delta = json.choices?.[0]?.delta;
         if (delta) {
           if (typeof onReasoning === 'function') {
-            const reasoning = delta.reasoning_content;
-            if (typeof reasoning === 'string' && reasoning.length > 0) {
+            const rawReasoning = delta.reasoning_content ?? (delta as any).reasoning ?? (delta as any).thinking;
+            const reasoning = typeof rawReasoning === 'string'
+              ? rawReasoning
+              : (rawReasoning && typeof rawReasoning === 'object' && typeof (rawReasoning as any).text === 'string')
+                ? (rawReasoning as any).text
+                : '';
+            if (reasoning.length > 0) {
               try { onReasoning(reasoning); } catch { /* ignore */ }
             }
           }

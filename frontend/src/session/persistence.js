@@ -250,6 +250,8 @@ function captureSessionPayload(){
       rawText:m.rawText||null,
       type:m.type||null,
       reasoningContent:m.reasoningContent||null,
+      reasoningDurationSec:m.reasoningDurationSec||null,
+      summary:m.summary||null,
       /* P_attachments — round-trip the inlined image dataUrl /
        * parsed text body so reloads restore thumbnails without a
        * re-upload. The server caps to 20 in sessions.js; we

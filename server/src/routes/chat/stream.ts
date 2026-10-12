@@ -91,10 +91,8 @@ export function registerStreamRoute(router: Router) {
          (bad turnId) from being reported as unhandled while ownership is
          still pending. */
       turnPromise.catch(() => {});
-      const prepPromise = ownershipPromise.then(
-        () => prepareChatRequest(req, res),
-        () => null,
-      );
+      const prepPromise = prepareChatRequest(req, res);
+      prepPromise.catch(() => {});
       /* P_prep-parallel — the tool context (connector snapshots +
          registry build) only needs the request mode, not the prepared
          payload, so start it here alongside ownership/turn/prep instead
@@ -109,9 +107,6 @@ export function registerStreamRoute(router: Router) {
         bodyMode === 'tutor' ? 'tutor' : 'chat',
       );
       toolCtxPromise.catch(() => {});
-      /* Ownership must pass before the prelude runs, since the prelude may
-         write a response of its own. Chaining it keeps that guarantee while
-         the turn binding overlaps both. */
       await ownershipPromise;
       const [turnId, prep] = await Promise.all([turnPromise, prepPromise]);
       if (!prep || !prep.ok) return;

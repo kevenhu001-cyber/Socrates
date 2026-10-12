@@ -156,7 +156,16 @@ function emitJsonDelta(state, context, payload) {
     return;
   }
   const delta = message.choices && message.choices[0] && message.choices[0].delta && message.choices[0].delta.content;
-  const reasoning = message.choices && message.choices[0] && message.choices[0].delta && message.choices[0].delta.reasoning_content;
+  const rawReasoning = message.choices && message.choices[0] && message.choices[0].delta && (
+    message.choices[0].delta.reasoning_content ??
+    message.choices[0].delta.reasoning ??
+    message.choices[0].delta.thinking
+  );
+  const reasoning = typeof rawReasoning === 'string'
+    ? rawReasoning
+    : (rawReasoning && typeof rawReasoning === 'object' && typeof rawReasoning.text === 'string')
+      ? rawReasoning.text
+      : '';
   emitReasoning(state, context, reasoning);
   emitVisibleDelta(state, context, delta);
 }

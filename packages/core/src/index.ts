@@ -75,10 +75,16 @@ export function dispatchChatSseFrame(frame: string, handlers: ChatSseHandlers) {
     return;
   }
 
-  const delta = (parsed as { choices?: Array<{ delta?: { content?: unknown; reasoning_content?: unknown } }> })
+  const delta = (parsed as { choices?: Array<{ delta?: { content?: unknown; reasoning_content?: unknown; reasoning?: unknown; thinking?: unknown } }> })
     ?.choices?.[0]?.delta;
   if (typeof delta?.content === 'string') handlers.onDelta?.(delta.content);
-  if (typeof delta?.reasoning_content === 'string') handlers.onReasoning?.(delta.reasoning_content);
+  const rawReasoning = delta?.reasoning_content ?? (delta as any)?.reasoning ?? (delta as any)?.thinking;
+  const reasoning = typeof rawReasoning === 'string'
+    ? rawReasoning
+    : (rawReasoning && typeof rawReasoning === 'object' && typeof (rawReasoning as any).text === 'string')
+      ? (rawReasoning as any).text
+      : '';
+  if (reasoning) handlers.onReasoning?.(reasoning);
 }
 
 /** Split an SSE response buffer while preserving an incomplete trailing frame. */

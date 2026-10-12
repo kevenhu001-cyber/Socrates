@@ -38,6 +38,7 @@ export const executeWebSearch: ToolExecutor = async (
     : 10;
   let searchResults: SearchResult[] | null = null;
   let searchError: WebSearchError | null = null;
+  emitter.event('tool_progress', { id: call.id, phase: 'searching', elapsedMs: 0 });
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       searchResults = (await webSearch(searchQuery, searchCount, {

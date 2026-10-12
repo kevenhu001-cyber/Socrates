@@ -8,7 +8,8 @@ trap 'rm -rf "$WORK"' EXIT
 make_fixture() {
   local name="$1"
   local base="$WORK/$name"
-  mkdir -p "$base"/{bin,frontend,server/node_modules/.bin,server/src,app-root/assets,site-root,status-root,etc}
+  mkdir -p "$base"/{bin,frontend,server/node_modules/.bin,server/src,app-root/assets,site-root,status-root,etc,ops/nginx}
+  cp "$ROOT/ops/nginx/insert-spa-cache.awk" "$base/ops/nginx/insert-spa-cache.awk"
   printf 'old backend\n' > "$base/server/dist-marker"
   mkdir -p "$base/server/dist"
   mv "$base/server/dist-marker" "$base/server/dist/index.runtime.js"
@@ -19,8 +20,20 @@ make_fixture() {
   printf '<html>status</html>\n' > "$base/server/src/status.html"
   printf 'try_files /status.1.html =404;\n' > "$base/etc/status.conf"
   # App nginx config with the managed SPA fallback that deploy.sh
-  # set_app_index_target() rewrites to the freshly deployed entry.
-  printf 'try_files $uri $uri/ /__APP_INDEX__;\n' > "$base/etc/app.conf"
+  # set_app_index_target() rewrites to the freshly deployed entry. Keep the
+  # two HTML locations here so the edge-cache installer gets a positive test,
+  # not just the missing-script warning path.
+  cat > "$base/etc/app.conf" <<'NGINX'
+server {
+  location / {
+    add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+    try_files $uri $uri/ /__APP_INDEX__;
+  }
+  location ~ ^/index\.[0-9]+\.html$ {
+    add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+  }
+}
+NGINX
   printf 'active\n' > "$base/systemctl.state"
   : > "$base/systemctl.log"
 
@@ -225,6 +238,12 @@ grep -q '"mobileBootstrapAligned": true' "$success_base/deploy-state.json"
 grep -q 'admin.status ok' "$success_base/output.log"
 grep -q 'admin.config fail-closed (403)' "$success_base/output.log"
 grep -q 'pi.agent disabled (binary unavailable)' "$success_base/output.log"
+grep -q 'cache:   SPA HTML edge policy wired' "$success_base/output.log"
+grep -q 'CDN-Cache-Control "public, max-age=60' "$success_base/etc/app.conf"
+if grep -q 'no-cache\|no-store' "$success_base/etc/app.conf"; then
+  echo "stale SPA no-cache policy survived deployment" >&2
+  exit 1
+fi
 grep -q '"adminConfigFailClosed": true' "$success_base/deploy-state.json"
 grep -q '"schemaTablesVerified": true' "$success_base/deploy-state.json"
 if compgen -G "$success_base/server/.dist-next.*" >/dev/null; then

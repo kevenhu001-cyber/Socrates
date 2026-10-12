@@ -69,9 +69,6 @@ function formatDisplay(
   entryName: string,
   translate: (key: string, fallback: string) => string,
 ): string {
-  const duration = result.durationMs != null && result.durationMs > 0
-    ? ' [' + (result.durationMs / 1000).toFixed(1) + 's]'
-    : '';
   if (result.status === 'awaiting_approval') {
     return translate('tool.codexApprovalCopy', 'Review the action before it continues.');
   }
@@ -80,9 +77,9 @@ function formatDisplay(
     const hint = (result.name || entryName) === 'code_interpreter'
       ? pythonErrorHint(String(result.stderr || '') + String(result.error || ''))
       : '';
-    return errorMessage + duration + hint;
+    return errorMessage + hint;
   }
-  return (result.output || '(no output)') + (result.stderr ? '\n[stderr]\n' + result.stderr : '') + duration;
+  return (result.output || '(no output)') + (result.stderr ? '\n[stderr]\n' + result.stderr : '');
 }
 
 function runPhaseForResult(result: ToolResultInput, awaitingApproval: boolean): string {

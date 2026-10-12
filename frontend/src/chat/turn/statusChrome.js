@@ -73,19 +73,30 @@ export function createStatusChrome(state) {
     if (_prev && _prev.phase === "thinking") return;
     /* The elapsed cue is quantized to 5s steps so the pill's width only
        changes rarely and predictably, instead of ticking every second. */
-    var _elapsedQ = sec >= 12 ? Math.max(10, Math.floor(sec / 5) * 5) : undefined;
     setLiveStatus({
       phase: "waiting", label: _waitingLabel, mode: state.appMode(),
-      elapsedSec: _elapsedQ
+      elapsedSec: sec > 0 ? sec : undefined
     });
   }
 
-  function stampThinking() {
-    if (!state.reactLive || statusIsBusy()) return;
+  function stampThinking(sec) {
+    if (!state.reactLive) return;
+    var _owner = liveMessage();
+    var _prev = _owner && _owner._liveStatus;
+    if (_prev && (_prev.phase === "error" || _prev.phase === "retrying" || _prev.phase === "tool-running")) return;
+    var curSec = typeof sec === 'number' && sec > 0 ? sec : (_prev && _prev.elapsedSec);
     setLiveStatus({
       phase: "thinking",
-      label: state.t("think.thinking", "正在深度思考…"),
+      label: state.t("think.thinking", "正在思考…"),
+      mode: state.appMode(),
+      elapsedSec: curSec,
     });
+  }
+
+  function isThinkingPhase() {
+    var msg = liveMessage();
+    var prev = msg && msg._liveStatus;
+    return !!(prev && prev.phase === "thinking");
   }
 
   return {
@@ -95,5 +106,6 @@ export function createStatusChrome(state) {
     clearLiveStatus,
     stampWaiting,
     stampThinking,
+    isThinkingPhase,
   };
 }

@@ -187,6 +187,15 @@ export function revealAppAndHydrate(onHydrated){
   var hydration;
   try{ hydration=afterAuthEnter(); }catch(err){ hydration=Promise.reject(err); }
   hideGate();
+  /* React's compatibility registry is intentionally deferred until the app
+     is visible. This keeps the auth route from downloading the hidden
+     composer/editor and modal graph. Share routes do not call this function
+     and keep using the lightweight assistant-turn entry point above. */
+  try{
+    if(typeof window.__socratesMountReactCompatibility === "function"){
+      window.__socratesMountReactCompatibility();
+    }
+  }catch(e){reportSwallow(e, 'auth/index.mountReactCompatibility');}
   Promise.resolve(hydration)
     .catch(function(err){ try{console.error("[auth] post-auth hydration failed",err)}catch(e){reportSwallow(e, 'auth/index.hydrate.log'); } })
     .then(function(){ if(typeof onHydrated==="function")try{onHydrated()}catch(e){reportSwallow(e, 'auth/index.hydrate.onHydrated'); } });

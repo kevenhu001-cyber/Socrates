@@ -15,6 +15,16 @@ export function bootstrapReactCompatibilityRuntime(): Root {
     if (!document.getElementById(id)) throw new Error(`React mount target "#${id}" was not found.`);
   }
   configureMountRegistry(mountRegistryList());
-  runMountRegistry(document);
+  /* The app shell is hidden until authBoot resolves. Running the full
+     registry here used to fetch every lazy overlay plus the TipTap editor
+     while an unauthenticated visitor was still looking at the login gate.
+     Keep only the lightweight sidebar nav hydrated for shell compatibility;
+     mount the visible app surfaces after auth reveals the shell. The
+     registry is idempotent, so a second call only mounts hosts that were
+     deferred. */
+  runMountRegistry(document, { labels: new Set(['sidebar-nav']) });
+  (window as any).__socratesMountReactCompatibility = () => {
+    runMountRegistry(document);
+  };
   return (window as any).__socratesPillRoot ?? null;
 }

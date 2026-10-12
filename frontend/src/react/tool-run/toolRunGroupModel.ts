@@ -75,7 +75,7 @@ export function toolRunGroupView(
   const label = toolRunGroupLabel(all, state === 'awaiting' ? 'done' : state);
   const meta = label.meta ? label.meta.slice() : [];
   const totalMs = all.reduce((sum, call) => sum + durationOf(call), 0);
-  const seconds = state === 'running' ? '' : formatSeconds(totalMs);
+  const seconds = (state === 'running' || state === 'awaiting') ? '' : formatSeconds(totalMs);
   if (seconds) meta.push(seconds);
 
   const sections = groupSectionsOf(members, memberViews);

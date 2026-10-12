@@ -16,7 +16,7 @@ const MAX_PAGE_CHARS = 30_000;
 const DEFAULT_PAGE_CHARS = 20_000;
 const SOURCE_MAX_BYTES = 1_000_000;
 const PAGE_CACHE_TTL_MS = 15 * 60_000;
-const PAGE_CACHE_ENTRIES = 8;
+const PAGE_CACHE_ENTRIES = 64;
 const MAX_BATCH_URLS = 4;
 type FetchedPage = { ok?: boolean; url?: string; title?: string; content?: string; pageDate?: string; truncated?: boolean; reason?: string; code?: string; pageCount?: number };
 const pageCache = new Map<string, { page: FetchedPage; fetchedAt: number }>();
@@ -95,6 +95,8 @@ export const executeWebFetch: ToolExecutor = async (
   if (batch && offset > 0) {
     return failEmit(ctx, call, 'invalid_paging_arguments', false, 'offset paging requires a single `url`; batch fetches always start each page at 0.');
   }
+
+  emitter.event('tool_progress', { id: call.id, phase: 'fetching', elapsedMs: 0 });
 
   /* Continuation reads (offset > 0) must hit the cached snapshot so the
      slice lines up with what the model already saw. A single-URL fetch

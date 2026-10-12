@@ -16,12 +16,13 @@ import {and, desc, eq, gte, or, sql} from 'drizzle-orm';
 import {NotFound, TooManyRequests} from '../../lib/errors.js';
 import {getBeagleQuota} from '../../lib/tiers.js';
 import {getDb} from '../../db/index.js';
-import {usageEvents} from '../../db/schema.js';
+import {usageEvents, artifacts, sessions} from '../../db/schema.js';
 import {isMultimodalProvider} from '../../lib/multimodal.js';
 import {pickChatLimiterFor} from '../../middleware/rateLimit.js';
 
 import type {NextFunction, Request, Response} from 'express';
-import type {getActiveApiKey} from '../../services/apiKey.js';
+import {getActiveApiKey} from '../../services/apiKey.js';
+import {estimateMessageTokens} from '../../services/usageTracker.js';
 import type {User} from '../../types/http.js';
 /* P_teacher-mode-cache — the teacher-mode system prompt lives on
    disk and rarely changes. The canonical loader is in
@@ -79,7 +80,6 @@ async function resolveAssistantInstructions(
   assistantId: string | undefined, sessionId: string | undefined, userId: string | undefined,
 ): Promise<PolicyBlock | null> {
   if (!userId) return null;
-  const { artifacts, sessions } = await import('../../db/schema.js');
   let selectedId = assistantId;
   if (!selectedId && sessionId) {
     const [session] = await getDb().select({ assistantId: sessions.assistantId }).from(sessions)
@@ -1011,7 +1011,7 @@ export async function prepareChatRequest(
      never removes (it always keeps the latest turns), so resolving it from
      the unwindowed list yields the same query. */
   const projectId = typeof parsed.projectId === 'string' ? parsed.projectId : undefined;
-  const providerPromise = import('../../services/apiKey.js').then(({ getActiveApiKey }) => getActiveApiKey(req.userId));
+  const providerPromise = getActiveApiKey(req.userId);
   const teacherPromise: Promise<PolicyBlock | null> = mode === 'tutor'
     ? getTeacherModePrompt().then((prompt) => ({ marker: TEACHER_MODE_MARKER, prompt }))
     : Promise.resolve(null);
@@ -1024,7 +1024,6 @@ export async function prepareChatRequest(
 
   let windowedMessages: ChatMessage[] = messages;
   try {
-    const { estimateMessageTokens } = await import('../../services/usageTracker.js');
     const rawBudget = Number(process.env.CHAT_CONTEXT_MAX_TOKENS);
     const budget = Number.isFinite(rawBudget) && rawBudget > 0 ? Math.floor(rawBudget) : 100_000;
     if (estimateMessageTokens(messages) > budget) {

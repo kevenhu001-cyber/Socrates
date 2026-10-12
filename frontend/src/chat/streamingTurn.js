@@ -288,7 +288,9 @@ export function addStreamingMessage(opts){
      `message._liveStatus`, never a node. TurnStatus draws it. */
   var reactThinkCtl={
     append:function(){
-      statusChrome.stampThinking(state.fullReasoning);
+      var sec=Math.max(1,Math.round((Date.now()-thinkStarted)/1000));
+      state.reasoningDurationSec=sec;
+      statusChrome.stampThinking(sec);
     },
     finalize:function(){clearLiveStatus()},
     remove:function(){clearLiveStatus()},
@@ -329,7 +331,9 @@ export function addStreamingMessage(opts){
     }
     /* The status line is data drawn by TurnStatus — there is no pill DOM. */
     state.thinkCtl=reactThinkCtl;
-    statusChrome.stampThinking(state.fullReasoning);
+    var sec=Math.max(1,Math.round((Date.now()-thinkStarted)/1000));
+    state.reasoningDurationSec=sec;
+    statusChrome.stampThinking(sec);
     return reactThinkCtl;
   }
   /* Unique ID for the retry button so we can attach a click handler after
@@ -353,8 +357,19 @@ export function addStreamingMessage(opts){
      twitchy elapsed-seconds counter that can read like a stalled request. */
   var _elapsedTick=null;
   _elapsedTick=setInterval(function(){
-    if(state.finished||!firstDelta)return;
-    statusChrome.stampWaiting(Math.round((Date.now()-thinkStarted)/1000));
+    if(state.finished)return;
+    var sec=Math.max(1,Math.round((Date.now()-thinkStarted)/1000));
+    if(firstDelta){
+      if(statusChrome.isThinkingPhase()){
+        state.reasoningDurationSec=sec;
+        statusChrome.stampThinking(sec);
+      } else {
+        statusChrome.stampWaiting(sec);
+      }
+    } else if(statusChrome.isThinkingPhase()){
+      state.reasoningDurationSec=sec;
+      statusChrome.stampThinking(sec);
+    }
   },1000);
   state._elapsedTick=_elapsedTick;
 
@@ -642,6 +657,8 @@ export function addStreamingMessage(opts){
       if(typeof delta==="string"){
         state.fullReasoning+=delta;
       }
+      var sec=Math.max(1,Math.round((Date.now()-thinkStarted)/1000));
+      state.reasoningDurationSec=sec;
       if(state.toolRuntime&&typeof state.toolRuntime.hasActiveTools==="function"&&state.toolRuntime.hasActiveTools())return;
       try{ensureThinkCtl().append(delta||"")}catch(e){reportSwallow(e, 'streamingTurn._preRev1.appendDelta'); }
       /* Real-time reasoning saved to React store for persistence;
@@ -649,6 +666,7 @@ export function addStreamingMessage(opts){
       if(stillOwnsSlot()){
         patchOwnedMessage({
           reasoningContent:state.fullReasoning,
+          reasoningDurationSec:sec,
         },true);
         publishReactChatRuntime({type:"stream-delta",messageId:clientId,textLength:state.full.length});
       }

@@ -256,13 +256,11 @@ function handleStubbedApi(req, res, next, localPath) {
 }
 
 /* P_perf-css-preload — Vite injects `modulepreload` for entry JS but nothing
-   for stylesheets. The SPA entry pulls in 8 render-blocking CSS files, and on
-   a cross-border link each one costs a full RTT (measured 0.6–1.8s TTFB per
-   file from Europe) that the parser pays serially before first paint. A
-   `<link rel="preload" as="style">` lets the browser start those fetches while
-   it is still parsing the document, so they overlap instead of stacking.
-   `onload` flips to `onload="this.rel='stylesheet'"` so the resource stays
-   non-blocking, matching how the modulepreload hints already behave. */
+   for the entry stylesheet. Preload only that critical stylesheet: the
+   media=print links in index.html already defer the static below-fold slices,
+   while KaTeX and tldraw CSS belong to dynamic modules and must stay out of
+   the first-paint request graph. Preloading every CSS asset used to make
+   those lazy modules pay a cross-border RTT on every cold visit. */
 function createCssPreloadPlugin() {
   return {
     name: 'socrates-css-preload',
@@ -271,7 +269,8 @@ function createCssPreloadPlugin() {
       order: 'post',
       handler(html, ctx) {
         if (!ctx.bundle) return html;
-        const css = Object.keys(ctx.bundle).filter((f) => f.endsWith('.css'));
+        const css = Object.keys(ctx.bundle).filter((f) =>
+          /(?:^|\/)index(?:-[^/]+)?\.css$/.test(f));
         if (!css.length) return html;
         const tags = css
           .map((f) => `<link rel="preload" as="style" href="/${f}" onload="this.onload=null;this.rel='stylesheet'">`)

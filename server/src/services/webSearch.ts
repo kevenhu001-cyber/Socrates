@@ -222,59 +222,45 @@ async function runWebSearch(
   const hasMinimaxKey = !!(process.env.MINIMAX_SEARCH_KEY || process.env.BEAGLE_SYSTEM_KEY);
   const acSignal = ac.signal;
 
-  /* P_query-expansion — expand the user's query into multiple variants
-     via the LLM to improve recall. Each variant captures a different
-     angle / phrasing of the same information need. The expanded queries
-     are cached (256-entry LRU) so repeated topic refreshes skip the LLM
-     roundtrip. Fallback to [query] on any failure (no key, timeout,
-     parse error, empty variants). */
-  let variants: string[];
-  try {
-    variants = await expandQuery(query, {
-      userId: userId ?? null,
-      signal: acSignal,
-      variantCount: 4,
-    });
-  } catch {
-    variants = [query];
-  }
-  // Per-variant result limit: share the total limit across variants
-  // so we don't flood the merge step with 5× the desired count.
-  const perVariantLimit = Math.max(1, Math.ceil(limit / variants.length));
+  /* P_query-expansion — expand the user's query into variants via LLM
+     in the background CONCURRENTLY with the primary query search.
+     The primary search on the exact query begins immediately at t=0! */
+  const variantsPromise = expandQuery(query, {
+    userId: userId ?? null,
+    signal: acSignal,
+    variantCount: 2,
+  }).catch(() => [query]);
 
-  /* P_multi-variant-fan-out — for each engine, search ALL query variants
-     in parallel, then flatten and deduplicate per-engine. This lets the
-     model surface results from different query phrasings without
-     multiplying the engine count. Each variant call has its own internal
-     timeout; the `withTimeout` wrapper provides an additional engine-level
-     safeguard. `unavailable` results (timeout/error) are filtered out
-     per-variant so a single slow variant can't poison the whole engine. */
+  /* P_multi-variant-fan-out — search the primary query immediately across
+     engines, then merge any resolved query variants concurrently without
+     blocking the initial search on the LLM expansion roundtrip. */
   const searchVariants = (
     searchFn: (q: string, limit: number, signal: AbortSignal | null) => Promise<SearchResult[]>,
     label: string,
     timeoutMs: number,
   ): Promise<SearchResult[]> => {
-    /* Do not abort the entire search when one provider is slow. Each engine
-     * gets its own controller, combined with the turn-wide deadline, so its
-     * timeout really cancels its outstanding I/O while healthy providers can
-     * still contribute results. */
     const engineController = new AbortController();
     const engineSignal = typeof AbortSignal.any === 'function'
       ? AbortSignal.any([acSignal, engineController.signal])
       : (acSignal.aborted ? acSignal : engineController.signal);
+
+    const primaryP = searchFn(query, limit, engineSignal).then((results) => {
+      return Array.isArray(results) ? results : [];
+    });
+
+    const secondaryP = variantsPromise.then(async (vars) => {
+      const extra = vars.filter((v) => v !== query);
+      if (!extra.length) return [];
+      const perVariantLimit = Math.max(1, Math.ceil(limit / vars.length));
+      const subArrays = await Promise.all(
+        extra.map((v) => searchFn(v, perVariantLimit, engineSignal).then((r) => (Array.isArray(r) ? r : []))),
+      );
+      return subArrays.flat();
+    }).catch(() => []);
+
     return withTimeout(
-      Promise.all(
-        variants.map((v) =>
-          searchFn(v, perVariantLimit, engineSignal).then((results) => {
-            // Each engine's searchXxx returns its own _engineStatus on the
-            // array. Keep the first non-'ok' status (if any) so diagnostic
-            // reporting works even when all variants fail.
-            return Array.isArray(results) ? results : [];
-          }),
-        ),
-      ).then((arrays) => {
-        // Flatten and deduplicate by URL, keeping first occurrence
-        // (variants[0] = original query, so its results naturally win).
+      Promise.all([primaryP, secondaryP]).then(([primaryRes, secondaryRes]) => {
+        const arrays = [primaryRes, secondaryRes];
         const seen = new Set<string>();
         let worstStatus = 'ok';
         for (const arr of arrays) {
@@ -373,6 +359,7 @@ async function runWebSearch(
     throw new WebSearchUnavailableError(outcomes.map(({ name, status }) => ({ name, status })));
   }
 
+  const variants = await variantsPromise;
   for (const r of finalResults) {
     r.matchedQuery = query;
     r.matchedQueries = variants;

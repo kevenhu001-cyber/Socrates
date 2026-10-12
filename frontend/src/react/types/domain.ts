@@ -165,9 +165,10 @@ export interface LegacyChatMessage {
   editedText?: string | null;
   /* Inline SVG of the active extension (chip icon in the canvas header). */
   _extensionIcon?: string | null;
-  /* Provider reasoning retained for session persistence; the UI renders only
-     high-level activity summaries, never this text. */
+  /* Provider reasoning retained for session persistence and progressive thought disclosure. */
   reasoningContent?: string | null;
+  /** Seconds spent in thinking / reasoning phase. */
+  reasoningDurationSec?: number | null;
   /**
    * Internal tool-runtime revision used by projection/write coordination.
    * React no longer depends on this scalar for row invalidation; immutable

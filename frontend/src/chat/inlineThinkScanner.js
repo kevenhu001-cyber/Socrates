@@ -66,7 +66,7 @@ export function createInlineThinkScanner({ onVisibleText, onThinking }) {
         const flushIndex = Math.max(0, probe.length - 7);
         thinkBuffer += probe.slice(0, flushIndex);
         thinkTail = probe.slice(flushIndex);
-        if (typeof onThinking === 'function' && thinkBuffer.length >= 200) {
+        if (typeof onThinking === 'function' && thinkBuffer.length > 0) {
           emitThinking(thinkBuffer);
           thinkBuffer = '';
         }

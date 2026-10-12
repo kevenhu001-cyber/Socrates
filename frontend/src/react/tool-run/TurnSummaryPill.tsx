@@ -14,27 +14,35 @@ export interface TurnSummaryPillProps {
  * The one line that says a turn did work, at the top of the answer.
  *
  * Closed, it is a label and nothing else — no panel, no overlay, no icon
- * slot competing with the answer. The public summary lives inside the body,
- * while execution facts remain in the ordered tool rows, so a long summary collapses to one
- * line instead of pushing the answer down.
- *
- * While the turn is live the same element doubles as the phase line, and it
- * takes the tool glyph the running call will use — so the reader sees the
- * transition happen rather than two unrelated spinners swap.
+ * slot competing with the answer. Clicking opens the detailed thinking
+ * chain and summary, showing step-by-step reasoning just like ChatGPT/Qwen.
  */
 export function TurnSummaryPill({ message, live, messageId, status }: TurnSummaryPillProps) {
-  const [open, setOpen] = useState(false);
+  const [userToggled, setUserToggled] = useState(false);
+  const [userOpen, setUserOpen] = useState(false);
+
   const view = turnSummaryOf(message, Boolean(live), Boolean(status));
   if (!view.hasWork) return null;
-  const elapsed = status?.elapsedSec && status.elapsedSec >= 12 ? `${status.elapsedSec}s` : '';
+  // Only display ticking elapsed seconds while live status is active;
+  // settled turns already have the formatted duration inside view.label.
+  const elapsed = status?.elapsedSec ? `${status.elapsedSec}s` : '';
   const liveTool = status?.phase === 'tool-running' && status.toolName;
+  const isThinkingLive = Boolean(live && (status?.phase === 'thinking' || (!message.rawText && view.hasThinking)));
+  const reasoningContent = typeof message.reasoningContent === 'string' ? message.reasoningContent.trim() : '';
+
+  // Auto-expand only while actively thinking live; collapse by default once thinking ends.
+  // If the user manually toggles the card, respect the user's explicit open state.
+  const open = userToggled ? userOpen : isThinkingLive;
 
   return (
     <details
       className="turn-summary thinking-summary"
       data-message-id={messageId}
       open={open}
-      onToggle={(event) => setOpen(event.currentTarget.open)}
+      onToggle={(event) => {
+        setUserToggled(true);
+        setUserOpen(event.currentTarget.open);
+      }}
     >
       <summary
         className={`turn-summary-pill${status ? ' thinking-status' : ''}`}
@@ -54,8 +62,17 @@ export function TurnSummaryPill({ message, live, messageId, status }: TurnSummar
         <span className="turn-summary-chevron" aria-hidden="true" dangerouslySetInnerHTML={{ __html: STROKE_ICONS.chevronRight }} />
       </summary>
       {open ? (
-        <div className="turn-summary-detail">
-          <p className="turn-summary-text">{view.summary}</p>
+        <div className="turn-summary-detail" role="region" aria-label={view.label}>
+          {reasoningContent || isThinkingLive ? (
+            <div className="turn-summary-thinking-content">
+              {reasoningContent ? (
+                <pre className="turn-summary-thinking-text">{reasoningContent}</pre>
+              ) : null}
+              {isThinkingLive ? <span className="stream-cursor is-thinking" aria-hidden="true">▍</span> : null}
+            </div>
+          ) : view.summary ? (
+            <p className="turn-summary-text">{view.summary}</p>
+          ) : null}
         </div>
       ) : null}
     </details>

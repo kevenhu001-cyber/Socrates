@@ -403,10 +403,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
       break;
     }
   }
-  const upfrontSummary = generateInitialTaskSummary(userPrompt);
-  if (upfrontSummary) {
-    emitter.event('turn_summary', { summary: upfrontSummary, phase: 'initial' });
-  }
+  /* The model's real thinking content streams directly; do not emit synthetic upfront summaries. */
 
   /* ─── Tool-calling loop ─────────────────────────────────────────
    * The LLM may decide mid-stream to call a native tool. We run

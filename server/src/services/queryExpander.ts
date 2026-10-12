@@ -70,7 +70,7 @@ export async function expandQuery(query: string, opts: { userId?: string | null;
     return [q];
   }
 
-  const timer = AbortSignal.timeout(6_000);
+  const timer = AbortSignal.timeout(2_000);
   const merged = opts.signal ? AbortSignal.any([opts.signal, timer]) : timer;
 
   try {

@@ -2,8 +2,9 @@
 #   listen 443 ssl http2;            # multiplexed asset download, single TLS handshake
 #   listen 443 quic reuseport;       # HTTP/3 — big win on lossy mobile / cross-border links
 #   add_header Alt-Svc 'h3=":443"';  # advertise HTTP/3
-# TLS 1.3 + a domestic CDN (EdgeOne) in front is what makes first paint fast
-# on China mobile networks; every location below assumes that setup.
+# TLS 1.3 + a nearby CDN (EdgeOne for China traffic, or a correctly configured
+# Cloudflare cache rule elsewhere) is what makes first paint fast on mobile
+# networks; every location below assumes that setup.
 location /api/v2/ {
     rewrite ^/api/v2/(.*) /api/$1 break;
     proxy_pass http://127.0.0.1:3037;
@@ -70,7 +71,15 @@ location ~* ^/(?:favicon\.png|logo\.png|robots\.txt|site\.webmanifest)$ {
 
 location / {
     add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
-    add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+    # The SPA entry is static HTML: it contains no user data and points at
+    # fingerprinted assets. Let the edge serve it for one minute while the
+    # browser revalidates normally. deploy.sh keeps this policy aligned in
+    # hand-maintained vhosts too.
+    add_header Cache-Control "public, max-age=60, stale-while-revalidate=600, stale-if-error=86400" always;
+    add_header CDN-Cache-Control "public, max-age=60, stale-while-revalidate=600, stale-if-error=86400" always;
+    # Cloudflare evaluates this header independently of the browser policy;
+    # it is harmless on EdgeOne and other CDNs that only read CDN-Cache-Control.
+    add_header Cloudflare-CDN-Cache-Control "public, max-age=60, stale-while-revalidate=600, stale-if-error=86400" always;
     # Content-Security-Policy for the SPA document. deploy.sh installs and
     # wires this automatically (install_spa_csp); the line is shown here so
     # the example matches a deployed config. Repeated per HTML location
@@ -80,16 +89,14 @@ location / {
     try_files $uri /__APP_INDEX__;
 }
 
-# The versioned SPA entry (~72KB → ~15KB gz). Vite emits
-# dist/index.html.gz at build time and deploy.sh installs it as
-# index.<TS>.html.gz next to the versioned file, so gzip_static
-# here serves the compressed document. (Optional upgrade: if the
-# nginx build has ngx_brotli, `brotli_static on;` serves .br
-# siblings — the build does not emit them today, so add a brotli
-# step to the bundle plugin before enabling.)
+# The versioned SPA entry (~72KB → ~15KB gz). Vite emits gzip and Brotli
+# siblings at build time and deploy.sh installs them next to the versioned
+# file, so gzip_static/brotli_static serve the compressed document.
 location ~ ^/index\.[0-9]+\.html$ {
     add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
-    add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+    add_header Cache-Control "public, max-age=60, stale-while-revalidate=600, stale-if-error=86400" always;
+    add_header CDN-Cache-Control "public, max-age=60, stale-while-revalidate=600, stale-if-error=86400" always;
+    add_header Cloudflare-CDN-Cache-Control "public, max-age=60, stale-while-revalidate=600, stale-if-error=86400" always;
     gzip_static on;
     brotli_static on;
     include /etc/nginx/snippets/socrates-csp-spa.conf;

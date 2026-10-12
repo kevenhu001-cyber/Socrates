@@ -56,3 +56,32 @@ test('mount registry replaces specs and preserves intentional legacy ownership',
   assert.deepEqual(result.skipped, [spec]);
   assert.equal(document.getElementById('legacy').dataset.mountedBy, undefined);
 });
+
+test('mount registry label filters skip lazy hosts until the full pass', () => {
+  const dom = new JSDOM('<!doctype html><div id="light"></div>');
+  const { document } = dom.window;
+  let mounts = 0;
+  configureMountRegistry([
+    { hostId: 'light', label: 'light', mount: () => { mounts += 1; } },
+    {
+      hostId: 'lazy',
+      label: 'heavy',
+      ensureHost(doc) {
+        const host = doc.createElement('div');
+        host.id = 'lazy';
+        doc.body.appendChild(host);
+        return host;
+      },
+      mount: () => { mounts += 1; },
+    },
+  ]);
+
+  const shellPass = runMountRegistry(document, { labels: new Set(['light']) });
+  assert.equal(shellPass.mounted.length, 1);
+  assert.equal(document.getElementById('lazy'), null, 'filtered lazy hosts stay uncreated');
+  assert.equal(mounts, 1);
+
+  const fullPass = runMountRegistry(document);
+  assert.equal(fullPass.mounted.length, 1);
+  assert.equal(mounts, 2);
+});

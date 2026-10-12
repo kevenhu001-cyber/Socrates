@@ -85,7 +85,9 @@ export function createFinishRender(state) {
       var _finalPatch = {
         html: finalHtml, rawText: state.full,
         type: "assistant",
-        reasoningContent: state.fullReasoning || null, outputMode: _om,
+        reasoningContent: state.fullReasoning || null,
+        reasoningDurationSec: (state.fullReasoning && state.reasoningDurationSec) ? state.reasoningDurationSec : undefined,
+        outputMode: _om,
         _streamSettled: true,
         _toolRunRev: _preRev + 1,
       };
