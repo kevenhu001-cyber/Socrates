@@ -252,10 +252,13 @@ test('planSendGlide duration grows monotonically with distance and stays within 
   assert.equal(planSendGlide(1e9, 800).duration, SEND_GLIDE_MAX_MS);
 });
 
-test('planSendGlide keeps far glides visibly slower than the constant-velocity planner cap', async () => {
-  const { planSendGlide } = await import('../src/ui/motion.js');
+test('planSendGlide keeps send acknowledgement inside the interaction-time envelope', async () => {
+  const { planSendGlide, SEND_GLIDE_MAX_MS } = await import('../src/ui/motion.js');
+  const oneScreen = planSendGlide(800, 800);
   const far = planSendGlide(20000, 800);
-  assert.ok(far.duration > MOTION_MAX_DURATION_MS, 'a 25-screen send must glide longer than 520ms');
+  assert.ok(oneScreen.duration >= 180 && oneScreen.duration <= 220, `one-screen send should land near 200ms, got ${oneScreen.duration}`);
+  assert.equal(far.duration, SEND_GLIDE_MAX_MS);
+  assert.ok(far.duration < MOTION_MAX_DURATION_MS, 'send glide must stay shorter than the generic long-motion cap');
   /* A negative distance (upward glide) plans like its magnitude. */
   assert.equal(planSendGlide(-20000, 800).duration, far.duration);
 });

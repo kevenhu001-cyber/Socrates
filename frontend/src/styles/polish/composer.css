@@ -44,21 +44,23 @@
    block and the phone sheet by restore/mobile-parity.css + fixes.css;
    nothing to converge here. */
 
-/* "+" open animation — the card springs out of the trigger edge. The menu
-   lives on <body> and is shown by removing .hidden (display:none), so this
-   animation replays on every open without JS coordination. position() in
-   ui/composerTools.js stamps data-menu-side so transform-origin tracks the
-   edge the card is anchored to. */
+/* "+" open animation — same motion language as the rest of the overlay
+   system: a very small anchored lift, .98 scale, shared 160ms/ease-out.
+   The menu lives on <body> and is shown by removing .hidden (display:none),
+   so this animation replays on every open without JS coordination. */
 @keyframes composerToolsIn {
-  from { opacity: 0; transform: translateY(var(--_ct-dir, -6px)) scale(0.96); }
+  from {
+    opacity: 0;
+    transform: translateY(var(--_ct-dir, -4px)) scale(var(--ui-overlay-enter-scale, .98));
+  }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 body #composerToolsMenu.composer-tools-menu:not(.hidden) {
-  animation: composerToolsIn 160ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  animation: composerToolsIn var(--ui-duration-overlay, 160ms) var(--ui-ease-out) both;
   transform-origin: top left;
 }
 body #composerToolsMenu.composer-tools-menu[data-menu-side="above"]:not(.hidden) {
-  --_ct-dir: 6px;
+  --_ct-dir: 4px;
   transform-origin: bottom left;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -164,7 +166,9 @@ body #composerToolsMenu .composer-tools-item kbd {
   background: transparent;
   color: var(--ui-text-muted);
   cursor: pointer;
-  transition: background-color .15s var(--ui-ease-out), color .15s ease, opacity .15s ease;
+  transition: background-color var(--ui-duration-hover) ease,
+              color var(--ui-duration-hover) ease,
+              opacity var(--ui-duration-hover) ease;
 }
 #appShell .voice-recording-cancel:hover,
 #appShell .voice-recording-cancel:focus-visible {

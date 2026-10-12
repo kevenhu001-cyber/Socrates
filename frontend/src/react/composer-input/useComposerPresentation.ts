@@ -16,12 +16,14 @@ export function useComposerPresentation(
     : true;
   useAutoHeight(isDesktop ? editorElement : null, {
     motion: {
-      velocity: 1100,
-      maxDuration: 360,
-      /* A single composer line is the whole transition the user sees, so do
-         not let the planner's general snap threshold collapse that motion. */
-      snapDistance: 0,
-      minDuration: 140,
+      /* Keep ordinary typing out of the animated-layout hot path. A one-line
+         composer delta is roughly 24–30px, so those changes settle in one
+         frame; larger structural changes (paste, attachments, mode changes)
+         still get a short, distance-aware morph. */
+      velocity: 1800,
+      maxDuration: 200,
+      snapDistance: 30,
+      minDuration: 90,
     },
   });
 

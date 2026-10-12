@@ -124,8 +124,9 @@
 .turn-summary[open] > .turn-summary-pill .turn-summary-chevron { transform: rotate(90deg); }
 
 /* Live phase line. Same row as every tool row, and it retires the moment
-   the real row mounts — so the two never appear together. While it holds
-   the turn it breathes, which is the whole "alive" signal. */
+   the real row mounts — so the two never appear together. Liveness is an
+   opacity-only cue: unlike the previous text-gradient shimmer it stays on
+   the compositor path and never repaints clipped text every frame. */
 .turn-summary-pill.thinking-status {
   color: var(--ts-live);
   font-weight: 500;
@@ -135,19 +136,13 @@
   animation: tool-row-breathe var(--ui-duration-pulse-slow, 1.6s) ease-in-out infinite;
 }
 .turn-summary-pill.thinking-status:hover { color: var(--ts-live); }
-/* Text supplies the liveness cue during waiting/reasoning, which have no
-   tool glyph. Only theme tokens colour the subtle moving highlight. */
 .thinking-status .thinking-status-label {
-  background: linear-gradient(110deg, var(--ts-live) 35%, var(--ui-text-primary) 50%, var(--ts-live) 65%);
-  background-size: 250% 100%;
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
-  animation: thought-shimmer var(--ui-duration-pulse-slow, 1.6s) linear infinite;
+  color: var(--ts-live);
+  animation: thinking-status-breathe var(--ui-duration-pulse-slow, 1.6s) ease-in-out infinite;
 }
-@keyframes thought-shimmer {
-  from { background-position: 100% 0; }
-  to { background-position: -100% 0; }
+@keyframes thinking-status-breathe {
+  0%, 100% { opacity: .62; }
+  50% { opacity: 1; }
 }
 .thinking-status-detail {
   flex: 0 0 auto;
@@ -209,9 +204,5 @@
   .turn-summary > .turn-summary-pill,
   .turn-summary-chevron { transition: none; }
   .turn-summary-pill.thinking-status .tool-inline-tool-icon { animation: none; opacity: .8; }
-  .thinking-status .thinking-status-label {
-    animation: none;
-    background: none;
-    color: var(--ts-live);
-  }
+  .thinking-status .thinking-status-label { animation: none; opacity: 1; }
 }
