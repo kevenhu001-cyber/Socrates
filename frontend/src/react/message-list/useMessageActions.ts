@@ -1,3 +1,4 @@
+import { stripIntelligenceUiBlocks } from '../intelligence-ui/model';
 import type { LegacyChatMessage } from '../types/domain';
 import type { MessageToolbarCallbacks } from './types';
 import { getLegacyActions } from '../legacy/gateway.ts';
@@ -11,7 +12,7 @@ function messageIdOf(message: LegacyChatMessage): string | null {
 function plainTextOf(message: LegacyChatMessage): string {
   let text = '';
   if (typeof message.rawText === 'string' && message.rawText.length > 0) {
-    text = message.rawText;
+    text = stripIntelligenceUiBlocks(message.rawText);
   } else if (typeof message.html === 'string' && message.html.length > 0) {
     text = stripHtmlToText(message.html);
   }
