@@ -37,6 +37,8 @@ test('universal exam renders questions, saves answers and grades locally', async
     if (url.pathname.endsWith('/auth/me')) return json({ user: { id: 'account', email: 'test@example.com', displayName: 'Test' } });
     if (url.pathname.endsWith('/auth/csrf-token')) return json({ csrfToken: 'test-csrf' });
     if (url.pathname.endsWith('/config')) return json({});
+    if (url.pathname.endsWith('/api-key') && req.method === 'GET') return json({ providers: [] });
+    if (url.pathname.endsWith('/creations/items/assistants') && req.method === 'GET') return json({ items: [] });
     if (url.pathname.endsWith('/projects')) return json({ projects: [] });
     if (url.pathname.endsWith('/files') && req.method === 'GET') return json({ files: [], nextCursor: null });
     if (url.pathname.endsWith('/sessions') && req.method === 'POST') {
@@ -44,15 +46,23 @@ test('universal exam renders questions, saves answers and grades locally', async
       Object.assign(record, payload);
       return json(record);
     }
-    if (url.pathname.endsWith('/sessions') && req.method === 'GET') return json({ sessions: [{ id: record.id, title: record.title, topic: record.topic, mode: record.mode, phase: record.phase, kind: record.kind, projectId: null }], nextCursor: null });
+    if (url.pathname.endsWith('/sessions') && req.method === 'GET') {
+      if (url.searchParams.get('archived') === 'true') return json({ sessions: [], nextCursor: null });
+      return json({ sessions: [{ id: record.id, title: record.title, topic: record.topic, mode: record.mode, phase: record.phase, kind: record.kind, projectId: null }], nextCursor: null });
+    }
     const id = url.pathname.split('/').at(-1);
+    if (id === a && req.method === 'PATCH') {
+      saves.push(payload);
+      Object.assign(record, payload);
+      return json(record);
+    }
     if (id === a) return json(record);
     return json({ message: 'Not found' }, 404);
   });
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(4176, '127.0.0.1', resolve); });
   const openExam = async () => {
     await ensureSidebarOpen(page);
-    const target = page.getByRole('complementary').getByText('Arithmetic and biology', { exact: true });
+    const target = page.getByRole('button', { name: 'Arithmetic and biology', exact: true });
     await target.click();
   };
   try {
@@ -68,15 +78,15 @@ test('universal exam renders questions, saves answers and grades locally', async
 
     // Questions render in place of the transcript/composer.
     await expect(page.getByText('Question 1 / 3')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'A 4' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'A. 4' })).toBeVisible();
     await expect(page.getByLabel('Answer for question 2')).toBeVisible();
     await expect(page.getByLabel('Answer for question 3')).toBeVisible();
     await expect(page.getByPlaceholder('Ask Socrates')).toHaveCount(0);
 
     // Submit gate, then answer all three (one wrong on purpose).
-    await page.getByRole('button', { name: 'Submit for Grading' }).click();
+    await page.getByRole('button', { name: 'Submit exam', exact: true }).click();
     await expect(page.locator('.exam-score')).toHaveCount(0);
-    await page.getByRole('button', { name: 'B 3' }).click();
+    await page.getByRole('button', { name: 'B. 3' }).click();
     await page.getByLabel('Answer for question 2').fill('paris');
     await page.getByLabel('Answer for question 3').fill('Chlorophyll captures light');
     await expect(page.getByText(/3 answered/)).toBeVisible();
@@ -85,9 +95,8 @@ test('universal exam renders questions, saves answers and grades locally', async
     await expect.poll(() => saves.at(-1)?.examData?.submitted).toBe(false);
 
     // Local grading: 2/3 correct, wrong MCQ marked, explanation rendered.
-    await page.getByRole('button', { name: 'Submit for Grading' }).click();
-    await expect(page.locator('.exam-score')).toContainText('2/ 3');
-    await expect(page.locator('.exam-score')).toContainText('67 correct');
+    await page.getByRole('button', { name: 'Submit exam', exact: true }).click();
+    await expect(page.getByText('2 / 3 · 67% correct', { exact: true })).toBeVisible();
     await expect(page.getByText('Incorrect', { exact: true })).toHaveCount(1);
     await expect(page.getByText('Correct', { exact: true })).toHaveCount(2);
     await expect(page.getByText(/Basic addition/)).toBeVisible();
@@ -98,8 +107,7 @@ test('universal exam renders questions, saves answers and grades locally', async
     await page.reload();
     await dismissCookieConsent();
     await openExam();
-    await expect(page.locator('.exam-score')).toContainText('2/ 3');
-    await expect(page.locator('.exam-score')).toContainText('67 correct');
+    await expect(page.getByText('2 / 3 · 67% correct', { exact: true })).toBeVisible();
     await expect(page.getByPlaceholder('Ask Socrates')).toHaveCount(0);
     expect(errors).toEqual([]);
     await page.screenshot({ path: `test-results/universal-exam-${encodeURIComponent(testInfo.project.name)}.png`, fullPage: false });
