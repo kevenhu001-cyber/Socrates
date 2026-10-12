@@ -65,7 +65,7 @@ export type IntelligenceUiSegment = IntelligenceUiBlockSegment | IntelligenceUiT
 
 export interface IntelligenceUiValueContext {
   state: IntelligenceUiState;
-  tools?: ReadonlyArray<Record<string, unknown>>;
+  tools?: ReadonlyArray<unknown>;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -207,11 +207,12 @@ function finiteNumber(value: unknown): number | null {
   return Number.isFinite(number) ? number : null;
 }
 
-function toolValue(ref: Record<string, unknown>, tools: ReadonlyArray<Record<string, unknown>>): unknown {
+function toolValue(ref: Record<string, unknown>, tools: ReadonlyArray<unknown>): unknown {
+  const records = tools.filter(isRecord);
   const selector = ref.tool;
   let tool: Record<string, unknown> | undefined;
-  if (typeof selector === 'number' && Number.isInteger(selector) && selector >= 0) tool = tools[selector];
-  if (typeof selector === 'string') tool = tools.find((entry) => entry && entry.id === selector);
+  if (typeof selector === 'number' && Number.isInteger(selector) && selector >= 0) tool = records[selector];
+  if (typeof selector === 'string') tool = records.find((entry) => entry.id === selector);
   if (!tool) return undefined;
   return readPath(tool, typeof ref.path === 'string' ? ref.path : '');
 }
@@ -241,9 +242,9 @@ export function resolveIntelligenceUiValue(value: unknown, context: Intelligence
   const args = resolveArgs(value, context);
   const pair = numericPair(args);
   switch (value.op) {
-    case 'add': return args.reduce((sum, item) => sum + (finiteNumber(item) ?? 0), 0);
+    case 'add': return args.reduce<number>((sum, item) => sum + (finiteNumber(item) ?? 0), 0);
     case 'sub': return pair ? pair[0] - pair[1] : undefined;
-    case 'mul': return args.reduce((product, item) => product * (finiteNumber(item) ?? 1), 1);
+    case 'mul': return args.reduce<number>((product, item) => product * (finiteNumber(item) ?? 1), 1);
     case 'div': return pair && pair[1] !== 0 ? pair[0] / pair[1] : undefined;
     case 'round': {
       const number = finiteNumber(args[0]);
