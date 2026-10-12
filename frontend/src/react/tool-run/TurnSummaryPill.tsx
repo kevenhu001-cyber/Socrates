@@ -11,11 +11,13 @@ export interface TurnSummaryPillProps {
 }
 
 /**
- * The one line that says a turn did work, at the top of the answer.
+ * Compact per-turn work disclosure.
  *
- * Closed, it is a label and nothing else — no panel, no overlay, no icon
- * slot competing with the answer. Clicking opens the detailed thinking
- * chain and summary, showing step-by-step reasoning just like ChatGPT/Qwen.
+ * This surface deliberately exposes only public activity summaries. Provider
+ * reasoning is retained on the message for persistence/model replay, but it is
+ * never rendered here: the transcript should explain what the assistant did,
+ * not expose a raw chain-of-thought stream. Tool execution facts remain owned
+ * by ToolRunRow/ToolRunGroup, and artifacts remain outside this disclosure.
  */
 export function TurnSummaryPill({ message, live, messageId, status }: TurnSummaryPillProps) {
   const [userOpen, setUserOpen] = useState<boolean | null>(null);
@@ -24,19 +26,16 @@ export function TurnSummaryPill({ message, live, messageId, status }: TurnSummar
   if (!view.hasWork) return null;
 
   const liveTool = status?.phase === 'tool-running' && status.toolName;
-  // A turn is actively thinking live ONLY when live is true, phase is thinking,
-  // and public answer text has not yet started streaming.
+  // A turn is actively thinking only before public answer text starts. The
+  // reasoning payload is a semantic signal here, never display content.
   const isThinkingLive = Boolean(live && (status?.phase === 'thinking' || (!message.rawText && view.hasThinking)));
-  const reasoningContent = typeof message.reasoningContent === 'string' ? message.reasoningContent.trim() : '';
 
-  // Auto-expand during active live thinking; collapse by default once thinking ends.
-  // If the user explicitly clicked the pill, respect the user's explicit open state.
+  // Open while active so the reader can see the public task/activity summary;
+  // collapse after completion unless the user explicitly chose a state.
   const open = userOpen !== null ? userOpen : isThinkingLive;
 
-  // Single authority for time:
-  // If the label already includes duration (e.g. "已深度思考 (3 秒)" or "Thought for 3s"),
-  // DO NOT display elapsed time separately — this eliminates duplicate time hints.
-  // Only display ticking elapsed seconds while actively thinking/waiting without an embedded duration.
+  // One authority for duration. Completed duration belongs in the disclosure
+  // label; the live ticker is only a fallback while the label has no duration.
   const labelText = (status?.label && isThinkingLive) ? status.label : view.label;
   const labelHasDuration = Boolean(view.durationSec > 0 || labelText.includes('秒') || /\b\d+s\b/i.test(labelText));
   const elapsed = (!labelHasDuration && isThinkingLive && status?.elapsedSec) ? `${status.elapsedSec}s` : '';
@@ -57,8 +56,7 @@ export function TurnSummaryPill({ message, live, messageId, status }: TurnSummar
           setUserOpen(!open);
         }}
       >
-        {/* Only a deferred live tool needs a glyph. Settled thought headings
-            remain plain text; their chevron is the disclosure affordance. */}
+        {/* A deferred live tool may use the same compact disclosure slot. */}
         {liveTool ? (
           <span className="tool-inline-tool-icon" aria-hidden="true" dangerouslySetInnerHTML={{ __html: toolIcon(status!.toolName!) }} />
         ) : null}
@@ -70,17 +68,7 @@ export function TurnSummaryPill({ message, live, messageId, status }: TurnSummar
       </summary>
       {open ? (
         <div className="turn-summary-detail" role="region" aria-label={view.label}>
-          {reasoningContent || isThinkingLive ? (
-            <div className="turn-summary-thinking-content">
-              {reasoningContent ? (
-                <pre className="turn-summary-thinking-text">{reasoningContent}</pre>
-              ) : null}
-              {isThinkingLive ? <span className="stream-cursor is-thinking" aria-hidden="true">▍</span> : null}
-            </div>
-          ) : null}
-          {view.summary ? (
-            <p className="turn-summary-text">{view.summary}</p>
-          ) : null}
+          <p className="turn-summary-text">{view.summary}</p>
         </div>
       ) : null}
     </details>

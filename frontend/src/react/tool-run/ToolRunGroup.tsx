@@ -46,6 +46,10 @@ const CSS_STATE: Record<ToolRunState, string> = {
   stopped: 'cancelled',
 };
 
+function isDurationMeta(value: string): boolean {
+  return /^\d+(?:\.\d+)?s$/i.test(value.trim());
+}
+
 export interface ToolRunGroupProps {
   segment: GroupSegment;
   /** Passed down so a member row can file an approval against its turn. */
@@ -65,7 +69,11 @@ export function ToolRunGroup({ segment, messageId, readOnly }: ToolRunGroupProps
   // Hooks first: the single-member shortcut below must not make one conditional.
   const elapsedMs = useElapsed(startedAt, inFlight && !!startedAt);
 
-  const meta = view.meta.slice();
+  // The aggregate row keeps useful outcome facts but drops cumulative settled
+  // duration. Turn-level work time is the reader-facing duration; cumulative
+  // tool timings remain an execution detail and can be misleading for parallel
+  // calls because they are not the user's wall-clock wait.
+  const meta = view.meta.filter((part) => inFlight || !isDurationMeta(part));
   if (inFlight) {
     const elapsed = formatSeconds(elapsedMs);
     if (elapsed) meta.push(elapsed);

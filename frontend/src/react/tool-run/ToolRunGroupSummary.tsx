@@ -2,12 +2,13 @@ import { STROKE_ICONS, categoryIcon } from '../../ui/icons/toolIcons.js';
 import type { ToolRunGroupView, ToolRunState } from './toolRunModel.js';
 
 /**
- * The monochrome check marks settled work; an alert still marks failure.
- * Running work retains its category glyph in the same slot.
+ * Tool groups are activity, not success cards. Keep the category glyph for
+ * normal running/completed work and reserve the alert glyph for failures.
+ * Completion is already stated by the label/state and should not add a second,
+ * brightly legible "success" signal beside the answer.
  */
 function summaryIcon(state: ToolRunState, category: string): string {
   if (state === 'error') return STROKE_ICONS.alert;
-  if (state === 'done') return STROKE_ICONS.check;
   return categoryIcon(category);
 }
 

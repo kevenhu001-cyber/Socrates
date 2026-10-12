@@ -75,7 +75,9 @@ test('one inline disclosure updates during reasoning and collapses on completion
   await page.evaluate(() => window.__pushThinkingFrame('turn_summary', { summary: 'Preparing the comparison.', phase: 'initial' }));
   await expect(disclosure.locator('.turn-summary-text')).toHaveText('Preparing the comparison.');
   await page.evaluate(() => window.__pushThinkingFrame('', { choices: [{ delta: { reasoning_content: 'another private thought' } }] }));
-  await expect(disclosure.locator('.turn-summary-thinking-text')).toContainText('another private thought');
+  await expect(disclosure.locator('.turn-summary-text')).toHaveText('Preparing the comparison.');
+  await expect(disclosure.locator('.turn-summary-thinking-text')).toHaveCount(0);
+  await expect(bubble).not.toContainText('another private thought');
   await page.evaluate(() => window.__finishThinking());
   await expect(bubble).toContainText('The final answer.');
   await expect(bubble.locator('.thinking-status')).toHaveCount(0);
@@ -83,11 +85,13 @@ test('one inline disclosure updates during reasoning and collapses on completion
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   await expect(disclosure.locator('.turn-summary-detail')).toHaveCount(0);
   await expect(trigger).toHaveText(/Thought (?:complete|for \d+s)/);
-  // Manual click expands the detail
+  // Manual click expands the public summary, never the provider reasoning.
   await trigger.click();
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   await expect(disclosure.locator('.turn-summary-text')).toHaveText('Checked the sources and compared the findings.');
-  await expect(disclosure.locator('.turn-summary-thinking-text')).toContainText('another private thought');
+  await expect(disclosure.locator('.turn-summary-thinking-text')).toHaveCount(0);
+  await expect(bubble).not.toContainText('another private thought');
+  await expect(bubble).not.toContainText('private inline');
   await expect(page.locator('[data-thinking-panel], #thinkingPanelReactRoot, #summaryBtn')).toHaveCount(0);
   await trigger.click();
   await expect(disclosure.locator('.turn-summary-detail')).toHaveCount(0);
@@ -103,6 +107,7 @@ test('waiting disclosure works with native keyboard controls and does not reset 
   await expect(bubble.locator('.turn-summary-text')).toBeVisible();
   await page.evaluate(() => window.__pushThinkingFrame('', { choices: [{ delta: { reasoning_content: 'private reasoning' } }] }));
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  await expect(bubble).not.toContainText('private reasoning');
   await page.keyboard.press('Space');
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   await page.evaluate(() => window.__finishThinking());
@@ -154,6 +159,7 @@ for (const mobile of [false, true]) {
     const tool = bubble.locator('.tool-inline');
     await expect(tool).toHaveCount(1);
     await expect(bubble.locator('.turn-summary > summary')).toHaveText('思考完成');
+    await expect(bubble).not.toContainText('private reasoning');
     const arrowGap = await tool.evaluate((node) => {
       const label = node.querySelector('.tool-inline-label').getBoundingClientRect();
       return node.querySelector('.tool-inline-chev').getBoundingClientRect().left - label.right;
@@ -165,6 +171,7 @@ for (const mobile of [false, true]) {
     await bubble.locator('.turn-summary > summary').click();
     await tool.locator('summary').click();
     await expect(bubble.locator('.turn-summary-text')).toHaveText('已查阅资料并对比了适用条件。');
+    await expect(bubble.locator('.turn-summary-thinking-text')).toHaveCount(0);
     await expect(tool.locator('.tool-inline-src')).toBeVisible();
     await expect(bubble.locator('.turn-summary-activities')).toHaveCount(0);
     for (const control of [bubble.locator('.turn-summary > summary'), tool.locator(':scope > summary')]) {
@@ -202,8 +209,11 @@ for (const theme of ['light', 'dark']) {
       await expect(trigger).toHaveText('思考完成');
       await expect(first.locator('.turn-summary-detail')).toHaveCount(0);
       await expect(second.locator('.turn-summary > summary')).toHaveText('思考完成');
+      await expect(first).not.toContainText('private reasoning');
+      await expect(second).not.toContainText('another private reasoning');
       await trigger.click();
       await expect(first.locator('.turn-summary-text')).toHaveText(summaryText);
+      await expect(first.locator('.turn-summary-thinking-text')).toHaveCount(0);
       await expect(second.locator('.turn-summary-detail')).toHaveCount(0);
       await first.locator('.tool-inline > summary').click();
       await expect(first.locator('.tool-inline-src')).toBeVisible();
