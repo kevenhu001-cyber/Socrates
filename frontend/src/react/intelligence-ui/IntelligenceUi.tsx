@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import {
   displayIntelligenceUiValue,
   initialStateForNodes,
@@ -143,8 +143,9 @@ function UiStack({ node, context }: { node: IntelligenceUiNode; context: RenderC
 
 function UiGrid({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
   const columns = Math.min(4, Math.max(1, Math.round(asNumber(resolve(node.columns, context), 2))));
+  const style = { '--intui-columns': columns } as CSSProperties;
   return (
-    <div className="intui-grid" data-intui-id={node.id} style={{ '--intui-columns': columns } as React.CSSProperties}>
+    <div className="intui-grid" data-intui-id={node.id} style={style}>
       {renderChildren(node, context)}
     </div>
   );
