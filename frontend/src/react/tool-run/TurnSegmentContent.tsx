@@ -1,9 +1,9 @@
 import { Fragment, type ReactNode } from 'react';
-import { runStartedAt, toolRunView, type TurnSegment } from './toolRunModel.js';
+import { IntelligentTextSegment } from '../intelligence-ui/IntelligentTextSegment';
+import { runStartedAt, toolRunView, type ToolCallRecord, type TurnSegment } from './toolRunModel.js';
 import { ToolRunAttachments } from './ToolRunAttachments.js';
 import { ToolRunGroup } from './ToolRunGroup.js';
 import { ToolRunRow } from './ToolRunRow.js';
-import { LiveTextSegment } from './LiveTextSegment';
 import type { ProseRenderer } from './proseRenderer';
 
 interface TurnSegmentContentProps {
@@ -11,6 +11,7 @@ interface TurnSegmentContentProps {
   index: number;
   growingIndex: number;
   messageId: string;
+  tools: ReadonlyArray<ToolCallRecord>;
   readOnly?: boolean;
   prose: ProseRenderer;
 }
@@ -20,25 +21,18 @@ export function TurnSegmentContent({
   index,
   growingIndex,
   messageId,
+  tools,
   readOnly,
   prose,
 }: TurnSegmentContentProps): ReactNode {
   if (segment.kind === 'text') {
-    if (index !== growingIndex) {
-      return (
-        <div
-          key={'text-' + segment.start + '-' + index}
-          className="tool-run-prose"
-          dangerouslySetInnerHTML={prose.settled(segment.text)}
-        />
-      );
-    }
     return (
-      <LiveTextSegment
-        key={'text-' + segment.start + '-' + index}
+      <IntelligentTextSegment
         text={segment.text}
-        settled={prose.settled}
-        tail={prose.tail}
+        live={index === growingIndex}
+        prose={prose}
+        tools={tools}
+        readOnly={readOnly}
       />
     );
   }
