@@ -72,6 +72,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
+export function isSafeIntelligenceUiStateKey(value: string): boolean {
+  return Boolean(value)
+    && value.length <= MAX_ID_LENGTH
+    && SAFE_ID.test(value)
+    && !FORBIDDEN_PATH_KEYS.has(value);
+}
+
 function normalizeNode(value: unknown): IntelligenceUiNode | null {
   if (!isRecord(value)) return null;
   const id = typeof value.id === 'string' ? value.id.trim() : '';
@@ -178,7 +185,7 @@ export function initialStateForNodes(nodes: ReadonlyArray<IntelligenceUiNode>): 
   for (const node of nodes) {
     if (!node.parent && node.state) {
       for (const [key, value] of Object.entries(node.state)) {
-        if (!(key in state) && key.length <= MAX_ID_LENGTH && SAFE_ID.test(key)) state[key] = value;
+        if (!(key in state) && isSafeIntelligenceUiStateKey(key)) state[key] = value;
       }
     }
   }
@@ -235,7 +242,9 @@ export function resolveIntelligenceUiValue(value: unknown, context: Intelligence
     return value;
   }
 
-  if (typeof value.state === 'string' && Object.keys(value).length <= 2) return context.state[value.state];
+  if (typeof value.state === 'string' && Object.keys(value).length <= 2) {
+    return isSafeIntelligenceUiStateKey(value.state) ? context.state[value.state] : undefined;
+  }
   if (('tool' in value) && context.tools) return toolValue(value, context.tools);
   if (typeof value.op !== 'string') return value;
 
