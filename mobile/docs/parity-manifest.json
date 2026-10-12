@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "webBaseline": "a722b35df8b860e607dce52d9819acac8a757bb3",
-  "baselineNote": "Generated from the latest commit touching frontend/. Any later Web UI change must update this manifest and the visual baselines.",
+  "webBaseline": "740b485f35d0a0ae464a679c3f0651de8b3961eb",
+  "baselineNote": "Latest frontend-changing commit on origin/main. Refresh the parity manifest and visual baselines when origin/main advances the Web UI.",
   "viewports": [
     {
       "name": "phone-compact",
@@ -156,6 +156,17 @@
         "error"
       ],
       "webReference": "mistakes"
+    },
+    {
+      "id": "creations",
+      "route": "Creations",
+      "coverage": [
+        "loading",
+        "empty",
+        "data",
+        "error"
+      ],
+      "webReference": "images/assistants"
     },
     {
       "id": "skills",

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { Animated, Easing, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useIsFocused } from '@react-navigation/native';
@@ -18,7 +18,9 @@ import type { RootStackParamList } from '../navigation/types';
 import { useResponsive } from '../theme/responsive';
 import { filterPromptTemplates, getPromptTemplates, MOBILE_EXTENSIONS, parseSlashQuery, subscribePromptTemplates, type MobilePromptTemplate } from '../data/chat/prompts';
 import { AnimatedPressable } from '../components/AnimatedPressable';
-import { withAlpha } from '../theme/theme';
+import { HomeQuickActions } from '../components/HomeQuickActions';
+import { motionDuration, motionEasing, withAlpha } from '../theme/theme';
+import { motionAllowed, useReducedMotion } from '../native/reducedMotion';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -28,16 +30,27 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 function Enter({ delay = 0, children }: { delay?: number; children: React.ReactNode }) {
   const opacity = useRef(new Animated.Value(0)).current;
   const translate = useRef(new Animated.Value(8)).current;
+  const enterConsumed = useRef(false);
+  const reducedMotion = useReducedMotion();
+  const animate = motionAllowed(reducedMotion);
   useEffect(() => {
+    if (!animate) {
+      opacity.setValue(1);
+      translate.setValue(0);
+      enterConsumed.current = true;
+      return undefined;
+    }
+    if (enterConsumed.current) return undefined;
+    enterConsumed.current = true;
     const animation = Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: 400, delay, easing: Easing.bezier(0.16, 1, 0.3, 1), useNativeDriver: true }),
-      Animated.timing(translate, { toValue: 0, duration: 400, delay, easing: Easing.bezier(0.16, 1, 0.3, 1), useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 1, duration: motionDuration.landing, delay, easing: motionEasing.out, useNativeDriver: true }),
+      Animated.timing(translate, { toValue: 0, duration: motionDuration.landing, delay, easing: motionEasing.out, useNativeDriver: true }),
     ]);
     animation.start();
     return () => {
       animation.stop();
     };
-  }, [delay, opacity, translate]);
+  }, [animate, delay, opacity, translate]);
   return <Animated.View style={{ opacity, transform: [{ translateY: translate }] }}>{children}</Animated.View>;
 }
 
@@ -58,6 +71,7 @@ export function NewChatScreen({ navigation, route }: Props) {
    * so typing on the landing does not re-render the greeting, quick actions,
    * and header. `send` reads them from getSnapshot() at press time. */
   const isIncognito = useAppStore((s) => s.isIncognito);
+  const webSearchEnabled = useAppStore((s) => s.webSearchEnabled);
   const activeExtension = useAppStore((s) => s.activeExtension);
   const activeTemplate = useAppStore((s) => s.activeTemplate);
   const reasoningEffort = useAppStore((s) => s.reasoningEffort);
@@ -129,6 +143,15 @@ export function NewChatScreen({ navigation, route }: Props) {
     setToolsMenuAnchor(anchor || null);
     setToolsMenuOpen(true);
   }, []);
+
+  const onHomeUpload = useCallback(() => {
+    setToolsMenuAnchor(null);
+    setToolsMenuOpen(true);
+  }, []);
+  const onHomeWrite = useCallback(() => appStore.setActiveExtension('write'), []);
+  const onHomeResearch = useCallback(() => {
+    void appStore.setWebSearchEnabled(!webSearchEnabled);
+  }, [webSearchEnabled]);
 
   const send = useCallback(() => {
     /* Snapshot read: closing over the subscribed `draft` would give this
@@ -217,12 +240,9 @@ export function NewChatScreen({ navigation, route }: Props) {
          * keyboard instead of keeping it pinned open. */
         keyboardDismissMode="on-drag"
       >
-        {/* Current SPA landing: greeting + composer only. The old
-         * heuristic Ideas/prompt library and home quick-actions are hidden by
-         * the final chat-surface.css layer, so native must not resurrect them.
-         * `.topic-setup` uses two shrinkable spacers (2:1, top capped at
-         * 200px) that seat the group ~42% down the surface rather than at
-         * the optical centre. */}
+        {/* `.topic-setup` uses two shrinkable spacers (2:1, top capped at
+         * 200px) that seat the group ~42% down the surface rather than at the
+         * optical centre. */}
         <View style={[styles.heroSpacer, isCompact ? styles.heroSpacerCompact : null]} />
         <View style={[styles.heroRegion, isCompact ? styles.heroRegionCompact : null]}>
           <Enter delay={0}>
@@ -244,9 +264,11 @@ export function NewChatScreen({ navigation, route }: Props) {
           </Enter>
         </View>
 
-        {/* Landing quick actions removed: the final chat-surface.css hides
-         * `.home-quick-actions` ("native must not resurrect them"), and the
-         * ChatGPT reference home is empty above the composer. */}
+        <HomeQuickActions
+          onUpload={onHomeUpload}
+          onWrite={onHomeWrite}
+          onResearch={onHomeResearch}
+        />
 
         {/* Central Composer Capsule */}
         <Enter delay={140}>

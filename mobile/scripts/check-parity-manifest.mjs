@@ -36,12 +36,12 @@ function exactSet(label, expected, actual) {
 if (manifest.schemaVersion !== 2) fail('schemaVersion must be 2');
 if (!manifest.webBaseline || manifest.webBaseline.length !== 40) fail('webBaseline must be a full commit hash');
 
-const currentWebBaseline = execFileSync('git', ['log', '-1', '--format=%H', '--', 'frontend'], {
+const currentWebBaseline = execFileSync('git', ['log', '-1', '--format=%H', 'origin/main', '--', 'frontend'], {
   cwd: repoRoot,
   encoding: 'utf8',
 }).trim();
 if (manifest.webBaseline !== currentWebBaseline) {
-  fail(`web baseline is stale: manifest=${manifest.webBaseline.slice(0, 8)}, frontend=${currentWebBaseline.slice(0, 8)}`);
+  fail(`web baseline is stale: manifest=${manifest.webBaseline.slice(0, 8)}, origin/main frontend=${currentWebBaseline.slice(0, 8)}`);
 }
 
 const requiredViewports = ['390x844', '412x915', '768x1024', '1440x900'];

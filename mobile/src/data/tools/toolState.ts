@@ -12,7 +12,19 @@ export type ToolEventKind =
   | 'tool_result'
   | 'tool_progress'
   | 'tool_call_delta'
-  | 'execution_start';
+  | 'execution_start'
+  | 'agent_step';
+
+export interface MobileAgentStep {
+  stepId: string;
+  kind?: string;
+  title?: string;
+  detail?: string;
+  command?: string;
+  status: string;
+  exitCode?: number | null;
+  output?: string | null;
+}
 
 export type ToolStatus = 'running' | 'awaiting' | 'done' | 'failed';
 
@@ -20,6 +32,39 @@ export interface MobileToolCall extends ToolCall {
   status?: ToolStatus;
   /** Streamed stdout/stderr chunks joined in arrival order. */
   progress?: string;
+  /** Workspace Agent Explore stages streamed by the server's agent_step event. */
+  agentSteps?: MobileAgentStep[];
+}
+
+/** Commands and code are useful before the tool finishes; other tool inputs
+ * remain in the existing technical-details disclosure. */
+export function livePreviewOf(call: Pick<MobileToolCall, 'name' | 'input' | 'argumentsText'>): string {
+  const name = call.name || '';
+  const input = call.input && typeof call.input === 'object' && !Array.isArray(call.input)
+    ? call.input as Record<string, unknown>
+    : null;
+  if (name === 'Bash') {
+    const command = input && (typeof input.command === 'string' ? input.command : typeof input.cmd === 'string' ? input.cmd : '');
+    if (command) return command.slice(0, 12_000);
+    return extractCodePreview(call.argumentsText || '');
+  }
+  if (name !== 'code_interpreter' && name !== 'Code') return '';
+  return extractCodePreview(call.argumentsText || '').slice(0, 12_000);
+}
+
+/** Provider arguments are cumulative partial JSON snapshots during streaming. */
+export function extractCodePreview(argsJson: string): string {
+  const raw = String(argsJson || '');
+  if (!raw.trim()) return '';
+  for (const candidate of [raw, `${raw}"}`, `${raw}}`]) {
+    try {
+      const parsed = JSON.parse(candidate) as Record<string, unknown>;
+      const code = parsed && (parsed.code ?? parsed.script ?? parsed.source);
+      if (typeof code === 'string' && code.trim()) return code;
+    } catch { /* partial JSON; try a tolerant fallback */ }
+  }
+  const stripped = raw.replace(/^\s*\{?\s*"[a-z_]+?"\s*:\s*"?/i, '');
+  return stripped.length >= 3 ? stripped : '';
 }
 
 const MAX_STREAMED_TEXT = 48_000;
@@ -138,6 +183,28 @@ export function reduceToolEvent(
   const record = asRecord(payload);
   if (!record) return calls;
   const id = str(record.id);
+
+  if (kind === 'agent_step') {
+    const stepId = str(record.stepId);
+    if (!id || !stepId) return calls;
+    const at = indexOfCall(calls, id);
+    const previous = at >= 0 ? calls[at].agentSteps || [] : [];
+    const nextStep: MobileAgentStep = {
+      stepId,
+      kind: str(record.kind) || undefined,
+      title: str(record.title) || undefined,
+      detail: str(record.detail) || undefined,
+      command: str(record.command) || undefined,
+      status: str(record.status) || 'running',
+      exitCode: typeof record.exitCode === 'number' ? record.exitCode : null,
+      output: str(record.output),
+    };
+    const stepIndex = previous.findIndex((step) => step.stepId === stepId);
+    const agentSteps = previous.slice();
+    if (stepIndex < 0) agentSteps.push(nextStep);
+    else agentSteps[stepIndex] = { ...agentSteps[stepIndex], ...nextStep };
+    return upsert(calls, id, { agentSteps: agentSteps.slice(-20), status: 'running', ...seat(id) });
+  }
 
   if (kind === 'tool_call_delta') {
     // Deltas may precede the tool_use frame; buffer argument text by id.

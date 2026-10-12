@@ -43,10 +43,10 @@ describe('createPlaybackClock — steady arrival', () => {
   test('plays close to arrival without jumping ahead', () => {
     const clock = createPlaybackClock(CFG, 0);
     let arrived = 0;
-    // Arrive ~40 cps for 2s in 100ms steps; tick every 100ms.
-    for (let t = 100; t <= 2000; t += 100) {
-      arrived += 4; // 40 cps * 0.1s
-      clock.push(arrived);
+    // Arrive ~50 cps for 2s in 20ms steps; tick at a normal display cadence.
+    for (let t = 20; t <= 2000; t += 20) {
+      arrived += 1; // 50 cps * 0.02s
+      clock.push(Math.floor(arrived));
       const r = clock.tick(t);
       assert.ok(r.playedLen <= arrived, 'never plays past what arrived');
       assert.equal(r.state, 'playing');
@@ -78,7 +78,35 @@ describe('createPlaybackClock — burst is smoothed', () => {
   });
 });
 
+describe('createPlaybackClock — reveal arrived content at a tool boundary', () => {
+  test('reveals the current buffer without ending the stream or swallowing later text', () => {
+    const clock = createPlaybackClock(CFG, 0);
+    clock.push(12);
+    const revealed = clock.revealBuffered();
+    assert.equal(revealed.playedLen, 12);
+    assert.equal(revealed.revealed, 12);
+    assert.equal(revealed.state, 'playing');
+    assert.equal(clock.isDone(), false);
+
+    clock.push(20);
+    const continued = clock.tick(16);
+    assert.ok(continued.playedLen > 12, 'post-tool answer continues from the revealed prefix');
+    assert.ok(continued.playedLen <= 20, 'playback never advances beyond arrived text');
+  });
+});
+
 describe('createPlaybackClock — stall', () => {
+  test('caps a long background/resume gap to one bounded visual tick', () => {
+    const clock = createPlaybackClock(CFG, 0);
+    clock.push(10_000);
+    const resumed = clock.tick(10_000);
+    assert.ok(resumed.revealed <= CFG.maxCps * CFG.maxTickMs / 1000);
+    assert.ok(resumed.revealed < 1000, 'resume never dumps the whole suspended-time budget');
+    assert.equal(resumed.playedLen, clock.playedLen());
+    const next = clock.tick(10_016);
+    assert.ok(next.playedLen >= resumed.playedLen, 'normal playback continues after resume');
+  });
+
   test('reports starved once buffer empties and starve window elapses', () => {
     const clock = createPlaybackClock(CFG, 0);
     clock.push(20);

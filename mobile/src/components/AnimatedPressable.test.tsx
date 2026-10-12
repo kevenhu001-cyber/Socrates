@@ -1,9 +1,19 @@
 import React from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { Animated, StyleSheet, Text } from 'react-native';
 import { act, create } from 'react-test-renderer';
 import { AnimatedPressable } from './AnimatedPressable';
 
+const mockUseReducedMotion = jest.fn<boolean | null, []>(() => null);
+jest.mock('../native/reducedMotion', () => ({
+  useReducedMotion: () => mockUseReducedMotion(),
+  motionAllowed: (preference: boolean | null) => preference === false,
+}));
+
 describe('AnimatedPressable', () => {
+  beforeEach(() => {
+    mockUseReducedMotion.mockReturnValue(null);
+  });
+
   it('keeps layout and hit-target styles on the element that handles presses', () => {
     let tree: ReturnType<typeof create>;
     act(() => {
@@ -52,5 +62,29 @@ describe('AnimatedPressable', () => {
     });
     const afterStyles = pressable().props.style as unknown[];
     expect(afterStyles.filter((entry) => typeof entry === 'object' && entry !== null && 'outlineWidth' in entry)).toHaveLength(0);
+  });
+
+  it('keeps the same action geometry and fires immediately with Reduce Motion enabled', () => {
+    mockUseReducedMotion.mockReturnValue(true);
+    const timing = jest.spyOn(Animated, 'timing');
+    const onPress = jest.fn();
+    let tree: ReturnType<typeof create>;
+    act(() => {
+      tree = create(
+        <AnimatedPressable testID="reduced-target" style={{ minHeight: 48, paddingHorizontal: 16 }} onPress={onPress}>
+          <Text>Send</Text>
+        </AnimatedPressable>,
+      );
+    });
+
+    const target = tree!.root.findAllByProps({ testID: 'reduced-target' }).find((node) => Array.isArray(node.props.style))!;
+    expect(StyleSheet.flatten(target.props.style)).toEqual(expect.objectContaining({ minHeight: 48, paddingHorizontal: 16 }));
+    act(() => {
+      target.props.onPressIn?.({});
+      target.props.onPress?.({});
+    });
+    expect(onPress).toHaveBeenCalledTimes(1);
+    expect(timing).not.toHaveBeenCalled();
+    timing.mockRestore();
   });
 });

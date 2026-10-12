@@ -556,7 +556,14 @@ export function addStreamingMessage(opts){
   var ret={
     getClientId:function(){return clientId},
     isFinished:function(){return finished},
-    recordToolUse:toolRuntime.recordToolUse,
+    recordToolUse:function(call){
+      /* The model may stream a short, user-facing preamble before asking for
+         a tool. Reveal only content already accepted by the visible-text
+         scanner; tool arguments and hidden reasoning use separate channels.
+         Do not end playback here: the post-tool answer may still arrive. */
+      _streamPlayer.revealBufferedNow();
+      return toolRuntime.recordToolUse(call);
+    },
     recordToolProgress:toolRuntime.recordToolProgress,
     recordToolCallDelta:toolRuntime.recordToolCallDelta,
     recordExecutionStart:toolRuntime.recordExecutionStart,

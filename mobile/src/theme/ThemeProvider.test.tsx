@@ -44,6 +44,27 @@ describe('ThemeProvider', () => {
     expect(seen[0]).toMatch(/^#/);
   });
 
+  it('does not rebroadcast the visual theme when only preference hydration readiness changes', async () => {
+    let renders = 0;
+    function VisualProbe() {
+      renders += 1;
+      useTheme();
+      return <Text>visual</Text>;
+    }
+
+    await act(async () => {
+      create(
+        <ThemeProvider>
+          <VisualProbe />
+        </ThemeProvider>,
+      );
+    });
+
+    // The secure-store mock returns no preference, so hydration changes only
+    // `ready`. Theme-mode changes remain covered by the controller test below.
+    expect(renders).toBe(1);
+  });
+
   it('supports setting theme preference between light, dark, and system', async () => {
     let controller: ReturnType<typeof useThemeController> | null = null;
     function Probe() {

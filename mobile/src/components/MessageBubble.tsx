@@ -5,6 +5,7 @@ import { BlurView } from 'expo-blur';
 import type { Message } from '@socrates/contracts';
 import { useTheme } from '../theme/ThemeProvider';
 import { motionEasing, withAlpha } from '../theme/theme';
+import { motionAllowed, useReducedMotion } from '../native/reducedMotion';
 import { useT } from '../i18n';
 import { Markdown, type TutorPracticeAnswer, type TutorQuizAnswer } from '../render/MarkdownView';
 import { ToolCard } from './ToolCard';
@@ -35,6 +36,17 @@ interface MessageBubbleProps {
   /** In-session find query — highlights matches like frontend findInSession. */
   highlight?: string;
   onIterate?: (text: string) => void;
+  /** True only for a message first inserted during this mounted transcript. */
+  animateEntrance?: boolean;
+}
+
+const animatedMessageIds = new Set<string>();
+
+function claimEntranceAnimation(messageId: string): boolean {
+  if (!messageId || animatedMessageIds.has(messageId)) return false;
+  animatedMessageIds.add(messageId);
+  if (animatedMessageIds.size > 2000) animatedMessageIds.delete(animatedMessageIds.values().next().value as string);
+  return true;
 }
 
 type CanvasMessage = Message & {
@@ -167,7 +179,13 @@ function HighlightedPlainText({ text, highlightKey, style }: { text: string; hig
 function StreamingIcon({ color }: { color: string }) {
   const spin = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(0.4)).current;
+  const reducedMotion = useReducedMotion();
   useEffect(() => {
+    if (!motionAllowed(reducedMotion)) {
+      spin.setValue(0);
+      pulse.setValue(0.7);
+      return;
+    }
     const animation = Animated.loop(
       Animated.timing(spin, { toValue: 1, duration: 900, easing: Easing.linear, useNativeDriver: true }),
     );
@@ -184,7 +202,7 @@ function StreamingIcon({ color }: { color: string }) {
       animation.stop();
       pulseLoop.stop();
     };
-  }, [pulse, spin]);
+  }, [pulse, reducedMotion, spin]);
   const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
   return (
     <View style={{ width: 14, height: 14, alignItems: 'center', justifyContent: 'center' }}>
@@ -216,7 +234,12 @@ function StreamingIcon({ color }: { color: string }) {
 
 function ThinkingLiveDot({ color }: { color: string }) {
   const opacity = useRef(new Animated.Value(0.45)).current;
+  const reducedMotion = useReducedMotion();
   useEffect(() => {
+    if (!motionAllowed(reducedMotion)) {
+      opacity.setValue(0.75);
+      return;
+    }
     const animation = Animated.loop(
       Animated.sequence([
         Animated.timing(opacity, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
@@ -225,7 +248,7 @@ function ThinkingLiveDot({ color }: { color: string }) {
     );
     animation.start();
     return () => animation.stop();
-  }, [opacity]);
+  }, [opacity, reducedMotion]);
   return <Animated.View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: color, opacity }} />;
 }
 
@@ -246,23 +269,29 @@ function ThinkingPanel({
   const mobile = width <= 768;
   const progress = useRef(new Animated.Value(0)).current;
   const backdrop = useRef(new Animated.Value(0)).current;
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (!visible) return;
+    if (!motionAllowed(reducedMotion)) {
+      progress.setValue(1);
+      backdrop.setValue(1);
+      return;
+    }
     progress.setValue(0);
     backdrop.setValue(0);
     const animation = Animated.parallel([
-      Animated.timing(backdrop, { toValue: 1, duration: 160, easing: Easing.linear, useNativeDriver: true }),
+      Animated.timing(backdrop, { toValue: 1, duration: 140, easing: Easing.linear, useNativeDriver: true }),
       Animated.timing(progress, {
         toValue: 1,
-        duration: mobile ? 280 : 240,
+        duration: mobile ? 190 : 170,
         easing: motionEasing.out,
         useNativeDriver: true,
       }),
     ]);
     animation.start();
     return () => animation.stop();
-  }, [backdrop, mobile, progress, visible]);
+  }, [backdrop, mobile, progress, reducedMotion, visible]);
 
   if (!visible) return null;
 
@@ -378,6 +407,7 @@ export const MessageBubble = React.memo(function MessageBubble({
   linkPreview,
   highlight,
   onIterate,
+  animateEntrance = false,
 }: MessageBubbleProps) {
   const { colors, typography } = useTheme();
   const t = useT();
@@ -388,6 +418,8 @@ export const MessageBubble = React.memo(function MessageBubble({
   const canvasMessage = message as CanvasMessage;
   const isCanvas = !isUser && canvasMessage.outputMode === 'canvas' && Boolean(canvasMessage.canvasId);
   const streaming = message.type === 'streaming';
+  const stopped = !isUser && !streaming && Boolean((message as Message & { stopped?: boolean }).stopped);
+  const reducedMotion = useReducedMotion();
   /* Rating is persisted on the message (onFeedback → appStore) so it
    * survives virtualization recycling and reloads; local useState would be
    * wiped whenever the row unmounts. */
@@ -400,10 +432,15 @@ export const MessageBubble = React.memo(function MessageBubble({
   const [thinkingPanelOpen, setThinkingPanelOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(text);
-  const speakPulse = useRef(new Animated.Value(0.6)).current;
+  const speakPulse = useRef(new Animated.Value(1)).current;
   /* web `.msg { animation: msgIn .22s }` — one-shot fade-in on mount,
    * assistant rows only. */
-  const enterOpacity = useRef(new Animated.Value(isUser ? 1 : 0.45)).current;
+  const enterOpacity = useRef(new Animated.Value(1)).current;
+  const entranceClaimedRef = useRef<boolean | null>(null);
+  if (entranceClaimedRef.current === null) {
+    entranceClaimedRef.current = animateEntrance && claimEntranceAnimation(messageId);
+  }
+  const shouldAnimateEntrance = entranceClaimedRef.current;
 
   /* Only stop playback on unmount if THIS row owns it — virtualization
    * recycles sibling rows and a bare Speech.stop() would kill another
@@ -416,17 +453,27 @@ export const MessageBubble = React.memo(function MessageBubble({
     if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
   }, []);
   useEffect(() => {
-    if (isUser) return;
-    Animated.timing(enterOpacity, {
+    if (!shouldAnimateEntrance || streaming || !motionAllowed(reducedMotion)) {
+      enterOpacity.setValue(1);
+      return;
+    }
+    enterOpacity.setValue(0.84);
+    const animation = Animated.timing(enterOpacity, {
       toValue: 1,
-      duration: 220,
+      duration: 130,
       easing: motionEasing.out,
       useNativeDriver: true,
-    }).start();
-  }, [enterOpacity, isUser]);
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [enterOpacity, reducedMotion, shouldAnimateEntrance, streaming]);
   useEffect(() => {
     if (!speaking) {
-      speakPulse.setValue(0.6);
+      speakPulse.setValue(1);
+      return;
+    }
+    if (!motionAllowed(reducedMotion)) {
+      speakPulse.setValue(1);
       return;
     }
     /* web `.msg-toolbar-btn.is-speaking`: 1.4s breathing pulse while TTS plays. */
@@ -438,7 +485,7 @@ export const MessageBubble = React.memo(function MessageBubble({
     );
     animation.start();
     return () => animation.stop();
-  }, [speakPulse, speaking]);
+  }, [reducedMotion, speakPulse, speaking]);
 
   const rate = async (next: 'up' | 'down') => {
     const value = rating === next ? 'none' : next;
@@ -491,7 +538,7 @@ export const MessageBubble = React.memo(function MessageBubble({
     });
   };
 
-  if (!streaming && !text && !message.toolCalls?.length && !message.attachments?.length) {
+  if (!streaming && !text && !message.toolCalls?.length && !message.attachments?.length && !stopped) {
     return null;
   }
 
@@ -613,6 +660,27 @@ export const MessageBubble = React.memo(function MessageBubble({
             streaming={streaming}
             onClose={() => setThinkingPanelOpen(false)}
           />
+        ) : null}
+
+        {stopped ? (
+          <View style={[styles.stoppedStatus, { borderColor: colors.border, backgroundColor: colors.surfaceRaised }]}>
+            <Text style={[styles.stoppedStatusText, { color: colors.textMuted, fontFamily: typography.body }]}>
+              {t('chat.stopped') || 'Stopped'}
+            </Text>
+            {onRetry ? (
+              <AnimatedPressable
+                accessibilityRole="button"
+                accessibilityLabel={t('chat.resend') || 'Resend'}
+                onPress={onRetry}
+                style={styles.stoppedResend}
+              >
+                <Ionicons name="refresh-outline" size={14} color={colors.accent} />
+                <Text style={[styles.stoppedResendText, { color: colors.accent, fontFamily: typography.medium }]}>
+                  {t('chat.resend') || 'Resend'}
+                </Text>
+              </AnimatedPressable>
+            ) : null}
+          </View>
         ) : null}
 
         {/* Tool calls that never got a seat in the text (no valid
@@ -849,6 +917,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 17,
   },
+  stoppedStatus: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 9,
+  },
+  stoppedStatusText: { fontSize: 12, lineHeight: 16 },
+  stoppedResend: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 2 },
+  stoppedResendText: { fontSize: 12, fontWeight: '600' },
   thinkingBackdrop: {
     position: 'absolute',
     top: 0,

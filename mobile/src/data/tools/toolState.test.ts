@@ -1,4 +1,4 @@
-import { reduceToolEvent, settleToolCalls, type MobileToolCall } from './toolState';
+import { extractCodePreview, livePreviewOf, reduceToolEvent, settleToolCalls, type MobileToolCall } from './toolState';
 
 /* Payload shapes below mirror server/src/routes/chat/stream.ts exactly:
  * tool_use is an array; every other frame is keyed by the tool-call id. */
@@ -44,6 +44,23 @@ describe('reduceToolEvent', () => {
     expect(calls[0].executionId).toBe('exec-9');
     expect(calls[0].progressPhase).toBe('running');
     expect(calls[0].progress).toBe('line 1\nline 2\n');
+  });
+
+  it('updates Explore agent steps in place as running and completed events arrive', () => {
+    let calls = reduceToolEvent([], 'tool_use', [{ id: 'agent-1', name: 'workspace_agent', input: {} }]);
+    calls = reduceToolEvent(calls, 'agent_step', {
+      id: 'agent-1', type: 'step', stepId: 'step-1', kind: 'search', title: 'Find sources',
+      detail: 'Searching the topic', status: 'running', exitCode: null,
+    });
+    calls = reduceToolEvent(calls, 'agent_step', {
+      id: 'agent-1', type: 'step', stepId: 'step-1', kind: 'search', title: 'Find sources',
+      detail: 'Found three useful sources', status: 'completed', exitCode: 0,
+    });
+    expect(calls).toHaveLength(1);
+    expect(calls[0].status).toBe('running');
+    expect(calls[0].agentSteps).toEqual([expect.objectContaining({
+      stepId: 'step-1', kind: 'search', title: 'Find sources', status: 'completed', exitCode: 0,
+    })]);
   });
 
   it('keeps the latest cumulative tool_call_delta arguments snapshot', () => {
@@ -130,5 +147,18 @@ describe('settleToolCalls', () => {
 
   it('handles an absent list', () => {
     expect(settleToolCalls(undefined)).toEqual([]);
+  });
+});
+
+describe('live tool preview', () => {
+  it('extracts code from complete and partial cumulative JSON arguments', () => {
+    expect(extractCodePreview('{"code":"print(1)"}')).toBe('print(1)');
+    expect(extractCodePreview('{"code":"print(1)')).toBe('print(1)');
+  });
+
+  it('shows streamed code and Bash commands, but not unrelated tool arguments', () => {
+    expect(livePreviewOf({ name: 'code_interpreter', input: {}, argumentsText: '{"code":"x = 1"' })).toBe('x = 1');
+    expect(livePreviewOf({ name: 'Bash', input: { command: 'npm test' } })).toBe('npm test');
+    expect(livePreviewOf({ name: 'web_search', input: { query: 'weather' }, argumentsText: '{"query":"weather"}' })).toBe('');
   });
 });

@@ -7,9 +7,10 @@ import { toast } from '../components/Toast';
 import { apiKeysApi, type ApiProvider } from '../data/api/client';
 import { TONE_PRESETS, type TonePreset } from '../data/chat/tonePresets';
 import { useTheme } from '../theme/ThemeProvider';
-import { motionEasing, withAlpha } from '../theme/theme';
+import { motionDuration, motionEasing, withAlpha } from '../theme/theme';
 import { useT } from '../i18n';
 import { appStore, useAppStore } from '../stores/appStore';
+import { motionAllowed, useReducedMotion } from '../native/reducedMotion';
 
 type ProviderDraft = {
   id: string;
@@ -55,10 +56,18 @@ function fromProviders(providers: ApiProvider[], selectedModel: string, tone: To
 
 function Toggle({ value, onChange }: { value: boolean; onChange: (value: boolean) => void }) {
   const { colors } = useTheme();
+  const reducedMotion = useReducedMotion();
   const translate = useRef(new Animated.Value(value ? 16 : 0)).current;
   useEffect(() => {
-    Animated.timing(translate, { toValue: value ? 16 : 0, duration: 150, easing: motionEasing.out, useNativeDriver: true }).start();
-  }, [translate, value]);
+    const toValue = value ? 16 : 0;
+    if (!motionAllowed(reducedMotion)) {
+      translate.setValue(toValue);
+      return undefined;
+    }
+    const animation = Animated.timing(translate, { toValue, duration: motionDuration.focus, easing: motionEasing.out, useNativeDriver: true });
+    animation.start();
+    return () => animation.stop();
+  }, [reducedMotion, translate, value]);
   return (
     <Pressable
       accessibilityRole="switch"

@@ -199,6 +199,22 @@ export const motionEasing = {
   spring: Easing.bezier(...easing.spring),
 };
 
+/** Small native timing scale for coordinated press, layout and route motion.
+ * Stream visibility never waits on these values; its cadence lives in the
+ * shared PlaybackClock. Every decorative caller must still gate on Reduce
+ * Motion before starting a JS-driven animation. */
+export const motionDuration = {
+  press: 120,
+  focus: 150,
+  page: 180,
+  composer: 190,
+  layout: 220,
+  drawerEnter: 280,
+  drawerExit: 220,
+  landing: 400,
+  ambient: 900,
+} as const;
+
 export const radius = {
   xs: 4,
   /* `sm` stays 6 rather than matching the web's 4px step: the mobile

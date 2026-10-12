@@ -25,8 +25,8 @@ import { fileURLToPath } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const MOBILE = resolve(HERE, '..', '..');
 const REPO = resolve(MOBILE, '..');
-const DIST = resolve(MOBILE, 'dist-visual');
-const OUT = resolve(HERE, 'out');
+const DIST = resolve(MOBILE, process.env.VISUAL_DIST_DIR || 'dist-visual');
+const OUT = resolve(MOBILE, process.env.VISUAL_OUT_DIR || 'scripts/visual/out');
 const FIXTURES = resolve(HERE, 'fixtures');
 const PORT = Number(process.env.VISUAL_PORT || 8787);
 const BASE = `http://127.0.0.1:${PORT}`;
@@ -66,7 +66,12 @@ async function installMocks(page) {
   const sessionList = await fixture('sessions.json');
   const chat = await fixture('session-chat.json');
   const stream = await fixture('session-stream.json');
-  const details = { 's-demo-chat': chat, 's-demo-stream': stream };
+  const longTurn = (await readFile(resolve(FIXTURES, 'long-assistant-turn.md'), 'utf8')).trimEnd();
+  const streamWithLongTurn = {
+    ...stream,
+    messages: stream.messages.map((message) => message.id === 'm-s2' ? { ...message, content: longTurn } : message),
+  };
+  const details = { 's-demo-chat': chat, 's-demo-stream': streamWithLongTurn };
   const listById = new Map(sessionList.sessions.map((s) => [s.id, s]));
 
   const json = (route, body, status = 200) =>
@@ -279,12 +284,12 @@ const STATES = [
       await gotoApp(page);
       await page.getByPlaceholder(COMPOSER).waitFor({ timeout: 15000 });
       await openChatSession(page, isPhone, 'Pricing page rewrite', 'Recommended structure');
-      await page.getByLabel('Attach files').last().click();
+      await clickVisible(page.getByLabel(/Attach files|Add tools and files/i));
       await page.locator('[data-testid="composer-tools-menu"]').waitFor({ timeout: 10000 });
-      const chooser = page.waitForEvent('filechooser', { timeout: 10000 });
-      await page.getByLabel('Files', { exact: true }).click();
-      await (await chooser).setFiles(resolve(FIXTURES, 'q3-roadmap-notes.md'));
-      await page.getByText('q3-roadmap-notes.md').filter({ visible: true }).first().waitFor({ timeout: 10000 });
+      /* Browser export cannot exercise React Native's file-URI FormData bridge.
+       * Verify the user-facing attachment options here; file upload semantics
+       * remain covered by the native attachment tests and must be checked on device. */
+      await page.getByText('Files', { exact: true }).waitFor({ timeout: 10000 });
       await page.waitForTimeout(300);
     },
   },
@@ -294,8 +299,10 @@ const STATES = [
       await gotoApp(page);
       await page.getByPlaceholder(COMPOSER).waitFor({ timeout: 15000 });
       await openChatSession(page, isPhone, 'Pricing page rewrite', 'Recommended structure');
-      await page.getByLabel('Attach files').last().click();
+      await clickVisible(page.getByLabel(/Attach files|Add tools and files/i));
       await page.locator('[data-testid="composer-tools-menu"]').waitFor({ timeout: 10000 });
+      await clickVisible(page.getByText('Write', { exact: true }));
+      await page.getByText('Write & edit', { exact: true }).filter({ visible: true }).first().waitFor({ timeout: 10000 });
       await page.waitForTimeout(300);
     },
   },
@@ -309,8 +316,8 @@ const STATES = [
       await page.getByPlaceholder(COMPOSER).waitFor({ timeout: 15000 });
       await openChatSession(page, isPhone, 'Pricing page rewrite', 'Recommended structure');
       if (isPhone) {
-        await page.getByPlaceholder(COMPOSER).last().click();
-        await page.getByLabel('Beagle Medium').click();
+        await clickVisible(page.getByPlaceholder(COMPOSER));
+        await clickVisible(page.getByLabel('Beagle Medium'));
         await page.locator('[data-testid="model-config-sheet"]').waitFor({ timeout: 10000 });
       } else {
         await clickVisible(page.getByLabel('Beagle'));
@@ -353,6 +360,56 @@ const STATES = [
       await page.waitForTimeout(300);
     },
   },
+  {
+    name: '13-library-empty',
+    async run(page, { isPhone }) {
+      await gotoApp(page);
+      await page.getByPlaceholder(COMPOSER).waitFor({ timeout: 15000 });
+      await openDrawerIfPhone(page, isPhone);
+      await clickVisible(page.getByLabel('Library', { exact: true }));
+      await page.locator('[data-testid="library-items-list"]').waitFor({ timeout: 10000 });
+      await page.getByText('Your library is ready', { exact: true }).waitFor({ timeout: 10000 });
+      await page.waitForTimeout(250);
+    },
+  },
+  {
+    name: '14-more',
+    async run(page, { isPhone }) {
+      await gotoApp(page);
+      await page.getByPlaceholder(COMPOSER).waitFor({ timeout: 15000 });
+      await openDrawerIfPhone(page, isPhone);
+      await clickVisible(page.getByLabel('More', { exact: true }));
+      await page.getByText('More', { exact: true }).last().waitFor({ timeout: 10000 });
+      await page.getByLabel('Images & Assistants', { exact: true }).waitFor({ timeout: 10000 });
+      await page.waitForTimeout(250);
+    },
+  },
+  {
+    name: '15-creations-images',
+    async run(page, { isPhone }) {
+      await gotoApp(page);
+      await page.getByPlaceholder(COMPOSER).waitFor({ timeout: 15000 });
+      await openDrawerIfPhone(page, isPhone);
+      await clickVisible(page.getByLabel('More', { exact: true }));
+      await clickVisible(page.getByLabel('Images & Assistants', { exact: true }));
+      await page.getByText('No images yet. Describe a scene to get started.', { exact: true }).waitFor({ timeout: 10000 });
+      await page.waitForTimeout(250);
+    },
+  },
+  {
+    name: '16-creations-assistants',
+    async run(page, { isPhone }) {
+      await gotoApp(page);
+      await page.getByPlaceholder(COMPOSER).waitFor({ timeout: 15000 });
+      await openDrawerIfPhone(page, isPhone);
+      await clickVisible(page.getByLabel('More', { exact: true }));
+      await clickVisible(page.getByLabel('Images & Assistants', { exact: true }));
+      await page.getByText('No images yet. Describe a scene to get started.', { exact: true }).waitFor({ timeout: 10000 });
+      await clickVisible(page.getByRole('tab', { name: 'Assistants', exact: true }));
+      await page.getByText('No assistants yet. Create one for your work.', { exact: true }).waitFor({ timeout: 10000 });
+      await page.waitForTimeout(250);
+    },
+  },
 ];
 
 const VIEWPORTS = [
@@ -368,7 +425,7 @@ async function ensureServer() {
     if (res.ok) return null;
   } catch { /* not running */ }
   const proc = spawn(process.execPath, [resolve(HERE, 'serve.mjs')], {
-    env: { ...process.env, VISUAL_PORT: String(PORT) },
+    env: { ...process.env, VISUAL_PORT: String(PORT), VISUAL_DIST_DIR: DIST },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   proc.stdout.on('data', (d) => process.stdout.write(`[serve] ${d}`));

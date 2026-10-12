@@ -10,7 +10,8 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
-import { motionEasing, withAlpha } from '../theme/theme';
+import { motionDuration, motionEasing, withAlpha } from '../theme/theme';
+import { motionAllowed, useReducedMotion } from '../native/reducedMotion';
 import { useT } from '../i18n';
 
 export type OverlayPresentation = 'center' | 'bottom';
@@ -49,30 +50,52 @@ export function Overlay({
 }: OverlayProps) {
   const { colors, radius, shadows } = useTheme();
   const t = useT();
+  const reducedMotion = useReducedMotion();
   const opacity = useRef(new Animated.Value(0)).current;
   const translate = useRef(new Animated.Value(presentation === 'bottom' ? 28 : 12)).current;
+  const previousVisible = useRef(false);
+  const activeAnimation = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
+    if (visible === previousVisible.current) {
+      if (visible && (!motionAllowed(reducedMotion) || !activeAnimation.current)) {
+        activeAnimation.current?.stop();
+        activeAnimation.current = null;
+        opacity.setValue(1);
+        translate.setValue(0);
+      }
+      return undefined;
+    }
+    previousVisible.current = visible;
     if (!visible) return undefined;
+    if (!motionAllowed(reducedMotion)) {
+      opacity.setValue(1);
+      translate.setValue(0);
+      return undefined;
+    }
     opacity.setValue(0);
     translate.setValue(presentation === 'bottom' ? 28 : 12);
     const animation = Animated.parallel([
       Animated.timing(opacity, {
         toValue: 1,
-        duration: 180,
+        duration: motionDuration.page,
         easing: motionEasing.out,
         useNativeDriver: true,
       }),
       Animated.timing(translate, {
         toValue: 0,
-        duration: 220,
+        duration: motionDuration.layout,
         easing: motionEasing.out,
         useNativeDriver: true,
       }),
     ]);
-    animation.start();
-    return () => animation.stop();
-  }, [opacity, presentation, translate, visible]);
+    activeAnimation.current = animation;
+    animation.start(() => { activeAnimation.current = null; });
+    return () => {
+      animation.stop();
+      if (activeAnimation.current === animation) activeAnimation.current = null;
+    };
+  }, [opacity, presentation, reducedMotion, translate, visible]);
 
   useEffect(() => {
     if (!visible || Platform.OS !== 'web' || typeof document === 'undefined') return undefined;

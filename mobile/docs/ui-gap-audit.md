@@ -73,11 +73,13 @@ Do not use historical prose as an acceptance baseline.
 | Priority | Gap | Exit condition |
 |---|---|---|
 | ~~P0~~ | ~~Native Prompt Templates manager/repository~~ — done: `SkillsScreen` + `prompts.ts` custom-template store (CRUD, `socrates-prompt-templates` persistence, live slash-palette merge) | — |
-| P0 | Tool approval — `ApprovalPanel` + `agentRunsApi.decideApproval`/`interrupt` exist, but the resumed-run stream has not been verified end-to-end on a device | Decision endpoint, resumed run stream, rejection and interruption pass on Android |
+| — | Tool approval is intentionally unavailable for the current mobile run API: the server advertises `approvalPolicy: 'never'` and emits no approval frames; do not surface unsupported decisions | Revisit only if a supported backend approval policy, stream events, and decision endpoint are introduced |
 | ~~P0~~ | ~~`teachingPlan` is stored but never rendered~~ — done: `TutorScreen` renders the plan card (title, done/total + %, per-subtopic status, live stage, 3-answer depth counter, practice-phase chip) | — |
 | ~~P1~~ | ~~Consecutive tool calls are appended above the prose instead of folding into a group header~~ — done: `src/data/tools/turnLayout.ts` ports `toolRunModel.buildTurnLayout` (consecutive calls fold into a collapsible `ToolRunGroup` seated between prose segments) | — |
 | ~~P1~~ | ~~Cmd+K searches local commands only~~ — done: `CmdKPalette` issues the same debounced `POST /api/search`, dedupes against local hits, renders snippet hints, and opens the session at the match | — |
-| P1 | Explore/agent workflow stepper (Plan/Search/Read/Report) is a chip label only; the streaming web search-progress log has no counterpart. Note: the web stepper consumes a **client-side** `agentRunStore` fed by `researchAgent.js`; mobile's explore is prompt-driven, so a faithful port needs stage events derived from the tool stream or a server-side workflow signal | Stepper and progress log render from tool events |
+| ~~P1~~ | ~~Explore/agent workflow stepper is only a chip~~ — done for the server Workspace Agent path: the mobile SSE adapter consumes actual `agent_step` frames, and `ToolCard` renders stage title/detail/status beside live tool progress; no client-invented steps | Android live-stream visual acceptance |
+| P1 | Images/Assistants creation surface previously had no native page | `CreationsScreen` provides image list/create/edit and assistant list/create/edit/delete through verified server routes | Android visual check, provider-error state, image preview |
+| P1 | Prompt Templates lacked account sync | `prompts.ts` now pages `/api/prompts?scope=mine`, pushes local-only items after authentication, adopts server IDs and keeps local cache on offline/guest errors | Android signed-in, pagination and offline acceptance |
 | ~~P1~~ | ~~Shortcuts sheet lists five hardcoded rows~~ — done: `MoreScreen.tsx` ports the web cheatsheet 1:1 (four sections, thirteen translated rows, kbd badges) | — |
 | ~~P1~~ | ~~Exam generation is not gated / fake `(i+1)/n` progress~~ — done: `ExamScreen` gates on a usable provider (`ProviderSetupGate`, web `exam.js:405-414`) and the bar tracks real `genDone/count` | — |
 | ~~P1~~ | ~~Home missing `/`-command overlay and keyboard-dismiss-on-scroll~~ — done: slash palette exists on `NewChatScreen` and `keyboardDismissMode="on-drag"` is set on Home and Chat. The prompt-library row is intentionally absent — the SPA hides it under the final `chat-surface.css` layer | — |
@@ -87,8 +89,16 @@ Do not use historical prose as an acceptance baseline.
 
 ## Evidence
 
+### Update 2026-10-04 (follow-up parity implementation)
+
+- Native `CreationsScreen` is reachable from More and uses the authenticated server Images and Assistants APIs. Image creation is user-triggered only; this implementation did not invoke image generation during development.
+- Composer images are downsampled/re-encoded on device when dimensions are available (GIF animation is preserved), persisted through the existing `/api/files` upload route, and only small images remain inline for the current turn. The mobile history adapter adds the server-recognized `fileId` pointer so `read_attachment` can resolve large images without changing shared core.
+- Prompt Templates account sync is delayed until `authStatus === 'signedIn'`, avoiding a token-bootstrap race; cursor pagination is followed to completion, while local storage remains the immediate source of truth.
+- Tool live preview now shows cumulative `code_interpreter`/`Code` source and Bash command input. Actual server `agent_step` frames are routed by a narrowly scoped mobile SSE adapter and merged into the same tool card.
+- **Tool approval remains intentionally unavailable:** current server contract is `approvalPolicy: 'never'`; there is no approval event/decision flow to mirror. Do not show an approval-pending state unless the server adds that capability.
+- The drawer already supports title/topic search; the 300dp panel and 40dp search row are source-aligned, but settings/drawer geometry and newly added screens still require Android device screenshot acceptance. This environment has no `adb`, emulator, or `/dev/kvm`.
+
 Android screenshots from the `Medium_Phone` emulator (API 37, 1080×2400 @420dpi,
 390 dp wide) are the release evidence for this pass; the auth screen renders under
 the status bar with no band. Fast proxy screenshots are written outside the
 repository under `/tmp/socrates-align-*.png` and are diagnostic only.
-

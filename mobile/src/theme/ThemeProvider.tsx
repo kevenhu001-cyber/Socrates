@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { useColorScheme, useWindowDimensions } from 'react-native';
+import { useColorScheme } from 'react-native';
 import { buildTheme, type Theme, type ThemeMode } from './theme';
 import { getItem, setItem } from '../platform/secureStorage';
 import { setAppStatusBarStyle } from '../native/statusBar';
@@ -11,6 +11,10 @@ const STORAGE_KEY = 'socrates.theme.preference';
 interface ThemeContextValue {
   theme: Theme;
   mode: ThemeMode;
+}
+
+interface ThemeControllerValue {
+  mode: ThemeMode;
   preference: ThemePreference;
   setPreference: (next: ThemePreference) => Promise<void>;
   toggle: () => Promise<void>;
@@ -21,6 +25,10 @@ const fallbackTheme = buildTheme('dark');
 
 const ThemeContext = createContext<ThemeContextValue>({
   theme: fallbackTheme,
+  mode: 'dark',
+});
+
+const ThemeControllerContext = createContext<ThemeControllerValue>({
   mode: 'dark',
   preference: 'dark',
   setPreference: async () => undefined,
@@ -125,7 +133,6 @@ function deriveBgRamp(overrideHex: string, mode: ThemeMode): {
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemColorScheme = useColorScheme();
-  const { width } = useWindowDimensions();
   const [preference, setPreferenceState] = useState<ThemePreference>('dark');
   const [ready, setReady] = React.useState(false);
   const [displayPrefs, setDisplayPrefs] = useState(displayPrefsStore.get());
@@ -196,7 +203,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         ...bgPatch,
       },
     };
-  }, [mode, displayPrefs, width]);
+  }, [mode, displayPrefs]);
 
   useEffect(() => {
     try {
@@ -217,12 +224,22 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     await writeStoredPreference(next);
   }, [mode]);
 
-  const value = useMemo<ThemeContextValue>(
-    () => ({ theme, mode, preference, setPreference, toggle, ready }),
-    [theme, mode, preference, setPreference, toggle, ready],
+  const themeValue = useMemo<ThemeContextValue>(
+    () => ({ theme, mode }),
+    [theme, mode],
+  );
+  const controllerValue = useMemo<ThemeControllerValue>(
+    () => ({ mode, preference, setPreference, toggle, ready }),
+    [mode, preference, setPreference, toggle, ready],
   );
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  return (
+    <ThemeContext.Provider value={themeValue}>
+      <ThemeControllerContext.Provider value={controllerValue}>
+        {children}
+      </ThemeControllerContext.Provider>
+    </ThemeContext.Provider>
+  );
 }
 
 export function useTheme() {
@@ -230,10 +247,10 @@ export function useTheme() {
 }
 
 export function useThemeController() {
-  return useContext(ThemeContext);
+  return useContext(ThemeControllerContext);
 }
 
 export function useAppearanceSync() {
-  const { preference, setPreference } = useContext(ThemeContext);
+  const { preference, setPreference } = useContext(ThemeControllerContext);
   return { preference, system: 'dark' as const, setPreference };
 }

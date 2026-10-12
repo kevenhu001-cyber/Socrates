@@ -7,7 +7,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = resolve(fileURLToPath(new URL('.', import.meta.url)), '../../dist-visual');
+const ROOT = resolve(process.env.VISUAL_DIST_DIR || resolve(fileURLToPath(new URL('.', import.meta.url)), '../../dist-visual'));
 const PORT = Number(process.env.VISUAL_PORT || 8787);
 const HOST = process.env.VISUAL_HOST || '127.0.0.1';
 

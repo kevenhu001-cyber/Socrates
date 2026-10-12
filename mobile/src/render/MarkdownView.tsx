@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View, type StyleProp, type TextStyle } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { withAlpha } from '../theme/theme';
@@ -8,6 +8,7 @@ import { native } from '../native/native';
 import { setClipboardText } from '../native/clipboard';
 import {
   hasMath,
+  createSettledMarkdownSplitter,
   hideUnclosedWidgetTail,
   inlineToHtml,
   inlineToText,
@@ -59,6 +60,7 @@ function HighlightedText({ text, highlightKey }: { text: string; highlightKey: s
 
 function Inline({ nodes, style, highlight }: { nodes: InlineNode[]; style?: StyleProp<TextStyle>; highlight?: string }) {
   const { colors, typography, fontScale } = useTheme();
+  if (hasMath(nodes)) return <MathParagraph nodes={nodes} style={style} />;
 
   const render = (list: InlineNode[], keyPrefix: string): React.ReactNode[] => list.map((node, index) => {
     const key = `${keyPrefix}.${index}`;
@@ -84,14 +86,9 @@ function Inline({ nodes, style, highlight }: { nodes: InlineNode[]; style?: Styl
           </Text>
         );
       case 'math':
-        // Inline math inside a paragraph cannot host a WebView (a `<View>` is
-        // illegal inside `<Text>`), so keep the LaTeX legible in the accent
-        // colour. Standalone formulas get a real RichBlock below.
-        return (
-          <Text key={key} style={{ fontFamily: typography.mono, fontSize: 14 * fontScale, color: colors.accent }}>
-            {node.text}
-          </Text>
-        );
+        // All math nodes are intercepted above and rendered as one KaTeX
+        // document so formulas never leak raw LaTeX into a native Text span.
+        return null;
       case 'link': {
         const href = safeHref(node.href);
         return (
@@ -525,19 +522,43 @@ function WidgetView({
  * paragraph in one WebView keeps the formulas on the same baseline as the
  * surrounding words, which is the point of having math inline at all.
  */
-function MathParagraph({ nodes, fontSize }: { nodes: InlineNode[]; fontSize: number }) {
-  /* Key the memo on node content, not identity: a re-parse (streaming delta,
-   * highlight toggle) yields an equal-but-new array, and rebuilding the HTML
-   * would remount the WebView and flash the spinner. `nodesKey` is only the
-   * change detector — the HTML is built from `nodes` itself, so no
-   * stringify→parse round trip. */
-  const nodesKey = useMemo(() => JSON.stringify(nodes), [nodes]);
+function mathStyleCss(style: StyleProp<TextStyle>, fallbackFontSize: number): string {
+  const flattened = StyleSheet.flatten(style) || {};
+  const css: string[] = ['text-align:left'];
+  const fontSize = typeof flattened.fontSize === 'number' ? flattened.fontSize : fallbackFontSize;
+  css.push(`font-size:${fontSize}px`);
+  if (typeof flattened.lineHeight === 'number') css.push(`line-height:${flattened.lineHeight}px`);
+  if (typeof flattened.color === 'string') css.push(`color:${flattened.color.replace(/[;{}<>"']/g, '')}`);
+  if (typeof flattened.fontFamily === 'string') css.push(`font-family:${flattened.fontFamily.replace(/[;{}<>"']/g, '')}`);
+  if (typeof flattened.fontWeight === 'string' || typeof flattened.fontWeight === 'number') css.push(`font-weight:${flattened.fontWeight}`);
+  if (flattened.fontStyle) css.push(`font-style:${flattened.fontStyle}`);
+  if (flattened.textAlign && flattened.textAlign !== 'auto') css.push(`text-align:${flattened.textAlign}`);
+  return css.join(';');
+}
+
+function MathParagraph({
+  nodes,
+  fontSize = 15,
+  style,
+  highlight,
+}: {
+  nodes: InlineNode[];
+  fontSize?: number;
+  style?: StyleProp<TextStyle>;
+  highlight?: string;
+}) {
+  const resolvedFontSize = StyleSheet.flatten(style)?.fontSize;
+  const baseFontSize = typeof resolvedFontSize === 'number' ? resolvedFontSize : fontSize;
+  const styleCss = mathStyleCss(style, baseFontSize);
+  /* The parser returns a new inline array for each active stream frame. Build
+   * the HTML once from that array, but keep the WebView document stable and
+   * patch its DOM over the bridge; changing WebView `source` per delta reloads
+   * the entire Katex page and repeats its height handshake. */
   const html = useMemo(
-    () => `<div style="text-align:left;font-size:${fontSize}px">${inlineToHtml(nodes)}</div>`,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [nodesKey, fontSize],
+    () => `<div style="${styleCss}">${inlineToHtml(nodes)}</div>`,
+    [nodes, styleCss],
   );
-  return <RichBlock body={html} libs={KATEX_ONLY} fallbackText={inlineToText(nodes)} center={false} initialHeight={fontSize * 1.6} />;
+  return <RichBlock body={html} libs={KATEX_ONLY} fallbackText={inlineToText(nodes)} center={false} initialHeight={baseFontSize * 1.6} dynamicBody />;
 }
 
 /* Fenced code block — mirrors the web card: 28px header bar (language
@@ -619,32 +640,33 @@ function BlockViewImpl({
       const lineHeight = [sizes.lineHeights.h2, sizes.lineHeights.h3, sizes.lineHeights.h4, sizes.lineHeights.bodyLg][level - 1];
       const style = { fontSize, lineHeight, color: colors.text, fontWeight: '700' as const, marginTop: index === 0 ? 0 : spacing.sm, marginBottom: 4 };
       if (hasMath(block.inline)) {
-        return <View style={{ marginTop: index === 0 ? 0 : spacing.sm }}><MathParagraph nodes={block.inline} fontSize={fontSize} /></View>;
+        return <View style={{ marginTop: index === 0 ? 0 : spacing.sm }}><MathParagraph nodes={block.inline} fontSize={fontSize} style={style} /></View>;
       }
       return <Inline nodes={block.inline} style={style} highlight={highlight} />;
     }
 
     case 'paragraph': {
+      const paragraphStyle = {
+        fontSize: 15 * fontScale,
+        lineHeight: 24.4 * fontScale,
+        color: muted ? colors.textMuted : colors.text,
+        fontStyle: muted ? 'italic' as const : 'normal' as const,
+        marginBottom: 6,
+      };
       if (hasMath(block.inline)) {
-        return <View style={styles.spaced}><MathParagraph nodes={block.inline} fontSize={15 * fontScale} /></View>;
+        return <View style={styles.spaced}><MathParagraph nodes={block.inline} fontSize={15 * fontScale} style={paragraphStyle} /></View>;
       }
       return (
         <Inline
           nodes={block.inline}
-          style={{
-            fontSize: 15 * fontScale,
-            lineHeight: 24.4 * fontScale,
-            color: muted ? colors.textMuted : colors.text,
-            fontStyle: muted ? 'italic' : 'normal',
-            marginBottom: 6,
-          }}
+          style={paragraphStyle}
           highlight={highlight}
         />
       );
     }
 
     case 'code':
-      return <CodeBlock lang={block.lang} text={block.text} />;
+      return <CodeBlock lang={block.lang} text={block.text} dimmed={!block.closed} />;
 
     case 'math':
       // An unterminated `$$` block is still arriving; typesetting it would only
@@ -691,20 +713,28 @@ function BlockViewImpl({
     case 'list':
       return (
         <View style={styles.spaced}>
-          {block.items.map((item, itemIndex) => (
-            <View key={itemIndex} style={[styles.listRow, { paddingLeft: item.depth * spacing.md }]}>
-              <Text style={[styles.bullet, { fontSize: 15 * fontScale, lineHeight: 24.4 * fontScale, color: item.checked === undefined ? colors.textSubtle : colors.accent }]}>
-                {item.checked === undefined
-                  ? (block.ordered && item.index ? `${item.index}.` : '•')
-                  : (item.checked ? '☑' : '☐')}
-              </Text>
-              <View style={styles.listBody}>
-                {hasMath(item.inline)
-                  ? <MathParagraph nodes={item.inline} fontSize={15 * fontScale} />
-                  : <Inline nodes={item.inline} style={{ fontSize: 15 * fontScale, lineHeight: 24.4 * fontScale, color: muted ? colors.textMuted : colors.text, fontStyle: muted ? 'italic' : 'normal' }} highlight={highlight} />}
+          {block.items.map((item, itemIndex) => {
+            const itemTextStyle = {
+              fontSize: 15 * fontScale,
+              lineHeight: 24.4 * fontScale,
+              color: muted ? colors.textMuted : colors.text,
+              fontStyle: muted ? 'italic' as const : 'normal' as const,
+            };
+            return (
+              <View key={itemIndex} style={[styles.listRow, { paddingLeft: item.depth * spacing.md }]}>
+                <Text style={[styles.bullet, { fontSize: 15 * fontScale, lineHeight: 24.4 * fontScale, color: item.checked === undefined ? colors.textSubtle : colors.accent }]}>
+                  {item.checked === undefined
+                    ? (block.ordered && item.index ? `${item.index}.` : '•')
+                    : (item.checked ? '☑' : '☐')}
+                </Text>
+                <View style={styles.listBody}>
+                  {hasMath(item.inline)
+                    ? <MathParagraph nodes={item.inline} fontSize={15 * fontScale} style={itemTextStyle} />
+                    : <Inline nodes={item.inline} style={itemTextStyle} highlight={highlight} />}
+                </View>
               </View>
-            </View>
-          ))}
+            );
+          })}
         </View>
       );
 
@@ -788,8 +818,59 @@ export const BlockView = React.memo(
       && a.muted === b.muted
       && a.onQuizAnswer === b.onQuizAnswer
       && a.onPracticeSubmit === b.onPracticeSubmit
-    ),
+  ),
 );
+
+function signNewBlocks(blocks: Block[], quizAlreadySeen: boolean): { blocks: SignedBlock[]; quizSeen: boolean } {
+  let quizSeen = quizAlreadySeen;
+  const signed = blocks as SignedBlock[];
+  for (const block of signed) {
+    if (block.type === 'widget' && block.kind === 'quiz') {
+      block.interactive = !quizSeen;
+      quizSeen = true;
+    }
+    block.sig = JSON.stringify(block);
+  }
+  return { blocks: signed, quizSeen };
+}
+
+const MarkdownBlockList = React.memo(function MarkdownBlockList({
+  blocks,
+  streaming,
+  highlight,
+  onQuizAnswer,
+  onPracticeSubmit,
+}: {
+  blocks: SignedBlock[];
+  streaming?: boolean;
+  highlight?: string;
+  onQuizAnswer?: (answer: TutorQuizAnswer) => void | Promise<void>;
+  onPracticeSubmit?: (answer: TutorPracticeAnswer) => void | Promise<void>;
+}) {
+  const { colors, fontScale } = useTheme();
+  return (
+    <>
+      {blocks.map((block, index) => (
+        <BlockView
+          key={index}
+          block={block}
+          index={index}
+          highlight={highlight}
+          onQuizAnswer={onQuizAnswer}
+          onPracticeSubmit={onPracticeSubmit}
+        />
+      ))}
+      {streaming ? <Text style={{ color: colors.textSubtle, fontSize: 15 * fontScale, lineHeight: 20 * fontScale }}>{CARET}</Text> : null}
+    </>
+  );
+});
+
+type StreamingMarkdownCache = {
+  splitter: ReturnType<typeof createSettledMarkdownSplitter>;
+  source: string;
+  stableBlocks: SignedBlock[];
+  quizSeen: boolean;
+};
 
 export interface MarkdownProps {
   text: string;
@@ -804,8 +885,9 @@ export interface MarkdownProps {
 
 /**
  * Hybrid Markdown renderer: prose, lists, tables and code are native views,
- * and only math/diagram blocks mount a WebView. Memoised on the raw text so a
- * streaming delta reparses once per update rather than once per child.
+ * and only math/diagram blocks mount a WebView. During streaming, completed
+ * blocks stay parsed and memoized; each flush reparses only the live Markdown
+ * tail, while a completed message still uses the same one-shot parser path.
  */
 export const Markdown = React.memo(function Markdown({
   text,
@@ -814,7 +896,7 @@ export const Markdown = React.memo(function Markdown({
   onQuizAnswer,
   onPracticeSubmit,
 }: MarkdownProps) {
-  const { colors, fontScale } = useTheme();
+  const streamCache = useRef<StreamingMarkdownCache | null>(null);
   /* Strip chat-template artifacts (`<|im_start|>`, `<s>`, `[INST]`,
    * `<think>` reasoning blocks and `<mistake>` blocks — the web routes
    * mistakes to the mistake book; mobile just hides them for now) and
@@ -822,35 +904,58 @@ export const Markdown = React.memo(function Markdown({
    * `renderAssistantHTML` in the web client. Unclosed widget tails are
    * held back like the web live tail, and only the first quiz per
    * message self-grades (one-question-per-turn). */
-  const blocks = useMemo(() => {
-    const parsed = parseMarkdown(hideUnclosedWidgetTail(stripCitationMarkers(stripChatArtifacts(text))));
-    let quizSeen = false;
-    for (const block of parsed) {
-      if (block.type !== 'widget' || block.kind !== 'quiz') continue;
-      block.interactive = !quizSeen;
-      quizSeen = true;
+  const parsed = useMemo(() => {
+    const parseSource = (source: string) => parseMarkdown(
+      hideUnclosedWidgetTail(stripCitationMarkers(stripChatArtifacts(source))),
+    );
+
+    if (!streaming) {
+      const cached = streamCache.current;
+      if (cached && cached.source === text) {
+        const tail = cached.splitter.push(text).tail;
+        const live = signNewBlocks(parseSource(tail), cached.quizSeen).blocks;
+        return { stable: cached.stableBlocks, live };
+      }
+      streamCache.current = null;
+      return { stable: [] as SignedBlock[], live: signNewBlocks(parseSource(text), false).blocks };
     }
-    /* Signed last so `interactive` counts and the field never feeds back into
-     * its own hash. */
-    for (const block of parsed) (block as SignedBlock).sig = JSON.stringify(block);
-    return parsed;
-  }, [text]);
-  if (!blocks.length) {
-    return streaming ? <Text style={{ color: colors.textSubtle, fontSize: 15 * fontScale }}>{CARET}</Text> : null;
+
+    let cached = streamCache.current;
+    if (!cached) {
+      cached = {
+        splitter: createSettledMarkdownSplitter(),
+        source: '',
+        stableBlocks: [],
+        quizSeen: false,
+      };
+      streamCache.current = cached;
+    }
+
+    const split = cached.splitter.push(text);
+    if (split.reset) {
+      cached.stableBlocks = [];
+      cached.quizSeen = false;
+    }
+    for (const settledSource of split.added) {
+      const next = signNewBlocks(parseSource(settledSource), cached.quizSeen);
+      cached.quizSeen = next.quizSeen;
+      if (next.blocks.length) cached.stableBlocks = cached.stableBlocks.concat(next.blocks);
+    }
+    cached.source = text;
+    const live = signNewBlocks(parseSource(split.tail), cached.quizSeen).blocks;
+    return { stable: cached.stableBlocks, live };
+  }, [text, streaming]);
+  const allBlocks = useMemo(
+    () => parsed.stable.concat(parsed.live),
+    [parsed.live, parsed.stable],
+  );
+
+  if (!parsed.stable.length && !parsed.live.length && !streaming) {
+    return null;
   }
   return (
     <View>
-      {blocks.map((block, index) => (
-        <BlockView
-          key={index}
-          block={block}
-          index={index}
-          highlight={highlight}
-          onQuizAnswer={onQuizAnswer}
-          onPracticeSubmit={onPracticeSubmit}
-        />
-      ))}
-      {streaming ? <Text style={{ color: colors.textSubtle, fontSize: 15 * fontScale, lineHeight: 20 * fontScale }}>{CARET}</Text> : null}
+      <MarkdownBlockList blocks={allBlocks} streaming={streaming} highlight={highlight} onQuizAnswer={onQuizAnswer} onPracticeSubmit={onPracticeSubmit} />
     </View>
   );
 });

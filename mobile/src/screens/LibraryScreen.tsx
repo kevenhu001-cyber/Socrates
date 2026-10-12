@@ -29,10 +29,20 @@ import { native } from '../native/native';
 import { appStore } from '../stores/appStore';
 import { useResponsive } from '../theme/responsive';
 import type { RootStackParamList } from '../navigation/types';
+import {
+  filterLibraryItems,
+  getLibraryFileTypeCategory,
+  LIBRARY_COLLECTION_FILTERS,
+  LIBRARY_TYPE_FILTERS,
+  type LibraryCollectionFilter,
+  type LibraryTypeFilter,
+} from '../data/library/libraryFilters';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Library'>;
 type Tab = 'files' | 'artifacts';
 type LibraryItem = Record<string, unknown>;
+type LibraryRowItem = { item: LibraryItem; index: number };
+type LibraryListRow = { key: string; items: LibraryRowItem[] };
 type DeleteTarget = { id: string; tab: Tab; title: string };
 type Preview =
   | { kind: 'text'; name: string; mimeType: string; text: string; truncated: boolean }
@@ -45,9 +55,21 @@ const TABLE_EXTENSIONS = new Set(['csv', 'tsv', 'xls', 'xlsx']);
 const SLIDE_EXTENSIONS = new Set(['ppt', 'pptx', 'key', 'odp']);
 const DOC_EXTENSIONS = new Set(['doc', 'docx', 'rtf', 'odt', 'md', 'markdown', 'txt']);
 const BOOK_EXTENSIONS = new Set(['epub', 'mobi', 'azw3']);
+const LIBRARY_ICON_COLORS: Readonly<Record<string, string>> = {
+  image: '#f43f5e', html: '#14b8a6', doc: '#3b82f6', code: '#a855f7',
+  table: '#22c55e', video: '#ef4444', audio: '#f59e0b', file: '#64748b',
+};
 
 function itemId(item: LibraryItem, index = 0) {
   return String(item.id || `item-${index}`);
+}
+
+function sourceTab(item: LibraryItem): Tab {
+  return item.__sourceTab === 'artifacts' ? 'artifacts' : 'files';
+}
+
+function itemKey(item: LibraryItem, index = 0) {
+  return `${sourceTab(item)}:${itemId(item, index)}`;
 }
 
 function itemName(item: LibraryItem, fallback: string) {
@@ -121,12 +143,16 @@ function mediaPreviewKind(item: LibraryItem): Exclude<Preview, { kind: 'text' }>
 
 export function LibraryScreen({ navigation }: Props) {
   const { colors, radius, typography } = useTheme();
-  const { isCompact, isDesktop, width } = useResponsive();
+  const { isCompact, isDesktop } = useResponsive();
   const t = useT();
-  const [tab, setTab] = useState<Tab>('files');
   const [files, setFiles] = useState<LibraryItem[]>([]);
   const [artifacts, setArtifacts] = useState<LibraryItem[]>([]);
   const [query, setQuery] = useState('');
+  const [collection, setCollection] = useState<LibraryCollectionFilter>('recommend');
+  const [typeFilter, setTypeFilter] = useState<LibraryTypeFilter>('all');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false);
+  const [newMenuOpen, setNewMenuOpen] = useState(false);
   const [selection, setSelection] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -157,14 +183,24 @@ export function LibraryScreen({ navigation }: Props) {
     void load();
   }, [load]);
 
-  const source = tab === 'files' ? files : artifacts;
-  const visibleItems = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    if (!needle) return source;
-    return source.filter((item) => itemName(item, t('library.untitled')).toLowerCase().includes(needle));
-  }, [query, source, t]);
+  const source = useMemo<LibraryItem[]>(() => [
+    ...files.map((item) => ({ ...item, __sourceTab: 'files' as const })),
+    ...artifacts.map((item) => ({ ...item, __sourceTab: 'artifacts' as const })),
+  ], [artifacts, files]);
+  const visibleItems = useMemo<LibraryItem[]>(() => {
+    return filterLibraryItems(source, { collection, type: typeFilter, query });
+  }, [collection, query, source, typeFilter]);
+  const listRows = useMemo<LibraryListRow[]>(() => {
+    const itemsPerRow = viewMode === 'grid' ? 2 : 1;
+    const rows: LibraryListRow[] = [];
+    for (let index = 0; index < visibleItems.length; index += itemsPerRow) {
+      const items = visibleItems.slice(index, index + itemsPerRow).map((item, offset) => ({ item, index: index + offset }));
+      rows.push({ key: itemKey(items[0].item, items[0].index), items });
+    }
+    return rows;
+  }, [viewMode, visibleItems]);
   const selectedItems = useMemo(
-    () => visibleItems.filter((item, index) => selection[itemId(item, index)]),
+    () => visibleItems.filter((item, index) => selection[itemKey(item, index)]),
     [selection, visibleItems],
   );
   const allSelected = visibleItems.length > 0 && selectedItems.length === visibleItems.length;
@@ -182,7 +218,7 @@ export function LibraryScreen({ navigation }: Props) {
     setSelection((current) => {
       const next = { ...current };
       visibleItems.forEach((item, index) => {
-        const id = itemId(item, index);
+        const id = itemKey(item, index);
         if (allSelected) delete next[id];
         else next[id] = true;
       });
@@ -192,6 +228,7 @@ export function LibraryScreen({ navigation }: Props) {
 
   const openItem = async (item: LibraryItem) => {
     const id = String(item.id || '');
+    const tab = sourceTab(item);
     if (!id) return;
     try {
       if (tab === 'artifacts') {
@@ -225,7 +262,9 @@ export function LibraryScreen({ navigation }: Props) {
     setError('');
     try {
       await filesApi.upload({ uri: asset.uri, name: asset.name || asset.fileName || 'attachment', mimeType: asset.mimeType, size: asset.size || asset.fileSize });
-      setTab('files');
+      setCollection('all');
+      setTypeFilter('all');
+      setQuery('');
       await load();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t('library.uploadFailed'));
@@ -236,7 +275,7 @@ export function LibraryScreen({ navigation }: Props) {
 
   const beginRename = (item: LibraryItem, index: number) => {
     const name = itemName(item, t('library.untitled'));
-    setRenameTarget({ id: itemId(item, index), tab, title: name });
+    setRenameTarget({ id: itemId(item, index), tab: sourceTab(item), title: name });
     setRenameValue(name);
   };
 
@@ -280,7 +319,7 @@ export function LibraryScreen({ navigation }: Props) {
   const requestDelete = (items: LibraryItem[], index?: number) => {
     const targets = items.map((item, itemIndex) => ({
       id: itemId(item, index === undefined ? itemIndex : index),
-      tab,
+      tab: sourceTab(item),
       title: itemName(item, t('library.untitled')),
     }));
     setDeleteTargets(targets);
@@ -288,61 +327,122 @@ export function LibraryScreen({ navigation }: Props) {
 
   const title = t('sidebar.nav.library') || 'Library';
   const description = t('library.directoryDesc');
-  const emptyTitle = query ? t('library.noMatch') : tab === 'files' ? t('library.emptyFiles') : t('library.emptyArtifacts');
-  const emptyBody = query ? t('library.noMatchDesc') : tab === 'files' ? t('library.emptyFilesDesc') : t('library.emptyArtifactsDesc');
+  const hasActiveFilter = Boolean(query.trim()) || collection !== 'recommend' || typeFilter !== 'all';
+  const emptyImages = collection === 'images' && !query.trim() && typeFilter === 'all';
+  const emptyTitle = emptyImages ? t('library.emptyImages') : hasActiveFilter ? t('library.noMatch') : t('library.emptyFiles');
+  const emptyBody = emptyImages ? t('library.emptyImagesDesc') : hasActiveFilter ? t('library.noMatchDesc') : t('library.emptyFilesDesc');
+  const compactHeader = isCompact;
+  const renderNewButton = (compact: boolean) => (
+    <AnimatedPressable
+      accessibilityRole="button"
+      accessibilityLabel={t('library.new')}
+      accessibilityState={{ expanded: newMenuOpen }}
+      disabled={uploading}
+      onPress={() => setNewMenuOpen(true)}
+      style={[styles.upload, compact ? styles.uploadCompact : null, { backgroundColor: colors.text, borderColor: colors.borderStrong, borderRadius: radius.pill, opacity: uploading ? 0.55 : 1 }]}
+    >
+      <Text style={[styles.uploadText, { color: colors.background, fontFamily: typography.semibold }]}>{t('library.new')}</Text>
+      {!compact ? <Ionicons name="chevron-down" size={14} color={colors.background} /> : null}
+    </AnimatedPressable>
+  );
+  const renderSettingsButton = () => (
+    <AnimatedPressable
+      accessibilityRole="button"
+      accessibilityLabel={t('profile.preferences')}
+      onPress={() => navigation.navigate('Settings')}
+      style={styles.settingsButton}
+    >
+      <Ionicons name="settings-outline" size={18} color={colors.textMuted} />
+    </AnimatedPressable>
+  );
 
   return (
     <Screen style={styles.screen}>
       <AppHeader showNavigation={isCompact} showIncognito={false} onNewChat={() => { appStore.startNewSession('chat'); navigation.navigate('Home'); }} />
       <View style={[styles.body, isDesktop ? styles.bodyDesktop : null]}>
-        <View style={[
-          styles.head,
-          isCompact ? (width < 600 ? styles.headCompactNarrow : styles.headCompactWide) : styles.headDesktop,
-        ]}>
+        <View style={[styles.head, compactHeader ? styles.headCompact : styles.headDesktop]}>
           <View style={styles.headCopy}>
-            <Text style={[styles.heading, { color: colors.text, fontFamily: typography.semibold }]}>{title}</Text>
-            {isCompact ? <Text style={[styles.description, { color: colors.textMuted, fontFamily: typography.body }]}>{description}</Text> : null}
-          </View>
-          <View style={[styles.headActions, isCompact && width < 600 ? styles.headActionsNarrow : styles.headActionsWide]}>
-            <View style={[styles.search, isCompact ? (width < 600 ? styles.searchCompactNarrow : styles.searchCompactWide) : styles.searchDesktop, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.pill }]}>
-              <Ionicons name="search-outline" size={17} color={colors.textMuted} />
-              <TextInput
-                accessibilityLabel={t('library.filterPlaceholder')}
-                value={query}
-                onChangeText={setQuery}
-                placeholder={t('library.filterPlaceholder')}
-                placeholderTextColor={colors.textSubtle}
-                style={[styles.searchInput, { color: colors.text, fontFamily: typography.body }]}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              {query ? <Pressable onPress={() => setQuery('')}><Ionicons name="close-circle" size={16} color={colors.textSubtle} /></Pressable> : null}
+            <View style={styles.titleRow}>
+              <Text style={[styles.heading, compactHeader ? styles.headingCompact : null, { color: colors.text, fontFamily: typography.semibold }]}>{title}</Text>
+              {compactHeader ? (
+                <View style={styles.headCompactActions}>
+                  {renderNewButton(true)}
+                  {renderSettingsButton()}
+                </View>
+              ) : null}
             </View>
-            {tab === 'files' ? (
-              <AnimatedPressable accessibilityLabel={t('library.upload')} disabled={uploading} onPress={() => { void upload(); }} style={[styles.upload, isCompact && width < 600 ? styles.uploadCompact : null, { backgroundColor: colors.text, borderColor: colors.borderStrong, borderRadius: radius.pill, opacity: uploading ? 0.55 : 1 }]}>
-                <Ionicons name="add" size={18} color={colors.background} />
-                <Text style={[styles.uploadText, { color: colors.background, fontFamily: typography.semibold }]}>{t('library.upload')}</Text>
-              </AnimatedPressable>
-            ) : null}
+            {!compactHeader ? <Text style={[styles.description, { color: colors.textMuted, fontFamily: typography.body }]}>{description}</Text> : null}
+          </View>
+          {!compactHeader ? (
+            <View style={styles.headActionsWide}>
+              {renderNewButton(false)}
+              {renderSettingsButton()}
+            </View>
+          ) : null}
+        </View>
+
+        <View style={[styles.libraryToolbar, isCompact ? styles.libraryToolbarCompact : null]}>
+          <View style={styles.libraryToolbarControls}>
+            <AnimatedPressable
+              accessibilityRole="button"
+              accessibilityLabel={t('library.filterByType')}
+              accessibilityState={{ expanded: filterMenuOpen, selected: typeFilter !== 'all' }}
+              onPress={() => setFilterMenuOpen(true)}
+              hitSlop={4}
+              style={[styles.libraryToolButton, { borderRadius: radius.sm, backgroundColor: typeFilter !== 'all' ? colors.surfaceHover : 'transparent' }]}
+            >
+              <Ionicons name="filter-outline" size={17} color={typeFilter !== 'all' ? colors.text : colors.textMuted} />
+            </AnimatedPressable>
+            <View style={[styles.toolbarDivider, { backgroundColor: colors.border }]} />
+            <View style={styles.viewSwitch}>
+              {(['grid', 'list'] as const).map((mode) => (
+                <AnimatedPressable
+                  key={mode}
+                  accessibilityRole="button"
+                  accessibilityLabel={t(mode === 'grid' ? 'library.gridView' : 'library.listView')}
+                  accessibilityState={{ selected: viewMode === mode }}
+                  onPress={() => setViewMode(mode)}
+                  hitSlop={{ top: 2, bottom: 2, left: 2, right: 2 }}
+                  style={[styles.viewButton, viewMode === mode && { backgroundColor: colors.surfaceRaised, borderRadius: radius.sm }]}
+                >
+                  <Ionicons name={mode === 'grid' ? 'grid-outline' : 'list-outline'} size={17} color={viewMode === mode ? colors.text : colors.textMuted} />
+                </AnimatedPressable>
+              ))}
+            </View>
+          </View>
+          <View style={[styles.search, isCompact ? styles.searchCompact : styles.searchDesktop, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.pill }]}>
+            <Ionicons name="search-outline" size={17} color={colors.textMuted} />
+            <TextInput
+              accessibilityLabel={t('library.filterPlaceholder')}
+              value={query}
+              onChangeText={setQuery}
+              placeholder={t('library.filterPlaceholder')}
+              placeholderTextColor={colors.textSubtle}
+              style={[styles.searchInput, { color: colors.text, fontFamily: typography.body }]}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {query ? <Pressable onPress={() => setQuery('')}><Ionicons name="close-circle" size={16} color={colors.textSubtle} /></Pressable> : null}
           </View>
         </View>
 
-        <View style={[styles.tabs, isCompact ? styles.tabsCompact : styles.tabsDesktop, width >= 600 && isCompact ? styles.tabsCompactWide : null]}>
-          {([
-            ['files', t('library.files')],
-            ['artifacts', t('library.artifacts')],
-          ] as Array<[Tab, string]>).map(([value, label]) => {
-            const active = tab === value;
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll} contentContainerStyle={styles.chips} accessibilityRole="tablist" accessibilityLabel={title}>
+          {LIBRARY_COLLECTION_FILTERS.map((filter) => {
+            const active = collection === filter.id;
             return (
-              <AnimatedPressable key={value} accessibilityRole="tab" accessibilityState={{ selected: active }} onPress={() => { setTab(value); setSelection({}); }} style={[styles.tab, active && { backgroundColor: colors.surfaceHover, borderRadius: radius.pill }]}>
-                <Text style={[styles.tabText, { color: active ? colors.text : colors.textMuted, fontFamily: active ? typography.semibold : typography.medium }]}>{label}</Text>
+              <AnimatedPressable
+                key={filter.id}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: active }}
+                onPress={() => setCollection(filter.id)}
+                hitSlop={3}
+                style={[styles.chip, { backgroundColor: active ? colors.surfaceHover : 'transparent', borderColor: active ? colors.border : 'transparent', borderRadius: radius.pill }]}
+              >
+                <Text style={[styles.chipText, { color: active ? colors.text : colors.textMuted, fontFamily: active ? typography.semibold : typography.medium }]}>{t(filter.label)}</Text>
               </AnimatedPressable>
             );
           })}
-          <AnimatedPressable accessibilityLabel={t('library.refresh')} onPress={() => { void load(); }} style={styles.refresh}>
-            <Ionicons name="refresh-outline" size={19} color={colors.textMuted} />
-          </AnimatedPressable>
-        </View>
+        </ScrollView>
 
         {selectedItems.length ? (
           <View style={[styles.selectionBar, { backgroundColor: colors.surface, borderRadius: radius.md }]}>
@@ -359,9 +459,16 @@ export function LibraryScreen({ navigation }: Props) {
 
         {error ? <Text style={[styles.error, { color: colors.danger, fontFamily: typography.body }]}>{error}</Text> : null}
         <FlatList
-          data={visibleItems}
-          keyExtractor={(item, index) => itemId(item, index)}
-          contentContainerStyle={visibleItems.length ? [styles.list, isDesktop ? styles.listDesktop : null] : [styles.emptyList, isCompact ? styles.emptyListCompact : styles.emptyListDesktop]}
+          testID="library-items-list"
+          data={listRows}
+          extraData={selection}
+          numColumns={1}
+          keyExtractor={(row) => row.key}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={9}
+          maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+          contentContainerStyle={listRows.length ? [viewMode === 'grid' ? styles.gridList : styles.list, isCompact ? (viewMode === 'grid' ? styles.gridListCompact : styles.listCompact) : null, isDesktop ? styles.listDesktop : null] : [styles.emptyList, isCompact ? styles.emptyListCompact : styles.emptyListDesktop]}
           refreshControl={<RefreshControl refreshing={busy} onRefresh={() => { void load(); }} tintColor={colors.accent} />}
           ListEmptyComponent={busy && !loaded ? <ActivityIndicator color={colors.accent} /> : (
             <View style={styles.empty}>
@@ -369,38 +476,112 @@ export function LibraryScreen({ navigation }: Props) {
               <Text style={[styles.emptyBody, { color: colors.textMuted, fontFamily: typography.body }]}>{emptyBody}</Text>
             </View>
           )}
-          renderItem={({ item, index }) => {
-            const id = itemId(item, index);
-            const name = itemName(item, t('library.untitled'));
-            const date = formatDate(item.updatedAt || item.uploadedAt || item.createdAt);
-            const meta = tab === 'files'
-              ? [date, formatBytes(item.size, '')].filter(Boolean).join(' · ')
-              : [String(item.type || t('library.artifact')), date].filter(Boolean).join(' · ');
-            return (
-              <View style={[styles.row, { borderBottomColor: withAlpha(colors.border, 0.18) }]}>
-                <AnimatedPressable accessibilityRole="checkbox" accessibilityState={{ checked: Boolean(selection[id]) }} onPress={() => toggleSelected(id)} style={styles.checkboxButton}>
-                  <Ionicons name={selection[id] ? 'checkbox' : 'square-outline'} size={19} color={selection[id] ? colors.accent : colors.textSubtle} />
-                </AnimatedPressable>
-                <AnimatedPressable onPress={() => { void openItem(item); }} style={styles.rowMain}>
-                  <View style={[styles.iconBox, { backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderRadius: radius.sm }]}>
-                    {iconForItem(item, tab, colors.textMuted)}
+          renderItem={({ item: row }) => {
+            const renderCard = ({ item, index }: LibraryRowItem) => {
+              const key = itemKey(item, index);
+              const itemTab = sourceTab(item);
+              const selected = Boolean(selection[key]);
+              const name = itemName(item, t('library.untitled'));
+              const date = formatDate(item.updatedAt || item.uploadedAt || item.createdAt);
+              const meta = itemTab === 'files'
+                ? [date, formatBytes(item.size, '')].filter(Boolean).join(' · ')
+                : [String(item.type || t('library.artifact')), date].filter(Boolean).join(' · ');
+              const iconCategory = getLibraryFileTypeCategory({ kind: String(item.kind || ''), name });
+              const iconBackground = itemTab === 'artifacts' ? '#a855f7' : (LIBRARY_ICON_COLORS[iconCategory] || LIBRARY_ICON_COLORS.file);
+              if (viewMode === 'grid') {
+                return (
+                  <View key={key} style={[styles.gridCard, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md }]}>
+                    <View style={styles.gridCardTop}>
+                      <View style={[styles.iconBox, { backgroundColor: iconBackground, borderColor: iconBackground, borderRadius: radius.sm }]}>
+                        {iconForItem(item, itemTab, '#ffffff')}
+                      </View>
+                      <AnimatedPressable accessibilityRole="checkbox" accessibilityState={{ checked: selected }} onPress={() => toggleSelected(key)} style={styles.gridCheckbox}>
+                        <Ionicons name={selected ? 'checkbox' : 'square-outline'} size={19} color={selected ? colors.accent : colors.textSubtle} />
+                      </AnimatedPressable>
+                    </View>
+                    <AnimatedPressable onPress={() => { void openItem(item); }} style={styles.gridCopy}>
+                      <Text numberOfLines={2} style={[styles.rowTitle, { color: colors.text, fontFamily: typography.semibold }]}>{name}</Text>
+                      <Text numberOfLines={1} style={[styles.rowMeta, { color: colors.textMuted, fontFamily: typography.body }]}>{meta || date || t('library.metaCreated')}</Text>
+                    </AnimatedPressable>
+                    <View style={styles.gridActions}>
+                      <AnimatedPressable accessibilityLabel={t('library.rename')} onPress={() => beginRename(item, index)} style={styles.gridAction}>
+                        <Ionicons name="pencil-outline" size={17} color={colors.textMuted} />
+                      </AnimatedPressable>
+                      <AnimatedPressable accessibilityLabel={t('common.delete')} onPress={() => requestDelete([item], index)} style={styles.gridAction}>
+                        <Ionicons name="trash-outline" size={17} color={colors.textMuted} />
+                      </AnimatedPressable>
+                    </View>
                   </View>
-                  <View style={styles.rowCopy}>
-                    <Text numberOfLines={1} style={[styles.rowTitle, { color: colors.text, fontFamily: typography.semibold }]}>{name}</Text>
-                    <Text numberOfLines={1} style={[styles.rowMeta, { color: colors.textMuted, fontFamily: typography.body }]}>{meta || date || t('library.metaCreated')}</Text>
-                  </View>
-                </AnimatedPressable>
-                <AnimatedPressable accessibilityLabel={t('library.rename')} onPress={() => beginRename(item, index)} style={styles.rowAction}>
-                  <Ionicons name="pencil-outline" size={17} color={colors.textMuted} />
-                </AnimatedPressable>
-                <AnimatedPressable accessibilityLabel={t('common.delete')} onPress={() => requestDelete([item], index)} style={styles.rowAction}>
-                  <Ionicons name="trash-outline" size={17} color={colors.textMuted} />
-                </AnimatedPressable>
-              </View>
-            );
+                );
+              }
+              return (
+                <View key={key} style={[styles.row, isCompact ? styles.rowCompact : null, { borderBottomColor: withAlpha(colors.border, 0.18) }]}>
+                  <AnimatedPressable accessibilityRole="checkbox" accessibilityState={{ checked: selected }} onPress={() => toggleSelected(key)} hitSlop={2} style={[styles.checkboxButton, isCompact ? styles.checkboxButtonCompact : null]}>
+                    <Ionicons name={selected ? 'checkbox' : 'square-outline'} size={19} color={selected ? colors.accent : colors.textSubtle} />
+                  </AnimatedPressable>
+                  <AnimatedPressable onPress={() => { void openItem(item); }} style={[styles.rowMain, isCompact ? styles.rowMainCompact : null]}>
+                    <View style={[styles.iconBox, isCompact ? styles.iconBoxCompact : null, { backgroundColor: iconBackground, borderColor: iconBackground, borderRadius: radius.sm }]}>
+                      {iconForItem(item, itemTab, '#ffffff')}
+                    </View>
+                    <View style={styles.rowCopy}>
+                      <Text numberOfLines={1} style={[styles.rowTitle, isCompact ? styles.rowTitleCompact : null, { color: colors.text, fontFamily: typography.semibold }]}>{name}</Text>
+                      <Text numberOfLines={1} style={[styles.rowMeta, isCompact ? styles.rowMetaCompact : null, { color: colors.textMuted, fontFamily: typography.body }]}>{meta || date || t('library.metaCreated')}</Text>
+                    </View>
+                  </AnimatedPressable>
+                  <AnimatedPressable accessibilityLabel={t('library.rename')} onPress={() => beginRename(item, index)} hitSlop={5} style={[styles.rowAction, isCompact ? styles.rowActionCompact : null]}>
+                    <Ionicons name="pencil-outline" size={17} color={colors.textMuted} />
+                  </AnimatedPressable>
+                  <AnimatedPressable accessibilityLabel={t('common.delete')} onPress={() => requestDelete([item], index)} hitSlop={5} style={[styles.rowAction, isCompact ? styles.rowActionCompact : null]}>
+                    <Ionicons name="trash-outline" size={17} color={colors.textMuted} />
+                  </AnimatedPressable>
+                </View>
+              );
+            };
+            return viewMode === 'grid'
+              ? <View style={styles.gridRow}>{row.items.map(renderCard)}</View>
+              : renderCard(row.items[0]);
           }}
         />
       </View>
+
+      <Overlay visible={filterMenuOpen} presentation="bottom" onClose={() => setFilterMenuOpen(false)} maxWidth={560} testID="library-filter-menu" style={[styles.menuSheet, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg }]}>
+        <View style={styles.menuHeader}>
+          <Text style={[styles.menuTitle, { color: colors.text, fontFamily: typography.semibold }]}>{t('library.filterByType')}</Text>
+          <AnimatedPressable accessibilityLabel={t('common.close')} onPress={() => setFilterMenuOpen(false)} style={styles.closeButton}><Ionicons name="close" size={22} color={colors.textMuted} /></AnimatedPressable>
+        </View>
+        {LIBRARY_TYPE_FILTERS.map((filter) => {
+          const active = typeFilter === filter.id;
+          return (
+            <AnimatedPressable
+              key={filter.id}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: active }}
+              onPress={() => { setTypeFilter(filter.id); setFilterMenuOpen(false); }}
+              style={[styles.menuOption, active && { backgroundColor: colors.surfaceHover, borderRadius: radius.sm }]}
+            >
+              <Text style={[styles.menuOptionText, { color: colors.text, fontFamily: active ? typography.semibold : typography.body }]}>{t(filter.label)}</Text>
+              {active ? <Ionicons name="checkmark" size={19} color={colors.accent} /> : null}
+            </AnimatedPressable>
+          );
+        })}
+      </Overlay>
+
+      <Overlay visible={newMenuOpen} presentation="bottom" onClose={() => setNewMenuOpen(false)} maxWidth={560} testID="library-new-menu" style={[styles.menuSheet, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg }]}>
+        <View style={styles.menuHeader}>
+          <Text style={[styles.menuTitle, { color: colors.text, fontFamily: typography.semibold }]}>{t('library.new')}</Text>
+          <AnimatedPressable accessibilityLabel={t('common.close')} onPress={() => setNewMenuOpen(false)} style={styles.closeButton}><Ionicons name="close" size={22} color={colors.textMuted} /></AnimatedPressable>
+        </View>
+        <AnimatedPressable
+          accessibilityRole="button"
+          accessibilityLabel={t('library.upload')}
+          disabled={uploading}
+          onPress={() => { setNewMenuOpen(false); setCollection('all'); setTypeFilter('all'); setQuery(''); void upload(); }}
+          style={styles.menuOption}
+        >
+          <Ionicons name="cloud-upload-outline" size={19} color={colors.textMuted} />
+          <Text style={[styles.menuOptionText, { color: colors.text, fontFamily: typography.body }]}>{t('library.upload')}</Text>
+        </AnimatedPressable>
+      </Overlay>
 
       <Overlay visible={Boolean(renameTarget)} onClose={() => setRenameTarget(null)} maxWidth={420} testID="library-rename" style={[styles.renameCard, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg }]}>
             <Text style={[styles.modalTitle, { color: colors.text, fontFamily: typography.display }]}>{t('library.rename')}</Text>
@@ -448,7 +629,7 @@ export function LibraryScreen({ navigation }: Props) {
       <ConfirmDialog
         visible={deleteTargets.length > 0}
         title={deleteTargets.length > 1 ? t('library.deleteSelected') : t('common.delete')}
-        message={deleteTargets.length > 1 ? t('library.deleteSelectedConfirm', { n: String(deleteTargets.length) }) : t(tab === 'files' ? 'library.deleteFileConfirm' : 'library.deleteArtifactConfirm')}
+        message={deleteTargets.length > 1 ? t('library.deleteSelectedConfirm', { n: String(deleteTargets.length) }) : t(deleteTargets[0]?.tab === 'files' ? 'library.deleteFileConfirm' : 'library.deleteArtifactConfirm')}
         confirmLabel={t('common.delete')}
         cancelLabel={t('common.cancel')}
         danger
@@ -463,24 +644,35 @@ const styles = StyleSheet.create({
   screen: { paddingTop: 0 },
   body: { flex: 1 },
   bodyDesktop: { alignSelf: 'center', width: '100%', maxWidth: 768 },
-  head: { gap: 16 },
-  headCompactNarrow: { paddingHorizontal: 24, paddingTop: 40, paddingBottom: 0, gap: 19 },
-  headCompactWide: { paddingHorizontal: 28, paddingTop: 58, paddingBottom: 0, gap: 19 },
+  head: { gap: 0 },
+  headCompact: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 16 },
   headDesktop: { paddingHorizontal: 15, paddingTop: 72, paddingBottom: 0, flexDirection: 'row', alignItems: 'flex-start', gap: 24 },
   headCopy: { flex: 1, minWidth: 0 },
+  titleRow: { minHeight: 36, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headCompactActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headActionsWide: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   heading: { fontSize: 30, lineHeight: 36, letterSpacing: -0.5 },
+  headingCompact: { fontSize: 27, lineHeight: 36 },
   description: { fontSize: 17, lineHeight: 26, marginTop: 4 },
-  headActions: { gap: 12 },
-  headActionsNarrow: { flexDirection: 'column' },
-  headActionsWide: { flexDirection: 'row', alignItems: 'flex-start' },
-  search: { minHeight: 48, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16 },
-  searchCompactNarrow: { width: '100%' },
-  searchCompactWide: { flex: 1, minWidth: 0 },
-  searchDesktop: { width: 240 },
-  searchInput: { flex: 1, minHeight: 48, fontSize: 14, paddingVertical: 0 },
-  upload: { width: 76, minHeight: 48, paddingHorizontal: 12, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  uploadCompact: { width: 115 },
+  search: { minHeight: 42, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14 },
+  searchCompact: { flex: 1, minWidth: 0, minHeight: 42 },
+  searchDesktop: { width: 240, minHeight: 42 },
+  searchInput: { flex: 1, minHeight: 40, fontSize: 14, paddingVertical: 0 },
+  upload: { minWidth: 96, minHeight: 48, paddingHorizontal: 12, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  uploadCompact: { width: 76, minWidth: 76, minHeight: 40, paddingHorizontal: 0 },
   uploadText: { fontSize: 14 },
+  settingsButton: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  libraryToolbar: { minHeight: 48, marginHorizontal: 15, marginBottom: 16, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  libraryToolbarCompact: { marginHorizontal: 16 },
+  libraryToolbarControls: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
+  libraryToolButton: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  toolbarDivider: { width: StyleSheet.hairlineWidth, height: 20 },
+  viewSwitch: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  viewButton: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
+  chipScroll: { marginBottom: 16 },
+  chips: { minHeight: 38, paddingHorizontal: 16, alignItems: 'center', gap: 8 },
+  chip: { minHeight: 38, paddingHorizontal: 17, alignItems: 'center', justifyContent: 'center' },
+  chipText: { fontSize: 13, lineHeight: 18 },
   tabs: { minHeight: 40, flexDirection: 'row', alignItems: 'center' },
   tabsCompact: { marginHorizontal: 24, marginTop: 27 },
   tabsCompactWide: { marginHorizontal: 28 },
@@ -490,11 +682,22 @@ const styles = StyleSheet.create({
   refresh: { marginLeft: 'auto', width: 40, minHeight: 40, alignItems: 'center', justifyContent: 'center' },
   selectionBar: { minHeight: 44, marginHorizontal: 20, marginTop: 10, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', gap: 6 },
   checkboxButton: { width: 36, height: 40, alignItems: 'center', justifyContent: 'center' },
+  checkboxButtonCompact: { width: 36, height: 44 },
   selectionText: { flex: 1, fontSize: 13 },
   selectionDelete: { minHeight: 36, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', gap: 5 },
   error: { marginHorizontal: 20, marginTop: 10, fontSize: 12 },
   list: { paddingHorizontal: 20, paddingTop: 6, paddingBottom: 40 },
+  listCompact: { paddingHorizontal: 16 },
   listDesktop: { paddingHorizontal: 15 },
+  gridList: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 40, gap: 10 },
+  gridListCompact: { paddingHorizontal: 16 },
+  gridRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
+  gridCard: { width: '48%', maxWidth: '48%', minWidth: 0, minHeight: 164, padding: 10, borderWidth: StyleSheet.hairlineWidth },
+  gridCardTop: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  gridCheckbox: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  gridCopy: { flex: 1, minHeight: 62, paddingTop: 8, justifyContent: 'flex-start' },
+  gridActions: { minHeight: 44, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
+  gridAction: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   emptyList: { alignItems: 'center', paddingHorizontal: 28 },
   emptyListCompact: { paddingTop: 58 },
   emptyListDesktop: { paddingTop: 30 },
@@ -502,13 +705,24 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 14 },
   emptyBody: { fontSize: 13, lineHeight: 20, textAlign: 'center', marginTop: 8 },
   row: { minHeight: 72, flexDirection: 'row', alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth },
+  rowCompact: { minHeight: 62 },
   rowMain: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
+  rowMainCompact: { gap: 10, paddingVertical: 8 },
   iconBox: { width: 42, height: 42, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  iconBoxCompact: { width: 34, height: 34 },
   rowCopy: { flex: 1, minWidth: 0 },
   rowTitle: { fontSize: 14 },
+  rowTitleCompact: { fontSize: 15 },
   rowMeta: { fontSize: 11.5, marginTop: 4 },
+  rowMetaCompact: { fontSize: 13, marginTop: 3 },
   rowAction: { width: 38, height: 42, alignItems: 'center', justifyContent: 'center' },
+  rowActionCompact: { width: 34, height: 38 },
   renameCard: { width: '100%', maxWidth: 420, alignSelf: 'center', borderWidth: 1, padding: 20 },
+  menuSheet: { width: '100%', padding: 18, borderWidth: StyleSheet.hairlineWidth },
+  menuHeader: { minHeight: 44, marginBottom: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  menuTitle: { flex: 1, fontSize: 18 },
+  menuOption: { minHeight: 48, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  menuOptionText: { flex: 1, fontSize: 14 },
   modalTitle: { fontSize: 21 },
   renameInput: { minHeight: 46, borderWidth: 1, marginTop: 16, paddingHorizontal: 12, fontSize: 14 },
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8, marginTop: 16 },

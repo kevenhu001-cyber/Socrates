@@ -1,13 +1,17 @@
 /**
  * sseEmitter — the write side of the chat stream pipeline.
  *
- * One place that knows how to turn a pipeline event into an SSE frame on
- * the response socket, with the abort guard and the `flush` compatibility
- * shim that used to be scattered through the route handler.
+ * One place that knows how to turn a pipeline event into an SSE frame on the
+ * response socket, with the abort guard and the `flush` compatibility shim.
+ * Adjacent model content/reasoning frames are coalesced for a tiny bounded
+ * window so compression/socket writes do not run once per provider token;
+ * semantic tool and lifecycle events force the text buffer out first.
  */
 
 import type { Response } from 'express';
 import type { ToolCallDelta } from './types.js';
+
+const DATA_BATCH_WINDOW_MS = 12;
 
 function flush(response: Response): void {
   try { (response as { flush?: () => void }).flush?.(); } catch {}
@@ -16,10 +20,39 @@ function flush(response: Response): void {
 export class SseEmitter {
   private readonly response: Response;
   private readonly aborted: () => boolean;
+  private pendingData = '';
+  private dataTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(response: Response, isAborted: () => boolean) {
     this.response = response;
     this.aborted = isAborted;
+  }
+
+  private canWrite(): boolean {
+    return !this.aborted() && !this.response.writableEnded && !this.response.destroyed;
+  }
+
+  private clearDataTimer(): void {
+    if (this.dataTimer !== null) {
+      clearTimeout(this.dataTimer);
+      this.dataTimer = null;
+    }
+  }
+
+  /** Flush coalesced frames before a semantic event or terminal frame. */
+  private flushPendingData(): void {
+    this.clearDataTimer();
+    const payload = this.pendingData;
+    this.pendingData = '';
+    if (payload) this.write(payload);
+  }
+
+  private queueData(payload: string): void {
+    if (!this.canWrite()) return;
+    this.pendingData += payload;
+    if (this.dataTimer !== null) return;
+    this.dataTimer = setTimeout(() => this.flushPendingData(), DATA_BATCH_WINDOW_MS);
+    this.dataTimer.unref?.();
   }
 
   /** Raw frame write — escapes the abort guard only for lifecycle frames. */
@@ -32,18 +65,19 @@ export class SseEmitter {
 
   /** Guarded write: silently drops frames once the client is gone. */
   write(payload: string): void {
-    if (this.aborted()) return;
+    if (!this.canWrite()) return;
     this.writeRaw(payload);
   }
 
   /** `event: <name>\ndata: {...}` frame from a JSON-serialisable bag. */
   event(name: string, data: unknown): void {
+    this.flushPendingData();
     this.write(`event: ${name}\ndata: ${JSON.stringify(data)}\n\n`);
   }
 
   /** Plain `data:` JSON frame (OpenAI-compatible chat delta). */
   data(value: unknown): void {
-    this.write(`data: ${JSON.stringify(value)}\n\n`);
+    this.queueData(`data: ${JSON.stringify(value)}\n\n`);
   }
 
   /** Assistant content delta. */
@@ -69,6 +103,7 @@ export class SseEmitter {
 
   /** Terminal `data: [DONE]` + socket end (unguarded: best effort). */
   finish(): void {
+    this.flushPendingData();
     try {
       this.response.write('data: [DONE]\n\n');
       this.response.end();
@@ -77,6 +112,7 @@ export class SseEmitter {
 
   /** Error frame + terminal DONE + end (upstream error path). */
   fatal(error: Error): void {
+    this.flushPendingData();
     console.error('[chat/stream] LLM error:', error.message);
     // Never forward raw upstream bodies to the client — they may
     // contain provider-specific details. Map to a status-only message;

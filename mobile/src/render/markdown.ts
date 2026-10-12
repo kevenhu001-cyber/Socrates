@@ -400,6 +400,128 @@ export function parseMarkdown(source: string | null | undefined): Block[] {
   return parseBlocks(text.split('\n'));
 }
 
+/* The web renderer keeps completed Markdown blocks stable and only reparses
+ * the live tail. Mobile uses the same conservative boundary rules so an open
+ * fence/math/widget or a loose list is never split; unlike DOM rendering, the
+ * parsed native blocks are cached as well, avoiding whole-answer parsing on
+ * every stream flush. */
+const STREAMING_TAGS = new Set([
+  'think', 'mistake', 'quiz', 'example', 'practice', 'definition', 'step',
+  'flashcard', 'proof', 'theorem', 'key-point', 'derivation', 'q', 'o',
+  'title', 'problem', 'solution', 'hint', 'front', 'back', 'statement',
+  'body', 'term', 'correct',
+]);
+
+function countToken(source: string, token: string): number {
+  let count = 0;
+  let index = source.indexOf(token);
+  while (index !== -1) {
+    count += 1;
+    index = source.indexOf(token, index + token.length);
+  }
+  return count;
+}
+
+export function isStableMarkdownPrefix(source: string): boolean {
+  const text = String(source || '');
+  if (countToken(text, '```') % 2 !== 0) return false;
+  if (countToken(text, '~~~') % 2 !== 0) return false;
+  if (countToken(text, '$$') % 2 !== 0) return false;
+  if (countToken(text, '\\[') !== countToken(text, '\\]')) return false;
+  if (countToken(text, '\\(') !== countToken(text, '\\)')) return false;
+  if (text.indexOf('<') === -1) return true;
+
+  const stack: string[] = [];
+  const tagRe = /<\/?([a-z][\w-]*)(?:\s[^>]*)?\/?>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = tagRe.exec(text)) !== null) {
+    const tag = match[1].toLowerCase();
+    if (!STREAMING_TAGS.has(tag)) continue;
+    const raw = match[0];
+    if (raw.charAt(1) === '/') {
+      if (stack.pop() !== tag) return false;
+    } else if (!/\/\s*>$/.test(raw)) {
+      stack.push(tag);
+    }
+  }
+  return stack.length === 0;
+}
+
+const STREAM_LIST_ITEM_RE = /^[ \t]*(?:[-*+]|\d{1,9}[.)])[ \t]+\S/;
+
+function isLooseListBoundary(source: string, blockStart: number, boundary: number): boolean {
+  const before = source.slice(blockStart, boundary);
+  const lastLine = before.slice(before.lastIndexOf('\n') + 1);
+  if (!STREAM_LIST_ITEM_RE.test(lastLine)) return false;
+
+  const after = source.slice(boundary + 2);
+  const newline = after.indexOf('\n');
+  const nextLine = newline === -1 ? after : after.slice(0, newline);
+  if (STREAM_LIST_ITEM_RE.test(nextLine)) return true;
+  if (/^[ \t]{2,}\S/.test(nextLine) && !/^[ \t]*(`{3,}|~{3,})/.test(nextLine)) return true;
+  if (newline === -1) return /^[ \t]*(?:[-*+]|\d{1,9}[.)]?)?[ \t]*$/.test(nextLine);
+  return false;
+}
+
+export interface SettledMarkdownSplit {
+  /** Newly completed source blocks, in order, since the preceding push. */
+  added: string[];
+  /** The uncommitted Markdown tail that should be parsed for this paint. */
+  tail: string;
+  /** True when the new input replaced rather than extended the prior text. */
+  reset: boolean;
+}
+
+/** Append-only settled-region splitter ported from the web stream renderer. */
+export function createSettledMarkdownSplitter(): { push: (source: string) => SettledMarkdownSplit } {
+  let source = '';
+  let blocks: string[] = [];
+  let emitted = 0;
+  let tailStart = 0;
+  let scanPosition = 0;
+
+  return {
+    push(input: string): SettledMarkdownSplit {
+      const text = String(input || '');
+      if (text === source) return { added: [], tail: text.slice(tailStart), reset: false };
+
+      let reset = false;
+      if (!text.startsWith(source)) {
+        blocks = [];
+        emitted = 0;
+        tailStart = 0;
+        scanPosition = 0;
+        reset = true;
+      }
+
+      let search = Math.max(scanPosition, tailStart);
+      for (;;) {
+        const boundary = text.indexOf('\n\n', search);
+        if (boundary === -1) {
+          scanPosition = Math.max(tailStart, text.length - 1);
+          break;
+        }
+        const candidate = text.slice(tailStart, boundary);
+        if (candidate.length === 0) {
+          tailStart = boundary + 2;
+          search = tailStart;
+        } else if (isStableMarkdownPrefix(candidate) && !isLooseListBoundary(text, tailStart, boundary)) {
+          blocks.push(candidate);
+          tailStart = boundary + 2;
+          search = tailStart;
+        } else {
+          search = boundary + 1;
+        }
+      }
+
+      source = text;
+      const added = blocks.slice(emitted);
+      emitted = blocks.length;
+      return { added, tail: text.slice(tailStart), reset };
+    },
+  };
+}
+
 function parseBlocks(lines: string[]): Block[] {
   const blocks: Block[] = [];
   let i = 0;

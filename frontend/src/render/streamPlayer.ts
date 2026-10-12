@@ -23,6 +23,8 @@ import {
   type PlaybackState,
 } from '@socrates/core';
 
+const UI_PAINT_INTERVAL_MS = 32;
+
 export interface StreamPlayerFrame {
   state: PlaybackState;
   /** Characters revealed by this frame (playedLen delta). */
@@ -34,6 +36,8 @@ export interface StreamPlayerFrame {
 export interface StreamPlayer {
   /** Coalesce a network delta into the buffer (advances totalLen only). */
   push(delta: string): void;
+  /** Reveal arrived text now without completing the stream or firing onDone. */
+  revealBufferedNow(): void;
   /** finish(): flush the remaining buffer, then fire onDone once caught up. */
   beginDrain(): void;
   /** Force the full arrived text visible immediately and paint it now. */
@@ -72,6 +76,14 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
   let generation = 0;
   let doneFired = false;
   let lastState: PlaybackState = 'idle';
+  let lastPaintAt = Number.NEGATIVE_INFINITY;
+  let lastPaintedLen = 0;
+
+  function shouldPaint(nowMs: number, force = false): boolean {
+    if (!force && nowMs - lastPaintAt < UI_PAINT_INTERVAL_MS) return false;
+    lastPaintAt = nowMs;
+    return true;
+  }
 
   function emitStateMaybe(state: PlaybackState): void {
     if (state !== lastState) {
@@ -86,11 +98,14 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
          dispose() schedule with the fresh generation. */
       if (captured !== generation) return;
       scheduled = false;
-      const r = clock.tick(now());
-      if (r.revealed > 0) {
+      const nowMs = now();
+      const r = clock.tick(nowMs);
+      const unpainted = r.playedLen - lastPaintedLen;
+      if (unpainted > 0 && shouldPaint(nowMs, clock.isDone())) {
+        lastPaintedLen = r.playedLen;
         onFrame(full.slice(0, r.playedLen), {
           state: r.state,
-          revealed: r.revealed,
+          revealed: unpainted,
           totalLen: clock.totalLen(),
         });
       }
@@ -127,6 +142,22 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
       clock.push(full.length);
       schedule();
     },
+    revealBufferedNow(): void {
+      const captured = generation;
+      const r = clock.revealBuffered();
+      if (captured !== generation) return;
+      scheduled = false;
+      generation += 1;
+      if (r.revealed > 0 && shouldPaint(now(), true)) {
+        lastPaintedLen = r.playedLen;
+        onFrame(full.slice(0, r.playedLen), {
+          state: r.state,
+          revealed: r.revealed,
+          totalLen: r.playedLen,
+        });
+      }
+      emitStateMaybe(r.state);
+    },
     beginDrain(): void {
       clock.beginDrain();
       schedule();
@@ -146,6 +177,8 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
           totalLen: total,
         });
       }
+      lastPaintedLen = total;
+      lastPaintAt = now();
       // Reflect terminal state; drop any pending frame.
       generation += 1;
       scheduled = false;

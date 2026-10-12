@@ -42,8 +42,10 @@ export interface PlaybackConfig {
    * Milliseconds with no new arrivals AND an empty buffer before the clock
    * reports `starved` (upstream stalled, nothing left to play). The cursor UI
    * turns this into a pulse / ellipsis; content is never fabricated.
-   */
+  */
   starveAfterMs: number;
+  /** Ignore excess wall-clock time in one tick (background/resume frame). */
+  maxTickMs: number;
 }
 
 export const DEFAULT_PLAYBACK_CONFIG: PlaybackConfig = {
@@ -55,6 +57,7 @@ export const DEFAULT_PLAYBACK_CONFIG: PlaybackConfig = {
   catchUpPending: 400,
   drainBoost: 2.2,
   starveAfterMs: 320,
+  maxTickMs: 50,
 };
 
 export interface TickResult {
@@ -72,6 +75,8 @@ export interface PlaybackClock {
   push(totalLen: number): void;
   /** Advance the visual cursor to `nowMs`. Returns the post-tick snapshot. */
   tick(nowMs: number): TickResult;
+  /** Reveal everything already buffered without entering the terminal drain state. */
+  revealBuffered(): TickResult;
   /** finish() was called upstream: flush the remaining buffer, then go done. */
   beginDrain(): void;
   /** True once draining has fully caught up (playedLen === totalLen). */
@@ -90,6 +95,7 @@ function clampConfig(config: Partial<PlaybackConfig> | undefined): PlaybackConfi
   c.catchUpPending = Math.max(1, c.catchUpPending);
   c.drainBoost = Math.max(1, c.drainBoost);
   c.starveAfterMs = Math.max(0, c.starveAfterMs);
+  c.maxTickMs = Math.max(1, c.maxTickMs);
   return c;
 }
 
@@ -148,7 +154,11 @@ export function createPlaybackClock(
       }
     },
     tick(nowMs: number): TickResult {
-      const dtMs = Math.max(0, nowMs - lastTickMs);
+      /* rAF may pause for seconds while the app is backgrounded or the main
+         thread is blocked. Do not turn that whole gap into one huge visual
+         jump; excess time is intentionally discarded and later ticks resume
+         at the normal cadence. */
+      const dtMs = Math.min(cfg.maxTickMs, Math.max(0, nowMs - lastTickMs));
       lastTickMs = nowMs;
       const before = played;
       if (pending() > 0) {
@@ -170,6 +180,14 @@ export function createPlaybackClock(
       const state = currentState(nowMs);
       const cps = pending() > 0 ? computeCps(total - before, cfg, draining) : 0;
       return { playedLen: played, revealed: played - before, cps, state };
+    },
+    revealBuffered(): TickResult {
+      const before = played;
+      played = total;
+      carry = 0;
+      lastActiveMs = lastTickMs;
+      const state = currentState(lastTickMs);
+      return { playedLen: played, revealed: played - before, cps: 0, state };
     },
     beginDrain(): void {
       draining = true;

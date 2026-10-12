@@ -1,5 +1,5 @@
-import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { JsonValue, ToolCall } from '@socrates/contracts';
 import { filesApi } from '../data/api/client';
@@ -8,9 +8,10 @@ import { setClipboardText } from '../native/clipboard';
 import { chartBody, mermaidBody, RichBlock, type RichLib } from '../render/RichBlock';
 import { useTheme } from '../theme/ThemeProvider';
 import { withAlpha, type Palette } from '../theme/theme';
+import { motionAllowed, useReducedMotion } from '../native/reducedMotion';
 import { useT } from '../i18n';
 import { AnimatedPressable } from './AnimatedPressable';
-import type { MobileToolCall, ToolStatus } from '../data/tools/toolState';
+import { livePreviewOf, type MobileToolCall, type MobileAgentStep, type ToolStatus } from '../data/tools/toolState';
 
 /** Collapsed cards show this many lines; the rest is behind the toggle. */
 const PREVIEW_LINES = 6;
@@ -354,6 +355,7 @@ function statusFor(call: ToolCall | MobileToolCall): ToolStatus {
  */
 export const ToolCard = memo(function ToolCard({ call }: { call: ToolCall | MobileToolCall }) {
   const { colors, typography } = useTheme();
+  const reducedMotion = useReducedMotion();
   const t = useT();
   // `tool.copy*`/`tool.input`/`tool.output` keys land with the i18n sweep;
   // fall back to the English copy until then.
@@ -382,6 +384,26 @@ export const ToolCard = memo(function ToolCard({ call }: { call: ToolCall | Mobi
 
   const mobile = call as MobileToolCall;
   const status = statusFor(call);
+  const statusOpacity = useRef(new Animated.Value(1)).current;
+  const previousStatus = useRef(status);
+  useEffect(() => {
+    if (previousStatus.current === status) return;
+    previousStatus.current = status;
+    if (!motionAllowed(reducedMotion)) {
+      statusOpacity.setValue(1);
+      return;
+    }
+    statusOpacity.setValue(0.62);
+    const animation = Animated.timing(statusOpacity, {
+      toValue: 1,
+      duration: 120,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [reducedMotion, status, statusOpacity]);
+  const livePreview = status === 'running' ? livePreviewOf(mobile) : '';
   const statusLabel = status === 'failed' && mobile.progress == null && call.output == null
     ? t('tool.statusStopped')
     : t(STATUS_KEY[status]);
@@ -414,9 +436,11 @@ export const ToolCard = memo(function ToolCard({ call }: { call: ToolCall | Mobi
       >
         {/* .agent-tool-state-icon: spinner while running, checkmark/exclamation
          * in terminal states (web `.agent-tool-status` icon slot). */}
-        <View style={styles.stateIcon}>
+        <Animated.View style={[styles.stateIcon, { opacity: statusOpacity }]}>
           {status === 'running' ? (
-            <ActivityIndicator size={14} color={colors.textSubtle} />
+            motionAllowed(reducedMotion)
+              ? <ActivityIndicator size={14} color={colors.textSubtle} />
+              : <Ionicons name="ellipsis-horizontal-circle-outline" size={15} color={colors.textSubtle} />
           ) : status === 'awaiting' ? (
             <Ionicons name="shield-checkmark-outline" size={15} color={colors.warning} />
           ) : status === 'done' ? (
@@ -424,7 +448,7 @@ export const ToolCard = memo(function ToolCard({ call }: { call: ToolCall | Mobi
           ) : (
             <Ionicons name="alert-circle" size={15} color={colors.danger} />
           )}
-        </View>
+        </Animated.View>
 
         {/* .agent-tool-icon: 20x20, radius 5 */}
         <View style={[styles.toolIconBox, { backgroundColor: colors.surfaceRaised }]}>
@@ -465,6 +489,36 @@ export const ToolCard = memo(function ToolCard({ call }: { call: ToolCall | Mobi
         <View style={[styles.bodyContainer, { borderLeftColor: withAlpha(colors.border, 0.5) }]}>
           {mobile.progressPhase ? (
             <Text style={[styles.meta, { color: colors.textSubtle }]}>{mobile.progressPhase}</Text>
+          ) : null}
+          {mobile.agentSteps?.length ? (
+            <View accessibilityLabel={t('tools.groupExploring')} style={[styles.agentSteps, { backgroundColor: colors.toolCardBgSunken, borderColor: colors.toolCardBorder }]}>
+              <Text style={[styles.agentStepsTitle, { color: colors.textSubtle, fontFamily: typography.medium }]}>{t('tools.groupExploring')}</Text>
+              {mobile.agentSteps.slice(-6).map((step: MobileAgentStep) => {
+                const running = step.status === 'running';
+                const failed = step.exitCode === 1 || /fail|error/i.test(step.status);
+                return (
+                  <View key={step.stepId} style={styles.agentStep}>
+                    {running && motionAllowed(reducedMotion) ? <ActivityIndicator size={12} color={colors.accent} /> : running ? (
+                      <Ionicons name="ellipsis-horizontal-circle-outline" size={14} color={colors.accent} />
+                    ) : (
+                      <Ionicons name={failed ? 'close-circle-outline' : 'checkmark-circle-outline'} size={14} color={failed ? colors.danger : colors.success} />
+                    )}
+                    <View style={styles.agentStepCopy}>
+                      <Text numberOfLines={1} style={[styles.agentStepTitle, { color: colors.textMuted }]}>{step.title || step.kind || step.stepId}</Text>
+                      {step.detail ? <Text numberOfLines={2} style={[styles.agentStepDetail, { color: colors.textSubtle }]}>{step.detail}</Text> : null}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          ) : null}
+          {livePreview ? (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.textSubtle, fontFamily: typography.medium }]}>{label('tool.livePreview', 'Live preview')}</Text>
+              <View style={[styles.output, { backgroundColor: colors.toolCardBgSunken }]}>
+                <Text selectable style={[styles.outputText, { color: colors.textMuted, fontFamily: typography.mono }]}>{livePreview}</Text>
+              </View>
+            </View>
           ) : null}
           {details ? <Text selectable style={[styles.detail, { color: colors.danger }]}>{details}</Text> : null}
 
@@ -567,6 +621,12 @@ const styles = StyleSheet.create({
   sectionCopy: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   sectionCopyText: { fontSize: 10 },
   meta: { fontSize: 11, lineHeight: 15, marginTop: 4, textTransform: 'capitalize' },
+  agentSteps: { borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 9, paddingVertical: 7, marginTop: 6, borderRadius: 8, gap: 5 },
+  agentStepsTitle: { fontSize: 10, letterSpacing: 0.5, textTransform: 'uppercase' },
+  agentStep: { minHeight: 19, flexDirection: 'row', alignItems: 'flex-start', gap: 7 },
+  agentStepCopy: { flex: 1, minWidth: 0 },
+  agentStepTitle: { fontSize: 11, lineHeight: 15 },
+  agentStepDetail: { fontSize: 10, lineHeight: 14, marginTop: 1 },
   detail: { fontSize: 12, lineHeight: 17, marginTop: 6 },
   output: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, maxHeight: 280 },
   outputText: { fontSize: 11, lineHeight: 16.5 },

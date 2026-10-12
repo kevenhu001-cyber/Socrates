@@ -359,6 +359,66 @@ export const sharesApi = {
   absoluteUrl: (url: string) => new URL(url, `${WEB_BASE_URL}/`).toString(),
 };
 
+export interface PromptTemplatePayload {
+  title: string;
+  description?: string | null;
+  body: string;
+  icon?: string | null;
+  category?: string | null;
+  shortcut?: string | null;
+  systemPrompt?: string | null;
+}
+export interface PromptTemplateRow extends PromptTemplatePayload {
+  id: string;
+  userId?: string | null;
+  isBuiltin?: boolean;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+/** Account-level template store implemented by server/src/routes/prompts.ts. */
+export const promptsApi = {
+  listMine: (cursor?: string | null) => apiRequest<{ templates: PromptTemplateRow[]; nextCursor: string | null }>(`/prompts?scope=mine&limit=200${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`),
+  create: (template: PromptTemplatePayload) => apiRequest<PromptTemplateRow>('/prompts', {
+    method: 'POST', body: JSON.stringify(template),
+  }),
+  update: (id: string, patch: PromptTemplatePayload) => apiRequest<PromptTemplateRow>(`/prompts/${encodeURIComponent(id)}`, {
+    method: 'PATCH', body: JSON.stringify(patch),
+  }),
+  remove: (id: string) => apiRequest<void>(`/prompts/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+};
+
+export interface CreationImageRecord {
+  id: string;
+  name: string;
+  uploadedAt?: string | null;
+  url?: string;
+}
+export interface CreationAssistantRecord {
+  id: string;
+  title: string;
+  source: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+/** Native image/assistant surfaces use the same routes and payloads as Web. */
+export const creationsApi = {
+  listImages: () => apiRequest<{ images: CreationImageRecord[] }>('/creations/images'),
+  createImage: (prompt: string, model?: string) => apiRequest<{ id: string; name: string; url: string }>('/creations/images', {
+    method: 'POST', body: JSON.stringify({ prompt, ...(model ? { model } : {}) }),
+  }),
+  editImage: (id: string, prompt: string, model?: string) => apiRequest<{ id: string; name: string; url: string }>(`/creations/images/${encodeURIComponent(id)}/edit`, {
+    method: 'POST', body: JSON.stringify({ prompt, ...(model ? { model } : {}) }),
+  }),
+  listAssistants: () => apiRequest<{ items: CreationAssistantRecord[] }>('/creations/items/assistants'),
+  createAssistant: (payload: Pick<CreationAssistantRecord, 'title' | 'source'>) => apiRequest<CreationAssistantRecord>('/creations/items/assistants', {
+    method: 'POST', body: JSON.stringify(payload),
+  }),
+  updateAssistant: (id: string, payload: Pick<CreationAssistantRecord, 'title' | 'source'>) => apiRequest<CreationAssistantRecord>(`/creations/items/assistants/${encodeURIComponent(id)}`, {
+    method: 'PATCH', body: JSON.stringify(payload),
+  }),
+  deleteAssistant: (id: string) => apiRequest<void>(`/creations/items/assistants/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+};
+
 export interface MobileFileAsset {
   uri: string;
   name: string;

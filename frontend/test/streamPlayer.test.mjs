@@ -76,6 +76,26 @@ test('a burst reveals gradually across frames, never all in the first frame', ()
   assert.equal(frames[frames.length - 1], 1000);
 });
 
+test('keeps the first visible frame immediate and coalesces later UI paints to about 30Hz', () => {
+  const h = harness();
+  const frames = [];
+  const player = createStreamPlayer({
+    onFrame: (text) => frames.push({ time: h.time, length: text.length }),
+    now: h.now,
+    raf: h.raf,
+  });
+  player.push('x'.repeat(1000));
+  h.run(1);
+  assert.equal(frames.length, 1, 'first visible prefix paints on the first animation frame');
+  h.run(6);
+  assert.ok(frames.length <= 4, `too many React-facing paints in ~117ms: ${frames.length}`);
+  for (let i = 1; i < frames.length; i += 1) {
+    assert.ok(frames[i].time - frames[i - 1].time >= 32, 'visible updates respect the paint interval');
+  }
+  player.flushNow();
+  assert.equal(frames.at(-1).length, 1000, 'forced terminal flush still exposes all arrived text');
+});
+
 test('upstream stall drives a starved state change once buffer drains', () => {
   const h = harness();
   const states = [];
@@ -144,6 +164,29 @@ test('flushNow makes everything visible immediately and fires onDone', () => {
   player.push('immediate content here');
   player.flushNow();
   assert.equal(lastText, 'immediate content here');
+  assert.equal(doneCount, 1);
+});
+
+test('reveals pre-tool prose immediately but keeps the player open for the final answer', () => {
+  const h = harness();
+  const frames = [];
+  let doneCount = 0;
+  const player = createStreamPlayer({
+    onFrame: (text) => frames.push(text),
+    onDone: () => { doneCount += 1; },
+    now: h.now,
+    raf: h.raf,
+  });
+  player.push('I will check that for you.');
+  player.revealBufferedNow(); // called synchronously at tool_use
+  assert.equal(frames.at(-1), 'I will check that for you.');
+  assert.equal(doneCount, 0, 'a tool boundary is not the end of the assistant turn');
+
+  player.push(' Here is the verified result.');
+  assert.ok(h.hasQueued, 'later answer text schedules playback normally');
+  player.beginDrain();
+  h.run(2_000);
+  assert.equal(frames.at(-1), 'I will check that for you. Here is the verified result.');
   assert.equal(doneCount, 1);
 });
 

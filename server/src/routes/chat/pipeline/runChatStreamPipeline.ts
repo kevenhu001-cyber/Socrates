@@ -24,6 +24,7 @@ import {publishChatTurnEvent, setChatTurnStatus, subscribeToChatTurn} from '../.
 import {sanitizeStoredHtml, sanitizePlainText} from '../../../lib/sanitize.js';
 import {indexMessageChunks} from '../../../services/chunkIndex.js';
 import {streamChatCompletion} from '../../../services/llm.js';
+import {createChatTurnDeltaBatcher} from '../../../services/chatTurnDeltaBatcher.js';
 import {
   MAX_TOOL_ARGUMENT_CHARS,
   normalizeToolCalls,
@@ -249,6 +250,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
    * thousands of delta events. Tool deltas/progress stay SSE-only (write
    * amplification); tool_use/tool_result boundaries are persisted. */
   let turnCheckpointTimer: ReturnType<typeof setInterval> | null = null;
+  let flushTurnDelta = () => {};
   const checkpointTurn = () => {
     if (!turnId) return;
     const db = getDb();
@@ -277,6 +279,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
     } catch { /* a failed poll must not kill the stream */ }
   };
   const clearTurnTimer = () => {
+    flushTurnDelta();
     if (turnCheckpointTimer) {
       clearInterval(turnCheckpointTimer);
       turnCheckpointTimer = null;
@@ -312,48 +315,49 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
   });
 
   const emitter = new SseEmitter(res, () => abortController.signal.aborted || sseDetached);
-  /* M1 async — mirror lifecycle frames into the bound turn. Content and
-   * reasoning deltas are persisted per-chunk (they are the resume
-   * baseline); tool_use/tool_result/agent frames mark boundaries;
-   * high-frequency progress/deltas stay SSE-only. All taps are
-   * fire-and-forget so a slow DB never stalls the live stream. */
+  /* M1 async — mirror lifecycle frames into the bound turn. Adjacent
+   * content/reasoning chunks are coalesced for a short bounded window before
+   * persistence; the emitter independently combines adjacent socket writes in
+   * a 12ms window. Reconnect replay retains exact text with far fewer serial
+   * DB event writes. Semantic/tool/terminal events flush pending text first so
+   * sequence order remains exact. */
   if (turnId) {
     const tap = (event: string, data: Record<string, unknown>) => {
       publishChatTurnEvent(turnId, event, data).catch(() => {});
     };
+    const deltaBatcher = createChatTurnDeltaBatcher(tap);
+    flushTurnDelta = () => deltaBatcher.flush();
     const innerContent = emitter.content.bind(emitter);
     emitter.content = (chunk: string) => {
       innerContent(chunk);
-      tap('content', { delta: chunk });
+      deltaBatcher.push('content', chunk);
     };
     const innerReasoning = emitter.reasoning.bind(emitter);
     emitter.reasoning = (reasoning: string) => {
       innerReasoning(reasoning);
-      tap('reasoning', { delta: reasoning });
+      deltaBatcher.push('reasoning', reasoning);
     };
     const innerEvent = emitter.event.bind(emitter);
     emitter.event = (name: string, data: unknown) => {
+      const isPersistedBoundary =
+        name === 'tool_use' || name === 'tool_result' || name === 'tool_approval' ||
+        name === 'agent_step' || name === 'agent_plan' || name === 'execution_start' || name === 'error';
+      if (isPersistedBoundary) flushTurnDelta();
       innerEvent(name, data);
-      if (
-        name === 'tool_use' ||
-        name === 'tool_result' ||
-        name === 'tool_approval' ||
-        name === 'agent_step' ||
-        name === 'agent_plan' ||
-        name === 'execution_start' ||
-        name === 'error'
-      ) {
+      if (isPersistedBoundary) {
         tap(name, (data ?? {}) as Record<string, unknown>);
         checkpointTurn();
       }
     };
     const innerFinish = emitter.finish.bind(emitter);
     emitter.finish = () => {
+      flushTurnDelta();
       innerFinish();
       tap('turn_done', { fullTextLength: fullText.length });
     };
     const innerFatal = emitter.fatal.bind(emitter);
     emitter.fatal = (err: Error) => {
+      flushTurnDelta();
       innerFatal(err);
       tap('turn_failed', { error: err.message });
     };

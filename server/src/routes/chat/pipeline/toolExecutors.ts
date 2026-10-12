@@ -27,7 +27,7 @@ const ARGUMENT_ERROR_CODES: ReadonlySet<string> = new Set<string>([
 import {hashToolArguments, type ToolTurnPolicy} from '../../../services/toolTurnPolicy.js';
 import {SseEmitter} from './sseEmitter.js';
 import {formatToolResultContent} from './toolFeedback.js';
-import {createToolExecutorRegistry} from './executors/registry.js';
+import {createToolExecutorRegistry, type ToolExecutorRegistry} from './executors/registry.js';
 import type {ToolExecutorContext} from './executors/types.js';
 import type {PreparedCall, StreamMessage,} from './types.js';
 
@@ -49,8 +49,10 @@ export type ToolRunner = (
   activeToolNames: string[],
 ) => Promise<StreamMessage>;
 
-export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
-  const registry = createToolExecutorRegistry();
+export function createToolRunner(
+  deps: ToolRunnerDeps,
+  registry: ToolExecutorRegistry = createToolExecutorRegistry(),
+): ToolRunner {
   const executorContext: ToolExecutorContext = {
     req: deps.req,
     sessionIdFromQuery: deps.sessionIdFromQuery,
@@ -127,13 +129,32 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
          rate-limited or flaky upstream is not re-hit on every hop. The
          sleep is abortable and bounded (policy caps it at
          CHAT_TOOL_BACKOFF_MAX_MS). */
+      const startedAt = Date.now();
       const backoffMs = deps.toolPolicy.retryDelayMs(toolName);
       if (backoffMs > 0 && !deps.abortSignal.aborted) {
+        deps.emitter.event('tool_progress', {
+          id: tc.id,
+          phase: 'queued',
+          stream: null,
+          chunk: '',
+          elapsedMs: 0,
+        });
         await new Promise<void>((resolve) => {
           const timer = setTimeout(resolve, backoffMs);
           const onAbort = () => { clearTimeout(timer); resolve(); };
           if (deps.abortSignal.aborted) { onAbort(); return; }
           deps.abortSignal.addEventListener('abort', onAbort, { once: true });
+        });
+      }
+      if (!deps.abortSignal.aborted) {
+        /* Generic phase marker for tools that do not stream their own
+           progress. It also makes the transition out of retry backoff visible. */
+        deps.emitter.event('tool_progress', {
+          id: tc.id,
+          phase: 'running',
+          stream: null,
+          chunk: '',
+          elapsedMs: Date.now() - startedAt,
         });
       }
       try {

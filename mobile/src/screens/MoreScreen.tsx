@@ -14,7 +14,7 @@ import type { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'More'>;
 
-type MoreItemAction = 'exam' | 'skills' | 'shortcuts';
+type MoreItemAction = 'exam' | 'skills' | 'creations' | 'shortcuts';
 
 interface MenuItemSpec {
   action: MoreItemAction;
@@ -32,6 +32,7 @@ interface MenuItemSpec {
 const ITEMS: MenuItemSpec[] = [
   { action: 'exam', labelKey: 'sidebar.nav.exam', labelFallback: 'Exam', icon: 'clipboard-outline' },
   { action: 'skills', labelKey: 'sidebar.more.skills', labelFallback: 'Skills & shortcuts', icon: 'sparkles-outline' },
+  { action: 'creations', labelKey: 'creations.title', labelFallback: 'Images & Assistants', icon: 'images-outline' },
   { action: 'shortcuts', labelKey: 'sidebar.more.shortcuts', labelFallback: 'Keyboard shortcuts', icon: 'keypad-outline' },
 ];
 
@@ -105,6 +106,9 @@ export function MoreScreen({ navigation }: Props) {
         break;
       case 'skills':
         navigation.navigate('Skills');
+        break;
+      case 'creations':
+        navigation.navigate('Creations');
         break;
       case 'shortcuts':
         setShortcutsOpen(true);

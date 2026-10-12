@@ -1,10 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Keyboard, Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Animated,
+  Easing,
+  Keyboard,
+  LayoutAnimation,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  UIManager,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Attachment } from '@socrates/contracts';
 import { useTheme } from '../theme/ThemeProvider';
-import { withAlpha } from '../theme/theme';
+import { motionDuration, withAlpha } from '../theme/theme';
 import { useI18n, useT } from '../i18n';
 import { toast } from './Toast';
 import { AnimatedPressable } from './AnimatedPressable';
@@ -12,7 +25,30 @@ import { AttachmentChip } from './AttachmentChip';
 import { ReasoningEffortPicker, type EffortPickerAnchor } from './ReasoningEffortPicker';
 import { useResponsive } from '../theme/responsive';
 import { native } from '../native/native';
+import { motionAllowed, useReducedMotion } from '../native/reducedMotion';
 import { useVoiceInput, type VoiceInputErrorCode, type VoiceInputStatus } from '../native/voiceInput';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+function animateComposerLayout(reducedMotion: boolean) {
+  if (reducedMotion || Platform.OS === 'web') return;
+  LayoutAnimation.configureNext({
+    duration: motionDuration.layout,
+    create: {
+      type: LayoutAnimation.Types.easeOut,
+      property: LayoutAnimation.Properties.opacity,
+      duration: motionDuration.page,
+    },
+    update: { type: LayoutAnimation.Types.easeInEaseOut },
+    delete: {
+      type: LayoutAnimation.Types.easeIn,
+      property: LayoutAnimation.Properties.opacity,
+      duration: motionDuration.focus,
+    },
+  });
+}
 
 export type ReasoningEffort = 'low' | 'medium' | 'high';
 
@@ -317,7 +353,15 @@ export const Composer = React.memo(function Composer({
   const ref = useRef<TextInput>(null);
   const attachAnchorRef = useRef<View>(null);
   const effortAnchorRef = useRef<View>(null);
+  const reducedMotionPreference = useReducedMotion();
+  /* Treat the unresolved system query as the accessible/static state. Focus,
+   * typing, and keyboard handling remain immediate; only optional motion waits
+   * until the shared preference has resolved. */
+  const reducedMotion = !motionAllowed(reducedMotionPreference);
   const [focused, setFocused] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const focusedRef = useRef(false);
+  const railProgress = useRef(new Animated.Value(isCompact ? 1 : 0)).current;
   const [editorHeight, setEditorHeight] = useState(50);
   const [effortPickerOpen, setEffortPickerOpen] = useState(false);
   const [effortAnchor, setEffortAnchor] = useState<EffortPickerAnchor | null>(null);
@@ -327,6 +371,46 @@ export const Composer = React.memo(function Composer({
    * would dismiss the sheet the same frame it opens. */
   const voiceSessionRef = useRef(false);
   const canSend = (value.trim().length > 0 || hasAttachments) && !disabled;
+  const hasContextChips = Boolean(activeExtensionLabel) || selectedPlugins.length > 0;
+  const isExpanded = isCompact || focused || keyboardVisible || value.includes('\n') || value.length > 30 || hasContextChips || attachments.length > 0;
+  /* The Web phone composer is two rows at rest and keeps the same geometry on
+   * focus. Reserve its tool row on compact screens instead of animating it in
+   * response to TextInput focus or keyboard visibility; the IME moves the
+   * surrounding layout through the existing adjustResize/KeyboardStickyView path. */
+  const showToolRail = isCompact || focused || keyboardVisible || value.includes('\n') || value.length > 30 || hasContextChips || attachments.length > 0;
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      /* Android can hide the IME with Back while leaving the native input
+       * focused. Blur it as well, so the composer returns to its idle rail
+       * instead of staying expanded with no keyboard to type into. */
+      if (focusedRef.current) {
+        if (!isCompact) animateComposerLayout(reducedMotion);
+        ref.current?.blur();
+      }
+      setKeyboardVisible(false);
+    });
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, [isCompact, reducedMotion]);
+
+  useEffect(() => {
+    if (reducedMotion || isCompact) {
+      railProgress.setValue(showToolRail ? 1 : 0);
+      return undefined;
+    }
+    const animation = Animated.timing(railProgress, {
+      toValue: showToolRail ? 1 : 0,
+      duration: motionDuration.composer,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [isCompact, railProgress, reducedMotion, showToolRail]);
 
   const handleVoiceError = (code: VoiceInputErrorCode) => {
     const message = code === 'not-allowed'
@@ -364,13 +448,6 @@ export const Composer = React.memo(function Composer({
     void voice.start();
   };
 
-  /* Single-row resting capsule on every viewport, expanding to two rows on
-   * focus or content. This deliberately diverges from the SPA phone
-   * composer (always two rows) and docs/frontend-parity.md: the product
-   * reference is ChatGPT mobile, whose composer rests as a one-row pill. */
-  const hasContextChips = Boolean(activeExtensionLabel) || selectedPlugins.length > 0;
-  const isExpanded = focused || value.includes('\n') || value.length > 30 || hasContextChips || attachments.length > 0;
-
   const openAttachMenu = () => {
     const node = attachAnchorRef.current;
     if (!node) {
@@ -401,6 +478,18 @@ export const Composer = React.memo(function Composer({
     : chatPlaceholder !== 'chat.placeholder'
       ? chatPlaceholder
       : 'Ask Socrates';
+  const focusInput = () => {
+    if (!isCompact && !showToolRail) animateComposerLayout(reducedMotion);
+    focusedRef.current = true;
+    setFocused(true);
+  };
+  const blurInput = () => {
+    if (!isCompact && !keyboardVisible && showToolRail) animateComposerLayout(reducedMotion);
+    focusedRef.current = false;
+    setFocused(false);
+  };
+  const railOpacity = isCompact ? 1 : railProgress.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
+  const railTranslateY = isCompact ? 0 : railProgress.interpolate({ inputRange: [0, 1], outputRange: [8, 0] });
   /* P1-2 alignment: iconColor now sourced from the canonical text
    * token (was `#e0e0e0` for dark, a legacy pre-align value). */
   const iconColor = colors.text;
@@ -422,8 +511,9 @@ export const Composer = React.memo(function Composer({
   return (
     <>
     <View
+      testID="composer-shell"
       style={[
-        voiceRecording ? styles.containerVoice : isExpanded ? styles.containerExpanded : styles.containerCapsule,
+        voiceRecording ? styles.containerVoice : showToolRail ? styles.containerExpanded : styles.containerCapsule,
         {
           /* `--surface-input` / the conversation composer card — web resolves
            * it to #212121 dark / #f2f2f2 light via `conversationSurface`. */
@@ -488,128 +578,10 @@ export const Composer = React.memo(function Composer({
           volume={voice.volume}
           onStop={voice.stop}
         />
-      ) : !isExpanded ? (
-        /* Single-row resting capsule — ChatGPT layout is attach + text +
-         * mic + voice orb, with the orb swapping to a send arrow once the
-         * draft can send. Voice input is implemented by the native
-         * SpeechRecognizer and swaps this row for the live recording bar. */
-        <View style={styles.singleRow}>
-          {/* Plus button — ChatGPT capsule parity: plain glyph, no disc. */}
-          <View ref={attachAnchorRef} collapsable={false}>
-            <AnimatedPressable
-              onPress={openAttachMenu}
-              accessibilityRole="button"
-              accessibilityLabel={t('chat.attach') || 'Add tools and files'}
-              style={styles.circleBtn}
-            >
-              <Ionicons name="add" size={24} color={iconColor} />
-            </AnimatedPressable>
-          </View>
-
-          {/* Text Input */}
-          <TextInput
-            ref={ref}
-            value={value}
-            onChangeText={onChangeText}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            placeholder={placeholder || defaultPlaceholder}
-            placeholderTextColor={colors.textMuted}
-            style={[
-              styles.singleInput,
-              {
-                color: colors.text,
-                fontFamily: typography.body,
-              },
-            ]}
-            autoFocus={autoFocus}
-            returnKeyType="default"
-          />
-
-          {/* Right cluster — ChatGPT capsule parity: plain mic glyph, then
-           * the trailing slot is a voice orb at rest and only becomes the
-           * send arrow once the draft can actually send. */}
-          <View style={styles.singleRightActions}>
-            <AnimatedPressable
-              accessibilityLabel={t('chat.voiceInput') || 'Voice input'}
-              accessibilityState={{ selected: voiceRecording }}
-              onPress={voice.start}
-              style={styles.micBtn}
-            >
-              <Ionicons name="mic-outline" size={22} color={iconColor} />
-            </AnimatedPressable>
-            {/* frontend `.send-btn.chat-stop`: neutral fill + dark glyph. */}
-            {disabled ? (
-              <AnimatedPressable
-                accessibilityLabel={t('chat.stopGenerating') || 'Stop generating'}
-                onPress={onStop}
-                scale={0.92}
-                style={[styles.actionBtn, { backgroundColor: sendIdleBg }]}
-              >
-                <Ionicons name="stop" size={14} color={sendIdleFg} />
-              </AnimatedPressable>
-            ) : canSend ? (
-              <AnimatedPressable
-                accessibilityLabel={t('chat.send') || 'Send message'}
-                onPress={onSend}
-                scale={0.92}
-                restingScale={1.05}
-                style={[
-                  styles.actionBtn,
-                  { backgroundColor: colors.accent },
-                  styles.sendGlow,
-                  { shadowColor: colors.accent },
-                ]}
-              >
-                <Ionicons name="arrow-up" size={16} color={colors.textInverse} />
-              </AnimatedPressable>
-            ) : (
-              <AnimatedPressable
-                accessibilityLabel={t('chat.voiceMode') || 'Voice mode'}
-                onPress={openVoiceMode}
-                scale={0.92}
-                style={[styles.actionBtn, { backgroundColor: colors.text }]}
-              >
-                <VoiceModeGlyph color={colors.background} />
-              </AnimatedPressable>
-            )}
-          </View>
-        </View>
       ) : (
         /* Multi-row expanded layout 1:1 matching cur-mobile-focused.png */
         <View style={styles.expandedContent}>
-          {/* Top text area */}
-          <TextInput
-            ref={ref}
-            value={value}
-            onChangeText={onChangeText}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            multiline
-            maxLength={32000}
-            placeholder={placeholder || defaultPlaceholder}
-            placeholderTextColor={colors.textMuted}
-            style={[
-              styles.expandedInput,
-              isCompact ? { height: editorHeight } : null,
-              {
-                color: colors.text,
-                fontFamily: typography.body,
-              },
-            ]}
-            autoFocus={autoFocus}
-            onContentSizeChange={(event) => {
-              if (!isCompact) return;
-              const next = Math.max(50, Math.min(180, Math.ceil(event.nativeEvent.contentSize.height)));
-              setEditorHeight((current) => current === next ? current : next);
-            }}
-            returnKeyType="default"
-            submitBehavior="newline"
-          />
-
-          {/* Current SPA mobile control rail:
-           * +  [workflow/plugin chips]  effort  mic  send */}
-          <View style={styles.expandedFooter}>
+          <View style={styles.composerInputRow}>
             <View ref={attachAnchorRef} collapsable={false}>
               <AnimatedPressable
                 onPress={openAttachMenu}
@@ -620,6 +592,92 @@ export const Composer = React.memo(function Composer({
                 <Ionicons name="add" size={24} color={iconColor} />
               </AnimatedPressable>
             </View>
+            {/* Keep the native input mounted across idle/focused layouts so
+             * opening the footer never drops the Android IME connection. */}
+            <TextInput
+              testID="composer-input"
+              ref={ref}
+              value={value}
+              onChangeText={onChangeText}
+              onFocus={focusInput}
+              onBlur={blurInput}
+              multiline
+              maxLength={32000}
+              placeholder={placeholder || defaultPlaceholder}
+              placeholderTextColor={colors.textMuted}
+              style={[
+                isExpanded ? styles.expandedInput : styles.singleInput,
+                styles.inputEditor,
+                isCompact ? { height: editorHeight } : null,
+                {
+                  color: colors.text,
+                  fontFamily: typography.body,
+                  paddingTop: showToolRail ? 16 : 11,
+                  textAlignVertical: showToolRail ? 'top' : 'center',
+                },
+              ]}
+              autoFocus={autoFocus}
+              onContentSizeChange={(event) => {
+                if (!isCompact) return;
+                const next = Math.max(50, Math.min(180, Math.ceil(event.nativeEvent.contentSize.height)));
+                setEditorHeight((current) => current === next ? current : next);
+              }}
+              returnKeyType="default"
+              submitBehavior="newline"
+            />
+            {!showToolRail ? (
+              <View style={styles.singleRightActions}>
+                <AnimatedPressable
+                  accessibilityLabel={t('chat.voiceInput') || 'Voice input'}
+                  accessibilityState={{ selected: voiceRecording }}
+                  onPress={voice.start}
+                  style={styles.micBtn}
+                >
+                  <Ionicons name="mic-outline" size={22} color={iconColor} />
+                </AnimatedPressable>
+                {disabled ? (
+                  <AnimatedPressable
+                    accessibilityLabel={t('chat.stopGenerating') || 'Stop generating'}
+                    onPress={onStop}
+                    scale={0.92}
+                    style={[styles.actionBtn, { backgroundColor: sendIdleBg }]}
+                  >
+                    <Ionicons name="stop" size={14} color={sendIdleFg} />
+                  </AnimatedPressable>
+                ) : canSend ? (
+                  <AnimatedPressable
+                    accessibilityLabel={t('chat.send') || 'Send message'}
+                    onPress={onSend}
+                    scale={0.92}
+                    restingScale={1.05}
+                    style={[styles.actionBtn, { backgroundColor: colors.accent }, styles.sendGlow, { shadowColor: colors.accent }]}
+                  >
+                    <Ionicons name="arrow-up" size={16} color={colors.textInverse} />
+                  </AnimatedPressable>
+                ) : (
+                  <AnimatedPressable
+                    accessibilityLabel={t('chat.voiceMode') || 'Voice mode'}
+                    onPress={openVoiceMode}
+                    scale={0.92}
+                    style={[styles.actionBtn, { backgroundColor: colors.text }]}
+                  >
+                    <VoiceModeGlyph color={colors.background} />
+                  </AnimatedPressable>
+                )}
+              </View>
+            ) : null}
+          </View>
+
+          {/* Focused tool rail: [workflow/plugin chips] effort mic send.
+           * The attachment action stays in the input row in both states. */}
+          <View
+            testID="composer-tools-rail"
+            pointerEvents={showToolRail ? 'auto' : 'none'}
+            accessibilityElementsHidden={!showToolRail}
+            importantForAccessibility={showToolRail ? 'auto' : 'no-hide-descendants'}
+            style={[styles.footerClip, showToolRail ? styles.footerClipOpen : null]}
+          >
+            <Animated.View style={[styles.expandedFooter, { opacity: railOpacity, transform: [{ translateY: railTranslateY }] }]}>
 
             <ScrollView
               horizontal
@@ -739,6 +797,7 @@ export const Composer = React.memo(function Composer({
                 </AnimatedPressable>
               )}
             </View>
+            </Animated.View>
           </View>
         </View>
       )}
@@ -877,6 +936,16 @@ const styles = StyleSheet.create({
   expandedContent: {
     flex: 1,
   },
+  composerInputRow: {
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  inputEditor: {
+    flex: 1,
+    minWidth: 0,
+  },
   expandedInput: {
     minHeight: 40,
     /* web mobile caps the growing editor at 180px (was 220). */
@@ -893,6 +962,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     paddingTop: 4,
+  },
+  footerClip: {
+    width: '100%',
+    height: 0,
+    overflow: 'hidden',
+  },
+  footerClipOpen: {
+    height: 48,
   },
   expandedRightRow: {
     flexDirection: 'row',

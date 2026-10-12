@@ -15,6 +15,7 @@ export type RootStackParamList = {
   Knowledge: undefined;
   Mistakes: undefined;
   Skills: undefined;
+  Creations: undefined;
   Embedded: { target: EmbeddedTarget; title: string };
   ArtifactPreview: { artifactId: string; html: string; kind?: string };
 

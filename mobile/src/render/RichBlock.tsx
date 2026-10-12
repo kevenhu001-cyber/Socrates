@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
@@ -99,6 +99,8 @@ export interface RichBlockProps {
   interactive?: boolean;
   /** Native Readable source for the Source toggle; defaults to the raw body. */
   sourceText?: string;
+  /** Update the existing document body over the bridge instead of reloading its WebView source. */
+  dynamicBody?: boolean;
 }
 
 interface BridgeMessage {
@@ -126,6 +128,7 @@ export const RichBlock = React.memo(function RichBlock({
   showActions = false,
   interactive = false,
   sourceText,
+  dynamicBody = false,
 }: RichBlockProps) {
   const { colors, typography } = useTheme();
   const t = useT();
@@ -143,7 +146,18 @@ export const RichBlock = React.memo(function RichBlock({
   // Remounts the WebView for the Reload action.
   const [reloadKey, setReloadKey] = useState(0);
   const ref = useRef<any>(null);
+  const bodyRef = useRef(body);
+  bodyRef.current = body;
+  const shellReadyRef = useRef(false);
+  const injectBody = useCallback((nextBody: string) => {
+    const payload = JSON.stringify(nextBody).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+    ref.current?.injectJavaScript?.(`window.__setRichBody&&window.__setRichBody(${payload});true;`);
+  }, []);
+  useEffect(() => {
+    if (dynamicBody && shellReadyRef.current) injectBody(body);
+  }, [body, dynamicBody, injectBody]);
 
+  const initialBody = dynamicBody ? '' : body;
   const source = useMemo(() => {
     const head = libs.flatMap((lib) => CDN[lib]).join('');
     const macros = JSON.stringify(KATEX_MACROS);
@@ -164,7 +178,7 @@ a{color:${colors.accent}}
 .katex-display{margin:0;overflow-x:auto;overflow-y:hidden;padding:2px 0}
 #err{color:${colors.danger};font-size:13px;text-align:left;white-space:pre-wrap;word-break:break-word}
 </style></head><body>
-<div id="root">${body}</div><div id="err"></div>
+<div id="root">${initialBody}</div><div id="err"></div>
 <script>(function(){
   var bridge=window.ReactNativeWebView;
   var send=function(v){ if(bridge) bridge.postMessage(JSON.stringify(v)); };
@@ -221,16 +235,29 @@ a{color:${colors.accent}}
     return true;
   }
   var attempts=0;
-  function run(){
+  var renderEpoch=0;
+  var readySent=false;
+  function render(epoch,announceReady){
+    if(epoch!==renderEpoch) return;
     attempts++;
     var done=renderMath()&&renderMermaid()&&renderChart();
-    if(!done && attempts<60){ setTimeout(run,100); return; }
+    if(!done && attempts<60){ setTimeout(function(){render(epoch,announceReady)},100); return; }
     // 6s without the libraries means the network is gone; the native fallback
     // text stays visible because we never report ready.
     if(!done){ fail(''); return; }
-    send({type:'ready'});
+    if(announceReady){ if(!readySent){readySent=true;send({type:'ready'});} }
+    else send({type:'contentRendered'});
     resize();
   }
+  function run(){ attempts=0; render(++renderEpoch,true); }
+  window.__setRichBody=function(html){
+    var root=document.getElementById('root');
+    if(!root) return;
+    root.innerHTML=String(html||'');
+    document.getElementById('err').textContent='';
+    attempts=0;
+    render(++renderEpoch,false);
+  };
   if(window.ResizeObserver) new ResizeObserver(resize).observe(document.body);
   window.addEventListener('load',run);
   document.addEventListener('click',function(event){
@@ -239,7 +266,9 @@ a{color:${colors.accent}}
   });
   run();
 })();</script></body></html>`;
-  }, [body, libs, colors, center]);
+  }, [initialBody, dynamicBody, libs, colors, center]);
+
+  const webViewSource = useMemo(() => ({ html: source, baseUrl: 'https://localhost/' }), [source]);
 
   const handleMessage = (event: WebViewMessageEvent) => {
     let message: BridgeMessage & { type: string };
@@ -247,7 +276,9 @@ a{color:${colors.accent}}
     if (message.type === 'resize' && typeof message.height === 'number' && message.height > 0) {
       setHeight(Math.min(2000, Math.max(24, message.height)));
     } else if (message.type === 'ready') {
+      shellReadyRef.current = true;
       setReady(true);
+      if (dynamicBody) injectBody(bodyRef.current);
     } else if (message.type === 'error') {
       setFailed(true);
     } else if (message.type === 'openLink' && message.url) {
@@ -273,8 +304,12 @@ a{color:${colors.accent}}
         key={reloadKey}
         ref={ref}
         originWhitelist={['https://localhost/']}
-        source={{ html: source, baseUrl: 'https://localhost/' }}
+        source={webViewSource}
         onMessage={handleMessage}
+        onLoadStart={() => {
+          shellReadyRef.current = false;
+          setReady(false);
+        }}
         onError={() => setFailed(true)}
         onHttpError={() => undefined}
         javaScriptEnabled

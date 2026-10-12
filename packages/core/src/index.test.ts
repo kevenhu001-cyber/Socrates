@@ -88,6 +88,24 @@ describe('@socrates/core', () => {
     expect(errors).toEqual(['inner-error', 'primary-message', 'bare-string']);
   });
 
+  it('reports malformed JSON chat frames as protocol errors but accepts plain-text error events', () => {
+    const deltas: string[] = [];
+    const errors: string[] = [];
+    const handlers = {
+      onDelta: (value: string) => deltas.push(value),
+      onError: (value: string) => errors.push(value),
+    };
+
+    dispatchChatSseFrame('data: {not-json}\n\n', handlers);
+    dispatchChatSseFrame('event: error\ndata: upstream unavailable\n\n', handlers);
+
+    expect(deltas).toEqual([]);
+    expect(errors).toEqual([
+      'Malformed SSE JSON payload for event: message',
+      'upstream unavailable',
+    ]);
+  });
+
   it('routes content and reasoning_content deltas independently in the same frame', () => {
     const content: string[] = [];
     const reasoning: string[] = [];

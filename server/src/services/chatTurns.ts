@@ -8,7 +8,7 @@
  * workspace semantics.
  */
 
-import { and, asc, desc, eq, max } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, max } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { chatTurnEvents, chatTurns, sessions } from '../db/schema.js';
 import { BadRequest, NotFound } from '../lib/errors.js';
@@ -198,12 +198,10 @@ export async function listChatTurnEvents(
       payload: chatTurnEvents.payload,
     })
     .from(chatTurnEvents)
-    .where(eq(chatTurnEvents.turnId, turnId))
-    .orderBy(asc(chatTurnEvents.sequence));
-  return rows
-    .filter((row) => Number(row.sequence) > safeAfter)
-    .slice(0, safeLimit)
-    .map((row) => ({
+    .where(and(eq(chatTurnEvents.turnId, turnId), gt(chatTurnEvents.sequence, safeAfter)))
+    .orderBy(asc(chatTurnEvents.sequence))
+    .limit(safeLimit);
+  return rows.map((row) => ({
       turnId,
       sequence: Number(row.sequence),
       event: String(row.event),

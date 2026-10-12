@@ -4,11 +4,14 @@ import { useCallback, useRef, useSyncExternalStore } from 'react';
 import { ApiError, apiKeysApi, authApi, configApi, memoryApi, messagesApi, mistakesApi, projectConnectorsApi, projectsApi, sessionsApi, type ApiProvider } from '../data/api/client';
 import { readCachedUser } from '../data/api/tokenStore';
 import { startChatStream } from '../data/sse/sseClient';
+import { getMobileStreamRenderInterval } from '../data/sse/streamCadence';
+import { createMobileStreamPlayer, type MobileStreamPlayer } from '../data/sse/streamPlayer';
 import { enqueue, incrementOutboxRetry, readDraft, readOutbox, removeOutbox, saveDraft } from '../data/offline/sqlite';
 import { sessionRepository } from '../data/repositories/sessionRepository';
 import { reduceToolEvent, settleToolCalls, type ToolEventKind } from '../data/tools/toolState';
 import { tSync } from '../i18n';
 import { extractHttpUrls, fetchPagesForContext, looksLikeUserMentionedSite, type LinkPreviewState } from '../data/chat/webLinks';
+import { appendAttachmentPointers } from '../data/chat/attachmentPointers';
 import { buildAssistantModeInstruction, MOBILE_EXTENSIONS, stripTemplateBodyPrefix, type MobileExtensionKey, type MobilePromptTemplate } from '../data/chat/prompts';
 import { catalogComposerPlugins, serializeSelectedPluginContext, type ComposerPluginSelection } from '../data/chat/plugins';
 import { applyDiagnosticResults, buildTeachingPlan, buildTutorApplicationPrompt, firstTeachingNodeIndex, nextTeachingStage, type TutorDiagnosticQuestion, type TutorKnowledgeNode, type TutorTeachingStage } from '../data/tutor/tutorFlow';
@@ -164,6 +167,8 @@ function buildMistakeRedoWidget(input: {
   return `<practice${answerAttr}>\n<title>Redo</title>\n<problem>${question}</problem>\n</practice>`;
 }
 
+type StreamTerminal = { kind: 'completed' | 'stopped' | 'error'; message?: string };
+
 class AppStore {
   private state = initialState;
   private listeners = new Set<() => void>();
@@ -171,11 +176,12 @@ class AppStore {
   private streamFinished = false;
   /** Identifies callbacks belonging to the currently visible stream. */
   private streamGeneration = 0;
+  private streamPlayer: MobileStreamPlayer | null = null;
+  private streamTerminal: StreamTerminal = { kind: 'completed' };
+  private streamTerminalReceived = false;
   /** Coalesce high-frequency token/progress frames before touching React state. */
   private pendingAssistantPatches: Array<(assistant: Message) => Partial<Message>> = [];
   private streamFlushTimer: ReturnType<typeof setTimeout> | null = null;
-  /** Raw-text deltas accumulated since the last flush; joined once per commit. */
-  private streamDeltaChunks: string[] = [];
   /** Draft writes batch to one trailing SQLite write instead of one per keystroke. */
   private pendingDraftSave: { sessionId: string; draft: string } | null = null;
   private draftSaveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -251,6 +257,7 @@ class AppStore {
   async logout() {
     this.stopStream?.();
     this.stopStream = null;
+    this.disposeStreamPlayer();
     this.streamFinished = true;
     this.streamGeneration += 1;
     this.clearPendingAssistantPatches();
@@ -268,6 +275,7 @@ class AppStore {
   async clearLocalCache() {
     this.stopStream?.();
     this.stopStream = null;
+    this.disposeStreamPlayer();
     this.streamFinished = true;
     this.streamGeneration += 1;
     this.clearPendingAssistantPatches();
@@ -633,6 +641,7 @@ class AppStore {
     this.flushDraftSave();
     this.stopStream?.();
     this.stopStream = null;
+    this.disposeStreamPlayer();
     this.streamFinished = true;
     this.streamGeneration += 1;
     this.clearPendingAssistantPatches();
@@ -771,6 +780,7 @@ class AppStore {
     this.flushDraftSave();
     this.stopStream?.();
     this.stopStream = null;
+    this.disposeStreamPlayer();
     this.streamFinished = true;
     this.streamGeneration += 1;
     this.clearPendingAssistantPatches();
@@ -795,10 +805,9 @@ class AppStore {
     const generation = this.streamGeneration;
     this.stopStream?.();
     this.stopStream = null;
-    // Keep partial text and any tool output. A stop is a normal terminal state,
-    // not an abandoned stream: pending batched frames are flushed, spinning
-    // tools are settled, and the session is durably saved below.
-    void this.finishStream(undefined, generation);
+    // Preserve the arrived prefix and reasoning, but do not play a queued
+    // suffix after the user asked to stop. `flushNow` settles synchronously.
+    this.requestStreamFinish({ kind: 'stopped' }, generation);
   }
 
   async beginTutorTeaching(
@@ -1177,11 +1186,21 @@ class AppStore {
     const generation = this.streamGeneration + 1;
     this.streamGeneration = generation;
     this.streamFinished = false;
+    this.disposeStreamPlayer();
+    this.streamTerminal = { kind: 'completed' };
+    this.streamTerminalReceived = false;
+    this.streamPlayer = createMobileStreamPlayer({
+      onFrame: (visibleText) => this.patchAssistant(() => ({ rawText: visibleText, content: visibleText })),
+      onDone: () => {
+        const terminal = this.streamTerminal;
+        void this.finishStream(terminal.kind === 'error' ? terminal.message : undefined, generation);
+      },
+    });
     this.clearPendingAssistantPatches();
     const streamingSession = { ...session, messages: [...nextMessages, assistant] };
     this.setState({ activeSession: streamingSession, isStreaming: true, error: null });
     try {
-      const history = buildChatHistory(nextMessages);
+      const history = appendAttachmentPointers(buildChatHistory(nextMessages), nextMessages);
       const finalUser = [...nextMessages].reverse().find((message) => message.role === 'user');
       const userText = String(finalUser?.rawText || finalUser?.content || '');
       const modelUserText = serializeSelectedPluginContext(this.state.selectedComposerPlugins, userText);
@@ -1305,8 +1324,9 @@ class AppStore {
         onToolProgress: (payload) => this.addToolEvent('tool_progress', payload, generation),
         onToolCallDelta: (payload) => this.addToolEvent('tool_call_delta', payload, generation),
         onExecutionStart: (payload) => this.addToolEvent('execution_start', payload, generation),
-        onError: (message) => { void this.finishStream(message, generation); },
-        onDone: () => { void this.finishStream(undefined, generation); },
+        onAgentStep: (payload) => this.addToolEvent('agent_step', payload, generation),
+        onError: (message) => this.requestStreamFinish({ kind: 'error', message }, generation),
+        onDone: () => this.requestStreamFinish({ kind: 'completed' }, generation),
       });
       // The user can press Stop while token retrieval/request setup is still
       // pending. Abort this late handle rather than resurrecting the stream.
@@ -1316,7 +1336,7 @@ class AppStore {
       }
       this.stopStream = stop;
     } catch (error) {
-      await this.finishStream(error instanceof Error ? error.message : tSync('chat.offline'), generation);
+      this.requestStreamFinish({ kind: 'error', message: error instanceof Error ? error.message : tSync('chat.offline') }, generation);
       throw error;
     }
   }
@@ -1325,6 +1345,7 @@ class AppStore {
     if (!this.state.isStreaming) return;
     this.stopStream?.();
     this.stopStream = null;
+    this.disposeStreamPlayer();
     this.streamFinished = true;
     this.streamGeneration += 1;
     this.clearPendingAssistantPatches();
@@ -1816,17 +1837,18 @@ class AppStore {
     if (this.streamFlushTimer) clearTimeout(this.streamFlushTimer);
     this.streamFlushTimer = null;
     this.pendingAssistantPatches = [];
-    this.streamDeltaChunks = [];
   }
 
   private queueAssistantPatch(generation: number, patch: (assistant: Message) => Partial<Message>) {
     if (generation !== this.streamGeneration || this.streamFinished) return;
     this.pendingAssistantPatches.push(patch);
     if (this.streamFlushTimer) return;
-    // Rendering an entire markdown tree once per transport chunk is needlessly
-    // expensive. 64ms keeps the live response responsive while roughly halving
-    // full-state commits (each flush re-parses the whole streaming markdown).
-    this.streamFlushTimer = setTimeout(() => this.flushAssistantPatches(generation), 64);
+    // Match the web's length-aware paint clock: keep the first screen
+    // responsive, then coalesce more aggressively as whole-message Markdown
+    // parsing gets costlier.
+    const currentLength = this.state.activeSession?.messages?.at(-1)?.rawText?.length || 0;
+    const interval = getMobileStreamRenderInterval(currentLength);
+    this.streamFlushTimer = setTimeout(() => this.flushAssistantPatches(generation), interval);
   }
 
   private flushAssistantPatches(generation: number) {
@@ -1848,16 +1870,14 @@ class AppStore {
   private appendAssistant(delta: string, generation: number) {
     if (!delta) return;
     if (generation !== this.streamGeneration || this.streamFinished) return;
-    this.streamDeltaChunks.push(delta);
-    // Each queued patch drains the shared chunk buffer, so only the first
-    // patch in a flush batch performs the join. Concatenating the full text
-    // per delta re-copied it once per SSE chunk (O(n²) across a batch); if a
-    // patch is dropped the undrained chunks are picked up by the next one.
-    this.queueAssistantPatch(generation, (assistant) => {
-      const chunks = this.streamDeltaChunks;
-      if (!chunks.length) return {};
-      this.streamDeltaChunks = [];
-      const rawText = `${assistant.rawText || ''}${chunks.join('')}`;
+    if (this.streamPlayer) {
+      this.streamPlayer.push(delta);
+      return;
+    }
+    // Defensive fallback for test harnesses or a stream that outlives its
+    // player: never hold the first delta behind a batching timer.
+    this.patchAssistant((assistant) => {
+      const rawText = `${assistant.rawText || ''}${delta}`;
       return { rawText, content: rawText };
     });
   }
@@ -1870,6 +1890,11 @@ class AppStore {
   }
 
   private addToolEvent(kind: ToolEventKind, payload: unknown, generation: number) {
+    if (kind === 'tool_use' && generation === this.streamGeneration && !this.streamFinished) {
+      /* Flush only the visible-text buffer at the tool boundary. Tool inputs
+       * and inline reasoning travel through separate, non-answer channels. */
+      this.streamPlayer?.revealBufferedNow();
+    }
     this.queueAssistantPatch(generation, (assistant) => {
       /* P_declarative-tool-run — where in rawText the answer was when the
        * frame landed (web streamingTurn.onInlineTool). Monotonic against
@@ -1887,12 +1912,43 @@ class AppStore {
     });
   }
 
+  private disposeStreamPlayer() {
+    this.streamPlayer?.dispose();
+    this.streamPlayer = null;
+  }
+
+  private requestStreamFinish(terminal: StreamTerminal, generation: number) {
+    if (generation !== this.streamGeneration || this.streamFinished) return;
+    if (this.streamTerminalReceived) {
+      // The first protocol/user terminal wins. In particular, once [DONE]
+      // arrived, Stop only flushes the already-complete playback buffer; it
+      // must not relabel the full answer as interrupted.
+      if (this.streamTerminal.kind === 'completed' && terminal.kind === 'stopped') {
+        if (this.streamPlayer) this.streamPlayer.flushNow();
+        else void this.finishStream(undefined, generation);
+      }
+      return;
+    }
+    this.streamTerminal = terminal;
+    this.streamTerminalReceived = true;
+    if (this.streamPlayer) {
+      if (this.streamTerminal.kind === 'stopped') this.streamPlayer.flushNow();
+      else this.streamPlayer.beginDrain();
+      return;
+    }
+    void this.finishStream(this.streamTerminal.kind === 'error' ? this.streamTerminal.message : undefined, generation);
+  }
+
   private async finishStream(error?: string, generation = this.streamGeneration) {
     if (generation !== this.streamGeneration || this.streamFinished) return;
     // Do this before flipping streamFinished so the final partial token/tool
     // result cannot be lost behind the terminal state transition.
     this.flushAssistantPatches(generation);
     this.streamFinished = true;
+    const terminal = this.streamTerminal;
+    this.streamTerminal = { kind: 'completed' };
+    this.streamTerminalReceived = false;
+    this.disposeStreamPlayer();
     const session = this.state.activeSession;
     this.stopStream = null;
     if (!session) {
@@ -1901,7 +1957,11 @@ class AppStore {
     }
     const messages = (session.messages || []).map((message) => {
       if (message.type !== 'streaming') return message;
-      const settled = { ...message, type: 'assistant' } as Message;
+      const settled = {
+        ...message,
+        type: 'assistant',
+        ...(terminal.kind === 'stopped' ? { stopped: true } : {}),
+      } as Message;
       // A tool still marked running when the stream ends never reported back.
       if (message.toolCalls?.length) settled.toolCalls = settleToolCalls(message.toolCalls);
       return settled;

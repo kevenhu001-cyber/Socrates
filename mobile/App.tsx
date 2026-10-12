@@ -18,10 +18,12 @@ import { CmdKPalette } from './src/cmdK/CmdKPalette';
 import { cmdKStore } from './src/cmdK/cmdKStore';
 import { I18nProvider, useT } from './src/i18n';
 import { appStore, useAppStore } from './src/stores/appStore';
-import { hydratePromptTemplates } from './src/data/chat/prompts';
+import { hydratePromptTemplates, syncPromptTemplates } from './src/data/chat/prompts';
 import { loadPreferences } from './src/data/preferences';
 import { getNetworkStatus, subscribeToNetworkStatus } from './src/native/network';
 import { ThemeProvider, useTheme } from './src/theme/ThemeProvider';
+import { motionDuration } from './src/theme/theme';
+import { motionAllowed, useReducedMotion } from './src/native/reducedMotion';
 import { useFonts } from 'expo-font';
 import {
   PlusJakartaSans_400Regular,
@@ -33,6 +35,7 @@ import { JetBrainsMono_400Regular } from '@expo-google-fonts/jetbrains-mono';
 import { Newsreader_500Medium } from '@expo-google-fonts/newsreader';
 import { NotoSansSC_400Regular } from '@expo-google-fonts/noto-sans-sc';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { SplashReveal } from './src/components/SplashReveal';
 import { ShareModal } from './src/components/ShareModal';
 import { ToastHost } from './src/components/Toast';
 import { ProfileOverlay } from './src/components/ProfileOverlay';
@@ -56,10 +59,11 @@ import { SearchScreen } from './src/screens/SearchScreen';
 import { ScheduledScreen } from './src/screens/ScheduledScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { SkillsScreen } from './src/screens/SkillsScreen';
+import { CreationsScreen } from './src/screens/CreationsScreen';
 import { TutorScreen } from './src/screens/TutorScreen';
 import { WorkspaceScreen } from './src/screens/WorkspaceScreen';
 import type { RootStackParamList } from './src/navigation/types';
-import { hideAppSplash, prepareAppRuntime, setAppBackgroundColor } from './src/native/appRuntime';
+import { prepareAppRuntime, setAppBackgroundColor } from './src/native/appRuntime';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
@@ -142,6 +146,8 @@ function LoadingScreen() {
 function NativeStack({ onRouteChange }: { onRouteChange?: (routeName: keyof RootStackParamList | null) => void }) {
   const authStatus = useAppStore((s) => s.authStatus);
   const { colors } = useTheme();
+  const reducedMotion = useReducedMotion();
+  const pageTransitionDuration = motionAllowed(reducedMotion) ? motionDuration.page : 0;
   if (authStatus === 'booting') return <LoadingScreen />;
   if (authStatus === 'signedOut') return <AuthScreen />;
 
@@ -169,7 +175,7 @@ function NativeStack({ onRouteChange }: { onRouteChange?: (routeName: keyof Root
       {/* freezeOnBlur suspends React work for screens hidden behind the top
        * one — a directory page left in the stack (Recents/Projects/…) stops
        * re-rendering on every store update while Chat streams on top of it. */}
-      <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false, animation: 'fade', freezeOnBlur: true }}>
+      <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false, animation: 'fade', animationDuration: pageTransitionDuration, freezeOnBlur: true }}>
         <Stack.Screen name="Home" component={NewChatScreen} />
         <Stack.Screen name="Chat" component={ChatScreen} />
         <Stack.Screen name="Tutor" component={TutorScreen} />
@@ -193,6 +199,7 @@ function NativeStack({ onRouteChange }: { onRouteChange?: (routeName: keyof Root
         <Stack.Screen name="Knowledge" component={KnowledgeScreen} />
         <Stack.Screen name="Mistakes" component={MistakesScreen} />
         <Stack.Screen name="Skills" component={SkillsScreen} />
+        <Stack.Screen name="Creations" component={CreationsScreen} />
         <Stack.Screen name="Workspace" component={WorkspaceScreen} />
         <Stack.Screen name="Embedded" component={EmbeddedWebScreen} />
         <Stack.Screen name="ArtifactPreview" component={ArtifactPreviewScreen} />
@@ -211,6 +218,10 @@ function NativeApp() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [usageOpen, setUsageOpen] = useState(false);
   const [storageOpen, setStorageOpen] = useState(false);
+
+  useEffect(() => {
+    if (authStatus === 'signedIn') void syncPromptTemplates(true);
+  }, [authStatus]);
 
   /* Android draws edge-to-edge here (see plugins/withEdgeToEdge.js), so the
    * status bar has no colour of its own — only the icon brightness follows the
@@ -394,28 +405,20 @@ export default function App() {
     });
   }, []);
 
-  const revealApp = useCallback(() => {
-    if (fontsLoaded) {
-      void hideAppSplash().catch((err) => {
-        console.warn('[App] Failed to hide app splash screen:', err);
-      });
-    }
-  }, [fontsLoaded]);
-
   return (
     <KeyboardProvider>
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-        <View onLayout={revealApp} style={styles.root} testID="app-root">
-          <ErrorBoundary>
-            <ThemeProvider>
+        <ThemeProvider>
+          <SplashReveal fontsLoaded={Boolean(fontsLoaded)}>
+            <ErrorBoundary>
               <I18nProvider>
                 <AppDrawerProvider>
                   <NativeApp />
                 </AppDrawerProvider>
               </I18nProvider>
-            </ThemeProvider>
-          </ErrorBoundary>
-        </View>
+            </ErrorBoundary>
+          </SplashReveal>
+        </ThemeProvider>
       </SafeAreaProvider>
     </KeyboardProvider>
   );

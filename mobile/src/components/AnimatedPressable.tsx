@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { Animated, Pressable, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
-import { motionEasing, withAlpha } from '../theme/theme';
+import { motionDuration, motionEasing, withAlpha } from '../theme/theme';
+import { motionAllowed, useReducedMotion } from '../native/reducedMotion';
 
 const AnimatedPressableBase = Animated.createAnimatedComponent(Pressable);
 
@@ -24,13 +25,15 @@ interface Props extends PressableProps {
 
 export function AnimatedPressable({ children, style, scale = 0.975, restingScale = 1, disabledOpacity = 1, focusRing = true, onPressIn, onPressOut, onFocus, onBlur, ...props }: Props) {
   const { colors } = useTheme();
+  const reducedMotion = useReducedMotion();
+  const animatePress = motionAllowed(reducedMotion);
   const value = useRef(new Animated.Value(restingScale)).current;
   const [focused, setFocused] = useState(false);
   /* Web press feedback is a CSS transition, not a spring simulation —
    * use the canonical `easing.spring` bezier (`cubic-bezier(0.34, 1.3,
    * 0.64, 1)`, ~180ms reads the same as the old damped spring). */
   const animate = (toValue: number) =>
-    Animated.timing(value, { toValue, duration: 180, easing: motionEasing.spring, useNativeDriver: true }).start();
+    Animated.timing(value, { toValue, duration: motionDuration.press, easing: motionEasing.out, useNativeDriver: true }).start();
   /* frontend `button:focus-visible, a:focus-visible { outline: 2px solid
    * hsl(var(--accent-000)/.85); outline-offset: 2px }`. RN has no focus
    * pseudo-class; emulate it for keyboard/TV/web focus. Unknown outline
@@ -42,9 +45,9 @@ export function AnimatedPressable({ children, style, scale = 0.975, restingScale
     <AnimatedPressableBase
       {...props}
       accessibilityRole={props.accessibilityRole ?? 'button'}
-      style={[style, props.disabled && disabledOpacity !== 1 ? { opacity: disabledOpacity } : null, focusStyle, { transform: [{ scale: value }] }]}
-      onPressIn={(event) => { if (!props.disabled) animate(scale); onPressIn?.(event); }}
-      onPressOut={(event) => { if (!props.disabled) animate(restingScale); onPressOut?.(event); }}
+      style={[style, props.disabled && disabledOpacity !== 1 ? { opacity: disabledOpacity } : null, focusStyle, { transform: [{ scale: animatePress ? value : restingScale }] }]}
+      onPressIn={(event) => { if (!props.disabled && animatePress) animate(scale); onPressIn?.(event); }}
+      onPressOut={(event) => { if (!props.disabled && animatePress) animate(restingScale); onPressOut?.(event); }}
       onFocus={(event) => { setFocused(true); onFocus?.(event); }}
       onBlur={(event) => { setFocused(false); onBlur?.(event); }}
     >

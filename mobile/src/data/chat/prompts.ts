@@ -1,4 +1,5 @@
 import { getItem, setItem } from '../../platform/secureStorage';
+import { promptsApi, type PromptTemplatePayload, type PromptTemplateRow } from '../api/client';
 import { toneVoiceSuffix, type TonePreset } from './tonePresets';
 export type MobileExtensionKey = 'write' | 'explore' | 'analyze';
 export type MobileOutputMode = 'chat' | 'canvas';
@@ -166,6 +167,36 @@ const PROMPT_TEMPLATES_KEY = 'socrates-prompt-templates';
 const templateListeners = new Set<() => void>();
 let customCache: MobilePromptTemplate[] = [];
 let mergedCache: MobilePromptTemplate[] = [...MOBILE_PROMPT_TEMPLATES];
+let syncInFlight: Promise<void> | null = null;
+let lastSyncAt = 0;
+const SYNC_MIN_INTERVAL_MS = 30_000;
+const isServerTemplateId = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+function serverPayload(template: MobilePromptTemplate): PromptTemplatePayload {
+  return {
+    title: template.title,
+    description: template.description || null,
+    body: template.body || '',
+    icon: template.icon || null,
+    category: template.category || 'other',
+    shortcut: template.shortcut || null,
+    systemPrompt: template.systemPrompt || null,
+  };
+}
+
+function localTemplate(row: PromptTemplateRow): MobilePromptTemplate {
+  return {
+    id: row.id,
+    title: row.title || '',
+    description: row.description || '',
+    body: row.body || '',
+    icon: row.icon || 'pg',
+    category: row.category || 'other',
+    shortcut: row.shortcut || '',
+    systemPrompt: row.systemPrompt || '',
+    isBuiltin: false,
+  };
+}
 
 function mergeTemplates(customs: MobilePromptTemplate[]): MobilePromptTemplate[] {
   /* Web `loadPromptTemplates`: key by shortcut — a custom row overrides a
@@ -240,10 +271,68 @@ export async function upsertCustomTemplate(template: MobilePromptTemplate): Prom
   if (index >= 0) customs[index] = next;
   else customs.push(next);
   await persistCustoms(customs);
+  void writeTemplateToServer(next);
 }
 
 export async function deleteCustomTemplate(id: string): Promise<void> {
   await persistCustoms(customCache.filter((template) => template.id !== id));
+  if (isServerTemplateId(id)) void promptsApi.remove(id).catch(() => undefined);
+}
+
+/** Pull account templates and push unsynced local customs, matching the Web
+ * `/api/prompts` policy. Server UUID rows win; UUIDs missing remotely were
+ * deleted on another device. Local-only rows survive failed requests. */
+export function syncPromptTemplates(force = false): Promise<void> {
+  if (!force && Date.now() - lastSyncAt < SYNC_MIN_INTERVAL_MS) return Promise.resolve();
+  if (syncInFlight) return syncInFlight;
+  lastSyncAt = Date.now();
+  syncInFlight = (async () => {
+    try {
+      const rows: PromptTemplateRow[] = [];
+      let cursor: string | null = null;
+      do {
+        const response = await promptsApi.listMine(cursor);
+        if (Array.isArray(response.templates)) rows.push(...response.templates);
+        cursor = response.nextCursor || null;
+      } while (cursor);
+      const remote = rows
+        .filter((row) => row && typeof row.id === 'string' && typeof row.title === 'string')
+        .map(localTemplate);
+      const remoteShortcuts = new Set(remote.map((template) => template.shortcut).filter(Boolean));
+      const pending = customCache.filter((template) =>
+        !isServerTemplateId(template.id)
+        && (!template.shortcut || !remoteShortcuts.has(template.shortcut)),
+      );
+      const reconciled: MobilePromptTemplate[] = [];
+      for (const template of pending) {
+        try {
+          const created = await promptsApi.create(serverPayload(template));
+          reconciled.push(created?.id ? { ...template, id: created.id } : template);
+        } catch {
+          reconciled.push(template);
+        }
+      }
+      await persistCustoms([...remote, ...reconciled]);
+    } catch {
+      /* Offline / signed-out use remains local-only until a later sync. */
+    }
+  })().finally(() => { syncInFlight = null; });
+  return syncInFlight;
+}
+
+async function writeTemplateToServer(template: MobilePromptTemplate): Promise<void> {
+  try {
+    if (isServerTemplateId(template.id)) {
+      await promptsApi.update(template.id, serverPayload(template));
+      return;
+    }
+    const created = await promptsApi.create(serverPayload(template));
+    if (!created?.id) return;
+    const latest = customCache.map((item) => item.id === template.id ? { ...item, id: created.id } : item);
+    await persistCustoms(latest);
+  } catch {
+    /* Local-first write-through; next startup/pull retries unsynced rows. */
+  }
 }
 
 /* Web `onPromptTemplateEditorSave` validation, kept pure so the screen and

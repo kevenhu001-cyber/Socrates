@@ -1,4 +1,4 @@
-import { hasMath, hideUnclosedWidgetTail, inlineToHtml, inlineToText, parseInline, parseMarkdown, safeHref, stripCitationMarkers, type Block } from './markdown';
+import { createSettledMarkdownSplitter, hasMath, hideUnclosedWidgetTail, inlineToHtml, inlineToText, parseInline, parseMarkdown, safeHref, stripCitationMarkers, type Block } from './markdown';
 
 function types(blocks: Block[]): string[] {
   return blocks.map((block) => block.type);
@@ -81,6 +81,101 @@ describe('parseMarkdown blocks', () => {
     expect(parseMarkdown('   \n\n ')).toEqual([]);
     expect(parseMarkdown(null)).toEqual([]);
     expect(parseMarkdown(undefined)).toEqual([]);
+  });
+});
+
+describe('settled Markdown stream splitting', () => {
+  it('keeps the first delta live, then emits only newly completed blocks in a burst', () => {
+    const splitter = createSettledMarkdownSplitter();
+    expect(splitter.push('你').tail).toBe('你');
+    expect(splitter.push('你好，世界。\n\n# 稳定标题\n\n下一段').added).toEqual([
+      '你好，世界。',
+      '# 稳定标题',
+    ]);
+    expect(splitter.push('你好，世界。\n\n# 稳定标题\n\n下一段继续').added).toEqual([]);
+    expect(splitter.push('你好，世界。\n\n# 稳定标题\n\n下一段继续\n\n表格').added).toEqual(['下一段继续']);
+  });
+
+  it('does not settle partial fences, display math, widgets, or loose-list continuations', () => {
+    const code = createSettledMarkdownSplitter();
+    const partialCode = '说明\n\n```ts\nconst answer = 42;\n\n仍在代码块';
+    expect(code.push(partialCode).added).toEqual(['说明']);
+    expect(code.push(`${partialCode}\n\n\`\`\``).added).toEqual([]);
+
+    const math = createSettledMarkdownSplitter();
+    expect(math.push('公式\n\n$$\nx^2\n\n还未闭合').added).toEqual(['公式']);
+
+    const widget = createSettledMarkdownSplitter();
+    expect(widget.push('卡片\n\n<example>\n<problem>题目').added).toEqual(['卡片']);
+
+    const list = createSettledMarkdownSplitter();
+    const split = list.push('- 第一项\n\n- 第二项\n\n下一个段落');
+    expect(split.added).toEqual(['- 第一项\n\n- 第二项']);
+    expect(split.tail).toBe('下一个段落');
+  });
+
+  it('preserves complete table/list/code semantics and resets on replacement text', () => {
+    const splitter = createSettledMarkdownSplitter();
+    const source = '# 标题\n\n| 名称 | 值 |\n| --- | --- |\n| 甲 | 1 |\n\n- 一\n\n- 二\n\n```js\nconst x = 1;\n```\n\n尾部';
+    const split = splitter.push(source);
+    expect([...split.added, split.tail].filter(Boolean).join('\n\n')).toBe(source);
+    const incrementallyParsed = split.added.flatMap((part) => parseMarkdown(part)).concat(parseMarkdown(split.tail));
+    expect(incrementallyParsed).toEqual(parseMarkdown(source));
+
+    const replacement = splitter.push('替换后的新回答\n\n第二段');
+    expect(replacement.reset).toBe(true);
+    expect(replacement.added).toEqual(['替换后的新回答']);
+    expect(replacement.tail).toBe('第二段');
+  });
+
+  it('keeps large active structures intact across a long burst of partial updates', () => {
+    const longCode = '```ts\n' + Array.from({ length: 96 }, (_, index) =>
+      `const item${index} = ${'x'.repeat(72)};\n\n`,
+    ).join('');
+    const longMath = '$$\n' + Array.from({ length: 96 }, (_, index) =>
+      `x_{${index}} + ${'y'.repeat(72)}\n\n`,
+    ).join('');
+    const longWidget = '<example>\n<problem>\n' + Array.from({ length: 96 }, (_, index) =>
+      `Problem detail ${index}: ${'z'.repeat(72)}\n`,
+    ).join('');
+    const longLooseList = Array.from({ length: 96 }, (_, index) =>
+      `- Item ${index}: ${'l'.repeat(72)}`,
+    ).join('\n\n');
+
+    const cases = [
+      { active: longCode, close: '\n```' },
+      { active: longMath, close: '\n$$' },
+      { active: longWidget, close: '\n</problem>\n</example>' },
+      { active: longLooseList, close: '' },
+    ];
+
+    for (const scenario of cases) {
+      const splitter = createSettledMarkdownSplitter();
+      const prefix = 'Stable prelude\n\n';
+      let source = '';
+      let sawPrelude = false;
+      const settled: string[] = [];
+      for (let offset = 0; offset < scenario.active.length; offset += 384) {
+        source = prefix + scenario.active.slice(0, offset + 384);
+        const split = splitter.push(source);
+        settled.push(...split.added);
+        if (!sawPrelude) {
+          expect(split.added).toEqual(['Stable prelude']);
+          sawPrelude = true;
+        } else {
+          expect(split.added).toEqual([]);
+        }
+        expect(split.tail).toBe(scenario.active.slice(0, offset + 384));
+      }
+
+      source += `${scenario.close}\n\nAfter the active block.`;
+      const finalSplit = splitter.push(source);
+      settled.push(...finalSplit.added);
+      expect(finalSplit.added).toEqual([scenario.active + scenario.close]);
+      expect(finalSplit.tail).toBe('After the active block.');
+      const splitBlocks = settled.flatMap((part) => parseMarkdown(part)).concat(parseMarkdown(finalSplit.tail));
+      expect(splitBlocks).toEqual(parseMarkdown(source));
+    }
   });
 });
 

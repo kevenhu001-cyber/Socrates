@@ -40,13 +40,25 @@ export function dispatchChatSseFrame(frame: string, handlers: ChatSseHandlers) {
   }
   if (!data.length) return;
   const payload = data.join('\n');
+  if (!payload.trim()) return;
   if (payload === '[DONE]') {
     handlers.onDone?.();
     return;
   }
 
-  let parsed: unknown = payload;
-  try { parsed = JSON.parse(payload); } catch { /* keep a useful text payload */ }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(payload);
+  } catch {
+    // A legacy `event: error` may carry a plain human-readable message. All
+    // other chat SSE data frames are JSON; silently treating invalid JSON as a
+    // string can hide a broken protocol frame before a later [DONE].
+    if (event === 'error') parsed = payload;
+    else {
+      handlers.onError?.(`Malformed SSE JSON payload for event: ${event}`);
+      return;
+    }
+  }
 
   if (event === 'error') {
     const value = parsed as { error?: unknown; message?: unknown } | string;

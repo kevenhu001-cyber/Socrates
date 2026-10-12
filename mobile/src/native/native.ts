@@ -14,6 +14,8 @@ export interface NativeFileAsset {
   size?: number | null;
   fileSize?: number | null;
   base64?: string | null;
+  width?: number;
+  height?: number;
 }
 
 export interface NativePickerResult {
@@ -65,11 +67,11 @@ export const native = {
     return DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true, multiple: false }) as Promise<NativePickerResult>;
   },
   async pickImage(): Promise<NativePickerResult> {
-    return ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.75, base64: true, allowsEditing: false }) as Promise<NativePickerResult>;
+    return ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1, base64: false, allowsEditing: false }) as Promise<NativePickerResult>;
   },
   async capturePhoto(): Promise<NativePickerResult> {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) return { canceled: true, assets: [] };
-    return ImagePicker.launchCameraAsync({ quality: 0.75, base64: true, allowsEditing: false }) as Promise<NativePickerResult>;
+    return ImagePicker.launchCameraAsync({ quality: 1, base64: false, allowsEditing: false }) as Promise<NativePickerResult>;
   },
 };

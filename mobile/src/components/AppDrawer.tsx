@@ -5,7 +5,8 @@ import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import type { EmbeddedTarget, Session } from '@socrates/contracts';
 import { useTheme, useThemeController } from '../theme/ThemeProvider';
-import { motionEasing } from '../theme/theme';
+import { motionDuration, motionEasing } from '../theme/theme';
+import { motionAllowed, useReducedMotion } from '../native/reducedMotion';
 import { mobileDrawerWidth, useResponsive } from '../theme/responsive';
 import { useT } from '../i18n';
 import { appStore, useAppStore } from '../stores/appStore';
@@ -202,6 +203,8 @@ export function AppDrawer({ onNavigate, onOpenEmbedded, activeRoute }: Props) {
   const { open, closeDrawer } = useAppDrawer();
   const { sidebarWidth } = useResponsive();
   const { colors } = useTheme();
+  const reducedMotion = useReducedMotion();
+  const animateMotion = motionAllowed(reducedMotion);
   const t = useT();
   /* Cmd+K and the drawer publish these signals. The root app renders the
    * native overlays above both the drawer and the active screen. */
@@ -217,7 +220,8 @@ export function AppDrawer({ onNavigate, onOpenEmbedded, activeRoute }: Props) {
     if (!open) return;
     closeDrawer();
   }), [closeDrawer]);
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(open ? 1 : 0)).current;
+  const activeAnimation = useRef<Animated.CompositeAnimation | null>(null);
   /* Keep the Modal mounted through the exit animation. `prevOpen` edge-
    * triggers each open/close so exactly one timing runs per transition —
    * `setMounted(true)` must not restart the entrance — and the `finished`
@@ -225,27 +229,57 @@ export function AppDrawer({ onNavigate, onOpenEmbedded, activeRoute }: Props) {
   const [mounted, setMounted] = useState(open);
   const prevOpenRef = useRef(open);
   useEffect(() => {
-    if (open === prevOpenRef.current) return;
+    if (open === prevOpenRef.current) {
+      if (!animateMotion || !activeAnimation.current) {
+        if (!animateMotion) activeAnimation.current?.stop();
+        activeAnimation.current = null;
+        slideAnim.setValue(open ? 1 : 0);
+        if (!open) setMounted(false);
+      }
+      return undefined;
+    }
     prevOpenRef.current = open;
     if (open) {
       setMounted(true);
-      Animated.timing(slideAnim, {
+      if (!animateMotion) {
+        slideAnim.setValue(1);
+        return undefined;
+      }
+      const animation = Animated.timing(slideAnim, {
         toValue: 1,
-        duration: 280,
+        duration: motionDuration.drawerEnter,
         easing: motionEasing.out,
         useNativeDriver: true,
-      }).start();
+      });
+      activeAnimation.current = animation;
+      animation.start(() => { activeAnimation.current = null; });
+      return () => {
+        animation.stop();
+        if (activeAnimation.current === animation) activeAnimation.current = null;
+      };
     } else {
-      Animated.timing(slideAnim, {
+      if (!animateMotion) {
+        slideAnim.setValue(0);
+        setMounted(false);
+        return undefined;
+      }
+      const animation = Animated.timing(slideAnim, {
         toValue: 0,
-        duration: 220,
+        duration: motionDuration.drawerExit,
         easing: motionEasing.out,
         useNativeDriver: true,
-      }).start(({ finished }) => {
+      });
+      activeAnimation.current = animation;
+      animation.start(({ finished }) => {
+        activeAnimation.current = null;
         if (finished) setMounted(false);
       });
+      return () => {
+        animation.stop();
+        if (activeAnimation.current === animation) activeAnimation.current = null;
+      };
     }
-  }, [open, slideAnim]);
+  }, [animateMotion, open, slideAnim]);
 
   const permanent = sidebarWidth !== null;
   if (permanent) {
