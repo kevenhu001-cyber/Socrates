@@ -80,7 +80,7 @@ test('a live row waits for its paragraph, then mounts once behind it', async ({ 
   /* The status line proves the tool_use was processed and rendered — only
      then is "no row" a meaningful assertion (otherwise we might just be
      faster than the render pass). */
-  await expect(body.locator('.thinking-status-label')).toContainText('Tool running');
+  await expect(body.locator('.thinking-status-label')).toContainText('Searching the web…');
   /* The paragraph is unfinished: no row may mount (and therefore nothing
      can jump when punctuation arrives). A finished sentence alone must
      NOT mount it either — only a completed paragraph does. */

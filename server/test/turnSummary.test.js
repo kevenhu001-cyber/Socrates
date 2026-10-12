@@ -105,8 +105,15 @@ test('generateTurnSummary hands its deadline down as a real signal', async () =>
     {
       timeoutMs: 20,
       complete: (_prompt, signal) => new Promise((_resolve, reject) => {
+        /* The production deadline is intentionally unref'ed. Keep this
+           provider fixture alive like a real socket/request so Node 22 does
+           not exit the isolated test worker before the abort is observable. */
+        const keepAlive = setTimeout(() => reject(new Error('summary request did not abort')), 1_000);
         seen = signal;
-        signal.addEventListener('abort', () => reject(new Error('aborted')));
+        signal.addEventListener('abort', () => {
+          clearTimeout(keepAlive);
+          reject(new Error('aborted'));
+        }, { once: true });
       }),
     },
   );

@@ -4,7 +4,7 @@ import { ToolRunDetail } from './ToolRunDetail.js';
 import { RetryButton } from './ToolRunDetailSections.js';
 import { ToolRunRowHead } from './ToolRunRowHead.js';
 import { useToolRunDisclosure } from './ToolRunDisclosure';
-import type { ToolRunView } from './toolRunModel';
+import { agentRunStateOf, type ToolRunView } from './toolRunModel';
 import { useElapsed } from './useElapsed.js';
 
 export interface ToolRunRowProps {
@@ -30,7 +30,7 @@ export function ToolRunRow({ view, startedAt, messageId, readOnly, nested }: Too
         data-state={view.state}
         data-nested={nested ? '1' : undefined}
         data-react-owned="1"
-        data-expandable={view.sections.length || view.tech.length || view.livePreview || view.liveOutput || view.agentRun ? '1' : undefined}
+        data-expandable={view.sections.length || view.tech.length || view.livePreview || view.liveOutput ? '1' : undefined}
         data-error={view.state === 'error' ? '1' : undefined}
         open={open}
         onToggle={(event) => setOpen(event.currentTarget.open)}
@@ -44,16 +44,19 @@ export function ToolRunRow({ view, startedAt, messageId, readOnly, nested }: Too
               {view.livePreview ? <pre className="tool-inline-code-preview">{view.livePreview}</pre> : null}
               {view.liveOutput ? <pre className="tool-inline-code-preview is-output">{view.liveOutput}</pre> : null}
               {!view.livePreview && !view.liveOutput ? <ToolRunDetail view={view} readOnly={readOnly} /> : null}
-              {view.agentRun ? <ToolRunAgentSteps run={view.agentRun} live /> : null}
             </div>
           ) : (
-            <>
-              <ToolRunDetail view={view} readOnly={readOnly} />
-              {view.agentRun ? <ToolRunAgentSteps run={view.agentRun} live={false} state={view.state === 'error' ? 'failed' : view.state === 'stopped' ? 'cancelled' : 'done'} /> : null}
-            </>
+            <ToolRunDetail view={view} readOnly={readOnly} />
           )
         ) : null}
       </details>
+      {view.agentRun ? (
+        <ToolRunAgentSteps
+          run={view.agentRun}
+          live={inFlight}
+          state={agentRunStateOf(view.state)}
+        />
+      ) : null}
       {error?.kind === 'error' ? <p className="tool-inline-error" role="alert">{error.text.trim().split('\n')[0].slice(0, 180)}</p> : null}
       <RetryButton view={view} readOnly={readOnly} />
       {view.approval ? (

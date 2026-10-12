@@ -13,8 +13,8 @@ let visibleMessagesRevision = -1;
 
 export function getVisibleMessagesSnapshot(): ReadonlyArray<LegacyChatMessage> {
   const snapshot = getChatRuntimeSnapshot();
-  /* Revisions invalidate the cache because the legacy pipeline mutates entries
-     in place while streaming text and tool state. */
+  /* The list/filter result is revision-scoped. Individual message objects are
+     immutable and keep stable identity when that row did not change. */
   if (visibleMessagesRevision === snapshot.revision) return visibleMessagesCache;
 
   const seen = new Set<string>();

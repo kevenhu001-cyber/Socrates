@@ -171,7 +171,7 @@ test('a settled visualization under a collapsed tool run stays on screen', async
   await body.screenshot({ path: 'test-results/tool-output-collapsed.png' });
 });
 
-test('opening the mobile tool sheet does not move or duplicate call outputs', async ({ page }) => {
+test('opening the mobile tool group does not move or duplicate call outputs', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const code = {
     id: 'code-1',
@@ -194,7 +194,6 @@ test('opening the mobile tool sheet does not move or duplicate call outputs', as
   ]);
 
   const group = body.locator('.tool-run-group');
-  const sheet = page.locator('[data-tool-run-sheet="1"]');
   const charts = body.locator('.visualization-card');
   await expect(charts).toHaveCount(2);
   await expect(charts.nth(0)).toContainText('Probe A');
@@ -203,10 +202,11 @@ test('opening the mobile tool sheet does not move or duplicate call outputs', as
   await expect(group.locator('.tool-run-list')).toHaveAttribute('hidden', '');
 
   await group.locator('.tool-run-summary').click();
-  await expect(sheet).toBeVisible();
+  await expect(group).toHaveClass(/open/);
+  await expect(group.locator('.tool-run-list')).toBeVisible();
+  await expect(page.locator('[data-tool-run-sheet="1"]')).toHaveCount(0);
   await expect(charts).toHaveCount(2);
   await expect(body.locator('.exec-artifact')).toHaveCount(0);
-  await expect(sheet.locator('.visualization-card, .exec-artifact')).toHaveCount(0);
   await expect(group.locator('.tool-run-list .visualization-card, .tool-run-list .exec-artifact')).toHaveCount(0);
 
   const probe = await readVizProbe(page);

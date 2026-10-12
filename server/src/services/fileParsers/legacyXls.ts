@@ -11,6 +11,7 @@
  * workbook materializing before truncation.
  */
 import XLSX from 'xlsx';
+import { readFile } from 'node:fs/promises';
 
 const SHEET_HEADER = (name: string) => `### Sheet: ${name || 'Untitled'}\n`;
 
@@ -22,7 +23,14 @@ export async function extract(filepath: string) {
   let wb: XLSX.WorkBook;
   try {
     // cellDates keeps date cells typed so they format as ISO below.
-    wb = XLSX.readFile(filepath, { cellDates: true, sheetRows: MAX_ROWS_PER_SHEET });
+    // SheetJS 0.20.x no longer supports the filesystem helper in its ESM
+    // build; read the file into a buffer so the parser works in Node and
+    // remains independent of SheetJS' optional fs adapter.
+    wb = XLSX.read(await readFile(filepath), {
+      type: 'buffer',
+      cellDates: true,
+      sheetRows: MAX_ROWS_PER_SHEET,
+    });
   } catch (e) {
     const em = e as Error;
     const err = new Error('xls_parse_failed: ' + (em.message || em)) as Error & { code: string };

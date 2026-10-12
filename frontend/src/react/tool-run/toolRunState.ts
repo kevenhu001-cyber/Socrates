@@ -63,6 +63,20 @@ export function toolRunStateOf(call: ToolCallRecord | null | undefined): ToolRun
   return persistedStateOf(call, status);
 }
 
+/**
+ * Translate the generic tool row state to the agent-run activity state.
+ * Live rows deliberately leave the terminal state unset; the agent step
+ * renderer owns its live status until the enclosing tool actually settles.
+ */
+export function agentRunStateOf(
+  state: ToolRunState,
+): 'done' | 'failed' | 'cancelled' | undefined {
+  if (state === 'running' || state === 'awaiting') return undefined;
+  if (state === 'error') return 'failed';
+  if (state === 'stopped') return 'cancelled';
+  return 'done';
+}
+
 export function durationOf(call: ToolCallRecord): number {
   if (call._run && typeof call._run.durationMs === 'number' && call._run.durationMs > 0) {
     return call._run.durationMs;

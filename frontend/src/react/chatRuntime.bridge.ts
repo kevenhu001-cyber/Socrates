@@ -2,10 +2,9 @@
  * Chat runtime bridge — M2 single-bridge migration.
  *
  * Carries the runtime snapshot that the React message list, the chat
- * composer, and the send-button indicator all subscribe to. The legacy
- * pipeline mutates `window.stateStore.read("messages")` in place; this bridge
- * re-reads it on every commit so React sees the latest text, tool
- * results, and streaming bubble.
+ * composer, and the send-button indicator all subscribe to. The session
+ * domain now publishes recursively frozen message rows; this bridge adds the
+ * stream lifecycle snapshot and keeps a defensive path for compatibility data.
  *
  * Why this bridge does not use `createImmutableBridge` directly
  *  - The factory coalesces dispatches per animation frame, but only
@@ -34,6 +33,7 @@ import type { ImmutableBridge } from '../lib/bridge/createImmutableBridge.ts';
 import { useBridge } from '../lib/bridge/useBridge.ts';
 import { getStreamRenderInterval } from '../render/streaming.js';
 import { stateStore } from '../state/store.js';
+import { reconcileMessageSnapshots } from './chatRuntimeSnapshot.ts';
 import type {
   ChatRuntimeEvent,
   ChatRuntimeSnapshot,
@@ -89,10 +89,10 @@ let pendingDeltaFrame = 0;
 /* P_stream-paint-cadence — deltas used to commit once per rAF (up to 60
    repaints/sec), which made the adaptive getStreamRenderInterval() cadence
    dead code: it paced the state mirror but not the paint path. Each commit
-   re-parses the markdown tail and rewrites innerHTML, so at 60fps the main
-   thread never got a frame back on long answers. Now delta commits are also
-   gated by the same interval: the first paint is immediate, and subsequent
-   ones are paced at ~20/12/8fps by answer length. */
+   re-parses the markdown tail, so at 60fps the main thread can lose too much
+   frame budget on long answers. Delta commits are gated by the same interval:
+   the first paint is immediate, and subsequent ones are paced at ~20/12/8fps
+   by answer length. */
 let pendingDeltaTimer: ReturnType<typeof setTimeout> | null = null;
 let lastDeltaCommitAt = 0;
 
@@ -151,6 +151,11 @@ function streamFromEvent(
         status: 'failed',
         textLength: event.textLength,
       });
+    case 'stream-retry-replaced':
+      /* The failed row was removed from session state immediately before this
+         event. Clear its terminal stream record until the replacement stream
+         publishes its own stream-started event. */
+      return IDLE_STREAM;
     case 'message-added':
       return snapshot.stream;
     case 'tool-run-updated':
@@ -179,21 +184,30 @@ function streamFromEvent(
   }
 }
 
-function commit(event: ChatRuntimeEvent): void {
+function changedMessageIdsForEvent(event: ChatRuntimeEvent): ReadonlySet<string> | null {
+  if (event.type === 'state-synced') return null;
+  return new Set([event.messageId]);
+}
+
+function commit(
+  event: ChatRuntimeEvent,
+  changedMessageIds: ReadonlySet<string> | null = changedMessageIdsForEvent(event),
+): void {
   const legacy = readChatState();
-  const last = legacy.messages.length > 0
-    ? legacy.messages[legacy.messages.length - 1]
-    : undefined;
+  const messages = reconcileMessageSnapshots(
+    snapshot.messages,
+    legacy.messages,
+    changedMessageIds,
+  );
+  const last = messages.length > 0 ? messages[messages.length - 1] : undefined;
   const stream = streamFromEvent(event, legacy.messages);
 
   snapshot = Object.freeze({
     revision: snapshot.revision + 1,
     currentSessionId: legacy.currentSessionId,
     phase: legacy.phase,
-    messageCount: legacy.messages.length,
-    messages: Object.freeze(
-      [...legacy.messages] as ReadonlyArray<LegacyChatMessage>,
-    ),
+    messageCount: messages.length,
+    messages,
     lastMessage: last
       ? Object.freeze({
           id: asString(last.clientId ?? last.id),
@@ -293,22 +307,22 @@ function scheduleDeltaFlush(event: Extract<ChatRuntimeEvent, { type: 'stream-del
 
 /**
  * Tool lifecycle events arrive faster than a person can read them (a code run
- * emits progress on every output flush). Both the text tail and the row state
- * are re-read from `state.messages` at commit time, so one repaint per frame
- * is enough for the whole turn — same trick `stream-delta` uses.
+ * emits progress on every output flush). The bridge snapshots every changed
+ * message once per frame and preserves object identity for untouched rows.
  */
 function flushPendingToolRuns(): void {
   if (!pendingToolRuns || pendingToolRuns.size === 0) {
     pendingToolRuns = null;
     return;
   }
-  const ids = [...pendingToolRuns];
+  const ids = new Set(pendingToolRuns);
   pendingToolRuns = null;
-  /* Every commit re-reads and clones the complete legacy message array. The
-     message id is useful for the event contract, but the snapshot contains
-     all tool rows, so committing once is enough even when several turns
-     changed before this frame. */
-  commit({ type: 'tool-run-updated', messageId: ids[0] });
+  /* One commit is enough for every coalesced tool message; the changed-id set
+     tells the immutable reconciler which row identities must advance. */
+  const firstId = ids.values().next().value;
+  if (typeof firstId === 'string') {
+    commit({ type: 'tool-run-updated', messageId: firstId }, ids);
+  }
 }
 
 function publish(event: ChatRuntimeEvent): void {
@@ -324,8 +338,8 @@ function publish(event: ChatRuntimeEvent): void {
     return;
   }
 
-  // Preserve lifecycle ordering when a terminal event lands before the
-  // animation frame scheduled for the final delta.
+  // Preserve lifecycle ordering when a terminal or replacement event lands
+  // before the animation frame scheduled for the final delta/tool update.
   flushPendingDelta();
   flushPendingToolRuns();
   commit(event);

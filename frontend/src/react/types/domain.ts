@@ -117,11 +117,10 @@ export interface ChatMessageSummary {
 }
 
 /**
- * Mirror of the legacy `state.messages` entry shape. Kept loose on
- * purpose: the legacy state-machine mutates entries in place (rawText
- * during streaming, html on finish) and we don't want to gate every
- * mutation through a strict TypeScript type. React-side renderers
- * narrow per-role before reading fields.
+ * Mirror of the chat message entry shape at the React migration boundary.
+ * The session domain now publishes recursively frozen rows, while a few
+ * compatibility callers still operate on legacy-shaped data before dispatch.
+ * React-side renderers narrow per-role before reading fields.
  */
 export interface LegacyChatMessage {
   clientId?: string;
@@ -170,12 +169,9 @@ export interface LegacyChatMessage {
      high-level activity summaries, never this text. */
   reasoningContent?: string | null;
   /**
-   * Bumped by chat/toolRuntime.ts on every tool-lifecycle mutation. The
-   * runtime mutates `toolCalls[]` in place, so object identity and array
-   * identity both survive a status change — without a revision the memoized
-   * row would keep painting the state it first saw. Transient: saveCurrentSession
-   * projects an explicit field list (and skips `type: 'streaming'` entries
-   * entirely), so this never reaches a persisted payload.
+   * Internal tool-runtime revision used by projection/write coordination.
+   * React no longer depends on this scalar for row invalidation; immutable
+   * session-message identity is the rendering signal.
    */
   _toolRunRev?: number;
   /** Revisions from the legacy math renderer, read by the memoized message row. */
@@ -262,8 +258,9 @@ export type ChatRuntimeEvent =
   | { type: 'stream-finished'; messageId: string; textLength: number }
   | { type: 'stream-aborted'; messageId: string; textLength: number; reason?: string }
   | { type: 'stream-failed'; messageId: string; textLength: number; error?: string }
+  | { type: 'stream-retry-replaced'; messageId: string; messageIndex: number }
   /* A tool call on this message changed state (progress / result / approval
-     / delta arguments) without any text delta to ride on. The declarative
-     renderer draws rows from `message.toolCalls`, which the runtime mutates
-     in place, so React only sees a change if something publishes one. */
+     / delta arguments) without any text delta to ride on. The session domain
+     publishes a new immutable message identity for that write; this event
+     coalesces the notification so React observes it on the next paint. */
   | { type: 'tool-run-updated'; messageId: string };

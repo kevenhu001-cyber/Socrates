@@ -33,12 +33,7 @@ function MessageList() {
           <MessageItem
             key={id}
             message={entry}
-            /* Legacy writers mutate message objects in place; these scalar
-               revisions tell the memoized row when its rendered data changed. */
-            textLength={typeof entry.rawText === 'string' ? entry.rawText.length : 0}
-            toolRevision={entry._toolRunRev || 0}
             mathRevision={typeof window === 'undefined' ? 0 : window.__socratesMathRenderRev || 0}
-            renderRevision={entry._katexRenderedRev || entry._renderRev || 0}
           />
         );
       })}
