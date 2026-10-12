@@ -33,11 +33,11 @@
  * specificity shims only; they do not change which root element matches.
  */
 
-:root:not(#_focus-a):not(#_focus-b) #appShell .workspace-search-field input:focus-visible,
-:root:not(#_focus-a):not(#_focus-b) #appShell .plugin-directory-search input:focus-visible,
-:root:not(#_focus-a):not(#_focus-b) #appShell .workspace-field input:focus-visible,
-:root:not(#_focus-a):not(#_focus-b) #appShell .workspace-field textarea:focus-visible,
-:root:not(#_focus-a):not(#_focus-b) #appShell .workspace-field select:focus-visible {
+:root:not(#_focus-search-a):not(#_focus-search-b) #appShell .workspace-search-field input:focus-visible,
+:root:not(#_focus-plugin-a):not(#_focus-plugin-b) #appShell .plugin-directory-search input:focus-visible,
+:root:not(#_focus-input-a):not(#_focus-input-b) #appShell .workspace-field input:focus-visible,
+:root:not(#_focus-textarea-a):not(#_focus-textarea-b) #appShell .workspace-field textarea:focus-visible,
+:root:not(#_focus-select-a):not(#_focus-select-b) #appShell .workspace-field select:focus-visible {
   outline: none !important;
 }
 
