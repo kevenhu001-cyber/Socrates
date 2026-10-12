@@ -14,10 +14,16 @@ export function turnSummaryOf(message: LegacyChatMessage, live: boolean, showsSt
       : 0;
 
   let label: string;
-  if (hasThinking && !live) {
-    label = durationSec > 0
-      ? tf('think.thoughtDuration', `Thought for ${durationSec}s`, { sec: durationSec })
-      : translate('think.complete', 'Thought complete');
+  if (hasThinking) {
+    if (durationSec > 0 && (!live || Boolean(message.rawText))) {
+      label = tf('think.thoughtDuration', `Thought for ${durationSec}s`, { sec: durationSec });
+    } else if (!live) {
+      label = durationSec > 0
+        ? tf('think.thoughtDuration', `Thought for ${durationSec}s`, { sec: durationSec })
+        : translate('think.complete', 'Thought complete');
+    } else {
+      label = translate('think.process', 'Process');
+    }
   } else {
     label = translate('think.process', 'Process');
   }

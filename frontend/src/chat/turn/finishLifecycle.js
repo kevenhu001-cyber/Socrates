@@ -66,6 +66,7 @@ export function createFinishLifecycle(state, ownerSessionId, finishRender, finis
         rawText: state.full,
         type: 'assistant',
         reasoningContent: state.fullReasoning || null,
+        _liveStatus: null,
         _streamSettled: true,
         _toolRunRev: toolRunRev + 1,
       });

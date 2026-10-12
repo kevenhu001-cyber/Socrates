@@ -63,27 +63,31 @@ async function startTurn(page, immediate = true) {
   return page.locator('.msg.assistant').last();
 }
 
-test('one inline disclosure updates during reasoning and remains open on completion', async ({ page }) => {
+test('one inline disclosure updates during reasoning and collapses on completion', async ({ page }) => {
   const bubble = await startTurn(page);
   const disclosure = bubble.locator('.turn-summary');
   const trigger = disclosure.locator('summary');
   await expect(trigger).toBeVisible();
-  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   await expect(bubble.locator('.thinking-status')).toHaveCount(1);
   await expect(bubble.locator('.thinking-spinner, .turn-summary-sparkle')).toHaveCount(0);
-  await trigger.click();
   await expect(disclosure.locator('.turn-summary-detail')).toBeVisible();
   await page.evaluate(() => window.__pushThinkingFrame('turn_summary', { summary: 'Preparing the comparison.', phase: 'initial' }));
   await expect(disclosure.locator('.turn-summary-text')).toHaveText('Preparing the comparison.');
   await page.evaluate(() => window.__pushThinkingFrame('', { choices: [{ delta: { reasoning_content: 'another private thought' } }] }));
-  await expect(bubble).not.toContainText('private');
+  await expect(disclosure.locator('.turn-summary-thinking-text')).toContainText('another private thought');
   await page.evaluate(() => window.__finishThinking());
   await expect(bubble).toContainText('The final answer.');
   await expect(bubble.locator('.thinking-status')).toHaveCount(0);
+  // Auto-collapse once thinking ends
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(disclosure.locator('.turn-summary-detail')).toHaveCount(0);
+  await expect(trigger).toHaveText(/Thought (?:complete|for \d+s)/);
+  // Manual click expands the detail
+  await trigger.click();
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   await expect(disclosure.locator('.turn-summary-text')).toHaveText('Checked the sources and compared the findings.');
-  await expect(trigger).toHaveText('Thought complete');
-  await expect(bubble).not.toContainText('private');
+  await expect(disclosure.locator('.turn-summary-thinking-text')).toContainText('another private thought');
   await expect(page.locator('[data-thinking-panel], #thinkingPanelReactRoot, #summaryBtn')).toHaveCount(0);
   await trigger.click();
   await expect(disclosure.locator('.turn-summary-detail')).toHaveCount(0);

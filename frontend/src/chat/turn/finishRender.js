@@ -88,6 +88,7 @@ export function createFinishRender(state) {
         reasoningContent: state.fullReasoning || null,
         reasoningDurationSec: (state.fullReasoning && state.reasoningDurationSec) ? state.reasoningDurationSec : undefined,
         outputMode: _om,
+        _liveStatus: null,
         _streamSettled: true,
         _toolRunRev: _preRev + 1,
       };

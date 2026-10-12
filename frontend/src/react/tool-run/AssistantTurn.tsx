@@ -56,11 +56,12 @@ function shouldShowStatus(
   phase: string | undefined,
   live: boolean,
   hasRunningRow: boolean,
+  hasSettledTool: boolean,
 ): boolean {
   if (!phase) return false;
   const terminalFailure = phase === 'error' || phase === 'stopped';
   if (!live && !terminalFailure) return false;
-  if (live && !terminalFailure && hasRunningRow && phase !== 'retrying') return false;
+  if (live && !terminalFailure && (hasRunningRow || (phase === 'tool-running' && hasSettledTool)) && phase !== 'retrying') return false;
   return true;
 }
 
@@ -93,8 +94,9 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
     segment.kind === 'group' ? segment.running.length > 0
       : segment.kind === 'tool' && ['running', 'awaiting'].includes(toolRunStateOf(segment.call)),
   );
+  const hasSettledTool = calls.some((c) => toolRunStateOf(c) === 'done');
   const liveStatus = message._liveStatus;
-  const showStatus = shouldShowStatus(liveStatus?.phase, isLive, hasRunningRow);
+  const showStatus = shouldShowStatus(liveStatus?.phase, isLive, hasRunningRow, hasSettledTool);
   const messageId = String(message.clientId || message.id || '');
 
   return (

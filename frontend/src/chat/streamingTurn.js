@@ -624,7 +624,7 @@ export function addStreamingMessage(opts){
            off) the player reveals everything each frame, so the behaviour
            matches the old immediate paint. */
         var _curSt=statusChrome.liveMessage()&&statusChrome.liveMessage()._liveStatus;
-        var _clearWaiting=_curSt&&(_curSt.phase==="waiting"||_curSt.phase==="retrying");
+        var _clearWaiting=_curSt&&(_curSt.phase==="waiting"||_curSt.phase==="retrying"||_curSt.phase==="thinking"||_curSt.phase==="tool-running");
         if(_clearWaiting){
           var _preRev1=(stateStore.read("messages")[msgIdx]&&stateStore.read("messages")[msgIdx]._toolRunRev)||0;
           patchOwnedMessage({
@@ -632,18 +632,14 @@ export function addStreamingMessage(opts){
             _toolRunRev:_preRev1+1
           },true);
         }
+        if(state.thinkCtl&&typeof state.thinkCtl.finalize==="function"){
+          try{state.thinkCtl.finalize()}catch(e){reportSwallow(e, 'streamingTurn._preRev1.finalizeOnFirstDelta');}
+        }
       }
       /* Every delta only fills the buffer; the player's onFrame reveals the
          played prefix via doRender() at the frame boundary. */
       _streamPlayer.push(delta);
-      /* Hide the status pill once the streamed text passes a small
-         threshold — anything shorter is almost certainly a
-         "好的,让我搜一下…" preamble that the model emits before its
-         tool_use, and we want the pill to stay so the upcoming
-         "Searching" label has a host. 60 chars is well below any
-         substantive answer but well above a typical Chinese/English
-         transition phrase. */
-      if(state.thinkCtl&&typeof state.thinkCtl.finalize==="function"&&state.full.length>=60){
+      if(state.thinkCtl&&typeof state.thinkCtl.finalize==="function"){
         try{state.thinkCtl.finalize()}catch(e){reportSwallow(e, 'streamingTurn._preRev1.finalizeLongForm'); }
       }
     },

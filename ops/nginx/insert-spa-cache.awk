@@ -72,7 +72,7 @@ END {
         if (l ~ /^[[:space:]]*add_header[[:space:]]+Cache-Control[[:space:]]/) {
             indent = l
             sub(/[^[:space:]].*$/, "", indent)
-            print indent "add_header Cache-Control \"public, max-age=60, stale-while-revalidate=600, stale-if-error=86400\" always;"
+            print indent "add_header Cache-Control \"public, max-age=0, must-revalidate\" always;"
             print indent "add_header CDN-Cache-Control \"public, max-age=60, stale-while-revalidate=600, stale-if-error=86400\" always;"
             print indent "add_header Cloudflare-CDN-Cache-Control \"public, max-age=60, stale-while-revalidate=600, stale-if-error=86400\" always;"
         } else if (l !~ /^[[:space:]]*add_header[[:space:]]+(CDN-Cache-Control|Cloudflare-CDN-Cache-Control|Pragma|Expires)[[:space:]]/) {
