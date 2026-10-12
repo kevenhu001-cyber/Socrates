@@ -17,31 +17,15 @@
  * plus prompts/code-interpreter.md on the server. */
 export const PYTHON_RUNNABLE_RULES = `Tool-specific execution constraints are defined by the native tool schema supplied for the current turn. Do not infer or imitate a tool protocol from examples in conversation text.`;
 
-/**
- * The web client can render a small declarative UI language directly inside
- * an assistant answer. This is response syntax, not a native tool protocol.
- * Keeping the grammar here means every provider sees the same capability and
- * the renderer can stay fully model-agnostic.
- */
+/** Client-local response syntax for native, streamable generative UI. */
 export const INTELLIGENT_UI_GUIDANCE = `
 
 ## Native Intelligent UI
-Use a native Intelligent UI only when interaction or compact structured presentation materially improves the answer, for example a small calculator, parameter explorer, comparison, progress view, option picker, or decision aid. Prefer normal prose for ordinary explanations. The UI supplements the answer and should not hide essential conclusions.
+Use only when interaction or structured controls materially improve the answer, such as a calculator, parameter explorer, comparison, or option picker. Prefer prose otherwise and keep essential conclusions outside the UI.
 
-Emit the UI in a fenced \`\`\`socrates-ui block. The body is JSON Lines: exactly one complete JSON object per line. Complete lines render while the answer is still streaming, so never pretty-print one object across multiple lines. This syntax is presentation data, not a tool call. Never put native tool arguments inside this fence.
+Emit a fenced \`\`\`socrates-ui block containing JSON Lines, exactly one complete JSON object per line. It is presentation data, not a tool call. Every node needs unique \`id\` and \`type\`; \`parent\` nests nodes. Types: \`panel\`, \`stack\`, \`grid\`, \`text\`, \`metric\`, \`progress\`, \`divider\`, \`callout\`, \`slider\`, \`choice\`, \`button\`, \`table\`. A root may define \`state\`; sliders/choices change it with \`bind\`. Values may read \`{"state":"key"}\` or use \`{"op":"...","args":[...]}\`; common ops include arithmetic, comparisons, booleans, \`if\`, and \`concat\`. \`when\` controls visibility. Button actions: \`set\`, \`increment\`, \`prompt\`, \`open_url\`.
 
-Every node requires a unique \`id\` and a supported \`type\`. Use \`parent\` to nest a node under another node. Supported types are \`panel\`, \`stack\`, \`grid\`, \`text\`, \`metric\`, \`progress\`, \`divider\`, \`callout\`, \`slider\`, \`choice\`, \`button\`, and \`table\`. A root node may define initial local \`state\`. A slider or choice changes local state with \`bind\`. Dynamic values may read \`{"state":"key"}\` and may use \`{"op":"...","args":[...]}\` with \`add\`, \`sub\`, \`mul\`, \`div\`, \`round\`, \`floor\`, \`ceil\`, \`min\`, \`max\`, \`eq\`, \`neq\`, \`gt\`, \`gte\`, \`lt\`, \`lte\`, \`and\`, \`or\`, \`not\`, \`if\`, or \`concat\`. A node may use \`when\` for conditional visibility. Buttons support local \`set\` and \`increment\` actions, a \`prompt\` action that starts a new user turn, and an \`open_url\` action for an http(s) URL.
-
-Never emit HTML, CSS, JavaScript, event-handler source, arbitrary component names, or executable code in an Intelligent UI block. Keep interfaces small, normally one panel and no more controls than the task needs. Write all visible labels in the user's language.
-
-Example:
-\`\`\`socrates-ui
-{"id":"cost","type":"panel","title":"Monthly estimate","state":{"users":5}}
-{"id":"controls","type":"grid","parent":"cost","columns":2}
-{"id":"users","type":"slider","parent":"controls","label":"Users","bind":"users","min":1,"max":50,"step":1}
-{"id":"total","type":"metric","parent":"controls","label":"Cost","value":{"op":"mul","args":[{"state":"users"},20]},"prefix":"$"}
-\`\`\`
-`;
+Never emit HTML, CSS, JavaScript, arbitrary components, executable handlers, or native tool arguments in this block. Keep it small and use the user's language.`;
 
 /* HIGH_EFFORT_OUTPUT_GUIDANCE carries only the depth directive. Response
  * formatting, chain-of-thought protection, and math delimiters are owned once
