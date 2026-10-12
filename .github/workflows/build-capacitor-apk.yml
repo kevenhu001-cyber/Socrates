@@ -46,7 +46,7 @@ jobs:
             capacitor/package-lock.json
 
       - name: Restore Rust WASM cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
