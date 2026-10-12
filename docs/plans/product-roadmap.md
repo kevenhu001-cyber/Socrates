@@ -41,20 +41,19 @@
 | 会话分支 / 多角度重讲 | `branchFromMessage` | `chat/editBranch.js` L240+ | `opts.reExplain` 走教育化分支：注入"换一种解释角度"追问并自动续讲 |
 | 重生成回答 | `regenerateAssistantMessage` | `chat/editBranch.js` | 定位上一条 user 消息，splice 掉 assistant 气泡后重新 `askChatTurn` |
 | 消息工具栏 | `buildMessageToolbar` | `react/message-list/useMessageActions.ts` | user 角色：copy/edit/delete；assistant 角色：copy/share/regenerate/thumbs/branch/re-explain |
+| 会话内查找（Ctrl-F） | `openFindInSession` | `react/find-in-session/*` | 顶栏 `#findBtn` + `Ctrl-F`，`<mark>` 高亮、导航、延迟挂载行自动 flush |
 
 `branchedFrom` 指针已贯穿全链路（**P1.1 已落地**）：`state/session.ts` 类型 → `session/persistence.js` L292 持久化 → `session/loader.js` L372 恢复 → `session/organize.js` L265 比较 → `react/session-list/SessionList.tsx` L66 侧栏展示 `Branched` / `Re-explained` 角标。
 
 上下文重建：`frontend/src/chat/history.js` 的 `extractHistory`（三级来源：内存 `state.messages.rawText` → localStorage 镜像 → 实时 DOM 兜底），已支持编辑/重生成后的历史重建，并做了 `<think>` 剥离、多模态附件重建、超长会话压缩。
 
-**结论**：P0.1 的"编辑 + 重生成"核心链路**已经打通**；P1.1 的 `branchedFrom` + 多角度重讲**也已打通**（2026-09-29 复核）。
+**结论**：P0.1 的"编辑 + 重生成"核心链路**已经打通**；P0.2 的会话内查找**已经打通**；P1.1 的 `branchedFrom` + 多角度重讲**也已打通**。
 
 ### 待新建 / 待改造
 
 | 能力 | 现状 | 目标 |
 | --- | --- | --- |
-| 会话内查找（Ctrl-F） | 不存在。仅有全局 Cmd-K（`ui/cmdK.js`） | 新建当前会话内查找面板 |
-| 力导向知识图谱 | 线性 `.kb-node` 列表（`ui/knowledgeDetail.js`） | 升级为力导向图 |
-| Agent 分屏视图 | Agent/Deep Research 共用 React transcript 与 tool-run surfaces（`chat/streamingTurn.js`、`react/tool-run/`、`ui/agentSteps.ts`），暂无独立分屏 | 左右分屏：对话 + 工具 Tab |
+| Agent 分屏视图 | Agent/Deep Research 共用 React transcript 与 tool-run surfaces（`chat/streamingTurn.js`、`react/tool-run/`、`ui/agentSteps.ts`），暂无独立分屏 | 左右分屏：对话 + 工具 Tab（建议降级） |
 | 国际化收尾 | `t()`/`tr()` 基建已在 `i18n.js`（约 1100 行字典） | 替换残余硬编码英文 |
 
 ---
@@ -80,21 +79,17 @@
 
 **商业价值**：满足用户对 AI 对话产品的基本期望，避免被视为功能不完整。
 
-### P0.2 会话内查找（Ctrl-F 面板）—— 新增
+### P0.2 会话内查找（Ctrl-F 面板）—— ✅ 已落地
 
-**现状**：不存在。仅有全局搜索 Cmd-K（`ui/cmdK.js`，跨会话 Fuse.js + 服务端 `/api/search`）。
+**现状**：已在 `react/find-in-session/` 完整实现并上线。
 
-实现要点：
+落地情况：
 
-1. **复用 UI 框架**：借鉴 `cmdK.js` 的浮层结构、键盘导航（`onCmdKKey` 的 ArrowUp/Down/Enter/Escape）与选中态管理模式。
-2. **作用域限定当前会话**：新建独立模块（如 `ui/findInSession.js`），**不污染**全局 Cmd-K 索引，仅在当前会话 `#msgList` 的 `.msg` 元素内做文本匹配。
-3. **头部入口**：在聊天头部添加"查找"按钮；绑定 `Ctrl-F`（拦截浏览器默认查找）。
-4. **高亮与导航**：命中文本包裹高亮 `<mark>`，支持上/下导航滚动到命中项，显示"第 N / 共 M 条"计数。
-5. **退出清理**：关闭时移除所有高亮，恢复原始 DOM。
-
-**预估工作量**：约 1 天。
-
-**验收**：新增 e2e 规格 `frontend/e2e/find-in-session.spec.mjs`（参照 `cmd-k.spec.mjs`）。
+1. **入口接通** ✅ — 顶栏 `#findBtn`（在有会话显示时可见，与 Share 按钮联动）+ 全局快捷键 `Ctrl-F` / `Cmd-F`（`ui/keyboardShortcuts.js` 拦截）。
+2. **高亮与无损清理** ✅ — `findHighlight.ts` 遍历当前会话 `#msgList .msg-body` 纯文本节点包裹 `<mark class="find-hl">`，关闭时完全还原原始 DOM。
+3. **导航与计数** ✅ — 支持 Enter（下一个）、Shift+Enter（上一个）、Escape（退出）与按钮导航，循环计数实时显示为 `N/M`。
+4. **长会话渐进式加载支持** ✅ — 查找前自动通过 `flushDeferredMessageRows()` 刷新未挂载历史行，确保搜索全量历史。
+5. **e2e 覆盖** ✅ — `frontend/e2e/find-in-session.spec.mjs`（3 个用例全部通过，覆盖高亮/导航/移动端视口/长会话刷新）。
 
 ---
 

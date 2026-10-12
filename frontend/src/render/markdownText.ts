@@ -12,9 +12,7 @@ export function stripMarkdown(s: string | null | undefined): string {
     .replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, '')
     .replace(/```[\s\S]*?```/g, '')
     .replace(/~~~[\s\S]*?~~~/g, '')
-    .replace(/\$\$([^$]*)\$\$/g, function (m, inner: string) {
-      return _looksLikeInlineMath(inner.trim()) ? '' : m;
-    })
+    .replace(/\$\$[\s\S]*?\$\$/g, '')
     .replace(/\$([^$]*)\$/g, function (m, inner: string) {
       return _looksLikeInlineMath(inner.trim()) ? '' : m;
     })

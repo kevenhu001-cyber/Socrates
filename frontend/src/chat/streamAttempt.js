@@ -227,6 +227,15 @@ async function finishStreamResponse(processor, stream, context) {
   }
 
   if (!processor.full && !processor.formattedHtml) {
+    if (processor.semanticActivity) {
+      return completed({
+        text: processor.full || '',
+        html: (processor.formattedHtml && processor.formattedHtml.html) || null,
+        widgets: (processor.formattedHtml && processor.formattedHtml.widgets) || [],
+        cancelled: false,
+        semanticActivity: true,
+      });
+    }
     const message = stream.gotAnyData
       ? 'empty stream (server returned no content)'
       : 'empty stream (' + stream.bytesReceived + ' bytes received)';
@@ -243,6 +252,7 @@ async function finishStreamResponse(processor, stream, context) {
     html: processor.formattedHtml && processor.formattedHtml.html || null,
     widgets: processor.formattedHtml && processor.formattedHtml.widgets || [],
     cancelled: false,
+    semanticActivity: processor.semanticActivity,
   });
 }
 

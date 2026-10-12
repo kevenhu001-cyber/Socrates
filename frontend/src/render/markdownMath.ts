@@ -81,6 +81,7 @@ function closeUnclosedEnvironments(src: string): string {
 export function normalizeMathSource(math: string, displayMode: boolean): string {
   let source = String(math).trim();
   source = source
+    .replace(/^[ \t]*>[ \t]?/gm, '')
     .replace(/\\begin\{eqnarray\*?\}/g, '\\begin{aligned}')
     .replace(/\\end\{eqnarray\*?\}/g, '\\end{aligned}')
     .replace(/\\begin\{alignedat\}(?!\{)/g, '\\begin{alignedat}{2}')
@@ -295,6 +296,17 @@ export function _looksLikeInlineMathTail(s: string): boolean {
   if (/\s/.test(trimmed) && !/\\/.test(trimmed) && TAIL_PROSE_WORD_RE.test(trimmed)) return false;
   if (_looksLikeLatex(s)) return true;
   if (/[\\^_{}[\]]/.test(trimmed)) return true;
+
+  /* Live open coordinates / tuples, e.g. "设在 $(0, 0" or "设 $(x, y" */
+  if (/^\([A-Za-z0-9\s,.'"+\-*/|=<>!:;\\^_{}[\]]*$/.test(trimmed) && trimmed.includes(',')) {
+    return true;
+  }
+
+  /* Live open fractions, e.g. "$1/" or "$x/" */
+  if (/^[+-]?(?:\d+|[A-Za-z])\s*\/$/.test(trimmed)) {
+    return true;
+  }
+
   if (/\s/.test(trimmed)) {
     /* Same widening as the closed pass: `$x, y` renders live while a
        spaced prose tail (`$5 USD`) still waits for its closing `$`. */
