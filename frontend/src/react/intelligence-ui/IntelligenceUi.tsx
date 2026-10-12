@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties, type MouseEvent, type
 import {
   displayIntelligenceUiValue,
   initialStateForNodes,
+  isSafeIntelligenceUiStateKey,
   parseIntelligenceUiRecords,
   resolveIntelligenceUiValue,
   type IntelligenceUiNode,
@@ -29,8 +30,8 @@ type UiAction = {
   key?: string;
   value?: unknown;
   amount?: unknown;
-  prompt?: string;
-  url?: string;
+  prompt?: unknown;
+  url?: unknown;
 };
 
 function asNumber(value: unknown, fallback: number): number {
@@ -80,7 +81,7 @@ function renderChildren(node: IntelligenceUiNode, context: RenderContext): React
 }
 
 function setBoundValue(context: RenderContext, key: string, value: unknown): void {
-  if (!key) return;
+  if (!isSafeIntelligenceUiStateKey(key)) return;
   context.setState((previous) => previous[key] === value ? previous : { ...previous, [key]: value });
 }
 
@@ -108,17 +109,21 @@ function executeAction(action: UiAction, context: RenderContext, event: MouseEve
     setBoundValue(context, action.key, resolve(action.value, context));
     return;
   }
-  if (type === 'increment' && typeof action.key === 'string') {
+  if (type === 'increment' && typeof action.key === 'string' && isSafeIntelligenceUiStateKey(action.key)) {
     const current = asNumber(context.state[action.key], 0);
     const amount = asNumber(resolve(action.amount, context), 1);
     setBoundValue(context, action.key, current + amount);
     return;
   }
-  if (type === 'prompt' && typeof action.prompt === 'string' && !context.readOnly) {
-    dispatchPrompt(event, action.prompt);
+  if (type === 'prompt' && !context.readOnly) {
+    const prompt = asText(resolve(action.prompt, context));
+    if (prompt) dispatchPrompt(event, prompt);
     return;
   }
-  if (type === 'open_url' && typeof action.url === 'string') openSafeUrl(action.url);
+  if (type === 'open_url') {
+    const url = asText(resolve(action.url, context));
+    if (url) openSafeUrl(url);
+  }
 }
 
 function UiPanel({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
@@ -203,7 +208,7 @@ function UiCallout({ node, context }: { node: IntelligenceUiNode; context: Rende
 
 function UiSlider({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
   const bind = typeof node.bind === 'string' ? node.bind : '';
-  if (!bind) return null;
+  if (!isSafeIntelligenceUiStateKey(bind)) return null;
   const min = asNumber(resolve(node.min, context), 0);
   const max = Math.max(min, asNumber(resolve(node.max, context), 100));
   const step = Math.max(Number.EPSILON, asNumber(resolve(node.step, context), 1));
@@ -230,7 +235,7 @@ function UiSlider({ node, context }: { node: IntelligenceUiNode; context: Render
 
 function UiChoice({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
   const bind = typeof node.bind === 'string' ? node.bind : '';
-  if (!bind || !Array.isArray(node.options)) return null;
+  if (!isSafeIntelligenceUiStateKey(bind) || !Array.isArray(node.options)) return null;
   const label = asText(resolve(node.label, context));
   const options = node.options.slice(0, 8).filter((option) => option && typeof option === 'object') as Array<Record<string, unknown>>;
   return (
