@@ -96,23 +96,22 @@ export function planMotionForUser(distance, opts) {
  * from wherever the reader is — the bottom, one screen up, or the very
  * first message of a long session — to the freshly submitted prompt.
  *
- * planMotion's constant-velocity curve caps at 520ms, so a 20 000px
- * jump would run at ~38 000px/s: the page blurs and reads as a
- * teleport. The send glide instead grows its duration with the
- * LOGARITHM of the distance measured in viewports: every doubling of
- * the distance adds the same small amount of time, so a one-screen
- * send feels immediate and a fifty-screen send is still a single,
- * visible, continuous glide that tops out at SEND_GLIDE_MAX_MS.
+ * Sending is an interaction acknowledgement, not a page transition. The
+ * glide still grows logarithmically with distance so a far send remains
+ * spatially understandable, but it now tops out inside the shell's
+ * interaction-time envelope instead of occupying more than half a second.
+ * A one-screen hop lands around 200ms and even an extreme jump is capped at
+ * 360ms, so model/work feedback can become the dominant motion immediately.
  *
  * Easing: a short hop keeps the snappy ease-out used everywhere else.
  * A long glide uses ease-in-out — an ease-out quint covers ~40% of the
- * distance in its first tenth, which over thousands of pixels is
- * exactly the jump we are trying to avoid; ease-in-out accelerates
- * from rest, cruises, and lands soft on the prompt. */
-export const SEND_GLIDE_MIN_MS = 120;
-export const SEND_GLIDE_MAX_MS = 600;
-export const SEND_GLIDE_BASE_MS = 150;
-export const SEND_GLIDE_PER_DOUBLING_MS = 120;
+ * distance in its first tenth, which over thousands of pixels is exactly the
+ * jump we are trying to avoid; ease-in-out accelerates from rest, cruises,
+ * and lands soft on the prompt. */
+export const SEND_GLIDE_MIN_MS = 100;
+export const SEND_GLIDE_MAX_MS = 360;
+export const SEND_GLIDE_BASE_MS = 130;
+export const SEND_GLIDE_PER_DOUBLING_MS = 75;
 /* Distances up to this many viewports keep the ease-out curve. */
 export const SEND_GLIDE_LONG_VIEWPORTS = 1.5;
 
