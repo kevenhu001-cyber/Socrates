@@ -19,6 +19,18 @@ export function ToolRunRowHead({ view, elapsedMs }: { view: ToolRunView; elapsed
   const meta = parts.join(' · ');
   const hosts = view.hosts || [];
 
+  // `mono` currently identifies command-shaped labels such as `$ npm test`.
+  // Keep the command itself in the existing Arguments/technical disclosure;
+  // the transcript-level activity row should describe the action, not expose a
+  // shell log. This preserves the underlying model and avoids duplicating data.
+  const displayLabel = view.mono
+    ? (view.state === 'running'
+      ? translate('tool.runningCommand', 'Running a command…')
+      : view.state === 'done'
+        ? translate('tool.ranCommand', 'Ran a command')
+        : view.label)
+    : view.label;
+
   return (
     <>
       <span
@@ -27,10 +39,10 @@ export function ToolRunRowHead({ view, elapsedMs }: { view: ToolRunView; elapsed
         dangerouslySetInnerHTML={{ __html: toolIcon(view.name) }}
       />
       <span
-        className={`tool-inline-label${view.mono ? ' is-mono' : ''}`}
-        title={view.label}
+        className="tool-inline-label"
+        title={displayLabel}
       >
-        {view.label}
+        {displayLabel}
       </span>
       <span
         className="tool-inline-chev"
