@@ -14,6 +14,218 @@
   font-family: var(--cg-font);
 }
 
+/* ── Desktop hierarchy — quiet chrome, stable geometry ──────────────────
+   Keep the parity contract (260/52 column, 36px rows, 200ms rail motion) and
+   change only visual weight. The goal is a sidebar that reads as navigation,
+   not a stack of competing cards: smaller branding, softer default labels,
+   whitespace instead of separators, and one neutral selected-row language. */
+@media (min-width: 769px) {
+  #appShell #sidebarHeader {
+    height: 52px;
+    padding: 0 8px 0 10px;
+  }
+  #appShell #sidebarHeader .sidebar-logo {
+    gap: 8px;
+    height: 36px;
+    padding: 0 6px;
+    font-size: var(--ui-text-body);
+    font-weight: 600;
+    line-height: 20px;
+    letter-spacing: -0.01em;
+  }
+  #appShell #sidebarHeader .sidebar-logo-img {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+  }
+  #appShell #newChatBtn,
+  #appShell #sidebarCloseBtn {
+    color: var(--ui-text-tertiary);
+  }
+  #appShell #newChatBtn:hover,
+  #appShell #sidebarCloseBtn:hover,
+  #appShell #newChatBtn:focus-visible,
+  #appShell #sidebarCloseBtn:focus-visible {
+    color: var(--ui-text-primary);
+  }
+  #appShell #newChatBtn svg,
+  #appShell #sidebarCloseBtn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  #appShell #sidebarNav {
+    gap: 1px;
+    padding: 2px 8px 8px;
+  }
+  #appShell #sidebarNav .sidebar-nav-btn {
+    gap: 8px;
+    padding-inline: 8px;
+    color: var(--ui-text-secondary);
+    transition: background-color var(--ui-duration-hover) ease,
+                color var(--ui-duration-hover) ease;
+  }
+  #appShell #sidebarNav .sidebar-nav-btn:hover,
+  #appShell #sidebarNav .sidebar-nav-btn:focus-visible,
+  #appShell #sidebarNav .sidebar-nav-btn.active,
+  #appShell #sidebarNav .sidebar-nav-btn[aria-current="page"] {
+    color: var(--ui-text-primary);
+  }
+  /* Grouping comes from breathing room, not another line in the rail. */
+  #appShell #sidebar .sidebar-nav-sep {
+    height: 0;
+    margin: 5px 14px 7px;
+    background: transparent;
+  }
+
+  #appShell #sidebar .sidebar-search-row {
+    margin-inline: 8px;
+  }
+  #appShell #sidebar .sidebar-search {
+    gap: 8px;
+    padding-inline: 8px;
+    color: var(--ui-text-secondary);
+  }
+  #appShell #sidebar .sidebar-search svg {
+    width: 18px;
+    height: 18px;
+    flex-basis: 18px;
+    color: var(--ui-text-secondary);
+  }
+  #appShell #sidebarSearch,
+  #appShell #sidebarSearch::placeholder {
+    color: var(--ui-text-secondary);
+  }
+  #appShell #sidebarSearch:focus::placeholder {
+    color: var(--ui-text-placeholder);
+  }
+
+  #appShell #recentsPanel {
+    padding: 0 8px 6px;
+  }
+  #appShell #sidebar .recents-header {
+    padding: 14px 8px 4px;
+  }
+  #appShell #sidebar .recents-title {
+    color: var(--ui-text-muted);
+    font-size: var(--ui-font-size-xxs);
+    font-weight: 500;
+    line-height: 16px;
+  }
+  #appShell #sidebar .recents-time-label {
+    padding: 10px 8px 3px;
+    color: var(--ui-text-muted);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 15px;
+    letter-spacing: 0;
+  }
+  /* Mode is still available in the row data/menu; the dot was visual noise
+     in a list whose primary job is fast title scanning. */
+  #appShell #sidebar .recent-mode-badge {
+    display: none;
+  }
+  #appShell #sidebar .recent-item {
+    gap: 0;
+    padding-inline: 8px;
+    color: var(--ui-text-secondary);
+    transition: background-color var(--ui-duration-hover) ease,
+                color var(--ui-duration-hover) ease;
+  }
+  #appShell #sidebar .recent-item-text {
+    color: inherit;
+  }
+  #appShell #sidebar .recent-item:hover,
+  #appShell #sidebar .recent-item:focus-within,
+  #appShell #sidebar .recent-item.active,
+  #appShell #sidebar .recent-item[aria-current="true"] {
+    color: var(--ui-text-primary);
+  }
+  #appShell #sidebar .recent-item-overflow {
+    color: var(--ui-text-muted);
+  }
+
+  /* The footer is the last navigation row, not a separate card. Space is
+     enough to separate it from history, so the hairline can disappear. */
+  #appShell #sidebarFooter {
+    padding: 6px 8px 8px;
+    border-top: 0;
+  }
+  #appShell #sidebarUserRow:hover {
+    background: transparent;
+  }
+  #appShell .sidebar-footer-account-wrap {
+    gap: 0;
+  }
+  #appShell .sidebar-account-trigger {
+    gap: 8px;
+    min-height: 40px;
+    padding: 6px 8px;
+    color: var(--ui-text-secondary);
+    transition: background-color var(--ui-duration-hover) ease,
+                color var(--ui-duration-hover) ease;
+  }
+  #appShell .sidebar-account-trigger:hover,
+  #appShell .sidebar-account-trigger:focus-visible,
+  #appShell .sidebar-account-trigger[aria-expanded="true"] {
+    color: var(--ui-text-primary);
+  }
+  #appShell #sidebarUserRow .user-avatar {
+    flex-basis: 28px;
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+  #appShell #sidebarUserRow .user-name {
+    font-size: var(--ui-font-size-xs);
+    line-height: 16px;
+  }
+  #appShell #sidebarUserRow .user-plan,
+  #appShell #sidebarUserRow .tier-badge {
+    font-size: 11px;
+    line-height: 14px;
+  }
+
+  /* Match the compact rail: account menus should feel like menus, not modal
+     cards. Keep the existing AnchoredMenu lifecycle and accessibility. */
+  #appShell .sidebar-account-menu {
+    width: 236px;
+    padding: 6px;
+    border-radius: var(--ui-radius-lg);
+  }
+  #appShell .sidebar-account-menu :is(button, a) {
+    min-height: 36px;
+    gap: 9px;
+    padding: 0 8px;
+    font-size: var(--ui-font-size-xs);
+  }
+  #appShell .sidebar-account-menu svg {
+    width: 18px;
+    height: 18px;
+    flex-basis: 18px;
+  }
+  #appShell .sidebar-account-menu hr {
+    margin: 5px 6px;
+    border-top-color: var(--ui-border-subtle);
+  }
+  #appShell .sidebar-account-menu .account-menu-identity {
+    min-height: 42px;
+  }
+
+  #appShell #sidebar.collapsed #sidebarHeader {
+    padding: 8px 8px 6px;
+  }
+  #appShell #sidebar.collapsed #sidebarNav {
+    gap: 2px;
+  }
+  #appShell #sidebar.collapsed .sidebar-nav-sep {
+    margin-block: 4px;
+  }
+  #appShell #sidebar.collapsed #sidebarFooter {
+    padding-block: 8px;
+  }
+}
+
 @media (max-width: 768px) {
 
 /* Reference drawer gutters: ~6px outside the row backgrounds on the left,
@@ -207,13 +419,13 @@
   color: var(--ui-text-primary);
 }
 }
-/* Current-session emphasis: 3px inset accent bar on the row's left edge.
-   `box-shadow: inset` avoids taking layout space (the row already has
-   padding) and stays visible when the row is at the top/bottom of the
-   scroll viewport where a border would clip. */
+/* Current session uses the same quiet tonal wash as primary navigation.
+   Removing the old accent stripe keeps the drawer monochrome and prevents
+   the selected conversation from competing with the transcript. */
 @media (max-width: 768px) {
 #appShell .recent-item.active {
-  box-shadow: inset 3px 0 0 var(--ui-accent);
+  box-shadow: none;
+  background: var(--ui-bg-raised);
 }
 }
 @media (max-width: 768px) {
@@ -316,7 +528,7 @@
 #appShell .sidebar-nav-btn[data-nav="new"] {
   background: var(--ui-bg-surface);
   color: var(--ui-text-primary);
-  border-radius: var(--ui-radius-lg);
+  border-radius: var(--ui-radius-row);
 }
 }
 
