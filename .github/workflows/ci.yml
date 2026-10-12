@@ -51,7 +51,7 @@ jobs:
     outputs:
       code: ${{ steps.filter.outputs.code }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Need history on both sides of the comparison.
           fetch-depth: 0
@@ -148,7 +148,7 @@ jobs:
     # Deliberately NOT gated on `changes`: a conflict marker inside a
     # docs-only PR is still a broken file, and this job costs seconds.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # 2026-09-26: merge ee20d6df committed qodana.yaml and
       # .github/workflows/qodana_code_quality.yml with live
@@ -186,7 +186,7 @@ jobs:
         working-directory: frontend
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v4
         with:
@@ -343,7 +343,7 @@ jobs:
       NODE_ENV: test
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v4
         with:
@@ -388,7 +388,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Restore Rust protocol cache
         uses: actions/cache@v4
@@ -440,7 +440,7 @@ jobs:
     timeout-minutes: 25
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v4
         with:

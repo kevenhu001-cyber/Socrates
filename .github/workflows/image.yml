@@ -51,7 +51,7 @@ jobs:
       attestations: write    # build provenance
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # docker references must be all-lowercase, but github.repository keeps
       # the repo's display casing (here: "Socrates"). metadata-action papers
