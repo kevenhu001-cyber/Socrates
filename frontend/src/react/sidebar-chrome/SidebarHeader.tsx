@@ -1,4 +1,3 @@
-
 import { getLegacyActions, t } from '../legacy/gateway.ts';
 import { sidebarIcons } from '../../sidebar/sidebarIcons';
 import { useUserInfo } from './sidebarChrome.bridge';
@@ -35,7 +34,7 @@ export function SidebarHeader() {
           <path d="m7 10 5 5 5-5" />
         </svg>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <div className="sidebar-header-actions">
         <button
           className="btn-icon sidebar-search-btn"
           id="sidebarSearchBtn"
