@@ -65,7 +65,10 @@ export function IntelligentTextSegment({
   return (
     <>
       {segments.map((segment, index) => {
-        const key = `${segment.kind}-${segment.start}-${segment.end}`;
+        /* `end` grows on every streamed token for an open fence. Keying by the
+           stable start offset preserves local slider/choice state while new
+           JSONL records arrive and the same block expands in place. */
+        const key = `${segment.kind}-${segment.start}`;
         if (segment.kind === 'ui') {
           return (
             <IntelligenceUiBlock
