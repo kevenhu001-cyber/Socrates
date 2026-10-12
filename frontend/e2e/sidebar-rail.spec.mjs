@@ -21,32 +21,45 @@ async function boot(page, mode = 'dark') {
   await expect(page.locator('#recentsList .recent-item')).toHaveCount(SESSIONS.length);
 }
 
-test('open sidebar uses 36px rows, solid hover and one-line history', async ({ page }) => {
+test('open sidebar uses quiet 36px rows, compact chrome and one-line history', async ({ page }) => {
   await boot(page, 'light');
   const rows = await page.evaluate(() => {
     const box = (n) => n.getBoundingClientRect();
     const nav = document.querySelector('#navLibrary');
     const item = document.querySelector('#recentsList .recent-item');
     const sidebar = getComputedStyle(document.getElementById('sidebar'));
+    const header = document.getElementById('sidebarHeader');
+    const logo = header.querySelector('.sidebar-logo');
+    const badge = item.querySelector('.recent-mode-badge');
+    const footer = document.getElementById('sidebarFooter');
+    const avatar = document.querySelector('#sidebarUserRow .user-avatar');
     return {
       navH: Math.round(box(nav).height),
       navRadius: getComputedStyle(nav).borderTopLeftRadius,
       itemH: Math.round(box(item).height),
       metaVisible: getComputedStyle(item.querySelector('.recent-item-meta')).display !== 'none',
+      modeBadgeVisible: Boolean(badge && getComputedStyle(badge).display !== 'none'),
       sidebarBg: sidebar.backgroundColor,
       sidebarBorder: `${sidebar.borderRightWidth} ${sidebar.borderRightColor}`,
+      headerH: Math.round(box(header).height),
+      logoFontSize: getComputedStyle(logo).fontSize,
+      footerBorderTop: getComputedStyle(footer).borderTopWidth,
+      avatarSize: avatar ? Math.round(box(avatar).width) : 0,
     };
   });
   expect(rows.navH).toBe(36);
   /* --ui-radius-row (10px), the documented row step in polish/buttons.css and
-     the value the phone drawer uses. This asserted 12px while
-     parity/sidebar.css carried a second, later --ui-radius-lg declaration for
-     the same selectors; removing that duplicate makes the rail 10px again. */
+     the value the phone drawer uses. */
   expect(rows.navRadius).toBe('10px');
   expect(rows.itemH).toBe(36);
   expect(rows.metaVisible).toBe(false);
+  expect(rows.modeBadgeVisible).toBe(false);
   expect(rows.sidebarBg).toBe('rgb(252, 252, 252)');
   expect(rows.sidebarBorder).toBe('1px rgba(0, 0, 0, 0.1)');
+  expect(rows.headerH).toBe(52);
+  expect(rows.logoFontSize).toBe('16px');
+  expect(rows.footerBorderTop).toBe('0px');
+  expect(rows.avatarSize).toBe(28);
 
   await page.locator('#navProjects').hover();
   await expect(page.locator('#navProjects')).toHaveCSS('background-color', 'rgb(243, 243, 243)');
