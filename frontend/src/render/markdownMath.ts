@@ -75,6 +75,20 @@ function closeUnclosedEnvironments(src: string): string {
   return closed;
 }
 
+/* Weak-model LaTeX occasionally uses AMS environments or metadata KaTeX
+   cannot consume directly. Normalize only syntax that is safe to repair;
+   mathematical content is left untouched. */
+export function normalizeMathSource(math: string, displayMode: boolean): string {
+  let source = String(math).trim();
+  source = source
+    .replace(/\\begin\{eqnarray\*?\}/g, '\\begin{aligned}')
+    .replace(/\\end\{eqnarray\*?\}/g, '\\end{aligned}')
+    .replace(/\\begin\{alignedat\}(?!\{)/g, '\\begin{alignedat}{2}')
+    .replace(/\\label\{[^}]*\}/g, '');
+  if (!displayMode) source = source.replace(/\\tag\*?\{[^}]*\}/g, '');
+  return source;
+}
+
 function neutralizeKatexErrors(html: string): string {
   if (html.indexOf('katex-error') === -1) return html;
   return html.replace(/<span class="katex-error"([^>]*)>([\s\S]*?)<\/span>/g,
@@ -362,19 +376,21 @@ function _renderStreamMath(math: string, displayMode: boolean, unclosed: boolean
   const render = (source: string, tolerant: boolean): string =>
     katex.renderToString(source, tolerant ? { ...opts, throwOnError: false } : opts);
 
-  let source = String(math).trim();
+  let source = normalizeMathSource(math, displayMode);
   /* Complete, valid math — the common case — renders in one pass. */
   try {
     return render(source, false);
   } catch (_) { /* incomplete or malformed — tolerant passes below */ }
 
-  if (unclosed) {
-    /* Auto-close `\begin{aligned} …` so the rows typed so far render
-       live instead of hiding behind the missing `\end{aligned}`. */
-    const closed = closeUnclosedEnvironments(source);
+  /* Auto-close environments even when the surrounding display delimiter is
+     already complete: models often emit `$$...$$` but forget `\end{...}`. */
+  const closed = closeUnclosedEnvironments(source);
+  if (closed !== source) {
     try {
       return render(closed, false);
     } catch (_) { /* still structurally incomplete */ }
+    source = closed;
+  } else if (unclosed) {
     source = closed;
   }
 
@@ -387,4 +403,3 @@ function _renderStreamMath(math: string, displayMode: boolean, unclosed: boolean
     return null;
   }
 }
-
