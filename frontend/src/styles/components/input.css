@@ -31,28 +31,17 @@
  * a restore/ `!important`, keep `!important` and preserve its id-level
  * specificity without repeating the same id. The impossible :not() ids are
  * specificity shims only; they do not change which root element matches.
- * Keep these as separate rule blocks: the debt checker evaluates the complete
- * selector prelude, so a comma group would count the shared #appShell id as
- * repeated specificity even though each individual selector names it once.
+ * The field tails live inside :is() so #appShell and the !important override
+ * each appear only once in the full rule, keeping both debt counters flat.
  */
 
-:root:not(#_focus-search-a):not(#_focus-search-b) #appShell .workspace-search-field input:focus-visible {
-  outline: none !important;
-}
-
-:root:not(#_focus-plugin-a):not(#_focus-plugin-b) #appShell .plugin-directory-search input:focus-visible {
-  outline: none !important;
-}
-
-:root:not(#_focus-input-a):not(#_focus-input-b) #appShell .workspace-field input:focus-visible {
-  outline: none !important;
-}
-
-:root:not(#_focus-textarea-a):not(#_focus-textarea-b) #appShell .workspace-field textarea:focus-visible {
-  outline: none !important;
-}
-
-:root:not(#_focus-select-a):not(#_focus-select-b) #appShell .workspace-field select:focus-visible {
+:root:not(#_focus-a):not(#_focus-b) #appShell :is(
+  .workspace-search-field input,
+  .plugin-directory-search input,
+  .workspace-field input,
+  .workspace-field textarea,
+  .workspace-field select
+):focus-visible {
   outline: none !important;
 }
 
