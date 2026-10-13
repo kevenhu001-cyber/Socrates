@@ -13,16 +13,58 @@
  * `[data-visualization-id]` dedup hold across the two paths.
  */
 import { IntelligenceUiBlock } from '../intelligence-ui/IntelligenceUi';
-import { toolRunStateOf } from './toolRunModel';
 import { useEffect, useRef, useState } from 'react';
 
 import { ToolOutputRenderer } from '../tool-output/ToolOutputRenderer';
-import { attachmentOutputsOf, type ToolCallRecord } from './toolRunModel';
+import { attachmentOutputsOf, toolRunStateOf, type ToolCallRecord } from './toolRunModel';
 
 export interface ToolRunAttachmentsProps {
   call: ToolCallRecord;
   tools?: ReadonlyArray<ToolCallRecord>;
   readOnly?: boolean;
+}
+
+interface IntelligenceUiDocument {
+  version: 1;
+  nodes: unknown[];
+}
+
+function parseIntelligenceUiDocument(value: unknown): IntelligenceUiDocument | null {
+  let candidate = value;
+  if (typeof candidate === 'string') {
+    const text = candidate.trim();
+    if (!text) return null;
+    try {
+      candidate = JSON.parse(text);
+    } catch {
+      /* A streamed argument string is expected to be invalid until its final
+         chunk arrives. Treat that as "not ready yet", not as a render error. */
+      return null;
+    }
+  }
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return null;
+  const record = candidate as Record<string, unknown>;
+  if (record.version !== 1 || !Array.isArray(record.nodes) || !record.nodes.length) return null;
+  return { version: 1, nodes: record.nodes };
+}
+
+/**
+ * Native tool arguments can reach the client in three equivalent shapes:
+ * parsed `tool_use.input`, a pre-use `input.__raw` snapshot, or the cumulative
+ * `tool_call_delta.argumentsText`. Reading all three removes event-order races
+ * without changing the persisted tool protocol.
+ */
+function intelligenceUiDocumentOf(call: ToolCallRecord): IntelligenceUiDocument | null {
+  const direct = parseIntelligenceUiDocument(call.input);
+  if (direct) return direct;
+
+  if (call.input && typeof call.input === 'object' && !Array.isArray(call.input)) {
+    const raw = (call.input as Record<string, unknown>).__raw;
+    const recovered = parseIntelligenceUiDocument(raw);
+    if (recovered) return recovered;
+  }
+
+  return parseIntelligenceUiDocument(call.argumentsText);
 }
 
 export function ToolRunAttachments({ call, tools = [call], readOnly }: ToolRunAttachmentsProps) {
@@ -36,12 +78,24 @@ export function ToolRunAttachments({ call, tools = [call], readOnly }: ToolRunAt
     setHost(hostRef.current);
   }, [call.id]);
 
-  if (call.name === 'render_intelligent_ui' && toolRunStateOf(call) === 'done') {
-    const document = call.input as { version?: number; nodes?: unknown[] } | undefined;
-    if (document?.version === 1 && Array.isArray(document.nodes)) {
-      return <div className="tool-inline-attachments" data-tool-anchor={call.id}>
-        <IntelligenceUiBlock source={document.nodes.map((node) => JSON.stringify(node)).join('\n')} tools={tools} readOnly={readOnly} />
-      </div>;
+  if (call.name === 'render_intelligent_ui') {
+    const state = toolRunStateOf(call);
+    const document = intelligenceUiDocumentOf(call);
+    /* A validated-looking document may be painted as soon as its arguments
+       are complete; the tool row remains the authority for final success.
+       Failed/stopped calls never expose rejected UI data. */
+    if (document && state !== 'error' && state !== 'stopped') {
+      const source = document.nodes.map((node) => JSON.stringify(node)).join('\n');
+      if (source) {
+        return <div className="tool-inline-attachments" data-tool-anchor={call.id}>
+          <IntelligenceUiBlock
+            source={source}
+            tools={tools}
+            open={state === 'running' || state === 'awaiting'}
+            readOnly={readOnly}
+          />
+        </div>;
+      }
     }
   }
   if (!outputs.length) return null;
