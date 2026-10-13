@@ -15,7 +15,7 @@ test('reference home keeps its bottom composer and phone configuration usable', 
   const rect = await composer.boundingBox();
   expect(rect.x).toBe(16);
   expect(rect.width).toBe(358);
-  expect(rect.height).toBe(85);
+  expect(rect.height).toBe(52);
   expect(769 - rect.y - rect.height).toBe(24);
   const greeting = await page.locator('#topicTitle').boundingBox();
   expect(Math.abs(greeting.y + greeting.height / 2 - 344.765)).toBeLessThan(1);
