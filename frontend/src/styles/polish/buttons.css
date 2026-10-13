@@ -7,10 +7,10 @@
  *   .btn-icon     square-or-circle icon button
  *   .btn-{sm,md,touch} size ladder (32 / 40 / 44)
  *
- * Cascade position: this file is @imported last in polish/index.css, so
- * equal-specificity rules win by order. Mobile (≤768px) then bumps every
- * `.btn` / `.btn-md` to 44 px touch height inside the same media query —
- * mobile users should never have to land on a 40 px target.
+ * Cascade position: this file lives near the end of polish/index.css. It also
+ * imports the cross-surface motion policy here so the outer split-CSS manifest
+ * stays byte-for-byte stable while motion still lands after the visual owners.
+ * Mobile (≤768px) then bumps every `.btn` / `.btn-md` to 44 px touch height.
  *
  * Style language (docs/ref/chatgpt-parity.md):
  *   - square icon: 8px radius (`--ui-radius-control`)
@@ -25,6 +25,8 @@
  * scripts/check-composer-css.mjs.
  */
 
+@import './motion.css';
+
 :root {
   /* Make all .btn-icon hit areas honour the touch baseline even outside
      the ≤768px media query — `.btn-icon.touch` is the explicit opt-in,
@@ -38,11 +40,11 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: var(--ui-control-md);   /* 40px default */
+  min-height: var(--ui-control-md);
   min-width: var(--ui-control-md);
   padding: 0 12px;
   border: 1px solid transparent;
-  border-radius: var(--ui-radius-control); /* 8px */
+  border-radius: var(--ui-radius-control);
   background: transparent;
   color: var(--ui-text-secondary);
   font: 400 var(--ui-text-ui) / 20px var(--font-sans, system-ui, sans-serif);
@@ -84,7 +86,7 @@
 /* ─────────── Size ladder ─────────── */
 
 .btn-touch {
-  min-height: var(--ui-hit-area);    /* 44 */
+  min-height: var(--ui-hit-area);
   min-width: var(--ui-hit-area);
   padding: 0 14px;
   font-size: var(--ui-text-ui);
@@ -108,13 +110,13 @@
 .btn-icon {
   display: inline-grid;
   place-items: center;
-  width: var(--ui-control-md);       /* 40 default */
+  width: var(--ui-control-md);
   height: var(--ui-control-md);
   min-width: var(--ui-control-md);
   min-height: var(--ui-control-md);
   padding: 0;
   border: 0;
-  border-radius: var(--ui-radius-control); /* 8px — chatgpt square icon */
+  border-radius: var(--ui-radius-control);
   background: transparent;
   color: var(--ui-text-secondary);
   cursor: pointer;
@@ -149,7 +151,6 @@
   display: block;
 }
 
-/* shape variants */
 .btn-icon.circle { border-radius: var(--ui-radius-pill); }
 .btn-icon.square { border-radius: var(--ui-radius-control); }
 .btn-icon.accent {
@@ -157,7 +158,6 @@
   color: var(--ui-text-primary);
 }
 
-/* size ladder */
 .btn-icon.sm {
   width: var(--ui-control-sm);
   height: var(--ui-control-sm);
@@ -166,7 +166,7 @@
 }
 .btn-icon.sm svg { width: 16px; height: 16px; }
 
-.btn-icon.md { /* default 40 */ }
+.btn-icon.md { }
 
 .btn-icon.touch {
   width: var(--ui-hit-area);
@@ -176,18 +176,15 @@
 }
 .btn-icon.touch svg { width: 22px; height: 22px; }
 
-/* ─────────── Mobile (≤768px) touch bump ─────────── */
 @media (max-width: 768px) {
   .btn {
-    min-height: var(--ui-hit-area); /* 44 */
+    min-height: var(--ui-hit-area);
     padding: 0 14px;
   }
 
-  /* .btn-touch already 44, just lock the floor */
   .btn-touch { min-height: var(--ui-hit-area); min-width: var(--ui-hit-area); }
 }
 
-/* ─────────── Reduced motion ─────────── */
 @media (prefers-reduced-motion: reduce) {
   .btn,
   .btn-icon { transition: none; }
