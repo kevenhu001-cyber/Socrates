@@ -415,7 +415,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 .msg-toolbar-btn svg{width:16px;height:16px;stroke-width:1.7}
 @keyframes readAloudPulse{0%,100%{opacity:1}50%{opacity:.55}}
 #appShell#appShell .msg-toolbar {
-  color: var(--conversation-text-muted);
+  color: var(--ui-text-tertiary);
 }
 @media (min-width: 769px) {
   #appShell #msgList .msg-toolbar {

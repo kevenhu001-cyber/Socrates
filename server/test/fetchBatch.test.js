@@ -464,7 +464,7 @@ describe('fetchBatch — response handling', () => {
       body: url.includes('batch-one') ? 'First page text' : 'Second page text',
     }));
     const events = [];
-    const ctx = { emitter: { event: (_name, payload) => events.push(payload) } };
+    const ctx = { emitter: { event: (name, payload) => events.push({ name, payload }) } };
     const call = { id: 'batch-fetch', function: { name: 'web_fetch' } };
     const urls = [
       'https://batch-two.test/article',
@@ -474,9 +474,11 @@ describe('fetchBatch — response handling', () => {
     const { result } = await executeWebFetch({ urls }, call, ctx, { activeToolNames: [] });
     assert.equal(result.status, 'completed');
     assert.match(result.output, /\[page 1\/3\][\s\S]*Second page text[\s\S]*\[page 2\/3\][\s\S]*\[error: dns_failure[\s\S]*\[page 3\/3\][\s\S]*First page text/);
-    assert.deepEqual(events[0].pages.map((p) => p.url), urls);
-    assert.deepEqual(events[0].pages.map((p) => p.ok), [true, false, true]);
-    assert.equal(events[0].truncated, true);
+    const toolResult = events.find(({ name }) => name === 'tool_result')?.payload;
+    assert.ok(toolResult, 'expected a tool_result event');
+    assert.deepEqual(toolResult.pages.map((p) => p.url), urls);
+    assert.deepEqual(toolResult.pages.map((p) => p.ok), [true, false, true]);
+    assert.equal(toolResult.truncated, true);
     assert.equal(globalThis.fetch.mock.calls.length, 2);
   });
 
@@ -484,12 +486,14 @@ describe('fetchBatch — response handling', () => {
     stubDns({ 'batch-cap.test': [{ address: '8.8.8.8', family: 4 }] });
     globalThis.fetch = mock.fn(async () => makeResponse({ headers: { 'content-type': 'text/plain' }, body: 'Page content' }));
     const events = [];
-    const ctx = { emitter: { event: (_name, payload) => events.push(payload) } };
+    const ctx = { emitter: { event: (name, payload) => events.push({ name, payload }) } };
     const call = { id: 'batch-cap', function: { name: 'web_fetch' } };
     const urls = Array.from({ length: 6 }, (_, i) => `https://batch-cap.test/${i}`);
     const { result } = await executeWebFetch({ urls }, call, ctx, { activeToolNames: [] });
     assert.equal(result.status, 'completed');
-    assert.deepEqual(events[0].pages.map((p) => p.url), urls.slice(0, 4));
+    const toolResult = events.find(({ name }) => name === 'tool_result')?.payload;
+    assert.ok(toolResult, 'expected a tool_result event');
+    assert.deepEqual(toolResult.pages.map((p) => p.url), urls.slice(0, 4));
     assert.equal(globalThis.fetch.mock.calls.length, 4);
   });
 
@@ -505,15 +509,20 @@ describe('fetchBatch — response handling', () => {
     stubDns({ 'bounded.test': [{ address: '8.8.8.8', family: 4 }] });
     globalThis.fetch = mock.fn(async () => makeResponse({ headers: { 'content-type': 'text/plain' }, body: 'Z'.repeat(1_050_000) }));
     const events = [];
-    const ctx = { emitter: { event: (_name, payload) => events.push(payload) } };
+    const ctx = { emitter: { event: (name, payload) => events.push({ name, payload }) } };
     const call = { id: 'bounded', function: { name: 'web_fetch' } };
     const url = 'https://bounded.test/page';
     await executeWebFetch({ url }, call, ctx, { activeToolNames: [] });
     const response = await executeWebFetch({ url, offset: 999_500, max_chars: 1000 }, call, ctx, { activeToolNames: [] });
     assert.match(response.result.output, /\[source_truncated: yes/);
     assert.match(response.result.output, /\[has_more: no\]/);
-    assert.equal(events[1].hasMore, false);
-    assert.equal(events[1].sourceTruncated, true);
+    const toolResults = events
+      .filter(({ name }) => name === 'tool_result')
+      .map(({ payload }) => payload);
+    const continuationResult = toolResults[1];
+    assert.ok(continuationResult, 'expected the continuation tool_result event');
+    assert.equal(continuationResult.hasMore, false);
+    assert.equal(continuationResult.sourceTruncated, true);
     const invalid = await executeWebFetch({ url, offset: 1_000_000 }, call, ctx, { activeToolNames: [] });
     assert.equal(invalid.result.errorCode, 'offset_out_of_range');
     assert.match(formatToolResultContent('web_fetch', invalid.result), /restart at offset 0/i);

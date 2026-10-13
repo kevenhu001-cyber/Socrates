@@ -43,6 +43,10 @@ RUN npm ci --include=dev --no-audit --no-fund
 FROM deps AS build
 WORKDIR /repo/server
 COPY server/tsconfig.json server/tsconfig.build.json ./
+# The server imports the type-only public turn-activity contract during its
+# production build. Keep the shared declaration available in the image build
+# context just as it is in the workspace typecheck.
+COPY packages/contracts /repo/packages/contracts
 COPY server/src ./src
 RUN npm run build && test -f dist/index.runtime.js
 

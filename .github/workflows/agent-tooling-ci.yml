@@ -153,7 +153,7 @@ jobs:
 
       - name: Agent UI unit tests
         run: |
-          node --experimental-strip-types --test \
+          node --import tsx --test \
             test/agentSteps.test.mjs \
             test/agentMode.test.mjs \
             test/toolRuntime.test.mjs \
