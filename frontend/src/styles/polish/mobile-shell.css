@@ -29,10 +29,7 @@
   }
   #appShell .top-bar-right { margin-left: auto; }
 
-  #appShell #sidebarOpenBtn,
-  #appShell #mobileNewChatBtn,
-  #appShell #findBtn,
-  #appShell #shareBtn {
+  #appShell :is(#sidebarOpenBtn, #mobileNewChatBtn, #findBtn, #shareBtn) {
     border-color: transparent;
     background: transparent;
     box-shadow: none;
@@ -40,10 +37,7 @@
   }
   #appShell #sidebarOpenBtn { margin-inline-start: -10px; }
   #appShell #mobileNewChatBtn { margin-inline-end: -10px; }
-  #appShell #sidebarOpenBtn svg,
-  #appShell #mobileNewChatBtn svg,
-  #appShell #findBtn svg,
-  #appShell #shareBtn svg {
+  #appShell :is(#sidebarOpenBtn, #mobileNewChatBtn, #findBtn, #shareBtn) svg {
     width: var(--figma-mobile-icon);
     height: var(--figma-mobile-icon);
   }
@@ -314,10 +308,8 @@
     line-height: 22px;
   }
 
-  body.workspace-active #appShell #mobileMode,
-  body.workspace-active #appShell .mobile-newchat-btn,
-  body.exam-active #appShell #mobileMode,
-  body.admin-active #appShell #mobileMode {
+  body:is(.workspace-active, .exam-active, .admin-active) #appShell #mobileMode,
+  body.workspace-active #appShell .mobile-newchat-btn {
     visibility: hidden;
     pointer-events: none;
   }
