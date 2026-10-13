@@ -5,63 +5,66 @@
  * Geometry owned by JS (--app-sidebar-width, drawer transform) untouched.
  */
 
-/* The parity layer pins the whole shell to --chatgpt-font (ui-sans-serif →
-   Segoe UI on Windows) while chat surfaces render Plus Jakarta Sans via
-   --cg-font — the brand wordmark and nav read as a different face from the
-   conversation. Converge the shell on the bundled brand stack. */
+/* Keep the whole shell on one bundled face. */
 #appShell,
 #composerToolsMenu {
   font-family: var(--cg-font);
 }
 
-/* ── Desktop hierarchy — quiet chrome, stable geometry ──────────────────
-   Keep the parity contract (260/52 column, 36px rows, 200ms rail motion) and
-   change only visual weight. The goal is a sidebar that reads as navigation,
-   not a stack of competing cards: smaller branding, softer default labels,
-   whitespace instead of separators, and one neutral selected-row language. */
+/* ── Desktop hierarchy — Figma ChatGPT Apps UI Kit ────────────────────── */
 @media (min-width: 769px) {
+  /* Figma: 260px white rail, #e8e8e8 right hairline, then a 10px gutter
+     before the flexible application column. */
+  #appShell #sidebar {
+    background: var(--ui-bg-page);
+    border-right-color: var(--ui-bg-control);
+  }
+  #appShell #sidebar ~ .main {
+    padding-left: calc(var(--app-sidebar-width, 260px) + 10px);
+  }
+
   #appShell #sidebarHeader {
     height: 52px;
-    padding: 0 8px 0 10px;
+    padding: 0 6px 0 10px;
   }
   #appShell #sidebarHeader .sidebar-logo {
-    gap: 8px;
+    gap: 0;
     height: 36px;
-    padding: 0 6px;
-    font-size: var(--ui-text-body);
-    font-weight: 600;
-    line-height: 20px;
-    letter-spacing: -0.01em;
+    padding: 0 4px;
+    font-size: 0;
+    line-height: 0;
   }
   #appShell #sidebarHeader .sidebar-logo-img {
-    width: 22px;
-    height: 22px;
-    border-radius: 5px;
+    width: 26px;
+    height: 26px;
+    border-radius: 0;
   }
-  #appShell #newChatBtn,
+  #appShell #newChatBtn { display: none; }
   #appShell #sidebarCloseBtn {
-    color: var(--ui-text-tertiary);
+    color: var(--ui-text-primary);
   }
-  #appShell #newChatBtn:hover,
   #appShell #sidebarCloseBtn:hover,
-  #appShell #newChatBtn:focus-visible,
   #appShell #sidebarCloseBtn:focus-visible {
     color: var(--ui-text-primary);
   }
-  #appShell #newChatBtn svg,
   #appShell #sidebarCloseBtn svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
   }
 
+  /* Figma list item: 36px row, 20px glyph, 6px gap, 10px inline inset,
+     14/18 regular type, 10px radius. */
   #appShell #sidebarNav {
-    gap: 1px;
-    padding: 2px 8px 8px;
+    gap: 0;
+    padding: 0 6px 8px;
   }
   #appShell #sidebarNav .sidebar-nav-btn {
-    gap: 8px;
-    padding-inline: 8px;
-    color: var(--ui-text-secondary);
+    gap: 6px;
+    padding: 8px 10px;
+    color: var(--ui-text-primary);
+    font-size: var(--ui-text-ui);
+    font-weight: 400;
+    line-height: 18px;
     transition: background-color var(--ui-duration-hover) ease,
                 color var(--ui-duration-hover) ease;
   }
@@ -71,68 +74,74 @@
   #appShell #sidebarNav .sidebar-nav-btn[aria-current="page"] {
     color: var(--ui-text-primary);
   }
-  /* Grouping comes from breathing room, not another line in the rail. */
+  #appShell #sidebarNav .sidebar-nav-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+  /* The kit separates groups with breathing room, not a visible rule. */
   #appShell #sidebar .sidebar-nav-sep {
     height: 0;
-    margin: 5px 14px 7px;
+    margin: 10px 10px;
     background: transparent;
   }
 
   #appShell #sidebar .sidebar-search-row {
-    margin-inline: 8px;
+    margin-inline: 6px;
   }
   #appShell #sidebar .sidebar-search {
-    gap: 8px;
-    padding-inline: 8px;
-    color: var(--ui-text-secondary);
+    gap: 6px;
+    padding-inline: 10px;
+    color: var(--ui-text-primary);
   }
   #appShell #sidebar .sidebar-search svg {
-    width: 18px;
-    height: 18px;
-    flex-basis: 18px;
-    color: var(--ui-text-secondary);
+    width: 20px;
+    height: 20px;
+    flex-basis: 20px;
+    color: var(--ui-text-primary);
   }
   #appShell #sidebarSearch,
   #appShell #sidebarSearch::placeholder {
-    color: var(--ui-text-secondary);
+    color: var(--ui-text-primary);
+    font-size: var(--ui-text-ui);
+    line-height: 18px;
   }
   #appShell #sidebarSearch:focus::placeholder {
     color: var(--ui-text-placeholder);
   }
 
   #appShell #recentsPanel {
-    padding: 0 8px 6px;
+    padding: 0 6px 8px;
   }
   #appShell #sidebar .recents-header {
-    padding: 14px 8px 4px;
+    padding: 12px 10px 4px;
   }
   #appShell #sidebar .recents-title {
-    color: var(--ui-text-muted);
-    font-size: var(--ui-font-size-xxs);
-    font-weight: 500;
-    line-height: 16px;
+    color: var(--ui-text-placeholder);
+    font-size: var(--ui-text-ui);
+    font-weight: 400;
+    line-height: 18px;
   }
   #appShell #sidebar .recents-time-label {
-    padding: 10px 8px 3px;
-    color: var(--ui-text-muted);
-    font-weight: 500;
-    line-height: 15px;
+    padding: 10px 10px 3px;
+    color: var(--ui-text-placeholder);
+    font-weight: 400;
+    line-height: 16px;
     letter-spacing: 0;
   }
-  /* Mode is still available in the row data/menu; the dot was visual noise
-     in a list whose primary job is fast title scanning. */
   #appShell #sidebar .recent-mode-badge {
     display: none;
   }
   #appShell #sidebar .recent-item {
     gap: 0;
-    padding-inline: 8px;
-    color: var(--ui-text-secondary);
+    padding: 8px 10px;
+    color: var(--ui-text-primary);
+    line-height: 18px;
     transition: background-color var(--ui-duration-hover) ease,
                 color var(--ui-duration-hover) ease;
   }
   #appShell #sidebar .recent-item-text {
     color: inherit;
+    line-height: 18px;
   }
   #appShell #sidebar .recent-item:hover,
   #appShell #sidebar .recent-item:focus-within,
@@ -141,14 +150,14 @@
     color: var(--ui-text-primary);
   }
   #appShell #sidebar .recent-item-overflow {
-    color: var(--ui-text-muted);
+    color: var(--ui-text-placeholder);
   }
 
-  /* The footer is the last navigation row, not a separate card. Space is
-     enough to separate it from history, so the hairline can disappear. */
+  /* Figma footer: 8px outer inset, top hairline, 24px avatar and two
+     14/18 + 12/16 identity lines. */
   #appShell #sidebarFooter {
-    padding: 6px 8px 8px;
-    border-top: 0;
+    padding: 8px;
+    border-top: 1px solid var(--ui-bg-control);
   }
   #appShell #sidebarUserRow:hover {
     background: transparent;
@@ -158,9 +167,9 @@
   }
   #appShell .sidebar-account-trigger {
     gap: 8px;
-    min-height: 40px;
-    padding: 6px 8px;
-    color: var(--ui-text-secondary);
+    min-height: 36px;
+    padding: 6px;
+    color: var(--ui-text-primary);
     transition: background-color var(--ui-duration-hover) ease,
                 color var(--ui-duration-hover) ease;
   }
@@ -170,25 +179,24 @@
     color: var(--ui-text-primary);
   }
   #appShell #sidebarUserRow .user-avatar {
-    flex-basis: 28px;
-    width: 28px;
-    height: 28px;
-    font-size: 11px;
+    flex-basis: 24px;
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
   }
   #appShell #sidebarUserRow .user-name {
-    font-size: var(--ui-font-size-xs);
-    line-height: 16px;
+    font-size: var(--ui-text-ui);
+    line-height: 18px;
   }
   #appShell #sidebarUserRow .user-plan {
-    font-size: 11px;
-    line-height: 14px;
+    color: var(--ui-text-placeholder);
+    font-size: var(--ui-font-size-xxs);
+    line-height: 16px;
   }
   #appShell #sidebarUserRow .tier-badge {
-    line-height: 14px;
+    line-height: 16px;
   }
 
-  /* Match the compact rail: account menus should feel like menus, not modal
-     cards. Keep the existing AnchoredMenu lifecycle and accessibility. */
   #appShell .sidebar-account-menu {
     width: 236px;
     padding: 6px;
