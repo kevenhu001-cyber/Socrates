@@ -86,8 +86,8 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
     };
   });
   expect(mobileGeometry.composer?.width).toBeGreaterThanOrEqual(320);
-  /* Reference phone capsule is a two-row 85px stack (editor row 1, controls row 2). */
-  expect(mobileGeometry.composer?.height).toBe(85);
+  /* Current reference phone capsule is a compact one-row 52px rail. */
+  expect(mobileGeometry.composer?.height).toBe(52);
   expect((mobileGeometry.composer?.y ?? 0) + (mobileGeometry.composer?.height ?? 0)).toBeLessThanOrEqual(769);
   expect(mobileGeometry.plus?.width).toBe(36);
   expect(mobileGeometry.send?.width).toBe(36);
@@ -183,7 +183,7 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   const chatComposerBox = await page.locator('#composerInputWrap').boundingBox();
   const chatEditorBox = await page.locator('#composerRoot').boundingBox();
   const chatToolsBox = await page.locator('#composerToolsBtn').boundingBox();
-  expect(chatComposerBox?.height).toBe(85);
+  expect(chatComposerBox?.height).toBe(52);
   expect(chatToolsBox?.width).toBe(36);
   await page.screenshot({ path: 'test-results/socrates-reference-mobile-chat-composer-390x769.png', fullPage: true });
 
