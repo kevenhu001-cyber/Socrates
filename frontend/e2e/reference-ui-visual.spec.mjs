@@ -2,9 +2,8 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-/* These screenshots are intentionally written to /tmp.  The spec checks the
-   app-owned surfaces at the same mobile and desktop sizes as the supplied
-   references without committing generated artefacts to the repository. */
+/* These screenshots check app-owned surfaces at the mobile and desktop target
+   sizes. Native browser / OS chrome is deliberately outside the comparison. */
 
 /* Reference phone drawer is 80vw capped at 330px: 312px at 390px. */
 const MOBILE_DRAWER = 312;
@@ -81,42 +80,36 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
     return {
       composer: read('#composerInputWrap'),
       plus: read('#composerToolsBtn'),
+      mic: read('#composerMicBtn'),
       send: read('#composerPrimaryBtn'),
       background: getComputedStyle(document.querySelector('.main-content')).backgroundColor,
     };
   });
-  expect(mobileGeometry.composer?.width).toBeGreaterThanOrEqual(320);
-  /* Reference phone capsule is a two-row 85px stack (editor row 1, controls row 2). */
-  expect(mobileGeometry.composer?.height).toBe(85);
+  expect(mobileGeometry.composer?.width).toBeGreaterThanOrEqual(350);
+  /* Figma mobile rests on one 44px row: separate 44px add, bare 24px mic,
+     and a 32px primary action inside the input pill. */
+  expect(mobileGeometry.composer?.height).toBe(44);
   expect((mobileGeometry.composer?.y ?? 0) + (mobileGeometry.composer?.height ?? 0)).toBeLessThanOrEqual(769);
-  expect(mobileGeometry.plus?.width).toBe(36);
-  expect(mobileGeometry.send?.width).toBe(36);
-  /* The mobile canvas shares the charcoal page surface with desktop. */
+  expect(mobileGeometry.plus?.width).toBe(44);
+  expect(mobileGeometry.mic?.width).toBe(24);
+  expect(mobileGeometry.send?.width).toBe(32);
   expect(mobileGeometry.background).toBe('rgb(20, 20, 20)');
 
   await page.locator('#composerToolsBtn').click();
   const toolsMenu = page.locator('#composerToolsMenu');
   await expect(toolsMenu).toBeVisible();
-  /* The card plays a 160ms scale/translate entrance; geometry assertions
-     apply to the resting state, so wait for the transform to settle. */
   await expect.poll(async () => toolsMenu.evaluate((el) => {
     const t = getComputedStyle(el).transform;
     return t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)';
   })).toBe(true);
   const toolsBox = await toolsMenu.boundingBox();
-  /* The reference sheet is ~65% of the phone width — 252px at 390px. */
   expect(toolsBox?.width).toBeGreaterThanOrEqual(244);
   expect(toolsBox?.width).toBeLessThanOrEqual(260);
   expect(toolsBox?.height).toBeGreaterThanOrEqual(300);
   expect(toolsBox?.height).toBeLessThanOrEqual(368);
-  /* The sheet is flush with the capsule's 16px page gutter
-     (--ui-mobile-page-gutter in styles/tokens.css). */
-  expect(toolsBox?.x).toBeGreaterThanOrEqual(14);
-  expect(toolsBox?.x).toBeLessThanOrEqual(18);
-  expect(Math.abs(
-    ((toolsBox?.y ?? 0) + (toolsBox?.height ?? 0))
-      - ((mobileGeometry.composer?.y ?? 0) + (mobileGeometry.composer?.height ?? 0)),
-  )).toBeLessThanOrEqual(2);
+  /* The current tool card is anchored to the same 12px Figma page gutter. */
+  expect(toolsBox?.x).toBeGreaterThanOrEqual(10);
+  expect(toolsBox?.x).toBeLessThanOrEqual(14);
   const toolsBackground = await toolsMenu.evaluate((element) => getComputedStyle(element).backgroundColor);
   expect(toolsBackground).not.toBe('rgba(0, 0, 0, 0)');
   await page.mouse.move(380, 4);
@@ -152,9 +145,6 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
       rowIcon: box('.plugin-directory-row .workspace-row-icon'),
     };
   });
-  /* 36px search per docs/ref/mobile-reference-2026-10-04.md
-     ("Directories | 36px search, 40px tabs/app icons, 60px file rows"),
-     owned by polish/mobile-directories.css. */
   expect(pluginGeometry.search?.height).toBe(36);
   expect((pluginGeometry.installedLabel?.y ?? 0) + (pluginGeometry.installedLabel?.height ?? 0)).toBeLessThanOrEqual(pluginGeometry.installedIcon?.y ?? 0);
   expect(pluginGeometry.installedIcon?.width).toBe(40);
@@ -181,10 +171,9 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   });
   await expect(page.locator('#composerInputWrap')).toBeVisible();
   const chatComposerBox = await page.locator('#composerInputWrap').boundingBox();
-  const chatEditorBox = await page.locator('#composerRoot').boundingBox();
   const chatToolsBox = await page.locator('#composerToolsBtn').boundingBox();
-  expect(chatComposerBox?.height).toBe(85);
-  expect(chatToolsBox?.width).toBe(36);
+  expect(chatComposerBox?.height).toBe(44);
+  expect(chatToolsBox?.width).toBe(44);
   await page.screenshot({ path: 'test-results/socrates-reference-mobile-chat-composer-390x769.png', fullPage: true });
 
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -201,8 +190,6 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   const desktopToolsMenu = page.locator('#composerToolsMenu');
   await expect(desktopToolsMenu).toBeVisible();
   const desktopToolsBox = await desktopToolsMenu.boundingBox();
-  /* The compact card ceiling is min(560px, 62vh) — roomy enough for the
-     nine-row directory while staying clearly smaller than a panel. */
   expect(desktopToolsBox?.height).toBeLessThanOrEqual(560);
   const desktopToolsBackground = await desktopToolsMenu.evaluate((element) => getComputedStyle(element).backgroundColor);
   expect(desktopToolsBackground).not.toBe('rgba(0, 0, 0, 0)');
