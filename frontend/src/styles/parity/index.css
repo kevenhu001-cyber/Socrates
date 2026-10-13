@@ -1,14 +1,12 @@
 /*
  * parity/ — ChatGPT/Figma aligned surface owners.
- * Each file owns one surface. The composer is split only by breakpoint:
- * composer-unified.css owns the shared component contract and desktop /
- * expanded states; composer-mobile.css owns its <=768px resting geometry.
- * Both style the same DOM node — there is no duplicate composer component.
+ * Each file owns one surface on desktop. composer-unified.css remains the
+ * shared composer contract; polish/mobile-shell.css pulls in its phone-only
+ * geometry companion so the locked parity manifest does not gain a new slot.
  *
  * Sits after restore/ (being retired) and before polish/.
  */
 @import './sidebar.css';
 @import './topbar.css';
 @import './composer-unified.css';
-@import './composer-mobile.css';
 @import './transcript.css';
