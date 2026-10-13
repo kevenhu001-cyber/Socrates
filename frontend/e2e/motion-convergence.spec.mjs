@@ -22,12 +22,11 @@ test('desktop sidebar commits layout once and animates the main surface with tra
     main.getAnimations().forEach((animation) => animation.cancel());
 
     const beforeInset = Number.parseFloat(getComputedStyle(main).paddingLeft);
-    const sidebarTransition = getComputedStyle(sidebar).transitionDuration;
-    const mainTransition = getComputedStyle(main).transitionDuration;
-
     window.toggleSidebar?.();
 
     const afterInset = Number.parseFloat(getComputedStyle(main).paddingLeft);
+    const sidebarTransition = getComputedStyle(sidebar).transitionDuration;
+    const mainTransition = getComputedStyle(main).transitionDuration;
     const animations = main.getAnimations().map((animation) => ({
       duration: Number(animation.effect?.getTiming().duration || 0),
       keyframes: animation.effect instanceof KeyframeEffect
@@ -40,11 +39,13 @@ test('desktop sidebar commits layout once and animates the main surface with tra
 
   expect(result).not.toBeNull();
   expect(result.beforeInset - result.afterInset).toBeGreaterThan(100);
+  /* The service suppresses the legacy width/padding transitions only for the
+     geometry commit frame. The visual continuation is the WAAPI transform. */
   expect(result.sidebarTransition).toMatch(/^0s(?:, 0s)*$/);
   expect(result.mainTransition).toMatch(/^0s(?:, 0s)*$/);
-  expect(result.animations.length).toBeGreaterThan(0);
-  expect(result.animations[0].duration).toBe(180);
-  expect(result.animations[0].keyframes.join(' ')).toContain('translateX');
+  const spatial = result.animations.find((animation) => animation.keyframes.join(' ').includes('translateX'));
+  expect(spatial).toBeTruthy();
+  expect(spatial.duration).toBe(180);
 });
 
 test('live activity keeps one primary motion cue and respects reduced motion', async ({ page }) => {
