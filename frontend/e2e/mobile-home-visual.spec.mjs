@@ -49,12 +49,10 @@ test('mobile conversation home matches the compact dark reference layout', async
      44px tactile chip as the hamburger (restore/chat-surface.css). */
   expect(geometry.right?.width).toBe(44);
   expect(geometry.composer?.width).toBeGreaterThanOrEqual(320);
-  /* Empty-home mobile composer uses the reference's two-row 85px stack
-     (editor on row 1, add/dictation/send controls on row 2). The height
-     follows the owner's padding/row-gap/editor metrics — see
-     docs/ref/mobile-reference-2026-10-04.md and the arithmetic in
-     e2e/mobile-composer-reference.spec.mjs. */
-  expect(geometry.composer?.height).toBe(85);
+  /* Empty-home mobile composer uses the current compact one-row 52px rail:
+     add/editor/dictation/send share one line, and only multiline drafts,
+     selected tools/plugins, or attachments expand the capsule. */
+  expect(geometry.composer?.height).toBe(52);
   expect(geometry.composer?.bottom).toBeLessThanOrEqual((geometry.viewportHeight ?? 844) - 16);
   /* The empty-state capsule pins to the bottom action band: its foot rests
      on the safe-area inset above the viewport bottom, not in the old
@@ -103,13 +101,12 @@ test('mobile conversation home matches the compact dark reference layout', async
 
   await page.screenshot({ path: 'test-results/mobile-home-reference-collapsed.png', fullPage: true });
 
-  /* The active-chat header uses the reference's one tactile navigation
-     control plus two unframed utilities. Expose the session-only controls
-     without invoking a networked share action so this remains visual QA. */
+  /* Active conversation chrome mirrors the supplied Android reference:
+     one raised navigation circle on the left and one raised compose+overflow
+     capsule on the right. Find/share stay functional behind the overflow. */
   const headerVisual = await page.evaluate(() => {
+    window.toggleChatTopBarEls?.(true);
     document.body.dataset.conversationActive = 'true';
-    document.getElementById('findBtn')?.classList.remove('hidden');
-    document.getElementById('shareBtn')?.classList.remove('hidden');
     const measure = (selector) => {
       const el = document.querySelector(selector);
       const rect = el?.getBoundingClientRect();
@@ -119,7 +116,7 @@ test('mobile conversation home matches the compact dark reference layout', async
         right: rect.right,
         width: rect.width,
         height: rect.height,
-        borderStyle: style.borderStyle,
+        display: style.display,
         borderWidth: style.borderWidth,
         background: style.backgroundColor,
       } : null;
@@ -127,52 +124,54 @@ test('mobile conversation home matches the compact dark reference layout', async
     return {
       sidebar: measure('#sidebarOpenBtn'),
       modelSwitcher: measure('#topModelSwitcher'),
+      capsule: measure('.top-bar-right'),
       newChat: measure('#mobileNewChatBtn'),
+      more: measure('#mobileConversationMoreBtn'),
       find: measure('#findBtn'),
       share: measure('#shareBtn'),
       sidebarStatus: measure('.mobile-sidebar-status'),
-      findIcon: measure('#findBtn svg'),
-      shareIcon: measure('#shareBtn svg'),
-      shareLabelVisible: Boolean(document.querySelector('#shareBtn .share-btn-label')?.getClientRects().length),
     };
   });
-  /* This block deliberately flips body[data-conversation-active="true"]
-     above, so the mobile header is in its in-conversation form. That state
-     has two documented sizes (restore/chat-surface.css: "Landing top-bar
-     buttons are 44px tactile chips; the in-conversation header keeps its
-     existing 40px unframed utilities"), and this expectation was still
-     asserting the landing size for #sidebarOpenBtn, so it failed at 40.
-     #findBtn / #shareBtn are 44 in both states (fixes.css pins them on
-     phone regardless of surface). */
   expect(headerVisual.sidebar?.width).toBe(40);
-  expect(headerVisual.find?.width).toBe(44);
-  expect(headerVisual.share?.width).toBe(44);
-  expect(headerVisual.modelSwitcher?.width).toBeGreaterThan(0);
-  expect(headerVisual.modelSwitcher?.right).toBeLessThanOrEqual(headerVisual.newChat?.x ?? 0);
-  for (const width of [390, 360, 320]) {
-    await page.setViewportSize({ width, height: 844 });
-    const boxes = await page.evaluate(() => {
-      const rect = (selector) => document.querySelector(selector).getBoundingClientRect();
-      const switcher = rect('#topModelSwitcher');
-      const newChat = rect('#mobileNewChatBtn');
-      return { switcherRight: switcher.right, newChatLeft: newChat.left, switcherWidth: switcher.width };
-    });
-    expect(boxes.switcherWidth).toBeGreaterThan(0);
-    expect(boxes.switcherRight).toBeLessThanOrEqual(boxes.newChatLeft);
-  }
-  expect(headerVisual.find?.borderWidth).toBe('0px');
-  expect(headerVisual.share?.borderWidth).toBe('0px');
+  expect(headerVisual.newChat?.width).toBe(40);
+  expect(headerVisual.more?.width).toBe(40);
+  expect(headerVisual.capsule?.height).toBe(48);
+  expect(headerVisual.capsule?.width).toBeGreaterThanOrEqual(88);
+  expect(headerVisual.modelSwitcher?.width).toBe(0);
+  expect(headerVisual.find?.display).toBe('none');
+  expect(headerVisual.share?.display).toBe('none');
   /* The reference header shows no always-on status dot next to the
      sidebar toggle, so it stays display:none on mobile. */
   expect(headerVisual.sidebarStatus?.width).toBe(0);
-  expect(headerVisual.findIcon?.width).toBe(24);
-  expect(headerVisual.shareIcon?.width).toBe(24);
-  expect(headerVisual.shareLabelVisible).toBe(false);
+
+  for (const width of [390, 360, 320]) {
+    await page.setViewportSize({ width, height: 844 });
+    const boxes = await page.evaluate(() => {
+      const capsule = document.querySelector('.top-bar-right')?.getBoundingClientRect();
+      const more = document.querySelector('#mobileConversationMoreBtn')?.getBoundingClientRect();
+      return { capsuleRight: capsule?.right ?? 0, capsuleWidth: capsule?.width ?? 0, moreWidth: more?.width ?? 0 };
+    });
+    expect(boxes.moreWidth).toBe(40);
+    expect(boxes.capsuleWidth).toBeGreaterThanOrEqual(88);
+    expect(boxes.capsuleRight).toBeLessThanOrEqual(width - 14);
+  }
+
+  const more = page.locator('#mobileConversationMoreBtn');
+  await more.click();
+  const actionMenu = page.locator('#mobileConversationMoreMenu');
+  await expect(actionMenu).toBeVisible();
+  await expect(actionMenu.getByRole('menuitem', { name: /Find in conversation/i })).toBeVisible();
+  await expect(actionMenu.getByRole('menuitem', { name: /Share/i })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(actionMenu).toBeHidden();
 
   /* The supplied visual's app-owned region normalizes to roughly 390×756
      after removing browser chrome. Capture that exact comparison viewport
      outside the repo for the design-QA pass. */
-  await page.evaluate(() => { document.body.dataset.conversationActive = 'false'; });
+  await page.evaluate(() => {
+    window.toggleChatTopBarEls?.(false);
+    document.body.dataset.conversationActive = 'false';
+  });
   await page.setViewportSize({ width: 390, height: 756 });
   await page.waitForTimeout(180);
   await page.screenshot({ path: 'test-results/socrates-mobile-reference-implementation.png', fullPage: true });

@@ -65,7 +65,9 @@
   --ui-sidebar-mobile: 254px;
   --ui-mobile-row: 40px;
   --ui-mobile-header: 56px;
-  --ui-mobile-page-gutter: 16px;
+  /* ChatGPT's phone composer sits one 32px rhythm step in from the screen,
+     while transcript prose itself uses the tighter 16px reading gutter. */
+  --ui-mobile-page-gutter: 32px;
   --ui-mobile-bottom: max(24px, env(safe-area-inset-bottom, 0px));
   --ui-sidebar-desktop: 260px;
   --ui-detail-width: 420px;

@@ -5,15 +5,16 @@
  */
 
 @media (max-width: 768px) {
-  /* Drawer: same surface as desktop rail + hairline edge. The backdrop is a
-     flat --ui-backdrop dim with no blur: blur is the most expensive effect
-     on low-end phones and runs on every open while the drawer slides in
-     (see P_perf-mobile-backdrop in legacy/15). */
+  /* The current reference drawer is a flat sheet over a dim scrim. A hard
+     edge or directional drop shadow makes it read like a desktop panel, so
+     mobile deliberately drops both while keeping the same drawer geometry. */
   #appShell .sidebar {
-    border-right: 1px solid var(--ui-border-subtle);
+    border-right: 0;
+    box-shadow: none;
   }
 
-  /* Top bar icons keep 40px touch targets, quieter color. */
+  /* Top bar icons keep compact touch targets and quieter color. The active
+     conversation's compose/overflow capsule is owned by mobile-shell.css. */
   #appShell .top-bar .toggle-sidebar,
   #appShell .top-bar .mobile-newchat-btn,
   #appShell .top-bar .mobile-incognito-btn {
