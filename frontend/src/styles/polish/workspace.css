@@ -800,10 +800,8 @@
   border: 1px solid var(--ui-border-subtle);
 }
 
-/* P_wave-page — the box is sized for the 44px wave, and the ring class name
-   survives only as the box the wave sits in (the concentric ring + dot that
-   used to occupy it are gone: two objects spinning at two tempos beside
-   each other read as two different things loading, and only one was). */
+/* P_ring-page — keep the page-level loading affordance as a compact rotating
+   ring. The content placeholders below are the surfaces that use shimmer. */
 #appShell .workspace-loading-spinner-box {
   position: relative;
   width: 44px;
@@ -815,11 +813,19 @@
 }
 
 #appShell .workspace-loading-spinner-ring {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
+  border: 2px solid var(--ui-border-subtle);
+  border-top-color: var(--ui-accent-strong);
+  border-right-color: var(--ui-text-primary);
+  box-sizing: border-box;
+  animation: workspaceLoadingSpin var(--ui-duration-spin, 0.9s) cubic-bezier(.4, 0, .2, 1) infinite;
+  will-change: transform;
+}
+
+@keyframes workspaceLoadingSpin {
+  to { transform: rotate(360deg); }
 }
 
 #appShell .workspace-loading-banner-text {

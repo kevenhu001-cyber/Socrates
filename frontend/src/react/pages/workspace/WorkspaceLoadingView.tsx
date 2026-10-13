@@ -29,9 +29,9 @@ export function WorkspaceLoadingView({ page }: WorkspaceLoadingViewProps) {
     <div className={`workspace-surface workspace-loading-surface workspace-loading-${page}`} aria-busy="true" aria-live="polite">
       <div className="workspace-loading-banner">
         <div className="workspace-loading-spinner-box">
-          {/* Keep the historical hook for loading-state tests. The visual is
-              now a circular shimmer block rather than a separate spinner. */}
-          <div className="workspace-loading-spinner-ring workspace-skeleton-shimmer" aria-hidden="true" />
+          {/* Keep the page-level loading affordance as a rotating ring. The
+              content placeholders below carry the shimmer treatment. */}
+          <div className="workspace-loading-spinner-ring" aria-hidden="true" />
         </div>
         <div className="workspace-loading-banner-text">
           <strong className="shimmer-text">{title}</strong>
