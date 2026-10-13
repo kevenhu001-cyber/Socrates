@@ -1,6 +1,9 @@
 /** Shared retry policy for all provider-backed model calls. */
 
-export const AI_MAX_RETRIES = 5;
+/* Keep automatic replay deliberately small. The server already owns provider
+   backoff for 429/5xx responses, so a large client retry budget multiplies
+   upstream traffic and can turn one transient failure into a request storm. */
+export const AI_MAX_RETRIES = 1;
 export const AI_MAX_ATTEMPTS = AI_MAX_RETRIES + 1;
 export const AI_RETRY_DELAY_MS = 5000;
 
@@ -19,7 +22,7 @@ export interface AIRequestOptions {
   signal?: AbortSignal;
   /** Test-only seam; production callers use the fixed five-second delay. */
   sleep?: (delayMs: number, signal?: AbortSignal) => Promise<void>;
-  /** Test-only seam; production callers use five retries. */
+  /** Test-only seam; production callers use one retry. */
   maxRetries?: number;
   /** Test-only seam; production callers use five seconds. */
   delayMs?: number;
