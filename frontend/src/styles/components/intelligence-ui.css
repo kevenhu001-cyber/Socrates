@@ -1,0 +1,228 @@
+/* Native Intelligent UI v2 surfaces.
+ * Model output selects semantic composition only; visual decisions stay on the
+ * Socrates token system and inherit the transcript's canonical ownership. */
+.msg.assistant .msg-body.is-declarative .intui-chart {
+  display: grid;
+  gap: var(--ui-space-sm);
+  min-width: 0;
+  margin: 0;
+}
+.msg.assistant .msg-body.is-declarative .intui-chart-title,
+.msg.assistant .msg-body.is-declarative .intui-gallery-label,
+.msg.assistant .msg-body.is-declarative .intui-entity-title {
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-semibold);
+  line-height: var(--ui-line-height-normal);
+}
+.msg.assistant .msg-body.is-declarative .intui-chart-plot {
+  display: block;
+  width: 100%;
+  height: clamp(8rem, 24vw, 10rem);
+  overflow: visible;
+}
+.msg.assistant .msg-body.is-declarative .intui-chart-axis {
+  stroke: var(--ui-border-subtle);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.msg.assistant .msg-body.is-declarative .intui-chart-bar {
+  fill: var(--ui-accent-strong);
+  opacity: .82;
+}
+.msg.assistant .msg-body.is-declarative .intui-chart-line {
+  fill: none;
+  stroke: var(--ui-accent-strong);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.msg.assistant .msg-body.is-declarative .intui-chart-point {
+  fill: var(--ui-bg-raised);
+  stroke: var(--ui-accent-strong);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.msg.assistant .msg-body.is-declarative .intui-chart-values {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(5rem, 1fr));
+  gap: var(--ui-space-xs) var(--ui-space-md);
+}
+.msg.assistant .msg-body.is-declarative .intui-chart-value {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ui-space-xs);
+  min-width: 0;
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+}
+.msg.assistant .msg-body.is-declarative .intui-chart-value span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.msg.assistant .msg-body.is-declarative .intui-chart-value strong {
+  color: var(--ui-text-primary);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ui-font-weight-medium);
+}
+
+.msg.assistant .msg-body.is-declarative .intui-tabs {
+  display: grid;
+  gap: var(--ui-space-md);
+  min-width: 0;
+}
+.msg.assistant .msg-body.is-declarative .intui-tab-list {
+  display: flex;
+  gap: var(--ui-space-md);
+  min-width: 0;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--ui-border-subtle);
+  scrollbar-width: none;
+}
+.msg.assistant .msg-body.is-declarative .intui-tab-list::-webkit-scrollbar { display: none; }
+.msg.assistant .msg-body.is-declarative .intui-tab-list button {
+  position: relative;
+  flex: 0 0 auto;
+  min-height: var(--ui-control-sm);
+  padding: 0 0 var(--ui-space-xs);
+  border: 0;
+  background: transparent;
+  color: var(--ui-text-tertiary);
+  font: var(--ui-font-weight-medium) var(--ui-font-size-xs) / 1 var(--font-sans);
+  cursor: pointer;
+  transition: color var(--ui-duration-hover) ease, opacity var(--ui-duration-hover) ease;
+}
+.msg.assistant .msg-body.is-declarative .intui-tab-list button::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: -1px;
+  height: 1px;
+  background: transparent;
+}
+.msg.assistant .msg-body.is-declarative .intui-tab-list button:hover {
+  color: var(--ui-text-primary);
+}
+.msg.assistant .msg-body.is-declarative .intui-tab-list button.is-selected {
+  color: var(--ui-text-primary);
+}
+.msg.assistant .msg-body.is-declarative .intui-tab-list button.is-selected::after {
+  background: var(--ui-text-primary);
+}
+.msg.assistant .msg-body.is-declarative .intui-tab-list button:focus-visible,
+.msg.assistant .msg-body.is-declarative .intui-tab-panel:focus-visible {
+  outline: 2px solid var(--ui-border-strong);
+  outline-offset: 2px;
+}
+.msg.assistant .msg-body.is-declarative .intui-tab-panel {
+  display: grid;
+  gap: var(--ui-space-md);
+  min-width: 0;
+  outline: none;
+}
+
+.msg.assistant .msg-body.is-declarative .intui-entity {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--ui-space-md);
+  min-width: 0;
+  padding: var(--ui-space-md) 0;
+  border-top: 1px solid var(--ui-border-subtle);
+  border-bottom: 1px solid var(--ui-border-subtle);
+}
+.msg.assistant .msg-body.is-declarative .intui-entity-image {
+  width: 4.5rem;
+  height: 4.5rem;
+  object-fit: cover;
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-bg-control);
+}
+.msg.assistant .msg-body.is-declarative .intui-entity-body,
+.msg.assistant .msg-body.is-declarative .intui-entity-head {
+  display: grid;
+  gap: var(--ui-space-xs);
+  min-width: 0;
+}
+.msg.assistant .msg-body.is-declarative .intui-entity-subtitle,
+.msg.assistant .msg-body.is-declarative .intui-entity-description {
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+  line-height: var(--ui-line-height-relaxed);
+}
+.msg.assistant .msg-body.is-declarative .intui-entity-description { margin: 0; }
+.msg.assistant .msg-body.is-declarative .intui-entity-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: var(--ui-space-sm) var(--ui-space-lg);
+  margin: var(--ui-space-xs) 0 0;
+}
+.msg.assistant .msg-body.is-declarative .intui-entity-fields > div {
+  display: grid;
+  gap: var(--ui-space-xxs);
+  min-width: 0;
+}
+.msg.assistant .msg-body.is-declarative .intui-entity-fields dt {
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+}
+.msg.assistant .msg-body.is-declarative .intui-entity-fields dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+.msg.assistant .msg-body.is-declarative .intui-entity-action {
+  justify-self: start;
+  margin-top: var(--ui-space-xs);
+}
+
+.msg.assistant .msg-body.is-declarative .intui-image-gallery-wrap {
+  display: grid;
+  gap: var(--ui-space-sm);
+  min-width: 0;
+}
+.msg.assistant .msg-body.is-declarative .intui-image-gallery {
+  display: grid;
+  grid-template-columns: repeat(var(--intui-gallery-columns, 2), minmax(0, 1fr));
+  gap: var(--ui-space-xs);
+  min-width: 0;
+}
+.msg.assistant .msg-body.is-declarative .intui-image-gallery figure {
+  display: grid;
+  gap: var(--ui-space-xs);
+  min-width: 0;
+  margin: 0;
+}
+.msg.assistant .msg-body.is-declarative .intui-image-gallery img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-bg-control);
+}
+.msg.assistant .msg-body.is-declarative .intui-image-gallery figcaption {
+  overflow: hidden;
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+  line-height: var(--ui-line-height-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .msg.assistant .msg-body.is-declarative .intui-entity {
+    grid-template-columns: 1fr;
+  }
+  .msg.assistant .msg-body.is-declarative .intui-entity-image {
+    width: 4rem;
+    height: 4rem;
+  }
+  .msg.assistant .msg-body.is-declarative .intui-image-gallery {
+    grid-template-columns: 1fr;
+  }
+}
