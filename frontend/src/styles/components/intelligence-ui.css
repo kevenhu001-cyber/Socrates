@@ -101,8 +101,7 @@
   position: absolute;
   inset-inline: 0;
   inset-block-end: -1px;
-  height: 1px;
-  background: transparent;
+  border-block-end: 1px solid transparent;
 }
 .intui .intui-tab-list button:hover {
   color: var(--ui-text-primary);
@@ -111,7 +110,7 @@
   color: var(--ui-text-primary);
 }
 .intui .intui-tab-list button.is-selected::after {
-  background: var(--ui-text-primary);
+  border-block-end-color: var(--ui-text-primary);
 }
 .intui .intui-tab-list button:focus-visible,
 .intui .intui-tab-panel:focus-visible {
