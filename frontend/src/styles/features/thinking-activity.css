@@ -126,20 +126,20 @@
 }
 .turn-summary .tool-inline-tool-icon :is(svg, img) { width: 100%; height: 100%; }
 
-/* On phones the supplied ChatGPT reference treats reasoning as quiet inline
-   transcript metadata rather than a second animated surface. Keep exactly one
-   muted hierarchy step, remove elapsed-detail clutter, and leave the full
-   expandable reasoning text available below it when the user opens it. */
+/* On phones the supplied ChatGPT reference treats reasoning and tool work as
+   one quiet transcript layer. A top-level connector action may keep its glyph;
+   the individual steps beneath it read as plain muted lines, without the
+   desktop rail/indent/chevron scaffolding. */
 @media (max-width: 768px) {
   .turn-summary {
-    margin: 0 0 14px;
+    margin: 0 0 16px;
     color: var(--ui-text-tertiary);
-    font-size: calc(15px * var(--app-font-scale, 1));
+    font-size: calc(16px * var(--app-type-scale));
     line-height: 1.5;
   }
   .turn-summary-status {
     align-items: center;
-    gap: 8px;
+    gap: 9px;
     min-height: 24px;
   }
   .turn-summary .tool-inline-tool-icon {
@@ -154,6 +154,59 @@
     color: var(--ui-text-tertiary);
     line-height: 1.55;
   }
+
+  #appShell .msg.assistant .msg-body.is-declarative:has(.tool-inline, .tool-run-group, .thinking-summary) {
+    --tc-gap: 9px;
+    --tc-group-step: 0px;
+    --tc-head-pad: 0px;
+    --tc-icon: 18px;
+    --tc-glyph: 18px;
+  }
+  #appShell .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-head,
+  #appShell .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-run-summary {
+    align-items: center;
+    min-height: 32px;
+    padding: 2px 0;
+    font-size: calc(16px * var(--app-type-scale));
+    line-height: 1.5;
+  }
+  #appShell .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-label,
+  #appShell .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-run-summary-label {
+    color: var(--ui-text-tertiary);
+    font-size: calc(16px * var(--app-type-scale));
+    font-weight: 400;
+    line-height: 1.5;
+  }
+  #appShell .msg.assistant .msg-body.is-declarative .tool-inline-tool-icon,
+  #appShell .msg.assistant .msg-body.is-declarative .tool-run-summary-icon {
+    margin-top: 0;
+  }
+
+  /* ChatGPT mobile flattens the child operations underneath a connector run:
+     no left rail, no nested offset and no repeated connector glyph. The whole
+     line remains tappable, so hiding the decorative chevron does not remove
+     the disclosure interaction. */
+  #appShell .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-inline[data-nested="1"] {
+    max-width: 100%;
+    margin: 2px 0;
+    margin-inline-start: 0;
+    border-inline-start: 0;
+  }
+  #appShell .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-inline[data-nested="1"] > .tool-inline-head {
+    padding-inline-start: 0;
+  }
+  #appShell .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-inline[data-nested="1"] .tool-inline-tool-icon {
+    display: none;
+  }
+  #appShell .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-inline[data-nested="1"] > .tool-inline-detail {
+    margin-inline-start: 0;
+    padding-inline-start: 0;
+    border-inline-start: 0;
+  }
+  #appShell .msg.assistant .msg-body.is-declarative :is(.tool-inline-chev, .tool-run-summary-chev) {
+    display: none;
+  }
+
   #appShell :is(
     .thinking-status .thinking-status-label,
     .tool-inline-label,
