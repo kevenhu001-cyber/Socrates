@@ -1,5 +1,10 @@
 import {toolCategory} from '../../render/toolCategory.js';
-import {isParagraphStart, snapToolOffsetOutOfBlock, toolRowAnchorOffset} from '../../render/streaming.js';
+import {
+  isParagraphStart,
+  restoredToolRowAnchorOffset,
+  snapToolOffsetOutOfBlock,
+  toolRowAnchorOffset,
+} from '../../render/streaming.js';
 import {summarizeToolRuns, type ToolRun} from '../../chat/toolRunState.js';
 import {toolRunStateOf} from './toolRunState.ts';
 import type {ToolCallRecord, ToolRunState, ThinkRange, TurnSegment} from './toolRunModel.types.ts';
@@ -105,11 +110,14 @@ export function isSentenceCompleteAt(rawText: string, offset: number): boolean {
 export function buildTurnLayout(
   rawText: string,
   toolCalls: ReadonlyArray<ToolCallRecord> | null | undefined,
-  opts?: { inlineThink?: boolean; deferOpenParagraph?: boolean },
+  opts?: { inlineThink?: boolean; deferOpenParagraph?: boolean; restoredFromHistory?: boolean },
 ): TurnSegment[] {
   const raw = String(rawText || '');
   const think = opts?.inlineThink ? [] : findThinkRanges(raw);
   const defer = opts?.deferOpenParagraph === true;
+  const rowAnchor = opts?.restoredFromHistory && !defer
+    ? restoredToolRowAnchorOffset
+    : toolRowAnchorOffset;
   const calls = sortableToolCalls(raw, toolCalls).filter((call) => {
     if (!defer) return true;
     /* Approvals need a human decision: never hide them behind prose. */
@@ -118,7 +126,7 @@ export function buildTurnLayout(
     const persistedOffset = Math.min(call.textOffset as number, raw.length);
     const visual = snapToolOffsetOutOfBlock(
       raw,
-      toolRowAnchorOffset(raw, persistedOffset),
+      rowAnchor(raw, persistedOffset),
     );
     return isRowMountableAt(raw, visual);
   });
@@ -142,15 +150,15 @@ export function buildTurnLayout(
   let prev = 0;
   for (const call of calls) {
     const persistedOffset = Math.min(call.textOffset as number, raw.length);
-    /* Paragraph-atomic placement (P_tool-order-paragraph): a mid-paragraph
-       fire position advances past that paragraph's end; a clean paragraph
-       start stays. snapToolOffsetOutOfBlock then keeps code/table spans
-       atomic. `prev` keeps same-paragraph bursts in order. */
+    /* Live/default turns keep paragraph-atomic placement; restored turns use
+       the next sentence boundary so one long paragraph cannot strand every
+       tool row at EOF. Both paths keep code/table spans atomic, and `prev`
+       preserves order when several calls share a sentence. */
     const offset = Math.max(
       prev,
       snapToolOffsetOutOfBlock(
         raw,
-        toolRowAnchorOffset(raw, persistedOffset),
+        rowAnchor(raw, persistedOffset),
       ),
     );
     pushProse(prev, offset);

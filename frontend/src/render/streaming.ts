@@ -193,6 +193,41 @@ export function toolRowAnchorOffset(text: string, offset: number): number {
   return paragraphEndAfter(full, off);
 }
 
+const TOOL_SENTENCE_CLOSERS = new Set(['"', "'", '”', '’', '」', '』', '）', ')', ']', '}']);
+
+/**
+ * Historical turns already have their complete prose, so keep a tool row
+ * close to the sentence where its persisted fire offset points. Live turns
+ * still use `toolRowAnchorOffset`: their framing paragraph may continue after
+ * the call and should remain together while it streams.
+ */
+export function restoredToolRowAnchorOffset(text: string, offset: number): number {
+  const full = String(text || '');
+  const off = Math.max(0, Math.min(full.length, Math.floor(Number(offset) || 0)));
+  if (isParagraphStart(full, off)) return off;
+
+  const paragraphEnd = paragraphEndAfter(full, off);
+  if (full[off] === '\n' || full[off] === '\r') return off;
+
+  let boundary = off;
+  while (boundary < paragraphEnd && TOOL_SENTENCE_CLOSERS.has(full[boundary])) boundary += 1;
+  const before = full.slice(0, off).trimEnd();
+  const last = before[before.length - 1] || '';
+  const next = full[boundary] || '';
+  if (/[。！？!?]/u.test(last) || (last === '.' && (!next || /\s/u.test(next)))) return boundary;
+
+  for (let index = off; index < paragraphEnd; index += 1) {
+    const char = full[index];
+    if (!/[。！？!?]/u.test(char) && char !== '.') continue;
+    if (char === '.' && index + 1 < paragraphEnd && !/\s/u.test(full[index + 1])) continue;
+
+    let end = index + 1;
+    while (end < paragraphEnd && TOOL_SENTENCE_CLOSERS.has(full[end])) end += 1;
+    if (/[。！？!?]/u.test(char) || end >= paragraphEnd || /\s/u.test(full[end])) return end;
+  }
+  return paragraphEnd;
+}
+
 /* Keep completed Markdown blocks in a stable DOM region and return only the
  * unfinished tail for frequent updates. The final renderer still reparses the
  * complete response once, so a conservative fallback here is always safe. */

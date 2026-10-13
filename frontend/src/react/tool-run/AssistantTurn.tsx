@@ -76,6 +76,7 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
   const segments = buildTurnLayout(rawText, calls, {
     inlineThink: false,
     deferOpenParagraph: isLive,
+    restoredFromHistory: Boolean(message.restoredFromHistory),
   });
   const prose = useProseRenderer(isLive);
   const growingIndex = isLive ? lastTextIndex(segments) : -1;

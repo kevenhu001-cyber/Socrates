@@ -1,12 +1,12 @@
-// e2e/tool-order.spec.mjs — P_tool-order-paragraph / P_tool-order-defer.
+// e2e/tool-order.spec.mjs — live paragraph deferral and restored sentence placement.
 //
 // A tool row belongs to the paragraph during which it fired:
 //   1. (live) a tool_use that lands mid-paragraph mounts NOTHING until the
 //      paragraph completes — the TurnStatus tool-running line covers the
 //      gap — then mounts exactly once, behind the paragraph (a finished
 //      sentence alone is not enough);
-//   2. (finalized) a persisted offset behind "原因有三：" advances past its
-//      paragraph: colons/semicolons never anchor a row.
+//   2. (restored) an offset behind "原因有三：" advances through the next
+//      complete sentence, so a long paragraph does not push tools to its end.
 import { expect, test } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
@@ -130,7 +130,7 @@ test('a live row waits for its paragraph, then mounts once behind it', async ({ 
 /* ── finalized colon order ─────────────────────────────────────────── */
 
 const COLON_SESSION_ID = '99999999-9999-4999-8999-999999999999';
-const COLON_RAW = '原因有三：第一。\n\n第二。尾巴。';
+const COLON_RAW = '原因有三：第一。第二。尾巴。';
 
 async function loadColonFixture(page) {
   await mockAuthedApp(page);
@@ -163,7 +163,7 @@ async function loadColonFixture(page) {
               output: '1 result',
               durationMs: 100,
               status: 'completed',
-              /* Fired right behind the colon — must advance to 第一。 */
+              /* Fired right behind the colon — must advance to 第一。, not EOF. */
               textOffset: '原因有三：'.length,
             }],
           },
@@ -180,7 +180,7 @@ async function loadColonFixture(page) {
   return page.locator('#msgList .msg.assistant').last().locator('.msg-body');
 }
 
-test('a colon never anchors a row: it advances past its paragraph', async ({ page }) => {
+test('a colon never anchors a restored row: it advances to the next sentence', async ({ page }) => {
   const body = await loadColonFixture(page);
   const order = await body.evaluate((el) => {
     const out = [];
@@ -198,8 +198,8 @@ test('a colon never anchors a row: it advances past its paragraph', async ({ pag
     }
     return out;
   });
-  /* A lone call gets no aggregate header: the row sits behind the whole
-     first paragraph — never behind the colon that fired it. */
+  /* A lone call gets no aggregate header: the row stays near its fire point
+     while still waiting for a complete sentence after the colon. */
   expect(order).toEqual([
     'text:原因有三：第一。',
     'row:c1',

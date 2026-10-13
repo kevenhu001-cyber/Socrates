@@ -1,7 +1,6 @@
 /**
- * Unit tests for P_tool-order-paragraph / P_tool-order-defer /
- * P_tool-order-block: tool rows are paragraph-atomic and run strictly
- * in order.
+ * Unit tests for tool ordering, live paragraph deferral, restored sentence
+ * placement, and Markdown-block safety.
  *
  * - A tool that fires mid-paragraph advances past that paragraph's end;
  *   a framing sentence written AFTER the call ("我来搜索一下…") stays
@@ -11,6 +10,8 @@
  *   it already follows a finished block.
  * - A live row whose paragraph has not finished stays unmounted
  *   (deferred); it mounts exactly once, behind the completed paragraph.
+ * - A restored row sits after the first complete sentence following its
+ *   persisted fire offset, even when the answer is one long paragraph.
  * - Offsets inside fenced code blocks or table rows snap forward out of the
  *   block instead of splitting it.
  */
@@ -152,6 +153,22 @@ test('finalized layout mounts every row (nothing starves)', () => {
   assert.deepEqual(layout.map((s) => s.kind), ['text', 'group']);
   assert.equal(layout[0].text, '原因有三：还没写完');
   assert.equal(layout[1].members.map((m) => m.id).join(','), 's,f');
+});
+
+test('restored layout keeps tool rows near their fire sentence in a long paragraph', () => {
+  const raw = '先检索一下资料。下面是整理后的完整回答。';
+  const calls = [call({ id: 's', textOffset: '先检索一下'.length, output: 'ok' })];
+
+  const restored = buildTurnLayout(raw, calls, { restoredFromHistory: true });
+  assert.deepEqual(restored.map((segment) => segment.kind), ['text', 'group', 'text']);
+  assert.equal(restored[0].text, '先检索一下资料。');
+  assert.equal(restored[2].text, '下面是整理后的完整回答。');
+
+  /* Live turns keep the existing paragraph-atomic placement while text is
+     arriving; the history-only policy must not change that path. */
+  const live = buildTurnLayout(raw, calls, { deferOpenParagraph: true });
+  assert.deepEqual(live.map((segment) => segment.kind), ['text', 'group']);
+  assert.equal(live[0].text, raw);
 });
 
 test('equal-offset calls keep event order before rows in later paragraphs', () => {
