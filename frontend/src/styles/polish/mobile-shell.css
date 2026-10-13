@@ -1,10 +1,10 @@
-/* Canonical phone shell. Measurements use the supplied 1200px screenshots
-   at a 390px CSS viewport, excluding the browser's 306px chrome. */
+/* Canonical phone shell. Measurements are normalized from the supplied
+   current ChatGPT Android screenshots rather than inherited desktop chrome. */
 @media (max-width: 768px) {
   #appShell .top-bar {
     height: calc(var(--ui-mobile-header) + env(safe-area-inset-top, 0px));
     min-height: calc(var(--ui-mobile-header) + env(safe-area-inset-top, 0px));
-    padding: env(safe-area-inset-top, 0px) 8px 0;
+    padding: env(safe-area-inset-top, 0px) 16px 0;
     gap: 8px;
     border: 0;
     background: var(--ui-bg-page);
@@ -22,10 +22,9 @@
     box-shadow: none;
     color: var(--ui-text-primary);
   }
-  /* Restore layers deliberately keep the buttons themselves transparent.
-     The reference, however, reads them as small floating controls. A paint-only
-     pseudo surface provides that depth without changing the tested hit target,
-     layout geometry, or the controls' existing interaction contract. */
+  /* The reference leaves about one 16px screen gutter around the painted
+     44px header controls. The button itself stays 40px; the pseudo-surface
+     adds the final 2px per side without changing hit geometry. */
   body[data-conversation-active="true"] #appShell #sidebarOpenBtn::before,
   body[data-conversation-active="true"] #appShell #mobileNewChatBtn::before {
     content: "";
@@ -39,7 +38,15 @@
   }
   #appShell #sidebarOpenBtn svg, #appShell #mobileNewChatBtn svg { width: 24px; height: 24px; }
   #appShell .mobile-newchat-btn { display: inline-flex; align-items: center; justify-content: center; }
-  #appShell #mobileMode { position: absolute; left: 58px; top: calc(50% + env(safe-area-inset-top, 0px) / 2); transform: translateY(-50%); }
+
+  /* The supplied in-conversation reference keeps the header almost empty:
+     navigation on the left, actions on the right, and transcript visible
+     through the centre. Model/reasoning remains reachable from the composer
+     configuration control, so duplicating its label in the header creates a
+     visual element the reference does not have. */
+  body[data-conversation-active="true"] #appShell #topModelSwitcher { display: none; }
+
+  #appShell #mobileMode { position: absolute; left: 66px; top: calc(50% + env(safe-area-inset-top, 0px) / 2); transform: translateY(-50%); }
   #appShell #mobileModeTrigger {
     display: inline-flex;
     align-items: center;
@@ -53,7 +60,7 @@
     line-height: 24px;
   }
   #appShell #mobileModeTrigger svg { width: 16px; height: 16px; }
-  #appShell #mobileModeMenu { left: 0; right: auto; transform: none; width: min(260px, calc(100vw - 72px)); }
+  #appShell #mobileModeMenu { left: 0; right: auto; transform: none; width: min(260px, calc(100vw - 80px)); }
   #appShell .main-content, #appShell .main-inner { padding: 0; }
   #appShell #topicSetup {
     position: relative;
@@ -90,6 +97,6 @@
   body.workspace-active #appShell .mobile-newchat-btn { display: none; }
 }
 @media (max-width: 359px) {
-  #appShell #mobileMode { left: 48px; }
+  #appShell #mobileMode { left: 56px; }
   #appShell #mobileModeTrigger { font-size: var(--ui-font-size-md); }
 }
