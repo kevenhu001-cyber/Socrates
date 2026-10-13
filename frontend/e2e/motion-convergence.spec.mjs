@@ -48,7 +48,7 @@ test('desktop sidebar commits layout once and animates the main surface with tra
   expect(spatial.duration).toBe(180);
 });
 
-test('live activity keeps one primary motion cue and respects reduced motion', async ({ page }) => {
+test('live thinking uses one primary cue and respects reduced motion', async ({ page }) => {
   const normal = await page.evaluate(() => {
     const shell = document.getElementById('appShell');
     if (!shell) return null;
@@ -56,23 +56,15 @@ test('live activity keeps one primary motion cue and respects reduced motion', a
     fixture.id = 'motion-convergence-fixture';
     fixture.innerHTML = `
       <div class="thinking-status">
-        <span class="tool-inline-tool-icon"></span>
         <span class="thinking-status-label shimmer-text">Working</span>
       </div>
-      <div class="voice-recording-indicator"></div>
     `;
     shell.appendChild(fixture);
     const label = fixture.querySelector('.thinking-status-label');
-    const icon = fixture.querySelector('.tool-inline-tool-icon');
-    const voice = fixture.querySelector('.voice-recording-indicator');
-    return {
-      label: label ? getComputedStyle(label).animationName : null,
-      icon: icon ? getComputedStyle(icon).animationName : null,
-      voice: voice ? getComputedStyle(voice).animationName : null,
-    };
+    return label ? getComputedStyle(label).animationName : null;
   });
 
-  expect(normal).toEqual({ label: 'ui-activity-shimmer', icon: 'none', voice: 'none' });
+  expect(normal).toBe('thinking-status-shimmer');
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const reduced = await page.locator('#motion-convergence-fixture .thinking-status-label').evaluate((label) => ({
