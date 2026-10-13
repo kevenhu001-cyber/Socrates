@@ -853,15 +853,19 @@
   -webkit-text-fill-color: transparent;
   background-image: linear-gradient(105deg,
     var(--ui-text-tertiary) 0%,
-    var(--ui-text-tertiary) 38%,
-    var(--ui-text-primary) 50%,
-    var(--ui-text-tertiary) 62%,
+    var(--ui-text-tertiary) 28%,
+    color-mix(in srgb, var(--ui-text-tertiary), var(--ui-text-primary) 42%) 40%,
+    var(--ui-text-primary) 47%,
+    var(--ui-accent-strong) 50%,
+    var(--ui-text-primary) 53%,
+    color-mix(in srgb, var(--ui-text-tertiary), var(--ui-text-primary) 42%) 60%,
+    var(--ui-text-tertiary) 72%,
     var(--ui-text-tertiary) 100%);
-  background-size: 260% 100%;
+  background-size: 320% 100%;
   background-position: 150% 0;
   -webkit-background-clip: text;
   background-clip: text;
-  animation: workspaceTextShimmer var(--ui-duration-shimmer, 1.8s) linear infinite;
+  animation: workspaceTextShimmer 1.35s linear infinite;
   will-change: background-position;
 }
 
