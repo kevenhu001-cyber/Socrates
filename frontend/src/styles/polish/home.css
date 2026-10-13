@@ -41,7 +41,7 @@
     padding: 0;
     gap: 0;
     border: 1px solid var(--ui-bg-control);
-    border-radius: 25px;
+    border-radius: var(--ui-radius-pill);
     background: var(--ui-bg-page);
     color: var(--ui-text-primary);
     text-align: left;
