@@ -49,10 +49,12 @@ test('mobile conversation home matches the compact dark reference layout', async
      44px tactile chip as the hamburger (restore/chat-surface.css). */
   expect(geometry.right?.width).toBe(44);
   expect(geometry.composer?.width).toBeGreaterThanOrEqual(320);
-  /* Empty-home mobile composer uses the current compact one-row 52px rail:
-     add/editor/dictation/send share one line, and only multiline drafts,
-     selected tools/plugins, or attachments expand the capsule. */
-  expect(geometry.composer?.height).toBe(52);
+  /* Empty-home mobile composer uses the reference's two-row 85px stack
+     (editor on row 1, add/dictation/send controls on row 2). The height
+     follows the owner's padding/row-gap/editor metrics — see
+     docs/ref/mobile-reference-2026-10-04.md and the arithmetic in
+     e2e/mobile-composer-reference.spec.mjs. */
+  expect(geometry.composer?.height).toBe(85);
   expect(geometry.composer?.bottom).toBeLessThanOrEqual((geometry.viewportHeight ?? 844) - 16);
   /* The empty-state capsule pins to the bottom action band: its foot rests
      on the safe-area inset above the viewport bottom, not in the old

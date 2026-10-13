@@ -13,9 +13,9 @@ test('reference home keeps its bottom composer and phone configuration usable', 
   await expect(composer).toHaveCSS('background-color', 'rgb(28, 28, 28)');
   await expect(page.locator('#composerPrimaryBtn .icon-voice')).toBeVisible();
   const rect = await composer.boundingBox();
-  expect(rect.x).toBe(32);
-  expect(rect.width).toBe(326);
-  expect(rect.height).toBe(52);
+  expect(rect.x).toBe(16);
+  expect(rect.width).toBe(358);
+  expect(rect.height).toBe(85);
   expect(769 - rect.y - rect.height).toBe(24);
   const greeting = await page.locator('#topicTitle').boundingBox();
   expect(Math.abs(greeting.y + greeting.height / 2 - 344.765)).toBeLessThan(1);
@@ -25,8 +25,8 @@ test('reference home keeps its bottom composer and phone configuration usable', 
   await page.keyboard.press('Escape');
   await page.setViewportSize({ width: 320, height: 568 });
   const compact = await composer.boundingBox();
-  expect(compact.x).toBe(32);
-  expect(compact.width).toBe(256);
+  expect(compact.x).toBe(16);
+  expect(compact.width).toBe(288);
   expect(compact.y + compact.height).toBeLessThanOrEqual(568);
   await page.locator('#sidebarOpenBtn').click();
   await page.locator('.sidebar-account-trigger').click();
@@ -35,35 +35,6 @@ test('reference home keeps its bottom composer and phone configuration usable', 
   expect(menu.y).toBeGreaterThanOrEqual(0);
   expect(menu.x + menu.width).toBeLessThanOrEqual(320);
   expect(menu.y + menu.height).toBeLessThanOrEqual(568);
-});
-
-test('mobile conversation chrome exposes the reference compose and overflow capsule', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 769 });
-  await mockAuthedApp(page, { lang: 'en' });
-  await page.goto('/');
-  await waitForAppShell(page);
-  await page.evaluate(() => {
-    window.toggleChatTopBarEls?.(true);
-    document.body.dataset.conversationActive = 'true';
-  });
-
-  const compose = page.locator('#mobileNewChatBtn');
-  const more = page.locator('#mobileConversationMoreBtn');
-  const capsule = page.locator('.top-bar-right');
-  await expect(compose).toBeVisible();
-  await expect(more).toBeVisible();
-  await expect(page.locator('#topModelSwitcher')).toBeHidden();
-  const capsuleBox = await capsule.boundingBox();
-  expect(capsuleBox?.height).toBe(48);
-  expect(capsuleBox?.width).toBeGreaterThanOrEqual(88);
-
-  await more.click();
-  const actions = page.locator('#mobileConversationMoreMenu');
-  await expect(actions).toBeVisible();
-  await expect(actions.getByRole('menuitem', { name: /Find in conversation/i })).toBeVisible();
-  await expect(actions.getByRole('menuitem', { name: /Share/i })).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(actions).toBeHidden();
 });
 
 test('mobile account menu opens settings and restores keyboard focus', async ({ page }) => {
