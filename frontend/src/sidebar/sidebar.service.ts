@@ -30,41 +30,12 @@ function mainSidebarInset(main: HTMLElement): number {
 }
 
 /**
- * The legacy/parity cascade still declares width/padding transitions because
- * other call sites depend on that CSS contract. The interactive toggle does
- * not: it commits its target geometry once, then uses a compositor transform.
- * Suppress those layout transitions only for the commit frame and restore the
- * author's inline values on the next frame so drag-resize and other consumers
- * keep their existing behaviour.
- */
-function suppressDesktopLayoutTransitions(sidebar: HTMLElement, main: HTMLElement): () => void {
-  const sidebarTransition = sidebar.style.transition;
-  const mainTransition = main.style.transition;
-  sidebar.style.transition = 'none';
-  main.style.transition = 'none';
-
-  /* Flush the suppression before the collapsed class changes. Without this,
-     the browser can batch both writes and still start the old width tween. */
-  void sidebar.offsetWidth;
-  void main.offsetWidth;
-
-  return () => {
-    requestAnimationFrame(() => {
-      sidebar.style.transition = sidebarTransition;
-      main.style.transition = mainTransition;
-    });
-  };
-}
-
-/**
  * Desktop open/close uses a FLIP-style compositor transition.
  *
- * The target sidebar width and main padding are committed immediately;
- * animating either property would relayout the transcript, composer and top
- * bar on every frame. We instead measure the content inset before/after the
- * class flip and visually carry the main surface from the old x-position to
- * the new one with transform. The sidebar itself is already on the page
- * colour, so only newly revealed content needs a tiny fade/translate on open.
+ * polish/motion.css owns the cross-surface rule that disables the historical
+ * width/padding transitions. The target geometry therefore commits once; this
+ * service only measures the old/new inset and visually carries the main
+ * surface across that jump with a transform.
  */
 function animateDesktopSidebarMotion(
   sidebar: HTMLElement,
@@ -149,9 +120,6 @@ export function toggleSidebar(): void {
      from the transform of the animation that is still in flight. */
   cancelDesktopSidebarMotion();
   const beforeInset = main ? mainSidebarInset(main) : 0;
-  const restoreLayoutTransitions = main
-    ? suppressDesktopLayoutTransitions(sidebar, main)
-    : null;
 
   const wasCollapsed = sidebar.classList.contains('collapsed');
   if (wasCollapsed) {
@@ -165,7 +133,6 @@ export function toggleSidebar(): void {
 
   if (desktop && main) {
     animateDesktopSidebarMotion(sidebar, main, beforeInset, open);
-    restoreLayoutTransitions?.();
   }
 
   const legacyWindow = window as Window & { sidebarOpen?: boolean; syncSidebarBtns?: () => void };
