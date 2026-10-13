@@ -11,8 +11,24 @@
 }
 }
 
-/* Assistant column keeps full width, no bubble. */
-
+/* Assistant column keeps full width, no bubble. The supplied phone reference
+   is notably denser than the old mobile transcript: ~14px page gutters and a
+   compact 1.58 line-height keep prose, public reasoning, and tool activity in
+   one continuous reading column instead of a stack of separate surfaces. */
+@media (max-width: 768px) {
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell #msgList {
+  gap: 22px;
+  padding: 18px 14px 34px;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg.assistant .msg-body {
+  font-size: calc(15px * var(--app-font-scale, 1));
+  line-height: 1.58;
+  letter-spacing: -.004em;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg.assistant .msg-body strong {
+  font-weight: 650;
+}
+}
 
 
 /* Code blocks: a bordered card with a crisp header. Dark keeps the
@@ -160,7 +176,7 @@
    rule below, so the two cannot drift apart again. */
 #appShell .msg-body { --msg-para-gap: 12px; }
 @media (max-width: 768px) {
-#appShell .msg-body { line-height: 1.65; --msg-para-gap: 10px; }
+#appShell .msg-body { line-height: 1.58; --msg-para-gap: 12px; }
 }
 
 /* P_turn-surface-single — one assistant body owns every phase from the first
