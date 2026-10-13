@@ -79,6 +79,13 @@ export function SidebarHeader() {
           data-i18n-title="chrome.closeSidebar"
           data-i18n-aria="chrome.closeSidebar"
           aria-controls="sidebar"
+          style={{
+            width: 'var(--ui-control-desktop)',
+            minWidth: 'var(--ui-control-desktop)',
+            height: 'var(--ui-control-desktop)',
+            minHeight: 'var(--ui-control-desktop)',
+            borderRadius: 'var(--ui-radius-control)',
+          }}
           onClick={() => {
             getLegacyActions().navigation.toggleSidebar();
           }}
