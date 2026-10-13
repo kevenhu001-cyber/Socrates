@@ -80,10 +80,12 @@ test('thinking, tools and recording share one primary persistent cue', async ({ 
       const node = fixture.querySelector(selector);
       return node ? getComputedStyle(node, pseudo).animationName : null;
     };
+    const thinking = fixture.querySelector('.thinking-status-label');
 
     return {
       thinkingLabel: animation('.thinking-status-label'),
       thinkingIcon: animation('.thinking-status .tool-inline-tool-icon'),
+      thinkingTextShadow: thinking ? getComputedStyle(thinking).textShadow : null,
       inlineLabel: animation('.tool-inline-label'),
       inlineIcon: animation('.tool-inline .tool-inline-tool-icon'),
       groupLabel: animation('.tool-run-summary-label'),
@@ -95,18 +97,18 @@ test('thinking, tools and recording share one primary persistent cue', async ({ 
     };
   });
 
-  expect(normal).toEqual({
-    thinkingLabel: 'ui-activity-shimmer',
-    thinkingIcon: 'none',
-    inlineLabel: 'ui-activity-shimmer',
-    inlineIcon: 'none',
-    groupLabel: 'ui-activity-shimmer',
-    groupIcon: 'none',
-    agentLabel: 'ui-activity-shimmer',
-    agentIcon: 'none',
-    voiceCore: 'none',
-    voiceHalo: 'ui-recording-ring',
-  });
+  expect(normal).not.toBeNull();
+  expect(normal.thinkingLabel).toBe('ui-activity-shimmer');
+  expect(normal.thinkingIcon).toBe('none');
+  expect(normal.thinkingTextShadow).not.toBe('none');
+  expect(normal.inlineLabel).toBe('ui-activity-shimmer');
+  expect(normal.inlineIcon).toBe('none');
+  expect(normal.groupLabel).toBe('ui-activity-shimmer');
+  expect(normal.groupIcon).toBe('none');
+  expect(normal.agentLabel).toBe('ui-activity-shimmer');
+  expect(normal.agentIcon).toBe('none');
+  expect(normal.voiceCore).toBe('none');
+  expect(normal.voiceHalo).toBe('ui-recording-ring');
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const reduced = await page.evaluate(() => {
