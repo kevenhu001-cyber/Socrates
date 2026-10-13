@@ -113,6 +113,21 @@ test('buildToolErrorFeedback tells the model to stop when retries are exhausted'
   assert.doesNotMatch(feedback.modelMessage, /Send one corrected call/);
 });
 
+test('tool correction feedback can replace a generic example with the rejected visualization template', () => {
+  const feedback = buildToolErrorFeedback({
+    toolName: 'render_visualization',
+    schema: VISUALIZATION_TOOL.function.parameters,
+    errorCode: 'visual_spec_invalid',
+    fieldErrors: 'payload.values: must match yCategories',
+    retryable: true,
+    hint: 'Use a matrix with one value per category pair.',
+    exampleOverride: { version: 1, template: 'heatmap', title: 'Activity', accessibilitySummary: 'A two by two heatmap.', payload: { xCategories: ['Mon', 'Tue'], yCategories: ['AM', 'PM'], values: [[2, 4], [3, 1]] } },
+  });
+  assert.match(feedback.modelMessage, /Use a matrix with one value per category pair/);
+  assert.match(feedback.modelMessage, /"template":"heatmap"/);
+  assert.match(feedback.modelMessage, /"xCategories"/);
+});
+
 test('buildToolErrorFeedback lists callable tools for an unknown tool', () => {
   const feedback = buildToolErrorFeedback({
     toolName: 'delete_database',

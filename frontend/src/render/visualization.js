@@ -10,7 +10,8 @@ import { parseFunctionExpression, sampleFunction } from './visualizationMath.js'
 import { categoryAxisLayout, formatCategoryLabel, truncateLabel } from './visualizationLabels.js';
 import { optionForChart, VIZ_FONT_FAMILY } from './visualizationOptions.js';
 import { dispatchExtensionRepair, renderExtension } from './visualizationExtensions.js';
-import { renderStructureVisualization, renderVisualizationTable } from './visualizationStatic.js';
+import { renderSemanticVisualization, renderStructureVisualization, renderVisualizationTable } from './visualizationStatic.js';
+import { reportSwallow } from '../util/reportSwallow.ts';
 export { parseFunctionExpression, sampleFunction, categoryAxisLayout, formatCategoryLabel };
 
 var echartsPromise = null;
@@ -264,8 +265,10 @@ export async function mountVisualization(spec, host, options) {
       var chartOpts = optionForChart(spec, palette());
       if (!chartOpts) {
         chart.dispose();
-        stage.innerHTML = '<div class="visualization-fallback"><strong>视觉内容暂未渲染</strong><p>' + esc(spec.accessibilitySummary) + '</p><button type="button">' + esc(vizT('viz.action.retry', 'Retry locally')) + '</button></div>';
-        stage.querySelector('button').addEventListener('click', function () { remountVisualization(spec, host, options, card); });
+        stage.innerHTML = '<div class="visualization-fallback"><strong>视觉内容暂未渲染</strong><p>' + esc(spec.accessibilitySummary) + '</p><button type="button" data-viz-fallback="retry">' + esc(vizT('viz.action.retry', 'Retry locally')) + '</button> <button type="button" data-viz-fallback="fix">' + esc(vizT('viz.action.fixWithAi', 'Fix with AI')) + '</button></div>';
+        stage.querySelector('[data-viz-fallback="retry"]').addEventListener('click', function () { remountVisualization(spec, host, options, card); });
+        stage.querySelector('[data-viz-fallback="fix"]').addEventListener('click', function () { dispatchExtensionRepair(card, spec, 'renderer returned no chart option'); });
+        reportSwallow(new Error('renderer returned no chart option'), 'visualization/' + spec.template + '/empty_options', 'recoverable');
         chart = null;
       } else if (isCancelled()) {
         chart.dispose();
@@ -330,6 +333,7 @@ export async function mountVisualization(spec, host, options) {
              error rides the tool-retry pipeline back to the model
              instead of dying silently in an opaque-origin frame. */
           var errMsg = String(data.message || 'render error').slice(0, 300);
+          reportSwallow(new Error('sandboxed visualization reported a runtime error'), 'visualization/' + spec.template + '/iframe_runtime_error', 'recoverable');
           var errBanner = stage.querySelector('.visualization-ext-error');
           if (!errBanner) {
             errBanner = document.createElement('div');
@@ -350,9 +354,13 @@ export async function mountVisualization(spec, host, options) {
         }
       };
       window.addEventListener('message', receiveExtensionMsg);
+      frame.addEventListener('error', function () {
+        reportSwallow(new Error('sandboxed visualization iframe failed to load'), 'visualization/' + spec.template + '/iframe_load_error', 'recoverable');
+      });
       card._visualizationCleanup = function () { window.removeEventListener('message', receiveExtensionMsg); };
     } else {
-      stage.innerHTML = renderStructureVisualization(spec, 'visual-arrow-' + (++visualCounter), esc, VIZ_FONT_FAMILY, truncateLabel);
+      var semanticSvg = renderSemanticVisualization(spec, 'visual-arrow-' + (++visualCounter), esc, VIZ_FONT_FAMILY, truncateLabel);
+      stage.innerHTML = semanticSvg || renderStructureVisualization(spec, 'visual-arrow-' + (++visualCounter), esc, VIZ_FONT_FAMILY, truncateLabel);
       chart = svgStageChart(stage);
     }
     if (isCancelled()) { disposeCard(card); return null; }
@@ -373,6 +381,19 @@ export async function mountVisualization(spec, host, options) {
     /* A cancelled mount must not paint a fallback into a host React has
        already abandoned; dispose and let the caller's teardown stay final. */
     if (isCancelled()) { disposeCard(card); return null; }
+    var cleanup = card._visualizationCleanup;
+    card._visualizationCleanup = null;
+    if (typeof cleanup === 'function') {
+      try { cleanup(); } catch (_) { /* empty-catch: visualization cleanup must not hide the original render failure */ }
+    }
+    if (liveEntry) {
+      var failedChartIndex = _liveCharts.indexOf(liveEntry);
+      if (failedChartIndex >= 0) _liveCharts.splice(failedChartIndex, 1);
+    }
+    if (chart && typeof chart.dispose === 'function') {
+      try { if (!chart.isDisposed || !chart.isDisposed()) chart.dispose(); } catch (_) { /* empty-catch: visualization cleanup must not hide the original render failure */ }
+    }
+    reportSwallow(error, 'visualization/' + spec.template + '/render_failure', 'recoverable');
     stage.innerHTML = '<div class="visualization-fallback"><strong>视觉内容暂未渲染</strong><p>' + esc(spec.accessibilitySummary) + '</p>' +
       '<button type="button" data-viz-fallback="retry">' + esc(vizT('viz.action.retry', 'Retry locally')) + '</button>' +
       ' <button type="button" data-viz-fallback="fix">' + esc(vizT('viz.action.fixWithAi', 'Fix with AI')) + '</button></div>';
@@ -387,7 +408,7 @@ export async function mountVisualization(spec, host, options) {
     if (fixBtn) fixBtn.addEventListener('click', function () {
       dispatchExtensionRepair(card, spec, error && error.message);
     });
-    console.warn('[visualization] render failed', error);
+    console.warn('[visualization] render failed', error && error.name || 'Error');
   }
   return card;
 }

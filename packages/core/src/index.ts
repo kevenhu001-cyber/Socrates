@@ -1,4 +1,5 @@
 export * from './intelligenceUi';
+export * from './visualizationMath.js';
 import type { Attachment, ChatSseHandlers, JsonValue, Message, Session } from '@socrates/contracts';
 
 export type { ChatSseHandlers, Message, Session } from '@socrates/contracts';

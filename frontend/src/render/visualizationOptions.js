@@ -7,15 +7,19 @@ function colorFor(role, index, colors) {
   return [colors.primary, colors.secondary, colors.comparison, colors.highlight, colors.baseline][index % 5];
 }
 
+function escapeTooltip(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
+    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char];
+  });
+}
+
 function normalizeFunction(spec) {
   var payload = spec.payload || {}, allValues = [], minX = Infinity, maxX = -Infinity;
   var rawFunctions = Array.isArray(payload.functions) ? payload.functions : [];
   var series = [];
   rawFunctions.forEach(function (fn) {
     if (!fn || typeof fn.expression !== 'string' || !fn.expression.trim()) return;
-    var sample;
-    try { sample = sampleFunction(fn.expression, fn.domain, 760); }
-    catch (_) { return; }
+    var sample = sampleFunction(fn.expression, fn.domain, 760);
     if (!sample || !Array.isArray(sample.points)) return;
     var finitePoints = sample.points.filter(function (point) { return point && Number.isFinite(point[1]); });
     if (!finitePoints.length) return;
@@ -78,7 +82,7 @@ export function optionForChart(spec, colors) {
   };
   if (spec.template === 'function') {
     var normalized = normalizeFunction(spec);
-    if (!normalized.series.length) return null;
+    if (!normalized.series.length) throw new Error('No finite function values were produced for the requested domain.');
     var hasLn = normalized.series.some(function (item) { return /\b(?:ln|log)\s*\(/i.test(item.expression || ''); });
     return {
       backgroundColor: 'transparent', textStyle: textStyle,
@@ -125,8 +129,70 @@ export function optionForChart(spec, colors) {
       emphasis: { scaleSize: 4 },
     }; }),
   };
+  if (chartType === 'heatmap') {
+    var xCategories = payload.xCategories || [];
+    var yCategories = payload.yCategories || [];
+    var matrix = payload.values || [];
+    var heatValues = matrix.flat();
+    var heatMin = Math.min.apply(null, heatValues);
+    var heatMax = Math.max.apply(null, heatValues);
+    if (heatMin === heatMax) heatMax = heatMin + 1;
+    return {
+      backgroundColor: 'transparent', textStyle: textStyle,
+      aria: { enabled: true, description: { summary: spec.accessibilitySummary } },
+      tooltip: Object.assign({ trigger: 'item', formatter: function (params) {
+        return escapeTooltip(truncateLabel(yCategories[params.value[1]], 24)) + ' · ' + escapeTooltip(truncateLabel(xCategories[params.value[0]], 24)) + ': ' + escapeTooltip(params.value[2]);
+      } }, tooltipBase),
+      grid: { left: 82, right: 76, top: 18, bottom: 56, containLabel: true },
+      xAxis: { type: 'category', data: xCategories, splitArea: { show: true }, axisLabel: { color: colors.text, fontFamily: fontFamily, interval: 0, hideOverlap: xCategories.length > 20, formatter: function (value) { return truncateLabel(value, 16); } }, axisLine: { lineStyle: { color: colors.line } } },
+      yAxis: { type: 'category', data: yCategories, inverse: true, splitArea: { show: true }, axisLabel: { color: colors.text, fontFamily: fontFamily, formatter: function (value) { return truncateLabel(value, 18); } }, axisLine: { lineStyle: { color: colors.line } } },
+      visualMap: { min: heatMin, max: heatMax, calculable: true, orient: 'vertical', right: 4, top: 'center', textStyle: { color: colors.text, fontFamily: fontFamily }, inRange: { color: ['#e8efff', colors.primary] } },
+      series: [{ type: 'heatmap', data: matrix.flatMap(function (row, y) { return row.map(function (value, x) { return [x, y, value]; }); }), label: { show: xCategories.length * yCategories.length <= 80, color: colors.text, fontFamily: fontFamily }, emphasis: { itemStyle: { shadowBlur: 8, shadowColor: 'rgba(0,0,0,.22)' } } }],
+    };
+  }
+  if (chartType === 'radar') {
+    var indicators = payload.indicators || [];
+    var radarSeries = payload.series || [];
+    var radarIndicators = indicators.map(function (indicator, index) {
+      var values = radarSeries.map(function (series) { return Number(series.data[index]); }).filter(Number.isFinite);
+      var low = Math.min.apply(null, [0].concat(values));
+      var observedMax = Math.max.apply(null, values.concat([0]));
+      var upper = indicator.max === undefined ? Math.max(1, observedMax * 1.08) : indicator.max;
+      return { name: indicator.name, min: Math.min(low, upper - 0.001), max: upper };
+    });
+    return {
+      backgroundColor: 'transparent', textStyle: textStyle,
+      color: radarSeries.map(function (item, index) { return colorFor(item.role, index, colors); }),
+      aria: { enabled: true, description: { summary: spec.accessibilitySummary } },
+      tooltip: Object.assign({ trigger: 'item' }, tooltipBase),
+      legend: legendOptions(radarSeries, colors, fontFamily, 'bottom'),
+      radar: { indicator: radarIndicators, shape: 'polygon', radius: '66%', center: ['50%', radarSeries.length > 1 ? '45%' : '50%'], axisName: { color: colors.text, fontFamily: fontFamily }, axisLine: { lineStyle: { color: colors.line } }, splitLine: { lineStyle: { color: colors.line } }, splitArea: { areaStyle: { color: ['rgba(128,140,160,.025)', 'rgba(128,140,160,.07)'] } } },
+      series: [{ type: 'radar', data: radarSeries.map(function (series, index) { return { name: series.name || 'Series ' + (index + 1), value: series.data, itemStyle: { color: colorFor(series.role, index, colors) }, lineStyle: { width: 2 }, areaStyle: { opacity: 0.12 } }; }) }],
+    };
+  }
+  if (chartType === 'scatter') {
+    var scatterSeries = payload.series || [];
+    return {
+      backgroundColor: 'transparent', textStyle: textStyle,
+      color: scatterSeries.map(function (item, index) { return colorFor(item.role, index, colors); }),
+      aria: { enabled: true, description: { summary: spec.accessibilitySummary } },
+      tooltip: Object.assign({ trigger: 'item', formatter: function (params) { return escapeTooltip(params.seriesName || '') + '<br>' + escapeTooltip(payload.xLabel || 'x') + ': ' + escapeTooltip(params.value[0]) + '<br>' + escapeTooltip(payload.yLabel || 'y') + ': ' + escapeTooltip(params.value[1]); } }, tooltipBase),
+      legend: legendOptions(scatterSeries, colors, fontFamily),
+      grid: { left: 62, right: 22, top: scatterSeries.length > 1 ? 44 : 18, bottom: 52, containLabel: true },
+      xAxis: { type: 'value', name: payload.xLabel || '', nameTextStyle: { color: colors.text, fontFamily: fontFamily }, axisLabel: { color: colors.text, fontFamily: fontFamily }, axisLine: { lineStyle: { color: colors.line } }, splitLine: { lineStyle: { color: colors.grid } } },
+      yAxis: { type: 'value', name: payload.yLabel || '', nameTextStyle: { color: colors.text, fontFamily: fontFamily }, axisLabel: { color: colors.text, fontFamily: fontFamily }, axisLine: { lineStyle: { color: colors.line } }, splitLine: { lineStyle: { color: colors.grid } } },
+      dataZoom: [{ type: 'inside' }],
+      series: scatterSeries.map(function (series, index) { return { name: series.name || 'Series ' + (index + 1), type: 'scatter', data: series.data.map(function (point) { return Array.isArray(point) ? point : [point.x, point.y]; }), symbolSize: 9, emphasis: { focus: 'series', scale: 1.25 } }; }),
+    };
+  }
   var typeMap = { line: 'line', area: 'line', bar: 'bar', scatter: 'scatter', histogram: 'bar', heatmap: 'heatmap', radar: 'radar', boxplot: 'boxplot' };
   var seriesType = typeMap[chartType] || 'line';
+  var seriesInput = payload.series || [];
+  if (!categories.length && seriesInput.length && ['line', 'area', 'bar', 'histogram', 'boxplot'].includes(chartType)) {
+    var categoryCount = Math.max.apply(null, seriesInput.map(function (series) { return (series.data || []).length; }));
+    categories = Array.from({ length: categoryCount }, function (_, index) { return String(index + 1); });
+    axisLayout = categoryAxisLayout(categories);
+  }
   return {
     backgroundColor: 'transparent', textStyle: textStyle,
     color: payload.series.map(function (item, index) { return colorFor(item.role, index, colors); }),
@@ -160,6 +226,6 @@ export function optionForChart(spec, colors) {
     },
     yAxis: { type: 'value', name: payload.yLabel || '', nameTextStyle: { color: colors.text, fontFamily: fontFamily }, axisLabel: { color: colors.text, fontFamily: fontFamily }, axisLine: { lineStyle: { color: colors.line } }, splitLine: { lineStyle: { color: colors.grid } } },
     dataZoom: ['line', 'area', 'bar', 'scatter', 'histogram'].includes(chartType) ? [{ type: 'inside' }] : undefined,
-    series: payload.series.map(function (series, index) { return { name: series.name || 'Series ' + (index + 1), type: seriesType, data: series.data, showSymbol: chartType === 'scatter', symbolSize: chartType === 'scatter' ? 8 : undefined, areaStyle: spec.template === 'area' ? { opacity: 0.16 } : undefined, smooth: chartType === 'line' || spec.template === 'area', emphasis: { focus: 'series' } }; }),
+    series: seriesInput.map(function (series, index) { return { name: series.name || 'Series ' + (index + 1), type: seriesType, data: series.data, showSymbol: false, barMaxWidth: chartType === 'bar' || chartType === 'histogram' ? 54 : undefined, barCategoryGap: chartType === 'histogram' ? '8%' : undefined, areaStyle: spec.template === 'area' ? { opacity: 0.16 } : undefined, smooth: chartType === 'area', emphasis: { focus: 'series' } }; }),
   };
 }

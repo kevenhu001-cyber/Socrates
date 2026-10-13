@@ -7,7 +7,7 @@ let threePromise;
 let tldrawPromise;
 let geogebraPromise;
 
-const STRUCTURE_TEMPLATES = new Set(['flowchart', 'sequence', 'state', 'tree', 'mindmap', 'network', 'concept_map']);
+const STRUCTURE_TEMPLATES = new Set(['flowchart', 'sequence', 'state', 'network', 'concept_map']);
 
 export function usesSpecializedRenderer(template) {
   return template === 'function'
@@ -68,6 +68,32 @@ function plotlyThemeUpdate(colors) {
   };
 }
 
+export function plotlyTracesForVisualization(spec, colors, sampleFunctionImpl) {
+  if (spec.template === 'function') {
+    return (spec.payload.functions || []).map((fn, index) => {
+      const sampled = sampleFunctionImpl(fn.expression, fn.domain, 900);
+      return {
+        x: sampled.points.map((point) => point[0]),
+        y: sampled.points.map((point) => point[1]),
+        type: 'scatter',
+        mode: 'lines',
+        name: fn.label || fn.expression,
+        line: { width: 2.4, color: [colors.primary, '#16a394', '#8a62d6', '#dc8a2f'][index % 4] },
+        connectgaps: false,
+      };
+    });
+  }
+  const categories = spec.payload.categories || [];
+  return (spec.payload.series || []).map((series, index) => ({
+    x: categories.length ? categories : series.data.map((_, i) => i + 1),
+    y: series.data,
+    type: series.kind === 'bar' ? 'bar' : 'scatter',
+    mode: series.kind === 'scatter' ? 'markers' : series.kind === 'bar' ? undefined : 'lines+markers',
+    name: series.name || `Series ${index + 1}`,
+    line: { width: 2.2 },
+  }));
+}
+
 function downloadSvgAdapter(stage) {
   return {
     dispatchAction() {},
@@ -85,31 +111,7 @@ async function mountPlotly(spec, stage, helpers) {
   plotlyPromise ||= ensurePlotly();
   const Plotly = await plotlyPromise;
   const colors = plotlyColors();
-  let traces = [];
-  if (spec.template === 'function') {
-    traces = (spec.payload.functions || []).map((fn, index) => {
-      const sampled = helpers.sampleFunction(fn.expression, fn.domain, 900);
-      return {
-        x: sampled.points.map((point) => point[0]),
-        y: sampled.points.map((point) => point[1]),
-        type: 'scatter',
-        mode: 'lines',
-        name: fn.label || fn.expression,
-        line: { width: 2.4, color: [colors.primary, '#16a394', '#8a62d6', '#dc8a2f'][index % 4] },
-        connectgaps: false,
-      };
-    });
-  } else {
-    const categories = spec.payload.categories || [];
-    traces = (spec.payload.series || []).map((series, index) => ({
-      x: categories.length ? categories : series.data.map((_, i) => i + 1),
-      y: series.data,
-      type: series.kind === 'bar' ? 'bar' : 'scatter',
-      mode: series.kind === 'markers' ? 'markers' : 'lines+markers',
-      name: series.name || `Series ${index + 1}`,
-      line: { width: 2.2 },
-    }));
-  }
+  const traces = plotlyTracesForVisualization(spec, colors, helpers.sampleFunction);
   const categories = spec.payload.categories || [];
   const longestCategory = categories.reduce((max, value) => Math.max(max, Array.from(String(value ?? '')).length), 0);
   const tickAngle = categories.length > 10 ? -40 : (categories.length > 6 && longestCategory > 18 ? -28 : 0);
@@ -149,16 +151,23 @@ function compactMermaidLabel(value, max = 48) {
   return chars.length > max ? `${chars.slice(0, max - 1).join('')}…` : chars.join('');
 }
 
-function mermaidText(spec) {
+export function mermaidText(spec) {
   const payload = spec.payload || {};
   const nodes = payload.nodes || [];
   const edges = payload.edges || [];
   const safeId = (value) => `n_${String(value).replace(/[^a-zA-Z0-9_]/g, '_')}`;
-  const safeLabel = (value) => compactMermaidLabel(value).replace(/"/g, '&quot;');
+  const safeLabel = (value) => compactMermaidLabel(value).replace(/[\r\n"|]/g, ' ');
   if (spec.template === 'sequence') {
     const participants = nodes.map((node) => `participant ${safeId(node.id)} as ${safeLabel(node.label)}`);
     const messages = edges.map((edge) => `${safeId(edge.from)}->>${safeId(edge.to)}: ${safeLabel(edge.label || '')}`);
     return ['sequenceDiagram', ...participants, ...messages].join('\n');
+  }
+  if (spec.template === 'state') {
+    return [
+      'stateDiagram-v2',
+      ...nodes.map((node) => `state "${safeLabel(node.label)}" as ${safeId(node.id)}`),
+      ...edges.map((edge) => `${safeId(edge.from)} --> ${safeId(edge.to)}${edge.label ? ` : ${safeLabel(edge.label)}` : ''}`),
+    ].join('\n');
   }
   const direction = payload.direction === 'horizontal' ? 'LR' : 'TB';
   return [
@@ -166,6 +175,13 @@ function mermaidText(spec) {
     ...nodes.map((node) => `${safeId(node.id)}["${safeLabel(node.label)}"]`),
     ...edges.map((edge) => `${safeId(edge.from)} -->${edge.label ? `|"${safeLabel(edge.label)}"|` : ''} ${safeId(edge.to)}`),
   ].join('\n');
+}
+
+export function applyGeoGebraCommands(api, commands) {
+  for (const command of commands || []) {
+    const accepted = api.evalCommand(command);
+    if (accepted === false) throw new Error(`Construction app rejected a command: ${String(command).slice(0, 120)}`);
+  }
 }
 
 async function mountMermaid(spec, stage) {
@@ -310,19 +326,38 @@ function loadGeoGebra() {
 async function mountGeoGebra(spec, stage) {
   const GGBApplet = await loadGeoGebra();
   let api;
-  const applet = new GGBApplet({
-    appName: spec.payload.appName || 'geometry',
-    width: Math.max(stage.clientWidth, 320),
-    height: Math.max(stage.clientHeight, 300),
-    showToolBar: true,
-    showAlgebraInput: true,
-    showMenuBar: false,
-    appletOnLoad(ggbApi) {
-      api = ggbApi;
-      (spec.payload.commands || []).forEach((command) => ggbApi.evalCommand(command));
-    },
-  }, true);
-  applet.inject(stage);
+  await new Promise((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => finish(new Error('GeoGebra applet did not finish loading.')), 20000);
+    const finish = (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (error) reject(error);
+      else resolve();
+    };
+    const applet = new GGBApplet({
+      appName: spec.payload.appName || 'geometry',
+      width: Math.max(stage.clientWidth, 320),
+      height: Math.max(stage.clientHeight, 300),
+      showToolBar: true,
+      showAlgebraInput: true,
+      showMenuBar: false,
+      appletOnLoad(ggbApi) {
+        api = ggbApi;
+        try {
+          applyGeoGebraCommands(ggbApi, spec.payload.commands);
+          finish();
+        } catch (error) {
+          finish(error instanceof Error ? error : new Error('GeoGebra construction command failed.'));
+        }
+      },
+    }, true);
+    try { applet.inject(stage); } catch (error) { finish(error instanceof Error ? error : new Error('GeoGebra applet could not be started.')); }
+  }).catch((error) => {
+    stage.replaceChildren();
+    throw error;
+  });
   return {
     handled: true,
     chart: { dispatchAction() { api?.setCoordSystem?.(-10, 10, -8, 8); }, getDataURL() { return api?.getPNGBase64 ? `data:image/png;base64,${api.getPNGBase64(1, false, 96)}` : ''; } },

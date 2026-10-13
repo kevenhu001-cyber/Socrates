@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { executeVisualization, validateVisualizationSpec, VISUALIZATION_TOOL } from '../src/services/visualization.js';
+import {
+  executeVisualization,
+  validateVisualizationSpec,
+  VISUALIZATION_TOOL,
+  VISUALIZATION_TEMPLATE_CONTRACTS,
+  visualizationTemplateExample,
+} from '../src/services/visualization.js';
 
 const lnSpec = {
   version: 1,
@@ -80,6 +86,23 @@ test('visual tool returns structured field errors instead of a Python fallback',
   assert.equal(result.status, 'failed');
   assert.equal(result.errorCode, 'visual_spec_invalid');
   assert.ok(Array.isArray(result.detail));
+  assert.deepEqual(result.diagnostics, { stage: 'payload_shape', template: 'function', issuePaths: ['payload.functions.0.expression'] });
+});
+
+test('every documented template example passes the same validator that executes tool calls', () => {
+  for (const template of Object.keys(VISUALIZATION_TEMPLATE_CONTRACTS)) {
+    const result = validateVisualizationSpec(visualizationTemplateExample(template));
+    assert.equal(result.ok, true, `${template} example rejected at ${result.stage}: ${JSON.stringify(result.issues)}`);
+  }
+});
+
+test('semantic diagnostics preserve the rejected template for a targeted correction example', () => {
+  const result = executeVisualization({ ...lnSpec, payload: { functions: [{ expression: 'x', domain: [5, 1] }] } });
+  assert.equal(result.status, 'failed');
+  assert.equal(result.diagnostics.stage, 'semantic');
+  assert.equal(result.diagnostics.template, 'function');
+  assert.deepEqual(result.diagnostics.issuePaths, ['payload.functions.0.domain']);
+  assert.equal(visualizationTemplateExample(result.diagnostics.template).template, 'function');
 });
 
 test('static SVG illustrations accept standalone XML documents', () => {
@@ -138,6 +161,25 @@ test('interactive_simulation still rejects nested frames, network APIs and dange
     const result = validateVisualizationSpec({ ...base, payload: { source } });
     assert.equal(result.ok, false, source);
   }
+});
+
+test('extension content rejects external asset URLs that its CSP cannot load', () => {
+  const base = { version: 1, template: 'svg_illustration', title: 'Remote image', accessibilitySummary: 'Inline-only SVG.' };
+  const cases = [
+    '<svg><image href="https://example.com/image.png"/></svg>',
+    '<svg><style>.shape{fill:url(https://example.com/paint.svg#x)}</style></svg>',
+    '<svg><style>@import url("https://example.com/shape.css")</style></svg>',
+  ];
+  for (const source of cases) {
+    const result = validateVisualizationSpec({ ...base, payload: { source } });
+    assert.equal(result.ok, false, source);
+    assert.equal(result.stage, 'extension_safety');
+  }
+  const inline = validateVisualizationSpec({
+    ...base,
+    payload: { source: '<svg><image href="data:image/png;base64,aGVsbG8="/></svg>' },
+  });
+  assert.equal(inline.ok, true);
 });
 
 test('tool declaration exposes the versioned visual contract', () => {

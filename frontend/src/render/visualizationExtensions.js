@@ -1,12 +1,8 @@
 /* Sandboxed extension rendering and model-facing repair routing. */
-/* P_extension-safety — block only the actually-dangerous patterns:
-   - <script>, <iframe>, <object>, <embed>, <form> tags;
-   - inline event handlers (onclick, onerror, …);
-   - outbound scripts/fetch/websocket;
-   - dangerous URL schemes on attributes (javascript:, vbscript:,
-     data:text/html). We previously also rejected any href/src
-     starting with `https:`, which broke legitimate CDN images and
-     external CSS imports inside svg_illustration templates. */
+/* Extension content is self-contained: tags and CSP block executable/network
+   escape paths, and resource URLs are limited to fragments or inline data.
+   External images and CSS imports would be blocked by the iframe CSP anyway,
+   so reject them before rendering with a useful repair error. */
 
 /* P_interactive-sim-scripts — `interactive_simulation` would be a
    contradiction if it rejected <script>: an "interactive" template
@@ -26,11 +22,18 @@ function extensionIsSafe(source, allowScripts) {
   if (tagBan.test(src)) return false;
   if (!allowScripts && /\son\w+\s*=/i.test(src)) return false;
   if (/\b(?:fetch|xmlhttprequest|websocket|sendbeacon|eventsource)\b/i.test(src)) return false;
-  var attrRe = /\b(?:src|href|action|formaction|xlink:href)\s*=\s*["']?\s*([^\s"'>]+)/gi;
+  if (/@import\b/i.test(src)) return false;
+  var attrRe = /\b(?:src|href|action|formaction|xlink:href)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi;
   var match;
   while ((match = attrRe.exec(src)) !== null) {
-    var value = String(match[1] || '').trim();
+    var value = String(match[1] || match[2] || match[3] || '').trim();
     if (/^(?:javascript|vbscript|livescript|mocha|data\s*:\s*text\/html)/i.test(value)) return false;
+    if (!/^(?:#|data:(?:image\/|font\/)|blob:)/i.test(value)) return false;
+  }
+  var cssUrlRe = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^\s)]+))\s*\)/gi;
+  while ((match = cssUrlRe.exec(src)) !== null) {
+    var cssUrl = String(match[1] || match[2] || match[3] || '').trim();
+    if (!/^(?:#|data:(?:image\/|font\/)|blob:)/i.test(cssUrl)) return false;
   }
   return true;
 }
@@ -45,12 +48,13 @@ function standaloneSvgSource(source) {
 export function renderExtension(spec, cardId, escapeHtml) {
   var source = String(spec.payload.source || '');
   var allowScripts = spec.template === 'interactive_simulation';
-  if (!extensionIsSafe(source, allowScripts)) return '<div class="visualization-fallback">此扩展内容未通过本地安全检查。标题和数据摘要仍可用。</div>';
+  if (!extensionIsSafe(source, allowScripts)) throw new Error('extension_security_check_failed');
   var nonce = 'viz-' + cardId + '-' + Math.random().toString(36).slice(2);
-  var csp = "default-src 'none'; img-src data: blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; font-src https: data:; form-action 'none'; base-uri 'none'";
+  var csp = "default-src 'none'; img-src data: blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; font-src data:; form-action 'none'; base-uri 'none'";
   /* P_perf-self-host — sandboxed extension iframes use the platform font
      stack instead of blocking on fonts.googleapis.com. */
   var svgSource = spec.template === 'svg_illustration' ? standaloneSvgSource(source) : '';
+  if (spec.template === 'svg_illustration' && !svgSource) throw new Error('svg_document_root_invalid');
   var renderSource = svgSource
     ? '<img class="visualization-svg-illustration" alt="' + escapeHtml(spec.accessibilitySummary) + '" src="data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgSource) + '">'
     : source.replace(/^\uFEFF?\s*<\?xml[^?]*\?>\s*/i, '');
@@ -88,8 +92,11 @@ function extensionRepairPrompt(spec, errMsg) {
      the CDN itself is unreachable, retrying the same template cannot
      help — tell the model to express the construction with a
      self-hosted template instead. */
-  if (/geogebra|deployggb/i.test(String(errMsg || ''))) {
+  var renderError = String(errMsg || '');
+  if (/deployggb/i.test(renderError) || /geogebra[^.]{0,80}cdn[^.]{0,80}(?:unreachable|unavailable|failed|timed out)/i.test(renderError)) {
     msg += ' GeoGebra\'s CDN is unreachable from this client, so math_construction cannot work right now — rebuild the figure with the `geometry` or `function` template instead.';
+  } else if (/geogebra/i.test(renderError)) {
+    msg += ' The GeoGebra applet failed locally. If the command syntax is valid, retry the applet once; for a simple planar construction, switch to the built-in `geometry` template.';
   }
   return msg;
 }

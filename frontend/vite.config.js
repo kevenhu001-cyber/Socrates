@@ -402,6 +402,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      '@socrates/core/visualizationMath': fileURLToPath(new URL('../packages/core/src/visualizationMath.js', import.meta.url)),
       '@socrates/contracts': fileURLToPath(new URL('../packages/contracts/src/index.ts', import.meta.url)),
       '@socrates/core': fileURLToPath(new URL('../packages/core/src/index.ts', import.meta.url)),
     },

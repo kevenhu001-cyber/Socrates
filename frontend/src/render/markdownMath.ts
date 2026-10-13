@@ -257,8 +257,10 @@ export function replaceInlineDollarMath(
     let close = -1;
     for (let j = open + 1; j < s.length; j++) {
       const c = s.charAt(j);
-      if (c === '\\') { j++; continue; }
-      if (c === '\n' && (!multiline || s.charAt(j + 1) === '\n')) break;
+      if (c === '\n') {
+        if (!multiline || s.charAt(j + 1) === '\n') break;
+        if (/^[ \t]*(?:[#＃]|(?:\*\*|__)[ \t]*[#＃])/.test(s.slice(j + 1))) break;
+      }
       if (c === '$') {
         if (s.charAt(j + 1) !== '$') close = j;
         break;

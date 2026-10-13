@@ -113,3 +113,30 @@ test('valid multiline LaTeX environments are not split unless Markdown actually 
     assert.match(html, /正文/);
   });
 });
+
+test('unclosed display math yields to spaced numbered headings and bold-wrapped headings', () => {
+  withRenderers(() => {
+    const cases = [
+      ['$$\nE = mc^2\n# 1 标题\n正文', 'h1', '1 标题'],
+      ['$$\nE = mc^2\n## 1 Introduction\nContent', 'h2', '1 Introduction'],
+      ['$$\nE = mc^2\n## 2026 年度计划\n正文', 'h2', '2026 年度计划'],
+      ['$$\nE = mc^2\n**## 结论**\n正文', 'h2', '结论'],
+      ['\\[\nE = mc^2\n## 1 标题\n正文', 'h2', '1 标题'],
+    ];
+    for (const [src, tag, text] of cases) {
+      assertMathThenHeading(src, tag, text);
+    }
+  });
+});
+
+test('unclosed inline math does not swallow following Markdown heading across newline', () => {
+  withRenderers(() => {
+    const src = '得到公式 $f(x) = x^2\n## 结论\n正文 $y=1$';
+    const html = formatMsg(src);
+    assert.match(html, /<h2>结论<\/h2>/);
+    assert.match(html, /正文/);
+    const progressive = formatMsgProgressive(src, { complete: true });
+    assert.match(progressive, /<h2>结论<\/h2>/);
+  });
+});
+

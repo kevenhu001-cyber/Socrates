@@ -3,7 +3,11 @@
  * and a working example, which is what actually unblocks the model.
  */
 
-import { executeVisualization } from '../../../../services/visualization.js';
+import {
+  executeVisualization,
+  visualizationTemplateCorrectionHint,
+  visualizationTemplateExample,
+} from '../../../../services/visualization.js';
 import { buildToolErrorFeedback } from '../../../../services/toolErrorFeedback.js';
 import type { ToolExecutor, ToolExecutionResult } from './types.js';
 import type { ToolResult } from '../types.js';
@@ -24,6 +28,8 @@ export const executeRenderVisualization: ToolExecutor = async (
       errorCode: result.errorCode || 'visual_spec_invalid',
       fieldErrors: JSON.stringify(result.detail || []),
       retryable: Boolean(result.retryable),
+      hint: visualizationTemplateCorrectionHint(result.diagnostics?.template),
+      exampleOverride: visualizationTemplateExample(result.diagnostics?.template),
     });
     result.detail = feedback.detail;
     result.correction = feedback.modelMessage;
@@ -42,14 +48,18 @@ export const executeRenderVisualization: ToolExecutor = async (
     visualization: result.visualization || null,
     error: result.errorCode || null,
     errorCode: result.errorCode || null,
+    diagnostics: result.diagnostics || null,
     retryable: result.retryable,
     userMessage: result.userMessage,
     detail: result.detail,
     durationMs: result.durationMs,
   });
   console.info('[visualization]', JSON.stringify({
-    template: result.visualization && result.visualization.template || null,
+    stage: result.diagnostics?.stage || (result.status === 'completed' ? 'server_accepted' : 'server_rejected'),
+    template: result.diagnostics?.template || result.visualization?.template || null,
     status: result.status,
+    errorCode: result.errorCode || null,
+    issuePaths: result.diagnostics?.issuePaths || [],
     durationMs: result.durationMs,
     corrected: toolPolicy.remainingRetries('render_visualization') < toolPolicy.snapshot().perToolFailureLimit,
   }));

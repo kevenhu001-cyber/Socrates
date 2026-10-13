@@ -6,6 +6,8 @@
    Both imported by render/markdown.js. */
 
 import { _autoWrapBareBracketMath, fixEmphasisMarkers, fixHeadingMarkers, fixMarkdownTableSeparators } from './helpers.js';
+import { recoverUnclosedDisplayMathBeforeHeading } from './markdownBoundary.ts';
+export { recoverUnclosedDisplayMathBeforeHeading } from './markdownBoundary.ts';
 
 /* A line that is nothing but `$…$` is almost always a display formula the
    model forgot to double up (weak models put `$x^2$` on its own line), so it
@@ -43,7 +45,7 @@ export interface StreamingPreprocessOptions {
    well-formed markdown + math. */
 export function preprocessMarkdown(t: string | null | undefined): string {
   if (!t) return t as string;
-  let s = String(t);
+  let s = recoverUnclosedDisplayMathBeforeHeading(String(t));
   s = s.replace(/\r\n?/g, '\n');
   s = s.replace(/<p>\s*/gi, '').replace(/\s*<\/p>/gi, '\n');
   s = s.replace(/<br\s*\/?>/gi, '\n');
@@ -166,7 +168,7 @@ export function preprocessMarkdownForStreaming(
 ): string {
   if (!t) return t as string;
   const complete = opts?.complete === true;
-  let s = String(t);
+  let s = recoverUnclosedDisplayMathBeforeHeading(String(t));
   s = s.replace(/\r\n?/g, '\n');
   s = s.replace(/<p>\s*/gi, '').replace(/\s*<\/p>/gi, '\n');
   s = s.replace(/<br\s*\/?>/gi, '\n');

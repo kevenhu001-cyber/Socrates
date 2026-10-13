@@ -9,9 +9,22 @@ const S = (template, payload) => ({ version: 1, template, title: 'T ' + template
 const nodes = [{ id: 'a', label: 'Start' }, { id: 'b', label: 'Middle' }, { id: 'c', label: 'End' }];
 const edges = [{ from: 'a', to: 'b', label: 'go' }, { from: 'b', to: 'c' }];
 const CASES = [
-  { spec: { ...S('radar', { categories: ['a', 'b', 'c', 'd'], series: [{ name: 'x', data: [1, 2, 3, 4] }] }), caption: 'Optional explanatory note.' }, content: 'svg *', actions: ['table', 'reset', 'download', 'fullscreen'] },
+  { spec: { ...S('radar', { indicators: [{ name: 'Speed', max: 10 }, { name: 'Power', max: 10 }, { name: 'Focus', max: 10 }], series: [{ name: 'x', data: [8, 6, 9] }, { name: 'y', data: [5, 9, 4] }] }), caption: 'Optional explanatory note.' }, content: 'svg *', actions: ['table', 'reset', 'download', 'fullscreen'] },
+  { spec: S('heatmap', { xCategories: ['Mon', 'Tue'], yCategories: ['AM', 'PM'], values: [[2, 4], [3, 1]] }), content: 'canvas', actions: ['table', 'reset', 'download', 'fullscreen'], tableRows: 2 },
+  { spec: S('scatter', { xLabel: 'Hours', yLabel: 'Score', series: [{ name: 'Samples', data: [[1, 4], { x: 2, y: 7 }, [3, 6]] }] }), content: 'svg *', actions: ['table', 'reset', 'download', 'fullscreen'], tableRows: 3 },
+  { spec: S('boxplot', { categories: ['A', 'B'], series: [{ name: 'Scores', data: [[1, 2, 3, 4, 5], [2, 3, 4, 5, 8]] }] }), content: 'svg *', actions: ['table', 'reset', 'download', 'fullscreen'], tableRows: 2 },
+  { spec: S('function', { functions: [{ expression: 'sin(x)', label: 'Sine', domain: [-3, 3] }] }), content: 'svg *', actions: ['table', 'reset', 'download', 'fullscreen'] },
+  { spec: S('paper_chart', { categories: ['A', 'B'], series: [{ name: 'Trend', kind: 'line', data: [1, 2] }, { name: 'Counts', kind: 'bar', data: [3, 4] }, { name: 'Samples', kind: 'scatter', data: [4, 2] }] }), content: 'svg *', actions: ['table', 'reset', 'download', 'fullscreen'], tableRows: 2 },
   { spec: S('flowchart', { nodes, edges }), content: 'svg *', actions: ['table', 'download', 'fullscreen'] },
-  { spec: S('timeline', { items: [{ label: '1900', detail: 'x' }, { label: '1950', detail: 'y' }] }), content: 'svg *', actions: ['table', 'download', 'fullscreen'], tableRows: 2 },
+  { spec: S('sequence', { nodes: [{ id: 'student', label: 'Student' }, { id: 'tutor', label: 'Tutor' }], edges: [{ from: 'student', to: 'tutor', label: 'asks' }] }), content: 'svg *', actions: ['table', 'download', 'fullscreen'] },
+  { spec: S('state', { nodes: [{ id: 'idle', label: 'Idle' }, { id: 'ready', label: 'Ready' }], edges: [{ from: 'idle', to: 'ready', label: 'start' }] }), content: 'svg *', actions: ['table', 'download', 'fullscreen'] },
+  { spec: S('tree', { nodes: [{ id: 'root', label: 'Root' }, { id: 'left', label: 'Left' }, { id: 'right', label: 'Right' }], edges: [{ from: 'root', to: 'left' }, { from: 'root', to: 'right' }] }), content: 'svg *', actions: ['table', 'download', 'fullscreen'] },
+  { spec: S('mindmap', { nodes: [{ id: 'root', label: 'Topic' }, { id: 'branch', label: 'Branch' }], edges: [{ from: 'root', to: 'branch' }] }), content: 'svg *', actions: ['table', 'download', 'fullscreen'] },
+  { spec: S('timeline', { items: [{ label: 'Start', value: '1900', detail: 'x' }, { label: 'Finish', value: '1950', detail: 'y' }] }), content: 'svg *', actions: ['table', 'download', 'fullscreen'], tableRows: 2 },
+  { spec: S('process', { items: [{ label: 'Collect' }, { label: 'Compare' }, { label: 'Decide' }] }), content: 'svg *', actions: ['table', 'download', 'fullscreen'], tableRows: 3 },
+  { spec: S('comparison', { items: [{ label: 'Option A', value: 'Fast' }, { label: 'Option B', value: 'Simple' }] }), content: 'svg *', actions: ['table', 'download', 'fullscreen'], tableRows: 2 },
+  { spec: S('number_line', { items: [{ label: 'Low', value: -2 }, { label: 'Zero', value: 0 }, { label: 'High', value: 3 }] }), content: 'svg *', actions: ['table', 'download', 'fullscreen'], tableRows: 3 },
+  { spec: S('geometry', { shapes: [{ type: 'point', at: [0, 0], label: 'O' }, { type: 'segment', from: [0, 0], to: [3, 2], label: 'AB' }, { type: 'circle', center: [0, 0], radius: 2 }, { type: 'polygon', points: [[0, 0], [3, 0], [2, 2]], label: 'Triangle' }] }), content: 'svg *', actions: ['table', 'download', 'fullscreen'], tableRows: 4 },
   { spec: S('interactive_simulation', { source: '<div id="x">hi</div><script>document.getElementById("x").textContent="ok"</script>' }), content: 'iframe[data-ready="true"]', actions: ['fullscreen'] },
   { spec: S('svg_illustration', { source: '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800"><rect width="1200" height="800" fill="#336699"/><circle cx="600" cy="400" r="160" fill="#fff"/></svg>' }), content: 'iframe[data-ready="true"]', actions: ['fullscreen'] },
   { spec: S('geometry_3d', { objects: [{ type: 'box' }, { type: 'sphere', position: [2, 0, 0] }] }), content: 'canvas', actions: ['reset', 'download', 'fullscreen'] },
@@ -46,6 +59,10 @@ for (const { spec, content, actions, tableRows } of CASES) {
     await expect(card).toBeVisible({ timeout: 15000 });
     await expect(card.locator('.visualization-stage ' + content).first()).toBeAttached({ timeout: 15000 });
     await expect(card.locator('.visualization-fallback')).toHaveCount(0);
+    if (spec.template === 'heatmap') await card.screenshot({ path: 'test-results/visualization-heatmap.png' });
+    if (spec.template === 'process') await card.screenshot({ path: 'test-results/visualization-process.png' });
+    if (spec.template === 'number_line') await card.screenshot({ path: 'test-results/visualization-number-line.png' });
+    if (spec.template === 'geometry') await card.screenshot({ path: 'test-results/visualization-geometry.png' });
     if (spec.caption) {
       await expect(card.locator('h3')).toHaveText(spec.title);
       await expect(card.locator('.visualization-header .visualization-caption')).toHaveCount(0);

@@ -34,6 +34,7 @@ FROM node:22-bookworm-slim AS deps
 WORKDIR /repo/server
 
 COPY server/package.json server/package-lock.json ./
+COPY packages/core /repo/packages/core
 # --include=dev: tsc lives in devDependencies and stage 2 needs it.
 # allowScripts in package.json is already narrowed to { "esbuild": true }, so
 # this does not hand install-time code execution to the whole tree.
@@ -57,6 +58,7 @@ RUN npm run build && test -f dist/index.runtime.js
 FROM node:22-bookworm-slim AS prod-deps
 WORKDIR /repo/server
 COPY server/package.json server/package-lock.json ./
+COPY packages/core /repo/packages/core
 RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
 
 # ─── Stage 4: runtime ────────────────────────────────────────────────
@@ -87,6 +89,7 @@ WORKDIR /repo/server
 # build machine happened to have.
 COPY --from=prod-deps --chown=node:node /repo/server/node_modules ./node_modules
 COPY --from=build     --chown=node:node /repo/server/dist ./dist
+COPY --chown=node:node packages/core /repo/packages/core
 
 # package.json is read at runtime (type: module, engines) and by `npm start`.
 COPY --chown=node:node server/package.json ./package.json

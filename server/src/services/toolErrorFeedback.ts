@@ -37,6 +37,8 @@ export interface ToolErrorFeedbackInput {
   availableTools?: readonly string[];
   /** Extra sentence appended before the schema block. */
   hint?: string | null;
+  /** Tool-specific complete example when one generic example would mislead. */
+  exampleOverride?: Record<string, unknown> | null;
 }
 
 export interface ToolErrorFeedback {
@@ -217,7 +219,10 @@ const MODEL_HINTS: Record<string, string> = {
 export function buildToolErrorFeedback(input: ToolErrorFeedbackInput): ToolErrorFeedback {
   const { toolName, schema, errorCode, retryable } = input;
   const fieldErrors = normalizeFieldErrors(input.fieldErrors);
-  const example = canonicalToolExampleJson(toolName, schema);
+  let example = canonicalToolExampleJson(toolName, schema);
+  if (input.exampleOverride) {
+    try { example = JSON.stringify(input.exampleOverride); } catch { /* keep the canonical fallback */ }
+  }
   const schemaText = describeToolSchema(schema);
 
   const lines: string[] = [`[error] ${errorCode}: the call to \`${toolName}\` was rejected before execution.`];
