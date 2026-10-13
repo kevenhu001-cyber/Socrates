@@ -1,12 +1,14 @@
 /*
- * parity/ — chatgpt.com-aligned desktop layer (reference values:
- * docs/ref/chatgpt-parity.md). Each file owns one surface on desktop (the
- * composer file owns it at every width); the
- * older rules for that surface were moved behind @media (max-width: 768px)
- * by scripts/migrate-surface-css.mjs, so this layer needs no !important.
+ * parity/ — ChatGPT/Figma aligned surface owners.
+ * Each file owns one surface. The composer is split only by breakpoint:
+ * composer-unified.css owns the shared component contract and desktop /
+ * expanded states; composer-mobile.css owns its <=768px resting geometry.
+ * Both style the same DOM node — there is no duplicate composer component.
+ *
  * Sits after restore/ (being retired) and before polish/.
  */
 @import './sidebar.css';
 @import './topbar.css';
 @import './composer-unified.css';
+@import './composer-mobile.css';
 @import './transcript.css';
