@@ -37,6 +37,35 @@ test('reference home keeps its bottom composer and phone configuration usable', 
   expect(menu.y + menu.height).toBeLessThanOrEqual(568);
 });
 
+test('mobile conversation chrome exposes the reference compose and overflow capsule', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 769 });
+  await mockAuthedApp(page, { lang: 'en' });
+  await page.goto('/');
+  await waitForAppShell(page);
+  await page.evaluate(() => {
+    window.toggleChatTopBarEls?.(true);
+    document.body.dataset.conversationActive = 'true';
+  });
+
+  const compose = page.locator('#mobileNewChatBtn');
+  const more = page.locator('#mobileConversationMoreBtn');
+  const capsule = page.locator('.top-bar-right');
+  await expect(compose).toBeVisible();
+  await expect(more).toBeVisible();
+  await expect(page.locator('#topModelSwitcher')).toBeHidden();
+  const capsuleBox = await capsule.boundingBox();
+  expect(capsuleBox?.height).toBe(48);
+  expect(capsuleBox?.width).toBeGreaterThanOrEqual(88);
+
+  await more.click();
+  const actions = page.locator('#mobileConversationMoreMenu');
+  await expect(actions).toBeVisible();
+  await expect(actions.getByRole('menuitem', { name: /Find in conversation/i })).toBeVisible();
+  await expect(actions.getByRole('menuitem', { name: /Share/i })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(actions).toBeHidden();
+});
+
 test('mobile account menu opens settings and restores keyboard focus', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 768 });
   await mockAuthedApp(page, { lang: 'zh', user: { displayName: 'Adex Hu', tier: 'descartes' } });
