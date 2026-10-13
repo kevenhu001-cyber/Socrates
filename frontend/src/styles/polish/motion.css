@@ -34,10 +34,12 @@
   animation: ui-activity-shimmer var(--ui-duration-shimmer, 1.8s) linear infinite;
 }
 
-#appShell .thinking-status:has(.thinking-status-label.shimmer-text) .tool-inline-tool-icon,
-#appShell .tool-inline[data-state="running"]:has(.tool-inline-label.shimmer-text) .tool-inline-tool-icon,
-#appShell .tool-run-group[data-state="running"]:has(.tool-run-summary-label.shimmer-text) .tool-run-summary-icon,
-#appShell .agent-step[data-state="running"]:has(.agent-step-label.shimmer-text) .agent-step-icon {
+#appShell :is(
+  .thinking-status:has(.thinking-status-label.shimmer-text) .tool-inline-tool-icon,
+  .tool-inline[data-state="running"]:has(.tool-inline-label.shimmer-text) .tool-inline-tool-icon,
+  .tool-run-group[data-state="running"]:has(.tool-run-summary-label.shimmer-text) .tool-run-summary-icon,
+  .agent-step[data-state="running"]:has(.agent-step-label.shimmer-text) .agent-step-icon
+) {
   animation: none;
 }
 
