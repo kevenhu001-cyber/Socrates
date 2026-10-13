@@ -1,24 +1,23 @@
 /**
  * Server-side query expansion for web search.
  *
- * Takes the user's natural-language query and asks the LLM to produce
- * 2 alternative search-engine-friendly variants. We then search the
- * original + 2 variants (3 total) in parallel and merge the results
- * with RRF. This dramatically improves recall for conversational or
- * ambiguous queries ("那个最近的 X"  → 2 reformulations that match
- * what people actually wrote about X).
+ * Query expansion is intentionally opt-in. A single search already fans out
+ * across several search providers; adding an LLM expansion request plus extra
+ * variants multiplies outbound traffic and concurrent work. Set
+ * WEB_SEARCH_QUERY_EXPANSION=1 when the extra recall is worth that cost.
+ *
+ * When enabled, this takes the user's natural-language query and asks the LLM
+ * for alternative search-engine-friendly variants. The original query is
+ * always retained and failures degrade to the original only.
  *
  * Design notes:
- *   - 6-second hard timeout on the LLM call. Slow expansions should
+ *   - 2-second hard timeout on the LLM call. Slow expansions should
  *     never block the search.
- *   - In-memory LRU cache (256 entries). Repeated topic refreshes
- *     (the SPA calls web search every 5 turns on a topic) hit the
+ *   - In-memory LRU cache (256 entries). Repeated topic refreshes hit the
  *     cache and skip the LLM roundtrip.
- *   - Fallback to [query] on ANY failure (no key, timeout, parse
- *     error, empty variants). Search still works, just with one
- *     variant.
- *   - Uses the user's active LLM provider (same one the chat route
- *     uses). No separate model needed.
+ *   - Fallback to [query] on ANY failure (no key, timeout, parse error,
+ *     empty variants). Search still works, just with one variant.
+ *   - Uses the user's active LLM provider (same one the chat route uses).
  */
 
 import { callChatCompletion } from './llm.js';
@@ -26,6 +25,10 @@ import { getActiveApiKey } from './apiKey.js';
 
 const _cache = new Map<string, string[]>();
 const CACHE_MAX = 256;
+
+function queryExpansionEnabled(): boolean {
+  return /^(1|true|yes|on)$/i.test(String(process.env.WEB_SEARCH_QUERY_EXPANSION || '').trim());
+}
 
 /**
  * @param {number} [count=4]  how many variants to generate
@@ -56,6 +59,12 @@ function buildSystemPrompt(count: number): string {
 export async function expandQuery(query: string, opts: { userId?: string | null; signal?: AbortSignal; variantCount?: number } = {}): Promise<string[]> {
   if (!query || !String(query).trim()) return [query];
   const q = String(query).trim();
+
+  /* Stability-first default: do not spend another LLM request merely to
+     rewrite a query. Returning only the original also prevents webSearch from
+     launching the per-engine secondary-variant fan-out. */
+  if (!queryExpansionEnabled()) return [q];
+
   const variantCount = Math.max(1, Math.min(8, opts.variantCount ?? 4));
 
   if (_cache.has(q)) return _cache.get(q)!;
