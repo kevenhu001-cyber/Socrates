@@ -28,7 +28,6 @@
  *   mobile-shell.css — ≤768px header and home layout
  *   mobile-sidebar.css — ≤768px drawer rows, header and account layout
  *   mobile-directories.css — ≤768px library and plugin layout
- *   motion.css      — cross-surface motion policy; loaded last on purpose
  */
 
 @import './sidebar.css';
@@ -45,8 +44,5 @@
 @import './mobile-controls.css';
 @import './mobile-shell.css';
 @import './mobile-sidebar.css';
-@import './mobile-directories.css';
 
-/* Motion is a policy layer rather than another visual owner. Keep it last so
-   legacy/parity component animations cannot re-introduce competing cues. */
-@import './motion.css';
+@import './mobile-directories.css';
