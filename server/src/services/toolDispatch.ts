@@ -41,11 +41,20 @@ export async function dispatchToolCalls<TCall, TResult>(
   let active = 0;
   const waiters: Array<() => void> = [];
 
-  const acquire = async () => {
-    if (active >= concurrency) {
-      await new Promise<void>((resolve) => waiters.push(resolve));
+  const acquire = (): Promise<void> => {
+    if (active < concurrency) {
+      active += 1;
+      return Promise.resolve();
     }
-    active += 1;
+    return new Promise<void>((resolve) => {
+      waiters.push(() => {
+        /* Reserve the released slot synchronously before waking the waiter.
+           That prevents a newly arriving call from stealing the slot between
+           release() and the waiter's next microtask. */
+        active += 1;
+        resolve();
+      });
+    });
   };
 
   const release = () => {
