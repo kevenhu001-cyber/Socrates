@@ -770,9 +770,14 @@
 /*  Workspace Loading & Skeletons                                     */
 /* ------------------------------------------------------------------ */
 
-@keyframes workspaceSkeletonPulse {
-  0%, 100% { opacity: 0.35; }
-  50% { opacity: 0.75; }
+@keyframes workspaceSkeletonShimmer {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+
+@keyframes workspaceTextShimmer {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
 }
 
 #appShell .workspace-loading-surface {
@@ -814,6 +819,7 @@
   place-items: center;
   width: 100%;
   height: 100%;
+  border-radius: 50%;
 }
 
 #appShell .workspace-loading-banner-text {
@@ -833,12 +839,49 @@
   color: var(--ui-text-tertiary);
 }
 
+/* Loading copy gets the same travelling highlight as the blocks below. Keep
+   this scoped to page-loading copy so the existing inline `shimmer-text`
+   contract remains free to serve stream/tool status labels elsewhere. */
+#appShell .workspace-loading-banner-text .shimmer-text {
+  color: var(--ui-text-tertiary);
+  -webkit-text-fill-color: transparent;
+  background-image: linear-gradient(105deg,
+    var(--ui-text-tertiary) 0%,
+    var(--ui-text-tertiary) 38%,
+    var(--ui-text-primary) 50%,
+    var(--ui-text-tertiary) 62%,
+    var(--ui-text-tertiary) 100%);
+  background-size: 260% 100%;
+  background-position: 150% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: workspaceTextShimmer var(--ui-duration-shimmer, 1.8s) linear infinite;
+  will-change: background-position;
+}
+
 #appShell .workspace-skeleton-container {
   display: flex;
   flex-direction: column;
   gap: 18px;
   width: 100%;
-  animation: workspaceSkeletonPulse var(--ui-duration-pulse-slow, 1.6s) ease-in-out infinite;
+}
+
+/* All visible placeholder blocks share one sweep. A gradient background is
+   used instead of opacity pulsing so the user can read the loading direction
+   at a glance while each block keeps its final layout footprint. */
+#appShell .workspace-skeleton-shimmer {
+  background-color: var(--cg-surface-raised);
+  background-image: linear-gradient(105deg,
+    var(--cg-surface-raised) 0%,
+    var(--cg-surface-raised) 36%,
+    color-mix(in srgb, var(--cg-surface-raised), var(--ui-text-primary) 12%) 50%,
+    var(--cg-surface-raised) 64%,
+    var(--cg-surface-raised) 100%);
+  background-repeat: no-repeat;
+  background-size: 240% 100%;
+  background-position: 150% 0;
+  animation: workspaceSkeletonShimmer var(--ui-duration-shimmer, 1.8s) linear infinite;
+  will-change: background-position;
 }
 
 #appShell .workspace-skeleton-strip {
@@ -882,7 +925,7 @@
 }
 
 #appShell .workspace-skeleton-pill-tab.active {
-  background: var(--ui-bg-control);
+  background-color: var(--ui-bg-control);
 }
 
 #appShell .workspace-skeleton-pill-chip {
@@ -1014,6 +1057,121 @@
   flex-shrink: 0;
 }
 
+/* Scheduled tasks use the same card/list hierarchy as the settled page so a
+   slow request does not cause the whole directory to jump when it resolves. */
+#appShell .workspace-loading-scheduled {
+  max-width: 1040px;
+  padding: 40px 32px 64px;
+}
+
+#appShell .workspace-skeleton-scheduled-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+#appShell .workspace-skeleton-scheduled-heading {
+  max-width: 52%;
+  gap: 10px;
+}
+
+#appShell .workspace-skeleton-line-page-title {
+  width: 180px;
+  height: 32px;
+}
+
+#appShell .workspace-skeleton-line-page-desc {
+  width: min(360px, 100%);
+  height: 12px;
+}
+
+#appShell .workspace-skeleton-scheduled-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#appShell .workspace-skeleton-scheduled-actions .workspace-skeleton-search {
+  width: 220px;
+  height: var(--ui-control-search);
+}
+
+#appShell .workspace-skeleton-create {
+  width: 76px;
+  height: var(--ui-control-desktop);
+}
+
+#appShell .workspace-skeleton-scheduled-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+#appShell .workspace-skeleton-scheduled-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  min-height: 72px;
+  padding: 16px;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-raised);
+}
+
+#appShell .workspace-skeleton-scheduled-card .workspace-skeleton-icon-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--ui-radius-lg);
+}
+
+#appShell .workspace-skeleton-scheduled-card .workspace-skeleton-line-desc {
+  width: 100%;
+  max-width: none;
+}
+
+#appShell .workspace-scheduled-task-list {
+  gap: 10px;
+}
+
+#appShell .scheduled-skeleton-row {
+  min-height: 70px;
+  padding: 16px;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-bg-raised);
+}
+
+#appShell .workspace-skeleton-task-action {
+  width: 96px;
+}
+
+/* The lazy page chunk has a shorter gap than a data request, but it should
+   still announce the same visual language before React takes ownership. */
+#appShell .workspace-chunk-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  min-height: 180px;
+  padding: 48px 20px;
+}
+
+#appShell .workspace-chunk-loading-label {
+  font-size: var(--ui-font-size-sm);
+}
+
+#appShell .workspace-chunk-loading-line {
+  width: min(420px, 82%);
+  height: 12px;
+  border-radius: var(--ui-radius-pill);
+}
+
+#appShell .workspace-chunk-loading-line-short {
+  width: min(260px, 58%);
+}
+
 @media (max-width: 768px) {
 
   /* Touch has no hover, so the desktop hover-reveal contract cannot gate the
@@ -1033,6 +1191,38 @@
     min-width: 56px;
     height: 56px;
     min-height: 56px;
+  }
+
+  #appShell .workspace-loading-scheduled {
+    max-width: none;
+    padding: 24px 16px 48px;
+  }
+
+  #appShell .workspace-skeleton-scheduled-head {
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  #appShell .workspace-skeleton-scheduled-heading {
+    max-width: none;
+    width: 100%;
+  }
+
+  #appShell .workspace-skeleton-scheduled-actions {
+    width: 100%;
+  }
+
+  #appShell .workspace-skeleton-scheduled-actions .workspace-skeleton-search {
+    flex: 1 1 auto;
+    width: auto;
+  }
+
+  #appShell .workspace-skeleton-scheduled-cards {
+    grid-template-columns: 1fr;
+  }
+
+  #appShell .scheduled-skeleton-row {
+    padding: 14px;
   }
 
   #appShell .plugin-detail-title-row h2 {

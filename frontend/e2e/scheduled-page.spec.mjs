@@ -90,3 +90,32 @@ test('scheduled task list searches, filters active tasks, and dispatches row act
   await expect(page.locator('.workspace-empty')).toContainText('No active tasks');
   await expect(page.locator('.task-row')).toHaveCount(0);
 });
+
+test('scheduled page uses shimmer skeletons while tasks are loading', async ({ page }) => {
+  await mockAuthedApp(page, { lang: 'en' });
+  let releaseTasks;
+  const tasksResponse = new Promise((resolve) => { releaseTasks = resolve; });
+
+  await page.route('**/api/**', async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname.replace('/api/v2/', '/api/');
+    if (path === '/api/scheduled-tasks' && request.method() === 'GET') {
+      await tasksResponse;
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ tasks: [] }) });
+      return;
+    }
+    await route.fallback();
+  });
+
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.locator('#navScheduled').click();
+
+  const loading = page.locator('.workspace-loading-scheduled');
+  await expect(loading).toBeVisible();
+  await expect(loading.locator('.workspace-skeleton-shimmer')).toHaveCount(31);
+  await expect(loading.locator('.shimmer-text')).toHaveCount(2);
+
+  releaseTasks();
+  await expect(page.locator('.scheduled-directory')).toBeVisible();
+});

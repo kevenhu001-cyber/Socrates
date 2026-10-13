@@ -9,6 +9,7 @@ import { ScheduledPageHeader } from './ScheduledPageHeader';
 import { ScheduledRecommendations } from './ScheduledRecommendations';
 import { ScheduledTaskList } from './ScheduledTaskList';
 import { scheduledText } from './scheduled.copy';
+import { WorkspaceLoadingView } from '../workspace/WorkspaceLoadingView';
 
 const PANEL_ID = 'scheduledPanel';
 
@@ -26,7 +27,7 @@ function ScheduledPage() {
   }, [snap.tasks, query, scope]);
 
   if (snap.loading) {
-    return <div className="workspace-loading">{scheduledText('scheduled.loading', 'Loading tasks…')}</div>;
+    return <WorkspaceLoadingView page="scheduled" />;
   }
 
   if (snap.error) {

@@ -118,6 +118,7 @@
   --ui-duration-pulse: 1200ms;
   --ui-duration-pulse-slow: 1600ms;
   --ui-duration-spin: 900ms;
+  --ui-duration-shimmer: 1800ms;
 
   /* Wave loader (styles/components/wave.css + react/wave/Wave.tsx).
      A left-to-right band of bars whose lit column travels across the row and

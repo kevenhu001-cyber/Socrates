@@ -12,7 +12,7 @@ export function loadPage(hostId: string, load: () => Promise<void>): void {
   const host = document.getElementById(hostId);
   if (host && !loadedPages.has(hostId)) {
     host.classList.remove('visually-hidden');
-    host.textContent = 'Loading…';
+    host.innerHTML = '<div class="workspace-chunk-loading" role="status"><span class="workspace-chunk-loading-label shimmer-text">Loading…</span><span class="workspace-chunk-loading-line workspace-skeleton-shimmer"></span><span class="workspace-chunk-loading-line workspace-skeleton-shimmer workspace-chunk-loading-line-short"></span></div>';
     host.setAttribute('aria-busy', 'true');
   }
   void load().then(() => loadedPages.add(hostId)).catch(() => {

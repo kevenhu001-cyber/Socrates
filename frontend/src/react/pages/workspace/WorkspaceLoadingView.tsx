@@ -1,9 +1,11 @@
 import React from 'react';
 
-import { Wave } from '../../wave/Wave.js';
-
 export interface WorkspaceLoadingViewProps {
   page: string;
+}
+
+function SkeletonBlock({ className }: { className: string }) {
+  return <div className={`workspace-skeleton-shimmer ${className}`} />;
 }
 
 export function WorkspaceLoadingView({ page }: WorkspaceLoadingViewProps) {
@@ -18,28 +20,22 @@ export function WorkspaceLoadingView({ page }: WorkspaceLoadingViewProps) {
   } else if (page === 'library') {
     title = '资料库';
     label = '正在载入知识库文档与文件…';
+  } else if (page === 'scheduled') {
+    title = '定时任务';
+    label = '正在载入任务与运行计划…';
   }
 
   return (
     <div className={`workspace-surface workspace-loading-surface workspace-loading-${page}`} aria-busy="true" aria-live="polite">
-      {/* P_wave-page — the page loader is the one loading state big enough to
-          carry a real animation, so it gets the travelling wave. It replaced a
-          concentric ring + dot: two objects spinning at two tempos beside each
-          other, which read as two different things loading. The wave is a
-          single left-to-right band, matching the inline wave on a tool row so
-          "loading" looks identical at every scale. */}
       <div className="workspace-loading-banner">
         <div className="workspace-loading-spinner-box">
-          {/* The `workspace-loading-spinner-ring` class stays on the box: it
-              is the loading-state hook chatgpt-oled-replicas.spec asserts, and
-              a 44px wave is still "a spinner is showing" to that contract. */}
-          <div className="workspace-loading-spinner-ring">
-            <Wave size="lg" count={5} />
-          </div>
+          {/* Keep the historical hook for loading-state tests. The visual is
+              now a circular shimmer block rather than a separate spinner. */}
+          <div className="workspace-loading-spinner-ring workspace-skeleton-shimmer" aria-hidden="true" />
         </div>
         <div className="workspace-loading-banner-text">
-          <strong>{title}</strong>
-          <span>{label}</span>
+          <strong className="shimmer-text">{title}</strong>
+          <span className="shimmer-text">{label}</span>
         </div>
       </div>
 
@@ -47,26 +43,26 @@ export function WorkspaceLoadingView({ page }: WorkspaceLoadingViewProps) {
       {page === 'plugins' && (
         <div className="workspace-skeleton-container" aria-hidden="true">
           <div className="workspace-skeleton-strip">
-            <div className="workspace-skeleton-pill workspace-skeleton-pill-sm" />
+            <SkeletonBlock className="workspace-skeleton-pill workspace-skeleton-pill-sm" />
             <div className="workspace-skeleton-icons">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="workspace-skeleton-squircle" />
+                <SkeletonBlock key={i} className="workspace-skeleton-squircle" />
               ))}
             </div>
           </div>
           <div className="workspace-skeleton-tabs">
-            <div className="workspace-skeleton-pill workspace-skeleton-pill-tab active" />
-            <div className="workspace-skeleton-pill workspace-skeleton-pill-tab" />
+            <SkeletonBlock className="workspace-skeleton-pill workspace-skeleton-pill-tab active" />
+            <SkeletonBlock className="workspace-skeleton-pill workspace-skeleton-pill-tab" />
           </div>
           <div className="workspace-skeleton-list">
             {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="workspace-skeleton-row">
-                <div className="workspace-skeleton-logo" />
+                <SkeletonBlock className="workspace-skeleton-logo" />
                 <div className="workspace-skeleton-copy">
-                  <div className="workspace-skeleton-line workspace-skeleton-line-title" />
-                  <div className="workspace-skeleton-line workspace-skeleton-line-desc" />
+                  <SkeletonBlock className="workspace-skeleton-line workspace-skeleton-line-title" />
+                  <SkeletonBlock className="workspace-skeleton-line workspace-skeleton-line-desc" />
                 </div>
-                <div className="workspace-skeleton-action" />
+                <SkeletonBlock className="workspace-skeleton-action" />
               </div>
             ))}
           </div>
@@ -76,19 +72,19 @@ export function WorkspaceLoadingView({ page }: WorkspaceLoadingViewProps) {
       {page === 'projects' && (
         <div className="workspace-skeleton-container" aria-hidden="true">
           <div className="workspace-skeleton-tabs">
-            <div className="workspace-skeleton-pill workspace-skeleton-pill-tab active" />
-            <div className="workspace-skeleton-pill workspace-skeleton-pill-tab" />
-            <div className="workspace-skeleton-pill workspace-skeleton-pill-tab" />
+            <SkeletonBlock className="workspace-skeleton-pill workspace-skeleton-pill-tab active" />
+            <SkeletonBlock className="workspace-skeleton-pill workspace-skeleton-pill-tab" />
+            <SkeletonBlock className="workspace-skeleton-pill workspace-skeleton-pill-tab" />
           </div>
           <div className="workspace-skeleton-list">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="workspace-skeleton-row project-skeleton-row">
-                <div className="workspace-skeleton-icon-circle" />
+                <SkeletonBlock className="workspace-skeleton-icon-circle" />
                 <div className="workspace-skeleton-copy">
-                  <div className="workspace-skeleton-line workspace-skeleton-line-title" />
-                  <div className="workspace-skeleton-line workspace-skeleton-line-sub" />
+                  <SkeletonBlock className="workspace-skeleton-line workspace-skeleton-line-title" />
+                  <SkeletonBlock className="workspace-skeleton-line workspace-skeleton-line-sub" />
                 </div>
-                <div className="workspace-skeleton-dot-action" />
+                <SkeletonBlock className="workspace-skeleton-dot-action" />
               </div>
             ))}
           </div>
@@ -98,24 +94,67 @@ export function WorkspaceLoadingView({ page }: WorkspaceLoadingViewProps) {
       {page === 'library' && (
         <div className="workspace-skeleton-container" aria-hidden="true">
           <div className="workspace-skeleton-toolbar">
-            <div className="workspace-skeleton-pill workspace-skeleton-pill-md" />
-            <div className="workspace-skeleton-search" />
+            <SkeletonBlock className="workspace-skeleton-pill workspace-skeleton-pill-md" />
+            <SkeletonBlock className="workspace-skeleton-search" />
           </div>
           <div className="workspace-skeleton-chips">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="workspace-skeleton-pill workspace-skeleton-pill-chip" />
+              <SkeletonBlock key={i} className="workspace-skeleton-pill workspace-skeleton-pill-chip" />
             ))}
           </div>
           <div className="workspace-skeleton-list">
             {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="workspace-skeleton-row library-skeleton-row">
-                <div className="workspace-skeleton-check" />
-                <div className="workspace-skeleton-file-icon" />
+                <SkeletonBlock className="workspace-skeleton-check" />
+                <SkeletonBlock className="workspace-skeleton-file-icon" />
                 <div className="workspace-skeleton-copy">
-                  <div className="workspace-skeleton-line workspace-skeleton-line-title" />
+                  <SkeletonBlock className="workspace-skeleton-line workspace-skeleton-line-title" />
                 </div>
-                <div className="workspace-skeleton-line workspace-skeleton-line-date" />
-                <div className="workspace-skeleton-line workspace-skeleton-line-size" />
+                <SkeletonBlock className="workspace-skeleton-line workspace-skeleton-line-date" />
+                <SkeletonBlock className="workspace-skeleton-line workspace-skeleton-line-size" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {page === 'scheduled' && (
+        <div className="workspace-skeleton-container workspace-scheduled-skeleton" aria-hidden="true">
+          <div className="workspace-skeleton-scheduled-head">
+            <div className="workspace-skeleton-copy workspace-skeleton-scheduled-heading">
+              <SkeletonBlock className="workspace-skeleton-line workspace-skeleton-line-page-title" />
+              <SkeletonBlock className="workspace-skeleton-line workspace-skeleton-line-page-desc" />
+            </div>
+            <div className="workspace-skeleton-scheduled-actions">
+              <SkeletonBlock className="workspace-skeleton-search" />
+              <SkeletonBlock className="workspace-skeleton-action workspace-skeleton-create" />
+            </div>
+          </div>
+          <div className="workspace-skeleton-tabs">
+            <SkeletonBlock className="workspace-skeleton-pill workspace-skeleton-pill-tab active" />
+            <SkeletonBlock className="workspace-skeleton-pill workspace-skeleton-pill-tab" />
+          </div>
+          <div className="workspace-skeleton-scheduled-cards">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="workspace-skeleton-scheduled-card">
+                <SkeletonBlock className="workspace-skeleton-icon-circle" />
+                <div className="workspace-skeleton-copy">
+                  <SkeletonBlock className="workspace-skeleton-line workspace-skeleton-line-title" />
+                  <SkeletonBlock className="workspace-skeleton-line workspace-skeleton-line-desc" />
+                </div>
+                <SkeletonBlock className="workspace-skeleton-dot-action" />
+              </div>
+            ))}
+          </div>
+          <div className="workspace-skeleton-list workspace-scheduled-task-list">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="workspace-skeleton-row scheduled-skeleton-row">
+                <SkeletonBlock className="workspace-skeleton-icon-circle" />
+                <div className="workspace-skeleton-copy">
+                  <SkeletonBlock className="workspace-skeleton-line workspace-skeleton-line-title" />
+                  <SkeletonBlock className="workspace-skeleton-line workspace-skeleton-line-sub" />
+                </div>
+                <SkeletonBlock className="workspace-skeleton-action workspace-skeleton-task-action" />
               </div>
             ))}
           </div>

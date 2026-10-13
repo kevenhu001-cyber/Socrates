@@ -424,11 +424,11 @@ html[data-boot-state="auth"] .boot-loading-dots::before,
 html[data-boot-state="auth"] .boot-loading-dots::after{animation:none}
 .boot-loading-logo{display:flex;align-items:center;gap:8px;color:hsl(var(--text-300));font-weight:600;font-size:calc(15px * var(--app-font-scale,1));letter-spacing:-.02em}
 .boot-loading-logo svg,.boot-loading-logo img{flex-shrink:0;color:hsl(var(--brand-000))}
-.boot-loading-dots{display:inline-flex;align-items:center;margin-left:6px;width:16px;height:16px;position:relative}
+.boot-loading-dots{display:inline-flex;align-items:center;margin-left:6px;width:44px;height:8px;position:relative;overflow:hidden;border-radius:999px;background:hsl(var(--border-300)/0.18)}
 .boot-loading-dots span{display:none}
-.boot-loading-dots::before{content:"";display:block;width:100%;height:100%;border-radius:50%;border:2px solid hsl(var(--border-300)/0.3);border-top-color:hsl(var(--accent-000));border-right-color:hsl(var(--brand-000));animation:bootSpin 1s cubic-bezier(.4,0,.2,1) infinite;box-sizing:border-box}
-.boot-loading-dots::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1px solid hsl(var(--accent-000)/0.2);animation:bootSpin 2s linear infinite reverse;opacity:.5}
-@keyframes bootSpin{to{transform:rotate(360deg)}}
+.boot-loading-dots::before{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 20%,hsl(var(--accent-000)/0.7) 50%,transparent 80%);background-size:220% 100%;animation:bootShimmer var(--ui-duration-shimmer,1.8s) linear infinite}
+.boot-loading-dots::after{display:none}
+@keyframes bootShimmer{from{background-position:150% 0}to{background-position:-50% 0}}
 .auth-card{width:100%;max-width:420px;padding:32px 28px}
 /* P4.5 — transient banner shown at the top of the auth gate when a
    401 from any background apiFetch triggers handleAuthExpired(). */
@@ -485,4 +485,3 @@ html[data-boot-state="auth"] .boot-loading-dots::after{animation:none}
 
 /* "Jump to bottom" floating button. Shown whenever the user has
    scrolled away from the bottom of the chat — even mid-reveal. */
-
