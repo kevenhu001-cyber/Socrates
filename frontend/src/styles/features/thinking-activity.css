@@ -77,13 +77,34 @@
   overflow-wrap: anywhere;
 }
 .turn-summary-status + .turn-summary-text { margin-top: var(--ui-space-xs); }
-.thinking-status .thinking-status-label {
-  animation: thinking-status-breathe var(--ui-duration-pulse-slow, 1.6s) ease-in-out infinite;
+
+/* One persistent cue owns the live thinking state. The old opacity breathe
+   made the entire status line repeatedly brighten and dim; a low-contrast
+   left-to-right text shimmer carries the same "working" signal without
+   changing the row's visual weight or competing with tool activity below. */
+.thinking-status .thinking-status-label { animation: none; }
+.thinking-status .thinking-status-label.shimmer-text {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  background-image: linear-gradient(
+    105deg,
+    var(--ui-text-tertiary) 0%,
+    var(--ui-text-tertiary) 36%,
+    var(--ui-text-primary) 50%,
+    var(--ui-text-tertiary) 64%,
+    var(--ui-text-tertiary) 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 240% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: thinking-status-shimmer var(--ui-duration-shimmer, 1.8s) linear infinite;
 }
-@keyframes thinking-status-breathe {
-  0%, 100% { opacity: .62; }
-  50% { opacity: 1; }
+@keyframes thinking-status-shimmer {
+  from { background-position: 160% 0; }
+  to { background-position: -160% 0; }
 }
+
 .thinking-status-detail {
   flex: 0 0 auto;
   color: var(--ui-text-tertiary);
@@ -102,5 +123,10 @@
 }
 .turn-summary .tool-inline-tool-icon :is(svg, img) { width: 100%; height: 100%; }
 @media (prefers-reduced-motion: reduce) {
-  .thinking-status .thinking-status-label { animation: none; }
+  .thinking-status .thinking-status-label.shimmer-text {
+    animation: none;
+    background-image: none;
+    color: var(--ui-text-secondary);
+    -webkit-text-fill-color: currentColor;
+  }
 }
