@@ -31,7 +31,9 @@ test('mobile conversation home matches the Figma browser layout', async ({ page 
     return {
       topbar: rect('.top-bar'),
       left: rect('#sidebarOpenBtn'),
+      leftIcon: rect('#sidebarOpenBtn svg'),
       right: rect('#mobileNewChatBtn'),
+      rightIcon: rect('#mobileNewChatBtn svg'),
       title: rect('#mobileModeTrigger'),
       composer: rect('#composerInputWrap'),
       plus: rect('#composerToolsBtn'),
@@ -46,12 +48,15 @@ test('mobile conversation home matches the Figma browser layout', async ({ page 
     };
   });
 
-  /* Figma AppBar: 44px app-owned track; browser/OS chrome is external. */
+  /* Figma paints 24px glyphs in a 44px app bar. Browser controls retain a
+     larger accessible hit box, so visual geometry is asserted on the SVG. */
   expect(geometry.topbar?.height).toBe(44);
-  expect(geometry.left?.width).toBe(24);
-  expect(geometry.left?.height).toBe(24);
-  expect(geometry.right?.width).toBe(24);
-  expect(geometry.right?.height).toBe(24);
+  expect(geometry.left?.width).toBeGreaterThanOrEqual(40);
+  expect(geometry.right?.width).toBe(44);
+  expect(geometry.leftIcon?.width).toBe(24);
+  expect(geometry.leftIcon?.height).toBe(24);
+  expect(geometry.rightIcon?.width).toBe(24);
+  expect(geometry.rightIcon?.height).toBe(24);
   expect(geometry.title?.height).toBe(44);
 
   /* Figma home bottom area: 203×72 suggestion cards, 24px gap to a 44px
@@ -73,9 +78,9 @@ test('mobile conversation home matches the Figma browser layout', async ({ page 
 
   await page.screenshot({ path: 'test-results/mobile-home-reference-collapsed.png', fullPage: true });
 
-  /* Conversation header keeps the same 44px track. Socrates' existing model
-     switcher becomes the Figma-style title cluster while the existing chat
-     actions retain their behavior as unframed 24px glyphs. */
+  /* Conversation header keeps the 44px track. The functional model switcher
+     becomes the Figma-style title cluster; the actions stay accessible while
+     their visible glyphs remain 24px. */
   const headerVisual = await page.evaluate(() => {
     document.body.dataset.conversationActive = 'true';
     document.getElementById('findBtn')?.classList.remove('hidden');
@@ -95,8 +100,10 @@ test('mobile conversation home matches the Figma browser layout', async ({ page 
     };
     return {
       sidebar: measure('#sidebarOpenBtn'),
+      sidebarIcon: measure('#sidebarOpenBtn svg'),
       modelSwitcher: measure('#topModelSwitcher'),
       newChat: measure('#mobileNewChatBtn'),
+      newChatIcon: measure('#mobileNewChatBtn svg'),
       find: measure('#findBtn'),
       share: measure('#shareBtn'),
       sidebarStatus: measure('.mobile-sidebar-status'),
@@ -105,22 +112,24 @@ test('mobile conversation home matches the Figma browser layout', async ({ page 
       shareLabelVisible: Boolean(document.querySelector('#shareBtn .share-btn-label')?.getClientRects().length),
     };
   });
-  expect(headerVisual.sidebar?.width).toBe(24);
-  expect(headerVisual.newChat?.width).toBe(24);
-  expect(headerVisual.find?.width).toBe(24);
-  expect(headerVisual.share?.width).toBe(24);
+  expect(headerVisual.sidebar?.width).toBeGreaterThanOrEqual(40);
+  expect(headerVisual.newChat?.width).toBeGreaterThanOrEqual(40);
+  expect(headerVisual.find?.width).toBeGreaterThanOrEqual(40);
+  expect(headerVisual.share?.width).toBeGreaterThanOrEqual(40);
+  expect(headerVisual.sidebarIcon?.width).toBe(24);
+  expect(headerVisual.newChatIcon?.width).toBe(24);
   expect(headerVisual.modelSwitcher?.width).toBeGreaterThan(0);
-  expect(headerVisual.modelSwitcher?.right).toBeLessThanOrEqual(headerVisual.newChat?.x ?? 0);
+  expect(headerVisual.modelSwitcher?.right).toBeLessThanOrEqual((headerVisual.newChat?.x ?? 0) + 1);
   for (const width of [390, 360, 320]) {
     await page.setViewportSize({ width, height: 844 });
     const boxes = await page.evaluate(() => {
       const rect = (selector) => document.querySelector(selector).getBoundingClientRect();
       const switcher = rect('#topModelSwitcher');
-      const newChat = rect('#mobileNewChatBtn');
-      return { switcherRight: switcher.right, newChatLeft: newChat.left, switcherWidth: switcher.width };
+      const right = document.querySelector('.top-bar-right').getBoundingClientRect();
+      return { switcherRight: switcher.right, actionsLeft: right.left, switcherWidth: switcher.width };
     });
     expect(boxes.switcherWidth).toBeGreaterThan(0);
-    expect(boxes.switcherRight).toBeLessThanOrEqual(boxes.newChatLeft + 1);
+    expect(boxes.switcherRight).toBeLessThanOrEqual(boxes.actionsLeft + 1);
   }
   expect(headerVisual.find?.borderWidth).toBe('0px');
   expect(headerVisual.share?.borderWidth).toBe('0px');
@@ -129,8 +138,7 @@ test('mobile conversation home matches the Figma browser layout', async ({ page 
   expect(headerVisual.shareIcon?.width).toBe(24);
   expect(headerVisual.shareLabelVisible).toBe(false);
 
-  /* Compare the app-owned browser region without synthesizing iOS status or
-     home-indicator chrome. */
+  /* Compare only the app-owned browser region, never synthesized iOS chrome. */
   await page.evaluate(() => { document.body.dataset.conversationActive = 'false'; });
   await page.setViewportSize({ width: 390, height: 756 });
   await page.waitForTimeout(180);
