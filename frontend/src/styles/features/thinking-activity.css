@@ -77,13 +77,27 @@
   overflow-wrap: anywhere;
 }
 .turn-summary-status + .turn-summary-text { margin-top: var(--ui-space-xs); }
-.thinking-status .thinking-status-label {
-  animation: thinking-status-breathe var(--ui-duration-pulse-slow, 1.6s) ease-in-out infinite;
+
+/* This file owns the shimmer's paint; polish/motion.css owns whether and how
+   it moves. Keeping those concerns separate prevents a feature stylesheet from
+   starting a second persistent cue beside tool/agent activity. */
+.thinking-status .thinking-status-label.shimmer-text {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  background-image: linear-gradient(
+    105deg,
+    var(--ui-text-tertiary) 0%,
+    var(--ui-text-tertiary) 36%,
+    var(--ui-text-primary) 50%,
+    var(--ui-text-tertiary) 64%,
+    var(--ui-text-tertiary) 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 240% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
 }
-@keyframes thinking-status-breathe {
-  0%, 100% { opacity: .62; }
-  50% { opacity: 1; }
-}
+
 .thinking-status-detail {
   flex: 0 0 auto;
   color: var(--ui-text-tertiary);
@@ -102,5 +116,9 @@
 }
 .turn-summary .tool-inline-tool-icon :is(svg, img) { width: 100%; height: 100%; }
 @media (prefers-reduced-motion: reduce) {
-  .thinking-status .thinking-status-label { animation: none; }
+  .thinking-status .thinking-status-label.shimmer-text {
+    background-image: none;
+    color: var(--ui-text-secondary);
+    -webkit-text-fill-color: currentColor;
+  }
 }

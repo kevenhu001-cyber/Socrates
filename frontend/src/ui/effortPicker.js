@@ -3,13 +3,13 @@ import { openChatConfiguration } from '../react/chat-configuration/chatConfigura
 import { getProviderConfigSnapshot, subscribeToProviderConfig } from '../config/providerConfig.store.ts';
 /* ui/effortPicker.js — the composer "思考强度" pill.
  *
- * P_chatgpt-landing (v3). The pill is a fixed-label trigger (思考强度 ⌄)
- * that opens the anchored React generation-config popover
- * (react/chat-configuration) — model list plus reasoning-effort slider and
- * response speed, mirroring the ChatGPT mobile composer. The legacy
- * in-picker dropdown markup and its portalling machinery were removed; this
- * module now only owns the persisted effort value and the trigger's
- * aria/tooltip copy.
+ * The compact pill is a phone affordance. Desktop already exposes the same
+ * model/reasoning configuration through #topModelSwitcher, so repeating the
+ * effort control inside the composer makes the primary input rail look like a
+ * power-user toolbar. syncEffortUI() therefore keeps the picker mounted but
+ * hidden on desktop and reveals it on phone layouts; this preserves state,
+ * accessibility wiring and the single composer DOM while reducing default
+ * desktop capability density.
  *
  * Deep thinking is derived from reasoning effort: High turns on the verbose
  * "careful scholar" chat prompt via window.extensiveThinkingOn (read by
@@ -21,6 +21,7 @@ import { getProviderConfigSnapshot, subscribeToProviderConfig } from '../config/
 
 var VALID = ["high", "medium", "low"];
 var _effort = null;
+var MOBILE_QUERY = '(max-width: 768px)';
 
 function _load() {
   var v = getStoredReasoningEffort();
@@ -63,19 +64,32 @@ function _activeModelLabel() {
   return model;
 }
 
+function _composerEffortVisible() {
+  try { return window.matchMedia && window.matchMedia(MOBILE_QUERY).matches; }
+  catch (_) { return false; }
+}
+
+function _syncComposerEffortVisibility() {
+  var visible = _composerEffortVisible();
+  document.querySelectorAll('.effort-picker').forEach(function (picker) {
+    picker.hidden = !visible;
+    picker.setAttribute('aria-hidden', visible ? 'false' : 'true');
+  });
+}
+
 /* Toggle the anchored configuration popover for the clicked trigger. */
 export function toggleEffortPicker(el) {
   openChatConfiguration(el || null);
 }
 
-/* Refresh every trigger: the visible pill text stays the fixed i18n label
-   (思考强度); the live "model · level" value rides on the tooltip and
-   aria-label so it stays one hover away and announced to screen readers. */
+/* Refresh every trigger: the live model/level value rides on the tooltip and
+   aria-label. On desktop the composer copy stays hidden and the same config is
+   available from the top-bar switcher; on phones the compact level remains in
+   the composer rail. */
 export function syncEffortUI() {
   var v = _load();
+  _syncComposerEffortVisibility();
   document.querySelectorAll(".effort-picker").forEach(function (picker) {
-    /* P_effort-glyph — kept for any residual markup/CSS that still keys off
-       the level attribute. */
     picker.setAttribute("data-effort", v);
     var effortLabel = _labelFor(v);
     var modelLabel = _activeModelLabel();
@@ -86,8 +100,6 @@ export function syncEffortUI() {
       trigger.setAttribute("title", fullLabel);
       trigger.setAttribute("data-model-label", modelLabel);
     }
-    /* Compact label shown instead of the fixed 思考强度 label on phone
-       layouts (the reference pill reads the level: 高/中/低). */
     var valueEl = picker.querySelector(".effort-value");
     if (valueEl) valueEl.textContent = effortLabel;
   });
@@ -121,6 +133,7 @@ if (typeof document !== "undefined") {
     _syncThinking(_effort);
     syncEffortUI();
   });
+  window.addEventListener('resize', _syncComposerEffortVisibility, { passive: true });
   window.addEventListener("DOMContentLoaded", function () { try { syncEffortUI(); } catch (_) {} });
   if (document.readyState !== "loading") { try { syncEffortUI(); } catch (_) {} }
 }

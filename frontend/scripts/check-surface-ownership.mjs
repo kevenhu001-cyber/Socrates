@@ -25,6 +25,35 @@ const surfaces = {
   },
 };
 
+/*
+ * Motion is intentionally the one cross-surface exception. The visual owner
+ * files above keep geometry, paint and typography, while polish/motion.css may
+ * coordinate animation state across sidebar / transcript / composer surfaces.
+ * The exception is property-scoped for the ENTIRE file: width, padding, color,
+ * display, typography, etc. are rejected even if a future selector does not
+ * belong to one of the guarded surfaces above.
+ */
+const CROSS_SURFACE_MOTION_OWNER = 'polish/motion.css';
+const MOTION_PROPERTIES = new Set([
+  'animation',
+  'opacity',
+  'transform',
+  'transform-origin',
+  'transition',
+  'will-change',
+]);
+
+function isMotionDeclaration(prop) {
+  return MOTION_PROPERTIES.has(prop)
+    || prop.startsWith('animation-')
+    || prop.startsWith('transition-');
+}
+
+function isMotionOnlyRule(rule) {
+  const declarations = (rule.nodes || []).filter((node) => node.type === 'decl');
+  return declarations.length > 0 && declarations.every((decl) => isMotionDeclaration(decl.prop));
+}
+
 function walk(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
@@ -43,17 +72,33 @@ function appliesOnDesktop(rule) {
   return true;
 }
 
+function insideKeyframes(rule) {
+  for (let parent = rule.parent; parent && parent.type !== 'root'; parent = parent.parent) {
+    if (parent.type === 'atrule' && /keyframes/i.test(parent.name)) return true;
+  }
+  return false;
+}
+
 const problems = [];
 for (const file of walk(STYLES)) {
   const rel = relative(STYLES, file).replaceAll('\\', '/');
   if (rel.startsWith('legacy/') || rel.startsWith('restore/') || rel === 'themes.css' || rel === 'tokens.css') continue;
   const root = postcss.parse(readFileSync(file, 'utf8'), { from: file });
   root.walkRules((rule) => {
+    if (insideKeyframes(rule)) return;
+
+    if (rel === CROSS_SURFACE_MOTION_OWNER && !isMotionOnlyRule(rule)) {
+      problems.push(`${rel}:${rule.source?.start?.line ?? '?'} motion policy may declare motion properties only: ${rule.selectors.join(', ')}`);
+      return;
+    }
+
     if (!appliesOnDesktop(rule)) return;
     for (const [name, surface] of Object.entries(surfaces)) {
       if (surface.owners.includes(rel)) continue;
+      const motionException = rel === CROSS_SURFACE_MOTION_OWNER;
       for (const selector of rule.selectors) {
         if (!surface.context.test(selector) || surface.exclude.test(selector)) continue;
+        if (motionException) continue;
         problems.push(`${rel}:${rule.source?.start?.line ?? '?'} ${name} desktop rule outside ${surface.owners.join(', ')}: ${selector}`);
       }
     }
@@ -72,27 +117,10 @@ for (const file of walk(STYLES)) {
  * resolved silently by @import order, so the shipped value was whichever file
  * sorted last and the other declaration was invisible dead code that a later
  * edit could revive.
- *
- * Matching is on the LAST simple selector in a compound (`#appShell
- * .sidebar-account-menu .tier-badge` → `.tier-badge`), because that is what
- * identifies the element; the ancestor path is scaffolding that varies by
- * sheet. Rules that only apply at <=768px are excluded, so this catches
- * desktop conflicts and not the deliberate mobile density.
- *
- * The list is deliberately short and every entry is a defect that was
- * actually observed. A blanket "no property twice anywhere" rule would fire
- * on hundreds of legitimate mobile/desktop pairs and on cascade layering
- * that is the point of this architecture. Add to it, don't widen it.
  */
 const duplicatePairs = [
-  // The plan label under the account name. Was 13px (components/sidebar.css)
-  // vs 14px (polish/mobile-sidebar.css) vs 12px (parity/sidebar.css).
   ['.tier-badge', 'font-size'],
-  // Group headers inside the history list: "Today", "Yesterday". The phone
-  // drawer used to drop to 11px while the desktop rail stayed at 12px.
   ['.recents-time-label', 'font-size'],
-  // The "+" menu footer search. 34px matches the desktop item rows above it;
-  // it was 38px in one sheet and 34px in another.
   ['.composer-tools-footer-search', 'min-height'],
 ];
 
@@ -102,7 +130,7 @@ const lastSimple = (selector) => {
   return parts.length ? parts[parts.length - 1] : selector.trim();
 };
 
-const ownerOf = new Map(); // "selector|prop" -> { value, where }
+const ownerOf = new Map();
 for (const file of walk(STYLES)) {
   const rel = relative(STYLES, file).replaceAll('\\', '/');
   if (rel.startsWith('legacy/') || rel.startsWith('restore/') || rel === 'themes.css' || rel === 'tokens.css') continue;
@@ -113,7 +141,7 @@ for (const file of walk(STYLES)) {
       const tail = lastSimple(selector);
       for (const [className, property] of duplicatePairs) {
         if (tail !== className) continue;
-        const decl = rule.nodes?.find((n) => n.type === 'decl' && n.prop === property && !n.important);
+        const decl = rule.nodes?.find((node) => node.type === 'decl' && node.prop === property && !node.important);
         if (!decl) continue;
         const prior = ownerOf.get(`${className}|${property}`);
         const here = `${rel}:${rule.source?.start?.line ?? '?'} ${property}: ${decl.value}`;
@@ -133,4 +161,4 @@ if (problems.length) {
   process.exit(1);
 }
 
-console.log('surface ownership check passed (sidebar, topbar, transcript + duplicate-declaration pairs)');
+console.log('surface ownership check passed (sidebar, topbar, transcript + restricted motion owner + duplicate-declaration pairs)');

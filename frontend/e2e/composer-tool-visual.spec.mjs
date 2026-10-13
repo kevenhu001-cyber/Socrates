@@ -29,29 +29,24 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
     await window.askChatTurn('Explore Socratic learning');
   });
 
-  // The live chat path replaced the agent-tool-card with a compact
-  // inline status row (.tool-inline) mounted in the message flow so the
-  // learner sees what the model is doing without tool-card chrome. The
-  // stream here is fulfilled atomically, so by assertion time the row
-  // has settled. Its label names the object of the call — the query —
-  // and the source count lives in the meta span, so the row is
-  // informative without expanding it.
   const toolRow = page.locator('.msg.assistant .tool-inline[data-tcid="search-visual"]');
   await expect(toolRow).toBeVisible();
   await expect(toolRow.locator('.tool-inline-label').first()).toHaveText('Searched for “Socratic learning”');
   await expect(toolRow.locator('.tool-inline-meta')).toHaveText('2 sources');
-  // Live activity has no aggregate header or card chrome.
   await expect(page.locator('.tool-run-summary')).toHaveCount(0);
   await expect(page.locator('.agent-tool-card')).toHaveCount(0);
+
   const chatComposer = page.locator('#composerInputWrap');
   await expect(chatComposer.locator('.rich-composer-toolbar')).toBeHidden();
   const desktopComposerBox = await chatComposer.boundingBox();
-  // The workbench content column is the shared 768px reading column.
   expect(desktopComposerBox?.width).toBeLessThanOrEqual(820);
-  // Desktop composer is the compact two-row surface: a 40px editor row plus
-  // a 40px control row (~98px with padding). It must never reach the
-  // multiline two-tier height while the draft is a single line.
   expect(desktopComposerBox?.height).toBeLessThanOrEqual(112);
+
+  /* Desktop keeps the primary rail quiet: + → prompt → mic → send. Model and
+     reasoning stay one click away in the existing top-bar configuration
+     trigger rather than occupying a permanent composer slot. */
+  await expect(chatComposer.locator('.effort-picker')).toBeHidden();
+  await expect(page.locator('#topModelSwitcher')).toBeVisible();
   const desktopControlBoxes = await page.evaluate(() => {
     const box = (selector) => {
       const element = document.querySelector(selector);
@@ -61,24 +56,18 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
     };
     return {
       attach: box('#composerInputWrap .attach-btn'),
-      // #composerRoot is a display:contents wrapper on desktop
-      // (styles/parity/composer-unified.css); the editable box is the real item.
       editor: box('#composerRoot .rich-composer-editor'),
       effort: box('#composerInputWrap .effort-picker'),
       mic: box('#composerMicBtn'),
       send: box('#composerPrimaryBtn'),
     };
   });
-  /* P_composer-unify — the conversation composer IS the landing composer:
-     plus → editor → effort → mic → send on one rail. */
-  expect(desktopControlBoxes.effort).not.toBeNull();
+  expect(desktopControlBoxes.effort).toBeNull();
   expect(desktopControlBoxes.attach?.right ?? 0).toBeLessThanOrEqual((desktopControlBoxes.editor?.left ?? 0) + 1);
-  expect(desktopControlBoxes.editor?.right ?? 0).toBeLessThanOrEqual((desktopControlBoxes.effort?.left ?? 0) + 1);
-  expect(desktopControlBoxes.effort?.right ?? 0).toBeLessThanOrEqual((desktopControlBoxes.mic?.left ?? 0) + 1);
+  expect(desktopControlBoxes.editor?.right ?? 0).toBeLessThanOrEqual((desktopControlBoxes.mic?.left ?? 0) + 1);
   expect(desktopControlBoxes.mic?.right ?? 0).toBeLessThanOrEqual((desktopControlBoxes.send?.left ?? 0) + 1);
   const editorCenter = ((desktopControlBoxes.editor?.top ?? 0) + (desktopControlBoxes.editor?.bottom ?? 0)) / 2;
   const attachCenter = ((desktopControlBoxes.attach?.top ?? 0) + (desktopControlBoxes.attach?.bottom ?? 0)) / 2;
-  // Every one-row control shares the same optical center inside the pill.
   expect(Math.abs(editorCenter - attachCenter)).toBeLessThanOrEqual(1);
   await page.screenshot({ path: 'test-results/visual-qa/chat-composer-dark.png', fullPage: true });
   await page.evaluate(() => window.toggleTheme?.());
@@ -97,12 +86,9 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   const mobileComposer = page.locator('#composerInputWrap');
   const mobileEditor = page.locator('#composerRoot .rich-composer-editor');
   await expect(mobileComposer.locator('.rich-composer-toolbar')).toBeHidden();
-  /* The reference keeps the reasoning-effort pill visible at rest. */
+  /* Non-default reasoning stays directly visible on phones. */
   await expect(mobileComposer.locator('.effort-picker')).toBeVisible();
   const collapsedBox = await mobileComposer.boundingBox();
-  /* The in-session mobile composer matches the landing (topic) card: the
-     reference's two-storey capsule (~104px) that only grows for a wrapped
-     draft. */
   expect(collapsedBox?.height).toBeLessThanOrEqual(112);
   const collapsedGeometry = await page.evaluate(() => {
     const rect = (selector) => {
@@ -120,33 +106,23 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
     };
   });
   console.log('[mobile-collapsed-geometry]', JSON.stringify(collapsedGeometry));
-  /* Two-storey capsule: the editor sits above the control rail. */
   expect(['contents', 'grid', 'flex']).toContain(collapsedGeometry.bodyDisplay);
   expect((collapsedGeometry.send?.top ?? 0)).toBeGreaterThanOrEqual((collapsedGeometry.editor?.bottom ?? 0) - 8);
   await page.screenshot({ path: 'test-results/visual-qa/chat-composer-mobile-collapsed.png', fullPage: true });
 
   await mobileEditor.click();
   await expect(mobileComposer.locator('.effort-picker')).toBeVisible();
-  // Focus is a state cue, not a layout jump. The same compact row stays in
-  // place until the editor actually becomes multiline. The effort pill is
-  // already visible at rest, matching the reference.
   await expect.poll(async () => (await mobileComposer.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual((collapsedBox?.height ?? 0) - 1);
   const focusedBox = await mobileComposer.boundingBox();
   const focusedEditorBox = await page.locator('#composerInputWrap .rich-composer-editor').boundingBox();
-  /* The effort pill is already visible at rest, so focus only narrows the
-     editor column while every control stays on the same row. */
-  // The mobile rail keeps the reasoning control exposed, leaving a
-  // compact but readable editor column at the 390px reference width.
   expect(focusedEditorBox?.width).toBeGreaterThanOrEqual(96);
   expect(focusedEditorBox?.right ?? 0).toBeLessThanOrEqual(focusedBox?.right ?? 0);
-  /* Focus must not push the card out of its capsule height. */
   expect(focusedBox?.height ?? 999).toBeLessThanOrEqual(112);
   await page.screenshot({ path: 'test-results/visual-qa/chat-composer-mobile-focused.png', fullPage: true });
 
   await page.evaluate(() => {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
   });
-  /* Blur does not re-hide the pill — the reference shows it at rest. */
   await expect(mobileComposer.locator('.effort-picker')).toBeVisible();
   await expect.poll(async () => (await mobileComposer.boundingBox())?.height ?? 0).toBeLessThanOrEqual(112);
 });

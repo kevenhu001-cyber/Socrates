@@ -36,7 +36,6 @@
   }
 }
 
-
 /* Effort trigger reads as a chip: quieter type than the editor text. */
 
 /* "+" tools menu — the desktop card skin (16px radius, border, shadow,
@@ -177,8 +176,8 @@ body #composerToolsMenu .composer-tools-item kbd {
 }
 #appShell .voice-recording-cancel svg { display: block; width: 15px; height: 15px; }
 
-/* Live dot — solid core + expanding halo ring instead of the offset
-   shadow pulse; reads "recording" without leaving the mono palette. */
+/* Live dot — solid core + expanding halo ring. Geometry and paint stay here;
+   polish/motion.css owns the halo's only persistent animation. */
 #appShell .voice-recording-indicator {
   position: relative;
   width: 8px;
@@ -193,11 +192,6 @@ body #composerToolsMenu .composer-tools-item kbd {
   border: 1.5px solid currentColor;
   border-radius: 50%;
   opacity: 0;
-  animation: polishVoiceRing var(--ui-duration-pulse-slow, 1.6s) cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
-}
-@keyframes polishVoiceRing {
-  0% { transform: scale(0.6); opacity: 0.5; }
-  70%, 100% { transform: scale(1.9); opacity: 0; }
 }
 
 /* Label + timer inline — "Listening… 0:12" reads as one status line. */
@@ -224,10 +218,6 @@ body #composerToolsMenu .composer-tools-item kbd {
 /* Confirm — keep the inverted 36px circle; paint-only hover (no geometry
    change, per the press contract in polish/press.css). */
 #appShell .voice-recording-stop:hover { opacity: 0.88; }
-
-@media (prefers-reduced-motion: reduce) {
-  #appShell .voice-recording-indicator::after { animation: none; }
-}
 
 /* Reference phone sheet is a flat action list — group labels stay in the
    DOM for the group aria-labels and the compat specs, but clip out of the

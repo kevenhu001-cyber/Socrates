@@ -1,9 +1,78 @@
 import { bumpRecentsVersion, setSidebarRecentsFilter, useSidebarStore } from './sidebar.store';
 
 const RECENTS_FILTER_KEY = 'socrates-recents-filter';
+const DESKTOP_SIDEBAR_BREAKPOINT = 769;
+const SIDEBAR_SPATIAL_DURATION_MS = 180;
+const SIDEBAR_SPATIAL_EASING = 'cubic-bezier(0.16, 1, 0.3, 1)';
+
+let mainShiftAnimation: Animation | null = null;
+let sidebarRevealAnimation: Animation | null = null;
 
 function storedRecentsFilter(): string | null {
   try { return localStorage.getItem(RECENTS_FILTER_KEY) || null; } catch { return null; }
+}
+
+function prefersReducedMotion(): boolean {
+  try { return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true; }
+  catch { return false; }
+}
+
+function cancelDesktopSidebarMotion(): void {
+  mainShiftAnimation?.cancel();
+  sidebarRevealAnimation?.cancel();
+  mainShiftAnimation = null;
+  sidebarRevealAnimation = null;
+}
+
+function mainSidebarInset(main: HTMLElement): number {
+  const value = Number.parseFloat(getComputedStyle(main).paddingLeft);
+  return Number.isFinite(value) ? value : 0;
+}
+
+/**
+ * Desktop open/close uses a FLIP-style compositor transition.
+ *
+ * polish/motion.css owns the cross-surface rule that disables the historical
+ * width/padding transitions. The target geometry therefore commits once; this
+ * service only measures the old/new inset and visually carries the main
+ * surface across that jump with a transform.
+ */
+function animateDesktopSidebarMotion(
+  sidebar: HTMLElement,
+  main: HTMLElement,
+  beforeInset: number,
+  opening: boolean,
+): void {
+  if (prefersReducedMotion() || typeof main.animate !== 'function') return;
+
+  const afterInset = mainSidebarInset(main);
+  const deltaX = beforeInset - afterInset;
+  if (Math.abs(deltaX) > 0.5) {
+    mainShiftAnimation = main.animate(
+      [
+        { transform: `translateX(${deltaX}px)` },
+        { transform: 'translateX(0)' },
+      ],
+      {
+        duration: SIDEBAR_SPATIAL_DURATION_MS,
+        easing: SIDEBAR_SPATIAL_EASING,
+      },
+    );
+  }
+
+  if (!opening) return;
+  const inner = sidebar.querySelector<HTMLElement>('.sidebar-inner');
+  if (!inner || typeof inner.animate !== 'function') return;
+  sidebarRevealAnimation = inner.animate(
+    [
+      { opacity: 0.82, transform: 'translateX(-4px)' },
+      { opacity: 1, transform: 'translateX(0)' },
+    ],
+    {
+      duration: SIDEBAR_SPATIAL_DURATION_MS,
+      easing: SIDEBAR_SPATIAL_EASING,
+    },
+  );
 }
 
 export function hydrateRecentsFilterState(): void {
@@ -44,6 +113,14 @@ export function toggleSidebar(): void {
   const sidebar = document.getElementById('sidebar');
   if (!sidebar) return;
   const backdrop = document.getElementById('sidebarBackdrop');
+  const desktop = window.innerWidth >= DESKTOP_SIDEBAR_BREAKPOINT;
+  const main = desktop ? document.querySelector<HTMLElement>('#appShell .main') : null;
+
+  /* A rapid second toggle should start from the committed layout state, not
+     from the transform of the animation that is still in flight. */
+  cancelDesktopSidebarMotion();
+  const beforeInset = main ? mainSidebarInset(main) : 0;
+
   const wasCollapsed = sidebar.classList.contains('collapsed');
   if (wasCollapsed) {
     sidebar.classList.remove('collapsed');
@@ -53,6 +130,11 @@ export function toggleSidebar(): void {
     backdrop?.classList.remove('show');
   }
   const open = !sidebar.classList.contains('collapsed');
+
+  if (desktop && main) {
+    animateDesktopSidebarMotion(sidebar, main, beforeInset, open);
+  }
+
   const legacyWindow = window as Window & { sidebarOpen?: boolean; syncSidebarBtns?: () => void };
   legacyWindow.sidebarOpen = open;
   legacyWindow.syncSidebarBtns?.();

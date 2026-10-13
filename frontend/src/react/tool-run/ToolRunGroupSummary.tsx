@@ -25,6 +25,7 @@ export function ToolRunGroupSummary({
   open: boolean;
   onToggle: () => void;
 }) {
+  const live = view.state === 'running';
   return (
     <button
       type="button"
@@ -37,7 +38,7 @@ export function ToolRunGroupSummary({
         aria-hidden="true"
         dangerouslySetInnerHTML={{ __html: summaryIcon(view.state, category) }}
       />
-      <span className="tool-run-summary-label">
+      <span className={`tool-run-summary-label${live ? ' shimmer-text' : ''}`}>
         {view.headerLabel}
       </span>
       <span

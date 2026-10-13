@@ -1,0 +1,76 @@
+/*
+ * polish/motion.css — cross-surface motion policy.
+ *
+ * This is the only live stylesheet allowed to coordinate motion across
+ * component/surface ownership boundaries. `check-surface-ownership.mjs`
+ * enforces that every normal rule in this file contains motion properties
+ * only; geometry, paint, typography and layout stay with their surface owner.
+ *
+ * Contract:
+ *   - one persistent activity cue per live state;
+ *   - layout geometry commits once, visible continuity uses transforms;
+ *   - recording uses one halo pulse, never a halo + core pulse pair;
+ *   - reduced-motion disables every persistent animation in this policy.
+ */
+
+/* Desktop shell: sidebar width and main inset are committed immediately.
+   sidebar.service.ts provides the visible 180ms FLIP on `.main`. */
+@media (min-width: 769px) {
+  #appShell #sidebar,
+  #appShell #sidebar ~ .main {
+    transition: none;
+  }
+}
+
+/* Thinking, inline tools, grouped tools and agent steps share one motion
+   language: a slow text shimmer. Their glyphs remain still while that label
+   owns the live-state cue. */
+#appShell :is(
+  .thinking-status-label,
+  .tool-inline-label,
+  .tool-run-summary-label,
+  .agent-step-label
+).shimmer-text {
+  animation: ui-activity-shimmer var(--ui-duration-shimmer, 1.8s) linear infinite;
+}
+
+#appShell :is(
+  .thinking-status:has(.thinking-status-label.shimmer-text) .tool-inline-tool-icon,
+  .tool-inline[data-state="running"]:has(.tool-inline-label.shimmer-text) .tool-inline-tool-icon,
+  .tool-run-group[data-state="running"]:has(.tool-run-summary-label.shimmer-text) .tool-run-summary-icon,
+  .agent-step[data-state="running"]:has(.agent-step-label.shimmer-text) .agent-step-icon
+) {
+  animation: none;
+}
+
+@keyframes ui-activity-shimmer {
+  from { background-position: 160% 0; }
+  to { background-position: -160% 0; }
+}
+
+/* Recording: components/composer.css owns the dot geometry and
+   polish/composer.css owns the halo shape. This policy owns the only
+   persistent animation. */
+#appShell .voice-recording-indicator {
+  animation: none;
+}
+#appShell .voice-recording-indicator::after {
+  animation: ui-recording-ring var(--ui-duration-pulse-slow, 1.6s) cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
+}
+
+@keyframes ui-recording-ring {
+  0% { transform: scale(0.6); opacity: 0.5; }
+  70%, 100% { transform: scale(1.9); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #appShell :is(
+    .thinking-status-label,
+    .tool-inline-label,
+    .tool-run-summary-label,
+    .agent-step-label
+  ).shimmer-text,
+  #appShell .voice-recording-indicator::after {
+    animation: none;
+  }
+}
