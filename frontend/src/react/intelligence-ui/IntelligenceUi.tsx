@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState, type CSSProperties, type MouseEvent, type
 import {
   displayIntelligenceUiValue,
   initialStateForNodes,
+  intelligenceUiChartDomain,
   isSafeIntelligenceUiStateKey,
+  normalizeIntelligenceUiImageUrl,
   parseIntelligenceUiRecords,
   resolveIntelligenceUiValue,
   type IntelligenceUiNode,
@@ -33,6 +35,10 @@ type UiAction = {
   prompt?: unknown;
   url?: unknown;
 };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
 
 function asNumber(value: unknown, fallback: number): number {
   const number = typeof value === 'number' ? value : Number(value);
@@ -237,7 +243,7 @@ function UiChoice({ node, context }: { node: IntelligenceUiNode; context: Render
   const bind = typeof node.bind === 'string' ? node.bind : '';
   if (!isSafeIntelligenceUiStateKey(bind) || !Array.isArray(node.options)) return null;
   const label = asText(resolve(node.label, context));
-  const options = node.options.slice(0, 8).filter((option) => option && typeof option === 'object') as Array<Record<string, unknown>>;
+  const options = node.options.slice(0, 8).filter(isRecord);
   return (
     <fieldset className="intui-choice" data-intui-id={node.id}>
       {label ? <legend>{label}</legend> : null}
@@ -265,7 +271,7 @@ function UiChoice({ node, context }: { node: IntelligenceUiNode; context: Render
 
 function UiButton({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
   const label = asText(resolve(node.label, context));
-  const action = node.action && typeof node.action === 'object' ? node.action as UiAction : null;
+  const action = isRecord(node.action) ? node.action as UiAction : null;
   if (!label || !action) return null;
   const promptDisabled = context.readOnly && action.type === 'prompt';
   return (
@@ -287,10 +293,9 @@ function UiTable({ node, context }: { node: IntelligenceUiNode; context: RenderC
   if (!columns.length || !rows.length) return null;
   const normalizedColumns = columns.map((column, index) => {
     if (typeof column === 'string') return { key: column, label: column };
-    if (column && typeof column === 'object') {
-      const item = column as Record<string, unknown>;
-      const key = typeof item.key === 'string' ? item.key : `col-${index}`;
-      return { key, label: asText(resolve(item.label ?? key, context)) };
+    if (isRecord(column)) {
+      const key = typeof column.key === 'string' ? column.key : `col-${index}`;
+      return { key, label: asText(resolve(column.label ?? key, context)) };
     }
     return { key: `col-${index}`, label: '' };
   });
@@ -302,7 +307,7 @@ function UiTable({ node, context }: { node: IntelligenceUiNode; context: RenderC
         </thead>
         <tbody>
           {rows.map((row, rowIndex) => {
-            const record = row && typeof row === 'object' ? row as Record<string, unknown> : {};
+            const record = isRecord(row) ? row : {};
             return (
               <tr key={`${node.id}-row-${rowIndex}`}>
                 {normalizedColumns.map((column) => (
@@ -314,6 +319,271 @@ function UiTable({ node, context }: { node: IntelligenceUiNode; context: RenderC
         </tbody>
       </table>
     </div>
+  );
+}
+
+interface ChartPoint {
+  label: string;
+  value: number;
+}
+
+function resolvedChartPoints(node: IntelligenceUiNode, context: RenderContext): ChartPoint[] {
+  if (!Array.isArray(node.points)) return [];
+  const points: ChartPoint[] = [];
+  for (const rawPoint of node.points.slice(0, 16)) {
+    if (!isRecord(rawPoint)) continue;
+    const value = asNumber(resolve(rawPoint.value, context), Number.NaN);
+    if (!Number.isFinite(value)) continue;
+    points.push({
+      label: asText(resolve(rawPoint.label, context)) || String(points.length + 1),
+      value,
+    });
+  }
+  return points;
+}
+
+function UiChart({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
+  const points = resolvedChartPoints(node, context);
+  if (!points.length) return null;
+  const title = asText(resolve(node.title, context));
+  const kind = node.kind === 'line' ? 'line' : 'bar';
+  const [domainMin, domainMax] = intelligenceUiChartDomain(points.map((point) => point.value));
+  const range = Math.max(Number.EPSILON, domainMax - domainMin);
+  const width = 320;
+  const height = 128;
+  const padX = 12;
+  const padY = 12;
+  const plotWidth = width - padX * 2;
+  const plotHeight = height - padY * 2;
+  const xAt = (index: number) => padX + plotWidth * (index + 0.5) / points.length;
+  const yAt = (value: number) => padY + (domainMax - value) / range * plotHeight;
+  const baseline = yAt(0);
+  const slotWidth = plotWidth / points.length;
+  const barWidth = Math.max(3, Math.min(24, slotWidth * 0.62));
+  const polyline = points.map((point, index) => `${xAt(index).toFixed(2)},${yAt(point.value).toFixed(2)}`).join(' ');
+
+  return (
+    <figure className="intui-chart" data-intui-id={node.id}>
+      {title ? <figcaption className="intui-chart-title">{title}</figcaption> : null}
+      <svg className="intui-chart-plot" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={title || 'Chart'}>
+        <line className="intui-chart-axis" x1={padX} x2={width - padX} y1={baseline} y2={baseline} />
+        {kind === 'bar' ? points.map((point, index) => {
+          const y = yAt(point.value);
+          const rectY = Math.min(y, baseline);
+          const rectHeight = Math.max(1, Math.abs(baseline - y));
+          return (
+            <rect
+              key={`${node.id}-bar-${index}`}
+              className="intui-chart-bar"
+              x={xAt(index) - barWidth / 2}
+              y={rectY}
+              width={barWidth}
+              height={rectHeight}
+              rx={2}
+            />
+          );
+        }) : (
+          <>
+            <polyline className="intui-chart-line" points={polyline} />
+            {points.map((point, index) => (
+              <circle
+                key={`${node.id}-point-${index}`}
+                className="intui-chart-point"
+                cx={xAt(index)}
+                cy={yAt(point.value)}
+                r={2.5}
+              />
+            ))}
+          </>
+        )}
+      </svg>
+      <div className="intui-chart-values">
+        {points.map((point, index) => (
+          <div className="intui-chart-value" key={`${node.id}-value-${index}`}>
+            <span>{point.label}</span>
+            <strong>{asText(point.value)}</strong>
+          </div>
+        ))}
+      </div>
+    </figure>
+  );
+}
+
+interface TabItem {
+  id: string;
+  label: string;
+}
+
+function normalizedTabs(node: IntelligenceUiNode, context: RenderContext): TabItem[] {
+  if (!Array.isArray(node.tabs)) return [];
+  const tabs: TabItem[] = [];
+  const seen = new Set<string>();
+  for (const rawTab of node.tabs.slice(0, 8)) {
+    if (!isRecord(rawTab)) continue;
+    const id = typeof rawTab.id === 'string' ? rawTab.id.trim() : '';
+    if (!isSafeIntelligenceUiStateKey(id) || seen.has(id)) continue;
+    seen.add(id);
+    tabs.push({ id, label: asText(resolve(rawTab.label ?? id, context)) || id });
+  }
+  return tabs;
+}
+
+function UiTabs({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
+  const tabs = normalizedTabs(node, context);
+  const [localTab, setLocalTab] = useState(() => tabs[0]?.id || '');
+  if (!tabs.length) return null;
+  const bind = typeof node.bind === 'string' && isSafeIntelligenceUiStateKey(node.bind) ? node.bind : '';
+  const candidate = bind ? asText(context.state[bind]) : localTab;
+  const active = tabs.some((tab) => tab.id === candidate) ? candidate : tabs[0].id;
+  const children = context.children.get(node.id) || [];
+  const panelId = `intui-tabpanel-${node.id}`;
+  const activeTabId = `intui-tab-${node.id}-${active}`;
+
+  const selectTab = (id: string) => {
+    if (bind) setBoundValue(context, bind, id);
+    else setLocalTab(id);
+  };
+
+  return (
+    <section className="intui-tabs" data-intui-id={node.id}>
+      <div className="intui-tab-list" role="tablist" aria-label={asText(resolve(node.label, context)) || 'Views'}>
+        {tabs.map((tab) => (
+          <button
+            type="button"
+            role="tab"
+            id={`intui-tab-${node.id}-${tab.id}`}
+            aria-controls={panelId}
+            aria-selected={tab.id === active}
+            tabIndex={tab.id === active ? 0 : -1}
+            className={tab.id === active ? 'is-selected' : ''}
+            key={tab.id}
+            onClick={() => selectTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      <div className="intui-tab-panel" id={panelId} role="tabpanel" aria-labelledby={activeTabId} tabIndex={0}>
+        {children.map((child) => {
+          const childTab = typeof child.tab === 'string' ? child.tab : '';
+          if (childTab && childTab !== active) return null;
+          return <UiNode key={child.id} node={child} context={context} />;
+        })}
+      </div>
+    </section>
+  );
+}
+
+function UiEntity({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
+  const title = asText(resolve(node.title, context));
+  const subtitle = asText(resolve(node.subtitle, context));
+  const description = asText(resolve(node.description, context));
+  const imageUrl = normalizeIntelligenceUiImageUrl(resolve(node.image, context));
+  const imageAlt = asText(resolve(node.imageAlt, context)) || title;
+  const fields = Array.isArray(node.fields) ? node.fields.slice(0, 6).filter(isRecord) : [];
+  const action = isRecord(node.action) ? node.action as UiAction : null;
+  const actionLabel = asText(resolve(node.actionLabel, context));
+  const promptDisabled = context.readOnly && action?.type === 'prompt';
+  if (!title && !subtitle && !description && !imageUrl && !fields.length) return null;
+
+  return (
+    <article className="intui-entity" data-intui-id={node.id}>
+      {imageUrl ? (
+        <img
+          className="intui-entity-image"
+          src={imageUrl}
+          alt={imageAlt}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          draggable={false}
+        />
+      ) : null}
+      <div className="intui-entity-body">
+        <div className="intui-entity-head">
+          {title ? <div className="intui-entity-title">{title}</div> : null}
+          {subtitle ? <div className="intui-entity-subtitle">{subtitle}</div> : null}
+        </div>
+        {description ? <p className="intui-entity-description">{description}</p> : null}
+        {fields.length ? (
+          <dl className="intui-entity-fields">
+            {fields.map((field, index) => {
+              const label = asText(resolve(field.label, context));
+              const value = asText(resolve(field.value, context));
+              if (!label && !value) return null;
+              return (
+                <div key={`${node.id}-field-${index}`}>
+                  <dt>{label}</dt>
+                  <dd>{value}</dd>
+                </div>
+              );
+            })}
+          </dl>
+        ) : null}
+        {renderChildren(node, context)}
+        {action && actionLabel ? (
+          <button
+            type="button"
+            className="intui-button intui-entity-action"
+            disabled={promptDisabled}
+            onClick={(event) => executeAction(action, context, event)}
+          >
+            {actionLabel}
+          </button>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
+interface GalleryImage {
+  src: string;
+  alt: string;
+  caption: string;
+}
+
+function resolvedGalleryImages(node: IntelligenceUiNode, context: RenderContext): GalleryImage[] {
+  if (!Array.isArray(node.images)) return [];
+  const images: GalleryImage[] = [];
+  for (const rawImage of node.images.slice(0, 8)) {
+    if (!isRecord(rawImage)) continue;
+    const src = normalizeIntelligenceUiImageUrl(resolve(rawImage.src, context));
+    if (!src) continue;
+    const caption = asText(resolve(rawImage.caption, context));
+    images.push({
+      src,
+      alt: asText(resolve(rawImage.alt, context)) || caption,
+      caption,
+    });
+  }
+  return images;
+}
+
+function UiImageGallery({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
+  const images = resolvedGalleryImages(node, context);
+  if (!images.length) return null;
+  const columns = Math.min(3, Math.max(1, Math.round(asNumber(resolve(node.columns, context), images.length === 1 ? 1 : 2))));
+  const style = { '--intui-gallery-columns': columns } as CSSProperties;
+  const label = asText(resolve(node.label, context));
+  return (
+    <section className="intui-image-gallery-wrap" data-intui-id={node.id} aria-label={label || 'Image gallery'}>
+      {label ? <div className="intui-gallery-label">{label}</div> : null}
+      <div className="intui-image-gallery" style={style}>
+        {images.map((image, index) => (
+          <figure key={`${node.id}-image-${index}`}>
+            <img
+              src={image.src}
+              alt={image.alt}
+              loading="lazy"
+              decoding="async"
+              referrerPolicy="no-referrer"
+              draggable={false}
+            />
+            {image.caption ? <figcaption>{image.caption}</figcaption> : null}
+          </figure>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -332,6 +602,10 @@ function UiNode({ node, context }: { node: IntelligenceUiNode; context: RenderCo
     case 'choice': return <UiChoice node={node} context={context} />;
     case 'button': return <UiButton node={node} context={context} />;
     case 'table': return <UiTable node={node} context={context} />;
+    case 'chart': return <UiChart node={node} context={context} />;
+    case 'tabs': return <UiTabs node={node} context={context} />;
+    case 'entity': return <UiEntity node={node} context={context} />;
+    case 'image-gallery': return <UiImageGallery node={node} context={context} />;
     default: return null;
   }
 }
