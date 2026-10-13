@@ -16,6 +16,14 @@ function labelFromTarget(target, fallback) {
   return target.getAttribute('aria-label') || target.getAttribute('title') || fallback;
 }
 
+function closestAction(target) {
+  if (!target) return null;
+  var element = target.nodeType === 1 ? target : target.parentElement;
+  return element && typeof element.closest === 'function'
+    ? element.closest('[data-mobile-conversation-action]')
+    : null;
+}
+
 function ensureMobileConversationActions(doc) {
   var right = doc.querySelector('.top-bar-right');
   var compose = doc.getElementById('mobileNewChatBtn');
@@ -83,7 +91,7 @@ function ensureMobileConversationActions(doc) {
     });
 
     menu.addEventListener('click', function (event) {
-      var action = event.target.closest('[data-mobile-conversation-action]');
+      var action = closestAction(event.target);
       if (!action) return;
       var targetId = action.dataset.mobileConversationAction === 'find' ? 'findBtn' : 'shareBtn';
       closeMobileConversationMenu(doc, false);
