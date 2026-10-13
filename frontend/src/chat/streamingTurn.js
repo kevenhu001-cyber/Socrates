@@ -15,6 +15,7 @@
  *   user-stop (abort) body — chat/turn/abortPath.js
  *   replaceWithError body — chat/turn/errorPath.js
  */
+import { normalizePublicTurnActivity } from '../ui/turnActivityModel';
 import { stateStore } from '../state/store.js';
 import { turnState, streamRetryViewport } from './turnState.js';
 import { setChatStopState, markTurnInProgress, quietTurn } from './turnUi.js';
@@ -38,9 +39,8 @@ import { createFinishViewport } from './turn/finishViewport.js';
 import { createAbortPath } from './turn/abortPath.js';
 import { createErrorPath } from './turn/errorPath.js';
 import { createMessageOwnership } from './turn/messageOwnership.js';
-import { generateInitialTaskSummary } from './thinkExtract.ts';
 import { createFinishLifecycle } from './turn/finishLifecycle.js';
-import { toolCategory } from '../render/toolCategory.js';
+import { toolRunLabel } from '../ui/toolPresentationModel';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 function _t(key, fallback) {
@@ -57,22 +57,6 @@ function _appMode() {
     if (typeof window !== 'undefined' && window.appMode) return window.appMode;
   } catch (e) { reportSwallow(e, 'streamingTurn._appMode.readGlobal'); }
   return 'chat';
-}
-function _toolRunningLabel(toolName) {
-  if (!toolName) return _t('tool.running', '工具运行中…');
-  var cat = toolCategory(toolName);
-  if (cat === 'search') return _t('tool.actionSearch', '正在搜索网络资料…');
-  if (cat === 'code') return _t('tool.actionCode', '正在执行代码…');
-  if (cat === 'visual') return _t('tool.actionVisual', '正在构建可视化图表…');
-  if (cat === 'fetch') return _t('tool.actionFetch', '正在获取网页内容…');
-  if (cat === 'plan') return _t('tool.actionPlan', '正在规划解题步骤…');
-  if (cat === 'spec') return _t('tool.actionSpec', '正在起草技术规格…');
-  if (cat === 'site') return _t('tool.actionSite', '正在构建与发布网页…');
-  if (cat === 'agent') return _t('tool.actionCodex', '正在执行工作区任务…');
-  if (toolName === 'read_attachment') return _t('tool.actionRecognizeImage', '正在读取与识别附件…');
-  if (cat === 'read') return _t('tool.actionRead', '正在读取文件…');
-  if (cat === 'write') return _t('tool.actionWrite', '正在更新文件…');
-  return _t('tool.running', '工具运行中…');
 }
 /* Smooth streaming decouples the network-arrival stream from the visual
    playback stream: upstream deltas only fill a buffer, and an adaptive
@@ -157,27 +141,12 @@ export function addStreamingMessage(opts){
       );
     }
   } catch (e) { reportSwallow(e, 'streamingTurn._listStyles.measureReserve'); }
-  var _promptText = (opts && opts.userPrompt) || '';
-  if (!_promptText) {
-    try {
-      var _msgs = stateStore.read("messages") || [];
-      for (var i = _msgs.length - 1; i >= 0; i--) {
-        if (_msgs[i] && _msgs[i].role === 'user') {
-          _promptText = _msgs[i].rawText || '';
-          break;
-        }
-      }
-    } catch (e) { reportSwallow(e, 'streamingTurn.findUserPrompt'); }
-  }
-  var _initialSummary = generateInitialTaskSummary(_promptText);
-
   var msgIdx=stateStore.dispatch({type:"session/append-message",payload:{
     clientId:clientId,
     role:"assistant",
     rawText:"",
     html:null,
     type:"streaming",
-    _taskSummary: _initialSummary || undefined,
     actions:null,
     _turnAnchorMinHeight: _initialReserve > 0 ? _initialReserve : undefined,
     _turnAnchorMode: _initialReserve > 0 ? 'turn' : undefined,
@@ -529,7 +498,7 @@ export function addStreamingMessage(opts){
       var _cur=statusChrome.liveMessage()&&statusChrome.liveMessage()._liveStatus;
       if(!_cur||(_cur.phase!=="error"&&_cur.phase!=="retrying")){
         var activeTool = toolName || (_cur && _cur.toolName);
-        var label = _toolRunningLabel(activeTool);
+        var label = toolRunLabel({name:activeTool}, 'running').text;
         setLiveStatus({phase:"tool-running",label:label,toolName:activeTool});
       }
       hideThinkCtl();
@@ -584,13 +553,20 @@ export function addStreamingMessage(opts){
     recordToolApproval:toolRuntime.recordToolApproval,
     recordAgentStep:toolRuntime.recordAgentStep,
     recordAgentPlan:toolRuntime.recordAgentPlan,
-    /* Task previews describe planned work; only completed summaries belong
-       in the persisted retrospective. Keep both on the owned message. */
-    recordTurnSummary:function(text,phase){
+    /* Public progress is supplied by the server; initial previews from old
+       streams are ignored and only retrospectives are persisted. */
+    recordTurnActivity:function(payload){
       if(!stillOwnsSlot())return;
+      var activity=normalizePublicTurnActivity(payload);
+      if(!activity)return;
+      patchOwnedMessage({_activity:activity},false);
+      publishReactChatRuntime({type:"tool-run-updated",messageId:clientId});
+    },
+    recordTurnSummary:function(text,phase){
+      if(!stillOwnsSlot()||phase==="initial")return;
       var value=String(text||"").trim();
       if(!value)return;
-      patchOwnedMessage(phase==="initial"?{_taskSummary:value}:{summary:value},false);
+      patchOwnedMessage({summary:value},false);
       // Process frames can arrive without text or tool deltas. Refresh the
       // coalesced activity snapshot without changing the stream's state.
       publishReactChatRuntime({type:"tool-run-updated",messageId:clientId});
@@ -658,7 +634,7 @@ export function addStreamingMessage(opts){
       if(state.toolRuntime&&typeof state.toolRuntime.hasActiveTools==="function"&&state.toolRuntime.hasActiveTools())return;
       try{ensureThinkCtl().append(delta||"")}catch(e){reportSwallow(e, 'streamingTurn._preRev1.appendDelta'); }
       /* Real-time reasoning saved to React store for persistence;
-         never mutate _liveStep with raw thinking monologue text. */
+         never derive public progress from private thinking text. */
       if(stillOwnsSlot()){
         patchOwnedMessage({
           reasoningContent:state.fullReasoning,

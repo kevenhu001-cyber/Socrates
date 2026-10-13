@@ -39,14 +39,14 @@ test('a new immutable message snapshot always invalidates the row', () => {
 
 test('render, tool, process, and anchor changes invalidate through snapshot identity', () => {
   const currentMessage = message({
-    _taskSummary: 'Preparing the answer.',
+    _activity: { type: 'thinking' },
     _turnViewportTarget: 24,
   });
   const changes = [
     message({ html: '<p>Updated</p>' }),
     message({ toolCalls: [{ id: 'tool-1', name: 'web_search' }] }),
     message({ attachments: [{ id: 'file-1', kind: 'image' }] }),
-    message({ _taskSummary: 'Checking sources.' }),
+    message({ _activity: { type: 'synthesizing' } }),
     message({ summary: 'Checked sources.' }),
     message({ reasoningContent: 'private reasoning' }),
     message({ _turnViewportTarget: 32 }),

@@ -270,7 +270,7 @@ export function createInlineToolRow(entry: InlineToolEntry): HTMLElement {
   row.innerHTML =
     '<summary class="tool-inline-head">'
     + '<span class="tool-inline-tool-icon">' + runningIconHtml() + '</span>'
-    + '<span class="tool-inline-label shimmer-text">' + esc(runningLabel(entry.name)) + '</span>'
+    + '<span class="tool-inline-label shimmer-text">' + esc(runningLabel(entry.name, entry.input)) + '</span>'
     + '<span class="tool-inline-meta"></span>'
     + '<span class="tool-inline-chev" aria-hidden="true">' + STROKE_ICONS.chevronRight + '</span>'
     + '</summary>'
@@ -426,7 +426,7 @@ export function settleInlineToolRow(
     label.textContent = cancelled
       ? translate('tool.statusStopped', 'Stopped')
       : awaitingApproval ? translate('tool.awaitingApproval', 'Waiting for your decision')
-      : failed ? errorLabel(name, result) : doneLabel(name, result);
+      : failed ? errorLabel(name, result, (row as HTMLElement & { _toolInput?: unknown })._toolInput) : doneLabel(name, result, (row as HTMLElement & { _toolInput?: unknown })._toolInput);
   }
   // Write the final total duration into the meta (Req 3.3): prefer the
   // backend's authoritative durationMs; fall back to the wall-clock span

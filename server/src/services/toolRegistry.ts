@@ -1,3 +1,4 @@
+import { INTELLIGENT_UI_TOOL } from './intelligentUi.js';
 import {WEB_SEARCH_TOOL} from './webSearch.js';
 import {WEB_FETCH_TOOL} from './fetchBatch.js';
 import {READ_ATTACHMENT_TOOL} from './attachmentReader.js';
@@ -90,6 +91,7 @@ export function createToolRegistry({ codeInterpreterToolDef, mode, connectorConn
     { name: 'save_memory', modelDefinition: SAVE_MEMORY_TOOL, enabled: true, pure: false, sessionSerial: false },
     /* Planning artifacts — pure structuring tools (no side effects) that
        validate a strict envelope and echo it back as a plan/spec card. */
+    { name: 'render_intelligent_ui', modelDefinition: INTELLIGENT_UI_TOOL, enabled: true, pure: true, sessionSerial: false },
     { name: 'create_plan', modelDefinition: PLAN_TOOL, enabled: true, pure: true, sessionSerial: false },
     { name: 'create_spec', modelDefinition: SPEC_TOOL, enabled: true, pure: true, sessionSerial: false },
     /* Sites the agent builds land in the same artifacts store the Sites

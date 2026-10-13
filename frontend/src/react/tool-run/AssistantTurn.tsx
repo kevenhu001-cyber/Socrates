@@ -2,6 +2,7 @@
  * One assistant answer, composed from public prose, tool runs, and turn status.
  * Parsing, prose caching, and streaming-tail decoration live in focused modules.
  */
+import { deriveTurnPresentationState } from '../../ui/turnActivityModel';
 import { useEffect, useRef, useState } from 'react';
 import {
   buildTurnLayout,
@@ -53,19 +54,6 @@ function segmentKey(segment: TurnSegment, index: number): string {
   return 'think-' + index;
 }
 
-function shouldShowStatus(
-  phase: string | undefined,
-  live: boolean,
-  hasRunningRow: boolean,
-  hasSettledTool: boolean,
-): boolean {
-  if (!phase) return false;
-  const terminalFailure = phase === 'error' || phase === 'stopped';
-  if (!live && !terminalFailure) return false;
-  if (live && !terminalFailure && (hasRunningRow || (phase === 'tool-running' && hasSettledTool)) && phase !== 'retrying') return false;
-  return true;
-}
-
 export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
   const rawText = typeof message.rawText === 'string' ? message.rawText : '';
   const calls = Array.isArray(message.toolCalls) ? message.toolCalls as ToolCallRecord[] : [];
@@ -96,15 +84,15 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
       : segment.kind === 'tool' && ['running', 'awaiting'].includes(toolRunStateOf(segment.call)),
   );
   const hasSettledTool = calls.some((c) => toolRunStateOf(c) === 'done');
-  const liveStatus = message._liveStatus;
-  const showStatus = shouldShowStatus(liveStatus?.phase, isLive, hasRunningRow, hasSettledTool);
+  const presentation = deriveTurnPresentationState(message, { live: isLive, hasRunningRow, hasSettledTool });
+  const liveStatus = presentation.status;
+  const showStatus = Boolean(liveStatus);
   const messageId = String(message.clientId || message.id || '');
 
   return (
     <ToolRunDisclosureProvider>
       <TurnSummaryPill
-        message={message}
-        live={isLive}
+        summary={presentation.publicSummary}
         messageId={messageId}
         status={showStatus && liveStatus && !['error', 'stopped'].includes(liveStatus.phase) ? liveStatus : undefined}
       />
@@ -123,7 +111,7 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
       {showStatus && liveStatus && ['error', 'stopped'].includes(liveStatus.phase) ? (
         <TurnStatus status={liveStatus} messageId={messageId} readOnly={readOnly} />
       ) : null}
-      {(isLive || isSettling) && !showStatus && !hasRunningRow ? (
+      {(presentation.showCursor || (isSettling && !showStatus && !hasRunningRow)) ? (
         <StreamCursor state={message._playbackState} settling={!isLive && isSettling} />
       ) : null}
     </ToolRunDisclosureProvider>

@@ -1,50 +1,48 @@
-import assert from 'node:assert/strict';
 import test from 'node:test';
-import { turnSummaryOf } from '../src/react/tool-run/turnSummary.ts';
+import assert from 'node:assert/strict';
+import { deriveTurnPresentationState, normalizePublicTurnActivity } from '../src/ui/turnActivityModel.ts';
 
-test('plain answers do not add activity chrome or repeat answer text', () => {
-  const view = turnSummaryOf({ role: 'assistant', rawText: 'The answer.' }, false);
-  assert.equal(view.hasWork, false);
-  assert.ok(!view.summary.includes('The answer.'));
+const live = { type: 'streaming', role: 'assistant', reasoningContent: 'private scratch work' };
+test('private reasoning and legacy task previews never become public copy', () => {
+  const view = deriveTurnPresentationState({ ...live, _taskSummary: 'Regex guessed topic' });
+  assert.equal(view.publicSummary, '');
+  assert.equal(view.status, undefined);
 });
-
-test('reasoning creates a factual summary without revealing its content', () => {
-  const view = turnSummaryOf({ role: 'assistant', rawText: '<think>private inline</think>Answer.', reasoningContent: 'private reasoning' }, false);
-  assert.equal(view.hasWork, true);
-  assert.equal(view.label, 'Thought complete');
-  assert.equal(view.summary, 'Thinking complete.');
-  assert.ok(!JSON.stringify(view).includes('private'));
+test('running tools own activity even if reasoning arrives or a summary exists', () => {
+  const view = deriveTurnPresentationState({ ...live, summary: 'Analysis complete', _activity: { type: 'thinking' }, _liveStatus: { phase: 'thinking', label: 'Thinking' } }, { hasRunningRow: true });
+  assert.equal(view.status, undefined);
+  assert.equal(view.publicSummary, '');
+  assert.equal(view.showCursor, false);
 });
-
-test('public summary remains separate from the factual thinking status', () => {
-  const view = turnSummaryOf({ role: 'assistant', summary: '  Checked sources and compared the findings.  ' }, false);
-  assert.equal(view.label, 'Process');
-  assert.equal(view.summary, 'Checked sources and compared the findings.');
+test('deferred tools keep a single visible action until their row mounts', () => {
+  const message = { ...live, _activity: { type: 'tool', toolCallId: 'search', toolName: 'web_search' }, _liveStatus: { phase: 'tool-running', label: 'Searching', toolName: 'web_search' } };
+  assert.equal(deriveTurnPresentationState(message).status.phase, 'tool-running');
+  assert.equal(deriveTurnPresentationState(message, { hasRunningRow: true }).status, undefined);
 });
-
-test('tool-only turns leave execution facts to the tool rows', () => {
-  const call = { id: 'search', name: 'web_search', input: { query: 'public query' } };
-  const message = { role: 'assistant', toolCalls: [call], _liveStatus: { phase: 'tool-running', label: 'Searching' } };
-  const running = turnSummaryOf(message, true);
-  assert.equal(running.hasWork, true);
-  const settled = turnSummaryOf({ ...message, toolCalls: [{ ...call, output: 'Found a source', status: 'completed', isError: false }] }, false);
-  assert.equal(settled.hasWork, false);
-  assert.equal('activities' in settled, false);
+test('done activity waits for playback settlement before enabling actions', () => {
+  const message = { ...live, _activity: { type: 'done', durationMs: 1200 } };
+  assert.equal(deriveTurnPresentationState(message).showToolbar, false);
+  assert.equal(deriveTurnPresentationState({ ...message, _streamSettled: true }).showToolbar, true);
 });
-
-test('task previews cannot become completed activity summaries', () => {
-  const preview = { role: 'assistant', _taskSummary: 'Preparing a comparison.', _liveStatus: { phase: 'waiting', label: 'Working' } };
-  assert.equal(turnSummaryOf(preview, true).summary, 'Preparing a comparison.');
-  assert.equal(turnSummaryOf(preview, false).hasWork, false);
-  const other = turnSummaryOf({ role: 'assistant', summary: 'Other turn.' }, false);
-  assert.equal(other.summary, 'Other turn.');
-  assert.equal(turnSummaryOf({ ...preview, summary: 'Compared the sources.' }, false).summary, 'Compared the sources.');
-});
-
-test('waiting and retrying provide status before reasoning arrives', () => {
-  for (const phase of ['waiting', 'retrying']) {
-    const view = turnSummaryOf({ role: 'assistant', _liveStatus: { phase, label: 'Working' } }, true);
-    assert.equal(view.hasWork, true);
-    assert.equal(view.summary, 'Waiting for the response.');
+test('retry and terminal failures remain visible over running tool rows', () => {
+  for (const phase of ['retrying', 'error', 'stopped']) {
+    assert.equal(deriveTurnPresentationState({ ...live, _liveStatus: { phase, label: phase } }, { hasRunningRow: true }).status.phase, phase);
   }
+});
+test('only explicit public summary events may provide reasoning summary copy', () => {
+  assert.equal(normalizePublicTurnActivity({ type: 'reasoning', text: 'private' }), null);
+  const view = deriveTurnPresentationState({ ...live, _activity: { type: 'public_reasoning_summary', text: ' Checked sources. ' } });
+  assert.equal(view.status.label, 'Checked sources.');
+});
+
+test('synthesizing is observable before prose and retires when prose begins', () => {
+  const message = { ...live, _activity: { type: 'synthesizing' } };
+  assert.equal(deriveTurnPresentationState(message).status.phase, 'synthesizing');
+  assert.equal(deriveTurnPresentationState({ ...message, rawText: 'Answer.' }).status, undefined);
+});
+
+test('an earlier completed tool cannot hide the next deferred tool activity', () => {
+  const message = { ...live, toolCalls: [{ id: 'old', name: 'Read', status: 'completed', output: 'Read file.' }], _activity: { type: 'tool', toolCallId: 'new', toolName: 'web_search' } };
+  assert.equal(deriveTurnPresentationState(message, { hasSettledTool: true }).status.phase, 'tool-running');
+  assert.equal(deriveTurnPresentationState({ ...message, toolCalls: [...message.toolCalls, { id: 'new', name: 'web_search', status: 'completed', output: '' }] }, { hasSettledTool: true }).status, undefined);
 });

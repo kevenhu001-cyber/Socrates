@@ -13,52 +13,7 @@
 
 /* Assistant column keeps full width, no bubble. */
 
-/* Hover toolbar — 32px ghost buttons, 8px radius on mobile. */
-@media (max-width: 768px) {
-#appShell .msg-toolbar {
-  height: 32px;
-  min-height: 32px;
-  display: flex;
-  align-items: center;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-}
-#appShell .msg-toolbar::-webkit-scrollbar { display: none; }
-}
-@media (max-width: 768px) {
-#appShell .msg-toolbar-btn {
-  min-width: 32px;
-  min-height: 32px;
-  color: var(--ui-text-muted);
-  transition: background-color var(--ui-duration-fast, 0.12s) ease,
-              color var(--ui-duration-fast, 0.12s) ease,
-              opacity var(--ui-duration-fast, 0.12s) ease;
-}
-}
-@media (max-width: 768px) {
-#appShell .msg-toolbar-btn:hover {
-  background: var(--ui-bg-hover-ghost);
-  color: var(--ui-text-primary);
-}
-#appShell .msg-toolbar-btn:active {
-  opacity: var(--press-opacity, var(--ui-press-opacity-sm, 0.72));
-  background: var(--ui-bg-hover);
-  color: var(--ui-text-primary);
-}
-}
-@media (max-width: 768px) {
-#appShell .msg-toolbar-btn svg { width: 16px; height: 16px; }
-}
 
-/* Tooltip micro-label — consistent with the rest of the shell. */
-@media (max-width: 768px) {
-#appShell .msg-toolbar-btn::after {
-  border-radius: var(--ui-radius-sm, 6px);
-  font-size: 11px;
-  padding: 5px 8px;
-}
-}
 
 /* Code blocks: a bordered card with a crisp header. Dark keeps the
    all-weather dark band; light matches the desktop light card
@@ -131,17 +86,6 @@
 #appShell#appShell .msg-body pre code { background: transparent; color: inherit; padding: 0; }
 }
 
-/* Copy feedback uses the shared short fade without changing icon geometry. */
-#appShell .msg-toolbar-btn[aria-label="Copied"] svg {
-  animation: checkmarkPop var(--ui-duration-fast) var(--ui-ease-out) forwards;
-}
-#appShell .msg-toolbar-btn[aria-label="Copied"] {
-  color: rgb(16 163 127);
-}
-@keyframes checkmarkPop {
-  from { opacity: 0.4; }
-  to { opacity: 1; }
-}
 
 /* Edit-in-place textarea and actions bar */
 #appShell .msg-edit-area {
@@ -322,9 +266,6 @@
 /* P_perf-finish-motion — finishing a streamed turn is a micro interaction,
    not a page transition. Cursor-out and toolbar-in use the same fast token
    instead of stacking 150/180/300 ms clocks. */
-#appShell .msg.assistant[data-stream-settled] .msg-toolbar {
-  transition: opacity var(--ui-duration-fast, 0.12s) var(--ui-ease-out, ease-out);
-}
 @media (prefers-reduced-motion: reduce) {
   #appShell :is(.stream-cursor, .msg.assistant[data-stream-settled] .msg-toolbar) {
     transition: none;

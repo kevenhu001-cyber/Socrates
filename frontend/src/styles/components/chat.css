@@ -393,3 +393,78 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   0%, 100% { opacity: .35; }
   50% { opacity: 1; }
 }
+/* Answer actions are mounted by React after playback settles.
+ * Toolbar ownership has moved out of legacy, restore, parity and polish. */
+.msg-toolbar{display:flex;gap:2px;align-items:center;margin-top:2px;opacity:0;transition:opacity .15s;min-height:var(--ui-control-sm)}
+.msg.assistant .msg-toolbar{justify-content:flex-start;margin-left:2px}
+.msg.user .msg-toolbar{justify-content:flex-end;margin-right:0}
+@media (hover:hover) {.msg:hover .msg-toolbar{opacity:1}
+}
+@media (hover:none) {.msg-toolbar{opacity:.7}
+}
+.msg-list>.msg.assistant:last-child .msg-toolbar{opacity:1}
+.msg.assistant[data-stream-settled] .msg-toolbar{opacity:1;transition:opacity .18s ease}
+.msg-toolbar-btn{position:relative;width:var(--ui-control-sm);min-height:var(--ui-control-sm);display:flex;align-items:center;justify-content:center;border-radius:var(--ui-radius-md);background:transparent;color:var(--ui-text-secondary);cursor:pointer;transition:background .12s,color .12s;border:0;padding:0}
+.msg-toolbar-btn:hover{background:var(--ui-bg-hover-ghost);color:var(--ui-text-primary)}
+.msg-toolbar-btn::after{content:attr(aria-label);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--ui-bg-overlay);color:var(--ui-text-primary);font-size:11px;font-weight:500;line-height:1;padding:6px 8px;border-radius:var(--ui-radius-sm);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .1s ease .35s;z-index:var(--ui-z-menu)}
+.msg-toolbar-btn:hover::after{opacity:1}
+.msg-toolbar-btn.active{color:var(--ui-text-primary);background:var(--ui-bg-hover)}
+.msg-toolbar-btn.active:hover{background:var(--ui-bg-hover)}
+.msg-toolbar-btn.is-speaking{color:var(--ui-on-accent);background:var(--ui-accent-strong);animation:readAloudPulse 1.4s ease-in-out infinite}
+.msg-toolbar-btn.is-speaking:hover{background:var(--ui-accent-strong)}
+.msg-toolbar-btn svg{width:16px;height:16px;stroke-width:1.7}
+@keyframes readAloudPulse{0%,100%{opacity:1}50%{opacity:.55}}
+#appShell#appShell .msg-toolbar {
+  color: var(--conversation-text-muted);
+}
+@media (min-width: 769px) {
+  #appShell #msgList .msg-toolbar {
+    gap: 0;
+    margin: 4px 0 0 -6px;
+  }
+}
+@media (min-width: 769px) {
+  #appShell #msgList .msg.user .msg-toolbar { margin: 4px -6px 0 0; }
+}
+@media (min-width: 769px) {
+  #appShell #msgList .msg-toolbar-btn {
+    display: inline-grid;
+    place-items: center;
+    width: var(--ui-control-sm);
+    height: var(--ui-control-sm);
+    min-width: var(--ui-control-sm);
+    min-height: var(--ui-control-sm);
+    padding: 0;
+    border: 0;
+    border-radius: var(--ui-radius-md);
+    background: transparent;
+    color: var(--ui-text-secondary);
+    cursor: pointer;
+    transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+  }
+}
+@media (min-width: 769px) {
+  #appShell #msgList .msg-toolbar-btn:hover,
+  #appShell #msgList .msg-toolbar-btn:focus-visible {
+    background: var(--ui-bg-hover-ghost);
+    color: var(--ui-text-primary);
+  }
+}
+@media (min-width: 769px) {
+  #appShell #msgList .msg-toolbar-btn svg { width: 18px; height: 18px; shape-rendering: crispEdges; }
+}
+#appShell .msg-toolbar-btn[aria-label="Copied"] svg {
+  animation: checkmarkPop var(--ui-duration-fast) var(--ui-ease-out) forwards;
+}
+#appShell .msg-toolbar-btn[aria-label="Copied"] {
+  color: var(--ui-success);
+}
+#appShell .msg.assistant[data-stream-settled] .msg-toolbar {
+  transition: opacity var(--ui-duration-fast, 0.12s) var(--ui-ease-out, ease-out);
+}
+@keyframes checkmarkPop {
+  from { opacity: 0.4; }
+  to { opacity: 1; }
+}
+
+.msg:focus-within .msg-toolbar { opacity: 1; }

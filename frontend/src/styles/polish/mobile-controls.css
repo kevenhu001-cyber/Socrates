@@ -238,3 +238,52 @@
 @media (max-width: 768px) {
   #appShell #sidebarNav #navSites.sidebar-nav-btn { display: grid; order: 6; }
 }
+
+/* Mobile toolbar density retained from transcript compatibility rules. */
+@media (max-width: 768px) {
+#appShell .msg-toolbar {
+  height: 32px;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+}
+@media (max-width: 768px) {
+#appShell .msg-toolbar::-webkit-scrollbar { display: none; }
+}
+@media (max-width: 768px) {
+#appShell .msg-toolbar-btn {
+  min-width: 32px;
+  min-height: 32px;
+  color: var(--ui-text-muted);
+  transition: background-color var(--ui-duration-fast, 0.12s) ease,
+              color var(--ui-duration-fast, 0.12s) ease,
+              opacity var(--ui-duration-fast, 0.12s) ease;
+}
+}
+@media (max-width: 768px) {
+#appShell .msg-toolbar-btn:hover {
+  background: var(--ui-bg-hover-ghost);
+  color: var(--ui-text-primary);
+}
+}
+@media (max-width: 768px) {
+#appShell .msg-toolbar-btn:active {
+  opacity: var(--press-opacity, var(--ui-press-opacity-sm, 0.72));
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+}
+}
+@media (max-width: 768px) {
+#appShell .msg-toolbar-btn svg { width: 16px; height: 16px; }
+}
+@media (max-width: 768px) {
+#appShell .msg-toolbar-btn::after {
+  border-radius: var(--ui-radius-sm, 6px);
+  font-size: 11px;
+  padding: 5px 8px;
+}
+}

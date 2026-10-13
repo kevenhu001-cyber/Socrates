@@ -893,6 +893,8 @@ export const zh = {
     "think.organizingAnswer":"正在组织回答…",
     "think.stillWorking":"仍在处理中，回答需要多一点时间…",
     "think.preparing":"正在构思生成方案…",
+    "think.synthesizing":"正在整理回答",
+    "think.analyzing":"正在分析问题",
     "think.process":"处理过程",
     "think.complete":"思考完成",
     "think.thoughtDuration":"已深度思考 ({sec} 秒)",

@@ -265,10 +265,6 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 }
 }
 
-#appShell#appShell .msg-toolbar {
-  color: var(--conversation-text-muted) !important;
-}
-
 #appShell#appShell .disclaimer {
   color: var(--conversation-text-muted) !important;
   background: var(--conversation-page) !important;

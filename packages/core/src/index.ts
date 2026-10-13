@@ -1,3 +1,4 @@
+export * from './intelligenceUi';
 import type { Attachment, ChatSseHandlers, JsonValue, Message, Session } from '@socrates/contracts';
 
 export type { ChatSseHandlers, Message, Session } from '@socrates/contracts';
@@ -69,7 +70,9 @@ export function dispatchChatSseFrame(frame: string, handlers: ChatSseHandlers) {
     tool_call_delta: handlers.onToolCallDelta,
     execution_start: handlers.onExecutionStart,
     tool_approval: handlers.onToolApproval,
-  }[event as 'tool_use' | 'tool_result' | 'tool_progress' | 'tool_call_delta' | 'execution_start' | 'tool_approval'];
+    turn_activity: handlers.onTurnActivity,
+    turn_summary: handlers.onTurnSummary,
+  }[event as 'tool_use' | 'tool_result' | 'tool_progress' | 'tool_call_delta' | 'execution_start' | 'tool_approval' | 'turn_activity' | 'turn_summary'];
   if (toolHandler) {
     toolHandler(parsed as never);
     return;

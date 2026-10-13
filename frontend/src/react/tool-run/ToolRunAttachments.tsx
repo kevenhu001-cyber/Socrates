@@ -12,6 +12,8 @@
  * same wrapper on history restore; keeping one host is what makes the
  * `[data-visualization-id]` dedup hold across the two paths.
  */
+import { IntelligenceUiBlock } from '../intelligence-ui/IntelligenceUi';
+import { toolRunStateOf } from './toolRunModel';
 import { useEffect, useRef, useState } from 'react';
 
 import { ToolOutputRenderer } from '../tool-output/ToolOutputRenderer';
@@ -19,9 +21,11 @@ import { attachmentOutputsOf, type ToolCallRecord } from './toolRunModel';
 
 export interface ToolRunAttachmentsProps {
   call: ToolCallRecord;
+  tools?: ReadonlyArray<ToolCallRecord>;
+  readOnly?: boolean;
 }
 
-export function ToolRunAttachments({ call }: ToolRunAttachmentsProps) {
+export function ToolRunAttachments({ call, tools = [call], readOnly }: ToolRunAttachmentsProps) {
   const outputs = attachmentOutputsOf(call);
   const hostRef = useRef<HTMLDivElement | null>(null);
   /* Children mount only once the host element exists, so each renderer's
@@ -32,6 +36,14 @@ export function ToolRunAttachments({ call }: ToolRunAttachmentsProps) {
     setHost(hostRef.current);
   }, [call.id]);
 
+  if (call.name === 'render_intelligent_ui' && toolRunStateOf(call) === 'done') {
+    const document = call.input as { version?: number; nodes?: unknown[] } | undefined;
+    if (document?.version === 1 && Array.isArray(document.nodes)) {
+      return <div className="tool-inline-attachments" data-tool-anchor={call.id}>
+        <IntelligenceUiBlock source={document.nodes.map((node) => JSON.stringify(node)).join('\n')} tools={tools} readOnly={readOnly} />
+      </div>;
+    }
+  }
   if (!outputs.length) return null;
 
   return (

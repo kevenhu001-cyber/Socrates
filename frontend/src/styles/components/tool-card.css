@@ -731,3 +731,8 @@
     transition: none;
   }
 }
+
+/* Static rows carry no disclosure or keyboard action. */
+.msg.assistant .msg-body.is-declarative .tool-inline:not([data-expandable="1"]) .tool-inline-head {
+  cursor: default;
+}

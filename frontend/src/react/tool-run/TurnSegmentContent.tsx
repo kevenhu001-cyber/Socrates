@@ -43,6 +43,7 @@ export function TurnSegmentContent({
       <ToolRunGroup
         key={'group-' + (first ? first.id : index) + '-' + index}
         segment={segment}
+        tools={tools}
         messageId={messageId}
         readOnly={readOnly}
       />
@@ -53,7 +54,7 @@ export function TurnSegmentContent({
     return (
       <Fragment key={'tool-' + segment.call.id}>
         <ToolRunRow startedAt={runStartedAt(segment.call)} view={toolRunView(segment.call)} messageId={messageId} readOnly={readOnly} />
-        <ToolRunAttachments call={segment.call} />
+        <ToolRunAttachments call={segment.call} tools={tools} readOnly={readOnly} />
       </Fragment>
     );
   }

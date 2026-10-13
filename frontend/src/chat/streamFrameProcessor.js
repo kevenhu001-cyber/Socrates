@@ -14,10 +14,9 @@ const CALLBACK_BY_EVENT = Object.freeze({
   tool_progress: 'onToolProgress',
   execution_start: 'onExecutionStart',
   tool_call_delta: 'onToolCallDelta',
-  /* P_turn-summary — the model's one-line retrospective of the work it did,
-     sent after the answer text and before [DONE]. Feeds the per-turn
-     disclosure in the assistant message. */
+  /* Completed observed work, sent before [DONE]. */
   turn_summary: 'onTurnSummary',
+  turn_activity: 'onTurnActivity',
 });
 
 const DEV = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) === true;
@@ -53,7 +52,7 @@ function parseFrame(frame) {
 
 function dispatchCallbackEvent(state, context, eventName, dataParts) {
   if (!Object.prototype.hasOwnProperty.call(CALLBACK_BY_EVENT, eventName)) return false;
-  state.semanticActivity = true;
+  if (eventName !== 'turn_activity') state.semanticActivity = true;
   const callback = context.opts && context.opts[CALLBACK_BY_EVENT[eventName]];
   if (typeof callback === 'function' && dataParts.length) {
     /* A tool row's text offset must include visible text held for a possible

@@ -23,7 +23,8 @@ import {chatTurns, messages, sessions} from '../../../db/schema.js';
 import {publishChatTurnEvent, setChatTurnStatus, subscribeToChatTurn} from '../../../services/chatTurns.js';
 import {sanitizeStoredHtml, sanitizePlainText} from '../../../lib/sanitize.js';
 import {indexMessageChunks} from '../../../services/chunkIndex.js';
-import {completedActivitySummary, generateInitialTaskSummary} from '../../../services/turnSummary.js';
+import { createTurnActivityController } from '../../../services/turnActivity.js';
+import {completedActivitySummary} from '../../../services/turnSummary.js';
 import {streamChatCompletion} from '../../../services/llm.js';
 import {
   MAX_TOOL_ARGUMENT_CHARS,
@@ -390,9 +391,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
     turnCheckpointTimer.unref?.();
   }
 
-  /* P_turn-summary-upfront — emit an initial task summary to the client
-     BEFORE the model starts thinking or streaming, so the summary pill
-     and drawer are immediately populated with what is being tackled. */
+  /* Read the question only to choose the completed activity summary language. */
   const rawUserMsgs = Array.isArray(req.body?.messages) ? req.body.messages : [];
   let userPrompt = '';
   for (let i = rawUserMsgs.length - 1; i >= 0; i--) {
@@ -404,6 +403,10 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
     }
   }
   /* The model's real thinking content streams directly; do not emit synthetic upfront summaries. */
+
+  const activityStartedAt = Date.now();
+  const activity = createTurnActivityController((value) => emitter.event('turn_activity', value));
+  activity.thinking();
 
   /* ─── Tool-calling loop ─────────────────────────────────────────
    * The LLM may decide mid-stream to call a native tool. We run
@@ -425,6 +428,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
   const toolCtx = await toolCtxPromise;
   const { toolPolicy, toolRegistry, toolDefs, toolNames, schemaForTool, toolExamples, FUZZY_SAFE, connectorConnectionsByProvider, projectConnectorConnectionsByProvider } = toolCtx;
   const MAX_TOOL_ITERATIONS = toolCtx.MAX_TOOL_ITERATIONS;
+  const executionResults = new Map<string, import("./types.js").ToolResult>();
   const runToolCall = createToolRunner({
     req,
     sessionIdFromQuery,
@@ -434,6 +438,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
     abortSignal: abortController.signal,
     toolPolicy,
     schemaForTool,
+    onResult: (id, result) => executionResults.set(id, result),
     connectorConnectionsByProvider,
     projectConnectorConnectionsByProvider,
   });
@@ -441,7 +446,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
   /* Kept structurally loose to match the legacy `finalMessages` shape that
      appendNativeToolContract / prependCodeInterpreterPrompt accept. */
   let workingMessages: any[] = finalMessages as any[];
-  const executedToolCalls: Array<{ id: string; name: string; input: unknown; output?: unknown; isError?: boolean }> = [];
+  const executedToolCalls: Array<{ id: string; name: string; input: unknown; output?: unknown; isError?: boolean; status?: string; errorCode?: string | null }> = [];
   /* Calls that exceeded the per-iteration cap on the previous hop and were
    * dropped without executing — surfaced in the contract so the model
    * knows they never ran (they are not echoed upstream either). */
@@ -543,6 +548,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
       } as Parameters<typeof streamChatCompletion>[0],
       // onChunk
       (chunk: string) => {
+        activity.synthesizing();
         fullText += chunk;
         iterContent += chunk;
         completionTokens = estimateTokens(fullText);
@@ -566,6 +572,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
       // client renders the thinking pill. Also accumulate so
       // streaming_text captures it on disconnect.
       (reasoning: string) => {
+        activity.thinking();
         fullReasoning += reasoning;
         iterReasoning += reasoning;
         reportTtfb('reasoning');
@@ -789,6 +796,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
     });
 
     // Emit tool_use event for the client to render cards.
+    for (const entry of prepared) activity.tool(entry.call.id, entry.toolName);
     emitter.event('tool_use', prepared.map((entry) => ({
       id: entry.call.id,
       name: entry.toolName,
@@ -846,15 +854,19 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
       (entry) => runToolCall(entry, activeToolNames),
     );
     workingMessages = workingMessages.concat(toolMessages);
+    activity.synthesizing();
     for (let i = 0; i < prepared.length; i++) {
       const prepCall = prepared[i];
       const toolMsg = (toolMessages as any[]).find((m: any) => m && m.tool_call_id === prepCall.call.id);
+      const execution = executionResults.get(prepCall.call.id);
       executedToolCalls.push({
         id: prepCall.call.id,
         name: prepCall.toolName,
         input: prepCall.args,
         output: toolMsg?.content || null,
-        isError: !prepCall.registryEntry || prepCall.rejection != null,
+        status: execution?.status,
+        errorCode: execution?.errorCode,
+        isError: execution ? execution.status !== 'completed' && execution.status !== 'awaiting_approval' : !prepCall.registryEntry || prepCall.rejection != null,
       });
     }
 
@@ -956,6 +968,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
     toolCalls: executedToolCalls,
     hasReasoning: Boolean(fullReasoning.trim()),
   });
+  activity.done(Date.now() - activityStartedAt);
   if (turnSummary) emitter.event('turn_summary', { summary: turnSummary });
 
   /* Done — record usage, clear streaming text, and close the stream.

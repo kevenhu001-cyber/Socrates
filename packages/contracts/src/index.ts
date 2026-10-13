@@ -1,3 +1,5 @@
+import type { PublicTurnActivity } from './turnActivity';
+export type { PublicTurnActivity } from './turnActivity';
 export type JsonValue = string | number | boolean | null | JsonObject | JsonValue[];
 export type JsonObject = { [key: string]: JsonValue };
 
@@ -406,6 +408,8 @@ export interface ChatRequest {
 export interface ChatSseHandlers {
   onDelta?: (text: string) => void;
   onReasoning?: (text: string) => void;
+  onTurnActivity?: (activity: PublicTurnActivity) => void;
+  onTurnSummary?: (payload: { summary: string }) => void;
   onToolUse?: (payload: JsonValue) => void;
   onToolResult?: (payload: JsonValue) => void;
   onToolProgress?: (payload: JsonValue) => void;
@@ -487,6 +491,8 @@ export type ArtifactBridgeMessage =
 export type ArtifactMessage = ArtifactBridgeMessage;
 
 export type ChatSseEventName =
+  | 'turn_activity'
+  | 'turn_summary'
   | 'tool_use'
   | 'tool_result'
   | 'tool_progress'

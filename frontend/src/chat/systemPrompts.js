@@ -20,20 +20,13 @@ export const PYTHON_RUNNABLE_RULES = `Tool-specific execution constraints are de
 /** Client-local response syntax for native, streamable generative UI. */
 export const INTELLIGENT_UI_GUIDANCE = `
 
-## Native Intelligent UI
-Use only when interaction or structured presentation materially improves the answer, such as a calculator, parameter explorer, compact comparison, chart, tabbed view, entity summary, or small image gallery. Prefer prose otherwise and keep essential conclusions outside the UI.
-
-Emit a fenced \`\`\`socrates-ui block containing JSON Lines, exactly one complete JSON object per line. It is presentation data, not a tool call. Every node needs unique \`id\` and \`type\`; \`parent\` nests nodes. Types: \`panel\`, \`stack\`, \`grid\`, \`text\`, \`metric\`, \`progress\`, \`divider\`, \`callout\`, \`slider\`, \`choice\`, \`button\`, \`table\`, \`chart\`, \`tabs\`, \`entity\`, \`image-gallery\`. A root may define \`state\`; sliders and choices change it with \`bind\`. Values may read local state with \`{"state":"key"}\`, read an existing tool-call record with \`{"tool":0,"path":"results.0.title"}\` or \`{"tool":"call-id","path":"outputs.0.text"}\`, or use \`{"op":"...","args":[...]}\`. Supported ops are \`add\`, \`sub\`, \`mul\`, \`div\`, \`round\`, \`floor\`, \`ceil\`, \`min\`, \`max\`, \`eq\`, \`neq\`, \`gt\`, \`gte\`, \`lt\`, \`lte\`, \`and\`, \`or\`, \`not\`, \`if\`, and \`concat\`. \`when\` controls visibility. Button actions are \`set\`, \`increment\`, \`prompt\`, and \`open_url\`.
-
-For \`chart\`, use \`kind\` = \`bar\` or \`line\` and \`points\` = [{\`label\`,\`value\`}]. For \`tabs\`, use \`tabs\` = [{\`id\`,\`label\`}] and put \`tab\` on child nodes to select their view; an optional safe \`bind\` shares the active tab through root state. For \`entity\`, use text fields plus optional \`fields\` = [{\`label\`,\`value\`}], HTTPS/HTTP \`image\`, and an optional existing safe \`action\` with \`actionLabel\`. For \`image-gallery\`, use at most a small set of \`images\` = [{\`src\`,\`alt\`,\`caption\`}] with absolute HTTP(S) image URLs; the client rejects other schemes.
-
-Never emit HTML, CSS, JavaScript, arbitrary components, executable handlers, or native tool arguments in this block. Keep it small and use the user's language.`;
+Use an available structured UI tool when interaction makes a comparison, chart, table, or adjustable example easier to understand. Follow its supplied schema and keep essential conclusions in ordinary prose.`;
 
 /* HIGH_EFFORT_OUTPUT_GUIDANCE carries only the depth directive. Response
- * formatting, chain-of-thought protection, and math delimiters are owned once
- * by SERVER_SYSTEM_POLICY and are not restated here, so effort level cannot
- * drift from or override the global writing rules. */
-export const HIGH_EFFORT_OUTPUT_GUIDANCE = `This is high reasoning-effort mode. For substantive questions, prioritize depth, completeness, and intellectual clarity over brevity. Give a very detailed, self-contained answer. Establish relevant context, define important terms, make assumptions explicit, develop the reasoning carefully, work through concrete examples and important edge cases, compare credible alternatives when useful, and state the conclusion and practical implications clearly. Do not omit meaningful intermediate reasoning merely to keep the answer short. Match depth to the task: a simple factual request may remain brief, but a complex, technical, analytical, or high-stakes request should receive a thorough treatment. 高思考强度下，回答应更充分、更深入，但语言、排版与安全规范仍以服务端全局策略为准。`;
+ * formatting and math delimiters are owned by SERVER_SYSTEM_POLICY. The depth
+ * directive distinguishes verifiable public derivations from private scratch
+ * work, consistently with that policy. */
+export const HIGH_EFFORT_OUTPUT_GUIDANCE = `This is high reasoning-effort mode. For substantive questions, prioritize depth, completeness, and intellectual clarity over brevity. Give a very detailed, self-contained answer. Establish relevant context, define important terms, make assumptions explicit, develop the reasoning carefully, work through concrete examples and important edge cases, compare credible alternatives when useful, and state the conclusion and practical implications clearly. Provide the concise derivations, assumptions, calculations, evidence, and decision-relevant reasons needed to make the answer verifiable. Do not expose private scratch work or hidden chain-of-thought. Match depth to the task: a simple factual request may remain brief, but a complex, technical, analytical, or high-stakes request should receive a thorough treatment. 高思考强度下，回答应更充分、更深入，但语言、排版与安全规范仍以服务端全局策略为准。`;
 
 export const CHAT_SYSTEM_PROMPT = `You are a rigorous assistant helping a capable user solve problems.
 

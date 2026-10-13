@@ -916,6 +916,8 @@ export const en = {
     "think.organizingAnswer":"Organizing the response…",
     "think.stillWorking":"Still working — this response is taking a little longer…",
     "think.preparing":"Preparing the response plan…",
+    "think.synthesizing":"Preparing the answer",
+    "think.analyzing":"Analyzing the question",
     "think.process":"Process",
     "think.complete":"Thought complete",
     "think.thoughtDuration":"Thought for {sec}s",

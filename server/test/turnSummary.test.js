@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { completedActivitySummary, normalizeSummary, generateTurnSummary, generateInitialTaskSummary, TURN_SUMMARY_SYSTEM_PROMPT } from '../src/services/turnSummary.js';
+import { completedActivitySummary, normalizeSummary, generateTurnSummary, TURN_SUMMARY_SYSTEM_PROMPT } from '../src/services/turnSummary.js';
 
 test('completed activity skips ordinary answers and reports observed reasoning only', () => {
   assert.equal(completedActivitySummary({ question: 'Hello', toolCalls: [], hasReasoning: false }), null);
@@ -125,27 +125,4 @@ test('generateTurnSummary hands its deadline down as a real signal', async () =>
 test('the system prompt asks for one plain line', () => {
   assert.match(TURN_SUMMARY_SYSTEM_PROMPT, /One line/);
   assert.match(TURN_SUMMARY_SYSTEM_PROMPT, /No markdown/);
-});
-
-test('generateInitialTaskSummary returns upfront summary before thinking begins', () => {
-  assert.equal(
-    generateInitialTaskSummary('解析函数积分与路径无关吗'),
-    '解析函数路径无关性的说明。',
-  );
-  assert.equal(
-    generateInitialTaskSummary('已知小球从高处自由落体，求运动时间和落地速度'),
-    '拆解运动条件和数据分析。',
-  );
-  assert.equal(
-    generateInitialTaskSummary('帮我用 Python 写一个爬虫'),
-    '爬虫方案设计与代码实现。',
-  );
-  assert.equal(
-    generateInitialTaskSummary('求解微分方程 dy/dx = y'),
-    '微分方程求解与推导。',
-  );
-  assert.equal(
-    generateInitialTaskSummary(''),
-    '',
-  );
 });

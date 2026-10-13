@@ -39,6 +39,7 @@ export interface ToolRunnerDeps {
   emitter: SseEmitter;
   abortSignal: AbortSignal;
   toolPolicy: ToolTurnPolicy;
+  onResult?: (toolCallId: string, result: import("./types.js").ToolResult) => void;
   schemaForTool: (name: string) => import('../../../services/toolCallSafety.js').JsonSchemaNode | null;
   connectorConnectionsByProvider: Record<string, any>;
   projectConnectorConnectionsByProvider: Record<string, any>;
@@ -108,6 +109,7 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
         userMessage: feedback.userMessage,
         detail: feedback.detail,
       });
+      deps.onResult?.(tc.id, { status: 'failed', errorCode: code, retryable });
       return {
         role: 'tool',
         tool_call_id: tc.id,
@@ -172,6 +174,7 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
     }
 
     const result = outcome.result;
+    deps.onResult?.(tc.id, result);
 
     /* Per-tool outcome accounting for every executor that did not need
        the post-failure count itself. A tool only loses its slot after

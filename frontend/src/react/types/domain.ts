@@ -202,10 +202,8 @@ export interface LegacyChatMessage {
   _playbackState?: 'idle' | 'playing' | 'starved' | 'draining' | 'done';
   /** One-line model retrospective persisted on the message. */
   summary?: string | null;
-  /** Initial task preview, shown only during this stream and never persisted. */
-  _taskSummary?: string;
-  /** In-flight step extracted from active reasoning stream. */
-  _liveStep?: string;
+  /** Server-owned public progress; private reasoning is never used as copy. */
+  _activity?: import("@socrates/contracts").PublicTurnActivity;
 }
 
 /**
@@ -224,7 +222,7 @@ export interface LegacyChatMessage {
  * line as soon as the real row mounts, so the two never appear together.
  */
 export interface LiveTurnStatus {
-  phase: 'waiting' | 'thinking' | 'retrying' | 'error' | 'stopped' | 'tool-running';
+  phase: 'waiting' | 'thinking' | 'synthesizing' | 'retrying' | 'error' | 'stopped' | 'tool-running';
   toolName?: string;
   /** Already-translated copy — the writer knows the app language. */
   label?: string;

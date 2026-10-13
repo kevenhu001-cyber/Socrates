@@ -203,29 +203,4 @@
   }
   #appShell #msgList .msg-body tr:last-child td { border-bottom: 0; }
 
-  /* ── Action toolbar ──────────────────────────────────────────────────── */
-  #appShell #msgList .msg-toolbar {
-    gap: 0;
-    margin: 4px 0 0 -6px;
-  }
-  #appShell #msgList .msg.user .msg-toolbar { margin: 4px -6px 0 0; }
-  #appShell #msgList .msg-toolbar-btn {
-    display: inline-grid;
-    place-items: center;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    border: 0;
-    border-radius: var(--ui-radius-md);
-    background: transparent;
-    color: var(--ui-text-secondary);
-    cursor: pointer;
-    transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
-  }
-  #appShell #msgList .msg-toolbar-btn:hover,
-  #appShell #msgList .msg-toolbar-btn:focus-visible {
-    background: var(--ui-bg-hover-ghost);
-    color: var(--ui-text-primary);
-  }
-  #appShell #msgList .msg-toolbar-btn svg { width: 18px; height: 18px; shape-rendering: crispEdges; }
 }

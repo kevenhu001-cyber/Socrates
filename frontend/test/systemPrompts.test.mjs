@@ -54,7 +54,9 @@ test('high-effort prompt prioritizes detailed paragraph-based answers without du
      owned once by SERVER_SYSTEM_POLICY and must not be re-declared here, so
      the effort level cannot drift from or override the global writing rules. */
   assert.doesNotMatch(HIGH_EFFORT_OUTPUT_GUIDANCE, /Avoid bullet points/i);
-  assert.doesNotMatch(HIGH_EFFORT_OUTPUT_GUIDANCE, /chain-of-thought/i);
+  assert.match(HIGH_EFFORT_OUTPUT_GUIDANCE, /Do not expose private scratch work or hidden chain-of-thought/i);
+  assert.match(HIGH_EFFORT_OUTPUT_GUIDANCE, /make the answer verifiable/i);
+  assert.doesNotMatch(HIGH_EFFORT_OUTPUT_GUIDANCE, /Do not omit meaningful intermediate reasoning/i);
   assert.match(CHAT_SYSTEM_PROMPT, /high reasoning-effort mode/i);
   assert.doesNotMatch(CHAT_CONCISE_PROMPT, /high reasoning-effort mode/i);
 });

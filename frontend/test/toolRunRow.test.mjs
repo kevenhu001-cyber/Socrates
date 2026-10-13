@@ -40,28 +40,26 @@ const settledAgentView = {
 test('agent run host stays in the reading flow while tool details are collapsed', () => {
   const html = renderToStaticMarkup(React.createElement(ToolRunRow, { view: settledAgentView }));
 
-  assert.match(html, /<details class="tool-inline"[^>]*>/);
+  assert.match(html, /<div class="tool-inline"[^>]*>/);
   assert.doesNotMatch(html, /<details class="tool-inline"[^>]*\sopen(?:="")?/);
-  assert.match(html, /<\/details><div class="agent-run-host"><\/div>/);
+  assert.match(html, /<\/div><div class="agent-run-host"><\/div>/);
+  assert.doesNotMatch(html, /<details|<summary|aria-expanded/);
 });
 
 test('public summaries stay visible without exposing provider reasoning', () => {
   const html = renderToStaticMarkup(React.createElement(TurnSummaryPill, {
-    messageId: 'summary', message: { summary: 'Checked workflow steps.', reasoningContent: 'private reasoning', rawText: 'Answer.' },
+    messageId: 'summary', summary: 'Checked workflow steps.',
   }));
   assert.match(html, /<p class="turn-summary-text"><span>Checked workflow steps\.<\/span><\/p>/);
   assert.doesNotMatch(html, /<details|private reasoning|Thought complete/);
 });
 
-test('an active public summary owns thinking status without a duplicate heading', () => {
+test('selected activity has one status and no inferred summary', () => {
   const html = renderToStaticMarkup(React.createElement(TurnSummaryPill, {
-    messageId: 'active', live: true,
-    message: { _taskSummary: 'Checking workflow steps.', reasoningContent: 'private reasoning' },
-    status: { phase: 'thinking', label: 'Thinking' },
+    messageId: 'active', status: { phase: 'thinking', label: 'Analyzing the question' },
   }));
-  assert.match(html, /class="turn-summary-text thinking-status" role="status"/);
-  assert.match(html, /Checking workflow steps/);
-  assert.doesNotMatch(html, /turn-summary-status|private reasoning|>Thinking</);
+  assert.equal((html.match(/role="status"/g) || []).length, 1);
+  assert.doesNotMatch(html, /private reasoning|turn-summary-text/);
 });
 
 test('parallel calls keep their original order and all actions stay visible', () => {

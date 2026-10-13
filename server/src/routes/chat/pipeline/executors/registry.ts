@@ -1,3 +1,4 @@
+import { executeIntelligentUi } from './intelligentUi.js';
 /**
  * Tool executor registry (LobeHub-alignment: self-registering tools).
  *
@@ -42,6 +43,7 @@ export function createToolExecutorRegistry(): ToolExecutorRegistry {
     ['web_fetch', executeWebFetch],
     ['read_attachment', executeReadAttachment],
     ['save_memory', executeSaveMemory],
+    ['render_intelligent_ui', executeIntelligentUi],
     ['create_plan', executePlanSpec],
     ['create_spec', executePlanSpec],
     ['create_site', executeCreateSite],

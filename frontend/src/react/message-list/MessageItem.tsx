@@ -2,6 +2,7 @@ import { memo, useRef } from 'react';
 
 import { hasTurnStructure, type ToolCallRecord } from '../tool-run/toolRunModel';
 import type { LegacyChatMessage } from '../types/domain';
+import { deriveTurnPresentationState } from '../../ui/turnActivityModel';
 import { MessageToolbar } from './MessageToolbar';
 import { MessageAttachments } from './MessageAttachments';
 import { MessageBody } from './MessageBody';
@@ -32,10 +33,6 @@ interface ViewportAnchorData {
 
 function messageRole(message: LegacyChatMessage): string {
   return typeof message.role === 'string' ? message.role : 'assistant';
-}
-
-function isLiveAssistant(message: LegacyChatMessage, role: string): boolean {
-  return role === 'assistant' && message.type === 'streaming' && message._streamSettled !== true;
 }
 
 function messageClientId(message: LegacyChatMessage): string {
@@ -99,7 +96,8 @@ function isRenderable(message: LegacyChatMessage, live: boolean): boolean {
 function MessageItemBase({ message }: MessageItemProps) {
   const role = messageRole(message);
   /* chatRuntime.bridge gives React an immutable snapshot for this row. */
-  const isLive = isLiveAssistant(message, role);
+  const presentation = deriveTurnPresentationState(message);
+  const isLive = role === 'assistant' && !presentation.isSettled;
   const clientId = messageClientId(message);
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const html = typeof message.html === 'string' ? message.html : '';
@@ -142,7 +140,7 @@ function MessageItemBase({ message }: MessageItemProps) {
         declarative={declarative}
         bodyRef={bodyRef}
       />
-      <MessageToolbar message={message} role={toolbarRole(role)} />
+      {role === 'user' || presentation.showToolbar ? <MessageToolbar message={message} role={toolbarRole(role)} /> : null}
     </div>
   );
 }

@@ -76,10 +76,8 @@ export function toolCallbacksForStream(ctl) {
     onAgentStep: function (step) { if (step && ctl.recordAgentStep) ctl.recordAgentStep(step); },
     onAgentPlan: function (plan) { if (plan && ctl.recordAgentPlan) ctl.recordAgentPlan(plan); },
     onToolCallDelta: function (delta) { if (delta && ctl.recordToolCallDelta) ctl.recordToolCallDelta(delta); },
-    /* P_turn-summary — the model's one-line retrospective, sent after the
-       answer text and before [DONE]. Patch it onto the message so the ⏱
-       status row and the Summary sheet read the model's own summary instead
-       of a mechanical first-sentence slice. */
+    /* Public progress and completed execution facts come from the server. */
+    onTurnActivity: function (activity) { if (ctl && ctl.recordTurnActivity) ctl.recordTurnActivity(activity); },
     onTurnSummary: function (payload) {
       var text = payload && typeof payload === 'string' ? payload : (payload && payload.summary);
       if (!text || !ctl || typeof ctl.recordTurnSummary !== 'function') return;

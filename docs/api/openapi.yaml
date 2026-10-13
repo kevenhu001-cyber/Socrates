@@ -2269,11 +2269,21 @@ paths:
         wrapper. The stream shares the authenticated chat rate-limit bucket.
         A successful priority-service fallback emits `preference_fallback`
         before content frames.
-        Optional `turn_summary` frames carry `{summary, phase: initial}` for
-        a transient task preview, or `{summary}` for a completed activity
+        Optional `turn_activity` frames report public observations: `{type: thinking}`,
+        `{type: tool, toolCallId, toolName}`, `{type: synthesizing}`, or
+        `{type: done, durationMs}`. Clients must wait for stream playback to
+        settle before mounting answer actions. Private reasoning is never
+        activity copy. Older clients may ignore this additive event.
+        Optional `turn_summary` frames carry `{summary}` for a completed activity
         retrospective. Completed summaries use observed execution facts and
         do not require another model request before the closing frame. Plain
         answers without reasoning or tools may omit the retrospective.
+        The native `render_intelligent_ui` tool accepts `{version: 1, nodes: [...]}`
+        with 1–80 unique typed nodes. Server validation rejects unsafe keys,
+        URLs, invalid parents and cycles. UI data travels through ordinary
+        tool_use/tool_result frames and stored toolCalls, separate from prose.
+        Existing clients can display a generic tool result; legacy UI fences
+        remain readable on the web for old sessions.
   /api/agent/run:
     post:
       tags: [agents]

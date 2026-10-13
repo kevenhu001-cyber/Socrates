@@ -19,19 +19,20 @@ export function ToolRunRow({ view, startedAt, messageId, readOnly, nested }: Too
   const { open, setOpen } = useToolRunDisclosure(view.id);
   const inFlight = view.state === 'running' || view.state === 'awaiting';
   const elapsedMs = useElapsed(startedAt || 0, inFlight);
+  const expandable = Boolean(view.sections.length || view.tech.length || view.livePreview || view.liveOutput);
+  const rowData = {
+    className: `tool-inline${inFlight ? ' is-live' : ''}`,
+    'data-tcid': view.id, 'data-tool': view.name, 'data-state': view.state,
+    'data-nested': nested ? '1' : undefined, 'data-react-owned': '1',
+    'data-error': view.state === 'error' ? '1' : undefined,
+  };
   const error = view.sections.find((section) => section.kind === 'error');
 
   return (
     <>
-      <details
-        className={`tool-inline${inFlight ? ' is-live' : ''}`}
-        data-tcid={view.id}
-        data-tool={view.name}
-        data-state={view.state}
-        data-nested={nested ? '1' : undefined}
-        data-react-owned="1"
-        data-expandable={view.sections.length || view.tech.length || view.livePreview || view.liveOutput ? '1' : undefined}
-        data-error={view.state === 'error' ? '1' : undefined}
+      {expandable ? <details
+        {...rowData}
+        data-expandable="1"
         open={open}
         onToggle={(event) => setOpen(event.currentTarget.open)}
       >
@@ -49,7 +50,9 @@ export function ToolRunRow({ view, startedAt, messageId, readOnly, nested }: Too
             <ToolRunDetail view={view} readOnly={readOnly} />
           )
         ) : null}
-      </details>
+      </details> : <div {...rowData}>
+        <div className="tool-inline-head"><ToolRunRowHead view={view} elapsedMs={elapsedMs} /></div>
+      </div>}
       {view.agentRun ? (
         <ToolRunAgentSteps
           run={view.agentRun}
