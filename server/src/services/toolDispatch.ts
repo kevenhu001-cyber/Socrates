@@ -1,10 +1,12 @@
 /**
  * Run a model-emitted tool batch while honoring registry scheduling hints.
  *
- * Most native tools are side-effect-free and can run concurrently. A tool
- * marked `sessionSerial`, however, shares mutable conversation state (the
- * Python scratch directory today), so calls of that kind must not overlap.
- * Results are still returned in the model's original call order.
+ * Stability is preferred over unbounded speculative parallelism: outbound
+ * tool work is globally bounded to two active calls by default. Operators can
+ * lower TOOL_MAX_CONCURRENCY to 1 for strict serialization, or raise it when
+ * their upstreams and quotas can absorb more parallel work. `sessionSerial`
+ * still provides the stronger ordering contract for tools that share mutable
+ * conversation state.
  */
 export interface ToolSchedulingEntry {
   /* `true` serializes same-named calls; a string names a lane SHARED
@@ -19,23 +21,61 @@ export interface ToolSchedulingRegistry {
   get(name: string): ToolSchedulingEntry | null | undefined;
 }
 
+function toolConcurrencyLimit(): number {
+  const configured = Number.parseInt(process.env.TOOL_MAX_CONCURRENCY || '2', 10);
+  if (!Number.isFinite(configured)) return 2;
+  return Math.max(1, Math.min(8, configured));
+}
+
 export async function dispatchToolCalls<TCall, TResult>(
   calls: readonly TCall[],
   getName: (call: TCall) => string,
   registry: ToolSchedulingRegistry,
   execute: (call: TCall) => Promise<TResult>,
 ): Promise<TResult[]> {
-  /* One FIFO lane per shared resource, not one global lane: a
-   * code_interpreter call need not wait behind a workspace_agent run —
-   * they serialize only within their own lane. */
+  /* One FIFO lane per shared mutable resource. A separate global permit pool
+     bounds otherwise-independent tools so a single model response cannot fan
+     out an unbounded number of upstream requests at once. */
   const laneTails = new Map<string, Promise<void>>();
+  const concurrency = toolConcurrencyLimit();
+  let active = 0;
+  const waiters: Array<() => void> = [];
+
+  const acquire = (): Promise<void> => {
+    if (active < concurrency) {
+      active += 1;
+      return Promise.resolve();
+    }
+    return new Promise<void>((resolve) => {
+      waiters.push(() => {
+        /* Reserve the released slot synchronously before waking the waiter.
+           That prevents a newly arriving call from stealing the slot between
+           release() and the waiter's next microtask. */
+        active += 1;
+        resolve();
+      });
+    });
+  };
+
+  const release = () => {
+    active = Math.max(0, active - 1);
+    const next = waiters.shift();
+    if (next) next();
+  };
+
+  const runBounded = async (call: TCall): Promise<TResult> => {
+    await acquire();
+    try {
+      return await execute(call);
+    } finally {
+      release();
+    }
+  };
 
   const tasks = calls.map((call) => {
     const entry = registry.get(getName(call));
     if (!entry?.sessionSerial) {
-      // Use a promise continuation so a synchronous throw is represented as
-      // a rejected task just like an async tool failure.
-      return Promise.resolve().then(() => execute(call));
+      return runBounded(call);
     }
 
     const laneKey = entry.sessionSerial === true ? getName(call) : entry.sessionSerial;
@@ -44,7 +84,7 @@ export async function dispatchToolCalls<TCall, TResult>(
     // Python call would permanently prevent a later, independent correction
     // in the same turn from running.
     const tail = laneTails.get(laneKey) || Promise.resolve();
-    const task = tail.then(() => execute(call));
+    const task = tail.then(() => runBounded(call));
     laneTails.set(laneKey, task.then(
       () => undefined,
       () => undefined,

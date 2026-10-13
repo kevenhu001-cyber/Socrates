@@ -9,11 +9,11 @@
  *   1. validateEnvironment  — fail fast on production misconfiguration.
  *   2. connectDatabase      — everything below needs the pool.
  *   3. seedBuiltInProvider  — the built-in Beagle key must exist before
- *                             the LLM warmup reads it.
+ *                             the optional LLM warmup reads it.
  *   4. validateApiKeys      — detect corrupted ciphertext at boot.
  *   5. startBackgroundTasks — fire-and-forget warmers/sweeps/daemons
- *                             (workspaces, Pyodide, scratch TTL, LLM
- *                             warmup, scheduler, recovery, monitor).
+ *                             (workspaces, Pyodide, scratch TTL, optional
+ *                             LLM warmup, scheduler, recovery, monitor).
  *   6. listen               — returns the HTTP server.
  */
 
@@ -70,6 +70,10 @@ export async function validateApiKeysAtBoot(): Promise<void> {
 
 /** ── 5. Fire-and-forget background tasks ── */
 
+function envFlag(name: string): boolean {
+  return /^(1|true|yes|on)$/i.test(String(process.env[name] || '').trim());
+}
+
 /** Reconcile one private Codex directory per existing conversation.
  * New sessions are initialized by POST /api/sessions; this startup pass
  * backfills older sessions and repairs rows left behind by an interrupted
@@ -125,15 +129,10 @@ function sweepStaleScratchDirs(): void {
   })();
 }
 
-/** Warm up LLM provider connection (MiniMax).
- * Send a minimal chat completion request to the upstream provider
- * so the model is loaded into memory and the HTTP/2 connection pool
- * is established before any user request arrives. Without this, the
- * first user of every server restart pays the cold-start penalty
- * (5-15s for model loading), which the frontend can't distinguish
- * from a stuck connection.
- * Uses the built-in provider key from the DB (seeded on a previous
- * deploy with BEAGLE_SYSTEM_KEY set), not the env var directly. */
+/** Optional LLM provider warmup.
+ * This issues a real chat-completion request and is therefore disabled by
+ * default. Set LLM_WARMUP_ENABLED=1 only when the deployment explicitly
+ * accepts unsolicited upstream traffic in exchange for a warmer first turn. */
 function warmLlmProvider(): void {
   (async () => {
     try {
@@ -224,13 +223,15 @@ function startMonitor(): void {
   })();
 }
 
-/** Start every fire-and-forget boot task, in the historical order. */
+/** Start every fire-and-forget boot task. External LLM probes are opt-in so a
+ * quiet server stays quiet and deploy/restart cycles do not create upstream
+ * traffic unrelated to an actual user request. */
 export function startBackgroundTasks(): void {
   reconcileSessionWorkspaces();
   warmPyodidePool();
   sweepStaleScratchDirs();
-  warmLlmProvider();
-  startLlmKeepWarmWorker();
+  if (envFlag('LLM_WARMUP_ENABLED')) warmLlmProvider();
+  if (envFlag('LLM_KEEP_WARM_ENABLED')) startLlmKeepWarmWorker();
   startSchedulerDaemon();
   recoverAgentRuns();
   startMonitor();
