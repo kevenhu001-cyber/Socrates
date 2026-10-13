@@ -134,7 +134,7 @@
   .turn-summary {
     margin: 0 0 16px;
     color: var(--ui-text-tertiary);
-    font-size: calc(16px * var(--app-type-scale));
+    font-size: var(--ui-text-body);
     line-height: 1.5;
   }
   .turn-summary-status {
@@ -167,13 +167,13 @@
     align-items: center;
     min-height: 32px;
     padding: 2px 0;
-    font-size: calc(16px * var(--app-type-scale));
+    font-size: var(--ui-text-body);
     line-height: 1.5;
   }
   #appShell .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-label,
   #appShell .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-run-summary-label {
     color: var(--ui-text-tertiary);
-    font-size: calc(16px * var(--app-type-scale));
+    font-size: var(--ui-text-body);
     font-weight: 400;
     line-height: 1.5;
   }
