@@ -10,7 +10,7 @@ import {
   waitForAIRetry,
 } from '../src/chat/retryPolicy.ts';
 
-test('AI retry policy allows six total attempts with five exact five-second waits', async () => {
+test('AI retry policy allows one automatic replay after a transient failure', async () => {
   const delays = [];
   const notices = [];
   let retries = 0;
@@ -24,12 +24,12 @@ test('AI retry policy allows six total attempts with five exact five-second wait
     if (await waitForAIRetry(attempt, new Error('connection reset'), options)) retries += 1;
   }
 
-  assert.equal(AI_MAX_RETRIES, 5);
-  assert.equal(AI_MAX_ATTEMPTS, 6);
-  assert.equal(retries, 5);
-  assert.deepEqual(delays, Array(5).fill(AI_RETRY_DELAY_MS));
-  assert.deepEqual(notices.map((notice) => notice.retryNumber), [1, 2, 3, 4, 5]);
-  assert.ok(notices.every((notice) => notice.maxRetries === 5 && notice.delayMs === 5000));
+  assert.equal(AI_MAX_RETRIES, 1);
+  assert.equal(AI_MAX_ATTEMPTS, 2);
+  assert.equal(retries, 1);
+  assert.deepEqual(delays, [AI_RETRY_DELAY_MS]);
+  assert.deepEqual(notices.map((notice) => notice.retryNumber), [1]);
+  assert.ok(notices.every((notice) => notice.maxRetries === 1 && notice.delayMs === 5000));
 });
 
 test('AI retry policy retries transient status errors but rejects terminal provider errors', () => {
