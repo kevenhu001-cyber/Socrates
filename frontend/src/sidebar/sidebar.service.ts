@@ -24,26 +24,31 @@ function cancelDesktopSidebarMotion(): void {
   sidebarRevealAnimation = null;
 }
 
+function mainSidebarInset(main: HTMLElement): number {
+  const value = Number.parseFloat(getComputedStyle(main).paddingLeft);
+  return Number.isFinite(value) ? value : 0;
+}
+
 /**
  * Desktop open/close uses a FLIP-style compositor transition.
  *
  * CSS commits the target sidebar width and main padding immediately; animating
  * either property would relayout the transcript, composer and top bar on every
- * frame. We instead measure the main surface before/after the class flip and
- * visually carry it from the old x-position to the new one with transform.
- * The sidebar itself is already on the page colour, so only the newly revealed
- * content needs a tiny fade/translate on open.
+ * frame. We instead measure the content inset before/after the class flip and
+ * visually carry the main surface from the old x-position to the new one with
+ * transform. The sidebar itself is already on the page colour, so only newly
+ * revealed content needs a tiny fade/translate on open.
  */
 function animateDesktopSidebarMotion(
   sidebar: HTMLElement,
   main: HTMLElement,
-  beforeMainLeft: number,
+  beforeInset: number,
   opening: boolean,
 ): void {
   if (prefersReducedMotion() || typeof main.animate !== 'function') return;
 
-  const afterMainLeft = main.getBoundingClientRect().left;
-  const deltaX = beforeMainLeft - afterMainLeft;
+  const afterInset = mainSidebarInset(main);
+  const deltaX = beforeInset - afterInset;
   if (Math.abs(deltaX) > 0.5) {
     mainShiftAnimation = main.animate(
       [
@@ -116,7 +121,7 @@ export function toggleSidebar(): void {
   /* A rapid second toggle should start from the committed layout state, not
      from the transform of the animation that is still in flight. */
   cancelDesktopSidebarMotion();
-  const beforeMainLeft = main ? main.getBoundingClientRect().left : 0;
+  const beforeInset = main ? mainSidebarInset(main) : 0;
 
   const wasCollapsed = sidebar.classList.contains('collapsed');
   if (wasCollapsed) {
@@ -129,7 +134,7 @@ export function toggleSidebar(): void {
   const open = !sidebar.classList.contains('collapsed');
 
   if (desktop && main) {
-    animateDesktopSidebarMotion(sidebar, main, beforeMainLeft, open);
+    animateDesktopSidebarMotion(sidebar, main, beforeInset, open);
   }
 
   const legacyWindow = window as Window & { sidebarOpen?: boolean; syncSidebarBtns?: () => void };
