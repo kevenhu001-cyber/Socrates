@@ -36,6 +36,7 @@
 
 #appShell .composer-shell {
   --composer-control: 36px;
+  --composer-secondary-control: 34px;
 }
 
 #appShell .composer-shell .composer-footer,
@@ -57,18 +58,18 @@
   position: relative;
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: var(--composer-control) minmax(0, 1fr) auto var(--composer-control) var(--composer-control);
+  grid-template-columns: var(--composer-secondary-control) minmax(0, 1fr) auto var(--composer-secondary-control) var(--composer-control);
   grid-template-rows: auto;
   grid-template-areas: "plus editor effort mic send";
   align-items: center;
-  column-gap: 4px;
+  column-gap: 6px;
   row-gap: 0;
   width: min(100%, var(--ui-content-chat));
   max-width: var(--ui-content-chat);
   height: auto;
-  min-height: 52px;
+  min-height: 56px;
   margin: 0 auto;
-  padding: 7px 10px 7px 8px;
+  padding: 10px;
   overflow: visible;
   border: 1px solid var(--ui-composer-border);
   border-radius: var(--ui-radius-composer-desktop);
@@ -77,8 +78,14 @@
   color: var(--ui-text-primary);
   box-shadow: var(--ui-composer-shadow);
   transform: none;
-  /* Paint-only feedback; geometry changes are animated by RichComposer. */
   transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+/* Exact light-mode paint from the Figma Composer component: #e8e8e8
+   hairline and elevation/01 (0 4 16 at 5%). */
+html[data-mode="light"] #appShell .composer-shell:not(.voice-recording-active) {
+  border-color: var(--ui-bg-control);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 5%);
 }
 
 /* A quiet focus cue keeps the capsule readable without a bright outer glow. */
@@ -86,15 +93,13 @@
   border-color: var(--ui-border-strong);
 }
 
-/* Two-row layout: a real multi-line draft, or any tool / plugin chip.
-   Shape flags are JS-owned (ui/composerShape.js toggles .has-plugin-chips /
-   .has-attachments); no :has() on the hot path. */
+/* Two-row layout: a real multi-line draft, or any tool / plugin chip. */
 #appShell .composer-shell.composer-multiline:not(.voice-recording-active),
 #appShell .composer-shell.has-plugin-chips:not(.voice-recording-active) {
   grid-template-areas:
     "editor editor editor editor editor"
     "plus   chips  effort mic    send";
-  padding: 10px 10px 7px 8px;
+  padding: 10px;
 }
 
 /* Attachments add a full-width row on top. */
@@ -109,8 +114,6 @@
   grid-area: files;
   min-width: 0;
   margin: 0 0 4px 2px;
-  /* Card chips carry a floating remove disc 7px above their top edge —
-     this padding keeps it inside the composer card. */
   padding: 8px 2px 0;
 }
 
@@ -124,10 +127,10 @@
 #appShell .composer-shell .rich-composer-editor {
   box-sizing: border-box;
   width: 100%;
-  min-height: 24px;
+  min-height: 22px;
   max-height: min(40dvh, 336px);
   margin: 0;
-  padding: 6px 8px;
+  padding: 0 8px;
   overflow-y: auto;
   border: 0;
   outline: none;
@@ -136,7 +139,7 @@
   font-family: var(--font-sans);
   font-size: var(--ui-font-size-md);
   font-weight: 400;
-  line-height: 24px;
+  line-height: 22px;
   text-align: left;
   scrollbar-width: thin;
 }
@@ -252,8 +255,6 @@
 #appShell .composer-shell .composer-plugin-chip-remove svg { width: 14px; height: 14px; }
 #appShell .composer-shell .composer-plugin-chip-more { padding-inline: 10px; color: var(--ui-text-muted); }
 
-/* Tool chip — web search picked from the "+" menu (chatgpt.com: 14px pill,
-   blue text; the globe turns into × on hover = "click to remove"). */
 #appShell .composer-tool-chip {
   display: inline-flex;
   align-items: center;
@@ -296,7 +297,7 @@
   position: static;
   display: inline-grid;
   place-items: center;
-  align-self: end;
+  align-self: center;
   box-sizing: border-box;
   width: var(--composer-control);
   min-width: var(--composer-control);
@@ -313,6 +314,10 @@
   transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease, opacity var(--ui-duration-fast) ease;
 }
 #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn) {
+  width: var(--composer-secondary-control);
+  min-width: var(--composer-secondary-control);
+  height: var(--composer-secondary-control);
+  min-height: var(--composer-secondary-control);
   background: transparent;
   color: var(--ui-text-primary);
 }
@@ -322,17 +327,12 @@
 }
 #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn) svg { display: block; width: 20px; height: 20px; }
 
-/* Primary action: voice mode when empty, send when there is a draft, stop
-   while a turn streams — one filled circle, like chatgpt.com. */
 #appShell .composer-shell .composer-primary-btn {
   background: var(--ui-text-primary);
   color: var(--ui-bg-page);
   font-weight: 500;
 }
 #appShell .composer-shell .composer-primary-btn:hover { opacity: 0.8; }
-/* Paint-only feedback for compact composer controls; polish/press.css keeps
-   their circles and SVG geometry fixed throughout the press. They dim a
-   step further than wide buttons so the 36px disc still reads as pressed. */
 #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn) {
   --press-opacity: var(--ui-press-opacity-sm);
 }
@@ -340,7 +340,6 @@
 #appShell .composer-shell .composer-primary-btn > span { display: grid; place-items: center; }
 #appShell .composer-shell .composer-primary-btn svg { display: block; width: 20px; height: 20px; }
 
-/* One simultaneous fade in a fixed grid cell; no delayed second entrance. */
 #appShell .composer-shell .composer-primary-btn .send-glyph {
   grid-area: 1 / 1;
   display: grid;
@@ -365,12 +364,12 @@
   outline-offset: 2px;
 }
 
-/* Reasoning effort: a compact ghost pill that never wraps. Shown on both
-   surfaces — the conversation composer is the landing composer. */
+/* Reasoning effort remains a Socrates capability; it is kept as the one
+   intentional product-specific control inside the Figma geometry. */
 #appShell .composer-shell .effort-picker {
   position: relative;
   display: inline-flex;
-  align-self: end;
+  align-self: center;
   width: auto;
   min-width: 0;
   margin: 0;
@@ -385,17 +384,17 @@
   gap: 4px;
   box-sizing: border-box;
   width: auto;
-  height: var(--composer-control);
-  min-height: var(--composer-control);
+  height: var(--composer-secondary-control);
+  min-height: var(--composer-secondary-control);
   margin: 0;
-  padding: 0 10px 0 12px;
+  padding: 0 10px;
   border: 0;
   border-radius: var(--ui-radius-pill);
   background: transparent;
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-sm);
   font-weight: 400;
-  line-height: 20px;
+  line-height: 18px;
   white-space: nowrap;
   cursor: pointer;
   transition: background-color var(--ui-duration-fast) ease;
@@ -409,23 +408,10 @@
 #appShell .composer-shell .effort-value:empty { display: none; }
 #appShell .composer-shell .effort-caret { flex: 0 0 16px; width: 16px; height: 16px; color: var(--ui-text-muted); }
 
-/* ── Phone (<= 768px) ──────────────────────────────────────────────────────
-   Always two storeys: the editor gets the whole first row, the controls sit
-   on a rail beneath it. Borderless card with a soft drop shadow. */
+/* ── Phone (<= 768px) ────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   #appShell .composer-shell:not(.voice-recording-active),
   #appShell .composer-shell.composer-multiline:not(.voice-recording-active),
-  /* P_composer-single — the landing and conversation shells are one node
-     with one grid. A landing-only 4-track grid that hid .effort-picker
-     landed in a983ed9f and broke e2e/composer-parity.spec.mjs on both phone
-     themes: the contract is that the shell keeps the same DOM shape and the
-     same computed styles across the landing → chat flip.
-
-     It was also a capability gap, not a layout necessity. There is exactly
-     one .effort-picker in index.html and no alternate affordance, so a phone
-     user could set reasoning effort from chat but not before their first
-     message, while the desktop landing could. The 4-track row fit fine
-     anyway: 36 + 36 + 36 fixed controls leave ~160px for the chip strip. */
   #appShell .composer-shell.has-plugin-chips:not(.voice-recording-active) {
     grid-template-areas:
       "editor editor editor editor editor"
@@ -449,10 +435,6 @@
     padding: 0 8px;
     line-height: 24px;
   }
-  /* The chips track is ~1fr of a narrow row — several selected plugins
-     would crush each chip to icon width under flex-shrink. Keep chips at
-     full size and let the strip scroll horizontally instead, as the
-     pre-unification mobile sheet did. */
   #appShell .composer-shell .composer-plugin-chips {
     overflow-x: auto;
     overflow-y: hidden;
@@ -464,6 +446,13 @@
   #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn, .effort-picker) {
     align-self: center;
   }
+  /* Restore the reference-pinned 36px mobile visual controls. */
+  #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn) {
+    width: var(--composer-control);
+    min-width: var(--composer-control);
+    height: var(--composer-control);
+    min-height: var(--composer-control);
+  }
   #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn) {
     background: var(--ui-bg-control);
     color: var(--ui-text-primary);
@@ -473,22 +462,17 @@
     background: var(--ui-bg-hover);
   }
   #appShell .composer-shell .effort-trigger {
+    height: var(--composer-control);
+    min-height: var(--composer-control);
     padding: 0 10px;
     background: var(--ui-bg-raised);
     font-size: 15px;
     line-height: 18px;
   }
   html[data-mode="dark"] #appShell .composer-shell .effort-trigger { background: var(--ui-bg-control); }
-  /* The default effort remains accessible from the header configuration
-     menu; only explicitly selected levels need a chip on the phone rail. */
   #appShell .composer-shell .effort-picker[data-effort="medium"] { display: none; }
-  /* Phones show the level only ("Medium"), not "Thinking Medium". */
   #appShell .composer-shell .effort-label:has(+ .effort-value:not(:empty)) { display: none; }
 
-  /* Hit-area wrapper: keep the 36×36 visual (chatgpt reference) but
-     extend the tap surface to 44×44 via ::before so iOS-precision taps
-     don't miss the round button. See polish/mobile-controls.css for the
-     same pattern applied to msg-toolbar-btn. */
   #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn) {
     position: relative;
     transition: background-color var(--ui-duration-fast, 0.12s) ease, opacity var(--ui-duration-fast, 0.12s) ease;
@@ -504,9 +488,7 @@
   }
 }
 
-/* ── Voice recording ───────────────────────────────────────────────────────
-   While dictating, the shell hosts only the recording bar (ui/voiceInput.js
-   toggles .voice-recording-active and injects .voice-recording-bar). */
+/* ── Voice recording ──────────────────────────────────────────────────── */
 #appShell .composer-shell.voice-recording-active {
   position: relative;
   box-sizing: border-box;
@@ -531,7 +513,7 @@
   #appShell .composer-shell.voice-recording-active { width: 100%; max-width: none; border-radius: 26px; }
 }
 
-/* Composer attachments: horizontal image tiles and document cards (ChatGPT-style). */
+/* Composer attachments: horizontal image tiles and document cards. */
 .composer-shell .attachment-chips {
   display: flex;
   flex-wrap: nowrap;
@@ -636,7 +618,6 @@
   white-space: nowrap;
 }
 
-/* Image chip: square tile with covered thumbnail */
 .composer-shell .attachment-chip.is-image {
   flex: 0 0 56px;
   width: 56px;
@@ -660,7 +641,6 @@
   display: block;
 }
 
-/* Close button: solid dark circular badge inside top-right corner */
 .composer-shell .attachment-chip-remove {
   position: absolute;
   top: 6px;
@@ -699,7 +679,6 @@
   outline-offset: 2px;
 }
 
-/* Progress indicator */
 .composer-shell .attachment-chip-progress {
   position: absolute;
   left: 0;
@@ -746,7 +725,6 @@
   z-index: 2;
 }
 
-/* Error state & retry */
 .composer-shell .attachment-chip.error {
   border-color: var(--ui-danger);
 }
