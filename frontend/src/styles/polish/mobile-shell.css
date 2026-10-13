@@ -1,5 +1,8 @@
 /* Canonical phone shell. Measurements are normalized from the supplied
    current ChatGPT Android screenshots rather than inherited desktop chrome. */
+.mobile-conversation-more-btn,
+.mobile-conversation-more-menu { display: none; }
+
 @media (max-width: 768px) {
   #appShell .top-bar {
     height: calc(var(--ui-mobile-header) + env(safe-area-inset-top, 0px));
@@ -23,10 +26,9 @@
     color: var(--ui-text-primary);
   }
   /* The reference leaves about one 16px screen gutter around the painted
-     44px header controls. The button itself stays 40px; the pseudo-surface
+     44px left header control. The button itself stays 40px; the pseudo-surface
      adds the final 2px per side without changing hit geometry. */
-  body[data-conversation-active="true"] #appShell #sidebarOpenBtn::before,
-  body[data-conversation-active="true"] #appShell #mobileNewChatBtn::before {
+  body[data-conversation-active="true"] #appShell #sidebarOpenBtn::before {
     content: "";
     position: absolute;
     inset: -2px;
@@ -38,6 +40,76 @@
   }
   #appShell #sidebarOpenBtn svg, #appShell #mobileNewChatBtn svg { width: 24px; height: 24px; }
   #appShell .mobile-newchat-btn { display: inline-flex; align-items: center; justify-content: center; }
+
+  /* Current ChatGPT groups compose + overflow into one raised capsule rather
+     than painting two independent circles. Find/share remain the real action
+     targets, but move behind the overflow menu on the phone. */
+  body[data-conversation-active="true"] #appShell .top-bar-right {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0;
+    height: 48px;
+    padding: 4px;
+    border-radius: var(--ui-radius-pill);
+    background: var(--ui-bg-raised);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 9%), 0 1px 2px rgb(0 0 0 / 5%);
+  }
+  body[data-conversation-active="true"] #appShell .top-bar-right > :is(#findBtn, #shareBtn, #mobileIncognitoBtn, .chat-model-wrap) {
+    display: none;
+  }
+  body[data-conversation-active="true"] #appShell #mobileNewChatBtn::before { content: none; }
+  body[data-conversation-active="true"] #appShell #mobileConversationMoreBtn:not([hidden]) {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--ui-text-primary);
+    cursor: pointer;
+  }
+  #appShell #mobileConversationMoreBtn:hover,
+  #appShell #mobileConversationMoreBtn[aria-expanded="true"] { background: var(--ui-bg-hover); }
+  #appShell #mobileConversationMoreBtn svg { width: 22px; height: 22px; }
+  #mobileConversationMoreBtn[hidden],
+  #mobileConversationMoreMenu[hidden] { display: none; }
+  #mobileConversationMoreMenu:not([hidden]) {
+    position: fixed;
+    z-index: var(--ui-z-popover);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px;
+    border: 1px solid var(--ui-border-subtle);
+    border-radius: var(--ui-radius-xl);
+    background: var(--ui-bg-overlay);
+    color: var(--ui-text-primary);
+    box-shadow: var(--ui-shadow-popover);
+  }
+  #mobileConversationMoreMenu [role="menuitem"] {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: var(--ui-control-touch);
+    padding: 0 10px;
+    border: 0;
+    border-radius: var(--ui-radius-row);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: var(--ui-text-ui);
+    text-align: left;
+    cursor: pointer;
+  }
+  #mobileConversationMoreMenu [role="menuitem"]:hover,
+  #mobileConversationMoreMenu [role="menuitem"]:focus-visible { background: var(--ui-bg-hover); }
+  #mobileConversationMoreMenu [role="menuitem"] svg { width: 20px; height: 20px; flex: 0 0 20px; }
 
   /* The supplied in-conversation reference keeps the header almost empty:
      navigation on the left, actions on the right, and transcript visible
