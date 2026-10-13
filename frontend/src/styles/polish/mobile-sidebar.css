@@ -26,7 +26,7 @@
     letter-spacing: -0.035em;
   }
   #appShell .cg-sidebar-caret { display: none; }
-  #appShell #sidebarHeader .btn-icon {
+  #appShell #sidebarHeader :is(#sidebarSearchBtn, #newChatBtn, #sidebarCloseBtn) {
     position: relative;
     display: grid;
     place-items: center;
@@ -36,7 +36,7 @@
     min-height: 44px;
     padding: 0;
   }
-  #appShell #sidebarHeader .btn-icon svg { width: 24px; height: 24px; stroke-width: 2.1; }
+  #appShell #sidebarHeader :is(#sidebarSearchBtn, #newChatBtn, #sidebarCloseBtn) svg { width: 24px; height: 24px; stroke-width: 2.1; }
   #appShell #sidebarHeader #sidebarSearchBtn {
     border: 0;
     border-radius: 50%;
@@ -110,7 +110,7 @@
   :root #appShell #sidebarNav #navSites { display: none; }
   :root[data-user-tier]:not([data-user-tier="diophantus"]):not([data-user-tier="free"]) #appShell #sidebarNav #navImages { display: none; }
   :root[data-user-tier]:not([data-user-tier="diophantus"]):not([data-user-tier="free"]) #appShell #sidebarNav #navSites { display: grid; order: 4; }
-  #appShell #sidebarHeader #newChatBtn { display: none; }
+  #appShell #sidebarHeader :is(#newChatBtn, #sidebarCloseBtn) { display: none; }
   #appShell #sidebarNav .sidebar-nav-btn.active:not(#navNew) { background: var(--ui-bg-selected); }
 
   /* Recents are separated from destinations by a single quiet hairline. */
