@@ -71,3 +71,49 @@ test('detail-free rows are static and native UI output is outside disclosure', a
   await expect(page.locator('div.tool-inline[data-tcid="empty"]')).toHaveCount(1);
   await expect(page.locator('.tool-inline summary, details.tool-inline')).toHaveCount(0);
 });
+
+test('native UI survives a tool-only settled turn and recovers raw streamed arguments', async ({ page }) => {
+  const document = {
+    version: 1,
+    nodes: [
+      { id: 'panel', type: 'panel', title: 'Recovered UI' },
+      { id: 'value', type: 'metric', parent: 'panel', label: 'Score', value: 7 },
+    ],
+  };
+  await prepareChatWorkbench(page, { messages: [{
+    clientId: 'native-ui-tool-only', role: 'assistant', rawText: '', html: '', type: null,
+    toolCalls: [{
+      id: 'ui-raw', name: 'render_intelligent_ui', status: 'completed', textOffset: 0,
+      output: 'Rendered 2 UI nodes', input: { __raw: JSON.stringify(document) },
+    }],
+  }] });
+
+  const message = page.locator('#msgList .msg.assistant[data-client-id="native-ui-tool-only"]');
+  await expect(message).toHaveCount(1);
+  await expect(message.locator('.intui')).toBeVisible();
+  await expect(message.locator('[data-intui-id="panel"]')).toContainText('Recovered UI');
+  await expect(message.locator('[data-intui-id="value"]')).toContainText('7');
+});
+
+test('native UI can mount from cumulative arguments before the tool result arrives', async ({ page }) => {
+  const document = {
+    version: 1,
+    nodes: [
+      { id: 'panel', type: 'panel', title: 'Live UI' },
+      { id: 'progress', type: 'progress', parent: 'panel', label: 'Ready', value: 40, max: 100 },
+    ],
+  };
+  await prepareChatWorkbench(page, { messages: [{
+    clientId: 'native-ui-arguments', role: 'assistant', rawText: '', html: '', type: null,
+    toolCalls: [{
+      id: 'ui-arguments', name: 'render_intelligent_ui', status: 'running', textOffset: 0,
+      output: null, input: null, argumentsText: JSON.stringify(document),
+    }],
+  }] });
+
+  const message = page.locator('#msgList .msg.assistant[data-client-id="native-ui-arguments"]');
+  await expect(message).toHaveCount(1);
+  await expect(message.locator('.intui')).toBeVisible();
+  await expect(message.locator('.intui')).toHaveAttribute('data-intui-streaming', 'true');
+  await expect(message.locator('[data-intui-id="progress"]')).toContainText('40%');
+});

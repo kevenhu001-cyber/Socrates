@@ -88,6 +88,14 @@ function isRenderable(message: LegacyChatMessage, live: boolean): boolean {
   if (live) return true;
   if (typeof message.html === 'string' && message.html.length > 0) return true;
   if (typeof message.rawText === 'string' && message.rawText.length > 0) return true;
+  /* A native tool can be the entire assistant answer. Once streaming settles,
+     that turn still has visible declarative content even with zero prose.
+     Without this check the row (and Intelligent UI attached to it) disappears
+     exactly at the live -> settled boundary. */
+  if (hasTurnStructure(
+    typeof message.rawText === 'string' ? message.rawText : '',
+    message.toolCalls as ReadonlyArray<ToolCallRecord> | undefined,
+  )) return true;
   /* Attachment-only user messages still need a row; the chips are their
      entire content. */
   return Array.isArray(message.attachments) && message.attachments.length > 0;
