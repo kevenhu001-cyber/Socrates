@@ -9,18 +9,21 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
   await waitForAppShell(page);
 
   const topic = page.locator('#composerInputWrap');
-  await expect(page.locator('#topicTitle')).toBeVisible();
+  await expect(page.locator('#topicTitle')).toBeHidden();
+  await expect(page.locator('#homeQuickActions')).toBeVisible();
   await expect(topic.locator('#composerMicBtn')).toBeVisible();
 
   const measure = async (wrapSelector, controls) => page.evaluate(({ wrapSelector: selector, controls: ids }) => {
     const rect = (target) => {
-      const box = document.querySelector(target)?.getBoundingClientRect();
-      const controlStyle = document.querySelector(target) ? getComputedStyle(document.querySelector(target)) : null;
+      const node = document.querySelector(target);
+      const box = node?.getBoundingClientRect();
+      const controlStyle = node ? getComputedStyle(node) : null;
       return box ? {
         left: Math.round(box.left),
         top: Math.round(box.top),
         width: Math.round(box.width),
         height: Math.round(box.height),
+        centerY: Math.round(box.top + box.height / 2),
         background: controlStyle?.backgroundColor,
       } : null;
     };
@@ -36,29 +39,23 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
   const landing = await measure('#composerInputWrap', [
     '#composerToolsBtn', '#composerMicBtn', '#composerPrimaryBtn',
   ]);
-  /* The phone capsule is the reference's two-row stack: 85px tall,
-     28px corners, 12px/8px/8px padding, editor on row 1 (full width),
-     36px circular controls on row 2, 12px page insets on both sides.
-     85 = 12 top + 24 editor + 3 row-gap + 36 control row + 8 bottom
-     + 1px border top and bottom. docs/ref/mobile-reference-2026-10-04.md
-     records the composer contract as "two rows, 36px controls, 28px
-     corners"; 8912121c retuned row-gap 6→3, padding 11/12/8→12/8/8 and
-     the editor 26→24px, which is what moved the capsule off the 89px this
-     assertion used to pin. */
-  expect(landing.wrap?.height).toBe(85);
-  expect(landing.radius).toBe('28px');
-  /* + and the primary control are 36px circles; the mic is the same size
-     and all three sit on the one control row, left to right. */
-  expect(landing.controls[0]?.width).toBe(36);
-  expect(landing.controls[0]?.height).toBe(36);
-  expect(landing.controls[1]?.width).toBe(36);
-  expect(landing.controls[1]?.height).toBe(36);
-  expect(landing.controls[2]?.width).toBe(36);
-  expect(landing.controls[2]?.height).toBe(36);
+  /* Figma mobile resting composer: one 44px row. The add control is a
+     separate 44px circle; the filled input pill contains a bare 24px mic and
+     a 32px primary action. Browser chrome/home-indicator geometry is not part
+     of this DOM measurement. */
+  expect(landing.wrap?.height).toBe(44);
+  expect(landing.radius).toBe('0px');
+  expect(landing.controls[0]?.width).toBe(44);
+  expect(landing.controls[0]?.height).toBe(44);
+  expect(landing.controls[1]?.width).toBe(24);
+  expect(landing.controls[1]?.height).toBe(24);
+  expect(landing.controls[2]?.width).toBe(32);
+  expect(landing.controls[2]?.height).toBe(32);
   expect(landing.controls[2]?.background).not.toBe('rgba(0, 0, 0, 0)');
-  expect(Math.abs((landing.controls[0]?.top ?? 0) - (landing.controls[2]?.top ?? 0))).toBeLessThanOrEqual(4);
-  expect((landing.controls[0]?.left ?? 0) + 36).toBeLessThanOrEqual(landing.controls[1]?.left ?? 0);
-  expect((landing.controls[1]?.left ?? 0) + 36).toBeLessThanOrEqual(landing.controls[2]?.left ?? 0);
+  const landingCenters = landing.controls.map((control) => control?.centerY ?? 0);
+  expect(Math.max(...landingCenters) - Math.min(...landingCenters)).toBeLessThanOrEqual(1);
+  expect((landing.controls[0]?.left ?? 0) + 44).toBeLessThanOrEqual(landing.controls[1]?.left ?? 0);
+  expect((landing.controls[1]?.left ?? 0) + 24).toBeLessThanOrEqual(landing.controls[2]?.left ?? 0);
   await page.screenshot({ path: 'test-results/socrates-mobile-unified-landing.png', fullPage: true });
 
   await page.evaluate(() => {
@@ -70,16 +67,14 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
   const conversation = await measure('#composerInputWrap', [
     '#composerToolsBtn', '#composerMicBtn', '#composerPrimaryBtn',
   ]);
-  /* Same single-row capsule height and chrome on both surfaces; the
-     horizontal inset differs because the landing column owns 12px page
-     padding while the chat bar runs nearly full-bleed. */
   expect(conversation.wrap?.height).toBe(landing.wrap?.height);
   expect(conversation.radius).toBe(landing.radius);
   expect(conversation.background).toBe(landing.background);
-  expect(conversation.controls[0]?.width).toBe(36);
-  expect(conversation.controls[1]?.width).toBe(36);
-  expect(conversation.controls[2]?.width).toBe(36);
-  expect((conversation.controls[1]?.left ?? 0) + 36).toBeLessThanOrEqual(conversation.controls[2]?.left ?? 0);
+  expect(conversation.controls[0]?.width).toBe(44);
+  expect(conversation.controls[1]?.width).toBe(24);
+  expect(conversation.controls[2]?.width).toBe(32);
+  const conversationCenters = conversation.controls.map((control) => control?.centerY ?? 0);
+  expect(Math.max(...conversationCenters) - Math.min(...conversationCenters)).toBeLessThanOrEqual(1);
   await page.screenshot({ path: 'test-results/socrates-mobile-unified-composer.png', fullPage: true });
 });
 
@@ -116,25 +111,16 @@ test('mobile composer keeps model selector and reference controls discoverable',
   const editor = page.locator('#composerRoot .rich-composer-editor');
   const effort = composer.locator('.effort-picker');
 
-  /* The top-bar Chat/Tutor pill was removed; mobile dropdown is the
-     remaining user-facing mode switch and is hidden during a conversation
-     by the same body[data-conversation-active] contract. We assert the
-     dropdown here rather than the (now-absent) top pill. */
+  /* Conversation uses the model switcher as its Figma-style title cluster;
+     the landing-only mode title is hidden once chat is active. */
   await expect(page.locator('#mobileMode')).toBeHidden();
+  await expect(page.locator('#topModelSwitcher')).toBeVisible();
   await expect(composer.locator('#composerMicBtn')).toBeVisible();
-  /* Empty composer → the shared primary control is the voice-input
-     affordance (waveform icon + label), not a disabled arrow.
-     "开始语音输入" is the zh rendering of the "Start voice input" label
-     that e2e/voice-input.spec.mjs pins in English; the shorter "语音输入"
-     this used to expect is not a label the app emits. */
   await expect(composer.locator('#composerPrimaryBtn')).toHaveAttribute('aria-label', '开始语音输入');
   await expect(composer.locator('#composerPrimaryBtn .icon-voice')).toHaveCount(1);
-  /* The reference pill reads the current level (高/中/低), not the
-     section label. The phone rail deliberately does not chip the default:
-     parity/composer-unified.css hides
-     .effort-picker[data-effort="medium"] because the default stays
-     reachable from the header configuration menu, so a non-default level
-     is what brings the chip back. Assert both halves of that contract. */
+
+  /* The default effort remains visually absent. A non-default choice is an
+     optional chip inside the same 44px input pill. */
   await expect(effort).toBeHidden();
   await page.evaluate(() => {
     localStorage.setItem('socrates-reasoning-effort', 'high');
@@ -148,14 +134,18 @@ test('mobile composer keeps model selector and reference controls discoverable',
   await expect(effort).toBeVisible();
 
   await page.evaluate(() => { document.documentElement.dataset.keyboardOpen = 'true'; });
-  /* Keyboard open keeps the same two-row capsule; only actual
-     multiline content increases its height. */
-  await expect.poll(async () => (await composer.boundingBox())?.height ?? 0).toBeLessThanOrEqual(85);
+  /* The visual viewport/keyboard lift does not change resting composer
+     geometry: it remains one 44px row immediately above the keyboard. */
+  await expect.poll(async () => Math.round((await composer.boundingBox())?.height ?? 0)).toBe(44);
   const rows = await page.evaluate(() => {
     const rect = (selector) => {
       const node = document.querySelector(selector);
       const box = node?.getBoundingClientRect();
-      return box ? { top: Math.round(box.top), bottom: Math.round(box.bottom) } : null;
+      return box ? {
+        top: Math.round(box.top),
+        bottom: Math.round(box.bottom),
+        centerY: Math.round(box.top + box.height / 2),
+      } : null;
     };
     return {
       composer: rect('#composerInputWrap'),
@@ -166,13 +156,10 @@ test('mobile composer keeps model selector and reference controls discoverable',
       send: rect('#composerPrimaryBtn'),
     };
   });
-  /* The controls form one row: add/effort/mic/send share the capsule's
-     lower control row, so their tops line up and stay inside the capsule
-     (the editor sits on its own row above them). */
-  const controlTops = ['attach', 'model', 'mic', 'send'].map((key) => rows[key]?.top ?? 0);
-  expect(Math.max(...controlTops) - Math.min(...controlTops)).toBeLessThanOrEqual(4);
-  expect(Math.min(...controlTops)).toBeGreaterThanOrEqual((rows.composer?.top ?? 0) - 1);
-  expect(Math.max(...controlTops)).toBeLessThanOrEqual((rows.composer?.bottom ?? 0) + 1);
+  const controlCenters = ['attach', 'model', 'mic', 'send'].map((key) => rows[key]?.centerY ?? 0);
+  expect(Math.max(...controlCenters) - Math.min(...controlCenters)).toBeLessThanOrEqual(1);
+  expect(Math.min(...controlCenters)).toBeGreaterThanOrEqual((rows.composer?.top ?? 0));
+  expect(Math.max(...controlCenters)).toBeLessThanOrEqual((rows.composer?.bottom ?? 0));
 
   await effort.locator('.effort-trigger').click();
   const pop = page.locator('.chat-config-pop');
@@ -180,7 +167,6 @@ test('mobile composer keeps model selector and reference controls discoverable',
   await expect(pop).toContainText('5.6 Luna');
   await expect(pop).toContainText('思考强度');
   await expect(pop).toContainText('速度');
-  /* The popover is anchored above the pill, not a sheet/dialog. */
   const popBox = await pop.boundingBox();
   const triggerBox = await effort.locator('.effort-trigger').boundingBox();
   expect(popBox?.y ?? 0).toBeLessThan(triggerBox?.y ?? 0);
@@ -199,7 +185,6 @@ test('desktop configuration reuses the same content in an anchored popover', asy
   await expect(pop).toBeVisible();
   const geometry = await pop.boundingBox();
   expect(geometry?.width).toBeLessThanOrEqual(300);
-  /* Anchored above (or beside) the pill, never a centred dialog. */
   const triggerBox = await trigger.boundingBox();
   expect(geometry?.y ?? 0).toBeLessThan((triggerBox?.y ?? 0) + (triggerBox?.height ?? 0));
 
@@ -211,8 +196,6 @@ test('desktop configuration reuses the same content in an anchored popover', asy
   await pop.getByRole('button', { name: /思考强度/ }).click();
   const slider = pop.locator('input[type="range"]');
   await expect(slider).toBeVisible();
-  /* React-controlled input: set through the native setter so the synthetic
-     onChange sees a real value transition. */
   await slider.evaluate((node) => {
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
     setter.call(node, '2');
@@ -220,7 +203,6 @@ test('desktop configuration reuses the same content in an anchored popover', asy
   });
   await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-reasoning-effort'))).toBe('high');
 
-  /* Escape backs out of the slider sub-view first, then dismisses. */
   await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
   await expect(pop).toBeHidden();
