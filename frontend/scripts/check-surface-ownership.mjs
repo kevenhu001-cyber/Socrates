@@ -29,8 +29,9 @@ const surfaces = {
  * Motion is intentionally the one cross-surface exception. The visual owner
  * files above keep geometry, paint and typography, while polish/motion.css may
  * coordinate animation state across sidebar / transcript / composer surfaces.
- * Keep the exception property-scoped: adding width, padding, color, display,
- * etc. to the motion owner must still fail this gate.
+ * The exception is property-scoped for the ENTIRE file: width, padding, color,
+ * display, typography, etc. are rejected even if a future selector does not
+ * belong to one of the guarded surfaces above.
  */
 const CROSS_SURFACE_MOTION_OWNER = 'polish/motion.css';
 const MOTION_PROPERTIES = new Set([
@@ -71,23 +72,34 @@ function appliesOnDesktop(rule) {
   return true;
 }
 
+function insideKeyframes(rule) {
+  for (let parent = rule.parent; parent && parent.type !== 'root'; parent = parent.parent) {
+    if (parent.type === 'atrule' && /keyframes/i.test(parent.name)) return true;
+  }
+  return false;
+}
+
 const problems = [];
 for (const file of walk(STYLES)) {
   const rel = relative(STYLES, file).replaceAll('\\', '/');
   if (rel.startsWith('legacy/') || rel.startsWith('restore/') || rel === 'themes.css' || rel === 'tokens.css') continue;
   const root = postcss.parse(readFileSync(file, 'utf8'), { from: file });
   root.walkRules((rule) => {
+    if (insideKeyframes(rule)) return;
+
+    if (rel === CROSS_SURFACE_MOTION_OWNER && !isMotionOnlyRule(rule)) {
+      problems.push(`${rel}:${rule.source?.start?.line ?? '?'} motion policy may declare motion properties only: ${rule.selectors.join(', ')}`);
+      return;
+    }
+
     if (!appliesOnDesktop(rule)) return;
     for (const [name, surface] of Object.entries(surfaces)) {
       if (surface.owners.includes(rel)) continue;
-      const motionException = rel === CROSS_SURFACE_MOTION_OWNER && isMotionOnlyRule(rule);
+      const motionException = rel === CROSS_SURFACE_MOTION_OWNER;
       for (const selector of rule.selectors) {
         if (!surface.context.test(selector) || surface.exclude.test(selector)) continue;
         if (motionException) continue;
-        const extra = rel === CROSS_SURFACE_MOTION_OWNER
-          ? ' (cross-surface motion owner may declare motion properties only)'
-          : '';
-        problems.push(`${rel}:${rule.source?.start?.line ?? '?'} ${name} desktop rule outside ${surface.owners.join(', ')}: ${selector}${extra}`);
+        problems.push(`${rel}:${rule.source?.start?.line ?? '?'} ${name} desktop rule outside ${surface.owners.join(', ')}: ${selector}`);
       }
     }
   });
@@ -105,17 +117,6 @@ for (const file of walk(STYLES)) {
  * resolved silently by @import order, so the shipped value was whichever file
  * sorted last and the other declaration was invisible dead code that a later
  * edit could revive.
- *
- * Matching is on the LAST simple selector in a compound (`#appShell
- * .sidebar-account-menu .tier-badge` → `.tier-badge`), because that is what
- * identifies the element; the ancestor path is scaffolding that varies by
- * sheet. Rules that only apply at <=768px are excluded, so this catches
- * desktop conflicts and not the deliberate mobile density.
- *
- * The list is deliberately short and every entry is a defect that was
- * actually observed. A blanket "no property twice anywhere" rule would fire
- * on hundreds of legitimate mobile/desktop pairs and on cascade layering
- * that is the point of this architecture. Add to it, don't widen it.
  */
 const duplicatePairs = [
   ['.tier-badge', 'font-size'],
