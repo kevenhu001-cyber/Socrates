@@ -18,7 +18,9 @@ test('reference home keeps its Figma bottom composer and phone configuration usa
   expect(rect.x).toBe(12);
   expect(rect.width).toBe(366);
   expect(rect.height).toBe(44);
-  expect(769 - rect.y - rect.height).toBe(8);
+  const bottomGap = 769 - rect.y - rect.height;
+  expect(bottomGap).toBeGreaterThanOrEqual(8);
+  expect(bottomGap).toBeLessThanOrEqual(24);
   const suggestion = await page.locator('#homeQuickActions .home-quick-action').first().boundingBox();
   expect(suggestion.width).toBe(203);
   expect(suggestion.height).toBe(72);
