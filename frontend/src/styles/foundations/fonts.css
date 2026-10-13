@@ -1,8 +1,13 @@
-/* Bundle both western and CJK webfonts for consistent typographic distribution */
+/* Bundle western and CJK webfonts for consistent typographic distribution.
+   MiSans (Chinese, Xiaomi) replaces Noto Sans SC. The `misans` npm package
+   ships per-weight .min.css slices under lib/Normal/ matching the web scale
+   (Regular=400, Medium=500, Demibold=600); each slice uses unicode-range so
+   Latin falls through to Inter and CJK glyphs render from MiSans. WOFF2-only,
+   aligned with the vite.config.js strip-woff-fallback postcss plugin. */
 @import '@fontsource/inter/400.css';
 @import '@fontsource/inter/500.css';
 @import '@fontsource/inter/600.css';
-@import '@fontsource/noto-sans-sc/400.css';
-@import '@fontsource/noto-sans-sc/500.css';
-@import '@fontsource/noto-sans-sc/600.css';
+@import 'misans/lib/Normal/MiSans-Regular.min.css';
+@import 'misans/lib/Normal/MiSans-Medium.min.css';
+@import 'misans/lib/Normal/MiSans-Demibold.min.css';
 

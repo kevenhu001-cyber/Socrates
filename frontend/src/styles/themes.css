@@ -10,7 +10,7 @@
    sit white-on-white with a shadow in light. */
 html[data-theme="socrates"][data-mode],
 html[data-theme="socrates"][data-mode]:lang(zh) {
-  --font-sans: "Inter", "Noto Sans SC", "Plus Jakarta Sans", sans-serif;
+  --font-sans: "Inter", "MiSans", "Plus Jakarta Sans", sans-serif;
   --cg-font: var(--font-sans);
   /* One typeface. The display face used to be Newsreader (legacy/00), which
      still leaked into the auth card title and the workspace dialog title

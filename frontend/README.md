@@ -81,3 +81,11 @@ API_PORT=8080 npm run dev
 # Or in server/: use the proxy default
 PORT=3037 npm start
 ```
+
+## Credits
+
+Chinese text is rendered with **MiSans**, a free font published by Xiaomi Mobile
+Software Co., Ltd., bundled from the `misans` npm package. MiSans is required by
+its IP license to be credited in software that uses it; the subsetted webfont
+slices ship inside the bundle (`node_modules/misans/lib/Normal/`) and are served
+from this app's own origin.
