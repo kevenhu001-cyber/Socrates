@@ -1,30 +1,20 @@
 /*
- * polish/motion.css — cross-surface motion policy.
+ * polish/motion.css — cross-surface activity-motion policy.
  *
- * This file owns motion semantics that intentionally span more than one
- * visual surface. Component files continue to own geometry and paint; this
- * layer only prevents competing animations from running at the same time and
- * removes layout-property transitions from the desktop shell.
+ * Component files continue to own geometry and paint. This layer only
+ * prevents multiple persistent activity animations from competing for the
+ * reader's attention. Spatial shell motion stays in the sidebar service so
+ * this policy does not become another sidebar CSS owner.
  *
  * Contract:
  *   1. A live assistant turn has one primary activity cue. Running text may
  *      shimmer; the icon beside the same text stays still.
  *   2. Recording uses the polished halo as its single persistent pulse. The
  *      legacy center-dot pulse is disabled.
- *   3. Desktop sidebar open/close commits layout immediately. The service
- *      performs the visible movement with a compositor FLIP on `.main`, so
- *      width/padding are never animated frame-by-frame.
+ *   3. Reduced-motion users receive the same state information without
+ *      persistent motion.
  */
 
-/* ── Desktop shell: no layout-property tween ─────────────────────────── */
-@media (min-width: 769px) {
-  #appShell #sidebar,
-  #appShell #sidebar ~ .main {
-    transition: none;
-  }
-}
-
-/* ── One activity signal per live row ───────────────────────────────── */
 @keyframes ui-activity-shimmer {
   from { background-position: 180% 0; }
   to { background-position: -180% 0; }
