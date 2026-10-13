@@ -116,6 +116,17 @@
   }
 
   #appShell .home-quick-action[hidden] { display: none; }
+
+  /* Bottom disclaimer in the Figma frame is 12/16, secondary text, centered
+     12px above the bottom edge. Positioning remains owned by app-shell.css. */
+  #appShell #topicDisclaimer {
+    bottom: 12px;
+    color: var(--ui-text-secondary);
+    font-size: calc(12px * var(--app-type-scale));
+    font-weight: 400;
+    line-height: calc(16px * var(--app-type-scale));
+    text-align: center;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
