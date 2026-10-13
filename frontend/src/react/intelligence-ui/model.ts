@@ -2,6 +2,7 @@ export const INTELLIGENCE_UI_FENCE = 'socrates-ui';
 
 const MAX_NODES = 80;
 const MAX_ID_LENGTH = 80;
+const MAX_EXTERNAL_URL_LENGTH = 2048;
 const SAFE_ID = /^[A-Za-z0-9._:-]+$/;
 const BLOCK_START = /^```(?:socrates-ui|sui)[ \t]*\r?$/gm;
 const BLOCK_END = /^```[ \t]*\r?$/gm;
@@ -19,7 +20,11 @@ export type IntelligenceUiNodeType =
   | 'slider'
   | 'choice'
   | 'button'
-  | 'table';
+  | 'table'
+  | 'chart'
+  | 'tabs'
+  | 'entity'
+  | 'image-gallery';
 
 const NODE_TYPES = new Set<IntelligenceUiNodeType>([
   'panel',
@@ -34,6 +39,10 @@ const NODE_TYPES = new Set<IntelligenceUiNodeType>([
   'choice',
   'button',
   'table',
+  'chart',
+  'tabs',
+  'entity',
+  'image-gallery',
 ]);
 
 export type IntelligenceUiState = Record<string, unknown>;
@@ -77,6 +86,39 @@ export function isSafeIntelligenceUiStateKey(value: string): boolean {
     && value.length <= MAX_ID_LENGTH
     && SAFE_ID.test(value)
     && !FORBIDDEN_PATH_KEYS.has(value);
+}
+
+/**
+ * Accept only absolute HTTP(S) image URLs. Credentials, data/blob/javascript
+ * schemes, and overlong model-provided URLs are rejected before reaching DOM.
+ */
+export function normalizeIntelligenceUiImageUrl(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const raw = value.trim();
+  if (!raw || raw.length > MAX_EXTERNAL_URL_LENGTH) return null;
+  try {
+    const url = new URL(raw);
+    if ((url.protocol !== 'http:' && url.protocol !== 'https:') || url.username || url.password) return null;
+    return url.href;
+  } catch {
+    return null;
+  }
+}
+
+/** Stable numeric domain for native charts, always including a zero baseline. */
+export function intelligenceUiChartDomain(values: ReadonlyArray<unknown>): [number, number] {
+  let min = 0;
+  let max = 0;
+  let hasFinite = false;
+  for (const value of values) {
+    const number = finiteNumber(value);
+    if (number == null) continue;
+    hasFinite = true;
+    min = Math.min(min, number);
+    max = Math.max(max, number);
+  }
+  if (!hasFinite || min === max) return [0, 1];
+  return [min, max];
 }
 
 function normalizeNode(value: unknown): IntelligenceUiNode | null {
