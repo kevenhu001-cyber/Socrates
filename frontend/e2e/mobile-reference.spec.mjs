@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 const id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
-test('reference home keeps its bottom composer and phone configuration usable', async ({ page }) => {
+test('reference home keeps its Figma bottom composer and phone configuration usable', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 769 });
   await page.emulateMedia({ colorScheme: 'dark' });
   await mockAuthedApp(page, { lang: 'zh', user: { displayName: 'Adex Hu', tier: 'diophantus' } });
@@ -10,24 +10,27 @@ test('reference home keeps its bottom composer and phone configuration usable', 
   await waitForAppShell(page);
   await page.evaluate(() => document.fonts.ready);
   const composer = page.locator('#composerInputWrap');
-  await expect(composer).toHaveCSS('background-color', 'rgb(28, 28, 28)');
+  await expect(composer).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(page.locator('#homeQuickActions')).toBeVisible();
+  await expect(page.locator('#topicTitle')).toBeHidden();
   await expect(page.locator('#composerPrimaryBtn .icon-voice')).toBeVisible();
   const rect = await composer.boundingBox();
-  expect(rect.x).toBe(16);
-  expect(rect.width).toBe(358);
-  expect(rect.height).toBe(85);
-  expect(769 - rect.y - rect.height).toBe(24);
-  const greeting = await page.locator('#topicTitle').boundingBox();
-  expect(Math.abs(greeting.y + greeting.height / 2 - 344.765)).toBeLessThan(1);
+  expect(rect.x).toBe(12);
+  expect(rect.width).toBe(366);
+  expect(rect.height).toBe(44);
+  expect(769 - rect.y - rect.height).toBe(8);
+  const suggestion = await page.locator('#homeQuickActions .home-quick-action').first().boundingBox();
+  expect(suggestion.width).toBe(203);
+  expect(suggestion.height).toBe(72);
   await page.locator('#mobileModeTrigger').click();
   await page.locator('#mobileConfigBtn').click();
   await expect(page.locator('.chat-config-pop')).toBeVisible();
   await page.keyboard.press('Escape');
   await page.setViewportSize({ width: 320, height: 568 });
   const compact = await composer.boundingBox();
-  expect(compact.x).toBe(16);
-  expect(compact.width).toBe(288);
-  expect(compact.y + compact.height).toBeLessThanOrEqual(568);
+  expect(compact.x).toBe(12);
+  expect(compact.width).toBe(296);
+  expect(compact.y + compact.height).toBeLessThanOrEqual(560);
   await page.locator('#sidebarOpenBtn').click();
   await page.locator('.sidebar-account-trigger').click();
   const menu = await page.locator('.sidebar-account-menu').boundingBox();
