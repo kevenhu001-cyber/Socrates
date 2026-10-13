@@ -47,6 +47,7 @@
     width: var(--figma-mobile-icon);
     height: var(--figma-mobile-icon);
   }
+  #appShell #shareBtn .share-btn-label { display: none; }
   #appShell .mobile-newchat-btn {
     display: inline-flex;
     align-items: center;
@@ -135,6 +136,12 @@
     font-size: var(--ui-font-size-lg);
     line-height: 24px;
     white-space: nowrap;
+  }
+  /* When contextual find/share actions are visible, reserve their real hit
+     areas rather than letting the absolutely positioned title sit beneath
+     them. This keeps 320px browsers collision-free without shrinking icons. */
+  body[data-conversation-active="true"] #appShell .top-bar:has(#findBtn:not(.hidden)) #topModelSwitcher {
+    max-width: max(72px, calc(100vw - 232px));
   }
   body[data-conversation-active="true"] #appShell .top-model-switcher-name {
     flex: 0 0 auto;
