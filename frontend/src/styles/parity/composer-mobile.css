@@ -111,14 +111,16 @@
     line-height: 18px;
   }
 
-  /* Figma mic is a bare 24px glyph inside the input pill. */
+  /* Figma mic is a bare 24px glyph inside the input pill. The visual metric
+     is a local Figma token defined on #appShell by mobile-shell.css, so it
+     does not create a new global interactive-control rung. */
   #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .mobile-mic-btn {
     grid-area: mic;
     align-self: center;
-    width: 24px;
-    min-width: 24px;
-    height: 24px;
-    min-height: 24px;
+    width: var(--figma-mobile-icon, 24px);
+    min-width: var(--figma-mobile-icon, 24px);
+    height: var(--figma-mobile-icon, 24px);
+    min-height: var(--figma-mobile-icon, 24px);
     padding: 0;
     border: 0;
     border-radius: 0;
@@ -130,8 +132,7 @@
     height: 24px;
   }
 
-  /* Send/stop is the Figma 32px primary disc. It remains functionally
-     disabled when Socrates has no draft; only geometry changes here. */
+  /* Send/stop is the Figma 32px primary disc. */
   #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .composer-primary-btn {
     grid-area: send;
     align-self: center;
