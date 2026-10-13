@@ -79,11 +79,13 @@
 .turn-summary-status + .turn-summary-text { margin-top: var(--ui-space-xs); }
 
 /* This file owns the shimmer's paint; polish/motion.css owns whether and how
-   it moves. Keeping those concerns separate prevents a feature stylesheet from
-   starting a second persistent cue beside tool/agent activity. */
+   it moves. The zero-offset shadow is the non-animated base glyph: the moving
+   clipped gradient can pass across it, but can never make the label disappear
+   when its bright band is outside the text bounds. */
 .thinking-status .thinking-status-label.shimmer-text {
   color: transparent;
   -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 0 var(--ui-text-tertiary);
   background-image: linear-gradient(
     105deg,
     var(--ui-text-tertiary) 0%,
@@ -120,5 +122,6 @@
     background-image: none;
     color: var(--ui-text-secondary);
     -webkit-text-fill-color: currentColor;
+    text-shadow: none;
   }
 }
