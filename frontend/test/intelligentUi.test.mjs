@@ -3,6 +3,8 @@ import test from 'node:test';
 
 import {
   initialStateForNodes,
+  intelligenceUiChartDomain,
+  normalizeIntelligenceUiImageUrl,
   parseIntelligenceUiRecords,
   resolveIntelligenceUiValue,
   splitIntelligenceUiText,
@@ -60,6 +62,21 @@ test('rejects unknown node types, unsafe ids, and duplicate ids', () => {
   assert.deepEqual(parseIntelligenceUiRecords(source).map((node) => node.id), ['ok']);
 });
 
+test('accepts only the four registered v2 native node types', () => {
+  const source = [
+    '{"id":"chart","type":"chart"}',
+    '{"id":"tabs","type":"tabs"}',
+    '{"id":"entity","type":"entity"}',
+    '{"id":"gallery","type":"image-gallery"}',
+    '{"id":"iframe","type":"iframe"}',
+  ].join('\n');
+
+  assert.deepEqual(
+    parseIntelligenceUiRecords(source).map((node) => node.type),
+    ['chart', 'tabs', 'entity', 'image-gallery'],
+  );
+});
+
 test('evaluates local state expressions without executing code', () => {
   const context = { state: { users: 5, price: 20 } };
   const value = resolveIntelligenceUiValue({
@@ -98,6 +115,29 @@ test('can bind values from an existing tool record by index or id', () => {
     resolveIntelligenceUiValue({ tool: 'calc-1', path: '__proto__.polluted' }, context),
     undefined,
   );
+});
+
+test('image URLs are restricted to absolute credential-free HTTP(S)', () => {
+  assert.equal(
+    normalizeIntelligenceUiImageUrl('https://example.com/reference.png'),
+    'https://example.com/reference.png',
+  );
+  assert.equal(
+    normalizeIntelligenceUiImageUrl('http://example.com/reference.png'),
+    'http://example.com/reference.png',
+  );
+  assert.equal(normalizeIntelligenceUiImageUrl('/relative.png'), null);
+  assert.equal(normalizeIntelligenceUiImageUrl('data:image/png;base64,AAAA'), null);
+  assert.equal(normalizeIntelligenceUiImageUrl('javascript:alert(1)'), null);
+  assert.equal(normalizeIntelligenceUiImageUrl('https://user:pass@example.com/private.png'), null);
+});
+
+test('chart domains include a zero baseline and remain finite for degenerate input', () => {
+  assert.deepEqual(intelligenceUiChartDomain([4, 8]), [0, 8]);
+  assert.deepEqual(intelligenceUiChartDomain([-3, -1]), [-3, 0]);
+  assert.deepEqual(intelligenceUiChartDomain([-4, 12]), [-4, 12]);
+  assert.deepEqual(intelligenceUiChartDomain([0, 0]), [0, 1]);
+  assert.deepEqual(intelligenceUiChartDomain(['not-a-number']), [0, 1]);
 });
 
 test('copy and TTS helpers can remove UI source while preserving prose', () => {
