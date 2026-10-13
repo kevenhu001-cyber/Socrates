@@ -11,6 +11,8 @@
   }
   #appShell .top-bar-left, #appShell .top-bar-right { gap: 8px; }
   #appShell #sidebarOpenBtn, #appShell #mobileNewChatBtn {
+    position: relative;
+    isolation: isolate;
     width: 40px;
     min-width: 40px;
     height: 40px;
@@ -19,6 +21,21 @@
     background: transparent;
     box-shadow: none;
     color: var(--ui-text-primary);
+  }
+  /* Restore layers deliberately keep the buttons themselves transparent.
+     The reference, however, reads them as small floating controls. A paint-only
+     pseudo surface provides that depth without changing the tested hit target,
+     layout geometry, or the controls' existing interaction contract. */
+  body[data-conversation-active="true"] #appShell #sidebarOpenBtn::before,
+  body[data-conversation-active="true"] #appShell #mobileNewChatBtn::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    z-index: -1;
+    border-radius: 50%;
+    background: var(--ui-bg-raised);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 9%), 0 1px 2px rgb(0 0 0 / 5%);
+    pointer-events: none;
   }
   #appShell #sidebarOpenBtn svg, #appShell #mobileNewChatBtn svg { width: 24px; height: 24px; }
   #appShell .mobile-newchat-btn { display: inline-flex; align-items: center; justify-content: center; }
