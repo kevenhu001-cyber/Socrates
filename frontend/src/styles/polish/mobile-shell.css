@@ -1,3 +1,5 @@
+@import '../parity/composer-mobile.css';
+
 /* Canonical phone browser shell, aligned to the 390px ChatGPT Apps UI Kit.
    The Figma frames include native iOS status/home-indicator chrome; the web
    implementation deliberately does not draw those OS surfaces. Browser safe
