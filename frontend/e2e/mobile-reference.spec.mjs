@@ -13,8 +13,8 @@ test('reference home keeps its bottom composer and phone configuration usable', 
   await expect(composer).toHaveCSS('background-color', 'rgb(28, 28, 28)');
   await expect(page.locator('#composerPrimaryBtn .icon-voice')).toBeVisible();
   const rect = await composer.boundingBox();
-  expect(rect.x).toBe(16);
-  expect(rect.width).toBe(358);
+  expect(rect.x).toBe(32);
+  expect(rect.width).toBe(326);
   expect(rect.height).toBe(52);
   expect(769 - rect.y - rect.height).toBe(24);
   const greeting = await page.locator('#topicTitle').boundingBox();
@@ -25,8 +25,8 @@ test('reference home keeps its bottom composer and phone configuration usable', 
   await page.keyboard.press('Escape');
   await page.setViewportSize({ width: 320, height: 568 });
   const compact = await composer.boundingBox();
-  expect(compact.x).toBe(16);
-  expect(compact.width).toBe(288);
+  expect(compact.x).toBe(32);
+  expect(compact.width).toBe(256);
   expect(compact.y + compact.height).toBeLessThanOrEqual(568);
   await page.locator('#sidebarOpenBtn').click();
   await page.locator('.sidebar-account-trigger').click();
