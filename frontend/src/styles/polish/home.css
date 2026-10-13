@@ -1,52 +1,73 @@
 /*
- * polish/home.css — quiet landing shortcuts.
- * The actions remain easy to discover without competing with the greeting
- * and composer; secondary controls appear only when the row is engaged.
+ * polish/home.css — desktop landing surface aligned to the ChatGPT Apps UI
+ * Kit. The existing live quick-action components are restyled in place; no
+ * duplicate landing component is introduced.
  */
 
 @media (min-width: 769px) {
+  /* Figma `ChatGPT5 - Main`: 30/38 regular hero, 40px to the composer. */
+  #appShell #topicSetup .topic-title.greeting {
+    margin: 0 0 40px;
+    padding: 0;
+    color: var(--ui-text-primary);
+    font-family: var(--font-sans);
+    font-size: calc(30px * var(--app-type-scale));
+    font-weight: 400;
+    line-height: calc(38px * var(--app-type-scale));
+    letter-spacing: 0;
+    text-align: center;
+  }
+
+  /* Reuse the existing upload/write/research actions as the Figma token row:
+     centered, wrapping pills with 8px gaps and a 40px composer-to-token gap. */
   #appShell .home-quick-actions {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     width: min(100%, var(--ui-content-chat));
-    margin: 20px auto 0;
+    margin: 40px auto 0;
   }
 
   #appShell .home-quick-action {
     position: relative;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     box-sizing: border-box;
-    width: 100%;
-    min-height: 44px;
-    padding: 4px 44px 4px 10px;
-    gap: 12px;
-    border: 0;
-    border-radius: var(--ui-radius-row);
-    background: transparent;
-    color: var(--ui-text-secondary);
+    width: auto;
+    min-height: 42px;
+    padding: 0;
+    gap: 0;
+    border: 1px solid var(--ui-bg-control);
+    border-radius: 25px;
+    background: var(--ui-bg-page);
+    color: var(--ui-text-primary);
     text-align: left;
     cursor: pointer;
     transition: background-color var(--ui-duration-hover) ease,
-                color var(--ui-duration-hover) ease;
+                border-color var(--ui-duration-hover) ease;
   }
 
   #appShell .home-quick-action:hover,
   #appShell .home-quick-action:focus-within {
     background: var(--ui-bg-hover);
+    border-color: var(--ui-bg-control);
     color: var(--ui-text-primary);
   }
 
   #appShell .home-quick-action-primary {
-    display: flex;
-    flex: 1 1 auto;
+    display: inline-flex;
+    flex: 0 0 auto;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     min-width: 0;
+    min-height: 40px;
     margin: 0;
-    padding: 0;
+    padding: 11px 16px;
     border: 0;
+    border-radius: inherit;
     background: transparent;
     color: inherit;
     font: inherit;
@@ -57,25 +78,27 @@
   #appShell .home-quick-action-icon {
     display: inline-grid;
     place-items: center;
-    flex: 0 0 20px;
-    width: 20px;
-    height: 20px;
-    color: var(--ui-text-muted);
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+    color: var(--ui-text-secondary);
   }
 
   #appShell .home-quick-action-icon svg {
     display: block;
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
   }
 
   #appShell .home-quick-action-copy {
     display: block;
     min-width: 0;
     color: inherit;
-    font-size: var(--ui-text-ui);
+    font-family: var(--font-sans);
+    font-size: calc(13px * var(--app-type-scale));
     font-weight: 400;
-    line-height: var(--ui-text-ui-line);
+    line-height: calc(18px * var(--app-type-scale));
+    letter-spacing: -0.08px;
   }
 
   #appShell .home-quick-action-copy span {
@@ -85,54 +108,16 @@
     white-space: nowrap;
   }
 
+  /* The Figma token is a single action surface; dismissal remains available
+     from the underlying data model but is intentionally not a second visible
+     affordance in the desktop landing row. */
   #appShell .home-quick-action-dismiss {
-    position: absolute;
-    top: 50%;
-    right: 6px;
-    display: inline-grid;
-    place-items: center;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
-    background: transparent;
-    color: var(--ui-text-secondary);
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(-50%);
-    transition: opacity var(--ui-duration-fast) ease,
-                background-color var(--ui-duration-fast) ease,
-                color var(--ui-duration-fast) ease;
-  }
-
-  #appShell .home-quick-action:hover .home-quick-action-dismiss,
-  #appShell .home-quick-action:focus-within .home-quick-action-dismiss {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  #appShell .home-quick-action-dismiss svg {
-    display: block;
-    width: 18px;
-    height: 18px;
-  }
-
-  #appShell .home-quick-action-dismiss:hover,
-  #appShell .home-quick-action-dismiss:focus-visible {
-    background: var(--ui-bg-hover-ghost);
-    color: var(--ui-text-primary);
-  }
-
-  #appShell .home-quick-action-dismiss:focus-visible {
-    outline: 2px solid var(--ui-border-strong);
-    outline-offset: 1px;
+    display: none;
   }
 
   #appShell .home-quick-action[hidden] { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #appShell .home-quick-action,
-  #appShell .home-quick-action-dismiss { transition: none; }
+  #appShell .home-quick-action { transition: none; }
 }
