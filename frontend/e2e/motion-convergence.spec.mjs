@@ -17,7 +17,6 @@ test('desktop sidebar commits layout once and animates the main surface with tra
     const main = document.querySelector('#appShell .main');
     if (!(sidebar instanceof HTMLElement) || !(main instanceof HTMLElement)) return null;
 
-    /* Establish the expanded state without invoking the transition under test. */
     sidebar.classList.remove('collapsed');
     main.getAnimations().forEach((animation) => animation.cancel());
 
@@ -39,8 +38,6 @@ test('desktop sidebar commits layout once and animates the main surface with tra
 
   expect(result).not.toBeNull();
   expect(result.beforeInset - result.afterInset).toBeGreaterThan(100);
-  /* The service suppresses the legacy width/padding transitions only for the
-     geometry commit frame. The visual continuation is the WAAPI transform. */
   expect(result.sidebarTransition).toMatch(/^0s(?:, 0s)*$/);
   expect(result.mainTransition).toMatch(/^0s(?:, 0s)*$/);
   const spatial = result.animations.find((animation) => animation.keyframes.join(' ').includes('translateX'));
@@ -48,7 +45,7 @@ test('desktop sidebar commits layout once and animates the main surface with tra
   expect(spatial.duration).toBe(180);
 });
 
-test('live thinking uses one primary cue and respects reduced motion', async ({ page }) => {
+test('thinking, tools and recording share one primary persistent cue', async ({ page }) => {
   const normal = await page.evaluate(() => {
     const shell = document.getElementById('appShell');
     if (!shell) return null;
@@ -56,21 +53,85 @@ test('live thinking uses one primary cue and respects reduced motion', async ({ 
     fixture.id = 'motion-convergence-fixture';
     fixture.innerHTML = `
       <div class="thinking-status">
-        <span class="thinking-status-label shimmer-text">Working</span>
+        <span class="tool-inline-tool-icon"></span>
+        <span class="thinking-status-label shimmer-text">Thinking</span>
       </div>
+      <details class="tool-inline" data-state="running">
+        <summary class="tool-inline-head">
+          <span class="tool-inline-tool-icon"></span>
+          <span class="tool-inline-label shimmer-text">Searching</span>
+        </summary>
+      </details>
+      <div class="tool-run-group" data-state="running">
+        <button class="tool-run-summary">
+          <span class="tool-run-summary-icon"></span>
+          <span class="tool-run-summary-label shimmer-text">Reading sources</span>
+        </button>
+      </div>
+      <div class="agent-step" data-state="running">
+        <span class="agent-step-icon"></span>
+        <span class="agent-step-label shimmer-text">Running command</span>
+      </div>
+      <span class="voice-recording-indicator"></span>
     `;
     shell.appendChild(fixture);
-    const label = fixture.querySelector('.thinking-status-label');
-    return label ? getComputedStyle(label).animationName : null;
+
+    const animation = (selector, pseudo) => {
+      const node = fixture.querySelector(selector);
+      return node ? getComputedStyle(node, pseudo).animationName : null;
+    };
+
+    return {
+      thinkingLabel: animation('.thinking-status-label'),
+      thinkingIcon: animation('.thinking-status .tool-inline-tool-icon'),
+      inlineLabel: animation('.tool-inline-label'),
+      inlineIcon: animation('.tool-inline .tool-inline-tool-icon'),
+      groupLabel: animation('.tool-run-summary-label'),
+      groupIcon: animation('.tool-run-summary-icon'),
+      agentLabel: animation('.agent-step-label'),
+      agentIcon: animation('.agent-step-icon'),
+      voiceCore: animation('.voice-recording-indicator'),
+      voiceHalo: animation('.voice-recording-indicator', '::after'),
+    };
   });
 
-  expect(normal).toBe('thinking-status-shimmer');
+  expect(normal).toEqual({
+    thinkingLabel: 'ui-activity-shimmer',
+    thinkingIcon: 'none',
+    inlineLabel: 'ui-activity-shimmer',
+    inlineIcon: 'none',
+    groupLabel: 'ui-activity-shimmer',
+    groupIcon: 'none',
+    agentLabel: 'ui-activity-shimmer',
+    agentIcon: 'none',
+    voiceCore: 'none',
+    voiceHalo: 'ui-recording-ring',
+  });
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  const reduced = await page.locator('#motion-convergence-fixture .thinking-status-label').evaluate((label) => ({
-    animation: getComputedStyle(label).animationName,
-    fill: getComputedStyle(label).webkitTextFillColor,
-  }));
-  expect(reduced.animation).toBe('none');
+  const reduced = await page.evaluate(() => {
+    const fixture = document.getElementById('motion-convergence-fixture');
+    if (!fixture) return null;
+    const animation = (selector, pseudo) => {
+      const node = fixture.querySelector(selector);
+      return node ? getComputedStyle(node, pseudo).animationName : null;
+    };
+    const thinking = fixture.querySelector('.thinking-status-label');
+    return {
+      thinking: animation('.thinking-status-label'),
+      inline: animation('.tool-inline-label'),
+      group: animation('.tool-run-summary-label'),
+      agent: animation('.agent-step-label'),
+      voiceHalo: animation('.voice-recording-indicator', '::after'),
+      fill: thinking ? getComputedStyle(thinking).webkitTextFillColor : null,
+    };
+  });
+
+  expect(reduced).not.toBeNull();
+  expect(reduced.thinking).toBe('none');
+  expect(reduced.inline).toBe('none');
+  expect(reduced.group).toBe('none');
+  expect(reduced.agent).toBe('none');
+  expect(reduced.voiceHalo).toBe('none');
   expect(reduced.fill).not.toBe('transparent');
 });
