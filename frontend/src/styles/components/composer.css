@@ -18,11 +18,9 @@
 
    Every colour here resolves through the --ui-* palette, so the strip is the
    same ink as the composer it sits in and follows a theme change or a custom
-   page background. It used to be a hardcoded monochrome pair (hsl(0 0% 10%)
-   on light, hsl(0 0% 92%) on dark) with a full [data-mode="dark"] override
-   block to invert it — which also made the stop circle a slightly different
-   near-white/near-black from the token-driven send button beside it. Height
-   lives in polish/composer.css. */
+   page background. Height lives in polish/composer.css. Persistent motion is
+   owned by polish/motion.css so the recording dot cannot start a second pulse
+   beside the polished halo. */
 #appShell .voice-recording-bar {
   display: flex;
   align-items: center;
@@ -38,10 +36,6 @@
   border-radius: 50%;
   background: currentColor;
   box-shadow: 0 0 0 4px var(--ui-bg-hover-ghost);
-  animation: voiceRecordingPulse var(--ui-duration-pulse, 1.2s) ease-in-out infinite;
-}
-@keyframes voiceRecordingPulse {
-  50% { opacity: 0.6; box-shadow: 0 0 0 7px transparent; }
 }
 #appShell .voice-recording-copy {
   display: flex;
@@ -118,7 +112,6 @@
 #appShell .voice-recording-stop svg { display: block; width: 16px; height: 16px; }
 
 @media (prefers-reduced-motion: reduce) {
-  #appShell .voice-recording-indicator { animation: none; }
   #appShell .voice-recording-wave > span { transition: none; }
 }
 
