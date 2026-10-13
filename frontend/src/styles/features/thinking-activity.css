@@ -78,11 +78,9 @@
 }
 .turn-summary-status + .turn-summary-text { margin-top: var(--ui-space-xs); }
 
-/* One persistent cue owns the live thinking state. The old opacity breathe
-   made the entire status line repeatedly brighten and dim; a low-contrast
-   left-to-right text shimmer carries the same "working" signal without
-   changing the row's visual weight or competing with tool activity below. */
-.thinking-status .thinking-status-label { animation: none; }
+/* This file owns the shimmer's paint; polish/motion.css owns whether and how
+   it moves. Keeping those concerns separate prevents a feature stylesheet from
+   starting a second persistent cue beside tool/agent activity. */
 .thinking-status .thinking-status-label.shimmer-text {
   color: transparent;
   -webkit-text-fill-color: transparent;
@@ -98,11 +96,6 @@
   background-size: 240% 100%;
   -webkit-background-clip: text;
   background-clip: text;
-  animation: thinking-status-shimmer var(--ui-duration-shimmer, 1.8s) linear infinite;
-}
-@keyframes thinking-status-shimmer {
-  from { background-position: 160% 0; }
-  to { background-position: -160% 0; }
 }
 
 .thinking-status-detail {
@@ -124,7 +117,6 @@
 .turn-summary .tool-inline-tool-icon :is(svg, img) { width: 100%; height: 100%; }
 @media (prefers-reduced-motion: reduce) {
   .thinking-status .thinking-status-label.shimmer-text {
-    animation: none;
     background-image: none;
     color: var(--ui-text-secondary);
     -webkit-text-fill-color: currentColor;
