@@ -132,7 +132,7 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.width ?? 0)).toBe(MOBILE_DRAWER);
   await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? -MOBILE_DRAWER)).toBe(0);
   await expect(page.locator('#sidebarSearchBtn')).toBeVisible();
-  await expect(page.locator('#sidebarCloseBtn')).toBeHidden();
+  await expect(page.locator('#sidebarCloseBtn')).toBeVisible();
   await page.screenshot({ path: 'test-results/socrates-reference-mobile-sidebar-390x769.png', fullPage: true });
   await page.evaluate(() => document.getElementById('navPlugins')?.click());
   await expect(page.locator('.plugin-directory')).toBeVisible();

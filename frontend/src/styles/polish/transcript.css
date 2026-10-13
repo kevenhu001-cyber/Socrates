@@ -11,24 +11,8 @@
 }
 }
 
-/* Assistant column keeps full width, no bubble. The supplied phone reference
-   uses a 16px reading gutter while the composer sits farther in at 32px; the
-   compact 1.58 line-height keeps prose, reasoning, and tool activity in one
-   continuous reading column instead of a stack of separate surfaces. */
-@media (max-width: 768px) {
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell #msgList {
-  gap: 22px;
-  padding: 18px 16px 34px;
-}
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg.assistant .msg-body {
-  font-size: calc(15px * var(--app-font-scale, 1));
-  line-height: 1.58;
-  letter-spacing: -.004em;
-}
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg.assistant .msg-body strong {
-  font-weight: 650;
-}
-}
+/* Assistant column keeps full width, no bubble. */
+
 
 
 /* Code blocks: a bordered card with a crisp header. Dark keeps the
@@ -176,7 +160,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
    rule below, so the two cannot drift apart again. */
 #appShell .msg-body { --msg-para-gap: 12px; }
 @media (max-width: 768px) {
-#appShell .msg-body { line-height: 1.58; --msg-para-gap: 12px; }
+#appShell .msg-body { line-height: 1.65; --msg-para-gap: 10px; }
 }
 
 /* P_turn-surface-single — one assistant body owns every phase from the first
