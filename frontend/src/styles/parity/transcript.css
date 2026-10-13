@@ -1,13 +1,8 @@
 /*
- * parity/transcript.css — the desktop (>= 769px) conversation column,
- * aligned with chatgpt.com (docs/ref/chatgpt-parity.md): a 768px reading
- * column, 16px/28px prose, neutral user bubble (radius 18, max 70%), light
- * code blocks in light mode, hairline tables, non-italic quotes and a quiet
- * 32px action toolbar.
- *
- * Text sizes follow the display preference: --app-type-scale is 1 at the
- * default "M" step (--app-font-scale 1.125), so the default is exactly the
- * reference size and S/L/XL still scale proportionally.
+ * parity/transcript.css — the desktop (>= 769px) conversation column.
+ * Geometry is pinned to the ChatGPT Apps UI Kit: a 768px reading column,
+ * 16/22px conversation type, 40px turn rhythm, and a 500px max pill-shaped
+ * user bubble with 14/16 padding.
  *
  * Socrates-specific blocks (viz cards, tool rows, thinking, tutor widgets,
  * KaTeX) are untouched here; see parity/socrates.css.
@@ -15,15 +10,15 @@
 
 @media (min-width: 769px) {
   #appShell #msgList {
-    /* --ui-text-body already carries --app-type-scale (tokens.css), so
-       multiplying here would scale the prose twice. */
     --prose-size: var(--ui-text-body);
-    --prose-line: var(--ui-text-body-line);
+    --prose-line: calc(22px * var(--app-type-scale));
     box-sizing: border-box;
     width: 100%;
     max-width: none;
     margin-inline: 0;
-    padding: 28px max(20px, calc((100% - var(--ui-content-chat)) / 2)) 24px;
+    /* Figma places a 16px spacer between the 52px header and the message
+       container, then starts the first turn at the container edge. */
+    padding: 16px max(20px, calc((100% - var(--ui-content-chat)) / 2)) 24px;
     gap: 0;
     scroll-padding-block: 24px;
     font-family: var(--font-sans);
@@ -37,7 +32,7 @@
     padding: 0;
   }
   #appShell #msgList > .msg.user { align-items: flex-end; }
-  #appShell #msgList > .msg + .msg { margin-top: 20px; }
+  #appShell #msgList > .msg + .msg { margin-top: 40px; }
   #appShell #msgList > .msg.assistant + .msg.user { margin-top: 40px; }
 
   #appShell #msgList .msg-body {
@@ -49,13 +44,14 @@
     overflow-wrap: anywhere;
   }
 
-  /* User bubble */
+  /* User bubble — Figma Message Bubble: max 500, px16/py14, full pill. */
   #appShell #msgList .msg.user .msg-body {
-    max-width: 70%;
-    padding: 10px 16px;
+    max-width: 500px;
+    padding: 14px 16px;
     border: 0;
-    border-radius: var(--ui-radius-bubble);
+    border-radius: var(--ui-radius-pill);
     background: var(--ui-bg-bubble);
+    line-height: calc(22px * var(--app-type-scale));
   }
   #appShell #msgList .msg.user .msg-body p { margin: 0; }
 
@@ -202,5 +198,4 @@
     font-weight: 600;
   }
   #appShell #msgList .msg-body tr:last-child td { border-bottom: 0; }
-
 }
