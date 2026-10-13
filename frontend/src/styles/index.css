@@ -46,7 +46,6 @@
 
 /* Canonical cross-surface details and interaction states */
 @import './polish/index.css';
-@import './polish/motion.css';
 
 /* Tier 4 — one final palette and legacy-token bridge */
 @import './themes.css';
