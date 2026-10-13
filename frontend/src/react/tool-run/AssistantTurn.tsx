@@ -114,6 +114,7 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
           index={index}
           growingIndex={growingIndex}
           messageId={messageId}
+          tools={calls}
           readOnly={readOnly}
           prose={prose}
         />

@@ -9,7 +9,7 @@
    of the app renders Plus Jakarta Sans via --cg-font; the bundled face is
    also what the localization specs assert. */
 @media (min-width: 769px) {
-#appShell#appShell#appShell#appShell #topicSetup .topic-title.greeting {
+:root:not(#_composer-a):not(#_composer-b):not(#_composer-c) #appShell #topicSetup .topic-title.greeting {
   font-family: var(--cg-font);
 }
 }
@@ -19,7 +19,7 @@
    nowrap + ellipsis is the hard guarantee. No competing rule sets these
    properties, so plain declarations are enough. */
 @media (min-width: 769px) {
-#appShell#appShell#appShell #topicSetup .topic-title.greeting {
+:root:not(#_composer-a):not(#_composer-b) #appShell #topicSetup .topic-title.greeting {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -31,7 +31,7 @@
    not dead center. Extra bottom padding shrinks the flex content box, which
    moves the centered block up by half the added amount. */
 @media (min-width: 769px) {
-  #appShell#appShell#appShell #topicSetup {
+  :root:not(#_composer-a):not(#_composer-b) #appShell #topicSetup {
     padding-bottom: calc(80px + var(--conversation-safe-bottom) + 18vh);
   }
 }

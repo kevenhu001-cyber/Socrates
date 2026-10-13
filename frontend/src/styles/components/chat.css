@@ -174,3 +174,222 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
     contain-intrinsic-size: auto 64px;
   }
 }
+
+/* Native Intelligent UI belongs to the transcript surface. The model chooses
+   composition only; all presentation resolves through existing --ui-* tokens. */
+.msg.assistant .msg-body.is-declarative .intui {
+  display: grid;
+  position: relative;
+  gap: var(--ui-space-sm);
+  min-width: 0;
+  margin: var(--ui-space-md) 0;
+  color: var(--ui-text-primary);
+  font: var(--ui-font-weight-regular) var(--ui-font-size-sm) / var(--ui-line-height-normal) var(--font-sans);
+}
+.msg.assistant .msg-body.is-declarative .intui-panel {
+  min-width: 0;
+  overflow: hidden;
+  padding: var(--ui-space-lg);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-raised);
+}
+.msg.assistant .msg-body.is-declarative .intui-panel-head {
+  display: grid;
+  gap: var(--ui-space-xxs);
+  margin-bottom: var(--ui-space-md);
+}
+.msg.assistant .msg-body.is-declarative :is(.intui-panel-title, .intui-callout-title) {
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-semibold);
+  line-height: var(--ui-line-height-normal);
+}
+.msg.assistant .msg-body.is-declarative :is(.intui-panel-description, .intui-callout-text, .intui-text) {
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-sm);
+  line-height: var(--ui-line-height-relaxed);
+}
+.msg.assistant .msg-body.is-declarative .intui-text { margin: 0; }
+.msg.assistant .msg-body.is-declarative :is(.intui-panel-body, .intui-stack) {
+  display: grid;
+  gap: var(--ui-space-md);
+  min-width: 0;
+}
+.msg.assistant .msg-body.is-declarative .intui-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--intui-columns, 2), minmax(0, 1fr));
+  gap: var(--ui-space-sm);
+  min-width: 0;
+}
+.msg.assistant .msg-body.is-declarative .intui-metric {
+  display: grid;
+  gap: var(--ui-space-xxs);
+  min-width: 0;
+  padding: var(--ui-space-md);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-bg-surface);
+}
+.msg.assistant .msg-body.is-declarative .intui-metric-label {
+  overflow: hidden;
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+  line-height: var(--ui-line-height-normal);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.msg.assistant .msg-body.is-declarative .intui-metric-value {
+  overflow-wrap: anywhere;
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-xl);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ui-font-weight-semibold);
+  letter-spacing: -.015em;
+  line-height: var(--ui-line-height-tight);
+}
+.msg.assistant .msg-body.is-declarative .intui-callout {
+  display: grid;
+  gap: var(--ui-space-xs);
+  padding: var(--ui-space-md);
+  border-inline-start: 2px solid var(--ui-border-strong);
+  color: var(--ui-text-secondary);
+}
+.msg.assistant .msg-body.is-declarative .intui-divider {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--ui-border-subtle);
+}
+.msg.assistant .msg-body.is-declarative :is(.intui-slider, .intui-progress, .intui-choice) {
+  display: grid;
+  gap: var(--ui-space-sm);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.msg.assistant .msg-body.is-declarative :is(.intui-control-head, .intui-progress-head) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-md);
+  min-width: 0;
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+}
+.msg.assistant .msg-body.is-declarative :is(.intui-control-head output, .intui-progress-head > :last-child) {
+  color: var(--ui-text-primary);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--ui-font-weight-medium);
+}
+.msg.assistant .msg-body.is-declarative .intui-slider input[type="range"] {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--ui-accent-strong);
+  cursor: pointer;
+}
+.msg.assistant .msg-body.is-declarative .intui-progress-track {
+  position: relative;
+  width: 100%;
+  height: var(--ui-space-xs);
+  overflow: hidden;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-control);
+}
+.msg.assistant .msg-body.is-declarative .intui-progress-value {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ui-accent-strong);
+  transition: width var(--ui-duration-normal) var(--ui-ease-out);
+}
+.msg.assistant .msg-body.is-declarative .intui-choice legend {
+  padding: 0;
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+}
+.msg.assistant .msg-body.is-declarative .intui-choice-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-xs);
+}
+.msg.assistant .msg-body.is-declarative :is(.intui-choice-options button, .intui-button) {
+  min-height: var(--ui-control-sm);
+  padding: 0 var(--ui-space-md);
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-control);
+  background: transparent;
+  color: var(--ui-text-secondary);
+  font: var(--ui-font-weight-medium) var(--ui-font-size-xs) / 1 var(--font-sans);
+  cursor: pointer;
+  transition: background-color var(--ui-duration-hover) ease, border-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease, opacity var(--ui-duration-hover) ease;
+}
+.msg.assistant .msg-body.is-declarative :is(.intui-choice-options button, .intui-button):hover {
+  border-color: var(--ui-border-strong);
+  background: var(--ui-bg-hover-ghost);
+  color: var(--ui-text-primary);
+}
+.msg.assistant .msg-body.is-declarative :is(.intui-choice-options button, .intui-button, .intui-slider input[type="range"]):focus-visible {
+  outline: 2px solid var(--ui-border-strong);
+  outline-offset: 2px;
+}
+.msg.assistant .msg-body.is-declarative .intui-choice-options button.is-selected {
+  border-color: var(--ui-border-strong);
+  background: var(--ui-bg-pill-selected);
+  color: var(--ui-text-primary);
+}
+.msg.assistant .msg-body.is-declarative .intui-button.is-primary {
+  border-color: var(--ui-accent-strong);
+  background: var(--ui-accent-strong);
+  color: var(--ui-on-accent);
+}
+.msg.assistant .msg-body.is-declarative .intui-button.is-primary:hover {
+  opacity: var(--ui-press-opacity);
+  background: var(--ui-accent-strong);
+  color: var(--ui-on-accent);
+}
+.msg.assistant .msg-body.is-declarative .intui-button:disabled {
+  border-color: var(--ui-border-subtle);
+  color: var(--ui-text-disabled);
+  cursor: default;
+  opacity: .7;
+}
+.msg.assistant .msg-body.is-declarative .intui-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-md);
+}
+.msg.assistant .msg-body.is-declarative .intui-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+}
+.msg.assistant .msg-body.is-declarative :is(.intui-table th, .intui-table td) {
+  padding: var(--ui-space-sm) var(--ui-space-md);
+  border-bottom: 1px solid var(--ui-border-subtle);
+  text-align: start;
+  vertical-align: top;
+}
+.msg.assistant .msg-body.is-declarative .intui-table th {
+  background: var(--ui-bg-surface);
+  color: var(--ui-text-primary);
+  font-weight: var(--ui-font-weight-medium);
+}
+.msg.assistant .msg-body.is-declarative .intui-table tbody tr:last-child td { border-bottom: 0; }
+.msg.assistant .msg-body.is-declarative .intui-stream-dot {
+  position: absolute;
+  inset-inline-end: var(--ui-space-xs);
+  inset-block-end: var(--ui-space-xs);
+  width: var(--ui-space-xs);
+  height: var(--ui-space-xs);
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-text-tertiary);
+  animation: intui-stream-breathe var(--ui-duration-pulse-slow) ease-in-out infinite;
+}
+@keyframes intui-stream-breathe {
+  0%, 100% { opacity: .35; }
+  50% { opacity: 1; }
+}
