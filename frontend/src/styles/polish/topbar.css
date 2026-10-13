@@ -1,7 +1,59 @@
 /*
  * polish/topbar.css — top bar + mode pill refinement.
- * Height (52px) and geometry stay owned by restore/fixes.css.
+ * Desktop geometry follows the ChatGPT Apps UI Kit; mobile keeps its
+ * separately reference-pinned controls.
  */
+
+@media (min-width: 769px) {
+  /* Figma NavigationHeader: 52px track, 4px left / 12px right inset. The
+     reference keeps contextual actions on the right and does not render a
+     persistent model or mode control in this bar. */
+  #appShell .top-bar {
+    height: 52px;
+    min-height: 52px;
+    padding: 0 12px 0 4px;
+  }
+  #appShell .top-mode-switch,
+  #appShell #topModelSwitcher {
+    display: none;
+  }
+  #appShell .top-bar-right {
+    gap: 0;
+    height: 52px;
+  }
+
+  /* Figma conversation header: labeled Share pill followed by a compact
+     square icon action. Reuse the existing share/find controls and markup. */
+  #appShell #shareBtn {
+    width: auto;
+    min-width: 0;
+    height: 36px;
+    padding: 0 12px;
+    gap: 6px;
+    border-radius: var(--ui-radius-pill);
+    font-size: var(--ui-text-ui);
+    font-weight: 500;
+    line-height: 18px;
+  }
+  #appShell #shareBtn .share-btn-label {
+    display: inline;
+  }
+  #appShell #shareBtn svg {
+    width: 20px;
+    height: 20px;
+  }
+  #appShell #findBtn {
+    width: 32px;
+    min-width: 32px;
+    height: 36px;
+    padding: 0;
+    border-radius: var(--ui-radius-control);
+  }
+  #appShell #findBtn svg {
+    width: 20px;
+    height: 20px;
+  }
+}
 
 @media (max-width: 768px) {
 
