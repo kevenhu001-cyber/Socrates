@@ -9,6 +9,17 @@
  */
 
 @media (max-width: 768px) {
+  /* The compatibility chat bar still reserves a 16px inset. Bleed the single
+     shared composer 4px into each side so both landing and conversation land
+     on Figma's 12px gutter. Its historical 16px bottom reserve similarly
+     becomes the reference 8px visual gap without rewriting keyboard logic. */
+  #appShell#appShell #chatInputBar #composerInputWrap {
+    width: calc(100% + 8px);
+    max-width: calc(100% + 8px);
+    margin-inline: -4px;
+    margin-bottom: -8px;
+  }
+
   /* Resting / single-line state from Figma ChatGPT5 Main, Loading and Typing:
      44px add control · 8px gap · 44px input pill. */
   #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) {
@@ -25,13 +36,21 @@
     max-width: none;
     height: var(--ui-control-touch);
     min-height: var(--ui-control-touch);
-    margin: 0;
+    margin-top: 0;
+    margin-bottom: 0;
     padding: 0;
     overflow: visible;
     border: 0;
     border-radius: 0;
     background: transparent;
     box-shadow: none;
+  }
+  /* Preserve the conversation bleed after the resting-state shorthand above. */
+  #appShell#appShell #chatInputBar #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) {
+    width: calc(100% + 8px);
+    max-width: calc(100% + 8px);
+    margin-inline: -4px;
+    margin-bottom: -8px;
   }
 
   /* The input pill begins after the add button + 8px inter-control gap. */
