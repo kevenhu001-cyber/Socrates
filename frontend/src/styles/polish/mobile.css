@@ -13,7 +13,8 @@
     box-shadow: none;
   }
 
-  /* Top bar icons keep 40px touch targets, quieter color. */
+  /* Top bar icons keep compact touch targets and quieter color. The active
+     conversation's compose/overflow capsule is owned by mobile-shell.css. */
   #appShell .top-bar .toggle-sidebar,
   #appShell .top-bar .mobile-newchat-btn,
   #appShell .top-bar .mobile-incognito-btn {
