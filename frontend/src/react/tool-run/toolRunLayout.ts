@@ -84,7 +84,7 @@ export function isSentenceCompleteAt(rawText: string, offset: number): boolean {
  * Build the ordered segment list for one assistant turn.
  *
  * Grouping is a *run* rule, not a category rule: consecutive tool calls with
- * nothing but whitespace between them collapse into one aggregate, and the
+ * nothing but whitespace between them share one activity sequence, and the
  * first piece of real prose breaks the run. That matches how the model
  * actually works — a burst of reads/writes before it has anything to say —
  * while keeping a tool row behind the paragraph that introduced it.
@@ -184,6 +184,7 @@ function foldConsecutiveRuns(segments: TurnSegment[]): TurnSegment[] {
     out.push({
       kind: 'group',
       category: settled.size === 1 ? Array.from(settled)[0] : 'mixed',
+      calls: run.slice(),
       members,
       running,
       state: groupState(members, running),
@@ -202,21 +203,20 @@ function foldConsecutiveRuns(segments: TurnSegment[]): TurnSegment[] {
   return out;
 }
 
-/** True when a group renders as a collapsed header rather than bare rows. */
+/** Legacy aggregate threshold; the React transcript shows each action. */
 export function groupShowsHeader(segment: Extract<TurnSegment, { kind: 'group' }>): boolean {
   return segment.members.length >= 2;
 }
 
 /**
  * Every call in a group whose non-text outputs (charts, saved files) must stay
- * visible even when the group is collapsed. Tool STATUS may hide behind the
- * aggregate toggle; tool OUTPUT never does. Row order and output order come
+ * visible independently of per-call details. Row order and output order come
  * from this one list so the two can never disagree.
  */
 export function groupOutputCalls(
   segment: Extract<TurnSegment, { kind: 'group' }>,
 ): ToolCallRecord[] {
-  return segment.members.concat(segment.running);
+  return segment.calls || segment.members.concat(segment.running);
 }
 
 /* Sorted-key serialization: the same spec can arrive as two distinct objects

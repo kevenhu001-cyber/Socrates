@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from 'react';
 import { IntelligentTextSegment } from '../intelligence-ui/IntelligentTextSegment';
-import { runStartedAt, toolRunView, type ToolCallRecord, type TurnSegment } from './toolRunModel.js';
+import { groupOutputCalls, runStartedAt, toolRunView, type ToolCallRecord, type TurnSegment } from './toolRunModel.js';
 import { ToolRunAttachments } from './ToolRunAttachments.js';
 import { ToolRunGroup } from './ToolRunGroup.js';
 import { ToolRunRow } from './ToolRunRow.js';
@@ -38,7 +38,7 @@ export function TurnSegmentContent({
   }
 
   if (segment.kind === 'group') {
-    const first = segment.members.length ? segment.members[0] : segment.running[0];
+    const first = groupOutputCalls(segment)[0];
     return (
       <ToolRunGroup
         key={'group-' + (first ? first.id : index) + '-' + index}

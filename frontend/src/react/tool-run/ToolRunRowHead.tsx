@@ -1,4 +1,5 @@
-import { STROKE_ICONS, toolIcon } from '../../ui/icons/toolIcons.js';
+import { STROKE_ICONS } from '../../ui/icons/toolIcons.js';
+import { ToolActivityIcon } from './ToolActivityIcon';
 import { formatSeconds, translate } from './labels.js';
 import type { ToolRunView } from './toolRunModel.js';
 
@@ -33,11 +34,7 @@ export function ToolRunRowHead({ view, elapsedMs }: { view: ToolRunView; elapsed
 
   return (
     <>
-      <span
-        className="tool-inline-tool-icon"
-        aria-hidden="true"
-        dangerouslySetInnerHTML={{ __html: toolIcon(view.name) }}
-      />
+      <ToolActivityIcon name={view.name} />
       <span
         className="tool-inline-label"
         title={displayLabel}

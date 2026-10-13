@@ -143,7 +143,8 @@ test('tool calls with textOffset restore as inline rows with the chart in place'
   // the bubble bottom after the trailing text segment.
   const order = await body.evaluate((el) => {
     const row = el.querySelector('.tool-inline[data-tcid="inline-viz-call"]');
-    const host = row && row.nextElementSibling;
+    const anchor = row && (row.closest('.tool-run-group') || row);
+    const host = anchor && anchor.nextElementSibling;
     return {
       hostIsAttachment: !!(host && host.classList.contains('tool-inline-attachments')),
       hostHasViz: !!(host && host.querySelector('.visualization-card')),
@@ -158,7 +159,7 @@ test('tool calls with textOffset restore as inline rows with the chart in place'
 
 const SENTENCE_SESSION_ID = '44444444-4444-4444-8444-444444444444';
 
-test('restored edit tools wait for the complete paragraph and use one compact summary', async ({ page }) => {
+test('restored edit actions wait for the complete paragraph and remain visible', async ({ page }) => {
   await mockAuthedApp(page);
   const rawText = '我先查一下相关资料。这是第一段。\n\n代码验证。尾巴。';
   const textOffset = '我先查一下'.length;
@@ -199,7 +200,8 @@ test('restored edit tools wait for the complete paragraph and use one compact su
 
   const body = page.locator('#msgList .msg.assistant .msg-body');
   await expect(body.locator('.tool-run-prose').first()).toHaveText('我先查一下相关资料。这是第一段。');
-  await expect(body.locator('.tool-run-summary')).toContainText('Edited moe.py, router_v2.py');
+  await expect(body.locator('.tool-run-summary')).toHaveCount(0);
+  await expect(body.locator('.tool-inline-label')).toHaveText(['Edited moe.py', 'Edited router_v2.py']);
   await expect(body.locator('.tool-inline-file-summary')).toHaveCount(0);
   const flow = await body.locator(':scope > *').evaluateAll((nodes) => nodes.map((node) => ({
     className: node.className,

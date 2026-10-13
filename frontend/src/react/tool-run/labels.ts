@@ -12,6 +12,7 @@
  */
 
 import { isInlineSearchTool, toolCategory } from '../../render/toolCategory.js';
+import { connectorActivityOf } from './toolActivity';
 
 export interface ToolCallLike {
   id?: string;
@@ -252,6 +253,25 @@ export function formatSeconds(ms: number | null | undefined): string {
    Same objects as the settled labels: the row never changes shape between
    running and done, only its verb tense. */
 
+function connectorLabel(call: ToolCallLike): RunLabel | null {
+  const activity = connectorActivityOf(String(call.name || ''), call.input);
+  if (!activity) return null;
+  const { service, action } = activity;
+  if (service === 'GitHub') {
+    if (/^(?:get_job_logs|download_(?:job|workflow_run)_logs|get_workflow_run_logs)$/.test(action)) {
+      return { text: tf('tool.connectorWorkflowLogs', 'Read {service} Actions workflow logs', { service }) };
+    }
+    if (/^(?:list_workflow_run_jobs|get_workflow_run_jobs|get_job)$/.test(action)) {
+      return { text: tf('tool.connectorWorkflowJobs', 'Check {service} Actions workflow steps', { service }) };
+    }
+    if (/^(?:list_workflow_runs|get_workflow_run|list_repo_workflows)$/.test(action)) {
+      return { text: tf('tool.connectorWorkflowRuns', 'Check {service} Actions workflow runs', { service }) };
+    }
+  }
+  const description = action.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').trim();
+  return { text: description ? tf('tool.connectorNamedAction', '{service} · {action}', { service, action: description }) : service };
+}
+
 function runningLabel(call: ToolCallLike): RunLabel {
   const name = String(call.name || '');
   const meta: string[] = [];
@@ -261,7 +281,7 @@ function runningLabel(call: ToolCallLike): RunLabel {
   }
   if (isInlineSearchTool(name)) {
     const q = queryOf(call.input);
-    if (q) return { text: tf('tool.searchingFor', 'Searching "{query}"…', { query: clip(q) }) };
+    if (q) return { text: tf('tool.searchingFor', 'Searching "{query}"…', { query: q }) };
     return { text: translate('tool.actionSearch', 'Searching the web…') };
   }
   if (name === 'web_fetch' || name === 'WebFetch') {
@@ -327,7 +347,7 @@ function runningLabel(call: ToolCallLike): RunLabel {
   if (name === 'create_plan') return { text: translate('tool.actionPlan', 'Drafting a plan…') };
   if (name === 'create_spec') return { text: translate('tool.actionSpec', 'Drafting a spec…') };
   if (name === 'create_site') return { text: translate('tool.actionSite', 'Building and publishing the site…') };
-  return { text: translate('tool.actionDefault', 'Using a tool') };
+  return connectorLabel(call) || { text: translate('tool.actionDefault', 'Using a tool') };
 }
 
 /* ── Settled copy ──────────────────────────────────────────────────────── */
@@ -341,7 +361,7 @@ function doneLabel(call: ToolCallLike): RunLabel {
     const n = resultCount(call);
     const q = queryOf(call.input);
     if (n > 0) meta.push(n === 1 ? translate('tool.nSourceOne', '1 source') : tf('tool.nSources', '{n} sources', { n }));
-    if (q) return { text: tf('tool.searchedFor', 'Searched for “{query}”', { query: clip(q) }), meta, hosts: resultHosts(call) };
+    if (q) return { text: tf('tool.searchedFor', 'Searched for “{query}”', { query: q }), meta, hosts: resultHosts(call) };
     return {
       text: n > 0
         ? tf('tool.searchDone', 'Found {n} web results', { n })
@@ -407,6 +427,9 @@ function doneLabel(call: ToolCallLike): RunLabel {
   if (name === 'create_plan') return { text: translate('tool.donePlan', 'Drafted a plan') };
   if (name === 'create_spec') return { text: translate('tool.doneSpec', 'Drafted a spec') };
   if (name === 'create_site') return { text: translate('tool.doneSite', 'Site published') };
+
+  const connector = connectorLabel(call);
+  if (connector) return connector;
 
   const outcome = outcomeOf(call.output);
   if (outcome) meta.push(outcome);

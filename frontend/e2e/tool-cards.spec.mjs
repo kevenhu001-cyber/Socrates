@@ -65,7 +65,7 @@ test('live chat shows an inline tool status instead of a tool card', async ({ pa
 
   // Live chat must not have the legacy tool card chrome.
   await expect(page.locator('.agent-tool-card')).toHaveCount(0);
-  await expect(page.locator('.tool-run-group')).toHaveCount(0);
+  await expect(page.locator('.tool-run-summary')).toHaveCount(0);
 
   // The text reply landed, so the status pill should be gone.
   await expect(bubble.locator('.thinking-status')).toHaveCount(0);
@@ -144,11 +144,12 @@ test('tool activity lands behind its paragraph without splitting it', async ({ p
   await expect(row).toHaveCount(1);
   const layout = await row.evaluate((toolRow) => {
     const body = toolRow.closest('.msg-body');
+    const anchor = toolRow.closest('.tool-run-group') || toolRow;
     let beforeText = '';
     let afterText = '';
     let seenRow = false;
     for (const node of Array.from(body?.children || [])) {
-      if (node === toolRow) { seenRow = true; continue; }
+      if (node === anchor) { seenRow = true; continue; }
       const cls = node.classList;
       if (cls && (cls.contains('tool-inline-attachments') || cls.contains('agent-run-host'))) continue;
       const text = (node.textContent || '').replace(/\s+/g, ' ').trim();
@@ -337,7 +338,7 @@ test('Tutor streams the same native tools and sends the tutor mode contract', as
   await expect(row.locator('.tool-inline-sources')).toContainText('Primary source');
 });
 
-test('live chat shows only the latest tool card during a burst but persists every call on finish', async ({ page }) => {
+test('live chat keeps a burst in the reading flow and persists every call on finish', async ({ page }) => {
   // P_tool_live_card — during streaming the bubble shows at most one
   // .tool-inline. The persisted HTML on the finished message must
   // contain every call so a reload / share view re-renders all three
@@ -390,7 +391,7 @@ test('live chat shows only the latest tool card during a burst but persists ever
   await expect(page.locator('.msg.assistant').last().locator('.tool-inline')).toHaveCount(3);
 });
 
-test('consecutive same-category tools aggregate under one collapsible header', async ({ page }) => {
+test('consecutive tools stay individually visible without an aggregate header', async ({ page }) => {
   await mockAuthedApp(page);
   await page.route('**/api/**/chat/stream', async (route) => {
     const stream = [
@@ -418,34 +419,20 @@ test('consecutive same-category tools aggregate under one collapsible header', a
     await window.askChatTurn('Search twice');
   });
 
-  /* P_declarative-tool-run — a run of same-category calls collapses under one
-     aggregate header (react/tool-run/ToolRunGroup). The old contract was a
-     single merged `.tool-inline` row carrying data-group-count/-ids; the rows
-     are now real rows inside a `.tool-run-list`, which is what expanding has
-     to reveal. */
   const bubble = page.locator('.msg.assistant').last();
-  await expect(bubble.locator('.tool-run-group')).toHaveCount(1);
-  const group = bubble.locator('.tool-run-group').first();
+  const group = bubble.locator('.tool-run-group');
+  await expect(group).toHaveCount(1);
   await expect(group).toHaveAttribute('data-state', 'complete');
-  await expect(group).toHaveAttribute('data-category', 'search');
-  await expect(group.locator('.tool-run-summary-label')).toContainText('Found 2 sources · 2 searches');
-  await expect(group.locator('.tool-run-summary-meta')).toContainText('2 actions');
-  /* Collapsed until asked: the member rows are in the DOM, off the screen. */
-  await expect(group.locator('.tool-run-list')).toBeHidden();
+  await expect(group.locator('.tool-run-summary')).toHaveCount(0);
   await expect(group.locator('.tool-inline')).toHaveCount(2);
-  await expect(group.locator('.tool-inline').first()).toBeHidden();
-
-  await group.locator('.tool-run-summary').click();
-  await expect(group.locator('.tool-run-list')).toBeVisible();
-  await expect(group.locator('.tool-inline[data-tcid="group-a"]')).toHaveCount(1);
-  await expect(group.locator('.tool-inline[data-tcid="group-b"]')).toHaveCount(1);
-  await expect(group.locator('.tool-inline[data-tcid="group-a"] .tool-inline-label'))
-    .toHaveText('Searched for “alpha”');
-  /* The aggregate answers "what did I learn" in one place: the merged source
-     list is the group's own detail, not a per-row dump. */
-  const aggregate = group.locator('.tool-run-list > .tool-inline-detail');
-  await expect(aggregate.locator('[data-kind="sources"] .tool-inline-src-title')).toHaveCount(2);
-  await expect(aggregate.locator('[data-kind="sources"]')).toContainText('Beta');
+  for (const id of ['group-a', 'group-b']) await expect(group.locator(`[data-tcid="${id}"]`)).toBeVisible();
+  const first = group.locator('[data-tcid="group-a"]');
+  await expect(first.locator('.tool-inline-label')).toHaveText('Searched for “alpha”');
+  await first.locator('summary').click();
+  await expect(first.locator('.tool-inline-src-title')).toHaveCount(1);
+  const second = group.locator('[data-tcid="group-b"]');
+  await second.locator('summary').click();
+  await expect(second.locator('.tool-inline-src-title')).toContainText('Beta');
 
   /* Same split-point contract as the burst test above: the merged row is a
      rendering decision, the persistence is one record per call. */
@@ -486,15 +473,11 @@ test('a failed member marks the grouped run and keeps its own error detail', asy
     await window.askChatTurn('Search');
   });
 
-  /* P_declarative-tool-run — a member that failed marks the whole aggregate
-     and says so in the header meta, which is the only part of a collapsed run
-     a reader sees. The failure then belongs to the row that caused it. */
+  /* Failed actions remain visible beside successful actions. */
   const bubble = page.locator('.msg.assistant').last();
   const group = bubble.locator('.tool-run-group').first();
   await expect(group).toHaveAttribute('data-state', 'error');
-  await expect(group.locator('.tool-run-summary-meta')).toContainText('1 failed');
-
-  await group.locator('.tool-run-summary').click();
+  await expect(group.locator('.tool-run-summary')).toHaveCount(0);
   const failed = group.locator('.tool-inline[data-tcid="fail-b"]');
   await expect(failed).toHaveAttribute('data-state', 'error');
   await expect(failed).toHaveAttribute('data-error', '1');

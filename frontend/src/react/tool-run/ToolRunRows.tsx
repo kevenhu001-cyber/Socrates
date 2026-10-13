@@ -1,72 +1,12 @@
-import { ToolRunDetail } from './ToolRunDetail.js';
 import { ToolRunRow } from './ToolRunRow.js';
-import { runStartedAt, toolRunView, type TurnSegment, type ToolRunGroupView } from './toolRunModel.js';
+import { groupOutputCalls, runStartedAt, toolRunView, type TurnSegment } from './toolRunModel.js';
 
-type GroupSegment = Extract<TurnSegment, { kind: 'group' }>;
-
-export function ToolRunRows({
-  segment,
-  view,
-  grouped,
-  open,
-  messageId,
-  readOnly,
-}: {
-  segment: GroupSegment;
-  view: ToolRunGroupView;
-  grouped: boolean;
-  open: boolean;
+export function ToolRunRows({ segment, messageId, readOnly }: {
+  segment: Extract<TurnSegment, { kind: 'group' }>;
   messageId?: string;
   readOnly?: boolean;
 }) {
-  if (!grouped) {
-    const single = segment.members.concat(segment.running);
-    return (
-      <>
-        {single.map((call) => (
-          <ToolRunRow
-            key={call.id}
-            view={toolRunView(call)}
-            startedAt={runStartedAt(call)}
-            messageId={messageId}
-            readOnly={readOnly}
-          />
-        ))}
-      </>
-    );
-  }
-
-  return (
-    <>
-      <div className="tool-run-list" hidden={!open}>
-        {open ? <ToolRunDetail view={view} readOnly={readOnly} /> : null}
-        {segment.members.map((call, index) => view.members[index].state === 'error' || view.members[index].approval ? null : (
-          <ToolRunRow
-            key={call.id}
-            view={view.members[index]}
-            startedAt={runStartedAt(call)}
-            messageId={messageId}
-            readOnly={readOnly}
-            nested
-          />
-        ))}
-      </div>
-
-      {/* Failures and decisions remain visible even when the group is closed. */}
-      {segment.members.map((call, index) => view.members[index].state === 'error' || view.members[index].approval ? (
-        <ToolRunRow key={call.id} view={view.members[index]} startedAt={runStartedAt(call)} messageId={messageId} readOnly={readOnly} nested />
-      ) : null)}
-      {/* Live lines stay outside the collapsed aggregate. */}
-      {segment.running.map((call, index) => (
-        <ToolRunRow
-          key={call.id}
-          view={view.running[index]}
-          startedAt={runStartedAt(call)}
-          messageId={messageId}
-          readOnly={readOnly}
-          nested
-        />
-      ))}
-    </>
-  );
+  return groupOutputCalls(segment).map((call) => (
+    <ToolRunRow key={call.id} view={toolRunView(call)} startedAt={runStartedAt(call)} messageId={messageId} readOnly={readOnly} />
+  ));
 }

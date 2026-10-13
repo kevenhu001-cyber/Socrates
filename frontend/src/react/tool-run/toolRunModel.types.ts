@@ -69,10 +69,11 @@ export type TurnSegment =
   | {
     kind: 'group';
     category: string;
-    /** Settled members, rendered inside the collapsed header. */
+    /** Original call order, retained while parallel calls settle out of order. */
+    calls?: ToolCallRecord[];
+    /** Settled calls, used for state and result summaries. */
     members: ToolCallRecord[];
-    /** Still-in-flight members, rendered after the header — the live line
-        never hides inside a collapsed aggregate. */
+    /** Calls whose execution is still in progress. */
     running: ToolCallRecord[];
     state: ToolRunState;
   };

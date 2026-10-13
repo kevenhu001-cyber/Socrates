@@ -29,6 +29,7 @@
  * per-file source + license table.
  */
 import notionRaw from '@lobehub/icons-static-svg/icons/notion.svg?raw';
+import githubRaw from '@lobehub/icons-static-svg/icons/github.svg?raw';
 import baiduCloudRaw from '@lobehub/icons-static-svg/icons/baiducloud.svg?raw';
 import tencentRaw from '@lobehub/icons-static-svg/icons/tencent-color.svg?raw';
 import googleRaw from '@lobehub/icons-static-svg/icons/google-color.svg?raw';
@@ -685,6 +686,15 @@ export function getConnectorIconMarkup(id: unknown): string {
   if (!key) return '';
   const stripped = key.replace(/^oc/, '');
   return MARKS[key] || MARKS[stripped] || MARKS[String(id || '').toLowerCase()] || NAME_MARKS[String(id || '')] || '';
+}
+
+/** Transcript marks use the unpadded vendor glyph where available. The
+ * directory's dark tile would make GitHub too small beside body-sized text. */
+export function getConnectorActivityIconMarkup(id: unknown): string {
+  if (normaliseConnectorId(id) === 'github') {
+    return githubRaw.replace(/<title>[\s\S]*?<\/title>/i, '').replace(/<svg /, '<svg aria-hidden="true" ');
+  }
+  return getConnectorIconMarkup(id);
 }
 
 /* Ids with a bundled real brand mark (useful for tests / diagnostics). */

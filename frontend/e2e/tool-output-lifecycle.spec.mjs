@@ -141,7 +141,7 @@ async function openAssistantFixture(page, messages, options = {}) {
 
 /* ── visibility under a collapsed run ─────────────────────────────────── */
 
-test('a settled visualization under a collapsed tool run stays on screen', async ({ page }) => {
+test('a settled visualization beside visible tool activities stays on screen', async ({ page }) => {
   const body = await openAssistantFixture(page, [
     userMessage(),
     assistantMessage([searchCall('search-1', 'parabola'), vizCall('viz-1', 'Probe parabola')]),
@@ -149,8 +149,8 @@ test('a settled visualization under a collapsed tool run stays on screen', async
 
   const group = body.locator('.tool-run-group');
   await expect(group).toHaveCount(1);
-  await expect(group.locator('.tool-run-summary')).toHaveCount(1);
-  await expect(group.locator('.tool-run-list')).toHaveAttribute('hidden', '');
+  await expect(group.locator('.tool-run-summary')).toHaveCount(0);
+  await expect(group.locator('.tool-run-list')).toHaveCount(0);
 
   const card = body.locator('.visualization-card');
   await expect(card).toBeVisible();
@@ -171,7 +171,7 @@ test('a settled visualization under a collapsed tool run stays on screen', async
   await body.screenshot({ path: 'test-results/tool-output-collapsed.png' });
 });
 
-test('opening the mobile tool group does not move or duplicate call outputs', async ({ page }) => {
+test('opening a mobile tool detail does not move or duplicate call outputs', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const code = {
     id: 'code-1',
@@ -199,11 +199,12 @@ test('opening the mobile tool group does not move or duplicate call outputs', as
   await expect(charts.nth(0)).toContainText('Probe A');
   await expect(charts.nth(1)).toContainText('Probe B');
   await expect(body.locator('.exec-artifact')).toHaveCount(0);
-  await expect(group.locator('.tool-run-list')).toHaveAttribute('hidden', '');
+  await expect(group.locator('.tool-run-list')).toHaveCount(0);
 
-  await group.locator('.tool-run-summary').click();
-  await expect(group).toHaveClass(/open/);
-  await expect(group.locator('.tool-run-list')).toBeVisible();
+  const row = group.locator('[data-tcid="search-1"]');
+  await row.locator(':scope > summary').click();
+  await expect(row.locator(':scope > summary')).toHaveAttribute('aria-expanded', 'true');
+  await expect(row.locator('.tool-inline-detail')).toBeVisible();
   await expect(page.locator('[data-tool-run-sheet="1"]')).toHaveCount(0);
   await expect(charts).toHaveCount(2);
   await expect(body.locator('.exec-artifact')).toHaveCount(0);
@@ -231,7 +232,7 @@ test('a generated image stays hidden until assistant prose references it', async
   ]);
 
   const group = body.locator('.tool-run-group');
-  await expect(group.locator('.tool-run-list')).toHaveAttribute('hidden', '');
+  await expect(group.locator('.tool-run-list')).toHaveCount(0);
   await expect(body.locator('.visualization-card')).toBeVisible();
   await expect(body.locator('.exec-artifact, .exec-artifact-image')).toHaveCount(0);
   await expect(group.locator('.visualization-card')).toHaveCount(0);
@@ -369,8 +370,8 @@ test('a visualization stays visible across the running → result transition', a
   await expect(message.locator('.tool-inline[data-tcid="viz-1"]')).toHaveAttribute('data-state', 'done');
   const group = message.locator('.tool-run-group');
   await expect(group).toHaveCount(1);
-  await expect(group.locator('.tool-run-summary')).toHaveCount(1);
-  await expect(group.locator('.tool-run-list')).toHaveAttribute('hidden', '');
+  await expect(group.locator('.tool-run-summary')).toHaveCount(0);
+  await expect(group.locator('.tool-run-list')).toHaveCount(0);
   await expect(message.locator('.visualization-card')).toBeVisible();
   await expect(group.locator('.visualization-card')).toHaveCount(0);
   await expect(group.locator('.tool-run-list .visualization-card')).toHaveCount(0);
@@ -389,7 +390,7 @@ test('a visualization stays visible across the running → result transition', a
 
 /* ── stability and history ────────────────────────────────────────────── */
 
-test('expanding and collapsing a run ten times never remounts its chart', async ({ page }) => {
+test('expanding and collapsing a tool ten times never remounts its chart', async ({ page }) => {
   const body = await openAssistantFixture(page, [
     userMessage(),
     assistantMessage([searchCall('search-1', 'parabola'), vizCall('viz-1', 'Probe stable')]),
@@ -398,12 +399,11 @@ test('expanding and collapsing a run ten times never remounts its chart', async 
   await expect(card).toBeVisible();
   const handle = await card.elementHandle();
 
-  const list = body.locator('.tool-run-list');
-  const summary = body.locator('.tool-run-summary');
+  const row = body.locator('[data-tcid="search-1"]');
+  const summary = row.locator(':scope > summary');
   for (let i = 0; i < 10; i++) {
     await summary.click();
-    if (i % 2 === 0) await expect(list).not.toHaveAttribute('hidden', '');
-    else await expect(list).toHaveAttribute('hidden', '');
+    await expect(summary).toHaveAttribute('aria-expanded', i % 2 === 0 ? 'true' : 'false');
   }
 
   const sameNode = await page.evaluate((el) => {
@@ -480,7 +480,7 @@ test('a call persisted with the outputs protocol renders the same', async ({ pag
 
 /* ── real renderer cases ──────────────────────────────────────────────── */
 
-test('a collapsed run with a real chart does not overflow a 390px viewport', async ({ page }) => {
+test('visible activities with a real chart do not overflow a 390px viewport', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const body = await openAssistantFixture(page, [
     userMessage(),

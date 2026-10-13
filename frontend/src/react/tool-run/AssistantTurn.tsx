@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   buildTurnLayout,
+  groupOutputCalls,
   toolRunStateOf,
   type ToolCallRecord,
   type TurnSegment,
@@ -45,7 +46,7 @@ function lastTextIndex(segments: TurnSegment[]): number {
 function segmentKey(segment: TurnSegment, index: number): string {
   if (segment.kind === 'text') return 'text-' + segment.start + '-' + index;
   if (segment.kind === 'group') {
-    const first = segment.members.length ? segment.members[0] : segment.running[0];
+    const first = groupOutputCalls(segment)[0];
     return 'group-' + (first ? first.id : index) + '-' + index;
   }
   if (segment.kind === 'tool') return 'tool-' + segment.call.id;

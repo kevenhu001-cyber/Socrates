@@ -46,98 +46,38 @@
   --tool-activity-danger-bg: color-mix(in srgb, var(--ui-danger) 8%, var(--ui-bg-page));
 }
 
-/* ── Per-answer process disclosure ───────────────────────────────────
-   One line, one job: say that work happened and let the reader open it
-   or not. It is not a panel and it is not an overlay — a thin label with
-   a chevron, sitting in the same rhythm as the tool rows below it, so the
-   whole turn reads as one system rather than a header plus a body.
-
-   The summary TEXT lives in the expanded body. Keeping the closed line
-   to a label is what lets a long sentence collapse without leaving a
-   three-line pill at the top of the answer. */
-/* The process disclosure borrows the tool ledger so its rail, its glyph
-   slot and its row height are literally the same values the rows below
-   use. Declared on the pill itself, not the bubble: an empty custom
-   property block on .msg-body is a transcript-surface rule, and the
-   transcript surface has exactly one owner. It inherits by custom
-   property either way, so the rows keep the shared values. */
+/* Public process summaries share the transcript's type size. Color carries
+   their lower priority; no panel, rail, or separate disclosure heading. */
 .turn-summary {
-  --ts-rail: var(--ui-border-subtle);
-  --ts-quiet: var(--ui-text-tertiary);
-  --ts-live: var(--ui-text-secondary);
+  margin: 0 0 var(--ui-space-md);
   min-width: 0;
-  margin: 0 0 var(--ui-space-sm);
   border: 0;
   background: transparent;
-}
-.turn-summary > .turn-summary-pill {
-  display: flex;
-  align-items: center;
-  gap: var(--ui-space-sm);
-  width: fit-content;
-  max-width: 100%;
-  min-height: var(--ui-control-sm);
-  padding: 2px 0;
-  margin: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--ui-text-tertiary);
-  font: 400 var(--ui-font-size-xs) / 1.5 var(--font-sans);
-  list-style: none;
-  text-align: left;
-  cursor: pointer;
-  transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
-}
-.turn-summary-pill::-webkit-details-marker { display: none; }
-.turn-summary-pill::marker { content: ''; }
-.turn-summary > .turn-summary-pill:hover {
-  color: var(--ui-text-primary);
-}
-.turn-summary > .turn-summary-pill:focus-visible {
-  outline: 2px solid var(--ui-border-strong);
-  outline-offset: 1px;
-}
-.turn-summary[open] > .turn-summary-pill {
   color: var(--ui-text-secondary);
+  font: 400 var(--ui-text-body) / 1.65 var(--font-sans);
+}
+.turn-summary-status {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ui-space-sm);
+  min-width: 0;
+  color: inherit;
 }
 .turn-summary-label {
-  flex: 0 1 auto;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
-.turn-summary-chevron {
-  display: inline-flex;
-  width: 14px;
-  height: 14px;
-  flex: 0 0 14px;
-  align-items: center;
-  justify-content: center;
-  color: var(--ui-text-disabled);
-  opacity: .55;
-  transition: transform var(--ui-duration-normal) var(--ui-ease-out), opacity var(--ui-duration-hover) ease;
+.msg.assistant .msg-body.is-declarative .thinking-summary .turn-summary-text {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--ui-text-secondary);
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
-.turn-summary-chevron svg { display: block; width: 100%; height: 100%; }
-.turn-summary > .turn-summary-pill:hover .turn-summary-chevron { opacity: 1; }
-.turn-summary[open] > .turn-summary-pill .turn-summary-chevron { transform: rotate(90deg); }
-
-/* Live phase line. Same row as every tool row, and it retires the moment
-   the real row mounts — so the two never appear together. Liveness is an
-   opacity-only cue: unlike the previous text-gradient shimmer it stays on
-   the compositor path and never repaints clipped text every frame. */
-.turn-summary-pill.thinking-status {
-  color: var(--ts-live);
-  font-weight: 500;
-}
-.turn-summary-pill.thinking-status .tool-inline-tool-icon {
-  color: var(--ts-live);
-  animation: tool-row-breathe var(--ui-duration-pulse-slow, 1.6s) ease-in-out infinite;
-}
-.turn-summary-pill.thinking-status:hover { color: var(--ts-live); }
+.turn-summary-status + .turn-summary-text { margin-top: var(--ui-space-xs); }
 .thinking-status .thinking-status-label {
-  color: var(--ts-live);
   animation: thinking-status-breathe var(--ui-duration-pulse-slow, 1.6s) ease-in-out infinite;
 }
 @keyframes thinking-status-breathe {
@@ -146,63 +86,21 @@
 }
 .thinking-status-detail {
   flex: 0 0 auto;
-  color: var(--ts-quiet);
+  color: var(--ui-text-tertiary);
   font-size: var(--ui-font-size-xxs);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-
-/* Expanded body — the same rail the tool rows use, so opening the
-   process does not introduce a second visual language. */
-.msg.assistant .msg-body.is-declarative .thinking-summary .turn-summary-detail {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ui-space-sm);
-  margin: 0 0 var(--ui-space-sm);
-  padding: var(--ui-space-xxs) 0 var(--ui-space-xxs) var(--ui-space-md);
-  border-inline-start: 1px solid var(--ts-rail);
-  color: var(--ui-text-secondary);
-  font-size: var(--ui-font-size-xs);
-  line-height: 1.65;
-  overflow-wrap: anywhere;
-}
-.msg.assistant .msg-body.is-declarative .thinking-summary .turn-summary-text {
-  margin: 0;
-  color: inherit;
-  white-space: pre-wrap;
-}
-.msg.assistant .msg-body.is-declarative .thinking-summary .turn-summary-thinking-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ui-space-xs);
-  margin: 0;
-  color: inherit;
-}
-.msg.assistant .msg-body.is-declarative .thinking-summary .turn-summary-thinking-text {
-  margin: 0;
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
-  color: var(--ui-text-secondary);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.turn-summary .tool-inline-tool-icon,
-.turn-summary .tool-inline-tool-icon svg {
-  display: block;
-  width: 15px;
-  height: 15px;
-  flex: 0 0 15px;
+.turn-summary .tool-inline-tool-icon {
+  display: inline-flex;
+  align-self: flex-start;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  margin-top: 3px;
   color: var(--ui-text-tertiary);
 }
-
-@media (max-width: 760px) {
-  .turn-summary > .turn-summary-pill { min-height: var(--ui-control-touch); }
-}
-
+.turn-summary .tool-inline-tool-icon :is(svg, img) { width: 100%; height: 100%; }
 @media (prefers-reduced-motion: reduce) {
-  .turn-summary > .turn-summary-pill,
-  .turn-summary-chevron { transition: none; }
-  .turn-summary-pill.thinking-status .tool-inline-tool-icon { animation: none; opacity: .8; }
-  .thinking-status .thinking-status-label { animation: none; opacity: 1; }
+  .thinking-status .thinking-status-label { animation: none; }
 }

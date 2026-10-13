@@ -4,7 +4,7 @@
  * One system covers three things, because in a transcript they are one thing:
  *
  *   .tool-inline        one tool call
- *   .tool-run-group     a collapsed run of calls, with its own header
+ *   .tool-run-group     an ordered sequence of visible activity rows
  *   their shared body   results first, technical details behind a toggle
  *
  * The reference is the way ChatGPT and Claude present the same information:
@@ -15,8 +15,7 @@
  *   row    one line: glyph, label, dim meta, chevron. No border, no fill, no
  *          shadow — a settled run reads as a few dim lines of prose sitting
  *          between two paragraphs.
- *   rail   an expanded body hangs off a 1px rule, so a run of rows reads as
- *          one indented block instead of a stack of cards.
+ *   rail   an expanded result body hangs off a 1px rule.
  *   detail result bodies continue along the rail with no nested cards.
  *   state  motion marks running work; failure retains its colour cue.
  *
@@ -48,8 +47,8 @@
      outside it — carries its own rail, so this one number is the whole
      indent story and the run's glyphs share a column for free. */
   --tc-nested-text: calc(var(--tc-group-step) + var(--tc-rail-w) + var(--tc-head-pad));
-  --tc-icon: 16px;
-  --tc-glyph: 15px;
+  --tc-icon: 20px;
+  --tc-glyph: 20px;
   --tc-chevron: 14px;
   --tc-rail: var(--ui-border-subtle);
   --tc-idle: var(--ui-text-secondary);
@@ -79,17 +78,17 @@
 .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-head,
 .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-run-summary {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--tc-gap);
   width: 100%;
   max-width: 100%;
   min-height: var(--tc-row-height);
-  padding: 2px 0;
+  padding: var(--ui-space-xxs) 0;
   border: 0;
   border-radius: 0;
   background: transparent;
   color: var(--tc-idle);
-  font: 400 var(--ui-font-size-xs) / 1.5 var(--font-sans);
+  font: 400 var(--ui-text-body) / 1.65 var(--font-sans);
   text-align: left;
   list-style: none;
   cursor: pointer;
@@ -126,6 +125,7 @@
   width: var(--tc-icon);
   height: var(--tc-icon);
   flex: 0 0 var(--tc-icon);
+  margin-top: calc((var(--ui-text-body) * 1.65 - var(--tc-icon)) / 2);
   align-items: center;
   justify-content: center;
   color: var(--ui-text-tertiary);
@@ -149,6 +149,13 @@
 .msg.assistant .msg-body.is-declarative .tool-inline[data-state="awaiting"] .tool-inline-tool-icon {
   color: var(--tc-live);
 }
+/* Brand marks reuse the plugin directory assets without a category outline. */
+.msg.assistant .msg-body.is-declarative .tool-inline-tool-icon img {
+  display: block;
+  width: var(--tc-glyph);
+  height: var(--tc-glyph);
+  object-fit: contain;
+}
 /* A quiet check confirms completion without competing with the answer. */
 .msg.assistant .msg-body.is-declarative .tool-run-summary-icon.is-done {
   color: var(--ui-text-tertiary);
@@ -166,21 +173,17 @@
   50% { opacity: 1; }
 }
 
-/* ── Label + trailing facts ────────────────────────────────────────────
-   One ellipsis budget for the line: the label takes it, the meta shrinks
-   first. The label carries `title`, so what the truncation loses is
-   recoverable on hover. */
+/* Action descriptions wrap at transcript width, including on touch screens. */
 .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-label,
 .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-run-summary-label {
   flex: 0 1 auto;
   min-width: 0;
-  overflow: hidden;
+  overflow-wrap: anywhere;
   color: inherit;
-  font-size: var(--ui-font-size-xs);
+  font-size: var(--ui-text-body);
   font-weight: 400;
   letter-spacing: -.003em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
 }
 .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-run-summary-label {
   font-weight: 500;
@@ -190,7 +193,7 @@
   flex: 0 1 auto;
   min-width: 0;
   max-width: none;
-  margin: 0 0 0 auto;
+  margin: calc((var(--ui-text-body) * 1.65 - var(--ui-font-size-xxs) * 1.5) / 2) 0 0 auto;
   overflow: hidden;
   opacity: 1;
   color: var(--tc-quiet);
@@ -200,10 +203,10 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* Provenance: the hosts a call actually read. Small enough to stay out of
-   the label's way, dim enough to read as metadata rather than a claim. */
+/* Source facts remain in the row model for compatibility; the expanded source
+   list owns their visible presentation so long action titles have full width. */
 .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-hosts {
-  display: inline-flex;
+  display: none;
   flex: 0 1 auto;
   flex-wrap: nowrap;
   gap: var(--ui-space-xxs);
@@ -224,6 +227,9 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.msg.assistant .msg-body.is-declarative .tool-inline:not([data-state="running"]) .tool-inline-meta {
+  display: none;
+}
 
 /* The disclosure glyph is always drawn but nearly invisible: it is the only
    signal that a line opens, so hiding it behind a hover would cost the
@@ -233,6 +239,7 @@
   display: inline-flex;
   width: var(--tc-chevron);
   height: var(--tc-chevron);
+  margin-top: calc((var(--ui-text-body) * 1.65 - var(--tc-chevron)) / 2);
   flex: 0 0 var(--tc-chevron);
   align-items: center;
   justify-content: center;
@@ -700,7 +707,8 @@
   .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-label {
     flex: 0 1 auto;
   }
-  .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-hosts {
+  .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-hosts,
+  .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-meta {
     display: none;
   }
 }

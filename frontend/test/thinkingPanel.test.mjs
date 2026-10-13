@@ -16,7 +16,7 @@ test('reasoning creates a factual summary without revealing its content', () => 
   assert.ok(!JSON.stringify(view).includes('private'));
 });
 
-test('model summary stays in details rather than the short heading', () => {
+test('public summary remains separate from the factual thinking status', () => {
   const view = turnSummaryOf({ role: 'assistant', summary: '  Checked sources and compared the findings.  ' }, false);
   assert.equal(view.label, 'Process');
   assert.equal(view.summary, 'Checked sources and compared the findings.');
@@ -41,7 +41,7 @@ test('task previews cannot become completed activity summaries', () => {
   assert.equal(turnSummaryOf({ ...preview, summary: 'Compared the sources.' }, false).summary, 'Compared the sources.');
 });
 
-test('waiting and retrying have a disclosure before reasoning arrives', () => {
+test('waiting and retrying provide status before reasoning arrives', () => {
   for (const phase of ['waiting', 'retrying']) {
     const view = turnSummaryOf({ role: 'assistant', _liveStatus: { phase, label: 'Working' } }, true);
     assert.equal(view.hasWork, true);

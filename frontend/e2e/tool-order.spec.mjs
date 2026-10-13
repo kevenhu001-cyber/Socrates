@@ -110,7 +110,7 @@ test('a live row waits for its paragraph, then mounts once behind it', async ({ 
       if (node.classList.contains('tool-run-prose')) {
         out.push(`text:${(node.textContent || '').replace(/▍/g, '').trim()}`);
       } else if (node.classList.contains('tool-run-group')) {
-        out.push(`group:${node.dataset.category}`);
+        for (const row of node.querySelectorAll(':scope > .tool-inline')) out.push(`row:${row.dataset.tcid}`);
       } else if (node.classList.contains('tool-inline')) {
         out.push(`row:${node.dataset.tcid}`);
       } else if (!node.classList.contains('tool-run-turn-status')
@@ -189,7 +189,7 @@ test('a colon never anchors a row: it advances past its paragraph', async ({ pag
       if (node.classList.contains('tool-run-prose')) {
         out.push(`text:${(node.textContent || '').trim()}`);
       } else if (node.classList.contains('tool-run-group')) {
-        out.push(`group:${node.dataset.category}`);
+        for (const row of node.querySelectorAll(':scope > .tool-inline')) out.push(`row:${row.dataset.tcid}`);
       } else if (node.classList.contains('tool-inline')) {
         out.push(`row:${node.dataset.tcid}`);
       } else {

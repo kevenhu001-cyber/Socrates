@@ -1,25 +1,4 @@
-// e2e/tool-run-group.spec.mjs — the declarative tool-run renderer (react/tool-run).
-//
-// Both surfaces draw from the same data now: a streamed turn and a restored one
-// are laid out from `rawText` + `toolCalls[].textOffset`, so a reload shows what
-// the stream showed. Most of these specs therefore load a session fixture, and
-// assert the structure the plan calls for:
-//
-//   1. a run of ≥2 calls collapses under one aggregate header, a run of 1 does
-//      not get a header at all;
-//   2. an in-flight call renders outside the collapsed header;
-//   3. expanding a row shows results, and the argument dump sits behind the
-//      secondary 「技术细节」 toggle;
-//   4. a failed row keeps a visible chevron + Retry, which re-dispatches the
-//      same `tool-retry` event the legacy delegate listens for;
-//   5. prose stays in its recorded order around the rows;
-//   6. a running row paints its streaming program and stdout OUTSIDE any
-//      collapsible (one spec here drives a real SSE for that — history cannot
-//      stream).
-//
-// Copy is asserted in English (the app defaults to zh), so the spec pins the
-// language before boot instead of asserting on one locale's word order.
-
+// Tool activities remain visible; only per-call execution details collapse.
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
@@ -145,65 +124,26 @@ async function loadFixtureSession(page, { theme = 'dark', html = null, toolCalls
   return page.locator('#msgList .msg.assistant').last().locator('.msg-body');
 }
 
-test('a run of three searches collapses under one header, with the live row outside it', async ({ page }) => {
+test('consecutive searches stay visible in call order without an aggregate header', async ({ page }) => {
   const body = await loadFixtureSession(page);
-
-  await expect(body.locator('.tool-run-group')).toHaveCount(2);
+  await expect(body.locator('.tool-run-group')).toHaveCount(3);
   const first = body.locator('.tool-run-group').first();
-
-  /* While any member is in flight the header says so, and the count of calls
-     in the run — finished or not — rides in the meta. */
-  await expect(first.locator('.tool-run-summary-label')).toHaveText('Exploring');
-  await expect(first.locator('.tool-run-summary-meta')).toContainText('3 actions');
   await expect(first).toHaveAttribute('data-state', 'running');
-  await expect(first).toHaveAttribute('data-category', 'search');
-  /* The chevron sits next to the label, while metadata stays at the far edge. */
-  const chev = await first.locator('.tool-run-summary-chev').boundingBox();
-  expect(chev.width).toBeGreaterThanOrEqual(12);
-  const label = await first.locator('.tool-run-summary-label').boundingBox();
-  const labelGap = chev.x - (label.x + label.width);
-  expect(labelGap).toBeGreaterThanOrEqual(0);
-  expect(labelGap).toBeLessThanOrEqual(9); // 8px token gap + fractional layout tolerance
-
-  /* Collapsed by default. The member rows exist (expanding must not have to
-     build them) but nothing under the hidden aggregate body is on screen. */
-  await expect(first.locator('.tool-run-list')).toHaveAttribute('hidden', '');
-  await expect(first.locator('.tool-run-list')).toBeHidden();
-  await expect(first.locator('.tool-run-list .tool-inline')).toHaveCount(2);
-  await expect(first.locator('.tool-run-list .tool-inline').first()).toBeHidden();
-
-  /* The in-flight third search is the one line that must stay visible. */
-  const live = first.locator('.tool-inline[data-tcid="s3"]');
-  await expect(live).toHaveCount(1);
-  await expect(live).toHaveAttribute('data-state', 'running');
-  await expect(live).toBeVisible();
-  await expect(live.locator('.tool-inline-label')).toHaveText('Searching "gamma theory"…');
-  // Outside the collapsed aggregate, not inside it:
-  await expect(first.locator('.tool-run-list .tool-inline[data-tcid="s3"]')).toHaveCount(0);
-
-  await first.locator('.tool-run-summary').click();
-  await expect(first.locator('.tool-run-list')).not.toHaveAttribute('hidden', '');
-  await expect(first.locator('.tool-run-list .tool-inline')).toHaveCount(2);
-  /* Expanding the aggregate gives the merged source list first — the thing a
-     reader actually wants — before any per-call row is opened. */
-  await expect(first.locator('.tool-run-list > .tool-inline-detail [data-kind="sources"] .tool-inline-src-title'))
-    .toHaveCount(3);
-  await expect(first.locator('.tool-inline[data-tcid="s1"] .tool-inline-label'))
-    .toHaveText('Searched for “alpha theory”');
-  await expect(first.locator('.tool-inline[data-tcid="s2"] .tool-inline-label'))
-    .toHaveText('Searched for “beta theory”');
-  /* Every nested row is marked so the stylesheet can tighten its rhythm. */
-  await expect(first.locator('.tool-run-list .tool-inline[data-tcid="s1"]'))
-    .toHaveAttribute('data-nested', '1');
+  await expect(first.locator('.tool-run-summary, .tool-run-list')).toHaveCount(0);
+  expect(await first.locator('.tool-inline').evaluateAll((rows) => rows.map((row) => row.dataset.tcid))).toEqual(['s1', 's2', 's3']);
+  for (const row of await first.locator('.tool-inline').all()) await expect(row).toBeVisible();
+  await expect(first.locator('[data-tcid="s1"] .tool-inline-label')).toHaveText('Searched for “alpha theory”');
+  await expect(first.locator('[data-tcid="s3"]')).toHaveAttribute('data-state', 'running');
+  await expect(first.locator('[data-tcid="s3"] .tool-inline-label')).toHaveText('Searching "gamma theory"…');
 });
+
 
 test('expanding a row shows the result, and the argument dump sits behind Technical details', async ({ page }) => {
   const body = await loadFixtureSession(page);
   const group = body.locator('.tool-run-group').first();
-  await group.locator('.tool-run-summary').click();
 
   const row = group.locator('.tool-inline[data-tcid="s1"]');
-  await row.locator('summary').click();
+  await row.locator(':scope > summary').click();
   await expect(row).toHaveAttribute('open', '');
 
   const detail = row.locator('.tool-inline-detail');
@@ -251,7 +191,7 @@ test('long tool output expands and copies the complete source text', async ({ pa
     });
   });
   const row = body.locator('.tool-inline[data-tcid="long-output"]');
-  await row.locator('summary').click();
+  await row.locator(':scope > summary').click();
   const section = row.locator('[data-kind="output"]');
   await expect(section.locator('.tool-inline-detail-value')).toContainText('line-0:');
   await expect(section.locator('.tool-inline-detail-value')).not.toContainText('line-15:');
@@ -270,7 +210,7 @@ test('long technical arguments stay within the expanded tool detail', async ({ p
   };
   const body = await loadFixtureSession(page, { toolCalls: [longCall] });
   const row = body.locator('.tool-inline[data-tcid="wide-args"]');
-  await row.locator('summary').click();
+  await row.locator(':scope > summary').click();
   await row.locator('.tool-inline-tech-summary').click();
 
   const value = row.locator('[data-kind="technical"] .tool-inline-detail-value');
@@ -313,7 +253,7 @@ test('a lone call gets no aggregate header, and its failure keeps a visible Retr
   await expect(row).toHaveAttribute('data-state', 'error');
   await expect(row.locator('.tool-inline-chev')).toHaveCount(1);
 
-  await row.locator('summary').click();
+  await row.locator(':scope > summary').click();
   await expect(row.locator('[data-kind="error"] .tool-inline-detail-value'))
     .toContainText('Search upstream timed out after 30s');
 
@@ -339,20 +279,19 @@ test('a lone call gets no aggregate header, and its failure keeps a visible Retr
     .toContainText('SEARCH_TIMEOUT');
 });
 
-test('a write run uses one compact summary row that opens its file details', async ({ page }) => {
+test('each file action stays visible and opens its own result details', async ({ page }) => {
   const body = await loadFixtureSession(page);
-  const write = body.locator('.tool-run-group').nth(1);
+  const write = body.locator('.tool-run-group[data-category="write"]');
   await expect(write).toHaveAttribute('data-state', 'complete');
-  await expect(write.locator('.tool-run-summary-label')).toHaveText('Edited moe.py + router_v2.py');
-
-  await expect(write.locator('.tool-inline-file-summary')).toHaveCount(0);
-  await write.locator('.tool-run-summary').click();
-  await expect(write.locator('.tool-run-list')).not.toHaveAttribute('hidden', '');
-  await expect(write.locator('[data-kind="files"] .tool-inline-detail-value'))
-    .toContainText('router_v2.py');
-  await expect(write.locator('.tool-inline[data-tcid="w1"] .tool-inline-label'))
-    .toHaveText('Created router_v2.py');
+  await expect(write.locator('.tool-run-summary')).toHaveCount(0);
+  const row = write.locator('[data-tcid="w1"]');
+  await expect(row.locator('.tool-inline-label')).toHaveText('Created router_v2.py');
+  await expect(write.locator('[data-tcid="w2"] .tool-inline-label')).toHaveText('Edited moe.py');
+  await row.locator(':scope > summary').click();
+  await expect(row.locator('.tool-inline-detail')).toBeVisible();
+  await expect(row.locator('.tool-inline-detail')).toContainText('router_v2.py');
 });
+
 
 test('answer prose keeps its recorded order around the rows, with no baked-in duplicates', async ({ page }) => {
   const body = await loadFixtureSession(page);
@@ -370,7 +309,10 @@ test('answer prose keeps its recorded order around the rows, with no baked-in du
       } else if (node.classList.contains('tool-run-prose')) {
         order.push(`text:${(node.textContent || '').trim()}`);
       } else if (node.classList.contains('tool-run-group')) {
-        order.push(`group:${node.dataset.category}`);
+        for (const child of node.children) {
+          if (child.classList.contains('tool-inline')) order.push(`row:${child.dataset.tcid}`);
+          else order.push(`other:${child.className}`);
+        }
       } else if (node.classList.contains('tool-inline')) {
         order.push(`row:${node.dataset.tcid}`);
       } else {
@@ -380,13 +322,16 @@ test('answer prose keeps its recorded order around the rows, with no baked-in du
     return order;
   });
   expect(layout).toEqual([
-    'group:search',
+    'row:s1',
+    'row:s2',
+    'row:s3',
     'text:Lead paragraph.',
     'row:f1',
     'other:tool-inline-error',
     'other:tool-inline-error-actions',
     'text:Middle paragraph.',
-    'group:write',
+    'row:w1',
+    'row:w2',
     'text:Tail paragraph.',
   ]);
 
@@ -397,56 +342,30 @@ test('answer prose keeps its recorded order around the rows, with no baked-in du
   await expect(body).not.toContainText('baked row');
 });
 
-test('a narrow viewport expands tools in the message without a sheet', async ({ page }) => {
+test('a narrow viewport expands individual tools in the message without a sheet', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const body = await loadFixtureSession(page);
-  const group = body.locator('.tool-run-group').first();
-  const trigger = group.locator('.tool-run-summary');
-  await trigger.click();
-  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
-  await expect(group.locator('.tool-run-list')).toBeVisible();
-  const row = group.locator('.tool-inline[data-tcid="s1"]');
-  await row.locator('summary').click();
+  const row = body.locator('.tool-inline[data-tcid="s1"]');
+  await expect(row).toBeVisible();
+  await row.locator(':scope > summary').click();
+  await expect(row.locator(':scope > summary')).toHaveAttribute('aria-expanded', 'true');
   await expect(row.locator('.tool-inline-src-title')).toHaveCount(2);
   await expect(page.locator('.tool-run-sheet')).toHaveCount(0);
-  await trigger.click();
-  await expect(group.locator('.tool-run-list')).toBeHidden();
+  await row.locator(':scope > summary').click();
+  await expect(row.locator('.tool-inline-detail')).toHaveCount(0);
+  await expect(body.locator('.tool-inline[data-tcid="s2"]')).toBeVisible();
 });
 
-test('the turn keeps one column for its rows and prose at body width', async ({ page }) => {
-  /* Collapsed is the state a reader lands in, so capture it before opening
-     anything: one header for the run, the live row below it, one lone row, and
-     the file chip standing in for the write group's contents.
 
-     No light-mode pair: `body[data-conversation-active] #appShell` pins the
-     conversation surface to the dark workbench palette (styles.css "Socrates
-     workbench contract"), so a light-theme load of a chat renders identically.
-     The `theme` option stays on the fixture so a spec that needs the light
-     palette can ask for it elsewhere. */
+test('settled, running, and failed rows share the prose column', async ({ page }) => {
   const body = await loadFixtureSession(page);
-  await expect(body.locator('.tool-run-group')).toHaveCount(2);
-  await body.locator('.tool-run-group').first().scrollIntoViewIfNeeded();
-  await page.waitForTimeout(150);
+  await expect(body.locator('.tool-run-group')).toHaveCount(3);
+  await body.scrollIntoViewIfNeeded();
   await body.screenshot({ path: 'test-results/tool-run-group-dark.png' });
-
-  await body.locator('.tool-run-group').first().locator('.tool-run-summary').click();
   await body.locator('.tool-inline[data-tcid="s1"] summary').click();
-  await page.waitForTimeout(150);
   await body.screenshot({ path: 'test-results/tool-run-group-dark-open.png' });
-
-  /* The live row sits outside the collapsed header, but it is still a member of
-     the run: its icon must land in the same column as the settled rows' icons,
-     not back at the prose edge. (Checked once the aggregate is open, since a
-     collapsed member has no box to measure.) */
-  const memberBox = await body.locator('.tool-inline[data-tcid="s2"] .tool-inline-tool-icon').boundingBox();
-  const liveBox = await body.locator('.tool-inline[data-tcid="s3"] .tool-inline-tool-icon').boundingBox();
-  expect(Math.abs(memberBox.x - liveBox.x)).toBeLessThanOrEqual(1);
-  /* And a lone row stays at the prose edge, unindented. */
-  const loneBox = await body.locator('.tool-inline[data-tcid="f1"] .tool-inline-tool-icon').boundingBox();
-  expect(loneBox.x).toBeLessThan(memberBox.x - 10);
-
-  // Each prose slice is its own element, but display:contents keeps the text
-  // flowing as one body: the paragraphs must still be laid out at body width.
+  const icons = await body.locator('.tool-inline-tool-icon').evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().left));
+  expect(Math.max(...icons) - Math.min(...icons)).toBeLessThanOrEqual(1);
   const proseWidth = await body.locator('.tool-run-prose').first().evaluate((el) => {
     const p = el.querySelector('p') || el.firstElementChild;
     return p ? p.getBoundingClientRect().width : 0;
@@ -454,12 +373,7 @@ test('the turn keeps one column for its rows and prose at body width', async ({ 
   expect(proseWidth).toBeGreaterThan(200);
 });
 
-/* The live preview is the one part of a running call that must not wait for a
-   click: a long-running `code_interpreter` is only legible if the program — and
-   then its stdout — is on screen while it runs. The old painter built that
-   preview and wrote it into the row's collapsed body, where nobody could see
-   it. History cannot stream, so this is the one spec in the file that drives a
-   real SSE. */
+
 test('a running code call streams details on demand and retains expansion on completion', async ({ page }) => {
   await page.addInitScript(() => {
     const nativeFetch = window.fetch.bind(window);
@@ -520,7 +434,7 @@ test('a running code call streams details on demand and retains expansion on com
   });
   const preview = row.locator('.tool-inline-code-preview').first();
   await expect(preview).toHaveCount(0);
-  await row.locator('summary').click();
+  await row.locator(':scope > summary').click();
   await expect(preview).toBeVisible();
   await expect(preview).toContainText('step_39(data)');
   /* Outside every collapsible — the row itself is a plain div while in flight,

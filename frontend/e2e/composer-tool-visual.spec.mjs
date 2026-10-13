@@ -40,9 +40,8 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   await expect(toolRow).toBeVisible();
   await expect(toolRow.locator('.tool-inline-label').first()).toHaveText('Searched for “Socratic learning”');
   await expect(toolRow.locator('.tool-inline-meta')).toHaveText('2 sources');
-  // tool-run-group and agent-tool-card are now share/history-only —
-  // they must NOT be created in the live chat path.
-  await expect(page.locator('.tool-run-group')).toHaveCount(0);
+  // Live activity has no aggregate header or card chrome.
+  await expect(page.locator('.tool-run-summary')).toHaveCount(0);
   await expect(page.locator('.agent-tool-card')).toHaveCount(0);
   const chatComposer = page.locator('#composerInputWrap');
   await expect(chatComposer.locator('.rich-composer-toolbar')).toBeHidden();

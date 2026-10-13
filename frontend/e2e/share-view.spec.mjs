@@ -169,10 +169,10 @@ test('a shared turn lays its tool rows out declaratively, read-only', async ({ p
      activity-row pass hides — without it the turn renders but reads inert. */
   await expect(body).toHaveClass(/is-declarative/);
 
-  // Two consecutive calls of the same category → one aggregate header.
+  // Consecutive calls remain visible in the shared transcript.
   await expect(body.locator('.tool-run-group')).toHaveCount(1);
-  await expect(body.locator('.tool-run-summary-meta')).toContainText('2 actions');
-  await expect(body.locator('.tool-run-list')).toBeHidden();
+  await expect(body.locator('.tool-run-summary')).toHaveCount(0);
+  await expect(body.locator('.tool-inline').first()).toBeVisible();
   await expect(body.locator('.tool-inline')).toHaveCount(2);
 
   // Both calls split at offset 0, so the run is the first thing in the turn
@@ -187,14 +187,12 @@ test('a shared turn lays its tool rows out declaratively, read-only', async ({ p
   )));
   expect(order).toEqual(['group', 'text:' + oneLine(SHARED_RAW)]);
 
-  await body.locator('.tool-run-summary').click();
   await expect(body.locator('.tool-inline-label')).toHaveText([
     'Searched for “inverse square law”',
     'Read arxiv.org',
   ]);
   await body.locator('.tool-inline[data-tcid="shared-search"] summary').click();
-  /* Scoped to the row: the aggregate's merged list is showing the same two
-     sources one level up, and that duplication is the point of the header. */
+  // Sources are shown only inside their own action detail.
   await expect(body.locator('.tool-inline[data-tcid="shared-search"] .tool-inline-src-title')).toHaveCount(2);
 
   /* Read-only: nothing in the turn can retry a call or answer a permission

@@ -263,13 +263,10 @@ test('running rows use the same object as the settled label', () => {
   assert.equal(view.label, 'Reading moe.py…');
 });
 
-test('a long query is clipped to one label line', () => {
-  const label = toolRunLabel(
-    { id: 's', name: 'web_search', input: { query: 'x'.repeat(200) } },
-    'done',
-  );
-  assert.ok(label.text.length < 70, `label too long: ${label.text.length}`);
-  assert.ok(label.text.endsWith('…”') || label.text.endsWith('…'), label.text);
+test('a long query keeps its action object for natural wrapping', () => {
+  const query = 'x'.repeat(200);
+  const label = toolRunLabel({ id: 's', name: 'web_search', input: { query } }, 'done');
+  assert.equal(label.text, 'Searched for “' + query + '”');
 });
 
 test('failed rows name what failed and expose a retry only for search', () => {
