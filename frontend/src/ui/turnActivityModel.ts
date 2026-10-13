@@ -30,12 +30,25 @@ interface PresentationOptions {
   hasSettledTool?: boolean;
 }
 
+/**
+ * Provider reasoning and public answer text share the same raw stream field
+ * for a few legacy providers. Treat a think-only payload as non-answer text
+ * so the live activity line can stay visible until the first real prose.
+ */
+function hasVisibleAnswerText(message: LegacyChatMessage): boolean {
+  const rawText = typeof message.rawText === 'string' ? message.rawText : '';
+  return rawText
+    .replace(/<think\b[^>]*>[\s\S]*?(?:<\/think>|$)/gi, '')
+    .trim()
+    .length > 0;
+}
+
 function observedStatus(message: LegacyChatMessage, activity: PublicTurnActivity): LiveTurnStatus | undefined {
   const legacy = message._liveStatus;
   switch (activity.type) {
-    case 'thinking': return { phase: 'thinking', label: translate('think.analyzing', 'Analyzing the question'), elapsedSec: legacy?.elapsedSec };
-    case 'public_reasoning_summary': return { phase: 'thinking', label: activity.text };
-    case 'synthesizing': return message.rawText ? undefined : { phase: 'synthesizing', label: translate('think.synthesizing', 'Preparing the answer') };
+    case 'thinking': return hasVisibleAnswerText(message) ? undefined : { phase: 'thinking', label: translate('think.analyzing', 'Analyzing the question'), elapsedSec: legacy?.elapsedSec };
+    case 'public_reasoning_summary': return hasVisibleAnswerText(message) ? undefined : { phase: 'thinking', label: activity.text };
+    case 'synthesizing': return hasVisibleAnswerText(message) ? undefined : { phase: 'synthesizing', label: translate('think.synthesizing', 'Preparing the answer') };
     case 'tool': {
       const call = message.toolCalls?.find((entry) => entry.id === activity.toolCallId);
       if (call && !['running', 'awaiting'].includes(toolRunStateOf(call))) return undefined;

@@ -32,8 +32,13 @@ export function MessageBody({
 
   if (declarative) {
     return (
-      <div className="msg-body is-declarative" ref={bodyRef}>
-        <AssistantTurn message={message} live={isLive} />
+      <div
+        className="msg-body is-declarative turn-surface"
+        data-ui-surface="assistant-turn"
+        data-turn-state={isLive ? 'live' : 'settled'}
+        ref={bodyRef}
+      >
+        <AssistantTurn message={message} html={html} live={isLive} />
       </div>
     );
   }

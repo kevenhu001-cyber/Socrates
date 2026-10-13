@@ -59,7 +59,15 @@ test('selected activity has one status and no inferred summary', () => {
     messageId: 'active', status: { phase: 'thinking', label: 'Analyzing the question' },
   }));
   assert.equal((html.match(/role="status"/g) || []).length, 1);
+  assert.match(html, /thinking-status-label shimmer-text/);
   assert.doesNotMatch(html, /private reasoning|turn-summary-text/);
+});
+
+test('running tool labels use the same live text cue as turn status', () => {
+  const html = renderToStaticMarkup(React.createElement(ToolRunRow, {
+    view: { ...settledAgentView, id: 'tool-live', state: 'running' },
+  }));
+  assert.match(html, /class="tool-inline-label shimmer-text"/);
 });
 
 test('parallel calls keep their original order and all actions stay visible', () => {

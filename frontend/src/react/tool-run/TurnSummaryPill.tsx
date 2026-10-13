@@ -20,7 +20,11 @@ export function TurnSummaryPill({ summary, messageId, status }: TurnSummaryPillP
   if (!summary && !status) return null;
   const active = status ? ACTIVE_PHASES.has(status.phase) : false;
   return (
-    <div className="turn-summary thinking-summary" data-message-id={messageId}>
+    <div
+      className="turn-surface-status turn-summary thinking-summary"
+      data-message-id={messageId}
+      data-turn-surface-part="activity"
+    >
       {status ? (
         <div className="turn-summary-status thinking-status" data-mode={status.mode} data-state={status.state || undefined} role="status">
           {status.phase === 'tool-running' && status.toolName ? <ToolActivityIcon name={status.toolName} /> : null}

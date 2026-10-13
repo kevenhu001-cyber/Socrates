@@ -9,6 +9,47 @@ async function controller(page) {
   });
 }
 
+test('thinking shimmer hands the same message body to the first answer token', async ({ page }) => {
+  await prepareChatWorkbench(page);
+  await page.evaluate(async () => {
+    window.__thinkingController = await window.addStreamingMessage({ userPrompt: '先分析问题，再给出答案。' });
+    window.__thinkingController.recordTurnActivity({ type: 'thinking' });
+  });
+
+  const message = page.locator('#msgList .msg.assistant').last();
+  const surface = message.locator('.msg-body.turn-surface');
+  await expect(surface).toHaveCount(1);
+  await expect(surface).toHaveAttribute('data-ui-surface', 'assistant-turn');
+  await expect(surface).toHaveAttribute('data-turn-state', 'live');
+  const status = message.locator('.thinking-status');
+  await expect(status).toHaveCount(1);
+  await expect(status.locator('.thinking-status-label')).toHaveClass(/shimmer-text/);
+  const before = await status.boundingBox();
+
+  await page.evaluate(() => window.__thinkingController.append('回答从同一个消息正文位置开始。'));
+  await expect(message.locator('.thinking-status')).toHaveCount(0);
+  const answer = message.locator('.tool-run-prose p').first();
+  await expect(answer).toContainText('回答从同一个消息正文位置开始。');
+  await expect(surface).toHaveAttribute('data-turn-state', 'live');
+  const after = await answer.boundingBox();
+  expect(before).not.toBeNull();
+  expect(after).not.toBeNull();
+  expect(Math.abs((after?.x || 0) - (before?.x || 0))).toBeLessThanOrEqual(1);
+});
+
+test('settled assistant history keeps the same surface when only legacy HTML exists', async ({ page }) => {
+  await prepareChatWorkbench(page, { messages: [
+    { clientId: 'history-user', role: 'user', rawText: '历史问题', html: '<p>历史问题</p>' },
+    { clientId: 'history-assistant', role: 'assistant', rawText: '', html: '<p>历史答案仍在同一个回答 surface 中。</p>' },
+  ] });
+
+  const message = page.locator('#msgList .msg.assistant').last();
+  const surface = message.locator('.msg-body.turn-surface');
+  await expect(surface).toHaveAttribute('data-ui-surface', 'assistant-turn');
+  await expect(surface).toHaveAttribute('data-turn-state', 'settled');
+  await expect(surface.locator('.tool-run-prose')).toContainText('历史答案仍在同一个回答 surface 中。');
+});
+
 test('streaming actions are absent and running tools own the activity surface', async ({ page }) => {
   await prepareChatWorkbench(page);
   await controller(page);
@@ -39,6 +80,7 @@ test('streaming actions are absent and running tools own the activity surface', 
   await expect(message.locator('.msg-toolbar')).toHaveCount(0);
   await page.evaluate(() => window.__activityController.finish());
   await expect(message).toHaveAttribute('data-stream-settled', 'true');
+  await expect(message.locator('.msg-body.turn-surface')).toHaveAttribute('data-turn-state', 'settled');
   await expect(message.locator('.msg-toolbar button').first()).toBeVisible();
   await page.screenshot({ path: 'test-results/turn-activity-settled.png' });
 });

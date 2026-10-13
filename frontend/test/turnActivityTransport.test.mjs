@@ -4,6 +4,7 @@ import { createStreamFrameProcessor } from '../src/chat/streamFrameProcessor.js'
 import { dispatchChatSseFrame } from '@socrates/core';
 import { doneLabel, runningLabel, errorLabel } from '../src/ui/toolInline/labels.ts';
 import { toolRunLabel } from '../src/ui/toolPresentationModel.ts';
+import { deriveTurnPresentationState } from '../src/ui/turnActivityModel.ts';
 
 const frame = 'event: turn_activity\ndata: {"type":"thinking"}\n\n';
 test('public activity is delivered without counting a startup indicator as model output', () => {
@@ -20,6 +21,25 @@ test('shared SSE consumers receive activity and safely ignore it without a handl
   dispatchChatSseFrame(frame, {});
   assert.deepEqual(events, [{ type: 'thinking' }]);
 });
+
+test('thinking activity retires when visible answer prose starts', () => {
+  const live = deriveTurnPresentationState({
+    type: 'streaming',
+    rawText: 'The answer is ready.',
+    _activity: { type: 'thinking' },
+  }, { live: true });
+  assert.equal(live.status, undefined);
+});
+
+test('think-only raw text keeps the activity line visible', () => {
+  const live = deriveTurnPresentationState({
+    type: 'streaming',
+    rawText: '<think>private provider reasoning</think>',
+    _activity: { type: 'thinking' },
+  }, { live: true });
+  assert.equal(live.status?.phase, 'thinking');
+});
+
 test('React and degraded renderers derive tool copy from the same call', () => {
   for (const [name, input] of [
     ['web_search', { query: 'React Context' }], ['Read', { path: 'src/App.tsx' }],

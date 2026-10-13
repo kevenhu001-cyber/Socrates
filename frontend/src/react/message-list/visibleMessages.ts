@@ -5,7 +5,9 @@ import { entryId } from './messageIdentity';
 function isRenderable(entry: LegacyChatMessage): boolean {
   if (entry.type === 'streaming') return true;
   if (typeof entry.html === 'string' && entry.html.length > 0) return true;
-  return typeof entry.rawText === 'string' && entry.rawText.length > 0;
+  if (typeof entry.rawText === 'string' && entry.rawText.length > 0) return true;
+  if (Array.isArray(entry.toolCalls) && entry.toolCalls.length > 0) return true;
+  return Array.isArray(entry.attachments) && entry.attachments.length > 0;
 }
 
 let visibleMessagesCache: ReadonlyArray<LegacyChatMessage> = Object.freeze([]);

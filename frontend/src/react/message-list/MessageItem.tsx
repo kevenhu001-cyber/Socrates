@@ -73,13 +73,13 @@ function turnAnchorOf(message: LegacyChatMessage): TurnAnchor {
   };
 }
 
-function usesDeclarativeBody(message: LegacyChatMessage, role: string, isLive: boolean): boolean {
+function usesDeclarativeBody(role: string): boolean {
   if (role !== 'assistant') return false;
-  if (isLive || (typeof message.rawText === 'string' && message.rawText.length > 0)) return true;
-  return hasTurnStructure(
-    typeof message.rawText === 'string' ? message.rawText : '',
-    message.toolCalls as ReadonlyArray<ToolCallRecord> | undefined,
-  );
+  /* One assistant turn surface owns the complete lifecycle. Keeping the
+     renderer stable across live, settled, and history snapshots prevents the
+     answer from switching from the declarative body to a second innerHTML
+     surface at the end of a turn. */
+  return true;
 }
 
 function isRenderable(message: LegacyChatMessage, live: boolean): boolean {
@@ -96,6 +96,9 @@ function isRenderable(message: LegacyChatMessage, live: boolean): boolean {
     typeof message.rawText === 'string' ? message.rawText : '',
     message.toolCalls as ReadonlyArray<ToolCallRecord> | undefined,
   )) return true;
+  /* Older tool-only rows may not have a persisted textOffset. They still
+     have visible legacy HTML and must remain in the same assistant surface. */
+  if (Array.isArray(message.toolCalls) && message.toolCalls.length > 0) return true;
   /* Attachment-only user messages still need a row; the chips are their
      entire content. */
   return Array.isArray(message.attachments) && message.attachments.length > 0;
@@ -116,7 +119,7 @@ function MessageItemBase({ message }: MessageItemProps) {
   const attachments = Array.isArray(message.attachments) ? message.attachments : [];
   /* Keep the declarative tree mounted across the finish boundary so the
      toolbar and cursor transition without replacing the message body. */
-  const declarative = usesDeclarativeBody(message, role, isLive);
+  const declarative = usesDeclarativeBody(role);
 
   useMessagePostRender(message, html, clientId, isLive, bodyRef);
 

@@ -36,7 +36,7 @@ export function ToolRunRowHead({ view, elapsedMs }: { view: ToolRunView; elapsed
     <>
       <ToolActivityIcon name={view.name} />
       <span
-        className="tool-inline-label"
+        className={`tool-inline-label${view.state === 'running' ? ' shimmer-text' : ''}`}
         title={displayLabel}
       >
         {displayLabel}

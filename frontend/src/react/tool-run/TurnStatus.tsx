@@ -19,7 +19,7 @@ function FailedLine({ status, messageId, readOnly }: TurnStatusProps) {
     } catch (_) { /* bridge unavailable — the button is inert */ }
   };
   return (
-    <div className="msg-error">
+    <div className="turn-surface-status msg-error" data-turn-surface-part="terminal">
       <span className="msg-error-text">{message}</span>
       {readOnly || status.retryable === false ? null : (
         <button type="button" className="msg-retry-btn" onClick={retry}>
@@ -38,7 +38,7 @@ function StoppedLine({ status, messageId, readOnly }: TurnStatusProps) {
     } catch (_) { /* bridge unavailable — the button is inert */ }
   };
   return (
-    <div className="msg-error msg-resend" style={{ marginTop: '8px' }}>
+    <div className="turn-surface-status msg-error msg-resend" data-turn-surface-part="terminal" style={{ marginTop: '8px' }}>
       <span className="msg-error-text">{status.label || i18n('chat.stopped', 'Response stopped')}</span>
       {readOnly ? null : <button
         type="button"

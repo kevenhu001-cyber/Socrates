@@ -7,6 +7,8 @@ import { useEffect, useRef, useState } from 'react';
 import {
   buildTurnLayout,
   groupOutputCalls,
+  sortableToolCalls,
+  stripLegacyToolHtml,
   toolRunStateOf,
   type ToolCallRecord,
   type TurnSegment,
@@ -20,6 +22,10 @@ import type { LegacyChatMessage } from '../types/domain';
 
 export interface AssistantTurnProps {
   message: LegacyChatMessage;
+  /** Stored HTML is only a compatibility source for old snapshots that do not
+   * carry rawText. It is rendered inside the same turn surface, never as a
+   * second message-body renderer. */
+  html?: string;
   /** Share / replay: no Retry, no approval affordances. */
   readOnly?: boolean;
   /** Paint public prose with the streaming renderer and split the live tail. */
@@ -54,9 +60,10 @@ function segmentKey(segment: TurnSegment, index: number): string {
   return 'think-' + index;
 }
 
-export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
+export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnProps) {
   const rawText = typeof message.rawText === 'string' ? message.rawText : '';
   const calls = Array.isArray(message.toolCalls) ? message.toolCalls as ToolCallRecord[] : [];
+  const storedHtml = typeof html === 'string' ? html : '';
   const isLive = Boolean(live);
   const [isSettling, setIsSettling] = useState(false);
   const wasLiveRef = useRef(isLive);
@@ -78,6 +85,10 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
     deferOpenParagraph: isLive,
     restoredFromHistory: Boolean(message.restoredFromHistory),
   });
+  const canSpliceStoredTools = sortableToolCalls(rawText, calls).length > 0;
+  const legacyHtml = !rawText.trim() && storedHtml.trim()
+    ? (canSpliceStoredTools ? stripLegacyToolHtml(storedHtml) : storedHtml)
+    : '';
   const prose = useProseRenderer(isLive);
   const growingIndex = isLive ? lastTextIndex(segments) : -1;
   const hasRunningRow = segments.some((segment) =>
@@ -97,6 +108,12 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
         messageId={messageId}
         status={showStatus && liveStatus && !['error', 'stopped'].includes(liveStatus.phase) ? liveStatus : undefined}
       />
+      {legacyHtml ? (
+        <div
+          className="tool-run-prose is-settled"
+          dangerouslySetInnerHTML={{ __html: legacyHtml }}
+        />
+      ) : null}
       {segments.map((segment, index) => (
         <TurnSegmentContent
           key={segmentKey(segment, index)}

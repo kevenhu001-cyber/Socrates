@@ -79,10 +79,17 @@
 .turn-summary-status + .turn-summary-text { margin-top: var(--ui-space-xs); }
 
 /* This file owns the shimmer's paint; polish/motion.css owns whether and how
-   it moves. The zero-offset shadow is the non-animated base glyph: the moving
-   clipped gradient can pass across it, but can never make the label disappear
-   when its bright band is outside the text bounds. */
-.thinking-status .thinking-status-label.shimmer-text {
+   it moves. All live activity labels use the same treatment, regardless of
+   whether the row is the turn status, a tool, or an agent step. The zero-offset
+   shadow is the non-animated base glyph: the moving clipped gradient can pass
+   across it, but can never make the label disappear when its bright band is
+   outside the text bounds. */
+#appShell :is(
+  .thinking-status .thinking-status-label,
+  .tool-inline-label,
+  .tool-run-summary-label,
+  .agent-step-label
+).shimmer-text {
   color: transparent;
   -webkit-text-fill-color: transparent;
   text-shadow: 0 0 0 var(--ui-text-tertiary);
@@ -98,6 +105,7 @@
   background-size: 240% 100%;
   -webkit-background-clip: text;
   background-clip: text;
+  opacity: 1;
 }
 
 .thinking-status-detail {
@@ -118,7 +126,12 @@
 }
 .turn-summary .tool-inline-tool-icon :is(svg, img) { width: 100%; height: 100%; }
 @media (prefers-reduced-motion: reduce) {
-  .thinking-status .thinking-status-label.shimmer-text {
+  #appShell :is(
+    .thinking-status .thinking-status-label,
+    .tool-inline-label,
+    .tool-run-summary-label,
+    .agent-step-label
+  ).shimmer-text {
     background-image: none;
     color: var(--ui-text-secondary);
     -webkit-text-fill-color: currentColor;
