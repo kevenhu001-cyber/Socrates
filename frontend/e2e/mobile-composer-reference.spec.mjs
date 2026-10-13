@@ -36,19 +36,14 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
   const landing = await measure('#composerInputWrap', [
     '#composerToolsBtn', '#composerMicBtn', '#composerPrimaryBtn',
   ]);
-  /* The phone capsule is the reference's two-row stack: 85px tall,
-     28px corners, 12px/8px/8px padding, editor on row 1 (full width),
-     36px circular controls on row 2, 12px page insets on both sides.
-     85 = 12 top + 24 editor + 3 row-gap + 36 control row + 8 bottom
-     + 1px border top and bottom. docs/ref/mobile-reference-2026-10-04.md
-     records the composer contract as "two rows, 36px controls, 28px
-     corners"; 8912121c retuned row-gap 6→3, padding 11/12/8→12/8/8 and
-     the editor 26→24px, which is what moved the capsule off the 89px this
-     assertion used to pin. */
-  expect(landing.wrap?.height).toBe(85);
+  /* The current mobile reference uses a compact one-row capsule: 52px tall,
+     28px corners, 36px controls, and 7px vertical padding. Multiline drafts,
+     selected tools/plugins and attachments are the only states that expand
+     into additional rows. */
+  expect(landing.wrap?.height).toBe(52);
   expect(landing.radius).toBe('28px');
-  /* + and the primary control are 36px circles; the mic is the same size
-     and all three sit on the one control row, left to right. */
+  /* +, mic and the primary action are all 36px touch visuals and share the
+     same rail with the editor. Only the primary action is filled. */
   expect(landing.controls[0]?.width).toBe(36);
   expect(landing.controls[0]?.height).toBe(36);
   expect(landing.controls[1]?.width).toBe(36);
@@ -148,9 +143,9 @@ test('mobile composer keeps model selector and reference controls discoverable',
   await expect(effort).toBeVisible();
 
   await page.evaluate(() => { document.documentElement.dataset.keyboardOpen = 'true'; });
-  /* Keyboard open keeps the same two-row capsule; only actual
+  /* Keyboard open does not change the idle one-row capsule; only actual
      multiline content increases its height. */
-  await expect.poll(async () => (await composer.boundingBox())?.height ?? 0).toBeLessThanOrEqual(85);
+  await expect.poll(async () => (await composer.boundingBox())?.height ?? 0).toBeLessThanOrEqual(52);
   const rows = await page.evaluate(() => {
     const rect = (selector) => {
       const node = document.querySelector(selector);
@@ -166,9 +161,8 @@ test('mobile composer keeps model selector and reference controls discoverable',
       send: rect('#composerPrimaryBtn'),
     };
   });
-  /* The controls form one row: add/effort/mic/send share the capsule's
-     lower control row, so their tops line up and stay inside the capsule
-     (the editor sits on its own row above them). */
+  /* Add/effort/mic/send share the same compact rail and stay inside the
+     capsule; the editor occupies the flexible track between them. */
   const controlTops = ['attach', 'model', 'mic', 'send'].map((key) => rows[key]?.top ?? 0);
   expect(Math.max(...controlTops) - Math.min(...controlTops)).toBeLessThanOrEqual(4);
   expect(Math.min(...controlTops)).toBeGreaterThanOrEqual((rows.composer?.top ?? 0) - 1);
