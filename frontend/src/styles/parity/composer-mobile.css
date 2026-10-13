@@ -13,7 +13,7 @@
      shared composer 4px into each side so both landing and conversation land
      on Figma's 12px gutter. Its historical 16px bottom reserve similarly
      becomes the reference 8px visual gap without rewriting keyboard logic. */
-  #appShell#appShell #chatInputBar #composerInputWrap {
+  #appShell#appShell .chat-input-bar .composer-shell {
     width: calc(100% + 8px);
     max-width: calc(100% + 8px);
     margin-inline: -4px;
@@ -22,7 +22,7 @@
 
   /* Resting / single-line state from Figma ChatGPT5 Main, Loading and Typing:
      44px add control · 8px gap · 44px input pill. */
-  #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) {
+  #appShell#appShell .composer-shell:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) {
     position: relative;
     isolation: isolate;
     display: grid;
@@ -46,7 +46,7 @@
     box-shadow: none;
   }
   /* Preserve the conversation bleed after the resting-state shorthand above. */
-  #appShell#appShell #chatInputBar #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) {
+  #appShell#appShell .chat-input-bar .composer-shell:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) {
     width: calc(100% + 8px);
     max-width: calc(100% + 8px);
     margin-inline: -4px;
@@ -54,7 +54,7 @@
   }
 
   /* The input pill begins after the add button + 8px inter-control gap. */
-  #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments)::before {
+  #appShell#appShell .composer-shell:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments)::before {
     content: "";
     position: absolute;
     z-index: 0;
@@ -67,13 +67,13 @@
     pointer-events: none;
   }
 
-  #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .rich-composer > :not(.composer-plugin-chips):not(.rich-composer-toolbar),
-  #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) :is(.composer-tools-trigger, .effort-picker, .mobile-mic-btn, .composer-primary-btn) {
+  #appShell#appShell .composer-shell:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .rich-composer > :not(.composer-plugin-chips):not(.rich-composer-toolbar),
+  #appShell#appShell .composer-shell:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) :is(.composer-tools-trigger, .effort-picker, .mobile-mic-btn, .composer-primary-btn) {
     position: relative;
     z-index: 1;
   }
 
-  #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .rich-composer-editor {
+  #appShell#appShell .composer-shell:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .rich-composer-editor {
     box-sizing: border-box;
     height: var(--ui-control-touch);
     min-height: var(--ui-control-touch);
@@ -87,16 +87,16 @@
     line-height: 22px;
     white-space: nowrap;
   }
-  #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .rich-composer-editor :is(p, div) {
+  #appShell#appShell .composer-shell:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .rich-composer-editor :is(p, div) {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .rich-composer-editor p.is-editor-empty:first-child::before {
+  #appShell#appShell .composer-shell:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .rich-composer-editor p.is-editor-empty:first-child::before {
     color: var(--ui-text-placeholder);
   }
 
-  #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .composer-tools-trigger {
+  #appShell#appShell .composer-shell:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .composer-tools-trigger {
     grid-area: plus;
     align-self: center;
     width: var(--ui-control-touch);
@@ -109,7 +109,7 @@
     background: var(--ui-bg-surface);
     color: var(--ui-text-tertiary);
   }
-  #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .composer-tools-trigger svg {
+  #appShell#appShell .composer-shell:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .composer-tools-trigger svg {
     width: 24px;
     height: 24px;
     stroke-width: 1.8;
@@ -117,7 +117,7 @@
 
   /* Medium is the default and stays visually absent. Explicit effort choices
      remain a compact chip inside the same input pill. */
-  #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .effort-trigger {
+  #appShell#appShell .composer-shell:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .effort-trigger {
     height: var(--ui-control-sm);
     min-height: var(--ui-control-sm);
     padding: 0 var(--ui-space-sm);
@@ -129,7 +129,7 @@
 
   /* Figma mic is a bare 24px glyph inside the input pill. This is a visual
      metric, not a new global button-size rung. */
-  #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .mobile-mic-btn {
+  #appShell#appShell .composer-shell:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .mobile-mic-btn {
     grid-area: mic;
     align-self: center;
     width: var(--figma-mobile-icon, 24px);
@@ -142,12 +142,12 @@
     background: transparent;
     color: var(--ui-text-tertiary);
   }
-  #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .mobile-mic-btn svg {
+  #appShell#appShell .composer-shell:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .mobile-mic-btn svg {
     width: 24px;
     height: 24px;
   }
 
-  #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .composer-primary-btn {
+  #appShell#appShell .composer-shell:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .composer-primary-btn {
     grid-area: send;
     align-self: center;
     width: var(--ui-control-sm);
@@ -159,7 +159,7 @@
     background: var(--ui-text-primary);
     color: var(--ui-bg-page);
   }
-  #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .composer-primary-btn svg {
+  #appShell#appShell .composer-shell:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .composer-primary-btn svg {
     width: 20px;
     height: 20px;
   }
@@ -167,11 +167,11 @@
   /* The previous two-storey mobile owner extended 36px buttons with
      overlapping pseudo hit areas. Remove those extensions in the resting row
      so mic/send cannot steal each other's taps. */
-  #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn)::before {
+  #appShell#appShell .composer-shell:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn)::before {
     display: none;
   }
 
-  #appShell#appShell #composerInputWrap:is(.composer-multiline, .has-plugin-chips, .has-attachments):not(.voice-recording-active) {
+  #appShell#appShell .composer-shell:is(.composer-multiline, .has-plugin-chips, .has-attachments):not(.voice-recording-active) {
     border-color: transparent;
     background: var(--ui-bg-surface);
     box-shadow: none;
