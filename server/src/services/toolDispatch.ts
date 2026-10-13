@@ -1,11 +1,12 @@
 /**
  * Run a model-emitted tool batch while honoring registry scheduling hints.
  *
- * Stability is preferred over speculative parallelism: outbound tool work is
- * globally bounded and defaults to one active call at a time. Operators can
- * raise TOOL_MAX_CONCURRENCY when their upstreams and quotas can absorb more
- * parallel work. `sessionSerial` still provides the stronger ordering contract
- * for tools that share mutable conversation state.
+ * Stability is preferred over unbounded speculative parallelism: outbound
+ * tool work is globally bounded to two active calls by default. Operators can
+ * lower TOOL_MAX_CONCURRENCY to 1 for strict serialization, or raise it when
+ * their upstreams and quotas can absorb more parallel work. `sessionSerial`
+ * still provides the stronger ordering contract for tools that share mutable
+ * conversation state.
  */
 export interface ToolSchedulingEntry {
   /* `true` serializes same-named calls; a string names a lane SHARED
@@ -21,8 +22,8 @@ export interface ToolSchedulingRegistry {
 }
 
 function toolConcurrencyLimit(): number {
-  const configured = Number.parseInt(process.env.TOOL_MAX_CONCURRENCY || '1', 10);
-  if (!Number.isFinite(configured)) return 1;
+  const configured = Number.parseInt(process.env.TOOL_MAX_CONCURRENCY || '2', 10);
+  if (!Number.isFinite(configured)) return 2;
   return Math.max(1, Math.min(8, configured));
 }
 
