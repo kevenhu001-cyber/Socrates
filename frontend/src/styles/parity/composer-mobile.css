@@ -2,10 +2,10 @@
  * parity/composer-mobile.css — narrow-screen geometry for the SAME shared
  * composer node owned by composer-unified.css.
  *
- * The Figma mobile web/app surface is not the desktop capsule squeezed to
- * 390px: its resting state is a 44px row with a separate 44px add button and
- * a filled input pill. Expanded drafts, attachments and plugin chips continue
- * to use composer-unified.css's multi-row state so functionality is retained.
+ * The Figma mobile surface is not the desktop capsule squeezed to 390px: its
+ * resting state is a 44px row with a separate add button and a filled input
+ * pill. Expanded drafts, attachments and plugin chips continue to use
+ * composer-unified.css's multi-row state so functionality is retained.
  */
 
 @media (max-width: 768px) {
@@ -15,28 +15,26 @@
     position: relative;
     isolation: isolate;
     display: grid;
-    grid-template-columns: 44px minmax(0, 1fr) auto 24px 32px;
-    grid-template-rows: 44px;
+    grid-template-columns: var(--ui-control-touch) minmax(0, 1fr) auto var(--figma-mobile-icon, 24px) var(--ui-control-sm);
+    grid-template-rows: var(--ui-control-touch);
     grid-template-areas: "plus editor effort mic send";
     align-items: center;
-    column-gap: 8px;
+    column-gap: var(--ui-space-sm);
     row-gap: 0;
     width: 100%;
     max-width: none;
-    height: 44px;
-    min-height: 44px;
+    height: var(--ui-control-touch);
+    min-height: var(--ui-control-touch);
     margin: 0;
     padding: 0;
     overflow: visible;
-    border: 0 !important;
+    border: 0;
     border-radius: 0;
-    background: transparent !important;
-    box-shadow: none !important;
+    background: transparent;
+    box-shadow: none;
   }
 
-  /* Input pill starts after the 44px add button + 8px inter-control gap.
-     Keeping the paint on the shared shell avoids introducing a second input
-     component or wrapping the existing TipTap editor in mobile-only markup. */
+  /* The input pill begins after the add button + 8px inter-control gap. */
   #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments)::before {
     content: "";
     position: absolute;
@@ -44,7 +42,7 @@
     top: 0;
     right: 0;
     bottom: 0;
-    left: 52px;
+    left: calc(var(--ui-control-touch) + var(--ui-space-sm));
     border-radius: var(--ui-radius-pill);
     background: var(--ui-bg-surface);
     pointer-events: none;
@@ -58,15 +56,15 @@
 
   #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .rich-composer-editor {
     box-sizing: border-box;
-    height: 44px;
-    min-height: 44px;
-    max-height: 44px;
-    padding: 11px 0 11px 16px;
+    height: var(--ui-control-touch);
+    min-height: var(--ui-control-touch);
+    max-height: var(--ui-control-touch);
+    padding: 11px 0 11px var(--ui-space-lg);
     overflow: hidden;
     color: var(--ui-text-primary);
     font-family: var(--font-sans);
-    font-size: 16px;
-    font-weight: 400;
+    font-size: var(--ui-font-size-md);
+    font-weight: var(--ui-font-weight-regular);
     line-height: 22px;
     white-space: nowrap;
   }
@@ -79,14 +77,13 @@
     color: var(--ui-text-placeholder);
   }
 
-  /* Separate 44px add circle. */
   #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .composer-tools-trigger {
     grid-area: plus;
     align-self: center;
-    width: 44px;
-    min-width: 44px;
-    height: 44px;
-    min-height: 44px;
+    width: var(--ui-control-touch);
+    min-width: var(--ui-control-touch);
+    height: var(--ui-control-touch);
+    min-height: var(--ui-control-touch);
     padding: 0;
     border: 0;
     border-radius: 50%;
@@ -99,21 +96,20 @@
     stroke-width: 1.8;
   }
 
-  /* Medium is the default and stays visually absent, as before. Explicit
-     effort choices remain a compact chip inside the input pill. */
+  /* Medium is the default and stays visually absent. Explicit effort choices
+     remain a compact chip inside the same input pill. */
   #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .effort-trigger {
-    height: 32px;
-    min-height: 32px;
-    padding: 0 8px;
+    height: var(--ui-control-sm);
+    min-height: var(--ui-control-sm);
+    padding: 0 var(--ui-space-sm);
     border-radius: var(--ui-radius-pill);
     background: transparent;
-    font-size: 13px;
+    font-size: var(--ui-font-size-xs);
     line-height: 18px;
   }
 
-  /* Figma mic is a bare 24px glyph inside the input pill. The visual metric
-     is a local Figma token defined on #appShell by mobile-shell.css, so it
-     does not create a new global interactive-control rung. */
+  /* Figma mic is a bare 24px glyph inside the input pill. This is a visual
+     metric, not a new global button-size rung. */
   #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .mobile-mic-btn {
     grid-area: mic;
     align-self: center;
@@ -132,14 +128,13 @@
     height: 24px;
   }
 
-  /* Send/stop is the Figma 32px primary disc. */
   #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) .composer-primary-btn {
     grid-area: send;
     align-self: center;
-    width: 32px;
-    min-width: 32px;
-    height: 32px;
-    min-height: 32px;
+    width: var(--ui-control-sm);
+    min-width: var(--ui-control-sm);
+    height: var(--ui-control-sm);
+    min-height: var(--ui-control-sm);
     padding: 0;
     border-radius: 50%;
     background: var(--ui-text-primary);
@@ -150,15 +145,13 @@
     height: 20px;
   }
 
-  /* The old two-storey mobile owner extended 36px buttons with overlapping
-     pseudo hit areas. The Figma resting row uses the actual visual controls;
-     remove those extensions here so mic/send cannot steal each other's taps. */
+  /* The previous two-storey mobile owner extended 36px buttons with
+     overlapping pseudo hit areas. Remove those extensions in the resting row
+     so mic/send cannot steal each other's taps. */
   #appShell#appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips):not(.has-attachments) :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn)::before {
     display: none;
   }
 
-  /* Expanded states keep the established feature-complete multi-row layout,
-     but converge their mobile paint on the same neutral Figma surface. */
   #appShell#appShell #composerInputWrap:is(.composer-multiline, .has-plugin-chips, .has-attachments):not(.voice-recording-active) {
     border-color: transparent;
     background: var(--ui-bg-surface);
