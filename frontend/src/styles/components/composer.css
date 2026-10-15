@@ -136,16 +136,13 @@
 
 @media (max-width: 768px) {
   /* Phone layout — the reference's single-row capsule:
-     [+] · editor · [高⌄] · [mic] · [voice/send]. The wrap is a wrapping
-     flex row so attachment chips still get their own line on top. */
-  #appShell #composerInputWrap:not(.voice-recording-active) .attachment-chips {
-    flex: 0 0 100%;
-    order: 0;
-  }
+     [+] · editor · [高⌄] · [mic] · [voice/send]. The shell is a 2-row
+     grid in parity/composer-unified.css with the chip track on the
+     second row (grid-template-areas: "… chips effort mic send"), so
+     legacy flex/!important overrides for #composerInputWrap are gone:
+     .attachment-chips already takes its own track and
+     .rich-composer-toolbar is display:none from parity line 123. */
 
-  /* The footer wrapper trees stay transparent so every control is a direct
-     flex item of the wrap in source order: + → editor → effort → mic →
-     primary. */
   /* The reference pill reads the selected level (高/中/低), not the
      section label. */
   #appShell .effort-label { display: none; }
@@ -156,10 +153,4 @@
      the controls pin to the bottom edge like the reference. */
 
   /* Single-line editors: compact tiptap so the capsule stays ~54px. */
-  /* The topic composer shares the in-session rule: no formatting toolbar
-     inside the phone capsule. */
-  #appShell #composerInputWrap .rich-composer-toolbar { display: none; }
-
-  /* Both phone composers use the same two-storey capsule: the prompt owns
-     the first row and controls sit on a dedicated second row. */
 }
