@@ -20,11 +20,25 @@ export function playSendGlyph(doc) {
   const btn = d && d.getElementById ? d.getElementById('composerPrimaryBtn') : null;
   if (!btn) return;
   if (timer) clearTimeout(timer);
-  /* Restart cleanly on a rapid second send: drop the class for one
-     style recalculation so the CSS animations run again. */
+  /* P_send-glyph-no-reflow — the previous restart trick
+     (`btn.classList.remove` + `void btn.offsetWidth` + `add`) forced a
+     synchronous layout on every send, costing 5–15ms on the click
+     frame even when the button was nowhere near the viewport's
+     current style. Removing the class and re-adding it in the same
+     tick already cancels the running CSS animation in every modern
+     engine; deferring the re-add to rAF lets the click handler return
+     immediately and lands the restart on the next paint boundary,
+     which is the only place the animation needs to be "fresh" anyway.
+     The 220ms timer below still drives the un-send side. */
   btn.classList.remove('is-sending');
-  void btn.offsetWidth;
-  btn.classList.add('is-sending');
+  const raf = typeof d.requestAnimationFrame === 'function'
+    ? d.requestAnimationFrame.bind(d)
+    : (typeof requestAnimationFrame === 'function' ? requestAnimationFrame : null);
+  const restart = function () {
+    btn.classList.add('is-sending');
+  };
+  if (raf) raf(restart);
+  else restart();
   timer = setTimeout(function () {
     timer = 0;
     btn.classList.remove('is-sending');

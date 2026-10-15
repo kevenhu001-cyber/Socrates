@@ -67,8 +67,15 @@ export function commitSendInput(input, options) {
   if (input.isComposerSubmit) {
     playSendGlyph();
     userClientId = addMessage('user', input.text, null, null, input.immediateAttachments);
-    clearComposer('chat');
-    updateComposerBtn();
+    /* P_composer-defer-clear — clearComposer() walks the TipTap doc
+       and re-paints the chips; on a populated composer this can take
+       5–10ms. Defer the destructive part to idle time so the click
+       handler returns with the user bubble already committed. The
+       addMessage() call above is what drives the visible transition
+       (user bubble + stop button); the composer text is the only
+       thing that changes here, and it does not block the
+       transcript update. */
+    scheduleIdleClearComposer('chat');
   } else {
     userClientId = addMessage('user', input.text, null, null, input.immediateAttachments);
   }
@@ -78,11 +85,37 @@ export function commitSendInput(input, options) {
     else focusComposer('chat');
     resetAttachments();
     renderAttachmentChips();
+    /* P_composer-btn-collapse — the click frame used to call
+       updateComposerBtn() twice (once right after clearComposer, once
+       after the chip reset). Each call walks the composer for visible
+       artifacts and the toolbar's enabled state. One walk at the end
+       is enough because the toolbar reads state after both clear and
+       reset have settled. */
     updateComposerBtn();
   }
   // Release the submitted draft before lazy loading or attachment preparation.
   // Attachments added while those tasks run belong to the next turn.
   return { userClientId, precreatedTurn: createPrecreatedTurn(input) };
+}
+
+/* P_composer-defer-clear — schedule `clearComposer` for the next
+   idle slot so the click handler can return without paying for a
+   TipTap document walk. Falls back through rIC → setTimeout so Safari
+   (which has rIC since 16.4 but not on all surfaces) and the test
+   harness (no rIC) still clear. */
+function scheduleIdleClearComposer(scope) {
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(function idleClear() { clearComposer(scope); }, { timeout: 0 });
+    return;
+  }
+  var raf = typeof requestAnimationFrame === 'function'
+    ? requestAnimationFrame
+    : null;
+  if (raf) {
+    raf(function rafClear() { clearComposer(scope); });
+    return;
+  }
+  setTimeout(function () { clearComposer(scope); }, 0);
 }
 
 function patchCommittedAttachments(userClientId, attachments) {

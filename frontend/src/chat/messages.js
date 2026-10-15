@@ -76,7 +76,32 @@ export function addMessage(role, text, type, actions, attachmentsArg) {
    * shape persistMessageList() expects. */
   var atts = Array.isArray(attachmentsArg) ? attachmentsArg.slice(0, 20) : [];
   var entry = { clientId: clientId, role: role, rawText: String(text || ''), html: html, type: type || null, actions: actions || null, modelInfo: modelInfo, attachments: atts };
-  stateStore.dispatch({ type: 'session/append-message', payload: entry });
+  /* P_send-batch-actions — the click frame used to fire 2–3 separate
+     stateStore.dispatch calls (state/set _userScrolledAway,
+     session/append-message, tutor kb/patch-node). Each one paid a
+     notify() walk over every React subscriber. Route them through
+     state/batch-actions so the listener walk happens once at the end of
+     the batch and React commits a single coherent snapshot. */
+  var _batchActions = [{ type: 'session/append-message', payload: entry }];
+  var _curIdx;
+  var _curNode;
+  if (role === 'user') {
+    _batchActions.push({ type: 'state/set', key: '_userScrolledAway', value: false });
+    /* KB read happens before dispatch so the array passed into the
+       batch reflects the pre-click state, and so the conditional
+       `kb/patch-node` action is only queued when there is real work. */
+    _curIdx = stateStore.read('currentNode');
+    var _nodes = stateStore.read('kbNodes');
+    _curNode = _nodes && _nodes[_curIdx];
+    if (_curNode && _curNode.status === 'blank') {
+      _batchActions.push({
+        type: 'kb/patch-node',
+        index: _curIdx,
+        patch: { status: 'fuzzy', questions: (_curNode.questions || 0) + 1 },
+      });
+    }
+  }
+  stateStore.dispatch({ type: 'state/batch-actions', actions: _batchActions });
   publishReactChatRuntime({ type: 'message-added', messageId: clientId });
 
   /* React owns the visible message list — the state push above is the
@@ -95,25 +120,15 @@ export function addMessage(role, text, type, actions, attachmentsArg) {
         try { if (typeof window.saveCurrentSession === 'function') window.saveCurrentSession(); } catch (_) {}
       }
     }
-    /* Update KB: if user is answering substantive questions, mark current node progress.
-       P_kb-patch-node — the previous path rebuilt the entire kbNodes array
+    /* P_kb-patch-node — the previous path rebuilt the entire kbNodes array
        via .map (O(N) Object.assign on every node) and dispatched it as
        state/set kbNodes, which fires a kb-bridge commit and re-renders every
        KB row. The new kb/patch-node action updates only the touched index,
        so the reducer still has to clone the array (one slot) but skips the
-       per-row rebuild. */
-    if (role === 'user') {
-      var _curIdx = stateStore.read('currentNode');
-      var _nodes = stateStore.read('kbNodes');
-      var _curNode = _nodes && _nodes[_curIdx];
-      if (_curNode && _curNode.status === 'blank') {
-        stateStore.dispatch({
-          type: 'kb/patch-node',
-          index: _curIdx,
-          patch: { status: 'fuzzy', questions: (_curNode.questions || 0) + 1 },
-        });
-        try { updateKB(); } catch (_) {}
-      }
+       per-row rebuild. The action is queued inside `_batchActions` above so
+       it commits in the same notify as session/append-message. */
+    if (role === 'user' && _curNode && _curNode.status === 'blank') {
+      try { updateKB(); } catch (_) {}
     }
   } catch (_) {}
   /* Return the clientId so callers (e.g. startSession) can patch this

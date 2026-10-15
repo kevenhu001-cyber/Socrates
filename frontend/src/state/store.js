@@ -160,6 +160,63 @@ var stateStore = (function () {
           patch: action.patch || {},
         });
         break;
+      case 'state/batch-actions': {
+        /* P_send-batch-actions — the click frame used to fire 2–3
+           synchronous `stateStore.dispatch` calls (state/set
+           _userScrolledAway, session/append-message, tutor
+           kb/patch-node). Each one runs the dispatchToNamespace →
+           bridge.flush() pair and then notify() walks every React
+           subscriber. This reducer accepts an `actions` array and
+           dispatches each entry through the same code path `dispatch`
+           would, but the notify() at the bottom of dispatch fires ONCE
+           for the whole batch — collapsing 2–3 listener walks into one
+           and matching what a single mutated snapshot would have
+           produced. The supported action types are the same set the
+           `state/*` / `session/*` / `kb/*` / `ui/*` / `call/*` /
+           `exam/*` / `search/*` / `state/reset` branches above handle,
+           so callers don't need to learn a new vocabulary. */
+        if (!Array.isArray(action.actions)) {
+          throw new TypeError('state/batch-actions requires an actions array');
+        }
+        for (var bi = 0; bi < action.actions.length; bi += 1) {
+          var inner = action.actions[bi];
+          if (!inner || typeof inner.type !== 'string') {
+            throw new TypeError('state/batch-actions: every entry requires a type');
+          }
+          var innerNs = /^([a-z]+)\/(set|patch|reset)$/.exec(inner.type);
+          if (innerNs && namespaceBridges[innerNs[1]]) {
+            dispatchToNamespace(innerNs[1], inner);
+            continue;
+          }
+          var innerColon = inner.type.indexOf(':');
+          var innerRoot = innerColon >= 0 ? inner.type.slice(0, innerColon) : null;
+          if (innerRoot === 'session' || innerRoot === 'kb'
+              || innerRoot === 'search' || innerRoot === 'call'
+              || innerRoot === 'ui' || innerRoot === 'exam') {
+            dispatchToNamespace(innerRoot, inner);
+            continue;
+          }
+          if (inner.type === 'state/set') {
+            var setPath = pathFor(inner.key);
+            if (!setPath) throw new TypeError('Unknown state key: ' + inner.key);
+            var setParts = setPath.split('.');
+            dispatchToNamespace(setParts[0], {
+              type: setParts[0] + '/set',
+              key: setParts[1],
+              value: setParts.length > 2
+                ? nestedValue(namespaceBridges[setParts[0]].getSnapshot()[setParts[1]], setParts.slice(2), inner.value)
+                : inner.value,
+            });
+            continue;
+          }
+          if (inner.type === 'state/reset') {
+            resetBridges();
+            continue;
+          }
+          throw new TypeError('state/batch-actions: unsupported action ' + inner.type);
+        }
+        break;
+      }
       case 'state/reset':
         resetBridges();
         break;

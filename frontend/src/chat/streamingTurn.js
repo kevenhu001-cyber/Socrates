@@ -85,7 +85,6 @@ export function addStreamingMessage(opts){
   /* P1.4 — a new bubble starts with the user "at bottom" again.
      Suppress the pill for this stream and let the scroll listener
      re-enable it only if the user moves away during streaming. */
-  stateStore.dispatch({type:"state/set",key:"_userScrolledAway",value:false});
   hideNewReplyPill();
   var list=document.getElementById("msgList");
   /* P_react-live-turn — captured once for this turn: the runtime cannot be
@@ -123,17 +122,28 @@ export function addStreamingMessage(opts){
      The initial dispatch carries no reserve so React commits at natural
      height; position() converges once the second rAF lands. */
   var _initialTargetOffset=TURN_ANCHOR_TOP_OFFSET;
-  var msgIdx=stateStore.dispatch({type:"session/append-message",payload:{
-    clientId:clientId,
-    role:"assistant",
-    rawText:"",
-    html:null,
-    type:"streaming",
-    actions:null,
-    _turnAnchorMinHeight: undefined,
-    _turnAnchorMode: undefined,
-    _turnViewportTarget: undefined,
-  }});
+  /* P_send-batch-actions — the assistant-placeholder push and the
+     `_userScrolledAway` clear used to be two separate stateStore.dispatch
+     calls on the click frame, each paying a notify() walk. Route them
+     through state/batch-actions so React commits a single snapshot. */
+  stateStore.dispatch({
+    type:'state/batch-actions',
+    actions:[
+      { type:'state/set', key:'_userScrolledAway', value:false },
+      { type:'session/append-message', payload:{
+        clientId:clientId,
+        role:"assistant",
+        rawText:"",
+        html:null,
+        type:"streaming",
+        actions:null,
+        _turnAnchorMinHeight: undefined,
+        _turnAnchorMode: undefined,
+        _turnViewportTarget: undefined,
+      }},
+    ],
+  });
+  var msgIdx=stateStore.read("messages").length-1;
   publishReactChatRuntime({type:"stream-started",messageId:clientId});
   /* Defer the leading-reserve measurement to the next animation frame.
      The synchronous click chain never reads layout; the rAF callback
