@@ -62,7 +62,7 @@ async function createPrecreatedTurn(input) {
   };
 }
 
-export async function commitSendInput(input, options) {
+export function commitSendInput(input, options) {
   let userClientId;
   if (input.isComposerSubmit) {
     playSendGlyph();
@@ -73,7 +73,6 @@ export async function commitSendInput(input, options) {
     userClientId = addMessage('user', input.text, null, null, input.immediateAttachments);
   }
 
-  const precreatedTurn = await createPrecreatedTurn(input);
   if (input.isComposerSubmit) {
     if (options.blurAfterSend) blurChatComposer();
     else focusComposer('chat');
@@ -81,7 +80,9 @@ export async function commitSendInput(input, options) {
     renderAttachmentChips();
     updateComposerBtn();
   }
-  return { userClientId, precreatedTurn };
+  // Release the submitted draft before lazy loading or attachment preparation.
+  // Attachments added while those tasks run belong to the next turn.
+  return { userClientId, precreatedTurn: createPrecreatedTurn(input) };
 }
 
 function patchCommittedAttachments(userClientId, attachments) {

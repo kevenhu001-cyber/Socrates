@@ -138,3 +138,40 @@
     text-shadow: none;
   }
 }
+
+
+/* Terminal chat state shares the canonical palette and control ladder.
+   The old tutor stylesheet no longer owns chat errors or Retry/Resend. */
+.msg-error {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-sm);
+  padding: var(--ui-space-sm);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-control);
+  background: transparent;
+  color: var(--ui-danger);
+  font-size: var(--ui-font-size-xxs);
+  line-height: var(--ui-text-ui-line);
+}
+.msg-error-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.msg-resend { color: var(--ui-text-secondary); }
+.msg-retry-btn {
+  flex-shrink: 0;
+  min-height: var(--ui-control-sm);
+  padding: 0 var(--ui-space-sm);
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-control);
+  background: transparent;
+  color: var(--ui-text-primary);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--ui-duration-fast) ease;
+}
+.msg-retry-btn:hover:not(:disabled) { background: var(--ui-bg-hover); }
+.msg-retry-btn:focus-visible { outline: 2px solid var(--ui-focus-ring); outline-offset: 2px; }
+.msg-retry-btn:disabled { opacity: var(--ui-disabled-opacity, 0.5); cursor: wait; }
+@media (max-width: 768px) {
+  .msg-retry-btn { min-height: var(--ui-control-touch); }
+}

@@ -323,12 +323,7 @@
 .stream-settled-content:not(:empty)>p:last-child{margin-bottom:8px}
 .stream-live-content:empty{display:none}
 
-/* Inline error/retry state — replaces the streaming bubble on failure */
-.msg-error{display:flex;align-items:center;gap:8px;padding:6px 10px;border:0.5px solid hsl(0 60% 50%/0.25);border-radius:8px;background:transparent;color:hsl(0 60% 70%);font-size:calc(12px * var(--app-font-scale, 1))}
-.msg-error-text{flex:1;min-width:0;word-break:break-word}
-.msg-retry-btn{flex-shrink:0;padding:3px 10px;border-radius:6px;background:transparent;color:hsl(var(--accent-000));border:0.5px solid hsl(var(--accent-000)/0.35);font-size:calc(11.5px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;transition:background-color .12s,color .1s,opacity .12s}
-.msg-retry-btn:hover:not(:disabled){background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
-.msg-retry-btn:disabled{opacity:0.5;cursor:wait}
+/* Chat terminal status is owned by features/thinking-activity.css. */
 
 /* Inline "(stopped by user)" marker — appended at the bottom of a
    partially streamed chat bubble when the user clicks Stop. Visually

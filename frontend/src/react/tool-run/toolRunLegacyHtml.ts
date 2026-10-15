@@ -30,6 +30,16 @@ const LEGACY_TOOL_SELECTORS = [
 export function stripLegacyToolHtml(html: string): string {
   const source = String(html || '');
   if (!source || !/tool-inline|tool-run-group|agent-tool-card|think-tools/.test(source)) return source;
+  return stripStoredMarkup(source, LEGACY_TOOL_SELECTORS);
+}
+
+/** The declarative terminal status owns Retry/Resend; stored copies are inert. */
+export function stripLegacyTerminalHtml(html: string): string {
+  if (!html || !html.includes('msg-error')) return html;
+  return stripStoredMarkup(html, ['.msg-error']);
+}
+
+function stripStoredMarkup(source: string, selectors: readonly string[]): string {
   const parser = (globalThis as unknown as { DOMParser?: typeof DOMParser }).DOMParser;
   if (typeof parser !== 'function') return source;
   try {
@@ -39,7 +49,7 @@ export function stripLegacyToolHtml(html: string): string {
     );
     const body = doc.body;
     if (!body) return source;
-    for (const selector of LEGACY_TOOL_SELECTORS) {
+    for (const selector of selectors) {
       const nodes = body.querySelectorAll(selector);
       for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i];

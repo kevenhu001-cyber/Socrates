@@ -130,6 +130,25 @@ test('prepareViewport removes the failed row and message slot', async () => {
   }
 });
 
+test('prepareViewport leaves React-owned DOM removal to the message-list commit', async () => {
+  const { stateStore } = await import('../src/state/store.js');
+  const store = createStreamRetryViewport();
+  const { list, row } = makeList();
+  row.setAttribute('data-react-owned', '1');
+  stateStore.dispatch({
+    type: 'session/append-message',
+    payload: { clientId: 'c1', role: 'assistant', rawText: 'failed reply' },
+  });
+  try {
+    store.prepareViewport(list, 0, 'c1');
+    assert.equal(row.parentNode, list, 'React must still find its child when it commits');
+    assert.equal(stateStore.read('messages').some((message) => message.clientId === 'c1'), false);
+    assert.ok(store.consumeViewport(), 'replacement keeps the captured position');
+  } finally {
+    list.remove();
+  }
+});
+
 test('settleErrorViewport reports the error offset then detaches', () => {
   const store = createStreamRetryViewport();
   const { list } = makeList();

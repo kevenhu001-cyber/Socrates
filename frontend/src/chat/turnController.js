@@ -19,7 +19,7 @@ import {
 import { injectTemplateSystemPrompt } from './templateSystemPrompt.ts';
 import { languageDirectiveFor } from './lang.js';
 import { CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT } from './systemPrompts.js';
-import { extractHttpUrls, fetchPagesForContext, looksLikeUserMentionedSite } from './webLinks.js';
+import { CHAT_PAGE_CONTEXT_TIMEOUT_MS, extractHttpUrls, fetchPagesForContext, looksLikeUserMentionedSite } from './webLinks.js';
 import { renderLinkPreviews, renderNoUrlHint } from '../ui/linkPreviews.js';
 import { getReasoningEffort } from '../ui/effortPicker.js';
 import { publishActiveWorkflowEvent, publishActiveWorkflowFinish, publishWorkspaceAgentEvent } from './toolCallbacks.js';
@@ -48,6 +48,7 @@ function _addAnchoredAssistant(text) {
 }
 
 export async function askChatTurn(userText,pendingOverride,precreatedController){
+  const ownerSessionId = stateStore.read("currentSessionId");
 
   /* startSession can create the first assistant placeholder before any
      network work so the transition never opens onto an empty transcript.
@@ -129,21 +130,47 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
   var userContent = (pendingContent !== undefined && pendingContent !== null)
     ? pendingContent
     : userMsg;
+  /* P_zero-delay — startSession() may have already created the
+     streaming controller in the same task as the click so the user
+     sees the assistant placeholder on the first paint. Reuse it
+     instead of spawning a second bubble (which would render twice
+     and double the React commit work). */
+  var ctl=precreatedCtl;
+  if(!ctl){
+    ctl=await _addStreamingMessage({
+      userPrompt: userMsg,
+      onRetry:function(){
+        /* Carry this turn's immutable content directly so retrying an older
+           multimodal turn can never pick up a newer draft's attachments. */
+        quietTurn(retryTurn());
+      }
+    });
+  }
+  const turnWasCancelled = () => stateStore.read('currentSessionId') !== ownerSessionId
+    || (typeof ctl.isFinished === 'function' && ctl.isFinished());
+  if (turnWasCancelled()) return;
   /* If the user's message contains any http(s) URL, fetch each one and
      append the page text to the prompt as a [Referenced page] block.
      This gives the assistant the ability to read links the user
      pastes in — same as agent mode. We cap at 3 URLs to keep the
-     prompt sane; each fetch is bounded by 8 s server-side. Failures
-     fall back gracefully (just skip the block). */
+     prompt sane. Client preparation has a bounded deadline and responds
+     to Stop, superseding turns and session changes. */
   var urls=extractHttpUrls(userMsg);
   var pageBlocks=[];
   var pageResults=[];
   if(urls.length){
+    const preparation = new AbortController();
+    const abortPreparation = () => preparation.abort();
+    window._activeChatAbort = abortPreparation;
     try{
-      var fetched=await fetchPagesForContext(urls);
+      var fetched=await fetchPagesForContext(urls, { signal: preparation.signal, timeoutMs: CHAT_PAGE_CONTEXT_TIMEOUT_MS });
       pageBlocks=fetched.blocks||[];
       pageResults=fetched.results||[];
     }catch(_){pageBlocks=[];pageResults=[]}
+    finally {
+      if (window._activeChatAbort === abortPreparation) window._activeChatAbort = null;
+    }
+    if (preparation.signal.aborted || turnWasCancelled()) return;
     /* Surface the URL previews inside the user's bubble so the user
        sees exactly what the model is reading. The most recently
        appended <div class="msg user"> is the bubble for this turn. */
@@ -232,22 +259,6 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
      Spread the preview as individual console.warn lines so they show
      in the text output without needing to expand Array(2). */
   
-  /* P_zero-delay — startSession() may have already created the
-     streaming controller in the same task as the click so the user
-     sees the assistant placeholder on the first paint. Reuse it
-     instead of spawning a second bubble (which would render twice
-     and double the React commit work). */
-  var ctl=precreatedCtl;
-  if(!ctl){
-    ctl=await _addStreamingMessage({
-      userPrompt: userMsg,
-      onRetry:function(){
-        /* Carry this turn's immutable content directly so retrying an older
-           multimodal turn can never pick up a newer draft's attachments. */
-        quietTurn(retryTurn());
-      }
-    });
-  }
   /* M1 async — bind the turn to a detached server-side run so a socket drop
      mid-turn leaves a resumable run. The pending pointer survives reloads;
      it is cleared on finish/cancel below and re-attached by loadSession when
@@ -290,6 +301,7 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
      .tool-inline rows inside the bubble (created via the streaming
      controller's onInlineTool), so the transient thinking-pill label
      swap ("Searching…" / "已找到 N 条…") is gone. */
+  if (turnWasCancelled()) return;
   var result=await callAPIStream(msgs,MAX_TOKENS_CHAT,function(delta){ctl.append(delta)},function(t){ctl.appendThinking(t)},{
     onRetry:function(notice){
       if(ctl&&typeof ctl.setRetryStatus==="function")ctl.setRetryStatus(notice);

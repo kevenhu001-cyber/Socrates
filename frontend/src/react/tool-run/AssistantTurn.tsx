@@ -18,6 +18,7 @@ import { TurnStatus } from './TurnStatus.js';
 import { TurnSummaryPill } from './TurnSummaryPill';
 import { TurnSegmentContent } from './TurnSegmentContent';
 import { useProseRenderer } from './proseRenderer';
+import { stripLegacyTerminalHtml } from './toolRunLegacyHtml';
 import type { LegacyChatMessage } from '../types/domain';
 
 export interface AssistantTurnProps {
@@ -86,7 +87,7 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
     restoredFromHistory: Boolean(message.restoredFromHistory),
   });
   const canSpliceStoredTools = sortableToolCalls(rawText, calls).length > 0;
-  const legacyHtml = !rawText.trim() && storedHtml.trim()
+  const storedProse = !rawText.trim() && storedHtml.trim()
     ? (canSpliceStoredTools ? stripLegacyToolHtml(storedHtml) : storedHtml)
     : '';
   const prose = useProseRenderer(isLive);
@@ -99,6 +100,8 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
   const presentation = deriveTurnPresentationState(message, { live: isLive, hasRunningRow, hasSettledTool });
   const liveStatus = presentation.status;
   const showStatus = Boolean(liveStatus);
+  const legacyHtml = liveStatus && ['error', 'stopped'].includes(liveStatus.phase)
+    ? stripLegacyTerminalHtml(storedProse) : storedProse;
   const messageId = String(message.clientId || message.id || '');
 
   return (

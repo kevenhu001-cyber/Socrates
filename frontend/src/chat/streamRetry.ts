@@ -158,7 +158,9 @@ export function createStreamRetryViewport(): StreamRetryViewport {
         clientId,
       });
     }
-    if (row && row.parentNode === list) row.remove();
+    // React owns its rows through the state update above. Removing one here
+    // makes the next React commit throw NotFoundError and lose the transcript.
+    if (row && row.parentNode === list && !row.hasAttribute('data-react-owned')) row.remove();
     publishReactChatRuntime({
       type: 'stream-retry-replaced',
       messageId: clientId,

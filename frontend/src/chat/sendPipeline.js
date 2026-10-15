@@ -36,11 +36,15 @@ export async function submitChatMessage(textOverride, options) {
   const input = captureSendInput(textOverride);
   if (!input) return;
 
-  const committed = await commitSendInput(input, sendOptions);
-  const payload = await assembleSendPayload(input, committed.userClientId);
+  const committed = commitSendInput(input, sendOptions);
+  // Upload completion and the streaming chunk load are independent.
+  const [precreatedTurn, payload] = await Promise.all([
+    committed.precreatedTurn,
+    assembleSendPayload(input, committed.userClientId),
+  ]);
 
-  if (committed.precreatedTurn) {
-    committed.precreatedTurn.setRetryTarget(() => askChatTurn(input.text, payload.chatContent));
+  if (precreatedTurn) {
+    precreatedTurn.setRetryTarget(() => askChatTurn(input.text, payload.chatContent));
   }
 
   turnState.pendingChatContent = payload.chatContent;
@@ -51,7 +55,7 @@ export async function submitChatMessage(textOverride, options) {
   const dispatch = () => dispatchSendTurn({
     text: input.text,
     chatContent: payload.chatContent,
-    precreatedController: committed.precreatedTurn?.controller || null,
+    precreatedController: precreatedTurn?.controller || null,
     options: sendOptions,
     submitChatMessage,
   });

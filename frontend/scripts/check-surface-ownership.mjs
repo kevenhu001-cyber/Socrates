@@ -82,6 +82,21 @@ function insideKeyframes(rule) {
 const problems = [];
 for (const file of walk(STYLES)) {
   const rel = relative(STYLES, file).replaceAll('\\', '/');
+  // Completed migrations must not gain a second owner in compatibility CSS.
+  const migratedSurfaces = [
+    { name: 'home shortcut', pattern: /\.home-quick-action/,
+      owners: ['polish/home.css', 'polish/mobile-shell.css', 'polish/press.css'] },
+    { name: 'chat terminal state', pattern: /\.msg-(?:error(?:-text)?|retry-btn|resend)(?![-\w])/,
+      owners: ['features/thinking-activity.css'] },
+  ];
+  const migratedRoot = postcss.parse(readFileSync(file, 'utf8'), { from: file });
+  migratedRoot.walkRules((rule) => {
+    for (const surface of migratedSurfaces) {
+      if (!surface.owners.includes(rel) && surface.pattern.test(rule.selector)) {
+        problems.push(`${rel}:${rule.source?.start?.line ?? '?'} ${surface.name} rule outside ${surface.owners.join(', ')}`);
+      }
+    }
+  });
   if (rel.startsWith('legacy/') || rel.startsWith('restore/') || rel === 'themes.css' || rel === 'tokens.css') continue;
   const root = postcss.parse(readFileSync(file, 'utf8'), { from: file });
   root.walkRules((rule) => {
@@ -161,4 +176,4 @@ if (problems.length) {
   process.exit(1);
 }
 
-console.log('surface ownership check passed (sidebar, topbar, transcript + restricted motion owner + duplicate-declaration pairs)');
+console.log('surface ownership check passed (sidebar, topbar, transcript + migrated surfaces + restricted motion owner + duplicate-declaration pairs)');

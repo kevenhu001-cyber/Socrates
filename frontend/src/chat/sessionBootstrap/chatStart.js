@@ -39,25 +39,22 @@ function patchFirstTurnAttachments(clientId, topic, attachments) {
   }
 }
 
-async function assembleAndSendFirstTurn(context, userClientId, initialSave) {
+async function assembleAndSendFirstTurn(context, userClientId, initialSave, contentPromise) {
   resetSessionTransients();
   if (context.activeTemplate) setActiveTemplate(context.activeTemplate);
 
-  const hasAttachments = context.startAttachments.length > 0;
-  const contentPromise = hasAttachments
-    ? buildMessageContent(context.topicForModel, context.startAttachments)
-    : Promise.resolve({ rawText: context.topicForModel, parts: context.topicForModel, attachmentList: [] });
   let savePromise = initialSave;
-  let built;
-  try {
-    if (!savePromise) {
-      try { savePromise = saveCurrentSession(); }
-      catch { savePromise = null; }
-    }
-    [built] = await Promise.all([contentPromise, Promise.resolve(savePromise)]);
-  } catch {
-    built = { rawText: context.topicForModel, parts: context.topicForModel, attachmentList: [] };
+  if (!savePromise) {
+    try { savePromise = saveCurrentSession(); }
+    catch (error) { reportSwallow(error, 'chat/sessionBootstrap.initialSave'); }
   }
+  // A persistence failure must not discard successfully prepared attachments.
+  const [built] = await Promise.all([
+    contentPromise,
+    Promise.resolve(savePromise).catch((error) => {
+      reportSwallow(error, 'chat/sessionBootstrap.initialSave');
+    }),
+  ]);
 
   const chatContent = built.parts || context.topicForModel;
   const topic = stateStore.read('topic');
@@ -98,13 +95,28 @@ export async function startChatSession(context) {
     context.immediateAttachments,
   );
   const initialSave = saveState.saveInFlight || null;
+  // Clear the submitted chips before the lazy streaming module can yield.
+  resetAttachments();
+  renderAttachmentChips();
+  updateComposerBtn();
+  updateKB();
+  updateChatStats();
+
+  // Prepare attachments while the streaming chunk loads; retries share the
+  // immutable payload instead of reading the next draft or redoing uploads.
+  const contentPromise = buildMessageContent(context.topicForModel, context.startAttachments)
+    .catch((error) => {
+      reportSwallow(error, 'chat/sessionBootstrap.buildFirstContent');
+      return { parts: context.topicForModel, attachmentList: context.immediateAttachments };
+    });
+
   let syncController = null;
   if (typeof window.addStreamingMessage === 'function') {
     try {
       syncController = await window.addStreamingMessage({
-        onRetry() {
-          try { console.warn('[chat] sync start retry not wired yet'); }
-          catch (error) { reportSwallow(error, 'chat/sessionBootstrap.syncRetry'); }
+        async onRetry() {
+          const built = await contentPromise;
+          return askChatTurn(context.topic, built.parts);
         },
       });
     } catch (error) { reportSwallow(error, 'chat/sessionBootstrap.createFirstPlaceholder'); }
@@ -114,10 +126,5 @@ export async function startChatSession(context) {
     catch (error) { reportSwallow(error, 'chat/sessionBootstrap.publishSyncController'); }
   }
 
-  resetAttachments();
-  renderAttachmentChips();
-  updateComposerBtn();
-  updateKB();
-  updateChatStats();
-  setTimeout(() => assembleAndSendFirstTurn(context, userClientId, initialSave), 0);
+  setTimeout(() => assembleAndSendFirstTurn(context, userClientId, initialSave, contentPromise), 0);
 }

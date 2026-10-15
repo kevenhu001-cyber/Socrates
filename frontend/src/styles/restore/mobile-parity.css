@@ -76,74 +76,8 @@
     visibility: hidden !important;
   }
 
-  /* ─────────────────────────────────────────────────────────────
-   * 2. Home — suggestion rows directly above the composer.
-   * ───────────────────────────────────────────────────────────── */
-
-  /* The quick-actions row sits after the composer in the DOM; pull it
-     above it in the flex column. (The home-suggestions-wrap container was
-     removed from index.html — see section-7 note in ref-baseline.css.)
-
-     This was `order: 0`, which is a no-op: every sibling already resolves
-     to 0, so the row stayed below the composer. That only went unnoticed
-     while the row was display:none; once the landing shortcuts were
-     restored on 2026-10-04 the row landed in the bottom action band and
-     pushed the capsule up, breaking the "composer rests on the safe-area
-     inset" contract asserted by e2e/landing-light-visual.spec.mjs.
-     -1 puts the shortcuts above the composer and hands the bottom band
-     back to the capsule, which is what the comment always described. */
-  #appShell#appShell .home-quick-actions {
-    order: -1;
-    margin-bottom: 14px;
-  }
-
-  #appShell#appShell .home-quick-actions {
-    display: none;
-    flex-direction: column;
-    width: 100%;
-    max-width: none;
-    margin: 0;
-    gap: 0;
-  }
-
-  #appShell#appShell .home-quick-action {
-    display: flex !important;
-    align-items: center;
-    width: 100%;
-    min-height: 52px !important;
-    padding: 8px 6px !important;
-    gap: 14px !important;
-    border: 0;
-    border-radius: 12px !important;
-    background: transparent !important;
-    text-align: left;
-  }
-
-  #appShell#appShell .home-quick-action:active {
-    background: var(--cg-surface-hover) !important;
-  }
-
-  #appShell#appShell .home-quick-action-icon {
-    display: inline-flex !important;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 28px !important;
-    width: 28px !important;
-    height: 28px !important;
-    color: var(--cg-text-muted) !important;
-  }
-
-  #appShell#appShell .home-quick-action-icon svg {
-    width: 24px !important;
-    height: 24px !important;
-  }
-
-  #appShell#appShell .home-quick-action-copy strong {
-    color: var(--cg-text-secondary) !important;
-    font-size: 16px !important;
-    font-weight: 400 !important;
-    line-height: 24px !important;
-  }
+  /* Home shortcuts are desktop-only. polish/home.css owns their styles;
+     polish/mobile-shell.css owns their visibility on phones. */
 
   /* ─────────────────────────────────────────────────────────────
    * 3. Composer — two-row card: text on top, controls below.
@@ -335,64 +269,6 @@
 #appShell#appShell #mobileIncognitoBtn svg {
     stroke-linecap: round !important;
     stroke-linejoin: round !important;
-  }
-
-  /* The home-suggestions-wrap container was removed from index.html — only
-     the quick-actions row remains on landing. */
-  #appShell#appShell .home-quick-actions {
-    display: none;
-    gap: 0;
-  }
-
-  #appShell#appShell .home-quick-action {
-    min-height: 52px !important;
-    padding: 8px 44px 8px 8px !important;
-    gap: 14px !important;
-    border-radius: 10px !important;
-    background: transparent !important;
-    color: var(--cg-text-secondary) !important;
-  }
-
-  /* P_a11y-nested-controls — the primary button now holds the icon and the
-     copy, so it inherits the phone row's 14px gap rather than the 12px the
-     desktop row uses. */
-  #appShell#appShell .home-quick-action-primary {
-    gap: 14px;
-  }
-
-  #appShell#appShell .home-quick-action-icon {
-    flex: 0 0 28px !important;
-    width: 28px !important;
-    height: 28px !important;
-    color: var(--cg-text-muted) !important;
-  }
-
-  #appShell#appShell .home-quick-action-icon svg {
-    width: 24px !important;
-    height: 24px !important;
-    stroke-width: 1.8 !important;
-  }
-
-  #appShell#appShell .home-quick-action-copy,
-  #appShell#appShell .home-quick-action-copy span {
-    min-width: 0 !important;
-    color: var(--cg-text-secondary) !important;
-    font-size: 16px !important;
-    font-weight: 400 !important;
-    line-height: 24px !important;
-  }
-
-  #appShell#appShell .home-quick-action-dismiss {
-    right: 2px !important;
-    width: 32px !important;
-    height: 32px !important;
-    color: var(--cg-text-secondary) !important;
-    background: transparent !important;
-  }
-
-  #appShell#appShell .home-quick-action-dismiss svg {
-    width: 20px !important;
-    height: 20px !important;
   }
 
   /* The tools menu anchors to the capsule's 12px page inset (the reference

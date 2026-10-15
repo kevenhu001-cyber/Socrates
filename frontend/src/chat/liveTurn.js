@@ -18,7 +18,11 @@ export function claimLiveRetry(owner, run) {
 export function retryLiveTurn(messageId) {
   var owner = turnState.liveRetryOwner;
   if (!owner) return false;
-  if (messageId && String(owner.owner.clientId || '') !== String(messageId)) return false;
+  // Streaming controllers expose identity through their public accessor.
+  // Restored/legacy owners can still supply a clientId field.
+  var ownerId = typeof owner.owner.getClientId === 'function'
+    ? owner.owner.getClientId() : owner.owner.clientId;
+  if (messageId && String(ownerId || '') !== String(messageId)) return false;
   try { owner.run(); } catch (_) { /* the retry handler threw — the turn is unchanged */ }
   return true;
 }

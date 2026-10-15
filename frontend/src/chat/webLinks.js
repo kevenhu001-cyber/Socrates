@@ -1,4 +1,9 @@
 import { apiFetch } from '../util/api.js';
+import { linkAbortSignal } from '../util/api/request.js';
+
+export const CHAT_PAGE_CONTEXT_TIMEOUT_MS = 2500;
+// Research workflows allow the server's existing eight-second page timeout.
+const PAGE_CONTEXT_TIMEOUT_MS = 10_000;
 
 /* Heuristic: returns true if the user's text seems to refer to a
    website but we couldn't pull a usable URL out of it. We look for
@@ -102,10 +107,27 @@ export function extractHttpUrls(text){
    link-preview cards in the user bubble. Failures degrade to a small
    error line per page so the assistant can still acknowledge the link
    in its answer. */
-export async function fetchPagesForContext(urls){
+export async function fetchPagesForContext(urls, options = {}){
   if(!Array.isArray(urls)||!urls.length)return{blocks:[],results:[]};
+  const linked = linkAbortSignal(options.signal, 'chat.webLinks');
+  let timedOut = false;
+  let rejectOnAbort;
+  const aborted = new Promise((_, reject) => {
+    rejectOnAbort = () => reject(new Error(timedOut ? 'page retrieval timed out' : 'page retrieval cancelled'));
+    if (linked.controller.signal.aborted) rejectOnAbort();
+    else linked.controller.signal.addEventListener('abort', rejectOnAbort, { once: true });
+  });
+  const timer = setTimeout(() => {
+    timedOut = true;
+    linked.controller.abort();
+  }, options.timeoutMs ?? PAGE_CONTEXT_TIMEOUT_MS);
   try{
-    var r=await apiFetch("/api/fetch-batch",{method:"POST",body:{urls:urls}});
+    // Race the full JSON operation as well as aborting transport: a stalled
+    // response body or fetch mock must not hold the chat preparation open.
+    var r=await Promise.race([
+      apiFetch("/api/fetch-batch",{method:"POST",body:{urls:urls},signal:linked.controller.signal}),
+      aborted,
+    ]);
     const results=(r&&r.results)||[];
     const blocks=[];
     for(var i=0;i<urls.length;i++){
@@ -129,5 +151,9 @@ export async function fetchPagesForContext(urls){
     const blocks=urls.map(function(u){return"[Referenced page] "+u+"\n(could not retrieve: "+emsg+")"});
     const results=urls.map(function(){return{ok:false,reason:emsg}});
     return{blocks:blocks,results:results};
+  } finally {
+    clearTimeout(timer);
+    linked.controller.signal.removeEventListener('abort', rejectOnAbort);
+    linked.detach();
   }
 }

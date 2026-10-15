@@ -3,6 +3,7 @@
  * its click affordances so the visual layer stays declarative. */
 
 import { toggleWebSearch } from '../pickers.js';
+import { openAttachmentPicker } from '../attachments/render.js';
 
 export function installHomeSurface() {
   document.addEventListener('click', (event) => {
@@ -23,14 +24,7 @@ export function installHomeSurface() {
       write: 'composeAction',
     };
     if (action === 'upload') {
-      /* Keep the entry point on the real composer tools control so the
-         existing upload flow and the OpenConnector menu stay in one place. */
-      const toolsButton = document.getElementById('composerToolsBtn');
-      if (toolsButton) {
-        toolsButton.click();
-      } else {
-        document.getElementById('composerAttachInput')?.click();
-      }
+      openAttachmentPicker('composerAttachInput');
       return;
     }
     if (action === 'research') {

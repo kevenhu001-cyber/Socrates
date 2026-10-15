@@ -3,16 +3,16 @@
     "live": {
       "important": 20,
       "hexColor": 41,
-      "literalRadius": 7,
+      "literalRadius": 3,
       "stackedId": 46,
-      "literalFontSize": 88
+      "literalFontSize": 75
     },
     "frozen": {
-      "important": 741,
+      "important": 692,
       "hexColor": 113,
-      "literalRadius": 345,
-      "stackedId": 61,
-      "literalFontSize": 559
+      "literalRadius": 329,
+      "stackedId": 60,
+      "literalFontSize": 547
     }
   },
   "generatedBy": "check-css-debt.mjs --update"

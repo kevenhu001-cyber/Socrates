@@ -678,3 +678,19 @@ test('code_interpreter distinguishes drafting from executing and analyzing', () 
   assert.match(analyzingLabel.text, /Analyzing data|正在数据分析/);
 });
 
+
+
+test('declarative terminal status strips duplicate stored Retry controls but preserves prose', async () => {
+  const { JSDOM } = await import('jsdom');
+  const { stripLegacyTerminalHtml } = await import('../src/react/tool-run/toolRunLegacyHtml.ts');
+  const previous = globalThis.DOMParser;
+  globalThis.DOMParser = new JSDOM('').window.DOMParser;
+  try {
+    const html = '<p>Partial reply</p><div class="msg-error"><span>Failed</span><button class="msg-retry-btn">Retry</button></div>';
+    assert.equal(stripLegacyTerminalHtml(html), '<p>Partial reply</p>');
+    assert.equal(stripLegacyTerminalHtml('<p>Partial reply</p>'), '<p>Partial reply</p>');
+  } finally {
+    if (previous === undefined) delete globalThis.DOMParser;
+    else globalThis.DOMParser = previous;
+  }
+});

@@ -439,6 +439,7 @@ test('retry replaces the failed answer and resumes at the visible error position
   });
 
   await retryButton.click();
+  await expect(page.locator('#msgList .error-boundary-fallback')).toHaveCount(0);
   /* The retried turn announces itself through its anchor chrome — the row
      carrying data-viewport-anchor="retry" is the one being positioned at the
      captured error offset. Waiting on the status line alone can catch a frame
