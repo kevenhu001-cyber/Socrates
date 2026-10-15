@@ -732,6 +732,8 @@ export const zh = {
     "effort.high":"高",
     "effort.high.note":"更深入、更全面的思考",
     "effort.medium":"中",
+    "effort.instant":"立即",
+    "chatconfig.instantHint":"无需思考，直接回答",
     "effort.low":"低",
     "chatconfig.title":"配置",
     "chatconfig.models":"模型",

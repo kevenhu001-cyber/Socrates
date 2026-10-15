@@ -1330,7 +1330,9 @@
           "sessionId": { "type": "string", "format": "uuid" },
           "content": { "type": "string", "minLength": 1, "maxLength": 32000 },
           "mode": { "type": "string", "enum": ["socratic", "tutor"], "default": "socratic" },
-          "response_speed": { "type": "string", "enum": ["standard", "fast"], "default": "standard", "description": "Requests priority service when fast; unsupported providers automatically fall back to standard." }
+          "response_speed": { "type": "string", "enum": ["standard", "fast"], "default": "standard", "description": "Requests priority service when fast; unsupported providers automatically fall back to standard." },
+          "reasoning_effort": { "type": "string", "enum": ["none", "low", "medium", "high"], "description": "Use none for Instant on OpenAI-compatible models. Explicit no-thinking controls are retained during compatibility retries." },
+          "extra_body": { "type": "object", "description": "Allowlisted provider options. Instant uses thinking.type=disabled, enable_thinking=false, or chat_template_kwargs.enable_thinking=false for the matching provider." }
         }
       },
       "ChatStreamEvent": {

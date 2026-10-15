@@ -108,3 +108,57 @@ test('missing user and user-switch reset clear provider state and key drafts', a
   assert.equal('key' in JSON.parse(update.options.body), false);
   assert.equal(JSON.stringify(store.getProviderConfigSnapshot()).includes('user-one-secret'), false);
 });
+
+
+test('MiniMax M3.1 forwards the selected low effort and split reasoning', async () => {
+  reset();
+  const { isReasoningProvider } = await import('../src/config/providers.js');
+  const { buildChatRequestBody } = await import('../src/chat/api/requestBody.js');
+  store.publishProviderConfig({ providers: [{ id: 'minimax', model: 'MiniMax-M3.1-Flash-Preview', label: 'MiniMax', hasKey: true }], activeId: 'minimax' });
+  window.isReasoningProvider = isReasoningProvider;
+  window.getReasoningEffort = () => 'low';
+  try {
+    assert.equal(isReasoningProvider(), true);
+    const body = buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7);
+    assert.equal(body.reasoning_effort, 'low');
+    assert.deepEqual(body.extra_body, { reasoning_split: true });
+  } finally {
+    delete window.isReasoningProvider;
+    delete window.getReasoningEffort;
+    reset();
+  }
+});
+
+
+test('MiniMax M3 separates reasoning without claiming granular effort support', async () => {
+  reset();
+  const { isReasoningProvider } = await import('../src/config/providers.js');
+  const { buildChatRequestBody } = await import('../src/chat/api/requestBody.js');
+  store.publishProviderConfig({ providers: [{ id: 'minimax', model: 'MiniMax-M3', label: 'MiniMax', hasKey: true }], activeId: 'minimax' });
+  window.isReasoningProvider = isReasoningProvider;
+  window.getReasoningEffort = () => 'low';
+  try {
+    const body = buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7);
+    assert.deepEqual(body.extra_body, { reasoning_split: true });
+    assert.equal('reasoning_effort' in body, false);
+    assert.equal('thinking' in body.extra_body, false, 'Low must not silently disable thinking');
+  } finally {
+    delete window.isReasoningProvider;
+    delete window.getReasoningEffort;
+    reset();
+  }
+});
+
+
+test('Instant remains available across all providers without a model allowlist', async () => {
+  const { buildChatRequestBody } = await import('../src/chat/api/requestBody.js');
+  for (const model of ['MiniMax-M3', 'MiniMax-M3.1-Flash-Preview', 'deepseek-chat', 'Qwen3-32B', 'gpt-5.2', 'custom-model', '']) {
+    reset();
+    storage.set('socrates-reasoning-effort', 'instant');
+    store.publishProviderConfig({ providers: [{ id: 'active', model, label: model, hasKey: true }], activeId: 'active' });
+    const body = buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7);
+    assert.equal(body.reasoning_effort, 'none', model);
+    assert.equal(storage.get('socrates-reasoning-effort'), 'instant');
+  }
+  reset();
+});

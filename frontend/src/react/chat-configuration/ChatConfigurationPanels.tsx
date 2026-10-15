@@ -2,7 +2,7 @@ import type { ReasoningEffort, ResponseSpeed } from '../../config/chatPreference
 import type { ChatProviderOption } from './types';
 import { i18n } from '../legacy/gateway.ts';
 
-const EFFORT_STOPS: ReasoningEffort[] = ['low', 'medium', 'high'];
+const EFFORT_STOPS: ReasoningEffort[] = ['instant', 'low', 'medium', 'high'];
 
 export function effortLabel(value: ReasoningEffort): string {
   return i18n(`effort.${value}`, value);
@@ -75,24 +75,33 @@ interface EffortPanelProps {
 }
 
 export function EffortPanel({ effort, speed, onBack, onCommit }: EffortPanelProps) {
-  const sliderIndex = EFFORT_STOPS.indexOf(effort);
+  const stops = EFFORT_STOPS;
+  const sliderIndex = stops.indexOf(effort);
   return (
     <>
       <button type="button" className="chat-config-row" data-initial-focus="true" onClick={onBack}>
         <span><strong>{effortLabel(effort)}</strong></span>
         <span className="chat-config-value"><ChevronIcon /></span>
       </button>
+      <button type="button" className="chat-config-row" aria-pressed={effort === 'instant'} onClick={() => onCommit('instant', speed)}>
+        <span>
+          <strong>{i18n('effort.instant', 'Instant')}</strong>
+          <small>{i18n('chatconfig.instantHint', 'Answer directly without thinking')}</small>
+        </span>
+        {effort === 'instant' ? <CheckIcon /> : null}
+      </button>
       <div className="chat-config-slider">
         <input
           type="range"
           min={0}
-          max={EFFORT_STOPS.length - 1}
+          max={stops.length - 1}
           step={1}
           value={sliderIndex < 0 ? 1 : sliderIndex}
           aria-label={i18n('chatconfig.effort', 'Reasoning effort')}
-          onChange={(event) => onCommit(EFFORT_STOPS[Number(event.target.value)], speed)}
+          aria-valuetext={effortLabel(effort)}
+          onChange={(event) => onCommit(stops[Number(event.target.value)], speed)}
         />
-        <div className="chat-config-slider-dots" aria-hidden="true"><span /><span /><span /></div>
+        <div className="chat-config-slider-dots" aria-hidden="true">{stops.map(stop => <span key={stop} />)}</div>
       </div>
     </>
   );

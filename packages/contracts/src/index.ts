@@ -400,7 +400,7 @@ export interface ChatRequest {
   mode?: 'chat' | 'tutor';
   assistantId?: string;
   sessionId?: string;
-  reasoning_effort?: 'low' | 'medium' | 'high';
+  reasoning_effort?: 'none' | 'low' | 'medium' | 'high';
   response_speed?: 'standard' | 'fast';
   extra_body?: JsonObject;
 }

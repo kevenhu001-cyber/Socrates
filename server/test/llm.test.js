@@ -952,3 +952,71 @@ describe('runChatStreamPipeline: length continuation', () => {
     assert.equal(frames.filter((frame) => frame === 'data: [DONE]\n\n').length, 1);
   });
 });
+
+
+describe('Instant mode survives compatibility retries', () => {
+  for (const control of [
+    { reasoning_effort: 'none' },
+    { extra_body: { thinking: { type: 'disabled' }, reasoning_split: true } },
+    { extra_body: { enable_thinking: false } },
+    { extra_body: { chat_template_kwargs: { enable_thinking: false } } },
+  ]) {
+    test(JSON.stringify(control), async () => {
+      const attempts = [];
+      const errors = [];
+      globalThis.fetch = async (_url, init) => {
+        attempts.push(JSON.parse(init.body));
+        return makeJsonResponse({ error: 'unsupported option' }, 400);
+      };
+      await streamChatCompletion({ ...BASE_OPTS, ...control, response_speed: 'fast' }, () => {}, () => {}, error => errors.push(error));
+      assert.ok(errors.length > 0, 'unsupported Instant must remain an error');
+      assert.ok(attempts.length >= 2, 'exercise compatibility fallback');
+      for (const body of attempts) {
+        if (control.reasoning_effort) assert.equal(body.reasoning_effort, 'none');
+        if (control.extra_body?.thinking) assert.deepEqual(body.thinking, { type: 'disabled' });
+        if (control.extra_body?.enable_thinking === false) assert.equal(body.enable_thinking, false);
+        if (control.extra_body?.chat_template_kwargs) assert.deepEqual(body.chat_template_kwargs, { enable_thinking: false });
+      }
+    });
+  }
+});
+
+
+describe('Instant translates the real upstream model', () => {
+  for (const [model, apiBase, controls] of [
+    ['MiniMax-M3', BASE_OPTS.apiBase, { thinking: { type: 'disabled' } }],
+    ['deepseek-chat', BASE_OPTS.apiBase, { thinking: { type: 'disabled' } }],
+    ['glm-4.7', BASE_OPTS.apiBase, { thinking: { type: 'disabled' } }],
+    ['Qwen3-32B', 'https://dashscope.aliyuncs.com/compatible-mode/v1', { enable_thinking: false }],
+    ['Qwen/Qwen3-8B', BASE_OPTS.apiBase, { chat_template_kwargs: { enable_thinking: false } }],
+    ['gpt-5.2', BASE_OPTS.apiBase, { reasoning_effort: 'none' }],
+    ['custom-model', BASE_OPTS.apiBase, { reasoning_effort: 'none' }],
+  ]) {
+    test(model, async () => {
+      const attempts = [];
+      globalThis.fetch = async (_url, init) => {
+        attempts.push(JSON.parse(init.body));
+        return attempts.length === 1
+          ? makeJsonResponse({ error: 'priority unsupported' }, 400)
+          : makeSseResponse([{ choices: [{ delta: { content: 'Direct answer' }, finish_reason: 'stop' }] }, sseDone()]);
+      };
+      await streamChatCompletion({ ...BASE_OPTS, apiBase, model, reasoning_effort: 'none', response_speed: 'fast' }, () => {}, () => {}, error => { throw error; });
+      for (const body of attempts) {
+        for (const [key, value] of Object.entries(controls)) assert.deepEqual(body[key], value);
+        if (!controls.reasoning_effort) assert.equal(body.reasoning_effort, undefined);
+      }
+    });
+  }
+});
+
+
+test('Instant wins conflicting thinking options on every MiniMax fallback', async () => {
+  const bodies = [];
+  globalThis.fetch = async (_url, init) => {
+    bodies.push(JSON.parse(init.body));
+    return makeJsonResponse({ error: 'unsupported' }, 400);
+  };
+  await streamChatCompletion({ ...BASE_OPTS, model: 'MiniMax-M3', reasoning_effort: 'none', extra_body: { thinking: { type: 'enabled' } } }, () => {}, () => {}, () => {});
+  assert.ok(bodies.length > 1);
+  for (const body of bodies) assert.deepEqual(body.thinking, { type: 'disabled' });
+});

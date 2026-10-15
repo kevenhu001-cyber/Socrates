@@ -1,9 +1,9 @@
-export type ReasoningEffort = 'high' | 'medium' | 'low';
+export type ReasoningEffort = 'high' | 'medium' | 'low' | 'instant';
 export type ResponseSpeed = 'standard' | 'fast';
 
 const EFFORT_KEY = 'socrates-reasoning-effort';
 const SPEED_KEY = 'socrates-response-speed';
-const EFFORTS = new Set<ReasoningEffort>(['high', 'medium', 'low']);
+const EFFORTS = new Set<ReasoningEffort>(['high', 'medium', 'low', 'instant']);
 const SPEEDS = new Set<ResponseSpeed>(['standard', 'fast']);
 
 export function getStoredReasoningEffort(): ReasoningEffort {

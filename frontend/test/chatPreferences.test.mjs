@@ -28,3 +28,12 @@ test('invalid stored values fall back safely', () => {
   assert.equal(preferences.getStoredReasoningEffort(), 'medium');
   assert.equal(preferences.getStoredResponseSpeed(), 'standard');
 });
+
+
+test('Instant persists as a fourth reasoning level without changing speed', () => {
+  preferences.saveChatPreferences('instant', 'fast');
+  assert.equal(preferences.getStoredReasoningEffort(), 'instant');
+  assert.equal(preferences.getStoredResponseSpeed(), 'fast');
+  preferences.saveChatPreferences('low', 'fast');
+  assert.equal(preferences.getStoredReasoningEffort(), 'low');
+});

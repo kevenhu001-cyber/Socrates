@@ -826,3 +826,12 @@ describe('ChatPayloadSchema', () => {
     assert.equal(parsed.messages[0].experimental, true);
   });
 });
+
+
+test('Instant controls pass validation and the provider option allowlist', () => {
+  const parsed = ChatPayloadSchema.parse({ messages: [{ role: 'user', content: 'hello' }], reasoning_effort: 'none' });
+  assert.equal(parsed.reasoning_effort, 'none');
+  assert.deepEqual(sanitizeExtraBody({ thinking: { type: 'disabled' }, enable_thinking: false, chat_template_kwargs: { enable_thinking: false }, api_key: 'forbidden' }), {
+    thinking: { type: 'disabled' }, enable_thinking: false, chat_template_kwargs: { enable_thinking: false },
+  });
+});

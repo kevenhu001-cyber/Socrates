@@ -279,7 +279,7 @@ function normalizeProviderMessages(messages: ChatCompletionRequestOptions['messa
 
 function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: boolean) {
   const { model, messages, maxTokens, temperature = stream ? 0.7 : 0.3, reasoning_effort, response_speed, extra_body, tools, tool_choice } = opts;
-  const base = {
+  const base: Record<string, unknown> = {
     model,
     messages: normalizeProviderMessages(messages),
     max_tokens: maxTokens || DEFAULT_MAX_TOKENS,
@@ -299,6 +299,19 @@ function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: boolean
     ...(response_speed === 'fast' ? { service_tier: 'priority' } : {}),
     ...(extra_body ? { ...extra_body } : {}),
   } as Record<string, unknown>;
+  if (reasoning_effort === 'none') {
+    const name = model.toLowerCase();
+    // Resolve against the server-owned model identity. The browser can offer
+    // Instant for every provider without knowing private built-in model names.
+    if (/qwen|qwq/.test(name)) {
+      delete base.reasoning_effort;
+      if (/dashscope|aliyuncs/i.test(opts.apiBase)) base.enable_thinking = false;
+      else base.chat_template_kwargs = { enable_thinking: false };
+    } else if (/minimax|deepseek|glm|kimi/.test(name)) {
+      delete base.reasoning_effort;
+      base.thinking = { type: 'disabled' };
+    }
+  }
   const hasTools = Array.isArray(tools) && tools.length > 0;
   const withTools: Record<string, unknown> = {
     ...base,
@@ -346,8 +359,15 @@ function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: boolean
    * variant, never on a successful request. */
   if (reasoning_effort || extra_body) {
     const { reasoning_effort: _effort, ...withoutReasoning } = compatibilityBase;
-    const withoutOptional = dropStreamOptions({ ...withoutReasoning });
-    for (const key of Object.keys(extra_body || {})) delete withoutOptional[key];
+    const withoutOptional = dropStreamOptions({ ...withoutReasoning, ...(base.reasoning_effort === 'none' ? { reasoning_effort: 'none' } : {}) });
+    for (const key of Object.keys(extra_body || {})) {
+      // Instant is an explicit output mode, not an optional hint. A provider
+      // that rejects it must fail rather than silently resume thinking.
+      if (key === 'chat_template_kwargs' && (withoutOptional.chat_template_kwargs as { enable_thinking?: boolean } | undefined)?.enable_thinking === false) continue;
+      if (key === 'enable_thinking' && withoutOptional.enable_thinking === false) continue;
+      if (key === 'thinking' && (withoutOptional.thinking as { type?: string } | undefined)?.type === 'disabled') continue;
+      delete withoutOptional[key];
+    }
     variants.push({ body: withoutOptional, reason: 'provider-400-with-optional-fields', speedApplied: 'standard' });
   }
   /* Only when NO other compatibility variant exists does stream_options get

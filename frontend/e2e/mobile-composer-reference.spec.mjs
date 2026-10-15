@@ -193,15 +193,15 @@ test('desktop configuration reuses the same content in an anchored popover', asy
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
-  const trigger = page.locator('#composerInputWrap .effort-trigger');
+  const trigger = page.locator('#topModelSwitcher');
   await trigger.click();
   const pop = page.locator('.chat-config-pop');
   await expect(pop).toBeVisible();
   const geometry = await pop.boundingBox();
   expect(geometry?.width).toBeLessThanOrEqual(300);
-  /* Anchored above (or beside) the pill, never a centred dialog. */
+  /* Desktop configuration is anchored below the top-bar model switcher. */
   const triggerBox = await trigger.boundingBox();
-  expect(geometry?.y ?? 0).toBeLessThan((triggerBox?.y ?? 0) + (triggerBox?.height ?? 0));
+  expect(geometry?.y ?? 0).toBeGreaterThanOrEqual((triggerBox?.y ?? 0) + (triggerBox?.height ?? 0));
 
   await pop.getByRole('button', { name: /速度/ }).click();
   await expect(pop.getByRole('option', { name: /快速/ })).toBeVisible();
@@ -215,7 +215,7 @@ test('desktop configuration reuses the same content in an anchored popover', asy
      onChange sees a real value transition. */
   await slider.evaluate((node) => {
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
-    setter.call(node, '2');
+    setter.call(node, '3');
     node.dispatchEvent(new Event('input', { bubbles: true }));
   });
   await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-reasoning-effort'))).toBe('high');

@@ -801,7 +801,7 @@ export const ChatPayloadSchema = z.object({
      looks like a DeepSeek-family reasoning model. We forward
      them to llm.js as-is; non-DeepSeek upstreams silently ignore
      the unknown fields. */
-  reasoning_effort: z.enum(['low', 'medium', 'high']).optional(),
+  reasoning_effort: z.enum(['none', 'low', 'medium', 'high']).optional(),
   response_speed: z.enum(['standard', 'fast']).optional().default('standard'),
   /* Backward-compatible input for older clients. Agent routing is now always
      decided from the user's intent by the model; this field is accepted but
@@ -1033,7 +1033,7 @@ export async function prepareChatRequest(
         mode: 'tutor' | 'chat';
         temperature: number;
         maxTokens: number | undefined;
-        reasoning_effort?: 'low' | 'medium' | 'high';
+        reasoning_effort?: 'none' | 'low' | 'medium' | 'high';
         responseSpeed: 'standard' | 'fast';
       };
     }

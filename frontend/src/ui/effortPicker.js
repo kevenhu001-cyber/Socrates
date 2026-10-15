@@ -15,11 +15,11 @@ import { getProviderConfigSnapshot, subscribeToProviderConfig } from '../config/
  * "careful scholar" chat prompt via window.extensiveThinkingOn (read by
  * main.js when building the system prompt).
  *
- * Persistence: localStorage["socrates-reasoning-effort"] ∈ high|medium|low
+ * Persistence: localStorage["socrates-reasoning-effort"] ∈ instant|low|medium|high
  * (schema-validated by config/chatPreferences.ts).
  */
 
-var VALID = ["high", "medium", "low"];
+var VALID = ["high", "medium", "low", "instant"];
 var _effort = null;
 var MOBILE_QUERY = '(max-width: 768px)';
 
@@ -48,6 +48,7 @@ function _t(key, fallback) {
 }
 
 function _labelFor(v) {
+  if (v === "instant") return _t("effort.instant", "Instant");
   if (v === "high") return _t("effort.high", "High");
   if (v === "low") return _t("effort.low", "Low");
   return _t("effort.medium", "Medium");

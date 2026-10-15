@@ -32,6 +32,8 @@ const purify = createDOMPurify(window);
  * conversation or smuggle a credential. */
 const ALLOWED_EXTRA_BODY_KEYS = new Set([
   'thinking',
+  'enable_thinking',
+  'chat_template_kwargs',
   'top_p',
   'top_k',
   'stop',

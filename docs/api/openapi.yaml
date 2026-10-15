@@ -2258,6 +2258,11 @@ paths:
         service automatically falls back to standard and is reported in meta.
         An optional `assistantId` selects an owned configurable assistant; an
         owned `sessionId` restores that session's assistant when omitted.
+        Instant mode uses `reasoning_effort: none` on OpenAI-compatible models,
+        or allowlisted `extra_body` controls: `thinking: {type: disabled}`,
+        `enable_thinking: false`, or `chat_template_kwargs: {enable_thinking: false}`.
+        Explicit no-thinking controls are preserved during compatibility retries;
+        providers that reject them return an error instead of silently enabling thinking.
   /api/chat/stream:
     post:
       tags: [users]
@@ -2267,6 +2272,7 @@ paths:
         registry for the current turn. Tool arguments are one JSON object that
         matches the supplied function schema, without an input or arguments
         wrapper. The stream shares the authenticated chat rate-limit bucket.
+        Instant uses the same provider-specific no-thinking controls as `/api/chat`.
         A successful priority-service fallback emits `preference_fallback`
         before content frames.
         Optional `turn_activity` frames report public observations: `{type: thinking}`,

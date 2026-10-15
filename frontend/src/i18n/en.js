@@ -755,6 +755,8 @@ export const en = {
     "effort.high":"High",
     "effort.high.note":"Deeper, more thorough thinking",
     "effort.medium":"Medium",
+    "effort.instant":"Instant",
+    "chatconfig.instantHint":"Answer directly without thinking",
     "effort.low":"Low",
     "chatconfig.title":"Chat settings",
     "chatconfig.models":"Models",

@@ -59,7 +59,9 @@ function _isReasoningForActive() {
   if (p.isBuiltIn) return !!window.BEAGLE_IS_REASONING;
   var m = (p.model || "").toLowerCase();
   var l = (p.label || "").toLowerCase();
-  return /deepseek-r1|qwq-|minimax-m1|reasoning|think/.test(m) || /deepseek-r1|qwq/.test(l);
+  // M3.1 exposes effort on the OpenAI-compatible endpoint. Omitting it
+  // silently uses the provider default rather than the selected Low level.
+  return /deepseek-r1|qwq-|minimax-m1|minimax-m3\.1(?:-|$)|reasoning|think/.test(m) || /deepseek-r1|qwq/.test(l);
 }
 
 function isReasoningProvider() {
