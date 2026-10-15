@@ -51,7 +51,7 @@ export function ShareLinkPanel({
       <div id="shareCreateArea" style={{ textAlign: 'center', marginTop: 4 }}>
         <button
           type="button"
-          className="settings-btn primary"
+          className="btn"
           id="shareCreateBtn"
           onClick={onCreate}
           style={{ marginTop: 8 }}

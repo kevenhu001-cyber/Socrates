@@ -54,7 +54,7 @@ export function ImageVoiceSettingsSection({
         </div>
         <div className="settings-field">
           <input className="settings-input" value={imageModel} placeholder="gpt-image-1" onChange={(event) => updateImageModel(event.target.value)} />
-          <button className="settings-btn secondary" onClick={() => void savePreference({ imageModel })}>{label('同步图片模型', 'Sync image model')}</button>
+          <button className="btn" onClick={() => void savePreference({ imageModel })}>{label('同步图片模型', 'Sync image model')}</button>
         </div>
       </section>
       <section className="settings-section">
@@ -80,13 +80,13 @@ export function SettingsModelActions({
 }) {
   return (
     <div className="settings-actions">
-      <button className="settings-btn danger" id="clearSettingsBtn" onClick={confirmClearSettings}>
+      <button className="btn" id="clearSettingsBtn" onClick={confirmClearSettings}>
         {i18n('settings.clearAll', 'Clear all')}
       </button>
-      <button className="settings-btn secondary" id="cancelSettingsBtn" onClick={closeSettings}>
+      <button className="btn" id="cancelSettingsBtn" onClick={closeSettings}>
         {i18n('common.cancel', 'Cancel')}
       </button>
-      <button className="settings-btn primary" id={SAVE_BTN_ID} disabled={saving} onClick={() => void onSave()}>
+      <button className="btn" id={SAVE_BTN_ID} disabled={saving} onClick={() => void onSave()}>
         {saving ? i18n('settings.saving', 'Saving…') : i18n('settings.save', 'Save')}
       </button>
     </div>

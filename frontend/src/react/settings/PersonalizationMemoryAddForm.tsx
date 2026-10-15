@@ -36,7 +36,7 @@ export function PersonalizationMemoryAddForm({
         value={value}
         onChange={(event) => setValue(event.target.value)}
       />
-      <button type="submit" className="settings-btn secondary" disabled={!value.trim()}>
+      <button type="submit" className="btn" disabled={!value.trim()}>
         {label('添加', 'Add')}
       </button>
     </form>

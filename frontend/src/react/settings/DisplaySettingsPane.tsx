@@ -72,12 +72,12 @@ export function DisplaySettingsPane({ hidden, label }: SettingsPaneProps) {
             <input type="color" value={display.darkBg || '#09090b'} onChange={(event) => apply(() => setBackgroundDark(event.target.value))} />
             <span>{label('深色', 'Dark')}</span>
           </label>
-          <button type="button" className="settings-btn secondary" onClick={() => apply(() => resetBackgroundDark())}>{label('重置', 'Reset')}</button>
+          <button type="button" className="btn" onClick={() => apply(() => resetBackgroundDark())}>{label('重置', 'Reset')}</button>
           <label className="settings-bg-picker">
             <input type="color" value={display.lightBg || '#ffffff'} onChange={(event) => apply(() => setBackgroundLight(event.target.value))} />
             <span>{label('浅色', 'Light')}</span>
           </label>
-          <button type="button" className="settings-btn secondary" onClick={() => apply(() => resetBackgroundLight())}>{label('重置', 'Reset')}</button>
+          <button type="button" className="btn" onClick={() => apply(() => resetBackgroundLight())}>{label('重置', 'Reset')}</button>
         </div>
       </div>
     </section>
