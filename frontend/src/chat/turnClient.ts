@@ -13,6 +13,7 @@
  */
 
 import { apiFetch, apiFetchRaw } from '../util/api.js';
+import { batchSetItem } from '../batchStorage.js';
 import { consumeSseBuffer } from '../../../packages/core/src/index.ts';
 
 export interface ChatTurn {
@@ -174,7 +175,14 @@ export function savePendingTurn(sessionId: string, pointer: Omit<PendingTurn, 's
   try {
     if (!sessionId || !pointer.turnId) return;
     const record: PendingTurn = { ...pointer, sessionId, updatedAt: Date.now() };
-    localStorage.setItem(pendingKey(sessionId), JSON.stringify(record));
+    /* P_batch-storage — the pending-turn pointer is rewritten on
+       every turn-bump (interrupt, retry, re-attach) — 1–5 writes per
+       session switch. localStorage.setItem is synchronous and forces
+       a storage commit, so a burst would serialise on the main
+       thread. batchSetItem coalesces all writes from one microtask
+       into a single setItem loop; the resume pointer is read on
+       next load so the slight delay is invisible. */
+    batchSetItem(pendingKey(sessionId), JSON.stringify(record));
   } catch { /* storage full/blocked — resume just won't survive reload */ }
 }
 

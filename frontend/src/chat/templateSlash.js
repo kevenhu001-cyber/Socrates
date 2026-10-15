@@ -18,6 +18,7 @@ import { loadPromptTemplates } from './promptTemplates.js';
 import { esc } from '../render/helpers.js';
 import { updateComposerBtn } from '../ui/topicSetup.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { batchSetItem } from '../batchStorage.js';
 
 export var _slashSelected=0;
 var _slashList=[];
@@ -42,7 +43,11 @@ var EXTENSION_SIDE_EFFECTS={
   deepResearch:function(on){ window.deepResearchOn=!!on; if(typeof window.syncQuickChips==="function") window.syncQuickChips(); },
   extensiveThinking:function(on){
     window.extensiveThinkingOn=!!on;
-    try{localStorage.setItem("socrates-extensive-thinking",JSON.stringify(!!window.extensiveThinkingOn))}catch(e){reportSwallow(e, 'templateSlash.extensiveThinking.persist');}
+    /* P_batch-storage — the toggle is a user click that lands in
+       the middle of a render frame. Coalesce the persist into the
+       next microtask's batch so a rapid on/off pair (double-click
+       the chip) only writes once. */
+    try{batchSetItem("socrates-extensive-thinking",JSON.stringify(!!window.extensiveThinkingOn))}catch(e){reportSwallow(e, 'templateSlash.extensiveThinking.persist');}
   }
 };
 export function _applyExtensionSideEffects(prevExt,nextExt){
