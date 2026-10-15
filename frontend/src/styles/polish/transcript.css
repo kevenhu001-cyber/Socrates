@@ -224,13 +224,7 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: radial-gradient(
-    circle at 35% 35%,
-    var(--ui-accent-strong) 0%,
-    var(--ui-thinking-accent) 70%,
-    color-mix(in srgb, var(--ui-thinking-accent) 60%, transparent) 100%
-  );
-  box-shadow: 0 0 8px 1px color-mix(in srgb, var(--ui-thinking-accent) 40%, transparent);
+  background: var(--ui-text-primary);
   animation: streamCursorPulse var(--ui-duration-pulse, 1.2s) ease-in-out infinite;
 }
 #appShell .stream-cursor.is-starved::before { animation-duration: var(--ui-duration-pulse-slow, 1.6s); }
@@ -255,16 +249,8 @@
   height: 12px;
 }
 @keyframes streamCursorPulse {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-    box-shadow: 0 0 10px 2px color-mix(in srgb, var(--ui-thinking-accent) 45%, transparent);
-  }
-  50% {
-    opacity: 0.38;
-    transform: scale(0.85);
-    box-shadow: 0 0 4px 0 color-mix(in srgb, var(--ui-thinking-accent) 15%, transparent);
-  }
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 0.28; }
 }
 @media (prefers-reduced-motion: reduce) {
   #appShell .stream-cursor::before { animation: none; opacity: 0.7; }
