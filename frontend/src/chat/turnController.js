@@ -103,7 +103,13 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
     ctlOff.replaceWithError("You appear to be offline — check your connection and retry.",retryThisTurn);
     return;
   }
-  var history=extractHistory();
+  /* P_empty-send-skip-history — extractHistory walks the message list
+     and clones each row, so on a populated transcript it costs ~1–3ms
+     before the LLM call goes out. An empty messages list (first send
+     in a fresh session) has nothing to walk — pass an empty array
+     straight through. Steady state is identical because
+     extractHistory([]) is itself the empty array. */
+  var history=stateStore.read("messages").length === 0 ? [] : extractHistory();
   /* P_crosstalk-diag — temporary diagnostic for "new session inherits
      old context" bug. Logs the history length, stateStore.read("messages") length,
      current session id, and a short preview of each history entry so

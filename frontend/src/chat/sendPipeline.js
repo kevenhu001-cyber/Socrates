@@ -29,9 +29,32 @@ function refreshTutorWebContext(text) {
     .catch((error) => reportSwallow(error, 'chat/sendPipeline.refreshTutorWebContext'));
 }
 
+let _prefetchScheduled = false;
+function schedulePrefetchStreamingTurn() {
+  if (_prefetchScheduled) return;
+  _prefetchScheduled = true;
+  const run = () => {
+    _prefetchScheduled = false;
+    prefetchStreamingTurn();
+  };
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(run, { timeout: 1000 });
+  } else if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(run);
+  } else {
+    setTimeout(run, 0);
+  }
+}
+
 export async function submitChatMessage(textOverride, options) {
   const sendOptions = options || {};
-  prefetchStreamingTurn();
+  /* P_send-prefetch-defer — prefetchStreamingTurn() warms the
+     dynamic import for the streaming turn module so the first
+     click doesn't pay the parse cost. Calling it on every click
+     frame is wasted work after the first call (the import is
+     cached). Defer it to the next idle slot so the click frame
+     stays focused on the user bubble / Stop button transition. */
+  schedulePrefetchStreamingTurn();
 
   const input = captureSendInput(textOverride);
   if (!input) return;
