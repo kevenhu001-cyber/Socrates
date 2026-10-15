@@ -43,5 +43,18 @@ export function MessageBody({
     );
   }
 
+  /* P_user-msg-no-format — addMessage now skips formatMsg() on the click
+     path for user messages and stores html = ''. Render the bubble from
+     rawText via React children (auto-escaped, no DOMPurify roundtrip) so
+     the user sees their original text without a markdown pass on every
+     send. */
+  if (!html && typeof message.rawText === 'string' && message.rawText.length > 0) {
+    return (
+      <div className="msg-body" ref={bodyRef}>
+        {message.rawText}
+      </div>
+    );
+  }
+
   return <div className="msg-body" ref={bodyRef} dangerouslySetInnerHTML={{ __html: html }} />;
 }

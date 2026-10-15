@@ -55,6 +55,14 @@ export function addMessage(role, text, type, actions, attachmentsArg) {
   }
   if (role === 'assistant' && /<(quiz|example|practice|definition|step|flashcard|proof|theorem|key-point|derivation)\b/i.test(_displaySource)) {
     try { html = _renderAssistantHtml(_displaySource); } catch (_) { html = formatMsg(_displaySource); }
+  } else if (role === 'user') {
+    /* P_user-msg-no-format — user bubbles render from `rawText` via
+       MessageBody's empty-html fallback. formatMsg() runs synchronous
+       markdown over the whole paste, costing 30–80ms on a 50KB paste,
+       and the parsed HTML was never read. Skip it. The empty html tells
+       MessageBody to render rawText as React children, which auto-escapes
+       and is therefore safe without DOMPurify. */
+    html = '';
   } else {
     html = formatMsg(_displaySource);
   }
@@ -87,13 +95,25 @@ export function addMessage(role, text, type, actions, attachmentsArg) {
         try { if (typeof window.saveCurrentSession === 'function') window.saveCurrentSession(); } catch (_) {}
       }
     }
-    /* Update KB: if user is answering substantive questions, mark current node progress */
-    if (role === 'user' && stateStore.read('kbNodes')[stateStore.read('currentNode')] && stateStore.read('kbNodes')[stateStore.read('currentNode')].status === 'blank') {
-      var progressedKbNodes = stateStore.read('kbNodes').map(function (node, index) {
-        return index === stateStore.read('currentNode') ? Object.assign({}, node, { status: 'fuzzy', questions: (node.questions || 0) + 1 }) : node;
-      });
-      stateStore.dispatch({ type: 'state/set', key: 'kbNodes', value: progressedKbNodes });
-      try { updateKB(); } catch (_) {}
+    /* Update KB: if user is answering substantive questions, mark current node progress.
+       P_kb-patch-node — the previous path rebuilt the entire kbNodes array
+       via .map (O(N) Object.assign on every node) and dispatched it as
+       state/set kbNodes, which fires a kb-bridge commit and re-renders every
+       KB row. The new kb/patch-node action updates only the touched index,
+       so the reducer still has to clone the array (one slot) but skips the
+       per-row rebuild. */
+    if (role === 'user') {
+      var _curIdx = stateStore.read('currentNode');
+      var _nodes = stateStore.read('kbNodes');
+      var _curNode = _nodes && _nodes[_curIdx];
+      if (_curNode && _curNode.status === 'blank') {
+        stateStore.dispatch({
+          type: 'kb/patch-node',
+          index: _curIdx,
+          patch: { status: 'fuzzy', questions: (_curNode.questions || 0) + 1 },
+        });
+        try { updateKB(); } catch (_) {}
+      }
     }
   } catch (_) {}
   /* Return the clientId so callers (e.g. startSession) can patch this

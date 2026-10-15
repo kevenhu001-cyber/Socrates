@@ -25,6 +25,7 @@ import type { RevisionedSnapshot } from '../lib/bridge/createImmutableBridge.ts'
 import {
   createInitialKbState,
   type KbState,
+  type KbNode,
 } from './kb.ts';
 import {
   createInitialSearchState,
@@ -133,6 +134,12 @@ export const sessionStore = sessionDomain.store;
 export type KbAction =
   | { type: 'kb/set'; key: keyof KbState; value: unknown }
   | { type: 'kb/patch'; patch: Partial<KbState> }
+  /* P_kb-patch-node — touch a single kbNodes slot in place. The previous
+     .map-everything path cost O(N) Object.assign on every user answer in
+     tutor mode; this one still clones the array (one allocation) but
+     touches only the changed row. Out-of-range indices are a no-op so
+     caller guards stay optional. */
+  | { type: 'kb/patch-node'; index: number; patch: Partial<KbNode> }
   | { type: 'kb/reset' };
 
 export type KbSnapshot = KbState & RevisionedSnapshot;
@@ -143,6 +150,14 @@ function kbReducer(state: KbSnapshot, action: KbAction): KbSnapshot {
       return { ...state, [action.key]: action.value };
     case 'kb/patch':
       return { ...state, ...action.patch };
+    case 'kb/patch-node': {
+      const nodes = state.kbNodes;
+      const i = action.index;
+      if (!Array.isArray(nodes) || i < 0 || i >= nodes.length) return state;
+      const next = nodes.slice();
+      next[i] = { ...next[i], ...action.patch };
+      return { ...state, kbNodes: next };
+    }
     case 'kb/reset':
       return { ...createInitialKbState(), revision: state.revision };
     default:

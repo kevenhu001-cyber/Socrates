@@ -85,6 +85,15 @@ let pendingDelta: Extract<ChatRuntimeEvent, { type: 'stream-delta' }> | null = n
 /* Tool state can change on more than one message at a time (a retry while a
    new turn streams), so the coalesced set is keyed by message id. */
 let pendingToolRuns: Set<string> | null = null;
+/* P_bridge-coalesce-lifecycle — `message-added` and `stream-started` arrive
+   back-to-back on the click frame from chat/messages.js + chat/streamingTurn.js.
+   The synchronous `commit()` pair used to fire two `Object.freeze` walks over
+   the message list and two listener notifications back-to-back. Queue the
+   second one until the next animation frame; multiple events in the same
+   frame collapse into a single commit (the last queued event wins, matching
+   what a synchronous pair would have produced). Terminal events drain this
+   slot before committing so lifecycle ordering survives. */
+let pendingLifecycle: ChatRuntimeEvent | null = null;
 let pendingDeltaFrame = 0;
 /* P_stream-paint-cadence — deltas used to commit once per rAF (up to 60
    repaints/sec), which made the adaptive getStreamRenderInterval() cadence
@@ -279,12 +288,25 @@ function scheduleFrame(): void {
     } else if (pendingDelta) {
       /* The pending delta grew past a cadence boundary since its timer was
          armed (a longer textLength raises the interval). Re-arm so a mid-
-         stream stall cannot leave the last paint hanging until the next
+         stream stall cannot leave the last paint until the next
          event happens to arrive. */
       scheduleDeltaFlush(pendingDelta);
     }
     flushPendingToolRuns();
+    flushPendingLifecycle();
   });
+}
+
+/**
+ * Drain the queued lifecycle event (message-added / stream-started) into
+ * a single commit. No-op when the slot is empty so the rAF callback above
+ * can call this unconditionally.
+ */
+function flushPendingLifecycle(): void {
+  if (!pendingLifecycle) return;
+  const event = pendingLifecycle;
+  pendingLifecycle = null;
+  commit(event);
 }
 
 /* Defer the next delta commit until its cadence deadline, then hand it to
@@ -338,10 +360,21 @@ function publish(event: ChatRuntimeEvent): void {
     return;
   }
 
+  /* Coalesce the two click-frame lifecycle events into one commit per
+     animation frame. The second event in the same frame overwrites the
+     slot — that's identical to what two synchronous commits would have
+     produced for the snapshot's lastEvent/stream fields. */
+  if (event.type === 'message-added' || event.type === 'stream-started') {
+    pendingLifecycle = event;
+    scheduleFrame();
+    return;
+  }
+
   // Preserve lifecycle ordering when a terminal or replacement event lands
   // before the animation frame scheduled for the final delta/tool update.
   flushPendingDelta();
   flushPendingToolRuns();
+  flushPendingLifecycle();
   commit(event);
 }
 
@@ -382,6 +415,7 @@ const chatRuntimeBridge: ImmutableBridge<ChatRuntimeSnapshot, ChatRuntimeEvent> 
     });
     pendingDelta = null;
     pendingToolRuns = null;
+    pendingLifecycle = null;
     clearDeltaTimer();
     lastDeltaCommitAt = 0;
     if (pendingDeltaFrame) {
