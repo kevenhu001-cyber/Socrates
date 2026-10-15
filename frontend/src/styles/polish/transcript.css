@@ -224,7 +224,13 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: hsl(var(--text-200));
+  background: radial-gradient(
+    circle at 35% 35%,
+    var(--ui-accent-strong) 0%,
+    var(--ui-thinking-accent) 70%,
+    color-mix(in srgb, var(--ui-thinking-accent) 60%, transparent) 100%
+  );
+  box-shadow: 0 0 8px 1px color-mix(in srgb, var(--ui-thinking-accent) 40%, transparent);
   animation: streamCursorPulse var(--ui-duration-pulse, 1.2s) ease-in-out infinite;
 }
 #appShell .stream-cursor.is-starved::before { animation-duration: var(--ui-duration-pulse-slow, 1.6s); }
@@ -249,11 +255,52 @@
   height: 12px;
 }
 @keyframes streamCursorPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.35; }
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 10px 2px color-mix(in srgb, var(--ui-thinking-accent) 45%, transparent);
+  }
+  50% {
+    opacity: 0.38;
+    transform: scale(0.85);
+    box-shadow: 0 0 4px 0 color-mix(in srgb, var(--ui-thinking-accent) 15%, transparent);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   #appShell .stream-cursor::before { animation: none; opacity: 0.7; }
+}
+
+/* AI streaming output — progressive gradient reveal */
+#appShell .tool-run-prose.is-live.is-tail {
+  position: relative;
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    rgb(0 0 0) 0%,
+    rgb(0 0 0) calc(100% - 1.4em),
+    rgb(0 0 0 / 75%) 100%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    rgb(0 0 0) 0%,
+    rgb(0 0 0) calc(100% - 1.4em),
+    rgb(0 0 0 / 75%) 100%
+  );
+}
+#appShell .tool-run-prose.is-live {
+  animation: streamBlockFadeIn var(--ui-duration-fast, 140ms) var(--ui-ease-out, ease-out);
+}
+@keyframes streamBlockFadeIn {
+  0% { opacity: 0.85; }
+  100% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #appShell .tool-run-prose.is-live.is-tail {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  #appShell .tool-run-prose.is-live {
+    animation: none;
+  }
 }
 
 /* "New reply" / scroll pill — floating chip, menu shadow. */

@@ -85,6 +85,7 @@
    across it, but can never make the label disappear when its bright band is
    outside the text bounds. */
 #appShell :is(
+  .shimmer-text,
   .thinking-status .thinking-status-label,
   .tool-inline-label,
   .tool-run-summary-label,
@@ -92,20 +93,35 @@
 ).shimmer-text {
   color: transparent;
   -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 0 var(--ui-text-tertiary);
   background-image: linear-gradient(
-    105deg,
+    110deg,
     var(--ui-text-tertiary) 0%,
-    var(--ui-text-tertiary) 36%,
-    var(--ui-text-primary) 50%,
-    var(--ui-text-tertiary) 64%,
+    var(--ui-text-tertiary) 26%,
+    var(--ui-text-secondary) 38%,
+    color-mix(in srgb, var(--ui-accent-strong) 85%, var(--ui-thinking-accent)) 50%,
+    var(--ui-text-secondary) 62%,
+    var(--ui-text-tertiary) 74%,
     var(--ui-text-tertiary) 100%
   );
   background-repeat: no-repeat;
-  background-size: 240% 100%;
+  background-size: 260% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   opacity: 1;
+}
+
+/* Thinking status pulse indicator: provides a breathing cue alongside the text */
+#appShell .thinking-status:has(.thinking-status-label.shimmer-text):not(:has(.tool-inline-tool-icon))::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 2px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--ui-accent-strong) 0%, var(--ui-thinking-accent) 70%, color-mix(in srgb, var(--ui-thinking-accent) 60%, transparent) 100%);
+  box-shadow: 0 0 8px 1px color-mix(in srgb, var(--ui-thinking-accent) 45%, transparent);
+  align-self: center;
+  flex-shrink: 0;
 }
 
 .thinking-status-detail {
@@ -127,6 +143,7 @@
 .turn-summary .tool-inline-tool-icon :is(svg, img) { width: 100%; height: 100%; }
 @media (prefers-reduced-motion: reduce) {
   #appShell :is(
+    .shimmer-text,
     .thinking-status .thinking-status-label,
     .tool-inline-label,
     .tool-run-summary-label,

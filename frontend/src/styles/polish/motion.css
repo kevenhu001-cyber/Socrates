@@ -26,12 +26,13 @@
    language: a slow text shimmer. Their glyphs remain still while that label
    owns the live-state cue. */
 #appShell :is(
+  .shimmer-text,
   .thinking-status-label,
   .tool-inline-label,
   .tool-run-summary-label,
   .agent-step-label
 ).shimmer-text {
-  animation: ui-activity-shimmer var(--ui-duration-shimmer, 1.8s) linear infinite;
+  animation: ui-activity-shimmer var(--ui-duration-shimmer, 2s) cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 #appShell :is(
@@ -43,9 +44,18 @@
   animation: none;
 }
 
+#appShell .thinking-status:has(.thinking-status-label.shimmer-text):not(:has(.tool-inline-tool-icon))::before {
+  animation: ui-thinking-orb var(--ui-duration-pulse, 1.2s) ease-in-out infinite;
+}
+
 @keyframes ui-activity-shimmer {
-  from { background-position: 160% 0; }
-  to { background-position: -160% 0; }
+  0% { background-position: 180% 0; }
+  100% { background-position: -180% 0; }
+}
+
+@keyframes ui-thinking-orb {
+  0%, 100% { transform: scale(1); opacity: 0.95; }
+  50% { transform: scale(0.72); opacity: 0.45; }
 }
 
 /* Recording: components/composer.css owns the dot geometry and
@@ -65,12 +75,18 @@
 
 @media (prefers-reduced-motion: reduce) {
   #appShell :is(
+    .shimmer-text,
     .thinking-status-label,
     .tool-inline-label,
     .tool-run-summary-label,
     .agent-step-label
-  ).shimmer-text,
-  #appShell .voice-recording-indicator::after {
+  ).shimmer-text {
+    animation: none;
+  }
+  #appShell :is(
+    .thinking-status:has(.thinking-status-label.shimmer-text)::before,
+    .voice-recording-indicator::after
+  ) {
     animation: none;
   }
 }
