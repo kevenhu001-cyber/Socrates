@@ -188,8 +188,8 @@ var stateStore = (function () {
             dispatchToNamespace(innerNs[1], inner);
             continue;
           }
-          var innerColon = inner.type.indexOf(':');
-          var innerRoot = innerColon >= 0 ? inner.type.slice(0, innerColon) : null;
+          var innerSlash = inner.type.indexOf('/');
+          var innerRoot = innerSlash > 0 ? inner.type.slice(0, innerSlash) : null;
           if (innerRoot === 'session' || innerRoot === 'kb'
               || innerRoot === 'search' || innerRoot === 'call'
               || innerRoot === 'ui' || innerRoot === 'exam') {
