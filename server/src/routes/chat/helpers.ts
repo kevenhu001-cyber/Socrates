@@ -942,6 +942,64 @@ export function transformMessagesForModel(messages: ChatMessage[], provider: Pro
    module load — zero per-request cost. */
 export const SSE_PRIME = ': open\n' + Array.from({ length: 32 }, () => ':' + 'o'.repeat(1022)).join('\n') + '\n\n';
 
+/* P_ttfb-prime-first — write the SSE status line + headers + 32 KB
+   prime comment in one call. The route shell invokes this BEFORE
+   awaiting the session-ownership check so the browser sees a 200 /
+   text-event-stream response the instant the request lands, instead
+   of waiting for ownership + prep + turn binding to settle. Without
+   the early prime, Express buffers the headers until the first body
+   byte arrives from the LLM (a few hundred ms on a fast network),
+   and EdgeOne's ~8 KB first-chunk buffer swallows short LLM answers
+   whole — the client gets the full reply in one shot at the end and
+   never sees a Thinking pill. Callers that already opened an SSE
+   response should pass nothing here; the helper bails on the second
+   writeHead so `runChatStreamPipeline` is still safe to call from
+   tests that drive it directly. */
+export function writeSsePrime(res: import('express').Response): boolean {
+  if (res.headersSent) return false;
+  try {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    });
+    res.flushHeaders?.();
+    res.write(SSE_PRIME);
+    try { (res as { flush?: () => void }).flush?.(); } catch { /* best effort */ }
+    return true;
+  } catch {
+    /* socket already closed — the route's req.on('close') guard
+       handles cleanup; nothing more we can do. */
+    return false;
+  }
+}
+
+/* P_ttfb-sse-error — short-circuit the SSE response once the route
+   has already primed it but a later step (ownership, prep, turn
+   binding) threw. The client sees a single `event: error` frame
+   followed by [DONE] and the socket closes; status stays 200 because
+   the response already committed. Errors BEFORE writeSsePrime should
+   still use the legacy `res.status(...).json(...)` path — this helper
+   assumes headers are out. */
+export function endSseWithError(res: import('express').Response, err: unknown): void {
+  const message = err instanceof Error ? err.message : String(err);
+  const safe = (() => {
+    try { return JSON.stringify({ error: message, message }); } catch { return '{}'; }
+  })();
+  try {
+    if (!res.headersSent) {
+      res.status(500).json({ code: 'INTERNAL', message });
+      return;
+    }
+    res.write(`event: error\ndata: ${safe}\n\n`);
+    res.write('data: [DONE]\n\n');
+    res.end();
+  } catch { /* socket closed */ }
+}
+
 /* ─────────────────────────────────────────────────────────────────
    Shared request prep — both / and /stream call this.
    ───────────────────────────────────────────────────────────────── */

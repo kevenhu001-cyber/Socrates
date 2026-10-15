@@ -5,6 +5,60 @@ import { encrypt, decrypt, encryptionKey } from '../lib/crypto.js';
 
 type ApiKeyRow = typeof apiKeys.$inferSelect;
 
+/* P_ttfb-apikey-cache — every chat turn runs `getActiveApiKey` once
+   during the request prelude (helpers.prepareChatRequest → provider
+   lookup + decrypt). The DB read is ~3–8ms and the AES-GCM decrypt
+   is another ~1ms. Both are wasted on bursts (open → list → send →
+   save) where the user's active key is unchanged across requests.
+   The cache is keyed by userId (with a single shared "global" slot
+   for the anonymous built-in key path) and explicitly invalidated at
+   every mutation site: createApiKey, the apiKeys routes' PATCH /
+   POST / DELETE, the built-in seed, and validateApiKeys when it
+   clears a corrupted ciphertext. The TTL is intentionally short — a
+   missed invalidation cannot outlive it. */
+const _apiKeyCache = new Map<string, { result: ReturnType<typeof decryptProvider> | null; cachedAt: number }>();
+const API_KEY_CACHE_TTL_MS = 30_000;
+const API_KEY_CACHE_MAX_ENTRIES = 2_000;
+
+function cacheKey(userId: string | null): string {
+  return userId ? `u:${userId}` : 'global';
+}
+
+/* `cacheGet` returns one of:
+   - { hit: true, result } — the cache has a fresh entry, return it
+     (the `result` field is the resolved provider OR null when the
+     user genuinely has no active key).
+   - { hit: false } — the cache is empty or stale; the caller must
+     hit the DB. */
+function cacheGet(userId: string | null, now: number):
+  | { hit: true; result: ReturnType<typeof decryptProvider> | null }
+  | { hit: false } {
+  const key = cacheKey(userId);
+  const entry = _apiKeyCache.get(key);
+  if (!entry) return { hit: false };
+  if (now - entry.cachedAt > API_KEY_CACHE_TTL_MS) {
+    _apiKeyCache.delete(key);
+    return { hit: false };
+  }
+  return { hit: true, result: entry.result };
+}
+
+function cacheSet(userId: string | null, result: ReturnType<typeof decryptProvider> | null, now: number) {
+  if (_apiKeyCache.size >= API_KEY_CACHE_MAX_ENTRIES) {
+    const oldest = _apiKeyCache.keys().next();
+    if (!oldest.done) _apiKeyCache.delete(oldest.value);
+  }
+  _apiKeyCache.set(cacheKey(userId), { result, cachedAt: now });
+}
+
+/* Drop one cached resolution (the caller knows the exact user that
+   changed). `null` clears the whole cache — used by the built-in
+   seed path which mutates a global key for everyone. */
+export function invalidateApiKeyCache(userId?: string | null): void {
+  if (userId == null) _apiKeyCache.clear();
+  else _apiKeyCache.delete(cacheKey(userId));
+}
+
 /* Masked preview — suffix only. The previous prefix hint (first 8
    chars) exposed the most identifying part of the secret
    (e.g. `sk-ant-…`) to anyone reading the DB or logs. */
@@ -17,36 +71,45 @@ function keyHintFor(key: string): string {
  * Returns { url, model, keyPlaintext, keyHint } or null.
  */
 export async function getActiveApiKey(userId: string | null) {
+  const now = Date.now();
+  /* P_ttfb-apikey-cache — short-circuit before the DB round-trip when
+     the per-user cache is warm. The anonymous / global key shares a
+     single cache slot because it is the same row for every anonymous
+     request. */
+  const cached = cacheGet(userId, now);
+  if (cached.hit) return cached.result;
+
+  let result: ReturnType<typeof decryptProvider> | null = null;
   if (!userId) {
     // Anonymous users: check for built-in Beagle provider (global)
     const db = getDb();
     const [globalKey] = await db.select().from(apiKeys)
       .where(and(eq(apiKeys.isActive, true), eq(apiKeys.isBuiltIn, true), isNotNull(apiKeys.keyCiphertext)))
       .limit(1);
-    if (globalKey) return decryptProvider(globalKey);
-    return null;
-  }
-
-  const db = getDb();
-  // First try user's active key (must have a ciphertext — a row without
-  // one can't produce a usable provider and would otherwise short-circuit
-  // the built-in fallback, causing a 503 KEY_DECRYPT_FAILED).
-  let [key] = await db.select().from(apiKeys)
-    .where(and(eq(apiKeys.userId, userId), eq(apiKeys.isActive, true), isNotNull(apiKeys.keyCiphertext)))
-    .limit(1);
-
-  if (!key) {
-    // Fall back to built-in (must also have a ciphertext).
-    // Order by createdAt so the original seeded row is always preferred
-    // over any duplicates that may have been created by previous seed runs.
-    [key] = await db.select().from(apiKeys)
-      .where(and(eq(apiKeys.isActive, true), eq(apiKeys.isBuiltIn, true), isNotNull(apiKeys.keyCiphertext)))
-      .orderBy(apiKeys.createdAt)
+    if (globalKey) result = decryptProvider(globalKey);
+  } else {
+    const db = getDb();
+    // First try user's active key (must have a ciphertext — a row without
+    // one can't produce a usable provider and would otherwise short-circuit
+    // the built-in fallback, causing a 503 KEY_DECRYPT_FAILED).
+    let [key] = await db.select().from(apiKeys)
+      .where(and(eq(apiKeys.userId, userId), eq(apiKeys.isActive, true), isNotNull(apiKeys.keyCiphertext)))
       .limit(1);
-  }
 
-  if (!key) return null;
-  return decryptProvider(key);
+    if (!key) {
+      // Fall back to built-in (must also have a ciphertext).
+      // Order by createdAt so the original seeded row is always preferred
+      // over any duplicates that may have been created by previous seed runs.
+      [key] = await db.select().from(apiKeys)
+        .where(and(eq(apiKeys.isActive, true), eq(apiKeys.isBuiltIn, true), isNotNull(apiKeys.keyCiphertext)))
+        .orderBy(apiKeys.createdAt)
+        .limit(1);
+    }
+
+    if (key) result = decryptProvider(key);
+  }
+  cacheSet(userId, result, now);
+  return result;
 }
 
 function decryptProvider(key: ApiKeyRow) {
@@ -132,6 +195,12 @@ export async function seedBuiltInProvider() {
       }).returning({ id: apiKeys.id });
       console.log('[seed] Created built-in Beagle provider (id=' + (ins[0] && ins[0].id) + ')');
     }
+    /* P_ttfb-apikey-cache — the built-in key is the global fallback
+       for both authenticated and anonymous users. Any seed run
+       (first boot, re-seed, or the legacy cleanup path above) must
+       drop the cached entry so the next /api/chat/stream picks up
+       the fresh ciphertext. */
+    invalidateApiKeyCache(null);
   } catch (err) {
     console.error('[seed] Failed to seed built-in provider:', (err as Error).message);
   }
@@ -174,6 +243,10 @@ export async function validateApiKeys() {
 
     if (corruptedCount > 0) {
       console.warn(`[validateApiKeys] Cleared ${corruptedCount} corrupted key(s). Users must re-enter their API keys.`);
+      /* P_ttfb-apikey-cache — at least one row was mutated; drop
+         the entire cache so the next read re-resolves. Cheaper than
+         tracking which userId's row was touched. */
+      invalidateApiKeyCache(null);
     } else {
       console.log('[validateApiKeys] All API keys validated successfully.');
     }
@@ -223,6 +296,12 @@ export async function createApiKey(userId: string, { label, url, model, key, isM
      * smuggle a non-boolean through zod's passthrough. */
     isMultimodal: isMultimodal === true,
   }).returning(SAFE_CREATE_PROJECTION);
+
+  /* P_ttfb-apikey-cache — a new key creates a new active row (the
+     insert is also the activation), so the per-user cache is now
+     stale. Drop it so the next /api/chat/stream resolves to the
+     new provider. */
+  invalidateApiKeyCache(userId);
 
   return result;
 }

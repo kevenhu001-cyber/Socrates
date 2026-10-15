@@ -85,41 +85,48 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
   })();
 
   // Set SSE headers
-  res.writeHead(200, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache, no-store, must-revalidate',
-    'Pragma': 'no-cache',
-    'Expires': '0',
-    'Connection': 'keep-alive',
-    'X-Accel-Buffering': 'no',
-  });
+  /* P_ttfb-prime-first — when the route shell has already primed
+     the SSE response (writeSsePrime) before awaiting ownership,
+     skip the pipeline's own writeHead + SSE_PRIME write. The two
+     code paths converge here so direct pipeline callers (tests)
+     still get a self-contained pipeline that writes headers itself. */
+  if (!ctx.ssePrimed) {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    });
 
-  /* Prime the stream BEFORE the upstream has anything to say.
+    /* Prime the stream BEFORE the upstream has anything to say.
 
-     1. `res.flushHeaders()` forces Node to write the response status
-        line + headers to the socket immediately. Without this, Express
-        buffers the headers until the first body byte arrives from the
-        LLM, which on a fast network can be a few hundred ms — the
-        browser has painted the page but shows nothing yet, making the
-        request look hung.
+       1. `res.flushHeaders()` forces Node to write the response status
+          line + headers to the socket immediately. Without this, Express
+          buffers the headers until the first body byte arrives from the
+          LLM, which on a fast network can be a few hundred ms — the
+          browser has painted the page but shows nothing yet, making the
+          request look hung.
 
-     2. EdgeOne CDN (~8 KB) and Safari's fetch ReadableStream (~1 KB)
-        both apply a first-chunk buffer: they hold the start of the
-        body until enough bytes accumulate, then switch to streaming
-        mode. A short LLM answer fits entirely inside that buffer, so
-        the client receives the whole response in one shot at the end
-        — no progressive streaming, no Thinking pill.
+       2. EdgeOne CDN (~8 KB) and Safari's fetch ReadableStream (~1 KB)
+          both apply a first-chunk buffer: they hold the start of the
+          body until enough bytes accumulate, then switch to streaming
+          mode. A short LLM answer fits entirely inside that buffer, so
+          the client receives the whole response in one shot at the end
+          — no progressive streaming, no Thinking pill.
 
-        SSE_PRIME (32 KB of `:` comment lines, shared with the
-        built-in minimax proxy) overflows both buffers so subsequent
-        writes — even one-byte deltas — flow through immediately.
-        Comment lines are valid per the SSE spec and ignored by every
-        parser, including ours. */
-  try {
-    res.flushHeaders();
-    res.write(SSE_PRIME);
-    try { (res as { flush?: () => void }).flush?.(); } catch {}
-  } catch { /* socket already closed — the req.on('close') guard below handles it */ }
+          SSE_PRIME (32 KB of `:` comment lines, shared with the
+          built-in minimax proxy) overflows both buffers so subsequent
+          writes — even one-byte deltas — flow through immediately.
+          Comment lines are valid per the SSE spec and ignored by every
+          parser, including ours. */
+    try {
+      res.flushHeaders();
+      res.write(SSE_PRIME);
+      try { (res as { flush?: () => void }).flush?.(); } catch {}
+    } catch { /* socket already closed — the req.on('close') guard below handles it */ }
+  }
 
   /* P_sse-metrics — bump the active-connection counter so the
      /api/health endpoint can report how many SSE streams are open

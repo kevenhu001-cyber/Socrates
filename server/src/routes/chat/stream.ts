@@ -26,7 +26,10 @@ import { chatTurns } from '../../db/schema.js';
 import { and, eq } from 'drizzle-orm';
 import {
   chatRateLimitDispatch,
+  endSseWithError,
   prepareChatRequest,
+  writeSsePrime,
+  ChatPayloadSchema,
 } from './helpers.js';
 import { runChatStreamPipeline } from './pipeline/runChatStreamPipeline.js';
 import { createStreamToolContext } from './pipeline/toolContext.js';
@@ -74,15 +77,43 @@ export function registerStreamRoute(router: Router) {
       const sessionIdFromQuery = parseChatSessionId(req.query.sessionId ?? req.body?.sessionId);
       const projectIdFromBody = typeof req.body?.projectId === 'string' ? req.body.projectId : null;
 
+      /* P_ttfb-prime-first — validate the body schema BEFORE we
+         commit the SSE response. prepareChatRequest() does its own
+         parse-and-400 path, but a 400 is no longer possible once the
+         status line is out: writeSsePrime below sets it to 200 + SSE
+         headers and Express will not let us change it. A bad body
+         therefore gets the legacy JSON 400 here so the client gets a
+         structured error, while every error AFTER the prime is
+         surfaced as an SSE `event: error` frame. */
+      try {
+        ChatPayloadSchema.parse(req.body);
+      } catch (err) {
+        res.status(400).json({ code: 'INVALID_REQUEST', message: (err as Error).message });
+        return;
+      }
+
+      /* P_ttfb-prime-first — write SSE status + headers + 32 KB
+         prime NOW, before the session-ownership DB round-trip and
+         before the provider/RAG/memory prelude start. The browser
+         sees a 200 the instant the request lands, and EdgeOne's
+         first-chunk buffer is already overflowed so a fast LLM
+         answer still streams progressively instead of arriving in
+         one shot at the end. If anything below throws after this
+         point, endSseWithError writes a single `event: error`
+         frame so the client gets a structured failure rather than a
+         half-open connection. */
+      const ssePrimed = writeSsePrime(res);
+
       /* P_prep-parallel — the session-ownership gate, the detached-turn
          binding and the request prelude (provider, RAG, memories, …) are
          independent reads, and they used to run one after another before the
          first upstream byte. Start them together.
 
          The ownership gate still decides the outcome: nothing is streamed
-         unless it passes, and its error wins over anything the prelude
-         produced. The prelude writes its own error responses, so once
-         headers are out an ownership failure can only end the request. */
+         unless it passes. The prelude used to write its own 400/500
+         responses; now that SSE is already committed, prep's failures
+         surface as an `event: error` frame via endSseWithError below
+         instead of a JSON error body. */
       const ownershipPromise: Promise<unknown> = sessionIdFromQuery
         ? requireOwnedSessionAfterSave(sessionIdFromQuery, req.userId!)
         : Promise.resolve(null);
@@ -91,6 +122,11 @@ export function registerStreamRoute(router: Router) {
          (bad turnId) from being reported as unhandled while ownership is
          still pending. */
       turnPromise.catch(() => {});
+      /* P_ttfb-prime-first — when the SSE response is already committed,
+         prepareChatRequest's body-validation 400 path is unreachable
+         (we parsed above). The remaining failures (provider lookup,
+         RAG, memory) are async I/O and surface as a thrown error, which
+         we route through endSseWithError below instead of `next(err)`. */
       const prepPromise = prepareChatRequest(req, res);
       prepPromise.catch(() => {});
       /* P_prep-parallel — the tool context (connector snapshots +
@@ -99,17 +135,45 @@ export function registerStreamRoute(router: Router) {
          of inside the pipeline after prep settles. The connector reads
          then overlap the RAG embedding round-trip rather than queueing
          behind it on the path to the first token. The mode mirrors the
-         ChatPayloadSchema default; an invalid body fails prep below and
-         the orphaned promise is dropped (rejection already handled). */
+         ChatPayloadSchema default; an invalid body is rejected above
+         and never reaches the tool context. */
       const bodyMode = (req.body as { mode?: unknown } | undefined)?.mode;
       const toolCtxPromise = createStreamToolContext(
         req as typeof req & { userId?: string },
         bodyMode === 'tutor' ? 'tutor' : 'chat',
       );
       toolCtxPromise.catch(() => {});
-      await ownershipPromise;
-      const [turnId, prep] = await Promise.all([turnPromise, prepPromise]);
-      if (!prep || !prep.ok) return;
+
+      let turnId: string | null = null;
+      let prep: Awaited<ReturnType<typeof prepareChatRequest>> | null = null;
+      try {
+        await ownershipPromise;
+        [turnId, prep] = await Promise.all([turnPromise, prepPromise]);
+      } catch (err) {
+        /* P_ttfb-prime-first — ownership / turn binding / prep threw
+           AFTER the SSE prime. Surface the error as a single
+           `event: error` frame + [DONE] and end the socket. The
+           response status stays 200 because the headers already went
+           out; the client can tell apart success vs failure by the
+           `event: error` frame and the [DONE] terminator. */
+        if (ssePrimed) {
+          endSseWithError(res, err);
+          return;
+        }
+        throw err;
+      }
+      if (!prep || !prep.ok) {
+        /* Defensive — body validation already ran above, so this
+           branch only fires if prepareChatRequest grows new error
+           modes that don't throw. Forward them through the SSE
+           error frame path so the client gets a structured failure
+           rather than a hung connection. */
+        if (ssePrimed) {
+          endSseWithError(res, new Error('Request preparation failed'));
+          return;
+        }
+        return;
+      }
 
       await runChatStreamPipeline({
         req: req as typeof req & { userId?: string },
@@ -119,6 +183,7 @@ export function registerStreamRoute(router: Router) {
         projectIdFromBody,
         turnId,
         toolCtxPromise,
+        ssePrimed,
       });
     } catch (err) { next(err); }
   });

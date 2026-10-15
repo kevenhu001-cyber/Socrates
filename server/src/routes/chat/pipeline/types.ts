@@ -107,4 +107,14 @@ export interface ChatStreamPipelineContext {
    * up only the overlap.
    */
   toolCtxPromise?: Promise<import('./toolContext.js').StreamToolContext>;
+  /**
+   * P_ttfb-prime-first — set when the route shell has already
+   * written the SSE status line + headers + 32 KB prime comment
+   * (helpers.writeSsePrime) before awaiting ownership/prep. The
+   * pipeline skips its own writeHead + SSE_PRIME write when this is
+   * true so the response is not committed twice. Undefined / false
+   * keeps the legacy self-contained path so direct pipeline callers
+   * (tests) still work.
+   */
+  ssePrimed?: boolean;
 }

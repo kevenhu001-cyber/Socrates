@@ -8,6 +8,7 @@ import { audit } from '../middleware/audit.js';
 import { encrypt, encryptionKey } from '../lib/crypto.js';
 import { getApiKeyLimit } from '../lib/tiers.js';
 import { isUuid } from '../lib/validate.js';
+import { invalidateApiKeyCache } from '../services/apiKey.js';
 
 /* P_apikey-ciphertext-leak — projection shared by every response that
  * returns an apiKeys row. The encrypted AES-GCM payload is stored
@@ -166,6 +167,12 @@ router.post('/', audit('create_api_key', (req) => ({ label: req.body?.label, url
       isMultimodal,
     }).returning(SAFE_PROJECTION);
 
+    /* P_ttfb-apikey-cache — a fresh row is the new active provider
+       (the deactivation above plus the insert). Drop the cached
+       entry for this user so the next /api/chat/stream re-resolves
+       to the new key instead of serving the old one. */
+    invalidateApiKeyCache(req.userId);
+
     return res.status(201).json(result);
   } catch (err) { next(err); }
 });
@@ -219,6 +226,11 @@ router.patch('/:id', async (req, res, next) => {
 
     await db.update(apiKeys).set(patch).where(eq(apiKeys.id, req.params.id));
     const [updated] = await db.select(SAFE_PROJECTION).from(apiKeys).where(eq(apiKeys.id, req.params.id)).limit(1);
+    /* P_ttfb-apikey-cache — a PATCH can flip isActive (selecting a
+       different key), rotate the ciphertext, or change url/model.
+       All three change the answer getActiveApiKey() should give, so
+       drop the cached entry. */
+    invalidateApiKeyCache(req.userId);
     return res.json(updated);
   } catch (err) { next(err); }
 });
@@ -233,6 +245,12 @@ router.delete('/:id', audit('delete_api_key'), async (req, res, next) => {
       .limit(1);
     if (!existing) throw new NotFound('API key not found');
     await db.delete(apiKeys).where(eq(apiKeys.id, req.params.id));
+    /* P_ttfb-apikey-cache — the deleted key may have been the
+       active row (and likely was, since users delete the key
+       they were using). Drop the cached entry so the next
+       /api/chat/stream re-resolves, falling through to either
+       the user's other active key or the built-in default. */
+    invalidateApiKeyCache(req.userId);
     return res.status(204).end();
   } catch (err) { next(err); }
 });
