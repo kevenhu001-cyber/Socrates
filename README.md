@@ -398,7 +398,6 @@ Socrates/
 │   ├── ref/                # Reference captures & playbooks
 │   ├── assets/hero.svg     # README hero image
 │   └── STRUCTURE.md        # docs/ placement convention
-├── capacitor/              # Legacy Capacitor WebView shell (frozen)
 ├── tools-rust/             # Rust mechanism library (native + WASM)
 ├── ops/nginx/              # CSP + performance nginx snippets
 ├── scripts/                # Operator & CI utility scripts

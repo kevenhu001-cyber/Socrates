@@ -76,6 +76,8 @@
 | 0014 | 移除 open-connector vendored fork，连接器集成收敛为 cloud-only | Accepted | 0003、0010、F-003 |
 | 0015 | 后端测试保留 `.js` 扩展名，由 `tsx` 解析 `.ts` 源 | Accepted | 0003、F-016 |
 
-> 0004–0008 为预留号段（留给在审/草稿中的 P1 决策），当前未分配。新 ADR 从 0016 起取号。
+| 0016 | 移除 `capacitor/` 遗留 WebView 壳及其 CI workflow | Accepted | 0003、0009、0014、F-007 |
+
+> 0004–0008 为预留号段（留给在审/草稿中的 P1 决策），当前未分配。新 ADR 从 0017 起取号。
 
 后续新增 ADR 须在本表追加一行。

@@ -34,7 +34,6 @@ mobile/dist-*
 mobile/android
 mobile/ios
 tools-rust/target
-capacitor/android
 
 # ── Test / tooling artifacts ──
 **/playwright-report
@@ -74,7 +73,6 @@ frontend
 site
 mobile
 desktop
-capacitor
 docs
 tasks
 assets

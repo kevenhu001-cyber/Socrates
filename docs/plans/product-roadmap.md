@@ -235,7 +235,7 @@
 
 1. **继续在教学主链路找同类缺陷**，而不是开 P1.3。上一轮的三个缺陷有共同特征——都是"实现了、但从没人断言过用户实际看到的那一层"。错题本的"已攻克/重做"、诊断评估的结果页、诊断出题流程都还没被 e2e 覆盖到文案层。
 2. **消息列表虚拟化**（见 `docs/plans/2026-09-26-session-switch-perf-plan.md`）—— 长会话首访的剩余主体，与 `turnAnchor` 滚动锚定 / 流式高度 / postRender 回填耦合过深，需单独立项。
-3. **F-007 capacitor 定生死** —— 决定删除还是正式支持，避免它继续被 CI 构建却无人使用。
+3. ~~**F-007 capacitor 定生死**~~ ✅ 2026-10-15 已决：**删除**。`capacitor/` 与 `build-capacitor-apk.yml` 一并移除，见 `docs/adr/0016-capacitor-shell-removal.md`。
 4. **F-015 / F-004：`site/` 与 `packages/` 补 CI** —— `packages/` 是 `mobile/` 的依赖来源，无 CI 意味着 `@socrates/core` 的破坏性改动会静默通过。
 5. **P1.3 Agent 分屏** —— 降级待议，见 P1.3 节的立项条件。
 6. **P2 持续推进**：每个功能上线时同步补齐无障碍与国际化，避免债务堆积。

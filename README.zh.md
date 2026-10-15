@@ -320,7 +320,6 @@ Socrates/
 │   ├── ref/                # 参考抓取与操作手册
 │   ├── assets/hero.svg     # README 英雄图片
 │   └── STRUCTURE.md        # docs/ 落点约定
-├── capacitor/              # 遗留 Capacitor WebView 壳（冻结）
 ├── tools-rust/             # Rust 机制库（native + WASM）
 ├── ops/nginx/              # CSP + 性能 nginx 片段
 ├── scripts/                # 运维与 CI 工具脚本

@@ -262,9 +262,10 @@ app.use(helmet({
   // cdn.jsdelivr.net scripts, which no longer exist — and the SPA reaches
   // the API same-origin through the nginx /api/v2 reverse proxy, so that
   // rationale never applied either. The honest reason to keep it wide is
-  // that the non-browser clients (Expo web build, the frozen Capacitor
-  // shell) have not been audited for no-cors subresource loads against the
-  // API host; narrowing this is a separate, testable change.
+  // that the non-browser clients (Expo web build) have not been audited for
+  // no-cors subresource loads against the API host; narrowing this is a
+  // separate, testable change. (The Capacitor shell that used to be the
+  // second such client was removed 2026-10-15 — ADR 0016.)
   crossOriginResourcePolicy: { policy: 'cross-origin' },
   // Same-origin opener — prevents window.opener leaks.
   crossOriginOpenerPolicy: { policy: 'same-origin' },

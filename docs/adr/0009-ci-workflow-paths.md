@@ -11,7 +11,7 @@
 
 - `server-ci.yml`、`mobile-apk.yml`、`build-apk.yml`、`agent-tooling-ci.yml` 都已配置 `paths:` 限制 —— **触发是精准的**。
 - `ci.yml`（前端 + 后端 + shared 的默认 merge gate）是 on-push-everything 类型 —— 任何改动都会触发 frontend / server 完整 build + Playwright smoke + WASM build。
-- `build-capacitor-apk.yml` / `release-clients.yml` 等默认按需人工触发（`workflow_dispatch`），仅在 push 时按现有 `paths` 触发 —— 现状可接受。
+- `release-clients.yml` 等默认按需人工触发（`workflow_dispatch`），仅在 push 时按现有 `paths` 触发 —— 现状可接受。
 
 具体成本：docs-only PR（如本次 P0 文档治理 PR、ADR 合入 PR）会触发 ci.yml 跑一次完整前端构建（约 5–10 分钟）+ Playwright setup（约 3 分钟）= 每次 docs 改动 8–13 分钟的 CI 时间浪费。本仓库最近的 ADR 治理频率较高，这种浪费成倍放大。
 
@@ -53,7 +53,7 @@
 
 ## 影响
 
-- **CI**：docs-only / README / .gitignore 类 PR 不再消耗 frontend / server / shared 三个 job 的时间（`ci.yml` 内无 Capacitor job；Capacitor 构建在 `build-capacitor-apk.yml`）。
+- **CI**：docs-only / README / .gitignore 类 PR 不再消耗 frontend / server / shared 三个 job 的时间（`ci.yml` 内无 Capacitor job）。
 - **覆盖**：所有代码改动仍会被 `ci.yml` 触发；不丢任何"该跑的测试"面。
 - **AGENTS.md**：已修订 line 20 段（commit `be97018` 之前的状态恢复后的最新版），明确说明每条 workflow 的实际覆盖。
 - **`docs/STRUCTURE.md`**：路径 + ADR 索引指向本文件。
