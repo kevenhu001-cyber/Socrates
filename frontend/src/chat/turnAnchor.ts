@@ -597,16 +597,19 @@ export function scheduleActiveTurnToTop(
     }
     if (!retryViewport && !anchorReservePainted()) return;
     if (!retryViewport) list.__socratesTurnViewportOwner = true;
+    /* Read layout once. Both rects land in the same flush and reusing
+       `anchorInList` below skips a separate `offsetTop` read, which
+       would otherwise force a second layout flush in this rAF body. */
     const listRect = list.getBoundingClientRect();
     const anchorRect = anchor.getBoundingClientRect();
-    /* `offsetTop` is layout-based (transforms ignored), so the entrance
-       animation on the fresh user bubble cannot bias the target. Retries
-       keep the rect-based measurement for their exact visible restore. */
-    const promptTarget = (): number =>
-      Math.max(0, (anchor as HTMLElement).offsetTop - targetOffset);
+    const anchorInList = anchorRect.top - listRect.top;
+    /* `target` is consumed each animation frame by velocityScrollTo via
+       `opts.target`; capture the live offset once so the per-frame call
+       doesn't pay for another layout flush. */
+    const promptTarget = (): number => Math.max(0, anchorInList - targetOffset);
     const target = retryViewport
-      ? Math.max(0, list.scrollTop + (anchorRect.top - listRect.top) - targetOffset)
-      : Math.max(0, (anchor as HTMLElement).offsetTop - targetOffset);
+      ? Math.max(0, list.scrollTop + anchorInList - targetOffset)
+      : promptTarget();
     /* The retry placeholder's min-height and the React removal of the
        failed row can settle over several frames. A single scrollTop write
        therefore runs against stale scrollHeight and leaves the retry well

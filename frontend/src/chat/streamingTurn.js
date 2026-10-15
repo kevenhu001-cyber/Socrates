@@ -111,36 +111,18 @@ export function addStreamingMessage(opts){
   var clientId=(opts&&opts.clientId)?opts.clientId:("msg-"+generateId());
   div.dataset.clientId=clientId;
   /* P_stream-start-reserve — the assistant placeholder is published to the
-     runtime bridge before this turn's leading reserve is laid out. Without
-     a pre-stamped reserve, the first React commit paints the bubble at its
-     natural height (status pill + cursor only, ~28px) and the new row
-     shrinks the transcript's scroll range by several hundred pixels — the
-     browser clamps scrollTop, the reader's position snaps to the new
-     bottom, and the prompt slides into view only when
-     scheduleActiveTurnToTop() measures the layout two frames later. The
-     reserve stamped here lives on the message entry, so MessageItem reads
-     it on its first commit and the bubble paints with the right height
-     synchronously; no second layout pass, no position snap, no reload
-     flicker. The user bubble's own size is the only thing that has just
-     changed, so we measure *its* post-commit height in a rAF, then stamp
-     the reserve onto the assistant entry before the chat-runtime bridge
-     publishes the new revision — the order keeps React's commit cycle
-     one and only one. */
-  var _initialReserve=0;
+     runtime bridge before this turn's leading reserve is laid out. The
+     reserve measurement is deferred one rAF: doing it synchronously
+     inside addStreamingMessage forced a layout flush on the click frame
+     (after the user bubble already changed the transcript), costing
+     50–120ms on populated transcripts. The user bubble's own size is
+     the only thing that has just changed, so we measure *its*
+     post-commit height in the next rAF, then stamp the reserve onto
+     the assistant entry via session/update-message — MessageItem reads
+     it on its next commit and the bubble paints with the right height.
+     The initial dispatch carries no reserve so React commits at natural
+     height; position() converges once the second rAF lands. */
   var _initialTargetOffset=TURN_ANCHOR_TOP_OFFSET;
-  try {
-    if (list && typeof turnAnchorReserve === 'function') {
-      var _listStyles=(typeof window !== 'undefined' && window.getComputedStyle) ? window.getComputedStyle(list) : null;
-      var _listBottomPad=_listStyles ? (parseFloat(_listStyles.paddingBottom) || 0) : 0;
-      var _latestUser=list.querySelector ? list.querySelector('.msg.user:last-of-type') : null;
-      var _promptHeight=_latestUser ? _latestUser.getBoundingClientRect().height : 0;
-      _initialReserve=turnAnchorReserve(
-        list.clientHeight,
-        _promptHeight,
-        _listBottomPad,
-      );
-    }
-  } catch (e) { reportSwallow(e, 'streamingTurn._listStyles.measureReserve'); }
   var msgIdx=stateStore.dispatch({type:"session/append-message",payload:{
     clientId:clientId,
     role:"assistant",
@@ -148,11 +130,41 @@ export function addStreamingMessage(opts){
     html:null,
     type:"streaming",
     actions:null,
-    _turnAnchorMinHeight: _initialReserve > 0 ? _initialReserve : undefined,
-    _turnAnchorMode: _initialReserve > 0 ? 'turn' : undefined,
-    _turnViewportTarget: _initialReserve > 0 ? _initialTargetOffset : undefined,
+    _turnAnchorMinHeight: undefined,
+    _turnAnchorMode: undefined,
+    _turnViewportTarget: undefined,
   }});
   publishReactChatRuntime({type:"stream-started",messageId:clientId});
+  /* Defer the leading-reserve measurement to the next animation frame.
+     The synchronous click chain never reads layout; the rAF callback
+     below pays for one flush after React commits the user bubble. */
+  if (list && typeof turnAnchorReserve === 'function') {
+    requestAnimationFrame(function stampTurnReserve(){
+      try {
+        if (!list || typeof list.getBoundingClientRect !== 'function') return;
+        var _listStyles=(typeof window !== 'undefined' && window.getComputedStyle) ? window.getComputedStyle(list) : null;
+        var _listBottomPad=_listStyles ? (parseFloat(_listStyles.paddingBottom) || 0) : 0;
+        var _latestUser=list.querySelector ? list.querySelector('.msg.user:last-of-type') : null;
+        var _promptHeight=_latestUser ? _latestUser.getBoundingClientRect().height : 0;
+        var _reserve=turnAnchorReserve(
+          list.clientHeight,
+          _promptHeight,
+          _listBottomPad,
+        );
+        if (_reserve > 0) {
+          stateStore.dispatch({
+            type:'session/update-message',
+            clientId: clientId,
+            patch: {
+              _turnAnchorMinHeight: _reserve,
+              _turnAnchorMode: 'turn',
+              _turnViewportTarget: _initialTargetOffset,
+            },
+          });
+        }
+      } catch (e) { reportSwallow(e, 'streamingTurn.stampTurnReserve.measure'); }
+    });
+  }
 
   /* Shared turn state — passed to every helper factory below so the
      extracted modules can read/mutate the same closure-bound values
