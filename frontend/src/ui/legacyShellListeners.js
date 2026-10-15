@@ -30,6 +30,25 @@ export function mountLegacyShellListeners(actions) {
     let surface = 'topic';
     try { surface = readComposerSurface(); } catch (_) { /* default above */ }
     const streaming = button?.dataset.stop === '1' || button?.classList.contains('chat-stop') || button?.classList.contains('agent-stop');
+    /* P_composer-dblclick-guard — a fast double-click on the send
+       button used to fire the full click chain twice (addMessage →
+       session/append-message → addStreamingMessage → precreate →
+       playSendGlyph). The second click is a re-entrancy that doesn't
+       produce a usable turn but still pays every cost. Set
+       pointer-events:none for one animation frame so the second
+       synthetic click cannot land on the same button; the next rAF
+       restores it after the React commit. Voice mode below skips
+       the guard because the speech toggle reuses the same button
+       and a single tap must remain reliable. */
+    const guardReentrancy = !streaming && button?.classList.contains('active');
+    if (guardReentrancy && button) {
+      button.style.pointerEvents = 'none';
+      const raf = typeof requestAnimationFrame === 'function'
+        ? requestAnimationFrame
+        : null;
+      if (raf) raf(() => { button.style.pointerEvents = ''; });
+      else setTimeout(() => { button.style.pointerEvents = ''; }, 16);
+    }
     if (button && !button.classList.contains('active') && !streaming) {
       window.toggleSpeechInput?.(surface);
       return;
