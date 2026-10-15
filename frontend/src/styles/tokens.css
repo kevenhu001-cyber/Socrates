@@ -118,7 +118,10 @@
   --ui-duration-pulse: 1200ms;
   --ui-duration-pulse-slow: 1600ms;
   --ui-duration-spin: 900ms;
-  --ui-duration-shimmer: 1800ms;
+  /* Steady activity wave: slow enough to read as "working", not "flashing".
+     Linear motion + a seamless loop (see polish/motion.css) keep the tempo
+     constant so the label feels stable. */
+  --ui-duration-shimmer: 3000ms;
 
   /* Wave loader (styles/components/wave.css + react/wave/Wave.tsx).
      A left-to-right band of bars whose lit column travels across the row and

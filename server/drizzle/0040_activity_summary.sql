@@ -1,1 +1,0 @@
-ALTER TABLE "messages" ADD COLUMN "activity_summary" jsonb;

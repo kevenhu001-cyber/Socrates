@@ -23,8 +23,12 @@
 }
 
 /* Thinking, inline tools, grouped tools and agent steps share one motion
-   language: a slow text shimmer. Their glyphs remain still while that label
-   owns the live-state cue. */
+   language: a slow, constant-speed light sweep. Linear timing keeps the
+   velocity even across the whole cycle (no ease-in-out surge). The travel
+   stays strictly inside 0% ↔ 100%: with a 220%-wide background the image
+   covers the glyphs at every frame, so no blank (transparent) region can
+   ever slide over the text. Glyphs never move and opacity never changes:
+   only the highlight travels, left to right. */
 #appShell :is(
   .shimmer-text,
   .thinking-status-label,
@@ -32,7 +36,7 @@
   .tool-run-summary-label,
   .agent-step-label
 ).shimmer-text {
-  animation: ui-activity-shimmer var(--ui-duration-shimmer, 2s) cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation: ui-activity-shimmer var(--ui-duration-shimmer, 3s) linear infinite;
 }
 
 #appShell :is(
@@ -45,8 +49,11 @@
 }
 
 @keyframes ui-activity-shimmer {
-  0% { background-position: 180% 0; }
-  100% { background-position: -180% 0; }
+  /* 100% parks the highlight just left of the glyphs, 0% just right of
+     them; both ends (and every frame between) keep the background fully
+     covering the text, so the loop wraps with no jump and no blank gap. */
+  0% { background-position: 100% 0; }
+  100% { background-position: 0% 0; }
 }
 
 /* Recording: components/composer.css owns the dot geometry and

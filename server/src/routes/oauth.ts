@@ -17,7 +17,7 @@ import {
   issueTokenPair,
   refreshWithinWindow,
   revokeTokenValue,
-} from '../services/oauthTokens.js';
+} from '../services/integrations/oauthTokens.js';
 import {
   OAUTH_ISSUER,
   wwwAuthenticateChallenge,

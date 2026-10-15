@@ -7,12 +7,12 @@ import { requireAuth } from '../middleware/auth.js';
 import {
   PROJECT_CONNECTOR_CATALOG, cloudProviderSelector, connectorErrorPayload, externalUserId,
   getProjectConnector, getProjectConnectorProvider, isProjectConnectorConfigured,
-} from '../services/oomolProjectConnector.js';
+} from '../services/integrations/oomolProjectConnector.js';
 import {
   OC_ID_PREFIX, buildOpenConnectorCatalogForCloud, buildOpenConnectorStubCatalog, ocAuthType, ocInventoryEntry,
   type OcCatalogItem,
-} from '../services/openConnectorCatalog.js';
-import { OPEN_CONNECTOR_CLOUD_AUTH } from '../services/openConnectorCloudAuth.generated.js';
+} from '../services/integrations/openConnectorCatalog.js';
+import { OPEN_CONNECTOR_CLOUD_AUTH } from '../services/integrations/openConnectorCloudAuth.generated.js';
 
 const router = Router();
 const CONNECTION_NAME = 'socrates';

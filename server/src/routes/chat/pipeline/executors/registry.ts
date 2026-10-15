@@ -24,9 +24,9 @@ import {executePlanSpec} from './planSpec.js';
 import {executeCreateSite} from './createSite.js';
 import {executePersonalConnector, executeProjectConnector,} from './connectors.js';
 import {executeOpenConnector} from './openConnector.js';
-import {CONNECTOR_TOOL_NAMES} from '../../../../services/connectorTools.js';
-import {PROJECT_CONNECTOR_TOOL_NAMES} from '../../../../services/projectConnectorTools.js';
-import {getOpenConnectorChatTool} from '../../../../services/openConnectorChatTools.js';
+import {CONNECTOR_TOOL_NAMES} from '../../../../services/integrations/connectorTools.js';
+import {PROJECT_CONNECTOR_TOOL_NAMES} from '../../../../services/integrations/projectConnectorTools.js';
+import {getOpenConnectorChatTool} from '../../../../services/integrations/openConnectorChatTools.js';
 
 export interface ToolExecutorRegistry {
   /** Exact-name executor map. */

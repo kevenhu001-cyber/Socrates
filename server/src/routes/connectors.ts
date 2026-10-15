@@ -8,12 +8,12 @@ import { connectorAuthLimiter, searchLimiter } from '../middleware/rateLimit.js'
 import {
   completeGithubAuthorization, createOAuthState, githubCallbackUrl, githubIsConfigured,
   listGithubInstallationRepositories, verifyGithubWebhook, verifyOAuthState,
-} from '../services/githubConnector.js';
-import { completeFeishuAuthorization, feishuAuthorizationUrl, feishuIsConfigured } from '../services/feishuConnector.js';
-import { completeGiteeAuthorization, giteeAuthorizationUrl, giteeIsConfigured, listGiteeRepositories } from '../services/giteeConnector.js';
-import { completeNotionAuthorization, notionAuthorizationUrl, notionIsConfigured, searchNotionPages } from '../services/notionConnector.js';
-import { createZoteroConnection, listZoteroItems, ZoteroConnectorError } from '../services/zoteroConnector.js';
-import { ArxivConnectorError, searchArxivPapers } from '../services/arxivConnector.js';
+} from '../services/integrations/githubConnector.js';
+import { completeFeishuAuthorization, feishuAuthorizationUrl, feishuIsConfigured } from '../services/integrations/feishuConnector.js';
+import { completeGiteeAuthorization, giteeAuthorizationUrl, giteeIsConfigured, listGiteeRepositories } from '../services/integrations/giteeConnector.js';
+import { completeNotionAuthorization, notionAuthorizationUrl, notionIsConfigured, searchNotionPages } from '../services/integrations/notionConnector.js';
+import { createZoteroConnection, listZoteroItems, ZoteroConnectorError } from '../services/integrations/zoteroConnector.js';
+import { ArxivConnectorError, searchArxivPapers } from '../services/integrations/arxivConnector.js';
 
 const router = Router();
 const CATALOG = [

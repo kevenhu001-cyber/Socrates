@@ -80,10 +80,10 @@
 
 /* This file owns the shimmer's paint; polish/motion.css owns whether and how
    it moves. All live activity labels use the same treatment, regardless of
-   whether the row is the turn status, a tool, or an agent step. The zero-offset
-   shadow is the non-animated base glyph: the moving clipped gradient can pass
-   across it, but can never make the label disappear when its bright band is
-   outside the text bounds. */
+   whether the row is the turn status, a tool, or an agent step. The gradient
+   is a solid readable base with one wide, bright travelling band, so the
+   glyphs stay fully opaque for the whole cycle: the text never fades, and
+   the light sweep reads clearly as it passes. */
 #appShell :is(
   .shimmer-text,
   .thinking-status .thinking-status-label,
@@ -91,20 +91,18 @@
   .tool-run-summary-label,
   .agent-step-label
 ).shimmer-text {
-  color: transparent;
+  color: var(--ui-text-secondary);
   -webkit-text-fill-color: transparent;
   background-image: linear-gradient(
-    105deg,
-    var(--ui-text-tertiary) 0%,
-    var(--ui-text-tertiary) 25%,
-    var(--ui-text-secondary) 38%,
-    var(--ui-accent-strong) 50%,
-    var(--ui-text-secondary) 62%,
-    var(--ui-text-tertiary) 75%,
-    var(--ui-text-tertiary) 100%
+    100deg,
+    var(--ui-text-secondary) 0%,
+    var(--ui-text-secondary) 35%,
+    color-mix(in srgb, var(--ui-text-primary) 35%, white 65%) 50%,
+    var(--ui-text-secondary) 65%,
+    var(--ui-text-secondary) 100%
   );
   background-repeat: no-repeat;
-  background-size: 260% 100%;
+  background-size: 220% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   opacity: 1;

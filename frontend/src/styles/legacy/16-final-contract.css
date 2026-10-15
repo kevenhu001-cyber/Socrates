@@ -278,12 +278,24 @@
      except restore/'s #appShell-scoped guard. */
   animation:calm-status-breathe var(--ui-duration-pulse-slow, 1.6s) ease-in-out infinite;
 }
-.msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-label.shimmer-text,
-.agent-tool-card[data-tool-state="running"] .agent-tool-name{
-  background:none!important;
-  color:hsl(var(--text-300))!important;
-  -webkit-text-fill-color:currentColor!important;
-  animation:calm-status-text var(--ui-duration-pulse-slow, 1.6s) ease-in-out infinite;
+/* Running tool name: same stable light sweep as the canonical shimmer
+   (features/thinking-activity.css), expressed in the legacy hsl() tokens.
+   No !important here — this sits after the earlier running-name rule in
+   this file so it wins by order, and no Tier 3 rule targets
+   .agent-tool-name (it has no .shimmer-text class). Opacity stays at 1:
+   the text never fades, only the highlight travels. Tool-inline labels
+   are intentionally not overridden here; the canonical #appShell
+   shimmer (Tier 3, loaded after this file) owns them. */
+.msg.assistant .agent-tool-card[data-tool-state="running"] .agent-tool-name{
+  background:linear-gradient(100deg,hsl(var(--text-400)) 0%,hsl(var(--text-400)) 35%,hsl(var(--text-000)) 50%,hsl(var(--text-400)) 65%,hsl(var(--text-400)) 100%);
+  background-size:220% 100%;
+  background-repeat:no-repeat;
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:hsl(var(--text-400));
+  -webkit-text-fill-color:transparent;
+  opacity:1;
+  animation:neutralTextWave 3s linear infinite;
 }
 .msg.assistant .msg-body:not(.is-declarative):has(.tool-inline) .tool-inline-detail{
   margin-top:5px!important;
@@ -307,12 +319,11 @@
 .msg.assistant .agent-tool-card[data-tool-state="running"] .agent-tool-status{visibility:hidden}
 
 @keyframes calm-status-breathe{
-  0%,100%{opacity:.38}
-  50%{opacity:.9}
-}
-@keyframes calm-status-text{
+  /* Shallow, slow breathe for the 7px status dot in front of the label.
+     The old 0.38 dip read as flicker; 0.62 keeps the dot always present
+     so the row feels steady while the text carries the wave. */
   0%,100%{opacity:.62}
-  50%{opacity:1}
+  50%{opacity:.85}
 }
 
 /* Inline artifacts sit in the reading flow and open in a persistent preview

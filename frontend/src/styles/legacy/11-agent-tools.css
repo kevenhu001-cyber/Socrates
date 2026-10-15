@@ -594,7 +594,7 @@
    search is in flight — gradient-clipped text, opacity only. */
 .search-progress.running .search-progress-title,
 .search-progress.running .search-progress-label{background:linear-gradient(90deg,hsl(var(--text-400)) 35%,hsl(var(--text-000)) 50%,hsl(var(--text-400)) 65%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:textShimmer 2.4s linear infinite}
-@keyframes textShimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+@keyframes textShimmer{from{background-position:100% 0}to{background-position:0% 0}}
 .search-progress-elapsed{
   flex:0 0 auto;
   color:hsl(var(--text-500));

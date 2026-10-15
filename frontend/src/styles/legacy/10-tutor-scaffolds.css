@@ -286,18 +286,18 @@
     hsl(var(--text-400)) 62%,
     hsl(var(--text-400)) 100%);
   background-size:260% 100%;
-  background-position:150% 0;
+  background-position:100% 0;
   -webkit-background-clip:text;
   background-clip:text;
   animation:neutralTextWave 3.2s linear infinite;
   will-change:background-position;
 }
 @keyframes neutralTextWave{
-  /* The highlight enters and leaves beyond the glyphs. The background
-     position technically wraps at the loop boundary, but both sides are
-     the same quiet base color, so there is no visible jump. */
-  0%{background-position:150% 0}
-  100%{background-position:-50% 0}
+  /* Travel stays inside 0% ↔ 100% so the 260%-wide background covers the
+     glyphs on every frame: the highlight sweeps left to right and the
+     loop wraps with no jump and no blank (transparent) gap. */
+  0%{background-position:100% 0}
+  100%{background-position:0% 0}
 }
 /* Container that holds the "Thinking…" badge. */
 

@@ -52,12 +52,11 @@
 ## 影响
 
 - **PR 切分**（每 PR ≤ 1 个子目录 + 自带测试迁移）：
-  1. PR-0010.1：迁 `services/util/`（最小，10 文件左右）。**已部分落地 2026-09-20**：5/10 文件已迁（artifactOwnership / workspacePaths / workspaceResources / cleanupDb / fileArtifacts），余 fetchBatch / statusMonitor / connectorTools / projectConnectorTools 待后续 PR 补齐。
-  2. PR-0010.2：迁 `services/core/`（影响 20+ 文件 + 多数 test 文件 + `routes/` import）。
-  3. PR-0010.3：迁 `services/embeddings/`（含现有 `fileParsers/` 与 `searchEngines/`）。
-  4. PR-0010.4：迁 `services/tools/`（agent / tool-call 周边）。
-  5. ~~PR-0010.5：迁 `services/integrations/openConnector/`（open-connector wrapper）。~~ **作废（2026-09-26）**：open-connector 集成已收敛为 cloud-only 且 sidecar 删除，见 `docs/adr/0014-open-connector-removal-cloud-only.md`；剩余 `openConnector*` 服务文件并入 PR-0010.6 的 `services/integrations/` 即可。
-  6. PR-0010.6：迁 `services/integrations/`（第三方 SaaS connectors）。
+  1. PR-0010.1：迁 `services/util/`（跨切面工具）。**已落地（2026-10-15）**：7 个文件归仓入 `services/util/`（artifactOwnership / workspacePaths / workspaceResources / cleanupDb / fileArtifacts / fetchBatch / statusMonitor），保留向后兼容转发层。
+  2. PR-0010.2：迁 `services/core/`（LLM proxy / 认证 / 调度 / 用量流水线）。**已落地（2026-10-15）**：11 个核心服务文件归仓入 `services/core/`，保留向后兼容转发层。
+  3. PR-0010.3：迁 `services/embeddings/`（向量化 / chunkIndex / RAG / TTS / 视觉）。**已落地（2026-10-15）**：11 个模型边缘与检索服务归仓入 `services/embeddings/`，保留向后兼容转发层。
+  4. PR-0010.4：迁 `services/tools/`（agent / tool-call 周边）。**已落地（2026-10-15）**：8 个核心工具调度、注册与运行态文件归仓入 `services/tools/`，保留向后兼容转发层。
+  5. PR-0010.6：迁 `services/integrations/`（第三方 SaaS connectors 与开放连接器）。**已落地（2026-10-15）**：14 个文件已归仓入 `services/integrations/`，保留向后兼容转发层。
 - **代码**：每次迁移涉及相对路径批量更新，IDE 全局重写 + grep 双保险；跨子目录的循环 import 风险由每个 PR 末的 ESLint `import/no-cycle` 验证。
 - **CI**：`server-ci.yml` 与 `ci.yml:server` job 跑 `server/test/`；每 PR 跑回归。
 - **数据**：无 schema 变更。

@@ -1,4 +1,20 @@
 {
+  "name": "socrates-monorepo",
+  "private": true,
+  "description": "Socrates — Intelligent AI Tutor & Learning Platform Monorepo",
+  "type": "module",
+  "scripts": {
+    "typecheck": "npm --prefix server run typecheck && npm --prefix frontend run typecheck && npm --prefix apps/socrates run typecheck",
+    "typecheck:server": "npm --prefix server run typecheck",
+    "typecheck:frontend": "npm --prefix frontend run typecheck",
+    "typecheck:app": "npm --prefix apps/socrates run typecheck",
+    "lint": "npm --prefix frontend run lint",
+    "lint:dom": "node scripts/check-packages-dom.mjs",
+    "lint:drizzle": "node scripts/check-drizzle-drift.mjs",
+    "test:unit": "npm --prefix server run test:unit && npm --prefix frontend run test:unit",
+    "test:shared": "npm --prefix apps/socrates run test:shared",
+    "verify": "npm run typecheck && npm run lint && npm run test:shared"
+  },
   "dependencies": {
     "@fontsource/plus-jakarta-sans": "^5.3.0",
     "playwright": "^1.61.1",
