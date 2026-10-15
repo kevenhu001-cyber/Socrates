@@ -283,8 +283,7 @@ window.__socratesLegacy = {
        imperative doRender painted with. formatMsg assumes closed pairs, so
        feeding it a half-arrived `$$…$$` or an open fence leaks raw LaTeX into
        the bubble; this preprocessor tolerates partial input. AssistantTurn
-       uses it for a live turn and renderAssistantHTML once the turn settles,
-       which is the same hand-off the legacy pipeline did at finish(). */
+       keeps this renderer for the lifetime of a streamed turn, including finish. */
     renderAssistantProgressive: function (rawText, opts) {
       /* P_strip-citations — same body contract as renderAssistantHTML, so a
          marker never flashes in the live tail and then vanishes at finish.

@@ -6,8 +6,6 @@ import { publishReactChatRuntime } from '../../ui/reactBridge.js';
 import { announceTranscript } from '../../ui/liveRegion.js';
 import { saveCurrentSession } from '../../session/persistence.js';
 import { appendLocalMemory } from '../../storage/localMemory.js';
-import { esc } from '../../render/helpers.js';
-import { stripChatArtifacts } from '../../util/stripChatArtifacts.js';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 
 export function createFinishLifecycle(state, ownerSessionId, finishRender, finishViewport) {
@@ -44,6 +42,8 @@ export function createFinishLifecycle(state, ownerSessionId, finishRender, finis
 
   function finishBody() {
     if (state.finished) return;
+    // Measure the painted turn before completion changes status or tool rows.
+    finishViewport.capture();
     state.finished = true;
     state._disposed = true;
     state.toolRuntime.dispose();
@@ -55,13 +55,10 @@ export function createFinishLifecycle(state, ownerSessionId, finishRender, finis
       renderResult = finishRender.run();
     } catch {
       console.log('[finish] render error');
-      const fallbackHtml = '<p>' + esc(stripChatArtifacts(state.full)
-        .replace(/<think>[\s\S]*?<\/think>/gi, '')
-        .replace(/<think>[\s\S]*$/gi, '')) + '</p>';
       const current = stateStore.read('messages')[state.msgIdx];
       const toolRunRev = (current && current._toolRunRev) || 0;
       state.patchOwnedMessage({
-        html: fallbackHtml,
+        html: null,
         rawText: state.full,
         type: 'assistant',
         reasoningContent: state.fullReasoning || null,
@@ -106,7 +103,6 @@ export function createFinishLifecycle(state, ownerSessionId, finishRender, finis
       turnState.activeChatCtl = null;
     }
 
-    finishViewport.capture();
     finishViewport.settle();
   }
 

@@ -1,9 +1,9 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import { createSettledSplitter } from '../../render/streaming.js';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import type { ProseRenderer } from './proseRenderer';
 
-function SettledBlock({ html }: { html: { __html: string } }) {
+function SettledBlock({ html, live = false, tail = false }: { html: { __html: string }; live?: boolean; tail?: boolean }) {
   const ref = useRef<HTMLDivElement | null>(null);
   useLayoutEffect(() => {
     const element = ref.current;
@@ -17,7 +17,7 @@ function SettledBlock({ html }: { html: { __html: string } }) {
   return (
     <div
       ref={ref}
-      className="tool-run-prose is-settled"
+      className={'tool-run-prose ' + (live ? 'is-live' : 'is-settled') + (tail ? ' is-tail' : '')}
       dangerouslySetInnerHTML={html}
     />
   );
@@ -25,6 +25,7 @@ function SettledBlock({ html }: { html: { __html: string } }) {
 
 interface LiveTextSegmentProps extends ProseRenderer {
   text: string;
+  live?: boolean;
 }
 
 /**
@@ -40,21 +41,21 @@ interface LiveTextSegmentProps extends ProseRenderer {
  * The splitter is held in a ref because its pure text index can be replayed
  * safely if React abandons a concurrent render.
  */
-export function LiveTextSegment({ text, settled, tail }: LiveTextSegmentProps) {
+export function LiveTextSegment({ text, live = true, settled, tail }: LiveTextSegmentProps) {
   const splitterRef = useRef<ReturnType<typeof createSettledSplitter> | null>(null);
   if (!splitterRef.current) splitterRef.current = createSettledSplitter();
-  const split = splitterRef.current.push(text);
-  const tailBox = tail(split.tail);
+  const splitter = splitterRef.current;
+  const { blocks, tailBox } = useMemo(() => {
+    const split = splitter.push(text);
+    return { blocks: split.blocks.map(block => settled(block)), tailBox: tail(split.tail) };
+  }, [splitter, text, settled, tail]);
 
   return (
     <>
-      {split.blocks.map((block, index) => (
-        <SettledBlock key={index} html={settled(block)} />
+      {blocks.map((html, index) => (
+        <SettledBlock key={index} html={html} />
       ))}
-      <div
-        className="tool-run-prose is-live"
-        dangerouslySetInnerHTML={tailBox}
-      />
+      <SettledBlock html={tailBox} live={live} tail />
     </>
   );
 }

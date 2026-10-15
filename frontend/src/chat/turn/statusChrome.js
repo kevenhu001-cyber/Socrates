@@ -31,7 +31,7 @@ import { setReactLiveStatus } from '../../ui/messageSnapshot.js';
  * }}
  */
 export function createStatusChrome(state) {
-  var _waitingLabel = state.appMode() === "chat" ? state.t("think.thinking") : state.t("common.generating");
+  var _waitingLabel = state.t("think.waitingForResponse", "Waiting for the response.");
 
   function liveMessage() {
     return (state.msgIdx >= 0 && stateStore.read("messages")[state.msgIdx] &&
@@ -84,7 +84,7 @@ export function createStatusChrome(state) {
     var _owner = liveMessage();
     var _prev = _owner && _owner._liveStatus;
     if (_prev && (_prev.phase === "error" || _prev.phase === "retrying" || _prev.phase === "tool-running")) return;
-    var curSec = typeof sec === 'number' && sec > 0 ? sec : (_prev && _prev.elapsedSec);
+    var curSec = typeof sec === 'number' && sec >= 0 ? sec : (_prev && _prev.elapsedSec);
     setLiveStatus({
       phase: "thinking",
       label: state.t("think.thinking", "正在思考…"),

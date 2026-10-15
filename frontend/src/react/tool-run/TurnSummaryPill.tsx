@@ -26,7 +26,7 @@ export function TurnSummaryPill({ summary, messageId, status }: TurnSummaryPillP
       data-turn-surface-part="activity"
     >
       {status ? (
-        <div className="turn-summary-status thinking-status" data-mode={status.mode} data-state={status.state || undefined} role="status">
+        <div className="turn-summary-status thinking-status" data-mode={status.mode} data-phase={status.phase} data-state={status.state || undefined} role="status">
           {status.phase === 'tool-running' && status.toolName ? <ToolActivityIcon name={status.toolName} /> : null}
           <span className={`turn-summary-label thinking-status-label${active ? ' shimmer-text' : ''}`}>{status.label}</span>
           {status.elapsedSec ? <span className="thinking-status-detail">{status.elapsedSec}s</span> : null}

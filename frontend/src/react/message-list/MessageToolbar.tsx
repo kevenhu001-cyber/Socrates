@@ -33,9 +33,10 @@ function IconButton({ label, onClick, svgInner, active }: IconButtonProps): Reac
 interface MessageToolbarProps {
   message: LegacyChatMessage;
   role: 'user' | 'assistant';
+  pending?: boolean;
 }
 
-function MessageToolbar({ message, role }: MessageToolbarProps): React.ReactElement | null {
+function MessageToolbar({ message, role, pending = false }: MessageToolbarProps): React.ReactElement | null {
   const c = useMessageToolbarCallbacks(message);
   const [copied, setCopied] = React.useState(false);
   const id = typeof message.id === 'string' ? message.id
@@ -47,6 +48,13 @@ function MessageToolbar({ message, role }: MessageToolbarProps): React.ReactElem
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // Reserve the same toolbar geometry during playback without mounting any
+  // actionable controls. Completion reveals actions without growing the row.
+  if (pending) {
+    return <div className="msg-toolbar" data-role={role} data-message-id={id}
+      aria-hidden="true" inert style={{ visibility: 'hidden' }} />;
+  }
 
   return (
     <div className="msg-toolbar" data-role={role} data-message-id={id}>

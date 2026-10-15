@@ -1,10 +1,10 @@
-import type { ReactNode } from 'react';
+import { useRef } from 'react';
 
 import { LiveTextSegment } from '../tool-run/LiveTextSegment';
 import type { ProseRenderer } from '../tool-run/proseRenderer';
 import type { ToolCallRecord } from '../tool-run/toolRunModel';
 import { IntelligenceUiBlock } from './IntelligenceUi';
-import { splitIntelligenceUiText, type IntelligenceUiTextSegment } from './model';
+import { splitIntelligenceUiText } from './model';
 
 interface IntelligentTextSegmentProps {
   text: string;
@@ -21,15 +21,14 @@ function lastTextSegmentIndex(segments: ReturnType<typeof splitIntelligenceUiTex
   return -1;
 }
 
-function settledText(segment: IntelligenceUiTextSegment, prose: ProseRenderer, key: string): ReactNode {
-  if (!segment.text) return null;
-  return (
-    <div
-      key={key}
-      className="tool-run-prose"
-      dangerouslySetInnerHTML={prose.settled(segment.text)}
-    />
-  );
+/** Once streamed, keep the same block tree even when the turn settles. */
+function TextProse({ text, live, prose }: { text: string; live: boolean; prose: ProseRenderer }) {
+  const streamedRef = useRef(live);
+  if (live) streamedRef.current = true;
+  if (streamedRef.current) {
+    return <LiveTextSegment text={text} live={live} settled={prose.settled} tail={prose.tail} />;
+  }
+  return <div className="tool-run-prose" dangerouslySetInnerHTML={prose.settled(text)} />;
 }
 
 /**
@@ -50,15 +49,7 @@ export function IntelligentTextSegment({
   /* Preserve the exact pre-Intelligent-UI streaming path for ordinary prose.
      This keeps the settled-prefix cache and live-tail animation unchanged. */
   if (!hasUi) {
-    if (live) {
-      return <LiveTextSegment text={text} settled={prose.settled} tail={prose.tail} />;
-    }
-    return (
-      <div
-        className="tool-run-prose"
-        dangerouslySetInnerHTML={prose.settled(text)}
-      />
-    );
+    return <TextProse text={text} live={live} prose={prose} />;
   }
 
   const liveTextIndex = live ? lastTextSegmentIndex(segments) : -1;
@@ -82,17 +73,7 @@ export function IntelligentTextSegment({
         }
 
         if (!segment.text) return null;
-        if (index === liveTextIndex) {
-          return (
-            <LiveTextSegment
-              key={key}
-              text={segment.text}
-              settled={prose.settled}
-              tail={prose.tail}
-            />
-          );
-        }
-        return settledText(segment, prose, key);
+        return <TextProse key={key} text={segment.text} live={index === liveTextIndex} prose={prose} />;
       })}
     </>
   );

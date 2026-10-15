@@ -151,7 +151,7 @@ function MessageItemBase({ message }: MessageItemProps) {
         declarative={declarative}
         bodyRef={bodyRef}
       />
-      {role === 'user' || presentation.showToolbar ? <MessageToolbar message={message} role={toolbarRole(role)} /> : null}
+      {role === 'user' || presentation.showToolbar || isLive ? <MessageToolbar message={message} role={toolbarRole(role)} pending={isLive} /> : null}
     </div>
   );
 }

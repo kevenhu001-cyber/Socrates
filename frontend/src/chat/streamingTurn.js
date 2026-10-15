@@ -11,7 +11,7 @@
  *   finish/drain/persistence/status-release lifecycle — chat/turn/finishLifecycle.js
  *   finish-time viewport capture + RAF settle — chat/turn/finishViewport.js
  *   live-status chrome and per-turn status publication — chat/turn/statusChrome.js
- *   finish-time single formatMsg pass + canvas mode writeback — chat/turn/finishRender.js
+ *   finish-time metadata + canvas mode writeback — chat/turn/finishRender.js
  *   user-stop (abort) body — chat/turn/abortPath.js
  *   replaceWithError body — chat/turn/errorPath.js
  */
@@ -104,8 +104,7 @@ export function addStreamingMessage(opts){
   div.appendChild(body);
   /* P1.1/P1.2 — push a placeholder into the authoritative
      stateStore.read("messages") list. While streaming, `rawText` is updated on
-     every delta and `html` is set to null. At finish() time we
-     do a single formatMsg pass and write `html`. The DOM bubble
+     every delta and `html` stays null for ordinary chat, including finish(). The DOM bubble
      is the rendered view, not the source. */
   var clientId=(opts&&opts.clientId)?opts.clientId:("msg-"+generateId());
   div.dataset.clientId=clientId;
@@ -209,8 +208,7 @@ export function addStreamingMessage(opts){
     t: _t,
     appMode: _appMode,
   };
-  /* P_smooth-stream — `full` is the ARRIVED text (persistence, the finish()
-     one-shot render, and tool textOffsets all index into it). `_visibleLen`
+  /* P_smooth-stream — `full` is the ARRIVED text (persistence and tool textOffsets index into it). `_visibleLen`
      is how much of it the playback clock has revealed; the live bubble paints
      `full.slice(0,_visibleLen)`. With smooth streaming off, the two are kept
      equal so the reader sees the whole arrived text as before. `_playbackState`
@@ -279,7 +277,7 @@ export function addStreamingMessage(opts){
      `message._liveStatus`, never a node. TurnStatus draws it. */
   var reactThinkCtl={
     append:function(){
-      var sec=Math.max(1,Math.round((Date.now()-thinkStarted)/1000));
+      var sec=Math.max(0,Math.floor((Date.now()-thinkStarted)/1000));
       state.reasoningDurationSec=sec;
       statusChrome.stampThinking(sec);
     },
@@ -322,7 +320,7 @@ export function addStreamingMessage(opts){
     }
     /* The status line is data drawn by TurnStatus — there is no pill DOM. */
     state.thinkCtl=reactThinkCtl;
-    var sec=Math.max(1,Math.round((Date.now()-thinkStarted)/1000));
+    var sec=Math.max(0,Math.floor((Date.now()-thinkStarted)/1000));
     state.reasoningDurationSec=sec;
     statusChrome.stampThinking(sec);
     return reactThinkCtl;
@@ -349,7 +347,7 @@ export function addStreamingMessage(opts){
   var _elapsedTick=null;
   _elapsedTick=setInterval(function(){
     if(state.finished)return;
-    var sec=Math.max(1,Math.round((Date.now()-thinkStarted)/1000));
+    var sec=Math.max(0,Math.floor((Date.now()-thinkStarted)/1000));
     if(firstDelta){
       if(statusChrome.isThinkingPhase()){
         state.reasoningDurationSec=sec;
@@ -402,7 +400,7 @@ export function addStreamingMessage(opts){
      push(delta) only fills the buffer; onFrame reveals the played prefix at
      an adaptive rate via doRender(). onStateChange feeds the cursor animation.
      onDone fires after finish()'s beginDrain() flushes the buffer — that is
-     where the one-shot final render runs (set into state._finishContinuation).
+     where completion metadata is saved (via state._finishContinuation).
      The rAF seam is bound to the shared `pendingRender` slot so
      cancelScheduledRender() teardown cancels a player-queued frame. */
   var _streamPlayer=createStreamPlayer({
@@ -648,10 +646,12 @@ export function addStreamingMessage(opts){
       /* P_session-stream-dispose — same guard as append().
          P_session-cross-talk — stillOwnsSlot() closes the race window. */
       if(!stillOwnsSlot())return;
-      if(typeof delta==="string"){
-        state.fullReasoning+=delta;
-      }
-      var sec=Math.max(1,Math.round((Date.now()-thinkStarted)/1000));
+      if(typeof delta!=="string"||!delta.length)return;
+      // Start the reasoning clock on observed provider output, excluding all
+      // time spent connecting, preparing context, or waiting for upstream.
+      if(!state.fullReasoning)thinkStarted=Date.now();
+      state.fullReasoning+=delta;
+      var sec=Math.max(0,Math.floor((Date.now()-thinkStarted)/1000));
       state.reasoningDurationSec=sec;
       if(state.toolRuntime&&typeof state.toolRuntime.hasActiveTools==="function"&&state.toolRuntime.hasActiveTools())return;
       try{ensureThinkCtl().append(delta||"")}catch(e){reportSwallow(e, 'streamingTurn._preRev1.appendDelta'); }

@@ -46,3 +46,17 @@ test('an earlier completed tool cannot hide the next deferred tool activity', ()
   assert.equal(deriveTurnPresentationState(message, { hasSettledTool: true }).status.phase, 'tool-running');
   assert.equal(deriveTurnPresentationState({ ...message, toolCalls: [...message.toolCalls, { id: 'new', name: 'web_search', status: 'completed', output: '' }] }, { hasSettledTool: true }).status, undefined);
 });
+
+
+test('startup thinking activity remains waiting until provider reasoning is observed', () => {
+  const waiting = { type: 'streaming', _activity: { type: 'thinking' }, _liveStatus: { phase: 'waiting', label: 'Waiting', elapsedSec: 5 } };
+  const status = deriveTurnPresentationState(waiting).status;
+  assert.equal(status.phase, 'waiting');
+  assert.equal(status.elapsedSec, 5);
+  assert.match(status.label, /Waiting/);
+  const thinking = deriveTurnPresentationState({ ...waiting, reasoningContent: 'private', _liveStatus: { phase: 'thinking', label: 'Thinking', elapsedSec: 1 } }).status;
+  assert.equal(thinking.phase, 'thinking');
+  assert.equal(thinking.elapsedSec, 1);
+  assert.match(thinking.label, /Thinking/);
+  assert.equal(deriveTurnPresentationState({ ...waiting, rawText: 'Answer.' }).status, undefined);
+});

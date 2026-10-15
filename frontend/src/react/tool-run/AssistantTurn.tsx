@@ -90,7 +90,11 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
   const storedProse = !rawText.trim() && storedHtml.trim()
     ? (canSpliceStoredTools ? stripLegacyToolHtml(storedHtml) : storedHtml)
     : '';
-  const prose = useProseRenderer(isLive);
+  // Keep the renderer and its block cache for the lifetime of a streamed turn.
+  // Finishing only changes chrome; it must not repaint prose with another parser.
+  const streamedRef = useRef(isLive);
+  if (isLive) streamedRef.current = true;
+  const prose = useProseRenderer(streamedRef.current);
   const growingIndex = isLive ? lastTextIndex(segments) : -1;
   const hasRunningRow = segments.some((segment) =>
     segment.kind === 'group' ? segment.running.length > 0

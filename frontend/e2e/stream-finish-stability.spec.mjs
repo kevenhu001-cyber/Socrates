@@ -4,8 +4,7 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 /* P_stream-finish-stability — the end of a stream must not move anything the
    reader is looking at. The live turn paints settled markdown blocks one by
-   one and, at finish, repaints the whole answer in one pass; the two layouts
-   have to be identical. Regressions this guards:
+   one and keeps that tree at finish; the layout must remain identical. Regressions this guards:
      • paragraph gaps read 0 while streaming (each settled block's last <p>
        matched `#appShell .msg-body p:last-child`) and snapped to 10px at
        finish;
@@ -114,6 +113,33 @@ async function measure(page) {
   });
 }
 
+// Sample every painted frame: a snap followed by a correction is still a bug.
+async function trackFinishMotion(page) {
+  await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    const row = Array.from(list.querySelectorAll('.msg.assistant')).at(-1);
+    const body = row.querySelector('.msg-body');
+    window.__finishMotion = { samples: [], frame: 0 };
+    const sample = () => {
+      window.__finishMotion.samples.push({
+        top: body.getBoundingClientRect().top - list.getBoundingClientRect().top,
+        bodyHeight: body.getBoundingClientRect().height,
+        scrollTop: list.scrollTop,
+        scrollHeight: list.scrollHeight,
+      });
+      window.__finishMotion.frame = requestAnimationFrame(sample);
+    };
+    sample();
+  });
+}
+
+async function finishMotion(page) {
+  return page.evaluate(() => {
+    cancelAnimationFrame(window.__finishMotion.frame);
+    return window.__finishMotion.samples;
+  });
+}
+
 async function waitForSettledTurn(page) {
   await page.evaluate(() => window.__finishStabilityTurn);
   const bubble = page.locator('#msgList .msg.assistant').last();
@@ -142,9 +168,21 @@ for (const [label, viewport] of [['desktop', null], ['mobile', { width: 390, hei
   await expect(bubble.locator('.tool-run-prose.is-live')).toContainText('即可快速判断。');
   await expect(bubble.locator('.tool-run-prose.is-settled .katex-display')).toHaveCount(1);
   const live = await measure(page);
+  await expect(bubble.locator('.msg-toolbar')).toBeHidden();
+  await expect(bubble.locator('.msg-toolbar button')).toHaveCount(0);
+  await trackFinishMotion(page);
+  await page.screenshot({ path: `test-results/stream-finish-${encodeURIComponent(label)}-before.png` });
 
   await waitForSettledTurn(page);
   const done = await measure(page);
+  const frames = await finishMotion(page);
+  await expect(bubble.locator('.msg-toolbar button').first()).toBeVisible();
+  await page.screenshot({ path: `test-results/stream-finish-${encodeURIComponent(label)}-after.png` });
+  for (const frame of frames) {
+    expect(Math.abs(frame.top - live.bodyOffset), '正文在结束过程中的任意一帧都不能跳动').toBeLessThanOrEqual(2);
+    expect(Math.abs(frame.bodyHeight - live.bodyHeight), '末段间距不能在结束时短暂变高').toBeLessThanOrEqual(1);
+    expect(Math.abs(frame.scrollTop - live.scrollTop), '结束时不能主动拉到底部').toBeLessThanOrEqual(2);
+  }
 
   expect(done.blocks.map((b) => b.tag)).toEqual(live.blocks.map((b) => b.tag));
   for (let i = 0; i < live.blocks.length; i += 1) {
@@ -185,4 +223,38 @@ test('a long answer stays fully reachable after finish', async ({ page }) => {
   expect(res.rowHeight, 'the row must not be squeezed below its content').toBeGreaterThanOrEqual(res.bodyHeight);
   expect(res.lastPBottom).toBeLessThanOrEqual(res.listBottom + 1);
   expect(res.lastPHit, 'the last paragraph is painted and not covered after scrolling to the end').toBe(true);
+});
+
+
+test('finish keeps the streamed prose nodes and tail formatting', async ({ page }) => {
+  await openChat(page, null);
+  // The final standalone math line would be promoted by the complete parser.
+  const text = '## 保留节点\n\n已经输出的 **正文**。\n\n$x$';
+  await startStream(page, chunk(text, 12));
+  const bubble = page.locator('#msgList .msg.assistant').last();
+  await expect(bubble.locator('.tool-run-prose.is-live .katex')).toHaveCount(1);
+  await page.evaluate(() => {
+    const body = document.querySelector('#msgList .msg.assistant:last-child .msg-body');
+    window.__streamProse = Array.from(body.querySelectorAll('.tool-run-prose')).map(node => ({
+      node, children: Array.from(node.childNodes), html: node.innerHTML,
+    }));
+  });
+  await waitForSettledTurn(page);
+  const result = await page.evaluate(() => {
+    const body = document.querySelector('#msgList .msg.assistant:last-child .msg-body');
+    const nodes = Array.from(body.querySelectorAll('.tool-run-prose'));
+    return {
+      unchanged: window.__streamProse.every((saved, i) => saved.node === nodes[i]
+        && saved.html === nodes[i].innerHTML
+        && saved.children.every((child, j) => child === nodes[i].childNodes[j])),
+      count: nodes.length,
+      originalCount: window.__streamProse.length,
+      storedHtml: window.stateStore.read('messages').at(-1).html,
+    };
+  });
+  expect(result.unchanged).toBe(true);
+  expect(result.count).toBe(result.originalCount);
+  expect(result.storedHtml).toBeNull();
+  await expect(bubble.locator('.katex-display')).toHaveCount(0);
+  await page.screenshot({ path: 'test-results/stream-finished.png' });
 });

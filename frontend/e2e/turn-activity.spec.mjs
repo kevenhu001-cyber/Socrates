@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
+import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
+import { gotoAndSettle } from './_lib.mjs';
 
 async function controller(page) {
   await page.evaluate(async () => {
@@ -37,6 +39,35 @@ test('thinking shimmer hands the same message body to the first answer token', a
   expect(Math.abs((after?.x || 0) - (before?.x || 0))).toBeLessThanOrEqual(1);
 });
 
+test('waiting time is separate from observed model reasoning', async ({ page }) => {
+  await prepareChatWorkbench(page);
+  await page.evaluate(async () => {
+    // Advance only the turn's wall clock; avoid sleeping five seconds per test.
+    const realNow = Date.now;
+    let offset = 0;
+    Date.now = () => realNow() + offset;
+    window.__advanceReasoningClock = () => { offset = 5000; };
+    window.__waitingController = await window.addStreamingMessage({});
+    window.__waitingController.recordTurnActivity({ type: 'thinking' });
+  });
+  const message = page.locator('#msgList .msg.assistant').last();
+  const status = message.locator('.thinking-status');
+  await expect(status).toHaveAttribute('data-phase', 'waiting');
+  await page.evaluate(() => window.__advanceReasoningClock());
+  await expect(status.locator('.thinking-status-detail')).toContainText(/[5-9]s/);
+  await page.screenshot({ path: 'test-results/waiting-response.png' });
+  await page.evaluate(() => window.__waitingController.appendThinking('PRIVATE REASONING'));
+  await expect(status).toHaveAttribute('data-phase', 'thinking');
+  await expect(status.locator('.thinking-status-detail')).toHaveCount(0);
+  const duration = await page.evaluate(() => window.stateStore.read('messages').at(-1).reasoningDurationSec);
+  expect(duration).toBe(0);
+  await page.screenshot({ path: 'test-results/observed-reasoning.png' });
+  await expect(message).not.toContainText('PRIVATE REASONING');
+  await page.evaluate(() => window.__waitingController.append('这才是正文。'));
+  await expect(status).toHaveCount(0);
+  await page.evaluate(() => window.__waitingController.finish());
+});
+
 test('settled assistant history keeps the same surface when only legacy HTML exists', async ({ page }) => {
   await prepareChatWorkbench(page, { messages: [
     { clientId: 'history-user', role: 'user', rawText: '历史问题', html: '<p>历史问题</p>' },
@@ -55,7 +86,7 @@ test('streaming actions are absent and running tools own the activity surface', 
   await controller(page);
   const message = page.locator('#msgList .msg.assistant').last();
   await expect(message.locator('.thinking-status')).toHaveCount(1);
-  await expect(message.locator('.msg-toolbar')).toHaveCount(0);
+  await expect(message.locator('.msg-toolbar')).toBeHidden();
   await expect(message).not.toContainText('PRIVATE SCRATCH WORK');
   await expect(message).not.toContainText('相关解析与说明');
 
@@ -77,7 +108,7 @@ test('streaming actions are absent and running tools own the activity surface', 
     ctl.append('The relevant evidence is now in the answer.');
     ctl.recordTurnActivity({ type: 'done', durationMs: 1200 });
   });
-  await expect(message.locator('.msg-toolbar')).toHaveCount(0);
+  await expect(message.locator('.msg-toolbar')).toBeHidden();
   await page.evaluate(() => window.__activityController.finish());
   await expect(message).toHaveAttribute('data-stream-settled', 'true');
   await expect(message.locator('.msg-body.turn-surface')).toHaveAttribute('data-turn-state', 'settled');
@@ -158,4 +189,29 @@ test('native UI can mount from cumulative arguments before the tool result arriv
   await expect(message.locator('.intui')).toBeVisible();
   await expect(message.locator('.intui')).toHaveAttribute('data-intui-streaming', 'true');
   await expect(message.locator('[data-intui-id="progress"]')).toContainText('40%');
+});
+
+
+test('MiniMax M3 requests split reasoning without an unsupported low-effort claim', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('socrates-last-active-id', 'minimax-m3');
+    localStorage.setItem('socrates-reasoning-effort', 'low');
+  });
+  await mockAuthedApp(page, { apiKeys: { providers: [{ id: 'minimax-m3', label: 'MiniMax', model: 'MiniMax-M3', url: 'https://provider.example/v1', hasKey: true, isActive: true }] } });
+  let sentBody;
+  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async route => {
+    sentBody = route.request().postDataJSON();
+    await route.fulfill({ contentType: 'text/event-stream', body: 'data: {"choices":[{"delta":{"content":"M3 answer."}}]}\n\ndata: [DONE]\n\n' });
+  });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.evaluate(() => {
+    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.__testActivateMainView('chatView');
+    window.submitChatMessage('Say hello.');
+  });
+  await expect.poll(() => sentBody).toBeTruthy();
+  expect(sentBody.extra_body).toEqual({ reasoning_split: true });
+  expect(sentBody.reasoning_effort).toBeUndefined();
+  await expect(page.locator('#msgList .msg.assistant').last()).toContainText('M3 answer.');
 });

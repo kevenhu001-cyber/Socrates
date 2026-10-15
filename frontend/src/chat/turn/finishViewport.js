@@ -1,17 +1,9 @@
 /**
  * chat/turn/finishViewport.js — finish-time viewport re-assertion.
  *
- * The final pass changes the answer's height (a running row folds into its
- * group, the status line retires, KaTeX resolves), and neither scrollTop
- * nor distance-from-bottom survives that. The capture reads the row
- * identity + viewport offset right before the React handoff; the settle
- * loop replays the captured viewport across a bounded number of frames so
- * the reader's view stays on the answer while layout settles.
- *
- * Extracted from chat/streamingTurn.js during the 2026-10 addStreamingMessage
- * split. The capture and apply branches are byte-for-byte the original
- * finish() tail; only the wrapping is moved out so the streaming hot path
- * can be read top-down.
+ * Capture the visible answer before completion updates its status and tools.
+ * Preserve that row or paragraph while the layout settles; proximity to the
+ * bottom is never a reason to move the reader to a different paragraph.
  */
 import { stateStore } from '../../state/store.js';
 import { updateMessageSnapshot } from '../../ui/messageSnapshot.js';
@@ -48,10 +40,12 @@ export function createFinishViewport(state) {
          legacy-to-React swap. Keep an explicit row-level snapshot too:
          inner nodes may be transplanted and stay connected, masking the
          fact that the outer answer row itself moved. */
-      if (state.div && state.div.isConnected) {
-        var _fvLiveRect = state.div.getBoundingClientRect();
+      var liveRow = state.div && state.div.isConnected ? state.div
+        : list.querySelector('.msg[data-client-id="' + state.clientId + '"]');
+      if (liveRow) {
+        var _fvLiveRect = liveRow.getBoundingClientRect();
         if (_fvLiveRect.bottom > _fvRect.top + 1 && _fvLiveRect.top < _fvRect.bottom - 1) {
-          _fvAnchor = state.div;
+          _fvAnchor = liveRow;
           _fvStreamRowOffset = _fvLiveRect.top - _fvRect.top;
           _fvStreamRowNearTop = Math.abs(_fvStreamRowOffset) <= 96;
         }
@@ -82,7 +76,7 @@ export function createFinishViewport(state) {
         var _fvCandidates = _fvAnchor.querySelectorAll(
           '.stream-settled-content > *,.stream-live-content > *,' +
           '.think-prefix > *,.think-suffix > *,.tool-inline,' +
-          '.visualization-card,.exec-artifact,.msg-body > *'
+          '.visualization-card,.exec-artifact,.tool-run-prose > *,.msg-body > *'
         );
         for (var _fvni = 0; _fvni < _fvCandidates.length; _fvni++) {
           var _fvnr = _fvCandidates[_fvni].getBoundingClientRect();
@@ -105,8 +99,6 @@ export function createFinishViewport(state) {
         : (_fvInnerAnchor || _fvAnchor);
       _finishViewport = {
         scroller: list,
-        pinned: !stateStore.read("_userScrolledAway") &&
-          list.scrollHeight - list.scrollTop - list.clientHeight <= 96,
         /* Freeze the reader-intent flag NOW: layout churn during the
            handoff fires scroll events that can flip the live flag
            without any user input. */
@@ -121,20 +113,9 @@ export function createFinishViewport(state) {
     } catch (_) { /* viewport capture failed; settle will no-op */ }
   }
 
-  /* The `stream-finished` runtime event is fired in the microtask
-     scheduled above, AFTER React commits the `_streamSettled`
-     bubble. Doing it here would flip the chat-runtime bridge to
-     "completed" before the visible row settles, which is what made
-     the page reload-and-flicker at end of stream.
-     P_react-live-turn — the bubble React has been painting this whole
-     turn IS the finalized one: there is no transplant, no reveal, and
-     no duplicate legacy node to drop. What still changes at finish is
-     the content height — the running row folds into its group, the
-     status line retires, KaTeX resolves — so re-assert the anchor
-     captured above for a bounded number of frames. A one-shot restore
-     taken mid-flux strands the reader above the answer ("jumped back
-     to my own message"), and the churn fires scroll events the
-     scrollPill listener misreads as the user scrolling away. */
+  /* Completion can retire status rows or mount tool outputs. Reapply the
+     captured reading position for a bounded number of frames, stopping as
+     soon as the reader scrolls or interacts. */
   function settle() {
     if (!state.reactLive) return;
     if (!_finishViewport || !_finishViewport.scroller) return;
@@ -153,48 +134,10 @@ export function createFinishViewport(state) {
       }
     };
     var _fvApply = function () {
-      if (_finishViewport.pinned) {
-        /* A short answer can be both at the physical bottom and
-           aligned near the viewport top. If completion removes
-           streaming-only chrome, blindly staying at bottom moves
-           the whole answer downward. Restore the lost row height
-           first, then snap to the new bottom so both invariants
-           remain true. */
-        if (_finishViewport.streamRowId &&
-          Number.isFinite(_finishViewport.streamRowOffset)) {
-          var _fvPinnedRow = state.list.querySelector(
-            '.msg[data-client-id="' + _finishViewport.streamRowId + '"][data-react-owned]'
-          );
-          if (_fvPinnedRow) {
-            var _fvPinnedRect = _fvPinnedRow.getBoundingClientRect();
-            var _fvPinnedNow = _fvPinnedRect.top -
-              _fvScroller.getBoundingClientRect().top;
-            var _fvPinnedDelta = Math.ceil(
-              _fvPinnedNow - _finishViewport.streamRowOffset
-            );
-            if (_fvPinnedDelta > 1) {
-              var _fvPinnedMin = Math.ceil(
-                _fvPinnedRect.height + _fvPinnedDelta
-              );
-              _fvPinnedRow.style.minHeight = _fvPinnedMin + "px";
-              var _fvPinnedMsg = state.msgIdx >= 0 ? stateStore.read("messages")[state.msgIdx] : null;
-              if (_fvPinnedMsg) {
-                updateMessageSnapshot(_fvPinnedMsg, {
-                  _turnAnchorMinHeight: Math.max(
-                    Number(_fvPinnedMsg._turnAnchorMinHeight) || 0,
-                    _fvPinnedMin
-                  )
-                }, true);
-              }
-            }
-          }
-        }
-        writeScrollTop(_fvScroller, _fvScroller.scrollHeight, 'finish');
-        /* Layout-shift scroll events during the handoff may
-           have flipped this flag; the reader never left the
-           bottom, so undo the corruption. */
-        stateStore.dispatch({ type: "state/set", key: "_userScrolledAway", value: false });
-      } else if (_finishViewport.scrolledAway && _finishViewport.scrollTop <= 2) {
+      // Completion must preserve the text being read, including for a reader
+      // who happens to be near the bottom. Snapping to the new bottom moves
+      // every paragraph when actions/status change the row's height.
+      if (_finishViewport.scrolledAway && _finishViewport.scrollTop <= 2) {
         /* At the absolute transcript top, preserving scrollTop
            is the user's explicit intent. Mid-answer reading is
            different: React/legacy height deltas move the visible

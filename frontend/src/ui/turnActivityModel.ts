@@ -43,10 +43,21 @@ function hasVisibleAnswerText(message: LegacyChatMessage): boolean {
     .length > 0;
 }
 
+/** A startup activity signal is not evidence that the provider is reasoning. */
+function hasObservedReasoning(message: LegacyChatMessage): boolean {
+  if (typeof message.reasoningContent === 'string' && message.reasoningContent.trim()) return true;
+  const raw = typeof message.rawText === 'string' ? message.rawText : '';
+  return Boolean(raw.match(/<think\b[^>]*>([\s\S]*?)(?:<\/think>|$)/i)?.[1]?.trim());
+}
+
 function observedStatus(message: LegacyChatMessage, activity: PublicTurnActivity): LiveTurnStatus | undefined {
   const legacy = message._liveStatus;
   switch (activity.type) {
-    case 'thinking': return hasVisibleAnswerText(message) ? undefined : { phase: 'thinking', label: translate('think.analyzing', 'Analyzing the question'), elapsedSec: legacy?.elapsedSec };
+    case 'thinking':
+      if (hasVisibleAnswerText(message)) return undefined;
+      return hasObservedReasoning(message)
+        ? { phase: 'thinking', label: translate('think.thinking', 'Thinking…'), elapsedSec: legacy?.phase === 'thinking' ? legacy.elapsedSec : undefined }
+        : { phase: 'waiting', label: translate('think.waitingForResponse', 'Waiting for the response.'), elapsedSec: legacy?.phase === 'waiting' ? legacy.elapsedSec : undefined };
     case 'public_reasoning_summary': return hasVisibleAnswerText(message) ? undefined : { phase: 'thinking', label: activity.text };
     case 'synthesizing': return hasVisibleAnswerText(message) ? undefined : { phase: 'synthesizing', label: translate('think.synthesizing', 'Preparing the answer') };
     case 'tool': {

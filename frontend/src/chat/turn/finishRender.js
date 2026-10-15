@@ -1,13 +1,12 @@
 /**
- * chat/turn/finishRender.js — finish-time single formatMsg pass.
+ * chat/turn/finishRender.js — finish-time metadata and persistence.
  *
- * At natural finish, this module does the one and only markdown pass that
- * ever becomes the `html` field of the saved message. Reasoning_content
+ * Ordinary chat keeps its progressive render and saves raw text. Canvas
+ * output still builds the HTML required by its editor. Reasoning_content
  * is persisted as `reasoningContent`, the inline-tool textOffset split
  * points are stamped onto `toolCalls[]` from `inlineToolRows`, the canvas
  * template's `outputMode` and `canvasId` are copied onto the entry, and
- * `_streamSettled` + `_toolRunRev` flip so React swaps the live bubble
- * for the finalized row in one commit.
+ * `_streamSettled` + `_toolRunRev` publish completion without replacing prose.
  *
  * Extracted from chat/streamingTurn.js during the 2026-10 addStreamingMessage
  * split. The tool-call offset writeback, the canvas-mode branch, and the
@@ -17,7 +16,6 @@
  * adjacent to the rest of the finish path.
  */
 import { stateStore } from '../../state/store.js';
-import { esc } from '../../render/helpers.js';
 import { buildAssistantHtml } from '../../render/assistantHtml.ts';
 import { stripChatArtifacts } from '../../util/stripChatArtifacts.js';
 
@@ -58,19 +56,13 @@ export function createFinishRender(state) {
         })});
       }
     } catch (_) { /* tool offset writeback failed; layout will fall back */ }
-    var finalHtml;
-    var visibleFinal;
-    try {
-      visibleFinal = stripChatArtifacts(state.full)
-        .replace(/<think>[\s\S]*?<\/think>/gi, "")
-        .replace(/<think>[\s\S]*$/gi, "");
-      finalHtml = buildAssistantHtml(visibleFinal);
-    } catch {
-      console.log("[finish] render error");
-      finalHtml = "<p>" + esc(stripChatArtifacts(state.full)
-        .replace(/<think>[\s\S]*?<\/think>/gi, "")
-        .replace(/<think>[\s\S]*$/gi, "")) + "</p>";
-    }
+    // Ordinary chat persists raw text. Its progressive DOM is already painted;
+    // building final HTML here repeats all parsing and can register widgets twice.
+    var visibleFinal = stripChatArtifacts(state.full)
+      .replace(/<think>[\s\S]*?<\/think>/gi, "")
+      .replace(/<think>[\s\S]*$/gi, "");
+    var canvasMode = window._activeTemplate && window._activeTemplate.outputMode === 'canvas';
+    var finalHtml = canvasMode ? buildAssistantHtml(visibleFinal) : null;
     /* Finalize the thinking status BEFORE saving it so the spinner
        stops once the response is complete. */
     if (state.thinkCtl && typeof state.thinkCtl.finalize === "function") {
