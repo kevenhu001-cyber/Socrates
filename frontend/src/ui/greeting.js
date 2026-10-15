@@ -47,7 +47,7 @@ export function renderGreeting() {
   el.classList.add("greeting");
   /* The previous heuristic suggestions (mountHomeSuggestions) were removed
      — they read as noise on the landing surface and conflicted with the
-     quick-actions reference block. See src/ui/homeSuggestions.ts. */
+     quick-actions reference block. */
 }
 
 // Consumers import renderGreeting directly (window bridge removed in

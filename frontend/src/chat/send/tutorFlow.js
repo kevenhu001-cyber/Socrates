@@ -6,7 +6,6 @@ import { reportSwallow } from '../../util/reportSwallow.ts';
 import { generateFollowUpStream } from '../../tutor/socraticTurn.js';
 import { toolCallbacksForStream } from '../toolCallbacks.js';
 import { isExpectedTurnAbort } from '../turnUi.js';
-import { updateChatStats } from '../stats.js';
 import { getTutorSocratic, addAnchoredAssistant, addStreamingMessage, askChatTurn, translate, reportTurnFailure } from './runtime.js';
 import { advanceTutorNodeIfReady, recordTutorProgress } from './tutorProgress.js';
 import { stuckPromptTransition } from './tutorPolicy.js';
@@ -126,7 +125,6 @@ function shouldRunTutorFollowUp(isSubstantive, origin) {
 export async function dispatchTutorTurn({ text, chatContent, options, submitChatMessage }) {
   const { node, isSubstantive } = recordTutorProgress(text, options);
   if (advanceTutorNodeIfReady(node, options.origin)) {
-    updateChatStats();
     return;
   }
 
@@ -135,5 +133,4 @@ export async function dispatchTutorTurn({ text, chatContent, options, submitChat
   } else {
     showStuckResponse(text);
   }
-  updateChatStats();
 }

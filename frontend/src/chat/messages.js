@@ -1,7 +1,7 @@
 /* chat/messages.js — extracted from main.js (B4/B5 batch).
  * Authoritative message append path. Zero-behavior-change lift.
  * Main.js-local side effects (renderAssistantHTML, saveCurrentSession,
- * updateChatStats, updateKB) resolve via window.* at call time to
+ * updateKB) resolve via window.* at call time to
  * avoid circular imports.
  */
 import { stateStore } from '../state/store.js';
@@ -13,7 +13,6 @@ import { stripCitationMarkers } from '../render/helpers.js';
 import { getActiveProvider } from '../pickers.js';
 import { generateId } from '../util/ids.js';
 import { streamRetryViewport } from './turnState.js';
-import { updateChatStats } from './stats.js';
 import { updateKB } from '../ui/knowledgePanel.js';
 
 function _renderAssistantHtml(text) {
@@ -87,7 +86,6 @@ export function addMessage(role, text, type, actions, attachmentsArg) {
       if (stateStore.read('phase') === 'chat' || (stateStore.read('topic') && stateStore.read('kbNodes').length)) {
         try { if (typeof window.saveCurrentSession === 'function') window.saveCurrentSession(); } catch (_) {}
       }
-      try { updateChatStats(); } catch (_) {}
     }
     /* Update KB: if user is answering substantive questions, mark current node progress */
     if (role === 'user' && stateStore.read('kbNodes')[stateStore.read('currentNode')] && stateStore.read('kbNodes')[stateStore.read('currentNode')].status === 'blank') {

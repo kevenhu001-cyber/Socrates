@@ -14,7 +14,7 @@ function showMainPage(pageId: string): void {
 
 function closeAllPanels(): void {
   ['knowledgePanel', 'mistakesPanel'].forEach((id) => document.getElementById(id)?.classList.add('hidden'));
-  ['tabKnowledge', 'tabRecents', 'tabMistakes'].forEach((id) => document.getElementById(id)?.classList.remove('active'));
+  ['tabKnowledge', 'tabMistakes'].forEach((id) => document.getElementById(id)?.classList.remove('active'));
 }
 
 function openCreation(name: 'images' | 'assistants' | 'sites'): void {

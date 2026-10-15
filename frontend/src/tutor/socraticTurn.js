@@ -16,7 +16,6 @@ import { notifyMockFallbackOnce } from '../chat/mockFallbackNotice.js';
 import { addMessage as _addMessage } from '../chat/messages.js';
 import { scheduleTurnToTopForMessage } from '../chat/turnAnchor.ts';
 import { toolCallbacksForStream as _toolCallbacksForStream } from '../chat/toolCallbacks.js';
-import { updateChatStats as _updateChatStatsDirect } from '../chat/stats.js';
 
 /* omit entirely; backend passes through */
 var MAX_TOKENS_CHAT = undefined;
@@ -123,9 +122,6 @@ function _addStreamingMessage(opts) {
   }
   throw new Error('addStreamingMessage bridge missing');
 }
-function _updateChatStats() {
-  try { _updateChatStatsDirect(); } catch (_) {}
-}
 function _addAnchoredAssistant(text) {
   var clientId=_addMessage("assistant",text);
   var list=typeof document!=="undefined"?document.getElementById("msgList"):null;
@@ -154,7 +150,6 @@ export async function askNextQuestion(){
     if(result!=null){
       ctl.finish();
       stateStore.dispatch({type:"state/batch",patch:{stuckCount:0,totalQ:stateStore.read("totalQ")+1}});
-      _updateChatStats();
       return;
     }
     /* Distinguish upstream error (show retry) from "API returned null
@@ -172,5 +167,4 @@ export async function askNextQuestion(){
   var q=await generateSocraticQuestion(node,stateStore.read("domain"));
   _addAnchoredAssistant(q.text);
   stateStore.dispatch({type:"state/batch",patch:{stuckCount:0,totalQ:stateStore.read("totalQ")+1}});
-  _updateChatStats();
 }

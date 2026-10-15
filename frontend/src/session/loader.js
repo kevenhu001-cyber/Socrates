@@ -32,7 +32,6 @@ import { toggleShareBtn } from '../ui/share.js';
 import { activateMainView } from '../ui/mainViewController.js';
 import { updateComposerBtn } from '../ui/topicSetup.js';
 import { clearComposer } from '../composer/controller.ts';
-import { updateChatStats } from '../chat/stats.js';
 import { updateKB } from '../ui/knowledgePanel.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
@@ -522,7 +521,6 @@ export async function loadSession(id){
     try{ void reattachPendingTurn(s.id); }catch (e) {reportSwallow(e, 'session/loader.loadSession~6'); }
     mirrorSessionHistory(s);
     if(_appMode()!=="chat"||(s.kbNodes&&s.kbNodes.length>0)) updateKB();
-    updateChatStats();
     _renderRecents();
     _renderMistakes();
     _updateMistakesBadge();

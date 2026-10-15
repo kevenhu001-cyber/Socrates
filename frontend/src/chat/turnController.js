@@ -27,7 +27,6 @@ import { clearPendingTurn, newClientTurnId, savePendingTurn } from './turnClient
 import { addMessage } from './messages.js';
 import { scheduleTurnToTopForMessage } from './turnAnchor.ts';
 import { saveCurrentSession } from '../session/persistence.js';
-import { updateChatStats } from './stats.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 /* omit entirely; backend passes through (mirrors main.js contract) */
@@ -362,7 +361,6 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
     if(_turnSessionId&&(result&&(result.text||result.cancelled)))clearPendingTurn(_turnSessionId,_clientTurnId);
   }catch (e) {reportSwallow(e, 'chat/turnController.askChatTurn#13'); }
   publishActiveWorkflowFinish(!!(result&&result.text&&String(result.text).trim()));
-  updateChatStats();
   if(!ctl || typeof ctl.isFinished !== "function" || !ctl.isFinished()){
     if(stateStore.read("phase")==="chat"||(stateStore.read("topic")&&stateStore.read("kbNodes").length))saveCurrentSession();
   }

@@ -22,7 +22,6 @@ import { setChatStopState, markTurnEnded, resendLastUserMessage } from '../turnU
 import { claimLiveRetry } from '../liveTurn.js';
 import { turnState } from '../turnState.js';
 import { removeSupersededStub } from '../turnAnchor.ts';
-import { updateChatStats } from '../stats.js';
 import { saveCurrentSession } from '../../session/persistence.js';
 import { stripChatArtifacts } from '../../util/stripChatArtifacts.js';
 import { publishReactChatRuntime } from '../../ui/reactBridge.js';
@@ -143,7 +142,6 @@ export function createAbortPath(state) {
       };
       try { state.list.addEventListener("click", _resendDelegated); } catch (_) { /* list unavailable */ }
       try { saveCurrentSession(); } catch (_) { /* save failed */ }
-      try { updateChatStats(); } catch (_) { /* stats update failed */ }
     }
     /* Publish first, then remove only a throwaway shell on the next
        frame (a non-React node with our clientId, if one ever exists). */

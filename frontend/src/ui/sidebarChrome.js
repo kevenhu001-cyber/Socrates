@@ -75,7 +75,6 @@ export function isMobileViewport() { return window.innerWidth < 768; }
 
 export function switchTab(tab) {
   var tk = document.getElementById('tabKnowledge'); if (tk) tk.classList.toggle('active', tab === 'knowledge');
-  var tr = document.getElementById('tabRecents'); if (tr) tr.classList.toggle('active', tab === 'recents');
   var mt = document.getElementById('tabMistakes');
   if (mt) mt.classList.toggle('active', tab === 'mistakes');
   var kp = document.getElementById('knowledgePanel'); if (kp) kp.classList.toggle('hidden', tab !== 'knowledge');

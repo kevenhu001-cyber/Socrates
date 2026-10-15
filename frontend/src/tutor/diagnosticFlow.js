@@ -1,7 +1,7 @@
 /* tutor/diagnosticFlow.js — extracted from main.js (B4 batch 1).
  * Diagnostic navigation + results + proceed-to-teaching.
  * Zero-behavior-change lift: cross-cluster callbacks (updateKB,
- * updateChatStats, saveCurrentSession, askNextQuestion, cancel/retry/
+ * saveCurrentSession, askNextQuestion, cancel/retry/
  * builtin handlers owned by startSession) are resolved via window.*
  * at call time to avoid circular imports with main.js.
  */
@@ -11,7 +11,6 @@ import { buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan } from '../cha
 import { renderDiagResultsScreen } from '../ui/diagnosticResults.js';
 import { renderDiagQuestion as renderDiagQuestionUI } from '../ui/diagnosticQuestion.js';
 import { formatMsg } from '../render/markdown.js';
-import { updateChatStats } from '../chat/stats.js';
 import { updateKB } from '../ui/knowledgePanel.js';
 import { activateMainView } from '../ui/mainViewController.js';
 
@@ -88,7 +87,6 @@ export function finishDiagnostic() {
 export function proceedToTeaching() {
   activateMainView('chatView', document);
   try { updateKB(); } catch (_) {}
-  try { updateChatStats(); } catch (_) {}
 
   /* P_teaching-plan — generate the structured teaching plan from the
      freshly-populated KB. Sub-topics are sorted so blank nodes come

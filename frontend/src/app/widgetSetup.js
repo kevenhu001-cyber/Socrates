@@ -11,7 +11,6 @@ import { createMistakeBook } from '../ui/mistakeBook.js';
 import { formatMsg } from '../render/markdown.js';
 import { shouldRequestTutorAfterQuiz } from '../tutor/policy.js';
 import { updateKB } from '../ui/knowledgePanel.js';
-import { updateChatStats } from '../chat/stats.js';
 import { configureAssistantHtml } from '../render/assistantHtml.ts';
 import { configureTurnAnchor } from '../chat/turnAnchor.ts';
 import { isMsgListMounted } from '../ui/msgListMount.ts';
@@ -56,7 +55,6 @@ export function installWidgetRuntime() {
     handleQuizPick: handleQuizPick,
     shouldRequestTutorAfterQuiz: shouldRequestTutorAfterQuiz,
     updateKB: updateKB,
-    updateChatStats: updateChatStats,
     saveCurrentSession: saveCurrentSession,
   });
   configureAssistantHtml({

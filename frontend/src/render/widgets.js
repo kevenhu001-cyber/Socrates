@@ -13,7 +13,6 @@ let runtime = {
   handleQuizPick: () => {},
   shouldRequestTutorAfterQuiz: () => false,
   updateKB: () => {},
-  updateChatStats: () => {},
   saveCurrentSession: () => {},
 };
 
@@ -187,7 +186,7 @@ export function mountQuizWidget(slot, parsed) {
 }
 
 export function handleQuizPick(card, options, feedback, buttons, picked, parsed) {
-  const { t, esc: escape, recordMistake, removeMistakeForQuizSlot, stateStore, shouldRequestTutorAfterQuiz, updateKB, updateChatStats, saveCurrentSession, submitChatMessage } = runtime;
+  const { t, esc: escape, recordMistake, removeMistakeForQuizSlot, stateStore, shouldRequestTutorAfterQuiz, updateKB, saveCurrentSession, submitChatMessage } = runtime;
   buttons.forEach((button) => { button.disabled = true; });
   const chosen = buttons.find((button) => button.getAttribute('data-letter') === picked.letter);
   chosen?.classList.add('selected');
@@ -214,7 +213,6 @@ export function handleQuizPick(card, options, feedback, buttons, picked, parsed)
   }
   if (!shouldRequestTutorAfterQuiz(correct, isRight)) {
     try { updateKB(); } catch {}
-    try { updateChatStats(); } catch {}
     try { saveCurrentSession(); } catch {}
     return;
   }

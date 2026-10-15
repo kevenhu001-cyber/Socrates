@@ -14,7 +14,6 @@ import { syncChatModel, getActiveProvider } from '../../pickers.js';
 import { loadWebSearch } from '../webSearchLoader.js';
 import { generateTopicKBNodes } from '../topicKbNodes.js';
 import { generateDiagnosticQuestions } from '../diagnosticGenerator.js';
-import { updateChatStats } from '../stats.js';
 import { updateKB } from '../../ui/knowledgePanel.js';
 import { renderDiagQuestion, proceedToTeaching } from '../../tutor/diagnosticFlow.js';
 import { buildFallbackDiagnosticQuestions, shouldAutoSearchTutor } from '../../tutor/policy.js';
@@ -116,7 +115,6 @@ function completeDiagnosticQuestions(questions) {
   if (!questions || !questions.length) return false;
   stateStore.dispatch({ type: 'state/set', key: 'diagQuestions', value: questions });
   stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'real' });
-  updateChatStats();
   updateDiagnosticProgress(100, translate('diag.ready'));
   renderDiagQuestion();
   updateKB();
@@ -168,7 +166,6 @@ async function runDiagnosticGeneration(context, reinjectLoading) {
   if (stateStore.read('diagCancel')) return;
   if (completeDiagnosticQuestions(questions)) return;
   recordDiagnosticFailureReason();
-  updateChatStats();
   renderDiagnosticFailure(generationError);
 }
 
@@ -188,7 +185,6 @@ function installDiagnosticActions(context) {
     if (!stateStore.read('lastCallError')) {
       stateStore.dispatch({ type: 'state/set', key: 'lastCallError', value: 'Using built-in questions' });
     }
-    updateChatStats();
     const diagnosticView = document.getElementById('diagnosticView');
     if (diagnosticView) diagnosticView.classList.remove('hidden');
     renderDiagQuestion();

@@ -5,7 +5,6 @@ import { setChatStopState, markTurnEnded } from '../turnUi.js';
 import { publishReactChatRuntime } from '../../ui/reactBridge.js';
 import { announceTranscript } from '../../ui/liveRegion.js';
 import { saveCurrentSession } from '../../session/persistence.js';
-import { updateChatStats } from '../stats.js';
 import { appendLocalMemory } from '../../storage/localMemory.js';
 import { esc } from '../../render/helpers.js';
 import { stripChatArtifacts } from '../../util/stripChatArtifacts.js';
@@ -95,7 +94,6 @@ export function createFinishLifecycle(state, ownerSessionId, finishRender, finis
       || (stateStore.read('topic') && stateStore.read('kbNodes').length)) {
       saveCurrentSession();
     }
-    updateChatStats();
 
     /* An older turn must not clear the Stop control installed by a newer
        turn that started before this one finished unwinding. */

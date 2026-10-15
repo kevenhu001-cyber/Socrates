@@ -7,7 +7,6 @@ import { askChatTurn } from '../turnController.js';
 import { isExpectedTurnAbort } from '../turnUi.js';
 import { setActiveTemplate } from '../templateSlash.js';
 import { addMessage } from '../messages.js';
-import { updateChatStats } from '../stats.js';
 import { updateKB } from '../../ui/knowledgePanel.js';
 import { activateMainView } from '../../ui/mainViewController.js';
 import { clearComposer } from '../../composer/controller.ts';
@@ -100,7 +99,6 @@ export async function startChatSession(context) {
   renderAttachmentChips();
   updateComposerBtn();
   updateKB();
-  updateChatStats();
 
   // Prepare attachments while the streaming chunk loads; retries share the
   // immutable payload instead of reading the next draft or redoing uploads.

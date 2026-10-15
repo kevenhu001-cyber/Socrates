@@ -19,7 +19,6 @@ import { setReactLiveStatus } from '../../ui/messageSnapshot.js';
 import { setChatStopState, markTurnEnded } from '../turnUi.js';
 import { claimLiveRetry } from '../liveTurn.js';
 import { turnState } from '../turnState.js';
-import { updateChatStats } from '../stats.js';
 import { streamRetryViewport } from '../turnState.js';
 import { publishReactChatRuntime } from '../../ui/reactBridge.js';
 
@@ -129,7 +128,6 @@ export function createErrorPath(state) {
     } catch {
       state.patchOwnedMessage({ html: '<p>' + esc(errMsg || 'Generation failed') + '</p>', type: "assistant" });
     }
-    updateChatStats();
     /* Restore the send button — even error paths end the stream.
      * Guarded on the active controller so a new stream that
      * supersedes this one is not clobbered. */
