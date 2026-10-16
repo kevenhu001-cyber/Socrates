@@ -19,6 +19,7 @@ export function installShutdown(server: Server): void {
     server.close(async () => {
       console.log('[server] HTTP server closed — draining connections');
       stopExpiredCleanup();
+      try { const { stopChatTurnRecovery } = await import('../services/chatTurns.js'); stopChatTurnRecovery(); } catch {}
       try { const { stopScheduler } = await import('../services/scheduler.js'); stopScheduler(); } catch {}
       try { const { stopStatusMonitor } = await import('../services/statusMonitor.js'); stopStatusMonitor(); } catch {}
       await stopRustFetchWorker().catch(() => {});

@@ -120,41 +120,61 @@ router.get('/:id', async (req, res, next) => {
 
 router.get('/:id/events', async (req, res, next) => {
   const turnId = String(req.params.id);
+  let cursor = Number(req.query.after ?? 0);
+  if (!Number.isInteger(cursor) || cursor < 0 || cursor > 2_147_483_647) {
+    return next(new BadRequest('after must be a non-negative 32-bit integer'));
+  }
   let unsubscribe: (() => void) | null = null;
   let keepalive: { stop: () => void } | null = null;
+  let poll: ReturnType<typeof setInterval> | null = null;
   let closed = false;
-  try {
-    const after = Math.max(0, Number(req.query.after || 0));
-    const buffered: ChatTurnEvent[] = [];
-    let replayComplete = false;
-    unsubscribe = subscribeToChatTurn(turnId, (event) => {
-      if (closed || event.sequence <= after) return;
-      if (!replayComplete) buffered.push(event);
-      else sendTurnEvent(res, event);
-    });
-    const rows = await listChatTurnEvents(req.userId!, turnId, after);
-    if (!writeSseHeaders(res)) return;
-    trackSseConnection(req.app, +1);
-    keepalive = startSseKeepalive(res, { intervalMs: 10_000 });
-    for (const row of rows) sendTurnEvent(res, row);
-    replayComplete = true;
-    buffered.sort((a, b) => a.sequence - b.sequence);
-    const sent = new Set(rows.map((row) => row.sequence));
-    for (const event of buffered) {
-      if (!sent.has(event.sequence)) sendTurnEvent(res, event);
-    }
-    req.on('close', () => {
-      closed = true;
-      unsubscribe?.();
-      keepalive?.stop();
-      try {
-        trackSseConnection(req.app, -1);
-      } catch {
-        /* ignore */
-      }
-    });
-  } catch (err) {
+  let tracked = false;
+  let draining = false;
+  const cleanup = () => {
+    if (closed) return;
+    closed = true;
     unsubscribe?.();
+    keepalive?.stop();
+    if (poll) clearInterval(poll);
+    if (tracked) trackSseConnection(req.app, -1);
+  };
+  res.once('close', cleanup);
+
+  // Read the durable log for both replay and live delivery. Local events
+  // only wake this reader; the poll catches writes from other processes,
+  // and avoids depending on a lossy notification channel for correctness.
+  const drain = async () => {
+    if (closed || draining) return;
+    draining = true;
+    try {
+      while (!closed) {
+        const rows = await listChatTurnEvents(req.userId!, turnId, cursor, 500);
+        for (const row of rows) {
+          if (closed) break;
+          sendTurnEvent(res, row);
+          cursor = row.sequence;
+        }
+        if (rows.length < 500) break;
+      }
+    } finally { draining = false; }
+  };
+  const wake = () => {
+    void drain().catch((err) => {
+      console.warn('[chat-turns] event tail read failed:', (err as Error).message);
+    });
+  };
+  try {
+    await getChatTurn(req.userId!, turnId);
+    if (closed || !writeSseHeaders(res)) { cleanup(); return; }
+    trackSseConnection(req.app, +1);
+    tracked = true;
+    keepalive = startSseKeepalive(res, { intervalMs: 10_000 });
+    unsubscribe = subscribeToChatTurn(turnId, wake);
+    poll = setInterval(wake, 1000);
+    poll.unref();
+    await drain();
+  } catch (err) {
+    cleanup();
     if (!res.headersSent) next(err);
     else if (!res.writableEnded) res.end();
   }

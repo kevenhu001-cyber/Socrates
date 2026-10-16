@@ -6,7 +6,7 @@ import { authCacheGet, authCacheSet } from '../lib/authCache.js';
 import { isMobileAccessToken } from '../services/auth.js';
 import { verifyAgentKey, AGENT_KEY_RE } from '../services/agentKeys.js';
 import { verifyOAuthAccessToken, OAUTH_ACCESS_TOKEN_RE } from '../services/integrations/oauthTokens.js';
-import { ALL_SCOPES_SET } from './scopes.js';
+import { ALL_SCOPES_SET } from '../lib/authScopes.js';
 import { eq } from 'drizzle-orm';
 
 /* Browser sessions and mobile credentials deliberately use different token

@@ -52,3 +52,13 @@ test('disk usage walks the tree and the pre-run gate blocks over-cap workspaces'
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('deep workspace trees cannot hide bytes beyond the former depth limit', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'socrates-workspace-deep-'));
+  try {
+    const deep = path.join(dir, ...Array(12).fill('nested'));
+    mkdirSync(deep, { recursive: true });
+    writeFileSync(path.join(deep, 'data'), 'x'.repeat(4096));
+    assert.equal(workspaceDiskUsageBytes(dir), 4096);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});

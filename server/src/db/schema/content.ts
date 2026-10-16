@@ -206,7 +206,7 @@ export const usageEvents = pgTable('usage_events', {
 /* ──────────────────────────────────────────────
    Scheduled Tasks — recurring tasks / reminders
    One row per scheduled task. The task runs at the next scheduled
-   time (nextRunAt) and is rescheduled according to cronExpression.
+   time (nextRunAt) and is rescheduled according to frequency.
    The scheduler daemon (src/services/scheduler.js) polls for
    overdue tasks, runs them, and updates nextRunAt.
    ────────────────────────────────────────────── */
@@ -238,6 +238,22 @@ export const scheduledTasks = pgTable('scheduled_tasks', {
   index('scheduled_tasks_project_id_idx').on(table.projectId),
   index('scheduled_tasks_last_run_id_idx').on(table.lastRunId),
 ]);
+
+/** One current execution lease per task. Kept outside the public task row;
+ * executionId survives a native retry and identifies its persisted messages. */
+export const scheduledTaskLeases = pgTable('scheduled_task_leases', {
+  taskId: uuid('task_id').primaryKey().references(() => scheduledTasks.id, { onDelete: 'cascade' }),
+  executionId: uuid('execution_id').notNull(),
+  ownerToken: uuid('owner_token').notNull(),
+  agentKind: text('agent_kind').notNull(), // execution-time policy; config may change later
+  state: text('state').notNull(), // running | completed | failed | uncertain
+  kind: text('kind').notNull(), // scheduled | manual
+  scheduledFor: timestamp('scheduled_for', { withTimezone: true }),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  attempts: integer('attempts').notNull().default(1),
+  error: text('error'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index('scheduled_task_leases_state_expiry_idx').on(table.state, table.expiresAt)]);
 
 /* ──────────────────────────────────────────────
    Embedding configuration (admin-managed)

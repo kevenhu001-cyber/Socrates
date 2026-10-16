@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { durableJsonWrite } from '../middleware/durableIdempotency.js';
 import { eq, and, inArray, or } from 'drizzle-orm';
 import fs from 'node:fs/promises';
 import { getDb } from '../db/index.js';
@@ -31,12 +32,13 @@ router.post('/', async (req, res, next) => {
   try {
     const { name, description, color, icon, systemPrompt } = req.body;
     if (!name) throw new BadRequest('name is required');
-    const db = getDb();
-    const [project] = await db.insert(projects).values({
-      userId: req.userId!,
-      name, description, color, icon, systemPrompt,
-    }).returning();
-    return res.status(201).json(project);
+    return await durableJsonWrite(req, res, 'projects.create.v1', async (tx) => {
+      const [project] = await tx.insert(projects).values({
+        userId: req.userId!,
+        name, description, color, icon, systemPrompt,
+      }).returning();
+      return { status: 201, body: project };
+    });
   } catch (err) { next(err); }
 });
 

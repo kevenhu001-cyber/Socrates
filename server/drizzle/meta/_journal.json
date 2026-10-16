@@ -288,6 +288,20 @@
       "when": 1791735383712,
       "tag": "0040_messages_turn_summary",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1792083743641,
+      "tag": "0041_scheduled_task_leases",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1792106559387,
+      "tag": "0042_idempotency_receipts",
+      "breakpoints": true
     }
   ]
 }

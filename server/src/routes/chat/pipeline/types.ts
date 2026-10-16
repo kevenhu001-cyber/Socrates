@@ -95,6 +95,9 @@ export interface ChatStreamPipelineContext {
    * in the route before the pipeline starts.
    */
   turnId?: string | null;
+  executionSignal?: AbortSignal;
+  /** Server-internal: the route has already claimed the prelude and execution. */
+  executionClaimed?: boolean;
   /**
    * P_prep-parallel — the tool context promise started by the route
    * shell alongside ownership/turn/prep, so the connector snapshot

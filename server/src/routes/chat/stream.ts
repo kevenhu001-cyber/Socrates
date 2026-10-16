@@ -20,7 +20,7 @@ import { requireAuth } from '../../middleware/auth.js';
 import { resourceScope } from '../../middleware/scopes.js';
 import { parseChatSessionId, requireOwnedSession } from '../../lib/sessionOwnership.js';
 import { isUuid } from '../../lib/validate.js';
-import { NotFound } from '../../lib/errors.js';
+import { Conflict, NotFound } from '../../lib/errors.js';
 import { getDb } from '../../db/index.js';
 import { chatTurns } from '../../db/schema.js';
 import { and, eq } from 'drizzle-orm';
@@ -33,7 +33,8 @@ import {
 } from './helpers.js';
 import { runChatStreamPipeline } from './pipeline/runChatStreamPipeline.js';
 import { createStreamToolContext } from './pipeline/toolContext.js';
-import { createChatTurn } from '../../services/chatTurns.js';
+import { createChatTurn, withChatTurnExecution } from '../../services/chatTurns.js';
+import { writeSseEvent } from '../../lib/sse.js';
 
 import type { Request, Router } from 'express';
 
@@ -104,88 +105,40 @@ export function registerStreamRoute(router: Router) {
          half-open connection. */
       const ssePrimed = writeSsePrime(res);
 
-      /* P_prep-parallel — the session-ownership gate, the detached-turn
-         binding and the request prelude (provider, RAG, memories, …) are
-         independent reads, and they used to run one after another before the
-         first upstream byte. Start them together.
-
-         The ownership gate still decides the outcome: nothing is streamed
-         unless it passes. The prelude used to write its own 400/500
-         responses; now that SSE is already committed, prep's failures
-         surface as an `event: error` frame via endSseWithError below
-         instead of a JSON error body. */
       const ownershipPromise: Promise<unknown> = sessionIdFromQuery
         ? requireOwnedSessionAfterSave(sessionIdFromQuery, req.userId!)
         : Promise.resolve(null);
       const turnPromise = resolveTurnBinding(req, sessionIdFromQuery, ownershipPromise);
-      /* Observed below via Promise.all; this only stops an early rejection
-         (bad turnId) from being reported as unhandled while ownership is
-         still pending. */
-      turnPromise.catch(() => {});
-      /* P_ttfb-prime-first — when the SSE response is already committed,
-         prepareChatRequest's body-validation 400 path is unreachable
-         (we parsed above). The remaining failures (provider lookup,
-         RAG, memory) are async I/O and surface as a thrown error, which
-         we route through endSseWithError below instead of `next(err)`. */
-      const prepPromise = prepareChatRequest(req, res);
-      prepPromise.catch(() => {});
-      /* P_prep-parallel — the tool context (connector snapshots +
-         registry build) only needs the request mode, not the prepared
-         payload, so start it here alongside ownership/turn/prep instead
-         of inside the pipeline after prep settles. The connector reads
-         then overlap the RAG embedding round-trip rather than queueing
-         behind it on the path to the first token. The mode mirrors the
-         ChatPayloadSchema default; an invalid body is rejected above
-         and never reaches the tool context. */
-      const bodyMode = (req.body as { mode?: unknown } | undefined)?.mode;
-      const toolCtxPromise = createStreamToolContext(
-        req as typeof req & { userId?: string },
-        bodyMode === 'tutor' ? 'tutor' : 'chat',
-      );
-      toolCtxPromise.catch(() => {});
+      const [, turnId] = await Promise.all([ownershipPromise, turnPromise]);
 
-      let turnId: string | null = null;
-      let prep: Awaited<ReturnType<typeof prepareChatRequest>> | null = null;
+      // Claim before preparation: RAG/provider prelude can itself call an
+      // upstream model. Losing retries must not perform that work either.
       try {
-        await ownershipPromise;
-        [turnId, prep] = await Promise.all([turnPromise, prepPromise]);
+        await withChatTurnExecution(req.userId!, turnId, async (executionSignal) => {
+          const bodyMode = (req.body as { mode?: unknown } | undefined)?.mode;
+          const toolCtxPromise = createStreamToolContext(
+            req as typeof req & { userId?: string }, bodyMode === 'tutor' ? 'tutor' : 'chat',
+          );
+          toolCtxPromise.catch(() => {});
+          const prep = await prepareChatRequest(req, res);
+          if (!prep.ok) throw new Error('Request preparation failed');
+          if (executionSignal.aborted) throw new Error('Turn execution interrupted during preparation');
+          await runChatStreamPipeline({
+            req: req as typeof req & { userId?: string }, res, prep,
+            sessionIdFromQuery, projectIdFromBody, turnId, toolCtxPromise, ssePrimed,
+            executionSignal, executionClaimed: true,
+          });
+        });
       } catch (err) {
-        /* P_ttfb-prime-first — ownership / turn binding / prep threw
-           AFTER the SSE prime. Surface the error as a single
-           `event: error` frame + [DONE] and end the socket. The
-           response status stays 200 because the headers already went
-           out; the client can tell apart success vs failure by the
-           `event: error` frame and the [DONE] terminator. */
-        if (ssePrimed) {
-          endSseWithError(res, err);
-          return;
-        }
+        // A retry that only supplied clientTurn.id still needs the durable
+        // server ID to reconnect after losing its execution claim.
+        if (err instanceof Conflict) writeSseEvent(res, 'turn_bound', { turnId });
         throw err;
       }
-      if (!prep || !prep.ok) {
-        /* Defensive — body validation already ran above, so this
-           branch only fires if prepareChatRequest grows new error
-           modes that don't throw. Forward them through the SSE
-           error frame path so the client gets a structured failure
-           rather than a hung connection. */
-        if (ssePrimed) {
-          endSseWithError(res, new Error('Request preparation failed'));
-          return;
-        }
-        return;
-      }
-
-      await runChatStreamPipeline({
-        req: req as typeof req & { userId?: string },
-        res,
-        prep: prep as typeof prep & { ok: true },
-        sessionIdFromQuery,
-        projectIdFromBody,
-        turnId,
-        toolCtxPromise,
-        ssePrimed,
-      });
-    } catch (err) { next(err); }
+    } catch (err) {
+      if (res.headersSent) endSseWithError(res, err);
+      else next(err);
+    }
   });
 }
 
@@ -202,15 +155,15 @@ async function resolveTurnBinding(
   req: Request,
   sessionId: string | null,
   ownership: Promise<unknown>,
-): Promise<string | null> {
+): Promise<string> {
   const rawTurnId = req.query.turnId ?? req.body?.turnId;
   if (typeof rawTurnId === 'string' && rawTurnId) {
     if (!isUuid(rawTurnId)) throw new NotFound('Chat turn not found');
-    const [owned] = await getDb().select({ id: chatTurns.id })
+    const [owned] = await getDb().select({ id: chatTurns.id, sessionId: chatTurns.sessionId })
       .from(chatTurns)
       .where(and(eq(chatTurns.id, rawTurnId), eq(chatTurns.userId, req.userId!)))
       .limit(1);
-    if (!owned) throw new NotFound('Chat turn not found');
+    if (!owned || owned.sessionId !== sessionId) throw new NotFound('Chat turn not found for this session');
     return owned.id;
   }
   const clientTurn = req.body?.clientTurn;
@@ -218,20 +171,13 @@ async function resolveTurnBinding(
   const effectiveTurnId = (providedTurnId && providedTurnId.length <= 200)
     ? providedTurnId
     : `srv-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-  try { await ownership; } catch { return null; }
-  try {
-    const created = await createChatTurn({
-      userId: req.userId!,
-      clientTurnId: effectiveTurnId,
-      sessionId,
-      model: null,
-      inputSnapshot: clientTurn?.input ?? null,
-    });
-    return created.turn.id;
-  } catch (err) {
-    /* A detached turn is a resilience feature. Failing to create one
-       degrades to the legacy unbound stream, as it does on the client. */
-    console.warn('[chat/stream] detached turn binding failed:', (err as Error).message);
-    return null;
-  }
+  await ownership;
+  const created = await createChatTurn({
+    userId: req.userId!,
+    clientTurnId: effectiveTurnId,
+    sessionId,
+    model: null,
+    inputSnapshot: clientTurn?.input ?? null,
+  });
+  return created.turn.id;
 }

@@ -8,6 +8,27 @@ info:
     chat, agent, search, fetch-batch) are summarised at the end
     of this file for completeness; the new endpoints introduced
     by the P1-P6 feature enhancements are documented in detail.
+
+    JSON writes may send Idempotency-Key (1-200 printable ASCII characters,
+    excluding spaces). POST /api/projects, /api/prompts, /api/scheduled-tasks,
+    POST /api/sessions/{sessionId}/archive, PATCH /api/users/me,
+    PATCH /api/users/me/preferences and PUT /api/sessions/{sessionId}/tags persist
+    successful JSON responses atomically with their database writes. These operations
+    support replay across instances and restarts for 24 hours after commit, scoped to
+    the authenticated user, credential and operation (including the session ID).
+    Authentication and existing route permissions run before every replay.
+    Object key order is ignored when comparing bodies; array order matters.
+    Invalid keys return 400 on these operations. Credential rotation starts a
+    new scope. The original response is replayed even if the resource changed.
+
+    Other JSON writes use a process-local cache for up to 24 hours, subject to
+    eviction, and do not survive restart. For both mechanisms a concurrent
+    repeat returns 409 IDEMPOTENCY_IN_PROGRESS with Retry-After: 1; changed
+    bodies return 409 IDEMPOTENCY_CONFLICT. Responses exceeding 256 KiB retain
+    a completion marker: retries return 409 IDEMPOTENCY_RESULT_UNAVAILABLE;
+    retrieve the resource instead of repeating the write. The process-local
+    cache can also return 503 IDEMPOTENCY_CAPACITY with Retry-After: 1.
+    Uploads, SSE and external effects need operation-specific guarantees.
   version: "2.0.0"
   contact:
     name: Socrates engineering
@@ -62,8 +83,1015 @@ tags:
     description: Prompt templates (P5.8)
   - name: creations
     description: Images, configurable assistants, and publishable sites
+  - name: admin
+    description: Operator console authentication and system model/embedding configuration
+  - name: plugins
+    description: Plugin marketplace, configuration, and lifecycle management
+  - name: mcp
+    description: Model Context Protocol (MCP) Streamable HTTP discovery and documentation surfaces
 
 paths:
+  /api/health:
+    get:
+      summary: Health check and database connectivity probe
+      description: Returns health status, uptime, database connection state, and pubsub status.
+      responses:
+        '200':
+          description: Service is healthy and database is connected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  db: { type: string }
+                  uptime: { type: number }
+                  pubsub: { type: object }
+        '503':
+          description: Service is degraded or database is disconnected
+
+  /api/hello:
+    get:
+      summary: Lightweight connectivity and smoke-test ping
+      description: Unauthenticated endpoint returning a static greeting message.
+      responses:
+        '200':
+          description: Static greeting
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: hello }
+
+  /api/config:
+    get:
+      summary: Public client configuration and feature flags
+      description: Returns client configuration including Beagle provider availability without exposing upstream model secrets.
+      responses:
+        '200':
+          description: Public configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hasBeagleKey: { type: boolean }
+                  isReasoning: { type: boolean }
+
+  /api/auth/csrf-token:
+    get:
+      tags: [auth]
+      summary: Issue CSRF token cookie
+      description: Sets a fresh double-submit CSRF cookie for browser SPA sessions.
+      responses:
+        '200':
+          description: CSRF cookie set
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+
+  /api/status:
+    get:
+      summary: Public system status and component health feed
+      description: Unauthenticated real-time component health, uptime metrics, and incident history.
+      responses:
+        '200':
+          description: System status feed
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/status/subscribe:
+    post:
+      summary: Subscribe to system status notifications
+      description: Registers an email address to receive incident and status updates.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '200':
+          description: Subscription request accepted
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/status/confirm:
+    get:
+      summary: Confirm status notification subscription
+      parameters:
+        - { name: token, in: query, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Subscription confirmed
+
+  /.well-known/openid-configuration:
+    get:
+      summary: OpenID Connect discovery document
+      description: Standard RFC 8414 / OIDC authorization server metadata.
+      responses:
+        '200':
+          description: OAuth/OIDC metadata
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /.well-known/oauth-authorization-server:
+    get:
+      summary: RFC 8414 OAuth 2.0 authorization server metadata
+      responses:
+        '200':
+          description: Authorization server metadata
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /.well-known/oauth-authorization-server/api/oauth:
+    get:
+      summary: RFC 8414 §5 path-inserted OAuth authorization server metadata
+      responses:
+        '200':
+          description: Authorization server metadata for pathed issuer
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api:
+    get:
+      summary: User tag vocabulary index
+      description: Returns unique tag names and associated colors created by the authenticated user.
+      responses:
+        '200':
+          description: List of tag items
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tags:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name: { type: string }
+                        color: { type: string, nullable: true }
+
+  /api/oauth/register:
+    post:
+      summary: RFC 7591 Dynamic Client Registration
+      description: Machine-readable registration endpoint for OAuth 2.0 clients and agents.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [client_name, redirect_uris]
+              properties:
+                client_name: { type: string, maxLength: 100 }
+                redirect_uris:
+                  type: array
+                  items: { type: string, format: uri }
+                scope:
+                  oneOf:
+                    - type: string
+                    - type: array
+                      items: { type: string }
+      responses:
+        '201':
+          description: Client registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  client_id: { type: string }
+                  client_secret: { type: string }
+                  client_id_issued_at: { type: integer }
+                  client_secret_expires_at: { type: integer }
+                  client_name: { type: string }
+                  redirect_uris: { type: array, items: { type: string } }
+                  grant_types: { type: array, items: { type: string } }
+                  response_types: { type: array, items: { type: string } }
+                  token_endpoint_auth_method: { type: string }
+                  scope: { type: string }
+
+  /api/oauth/authorize:
+    get:
+      summary: RFC 6749 OAuth 2.0 Authorization Endpoint (Consent UI)
+      description: Interactive consent page for resource owner authorization with PKCE.
+      parameters:
+        - name: client_id
+          in: query
+          required: true
+          schema: { type: string }
+        - name: redirect_uri
+          in: query
+          required: true
+          schema: { type: string }
+        - name: response_type
+          in: query
+          required: true
+          schema: { type: string, enum: [code] }
+        - name: scope
+          in: query
+          schema: { type: string }
+        - name: state
+          in: query
+          schema: { type: string }
+        - name: code_challenge
+          in: query
+          schema: { type: string }
+        - name: code_challenge_method
+          in: query
+          schema: { type: string, enum: [S256] }
+      responses:
+        '200':
+          description: HTML consent screen
+          content:
+            text/html:
+              schema: { type: string }
+        '302':
+          description: Redirect back to client with code or error
+    post:
+      summary: RFC 6749 OAuth 2.0 Consent Decision
+      description: Handles user allow/deny decision and issues authorization code.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [client_id, redirect_uri, decision, csrf_token]
+              properties:
+                client_id: { type: string }
+                redirect_uri: { type: string }
+                scope: { type: string }
+                state: { type: string }
+                code_challenge: { type: string }
+                code_challenge_method: { type: string }
+                csrf_token: { type: string }
+                decision: { type: string, enum: [allow, deny] }
+      responses:
+        '302':
+          description: Redirect back to client with authorization code or access_denied error
+
+  /api/oauth/token:
+    post:
+      summary: RFC 6749 OAuth 2.0 Token Endpoint
+      description: Exchange authorization code or refresh token for Bearer access token.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [grant_type]
+              properties:
+                grant_type: { type: string, enum: [authorization_code, refresh_token] }
+                code: { type: string }
+                code_verifier: { type: string }
+                redirect_uri: { type: string }
+                refresh_token: { type: string }
+                client_id: { type: string }
+                client_secret: { type: string }
+      responses:
+        '200':
+          description: Token response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: { type: string }
+                  token_type: { type: string, example: Bearer }
+                  expires_in: { type: integer }
+                  refresh_token: { type: string }
+                  scope: { type: string }
+        '400':
+          description: OAuth token error
+        '401':
+          description: Client authentication failure
+
+  /api/oauth/revoke:
+    post:
+      summary: RFC 7009 OAuth 2.0 Token Revocation
+      description: Revokes an active access token or refresh token.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: { type: string }
+                token_type_hint: { type: string, enum: [access_token, refresh_token] }
+      responses:
+        '200':
+          description: Token successfully revoked
+          content:
+            application/json:
+              schema: { type: object }
+
+  /api/account/cancel:
+    post:
+      summary: Mark paid subscription to cancel at period end
+      description: Sets cancelAtPeriodEnd flag so subscription stays active until billing period expires. Idempotent.
+      responses:
+        '200':
+          description: Subscription cancellation status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  cancelAtPeriodEnd: { type: boolean }
+                  tier: { type: string }
+
+  /api/account/usage:
+    get:
+      summary: Consolidated account overview, subscription plan and resource usage
+      description: Returns account details, subscription tier limits and current usage metrics (sessions, API keys, knowledge graph nodes).
+      responses:
+        '200':
+          description: Account usage profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { type: object }
+                  plan: { type: object }
+                  usage: { type: object }
+
+  /api/account/usage-heatmap:
+    get:
+      summary: Hourly token consumption buckets for heatmap visualisation
+      parameters:
+        - name: hours
+          in: query
+          schema: { type: integer, default: 168 }
+          description: Number of hours to look back (between 24 and 168)
+      responses:
+        '200':
+          description: Continuous list of hourly token buckets and percentiles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hours: { type: integer }
+                  buckets:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        hour: { type: string, format: date-time }
+                        tokens: { type: integer }
+                        calls: { type: integer }
+                  totalTokens: { type: integer }
+                  totalCalls: { type: integer }
+
+  /api/account/usage-trend:
+    get:
+      summary: Daily token consumption trends for dashboard charts
+      parameters:
+        - name: days
+          in: query
+          schema: { type: integer, default: 30 }
+          description: Number of days to look back (between 7 and 90)
+      responses:
+        '200':
+          description: Continuous daily token usage entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  days: { type: integer }
+                  entries:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        day: { type: string, format: date }
+                        tokens: { type: integer }
+                        calls: { type: integer }
+                  totalTokens: { type: integer }
+                  totalCalls: { type: integer }
+
+  /api/account/export:
+    get:
+      summary: Complete user data archive export
+      description: Returns an aggregated JSON document containing all user sessions, messages, API keys, memories, prompts, and artifacts.
+      responses:
+        '200':
+          description: Complete account data export JSON
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/account/payment-method:
+    post:
+      summary: Store non-sensitive card metadata
+      description: Stores card brand, last4, and expiry month/year on user preferences. Sensitive PAN/CVC are never received.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [brand, last4, expMonth, expYear]
+              properties:
+                brand: { type: string }
+                last4: { type: string, pattern: '^[0-9]{4}$' }
+                expMonth: { type: integer }
+                expYear: { type: integer }
+      responses:
+        '200':
+          description: Payment method saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  paymentMethod: { type: object }
+    delete:
+      summary: Remove saved payment method metadata
+      responses:
+        '200':
+          description: Payment method removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+
+  /api/account/agent-keys:
+    get:
+      summary: List account agent API keys
+      description: Returns all long-lived scoped credentials minted for autonomous agents. Plaintext secret is never included.
+      responses:
+        '200':
+          description: List of agent key metadata rows
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  keys:
+                    type: array
+                    items:
+                      type: object
+    post:
+      summary: Mint a new scoped agent API key
+      description: Issues a new scoped credential. The plaintext credential token is returned exactly once in the response.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [label, scopes]
+              properties:
+                label: { type: string, maxLength: 100 }
+                scopes:
+                  type: array
+                  items: { type: string }
+                expiresAt: { type: string, format: date-time, nullable: true }
+      responses:
+        '201':
+          description: Key minted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  id: { type: string, format: uuid }
+                  keyId: { type: string }
+                  credential: { type: string }
+                  scopes: { type: array, items: { type: string } }
+
+  /api/account/agent-keys/{id}/revoke:
+    post:
+      summary: Revoke an agent API key
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Key revoked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+
+  /api/admin-auth/status:
+    get:
+      tags: [admin]
+      summary: Operator console configuration and client IP allowlist probe
+      description: Returns whether the admin password is configured and whether the caller's IP is allowed by the admin IP filter.
+      responses:
+        '200':
+          description: Admin status probe
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  configured: { type: boolean }
+                  ipAllowed: { type: boolean }
+
+  /api/admin-auth/verify:
+    get:
+      tags: [admin]
+      summary: Verify active admin session token
+      description: Validates the admin bearer token or session cookie.
+      responses:
+        '200':
+          description: Session validity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid: { type: boolean }
+
+  /api/admin-auth/login:
+    post:
+      tags: [admin]
+      summary: Operator console password authentication
+      description: Authenticates the operator against ADMIN_PASSWORD with per-IP rate limiting and lockout protection.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password: { type: string, maxLength: 200 }
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  expiresAt: { type: string, format: date-time }
+        '403':
+          description: IP not allowed
+        '503':
+          description: Admin password not configured on server
+
+  /api/admin-auth/logout:
+    post:
+      tags: [admin]
+      summary: Operator console logout
+      responses:
+        '200':
+          description: Session cleared
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+
+  /api/system-models:
+    get:
+      tags: [admin]
+      summary: Read built-in system model configuration
+      description: Returns the currently active system provider/model configuration (API key ciphertext is omitted).
+      responses:
+        '200':
+          description: Active system model definition or null if unconfigured
+          content:
+            application/json:
+              schema:
+                type: object
+                nullable: true
+                properties:
+                  id: { type: string, format: uuid }
+                  label: { type: string }
+                  url: { type: string }
+                  model: { type: string }
+                  keyHint: { type: string, nullable: true }
+                  hasKey: { type: boolean }
+                  isActive: { type: boolean }
+                  isBuiltIn: { type: boolean }
+                  isMultimodal: { type: boolean }
+                  createdAt: { type: string, format: date-time }
+    put:
+      tags: [admin]
+      summary: Update built-in system model configuration
+      description: Sets the system model provider endpoint, model name and API key. Provider URL is verified against SSRF rules.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [label, url, model]
+              properties:
+                label: { type: string }
+                url: { type: string }
+                model: { type: string }
+                key: { type: string, description: Plaintext key to encrypt or empty string to deactivate }
+                keyHint: { type: string }
+                isMultimodal: { type: boolean, default: true }
+      responses:
+        '200':
+          description: Saved system model configuration
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/embedding-config:
+    get:
+      tags: [admin]
+      summary: List vector embedding provider configurations
+      description: Returns configured embedding model endpoints and dimensions (ciphertext is never exposed).
+      responses:
+        '200':
+          description: List of embedding configurations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+    put:
+      tags: [admin]
+      summary: Create or update embedding provider configuration
+      description: Configures embedding provider endpoint and dimensions with SSRF verification. Exactly one config is active at a time.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [label, url, model, dimensions]
+              properties:
+                id: { type: string, description: If present updates existing configuration }
+                label: { type: string }
+                url: { type: string }
+                model: { type: string }
+                dimensions: { type: integer, minimum: 64, maximum: 4096 }
+                key: { type: string }
+                keyHint: { type: string }
+                isActive: { type: boolean, default: true }
+      responses:
+        '200':
+          description: Saved configuration
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/embedding-config/{id}:
+    delete:
+      tags: [admin]
+      summary: Remove embedding provider configuration
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Configuration deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+
+  /api/plugins:
+    get:
+      tags: [plugins]
+      summary: List user's installed plugins
+      responses:
+        '200':
+          description: Installed plugin list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plugins:
+                    type: array
+                    items:
+                      type: object
+    post:
+      tags: [plugins]
+      summary: Install a new plugin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                description: { type: string }
+                type: { type: string, default: extension }
+                config: { type: object }
+      responses:
+        '201':
+          description: Plugin installed
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/plugins/marketplace:
+    get:
+      tags: [plugins]
+      summary: List available built-in marketplace plugins
+      responses:
+        '200':
+          description: Built-in plugin catalog
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plugins:
+                    type: array
+                    items:
+                      type: object
+
+  /api/plugins/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      tags: [plugins]
+      summary: Update plugin settings or toggle enabled state
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                description: { type: string }
+                type: { type: string }
+                config: { type: object }
+                isEnabled: { type: boolean }
+      responses:
+        '200':
+          description: Updated plugin
+          content:
+            application/json:
+              schema:
+                type: object
+    delete:
+      tags: [plugins]
+      summary: Uninstall a plugin
+      responses:
+        '204':
+          description: Plugin deleted
+
+  /api/mcp:
+    post:
+      tags: [mcp]
+      summary: Model Context Protocol (MCP) Streamable HTTP session initialization and message exchange
+      description: Accepts JSON-RPC 2.0 messages conforming to the Model Context Protocol. Supports socrates.* discovery and read-only tools.
+      parameters:
+        - name: mcp-session-id
+          in: header
+          required: false
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: MCP response or session stream
+        '400':
+          description: Missing or unknown session ID
+    get:
+      tags: [mcp]
+      summary: MCP server-sent event stream for an active session
+      parameters:
+        - name: mcp-session-id
+          in: header
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: SSE event stream
+          content:
+            text/event-stream:
+              schema: { type: string }
+        '400':
+          description: Unknown session ID
+    delete:
+      tags: [mcp]
+      summary: Terminate an active MCP session
+      parameters:
+        - name: mcp-session-id
+          in: header
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Session terminated
+        '400':
+          description: Unknown session ID
+
+  /api/mcp/docs:
+    post:
+      tags: [mcp]
+      summary: MCP Documentation Server session initialization and query exchange
+      description: Curated read-only MCP server providing searchable access to Socrates developer and product documentation.
+      parameters:
+        - name: mcp-session-id
+          in: header
+          required: false
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: MCP docs response
+        '400':
+          description: Missing or unknown session ID
+    get:
+      tags: [mcp]
+      summary: MCP Documentation Server event stream
+      parameters:
+        - name: mcp-session-id
+          in: header
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: SSE event stream
+          content:
+            text/event-stream:
+              schema: { type: string }
+        '400':
+          description: Unknown session ID
+    delete:
+      tags: [mcp]
+      summary: Terminate an active MCP documentation session
+      parameters:
+        - name: mcp-session-id
+          in: header
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Session terminated
+        '400':
+          description: Unknown session ID
+
+  /api/chat-turns:
+    get:
+      tags: [agents]
+      operationId: listChatTurns
+      summary: List the authenticated user's recent chat turns
+      parameters:
+        - { name: sessionId, in: query, schema: { type: string, format: uuid } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        '200':
+          description: Recent turns
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  turns: { type: array, items: { $ref: '#/components/schemas/ChatTurn' } }
+    post:
+      tags: [agents]
+      operationId: createChatTurn
+      summary: Atomically create a chat turn and its initial event
+      description: |
+        Concurrent requests with the same (user, clientTurnId) return one
+        durable turn. This creates a record; it does not itself start an LLM
+        worker. Use the chat stream's turn binding to execute it. A clientTurnId
+        cannot be rebound to a different session. The chat stream atomically
+        claims a queued turn before model/tool work. Repeated execution attempts
+        emit an SSE error with CONFLICT (the primed HTTP status remains 200).
+        Reconnect to the event endpoint instead. Heartbeat-expired executions
+        become interrupted and require an explicit new turn to retry.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [clientTurnId]
+              properties:
+                clientTurnId: { type: string, minLength: 1, maxLength: 200 }
+                sessionId: { type: [string, 'null'], format: uuid }
+                model: { type: [string, 'null'] }
+                input: {}
+      responses:
+        '201':
+          description: Created, with turn, created=true and capabilities.resumable=true
+        '200':
+          description: Existing turn, with created=false
+        '400':
+          description: Invalid clientTurnId or sessionId
+        '404':
+          description: Session does not exist or is not owned by the caller
+        '409':
+          description: clientTurnId was already bound to a different session
+  /api/chat-turns/{id}:
+    get:
+      tags: [agents]
+      operationId: getChatTurn
+      summary: Read an owned turn and up to 200 initial events
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Turn snapshot and initial events; use the event stream to replay the full log
+        '404':
+          description: Turn does not exist or is not owned by the caller
+  /api/chat-turns/{id}/events:
+    get:
+      tags: [agents]
+      operationId: streamChatTurnEvents
+      summary: Replay and tail an owned turn's durable events
+      description: |
+        Sends event: turn_event with {turnId, sequence, event, data} JSON,
+        followed by chat-protocol aliases. Content aliases are default SSE
+        data events containing delta; reasoning aliases contain reasoning.
+        Other aliases use their original event name. Resume with after=lastSeq.
+        Replay drains all available pages; a one-second database poll catches
+        events written by another server instance. Disconnecting unsubscribes
+        this reader and does not interrupt the worker. Event persistence does
+        not by itself imply worker restart recovery.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: after, in: query, schema: { type: integer, minimum: 0, maximum: 2147483647, default: 0 } }
+      responses:
+        '200':
+          description: Ordered SSE event envelopes and compatibility aliases
+          content:
+            text/event-stream:
+              schema: { type: string }
+        '400':
+          description: Invalid event cursor
+        '404':
+          description: Turn does not exist or is not owned by the caller
+  /api/chat-turns/{id}/interrupt:
+    post:
+      tags: [agents]
+      operationId: interruptChatTurn
+      summary: Mark an owned turn interrupted and emit its interruption event
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Updated turn and an idempotent boolean; worker cancellation is asynchronous
+        '404':
+          description: Turn does not exist or is not owned by the caller
   /api/mobile/bootstrap:
     get:
       tags: [mobile]
@@ -127,26 +1155,6 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
-  /api/messages/{messageId}/regenerate:
-    parameters:
-      - $ref: '#/components/parameters/MessageId'
-    post:
-      tags: [messages]
-      operationId: regenerateAssistant
-      summary: Re-run the model on the user message that precedes this assistant message
-      description: |
-        Returns a Server-Sent-Events stream identical in shape to
-        `/api/chat/stream`, with `delta.content` chunks. After the
-        stream completes, the server has replaced the assistant
-        message in-place.
-      responses:
-        '200':
-          description: SSE stream
-          content:
-            text/event-stream:
-              schema: { $ref: '#/components/schemas/ChatDelta' }
-        '404': { $ref: '#/components/responses/NotFound' }
-
   /api/messages/{messageId}/feedback:
     parameters:
       - $ref: '#/components/parameters/MessageId'
@@ -175,20 +1183,6 @@ paths:
               schema: { $ref: '#/components/schemas/FeedbackReceipt' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '404': { $ref: '#/components/responses/NotFound' }
-
-  /api/messages/{messageId}/copy-event:
-    parameters:
-      - $ref: '#/components/parameters/MessageId'
-    post:
-      tags: [messages]
-      operationId: logCopy
-      summary: "Server-side telemetry: user clicked Copy on this message"
-      description: |
-        Best-effort; the client may skip this on privacy opt-out.
-        Helps the user see "this is a popular answer" and helps
-        admins prioritise quality work.
-      responses:
-        '204': { description: Recorded }
 
   # ========================================================================
   # P1.2 — Global search
@@ -229,40 +1223,10 @@ paths:
                   nextCursor: { type: string, nullable: true }
                   total: { type: integer }
 
-  /api/search/suggest:
-    get:
-      tags: [search]
-      operationId: searchSuggest
-      summary: Typeahead suggestions (titles, tags, recent queries)
-      parameters:
-        - in: query
-          name: q
-          schema: { type: string, minLength: 1, maxLength: 100 }
-      responses:
-        '200':
-          description: Suggestions
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  titles: { type: array, items: { type: string } }
-                  tags: { type: array, items: { type: string } }
-                  recent: { type: array, items: { type: string } }
-
   # ========================================================================
   # P1.3 — User preferences
   # ========================================================================
   /api/users/me:
-    get:
-      tags: [users]
-      operationId: getMe
-      responses:
-        '200':
-          description: Current user
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/User' }
     patch:
       tags: [users]
       operationId: updateMe
@@ -290,18 +1254,6 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/User' }
 
-  /api/users/me/export:
-    get:
-      tags: [users]
-      operationId: exportMyData
-      summary: GDPR-style data export (sessions, memories, settings)
-      responses:
-        '200':
-          description: ZIP archive
-          content:
-            application/zip:
-              schema: { type: string, format: binary }
-
   # ========================================================================
   # P2.1 — Projects
   # ========================================================================
@@ -321,6 +1273,9 @@ paths:
     post:
       tags: [projects]
       operationId: createProject
+      description: Database-backed idempotent JSON write; see the Idempotency-Key contract above.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
@@ -336,6 +1291,7 @@ paths:
                 systemPrompt: { type: string, maxLength: 32000, description: Project-scoped system prompt additions }
                 workspaceId: { type: string, format: uuid, nullable: true }
       responses:
+        '409': { $ref: '#/components/responses/IdempotencyConflict' }
         '201':
           description: Created
           content:
@@ -347,15 +1303,6 @@ paths:
   /api/projects/{projectId}:
     parameters:
       - $ref: '#/components/parameters/ProjectId'
-    get:
-      tags: [projects]
-      operationId: getProject
-      responses:
-        '200':
-          description: Project with sessions
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ProjectDetail' }
     patch:
       tags: [projects]
       operationId: updateProject
@@ -386,30 +1333,6 @@ paths:
         '204': { description: Deleted }
         '404': { $ref: '#/components/responses/NotFound' }
 
-  /api/projects/{projectId}/sessions:
-    parameters:
-      - $ref: '#/components/parameters/ProjectId'
-    get:
-      tags: [projects]
-      operationId: listProjectSessions
-      parameters:
-        - in: query
-          name: limit
-          schema: { type: integer, default: 50, maximum: 200 }
-        - in: query
-          name: cursor
-          schema: { type: string }
-      responses:
-        '200':
-          description: Sessions
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  sessions: { type: array, items: { $ref: '#/components/schemas/SessionSummary' } }
-                  nextCursor: { type: string, nullable: true }
-
   # ========================================================================
   # P2.2 — Scheduled tasks, connectors and learning state
   # ========================================================================
@@ -429,6 +1352,9 @@ paths:
     post:
       tags: [scheduled]
       operationId: createScheduledTask
+      description: Database-backed idempotent JSON write; see the Idempotency-Key contract above.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
@@ -444,6 +1370,7 @@ paths:
                 frequency: { type: string, enum: [once, hourly, daily, weekly, monthly, custom] }
                 nextRunAt: { type: string, format: date-time, nullable: true }
       responses:
+        '409': { $ref: '#/components/responses/IdempotencyConflict' }
         '201':
           description: Created
           content:
@@ -495,12 +1422,22 @@ paths:
       tags: [scheduled]
       operationId: runScheduledTask
       summary: Execute a scheduled task immediately without moving its next slot
+      description: |
+        Manual and scheduled executions share a database lease. Completion
+        commits result messages and bookkeeping together. A busy task returns
+        409; sequential manual runs are distinct executions. Native LLM tasks
+        whose worker dies can be reclaimed after lease expiry. Workspace-agent
+        runs with unknown external effects are paused instead of automatically
+        replayed; review their run history before manually retrying. Pauses and
+        reschedules made during provider work are preserved.
       responses:
         '200':
           description: Updated task
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ScheduledTask' }
+        '409':
+          description: Task already running or expired agent outcome uncertain; uncertain tasks are paused
 
   /api/project-connectors:
     get:
@@ -682,64 +1619,30 @@ paths:
     put:
       tags: [tags]
       operationId: setSessionTags
+      description: Atomically replace session tags. Supports database-backed Idempotency-Key replay across instances.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [tags]
               properties:
-                tags: { type: array, items: { type: string, maxLength: 30 }, maxItems: 12 }
+                tags: { type: array, items: { type: string }, description: Only the first 12 entries are applied. }
       responses:
         '200':
-          description: Updated
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/SessionSummary' }
-
-  /api/sessions/{sessionId}/pin:
-    parameters:
-      - $ref: '#/components/parameters/SessionId'
-    post:
-      tags: [tags]
-      operationId: pinSession
-      responses:
-        '200':
-          description: Pinned
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/SessionSummary' }
-    delete:
-      tags: [tags]
-      operationId: unpinSession
-      responses:
-        '200':
-          description: Unpinned
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/SessionSummary' }
-
-  /api/tags:
-    get:
-      tags: [tags]
-      operationId: listMyTags
-      responses:
-        '200':
-          description: User's tag vocabulary
+          description: Requested tags
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  tags:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        name: { type: string }
-                        count: { type: integer }
-                        color: { type: string }
+                  tags: { type: array, items: { type: string } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/IdempotencyConflict' }
 
   # ========================================================================
   # P2.3 — Archive / trash
@@ -766,24 +1669,6 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/SessionSummary' }
 
-  /api/sessions/archived:
-    get:
-      tags: [archive]
-      operationId: listArchived
-      parameters:
-        - in: query
-          name: limit
-          schema: { type: integer, default: 50 }
-      responses:
-        '200':
-          description: Archived sessions
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  sessions: { type: array, items: { $ref: '#/components/schemas/SessionSummary' } }
-
   /api/sessions/{sessionId}:
     delete:
       tags: [archive]
@@ -803,6 +1688,25 @@ paths:
   # P3.1 — File upload
   # ========================================================================
   /api/files:
+    get:
+      tags: [files]
+      operationId: listFiles
+      summary: List user files with cursor pagination
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50, maximum: 200 }
+        - in: query
+          name: cursor
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: List of files
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/FileRef' }
     post:
       tags: [files]
       operationId: uploadFile
@@ -832,6 +1736,36 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
 
+  /api/files/extract:
+    post:
+      tags: [files]
+      operationId: extractDocumentText
+      summary: Extract plain text from PDF/Office documents
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Extracted text
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  text: { type: string }
+                  truncated: { type: boolean }
+                  name: { type: string }
+                  kind: { type: string }
+
   /api/files/{fileId}:
     parameters:
       - $ref: '#/components/parameters/FileId'
@@ -844,6 +1778,29 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/FileRef' }
+    patch:
+      tags: [files]
+      operationId: renameFile
+      summary: Rename an uploaded file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 255 }
+      responses:
+        '200':
+          description: Renamed file
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  name: { type: string }
     delete:
       tags: [files]
       operationId: deleteFile
@@ -887,63 +1844,6 @@ paths:
                   truncated: { type: boolean }
                   meta: { type: object, additionalProperties: true }
         '415': { $ref: '#/components/responses/BadRequest' }
-
-  /api/files/{fileId}/thumbnail:
-    parameters:
-      - $ref: '#/components/parameters/FileId'
-      - in: query
-        name: w
-        schema: { type: integer, default: 256 }
-      - in: query
-        name: h
-        schema: { type: integer, default: 256 }
-    get:
-      tags: [files]
-      operationId: getFileThumbnail
-      responses:
-        '200':
-          description: PNG thumbnail
-          content:
-            image/png:
-              schema: { type: string, format: binary }
-
-  # ========================================================================
-  # P3.3 — Voice
-  # ========================================================================
-  /api/voice/transcribe:
-    post:
-      tags: [voice]
-      operationId: transcribeAudio
-      summary: Server-side fallback when client-side Web Speech API is unavailable
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required: [audio]
-              properties:
-                audio:
-                  type: string
-                  format: binary
-                  description: webm/opus or wav, max 5 minutes
-                language:
-                  type: string
-                  description: BCP-47 code, e.g. "en-US"
-      responses:
-        '200':
-          description: Transcript
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  text: { type: string }
-                  language: { type: string }
-                  duration: { type: number, description: Seconds }
-                  words:
-                    type: array
-                    items: { $ref: '#/components/schemas/TranscriptWord' }
 
   # ========================================================================
   # P4.1 — Artifacts
@@ -1068,16 +1968,6 @@ paths:
       responses:
         '204': { description: Unshared }
 
-  /a/{shareToken}:
-    get:
-      tags: [artifacts]
-      operationId: publicArtifactView
-      responses:
-        '200':
-          description: Public artifact page (HTML)
-          content:
-            text/html: {}
-
   # ========================================================================
   # P4.4 — Memory
   # ========================================================================
@@ -1173,32 +2063,6 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/MemoryEntry' }
 
-  /api/memory/extract:
-    post:
-      tags: [memory]
-      operationId: extractMemoriesFromSession
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [sessionId]
-              properties:
-                sessionId: { type: string, format: uuid }
-                confirm: { type: array, items: { type: string, maxLength: 2000 }, description: Pre-approved candidates to upsert verbatim }
-      responses:
-        '200':
-          description: Extraction candidates
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  candidates:
-                    type: array
-                    items: { $ref: '#/components/schemas/MemoryEntry' }
-
   # ========================================================================
   # P5.1 — Usage
   # ========================================================================
@@ -1230,6 +2094,33 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/UsageLimits' }
+
+  /api/usage/daily:
+    get:
+      tags: [usage]
+      operationId: getUsageDaily
+      summary: Daily token counts for heatmap (last 365 days)
+      parameters:
+        - in: query
+          name: days
+          schema: { type: string, default: '365' }
+      responses:
+        '200':
+          description: Daily token usage entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  days: { type: integer }
+                  entries:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        day: { type: string, format: date }
+                        tokens: { type: integer }
+                        messages: { type: integer }
 
   # ========================================================================
   # P5.2 — Notifications
@@ -1265,132 +2156,6 @@ paths:
       operationId: unregisterPush
       responses:
         '204': { description: Unregistered }
-
-  /api/notifications/preferences:
-    get:
-      tags: [notifications]
-      operationId: getNotifPrefs
-      responses:
-        '200':
-          description: Per-channel preferences
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/NotificationPrefs' }
-    put:
-      tags: [notifications]
-      operationId: setNotifPrefs
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/NotificationPrefs' }
-      responses:
-        '200':
-          description: Saved
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/NotificationPrefs' }
-
-  # ========================================================================
-  # P5.5 — Workspaces
-  # ========================================================================
-  /api/workspaces:
-    get:
-      tags: [workspaces]
-      operationId: listWorkspaces
-      responses:
-        '200':
-          description: Workspaces
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  workspaces: { type: array, items: { $ref: '#/components/schemas/Workspace' } }
-    post:
-      tags: [workspaces]
-      operationId: createWorkspace
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [name]
-              properties:
-                name: { type: string, maxLength: 80 }
-                plan: { type: string, enum: [team, business], default: team }
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Workspace' }
-
-  /api/workspaces/{workspaceId}/members:
-    parameters:
-      - $ref: '#/components/parameters/WorkspaceId'
-    get:
-      tags: [workspaces]
-      operationId: listMembers
-      responses:
-        '200':
-          description: Members
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  members: { type: array, items: { $ref: '#/components/schemas/WorkspaceMember' } }
-    post:
-      tags: [workspaces]
-      operationId: inviteMember
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [email, role]
-              properties:
-                email: { type: string, format: email }
-                role: { type: string, enum: [admin, member, viewer] }
-      responses:
-        '201':
-          description: Invited
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/WorkspaceMember' }
-
-  /api/workspaces/{workspaceId}/members/{userId}:
-    parameters:
-      - $ref: '#/components/parameters/WorkspaceId'
-      - in: path
-        name: userId
-        required: true
-        schema: { type: string, format: uuid }
-    patch:
-      tags: [workspaces]
-      operationId: updateMember
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                role: { type: string, enum: [admin, member, viewer] }
-      responses:
-        '200':
-          description: Updated
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/WorkspaceMember' }
-    delete:
-      tags: [workspaces]
-      operationId: removeMember
-      responses:
-        '204': { description: Removed }
 
   # ========================================================================
   # P5.7 — Import
@@ -1468,6 +2233,9 @@ paths:
     post:
       tags: [prompts]
       operationId: createPromptTemplate
+      description: Database-backed idempotent JSON write; see the Idempotency-Key contract above.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
@@ -1484,6 +2252,7 @@ paths:
                 shortcut: { type: string, maxLength: 20, description: Optional slash-command alias, e.g. "/summarize" }
                 systemPrompt: { type: string, maxLength: 32000, description: Optional system prompt injected while the template is active }
       responses:
+        '409': { $ref: '#/components/responses/IdempotencyConflict' }
         '201':
           description: Created
           content:
@@ -1524,286 +2293,6 @@ paths:
       operationId: deletePromptTemplate
       responses:
         '204': { description: Deleted }
-
-  # ========================================================================
-  # P6.1 — Real-time collaboration
-  # ========================================================================
-  /api/sessions/{sessionId}/collab:
-    parameters:
-      - $ref: '#/components/parameters/SessionId'
-    get:
-      tags: [collaborators]
-      operationId: openCollabSocket
-      summary: Upgrade to WebSocket for real-time sync (Y.js over binary protocol)
-      description: |
-        Bidirectional WebSocket. The server stores the Y.Doc per
-        session and broadcasts updates to all connected clients.
-        Authentication via the same `sid` cookie + `X-CSRF-Token`
-        header (sent in the WebSocket upgrade request).
-      responses:
-        '101':
-          description: Switching protocols
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-
-  /api/sessions/{sessionId}/collab/presence:
-    parameters:
-      - $ref: '#/components/parameters/SessionId'
-    get:
-      tags: [collaborators]
-      operationId: getPresence
-      responses:
-        '200':
-          description: Currently connected users
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  users:
-                    type: array
-                    items: { $ref: '#/components/schemas/PresenceUser' }
-
-  /api/sessions/{sessionId}/collab/comments:
-    parameters:
-      - $ref: '#/components/parameters/SessionId'
-    get:
-      tags: [collaborators]
-      operationId: listComments
-      responses:
-        '200':
-          description: Inline comments anchored to message ids
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  comments: { type: array, items: { $ref: '#/components/schemas/Comment' } }
-    post:
-      tags: [collaborators]
-      operationId: addComment
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [anchor, body]
-              properties:
-                anchor: { type: string, description: MessageId or range }
-                body: { type: string, maxLength: 4000 }
-                parentId: { type: string, format: uuid, nullable: true, description: For threading replies }
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Comment' }
-
-  # ========================================================================
-  # P6.2 — Agent reinforcement
-  # ========================================================================
-  /api/agent/runs/{runId}:
-    parameters:
-      - in: path
-        name: runId
-        required: true
-        schema: { type: string, format: uuid }
-    get:
-      tags: [agents]
-      operationId: getAgentRun
-      responses:
-        '200':
-          description: Run state
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/AgentRun' }
-
-  /api/agent/runs/{runId}/plan:
-    parameters:
-      - in: path
-        name: runId
-        required: true
-        schema: { type: string, format: uuid }
-    put:
-      tags: [agents]
-      operationId: setAgentPlan
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [steps]
-              properties:
-                steps:
-                  type: array
-                  items:
-                    type: object
-                    required: [id, title]
-                    properties:
-                      id: { type: string }
-                      title: { type: string, maxLength: 200 }
-                      rationale: { type: string, maxLength: 1000 }
-                approved: { type: boolean, default: false, description: When true, the agent starts executing. }
-      responses:
-        '200':
-          description: Plan saved
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/AgentRun' }
-
-  /api/agent/runs/{runId}/checkpoints:
-    parameters:
-      - in: path
-        name: runId
-        required: true
-        schema: { type: string, format: uuid }
-    get:
-      tags: [agents]
-      operationId: listCheckpoints
-      responses:
-        '200':
-          description: Rollback points
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  checkpoints: { type: array, items: { $ref: '#/components/schemas/Checkpoint' } }
-    post:
-      tags: [agents]
-      operationId: createCheckpoint
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [name]
-              properties:
-                name: { type: string, maxLength: 100 }
-                description: { type: string, maxLength: 500 }
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Checkpoint' }
-
-  /api/agent/runs/{runId}/checkpoints/{checkpointId}/rollback:
-    parameters:
-      - in: path
-        name: runId
-        required: true
-        schema: { type: string, format: uuid }
-      - in: path
-        name: checkpointId
-        required: true
-        schema: { type: string, format: uuid }
-    post:
-      tags: [agents]
-      operationId: rollbackToCheckpoint
-      responses:
-        '200':
-          description: Rolled back
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/AgentRun' }
-
-  /api/agent/runs/{runId}/diffs:
-    parameters:
-      - in: path
-        name: runId
-        required: true
-        schema: { type: string, format: uuid }
-    get:
-      tags: [agents]
-      operationId: listDiffs
-      responses:
-        '200':
-          description: Proposed file changes
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  diffs: { type: array, items: { $ref: '#/components/schemas/FileDiff' } }
-
-  /api/agent/runs/{runId}/diffs/{diffId}/approve:
-    parameters:
-      - in: path
-        name: runId
-        required: true
-        schema: { type: string, format: uuid }
-      - in: path
-        name: diffId
-        required: true
-        schema: { type: string, format: uuid }
-    post:
-      tags: [agents]
-      operationId: approveDiff
-      responses:
-        '200':
-          description: Approved
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/FileDiff' }
-
-  /api/agent/runs/{runId}/diffs/{diffId}/reject:
-    parameters:
-      - in: path
-        name: runId
-        required: true
-        schema: { type: string, format: uuid }
-      - in: path
-        name: diffId
-        required: true
-        schema: { type: string, format: uuid }
-    post:
-      tags: [agents]
-      operationId: rejectDiff
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                reason: { type: string, maxLength: 500 }
-      responses:
-        '200':
-          description: Rejected
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/FileDiff' }
-
-  /api/agent/compact:
-    post:
-      tags: [agents]
-      operationId: compactContext
-      summary: Force context compaction of a long agent conversation
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [runId]
-              properties:
-                runId: { type: string, format: uuid }
-                strategy: { type: string, enum: [sliding, summary, both], default: both }
-      responses:
-        '200':
-          description: Compaction stats
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  beforeTokens: { type: integer }
-                  afterTokens: { type: integer }
-                  summary: { type: string, nullable: true }
 
   # ========================================================================
   # P6.3 — Classroom / spaced repetition
@@ -1861,6 +2350,12 @@ paths:
                 type: object
                 properties:
                   students: { type: array, items: { $ref: '#/components/schemas/StudentSummary' } }
+  /api/classroom/classes/{classId}/join:
+    parameters:
+      - in: path
+        name: classId
+        required: true
+        schema: { type: string, format: uuid }
     post:
       tags: [classroom]
       operationId: joinClass
@@ -1874,7 +2369,7 @@ paths:
               properties:
                 joinCode: { type: string, pattern: "^[A-Z0-9]{6}$" }
       responses:
-        '201':
+        '200':
           description: Joined
           content:
             application/json:
@@ -1896,96 +2391,6 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ClassDashboard' }
-
-  /api/srs/queue:
-    get:
-      tags: [classroom]
-      operationId: getSrsQueue
-      description: Spaced-repetition queue of mistakes due for review today
-      responses:
-        '200':
-          description: Queue
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  due: { type: array, items: { $ref: '#/components/schemas/MistakeSummary' } }
-                  new: { type: array, items: { $ref: '#/components/schemas/MistakeSummary' } }
-                  learning: { type: array, items: { $ref: '#/components/schemas/MistakeSummary' } }
-    post:
-      tags: [classroom]
-      operationId: gradeSrsCard
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [mistakeId, grade]
-              properties:
-                mistakeId: { type: string, format: uuid }
-                grade: { type: integer, minimum: 0, maximum: 3, description: Anki-style 0-3 grade }
-      responses:
-        '200':
-          description: Updated schedule
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  nextDue: { type: string, format: date-time }
-                  interval: { type: integer, description: Days }
-                  ease: { type: number }
-
-  /api/paths:
-    get:
-      tags: [classroom]
-      operationId: listStudyPaths
-      responses:
-        '200':
-          description: Study paths
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  paths: { type: array, items: { $ref: '#/components/schemas/StudyPath' } }
-
-  /api/paths/{pathId}/enroll:
-    parameters:
-      - in: path
-        name: pathId
-        required: true
-        schema: { type: string, format: uuid }
-    post:
-      tags: [classroom]
-      operationId: enrollPath
-      responses:
-        '200':
-          description: Enrolled
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  progress: { type: object }
-
-  /api/streaks:
-    get:
-      tags: [classroom]
-      operationId: getStreaks
-      responses:
-        '200':
-          description: Streak data
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  current: { type: integer, description: Consecutive days }
-                  longest: { type: integer }
-                  last7Days: { type: array, items: { type: boolean } }
 
   # ========================================================================
   # Existing endpoints (summary)
@@ -2026,10 +2431,103 @@ paths:
     get:
       tags: [users]
       summary: EXISTING
+  /api/auth/resend-verification:
+    post:
+      tags: [users]
+      summary: Resend email verification link
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '200':
+          description: Verification email dispatched
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+  /api/auth/reset-info:
+    get:
+      tags: [users]
+      summary: Inspect password reset token status and email
+      parameters:
+        - in: query
+          name: token
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Reset token info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid: { type: boolean }
+                  email: { type: string }
+  /api/auth/password:
+    post:
+      tags: [users]
+      summary: Change password for authenticated session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [oldPassword, newPassword]
+              properties:
+                oldPassword: { type: string }
+                newPassword: { type: string, minLength: 8, maxLength: 64 }
+      responses:
+        '200':
+          description: Password updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+  /api/auth/account:
+    delete:
+      tags: [users]
+      summary: Delete caller account and clear session cookies
+      responses:
+        '200':
+          description: Account purged
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
   /api/auth/oauth/github/start:
     get:
       tags: [users]
       summary: EXISTING
+  /api/auth/oauth/github/callback:
+    get:
+      tags: [users]
+      summary: GitHub OAuth callback
+      parameters:
+        - in: query
+          name: code
+          required: true
+          schema: { type: string }
+        - in: query
+          name: state
+          required: true
+          schema: { type: string }
+      responses:
+        '302':
+          description: Redirects to target or home with session cookie established
   /api/auth/mobile/login:
     post:
       tags: [mobile]
@@ -2196,10 +2694,6 @@ paths:
           schema: { type: string, enum: ['socrates://auth/callback'] }
       responses:
         '302': { description: Redirect to GitHub authorization }
-  /api/captcha/generate:
-    get:
-      tags: [users]
-      summary: EXISTING
   /api/sessions:
     get:
       tags: [archive]
@@ -2207,6 +2701,19 @@ paths:
     post:
       tags: [archive]
       summary: EXISTING — create session
+    delete:
+      tags: [archive]
+      summary: Bulk delete active non-archived sessions for the user
+      responses:
+        '200':
+          description: Deletion count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  deleted: { type: integer }
   /api/sessions/{id}:
     get:
       tags: [archive]
@@ -2290,10 +2797,6 @@ paths:
         tool_use/tool_result frames and stored toolCalls, separate from prose.
         Existing clients can display a generic tool result; legacy UI fences
         remain readable on the web for old sessions.
-  /api/agent/run:
-    post:
-      tags: [agents]
-      summary: EXISTING — SSE agent run
   /api/agent-runs/capabilities:
     get:
       tags: [agents]
@@ -2612,6 +3115,774 @@ paths:
       responses:
         '201': { description: Edited image stored as a user-owned file }
 
+  /api/connectors:
+    get:
+      tags: [connectors]
+      operationId: listConnectors
+      summary: List user connectors catalog and current connection statuses
+      responses:
+        '200':
+          description: Connectors list with status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  connectors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        name: { type: string }
+                        description: { type: string }
+                        configured: { type: boolean }
+                        connection: { type: object, nullable: true }
+
+  /api/connectors/github/start:
+    get:
+      tags: [connectors]
+      summary: Initiate GitHub connector OAuth authorization
+      responses:
+        '302': { description: Redirect to GitHub authorize URL }
+        '503': { description: GitHub connector not configured }
+
+  /api/connectors/github/callback:
+    get:
+      tags: [connectors]
+      summary: GitHub connector OAuth callback
+      parameters:
+        - in: query
+          name: code
+          required: true
+          schema: { type: string }
+        - in: query
+          name: state
+          required: true
+          schema: { type: string }
+      responses:
+        '302': { description: Redirect to frontend with connection status }
+
+  /api/connectors/github/repositories:
+    get:
+      tags: [connectors]
+      summary: List repositories accessible via connected GitHub installation
+      responses:
+        '200':
+          description: Accessible repositories
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  repositories: { type: array, items: { type: object } }
+        '404': { description: GitHub is not connected }
+
+  /api/connectors/github/webhook:
+    post:
+      tags: [connectors]
+      summary: Ingest GitHub App webhook events
+      responses:
+        '202': { description: Event accepted }
+        '204': { description: Ping handled }
+        '401': { description: Invalid signature }
+
+  /api/connectors/github:
+    delete:
+      tags: [connectors]
+      summary: Disconnect GitHub connector
+      responses:
+        '204': { description: Disconnected }
+
+  /api/connectors/feishu/start:
+    get:
+      tags: [connectors]
+      summary: Initiate Feishu connector OAuth authorization
+      responses:
+        '302': { description: Redirect to Feishu authorize URL }
+        '503': { description: Feishu connector not configured }
+
+  /api/connectors/feishu/callback:
+    get:
+      tags: [connectors]
+      summary: Feishu connector OAuth callback
+      parameters:
+        - in: query
+          name: code
+          required: true
+          schema: { type: string }
+        - in: query
+          name: state
+          required: true
+          schema: { type: string }
+      responses:
+        '302': { description: Redirect to frontend with connection status }
+
+  /api/connectors/feishu:
+    delete:
+      tags: [connectors]
+      summary: Disconnect Feishu connector
+      responses:
+        '204': { description: Disconnected }
+
+  /api/connectors/gitee/start:
+    get:
+      tags: [connectors]
+      summary: Initiate Gitee connector OAuth authorization
+      responses:
+        '302': { description: Redirect to Gitee authorize URL }
+        '503': { description: Gitee connector not configured }
+
+  /api/connectors/gitee/callback:
+    get:
+      tags: [connectors]
+      summary: Gitee connector OAuth callback
+      parameters:
+        - in: query
+          name: code
+          required: true
+          schema: { type: string }
+        - in: query
+          name: state
+          required: true
+          schema: { type: string }
+      responses:
+        '302': { description: Redirect to frontend with connection status }
+
+  /api/connectors/gitee/repositories:
+    get:
+      tags: [connectors]
+      summary: List repositories accessible via connected Gitee account
+      responses:
+        '200':
+          description: Accessible repositories
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  repositories: { type: array, items: { type: object } }
+        '404': { description: Gitee is not connected }
+
+  /api/connectors/gitee:
+    delete:
+      tags: [connectors]
+      summary: Disconnect Gitee connector
+      responses:
+        '204': { description: Disconnected }
+
+  /api/connectors/notion/start:
+    get:
+      tags: [connectors]
+      summary: Initiate Notion connector OAuth authorization
+      responses:
+        '302': { description: Redirect to Notion authorize URL }
+        '503': { description: Notion connector not configured }
+
+  /api/connectors/notion/callback:
+    get:
+      tags: [connectors]
+      summary: Notion connector OAuth callback
+      parameters:
+        - in: query
+          name: code
+          required: true
+          schema: { type: string }
+        - in: query
+          name: state
+          required: true
+          schema: { type: string }
+      responses:
+        '302': { description: Redirect to frontend with connection status }
+
+  /api/connectors/notion/pages:
+    get:
+      tags: [connectors]
+      summary: Search pages accessible via connected Notion workspace
+      parameters:
+        - in: query
+          name: query
+          schema: { type: string, maxLength: 200 }
+      responses:
+        '200':
+          description: Pages matching search
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pages: { type: array, items: { type: object } }
+        '404': { description: Notion is not connected }
+
+  /api/connectors/notion:
+    delete:
+      tags: [connectors]
+      summary: Disconnect Notion connector
+      responses:
+        '204': { description: Disconnected }
+
+  /api/connectors/zotero:
+    post:
+      tags: [connectors]
+      summary: Connect Zotero using read-only API key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [apiKey]
+              properties:
+                apiKey: { type: string }
+      responses:
+        '201':
+          description: Connected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  connection: { type: object }
+        '400': { description: Invalid Zotero API key }
+    delete:
+      tags: [connectors]
+      summary: Disconnect Zotero connector
+      responses:
+        '204': { description: Disconnected }
+
+  /api/connectors/zotero/items:
+    get:
+      tags: [connectors]
+      summary: Search items in connected Zotero research library
+      parameters:
+        - in: query
+          name: query
+          schema: { type: string, maxLength: 200 }
+      responses:
+        '200':
+          description: Research items matching query
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { type: object } }
+        '404': { description: Zotero is not connected }
+
+  /api/connectors/arxiv/papers:
+    get:
+      tags: [connectors]
+      summary: Search public arXiv preprints
+      parameters:
+        - in: query
+          name: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Preprints matching query
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  papers: { type: array, items: { type: object } }
+        '502': { description: ArXiv query failed }
+
+  /api/project-connectors/{provider}/connection:
+    parameters:
+      - in: path
+        name: provider
+        required: true
+        schema: { type: string }
+    delete:
+      tags: [connectors]
+      summary: Disconnect an OOMOL project connector or OpenConnector service
+      responses:
+        '200':
+          description: Disconnected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: disconnected }
+        '404': { description: Unknown connector provider }
+
+  /api/project-connectors/{provider}/oauth-config:
+    parameters:
+      - in: path
+        name: provider
+        required: true
+        schema: { type: string }
+    get:
+      tags: [connectors]
+      summary: Read OAuth configuration for cloud connector
+      responses:
+        '200':
+          description: OAuth configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service: { type: string }
+                  configured: { type: boolean }
+        '404': { description: Unknown connector provider }
+        '503': { description: Project connector not configured }
+    put:
+      tags: [connectors]
+      summary: Stale OAuth config submission rejection
+      responses:
+        '400': { description: OAuth apps are managed in OOMOL console }
+        '404': { description: Unknown connector provider }
+
+  /api/web-search:
+    post:
+      tags: [search]
+      operationId: performWebSearch
+      summary: Live web search proxy for prompt research context
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query: { type: string }
+                count: { type: integer, default: 5 }
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  query: { type: string }
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        title: { type: string }
+                        url: { type: string, format: uri }
+                        snippet: { type: string }
+
+  /api/image-search:
+    post:
+      tags: [search]
+      operationId: performImageSearch
+      summary: Live image search results from Bing Images
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query: { type: string }
+                count: { type: integer, default: 8 }
+      responses:
+        '200':
+          description: Image search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  query: { type: string }
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        title: { type: string }
+                        url: { type: string, format: uri }
+                        thumbnailUrl: { type: string, format: uri }
+                        sourceUrl: { type: string, format: uri }
+
+  /api/fetch-batch:
+    post:
+      tags: [search]
+      operationId: fetchBatchUrls
+      summary: SSRF-guarded batch fetch of external URL contents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [urls]
+              properties:
+                urls:
+                  type: array
+                  items: { type: string, format: uri }
+      responses:
+        '200':
+          description: Batch fetched responses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    url: { type: string, format: uri }
+                    status: { type: integer }
+                    content: { type: string }
+        '400': { description: Invalid URLs }
+
+  /api/client-error:
+    post:
+      tags: [system]
+      operationId: reportClientError
+      summary: Telemetry reporting for client-side swallowed errors
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                kind: { type: string }
+                correl: { type: string }
+                msg: { type: string }
+                stack: { type: string }
+                href: { type: string }
+                ua: { type: string }
+                severity: { type: string }
+      responses:
+        '204': { description: Telemetry recorded }
+
+  /api/tts:
+    post:
+      tags: [voice]
+      operationId: synthesizeSpeech
+      summary: Cloud text-to-speech synthesis proxy with multi-tier caching
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string, maxLength: 20000 }
+                voice: { type: string }
+                format: { type: string, enum: [mp3, opus, wav], default: mp3 }
+                lang: { type: string }
+                messageId: { type: string }
+      responses:
+        '200':
+          description: Synthesized audio stream
+          content:
+            audio/mpeg: { schema: { type: string, format: binary } }
+            audio/opus: { schema: { type: string, format: binary } }
+            audio/wav: { schema: { type: string, format: binary } }
+        '400': { description: Empty text }
+        '501': { description: Voice provider not configured }
+
+  /api/vision/describe:
+    post:
+      tags: [vision]
+      operationId: describeImage
+      summary: Image recognition description via mmx vision CLI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [dataUrl]
+              properties:
+                dataUrl: { type: string, description: Image base64 data URL }
+                prompt: { type: string }
+      responses:
+        '200':
+          description: Image description
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  description: { type: string }
+
+  /api/rag/search:
+    post:
+      tags: [rag]
+      operationId: searchRagChunks
+      summary: Session-scoped hybrid BM25 and vector chunk retrieval
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sessionId, query]
+              properties:
+                sessionId: { type: string, format: uuid }
+                query: { type: string, minLength: 1, maxLength: 2000 }
+                limit: { type: integer, minimum: 1, maximum: 50, default: 8 }
+                minScore: { type: number, default: 0.5 }
+      responses:
+        '200':
+          description: Ranked chunk hits
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hits:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        messageId: { type: string, format: uuid }
+                        ordinal: { type: integer }
+                        text: { type: string }
+                        score: { type: number }
+        '400': { description: Validation error }
+        '404': { description: Session not found }
+
+  /api/executions/{id}/stream:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [execution]
+      operationId: streamExecutionProgress
+      summary: SSE stream for real-time code execution progress and artifacts
+      responses:
+        '200':
+          description: Real-time execution events
+          content:
+            text/event-stream:
+              schema: { type: string }
+        '400': { description: Invalid execution ID format }
+        '404': { description: Execution not found }
+
+  /api/minimax/v1/chat/completions:
+    post:
+      tags: [chat]
+      operationId: createMinimaxChatCompletion
+      summary: Proxy for built-in Beagle (MiniMax) LLM provider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [messages]
+              properties:
+                messages: { type: array, items: { type: object } }
+                temperature: { type: number }
+                max_tokens: { type: integer }
+                stream: { type: boolean, default: false }
+                reasoning_effort: { type: string }
+                response_speed: { type: string, enum: [standard, fast] }
+                extra_body: { type: object }
+                assistantId: { type: string, format: uuid }
+                sessionId: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Chat completion JSON or SSE event stream
+          content:
+            application/json:
+              schema: { type: object }
+            text/event-stream:
+              schema: { type: string }
+        '503': { description: Built-in LLM provider not configured }
+
+  /api/nlweb/ask:
+    get:
+      tags: [nlweb]
+      summary: NLWeb-conformant GET query over Socrates public corpus
+      parameters:
+        - in: query
+          name: q
+          schema: { type: string }
+        - in: query
+          name: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: NLWeb search response
+          content:
+            application/json:
+              schema: { type: object }
+    post:
+      tags: [nlweb]
+      summary: NLWeb-conformant POST query over Socrates public corpus
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query: { type: string }
+                q: { type: string }
+      responses:
+        '200':
+          description: NLWeb search response
+          content:
+            application/json:
+              schema: { type: object }
+
+  /api/nlweb/stream:
+    post:
+      tags: [nlweb]
+      summary: NLWeb streaming query response
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query: { type: string }
+                q: { type: string }
+      responses:
+        '200':
+          description: NLWeb SSE response stream
+          content:
+            text/event-stream:
+              schema: { type: string }
+
+  /api/ask:
+    get:
+      tags: [nlweb]
+      summary: Short alias for NLWeb GET ask query
+      parameters:
+        - in: query
+          name: q
+          schema: { type: string }
+        - in: query
+          name: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: NLWeb search response
+          content:
+            application/json:
+              schema: { type: object }
+    post:
+      tags: [nlweb]
+      summary: Short alias for NLWeb POST ask query
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query: { type: string }
+                q: { type: string }
+      responses:
+        '200':
+          description: NLWeb search response
+          content:
+            application/json:
+              schema: { type: object }
+
+  /api/stream:
+    post:
+      tags: [nlweb]
+      summary: Short alias for NLWeb POST stream query
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query: { type: string }
+                q: { type: string }
+      responses:
+        '200':
+          description: NLWeb SSE response stream
+          content:
+            text/event-stream:
+              schema: { type: string }
+
+  /api/suggestions/starters:
+    get:
+      tags: [suggestions]
+      operationId: getStarterSuggestions
+      summary: Personalized landing prompt suggestions
+      parameters:
+        - in: query
+          name: lang
+          schema: { type: string, enum: [en, zh], default: en }
+      responses:
+        '200':
+          description: Starter prompts list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  suggestions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        prompt: { type: string }
+                        icon: { type: string, enum: [spark, history, target] }
+                  source: { type: string }
+
+  /api/suggestions/starters/invalidate:
+    post:
+      tags: [suggestions]
+      operationId: invalidateStarterSuggestions
+      summary: Invalidate cached starter prompts for current user
+      responses:
+        '200':
+          description: Cache invalidated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+
+  /api/knowledge-boundary/node:
+    patch:
+      tags: [knowledge]
+      operationId: updateKnowledgeBoundaryNode
+      summary: Update a specific knowledge node confidence score or user note
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sessionId, nodeIndex]
+              properties:
+                sessionId: { type: string, format: uuid }
+                nodeIndex: { type: integer, minimum: 0 }
+                confidenceScore: { type: integer, minimum: 0, maximum: 5 }
+                userNote: { type: string, maxLength: 20000 }
+      responses:
+        '200':
+          description: Updated knowledge node
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nodeName: { type: string, nullable: true }
+                  status: { type: string }
+                  sessionId: { type: string, format: uuid }
+                  nodeIndex: { type: integer }
+                  confidenceScore: { type: integer }
+                  userNote: { type: string, nullable: true }
+        '400': { description: Invalid node index or session }
+
+
 components:
   securitySchemes:
     cookieAuth:
@@ -2628,6 +3899,12 @@ components:
       bearerFormat: Socrates mobile access token (ma.<pair>.<secret>)
 
   parameters:
+    IdempotencyKey:
+      in: header
+      name: Idempotency-Key
+      required: false
+      description: Reuse the same key and JSON body to retry a write within 24 hours, using the same credential.
+      schema: { type: string, minLength: 1, maxLength: 200, pattern: '^[!-~]+$' }
     MessageId:
       in: path
       name: messageId
@@ -2679,6 +3956,20 @@ components:
       schema: { type: string, format: uuid }
 
   responses:
+    IdempotencyConflict:
+      description: Request still in progress, body conflict, or completed result too large to retain.
+      headers:
+        Retry-After:
+          description: Present with value 1 for IDEMPOTENCY_IN_PROGRESS.
+          schema: { type: integer, minimum: 1 }
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [code, message]
+            properties:
+              code: { type: string, enum: [IDEMPOTENCY_IN_PROGRESS, IDEMPOTENCY_CONFLICT, IDEMPOTENCY_RESULT_UNAVAILABLE] }
+              message: { type: string }
     BadRequest:
       description: Malformed request
       content:
@@ -2701,6 +3992,24 @@ components:
           schema: { $ref: '#/components/schemas/Error' }
 
   schemas:
+    ChatTurn:
+      type: object
+      required: [id, clientTurnId, status, generation]
+      properties:
+        id: { type: string, format: uuid }
+        sessionId: { type: [string, 'null'], format: uuid }
+        clientTurnId: { type: string }
+        status: { type: string, enum: [queued, running, awaiting_approval, completed, failed, interrupted] }
+        generation: { type: integer }
+        model: { type: [string, 'null'] }
+        fullText: { type: [string, 'null'] }
+        fullReasoning: { type: [string, 'null'] }
+        toolCalls: { type: array, items: {} }
+        usage: { type: object }
+        error: { type: [string, 'null'] }
+        startedAt: { type: string, format: date-time }
+        completedAt: { type: [string, 'null'], format: date-time }
+        updatedAt: { type: string, format: date-time }
     MobileTokenPair:
       type: object
       required: [accessToken, refreshToken, expiresAt, refreshExpiresAt]

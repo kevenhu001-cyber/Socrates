@@ -87,17 +87,6 @@
     : initialPreference;
   document.documentElement.setAttribute('data-theme-preference', initialPreference);
   document.documentElement.setAttribute('data-mode', initialMode);
-  var cap = window.Capacitor;
-  if (cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform()) {
-    var platform = typeof cap.getPlatform === 'function' ? cap.getPlatform() : 'native';
-    document.documentElement.setAttribute('data-capacitor-platform', platform);
-    document.documentElement.classList.add('is-native-app');
-    /* Paint the root with the effective surface colour so the first
-       frame is not white. The bundled CSS overrides this once it loads.
-       The two values mirror `resolveBackground()` in src/ui/tokens.ts;
-       the JS adapter in src/ui/tokens.js exports the same strings. */
-    document.documentElement.style.backgroundColor = initialMode === "light" ? '#ffffff' : '#141414';
-  }
 })();
 </script>
 <!-- P_perf-self-host — fonts (Inter/Newsreader/Noto Sans SC),

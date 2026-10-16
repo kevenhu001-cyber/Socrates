@@ -83,8 +83,8 @@ export async function dispatchToolCalls<TCall, TResult>(
     // Advance the tail even when this invocation fails. Otherwise one bad
     // Python call would permanently prevent a later, independent correction
     // in the same turn from running.
-    const tail = laneTails.get(laneKey) || Promise.resolve();
-    const task = tail.then(() => runBounded(call));
+    const tail = laneTails.get(laneKey);
+    const task = tail ? tail.then(() => runBounded(call)) : runBounded(call);
     laneTails.set(laneKey, task.then(
       () => undefined,
       () => undefined,

@@ -101,6 +101,24 @@ function routesInFile(file) {
   const found = [];
   const re = new RegExp(`\\b${v}\\.(${METHOD_RE})\\(\\s*'([^']+)'`, 'g');
   for (const m of src.matchAll(re)) found.push({ method: m[1].toUpperCase(), sub: m[2] });
+
+  // Scan subfolder helper imports for route registrations (e.g. routes/chat/stream.ts)
+  const dir = dirname(file);
+  for (const im of src.matchAll(/import\s+(?:\{[^}]*\}|\w+)\s+from\s+'(\.\/[^']+)\.js'/g)) {
+    const importPath = im[1];
+    // Only inspect subdirectories (e.g. ./chat/stream), not sibling router files (e.g. ./apiKeys)
+    if (!importPath.slice(2).includes('/')) continue;
+    for (const ext of ['.ts', '.js']) {
+      const helper = join(dir, importPath + ext);
+      if (existsSync(helper)) {
+        const helperSrc = readFileSync(helper, 'utf8');
+        if (/Router\(/.test(helperSrc)) continue;
+        const helperRe = new RegExp(`\\b(?:${v}|router)\\.(${METHOD_RE})\\(\\s*'([^']+)'`, 'g');
+        for (const m of helperSrc.matchAll(helperRe)) found.push({ method: m[1].toUpperCase(), sub: m[2] });
+      }
+    }
+  }
+
   routerRouteCache.set(file, found);
   return found;
 }

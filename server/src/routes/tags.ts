@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { durableJsonWrite } from '../middleware/durableIdempotency.js';
 import { eq, and, inArray } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { tags, sessionTags, sessions } from '../db/schema.js';
@@ -11,23 +12,22 @@ router.use(requireAuth);
 /* PUT /api/sessions/:id/tags — set tags on a session */
 router.put('/sessions/:id/tags', async (req, res, next) => {
   try {
-    const db = getDb();
     const { tags: tagNames = [] } = req.body;
     if (!Array.isArray(tagNames)) return res.status(400).json({ code: 'BAD_REQUEST', message: 'tags must be an array' });
 
-    const [session] = await db.select().from(sessions)
-      .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId!))).limit(1);
-    if (!session) throw new NotFound('Session not found');
+    return await durableJsonWrite(req, res, `session.tags.replace.v1:${req.params.id.toLowerCase()}`, async (tx) => {
+      const [session] = await tx.select().from(sessions)
+        .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId!))).for('update').limit(1);
+      if (!session) throw new NotFound('Session not found');
 
-    // Atomic tag assignment: delete old links, fetch existing tags
-    // in one SELECT, bulk-INSERT any missing tags, bulk-INSERT the new
-    // links. All steps run in one transaction so a mid-loop failure
-    // rolls back cleanly instead of leaving a partial tag set.
-    await db.transaction(async (tx) => {
+      // Atomic tag assignment: delete old links, fetch existing tags
+      // in one SELECT, bulk-INSERT any missing tags, bulk-INSERT the new
+      // links. All steps run in one transaction so a mid-loop failure
+      // rolls back cleanly instead of leaving a partial tag set.
       await tx.delete(sessionTags).where(eq(sessionTags.sessionId, req.params.id));
 
       const names = tagNames.slice(0, 12);
-      if (names.length === 0) return;
+      if (names.length === 0) return { status: 200, body: { tags: tagNames } };
 
       const existingTags = await tx.select().from(tags)
         .where(and(eq(tags.userId, req.userId!), inArray(tags.name, names)));
@@ -49,9 +49,8 @@ router.put('/sessions/:id/tags', async (req, res, next) => {
       if (links.length > 0) {
         await tx.insert(sessionTags).values(links);
       }
+      return { status: 200, body: { tags: tagNames } };
     });
-
-    return res.json({ tags: tagNames });
   } catch (err) { next(err); }
 });
 

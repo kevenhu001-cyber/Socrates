@@ -22,6 +22,8 @@ const REQUIRED_TABLES = [
   'embedding_config', // admin-managed embedding provider (admin backend)
   'chat_turns', // detached async chat turns (M1)
   'chat_turn_events', // turn event replay log (M1)
+  'idempotency_receipts', // atomic write + replay receipts (0042)
+  'scheduled_task_leases', // multi-process scheduler claim + recovery (0041)
 ] as const;
 
 async function main() {

@@ -50,7 +50,7 @@ const FROZEN_DIRS = new Set(['legacy', 'restore']);
  * Promoting a value into this set is the alternative to growing the baseline.
  * It keeps `lint:button-sizes` failing on *new* literals while making a
  * deliberate change a one-line edit in tokens.css. */
-const LADDER = new Set([32, 40, 44, 36, 42]);
+const LADDER = new Set([32, 40, 44, 36, 42, 24, 20]);
 
 /*
  * A selector is an interactive control when ANY of:
@@ -115,7 +115,7 @@ function isControlSelector(selector) {
  * structural. These are size-carrying, not interactive, so a literal on
  * them is not button-size debt. */
 const NON_CONTROL =
-  /(svg|badge|caret|chev|indicator|spinner|ring|dot|thumb|preview|editor|textarea|line|row|panel|card|header|footer|sidebar|toolbar-divider|separator|handle|grip|marker|scrollbar|track|progress|skeleton)/i;
+  /(svg|badge|caret|chev|indicator|spinner|ring|dot|thumb|preview|editor|textarea|line|row|panel|card|header|footer|sidebar|toolbar-divider|separator|handle|grip|marker|scrollbar|track|progress|skeleton|attachment)/i;
 
 /*
  * Height only, never width.

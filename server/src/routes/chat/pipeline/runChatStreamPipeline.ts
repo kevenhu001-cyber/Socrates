@@ -20,7 +20,7 @@
 import {and, eq} from 'drizzle-orm';
 import {getDb} from '../../../db/index.js';
 import {chatTurns, messages, sessions} from '../../../db/schema.js';
-import {publishChatTurnEvent, setChatTurnStatus, subscribeToChatTurn} from '../../../services/chatTurns.js';
+import {withChatTurnExecution, publishChatTurnEvent, setChatTurnStatus, subscribeToChatTurn} from '../../../services/chatTurns.js';
 import {sanitizeStoredHtml, sanitizePlainText} from '../../../lib/sanitize.js';
 import {indexMessageChunks} from '../../../services/chunkIndex.js';
 import { createTurnActivityController } from '../../../services/turnActivity.js';
@@ -59,6 +59,16 @@ import {createStreamToolContext} from './toolContext.js';
 import type {ChatStreamPipelineContext, PreparedCall, ToolCall, ToolCallDelta,} from './types.js';
 
 export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Promise<void> {
+  if (ctx.turnId && !ctx.executionClaimed) {
+    return withChatTurnExecution(ctx.req.userId!, ctx.turnId, (signal) =>
+      runChatStreamPipeline({ ...ctx, executionSignal: signal, executionClaimed: true }));
+  }
+  let cleanup = () => {};
+  try { await executeChatStreamPipeline(ctx, (release) => { cleanup = release; }); }
+  finally { cleanup(); }
+}
+
+async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registerCleanup?: (release: () => void) => void): Promise<void> {
   const { req, res, prep, sessionIdFromQuery, projectIdFromBody, turnId } = ctx;
   /* P_ttfb-metric — anchor for the time-to-first-token breakdown. Logged once
      per turn when the first content/reasoning delta reaches the client, so
@@ -248,13 +258,16 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
   }
 
   const abortController = new AbortController();
+  if (ctx.executionSignal) {
+    if (ctx.executionSignal.aborted) abortController.abort(ctx.executionSignal.reason);
+    else ctx.executionSignal.addEventListener('abort', () => abortController.abort(ctx.executionSignal!.reason), { once: true });
+  }
   let streamCompleted = false;  // P_streaming-survival — prevents close handler from overwriting cleared streaming_text
   /* M1 async — when a turn is bound, socket close detaches the SSE feed
    * instead of cancelling the run: the upstream LLM keeps going, frames
    * keep landing in chat_turn_events, and the client re-attaches with
    * ?after=. Without a turn binding the legacy behaviour stands (abort). */
   let sseDetached = false;
-  let turnRunning: Promise<unknown> = Promise.resolve();
 
   let unsubscribeTurn: (() => void) | null = null;
   if (turnId) {
@@ -304,6 +317,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
     }
     unsubscribeTurn?.();
   };
+  registerCleanup?.(clearTurnTimer);
 
   req.on('close', () => {
     trackSseConnection(req.app, -1);
@@ -382,11 +396,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
        a reload (clients that created the turn themselves already know; older
        clients ignore an unknown event). */
     emitter.event('turn_bound', { turnId });
-    /* P_prep-parallel — bookkeeping, not a precondition for the first token.
-       publishChatTurnEvent sequences per turn, so turn_started still lands
-       before any content event; the terminal status writes below wait for
-       `turnRunning` so a fast turn cannot be overwritten back to running. */
-    turnRunning = setChatTurnStatus(turnId, 'running').catch(() => {});
+    // Execution was already claimed before any pipeline side effects.
     publishChatTurnEvent(turnId, 'turn_started', {
       sessionId: sessionIdFromQuery,
       model: provider.model,
@@ -632,7 +642,6 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
         // An explicit Stop already flipped the row to interrupted via the
         // interrupt endpoint; don't overwrite it with failed.
         if (abortController.signal.reason !== 'turn_interrupted') {
-          await turnRunning;
           await setChatTurnStatus(turnId, 'failed', {
             fullText: fullText || null,
             fullReasoning: fullReasoning || null,
@@ -1004,7 +1013,6 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
   if (turnId) {
     clearTurnTimer();
     checkpointTurn();
-    await turnRunning;
     const isBlank = !fullText && !fullReasoning && executedToolCalls.length === 0;
     await setChatTurnStatus(turnId, isBlank && !abortController.signal.aborted ? 'failed' : 'completed', {
       fullText: fullText || null,

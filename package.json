@@ -8,12 +8,13 @@
     "typecheck:server": "npm --prefix server run typecheck",
     "typecheck:frontend": "npm --prefix frontend run typecheck",
     "typecheck:app": "npm --prefix apps/socrates run typecheck",
-    "lint": "npm --prefix frontend run lint",
+    "lint": "npm --prefix frontend run lint && npm run lint:server-boundaries",
     "lint:dom": "node scripts/check-packages-dom.mjs",
     "lint:drizzle": "node scripts/check-drizzle-drift.mjs",
     "test:unit": "npm --prefix server run test:unit && npm --prefix frontend run test:unit",
     "test:shared": "npm --prefix apps/socrates run test:shared",
-    "verify": "npm run typecheck && npm run lint && npm run test:shared"
+    "verify": "npm run typecheck && npm run lint && npm run test:shared",
+    "lint:server-boundaries": "node server/scripts/check-service-boundaries.mjs"
   },
   "dependencies": {
     "@fontsource/plus-jakarta-sans": "^5.3.0",

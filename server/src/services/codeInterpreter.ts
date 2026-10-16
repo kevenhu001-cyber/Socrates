@@ -29,7 +29,7 @@ import os from 'node:os';
 import { eq } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { executions } from '../db/schema.js';
-import { recordAudit } from '../middleware/audit.js';
+import { recordAudit } from './core/audit.js';
 import { persistArtifact } from './util/fileArtifacts.js';
 import { publish, subscribe as pubsubSubscribe } from '../lib/pubsub.js';
 import { parseChatSessionId, requireOwnedSession } from '../lib/sessionOwnership.js';

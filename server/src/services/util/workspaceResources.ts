@@ -74,28 +74,32 @@ export function limitsFromPolicy(policy: unknown): WorkspaceLimits {
 
 /**
  * Recursively measure a workspace tree. Symlinks are counted as entries but
- * never followed, and the walk is depth-bounded so a pathological tree
- * cannot stall the chat stream.
+ * never followed. An entry budget bounds work, but exceeding it or hitting
+ * an unreadable subtree fails the quota check closed rather than ignoring
+ * potentially unlimited bytes below a fixed depth.
  */
-export function workspaceDiskUsageBytes(dir: string, depth = 0): number {
-  if (depth > 8) return 0;
+export function workspaceDiskUsageBytes(dir: string): number {
   let total = 0;
-  let entries;
-  try {
-    entries = readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return 0;
-  }
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
+  let visited = 0;
+  const pending = [dir];
+  while (pending.length) {
+    const current = pending.pop()!;
+    let entries;
     try {
-      if (entry.isDirectory()) {
-        total += workspaceDiskUsageBytes(full, depth + 1);
-      } else if (entry.isFile()) {
-        total += statSync(full).size;
+      entries = readdirSync(current, { withFileTypes: true });
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') continue;
+      return Infinity;
+    }
+    for (const entry of entries) {
+      if (++visited > 100_000) return Infinity;
+      const full = path.join(current, entry.name);
+      try {
+        if (entry.isDirectory()) pending.push(full);
+        else if (entry.isFile()) total += statSync(full).size;
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code !== 'ENOENT') return Infinity;
       }
-    } catch {
-      /* File vanished or is unreadable — skip it rather than failing the run. */
     }
   }
   return total;

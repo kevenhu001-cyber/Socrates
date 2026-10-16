@@ -40,53 +40,7 @@ const SAFE_PROJECTION = {
  * AWS metadata at 169.254.169.254, or to call internal admin services).
  *
  * Allowed: https only, public IPv4 / IPv6, no localhost-equivalent names. */
-/* Exported so the admin-facing system-model route
-   (routes/systemModels.ts) can share the same SSRF posture without
-   re-deriving it. The user-facing apiKeys route below keeps using
-   the local name. */
-export function isAllowedProviderUrl(raw: unknown) {
-  if (typeof raw !== 'string' || raw.length > 2048) return false;
-  let u;
-  try { u = new URL(raw); } catch (_) { return false; }
-  if (u.protocol !== 'https:') return false;
-  // Reject userinfo / fragment / non-default ports.
-  if (u.username || u.password || u.hash) return false;
-  // Block obvious names first.
-  const host = u.hostname.toLowerCase();
-  if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local')) return false;
-  // Parse IP literal. If hostname is not an IP, allow it (public DNS will resolve later);
-  // If it IS an IP, validate it's public.
-  const isIPv4 = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host);
-  if (isIPv4) {
-    const parts = host.split('.').map(Number);
-    if (parts.some(p => !Number.isFinite(p) || p < 0 || p > 255)) return false;
-    const [a, b] = parts;
-    if (a === 10) return false;                                  // RFC1918
-    if (a === 127) return false;                                 // loopback
-    if (a === 0) return false;                                   // 0.0.0.0/8
-    if (a === 169 && b === 254) return false;                    // link-local
-    if (a === 172 && b >= 16 && b <= 31) return false;          // RFC1918
-    if (a === 192 && b === 168) return false;                    // RFC1918
-    if (a === 100 && b >= 64 && b <= 127) return false;          // carrier-grade NAT
-    if (a >= 224) return false;                                  // multicast / reserved
-  }
-  // IPv6 literal: block loopback, link-local, ULA, IPv4-mapped RFC1918.
-  if (host.includes(':')) {
-    // WHATWG URL keeps the IPv6 literal's brackets in .hostname
-    // (e.g. "[::1]"), so strip them before comparing.
-    const h = host.replace(/^\[/, '').replace(/\]$/, '').split('%')[0];
-    if (h === '::1' || h === '::') return false;
-    if (h.startsWith('fe8') || h.startsWith('fe9') || h.startsWith('fea') || h.startsWith('feb')) return false; // fe80::/10 link-local
-    if (h.startsWith('fc') || h.startsWith('fd')) return false; // fc00::/7 ULA
-    if (h.startsWith('::ffff:')) {
-      const v4 = h.slice(7);
-      // Recurse — but only for IPv4-mapped.
-      if (!isAllowedProviderUrl('https://' + v4 + '/')) return false;
-    }
-    return true;
-  }
-  return true;
-}
+import { isAllowedProviderUrl } from '../lib/providerUrl.js';
 
 const router = Router();
 

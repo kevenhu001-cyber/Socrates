@@ -7,7 +7,7 @@
  * component CSS, theme files, and JS code that needs to derive a
  * runtime value (e.g. `resolveBackground()` paints the document
  * background before the bundle finishes parsing so the first frame
- * never shows the Capacitor WebView default white flash).
+ * never shows the default browser white flash).
  *
  * Conventions
  *  - All color tokens are HSL strings (`H S% L%`) so theme files
@@ -30,7 +30,7 @@
  *    `displayPrefs.js` to keep the boot path free of dynamic
  *    imports.
  *  - `resolveBackground(mode)` returns the paint color used by the
- *    early Capacitor-paint hook in `index.html`. The values mirror
+ *    early theme-paint hook in `index.html`. The values mirror
  *    the page background the bundled CSS produces once it loads, so
  *    there is no visible flash between the pre-paint and the
  *    stylesheet taking effect.
@@ -246,8 +246,8 @@ export function getThemePalette(mode: ThemeMode): ThemePalette {
 
 /**
  * Returns the page background to paint on `document.documentElement`
- * before the bundle CSS finishes parsing. The Capacitor WebView boot
- * hook in `index.html` calls this synchronously so the first frame
+ * before the bundle CSS finishes parsing. The theme-paint hook
+ * in `index.html` calls this synchronously so the first frame
  * already matches the effective theme and no white flash shows.
  *
  * The hex values mirror the page background the bundled CSS produces

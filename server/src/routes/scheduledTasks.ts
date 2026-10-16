@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { durableJsonWrite } from '../middleware/durableIdempotency.js';
 import { eq, and, desc } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { projects, scheduledTasks, sessions } from '../db/schema.js';
@@ -44,48 +45,49 @@ router.post('/', async (req, res, next) => {
        explicit time still executes on the next scheduler poll instead
        of sitting dormant forever with a NULL nextRunAt. */
     const firstRun = parseNextRunAt(nextRunAt) || new Date();
-    const db = getDb();
     const normalizedAgentKind = agentKind === 'codex' ? 'codex' : 'native';
     if (normalizedAgentKind === 'codex' && !WORKSPACE_AGENT_BACKGROUND_ENABLED) {
       throw new BadRequest('Codex background runs are disabled');
     }
-    if (sessionId) {
-      const [session] = await db.select({ id: sessions.id }).from(sessions)
-        .where(and(eq(sessions.id, String(sessionId)), eq(sessions.userId, req.userId!))).limit(1);
-      if (!session) throw new NotFound('Session not found');
-    }
-    if (projectId) {
-      const [project] = await db.select({ id: projects.id }).from(projects)
-        .where(and(eq(projects.id, String(projectId)), eq(projects.userId, req.userId!))).limit(1);
-      if (!project) throw new NotFound('Project not found');
-    }
-    /* Scheduled policy is server-owned. A client may request a small,
-       declarative allowlist, but cannot set Codex's sandbox, cwd, provider,
-       or approval policy. Unattended runs still pause on side effects. */
-    const safePolicy = runPolicy && typeof runPolicy === 'object' && !Array.isArray(runPolicy)
-      ? {
-          allowedActions: Array.isArray(runPolicy.allowedActions) ? runPolicy.allowedActions.slice(0, 30).map(String) : [],
-          maxDurationMs: Number.isFinite(Number(runPolicy.maxDurationMs)) ? Math.min(900_000, Math.max(60_000, Number(runPolicy.maxDurationMs))) : null,
-        }
-      : {};
-    const safeNotifications = notificationConfig && typeof notificationConfig === 'object' && !Array.isArray(notificationConfig)
-      ? { enabled: notificationConfig.enabled !== false, channels: Array.isArray(notificationConfig.channels) ? notificationConfig.channels.slice(0, 5).map(String) : [] }
-      : { enabled: true, channels: [] };
-    const [task] = await db.insert(scheduledTasks).values({
-      userId: req.userId!,
-      title: String(title).trim(),
-      prompt: prompt || '',
-      sessionId: sessionId || null,
-      projectId: projectId || null,
-      agentKind: normalizedAgentKind,
-      runPolicy: safePolicy,
-      notificationConfig: safeNotifications,
-      cronExpression: cronExpression || null,
-      frequency: freq,
-      status: 'active',
-      nextRunAt: firstRun,
-    }).returning();
-    return res.status(201).json(task);
+    return await durableJsonWrite(req, res, 'scheduled-tasks.create.v1', async (tx) => {
+      if (sessionId) {
+        const [session] = await tx.select({ id: sessions.id }).from(sessions)
+          .where(and(eq(sessions.id, String(sessionId)), eq(sessions.userId, req.userId!))).limit(1);
+        if (!session) throw new NotFound('Session not found');
+      }
+      if (projectId) {
+        const [project] = await tx.select({ id: projects.id }).from(projects)
+          .where(and(eq(projects.id, String(projectId)), eq(projects.userId, req.userId!))).limit(1);
+        if (!project) throw new NotFound('Project not found');
+      }
+      /* Scheduled policy is server-owned. A client may request a small,
+         declarative allowlist, but cannot set Codex's sandbox, cwd, provider,
+         or approval policy. Unattended runs still pause on side effects. */
+      const safePolicy = runPolicy && typeof runPolicy === 'object' && !Array.isArray(runPolicy)
+        ? {
+            allowedActions: Array.isArray(runPolicy.allowedActions) ? runPolicy.allowedActions.slice(0, 30).map(String) : [],
+            maxDurationMs: Number.isFinite(Number(runPolicy.maxDurationMs)) ? Math.min(900_000, Math.max(60_000, Number(runPolicy.maxDurationMs))) : null,
+          }
+        : {};
+      const safeNotifications = notificationConfig && typeof notificationConfig === 'object' && !Array.isArray(notificationConfig)
+        ? { enabled: notificationConfig.enabled !== false, channels: Array.isArray(notificationConfig.channels) ? notificationConfig.channels.slice(0, 5).map(String) : [] }
+        : { enabled: true, channels: [] };
+      const [task] = await tx.insert(scheduledTasks).values({
+        userId: req.userId!,
+        title: String(title).trim(),
+        prompt: prompt || '',
+        sessionId: sessionId || null,
+        projectId: projectId || null,
+        agentKind: normalizedAgentKind,
+        runPolicy: safePolicy,
+        notificationConfig: safeNotifications,
+        cronExpression: cronExpression || null,
+        frequency: freq,
+        status: 'active',
+        nextRunAt: firstRun,
+      }).returning();
+      return { status: 201, body: task };
+    });
   } catch (err) { next(err); }
 });
 

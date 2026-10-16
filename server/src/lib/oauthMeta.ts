@@ -1,4 +1,4 @@
-import { ALL_SCOPES } from '../middleware/scopes.js';
+import { ALL_SCOPES } from './authScopes.js';
 
 /* Canonical externally-visible URLs for the Phase D OAuth 2.0 authorization
  * server. Single source of truth consumed by the /api/oauth routes, the

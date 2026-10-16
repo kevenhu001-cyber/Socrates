@@ -14,6 +14,7 @@ import {
 import { requireAuth } from '../middleware/auth.js';
 import { resourceScope } from '../middleware/scopes.js';
 import { writeLimiter } from '../middleware/rateLimit.js';
+import { durableJsonWrite } from '../middleware/durableIdempotency.js';
 import { NotFound, Forbidden, BadRequest } from '../lib/errors.js';
 import { indexMessageChunks } from '../services/chunkIndex.js';
 import { sanitizeStoredHtml, sanitizePlainText } from '../lib/sanitize.js';
@@ -1168,14 +1169,15 @@ router.delete('/', async (req, res, next) => {
 router.post('/:id/archive', async (req, res, next) => {
   try {
     if (!isUuid(req.params.id)) throw new NotFound('Session not found');
-    const db = getDb();
-    const [session] = await db.select().from(sessions)
-      .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId!)))
-      .limit(1);
-    if (!session) throw new NotFound('Session not found');
-    await db.update(sessions).set({ archivedAt: new Date(), updatedAt: new Date() })
-      .where(eq(sessions.id, req.params.id));
-    return res.json({ ok: true });
+    return await durableJsonWrite(req, res, `session.archive.v1:${req.params.id.toLowerCase()}`, async (tx) => {
+      const [session] = await tx.select().from(sessions)
+        .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId!)))
+        .for('update').limit(1);
+      if (!session) throw new NotFound('Session not found');
+      await tx.update(sessions).set({ archivedAt: new Date(), updatedAt: new Date() })
+        .where(eq(sessions.id, req.params.id));
+      return { status: 200, body: { ok: true } };
+    });
   } catch (err) { next(err); }
 });
 

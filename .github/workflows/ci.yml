@@ -353,8 +353,11 @@ jobs:
 
       - run: npm ci --include=dev --prefer-offline --no-audit --no-fund
 
-      - name: TypeScript check
-        run: npx tsc --noEmit
+      - name: TypeScript and service boundaries
+        run: npm run lint
+
+      - name: Install Agent isolation runtime for boundary tests
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends bubblewrap
 
       # Guards the migration metadata. A stale drizzle snapshot makes the next
       # `db:generate` re-emit already-applied DDL in non-idempotent form,

@@ -14,7 +14,7 @@ import {
   authSessions, pendingRegistrations, verificationTokens,
   usageEvents, auditEvents, executions,
   statusMonitorEvents, statusSubscribers,
-  ttsResults,
+  ttsResults, idempotencyReceipts,
 } from '../../db/schema.js';
 import { codeInterpreter } from '../codeInterpreter.js';
 
@@ -56,6 +56,14 @@ export async function runExpiredCleanup() {
   try {
     const db = getDb();
     const now = new Date();
+    // Count in PostgreSQL rather than materializing every expired hash in Node.
+    const receiptCleanup = await db.execute<{ count: number }>(sql`
+      WITH removed AS (
+        DELETE FROM ${idempotencyReceipts}
+        WHERE ${idempotencyReceipts.expiresAt} <= clock_timestamp() RETURNING 1
+      ) SELECT count(*)::int AS count FROM removed
+    `);
+    const expiredReceiptCount = receiptCleanup.rows[0]?.count || 0;
 
     const expiredAuth = await db.delete(authSessions)
       .where(lt(authSessions.expiresAt, now))
@@ -131,13 +139,13 @@ export async function runExpiredCleanup() {
       }
     }
 
-    const total = expiredAuth.length + expiredPending.length + expiredTokens.length
+    const total = expiredReceiptCount + expiredAuth.length + expiredPending.length + expiredTokens.length
       + expiredUsage.length + expiredAudit.length + expiredExec.length
       + expiredStatusEvents.length + expiredSubs.length + expiredTts.length;
     if (total > 0) {
       const ttsBytes = expiredTts.reduce((s, r) => s + (r.byteSize || 0), 0);
       console.log(
-        `[cleanup] Removed ${expiredAuth.length} session(s), ${expiredPending.length} pending, ` +
+        `[cleanup] Removed ${expiredReceiptCount} idempotency receipt(s), ${expiredAuth.length} session(s), ${expiredPending.length} pending, ` +
         `${expiredTokens.length} token(s), ${expiredUsage.length} usage event(s), ` +
         `${expiredAudit.length} audit event(s), ${expiredExec.length} execution(s) ` +
         `(${reapedScratch} scratch dir(s)), ${expiredStatusEvents.length} status event(s), ` +

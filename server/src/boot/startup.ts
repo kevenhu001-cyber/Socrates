@@ -227,6 +227,8 @@ function startMonitor(): void {
  * quiet server stays quiet and deploy/restart cycles do not create upstream
  * traffic unrelated to an actual user request. */
 export function startBackgroundTasks(): void {
+  void import('../services/chatTurns.js').then(({ startChatTurnRecovery }) => startChatTurnRecovery())
+    .catch((err) => console.warn('[chat-turns] recovery not started:', (err as Error).message));
   reconcileSessionWorkspaces();
   warmPyodidePool();
   sweepStaleScratchDirs();

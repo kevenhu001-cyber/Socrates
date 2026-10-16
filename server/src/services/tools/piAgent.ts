@@ -19,6 +19,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Readable } from 'node:stream';
 import { AGENT_STEP_LABELS, type AgentStepKind } from './agentStepProjection.js';
+import { isolateAgentCommand, killAgentProcessGroup } from '../util/agentIsolation.js';
+import { assertWorkspaceDiskWithinLimit } from '../util/workspaceResources.js';
+import { isAllowedProviderUrl } from '../../lib/providerUrl.js';
 
 const DEFAULT_TIMEOUT_MS = Math.max(60_000, Number(process.env.PI_AGENT_TIMEOUT_MS || 15 * 60_000));
 const MAX_OUTPUT_CHARS = 2_000_000;
@@ -71,11 +74,12 @@ function probePiBin(bin: string | null): boolean {
   }
 }
 
-export const PI_AGENT_ENABLED = process.env.PI_AGENT_ENABLED !== 'false' && probePiBin(resolvePiAgentBin());
+export const PI_AGENT_ENABLED = !['0', 'false'].includes(process.env.PI_AGENT_ENABLED || '') && probePiBin(resolvePiAgentBin());
 
 export interface PiAgentLimits {
   maxMemoryMb?: number;
   timeoutMs?: number;
+  maxDiskMb?: number;
 }
 
 /** The user-selected LLM endpoint for this run. */
@@ -191,6 +195,10 @@ function clamp(value: string, max: number): string {
  */
 export function runPiAgentTask(input: PiAgentRunInput): Promise<PiAgentRunResult> {
   return new Promise((resolve) => {
+    if (input.signal?.aborted) {
+      resolve({ status: 'aborted', output: '', error: 'aborted' });
+      return;
+    }
     const bin = resolvePiAgentBin();
     if (!bin) {
       resolve({ status: 'failed', output: '', error: 'pi_agent_unavailable' });
@@ -211,8 +219,8 @@ export function runPiAgentTask(input: PiAgentRunInput): Promise<PiAgentRunResult
     const userProvider = input.provider && input.provider.baseUrl && input.provider.model
       ? input.provider
       : null;
+    const extensionPath = fileURLToPath(new URL('../../../scripts/pi-run-provider.mjs', import.meta.url));
     if (userProvider) {
-      const extensionPath = fileURLToPath(new URL('../../scripts/pi-run-provider.mjs', import.meta.url));
       args.push('--extension', extensionPath, '--provider', 'socrates-run', '--model', userProvider.model);
     } else {
       const envProvider = String(process.env.PI_AGENT_PROVIDER || '').trim();
@@ -248,9 +256,17 @@ export function runPiAgentTask(input: PiAgentRunInput): Promise<PiAgentRunResult
 
     let child: ChildProcessByStdio<null, Readable, Readable>;
     try {
-      child = spawn(bin, args, {
+      if (input.provider?.baseUrl && !isAllowedProviderUrl(input.provider.baseUrl)) {
+        throw new Error(`agent_provider_url_rejected: ${input.provider.baseUrl}`);
+      }
+      if (!assertWorkspaceDiskWithinLimit(input.workspacePath, input.limits).ok) {
+        throw new Error('agent_workspace_disk_limit');
+      }
+      const command = isolateAgentCommand(bin, args, input.workspacePath, env, userProvider ? [extensionPath] : []);
+      child = spawn(command.bin, command.args, {
         cwd: input.workspacePath,
-        env,
+        env: command.env,
+        detached: process.platform !== 'win32',
         stdio: ['ignore', 'pipe', 'pipe'],
       });
     } catch (err) {
@@ -273,8 +289,9 @@ export function runPiAgentTask(input: PiAgentRunInput): Promise<PiAgentRunResult
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      clearInterval(diskTimer);
       input.signal?.removeEventListener?.('abort', onAbort);
-      try { child.kill('SIGKILL'); } catch { /* already gone */ }
+      killAgentProcessGroup(child);
       if (!output) output = lastAssistantText;
       resolve({ status, output: clamp(output, MAX_OUTPUT_CHARS), error: errorMessage });
     };
@@ -282,6 +299,13 @@ export function runPiAgentTask(input: PiAgentRunInput): Promise<PiAgentRunResult
     const onAbort = () => finish('aborted', 'aborted');
     input.signal?.addEventListener?.('abort', onAbort, { once: true });
     const timer = setTimeout(() => finish('timeout', `pi_agent_timeout_after_${timeoutMs}ms`), timeoutMs);
+    // Best-effort detection during execution; this is not a filesystem hard quota.
+    const diskTimer = setInterval(() => {
+      if (!assertWorkspaceDiskWithinLimit(input.workspacePath, input.limits).ok) {
+        finish('failed', 'agent_workspace_disk_limit');
+      }
+    }, 1000);
+    diskTimer.unref();
 
     const handleRecord = (record: Record<string, unknown>) => {
       const type = String(record.type || '');

@@ -8,10 +8,10 @@
  * workspace semantics.
  */
 
-import { and, asc, desc, eq, max } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, lt, max, sql } from 'drizzle-orm';
 import { getDb } from '../../db/index.js';
 import { chatTurnEvents, chatTurns, sessions } from '../../db/schema.js';
-import { BadRequest, NotFound } from '../../lib/errors.js';
+import { BadRequest, Conflict, NotFound } from '../../lib/errors.js';
 import { isUuid } from '../../lib/validate.js';
 
 export const CHAT_TURN_STATUSES = [
@@ -35,7 +35,7 @@ export interface ChatTurnEvent {
 type RuntimeSubscriber = (event: ChatTurnEvent) => void;
 
 const subscribers = new Map<string, Set<RuntimeSubscriber>>();
-const sequenceQueues = new Map<string, Promise<unknown>>();
+const sequenceQueues = new Map<string, Promise<void>>();
 const MAX_EVENT_PAYLOAD_CHARS = 120_000;
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -86,25 +86,36 @@ export function publishChatTurnEvent(
   event: string,
   data: Record<string, unknown> = {},
 ): Promise<ChatTurnEvent> {
+  // Preserve invocation order within one worker, while the parent-row lock
+  // below provides allocation safety across independent processes.
   const previous = sequenceQueues.get(turnId) || Promise.resolve();
-  const next = previous.catch(() => undefined).then(async () => {
-    const db = getDb();
-    const [last] = await db
+  const next = previous.then(() => persistChatTurnEvent(turnId, event, data));
+  const settled = next.then(() => undefined, () => undefined).finally(() => {
+    if (sequenceQueues.get(turnId) === settled) sequenceQueues.delete(turnId);
+  });
+  sequenceQueues.set(turnId, settled);
+  return next;
+}
+
+async function persistChatTurnEvent(turnId: string, event: string, data: Record<string, unknown>): Promise<ChatTurnEvent> {
+  const runtimeEvent = await getDb().transaction(async (tx) => {
+    // The parent row is the cross-process serialization point. Hold the
+    // lock only for sequence allocation + insert, never during LLM work.
+    const [turn] = await tx.select({ id: chatTurns.id }).from(chatTurns)
+      .where(eq(chatTurns.id, turnId)).for('update');
+    if (!turn) throw new NotFound('Chat turn not found');
+    const [last] = await tx
       .select({ sequence: max(chatTurnEvents.sequence) })
       .from(chatTurnEvents)
       .where(eq(chatTurnEvents.turnId, turnId));
     const sequence = Number(last?.sequence || 0) + 1;
     const payload = boundPayload(asRecord(data));
-    await db.insert(chatTurnEvents).values({ turnId, sequence, event, payload });
+    await tx.insert(chatTurnEvents).values({ turnId, sequence, event, payload });
     const runtimeEvent: ChatTurnEvent = { turnId, sequence, event, data: payload };
-    publishToSubscribers(runtimeEvent);
     return runtimeEvent;
   });
-  sequenceQueues.set(turnId, next);
-  void next.finally(() => {
-    if (sequenceQueues.get(turnId) === next) sequenceQueues.delete(turnId);
-  });
-  return next as Promise<ChatTurnEvent>;
+  publishToSubscribers(runtimeEvent);
+  return runtimeEvent;
 }
 
 export interface CreateChatTurnInput {
@@ -138,31 +149,38 @@ export async function createChatTurn(input: CreateChatTurnInput) {
   if (clientTurnId.length > 200) throw new BadRequest('clientTurnId is too long');
   const session = await resolveSession(input.userId, input.sessionId ?? null);
   const db = getDb();
-  const [existing] = await db
-    .select()
-    .from(chatTurns)
-    .where(and(eq(chatTurns.userId, input.userId), eq(chatTurns.clientTurnId, clientTurnId)))
-    .limit(1);
-  if (existing) return { turn: existing, created: false };
   const model = typeof input.model === 'string' ? input.model.slice(0, 200) : null;
-  const [turn] = await db
-    .insert(chatTurns)
-    .values({
-      userId: input.userId,
-      sessionId: session?.id || null,
-      clientTurnId,
-      status: 'queued',
-      model,
-      inputSnapshot: (input.inputSnapshot ?? null) as never,
-    })
-    .returning();
-  if (!turn) throw new Error('Unable to create chat turn');
-  await publishChatTurnEvent(turn.id, 'turn_created', {
-    sessionId: turn.sessionId,
-    clientTurnId,
-    model,
+  const result = await db.transaction(async (tx) => {
+    const [turn] = await tx
+      .insert(chatTurns)
+      .values({
+        userId: input.userId,
+        sessionId: session?.id || null,
+        clientTurnId,
+        status: 'queued',
+        model,
+        inputSnapshot: (input.inputSnapshot ?? null) as never,
+      })
+      .onConflictDoNothing({ target: [chatTurns.userId, chatTurns.clientTurnId] })
+      .returning();
+    if (!turn) {
+      const [existing] = await tx.select().from(chatTurns)
+        .where(and(eq(chatTurns.userId, input.userId), eq(chatTurns.clientTurnId, clientTurnId))).limit(1);
+      if (!existing) throw new Error('Unable to resolve chat turn conflict');
+      if (existing.sessionId !== (session?.id || null)) throw new Conflict('clientTurnId is already bound to another session');
+      return { turn: existing, created: false };
+    }
+    await tx.insert(chatTurnEvents).values({
+      turnId: turn.id, sequence: 1, event: 'turn_created',
+      payload: { sessionId: turn.sessionId, clientTurnId, model },
+    });
+    return { turn, created: true };
   });
-  return { turn, created: true };
+  if (result.created) publishToSubscribers({
+    turnId: result.turn.id, sequence: 1, event: 'turn_created',
+    data: { sessionId: result.turn.sessionId, clientTurnId, model },
+  });
+  return result;
 }
 
 async function loadTurn(turnId: string, userId: string) {
@@ -179,6 +197,70 @@ async function loadTurn(turnId: string, userId: string) {
 
 export async function getChatTurn(userId: string, turnId: string) {
   return loadTurn(turnId, userId);
+}
+
+/** A turn is executed once. Reconnects read its event log; an interrupted
+ * turn is never automatically re-executed because tools may have side effects. */
+export async function claimChatTurnExecution(userId: string, turnId: string): Promise<void> {
+  const [claimed] = await getDb().update(chatTurns)
+    .set({ status: 'running', updatedAt: sql`now()` })
+    .where(and(eq(chatTurns.id, turnId), eq(chatTurns.userId, userId), eq(chatTurns.status, 'queued')))
+    .returning({ id: chatTurns.id });
+  if (claimed) return;
+  await loadTurn(turnId, userId);
+  throw new Conflict('This turn has already been claimed. Reconnect to its events or create a new turn to retry.');
+}
+
+export async function touchChatTurnExecution(userId: string, turnId: string): Promise<boolean> {
+  const rows = await getDb().update(chatTurns).set({ updatedAt: sql`now()` })
+    .where(and(eq(chatTurns.id, turnId), eq(chatTurns.userId, userId), eq(chatTurns.status, 'running')))
+    .returning({ id: chatTurns.id });
+  return rows.length === 1;
+}
+
+/** The claim also covers preparation: RAG expansion/provider prelude can
+ * itself spend upstream tokens, so it must not run for losing retries. */
+export async function withChatTurnExecution<T>(userId: string, turnId: string, work: (signal: AbortSignal) => Promise<T>): Promise<T> {
+  await claimChatTurnExecution(userId, turnId);
+  const controller = new AbortController();
+  let renewing = false;
+  const heartbeat = setInterval(() => {
+    if (renewing) return;
+    renewing = true;
+    void touchChatTurnExecution(userId, turnId).then((owned) => {
+      if (!owned) controller.abort('turn_interrupted');
+    }).catch(() => controller.abort('execution_heartbeat_failed')).finally(() => { renewing = false; });
+  }, 20_000);
+  heartbeat.unref();
+  try { return await work(controller.signal); }
+  catch (err) {
+    await setChatTurnStatus(turnId, 'failed', { error: (err as Error).message }).catch(() => {});
+    throw err;
+  } finally { clearInterval(heartbeat); }
+}
+
+export async function recoverStaleChatTurns(staleAfterMs = 120_000): Promise<number> {
+  const rows = await getDb().update(chatTurns)
+    .set({ status: 'interrupted', error: 'Execution heartbeat expired; retry explicitly with a new turn.', completedAt: sql`now()`, updatedAt: sql`now()` })
+    .where(and(eq(chatTurns.status, 'running'), lt(chatTurns.updatedAt, sql`now() - ${staleAfterMs} * interval '1 millisecond'`)))
+    .returning({ id: chatTurns.id });
+  for (const row of rows) {
+    await publishChatTurnEvent(row.id, 'turn_interrupted', { status: 'interrupted', reason: 'heartbeat_expired' });
+  }
+  return rows.length;
+}
+
+let recoveryTimer: ReturnType<typeof setInterval> | null = null;
+export function startChatTurnRecovery(): void {
+  if (recoveryTimer) return;
+  const recover = () => { void recoverStaleChatTurns().catch((err) => console.warn('[chat-turns] recovery failed:', (err as Error).message)); };
+  recoveryTimer = setInterval(recover, 30_000);
+  recoveryTimer.unref();
+  recover();
+}
+export function stopChatTurnRecovery(): void {
+  if (recoveryTimer) clearInterval(recoveryTimer);
+  recoveryTimer = null;
 }
 
 export async function listChatTurnEvents(
@@ -198,11 +280,10 @@ export async function listChatTurnEvents(
       payload: chatTurnEvents.payload,
     })
     .from(chatTurnEvents)
-    .where(eq(chatTurnEvents.turnId, turnId))
-    .orderBy(asc(chatTurnEvents.sequence));
+    .where(and(eq(chatTurnEvents.turnId, turnId), gt(chatTurnEvents.sequence, safeAfter)))
+    .orderBy(asc(chatTurnEvents.sequence))
+    .limit(safeLimit);
   return rows
-    .filter((row) => Number(row.sequence) > safeAfter)
-    .slice(0, safeLimit)
     .map((row) => ({
       turnId,
       sequence: Number(row.sequence),
@@ -230,7 +311,9 @@ export async function setChatTurnStatus(
       ...(terminal ? { completedAt: new Date() } : {}),
       updatedAt: new Date(),
     })
-    .where(eq(chatTurns.id, turnId));
+    // A late worker must never turn an explicit Stop/recovery interruption
+    // into success (or resurrect a completed turn).
+    .where(and(eq(chatTurns.id, turnId), inArray(chatTurns.status, ['queued', 'running'])));
 }
 
 export async function interruptChatTurn(userId: string, turnId: string) {

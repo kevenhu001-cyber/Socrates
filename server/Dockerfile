@@ -68,7 +68,7 @@ FROM node:22-bookworm-slim AS runtime
 # (pyodideWorker, contentExtractorWorker, the optional Rust fetch binary), and
 # PID 1 in a container does not reap children by default.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends tini ca-certificates \
+ && apt-get install -y --no-install-recommends tini ca-certificates bubblewrap \
  && rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production \
@@ -96,6 +96,7 @@ COPY --chown=node:node server/package.json ./package.json
 # The stable systemd entry point delegates to dist/index.runtime.js. Kept so a
 # container and a systemd host start the process the same way.
 COPY --chown=node:node server/src/index.js ./src/index.js
+COPY --chown=node:node server/scripts/pi-run-provider.mjs ./scripts/pi-run-provider.mjs
 # Migrations travel with the image so the schema version is tied to the digest
 # rather than to whatever happens to be checked out on the host. They are
 # runnable with plain node: `node dist/db/migrate.js`.

@@ -786,7 +786,7 @@ export async function runAgentTurn(
       workspacePath: workspace.path,
       sessionId: `socrates-${run.sessionId || run.id}`,
       signal: abortController.signal,
-      limits: { maxMemoryMb: limitsFromPolicy(policy).maxMemoryMb },
+      limits: limitsFromPolicy(policy),
       provider: piProvider,
       onEvent,
     });

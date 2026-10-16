@@ -11,7 +11,7 @@ import { eq } from 'drizzle-orm';
 import { initDb, closeDb } from '../db/index.js';
 import { users } from '../db/schema.js';
 import { createOAuthClient } from '../routes/oauth.js';
-import { ALL_SCOPES } from '../middleware/scopes.js';
+import { ALL_SCOPES } from '../lib/authScopes.js';
 
 async function main() {
   const [ownerEmail, clientId, name, redirectUri, scopesArg] = process.argv.slice(2);

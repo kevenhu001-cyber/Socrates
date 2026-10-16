@@ -29,6 +29,8 @@ NGINX_APP_CONF="${NGINX_APP_CONF:-/etc/nginx/sites-available/app.topodrive.top}"
 NGINX_SNIPPETS_DIR="${NGINX_SNIPPETS_DIR:-/etc/nginx/snippets}"
 DEPLOY_LOCK_FILE="${DEPLOY_LOCK_FILE:-${XDG_RUNTIME_DIR:-/tmp}/socrates-deploy.lock}"
 STATE_FILE="${STATE_FILE:-/home/ubuntu/User/Socrates/.deploy-state.json}"
+BACKEND_ARTIFACT_DIR="${BACKEND_ARTIFACT_DIR:-}"
+FRONTEND_ARTIFACT_DIR="${FRONTEND_ARTIFACT_DIR:-}"
 ASSET_RETENTION_DAYS="${ASSET_RETENTION_DAYS:-30}"
 if [[ ! "$ASSET_RETENTION_DAYS" =~ ^[0-9]+$ ]]; then
   echo "ERROR: ASSET_RETENTION_DAYS must be a non-negative integer" >&2
@@ -478,14 +480,18 @@ trap handle_deploy_error ERR
 # reaches npm's CLI layer; npm 11 then refuses project-scoped installs with
 # `EALLOWSCRIPTS` even when package.json declares `allowScripts`. Strip those
 # two env entries for the install calls below so the project policy wins.
-echo "Installing backend dependencies from package-lock.json…"
-(cd "$SERVER_DIR" && env -u npm_config_allow_scripts -u NPM_CONFIG_ALLOW_SCRIPTS npm ci --include=dev)
-
 BACKEND_CANDIDATE=$(mktemp -d "$SERVER_DIR/.dist-next.XXXXXX")
-echo "Building backend candidate (TypeScript)…"
-(cd "$SERVER_DIR" && ./node_modules/.bin/tsc -p tsconfig.build.json --outDir "$BACKEND_CANDIDATE")
+if [[ -n "$BACKEND_ARTIFACT_DIR" && -f "$BACKEND_ARTIFACT_DIR/index.runtime.js" ]]; then
+  echo "Using prebuilt backend artifact from $BACKEND_ARTIFACT_DIR…"
+  cp -a "$BACKEND_ARTIFACT_DIR"/. "$BACKEND_CANDIDATE"/
+else
+  echo "Installing backend dependencies from package-lock.json…"
+  (cd "$SERVER_DIR" && env -u npm_config_allow_scripts -u NPM_CONFIG_ALLOW_SCRIPTS npm ci --include=dev)
+  echo "Building backend candidate (TypeScript)…"
+  (cd "$SERVER_DIR" && ./node_modules/.bin/tsc -p tsconfig.build.json --outDir "$BACKEND_CANDIDATE")
+fi
 if [[ ! -f "$BACKEND_CANDIDATE/index.runtime.js" ]]; then
-  echo "ERROR: backend build did not produce index.runtime.js" >&2
+  echo "ERROR: backend candidate did not contain index.runtime.js" >&2
   exit 1
 fi
 # P_deploy-swap-verify — stamp the candidate with its source identity so the
@@ -539,16 +545,18 @@ if [[ "${SKIP_SCHEMA_VERIFY:-0}" != "1" ]]; then
 fi
 
 # ─── 0.5. Memory pressure mitigation ─────────────────────────────────
-# Stop the running backend before the heavy frontend build so both
-# don't contend for the same ~3.7 GB of RAM.  Vite + Rollup needs up
-# to 1 GB just to tree-shake the large visualization libs (plotly,
-# mermaid, echarts, three.js).  Stopping the backend first frees its
-# ~130 MB resident set; the existing stop/start below becomes a no-op
-# until the dist-swap phase. The frontend build also receives an explicit
-# 4 GB V8 old-space ceiling; it is a limit, not an up-front allocation.
-echo "Stopping backend before frontend build (freeing ~130 MB RSS)…"
-$SUDO systemctl stop socrates-api 2>/dev/null || true
-BACKEND_STOPPED=1
+# Keep serving while the candidate is built. Constrained legacy hosts can
+# explicitly opt into the old downtime tradeoff; prefer CI-built artifacts.
+if [[ "${STOP_BACKEND_DURING_BUILD:-0}" == "1" ]]; then
+  echo "Stopping backend during build (STOP_BACKEND_DURING_BUILD=1)…"
+  $SUDO systemctl stop socrates-api 2>/dev/null || true
+  BACKEND_STOPPED=1
+fi
+
+SRC_DESC=""
+SRC_SIZE=0
+SRC_MD5=""
+SRC_SHA256=""
 
 # ─── 1. Build the frontend (Vite) ─────────────────────────────────────
 if [[ "${1:-}" != "" && -f "${1}" ]]; then
@@ -571,15 +579,20 @@ if [[ "${1:-}" != "" && -f "${1}" ]]; then
   SRC_MD5=$(md5sum "$APP_WEB_ROOT/$APP_FILE" | cut -d' ' -f1)
   SRC_SHA256=$(sha256sum "$APP_WEB_ROOT/$APP_FILE" | cut -d' ' -f1)
 else
-  # Production mode: build the Vite bundle and copy dist/* into the web root.
-  echo "Installing frontend dependencies from package-lock.json…"
-  (cd "$FRONTEND_DIR" && env -u npm_config_allow_scripts -u NPM_CONFIG_ALLOW_SCRIPTS npm ci --include=dev)
-  echo "Building frontend (Vite)…"
-  (cd "$FRONTEND_DIR" && NODE_OPTIONS="$FRONTEND_NODE_OPTIONS" npm run build 2>&1 | tail -20)
-  DIST_DIR="$FRONTEND_DIR/dist"
+  if [[ -n "$FRONTEND_ARTIFACT_DIR" && -f "$FRONTEND_ARTIFACT_DIR/index.html" ]]; then
+    echo "Using prebuilt frontend artifact from $FRONTEND_ARTIFACT_DIR…"
+    DIST_DIR="$FRONTEND_ARTIFACT_DIR"
+  else
+    # Production mode: build the Vite bundle and copy dist/* into the web root.
+    echo "Installing frontend dependencies from package-lock.json…"
+    (cd "$FRONTEND_DIR" && env -u npm_config_allow_scripts -u NPM_CONFIG_ALLOW_SCRIPTS npm ci --include=dev)
+    echo "Building frontend (Vite)…"
+    (cd "$FRONTEND_DIR" && NODE_OPTIONS="$FRONTEND_NODE_OPTIONS" npm run build 2>&1 | tail -20)
+    DIST_DIR="$FRONTEND_DIR/dist"
+  fi
 
   if [[ ! -f "$DIST_DIR/index.html" ]]; then
-    echo "ERROR: Vite build did not produce $DIST_DIR/index.html" >&2
+    echo "ERROR: frontend bundle did not contain $DIST_DIR/index.html" >&2
     exit 1
   fi
 

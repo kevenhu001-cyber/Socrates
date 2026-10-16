@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { durableJsonWrite } from '../middleware/durableIdempotency.js';
 import { eq, and, or, desc, sql } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { prompts } from '../db/schema.js';
@@ -39,11 +40,12 @@ router.post('/', async (req, res, next) => {
   try {
     const { title, description, body, icon, category, shortcut, systemPrompt } = req.body;
     if (!title || !body) throw new BadRequest('title and body are required');
-    const db = getDb();
-    const [p] = await db.insert(prompts).values({
-      userId: req.userId!, title, description, body, icon, category: category || 'other', shortcut, systemPrompt,
-    }).returning();
-    return res.status(201).json(p);
+    return await durableJsonWrite(req, res, 'prompts.create.v1', async (tx) => {
+      const [p] = await tx.insert(prompts).values({
+        userId: req.userId!, title, description, body, icon, category: category || 'other', shortcut, systemPrompt,
+      }).returning();
+      return { status: 201, body: p };
+    });
   } catch (err) { next(err); }
 });
 

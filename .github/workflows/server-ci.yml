@@ -1,6 +1,6 @@
 name: Server CI
 
-# Fast-feedback typecheck for server/ changes. Seconds, no services.
+# Fast-feedback typecheck and service-boundary guard for server/ changes. No services.
 #
 # Scope was narrowed on 2026-09-25 because this workflow had become a
 # liability rather than a gate:
@@ -66,13 +66,11 @@ jobs:
           cache: 'npm'
           cache-dependency-path: server/package-lock.json
 
-      # --ignore-scripts: package.json sets `allowScripts: { "*": true }`,
-      # so a transitive postinstall runs arbitrary code. A typecheck does
-      # not need any of it, and CI is the last place to hand out that
-      # privilege for free. Prefer the restored npm cache and skip install-time
-      # audit/funding network calls; security.yml owns the blocking audit.
+      # Typecheck and the native TypeScript AST guard need no install hooks.
+      # Preserve the esbuild-only allow-list and skip install-time audit/funding
+      # calls; security.yml owns the blocking advisory check.
       - name: Install dependencies
         run: npm ci --ignore-scripts --prefer-offline --no-audit --no-fund
 
-      - name: Typecheck
+      - name: Typecheck and service boundaries
         run: npm run lint

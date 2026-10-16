@@ -7,13 +7,14 @@
    persists the result as a session + messages (so it shows up in
    Recents), and reschedules according to `frequency`.
 
-   Single-process design: one poll interval per server; a claim
-   UPDATE guarded on the previous nextRunAt value prevents a task
-   from double-running if a poll overlaps a manual "run now".
+   Database leases serialize manual and scheduled runs across processes.
+   nextRunAt advances only when results and completion commit together.
    ────────────────────────────────────────────── */
-import { and, eq, inArray, isNotNull, lte } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, isNull, lte, ne, or, sql } from 'drizzle-orm';
 import { getDb } from '../../db/index.js';
-import { scheduledTasks, sessions, messages, users } from '../../db/schema.js';
+import { Conflict } from '../../lib/errors.js';
+import { claimScheduledTask, renewScheduledTaskLease, withScheduledTaskLease, type ScheduledLease } from './scheduledTaskLease.js';
+import { scheduledTasks, scheduledTaskLeases, sessions, messages, users } from '../../db/schema.js';
 import { getActiveApiKey } from './apiKey.js';
 import { callChatCompletion } from './llm.js';
 import {
@@ -26,7 +27,7 @@ import {
   SERVER_SYSTEM_POLICY,
   appendFinalOutputConstraints,
   injectUserContext,
-} from '../../routes/chat/helpers.js';
+} from '../../lib/chatPolicy.js';
 
 const POLL_INTERVAL_MS = parseInt(process.env.SCHEDULER_POLL_MS || '60000', 10);
 const MAX_TASKS_PER_POLL = 10;
@@ -74,12 +75,12 @@ export function computeNextRunAt(frequency: string | null | undefined, from: Dat
 }
 
 /**
- * Execute one task: call the LLM with the task prompt and persist the
- * answer as a session + message pair owned by the task's user. Repeat
- * runs of the same task append to the same session so the history of
- * a recurring briefing stays in one place.
+ * Execute provider work outside transactions. Result persistence and
+ * scheduling bookkeeping happen together in the fenced completion below.
  */
-async function executeTask(task: ScheduledTaskRow): Promise<{ runId?: string; awaitingApproval?: boolean }> {
+interface ExecutionOutcome { runId?: string; awaitingApproval?: boolean; content?: string; promptText?: string; model?: string | null; sessionId?: string | null }
+
+async function executeTask(task: ScheduledTaskRow, lease: ScheduledLease, signal: AbortSignal): Promise<ExecutionOutcome> {
   const db = getDb();
   let agentRunId: string | undefined;
   let content = '';
@@ -97,28 +98,21 @@ async function executeTask(task: ScheduledTaskRow): Promise<{ runId?: string; aw
       if (!existing) sessionId = null;
     }
     if (!sessionId) {
-      const [session] = await db.insert(sessions).values({
-        userId: task.userId,
-        title: `⏰ ${task.title}`,
-        topic: task.title,
-        mode: 'chat',
-        phase: 'chat',
-        kind: 'chat',
-        projectId: task.projectId,
-      }).returning({ id: sessions.id });
-      if (!session) throw new Error('Unable to create scheduled session');
-      sessionId = session.id;
-      await db.update(scheduledTasks).set({ sessionId }).where(eq(scheduledTasks.id, task.id));
+      sessionId = await withScheduledTaskLease(lease, async (tx) => {
+        const [session] = await tx.insert(sessions).values({
+          userId: task.userId, title: `⏰ ${task.title}`, topic: task.title,
+          mode: 'chat', phase: 'chat', kind: 'chat', projectId: task.projectId,
+        }).returning({ id: sessions.id });
+        await tx.update(scheduledTasks).set({ sessionId: session.id }).where(eq(scheduledTasks.id, task.id));
+        return session.id;
+      });
     }
     await ensureSessionWorkspaceForSession(task.userId, sessionId, task.projectId || null);
   }
 
   if (task.agentKind === 'codex') {
-    /* Scheduled workspace-agent tasks use the session workspace and durable run
-     * history. `stopOnApproval` makes unattended side effects pause the job
-     * and notify through the run/event surface instead of holding the poller
-     * open until a human appears. The approval continuation watcher in the
-     * Agent Runtime resumes the same turn after a decision. */
+    /* A workspace execution is never automatically replayed after lease
+     * loss. Its run history is retained for review of possible side effects. */
     const created = await createAgentRun({
       userId: task.userId,
       task: (task.prompt || '').trim() || task.title,
@@ -128,6 +122,9 @@ async function executeTask(task: ScheduledTaskRow): Promise<{ runId?: string; aw
       source: 'scheduled',
     });
     agentRunId = created.run.id;
+    await withScheduledTaskLease(lease, async (tx) => {
+      await tx.update(scheduledTasks).set({ lastRunId: agentRunId }).where(eq(scheduledTasks.id, task.id));
+    });
     const rawPolicy = task.runPolicy && typeof task.runPolicy === 'object' && !Array.isArray(task.runPolicy)
       ? task.runPolicy as Record<string, unknown>
       : {};
@@ -139,14 +136,12 @@ async function executeTask(task: ScheduledTaskRow): Promise<{ runId?: string; aw
     policyTimer?.unref?.();
     let result;
     try {
-      result = await runAgentTurn(agentRunId, task.userId, undefined, controller.signal);
+      result = await runAgentTurn(agentRunId, task.userId, undefined, AbortSignal.any([signal, controller.signal]));
     } finally {
       if (policyTimer) clearTimeout(policyTimer);
     }
     if (result.status === 'awaiting_approval') {
-      await db.update(scheduledTasks).set({ lastRunId: agentRunId, status: 'paused', nextRunAt: null, lastRunAt: new Date(), updatedAt: new Date() }).where(eq(scheduledTasks.id, task.id));
-      console.info(`[scheduler] task ${task.id} paused for approval (run ${agentRunId})`);
-      return { runId: agentRunId, awaitingApproval: true };
+      return { runId: agentRunId, awaitingApproval: true, sessionId };
     }
     if (result.status !== 'completed') throw new Error(result.error || `Agent run ${result.status}`);
     content = (result.output || result.summary || '').trim();
@@ -190,141 +185,125 @@ async function executeTask(task: ScheduledTaskRow): Promise<{ runId?: string; aw
       messages: chatMessages,
       maxTokens: 8000,
       temperature: 0.5,
+      signal,
     });
 
     content = (result.content || '').trim();
     if (!content) throw new Error('LLM returned an empty response');
   }
 
-  // Reuse the task's session when it still exists; otherwise create one.
-  if (sessionId) {
-    const [existing] = await db.select({ id: sessions.id }).from(sessions)
-      .where(and(eq(sessions.id, sessionId), eq(sessions.userId, task.userId)))
-      .limit(1);
-    if (!existing) sessionId = null;
-  }
-  if (!sessionId) {
-    const [session] = await db.insert(sessions).values({
-      userId: task.userId,
-      title: `⏰ ${task.title}`,
-      topic: task.title,
-      mode: 'chat',
-      phase: 'chat',
-      kind: 'chat',
-      projectId: task.projectId,
-      preview: content.slice(0, 200),
-    }).returning({ id: sessions.id });
-    if (!session) throw new Error('Unable to create scheduled session');
-    sessionId = session.id;
-    await db.update(scheduledTasks)
-      .set({ sessionId })
-      .where(eq(scheduledTasks.id, task.id));
-  } else {
-    await db.update(sessions)
-      .set({ preview: content.slice(0, 200), updatedAt: new Date() })
-      .where(eq(sessions.id, sessionId));
-  }
-
-  await ensureSessionWorkspaceForSession(task.userId, sessionId, task.projectId || null);
-
-  await db.insert(messages).values({ sessionId, role: 'user', content: promptText, rawText: promptText });
-  await db.insert(messages).values({
-    sessionId,
-    role: 'assistant',
-    content,
-    rawText: content,
-    type: 'assistant',
-    model: provider?.model || null,
-    agentRunId: agentRunId || null,
-  });
-  return { runId: agentRunId };
+  return { runId: agentRunId, content, promptText, model: provider?.model || null, sessionId };
 }
 
-/**
- * Run a task immediately (manual "Run now" from the UI, or a due task
- * claimed by the poll loop). Applies the post-run bookkeeping:
- * lastRunAt / runCount, terminal status for one-shot tasks, and — when
- * `reschedule` is true — the next nextRunAt for recurring tasks.
- * Returns the updated row.
- */
+const activeControllers = new Set<AbortController>();
+
+/** Claim before provider work. A native retry retains its execution ID;
+ * result messages, runCount, nextRunAt and lease completion commit together. */
 export async function runScheduledTaskNow(
-  task: ScheduledTaskRow,
-  opts: { reschedule?: boolean } = {},
+  input: ScheduledTaskRow,
+  opts: { reschedule?: boolean; automatic?: boolean } = {},
 ): Promise<ScheduledTaskRow> {
-  const db = getDb();
-  const recurringNext = computeNextRunAt(task.frequency, new Date());
-  let status: string;
-  let nextRunAt: Date | null | undefined;
-  let outcome: { runId?: string; awaitingApproval?: boolean } = {};
-  try {
-    outcome = await executeTask(task);
-    if (outcome.awaitingApproval) {
-      status = 'paused';
-      nextRunAt = null;
-    } else if (recurringNext) {
-      status = 'active';
-      nextRunAt = opts.reschedule ? recurringNext : undefined;
-    } else {
-      status = 'completed';
-      nextRunAt = null;
-    }
-  } catch (err) {
-    console.error(`[scheduler] task ${task.id} ("${task.title}") failed:`, (err as Error).message);
-    if (recurringNext) {
-      // A transient failure must not kill a recurring task — keep it
-      // active and try again at the next scheduled slot.
-      status = 'active';
-      nextRunAt = opts.reschedule ? recurringNext : undefined;
-    } else {
-      status = 'failed';
-      nextRunAt = null;
-    }
+  const claimed = await claimScheduledTask(input.id, input.userId, opts.automatic);
+  if (!claimed) {
+    if (opts.automatic) return input;
+    throw new Conflict('Scheduled task is already running');
   }
-  const [updated] = await db.update(scheduledTasks)
-    .set({
-      status,
-      lastRunAt: new Date(),
-      runCount: (task.runCount || 0) + 1,
-      updatedAt: new Date(),
-      ...(outcome.runId ? { lastRunId: outcome.runId } : {}),
-      ...(nextRunAt !== undefined ? { nextRunAt } : {}),
-    })
-    .where(eq(scheduledTasks.id, task.id))
-    .returning();
-  return updated;
+  const { task, lease } = claimed;
+  const controller = new AbortController();
+  activeControllers.add(controller);
+  let renewing = false;
+  const heartbeat = setInterval(() => {
+    if (renewing) return;
+    renewing = true;
+    void renewScheduledTaskLease(lease).then((owned) => {
+      if (!owned) controller.abort('scheduled_lease_lost');
+    }).catch(() => controller.abort('scheduled_lease_lost')).finally(() => { renewing = false; });
+  }, 20_000);
+  heartbeat.unref();
+  const deadline = setTimeout(() => controller.abort('scheduled_execution_timeout'), 900_000);
+  deadline.unref();
+  try {
+    let outcome: ExecutionOutcome = {};
+    let failure: string | null = null;
+    try {
+      outcome = await executeTask(task, lease, controller.signal);
+    } catch (err) {
+      failure = (err as Error).message;
+      console.error(`[scheduler] task ${task.id} failed:`, failure);
+    }
+    if (controller.signal.aborted && ['scheduled_lease_lost', 'scheduler_shutdown'].includes(controller.signal.reason)) {
+      throw new Conflict('Scheduled execution stopped without owning a valid lease');
+    }
+    return await withScheduledTaskLease(lease, async (tx, current) => {
+      const now = new Date();
+      let sessionId = outcome.sessionId || current.sessionId;
+      if (!failure && !outcome.awaitingApproval) {
+        if (sessionId) {
+          const [existing] = await tx.select({ id: sessions.id }).from(sessions)
+            .where(and(eq(sessions.id, sessionId), eq(sessions.userId, task.userId))).limit(1);
+          if (!existing) sessionId = null;
+        }
+        if (!sessionId) {
+          const [session] = await tx.insert(sessions).values({
+            userId: task.userId, title: `⏰ ${task.title}`, topic: task.title,
+            mode: 'chat', phase: 'chat', kind: 'chat', projectId: current.projectId,
+          }).returning({ id: sessions.id });
+          sessionId = session.id;
+        }
+        await tx.insert(messages).values([
+          { sessionId, role: 'user', content: outcome.promptText!, rawText: outcome.promptText!, clientId: `sched-${lease.executionId}-user` },
+          { sessionId, role: 'assistant', content: outcome.content!, rawText: outcome.content!, type: 'assistant', model: outcome.model, agentRunId: outcome.runId || null, clientId: `sched-${lease.executionId}-assistant` },
+        ]).onConflictDoNothing({ target: [messages.sessionId, messages.clientId] });
+        await tx.update(sessions).set({ preview: outcome.content!.slice(0, 200), updatedAt: now }).where(eq(sessions.id, sessionId));
+      }
+      const patch: Partial<Omit<typeof scheduledTasks.$inferInsert, 'runCount'>> & { runCount: ReturnType<typeof sql> } = {
+        lastRunAt: now, runCount: sql`${scheduledTasks.runCount} + 1`, updatedAt: now,
+      };
+      if (sessionId) patch.sessionId = sessionId;
+      if (outcome.runId) patch.lastRunId = outcome.runId;
+      if (outcome.awaitingApproval) {
+        patch.status = 'paused'; patch.nextRunAt = null;
+      } else if (current.status === task.status && current.nextRunAt?.getTime() === task.nextRunAt?.getTime()) {
+        // Preserve a user's pause/reschedule made while the provider was busy.
+        const recurringNext = computeNextRunAt(current.frequency, now);
+        patch.status = current.status === 'paused' ? 'paused' : recurringNext ? 'active' : failure ? 'failed' : 'completed';
+        if (!recurringNext) patch.nextRunAt = null;
+        else if (lease.kind === 'scheduled' || opts.reschedule) patch.nextRunAt = recurringNext;
+      }
+      const [updated] = await tx.update(scheduledTasks).set(patch).where(eq(scheduledTasks.id, task.id)).returning();
+      await tx.update(scheduledTaskLeases).set({ state: failure ? 'failed' : 'completed', error: failure, updatedAt: now })
+        .where(and(eq(scheduledTaskLeases.taskId, task.id), eq(scheduledTaskLeases.ownerToken, lease.ownerToken)));
+      return updated;
+    });
+  } finally {
+    clearInterval(heartbeat); clearTimeout(deadline); activeControllers.delete(controller);
+  }
 }
 
 let pollTimer: NodeJS.Timeout | null = null;
 let polling = false;
+let stopping = false;
 
-async function pollOnce(): Promise<void> {
-  if (polling) return;
+export async function pollScheduledTasksOnce(): Promise<void> {
+  if (polling || stopping) return;
   polling = true;
   try {
     const db = getDb();
-    const due = await db.select().from(scheduledTasks)
+    const rows = await db.select({ task: scheduledTasks }).from(scheduledTasks)
+      .leftJoin(scheduledTaskLeases, eq(scheduledTaskLeases.taskId, scheduledTasks.id))
       .where(and(
         inArray(scheduledTasks.status, ['pending', 'active']),
-        isNotNull(scheduledTasks.nextRunAt),
-        lte(scheduledTasks.nextRunAt, new Date()),
+        or(
+          and(isNotNull(scheduledTasks.nextRunAt), lte(scheduledTasks.nextRunAt, sql`clock_timestamp()`)),
+          and(eq(scheduledTaskLeases.state, 'running'), lte(scheduledTaskLeases.expiresAt, sql`clock_timestamp()`)),
+        ),
+        or(isNull(scheduledTaskLeases.taskId), ne(scheduledTaskLeases.state, 'running'), lte(scheduledTaskLeases.expiresAt, sql`clock_timestamp()`)),
       ))
-      .orderBy(scheduledTasks.nextRunAt)
-      .limit(MAX_TASKS_PER_POLL);
-
-    for (const task of due) {
-      // Claim: advance nextRunAt before executing, guarded on the value
-      // we read, so an overlapping poll / manual run skips this task.
-      const claimNext = computeNextRunAt(task.frequency, new Date());
-      const [claimed] = await db.update(scheduledTasks)
-        .set({ nextRunAt: claimNext, updatedAt: new Date() })
-        .where(and(
-          eq(scheduledTasks.id, task.id),
-          eq(scheduledTasks.nextRunAt, task.nextRunAt!),
-          inArray(scheduledTasks.status, ['pending', 'active']),
-        ))
-        .returning();
-      if (!claimed) continue;
-      await runScheduledTaskNow(claimed, { reschedule: false });
+      .orderBy(scheduledTasks.nextRunAt).limit(MAX_TASKS_PER_POLL);
+    for (const { task } of rows) {
+      if (stopping) break;
+      try { await runScheduledTaskNow(task, { automatic: true }); }
+      catch (err) { console.warn(`[scheduler] task ${task.id} claim/execution skipped:`, (err as Error).message); }
     }
   } catch (err) {
     console.error('[scheduler] poll failed:', (err as Error).message);
@@ -336,15 +315,19 @@ async function pollOnce(): Promise<void> {
 /** Start the poll loop. Idempotent. */
 export function startScheduler(): void {
   if (pollTimer) return;
-  pollTimer = setInterval(() => { void pollOnce(); }, POLL_INTERVAL_MS);
+  if (process.env.SCHEDULER_ENABLED === '0' || process.env.SCHEDULER_ENABLED === 'false') return;
+  stopping = false;
+  pollTimer = setInterval(() => { void pollScheduledTasksOnce(); }, POLL_INTERVAL_MS);
   if (typeof pollTimer.unref === 'function') pollTimer.unref();
   // Catch up on tasks that came due while the server was down.
-  void pollOnce();
+  void pollScheduledTasksOnce();
   console.log(`[scheduler] Started (poll every ${Math.round(POLL_INTERVAL_MS / 1000)}s)`);
 }
 
 /** Stop the poll loop. Idempotent. */
 export function stopScheduler(): void {
+  stopping = true;
+  for (const controller of activeControllers) controller.abort('scheduler_shutdown');
   if (pollTimer) {
     clearInterval(pollTimer);
     pollTimer = null;

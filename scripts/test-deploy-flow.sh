@@ -54,6 +54,10 @@ SH
 #!/usr/bin/env bash
 set -e
 if [[ "${1:-}" == "run" && "${2:-}" == "build" ]]; then
+  if [[ "${STOP_BACKEND_DURING_BUILD:-0}" != "1" && "$(cat "$SYSTEMCTL_STATE")" != "active" ]]; then
+    echo "backend must remain active during the frontend build" >&2
+    exit 1
+  fi
   if [[ "${MOCK_FRONTEND_BUILD_FAIL:-0}" == "1" ]]; then
     echo "mock frontend build failure" >&2
     exit 1
@@ -263,10 +267,22 @@ if [[ "$(cat "$build_failure_base/systemctl.state")" != "active" ]]; then
   exit 1
 fi
 build_failure_starts=$(grep -c '^start$' "$build_failure_base/systemctl.log" || true)
-if [[ "$build_failure_starts" != "1" ]]; then
-  echo "expected one backend restart after frontend build failure, got $build_failure_starts" >&2
+if [[ "$build_failure_starts" != "0" || -s "$build_failure_base/systemctl.log" ]]; then
+  echo "build failure must not stop or restart the live backend" >&2
   exit 1
 fi
+if compgen -G "$build_failure_base/server/.dist-next.*" >/dev/null; then
+  echo "candidate cleanup failed after frontend build failure" >&2
+  exit 1
+fi
+
+legacy_build_failure_base=$(make_fixture legacy-build-failure)
+if run_deploy "$legacy_build_failure_base" STOP_BACKEND_DURING_BUILD=1 MOCK_FRONTEND_BUILD_FAIL=1 >"$legacy_build_failure_base/output.log" 2>&1; then
+  echo "legacy frontend build failure unexpectedly succeeded" >&2
+  exit 1
+fi
+test "$(cat "$legacy_build_failure_base/systemctl.state")" == "active"
+test "$(grep -c '^start$' "$legacy_build_failure_base/systemctl.log")" == "1"
 
 rollback_base=$(make_fixture rollback)
 if run_deploy "$rollback_base" MOCK_GATE_FAIL=1 >"$rollback_base/output.log" 2>&1; then

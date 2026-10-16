@@ -57,6 +57,9 @@
   /* Workspace search field / pill. Taller than a toolbar button because it
      carries placeholder text, and identical across every directory page. */
   --ui-control-search: 42px;
+  /* Micro controls — chip dismissals and attachment badges. */
+  --ui-control-xs: 24px;
+  --ui-control-badge: 20px;
   /* Semantic alias for "mobile tap target": same value as
      --ui-control-touch but lets mobile-controls.css and buttons.css
      read intent (touch hit area) rather than reusing a generic "touch"

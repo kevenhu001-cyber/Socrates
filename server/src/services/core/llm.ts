@@ -6,7 +6,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import dns from 'node:dns';
-import { Agent, ProxyAgent, type Dispatcher } from 'undici';
+import { Agent, EnvHttpProxyAgent, ProxyAgent, type Dispatcher } from 'undici';
 
 /* ─── High-performance LLM HTTP Dispatcher ────────────────────────────────
  * Keeps connections alive across turns and tools (60s idle timeout), enables
@@ -52,8 +52,10 @@ export function getLlmDispatcher(): Dispatcher {
   if (_llmDispatcher) return _llmDispatcher;
   const proxyUrl = process.env.LLM_PROXY || process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.all_proxy;
   if (proxyUrl) {
-    _llmDispatcher = new ProxyAgent({
-      uri: proxyUrl,
+    if (process.env.LLM_PROXY && !process.env.HTTPS_PROXY) {
+      process.env.HTTPS_PROXY = process.env.LLM_PROXY;
+    }
+    _llmDispatcher = new EnvHttpProxyAgent({
       keepAliveTimeout: 60_000,
       keepAliveMaxTimeout: 300_000,
       connections: 64,

@@ -44,7 +44,7 @@ import { apiKeys } from '../db/schema.js';
 import { requireAdminSession } from '../middleware/adminAuth.js';
 import { BadRequest } from '../lib/errors.js';
 import { encrypt, encryptionKey } from '../lib/crypto.js';
-import { isAllowedProviderUrl } from './apiKeys.js';
+import { isAllowedProviderUrl } from '../lib/providerUrl.js';
 
 const router = Router();
 

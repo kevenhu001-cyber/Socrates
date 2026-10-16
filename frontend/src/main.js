@@ -36,7 +36,6 @@ import { initTopicFocusAssist } from './ui/topicFocusAssist.js';
 import './ui/composerAnim.js';
 import { installComposerShapeMirror } from './ui/composerShape.js';
 import { installKeyboardShortcuts } from './ui/keyboardShortcuts.js';
-import { isNativeApp, setupNativeBridge } from './native/capacitorBridge.js';
 import { initSidebarDrag } from './ui/sidebarResize.js';
 import { switchTab, toggleSidebarView, initSidebarChrome } from './ui/sidebarChrome.js';
 import { wireScrollPill } from './ui/scrollPill.js';
@@ -102,10 +101,6 @@ const keyboardLift = initKeyboardLift({
 
 window.__socratesKeyboard = keyboardLift;
 initTopicFocusAssist();
-
-if (isNativeApp()) {
-  setupNativeBridge({ keyboard: keyboardLift });
-}
 
 (function initMsgScrollbar(){
   var ml=document.getElementById("msgList");

@@ -85,23 +85,5 @@ export function audit(
   };
 }
 
-/**
- * Direct audit event recorder for use in route handlers.
- * @param {string} userId
- * @param {string} action
- * @param {object} [detail]
- */
-export async function recordAudit(userId: string, action: string, detail: Record<string, unknown> = {}) {
-  try {
-    const db = getDb();
-    await db.insert(auditEvents).values({
-      userId,
-      action,
-      detail,
-    }).catch((err) => {
-      console.warn('[audit] recordAudit failed:', err.message);
-    });
-  } catch (err) {
-    console.warn('[audit] recordAudit error:', (err as Error).message);
-  }
-}
+// Compatibility export; services import the recorder from core/audit directly.
+export { recordAudit } from '../services/core/audit.js';
