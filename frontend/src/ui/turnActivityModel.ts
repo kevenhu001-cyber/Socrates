@@ -58,7 +58,7 @@ function observedStatus(message: LegacyChatMessage, activity: PublicTurnActivity
       return hasObservedReasoning(message)
         ? { phase: 'thinking', label: translate('think.thinking', 'Thinking…'), elapsedSec: legacy?.phase === 'thinking' ? legacy.elapsedSec : undefined }
         : { phase: 'waiting', label: translate('think.waitingForResponse', 'Waiting for the response.'), elapsedSec: legacy?.phase === 'waiting' ? legacy.elapsedSec : undefined };
-    case 'public_reasoning_summary': return hasVisibleAnswerText(message) ? undefined : { phase: 'thinking', label: activity.text };
+    case 'public_reasoning_summary': return { phase: 'thinking', label: activity.text };
     case 'synthesizing': return hasVisibleAnswerText(message) ? undefined : { phase: 'synthesizing', label: translate('think.synthesizing', 'Preparing the answer') };
     case 'tool': {
       const call = message.toolCalls?.find((entry) => entry.id === activity.toolCallId);
@@ -87,10 +87,15 @@ export function deriveTurnPresentationState(message: LegacyChatMessage, options:
   const live = options.live ?? (message.type === 'streaming' && message._streamSettled !== true);
   const activity = normalizePublicTurnActivity(message._activity);
   const status = selectedStatus(message, activity, live, options);
+  const activities = message.turnRuntime?.activities || [];
+  const showActivityTimeline = activities.some((entry) => entry.kind === 'tool' || entry.kind === 'reasoning_summary')
+    || ((!live || message.turnRuntime?.generation === 'streaming') && activities.some((entry) => entry.kind === 'reasoning'));
   return {
+    activities,
+    showActivityTimeline,
     primaryActivity: activity,
     status,
-    publicSummary: live && options.hasRunningRow ? '' : (message.summary?.trim() || (live ? message._taskSummary?.trim() : '') || ''),
+    publicSummary: activities.filter((entry) => entry.kind === 'reasoning_summary').slice(-1)[0]?.text || (live && options.hasRunningRow ? '' : (message.summary?.trim() || (live ? message._taskSummary?.trim() : '') || '')),
     showToolbar: !live,
     showCursor: live && !status && !options.hasRunningRow,
     isSettled: !live,

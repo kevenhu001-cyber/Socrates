@@ -16,6 +16,7 @@ interface IntelligenceUiBlockProps {
   source: string;
   tools?: ReadonlyArray<ToolCallRecord>;
   open?: boolean;
+  showActivityCue?: boolean;
   readOnly?: boolean;
 }
 
@@ -610,7 +611,7 @@ function UiNode({ node, context }: { node: IntelligenceUiNode; context: RenderCo
   }
 }
 
-export function IntelligenceUiBlock({ source, tools = [], open = false, readOnly = false }: IntelligenceUiBlockProps) {
+export function IntelligenceUiBlock({ source, tools = [], open = false, showActivityCue = true, readOnly = false }: IntelligenceUiBlockProps) {
   const nodes = useMemo(() => parseIntelligenceUiRecords(source), [source]);
   const defaults = useMemo(() => initialStateForNodes(nodes), [nodes]);
   const children = useMemo(() => childMap(nodes), [nodes]);
@@ -634,7 +635,7 @@ export function IntelligenceUiBlock({ source, tools = [], open = false, readOnly
   return (
     <div className="intui" data-intui-streaming={open ? 'true' : 'false'}>
       {roots.map((node) => <UiNode key={node.id} node={node} context={context} />)}
-      {open ? <span className="intui-stream-dot" aria-hidden="true" /> : null}
+      {open && showActivityCue ? <span className="intui-stream-dot" aria-hidden="true" /> : null}
     </div>
   );
 }

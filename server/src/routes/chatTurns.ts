@@ -42,6 +42,7 @@ function publicTurn(turn: any) {
     fullText: turn.fullText,
     fullReasoning: turn.fullReasoning,
     toolCalls: turn.toolCalls,
+    turnRuntime: turn.turnRuntime,
     usage: turn.usage,
     error: turn.error,
     startedAt: turn.startedAt,

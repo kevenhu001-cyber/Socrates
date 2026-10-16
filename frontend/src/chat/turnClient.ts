@@ -26,6 +26,7 @@ export interface ChatTurn {
   fullText: string | null;
   fullReasoning: string | null;
   toolCalls: unknown[];
+  turnRuntime?: import("@socrates/contracts").TurnRuntime | null;
   usage: unknown;
   error: string | null;
 }

@@ -13,6 +13,7 @@
  * partial-text finalize, the superseded-stub retirement, and the
  * legacy-shell eviction all keep their original sequencing.
  */
+import { settleTurnRuntime } from '@socrates/core';
 import { stateStore } from '../../state/store.js';
 import { esc } from '../../render/helpers.js';
 import { buildAssistantHtml } from '../../render/assistantHtml.ts';
@@ -61,6 +62,7 @@ export function createAbortPath(state) {
     /* Stop the independent execution stream and any queued delta
        frame before this message can lose ownership of its slot. */
     state.toolRuntime.cancel();
+    state.patchOwnedMessage({turnRuntime:settleTurnRuntime(stateStore.read("messages")[state.msgIdx]?.turnRuntime, "stopped")});
     /* A user stop is an intentional end state. Keep any visible text as a
      * normal assistant message so it remains on screen and can be saved.
      * P_session-cross-talk — verify the slot still holds OUR placeholder
@@ -77,7 +79,7 @@ export function createAbortPath(state) {
       .replace(/<think>[\s\S]*?<\/think>/gi, "")
       .replace(/<think>[\s\S]*$/gi, "")
       .trim();
-    var hasPartial = !!(abortedMessage && visibleStoppedRaw);
+    var hasPartial = !!(abortedMessage && (visibleStoppedRaw || abortedMessage.turnRuntime?.uiSurfaces.some((surface) => surface.phase === 'committed')));
     if (abortedMessage && !hasPartial && abortedMessage.type === "streaming") {
       /* P_supersede-stable — removing the empty placeholder also removes
          the turn's viewport reserve, collapsing the scroll range on the

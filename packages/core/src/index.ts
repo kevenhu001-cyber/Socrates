@@ -1,4 +1,6 @@
 export * from './intelligenceUi';
+export * from './turnRuntime';
+export { validateIntelligentUi } from './intelligentUiValidation.js';
 export * from './visualizationMath.js';
 import type { Attachment, ChatSseHandlers, JsonValue, Message, Session } from '@socrates/contracts';
 
@@ -72,8 +74,9 @@ export function dispatchChatSseFrame(frame: string, handlers: ChatSseHandlers) {
     execution_start: handlers.onExecutionStart,
     tool_approval: handlers.onToolApproval,
     turn_activity: handlers.onTurnActivity,
+    turn_event: handlers.onTurnEvent,
     turn_summary: handlers.onTurnSummary,
-  }[event as 'tool_use' | 'tool_result' | 'tool_progress' | 'tool_call_delta' | 'execution_start' | 'tool_approval' | 'turn_activity' | 'turn_summary'];
+  }[event as 'tool_use' | 'tool_result' | 'tool_progress' | 'tool_call_delta' | 'execution_start' | 'tool_approval' | 'turn_activity' | 'turn_event' | 'turn_summary'];
   if (toolHandler) {
     toolHandler(parsed as never);
     return;

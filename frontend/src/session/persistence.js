@@ -6,6 +6,7 @@
  * patches its own row and asks for a throttled reconcile. See
  * session/recentsReconcile.js.
  */
+import { normalizeTurnRuntime } from '@socrates/core';
 import { stateStore } from '../state/store.js';
 import { saveState, deletedSessionGuard } from './saveState.js';
 import { generateId } from '../util/ids.js';
@@ -252,6 +253,7 @@ function captureSessionPayload(){
       reasoningContent:m.reasoningContent||null,
       reasoningDurationSec:m.reasoningDurationSec||null,
       summary:m.summary||null,
+      turnRuntime: normalizeTurnRuntime(m.turnRuntime),
       /* P_attachments — round-trip the inlined image dataUrl /
        * parsed text body so reloads restore thumbnails without a
        * re-upload. The server caps to 20 in sessions.js; we

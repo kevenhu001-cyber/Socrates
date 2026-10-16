@@ -7,6 +7,7 @@ function isRenderable(entry: LegacyChatMessage): boolean {
   if (typeof entry.html === 'string' && entry.html.length > 0) return true;
   if (typeof entry.rawText === 'string' && entry.rawText.length > 0) return true;
   if (Array.isArray(entry.toolCalls) && entry.toolCalls.length > 0) return true;
+  if (entry.turnRuntime?.uiSurfaces.some((surface) => surface.phase === 'committed' && surface.nodes.length > 0)) return true;
   return Array.isArray(entry.attachments) && entry.attachments.length > 0;
 }
 

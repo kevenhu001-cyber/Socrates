@@ -350,6 +350,8 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
       if(typeof ctl.recordToolCallDelta==="function")ctl.recordToolCallDelta(d);
     },
     /* The tutor path uses the same public events through toolCallbacks.js. */
+    onTurnSnapshot: function (snapshot) { if (ctl && ctl.recordTurnSnapshot) ctl.recordTurnSnapshot(snapshot); },
+    onTurnEvent: function (event) { if (ctl && ctl.recordTurnEvent) ctl.recordTurnEvent(event); },
     onTurnActivity:function(activity){ if(ctl&&ctl.recordTurnActivity)ctl.recordTurnActivity(activity); },
     onTurnSummary:function(payload){
       var text = payload && typeof payload === "string" ? payload : (payload && payload.summary);

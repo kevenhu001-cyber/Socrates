@@ -17,6 +17,7 @@ const CALLBACK_BY_EVENT = Object.freeze({
   /* Completed observed work, sent before [DONE]. */
   turn_summary: 'onTurnSummary',
   turn_activity: 'onTurnActivity',
+  turn_event: 'onTurnEvent',
 });
 
 const DEV = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) === true;
@@ -52,7 +53,7 @@ function parseFrame(frame) {
 
 function dispatchCallbackEvent(state, context, eventName, dataParts) {
   if (!Object.prototype.hasOwnProperty.call(CALLBACK_BY_EVENT, eventName)) return false;
-  if (eventName !== 'turn_activity') state.semanticActivity = true;
+  if (eventName !== 'turn_activity' && eventName !== 'turn_event') state.semanticActivity = true;
   const callback = context.opts && context.opts[CALLBACK_BY_EVENT[eventName]];
   if (typeof callback === 'function' && dataParts.length) {
     /* A tool row's text offset must include visible text held for a possible

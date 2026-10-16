@@ -1,6 +1,7 @@
 /* Restore persisted session messages and their local recovery paths.
  * These helpers own the boundary between saved session data, the transcript
  * store, and browser-local history. */
+import { normalizeTurnRuntime } from '@socrates/core';
 import { stateStore } from '../state/store.js';
 import { buildUserContentParts } from '../chat/history.js';
 import { quietTurn } from '../chat/turnUi.js';
@@ -62,6 +63,7 @@ export function restoreSessionMessage(m){
     /* P_turn-summary — carry the persisted retrospective so the Summary
        sheet reads the same after a reload as it did live. */
     summary: m.summary || null,
+    turnRuntime: normalizeTurnRuntime(m.turnRuntime),
     attachments: Array.isArray(m.attachments) ? m.attachments : [],
     toolCalls: Array.isArray(m.toolCalls) ? m.toolCalls.map(function(tc){
       return {

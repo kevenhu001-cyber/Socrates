@@ -182,3 +182,17 @@ test('state sync snapshots every mutable row even when ids are unchanged', () =>
   assert.equal(previous[0].rawText, 'before');
   assert.equal(next[0].rawText, 'after');
 });
+
+test('legacy callers cannot mutate an already-published public runtime graph', () => {
+  const source = { clientId: 'runtime', role: 'assistant', turnRuntime: {
+    version: 1, turnId: 'turn-1', seq: 1, lifecycle: 'live', generation: 'streaming',
+    activities: [{ id: 'summary', kind: 'reasoning_summary', phase: 'running', startedAt: 1, text: 'Public observation' }],
+    uiSurfaces: [{ id: 'ui', toolCallId: 'ui', textOffset: 0, phase: 'streaming', nodes: [{ id: 'root', type: 'panel', state: { count: 1 } }] }],
+  } };
+  const published = snapshotMessage(source);
+  source.turnRuntime.activities[0].text = 'Changed later';
+  source.turnRuntime.uiSurfaces[0].nodes[0].state.count = 9;
+  assert.equal(published.turnRuntime.activities[0].text, 'Public observation');
+  assert.equal(published.turnRuntime.uiSurfaces[0].nodes[0].state.count, 1);
+  assert.ok(Object.isFrozen(published.turnRuntime.uiSurfaces[0].nodes[0].state));
+});

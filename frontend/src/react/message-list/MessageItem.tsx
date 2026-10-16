@@ -99,6 +99,7 @@ function isRenderable(message: LegacyChatMessage, live: boolean): boolean {
   /* Older tool-only rows may not have a persisted textOffset. They still
      have visible legacy HTML and must remain in the same assistant surface. */
   if (Array.isArray(message.toolCalls) && message.toolCalls.length > 0) return true;
+  if (message.turnRuntime?.uiSurfaces.some((surface) => surface.phase === 'committed' && surface.nodes.length > 0)) return true;
   /* Attachment-only user messages still need a row; the chips are their
      entire content. */
   return Array.isArray(message.attachments) && message.attachments.length > 0;

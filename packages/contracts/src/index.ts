@@ -1,4 +1,6 @@
 import type { PublicTurnActivity } from './turnActivity';
+import type { TurnEvent, TurnRuntime } from './turnEvent';
+export type { TurnEvent, TurnEventPayload, TurnRuntime, TurnActivityEntry, TurnUiSurface, TurnUiNode } from './turnEvent';
 export type { PublicTurnActivity } from './turnActivity';
 export type JsonValue = string | number | boolean | null | JsonObject | JsonValue[];
 export type JsonObject = { [key: string]: JsonValue };
@@ -146,6 +148,7 @@ export interface Message {
   attachments?: Attachment[];
   toolCalls?: ToolCall[];
   citations?: Citation[];
+  turnRuntime?: TurnRuntime | null;
   /** Persisted thumbs rating; survives session reloads. */
   feedback?: 'up' | 'down' | null;
   createdAt?: string | null;
@@ -409,6 +412,7 @@ export interface ChatSseHandlers {
   onDelta?: (text: string) => void;
   onReasoning?: (text: string) => void;
   onTurnActivity?: (activity: PublicTurnActivity) => void;
+  onTurnEvent?: (event: TurnEvent) => void;
   onTurnSummary?: (payload: { summary: string }) => void;
   onToolUse?: (payload: JsonValue) => void;
   onToolResult?: (payload: JsonValue) => void;
@@ -492,6 +496,7 @@ export type ArtifactMessage = ArtifactBridgeMessage;
 
 export type ChatSseEventName =
   | 'turn_activity'
+  | 'turn_event'
   | 'turn_summary'
   | 'tool_use'
   | 'tool_result'

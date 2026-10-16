@@ -1,7 +1,7 @@
 import { Fragment, type ReactNode } from 'react';
 import { IntelligentTextSegment } from '../intelligence-ui/IntelligentTextSegment';
 import { ThinkingAccordion } from './ThinkingAccordion';
-import { groupOutputCalls, runStartedAt, toolRunView, type ToolCallRecord, type TurnSegment } from './toolRunModel.js';
+import { runStartedAt, toolRunView, type ToolCallRecord, type TurnSegment } from './toolRunModel.js';
 import { ToolRunAttachments } from './ToolRunAttachments.js';
 import { ToolRunGroup } from './ToolRunGroup.js';
 import { ToolRunRow } from './ToolRunRow.js';
@@ -41,10 +41,9 @@ export function TurnSegmentContent({
   }
 
   if (segment.kind === 'group') {
-    const first = groupOutputCalls(segment)[0];
     return (
       <ToolRunGroup
-        key={'group-' + (first ? first.id : index) + '-' + index}
+        key={'group-' + index}
         segment={segment}
         tools={tools}
         messageId={messageId}

@@ -15,6 +15,7 @@
  *   user-stop (abort) body — chat/turn/abortPath.js
  *   replaceWithError body — chat/turn/errorPath.js
  */
+import { normalizeTurnRuntime, reduceTurnEvent } from '@socrates/core';
 import { normalizePublicTurnActivity } from '../ui/turnActivityModel';
 import { stateStore } from '../state/store.js';
 import { turnState, streamRetryViewport } from './turnState.js';
@@ -575,6 +576,22 @@ export function addStreamingMessage(opts){
     recordAgentPlan:toolRuntime.recordAgentPlan,
     /* Public progress is supplied by the server; initial previews from old
        streams are ignored and only retrospectives are persisted. */
+    recordTurnSnapshot:function(payload){
+      if(!stillOwnsSlot())return;
+      var message=stateStore.read("messages")[msgIdx];
+      var runtime=normalizeTurnRuntime(payload);
+      if(!runtime||(message.turnRuntime&&(message.turnRuntime.turnId!==runtime.turnId||message.turnRuntime.seq>=runtime.seq)))return;
+      patchOwnedMessage({turnRuntime:runtime},false);
+      publishReactChatRuntime({type:"tool-run-updated",messageId:clientId});
+    },
+    recordTurnEvent:function(payload){
+      if(!stillOwnsSlot())return;
+      var message=stateStore.read("messages")[msgIdx];
+      var runtime=reduceTurnEvent(message.turnRuntime,payload);
+      if(!runtime||runtime===message.turnRuntime)return;
+      patchOwnedMessage({turnRuntime:runtime},false);
+      publishReactChatRuntime({type:"tool-run-updated",messageId:clientId});
+    },
     recordTurnActivity:function(payload){
       if(!stillOwnsSlot())return;
       var activity=normalizePublicTurnActivity(payload);

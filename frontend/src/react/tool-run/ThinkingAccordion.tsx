@@ -1,14 +1,23 @@
+import type { TurnActivityEntry } from '@socrates/contracts';
+import { toolRunLabel } from '../../ui/toolPresentationModel';
 import { useEffect, useId, useReducer, useState } from 'react';
 import { i18n } from '../legacy/gateway';
 
 export interface ThinkingAccordionProps {
   /** Public model-provided summary only. Never pass parsed reasoning text here. */
   publicSummary?: string;
+  activities?: ReadonlyArray<TurnActivityEntry>;
   isLive?: boolean;
   elapsedSec?: number;
 }
 
-export function ThinkingAccordion({ publicSummary = '', isLive = false, elapsedSec }: ThinkingAccordionProps) {
+function activityTitle(entry: TurnActivityEntry): string {
+  if (entry.kind === 'reasoning_summary') return entry.text || '';
+  if (entry.kind === 'tool') return toolRunLabel({ name: entry.toolName }, entry.phase === 'done' ? 'done' : entry.phase === 'failed' ? 'error' : entry.phase === 'stopped' ? 'stopped' : 'running').text;
+  return entry.kind === 'synthesis' ? i18n('think.synthesizing', 'Preparing the answer') : i18n('think.thinking', 'Thinking…');
+}
+
+export function ThinkingAccordion({ publicSummary = '', activities = [], isLive = false, elapsedSec }: ThinkingAccordionProps) {
   const [isOpen, setIsOpen] = useState(false);
   const bodyId = useId();
   const [, refreshLanguage] = useReducer((revision: number) => revision + 1, 0);
@@ -24,11 +33,13 @@ export function ThinkingAccordion({ publicSummary = '', isLive = false, elapsedS
     };
   }, []);
 
-  if (!normalizedSummary && !isLive) return null;
+  const timeline = activities.filter((entry) => entry.kind !== 'waiting');
+  if (!normalizedSummary && !isLive && !timeline.length) return null;
 
   return (
     <div
       className="thinking-accordion"
+      data-activity-timeline={timeline.length ? "true" : undefined}
       data-live={isLive ? 'true' : undefined}
       data-open={isOpen ? 'true' : 'false'}
     >
@@ -41,7 +52,7 @@ export function ThinkingAccordion({ publicSummary = '', isLive = false, elapsedS
           onClick={() => setIsOpen((previous) => !previous)}
         >
           <span className="thinking-accordion-left">
-            <span className="thinking-dot-indicator" aria-hidden="true">
+            <span className="thinking-dot-indicator" aria-hidden="true" hidden={timeline.length > 0}>
               <span className="thinking-dot-pulse">
                 <span />
                 <span />
@@ -50,7 +61,7 @@ export function ThinkingAccordion({ publicSummary = '', isLive = false, elapsedS
               <span className="thinking-dot-calm" />
             </span>
             <span className="thinking-accordion-title">
-              {isLive ? i18n('think.thinking', 'Thinking…') : i18n('think.summary', 'Thought summary')}
+              {timeline.length ? i18n('think.activityHistory', 'Activity') : isLive ? i18n('think.thinking', 'Thinking…') : i18n('think.summary', 'Thought summary')}
             </span>
             {typeof elapsedSec === 'number' && elapsedSec > 0 ? (
               <span className="thinking-accordion-elapsed">({elapsedSec.toFixed(1)}s)</span>
@@ -65,7 +76,13 @@ export function ThinkingAccordion({ publicSummary = '', isLive = false, elapsedS
       </div>
       <div id={bodyId} className="thinking-accordion-body" aria-hidden={!isOpen} inert={!isOpen}>
         <div className="thinking-accordion-inner">
-          <div className="thinking-accordion-text">{displaySummary}</div>
+          {timeline.length ? <ol className="turn-activity-list">
+            {timeline.map((entry) => <li key={entry.id} data-activity-id={entry.id} data-phase={entry.phase}>
+              <span>{activityTitle(entry)}</span>
+              <span className="turn-activity-phase">{i18n('think.activity.' + entry.phase, entry.phase)}</span>
+            </li>)}
+          </ol> : null}
+          {(normalizedSummary && !timeline.some((entry) => entry.text === normalizedSummary)) || !timeline.length ? <div className="thinking-accordion-text">{displaySummary}</div> : null}
         </div>
       </div>
     </div>

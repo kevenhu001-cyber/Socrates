@@ -12,6 +12,7 @@
  * same wrapper on history restore; keeping one host is what makes the
  * `[data-visualization-id]` dedup hold across the two paths.
  */
+import { validateIntelligentUi } from '@socrates/core';
 import { IntelligenceUiBlock } from '../intelligence-ui/IntelligenceUi';
 import { useEffect, useRef, useState } from 'react';
 
@@ -44,7 +45,7 @@ function parseIntelligenceUiDocument(value: unknown): IntelligenceUiDocument | n
   }
   if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return null;
   const record = candidate as Record<string, unknown>;
-  if (record.version !== 1 || !Array.isArray(record.nodes) || !record.nodes.length) return null;
+  if (record.version !== 1 || !Array.isArray(record.nodes) || !validateIntelligentUi(record).ok) return null;
   return { version: 1, nodes: record.nodes };
 }
 
@@ -80,7 +81,9 @@ export function ToolRunAttachments({ call, tools = [call], readOnly }: ToolRunAt
 
   if (call.name === 'render_intelligent_ui') {
     const state = toolRunStateOf(call);
-    const document = intelligenceUiDocumentOf(call);
+    const surface = call.uiSurface;
+    if (surface?.phase === 'aborted' && state !== 'done') return null;
+    const document = surface && surface.phase !== 'aborted' ? { version: 1, nodes: surface.nodes } : intelligenceUiDocumentOf(call);
     /* A validated-looking document may be painted as soon as its arguments
        are complete; the tool row remains the authority for final success.
        Failed/stopped calls never expose rejected UI data. */
@@ -90,8 +93,9 @@ export function ToolRunAttachments({ call, tools = [call], readOnly }: ToolRunAt
         return <div className="tool-inline-attachments" data-tool-anchor={call.id}>
           <IntelligenceUiBlock
             source={source}
+            showActivityCue={false}
             tools={tools}
-            open={state === 'running' || state === 'awaiting'}
+            open={surface && surface.phase !== 'aborted' ? surface.phase === 'streaming' : state === 'running' || state === 'awaiting'}
             readOnly={readOnly}
           />
         </div>;

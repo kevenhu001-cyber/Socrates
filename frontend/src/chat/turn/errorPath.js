@@ -13,6 +13,8 @@
  * same retry affordance, send-button restore, legacy-shell eviction, and
  * stream-failed runtime publish as before.
  */
+import { stateStore } from '../../state/store.js';
+import { settleTurnRuntime } from '@socrates/core';
 import { esc } from '../../render/helpers.js';
 import { buildAssistantHtml } from '../../render/assistantHtml.ts';
 import { setReactLiveStatus } from '../../ui/messageSnapshot.js';
@@ -36,6 +38,7 @@ export function createErrorPath(state) {
        late natural finish callback finds _disposed/finished flipped. */
     state.finished = true;
     state.toolRuntime.cancel();
+    state.patchOwnedMessage({turnRuntime:settleTurnRuntime(stateStore.read("messages")[state.msgIdx]?.turnRuntime, "failed")});
     if (state._elapsedTick) clearInterval(state._elapsedTick);
     state.cancelScheduledRender();
     try {

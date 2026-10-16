@@ -2,11 +2,11 @@
  * One assistant answer, composed from public prose, tool runs, and turn status.
  * Parsing, prose caching, and streaming-tail decoration live in focused modules.
  */
+import { ThinkingAccordion } from './ThinkingAccordion';
 import { deriveTurnPresentationState } from '../../ui/turnActivityModel';
 import { useEffect, useRef, useState } from 'react';
 import {
   buildTurnLayout,
-  groupOutputCalls,
   sortableToolCalls,
   stripLegacyToolHtml,
   toolRunStateOf,
@@ -53,17 +53,26 @@ function lastTextIndex(segments: TurnSegment[]): number {
 
 function segmentKey(segment: TurnSegment, index: number): string {
   if (segment.kind === 'text') return 'text-' + segment.start + '-' + index;
-  if (segment.kind === 'group') {
-    const first = groupOutputCalls(segment)[0];
-    return 'group-' + (first ? first.id : index) + '-' + index;
-  }
+  // Membership can expand before tool_use. Child outputs retain their own
+  // call IDs; the run host stays mounted when its first call changes.
+  if (segment.kind === 'group') return 'group-' + index;
   if (segment.kind === 'tool') return 'tool-' + segment.call.id;
   return 'think-' + index;
 }
 
 export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnProps) {
   const rawText = typeof message.rawText === 'string' ? message.rawText : '';
-  const calls = Array.isArray(message.toolCalls) ? message.toolCalls as ToolCallRecord[] : [];
+  const storedCalls = Array.isArray(message.toolCalls) ? message.toolCalls as ToolCallRecord[] : [];
+  const surfaces = message.turnRuntime?.uiSurfaces || [];
+  const calls: ToolCallRecord[] = storedCalls.map((call) => {
+    const uiSurface = surfaces.find((surface) => surface.toolCallId === call.id);
+    return uiSurface ? { ...call, _run: call._run, uiSurface } : call;
+  });
+  for (const surface of surfaces) {
+    if (surface.phase === 'aborted' || calls.some((call) => call.id === surface.toolCallId)) continue;
+    calls.push({ id: surface.toolCallId, name: 'render_intelligent_ui', textOffset: surface.textOffset,
+      status: surface.phase === 'committed' ? 'completed' : 'running', uiSurface: surface });
+  }
   const storedHtml = typeof html === 'string' ? html : '';
   const isLive = Boolean(live);
   const [isSettling, setIsSettling] = useState(false);
@@ -115,10 +124,16 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
 
   return (
     <ToolRunDisclosureProvider>
+      {presentation.showActivityTimeline ? <ThinkingAccordion
+        activities={presentation.activities}
+        publicSummary={presentation.publicSummary}
+        isLive={isLive && message.turnRuntime?.lifecycle === 'live'}
+        elapsedSec={message.turnRuntime?.durationMs !== undefined ? message.turnRuntime.durationMs / 1000 : undefined}
+      /> : null}
       <TurnSummaryPill
-        summary={presentation.publicSummary}
+        summary={presentation.showActivityTimeline ? undefined : presentation.publicSummary}
         messageId={messageId}
-        status={showStatus && liveStatus && !['error', 'stopped'].includes(liveStatus.phase) ? liveStatus : undefined}
+        status={!presentation.showActivityTimeline && showStatus && liveStatus && !['error', 'stopped'].includes(liveStatus.phase) ? liveStatus : undefined}
       />
       {legacyHtml ? (
         <div

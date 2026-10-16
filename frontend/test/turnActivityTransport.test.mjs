@@ -51,3 +51,19 @@ test('React and degraded renderers derive tool copy from the same call', () => {
     assert.equal(errorLabel(name, { ...result, ok: false }, input), toolRunLabel({ name, input, ...result, isError: true }, 'error').text);
   }
 });
+
+test('both SSE routers deliver the versioned turn event without converting it to prose', () => {
+  const event = { version: 1, turnId: 'turn-1', seq: 1, at: 100, type: 'generation', phase: 'streaming' };
+  const frame = `event: turn_event\ndata: ${JSON.stringify(event)}\n\n`;
+  for (const shared of [false, true]) {
+    const events = [];
+    const handlers = { onTurnEvent: (value) => events.push(value) };
+    if (shared) dispatchChatSseFrame(frame, handlers);
+    else {
+      const processor = createStreamFrameProcessor({ opts: handlers });
+      processor.processFrame(frame);
+      assert.equal(processor.full, '');
+    }
+    assert.deepEqual(events, [event]);
+  }
+});

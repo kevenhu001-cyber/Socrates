@@ -117,6 +117,7 @@ export type ToolOutput = VisualizationOutput | ArtifactOutput | TextOutput;
 
 /** The persisted + live shape of a message.toolCalls[] entry. */
 export interface ToolCallRecord extends ToolCallLike {
+  uiSurface?: import("@socrates/contracts").TurnUiSurface;
   id: string;
   name: string;
   textOffset?: number;

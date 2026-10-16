@@ -16,13 +16,15 @@
  * Behaviour is a verbatim extraction of the original single-closure
  * handler; the stages only differ in where the closures live.
  */
-
+import { reduceTurnEvent, settleTurnRuntime } from '../../../../../packages/core/src/turnRuntime.js';
+import type { TurnRuntime } from '../../../../../packages/contracts/src/turnEvent.js';
 import {and, eq} from 'drizzle-orm';
 import {getDb} from '../../../db/index.js';
 import {chatTurns, messages, sessions} from '../../../db/schema.js';
 import {withChatTurnExecution, publishChatTurnEvent, setChatTurnStatus, subscribeToChatTurn} from '../../../services/chatTurns.js';
 import {sanitizeStoredHtml, sanitizePlainText} from '../../../lib/sanitize.js';
 import {indexMessageChunks} from '../../../services/chunkIndex.js';
+import { createTurnEventController } from '../../../services/turnEvents.js';
 import { createTurnActivityController } from '../../../services/turnActivity.js';
 import {completedActivitySummary} from '../../../services/turnSummary.js';
 import {streamChatCompletion} from '../../../services/llm.js';
@@ -224,6 +226,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     })();
   }
 
+  let turnRuntime: TurnRuntime | null | undefined = null;
   let fullText = '';
   let fullReasoning = '';  // P_streaming-survival
   /* Token accounting — the chars/4 estimate is the fallback. The
@@ -287,7 +290,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     if (!turnId) return;
     const db = getDb();
     db.update(chatTurns)
-      .set({ fullText: fullText || null, fullReasoning: fullReasoning || null, updatedAt: new Date() })
+      .set({ fullText: fullText || null, fullReasoning: fullReasoning || null, turnRuntime, updatedAt: new Date() })
       .where(eq(chatTurns.id, turnId))
       .catch(() => {});
   };
@@ -370,6 +373,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     emitter.event = (name: string, data: unknown) => {
       innerEvent(name, data);
       if (
+        name === 'turn_event' ||
         name === 'tool_use' ||
         name === 'tool_result' ||
         name === 'tool_approval' ||
@@ -379,7 +383,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
         name === 'error'
       ) {
         tap(name, (data ?? {}) as Record<string, unknown>);
-        checkpointTurn();
+        if (name !== 'turn_event') checkpointTurn();
       }
     };
     const innerFinish = emitter.finish.bind(emitter);
@@ -422,7 +426,32 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
   /* The model's real thinking content streams directly; do not emit synthetic upfront summaries. */
 
   const activityStartedAt = Date.now();
-  const activity = createTurnActivityController((value) => emitter.event('turn_activity', value));
+  const turnEvents = createTurnEventController((value) => {
+    turnRuntime = reduceTurnEvent(turnRuntime, value);
+    emitter.event('turn_event', value);
+  }, turnId || undefined);
+  const activity = createTurnActivityController((value) => {
+    emitter.event('turn_activity', value);
+    turnEvents.activity(value);
+  });
+  const emitFatal = emitter.fatal.bind(emitter);
+  emitter.fatal = (error) => { turnEvents.done(abortController.signal.aborted ? 'stopped' : 'failed', Date.now() - activityStartedAt); emitFatal(error); };
+  const uiInputs = new Map<string, unknown>();
+  const emitEvent = emitter.event.bind(emitter);
+  emitter.event = (name, data) => {
+    emitEvent(name, data);
+    if (name === 'tool_use') {
+      for (const call of (Array.isArray(data) ? data : [data]) as Array<{ id: string; name: string; input: unknown }>) {
+        if (call?.name === 'render_intelligent_ui') uiInputs.set(call.id, call.input);
+      }
+    }
+    if (name === 'tool_result' && data && typeof data === 'object') {
+      const result = data as { id: string; ok?: boolean; status?: string };
+      if (result.status !== 'awaiting_approval') {
+        turnEvents.toolResult(result.id, result.ok !== false && !['failed', 'error', 'stopped', 'cancelled'].includes(result.status || ''), uiInputs.get(result.id), fullText.length);
+      }
+    }
+  };
   activity.thinking();
 
   /* ─── Tool-calling loop ─────────────────────────────────────────
@@ -565,7 +594,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
       } as Parameters<typeof streamChatCompletion>[0],
       // onChunk
       (chunk: string) => {
-        activity.synthesizing();
+        turnEvents.generation();
         fullText += chunk;
         iterContent += chunk;
         completionTokens = estimateTokens(fullText);
@@ -590,6 +619,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
       // streaming_text captures it on disconnect.
       (reasoning: string) => {
         activity.thinking();
+        turnEvents.reasoning();
         fullReasoning += reasoning;
         iterReasoning += reasoning;
         reportTtfb('reasoning');
@@ -610,6 +640,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
       // delta to the eventual tool_use frame via the tool_call id.
       (delta: ToolCallDelta) => {
         emitter.toolCallDelta(delta);
+        turnEvents.toolArguments(delta, fullText.length);
       },
     ));
 
@@ -645,6 +676,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
           await setChatTurnStatus(turnId, 'failed', {
             fullText: fullText || null,
             fullReasoning: fullReasoning || null,
+            turnRuntime,
             error: (upstreamErr as Error).message,
           }).catch(() => {});
         }
@@ -905,6 +937,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
    * (see the req.on('close') handler): the run continues detached unless
    * the abort came from an explicit Stop (turn_interrupted). */
   if (abortController.signal.aborted && !turnId) {
+    turnRuntime = settleTurnRuntime(turnRuntime, 'stopped');
     /* Still record partial usage so the operator can see incomplete
      * responses in the heatmap and diagnose client-drop patterns. */
     if (req.userId && fullText.length > 0) {
@@ -920,6 +953,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     return;
   }
   if (abortController.signal.aborted && turnId) {
+    turnEvents.done('stopped', Date.now() - activityStartedAt);
     // Explicit Stop on a bound turn: persist the partial answer so a
     // re-attach sees what had streamed, then stop. The row itself was
     // already flipped to interrupted by the interrupt endpoint.
@@ -949,6 +983,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
           rawText: safeRaw,
           reasoningContent: fullReasoning || null,
           toolCalls: executedToolCalls,
+          turnRuntime,
           model: provider.model,
           clientId: assistantClientId,
           type: 'assistant',
@@ -960,6 +995,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
             rawText: safeRaw,
             reasoningContent: fullReasoning || null,
             toolCalls: executedToolCalls,
+            turnRuntime,
           },
         }).catch((err) => console.error('[chat/stream] persist interrupted message failed:', err));
 
@@ -984,6 +1020,8 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     toolCalls: executedToolCalls,
     hasReasoning: Boolean(fullReasoning.trim()),
   });
+  const emptyTurn = !fullText && !fullReasoning && executedToolCalls.length === 0;
+  turnEvents.done(abortController.signal.aborted ? 'stopped' : emptyTurn ? 'failed' : 'done', Date.now() - activityStartedAt);
   activity.done(Date.now() - activityStartedAt);
   if (turnSummary) emitter.event('turn_summary', { summary: turnSummary });
 
@@ -1018,6 +1056,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
       fullText: fullText || null,
       fullReasoning: fullReasoning || null,
       toolCalls: executedToolCalls,
+      turnRuntime,
       ...(isBlank && !abortController.signal.aborted ? { error: 'Upstream returned no content' } : {}),
     }).catch(() => {});
   }
@@ -1044,6 +1083,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
            slice. Null when generation failed; the client falls back. */
         summary: turnSummary,
         toolCalls: executedToolCalls,
+        turnRuntime,
         model: provider.model,
         clientId: assistantClientId,
         type: 'assistant',
@@ -1056,6 +1096,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
           reasoningContent: fullReasoning || null,
           summary: turnSummary,
           toolCalls: executedToolCalls,
+          turnRuntime,
           model: provider.model,
         },
       }).returning({ id: messages.id });

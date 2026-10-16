@@ -11,7 +11,7 @@
  * - cap attachments/toolCalls at 20 per message
  * - topic falls back to sessionTitle and vice versa
  */
-
+import { normalizeTurnRuntime } from '@socrates/core';
 export function buildBeaconMessages(messages) {
   if (!Array.isArray(messages)) return [];
   return messages
@@ -24,6 +24,7 @@ export function buildBeaconMessages(messages) {
         reasoningContent: m.reasoningContent || m.reasoning_content || null,
         attachments: Array.isArray(m.attachments) ? m.attachments.slice(0, 20) : [],
         toolCalls: Array.isArray(m.toolCalls) ? m.toolCalls.slice(0, 20) : [],
+        turnRuntime: normalizeTurnRuntime(m.turnRuntime),
       };
     });
 }

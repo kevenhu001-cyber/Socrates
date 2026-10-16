@@ -206,6 +206,7 @@ export interface LegacyChatMessage {
   _taskSummary?: string | null;
   /** Server-owned public progress; private reasoning is never used as copy. */
   _activity?: import("@socrates/contracts").PublicTurnActivity;
+  turnRuntime?: import("@socrates/contracts").TurnRuntime | null;
 }
 
 /**

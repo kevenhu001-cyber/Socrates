@@ -104,6 +104,8 @@ export const messages = pgTable('messages', {
      path by services/turnSummary.ts, so a failed generation leaves it null
      and the UI falls back to the answer's first sentence. */
   summary: text('summary'),
+  /** Bounded public activity/UI snapshot; contains no private reasoning. */
+  turnRuntime: jsonb('turn_runtime'),
   /* P_attachments — array of {id, kind, name, mime, dataUrl?, text?, size, truncated?}
      representing images (dataUrl inlined), text files (text body), and PDFs
      (server-extracted text). Persisted so a session reload restores the
@@ -297,6 +299,7 @@ export const chatTurns = pgTable('chat_turns', {
   inputSnapshot: jsonb('input_snapshot'),
   fullText: text('full_text'),
   fullReasoning: text('full_reasoning'),
+  turnRuntime: jsonb('turn_runtime'),
   toolCalls: jsonb('tool_calls').default([]),
   usage: jsonb('usage').default({}),
   error: text('error'),

@@ -15,6 +15,9 @@ function abortSubscription(controller, reason, context) {
 }
 
 const EVENT_HANDLERS = new Map([
+  ['turn_event', (data, _state, context) => {
+    invoke(context.opts && context.opts.onTurnEvent, [data], 'chat/detachedTurnRecovery.onTurnEvent');
+  }],
   ['content', (data, state, context) => {
     if (typeof data.delta !== 'string') return;
     state.full += data.delta;
@@ -77,6 +80,10 @@ async function pollDetachedTurn(turnId, state, context, controller) {
     try { snapshot = await getChatTurn(turnId); }
     catch (error) { reportSwallow(error, 'chat/detachedTurnRecovery.pollCheck'); }
     if (snapshot && snapshot.turn) {
+      if (snapshot.turn.turnRuntime) invoke(context.opts && context.opts.onTurnSnapshot, [snapshot.turn.turnRuntime], 'chat/detachedTurnRecovery.runtimeSnapshot');
+      for (const frame of snapshot.events || []) {
+        if (frame.event === 'turn_event') invoke(context.opts && context.opts.onTurnEvent, [frame.data], 'chat/detachedTurnRecovery.snapshot');
+      }
       const completed = completedTurnResult(snapshot.turn, state, context, true);
       if (completed) return completed;
       if (isFailedTurn(snapshot.turn)) return null;
@@ -99,6 +106,10 @@ async function recoverActiveTurn(turnId, state, context, controller) {
   try {
     const initial = await getChatTurn(turnId);
     if (initial && initial.turn) {
+      if (initial.turn.turnRuntime) invoke(context.opts && context.opts.onTurnSnapshot, [initial.turn.turnRuntime], 'chat/detachedTurnRecovery.runtimeSnapshot');
+      for (const frame of initial.events || []) {
+        if (frame.event === 'turn_event') invoke(context.opts && context.opts.onTurnEvent, [frame.data], 'chat/detachedTurnRecovery.snapshot');
+      }
       const completed = completedTurnResult(initial.turn, state, context, false);
       if (completed) return completed;
       if (isFailedTurn(initial.turn)) return null;

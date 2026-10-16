@@ -295,7 +295,7 @@ export async function listChatTurnEvents(
 export async function setChatTurnStatus(
   turnId: string,
   status: ChatTurnStatus,
-  patch: Partial<{ fullText: string | null; fullReasoning: string | null; toolCalls?: unknown[]; error: string | null }> = {},
+  patch: Partial<{ fullText: string | null; fullReasoning: string | null; toolCalls?: unknown[]; turnRuntime?: unknown; error: string | null }> = {},
 ) {
   if (!CHAT_TURN_STATUSES.includes(status)) throw new BadRequest('Invalid status');
   const db = getDb();
@@ -307,6 +307,7 @@ export async function setChatTurnStatus(
       ...(patch.fullText !== undefined ? { fullText: patch.fullText } : {}),
       ...(patch.fullReasoning !== undefined ? { fullReasoning: patch.fullReasoning } : {}),
       ...(patch.toolCalls !== undefined ? { toolCalls: patch.toolCalls as never } : {}),
+      ...(patch.turnRuntime !== undefined ? { turnRuntime: patch.turnRuntime } : {}),
       ...(patch.error !== undefined ? { error: patch.error } : {}),
       ...(terminal ? { completedAt: new Date() } : {}),
       updatedAt: new Date(),

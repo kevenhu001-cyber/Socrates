@@ -15,6 +15,7 @@
  * wiring (memory / a11y / save / stats / stop-button restore) stays
  * adjacent to the rest of the finish path.
  */
+import { settleTurnRuntime } from '@socrates/core';
 import { stateStore } from '../../state/store.js';
 import { buildAssistantHtml } from '../../render/assistantHtml.ts';
 import { stripChatArtifacts } from '../../util/stripChatArtifacts.js';
@@ -82,6 +83,7 @@ export function createFinishRender(state) {
         outputMode: _om,
         _liveStatus: null,
         _streamSettled: true,
+        turnRuntime: settleTurnRuntime(stateStore.read("messages")[state.msgIdx]?.turnRuntime),
         _toolRunRev: _preRev + 1,
       };
       if (_om === 'canvas') {

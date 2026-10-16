@@ -80,6 +80,7 @@ export function snapshotMessage(message: LegacyChatMessage): LegacyChatMessage {
     toolCalls: message.toolCalls
       ? Object.freeze(message.toolCalls.map((call) => freezeToolCall(call)))
       : message.toolCalls,
+    turnRuntime: message.turnRuntime ? freezeToolData(message.turnRuntime) : message.turnRuntime,
     _liveStatus: message._liveStatus
       ? Object.freeze({ ...message._liveStatus })
       : message._liveStatus,

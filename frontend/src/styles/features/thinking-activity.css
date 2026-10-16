@@ -398,3 +398,16 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* Public timeline entries are stable observations; running tool rows own
+   their activity cue. The disclosure itself has no perpetual animation. */
+.thinking-accordion[data-activity-timeline] .thinking-dot-indicator { display: none; }
+.turn-activity-list {
+  margin: var(--ui-space-xs) 0;
+  padding-inline-start: var(--ui-space-lg);
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+  line-height: var(--ui-line-height-relaxed);
+}
+.turn-activity-list li { padding-block: var(--ui-space-xxs); overflow-wrap: anywhere; }
+.turn-activity-phase { margin-inline-start: var(--ui-space-sm); color: var(--ui-text-tertiary); }

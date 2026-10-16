@@ -77,6 +77,8 @@ export function toolCallbacksForStream(ctl) {
     onAgentPlan: function (plan) { if (plan && ctl.recordAgentPlan) ctl.recordAgentPlan(plan); },
     onToolCallDelta: function (delta) { if (delta && ctl.recordToolCallDelta) ctl.recordToolCallDelta(delta); },
     /* Public progress and completed execution facts come from the server. */
+    onTurnSnapshot: function (snapshot) { if (ctl && ctl.recordTurnSnapshot) ctl.recordTurnSnapshot(snapshot); },
+    onTurnEvent: function (event) { if (ctl && ctl.recordTurnEvent) ctl.recordTurnEvent(event); },
     onTurnActivity: function (activity) { if (ctl && ctl.recordTurnActivity) ctl.recordTurnActivity(activity); },
     onTurnSummary: function (payload) {
       var text = payload && typeof payload === 'string' ? payload : (payload && payload.summary);

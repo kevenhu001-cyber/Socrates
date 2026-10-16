@@ -1,3 +1,4 @@
+import { normalizeTurnRuntime } from '../../../packages/core/src/turnRuntime.js';
 import { Router } from 'express';
 import { eq, and, desc, gt, isNull, sql, inArray, count } from 'drizzle-orm';
 import { randomUUID, createHash } from 'node:crypto';
@@ -76,6 +77,7 @@ export const SessionPayloadSchema = z.object({
     /* P_reasoning-persist — chain-of-thought text from reasoning
        models. Preserved so it survives session save/load. */
     reasoningContent: z.string().max(500000).optional().nullable(),
+    turnRuntime: z.unknown().optional().transform((value) => normalizeTurnRuntime(value)),
     /* P_attachments — array of {id, kind, name, mime, fileId?, dataUrl?,
        text?, size, truncated?, error?} representing user-supplied files
        for this message. Persisted so a session reload restores chips,
@@ -673,6 +675,7 @@ router.post('/', writeLimiter, async (req, res, next) => {
             sources: m.sources || null,
             clientId: m.clientId || null,
             reasoningContent: m.reasoningContent || null,
+            turnRuntime: normalizeTurnRuntime(m.turnRuntime),
             attachments: Array.isArray(m.attachments) ? m.attachments.slice(0, 20) : [],
             /* P_tool-history — persist the tool-calls log so reload
              * re-renders the cards. Normalise to plain values so the
@@ -806,6 +809,7 @@ router.post('/', writeLimiter, async (req, res, next) => {
                 type: sql`EXCLUDED.type`,
                 sources: sql`EXCLUDED.sources`,
                 reasoningContent: sql`EXCLUDED.reasoning_content`,
+                turnRuntime: sql`COALESCE(EXCLUDED.turn_runtime, ${messages.turnRuntime})`,
                 attachments: sql`EXCLUDED.attachments`,
                 toolCalls: sql`EXCLUDED.tool_calls`,
                 createdAt: sql`EXCLUDED.created_at`,
@@ -984,6 +988,7 @@ router.get('/:id', async (req, res, next) => {
       /* P_turn-summary — the model's retrospective, so a reloaded session
          shows the same Summary sheet the live turn produced. */
       summary: messages.summary,
+      turnRuntime: messages.turnRuntime,
       attachments: messages.attachments,
       toolCalls: messages.toolCalls,
       agentRunId: messages.agentRunId,

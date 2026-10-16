@@ -2782,6 +2782,27 @@ paths:
         Instant uses the same provider-specific no-thinking controls as `/api/chat`.
         A successful priority-service fallback emits `preference_fallback`
         before content frames.
+        Optional `turn_event` frames provide the version 1 public turn runtime.
+        Every event has `version: 1`, `turnId`, strictly increasing `seq`, `at`
+        (Unix milliseconds), and `type`. Payloads are `activity.upsert` with
+        an `activity` (stable id, kind, phase, startedAt, optional endedAt,
+        public text, toolCallId and toolName), `generation` with phase streaming,
+        `ui.begin` with surfaceId/toolCallId/textOffset, `ui.add` with surfaceId/node,
+        `ui.patch` with surfaceId/nodeId/props, `ui.commit` with surfaceId/nodes,
+        `ui.abort` with surfaceId, or `turn.done` with phase done/failed/stopped
+        and optional durationMs. Activity phases are running/done/failed/stopped;
+        kinds are waiting/reasoning/tool/synthesis/reasoning_summary. Only
+        reasoning_summary entries carry public model-provided text. A generation
+        event does not finish activities or tools. Clients deduplicate by turnId
+        and seq; unknown versions/types may be ignored. UI patches cannot change
+        node identity/type/parent and must pass the full UI validator. UI commit
+        replaces the preview with the validated final document; abort retracts it.
+        Only complete validated nodes stream before tool_use. Incomplete nodes
+        and unresolved parents wait. Tool failure or malformed arguments retract
+        the preview; successful execution commits it. Existing tool_use/tool_result
+        frames and stored toolCalls remain the compatible final representation.
+        The bounded turnRuntime snapshot is saved/restored on session messages.
+        Detached turn event replay includes these same public runtime events.
         Optional `turn_activity` frames report public observations: `{type: thinking}`,
         `{type: tool, toolCallId, toolName}`, `{type: synthesizing}`, or
         `{type: done, durationMs}`. Clients must wait for stream playback to
