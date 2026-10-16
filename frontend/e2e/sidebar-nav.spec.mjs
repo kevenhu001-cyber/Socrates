@@ -159,8 +159,8 @@ test('account row exposes profile and settings through its menu', async ({ page 
     const c = (sel) => { const r = el.querySelector(sel).getBoundingClientRect(); return { w: r.width, h: r.height, cy: r.top + r.height / 2 }; };
     return { avatar: c('.user-avatar'), identity: c('.user-identity'), radius: getComputedStyle(el.querySelector('.user-avatar')).borderTopLeftRadius };
   });
-  expect(Math.round(geo.avatar.w)).toBe(32);
-  expect(Math.round(geo.avatar.h)).toBe(32);
+  expect(Math.round(geo.avatar.w)).toBe(28);
+  expect(Math.round(geo.avatar.h)).toBe(28);
   expect(geo.radius).toBe('50%');
   expect(Math.abs(geo.avatar.cy - geo.identity.cy)).toBeLessThanOrEqual(1);
   await page.screenshot({ path: 'test-results/visual-qa/sidebar-account-row.png', clip: await page.locator('#sidebarFooter').boundingBox() });

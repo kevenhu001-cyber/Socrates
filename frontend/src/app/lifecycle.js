@@ -202,6 +202,7 @@ export async function signOut(){
   resetShareToken();
   try{turnState.pendingChatContent=null}catch(e){reportSwallow(e,'app/lifecycle.signOut.clearPendingChat');}
   try{turnState.pendingAttachments=null}catch(e){reportSwallow(e,'app/lifecycle.signOut.clearPendingAttachments');}
+  try{localStorage.removeItem('socrates-recents-filter')}catch(e){reportSwallow(e,'app/lifecycle.signOut.clearRecentsFilter','expected');}
   showGate();
   renderUserFooter();
 }

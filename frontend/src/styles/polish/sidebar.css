@@ -36,16 +36,20 @@
   #appShell #sidebarHeader .sidebar-logo-img {
     width: 22px;
     height: 22px;
-    border-radius: 5px;
+    border-radius: var(--ui-radius-xs);
   }
   #appShell #newChatBtn,
   #appShell #sidebarCloseBtn {
+    border-radius: var(--ui-radius-sm);
     color: var(--ui-text-tertiary);
+    transition: background-color var(--ui-duration-hover) ease,
+                color var(--ui-duration-hover) ease;
   }
   #appShell #newChatBtn:hover,
   #appShell #sidebarCloseBtn:hover,
   #appShell #newChatBtn:focus-visible,
   #appShell #sidebarCloseBtn:focus-visible {
+    background: var(--ui-bg-hover);
     color: var(--ui-text-primary);
   }
   #appShell #newChatBtn svg,
@@ -61,15 +65,21 @@
   #appShell #sidebarNav .sidebar-nav-btn {
     gap: 8px;
     padding-inline: 8px;
+    border-radius: var(--ui-radius-row);
     color: var(--ui-text-secondary);
     transition: background-color var(--ui-duration-hover) ease,
                 color var(--ui-duration-hover) ease;
   }
   #appShell #sidebarNav .sidebar-nav-btn:hover,
-  #appShell #sidebarNav .sidebar-nav-btn:focus-visible,
+  #appShell #sidebarNav .sidebar-nav-btn:focus-visible {
+    background: var(--ui-bg-hover);
+    color: var(--ui-text-primary);
+  }
   #appShell #sidebarNav .sidebar-nav-btn.active,
   #appShell #sidebarNav .sidebar-nav-btn[aria-current="page"] {
+    background: var(--ui-bg-hover);
     color: var(--ui-text-primary);
+    font-weight: 500;
   }
   /* Grouping comes from breathing room, not another line in the rail. */
   #appShell #sidebar .sidebar-nav-sep {
@@ -84,13 +94,31 @@
   #appShell #sidebar .sidebar-search {
     gap: 8px;
     padding-inline: 8px;
+    border-radius: var(--ui-radius-row);
     color: var(--ui-text-secondary);
+    transition: background-color var(--ui-duration-hover) ease,
+                color var(--ui-duration-hover) ease,
+                box-shadow var(--ui-duration-hover) ease;
+  }
+  #appShell #sidebar .sidebar-search:hover {
+    background: var(--ui-bg-hover);
+    color: var(--ui-text-primary);
+  }
+  #appShell #sidebar .sidebar-search:focus-within {
+    background: var(--ui-bg-surface);
+    color: var(--ui-text-primary);
+    box-shadow: inset 0 0 0 1px var(--ui-border-subtle);
   }
   #appShell #sidebar .sidebar-search svg {
     width: 18px;
     height: 18px;
     flex-basis: 18px;
     color: var(--ui-text-secondary);
+    transition: color var(--ui-duration-hover) ease;
+  }
+  #appShell #sidebar .sidebar-search:hover svg,
+  #appShell #sidebar .sidebar-search:focus-within svg {
+    color: var(--ui-text-primary);
   }
   #appShell #sidebarSearch,
   #appShell #sidebarSearch::placeholder {
@@ -102,6 +130,7 @@
 
   #appShell #recentsPanel {
     padding: 0 8px 6px;
+    scrollbar-width: thin;
   }
   #appShell #sidebar .recents-header {
     padding: 14px 8px 4px;
@@ -113,11 +142,11 @@
     line-height: 16px;
   }
   #appShell #sidebar .recents-time-label {
-    padding: 10px 8px 3px;
+    padding: 12px 8px 4px;
     color: var(--ui-text-muted);
     font-weight: 500;
     line-height: 15px;
-    letter-spacing: 0;
+    letter-spacing: 0.02em;
   }
   /* Mode is still available in the row data/menu; the dot was visual noise
      in a list whose primary job is fast title scanning. */
@@ -127,21 +156,44 @@
   #appShell #sidebar .recent-item {
     gap: 0;
     padding-inline: 8px;
+    border-radius: var(--ui-radius-row);
     color: var(--ui-text-secondary);
     transition: background-color var(--ui-duration-hover) ease,
                 color var(--ui-duration-hover) ease;
   }
   #appShell #sidebar .recent-item-text {
     color: inherit;
+    font-size: var(--ui-text-ui);
+    line-height: var(--ui-text-ui-line);
+    transition: color var(--ui-duration-hover) ease;
   }
   #appShell #sidebar .recent-item:hover,
-  #appShell #sidebar .recent-item:focus-within,
-  #appShell #sidebar .recent-item.active,
-  #appShell #sidebar .recent-item[aria-current="true"] {
+  #appShell #sidebar .recent-item:focus-within {
+    background: var(--ui-bg-hover);
     color: var(--ui-text-primary);
   }
+  #appShell #sidebar .recent-item.active,
+  #appShell #sidebar .recent-item[aria-current="true"] {
+    background: var(--ui-bg-hover);
+    color: var(--ui-text-primary);
+  }
+  #appShell #sidebar .recent-item.active .recent-item-text,
+  #appShell #sidebar .recent-item[aria-current="true"] .recent-item-text {
+    font-weight: 500;
+  }
+  #appShell #sidebar .recent-item-actions {
+    margin-inline-start: 4px;
+    transition: opacity var(--ui-duration-hover) ease;
+  }
   #appShell #sidebar .recent-item-overflow {
+    border-radius: var(--ui-radius-sm);
     color: var(--ui-text-muted);
+    transition: background-color var(--ui-duration-hover) ease,
+                color var(--ui-duration-hover) ease;
+  }
+  #appShell #sidebar .recent-item-overflow:hover {
+    background: var(--ui-bg-hover);
+    color: var(--ui-text-primary);
   }
 
   /* The footer is the last navigation row, not a separate card. Space is
@@ -160,6 +212,7 @@
     gap: 8px;
     min-height: 40px;
     padding: 6px 8px;
+    border-radius: var(--ui-radius-row);
     color: var(--ui-text-secondary);
     transition: background-color var(--ui-duration-hover) ease,
                 color var(--ui-duration-hover) ease;
@@ -167,6 +220,7 @@
   #appShell .sidebar-account-trigger:hover,
   #appShell .sidebar-account-trigger:focus-visible,
   #appShell .sidebar-account-trigger[aria-expanded="true"] {
+    background: var(--ui-bg-hover);
     color: var(--ui-text-primary);
   }
   #appShell #sidebarUserRow .user-avatar {
@@ -174,6 +228,7 @@
     width: 28px;
     height: 28px;
     font-size: 11px;
+    border-radius: 50%;
   }
   #appShell #sidebarUserRow .user-name {
     font-size: var(--ui-font-size-xs);
@@ -192,13 +247,23 @@
   #appShell .sidebar-account-menu {
     width: 236px;
     padding: 6px;
+    border: 1px solid var(--ui-border-subtle);
     border-radius: var(--ui-radius-lg);
+    background: var(--ui-bg-surface);
+    box-shadow: var(--ui-shadow-menu);
   }
   #appShell .sidebar-account-menu :is(button, a) {
     min-height: 36px;
     gap: 9px;
     padding: 0 8px;
+    border-radius: var(--ui-radius-sm);
     font-size: var(--ui-font-size-xs);
+    transition: background-color var(--ui-duration-hover) ease,
+                color var(--ui-duration-hover) ease;
+  }
+  #appShell .sidebar-account-menu :is(button, a):hover {
+    background: var(--ui-bg-hover);
+    color: var(--ui-text-primary);
   }
   #appShell .sidebar-account-menu svg {
     width: 18px;
