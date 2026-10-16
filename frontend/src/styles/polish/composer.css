@@ -32,7 +32,7 @@
    moves the centered block up by half the added amount. */
 @media (min-width: 769px) {
   :root:not(#_composer-a):not(#_composer-b) #appShell #topicSetup {
-    padding-bottom: calc(80px + var(--conversation-safe-bottom) + 18vh);
+    padding-bottom: calc(80px + var(--conversation-safe-bottom) + 4vh);
   }
 }
 

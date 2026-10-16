@@ -72,7 +72,7 @@
   /* The 36px desktop density rung — the same step as the model switcher
      and the library toolbar, not the 40px mobile rung. */
   height: var(--ui-control-desktop);
-  min-width: 72px;
+  min-width: 104px;
   margin: 0;
   padding: 0 var(--ui-space-md);
   border: 0;
@@ -304,4 +304,9 @@ html[data-main-view$="Panel"] #appShell #mobileMode,
 html[data-main-view$="Panel"] #appShell #mobileIncognitoBtn,
 html[data-main-view$="Panel"] #appShell #mobileNewChatBtn {
   display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #appShell .top-mode-switch-thumb,
+  #appShell .top-mode-switch-option { transition: none; }
 }

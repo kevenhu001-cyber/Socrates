@@ -8,9 +8,9 @@
   #appShell .home-quick-actions {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
     width: min(100%, var(--ui-content-chat));
-    margin: 20px auto 0;
+    margin: 28px auto 0;
   }
 
   #appShell .home-quick-action {
@@ -19,7 +19,7 @@
     align-items: center;
     box-sizing: border-box;
     width: 100%;
-    min-height: 44px;
+    min-height: 48px;
     padding: 4px 44px 4px 10px;
     gap: 12px;
     border: 0;
@@ -45,7 +45,8 @@
     gap: 12px;
     min-width: 0;
     margin: 0;
-    padding: 0;
+    padding: 8px 0;
+    min-height: var(--ui-control-sm);
     border: 0;
     background: transparent;
     color: inherit;
@@ -135,4 +136,87 @@
 @media (prefers-reduced-motion: reduce) {
   #appShell .home-quick-action,
   #appShell .home-quick-action-dismiss { transition: none; }
+}
+
+/* Tutor uses the reference's secondary-mode cards, with real learning
+   prompts. Visibility follows the existing mode attribute without a render
+   pass, network request, or extra observer on the conversation. */
+#appShell .home-tutor-starters { display: none; }
+
+@media (min-width: 769px) {
+  body[data-app-mode="tutor"] #appShell .home-quick-actions { display: none; }
+  body[data-app-mode="tutor"] #appShell .home-tutor-starters {
+    display: block;
+    width: min(100%, var(--ui-content-chat));
+    margin: 28px auto 0;
+    animation: homeStartersIn var(--ui-duration-normal) var(--ui-ease-out) both;
+  }
+  #appShell .home-tutor-starters h2 {
+    margin: 0 0 12px 12px;
+    color: var(--ui-text-secondary);
+    font-size: var(--ui-font-size-sm);
+    font-weight: 400;
+    line-height: 1.5;
+  }
+  #appShell .home-tutor-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  #appShell .home-tutor-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid var(--ui-border-subtle);
+    border-radius: var(--ui-radius-composer);
+    background: var(--ui-bg-composer);
+    color: var(--ui-text-secondary);
+    text-align: start;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    font: inherit;
+    font-size: var(--ui-font-size-sm);
+    line-height: 1.5;
+    cursor: pointer;
+    transition: background-color var(--ui-duration-hover) ease,
+                border-color var(--ui-duration-hover) ease;
+  }
+  #appShell .home-tutor-card:hover {
+    background: var(--ui-bg-hover);
+    border-color: var(--ui-border-strong);
+  }
+  #appShell .home-tutor-card strong {
+    color: var(--ui-text-primary);
+    font-size: var(--ui-text-ui);
+    font-weight: 500;
+  }
+  #appShell .home-tutor-card-icon {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    margin-bottom: 8px;
+    color: var(--ui-text-primary);
+    font-size: 24px;
+    line-height: 1;
+  }
+  #appShell :is(.home-tutor-card, .home-quick-action-primary):focus-visible {
+    outline: 2px solid var(--ui-focus-ring);
+    outline-offset: 3px;
+  }
+  #appShell .home-quick-action:has([aria-pressed="true"]) {
+    color: var(--ui-tool-chip-text);
+  }
+}
+
+@keyframes homeStartersIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  body[data-app-mode="tutor"] #appShell .home-tutor-starters { animation: none; }
+  #appShell .home-tutor-card { transition: none; }
 }
