@@ -76,3 +76,65 @@ test('prose, parallel tools and public summaries advance independently with orde
   const length = f.events.length; f.ctl.reasoning(); f.ctl.generation();
   assert.equal(f.events.length, length);
 });
+
+test('server evidence uses stable source IDs and never infers claims from search results', () => {
+  const f = fixture();
+  const sources = f.ctl.registerSources([
+    { url: 'https://example.test/page', title: 'Official guide', snippet: 'Evidence.' },
+    { url: 'https://example.test/page', title: 'Duplicate' },
+    { url: 'javascript:alert(1)' }, { url: 'https://user:pass@example.test' },
+  ]);
+  assert.equal(sources.length, 2);
+  assert.equal(sources[0].id, sources[1].id);
+  assert.equal(f.runtime().sources.length, 1);
+  assert.equal(f.runtime().claims, undefined);
+  const quote = 'A verified claim.';
+  assert.equal(f.ctl.citeSources({ claims: [{ quote, sourceIds: [sources[0].id] }] }, quote).ok, true);
+  assert.deepEqual(f.runtime().claims[0], { id: 'claim-1', quote, start: 0, end: quote.length, citationIds: ['citation-source-1'] });
+  assert.equal(f.runtime().citations[0].sourceId, sources[0].id);
+});
+
+test('claim batches reject unknown evidence, ambiguous matches, code and private reasoning atomically', () => {
+  const f = fixture();
+  const [source] = f.ctl.registerSources([{ url: 'https://example.test/page' }]);
+  const claim = { quote: 'A claim.', sourceIds: [source.id] };
+  for (const [claims, text] of [
+    [[{ ...claim, sourceIds: ['invented'] }], 'A claim.'],
+    [[claim], 'A claim. A claim.'],
+    [[claim], '<think>first\nA claim.</think>'],
+    [[claim], '```js\nA claim.\n```'],
+    [[claim], '$A claim.$'],
+    [[claim, { ...claim, quote: 'Not written yet.' }], 'A claim.'],
+    [[claim, claim], 'A claim.'],
+  ]) {
+    const before = f.events.length;
+    assert.equal(f.ctl.citeSources({ claims }, text).ok, false, text);
+    assert.equal(f.events.length, before);
+  }
+  assert.equal(f.ctl.citeSources({ claims: [{ ...claim, occurrence: 1 }] }, 'A claim. A claim.').ok, true);
+  assert.equal(f.runtime().claims[0].start, 9);
+});
+
+test('model-authored UI transactions validate revisions, remove subtrees and roll back invalid batches', () => {
+  const f = fixture();
+  const nodes = [root, child, { id: 'nested', type: 'text', parent: 'child', text: 'Remove together' }];
+  f.ctl.toolResult('ui', true, { version: 1, nodes });
+  assert.equal(f.ctl.patchUi({ surfaceId: 'missing', revision: 0, operations: [] }).ok, false);
+  const edit = (revision, operations) => f.ctl.patchUi({ surfaceId: 'ui', revision, operations });
+  assert.equal(edit(0, [{ op: 'patch', nodeId: 'root', props: { title: 'Updated' } }]).ok, true);
+  assert.equal(f.runtime().uiSurfaces[0].revision, 1);
+  assert.equal(f.runtime().uiSurfaces[0].nodes[0].title, 'Updated');
+  const before = f.runtime();
+  for (const operations of [
+    [{ op: 'patch', nodeId: 'root', props: { title: 'Should not commit' } }, { op: 'patch', nodeId: 'missing', props: {} }],
+    [{ op: 'patch', nodeId: 'root', props: { image: 'javascript:alert(1)' } }],
+    [{ op: 'patch', nodeId: 'root', props: JSON.parse('{"__proto__":{"polluted":true}}') }],
+    [{ op: 'remove', nodeId: 'root' }],
+  ]) { assert.equal(edit(1, operations).ok, false); assert.deepEqual(f.runtime(), before); }
+  assert.equal(edit(0, [{ op: 'remove', nodeId: 'child' }]).ok, false);
+  assert.equal(edit(1, [{ op: 'remove', nodeId: 'child' }]).ok, true);
+  assert.deepEqual(f.runtime().uiSurfaces[0].nodes.map((node) => node.id), ['root']);
+  f.ctl.done('stopped');
+  assert.equal(edit(2, [{ op: 'patch', nodeId: 'root', props: { title: 'Late' } }]).ok, false);
+  assert.deepEqual(f.ctl.registerSources([{ url: 'https://example.test/late' }]), []);
+});

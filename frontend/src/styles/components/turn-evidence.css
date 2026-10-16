@@ -1,0 +1,52 @@
+/* Evidence is owned by the assistant turn; all colors inherit theme tokens. */
+.turn-evidence a[href^="#socrates-citation-"] {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--ui-space-xs);
+  border-radius: var(--ui-radius-pill);
+  color: var(--ui-text-secondary);
+  background: var(--ui-bg-hover);
+  font: 500 var(--ui-font-size-xs) / var(--ui-line-height-normal) var(--font-sans);
+  text-decoration: none;
+  vertical-align: baseline;
+}
+.turn-evidence a[href^="#socrates-citation-"]:focus-visible,
+.turn-sources summary:focus-visible {
+  outline: 2px solid var(--ui-border-strong);
+  outline-offset: 2px;
+}
+.turn-source-preview {
+  position: fixed;
+  z-index: var(--ui-z-popover);
+  width: min(360px, calc(100vw - 32px));
+  max-height: min(50vh, 280px);
+  overflow: auto;
+  box-sizing: border-box;
+  padding: var(--ui-space-md);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-surface);
+  color: var(--ui-text-primary);
+  box-shadow: var(--ui-shadow-popover);
+  font-size: var(--ui-font-size-sm);
+}
+.turn-source-preview > div + div { margin-top: var(--ui-space-md); }
+.turn-source-preview small,
+.turn-sources small {
+  display: block;
+  color: var(--ui-text-tertiary);
+}
+.turn-source-preview p,
+.turn-sources p { margin: var(--ui-space-xs) 0; color: var(--ui-text-secondary); }
+.turn-sources {
+  margin-block: var(--ui-space-md);
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-sm);
+  overflow-wrap: anywhere;
+}
+.turn-sources summary {
+  cursor: pointer;
+  min-height: var(--ui-control-sm);
+  align-content: center;
+}
+.turn-sources li { margin-block: var(--ui-space-sm); }

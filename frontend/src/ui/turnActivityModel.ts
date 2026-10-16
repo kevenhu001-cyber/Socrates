@@ -88,14 +88,28 @@ export function deriveTurnPresentationState(message: LegacyChatMessage, options:
   const activity = normalizePublicTurnActivity(message._activity);
   const status = selectedStatus(message, activity, live, options);
   const activities = message.turnRuntime?.activities || [];
-  const showActivityTimeline = activities.some((entry) => entry.kind === 'tool' || entry.kind === 'reasoning_summary')
-    || ((!live || message.turnRuntime?.generation === 'streaming') && activities.some((entry) => entry.kind === 'reasoning'));
+  // Intent previews and completed observations are never reasoning summaries.
+  const reasoningSummaries = activities.filter((entry) => entry.kind === 'reasoning_summary' && entry.text?.trim());
+  const publicSummary = reasoningSummaries[reasoningSummaries.length - 1]?.text?.trim()
+    || (activity?.type === 'public_reasoning_summary' ? activity.text : '');
+  const ranges = activities.filter((entry) => ['reasoning', 'reasoning_summary'].includes(entry.kind) && entry.endedAt !== undefined)
+    .map((entry) => [entry.startedAt, entry.endedAt!] as const).sort((a, b) => a[0] - b[0]);
+  let reasoningMs = 0;
+  let end = 0;
+  for (const range of ranges) {
+    reasoningMs += Math.max(0, range[1] - Math.max(end, range[0]));
+    end = Math.max(end, range[1]);
+  }
   return {
     activities,
-    showActivityTimeline,
+    reasoningSummaries,
+    showReasoningSummary: Boolean(publicSummary),
     primaryActivity: activity,
     status,
-    publicSummary: activities.filter((entry) => entry.kind === 'reasoning_summary').slice(-1)[0]?.text || (live && options.hasRunningRow ? '' : (message.summary?.trim() || (live ? message._taskSummary?.trim() : '') || '')),
+    intentSummary: live ? message._taskSummary?.trim() || '' : '',
+    outcomeSummary: !live ? message.summary?.trim() || '' : '',
+    publicSummary,
+    reasoningDurationSec: reasoningMs > 0 ? reasoningMs / 1000 : undefined,
     showToolbar: !live,
     showCursor: live && !status && !options.hasRunningRow,
     isSettled: !live,

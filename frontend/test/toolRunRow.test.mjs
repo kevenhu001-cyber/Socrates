@@ -46,11 +46,11 @@ test('agent run host stays in the reading flow while tool details are collapsed'
   assert.doesNotMatch(html, /<details|<summary|aria-expanded/);
 });
 
-test('public summaries stay visible without exposing provider reasoning', () => {
+test('completed observations stay separate from provider reasoning', () => {
   const html = renderToStaticMarkup(React.createElement(TurnSummaryPill, {
     messageId: 'summary', summary: 'Checked workflow steps.',
   }));
-  assert.match(html, /<p class="turn-summary-text"><span>Checked workflow steps\.<\/span><\/p>/);
+  assert.match(html, /<p class="turn-summary-text" data-summary-kind="outcome"><span>Checked workflow steps\.<\/span><\/p>/);
   assert.doesNotMatch(html, /<details|private reasoning|Thought complete/);
 });
 

@@ -10,6 +10,11 @@ export interface TurnActivityEntry {
   toolCallId?: string;
   toolName?: string;
 }
+export interface TurnSource { id: string; url: string; title: string; snippet: string }
+export interface TurnCitation { id: string; sourceId: string }
+export interface TurnClaim { id: string; start: number; end: number; quote: string; citationIds: string[] }
+export type TurnUiEdit = { op: 'patch'; nodeId: string; props: Record<string, unknown> }
+  | { op: 'add'; node: TurnUiNode } | { op: 'remove'; nodeId: string };
 export type TurnUiNode = { id: string; type: string; parent?: string; [key: string]: unknown };
 export interface TurnUiSurface {
   id: string;
@@ -17,9 +22,13 @@ export interface TurnUiSurface {
   textOffset: number;
   phase: 'streaming' | 'committed' | 'aborted';
   nodes: TurnUiNode[];
+  revision?: number;
 }
 export type TurnEventPayload =
   | { type: 'activity.upsert'; activity: TurnActivityEntry }
+  | { type: 'source.upsert'; source: TurnSource }
+  | { type: 'claim.annotate'; claim: TurnClaim; citations: TurnCitation[] }
+  | { type: 'ui.edit'; surfaceId: string; baseRevision: number; operations: TurnUiEdit[] }
   | { type: 'generation'; phase: 'streaming' }
   | { type: 'ui.begin'; surfaceId: string; toolCallId: string; textOffset: number }
   | { type: 'ui.add'; surfaceId: string; node: TurnUiNode }
@@ -37,4 +46,7 @@ export interface TurnRuntime {
   activities: TurnActivityEntry[];
   uiSurfaces: TurnUiSurface[];
   durationMs?: number;
+  sources?: TurnSource[];
+  citations?: TurnCitation[];
+  claims?: TurnClaim[];
 }

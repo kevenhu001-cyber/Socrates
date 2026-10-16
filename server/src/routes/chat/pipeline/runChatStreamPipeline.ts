@@ -1,3 +1,4 @@
+import { rebaseTurnRuntimeText } from '../../../../../packages/core/src/turnRuntimeText.js';
 /**
  * runChatStreamPipeline — the chat stream orchestrator (M2 of the
  * LobeHub-alignment plan).
@@ -476,6 +477,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
   const MAX_TOOL_ITERATIONS = toolCtx.MAX_TOOL_ITERATIONS;
   const executionResults = new Map<string, import("./types.js").ToolResult>();
   const runToolCall = createToolRunner({
+    publicRuntime: { registerSources: turnEvents.registerSources, patchUi: turnEvents.patchUi, citeSources: (args) => turnEvents.citeSources(args, fullText) },
     req,
     sessionIdFromQuery,
     projectIdFromBody,
@@ -975,6 +977,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
           : `ast-${turnId}`;
         const safeContent = sanitizeStoredHtml(fullText);
         const safeRaw = sanitizePlainText(fullText);
+        const storedTurnRuntime = rebaseTurnRuntimeText(turnRuntime, fullText, safeRaw);
         db.insert(messages).values({
           sessionId: sessionIdFromQuery,
           role: 'assistant',
@@ -983,7 +986,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
           rawText: safeRaw,
           reasoningContent: fullReasoning || null,
           toolCalls: executedToolCalls,
-          turnRuntime,
+          turnRuntime: storedTurnRuntime,
           model: provider.model,
           clientId: assistantClientId,
           type: 'assistant',
@@ -995,7 +998,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
             rawText: safeRaw,
             reasoningContent: fullReasoning || null,
             toolCalls: executedToolCalls,
-            turnRuntime,
+            turnRuntime: storedTurnRuntime,
           },
         }).catch((err) => console.error('[chat/stream] persist interrupted message failed:', err));
 
@@ -1069,6 +1072,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
 
     const safeContent = sanitizeStoredHtml(fullText);
     const safeRaw = sanitizePlainText(fullText);
+    const storedTurnRuntime = rebaseTurnRuntimeText(turnRuntime, fullText, safeRaw);
 
     try {
       const [inserted] = await db.insert(messages).values({
@@ -1083,7 +1087,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
            slice. Null when generation failed; the client falls back. */
         summary: turnSummary,
         toolCalls: executedToolCalls,
-        turnRuntime,
+        turnRuntime: storedTurnRuntime,
         model: provider.model,
         clientId: assistantClientId,
         type: 'assistant',
@@ -1096,7 +1100,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
           reasoningContent: fullReasoning || null,
           summary: turnSummary,
           toolCalls: executedToolCalls,
-          turnRuntime,
+          turnRuntime: storedTurnRuntime,
           model: provider.model,
         },
       }).returning({ id: messages.id });

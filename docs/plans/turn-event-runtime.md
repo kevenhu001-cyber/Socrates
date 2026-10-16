@@ -23,8 +23,8 @@ and historical UI fences remain compatible. The SPA consumes an immutable
   The disclosure contains observations and explicitly public summaries only;
   private reasoning text never populates timeline entries.
 - The shared reducer supports validated add/patch/commit/abort operations.
-  The current model-facing tool still generates a nodes array: it emits add
-  operations and a final commit, not model-authored patch commands.
+  The render tool streams a nodes array and commits it; `patch_intelligent_ui`
+  adds model-authored atomic edits of committed current-turn surfaces below.
 - Stop/failure closes running activities and discards unfinished UI. Committed
   artifacts survive. Sequence checks ignore duplicate/older replay and events
   from a different turn. Detached recovery forwards the same events, including
@@ -60,9 +60,10 @@ components can adopt the shared reducer without introducing DOM dependencies;
 its existing tool event fallback remains compatible. Prose/tool normalization
 into a broader runtime can be migrated incrementally.
 
-Provider-specific public reasoning-summary delta adapters, user-editable UI
-patch generation, claim/citation annotations, Deep Research plan review and
-report workspace, and higher-level semantic components remain separate work.
+Provider-specific public reasoning-summary delta adapters, cross-turn/user-driven
+UI editing, Deep Research plan review and report workspace, and higher-level
+semantic components remain separate work. The 2026-10-17 increment below adds
+current-turn model patch generation and structured claim/citation annotations.
 No private reasoning extraction is used as a substitute for public summaries.
 
 ## Validation notes
@@ -83,3 +84,76 @@ matrix. The same assertion failed on an independently built clean HEAD
 The SQL migration is additive and was reviewed with its Drizzle snapshot and
 journal. Database-backed migration/session round-trip verification was not run;
 the migration has not been applied to a running database.
+
+## Thinking/Activity v2, Citation v2 and UI patch tools (2026-10-17)
+
+The baseline SPA now separates four presentation concepts without changing
+legacy storage fields: `_taskSummary` is an intent preview, `_liveStatus` and
+runtime activity are observed progress, only explicit `reasoning_summary` /
+`public_reasoning_summary` supplies thought-summary content, and `summary` is
+a completed activity/outcome observation. Intent/outcome never supply thought
+copy. Private think ranges produce no disclosure. A thought disclosure contains
+at most five unique public entries; it does not duplicate tool rows or phase
+labels. Generic waiting/thinking text remains chrome. Completed durations count
+the union of observed reasoning intervals, excluding tool/wait/synthesis time.
+Provider-specific summary adapters are still separate work; this increment
+never invents summary text for providers without that explicit signal.
+
+`web_search` and `web_fetch` register bounded, credential-free HTTP(S) sources
+with stable per-turn IDs and return those IDs to the model. `cite_sources`
+accepts exact quotes from already-written visible prose and registered source
+IDs. The server resolves quotes to UTF-16 raw-text ranges and atomically emits
+`claim.annotate` events linking claim IDs → citation IDs → source IDs.
+Ambiguous quotes require an explicit zero-based occurrence (at most 1000).
+Unknown sources, private/code/math/link ranges and overlapping annotations
+fail without publishing a partial batch. This validates provenance and position;
+it does not assert that the source entails or independently verifies a claim.
+
+The client inserts its own reference links only after matching the quote/range
+against displayed prose. Numerical text written by a model is not interpreted
+as evidence. Inline references support hover/focus preview, click/Enter, Escape
+and touch; a Sources disclosure aggregates cited URLs. No external favicon or
+preview request is made. Existing numerical-marker cleanup protects legacy
+unstructured answers; generated structured Markdown links survive it.
+
+`patch_intelligent_ui` accepts a surface ID (the original render tool call ID),
+revision and 1–40 operations: add node, patch props, remove subtree. It targets
+committed surfaces in the current live turn. Revision 0 is the initial document;
+each accepted batch advances it once via `ui.edit`. A stale revision or invalid
+final document rejects the entire batch. Patches cannot change identity, type
+or parent; removed subtrees must leave a valid nonempty document. Render/patch
+tools share a scheduling lane. The existing React host, node keys and merge-only
+local defaults retain the user's control state and focus on surviving nodes.
+This is model-driven current-turn editing, not a cross-turn artifact editor or
+an asynchronous UI action loop. Those require an explicit artifact ownership
+and interaction protocol in a later increment.
+
+Storage sanitization rebases claim ranges and native surface offsets when
+control characters or surrounding whitespace are removed. Live/checkpoint
+snapshots retain their original text coordinate system. A stale quote never
+falls back to guessed matching against a different answer.
+
+Evidence and surface revisions are optional additive fields in version 1
+snapshots. Existing snapshot size bounds, checkpoint/replay, beacon/session
+save and stop/failure behavior apply. There is no new database migration;
+installation still requires the existing 0043 migration described above.
+Rolling back the application leaves the JSON data in place; older clients
+ignore the new events and retain prose/tool-result fallbacks. The Universal
+App can consume these DOM-free types/reducers; its native components have not
+yet adopted the SPA's new evidence/patch presentation. The retired `mobile/`
+source tree is not a compatibility target.
+
+Validation for this increment includes frontend lint/build, server typecheck,
+the native provider→tool→SSE pipeline, evidence/patch/semantic unit tests,
+source previews in both themes on desktop/mobile, history restore and local
+control/focus retention. The broader chat regression run passed 39 of 40 browser
+cases. Its sole failure remains `e2e/chat-send.spec.mjs:85`: the mobile send test
+expects no user-row transform during an existing entry animation. An independent
+build of clean HEAD `ebae38ce` reproduced that same assertion failure.
+
+The broader unit subset also exposed the existing
+`test/toolRunRow.test.mjs:66` shimmer-class expectation. Clean HEAD `ebae38ce`
+reproduced it too; the production tool row and that assertion are unchanged.
+Database-backed session round trips were not run. The storage-range regression
+is covered by the pure sanitizer-coordinate helper tests; no migration or
+deployment was performed.

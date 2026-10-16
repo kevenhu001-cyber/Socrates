@@ -5,7 +5,7 @@ import { setLang } from './_lib.mjs';
 test('thinking disclosure supports keyboard control and preserves intent through completion', async ({ page }) => {
   await prepareChatWorkbench(page, { messages: [{
     clientId: 'disclosure-fixture', role: 'assistant', type: 'streaming',
-    rawText: '<think>internal draft</think>', summary: 'Preparing a concise comparison.', _streamSettled: false,
+    rawText: '<think>internal draft</think>', _activity: { type: 'public_reasoning_summary', text: 'Preparing a concise comparison.' }, _streamSettled: false,
   }] });
   const accordion = page.locator('.thinking-accordion');
   const toggle = accordion.locator('.thinking-accordion-toggle');
@@ -19,7 +19,7 @@ test('thinking disclosure supports keyboard control and preserves intent through
 
   await page.evaluate(() => {
     const messages = window.stateStore.read('messages').map((message) => ({
-      ...message, rawText: '<think>internal draft with additional private detail</think>', summary: 'Checked the relevant sources.',
+      ...message, rawText: '<think>internal draft with additional private detail</think>', _activity: { type: 'public_reasoning_summary', text: 'Checked the relevant sources.' },
     }));
     window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: messages });
     window.__socratesReactChatBridge.publish({ type: 'state-synced', reason: 'disclosure-update' });

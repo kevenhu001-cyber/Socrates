@@ -14,6 +14,7 @@ import type { SseEmitter } from '../sseEmitter.js';
 import type { ToolCall, ToolResult } from '../types.js';
 
 export interface ToolExecutorContext {
+  publicRuntime?: Pick<ReturnType<typeof import('../../../../services/turnEvents.js').createTurnEventController>, 'registerSources' | 'patchUi'> & { citeSources: (args: Record<string, unknown>) => { ok: boolean; error?: string; output?: string } };
   req: Request & { userId?: string; user?: { tier?: string } | null };
   sessionIdFromQuery: string | null;
   projectIdFromBody: string | null;

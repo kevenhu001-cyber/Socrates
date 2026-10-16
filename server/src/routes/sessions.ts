@@ -1,3 +1,4 @@
+import { rebaseTurnRuntimeText } from '../../../packages/core/src/turnRuntimeText.js';
 import { normalizeTurnRuntime } from '../../../packages/core/src/turnRuntime.js';
 import { Router } from 'express';
 import { eq, and, desc, gt, isNull, sql, inArray, count } from 'drizzle-orm';
@@ -658,6 +659,7 @@ router.post('/', writeLimiter, async (req, res, next) => {
         const _insertBase = Date.now();
         const rows = persistMsgs.map((m, i) => {
           const contentRaw = m.rawText || m.content || '';
+          const cleanRaw = sanitizePlainText(contentRaw);
           /* P_sanitize-once — `content` was derived from the same source as
              `html`, so calling sanitizeStoredHtml on both independently parsed
              the identical markup twice for every message on every save. On a
@@ -669,13 +671,13 @@ router.post('/', writeLimiter, async (req, res, next) => {
           return {
             role: m.role || 'user',
             content: cleanContent,
-            rawText: sanitizePlainText(contentRaw),
+            rawText: cleanRaw,
             html: cleanHtml,
             type: m.type || null,
             sources: m.sources || null,
             clientId: m.clientId || null,
             reasoningContent: m.reasoningContent || null,
-            turnRuntime: normalizeTurnRuntime(m.turnRuntime),
+            turnRuntime: rebaseTurnRuntimeText(m.turnRuntime, contentRaw, cleanRaw),
             attachments: Array.isArray(m.attachments) ? m.attachments.slice(0, 20) : [],
             /* P_tool-history — persist the tool-calls log so reload
              * re-renders the cards. Normalise to plain values so the

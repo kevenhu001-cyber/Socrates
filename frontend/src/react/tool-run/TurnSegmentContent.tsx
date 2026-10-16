@@ -1,6 +1,7 @@
+import { annotateTurnProse } from '@socrates/core';
+import type { TurnRuntime } from '@socrates/contracts';
 import { Fragment, type ReactNode } from 'react';
 import { IntelligentTextSegment } from '../intelligence-ui/IntelligentTextSegment';
-import { ThinkingAccordion } from './ThinkingAccordion';
 import { runStartedAt, toolRunView, type ToolCallRecord, type TurnSegment } from './toolRunModel.js';
 import { ToolRunAttachments } from './ToolRunAttachments.js';
 import { ToolRunGroup } from './ToolRunGroup.js';
@@ -9,9 +10,9 @@ import type { ProseRenderer } from './proseRenderer';
 
 interface TurnSegmentContentProps {
   segment: TurnSegment;
+  turnRuntime?: TurnRuntime | null;
   index: number;
   growingIndex: number;
-  publicSummary?: string;
   messageId: string;
   tools: ReadonlyArray<ToolCallRecord>;
   readOnly?: boolean;
@@ -20,9 +21,9 @@ interface TurnSegmentContentProps {
 
 export function TurnSegmentContent({
   segment,
+  turnRuntime,
   index,
   growingIndex,
-  publicSummary,
   messageId,
   tools,
   readOnly,
@@ -31,7 +32,7 @@ export function TurnSegmentContent({
   if (segment.kind === 'text') {
     return (
       <IntelligentTextSegment
-        text={segment.text}
+        text={annotateTurnProse(segment.text, segment.start, turnRuntime)}
         live={index === growingIndex}
         prose={prose}
         tools={tools}
@@ -61,15 +62,6 @@ export function TurnSegmentContent({
     );
   }
 
-  if (segment.kind === 'think') {
-    return (
-      <ThinkingAccordion
-        key={'think-' + index}
-        publicSummary={publicSummary}
-        isLive={index === growingIndex}
-      />
-    );
-  }
-
+  // Private think ranges reserve offsets only; they never create disclosures.
   return null;
 }

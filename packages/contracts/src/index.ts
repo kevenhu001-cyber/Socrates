@@ -1,6 +1,6 @@
 import type { PublicTurnActivity } from './turnActivity';
 import type { TurnEvent, TurnRuntime } from './turnEvent';
-export type { TurnEvent, TurnEventPayload, TurnRuntime, TurnActivityEntry, TurnUiSurface, TurnUiNode } from './turnEvent';
+export type { TurnEvent, TurnEventPayload, TurnRuntime, TurnActivityEntry, TurnUiSurface, TurnUiNode, TurnUiEdit, TurnSource, TurnCitation, TurnClaim } from './turnEvent';
 export type { PublicTurnActivity } from './turnActivity';
 export type JsonValue = string | number | boolean | null | JsonObject | JsonValue[];
 export type JsonObject = { [key: string]: JsonValue };

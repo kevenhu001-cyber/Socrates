@@ -2790,7 +2790,26 @@ paths:
         `ui.begin` with surfaceId/toolCallId/textOffset, `ui.add` with surfaceId/node,
         `ui.patch` with surfaceId/nodeId/props, `ui.commit` with surfaceId/nodes,
         `ui.abort` with surfaceId, or `turn.done` with phase done/failed/stopped
-        and optional durationMs. Activity phases are running/done/failed/stopped;
+        and optional durationMs. Additive evidence events are `source.upsert`
+        with source `{id,url,title,snippet}` and `claim.annotate` with claim
+        `{id,start,end,quote,citationIds}` plus citations `[{id,sourceId}]`.
+        Claim offsets are UTF-16 indices into raw assistant text, end-exclusive;
+        quote must match visible prose exactly. Sources originate only from
+        successful web_search/web_fetch results; annotation does not imply
+        independent verification of a claim. The native cite_sources tool binds
+        already-written prose to registered source IDs. Unknown sources,
+        ambiguous quotes, private/code/math spans and overlapping claims reject
+        the complete tool batch. Sources/citations/claims persist in turnRuntime
+        (limits 80/80/128). The SPA renders inline references, source previews and
+        a Sources disclosure; legacy clients may continue showing tool cards.
+        `ui.edit` carries surfaceId, baseRevision and atomic operations
+        `[{op:patch,nodeId,props}|{op:add,node}|{op:remove,nodeId}]`.
+        The native patch_intelligent_ui tool edits committed surfaces in the
+        current live turn only. Revision starts at 0 and increments once per
+        accepted transaction; stale revisions reject all operations. Remove
+        also removes descendants. Full graph, URL, size and safety validation
+        applies; at least one node must remain. Surviving node IDs and local
+        control state are preserved. Activity phases are running/done/failed/stopped;
         kinds are waiting/reasoning/tool/synthesis/reasoning_summary. Only
         reasoning_summary entries carry public model-provided text. A generation
         event does not finish activities or tools. Clients deduplicate by turnId

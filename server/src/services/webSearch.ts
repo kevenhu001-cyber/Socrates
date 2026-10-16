@@ -85,11 +85,11 @@ export class WebSearchUnavailableError extends Error {
  *
  * P_tool-contract — the description is a structured contract. Hard
  * rules: query must be 1-6 words, results are numbered for reference,
- * and the answer uses the existing separate sources card.
+ * and the answer can attach structured claim citations to registered sources.
  * Cache key includes the query string, so identical queries within
  * 5 minutes return identical results without re-running engines.
  */
-export const WEB_SEARCH_CITATION_GUIDANCE = 'Use relevant results to support factual claims in natural prose. Do NOT add [1]/[2] citation markers, append a separate "Sources:" / "References:" list, or paste result URLs into your reply; the UI displays source cards separately when available.';
+export const WEB_SEARCH_CITATION_GUIDANCE = 'Write factual claims in natural prose, then call cite_sources with exact quotes and the Source IDs returned by the tools. Do not invent source IDs or write numerical reference markers. The UI renders inline citations and a Sources list. If a result has no Source ID, use a Markdown link to its URL.';
 
 export const WEB_SEARCH_TOOL = {
   type: 'function',

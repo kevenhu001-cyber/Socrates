@@ -103,3 +103,43 @@ test('completed checkpoint restores UI beyond the first event page and ignores o
   await expect(message.locator('.turn-activity-list')).toContainText('Compared the official sources.');
   expect(await page.evaluate(() => window.stateStore.read('messages').at(-1).turnRuntime.seq)).toBe(800);
 });
+
+test('committed UI patch retains DOM, local state and disclosure while removing a subtree', async ({ page }) => {
+  await start(page);
+  await page.evaluate((nodes) => {
+    window.__turnEvent({ type: 'ui.begin', surfaceId: 'editable', toolCallId: 'editable', textOffset: 0 });
+    window.__turnEvent({ type: 'ui.commit', surfaceId: 'editable', nodes: [...nodes,
+      { id: 'old-group', type: 'stack', parent: 'panel' }, { id: 'old-child', type: 'text', parent: 'old-group', text: 'Outdated evidence' },
+    ] });
+  }, nodes);
+  const message = page.locator('#msgList .msg.assistant').last();
+  const panel = message.locator('[data-intui-id="panel"]');
+  await panel.evaluate((node) => { node.__retained = true; });
+  await message.getByRole('button', { name: 'Add one', exact: true }).click();
+  const button = message.getByRole('button', { name: 'Add one', exact: true });
+  await button.focus();
+  await page.evaluate(() => window.__turnEvent({ type: 'ui.edit', surfaceId: 'editable', baseRevision: 0, operations: [
+    { op: 'patch', nodeId: 'panel', props: { title: 'Updated estimate', state: { count: 99 } } },
+    { op: 'remove', nodeId: 'old-group' },
+    { op: 'add', node: { id: 'new-evidence', type: 'text', parent: 'panel', text: 'Fresh evidence' } },
+  ] }));
+  await expect(panel).toContainText('Updated estimate');
+  await expect(panel).toContainText('Fresh evidence');
+  await expect(message.locator('[data-intui-id="value"]')).toContainText('2');
+  await expect(message.locator('[data-intui-id="old-child"]')).toHaveCount(0);
+  await expect(button).toBeFocused();
+  expect(await panel.evaluate((node) => node.__retained)).toBe(true);
+  await page.evaluate(() => {
+    // A stale revision and a mixed invalid transaction must preserve the view.
+    window.__turnEvent({ type: 'ui.edit', surfaceId: 'editable', baseRevision: 0, operations: [{ op: 'remove', nodeId: 'add' }] });
+    window.__turnEvent({ type: 'ui.edit', surfaceId: 'editable', baseRevision: 1, operations: [
+      { op: 'patch', nodeId: 'panel', props: { title: 'Must not commit' } },
+      { op: 'patch', nodeId: 'new-evidence', props: { html: '<script/>' } },
+    ] });
+    window.__turnEventCtl.finish();
+  });
+  await expect(panel).toContainText('Updated estimate');
+  await expect(button).toBeVisible();
+  await expect(message.locator('[data-intui-id="value"]')).toContainText('2');
+  await page.screenshot({ path: 'test-results/intelligent-ui-patch.png' });
+});

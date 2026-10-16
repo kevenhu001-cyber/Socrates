@@ -307,6 +307,8 @@ function runningLabel(call: ToolCallLike): RunLabel {
     }
     return { text: translate('tool.actionCode', 'Executing code…') };
   }
+  if (name === 'cite_sources') return { text: translate('tool.actionCite', 'Checking references…') };
+  if (name === 'patch_intelligent_ui') return { text: translate('tool.actionPatchUi', 'Updating the visual…') };
   if (name === 'render_intelligent_ui') return { text: translate('tool.actionVisual', 'Creating a visual') };
   if (name === 'render_visualization') {
     const { type, title } = chartInfo(call);
@@ -354,6 +356,8 @@ function runningLabel(call: ToolCallLike): RunLabel {
 /* ── Settled copy ──────────────────────────────────────────────────────── */
 
 function doneLabel(call: ToolCallLike): RunLabel {
+  if (call.name === 'cite_sources') return { text: translate('tool.doneCite', 'Added references') };
+  if (call.name === 'patch_intelligent_ui') return { text: translate('tool.donePatchUi', 'Updated the visual') };
   if (call.name === 'render_intelligent_ui') return { text: translate('tool.doneVisual', 'Created a visual') };
   const name = String(call.name || '');
   const meta: string[] = [];

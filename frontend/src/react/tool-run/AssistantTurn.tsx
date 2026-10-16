@@ -2,6 +2,7 @@
  * One assistant answer, composed from public prose, tool runs, and turn status.
  * Parsing, prose caching, and streaming-tail decoration live in focused modules.
  */
+import { TurnEvidence } from '../citations/TurnEvidence';
 import { ThinkingAccordion } from './ThinkingAccordion';
 import { deriveTurnPresentationState } from '../../ui/turnActivityModel';
 import { useEffect, useRef, useState } from 'react';
@@ -66,7 +67,7 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
   const surfaces = message.turnRuntime?.uiSurfaces || [];
   const calls: ToolCallRecord[] = storedCalls.map((call) => {
     const uiSurface = surfaces.find((surface) => surface.toolCallId === call.id);
-    return uiSurface ? { ...call, _run: call._run, uiSurface } : call;
+    return uiSurface ? { ...call, textOffset: uiSurface.textOffset, _run: call._run, uiSurface } : call;
   });
   for (const surface of surfaces) {
     if (surface.phase === 'aborted' || calls.some((call) => call.id === surface.toolCallId)) continue;
@@ -113,10 +114,6 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
   const hasSettledTool = calls.some((c) => toolRunStateOf(c) === 'done');
   const presentation = deriveTurnPresentationState(message, { live: isLive, hasRunningRow, hasSettledTool });
   const liveStatus = presentation.status;
-  const firstThinkIndex = segments.findIndex((segment) => segment.kind === 'think');
-  const publicThinkingSummary = presentation.primaryActivity?.type === 'public_reasoning_summary'
-    ? presentation.primaryActivity.text
-    : presentation.publicSummary;
   const showStatus = Boolean(liveStatus);
   const legacyHtml = liveStatus && ['error', 'stopped'].includes(liveStatus.phase)
     ? stripLegacyTerminalHtml(storedProse) : storedProse;
@@ -124,42 +121,47 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
 
   return (
     <ToolRunDisclosureProvider>
-      {presentation.showActivityTimeline ? <ThinkingAccordion
-        activities={presentation.activities}
-        publicSummary={presentation.publicSummary}
-        isLive={isLive && message.turnRuntime?.lifecycle === 'live'}
-        elapsedSec={message.turnRuntime?.durationMs !== undefined ? message.turnRuntime.durationMs / 1000 : undefined}
-      /> : null}
-      <TurnSummaryPill
-        summary={presentation.showActivityTimeline ? undefined : presentation.publicSummary}
-        messageId={messageId}
-        status={!presentation.showActivityTimeline && showStatus && liveStatus && !['error', 'stopped'].includes(liveStatus.phase) ? liveStatus : undefined}
-      />
-      {legacyHtml ? (
-        <div
-          className="tool-run-prose is-settled"
-          dangerouslySetInnerHTML={{ __html: legacyHtml }}
-        />
-      ) : null}
-      {segments.map((segment, index) => (
-        <TurnSegmentContent
-          key={segmentKey(segment, index)}
-          segment={segment}
-          index={index}
-          growingIndex={growingIndex}
-          publicSummary={index === firstThinkIndex ? publicThinkingSummary : undefined}
+      <TurnEvidence runtime={message.turnRuntime} text={rawText}>
+        {presentation.showReasoningSummary ? <ThinkingAccordion
+          activities={presentation.reasoningSummaries}
+          publicSummary={presentation.publicSummary}
+          isLive={isLive}
+          elapsedSec={presentation.reasoningDurationSec}
+          statusLabel={liveStatus?.label}
+          showActivityCue={!hasRunningRow}
+        /> : null}
+        <TurnSummaryPill
+          summary={presentation.intentSummary || presentation.outcomeSummary}
+          summaryKind={presentation.intentSummary ? 'intent' : 'outcome'}
           messageId={messageId}
-          tools={calls}
-          readOnly={readOnly}
-          prose={prose}
+          status={!presentation.showReasoningSummary && showStatus && liveStatus && !['error', 'stopped'].includes(liveStatus.phase) ? liveStatus : undefined}
         />
-      ))}
-      {showStatus && liveStatus && ['error', 'stopped'].includes(liveStatus.phase) ? (
-        <TurnStatus status={liveStatus} messageId={messageId} readOnly={readOnly} />
-      ) : null}
-      {(presentation.showCursor || (isSettling && !showStatus && !hasRunningRow)) ? (
-        <StreamCursor state={message._playbackState} settling={!isLive && isSettling} />
-      ) : null}
+        {legacyHtml ? (
+          <div
+            className="tool-run-prose is-settled"
+            dangerouslySetInnerHTML={{ __html: legacyHtml }}
+          />
+        ) : null}
+        {segments.map((segment, index) => (
+          <TurnSegmentContent
+            key={segmentKey(segment, index)}
+            segment={segment}
+            turnRuntime={message.turnRuntime}
+            index={index}
+            growingIndex={growingIndex}
+            messageId={messageId}
+            tools={calls}
+            readOnly={readOnly}
+            prose={prose}
+          />
+        ))}
+        {showStatus && liveStatus && ['error', 'stopped'].includes(liveStatus.phase) ? (
+          <TurnStatus status={liveStatus} messageId={messageId} readOnly={readOnly} />
+        ) : null}
+        {(presentation.showCursor || (isSettling && !showStatus && !hasRunningRow)) ? (
+          <StreamCursor state={message._playbackState} settling={!isLive && isSettling} />
+        ) : null}
+      </TurnEvidence>
     </ToolRunDisclosureProvider>
   );
 }

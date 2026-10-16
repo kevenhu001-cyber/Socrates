@@ -200,7 +200,7 @@ export interface LegacyChatMessage {
    * 'done'/'idle' otherwise. Not persisted.
    */
   _playbackState?: 'idle' | 'playing' | 'starved' | 'draining' | 'done';
-  /** One-line model retrospective persisted on the message. */
+  /** Completed activity/outcome observation. Never a public reasoning summary. */
   summary?: string | null;
   /** Transient live task preview from turn_summary initial frames. Not persisted. */
   _taskSummary?: string | null;

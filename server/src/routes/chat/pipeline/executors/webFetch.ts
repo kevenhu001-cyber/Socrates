@@ -136,9 +136,11 @@ export const executeWebFetch: ToolExecutor = async (
       }
       const { block, end, hasMore } = formatPageBlock(page, targetUrl, offset, maxChars);
       const sourceTruncated = Boolean(page.truncated);
-      const result: ToolResult = { status: 'completed', output: block, retryable: false };
+      const source = ctx.publicRuntime?.registerSources([{ url: page.url || targetUrl, title: page.title, snippet: rawContent.slice(offset, Math.min(end, offset + 600)) }])[0];
+      const citedBlock = source ? `Source ID: ${source.id}\n${block}` : block;
+      const result: ToolResult = { status: 'completed', output: citedBlock, retryable: false };
       emitter.event('tool_result', {
-        id: call.id, ok: true, status: 'completed', output: block,
+        id: call.id, ok: true, status: 'completed', output: citedBlock,
         url: page.url || targetUrl, title: page.title || '',
         offset, totalChars: rawContent.length, returnedChars: end - offset,
         hasMore, nextOffset: hasMore ? end : undefined, sourceTruncated,
@@ -164,7 +166,8 @@ export const executeWebFetch: ToolExecutor = async (
     if (page && page.ok) {
       anyOk = true;
       const { block } = formatPageBlock(page, url, 0, maxChars);
-      blocks.push(prefix + block);
+      const source = ctx.publicRuntime?.registerSources([{ url: page.url || url, title: page.title, snippet: String(page.content || '').slice(0, 600) }])[0];
+      blocks.push(prefix + (source ? `Source ID: ${source.id}\n` : '') + block);
       summary.push({ url: page.url || url, title: page.title || '', ok: true, chars: String(page.content || '').length, ...(page.pageCount ? { pageCount: page.pageCount } : {}) });
     } else {
       const reason = (page && page.reason) || 'fetch_failed';

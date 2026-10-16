@@ -32,6 +32,7 @@ import type {ToolExecutorContext} from './executors/types.js';
 import type {PreparedCall, StreamMessage,} from './types.js';
 
 export interface ToolRunnerDeps {
+  publicRuntime?: ToolExecutorContext['publicRuntime'];
   req: import('express').Request & { userId?: string; user?: { tier?: string } | null };
   sessionIdFromQuery: string | null;
   projectIdFromBody: string | null;
@@ -53,6 +54,7 @@ export type ToolRunner = (
 export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
   const registry = createToolExecutorRegistry();
   const executorContext: ToolExecutorContext = {
+    publicRuntime: deps.publicRuntime,
     req: deps.req,
     sessionIdFromQuery: deps.sessionIdFromQuery,
     projectIdFromBody: deps.projectIdFromBody,

@@ -2,7 +2,7 @@
  * web_search executor.
  *
  * P_search-numbered — results are formatted as a numbered list with
- * [1], [2], … markers for result identification; the prose uses source cards.
+ * source IDs for structured claim annotations and source previews.
  * Searches are idempotent and provider/network failures are often
  * transient, so it retries once; code execution deliberately does not
  * use this path because repeating it may have side effects.
@@ -76,6 +76,7 @@ export const executeWebSearch: ToolExecutor = async (
   }
 
   if (searchResults && searchResults.length > 0) {
+    const sources = ctx.publicRuntime?.registerSources(searchResults) || [];
     const blocks = searchResults.map((r, i) => {
       const idx = i + 1;
       const title = String(r.title || '').slice(0, 240);
@@ -83,7 +84,10 @@ export const executeWebSearch: ToolExecutor = async (
       const snippet = String(r.snippet || '').slice(0, 400);
       const date = r.date ? `    Date: ${String(r.date).slice(0, 30)}\n` : '';
       const source = r.source ? `    Source: ${r.source}\n` : '';
-      return `[${idx}] ${title}\n    URL: ${url}\n${date}${source}    Snippet: ${snippet}`;
+      let normalizedUrl = '';
+      try { normalizedUrl = new URL(url).href; } catch { /* Invalid search URLs never receive source IDs. */ }
+      const registered = sources.find((entry) => entry.url === normalizedUrl);
+      return `[${idx}] ${title}${registered ? `\n    Source ID: ${registered.id}` : ''}\n    URL: ${url}\n${date}${source}    Snippet: ${snippet}`;
     });
     const footer = `\n\n${WEB_SEARCH_CITATION_GUIDANCE}`;
     const output = blocks.join('\n\n') + footer;

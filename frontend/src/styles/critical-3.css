@@ -21,6 +21,7 @@
 @import './components/composer.css';
 @import './components/chat.css';
 @import './components/intelligence-ui.css';
+@import './components/turn-evidence.css';
 @import './components/input.css';
 @import './components/menu.css';
 @import './components/detail.css';

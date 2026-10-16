@@ -60,3 +60,34 @@ test('startup thinking activity remains waiting until provider reasoning is obse
   assert.match(thinking.label, /Thinking/);
   assert.equal(deriveTurnPresentationState({ ...waiting, rawText: 'Answer.' }).status, undefined);
 });
+
+test('intent, public reasoning, status and completed observations stay separate', () => {
+  const message = { type: 'streaming', _taskSummary: 'Compare two methods.', summary: 'Used one tool.' };
+  const view = deriveTurnPresentationState(message);
+  assert.equal(view.intentSummary, message._taskSummary);
+  assert.equal(view.outcomeSummary, '');
+  assert.equal(view.publicSummary, '');
+  assert.equal(view.showReasoningSummary, false);
+  const done = deriveTurnPresentationState({ ...message, _streamSettled: true });
+  assert.equal(done.intentSummary, '');
+  assert.equal(done.outcomeSummary, message.summary);
+  assert.equal(done.publicSummary, '');
+});
+
+test('tool and private reasoning observations never create a thought summary', () => {
+  for (const kind of ['tool', 'reasoning', 'waiting', 'synthesis']) {
+    const view = deriveTurnPresentationState({ type: 'assistant', turnRuntime: { activities: [{ id: 'observed', kind, phase: 'done', startedAt: 100, endedAt: 1200 }] } });
+    assert.equal(view.showReasoningSummary, false);
+    assert.equal(view.publicSummary, '');
+  }
+});
+
+test('thought duration counts only observed reasoning intervals without overlap', () => {
+  const entry = { phase: 'done', startedAt: 100, endedAt: 2100 };
+  const view = deriveTurnPresentationState({ type: 'assistant', turnRuntime: { durationMs: 50000, activities: [
+    { ...entry, id: 'reasoning', kind: 'reasoning' },
+    { ...entry, id: 'summary', kind: 'reasoning_summary', startedAt: 1100, endedAt: 3100, text: 'Compared the methods.' },
+    { ...entry, id: 'tool', kind: 'tool', endedAt: 50100 },
+  ] } });
+  assert.equal(view.reasoningDurationSec, 3);
+});

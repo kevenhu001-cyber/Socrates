@@ -11,7 +11,7 @@ test('activity survives prose and running tools and round-trips through persiste
   runtime = reduceTurnEvent(runtime, event(2, { type: 'generation', phase: 'streaming' }));
   const message = { role: 'assistant', type: 'streaming', rawText: 'An initial finding.', turnRuntime: runtime };
   const view = deriveTurnPresentationState(message, { live: true, hasRunningRow: true });
-  assert.equal(view.showActivityTimeline, true);
+  assert.equal(view.showReasoningSummary, true);
   assert.equal(view.activities[0].phase, 'running');
   assert.equal(view.publicSummary, activity.text);
   runtime = settleTurnRuntime(runtime, 'done', 180);
@@ -51,4 +51,27 @@ test('stored snapshots reject malformed, unbounded and unsafe data', () => {
     { ...runtime, activities: [{ ...activity, kind: 'reasoning', text: 'private' }] },
     { ...runtime, uiSurfaces: [{ id: 'ui', toolCallId: 'ui', textOffset: 0, phase: 'committed', nodes: [{ ...panel, html: '<script/>' }] }] },
   ]) assert.equal(normalizeTurnRuntime(bad), null);
+});
+
+test('committed UI edits are atomic, versioned, and preserve untouched nodes', () => {
+  let runtime = reduceTurnEvent(null, event(1, { type: 'ui.begin', surfaceId: 'ui', toolCallId: 'ui', textOffset: 0 }));
+  const child = { id: 'child', type: 'text', parent: 'panel', text: 'Original' };
+  runtime = reduceTurnEvent(runtime, event(2, { type: 'ui.commit', surfaceId: 'ui', nodes: [panel, child] }));
+  const edit = (baseRevision, operations) => event(runtime.seq + 1, { type: 'ui.edit', surfaceId: 'ui', baseRevision, operations });
+  const updated = reduceTurnEvent(runtime, edit(0, [{ op: 'patch', nodeId: 'child', props: { text: 'Updated' } }]));
+  assert.equal(updated.uiSurfaces[0].nodes[0], runtime.uiSurfaces[0].nodes[0]);
+  assert.equal(updated.uiSurfaces[0].nodes[1].text, 'Updated');
+  assert.equal(updated.uiSurfaces[0].revision, 1);
+  assert.deepEqual(normalizeTurnRuntime(JSON.parse(JSON.stringify(updated))), updated);
+  runtime = updated;
+  for (const operations of [
+    [{ op: 'patch', nodeId: 'child', props: { text: 'Must roll back' } }, { op: 'patch', nodeId: 'missing', props: { text: 'Bad' } }],
+    [{ op: 'patch', nodeId: 'child', props: { html: '<script/>' } }],
+    [{ op: 'add', node: { id: 'orphan', parent: 'missing', type: 'text' } }],
+    [{ op: 'patch', nodeId: 'child', props: { id: 'changed' } }],
+  ]) assert.equal(reduceTurnEvent(runtime, edit(1, operations)), runtime);
+  assert.equal(reduceTurnEvent(runtime, edit(0, [{ op: 'remove', nodeId: 'child' }])), runtime);
+  const removed = reduceTurnEvent(runtime, edit(1, [{ op: 'remove', nodeId: 'child' }]));
+  assert.deepEqual(removed.uiSurfaces[0].nodes, [panel]);
+  assert.equal(removed.uiSurfaces[0].revision, 2);
 });
