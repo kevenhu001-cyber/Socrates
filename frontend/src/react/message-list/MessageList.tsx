@@ -1,5 +1,5 @@
 import { createRoot, type Root } from 'react-dom/client';
-import { useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 
 import { subscribeToChatRuntime } from '../chatRuntime.bridge';
 import { ErrorBoundary } from '../ErrorBoundary';
@@ -8,6 +8,7 @@ import { reportSwallow } from '../../util/reportSwallow.ts';
 import { isMsgListMounted, setMsgListMounted } from '../../ui/msgListMount.ts';
 import { entryId } from './messageIdentity';
 import { MessageItem } from './MessageItem';
+import { updateScrollFadeMask } from './messageScroll';
 import { useProgressiveMessageMount } from './useProgressiveMessageMount';
 import { getVisibleMessagesSnapshot } from './visibleMessages';
 
@@ -20,6 +21,23 @@ function MessageList() {
     getVisibleMessagesSnapshot,
   );
   const { mounted, start } = useProgressiveMessageMount(visibleMessages);
+
+  useEffect(() => {
+    const list = document.getElementById(MSG_LIST_ID);
+    if (!list) return undefined;
+    const onScroll = () => updateScrollFadeMask(list);
+    onScroll();
+    list.addEventListener('scroll', onScroll, { passive: true });
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver === 'function') {
+      ro = new ResizeObserver(onScroll);
+      ro.observe(list);
+    }
+    return () => {
+      list.removeEventListener('scroll', onScroll);
+      ro?.disconnect();
+    };
+  }, []);
 
   if (mounted.length === 0) {
     return <div data-react-message-list-empty="1" data-react-owned="1" />;

@@ -1,5 +1,6 @@
 import { Fragment, type ReactNode } from 'react';
 import { IntelligentTextSegment } from '../intelligence-ui/IntelligentTextSegment';
+import { ThinkingAccordion } from './ThinkingAccordion';
 import { groupOutputCalls, runStartedAt, toolRunView, type ToolCallRecord, type TurnSegment } from './toolRunModel.js';
 import { ToolRunAttachments } from './ToolRunAttachments.js';
 import { ToolRunGroup } from './ToolRunGroup.js';
@@ -10,6 +11,7 @@ interface TurnSegmentContentProps {
   segment: TurnSegment;
   index: number;
   growingIndex: number;
+  publicSummary?: string;
   messageId: string;
   tools: ReadonlyArray<ToolCallRecord>;
   readOnly?: boolean;
@@ -20,6 +22,7 @@ export function TurnSegmentContent({
   segment,
   index,
   growingIndex,
+  publicSummary,
   messageId,
   tools,
   readOnly,
@@ -60,7 +63,13 @@ export function TurnSegmentContent({
   }
 
   if (segment.kind === 'think') {
-    return null;
+    return (
+      <ThinkingAccordion
+        key={'think-' + index}
+        publicSummary={publicSummary}
+        isLive={index === growingIndex}
+      />
+    );
   }
 
   return null;

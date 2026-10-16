@@ -27,6 +27,42 @@
     gap: 0;
     scroll-padding-block: 24px;
     font-family: var(--font-sans);
+    --ui-scroll-fade-top: 0px;
+    --ui-scroll-fade-bottom: 0px;
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(0, 0, 0, 0.05) calc(var(--ui-scroll-fade-top) * 0.15),
+      rgba(0, 0, 0, 0.18) calc(var(--ui-scroll-fade-top) * 0.32),
+      rgba(0, 0, 0, 0.38) calc(var(--ui-scroll-fade-top) * 0.50),
+      rgba(0, 0, 0, 0.64) calc(var(--ui-scroll-fade-top) * 0.68),
+      rgba(0, 0, 0, 0.88) calc(var(--ui-scroll-fade-top) * 0.85),
+      black var(--ui-scroll-fade-top),
+      black calc(100% - var(--ui-scroll-fade-bottom)),
+      rgba(0, 0, 0, 0.88) calc(100% - var(--ui-scroll-fade-bottom) * 0.85),
+      rgba(0, 0, 0, 0.64) calc(100% - var(--ui-scroll-fade-bottom) * 0.68),
+      rgba(0, 0, 0, 0.38) calc(100% - var(--ui-scroll-fade-bottom) * 0.50),
+      rgba(0, 0, 0, 0.18) calc(100% - var(--ui-scroll-fade-bottom) * 0.32),
+      rgba(0, 0, 0, 0.05) calc(100% - var(--ui-scroll-fade-bottom) * 0.15),
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(0, 0, 0, 0.05) calc(var(--ui-scroll-fade-top) * 0.15),
+      rgba(0, 0, 0, 0.18) calc(var(--ui-scroll-fade-top) * 0.32),
+      rgba(0, 0, 0, 0.38) calc(var(--ui-scroll-fade-top) * 0.50),
+      rgba(0, 0, 0, 0.64) calc(var(--ui-scroll-fade-top) * 0.68),
+      rgba(0, 0, 0, 0.88) calc(var(--ui-scroll-fade-top) * 0.85),
+      black var(--ui-scroll-fade-top),
+      black calc(100% - var(--ui-scroll-fade-bottom)),
+      rgba(0, 0, 0, 0.88) calc(100% - var(--ui-scroll-fade-bottom) * 0.85),
+      rgba(0, 0, 0, 0.64) calc(100% - var(--ui-scroll-fade-bottom) * 0.68),
+      rgba(0, 0, 0, 0.38) calc(100% - var(--ui-scroll-fade-bottom) * 0.50),
+      rgba(0, 0, 0, 0.18) calc(100% - var(--ui-scroll-fade-bottom) * 0.32),
+      rgba(0, 0, 0, 0.05) calc(100% - var(--ui-scroll-fade-bottom) * 0.15),
+      transparent 100%
+    );
   }
 
   /* ── Turns ───────────────────────────────────────────────────────────── */

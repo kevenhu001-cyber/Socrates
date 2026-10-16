@@ -202,6 +202,31 @@ async function bootPyodide() {
       // Default indexURL auto-detects the pyodide package's own directory
       // in Node — the WASM blob lives next to pyodide.mjs in node_modules.
       fullStdLib: false,
+      // P_worker-stdio — the pool spawns this file via
+      // `new Worker(entry.file, …)` from codeInterpreter.js, so we run
+      // inside a `node:worker_threads` Worker. Workers do not inherit
+      // `process.stdout` / `process.stderr` (both are `null`), and Pyodide's
+      // default stdout/stderr bindings fall through to `fs.writeSync(undefined, …)`
+      // the first time Python prints. The earliest print() during boot is the
+      // CJK font registration's status line, which then raises
+      // `OSError: [Errno 29] I/O error` — the boot survives because the
+      // CJK block has its own try/except, but the registration silently fails
+      // (CJK text in matplotlib output renders as tofu) and the journal fills
+      // with stack traces every boot / respawn.
+      //
+      // Pyodide's documented fix is to pass explicit `stdout` / `stderr`
+      // callbacks — they are only active until `runCode()` replaces
+      // `sys.stdout` with our `_CappedStream`, so this only affects the
+      // boot phase. We forward to `console.log` / `console.warn` (the same
+      // channel the existing `console.warn('[pyodide] CJK font registration
+      // threw: …')` already uses) so the diagnostic text stays visible
+      // alongside the rest of the worker's journal.
+      stdout: (msg: string) => {
+        try { console.log(`[pyodide-boot] ${msg}`); } catch (_) { /* worker torn down */ }
+      },
+      stderr: (msg: string) => {
+        try { console.warn(`[pyodide-boot] ${msg}`); } catch (_) { /* worker torn down */ }
+      },
     });
 
     /* Preload scientific packages. loadPackage is a no-op for already-

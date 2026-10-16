@@ -90,7 +90,7 @@ export function deriveTurnPresentationState(message: LegacyChatMessage, options:
   return {
     primaryActivity: activity,
     status,
-    publicSummary: live && options.hasRunningRow ? '' : (message.summary?.trim() || ''),
+    publicSummary: live && options.hasRunningRow ? '' : (message.summary?.trim() || (live ? message._taskSummary?.trim() : '') || ''),
     showToolbar: !live,
     showCursor: live && !status && !options.hasRunningRow,
     isSettled: !live,

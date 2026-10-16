@@ -41,12 +41,12 @@ export function ToolRunGroupSummary({
       <span className={`tool-run-summary-label${live ? ' shimmer-text' : ''}`}>
         {view.headerLabel}
       </span>
+      {meta.length ? <span className="tool-run-summary-meta">{meta.join(' · ')}</span> : null}
       <span
         className="tool-run-summary-chev"
         aria-hidden="true"
         dangerouslySetInnerHTML={{ __html: STROKE_ICONS.chevronDown }}
       />
-      {meta.length ? <span className="tool-run-summary-meta">{meta.join(' · ')}</span> : null}
     </button>
   );
 }

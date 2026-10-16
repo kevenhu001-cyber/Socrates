@@ -32,7 +32,7 @@
    prose answer never inherits it, and so the values are resolved once
    against the bubble rather than restated on each selector. */
 .msg.assistant .msg-body.is-declarative:has(.tool-inline, .tool-run-group, .thinking-summary) {
-  --tc-row-height: var(--ui-control-sm);
+  --tc-row-height: var(--ui-control-desktop, var(--ui-control-sm));
   --tc-gap: var(--ui-space-sm);
   --tc-head-pad: var(--ui-space-sm);
   /* How deep a member of a run sits. It has to be deeper than the rail inset
@@ -47,9 +47,9 @@
      outside it — carries its own rail, so this one number is the whole
      indent story and the run's glyphs share a column for free. */
   --tc-nested-text: calc(var(--tc-group-step) + var(--tc-rail-w) + var(--tc-head-pad));
-  --tc-icon: 20px;
-  --tc-glyph: 20px;
-  --tc-chevron: 14px;
+  --tc-icon: 16px;
+  --tc-glyph: 16px;
+  --tc-chevron: 12px;
   --tc-rail: var(--ui-border-subtle);
   --tc-idle: var(--ui-text-secondary);
   --tc-quiet: var(--ui-text-tertiary);
@@ -67,6 +67,7 @@
   box-shadow: none;
   color: var(--tc-idle);
 }
+
 .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-run-group {
   margin: var(--tc-gap) 0 var(--ui-space-xs);
 }
@@ -78,7 +79,7 @@
 .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-head,
 .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-run-summary {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--tc-gap);
   width: 100%;
   max-width: 100%;
@@ -87,18 +88,21 @@
   border: 0;
   border-radius: 0;
   background: transparent;
+  background-color: transparent;
   color: var(--tc-idle);
   font: 400 var(--ui-text-body) / 1.65 var(--font-sans);
   text-align: left;
   list-style: none;
   cursor: pointer;
-  transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+  user-select: none;
+  transition: color var(--ui-duration-hover) ease;
 }
 .tool-inline-head::-webkit-details-marker { display: none; }
 .tool-inline-head::marker { content: ''; }
 .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-head:hover,
 .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-run-summary:hover {
   background: transparent;
+  background-color: transparent;
   color: var(--ui-text-primary);
 }
 .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-head:focus-visible,
@@ -107,11 +111,11 @@
   outline-offset: 1px;
   border-radius: var(--ui-radius-sm);
 }
-/* Expansion changes the arrow, without turning a text row into a button. */
 .msg.assistant .msg-body.is-declarative .tool-inline[open] > .tool-inline-head,
 .msg.assistant .msg-body.is-declarative .tool-run-group.open .tool-run-summary,
 .msg.assistant .msg-body.is-declarative .tool-run-summary[aria-expanded="true"] {
   background: transparent;
+  background-color: transparent;
   color: var(--ui-text-secondary);
 }
 
@@ -125,7 +129,7 @@
   width: var(--tc-icon);
   height: var(--tc-icon);
   flex: 0 0 var(--tc-icon);
-  margin-top: calc((var(--ui-text-body) * 1.65 - var(--tc-icon)) / 2);
+  margin-top: 0;
   align-items: center;
   justify-content: center;
   color: var(--ui-text-tertiary);
@@ -192,27 +196,25 @@
 .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-run-summary-meta {
   flex: 0 1 auto;
   min-width: 0;
-  max-width: none;
-  margin: calc((var(--ui-text-body) * 1.65 - var(--ui-font-size-xxs) * 1.5) / 2) 0 0 auto;
+  max-width: 40%;
+  margin: 0 0 0 auto;
+  padding: 1px 7px;
   overflow: hidden;
   opacity: 1;
   color: var(--tc-quiet);
   font-size: var(--ui-font-size-xxs);
   font-variant-numeric: tabular-nums;
   letter-spacing: .01em;
+  border-radius: var(--ui-radius-pill, 999px);
+  background: var(--ui-bg-sunken, color-mix(in srgb, var(--ui-text-primary) 4%, transparent));
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.3;
 }
 /* Source facts remain in the row model for compatibility; the expanded source
    list owns their visible presentation so long action titles have full width. */
 .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-hosts {
   display: none;
-  flex: 0 1 auto;
-  flex-wrap: nowrap;
-  gap: var(--ui-space-xxs);
-  min-width: 0;
-  margin: 0;
-  overflow: hidden;
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-host {
   max-width: 22ch;
@@ -227,7 +229,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.msg.assistant .msg-body.is-declarative .tool-inline:not([data-state="running"]) .tool-inline-meta {
+.msg.assistant .msg-body.is-declarative .tool-inline .tool-inline-meta:not(.is-visible) {
   display: none;
 }
 
@@ -239,7 +241,6 @@
   display: inline-flex;
   width: var(--tc-chevron);
   height: var(--tc-chevron);
-  margin-top: calc((var(--ui-text-body) * 1.65 - var(--tc-chevron)) / 2);
   flex: 0 0 var(--tc-chevron);
   align-items: center;
   justify-content: center;
@@ -247,7 +248,11 @@
   color: var(--ui-text-disabled);
   opacity: .55;
   transform: none;
-  transition: transform var(--ui-duration-normal) var(--ui-ease-out), opacity var(--ui-duration-hover) ease;
+  transition: transform var(--ui-duration-normal) var(--ui-ease-spring-gentle, cubic-bezier(0.16, 1, 0.3, 1)), opacity var(--ui-duration-hover) ease;
+}
+.msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-head:not(:has(.tool-inline-meta.is-visible)) .tool-inline-chev,
+.msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-run-summary:not(:has(.tool-run-summary-meta)) .tool-run-summary-chev {
+  margin-left: auto;
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-chev svg,
 .msg.assistant .msg-body.is-declarative .tool-run-summary-chev svg {
@@ -296,9 +301,9 @@
   animation: tool-rail-enter var(--ui-duration-normal) var(--ui-ease-out);
 }
 /* A lone row's body hangs off its own rail, one indent in from the row. The
-   top step is deliberately smaller than the panel's own inner padding: the
-   head already carries 32px of height, so 8px here doubled the gap for no
-   gain and pushed a fully-expanded row past a readable block. */
+   top step is deliberately smaller than a control row's own inner padding,
+   so the expanded detail stays close to the action without creating a second
+   panel-shaped gap. */
 .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-detail {
   margin: var(--ui-space-xxs) 0 var(--ui-space-sm) var(--tc-indent);
   padding: var(--ui-space-xs) 0 0 var(--tc-indent);
@@ -308,12 +313,11 @@
   background: transparent;
   animation: tool-rail-enter var(--ui-duration-normal) var(--ui-ease-out);
 }
-/* Inside a member the row already drew the rail, so the body just hangs off
-   it — two rails 0px apart would read as one fat line. */
+/* Inside a member row of a run group */
 .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-inline[data-nested="1"] > .tool-inline-detail {
   margin-inline-start: 0;
   border-inline-start: 0;
-  padding-inline-start: var(--tc-indent);
+  padding: 0 0 0 var(--tc-indent);
 }
 .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-run-list[hidden] {
   display: none;
@@ -331,9 +335,8 @@
 .msg.assistant .msg-body.is-declarative:has(.tool-run-group) .tool-inline[data-nested="1"] {
   margin: 0;
   /* The clamp matters: a row is width:100%, so without it the indent would
-     push the row past the run's right edge and the run's overflow:hidden
-     would turn that into a 24px horizontal scroll the moment a row takes
-     focus — silently sliding every member left of its header. */
+     push the row past the run's right edge and create a horizontal overflow
+     when a member takes focus. */
   max-width: calc(100% - var(--tc-group-step));
   margin-inline-start: var(--tc-group-step);
   border-inline-start: var(--tc-rail-w) solid var(--tc-rail);
@@ -377,15 +380,15 @@
 .msg.assistant .msg-body.is-declarative .tool-inline-code-preview {
   display: block;
   max-width: 100%;
-  max-height: 180px;
-  margin: 0;
-  padding: 0;
+  max-height: 200px;
+  margin: var(--ui-space-xxs) 0;
+  padding: 8px 12px;
   overflow: auto;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--ui-text-secondary);
-  font: 400 var(--ui-font-size-xs) / 1.6 var(--font-mono);
+  border: 1px solid var(--ui-border-code, var(--ui-border-subtle));
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-bg-code, color-mix(in srgb, var(--ui-text-primary) 3%, transparent));
+  color: var(--ui-text-primary);
+  font: 400 var(--ui-font-size-xs) / 1.55 var(--font-mono);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -443,7 +446,7 @@
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xs);
   text-decoration: none;
-  transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+  transition: color var(--ui-duration-hover) ease;
 }
 .msg.assistant .msg-body.is-declarative a.tool-inline-src:hover,
 .msg.assistant .msg-body.is-declarative a.tool-inline-src:focus-visible {
@@ -456,6 +459,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 500;
+  color: var(--ui-text-primary);
 }
 .msg.assistant .msg-body.is-declarative .tool-inline-src-meta {
   display: flex;

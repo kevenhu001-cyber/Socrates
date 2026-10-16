@@ -202,6 +202,8 @@ export interface LegacyChatMessage {
   _playbackState?: 'idle' | 'playing' | 'starved' | 'draining' | 'done';
   /** One-line model retrospective persisted on the message. */
   summary?: string | null;
+  /** Transient live task preview from turn_summary initial frames. Not persisted. */
+  _taskSummary?: string | null;
   /** Server-owned public progress; private reasoning is never used as copy. */
   _activity?: import("@socrates/contracts").PublicTurnActivity;
 }

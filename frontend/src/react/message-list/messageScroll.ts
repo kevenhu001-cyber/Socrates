@@ -35,9 +35,27 @@ export function isSticky(list: HTMLElement): boolean {
   return Boolean(sticky && sticky.list === list && performance.now() < sticky.until);
 }
 
+const FADE_SIZE_PX = 28;
+
+export function updateScrollFadeMask(list: HTMLElement | null): void {
+  if (!list) return;
+  const { scrollTop = 0, scrollHeight = 0, clientHeight = 0 } = list;
+  const isAtTop = scrollTop <= 2;
+  const isAtBottom = scrollTop + clientHeight >= scrollHeight - 2;
+  const topVal = isAtTop ? '0px' : `${FADE_SIZE_PX}px`;
+  const bottomVal = isAtBottom ? '0px' : `${FADE_SIZE_PX}px`;
+  if (list.style.getPropertyValue('--ui-scroll-fade-top') !== topVal) {
+    list.style.setProperty('--ui-scroll-fade-top', topVal);
+  }
+  if (list.style.getPropertyValue('--ui-scroll-fade-bottom') !== bottomVal) {
+    list.style.setProperty('--ui-scroll-fade-bottom', bottomVal);
+  }
+}
+
 export function stickTo(list: HTMLElement): void {
   writeScrollTop(list, list.scrollHeight, 'content');
   if (sticky) sticky.expected = list.scrollTop;
+  updateScrollFadeMask(list);
 }
 
 export function pinToBottom(list: HTMLElement): void {

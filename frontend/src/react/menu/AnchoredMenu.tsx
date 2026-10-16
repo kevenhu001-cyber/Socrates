@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 
 /** Shared viewport-aware menu: portals escape scrolling lists, with keyboard
@@ -9,6 +9,31 @@ export function AnchoredMenu({ anchor, onClose, className, children, above = fal
 }) {
   const menu = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ left: 8, top: 8 });
+  const [closing, setClosing] = useState(false);
+  const closeTimerRef = useRef<number | null>(null);
+  const closingRef = useRef(false);
+
+  const requestClose = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    setClosing(true);
+    closeTimerRef.current = window.setTimeout(() => {
+      onClose();
+    }, 110);
+  }, [onClose]);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
+    };
+  }, []);
+
+  // Initial focus belongs to opening, not to positioning or the exit animation.
+  // Re-running it while closing would steal Escape/Tab's destination focus.
+  useLayoutEffect(() => {
+    menu.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus({ preventScroll: true });
+  }, []);
+
   useLayoutEffect(() => {
     const trigger = anchor.current;
     const node = menu.current;
@@ -23,11 +48,10 @@ export function AnchoredMenu({ anchor, onClose, className, children, above = fal
       });
     };
     reposition();
-    node.querySelector<HTMLElement>('[role="menuitem"]')?.focus({ preventScroll: true });
     const outside = (event: PointerEvent) => {
-      if (event.target instanceof Node && !node.contains(event.target) && !trigger.contains(event.target)) onClose();
+      if (event.target instanceof Node && !node.contains(event.target) && !trigger.contains(event.target)) requestClose();
     };
-    const dismiss = () => onClose();
+    const dismiss = () => requestClose();
     document.addEventListener('pointerdown', outside);
     window.addEventListener('resize', dismiss);
     window.addEventListener('scroll', reposition, true);
@@ -36,15 +60,18 @@ export function AnchoredMenu({ anchor, onClose, className, children, above = fal
       window.removeEventListener('resize', dismiss);
       window.removeEventListener('scroll', reposition, true);
     };
-  }, [anchor, above, onClose, spill]);
+  }, [anchor, above, requestClose, spill]);
   const host = document.getElementById('appShell');
   if (!host) return null;
-  return createPortal(<div ref={menu} className={className} role="menu" style={{ position: 'fixed', ...position }}
+  return createPortal(<div ref={menu} className={`anchored-menu ${className}`.trim()} data-state={closing ? 'closing' : 'open'} inert={closing} role="menu" style={{ position: 'fixed', ...position }}
     onClick={(event) => event.stopPropagation()}
     onKeyDown={(event) => {
       if (event.key === 'Escape' || event.key === 'Tab') {
-        if (event.key === 'Escape') { event.preventDefault(); anchor.current?.focus(); }
-        onClose();
+        if (event.key === 'Escape') event.preventDefault();
+        // Let Tab's native default continue from the trigger in document order,
+        // rather than into an item that will disappear after the exit animation.
+        anchor.current?.focus({ preventScroll: true });
+        requestClose();
       }
       if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
         event.preventDefault();

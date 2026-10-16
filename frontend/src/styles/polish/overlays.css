@@ -118,7 +118,19 @@
    foundations/base.css. The scrims keep their own fadeIn. */
 @keyframes ui-overlay-in {
   from { opacity: 0; transform: scale(var(--ui-overlay-enter-scale, .98)); }
+  to { opacity: 1; transform: scale(1); }
 }
+
+@keyframes ui-overlay-out {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(var(--ui-overlay-enter-scale, .98)); }
+}
+
+@keyframes ui-scrim-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
 .cmd-k-modal,
 .settings-modal,
 .profile-modal,
@@ -127,7 +139,32 @@
 .confirm-box,
 .sidebar-more-popover,
 .display-prefs-popover {
-  animation: ui-overlay-in var(--ui-duration-overlay, 160ms) var(--ui-ease-out) both;
+  animation: ui-overlay-in var(--ui-duration-overlay, 160ms) var(--ui-ease-spring-gentle, var(--ui-ease-out)) both;
+}
+
+.confirm-box[data-state="closing"],
+.cmd-k-modal[data-state="closing"],
+.settings-modal[data-state="closing"],
+.profile-modal[data-state="closing"],
+.usage-modal[data-state="closing"],
+.share-modal[data-state="closing"],
+.sidebar-more-popover[data-state="closing"],
+.display-prefs-popover[data-state="closing"],
+.anchored-menu[data-state="closing"],
+[data-state="closing"].sidebar-account-menu,
+[data-state="closing"].composer-tools-menu,
+[data-state="closing"].model-picker-menu,
+[data-state="closing"].extensions-menu {
+  animation: ui-overlay-out 120ms var(--ui-ease-out) forwards;
+}
+
+.confirm-dialog[data-state="closing"],
+.settings-overlay[data-state="closing"],
+.profile-overlay[data-state="closing"],
+.usage-overlay[data-state="closing"],
+.share-overlay[data-state="closing"],
+.cmd-k-overlay[data-state="closing"] {
+  animation: ui-scrim-out 120ms var(--ui-ease-out) forwards;
 }
 
 /* ── CmdK palette ── */

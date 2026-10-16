@@ -1,5 +1,5 @@
 import { markHostMountedBy } from '../lib/boot/ownership';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { getLegacyActions, i18n } from '../legacy/gateway.ts';
@@ -18,6 +18,26 @@ function ConfirmDialog() {
   const overlayRef = useRef<HTMLDivElement>(null);
   const prevFocusRef = useRef<HTMLElement | null>(null);
   const legacy = getLegacyActions();
+  const [closing, setClosing] = useState(false);
+  const wasOpenRef = useRef(snap.open);
+  const cachedSnapRef = useRef(snap);
+  if (snap.open) cachedSnapRef.current = snap;
+
+  useEffect(() => {
+    if (wasOpenRef.current && !snap.open) {
+      setClosing(true);
+      const timer = window.setTimeout(() => {
+        setClosing(false);
+      }, 120);
+      wasOpenRef.current = snap.open;
+      return () => window.clearTimeout(timer);
+    }
+    wasOpenRef.current = snap.open;
+    return undefined;
+  }, [snap.open]);
+
+  const isVisible = snap.open || closing;
+  const renderSnap = snap.open ? snap : cachedSnapRef.current;
 
   /* Focus management: remember the trigger element on open, focus the
      title (data-initial-focus, matching the legacy modalA11y behavior),
@@ -90,7 +110,8 @@ function ConfirmDialog() {
   return (
     <div
       ref={overlayRef}
-      className={`confirm-dialog${snap.open ? '' : ' hidden'}`}
+      className={`confirm-dialog${isVisible ? '' : ' hidden'}`}
+      data-state={closing ? 'closing' : snap.open ? 'open' : 'closed'}
       id="confirmDialog"
       role="alertdialog"
       aria-modal="true"
@@ -98,17 +119,21 @@ function ConfirmDialog() {
       aria-describedby="confirmMsg"
       onClick={handleOverlayClick}
     >
-      <div className="confirm-box" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="confirm-box"
+        data-state={closing ? 'closing' : snap.open ? 'open' : 'closed'}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div
           className="confirm-title"
           id="confirmTitle"
           tabIndex={-1}
           data-initial-focus="true"
         >
-          {snap.title}
+          {renderSnap.title}
         </div>
         <div className="confirm-msg" id="confirmMsg">
-          {snap.msg}
+          {renderSnap.msg}
         </div>
         <div className="confirm-actions" id="confirmActions">
           <button
@@ -119,11 +144,11 @@ function ConfirmDialog() {
             {i18n('common.cancel', 'Cancel')}
           </button>
           <button
-            className={`confirm-btn ${snap.danger ? 'danger' : 'primary'}`}
+            className={`confirm-btn ${renderSnap.danger ? 'danger' : 'primary'}`}
             id="confirmOkBtn"
             onClick={() => legacy.confirm.closeConfirm(true)}
           >
-            {snap.danger ? i18n('common.delete', 'Delete') : i18n('common.ok', 'OK')}
+            {renderSnap.danger ? i18n('common.delete', 'Delete') : i18n('common.ok', 'OK')}
           </button>
         </div>
       </div>

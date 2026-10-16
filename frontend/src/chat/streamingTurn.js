@@ -583,10 +583,10 @@ export function addStreamingMessage(opts){
       publishReactChatRuntime({type:"tool-run-updated",messageId:clientId});
     },
     recordTurnSummary:function(text,phase){
-      if(!stillOwnsSlot()||phase==="initial")return;
+      if(!stillOwnsSlot())return;
       var value=String(text||"").trim();
       if(!value)return;
-      patchOwnedMessage({summary:value},false);
+      patchOwnedMessage(phase==="initial"?{_taskSummary:value}:{summary:value},false);
       // Process frames can arrive without text or tool deltas. Refresh the
       // coalesced activity snapshot without changing the stream's state.
       publishReactChatRuntime({type:"tool-run-updated",messageId:clientId});

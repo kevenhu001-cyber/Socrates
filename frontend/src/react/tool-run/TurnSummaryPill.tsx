@@ -31,7 +31,8 @@ export function TurnSummaryPill({ summary, messageId, status }: TurnSummaryPillP
           <span className={`turn-summary-label thinking-status-label${active ? ' shimmer-text' : ''}`}>{status.label}</span>
           {status.elapsedSec ? <span className="thinking-status-detail">{status.elapsedSec}s</span> : null}
         </div>
-      ) : summary ? <p className="turn-summary-text"><span>{summary}</span></p> : null}
+      ) : null}
+      {summary ? <p className="turn-summary-text"><span>{summary}</span></p> : null}
     </div>
   );
 }

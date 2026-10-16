@@ -406,7 +406,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 .msg.assistant[data-stream-settled] .msg-toolbar{opacity:1;transition:opacity .18s ease}
 .msg-toolbar-btn{position:relative;width:var(--ui-control-sm);min-height:var(--ui-control-sm);display:flex;align-items:center;justify-content:center;border-radius:var(--ui-radius-md);background:transparent;color:var(--ui-text-secondary);cursor:pointer;transition:background .12s,color .12s;border:0;padding:0}
 .msg-toolbar-btn:hover{background:var(--ui-bg-hover-ghost);color:var(--ui-text-primary)}
-.msg-toolbar-btn::after{content:attr(aria-label);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--ui-bg-overlay);color:var(--ui-text-primary);font-size:11px;font-weight:500;line-height:1;padding:6px 8px;border-radius:var(--ui-radius-sm);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .1s ease .35s;z-index:var(--ui-z-menu)}
+.msg-toolbar-btn::after{content:attr(aria-label);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--ui-bg-overlay);color:var(--ui-text-primary);font-size:var(--ui-font-size-xxs);font-weight:500;line-height:1;padding:6px 8px;border-radius:var(--ui-radius-sm);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .1s ease .35s;z-index:var(--ui-z-menu)}
 .msg-toolbar-btn:hover::after{opacity:1}
 .msg-toolbar-btn.active{color:var(--ui-text-primary);background:var(--ui-bg-hover)}
 .msg-toolbar-btn.active:hover{background:var(--ui-bg-hover)}
@@ -451,10 +451,11 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   }
 }
 @media (min-width: 769px) {
-  #appShell #msgList .msg-toolbar-btn svg { width: 18px; height: 18px; shape-rendering: crispEdges; }
+  #appShell #msgList .msg-toolbar-btn svg { width: 18px; height: 18px; shape-rendering: geometricPrecision; }
 }
 #appShell .msg-toolbar-btn[aria-label="Copied"] svg {
-  animation: checkmarkPop var(--ui-duration-fast) var(--ui-ease-out) forwards;
+  animation: checkmarkPop var(--ui-duration-fast, 180ms) var(--ui-ease-spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1)) forwards;
+  transform-origin: center center;
 }
 #appShell .msg-toolbar-btn[aria-label="Copied"] {
   color: var(--ui-success);
@@ -463,8 +464,9 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   transition: opacity var(--ui-duration-fast, 0.12s) var(--ui-ease-out, ease-out);
 }
 @keyframes checkmarkPop {
-  from { opacity: 0.4; }
-  to { opacity: 1; }
+  0% { transform: scale(0.65); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 .msg:focus-within .msg-toolbar { opacity: 1; }

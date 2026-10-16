@@ -85,7 +85,7 @@ test('thinking, tools and recording share one primary persistent cue', async ({ 
     return {
       thinkingLabel: animation('.thinking-status-label'),
       thinkingIcon: animation('.thinking-status .tool-inline-tool-icon'),
-      thinkingTextShadow: thinking ? getComputedStyle(thinking).textShadow : null,
+      thinkingBackground: thinking ? getComputedStyle(thinking).backgroundImage : null,
       inlineLabel: animation('.tool-inline-label'),
       inlineIcon: animation('.tool-inline .tool-inline-tool-icon'),
       groupLabel: animation('.tool-run-summary-label'),
@@ -100,7 +100,7 @@ test('thinking, tools and recording share one primary persistent cue', async ({ 
   expect(normal).not.toBeNull();
   expect(normal.thinkingLabel).toBe('ui-activity-shimmer');
   expect(normal.thinkingIcon).toBe('none');
-  expect(normal.thinkingTextShadow).not.toBe('none');
+  expect(normal.thinkingBackground).toContain('linear-gradient');
   expect(normal.inlineLabel).toBe('ui-activity-shimmer');
   expect(normal.inlineIcon).toBe('none');
   expect(normal.groupLabel).toBe('ui-activity-shimmer');

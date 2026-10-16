@@ -95,7 +95,8 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
   const streamedRef = useRef(isLive);
   if (isLive) streamedRef.current = true;
   const prose = useProseRenderer(streamedRef.current);
-  const growingIndex = isLive ? lastTextIndex(segments) : -1;
+  const textIdx = lastTextIndex(segments);
+  const growingIndex = isLive ? (textIdx !== -1 ? textIdx : segments.findIndex((s) => s.kind === 'think')) : -1;
   const hasRunningRow = segments.some((segment) =>
     segment.kind === 'group' ? segment.running.length > 0
       : segment.kind === 'tool' && ['running', 'awaiting'].includes(toolRunStateOf(segment.call)),
@@ -103,6 +104,10 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
   const hasSettledTool = calls.some((c) => toolRunStateOf(c) === 'done');
   const presentation = deriveTurnPresentationState(message, { live: isLive, hasRunningRow, hasSettledTool });
   const liveStatus = presentation.status;
+  const firstThinkIndex = segments.findIndex((segment) => segment.kind === 'think');
+  const publicThinkingSummary = presentation.primaryActivity?.type === 'public_reasoning_summary'
+    ? presentation.primaryActivity.text
+    : presentation.publicSummary;
   const showStatus = Boolean(liveStatus);
   const legacyHtml = liveStatus && ['error', 'stopped'].includes(liveStatus.phase)
     ? stripLegacyTerminalHtml(storedProse) : storedProse;
@@ -127,6 +132,7 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
           segment={segment}
           index={index}
           growingIndex={growingIndex}
+          publicSummary={index === firstThinkIndex ? publicThinkingSummary : undefined}
           messageId={messageId}
           tools={calls}
           readOnly={readOnly}

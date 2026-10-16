@@ -44,6 +44,29 @@ describe('codeInterpreter.execute — input guard rails', () => {
     assert.equal(typeof os.tmpdir(), 'string');
   });
 
+  /* P_worker-stdio — node:worker_threads Workers do not inherit
+   * process.stdout/stderr. Without explicit `stdout`/`stderr` callbacks
+   * on `loadPyodide()`, the first Python `print()` during boot (the
+   * CJK font registration status line) calls into Pyodide's default
+   * fd binding and raises `OSError: [Errno 29] I/O error`, which the
+   * CJK block's own try/except swallows — leaving the font unregistered
+   * (CJK text in matplotlib output becomes tofu) and the journal
+   * spammed with stack traces every worker boot / respawn. The fix is
+   * to pass callbacks; this test pins the shape so the next refactor
+   * can't silently drop them again. */
+  test('loadPyodide() binds stdout/stderr callbacks to survive worker_threads', async () => {
+    const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src/services/pyodideWorker.ts');
+    const workerSource = await fsPromises.readFile(source, 'utf8');
+    const loadMatch = workerSource.match(/loadPyodide\(\s*\{[\s\S]*?\}\s*\)/);
+    assert.ok(loadMatch, 'loadPyodide({ … }) call site not found in pyodideWorker.ts');
+    const optionsBlock = loadMatch[0];
+    assert.match(optionsBlock, /\bstdout\s*:\s*\(/, 'loadPyodide() must pass a stdout callback (worker_threads has no process.stdout)');
+    assert.match(optionsBlock, /\bstderr\s*:\s*\(/, 'loadPyodide() must pass a stderr callback (worker_threads has no process.stderr)');
+    /* fullStdLib:false stays — flipping it to true balloons the boot wheel
+       cache by ~100 MB with no benefit (we pre-load only numpy/pandas/matplotlib). */
+    assert.match(optionsBlock, /fullStdLib\s*:\s*false/);
+  });
+
   /* P_worker-embedded-python-escapes — the Python setup scripts in
    * pyodideWorker.ts are JS template literals. A lone `\r` (or `\n`)
    * escape inside one evaluates to a real CR/LF byte. Python treats CR

@@ -36,16 +36,11 @@ export function ToolRunRowHead({ view, elapsedMs }: { view: ToolRunView; elapsed
     <>
       <ToolActivityIcon name={view.name} />
       <span
-        className={`tool-inline-label${view.state === 'running' ? ' shimmer-text' : ''}`}
+        className="tool-inline-label"
         title={displayLabel}
       >
         {displayLabel}
       </span>
-      <span
-        className="tool-inline-chev"
-        aria-hidden="true"
-        dangerouslySetInnerHTML={{ __html: STROKE_ICONS.chevronRight }}
-      />
       {/* Provenance remains a quiet fact beside the activity; technical
           arguments/stdout stay behind the row disclosure. */}
       {hosts.length > 0 ? (
@@ -63,6 +58,11 @@ export function ToolRunRowHead({ view, elapsedMs }: { view: ToolRunView; elapsed
                 : translate('tool.statusDone', 'Done')}
       </span>
       {meta ? <span className="tool-inline-meta is-visible">{meta}</span> : null}
+      <span
+        className="tool-inline-chev"
+        aria-hidden="true"
+        dangerouslySetInnerHTML={{ __html: STROKE_ICONS.chevronRight }}
+      />
     </>
   );
 }
