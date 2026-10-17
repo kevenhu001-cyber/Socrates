@@ -46,112 +46,20 @@
   --tool-activity-danger-bg: color-mix(in srgb, var(--ui-danger) 8%, var(--ui-bg-page));
 }
 
-/* Public process summaries share the transcript's type size. Color carries
-   their lower priority; no panel, rail, or separate disclosure heading. */
-.turn-summary {
-  margin: 0 0 var(--ui-space-md);
-  min-width: 0;
-  border: 0;
-  background: transparent;
+/* One process disclosure owns intent, public summaries and tool activity. */
+.turn-activity-dot {
+  display: inline-block;
+  flex: 0 0 5px;
+  width: 5px;
+  height: 5px;
+  border-radius: var(--ui-radius-pill);
+  background: currentColor;
+}
+.turn-activity-intent {
+  margin: var(--ui-space-xs) 0;
   color: var(--ui-text-secondary);
-  font: 400 var(--ui-text-body) / 1.65 var(--font-sans);
-}
-.turn-summary-status {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--ui-space-xs, 8px);
-  min-height: 32px;
-  min-width: 0;
-  color: inherit;
-  padding: 4px 10px;
-  border-radius: var(--ui-radius-pill, 999px);
-  border: 1px solid var(--ui-border-subtle);
-  background: var(--ui-bg-subtle, color-mix(in srgb, var(--ui-text-primary) 3%, transparent));
-}
-.turn-summary-label {
-  min-width: 0;
   font-size: var(--ui-font-size-sm);
-  font-weight: 500;
-  line-height: 1;
 }
-.msg.assistant .msg-body.is-declarative .thinking-summary .turn-summary-text {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  color: var(--ui-text-secondary);
-  font: inherit;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-.turn-summary-status + .turn-summary-text { margin-top: var(--ui-space-xs); }
-
-/* This file owns the shimmer's paint; polish/motion.css owns whether and how
-   it moves. All live activity labels use the same treatment, regardless of
-   whether the row is the turn status, a tool, or an agent step. The gradient
-   is a solid readable base with one wide, bright travelling band, so the
-   glyphs stay fully opaque for the whole cycle: the text never fades, and
-   the light sweep reads clearly as it passes. */
-#appShell :is(
-  .shimmer-text,
-  .thinking-status .thinking-status-label,
-  .tool-inline-label,
-  .tool-run-summary-label,
-  .agent-step-label
-).shimmer-text {
-  color: var(--ui-text-secondary);
-  -webkit-text-fill-color: transparent;
-  background-image: linear-gradient(
-    100deg,
-    var(--ui-text-secondary) 0%,
-    var(--ui-text-secondary) 35%,
-    color-mix(in srgb, var(--ui-text-primary) 35%, white 65%) 50%,
-    var(--ui-text-secondary) 65%,
-    var(--ui-text-secondary) 100%
-  );
-  background-repeat: no-repeat;
-  background-size: 220% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  opacity: 1;
-}
-
-.thinking-status-detail {
-  flex: 0 0 auto;
-  color: var(--ui-text-tertiary);
-  font-size: var(--ui-font-size-xxs);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  padding: 2px 7px;
-  border-radius: var(--ui-radius-pill, 999px);
-  background: var(--ui-bg-sunken, color-mix(in srgb, var(--ui-text-primary) 5%, transparent));
-  line-height: 1;
-}
-.turn-summary .tool-inline-tool-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 16px;
-  width: 16px;
-  height: 16px;
-  margin: 0;
-  color: var(--ui-text-tertiary);
-}
-.turn-summary .tool-inline-tool-icon :is(svg, img) { width: 100%; height: 100%; }
-@media (prefers-reduced-motion: reduce) {
-  #appShell :is(
-    .shimmer-text,
-    .thinking-status .thinking-status-label,
-    .tool-inline-label,
-    .tool-run-summary-label,
-    .agent-step-label
-  ).shimmer-text {
-    background-image: none;
-    color: var(--ui-text-secondary);
-    -webkit-text-fill-color: currentColor;
-    text-shadow: none;
-  }
-}
-
 
 /* Terminal chat state shares the canonical palette and control ladder.
    The old tutor stylesheet no longer owns chat errors or Retry/Resend. */
@@ -225,7 +133,7 @@
   border-radius: var(--ui-radius-md);
   background: transparent;
   color: var(--ui-text-secondary);
-  font: 500 var(--ui-font-size-xs) / 1.4 var(--font-sans);
+  font: 500 var(--ui-font-size-sm) / 1.4 var(--font-sans);
   text-align: start;
   cursor: pointer;
   transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease;
@@ -248,83 +156,8 @@
   min-width: 0;
 }
 
-.thinking-dot-pulse {
-  position: absolute;
-  inset-inline-start: 0;
-  top: 50%;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  width: 16px;
-  height: 14px;
-  opacity: 0;
-  transform: translateY(-50%) scale(.8);
-  transform-origin: left center;
-  transition: opacity var(--ui-duration-normal) var(--ui-ease-out),
-    transform var(--ui-duration-normal) var(--ui-ease-out);
-}
-
-.thinking-dot-pulse span {
-  width: 3.5px;
-  height: 3.5px;
-  border-radius: var(--ui-radius-pill, 999px);
-  background: var(--ui-text-secondary);
-  animation: none;
-}
-
-.thinking-dot-pulse span:nth-child(2) {
-  animation-delay: -180ms;
-}
-
-.thinking-dot-pulse span:nth-child(3) {
-  animation-delay: -360ms;
-}
-
-.thinking-dot-indicator {
-  position: relative;
-  flex: 0 0 16px;
-  width: 16px;
-  height: 14px;
-}
-
-.thinking-accordion[data-live="true"] .thinking-dot-pulse {
-  opacity: 1;
-  transform: translateY(-50%) scale(1);
-}
-
-.thinking-accordion[data-live="true"] .thinking-dot-pulse span {
-  animation: ui-dot-pulse var(--ui-duration-pulse, 1.2s) ease-in-out infinite;
-}
-
-@keyframes ui-dot-pulse {
-  0%, 100% { opacity: 0.35; transform: scale(0.85); }
-  50% { opacity: 1; transform: scale(1.15); }
-}
-
-.thinking-dot-calm {
-  position: absolute;
-  inset-inline-start: 0;
-  top: 50%;
-  display: block;
-  flex: 0 0 4px;
-  width: 4px;
-  height: 4px;
-  border-radius: var(--ui-radius-pill, 999px);
-  background: var(--ui-text-tertiary);
-  opacity: 0.5;
-  transform: translateY(-50%) scale(1);
-  transform-origin: center;
-  transition: opacity var(--ui-duration-normal) var(--ui-ease-out),
-    transform var(--ui-duration-normal) var(--ui-ease-out);
-}
-
-.thinking-accordion[data-live="true"] .thinking-dot-calm {
-  opacity: 0;
-  transform: translateY(-50%) scale(.65);
-}
-
 .thinking-accordion-title {
-  font-size: var(--ui-font-size-xs);
+  font-size: var(--ui-font-size-sm);
   font-weight: 500;
   color: inherit;
 }
@@ -343,7 +176,7 @@
   width: 12px;
   height: 12px;
   color: var(--ui-text-tertiary);
-  transition: transform var(--ui-duration-normal) var(--ui-ease-spring-snappy);
+  transition: transform 160ms cubic-bezier(.2,.8,.2,1);
 }
 
 .thinking-accordion[data-open="true"] .thinking-accordion-chev {
@@ -357,9 +190,9 @@
   transform: translateY(-2px);
   pointer-events: none;
   transition:
-    grid-template-rows var(--ui-duration-normal) var(--ui-ease-spring-snappy),
+    grid-template-rows 160ms cubic-bezier(.2,.8,.2,1),
     opacity var(--ui-duration-fast) var(--ui-ease-out),
-    transform var(--ui-duration-normal) var(--ui-ease-out);
+    transform 160ms var(--ui-ease-out);
 }
 
 .thinking-accordion[data-open="true"] .thinking-accordion-body {
@@ -375,13 +208,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .thinking-accordion-body,
-  .thinking-accordion-chev,
-  .thinking-dot-pulse,
-  .thinking-dot-calm {
+  .thinking-accordion-chev {
     transition: none;
-  }
-  .thinking-dot-pulse span {
-    animation: none;
   }
 }
 
@@ -390,7 +218,7 @@
   margin: var(--ui-space-xxs) 0 var(--ui-space-xs) 6px;
   border-inline-start: 2px solid var(--ui-border-subtle);
   border-top: 0;
-  font-size: var(--ui-font-size-xs);
+  font-size: var(--ui-font-size-sm);
   line-height: var(--ui-line-height-relaxed);
   font-family: var(--font-sans);
   color: var(--ui-text-secondary);
@@ -401,13 +229,23 @@
 
 /* Public timeline entries are stable observations; running tool rows own
    their activity cue. The disclosure itself has no perpetual animation. */
-.thinking-accordion[data-activity-timeline] .thinking-dot-indicator { display: none; }
 .turn-activity-list {
   margin: var(--ui-space-xs) 0;
   padding-inline-start: var(--ui-space-lg);
   color: var(--ui-text-secondary);
-  font-size: var(--ui-font-size-xs);
+  font-size: var(--ui-font-size-sm);
   line-height: var(--ui-line-height-relaxed);
 }
 .turn-activity-list li { padding-block: var(--ui-space-xxs); overflow-wrap: anywhere; }
 .turn-activity-phase { margin-inline-start: var(--ui-space-sm); color: var(--ui-text-tertiary); }
+
+.thinking-accordion-toggle:disabled { cursor: default; opacity: 1; }
+.thinking-accordion-toggle:disabled:hover { background: transparent; color: var(--ui-text-secondary); }
+.turn-activity-surface .thinking-accordion-inner {
+  border-inline-start: 1px solid var(--ui-border-subtle);
+  padding-inline-start: var(--ui-space-sm);
+}
+.turn-activity-surface .thinking-accordion-text { border: 0; margin: 0; padding: 0; }
+.turn-activity-surface .turn-activity-list { list-style: none; padding: 0; }
+
+.thinking-status-detail { color: var(--ui-text-tertiary); font-size: var(--ui-font-size-xxs); font-variant-numeric: tabular-nums; }

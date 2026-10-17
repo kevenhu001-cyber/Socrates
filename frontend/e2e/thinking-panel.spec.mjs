@@ -63,20 +63,19 @@ async function startTurn(page, immediate = true) {
   return page.locator('.msg.assistant').last();
 }
 
-test('public process summaries update inline and remain readable after completion', async ({ page }) => {
+test('intent stays in the unified activity and completed observations do not duplicate the answer', async ({ page }) => {
   const bubble = await startTurn(page);
   await expect(bubble.locator('.thinking-status')).toHaveCount(1);
   await expect(bubble.locator('.thinking-spinner, .turn-summary-sparkle')).toHaveCount(0);
   await page.evaluate(() => window.__pushThinkingFrame('turn_summary', { summary: 'Preparing the comparison.', phase: 'initial' }));
-  await expect(bubble.locator('.turn-summary-text')).toHaveText('Preparing the comparison.');
+  await expect(bubble.locator('.turn-activity-intent')).toHaveText('Preparing the comparison.');
   await expect(bubble.locator('.turn-summary > summary')).toHaveCount(0);
   await page.evaluate(() => window.__pushThinkingFrame('', { choices: [{ delta: { reasoning_content: 'another private thought' } }] }));
   await expect(bubble).not.toContainText('another private thought');
   await page.evaluate(() => window.__finishThinking());
   await expect(bubble).toContainText('The final answer.');
   await expect(bubble.locator('.thinking-status')).toHaveCount(0);
-  await expect(bubble.locator('.turn-summary-text')).toHaveText('Checked the sources and compared the findings.');
-  await expect(bubble.locator('.turn-summary-text')).toBeVisible();
+  await expect(bubble.locator('.turn-activity-surface')).toHaveCount(0);
   await expect(bubble).not.toContainText('private');
   await expect(page.locator('[data-thinking-panel], #thinkingPanelReactRoot, #summaryBtn')).toHaveCount(0);
 });
@@ -86,8 +85,10 @@ test('tool status owns live progress without a duplicate activity list', async (
   await page.evaluate(() => window.__pushThinkingFrame('tool_use', [{ id: 'search-inline', name: 'web_search', input: { query: 'public query' } }]));
   const row = bubble.locator('.tool-inline[data-tcid="search-inline"]');
   await expect(row).toHaveAttribute('data-state', 'running');
-  await expect(bubble.locator('.thinking-status, .stream-cursor')).toHaveCount(0);
-  await expect(bubble.getByText('Searching "public query"…', { exact: true })).toHaveCount(1);
+  await expect(bubble.locator('.thinking-status')).toHaveCount(1);
+  await expect(bubble.locator('.stream-cursor')).toHaveCount(0);
+  await expect(bubble.locator('.thinking-status-label')).toHaveText('Searching "public query"…');
+  await bubble.locator('.thinking-accordion-toggle').click();
   await page.evaluate(() => window.__pushThinkingFrame('tool_result', { id: 'search-inline', name: 'web_search', ok: true, output: 'Found a source', results: [{ title: 'Source', url: 'https://example.test' }], status: 'completed' }));
   await expect(row).toHaveAttribute('data-state', 'done');
   // Native disclosure keyboard interaction still opens the execution detail.
@@ -106,6 +107,7 @@ test('parallel tools keep their order, DOM identity, and open details as later c
     { id: 'first-slow', name: 'Read', input: { file_path: 'slow.ts' } },
     { id: 'second-fast', name: 'web_search', input: { query: 'fast source' } },
   ]));
+  await bubble.locator('.thinking-accordion-toggle').click();
   const first = bubble.locator('[data-tcid="first-slow"]');
   const trigger = first.locator(':scope > summary');
   await expect(first).toBeVisible();
@@ -129,7 +131,7 @@ test('parallel tools keep their order, DOM identity, and open details as later c
 test('a task preview does not leave a thought header on a plain answer', async ({ page }) => {
   const bubble = await startTurn(page, false);
   await page.evaluate(() => window.__pushThinkingFrame('turn_summary', { summary: 'Preparing an answer.', phase: 'initial' }));
-  await expect(bubble.locator('.turn-summary-text')).toHaveText('Preparing an answer.');
+  await expect(bubble.locator('.turn-activity-intent')).toHaveText('Preparing an answer.');
   await page.evaluate(() => window.__finishPlain());
   await expect(bubble).toContainText('A direct answer.');
   await expect(bubble.locator('.turn-summary')).toHaveCount(0);
@@ -161,8 +163,10 @@ for (const theme of ['light', 'dark']) {
       await expect(page).toHaveTitle(/Socrates/i);
       expect(new URL(page.url()).pathname).toBe('/');
       const bubble = page.locator('.msg.assistant').last();
-      const process = bubble.locator('.turn-summary-text');
-      await expect(process).toHaveText('检查 CI 工作流运行任务');
+      const process = bubble.locator('.thinking-accordion-toggle');
+      await expect(bubble.locator('.turn-summary-text')).toHaveCount(0);
+      await process.click();
+      await page.mouse.move(0, 0);
       await expect(process).toBeVisible();
       await expect(bubble).not.toContainText('private reasoning');
       await expect(bubble.locator('.tool-run-summary, .turn-summary > summary')).toHaveCount(0);
@@ -179,9 +183,9 @@ for (const theme of ['light', 'dark']) {
       await expect(label).toHaveText('已搜索「' + longQuery + '」');
       const type = await label.evaluate((node) => ({ size: getComputedStyle(node).fontSize, color: getComputedStyle(node).color, whiteSpace: getComputedStyle(node).whiteSpace, height: node.getBoundingClientRect().height }));
       await expect(process).toHaveCSS('font-size', type.size);
-      expect(parseFloat(type.size)).toBeGreaterThanOrEqual(15);
+      expect(parseFloat(type.size)).toBe(14);
       expect(type.whiteSpace).toBe('normal');
-      await expect(process).toHaveCSS('color', type.color);
+      await expect(process).toHaveCSS('font-weight', '500');
       if (mobile) expect(type.height).toBeGreaterThan(30);
       const overflow = await bubble.evaluate((node) => node.scrollWidth - node.clientWidth);
       expect(overflow).toBeLessThanOrEqual(1);

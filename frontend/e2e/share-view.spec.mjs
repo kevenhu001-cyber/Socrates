@@ -169,6 +169,7 @@ test('a shared turn lays its tool rows out declaratively, read-only', async ({ p
      activity-row pass hides — without it the turn renders but reads inert. */
   await expect(body).toHaveClass(/is-declarative/);
 
+  await body.locator('.thinking-accordion-toggle').click();
   // Consecutive calls remain visible in the shared transcript.
   await expect(body.locator('.tool-run-group')).toHaveCount(1);
   await expect(body.locator('.tool-run-summary')).toHaveCount(0);
@@ -180,12 +181,12 @@ test('a shared turn lays its tool rows out declaratively, read-only', async ({ p
   // (Compared whitespace-collapsed: the markdown renderer's block output
   // separates paragraphs with one newline in textContent, not the source's two.)
   const oneLine = (text) => text.replace(/\s+/g, ' ').trim();
-  const order = await body.evaluate((el) => Array.from(el.children).map((node) => (
+  const order = await body.locator('.turn-evidence').evaluate((el) => Array.from(el.children).map((node) => (
     node.classList.contains('tool-run-prose')
       ? 'text:' + (node.textContent || '').replace(/\s+/g, ' ').trim()
-      : node.classList.contains('tool-run-group') ? 'group' : 'other'
+      : node.classList.contains('turn-activity-surface') ? 'activity' : 'other'
   )));
-  expect(order).toEqual(['group', 'text:' + oneLine(SHARED_RAW)]);
+  expect(order).toEqual(['activity', 'text:' + oneLine(SHARED_RAW)]);
 
   await expect(body.locator('.tool-inline-label')).toHaveText([
     'Searched for “inverse square law”',

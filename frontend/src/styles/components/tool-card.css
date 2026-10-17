@@ -90,7 +90,7 @@
   background: transparent;
   background-color: transparent;
   color: var(--tc-idle);
-  font: 400 var(--ui-text-body) / 1.65 var(--font-sans);
+  font: 400 var(--ui-font-size-sm) / var(--ui-text-ui-line) var(--font-sans);
   text-align: left;
   list-style: none;
   cursor: pointer;
@@ -148,7 +148,7 @@
 .msg.assistant .msg-body.is-declarative .tool-inline[data-state="running"] .tool-inline-tool-icon,
 .msg.assistant .msg-body.is-declarative .tool-run-group[data-state="running"] .tool-run-summary-icon {
   color: var(--tc-live);
-  animation: tool-row-breathe var(--ui-duration-pulse-slow, 1.6s) ease-in-out infinite;
+  animation: none;
 }
 .msg.assistant .msg-body.is-declarative .tool-inline[data-state="awaiting"] .tool-inline-tool-icon {
   color: var(--tc-live);
@@ -172,10 +172,6 @@
 .msg.assistant .msg-body.is-declarative .tool-run-group[data-state="cancelled"] .tool-run-summary-icon {
   color: var(--ui-text-disabled);
 }
-@keyframes tool-row-breathe {
-  0%, 100% { opacity: .45; }
-  50% { opacity: 1; }
-}
 
 /* Action descriptions wrap at transcript width, including on touch screens. */
 .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-label,
@@ -184,7 +180,7 @@
   min-width: 0;
   overflow-wrap: anywhere;
   color: inherit;
-  font-size: var(--ui-text-body);
+  font-size: var(--ui-font-size-sm);
   font-weight: 400;
   letter-spacing: -.003em;
   white-space: normal;

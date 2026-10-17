@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ThinkingAccordion } from '../src/react/tool-run/ThinkingAccordion.tsx';
+import { TurnActivitySurface } from '../src/react/tool-run/TurnActivitySurface.tsx';
 import { en } from '../src/i18n/en.js';
 import { zh } from '../src/i18n/zh.js';
 
@@ -30,7 +30,7 @@ afterEach(async () => {
 });
 
 async function render(props = {}) {
-  await act(() => root.render(createElement(ThinkingAccordion, { publicSummary: 'Public summary', isLive: true, ...props })));
+  await act(() => root.render(createElement(TurnActivitySurface, { publicSummary: 'Public summary', isLive: true, ...props })));
 }
 const toggle = () => container.querySelector('.thinking-accordion-toggle');
 
@@ -79,7 +79,8 @@ test('settled disclosure without a public summary is hidden', async () => {
 
 test('live chrome never fabricates summary content or repeats tool activity', async () => {
   await render({ publicSummary: '', activities: [{ id: 'search', kind: 'tool', phase: 'running', startedAt: 0, toolName: 'web_search' }] });
-  assert.equal(container.querySelector('.thinking-accordion'), null);
+  assert.equal(container.querySelector('.thinking-accordion-text'), null);
+  assert.equal(toggle().disabled, true);
   await render({ publicSummary: 'Compared publication dates.', activities: [
     { id: 'search', kind: 'tool', phase: 'running', startedAt: 0, toolName: 'web_search' },
     { id: 'summary', kind: 'reasoning_summary', phase: 'running', startedAt: 0, text: 'Compared publication dates.' },

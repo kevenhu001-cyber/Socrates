@@ -62,6 +62,7 @@ test('live chat shows an inline tool status instead of a tool card', async ({ pa
   });
 
   const bubble = page.locator('.msg.assistant').last();
+  await bubble.locator('.thinking-accordion-toggle').click();
 
   // Live chat must not have the legacy tool card chrome.
   await expect(page.locator('.agent-tool-card')).toHaveCount(0);
@@ -108,6 +109,7 @@ test('live Python image artifacts stay hidden until cited in assistant markdown'
   });
 
   const bubble = page.locator('.msg.assistant').last();
+  await bubble.locator('.thinking-accordion-toggle').click();
   await expect(bubble.locator('.tool-inline[data-tcid="code-plot"]')).toHaveAttribute('data-state', 'done');
   await expect(bubble.locator('.exec-artifact, .exec-artifact-image')).toHaveCount(0);
 });
@@ -140,39 +142,12 @@ test('tool activity lands behind its paragraph without splitting it', async ({ p
   });
 
   const bubble = page.locator('.msg.assistant').last();
+  await bubble.locator('.thinking-accordion-toggle').click();
   const row = bubble.locator('.tool-inline[data-tcid="boundary-search"]');
   await expect(row).toHaveCount(1);
-  const layout = await row.evaluate((toolRow) => {
-    const body = toolRow.closest('.msg-body');
-    const anchor = toolRow.closest('.tool-run-group') || toolRow;
-    let beforeText = '';
-    let afterText = '';
-    let seenRow = false;
-    for (const node of Array.from(body?.children || [])) {
-      if (node === anchor) { seenRow = true; continue; }
-      const cls = node.classList;
-      if (cls && (cls.contains('tool-inline-attachments') || cls.contains('agent-run-host'))) continue;
-      const text = (node.textContent || '').replace(/\s+/g, ' ').trim();
-      if (!text) continue;
-      if (seenRow) afterText += text;
-      else beforeText += text;
-    }
-    const clone = body?.cloneNode(true);
-    clone?.querySelectorAll('.tool-inline, .tool-inline-attachments, .agent-run-host').forEach((node) => node.remove());
-    return {
-      beforeText,
-      afterText,
-      prose: (clone?.textContent || '').replace(/\s+/g, ' ').trim(),
-    };
-  });
-  // Both finished paragraphs stay before the row; the paragraph that was
-  // streaming when the tool fired completes above it too — intact, not
-  // split across the row — and only the next paragraph follows it.
-  expect(layout.beforeText).toContain('先说明结论。');
-  expect(layout.beforeText).toContain('然后继续检查这个模块的实现细节。');
-  expect(layout.beforeText).not.toContain('再给出');
-  expect(layout.afterText).toContain('再给出修复方案。');
-  expect(layout.prose).toContain('先说明结论。 然后继续检查这个模块的实现细节。 再给出修复方案。');
+  await expect(bubble.locator('.turn-activity-surface [data-tcid="boundary-search"]')).toHaveCount(1);
+  const prose = await bubble.locator('.tool-run-prose').allTextContents();
+  expect(prose.join(' ').replace(/\s+/g, ' ')).toContain('先说明结论。 然后继续检查这个模块的实现细节。 再给出修复方案。');
 });
 
 test('live chat shows a Searching label while the model is searching', async ({ page }) => {
@@ -224,6 +199,7 @@ test('live chat shows a Searching label while the model is searching', async ({ 
     window.__searchTurnPromise = window.askChatTurn('Look something up');
   });
 
+  await page.locator('.msg.assistant').last().locator('.thinking-accordion-toggle').click();
   const row = page.locator('.msg.assistant .tool-inline[data-tcid="late-search"]').last();
   await expect(row).toBeVisible();
   await expect(row.locator('.tool-inline-label')).toContainText('Searching');
@@ -231,7 +207,7 @@ test('live chat shows a Searching label while the model is searching', async ({ 
   expect(await row.locator('.tool-inline-label').evaluate((node) => getComputedStyle(node).animationName)).toBe('none');
   await expect(row.locator('.tool-inline-tool-icon svg circle')).toHaveCount(1);
   await expect(row.locator('.tool-inline-tool-icon svg path')).toHaveCount(1);
-  await expect(page.locator('.msg.assistant .thinking-status')).toHaveCount(0);
+  await expect(page.locator('.msg.assistant .thinking-status')).toHaveCount(1);
   await expect(row).toHaveAttribute('data-state', 'running');
 
   await page.evaluate(() => window.__finishSearchStream());
@@ -291,10 +267,11 @@ test('code execution switches from executing to data analysis without thinking o
   });
 
   const bubble = page.locator('.msg.assistant').last();
+  await bubble.locator('.thinking-accordion-toggle').click();
   const row = bubble.locator('.tool-inline[data-tcid="live-code"]').last();
   await expect(row.locator('.tool-inline-label')).toContainText('Executing code');
   await expect(row.locator('.tool-inline-tool-icon svg path')).toHaveCount(3);
-  await expect(bubble.locator('.thinking-status')).toHaveCount(0);
+  await expect(bubble.locator('.thinking-status')).toHaveCount(1);
   await page.evaluate(() => window.__sendCodeProgress());
   await expect(row.locator('.tool-inline-label')).toContainText('Analyzing data');
   await page.evaluate(() => window.__finishCodeStream());
@@ -332,6 +309,7 @@ test('Tutor streams the same native tools and sends the tutor mode contract', as
   });
 
   expect(requestMode).toBe('tutor');
+  await page.locator('.msg.assistant').last().locator('.thinking-accordion-toggle').click();
   const row = page.locator('.msg.assistant .tool-inline[data-tcid="tutor-search"]').last();
   await expect(row).toHaveAttribute('data-state', 'done');
   await row.locator('summary').click();
@@ -420,6 +398,7 @@ test('consecutive tools stay individually visible without an aggregate header', 
   });
 
   const bubble = page.locator('.msg.assistant').last();
+  await bubble.locator('.thinking-accordion-toggle').click();
   const group = bubble.locator('.tool-run-group');
   await expect(group).toHaveCount(1);
   await expect(group).toHaveAttribute('data-state', 'complete');
@@ -475,6 +454,7 @@ test('a failed member marks the grouped run and keeps its own error detail', asy
 
   /* Failed actions remain visible beside successful actions. */
   const bubble = page.locator('.msg.assistant').last();
+  await bubble.locator('.thinking-accordion-toggle').click();
   const group = bubble.locator('.tool-run-group').first();
   await expect(group).toHaveAttribute('data-state', 'error');
   await expect(group.locator('.tool-run-summary')).toHaveCount(0);

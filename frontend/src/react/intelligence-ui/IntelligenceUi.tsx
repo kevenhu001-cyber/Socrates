@@ -10,10 +10,12 @@ import {
   type IntelligenceUiNode,
   type IntelligenceUiState,
 } from './model';
+import { IntelligentSurface, type IntelligentDisplayMode } from './IntelligentSurface';
 import type { ToolCallRecord } from '../tool-run/toolRunModel';
 
 interface IntelligenceUiBlockProps {
   source: string;
+  displayMode?: IntelligentDisplayMode;
   tools?: ReadonlyArray<ToolCallRecord>;
   open?: boolean;
   showActivityCue?: boolean;
@@ -611,7 +613,7 @@ function UiNode({ node, context }: { node: IntelligenceUiNode; context: RenderCo
   }
 }
 
-export function IntelligenceUiBlock({ source, tools = [], open = false, showActivityCue = true, readOnly = false }: IntelligenceUiBlockProps) {
+export function IntelligenceUiBlock({ source, tools = [], open = false, showActivityCue = true, readOnly = false, displayMode = 'inline' }: IntelligenceUiBlockProps) {
   const nodes = useMemo(() => parseIntelligenceUiRecords(source), [source]);
   const defaults = useMemo(() => initialStateForNodes(nodes), [nodes]);
   const children = useMemo(() => childMap(nodes), [nodes]);
@@ -634,7 +636,9 @@ export function IntelligenceUiBlock({ source, tools = [], open = false, showActi
 
   return (
     <div className="intui" data-intui-streaming={open ? 'true' : 'false'}>
-      {roots.map((node) => <UiNode key={node.id} node={node} context={context} />)}
+      <IntelligentSurface displayMode={displayMode}>
+        {roots.map((node) => <UiNode key={node.id} node={node} context={context} />)}
+      </IntelligentSurface>
       {open && showActivityCue ? <span className="intui-stream-dot" aria-hidden="true" /> : null}
     </div>
   );

@@ -70,7 +70,7 @@ test('deferred tool shows a clean single status line, no orphan dots', async ({ 
   // The deferred state: status line visible, NO mounted tool row yet.
   await expect(bubble.locator('.tool-inline')).toHaveCount(0);
   await expect(bubble).toContainText(/正在更新文件|工具运行中/);
-  await expect(bubble.locator('.thinking-status .tool-inline-tool-icon svg')).toHaveCount(1);
+  await expect(bubble.locator('.thinking-status .turn-activity-dot')).toHaveCount(1);
   await expect(bubble.locator('.thinking-status .thinking-spinner')).toHaveCount(0);
 
   // No orphaned stream cursor next to the status icon: while the live
@@ -78,7 +78,7 @@ test('deferred tool shows a clean single status line, no orphan dots', async ({ 
   await expect(bubble.locator('.stream-cursor')).toHaveCount(0);
 
   // The unified progress heading is above the answer, with no duplicate trailer.
-  await expect(bubble.locator('.turn-summary > .thinking-status')).toBeVisible();
+  await expect(bubble.locator('.turn-activity-surface > .thinking-status')).toBeVisible();
 
   await page.waitForTimeout(400);
   await bubble.screenshot({ path: 'test-results/tool-status-deferred.png' });
@@ -88,7 +88,7 @@ test('deferred tool shows a clean single status line, no orphan dots', async ({ 
   await page.evaluate(() => window.__pushText('容。文件已经写好。\n\n你可以看了。'));
   const row = bubble.locator('.tool-inline[data-tcid="w-defer"]');
   await expect(row).toHaveCount(1);
-  await expect(bubble.locator('.thinking-status')).toHaveCount(0);
+  await expect(bubble.locator('.thinking-status')).toHaveCount(1);
   await expect(bubble.locator('.stream-cursor')).toHaveCount(0);
   await expect(row.locator('.tool-inline-label')).toContainText('demo.txt');
   await page.waitForTimeout(400);
@@ -147,7 +147,8 @@ test('an active tool at the turn tail owns progress without an extra cursor', as
   await expect(row).toHaveCount(1);
 
   await expect(row).toHaveAttribute('data-state', 'running');
-  await expect(bubble.locator('.stream-cursor, .thinking-status')).toHaveCount(0);
+  await expect(bubble.locator('.stream-cursor')).toHaveCount(0);
+  await expect(bubble.locator('.thinking-status')).toHaveCount(1);
   await page.waitForTimeout(400);
   await bubble.screenshot({ path: 'test-results/tool-status-cursor-below-row.png' });
 });

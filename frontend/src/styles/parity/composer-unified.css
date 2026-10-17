@@ -378,6 +378,13 @@
   transform: none;
   pointer-events: auto;
 }
+/* ui/effortPicker.js toggles the standard `hidden` attribute to keep reasoning
+   effort in the top-bar configuration menu on desktop and in the composer rail
+   on phones. An author `display` outranks the user-agent `[hidden]` rule, so
+   the desktop leak has to be restated here at higher specificity. */
+#appShell .composer-shell .effort-picker[hidden] {
+  display: none;
+}
 #appShell .composer-shell .effort-trigger {
   display: inline-flex;
   align-items: center;

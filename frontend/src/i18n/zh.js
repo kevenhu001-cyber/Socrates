@@ -3,6 +3,15 @@
    pay for it, and zh users fetch it in parallel with the auth boot
    fetches while the boot-loading screen is still up. */
 export const zh = {
+    "think.activity":"活动记录",
+    "message.moreActions":"更多操作",
+    "intui.surface":"交互结果",
+    "intui.displayMode":"展示模式",
+    "intui.inline":"内嵌",
+    "intui.compact":"紧凑",
+    "intui.carousel":"横向浏览",
+    "intui.pip":"悬浮",
+
     "a11y.skipToContent":"跳到主要内容",
     /* chrome.* — 静态外壳的 tooltip / aria 文案（侧栏 chrome、显示设置弹层、
        顶栏模型胶囊、输入框工具栏、浮层容器）。与功能面键分开，避免改词波及功能文案。 */

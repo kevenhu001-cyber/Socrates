@@ -58,13 +58,13 @@ test('formatElapsed matches the reference "用时 1h 39m 2s" shape', () => {
   assert.equal(formatElapsed((1 * 3600 + 39 * 60 + 2) * 1000), '用时 1h 39m 2s');
 });
 
-test('a running command step renders the Chinese label and shimmer', () => {
+test('a running command step renders the Chinese label without text animation', () => {
   const body = host();
   const row = upsertAgentStep(body, step(), 'run-1');
   assert.equal(row.dataset.state, 'running');
   assert.equal(row.dataset.kind, 'command');
   assert.equal(row.querySelector('.agent-step-label').textContent, '运行了命令');
-  assert.ok(row.querySelector('.agent-step-label').classList.contains('shimmer-text'));
+  assert.equal(row.querySelector('.agent-step-label').classList.contains('shimmer-text'), false);
   assert.equal(row.querySelector('.agent-step-cmd').textContent, 'npm run test:unit');
   assert.ok(row.querySelector('.agent-step-icon svg'), 'a stroke icon is mounted');
   assert.equal(body.querySelectorAll('.agent-run').length, 1);

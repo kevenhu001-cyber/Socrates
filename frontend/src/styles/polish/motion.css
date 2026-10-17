@@ -22,38 +22,17 @@
   }
 }
 
-/* Thinking, inline tools, grouped tools and agent steps share one motion
-   language: a slow, constant-speed light sweep. Linear timing keeps the
-   velocity even across the whole cycle (no ease-in-out surge). The travel
-   stays strictly inside 0% ↔ 100%: with a 220%-wide background the image
-   covers the glyphs at every frame, so no blank (transparent) region can
-   ever slide over the text. Glyphs never move and opacity never changes:
-   only the highlight travels, left to right. */
-#appShell :is(
-  .shimmer-text,
-  .thinking-status-label,
-  .tool-inline-label,
-  .tool-run-summary-label,
-  .agent-step-label
-).shimmer-text {
-  animation: ui-activity-shimmer var(--ui-duration-shimmer, 3s) linear infinite;
+/* One subtle breathing dot is the sole persistent cue for a live turn.
+   Tool glyphs and text stay still inside the activity history. */
+#appShell .turn-activity-dot {
+  animation: ui-activity-breathe 1800ms ease-in-out infinite;
 }
-
-#appShell :is(
-  .thinking-status:has(.thinking-status-label.shimmer-text) .tool-inline-tool-icon,
-  .tool-inline[data-state="running"]:has(.tool-inline-label.shimmer-text) .tool-inline-tool-icon,
-  .tool-run-group[data-state="running"]:has(.tool-run-summary-label.shimmer-text) .tool-run-summary-icon,
-  .agent-step[data-state="running"]:has(.agent-step-label.shimmer-text) .agent-step-icon
-) {
+@keyframes ui-activity-breathe {
+  0%, 100% { opacity: .45; }
+  50% { opacity: .85; }
+}
+#appShell .turn-activity-surface :is(.tool-inline-tool-icon, .agent-step-icon, .tool-inline-label, .tool-run-summary-label, .agent-step-label) {
   animation: none;
-}
-
-@keyframes ui-activity-shimmer {
-  /* 100% parks the highlight just left of the glyphs, 0% just right of
-     them; both ends (and every frame between) keep the background fully
-     covering the text, so the loop wraps with no jump and no blank gap. */
-  0% { background-position: 100% 0; }
-  100% { background-position: 0% 0; }
 }
 
 /* Recording: components/composer.css owns the dot geometry and
@@ -79,7 +58,8 @@
     .tool-run-summary-label,
     .agent-step-label
   ).shimmer-text,
-  #appShell .voice-recording-indicator::after {
+  #appShell .voice-recording-indicator::after,
+  #appShell .turn-activity-dot {
     animation: none;
   }
 }

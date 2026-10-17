@@ -136,7 +136,11 @@ for (const vp of VIEWPORTS) {
       const { shape: chatShape, ...chatRest } = chat;
       expect.soft(chatShape, 'same DOM shape and class vocabulary').toEqual(topicShape);
       expect.soft(diff(topicRest, chatRest), 'computed style differences').toEqual([]);
-      expect(chat.effort.visible, 'default effort stays in the header configuration on phones').toBe(vp.name !== 'phone');
+      /* a1d66a66 progressively discloses the effort control: the desktop rail
+         leaves it to the top-bar configuration, and the phone rail only shows a
+         chip for an explicitly chosen level. At the default (medium) effort
+         there is therefore no composer chip on either surface. */
+      expect(chat.effort.visible, 'default effort stays in the header configuration').toBe(false);
     });
   }
 }

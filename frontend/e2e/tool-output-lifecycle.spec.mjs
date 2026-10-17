@@ -166,7 +166,7 @@ test('a settled visualization beside visible tool activities stays on screen', a
   expect(probe.removed).toEqual([]);
 
   /* Visual contract: the collapsed run shows its chart below the summary. */
-  await group.scrollIntoViewIfNeeded();
+  await body.scrollIntoViewIfNeeded();
   await page.waitForTimeout(150);
   await body.screenshot({ path: 'test-results/tool-output-collapsed.png' });
 });
@@ -201,6 +201,7 @@ test('opening a mobile tool detail does not move or duplicate call outputs', asy
   await expect(body.locator('.exec-artifact')).toHaveCount(0);
   await expect(group.locator('.tool-run-list')).toHaveCount(0);
 
+  await body.locator('.thinking-accordion-toggle').click();
   const row = group.locator('[data-tcid="search-1"]');
   await row.locator(':scope > summary').click();
   await expect(row.locator(':scope > summary')).toHaveAttribute('aria-expanded', 'true');
@@ -399,6 +400,7 @@ test('expanding and collapsing a tool ten times never remounts its chart', async
   await expect(card).toBeVisible();
   const handle = await card.elementHandle();
 
+  await body.locator('.thinking-accordion-toggle').click();
   const row = body.locator('[data-tcid="search-1"]');
   const summary = row.locator(':scope > summary');
   for (let i = 0; i < 10; i++) {

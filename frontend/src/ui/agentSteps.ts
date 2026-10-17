@@ -214,7 +214,7 @@ export function upsertAgentStep(
   const label = row.querySelector('.agent-step-label') as HTMLElement | null;
   if (label) {
     label.textContent = agentStepLabel(step);
-    label.classList.toggle('shimmer-text', step.status === 'running');
+    label.classList.remove('shimmer-text');
   }
   const command = row.querySelector('.agent-step-cmd') as HTMLElement | null;
   if (command) {

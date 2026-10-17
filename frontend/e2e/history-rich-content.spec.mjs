@@ -142,9 +142,7 @@ test('tool calls with textOffset restore as inline rows with the chart in place'
   // The chart must sit in the anchored host right after its row, not at
   // the bubble bottom after the trailing text segment.
   const order = await body.evaluate((el) => {
-    const row = el.querySelector('.tool-inline[data-tcid="inline-viz-call"]');
-    const anchor = row && (row.closest('.tool-run-group') || row);
-    const host = anchor && anchor.nextElementSibling;
+    const host = el.querySelector('.tool-inline-attachments[data-tool-anchor="inline-viz-call"]');
     return {
       hostIsAttachment: !!(host && host.classList.contains('tool-inline-attachments')),
       hostHasViz: !!(host && host.querySelector('.visualization-card')),
@@ -159,7 +157,7 @@ test('tool calls with textOffset restore as inline rows with the chart in place'
 
 const SENTENCE_SESSION_ID = '44444444-4444-4444-8444-444444444444';
 
-test('restored edit actions wait for the complete paragraph and remain visible', async ({ page }) => {
+test('restored edit actions keep the answer intact inside the unified activity hierarchy', async ({ page }) => {
   await mockAuthedApp(page);
   const rawText = '我先查一下相关资料。这是第一段。\n\n代码验证。尾巴。';
   const textOffset = '我先查一下'.length;
@@ -199,15 +197,14 @@ test('restored edit actions wait for the complete paragraph and remain visible',
   await page.evaluate((id) => window.loadSession(id), SENTENCE_SESSION_ID);
 
   const body = page.locator('#msgList .msg.assistant .msg-body');
-  await expect(body.locator('.tool-run-prose').first()).toHaveText('我先查一下相关资料。这是第一段。');
+  await expect.poll(async () => (await body.locator('.tool-run-prose').allTextContents()).join('').replace(/\s/g, '')).toBe(rawText.replace(/\s/g, ''));
   await expect(body.locator('.tool-run-summary')).toHaveCount(0);
   await expect(body.locator('.tool-inline-label')).toHaveText(['Edited moe.py', 'Edited router_v2.py']);
   await expect(body.locator('.tool-inline-file-summary')).toHaveCount(0);
-  const flow = await body.locator(':scope > *').evaluateAll((nodes) => nodes.map((node) => ({
+  const flow = await body.locator('.turn-evidence > *').evaluateAll((nodes) => nodes.map((node) => ({
     className: node.className,
     text: node.textContent.trim(),
   })));
-  expect(flow[0].text).toBe('我先查一下相关资料。这是第一段。');
-  expect(flow[1].className).toContain('tool-run-group');
-  expect(flow[2].text).toBe('代码验证。尾巴。');
+  expect(flow[0].className).toContain('turn-activity-surface');
+  expect(flow.slice(1).every((node) => node.className.includes('tool-run-prose'))).toBe(true);
 });

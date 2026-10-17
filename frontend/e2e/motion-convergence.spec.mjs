@@ -51,26 +51,21 @@ test('thinking, tools and recording share one primary persistent cue', async ({ 
     if (!shell) return null;
     const fixture = document.createElement('div');
     fixture.id = 'motion-convergence-fixture';
+    fixture.className = 'turn-activity-surface';
     fixture.innerHTML = `
-      <div class="thinking-status">
+      <div class="thinking-status"><span class="turn-activity-dot"></span>
         <span class="tool-inline-tool-icon"></span>
-        <span class="thinking-status-label shimmer-text">Thinking</span>
+        <span class="thinking-status-label">Thinking</span>
       </div>
       <details class="tool-inline" data-state="running">
         <summary class="tool-inline-head">
           <span class="tool-inline-tool-icon"></span>
-          <span class="tool-inline-label shimmer-text">Searching</span>
+          <span class="tool-inline-label">Searching</span>
         </summary>
       </details>
-      <div class="tool-run-group" data-state="running">
-        <button class="tool-run-summary">
-          <span class="tool-run-summary-icon"></span>
-          <span class="tool-run-summary-label shimmer-text">Reading sources</span>
-        </button>
-      </div>
       <div class="agent-step" data-state="running">
         <span class="agent-step-icon"></span>
-        <span class="agent-step-label shimmer-text">Running command</span>
+        <span class="agent-step-label">Running command</span>
       </div>
       <span class="voice-recording-indicator"></span>
     `;
@@ -83,13 +78,12 @@ test('thinking, tools and recording share one primary persistent cue', async ({ 
     const thinking = fixture.querySelector('.thinking-status-label');
 
     return {
+      dot: animation('.turn-activity-dot'),
       thinkingLabel: animation('.thinking-status-label'),
       thinkingIcon: animation('.thinking-status .tool-inline-tool-icon'),
       thinkingBackground: thinking ? getComputedStyle(thinking).backgroundImage : null,
       inlineLabel: animation('.tool-inline-label'),
       inlineIcon: animation('.tool-inline .tool-inline-tool-icon'),
-      groupLabel: animation('.tool-run-summary-label'),
-      groupIcon: animation('.tool-run-summary-icon'),
       agentLabel: animation('.agent-step-label'),
       agentIcon: animation('.agent-step-icon'),
       voiceCore: animation('.voice-recording-indicator'),
@@ -98,14 +92,13 @@ test('thinking, tools and recording share one primary persistent cue', async ({ 
   });
 
   expect(normal).not.toBeNull();
-  expect(normal.thinkingLabel).toBe('ui-activity-shimmer');
+  expect(normal.dot).toBe('ui-activity-breathe');
+  expect(normal.thinkingLabel).toBe('none');
   expect(normal.thinkingIcon).toBe('none');
-  expect(normal.thinkingBackground).toContain('linear-gradient');
-  expect(normal.inlineLabel).toBe('ui-activity-shimmer');
+  expect(normal.thinkingBackground).toBe('none');
+  expect(normal.inlineLabel).toBe('none');
   expect(normal.inlineIcon).toBe('none');
-  expect(normal.groupLabel).toBe('ui-activity-shimmer');
-  expect(normal.groupIcon).toBe('none');
-  expect(normal.agentLabel).toBe('ui-activity-shimmer');
+  expect(normal.agentLabel).toBe('none');
   expect(normal.agentIcon).toBe('none');
   expect(normal.voiceCore).toBe('none');
   expect(normal.voiceHalo).toBe('ui-recording-ring');
@@ -122,7 +115,6 @@ test('thinking, tools and recording share one primary persistent cue', async ({ 
     return {
       thinking: animation('.thinking-status-label'),
       inline: animation('.tool-inline-label'),
-      group: animation('.tool-run-summary-label'),
       agent: animation('.agent-step-label'),
       voiceHalo: animation('.voice-recording-indicator', '::after'),
       fill: thinking ? getComputedStyle(thinking).webkitTextFillColor : null,
@@ -132,7 +124,6 @@ test('thinking, tools and recording share one primary persistent cue', async ({ 
   expect(reduced).not.toBeNull();
   expect(reduced.thinking).toBe('none');
   expect(reduced.inline).toBe('none');
-  expect(reduced.group).toBe('none');
   expect(reduced.agent).toBe('none');
   expect(reduced.voiceHalo).toBe('none');
   expect(reduced.fill).not.toBe('transparent');

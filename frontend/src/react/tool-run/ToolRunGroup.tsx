@@ -8,20 +8,19 @@ export interface ToolRunGroupProps {
   segment: GroupSegment;
   messageId?: string;
   readOnly?: boolean;
+  activityOnly?: boolean;
   tools?: ReadonlyArray<ToolCallRecord>;
 }
 
-const CSS_STATE = { running: 'running', awaiting: 'running', done: 'complete', error: 'error', stopped: 'cancelled' };
-
-/** Each action stays in the transcript. Only its arguments/results collapse.
- * Keep the container stable as parallel calls settle; rows retain their
- * disclosure state and artifact hosts never remount. */
-export function ToolRunGroup({ segment, messageId, readOnly, tools }: ToolRunGroupProps) {
+/** Required actions and results remain in the transcript. Activity rows live
+ * in the turn disclosure; stable output keys preserve interactive state. */
+export function ToolRunGroup({ segment, messageId, readOnly, tools, activityOnly }: ToolRunGroupProps) {
+  if (activityOnly) return <section className="tool-run-group" data-state={segment.state === 'done' ? 'complete' : segment.state} data-category={segment.category}>
+    <ToolRunRows segment={segment} messageId={messageId} readOnly={readOnly} activityOnly />
+  </section>;
   return (
     <>
-      <section className="tool-run-group" data-state={CSS_STATE[segment.state]} data-category={segment.category}>
-        <ToolRunRows segment={segment} messageId={messageId} readOnly={readOnly} />
-      </section>
+      <ToolRunRows segment={segment} messageId={messageId} readOnly={readOnly} actionsOnly />
       {groupOutputCalls(segment).map((call) => <ToolRunAttachments key={`output-${call.id}`} call={call} tools={tools} readOnly={readOnly} />)}
     </>
   );

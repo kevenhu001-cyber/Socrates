@@ -6,7 +6,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 import { ToolRunRow } from '../src/react/tool-run/ToolRunRow.tsx';
 import { ToolRunGroup } from '../src/react/tool-run/ToolRunGroup.tsx';
-import { TurnSummaryPill } from '../src/react/tool-run/TurnSummaryPill.tsx';
+import { TurnActivitySurface } from '../src/react/tool-run/TurnActivitySurface.tsx';
 import { buildTurnLayout, groupOutputCalls } from '../src/react/tool-run/toolRunModel.ts';
 import { connectorActivityOf, connectorToolIdOf } from '../src/react/tool-run/toolActivity.ts';
 import { toolRunLabel } from '../src/react/tool-run/labels.ts';
@@ -46,31 +46,30 @@ test('agent run host stays in the reading flow while tool details are collapsed'
   assert.doesNotMatch(html, /<details|<summary|aria-expanded/);
 });
 
-test('completed observations stay separate from provider reasoning', () => {
-  const html = renderToStaticMarkup(React.createElement(TurnSummaryPill, {
-    messageId: 'summary', summary: 'Checked workflow steps.',
-  }));
-  assert.match(html, /<p class="turn-summary-text" data-summary-kind="outcome"><span>Checked workflow steps\.<\/span><\/p>/);
-  assert.doesNotMatch(html, /<details|private reasoning|Thought complete/);
+test('completed observations do not create a second process surface', () => {
+  const html = renderToStaticMarkup(React.createElement(TurnActivitySurface, { isLive: false }));
+  assert.equal(html, '');
 });
 
 test('selected activity has one status and no inferred summary', () => {
-  const html = renderToStaticMarkup(React.createElement(TurnSummaryPill, {
-    messageId: 'active', status: { phase: 'thinking', label: 'Analyzing the question' },
+  const html = renderToStaticMarkup(React.createElement(TurnActivitySurface, {
+    isLive: true, statusLabel: 'Analyzing the question',
   }));
   assert.equal((html.match(/role="status"/g) || []).length, 1);
-  assert.match(html, /thinking-status-label shimmer-text/);
-  assert.doesNotMatch(html, /private reasoning|turn-summary-text/);
+  assert.match(html, /turn-activity-dot/);
+  assert.doesNotMatch(html, /shimmer-text|private reasoning|turn-summary-text/);
 });
 
-test('running tool labels use the same live text cue as turn status', () => {
+test('running tool labels stay still inside activity history', () => {
   const html = renderToStaticMarkup(React.createElement(ToolRunRow, {
-    view: { ...settledAgentView, id: 'tool-live', state: 'running' },
+    view: { ...settledAgentView, id: 'tool-live', state: 'running' }, activityOnly: true,
   }));
-  assert.match(html, /class="tool-inline-label shimmer-text"/);
+  assert.match(html, /class="tool-inline-label"/);
+  assert.doesNotMatch(html, /shimmer-text|tool-inline-approval/);
+  assert.match(html, /agent-run-host/);
 });
 
-test('parallel calls keep their original order and all actions stay visible', () => {
+test('group outputs do not duplicate activity rows in the transcript', () => {
   const calls = [
     { id: 'first-running', name: 'Read', input: { path: 'first.ts' }, textOffset: 0 },
     { id: 'second-done', name: 'Read', input: { path: 'second.ts' }, status: 'completed', textOffset: 0 },
@@ -78,10 +77,7 @@ test('parallel calls keep their original order and all actions stay visible', ()
   const segment = buildTurnLayout('Answer.', calls)[0];
   assert.deepEqual(groupOutputCalls(segment).map((call) => call.id), ['first-running', 'second-done']);
   const html = renderToStaticMarkup(React.createElement(ToolRunGroup, { segment }));
-  assert.ok(html.indexOf('first-running') < html.indexOf('second-done'));
-  assert.doesNotMatch(html, /tool-run-summary|tool-run-list|data-nested/);
-  assert.match(html, /Reading first\.ts/);
-  assert.match(html, /Read second\.ts/);
+  assert.doesNotMatch(html, /tool-inline-label|tool-run-group/);
 });
 
 test('connector actions use service marks and descriptive workflow labels', () => {

@@ -1,7 +1,7 @@
 import type { PublicTurnActivity } from '@socrates/contracts';
 import type { LegacyChatMessage, LiveTurnStatus } from '../react/types/domain';
 import { toolRunStateOf } from './toolPresentationState';
-import { toolRunLabel, translate } from './toolPresentationModel';
+import { toolRunLabel, translate, type ToolCallLike } from './toolPresentationModel';
 
 /** Validate progress at the transport boundary. No reasoning-text extraction. */
 export function normalizePublicTurnActivity(value: unknown): PublicTurnActivity | null {
@@ -28,6 +28,7 @@ interface PresentationOptions {
   live?: boolean;
   hasRunningRow?: boolean;
   hasSettledTool?: boolean;
+  activeTool?: ToolCallLike;
 }
 
 /**
@@ -58,7 +59,7 @@ function observedStatus(message: LegacyChatMessage, activity: PublicTurnActivity
       return hasObservedReasoning(message)
         ? { phase: 'thinking', label: translate('think.thinking', 'Thinking…'), elapsedSec: legacy?.phase === 'thinking' ? legacy.elapsedSec : undefined }
         : { phase: 'waiting', label: translate('think.waitingForResponse', 'Waiting for the response.'), elapsedSec: legacy?.phase === 'waiting' ? legacy.elapsedSec : undefined };
-    case 'public_reasoning_summary': return { phase: 'thinking', label: activity.text };
+    case 'public_reasoning_summary': return { phase: 'thinking', label: translate('think.thinking', 'Thinking…') };
     case 'synthesizing': return hasVisibleAnswerText(message) ? undefined : { phase: 'synthesizing', label: translate('think.synthesizing', 'Preparing the answer') };
     case 'tool': {
       const call = message.toolCalls?.find((entry) => entry.id === activity.toolCallId);
@@ -100,13 +101,23 @@ export function deriveTurnPresentationState(message: LegacyChatMessage, options:
     reasoningMs += Math.max(0, range[1] - Math.max(end, range[0]));
     end = Math.max(end, range[1]);
   }
+  const intentSummary = live ? message._taskSummary?.trim() || '' : '';
+  const terminal = status?.phase === 'error' || status?.phase === 'stopped';
+  const activityStatus: LiveTurnStatus | undefined = terminal ? undefined : status
+    || (live && options.activeTool ? {
+      phase: 'tool-running', toolName: options.activeTool.name,
+      label: toolRunLabel(options.activeTool, 'running').text,
+    } : undefined);
   return {
+    activityStatus,
+    activityLabel: activityStatus?.phase === 'waiting' && intentSummary ? intentSummary : activityStatus?.label,
+    activityLive: live && Boolean(activityStatus),
     activities,
     reasoningSummaries,
     showReasoningSummary: Boolean(publicSummary),
     primaryActivity: activity,
     status,
-    intentSummary: live ? message._taskSummary?.trim() || '' : '',
+    intentSummary,
     outcomeSummary: !live ? message.summary?.trim() || '' : '',
     publicSummary,
     reasoningDurationSec: reasoningMs > 0 ? reasoningMs / 1000 : undefined,

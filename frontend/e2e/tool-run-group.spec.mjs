@@ -121,7 +121,9 @@ async function loadFixtureSession(page, { theme = 'dark', html = null, toolCalls
   await waitForAppShell(page);
   await page.waitForFunction(() => typeof window.loadSession === 'function', null, { timeout: 15_000 });
   await page.evaluate((id) => window.loadSession(id), SESSION_ID);
-  return page.locator('#msgList .msg.assistant').last().locator('.msg-body');
+  const body = page.locator('#msgList .msg.assistant').last().locator('.msg-body');
+  await body.locator('.thinking-accordion-toggle').click();
+  return body;
 }
 
 test('consecutive searches stay visible in call order without an aggregate header', async ({ page }) => {
@@ -295,7 +297,7 @@ test('each file action stays visible and opens its own result details', async ({
 
 test('answer prose keeps its recorded order around the rows, with no baked-in duplicates', async ({ page }) => {
   const body = await loadFixtureSession(page);
-  const layout = await body.evaluate((el) => {
+  const layout = await body.locator('.turn-evidence').evaluate((el) => {
     const order = [];
     for (const node of Array.from(el.children)) {
       /* Attachment hosts are mount points, not layout: React renders them next
@@ -304,8 +306,8 @@ test('answer prose keeps its recorded order around the rows, with no baked-in du
       if (node.classList.contains('tool-inline-attachments')) continue;
       /* The turn-summary disclosure leads every assistant turn; it is
          chrome, not part of the prose flow. */
-      if (node.classList.contains('turn-summary')) {
-        order.push('pill');
+      if (node.classList.contains('turn-activity-surface')) {
+        order.push('activity');
       } else if (node.classList.contains('tool-run-prose')) {
         order.push(`text:${(node.textContent || '').trim()}`);
       } else if (node.classList.contains('tool-run-group')) {
@@ -322,16 +324,11 @@ test('answer prose keeps its recorded order around the rows, with no baked-in du
     return order;
   });
   expect(layout).toEqual([
-    'row:s1',
-    'row:s2',
-    'row:s3',
+    'activity',
     'text:Lead paragraph.',
-    'row:f1',
     'other:tool-inline-error',
     'other:tool-inline-error-actions',
     'text:Middle paragraph.',
-    'row:w1',
-    'row:w2',
     'text:Tail paragraph.',
   ]);
 
@@ -425,6 +422,7 @@ test('a running code call streams details on demand and retains expansion on com
     window.__codeTurnPromise = window.askChatTurn('Run it');
   });
 
+  await page.locator('.msg.assistant').last().locator('.thinking-accordion-toggle').click();
   const row = page.locator('.msg.assistant').last().locator('.tool-inline[data-tcid="live-code"]').last();
   await expect(row).toHaveAttribute('data-state', 'running');
 

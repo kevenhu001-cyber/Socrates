@@ -271,13 +271,13 @@
    hangs in the toolbar row instead — that row is laid out, just transparent,
    while streaming — so the toolbar fades in where the dot was and the turn's
    height does not change. */
-#appShell .msg-body > .stream-cursor {
+#appShell :is(.msg-body, .turn-evidence) > .stream-cursor {
   display: block;
   width: 12px;
   height: 0;
   margin-left: 0;
 }
-#appShell .msg-body > .stream-cursor::before {
+#appShell :is(.msg-body, .turn-evidence) > .stream-cursor::before {
   inset: auto;
   top: 8px;
   left: 0;

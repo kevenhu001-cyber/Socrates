@@ -13,12 +13,14 @@ export interface ToolRunRowProps {
   messageId?: string;
   readOnly?: boolean;
   nested?: boolean;
+  activityOnly?: boolean;
+  actionsOnly?: boolean;
 }
 
-export function ToolRunRow({ view, startedAt, messageId, readOnly, nested }: ToolRunRowProps) {
+export function ToolRunRow({ view, startedAt, messageId, readOnly, nested, activityOnly, actionsOnly }: ToolRunRowProps) {
   const { open, setOpen } = useToolRunDisclosure(view.id);
   const inFlight = view.state === 'running' || view.state === 'awaiting';
-  const elapsedMs = useElapsed(startedAt || 0, inFlight);
+  const elapsedMs = useElapsed(startedAt || 0, inFlight && !actionsOnly);
   const expandable = Boolean(view.sections.length || view.tech.length || view.livePreview || view.liveOutput);
   const rowData = {
     className: `tool-inline${inFlight ? ' is-live' : ''}`,
@@ -30,7 +32,7 @@ export function ToolRunRow({ view, startedAt, messageId, readOnly, nested }: Too
 
   return (
     <>
-      {expandable ? <details
+      {!actionsOnly ? (expandable ? <details
         {...rowData}
         data-expandable="1"
         open={open}
@@ -52,19 +54,21 @@ export function ToolRunRow({ view, startedAt, messageId, readOnly, nested }: Too
         ) : null}
       </details> : <div {...rowData}>
         <div className="tool-inline-head"><ToolRunRowHead view={view} elapsedMs={elapsedMs} /></div>
-      </div>}
-      {view.agentRun ? (
+      </div>) : null}
+      {!actionsOnly && view.agentRun ? (
         <ToolRunAgentSteps
           run={view.agentRun}
           live={inFlight}
           state={agentRunStateOf(view.state)}
         />
       ) : null}
-      {error?.kind === 'error' ? <p className="tool-inline-error" role="alert">{error.text.trim().split('\n')[0].slice(0, 180)}</p> : null}
-      <RetryButton view={view} readOnly={readOnly} />
-      {view.approval ? (
-        <ToolRunApproval view={view.approval} messageId={messageId || ''} toolCallId={view.id} readOnly={readOnly} />
-      ) : null}
+      {!activityOnly ? <>
+        {error?.kind === 'error' ? <p className="tool-inline-error" role="alert">{error.text.trim().split('\n')[0].slice(0, 180)}</p> : null}
+        <RetryButton view={view} readOnly={readOnly} />
+        {view.approval ? (
+          <ToolRunApproval view={view.approval} messageId={messageId || ''} toolCallId={view.id} readOnly={readOnly} />
+        ) : null}
+      </> : null}
     </>
   );
 }

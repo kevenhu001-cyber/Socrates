@@ -3,7 +3,9 @@
  * Parsing, prose caching, and streaming-tail decoration live in focused modules.
  */
 import { TurnEvidence } from '../citations/TurnEvidence';
-import { ThinkingAccordion } from './ThinkingAccordion';
+import { TurnActivitySurface } from './TurnActivitySurface';
+import { ToolRunGroup } from './ToolRunGroup';
+import { ToolRunRow } from './ToolRunRow';
 import { deriveTurnPresentationState } from '../../ui/turnActivityModel';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -11,12 +13,13 @@ import {
   sortableToolCalls,
   stripLegacyToolHtml,
   toolRunStateOf,
+  toolRunView,
+  runStartedAt,
   type ToolCallRecord,
   type TurnSegment,
 } from './toolRunModel.js';
 import { ToolRunDisclosureProvider } from './ToolRunDisclosure';
 import { TurnStatus } from './TurnStatus.js';
-import { TurnSummaryPill } from './TurnSummaryPill';
 import { TurnSegmentContent } from './TurnSegmentContent';
 import { useProseRenderer } from './proseRenderer';
 import { stripLegacyTerminalHtml } from './toolRunLegacyHtml';
@@ -112,7 +115,8 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
       : segment.kind === 'tool' && ['running', 'awaiting'].includes(toolRunStateOf(segment.call)),
   );
   const hasSettledTool = calls.some((c) => toolRunStateOf(c) === 'done');
-  const presentation = deriveTurnPresentationState(message, { live: isLive, hasRunningRow, hasSettledTool });
+  const activeTool = calls.find((call) => ['running', 'awaiting'].includes(toolRunStateOf(call)));
+  const presentation = deriveTurnPresentationState(message, { live: isLive, hasRunningRow, hasSettledTool, activeTool });
   const liveStatus = presentation.status;
   const showStatus = Boolean(liveStatus);
   const legacyHtml = liveStatus && ['error', 'stopped'].includes(liveStatus.phase)
@@ -122,20 +126,22 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
   return (
     <ToolRunDisclosureProvider>
       <TurnEvidence runtime={message.turnRuntime} text={rawText}>
-        {presentation.showReasoningSummary ? <ThinkingAccordion
+        <TurnActivitySurface
           activities={presentation.reasoningSummaries}
           publicSummary={presentation.publicSummary}
-          isLive={isLive}
+          isLive={presentation.activityLive}
+          status={presentation.activityStatus}
           elapsedSec={presentation.reasoningDurationSec}
-          statusLabel={liveStatus?.label}
-          showActivityCue={!hasRunningRow}
-        /> : null}
-        <TurnSummaryPill
-          summary={presentation.intentSummary || presentation.outcomeSummary}
-          summaryKind={presentation.intentSummary ? 'intent' : 'outcome'}
-          messageId={messageId}
-          status={!presentation.showReasoningSummary && showStatus && liveStatus && !['error', 'stopped'].includes(liveStatus.phase) ? liveStatus : undefined}
-        />
+          statusLabel={presentation.activityLabel}
+          intentSummary={presentation.intentSummary}
+          hasTools={segments.some((segment) => segment.kind === 'tool' || segment.kind === 'group')}
+        >
+          {segments.map((segment, index) => segment.kind === 'group'
+            ? <ToolRunGroup key={segmentKey(segment, index)} segment={segment} messageId={messageId} readOnly={readOnly} activityOnly />
+            : segment.kind === 'tool'
+              ? <ToolRunRow key={segment.call.id} view={toolRunView(segment.call)} startedAt={runStartedAt(segment.call)} messageId={messageId} readOnly={readOnly} activityOnly />
+              : null)}
+        </TurnActivitySurface>
         {legacyHtml ? (
           <div
             className="tool-run-prose is-settled"

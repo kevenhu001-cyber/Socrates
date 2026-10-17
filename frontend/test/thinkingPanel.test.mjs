@@ -32,7 +32,9 @@ test('retry and terminal failures remain visible over running tool rows', () => 
 test('only explicit public summary events may provide reasoning summary copy', () => {
   assert.equal(normalizePublicTurnActivity({ type: 'reasoning', text: 'private' }), null);
   const view = deriveTurnPresentationState({ ...live, _activity: { type: 'public_reasoning_summary', text: ' Checked sources. ' } });
-  assert.equal(view.status.label, 'Checked sources.');
+  assert.equal(view.publicSummary, 'Checked sources.');
+  assert.equal(view.status.phase, 'thinking');
+  assert.notEqual(view.status.label, view.publicSummary);
 });
 
 test('synthesizing is observable before prose and retires when prose begins', () => {
@@ -90,4 +92,20 @@ test('thought duration counts only observed reasoning intervals without overlap'
     { ...entry, id: 'tool', kind: 'tool', endedAt: 50100 },
   ] } });
   assert.equal(view.reasoningDurationSec, 3);
+});
+
+
+test('the unified activity header selects the running tool without duplicating its summary', () => {
+  const tool = { id: 'search', name: 'web_search', input: { query: 'official specifications' } };
+  const view = deriveTurnPresentationState({ ...live, toolCalls: [tool] }, { live: true, hasRunningRow: true, activeTool: tool });
+  assert.equal(view.status, undefined, 'inline compatibility status yields to the running tool');
+  assert.equal(view.activityLive, true);
+  assert.equal(view.activityStatus.phase, 'tool-running');
+  assert.equal(view.activityLabel, 'Searching "official specifications"…');
+});
+
+test('intent can label waiting, and terminal state retires the activity cue', () => {
+  const message = { ...live, _taskSummary: 'Compare specifications', _liveStatus: { phase: 'waiting', label: 'Waiting' } };
+  assert.equal(deriveTurnPresentationState(message).activityLabel, 'Compare specifications');
+  assert.equal(deriveTurnPresentationState({ ...message, _liveStatus: { phase: 'error', label: 'Failed' } }).activityLive, false);
 });

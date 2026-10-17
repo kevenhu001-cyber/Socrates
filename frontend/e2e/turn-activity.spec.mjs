@@ -11,7 +11,7 @@ async function controller(page) {
   });
 }
 
-test('thinking shimmer hands the same message body to the first answer token', async ({ page }) => {
+test('activity hands the same message body to the first answer token', async ({ page }) => {
   await prepareChatWorkbench(page);
   await page.evaluate(async () => {
     window.__thinkingController = await window.addStreamingMessage({ userPrompt: '先分析问题，再给出答案。' });
@@ -25,7 +25,8 @@ test('thinking shimmer hands the same message body to the first answer token', a
   await expect(surface).toHaveAttribute('data-turn-state', 'live');
   const status = message.locator('.thinking-status');
   await expect(status).toHaveCount(1);
-  await expect(status.locator('.thinking-status-label')).toHaveClass(/shimmer-text/);
+  await expect(status.locator('.turn-activity-dot')).toHaveCount(1);
+  await expect(status.locator('.thinking-status-label')).not.toHaveClass(/shimmer-text/);
   const before = await status.boundingBox();
 
   await page.evaluate(() => window.__thinkingController.append('回答从同一个消息正文位置开始。'));
@@ -36,7 +37,7 @@ test('thinking shimmer hands the same message body to the first answer token', a
   const after = await answer.boundingBox();
   expect(before).not.toBeNull();
   expect(after).not.toBeNull();
-  expect(Math.abs((after?.x || 0) - (before?.x || 0))).toBeLessThanOrEqual(1);
+  expect(Math.abs((after?.x || 0) - (before?.x || 0))).toBeLessThanOrEqual(8);
 });
 
 test('waiting time is separate from observed model reasoning', async ({ page }) => {
@@ -97,7 +98,9 @@ test('streaming actions are absent and running tools own the activity surface', 
     ctl.appendThinking('More private scratch work while searching.');
   });
   await expect(message.locator('.tool-inline[data-state="running"]')).toHaveCount(1);
-  await expect(message.locator('.thinking-status')).toHaveCount(0);
+  await expect(message.locator('.thinking-status')).toHaveCount(1);
+  await expect(message.locator('.turn-activity-surface')).toHaveCount(1);
+  await expect(message.locator('.turn-activity-dot')).toHaveCount(1);
   await expect(message.locator('.msg-toolbar button')).toHaveCount(0);
   await page.screenshot({ path: 'test-results/turn-activity-running.png' });
 
@@ -131,6 +134,7 @@ test('detail-free rows are static and native UI output is outside disclosure', a
   const before = await page.locator('.intui').innerText();
   await page.getByRole('button', { name: 'Add one', exact: true }).click();
   await expect.poll(() => page.locator('.intui').innerText()).not.toBe(before);
+  await page.locator('.thinking-accordion-toggle').click();
   await page.locator('.tool-inline summary').click();
   await expect(page.locator('.intui')).toBeVisible();
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { MessageOverflow } from './MessageOverflow';
 import type { LegacyChatMessage } from '../types/domain';
 import { useMessageToolbarCallbacks } from './useMessageActions';
 
@@ -168,17 +169,12 @@ function MessageToolbar({ message, role, pending = false }: MessageToolbarProps)
       {role === 'assistant' && (
         <>
           <IconButton
-            label="Share conversation"
-            onClick={() => c.onShare?.()}
-          >
-            {ShareIcon}
-          </IconButton>
-          <IconButton
             label="Regenerate response"
             onClick={() => c.onRegenerate?.()}
           >
             {RegenerateIcon}
           </IconButton>
+          <span className="msg-toolbar-feedback">
           <IconButton
             label="Helpful"
             onClick={() => c.onThumbsUp?.()}
@@ -191,24 +187,15 @@ function MessageToolbar({ message, role, pending = false }: MessageToolbarProps)
           >
             {ThumbsDownIcon}
           </IconButton>
-          <IconButton
-            label="Branch from here"
-            onClick={() => c.onBranch?.()}
-          >
-            {BranchIcon}
-          </IconButton>
-          <IconButton
-            label="Re-explain from a different angle"
-            onClick={() => c.onReExplain?.()}
-          >
-            {ReExplainIcon}
-          </IconButton>
-          <IconButton
-            label="Read aloud"
-            onClick={(ev) => c.onReadAloud?.(ev)}
-          >
-            {ReadAloudIcon}
-          </IconButton>
+          </span>
+          <MessageOverflow actions={[
+            { label: 'Share conversation', icon: ShareIcon, onClick: () => c.onShare?.() },
+            { label: 'Branch from here', icon: BranchIcon, onClick: () => c.onBranch?.() },
+            { label: 'Read aloud', icon: ReadAloudIcon, onClick: (event) => c.onReadAloud?.(event) },
+            { label: 'Re-explain from a different angle', icon: ReExplainIcon, onClick: () => c.onReExplain?.() },
+            { label: 'Helpful', icon: ThumbsUpIcon, mobileOnly: true, onClick: () => c.onThumbsUp?.() },
+            { label: 'Not helpful', icon: ThumbsDownIcon, mobileOnly: true, onClick: () => c.onThumbsDown?.() },
+          ]} />
         </>
       )}
     </div>

@@ -1,5 +1,14 @@
 /* English locale table. Kept synchronous because it is the fallback for all locales. */
 export const en = {
+    "think.activity":"Activity",
+    "message.moreActions":"More actions",
+    "intui.surface":"Interactive result",
+    "intui.displayMode":"Display mode",
+    "intui.inline":"Inline",
+    "intui.compact":"Compact",
+    "intui.carousel":"Carousel",
+    "intui.pip":"Floating",
+
     "a11y.skipToContent":"Skip to content",
     /* chrome.* — static shell tooltips / aria labels (sidebar chrome, display
        popover, topbar model capsule, composer toolbar, overlay containers).

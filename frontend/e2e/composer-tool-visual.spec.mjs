@@ -29,6 +29,7 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
     await window.askChatTurn('Explore Socratic learning');
   });
 
+  await page.locator('.msg.assistant .thinking-accordion-toggle').click();
   const toolRow = page.locator('.msg.assistant .tool-inline[data-tcid="search-visual"]');
   await expect(toolRow).toBeVisible();
   await expect(toolRow.locator('.tool-inline-label').first()).toHaveText('Searched for “Socratic learning”');
