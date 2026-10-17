@@ -10,7 +10,7 @@ import { getVisibleSessions, getArchivedSessionsFrom, sweepExpiredArchivesFrom, 
 import { createReconciler } from './recentsReconcile.ts';
 import { getKnownTagsFromSessions } from '../ui/recentsHelpers.js';
 import { apiFetch } from '../util/api.ts';
-import { detailCache } from './detailCache.js';
+import { detailCache } from './detailCache.ts';
 import { clearLocalMemory } from '../storage/localMemory.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { resetShareToken, toggleShareBtn } from '../ui/share.js';

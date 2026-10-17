@@ -4,7 +4,7 @@ import { hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { installSessionListBridge, setCurrentSessionId, useSessionListSnapshot } from './sessionList.bridge';
-import { detailCache } from '../../session/detailCache.js';
+import { detailCache } from '../../session/detailCache.ts';
 import { SessionListEmptyState } from './SessionListEmptyState';
 import { SessionTimeline } from './SessionTimeline';
 

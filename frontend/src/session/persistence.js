@@ -20,7 +20,7 @@ import { markCmdKIndexDirty } from '../ui/cmdK.js';
 import { toggleShareBtn } from '../ui/share.js';
 import { showToast } from '../ui/toast.js';
 import { apiFetch } from '../util/api.ts';
-import { detailCache } from './detailCache.js';
+import { detailCache } from './detailCache.ts';
 
 function _t(key, fallback) {
   try {

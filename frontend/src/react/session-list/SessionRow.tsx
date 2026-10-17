@@ -1,6 +1,6 @@
 import React, { memo, useCallback, useRef, useState } from 'react';
 import { t } from '../legacy/gateway.ts';
-import { detailCache } from '../../session/detailCache.js';
+import { detailCache } from '../../session/detailCache.ts';
 import type { SessionItem } from './types';
 import { safeId } from './sessionListModel';
 import { SessionRowDetails } from './SessionRowDetails';

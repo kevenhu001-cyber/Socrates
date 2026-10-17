@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   signature, lookup, store, invalidate, has, foldSave, _reset, _size, limits, detailCache,
-} from '../src/session/detailCache.js';
+} from '../src/session/detailCache.ts';
 
 /* session/detailCache.js is pure in-memory state; reset between tests so the
    module-level Map never leaks across cases. */

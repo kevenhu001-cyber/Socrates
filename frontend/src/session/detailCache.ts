@@ -1,4 +1,4 @@
-/* session/detailCache.js — P2 stale-while-revalidate session-detail cache.
+/* session/detailCache.ts — P2 stale-while-revalidate session-detail cache.
  *
  * apiFetch forces `cb=<ts>` + `no-store` on every GET (util/api.ts), so
  * switching between history sessions re-paid the full round-trip AND the
@@ -18,47 +18,77 @@
  * after MAX_AGE, and the whole cache is bounded by entry count and per-entry
  * serialized size so a pile of long sessions can't balloon memory.
  *
- * Exported as a plain object (not a class) to match the other session/*.js
+ * Exported as a plain object (not a class) to match the other session/*.ts
  * modules and to keep the unit test free of import-order concerns.
  */
 
 import { apiFetch } from '../util/api.ts';
 
-var MAX_ENTRIES = 8;
-var MAX_ENTRY_BYTES = 3_000_000;   // 3 MB serialized cap per session
-var MAX_AGE_MS = 600_000;          // 10 min: after this a hit is treated as a miss
+const MAX_ENTRIES = 8;
+const MAX_ENTRY_BYTES = 3_000_000;   // 3 MB serialized cap per session
+const MAX_AGE_MS = 600_000;          // 10 min: after this a hit is treated as a miss
+
+/** A message row inside a cached detail response. */
+export interface CachedMessage {
+  id?: string | null;
+  clientId?: string | null;
+  html?: string | null;
+  rawText?: string | null;
+  reasoningContent?: string | null;
+  attachments?: Array<{ dataUrl?: string | null; text?: string | null } | null> | null;
+  toolCalls?: unknown[] | null;
+  [key: string]: unknown;
+}
+
+/** GET /api/sessions/:id, as far as the cache and the fold read it. */
+export interface CachedDetailResponse {
+  id?: string;
+  kind?: string | null;
+  title?: string | null;
+  topic?: string | null;
+  phase?: string | null;
+  streamingText?: string | null;
+  messages?: CachedMessage[] | null;
+  [key: string]: unknown;
+}
+
+export interface CacheEntry {
+  response: CachedDetailResponse;
+  sig: string;
+  at: number;
+}
 
 /* id -> { response, sig, at } ; Map preserves insertion order = LRU. */
-var _entries = new Map();
-var _inflightPrefetches = new Map();
+const _entries = new Map<string, CacheEntry>();
+const _inflightPrefetches = new Map<string, Promise<CachedDetailResponse | null>>();
 
 /* A cached entry fetched this recently is not re-fetched in the background:
    the same tab just read it, and every local write path (save / delete /
    archive) invalidates it. Rapid back-and-forth switching used to pay one
    full detail GET + JSON.parse per click. */
-var REVALIDATE_AFTER_MS = 30_000;
+const REVALIDATE_AFTER_MS = 30_000;
 
 /* Size estimate for the cap. This used to JSON.stringify the whole response
    on every store — a multi-hundred-KB serialisation on each switch just to
    read `.length`. The message bodies dominate the payload, so summing their
    string fields (plus a per-row allowance for keys and small fields) is
    within a few percent and costs nothing. */
-function serializedBytes(response) {
-  var msgs = Array.isArray(response.messages) ? response.messages : [];
-  var total = 2048;
-  for (var i = 0; i < msgs.length; i++) {
-    var m = msgs[i];
+function serializedBytes(response: CachedDetailResponse): number {
+  const msgs = Array.isArray(response.messages) ? response.messages : [];
+  let total = 2048;
+  for (let i = 0; i < msgs.length; i++) {
+    const m = msgs[i];
     if (!m) continue;
     total += 256 + (m.html ? m.html.length : 0) + (m.rawText ? m.rawText.length : 0)
       + (m.reasoningContent ? m.reasoningContent.length : 0);
     if (Array.isArray(m.attachments) && m.attachments.length) {
-      for (var a = 0; a < m.attachments.length; a++) {
-        var at = m.attachments[a];
+      for (let a = 0; a < m.attachments.length; a++) {
+        const at = m.attachments[a];
         if (at) total += 128 + (at.dataUrl ? at.dataUrl.length : 0) + (at.text ? at.text.length : 0);
       }
     }
     if (Array.isArray(m.toolCalls) && m.toolCalls.length) {
-      try { total += JSON.stringify(m.toolCalls).length; } catch (_) { return Infinity; }
+      try { total += JSON.stringify(m.toolCalls).length; } catch { return Infinity; }
     }
   }
   return total;
@@ -70,13 +100,13 @@ function serializedBytes(response) {
  * renderer reads moved) and includes a sum of html lengths so an in-place edit
  * that keeps the same message id still trips a re-paint.
  */
-export function signature(s) {
+export function signature(s: CachedDetailResponse | null | undefined): string {
   if (!s || typeof s !== 'object') return '';
-  var msgs = Array.isArray(s.messages) ? s.messages : [];
-  var ids = '';
-  var htmlLen = 0;
-  for (var i = 0; i < msgs.length; i++) {
-    var m = msgs[i] || {};
+  const msgs = Array.isArray(s.messages) ? s.messages : [];
+  let ids = '';
+  let htmlLen = 0;
+  for (let i = 0; i < msgs.length; i++) {
+    const m = msgs[i] || {};
     ids += (m.id || m.clientId || '') + ',';
     htmlLen += (m.html || '').length;
   }
@@ -88,8 +118,8 @@ export function signature(s) {
 }
 
 /** Return a live (unexpired) entry, bumping its LRU rank, or null. */
-export function lookup(id) {
-  var e = _entries.get(id);
+export function lookup(id: string): CacheEntry | null {
+  const e = _entries.get(id);
   if (!e) return null;
   if (Date.now() - e.at > MAX_AGE_MS) { _entries.delete(id); return null; }
   _entries.delete(id); _entries.set(id, e);
@@ -97,20 +127,21 @@ export function lookup(id) {
 }
 
 /** Remember a freshly-fetched response for `id` (subject to the size caps). */
-export function store(id, response, sig) {
+export function store(id: string, response: CachedDetailResponse, sig?: string | null): void {
   if (!id || !response || typeof response !== 'object') return;
   if (response.kind === 'exam') return;   // exam renders via a different path
-  var bytes = serializedBytes(response);
+  const bytes = serializedBytes(response);
   if (bytes > MAX_ENTRY_BYTES) return;    // too big to be worth cloning later
   _entries.delete(id);
-  _entries.set(id, { response: response, sig: sig != null ? sig : signature(response), at: Date.now() });
+  _entries.set(id, { response, sig: sig != null ? sig : signature(response), at: Date.now() });
   while (_entries.size > MAX_ENTRIES) {
-    var oldest = _entries.keys().next().value;
+    const oldest = _entries.keys().next().value;
+    if (oldest === undefined) break;
     _entries.delete(oldest);
   }
 }
 
-export function invalidate(id) {
+export function invalidate(id: string | null | undefined): void {
   if (id != null) {
     _entries.delete(id);
     _inflightPrefetches.delete(id);
@@ -121,19 +152,18 @@ export function invalidate(id) {
  * Prefetch a session in the background (e.g. on pointerenter / touchstart).
  * De-duplicates concurrent in-flight requests and avoids re-fetching cached entries.
  */
-export function prefetch(id) {
+export function prefetch(id: string | null | undefined): Promise<CachedDetailResponse | null> {
   if (!id || typeof id !== 'string') return Promise.resolve(null);
   if (has(id)) {
-    var cached = lookup(id);
+    const cached = lookup(id);
     return Promise.resolve(cached ? cached.response : null);
   }
-  if (_inflightPrefetches.has(id)) {
-    return _inflightPrefetches.get(id);
-  }
+  const inflight = _inflightPrefetches.get(id);
+  if (inflight) return inflight;
 
-  var p = Promise.resolve().then(function () {
+  const p = Promise.resolve().then(function () {
     if (typeof apiFetch === 'function') {
-      return apiFetch('/api/sessions/' + encodeURIComponent(id));
+      return apiFetch<CachedDetailResponse>('/api/sessions/' + encodeURIComponent(id));
     }
     return null;
   }).then(function (s) {
@@ -151,44 +181,39 @@ export function prefetch(id) {
   return p;
 }
 
-export function getInflight(id) {
+export function getInflight(id: string): Promise<CachedDetailResponse | null> | null {
   return _inflightPrefetches.get(id) || null;
 }
 
 /**
  * Preload the top-N recent sessions during browser idle time so switching is 0ms.
  */
-export function idleWarmup(sessionIds) {
+export function idleWarmup(sessionIds: ReadonlyArray<string | null | undefined>): void {
   if (!Array.isArray(sessionIds) || !sessionIds.length) return;
-  var queue = sessionIds.filter(function (id) { return id && !has(id); }).slice(0, 3);
+  const queue = sessionIds.filter(function (id): id is string { return !!id && !has(id); }).slice(0, 3);
   if (!queue.length) return;
 
-  var step = function () {
+  const step = function (): void {
     if (!queue.length) return;
-    var nextId = queue.shift();
+    const nextId = queue.shift();
+    if (!nextId) return;
     prefetch(nextId).then(function () {
       if (queue.length) {
-        if (typeof requestIdleCallback === 'function') {
-          requestIdleCallback(step, { timeout: 3000 });
-        } else {
-          setTimeout(step, 300);
-        }
+        if (typeof requestIdleCallback === 'function') requestIdleCallback(step, { timeout: 3000 });
+        else setTimeout(step, 300);
       }
     });
   };
 
-  if (typeof requestIdleCallback === 'function') {
-    requestIdleCallback(step, { timeout: 3000 });
-  } else {
-    setTimeout(step, 300);
-  }
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(step, { timeout: 3000 });
+  else setTimeout(step, 300);
 }
 
 /* Session-level scalars a save can move. Messages are handled separately
    because they arrive as a delta; these come back whole on the save
    response. Kept as a list so the merge is explicit and testable rather than
    a blind Object.assign over the response. */
-var SCALAR_KEYS = [
+const SCALAR_KEYS = [
   'id', 'title', 'topic', 'mode', 'kind', 'phase', 'totalQ', 'projectId',
   'pinned', 'archivedAt', 'examData', 'kbNodes', 'mistakes', 'teachingPlan',
   'boundariesHistory', 'mistakeFilter', 'branchedFrom', 'currentNode',
@@ -204,60 +229,65 @@ var SCALAR_KEYS = [
  * one session most likely to be revisited — the one the user just chatted in
  * — was precisely the one that could never hit it. The save already computes
  * the exact set of message rows that moved (the same delta that made the
- * server correct, see saveDelta.js), so applying that delta to the cached copy
+ * server correct, see saveDelta.ts), so applying that delta to the cached copy
  * leaves it correct rather than stale.
  *
  * Anything this gets wrong is self-correcting: loadSession() reconciles every
  * hit against a live fetch and re-paints when the signature differs, so a bad
  * fold costs one extra paint, never a wrong final state.
  *
- * @param {string} id         session id the save landed under
- * @param {object} saved      the POST response (scalars)
- * @param {Array}  rows       the message delta that was acknowledged
+ * @param id    session id the save landed under
+ * @param saved the POST response (scalars)
+ * @param rows  the message delta that was acknowledged
  */
-export function foldSave(id, saved, rows) {
+export function foldSave(
+  id: string | null | undefined,
+  saved: Record<string, unknown> | null | undefined,
+  rows: CachedMessage[] | null | undefined,
+): void {
   if (id == null) return;
-  var e = _entries.get(id);
+  const e = _entries.get(id);
   if (!e) return;
 
-  var response = e.response;
-  var next = {};
+  const response = e.response;
+  const next: CachedDetailResponse = {};
   /* Start from the cached copy, then overlay only the scalars the save
      response actually carried. The save handler deliberately drops the big
      JSONB blobs from its reply, so anything it omits must keep the value the
      cached detail already had — a blind replace would blank kbNodes etc. */
-  for (var i = 0; i < SCALAR_KEYS.length; i++) {
-    var key = SCALAR_KEYS[i];
+  for (let i = 0; i < SCALAR_KEYS.length; i++) {
+    const key = SCALAR_KEYS[i];
     if (Object.prototype.hasOwnProperty.call(response, key)) next[key] = response[key];
   }
   if (saved && typeof saved === 'object') {
-    for (var s = 0; s < SCALAR_KEYS.length; s++) {
-      var sk = SCALAR_KEYS[s];
+    for (let s = 0; s < SCALAR_KEYS.length; s++) {
+      const sk = SCALAR_KEYS[s];
       if (saved[sk] !== undefined) next[sk] = saved[sk];
     }
   }
 
   if (Array.isArray(rows) && rows.length) {
-    var msgs = Array.isArray(response.messages) ? response.messages.slice() : [];
-    var byClient = Object.create(null);
-    for (var m = 0; m < msgs.length; m++) {
-      var ck = msgs[m] && (msgs[m].clientId || msgs[m].id);
+    const msgs = Array.isArray(response.messages) ? response.messages.slice() : [];
+    const byClient: Record<string, number> = Object.create(null);
+    for (let m = 0; m < msgs.length; m++) {
+      const ck = msgs[m] && (msgs[m].clientId || msgs[m].id);
       if (ck) byClient[ck] = m;
     }
-    for (var r = 0; r < rows.length; r++) {
-      var row = rows[r];
+    for (let r = 0; r < rows.length; r++) {
+      const row = rows[r];
       if (!row) continue;
-      var match = byClient[row.clientId] != null ? byClient[row.clientId]
-        : (byClient[row.id] != null ? byClient[row.id] : -1);
+      const byClientId = row.clientId ? byClient[row.clientId] : undefined;
+      const byRowId = row.id ? byClient[row.id] : undefined;
+      const match = byClientId != null ? byClientId : (byRowId != null ? byRowId : -1);
       if (match >= 0) {
         /* Keep the server's row id — the cache is keyed by it, and the
            client's copy may not know it yet. */
-        var merged = Object.assign({}, msgs[match], row);
+        const merged = Object.assign({}, msgs[match], row);
         merged.id = msgs[match].id;
         msgs[match] = merged;
       } else {
         msgs.push(row);
-        var nk = row.clientId || row.id;
+        const nk = row.clientId || row.id;
         if (nk) byClient[nk] = msgs.length - 1;
       }
     }
@@ -275,22 +305,22 @@ export function foldSave(id, saved, rows) {
 }
 
 /** True when a live entry was fetched too recently to be worth re-checking. */
-export function isFresh(entry) {
+export function isFresh(entry: CacheEntry | null | undefined): boolean {
   return !!entry && (Date.now() - entry.at) < REVALIDATE_AFTER_MS;
 }
 
-export function has(id) {
-  var e = _entries.get(id);
+export function has(id: string): boolean {
+  const e = _entries.get(id);
   return !!e && (Date.now() - e.at <= MAX_AGE_MS);
 }
 
 /* Test seams. */
-export function _reset() {
+export function _reset(): void {
   _entries.clear();
   _inflightPrefetches.clear();
 }
-export function _size() { return _entries.size; }
-export const limits = { MAX_ENTRIES: MAX_ENTRIES, MAX_ENTRY_BYTES: MAX_ENTRY_BYTES, MAX_AGE_MS: MAX_AGE_MS, REVALIDATE_AFTER_MS: REVALIDATE_AFTER_MS };
+export function _size(): number { return _entries.size; }
+export const limits = { MAX_ENTRIES, MAX_ENTRY_BYTES, MAX_AGE_MS, REVALIDATE_AFTER_MS };
 
 export const detailCache = {
   signature: signature,

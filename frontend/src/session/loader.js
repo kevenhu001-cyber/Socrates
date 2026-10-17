@@ -19,13 +19,13 @@ import { buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan } from '../cha
 import { stateView } from '../tutor/diagnosticFlow.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { showToast } from '../ui/toast.js';
-import { detailCache } from './detailCache.js';
+import { detailCache } from './detailCache.ts';
 import {
   restoreSessionMessage,
   restoreLocalAssistantFallback,
   restoreInterruptedResponse,
   mirrorSessionHistory,
-} from './historyRestore.js';
+} from './historyRestore.ts';
 import { reattachPendingTurn } from './pendingTurnRestore.ts';
 import { seedSyncedMessages } from './persistence.js';
 import { toggleShareBtn } from '../ui/share.js';

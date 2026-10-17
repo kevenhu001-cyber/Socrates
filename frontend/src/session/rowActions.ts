@@ -3,7 +3,7 @@
 import { apiFetch } from '../util/api.ts';
 import { serverCache } from './serverCache.ts';
 import { stateStore } from '../state/store.js';
-import { detailCache } from './detailCache.js';
+import { detailCache } from './detailCache.ts';
 
 /** Fields the row menu can PATCH; anything else is passed through. */
 export interface SessionMetadataPatch {
