@@ -2,6 +2,7 @@ import React from 'react';
 import { MessageOverflow } from './MessageOverflow';
 import type { LegacyChatMessage } from '../types/domain';
 import { useMessageToolbarCallbacks } from './useMessageActions';
+import { i18n } from '../legacy/gateway';
 
 interface IconButtonProps {
   label: string;
@@ -9,6 +10,8 @@ interface IconButtonProps {
   children?: React.ReactNode;
   svgInner?: string;
   active?: boolean;
+  /** Extra class for a state that CSS keys off, e.g. the copied check. */
+  modifier?: string;
 }
 
 const CopyIcon = (
@@ -93,11 +96,11 @@ const ReadAloudIcon = (
   </>
 );
 
-function IconButton({ label, onClick, children, svgInner, active }: IconButtonProps): React.ReactElement {
+function IconButton({ label, onClick, children, svgInner, active, modifier }: IconButtonProps): React.ReactElement {
   return (
     <button
       type="button"
-      className={`btn btn-icon btn-touch msg-toolbar-btn${active ? ' active' : ''}`}
+      className={`btn btn-icon btn-touch msg-toolbar-btn${active ? ' active' : ''}${modifier ? ` ${modifier}` : ''}`}
       aria-label={label}
       onClick={onClick}
     >
@@ -124,6 +127,11 @@ interface MessageToolbarProps {
 function MessageToolbar({ message, role, pending = false }: MessageToolbarProps): React.ReactElement | null {
   const c = useMessageToolbarCallbacks(message);
   const [copied, setCopied] = React.useState(false);
+  const [, refreshLanguage] = React.useReducer((revision: number) => revision + 1, 0);
+  React.useEffect(() => {
+    document.addEventListener('socrates:langchange', refreshLanguage);
+    return () => document.removeEventListener('socrates:langchange', refreshLanguage);
+  }, []);
   const id = typeof message.id === 'string' ? message.id
     : typeof message.clientId === 'string' ? message.clientId
     : '';
@@ -144,22 +152,23 @@ function MessageToolbar({ message, role, pending = false }: MessageToolbarProps)
   return (
     <div className="msg-toolbar" data-role={role} data-message-id={id}>
       <IconButton
-        label={copied ? "Copied" : "Copy"}
+        label={copied ? i18n('message.copied', 'Copied') : i18n('message.copy', 'Copy')}
         onClick={handleCopy}
         active={copied}
+        modifier={copied ? 'is-copied' : undefined}
       >
         {copied ? CheckIcon : CopyIcon}
       </IconButton>
       {role === 'user' && (
         <>
           <IconButton
-            label="Edit message"
+            label={i18n('message.edit', 'Edit message')}
             onClick={() => c.onEdit?.()}
           >
             {EditIcon}
           </IconButton>
           <IconButton
-            label="Delete message"
+            label={i18n('message.delete', 'Delete message')}
             onClick={() => c.onDelete?.()}
           >
             {DeleteIcon}
@@ -169,32 +178,32 @@ function MessageToolbar({ message, role, pending = false }: MessageToolbarProps)
       {role === 'assistant' && (
         <>
           <IconButton
-            label="Regenerate response"
+            label={i18n('message.regenerate', 'Regenerate response')}
             onClick={() => c.onRegenerate?.()}
           >
             {RegenerateIcon}
           </IconButton>
           <span className="msg-toolbar-feedback">
           <IconButton
-            label="Helpful"
+            label={i18n('message.helpful', 'Helpful')}
             onClick={() => c.onThumbsUp?.()}
           >
             {ThumbsUpIcon}
           </IconButton>
           <IconButton
-            label="Not helpful"
+            label={i18n('message.notHelpful', 'Not helpful')}
             onClick={() => c.onThumbsDown?.()}
           >
             {ThumbsDownIcon}
           </IconButton>
           </span>
           <MessageOverflow actions={[
-            { label: 'Share conversation', icon: ShareIcon, onClick: () => c.onShare?.() },
-            { label: 'Branch from here', icon: BranchIcon, onClick: () => c.onBranch?.() },
-            { label: 'Read aloud', icon: ReadAloudIcon, onClick: (event) => c.onReadAloud?.(event) },
-            { label: 'Re-explain from a different angle', icon: ReExplainIcon, onClick: () => c.onReExplain?.() },
-            { label: 'Helpful', icon: ThumbsUpIcon, mobileOnly: true, onClick: () => c.onThumbsUp?.() },
-            { label: 'Not helpful', icon: ThumbsDownIcon, mobileOnly: true, onClick: () => c.onThumbsDown?.() },
+            { label: i18n('message.share', 'Share conversation'), icon: ShareIcon, onClick: () => c.onShare?.() },
+            { label: i18n('message.branch', 'Branch from here'), icon: BranchIcon, onClick: () => c.onBranch?.() },
+            { label: i18n('message.readAloud', 'Read aloud'), icon: ReadAloudIcon, onClick: (event) => c.onReadAloud?.(event) },
+            { label: i18n('message.reExplain', 'Re-explain from a different angle'), icon: ReExplainIcon, onClick: () => c.onReExplain?.() },
+            { label: i18n('message.helpful', 'Helpful'), icon: ThumbsUpIcon, mobileOnly: true, onClick: () => c.onThumbsUp?.() },
+            { label: i18n('message.notHelpful', 'Not helpful'), icon: ThumbsDownIcon, mobileOnly: true, onClick: () => c.onThumbsDown?.() },
           ]} />
         </>
       )}

@@ -270,7 +270,7 @@
   line-height: 20px;
   white-space: nowrap;
   cursor: pointer;
-  transition: background-color 0.1s ease, color 0.1s ease;
+  transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
 }
 #appShell .composer-tool-chip:hover,
 #appShell .composer-tool-chip:focus-visible {
@@ -279,7 +279,7 @@
 }
 #appShell .composer-tool-chip:focus-visible { outline: 2px solid currentColor; outline-offset: 1px; }
 #appShell .composer-tool-chip-icon { display: inline-grid; width: 20px; height: 20px; }
-#appShell .composer-tool-chip-icon svg { grid-area: 1 / 1; width: 20px; height: 20px; transition: opacity 0.1s ease; }
+#appShell .composer-tool-chip-icon svg { grid-area: 1 / 1; width: 20px; height: 20px; transition: opacity var(--ui-duration-hover) ease; }
 #appShell .composer-tool-chip-close { opacity: 0; }
 #appShell .composer-tool-chip:hover .composer-tool-chip-glyph,
 #appShell .composer-tool-chip:focus-visible .composer-tool-chip-glyph { opacity: 0; }
