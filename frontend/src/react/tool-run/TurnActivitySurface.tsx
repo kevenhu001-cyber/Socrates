@@ -31,9 +31,19 @@ export function TurnActivitySurface({ publicSummary = '', activities = [], isLiv
 
   // Only explicitly public summaries enter the reasoning list. Tools share
   // this disclosure; interactive results and required actions stay outside.
+  // Keep the last occurrence of each public summary. Work backwards so
+  // streaming updates do not repeatedly scan the remainder of the timeline.
+  const seenSummaries = new Set<string>();
   const timeline = activities.filter((entry) => entry.kind === 'reasoning_summary' && entry.text?.trim())
-    .filter((entry, index, entries) => !entries.slice(index + 1).some((other) => other.text?.trim() === entry.text?.trim()))
-    .slice(-5);
+    .reverse()
+    .filter((entry) => {
+      const text = entry.text!.trim();
+      if (seenSummaries.has(text)) return false;
+      seenSummaries.add(text);
+      return true;
+    })
+    .slice(0, 5)
+    .reverse();
   const summaries = timeline.length ? timeline : normalizedSummary ? [{ id: 'public-summary', text: normalizedSummary, phase: 'done' }] : [];
   const hasDetails = Boolean(summaries.length || hasTools || intentSummary?.trim());
   if (!hasDetails && !isLive) return null;
