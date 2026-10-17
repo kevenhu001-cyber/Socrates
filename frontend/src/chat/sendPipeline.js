@@ -1,6 +1,6 @@
 /* chat/sendPipeline.js — public entry point for submitting a chat turn. */
 import { turnState } from './turnState.ts';
-import { loadWebSearch } from './webSearchLoader.js';
+import { loadWebSearch } from './webSearchLoader.ts';
 import { shouldRefreshSearch } from './webSearchPolicy.ts';
 import { shouldAutoSearchTutor } from '../tutor/policy.js';
 import { stateStore } from '../state/store.js';
@@ -13,12 +13,12 @@ import {
 import {
   dispatchSendTurn,
   scheduleSendTurn,
-} from './send/dispatch.js';
+} from './send/dispatch.ts';
 import {
   askChatTurn,
   isWebSearchOn,
   prefetchStreamingTurn,
-} from './send/runtime.js';
+} from './send/runtime.ts';
 
 function refreshTutorWebContext(text) {
   const topic = stateStore.read('topic');

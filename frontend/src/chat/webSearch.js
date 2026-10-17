@@ -1,5 +1,5 @@
 import { apiFetch, apiFetchRaw } from '../util/api.ts';
-import { callAPI } from './api.js';
+import { callAPI } from './api.ts';
 import { offlineGuard } from './offline.ts';
 import { hasUsableActive, webSearchOn } from '../config/providers.ts';
 import { loadLocalMemory } from '../storage/localMemory.ts';

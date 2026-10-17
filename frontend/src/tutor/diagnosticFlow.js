@@ -7,7 +7,7 @@
  */
 import { stateStore } from '../state/store.js';
 import { applyDiagnosticResults } from '../chat/diagnosticResults.js';
-import { buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan } from '../chat/teachingPlan.js';
+import { buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan } from '../chat/teachingPlan.ts';
 import { renderDiagResultsScreen } from '../ui/diagnosticResults.js';
 import { renderDiagQuestion as renderDiagQuestionUI } from '../ui/diagnosticQuestion.js';
 import { formatMsg } from '../render/markdown.ts';

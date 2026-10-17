@@ -3,7 +3,7 @@ import {
   AI_MAX_ATTEMPTS,
   isUserAbort,
 } from '../retryPolicy.ts';
-import { buildChatRequestBody } from './requestBody.js';
+import { buildChatRequestBody } from './requestBody.ts';
 import {
   bindAbortSignal,
   errorMessage,
@@ -11,7 +11,7 @@ import {
   makeAIError,
   setLastCallError,
   waitForRetry,
-} from './shared.js';
+} from './shared.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 
 const SEMANTIC_EVENTS = new Set([

@@ -113,7 +113,7 @@ test('missing user and user-switch reset clear provider state and key drafts', a
 test('MiniMax M3.1 forwards the selected low effort and split reasoning', async () => {
   reset();
   const { isReasoningProvider } = await import('../src/config/providers.ts');
-  const { buildChatRequestBody } = await import('../src/chat/api/requestBody.js');
+  const { buildChatRequestBody } = await import('../src/chat/api/requestBody.ts');
   store.publishProviderConfig({ providers: [{ id: 'minimax', model: 'MiniMax-M3.1-Flash-Preview', label: 'MiniMax', hasKey: true }], activeId: 'minimax' });
   window.isReasoningProvider = isReasoningProvider;
   window.getReasoningEffort = () => 'low';
@@ -133,7 +133,7 @@ test('MiniMax M3.1 forwards the selected low effort and split reasoning', async 
 test('MiniMax M3 separates reasoning without claiming granular effort support', async () => {
   reset();
   const { isReasoningProvider } = await import('../src/config/providers.ts');
-  const { buildChatRequestBody } = await import('../src/chat/api/requestBody.js');
+  const { buildChatRequestBody } = await import('../src/chat/api/requestBody.ts');
   store.publishProviderConfig({ providers: [{ id: 'minimax', model: 'MiniMax-M3', label: 'MiniMax', hasKey: true }], activeId: 'minimax' });
   window.isReasoningProvider = isReasoningProvider;
   window.getReasoningEffort = () => 'low';
@@ -151,7 +151,7 @@ test('MiniMax M3 separates reasoning without claiming granular effort support', 
 
 
 test('Instant remains available across all providers without a model allowlist', async () => {
-  const { buildChatRequestBody } = await import('../src/chat/api/requestBody.js');
+  const { buildChatRequestBody } = await import('../src/chat/api/requestBody.ts');
   for (const model of ['MiniMax-M3', 'MiniMax-M3.1-Flash-Preview', 'deepseek-chat', 'Qwen3-32B', 'gpt-5.2', 'custom-model', '']) {
     reset();
     storage.set('socrates-reasoning-effort', 'instant');

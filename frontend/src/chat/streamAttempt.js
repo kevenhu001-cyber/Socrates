@@ -2,7 +2,7 @@
  * successful results use the same small outcome shape so the caller can own
  * the global retry budget and final cleanup. */
 import { apiFetchRaw } from '../util/api.ts';
-import { buildChatRequestBody } from './api/requestBody.js';
+import { buildChatRequestBody } from './api/requestBody.ts';
 import { consumeSseBuffer } from '../../../packages/core/src/index.ts';
 import { createChatTurn } from './turnClient.ts';
 import { recoverDetachedTurn } from './detachedTurnRecovery.js';

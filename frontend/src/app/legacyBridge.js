@@ -43,7 +43,7 @@ import { openStorageModal, closeStorageModal } from '../ui/storage.js';
 import { openPromptTemplatesModal, closePromptTemplatesModal } from '../ui/promptTemplates.js';
 import { toggleExtensionByKey } from '../pickers.js';
 import { openCmdKResult } from '../ui/cmdK.js';
-import { loadWebSearch } from '../chat/webSearchLoader.js';
+import { loadWebSearch } from '../chat/webSearchLoader.ts';
 /* ui/dangerConfirms.js is lazy — confirm actions import it on demand. */
 import { processPendingMermaid, processPendingViz, reclaimVizCards, schedulePendingMermaid } from '../render/vizStubs.js';
 import { wireCodeBlockHeaders, wireMsgBodyImages } from '../render/postRender.ts';
@@ -53,7 +53,7 @@ import { formatMsgProgressive } from '../render/markdown.ts';
 import { stripCitationMarkers } from '../render/helpers.ts';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.ts';
 import { retryLiveTurn, decideLiveApproval } from '../chat/liveTurn.js';
-import { startSession } from '../chat/sessionBootstrap.js';
+import { startSession } from '../chat/sessionBootstrap.ts';
 import { submitChatMessage } from '../chat/sendPipeline.js';
 import { setRecentsSearch } from '../ui/recentsView.js';
 import { syncEffortUI } from '../ui/effortPicker.js';

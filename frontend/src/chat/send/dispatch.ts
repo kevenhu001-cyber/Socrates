@@ -6,9 +6,22 @@ import {
   getAppMode,
   isDeepResearchOn,
   reportTurnFailure,
-} from './runtime.js';
+} from './runtime.ts';
 
-async function runChatTurn(text, chatContent, precreatedController) {
+/** The abort surface of a turn created before the send was dispatched. */
+interface PrecreatedController {
+  abort(): void;
+}
+
+export interface DispatchSendTurnInput {
+  text: string;
+  chatContent: unknown;
+  precreatedController?: PrecreatedController | null;
+  options?: unknown;
+  submitChatMessage?: unknown;
+}
+
+async function runChatTurn(text: string, chatContent: unknown, precreatedController?: PrecreatedController | null): Promise<void> {
   try {
     await askChatTurn(text, chatContent, precreatedController);
   } catch (error) {
@@ -23,14 +36,15 @@ export async function dispatchSendTurn({
   precreatedController,
   options,
   submitChatMessage,
-}) {
+}: DispatchSendTurnInput): Promise<void> {
   if (isDeepResearchOn() && text) {
     if (precreatedController) {
       try { precreatedController.abort(); }
       catch (error) { reportSwallow(error, 'sendPipeline.deepResearch.abortPrecreated'); }
     }
-    if (typeof window.startDeepResearch === 'function') {
-      await window.startDeepResearch(text);
+    const win = window as Window & { startDeepResearch?: (text: string) => unknown };
+    if (typeof win.startDeepResearch === 'function') {
+      await win.startDeepResearch(text);
     }
     return;
   }
@@ -43,7 +57,7 @@ export async function dispatchSendTurn({
   await dispatchTutorTurn({ text, chatContent, options, submitChatMessage });
 }
 
-export function scheduleSendTurn(dispatch) {
+export function scheduleSendTurn(dispatch: () => void): void {
   if (getAppMode() === 'chat') dispatch();
   else setTimeout(dispatch, 0);
 }

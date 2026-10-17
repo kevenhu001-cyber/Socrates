@@ -15,7 +15,7 @@ import { ensureSessionShape, setAppMode, syncAppModeUI, syncSidebarForMode, type
 import { syncChatModel } from '../pickers.js';
 import { pushChatIdToURL, pushExamIdToURL } from './store.ts';
 import { clearLegacyMsgListChildren } from '../ui/messageListDom.js';
-import { buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan } from '../chat/teachingPlan.js';
+import { buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan } from '../chat/teachingPlan.ts';
 import { stateView } from '../tutor/diagnosticFlow.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { showToast } from '../ui/toast.js';

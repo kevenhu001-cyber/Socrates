@@ -46,7 +46,7 @@ import { initArtifactPreview } from './ui/artifactPreview.js';
 import { initLinkFavicons } from './ui/linkFavicons.js';
 import { installLayoutStateMirror } from './ui/layoutStateMirror.js';
 import { installDiagnosticFlowListeners } from './tutor/diagnosticFlow.js';
-import { startSession } from './chat/sessionBootstrap.js';
+import { startSession } from './chat/sessionBootstrap.ts';
 import { startNewChat, toggleIncognito, isInAuthGraceWindow, handleAuthExpired, getUserMemories } from './app/lifecycle.js';
 import { setRecentsSearch } from './ui/recentsView.js';
 import { installLiveTurnRetryListener } from './chat/liveTurn.js';

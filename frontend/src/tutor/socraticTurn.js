@@ -5,7 +5,7 @@
 import { stateStore } from '../state/store.js';
 import { hasUsableActive } from '../config/providers.ts';
 import { extractHistory } from '../chat/history.js';
-import { callAPI } from '../chat/api.js';
+import { callAPI } from '../chat/api.ts';
 import { callAPIStream } from '../chat/stream.js';
 import { buildSocraticMessages, buildFollowUpMessages, buildSocraticPrompt } from './flow.ts';
 import { BASELINE_LEVEL, fromBasicsDirective } from '../chat/socraticDirectives.js';

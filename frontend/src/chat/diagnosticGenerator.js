@@ -1,4 +1,4 @@
-import { callAPI } from './api.js';
+import { callAPI } from './api.ts';
 import { parseOneDiagResponse } from './diagnosticParser.js';
 import { stateStore } from '../state/store.js';
 

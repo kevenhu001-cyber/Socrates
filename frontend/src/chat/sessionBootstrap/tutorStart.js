@@ -11,15 +11,15 @@ import { buildMessageContent, resetAttachments } from '../../attachments.js';
 import { renderAttachmentChips } from '../../attachments/render.js';
 import { updateComposerBtn } from '../../ui/topicSetup.js';
 import { syncChatModel, getActiveProvider } from '../../pickers.js';
-import { loadWebSearch } from '../webSearchLoader.js';
-import { generateTopicKBNodes } from '../topicKbNodes.js';
+import { loadWebSearch } from '../webSearchLoader.ts';
+import { generateTopicKBNodes } from '../topicKbNodes.ts';
 import { generateDiagnosticQuestions } from '../diagnosticGenerator.js';
 import { updateKB } from '../../ui/knowledgePanel.js';
 import { renderDiagQuestion, proceedToTeaching } from '../../tutor/diagnosticFlow.js';
 import { buildFallbackDiagnosticQuestions, shouldAutoSearchTutor } from '../../tutor/policy.js';
 import { esc } from '../../render/helpers.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
-import { isWebSearchOn, renderRecents, translate } from './runtime.js';
+import { isWebSearchOn, renderRecents, translate } from './runtime.ts';
 
 function diagnosticLoadingHTML() {
   return '<div class="diag-loading"><div class="loading"><span></span><span></span><span></span></div>'

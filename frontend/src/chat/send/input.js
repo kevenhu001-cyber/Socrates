@@ -17,7 +17,7 @@ import {
   getAppMode,
   isDeepResearchOn,
   translate,
-} from './runtime.js';
+} from './runtime.ts';
 
 export function captureSendInput(textOverride) {
   const rawText = textOverride != null ? textOverride : getComposerMarkdown('chat');

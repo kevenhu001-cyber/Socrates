@@ -1,7 +1,7 @@
 import { getStoredResponseSpeed } from '../../config/chatPreferences.ts';
 import { notifySpeedFallbackOnce } from '../speedFallback.ts';
 import { AI_MAX_ATTEMPTS, isUserAbort } from '../retryPolicy.ts';
-import { buildChatRequestBody } from './requestBody.js';
+import { buildChatRequestBody } from './requestBody.ts';
 import {
   attemptLimit,
   bindAbortSignal,
@@ -10,7 +10,7 @@ import {
   monthlyLimitMessage,
   retryDecision,
   setLastCallError,
-} from './shared.js';
+} from './shared.ts';
 
 function interpretCustomResponse(response) {
   if (!response || typeof response.content !== 'string') {

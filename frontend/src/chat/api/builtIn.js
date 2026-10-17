@@ -5,7 +5,7 @@ import {
   AI_MAX_ATTEMPTS,
   isUserAbort,
 } from '../retryPolicy.ts';
-import { buildChatRequestBody } from './requestBody.js';
+import { buildChatRequestBody } from './requestBody.ts';
 import {
   attemptLimit,
   bindAbortSignal,
@@ -15,7 +15,7 @@ import {
   monthlyLimitMessage,
   retryDecision,
   setLastCallError,
-} from './shared.js';
+} from './shared.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 
 async function readResponseText(response) {

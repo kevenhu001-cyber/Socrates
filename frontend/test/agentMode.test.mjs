@@ -13,7 +13,7 @@ globalThis.localStorage = dom.window.localStorage;
 /* The workspace agent is selected from intent by the server/model. The
    browser request builder must not expose a manual mode switch anymore. */
 test('chat requests never carry a manual agent-mode flag', async () => {
-  const { buildChatRequestBody } = await import('../src/chat/api.js');
+  const { buildChatRequestBody } = await import('../src/chat/api.ts');
   window.appMode = 'chat';
 
   assert.equal(buildChatRequestBody([{ role: 'user', content: 'hi' }], 100, 0.7).agentMode, undefined);
@@ -23,7 +23,7 @@ test('chat requests never carry a manual agent-mode flag', async () => {
 });
 
 test('chat requests carry the validated response speed preference', async () => {
-  const { buildChatRequestBody } = await import('../src/chat/api.js');
+  const { buildChatRequestBody } = await import('../src/chat/api.ts');
   localStorage.setItem('socrates-response-speed', 'fast');
   assert.equal(buildChatRequestBody([{ role: 'user', content: 'hi' }], 100, 0.7).response_speed, 'fast');
   localStorage.setItem('socrates-response-speed', 'unexpected');

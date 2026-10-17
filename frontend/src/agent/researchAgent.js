@@ -14,7 +14,7 @@
 import { stateStore } from '../state/store.js';
 import { showToast } from '../ui/toast.js';
 import { fetchPagesForContext } from '../chat/webLinks.js';
-import { loadWebSearch } from '../chat/webSearchLoader.js';
+import { loadWebSearch } from '../chat/webSearchLoader.ts';
 
 /* Start a deep research session. Returns a Promise that resolves
    when the research is complete and the report has been posted. */
@@ -423,6 +423,6 @@ import {
   getComposerMarkdown,
   getVisibleComposerSurface,
 } from '../composer/controller.ts';
-import { callAPI } from '../chat/api.js';
+import { callAPI } from '../chat/api.ts';
 import { apiFetch } from '../util/api.ts';
 import { publishAgentRun } from '../extensions/agentRunStore.ts';

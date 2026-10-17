@@ -18,7 +18,7 @@ globalThis.window = {
   apiFetch: async () => ({ content: '' }),
 };
 
-const { callAPI, callAPIChat, buildChatRequestBody } = await import('../src/chat/api.js');
+const { callAPI, callAPIChat, buildChatRequestBody } = await import('../src/chat/api.ts');
 const { stateStore } = await import('../src/state/store.js');
 const encoder = new TextEncoder();
 

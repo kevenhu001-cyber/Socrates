@@ -6,7 +6,7 @@ import { reportSwallow } from '../../util/reportSwallow.ts';
 import { generateFollowUpStream } from '../../tutor/socraticTurn.js';
 import { toolCallbacksForStream } from '../toolCallbacks.js';
 import { isExpectedTurnAbort } from '../turnUi.ts';
-import { getTutorSocratic, addAnchoredAssistant, addStreamingMessage, askChatTurn, translate, reportTurnFailure } from './runtime.js';
+import { getTutorSocratic, addAnchoredAssistant, addStreamingMessage, askChatTurn, translate, reportTurnFailure } from './runtime.ts';
 import { advanceTutorNodeIfReady, recordTutorProgress } from './tutorProgress.js';
 import { stuckPromptTransition } from './tutorPolicy.ts';
 
