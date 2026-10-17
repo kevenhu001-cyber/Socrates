@@ -1,5 +1,5 @@
 {
-  "count": 184,
+  "count": 179,
   "files": [
     "src/agent/researchAgent.js",
     "src/app/bootstrap.js",
@@ -101,7 +101,6 @@
     "src/render/viz.js",
     "src/render/vizStubs.js",
     "src/render/widgets.js",
-    "src/session/beacon.js",
     "src/session/detailCache.js",
     "src/session/historyRestore.js",
     "src/session/loader.js",
@@ -111,11 +110,7 @@
     "src/session/persistence.js",
     "src/session/recents.js",
     "src/session/recentsReconcile.js",
-    "src/session/rowActions.js",
     "src/session/saveDelta.js",
-    "src/session/saveState.js",
-    "src/session/serverCache.js",
-    "src/session/store.js",
     "src/sidebar/morePopover.js",
     "src/sidebar/nav.js",
     "src/state/store.js",

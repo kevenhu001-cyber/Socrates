@@ -5,7 +5,7 @@
 
 import { esc } from './render/helpers.ts';
 import { stateStore } from './state/store.js';
-import { pushChatIdToURL, setExamIdInURL } from './session/store.js';
+import { pushChatIdToURL, setExamIdInURL } from './session/store.ts';
 import { reportSwallow } from './util/reportSwallow.ts';
 
 import { activateMainView } from './ui/mainViewController.js';

@@ -3,7 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { useSyncExternalStore } from 'react';
 
 import { getKnownTagsFromSessions } from '../../ui/recentsHelpers.js';
-import { serverCache } from '../../session/serverCache.js';
+import { serverCache } from '../../session/serverCache.ts';
 import {
   getProjectCacheSnapshot,
   subscribeToProjectCache,

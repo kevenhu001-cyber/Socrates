@@ -1,6 +1,6 @@
 import { stateStore } from '../state/store.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { pushExamIdToURL } from '../session/store.js';
+import { pushExamIdToURL } from '../session/store.ts';
 import { toggleShareBtn } from '../ui/share.js';
 import { prefersReducedMotion } from '../ui/motion.js';
 import { renderExamResults } from './results.js';

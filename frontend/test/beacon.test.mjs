@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildBeaconMessages, buildBeaconPayload, readBeaconCsrf } from '../src/session/beacon.js';
+import { buildBeaconMessages, buildBeaconPayload, readBeaconCsrf } from '../src/session/beacon.ts';
 
 describe('beacon payload builder (F3 extraction from main.js)', () => {
   it('skips streaming placeholders and caps attachments/toolCalls', () => {

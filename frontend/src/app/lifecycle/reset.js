@@ -5,7 +5,7 @@ import { resetComposerForNewSession, focusComposerForNewSession } from '../../re
 import { clearLegacyMsgListChildren } from '../../ui/messageListDom.js';
 import { publishReactChatRuntime } from '../../ui/reactBridge.js';
 import { resetShareToken, toggleShareBtn } from '../../ui/share.js';
-import { clearSessionRouteInURL } from '../../session/store.js';
+import { clearSessionRouteInURL } from '../../session/store.ts';
 import { scrollContainer } from '../../ui/scroll.js';
 import { saveSessionBeforeReset } from '../../session/persistence.js';
 import { renderGreeting } from '../../ui/greeting.js';

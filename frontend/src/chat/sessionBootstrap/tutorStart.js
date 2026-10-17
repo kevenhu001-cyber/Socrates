@@ -1,7 +1,7 @@
 import { stateStore } from '../../state/store.js';
-import { saveState, rememberDeletedSession } from '../../session/saveState.js';
+import { saveState, rememberDeletedSession } from '../../session/saveState.ts';
 import { setCurrentSessionId } from '../../session/loader.js';
-import { setChatIdInURL } from '../../session/store.js';
+import { setChatIdInURL } from '../../session/store.ts';
 import { flushRecentsReconcile } from '../../session/recents.js';
 import { apiFetch } from '../../util/api.ts';
 import { activateMainView } from '../../ui/mainViewController.js';

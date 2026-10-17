@@ -5,7 +5,7 @@
  */
 import { resetState } from '../state/store.js';
 import { turnState } from '../chat/turnState.js';
-import { saveState } from '../session/saveState.js';
+import { saveState } from '../session/saveState.ts';
 import { apiFetch } from '../util/api.ts';
 import { showGate, showAuthSignin } from '../auth/index.ts';
 import { showToast } from '../ui/toast.js';

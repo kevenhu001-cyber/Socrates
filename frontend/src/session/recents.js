@@ -4,9 +4,9 @@
  * renderArchivedList) and app reset resolve via window.* at call time.
  */
 import { stateStore, resetState } from '../state/store.js';
-import { serverCache } from './serverCache.js';
-import { saveState, rememberDeletedSession, forgetDeletedSession } from './saveState.js';
-import { getVisibleSessions, getArchivedSessionsFrom, sweepExpiredArchivesFrom, setChatIdInURL } from './store.js';
+import { serverCache } from './serverCache.ts';
+import { saveState, rememberDeletedSession, forgetDeletedSession } from './saveState.ts';
+import { getVisibleSessions, getArchivedSessionsFrom, sweepExpiredArchivesFrom, setChatIdInURL } from './store.ts';
 import { createReconciler } from './recentsReconcile.js';
 import { getKnownTagsFromSessions } from '../ui/recentsHelpers.js';
 import { apiFetch } from '../util/api.ts';

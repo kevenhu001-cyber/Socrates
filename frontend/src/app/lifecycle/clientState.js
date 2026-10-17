@@ -1,5 +1,5 @@
 import { turnState } from '../../chat/turnState.js';
-import { serverCache } from '../../session/serverCache.js';
+import { serverCache } from '../../session/serverCache.ts';
 import { setAppMode, LAST_ACTIVE_ID_KEY } from '../../config/providers.ts';
 import { resetProviderConfigForUser } from '../../config/providerConfig.service.ts';
 import { resetCmdKSearchState } from '../../ui/cmdK.js';

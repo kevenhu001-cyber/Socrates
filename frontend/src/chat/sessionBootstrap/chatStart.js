@@ -1,6 +1,6 @@
 import { stateStore } from '../../state/store.js';
 import { turnState } from '../turnState.js';
-import { saveState } from '../../session/saveState.js';
+import { saveState } from '../../session/saveState.ts';
 import { resetSessionTransients } from '../../session/loader.js';
 import { saveCurrentSession } from '../../session/persistence.js';
 import { askChatTurn } from '../turnController.js';

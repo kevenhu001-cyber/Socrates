@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { reduceTurnEvent, normalizeTurnRuntime, settleTurnRuntime } from '@socrates/core';
 import { deriveTurnPresentationState } from '../src/ui/turnActivityModel.ts';
-import { buildBeaconMessages } from '../src/session/beacon.js';
+import { buildBeaconMessages } from '../src/session/beacon.ts';
 const event = (seq, payload) => ({ version: 1, turnId: 'turn-1', seq, at: 100, ...payload });
 const panel = { id: 'panel', type: 'panel', state: { count: 1 } };
 const activity = { id: 'summary', kind: 'reasoning_summary', phase: 'running', text: 'Checking two official sources.', startedAt: 100 };

@@ -8,12 +8,12 @@
  */
 import { normalizeTurnRuntime } from '@socrates/core';
 import { stateStore } from '../state/store.js';
-import { saveState, deletedSessionGuard } from './saveState.js';
+import { saveState, deletedSessionGuard } from './saveState.ts';
 import { generateId } from '../util/ids.ts';
-import { pushChatIdToURL } from './store.js';
-import { serverCache } from './serverCache.js';
+import { pushChatIdToURL } from './store.ts';
+import { serverCache } from './serverCache.ts';
 import { patchSessionRow } from './recentsReconcile.js';
-import { buildBeaconPayload } from './beacon.js';
+import { buildBeaconPayload } from './beacon.ts';
 import { buildDeltaPayload, commitSynced, createFingerprintCache, seedSynced, stateFingerprint } from './saveDelta.js';
 import { generateSessionTitle } from '../chat/sessionTitle.js';
 import { markCmdKIndexDirty } from '../ui/cmdK.js';

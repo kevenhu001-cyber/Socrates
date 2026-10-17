@@ -3,7 +3,7 @@
  * Zero-behavior-change lift. Render surfaces resolve via window.*.
  */
 import { stateStore } from '../state/store.js';
-import { serverCache } from './serverCache.js';
+import { serverCache } from './serverCache.ts';
 import { findServerSessionIndex, getKnownTags, getRecents, flushRecentsReconcile } from './recents.js';
 import { getRecentsFilter } from '../sidebar/sidebar.service.ts';
 import { filterRecentsByChip } from '../ui/recentsHelpers.js';

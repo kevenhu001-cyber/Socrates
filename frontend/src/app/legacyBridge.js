@@ -1,4 +1,4 @@
-import { updateSessionMetadata } from '../session/rowActions.js';
+import { updateSessionMetadata } from '../session/rowActions.ts';
 /* app/legacyBridge.js — extracted from main.js (B6 batch).
  * Legacy window bridges (window.X = X for inline handlers / cross-module
  * callers) + the typed window.__socratesLegacy gateway for React.
