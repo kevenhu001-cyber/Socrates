@@ -7,9 +7,22 @@ import { announceTranscript } from '../../ui/liveRegion.js';
 import { saveCurrentSession } from '../../session/persistence.ts';
 import { appendLocalMemory } from '../../storage/localMemory.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
+import { readTurnMessage } from './runtimeState.ts';
+import type { TurnRuntimeState } from './runtimeState.ts';
+import type { FinishRender, FinishRenderResult } from './finishRender.ts';
+import type { FinishViewport } from './finishViewport.ts';
 
-export function createFinishLifecycle(state, ownerSessionId, finishRender, finishViewport) {
-  function finish() {
+export interface FinishLifecycle {
+  finish(): void;
+}
+
+export function createFinishLifecycle(
+  state: TurnRuntimeState,
+  ownerSessionId: string | null,
+  finishRender: FinishRender,
+  finishViewport: FinishViewport,
+): FinishLifecycle {
+  function finish(): void {
     if (state._disposed) return;
 
     /* A late [DONE] can arrive after the session changes. Abandon it before
@@ -31,16 +44,16 @@ export function createFinishLifecycle(state, ownerSessionId, finishRender, finis
     if (state.finished) return;
 
     const player = state._streamPlayer;
-    if (state._smooth && player.playedLen() < player.totalLen()) {
+    if (state._smooth && player && player.playedLen() < player.totalLen()) {
       state._finishContinuation = finishBody;
       player.beginDrain();
       return;
     }
-    player.flushNow();
+    if (player) player.flushNow();
     finishBody();
   }
 
-  function finishBody() {
+  function finishBody(): void {
     if (state.finished) return;
     // Measure the painted turn before completion changes status or tool rows.
     finishViewport.capture();
@@ -50,12 +63,12 @@ export function createFinishLifecycle(state, ownerSessionId, finishRender, finis
     if (state._elapsedTick) clearInterval(state._elapsedTick);
     state.cancelScheduledRender();
 
-    let renderResult;
+    let renderResult: FinishRenderResult | undefined;
     try {
       renderResult = finishRender.run();
     } catch {
       console.log('[finish] render error');
-      const current = stateStore.read('messages')[state.msgIdx];
+      const current = readTurnMessage(state.msgIdx);
       const toolRunRev = (current && current._toolRunRev) || 0;
       state.patchOwnedMessage({
         html: null,
@@ -76,7 +89,7 @@ export function createFinishLifecycle(state, ownerSessionId, finishRender, finis
     });
   }
 
-  function finishAfterRender(renderResult) {
+  function finishAfterRender(renderResult: FinishRenderResult | undefined): void {
     try { appendLocalMemory('assistant', state.full); }
     catch (error) { reportSwallow(error, 'streamingTurn.finishAfterRender.appendLocalMemory'); }
 
@@ -87,8 +100,9 @@ export function createFinishLifecycle(state, ownerSessionId, finishRender, finis
       }
     } catch (error) { reportSwallow(error, 'streamingTurn.finishAfterRender.announceTranscript'); }
 
+    const kbNodes = stateStore.read('kbNodes') as readonly unknown[];
     if (stateStore.read('phase') === 'chat'
-      || (stateStore.read('topic') && stateStore.read('kbNodes').length)) {
+      || (stateStore.read('topic') && kbNodes.length)) {
       saveCurrentSession();
     }
 

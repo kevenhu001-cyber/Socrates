@@ -1,5 +1,5 @@
 {
-  "count": 143,
+  "count": 136,
   "files": [
     "src/agent/researchAgent.js",
     "src/app/bootstrap.js",
@@ -27,7 +27,6 @@
     "src/chat/diagnosticParser.js",
     "src/chat/editBranch.js",
     "src/chat/history.js",
-    "src/chat/liveTurn.js",
     "src/chat/messages.js",
     "src/chat/mockDiagnostic.js",
     "src/chat/mocks.js",
@@ -45,12 +44,6 @@
     "src/chat/systemPrompts.js",
     "src/chat/templateSlash.js",
     "src/chat/toolCallbacks.js",
-    "src/chat/turn/abortPath.js",
-    "src/chat/turn/errorPath.js",
-    "src/chat/turn/finishLifecycle.js",
-    "src/chat/turn/finishRender.js",
-    "src/chat/turn/finishViewport.js",
-    "src/chat/turn/statusChrome.js",
     "src/chat/turnController.js",
     "src/chat/webLinks.js",
     "src/chat/webSearch.js",

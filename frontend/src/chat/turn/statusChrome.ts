@@ -1,5 +1,5 @@
 /**
- * chat/turn/statusChrome.js — live-status chrome for addStreamingMessage.
+ * chat/turn/statusChrome.ts — live-status chrome for addStreamingMessage.
  *
  * The waiting dot, the reasoning pill, the retry notice and the timeout
  * error block collapse into one field — `message._liveStatus` — drawn by
@@ -13,34 +13,30 @@
  * `state.msgIdx`); keeping them as a single factory avoids each method
  * re-binding its own copies.
  */
-import { stateStore } from '../../state/store.js';
 import { setReactLiveStatus } from '../../ui/messageSnapshot.js';
+import { readTurnMessage } from './runtimeState.ts';
+import type { LiveStatus, TurnMessage, TurnRuntimeState } from './runtimeState.ts';
 
-/**
- * Build the live-status chrome bound to one turn's state.
- *
- * @param {object} state  shared turn state (see chat/streamingTurn.js).
- * @param {Function} state.appMode  () => 'chat' | ... (mode getter)
- * @returns {{
- *   liveMessage: () => object|null,
- *   setLiveStatus: (status: object|null) => void,
- *   statusIsBusy: () => boolean,
- *   clearLiveStatus: () => void,
- *   stampWaiting: (sec: number) => void,
- *   stampThinking: () => void,
- * }}
- */
-export function createStatusChrome(state) {
-  var _waitingLabel = state.t("think.waitingForResponse", "Waiting for the response.");
+export interface StatusChrome {
+  liveMessage(): TurnMessage | null;
+  setLiveStatus(status: LiveStatus | null): void;
+  statusIsBusy(): boolean;
+  clearLiveStatus(): void;
+  stampWaiting(sec: number): void;
+  stampThinking(sec?: number): void;
+  isThinkingPhase(): boolean;
+}
 
-  function liveMessage() {
-    return (state.msgIdx >= 0 && stateStore.read("messages")[state.msgIdx] &&
-      stateStore.read("messages")[state.msgIdx].clientId === state.clientId)
-      ? stateStore.read("messages")[state.msgIdx] : null;
+export function createStatusChrome(state: TurnRuntimeState): StatusChrome {
+  const _waitingLabel = state.t('think.waitingForResponse', 'Waiting for the response.');
+
+  function liveMessage(): TurnMessage | null {
+    const message = readTurnMessage(state.msgIdx);
+    return (message && message.clientId === state.clientId) ? message : null;
   }
 
-  function setLiveStatus(status) {
-    var msg = liveMessage();
+  function setLiveStatus(status: LiveStatus | null): void {
+    const msg = liveMessage();
     if (msg) setReactLiveStatus(msg, status);
   }
 
@@ -50,17 +46,17 @@ export function createStatusChrome(state) {
      deferred behind an unfinished paragraph, thinking/waiting stamps must
      not overwrite its line (the row itself isn't mounted yet, so this
      line is the only visible proof of work). */
-  function statusIsBusy() {
-    var msg = liveMessage();
-    var prev = msg && msg._liveStatus;
-    return !!(prev && (prev.phase === "error" || prev.phase === "retrying" || prev.phase === "tool-running"));
+  function statusIsBusy(): boolean {
+    const msg = liveMessage();
+    const prev = msg && msg._liveStatus;
+    return !!(prev && (prev.phase === 'error' || prev.phase === 'retrying' || prev.phase === 'tool-running'));
   }
 
-  function clearLiveStatus() {
+  function clearLiveStatus(): void {
     if (!statusIsBusy()) setLiveStatus(null);
   }
 
-  function stampWaiting(sec) {
+  function stampWaiting(sec: number): void {
     if (!state.reactLive || statusIsBusy()) return;
     /* Reasoning owns the line once it starts. Reasoning deltas re-stamp
        phase "thinking" on every chunk; the 1s elapsed tick would otherwise
@@ -68,35 +64,35 @@ export function createStatusChrome(state) {
        waiting may not overwrite a thinking line — only content (append/tool
        activity) retires it. (P_thinking-unified: all live phases share one
        pill shape, so this is purely about label stability now, not layout.) */
-    var _owner = liveMessage();
-    var _prev = _owner && _owner._liveStatus;
-    if (_prev && _prev.phase === "thinking") return;
+    const _owner = liveMessage();
+    const _prev = _owner && _owner._liveStatus;
+    if (_prev && _prev.phase === 'thinking') return;
     /* The elapsed cue is quantized to 5s steps so the pill's width only
        changes rarely and predictably, instead of ticking every second. */
     setLiveStatus({
-      phase: "waiting", label: _waitingLabel, mode: state.appMode(),
-      elapsedSec: sec > 0 ? sec : undefined
+      phase: 'waiting', label: _waitingLabel, mode: state.appMode(),
+      elapsedSec: sec > 0 ? sec : undefined,
     });
   }
 
-  function stampThinking(sec) {
+  function stampThinking(sec?: number): void {
     if (!state.reactLive) return;
-    var _owner = liveMessage();
-    var _prev = _owner && _owner._liveStatus;
-    if (_prev && (_prev.phase === "error" || _prev.phase === "retrying" || _prev.phase === "tool-running")) return;
-    var curSec = typeof sec === 'number' && sec >= 0 ? sec : (_prev && _prev.elapsedSec);
+    const _owner = liveMessage();
+    const _prev = _owner && _owner._liveStatus;
+    if (_prev && (_prev.phase === 'error' || _prev.phase === 'retrying' || _prev.phase === 'tool-running')) return;
+    const curSec = typeof sec === 'number' && sec >= 0 ? sec : (_prev && _prev.elapsedSec) ?? undefined;
     setLiveStatus({
-      phase: "thinking",
-      label: state.t("think.thinking", "正在思考…"),
+      phase: 'thinking',
+      label: state.t('think.thinking', '正在思考…'),
       mode: state.appMode(),
       elapsedSec: curSec,
     });
   }
 
-  function isThinkingPhase() {
-    var msg = liveMessage();
-    var prev = msg && msg._liveStatus;
-    return !!(prev && prev.phase === "thinking");
+  function isThinkingPhase(): boolean {
+    const msg = liveMessage();
+    const prev = msg && msg._liveStatus;
+    return !!(prev && prev.phase === 'thinking');
   }
 
   return {

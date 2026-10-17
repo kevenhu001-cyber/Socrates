@@ -13,7 +13,10 @@ export interface ActiveChatController {
 
 /** The live turn that the status line's Retry affordance would re-run. */
 export interface LiveRetryOwner {
-  owner: { getClientId?: () => string; clientId?: string };
+  /* Streaming controllers identify themselves with `getClientId`; restored
+     and legacy owners carry a plain `clientId`. `abort` is listed only so a
+     bare `ActiveChatController` satisfies this weak type. */
+  owner: { getClientId?: () => string; clientId?: string; abort?: () => void };
   run: () => void;
 }
 

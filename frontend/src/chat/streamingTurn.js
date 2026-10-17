@@ -20,7 +20,7 @@ import { normalizePublicTurnActivity } from '../ui/turnActivityModel';
 import { stateStore } from '../state/store.js';
 import { turnState, streamRetryViewport } from './turnState.ts';
 import { setChatStopState, markTurnInProgress, quietTurn } from './turnUi.ts';
-import { registerLiveTurnRuntime, claimLiveSearchRetry } from './liveTurn.js';
+import { registerLiveTurnRuntime, claimLiveSearchRetry } from './liveTurn.ts';
 import { generateId } from '../util/ids.ts';
 import { hideNewReplyPill } from '../ui/scrollPill.js';
 import { isMsgListMounted } from '../ui/msgListMount.ts';
@@ -34,13 +34,13 @@ import {
 } from './turnAnchor.ts';
 import { createToolRuntime } from './toolRuntime.ts';
 import { scrollContainer, isPinnedToBottom } from '../ui/scroll.js';
-import { createStatusChrome } from './turn/statusChrome.js';
-import { createFinishRender } from './turn/finishRender.js';
-import { createFinishViewport } from './turn/finishViewport.js';
-import { createAbortPath } from './turn/abortPath.js';
-import { createErrorPath } from './turn/errorPath.js';
+import { createStatusChrome } from './turn/statusChrome.ts';
+import { createFinishRender } from './turn/finishRender.ts';
+import { createFinishViewport } from './turn/finishViewport.ts';
+import { createAbortPath } from './turn/abortPath.ts';
+import { createErrorPath } from './turn/errorPath.ts';
 import { createMessageOwnership } from './turn/messageOwnership.ts';
-import { createFinishLifecycle } from './turn/finishLifecycle.js';
+import { createFinishLifecycle } from './turn/finishLifecycle.ts';
 import { toolRunLabel } from '../ui/toolPresentationModel';
 import { reportSwallow } from '../util/reportSwallow.ts';
 

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { claimLiveRetry, retryLiveTurn } from '../src/chat/liveTurn.js';
+import { claimLiveRetry, retryLiveTurn } from '../src/chat/liveTurn.ts';
 
 test('React Retry resolves the streaming controller identity and rejects another message', () => {
   let calls = 0;

@@ -49,7 +49,7 @@ import { installDiagnosticFlowListeners } from './tutor/diagnosticFlow.js';
 import { startSession } from './chat/sessionBootstrap.ts';
 import { startNewChat, toggleIncognito, isInAuthGraceWindow, handleAuthExpired, getUserMemories } from './app/lifecycle.js';
 import { setRecentsSearch } from './ui/recentsView.js';
-import { installLiveTurnRetryListener } from './chat/liveTurn.js';
+import { installLiveTurnRetryListener } from './chat/liveTurn.ts';
 import {
   configurePromptSuffixes,
 } from './chat/promptSuffixes.ts';

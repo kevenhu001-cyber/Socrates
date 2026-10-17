@@ -52,7 +52,7 @@ import { appendInlineArtifact } from '../ui/toolCards.js';
 import { formatMsgProgressive } from '../render/markdown.ts';
 import { stripCitationMarkers } from '../render/helpers.ts';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.ts';
-import { retryLiveTurn, decideLiveApproval } from '../chat/liveTurn.js';
+import { retryLiveTurn, decideLiveApproval } from '../chat/liveTurn.ts';
 import { startSession } from '../chat/sessionBootstrap.ts';
 import { submitChatMessage } from '../chat/sendPipeline.ts';
 import { setRecentsSearch } from '../ui/recentsView.js';
