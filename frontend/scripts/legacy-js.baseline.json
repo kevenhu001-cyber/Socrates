@@ -1,5 +1,5 @@
 {
-  "count": 185,
+  "count": 184,
   "files": [
     "src/agent/researchAgent.js",
     "src/app/bootstrap.js",
@@ -21,7 +21,6 @@
     "src/attachments/limits.js",
     "src/attachments/messageContent.js",
     "src/attachments/render.js",
-    "src/auth/forms.js",
     "src/batchStorage.js",
     "src/chat/api.js",
     "src/chat/api/builtIn.js",

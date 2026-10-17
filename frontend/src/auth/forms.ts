@@ -1,28 +1,75 @@
-import { apiFetch } from '../util/api.ts';
+import { apiFetch, type ApiError } from '../util/api.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { getValue, isChecked, setValue, setText, setVisible, focusId, setButton } from './shell.ts';
+import { getValue, isChecked, setValue, setText, setVisible, focusId, setButton, type AuthRoot } from './shell.ts';
 import { adoptAuthenticatedUser } from './forms/sessionAdoption.ts';
 
-function fetchCurrentUser() {
-  return apiFetch('/api/auth/me', { _authEndpoint: true });
+/** The user record these flows carry between login, /me, and the window. */
+interface AuthUser {
+  id?: string;
+  name?: string;
+  email?: string;
+  [key: string]: unknown;
 }
 
-function markAuthSuccess() {
-  if (typeof window.markAuthSuccess === 'function') window.markAuthSuccess();
+/** Window bridges published by the legacy shell (windowExports.js). */
+interface AuthFormsWindow extends Window {
+  setCurrentUser?: (user: unknown) => void;
+  markAuthSuccess?: () => void;
+  __resetToken?: string | null;
 }
 
-function setGuestPreference(enabled, context) {
+/** The parts of a rejected request these handlers branch on. */
+interface AuthFailure {
+  status: number;
+  code: string | null;
+  message: string;
+}
+
+/* Caught values are `unknown`; normalise once so every handler can read the
+   status/code pair the API client attaches without casting at each site. */
+function asAuthFailure(error: unknown): AuthFailure {
+  const candidate = (error || {}) as Partial<ApiError> & { message?: unknown };
+  return {
+    status: typeof candidate.status === 'number' ? candidate.status : 0,
+    code: typeof candidate.code === 'string' ? candidate.code : null,
+    message: typeof candidate.message === 'string' ? candidate.message : String(error ?? ''),
+  };
+}
+
+/** Auth-shell transitions supplied by index.ts (kept as a factory arg to
+ *  avoid a cycle from forms back into the gate controller). */
+export interface AuthFormDependencies {
+  showGate(root?: AuthRoot): void;
+  showAuthView(id: string, root?: AuthRoot): void;
+  setAuthError(viewId: string, msg: string, root?: AuthRoot): void;
+  clearAuthTabSelection(root?: AuthRoot): void;
+  revealAppAndHydrate(onHydrated?: () => void): void;
+  translate(key: string): string;
+}
+
+type AuthFormUi = AuthFormDependencies & { setText: typeof setText };
+
+function fetchCurrentUser(): Promise<{ user?: AuthUser | null } | null> {
+  return apiFetch<{ user?: AuthUser | null } | null>('/api/auth/me', { _authEndpoint: true });
+}
+
+function markAuthSuccess(): void {
+  const win = window as AuthFormsWindow;
+  if (typeof win.markAuthSuccess === 'function') win.markAuthSuccess();
+}
+
+function setGuestPreference(enabled: boolean, context: string): void {
   if (!enabled) return;
   try { localStorage.setItem('socrates-guest', '1'); }
   catch (error) { reportSwallow(error, context); }
 }
 
-function signedIn(root, error, email, dependencies) {
-  const { showGate, showAuthView, setAuthError, setText, setValue, translate } = dependencies;
+function signedIn(root: AuthRoot | undefined, error: AuthFailure, email: string, dependencies: AuthFormUi): void {
+  const { showGate, showAuthView, setAuthError, translate } = dependencies;
   showGate(root);
   if (error.status === 403 && error.code === 'UNVERIFIED') {
-    setText(root, 'authVerifyEmail', email);
-    try { setValue(root, 'authResendEmail', email); }
+    setText(root || document, 'authVerifyEmail', email);
+    try { setValue(root || document, 'authResendEmail', email); }
     catch (prefillError) { reportSwallow(prefillError, 'auth/forms.signin.prefillResendEmail'); }
     showAuthView('authVerifySentView', root);
     return;
@@ -33,13 +80,13 @@ function signedIn(root, error, email, dependencies) {
   setAuthError('authSigninError', message, root);
 }
 
-async function verifyWithApi(token, dependencies) {
-  const response = await apiFetch('/api/auth/verify?token=' + encodeURIComponent(token));
+async function verifyWithApi(token: string, dependencies: AuthFormDependencies): Promise<void> {
+  const response = await apiFetch<{ user?: AuthUser | null } | null>('/api/auth/verify?token=' + encodeURIComponent(token));
   markAuthSuccess();
-  await adoptAuthenticatedUser(response && response.user ? response.user : null, {
+  await adoptAuthenticatedUser<AuthUser>(response && response.user ? response.user : null, {
     fetchMe: fetchCurrentUser,
-    setUser: (user) => window.setCurrentUser(user),
-    getCurrentUser: () => window.CURRENT_USER,
+    setUser: (user) => (window as AuthFormsWindow).setCurrentUser?.(user),
+    getCurrentUser: () => window.CURRENT_USER as AuthUser | null,
     retryAfterFailure: true,
     retryOnlyWithCurrentUser: true,
     nullFallback: true,
@@ -49,7 +96,7 @@ async function verifyWithApi(token, dependencies) {
   dependencies.revealAppAndHydrate();
 }
 
-function showVerifyFailure(error, dependencies) {
+function showVerifyFailure(error: AuthFailure, dependencies: AuthFormUi): void {
   const expired = error.status === 400 && error.code === 'EXPIRED';
   const title = dependencies.translate(expired
     ? 'auth.verifyFailedExpiredTitle'
@@ -60,9 +107,10 @@ function showVerifyFailure(error, dependencies) {
   dependencies.showAuthView('authVerifyFailedView');
 }
 
-function createCredentialHandlers(ui) {
+function createCredentialHandlers(ui: AuthFormUi) {
   const { showAuthView, setAuthError, clearAuthTabSelection, revealAppAndHydrate, translate } = ui;
-  async function submitAuthSignin(root) {
+
+  async function submitAuthSignin(root?: AuthRoot): Promise<void> {
     const form = root || document;
     const email = getValue(form, 'authSigninEmail').trim();
     const password = getValue(form, 'authSigninPassword');
@@ -74,27 +122,27 @@ function createCredentialHandlers(ui) {
     }
     setButton(form, 'authSigninBtn', true, translate('auth.signingIn'));
     try {
-      const response = await apiFetch('/api/auth/login', {
+      const response = await apiFetch<{ user?: AuthUser | null } | null>('/api/auth/login', {
         method: 'POST', _authEndpoint: true, body: { email, password },
       });
       setGuestPreference(isGuest, 'auth/forms.signin.markGuest');
       markAuthSuccess();
-      await adoptAuthenticatedUser(response && response.user, {
+      await adoptAuthenticatedUser<AuthUser>(response && response.user ? response.user : null, {
         fetchMe: fetchCurrentUser,
-        setUser: (user) => window.setCurrentUser(user),
+        setUser: (user) => (window as AuthFormsWindow).setCurrentUser?.(user),
         retryAfterFailure: true,
         report: reportSwallow,
         context: 'auth/forms.signin.recheckMe',
       });
       revealAppAndHydrate();
     } catch (error) {
-      signedIn(form, error, email, ui);
+      signedIn(form, asAuthFailure(error), email, ui);
     } finally {
       setButton(form, 'authSigninBtn', false, translate('auth.signIn'));
     }
   }
 
-  async function submitAuthRegister(root) {
+  async function submitAuthRegister(root?: AuthRoot): Promise<void> {
     const form = root || document;
     const email = getValue(form, 'authRegisterEmail').trim();
     const password = getValue(form, 'authRegisterPassword');
@@ -115,16 +163,17 @@ function createCredentialHandlers(ui) {
       showAuthView('authVerifySentView', form);
       clearAuthTabSelection(form);
     } catch (error) {
-      const message = error.status === 409
+      const failure = asAuthFailure(error);
+      const message = failure.status === 409
         ? 'That email is already registered. Try signing in.'
-        : error.message;
+        : failure.message;
       setAuthError('authRegisterError', message, form);
     } finally {
       setButton(form, 'authRegisterBtn', false, translate('auth.sendVerificationLink'));
     }
   }
 
-  async function resendVerification(root) {
+  async function resendVerification(root?: AuthRoot): Promise<void> {
     const form = root || document;
     const email = getValue(form, 'authResendEmail').trim();
     if (!email) return;
@@ -135,24 +184,24 @@ function createCredentialHandlers(ui) {
       setText(form, 'authVerifyEmail', email);
       showAuthView('authVerifySentView', form);
     } catch (error) {
-      setAuthError('authVerifyFailedError', error.message, form);
+      setAuthError('authVerifyFailedError', asAuthFailure(error).message, form);
     }
   }
 
-  async function submitAuthVerify(token) {
+  async function submitAuthVerify(token: string): Promise<void> {
     showAuthView('authVerifiedView');
     clearAuthTabSelection();
     try { await verifyWithApi(token, ui); }
-    catch (error) { showVerifyFailure(error, ui); }
+    catch (error) { showVerifyFailure(asAuthFailure(error), ui); }
   }
 
   return { submitAuthSignin, submitAuthRegister, resendVerification, submitAuthVerify };
 }
 
-function createPasswordHandlers(ui) {
+function createPasswordHandlers(ui: AuthFormUi) {
   const { showAuthView, setAuthError, translate } = ui;
 
-  async function submitAuthForgotPassword(root) {
+  async function submitAuthForgotPassword(root?: AuthRoot): Promise<void> {
     const form = root || document;
     const email = getValue(form, 'authForgotEmail').trim();
     setAuthError('authForgotError', '', form);
@@ -165,13 +214,13 @@ function createPasswordHandlers(ui) {
       setText(form, 'authForgotSentEmail', email);
       showAuthView('authForgotSentView', form);
     } catch (error) {
-      setAuthError('authForgotError', error.message, form);
+      setAuthError('authForgotError', asAuthFailure(error).message, form);
     } finally {
       setButton(form, 'authForgotBtn', false, translate('auth.sendResetLink'));
     }
   }
 
-  async function submitAuthResetPassword(root) {
+  async function submitAuthResetPassword(root?: AuthRoot): Promise<void> {
     const form = root || document;
     const password = getValue(form, 'authResetPassword');
     const confirm = getValue(form, 'authResetConfirm');
@@ -185,11 +234,11 @@ function createPasswordHandlers(ui) {
     setButton(form, 'authResetBtn', true, translate('auth.resetting'));
     try {
       await apiFetch('/api/auth/reset-password', {
-        method: 'POST', body: { token: window.__resetToken, password },
+        method: 'POST', body: { token: (window as AuthFormsWindow).__resetToken, password },
       });
       showAuthView('authResetSuccessView', form);
     } catch (error) {
-      setAuthError('authResetError', error.message, form);
+      setAuthError('authResetError', asAuthFailure(error).message, form);
     } finally {
       setButton(form, 'authResetBtn', false, translate('auth.resetPassword'));
     }
@@ -198,10 +247,10 @@ function createPasswordHandlers(ui) {
   return { submitAuthForgotPassword, submitAuthResetPassword };
 }
 
-function createCodeHandlers(ui) {
+function createCodeHandlers(ui: AuthFormUi) {
   const { setAuthError, revealAppAndHydrate, translate } = ui;
 
-  async function submitAuthSendCode(root) {
+  async function submitAuthSendCode(root?: AuthRoot): Promise<void> {
     const form = root || document;
     const email = getValue(form, 'authCodeEmail').trim();
     setAuthError('authCodeError', '', form);
@@ -219,13 +268,13 @@ function createCodeHandlers(ui) {
       setVisible(form, 'authCodeResendWrap', true);
       focusId(form, 'authCodeInput');
     } catch (error) {
-      setAuthError('authCodeError', error.message, form);
+      setAuthError('authCodeError', asAuthFailure(error).message, form);
     } finally {
       setButton(form, 'authCodeSendBtn', false, translate('auth.sendCode'));
     }
   }
 
-  async function submitAuthLoginWithCode(root) {
+  async function submitAuthLoginWithCode(root?: AuthRoot): Promise<void> {
     const form = root || document;
     const email = getValue(form, 'authCodeEmail').trim();
     const code = getValue(form, 'authCodeInput').trim().toUpperCase();
@@ -237,26 +286,26 @@ function createCodeHandlers(ui) {
     }
     setButton(form, 'authCodeLoginBtn', true, translate('auth.loggingIn'));
     try {
-      const response = await apiFetch('/api/auth/login-with-code', {
+      const response = await apiFetch<{ user?: AuthUser | null } | null>('/api/auth/login-with-code', {
         method: 'POST', _authEndpoint: true, body: { email, code },
       });
       markAuthSuccess();
-      await adoptAuthenticatedUser(response && response.user, {
+      await adoptAuthenticatedUser<AuthUser>(response && response.user ? response.user : null, {
         fetchMe: fetchCurrentUser,
-        setUser: (user) => window.setCurrentUser(user),
+        setUser: (user) => (window as AuthFormsWindow).setCurrentUser?.(user),
         report: reportSwallow,
         context: 'auth/forms.codeLogin.recheckMe',
       });
       setGuestPreference(isGuest, 'auth/forms.codeLogin.markGuest');
       revealAppAndHydrate();
     } catch (error) {
-      setAuthError('authCodeError', error.message, form);
+      setAuthError('authCodeError', asAuthFailure(error).message, form);
     } finally {
       setButton(form, 'authCodeLoginBtn', false, translate('auth.logIn'));
     }
   }
 
-  async function resendAuthCode(root) {
+  async function resendAuthCode(root?: AuthRoot): Promise<void> {
     const email = getValue(root || document, 'authCodeEmail').trim();
     if (!email) return;
     try {
@@ -267,9 +316,9 @@ function createCodeHandlers(ui) {
   return { submitAuthSendCode, submitAuthLoginWithCode, resendAuthCode };
 }
 
-/** Create form actions with the auth-shell transitions supplied by index.js. */
-export function createAuthFormHandlers(dependencies) {
-  const ui = { ...dependencies, setText };
+/** Create form actions with the auth-shell transitions supplied by index.ts. */
+export function createAuthFormHandlers(dependencies: AuthFormDependencies) {
+  const ui: AuthFormUi = { ...dependencies, setText };
   return {
     ...createCredentialHandlers(ui),
     ...createPasswordHandlers(ui),
