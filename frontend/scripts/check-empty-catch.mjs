@@ -25,6 +25,16 @@
  * is exempted (see `isExempted`). Reasoned exemptions are documented
  * individually; a blanket exemption is not.
  *
+ * History — 415 -> 392 was NOT a loosening. The old regex parser reported
+ * 418 offenders on the same tree and 27 of those (across 20 files) were
+ * false positives: it stripped `//` comments before matching, so a `//`
+ * inside a regex or string ate the rest of the line including any catch on
+ * it, and `catch(e){}` text inside an iframe srcdoc string literal counted
+ * as real source. It also stripped the body's `empty-catch: intentional`
+ * marker BEFORE testing for the exemption, so every exempted multi-line
+ * catch was miscounted as an offender. The AST parser counts what
+ * JavaScript actually parses.
+ *
  * Usage:  node scripts/check-empty-catch.mjs [--update]
  */
 import { readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
