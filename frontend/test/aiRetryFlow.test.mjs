@@ -51,7 +51,7 @@ function installStreamEnvironment(responses) {
 }
 
 async function runStream(options = {}) {
-  const { callAPIStream } = await import('../src/chat/stream.js');
+  const { callAPIStream } = await import('../src/chat/stream.ts');
   return callAPIStream(
     [{ role: 'user', content: 'retry me' }],
     256,
@@ -118,7 +118,7 @@ test('stream treats reasoning tokens as semantic output and does not retry', asy
   ]);
 
   let thinkingReceived = '';
-  const { callAPIStream } = await import('../src/chat/stream.js');
+  const { callAPIStream } = await import('../src/chat/stream.ts');
   const result = await callAPIStream(
     [{ role: 'user', content: 'reasoning question' }],
     256,

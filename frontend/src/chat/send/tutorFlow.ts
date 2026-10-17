@@ -4,17 +4,30 @@ import { _origGenerateFollowUp } from '../mocks.js';
 import { notifyMockFallbackOnce } from '../mockFallbackNotice.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { generateFollowUpStream } from '../../tutor/socraticTurn.js';
-import { toolCallbacksForStream } from '../toolCallbacks.js';
+import { toolCallbacksForStream } from '../toolCallbacks.ts';
 import { isExpectedTurnAbort } from '../turnUi.ts';
 import { getTutorSocratic, addAnchoredAssistant, addStreamingMessage, askChatTurn, translate, reportTurnFailure } from './runtime.ts';
-import { advanceTutorNodeIfReady, recordTutorProgress } from './tutorProgress.js';
-import { stuckPromptTransition } from './tutorPolicy.ts';
+import { advanceTutorNodeIfReady, recordTutorProgress } from './tutorProgress.ts';
+import {
+  stuckPromptTransition,
+  type SubmitChatMessage,
+  type TutorTurnOptions,
+} from './tutorPolicy.ts';
+import type { KbNode } from '../teachingPlan.ts';
 
-function invokeTutorPrompt(method, context, ...args) {
-  const tutor = getTutorSocratic();
-  if (!tutor || typeof tutor !== 'object' || typeof tutor[method] !== 'function') return false;
+/** What dispatchSendTurn hands the tutor path. */
+export interface DispatchTutorTurnInput {
+  text: string;
+  chatContent: unknown;
+  options: TutorTurnOptions;
+  submitChatMessage: SubmitChatMessage;
+}
+
+function invokeTutorPrompt(method: string, context: string, ...args: unknown[]): boolean {
+  const tutor = getTutorSocratic() as Record<string, unknown> | null | undefined;
+  if (!tutor || typeof tutor[method] !== 'function') return false;
   try {
-    tutor[method](...args);
+    (tutor[method] as (...callArgs: unknown[]) => void)(...args);
     return true;
   } catch (error) {
     reportSwallow(error, context);
@@ -22,13 +35,13 @@ function invokeTutorPrompt(method, context, ...args) {
   }
 }
 
-function showStuckResponse(text) {
+function showStuckResponse(text: string): void {
   const transition = stuckPromptTransition({
     stuckCount: stateStore.read('stuckCount'),
     offered: stateStore.read('stuckCheckOffered'),
     rejected: stateStore.read('stuckCheckRejected'),
   });
-  const applyTransition = () => {
+  const applyTransition = (): void => {
     if (transition.patch) stateStore.dispatch({ type: 'state/batch', patch: transition.patch });
   };
 
@@ -60,14 +73,21 @@ function showStuckResponse(text) {
   addAnchoredAssistant(translate('tutor.takeTime'));
 }
 
-async function runChatFallback(text, chatContent) {
+async function runChatFallback(text: string, chatContent: unknown): Promise<void> {
   try { await askChatTurn(text, chatContent); }
   catch (error) {
     if (!isExpectedTurnAbort(error)) reportTurnFailure(error, 'sendPipeline.tutorFallback');
   }
 }
 
-async function runTutorFollowUp(text, chatContent, options, node, isSubstantive, submitChatMessage) {
+async function runTutorFollowUp(
+  text: string,
+  chatContent: unknown,
+  options: TutorTurnOptions,
+  node: KbNode | null,
+  isSubstantive: boolean,
+  submitChatMessage: SubmitChatMessage,
+): Promise<void> {
   if (!node) {
     await runChatFallback(text, chatContent);
     stateStore.dispatch({
@@ -86,8 +106,8 @@ async function runTutorFollowUp(text, chatContent, options, node, isSubstantive,
       text,
       node,
       stateStore.read('domain'),
-      (delta) => streamController.append(delta),
-      (thinking) => streamController.appendThinking(thinking),
+      (delta: string) => streamController.append(delta),
+      (thinking: string) => streamController.appendThinking(thinking),
       toolCallbacksForStream(streamController),
     );
     if (response != null) {
@@ -118,11 +138,16 @@ async function runTutorFollowUp(text, chatContent, options, node, isSubstantive,
   });
 }
 
-function shouldRunTutorFollowUp(isSubstantive, origin) {
+function shouldRunTutorFollowUp(isSubstantive: boolean, origin?: string | null): boolean {
   return isSubstantive || stateStore.read('stuckCount') < 3 || origin === 'quiz';
 }
 
-export async function dispatchTutorTurn({ text, chatContent, options, submitChatMessage }) {
+export async function dispatchTutorTurn({
+  text,
+  chatContent,
+  options,
+  submitChatMessage,
+}: DispatchTutorTurnInput): Promise<void> {
   const { node, isSubstantive } = recordTutorProgress(text, options);
   if (advanceTutorNodeIfReady(node, options.origin)) {
     return;

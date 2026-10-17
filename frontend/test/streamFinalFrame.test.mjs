@@ -60,7 +60,7 @@ test('final SSE frame without trailing newline is still parsed', async () => {
     'data: {"choices":[{"delta":{"content":" GOODBYE"}}]}',
   ]);
 
-  const { callAPIStream } = await import('../src/chat/stream.js');
+  const { callAPIStream } = await import('../src/chat/stream.ts');
   let full = '';
   const result = await callAPIStream(
     [{ role: 'user', content: 'hi' }],

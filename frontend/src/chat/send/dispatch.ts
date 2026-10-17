@@ -1,5 +1,5 @@
 import { isExpectedTurnAbort } from '../turnUi.ts';
-import { dispatchTutorTurn } from './tutorFlow.js';
+import { dispatchTutorTurn } from './tutorFlow.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import {
   askChatTurn,
@@ -7,6 +7,7 @@ import {
   isDeepResearchOn,
   reportTurnFailure,
 } from './runtime.ts';
+import type { SubmitChatMessage, TutorTurnOptions } from './tutorPolicy.ts';
 
 /** The abort surface of a turn created before the send was dispatched. */
 interface PrecreatedController {
@@ -54,7 +55,14 @@ export async function dispatchSendTurn({
     return;
   }
 
-  await dispatchTutorTurn({ text, chatContent, options, submitChatMessage });
+  /* `options`/`submitChatMessage` arrive untyped from the JS send pipeline;
+     the tutor contract is applied at this boundary. */
+  await dispatchTutorTurn({
+    text,
+    chatContent,
+    options: (options || {}) as TutorTurnOptions,
+    submitChatMessage: submitChatMessage as SubmitChatMessage,
+  });
 }
 
 export function scheduleSendTurn(dispatch: () => void): void {

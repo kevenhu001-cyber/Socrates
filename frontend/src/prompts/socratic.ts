@@ -1,4 +1,4 @@
-import { INTELLIGENT_UI_GUIDANCE } from '../chat/systemPrompts.js';
+import { INTELLIGENT_UI_GUIDANCE } from '../chat/systemPrompts.ts';
 
 /* Socratic tutor role prompt.
  *

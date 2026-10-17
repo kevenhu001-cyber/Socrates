@@ -12,17 +12,57 @@ import {
   AI_MAX_ATTEMPTS,
   isUserAbort,
   waitForAIRetry,
+  type AIRequestOptions,
 } from './retryPolicy.ts';
 import { runStreamAttempt } from './streamAttempt.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
-function setLastCallError(value) {
+/** Bridges installed by main.js before any stream can run; a required shape
+ * because a stream without them is a boot-order bug the original would throw on. */
+interface StreamWindow extends Window {
+  getActiveProvider: () => unknown;
+  offlineGuard: () => boolean;
+  STREAM_MAX_ATTEMPTS?: number;
+  _activeChatAbort?: ((reason?: unknown) => void) | null;
+}
+
+/** Resolved value of a completed stream call. */
+export interface StreamResult {
+  text: string;
+  html?: string | null;
+  widgets?: unknown[];
+  cancelled?: boolean;
+}
+
+/** Outcome of one attempt, produced by streamAttempt.js. */
+export type StreamAttemptOutcome =
+  | { kind: 'success'; result: StreamResult }
+  | { kind: 'failure' }
+  | { kind: 'cancelled'; result: StreamResult | null }
+  | { kind: 'retry'; error: Error };
+
+/** Options threaded through the streaming call. Tool-callback handlers ride
+ * along as extra keys because the frame processor invokes them by name. */
+export interface StreamCallOptions extends AIRequestOptions {
+  maxAttempts?: number;
+  turnId?: string;
+  [key: string]: unknown;
+}
+
+/** `null` is allowed: exam generation calls without a delta sink. */
+export type StreamDeltaHandler = ((text: string, full: string) => void) | null;
+export type StreamThinkingHandler = ((text: string) => void) | null;
+
+function setLastCallError(value: string | null): void {
   stateStore.dispatch({ type: 'state/set', key: 'lastCallError', value });
 }
 
-function bindAbortSignal(parent, child) {
+function bindAbortSignal(
+  parent: AbortSignal | null | undefined,
+  child: { abort(reason?: unknown): void },
+): (() => void) | null {
   if (!parent) return null;
-  const onAbort = () => {
+  const onAbort = (): void => {
     try { child.abort(parent.reason || 'aborted'); }
     catch (error) { reportSwallow(error, 'chat/stream.bindAbortSignal'); }
   };
@@ -34,20 +74,21 @@ function bindAbortSignal(parent, child) {
   };
 }
 
-function maxStreamAttempts(opts) {
-  const configuredAttempts = opts && typeof opts.maxAttempts === 'number'
+function maxStreamAttempts(opts?: StreamCallOptions | null): number {
+  const configured = opts && typeof opts.maxAttempts === 'number'
     ? opts.maxAttempts
-    : window.STREAM_MAX_ATTEMPTS;
-  return typeof configuredAttempts === 'number' && configuredAttempts > 0
-    ? configuredAttempts
+    : (window as unknown as StreamWindow).STREAM_MAX_ATTEMPTS;
+  return typeof configured === 'number' && configured > 0
+    ? configured
     : AI_MAX_ATTEMPTS;
 }
 
 /* Drop the global abort handle only while it is still the one this call
    installed. A superseded stream unwinds after the next turn has put its
    own handle in place; an older cleanup must not erase the live handle. */
-function clearActiveChatAbort(handle) {
-  if (handle && window._activeChatAbort === handle) window._activeChatAbort = null;
+function clearActiveChatAbort(handle: unknown): void {
+  const win = window as unknown as StreamWindow;
+  if (handle && win._activeChatAbort === handle) win._activeChatAbort = null;
 }
 
 /* Streaming variant. Calls /api/chat/stream (our backend SSE proxy).
@@ -55,11 +96,18 @@ function clearActiveChatAbort(handle) {
    Resolves to {text, html, widgets, cancelled} on success, or null on failure.
    There is no client-side response deadline: reasoning may take as long as
    needed, while transient transport failures use the shared retry policy. */
-export async function callAPIStream(messages, maxTokens, onDelta, onThinking, opts) {
-  const getActiveProvider = window.getActiveProvider;
-  const offlineGuard = window.offlineGuard;
+export async function callAPIStream(
+  messages: unknown,
+  maxTokens: number,
+  onDelta: StreamDeltaHandler,
+  onThinking: StreamThinkingHandler,
+  opts?: StreamCallOptions | null,
+): Promise<StreamResult | null> {
+  const win = window as unknown as StreamWindow;
+  const getActiveProvider = win.getActiveProvider;
+  const offlineGuard = win.offlineGuard;
   const maxAttempts = maxStreamAttempts(opts);
-  const retryOptions = Object.assign({}, opts || {}, {
+  const retryOptions: AIRequestOptions = Object.assign({}, opts || {}, {
     source: 'chat',
     maxRetries: maxAttempts - 1,
   });
@@ -71,19 +119,21 @@ export async function callAPIStream(messages, maxTokens, onDelta, onThinking, op
   setLastCallError(null);
 
   const turnController = new AbortController();
-  const unbindExternal = bindAbortSignal(retryOptions.signal, turnController);
-  let activeAbortHandle = null;
-  const waitForRetry = async (attempt, error) => {
+  const unbindExternal = bindAbortSignal(retryOptions.signal ?? null, turnController);
+  let activeAbortHandle: ((reason?: unknown) => void) | null = null;
+  const waitForRetry = async (attempt: number, error: unknown): Promise<boolean> => {
     try {
       return await waitForAIRetry(attempt, error, Object.assign({}, retryOptions, {
         signal: turnController.signal,
       }));
     } catch (caught) {
-      if (isUserAbort(caught, turnController.signal) || isUserAbort(caught, retryOptions.signal)) return false;
+      if (isUserAbort(caught, turnController.signal) || isUserAbort(caught, retryOptions.signal)) {
+        return false;
+      }
       throw caught;
     }
   };
-  const retryWasCancelled = () => turnController.signal.aborted
+  const retryWasCancelled = (): boolean => turnController.signal.aborted
     && isUserAbort(null, turnController.signal);
 
   try {
@@ -96,10 +146,12 @@ export async function callAPIStream(messages, maxTokens, onDelta, onThinking, op
     const activeTurn = {
       current: opts && typeof opts.turnId === 'string' ? opts.turnId : null,
     };
-    let lastError = null;
+    let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-      const outcome = await runStreamAttempt({
+      /* streamAttempt.js is still untyped; the outcome union is declared here
+         and the module can adopt it wholesale when it converts. */
+      const outcome = (await runStreamAttempt({
         messages,
         maxTokens,
         onDelta,
@@ -110,12 +162,13 @@ export async function callAPIStream(messages, maxTokens, onDelta, onThinking, op
         turnController,
         turnSignal: turnController.signal,
         activeTurn,
-        bindAttemptSignal: (controller) => bindAbortSignal(turnController.signal, controller),
-        onAbortHandle: (handle) => { activeAbortHandle = handle; },
+        bindAttemptSignal: (controller: { abort(reason?: unknown): void }) =>
+          bindAbortSignal(turnController.signal, controller),
+        onAbortHandle: (handle: (reason?: unknown) => void) => { activeAbortHandle = handle; },
         waitForRetry,
         retryWasCancelled,
         setLastCallError,
-      });
+      })) as StreamAttemptOutcome;
 
       if (outcome.kind === 'success' || outcome.kind === 'cancelled') return outcome.result;
       if (outcome.kind === 'retry') {
@@ -126,7 +179,7 @@ export async function callAPIStream(messages, maxTokens, onDelta, onThinking, op
     }
 
     /* Keep an error visible even when every retryable attempt was exhausted. */
-    setLastCallError(lastError && lastError.message || 'Stream failed after all retries');
+    setLastCallError((lastError && lastError.message) || 'Stream failed after all retries');
     return null;
   } finally {
     if (unbindExternal) unbindExternal();

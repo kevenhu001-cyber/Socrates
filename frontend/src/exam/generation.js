@@ -1,6 +1,6 @@
 import { esc } from '../render/helpers.ts';
 import { formatMsg } from '../render/markdown.ts';
-import { callAPIStream } from '../chat/stream.js';
+import { callAPIStream } from '../chat/stream.ts';
 import { stateStore } from '../state/store.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { getProviderConfigSnapshot, setActiveProviderLocal } from '../config/providerConfig.service.ts';

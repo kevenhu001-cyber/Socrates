@@ -9,18 +9,23 @@ import {
   isSubstantiveTutorAnswer,
   nextTutorStage,
   tutorNodeProgressDecision,
+  type TutorTurnOptions,
 } from './tutorPolicy.ts';
+import type { KbNode, TeachingPlan } from '../teachingPlan.ts';
 
-function renderTutorProgress(method, context) {
-  const tutor = getTutorSocratic();
-  if (!tutor || typeof tutor !== 'object' || typeof tutor[method] !== 'function') return;
-  try { tutor[method](); }
+function renderTutorProgress(method: string, context: string): void {
+  const tutor = getTutorSocratic() as Record<string, unknown> | null | undefined;
+  if (!tutor || typeof tutor[method] !== 'function') return;
+  try { (tutor[method] as () => void)(); }
   catch (error) { reportSwallow(error, context); }
 }
 
-export function recordTutorProgress(text, options) {
-  const currentNode = stateStore.read('currentNode');
-  const node = stateStore.read('kbNodes')[currentNode];
+export function recordTutorProgress(
+  text: string,
+  options: TutorTurnOptions,
+): { node: KbNode | null; isSubstantive: boolean } {
+  const currentNode = stateStore.read('currentNode') as number;
+  const node = (stateStore.read('kbNodes') as KbNode[])[currentNode] || null;
   stateStore.dispatch({
     type: 'state/set',
     key: 'stuckCount',
@@ -60,17 +65,18 @@ export function recordTutorProgress(text, options) {
   return { node, isSubstantive };
 }
 
-function findNextNodeIndex(node) {
+function findNextNodeIndex(node: KbNode): number {
   let nextNodeIndex = -1;
-  const planSubtopics = (stateStore.read('teachingPlan') && stateStore.read('teachingPlan').subtopics) || [];
+  const plan = stateStore.read('teachingPlan') as TeachingPlan | null;
+  const planSubtopics = (plan && plan.subtopics) || [];
   if (planSubtopics.length) {
     const currentPlanIndex = planSubtopics.findIndex((subtopic) => subtopic.name === node.name);
     const nextPlanIndex = planSubtopics.findIndex((subtopic, index) => (
       index > currentPlanIndex && subtopic.status !== 'internalized'
     ));
     if (nextPlanIndex >= 0) {
-      const nextSubtopic = planSubtopics[nextPlanIndex];
-      const nodes = stateStore.read('kbNodes');
+      const nextSubtopic = planSubtopics[nextPlanIndex]!;
+      const nodes = stateStore.read('kbNodes') as KbNode[];
       nextNodeIndex = nodes.findIndex((candidate) => candidate.name === nextSubtopic.name);
       stateStore.dispatch({
         type: 'state/set',
@@ -81,10 +87,11 @@ function findNextNodeIndex(node) {
   }
 
   if (nextNodeIndex < 0) {
-    const currentIndex = stateStore.read('currentNode');
-    const nodes = stateStore.read('kbNodes');
+    const currentIndex = stateStore.read('currentNode') as number;
+    const nodes = stateStore.read('kbNodes') as KbNode[];
     for (let index = currentIndex + 1; index < nodes.length; index += 1) {
-      if (nodes[index].status !== 'internalized') {
+      const candidate = nodes[index];
+      if (candidate && candidate.status !== 'internalized') {
         nextNodeIndex = index;
         break;
       }
@@ -93,8 +100,8 @@ function findNextNodeIndex(node) {
   return nextNodeIndex;
 }
 
-export function advanceTutorNodeIfReady(node, origin) {
-  if (!tutorNodeProgressDecision({
+export function advanceTutorNodeIfReady(node: KbNode | null, origin?: string | null): boolean {
+  if (!node || !tutorNodeProgressDecision({
     node,
     substantiveCount: stateStore.read('substantiveCount'),
     teachingStage: stateStore.read('teachingStage'),
@@ -103,10 +110,10 @@ export function advanceTutorNodeIfReady(node, origin) {
 
   const updatedNode = Object.assign({}, node, {
     status: 'internalized',
-    questions: (node.questions || 0) + 1,
+    questions: (typeof node.questions === 'number' ? node.questions : 0) + 1,
   });
-  const currentIndex = stateStore.read('currentNode');
-  const updatedNodes = stateStore.read('kbNodes').slice();
+  const currentIndex = stateStore.read('currentNode') as number;
+  const updatedNodes = (stateStore.read('kbNodes') as KbNode[]).slice();
   updatedNodes[currentIndex] = updatedNode;
   stateStore.dispatch({ type: 'state/set', key: 'kbNodes', value: updatedNodes });
   stateStore.dispatch({ type: 'state/set', key: 'substantiveCount', value: 0 });
@@ -129,7 +136,7 @@ export function advanceTutorNodeIfReady(node, origin) {
         practiceAttempts: 0,
       },
     });
-    const nextNode = stateStore.read('kbNodes')[nextNodeIndex];
+    const nextNode = (stateStore.read('kbNodes') as KbNode[])[nextNodeIndex]!;
     addAnchoredAssistant('Good depth on **' + updatedNode.name + '**. Let\'s move to the next area: **' + nextNode.name + '**.');
     setTimeout(() => askNextQuestion(), 900);
   }

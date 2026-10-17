@@ -8,7 +8,7 @@ import { turnState } from './turnState.ts';
 import { interruptPendingTurn, quietTurn } from './turnUi.ts';
 import { hasUsableActive } from '../config/providers.ts';
 import { extractHistory } from './history.js';
-import { callAPIStream } from './stream.js';
+import { callAPIStream } from './stream.ts';
 import { handleChatApiResult } from './format.ts';
 import { offlineGuard } from './offline.ts';
 import {
@@ -18,11 +18,11 @@ import {
 } from './promptSuffixes.ts';
 import { injectTemplateSystemPrompt } from './templateSystemPrompt.ts';
 import { languageDirectiveFor } from './lang.ts';
-import { CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT } from './systemPrompts.js';
+import { CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT } from './systemPrompts.ts';
 import { CHAT_PAGE_CONTEXT_TIMEOUT_MS, extractHttpUrls, fetchPagesForContext, looksLikeUserMentionedSite } from './webLinks.js';
 import { renderLinkPreviews, renderNoUrlHint } from '../ui/linkPreviews.js';
 import { getReasoningEffort } from '../ui/effortPicker.js';
-import { publishActiveWorkflowEvent, publishActiveWorkflowFinish, publishWorkspaceAgentEvent } from './toolCallbacks.js';
+import { publishActiveWorkflowEvent, publishActiveWorkflowFinish, publishWorkspaceAgentEvent } from './toolCallbacks.ts';
 import { clearPendingTurn, newClientTurnId, savePendingTurn } from './turnClient.ts';
 import { addMessage } from './messages.js';
 import { scheduleTurnToTopForMessage } from './turnAnchor.ts';

@@ -35,6 +35,15 @@ export function tutorNodeProgressDecision({ node, substantiveCount, teachingStag
     && stageIndex >= exerciseIndex;
 }
 
+/** Options the send path threads through the tutor flow. */
+export interface TutorTurnOptions {
+  origin?: string | null;
+  [key: string]: unknown;
+}
+
+/** The submit entry point a retry re-invokes. */
+export type SubmitChatMessage = (text: string, options: unknown) => unknown;
+
 export type StuckAction = 'take-time' | 'four-options' | 'explain-prompt';
 
 export interface StuckTransition {

@@ -17,7 +17,7 @@ import {
   fromBasicsDirective,
   stageInstruction,
   tutorTurnDirective,
-} from '../src/chat/socraticDirectives.js';
+} from '../src/chat/socraticDirectives.ts';
 import {
   extractDiagQuestionsBalanced,
   normalizeDiagQuestions,

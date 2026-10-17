@@ -5,7 +5,7 @@ import {
   fromBasicsDirective,
   stageInstruction,
   tutorTurnDirective,
-} from '../src/chat/socraticDirectives.js';
+} from '../src/chat/socraticDirectives.ts';
 
 test('Tutor stage instructions no longer force a full lesson on every turn', () => {
   assert.doesNotMatch(stageInstruction('define'), /1500|8-20|verbose/i);

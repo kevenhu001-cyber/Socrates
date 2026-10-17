@@ -1,5 +1,5 @@
 import { stateStore } from '../../state/store.js';
-import { turnState } from '../turnState.ts';
+import { turnState, type StreamingTurnController } from '../turnState.ts';
 import { saveState } from '../../session/saveState.ts';
 import { resetSessionTransients } from '../../session/loader.ts';
 import { saveCurrentSession } from '../../session/persistence.ts';
@@ -17,10 +17,25 @@ import { renderAttachmentChips } from '../../attachments/render.js';
 import { formatMsg } from '../../render/markdown.ts';
 import { publishReactChatRuntime } from '../../ui/reactBridge.js';
 import { reportSwallow } from '../../util/reportSwallow.ts';
+import type { SessionStartContext } from './input.ts';
 
-function patchFirstTurnAttachments(clientId, topic, attachments) {
+/** Legacy bridges read while booting the first chat turn. */
+interface ChatStartWindow extends Window {
+  startDeepResearch?: (topic: string) => Promise<unknown> | unknown;
+  __loadStreamingTurn?: () => void;
+  addStreamingMessage?: (options: { onRetry?: () => void }) => StreamingTurnController;
+  __socratesSyncCtl?: StreamingTurnController | null;
+}
+
+/** Resolved value of the first-turn content build. */
+interface BuiltMessageContent {
+  parts: unknown;
+  attachmentList?: unknown[];
+}
+
+function patchFirstTurnAttachments(clientId: string, topic: string, attachments: unknown[]): void {
   if (!attachments.length || !clientId) return;
-  const messages = stateStore.read('messages');
+  const messages = stateStore.read('messages') as Array<{ clientId?: string }>;
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     if (!messages[index] || messages[index].clientId !== clientId) continue;
     stateStore.dispatch({
@@ -38,7 +53,13 @@ function patchFirstTurnAttachments(clientId, topic, attachments) {
   }
 }
 
-async function assembleAndSendFirstTurn(context, userClientId, initialSave, contentPromise) {
+async function assembleAndSendFirstTurn(
+  context: SessionStartContext,
+  userClientId: string,
+  initialSave: Promise<unknown> | null,
+  contentPromise: Promise<BuiltMessageContent>,
+): Promise<void> {
+  const win = window as ChatStartWindow;
   resetSessionTransients();
   if (context.activeTemplate) setActiveTemplate(context.activeTemplate);
 
@@ -62,8 +83,8 @@ async function assembleAndSendFirstTurn(context, userClientId, initialSave, cont
   turnState.pendingAttachments = attachments;
   patchFirstTurnAttachments(userClientId, topic, attachments);
 
-  if (context.deepResearchOn && typeof window.startDeepResearch === 'function') {
-    await window.startDeepResearch(context.topicForModel);
+  if (context.deepResearchOn && typeof win.startDeepResearch === 'function') {
+    await win.startDeepResearch(context.topicForModel);
     return;
   }
   try {
@@ -76,14 +97,15 @@ async function assembleAndSendFirstTurn(context, userClientId, initialSave, cont
   }
 }
 
-export async function startChatSession(context) {
+export async function startChatSession(context: SessionStartContext): Promise<void> {
+  const win = window as ChatStartWindow;
   activateMainView('chatView', document);
   try { clearComposer('topic'); }
   catch (error) { reportSwallow(error, 'chat/sessionBootstrap.clearTopicComposer'); }
   clearLegacyMsgListChildren();
 
   try {
-    if (typeof window.__loadStreamingTurn === 'function') window.__loadStreamingTurn();
+    if (typeof win.__loadStreamingTurn === 'function') win.__loadStreamingTurn();
   } catch (error) { reportSwallow(error, 'chat/sessionBootstrap.prefetchStreamingTurn'); }
 
   const userClientId = addMessage(
@@ -102,16 +124,16 @@ export async function startChatSession(context) {
 
   // Prepare attachments while the streaming chunk loads; retries share the
   // immutable payload instead of reading the next draft or redoing uploads.
-  const contentPromise = buildMessageContent(context.topicForModel, context.startAttachments)
+  const contentPromise: Promise<BuiltMessageContent> = buildMessageContent(context.topicForModel, context.startAttachments)
     .catch((error) => {
       reportSwallow(error, 'chat/sessionBootstrap.buildFirstContent');
       return { parts: context.topicForModel, attachmentList: context.immediateAttachments };
     });
 
-  let syncController = null;
-  if (typeof window.addStreamingMessage === 'function') {
+  let syncController: StreamingTurnController | null = null;
+  if (typeof win.addStreamingMessage === 'function') {
     try {
-      syncController = await window.addStreamingMessage({
+      syncController = await win.addStreamingMessage({
         async onRetry() {
           const built = await contentPromise;
           return askChatTurn(context.topic, built.parts);
@@ -120,7 +142,7 @@ export async function startChatSession(context) {
     } catch (error) { reportSwallow(error, 'chat/sessionBootstrap.createFirstPlaceholder'); }
   }
   if (syncController) {
-    try { window.__socratesSyncCtl = syncController; }
+    try { win.__socratesSyncCtl = syncController; }
     catch (error) { reportSwallow(error, 'chat/sessionBootstrap.publishSyncController'); }
   }
 

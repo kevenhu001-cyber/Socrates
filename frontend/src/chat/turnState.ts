@@ -11,6 +11,30 @@ export interface ActiveChatController {
   abort(): void;
 }
 
+/** The controller returned by the streaming-turn factory — the full surface
+ * the send path, the tool-callback adapter, and the tutor follow-up drive:
+ * text/thinking append plus the record* ledger the tool callbacks call. */
+export interface StreamingTurnController extends ActiveChatController {
+  getClientId(): string;
+  isFinished(): boolean;
+  append(delta: string): void;
+  appendThinking(delta: string): void;
+  finish(): void;
+  replaceWithError(message: string, retry: () => void): void;
+  recordToolUse(call: unknown): void;
+  recordToolProgress(progress: unknown): void;
+  recordToolCallDelta(delta: unknown): void;
+  recordExecutionStart(event: unknown): void;
+  recordToolResult(result: unknown): void;
+  recordToolApproval(approval: unknown): void;
+  recordAgentStep(step: unknown): void;
+  recordAgentPlan(plan: unknown): void;
+  recordTurnSnapshot(payload: unknown): void;
+  recordTurnEvent(payload: unknown): void;
+  recordTurnActivity(payload: unknown): void;
+  recordTurnSummary(text: string, phase?: string): void;
+}
+
 /** The live turn that the status line's Retry affordance would re-run. */
 export interface LiveRetryOwner {
   /* Streaming controllers identify themselves with `getClientId`; restored

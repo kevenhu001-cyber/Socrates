@@ -1,7 +1,7 @@
 /* Task 2.2 — short per-stage directive used by buildSocraticMessages
    and buildFollowUpMessages. Keeping it in one place means the
    stage names and their instructions never drift apart. */
-export function stageInstruction(stage){
+export function stageInstruction(stage: string): string {
   switch(stage){
     case "motivate":   return "Give a short motivation and one concrete intuition. Do not define the concept yet.";
     case "define":     return "Give the precise definition and only the essential first derivation. Build on the motivation already shown.";
@@ -18,11 +18,22 @@ export function stageInstruction(stage){
    DEPTH (how detailed / how many examples); it never changes WHERE
    we start — we always begin from the most essential core definition.
    Reference: P_teaching-plan, P_level-consistency, P_knowledge-point. */
-export var BASELINE_LEVEL = "baseline (not mastery), depth cue only, always start from the core definition";
+export const BASELINE_LEVEL = "baseline (not mastery), depth cue only, always start from the core definition";
 
-export function fromBasicsDirective(node, opts){
-  var status=(node&&node.status)||"unknown";
-  var continuation=!!(opts&&opts.continuation);
+/** The node fields the directive reads. */
+export interface DirectiveNode {
+  status?: string | null;
+}
+export interface DirectiveOptions {
+  continuation?: boolean;
+}
+
+export function fromBasicsDirective(
+  node: DirectiveNode | null | undefined,
+  opts?: DirectiveOptions | null,
+): string {
+  const status = (node && node.status) || "unknown";
+  const continuation = Boolean(opts && opts.continuation);
   if(continuation){
     return "FOUNDATION ANCHOR FOR THIS FOLLOW-UP:\n"+
       "The core definition has already been introduced in the conversation. Refer back to it in at most one sentence when it helps, but do not restate the definition, derivation, examples, or summary. Only revisit the foundation in detail if the student's answer shows a specific misconception.\n\n";
@@ -43,11 +54,11 @@ export function fromBasicsDirective(node, opts){
    precision, but its generic depth rules must not force every stage to
    regenerate the same lesson. This directive is appended after the generic
    prompt so the current stage and conversation history win. */
-export function tutorTurnDirective(stage, isFirst){
-  var opening=isFirst
+export function tutorTurnDirective(stage: string, isFirst: boolean): string {
+  const opening = isFirst
     ? "This is the opening turn for the current sub-topic."
     : "This is a continuation turn. The student has already seen earlier material in the conversation.";
-  var scope;
+  let scope;
   switch(stage){
     case "motivate":
       scope="Give a short, engaging motivation with one concrete intuition and at most one closing question, and leave it at that; hold off on definitions, worked examples, and exercises until the next stage.";

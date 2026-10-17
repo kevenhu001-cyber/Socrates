@@ -6,7 +6,7 @@ import {
   CHAT_SYSTEM_PROMPT,
   HIGH_EFFORT_OUTPUT_GUIDANCE,
   PYTHON_RUNNABLE_RULES,
-} from '../src/chat/systemPrompts.js';
+} from '../src/chat/systemPrompts.ts';
 
 test('chat prompts do not duplicate the server-owned untrusted-data rule', () => {
   /* untrusted-data handling is owned once by SERVER_SYSTEM_POLICY in

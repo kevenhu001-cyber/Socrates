@@ -6,16 +6,16 @@ import { stateStore } from '../state/store.js';
 import { hasUsableActive } from '../config/providers.ts';
 import { extractHistory } from '../chat/history.js';
 import { callAPI } from '../chat/api.ts';
-import { callAPIStream } from '../chat/stream.js';
+import { callAPIStream } from '../chat/stream.ts';
 import { buildSocraticMessages, buildFollowUpMessages, buildSocraticPrompt } from './flow.ts';
-import { BASELINE_LEVEL, fromBasicsDirective } from '../chat/socraticDirectives.js';
+import { BASELINE_LEVEL, fromBasicsDirective } from '../chat/socraticDirectives.ts';
 import { appendClientContextMessages } from '../chat/promptSuffixes.ts';
 import { injectTemplateSystemPrompt } from '../chat/templateSystemPrompt.ts';
 import { _origGenerateSocraticQuestion, _origGetExplanation } from '../chat/mocks.js';
 import { notifyMockFallbackOnce } from '../chat/mockFallbackNotice.ts';
 import { addMessage as _addMessage } from '../chat/messages.js';
 import { scheduleTurnToTopForMessage } from '../chat/turnAnchor.ts';
-import { toolCallbacksForStream as _toolCallbacksForStream } from '../chat/toolCallbacks.js';
+import { toolCallbacksForStream as _toolCallbacksForStream } from '../chat/toolCallbacks.ts';
 
 /* omit entirely; backend passes through */
 var MAX_TOKENS_CHAT = undefined;

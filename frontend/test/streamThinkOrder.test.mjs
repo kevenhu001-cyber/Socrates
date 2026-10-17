@@ -67,7 +67,7 @@ function eventFrame(event, data) {
 }
 
 async function runStream(options = {}) {
-  const { callAPIStream } = await import('../src/chat/stream.js');
+  const { callAPIStream } = await import('../src/chat/stream.ts');
   let full = '';
   const thinking = [];
   const events = [];

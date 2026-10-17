@@ -15,7 +15,7 @@ import {
   fromBasicsDirective,
   stageInstruction,
   tutorTurnDirective,
-} from '../chat/socraticDirectives.js';
+} from '../chat/socraticDirectives.ts';
 import {
   appendClientContextMessages,
   thinkingSuffix,

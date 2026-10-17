@@ -2,7 +2,7 @@
    modules so their startup and recovery paths stay independently reviewable. */
 import { captureSessionStart } from './sessionBootstrap/input.ts';
 import { initializeNewSession } from './sessionBootstrap/initialize.ts';
-import { startChatSession } from './sessionBootstrap/chatStart.js';
+import { startChatSession } from './sessionBootstrap/chatStart.ts';
 import { startTutorSession } from './sessionBootstrap/tutorStart.js';
 import { getAppMode } from './sessionBootstrap/runtime.ts';
 
