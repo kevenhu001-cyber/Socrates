@@ -35,7 +35,7 @@ export function TurnActivitySurface({ publicSummary = '', activities = [], isLiv
     .filter((entry, index, entries) => !entries.slice(index + 1).some((other) => other.text?.trim() === entry.text?.trim()))
     .slice(-5);
   const summaries = timeline.length ? timeline : normalizedSummary ? [{ id: 'public-summary', text: normalizedSummary, phase: 'done' }] : [];
-  const hasDetails = Boolean(summaries.length || hasTools);
+  const hasDetails = Boolean(summaries.length || hasTools || intentSummary?.trim());
   if (!hasDetails && !isLive) return null;
   const title = isLive ? statusLabel || i18n('think.thinking', 'Thinking…')
     : typeof elapsedSec === 'number' && Number.isFinite(elapsedSec) && elapsedSec > 0

@@ -69,6 +69,11 @@ test('intent stays in the unified activity and completed observations do not dup
   await expect(bubble.locator('.thinking-spinner, .turn-summary-sparkle')).toHaveCount(0);
   await page.evaluate(() => window.__pushThinkingFrame('turn_summary', { summary: 'Preparing the comparison.', phase: 'initial' }));
   await expect(bubble.locator('.turn-activity-intent')).toHaveText('Preparing the comparison.');
+  const previewToggle = bubble.locator('.thinking-accordion-toggle');
+  await expect(previewToggle).toBeEnabled();
+  await previewToggle.click();
+  await expect(previewToggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(bubble.locator('.turn-activity-intent')).toBeVisible();
   await expect(bubble.locator('.turn-summary > summary')).toHaveCount(0);
   await page.evaluate(() => window.__pushThinkingFrame('', { choices: [{ delta: { reasoning_content: 'another private thought' } }] }));
   await expect(bubble).not.toContainText('another private thought');
