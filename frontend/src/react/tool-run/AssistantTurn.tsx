@@ -83,13 +83,17 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
   const wasLiveRef = useRef(isLive);
 
   useEffect(() => {
-    if (wasLiveRef.current && !isLive) {
-      setIsSettling(true);
-      const timer = setTimeout(() => setIsSettling(false), STREAM_SETTLE_MS);
-      wasLiveRef.current = isLive;
-      return () => clearTimeout(timer);
-    }
+    const justSettled = wasLiveRef.current && !isLive;
     wasLiveRef.current = isLive;
+    if (isLive) {
+      // A new live turn must not inherit the previous settle animation.
+      setIsSettling(false);
+      return;
+    }
+    if (!justSettled) return;
+    setIsSettling(true);
+    const timer = setTimeout(() => setIsSettling(false), STREAM_SETTLE_MS);
+    return () => clearTimeout(timer);
   }, [isLive]);
 
   /* Tool-call records mutate in place as rows settle; rebuild this pure layout
