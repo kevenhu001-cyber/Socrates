@@ -7,7 +7,7 @@ import {
   shouldGateForInitialUnauthorized,
   startAuthRequests,
   startCsrfBootstrap,
-} from '../src/auth/boot/requests.js';
+} from '../src/auth/boot/requests.ts';
 import { selectAuthUrlRoute } from '../src/auth/boot/routeSelector.ts';
 
 test('preflight adoption preserves JSON success and classifies HTTP failures', async () => {

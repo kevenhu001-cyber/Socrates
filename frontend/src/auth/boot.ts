@@ -6,41 +6,57 @@ import { showToast } from '../ui/toast.js';
 import { openMobileTargetFromUrl } from '../native/mobileWebSessionBridge.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { renderUserFooter } from '../ui/profile.js';
-import { revealAppAndHydrate } from './index.js';
-import { handleAuthUrlRoutes } from './boot/routes.js';
+import { revealAppAndHydrate } from './index.ts';
+import { handleAuthUrlRoutes } from './boot/routes.ts';
 import {
   readBootPreflight,
   retryAuthMe,
   shouldGateForInitialUnauthorized,
   startAuthRequests,
   lazyCsrfBootstrap,
-} from './boot/requests.js';
+  type AuthMeResult,
+} from './boot/requests.ts';
+
+interface BootLegacyWindow extends Window {
+  __i18nReady?: Promise<unknown>;
+  BEAGLE_IS_REASONING?: boolean;
+  isInAuthGraceWindow?: () => boolean;
+  setCurrentUser?: (user: unknown) => void;
+  markAuthSuccess?: () => void;
+  showGate?: () => void;
+  showAuthSignin?: () => void;
+}
+
+/** What /api/v2/config publishes; only these fields are read here. */
+interface ServerConfig {
+  hasBeagleKey?: boolean;
+  beagleModel?: unknown;
+  isReasoning?: boolean;
+}
 
 /* Let the default locale chunk settle before exposing either authenticated
    content or the auth gate. Bound the wait so a broken chunk cannot stall boot. */
-function i18nSettled() {
+function i18nSettled(): Promise<unknown> {
   try {
-    const ready = window.__i18nReady;
+    const ready = (window as BootLegacyWindow).__i18nReady;
     return ready ? Promise.race([ready, new Promise((resolve) => setTimeout(resolve, 500))]) : Promise.resolve();
-  } catch (_) {
-    return Promise.resolve();
-  }
+  } catch { return Promise.resolve(); }
 }
 
 /* This live binding is consumed by providerConfig.service.ts and mirrored to
    window after config resolves, since windowExports captures it at import. */
-export var SERVER_HAS_BEAGLE_KEY = false;
+export let SERVER_HAS_BEAGLE_KEY = false;
 
-async function publishServerConfig(configRequest) {
+async function publishServerConfig(configRequest: Promise<unknown>): Promise<void> {
   let hasBuiltInKey = false;
   try {
-    const config = await configRequest;
+    const config = await configRequest as ServerConfig | null;
     if (config && config.hasBeagleKey) {
       /* The raw key remains on the server; only the model name is public. */
       if (typeof config.beagleModel === 'string') setBuiltInProviderModel(config.beagleModel);
       hasBuiltInKey = true;
     }
-    try { window.BEAGLE_IS_REASONING = config && config.isReasoning === true; }
+    try { (window as BootLegacyWindow).BEAGLE_IS_REASONING = config?.isReasoning === true; }
     catch (error) { reportSwallow(error, 'auth/boot.config.setReasoningFlag'); }
   } catch (error) {
     reportSwallow(error, 'auth/boot.config.fetch');
@@ -51,33 +67,36 @@ async function publishServerConfig(configRequest) {
   catch (error) { reportSwallow(error, 'auth/boot.config.rebridgeServerHasKey'); }
 }
 
-async function showSigninGate() {
+async function showSigninGate(): Promise<void> {
   await i18nSettled();
-  if (typeof window.showGate === 'function') window.showGate();
-  if (typeof window.showAuthSignin === 'function') window.showAuthSignin();
+  const win = window as BootLegacyWindow;
+  if (typeof win.showGate === 'function') win.showGate();
+  if (typeof win.showAuthSignin === 'function') win.showAuthSignin();
 }
 
-async function finishAuthenticatedBoot(user, csrfReady) {
+async function finishAuthenticatedBoot(user: unknown, csrfReady: PromiseLike<unknown>): Promise<void> {
   await Promise.all([csrfReady, i18nSettled()]);
-  if (typeof window.setCurrentUser === 'function') window.setCurrentUser(user);
-  else window.CURRENT_USER = user;
+  const win = window as BootLegacyWindow;
+  if (typeof win.setCurrentUser === 'function') win.setCurrentUser(user);
+  else window.CURRENT_USER = user as Record<string, unknown>;
   try {
-    if (window.markAuthSuccess) window.markAuthSuccess();
+    if (win.markAuthSuccess) win.markAuthSuccess();
   } catch (error) { reportSwallow(error, 'auth/boot.markAuthSuccess'); }
   /* Consume the allow-listed mobile target after normal hydration. */
   revealAppAndHydrate(openMobileTargetFromUrl);
 }
 
-async function finishUnavailableBoot() {
+async function finishUnavailableBoot(): Promise<void> {
   await i18nSettled();
-  if (typeof window.showGate === 'function') window.showGate();
-  if (typeof window.showAuthSignin === 'function') window.showAuthSignin();
+  const win = window as BootLegacyWindow;
+  if (typeof win.showGate === 'function') win.showGate();
+  if (typeof win.showAuthSignin === 'function') win.showAuthSignin();
   try { showToast("Couldn't reach the server. Check your connection and retry.", 5000); }
   catch (error) { reportSwallow(error, 'auth/boot.offlineToast'); }
   if (typeof renderUserFooter === 'function') renderUserFooter();
 }
 
-export async function authBoot() {
+export async function authBoot(): Promise<void> {
   /* index.html preloads csrf/me/config while the module graph evaluates. */
   const preflight = readBootPreflight();
   const csrfReady = lazyCsrfBootstrap(preflight);
@@ -85,8 +104,8 @@ export async function authBoot() {
   if (await handleAuthUrlRoutes(params, csrfReady)) return;
 
   const requests = startAuthRequests(preflight);
-  const initialMe = await requests.meRequest;
-  if (shouldGateForInitialUnauthorized(initialMe, () => window.isInAuthGraceWindow?.())) {
+  const initialMe: AuthMeResult = await requests.meRequest;
+  if (shouldGateForInitialUnauthorized(initialMe, () => (window as BootLegacyWindow).isInAuthGraceWindow?.() ?? false)) {
     await showSigninGate();
     return;
   }
@@ -99,9 +118,12 @@ export async function authBoot() {
     await showSigninGate();
     return;
   }
-  if (authResult.kind === 'resolved' && authResult.me && authResult.me.user) {
-    await finishAuthenticatedBoot(authResult.me.user, csrfReady);
-    return;
+  if (authResult.kind === 'resolved') {
+    const me = authResult.me as { user?: unknown } | null | undefined;
+    if (me && me.user) {
+      await finishAuthenticatedBoot(me.user, csrfReady);
+      return;
+    }
   }
   await finishUnavailableBoot();
 }
@@ -109,7 +131,8 @@ export async function authBoot() {
 /* Keep the page responsive even if an unexpected startup step throws. */
 authBoot().catch(() => {
   try {
-    if (typeof window.showGate === 'function') window.showGate();
-    if (typeof window.showAuthSignin === 'function') window.showAuthSignin();
+    const win = window as BootLegacyWindow;
+    if (typeof win.showGate === 'function') win.showGate();
+    if (typeof win.showAuthSignin === 'function') win.showAuthSignin();
   } catch (error) { reportSwallow(error, 'auth/boot.fallbackGate'); }
 });

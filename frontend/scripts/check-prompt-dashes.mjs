@@ -144,10 +144,20 @@ function findDashInStrings(text) {
   return hits;
 }
 
+/* Resolve an entry, following the legacy-JS → TS rename. A file that has
+ * been migrated must keep being scanned; only a genuinely absent path is a
+ * violation. */
+function resolvePromptFile(rel) {
+  const abs = join(REPO, rel);
+  if (existsSync(abs)) return abs;
+  const ts = abs.replace(/\.js$/, '.ts');
+  return ts !== abs && existsSync(ts) ? ts : abs;
+}
+
 function scanRepo() {
   const violations = [];
   for (const rel of PROMPT_FILES) {
-    const abs = join(REPO, rel);
+    const abs = resolvePromptFile(rel);
     let text;
     try {
       text = readFileSync(abs, 'utf8');

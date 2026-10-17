@@ -19,7 +19,9 @@ export const AUTH_VIEW_IDS = [
 ] as const;
 
 export type AuthRoot = Pick<Document, 'getElementById' | 'querySelectorAll'> & {
-  documentElement?: { dataset?: Record<string, string> };
+  /* `DOMStringMap` indexes as `string | undefined`, so the widened value type
+     is what lets a real `Document` satisfy this without a cast. */
+  documentElement?: { dataset?: Record<string, string | undefined> };
 };
 
 function el(root: AuthRoot, id: string): HTMLElement | null {

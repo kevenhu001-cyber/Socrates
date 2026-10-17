@@ -18,7 +18,7 @@
 //   Prefer direct module imports or typed bridges for new callers.
 
 /* ─── auth/boot.js — boot-time flags ─── */
-import { SERVER_HAS_BEAGLE_KEY } from './auth/boot.js';
+import { SERVER_HAS_BEAGLE_KEY } from './auth/boot.ts';
 window.SERVER_HAS_BEAGLE_KEY = SERVER_HAS_BEAGLE_KEY;
 
 /* ─── config/providers.js ─── */
@@ -67,7 +67,7 @@ window.formatMsg = formatMsg;
 /* Only the gate entry points stay on window (index.html inline
    onclick). Every auth view/submit handler is invoked through
    auth/index.js's own module-local wiring. */
-import { hideGate, showGate, showAuthSignin } from './auth/index.js';
+import { hideGate, showGate, showAuthSignin } from './auth/index.ts';
 window.hideGate = hideGate;
 window.showGate = showGate;
 window.showAuthSignin = showAuthSignin;

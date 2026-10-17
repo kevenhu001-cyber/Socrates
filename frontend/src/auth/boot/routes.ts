@@ -3,12 +3,24 @@ import { setBuiltInProviderModel } from '../../config/providerConfig.service.ts'
 import { showToast } from '../../ui/toast.js';
 import { loadSharedSession } from '../../ui/share.js';
 import { reportSwallow } from '../../util/reportSwallow.ts';
-import { showAuthView, submitAuthVerify, revealAppAndHydrate } from '../index.js';
+import { showAuthView, submitAuthVerify, revealAppAndHydrate } from '../index.ts';
 import { selectAuthUrlRoute } from './routeSelector.ts';
 import { recordBootedRouteKind } from './routeState.ts';
 
+/** Auth-view hooks still published on the window by the legacy shell. */
+interface BootRoutesWindow extends Window {
+  setCurrentUser?: (user: unknown) => void;
+  markAuthSuccess?: () => void;
+  showAuthSignin?: () => void;
+  showGate?: () => void;
+  __resetToken?: string | null;
+}
+
 /** Handle URL-only auth routes before starting the normal /me/config probes. */
-export async function handleAuthUrlRoutes(params, csrfReady) {
+export async function handleAuthUrlRoutes(
+  params: URLSearchParams,
+  csrfReady: PromiseLike<unknown>,
+): Promise<boolean> {
   const route = selectAuthUrlRoute(params, location.hostname);
   /* Record before any handler can rewrite location and erase the query. */
   recordBootedRouteKind(route.kind);
@@ -27,7 +39,7 @@ export async function handleAuthUrlRoutes(params, csrfReady) {
 }
 
 /** Resolve route precedence without touching browser state. */
-async function handleLocalDevRoute(params, csrfReady) {
+async function handleLocalDevRoute(params: URLSearchParams, csrfReady: PromiseLike<unknown>): Promise<boolean> {
   await csrfReady;
   const next = params.get('next');
   const search = next ? '?next=' + encodeURIComponent(next) : '';
@@ -37,17 +49,21 @@ async function handleLocalDevRoute(params, csrfReady) {
     window.SERVER_HAS_BEAGLE_KEY = true;
   } catch (error) { reportSwallow(error, 'auth/boot.localDev.config'); }
   const user = { id: 'local-dev', name: 'Local Dev', email: 'dev@local', plan: 'local', isLocal: true };
-  if (typeof window.setCurrentUser === 'function') window.setCurrentUser(user);
-  else window.CURRENT_USER = user;
+  const win = window as BootRoutesWindow;
+  if (typeof win.setCurrentUser === 'function') win.setCurrentUser(user);
+  /* The window declaration only pins the fields providerConfig reads (`tier`);
+     the local-dev record is a wider shape, so widen before assigning. */
+  else window.CURRENT_USER = user as Record<string, unknown>;
   try {
-    if (window.markAuthSuccess) window.markAuthSuccess();
+    if (win.markAuthSuccess) win.markAuthSuccess();
   } catch (error) { reportSwallow(error, 'auth/boot.localDev.markAuthSuccess'); }
   revealAppAndHydrate();
   return true;
 }
 
-function handleOAuthErrorRoute(params) {
-  const oauthError = params.get('oauth_error');
+function handleOAuthErrorRoute(params: URLSearchParams): boolean {
+  /* The selector only routes here when the parameter is present. */
+  const oauthError = params.get('oauth_error') || '';
   history.replaceState(null, '', location.pathname);
   showSigninGate();
   const message = 'GitHub login failed: ' + decodeURIComponent(oauthError) + '.';
@@ -58,21 +74,21 @@ function handleOAuthErrorRoute(params) {
   return true;
 }
 
-function handlePlainErrorRoute() {
+function handlePlainErrorRoute(): void {
   history.replaceState(null, '', location.pathname);
   showSigninGate();
 }
 
-async function handleSharedSessionRoute(params) {
-  const shareToken = params.get('share');
+async function handleSharedSessionRoute(params: URLSearchParams): Promise<boolean> {
+  const shareToken = params.get('share') || '';
   history.replaceState(null, '', location.pathname);
   try { await loadSharedSession(shareToken); }
   catch (error) { reportSwallow(error, 'auth/boot.shareSession'); }
   return true;
 }
 
-async function handleVerificationRoute(params, csrfReady) {
-  const token = params.get('token');
+async function handleVerificationRoute(params: URLSearchParams, csrfReady: PromiseLike<unknown>): Promise<boolean> {
+  const token = params.get('token') || '';
   await csrfReady;
   const redirect = params.get('redirect');
   history.replaceState(null, '', location.pathname + (redirect ? '?redirect=' + encodeURIComponent(redirect) : ''));
@@ -81,35 +97,37 @@ async function handleVerificationRoute(params, csrfReady) {
   return true;
 }
 
-function handlePasswordResetRoute(params) {
+function handlePasswordResetRoute(params: URLSearchParams): boolean {
   const token = params.get('reset_token');
   history.replaceState(null, '', location.pathname);
   showGate();
-  window.__resetToken = token;
+  (window as BootRoutesWindow).__resetToken = token;
   if (typeof showAuthView === 'function') showAuthView('authResetPasswordView');
   clearAuthTabSelection();
-  void prefillResetEmail(token);
+  void prefillResetEmail(token || '');
   return true;
 }
 
-async function prefillResetEmail(token) {
+async function prefillResetEmail(token: string): Promise<void> {
   try {
-    const info = await apiFetch('/api/auth/reset-info?token=' + encodeURIComponent(token));
-    const emailInput = document.getElementById('authResetEmail');
+    const info = await apiFetch<{ email?: string }>('/api/auth/reset-info?token=' + encodeURIComponent(token));
+    const emailInput = document.getElementById('authResetEmail') as HTMLInputElement | null;
     if (emailInput && info && info.email) emailInput.value = info.email;
   } catch (error) { reportSwallow(error, 'auth/boot.passwordReset.prefillEmail'); }
 }
 
-function showSigninGate() {
+function showSigninGate(): void {
   showGate();
-  if (typeof window.showAuthSignin === 'function') window.showAuthSignin();
+  const win = window as BootRoutesWindow;
+  if (typeof win.showAuthSignin === 'function') win.showAuthSignin();
 }
 
-function showGate() {
-  if (typeof window.showGate === 'function') window.showGate();
+function showGate(): void {
+  const win = window as BootRoutesWindow;
+  if (typeof win.showGate === 'function') win.showGate();
 }
 
-function clearAuthTabSelection() {
+function clearAuthTabSelection(): void {
   document.querySelectorAll('.auth-tab').forEach((tab) => {
     tab.classList.remove('active');
     tab.setAttribute('aria-selected', 'false');
