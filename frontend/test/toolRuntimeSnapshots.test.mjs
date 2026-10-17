@@ -105,7 +105,7 @@ test('pending approval remains actionable after a frozen message is finalized', 
 });
 
 test('diagnostic and teaching updates accept frozen knowledge snapshots', async () => {
-  const {applyDiagnosticResults} = await import('../src/chat/diagnosticResults.js');
+  const {applyDiagnosticResults} = await import('../src/chat/diagnosticResults.ts');
   const {buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan} = await import('../src/chat/teachingPlan.ts');
   stateStore.dispatch({type: 'state/batch', patch: {
     kbNodes: [{name: 'Fractions', status: 'blank', history: []}],

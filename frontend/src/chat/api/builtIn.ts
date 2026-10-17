@@ -1,11 +1,11 @@
 import { apiFetchRaw } from '../../util/api.ts';
 import { getStoredResponseSpeed } from '../../config/chatPreferences.ts';
 import { notifySpeedFallbackOnce } from '../speedFallback.ts';
-import {
-  AI_MAX_ATTEMPTS,
-  isUserAbort,
-} from '../retryPolicy.ts';
+import { AI_MAX_ATTEMPTS, isUserAbort } from '../retryPolicy.ts';
+import type { AIRequestOptions } from '../retryPolicy.ts';
 import { buildChatRequestBody } from './requestBody.ts';
+import type { ChatRequestMessage } from './requestBody.ts';
+import type { ProviderConfig } from '../../config/providerConfig.types.ts';
 import {
   attemptLimit,
   bindAbortSignal,
@@ -16,9 +16,41 @@ import {
   retryDecision,
   setLastCallError,
 } from './shared.ts';
+import type { ChatApiError } from './shared.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 
-async function readResponseText(response) {
+/**
+ * The built-in provider row carries no credential: the server holds the key
+ * and authenticates the proxied hop itself, so `key` is absent here and the
+ * Authorization header it would build is vestigial.
+ */
+export type BuiltInProvider = ProviderConfig & { key?: string };
+
+interface ChatCompletion {
+  choices: Array<{ message: { content: string } }>;
+  meta?: { response_speed_applied?: string };
+}
+
+/** Fields the transport attaches to a thrown request failure. */
+interface RequestFailure {
+  name?: string;
+  message?: unknown;
+  status?: number;
+  code?: string | null;
+  body?: Record<string, unknown>;
+}
+
+type BuiltInOutcome =
+  | { kind: 'success'; content: string }
+  /* `userCancelled` is absent on failures that never reached the transport
+     (a malformed 200 body), which the retry loop treats as not-cancelled. */
+  | { kind: 'failure'; error: ChatApiError; userCancelled?: boolean };
+
+function asFailure(value: unknown): RequestFailure {
+  return (value || {}) as RequestFailure;
+}
+
+async function readResponseText(response: Response): Promise<string> {
   try { return await response.text(); }
   catch (error) {
     reportSwallow(error, 'chat/api.builtIn.readResponse');
@@ -26,22 +58,27 @@ async function readResponseText(response) {
   }
 }
 
-function parseResponseBody(text) {
+function parseResponseBody(text: string): unknown {
   try { return JSON.parse(text); }
   catch { return null; }
 }
 
-function isChatCompletion(body) {
-  return !!(body && body.choices && body.choices[0]
-    && body.choices[0].message && typeof body.choices[0].message.content === 'string');
+function isChatCompletion(body: unknown): body is ChatCompletion {
+  const candidate = body as ChatCompletion | null;
+  return !!(candidate && candidate.choices && candidate.choices[0]
+    && candidate.choices[0].message && typeof candidate.choices[0].message.content === 'string');
 }
 
-function builtInResponseError(response, text) {
+function builtInResponseError(response: Response, text: string): ChatApiError {
   const body = parseResponseBody(text);
-  return makeAIError(response.status + ' ' + (text || '').slice(0, 200), response.status, body);
+  return makeAIError(
+    response.status + ' ' + (text || '').slice(0, 200),
+    response.status,
+    body as Record<string, unknown> | null,
+  );
 }
 
-function interpretBuiltInResponse(response, text) {
+function interpretBuiltInResponse(response: Response, text: string): BuiltInOutcome {
   if (!response.ok) return { kind: 'failure', error: builtInResponseError(response, text) };
 
   const body = parseResponseBody(text);
@@ -55,14 +92,19 @@ function interpretBuiltInResponse(response, text) {
   return { kind: 'success', content: body.choices[0].message.content };
 }
 
-function normalizeBuiltInFailure(caught, controller, retryOptions) {
+function normalizeBuiltInFailure(
+  caught: unknown,
+  controller: AbortController,
+  retryOptions: AIRequestOptions,
+): BuiltInOutcome {
+  const failure = asFailure(caught);
   const reason = String(controller.signal.reason || '');
   const aborted = isAbortError(caught);
   const message = aborted
     ? (isUserAbort(caught, controller.signal) ? 'request cancelled' : 'request interrupted')
-    : String(caught && caught.message || caught);
-  const error = makeAIError(message, caught && caught.status, caught && caught.body);
-  error.code = caught && caught.code;
+    : String(failure.message || caught);
+  const error = makeAIError(message, failure.status, failure.body);
+  error.code = failure.code;
   error.reason = reason;
   return {
     kind: 'failure',
@@ -71,7 +113,11 @@ function normalizeBuiltInFailure(caught, controller, retryOptions) {
   };
 }
 
-async function runBuiltInAttempt(provider, requestBody, retryOptions) {
+async function runBuiltInAttempt(
+  provider: BuiltInProvider,
+  requestBody: ReturnType<typeof buildChatRequestBody>,
+  retryOptions: AIRequestOptions,
+): Promise<BuiltInOutcome> {
   const controller = new AbortController();
   const unbind = bindAbortSignal(retryOptions.signal, controller);
   try {
@@ -94,10 +140,15 @@ async function runBuiltInAttempt(provider, requestBody, retryOptions) {
 
 /* Built-in Beagle bypasses the proxy for its provider hop, but keeps the
    shared retry, CSRF, auth-hook, and cancellation policies. */
-export async function callBuiltInAPI(provider, messages, maxTokens, retryOptions) {
+export async function callBuiltInAPI(
+  provider: BuiltInProvider,
+  messages: ChatRequestMessage[],
+  maxTokens: number,
+  retryOptions: AIRequestOptions,
+): Promise<unknown> {
   const requestBody = buildChatRequestBody(messages, maxTokens, 0.7);
   const maxAttempts = attemptLimit(retryOptions, AI_MAX_ATTEMPTS);
-  let lastError = null;
+  let lastError: unknown = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     const outcome = await runBuiltInAttempt(provider, requestBody, retryOptions);

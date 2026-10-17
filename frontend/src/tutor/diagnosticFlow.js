@@ -6,7 +6,7 @@
  * at call time to avoid circular imports with main.js.
  */
 import { stateStore } from '../state/store.js';
-import { applyDiagnosticResults } from '../chat/diagnosticResults.js';
+import { applyDiagnosticResults } from '../chat/diagnosticResults.ts';
 import { buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan } from '../chat/teachingPlan.ts';
 import { renderDiagResultsScreen } from '../ui/diagnosticResults.js';
 import { renderDiagQuestion as renderDiagQuestionUI } from '../ui/diagnosticQuestion.js';

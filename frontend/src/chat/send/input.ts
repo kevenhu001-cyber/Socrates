@@ -4,6 +4,7 @@ import { reportSwallow } from '../../util/reportSwallow.ts';
 import { showToast } from '../../ui/toast.js';
 import { stripTemplateBodyPrefix, blurChatComposer } from '../templateSlash.js';
 import { clearComposer, focusComposer, getComposerMarkdown } from '../../composer/controller.ts';
+import type { ComposerSurface } from '../../composer/controller.ts';
 import { selectedComposerPlugins } from '../../react/composer/pluginSelection.ts';
 import { serializeSelectedPluginContext } from '../../react/composer/pluginCatalog.ts';
 import { buildMessageContent, resetAttachments, snapshotAttachments } from '../../attachments.js';
@@ -18,11 +19,48 @@ import {
   isDeepResearchOn,
   translate,
 } from './runtime.ts';
+import type { ActiveChatController } from '../turnState.ts';
 
-export function captureSendInput(textOverride) {
+/** The composer snapshot a send is built from, captured before the clear. */
+export interface SendInput {
+  text: string;
+  textForModel: string;
+  isComposerSubmit: boolean;
+  turnAttachments: unknown[];
+  immediateAttachments: unknown[];
+}
+
+/** The streaming message created ahead of the network call. */
+export interface PrecreatedTurn {
+  controller: ActiveChatController | null;
+  setRetryTarget(target: () => unknown): void;
+}
+
+export interface CommittedSendInput {
+  userClientId: string | null;
+  precreatedTurn: Promise<PrecreatedTurn | null>;
+}
+
+export interface SendPayload {
+  chatContent: unknown;
+  attachments: unknown[];
+}
+
+export interface CommitSendOptions {
+  blurAfterSend?: boolean;
+}
+
+/** Legacy bridges the send path reads. */
+interface SendInputWindow extends Window {
+  _activeTemplate?: unknown;
+  attachments?: unknown[] | null;
+  publishReactChatRuntime?: (event: { type: string; reason: string }) => void;
+}
+
+export function captureSendInput(textOverride?: string | null): SendInput | null {
   const rawText = textOverride != null ? textOverride : getComposerMarkdown('chat');
   let text = rawText.trim();
-  if (window._activeTemplate && textOverride == null) {
+  if ((window as SendInputWindow)._activeTemplate && textOverride == null) {
     text = stripTemplateBodyPrefix(rawText).trim();
     if (!text) {
       try { showToast(translate('toast.typeTextFirst')); }
@@ -31,24 +69,26 @@ export function captureSendInput(textOverride) {
     }
   }
 
-  const hasAttachments = Array.isArray(window.attachments) && window.attachments.length > 0;
+  const composerAttachments = (window as SendInputWindow).attachments;
+  const hasAttachments = Array.isArray(composerAttachments) && composerAttachments.length > 0;
   if (!text && !hasAttachments) return null;
 
   const textForModel = serializeSelectedPluginContext(selectedComposerPlugins('chat').slice(), text);
   const isComposerSubmit = textOverride == null;
-  const turnAttachments = isComposerSubmit ? snapshotAttachments() : [];
-  const immediateAttachments = turnAttachments.slice(0, 20).map((attachment) => Object.assign({}, attachment));
+  const turnAttachments: unknown[] = isComposerSubmit ? snapshotAttachments() : [];
+  const immediateAttachments = turnAttachments.slice(0, 20)
+    .map((attachment) => Object.assign({}, attachment));
   return { text, textForModel, isComposerSubmit, turnAttachments, immediateAttachments };
 }
 
-async function createPrecreatedTurn(input) {
+async function createPrecreatedTurn(input: SendInput): Promise<PrecreatedTurn | null> {
   if (getAppMode() !== 'chat' || isDeepResearchOn()) return null;
   const supersededController = turnState.activeChatCtl;
-  let retryTarget = () => askChatTurn(input.text, input.textForModel);
-  let controller;
+  let retryTarget = (): unknown => askChatTurn(input.text, input.textForModel);
+  let controller: ActiveChatController | null;
   try {
     controller = await addStreamingMessage({ onRetry: () => retryTarget() });
-  } catch (_) {
+  } catch {
     controller = null;
   }
   if (supersededController && supersededController !== controller
@@ -62,8 +102,8 @@ async function createPrecreatedTurn(input) {
   };
 }
 
-export function commitSendInput(input, options) {
-  let userClientId;
+export function commitSendInput(input: SendInput, options: CommitSendOptions): CommittedSendInput {
+  let userClientId: string | null;
   if (input.isComposerSubmit) {
     playSendGlyph();
     userClientId = addMessage('user', input.text, null, null, input.immediateAttachments);
@@ -103,12 +143,12 @@ export function commitSendInput(input, options) {
    TipTap document walk. Falls back through rIC → setTimeout so Safari
    (which has rIC since 16.4 but not on all surfaces) and the test
    harness (no rIC) still clear. */
-function scheduleIdleClearComposer(scope) {
+function scheduleIdleClearComposer(scope: ComposerSurface): void {
   if (typeof requestIdleCallback === 'function') {
     requestIdleCallback(function idleClear() { clearComposer(scope); }, { timeout: 0 });
     return;
   }
-  var raf = typeof requestAnimationFrame === 'function'
+  const raf = typeof requestAnimationFrame === 'function'
     ? requestAnimationFrame
     : null;
   if (raf) {
@@ -118,11 +158,13 @@ function scheduleIdleClearComposer(scope) {
   setTimeout(function () { clearComposer(scope); }, 0);
 }
 
-function patchCommittedAttachments(userClientId, attachments) {
+function patchCommittedAttachments(userClientId: string | null, attachments: unknown[]): void {
   if (!userClientId) return;
   const messages = stateStore.read('messages');
+  if (!Array.isArray(messages)) return;
   for (let index = messages.length - 1; index >= 0; index -= 1) {
-    if (!messages[index] || messages[index].clientId !== userClientId) continue;
+    const message = messages[index] as { clientId?: string } | null | undefined;
+    if (!message || message.clientId !== userClientId) continue;
     stateStore.dispatch({
       type: 'session/update-message',
       index,
@@ -130,20 +172,24 @@ function patchCommittedAttachments(userClientId, attachments) {
       patch: { attachments },
     });
     try {
-      if (typeof window.publishReactChatRuntime === 'function') {
-        window.publishReactChatRuntime({ type: 'state-synced', reason: 'send-attachment-patch' });
+      const win = window as SendInputWindow;
+      if (typeof win.publishReactChatRuntime === 'function') {
+        win.publishReactChatRuntime({ type: 'state-synced', reason: 'send-attachment-patch' });
       }
     } catch (error) { reportSwallow(error, 'sendPipeline.publishAttachmentPatch'); }
     break;
   }
 }
 
-export async function assembleSendPayload(input, userClientId) {
+export async function assembleSendPayload(
+  input: SendInput,
+  userClientId: string | null,
+): Promise<SendPayload> {
   if (!input.turnAttachments.length) {
     return { chatContent: input.textForModel, attachments: input.immediateAttachments };
   }
 
-  let built;
+  let built: { rawText?: unknown; parts?: unknown; attachmentList?: unknown[] };
   try {
     built = await buildMessageContent(input.textForModel, input.turnAttachments);
   } catch (error) {

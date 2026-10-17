@@ -1,7 +1,7 @@
 /* Parse SSE frames into chat deltas and typed tool/agent events. The HTTP
  * transport owns retries and reader lifecycle; this module owns the wire
  * protocol and its semantic-output state. */
-import { createInlineThinkScanner } from './inlineThinkScanner.js';
+import { createInlineThinkScanner } from './inlineThinkScanner.ts';
 import { notifySpeedFallbackOnce } from './speedFallback.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 

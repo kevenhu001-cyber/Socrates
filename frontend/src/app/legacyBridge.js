@@ -54,7 +54,7 @@ import { stripCitationMarkers } from '../render/helpers.ts';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.ts';
 import { retryLiveTurn, decideLiveApproval } from '../chat/liveTurn.js';
 import { startSession } from '../chat/sessionBootstrap.ts';
-import { submitChatMessage } from '../chat/sendPipeline.js';
+import { submitChatMessage } from '../chat/sendPipeline.ts';
 import { setRecentsSearch } from '../ui/recentsView.js';
 import { syncEffortUI } from '../ui/effortPicker.js';
 

@@ -1,4 +1,4 @@
-/* chat/sendPipeline.js — public entry point for submitting a chat turn. */
+/* chat/sendPipeline.ts — public entry point for submitting a chat turn. */
 import { turnState } from './turnState.ts';
 import { loadWebSearch } from './webSearchLoader.ts';
 import { shouldRefreshSearch } from './webSearchPolicy.ts';
@@ -9,7 +9,8 @@ import {
   assembleSendPayload,
   captureSendInput,
   commitSendInput,
-} from './send/input.js';
+} from './send/input.ts';
+import type { CommitSendOptions } from './send/input.ts';
 import {
   dispatchSendTurn,
   scheduleSendTurn,
@@ -20,20 +21,21 @@ import {
   prefetchStreamingTurn,
 } from './send/runtime.ts';
 
-function refreshTutorWebContext(text) {
+function refreshTutorWebContext(text: string): void {
   const topic = stateStore.read('topic');
   if (!isWebSearchOn() || !topic || !shouldRefreshSearch()) return;
-  if (!shouldAutoSearchTutor(topic + ' ' + text)) return;
+  const query = String(topic) + ' ' + text;
+  if (!shouldAutoSearchTutor(query)) return;
   void loadWebSearch()
-    .then(({ fetchWebContext }) => fetchWebContext(topic + ' ' + text, { background: true }))
+    .then(({ fetchWebContext }) => fetchWebContext(query, { background: true }))
     .catch((error) => reportSwallow(error, 'chat/sendPipeline.refreshTutorWebContext'));
 }
 
 let _prefetchScheduled = false;
-function schedulePrefetchStreamingTurn() {
+function schedulePrefetchStreamingTurn(): void {
   if (_prefetchScheduled) return;
   _prefetchScheduled = true;
-  const run = () => {
+  const run = (): void => {
     _prefetchScheduled = false;
     prefetchStreamingTurn();
   };
@@ -46,7 +48,10 @@ function schedulePrefetchStreamingTurn() {
   }
 }
 
-export async function submitChatMessage(textOverride, options) {
+export async function submitChatMessage(
+  textOverride?: string | null,
+  options?: CommitSendOptions,
+): Promise<void> {
   const sendOptions = options || {};
   /* P_send-prefetch-defer — prefetchStreamingTurn() warms the
      dynamic import for the streaming turn module so the first
@@ -75,7 +80,7 @@ export async function submitChatMessage(textOverride, options) {
 
   refreshTutorWebContext(input.text);
 
-  const dispatch = () => dispatchSendTurn({
+  const dispatch = (): Promise<void> => dispatchSendTurn({
     text: input.text,
     chatContent: payload.chatContent,
     precreatedController: precreatedTurn?.controller || null,

@@ -7,7 +7,9 @@ import { reportSwallow } from '../../util/reportSwallow.ts';
 export interface ChatApiError extends Error {
   status?: number;
   body?: Record<string, unknown>;
-  code?: string;
+  code?: string | null;
+  /** Why the child controller aborted, carried through for retry policy. */
+  reason?: string;
 }
 
 /** The abort surface a parent signal drives. */

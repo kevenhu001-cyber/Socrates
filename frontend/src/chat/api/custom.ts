@@ -1,7 +1,10 @@
 import { getStoredResponseSpeed } from '../../config/chatPreferences.ts';
 import { notifySpeedFallbackOnce } from '../speedFallback.ts';
 import { AI_MAX_ATTEMPTS, isUserAbort } from '../retryPolicy.ts';
+import type { AIRequestOptions } from '../retryPolicy.ts';
 import { buildChatRequestBody } from './requestBody.ts';
+import type { ChatRequestMessage } from './requestBody.ts';
+import type { ApiRequestOptions } from '../../util/api.ts';
 import {
   attemptLimit,
   bindAbortSignal,
@@ -11,27 +14,59 @@ import {
   retryDecision,
   setLastCallError,
 } from './shared.ts';
+import type { ChatApiError } from './shared.ts';
 
-function interpretCustomResponse(response) {
-  if (!response || typeof response.content !== 'string') {
+/** The proxy answers with a chat-completion-shaped envelope. */
+interface CustomProviderResponse {
+  content?: unknown;
+  meta?: { response_speed_applied?: string };
+}
+
+/** Fields the transport attaches to a thrown request failure. */
+interface RequestFailure {
+  name?: string;
+  message?: unknown;
+  status?: number;
+  code?: string | null;
+  body?: Record<string, unknown>;
+}
+
+type CustomOutcome =
+  | { kind: 'success'; content: string }
+  | { kind: 'failure'; error: ChatApiError; userCancelled: boolean; cause: unknown };
+
+export type ApiFetch = (path: string, opts?: ApiRequestOptions) => Promise<unknown>;
+
+function asFailure(value: unknown): RequestFailure {
+  return (value || {}) as RequestFailure;
+}
+
+function interpretCustomResponse(response: unknown): CustomOutcome {
+  const payload = (response || {}) as CustomProviderResponse;
+  if (typeof payload.content !== 'string') {
     return { kind: 'failure', error: makeAIError('malformed response'), userCancelled: false, cause: null };
   }
-  if (response.meta && response.meta.response_speed_applied === 'standard'
+  if (payload.meta && payload.meta.response_speed_applied === 'standard'
       && getStoredResponseSpeed() === 'fast') {
     notifySpeedFallbackOnce();
   }
-  return { kind: 'success', content: response.content };
+  return { kind: 'success', content: payload.content };
 }
 
-function normalizeCustomFailure(caught, controller, retryOptions) {
+function normalizeCustomFailure(
+  caught: unknown,
+  controller: AbortController,
+  retryOptions: AIRequestOptions,
+): CustomOutcome {
+  const failure = asFailure(caught);
   const reason = String(controller.signal.reason || '');
-  const aborted = !!(caught && (caught.name === 'AbortError' || controller.signal.aborted));
-  const status = caught && caught.status;
+  const aborted = !!(caught && (failure.name === 'AbortError' || controller.signal.aborted));
+  const status = failure.status;
   const message = aborted
     ? (isUserAbort(caught, controller.signal) ? 'request cancelled' : 'request interrupted')
-    : (status ? status + ' ' : 'network: ') + (caught && caught.message || caught);
-  const error = makeAIError(message, status, caught && caught.body);
-  error.code = caught && caught.code;
+    : (status ? status + ' ' : 'network: ') + String(failure.message || caught);
+  const error = makeAIError(message, status, failure.body);
+  error.code = failure.code;
   error.reason = reason;
   return {
     kind: 'failure',
@@ -41,7 +76,12 @@ function normalizeCustomFailure(caught, controller, retryOptions) {
   };
 }
 
-async function runCustomAttempt(apiFetch, messages, maxTokens, retryOptions) {
+async function runCustomAttempt(
+  apiFetch: ApiFetch,
+  messages: ChatRequestMessage[],
+  maxTokens: number,
+  retryOptions: AIRequestOptions,
+): Promise<CustomOutcome> {
   const controller = new AbortController();
   const unbind = bindAbortSignal(retryOptions.signal, controller);
   try {
@@ -60,9 +100,14 @@ async function runCustomAttempt(apiFetch, messages, maxTokens, retryOptions) {
 
 /* User-configured providers use the same payload, retry budget, and terminal
    quota handling as the built-in provider through the server proxy. */
-export async function callCustomAPI(apiFetch, messages, maxTokens, retryOptions) {
+export async function callCustomAPI(
+  apiFetch: ApiFetch,
+  messages: ChatRequestMessage[],
+  maxTokens: number,
+  retryOptions: AIRequestOptions,
+): Promise<unknown> {
   const maxAttempts = attemptLimit(retryOptions, AI_MAX_ATTEMPTS);
-  let lastError = null;
+  let lastError: unknown = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     const outcome = await runCustomAttempt(apiFetch, messages, maxTokens, retryOptions);
@@ -74,7 +119,7 @@ export async function callCustomAPI(apiFetch, messages, maxTokens, retryOptions)
       setLastCallError(quotaMessage);
       return null;
     }
-    let retryFailure = null;
+    let retryFailure: unknown = null;
     if (!outcome.userCancelled) {
       const decision = await retryDecision(attempt, lastError, retryOptions);
       if (decision.retry) continue;

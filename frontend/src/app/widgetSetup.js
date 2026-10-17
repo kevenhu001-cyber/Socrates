@@ -14,7 +14,7 @@ import { updateKB } from '../ui/knowledgePanel.js';
 import { configureAssistantHtml } from '../render/assistantHtml.ts';
 import { configureTurnAnchor } from '../chat/turnAnchor.ts';
 import { isMsgListMounted } from '../ui/msgListMount.ts';
-import { submitChatMessage } from '../chat/sendPipeline.js';
+import { submitChatMessage } from '../chat/sendPipeline.ts';
 
 var _installedBook = null;
 

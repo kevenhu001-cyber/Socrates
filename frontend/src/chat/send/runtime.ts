@@ -1,6 +1,7 @@
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { addMessage } from '../messages.js';
 import { scheduleTurnToTopForMessage } from '../turnAnchor.ts';
+import type { ActiveChatController } from '../turnState.ts';
 
 /** Chat bridges published by the legacy shell. */
 interface SendRuntimeWindow extends Window {
@@ -9,7 +10,7 @@ interface SendRuntimeWindow extends Window {
   tutorSocratic?: unknown;
   deepResearchOn?: boolean;
   askChatTurn?: (text: string, pending: unknown, precreated?: unknown) => unknown;
-  addStreamingMessage?: (options: { onRetry?: () => void }) => unknown;
+  addStreamingMessage?: (options: { onRetry?: () => void }) => ActiveChatController | null;
   __loadStreamingTurn?: () => void;
 }
 
@@ -55,7 +56,7 @@ export function askChatTurn(text: string, pending: unknown, precreatedController
   return null;
 }
 
-export function addStreamingMessage(options: { onRetry?: () => void }): unknown {
+export function addStreamingMessage(options: { onRetry?: () => void }): ActiveChatController | null {
   const win = window as SendRuntimeWindow;
   if (typeof window !== 'undefined' && typeof win.addStreamingMessage === 'function') {
     return win.addStreamingMessage(options);

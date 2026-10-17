@@ -6,31 +6,46 @@ import { reportSwallow } from '../util/reportSwallow.ts';
 const OPEN_TAG = '<think>';
 const CLOSE_TAG = '</think>';
 
-function pendingOpenTagLength(text) {
+export interface InlineThinkHandlers {
+  onVisibleText(text: string): void;
+  onThinking?(text: string): void;
+}
+
+export interface InlineThinkScanner {
+  push(delta: unknown): void;
+  flushVisibleTail(): void;
+  finish(): boolean;
+  readonly isOpen: boolean;
+  readonly hasPendingThought: boolean;
+}
+
+function pendingOpenTagLength(text: string): number {
   for (let length = Math.min(text.length, OPEN_TAG.length - 1); length > 0; length -= 1) {
     if (text.slice(-length) === OPEN_TAG.slice(0, length)) return length;
   }
   return 0;
 }
 
-export function createInlineThinkScanner({ onVisibleText, onThinking }) {
+export function createInlineThinkScanner({ onVisibleText, onThinking }: InlineThinkHandlers): InlineThinkScanner {
   let thinkOpen = false;
   let thinkTail = '';
   let thinkBuffer = '';
 
-  function emitVisible(text) {
+  function emitVisible(text: string): void {
     if (!text) return;
     try { onVisibleText(text); }
-    catch (error) { console.warn('[API stream] onDelta threw:', error && error.message); }
+    catch (error) {
+      console.warn('[API stream] onDelta threw:', (error as { message?: string } | null)?.message);
+    }
   }
 
-  function emitThinking(text) {
+  function emitThinking(text: string): void {
     if (!text || typeof onThinking !== 'function') return;
     try { onThinking(text); }
     catch (error) { reportSwallow(error, 'chat/inlineThinkScanner.onThinking'); }
   }
 
-  function flushVisibleTail() {
+  function flushVisibleTail(): void {
     if (thinkOpen || !thinkTail.length) return;
     const keepLength = pendingOpenTagLength(thinkTail);
     const visibleLength = thinkTail.length - keepLength;
@@ -39,7 +54,7 @@ export function createInlineThinkScanner({ onVisibleText, onThinking }) {
     thinkTail = thinkTail.slice(visibleLength);
   }
 
-  function push(delta) {
+  function push(delta: unknown): void {
     if (typeof delta !== 'string' || !delta.length) return;
     let pending = delta;
     while (true) {
@@ -82,7 +97,7 @@ export function createInlineThinkScanner({ onVisibleText, onThinking }) {
     }
   }
 
-  function finish() {
+  function finish(): boolean {
     if (thinkOpen && typeof onThinking === 'function') {
       const remaining = thinkBuffer + thinkTail;
       emitThinking(remaining);
