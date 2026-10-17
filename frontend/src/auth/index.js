@@ -13,7 +13,7 @@
 import { notifyEmbeddedAuthExpired } from '../native/mobileWebSessionBridge.js';
 import { syncCookieConsentPlacement } from '../cookieConsent.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { afterAuthEnter } from './postAuth.js';
+import { afterAuthEnter } from './postAuth.ts';
 import { createAuthFormHandlers } from './forms.js';
 
 export { afterAuthEnter };

@@ -1,5 +1,17 @@
 /** Resolve URL-only auth routes and their precedence without browser effects. */
-export function selectAuthUrlRoute(params, hostname) {
+
+/** Every route the boot path can classify from the URL alone. */
+export type AuthUrlRoute =
+  | { kind: 'local-dev' }
+  | { kind: 'oauth-error'; oauthError: string }
+  | { kind: 'share'; shareToken: string; plainError: string | null }
+  | { kind: 'verify'; token: string; plainError: string | null }
+  | { kind: 'password-reset'; resetToken: string; plainError: string | null }
+  | { kind: 'continue'; plainError: string | null };
+
+export type AuthUrlRouteKind = AuthUrlRoute['kind'];
+
+export function selectAuthUrlRoute(params: URLSearchParams, hostname: string): AuthUrlRoute {
   const localHost = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(hostname);
   if (params.get('dev') === '1' && localHost) return { kind: 'local-dev' };
   const oauthError = params.get('oauth_error');

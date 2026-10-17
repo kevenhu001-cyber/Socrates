@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { adoptAuthenticatedUser } from '../src/auth/forms/sessionAdoption.js';
+import { adoptAuthenticatedUser } from '../src/auth/forms/sessionAdoption.ts';
 
 test('uses the canonical /me user when it is available', async () => {
   const users = [];

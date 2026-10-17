@@ -4,8 +4,8 @@ import { showToast } from '../../ui/toast.js';
 import { loadSharedSession } from '../../ui/share.js';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { showAuthView, submitAuthVerify, revealAppAndHydrate } from '../index.js';
-import { selectAuthUrlRoute } from './routeSelector.js';
-import { recordBootedRouteKind } from './routeState.js';
+import { selectAuthUrlRoute } from './routeSelector.ts';
+import { recordBootedRouteKind } from './routeState.ts';
 
 /** Handle URL-only auth routes before starting the normal /me/config probes. */
 export async function handleAuthUrlRoutes(params, csrfReady) {

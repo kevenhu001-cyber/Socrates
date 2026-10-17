@@ -1,6 +1,6 @@
 import { reportSwallow } from '../reportSwallow.ts';
-import { selectAuthUrlRoute } from '../../auth/boot/routeSelector.js';
-import { bootedRouteKind } from '../../auth/boot/routeState.js';
+import { selectAuthUrlRoute } from '../../auth/boot/routeSelector.ts';
+import { bootedRouteKind } from '../../auth/boot/routeState.ts';
 
 export interface AuthHooks {
   on401?: (detail: string) => void;

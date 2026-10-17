@@ -1,14 +1,20 @@
 import { apiFetch } from '../../util/api.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
-import { buildLegacyMigrationPayload } from './flow.js';
+import { buildLegacyMigrationPayload, type MigrationReport } from './flow.ts';
+
+export interface MigrateLegacyStorageOptions {
+  storage?: Storage;
+  post?: typeof apiFetch;
+  report?: MigrationReport;
+}
 
 /** Move local-only account data to the server once a new session is active. */
-export async function migrateLegacyStorage(options = {}) {
+export async function migrateLegacyStorage(options: MigrateLegacyStorageOptions = {}): Promise<boolean> {
   const storage = options.storage || localStorage;
   const post = options.post || apiFetch;
-  const report = options.report || reportSwallow;
-  let localApi;
-  let localSessions;
+  const report: MigrationReport = options.report || reportSwallow;
+  let localApi: string | null;
+  let localSessions: string | null;
   try {
     localApi = storage.getItem('socrates-api');
     localSessions = storage.getItem('socrates-sessions-v2');

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildLegacyMigrationPayload, fetchWithAuthGraceRetry, restoreRoutedSession } from '../src/auth/postAuth/flow.js';
-import { migrateLegacyStorage } from '../src/auth/postAuth/migration.js';
+import { buildLegacyMigrationPayload, fetchWithAuthGraceRetry, restoreRoutedSession } from '../src/auth/postAuth/flow.ts';
+import { migrateLegacyStorage } from '../src/auth/postAuth/migration.ts';
 
 test('migration payload includes saved sessions and the active provider only', () => {
   const payload = buildLegacyMigrationPayload(

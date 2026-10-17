@@ -6,14 +6,16 @@
  * route this is. Recording the kind here — inside the route handler, before
  * that rewrite — keeps the decision available to consumers that run later.
  *
- * Kept separate from routeSelector.js because that module is deliberately
+ * Kept separate from routeSelector.ts because that module is deliberately
  * pure ("without browser effects") and is covered as such. */
-let bootedKind = null;
+import type { AuthUrlRouteKind } from './routeSelector.ts';
 
-export function recordBootedRouteKind(kind) {
+let bootedKind: AuthUrlRouteKind | null = null;
+
+export function recordBootedRouteKind(kind: AuthUrlRouteKind): void {
   bootedKind = kind;
 }
 
-export function bootedRouteKind() {
+export function bootedRouteKind(): AuthUrlRouteKind | null {
   return bootedKind;
 }

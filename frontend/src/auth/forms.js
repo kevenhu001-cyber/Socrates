@@ -1,7 +1,7 @@
 import { apiFetch } from '../util/api.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { getValue, isChecked, setValue, setText, setVisible, focusId, setButton } from './shell.ts';
-import { adoptAuthenticatedUser } from './forms/sessionAdoption.js';
+import { adoptAuthenticatedUser } from './forms/sessionAdoption.ts';
 
 function fetchCurrentUser() {
   return apiFetch('/api/auth/me', { _authEndpoint: true });

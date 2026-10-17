@@ -1,5 +1,5 @@
 {
-  "count": 195,
+  "count": 189,
   "files": [
     "src/agent/researchAgent.js",
     "src/app/bootstrap.js",
@@ -23,15 +23,9 @@
     "src/attachments/render.js",
     "src/auth/boot.js",
     "src/auth/boot/requests.js",
-    "src/auth/boot/routeSelector.js",
-    "src/auth/boot/routeState.js",
     "src/auth/boot/routes.js",
     "src/auth/forms.js",
-    "src/auth/forms/sessionAdoption.js",
     "src/auth/index.js",
-    "src/auth/postAuth.js",
-    "src/auth/postAuth/flow.js",
-    "src/auth/postAuth/migration.js",
     "src/batchStorage.js",
     "src/chat/api.js",
     "src/chat/api/builtIn.js",
