@@ -145,7 +145,7 @@ test('pinned reader stays at the bottom while content streams', async ({ page })
 
 test('a pinned reader follows repeated stream growth without losing the newest content', async ({ page }) => {
   await bootStreamingChat(page);
-  await page.evaluate(() => {
+  const initialHeight = await page.evaluate(() => {
     window.__scrollSampleActive = true;
     window.__scrollTopSamples = [];
     const list = document.getElementById('msgList');
@@ -155,6 +155,7 @@ test('a pinned reader follows repeated stream growth without losing the newest c
       requestAnimationFrame(sample);
     };
     sample();
+    return list.scrollHeight;
   });
 
   for (let i = 0; i < 8; i += 1) {
@@ -163,6 +164,14 @@ test('a pinned reader follows repeated stream growth without losing the newest c
     }, i);
     await page.waitForTimeout(70);
   }
+  /* Two clocks bound this measurement: the playback clock reveals the
+     burst at 140–800 cps (packages/core/src/streamPlayer.ts), and the
+     turn's viewport anchor reserves the prompt's on-screen space with a
+     min-height, so text can grow inside that reserve without moving the
+     scroller at all. Sample until the transcript actually outgrows the
+     reserve, then judge following from those samples. */
+  await expect.poll(() => page.evaluate(() => document.getElementById('msgList').scrollHeight), { timeout: 20000 })
+    .toBeGreaterThan(initialHeight + 40);
   await expect.poll(() => distanceFromBottom(page)).toBeLessThanOrEqual(4);
   const tops = await page.evaluate(() => {
     window.__scrollSampleActive = false;

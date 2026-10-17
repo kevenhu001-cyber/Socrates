@@ -17,9 +17,10 @@ export function AnchoredMenu({ anchor, onClose, className, children, above = fal
     if (closingRef.current) return;
     closingRef.current = true;
     setClosing(true);
+    // Matches the 120ms ui-overlay-out exit in polish/overlays.css.
     closeTimerRef.current = window.setTimeout(() => {
       onClose();
-    }, 110);
+    }, 120);
   }, [onClose]);
 
   useEffect(() => {
@@ -63,7 +64,7 @@ export function AnchoredMenu({ anchor, onClose, className, children, above = fal
   }, [anchor, above, requestClose, spill]);
   const host = document.getElementById('appShell');
   if (!host) return null;
-  return createPortal(<div ref={menu} className={`anchored-menu ${className}`.trim()} data-state={closing ? 'closing' : 'open'} inert={closing} role="menu" style={{ position: 'fixed', ...position }}
+  return createPortal(<div ref={menu} className={`anchored-menu ${className}`.trim()} data-state={closing ? 'closing' : 'open'} data-placement={above ? 'above' : 'below'} data-align={spill && innerWidth <= 768 ? 'start' : 'end'} inert={closing} role="menu" style={{ position: 'fixed', ...position }}
     onClick={(event) => event.stopPropagation()}
     onKeyDown={(event) => {
       if (event.key === 'Escape' || event.key === 'Tab') {

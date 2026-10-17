@@ -173,8 +173,11 @@
   }
 }
 
+/* Opacity-only fade: a bouncy curve overshoots opacity, which reads as a
+   brief hold before the bubble settles. The send glide already supplies the
+   motion, so the fade decelerates on the house ease-out curve. */
 #appShell .msg.user[data-bubble-arriving] {
-  animation: msgUserIn var(--bubble-fade-duration, 220ms) var(--ui-ease-spring-bouncy) both;
+  animation: msgUserIn var(--bubble-fade-duration, 220ms) var(--ui-ease-out) both;
 }
 
 #appShell .msg.assistant:not([data-stream-settled]) {
@@ -315,11 +318,18 @@
   }
 }
 
-/* "New reply" / scroll pill — floating chip, menu shadow. */
+/* "New reply" / scroll pill — floating chip, menu shadow. The entrance runs
+   on the overlay clock (160ms) instead of the legacy 220/260ms pair so it
+   appears with the same tempo as every other anchored surface. */
 #appShell .new-reply-pill {
   border-radius: var(--ui-radius-pill);
   border: 1px solid var(--ui-border-subtle);
   box-shadow: var(--ui-shadow-menu);
+  transition:
+    opacity var(--ui-duration-fast) var(--ui-ease-out),
+    transform var(--ui-duration-overlay) var(--ui-ease-out),
+    box-shadow var(--ui-duration-overlay) var(--ui-ease-out),
+    filter var(--ui-duration-hover) ease;
 }
 
 /* Toasts. The legacy skin painted them with --bg-000, which is the page

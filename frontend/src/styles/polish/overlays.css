@@ -107,15 +107,18 @@
   -webkit-backdrop-filter: none;
 }
 
-/* ── Motion: one entrance for dialogs and sidebar popovers ──
+/* ── Motion: one entrance for dialogs, menus and popovers ──
    docs/ref/chatgpt-parity.md: menus and dialogs fade + scale over ~160ms
    ease-out (tokens.css --ui-duration-overlay / --ui-overlay-enter-scale).
    Before this every surface had its own entrance: dialogs slid 12px over
    200ms (confirm 150ms), and the command palette plus the sidebar "more" /
-   display popovers had none and popped in. The composer "+" menu and the
-   generation-config popover keep their anchored lift (polish/composer.css,
-   restore/chat-surface.css). Reduced motion collapses this via
-   foundations/base.css. The scrims keep their own fadeIn. */
+   display popovers had none and popped in. The React-anchored menus
+   (sidebar account, session rows), the message overflow popover and the
+   library row/new/filter menus used to pop too; they now share the same
+   entrance so a click never produces an un-animated surface. The composer
+   "+" menu and the generation-config popover keep their anchored lift
+   (polish/composer.css, restore/chat-surface.css). Reduced motion collapses
+   this via foundations/base.css. */
 @keyframes ui-overlay-in {
   from { opacity: 0; transform: scale(var(--ui-overlay-enter-scale, .98)); }
   to { opacity: 1; transform: scale(1); }
@@ -124,6 +127,11 @@
 @keyframes ui-overlay-out {
   from { opacity: 1; transform: scale(1); }
   to { opacity: 0; transform: scale(var(--ui-overlay-enter-scale, .98)); }
+}
+
+@keyframes ui-scrim-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes ui-scrim-out {
@@ -138,8 +146,39 @@
 .share-modal,
 .confirm-box,
 .sidebar-more-popover,
-.display-prefs-popover {
+.display-prefs-popover,
+.anchored-menu,
+.msg-action-menu,
+.library-row-menu,
+.library-new-menu,
+.library-filter-menu {
   animation: ui-overlay-in var(--ui-duration-overlay) var(--ui-ease-spring-gentle) both;
+}
+
+/* Anchored surfaces grow from the edge that touches their trigger, so the
+   entrance reads as the menu unfolding from the button instead of a card
+   fading in at its centre. AnchoredMenu reports its placement/alignment;
+   the library menus are positioned by their own right/left anchors. */
+.anchored-menu { transform-origin: top right; }
+.anchored-menu[data-placement="above"] { transform-origin: bottom right; }
+.anchored-menu[data-align="start"] { transform-origin: top left; }
+.anchored-menu[data-align="start"][data-placement="above"] { transform-origin: bottom left; }
+.msg-action-menu { transform-origin: top left; }
+#appShell .library-row-menu,
+#appShell .library-new-menu { transform-origin: top right; }
+#appShell .library-filter-menu { transform-origin: top left; }
+
+/* The scrim fades with its card. `.cmd-k-overlay` was the one scrim with no
+   entrance at all; the rest carried their own 120–150ms fadeIn. One token
+   keeps the dim and the card on the same clock. */
+.cmd-k-overlay,
+.settings-overlay,
+.profile-overlay,
+.usage-overlay,
+.share-overlay,
+.admin-modal-overlay,
+.confirm-dialog {
+  animation: ui-scrim-in var(--ui-duration-overlay) var(--ui-ease-out) both;
 }
 
 .confirm-box[data-state="closing"],
