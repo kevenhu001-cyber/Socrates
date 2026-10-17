@@ -13,7 +13,7 @@ import {
   retryAuthMe,
   shouldGateForInitialUnauthorized,
   startAuthRequests,
-  startCsrfBootstrap,
+  lazyCsrfBootstrap,
 } from './boot/requests.js';
 
 /* Let the default locale chunk settle before exposing either authenticated
@@ -80,7 +80,7 @@ async function finishUnavailableBoot() {
 export async function authBoot() {
   /* index.html preloads csrf/me/config while the module graph evaluates. */
   const preflight = readBootPreflight();
-  const csrfReady = startCsrfBootstrap(preflight);
+  const csrfReady = lazyCsrfBootstrap(preflight);
   const params = new URLSearchParams(location.search);
   if (await handleAuthUrlRoutes(params, csrfReady)) return;
 

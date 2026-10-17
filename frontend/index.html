@@ -41,6 +41,11 @@
     var w = window;
     if (w.__bootApi) return;
     w.__bootApi = {};
+    /* A URL-only route (?share, ?token, ?reset_token, ?oauth_error) returns
+       from authBoot before startAuthRequests, so its preflight /me + CSRF
+       are never consumed. Skip them there: a public share reader is
+       anonymous and cannot use the session state they would cost. */
+    var urlOnlyRoute = /(?:^|[?&])(share|token|reset_token|oauth_error)=/.test(location.search);
     var opts = { credentials: 'include' };
     var cb = '?cb=' + Date.now();
     function get(url) {
@@ -54,13 +59,16 @@
         return { failed: true };
       });
     }
-    w.__bootApi.me = get('/api/v2/auth/me');
+    if (!urlOnlyRoute) {
+      w.__bootApi.me = get('/api/v2/auth/me');
+      w.__bootApi.csrf = fetch('/api/v2/auth/csrf-token' + cb, opts).then(function () {
+        return null;
+      }, function () {
+        return null;
+      });
+    }
+    /* /api/v2/config is public: the share view still applies it. */
     w.__bootApi.config = get('/api/v2/config');
-    w.__bootApi.csrf = fetch('/api/v2/auth/csrf-token' + cb, opts).then(function () {
-      return null;
-    }, function () {
-      return null;
-    });
   } catch (_) { /* preflight is best effort */ }
 })();
 </script>

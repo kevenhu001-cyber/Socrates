@@ -1,4 +1,6 @@
 import { reportSwallow } from '../reportSwallow.ts';
+import { selectAuthUrlRoute } from '../../auth/boot/routeSelector.js';
+import { bootedRouteKind } from '../../auth/boot/routeState.js';
 
 let onUnauthorized = null;
 let isInGraceWindow = () => false;
@@ -20,8 +22,28 @@ export function installAuthHooks({ on401, isInGraceWindow: graceWindowCheck }) {
   prewarmAuthCache();
 }
 
+/** Every URL-only route returns from authBoot before startAuthRequests, so
+ * none of them runs the /me probe this prewarm exists to warm. A public share
+ * reader is anonymous — spending a request on auth state the view can never
+ * use is a wasted round trip, and the share boot path deliberately never
+ * touches /api/auth/me.
+ *
+ * Prefer the route the boot path recorded: those handlers clear the query with
+ * history.replaceState() before they await, so `location.search` is already
+ * empty by the time this runs. Fall back to the live URL only when boot has
+ * not classified the document yet. */
+function runsNormalAuthProbe() {
+  try {
+    const recorded = bootedRouteKind();
+    if (recorded) return recorded === 'continue';
+    if (typeof location === 'undefined') return true;
+    return selectAuthUrlRoute(new URLSearchParams(location.search), location.hostname).kind === 'continue';
+  } catch (error) { reportSwallow(error, 'util/api.prewarmAuthCache.urlRoute'); return true; }
+}
+
 function prewarmAuthCache() {
   if (typeof fetch !== 'function') return;
+  if (!runsNormalAuthProbe()) return;
   try {
     void fetch('/api/auth/me', { credentials: 'include', method: 'GET' })
       .catch((error) => { reportSwallow(error, 'util/api.prewarmAuthCache'); });

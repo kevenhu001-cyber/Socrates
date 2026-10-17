@@ -5,10 +5,13 @@ import { loadSharedSession } from '../../ui/share.js';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { showAuthView, submitAuthVerify, revealAppAndHydrate } from '../index.js';
 import { selectAuthUrlRoute } from './routeSelector.js';
+import { recordBootedRouteKind } from './routeState.js';
 
 /** Handle URL-only auth routes before starting the normal /me/config probes. */
 export async function handleAuthUrlRoutes(params, csrfReady) {
   const route = selectAuthUrlRoute(params, location.hostname);
+  /* Record before any handler can rewrite location and erase the query. */
+  recordBootedRouteKind(route.kind);
   if (route.kind !== 'local-dev' && route.kind !== 'oauth-error' && route.plainError) {
     handlePlainErrorRoute();
   }

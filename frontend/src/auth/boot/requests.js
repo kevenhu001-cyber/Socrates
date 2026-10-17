@@ -14,6 +14,23 @@ export function startCsrfBootstrap(preflight) {
       .catch((error) => reportSwallow(error, 'auth/boot.csrfPreflight'));
 }
 
+/** Same warm-up, deferred until something actually awaits it.
+ *
+ * A public share reader is anonymous and no share path awaits the CSRF prime,
+ * so priming it unconditionally spends a request the view can never use. The
+ * normal boot, local-dev and email verification all await it, and start it on
+ * first use; every await after that shares the same promise, so the request
+ * still overlaps the rest of startup exactly as before. */
+export function lazyCsrfBootstrap(preflight) {
+  let started = null;
+  const start = () => { started ||= startCsrfBootstrap(preflight); return started; };
+  return {
+    then(onFulfilled, onRejected) { return start().then(onFulfilled, onRejected); },
+    catch(onRejected) { return start().catch(onRejected); },
+    finally(onFinally) { return start().finally(onFinally); },
+  };
+}
+
 /** Convert the early raw fetch result into the apiFetch error contract. */
 export function adoptPreflight(promise, label) {
   return Promise.resolve(promise).then((response) => {
