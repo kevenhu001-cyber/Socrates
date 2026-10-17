@@ -19,6 +19,7 @@ export type IntelligenceUiNodeType =
   | 'callout'
   | 'slider'
   | 'choice'
+  | 'toggle'
   | 'button'
   | 'table'
   | 'chart'
@@ -37,6 +38,7 @@ const NODE_TYPES = new Set<IntelligenceUiNodeType>([
   'callout',
   'slider',
   'choice',
+  'toggle',
   'button',
   'table',
   'chart',
@@ -47,11 +49,70 @@ const NODE_TYPES = new Set<IntelligenceUiNodeType>([
 
 export type IntelligenceUiState = Record<string, unknown>;
 
+export type IntelligenceUiTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
+export type IntelligenceUiTrend = 'up' | 'down' | 'flat';
+
+const NODE_TONES: ReadonlySet<string> = new Set(['neutral', 'info', 'success', 'warning', 'danger']);
+const NODE_TRENDS: ReadonlySet<string> = new Set(['up', 'down', 'flat']);
+
+/**
+ * Semantic emphasis for callouts and progress bars. Model output is untrusted,
+ * so unknown tones fall back to neutral instead of leaking a raw attribute.
+ */
+export function normalizeIntelligenceUiTone(value: unknown): IntelligenceUiTone {
+  const tone = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return NODE_TONES.has(tone) ? tone as IntelligenceUiTone : 'neutral';
+}
+
+/** Metric direction; omitted trends are inferred from the rendered delta. */
+export function normalizeIntelligenceUiTrend(value: unknown): IntelligenceUiTrend | null {
+  const trend = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return NODE_TRENDS.has(trend) ? trend as IntelligenceUiTrend : null;
+}
+
+/**
+ * Field names are documented so the renderer and tool schema agree, while
+ * values stay `unknown`: every one is model-provided and resolved through the
+ * declarative expression layer before use.
+ */
 export interface IntelligenceUiNode {
   id: string;
   type: IntelligenceUiNodeType;
   parent?: string;
   state?: IntelligenceUiState;
+  title?: unknown;
+  subtitle?: unknown;
+  description?: unknown;
+  text?: unknown;
+  label?: unknown;
+  value?: unknown;
+  prefix?: unknown;
+  suffix?: unknown;
+  displayValue?: unknown;
+  bind?: unknown;
+  min?: unknown;
+  max?: unknown;
+  step?: unknown;
+  when?: unknown;
+  columns?: unknown;
+  rows?: unknown;
+  kind?: unknown;
+  points?: unknown;
+  options?: unknown;
+  tabs?: unknown;
+  tab?: unknown;
+  fields?: unknown;
+  image?: unknown;
+  imageAlt?: unknown;
+  images?: unknown;
+  actionLabel?: unknown;
+  primary?: unknown;
+  action?: unknown;
+  tone?: unknown;
+  trend?: unknown;
+  delta?: unknown;
+  checked?: unknown;
+  caption?: unknown;
   [key: string]: unknown;
 }
 

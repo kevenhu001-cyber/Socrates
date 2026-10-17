@@ -1,4 +1,4 @@
-const TYPES = ['panel', 'stack', 'grid', 'text', 'metric', 'progress', 'divider', 'callout', 'slider', 'choice', 'button', 'table', 'chart', 'tabs', 'entity', 'image-gallery'];
+const TYPES = ['panel', 'stack', 'grid', 'text', 'metric', 'progress', 'divider', 'callout', 'slider', 'choice', 'toggle', 'button', 'table', 'chart', 'tabs', 'entity', 'image-gallery'];
 
 /** Bound complexity and reject unsafe data before it is stored or rendered. */
 export function validateIntelligentUi(value) {

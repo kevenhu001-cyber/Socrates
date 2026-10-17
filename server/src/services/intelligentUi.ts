@@ -1,9 +1,9 @@
-const TYPES = ['panel', 'stack', 'grid', 'text', 'metric', 'progress', 'divider', 'callout', 'slider', 'choice', 'button', 'table', 'chart', 'tabs', 'entity', 'image-gallery'];
+const TYPES = ['panel', 'stack', 'grid', 'text', 'metric', 'progress', 'divider', 'callout', 'slider', 'choice', 'toggle', 'button', 'table', 'chart', 'tabs', 'entity', 'image-gallery'];
 export const INTELLIGENT_UI_TOOL = {
   type: 'function' as const,
   function: {
     name: 'render_intelligent_ui',
-    description: 'Render a small interactive UI alongside prose. Nodes have unique id/type and optional parent. Root state and bind support local controls. Values support {state:key}, {tool:callId,path:field}, or {op:add|sub|mul|div|round|min|max|eq|if|concat,args:[]}. Actions: set, increment, prompt, open_url. Charts use kind:bar|line and points:[{label,value}]; tables use columns and rows. No HTML, CSS, JS or executable handlers. Emit parents before children and write each complete node before starting the next. Keep essential conclusions in prose. After success, the surface ID is this tool call ID and revision is 0. Use patch_intelligent_ui to modify it in this turn while preserving local controls.',
+    description: 'Render a small interactive UI alongside prose. Nodes have unique id/type and optional parent. Root state and bind support local controls: slider, choice, toggle and tabs. Values support {state:key}, {tool:callId,path:field}, or {op:add|sub|mul|div|round|min|max|eq|if|concat,args:[]}. Actions: set, increment, prompt, open_url. Charts use kind:bar|line and points:[{label,value}]; tables use columns and rows. Callouts and progress bars accept tone:neutral|info|success|warning|danger; metrics accept delta and trend:up|down|flat. No HTML, CSS, JS or executable handlers. Emit parents before children and write each complete node before starting the next. Keep essential conclusions in prose. After success, the surface ID is this tool call ID and revision is 0. Use patch_intelligent_ui to modify it in this turn while preserving local controls.',
     parameters: {
       type: 'object', additionalProperties: false, required: ['version', 'nodes'],
       properties: {
@@ -24,8 +24,13 @@ export const INTELLIGENT_UI_TOOL = {
               prefix: { type: 'string' }, suffix: { type: 'string' },
               displayValue: { description: 'Optional formatted control or progress value.' },
               state: { type: 'object', description: 'Initial local state on a root node. Use safe keys.' },
-              bind: { type: 'string', description: 'State key changed by slider/choice/tabs controls.' },
+              bind: { type: 'string', description: 'State key changed by slider/choice/toggle/tabs controls.' },
               min: { type: 'number' }, max: { type: 'number' }, step: { type: 'number' },
+              checked: { type: 'boolean', description: 'Toggle value when root state declares no default.' },
+              tone: { type: 'string', enum: ['neutral', 'info', 'success', 'warning', 'danger'], description: 'Callout or progress emphasis.' },
+              delta: { description: 'Metric change, literal or expression.' },
+              trend: { type: 'string', enum: ['up', 'down', 'flat'], description: 'Metric direction; inferred from delta when omitted.' },
+              caption: { type: 'string', description: 'Table caption for assistive technology.' },
               when: { description: 'Boolean or value expression controlling visibility.' },
               columns: { description: 'Grid: number of columns. Table: [{key,label}].' },
               rows: { type: 'array', maxItems: 50, description: 'Table rows, keyed by column keys.' },

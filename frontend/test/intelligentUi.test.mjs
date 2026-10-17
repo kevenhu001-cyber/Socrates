@@ -5,6 +5,8 @@ import {
   initialStateForNodes,
   intelligenceUiChartDomain,
   normalizeIntelligenceUiImageUrl,
+  normalizeIntelligenceUiTone,
+  normalizeIntelligenceUiTrend,
   parseIntelligenceUiRecords,
   resolveIntelligenceUiValue,
   splitIntelligenceUiText,
@@ -62,19 +64,29 @@ test('rejects unknown node types, unsafe ids, and duplicate ids', () => {
   assert.deepEqual(parseIntelligenceUiRecords(source).map((node) => node.id), ['ok']);
 });
 
-test('accepts only the four registered v2 native node types', () => {
+test('accepts registered native node types and rejects unknown elements', () => {
   const source = [
     '{"id":"chart","type":"chart"}',
     '{"id":"tabs","type":"tabs"}',
     '{"id":"entity","type":"entity"}',
     '{"id":"gallery","type":"image-gallery"}',
+    '{"id":"notify","type":"toggle","bind":"notify","checked":true}',
     '{"id":"iframe","type":"iframe"}',
   ].join('\n');
 
   assert.deepEqual(
     parseIntelligenceUiRecords(source).map((node) => node.type),
-    ['chart', 'tabs', 'entity', 'image-gallery'],
+    ['chart', 'tabs', 'entity', 'image-gallery', 'toggle'],
   );
+});
+
+test('tone and trend hints normalize to the supported vocabulary', () => {
+  assert.equal(normalizeIntelligenceUiTone('warning'), 'warning');
+  assert.equal(normalizeIntelligenceUiTone(' DANGER '), 'danger');
+  assert.equal(normalizeIntelligenceUiTone('urgent'), 'neutral');
+  assert.equal(normalizeIntelligenceUiTone(undefined), 'neutral');
+  assert.equal(normalizeIntelligenceUiTrend('up'), 'up');
+  assert.equal(normalizeIntelligenceUiTrend('sideways'), null);
 });
 
 test('evaluates local state expressions without executing code', () => {

@@ -54,6 +54,8 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-danger: #ff6764;
   --ui-thinking-accent: hsl(18 48% 50%);
   --ui-success: #42dec2;
+  --ui-info: var(--ui-link);
+  --ui-warning: var(--ui-thinking-accent);
   --ui-avatar-bg: var(--ui-bg-control);
   --ui-bg-composer: #1c1c1c;
   --ui-bg-chip: rgb(255 255 255 / 7%);
@@ -122,6 +124,8 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-danger: #d8241a;
   --ui-thinking-accent: hsl(18 48% 42%);
   --ui-success: #027c6a;
+  --ui-info: var(--ui-link);
+  --ui-warning: var(--ui-thinking-accent);
   --ui-avatar-bg: var(--ui-text-muted);
   --ui-bg-composer: #fff;
   --ui-bg-chip: rgb(0 0 0 / 5%);

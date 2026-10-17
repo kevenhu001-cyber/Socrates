@@ -12,6 +12,7 @@ import { executeIntelligentUi } from '../src/routes/chat/pipeline/executors/inte
 const node = { id: 'root', type: 'panel', title: 'A useful view' };
 test('native UI validates version, node bounds, identity and parent graph', () => {
   assert.equal(validateIntelligentUi({ version: 1, nodes: [node, { id: 'text', type: 'text', parent: 'root', text: 'Hello' }] }).ok, true);
+  assert.equal(validateIntelligentUi({ version: 1, nodes: [node, { id: 'notify', type: 'toggle', parent: 'root', bind: 'notify', label: 'Notify' }] }).ok, true);
   for (const document of [
     { version: 2, nodes: [node] }, { version: 1, nodes: [] },
     { version: 1, nodes: [node, node] }, { version: 1, nodes: [{ ...node, type: 'script' }] },
