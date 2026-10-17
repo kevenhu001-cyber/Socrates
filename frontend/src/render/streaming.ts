@@ -5,11 +5,17 @@
  * coalescing them keeps input, scrolling, and code-block painting responsive.
  */
 
+/* Streaming-render cadence. Tuned against a measured paint-interval harness:
+ * a continuous ~3.7k chars/s supply revealed settled blocks (cached) but the
+ * old length-keyed tiers painted 270-char chunks at 8-12 fps for long answers
+ * while the main thread stayed idle (zero long tasks). Coalescing still
+ * protects input/scroll on a real burst, but the light tail — which is all
+ * that is reparsed per commit — can paint at ~30 fps. Only very long answers
+ * keep a guard band, so the floor is ~20 fps rather than a hard 8 fps. */
 export function getStreamRenderInterval(textLength: number | null | undefined): number {
   const len = Math.max(0, Number(textLength) || 0);
-  if (len < 2000) return 50;   /* first screen: responsive, ~20 fps */
-  if (len < 8000) return 80;   /* normal long answer: ~12 fps */
-  return 120;              /* very long answer: protect the main thread */
+  if (len < 32000) return 33;  /* ~30 fps */
+  return 50;                   /* very long answer: ~20 fps guard */
 }
 
 /* PERF: counts non-overlapping occurrences without allocating. The previous
