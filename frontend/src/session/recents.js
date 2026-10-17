@@ -9,7 +9,7 @@ import { saveState, rememberDeletedSession, forgetDeletedSession } from './saveS
 import { getVisibleSessions, getArchivedSessionsFrom, sweepExpiredArchivesFrom, setChatIdInURL } from './store.js';
 import { createReconciler } from './recentsReconcile.js';
 import { getKnownTagsFromSessions } from '../ui/recentsHelpers.js';
-import { apiFetch } from '../util/api.js';
+import { apiFetch } from '../util/api.ts';
 import { detailCache } from './detailCache.js';
 import { clearLocalMemory } from '../storage/localMemory.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';

@@ -9,7 +9,7 @@
 import { normalizeTurnRuntime } from '@socrates/core';
 import { stateStore } from '../state/store.js';
 import { saveState, deletedSessionGuard } from './saveState.js';
-import { generateId } from '../util/ids.js';
+import { generateId } from '../util/ids.ts';
 import { pushChatIdToURL } from './store.js';
 import { serverCache } from './serverCache.js';
 import { patchSessionRow } from './recentsReconcile.js';
@@ -19,7 +19,7 @@ import { generateSessionTitle } from '../chat/sessionTitle.js';
 import { markCmdKIndexDirty } from '../ui/cmdK.js';
 import { toggleShareBtn } from '../ui/share.js';
 import { showToast } from '../ui/toast.js';
-import { apiFetch } from '../util/api.js';
+import { apiFetch } from '../util/api.ts';
 import { detailCache } from './detailCache.js';
 
 function _t(key, fallback) {
@@ -540,7 +540,7 @@ function postSession(payload){
 export function installUnloadSave(){
   /* P_save-unload-ref — read CSRF token synchronously from the cookie
      (available during page teardown). Same pattern as getCsrfToken in
-     util/api.js but inlined to avoid an import dependency. */
+     util/api.ts but inlined to avoid an import dependency. */
   function _beaconCsrf(){
     var m=document.cookie.match(/\bcsrf=([^;]+)/);
     return m?m[1]:null;

@@ -1,10 +1,11 @@
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { authExpiryIsSuppressed, notifyUnauthorized, refreshCsrfToken } from './api/auth.js';
-import { createRetryApiFetch } from './api/retry.js';
-import { linkAbortSignal, prepareApiRequest } from './api/request.js';
+import { authExpiryIsSuppressed, notifyUnauthorized, refreshCsrfToken } from './api/auth.ts';
+import { createRetryApiFetch } from './api/retry.ts';
+import { linkAbortSignal, prepareApiRequest, type ApiRequestOptions } from './api/request.ts';
 
-export { installAuthHooks } from './api/auth.js';
-export { getCsrfToken } from './api/request.js';
+export { installAuthHooks } from './api/auth.ts';
+export { getCsrfToken } from './api/request.ts';
+export type { ApiRequestOptions } from './api/request.ts';
 
 /**
  * ApiError shape shared by JSON and streaming calls:
@@ -14,8 +15,23 @@ export { getCsrfToken } from './api/request.js';
  * parsing, and retry policy in focused modules while preserving these
  * stable public entry points.
  */
-export function makeApiError(status, message, body, code, retried) {
-  const error = new Error(message);
+export interface ApiError extends Error {
+  status: number;
+  code: string | null;
+  body: unknown;
+  retried: number;
+  isApiError: true;
+  requestId?: string;
+}
+
+export function makeApiError(
+  status: number,
+  message: string,
+  body: unknown,
+  code: string | null,
+  retried: number,
+): ApiError {
+  const error = new Error(message) as ApiError;
   error.status = status;
   error.code = code;
   error.body = body;
@@ -24,40 +40,46 @@ export function makeApiError(status, message, body, code, retried) {
   return error;
 }
 
-function isEventStreamResponse(response) {
+function bodyField(body: unknown, key: string): unknown {
+  return body && typeof body === 'object' ? (body as Record<string, unknown>)[key] : undefined;
+}
+
+function isEventStreamResponse(response: Response): boolean {
   try {
     const type = response && response.headers && typeof response.headers.get === 'function'
       ? String(response.headers.get('content-type') || '')
       : '';
     return /text\/event-stream/i.test(type);
-  } catch (_) {
-    return false;
-  }
+  } catch { /* empty-catch: intentional — header access cannot fail the request */ return false; }
 }
 
-async function throwRawResponseError(response) {
+async function throwRawResponseError(response: Response): Promise<never> {
   let text = '';
-  let body = null;
+  let body: unknown = null;
   try { text = await response.text(); }
   catch (error) { reportSwallow(error, 'util/api.rawError.readBody'); }
   try { if (text) body = JSON.parse(text); }
   catch (error) { reportSwallow(error, 'util/api.rawError.parseBody'); }
-  const message = (body && body.message)
-    || (body && body.detail)
-    || (body && body.error)
+  const message = bodyField(body, 'message')
+    || bodyField(body, 'detail')
+    || bodyField(body, 'error')
     || text
     || response.statusText
     || ('HTTP ' + response.status);
-  throw makeApiError(response.status, String(message).slice(0, 200), body, (body && body.code) || null, 0);
+  const code = bodyField(body, 'code');
+  throw makeApiError(response.status, String(message).slice(0, 200), body, typeof code === 'string' ? code : null, 0);
 }
 
-function makeJsonResponseError(response, body) {
-  const message = (body && (body.message || body.detail || body.title || body.error)) || ('HTTP ' + response.status);
+function makeJsonResponseError(response: Response, body: unknown): ApiError {
+  const raw = bodyField(body, 'message') || bodyField(body, 'detail')
+    || bodyField(body, 'title') || bodyField(body, 'error');
+  const message = raw || ('HTTP ' + response.status);
+  const code = bodyField(body, 'code');
   const error = makeApiError(
     response.status,
     typeof message === 'string' ? message : ('HTTP ' + response.status),
     body,
-    body && body.code,
+    typeof code === 'string' ? code : null,
     0,
   );
   try {
@@ -70,15 +92,15 @@ function makeJsonResponseError(response, body) {
 }
 
 /** Return a raw Response for SSE and other incrementally-read bodies. */
-export async function apiFetchRaw(path, opts = {}) {
+export async function apiFetchRaw(path: string, opts: ApiRequestOptions = {}): Promise<Response> {
   const request = prepareApiRequest(path, opts);
   const linkedSignal = linkAbortSignal(opts.signal, 'util/api.apiFetchRaw');
-  let response;
+  let response: Response;
   try {
     response = await fetch(request.path, Object.assign({}, request.opts, {
       signal: linkedSignal.controller.signal,
-    }));
-  } catch (_) {
+    }) as RequestInit);
+  } catch {
     linkedSignal.detach();
     throw makeApiError(0, '网络异常，请检查连接后重试', null, 'NETWORK', 0);
   }
@@ -99,18 +121,24 @@ export async function apiFetchRaw(path, opts = {}) {
   return response;
 }
 
-/** Fetch and parse a JSON API response. */
-export async function apiFetch(path, opts = {}) {
+/**
+ * Fetch and parse a JSON API response.
+ *
+ * The body is untyped by default (`T = any`) because the ~60 legacy call
+ * sites read ad-hoc shapes from it; typed callers pass an explicit `T`.
+ */
+export async function apiFetch<T = any>(path: string, opts: ApiRequestOptions = {}): Promise<T> {
   const request = prepareApiRequest(path, opts, { cacheBustGet: true });
   const userSignal = opts.signal || null;
   const linkedSignal = linkAbortSignal(userSignal, 'util/api.apiFetch');
-  let response;
+  let response: Response;
   try {
     response = await fetch(request.path, Object.assign({}, request.opts, {
       signal: linkedSignal.controller.signal,
-    }));
+    }) as RequestInit);
   } catch (caught) {
-    const aborted = caught && (caught.name === 'AbortError' || linkedSignal.controller.signal.aborted);
+    const failure = caught as { name?: string } | null;
+    const aborted = !!failure && (failure.name === 'AbortError' || linkedSignal.controller.signal.aborted);
     throw makeApiError(
       0,
       aborted ? '请求被取消' : '网络异常，请检查连接后重试',
@@ -123,7 +151,7 @@ export async function apiFetch(path, opts = {}) {
   }
 
   const body = await readJsonBody(response);
-  if (response.ok) return body;
+  if (response.ok) return body as T;
 
   const error = makeJsonResponseError(response, body);
   if (response.status === 401 && !opts._authEndpoint && !authExpiryIsSuppressed()) {
@@ -133,19 +161,19 @@ export async function apiFetch(path, opts = {}) {
        prevent CSRF refresh and turn the replay into another 403. */
     const refreshController = new AbortController();
     await refreshCsrfToken(refreshController.signal, 'util/api.apiFetch');
-    return apiFetch(request.path, Object.assign({}, opts, { _csrfRetried: true }));
+    return apiFetch<T>(request.path, Object.assign({}, opts, { _csrfRetried: true }));
   }
   throw error;
 }
 
-function shouldRefreshCsrf(response, opts, method) {
+function shouldRefreshCsrf(response: Response, opts: ApiRequestOptions, method: string): boolean {
   return response.status === 403 && !opts._csrfRetried && method !== 'GET' && method !== 'HEAD';
 }
 
-async function readJsonBody(response) {
-  let text;
+async function readJsonBody(response: Response): Promise<unknown> {
+  let text: string;
   try { text = await response.text(); }
-  catch (_) { throw makeApiError(response.status || 0, '响应读取失败', null, 'READ_BODY', 0); }
+  catch { throw makeApiError(response.status || 0, '响应读取失败', null, 'READ_BODY', 0); }
   try { return text ? JSON.parse(text) : null; }
   catch (error) {
     reportSwallow(error, 'util/api.jsonResponse.parseBody');

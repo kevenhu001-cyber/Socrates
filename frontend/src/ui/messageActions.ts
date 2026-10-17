@@ -7,7 +7,7 @@
  */
 
 import { stateStore } from '../state/store.js';
-import { apiFetch } from '../util/api.js';
+import { apiFetch } from '../util/api.ts';
 import { showToast } from './toast.js';
 import { buildAssistantHtml } from '../render/assistantHtml.ts';
 import { visualizationSpecOf } from '../render/visualizationSpec.ts';

@@ -24,7 +24,7 @@ import { claimLiveRetry } from '../liveTurn.js';
 import { turnState } from '../turnState.js';
 import { removeSupersededStub } from '../turnAnchor.ts';
 import { saveCurrentSession } from '../../session/persistence.js';
-import { stripChatArtifacts } from '../../util/stripChatArtifacts.js';
+import { stripChatArtifacts } from '../../util/stripChatArtifacts.ts';
 import { publishReactChatRuntime } from '../../ui/reactBridge.js';
 
 /**

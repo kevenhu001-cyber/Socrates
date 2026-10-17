@@ -21,7 +21,7 @@ import { stateStore } from '../state/store.js';
 import { turnState, streamRetryViewport } from './turnState.js';
 import { setChatStopState, markTurnInProgress, quietTurn } from './turnUi.js';
 import { registerLiveTurnRuntime, claimLiveSearchRetry } from './liveTurn.js';
-import { generateId } from '../util/ids.js';
+import { generateId } from '../util/ids.ts';
 import { hideNewReplyPill } from '../ui/scrollPill.js';
 import { isMsgListMounted } from '../ui/msgListMount.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';

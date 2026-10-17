@@ -12,7 +12,7 @@
  * M1 ships the client only; turnController switches to it in M2.
  */
 
-import { apiFetch, apiFetchRaw } from '../util/api.js';
+import { apiFetch, apiFetchRaw } from '../util/api.ts';
 import { batchPeek, batchRemoveItem, batchSetItem } from '../batchStorage.js';
 import { consumeSseBuffer } from '../../../packages/core/src/index.ts';
 

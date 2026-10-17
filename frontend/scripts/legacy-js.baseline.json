@@ -1,5 +1,5 @@
 {
-  "count": 220,
+  "count": 212,
   "files": [
     "src/agent/researchAgent.js",
     "src/app/bootstrap.js",
@@ -210,14 +210,6 @@
     "src/ui/topicSetup.js",
     "src/ui/usage.js",
     "src/ui/voiceInput.js",
-    "src/util/api.js",
-    "src/util/api/auth.js",
-    "src/util/api/request.js",
-    "src/util/api/retry.js",
-    "src/util/colors.js",
-    "src/util/ids.js",
-    "src/util/safe.js",
-    "src/util/stripChatArtifacts.js",
     "src/vendor/init.js",
     "src/vendor/lazy.js",
     "src/windowExports.js"

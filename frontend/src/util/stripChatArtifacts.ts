@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Strip chat-template artifacts that some reasoning / instruct-tuned
  * models leak into the stream.
@@ -8,11 +7,7 @@
  * [INST]...[/INST], <s>, etc. as raw text — both in the live bubble
  * and in the final rendered output.
  */
-/**
- * @param {string} t
- * @returns {string}
- */
-export function stripChatArtifacts(t) {
+export function stripChatArtifacts(t: string): string {
   if (!t) return t;
   /* PERF: this runs over the WHOLE accumulated response on every stream
      frame. The six replaces below each scan the full string, but the

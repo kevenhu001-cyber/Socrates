@@ -1,4 +1,4 @@
-import { apiFetchRaw } from '../../util/api.js';
+import { apiFetchRaw } from '../../util/api.ts';
 import { getStoredResponseSpeed } from '../../config/chatPreferences.ts';
 import { notifySpeedFallbackOnce } from '../speedFallback.js';
 import {

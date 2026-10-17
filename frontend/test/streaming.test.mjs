@@ -23,7 +23,7 @@ for (const key of ['Element', 'Node', 'NodeFilter', 'DocumentFragment', 'HTMLEle
 }
 
 const { formatMsg, formatMsgProgressive: renderProgressive, stripMarkdown } = await import('../src/render/markdown.ts');
-const { stripChatArtifacts } = await import('../src/util/stripChatArtifacts.js');
+const { stripChatArtifacts } = await import('../src/util/stripChatArtifacts.ts');
 
 /* Load the vendored KaTeX UMD into a bare VM context and hand it back,
    mirroring how lazy.js injects it into the page. Tests that need real

@@ -10,7 +10,7 @@ import { loadSession } from '../session/loader.js';
  *   - Fuse (CDN)
  *   - SERVER_SESSIONS, CURRENT_USER, state.session.*
  *   - esc (render/helpers.js)
- *   - apiFetch (util/api.js)
+ *   - apiFetch (util/api.ts)
  *   - loadSession, showToast
  *
  * Bridge: windowExports.js exposes closeCmdK + onCmdKInput + onCmdKKey so

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { sanitizeUrl, sanitizeUrls, escapeHtml } from '../src/util/safe.js';
+import { sanitizeUrl, sanitizeUrls, escapeHtml } from '../src/util/safe.ts';
 
 describe('safe.js URL sanitization (F4 attack vectors)', () => {
   it('blocks javascript:/vbscript: with case/whitespace tricks', () => {

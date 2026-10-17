@@ -2,13 +2,44 @@ import { reportSwallow } from '../reportSwallow.ts';
 
 const API_PREFIX = '/api/v2';
 
-export function getCsrfToken() {
+/**
+ * Options bag accepted by `apiFetch` / `apiFetchRaw`.
+ *
+ * Deliberately permissive: the two underscore flags are internal retry
+ * markers, and the index signature keeps call sites that forward a whole
+ * `RequestInit` (keepalive, mode, …) compiling. `body` is widened beyond
+ * `BodyInit` because callers hand over plain objects, which the request
+ * preparation serialises to JSON.
+ */
+export interface ApiRequestOptions {
+  method?: string;
+  headers?: Record<string, string>;
+  body?: BodyInit | Record<string, unknown> | null;
+  credentials?: RequestCredentials;
+  cache?: RequestCache;
+  signal?: AbortSignal | null;
+  _authEndpoint?: boolean;
+  _csrfRetried?: boolean;
+  [key: string]: unknown;
+}
+
+export interface PreparedRequest {
+  path: string;
+  opts: ApiRequestOptions;
+  method: string;
+}
+
+export function getCsrfToken(): string | null {
   const match = document.cookie.match(/\bcsrf=([^;]+)/);
   return match ? match[1] : null;
 }
 
 /** Apply shared URL, credentials, body, and CSRF rules to an API request. */
-export function prepareApiRequest(path, opts, { cacheBustGet = false } = {}) {
+export function prepareApiRequest(
+  path: string,
+  opts: ApiRequestOptions,
+  { cacheBustGet = false }: { cacheBustGet?: boolean } = {},
+): PreparedRequest {
   if (!path.startsWith(API_PREFIX + '/')) path = path.replace(/^\/api\//, API_PREFIX + '/');
   opts.credentials = 'include';
   if (!opts.headers) opts.headers = {};
@@ -34,10 +65,15 @@ export function prepareApiRequest(path, opts, { cacheBustGet = false } = {}) {
   return { path, opts, method };
 }
 
+export interface LinkedSignal {
+  controller: AbortController;
+  detach: () => void;
+}
+
 /** Link a caller's signal to fetch and expose idempotent listener cleanup. */
-export function linkAbortSignal(signal, source) {
+export function linkAbortSignal(signal: AbortSignal | null | undefined, source: string): LinkedSignal {
   const controller = new AbortController();
-  let onAbort = null;
+  let onAbort: (() => void) | null = null;
   if (signal) {
     if (signal.aborted) {
       try { controller.abort(); }

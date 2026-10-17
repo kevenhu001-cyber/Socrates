@@ -32,7 +32,7 @@
  *   activeProviderSupportsImages()   — vision capability of the active model
  */
 
-import { apiFetch } from './util/api.js';
+import { apiFetch } from './util/api.ts';
 import { reportSwallow } from './util/reportSwallow.ts';
 import { classifyAttachmentFile, docKindFromFile } from './attachments/fileTypes.js';
 import { compressImageFile, readFileAsDataUrl } from './attachments/imageCompression.js';

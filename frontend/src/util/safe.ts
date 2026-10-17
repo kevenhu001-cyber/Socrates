@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Frontend escape + sanitization helpers.
  *
@@ -16,11 +15,7 @@
  * clicked / loaded.  Whitelist-first design so the regex doesn't
  * need to enumerate every future attack vector.
  */
-/**
- * @param {unknown} s
- * @returns {string}
- */
-export function escapeHtml(s) {
+export function escapeHtml(s: unknown): string {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -34,13 +29,9 @@ const SAFE_RELATIVE_RE = /^[a-z0-9_.\-\/~?#%@+=&,;:()[\]{}!*'$]+$/i;
 const SAFE_DATA_IMAGE_RE = /^data:image\/(?:png|jpeg|jpg|gif|webp|avif);base64,[a-z0-9+/=]+$/i;
 const DANGEROUS_URL_RE = /^\s*(?:javascript|vbscript|file|filesystem|data\s*:\s*(?:text\/html|image\/svg|application\/xhtml))/i;
 
-/**
- * @param {unknown} url
- * @returns {string}
- */
-export function sanitizeUrl(url) {
+export function sanitizeUrl(url: unknown): string {
   if (typeof url !== 'string') return '';
-  var trimmed = url.replace(/^[\u0000-\u0020]+/, '');
+  const trimmed = url.replace(/^[\u0000-\u0020]+/, '');
   if (DANGEROUS_URL_RE.test(trimmed)) return '#';
   if (SAFE_URL_RE.test(trimmed)) return url;
   if (SAFE_DATA_IMAGE_RE.test(trimmed.replace(/\s+/g, ''))) return url;
@@ -49,11 +40,7 @@ export function sanitizeUrl(url) {
   return '#';
 }
 
-/**
- * @param {string} html
- * @returns {string}
- */
-export function sanitizeUrls(html) {
+export function sanitizeUrls(html: string): string {
   if (!html) return html;
   /* href on a, area, link; src on img, iframe, embed, source, track.
      Covers double-quoted, single-quoted, and unquoted values.
@@ -61,17 +48,9 @@ export function sanitizeUrls(html) {
      defense-in-depth for the innerHTML paths that bypass it. */
   return html.replace(
     /\b(href|src|xlink:href|action|formaction)\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'`>]+))/gi,
-    /**
-     * @param {string} m
-     * @param {string} attr
-     * @param {string} q
-     * @param {string} [double]
-     * @param {string} [sglt]
-     * @param {string} [bare]
-     */
-    function (m, attr, q, double, sglt, bare) {
-      var url = double !== undefined ? double : sglt !== undefined ? sglt : bare;
-      var fixed = sanitizeUrl(url);
+    function (m: string, attr: string, q: string, double?: string, sglt?: string, bare?: string): string {
+      const url = double !== undefined ? double : sglt !== undefined ? sglt : bare;
+      const fixed = sanitizeUrl(url);
       if (fixed === url) return m;
       /* Preserve the original quoting style; bare values get quoted. */
       if (q[0] === '"' || q[0] === "'") return attr + '=' + q[0] + fixed + q[0];

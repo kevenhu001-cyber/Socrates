@@ -1,7 +1,7 @@
 /* Execute one /api/chat/stream attempt. Request errors, stream errors, and
  * successful results use the same small outcome shape so the caller can own
  * the global retry budget and final cleanup. */
-import { apiFetchRaw } from '../util/api.js';
+import { apiFetchRaw } from '../util/api.ts';
 import { buildChatRequestBody } from './api/requestBody.js';
 import { consumeSseBuffer } from '../../../packages/core/src/index.ts';
 import { createChatTurn } from './turnClient.ts';

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { apiFetch, apiFetchRaw, installAuthHooks, retryApiFetch } from '../src/util/api.js';
+import { apiFetch, apiFetchRaw, installAuthHooks, retryApiFetch } from '../src/util/api.ts';
 
 async function withGlobals(overrides, fn) {
   const descriptors = new Map(Object.keys(overrides).map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));

@@ -8,7 +8,7 @@ import { findServerSessionIndex, getKnownTags, getRecents, flushRecentsReconcile
 import { getRecentsFilter } from '../sidebar/sidebar.service.ts';
 import { filterRecentsByChip } from '../ui/recentsHelpers.js';
 import { getCachedProjects } from '../projects/projectCache.ts';
-import { apiFetch } from '../util/api.js';
+import { apiFetch } from '../util/api.ts';
 import { esc } from '../render/helpers.ts';
 import { showToast } from '../ui/toast.js';
 

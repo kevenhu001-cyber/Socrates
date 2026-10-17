@@ -1,4 +1,4 @@
-import { apiFetchRaw } from '../../util/api.js';
+import { apiFetchRaw } from '../../util/api.ts';
 import {
   AI_MAX_ATTEMPTS,
   isUserAbort,

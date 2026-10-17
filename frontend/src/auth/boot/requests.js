@@ -1,4 +1,4 @@
-import { apiFetch, makeApiError } from '../../util/api.js';
+import { apiFetch, makeApiError } from '../../util/api.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 
 /** Read the optional <head> prefetch installed by index.html. */

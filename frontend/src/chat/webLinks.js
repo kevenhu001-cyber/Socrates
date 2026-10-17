@@ -1,5 +1,5 @@
-import { apiFetch } from '../util/api.js';
-import { linkAbortSignal } from '../util/api/request.js';
+import { apiFetch } from '../util/api.ts';
+import { linkAbortSignal } from '../util/api/request.ts';
 
 export const CHAT_PAGE_CONTEXT_TIMEOUT_MS = 2500;
 // Research workflows allow the server's existing eight-second page timeout.

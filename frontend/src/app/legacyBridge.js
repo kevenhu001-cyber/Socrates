@@ -51,7 +51,7 @@ import { mountVisualization, disposeVisualizations, disposeVisualization } from 
 import { appendInlineArtifact } from '../ui/toolCards.js';
 import { formatMsgProgressive } from '../render/markdown.ts';
 import { stripCitationMarkers } from '../render/helpers.ts';
-import { stripChatArtifacts } from '../util/stripChatArtifacts.js';
+import { stripChatArtifacts } from '../util/stripChatArtifacts.ts';
 import { retryLiveTurn, decideLiveApproval } from '../chat/liveTurn.js';
 import { startSession } from '../chat/sessionBootstrap.js';
 import { submitChatMessage } from '../chat/sendPipeline.js';

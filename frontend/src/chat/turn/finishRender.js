@@ -18,7 +18,7 @@
 import { settleTurnRuntime } from '@socrates/core';
 import { stateStore } from '../../state/store.js';
 import { buildAssistantHtml } from '../../render/assistantHtml.ts';
-import { stripChatArtifacts } from '../../util/stripChatArtifacts.js';
+import { stripChatArtifacts } from '../../util/stripChatArtifacts.ts';
 
 /**
  * Build the finish-time render bound to one turn's state.

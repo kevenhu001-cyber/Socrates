@@ -1,6 +1,6 @@
 import { stateStore } from '../../state/store.js';
 import { turnState } from '../turnState.js';
-import { generateId } from '../../util/ids.js';
+import { generateId } from '../../util/ids.ts';
 import { setCurrentSessionId } from '../../session/loader.js';
 import { pushChatIdToURL } from '../../session/store.js';
 import { copyComposerPlugins, clearComposerPlugins } from '../../react/composer/pluginSelection.ts';

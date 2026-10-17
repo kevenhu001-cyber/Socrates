@@ -1,4 +1,4 @@
-import { apiFetch } from '../util/api.js';
+import { apiFetch } from '../util/api.ts';
 import { hasUsableActive } from '../config/providers.js';
 import { stateStore } from '../state/store.js';
 

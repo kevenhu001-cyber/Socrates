@@ -14,7 +14,7 @@
  */
 
 import { esc } from '../render/helpers.ts';
-import { apiFetch } from '../util/api.js';
+import { apiFetch } from '../util/api.ts';
 import { stateStore } from '../state/store.js';
 import { showToast } from './toast.js';
 import { activateMainView } from './mainViewController.js';

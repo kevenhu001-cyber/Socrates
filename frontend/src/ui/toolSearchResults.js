@@ -1,4 +1,4 @@
-import { sanitizeUrl } from "../util/safe.js";
+import { sanitizeUrl } from "../util/safe.ts";
 import { copyText, setCopyFeedback, trTool } from "./toolCardHelpers.js";
 
 function hostFromUrl(url) {

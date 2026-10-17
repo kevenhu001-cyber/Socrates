@@ -6,7 +6,7 @@
 import { resetState } from '../state/store.js';
 import { turnState } from '../chat/turnState.js';
 import { saveState } from '../session/saveState.js';
-import { apiFetch } from '../util/api.js';
+import { apiFetch } from '../util/api.ts';
 import { showGate, showAuthSignin } from '../auth/index.js';
 import { showToast } from '../ui/toast.js';
 import { startNewComposerSession } from '../react/composer-input/lifecycle.ts';

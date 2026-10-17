@@ -9,8 +9,8 @@
 import { esc, escAttr, escHTML, KATEX_MACROS, safeHljsLang } from './helpers.ts';
 import { renderMermaid, renderViz, renderVizLoading, renderPlot } from './vizStubs.js';
 import { preprocessMarkdown, preprocessMarkdownForStreaming, type StreamingPreprocessOptions } from './preprocess.ts';
-import { stripChatArtifacts } from '../util/stripChatArtifacts.js';
-import { sanitizeUrls } from '../util/safe.js';
+import { stripChatArtifacts } from '../util/stripChatArtifacts.ts';
+import { sanitizeUrls } from '../util/safe.ts';
 import { sanitizeHtml } from './sanitizeHtml.ts';
 import { installCodeBlockCopy } from './markdownCodeCopy.ts';
 import {

@@ -4,7 +4,7 @@
 // shows tier-key-limits. Window exposures are routed
 // through src/windowExports.js.
 
-import { apiFetch } from '../util/api.js';
+import { apiFetch } from '../util/api.ts';
 var _usageListenersMounted=false;
 
 export function mountUsageListeners(){

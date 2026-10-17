@@ -6,7 +6,7 @@
 import { _publishSessionList } from '../session/organize.js';
 import { hasCachedProjects, loadCachedProjects } from '../projects/projectCache.ts';
 import { refreshRecentsFilterChipData } from '../sidebar/sidebar.service.ts';
-import { apiFetch } from '../util/api.js';
+import { apiFetch } from '../util/api.ts';
 
 var _renderRecentsPending = false;
 

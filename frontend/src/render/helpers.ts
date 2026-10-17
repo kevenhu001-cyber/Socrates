@@ -1,5 +1,5 @@
 /* ── HTML / attribute escaping shared by the markdown renderer ──
-   These are deliberately separate from util/safe.js because they
+   These are deliberately separate from util/safe.ts because they
    produce HTML-safe text intended for innerHTML (escapeHtml in
    safe.js also escapes single-quote, which is correct for JS strings
    but the renderer's helpers follow the existing calling conventions

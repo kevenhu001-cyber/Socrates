@@ -51,7 +51,7 @@
 // like every other persisted key in the app; every access is wrapped
 // because a full or disabled localStorage must never break editing.
 
-import { apiFetch } from '../util/api.js';
+import { apiFetch } from '../util/api.ts';
 
 const STORAGE_KEY = 'socrates-msg-outbox-v1';
 

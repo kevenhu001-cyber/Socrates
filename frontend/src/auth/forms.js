@@ -1,4 +1,4 @@
-import { apiFetch } from '../util/api.js';
+import { apiFetch } from '../util/api.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { getValue, isChecked, setValue, setText, setVisible, focusId, setButton } from './shell.ts';
 import { adoptAuthenticatedUser } from './forms/sessionAdoption.js';

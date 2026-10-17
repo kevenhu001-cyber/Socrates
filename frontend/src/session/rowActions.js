@@ -1,6 +1,6 @@
 /* Session metadata edits share one persistence path. Reconcile only after the
  * server accepts the change; never mutate immutable React bridge snapshots. */
-import { apiFetch } from '../util/api.js';
+import { apiFetch } from '../util/api.ts';
 import { serverCache } from './serverCache.js';
 import { stateStore } from '../state/store.js';
 import { detailCache } from './detailCache.js';

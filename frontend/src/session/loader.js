@@ -9,7 +9,7 @@ import { stateStore } from '../state/store.js';
 import { saveState } from './saveState.js';
 import { serverCache } from './serverCache.js';
 import { turnState } from '../chat/turnState.js';
-import { apiFetch } from '../util/api.js';
+import { apiFetch } from '../util/api.ts';
 import { refreshCachedProjects } from '../projects/projectCache.ts';
 import { ensureSessionShape, setAppMode, syncSidebarForMode } from '../config/providers.js';
 import { syncChatModel } from '../pickers.js';

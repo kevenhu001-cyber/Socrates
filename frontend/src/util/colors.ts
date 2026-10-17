@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Hex / HSL colour helpers for the display-prefs panel.
  *
@@ -16,17 +15,23 @@ const BG_VARS = [
   '--ui-bg-composer', '--ui-bg-bubble', '--ui-bg-chip', '--ui-bg-chip-hover', '--ui-bg-segment-active',
 ];
 
-/** @param {string} hex */
-export function parseHexColor(hex) {
+export interface HslColor {
+  h: number;
+  s: number;
+  l: number;
+}
+
+export function parseHexColor(hex: string): HslColor {
   hex = hex.replace(/^#/, '');
   if (hex.length === 3) hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
-  var r = parseInt(hex.substring(0, 2), 16) / 255;
-  var g = parseInt(hex.substring(2, 4), 16) / 255;
-  var b = parseInt(hex.substring(4, 6), 16) / 255;
-  var max = Math.max(r, g, b), min = Math.min(r, g, b);
-  var h = 0, s = 0, l = (max + min) / 2;
+  const r = parseInt(hex.substring(0, 2), 16) / 255;
+  const g = parseInt(hex.substring(2, 4), 16) / 255;
+  const b = parseInt(hex.substring(4, 6), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
   if (max !== min) {
-    var d = max - min;
+    const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
     switch (max) {
       case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
@@ -37,19 +42,15 @@ export function parseHexColor(hex) {
   return { h: h * 360, s: s * 100, l: l * 100 };
 }
 
-/**
- * @param {string} hex
- * @param {'light' | 'dark'} mode
- */
-export function applyCustomBg(hex, mode) {
-  var p = parseHexColor(hex);
+export function applyCustomBg(hex: string, mode: 'light' | 'dark'): void {
+  const p = parseHexColor(hex);
   /* Neutral-black theme contract: a custom background must never tint the
      UI. We keep only the *lightness* of the user's pick and force hue and
      saturation to 0, so every derived surface is a pure grayscale step.
      This kills the historical "跑色" (green/warm cast) while still letting
      users pick how light or dark the page is. */
-  var l = p.l;
-  var b000, b100, b200, b300;
+  const l = p.l;
+  let b000: string, b100: string, b200: string, b300: string;
   if (mode === 'light') {
     b100 = _hslStr(0, 0, l);
     /* When the user picks near-white (l >= 95), the standard
@@ -81,7 +82,7 @@ export function applyCustomBg(hex, mode) {
       b300 = _hslStr(0, 0, Math.max(l - 6.7, 0));
     }
   }
-  var root = document.documentElement;
+  const root = document.documentElement;
   root.style.setProperty('--bg-000', b000);
   root.style.setProperty('--bg-100', b100);
   root.style.setProperty('--bg-200', b200);
@@ -101,18 +102,13 @@ export function applyCustomBg(hex, mode) {
   root.style.setProperty('--ui-bg-segment-active', `hsl(${b300})`);
 }
 
-export function removeCustomBg() {
-  var root = document.documentElement;
+export function removeCustomBg(): void {
+  const root = document.documentElement;
   BG_VARS.forEach(function (v) {
     root.style.removeProperty(v);
   });
 }
 
-/**
- * @param {number} h
- * @param {number} s
- * @param {number} l
- */
-function _hslStr(h, s, l) {
+function _hslStr(h: number, s: number, l: number): string {
   return Math.round(h) + ' ' + Math.round(s) + '% ' + Math.round(l) + '%';
 }

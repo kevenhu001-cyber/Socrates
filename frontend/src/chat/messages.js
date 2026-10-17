@@ -11,7 +11,7 @@ import { appendLocalMemory } from '../storage/localMemory.js';
 import { formatMsg } from '../render/markdown.ts';
 import { stripCitationMarkers } from '../render/helpers.ts';
 import { getActiveProvider } from '../pickers.js';
-import { generateId } from '../util/ids.js';
+import { generateId } from '../util/ids.ts';
 import { streamRetryViewport } from './turnState.js';
 import { updateKB } from '../ui/knowledgePanel.js';
 

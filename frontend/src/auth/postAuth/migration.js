@@ -1,4 +1,4 @@
-import { apiFetch } from '../../util/api.js';
+import { apiFetch } from '../../util/api.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { buildLegacyMigrationPayload } from './flow.js';
 

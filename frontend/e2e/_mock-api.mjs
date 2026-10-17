@@ -70,7 +70,7 @@ export async function mockAuthedApp(page, options = {}) {
     }, lang);
   }
 
-  // Cookies that auth/boot.js + util/api.js expect to find.
+  // Cookies that auth/boot.js + util/api.ts expect to find.
   await page.context().addCookies([{
     name: 'csrf', value: CSRF_COOKIE_VALUE, domain: '127.0.0.1', path: '/',
   }, {

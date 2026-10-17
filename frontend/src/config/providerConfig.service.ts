@@ -1,4 +1,4 @@
-import { apiFetch } from '../util/api.js';
+import { apiFetch } from '../util/api.ts';
 import { showToast } from '../ui/toast.js';
 import {
   getProviderConfigSnapshot,

@@ -2,10 +2,15 @@ import { reportSwallow } from '../reportSwallow.ts';
 import { selectAuthUrlRoute } from '../../auth/boot/routeSelector.js';
 import { bootedRouteKind } from '../../auth/boot/routeState.js';
 
-let onUnauthorized = null;
-let isInGraceWindow = () => false;
+export interface AuthHooks {
+  on401?: (detail: string) => void;
+  isInGraceWindow?: () => boolean;
+}
 
-export function installAuthHooks({ on401, isInGraceWindow: graceWindowCheck }) {
+let onUnauthorized: ((detail: string) => void) | null = null;
+let isInGraceWindow: () => boolean = () => false;
+
+export function installAuthHooks({ on401, isInGraceWindow: graceWindowCheck }: AuthHooks): void {
   if (on401) onUnauthorized = on401;
   if (graceWindowCheck) isInGraceWindow = graceWindowCheck;
   /* P_ttfb-auth-prewarm — fire-and-forget /me on install so the
@@ -32,7 +37,7 @@ export function installAuthHooks({ on401, isInGraceWindow: graceWindowCheck }) {
  * history.replaceState() before they await, so `location.search` is already
  * empty by the time this runs. Fall back to the live URL only when boot has
  * not classified the document yet. */
-function runsNormalAuthProbe() {
+function runsNormalAuthProbe(): boolean {
   try {
     const recorded = bootedRouteKind();
     if (recorded) return recorded === 'continue';
@@ -41,7 +46,7 @@ function runsNormalAuthProbe() {
   } catch (error) { reportSwallow(error, 'util/api.prewarmAuthCache.urlRoute'); return true; }
 }
 
-function prewarmAuthCache() {
+function prewarmAuthCache(): void {
   if (typeof fetch !== 'function') return;
   if (!runsNormalAuthProbe()) return;
   try {
@@ -50,11 +55,11 @@ function prewarmAuthCache() {
   } catch (error) { reportSwallow(error, 'util/api.prewarmAuthCache.invoke'); }
 }
 
-export function authExpiryIsSuppressed() {
+export function authExpiryIsSuppressed(): boolean {
   return isInGraceWindow();
 }
 
-export function notifyUnauthorized(source, method, path) {
+export function notifyUnauthorized(source: string, method: string, path: string): void {
   try {
     if (onUnauthorized) onUnauthorized(source + ':' + method + ' ' + path);
   }
@@ -62,8 +67,11 @@ export function notifyUnauthorized(source, method, path) {
 }
 
 /** Refresh CSRF state and yield once before the caller replays its request. */
-export async function refreshCsrfToken(signal, source) {
-  const options = { credentials: 'include' };
+export async function refreshCsrfToken(
+  signal: AbortSignal | null | undefined,
+  source: string,
+): Promise<void> {
+  const options: RequestInit = { credentials: 'include' };
   if (signal) options.signal = signal;
   try { await fetch('/api/v2/auth/csrf-token', options); }
   catch (error) { reportSwallow(error, source + '.csrfRefresh'); }

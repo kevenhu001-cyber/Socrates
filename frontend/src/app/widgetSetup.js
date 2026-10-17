@@ -3,7 +3,7 @@
  * Called once from main.js at the original position to preserve eval order.
  */
 import { stateStore } from '../state/store.js';
-import { apiFetch } from '../util/api.js';
+import { apiFetch } from '../util/api.ts';
 import { saveCurrentSession } from '../session/persistence.js';
 import { mountQuizWidget, mountPracticeWidget, configureWidgetRuntimeEarly, handleQuizPick } from '../render/widgetScheduler.js';
 import { scrollContainer } from '../ui/scroll.js';

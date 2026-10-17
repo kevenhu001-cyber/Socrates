@@ -3,7 +3,7 @@
    Persisted in localStorage as `socrates-display`.
    ============================================================ */
 
-import { applyCustomBg, removeCustomBg, parseHexColor } from './util/colors.js';
+import { applyCustomBg, removeCustomBg, parseHexColor } from './util/colors.ts';
 import { DEFAULT_DARK_PICKER, DEFAULT_LIGHT_PICKER } from './ui/tokens.js';
 import { restingRect } from './ui/pressFeedback.js';
 

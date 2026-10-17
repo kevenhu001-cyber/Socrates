@@ -3,7 +3,7 @@ import { saveState, rememberDeletedSession } from '../../session/saveState.js';
 import { setCurrentSessionId } from '../../session/loader.js';
 import { setChatIdInURL } from '../../session/store.js';
 import { flushRecentsReconcile } from '../../session/recents.js';
-import { apiFetch } from '../../util/api.js';
+import { apiFetch } from '../../util/api.ts';
 import { activateMainView } from '../../ui/mainViewController.js';
 import { focusComposer } from '../../composer/controller.ts';
 import { clearComposerPlugins } from '../../react/composer/pluginSelection.ts';

@@ -1,5 +1,5 @@
 import { esc } from "../render/helpers.ts";
-import { apiFetch } from "../util/api.js";
+import { apiFetch } from "../util/api.ts";
 import { trTool } from "./toolCardHelpers.js";
 import { openArtifactPreview } from "./artifactPreview.js";
 

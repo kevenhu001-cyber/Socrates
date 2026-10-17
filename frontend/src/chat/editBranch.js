@@ -15,7 +15,7 @@ import {
 } from '../ui/messageActions.ts';
 import { stripMarkdown, formatMsg } from '../render/markdown.ts';
 import { buildUserContentParts } from '../chat/history.js';
-import { apiFetch } from '../util/api.js';
+import { apiFetch } from '../util/api.ts';
 import { showToast } from '../ui/toast.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { queueMessageOp } from '../session/mutationOutbox.js';

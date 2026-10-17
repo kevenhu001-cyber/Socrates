@@ -6,7 +6,7 @@ export type FailureSeverity = 'expected' | 'recoverable' | 'invariant';
  *
  * `/api/v2` bypasses the stale-CDN cache for `/api/*` and is rewritten to
  * `/api/*` by nginx in production and by the Express `apiV2Rewrite`
- * middleware locally — same shape as `util/api.js`'s `API_PREFIX`. It is
+ * middleware locally — same shape as `util/api.ts`'s `API_PREFIX`. It is
  * registered before `csrfProtection`, so no token is needed. Keep this a
  * single constant: `app/errorGuard.js` and this module must never drift onto
  * different spellings of the same route.

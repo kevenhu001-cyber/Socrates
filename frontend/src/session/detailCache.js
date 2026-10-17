@@ -1,6 +1,6 @@
 /* session/detailCache.js — P2 stale-while-revalidate session-detail cache.
  *
- * apiFetch forces `cb=<ts>` + `no-store` on every GET (util/api.js), so
+ * apiFetch forces `cb=<ts>` + `no-store` on every GET (util/api.ts), so
  * switching between history sessions re-paid the full round-trip AND the
  * JSON.parse of a multi-megabyte detail payload every single time — the
  * 2026-09-27 profile showed a revisit costing the same as a first visit
@@ -22,7 +22,7 @@
  * modules and to keep the unit test free of import-order concerns.
  */
 
-import { apiFetch } from '../util/api.js';
+import { apiFetch } from '../util/api.ts';
 
 var MAX_ENTRIES = 8;
 var MAX_ENTRY_BYTES = 3_000_000;   // 3 MB serialized cap per session

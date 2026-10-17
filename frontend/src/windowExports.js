@@ -37,8 +37,8 @@ window.thinkingOn = thinkingOn;
 import { toggleTheme } from './displayPrefs.js';
 window.toggleTheme = toggleTheme;
 
-/* ─── util/api.js ─── */
-import { apiFetch, getCsrfToken } from './util/api.js';
+/* ─── util/api.ts ─── */
+import { apiFetch, getCsrfToken } from './util/api.ts';
 window.apiFetch = apiFetch;
 window.getCsrfToken = getCsrfToken;
 

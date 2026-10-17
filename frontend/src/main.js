@@ -59,7 +59,7 @@ import { syncExtensionsUI, syncModelPills, syncWebSearchUI } from './pickers.js'
 import { bootstrapApp } from './app/bootstrap.js';
 import { installWidgetRuntime } from './app/widgetSetup.js';
 import { loadTonePreset } from './config/tonePresets.js';
-import { installAuthHooks } from './util/api.js';
+import { installAuthHooks } from './util/api.ts';
 import {
   syncAppModeUI, syncSidebarForMode,
 } from './config/providers.js';
