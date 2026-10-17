@@ -139,7 +139,7 @@
 .confirm-box,
 .sidebar-more-popover,
 .display-prefs-popover {
-  animation: ui-overlay-in var(--ui-duration-overlay, 160ms) var(--ui-ease-spring-gentle, var(--ui-ease-out)) both;
+  animation: ui-overlay-in var(--ui-duration-overlay) var(--ui-ease-spring-gentle) both;
 }
 
 .confirm-box[data-state="closing"],

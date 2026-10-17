@@ -50,7 +50,7 @@
   line-height:1;
 }
 .viz-status-dot{width:6px;height:6px;border-radius:50%;background:hsl(var(--accent-000));flex:0 0 auto}
-.viz[data-viz-state="loading"] .viz-status-dot{animation:search-progress-dot var(--ui-duration-pulse, 1.2s) ease-in-out infinite}
+.viz[data-viz-state="loading"] .viz-status-dot{animation:search-progress-dot var(--ui-duration-pulse) ease-in-out infinite}
 .viz[data-viz-state="loading"] .viz-status-label::before{content:"Rendering"}
 .viz[data-viz-state="ready"] .viz-status-label::before{content:"Interactive"}
 .viz[data-viz-state="ready"] .viz-status-dot{background:hsl(145 45% 45%)}
@@ -171,7 +171,7 @@
   width:10px;height:10px;border-radius:50%;
   border:1.5px solid hsl(var(--text-400)/0.4);
   border-top-color:hsl(var(--text-400));
-  animation:loadingSpin var(--ui-duration-spin, .9s) linear infinite;
+  animation:loadingSpin var(--ui-duration-spin) linear infinite;
   flex-shrink:0;
 }
 .viz-error{

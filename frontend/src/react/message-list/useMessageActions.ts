@@ -1,7 +1,7 @@
 import { stripIntelligenceUiBlocks } from '@socrates/core';
 import type { LegacyChatMessage } from '../types/domain';
 import type { MessageToolbarCallbacks } from './types';
-import { getLegacyActions } from '../legacy/gateway.ts';
+import { getLegacyActions, i18n } from '../legacy/gateway.ts';
 
 function messageIdOf(message: LegacyChatMessage): string | null {
   if (message.id) return message.id;
@@ -48,21 +48,21 @@ function fallbackCopy(text: string): void {
     ta.select();
     document.execCommand('copy');
     document.body.removeChild(ta);
-    getLegacyActions().messages.showToast?.('Copied');
+    getLegacyActions().messages.showToast?.(i18n('clipboard.copied', 'Copied to clipboard'));
   } catch (_) {
-    getLegacyActions().messages.showToast?.('Copy failed');
+    getLegacyActions().messages.showToast?.(i18n('clipboard.failed', 'Copy failed'));
   }
 }
 
 function doCopy(message: LegacyChatMessage): void {
   const text = plainTextOf(message);
   if (!text) {
-    getLegacyActions().messages.showToast?.('Nothing to copy');
+    getLegacyActions().messages.showToast?.(i18n('clipboard.nothing', 'Nothing to copy'));
     return;
   }
   if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
     navigator.clipboard.writeText(text).then(
-      () => getLegacyActions().messages.showToast?.('Copied to clipboard'),
+      () => getLegacyActions().messages.showToast?.(i18n('clipboard.copied', 'Copied to clipboard')),
       () => fallbackCopy(text),
     );
   } else {

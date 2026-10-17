@@ -820,7 +820,7 @@
   border-top-color: var(--ui-accent-strong);
   border-right-color: var(--ui-text-primary);
   box-sizing: border-box;
-  animation: workspaceLoadingSpin var(--ui-duration-spin, 0.9s) cubic-bezier(.4, 0, .2, 1) infinite;
+  animation: workspaceLoadingSpin var(--ui-duration-spin) cubic-bezier(.4, 0, .2, 1) infinite;
   will-change: transform;
 }
 
@@ -890,7 +890,7 @@
   background-repeat: no-repeat;
   background-size: 240% 100%;
   background-position: 150% 0;
-  animation: workspaceSkeletonShimmer var(--ui-duration-shimmer, 1.8s) linear infinite;
+  animation: workspaceSkeletonShimmer var(--ui-duration-shimmer) linear infinite;
   will-change: background-position;
 }
 

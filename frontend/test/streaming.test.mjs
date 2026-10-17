@@ -57,10 +57,11 @@ function restoreGlobal(name, descriptor) {
 }
 
 test('stream cadence adapts to response length', () => {
-  assert.equal(getStreamRenderInterval(0), 50);
-  assert.equal(getStreamRenderInterval(1999), 50);
-  assert.equal(getStreamRenderInterval(2000), 80);
-  assert.equal(getStreamRenderInterval(8000), 120);
+  assert.equal(getStreamRenderInterval(0), 33);
+  assert.equal(getStreamRenderInterval(1999), 33);
+  assert.equal(getStreamRenderInterval(31999), 33);
+  assert.equal(getStreamRenderInterval(32000), 50);
+  assert.equal(getStreamRenderInterval(200_000), 50);
 });
 
 test('stream splitting keeps completed blocks separate from the live tail', () => {

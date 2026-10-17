@@ -26,7 +26,7 @@ function AdminModal() {
       <div className="modal-card admin-modal" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
         <div className="modal-head">
           <h2 id="adminModalTitle">Admin configuration</h2>
-          <button type="button" className="modal-close" onClick={closeAdminModal} aria-label="Close admin configuration">
+          <button type="button" className="modal-close" onClick={closeAdminModal} aria-label="Close admin configuration" data-i18n-aria="admin.close">
             ×
           </button>
         </div>

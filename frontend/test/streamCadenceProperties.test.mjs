@@ -7,14 +7,14 @@ import { getStreamRenderInterval } from '../src/render/streaming.ts';
 
 const RUNS = 200;
 
-/* The three cadence tiers defined by getStreamRenderInterval:
-   len < 2000 -> 50ms, len < 8000 -> 80ms, otherwise -> 120ms. */
-const TIER_INTERVALS = [50, 80, 120];
+/* The two cadence tiers defined by getStreamRenderInterval:
+   len < 32000 -> 33ms, otherwise -> 50ms. */
+const TIER_INTERVALS = [33, 50];
 
 /* Tier boundaries used to build generators that straddle each edge, so the
    monotonicity check exercises the tier transitions rather than only the
    interior of a single tier. */
-const TIER_BOUNDARIES = [0, 1999, 2000, 7999, 8000];
+const TIER_BOUNDARIES = [0, 31999, 32000];
 
 /* A non-negative accumulated length, biased toward tier boundaries but also
    sampling the full range (including very large answers). */

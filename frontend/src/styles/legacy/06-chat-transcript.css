@@ -338,7 +338,7 @@ body.admin-active #topicDisclaimer{display:none!important}
    for another 220ms right after arrival. */
 .msg.user{animation:none;opacity:1;transform:none}
 .msg.user[data-bubble-arriving]{
-  animation:msgUserIn var(--bubble-fade-duration, 200ms) var(--ease-out) both;
+  animation:msgUserIn var(--bubble-fade-duration, 220ms) var(--ease-out) both;
 }
 .msg.turn-viewport-anchor{box-sizing:border-box}
 /* Keep transcript geometry exact. Height-estimated content-visibility made

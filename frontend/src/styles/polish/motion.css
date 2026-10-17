@@ -42,7 +42,7 @@
   animation: none;
 }
 #appShell .voice-recording-indicator::after {
-  animation: ui-recording-ring var(--ui-duration-pulse-slow, 1.6s) cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
+  animation: ui-recording-ring var(--ui-duration-pulse-slow) cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
 }
 
 @keyframes ui-recording-ring {
