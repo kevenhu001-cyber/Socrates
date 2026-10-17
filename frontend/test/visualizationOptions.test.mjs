@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { optionForChart } from '../src/render/visualizationOptions.js';
+import { optionForChart } from '../src/render/visualizationOptions.ts';
 
 const colors = {
   text: '#222', muted: '#777', line: '#ccc', grid: '#eee', surface: '#fff',

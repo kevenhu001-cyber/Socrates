@@ -1,5 +1,5 @@
 {
-  "count": 196,
+  "count": 195,
   "files": [
     "src/agent/researchAgent.js",
     "src/app/bootstrap.js",
@@ -109,7 +109,6 @@
     "src/pickers.js",
     "src/render/visualization.js",
     "src/render/visualizationAdapters.js",
-    "src/render/visualizationOptions.js",
     "src/render/viz.js",
     "src/render/vizStubs.js",
     "src/render/widgets.js",

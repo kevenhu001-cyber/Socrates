@@ -8,7 +8,7 @@ import { whenFontsReady } from './helpers.ts';
 import { ensureEcharts } from '../vendor/lazy.js';
 import { parseFunctionExpression, sampleFunction } from '@socrates/core/visualizationMath';
 import { categoryAxisLayout, formatCategoryLabel, truncateLabel } from './visualizationLabels.ts';
-import { optionForChart, VIZ_FONT_FAMILY } from './visualizationOptions.js';
+import { optionForChart, VIZ_FONT_FAMILY } from './visualizationOptions.ts';
 import { dispatchExtensionRepair, renderExtension } from './visualizationExtensions.ts';
 import { asVisualizationSpec } from './visualizationSpec.ts';
 import { renderSemanticVisualization, renderStructureVisualization, renderVisualizationTable } from './visualizationStatic.ts';

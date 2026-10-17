@@ -4,7 +4,9 @@ export interface CategoryAxisOptions {
   maxChars?: number;
   lineChars?: number;
   maxLines?: number;
-  rotate?: boolean;
+  /** Truthy when the axis already rotates labels; a degree value is accepted
+      because chart layouts pass `axisLayout.rotate` straight through. */
+  rotate?: boolean | number;
 }
 
 export interface CategoryAxisLayout {
