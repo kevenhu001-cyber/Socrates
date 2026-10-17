@@ -1,6 +1,6 @@
 /* Fullscreen and source dialogs for sandboxed visualization cards. */
 
-export function decodeSrcdoc(srcdoc) {
+export function decodeSrcdoc(srcdoc: string | null | undefined): string {
   return String(srcdoc || '')
     .replace(/&quot;/g, '"')
     .replace(/&lt;/g, '<')
@@ -8,38 +8,38 @@ export function decodeSrcdoc(srcdoc) {
     .replace(/&amp;/g, '&');
 }
 
-export function openVizModal(srcdoc, title) {
+export function openVizModal(srcdoc: string | null | undefined, title?: string): void {
   if (!srcdoc) return;
   // srcdoc is HTML-attribute-encoded when it comes from
   // data-srcdoc. Decode it back to raw HTML before stuffing it
   // into the modal iframe, which expects a raw srcdoc value.
-  var decoded = decodeSrcdoc(srcdoc);
-  var opener = document.activeElement;
-  var modal = document.createElement("div");
+  const decoded = decodeSrcdoc(srcdoc);
+  const opener = document.activeElement as HTMLElement | null;
+  const modal = document.createElement("div");
   modal.className = "viz-modal-backdrop";
   modal.onclick = function (e) { if (e.target === modal) close(); };
-  function close() {
+  function close(): void {
     modal.remove();
     document.removeEventListener("keydown", onKey);
     if (opener && typeof opener.focus === "function") opener.focus();
   }
-  function onKey(e) { if (e.key === "Escape") close(); }
+  function onKey(e: KeyboardEvent): void { if (e.key === "Escape") close(); }
   document.addEventListener("keydown", onKey);
-  var dialog = document.createElement("div");
+  const dialog = document.createElement("div");
   dialog.className = "viz-modal";
   dialog.setAttribute("role", "dialog");
   dialog.setAttribute("aria-label", "Canvas fullscreen");
   dialog.setAttribute("aria-modal", "true");
 
-  var head = document.createElement("div");
+  const head = document.createElement("div");
   head.className = "viz-modal-head";
 
-  var titleEl = document.createElement("span");
+  const titleEl = document.createElement("span");
   titleEl.className = "viz-modal-title";
   titleEl.textContent = title || "Canvas";
   head.appendChild(titleEl);
 
-  var closeButton = document.createElement("button");
+  const closeButton = document.createElement("button");
   closeButton.type = "button";
   closeButton.className = "viz-modal-close";
   closeButton.setAttribute("aria-label", "Close");
@@ -47,10 +47,10 @@ export function openVizModal(srcdoc, title) {
   closeButton.addEventListener("click", close);
   head.appendChild(closeButton);
 
-  var modalBody = document.createElement("div");
+  const modalBody = document.createElement("div");
   modalBody.className = "viz-modal-body";
 
-  var iframe = document.createElement("iframe");
+  const iframe = document.createElement("iframe");
   iframe.setAttribute("sandbox", "allow-scripts");
   iframe.setAttribute("title", "Canvas fullscreen");
   iframe.style.width = "100%";
@@ -74,33 +74,33 @@ export function openVizModal(srcdoc, title) {
    — the content is our own, not user-input. Shares the same shell,
    close button, Esc handler, and click-outside-to-close behaviour
    as the sandboxed version so the two modals feel identical. */
-export function openVizModalRaw(html, title) {
+export function openVizModalRaw(html: string | null | undefined, title?: string): void {
   if (!html) return;
-  var opener = document.activeElement;
-  var modal = document.createElement("div");
+  const opener = document.activeElement as HTMLElement | null;
+  const modal = document.createElement("div");
   modal.className = "viz-modal-backdrop";
   modal.onclick = function (e) { if (e.target === modal) close(); };
-  function close() {
+  function close(): void {
     modal.remove();
     document.removeEventListener("keydown", onKey);
     if (opener && typeof opener.focus === "function") opener.focus();
   }
-  function onKey(e) { if (e.key === "Escape") close(); }
+  function onKey(e: KeyboardEvent): void { if (e.key === "Escape") close(); }
   document.addEventListener("keydown", onKey);
-  var dialog = document.createElement("div");
+  const dialog = document.createElement("div");
   dialog.className = "viz-modal";
   dialog.setAttribute("role", "dialog");
   dialog.setAttribute("aria-label", title || "Fullscreen");
   dialog.setAttribute("aria-modal", "true");
 
-  var head = document.createElement("div");
+  const head = document.createElement("div");
   head.className = "viz-modal-head";
-  var titleEl = document.createElement("span");
+  const titleEl = document.createElement("span");
   titleEl.className = "viz-modal-title";
   titleEl.textContent = title || "Fullscreen";
   head.appendChild(titleEl);
 
-  var closeButton = document.createElement("button");
+  const closeButton = document.createElement("button");
   closeButton.type = "button";
   closeButton.className = "viz-modal-close";
   closeButton.setAttribute("aria-label", "Close");
@@ -108,7 +108,7 @@ export function openVizModalRaw(html, title) {
   closeButton.addEventListener("click", close);
   head.appendChild(closeButton);
 
-  var modalBody = document.createElement("div");
+  const modalBody = document.createElement("div");
   modalBody.className = "viz-modal-body viz-modal-body-raw";
   modalBody.innerHTML = html;
 
@@ -119,35 +119,35 @@ export function openVizModalRaw(html, title) {
   closeButton.focus();
 }
 
-export function openVizSourceModal(srcdoc, title) {
+export function openVizSourceModal(srcdoc: string | null | undefined, title?: string): void {
   if (!srcdoc) return;
-  var decoded = decodeSrcdoc(srcdoc);
-  var opener = document.activeElement;
-  var modal = document.createElement("div");
+  const decoded = decodeSrcdoc(srcdoc);
+  const opener = document.activeElement as HTMLElement | null;
+  const modal = document.createElement("div");
   modal.className = "viz-modal-backdrop";
-  function close() {
+  function close(): void {
     modal.remove();
     document.removeEventListener("keydown", onKey);
     if (opener && typeof opener.focus === "function") opener.focus();
   }
-  function onKey(e) { if (e.key === "Escape") close(); }
+  function onKey(e: KeyboardEvent): void { if (e.key === "Escape") close(); }
   document.addEventListener("keydown", onKey);
   modal.addEventListener("click", function (event) { if (event.target === modal) close(); });
 
-  var dialog = document.createElement("div");
+  const dialog = document.createElement("div");
   dialog.className = "viz-modal viz-source-modal";
   dialog.setAttribute("role", "dialog");
   dialog.setAttribute("aria-label", "Canvas source");
   dialog.setAttribute("aria-modal", "true");
 
-  var head = document.createElement("div");
+  const head = document.createElement("div");
   head.className = "viz-modal-head";
-  var titleEl = document.createElement("span");
+  const titleEl = document.createElement("span");
   titleEl.className = "viz-modal-title";
   titleEl.textContent = (title || "Canvas") + " source";
   head.appendChild(titleEl);
 
-  var copyButton = document.createElement("button");
+  const copyButton = document.createElement("button");
   copyButton.type = "button";
   copyButton.className = "viz-source-copy";
   copyButton.textContent = "Copy source";
@@ -160,7 +160,7 @@ export function openVizSourceModal(srcdoc, title) {
   });
   head.appendChild(copyButton);
 
-  var closeButton = document.createElement("button");
+  const closeButton = document.createElement("button");
   closeButton.type = "button";
   closeButton.className = "viz-modal-close";
   closeButton.setAttribute("aria-label", "Close");
@@ -168,9 +168,9 @@ export function openVizSourceModal(srcdoc, title) {
   closeButton.addEventListener("click", close);
   head.appendChild(closeButton);
 
-  var body = document.createElement("div");
+  const body = document.createElement("div");
   body.className = "viz-modal-body viz-source-body";
-  var pre = document.createElement("pre");
+  const pre = document.createElement("pre");
   pre.className = "viz-source-code";
   pre.textContent = decoded;
   body.appendChild(pre);

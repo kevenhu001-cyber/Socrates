@@ -22,8 +22,8 @@ import { stateStore } from '../state/store.js';
 import { wrapForCanvas } from './canvasWrap.ts';
 import { decodeEntities, esc, stripCitationMarkers, stripTags } from './helpers.ts';
 import { formatMsg } from './markdown.ts';
-import { extractScaffoldWidgets } from './scaffoldPipeline.js';
-import { scheduleWidgetMounts } from './widgetScheduler.js';
+import { extractScaffoldWidgets } from './scaffoldPipeline.ts';
+import { scheduleWidgetMounts } from './widgetScheduler.ts';
 import {
   parseExampleInner,
   parsePracticeInner,

@@ -6,9 +6,32 @@ import {
   parseKeyPointInner,
   parseProofInner,
   parseTheoremInner,
+  type ParsedTheorem,
 } from './widgetParsers.ts';
 
-function fallback(inner, t, esc) {
+export interface ScaffoldPlaceholder {
+  id: string;
+  parsed: unknown;
+}
+
+export interface ScaffoldDeps {
+  t: (key: string) => string;
+  esc: (value: unknown) => string;
+}
+
+/** A slot renderer that also carries the id prefix used for its placeholders. */
+interface SlotFactory {
+  (id: string): string;
+  prefix: string;
+}
+
+/** `parseTheoremInner` omits the hoisted <proof>; the caller reattaches it. */
+interface ParsedTheoremWithProof extends ParsedTheorem {
+  proofTitle?: string;
+  proofBody?: string;
+}
+
+function fallback(inner: string, t: ScaffoldDeps['t'], esc: ScaffoldDeps['esc']): string {
   return '<div class="inline-block-fallback"><div class="inline-block-fallback-label">'
     + t('tutor.fallbackWarn')
     + '</div><pre class="inline-block-fallback-content">'
@@ -16,8 +39,16 @@ function fallback(inner, t, esc) {
     + '</pre></div>';
 }
 
-function replaceBlocks(text, expression, parse, makeSlot, placeholders, t, esc) {
-  let match;
+function replaceBlocks(
+  text: string,
+  expression: RegExp,
+  parse: (inner: string) => unknown,
+  makeSlot: SlotFactory,
+  placeholders: ScaffoldPlaceholder[],
+  t: ScaffoldDeps['t'],
+  esc: ScaffoldDeps['esc'],
+): string {
+  let match: RegExpExecArray | null;
   let index = 0;
   while ((match = expression.exec(text)) !== null) {
     const parsed = parse(match[1]);
@@ -37,28 +68,40 @@ function replaceBlocks(text, expression, parse, makeSlot, placeholders, t, esc) 
 }
 
 /** Extract the non-interactive scaffold tags from assistant markdown. */
-export function extractScaffoldWidgets(source, { t, esc }) {
+export function extractScaffoldWidgets(
+  source: string,
+  { t, esc }: ScaffoldDeps,
+): {
+  text: string;
+  definitionPH: ScaffoldPlaceholder[];
+  stepPH: ScaffoldPlaceholder[];
+  flashcardPH: ScaffoldPlaceholder[];
+  derivationPH: ScaffoldPlaceholder[];
+  proofPH: ScaffoldPlaceholder[];
+  theoremPH: ScaffoldPlaceholder[];
+  keyPointPH: ScaffoldPlaceholder[];
+} {
   let text = source;
-  const definitionPH = [];
-  const stepPH = [];
-  const flashcardPH = [];
-  const derivationPH = [];
-  const proofPH = [];
-  const theoremPH = [];
-  const keyPointPH = [];
+  const definitionPH: ScaffoldPlaceholder[] = [];
+  const stepPH: ScaffoldPlaceholder[] = [];
+  const flashcardPH: ScaffoldPlaceholder[] = [];
+  const derivationPH: ScaffoldPlaceholder[] = [];
+  const proofPH: ScaffoldPlaceholder[] = [];
+  const theoremPH: ScaffoldPlaceholder[] = [];
+  const keyPointPH: ScaffoldPlaceholder[] = [];
 
   text = replaceBlocks(
     text,
     /<definition\b[^>]*>([\s\S]*?)<\/definition>/gi,
     parseDefinitionInner,
-    Object.assign((id) => `<div class="definition-slot" data-definition-id="${id}"></div>`, { prefix: 'def' }),
+    Object.assign((id: string) => `<div class="definition-slot" data-definition-id="${id}"></div>`, { prefix: 'def' }),
     definitionPH,
     t,
     esc,
   );
 
   const stepRe = /<step\b([^>]*?)>([\s\S]*?)<\/step>/gi;
-  let stepMatch;
+  let stepMatch: RegExpExecArray | null;
   let stepIndex = 0;
   while ((stepMatch = stepRe.exec(text)) !== null) {
     const attrs = stepMatch[1] || '';
@@ -83,7 +126,7 @@ export function extractScaffoldWidgets(source, { t, esc }) {
     text,
     /<flashcard\b[^>]*>([\s\S]*?)<\/flashcard>/gi,
     parseFlashcardInner,
-    Object.assign((id) => `<div class="flashcard-slot" data-flashcard-id="${id}"></div>`, { prefix: 'fc' }),
+    Object.assign((id: string) => `<div class="flashcard-slot" data-flashcard-id="${id}"></div>`, { prefix: 'fc' }),
     flashcardPH,
     t,
     esc,
@@ -92,7 +135,7 @@ export function extractScaffoldWidgets(source, { t, esc }) {
     text,
     /<derivation\b[^>]*>([\s\S]*?)<\/derivation>/gi,
     parseDerivationInner,
-    Object.assign((id) => `<div class="derivation-slot" data-derivation-id="${id}"></div>`, { prefix: 'der' }),
+    Object.assign((id: string) => `<div class="derivation-slot" data-derivation-id="${id}"></div>`, { prefix: 'der' }),
     derivationPH,
     t,
     esc,
@@ -101,20 +144,20 @@ export function extractScaffoldWidgets(source, { t, esc }) {
     text,
     /<proof\b[^>]*>([\s\S]*?)<\/proof>/gi,
     parseProofInner,
-    Object.assign((id) => `<div class="proof-slot" data-proof-id="${id}"></div>`, { prefix: 'prf' }),
+    Object.assign((id: string) => `<div class="proof-slot" data-proof-id="${id}"></div>`, { prefix: 'prf' }),
     proofPH,
     t,
     esc,
   );
 
   const theoremRe = /<theorem\b[^>]*>([\s\S]*?)<\/theorem>/gi;
-  let theoremMatch;
+  let theoremMatch: RegExpExecArray | null;
   let theoremIndex = 0;
   while ((theoremMatch = theoremRe.exec(text)) !== null) {
     const inner = theoremMatch[1];
     const proofMatch = inner.match(/<proof\b[^>]*>([\s\S]*?)<\/proof>/i);
     const proof = proofMatch ? parseProofInner(proofMatch[1]) : null;
-    const parsed = parseTheoremInner(inner.replace(/<proof\b[^>]*>[\s\S]*?<\/proof>/gi, ''));
+    const parsed = parseTheoremInner(inner.replace(/<proof\b[^>]*>[\s\S]*?<\/proof>/gi, '')) as ParsedTheoremWithProof | null;
     if (!parsed) {
       const replacement = fallback(inner, t, esc);
       text = text.slice(0, theoremMatch.index) + '\n\n' + replacement + '\n\n' + text.slice(theoremRe.lastIndex);
@@ -136,7 +179,7 @@ export function extractScaffoldWidgets(source, { t, esc }) {
     text,
     /<key-point\b[^>]*>([\s\S]*?)<\/key-point>/gi,
     parseKeyPointInner,
-    Object.assign((id) => `<div class="key-point-slot" data-key-point-id="${id}"></div>`, { prefix: 'kp' }),
+    Object.assign((id: string) => `<div class="key-point-slot" data-key-point-id="${id}"></div>`, { prefix: 'kp' }),
     keyPointPH,
     t,
     esc,

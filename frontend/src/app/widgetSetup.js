@@ -5,7 +5,7 @@
 import { stateStore } from '../state/store.js';
 import { apiFetch } from '../util/api.ts';
 import { saveCurrentSession } from '../session/persistence.js';
-import { mountQuizWidget, mountPracticeWidget, configureWidgetRuntimeEarly, handleQuizPick } from '../render/widgetScheduler.js';
+import { mountQuizWidget, mountPracticeWidget, configureWidgetRuntimeEarly, handleQuizPick } from '../render/widgetScheduler.ts';
 import { scrollContainer } from '../ui/scroll.js';
 import { createMistakeBook } from '../ui/mistakeBook.js';
 import { formatMsg } from '../render/markdown.ts';

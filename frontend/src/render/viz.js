@@ -31,11 +31,11 @@
 
 import { esc } from './helpers.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { decodeSrcdoc, openVizModal, openVizSourceModal } from './vizModals.js';
+import { decodeSrcdoc, openVizModal, openVizSourceModal } from './vizModals.ts';
 import {
   configureVizCardRegistry, findLiveVizFrame, parkVizCardForTest, reclaimVizCards,
   rememberLiveVizCard as _rememberLiveVizCard, unparkVizCardForTest,
-} from './vizCardRegistry.js';
+} from './vizCardRegistry.ts';
 import {
   configureVizMermaidQueue, mermaidCardIsNearViewportForTest, processPendingMermaid,
   resetMermaidGateForTest, schedulePendingMermaid,
@@ -44,7 +44,7 @@ export { parkVizCardForTest, unparkVizCardForTest, reclaimVizCards };
 export { mermaidCardIsNearViewportForTest, resetMermaidGateForTest };
 export { processPendingMermaid, schedulePendingMermaid };
 export { openVizModal };
-export { openVizModalRaw } from './vizModals.js';
+export { openVizModalRaw } from './vizModals.ts';
 import {
   _pendingViz,
   takePendingViz,
