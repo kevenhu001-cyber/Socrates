@@ -7,7 +7,7 @@ globalThis.localStorage = {
 };
 
 const { stateStore } = await import('../src/state/store.js');
-const { fallbackTitle, generateSessionTitle, normalizeSessionTitle } = await import('../src/chat/sessionTitle.js');
+const { fallbackTitle, generateSessionTitle, normalizeSessionTitle } = await import('../src/chat/sessionTitle.ts');
 
 test('session titles strip prefixes and stay short in both languages', () => {
   assert.equal(fallbackTitle('理解机器学习基本概念以及应用'), '理解机器学习基本');

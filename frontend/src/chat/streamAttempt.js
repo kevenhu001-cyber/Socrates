@@ -5,8 +5,8 @@ import { apiFetchRaw } from '../util/api.ts';
 import { buildChatRequestBody } from './api/requestBody.ts';
 import { consumeSseBuffer } from '../../../packages/core/src/index.ts';
 import { createChatTurn } from './turnClient.ts';
-import { recoverDetachedTurn } from './detachedTurnRecovery.js';
-import { createStreamFrameProcessor, makeStreamError } from './streamFrameProcessor.js';
+import { recoverDetachedTurn } from './detachedTurnRecovery.ts';
+import { createStreamFrameProcessor, makeStreamError } from './streamFrameProcessor.ts';
 import { isUserAbort } from './retryPolicy.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 

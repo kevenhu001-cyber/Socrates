@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createStreamFrameProcessor } from '../src/chat/streamFrameProcessor.js';
+import { createStreamFrameProcessor } from '../src/chat/streamFrameProcessor.ts';
 import { dispatchChatSseFrame } from '@socrates/core';
 import { doneLabel, runningLabel, errorLabel } from '../src/ui/toolInline/labels.ts';
 import { toolRunLabel } from '../src/ui/toolPresentationModel.ts';

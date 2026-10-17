@@ -1,6 +1,26 @@
-export function aiGenerate(topic){
-  var clean=topic.replace(/^(i want to |i'd like to |i would like to |learn about |learn |understand |study |explore )/i,"").replace(/[.!?]+$/,"").trim();
-  var domain=clean.length>30?clean.substring(0,27)+"...":clean;
+export interface MockDiagOption {
+  letter: string;
+  text: string;
+  level: 'internalized' | 'fuzzy' | 'blank';
+}
+export interface MockDiagQuestion {
+  q: string;
+  knowledgePoint: string;
+  subarea: string;
+  nodeIdx: number;
+  opts: MockDiagOption[];
+}
+export interface MockDiagTemplate {
+  knowledgePoint: string;
+  subarea: string;
+  nodeIdx: number;
+  q: string[];
+  opts: MockDiagOption[][];
+}
+
+export function aiGenerate(topic: string): { domain: string; nodes: unknown[]; diagQuestions: MockDiagQuestion[] } {
+  let clean=topic.replace(/^(i want to |i'd like to |i would like to |learn about |learn |understand |study |explore )/i,"").replace(/[.!?]+$/,"").trim();
+  let domain=clean.length>30?clean.substring(0,27)+"...":clean;
   domain=domain.charAt(0).toUpperCase()+domain.slice(1);
 
   /* Fixed 5-node KB skeleton, each carries the rich metadata that
@@ -11,7 +31,7 @@ export function aiGenerate(topic){
      2. Practical applications (应用场景)
      3. Common problems & pitfalls (常见问题处理)
      4. Critical analysis & advanced (批判性分析与进阶) */
-  var nodes=[
+  const nodes = [
     {name:"Basic concepts of "+domain,status:"blank",questions:0,system_note:"",user_note:"",confidence_score:0,history:[]},
     {name:"Core principles of "+domain,status:"blank",questions:0,system_note:"",user_note:"",confidence_score:0,history:[]},
     {name:"Practical applications of "+domain,status:"blank",questions:0,system_note:"",user_note:"",confidence_score:0,history:[]},
@@ -19,7 +39,7 @@ export function aiGenerate(topic){
     {name:"Critical analysis and advanced "+domain,status:"blank",questions:0,system_note:"",user_note:"",confidence_score:0,history:[]}
   ];
 
-  var diagQs=generateMockDiagQs(domain);
+  let diagQs=generateMockDiagQs(domain);
   return {domain:domain,nodes:nodes,diagQuestions:diagQs};
 }
 
@@ -27,12 +47,12 @@ export function aiGenerate(topic){
 /* Mock diagnostic questions for fallback when no API is configured.
    Each question is bound to a nodeIdx 0..4 (matching the fixed KB
    skeleton in aiGenerate) and to a subarea label. */
-export function generateMockDiagQs(domain){
+export function generateMockDiagQs(domain: string): MockDiagQuestion[] {
   /* The 5 fixed mock KB node names — used both to name the subareas and
      to seed the KB so the question's nodeIdx actually lines up.
      P_cold-start-coverage — aligned with the 5 knowledge dimensions. */
-  var subareaNames=["Basic concepts of "+domain,"Core principles of "+domain,"Practical applications of "+domain,"Common problems and pitfalls in "+domain,"Critical analysis and advanced "+domain];
-  var templates=[
+  let subareaNames=["Basic concepts of "+domain,"Core principles of "+domain,"Practical applications of "+domain,"Common problems and pitfalls in "+domain,"Critical analysis and advanced "+domain];
+  const templates: MockDiagTemplate[] = [
     {knowledgePoint:"core definitions and key vocabulary",subarea:subareaNames[0],nodeIdx:0,
      q:["How familiar are you with the core concepts of "+domain+"?","What is your current level of understanding of "+domain+"'s core ideas?"],
      opts:[
@@ -73,12 +93,17 @@ export function generateMockDiagQs(domain){
      ]}
   ];
   /* Shuffle order so successive mocks feel different. */
-  var pool=templates.slice();
-  for(var i=pool.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var tmp=pool[i];pool[i]=pool[j];pool[j]=tmp;}
-  return pool.map(function(t){
-    var qi=Math.floor(Math.random()*t.q.length);
-    var oi=Math.floor(Math.random()*t.opts.length);
-    return {q:t.q[qi],knowledgePoint:t.knowledgePoint,subarea:t.subarea,nodeIdx:t.nodeIdx,opts:t.opts[oi]};
+  const pool = templates.slice();
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = pool[i];
+    pool[i] = pool[j];
+    pool[j] = tmp;
+  }
+  return pool.map((t): MockDiagQuestion => {
+    const qi = Math.floor(Math.random() * t.q.length);
+    const oi = Math.floor(Math.random() * t.opts.length);
+    return { q: t.q[qi], knowledgePoint: t.knowledgePoint, subarea: t.subarea, nodeIdx: t.nodeIdx, opts: t.opts[oi] };
   });
 }
 

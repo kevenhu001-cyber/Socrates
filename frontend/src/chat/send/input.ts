@@ -10,7 +10,7 @@ import { serializeSelectedPluginContext } from '../../react/composer/pluginCatal
 import { buildMessageContent, resetAttachments, snapshotAttachments } from '../../attachments.js';
 import { renderAttachmentChips } from '../../attachments/render.js';
 import { updateComposerBtn } from '../../ui/topicSetup.js';
-import { addMessage } from '../messages.js';
+import { addMessage } from '../messages.ts';
 import { playSendGlyph } from '../../ui/sendGlyph.js';
 import {
   addStreamingMessage,

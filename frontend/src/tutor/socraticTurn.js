@@ -13,7 +13,7 @@ import { appendClientContextMessages } from '../chat/promptSuffixes.ts';
 import { injectTemplateSystemPrompt } from '../chat/templateSystemPrompt.ts';
 import { _origGenerateSocraticQuestion, _origGetExplanation } from '../chat/mocks.js';
 import { notifyMockFallbackOnce } from '../chat/mockFallbackNotice.ts';
-import { addMessage as _addMessage } from '../chat/messages.js';
+import { addMessage as _addMessage } from '../chat/messages.ts';
 import { scheduleTurnToTopForMessage } from '../chat/turnAnchor.ts';
 import { toolCallbacksForStream as _toolCallbacksForStream } from '../chat/toolCallbacks.ts';
 

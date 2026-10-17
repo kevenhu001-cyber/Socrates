@@ -15,14 +15,33 @@ import { generateId } from '../util/ids.ts';
 import { streamRetryViewport } from './turnState.ts';
 import { updateKB } from '../ui/knowledgePanel.js';
 
-function _renderAssistantHtml(text) {
-  if (typeof window !== 'undefined' && typeof window.renderAssistantHTML === 'function') {
-    return window.renderAssistantHTML(text);
+function _renderAssistantHtml(text: string): string {
+  const shell = window as { renderAssistantHTML?: (t: string) => string };
+  if (typeof window !== 'undefined' && typeof shell.renderAssistantHTML === 'function') {
+    return shell.renderAssistantHTML(text);
   }
   return formatMsg(text);
 }
 
-export function addMessage(role, text, type, actions, attachmentsArg) {
+/** The in-memory message entry pushed into the store. */
+interface MessageEntry {
+  clientId: string;
+  role: string;
+  rawText: string;
+  html: string;
+  type: string | null;
+  actions: unknown;
+  modelInfo: { label: string; model: string } | null;
+  attachments: unknown[];
+}
+
+export function addMessage(
+  role: string,
+  text: unknown,
+  type?: string | null,
+  actions?: unknown,
+  attachmentsArg?: unknown[],
+): string {
   /* User sending a message = explicitly wants to follow the conversation. */
   if (role === 'user') {
     streamRetryViewport.clearPendingViewport();
@@ -34,19 +53,21 @@ export function addMessage(role, text, type, actions, attachmentsArg) {
        stamped, so the browser clamped scrollTop and the transcript jumped
        by the reserve height on the send frame. */
     try {
-      var _activeTurnList = document.getElementById('msgList');
+      const _activeTurnList = document.getElementById('msgList') as (HTMLElement & { __socratesTurnViewportOwner?: unknown }) | null;
       if (_activeTurnList) delete _activeTurnList.__socratesTurnViewportOwner;
-    } catch (_) {}
+    } catch {
+      // empty-catch: intentional — the viewport-owner cleanup is best effort.
+    }
   }
   /* P1.1 — push to the authoritative stateStore.read("messages") first; the DOM
      is just a downstream view. */
-  var clientId = 'msg-' + generateId();
+  const clientId = 'msg-' + generateId();
 
   /* Use renderAssistantHTML for assistant messages containing scaffold
      XML tags so every Tutor scaffold, including the math-book blocks,
      is converted to its typed widget instead of raw XML text. */
-  var html;
-  var _displaySource = String(text || '');
+  let html: string;
+  let _displaySource = String(text || '');
   if (role === 'assistant') {
     /* P_strip-citations — assistant bubbles never show [1]/[2] search
        markers, including this direct-add path (re-explains, replayed
@@ -54,7 +75,8 @@ export function addMessage(role, text, type, actions, attachmentsArg) {
     _displaySource = stripCitationMarkers(_displaySource);
   }
   if (role === 'assistant' && /<(quiz|example|practice|definition|step|flashcard|proof|theorem|key-point|derivation)\b/i.test(_displaySource)) {
-    try { html = _renderAssistantHtml(_displaySource); } catch (_) { html = formatMsg(_displaySource); }
+    // empty-catch: intentional — a scaffold renderer failure falls back to plain markdown.
+    try { html = _renderAssistantHtml(_displaySource); } catch { html = formatMsg(_displaySource); }
   } else if (role === 'user') {
     /* P_user-msg-no-format — user bubbles render from `rawText` via
        MessageBody's empty-html fallback. formatMsg() runs synchronous
@@ -66,32 +88,32 @@ export function addMessage(role, text, type, actions, attachmentsArg) {
   } else {
     html = formatMsg(_displaySource);
   }
-  var modelInfo = null;
+  let modelInfo: { label: string; model: string } | null = null;
   if (role === 'assistant') {
-    var mp = getActiveProvider();
+    const mp = getActiveProvider();
     if (mp) modelInfo = { label: mp.label || mp.model || '', model: mp.model || '' };
   }
   /* P_attachments — keep the attachments array on the in-memory entry
    * so saveCurrentSession round-trips it. We normalise to the same
    * shape persistMessageList() expects. */
-  var atts = Array.isArray(attachmentsArg) ? attachmentsArg.slice(0, 20) : [];
-  var entry = { clientId: clientId, role: role, rawText: String(text || ''), html: html, type: type || null, actions: actions || null, modelInfo: modelInfo, attachments: atts };
+  const atts = Array.isArray(attachmentsArg) ? attachmentsArg.slice(0, 20) : [];
+  const entry: MessageEntry = { clientId: clientId, role: role, rawText: String(text || ''), html: html, type: type || null, actions: actions || null, modelInfo: modelInfo, attachments: atts };
   /* P_send-batch-actions — the click frame used to fire 2–3 separate
      stateStore.dispatch calls (state/set _userScrolledAway,
      session/append-message, tutor kb/patch-node). Each one paid a
      notify() walk over every React subscriber. Route them through
      state/batch-actions so the listener walk happens once at the end of
      the batch and React commits a single coherent snapshot. */
-  var _batchActions = [{ type: 'session/append-message', payload: entry }];
-  var _curIdx;
-  var _curNode;
+  const _batchActions: Array<Record<string, unknown>> = [{ type: 'session/append-message', payload: entry }];
+  let _curIdx = -1;
+  let _curNode: { status?: string; questions?: number } | undefined | null;
   if (role === 'user') {
     _batchActions.push({ type: 'state/set', key: '_userScrolledAway', value: false });
     /* KB read happens before dispatch so the array passed into the
        batch reflects the pre-click state, and so the conditional
        `kb/patch-node` action is only queued when there is real work. */
-    _curIdx = stateStore.read('currentNode');
-    var _nodes = stateStore.read('kbNodes');
+    _curIdx = stateStore.read('currentNode') as number;
+    const _nodes = stateStore.read('kbNodes');
     _curNode = _nodes && _nodes[_curIdx];
     if (_curNode && _curNode.status === 'blank') {
       _batchActions.push({
@@ -113,11 +135,13 @@ export function addMessage(role, text, type, actions, attachmentsArg) {
      composer collapse. Keep no second scroll owner here. */
   try {
     if (role === 'user' || role === 'assistant') {
-      try { appendLocalMemory(role, text); } catch (_) {}
+      // empty-catch: intentional — local memory must not block the message append.
+      try { appendLocalMemory(role, typeof text === 'string' ? text : null); } catch { /* best effort */ }
     }
     if (role === 'assistant') {
       if (stateStore.read('phase') === 'chat' || (stateStore.read('topic') && stateStore.read('kbNodes').length)) {
-        try { if (typeof window.saveCurrentSession === 'function') window.saveCurrentSession(); } catch (_) {}
+        const shell = window as { saveCurrentSession?: () => void };
+        try { if (typeof shell.saveCurrentSession === 'function') shell.saveCurrentSession(); } catch { /* best effort */ }
       }
     }
     /* P_kb-patch-node — the previous path rebuilt the entire kbNodes array
@@ -128,9 +152,9 @@ export function addMessage(role, text, type, actions, attachmentsArg) {
        per-row rebuild. The action is queued inside `_batchActions` above so
        it commits in the same notify as session/append-message. */
     if (role === 'user' && _curNode && _curNode.status === 'blank') {
-      try { updateKB(); } catch (_) {}
+      try { updateKB(); } catch { /* best effort */ }
     }
-  } catch (_) {}
+  } catch { /* side effects are best effort */ }
   /* Return the clientId so callers (e.g. startSession) can patch this
      entry in place once async work like buildMessageContent finishes —
      without re-running the side effects above. */

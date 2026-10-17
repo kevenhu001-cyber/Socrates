@@ -26,7 +26,7 @@ import { closeConfirm, showConfirm } from '../ui/confirm.js';
 import { deleteUserMessage, sendFeedback, restorePersistedMessageExtras } from '../ui/messageActions.ts';
 import { buildAssistantHtml as renderAssistantHTML } from '../render/assistantHtml.ts';
 import { showToast } from '../ui/toast.js';
-import { addMessage } from '../chat/messages.js';
+import { addMessage } from '../chat/messages.ts';
 import { askNextQuestion } from '../tutor/socraticTurn.js';
 import { saveCurrentSession } from '../session/persistence.ts';
 /* chat/webSearch.js (~16KB) is lazy — the window.fetchWebContext proxy

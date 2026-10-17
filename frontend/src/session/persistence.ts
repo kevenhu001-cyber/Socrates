@@ -15,7 +15,7 @@ import { serverCache } from './serverCache.ts';
 import { patchSessionRow, type SavedSession } from './recentsReconcile.ts';
 import { buildBeaconPayload, type BeaconPayload } from './beacon.ts';
 import { buildDeltaPayload, commitSynced, createFingerprintCache, seedSynced, stateFingerprint, type MessageLike } from './saveDelta.ts';
-import { generateSessionTitle } from '../chat/sessionTitle.js';
+import { generateSessionTitle } from '../chat/sessionTitle.ts';
 import { markCmdKIndexDirty } from '../ui/cmdK.js';
 import { toggleShareBtn } from '../ui/share.js';
 import { showToast } from '../ui/toast.js';

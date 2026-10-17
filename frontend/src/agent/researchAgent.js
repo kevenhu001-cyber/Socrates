@@ -13,7 +13,7 @@
 
 import { stateStore } from '../state/store.js';
 import { showToast } from '../ui/toast.js';
-import { fetchPagesForContext } from '../chat/webLinks.js';
+import { fetchPagesForContext } from '../chat/webLinks.ts';
 import { loadWebSearch } from '../chat/webSearchLoader.ts';
 
 /* Start a deep research session. Returns a Promise that resolves

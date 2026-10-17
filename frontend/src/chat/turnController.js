@@ -19,12 +19,12 @@ import {
 import { injectTemplateSystemPrompt } from './templateSystemPrompt.ts';
 import { languageDirectiveFor } from './lang.ts';
 import { CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT } from './systemPrompts.ts';
-import { CHAT_PAGE_CONTEXT_TIMEOUT_MS, extractHttpUrls, fetchPagesForContext, looksLikeUserMentionedSite } from './webLinks.js';
+import { CHAT_PAGE_CONTEXT_TIMEOUT_MS, extractHttpUrls, fetchPagesForContext, looksLikeUserMentionedSite } from './webLinks.ts';
 import { renderLinkPreviews, renderNoUrlHint } from '../ui/linkPreviews.js';
 import { getReasoningEffort } from '../ui/effortPicker.js';
 import { publishActiveWorkflowEvent, publishActiveWorkflowFinish, publishWorkspaceAgentEvent } from './toolCallbacks.ts';
 import { clearPendingTurn, newClientTurnId, savePendingTurn } from './turnClient.ts';
-import { addMessage } from './messages.js';
+import { addMessage } from './messages.ts';
 import { scheduleTurnToTopForMessage } from './turnAnchor.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';

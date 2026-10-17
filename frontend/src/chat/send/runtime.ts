@@ -1,5 +1,5 @@
 import { reportSwallow } from '../../util/reportSwallow.ts';
-import { addMessage } from '../messages.js';
+import { addMessage } from '../messages.ts';
 import { scheduleTurnToTopForMessage } from '../turnAnchor.ts';
 import type { StreamingTurnController } from '../turnState.ts';
 

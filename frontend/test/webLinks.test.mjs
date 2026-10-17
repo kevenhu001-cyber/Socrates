@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
-import { fetchPagesForContext } from '../src/chat/webLinks.js';
+import { fetchPagesForContext } from '../src/chat/webLinks.ts';
 
 const dom = new JSDOM('', { url: 'http://localhost/' });
 globalThis.window = dom.window;

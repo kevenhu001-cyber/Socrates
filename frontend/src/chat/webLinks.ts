@@ -10,7 +10,7 @@ const PAGE_CONTEXT_TIMEOUT_MS = 10_000;
    words like "网站"、"网址"、"网页"、"site"、"homepage", or for
    "看看/visit/check/打开" near a domain-shaped word. Conservative
    enough to avoid false positives in pure conceptual Q&A. */
-export function looksLikeUserMentionedSite(text){
+export function looksLikeUserMentionedSite(text: string): boolean {
   if(!text)return false;
   if(/网站|网址|网页|主页|站点|官网|链接|URL|url/i.test(text))return true;
   if(/\b(visit|open|check|go to|browse|look at|see|read|fetch)\b/i.test(text)
@@ -34,12 +34,12 @@ export function looksLikeUserMentionedSite(text){
    Conservative rules: we only auto-promote a bare domain if it contains
    at least one dot and the TLD looks plausible (≥ 2 alpha chars). This
    avoids grabbing every word like "github" in prose. */
-export function extractHttpUrls(text){
+export function extractHttpUrls(text: string): string[] {
   if(!text)return[];
-  var seen=Object.create(null);
-  var out=[];
+  const seen = Object.create(null) as Record<string, number>;
+  const out: string[] = [];
 
-  function add(u){
+  function add(u: string | undefined): void {
     if(!u)return;
     /* Strip common trailing punctuation. */
     u=u.replace(/[.,;:!?\]）】」』\)]+$/,"");
@@ -51,8 +51,8 @@ export function extractHttpUrls(text){
   }
 
   /* (1) http(s)://... */
-  var re1=/https?:\/\/[^\s一-鿿\u3000-〿＀-￯"'<>)\]】」』]+/gi;
-  var m;
+  const re1=/https?:\/\/[^\s一-鿿\u3000-〿＀-￯"'<>)\]】」』]+/gi;
+  let m: RegExpExecArray | null;
   while((m=re1.exec(text))!==null){
     add(m[0]);
     if(out.length>=3)break;
@@ -68,32 +68,32 @@ export function extractHttpUrls(text){
      wrote something like "report.pdf" or "image.png" — those are
      filenames, not URLs. We still allow the same token if the user
      wrote "www." or included a "/" path. */
-  var FILE_EXTS=("pdf doc docx xls xlsx ppt pptx zip rar 7z tar gz "+
+  let FILE_EXTS=("pdf doc docx xls xlsx ppt pptx zip rar 7z tar gz "+
     "jpg jpeg png gif webp svg mp3 mp4 mov avi mkv exe dmg iso "+
     "txt md rtf csv json xml html htm").split(" ");
-  var re2=/(?:^|[^\w一-鿿＠@])([a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+(?:\/[^\s一-鿿\u3000-〿＀-￯"'<>)\]】」』]*)?)/gi;
+  const re2=/(?:^|[^\w一-鿿＠@])([a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+(?:\/[^\s一-鿿\u3000-〿＀-￯"'<>)\]】」』]*)?)/gi;
   while((m=re2.exec(text))!==null){
-    var d=m[1];
+    const d = m[1];
     if(!d)continue;
     if(d.indexOf(".")===-1)continue;
     /* TLD is the part after the LAST dot in the host portion only.
        The host stops at the first "/" so "example.com/about" reads
        the TLD as "com", not the path's last segment. */
-    var host=d.split("/")[0];
-    var lastDot=host.lastIndexOf(".");
-    var tld=host.slice(lastDot+1);
+    const host = d.split("/")[0];
+    const lastDot = host.lastIndexOf(".");
+    const tld = host.slice(lastDot + 1);
     if(!/^[a-z]{2,}$/i.test(tld))continue;
     if(/^\d+(\.\d+)+$/.test(d))continue;
     /* Reject filename-style matches: "report.pdf" — no path AND no
        "www." AND the last segment is a known file extension. If the
        user actually wants a URL ending in .pdf, they'll paste the
        full https:// form, which the first regex already handles. */
-    var hasPath=d.indexOf("/")!==-1;
-    var hasWww=/^www\./i.test(d);
+    const hasPath = d.indexOf("/") !== -1;
+    const hasWww = /^www\./i.test(d);
     if(!hasPath&&!hasWww){
-      var t=tld.toLowerCase();
-      var isFile=false;
-      for(var fi=0;fi<FILE_EXTS.length;fi++){if(FILE_EXTS[fi]===t){isFile=true;break}}
+      const t = tld.toLowerCase();
+      let isFile = false;
+      for (const ext of FILE_EXTS) { if (ext === t) { isFile = true; break; } }
       if(isFile)continue;
     }
     add("https://"+d);
@@ -107,11 +107,27 @@ export function extractHttpUrls(text){
    link-preview cards in the user bubble. Failures degrade to a small
    error line per page so the assistant can still acknowledge the link
    in its answer. */
-export async function fetchPagesForContext(urls, options = {}){
+/** One entry of the /api/fetch-batch response. */
+export interface FetchedPage {
+  ok: boolean;
+  title?: string;
+  truncated?: boolean;
+  content?: string;
+  reason?: string;
+}
+export interface ReferencedPageBlocks {
+  blocks: string[];
+  results: FetchedPage[];
+}
+
+export async function fetchPagesForContext(
+  urls: string[],
+  options: { signal?: AbortSignal | null; timeoutMs?: number } = {},
+): Promise<ReferencedPageBlocks> {
   if(!Array.isArray(urls)||!urls.length)return{blocks:[],results:[]};
   const linked = linkAbortSignal(options.signal, 'chat.webLinks');
   let timedOut = false;
-  let rejectOnAbort;
+  let rejectOnAbort!: () => void;
   const aborted = new Promise((_, reject) => {
     rejectOnAbort = () => reject(new Error(timedOut ? 'page retrieval timed out' : 'page retrieval cancelled'));
     if (linked.controller.signal.aborted) rejectOnAbort();
@@ -124,15 +140,15 @@ export async function fetchPagesForContext(urls, options = {}){
   try{
     // Race the full JSON operation as well as aborting transport: a stalled
     // response body or fetch mock must not hold the chat preparation open.
-    var r=await Promise.race([
+    const r = await Promise.race([
       apiFetch("/api/fetch-batch",{method:"POST",body:{urls:urls},signal:linked.controller.signal}),
       aborted,
-    ]);
+    ]) as { results?: FetchedPage[] } | null;
     const results=(r&&r.results)||[];
-    const blocks=[];
-    for(var i=0;i<urls.length;i++){
-      var u=urls[i];
-      var f=results[i];
+    const blocks: string[] = [];
+    for(let i=0;i<urls.length;i++){
+      const u=urls[i];
+      const f=results[i];
       if(f&&f.ok&&f.content){
         blocks.push(
           "[Referenced page] "+u+"\n"+
@@ -141,15 +157,15 @@ export async function fetchPagesForContext(urls, options = {}){
           f.content
         );
       }else{
-        var reason=(f&&f.reason)||"fetch failed";
+        const reason=(f&&f.reason)||"fetch failed";
         blocks.push("[Referenced page] "+u+"\n(could not retrieve: "+reason+")");
       }
     }
     return{blocks:blocks,results:results};
   }catch(e){
-    const emsg=(e&&e.message)||String(e);
+    const emsg=(e as { message?: string })?.message||String(e);
     const blocks=urls.map(function(u){return"[Referenced page] "+u+"\n(could not retrieve: "+emsg+")"});
-    const results=urls.map(function(){return{ok:false,reason:emsg}});
+    const results: FetchedPage[] =urls.map(function(){return{ok:false,reason:emsg}});
     return{blocks:blocks,results:results};
   } finally {
     clearTimeout(timer);

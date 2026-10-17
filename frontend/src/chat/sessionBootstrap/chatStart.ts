@@ -6,7 +6,7 @@ import { saveCurrentSession } from '../../session/persistence.ts';
 import { askChatTurn } from '../turnController.js';
 import { isExpectedTurnAbort } from '../turnUi.ts';
 import { setActiveTemplate } from '../templateSlash.js';
-import { addMessage } from '../messages.js';
+import { addMessage } from '../messages.ts';
 import { updateKB } from '../../ui/knowledgePanel.js';
 import { activateMainView } from '../../ui/mainViewController.js';
 import { clearComposer } from '../../composer/controller.ts';

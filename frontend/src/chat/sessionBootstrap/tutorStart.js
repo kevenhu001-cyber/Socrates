@@ -13,7 +13,7 @@ import { updateComposerBtn } from '../../ui/topicSetup.js';
 import { syncChatModel, getActiveProvider } from '../../pickers.js';
 import { loadWebSearch } from '../webSearchLoader.ts';
 import { generateTopicKBNodes } from '../topicKbNodes.ts';
-import { generateDiagnosticQuestions } from '../diagnosticGenerator.js';
+import { generateDiagnosticQuestions } from '../diagnosticGenerator.ts';
 import { updateKB } from '../../ui/knowledgePanel.js';
 import { renderDiagQuestion, proceedToTeaching } from '../../tutor/diagnosticFlow.js';
 import { buildFallbackDiagnosticQuestions, shouldAutoSearchTutor } from '../../tutor/policy.js';

@@ -6,16 +6,16 @@ import { stateStore } from '../state/store.js';
    Called fire-and-forget on first save. A short cooldown prevents repeated
    saves from amplifying a 429 while still allowing a later retry.
    Uses the user's initial topic as context. */
-var _titleGenQueued=false;
-var _titleGenSession=null;
-var _titleGenRetryAfter=0;
-var _titleFallbackSession=null;
-var _titleFallbackValue=null;
+let _titleGenQueued = false;
+let _titleGenSession: string | null = null;
+let _titleGenRetryAfter = 0;
+let _titleFallbackSession: string | null = null;
+let _titleFallbackValue: string | null = null;
 
 /** A cheap local fallback so every session gets a short title even when the
  *  provider is unavailable. Keeps Chinese under ~8 chars and English under
  *  ~6 words so the Recents row never wraps. */
-function cleanTitle(value){
+function cleanTitle(value: unknown): string {
   return String(value||"")
     .replace(/<think>[\s\S]*?<\/think>/gi,"")
     .replace(/<think>[\s\S]*$/gi,"")
@@ -29,36 +29,36 @@ function cleanTitle(value){
     .replace(/^[\s\-•·—:"'\u201c\u201d\u2018\u2019「」『』]+|[\s\-•·—:"'\u201c\u201d\u2018\u2019「」『』]+$/g,"");
 }
 
-function compactTitle(value){
-  var clean=cleanTitle(value);
+function compactTitle(value: unknown): string {
+  let clean=cleanTitle(value);
   if(!clean)return "";
-  var isZh=/[\u3400-\u9fff]/.test(clean);
-  var sentence=clean.split(isZh ? /[。！？!?;\n]/ : /[.!?\n]/)[0].trim();
+  let isZh=/[\u3400-\u9fff]/.test(clean);
+  let sentence=clean.split(isZh ? /[。！？!?;\n]/ : /[.!?\n]/)[0].trim();
   if(!sentence)sentence=clean;
   if(isZh)return Array.from(sentence).slice(0,8).join("").replace(/[\s，。！？；：、]+$/g,"");
   return sentence.split(/\s+/).slice(0,6).join(" ").replace(/[\s.,;:!?]+$/g,"");
 }
 
-export function fallbackTitle(topic){
+export function fallbackTitle(topic: unknown): string {
   return compactTitle(topic);
 }
 
-export function normalizeSessionTitle(value){
+export function normalizeSessionTitle(value: unknown): string {
   return compactTitle(value);
 }
 
-export function generateSessionTitle(){
-  var sessionId=stateStore.read("currentSessionId");
-  var topic=(stateStore.read("topic")||"").replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/<think>[\s\S]*$/gi,"").trim();
+export function generateSessionTitle(): void {
+  const sessionId = stateStore.read("currentSessionId") as string;
+  const topic=(stateStore.read("topic")||"").replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/<think>[\s\S]*$/gi,"").trim();
   if(!sessionId||!topic)return;
-  var currentTitle=stateStore.read("sessionTitle")||"";
-  var ownsFallback=_titleFallbackSession===sessionId&&currentTitle===_titleFallbackValue;
+  const currentTitle = (stateStore.read("sessionTitle") as string) || "";
+  let ownsFallback=_titleFallbackSession===sessionId&&currentTitle===_titleFallbackValue;
   if(currentTitle&&!ownsFallback)return;
   if(_titleGenQueued&&_titleGenSession===sessionId)return;
   /* P_title-429 — background title generation must not turn repeated saves
      into a request storm after a rate-limit response. */
   if(_titleGenSession===sessionId&&Date.now()<_titleGenRetryAfter)return;
-  var fallback=fallbackTitle(topic);
+  const fallback = fallbackTitle(topic);
   if(!currentTitle&&fallback){
     stateStore.dispatch({type:'state/set',key:'sessionTitle',value:fallback});
     _titleFallbackSession=sessionId;
@@ -71,10 +71,11 @@ export function generateSessionTitle(){
   /* Title language follows the language the user actually wrote the
      topic in; the UI preference is only a fallback when the topic
      carries no detectable language signal. */
-  var isZh = /[\u4e00-\u9fff]/.test(topic)
+  const isZh = /[\u4e00-\u9fff]/.test(topic)
     ? true
-    : (/[A-Za-z]/.test(topic) ? false : window._currentLang === "zh");
-  var prompt, sysContent;
+    : (/[A-Za-z]/.test(topic) ? false : (window as { _currentLang?: string })._currentLang === "zh");
+  let prompt: string;
+  let sysContent: string;
   if (isZh) {
     prompt = "基于用户的第一条消息，生成一个简短的中文陈述式标题（3-8个字），"+
       "概括会话内容。示例：「探索量子计算」、「理解机器学习基础」、「学会更优写作」。\n"+
@@ -90,9 +91,10 @@ export function generateSessionTitle(){
       "Output ONLY the title, no quotes, no extra text.\n\n"+topic.slice(0,300);
     sysContent = "Do NOT output <think>...</think> blocks, internal reasoning, or chain-of-thought. Reply directly with the final title in clean prose. No preamble.";
   }
-  var sysMsg={role:"system",content:sysContent};
-  var userMsg={role:"user",content:prompt};
-  var msgs2=[sysMsg,userMsg];
+  const msgs2 = [
+    { role: "system", content: sysContent },
+    { role: "user", content: prompt },
+  ] as const;
   /* Background-only call: never trigger the global 401 → auth-gate flow.
      A title request that races a real session expiry (or a rate limit)
      must fail silently — the main chat turn already owns the user-visible
@@ -101,7 +103,7 @@ export function generateSessionTitle(){
   apiFetch("/api/chat",{method:"POST",_authEndpoint:true,body:{messages:msgs2,temperature:0.3,max_tokens:30,mode:"chat"}}).then(function(r){
     if(_titleGenSession===sessionId)_titleGenQueued=false;
     if(stateStore.read("currentSessionId")!==sessionId)return;
-    var raw=(r&&typeof r.content==="string")?r.content:
+    let raw=(r&&typeof r.content==="string")?r.content:
       (r&&r.choices&&r.choices[0]&&r.choices[0].message&&r.choices[0].message.content)||"";
     if(!raw)return;
     /* Mirror the strips formatMsg() / stripChatArtifacts() apply to
@@ -110,9 +112,9 @@ export function generateSessionTitle(){
      *  - chat-template tokens (<|im_start|>, <s>, [INST], etc.)
      *  - any leading punctuation the model added (quotes, dashes,
      *    bullets) that would look ugly in a sidebar title. */
-    var title=normalizeSessionTitle(raw);
-    var latestTitle=stateStore.read("sessionTitle")||"";
-    var stillOwnsTitle=_titleFallbackSession===sessionId&&latestTitle===_titleFallbackValue;
+    const title = normalizeSessionTitle(raw);
+    const latestTitle = (stateStore.read("sessionTitle") as string) || "";
+    let stillOwnsTitle=_titleFallbackSession===sessionId&&latestTitle===_titleFallbackValue;
     if(latestTitle&&!stillOwnsTitle)return;
     if(title&&title.length>2){
       /* P_title-save-race — only save the title if the session is
@@ -126,16 +128,17 @@ export function generateSessionTitle(){
         _titleFallbackValue=null;
       }
       _titleGenRetryAfter=0;
-      if (typeof window.saveCurrentSession === "function") window.saveCurrentSession();
+      const win = window as { saveCurrentSession?: () => void };
+      if (typeof win.saveCurrentSession === "function") win.saveCurrentSession();
     }
-  }).catch(function(e){
+  }).catch(function(e: unknown){
     if(_titleGenSession===sessionId)_titleGenQueued=false;
     /* P_title-quiet — 401 (session gone; the main turn already showed the
        gate) and 429 (rate-limited; the main turn already owns the retry
        toast) are expected background failures: stay silent and, for 429,
        back off longer so the next save doesn't re-hit the same bucket.
        Only log unexpected failures to keep the console useful. */
-    var st=e&&e.status;
+    const st=(e as { status?: number })?.status;
     if(st===429){if(_titleGenSession===sessionId)_titleGenRetryAfter=Date.now()+5*60*1000;return;}
     if(st===401)return;
     console.log("[title gen] failed");

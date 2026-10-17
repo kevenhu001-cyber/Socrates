@@ -45,7 +45,7 @@ test('completed detached turn only emits the text missing from the live stream',
     turn: { id: 'turn-1', status: 'completed', fullText: 'Known answer continues.' },
     events: [],
   });
-  const { recoverDetachedTurn } = await import('../src/chat/detachedTurnRecovery.js');
+  const { recoverDetachedTurn } = await import('../src/chat/detachedTurnRecovery.ts');
   const emitted = [];
 
   const result = await recoverDetachedTurn('turn-1', {
@@ -75,7 +75,7 @@ test('open detached turn replays typed events and completes after turn_done', as
       events: [],
     });
   };
-  const { recoverDetachedTurn } = await import('../src/chat/detachedTurnRecovery.js');
+  const { recoverDetachedTurn } = await import('../src/chat/detachedTurnRecovery.ts');
   const emitted = [];
 
   const result = await recoverDetachedTurn('turn-1', {
@@ -97,7 +97,7 @@ test('a completed reconnect replays public runtime events before returning the r
     turn: { id: 'turn-1', status: 'completed', fullText: 'Recovered.' },
     events: [{ sequence: 10, event: 'turn_event', data: runtimeEvent }],
   });
-  const { recoverDetachedTurn } = await import('../src/chat/detachedTurnRecovery.js');
+  const { recoverDetachedTurn } = await import('../src/chat/detachedTurnRecovery.ts');
   const events = [];
   const result = await recoverDetachedTurn('turn-1', { currentFull: '', onDelta() {}, opts: { onTurnEvent: (event) => events.push(event) }, signal: new AbortController().signal });
   assert.deepEqual(events, [runtimeEvent]);
@@ -109,7 +109,7 @@ test('completed recovery restores a checkpoint beyond the initial event-history 
   const { createTurnRuntime, reduceTurnEvent } = await import('@socrates/core');
   const snapshot = reduceTurnEvent(createTurnRuntime('turn-1'), { version: 1, turnId: 'turn-1', seq: 800, at: 100, type: 'turn.done', phase: 'done' });
   globalThis.fetch = async () => jsonResponse({ turn: { id: 'turn-1', status: 'completed', fullText: 'Done.', turnRuntime: snapshot }, events: [] });
-  const { recoverDetachedTurn } = await import('../src/chat/detachedTurnRecovery.js');
+  const { recoverDetachedTurn } = await import('../src/chat/detachedTurnRecovery.ts');
   const snapshots = [];
   await recoverDetachedTurn('turn-1', { currentFull: '', onDelta() {}, opts: { onTurnSnapshot: (value) => snapshots.push(value) }, signal: new AbortController().signal });
   assert.deepEqual(snapshots, [snapshot]);
