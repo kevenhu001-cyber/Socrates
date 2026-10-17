@@ -17,7 +17,7 @@ The schema is divided into 5 business domains + shared types:
 
 ## Rules
 
-1. **Re-export Invariant**: `server/src/db/schema/index.ts` re-exports all domain schemas, and `server/src/db/schema.ts` forwards `* from './schema/index.js'` for 100% backward compatibility with existing code and `drizzle.config.js`.
+1. **Single Entry Point**: `server/src/db/schema/index.ts` re-exports all domain schemas. Import it as `db/schema/index.js`; there is no flat `db/schema.ts` forwarding file (removed 2026-10-17), and `drizzle.config.js` points at the same index.
 2. **Foreign Key Invariant**: Always use arrow functions for table references: `() => targetTable.id`. This avoids cyclic module initialization hazards.
 3. **Drift Guard**: Any change to these files must produce zero drift against the Drizzle migration snapshots. Verify with:
    ```bash

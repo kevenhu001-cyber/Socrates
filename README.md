@@ -7,19 +7,19 @@
 [![App status](https://img.shields.io/badge/app-online-d8a85b?style=flat-square)](https://app.topodrive.top/)
 [![Backend](https://img.shields.io/badge/backend-TypeScript%20%2B%20Node.js-3178c6?style=flat-square&logo=typescript&logoColor=white)](server/)
 [![Frontend](https://img.shields.io/badge/frontend-Vite%20SPA-f3c769?style=flat-square&logo=vite&logoColor=black)](frontend/)
-[![Android](https://img.shields.io/badge/android-React%20Native%20%2B%20Expo-3DDC84?style=flat-square&logo=android&logoColor=white)](mobile/)
+[![Universal App](https://img.shields.io/badge/universal%20app-React%20Native%20%2B%20Expo-3DDC84?style=flat-square&logo=android&logoColor=white)](apps/socrates/)
 [![Database](https://img.shields.io/badge/database-PostgreSQL%2014%2B-4169e1?style=flat-square&logo=postgresql&logoColor=white)](server/src/db/)
 [![Source availability](https://img.shields.io/badge/source-available-555555?style=flat-square)](#source-availability-and-use)
 
 **Socrates — AI-powered Socratic tutor**  
 Streaming chat with reasoning models, interactive viz canvases, KaTeX math,
 document extraction (PDF/DOCX/XLSX/PPTX/EPUB/RTF), projects & tags, agent mode,
-cross-session memory, and a native Android client.
+cross-session memory, and a universal React Native client for Android and Web.
 
 [中文版说明 →](README.zh.md) ·
 [Live app](https://app.topodrive.top/) ·
 [OpenAPI spec](docs/api/openapi.yaml) ·
-[Android build](.github/workflows/build-apk.yml)
+[Universal App build](.github/workflows/universal-app-build.yml)
 
 </div>
 
@@ -36,7 +36,7 @@ cross-session memory, and a native Android client.
 - [Quick start](#quick-start)
   - [1. Frontend (Vite SPA)](#1-frontend-vite-spa)
   - [2. Backend API server](#2-backend-api-server)
-  - [3. Android client](#3-android-client)
+  - [3. Universal App (optional)](#3-universal-app-optional)
 - [Configuration](#configuration)
 - [Custom rendering pipeline](#custom-rendering-pipeline)
 - [API reference](#api-reference)
@@ -174,7 +174,7 @@ builds and copies the bundle into the nginx web root.
 ### Backend
 
 - **Express 5 + Drizzle ORM + PostgreSQL** with a typed schema
-  (see [`server/src/db/schema.ts`](server/src/db/schema.ts)).
+  (see [`server/src/db/schema/index.ts`](server/src/db/schema/index.ts)).
 - **Cookie-based auth** (`sid` cookie + CSRF double-submit), with
   pending-registration email verification, captcha, and 401-replay
   handling on the client.
@@ -187,7 +187,7 @@ builds and copies the bundle into the nginx web root.
   text is injected into the LLM context.
 - **Web search** — parallel fan-out across MiniMax, Bing, and SearXNG
   with automatic fallback for low-latency results.
-- **File / image upload** with `sharp` for thumbnail generation.
+- **File / image upload** via `multer`, with a persisted thumbnail path for previews.
 - **Public share links** (`/s/:token`) for read-only viewing of a
   single session.
 - **Usage tracking** (token counters, billing dashboard) per user.
@@ -197,13 +197,16 @@ builds and copies the bundle into the nginx web root.
 - **Team workspaces** (multi-user under one billing entity).
 - **Voice transcription** endpoint for audio messages.
 
-### Android client
+### Universal App (Android / Web)
 
-- **React Native + Expo** client in [`mobile/`](mobile/), sharing the same
-  backend and platform-neutral TypeScript core.
-- Android's primary flows use native RN navigation and components. Complex
-  editors and HTML artifacts are isolated WebView islands while they are
-  being rewritten.
+- **React Native + Expo + RN Web** in [`apps/socrates/`](apps/socrates/), sharing
+  `@socrates/ui` (Sidebar / ChatMessageList / Composer) and the platform-neutral
+  packages under [`packages/`](packages/) with the web SPA.
+- Primary flows use native navigation and components. Heavy editors
+  (TipTap/tldraw/HTML-viz/Mermaid/Three.js) stay in isolated `ArtifactIsland`
+  WebViews, never in shared core.
+- The retired `mobile/` tree (removed 2026-10-12) is not a build target; see
+  `AGENTS.md` for the current ownership map.
 
 ### Marketing & docs
 
@@ -297,7 +300,7 @@ sequenceDiagram
 | Layer | Technology | Notes |
 | --- | --- | --- |
 | Web SPA | React/TypeScript + legacy JS compatibility layer, Vite build | [`frontend/`](frontend/) — ~99% migrated, all surfaces React-driven |
-| Markdown | `marked` 4.3 + custom progressive renderer | see [Custom rendering pipeline](#custom-rendering-pipeline) |
+| Markdown | `marked` 13 + custom progressive renderer | see [Custom rendering pipeline](#custom-rendering-pipeline) |
 | Math | `katex` 0.16.9 (vendored, see [`frontend/src/vendor-files/katex/`](frontend/src/vendor-files/katex/)) | display + inline modes |
 | Code highlight | `highlight.js` (vendored + loaded lazily at finish time) | see [`frontend/src/vendor-files/highlight.min.js`](frontend/src/vendor-files/highlight.min.js) |
 | Search | `fuse.js` for the Cmd-K palette | |
@@ -305,17 +308,16 @@ sequenceDiagram
 | Backend | TypeScript, Express 5, Node.js ESM | [`server/src/`](server/src/) |
 | ORM | Drizzle ORM 0.40+ + `drizzle-kit` migrations | [`server/src/db/`](server/src/db/) |
 | Database | PostgreSQL 14+ | `DATABASE_URL` env var |
-| LLM proxy | `fetch` to any OpenAI-compatible endpoint | [`server/src/services/llm.ts`](server/src/services/llm.ts) |
+| LLM proxy | `fetch` to any OpenAI-compatible endpoint | [`server/src/services/core/llm.ts`](server/src/services/core/llm.ts) |
 | Document parsing | mammoth, SheetJS, jszip+xml2js, EPub, rtf2text | [`server/src/services/fileParsers/`](server/src/services/fileParsers/) |
 | Web search | MiniMax + Bing (parallel race), SearXNG fallback | [`server/src/services/webSearch.ts`](server/src/services/webSearch.ts) |
-| Image processing | `sharp` for upload thumbnails | |
+| Uploads | `multer`; thumbnails are stored as supplied derivatives | |
 | Email | `nodemailer` (SMTP) for verification, magic-link reset | |
-| File upload | `multer` | |
 | Code execution | Pyodide WASM (Python sandbox) | [`server/src/services/codeInterpreter.ts`](server/src/services/codeInterpreter.ts) |
-| RN UI | React Native + Expo + React Navigation | [`mobile/`](mobile/) |
-| RN networking/offline | TypeScript API + SSE, Android SQLite, Web storage adapter | [`mobile/src/data/`](mobile/src/data/) |
-| Shared core | SSE framing, chat event routing, session pure functions | [`packages/core/`](packages/core/) |
-| CI | GitHub Actions: RN checks, Web baseline, server checks, and APK | [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml) |
+| Universal App UI | React Native + Expo + RN Web + Zustand + Reanimated | [`apps/socrates/`](apps/socrates/) |
+| Universal App I/O | Platform adapters (`*.web` / `*.android` / `*.windows` / `*.macos`) over shared transport | [`apps/socrates/src/`](apps/socrates/src/) |
+| Shared packages | `@socrates/{core,contracts,api,chat,auth,settings,platform,theme,ui}` | [`packages/`](packages/) — DOM-free, enforced by `scripts/check-packages-dom.mjs` |
+| CI | GitHub Actions: SPA gate, server, security/SAST, OCI image, Universal App preview, Rust tooling, Qodana | [`ci.yml`](.github/workflows/ci.yml), [`universal-app-build.yml`](.github/workflows/universal-app-build.yml) |
 | Edge | nginx reverse proxy + static file server | [deploy.sh](deploy.sh) |
 | Vendored scripts | KaTeX + highlight.js + Plotly + Mermaid + ECharts (UMD under [`frontend/src/vendor-files/`](frontend/src/vendor-files/)); marked + DOMPurify + fuse.js come from npm — no CDN fallback | see [vendored-scripts-README](frontend/src/vendor-files/README.md) |
 
@@ -326,7 +328,7 @@ Socrates/
 ├── frontend/               # Vite SPA (React/TS + legacy JS)
 │   ├── index.html
 │   ├── src/
-│   │   ├── main.js         # State/event backbone (~925 lines)
+│   │   ├── main.js         # Entrypoint (~166 lines; composes extracted modules)
 │   │   ├── styles/         # All CSS — index.css entry, themes.css,
 │   │   │                   #  legacy/ slices, parity/ surface owners
 │   │   ├── state/          # Domain state bridges (session, kb, ui, ...)
@@ -381,13 +383,18 @@ Socrates/
 │       ├── middleware/     # auth, csrf, error
 │       ├── routes/         # auth, chat, sessions, share, files, ...
 │       └── services/       # llm, webSearch, fileParsers, codeInterpreter, ...
-├── mobile/                 # Expo + React Native primary app
-│   ├── App.tsx             # Native navigation entry point
-│   ├── src/screens/        # Shared RN screens
-│   └── app.json            # Expo native configuration
+├── apps/
+│   └── socrates/           # Universal App (Expo + React Native + RN Web)
+│       ├── App.tsx         # Native/web entry point
+│       ├── src/            # Screens + *.web / *.android / *.windows / *.macos adapters
+│       └── app.json        # Expo configuration
 ├── packages/
+│   ├── core/               # SSE framing, turn runtime, session pure functions
 │   ├── contracts/          # API and cross-client contracts
-│   └── core/               # Cross-platform SSE/session core
+│   ├── ui/                 # Shared RN components (Sidebar, ChatMessageList, Composer)
+│   ├── chat/               # Edit / outbox / retry state machines
+│   ├── api/  auth/  settings/  platform/  theme/
+│   └── ...                 # DOM-free; consumed by path from apps/socrates/
 ├── prompts/
 │   └── teacher-mode.md     # The Socratic system prompt (verbatim)
 ├── docs/
@@ -450,25 +457,29 @@ npm start
 
 The server listens on `http://0.0.0.0:8080` by default.
 
-### 3. Android client
+### 3. Universal App (optional)
 
 ```bash
-cd mobile
+cd apps/socrates
 npm install
 npm run typecheck
-npm test -- --watch=false
+npm run test:shared
+npm run export:web      # static web export
 ```
 
-The CI workflow at [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml)
-checks RN, Web, and server compatibility, then builds a debug Android APK.
-Native Android builds run on GitHub Actions rather than on a developer
-workstation. Trigger a debug build with
-`gh workflow run build-apk.yml --ref <branch> -f build_profile=debug`; use
-[`release-clients.yml`](.github/workflows/release-clients.yml) for a signed
-Android AAB/APK plus the desktop web bundle (the Expo `export:web` output —
-there is no native Windows app since `build-windows.yml` was removed).
-See [`docs/plans/rn-migration.md`](docs/plans/rn-migration.md) for the phase plan and
-acceptance checklist.
+The Universal App is the multi-platform target (Android + Web); the Vite SPA
+remains the visual/functional baseline until the module-by-module migration in
+[`docs/plans/universal-app-migration.md`](docs/plans/universal-app-migration.md)
+signs off. Android previews are built on GitHub Actions rather than on a
+developer workstation:
+
+```bash
+gh workflow run universal-app-build.yml --ref <branch> -f api_base_url=https://app.topodrive.top/api/v2
+```
+
+That workflow typechecks the app, exports the web bundle, runs `expo prebuild`,
+and uploads a preview APK plus a checksummed web tarball. There is no signed
+store-release workflow at this time.
 
 ## Configuration
 
@@ -617,13 +628,14 @@ The backend runs as a systemd unit (`Restart=always`). The
 server is stateless beyond PostgreSQL, so horizontal scaling is
 just a matter of running more processes behind the same nginx.
 
-The Android client is built by
-[`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml).
-[`.github/workflows/release-clients.yml`](.github/workflows/release-clients.yml) for
-versioned releases: it verifies, signs, checksums, and attaches Android and
-desktop-web artifacts to a GitHub Release. Google Play publishing is opt-in and requires a service
-account secret. See [`docs/audits/client-release.md`](docs/audits/client-release.md) for the complete
-workflow and secret contract.
+The Universal App preview is built by
+[`universal-app-build.yml`](.github/workflows/universal-app-build.yml) (manual
+dispatch or reusable call): it typechecks `apps/socrates/`, exports the web
+bundle, runs `expo prebuild`, builds a release-variant preview APK, and uploads
+both artifacts with checksums. [`image.yml`](.github/workflows/image.yml) builds
+and verifies a signed OCI image of the API server on every push but does **not**
+deploy — `deploy.sh` still builds on the host. There is currently no signed
+store-release pipeline.
 
 ## Security model
 
@@ -691,7 +703,7 @@ This repository is **public**. The public-facing surfaces include:
 
 - The marketing site at <https://topodrive.top/>
 - The live app at <https://app.topodrive.top/>
-- The Google Play listing (when published) for the Android client
+- The Universal App's Android distribution channel (when published)
 
 For source-code use and modification, see
 [Source availability and use](#source-availability-and-use).
@@ -745,9 +757,9 @@ For end-user terms, see [site/terms.html](site/terms.html).
   or use the in-app *Help* entry.
 - **API spec questions** — read [`docs/api/openapi.yaml`](docs/api/openapi.yaml)
   first, then ping the backend on-call.
-- **Android build failures** — the CI workflow logs include the
-  Expo prebuild/Gradle stack; confirm JDK 17, Android SDK, and Gradle
-  dependencies are available after an Expo/RN version bump.
+- **Universal App build failures** — the `universal-app-build.yml` logs include
+  the Expo prebuild/Gradle stack; confirm JDK 17, the Android SDK packages
+  pinned in that workflow, and Gradle dependencies after an Expo/RN bump.
 
 <div align="center">
 

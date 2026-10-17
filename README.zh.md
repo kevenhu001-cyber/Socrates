@@ -8,19 +8,19 @@
 [![应用状态](https://img.shields.io/badge/应用-在线-d8a85b?style=flat-square)](https://app.topodrive.top/)
 [![后端](https://img.shields.io/badge/后端-TypeScript%20%2B%20Node.js-3178c6?style=flat-square&logo=typescript&logoColor=white)](server/)
 [![前端](https://img.shields.io/badge/前端-Vite%20SPA-f3c769?style=flat-square&logo=vite&logoColor=black)](frontend/)
-[![Android](https://img.shields.io/badge/Android-React%20Native%20%2B%20Expo-3DDC84?style=flat-square&logo=android&logoColor=white)](mobile/)
+[![通用客户端](https://img.shields.io/badge/通用客户端-React%20Native%20%2B%20Expo-3DDC84?style=flat-square&logo=android&logoColor=white)](apps/socrates/)
 [![数据库](https://img.shields.io/badge/数据库-PostgreSQL%2014%2B-4169e1?style=flat-square&logo=postgresql&logoColor=white)](server/src/db/)
 [![源码使用](https://img.shields.io/badge/源码可见-非商业使用-555555?style=flat-square)](#源码可见与使用范围)
 
 **Socrates — AI 苏格拉底式学习助手**  
 流式对话 + 推理模型、交互式 viz 画布、KaTeX 数学公式、
 文档解析（PDF/DOCX/XLSX/PPTX/EPUB/RTF）、项目与标签、Agent 模式、
-跨会话记忆、原生 Android 客户端。
+跨会话记忆、面向 Android 与 Web 的通用 React Native 客户端。
 
 [English version →](README.md) ·
 [在线应用](https://app.topodrive.top/) ·
 [OpenAPI 规范](docs/api/openapi.yaml) ·
-[Android 构建](.github/workflows/build-apk.yml)
+[通用客户端构建](.github/workflows/universal-app-build.yml)
 
 </div>
 
@@ -37,7 +37,7 @@
 - [快速开始](#快速开始)
   - [1. 前端（Vite SPA）](#1-前端vite-spa)
   - [2. 后端 API 服务](#2-后端-api-服务)
-  - [3. Android 客户端](#3-android-客户端)
+  - [3. 通用客户端（可选）](#3-通用客户端可选)
 - [配置](#配置)
 - [自定义渲染管线](#自定义渲染管线)
 - [API 参考](#api-参考)
@@ -119,7 +119,7 @@
 - **自带 Key 的 LLM 代理** — 从任意 OpenAI 兼容端点流式获取响应，不记录明文密钥
 - **文档提取** — 服务端解析 PDF、DOCX、XLSX、PPTX、EPUB、RTF，文本注入 LLM 上下文
 - **Web 搜索** — MiniMax + Bing 并行竞速，SearXNG 降级备用，毫秒级响应
-- **文件/图片上传** — `sharp` 生成缩略图
+- **文件/图片上传** — 通过 `multer` 接收，缩略图路径随文件记录持久化
 - **公开分享链接** — `/s/:token` 只读查看
 - **用量跟踪** — Token 计数、计费仪表盘
 - **跨会话记忆** — 模型可写入和重新读取的持久存储
@@ -127,10 +127,14 @@
 - **团队工作区** — 多用户同一计费实体
 - **语音转录** — 音频消息处理
 
-### Android 客户端
+### 通用客户端（Android / Web）
 
-- **React Native + Expo** 原生客户端，共享同一后端和 TypeScript 核心
-- Android 主流程使用 RN 原生导航和组件；复杂编辑器/HTML 作品暂时隔离在局部 WebView
+- **[`apps/socrates/`](apps/socrates/)** 使用 React Native + Expo + RN Web，与 Web SPA
+  共享 [`packages/`](packages/) 下的 `@socrates/ui`（Sidebar / ChatMessageList /
+  Composer）和平台无关包
+- 主流程使用原生导航与组件；复杂编辑器（TipTap/tldraw/HTML-viz/Mermaid/Three.js）
+  隔离在 `ArtifactIsland` WebView 中，不进入共享核心
+- `mobile/` 已于 2026-10-12 整体删除，不再是构建目标；当前归属关系以 `AGENTS.md` 为准
 
 ### 市场与文档
 
@@ -219,7 +223,7 @@ sequenceDiagram
 | 层 | 技术 | 说明 |
 | --- | --- | --- |
 | Web SPA | React/TypeScript + 遗留 JS 兼容层，Vite 构建 | [`frontend/`](frontend/) — ~99% 迁移完成，所有 UI 层由 React 驱动 |
-| Markdown | `marked` 4.3 + 自定义渐进渲染器 | 见[自定义渲染管线](#自定义渲染管线) |
+| Markdown | `marked` 13 + 自定义渐进渲染器 | 见[自定义渲染管线](#自定义渲染管线) |
 | 数学公式 | `katex` 0.16.9（vendored，见 [`frontend/src/vendor-files/katex/`](frontend/src/vendor-files/katex/)） | 显示模式 + 行内模式 |
 | 代码高亮 | `highlight.js`（vendored，完成时延迟加载） | [`frontend/src/vendor-files/highlight.min.js`](frontend/src/vendor-files/highlight.min.js) |
 | 搜索 | `fuse.js` 用于 Cmd-K 面板 | |
@@ -227,17 +231,16 @@ sequenceDiagram
 | 后端 | TypeScript, Express 5, Node.js ESM | [`server/src/`](server/src/) |
 | ORM | Drizzle ORM 0.40+ + `drizzle-kit` | [`server/src/db/`](server/src/db/) |
 | 数据库 | PostgreSQL 14+ | `DATABASE_URL` 环境变量 |
-| LLM 代理 | `fetch` 到任意 OpenAI 兼容端点 | [`server/src/services/llm.ts`](server/src/services/llm.ts) |
+| LLM 代理 | `fetch` 到任意 OpenAI 兼容端点 | [`server/src/services/core/llm.ts`](server/src/services/core/llm.ts) |
 | 文档解析 | mammoth, SheetJS, jszip+xml2js, EPub, rtf2text | [`server/src/services/fileParsers/`](server/src/services/fileParsers/) |
 | Web 搜索 | MiniMax + Bing (并行竞速), SearXNG 降级 | [`server/src/services/webSearch.ts`](server/src/services/webSearch.ts) |
-| 图片处理 | `sharp` 生成缩略图 | |
+| 上传 | `multer`；缩略图按客户端提供的衍生文件持久化 | |
 | 邮件 | `nodemailer` (SMTP) 用于验证和密码重置 | |
-| 文件上传 | `multer` | |
 | 代码执行 | Pyodide WASM (Python 沙箱) | [`server/src/services/codeInterpreter.ts`](server/src/services/codeInterpreter.ts) |
-| RN UI | React Native + Expo + React Navigation | [`mobile/`](mobile/) |
-| RN 网络/离线 | TypeScript API + SSE、Android SQLite、Web storage adapter | [`mobile/src/data/`](mobile/src/data/) |
-| 跨端核心 | SSE 分帧、聊天事件路由、会话纯函数 | [`packages/core/`](packages/core/) |
-| CI | GitHub Actions: RN 类型检查、测试、Web 基线和 APK | [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml) |
+| 通用客户端 UI | React Native + Expo + RN Web + Zustand + Reanimated | [`apps/socrates/`](apps/socrates/) |
+| 通用客户端 I/O | 平台适配层（`*.web` / `*.android` / `*.windows` / `*.macos`） | [`apps/socrates/src/`](apps/socrates/src/) |
+| 共享包 | `@socrates/{core,contracts,api,chat,auth,settings,platform,theme,ui}` | [`packages/`](packages/) —— 强制 DOM-free，由 `scripts/check-packages-dom.mjs` 校验 |
+| CI | GitHub Actions：SPA 门禁、服务端、安全/SAST、OCI 镜像、通用客户端预览、Rust 工具链、Qodana | [`ci.yml`](.github/workflows/ci.yml)、[`universal-app-build.yml`](.github/workflows/universal-app-build.yml) |
 | 边缘 | nginx 反向代理 + 静态文件服务 | [deploy.sh](deploy.sh) |
 | vendored 前端库 | KaTeX + highlight.js + Plotly + Mermaid + ECharts（UMD，位于 [`frontend/src/vendor-files/`](frontend/src/vendor-files/)）；marked + DOMPurify + fuse.js 走 npm —— 无 CDN 回退 | 见 `frontend/src/vendor-files/README.md` |
 
@@ -248,7 +251,7 @@ Socrates/
 ├── frontend/               # Vite SPA (React/TS + 遗留 JS)
 │   ├── index.html
 │   ├── src/
-│   │   ├── main.js         # 状态/事件主干 (~925 行)
+│   │   ├── main.js         # 入口（约 166 行，负责组合已拆分的模块）
 │   │   ├── styles/         # 全部 CSS —— index.css 入口、themes.css、
 │   │   │                   #  legacy/ 切片、parity/ 各面所有者
 │   │   ├── state/          # 分领域状态桥（session、kb、ui……）
@@ -303,13 +306,18 @@ Socrates/
 │       ├── middleware/     # 认证、CSRF、错误处理
 │       ├── routes/         # 认证、对话、会话、分享、文件……
 │       └── services/       # LLM、Web 搜索、文件解析、代码执行……
-├── mobile/                 # Expo + React Native 主应用
-│   ├── App.tsx             # 原生导航主入口
-│   ├── src/screens/        # Android/Web 共用 RN 页面
-│   └── app.json             # Expo 原生配置
+├── apps/
+│   └── socrates/           # 通用客户端（Expo + React Native + RN Web）
+│       ├── App.tsx         # 原生/Web 入口
+│       ├── src/            # 页面 + *.web / *.android / *.windows / *.macos 适配层
+│       └── app.json        # Expo 配置
 ├── packages/
-│   ├── contracts/          # API 和跨客户端协议
-│   └── core/               # 跨端 SSE/会话核心
+│   ├── core/               # SSE 分帧、turn runtime、会话纯函数
+│   ├── contracts/          # API 与跨客户端契约
+│   ├── ui/                 # 共享 RN 组件（Sidebar、ChatMessageList、Composer）
+│   ├── chat/               # 编辑 / outbox / 重试状态机
+│   ├── api/  auth/  settings/  platform/  theme/
+│   └── ...                 # 强制 DOM-free，由 apps/socrates/ 按路径消费
 ├── prompts/
 │   └── teacher-mode.md     # 苏格拉底教师提示词（原样）
 ├── docs/
@@ -369,22 +377,27 @@ npm start
 
 服务默认监听 `http://0.0.0.0:8080`。
 
-### 3. Android 客户端
+### 3. 通用客户端（可选）
 
 ```bash
-cd mobile
+cd apps/socrates
 npm install
 npm run typecheck
-npm test -- --watch=false
+npm run test:shared
+npm run export:web      # 静态 Web 导出
 ```
 
-CI 工作流在每次推送到 `main` 分支时检查 RN、Web、Server，并自动构建 Android
-debug APK。原生 Android 构建统一在 GitHub Actions 执行，
-不要求开发机安装 Android SDK/NDK。需要验收时可执行
-`gh workflow run build-apk.yml --ref <branch> -f build_profile=debug`；正式签名
-APK/AAB 使用
-[`release-clients.yml`](.github/workflows/release-clients.yml)。
-完整迁移阶段和验收项见 [`docs/plans/rn-migration.md`](docs/plans/rn-migration.md)。
+通用客户端是多平台目标（Android + Web）；在
+[`docs/plans/universal-app-migration.md`](docs/plans/universal-app-migration.md)
+逐模块验收完成前，Vite SPA 仍是视觉与功能基线。Android 预览统一在
+GitHub Actions 构建，不要求开发机安装 Android SDK/NDK：
+
+```bash
+gh workflow run universal-app-build.yml --ref <branch> -f api_base_url=https://app.topodrive.top/api/v2
+```
+
+该工作流会做类型检查、导出 Web 产物、执行 `expo prebuild`，并上传预览 APK
+与带校验和的 Web 压缩包。目前没有签名商店发布流水线。
 
 ## 配置
 
@@ -471,11 +484,12 @@ data: [DONE]
 
 后端以 systemd unit 运行（`Restart=always`）。后端除 PostgreSQL 外无状态，水平扩展只需在 nginx 后增加进程。
 
-Android 客户端由 GitHub Actions 自动构建，产物可在 Actions 页下载。
-正式版本统一使用
-[`release-clients.yml`](.github/workflows/release-clients.yml)：它会先完成验证和签名，
-再创建 GitHub Release；Google Play 上传需要显式开启并配置服务账号。完整的 Secrets、tag
-和回滚说明见 [`docs/audits/client-release.md`](docs/audits/client-release.md)。
+通用客户端预览由
+[`universal-app-build.yml`](.github/workflows/universal-app-build.yml) 构建
+（手动触发或复用调用）：类型检查 `apps/socrates/`、导出 Web 产物、执行
+`expo prebuild`、构建 release 变体预览 APK，并上传带校验和的两份产物。
+[`image.yml`](.github/workflows/image.yml) 在每次推送时构建并验证 API 服务的
+签名 OCI 镜像，但**不部署** —— 部署仍由 `deploy.sh` 在主机上构建。
 
 ## 安全模型
 
@@ -493,7 +507,7 @@ Android 客户端由 GitHub Actions 自动构建，产物可在 Actions 页下�
 
 - 市场站点 <https://topodrive.top/>
 - 在线应用 <https://app.topodrive.top/>
-- Android 客户端的 Google Play 页面（发布后）
+- 通用客户端的 Android 分发渠道（发布后）
 
 源代码的使用与修改范围见[源码可见与使用范围](#源码可见与使用范围)。
 
@@ -533,7 +547,9 @@ Android 客户端由 GitHub Actions 自动构建，产物可在 Actions 页下�
 
 - **应用问题** — 发邮件至 [help@addtech.site](mailto:help@addtech.site) 或使用应用内帮助
 - **API 规范问题** — 先阅读 [`docs/api/openapi.yaml`](docs/api/openapi.yaml)
-- **Android 构建失败** — CI 工作流日志包含 Expo prebuild/Gradle 堆栈；请确认 JDK 17、Android SDK 和 Gradle 缓存可用
+- **通用客户端构建失败** — `universal-app-build.yml` 日志包含 Expo prebuild/Gradle
+  堆栈；请确认 JDK 17、工作流中固定的 Android SDK 组件，以及 Expo/RN 升级后的
+  Gradle 依赖可用
 
 <div align="center">
 

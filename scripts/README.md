@@ -14,6 +14,8 @@ scripts/
 ├── backup-secrets.sh            ← 把 secrets/ 加密备份到 ~/.socrates-backups
 ├── check-drizzle-drift.mjs      ← **CI 门禁**：drizzle migration 元数据漂移（server job）
 ├── check-openapi-drift.mjs      ← **CI 门禁**：路由 ↔ openapi.yaml 双向漂移棘轮（sanity job）
+├── check-doc-paths.mjs          ← **CI 门禁**：入口文档（README/README.zh/AGENTS）相对链接必须存在（frontend lint）
+├── check-forwarding-shims.mjs   ← **CI 门禁**：只做 re-export 的过渡壳数量棘轮（frontend lint）
 ├── audit-ratchet.mjs            ← **CI 门禁**：npm audit 棘轮（security.yml）
 ├── coverage-ratchet.mjs         ← **CI 门禁**：覆盖率棘轮（ci.yml）
 ├── gen-csp-hashes.mjs           ← 生成 SPA CSP hash 片段（deploy.sh 用）
@@ -22,7 +24,7 @@ scripts/
 ├── restart-server.sh            ← 停 + 起 socrates-api systemd 服务
 ├── rotate-secrets.sh            ← 重新生成 secrets/SESSION_SECRET 等敏感值
 ├── search.sh                    ← 全仓 ripgrep 助手（用法见脚本注释）
-└── test-deploy-flow.sh          ← **CI 强路径**：.github/workflows/build-apk.yml 调它
+└── test-deploy-flow.sh          ← 部署夹具：锁、候选构建、失败回滚（本地运行，CI 不再调用）
 ```
 
 ## 关于「根目录里的脚本」
@@ -35,7 +37,7 @@ scripts/
 | `restart-server.sh` | 自包含 |
 | `rotate-secrets.sh` | `scripts/backup-secrets.sh` 内部调用 |
 | `clean-local-artifacts.sh` | `scripts/README.md`（本文）引用方式说明 |
-| `test-deploy-flow.sh` | `.github/workflows/build-apk.yml`（`bash scripts/test-deploy-flow.sh` 步骤，**CI 强约束**） |
+| `test-deploy-flow.sh` | 无外部调用；在临时夹具中验证 `deploy.sh` 的锁、候选构建与回滚路径 |
 
 **严禁把上表脚本移入子目录**。如需调整，先改所有调用点 + 更新 CI 流水线。
 
