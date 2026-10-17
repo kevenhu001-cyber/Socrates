@@ -83,7 +83,7 @@
     "dompurify": "^3.4.12",
     "fuse.js": "^7.5.0",
     "highlight.js": "^11.12.0",
-    "lucide-react": "^1.53.0",
+    "lucide-react": "^1.54.0",
     "marked": "^13.0.3",
     "misans": "^5.0.0",
     "react": "^19.3.0",
