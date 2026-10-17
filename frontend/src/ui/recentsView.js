@@ -3,7 +3,7 @@
  * Zero-behavior-change lift. Session list data comes from session modules;
  * the window.renderRecents bridge in main.js stays as the public entry.
  */
-import { _publishSessionList } from '../session/organize.js';
+import { _publishSessionList } from '../session/organize.ts';
 import { hasCachedProjects, loadCachedProjects } from '../projects/projectCache.ts';
 import { refreshRecentsFilterChipData } from '../sidebar/sidebar.service.ts';
 import { apiFetch } from '../util/api.ts';

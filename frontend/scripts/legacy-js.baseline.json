@@ -1,5 +1,5 @@
 {
-  "count": 173,
+  "count": 171,
   "files": [
     "src/agent/researchAgent.js",
     "src/app/bootstrap.js",
@@ -102,9 +102,7 @@
     "src/render/vizStubs.js",
     "src/render/widgets.js",
     "src/session/loader.js",
-    "src/session/organize.js",
     "src/session/persistence.js",
-    "src/session/recents.js",
     "src/sidebar/morePopover.js",
     "src/sidebar/nav.js",
     "src/state/store.js",

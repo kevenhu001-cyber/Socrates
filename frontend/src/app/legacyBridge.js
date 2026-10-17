@@ -10,7 +10,7 @@ import { resendLastUserMessage, setChatStopState, handleSendClick, stopChatRespo
 import { setCurrentUser, markAuthSuccess, isInAuthGraceWindow, clearPerUserClientState, toggleAppMode, resetApp, startNewChat, signOut, toggleIncognito } from './lifecycle.js';
 import { getExplanation } from '../tutor/socraticTurn.js';
 import { setActiveTemplate, clearActiveTemplate } from '../chat/templateSlash.js';
-import { openTagEditor, closeTagEditor, onSessionDragStart, onSessionDragEnd, cycleActiveProject } from '../session/organize.js';
+import { openTagEditor, closeTagEditor, onSessionDragStart, onSessionDragEnd, cycleActiveProject } from '../session/organize.ts';
 import { askChatTurn } from '../chat/turnController.js';
 /* chat/streamingTurn.js (~65KB) is lazy — window.addStreamingMessage is
    an async proxy below; all call sites sit inside async send/restore
@@ -19,7 +19,7 @@ import { syncSidebarBtns, toggleSidebarView } from '../ui/sidebarChrome.js';
 import { loadSession } from '../session/loader.js';
 import { toggleKBDetail } from '../ui/knowledgeDetail.js';
 import { refreshApiConfig } from '../config/providers.ts';
-import { refreshServerSessions, retryRecentsFetch, actuallyDeleteSession, archiveSession, restoreSession, confirmPurgeSession, getArchivedSessions, flushRecentsReconcile } from '../session/recents.js';
+import { refreshServerSessions, retryRecentsFetch, actuallyDeleteSession, archiveSession, restoreSession, confirmPurgeSession, getArchivedSessions, flushRecentsReconcile } from '../session/recents.ts';
 import { renderRecents } from '../ui/recentsView.js';
 import { openNav } from '../sidebar/navigation.service.ts';
 import { closeConfirm, showConfirm } from '../ui/confirm.js';
