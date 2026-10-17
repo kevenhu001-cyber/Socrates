@@ -1,5 +1,5 @@
 import { stateStore } from '../../state/store.js';
-import { hasUsableActive } from '../../config/providers.js';
+import { hasUsableActive } from '../../config/providers.ts';
 import { _origGenerateFollowUp } from '../mocks.js';
 import { notifyMockFallbackOnce } from '../mockFallbackNotice.js';
 import { reportSwallow } from '../../util/reportSwallow.ts';

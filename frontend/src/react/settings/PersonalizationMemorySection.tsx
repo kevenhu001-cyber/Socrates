@@ -1,5 +1,5 @@
 import { getApiFetch } from '../legacy/gateway.ts';
-import { clearAllMemories, getAllMemories, removeMemory, setMemory } from '../../storage/memoryStore.js';
+import { clearAllMemories, getAllMemories, removeMemory, setMemory } from '../../storage/memoryStore.ts';
 import type { SettingsLabel, SettingsMemory } from './settings.types';
 import { PersonalizationMemoryAddForm } from './PersonalizationMemoryAddForm';
 import { PersonalizationMemoryList } from './PersonalizationMemoryList';

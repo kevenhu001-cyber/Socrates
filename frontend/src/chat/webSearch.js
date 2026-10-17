@@ -1,8 +1,8 @@
 import { apiFetch, apiFetchRaw } from '../util/api.ts';
 import { callAPI } from './api.js';
 import { offlineGuard } from './offline.ts';
-import { hasUsableActive, webSearchOn } from '../config/providers.js';
-import { loadLocalMemory } from '../storage/localMemory.js';
+import { hasUsableActive, webSearchOn } from '../config/providers.ts';
+import { loadLocalMemory } from '../storage/localMemory.ts';
 import { stateStore } from '../state/store.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { shouldRefreshSearch } from './webSearchPolicy.js';

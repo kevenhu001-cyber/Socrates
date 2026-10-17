@@ -1,4 +1,4 @@
-import { webSearchOn } from '../config/providers.js';
+import { webSearchOn } from '../config/providers.ts';
 import { stateStore } from '../state/store.js';
 
 const SEARCH_REFRESH_EVERY = 5;

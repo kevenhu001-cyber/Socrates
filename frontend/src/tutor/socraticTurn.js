@@ -3,7 +3,7 @@
  * explanation, and follow-up streaming. Zero-behavior-change lift.
  */
 import { stateStore } from '../state/store.js';
-import { hasUsableActive } from '../config/providers.js';
+import { hasUsableActive } from '../config/providers.ts';
 import { extractHistory } from '../chat/history.js';
 import { callAPI } from '../chat/api.js';
 import { callAPIStream } from '../chat/stream.js';

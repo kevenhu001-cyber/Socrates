@@ -5,7 +5,7 @@ import { setChatStopState, markTurnEnded } from '../turnUi.js';
 import { publishReactChatRuntime } from '../../ui/reactBridge.js';
 import { announceTranscript } from '../../ui/liveRegion.js';
 import { saveCurrentSession } from '../../session/persistence.js';
-import { appendLocalMemory } from '../../storage/localMemory.js';
+import { appendLocalMemory } from '../../storage/localMemory.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 
 export function createFinishLifecycle(state, ownerSessionId, finishRender, finishViewport) {

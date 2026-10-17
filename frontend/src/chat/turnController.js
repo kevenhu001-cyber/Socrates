@@ -6,7 +6,7 @@
 import { stateStore } from '../state/store.js';
 import { turnState } from './turnState.js';
 import { interruptPendingTurn, quietTurn } from './turnUi.js';
-import { hasUsableActive } from '../config/providers.js';
+import { hasUsableActive } from '../config/providers.ts';
 import { extractHistory } from './history.js';
 import { callAPIStream } from './stream.js';
 import { handleChatApiResult } from './format.ts';

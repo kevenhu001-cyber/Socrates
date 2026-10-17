@@ -1,5 +1,5 @@
 import { apiFetch } from '../util/api.ts';
-import { hasUsableActive } from '../config/providers.js';
+import { hasUsableActive } from '../config/providers.ts';
 import { stateStore } from '../state/store.js';
 
 /* Generate a declarative session title based on the user's first input.

@@ -14,7 +14,7 @@
  * legacy mode never sees a subscriber so the helpers are cheap no-ops.
  */
 
-import { webSearchOn, setWebSearchOn } from '../config/providers.js';
+import { webSearchOn, setWebSearchOn } from '../config/providers.ts';
 
 /* React migration bridge — publishes current profile state so the React
    compatibility root can render the modal content via useSyncExternalStore. */

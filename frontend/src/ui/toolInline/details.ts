@@ -1,6 +1,6 @@
 import { esc } from '../../render/helpers.ts';
 import { formatToolOutput } from '../../render/toolOutput.ts';
-import { getSocratesWasm } from '../../lib/socratesWasm.js';
+import { getSocratesWasm } from '../../lib/socratesWasm.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { isInlineSearchTool } from '../../render/toolCategory.ts';
 import { translate } from './labels.ts';

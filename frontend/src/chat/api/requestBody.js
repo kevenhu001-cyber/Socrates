@@ -1,5 +1,5 @@
 import { stateStore } from '../../state/store.js';
-import { isMiniMaxProvider } from '../../config/providers.js';
+import { isMiniMaxProvider } from '../../config/providers.ts';
 import { getStoredResponseSpeed, getStoredReasoningEffort } from '../../config/chatPreferences.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 

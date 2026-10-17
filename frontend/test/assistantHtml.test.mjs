@@ -16,7 +16,7 @@ globalThis.marked = marked;
 const { buildAssistantHtml, configureAssistantHtml } = await import(
   '../src/render/assistantHtml.ts'
 );
-const { setAppMode } = await import('../src/config/providers.js');
+const { setAppMode } = await import('../src/config/providers.ts');
 
 test('plain markdown renders to html', () => {
   const html = buildAssistantHtml('Hello **world**');

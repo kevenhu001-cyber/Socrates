@@ -17,7 +17,7 @@
  * live binding) is imported directly.
  */
 
-import { appMode } from '../config/providers.js';
+import { appMode } from '../config/providers.ts';
 import { stateStore } from '../state/store.js';
 import { wrapForCanvas } from './canvasWrap.ts';
 import { decodeEntities, esc, stripCitationMarkers, stripTags } from './helpers.ts';

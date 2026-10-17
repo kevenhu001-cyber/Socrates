@@ -7,7 +7,7 @@
 import { stateStore } from '../state/store.js';
 import { hideNewReplyPill } from '../ui/scrollPill.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
-import { appendLocalMemory } from '../storage/localMemory.js';
+import { appendLocalMemory } from '../storage/localMemory.ts';
 import { formatMsg } from '../render/markdown.ts';
 import { stripCitationMarkers } from '../render/helpers.ts';
 import { getActiveProvider } from '../pickers.js';

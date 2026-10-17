@@ -41,7 +41,7 @@ import { switchTab, toggleSidebarView, initSidebarChrome } from './ui/sidebarChr
 import { wireScrollPill } from './ui/scrollPill.js';
 import { wirePressFeedback } from './ui/pressFeedback.js';
 import { openShareModal } from './ui/share.js';
-import { loadMemories } from './storage/memoryStore.js';
+import { loadMemories } from './storage/memoryStore.ts';
 import { initArtifactPreview } from './ui/artifactPreview.js';
 import { initLinkFavicons } from './ui/linkFavicons.js';
 import { installLayoutStateMirror } from './ui/layoutStateMirror.js';
@@ -58,11 +58,11 @@ import { initTheme, loadDisplayPrefs, mountDisplayPrefsListeners } from './displ
 import { syncExtensionsUI, syncModelPills, syncWebSearchUI } from './pickers.js';
 import { bootstrapApp } from './app/bootstrap.js';
 import { installWidgetRuntime } from './app/widgetSetup.js';
-import { loadTonePreset } from './config/tonePresets.js';
+import { loadTonePreset } from './config/tonePresets.ts';
 import { installAuthHooks } from './util/api.ts';
 import {
   syncAppModeUI, syncSidebarForMode,
-} from './config/providers.js';
+} from './config/providers.ts';
 
 window.__SOCRATES_RELEASE_TAG__ = '20261008-speed-opt';
 

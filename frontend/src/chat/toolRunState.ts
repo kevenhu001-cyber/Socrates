@@ -11,7 +11,7 @@
  * the parity reference for tests (test/wasmParity.test.mjs).
  */
 
-import { getSocratesWasm } from '../lib/socratesWasm.js';
+import { getSocratesWasm } from '../lib/socratesWasm.ts';
 import { createToolRunApi } from '@socrates/core';
 
 export type { ToolRun, ToolRunSummary } from '@socrates/core';

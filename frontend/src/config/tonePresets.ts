@@ -1,4 +1,4 @@
-/* config/tonePresets.js — AI tone/voice presets.
+/* config/tonePresets.ts — AI tone/voice presets.
  *
  * Lets the user choose how the AI speaks. Each preset modifies the
  * VOICE section of the system prompt. Presets are stored in localStorage
@@ -19,12 +19,28 @@
  *   "tutor"      — Patient, encouraging, Socratic (default for tutor mode)
  */
 
-var TONE_KEY = "socrates-tone";
-var _currentTone = "default";
+export interface TonePreset {
+  label: string;
+  labelZh: string;
+  description: string;
+  descriptionZh: string;
+  voice: string;
+}
+
+export interface TonePresetSummary {
+  id: string;
+  label: string;
+  labelZh: string;
+  description: string;
+  descriptionZh: string;
+}
+
+const TONE_KEY = "socrates-tone";
+let _currentTone = "default";
 
 /* Tone definitions: each has a label, description, and a voice snippet
    that replaces the VOICE section of CHAT_SYSTEM_PROMPT. */
-var TONE_PRESETS = {
+const TONE_PRESETS: Record<string, TonePreset> = {
   "default": {
     label: "Default",
     labelZh: "默认",
@@ -73,9 +89,9 @@ You are not rude, but you value honesty over politeness. You assume the user wan
 };
 
 /* Load the saved tone preset. */
-function loadTonePreset() {
+function loadTonePreset(): string {
   try {
-    var saved = localStorage.getItem(TONE_KEY);
+    const saved = localStorage.getItem(TONE_KEY);
     if (saved && TONE_PRESETS[saved]) {
       _currentTone = saved;
       return _currentTone;
@@ -86,27 +102,27 @@ function loadTonePreset() {
 }
 
 /* Set and persist the tone preset. */
-function setTonePreset(tone) {
+function setTonePreset(tone: string): void {
   if (!TONE_PRESETS[tone]) return;
   _currentTone = tone;
   try { localStorage.setItem(TONE_KEY, tone); } catch { /* ignore */ }
 }
 
 /* Get the current tone preset id. */
-function getTonePreset() {
+function getTonePreset(): string {
   return _currentTone;
 }
 
 /* Get the voice snippet for the current tone. */
-function getToneVoice() {
-  var preset = TONE_PRESETS[_currentTone];
+function getToneVoice(): string {
+  const preset = TONE_PRESETS[_currentTone];
   return preset ? preset.voice : TONE_PRESETS["default"].voice;
 }
 
 /* Get all available presets as an array of { id, label, labelZh, description, descriptionZh }. */
-function getAvailablePresets() {
+function getAvailablePresets(): TonePresetSummary[] {
   return Object.keys(TONE_PRESETS).map(function (id) {
-    var p = TONE_PRESETS[id];
+    const p = TONE_PRESETS[id];
     return { id: id, label: p.label, labelZh: p.labelZh, description: p.description, descriptionZh: p.descriptionZh };
   });
 }

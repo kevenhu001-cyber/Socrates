@@ -4,7 +4,7 @@ import { getChatIdFromURL, getExamIdFromURL, setChatIdInURL, setExamIdInURL } fr
 import { loadSession } from '../session/loader.js';
 import { loadUserMemories, renderUserFooter } from '../ui/profile.js';
 import { syncExtensionsUI } from '../pickers.js';
-import { syncSidebarForMode } from '../config/providers.js';
+import { syncSidebarForMode } from '../config/providers.ts';
 import { syncWorkspaceRoute } from '../sidebar/navigation.service.ts';
 import { toggleShareBtn } from '../ui/share.js';
 import { renderGreeting } from '../ui/greeting.js';

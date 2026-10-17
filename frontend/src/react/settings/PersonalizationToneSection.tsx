@@ -1,4 +1,4 @@
-import { getAvailablePresets } from '../../config/tonePresets.js';
+import { getAvailablePresets } from '../../config/tonePresets.ts';
 import type { SettingsLabel } from './settings.types';
 
 export function PersonalizationToneSection({

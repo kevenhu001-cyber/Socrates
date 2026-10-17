@@ -18,7 +18,7 @@ import { askChatTurn } from '../chat/turnController.js';
 import { syncSidebarBtns, toggleSidebarView } from '../ui/sidebarChrome.js';
 import { loadSession } from '../session/loader.js';
 import { toggleKBDetail } from '../ui/knowledgeDetail.js';
-import { refreshApiConfig } from '../config/providers.js';
+import { refreshApiConfig } from '../config/providers.ts';
 import { refreshServerSessions, retryRecentsFetch, actuallyDeleteSession, archiveSession, restoreSession, confirmPurgeSession, getArchivedSessions, flushRecentsReconcile } from '../session/recents.js';
 import { renderRecents } from '../ui/recentsView.js';
 import { openNav } from '../sidebar/navigation.service.ts';

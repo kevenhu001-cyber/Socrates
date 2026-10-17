@@ -1,4 +1,4 @@
-import { loadLocalMemory } from '../storage/localMemory.js';
+import { loadLocalMemory } from '../storage/localMemory.ts';
 import { attachmentPointerLine, activeProviderSupportsImages } from '../attachments.js';
 
 var HISTORY_MAX_TURNS=30;      /* user+assistant pairs to keep (increased for longer context) */

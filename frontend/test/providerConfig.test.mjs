@@ -112,7 +112,7 @@ test('missing user and user-switch reset clear provider state and key drafts', a
 
 test('MiniMax M3.1 forwards the selected low effort and split reasoning', async () => {
   reset();
-  const { isReasoningProvider } = await import('../src/config/providers.js');
+  const { isReasoningProvider } = await import('../src/config/providers.ts');
   const { buildChatRequestBody } = await import('../src/chat/api/requestBody.js');
   store.publishProviderConfig({ providers: [{ id: 'minimax', model: 'MiniMax-M3.1-Flash-Preview', label: 'MiniMax', hasKey: true }], activeId: 'minimax' });
   window.isReasoningProvider = isReasoningProvider;
@@ -132,7 +132,7 @@ test('MiniMax M3.1 forwards the selected low effort and split reasoning', async 
 
 test('MiniMax M3 separates reasoning without claiming granular effort support', async () => {
   reset();
-  const { isReasoningProvider } = await import('../src/config/providers.js');
+  const { isReasoningProvider } = await import('../src/config/providers.ts');
   const { buildChatRequestBody } = await import('../src/chat/api/requestBody.js');
   store.publishProviderConfig({ providers: [{ id: 'minimax', model: 'MiniMax-M3', label: 'MiniMax', hasKey: true }], activeId: 'minimax' });
   window.isReasoningProvider = isReasoningProvider;

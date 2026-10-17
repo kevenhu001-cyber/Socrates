@@ -22,7 +22,7 @@ import { SERVER_HAS_BEAGLE_KEY } from './auth/boot.js';
 window.SERVER_HAS_BEAGLE_KEY = SERVER_HAS_BEAGLE_KEY;
 
 /* ─── config/providers.js ─── */
-import { appMode, webSearchOn, extensiveThinkingOn, isReasoningProvider, syncAppModeUI, setAppMode, thinkingOn } from './config/providers.js';
+import { appMode, webSearchOn, extensiveThinkingOn, isReasoningProvider, syncAppModeUI, setAppMode, thinkingOn } from './config/providers.ts';
 window.appMode = appMode;
 window.webSearchOn = webSearchOn;
 window.extensiveThinkingOn = extensiveThinkingOn;

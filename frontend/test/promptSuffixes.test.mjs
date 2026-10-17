@@ -21,8 +21,8 @@ const {
   thinkingSuffix,
   toneVoiceSuffix,
 } = await import('../src/chat/promptSuffixes.ts');
-const { setTonePreset } = await import('../src/config/tonePresets.js');
-const { setAppMode } = await import('../src/config/providers.js');
+const { setTonePreset } = await import('../src/config/tonePresets.ts');
+const { setAppMode } = await import('../src/config/providers.ts');
 const { stateStore } = await import('../src/state/store.js');
 
 test('toneVoiceSuffix is empty for the default preset', () => {

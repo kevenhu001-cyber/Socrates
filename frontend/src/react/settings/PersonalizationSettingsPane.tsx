@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
-import { getTonePreset, setTonePreset } from '../../config/tonePresets.js';
-import { getAllMemories } from '../../storage/memoryStore.js';
+import { getTonePreset, setTonePreset } from '../../config/tonePresets.ts';
+import { getAllMemories } from '../../storage/memoryStore.ts';
 import type { SettingsLabel, SettingsMemory, SaveSettingsPreference } from './settings.types';
 import { PersonalizationInstructionsSection } from './PersonalizationInstructionsSection';
 import { PersonalizationMemorySection } from './PersonalizationMemorySection';

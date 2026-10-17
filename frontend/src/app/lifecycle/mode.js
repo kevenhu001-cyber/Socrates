@@ -1,5 +1,5 @@
 import { stateStore } from '../../state/store.js';
-import { appMode, setAppMode, syncAppModeUI, syncSidebarForMode } from '../../config/providers.js';
+import { appMode, setAppMode, syncAppModeUI, syncSidebarForMode } from '../../config/providers.ts';
 import { showConfirm } from '../../ui/confirm.js';
 import { saveCurrentSession } from '../../session/persistence.js';
 import { resetApp } from './reset.js';

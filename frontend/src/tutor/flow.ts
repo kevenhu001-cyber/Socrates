@@ -8,7 +8,7 @@
  */
 
 import { stateStore } from '../state/store.js';
-import { SOCRATIC_SYSTEM_PROMPT } from '../prompts/socratic.js';
+import { SOCRATIC_SYSTEM_PROMPT } from '../prompts/socratic.ts';
 import { TUTOR_SEARCH_POLICY_PROMPT } from './policy.js';
 import {
   BASELINE_LEVEL,
