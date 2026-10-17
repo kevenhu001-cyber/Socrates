@@ -58,6 +58,14 @@ export interface StreamRetryViewport {
   rememberStableViewport(clientId: string, offset: number, ttlMs?: number): void;
 }
 
+/** Find a message without interpolating untrusted IDs into CSS selectors. */
+function findMessageRow(list: HTMLElement, clientId: string): Element | null {
+  for (const row of list.querySelectorAll('[data-client-id]')) {
+    if (row.getAttribute('data-client-id') === clientId) return row;
+  }
+  return null;
+}
+
 /** Create the retry-viewport store (one per app lifetime). */
 export function createStreamRetryViewport(): StreamRetryViewport {
   let pendingViewport: RetryViewportSnapshot | null = null;
@@ -70,7 +78,7 @@ export function createStreamRetryViewport(): StreamRetryViewport {
     ttlMs?: number,
   ): RetryViewportSnapshot | null {
     if (!list) return null;
-    const row = list.querySelector('[data-client-id="' + clientId + '"]');
+    const row = findMessageRow(list, clientId);
     const anchor = row && (row.querySelector('.msg-error') || row);
     const listRect = list.getBoundingClientRect();
     const anchorRect = anchor && anchor.getBoundingClientRect();
@@ -136,7 +144,7 @@ export function createStreamRetryViewport(): StreamRetryViewport {
     if (pressed && pressed.clientId === clientId && pressed.expiresAt >= Date.now()) {
       offset = pressed.offset;
     } else {
-      row = list.querySelector('[data-client-id="' + clientId + '"]');
+      row = findMessageRow(list, clientId);
       const anchor = row && (row.querySelector('.msg-error') || row);
       const listRect = list.getBoundingClientRect();
       const anchorRect = anchor && anchor.getBoundingClientRect();
@@ -203,7 +211,7 @@ export function createStreamRetryViewport(): StreamRetryViewport {
         smoothScrollToBottom(list, { smooth: false, owner: 'retry' });
         stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
       }
-      const row = list.querySelector('[data-client-id="' + clientId + '"]');
+      const row = findMessageRow(list, clientId);
       const anchor = row && (row.querySelector('.msg-error') || row);
       if (anchor) {
         const offset = Math.round(
