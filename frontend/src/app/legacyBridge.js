@@ -46,7 +46,7 @@ import { openCmdKResult } from '../ui/cmdK.js';
 import { loadWebSearch } from '../chat/webSearchLoader.js';
 /* ui/dangerConfirms.js is lazy — confirm actions import it on demand. */
 import { processPendingMermaid, processPendingViz, reclaimVizCards, schedulePendingMermaid } from '../render/vizStubs.js';
-import { wireCodeBlockHeaders, wireMsgBodyImages } from '../render/postRender.js';
+import { wireCodeBlockHeaders, wireMsgBodyImages } from '../render/postRender.ts';
 import { mountVisualization, disposeVisualizations, disposeVisualization } from '../render/vizStubs.js';
 import { appendInlineArtifact } from '../ui/toolCards.js';
 import { formatMsgProgressive } from '../render/markdown.ts';

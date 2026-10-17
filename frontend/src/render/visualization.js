@@ -7,9 +7,9 @@ import {
 import { whenFontsReady } from './helpers.ts';
 import { ensureEcharts } from '../vendor/lazy.js';
 import { parseFunctionExpression, sampleFunction } from '@socrates/core/visualizationMath';
-import { categoryAxisLayout, formatCategoryLabel, truncateLabel } from './visualizationLabels.js';
+import { categoryAxisLayout, formatCategoryLabel, truncateLabel } from './visualizationLabels.ts';
 import { optionForChart, VIZ_FONT_FAMILY } from './visualizationOptions.js';
-import { dispatchExtensionRepair, renderExtension } from './visualizationExtensions.js';
+import { dispatchExtensionRepair, renderExtension } from './visualizationExtensions.ts';
 import { renderSemanticVisualization, renderStructureVisualization, renderVisualizationTable } from './visualizationStatic.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 export { parseFunctionExpression, sampleFunction, categoryAxisLayout, formatCategoryLabel };

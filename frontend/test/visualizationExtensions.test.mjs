@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   dispatchExtensionRepair,
   renderExtension,
-} from '../src/render/visualizationExtensions.js';
+} from '../src/render/visualizationExtensions.ts';
 
 function escapeHtml(value) {
   return String(value == null ? '' : value).replace(/[&<>\'"]/g, (char) => ({

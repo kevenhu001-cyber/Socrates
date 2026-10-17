@@ -1,5 +1,5 @@
 {
-  "count": 206,
+  "count": 203,
   "files": [
     "src/agent/researchAgent.js",
     "src/app/bootstrap.js",
@@ -108,12 +108,9 @@
     "src/native/mobileWebSessionBridge.js",
     "src/pickers.js",
     "src/render/katexRefresh.js",
-    "src/render/postRender.js",
     "src/render/scaffoldPipeline.js",
     "src/render/visualization.js",
     "src/render/visualizationAdapters.js",
-    "src/render/visualizationExtensions.js",
-    "src/render/visualizationLabels.js",
     "src/render/visualizationOptions.js",
     "src/render/visualizationStatic.js",
     "src/render/viz.js",

@@ -1,6 +1,6 @@
 /* Theme-aware ECharts options derived from normalized visualization specs. */
 import { robustExtent, sampleFunction } from '@socrates/core/visualizationMath';
-import { categoryAxisLayout, formatCategoryLabel, truncateLabel } from './visualizationLabels.js';
+import { categoryAxisLayout, formatCategoryLabel, truncateLabel } from './visualizationLabels.ts';
 
 function colorFor(role, index, colors) {
   if (role && colors[role]) return colors[role];

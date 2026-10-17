@@ -2,7 +2,7 @@ import { esc } from './helpers.ts';
 import { openVizModalRaw } from './vizStubs.js';
 
 /** Add language labels and fullscreen controls to rendered code blocks. */
-export function wireCodeBlockHeaders(body) {
+export function wireCodeBlockHeaders(body: Element | null): void {
   if (!body) return;
   const isDirectContainer = typeof body.matches === 'function' && body.matches('.msg-body, .think-content, .tool-run-prose');
   const pres = isDirectContainer
@@ -44,14 +44,14 @@ export function wireCodeBlockHeaders(body) {
       openVizModalRaw(html, `${lang || 'code'} source`);
     });
     header.appendChild(expand);
-    pre.parentNode.insertBefore(header, pre);
+    (pre.parentNode as ParentNode).insertBefore(header, pre);
   }
 }
 
 /** Wire ordinary message images to the shared fullscreen image modal. */
-export function wireMsgBodyImages(body) {
+export function wireMsgBodyImages(body: Element | null): void {
   if (!body) return;
-  const images = body.querySelectorAll('.msg-body img:not(.exec-artifact-image)');
+  const images = body.querySelectorAll<HTMLElement>('.msg-body img:not(.exec-artifact-image)');
   for (const image of images) {
     if (image.dataset.lightboxWired) continue;
     image.dataset.lightboxWired = '1';

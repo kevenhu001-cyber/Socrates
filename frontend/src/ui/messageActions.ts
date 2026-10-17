@@ -12,7 +12,7 @@ import { showToast } from './toast.js';
 import { buildAssistantHtml } from '../render/assistantHtml.ts';
 import { visualizationSpecOf } from '../render/visualizationSpec.ts';
 import { formatMsg } from '../render/markdown.ts';
-import { wireCodeBlockHeaders, wireMsgBodyImages } from '../render/postRender.js';
+import { wireCodeBlockHeaders, wireMsgBodyImages } from '../render/postRender.ts';
 import { publishReactChatRuntime } from './reactBridge.js';
 import {
   appendFileChangeSummaryCards,
