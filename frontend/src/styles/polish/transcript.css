@@ -149,19 +149,17 @@
 }
 
 
-/* Row reveal. Upgraded with subtle spring physics:
-   - User prompt entering: scale(0.96) translateY(6px) -> 1
+/* Row reveal:
+   - User prompt entering: opacity only. The submitted prompt is already
+     travelling via turnAnchor's single transcript scroll glide, so a per-row
+     transform here would paint the bubble at a second, compositor-only
+     position mid-glide (legacy 06-chat-transcript.css pins transform:none and
+     e2e/chat-send.spec.mjs asserts it). Movement belongs to the glide alone.
    - Live assistant response: translateY(10px) -> 0
    Settled rows have data-stream-settled, keeping history clean. */
 @keyframes msgUserIn {
-  0% {
-    opacity: 0;
-    transform: scale(0.96) translateY(6px);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
+  0% { opacity: 0; }
+  100% { opacity: 1; }
 }
 
 @keyframes msgIn {

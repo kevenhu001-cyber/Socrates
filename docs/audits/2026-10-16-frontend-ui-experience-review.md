@@ -102,4 +102,16 @@ Kimi、ChatGPT、Claude 在这里作为体验方向；本次没有登录它们�
 - 新增 `anchored-menu-focus.spec.mjs`、`thinking-accordion.spec.mjs`、`thinkingAccordion.test.mjs`。新组件及既有活动状态模型的 13 项单元检查通过；新增交互、流式显示和完成稳定性共 12 项浏览器检查通过。
 - 最终标准 `npm run lint` 与 `npm run build` 均通过（lint 保留仓库已有 warnings）；补跑菜单、思考区和聊天工作台 8 项全部通过。已复查桌面／手机截图，截图产物保留在 gitignored 的 `frontend/test-results/`。
 - 扩展运行原有 `thinking-panel` 后发现 6 项失败：2 项期望显示 `phase: initial` 摘要，但当前处理器明确忽略它们，已在独立干净 HEAD `774958a3`（仅隔离测试端口）复现；另外 4 项是摘要 16px 与工具标签 14px 不一致，来自任务开始前已有的 `components/tool-card.css` 修改，本轮未修改该文件。干净 HEAD 中这 4 项通过。保留这些已有行为差异，未通过放宽断言掩盖失败。
-- 长会话有界挂载、流式双重节流、消息操作栏与首屏样式成本尚未实施，需按上述第二、三批分别验证。
+- 长会话有界挂载、消息操作栏与首屏样式成本尚未实施，需按上述第二、三批分别验证。
+
+## 第二批 · 流式双重节流与发送气泡动效契约
+
+- 流式 cadence：`frontend/src/render/streaming.ts` 的 `getStreamRenderInterval` 由旧档位 `[50, 80, 120]ms`（按长度递减到约 8–20 次每秒）改为 `[33, 50]ms`（<32000 字约 30 次每秒，≥32000 字约 20 次每秒保底）。`test/streaming.test.mjs` 与 `test/streamCadenceProperties.test.mjs` 同步为 `[33, 50]`。
+- 实测（本地 puppeteer Chrome + Playwright 驱动，持续约 3.7k 字/秒 供给）：1.5k–40k 字区间可见更新间隔稳定在约 30 次每秒，单帧最大字符块从约 270 降到约 134，主线程无长任务。旧档位在长回复时约 8–12 次每秒、单帧约 270 字符，瓶颈是长度键控过度保守，而非渲染开销。
+- 发送气泡动效契约：`polish/transcript.css` 的 `@keyframes msgUserIn` 曾用 `scale(0.96) translateY(6px)` 覆盖 legacy 的纯 opacity 版本，使刚发送的 prompt 自身带 transform，与 legacy `06-chat-transcript.css` 的 `transform:none` 及 `e2e/chat-send.spec.mjs` 的断言冲突。已移除 transform，恢复“位移只由 turnAnchor 滚动滑行负责”。
+- 发送滑行目标：`chat/turnAnchor.ts` 的滑行目标把“视口内偏移”当成了 `scrollTop`（`anchorInList - targetOffset`），只有在读者已在顶部（`scrollTop` = 0）时数值才**碰巧**正确。从满屏会话底部发送时，它让滑行把整个滚动范围**反向**跑一遍再吸附（实测偏移从 682 单调增到 4158 后跳到 12，正是“刚发出的 prompt 先反向闪一下”）。已改为与 retry 一致、且逐帧从实时布局重算的绝对 `scrollTop`：“`scrollTop` + 视口内偏移 − 目标偏移”。`scrollTop + offset` 是 prompt 在内容中的位置，滚动不改变它，所以逐帧重算既稳定、又能在布局中途变化时弯曲到真实落点，不再落偏几像素后回弹。
+- 验证（同一本地驱动，改动前 HEAD 为对照）：
+  - `chat-send`：8/9 → **9/9**（移除气泡 transform）。
+  - `chat-send-glide`：4/13 → 8/13（移除 transform）→ **13/13**（滑行目标修复）。此前失败集中在“满屏会话在底部”“深历史”两个场景。
+  - `chat-autoscroll` + `chat-keyboard-anchor` 共 18 项：5 失败 → **3 失败**（滑行目标修复又修好“发送滑行而非瞬移”“抢跑中回合仍视觉稳定”两项）。
+- 残留（改动前后均在干净 HEAD 失败，属其它子系统，未在本轮处理）：`chat-autoscroll` 的“固定读者跟随流式增长”（实测 `scrollTop` 采样极差为 0，流式增量未推动滚动）、`chat-keyboard-anchor` 的 visualViewport 抬升与 resizes-content 两项（键盘模拟环境相关）。

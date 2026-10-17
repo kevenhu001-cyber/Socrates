@@ -603,13 +603,30 @@ export function scheduleActiveTurnToTop(
     const listRect = list.getBoundingClientRect();
     const anchorRect = anchor.getBoundingClientRect();
     const anchorInList = anchorRect.top - listRect.top;
-    /* `target` is consumed each animation frame by velocityScrollTo via
-       `opts.target`; capture the live offset once so the per-frame call
-       doesn't pay for another layout flush. */
-    const promptTarget = (): number => Math.max(0, anchorInList - targetOffset);
-    const target = retryViewport
-      ? Math.max(0, list.scrollTop + anchorInList - targetOffset)
-      : promptTarget();
+    /* The destination is an absolute scrollTop: the prompt's content
+       position (`scrollTop + offset-in-viewport`) minus the top offset. The
+       bare viewport offset only equals the scrollTop when the reader is
+       already at the top; from the bottom of a full transcript it drove the
+       glide the entire scroll range the wrong way and then snapped, instead
+       of travelling the few hundred pixels up to the slot. `scrollTop +
+       offset` is invariant under scrolling, so re-reading it every frame is
+       stable — it bends to a mid-glide layout change (a reserve repaint, the
+       composer collapsing) instead of landing a few pixels past the slot and
+       snapping, and it never chases its own tail. Re-resolving the prompt
+       node is O(1) while it stays mounted and falls back to the send-time
+       measurement only if it is replaced. Retry shares the same expression. */
+    let promptNode: HTMLElement | null = anchor as HTMLElement;
+    const promptTarget = (): number => {
+      if (!promptNode || !promptNode.isConnected) {
+        promptNode = latestUserRow(list) as HTMLElement | null;
+      }
+      if (!promptNode) {
+        return Math.max(0, list.scrollTop + anchorInList - targetOffset);
+      }
+      const live = promptNode.getBoundingClientRect().top - list.getBoundingClientRect().top;
+      return Math.max(0, list.scrollTop + live - targetOffset);
+    };
+    const target = promptTarget();
     /* The retry placeholder's min-height and the React removal of the
        failed row can settle over several frames. A single scrollTop write
        therefore runs against stale scrollHeight and leaves the retry well
