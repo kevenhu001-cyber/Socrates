@@ -44,8 +44,7 @@ function isHeadingBoundary(line: string): boolean {
   return true;
 }
 
-function scanDisplayMath(line: string, initial: DisplayMathMode): DisplayMathMode {
-  let mode = initial;
+function scanDisplayMath(line: string, initial: DisplayMathMode): DisplayMathMode {  let mode = initial;
   for (let i = 0; i < line.length; i++) {
     if (mode === null) {
       if (line.startsWith('$$', i) && !isEscapedAt(line, i)) {
@@ -77,6 +76,21 @@ function scanDisplayMath(line: string, initial: DisplayMathMode): DisplayMathMod
 }
 
 /**
+ * True when the display-math region that is open at `start` is closed later
+ * in the message. A closed region means the candidate heading line is TeX
+ * source (`$$\n#notmath\nx+y\n$$`), so inserting a closer would corrupt the
+ * formula. Only a region with no remaining closer is genuinely lost.
+ */
+function hasClosingDelimiter(lines: string[], start: number, mode: DisplayMathMode): boolean {
+  let current = mode;
+  for (let i = start; i < lines.length; i++) {
+    current = scanDisplayMath(lines[i], current);
+    if (current === null) return true;
+  }
+  return false;
+}
+
+/**
  * Insert a missing display-math closer immediately before a Markdown heading
  * that would otherwise be consumed by the tolerant unclosed-math renderer.
  * Idempotent: once the closer is inserted, a second pass sees balanced math.
@@ -89,7 +103,8 @@ export function recoverUnclosedDisplayMathBeforeHeading(source: string | null | 
   let inFence = false;
   let fenceChar = '';
 
-  for (const line of lines) {
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index];
     const fence = line.match(FENCE_RE);
     if (fence) {
       const char = fence[1].charAt(0);
@@ -109,7 +124,7 @@ export function recoverUnclosedDisplayMathBeforeHeading(source: string | null | 
       continue;
     }
 
-    if (mode && isHeadingBoundary(line)) {
+    if (mode && isHeadingBoundary(line) && !hasClosingDelimiter(lines, index, mode)) {
       out.push(mode === '$$' ? '$$' : '\\]');
       mode = null;
     }

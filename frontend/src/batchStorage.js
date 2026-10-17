@@ -130,7 +130,24 @@ export function batchSetItem(key, value) {
   _batchStoragePending[key] = value;
 }
 
+/* Read through a queued write. A caller that saves and immediately reads back
+   (turnClient.savePendingTurn → loadPendingTurn, or bumpPendingSeq) must see
+   the value it just wrote; without this it would see the previous commit and
+   silently drop the update. */
+export function batchPeek(key) {
+  if (_batchStoragePending && Object.prototype.hasOwnProperty.call(_batchStoragePending, key)) {
+    return _batchStoragePending[key];
+  }
+  try { return typeof localStorage === 'undefined' ? null : localStorage.getItem(key); }
+  catch { return null; }
+}
+
 export function batchRemoveItem(key) {
+  /* Cancel a queued write first: otherwise the microtask would resurrect the
+     value after this removal (save → clear in one tick). */
+  if (_batchStoragePending && Object.prototype.hasOwnProperty.call(_batchStoragePending, key)) {
+    delete _batchStoragePending[key];
+  }
   try { localStorage.removeItem(key); }
   catch (err) {
     if (_detectStorageBlocked(err)) {

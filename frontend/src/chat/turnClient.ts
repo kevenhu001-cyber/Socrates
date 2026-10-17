@@ -13,7 +13,7 @@
  */
 
 import { apiFetch, apiFetchRaw } from '../util/api.js';
-import { batchSetItem } from '../batchStorage.js';
+import { batchPeek, batchRemoveItem, batchSetItem } from '../batchStorage.js';
 import { consumeSseBuffer } from '../../../packages/core/src/index.ts';
 
 export interface ChatTurn {
@@ -190,7 +190,7 @@ export function savePendingTurn(sessionId: string, pointer: Omit<PendingTurn, 's
 export function loadPendingTurn(sessionId: string): PendingTurn | null {
   try {
     if (!sessionId) return null;
-    const raw = localStorage.getItem(pendingKey(sessionId));
+    const raw = batchPeek(pendingKey(sessionId));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as PendingTurn;
     if (!parsed || parsed.turnId == null || parsed.sessionId !== sessionId) return null;
@@ -221,6 +221,6 @@ export function clearPendingTurn(sessionId: string, clientTurnId?: string): void
       const current = loadPendingTurn(sessionId);
       if (current && current.clientTurnId !== clientTurnId) return;
     }
-    localStorage.removeItem(pendingKey(sessionId));
+    batchRemoveItem(pendingKey(sessionId));
   } catch { /* ignore */ }
 }

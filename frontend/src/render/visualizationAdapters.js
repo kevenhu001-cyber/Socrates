@@ -1,4 +1,4 @@
-import { whenFontsReady } from './helpers.js';
+import { whenFontsReady } from './helpers.ts';
 import { ensureMermaid, ensurePlotly } from '../vendor/lazy.js';
 
 let plotlyPromise;
@@ -7,7 +7,7 @@ let threePromise;
 let tldrawPromise;
 let geogebraPromise;
 
-const STRUCTURE_TEMPLATES = new Set(['flowchart', 'sequence', 'state', 'network', 'concept_map']);
+const STRUCTURE_TEMPLATES = new Set(['flowchart', 'sequence', 'state', 'tree', 'mindmap', 'network', 'concept_map']);
 
 export function usesSpecializedRenderer(template) {
   return template === 'function'

@@ -6,12 +6,12 @@ import {
   canonicalToolExample,
   canonicalToolExampleJson,
   describeToolSchema,
-} from '../src/services/toolErrorFeedback.ts';
-import { PLAN_TOOL, SPEC_TOOL, executePlan, executeSpec } from '../src/services/planning.ts';
+} from '../src/services/tools/toolErrorFeedback.js';
+import { PLAN_TOOL, SPEC_TOOL, executePlan, executeSpec } from '../src/services/core/planning.js';
 import { VISUALIZATION_TOOL, executeVisualization } from '../src/services/visualization.ts';
 import { WEB_SEARCH_TOOL } from '../src/services/webSearch.ts';
-import { WEB_FETCH_TOOL } from '../src/services/fetchBatch.ts';
-import { repairToolArguments } from '../src/services/toolCallSafety.ts';
+import { WEB_FETCH_TOOL } from '../src/services/util/fetchBatch.js';
+import { repairToolArguments } from '../src/services/tools/toolCallSafety.js';
 
 /* The whole point of shipping an example is that a model can copy it
    verbatim and succeed. Assert that against each tool's real executor. */
@@ -28,8 +28,11 @@ test('canonical examples pass the executors that validate them', () => {
 
 test('web search asks for natural prose and separately displayed sources instead of raw citation markers', () => {
   const description = WEB_SEARCH_TOOL.function.description;
-  assert.match(description, /Do NOT add \[1\]\/\[2\] citation markers/);
-  assert.match(description, /source card/i);
+  /* Contract after e6331030 (structured citations): the model writes prose and
+   * calls cite_sources; it must not emit numeric markers itself, and the UI
+   * renders inline citations plus a Sources list. */
+  assert.match(description, /Do not invent source IDs or write numerical reference markers/);
+  assert.match(description, /Sources list/i);
   assert.doesNotMatch(description, /cite material claims inline/i);
 });
 
