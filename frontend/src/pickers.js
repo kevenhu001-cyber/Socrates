@@ -4,7 +4,7 @@
    before any event handler fires.
    ============================================================ */
 
-import { esc } from './render/helpers.js';
+import { esc } from './render/helpers.ts';
 import { webSearchOn, setWebSearchOn } from './config/providers.js';
 import { getProviderConfigSnapshot, getActiveProvider as getActiveProviderConfig, setActiveProvider, setActiveProviderLocal } from './config/providerConfig.service.ts';
 import { subscribeToProviderConfig } from './config/providerConfig.store.ts';

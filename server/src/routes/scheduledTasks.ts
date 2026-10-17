@@ -2,10 +2,10 @@ import { Router } from 'express';
 import { durableJsonWrite } from '../middleware/durableIdempotency.js';
 import { eq, and, desc } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { projects, scheduledTasks, sessions } from '../db/schema.js';
+import { projects, scheduledTasks, sessions } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { NotFound, BadRequest } from '../lib/errors.js';
-import { WORKSPACE_AGENT_BACKGROUND_ENABLED } from '../services/agentRuntime.js';
+import { WORKSPACE_AGENT_BACKGROUND_ENABLED } from '../services/tools/agentRuntime.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -165,7 +165,7 @@ router.post('/:id/run', async (req, res, next) => {
       .where(and(eq(scheduledTasks.id, req.params.id), eq(scheduledTasks.userId, req.userId!)))
       .limit(1);
     if (!task) throw new NotFound('Scheduled task not found');
-    const { runScheduledTaskNow } = await import('../services/scheduler.js');
+    const { runScheduledTaskNow } = await import('../services/core/scheduler.js');
     const updated = await runScheduledTaskNow(task, { reschedule: false });
     return res.json(updated);
   } catch (err) { next(err); }

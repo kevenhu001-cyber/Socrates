@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { eq, and, sql } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { files, sessions } from '../db/schema.js';
+import { files, sessions } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { resourceScope } from '../middleware/scopes.js';
 import { uploadLimiter } from '../middleware/rateLimit.js';
@@ -19,7 +19,7 @@ import {
   MEDIA_FILE_EXTENSIONS,
   TEXTUAL_APPLICATION_MIMES,
   formatBytes,
-} from '../services/attachmentReader.js';
+} from '../services/embeddings/attachmentReader.js';
 import { isUuid } from '../lib/validate.js';
 
 import os from 'node:os';
@@ -57,7 +57,7 @@ const storage = multer.diskStorage({
 /* Upload allow-list. Chat attachments ride on this endpoint, so it must
    accept every format the model can read via read_attachment (text,
    PDF, Office, EPUB/RTF, images) plus media files kept as attachments.
-   Extension sets are shared with services/attachmentReader.ts. */
+   Extension sets are shared with services/embeddings/attachmentReader.ts. */
 const ALLOWED_EXACT_MIMES = new Set([
   'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/avif',
   'application/pdf',

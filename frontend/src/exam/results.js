@@ -1,5 +1,5 @@
-import { esc } from '../render/helpers.js';
-import { formatMsg } from '../render/markdown.js';
+import { esc } from '../render/helpers.ts';
+import { formatMsg } from '../render/markdown.ts';
 import { examBody as _examBody, examFooter as _examFooter, examUiL as _examUiL, setExamTitle as _setExamTitle } from './ui.js';
 
 function resultTypeLabel(type, translate) {

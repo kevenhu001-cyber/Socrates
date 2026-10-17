@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Integration test for services/loginLockout.js — exercises the
+ * Integration test for services/core/loginLockout.js — exercises the
  * atomic upsert under real concurrent load. Requires a Postgres
  * instance reachable via DATABASE_URL; the test creates and drops
  * its own row so it is safe to run alongside the dev DB.
@@ -9,8 +9,8 @@ import { test, describe, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { eq } from 'drizzle-orm';
 import { initDb, getDb, closeDb } from '../src/db/index.js';
-import { loginFailures } from '../src/db/schema.js';
-import { recordFailure, checkLockout } from '../src/services/loginLockout.js';
+import { loginFailures } from '../src/db/schema/index.js';
+import { recordFailure, checkLockout } from '../src/services/core/loginLockout.js';
 
 const TEST_EMAIL = 'lockout-' + Date.now() + '-' + Math.random().toString(36).slice(2) + '@example.test';
 

@@ -21,7 +21,7 @@
  * instead of silently mixing them.
  */
 import { getDb } from '../../db/index.js';
-import { usageEvents } from '../../db/schema.js';
+import { usageEvents } from '../../db/schema/index.js';
 
 /** Where a usage row's numbers came from. Persisted on every row. */
 export type UsageSource = 'provider' | 'estimate';

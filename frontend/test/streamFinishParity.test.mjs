@@ -4,9 +4,9 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { marked } from 'marked';
 
-import { formatMsg, formatMsgProgressive } from '../src/render/markdown.js';
-import { createSettledSplitter } from '../src/render/streaming.js';
-import { preprocessMarkdownForStreaming } from '../src/render/preprocess.js';
+import { formatMsg, formatMsgProgressive } from '../src/render/markdown.ts';
+import { createSettledSplitter } from '../src/render/streaming.ts';
+import { preprocessMarkdownForStreaming } from '../src/render/preprocess.ts';
 
 /* P_stream-finish-parity — a live turn paints each settled markdown block
    with the streaming renderer and, at finish, repaints the whole answer

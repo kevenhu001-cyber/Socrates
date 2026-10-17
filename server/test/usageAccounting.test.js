@@ -7,7 +7,7 @@
  *
  *   1. `stream_options: { include_usage: true }` was never sent, so a
  *      streaming response carried no `usage` object at all.
- *   2. Even if it had, the SSE parse loop in services/llm.ts began each frame
+ *   2. Even if it had, the SSE parse loop in services/core/llm.ts began each frame
  *      with `if (!delta) continue`, and the usage frame is precisely the one
  *      frame with `choices: []` and no delta. It would have been discarded.
  *
@@ -23,8 +23,8 @@ import {
   estimateMessageTokens,
   normalizeProviderUsage,
   resolveUsage,
-} from '../src/services/usageTracker.js';
-import { streamChatCompletion } from '../src/services/llm.js';
+} from '../src/services/core/usageTracker.js';
+import { streamChatCompletion } from '../src/services/core/llm.js';
 
 const BASE_OPTS = {
   apiBase: 'https://upstream.invalid/v1',

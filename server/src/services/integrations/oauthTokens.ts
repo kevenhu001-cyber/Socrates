@@ -1,8 +1,8 @@
 import crypto from 'node:crypto';
 import { and, eq, isNull } from 'drizzle-orm';
 import { getDb } from '../../db/index.js';
-import { oauthAccessTokens, users } from '../../db/schema.js';
-import { sha256Hex } from '../agentKeys.js';
+import { oauthAccessTokens, users } from '../../db/schema/index.js';
+import { sha256Hex } from '../core/agentKeys.js';
 import type { User } from '../../types/http.js';
 
 /* ── Lifetimes ─────────────────────────────────────────────── */

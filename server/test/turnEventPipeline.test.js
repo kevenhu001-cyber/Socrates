@@ -7,7 +7,7 @@ const originalFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = originalFetch; });
 after(async () => {
   await shutdownPubsub();
-  const { stopContentExtractorPool } = await import('../src/services/contentExtractor.js');
+  const { stopContentExtractorPool } = await import('../src/services/embeddings/contentExtractor.js');
   await stopContentExtractorPool();
 });
 const frame = (value) => `data: ${JSON.stringify(value)}\n\n`;

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   cloudProviderConfigId,
   cloudProviderSelector,
-} from '../src/services/oomolProjectConnector.js';
+} from '../src/services/integrations/oomolProjectConnector.js';
 
 function withEnv(value, fn) {
   const prev = process.env.OC_CLOUD_PROVIDER_CONFIG_IDS;

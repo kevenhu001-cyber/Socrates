@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createToolTurnPolicy, hashToolArguments } from '../src/services/toolTurnPolicy.ts';
+import { createToolTurnPolicy, hashToolArguments } from '../src/services/tools/toolTurnPolicy.js';
 
 const ALL_TOOLS = ['web_search', 'code_interpreter', 'render_visualization', 'workspace_agent'];
 

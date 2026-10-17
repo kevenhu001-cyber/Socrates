@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { TtsCache, ttsCacheKey } from '../src/services/ttsCache.ts';
+import { TtsCache, ttsCacheKey } from '../src/services/embeddings/ttsCache.js';
 
 test('cache keys isolate per user and per request shape', () => {
   const a = ttsCacheKey('user-1', 'hello', 'alloy', 'mp3', 'en');

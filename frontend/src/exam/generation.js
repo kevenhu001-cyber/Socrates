@@ -1,5 +1,5 @@
-import { esc } from '../render/helpers.js';
-import { formatMsg } from '../render/markdown.js';
+import { esc } from '../render/helpers.ts';
+import { formatMsg } from '../render/markdown.ts';
 import { callAPIStream } from '../chat/stream.js';
 import { stateStore } from '../state/store.js';
 import { reportSwallow } from '../util/reportSwallow.ts';

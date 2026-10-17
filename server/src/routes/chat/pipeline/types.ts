@@ -73,7 +73,7 @@ export interface PreparedCall {
   call: ToolCall;
   /** Canonical registry name when resolved, else the requested name. */
   toolName: string;
-  registryEntry: ReturnType<ReturnType<typeof import('../../../services/toolRegistry.js').createToolRegistry>['get']> | null;
+  registryEntry: ReturnType<ReturnType<typeof import('../../../services/tools/toolRegistry.js').createToolRegistry>['get']> | null;
   args: Record<string, any>;
   rejection: { code: string; retryable: boolean; hint?: string; fieldErrors?: string } | null;
 }

@@ -6,19 +6,19 @@ import { randomUUID, createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import { z } from 'zod';
 import { codeInterpreter } from '../services/codeInterpreter.js';
-import { ensureSessionWorkspaceForSession, removeSessionWorkspacesForUser } from '../services/agentRuntime.js';
+import { ensureSessionWorkspaceForSession, removeSessionWorkspacesForUser } from '../services/tools/agentRuntime.js';
 import { getDb } from '../db/index.js';
 import {
   sessions, messages, mistakes, artifacts, artifactVersions,
   agentRuns, usageEvents, files,
   sessionTags, tags as tagsTable,
-} from '../db/schema.js';
+} from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { resourceScope } from '../middleware/scopes.js';
 import { writeLimiter } from '../middleware/rateLimit.js';
 import { durableJsonWrite } from '../middleware/durableIdempotency.js';
 import { NotFound, Forbidden, BadRequest } from '../lib/errors.js';
-import { indexMessageChunks } from '../services/chunkIndex.js';
+import { indexMessageChunks } from '../services/embeddings/chunkIndex.js';
 import { sanitizeStoredHtml, sanitizePlainText } from '../lib/sanitize.js';
 import { getSessionLimit } from '../lib/tiers.js';
 import { isUuid } from '../lib/validate.js';

@@ -1,6 +1,6 @@
 import { deleteCustomTemplate, findTemplateByShortcut, loadPromptTemplates, upsertCustomTemplate, syncPromptTemplates } from '../chat/promptTemplates.js';
 import { showToast } from './toast.js';
-import { esc } from '../render/helpers.js';
+import { esc } from '../render/helpers.ts';
 import { showConfirm } from './confirm.js';
 /* ui/promptTemplates.js — Wave 1d of main-js-split plan.
  * Prompt-templates modal: lists built-in and user templates, with edit and

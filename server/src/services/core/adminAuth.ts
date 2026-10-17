@@ -17,7 +17,7 @@
  *      recommended for public exposure).
  *
  *   2. Per-IP login-failure lockout — reuses the DB-backed
- *      `login_failures` table (services/loginLockout.ts) under the
+ *      `login_failures` table (services/core/loginLockout.ts) under the
  *      `admin-ip:<ip>` key namespace, so the lockout is process-global
  *      across cluster workers the same way the per-email user lockout
  *      is. An attacker rotating across worker processes cannot exceed

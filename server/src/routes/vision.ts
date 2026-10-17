@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { visionLimiter } from '../middleware/rateLimit.js';
 import { audit } from '../middleware/audit.js';
-import { describeImage } from '../services/vision.js';
+import { describeImage } from '../services/embeddings/vision.js';
 
 const router = Router();
 

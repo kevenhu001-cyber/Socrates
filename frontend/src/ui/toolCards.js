@@ -13,10 +13,10 @@
  * Reads from window.*: t, hljs, scrollMainToBottom
  */
 
-import { formatToolOutput } from '../render/toolOutput.js';
+import { formatToolOutput } from '../render/toolOutput.ts';
 import { copyText, setCopyFeedback, trTool } from './toolCardHelpers.js';
 import { startToolCardTimer } from './toolCardTimer.js';
-import { STROKE_ICONS, toolIcon } from './icons/toolIcons.js';
+import { STROKE_ICONS, toolIcon } from './icons/toolIcons.ts';
 
 export { stopToolCardTimerForCard } from './toolCardTimer.js';
 export { renderWebSearchResults } from './toolSearchResults.js';

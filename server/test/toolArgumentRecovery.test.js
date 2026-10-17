@@ -27,12 +27,12 @@ import {
   parseToolArguments,
   repairToolArguments,
   validateToolArguments,
-} from '../src/services/toolCallSafety.js';
-import { SELF_NORMALIZING_TOOLS } from '../src/services/toolRegistry.js';
+} from '../src/services/tools/toolCallSafety.js';
+import { SELF_NORMALIZING_TOOLS } from '../src/services/tools/toolRegistry.js';
 import { VISUALIZATION_TOOL, executeVisualization, validateVisualizationSpec } from '../src/services/visualization.js';
-import { PLAN_TOOL, SPEC_TOOL, executePlan, executeSpec } from '../src/services/planning.js';
+import { PLAN_TOOL, SPEC_TOOL, executePlan, executeSpec } from '../src/services/core/planning.js';
 import { CREATE_SITE_TOOL } from '../src/services/siteCreation.js';
-import { buildToolErrorFeedback } from '../src/services/toolErrorFeedback.js';
+import { buildToolErrorFeedback } from '../src/services/tools/toolErrorFeedback.js';
 
 const VIZ_SCHEMA = VISUALIZATION_TOOL.function.parameters;
 const PLAN_SCHEMA = PLAN_TOOL.function.parameters;

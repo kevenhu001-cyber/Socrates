@@ -2,8 +2,8 @@
  * create_plan / create_spec executor — structured card tools.
  */
 
-import { executePlan, executeSpec } from '../../../../services/planning.js';
-import { buildToolErrorFeedback } from '../../../../services/toolErrorFeedback.js';
+import { executePlan, executeSpec } from '../../../../services/core/planning.js';
+import { buildToolErrorFeedback } from '../../../../services/tools/toolErrorFeedback.js';
 import type { ToolExecutor, ToolExecutionResult } from './types.js';
 import type { ToolResult } from '../types.js';
 

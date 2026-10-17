@@ -19,13 +19,13 @@ import {and, desc, eq, gte, or, sql} from 'drizzle-orm';
 import {ApiError, NotFound, TooManyRequests} from '../../lib/errors.js';
 import {getBeagleQuota} from '../../lib/tiers.js';
 import {getDb} from '../../db/index.js';
-import {usageEvents, artifacts, sessions} from '../../db/schema.js';
+import {usageEvents, artifacts, sessions} from '../../db/schema/index.js';
 import {isMultimodalProvider} from '../../lib/multimodal.js';
 import {pickChatLimiterFor} from '../../middleware/rateLimit.js';
 
 import type {NextFunction, Request, Response} from 'express';
-import {getActiveApiKey} from '../../services/apiKey.js';
-import {estimateMessageTokens} from '../../services/usageTracker.js';
+import {getActiveApiKey} from '../../services/core/apiKey.js';
+import {estimateMessageTokens} from '../../services/core/usageTracker.js';
 import {visualizationTemplateGuide} from '../../services/visualization.js';
 /* P_teacher-mode-cache — the teacher-mode system prompt lives on
    disk and rarely changes. The canonical loader is in
@@ -49,7 +49,7 @@ import {getCodeInterpreterPrompt, getTeacherModePrompt} from '../../lib/prompts.
     the same whitelist. */
 import {sanitizeExtraBody} from '../../lib/sanitize.js';
 
-/** The decrypted LLM provider object returned by services/apiKey.js. */
+/** The decrypted LLM provider object returned by services/core/apiKey.js. */
 type Provider = NonNullable<Awaited<ReturnType<typeof getActiveApiKey>>>;
 
 /* ─────────────────────────────────────────────────────────────────
@@ -103,7 +103,7 @@ async function resolveAssistantInstructions(
  *
  * Query: the plain text of the LAST user message. Hits: the hybrid
  * BM25 + vector retrieval over the session's chunk index
- * (services/chunkIndex.ts), owner-checked server-side.
+ * (services/embeddings/chunkIndex.ts), owner-checked server-side.
  *
  * Injection contract (mirrors the client_context_data untrusted-data
  * rule in SERVER_SYSTEM_POLICY): the retrieved text is wrapped in a
@@ -154,7 +154,7 @@ async function resolveRagContext(
   if (!query) return null;
 
   try {
-    const { searchSessionChunksHybrid, sessionOwnedBy } = await import('../../services/chunkIndex.js');
+    const { searchSessionChunksHybrid, sessionOwnedBy } = await import('../../services/embeddings/chunkIndex.js');
     /* P_ttfb-rag-timeout — the hybrid search's vector leg burns a remote
      * embedding call, which on a flaky cross-border link can park the turn
      * for seconds before the first token. RAG is best-effort recall: race
@@ -244,7 +244,7 @@ async function resolveMemoryContext(
 ): Promise<PolicyBlock | null> {
   if (!userId) return null;
   try {
-    const { memories } = await import('../../db/schema.js');
+    const { memories } = await import('../../db/schema/index.js');
     /* Global rows plus rows tagged to THIS project only — a memory
        scoped to a different project must not leak across projects. */
     const scopeCond = projectId
@@ -628,7 +628,7 @@ export const ChatPayloadSchema = z.object({
      message is used as the retrieval query against the session's
      chunk index and the top hits are injected as an untrusted
      context block into the system prompt. Ownership is verified
-     server-side (services/chunkIndex.ts#sessionOwnedBy) before any
+     server-side (services/embeddings/chunkIndex.ts#sessionOwnedBy) before any
      retrieval, so a forged sessionId yields an empty injection
      rather than another user's history. */
   ragSessionId: z.string().max(64).optional(),
@@ -736,7 +736,7 @@ export function containsImageUrlParts(messages: ChatMessage[]): boolean {
  * System messages are not multimodal in OpenAI's spec, but we
  * still walk them for safety in case a future revision allows
  * system-image parts. The provider object is the decrypted shape
- * returned by services/apiKey.js#decryptProvider; it carries the
+ * returned by services/core/apiKey.js#decryptProvider; it carries the
  * user-controlled `isMultimodal` boolean. */
 export function transformMessagesForModel(messages: ChatMessage[], provider: Provider): ChatMessage[] {
   const multimodal = isMultimodalProvider(provider);
@@ -922,7 +922,7 @@ export async function prepareChatRequest(
     const rawBudget = Number(process.env.CHAT_CONTEXT_MAX_TOKENS);
     const budget = Number.isFinite(rawBudget) && rawBudget > 0 ? Math.floor(rawBudget) : 100_000;
     if (estimateMessageTokens(messages) > budget) {
-      const { compressSessionMessages } = await import('../../services/sessionCompressor.js');
+      const { compressSessionMessages } = await import('../../services/embeddings/sessionCompressor.js');
       const rawKeep = Number(process.env.CHAT_CONTEXT_KEEP_TURNS);
       const compressed = await compressSessionMessages(
         messages.filter((m) => m.role !== 'system'),

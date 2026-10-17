@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { getDb } from '../db/index.js';
 import type { Database } from '../db/index.js';
-import { shares, sessions } from '../db/schema.js';
+import { shares, sessions } from '../db/schema/index.js';
 import { eq, and } from 'drizzle-orm';
 import { requireAuth } from '../middleware/auth.js';
 import { NotFound } from '../lib/errors.js';

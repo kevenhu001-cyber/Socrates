@@ -28,8 +28,8 @@ for (const key of ['Element', 'Node', 'NodeFilter', 'DocumentFragment', 'HTMLEle
   if (globalThis[key] === undefined) globalThis[key] = dom.window[key];
 }
 
-const { formatMsg, formatMsgProgressive, replaceInlineDollarMath, _looksLikeNumericMath } = await import('../src/render/markdown.js');
-const { fixHeadingMarkers } = await import('../src/render/helpers.js');
+const { formatMsg, formatMsgProgressive, replaceInlineDollarMath, _looksLikeNumericMath } = await import('../src/render/markdown.ts');
+const { fixHeadingMarkers } = await import('../src/render/helpers.ts');
 
 function loadRealKatex() {
   const code = readFileSync(new URL('../src/vendor-files/katex/katex.min.js', import.meta.url), 'utf8');

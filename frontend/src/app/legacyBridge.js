@@ -49,8 +49,8 @@ import { processPendingMermaid, processPendingViz, reclaimVizCards, schedulePend
 import { wireCodeBlockHeaders, wireMsgBodyImages } from '../render/postRender.js';
 import { mountVisualization, disposeVisualizations, disposeVisualization } from '../render/vizStubs.js';
 import { appendInlineArtifact } from '../ui/toolCards.js';
-import { formatMsgProgressive } from '../render/markdown.js';
-import { stripCitationMarkers } from '../render/helpers.js';
+import { formatMsgProgressive } from '../render/markdown.ts';
+import { stripCitationMarkers } from '../render/helpers.ts';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.js';
 import { retryLiveTurn, decideLiveApproval } from '../chat/liveTurn.js';
 import { startSession } from '../chat/sessionBootstrap.js';

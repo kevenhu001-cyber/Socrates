@@ -1,4 +1,4 @@
-import type { AgentPlanData, AgentStepData } from '../../ui/agentSteps.js';
+import type { AgentPlanData, AgentStepData } from '../../ui/agentSteps.ts';
 
 /** `event: agent_step` — one projected workspace-agent step. */
 export interface AgentStepFrame extends AgentStepData {

@@ -10,7 +10,7 @@ import {
   scoreSpamPenalty,
   tokenBigrams,
   tokenizeQuery,
-} from './scoring.js';
+} from './embeddings/scoring.js';
 import * as searchResultCache from '../lib/searchResultCache.js';
 import {expandQuery} from './queryExpander.js';
 import {searchMinimax} from './searchEngines/minimax.js';

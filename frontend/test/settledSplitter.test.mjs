@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createSettledSplitter,
-} from '../src/render/streaming.js';
-import { formatMsgProgressive as renderProgressive } from '../src/render/markdown.js';
+} from '../src/render/streaming.ts';
+import { formatMsgProgressive as renderProgressive } from '../src/render/markdown.ts';
 
 /* createSettledSplitter keeps the settled region as a grow-only list of
    self-contained blocks so streaming renders mount each completed block

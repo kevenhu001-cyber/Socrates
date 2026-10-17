@@ -1,4 +1,4 @@
-import { toolCardView } from "./toolCardView.js";
+import { toolCardView } from "./toolCardView.ts";
 
 /* ============================================================
    RUNNING-CARD ELAPSED TIMER (task 6.3, Req 3.2 / 3.3)

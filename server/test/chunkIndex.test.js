@@ -1,10 +1,10 @@
 // @ts-check
 /**
- * Unit + integration tests for services/chunkIndex.ts — the durable
+ * Unit + integration tests for services/embeddings/chunkIndex.ts — the durable
  * per-message chunk index + session-scoped BM25 retrieval (LobeHub
  * M3 deferred).
  *
- * Pure part: the index reuses `services/rag.ts` (chunkText /
+ * Pure part: the index reuses `services/embeddings/rag.ts` (chunkText /
  * buildRagIndex / searchRagIndex) which is already covered by
  * rag.test.js. The integration block here pins the new contract:
  * the index lookup hits a real DB.
@@ -19,14 +19,14 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { eq } from 'drizzle-orm';
 import { initDb, getDb, closeDb } from '../src/db/index.js';
-import { users, sessions, messages, sessionChunks } from '../src/db/schema.js';
+import { users, sessions, messages, sessionChunks } from '../src/db/schema/index.js';
 import {
   indexMessageChunks,
   searchSessionChunks,
   searchSessionChunksHybrid,
   removeMessageChunks,
   sessionOwnedBy,
-} from '../src/services/chunkIndex.js';
+} from '../src/services/embeddings/chunkIndex.js';
 
 let dbAvailable = false;
 const TEST_USER_ID = '00000000-0000-0000-0000-0000000000a3';

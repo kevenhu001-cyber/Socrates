@@ -10,12 +10,12 @@
 
 import { eq, and } from 'drizzle-orm';
 import { getDb } from '../../../db/index.js';
-import { connectorConnections, projectConnectorConnections } from '../../../db/schema.js';
+import { connectorConnections, projectConnectorConnections } from '../../../db/schema/index.js';
 import { codeInterpreter } from '../../../services/codeInterpreter.js';
-import { createToolRegistry } from '../../../services/toolRegistry.js';
-import { canonicalToolExampleJson } from '../../../services/toolErrorFeedback.js';
-import { createToolTurnPolicy } from '../../../services/toolTurnPolicy.js';
-import type { JsonSchemaNode } from '../../../services/toolCallSafety.js';
+import { createToolRegistry } from '../../../services/tools/toolRegistry.js';
+import { canonicalToolExampleJson } from '../../../services/tools/toolErrorFeedback.js';
+import { createToolTurnPolicy } from '../../../services/tools/toolTurnPolicy.js';
+import type { JsonSchemaNode } from '../../../services/tools/toolCallSafety.js';
 import type { Request } from 'express';
 
 export interface StreamToolContext {

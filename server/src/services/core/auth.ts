@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { getDb } from '../../db/index.js';
-import { users, authSessions, verificationTokens, pendingRegistrations, files, loginFailures } from '../../db/schema.js';
+import { users, authSessions, verificationTokens, pendingRegistrations, files, loginFailures } from '../../db/schema/index.js';
 import type { User } from '../../types/http.js';
 import {
   hashPassword, comparePassword,

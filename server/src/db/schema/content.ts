@@ -189,7 +189,7 @@ export const usageEvents = pgTable('usage_events', {
   /* Provenance of the token counts: 'provider' when the upstream reported a
      `usage` object (non-streaming response, or the final
      stream_options.include_usage frame), 'estimate' when they came from the
-     chars/4 approximation in services/usageTracker.ts.
+     chars/4 approximation in services/core/usageTracker.ts.
 
      Defaults to 'estimate' so the ~history that predates this column is
      labelled truthfully rather than being silently promoted to "measured".
@@ -207,7 +207,7 @@ export const usageEvents = pgTable('usage_events', {
    Scheduled Tasks — recurring tasks / reminders
    One row per scheduled task. The task runs at the next scheduled
    time (nextRunAt) and is rescheduled according to frequency.
-   The scheduler daemon (src/services/scheduler.js) polls for
+   The scheduler daemon (src/services/core/scheduler.js) polls for
    overdue tasks, runs them, and updates nextRunAt.
    ────────────────────────────────────────────── */
 export const scheduledTasks = pgTable('scheduled_tasks', {

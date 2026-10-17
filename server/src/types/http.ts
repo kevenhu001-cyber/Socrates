@@ -1,4 +1,4 @@
-import type { users, authSessions } from '../db/schema.js';
+import type { users, authSessions } from '../db/schema/index.js';
 
 /** A full user row as stored in the database (the `req.user` shape). */
 export type User = typeof users.$inferSelect;

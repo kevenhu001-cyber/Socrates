@@ -6,12 +6,12 @@ import {
   oauthClients,
   oauthAuthorizationCodes,
   oauthAccessTokens,
-} from '../db/schema.js';
+} from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { parseScopeParam, ALL_SCOPES_SET } from '../middleware/scopes.js';
 import { rotateCsrfToken } from '../middleware/csrf.js';
 import { oauthRegisterLimiter, oauthTokenLimiter, oauthRevokeLimiter } from '../middleware/rateLimit.js';
-import { sha256Hex } from '../services/agentKeys.js';
+import { sha256Hex } from '../services/core/agentKeys.js';
 import {
   ACCESS_TOKEN_TTL_S,
   issueTokenPair,

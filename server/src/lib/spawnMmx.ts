@@ -2,7 +2,7 @@
  * Shared helpers for spawning the local `mmx` CLI.
  *
  * Centralised so the search engine (`searchEngines/mmx.js`) and the
- * vision service (`services/vision.js`) don't drift in how they
+ * vision service (`services/embeddings/vision.js`) don't drift in how they
  * prepare the subprocess environment. Both consumers rely on the
  * same invariants:
  *

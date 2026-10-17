@@ -9,7 +9,7 @@ import {
   TEXTUAL_APPLICATION_MIMES,
   formatAttachmentReadOutput,
   isTextReadable,
-} from '../src/services/attachmentReader.js';
+} from '../src/services/embeddings/attachmentReader.js';
 
 /* P_file-attachments — read_attachment is the model's only way into a
    durable upload. These tests cover the pure surface: the advertised

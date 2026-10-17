@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Tests for src/services/agentKeys.ts — scoped long-lived credentials for
+ * Tests for src/services/core/agentKeys.ts — scoped long-lived credentials for
  * headless agents. The grammar/hash checks are pure; the round-trip suite
  * needs PostgreSQL (skipped without DATABASE_URL, matching the other suites).
  *
@@ -16,9 +16,9 @@ import {
   createAgentKey,
   verifyAgentKey,
   sha256Hex,
-} from '../src/services/agentKeys.ts';
+} from '../src/services/core/agentKeys.js';
 import { initDb, getDb, closeDb } from '../src/db/index.js';
-import { users, agentApiKeys } from '../src/db/schema.js';
+import { users, agentApiKeys } from '../src/db/schema/index.js';
 import { eq } from 'drizzle-orm';
 
 let dbAvailable = false;

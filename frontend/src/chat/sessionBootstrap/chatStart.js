@@ -14,7 +14,7 @@ import { updateComposerBtn } from '../../ui/topicSetup.js';
 import { clearLegacyMsgListChildren } from '../../ui/messageListDom.js';
 import { buildMessageContent, resetAttachments } from '../../attachments.js';
 import { renderAttachmentChips } from '../../attachments/render.js';
-import { formatMsg } from '../../render/markdown.js';
+import { formatMsg } from '../../render/markdown.ts';
 import { publishReactChatRuntime } from '../../ui/reactBridge.js';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 

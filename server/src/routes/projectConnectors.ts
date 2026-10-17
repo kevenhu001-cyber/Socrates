@@ -2,7 +2,7 @@ import { Router } from 'express';
 import type { NextFunction, Request, Response } from 'express';
 import { and, eq } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { projectConnectorConnections } from '../db/schema.js';
+import { projectConnectorConnections } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import {
   PROJECT_CONNECTOR_CATALOG, cloudProviderSelector, connectorErrorPayload, externalUserId,

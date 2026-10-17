@@ -31,7 +31,7 @@
 
 import type { ImmutableBridge } from '../lib/bridge/createImmutableBridge.ts';
 import { useBridge } from '../lib/bridge/useBridge.ts';
-import { getStreamRenderInterval } from '../render/streaming.js';
+import { getStreamRenderInterval } from '../render/streaming.ts';
 import { stateStore } from '../state/store.js';
 import { reconcileMessageSnapshots } from './chatRuntimeSnapshot.ts';
 import type {
@@ -94,6 +94,14 @@ let pendingToolRuns: Set<string> | null = null;
    what a synchronous pair would have produced). Terminal events drain this
    slot before committing so lifecycle ordering survives. */
 let pendingLifecycle: ChatRuntimeEvent | null = null;
+/* Arrival order for the two queues. `message-added`/`stream-started` and
+   `tool-run-updated` can land in the same frame; flushing them in a fixed
+   order (tool runs first, lifecycle second) made `lastEvent` report the
+   older event. Track a monotonic sequence so the frame drains them in the
+   order they were published. */
+let pendingLifecycleSeq = 0;
+let pendingToolRunsSeq = 0;
+let eventSeq = 0;
 let pendingDeltaFrame = 0;
 /* P_stream-paint-cadence — deltas used to commit once per rAF (up to 60
    repaints/sec), which made the adaptive getStreamRenderInterval() cadence
@@ -292,9 +300,26 @@ function scheduleFrame(): void {
          event happens to arrive. */
       scheduleDeltaFlush(pendingDelta);
     }
-    flushPendingToolRuns();
-    flushPendingLifecycle();
+    flushQueuedCommits();
   });
+}
+
+/**
+ * Drain the lifecycle and tool-run queues in publication order. Both queues
+ * coalesce independently, so a single frame may hold one of each; committing
+ * them in a fixed order would make the snapshot's `lastEvent` depend on the
+ * queue implementation rather than on what actually happened last.
+ */
+function flushQueuedCommits(): void {
+  const queued: Array<{ seq: number; flush: () => void }> = [];
+  if (pendingLifecycle) {
+    queued.push({ seq: pendingLifecycleSeq, flush: flushPendingLifecycle });
+  }
+  if (pendingToolRuns && pendingToolRuns.size > 0) {
+    queued.push({ seq: pendingToolRunsSeq, flush: flushPendingToolRuns });
+  }
+  queued.sort((a, b) => a.seq - b.seq);
+  for (const entry of queued) entry.flush();
 }
 
 /**
@@ -356,6 +381,7 @@ function publish(event: ChatRuntimeEvent): void {
   if (event.type === 'tool-run-updated') {
     if (!pendingToolRuns) pendingToolRuns = new Set<string>();
     pendingToolRuns.add(event.messageId);
+    pendingToolRunsSeq = ++eventSeq;
     scheduleFrame();
     return;
   }
@@ -366,6 +392,7 @@ function publish(event: ChatRuntimeEvent): void {
      produced for the snapshot's lastEvent/stream fields. */
   if (event.type === 'message-added' || event.type === 'stream-started') {
     pendingLifecycle = event;
+    pendingLifecycleSeq = ++eventSeq;
     scheduleFrame();
     return;
   }
@@ -416,6 +443,9 @@ const chatRuntimeBridge: ImmutableBridge<ChatRuntimeSnapshot, ChatRuntimeEvent> 
     pendingDelta = null;
     pendingToolRuns = null;
     pendingLifecycle = null;
+    pendingLifecycleSeq = 0;
+    pendingToolRunsSeq = 0;
+    eventSeq = 0;
     clearDeltaTimer();
     lastDeltaCommitAt = 0;
     if (pendingDeltaFrame) {

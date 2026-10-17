@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm';
-import { artifacts } from '../../db/schema.js';
+import { artifacts } from '../../db/schema/index.js';
 import { NotFound } from '../../lib/errors.js';
 import type { Database } from '../../db/index.js';
 

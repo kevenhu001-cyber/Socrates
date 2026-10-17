@@ -24,7 +24,7 @@ import {
   toolRunView,
   visualizationSpecKey,
 } from '../src/react/tool-run/toolRunModel.ts';
-import { toolRunGroupLabel, toolRunLabel } from '../src/react/tool-run/labels.ts';
+import { toolRunGroupLabel, toolRunLabel } from '../src/ui/toolPresentationModel.ts';
 
 const RAW = 'First paragraph.\n\nSecond paragraph here.';
 

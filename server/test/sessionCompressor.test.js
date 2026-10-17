@@ -8,7 +8,7 @@
 import {describe, test} from 'node:test';
 import assert from 'node:assert/strict';
 
-import {compressSessionMessages, __resetCompressMemo} from '../src/services/sessionCompressor.js';
+import {compressSessionMessages, __resetCompressMemo} from '../src/services/embeddings/sessionCompressor.js';
 
 function makeMessages(n) {
   const out = [];

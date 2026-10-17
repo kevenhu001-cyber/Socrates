@@ -17,7 +17,7 @@ import { generateDiagnosticQuestions } from '../diagnosticGenerator.js';
 import { updateKB } from '../../ui/knowledgePanel.js';
 import { renderDiagQuestion, proceedToTeaching } from '../../tutor/diagnosticFlow.js';
 import { buildFallbackDiagnosticQuestions, shouldAutoSearchTutor } from '../../tutor/policy.js';
-import { esc } from '../../render/helpers.js';
+import { esc } from '../../render/helpers.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { isWebSearchOn, renderRecents, translate } from './runtime.js';
 

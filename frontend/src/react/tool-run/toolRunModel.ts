@@ -10,7 +10,7 @@ export {
   toolOutputsOf,
   visualizationSpecOf,
 } from './toolOutputs.ts';
-export {agentRunStateOf, runStartedAt, toolRunStateOf} from './toolRunState.ts';
+export {agentRunStateOf, runStartedAt, toolRunStateOf} from '../../ui/toolPresentationState.ts';
 export {
   buildTurnLayout,
   findThinkRanges,

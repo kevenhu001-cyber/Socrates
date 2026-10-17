@@ -4,7 +4,7 @@ import { randomBytes, createHmac, timingSafeEqual } from 'node:crypto';
 import { setCsrfToken, setCsrfCookie, clearCsrfCookie } from '../middleware/csrf.js';
 import { requireAuth, requireMobileBearer, requestCredential } from '../middleware/auth.js';
 import { authLimiter, codeLoginLimiter, resetLimiter } from '../middleware/rateLimit.js';
-import * as authService from '../services/auth.js';
+import * as authService from '../services/core/auth.js';
 import { audit } from '../middleware/audit.js';
 import { shouldUseSharedDomain, SHARED_COOKIE_DOMAIN } from '../lib/cookieEnv.js';
 import { generateSessionToken, sessionSecret } from '../lib/crypto.js';
@@ -504,7 +504,7 @@ router.get('/oauth/github/callback', async (req, res, next) => {
 
     // 4) Find or create the user, then start a session
     const { getDb } = await import('../db/index.js');
-    const { users, authSessions } = await import('../db/schema.js');
+    const { users, authSessions } = await import('../db/schema/index.js');
     const { eq } = await import('drizzle-orm');
     const db = getDb();
     let [user] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);

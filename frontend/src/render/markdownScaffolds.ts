@@ -1,5 +1,5 @@
 /* Incremental previews and plugin registry for Tutor scaffolds during streaming. */
-import { decodeEntities, escAttr, escHTML, stripTags } from './helpers.js';
+import { decodeEntities, escAttr, escHTML, stripTags } from './helpers.ts';
 
 /* Stream-time scaffold plugins. */
 interface StreamScaffoldPlugin {

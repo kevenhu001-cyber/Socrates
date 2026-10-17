@@ -48,4 +48,4 @@ export {
   type TurnSegment,
   type VisualizationOutput,
 } from './toolRunModel';
-export { formatSeconds, translate, tf } from './labels';
+export { formatSeconds, translate, tf } from '../../ui/toolPresentationModel.ts';

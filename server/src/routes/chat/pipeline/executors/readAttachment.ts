@@ -13,7 +13,7 @@ import {
   AttachmentReadError,
   formatAttachmentReadOutput,
   readAttachmentForUser,
-} from '../../../../services/attachmentReader.js';
+} from '../../../../services/embeddings/attachmentReader.js';
 import { isUuid } from '../../../../lib/validate.js';
 import type { ToolExecutor, ToolExecutionResult } from './types.js';
 import type { ToolResult } from '../types.js';

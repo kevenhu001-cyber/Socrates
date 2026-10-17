@@ -14,7 +14,7 @@ import { and, eq, inArray, isNotNull, isNull, lte, ne, or, sql } from 'drizzle-o
 import { getDb } from '../../db/index.js';
 import { Conflict } from '../../lib/errors.js';
 import { claimScheduledTask, renewScheduledTaskLease, withScheduledTaskLease, type ScheduledLease } from './scheduledTaskLease.js';
-import { scheduledTasks, scheduledTaskLeases, sessions, messages, users } from '../../db/schema.js';
+import { scheduledTasks, scheduledTaskLeases, sessions, messages, users } from '../../db/schema/index.js';
 import { getActiveApiKey } from './apiKey.js';
 import { callChatCompletion } from './llm.js';
 import {

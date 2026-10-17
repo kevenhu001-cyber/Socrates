@@ -1,11 +1,11 @@
 import { CITE_SOURCES_TOOL, PATCH_INTELLIGENT_UI_TOOL } from '../turnRuntimeTools.js';
 import { INTELLIGENT_UI_TOOL } from '../intelligentUi.js';
 import {WEB_SEARCH_TOOL} from '../webSearch.js';
-import {WEB_FETCH_TOOL} from '../fetchBatch.js';
-import {READ_ATTACHMENT_TOOL} from '../attachmentReader.js';
+import {WEB_FETCH_TOOL} from '../util/fetchBatch.js';
+import {READ_ATTACHMENT_TOOL} from '../embeddings/attachmentReader.js';
 import {SAVE_MEMORY_TOOL} from '../memoryTool.js';
 import {VISUALIZATION_TOOL} from '../visualization.js';
-import {PLAN_TOOL, SPEC_TOOL} from '../planning.js';
+import {PLAN_TOOL, SPEC_TOOL} from '../core/planning.js';
 import {CREATE_SITE_TOOL} from '../siteCreation.js';
 import {
   ARXIV_TOOL,

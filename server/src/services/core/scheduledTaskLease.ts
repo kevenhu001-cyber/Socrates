@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { and, eq, gt, sql } from 'drizzle-orm';
 import { getDb, type Database } from '../../db/index.js';
-import { scheduledTaskLeases, scheduledTasks } from '../../db/schema.js';
+import { scheduledTaskLeases, scheduledTasks } from '../../db/schema/index.js';
 import { Conflict, NotFound } from '../../lib/errors.js';
 
 type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];

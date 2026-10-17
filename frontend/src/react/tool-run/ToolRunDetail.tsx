@@ -11,8 +11,8 @@
  * (tool-inline-detail-section / -title / -value, tool-inline-src*) so the one
  * stylesheet covers both until Stage 2 removes the old path.
  */
-import { STROKE_ICONS } from '../../ui/icons/toolIcons.js';
-import { translate } from './labels.js';
+import { STROKE_ICONS } from '../../ui/icons/toolIcons.ts';
+import { translate } from '../../ui/toolPresentationModel.ts';
 import { ResultSection, TechSectionBlock } from './ToolRunDetailSections.js';
 import type { ToolRunView } from './toolRunModel';
 

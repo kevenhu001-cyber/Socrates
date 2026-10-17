@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { eq, and, sql, inArray, count } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { classroomClasses, classStudents, sessions, mistakes } from '../db/schema.js';
+import { classroomClasses, classStudents, sessions, mistakes } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { NotFound, BadRequest } from '../lib/errors.js';
 import crypto from 'node:crypto';

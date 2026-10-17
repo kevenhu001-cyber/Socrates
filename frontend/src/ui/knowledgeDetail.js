@@ -1,4 +1,4 @@
-import { esc } from '../render/helpers.js';
+import { esc } from '../render/helpers.ts';
 import { stateStore } from '../state/store.js';
 
 /* Locale lookup + {placeholder} substitution. i18n.js's t() deliberately

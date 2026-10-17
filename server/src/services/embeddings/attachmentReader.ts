@@ -27,7 +27,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { eq, and } from 'drizzle-orm';
 import { getDb } from '../../db/index.js';
-import { files } from '../../db/schema.js';
+import { files } from '../../db/schema/index.js';
 import { extractText as extractDocumentText, SUPPORTED_MIMES } from '../fileParsers/index.js';
 import { describeImageFile } from './vision.js';
 

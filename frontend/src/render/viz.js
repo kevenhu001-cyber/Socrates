@@ -29,7 +29,7 @@
  *   that works across all browsers under that sandbox.
  */
 
-import { esc } from './helpers.js';
+import { esc } from './helpers.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { decodeSrcdoc, openVizModal, openVizSourceModal } from './vizModals.js';
 import {

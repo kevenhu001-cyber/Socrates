@@ -50,7 +50,7 @@ async function main() {
    * instead of flowing. Disable Nagle on every inbound socket. Bulk
    * responses (assets, JSON bodies) are unaffected at any meaningful scale,
    * and the upstream LLM pool already runs with noDelay for the same
-   * reason (services/llm.ts). */
+   * reason (services/core/llm.ts). */
   server.on('connection', (socket) => {
     try { socket.setNoDelay(true); } catch { /* socket closed already */ }
   });

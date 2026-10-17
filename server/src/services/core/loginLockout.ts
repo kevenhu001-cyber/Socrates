@@ -26,7 +26,7 @@
 import { TooManyRequests } from '../../lib/errors.js';
 import { eq, sql, and, isNull, or, lt } from 'drizzle-orm';
 import { getDb } from '../../db/index.js';
-import { loginFailures } from '../../db/schema.js';
+import { loginFailures } from '../../db/schema/index.js';
 
 const WINDOW_MS = 15 * 60 * 1000;       // 15 minutes
 const LOCKOUT_MS = 15 * 60 * 1000;      // 15 minutes

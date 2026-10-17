@@ -15,9 +15,9 @@
  */
 import { settleTurnRuntime } from '@socrates/core';
 import { stateStore } from '../../state/store.js';
-import { esc } from '../../render/helpers.js';
+import { esc } from '../../render/helpers.ts';
 import { buildAssistantHtml } from '../../render/assistantHtml.ts';
-import { formatMsgProgressive } from '../../render/markdown.js';
+import { formatMsgProgressive } from '../../render/markdown.ts';
 import { setReactLiveStatus } from '../../ui/messageSnapshot.js';
 import { setChatStopState, markTurnEnded, resendLastUserMessage } from '../turnUi.js';
 import { claimLiveRetry } from '../liveTurn.js';

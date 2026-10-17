@@ -8,7 +8,7 @@
  * sandbox/approval policy; the model only sees the normalized limits.
  */
 
-import { updateWorkspacePolicy } from '../../../../services/agentRuntime.js';
+import { updateWorkspacePolicy } from '../../../../services/tools/agentRuntime.js';
 import type {
   ToolExecutor,
   ToolExecutionResult,

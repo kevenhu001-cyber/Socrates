@@ -1,6 +1,6 @@
 /* Viewport-gated, frame-budgeted Mermaid rendering queue. */
 import { ensureMermaid } from '../vendor/lazy.js';
-import { esc } from './helpers.js';
+import { esc } from './helpers.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { _pendingMermaid, validMermaid, vizErrorHtml, takePendingMermaid } from './vizStubs.js';
 

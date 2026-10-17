@@ -1,5 +1,5 @@
-import type { ToolRun } from '../toolRunState.js';
-import type { ToolApproval } from './approvals.js';
+import type { ToolRun } from '../toolRunState.ts';
+import type { ToolApproval } from './approvals.ts';
 
 interface ToolUseInput {
   id?: string;

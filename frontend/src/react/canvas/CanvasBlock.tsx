@@ -3,7 +3,7 @@ import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import type { LegacyChatMessage } from '../types/domain';
 import { setComposerMarkdown } from '../../composer/controller.ts';
 import { persistCanvasEdit } from './canvasState.ts';
-import { sanitizeHtml } from './sanitize';
+import { sanitizeHtml } from '../../render/sanitizeHtml.ts';
 import { copyToClipboard } from './clipboard';
 import { useTranslation } from './useTranslation';
 import { CanvasToolbar, type CanvasMode } from './CanvasToolbar';

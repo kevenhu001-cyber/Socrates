@@ -1,4 +1,4 @@
-import { esc } from './helpers.js';
+import { esc } from './helpers.ts';
 import { openVizModalRaw } from './vizStubs.js';
 
 /** Add language labels and fullscreen controls to rendered code blocks. */

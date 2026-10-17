@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { memories } from '../db/schema.js';
+import { memories } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { resourceScope } from '../middleware/scopes.js';
 import { NotFound, BadRequest } from '../lib/errors.js';

@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Unit tests for src/services/email.js — the transactional email
+ * Unit tests for src/services/core/email.js — the transactional email
  * service.
  *
  * Three layers to test:
@@ -30,7 +30,7 @@ import {
   sendDuplicateRegistrationEmail,
   sendStatusSubscriptionEmail,
   sendStatusIncidentEmail,
-} from '../src/services/email.js';
+} from '../src/services/core/email.js';
 
 /* ── Helpers ──────────────────────────────────────────────────── */
 

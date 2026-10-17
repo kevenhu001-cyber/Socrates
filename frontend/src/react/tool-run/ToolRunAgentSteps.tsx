@@ -20,7 +20,7 @@ import {
   stopAgentRunTimer,
   upsertAgentPlan,
   upsertAgentStep,
-} from '../../ui/agentSteps.js';
+} from '../../ui/agentSteps.ts';
 import type { ToolRunView } from './toolRunModel';
 
 export interface ToolRunAgentStepsProps {

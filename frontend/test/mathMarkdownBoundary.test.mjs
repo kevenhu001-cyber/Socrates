@@ -15,10 +15,10 @@ for (const key of ['Element', 'Node', 'NodeFilter', 'DocumentFragment', 'HTMLEle
 const {
   formatMsg,
   formatMsgProgressive,
-} = await import('../src/render/markdown.js');
+} = await import('../src/render/markdown.ts');
 const {
   recoverUnclosedDisplayMathBeforeHeading,
-} = await import('../src/render/preprocess.js');
+} = await import('../src/render/preprocess.ts');
 
 function loadRealKatex() {
   const code = readFileSync(new URL('../src/vendor-files/katex/katex.min.js', import.meta.url), 'utf8');

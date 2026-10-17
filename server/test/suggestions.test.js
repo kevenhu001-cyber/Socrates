@@ -15,7 +15,7 @@ import { eq } from 'drizzle-orm';
 
 import suggestionsRouter, { __test } from '../src/routes/suggestions.js';
 import { initDb, getDb, closeDb } from '../src/db/index.js';
-import { authSessions as authSessionsTable, sessions as sessionsTable, users as usersTable } from '../src/db/schema.js';
+import { authSessions as authSessionsTable, sessions as sessionsTable, users as usersTable } from '../src/db/schema/index.js';
 import { listen, httpRequest } from './_http.js';
 
 const t = __test;

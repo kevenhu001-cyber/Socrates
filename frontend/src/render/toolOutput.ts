@@ -16,7 +16,7 @@
  * containing `<script>` cannot execute.
  */
 
-import { escHTML, safeHljsLang } from './helpers.js';
+import { escHTML, safeHljsLang } from './helpers.ts';
 
 export interface FormattedToolOutput {
   html: string;

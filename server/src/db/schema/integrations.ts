@@ -21,7 +21,7 @@ export const notificationTokens = pgTable('notification_tokens', {
 /* ──────────────────────────────────────────────
    Status monitor events — self-hosted uptime tracking.
    One row per component state transition, recorded by the
-   background monitor (src/services/statusMonitor.js). History is
+   background monitor (src/services/util/statusMonitor.js). History is
    derived from these rows: a component is "down"/"degraded" for the
    interval between a transition INTO that state and the next
    transition OUT. Uptime over a window = 1 − (down+degraded time)/window.

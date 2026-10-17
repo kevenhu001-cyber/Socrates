@@ -8,7 +8,7 @@ import { saveCurrentSession } from '../session/persistence.js';
 import { mountQuizWidget, mountPracticeWidget, configureWidgetRuntimeEarly, handleQuizPick } from '../render/widgetScheduler.js';
 import { scrollContainer } from '../ui/scroll.js';
 import { createMistakeBook } from '../ui/mistakeBook.js';
-import { formatMsg } from '../render/markdown.js';
+import { formatMsg } from '../render/markdown.ts';
 import { shouldRequestTutorAfterQuiz } from '../tutor/policy.js';
 import { updateKB } from '../ui/knowledgePanel.js';
 import { configureAssistantHtml } from '../render/assistantHtml.ts';

@@ -8,7 +8,7 @@ import {
   getStreamRenderInterval,
   isStableMarkdownPrefix,
   splitStreamingMarkdown,
-} from '../src/render/streaming.js';
+} from '../src/render/streaming.ts';
 
 /* DOMPurify is bundled by Vite (no CDN global) and only exposes `.sanitize`
    when `window.document` exists — otherwise it reports isSupported:false and
@@ -22,7 +22,7 @@ for (const key of ['Element', 'Node', 'NodeFilter', 'DocumentFragment', 'HTMLEle
   if (globalThis[key] === undefined) globalThis[key] = dom.window[key];
 }
 
-const { formatMsg, formatMsgProgressive: renderProgressive, stripMarkdown } = await import('../src/render/markdown.js');
+const { formatMsg, formatMsgProgressive: renderProgressive, stripMarkdown } = await import('../src/render/markdown.ts');
 const { stripChatArtifacts } = await import('../src/util/stripChatArtifacts.js');
 
 /* Load the vendored KaTeX UMD into a bare VM context and hand it back,

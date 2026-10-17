@@ -7,7 +7,7 @@ import { codeInterpreter } from '../services/codeInterpreter.js';
 import {
   projects, sessions, messages, memories, artifacts, artifactVersions,
   mistakes, agentRuns, usageEvents, files, executions,
-} from '../db/schema.js';
+} from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { resourceScope } from '../middleware/scopes.js';
 import { NotFound, BadRequest } from '../lib/errors.js';

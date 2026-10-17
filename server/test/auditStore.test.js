@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { eq, and } from 'drizzle-orm';
 import { initDb, closeDb } from '../src/db/index.js';
-import { users, auditEvents } from '../src/db/schema.js';
+import { users, auditEvents } from '../src/db/schema/index.js';
 import { recordAudit } from '../src/services/core/audit.js';
 import { recordAudit as compatibilityRecordAudit } from '../src/middleware/audit.js';
 

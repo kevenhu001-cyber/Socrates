@@ -28,14 +28,14 @@ import crypto from 'node:crypto';
 import os from 'node:os';
 import { eq } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { executions } from '../db/schema.js';
+import { executions } from '../db/schema/index.js';
 import { recordAudit } from './core/audit.js';
 import { persistArtifact } from './util/fileArtifacts.js';
 import { publish, subscribe as pubsubSubscribe } from '../lib/pubsub.js';
 import { parseChatSessionId, requireOwnedSession } from '../lib/sessionOwnership.js';
 import { isUuid } from '../lib/validate.js';
 import { createSessionExecutionLock } from './sessionExecutionLock.js';
-import { MAX_TOOL_STRING_FIELD_CHARS } from './toolCallSafety.js';
+import { MAX_TOOL_STRING_FIELD_CHARS } from './tools/toolCallSafety.js';
 
 /* ─── Execution progress pub/sub ───
  * P_pubsub — replaces the in-process EventEmitter so SSE clients on

@@ -9,7 +9,7 @@ import { getRecentsFilter } from '../sidebar/sidebar.service.ts';
 import { filterRecentsByChip } from '../ui/recentsHelpers.js';
 import { getCachedProjects } from '../projects/projectCache.ts';
 import { apiFetch } from '../util/api.js';
-import { esc } from '../render/helpers.js';
+import { esc } from '../render/helpers.ts';
 import { showToast } from '../ui/toast.js';
 
 function _t(key, fallback) {

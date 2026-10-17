@@ -10,7 +10,7 @@
 
 import { and, asc, desc, eq, gt, inArray, lt, max, sql } from 'drizzle-orm';
 import { getDb } from '../../db/index.js';
-import { chatTurnEvents, chatTurns, sessions } from '../../db/schema.js';
+import { chatTurnEvents, chatTurns, sessions } from '../../db/schema/index.js';
 import { BadRequest, Conflict, NotFound } from '../../lib/errors.js';
 import { isUuid } from '../../lib/validate.js';
 

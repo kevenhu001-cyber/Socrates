@@ -15,7 +15,7 @@ import {
   subscribeComposer,
 } from '../composer/controller.ts';
 import { loadPromptTemplates } from './promptTemplates.js';
-import { esc } from '../render/helpers.js';
+import { esc } from '../render/helpers.ts';
 import { updateComposerBtn } from '../ui/topicSetup.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { batchSetItem } from '../batchStorage.js';

@@ -15,7 +15,7 @@ import {
   usageEvents, auditEvents, executions,
   statusMonitorEvents, statusSubscribers,
   ttsResults, idempotencyReceipts,
-} from '../../db/schema.js';
+} from '../../db/schema/index.js';
 import { codeInterpreter } from '../codeInterpreter.js';
 
 let _timer: ReturnType<typeof setInterval> | null = null;

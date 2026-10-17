@@ -7,7 +7,7 @@
 
 import {and, eq} from 'drizzle-orm';
 import {getDb} from '../../../../db/index.js';
-import {memories, projects} from '../../../../db/schema.js';
+import {memories, projects} from '../../../../db/schema/index.js';
 import type {ToolExecutionResult, ToolExecutor, ToolExecutorContext} from './types.js';
 import type {ToolCall, ToolResult} from '../types.js';
 

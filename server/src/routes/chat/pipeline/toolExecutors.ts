@@ -15,8 +15,8 @@
  * the dispatcher stays untouched.
  */
 
-import {buildToolErrorFeedback} from '../../../services/toolErrorFeedback.js';
-import {TOOL_ARGUMENT_ERRORS, wrapUntrustedToolResult} from '../../../services/toolCallSafety.js';
+import {buildToolErrorFeedback} from '../../../services/tools/toolErrorFeedback.js';
+import {TOOL_ARGUMENT_ERRORS, wrapUntrustedToolResult} from '../../../services/tools/toolCallSafety.js';
 
 /** Every code that means "the arguments were wrong", for logging. */
 const ARGUMENT_ERROR_CODES: ReadonlySet<string> = new Set<string>([
@@ -24,7 +24,7 @@ const ARGUMENT_ERROR_CODES: ReadonlySet<string> = new Set<string>([
   'invalid_tool_arguments',
 ]);
 
-import {hashToolArguments, type ToolTurnPolicy} from '../../../services/toolTurnPolicy.js';
+import {hashToolArguments, type ToolTurnPolicy} from '../../../services/tools/toolTurnPolicy.js';
 import {SseEmitter} from './sseEmitter.js';
 import {formatToolResultContent} from './toolFeedback.js';
 import {createToolExecutorRegistry} from './executors/registry.js';
@@ -41,7 +41,7 @@ export interface ToolRunnerDeps {
   abortSignal: AbortSignal;
   toolPolicy: ToolTurnPolicy;
   onResult?: (toolCallId: string, result: import("./types.js").ToolResult) => void;
-  schemaForTool: (name: string) => import('../../../services/toolCallSafety.js').JsonSchemaNode | null;
+  schemaForTool: (name: string) => import('../../../services/tools/toolCallSafety.js').JsonSchemaNode | null;
   connectorConnectionsByProvider: Record<string, any>;
   projectConnectorConnectionsByProvider: Record<string, any>;
 }

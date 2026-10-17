@@ -1,6 +1,6 @@
-import {toolCategory} from '../../render/toolCategory.js';
-import {formatSeconds, toolRunGroupLabel, translate} from './labels.js';
-import {durationOf, toolRunStateOf} from './toolRunState.ts';
+import {toolCategory} from '../../render/toolCategory.ts';
+import {formatSeconds, toolRunGroupLabel, translate} from '../../ui/toolPresentationModel.ts';
+import {durationOf, toolRunStateOf} from '../../ui/toolPresentationState.ts';
 import {
   filePathSummaries,
   fileSummaryOf,

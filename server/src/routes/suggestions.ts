@@ -15,11 +15,11 @@
 import { Router } from 'express';
 import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { memories, messages, sessions, users } from '../db/schema.js';
+import { memories, messages, sessions, users } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { chatLimiter } from '../middleware/rateLimit.js';
-import { getActiveApiKey } from '../services/apiKey.js';
-import { callChatCompletion } from '../services/llm.js';
+import { getActiveApiKey } from '../services/core/apiKey.js';
+import { callChatCompletion } from '../services/core/llm.js';
 
 const router = Router();
 

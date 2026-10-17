@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import type { Request, Response, NextFunction, CookieOptions } from 'express';
 import { Forbidden } from '../lib/errors.js';
 import { shouldUseSharedDomain, SHARED_COOKIE_DOMAIN } from '../lib/cookieEnv.js';
-import { isMobileAccessToken } from '../services/auth.js';
+import { isMobileAccessToken } from '../services/core/auth.js';
 
 /* These routes authenticate with an explicit body credential and never read
  * the ambient browser sid. Exempting them avoids a stale WebView csrf cookie

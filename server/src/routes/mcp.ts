@@ -33,7 +33,7 @@ import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 
 import { sql, and, eq, isNotNull } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { apiKeys } from '../db/schema.js';
+import { apiKeys } from '../db/schema/index.js';
 import { buildMobileBootstrapConfig } from './mobile.js';
 
 const SERVER_NAME = 'socrates';

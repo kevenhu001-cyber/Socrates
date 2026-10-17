@@ -60,7 +60,7 @@ import { startSearchProgress } from './ui/searchProgress.js';
 window.__startSearchProgress = startSearchProgress;
 
 /* ─── render/markdown.js ─── */
-import { formatMsg } from './render/markdown.js';
+import { formatMsg } from './render/markdown.ts';
 window.formatMsg = formatMsg;
 
 /* ─── auth/index.js ─── */
@@ -136,7 +136,7 @@ window.onCmdKKey = onCmdKKey;
 window.openCmdK = openCmdK;
 
 /* ─── ui/findInSession.js — P0.2 in-session find (Ctrl-F) ─── */
-import { openFindInSession, closeFindInSession, findNext, findPrev } from './ui/findInSession.js';
+import { openFindInSession, closeFindInSession, findNext, findPrev } from './react/find-in-session/FindInSession.tsx';
 window.openFindInSession = openFindInSession;
 window.closeFindInSession = closeFindInSession;
 window.findNext = findNext;
@@ -299,7 +299,7 @@ if (typeof window.setLang === 'function') {
 import {
   STREAM_MAX_ATTEMPTS, STREAM_RETRYABLE_STATUS,
   offlineGuard, sleepBackoff,
-} from './chat/offline.js';
+} from './chat/offline.ts';
 window.STREAM_MAX_ATTEMPTS = STREAM_MAX_ATTEMPTS;
 window.STREAM_RETRYABLE_STATUS = STREAM_RETRYABLE_STATUS;
 window.offlineGuard = offlineGuard;

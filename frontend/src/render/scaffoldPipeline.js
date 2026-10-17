@@ -1,4 +1,4 @@
-import { decodeEntities, stripTags } from './helpers.js';
+import { decodeEntities, stripTags } from './helpers.ts';
 import {
   parseDefinitionInner,
   parseDerivationInner,
@@ -6,7 +6,7 @@ import {
   parseKeyPointInner,
   parseProofInner,
   parseTheoremInner,
-} from './widgetParsers.js';
+} from './widgetParsers.ts';
 
 function fallback(inner, t, esc) {
   return '<div class="inline-block-fallback"><div class="inline-block-fallback-label">'

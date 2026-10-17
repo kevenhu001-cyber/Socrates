@@ -6,7 +6,7 @@ import {
   buildRagIndex,
   searchRagIndex,
   tokenize,
-} from '../src/services/rag.ts';
+} from '../src/services/embeddings/rag.js';
 
 test('chunkText splits on paragraph boundaries and hard-splits oversized paragraphs', () => {
   const small = 'First paragraph.\n\nSecond paragraph.';

@@ -1,6 +1,6 @@
 import { apiFetch, apiFetchRaw } from '../util/api.js';
 import { callAPI } from './api.js';
-import { offlineGuard } from './offline.js';
+import { offlineGuard } from './offline.ts';
 import { hasUsableActive, webSearchOn } from '../config/providers.js';
 import { loadLocalMemory } from '../storage/localMemory.js';
 import { stateStore } from '../state/store.js';

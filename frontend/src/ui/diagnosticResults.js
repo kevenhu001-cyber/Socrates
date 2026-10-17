@@ -1,4 +1,4 @@
-import { esc } from '../render/helpers.js';
+import { esc } from '../render/helpers.ts';
 import { scrollContainer } from './scroll.js';
 
 export function renderDiagResultsScreen(state, isZh){

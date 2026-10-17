@@ -11,7 +11,7 @@ import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
 import { getDb } from '../../db/index.js';
-import { files } from '../../db/schema.js';
+import { files } from '../../db/schema/index.js';
 
 /* Reuse the same UPLOAD_DIR resolution as routes/files.js so executor
  * artifacts land next to user-uploaded files and are served by the

@@ -9,7 +9,7 @@ import {
   sanitizeToolCallForProtocol,
   validateToolArguments,
   wrapUntrustedToolResult,
-} from '../src/services/toolCallSafety.ts';
+} from '../src/services/tools/toolCallSafety.js';
 
 /* A representative registry schema: one required string, one optional
    bounded integer, one optional string array, one enum. */

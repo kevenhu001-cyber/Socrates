@@ -5,7 +5,7 @@
 // in the modal markup references `window.closeCheatsheet`; the bridge
 // in main.js's window-export block (Phase B will move it to
 // windowExports.js) keeps the lookup working.
-import { esc } from '../render/helpers.js';
+import { esc } from '../render/helpers.ts';
 
 /* React migration bridge — publishes cheatsheet open state. */
 function _publishCheatsheetState(open) {

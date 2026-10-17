@@ -1,5 +1,5 @@
 import { getDb } from '../../db/index.js';
-import { auditEvents } from '../../db/schema.js';
+import { auditEvents } from '../../db/schema/index.js';
 
 /**
  * Direct audit event recorder for use in services and route handlers.

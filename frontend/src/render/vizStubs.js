@@ -43,7 +43,7 @@ export var VIZ_THEME_RESET =
     'code{font-family:"JetBrains Mono","Cascadia Code",ui-monospace,monospace;font-size:.92em}' +
   '</style>';
 
-import { esc } from './helpers.js';
+import { esc } from './helpers.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 /* Runtime snippet that runs at the END of every iframe body. It

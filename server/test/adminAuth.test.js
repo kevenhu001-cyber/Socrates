@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Unit tests for services/adminAuth.ts — the independent password
+ * Unit tests for services/core/adminAuth.ts — the independent password
  * credential for the /admin operator console (production hardening).
  *
  * Pins the five defence layers:
@@ -31,7 +31,7 @@ const {
   issueAdminSessionToken,
   verifyAdminSessionToken,
   extractAdminToken,
-} = await import('../src/services/adminAuth.js');
+} = await import('../src/services/core/adminAuth.js');
 
 describe('adminAuth — IP allowlist (layer 1)', () => {
   const original = process.env.ADMIN_IP_ALLOWLIST;

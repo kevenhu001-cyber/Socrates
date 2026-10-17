@@ -1,6 +1,6 @@
 import { eq, and, isNotNull, ne } from 'drizzle-orm';
 import { getDb } from '../../db/index.js';
-import { apiKeys } from '../../db/schema.js';
+import { apiKeys } from '../../db/schema/index.js';
 import { encrypt, decrypt, encryptionKey } from '../../lib/crypto.js';
 
 type ApiKeyRow = typeof apiKeys.$inferSelect;

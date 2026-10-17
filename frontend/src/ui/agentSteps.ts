@@ -21,7 +21,7 @@
  *     paths from an untrusted workspace can never inject markup.
  */
 
-import { agentStepIcon } from './icons/toolIcons.js';
+import { agentStepIcon } from './icons/toolIcons.ts';
 
 export interface AgentStepData {
   stepId: string;

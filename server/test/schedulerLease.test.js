@@ -7,11 +7,11 @@ import path from 'node:path';
 import express from 'express';
 import { and, eq, sql } from 'drizzle-orm';
 import { initDb, closeDb } from '../src/db/index.js';
-import { users, apiKeys, scheduledTasks, scheduledTaskLeases, messages } from '../src/db/schema.js';
+import { users, apiKeys, scheduledTasks, scheduledTaskLeases, messages } from '../src/db/schema/index.js';
 import { claimScheduledTask, renewScheduledTaskLease, withScheduledTaskLease } from '../src/services/core/scheduledTaskLease.js';
-import { runScheduledTaskNow, pollScheduledTasksOnce } from '../src/services/scheduler.js';
+import { runScheduledTaskNow, pollScheduledTasksOnce } from '../src/services/core/scheduler.js';
 import { encrypt, encryptionKey } from '../src/lib/crypto.js';
-import { getLlmDispatcher } from '../src/services/llm.js';
+import { getLlmDispatcher } from '../src/services/core/llm.js';
 import { shutdownPubsub } from '../src/lib/pubsub.js';
 import { listen } from './_http.js';
 

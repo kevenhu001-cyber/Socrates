@@ -15,7 +15,7 @@ import {
   requireScope,
   resourceScope,
 } from '../src/middleware/scopes.ts';
-import { AGENT_KEY_RE } from '../src/services/agentKeys.ts';
+import { AGENT_KEY_RE } from '../src/services/core/agentKeys.js';
 import { Forbidden, Unauthorized } from '../src/lib/errors.js';
 
 function fakeRes() {

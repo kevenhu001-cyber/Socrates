@@ -10,7 +10,7 @@
 import { test, describe, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { codeInterpreter, CODE_INTERPRETER_TOOL, resolvePyodideWorkerEntry } from '../src/services/codeInterpreter.js';
-import { MAX_TOOL_ARGUMENT_CHARS } from '../src/services/toolCallSafety.js';
+import { MAX_TOOL_ARGUMENT_CHARS } from '../src/services/tools/toolCallSafety.js';
 import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import os from 'node:os';

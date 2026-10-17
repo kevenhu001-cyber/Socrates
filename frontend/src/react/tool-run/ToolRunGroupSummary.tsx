@@ -1,4 +1,4 @@
-import { STROKE_ICONS, categoryIcon } from '../../ui/icons/toolIcons.js';
+import { STROKE_ICONS, categoryIcon } from '../../ui/icons/toolIcons.ts';
 import type { ToolRunGroupView, ToolRunState } from './toolRunModel.js';
 
 /**

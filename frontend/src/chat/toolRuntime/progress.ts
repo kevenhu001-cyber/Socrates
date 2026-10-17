@@ -1,7 +1,7 @@
-import { phaseFromProgress } from '../toolRunState.js';
-import type { ToolRun } from '../toolRunState.js';
-import { createLiveOutputBuffer, renderLivePreview } from '../liveOutput.js';
-import type { LiveOutputBufferHandle } from '../liveOutput.js';
+import { phaseFromProgress } from '../toolRunState.ts';
+import type { ToolRun } from '../toolRunState.ts';
+import { createLiveOutputBuffer, renderLivePreview } from '../liveOutput.ts';
+import type { LiveOutputBufferHandle } from '../liveOutput.ts';
 
 interface ToolProgress {
   id: string;

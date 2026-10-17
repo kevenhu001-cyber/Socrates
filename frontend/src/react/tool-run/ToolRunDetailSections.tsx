@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { formatToolOutput } from '../../render/toolOutput.js';
-import { basename, tf, translate } from './labels.js';
+import { formatToolOutput } from '../../render/toolOutput.ts';
+import { basename, tf, translate } from '../../ui/toolPresentationModel.ts';
 import type { DetailSection, TechSection, ToolRunView } from './toolRunModel.js';
 
 export function ResultSection({ section }: { section: DetailSection }) {

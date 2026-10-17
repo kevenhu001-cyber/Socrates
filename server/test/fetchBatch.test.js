@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Unit tests for src/services/fetchBatch.js — the SSRF-defended
+ * Unit tests for src/services/util/fetchBatch.js — the SSRF-defended
  * URL fetcher. This module is the ONLY public-facing endpoint that
  * fetches arbitrary user-supplied URLs (`POST /api/fetch-batch`),
  * so a bypass here is the most impactful single vulnerability in
@@ -22,10 +22,10 @@ import { test, describe, mock, after, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import dns from 'node:dns/promises';
 
-import { fetchBatch, WEB_FETCH_TOOL } from '../src/services/fetchBatch.js';
+import { fetchBatch, WEB_FETCH_TOOL } from '../src/services/util/fetchBatch.js';
 import { executeWebFetch } from '../src/routes/chat/pipeline/executors/webFetch.js';
 import { formatToolResultContent } from '../src/routes/chat/pipeline/toolFeedback.js';
-import { stopContentExtractorPool } from '../src/services/contentExtractor.js';
+import { stopContentExtractorPool } from '../src/services/embeddings/contentExtractor.js';
 
 const ORIG_DNS_LOOKUP = dns.lookup;
 const ORIG_FETCH = globalThis.fetch;

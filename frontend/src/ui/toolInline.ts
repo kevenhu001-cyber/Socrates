@@ -19,16 +19,16 @@
  * are derived in react/tool-run/toolRunModel.ts.
  */
 
-import { esc } from '../render/helpers.js';
+import { esc } from '../render/helpers.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import type { InlineToolEntry, InlineToolGroupMember, InlineToolMessageCall, InlineToolResult } from './toolInline/types.ts';
 import { doneLabel, errorLabel, groupDoneLabel, groupErrorLabel, runningLabel, translate } from './toolInline/labels.ts';
 import { renderInlineDetails, renderInlineGroupDetails, truncateDetailLines } from './toolInline/details.ts';
-import { toolCardView } from './toolCardView.js';
-import { STROKE_ICONS, toolIcon } from './icons/toolIcons.js';
+import { toolCardView } from './toolCardView.ts';
+import { STROKE_ICONS, toolIcon } from './icons/toolIcons.ts';
 
 export type { InlineToolEntry, InlineToolGroupMember, InlineToolMessageCall, InlineToolResult } from './toolInline/types.ts';
-export { isInlineSearchTool, toolCategory } from '../render/toolCategory.js';
+export { isInlineSearchTool, toolCategory } from '../render/toolCategory.ts';
 export { truncateDetailLines };
 
 /* ============================================================

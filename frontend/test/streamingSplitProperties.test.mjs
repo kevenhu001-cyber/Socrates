@@ -24,7 +24,7 @@ import fc from 'fast-check';
 import {
   isStableMarkdownPrefix,
   splitStreamingMarkdown,
-} from '../src/render/streaming.js';
+} from '../src/render/streaming.ts';
 
 const RUNS = 200;
 

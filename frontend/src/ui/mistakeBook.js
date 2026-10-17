@@ -1,4 +1,4 @@
-import { esc } from '../render/helpers.js';
+import { esc } from '../render/helpers.ts';
 import { formatRelativeTime } from './recentsHelpers.js';
 
 /* P_mistakes-i18n — this panel shipped raw English literals while zh is

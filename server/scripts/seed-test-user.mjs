@@ -52,7 +52,7 @@ async function main() {
   // Lazy import — dotenv has loaded DATABASE_URL by now, and the
   // drizzle pool only opens connections when the first query runs.
   const { initDb } = await import('../src/db/index.js');
-  const { users } = await import('../src/db/schema.js');
+  const { users } = await import('../src/db/schema/index.js');
 
   const db = initDb(process.env.DATABASE_URL);
   const passwordHash = await bcrypt.hash(TEST_PASSWORD, BCRYPT_ROUNDS);

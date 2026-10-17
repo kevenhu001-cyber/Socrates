@@ -10,7 +10,7 @@ import { applyDiagnosticResults } from '../chat/diagnosticResults.js';
 import { buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan } from '../chat/teachingPlan.js';
 import { renderDiagResultsScreen } from '../ui/diagnosticResults.js';
 import { renderDiagQuestion as renderDiagQuestionUI } from '../ui/diagnosticQuestion.js';
-import { formatMsg } from '../render/markdown.js';
+import { formatMsg } from '../render/markdown.ts';
 import { updateKB } from '../ui/knowledgePanel.js';
 import { activateMainView } from '../ui/mainViewController.js';
 

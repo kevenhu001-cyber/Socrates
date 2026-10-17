@@ -18,7 +18,7 @@
  */
 
 import { initDb } from '../db/index.js';
-import { getLlmDispatcher, startLlmKeepWarmWorker } from '../services/llm.js';
+import { getLlmDispatcher, startLlmKeepWarmWorker } from '../services/core/llm.js';
 
 /** ── 1. Production-only secret validation ──
  * Without SESSION_SECRET the api_keys table is encrypted with a public
@@ -51,7 +51,7 @@ export function connectDatabase(): void {
 /** ── 3. Seed built-in Beagle provider if BEAGLE_SYSTEM_KEY is set ── */
 export async function seedBuiltInBeagleProvider(): Promise<void> {
   try {
-    const { seedBuiltInProvider } = await import('../services/apiKey.js');
+    const { seedBuiltInProvider } = await import('../services/core/apiKey.js');
     await seedBuiltInProvider();
   } catch (err) {
     console.warn('[seed] Beagle provider skipped:', (err as Error).message);
@@ -61,7 +61,7 @@ export async function seedBuiltInBeagleProvider(): Promise<void> {
 /** ── 4. Validate all API keys (detect corrupted ciphertext) ── */
 export async function validateApiKeysAtBoot(): Promise<void> {
   try {
-    const { validateApiKeys } = await import('../services/apiKey.js');
+    const { validateApiKeys } = await import('../services/core/apiKey.js');
     await validateApiKeys();
   } catch (err) {
     console.warn('[validate] API key validation skipped:', (err as Error).message);
@@ -81,7 +81,7 @@ function envFlag(name: string): boolean {
 function reconcileSessionWorkspaces(): void {
   (async () => {
     try {
-      const { ensureSessionWorkspacesOnStartup } = await import('../services/agentRuntime.js');
+      const { ensureSessionWorkspacesOnStartup } = await import('../services/tools/agentRuntime.js');
       const result = await ensureSessionWorkspacesOnStartup();
       if (result.checked > 0) {
         console.log(`[agent-runtime] session workspace reconciliation checked ${result.checked}: ${result.created} new, ${result.failed} failed`);
@@ -136,7 +136,7 @@ function sweepStaleScratchDirs(): void {
 function warmLlmProvider(): void {
   (async () => {
     try {
-      const { getActiveApiKey } = await import('../services/apiKey.js');
+      const { getActiveApiKey } = await import('../services/core/apiKey.js');
       const provider = await getActiveApiKey(null); // null = global built-in
       if (!provider || !provider.keyPlaintext) {
         console.log('[llm-warmup] No built-in provider key available — skipping');
@@ -184,7 +184,7 @@ function warmLlmProvider(): void {
 function startSchedulerDaemon(): void {
   (async () => {
     try {
-      const { startScheduler } = await import('../services/scheduler.js');
+      const { startScheduler } = await import('../services/core/scheduler.js');
       startScheduler();
     } catch (err) {
       console.warn('[scheduler] not started:', (err as Error).message);
@@ -198,7 +198,7 @@ function startSchedulerDaemon(): void {
 function recoverAgentRuns(): void {
   (async () => {
     try {
-      const { recoverAgentRunsOnStartup } = await import('../services/agentRuntime.js');
+      const { recoverAgentRunsOnStartup } = await import('../services/tools/agentRuntime.js');
       const result = await recoverAgentRunsOnStartup();
       if (result.checked > 0) console.log(`[agent-runtime] restart recovery checked ${result.checked}: ${result.recovered} reconnected, ${result.disconnected} disconnected`);
     } catch (err) {
@@ -212,7 +212,7 @@ function recoverAgentRuns(): void {
 function startMonitor(): void {
   (async () => {
     try {
-      const { startStatusMonitor } = await import('../services/statusMonitor.js');
+      const { startStatusMonitor } = await import('../services/util/statusMonitor.js');
       /* Awaited on purpose: startStatusMonitor is async and the catch below
          is the only place its failures get reported. Unawaited, a rejection
          would surface as an unhandled rejection instead. */
@@ -227,7 +227,7 @@ function startMonitor(): void {
  * quiet server stays quiet and deploy/restart cycles do not create upstream
  * traffic unrelated to an actual user request. */
 export function startBackgroundTasks(): void {
-  void import('../services/chatTurns.js').then(({ startChatTurnRecovery }) => startChatTurnRecovery())
+  void import('../services/core/chatTurns.js').then(({ startChatTurnRecovery }) => startChatTurnRecovery())
     .catch((err) => console.warn('[chat-turns] recovery not started:', (err as Error).message));
   reconcileSessionWorkspaces();
   warmPyodidePool();

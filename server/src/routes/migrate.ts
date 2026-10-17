@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import crypto from 'node:crypto';
 import { getDb } from '../db/index.js';
-import { sessions, messages, apiKeys } from '../db/schema.js';
+import { sessions, messages, apiKeys } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { encrypt, encryptionKey } from '../lib/crypto.js';
-import { ensureSessionWorkspaceForSession } from '../services/agentRuntime.js';
+import { ensureSessionWorkspaceForSession } from '../services/tools/agentRuntime.js';
 
 const router = Router();
 router.use(requireAuth);

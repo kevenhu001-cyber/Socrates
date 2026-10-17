@@ -9,7 +9,7 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import { eq, and, sql } from 'drizzle-orm';
 import { initDb, closeDb } from '../src/db/index.js';
-import { users, authSessions, projects, sessions, idempotencyReceipts, agentApiKeys } from '../src/db/schema.js';
+import { users, authSessions, projects, sessions, idempotencyReceipts, agentApiKeys } from '../src/db/schema/index.js';
 import { createAgentKey } from '../src/services/core/agentKeys.js';
 import { runDurableJsonWrite } from '../src/services/core/durableIdempotency.js';
 import { idempotencyMiddleware } from '../src/middleware/idempotency.js';
@@ -63,7 +63,7 @@ after(async () => {
 function child(code) {
   const url = (file) => JSON.stringify(pathToFileURL(path.resolve(file)).href);
   const script = `import { initDb, closeDb } from ${url('src/db/index.ts')};
-import { projects } from ${url('src/db/schema.ts')};
+import { projects } from ${url('src/db/schema/index.ts')};
 import { runDurableJsonWrite } from ${url('src/services/core/durableIdempotency.ts')};
 initDb(process.env.DATABASE_URL);
 try { ${code} } finally { await closeDb(); }`;

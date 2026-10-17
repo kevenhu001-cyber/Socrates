@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { MAX_TOOL_STRING_FIELD_CHARS } from './toolCallSafety.js';
+import { MAX_TOOL_STRING_FIELD_CHARS } from './tools/toolCallSafety.js';
 import { parseFunctionExpression, sampleFunction } from '@socrates/core/visualizationMath';
 
 /**

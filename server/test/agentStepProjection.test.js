@@ -4,7 +4,7 @@ import {
   AGENT_STEP_LABELS,
   normalizeCommand,
   projectAgentEvent,
-} from '../src/services/agentStepProjection.js';
+} from '../src/services/tools/agentStepProjection.js';
 
 test('projects Pi tool lifecycle events into command / file / search steps', () => {
   const started = projectAgentEvent({

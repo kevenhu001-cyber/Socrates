@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { getDb } from '../../db/index.js';
-import { agentApiKeys, users } from '../../db/schema.js';
+import { agentApiKeys, users } from '../../db/schema/index.js';
 import type { User } from '../../types/http.js';
 import { eq } from 'drizzle-orm';
 

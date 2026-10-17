@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { stripCitationMarkers } from '../src/render/helpers.js';
+import { stripCitationMarkers } from '../src/render/helpers.ts';
 
 test('stripCitationMarkers removes inline search-citation runs', () => {
   assert.equal(stripCitationMarkers('深度学习[1]是机器学习的一个分支'), '深度学习是机器学习的一个分支');

@@ -18,9 +18,9 @@
  * enrichment instead of persisting garbage into the HNSW index.
  */
 import { eq, desc } from 'drizzle-orm';
-import { getLlmDispatcher } from '../llm.js';
+import { getLlmDispatcher } from '../core/llm.js';
 import { getDb } from '../../db/index.js';
-import { embeddingConfig } from '../../db/schema.js';
+import { embeddingConfig } from '../../db/schema/index.js';
 import { decrypt, encryptionKey } from '../../lib/crypto.js';
 
 export interface EmbeddingProviderConfig {

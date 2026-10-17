@@ -26,7 +26,7 @@ import { requireAuth } from '../src/middleware/auth.js';
 import { requireScope } from '../src/middleware/scopes.ts';
 import { errorHandler } from '../src/middleware/error.js';
 import { initDb, getDb, closeDb } from '../src/db/index.js';
-import { users, authSessions } from '../src/db/schema.js';
+import { users, authSessions } from '../src/db/schema/index.js';
 import { listen, httpRequest } from './_http.js';
 
 let dbAvailable = false;

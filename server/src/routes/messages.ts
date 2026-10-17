@@ -3,18 +3,18 @@ import type { Request, Response, NextFunction } from 'express';
 import { eq, and, asc, gte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '../db/index.js';
-import { messages, feedback, sessions, usageEvents } from '../db/schema.js';
+import { messages, feedback, sessions, usageEvents } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { chatLimiter, writeLimiter } from '../middleware/rateLimit.js';
 import { NotFound, BadRequest, TooManyRequests } from '../lib/errors.js';
 import { getBeagleQuota } from '../lib/tiers.js';
 import { isUuid } from '../lib/validate.js';
 import { sanitizeStoredHtml, sanitizePlainText } from '../lib/sanitize.js';
-import { getActiveApiKey } from '../services/apiKey.js';
-import { streamChatCompletion } from '../services/llm.js';
+import { getActiveApiKey } from '../services/core/apiKey.js';
+import { streamChatCompletion } from '../services/core/llm.js';
 import { trackSseConnection, startSseKeepalive } from '../lib/sse.js';
-import { invalidateForMessage, ttsTextHash } from '../services/ttsStore.js';
-import { indexMessageChunks } from '../services/chunkIndex.js';
+import { invalidateForMessage, ttsTextHash } from '../services/embeddings/ttsStore.js';
+import { indexMessageChunks } from '../services/embeddings/chunkIndex.js';
 
 /* P_attachments-shape — mirrors the per-message `attachments` shape
  * defined in routes/sessions.js (SessionPayloadSchema → messages[].attachments).

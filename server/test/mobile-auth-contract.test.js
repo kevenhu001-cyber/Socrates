@@ -16,7 +16,7 @@ import {
   isMobileAccessToken,
   isMobileRefreshToken,
   mobileTokenPairId,
-} from '../src/services/auth.js';
+} from '../src/services/core/auth.js';
 import authRouter, { MOBILE_AUTH_ROUTE_PATHS, redirectMobileWebSession } from '../src/routes/auth.js';
 import { requestCredential, requireMobileBearer } from '../src/middleware/auth.js';
 import { listen, httpRequest } from './_http.js';

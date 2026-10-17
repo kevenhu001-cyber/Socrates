@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { eq, and, gte, sql } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { usageEvents } from '../db/schema.js';
+import { usageEvents } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { getBeagleQuota } from '../lib/tiers.js';
 

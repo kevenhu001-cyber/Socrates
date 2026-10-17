@@ -5,10 +5,10 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { getDb } from '../db/index.js';
-import { artifacts, artifactVersions, files } from '../db/schema.js';
+import { artifacts, artifactVersions, files } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
-import { getActiveApiKey } from '../services/apiKey.js';
-import { callChatCompletion } from '../services/llm.js';
+import { getActiveApiKey } from '../services/core/apiKey.js';
+import { callChatCompletion } from '../services/core/llm.js';
 import { BadRequest, NotFound } from '../lib/errors.js';
 
 const router = Router();

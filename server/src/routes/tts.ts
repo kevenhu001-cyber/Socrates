@@ -29,13 +29,13 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { chatLimiter } from '../middleware/rateLimit.js';
-import { getActiveApiKey } from '../services/apiKey.js';
-import { ttsCache, ttsCacheKey } from '../services/ttsCache.js';
+import { getActiveApiKey } from '../services/core/apiKey.js';
+import { ttsCache, ttsCacheKey } from '../services/embeddings/ttsCache.js';
 import {
   lookupTtsResult,
   saveTtsResult,
   ttsTextHash,
-} from '../services/ttsStore.js';
+} from '../services/embeddings/ttsStore.js';
 
 const router = Router();
 

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { and, eq } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { connectorConnections } from '../db/schema.js';
+import { connectorConnections } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { connectorAuthLimiter, searchLimiter } from '../middleware/rateLimit.js';
 import {

@@ -1,4 +1,4 @@
-import { STROKE_ICONS } from './icons/toolIcons.js';
+import { STROKE_ICONS } from './icons/toolIcons.ts';
 import { openDetailSurface, closeDetailSurface } from './detailSurface.ts';
 
 let initialized = false;

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '../db/index.js';
-import { notificationTokens } from '../db/schema.js';
+import { notificationTokens } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { BadRequest } from '../lib/errors.js';
 

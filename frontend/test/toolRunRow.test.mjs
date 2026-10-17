@@ -8,8 +8,8 @@ import { ToolRunRow } from '../src/react/tool-run/ToolRunRow.tsx';
 import { ToolRunGroup } from '../src/react/tool-run/ToolRunGroup.tsx';
 import { TurnActivitySurface } from '../src/react/tool-run/TurnActivitySurface.tsx';
 import { buildTurnLayout, groupOutputCalls } from '../src/react/tool-run/toolRunModel.ts';
-import { connectorActivityOf, connectorToolIdOf } from '../src/react/tool-run/toolActivity.ts';
-import { toolRunLabel } from '../src/react/tool-run/labels.ts';
+import { connectorActivityOf, connectorToolIdOf } from '../src/ui/toolActivity.ts';
+import { toolRunLabel } from '../src/ui/toolPresentationModel.ts';
 
 const settledAgentView = {
   id: 'tool-agent-1',

@@ -18,18 +18,18 @@
  *     them, so a cached resolution would let a spent capability authenticate a
  *     second time;
  *   • an entry never outlives its own session's `expires_at`;
- *   • every revocation site in services/auth.ts calls `invalidateAuthCache`
+ *   • every revocation site in services/core/auth.ts calls `invalidateAuthCache`
  *     or `invalidateAuthCacheForUser` — the auth route layer does not depend
  *     on this module, so there is exactly one place to audit;
  *   • entries are capped, and the TTL is short enough that a missed
  *     invalidation cannot outlive 30 seconds.
  *
  * It lives in its own module rather than in middleware/auth.ts because
- * services/auth.ts has to call the invalidators, and middleware/auth.ts already
- * imports services/auth.ts — putting this there would close the cycle.
+ * services/core/auth.ts has to call the invalidators, and middleware/auth.ts already
+ * imports services/core/auth.ts — putting this there would close the cycle.
  */
 
-import type { users } from '../db/schema.js';
+import type { users } from '../db/schema/index.js';
 
 /** Exactly the row `select().from(users)` used to produce, so nothing
  * downstream that reads `req.user` changes shape. */

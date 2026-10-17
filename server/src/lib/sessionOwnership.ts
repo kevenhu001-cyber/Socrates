@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm';
-import { sessions } from '../db/schema.js';
+import { sessions } from '../db/schema/index.js';
 import type { Database } from '../db/index.js';
 import { BadRequest, NotFound } from './errors.js';
 import { isUuid } from './validate.js';

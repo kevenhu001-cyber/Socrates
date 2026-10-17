@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { and, eq } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { requireAuth } from '../middleware/auth.js';
-import { executions, files } from '../db/schema.js';
+import { executions, files } from '../db/schema/index.js';
 import { isUuid } from '../lib/validate.js';
 import { NotFound } from '../lib/errors.js';
 import { trackSseConnection, startSseKeepalive } from '../lib/sse.js';

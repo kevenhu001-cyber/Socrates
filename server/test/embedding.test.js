@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Unit tests for services/embedding.ts + routes/embeddingConfig.ts —
+ * Unit tests for services/embeddings/embedding.ts + routes/embeddingConfig.ts —
  * the vector layer of the session_chunks hybrid retrieval.
  *
  * Pure part: `isAllowedEmbeddingUrl` (the SSRF guard). Mirrors the
@@ -16,7 +16,7 @@
  */
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { isAllowedEmbeddingUrl } from '../src/services/embedding.js';
+import { isAllowedEmbeddingUrl } from '../src/services/embeddings/embedding.js';
 
 describe('embedding.isAllowedEmbeddingUrl — SSRF guard', () => {
   test('accepts a canonical public https endpoint', () => {

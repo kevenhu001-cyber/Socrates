@@ -21,7 +21,7 @@
 import { createHash } from 'node:crypto';
 import { and, eq, ne } from 'drizzle-orm';
 import { getDb } from '../../db/index.js';
-import { ttsResults, messages, sessions } from '../../db/schema.js';
+import { ttsResults, messages, sessions } from '../../db/schema/index.js';
 
 /* Pure helper — sha256 of the trimmed text the read-aloud path feeds
    to /api/tts. Re-computed in PATCH /api/messages to drop stale rows

@@ -1,4 +1,4 @@
-import {isTerminalToolPhase} from '../chat/toolRunState.js';
+import {isTerminalToolPhase} from '../chat/toolRunState.ts';
 import type { ToolCallLike } from './toolPresentationModel';
 
 type ToolRunState = 'running' | 'done' | 'error' | 'stopped' | 'awaiting';

@@ -11,7 +11,7 @@
  * when `window.t` is absent, so Node unit tests can assert copy without a DOM.
  */
 
-import { isInlineSearchTool, toolCategory } from '../render/toolCategory.js';
+import { isInlineSearchTool, toolCategory } from '../render/toolCategory.ts';
 import { connectorActivityOf } from './toolActivity';
 
 export interface ToolCallLike {

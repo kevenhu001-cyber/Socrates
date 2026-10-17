@@ -2,7 +2,7 @@
  * chunkIndex — durable per-message chunk index for session-scoped
  * BM25 retrieval (LobeHub-alignment M3 deferred).
  *
- * The pure scoring core lives in services/rag.ts. This module is the
+ * The pure scoring core lives in services/embeddings/rag.ts. This module is the
  * persistence adapter: it (1) chunks a freshly-persisted message's
  * text and writes one row per chunk into `session_chunks`, and (2)
  * loads all chunks for a session and ranks them with `searchRagIndex`
@@ -23,7 +23,7 @@
  */
 import { and, eq, isNotNull, sql } from 'drizzle-orm';
 import { getDb } from '../../db/index.js';
-import { sessionChunks } from '../../db/schema.js';
+import { sessionChunks } from '../../db/schema/index.js';
 import {
   chunkText,
   buildRagIndex,
@@ -166,7 +166,7 @@ export async function sessionOwnedBy(
   sessionId: string,
   userId: string,
 ): Promise<boolean> {
-  const { sessions } = await import('../../db/schema.js');
+  const { sessions } = await import('../../db/schema/index.js');
   const db = getDb();
   const [row] = await db
     .select({ id: sessions.id })

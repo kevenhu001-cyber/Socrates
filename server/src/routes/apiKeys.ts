@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import { eq, and, ne, count, sql } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { apiKeys } from '../db/schema.js';
+import { apiKeys } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { NotFound, BadRequest, Forbidden } from '../lib/errors.js';
 import { audit } from '../middleware/audit.js';
 import { encrypt, encryptionKey } from '../lib/crypto.js';
 import { getApiKeyLimit } from '../lib/tiers.js';
 import { isUuid } from '../lib/validate.js';
-import { invalidateApiKeyCache } from '../services/apiKey.js';
+import { invalidateApiKeyCache } from '../services/core/apiKey.js';
 
 /* P_apikey-ciphertext-leak — projection shared by every response that
  * returns an apiKeys row. The encrypted AES-GCM payload is stored

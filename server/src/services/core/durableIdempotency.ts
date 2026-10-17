@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { eq, sql } from 'drizzle-orm';
 import { getDb, type Database } from '../../db/index.js';
-import { idempotencyReceipts } from '../../db/schema.js';
+import { idempotencyReceipts } from '../../db/schema/index.js';
 import { ApiError } from '../../lib/errors.js';
 
 export type WriteTransaction = Parameters<Parameters<Database['transaction']>[0]>[0];

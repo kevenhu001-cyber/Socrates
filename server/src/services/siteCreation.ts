@@ -8,8 +8,8 @@
 
 import crypto from 'node:crypto';
 import { getDb } from '../db/index.js';
-import { artifacts } from '../db/schema.js';
-import { MAX_TOOL_STRING_FIELD_CHARS } from './toolCallSafety.js';
+import { artifacts } from '../db/schema/index.js';
+import { MAX_TOOL_STRING_FIELD_CHARS } from './tools/toolCallSafety.js';
 
 export const CREATE_SITE_TOOL = {
   type: 'function',

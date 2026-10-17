@@ -7,7 +7,7 @@
  * truncation.
  */
 
-import { CONNECTOR_TOOL_NAMES } from '../../../services/connectorTools.js';
+import { CONNECTOR_TOOL_NAMES } from '../../../services/integrations/connectorTools.js';
 import type { ToolResult } from './types.js';
 
 export function formatToolResultContent(toolName: string, result: ToolResult): string {

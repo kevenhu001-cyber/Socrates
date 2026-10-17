@@ -6,8 +6,8 @@
  * gmail search, google calendar, todoist, gitlab, qq mail).
  */
 
-import { executeConnectorTool, CONNECTOR_TOOL_NAMES } from '../../../../services/connectorTools.js';
-import { executeProjectConnectorTool, PROJECT_CONNECTOR_TOOL_NAMES } from '../../../../services/projectConnectorTools.js';
+import { executeConnectorTool, CONNECTOR_TOOL_NAMES } from '../../../../services/integrations/connectorTools.js';
+import { executeProjectConnectorTool, PROJECT_CONNECTOR_TOOL_NAMES } from '../../../../services/integrations/projectConnectorTools.js';
 import type { ToolExecutor, ToolExecutionResult } from './types.js';
 import type { ToolResult } from '../types.js';
 

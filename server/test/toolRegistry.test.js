@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createToolRegistry} from '../src/services/toolRegistry.js';
-import {PI_AGENT_ENABLED} from '../src/services/piAgent.js';
+import {createToolRegistry} from '../src/services/tools/toolRegistry.js';
+import {PI_AGENT_ENABLED} from '../src/services/tools/piAgent.js';
 
 test('tool registry exposes the same native search and visual tools in tutor mode', () => {
   const chat = createToolRegistry({ codeInterpreterToolDef: { function: { name: 'code_interpreter' } }, mode: 'chat' });

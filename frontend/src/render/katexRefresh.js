@@ -7,7 +7,7 @@ import { stateStore } from '../state/store.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { processPendingMermaid, processPendingViz, processPendingVizActions, reclaimVizCards } from './vizStubs.js';
 import { wireCodeBlockHeaders } from './postRender.js';
-import { safeHljsLang } from './helpers.js';
+import { safeHljsLang } from './helpers.ts';
 
 function _renderAssistantHtml(rawText) {
   if (typeof window !== 'undefined' && typeof window.renderAssistantHTML === 'function') {

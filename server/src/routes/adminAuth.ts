@@ -10,7 +10,7 @@
  *                               a password guess was close)
  * GET  /verify                → { valid } (token check for the SPA)
  *
- * Defence layers in application order (details in services/adminAuth.ts):
+ * Defence layers in application order (details in services/core/adminAuth.ts):
  *   0. adminLoginLimiter — dedicated 5-attempts/15min/IP budget, tighter
  *      than the shared authLimiter so admin brute force does not share
  *      (or consume) the user-login budget.
@@ -35,8 +35,8 @@ import {
   isAdminIpAllowed,
   adminLockoutKey,
   ADMIN_SESSION_TTL_MS,
-} from '../services/adminAuth.js';
-import { ADMIN_THRESHOLD, checkLockout, recordFailure, recordSuccess } from '../services/loginLockout.js';
+} from '../services/core/adminAuth.js';
+import { ADMIN_THRESHOLD, checkLockout, recordFailure, recordSuccess } from '../services/core/loginLockout.js';
 import { authLimiter } from '../middleware/rateLimit.js';
 import { BadRequest } from '../lib/errors.js';
 

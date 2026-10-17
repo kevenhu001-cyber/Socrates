@@ -9,7 +9,7 @@ import {
   resolveIntelligenceUiValue,
   type IntelligenceUiNode,
   type IntelligenceUiState,
-} from './model';
+} from '@socrates/core';
 import { IntelligentSurface, type IntelligentDisplayMode } from './IntelligentSurface';
 import type { ToolCallRecord } from '../tool-run/toolRunModel';
 

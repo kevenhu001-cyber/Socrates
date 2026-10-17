@@ -24,18 +24,18 @@
  *     between two admins cannot leave two active configs.
  *
  * This is the admin-facing half of the vector layer. The
- * server-side consumer is services/embedding.ts (read) and
- * services/chunkIndex.ts (write + hybrid search).
+ * server-side consumer is services/embeddings/embedding.ts (read) and
+ * services/embeddings/chunkIndex.ts (write + hybrid search).
  */
 import { Router } from 'express';
 import { z } from 'zod';
 import { eq, ne, sql } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { embeddingConfig } from '../db/schema.js';
+import { embeddingConfig } from '../db/schema/index.js';
 import { requireAdminSession } from '../middleware/adminAuth.js';
 import { NotFound, BadRequest } from '../lib/errors.js';
 import { encrypt, encryptionKey } from '../lib/crypto.js';
-import { isAllowedEmbeddingUrl, invalidateEmbeddingConfigCache } from '../services/embedding.js';
+import { isAllowedEmbeddingUrl, invalidateEmbeddingConfigCache } from '../services/embeddings/embedding.js';
 
 const router = Router();
 
@@ -74,7 +74,7 @@ const putSchema = configSchema.extend({
 });
 
 /* Operator console gate — the independent ADMIN_PASSWORD session
-   (services/adminAuth.ts + middleware/adminAuth.ts). The user
+   (services/core/adminAuth.ts + middleware/adminAuth.ts). The user
    session cookie is deliberately NOT accepted. */
 router.use(requireAdminSession);
 

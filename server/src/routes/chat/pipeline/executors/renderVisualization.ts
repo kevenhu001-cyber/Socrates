@@ -8,7 +8,7 @@ import {
   visualizationTemplateCorrectionHint,
   visualizationTemplateExample,
 } from '../../../../services/visualization.js';
-import { buildToolErrorFeedback } from '../../../../services/toolErrorFeedback.js';
+import { buildToolErrorFeedback } from '../../../../services/tools/toolErrorFeedback.js';
 import type { ToolExecutor, ToolExecutionResult } from './types.js';
 import type { ToolResult } from '../types.js';
 

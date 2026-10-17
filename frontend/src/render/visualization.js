@@ -4,9 +4,9 @@ import {
   mountSpecializedVisualization,
   usesSpecializedRenderer,
 } from './visualizationAdapters.js';
-import { whenFontsReady } from './helpers.js';
+import { whenFontsReady } from './helpers.ts';
 import { ensureEcharts } from '../vendor/lazy.js';
-import { parseFunctionExpression, sampleFunction } from './visualizationMath.js';
+import { parseFunctionExpression, sampleFunction } from '@socrates/core/visualizationMath';
 import { categoryAxisLayout, formatCategoryLabel, truncateLabel } from './visualizationLabels.js';
 import { optionForChart, VIZ_FONT_FAMILY } from './visualizationOptions.js';
 import { dispatchExtensionRepair, renderExtension } from './visualizationExtensions.js';

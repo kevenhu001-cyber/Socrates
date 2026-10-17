@@ -4,7 +4,7 @@ import { LiveTextSegment } from '../tool-run/LiveTextSegment';
 import type { ProseRenderer } from '../tool-run/proseRenderer';
 import type { ToolCallRecord } from '../tool-run/toolRunModel';
 import { IntelligenceUiBlock } from './IntelligenceUi';
-import { splitIntelligenceUiText } from './model';
+import { splitIntelligenceUiText } from '@socrates/core';
 
 interface IntelligentTextSegmentProps {
   text: string;

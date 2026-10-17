@@ -1,4 +1,4 @@
-import { stripIntelligenceUiBlocks } from '../intelligence-ui/model';
+import { stripIntelligenceUiBlocks } from '@socrates/core';
 import type { LegacyChatMessage } from '../types/domain';
 import type { MessageToolbarCallbacks } from './types';
 import { getLegacyActions } from '../legacy/gateway.ts';

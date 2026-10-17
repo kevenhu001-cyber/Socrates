@@ -18,7 +18,7 @@
  */
 import type { Request, Response, NextFunction } from 'express';
 import { getDb } from '../db/index.js';
-import { auditEvents } from '../db/schema.js';
+import { auditEvents } from '../db/schema/index.js';
 import { safeUrl } from '../lib/log.js';
 
 /**

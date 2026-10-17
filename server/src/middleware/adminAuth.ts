@@ -3,7 +3,7 @@
  * (/api/system-models, /api/embedding-config).
  *
  * The operator console is behind the independent ADMIN_PASSWORD
- * credential (services/adminAuth.ts), not the user session: an
+ * credential (services/core/adminAuth.ts), not the user session: an
  * operator who does not want a full user account still gets the
  * console, and a leaked admin password does not compromise any
  * user row.
@@ -25,7 +25,7 @@ import {
   verifyAdminSessionToken,
   extractAdminToken,
   isAdminIpAllowed,
-} from '../services/adminAuth.js';
+} from '../services/core/adminAuth.js';
 
 export async function requireAdminSession(req: Request, _res: Response, next: NextFunction) {
   try {

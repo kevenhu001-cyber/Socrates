@@ -1,4 +1,4 @@
-import { decodeEntities, stripTags } from './helpers.js';
+import { decodeEntities, stripTags } from './helpers.ts';
 
 export interface QuizOption {
   letter: string;

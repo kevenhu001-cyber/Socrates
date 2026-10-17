@@ -10,7 +10,7 @@
  * This module holds no DOM logic — the wiring in ui/toolCards.js consumes it.
  */
 
-import { isTerminalToolPhase, type ToolRun } from '../chat/toolRunState.js';
+import { isTerminalToolPhase, type ToolRun } from '../chat/toolRunState.ts';
 
 export interface ToolCardView {
   running: boolean;

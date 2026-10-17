@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   PROJECT_CONNECTOR_TOOL_NAMES,
   validateProjectConnectorToolArguments,
-} from '../src/services/projectConnectorTools.js';
+} from '../src/services/integrations/projectConnectorTools.js';
 
 test('ProjectConnector tool argument validation rejects unknown fields', () => {
   const result = validateProjectConnectorToolArguments(

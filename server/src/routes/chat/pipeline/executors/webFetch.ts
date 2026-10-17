@@ -8,7 +8,7 @@
  *     spending one tool iteration per page.
  */
 
-import {fetchBatch} from '../../../../services/fetchBatch.js';
+import {fetchBatch} from '../../../../services/util/fetchBatch.js';
 import type {ToolExecutionResult, ToolExecutor, ToolExecutorContext} from './types.js';
 import type {ToolCall, ToolResult} from '../types.js';
 

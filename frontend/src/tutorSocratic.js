@@ -1,5 +1,5 @@
 import { stateStore } from './state/store.js';
-import { esc } from './render/helpers.js';
+import { esc } from './render/helpers.ts';
 import { scheduleTurnToTopForMessage } from './chat/turnAnchor.ts';
 
 /* =====================================================================

@@ -1,6 +1,6 @@
 
 
-import { esc } from './helpers.js';
+import { esc } from './helpers.ts';
 
 let runtime = {
   formatMsg: (value) => String(value ?? ''),

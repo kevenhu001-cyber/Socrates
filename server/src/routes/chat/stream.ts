@@ -22,7 +22,7 @@ import { parseChatSessionId, requireOwnedSession } from '../../lib/sessionOwners
 import { isUuid } from '../../lib/validate.js';
 import { Conflict, NotFound } from '../../lib/errors.js';
 import { getDb } from '../../db/index.js';
-import { chatTurns } from '../../db/schema.js';
+import { chatTurns } from '../../db/schema/index.js';
 import { and, eq } from 'drizzle-orm';
 import {
   chatRateLimitDispatch,
@@ -33,7 +33,7 @@ import {
 } from './helpers.js';
 import { runChatStreamPipeline } from './pipeline/runChatStreamPipeline.js';
 import { createStreamToolContext } from './pipeline/toolContext.js';
-import { createChatTurn, withChatTurnExecution } from '../../services/chatTurns.js';
+import { createChatTurn, withChatTurnExecution } from '../../services/core/chatTurns.js';
 import { writeSseEvent } from '../../lib/sse.js';
 
 import type { Request, Router } from 'express';

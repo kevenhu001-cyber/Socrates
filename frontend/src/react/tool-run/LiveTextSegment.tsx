@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
-import { createSettledSplitter } from '../../render/streaming.js';
+import { createSettledSplitter } from '../../render/streaming.ts';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import type { ProseRenderer } from './proseRenderer';
 

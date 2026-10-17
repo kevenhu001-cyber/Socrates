@@ -21,14 +21,14 @@ import { reduceTurnEvent, settleTurnRuntime } from '../../../../../packages/core
 import type { TurnRuntime } from '../../../../../packages/contracts/src/turnEvent.js';
 import {and, eq} from 'drizzle-orm';
 import {getDb} from '../../../db/index.js';
-import {chatTurns, messages, sessions} from '../../../db/schema.js';
-import {withChatTurnExecution, publishChatTurnEvent, setChatTurnStatus, subscribeToChatTurn} from '../../../services/chatTurns.js';
+import {chatTurns, messages, sessions} from '../../../db/schema/index.js';
+import {withChatTurnExecution, publishChatTurnEvent, setChatTurnStatus, subscribeToChatTurn} from '../../../services/core/chatTurns.js';
 import {sanitizeStoredHtml, sanitizePlainText} from '../../../lib/sanitize.js';
-import {indexMessageChunks} from '../../../services/chunkIndex.js';
+import {indexMessageChunks} from '../../../services/embeddings/chunkIndex.js';
 import { createTurnEventController } from '../../../services/turnEvents.js';
 import { createTurnActivityController } from '../../../services/turnActivity.js';
 import {completedActivitySummary} from '../../../services/turnSummary.js';
-import {streamChatCompletion} from '../../../services/llm.js';
+import {streamChatCompletion} from '../../../services/core/llm.js';
 import {
   MAX_TOOL_ARGUMENT_CHARS,
   normalizeToolCalls,
@@ -37,17 +37,17 @@ import {
   sanitizeToolCallForProtocol,
   TOOL_ARGUMENT_ERRORS,
   validateToolArguments,
-} from '../../../services/toolCallSafety.js';
-import {SELF_NORMALIZING_TOOLS} from '../../../services/toolRegistry.js';
-import {hashToolArguments} from '../../../services/toolTurnPolicy.js';
-import {dispatchToolCalls} from '../../../services/toolDispatch.js';
+} from '../../../services/tools/toolCallSafety.js';
+import {SELF_NORMALIZING_TOOLS} from '../../../services/tools/toolRegistry.js';
+import {hashToolArguments} from '../../../services/tools/toolTurnPolicy.js';
+import {dispatchToolCalls} from '../../../services/tools/toolDispatch.js';
 import {
   estimateMessageTokens,
   estimateTokens,
   normalizeProviderUsage,
   recordUsage,
   resolveUsage
-} from '../../../services/usageTracker.js';
+} from '../../../services/core/usageTracker.js';
 import {annotateSpan, withSpan} from '../../../lib/telemetry.js';
 import {startSseKeepalive, trackSseConnection} from '../../../lib/sse.js';
 import {
@@ -232,7 +232,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
   let fullReasoning = '';  // P_streaming-survival
   /* Token accounting — the chars/4 estimate is the fallback. The
      authoritative numbers come from the provider's `usage` frame, which
-     `stream_options.include_usage` now asks for (see services/llm.ts).
+     `stream_options.include_usage` now asks for (see services/core/llm.ts).
 
      One chat turn can make SEVERAL upstream calls: every tool iteration is
      its own streamChatCompletion, each with its own usage frame. Summing is

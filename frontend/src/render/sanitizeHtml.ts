@@ -1,5 +1,5 @@
 /* Shared HTML sanitizer for rendered Markdown and Canvas content. */
-import { escHTML } from './helpers.js';
+import { escHTML } from './helpers.ts';
 import bundledDomPurify from 'dompurify';
 
 /* ── DOMPurify configuration ──────────────────────────────────────

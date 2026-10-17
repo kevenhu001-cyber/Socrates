@@ -19,7 +19,7 @@ import {
   codexWorkspaces,
   projects,
   sessions,
-} from '../../db/schema.js';
+} from '../../db/schema/index.js';
 import { BadRequest, NotFound } from '../../lib/errors.js';
 import {
   ensureProjectWorkspace,
@@ -35,7 +35,7 @@ import {
   type PiAgentEvent,
   type PiAgentProvider,
 } from './piAgent.js';
-import { getActiveApiKey } from '../apiKey.js';
+import { getActiveApiKey } from '../core/apiKey.js';
 import {
   WORKSPACE_LIMIT_DEFAULTS,
   assertWorkspaceDiskWithinLimit,

@@ -28,24 +28,24 @@
    `publishReactChatRuntime` in main.js uses). */
 import type { ChatRuntimeEvent } from '../react/types/domain';
 
-import type { AgentPlanData, AgentStepData } from '../ui/agentSteps.js';
+import type { AgentPlanData, AgentStepData } from '../ui/agentSteps.ts';
 import {
   TOOL_RUN_PHASES,
   isTerminalToolPhase,
   transitionToolRun,
-} from './toolRunState.js';
-import type { ToolRun } from './toolRunState.js';
-import type { LiveOutputBufferHandle } from './liveOutput.js';
-import { copyToolData, mergeToolCalls } from './toolRuntime/projection.js';
-import { createAgentFrameRuntime } from './toolRuntime/agentFrames.js';
-import type { AgentPlanFrame, AgentStepFrame } from './toolRuntime/agentFrames.js';
-import { createApprovalRuntime } from './toolRuntime/approvals.js';
-import type { ToolApproval } from './toolRuntime/approvals.js';
-import { createToolUseRuntime } from './toolRuntime/toolUse.js';
-import { createToolResultRuntime } from './toolRuntime/resultRuntime.js';
-import type { ToolResultInput } from './toolRuntime/resultProjection.js';
-import { createProgressRuntime } from './toolRuntime/progress.js';
-export type { AgentPlanFrame, AgentStepFrame } from './toolRuntime/agentFrames.js';
+} from './toolRunState.ts';
+import type { ToolRun } from './toolRunState.ts';
+import type { LiveOutputBufferHandle } from './liveOutput.ts';
+import { copyToolData, mergeToolCalls } from './toolRuntime/projection.ts';
+import { createAgentFrameRuntime } from './toolRuntime/agentFrames.ts';
+import type { AgentPlanFrame, AgentStepFrame } from './toolRuntime/agentFrames.ts';
+import { createApprovalRuntime } from './toolRuntime/approvals.ts';
+import type { ToolApproval } from './toolRuntime/approvals.ts';
+import { createToolUseRuntime } from './toolRuntime/toolUse.ts';
+import { createToolResultRuntime } from './toolRuntime/resultRuntime.ts';
+import type { ToolResultInput } from './toolRuntime/resultProjection.ts';
+import { createProgressRuntime } from './toolRuntime/progress.ts';
+export type { AgentPlanFrame, AgentStepFrame } from './toolRuntime/agentFrames.ts';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */

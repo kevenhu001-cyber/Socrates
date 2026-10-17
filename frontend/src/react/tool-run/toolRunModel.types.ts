@@ -1,5 +1,5 @@
-import type {AgentPlanData, AgentStepData} from '../../ui/agentSteps.js';
-import type {ToolCallLike} from './labels.js';
+import type {AgentPlanData, AgentStepData} from '../../ui/agentSteps.ts';
+import type {ToolCallLike} from '../../ui/toolPresentationModel.ts';
 
 export type ToolRunState = 'running' | 'done' | 'error' | 'stopped' | 'awaiting';
 

@@ -6,22 +6,22 @@
    formatTickSlice — convenience wrapper for the type-tick slider.
    All three exported for use by main.js / doRender / streaming. */
 
-import { esc, escAttr, escHTML, KATEX_MACROS, safeHljsLang } from './helpers.js';
+import { esc, escAttr, escHTML, KATEX_MACROS, safeHljsLang } from './helpers.ts';
 import { renderMermaid, renderViz, renderVizLoading, renderPlot } from './vizStubs.js';
-import { preprocessMarkdown, preprocessMarkdownForStreaming, type StreamingPreprocessOptions } from './preprocess.js';
+import { preprocessMarkdown, preprocessMarkdownForStreaming, type StreamingPreprocessOptions } from './preprocess.ts';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.js';
 import { sanitizeUrls } from '../util/safe.js';
-import { sanitizeHtml } from './sanitizeHtml.js';
-import { installCodeBlockCopy } from './markdownCodeCopy.js';
+import { sanitizeHtml } from './sanitizeHtml.ts';
+import { installCodeBlockCopy } from './markdownCodeCopy.ts';
 import {
   findStreamScaffold, renderStreamScaffoldPreview,
   streamScaffoldFallbackLabel, streamScaffoldFallbackText,
-} from './markdownScaffolds.js';
-export { clearStreamScaffolds, registerStreamScaffold } from './markdownScaffolds.js';
+} from './markdownScaffolds.ts';
+export { clearStreamScaffolds, registerStreamScaffold } from './markdownScaffolds.ts';
 import {
   _looksLikeInlineMathTail, _looksLikeNumericMath, _stashInlineCode,
   getKatex, renderStreamMath, replaceInlineDollarMath,
-} from './markdownMath.js';
+} from './markdownMath.ts';
 
 export function formatTickSlice(full: string, len: number): string {
   return formatMsgProgressive(full.slice(0, len));
@@ -565,7 +565,7 @@ function _formatMsg(t: string): string {
 export { sanitizeHtml };
 export { installCodeBlockCopy };
 export { _looksLikeNumericMath, replaceInlineDollarMath };
-export { findLastUserMessage, stripMarkdown } from './markdownText.js';
+export { findLastUserMessage, stripMarkdown } from './markdownText.ts';
 
 if (typeof window !== 'undefined') {
   installCodeBlockCopy();

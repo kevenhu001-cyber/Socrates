@@ -1,6 +1,6 @@
-import { STROKE_ICONS } from '../../ui/icons/toolIcons.js';
+import { STROKE_ICONS } from '../../ui/icons/toolIcons.ts';
 import { ToolActivityIcon } from './ToolActivityIcon';
-import { formatSeconds, translate } from './labels.js';
+import { formatSeconds, translate } from '../../ui/toolPresentationModel.ts';
 import type { ToolRunView } from './toolRunModel.js';
 
 function isDurationMeta(value: string): boolean {

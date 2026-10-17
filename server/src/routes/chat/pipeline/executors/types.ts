@@ -8,8 +8,8 @@
  */
 
 import type { Request } from 'express';
-import type { ToolTurnPolicy } from '../../../../services/toolTurnPolicy.js';
-import type { JsonSchemaNode } from '../../../../services/toolCallSafety.js';
+import type { ToolTurnPolicy } from '../../../../services/tools/toolTurnPolicy.js';
+import type { JsonSchemaNode } from '../../../../services/tools/toolCallSafety.js';
 import type { SseEmitter } from '../sseEmitter.js';
 import type { ToolCall, ToolResult } from '../types.js';
 

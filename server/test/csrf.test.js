@@ -17,7 +17,7 @@ import cookieParser from 'cookie-parser';
 
 import { csrfProtection, setCsrfCookie, clearCsrfCookie } from '../src/middleware/csrf.ts';
 import { errorHandler } from '../src/middleware/error.js';
-import { buildMobileTokenPair } from '../src/services/auth.js';
+import { buildMobileTokenPair } from '../src/services/core/auth.js';
 import { listen, httpRequest } from './_http.js';
 
 const originalConsoleError = console.error;

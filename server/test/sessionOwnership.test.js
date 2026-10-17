@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import { BadRequest } from '../src/lib/errors.js';
 import { parseChatSessionId } from '../src/lib/sessionOwnership.js';
-import { dispatchToolCalls } from '../src/services/toolDispatch.js';
+import { dispatchToolCalls } from '../src/services/tools/toolDispatch.js';
 import { createSessionExecutionLock } from '../src/services/sessionExecutionLock.js';
 
 const SESSION_A = '00000000-0000-4000-8000-000000000001';

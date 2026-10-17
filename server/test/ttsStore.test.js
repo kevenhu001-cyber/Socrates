@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Unit + integration tests for services/ttsStore.ts — the durable
+ * Unit + integration tests for services/embeddings/ttsStore.ts — the durable
  * per-message TTS persistence layer (M4 follow-up).
  *
  * Pure part: `ttsTextHash` is exercised in isolation, mirroring the
@@ -19,13 +19,13 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { and, eq } from 'drizzle-orm';
 import { initDb, getDb, closeDb } from '../src/db/index.js';
-import { messages, sessions, users, ttsResults } from '../src/db/schema.js';
+import { messages, sessions, users, ttsResults } from '../src/db/schema/index.js';
 import {
   ttsTextHash,
   lookupTtsResult,
   saveTtsResult,
   invalidateForMessage,
-} from '../src/services/ttsStore.js';
+} from '../src/services/embeddings/ttsStore.js';
 import { runExpiredCleanup } from '../src/services/util/cleanupDb.js';
 
 /* ── Pure part: ttsTextHash ────────────────────────────────────── */

@@ -5,7 +5,7 @@ import {
   findStreamScaffold,
   registerStreamScaffold,
   renderStreamScaffoldPreview,
-} from '../src/render/markdownScaffolds.js';
+} from '../src/render/markdownScaffolds.ts';
 
 test('stream scaffold previews use the injected markdown renderer', () => {
   const renderedValues = [];

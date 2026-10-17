@@ -14,7 +14,7 @@ import {
   CHAT_TURN_STATUSES,
   createChatTurn,
   setChatTurnStatus,
-} from '../src/services/chatTurns.js';
+} from '../src/services/core/chatTurns.js';
 
 describe('chatTurns: input validation (no DB)', () => {
   test('createChatTurn rejects empty clientTurnId without a database', async () => {

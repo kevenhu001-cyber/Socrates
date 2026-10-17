@@ -14,7 +14,7 @@
  * users' own providers) are out of scope for this route — an admin
  * never sees or edits another user's key.
  *
- * Resolution order (unchanged, see services/apiKey.ts#getActiveApiKey):
+ * Resolution order (unchanged, see services/core/apiKey.ts#getActiveApiKey):
  *   1. user's own active api_keys row (user-managed, not this route)
  *   2. built-in active row ← this route is the only writer
  *
@@ -40,7 +40,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { eq, and, ne } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { apiKeys } from '../db/schema.js';
+import { apiKeys } from '../db/schema/index.js';
 import { requireAdminSession } from '../middleware/adminAuth.js';
 import { BadRequest } from '../lib/errors.js';
 import { encrypt, encryptionKey } from '../lib/crypto.js';
@@ -70,7 +70,7 @@ const configSchema = z.object({
 });
 
 /* Operator console gate — the independent ADMIN_PASSWORD session
-   (services/adminAuth.ts + middleware/adminAuth.ts). */
+   (services/core/adminAuth.ts + middleware/adminAuth.ts). */
 router.use(requireAdminSession);
 
 /* GET / — the built-in system model row (ciphertext never leaves). */

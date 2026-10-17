@@ -19,9 +19,9 @@ export function installShutdown(server: Server): void {
     server.close(async () => {
       console.log('[server] HTTP server closed — draining connections');
       stopExpiredCleanup();
-      try { const { stopChatTurnRecovery } = await import('../services/chatTurns.js'); stopChatTurnRecovery(); } catch {}
-      try { const { stopScheduler } = await import('../services/scheduler.js'); stopScheduler(); } catch {}
-      try { const { stopStatusMonitor } = await import('../services/statusMonitor.js'); stopStatusMonitor(); } catch {}
+      try { const { stopChatTurnRecovery } = await import('../services/core/chatTurns.js'); stopChatTurnRecovery(); } catch {}
+      try { const { stopScheduler } = await import('../services/core/scheduler.js'); stopScheduler(); } catch {}
+      try { const { stopStatusMonitor } = await import('../services/util/statusMonitor.js'); stopStatusMonitor(); } catch {}
       await stopRustFetchWorker().catch(() => {});
       /* Pi agent runs are per-turn child processes; nothing to stop here. */
       // Pubsub holds its own long-lived LISTEN connection (not from the

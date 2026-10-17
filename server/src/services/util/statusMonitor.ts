@@ -17,7 +17,7 @@
 
 import { sql } from 'drizzle-orm';
 import { getDb } from '../../db/index.js';
-import { statusMonitorEvents, statusSubscribers } from '../../db/schema.js';
+import { statusMonitorEvents, statusSubscribers } from '../../db/schema/index.js';
 import { getStatus as getPubsubStatus } from '../../lib/pubsub.js';
 import { sendStatusIncidentEmail } from '../core/email.js';
 

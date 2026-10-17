@@ -1,4 +1,4 @@
-import type { ToolRun } from '../toolRunState.js';
+import type { ToolRun } from '../toolRunState.ts';
 
 interface ProjectableToolEntry {
   id: string;

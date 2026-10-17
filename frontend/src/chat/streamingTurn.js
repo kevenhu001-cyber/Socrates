@@ -32,7 +32,7 @@ import {
   turnAnchorReserve,
   TURN_ANCHOR_TOP_OFFSET,
 } from './turnAnchor.ts';
-import { createToolRuntime } from './toolRuntime.js';
+import { createToolRuntime } from './toolRuntime.ts';
 import { scrollContainer, isPinnedToBottom } from '../ui/scroll.js';
 import { createStatusChrome } from './turn/statusChrome.js';
 import { createFinishRender } from './turn/finishRender.js';

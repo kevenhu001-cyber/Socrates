@@ -9,7 +9,7 @@ import {
   resolveIntelligenceUiValue,
   splitIntelligenceUiText,
   stripIntelligenceUiBlocks,
-} from '../src/react/intelligence-ui/model.ts';
+} from '@socrates/core';
 
 test('splits prose around a settled intelligent UI fence', () => {
   const text = [

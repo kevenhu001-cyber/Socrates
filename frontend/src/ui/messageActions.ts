@@ -11,7 +11,7 @@ import { apiFetch } from '../util/api.js';
 import { showToast } from './toast.js';
 import { buildAssistantHtml } from '../render/assistantHtml.ts';
 import { visualizationSpecOf } from '../render/visualizationSpec.ts';
-import { formatMsg } from '../render/markdown.js';
+import { formatMsg } from '../render/markdown.ts';
 import { wireCodeBlockHeaders, wireMsgBodyImages } from '../render/postRender.js';
 import { publishReactChatRuntime } from './reactBridge.js';
 import {

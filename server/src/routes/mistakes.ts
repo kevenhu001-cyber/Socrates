@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { eq, and, desc, count } from 'drizzle-orm';
 import { z } from 'zod';
 import { getDb } from '../db/index.js';
-import { mistakes } from '../db/schema.js';
+import { mistakes } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { NotFound, BadRequest } from '../lib/errors.js';
 import { isUuid } from '../lib/validate.js';

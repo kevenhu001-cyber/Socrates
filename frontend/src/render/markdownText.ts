@@ -1,5 +1,5 @@
 /* Plain-text helpers used by message-editing flows. */
-import { _looksLikeInlineMath } from './markdownMath.js';
+import { _looksLikeInlineMath } from './markdownMath.ts';
 import { stateStore } from '../state/store.js';
 
 /* ── Plain-text helpers (used by message-editing flows) ──────────── */

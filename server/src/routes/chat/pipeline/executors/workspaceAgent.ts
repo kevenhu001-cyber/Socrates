@@ -11,9 +11,9 @@
  * agent runtime; Pi only executes inside the directory it resolves.
  */
 
-import { getWorkspaceContext } from '../../../../services/agentRuntime.js';
-import { runPiAgentTask, type PiAgentEvent, type PiAgentProvider } from '../../../../services/piAgent.js';
-import { getActiveApiKey } from '../../../../services/apiKey.js';
+import { getWorkspaceContext } from '../../../../services/tools/agentRuntime.js';
+import { runPiAgentTask, type PiAgentEvent, type PiAgentProvider } from '../../../../services/tools/piAgent.js';
+import { getActiveApiKey } from '../../../../services/core/apiKey.js';
 import { checkBeagleMonthlyLimit } from '../../helpers.js';
 import type {
   ToolExecutor,

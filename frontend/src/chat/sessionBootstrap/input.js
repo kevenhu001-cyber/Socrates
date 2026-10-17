@@ -3,7 +3,7 @@ import { getComposerMarkdown } from '../../composer/controller.ts';
 import { selectedComposerPlugins } from '../../react/composer/pluginSelection.ts';
 import { serializeSelectedPluginContext } from '../../react/composer/pluginCatalog.ts';
 import { attachments, snapshotAttachments } from '../../attachments.js';
-import { detectLanguage } from '../lang.js';
+import { detectLanguage } from '../lang.ts';
 import { isSlashCommandPaletteOpen } from '../templateSlash.js';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { getAppMode } from './runtime.js';

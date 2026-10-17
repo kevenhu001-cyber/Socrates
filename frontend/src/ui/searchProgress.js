@@ -8,7 +8,7 @@
  * Reads from window.*: _currentLang, scrollMainToBottom
  */
 
-import { esc } from '../render/helpers.js';
+import { esc } from '../render/helpers.ts';
 
 export var SEARCH_PROGRESS_LABELS = {
   en: {

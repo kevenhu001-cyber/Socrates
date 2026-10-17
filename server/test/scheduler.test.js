@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { computeNextRunAt } from '../src/services/scheduler.js';
+import { computeNextRunAt } from '../src/services/core/scheduler.js';
 
 test('computeNextRunAt advances hourly/daily/weekly by fixed offsets', () => {
   const from = new Date('2026-07-29T10:00:00Z');

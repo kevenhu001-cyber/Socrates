@@ -5,7 +5,7 @@
  * providers the user has marked as multimodal can actually consume
  * them. Before forwarding a multimodal payload we read the
  * `isMultimodal` flag directly off the active provider (decrypted
- * by `services/apiKey.js` from the `api_keys.is_multimodal`
+ * by `services/core/apiKey.js` from the `api_keys.is_multimodal`
  * column). If the flag is false, `routes/chat.js` replaces each
  * image_url part with a textual placeholder so:
  *   - the user gets a sensible "I can't view this" reply instead of
@@ -31,7 +31,7 @@
  * `image_url` content parts verbatim.
  *
  * @param {object|null|undefined} provider — the decrypted provider
- *   shape returned by `services/apiKey.js#decryptProvider`. Must carry
+ *   shape returned by `services/core/apiKey.js#decryptProvider`. Must carry
  *   `isMultimodal: boolean`. Anything else (missing / null / wrong
  *   shape) is treated as text-only.
  * @returns {boolean}

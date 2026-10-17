@@ -8,7 +8,7 @@
 
 import { and, eq, gte, ne, sql } from 'drizzle-orm';
 import { getDb } from '../../../../db/index.js';
-import { executions } from '../../../../db/schema.js';
+import { executions } from '../../../../db/schema/index.js';
 import { getExecutionsPerDay } from '../../../../lib/tiers.js';
 import { codeInterpreter } from '../../../../services/codeInterpreter.js';
 import type { ToolExecutor, ToolExecutionResult } from './types.js';

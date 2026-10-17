@@ -30,7 +30,7 @@
  *   3. A snapshot exists for the latest migration. This is the drift
  *      detector: it is what 0034/0035 skipped.
  *   4. `drizzle-kit generate` produces NOTHING new. If the snapshot matches
- *      src/db/schema.ts there is nothing left to emit, so any output means
+ *      src/db/schema/index.ts there is nothing left to emit, so any output means
  *      the metadata and the schema disagree — exactly the state that yields a
  *      surprise non-idempotent migration. Runs in a scratch copy so the repo
  *      is never modified by the check.
@@ -184,7 +184,7 @@ try {
       })
       .join('\n');
     fail(
-      'src/db/schema.ts and the drizzle snapshot disagree: `db:generate` still has ' +
+      'src/db/schema/index.ts and the drizzle snapshot disagree: `db:generate` still has ' +
       `${emitted.length} migration(s) to emit.\n` +
       '      Anything listed below is a change that exists in the schema but not in the\n' +
       '      recorded metadata. If it is ALREADY applied to production, the snapshot is\n' +

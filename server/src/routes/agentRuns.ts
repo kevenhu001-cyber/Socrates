@@ -23,8 +23,8 @@ import {
   runAgentTurn,
   subscribeToAgentRun,
   type AgentRuntimeEvent,
-} from '../services/agentRuntime.js';
-import { projectAgentEvent } from '../services/agentStepProjection.js';
+} from '../services/tools/agentRuntime.js';
+import { projectAgentEvent } from '../services/tools/agentStepProjection.js';
 
 const router = Router();
 

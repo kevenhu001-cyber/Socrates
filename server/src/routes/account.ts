@@ -7,11 +7,11 @@ import {
   users, sessions, messages, apiKeys, usageEvents, tags, sessionTags,
   projects, mistakes, memories, artifacts, artifactVersions, prompts,
   files, workspaceMembers,
-} from '../db/schema.js';
+} from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { parseScopes } from '../middleware/scopes.js';
-import { createAgentKey } from '../services/agentKeys.js';
-import { agentApiKeys } from '../db/schema.js';
+import { createAgentKey } from '../services/core/agentKeys.js';
+import { agentApiKeys } from '../db/schema/index.js';
 import { audit } from '../middleware/audit.js';
 
 const router = Router();

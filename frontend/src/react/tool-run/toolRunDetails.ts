@@ -1,4 +1,4 @@
-import { isInlineSearchTool, toolCategory } from '../../render/toolCategory.js';
+import { isInlineSearchTool, toolCategory } from '../../render/toolCategory.ts';
 import {
   basename,
   clip,
@@ -8,8 +8,8 @@ import {
   queryOf,
   toolRunLabel,
   translate,
-} from './labels.js';
-import {durationOf, toolRunStateOf} from './toolRunState.ts';
+} from '../../ui/toolPresentationModel.ts';
+import {durationOf, toolRunStateOf} from '../../ui/toolPresentationState.ts';
 import type {
   ApprovalView,
   SourceItem,

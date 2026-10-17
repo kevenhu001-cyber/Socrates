@@ -13,7 +13,7 @@
  * legacy mode never sees a subscriber so the helpers are cheap no-ops.
  */
 
-import { esc } from '../render/helpers.js';
+import { esc } from '../render/helpers.ts';
 import { apiFetch } from '../util/api.js';
 import { stateStore } from '../state/store.js';
 import { showToast } from './toast.js';

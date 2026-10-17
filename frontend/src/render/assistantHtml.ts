@@ -20,8 +20,8 @@
 import { appMode } from '../config/providers.js';
 import { stateStore } from '../state/store.js';
 import { wrapForCanvas } from './canvasWrap.ts';
-import { decodeEntities, esc, stripCitationMarkers, stripTags } from './helpers.js';
-import { formatMsg } from './markdown.js';
+import { decodeEntities, esc, stripCitationMarkers, stripTags } from './helpers.ts';
+import { formatMsg } from './markdown.ts';
 import { extractScaffoldWidgets } from './scaffoldPipeline.js';
 import { scheduleWidgetMounts } from './widgetScheduler.js';
 import {
@@ -31,7 +31,7 @@ import {
   type ParsedExample,
   type ParsedPractice,
   type ParsedQuiz,
-} from './widgetParsers.js';
+} from './widgetParsers.ts';
 
 /** Mistake-book entry written for <mistake> practice blocks. */
 export interface PracticeMistakeRecord {

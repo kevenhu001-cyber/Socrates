@@ -1,8 +1,8 @@
-import { esc } from '../../render/helpers.js';
-import { formatToolOutput } from '../../render/toolOutput.js';
+import { esc } from '../../render/helpers.ts';
+import { formatToolOutput } from '../../render/toolOutput.ts';
 import { getSocratesWasm } from '../../lib/socratesWasm.js';
 import { reportSwallow } from '../../util/reportSwallow.ts';
-import { isInlineSearchTool } from '../../render/toolCategory.js';
+import { isInlineSearchTool } from '../../render/toolCategory.ts';
 import { translate } from './labels.ts';
 import type { InlineToolGroupMember, InlineToolResult } from './types.ts';
 

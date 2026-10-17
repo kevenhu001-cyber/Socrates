@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import {
   OPEN_CONNECTOR_APP_INVENTORY,
   READY_CONNECTOR_APPS,
-} from '../src/services/openConnectorAppInventory.js';
+} from '../src/services/integrations/openConnectorAppInventory.js';
 import {
   OPEN_CONNECTOR_CLOUD_AUTH,
-} from '../src/services/openConnectorCloudAuth.generated.js';
+} from '../src/services/integrations/openConnectorCloudAuth.generated.js';
 import {
   buildOpenConnectorCatalogForCloud,
   buildOpenConnectorStubCatalog,
@@ -16,13 +16,13 @@ import {
   ocInventoryEntry,
   ocOAuthAppForm,
   ocStubCatalogItem,
-} from '../src/services/openConnectorCatalog.js';
+} from '../src/services/integrations/openConnectorCatalog.js';
 import {
   OPEN_CONNECTOR_CHAT_TOOLS,
   executeOpenConnectorTool,
   getOpenConnectorChatTool,
   validateOpenConnectorToolArguments,
-} from '../src/services/openConnectorChatTools.js';
+} from '../src/services/integrations/openConnectorChatTools.js';
 
 test('Inventory covers every screenshot app exactly once', () => {
   assert.equal(OPEN_CONNECTOR_APP_INVENTORY.length, 162);
@@ -238,7 +238,7 @@ test('Cloud auth snapshot covers every ready service with usable auth', () => {
   assert.ok(readyServices.size > 100);
   for (const service of readyServices) {
     const meta = OPEN_CONNECTOR_CLOUD_AUTH[service];
-    assert.ok(meta, `${service} missing from cloud snapshot (maintain server/src/services/openConnectorCloudAuth.generated.ts)`);
+    assert.ok(meta, `${service} missing from cloud snapshot (maintain server/src/services/integrations/openConnectorCloudAuth.generated.ts)`);
     assert.ok(Array.isArray(meta.authTypes) && meta.authTypes.length > 0, `${service} needs authTypes`);
     assert.ok(Array.isArray(meta.auth), `${service} needs auth array`);
     assert.ok(Array.isArray(meta.categories), `${service} needs categories`);

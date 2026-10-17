@@ -11,7 +11,7 @@
  * Returns:
  *   { hits: [{ messageId, ordinal, text, score }] }
  *
- * Owner check: the helper in services/chunkIndex.ts confirms the
+ * Owner check: the helper in services/embeddings/chunkIndex.ts confirms the
  * session belongs to the caller before any retrieval; a forged
  * sessionId is treated as "no session" and returns 404. The route
  * is intentionally read-only and shares the standard `requireAuth`
@@ -29,7 +29,7 @@ import { requireAuth } from '../middleware/auth.js';
 import {
   searchSessionChunksHybrid,
   sessionOwnedBy,
-} from '../services/chunkIndex.js';
+} from '../services/embeddings/chunkIndex.js';
 import { BadRequest, NotFound } from '../lib/errors.js';
 import { isUuid } from '../lib/validate.js';
 

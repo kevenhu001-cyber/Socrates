@@ -16,7 +16,7 @@ globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.MutationObserver = dom.window.MutationObserver;
 
-const { installCodeBlockCopy } = await import('../src/render/markdown.js');
+const { installCodeBlockCopy } = await import('../src/render/markdown.ts');
 
 function nextMutation() {
   return new Promise((resolve) => setTimeout(resolve, 0));

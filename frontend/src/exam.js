@@ -3,7 +3,7 @@
    navigation and result rendering live under ./exam/.
    ============================================================ */
 
-import { esc } from './render/helpers.js';
+import { esc } from './render/helpers.ts';
 import { stateStore } from './state/store.js';
 import { pushChatIdToURL, setExamIdInURL } from './session/store.js';
 import { reportSwallow } from './util/reportSwallow.ts';

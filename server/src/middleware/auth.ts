@@ -1,10 +1,10 @@
 import type { Request, Response, NextFunction } from 'express';
 import { Unauthorized } from '../lib/errors.js';
 import { getDb } from '../db/index.js';
-import { users, authSessions } from '../db/schema.js';
+import { users, authSessions } from '../db/schema/index.js';
 import { authCacheGet, authCacheSet } from '../lib/authCache.js';
-import { isMobileAccessToken } from '../services/auth.js';
-import { verifyAgentKey, AGENT_KEY_RE } from '../services/agentKeys.js';
+import { isMobileAccessToken } from '../services/core/auth.js';
+import { verifyAgentKey, AGENT_KEY_RE } from '../services/core/agentKeys.js';
 import { verifyOAuthAccessToken, OAUTH_ACCESS_TOKEN_RE } from '../services/integrations/oauthTokens.js';
 import { ALL_SCOPES_SET } from '../lib/authScopes.js';
 import { eq } from 'drizzle-orm';

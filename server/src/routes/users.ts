@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { eq } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { users } from '../db/schema.js';
+import { users } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { durableJsonWrite } from '../middleware/durableIdempotency.js';
 import { NotFound } from '../lib/errors.js';

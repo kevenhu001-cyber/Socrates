@@ -24,7 +24,7 @@ import {
   listChatTurns,
   subscribeToChatTurn,
   type ChatTurnEvent,
-} from '../services/chatTurns.js';
+} from '../services/core/chatTurns.js';
 
 const router = Router();
 

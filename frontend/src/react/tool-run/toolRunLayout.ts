@@ -1,12 +1,12 @@
-import {toolCategory} from '../../render/toolCategory.js';
+import {toolCategory} from '../../render/toolCategory.ts';
 import {
   isParagraphStart,
   restoredToolRowAnchorOffset,
   snapToolOffsetOutOfBlock,
   toolRowAnchorOffset,
-} from '../../render/streaming.js';
-import {summarizeToolRuns, type ToolRun} from '../../chat/toolRunState.js';
-import {toolRunStateOf} from './toolRunState.ts';
+} from '../../render/streaming.ts';
+import {summarizeToolRuns, type ToolRun} from '../../chat/toolRunState.ts';
+import {toolRunStateOf} from '../../ui/toolPresentationState.ts';
 import type {ToolCallRecord, ToolRunState, ThinkRange, TurnSegment} from './toolRunModel.types.ts';
 
 /* ── turn layout ───────────────────────────────────────────────────────── */

@@ -1,4 +1,4 @@
-import { TOOL_RUN_PHASES } from '../toolRunState.js';
+import { TOOL_RUN_PHASES } from '../toolRunState.ts';
 
 export interface ToolResultInput {
   id: string;

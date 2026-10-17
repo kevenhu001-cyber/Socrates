@@ -1,6 +1,6 @@
-import type { ToolRun } from '../toolRunState.js';
-import { projectToolResult } from './resultProjection.js';
-import type { ToolResultInput } from './resultProjection.js';
+import type { ToolRun } from '../toolRunState.ts';
+import { projectToolResult } from './resultProjection.ts';
+import type { ToolResultInput } from './resultProjection.ts';
 
 interface ResultArtifact {
   id: string;

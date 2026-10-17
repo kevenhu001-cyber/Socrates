@@ -1,5 +1,5 @@
 /* KaTeX heuristics and tolerant render helpers shared by Markdown passes. */
-import { KATEX_MACROS, _looksLikeLatex } from './helpers.js';
+import { KATEX_MACROS, _looksLikeLatex } from './helpers.ts';
 import { ensureKatex, onKatexReady } from '../vendor/lazy.js';
 
 interface KatexLike {

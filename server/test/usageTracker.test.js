@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Unit tests for src/services/usageTracker.js — token estimation
+ * Unit tests for src/services/core/usageTracker.js — token estimation
  * and usage-event recording.
  *
  * This module is the billing boundary. `estimateTokens` /
@@ -21,7 +21,7 @@ import {
   estimateMessageTokens,
   recordUsage,
   IMAGE_TOKEN_ESTIMATE,
-} from '../src/services/usageTracker.js';
+} from '../src/services/core/usageTracker.js';
 
 /* ── estimateTokens ───────────────────────────────────────────── */
 

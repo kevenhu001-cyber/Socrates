@@ -5,7 +5,7 @@
    skips non-idempotent rules.
    Both imported by render/markdown.js. */
 
-import { _autoWrapBareBracketMath, fixEmphasisMarkers, fixHeadingMarkers, fixMarkdownTableSeparators } from './helpers.js';
+import { _autoWrapBareBracketMath, fixEmphasisMarkers, fixHeadingMarkers, fixMarkdownTableSeparators } from './helpers.ts';
 import { recoverUnclosedDisplayMathBeforeHeading } from './markdownBoundary.ts';
 export { recoverUnclosedDisplayMathBeforeHeading } from './markdownBoundary.ts';
 

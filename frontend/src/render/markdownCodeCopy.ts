@@ -1,5 +1,5 @@
 /* DOM observer and clipboard behavior for Markdown code blocks. */
-import { escHTML } from './helpers.js';
+import { escHTML } from './helpers.ts';
 
 /* ── Code-block copy affordance (Task 7.1) ───────────────────────────
    Post-render pass that gives every fenced code block in assistant

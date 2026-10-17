@@ -28,9 +28,9 @@
  */
 
 import {createHash} from 'node:crypto';
-import {callChatCompletion} from '../llm.js';
-import {getActiveApiKey} from '../apiKey.js';
-import {estimateMessageTokens} from '../usageTracker.js';
+import {callChatCompletion} from '../core/llm.js';
+import {getActiveApiKey} from '../core/apiKey.js';
+import {estimateMessageTokens} from '../core/usageTracker.js';
 
 export interface CompressibleMessage {
   role?: unknown;

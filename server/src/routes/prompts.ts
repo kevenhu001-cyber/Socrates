@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { durableJsonWrite } from '../middleware/durableIdempotency.js';
 import { eq, and, or, desc, sql } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { prompts } from '../db/schema.js';
+import { prompts } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { NotFound, BadRequest } from '../lib/errors.js';
 

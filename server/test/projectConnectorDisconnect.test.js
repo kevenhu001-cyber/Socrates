@@ -19,8 +19,8 @@ import { eq, and } from 'drizzle-orm';
 import projectConnectorRouter from '../src/routes/projectConnectors.js';
 import { errorHandler } from '../src/middleware/error.js';
 import { initDb, getDb, closeDb } from '../src/db/index.js';
-import { users, projectConnectorConnections } from '../src/db/schema.js';
-import { createAgentKey } from '../src/services/agentKeys.ts';
+import { users, projectConnectorConnections } from '../src/db/schema/index.js';
+import { createAgentKey } from '../src/services/core/agentKeys.js';
 import { listen, httpRequest } from './_http.js';
 
 let testUser = null;

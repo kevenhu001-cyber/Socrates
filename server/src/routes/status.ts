@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { sql, gte, and, eq } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { statusMonitorEvents, statusSubscribers } from '../db/schema.js';
-import { COMPONENTS, startStatusMonitor, getLiveState, getRequestMetrics, HOST_REBOOTS, overlapMs } from '../services/statusMonitor.js';
-import { sendStatusSubscriptionEmail } from '../services/email.js';
+import { statusMonitorEvents, statusSubscribers } from '../db/schema/index.js';
+import { COMPONENTS, startStatusMonitor, getLiveState, getRequestMetrics, HOST_REBOOTS, overlapMs } from '../services/util/statusMonitor.js';
+import { sendStatusSubscriptionEmail } from '../services/core/email.js';
 import crypto from 'node:crypto';
 
 const router = Router();
@@ -39,7 +39,7 @@ async function getStatusFeed() {
  *
  * Public, unauthenticated system-status feed consumed by the
  * status.topodrive.top page. Component states come from the live
- * self-hosted monitor (src/services/statusMonitor.js); historical
+ * self-hosted monitor (src/services/util/statusMonitor.js); historical
  * uptime, the 90-day timeline heatmap, and incident history are
  * DERIVED FROM REAL RECORDED transitions in status_monitor_events,
  * not a synthetic baseline.

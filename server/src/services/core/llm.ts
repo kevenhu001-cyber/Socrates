@@ -289,7 +289,7 @@ function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: boolean
     stream,
     /* Ask the upstream to report what it actually billed. Without this a
        streaming response carries no `usage` object at all, which is why
-       services/usageTracker.ts had nothing but a chars/4 estimate to work
+       services/core/usageTracker.ts had nothing but a chars/4 estimate to work
        with. Non-streaming responses include `usage` unconditionally, so this
        only needs to be set for streams.
 
@@ -678,7 +678,7 @@ export async function streamChatCompletion(
     let buffer = '';
     let finishReason: string | null = null;
     /* Raw `usage` object from the upstream, if it sent one. Kept raw rather
-       than normalised here so services/usageTracker.ts owns the per-provider
+       than normalised here so services/core/usageTracker.ts owns the per-provider
        shape handling in exactly one place. */
     let providerUsage: unknown = null;
     /* tool_call deltas arrive indexed by `index`. We accumulate them
@@ -1059,7 +1059,7 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
     tool_calls: Array.isArray(message.tool_calls) ? message.tool_calls : undefined,
     finish_reason: finishReason,
     /* Raw upstream usage object, or undefined when the provider omitted it.
-       Normalisation lives in services/usageTracker.ts (resolveUsage). */
+       Normalisation lives in services/core/usageTracker.ts (resolveUsage). */
     usage: json.usage,
     meta: {
       response_speed_applied: successfulVariant?.speedApplied || 'standard',

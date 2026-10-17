@@ -35,7 +35,7 @@ import {
   parsePracticeInner,
   parseQuizInner,
   parseTheoremInner,
-} from '../src/render/widgetParsers.js';
+} from '../src/render/widgetParsers.ts';
 
 /* ---------------------------------------------------------------------
  * socraticDirectives / tutorSocratic directive logic (Requirement 4.1, 4.3)
