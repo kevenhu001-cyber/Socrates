@@ -1,14 +1,14 @@
 import { stateStore } from '../../state/store.js';
 import { hasUsableActive } from '../../config/providers.ts';
 import { _origGenerateFollowUp } from '../mocks.js';
-import { notifyMockFallbackOnce } from '../mockFallbackNotice.js';
+import { notifyMockFallbackOnce } from '../mockFallbackNotice.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { generateFollowUpStream } from '../../tutor/socraticTurn.js';
 import { toolCallbacksForStream } from '../toolCallbacks.js';
-import { isExpectedTurnAbort } from '../turnUi.js';
+import { isExpectedTurnAbort } from '../turnUi.ts';
 import { getTutorSocratic, addAnchoredAssistant, addStreamingMessage, askChatTurn, translate, reportTurnFailure } from './runtime.js';
 import { advanceTutorNodeIfReady, recordTutorProgress } from './tutorProgress.js';
-import { stuckPromptTransition } from './tutorPolicy.js';
+import { stuckPromptTransition } from './tutorPolicy.ts';
 
 function invokeTutorPrompt(method, context, ...args) {
   const tutor = getTutorSocratic();

@@ -7,7 +7,7 @@ import { JSDOM } from 'jsdom';
 const dom = new JSDOM('<!doctype html><html><body></body></html>');
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
-const { setChatStopState, resendLastUserMessage } = await import('../src/chat/turnUi.js');
+const { setChatStopState, resendLastUserMessage } = await import('../src/chat/turnUi.ts');
 const { stateStore } = await import('../src/state/store.js');
 
 function setMessages(messages) {

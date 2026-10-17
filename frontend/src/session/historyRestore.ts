@@ -4,7 +4,7 @@
 import { normalizeTurnRuntime } from '@socrates/core';
 import { stateStore } from '../state/store.js';
 import { buildUserContentParts } from '../chat/history.js';
-import { quietTurn } from '../chat/turnUi.js';
+import { quietTurn } from '../chat/turnUi.ts';
 import { apiFetch } from '../util/api.ts';
 import { loadLocalMemory, _memKey } from '../storage/localMemory.ts';
 import { batchSetItem } from '../batchStorage.js';

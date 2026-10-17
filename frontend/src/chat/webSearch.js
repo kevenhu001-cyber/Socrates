@@ -5,7 +5,7 @@ import { hasUsableActive, webSearchOn } from '../config/providers.ts';
 import { loadLocalMemory } from '../storage/localMemory.ts';
 import { stateStore } from '../state/store.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { shouldRefreshSearch } from './webSearchPolicy.js';
+import { shouldRefreshSearch } from './webSearchPolicy.ts';
 
 export { shouldRefreshSearch };
 

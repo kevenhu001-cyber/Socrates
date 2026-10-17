@@ -4,8 +4,8 @@
  * resolve via window.* at call time to avoid circular imports.
  */
 import { stateStore } from '../state/store.js';
-import { turnState } from './turnState.js';
-import { interruptPendingTurn, quietTurn } from './turnUi.js';
+import { turnState } from './turnState.ts';
+import { interruptPendingTurn, quietTurn } from './turnUi.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import {
   findMessageIndex,

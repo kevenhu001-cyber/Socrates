@@ -1,7 +1,7 @@
 /* chat/sendPipeline.js — public entry point for submitting a chat turn. */
-import { turnState } from './turnState.js';
+import { turnState } from './turnState.ts';
 import { loadWebSearch } from './webSearchLoader.js';
-import { shouldRefreshSearch } from './webSearchPolicy.js';
+import { shouldRefreshSearch } from './webSearchPolicy.ts';
 import { shouldAutoSearchTutor } from '../tutor/policy.js';
 import { stateStore } from '../state/store.js';
 import { reportSwallow } from '../util/reportSwallow.ts';

@@ -12,7 +12,7 @@ import { formatMsg } from '../render/markdown.ts';
 import { stripCitationMarkers } from '../render/helpers.ts';
 import { getActiveProvider } from '../pickers.js';
 import { generateId } from '../util/ids.ts';
-import { streamRetryViewport } from './turnState.js';
+import { streamRetryViewport } from './turnState.ts';
 import { updateKB } from '../ui/knowledgePanel.js';
 
 function _renderAssistantHtml(text) {

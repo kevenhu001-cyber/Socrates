@@ -1,4 +1,4 @@
-import { isExpectedTurnAbort } from '../turnUi.js';
+import { isExpectedTurnAbort } from '../turnUi.ts';
 import { dispatchTutorTurn } from './tutorFlow.js';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import {

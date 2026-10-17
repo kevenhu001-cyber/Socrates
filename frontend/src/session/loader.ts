@@ -8,7 +8,7 @@
 import { stateStore } from '../state/store.js';
 import { saveState } from './saveState.ts';
 import { serverCache } from './serverCache.ts';
-import { turnState } from '../chat/turnState.js';
+import { turnState } from '../chat/turnState.ts';
 import { apiFetch } from '../util/api.ts';
 import { refreshCachedProjects } from '../projects/projectCache.ts';
 import { ensureSessionShape, setAppMode, syncAppModeUI, syncSidebarForMode, type AppMode } from '../config/providers.ts';
@@ -455,7 +455,7 @@ export async function loadSession(id: string): Promise<void> {
      don't write to stateStore.read("messages") after we replace them. */
   const win = window as LoaderWindow;
   if (win._activeChatAbort) { try { win._activeChatAbort('session-switch'); } catch (e) { reportSwallow(e, 'session/loader.loadSession'); } }
-  if (turnState.activeChatCtl) { try { (turnState.activeChatCtl as { abort(): void }).abort(); } catch (e) { reportSwallow(e, 'session/loader.loadSession~2'); } }
+  if (turnState.activeChatCtl) { try { turnState.activeChatCtl.abort(); } catch (e) { reportSwallow(e, 'session/loader.loadSession~2'); } }
   turnState.activeChatCtl = null;
   win._activeChatAbort = null;
   turnState.chatStreaming = false;

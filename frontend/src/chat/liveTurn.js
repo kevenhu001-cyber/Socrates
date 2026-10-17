@@ -4,7 +4,7 @@
  * Zero-behavior-change lift; state lives in turnState.js.
  */
 import { stateStore } from '../state/store.js';
-import { turnState } from './turnState.js';
+import { turnState } from './turnState.ts';
 
 /* P_react-live-turn — one live turn may be retried, and only its own
    streaming closure knows how (it holds the prompt, the retry budget, and the

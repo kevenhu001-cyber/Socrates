@@ -12,7 +12,7 @@ import { BASELINE_LEVEL, fromBasicsDirective } from '../chat/socraticDirectives.
 import { appendClientContextMessages } from '../chat/promptSuffixes.ts';
 import { injectTemplateSystemPrompt } from '../chat/templateSystemPrompt.ts';
 import { _origGenerateSocraticQuestion, _origGetExplanation } from '../chat/mocks.js';
-import { notifyMockFallbackOnce } from '../chat/mockFallbackNotice.js';
+import { notifyMockFallbackOnce } from '../chat/mockFallbackNotice.ts';
 import { addMessage as _addMessage } from '../chat/messages.js';
 import { scheduleTurnToTopForMessage } from '../chat/turnAnchor.ts';
 import { toolCallbacksForStream as _toolCallbacksForStream } from '../chat/toolCallbacks.js';

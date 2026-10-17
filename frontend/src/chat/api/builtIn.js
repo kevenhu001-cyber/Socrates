@@ -1,6 +1,6 @@
 import { apiFetchRaw } from '../../util/api.ts';
 import { getStoredResponseSpeed } from '../../config/chatPreferences.ts';
-import { notifySpeedFallbackOnce } from '../speedFallback.js';
+import { notifySpeedFallbackOnce } from '../speedFallback.ts';
 import {
   AI_MAX_ATTEMPTS,
   isUserAbort,

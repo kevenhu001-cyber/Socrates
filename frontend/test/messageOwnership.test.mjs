@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createMessageOwnership } from '../src/chat/turn/messageOwnership.js';
+import { createMessageOwnership } from '../src/chat/turn/messageOwnership.ts';
 
 function createHarness() {
   let currentSessionId = 'session-a';

@@ -6,7 +6,7 @@ import { updateSessionMetadata } from '../session/rowActions.ts';
  * all entries resolve to direct imports (no window-read ordering hazards
  * except the documented optional surfaces that remain window.* reads).
  */
-import { resendLastUserMessage, setChatStopState, handleSendClick, stopChatResponse } from '../chat/turnUi.js';
+import { resendLastUserMessage, setChatStopState, handleSendClick, stopChatResponse } from '../chat/turnUi.ts';
 import { setCurrentUser, markAuthSuccess, isInAuthGraceWindow, clearPerUserClientState, toggleAppMode, resetApp, startNewChat, signOut, toggleIncognito } from './lifecycle.js';
 import { getExplanation } from '../tutor/socraticTurn.js';
 import { setActiveTemplate, clearActiveTemplate } from '../chat/templateSlash.js';

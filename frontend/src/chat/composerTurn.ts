@@ -1,4 +1,4 @@
-import { turnState } from './turnState.js';
+import { turnState } from './turnState.ts';
 import { stateStore } from '../state/store.js';
 import { clearPendingTurn, interruptChatTurn, loadPendingTurn } from './turnClient.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
@@ -41,10 +41,8 @@ export function handleSendClick(): void {
 export function stopChatResponse(): void {
   try { interruptPendingTurn(); }
   catch (error) { reportSwallow(error, 'chat/composerTurn.stop.interruptPendingTurn'); }
-  const activeChatCtl = (turnState as { activeChatCtl?: unknown }).activeChatCtl as { abort?: () => void } | null | undefined;
-  if (activeChatCtl && typeof activeChatCtl.abort === 'function') {
-    activeChatCtl.abort();
-  }
+  const activeChatCtl = turnState.activeChatCtl;
+  if (activeChatCtl) activeChatCtl.abort();
   try { legacyTurnActions()._activeChatAbort?.('user-stop'); }
   catch (error) { reportSwallow(error, 'chat/composerTurn.stop.abortActive'); }
 }

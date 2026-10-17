@@ -18,10 +18,10 @@ import { settleTurnRuntime } from '@socrates/core';
 import { esc } from '../../render/helpers.ts';
 import { buildAssistantHtml } from '../../render/assistantHtml.ts';
 import { setReactLiveStatus } from '../../ui/messageSnapshot.js';
-import { setChatStopState, markTurnEnded } from '../turnUi.js';
+import { setChatStopState, markTurnEnded } from '../turnUi.ts';
 import { claimLiveRetry } from '../liveTurn.js';
-import { turnState } from '../turnState.js';
-import { streamRetryViewport } from '../turnState.js';
+import { turnState } from '../turnState.ts';
+import { streamRetryViewport } from '../turnState.ts';
 import { publishReactChatRuntime } from '../../ui/reactBridge.js';
 
 /**

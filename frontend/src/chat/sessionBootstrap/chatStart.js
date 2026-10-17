@@ -1,10 +1,10 @@
 import { stateStore } from '../../state/store.js';
-import { turnState } from '../turnState.js';
+import { turnState } from '../turnState.ts';
 import { saveState } from '../../session/saveState.ts';
 import { resetSessionTransients } from '../../session/loader.ts';
 import { saveCurrentSession } from '../../session/persistence.ts';
 import { askChatTurn } from '../turnController.js';
-import { isExpectedTurnAbort } from '../turnUi.js';
+import { isExpectedTurnAbort } from '../turnUi.ts';
 import { setActiveTemplate } from '../templateSlash.js';
 import { addMessage } from '../messages.js';
 import { updateKB } from '../../ui/knowledgePanel.js';

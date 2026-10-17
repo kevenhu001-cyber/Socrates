@@ -9,7 +9,7 @@ globalThis.localStorage = dom.window.localStorage;
 
 /* `showToast` appends a real `.msg-toast` node to document.body, so the
    notice is observable through the DOM without stubbing the toast layer. */
-const notice = await import('../src/chat/mockFallbackNotice.js');
+const notice = await import('../src/chat/mockFallbackNotice.ts');
 
 function toasts() {
   return Array.from(document.querySelectorAll('.msg-toast')).map((el) => el.textContent);

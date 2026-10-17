@@ -1,7 +1,7 @@
 /* Re-attach detached chat turns after reload or reconnect. The session loader
  * owns when this runs; this module owns pending-turn transport and replay. */
 import { stateStore } from '../state/store.js';
-import { quietTurn } from '../chat/turnUi.js';
+import { quietTurn } from '../chat/turnUi.ts';
 import { buildUserContentParts } from '../chat/history.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import {

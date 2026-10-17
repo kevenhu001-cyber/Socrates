@@ -2,7 +2,7 @@
  * transport owns retries and reader lifecycle; this module owns the wire
  * protocol and its semantic-output state. */
 import { createInlineThinkScanner } from './inlineThinkScanner.js';
-import { notifySpeedFallbackOnce } from './speedFallback.js';
+import { notifySpeedFallbackOnce } from './speedFallback.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 const CALLBACK_BY_EVENT = Object.freeze({

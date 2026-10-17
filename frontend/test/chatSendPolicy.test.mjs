@@ -6,7 +6,7 @@ import {
   nextTutorStage,
   stuckPromptTransition,
   tutorNodeProgressDecision,
-} from '../src/chat/send/tutorPolicy.js';
+} from '../src/chat/send/tutorPolicy.ts';
 
 const substantiveAnswer = 'A thoughtful answer with enough detail to show how this idea works and why it matters.';
 

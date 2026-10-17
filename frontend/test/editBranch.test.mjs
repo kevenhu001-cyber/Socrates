@@ -8,7 +8,7 @@ globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 const { stateStore } = await import('../src/state/store.js');
 const { editUserMessage } = await import('../src/chat/editBranch.js');
-const { turnState } = await import('../src/chat/turnState.js');
+const { turnState } = await import('../src/chat/turnState.ts');
 
 test('editing a frozen message replaces it and replays only after the server patch settles', async () => {
   stateStore.dispatch({ type: 'session/replace-messages', payload: [

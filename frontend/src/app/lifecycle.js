@@ -4,7 +4,7 @@
  * Render/list surfaces still owned by the legacy shell resolve via window.*.
  */
 import { resetState } from '../state/store.js';
-import { turnState } from '../chat/turnState.js';
+import { turnState } from '../chat/turnState.ts';
 import { saveState } from '../session/saveState.ts';
 import { apiFetch } from '../util/api.ts';
 import { showGate, showAuthSignin } from '../auth/index.ts';

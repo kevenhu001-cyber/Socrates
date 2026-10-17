@@ -9,7 +9,7 @@ import {
   isSubstantiveTutorAnswer,
   nextTutorStage,
   tutorNodeProgressDecision,
-} from './tutorPolicy.js';
+} from './tutorPolicy.ts';
 
 function renderTutorProgress(method, context) {
   const tutor = getTutorSocratic();

@@ -1,7 +1,7 @@
 /* Finish, persist, publish, and release one streaming turn. */
 import { stateStore } from '../../state/store.js';
-import { turnState } from '../turnState.js';
-import { setChatStopState, markTurnEnded } from '../turnUi.js';
+import { turnState } from '../turnState.ts';
+import { setChatStopState, markTurnEnded } from '../turnUi.ts';
 import { publishReactChatRuntime } from '../../ui/reactBridge.js';
 import { announceTranscript } from '../../ui/liveRegion.js';
 import { saveCurrentSession } from '../../session/persistence.ts';

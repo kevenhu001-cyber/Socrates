@@ -1,5 +1,5 @@
 import { stateStore } from '../../state/store.js';
-import { turnState } from '../turnState.js';
+import { turnState } from '../turnState.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { showToast } from '../../ui/toast.js';
 import { stripTemplateBodyPrefix, blurChatComposer } from '../templateSlash.js';

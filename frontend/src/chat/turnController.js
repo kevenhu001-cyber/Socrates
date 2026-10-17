@@ -4,8 +4,8 @@
  * Streaming entry and app reset surfaces resolve via window.*.
  */
 import { stateStore } from '../state/store.js';
-import { turnState } from './turnState.js';
-import { interruptPendingTurn, quietTurn } from './turnUi.js';
+import { turnState } from './turnState.ts';
+import { interruptPendingTurn, quietTurn } from './turnUi.ts';
 import { hasUsableActive } from '../config/providers.ts';
 import { extractHistory } from './history.js';
 import { callAPIStream } from './stream.js';
