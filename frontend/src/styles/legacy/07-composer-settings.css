@@ -32,7 +32,7 @@
    two-line name+meta column, and a floating remove affordance. */
 .attachment-chips{display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px 2px}
 .attachment-chips.hidden{display:none}
-.attachment-chip{position:relative;display:inline-flex;align-items:center;gap:8px;background:var(--ui-bg-surface);border:1px solid var(--ui-border-default);border-radius:12px;padding:6px 12px 6px 6px;font-size:calc(12px * var(--app-font-scale, 1));color:var(--ui-text-primary);max-width:240px;line-height:1.25;transition:border-color var(--ui-duration-hover, 100ms) ease}
+.attachment-chip{position:relative;display:inline-flex;align-items:center;gap:8px;background:var(--ui-bg-surface);border:1px solid var(--ui-border-default);border-radius:12px;padding:6px 12px 6px 6px;font-size:calc(12px * var(--app-font-scale, 1));color:var(--ui-text-primary);max-width:240px;line-height:1.25;transition:border-color var(--ui-duration-hover) ease}
 .attachment-chip:hover{border-color:var(--ui-border-strong)}
 .attachment-chip-visual{position:relative;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;background:var(--ui-bg-hover);flex-shrink:0;overflow:hidden}
 .attachment-chip-visual .attachment-chip-thumb{width:100%;height:100%;border-radius:0}
@@ -93,7 +93,7 @@
 .attachment-chip-retry svg{width:12px;height:12px}
 /* Floating remove — a small dark disc at the top-right corner that
    fades in on hover/focus (always visible on touch). */
-.attachment-chip-remove{position:absolute;top:-7px;right:-7px;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:hsl(0 0% 16%/0.9);color:#fff;border:1px solid var(--ui-border-subtle);cursor:pointer;padding:0;opacity:0;transition:opacity var(--ui-duration-hover, 100ms) ease;z-index:2}
+.attachment-chip-remove{position:absolute;top:-7px;right:-7px;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:hsl(0 0% 16%/0.9);color:#fff;border:1px solid var(--ui-border-subtle);cursor:pointer;padding:0;opacity:0;transition:opacity var(--ui-duration-hover) ease;z-index:2}
 [data-mode=light] .attachment-chip-remove{background:hsl(0 0% 28%/0.88)}
 .attachment-chip:hover .attachment-chip-remove,.attachment-chip-remove:focus-visible{opacity:1}
 @media (hover:none){.attachment-chip-remove{opacity:0.9}}
@@ -117,7 +117,7 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
    are hidden; no markup changes needed. */
 .loading{display:block;width:16px;height:16px;position:relative;margin:0 auto}
 .loading span{display:none}
-.loading::before{content:"";display:block;width:100%;height:100%;border-radius:50%;border:2px solid hsl(var(--border-300)/0.20);border-top-color:hsl(var(--accent-000));animation:loadingSpin var(--ui-duration-spin, .9s) cubic-bezier(.65,0,.35,1) infinite;box-sizing:border-box}
+.loading::before{content:"";display:block;width:100%;height:100%;border-radius:50%;border:2px solid hsl(var(--border-300)/0.20);border-top-color:hsl(var(--accent-000));animation:loadingSpin var(--ui-duration-spin) cubic-bezier(.65,0,.35,1) infinite;box-sizing:border-box}
 
 /* Pulse-ring variant — concentric expanding rings, good for larger
    loading blocks that need a bolder visual. */

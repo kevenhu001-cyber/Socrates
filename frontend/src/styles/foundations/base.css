@@ -50,7 +50,7 @@ button { -webkit-tap-highlight-color: transparent; }
   text-decoration: none;
   box-shadow: var(--ui-shadow-menu, 0 8px 28px rgb(0 0 0 / 20%));
   transform: translateY(-200%);
-  transition: transform var(--ui-duration-fast, 140ms) var(--ui-ease-out, ease);
+  transition: transform var(--ui-duration-fast) var(--ui-ease-out);
 }
 .skip-link:focus-visible { transform: translateY(0); }
 #mainContent:focus,

@@ -83,7 +83,7 @@ function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
   };
 
   return (
-    <div className="composer-plugin-chips" aria-label="Selected plugins">
+    <div className="composer-plugin-chips" aria-label="Selected plugins" data-i18n-aria="composer.selectedPlugins">
       {webSearchOn ? <WebSearchChip /> : null}
       {visiblePlugins.map((plugin) => (
         <span className="composer-plugin-chip" key={plugin.id} title={plugin.description || plugin.name}>

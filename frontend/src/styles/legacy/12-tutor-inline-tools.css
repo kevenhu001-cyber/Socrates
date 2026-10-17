@@ -362,7 +362,7 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 .tool-inline-spinner{
   display:inline-block;width:14px;height:14px;border-radius:50%;
   border:1.6px solid currentColor;border-right-color:transparent;
-  animation:loadingSpin var(--ui-duration-spin, .9s) cubic-bezier(.45,.05,.55,.95) infinite;
+  animation:loadingSpin var(--ui-duration-spin) cubic-bezier(.45,.05,.55,.95) infinite;
   transition:opacity var(--crossfade-duration) ease;
 }
 /* Elapsed chip: collapsed while hidden so it reserves no width; JS adds
@@ -658,7 +658,7 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
   color:hsl(var(--text-400));
 }
 .tool-run-summary-icon svg{width:100%;height:100%;display:block}
-.tool-run-group[data-state="running"] .tool-run-summary-icon{color:hsl(var(--text-300));animation:search-progress-dot var(--ui-duration-pulse, 1.2s) ease-in-out infinite}
+.tool-run-group[data-state="running"] .tool-run-summary-icon{color:hsl(var(--text-300));animation:search-progress-dot var(--ui-duration-pulse) ease-in-out infinite}
 .tool-run-group[data-state="complete"] .tool-run-summary-icon{color:hsl(var(--text-400))}
 .tool-run-group[data-state="error"] .tool-run-summary-icon{color:hsl(0 55% 50%)}
 .tool-run-group[data-state="cancelled"] .tool-run-summary-icon{color:hsl(var(--text-500))}

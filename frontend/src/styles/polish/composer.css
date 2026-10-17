@@ -55,7 +55,7 @@
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 body #composerToolsMenu.composer-tools-menu:not(.hidden) {
-  animation: composerToolsIn var(--ui-duration-overlay, 160ms) var(--ui-ease-out) both;
+  animation: composerToolsIn var(--ui-duration-overlay) var(--ui-ease-out) both;
   transform-origin: top left;
 }
 body #composerToolsMenu.composer-tools-menu[data-menu-side="above"]:not(.hidden) {

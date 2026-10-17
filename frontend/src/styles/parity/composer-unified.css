@@ -498,7 +498,7 @@
      same pattern applied to msg-toolbar-btn. */
   #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn) {
     position: relative;
-    transition: background-color var(--ui-duration-fast, 0.12s) ease, opacity var(--ui-duration-fast, 0.12s) ease;
+    transition: background-color var(--ui-duration-fast) ease, opacity var(--ui-duration-fast) ease;
   }
   #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn):active {
     opacity: var(--press-opacity, var(--ui-press-opacity-sm, 0.72));
@@ -686,7 +686,7 @@
   padding: 0;
   z-index: 3;
   opacity: 1;
-  transition: opacity var(--ui-duration-fast, 120ms) ease, transform var(--ui-duration-fast, 120ms) ease;
+  transition: opacity var(--ui-duration-fast) ease, transform var(--ui-duration-fast) ease;
 }
 .composer-shell .attachment-chip-remove:hover {
   background: hsl(0 0% 0%);

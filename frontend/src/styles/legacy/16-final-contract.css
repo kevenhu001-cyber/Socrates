@@ -276,7 +276,7 @@
   /* No !important: this already wins by order + specificity, and an
      important infinite loop would beat every prefers-reduced-motion rule
      except restore/'s #appShell-scoped guard. */
-  animation:calm-status-breathe var(--ui-duration-pulse-slow, 1.6s) ease-in-out infinite;
+  animation:calm-status-breathe var(--ui-duration-pulse-slow) ease-in-out infinite;
 }
 /* Running tool name: same stable light sweep as the canonical shimmer
    (features/thinking-activity.css), expressed in the legacy hsl() tokens.
