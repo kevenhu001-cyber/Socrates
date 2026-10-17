@@ -1,7 +1,7 @@
 import { stateStore } from '../../state/store.js';
 import { appMode, setAppMode, syncAppModeUI, syncSidebarForMode } from '../../config/providers.ts';
 import { showConfirm } from '../../ui/confirm.js';
-import { saveCurrentSession } from '../../session/persistence.js';
+import { saveCurrentSession } from '../../session/persistence.ts';
 import { resetApp } from './reset.js';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { translateLifecycleText } from './helpers.js';

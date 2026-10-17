@@ -28,7 +28,7 @@ import { buildAssistantHtml as renderAssistantHTML } from '../render/assistantHt
 import { showToast } from '../ui/toast.js';
 import { addMessage } from '../chat/messages.js';
 import { askNextQuestion } from '../tutor/socraticTurn.js';
-import { saveCurrentSession } from '../session/persistence.js';
+import { saveCurrentSession } from '../session/persistence.ts';
 /* chat/webSearch.js (~16KB) is lazy — the window.fetchWebContext proxy
    below returns a promise, which every caller already awaits. */
 import { openAttachmentPicker, openMediaPicker } from '../attachments/render.js';

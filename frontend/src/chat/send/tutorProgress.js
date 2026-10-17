@@ -1,6 +1,6 @@
 import { stateStore } from '../../state/store.js';
 import { askNextQuestion } from '../../tutor/socraticTurn.js';
-import { saveCurrentSession } from '../../session/persistence.js';
+import { saveCurrentSession } from '../../session/persistence.ts';
 import { updateKB } from '../../ui/knowledgePanel.js';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { addAnchoredAssistant, getTutorSocratic } from './runtime.js';

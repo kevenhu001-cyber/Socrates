@@ -1,10 +1,10 @@
-/* session/persistence.js — extracted from main.js (B2 batch).
+/* session/persistence.ts — extracted from main.js (B2 batch).
  * Session save pipeline (requestSave/doSave) + unload keepalive wiring.
  * Zero-behavior-change lift. Main.js-local list/stats surfaces
  * (renderRecents, the recents reconciler) resolve via window.* at call time.
  * P_recents-amplify: a save no longer awaits a full 200-row list refresh — it
  * patches its own row and asks for a throttled reconcile. See
- * session/recentsReconcile.js.
+ * session/recentsReconcile.ts.
  */
 import { normalizeTurnRuntime } from '@socrates/core';
 import { stateStore } from '../state/store.js';
@@ -12,9 +12,9 @@ import { saveState, deletedSessionGuard } from './saveState.ts';
 import { generateId } from '../util/ids.ts';
 import { pushChatIdToURL } from './store.ts';
 import { serverCache } from './serverCache.ts';
-import { patchSessionRow } from './recentsReconcile.ts';
-import { buildBeaconPayload } from './beacon.ts';
-import { buildDeltaPayload, commitSynced, createFingerprintCache, seedSynced, stateFingerprint } from './saveDelta.ts';
+import { patchSessionRow, type SavedSession } from './recentsReconcile.ts';
+import { buildBeaconPayload, type BeaconPayload } from './beacon.ts';
+import { buildDeltaPayload, commitSynced, createFingerprintCache, seedSynced, stateFingerprint, type MessageLike } from './saveDelta.ts';
 import { generateSessionTitle } from '../chat/sessionTitle.js';
 import { markCmdKIndexDirty } from '../ui/cmdK.js';
 import { toggleShareBtn } from '../ui/share.js';
@@ -22,65 +22,143 @@ import { showToast } from '../ui/toast.js';
 import { apiFetch } from '../util/api.ts';
 import { detailCache } from './detailCache.ts';
 
-function _t(key, fallback) {
+/** A message row in the save payload (html/rawText both travel). */
+export interface SessionPostMessage extends MessageLike {
+  clientId: string | null;
+  role: string;
+  html: string | null | undefined;
+  rawText: string | null;
+  type: string | null;
+  reasoningContent: string | null;
+  reasoningDurationSec: number | null;
+  summary: unknown;
+  attachments: unknown[];
+  toolCalls: unknown[];
+}
+
+/** The full POST /api/sessions body captured from the store. */
+export interface SessionPostPayload {
+  id: string;
+  topic: string;
+  title: string;
+  pinned: boolean;
+  domain: string;
+  projectId: string | null;
+  assistantId: string | null;
+  mode: string;
+  messages: SessionPostMessage[];
+  kbNodes: unknown[];
+  mistakes: unknown[];
+  currentNode: number;
+  totalQ: number;
+  phase: string;
+  teachingStage: string;
+  currentExampleIdx: number;
+  practiceAttempts: number;
+  practicePhase: string;
+  teachingPlan: unknown;
+  boundariesHistory: unknown[];
+  mistakeFilter: string;
+  branchedFrom: unknown;
+  updatedAt: number;
+  [key: string]: unknown;
+}
+
+/** The POST /api/sessions response fields the save pipeline reads. */
+interface SaveResponse {
+  id?: string;
+  [key: string]: unknown;
+}
+
+/** Window surfaces the save pipeline reads at call time. */
+interface PersistenceWindow extends Window {
+  incognitoOn?: boolean;
+  appMode?: string;
+  renderRecents?: () => void;
+  scheduleRecentsReconcile?: () => void;
+  flushRecentsReconcile?: () => Promise<unknown>;
+}
+
+function _t(key: string, fallback?: string): string {
   try {
     if (typeof window !== 'undefined' && typeof window.t === 'function') {
-      var v = window.t(key);
+      const v = window.t(key);
       if (v && v !== key) return v;
     }
-  } catch (_) {}
+  } catch {
+    /* empty-catch: intentional — translation is best-effort */
+  }
   return fallback != null ? fallback : key;
 }
 /* P_recents-amplify — the Recents list after a save. These go through window.*
-   for the same reason the old _refreshServerSessions helper did: recents.js and
-   persistence.js must not take a hard import cycle. The reconciler singleton
-   lives in recents.js and wraps refreshServerSessions. */
-function _scheduleRecentsReconcile() {
+   for the same reason the old _refreshServerSessions helper did: recents.ts and
+   persistence.ts must not take a hard import cycle. The reconciler singleton
+   lives in recents.ts and wraps refreshServerSessions. */
+function _scheduleRecentsReconcile(): void {
   try {
-    if (typeof window !== 'undefined' && typeof window.scheduleRecentsReconcile === 'function') {
-      window.scheduleRecentsReconcile();
+    const win = window as PersistenceWindow;
+    if (typeof window !== 'undefined' && typeof win.scheduleRecentsReconcile === 'function') {
+      win.scheduleRecentsReconcile();
     }
-  } catch (_) {}
+  } catch {
+    /* empty-catch: intentional — reconcile scheduling is best-effort */
+  }
 }
-function _flushRecentsReconcile() {
+function _flushRecentsReconcile(): Promise<unknown> {
   try {
-    if (typeof window !== 'undefined' && typeof window.flushRecentsReconcile === 'function') {
-      return window.flushRecentsReconcile();
+    const win = window as PersistenceWindow;
+    if (typeof window !== 'undefined' && typeof win.flushRecentsReconcile === 'function') {
+      return win.flushRecentsReconcile();
     }
-  } catch (_) {}
+  } catch {
+    /* empty-catch: intentional — reconcile flushing is best-effort */
+  }
   return Promise.resolve([]);
 }
 /* P_recents-amplify — keep the Recents list in step with the server after a
    save without re-reading all 200 rows. */
-function _applySavedRow(saved, payload, sentId) {
+function _applySavedRow(
+  saved: SavedSession | null | undefined,
+  payload: SessionPostPayload,
+  sentId: string,
+): void {
   if (!saved || !saved.id) return;
   try {
     serverCache.sessions = patchSessionRow(serverCache.sessions, saved, payload, sentId);
-  } catch (_) { /* the reconcile will fix it */ }
+  } catch {
+    /* empty-catch: intentional — the reconcile will fix the row */
+  }
 }
-function _renderRecents() {
-  try { if (typeof window !== 'undefined' && typeof window.renderRecents === 'function') window.renderRecents(); } catch (_) {}
-}
-function _appMode() {
+function _renderRecents(): void {
   try {
-    if (typeof window !== 'undefined' && window.appMode) return window.appMode;
-  } catch (_) {}
+    const win = window as PersistenceWindow;
+    if (typeof window !== 'undefined' && typeof win.renderRecents === 'function') win.renderRecents();
+  } catch {
+    /* empty-catch: intentional — rendering is best-effort */
+  }
+}
+function _appMode(): string {
+  try {
+    if (typeof window !== 'undefined' && (window as PersistenceWindow).appMode) return (window as PersistenceWindow).appMode as string;
+  } catch {
+    /* empty-catch: intentional — mode lookup is best-effort */
+  }
   return 'chat';
 }
 
-export function saveCurrentSession(){
+export function saveCurrentSession(): Promise<unknown> | null {
   /* P_mobile-topbar — incognito ("无痕对话") sessions are never
      persisted. Entering incognito first saves any prior real session
      (toggleIncognito calls resetApp before flipping this flag), so
      bailing here only blocks the temporary conversation itself. */
-  if(typeof window!=="undefined"&&window.incognitoOn)return null;
-  if(!stateStore.read("topic"))return null;
-  if(!(typeof window!=="undefined"&&window.CURRENT_USER))return null; /* not signed in; do nothing */
+  if (typeof window !== 'undefined' && (window as PersistenceWindow).incognitoOn) return null;
+  if (!stateStore.read('topic')) return null;
+  if (!(typeof window !== 'undefined' && window.CURRENT_USER)) return null; /* not signed in; do nothing */
   /* P_context-race — discard saves during session loading. The
      loadSession function is in the middle of rebuilding state and
      any intercepted save would capture mismatched sessionId vs
      messages, causing "会话串台" (context cross-contamination). */
-  if(saveState.loadingSession) return null;
+  if (saveState.loadingSession) return null;
   /* If a save is already running, mark dirty and let it coalesce.
      P_save-snapshot — capture the changed state NOW, while the session that
      changed is still current, and let the queue post that payload verbatim.
@@ -91,13 +169,13 @@ export function saveCurrentSession(){
      and post it under the OLD id.
      Every dirty call re-captures so no intermediate change is dropped; the
      slot keeps the newest complete capture, which subsumes the older ones. */
-  if(saveState.saveInFlight){
-    try{ saveState.pendingSnapshot=captureSessionPayload(); }catch(_){ saveState.pendingSnapshot=null; }
-    saveState.saveDirty=true;
+  if (saveState.saveInFlight) {
+    try { saveState.pendingSnapshot = captureSessionPayload(); } catch { saveState.pendingSnapshot = null; }
+    saveState.saveDirty = true;
     return saveState.saveInFlight;  /* return the existing in-flight promise */
   }
-  saveState.saveDirty=false;
-  saveState.pendingSnapshot=null;
+  saveState.saveDirty = false;
+  saveState.pendingSnapshot = null;
   doSave();
   /* doSave() sets saveState.saveInFlight to the fetch+then promise, or leaves
      it as-is if early-exit guards (deleted session guard, empty topic)
@@ -123,50 +201,50 @@ export function saveCurrentSession(){
    conversation. So capture now, and defer only the post — the stringify,
    the signature and the network call move to the next macrotask, after
    the reset has been painted. */
-export function saveSessionBeforeReset(){
-  if(typeof window!=="undefined"&&window.incognitoOn)return null;
-  if(!stateStore.read("topic"))return null;
-  if(!(typeof window!=="undefined"&&window.CURRENT_USER))return null;
-  if(saveState.loadingSession)return null;
-  var sid=stateStore.read("currentSessionId");
-  if(deletedSessionGuard.has(sid))return null;
-  if(saveState.saveInFlight){
-    saveState.pendingSnapshot=captureSessionPayload();
-    saveState.saveDirty=false;
+export function saveSessionBeforeReset(): Promise<unknown> | null {
+  if (typeof window !== 'undefined' && (window as PersistenceWindow).incognitoOn) return null;
+  if (!stateStore.read('topic')) return null;
+  if (!(typeof window !== 'undefined' && window.CURRENT_USER)) return null;
+  if (saveState.loadingSession) return null;
+  const sid = stateStore.read('currentSessionId') as string | null;
+  if (deletedSessionGuard.has(sid)) return null;
+  if (saveState.saveInFlight) {
+    saveState.pendingSnapshot = captureSessionPayload();
+    saveState.saveDirty = false;
     return saveState.saveInFlight;
   }
-  if(!saveState.saveDirty && _lastPosted.id === sid){
-    var curMsgs = stateStore.read("messages") || [];
-    var synced = _syncedFor(sid);
-    if(synced && synced.size === curMsgs.length){
+  if (!saveState.saveDirty && _lastPosted.id === sid) {
+    const curMsgs = (stateStore.read('messages') as unknown[]) || [];
+    const synced = _syncedFor(sid);
+    if (synced && synced.size === curMsgs.length) {
       return null;
     }
   }
-  var snapshot=captureSessionPayload();
+  const snapshot = captureSessionPayload();
   /* P_reset-defer — park the snapshot for one tick. The pagehide beacon in
      installUnloadSave flushes it if the tab is torn down inside that window,
      so deferring cannot cost the user a conversation. */
-  saveState.deferredSnapshot=snapshot;
-  return new Promise(function(resolve){
-    setTimeout(function(){
-      if(saveState.deferredSnapshot===snapshot)saveState.deferredSnapshot=null;
+  saveState.deferredSnapshot = snapshot;
+  return new Promise(function (resolve) {
+    setTimeout(function () {
+      if (saveState.deferredSnapshot === snapshot) saveState.deferredSnapshot = null;
       /* Re-check under the deferred tick: the user may have switched
          sessions or deleted this one in the frame we yielded for. */
-      if(deletedSessionGuard.has(snapshot.id)){resolve(null);return;}
-      if(saveState.saveInFlight){
+      if (deletedSessionGuard.has(snapshot.id)) { resolve(null); return; }
+      if (saveState.saveInFlight) {
         /* Something started a save while we yielded — hand the snapshot
            to the coalescing queue instead of racing it. */
-        saveState.pendingSnapshot=snapshot;
-        saveState.saveDirty=false;
+        saveState.pendingSnapshot = snapshot;
+        saveState.saveDirty = false;
         resolve(saveState.saveInFlight);
         return;
       }
       resolve(postSession(snapshot));
-    },0);
+    }, 0);
   });
 }
 
-function doSave(){
+function doSave(): void {
   /* Guard against saving after state has been reset — the
      saveState.saveDirty cascade in saveCurrentSession bypasses the
      stateStore.read("topic") check after the first in-flight save finishes.
@@ -180,19 +258,19 @@ function doSave(){
      "give it back so the user can re-create it" UX I'd half-
      designed at one point) would otherwise bypass the topic
      check and silently re-insert the deleted row. */
-  var sid=stateStore.read("currentSessionId");
-  if(deletedSessionGuard.has(sid)){
-    saveState.saveInFlight=null;
-    saveState.saveDirty=false;
+  const sid = stateStore.read('currentSessionId') as string | null;
+  if (deletedSessionGuard.has(sid)) {
+    saveState.saveInFlight = null;
+    saveState.saveDirty = false;
     return;
   }
-  if(saveState.loadingSession){
-    saveState.saveDirty=false;
+  if (saveState.loadingSession) {
+    saveState.saveDirty = false;
     return;
   }
-  if(!stateStore.read("topic"))return;
-  var payload=captureSessionPayload();
-  var sessionId=payload.id;
+  if (!stateStore.read('topic')) return;
+  const payload = captureSessionPayload();
+  const sessionId = payload.id;
   /* P_dup-session — sync the namespace mirror too. Without this,
      a second saveCurrentSession in the same tick reads
      stateStore.read("currentSessionId") (still null because line 1228
@@ -201,11 +279,11 @@ function doSave(){
      sees the same chat appear twice in Recents. The two fields
      have to stay in lock-step synchronously, not just on the
      async POST response. */
-  stateStore.dispatch({type:"state/set",key:"currentSessionId",value:sessionId});
+  stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: sessionId });
   toggleShareBtn();
   /* Kick off AI title generation based on the user's first input. */
   generateSessionTitle();
-  payload.title=stateStore.read("sessionTitle")||payload.title;
+  payload.title = (stateStore.read('sessionTitle') as string) || payload.title;
   /* Mark Cmd-K search index dirty instead of rebuilding during interaction. */
   markCmdKIndexDirty();
   /* Fire-and-forget write to server. The local SERVER_SESSIONS cache is
@@ -220,8 +298,8 @@ function doSave(){
 }
 
 /* Snapshot the active session into a POST payload without touching state. */
-function captureSessionPayload(){
-  var now=Date.now();
+function captureSessionPayload(): SessionPostPayload {
+  const now = Date.now();
   /* P1.1 — read from the authoritative stateStore.read("messages") list, NOT
      from the live DOM. The DOM may still hold a half-rendered
      streaming bubble (text content only, no KaTeX), and reading
@@ -241,65 +319,65 @@ function captureSessionPayload(){
      reply, and it churns needless writes. Filtering streaming
      placeholders here is the root fix; they are only persisted after
      finish() flips type to "assistant". */
-  var messages=stateStore.read("messages")
-    .filter(function(m){return m.type!=="streaming"})
-    .map(function(m){
-    return {
-      clientId:m.clientId||null,
-      role:m.role,
-      html:m.html,
-      rawText:m.rawText||null,
-      type:m.type||null,
-      reasoningContent:m.reasoningContent||null,
-      reasoningDurationSec:m.reasoningDurationSec||null,
-      summary:m.summary||null,
-      turnRuntime: normalizeTurnRuntime(m.turnRuntime),
-      /* P_attachments — round-trip the inlined image dataUrl /
-       * parsed text body so reloads restore thumbnails without a
-       * re-upload. The server caps to 20 in sessions.js; we
-       * trim here too to keep payloads small. */
-      attachments:Array.isArray(m.attachments)?m.attachments.slice(0,20):[],
-      /* P_tool-history — persist tool-call cards (including artifact
-       * image IDs) so session reload re-renders the cards and their
-       * images. Without this, toolCalls are silently dropped at save
-       * time and never restored on reload. */
-      toolCalls:Array.isArray(m.toolCalls)?m.toolCalls.slice(0,20):[],
-    };
-  });
-  var sessionId=stateStore.read("currentSessionId")||generateId();
-  var payload={
-    id:sessionId,
-    topic:stateStore.read("topic"),
-    title:stateStore.read("sessionTitle")||stateStore.read("topic"),
-    pinned:!!serverCache.sessions.find((row) => row.id === sessionId)?.pinned,
-    domain:stateStore.read("domain")||stateStore.read("topic"),
-    projectId:stateStore.read("currentProjectId")||null,
-    assistantId:sessionStorage.getItem("socrates-active-assistant")||null,
-    mode:_appMode(),
-    messages:messages,
-    kbNodes:stateStore.read("kbNodes"),
-    mistakes:stateStore.read("mistakes")||[],
-    currentNode:stateStore.read("currentNode"),
-    totalQ:stateStore.read("totalQ"),
-    phase:stateStore.read("phase"),
+  const messages: SessionPostMessage[] = (stateStore.read('messages') as SessionPostMessage[])
+    .filter(function (m) { return m.type !== 'streaming'; })
+    .map(function (m) {
+      return {
+        clientId: m.clientId || null,
+        role: m.role,
+        html: m.html,
+        rawText: m.rawText || null,
+        type: m.type || null,
+        reasoningContent: m.reasoningContent || null,
+        reasoningDurationSec: m.reasoningDurationSec || null,
+        summary: m.summary || null,
+        turnRuntime: normalizeTurnRuntime(m.turnRuntime),
+        /* P_attachments — round-trip the inlined image dataUrl /
+         * parsed text body so reloads restore thumbnails without a
+         * re-upload. The server caps to 20 in sessions.js; we
+         * trim here too to keep payloads small. */
+        attachments: Array.isArray(m.attachments) ? m.attachments.slice(0, 20) : [],
+        /* P_tool-history — persist tool-call cards (including artifact
+         * image IDs) so session reload re-renders the cards and their
+         * images. Without this, toolCalls are silently dropped at save
+         * time and never restored on reload. */
+        toolCalls: Array.isArray(m.toolCalls) ? m.toolCalls.slice(0, 20) : [],
+      };
+    });
+  const sessionId = (stateStore.read('currentSessionId') as string) || generateId();
+  const payload: SessionPostPayload = {
+    id: sessionId,
+    topic: stateStore.read('topic') as string,
+    title: (stateStore.read('sessionTitle') || stateStore.read('topic')) as string,
+    pinned: !!serverCache.sessions.find((row) => row.id === sessionId)?.pinned,
+    domain: (stateStore.read('domain') || stateStore.read('topic')) as string,
+    projectId: (stateStore.read('currentProjectId') as string) || null,
+    assistantId: sessionStorage.getItem('socrates-active-assistant') || null,
+    mode: _appMode(),
+    messages: messages,
+    kbNodes: stateStore.read('kbNodes') as unknown[],
+    mistakes: (stateStore.read('mistakes') as unknown[]) || [],
+    currentNode: stateStore.read('currentNode') as number,
+    totalQ: stateStore.read('totalQ') as number,
+    phase: stateStore.read('phase') as string,
     /* Task 2.4 — persist the teaching-stage state machine so a
        reloaded session resumes at the right stage. The backend
        sessions.js uses .passthrough() so these extra fields are
        accepted without schema changes. */
-    teachingStage:stateStore.read("teachingStage")||"motivate",
-    currentExampleIdx:stateStore.read("currentExampleIdx")||0,
-    practiceAttempts:stateStore.read("practiceAttempts")||0,
-    practicePhase:stateStore.read("practicePhase")||"foundation",
-    teachingPlan:stateStore.read("teachingPlan")||null,
+    teachingStage: (stateStore.read('teachingStage') as string) || 'motivate',
+    currentExampleIdx: (stateStore.read('currentExampleIdx') as number) || 0,
+    practiceAttempts: (stateStore.read('practiceAttempts') as number) || 0,
+    practicePhase: (stateStore.read('practicePhase') as string) || 'foundation',
+    teachingPlan: stateStore.read('teachingPlan') || null,
     /* v3.0 design — knowledge boundary history (snapshots) and
        mistake filter are also persisted so the sidebar state
        survives reloads. */
-    boundariesHistory:stateStore.read("boundariesHistory")||[],
-    mistakeFilter:stateStore.read("mistakeFilter")||"all",
+    boundariesHistory: (stateStore.read('boundariesHistory') as unknown[]) || [],
+    mistakeFilter: (stateStore.read('mistakeFilter') as string) || 'all',
     /* P1.1 — persist branchedFrom metadata so a reloaded session
        shows "Branched from ..." in the sidebar. */
-    branchedFrom:stateStore.read("branchedFrom")||null,
-    updatedAt:now,
+    branchedFrom: stateStore.read('branchedFrom') || null,
+    updatedAt: now,
   };
   return payload;
 }
@@ -314,11 +392,11 @@ function captureSessionPayload(){
  * signature of the last body we actually sent and skip a re-save that would
  * post the same bytes. Any real change (new message, edited html, retitled
  * session) moves the signature and posts normally. */
-var _lastPosted = { id: null, sig: null };
+const _lastPosted: { id: string | null; sig: string | null } = { id: null, sig: null };
 
 /* P_incremental-save — reduce each save to the rows the server is not
  * already known to hold. The pure delta/fingerprint logic lives in
- * session/saveDelta.js so it can be unit-tested without the DOM globals
+ * session/saveDelta.ts so it can be unit-tested without the DOM globals
  * this module installs at import time; see that file for why deletions
  * do not travel through the save payload.
 
@@ -326,20 +404,21 @@ var _lastPosted = { id: null, sig: null };
  * the server ACKNOWLEDGED. It advances only inside the POST's success
  * path (commitSynced), so a failed save re-sends the same rows next time
  * instead of dropping them. */
-var _syncedBySession = new Map();
-var _SYNCED_SESSION_CAP = 8;
-var _fingerprints = createFingerprintCache();
+const _syncedBySession = new Map<string, Map<string, string>>();
+const _SYNCED_SESSION_CAP = 8;
+const _fingerprints = createFingerprintCache();
 
-function _syncedFor(sessionId){
-  var got=_syncedBySession.get(sessionId);
-  if(!got){
-    got=new Map();
-    _syncedBySession.set(sessionId,got);
+function _syncedFor(sessionId: string | null | undefined): Map<string, string> {
+  const key = sessionId || '';
+  let got = _syncedBySession.get(key);
+  if (!got) {
+    got = new Map<string, string>();
+    _syncedBySession.set(key, got);
     /* Bounded: an active user cycles through a handful of sessions, and
        every entry here holds one string per message. */
-    while(_syncedBySession.size>_SYNCED_SESSION_CAP){
-      var oldest=_syncedBySession.keys().next().value;
-      if(oldest===undefined||oldest===sessionId)break;
+    while (_syncedBySession.size > _SYNCED_SESSION_CAP) {
+      const oldest = _syncedBySession.keys().next().value;
+      if (oldest === undefined || oldest === key) break;
       _syncedBySession.delete(oldest);
     }
   }
@@ -349,26 +428,26 @@ function _syncedFor(sessionId){
 /* Seed the watermark from a freshly loaded session so the first save
    after a switch is a delta rather than a full re-upload. Without this
    the delta would only ever help mid-conversation. Called by
-   session/loader.js right after the messages land in state. */
-export function seedSyncedMessages(sessionId, messages){
-  if(!sessionId)return;
+   session/loader.ts right after the messages land in state. */
+export function seedSyncedMessages(sessionId: string | null | undefined, messages: unknown): void {
+  if (!sessionId) return;
   seedSynced(_syncedFor(sessionId), messages, _fingerprints);
 }
 
 /* Keep the watermark when a brand-new session is adopted under a
    server-minted UUID, so the next save is still a delta. */
-function _rekeySynced(fromId, toId){
-  if(!fromId||!toId||fromId===toId)return;
-  var got=_syncedBySession.get(fromId);
-  if(!got)return;
-  _syncedBySession.set(toId,got);
+function _rekeySynced(fromId: string | null | undefined, toId: string | null | undefined): void {
+  if (!fromId || !toId || fromId === toId) return;
+  const got = _syncedBySession.get(fromId);
+  if (!got) return;
+  _syncedBySession.set(toId, got);
   _syncedBySession.delete(fromId);
 }
 
-function payloadSignature(payload){
-  var msgs=Array.isArray(payload.messages)?payload.messages:[];
-  var parts='';
-  for(var i=0;i<msgs.length;i++){
+function payloadSignature(payload: SessionPostPayload): string {
+  const msgs = Array.isArray(payload.messages) ? payload.messages : [];
+  let parts = '';
+  for (let i = 0; i < msgs.length; i++) {
     /* P_signature-content — this used to be
      *   clientId + ':' + html.length + ':' + rawText.length
      * i.e. a LENGTH-ONLY comparison. A message rewritten to a different
@@ -376,7 +455,7 @@ function payloadSignature(payload){
      * "skip an identical re-save" short-circuit below silently dropped
      * the edit. Reuse the same memoised content fingerprint the delta
      * uses, so an unchanged message still costs one pointer compare. */
-    parts+=_fingerprints.of(msgs[i]||{})+';';
+    parts += _fingerprints.of(msgs[i] || {}) + ';';
   }
   /* P_signature-scope — the signature drives the "skip an identical
      re-save" short-circuit, so ANY field whose change must reach the
@@ -387,12 +466,12 @@ function payloadSignature(payload){
      chat/sendPipeline.js) could change and the save would be silently
      dropped. FNV-1a over the serialised state keeps this O(size of the
      tutor state) rather than O(whole transcript). */
-  var tutorFingerprint=stateFingerprint;
-  return [payload.title||'', payload.phase||'', payload.topic||'',
-    msgs.length, parts, Array.isArray(payload.kbNodes)?payload.kbNodes.length:0,
-    Array.isArray(payload.mistakes)?payload.mistakes.length:0,
-    payload.teachingStage||'', payload.currentNode||'', payload.totalQ||0,
-    tutorFingerprint(payload.teachingPlan), tutorFingerprint(payload.boundariesHistory)
+  const tutorFingerprint = stateFingerprint;
+  return [payload.title || '', payload.phase || '', payload.topic || '',
+    msgs.length, parts, Array.isArray(payload.kbNodes) ? payload.kbNodes.length : 0,
+    Array.isArray(payload.mistakes) ? payload.mistakes.length : 0,
+    payload.teachingStage || '', payload.currentNode || '', payload.totalQ || 0,
+    tutorFingerprint(payload.teachingPlan), tutorFingerprint(payload.boundariesHistory),
   ].join('#');
 }
 
@@ -402,34 +481,34 @@ function payloadSignature(payload){
    doSave() fallback only runs when nothing was captured, and never during a
    load: a live re-capture there would read the incoming conversation and post
    it under the outgoing session's id. */
-function drainSaveQueue(){
-  saveState.saveInFlight=null;
-  var queued=saveState.pendingSnapshot;
-  saveState.pendingSnapshot=null;
-  if(queued&&!deletedSessionGuard.has(queued.id)){
+function drainSaveQueue(): void {
+  saveState.saveInFlight = null;
+  const queued = saveState.pendingSnapshot;
+  saveState.pendingSnapshot = null;
+  if (queued && !deletedSessionGuard.has(queued.id as string)) {
     /* The slot holds the newest complete capture of the changed session, so
        posting it also discharges the dirty flag. */
-    saveState.saveDirty=false;
-    postSession(queued);
+    saveState.saveDirty = false;
+    postSession(queued as SessionPostPayload);
     return;
   }
-  if(saveState.saveDirty){
-    saveState.saveDirty=false;
-    if(saveState.loadingSession)return;
+  if (saveState.saveDirty) {
+    saveState.saveDirty = false;
+    if (saveState.loadingSession) return;
     doSave();
   }
 }
 
-function postSession(payload){
-  var sessionId=payload.id;
+function postSession(payload: SessionPostPayload): Promise<unknown> {
+  const sessionId = payload.id;
   /* P_save-dedup — skip a byte-identical re-save; still advance the queue so a
      pending snapshot / dirty flag is not stranded. */
-  var sig=payloadSignature(payload);
-  if(sessionId===_lastPosted.id && sig===_lastPosted.sig){
+  const sig = payloadSignature(payload);
+  if (sessionId === _lastPosted.id && sig === _lastPosted.sig) {
     drainSaveQueue();
-    return;
+    return Promise.resolve();
   }
-  _lastPosted.id=sessionId; _lastPosted.sig=sig;
+  _lastPosted.id = sessionId; _lastPosted.sig = sig;
   /* P_cache-foldsave — this used to be `detailCache.invalidate(sessionId)`.
      Dropping the entry on every save meant the session most likely to be
      revisited — the one the user just chatted in — was the one that could
@@ -444,26 +523,26 @@ function postSession(payload){
      the request was in-flight. If the active session changed, the
      POST response (server-adopted id) must NOT overwrite the new
      session's URL / state. */
-  var capturedSessionId=sessionId;
+  const capturedSessionId = sessionId;
   /* P_incremental-save — send only the rows the server is not already
      known to hold. The watermark advances only in the success handler
      below, for exactly the rows that were acknowledged. */
-  var body=buildDeltaPayload(payload,_syncedFor(capturedSessionId),_fingerprints);
-  var sentMessages=body.messages;
-  saveState.saveInFlight=apiFetch("/api/sessions",{method:"POST",body:body}).then(function(r){
+  const body = buildDeltaPayload(payload, _syncedFor(capturedSessionId), _fingerprints);
+  const sentMessages = body.messages;
+  saveState.saveInFlight = apiFetch<SaveResponse>('/api/sessions', { method: 'POST', body: body }).then(function (r) {
     /* The server acknowledged this batch — only now may the watermark
        advance. Anything that failed before this point re-sends next time. */
-    commitSynced(_syncedFor(capturedSessionId),sentMessages,_fingerprints);
-    if(r&&r.id&&r.id!==sessionId)_rekeySynced(capturedSessionId,r.id);
+    commitSynced(_syncedFor(capturedSessionId), sentMessages, _fingerprints);
+    if (r && r.id && r.id !== sessionId) _rekeySynced(capturedSessionId, r.id);
     /* P_cache-foldsave — the acknowledged delta is exactly what the server
        now holds, so folding it into the cached detail leaves the entry
        correct instead of dropping it. Applied to the server-adopted id too:
        that is the id every later loadSession() uses. The client draft id is
        re-keyed for the same reason it is for the sync watermark. */
-    var _cachedId=(r&&r.id)||capturedSessionId;
-    detailCache.foldSave(_cachedId,r,sentMessages);
-    if(r&&r.id&&r.id!==capturedSessionId){
-      detailCache.foldSave(capturedSessionId,r,sentMessages);
+    const _cachedId = (r && r.id) || capturedSessionId;
+    detailCache.foldSave(_cachedId, r, sentMessages as MessageLike[]);
+    if (r && r.id && r.id !== capturedSessionId) {
+      detailCache.foldSave(capturedSessionId, r, sentMessages as MessageLike[]);
     }
     /* P_delete-resurrect — if this session was deleted while the
        POST was in-flight (rememberDeletedSession set a tombstone),
@@ -471,8 +550,8 @@ function postSession(payload){
        have processed this upsert after the DELETE (race), potentially
        resurrecting the row. Instead, just refresh the server list
        which will reflect the DELETE (or the next DELETE cycle). */
-    if(r&&r.id&&r.id!==sessionId&&saveState.pendingSnapshot&&saveState.pendingSnapshot.id===sessionId){
-      saveState.pendingSnapshot.id=r.id;
+    if (r && r.id && r.id !== sessionId && saveState.pendingSnapshot && saveState.pendingSnapshot.id === sessionId) {
+      saveState.pendingSnapshot.id = r.id;
     }
     /* P_recents-amplify — the response carries every scalar the list row
        renders (server routes/sessions.ts P_save-response), so patch that one
@@ -481,48 +560,52 @@ function postSession(payload){
        saveInFlight promise, which meant (a) every turn paid it and (b)
        loadSession()'s drain of saveInFlight had to wait for it. Neither is
        needed to keep the list correct. */
-    _applySavedRow(r,payload,sessionId);
-    if(deletedSessionGuard.has(capturedSessionId)){
+    /* The server body is only a row once it carries an id, which is what
+       patchSessionRow guards on; the cast states that contract at the call. */
+    _applySavedRow(r as SavedSession, payload, sessionId);
+    if (deletedSessionGuard.has(capturedSessionId)) {
       /* P_delete-resurrect — a deleted row cannot be patched away, and the
          tombstone means the list is genuinely wrong right now. Force a real
          fetch instead of waiting for the reconcile window. */
       _flushRecentsReconcile();
-    }else{
+    } else {
       _scheduleRecentsReconcile();
     }
     /* P_context-race — if the user switched to a different session while this
        POST was in-flight, do NOT adopt the server's id (it belongs to the old
        session) and do NOT update the URL. The row patch above is keyed by id,
        so it is safe either way. */
-    if(stateStore.read("currentSessionId")===capturedSessionId && r && r.id && r.id!==sessionId){
-      stateStore.dispatch({type:"state/set",key:"currentSessionId",value:r.id});
+    if (stateStore.read('currentSessionId') === capturedSessionId && r && r.id && r.id !== sessionId) {
+      stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: r.id });
       pushChatIdToURL(r.id);
     }
     /* P_streaming-survival — after a successful save (the stream
        completed normally), clear the server-side streaming_text
        so a reload doesn't show partial content. Fire-and-forget;
        failure is harmless. */
-    var targetSid=(r&&r.id)||capturedSessionId;
-    if(targetSid){
-      apiFetch("/api/sessions/"+encodeURIComponent(targetSid),{
-        method:"PATCH",
-        body:{streamingText:null,streamingReasoning:null},
-      }).catch(function(){});
+    const targetSid = (r && r.id) || capturedSessionId;
+    if (targetSid) {
+      apiFetch('/api/sessions/' + encodeURIComponent(targetSid), {
+        method: 'PATCH',
+        body: { streamingText: null, streamingReasoning: null },
+      }).catch(function () { /* empty-catch: intentional — clearing the partial marker is best-effort */ });
     }
     _renderRecents();
-  }).catch(function(e){
+  }).catch(function (e) {
     /* F1a — surface the save failure so the user knows their
        conversation isn't being persisted. Without this the recent
        list can silently lose new entries (Bug1). The default 1800ms
        timeout is too short for an error toast, so this uses the
        shared toast's longer-lived error variant. */
-    showToast(_t("sessions.save_failed","Save failed")+": "+e.message+(e.requestId?(" (ref "+e.requestId+")"):""),{variant:"error",duration:5000});
-  }).then(function(){
+    const err = e as { message?: string; requestId?: string } | null;
+    showToast(_t('sessions.save_failed', 'Save failed') + ': ' + (err?.message || '') + (err?.requestId ? (' (ref ' + err.requestId + ')') : ''), { variant: 'error', duration: 5000 });
+  }).then(function () {
     /* Clear the in-flight flag BEFORE re-checking dirty so a queued save
        picks up the latest state (and the just-adopted server id, if any)
        instead of re-sending a stale id. */
     drainSaveQueue();
   });
+  return saveState.saveInFlight;
 }
 
 
@@ -537,67 +620,69 @@ function postSession(payload){
  * pagehide: Fires after beforeunload, right before the page is torn
  *   down. Uses fetch(keepalive:true) as a last-chance save attempt
  *   so the server receives the session data even if the page unloads. */
-export function installUnloadSave(){
+export function installUnloadSave(): void {
   /* P_save-unload-ref — read CSRF token synchronously from the cookie
      (available during page teardown). Same pattern as getCsrfToken in
      util/api.ts but inlined to avoid an import dependency. */
-  function _beaconCsrf(){
-    var m=document.cookie.match(/\bcsrf=([^;]+)/);
-    return m?m[1]:null;
+  function _beaconCsrf(): string | null {
+    const m = document.cookie.match(/\bcsrf=([^;]+)/);
+    return m ? m[1] : null;
   }
-  function _beaconSave(){
+  function _beaconSave(): void {
     /* P_reset-defer — a snapshot parked by saveSessionBeforeReset is the
        authority here: the caller has already reset the live state, so the
        store-based branch below would find an empty conversation. Flush the
        parked snapshot first, then fall back to the live-state path. */
-    var deferred=saveState.deferredSnapshot;
-    if(deferred){
-      _beaconPost(deferred);
+    const deferred = saveState.deferredSnapshot;
+    if (deferred) {
+      _beaconPost(deferred as SessionPostPayload);
       return;
     }
     /* Only fire if we have data worth saving and a save is pending. */
-    if(!saveState.saveInFlight||!stateStore.read("currentSessionId")||!(typeof window!=="undefined"&&window.CURRENT_USER))return;
-    /* F3: payload shape lives in session/beacon.js (unit-tested); the
+    if (!saveState.saveInFlight || !stateStore.read('currentSessionId') || !(typeof window !== 'undefined' && window.CURRENT_USER)) return;
+    /* F3: payload shape lives in session/beacon.ts (unit-tested); the
        keepalive wiring stays here because it runs during page teardown. */
-    var payload=buildBeaconPayload({
-      sessionId:stateStore.read("currentSessionId"),
-      topic:stateStore.read("topic"),
-      sessionTitle:stateStore.read("sessionTitle"),
-      appMode:_appMode(),
-      messages:stateStore.read("messages"),
+    const payload = buildBeaconPayload({
+      sessionId: stateStore.read('currentSessionId') as string,
+      topic: stateStore.read('topic') as string,
+      sessionTitle: stateStore.read('sessionTitle') as string,
+      appMode: _appMode(),
+      messages: stateStore.read('messages'),
     });
-    if(!payload)return;
+    if (!payload) return;
     _beaconPost(payload);
   }
   /* Raw keepalive fetch — apiFetch uses AbortController + JSON parsing which
      is incompatible with keepalive during pagehide. */
-  function _beaconPost(payload){
-    var csrf=_beaconCsrf();
-    try{
-      fetch("/api/v2/sessions",{
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json",
-          ...(csrf?{"X-CSRF-Token":csrf}:{}),
+  function _beaconPost(payload: SessionPostPayload | BeaconPayload): void {
+    const csrf = _beaconCsrf();
+    try {
+      fetch('/api/v2/sessions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(csrf ? { 'X-CSRF-Token': csrf } : {}),
         },
-        body:JSON.stringify(payload),
-        credentials:"include",
-        keepalive:true,
-      }).catch(function(){});
-    }catch(_){}
+        body: JSON.stringify(payload),
+        credentials: 'include',
+        keepalive: true,
+      }).catch(function () { /* empty-catch: intentional — the page is going away */ });
+    } catch {
+      /* empty-catch: intentional — the page is going away */
+    }
   }
   /* beforeunload — show confirmation if a save is in-flight. */
-  window.addEventListener("beforeunload",function(e){
-    if(saveState.saveInFlight){
+  window.addEventListener('beforeunload', function (e) {
+    if (saveState.saveInFlight) {
       e.preventDefault();
-      e.returnValue="";
+      e.returnValue = '';
     }
   });
   /* pagehide — last-chance keepalive fetch (fires before the page is
      torn down). Also fire on visibilitychange as a secondary guard. */
-  window.addEventListener("pagehide",_beaconSave);
-  window.addEventListener("visibilitychange",function(){
-    if(document.visibilityState==="hidden")_beaconSave();
+  window.addEventListener('pagehide', _beaconSave);
+  window.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') _beaconSave();
   });
 }
 

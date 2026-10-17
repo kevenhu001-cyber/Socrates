@@ -26,7 +26,7 @@ import { publishActiveWorkflowEvent, publishActiveWorkflowFinish, publishWorkspa
 import { clearPendingTurn, newClientTurnId, savePendingTurn } from './turnClient.ts';
 import { addMessage } from './messages.js';
 import { scheduleTurnToTopForMessage } from './turnAnchor.ts';
-import { saveCurrentSession } from '../session/persistence.js';
+import { saveCurrentSession } from '../session/persistence.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 /* omit entirely; backend passes through (mirrors main.js contract) */

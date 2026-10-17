@@ -7,7 +7,7 @@ import { publishReactChatRuntime } from '../../ui/reactBridge.js';
 import { resetShareToken, toggleShareBtn } from '../../ui/share.js';
 import { clearSessionRouteInURL } from '../../session/store.ts';
 import { scrollContainer } from '../../ui/scroll.js';
-import { saveSessionBeforeReset } from '../../session/persistence.js';
+import { saveSessionBeforeReset } from '../../session/persistence.ts';
 import { renderGreeting } from '../../ui/greeting.js';
 import { activateMainView } from '../../ui/mainViewController.js';
 import { setActiveNav } from '../../sidebar/navigation.service.ts';

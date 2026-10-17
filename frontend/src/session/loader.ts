@@ -28,7 +28,7 @@ import {
   type PersistedMessage,
 } from './historyRestore.ts';
 import { reattachPendingTurn } from './pendingTurnRestore.ts';
-import { seedSyncedMessages } from './persistence.js';
+import { seedSyncedMessages } from './persistence.ts';
 import { toggleShareBtn } from '../ui/share.js';
 import { activateMainView } from '../ui/mainViewController.js';
 import { updateComposerBtn } from '../ui/topicSetup.js';

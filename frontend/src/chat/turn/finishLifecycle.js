@@ -4,7 +4,7 @@ import { turnState } from '../turnState.js';
 import { setChatStopState, markTurnEnded } from '../turnUi.js';
 import { publishReactChatRuntime } from '../../ui/reactBridge.js';
 import { announceTranscript } from '../../ui/liveRegion.js';
-import { saveCurrentSession } from '../../session/persistence.js';
+import { saveCurrentSession } from '../../session/persistence.ts';
 import { appendLocalMemory } from '../../storage/localMemory.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 

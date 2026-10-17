@@ -12,7 +12,7 @@ import { showToast } from '../ui/toast.js';
 import { startNewComposerSession } from '../react/composer-input/lifecycle.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { resetShareToken } from '../ui/share.js';
-import { saveCurrentSession } from '../session/persistence.js';
+import { saveCurrentSession } from '../session/persistence.ts';
 import { renderUserFooter } from '../ui/profile.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { resetApp } from './lifecycle/reset.js';
