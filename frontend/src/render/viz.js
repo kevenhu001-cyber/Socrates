@@ -39,7 +39,7 @@ import {
 import {
   configureVizMermaidQueue, mermaidCardIsNearViewportForTest, processPendingMermaid,
   resetMermaidGateForTest, schedulePendingMermaid,
-} from './vizMermaidQueue.js';
+} from './vizMermaidQueue.ts';
 export { parkVizCardForTest, unparkVizCardForTest, reclaimVizCards };
 export { mermaidCardIsNearViewportForTest, resetMermaidGateForTest };
 export { processPendingMermaid, schedulePendingMermaid };
