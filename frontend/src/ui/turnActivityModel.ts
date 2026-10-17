@@ -59,7 +59,7 @@ function observedStatus(message: LegacyChatMessage, activity: PublicTurnActivity
       return hasObservedReasoning(message)
         ? { phase: 'thinking', label: translate('think.thinking', 'Thinking…'), elapsedSec: legacy?.phase === 'thinking' ? legacy.elapsedSec : undefined }
         : { phase: 'waiting', label: translate('think.waitingForResponse', 'Waiting for the response.'), elapsedSec: legacy?.phase === 'waiting' ? legacy.elapsedSec : undefined };
-    case 'public_reasoning_summary': return { phase: 'thinking', label: translate('think.thinking', 'Thinking…') };
+    case 'public_reasoning_summary': return hasVisibleAnswerText(message) ? undefined : { phase: 'thinking', label: translate('think.thinking', 'Thinking…') };
     case 'synthesizing': return hasVisibleAnswerText(message) ? undefined : { phase: 'synthesizing', label: translate('think.synthesizing', 'Preparing the answer') };
     case 'tool': {
       const call = message.toolCalls?.find((entry) => entry.id === activity.toolCallId);
