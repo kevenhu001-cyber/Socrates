@@ -10,7 +10,8 @@ import { parseFunctionExpression, sampleFunction } from '@socrates/core/visualiz
 import { categoryAxisLayout, formatCategoryLabel, truncateLabel } from './visualizationLabels.ts';
 import { optionForChart, VIZ_FONT_FAMILY } from './visualizationOptions.js';
 import { dispatchExtensionRepair, renderExtension } from './visualizationExtensions.ts';
-import { renderSemanticVisualization, renderStructureVisualization, renderVisualizationTable } from './visualizationStatic.js';
+import { asVisualizationSpec } from './visualizationSpec.ts';
+import { renderSemanticVisualization, renderStructureVisualization, renderVisualizationTable } from './visualizationStatic.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 export { parseFunctionExpression, sampleFunction, categoryAxisLayout, formatCategoryLabel };
 
@@ -196,6 +197,12 @@ function vizT(key, fallback) {
 
 export async function mountVisualization(spec, host, options) {
   if (!spec || spec.version !== 1 || !host) return null;
+  /* The spec is model output: every renderer below reads spec.template and
+     spec.payload without re-checking them, so normalise once here. A blank
+     template returns null (nothing can render it); a missing payload becomes
+     {} so `payload.series` et al. cannot throw. */
+  spec = asVisualizationSpec(spec);
+  if (!spec) return null;
   options = options || {};
   _ensureThemeWatcher();
   var cardId = options.toolCallId || ('visual-' + (++visualCounter));

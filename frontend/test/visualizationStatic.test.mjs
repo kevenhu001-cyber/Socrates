@@ -9,7 +9,7 @@ import {
   renderStructureVisualization,
   renderTimelineVisualization,
   renderVisualizationTable,
-} from '../src/render/visualizationStatic.js';
+} from '../src/render/visualizationStatic.ts';
 
 function escapeHtml(value) {
   return String(value == null ? '' : value).replace(/[&<>\'"]/g, (char) => ({

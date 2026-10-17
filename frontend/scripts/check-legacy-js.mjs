@@ -4,7 +4,7 @@
  *
  * `frontend/tsconfig.json` runs with `allowJs: true, checkJs: false`: the
  * `.js` modules are bundled, imported by typed code, and never type-checked.
- * `npm run lint` therefore reports a clean `tsc` even though 197 first-party
+ * `npm run lint` therefore reports a clean `tsc` even though 196 first-party
  * files (as of 2026-10-17) sit outside `strict`. The migration is real — the
  * extracted modules under `src/` are `.ts` — but nothing stops the next
  * helper from being written in `.js` and quietly widening that hole.
