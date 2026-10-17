@@ -7,7 +7,7 @@ import { stateStore, resetState } from '../state/store.js';
 import { serverCache } from './serverCache.ts';
 import { saveState, rememberDeletedSession, forgetDeletedSession } from './saveState.ts';
 import { getVisibleSessions, getArchivedSessionsFrom, sweepExpiredArchivesFrom, setChatIdInURL } from './store.ts';
-import { createReconciler } from './recentsReconcile.js';
+import { createReconciler } from './recentsReconcile.ts';
 import { getKnownTagsFromSessions } from '../ui/recentsHelpers.js';
 import { apiFetch } from '../util/api.ts';
 import { detailCache } from './detailCache.js';

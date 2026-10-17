@@ -19,7 +19,7 @@ import {
   messageFingerprint,
   seedSynced,
   stateFingerprint,
-} from '../src/session/saveDelta.js';
+} from '../src/session/saveDelta.ts';
 
 function msg(clientId, rawText, extra) {
   return Object.assign({ clientId, role: 'user', rawText, html: null, type: null }, extra || {});

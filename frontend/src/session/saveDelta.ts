@@ -1,7 +1,7 @@
-/* session/saveDelta.js — incremental session-save payload builder.
+/* session/saveDelta.ts — incremental session-save payload builder.
  *
  * Extracted from session/persistence.js for the same reason
- * session/beacon.js was: the logic is pure data-in / data-out, and
+ * session/beacon.ts was: the logic is pure data-in / data-out, and
  * keeping it out of persistence.js (which installs window listeners at
  * import time) makes it unit-testable without DOM globals.
  *
@@ -30,46 +30,70 @@
  * would silently drop rows on a failed save.
  */
 
+/** The message fields the fingerprint covers. */
+export interface MessageLike {
+  clientId?: string | null;
+  id?: string | null;
+  rawText?: string | null;
+  html?: string | null;
+  type?: string | null;
+  toolCalls?: unknown[];
+  [key: string]: unknown;
+}
+
+export interface FingerprintCache {
+  of(message: MessageLike | null | undefined): string;
+}
+
+interface CacheEntry {
+  raw: string;
+  type: string;
+  htmlLen: number;
+  tools: number;
+  calls: unknown[] | null;
+  fp: string;
+}
+
 /* FNV-1a. ~0.5 ms per 1 MB, which is the same order as the
  * JSON.stringify the full payload needed anyway, and far stronger than
  * the length-only compare the old whole-payload signature relied on. */
-function fnv1a(s) {
-  var h = 0x811c9dc5;
-  for (var i = 0; i < s.length; i++) {
+function fnv1a(s: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
     h ^= s.charCodeAt(i);
     h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
   }
   return h >>> 0;
 }
 
-function toolCallsFingerprint(value) {
-  var calls = Array.isArray(value) ? value : [];
-  var serialized;
-  try { serialized = JSON.stringify(calls); } catch (_) { serialized = String(calls); }
+function toolCallsFingerprint(value: unknown): string {
+  const calls = Array.isArray(value) ? value : [];
+  let serialized: string;
+  try { serialized = JSON.stringify(calls); } catch { serialized = String(calls); }
   return serialized.length + ':' + fnv1a(serialized).toString(36);
 }
 
-function sameToolCalls(previous, current) {
+function sameToolCalls(previous: unknown, current: unknown): boolean {
   if (previous === current) return true;
   if (!Array.isArray(previous) || !Array.isArray(current) || previous.length !== current.length) return false;
-  for (var i = 0; i < previous.length; i++) if (previous[i] !== current[i]) return false;
+  for (let i = 0; i < previous.length; i++) if (previous[i] !== current[i]) return false;
   return true;
 }
 
-export function messageFingerprint(m) {
+export function messageFingerprint(m: MessageLike | null | undefined): string {
   if (!m) return '';
-  var clientId = m.clientId || m.id || '';
-  var raw = m.rawText || '';
-  var calls = Array.isArray(m.toolCalls) ? m.toolCalls : [];
+  const clientId = m.clientId || m.id || '';
+  const raw = m.rawText || '';
+  const calls = Array.isArray(m.toolCalls) ? m.toolCalls : [];
   return clientId + ':' + raw.length + ':' + fnv1a(raw).toString(36)
     + ':' + (m.html || '').length + ':' + (m.type || '')
     + ':' + calls.length + ':' + toolCallsFingerprint(calls);
 }
 
 /** Fingerprint an arbitrary tutor-state value (teachingPlan, boundariesHistory). */
-export function stateFingerprint(v) {
-  var s;
-  try { s = JSON.stringify(v == null ? null : v); } catch (_) { s = String(v == null ? '' : v); }
+export function stateFingerprint(v: unknown): string {
+  let s: string;
+  try { s = JSON.stringify(v == null ? null : v); } catch { s = String(v == null ? '' : v); }
   return s.length + ':' + fnv1a(s).toString(36);
 }
 
@@ -80,19 +104,19 @@ export function stateFingerprint(v) {
  * untouched message reuses its previous hash after a single pointer
  * compare.
  */
-export function createFingerprintCache(cap) {
-  var cache = new Map();
-  var max = cap || 4000;
+export function createFingerprintCache(cap?: number): FingerprintCache {
+  const cache = new Map<string, CacheEntry>();
+  const max = cap || 4000;
   return {
     of: function (m) {
       if (!m) return '';
-      var clientId = m.clientId || m.id || '';
+      const clientId = m.clientId || m.id || '';
       if (!clientId) return messageFingerprint(m);
-      var raw = m.rawText || '';
-      var type = m.type || '';
-      var htmlLen = (m.html || '').length;
-      var calls = Array.isArray(m.toolCalls) ? m.toolCalls : null;
-      var tools = calls ? calls.length : 0;
+      const raw = m.rawText || '';
+      const type = m.type || '';
+      const htmlLen = (m.html || '').length;
+      const calls = Array.isArray(m.toolCalls) ? m.toolCalls : null;
+      const tools = calls ? calls.length : 0;
       /* Every field the fingerprint covers must also be part of the
          memo comparison, not just rawText. A message that gains its
          rendered html, or flips from a streaming placeholder to a
@@ -101,16 +125,16 @@ export function createFingerprintCache(cap) {
          happily return the stale fingerprint and silently drop the
          update. Tool-call entries are replaced on result updates; comparing
          member identities also covers shallow-copied arrays in save snapshots. */
-      var hit = cache.get(clientId);
+      const hit = cache.get(clientId);
       if (hit && hit.raw === raw && hit.type === type && hit.htmlLen === htmlLen
           && hit.tools === tools && sameToolCalls(hit.calls, calls)) {
         return hit.fp;
       }
-      var toolsSig = toolCallsFingerprint(calls);
-      var fp = clientId + ':' + raw.length + ':' + fnv1a(raw).toString(36)
+      const toolsSig = toolCallsFingerprint(calls);
+      const fp = clientId + ':' + raw.length + ':' + fnv1a(raw).toString(36)
         + ':' + htmlLen + ':' + type + ':' + tools + ':' + toolsSig;
       if (cache.size > max) cache.clear();
-      cache.set(clientId, { raw: raw, type: type, htmlLen: htmlLen, tools: tools, calls: calls, fp: fp });
+      cache.set(clientId, { raw, type, htmlLen, tools, calls, fp });
       return fp;
     },
   };
@@ -122,31 +146,43 @@ export function createFingerprintCache(cap) {
  * re-upload. Rows without a stable id are skipped — they can never be
  * matched and are always sent.
  */
-export function seedSynced(synced, messages, fingerprints) {
+export function seedSynced(synced: Map<string, string>, messages: unknown, fingerprints: FingerprintCache): void {
   synced.clear();
   if (!Array.isArray(messages)) return;
-  for (var i = 0; i < messages.length; i++) {
-    var m = messages[i];
+  for (let i = 0; i < messages.length; i++) {
+    const m = messages[i] as MessageLike | null | undefined;
     if (!m) continue;
-    var clientId = m.clientId || m.id;
+    const clientId = m.clientId || m.id;
     if (!clientId) continue;
     synced.set(clientId, fingerprints.of(m));
   }
 }
 
 /** The rows the server is not already known to hold, in payload shape. */
-export function messageDelta(synced, messages, fingerprints) {
-  var all = Array.isArray(messages) ? messages : [];
-  var delta = [];
-  for (var i = 0; i < all.length; i++) {
-    var m = all[i];
+export function messageDelta(
+  synced: Map<string, string>,
+  messages: unknown,
+  fingerprints: FingerprintCache,
+): MessageLike[] {
+  const all = Array.isArray(messages) ? (messages as MessageLike[]) : [];
+  const delta: MessageLike[] = [];
+  for (let i = 0; i < all.length; i++) {
+    const m = all[i];
     /* No stable id means the row cannot be matched against the
        watermark, so it is sent every time. Correctness over size. */
-    if (!m || !(m.clientId || m.id) || synced.get(m.clientId || m.id) !== fingerprints.of(m)) {
+    if (!m || !(m.clientId || m.id) || synced.get(m.clientId || m.id || '') !== fingerprints.of(m)) {
       delta.push(m);
     }
   }
   return delta;
+}
+
+/** A save payload: session scalars plus the message rows. */
+export interface SessionPayload {
+  messages?: unknown;
+  topic?: string | null;
+  title?: string | null;
+  [key: string]: unknown;
 }
 
 /**
@@ -155,9 +191,13 @@ export function messageDelta(synced, messages, fingerprints) {
  * the upsert when there is nothing to write and still persists the
  * session row itself.
  */
-export function buildDeltaPayload(payload, synced, fingerprints) {
-  var out = {};
-  for (var k in payload) {
+export function buildDeltaPayload(
+  payload: SessionPayload,
+  synced: Map<string, string>,
+  fingerprints: FingerprintCache,
+): SessionPayload {
+  const out: SessionPayload = {};
+  for (const k in payload) {
     if (Object.prototype.hasOwnProperty.call(payload, k)) out[k] = payload[k];
   }
   out.messages = messageDelta(synced, payload.messages, fingerprints);
@@ -169,12 +209,16 @@ export function buildDeltaPayload(payload, synced, fingerprints) {
  * a failed save must leave the watermark alone so the next attempt
  * re-sends the same rows.
  */
-export function commitSynced(synced, sentMessages, fingerprints) {
+export function commitSynced(
+  synced: Map<string, string>,
+  sentMessages: unknown,
+  fingerprints: FingerprintCache,
+): void {
   if (!Array.isArray(sentMessages)) return;
-  for (var i = 0; i < sentMessages.length; i++) {
-    var m = sentMessages[i];
+  for (let i = 0; i < sentMessages.length; i++) {
+    const m = sentMessages[i] as MessageLike | null | undefined;
     if (!m) continue;
-    var clientId = m.clientId || m.id;
+    const clientId = m.clientId || m.id;
     if (!clientId) continue;
     synced.set(clientId, fingerprints.of(m));
   }

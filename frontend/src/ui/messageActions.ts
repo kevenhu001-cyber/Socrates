@@ -22,7 +22,7 @@ import {
 } from './toolCards.js';
 import { mountVisualization } from '../render/vizStubs.js';
 import { processPendingMermaid, processPendingViz, processPendingVizActions } from '../render/vizStubs.js';
-import { queueMessageOp } from '../session/mutationOutbox.js';
+import { queueMessageOp } from '../session/mutationOutbox.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 /**

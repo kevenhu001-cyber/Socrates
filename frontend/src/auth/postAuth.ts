@@ -1,5 +1,5 @@
 import { stateStore } from '../state/store.js';
-import { drainMessageOutbox } from '../session/mutationOutbox.js';
+import { drainMessageOutbox } from '../session/mutationOutbox.ts';
 import { getChatIdFromURL, getExamIdFromURL, setChatIdInURL, setExamIdInURL } from '../session/store.ts';
 import { loadSession } from '../session/loader.js';
 import { loadUserMemories, renderUserFooter } from '../ui/profile.js';

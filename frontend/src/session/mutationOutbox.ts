@@ -1,4 +1,4 @@
-// src/session/mutationOutbox.js — durable replay queue for message edits
+// src/session/mutationOutbox.ts — durable replay queue for message edits
 // that never reached the server.
 //
 // ── Why this exists ────────────────────────────────────────────────────
@@ -61,26 +61,41 @@ const STORAGE_KEY = 'socrates-msg-outbox-v1';
    direction: the newest edit is the one the user still believes in. */
 const MAX_OPS = 500;
 
+export type MessageOpType = 'patch' | 'delete';
+
+export interface MessageOp {
+  sessionId: string | null;
+  id: string;
+  type: MessageOpType;
+  content?: string;
+  queuedAt: number;
+}
+
 /** Single-flight guard: `online` and boot can both fire within a tick. */
 let draining = false;
 
-function readQueue() {
+function isMessageOp(op: unknown): op is MessageOp {
+  const candidate = op as Partial<MessageOp> | null;
+  return !!candidate
+    && typeof candidate.id === 'string'
+    && (candidate.type === 'patch' || candidate.type === 'delete');
+}
+
+function readQueue(): MessageOp[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
-    const parsed = JSON.parse(raw);
+    const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (op) => op && typeof op.id === 'string' && (op.type === 'patch' || op.type === 'delete'),
-    );
+    return parsed.filter(isMessageOp);
   } catch {
-    /* Corrupt JSON or a storage that throws on read — start clean rather
-       than wedging the edit path. Nothing here is worth a crash. */
+    /* empty-catch: intentional — corrupt JSON or throwing storage must not
+       wedge the edit path; start clean instead. */
     return [];
   }
 }
 
-function writeQueue(ops) {
+function writeQueue(ops: MessageOp[]): void {
   try {
     if (!ops.length) {
       localStorage.removeItem(STORAGE_KEY);
@@ -88,9 +103,8 @@ function writeQueue(ops) {
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(ops.slice(-MAX_OPS)));
   } catch {
-    /* Quota exceeded or private-mode storage. The edit still works
-       locally; only the replay guarantee is lost, and the caller already
-       told the user the change was saved locally. */
+    /* empty-catch: intentional — quota/private mode only loses the replay
+       guarantee; the edit already applied locally. */
   }
 }
 
@@ -103,7 +117,7 @@ function writeQueue(ops) {
  * queued against. The sessionId is also what lets the server's
  * ownership check reject an op whose session no longer exists.
  */
-function opPath(sessionId, id) {
+function opPath(sessionId: string | null, id: string): string {
   const path = '/api/messages/' + encodeURIComponent(id);
   if (sessionId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId)) {
     return path + '?sessionId=' + encodeURIComponent(sessionId);
@@ -116,15 +130,13 @@ function opPath(sessionId, id) {
  *
  * Call this from the `.catch` of an edit / delete request. Queuing is
  * best-effort and never throws.
- *
- * @param {string|null} sessionId  session the message belonged to
- * @param {string} id              message clientId (the server resolves
- *                                 both id and clientId through
- *                                 findOwnedMessage)
- * @param {'patch'|'delete'} type
- * @param {string} [content]       new text, required for 'patch'
  */
-export function queueMessageOp(sessionId, id, type, content) {
+export function queueMessageOp(
+  sessionId: string | null,
+  id: string,
+  type: MessageOpType,
+  content?: string,
+): void {
   if (!id || (type !== 'patch' && type !== 'delete')) return;
   if (type === 'patch' && typeof content !== 'string') return;
   const ops = readQueue();
@@ -133,12 +145,12 @@ export function queueMessageOp(sessionId, id, type, content) {
 }
 
 /** Number of mutations still waiting to reach the server. */
-export function pendingOpCount() {
+export function pendingOpCount(): number {
   return readQueue().length;
 }
 
 /** Exposed for tests: the sanitised queue as it would be replayed. */
-export function readQueueForTest() {
+export function readQueueForTest(): MessageOp[] {
   return readQueue();
 }
 
@@ -153,7 +165,7 @@ export function readQueueForTest() {
  *
  * Safe to call repeatedly; concurrent calls collapse via `draining`.
  */
-export async function drainMessageOutbox() {
+export async function drainMessageOutbox(): Promise<number> {
   if (draining) return 0;
   if (typeof navigator !== 'undefined' && navigator.onLine === false) return 0;
 
@@ -183,7 +195,8 @@ export async function drainMessageOutbox() {
            success, and for a patch it means the session was deleted
            server-side, where re-creating the turn would be wrong. Either
            way, drop it and move on. */
-        if (!e || e.status !== 404) break;
+        const status = (e as { status?: number } | null)?.status;
+        if (status !== 404) break;
       }
       done = i + 1;
       /* Persist progress as we go, not at the end: a drain interrupted by
@@ -196,6 +209,11 @@ export async function drainMessageOutbox() {
   }
 }
 
+/** Session-save bridge published by the legacy shell. */
+interface OutboxWindow extends Window {
+  saveCurrentSession?: () => void;
+}
+
 /**
  * Start draining whenever the browser reports it is back online.
  *
@@ -204,16 +222,19 @@ export async function drainMessageOutbox() {
  * so the listener survives hot reloads without stacking up.
  */
 let wired = false;
-export function bootstrapOutbox() {
+export function bootstrapOutbox(): void {
   if (wired) return;
   wired = true;
 
-  const onOnline = () => {
+  const onOnline = (): void => {
     drainMessageOutbox().then((n) => {
       if (n > 0) {
         try {
-          if (typeof window.saveCurrentSession === 'function') window.saveCurrentSession();
-        } catch (_) { /* a save failure here is not worth surfacing */ }
+          const win = window as OutboxWindow;
+          if (typeof win.saveCurrentSession === 'function') win.saveCurrentSession();
+        } catch {
+          /* empty-catch: intentional — a save failure here is not worth surfacing */
+        }
       }
     });
   };

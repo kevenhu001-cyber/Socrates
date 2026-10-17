@@ -3,7 +3,7 @@ import { ensureFuse, ensureHighlight, ensureKatex } from '../vendor/lazy.js';
 import { bootstrapReactCompatibilityRuntime } from '../react/bootstrap.tsx';
 import { mountAuthListeners } from '../auth/index.ts';
 import { mountLegacyShellListeners } from '../ui/legacyShellListeners.js';
-import { bootstrapOutbox } from '../session/mutationOutbox.js';
+import { bootstrapOutbox } from '../session/mutationOutbox.ts';
 
 /**
  * Functions required by the legacy shell and the React compatibility gateway.

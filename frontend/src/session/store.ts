@@ -17,10 +17,10 @@ export interface SessionRow {
   pinned?: boolean;
   pinnedAt?: number | string | null;
   archivedAt?: number | string | null;
-  updated_at?: number | string;
-  updatedAt?: number | string;
-  created_at?: number | string;
-  createdAt?: number | string;
+  updated_at?: number | string | null;
+  updatedAt?: number | string | null;
+  created_at?: number | string | null;
+  createdAt?: number | string | null;
   [key: string]: unknown;
 }
 

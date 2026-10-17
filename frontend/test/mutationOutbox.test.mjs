@@ -79,7 +79,7 @@ function teardown() {
 
 installMocks();
 const { queueMessageOp, drainMessageOutbox, pendingOpCount, readQueueForTest } =
-  await import('../src/session/mutationOutbox.js');
+  await import('../src/session/mutationOutbox.ts');
 teardown();
 
 test('a failed edit is queued and survives a reload', () => {

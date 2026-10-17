@@ -26,7 +26,7 @@ import {
   restoreInterruptedResponse,
   mirrorSessionHistory,
 } from './historyRestore.js';
-import { reattachPendingTurn } from './pendingTurnRestore.js';
+import { reattachPendingTurn } from './pendingTurnRestore.ts';
 import { seedSyncedMessages } from './persistence.js';
 import { toggleShareBtn } from '../ui/share.js';
 import { activateMainView } from '../ui/mainViewController.js';

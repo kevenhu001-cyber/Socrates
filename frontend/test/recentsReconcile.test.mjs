@@ -5,7 +5,7 @@ import {
   patchSessionRow,
   createReconciler,
   RECONCILE_MIN_INTERVAL_MS,
-} from '../src/session/recentsReconcile.js';
+} from '../src/session/recentsReconcile.ts';
 
 /* ── patchSessionRow ─────────────────────────────────────────────── */
 

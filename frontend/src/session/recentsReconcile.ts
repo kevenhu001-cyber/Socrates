@@ -1,4 +1,4 @@
-/* session/recentsReconcile.js — keep the Recents list correct without
+/* session/recentsReconcile.ts — keep the Recents list correct without
    re-fetching all 200 rows after every save.
 
    P_recents-amplify (2026-09-27 session-switch profile) — every successful
@@ -22,11 +22,44 @@
    Everything here is pure / injectable so it can be unit-tested without the
    DOM globals persistence.js and loader.js install at import time.
  */
+import type { SessionRow } from './store.ts';
 
 /* Minimum gap between two background list reconciles. A save burst collapses
    into a single fetch; a user who keeps talking gets at most one list
    refresh per window instead of one per turn. */
-export var RECONCILE_MIN_INTERVAL_MS = 4000;
+export const RECONCILE_MIN_INTERVAL_MS = 4000;
+
+/** The POST /api/sessions response body, as far as the list row needs it. */
+export interface SavedSession {
+  id: string;
+  topic?: string | null;
+  title?: string | null;
+  mode?: string | null;
+  phase?: string | null;
+  kind?: string | null;
+  projectId?: string | null;
+  pinned?: boolean;
+  archivedAt?: number | string | null;
+  totalQ?: number | null;
+  branchedFrom?: unknown;
+  updatedAt?: number | string | null;
+  updated_at?: number | string | null;
+  createdAt?: number | string | null;
+  created_at?: number | string | null;
+  [key: string]: unknown;
+}
+
+/** The request payload, read only when the row has to be created. */
+export interface SessionSavePayload {
+  topic?: string | null;
+  title?: string | null;
+  domain?: string | null;
+  mode?: string | null;
+  phase?: string | null;
+  projectId?: string | null;
+  messages?: unknown;
+  [key: string]: unknown;
+}
 
 /* Fields the save response is authoritative for, and the row keys each one
    lands on. The list endpoint returns snake_case (`total_q`, `updated_at`)
@@ -37,7 +70,7 @@ export var RECONCILE_MIN_INTERVAL_MS = 4000;
 
    Anything not listed (tags, domain, preview) never changes on a save, so the
    row keeps whatever the last real fetch gave it. */
-var SCALAR_FIELDS = [
+const SCALAR_FIELDS: ReadonlyArray<{ from: string; to: readonly string[] }> = [
   { from: 'topic', to: ['topic'] },
   { from: 'title', to: ['title'] },
   { from: 'mode', to: ['mode'] },
@@ -52,16 +85,16 @@ var SCALAR_FIELDS = [
   { from: 'branchedFrom', to: ['branchedFrom'] },
 ];
 
-function pick(source, key) {
+function pick(source: Record<string, unknown>, key: string): unknown {
   if (source[key] != null) return source[key];
   /* Tolerate a snake_case response body as well, so this keeps working if the
      endpoint is ever serialized differently. */
-  var snake = key.replace(/[A-Z]/g, function (c) { return '_' + c.toLowerCase(); });
+  const snake = key.replace(/[A-Z]/g, function (c) { return '_' + c.toLowerCase(); });
   return source[snake];
 }
 
-function indexOfId(sessions, id) {
-  for (var i = 0; i < sessions.length; i++) {
+function indexOfId(sessions: ReadonlyArray<SessionRow>, id: string): number {
+  for (let i = 0; i < sessions.length; i++) {
     if (sessions[i] && sessions[i].id === id) return i;
   }
   return -1;
@@ -71,7 +104,7 @@ function indexOfId(sessions, id) {
    patch yet, so this is a row the next reconcile would have created anyway —
    built from the save response plus the payload we just sent, which together
    cover every field `_sessionRowFields` (organize.js) reads. */
-function buildFreshRow(saved, payload) {
+function buildFreshRow(saved: SavedSession, payload: SessionSavePayload): SessionRow {
   return {
     id: saved.id,
     topic: saved.topic || payload.topic || '',
@@ -97,37 +130,42 @@ function buildFreshRow(saved, payload) {
  * Patch (or insert) the row for one saved session. Returns a NEW array; the
  * input is never mutated.
  *
- * @param {Array}  sessions  current list rows
- * @param {object} saved     the POST /api/sessions response body
- * @param {object} [payload] the request payload, used only when the row is new
- * @param {string} [rekeyFrom] an id the row is currently filed under, used
+ * @param sessions  current list rows
+ * @param saved     the POST /api/sessions response body
+ * @param payload   the request payload, used only when the row is new
+ * @param rekeyFrom an id the row is currently filed under, used
  *   when the server minted its own UUID for a client-drafted session
- * @returns {Array} the updated list
+ * @returns the updated list
  */
-export function patchSessionRow(sessions, saved, payload, rekeyFrom) {
+export function patchSessionRow(
+  sessions: SessionRow[] | null | undefined,
+  saved: SavedSession | null | undefined,
+  payload?: SessionSavePayload | null,
+  rekeyFrom?: string | null,
+): SessionRow[] {
   if (!saved || !saved.id) return Array.isArray(sessions) ? sessions : [];
-  var list = Array.isArray(sessions) ? sessions : [];
+  let list: SessionRow[] = Array.isArray(sessions) ? sessions : [];
 
   /* The server replaced a client-drafted id with a canonical UUID. Re-file the
      row under the real id first, so the patch below finds it. If the canonical
      row is already listed the draft is a duplicate — drop it rather than
      renaming it into a second row with the same id. */
   if (rekeyFrom && rekeyFrom !== saved.id) {
-    var from = indexOfId(list, rekeyFrom);
+    const from = indexOfId(list, rekeyFrom);
     if (from >= 0) {
       if (indexOfId(list, saved.id) >= 0) {
-        var dropped = list.slice();
+        const dropped = list.slice();
         dropped.splice(from, 1);
         list = dropped;
       } else {
-        var rekeyed = list.slice();
+        const rekeyed = list.slice();
         rekeyed[from] = Object.assign({}, rekeyed[from], { id: saved.id });
         list = rekeyed;
       }
     }
   }
 
-  var idx = indexOfId(list, saved.id);
+  const idx = indexOfId(list, saved.id);
   if (idx < 0) {
     /* Brand-new session. Without a payload we have no `domain`/`tags`, and
        guessing them would paint a half-right row; let the reconcile catch it
@@ -136,20 +174,35 @@ export function patchSessionRow(sessions, saved, payload, rekeyFrom) {
     return [buildFreshRow(saved, payload)].concat(list);
   }
 
-  var patched = Object.assign({}, list[idx]);
-  for (var f = 0; f < SCALAR_FIELDS.length; f++) {
-    var value = pick(saved, SCALAR_FIELDS[f].from);
+  const patched: SessionRow = Object.assign({}, list[idx]);
+  for (let f = 0; f < SCALAR_FIELDS.length; f++) {
+    const value = pick(saved, SCALAR_FIELDS[f].from);
     /* Skipping null is deliberate: a real 0 (totalQ) must land, but a null
        archivedAt means "unchanged", not "archive it". */
     if (value == null) continue;
-    for (var k = 0; k < SCALAR_FIELDS[f].to.length; k += 1) {
+    for (let k = 0; k < SCALAR_FIELDS[f].to.length; k += 1) {
       patched[SCALAR_FIELDS[f].to[k]] = value;
     }
   }
 
-  var next = list.slice();
+  const next = list.slice();
   next[idx] = patched;
   return next;
+}
+
+export interface ReconcilerOptions {
+  refresh: () => unknown;
+  onDone?: () => unknown;
+  minIntervalMs?: number;
+  now?: () => number;
+  setTimer?: (fn: () => void, ms: number) => unknown;
+  clearTimer?: (handle: unknown) => void;
+}
+
+export interface Reconciler {
+  schedule(): void;
+  flush(): Promise<unknown>;
+  isScheduled(): boolean;
 }
 
 /**
@@ -159,29 +212,26 @@ export function patchSessionRow(sessions, saved, payload, rekeyFrom) {
  *   inside one window collapse into a single fetch.
  * flush()   — run right now and drop any pending timer. Use when the caller
  *   genuinely cannot show stale rows (delete / archive / restore / login).
- *
- * @param {{refresh:Function, onDone?:Function, minIntervalMs?:number,
- *          now?:Function, setTimer?:Function, clearTimer?:Function}} options
  */
-export function createReconciler(options) {
-  var refresh = options.refresh;
-  var onDone = options.onDone || function () { return undefined; };
-  var minIntervalMs = options.minIntervalMs == null
+export function createReconciler(options: ReconcilerOptions): Reconciler {
+  const refresh = options.refresh;
+  const onDone = options.onDone || function () { return undefined; };
+  const minIntervalMs = options.minIntervalMs == null
     ? RECONCILE_MIN_INTERVAL_MS
     : options.minIntervalMs;
-  var now = options.now || function () { return Date.now(); };
-  var setTimer = options.setTimer || function (fn, ms) { return setTimeout(fn, ms); };
-  var clearTimer = options.clearTimer || function (handle) { clearTimeout(handle); };
+  const now = options.now || function () { return Date.now(); };
+  const setTimer = options.setTimer || function (fn, ms) { return setTimeout(fn, ms); };
+  const clearTimer = options.clearTimer || function (handle) { clearTimeout(handle as ReturnType<typeof setTimeout>); };
 
-  var timer = null;
-  var running = false;
-  var rerunRequested = false;
+  let timer: unknown = null;
+  let running = false;
+  let rerunRequested = false;
   /* Seed with now() so the FIRST save-triggered reconcile waits a full window
      instead of firing instantly — that is the whole point. Callers that need
      the list immediately (boot, delete, archive) use flush(). */
-  var lastRunAt = now();
+  let lastRunAt = now();
 
-  function run() {
+  function run(): Promise<unknown> {
     if (timer !== null) {
       clearTimer(timer);
       timer = null;
@@ -194,7 +244,7 @@ export function createReconciler(options) {
     }
     running = true;
     lastRunAt = now();
-    var started;
+    let started: Promise<unknown>;
     try {
       started = Promise.resolve(refresh());
     } catch (err) {
@@ -212,9 +262,9 @@ export function createReconciler(options) {
     });
   }
 
-  function schedule() {
+  function schedule(): void {
     if (timer !== null) return;   // already folded into the open window
-    var wait = Math.max(0, minIntervalMs - (now() - lastRunAt));
+    const wait = Math.max(0, minIntervalMs - (now() - lastRunAt));
     timer = setTimer(function () {
       timer = null;
       run();
