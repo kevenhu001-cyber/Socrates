@@ -1,6 +1,6 @@
 import { stateStore } from '../../state/store.js';
 import { saveState, rememberDeletedSession } from '../../session/saveState.ts';
-import { setCurrentSessionId } from '../../session/loader.js';
+import { setCurrentSessionId } from '../../session/loader.ts';
 import { setChatIdInURL } from '../../session/store.ts';
 import { flushRecentsReconcile } from '../../session/recents.ts';
 import { apiFetch } from '../../util/api.ts';

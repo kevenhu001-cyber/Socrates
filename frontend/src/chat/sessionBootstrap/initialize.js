@@ -1,7 +1,7 @@
 import { stateStore } from '../../state/store.js';
 import { turnState } from '../turnState.js';
 import { generateId } from '../../util/ids.ts';
-import { setCurrentSessionId } from '../../session/loader.js';
+import { setCurrentSessionId } from '../../session/loader.ts';
 import { pushChatIdToURL } from '../../session/store.ts';
 import { copyComposerPlugins, clearComposerPlugins } from '../../react/composer/pluginSelection.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';

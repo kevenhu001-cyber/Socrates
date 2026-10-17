@@ -1,7 +1,7 @@
 import { stateStore } from '../../state/store.js';
 import { turnState } from '../turnState.js';
 import { saveState } from '../../session/saveState.ts';
-import { resetSessionTransients } from '../../session/loader.js';
+import { resetSessionTransients } from '../../session/loader.ts';
 import { saveCurrentSession } from '../../session/persistence.js';
 import { askChatTurn } from '../turnController.js';
 import { isExpectedTurnAbort } from '../turnUi.js';

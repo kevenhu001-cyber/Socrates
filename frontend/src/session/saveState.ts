@@ -51,6 +51,10 @@ export interface SaveState {
   deferredSnapshot: SessionSnapshot | null;
   loadingSession: boolean;
   loadSessionId: string | null;
+  /* Abort handle for the in-flight detail fetch; loadSession() aborts the
+     previous one before starting the next so a fast switch does not leave
+     two multi-megabyte JSON parses racing. */
+  loadAbortCtl: AbortController | null;
 }
 
 export const saveState: SaveState = {
@@ -60,6 +64,7 @@ export const saveState: SaveState = {
   deferredSnapshot: null,
   loadingSession: false,
   loadSessionId: null,
+  loadAbortCtl: null,
 };
 
 export function getSaveState(): SaveState {

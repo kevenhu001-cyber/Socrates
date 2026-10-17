@@ -16,7 +16,7 @@ import { askChatTurn } from '../chat/turnController.js';
    an async proxy below; all call sites sit inside async send/restore
    paths and await the controller. */
 import { syncSidebarBtns, toggleSidebarView } from '../ui/sidebarChrome.js';
-import { loadSession } from '../session/loader.js';
+import { loadSession } from '../session/loader.ts';
 import { toggleKBDetail } from '../ui/knowledgeDetail.js';
 import { refreshApiConfig } from '../config/providers.ts';
 import { refreshServerSessions, retryRecentsFetch, actuallyDeleteSession, archiveSession, restoreSession, confirmPurgeSession, getArchivedSessions, flushRecentsReconcile } from '../session/recents.ts';

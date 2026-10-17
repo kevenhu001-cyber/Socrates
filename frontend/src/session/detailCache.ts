@@ -35,7 +35,10 @@ export interface CachedMessage {
   html?: string | null;
   rawText?: string | null;
   reasoningContent?: string | null;
-  attachments?: Array<{ dataUrl?: string | null; text?: string | null } | null> | null;
+  /* The cache never interprets attachments — it only measures their string
+     fields — so the row type stays structural rather than pinning one
+     producer's attachment shape. */
+  attachments?: unknown[] | null;
   toolCalls?: unknown[] | null;
   [key: string]: unknown;
 }
@@ -83,7 +86,7 @@ function serializedBytes(response: CachedDetailResponse): number {
       + (m.reasoningContent ? m.reasoningContent.length : 0);
     if (Array.isArray(m.attachments) && m.attachments.length) {
       for (let a = 0; a < m.attachments.length; a++) {
-        const at = m.attachments[a];
+        const at = m.attachments[a] as { dataUrl?: string | null; text?: string | null } | null | undefined;
         if (at) total += 128 + (at.dataUrl ? at.dataUrl.length : 0) + (at.text ? at.text.length : 0);
       }
     }

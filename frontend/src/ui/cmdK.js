@@ -1,6 +1,6 @@
 import { stateStore } from '../state/store.js';
 import { showToast } from './toast.js';
-import { loadSession } from '../session/loader.js';
+import { loadSession } from '../session/loader.ts';
 
 /* ui/cmdK.js — Wave 1b of main-js-split plan.
  * Cmd-K global search palette: indexer (fuse.js), open/close, render,

@@ -1,6 +1,6 @@
 import { openPromptTemplatesModal } from "../ui/promptTemplates.js";
 import { activateMainView } from "../ui/mainViewController.js";
-import { loadSession } from "../session/loader.js";
+import { loadSession } from "../session/loader.ts";
 import { workspaceForPath, replaceRoute } from "../app/router.js";
 import { openNav } from "./navigation.service.ts";
 import { reportSwallow } from "../util/reportSwallow.ts";

@@ -1,7 +1,7 @@
 import { stateStore } from '../state/store.js';
 import { drainMessageOutbox } from '../session/mutationOutbox.ts';
 import { getChatIdFromURL, getExamIdFromURL, setChatIdInURL, setExamIdInURL } from '../session/store.ts';
-import { loadSession } from '../session/loader.js';
+import { loadSession } from '../session/loader.ts';
 import { loadUserMemories, renderUserFooter } from '../ui/profile.js';
 import { syncExtensionsUI } from '../pickers.js';
 import { syncSidebarForMode } from '../config/providers.ts';
