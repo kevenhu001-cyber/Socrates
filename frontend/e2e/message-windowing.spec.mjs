@@ -51,3 +51,20 @@ test('long settled histories keep a bounded DOM while sliding in both directions
   await expect(page.locator('[data-client-id="history-239"]')).toHaveCount(1);
   expect(await residentRows(page)).toBeLessThanOrEqual(60);
 });
+
+test('in-session find temporarily full-mounts history and restores the bounded window', async ({ page }) => {
+  await prepareChatWorkbench(page, { messages: history(120) });
+  await expect.poll(() => residentRows(page)).toBeLessThanOrEqual(60);
+
+  await page.evaluate(() => window.openFindInSession());
+  await expect(page.locator('#findInput')).toBeVisible();
+  await page.locator('#findInput').fill('History message 0');
+
+  await expect(page.locator('#findCount')).toHaveText('1/1');
+  await expect(page.locator('mark.find-hl')).toHaveCount(1);
+  await expect.poll(() => residentRows(page)).toBe(120);
+
+  await page.getByRole('button', { name: 'Close find' }).click();
+  await expect(page.locator('#findBar')).toHaveClass(/hidden/);
+  await expect.poll(() => residentRows(page)).toBeLessThanOrEqual(60);
+});
