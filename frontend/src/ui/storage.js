@@ -9,7 +9,7 @@ let _impl = null;
 function loadStorageImpl() {
   if (_impl) return Promise.resolve(_impl);
   if (!_implPromise) {
-    _implPromise = import('./storage.impl.js')
+    _implPromise = import('./storage.impl.mjs')
       .then(function (module) { _impl = module; return module; })
       .catch(function (error) {
         _implPromise = null;
