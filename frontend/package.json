@@ -46,7 +46,8 @@
     "lint:external-hosts": "node scripts/check-external-hosts.mjs",
     "lint:legacy-js": "node scripts/check-legacy-js.mjs",
     "lint:docs": "node ../scripts/check-doc-paths.mjs",
-    "lint:shims": "node ../scripts/check-forwarding-shims.mjs"
+    "lint:shims": "node ../scripts/check-forwarding-shims.mjs",
+    "generate:openui": "tsx scripts/generate-openui-prompt.mts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -71,6 +72,7 @@
     "@fontsource/newsreader": "^5.3.0",
     "@fontsource/plus-jakarta-sans": "^5.3.0",
     "@lobehub/icons-static-svg": "^1.95.1",
+    "@openuidev/react-lang": "1.0.0",
     "@socrates/contracts": "file:../packages/contracts",
     "@socrates/core": "file:../packages/core",
     "@tiptap/extension-link": "^3.31.4",
@@ -85,12 +87,14 @@
     "fuse.js": "^7.5.0",
     "highlight.js": "^11.12.0",
     "lucide-react": "^1.53.0",
+    "maplibre-gl": "6.13.0",
     "marked": "^13.0.3",
     "misans": "^5.0.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "three": "^0.186.1",
     "tldraw": "^5.5.2",
+    "zod": "4.4.3",
     "zustand": "^5.0.15"
   }
 }

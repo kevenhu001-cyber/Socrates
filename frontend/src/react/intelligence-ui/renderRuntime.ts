@@ -16,6 +16,7 @@ export interface RenderContext {
   children: Map<string, IntelligenceUiNode[]>;
   tools: ReadonlyArray<ToolCallRecord>;
   readOnly: boolean;
+  streaming?: boolean;
 }
 
 export type UiAction = {

@@ -3029,7 +3029,202 @@ paths:
         URLs, invalid parents and cycles. UI data travels through ordinary
         tool_use/tool_result frames and stored toolCalls, separate from prose.
         Existing clients can display a generic tool result; legacy UI fences
-        remain readable on the web for old sessions.
+        remain readable on the web for old sessions. Nodes may additionally use
+        `type: openui` with a nonempty `source` string (maximum 50000 characters)
+        containing OpenUI Lang 1.0. The SPA lazily renders the curated declarative
+        library; existing clients may display the generic tool result. Native
+        patch operations can update source. Local OpenUI state survives source
+        extensions on the same node ID. The SPA also recognizes streamed
+        fenced `openui` programs in prose; these fences are removed from copy
+        and speech output like existing socrates-ui fences. Same-origin map and image-search endpoints are supplied under
+        /api/intelligent-ui; no additional provider key, arbitrary Query/Mutation
+        provider or executable HTML is supplied. Shared packages carry only data; the React OpenUI renderer
+        belongs to the SPA until Universal App artifact migration signs off.
+  /api/intelligent-ui/images:
+    get:
+      tags: [chat]
+      summary: Resolve real OpenUI SearchImage results with source attribution
+      description: >-
+        Requires the normal authenticated session. Accepts a 2–200 character
+        query. Searches Wikimedia Commons, then DuckDuckGo image results and the existing
+        Bing provider when earlier sources are unavailable or empty. Returns up to eight raster images
+        with same-origin proxy URLs, title, sourceUrl, and author/license when
+        supplied by Commons. Empty upstream failures return 502 and are not
+        cached as successful results. Search and asset requests are rate limited.
+        The browser never receives a provider API key or an arbitrary proxy.
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: {type: string, minLength: 2, maxLength: 200}
+      responses:
+        '200':
+          description: Images with URLs under /api/v2/intelligent-ui/image and attribution
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [images, query]
+                properties:
+                  query: {type: string}
+                  images:
+                    type: array
+                    maxItems: 8
+                    items:
+                      type: object
+                      required: [url, title, sourceUrl]
+                      properties:
+                        url: {type: string}
+                        title: {type: string}
+                        sourceUrl: {type: string, format: uri}
+                        author: {type: string}
+                        license: {type: string}
+        '401': {description: Authentication required}
+        '429': {description: Search rate limit reached}
+        '502': {description: Image providers unavailable}
+  /api/intelligent-ui/image:
+    get:
+      tags: [chat]
+      summary: Serve a supported provider's raster thumbnail through the same origin
+      description: >-
+        Authenticated, rate limited proxy restricted to HTTPS Wikimedia upload
+        paths and Bing thumbnail hosts. Rejects credentials, custom ports,
+        redirects, SVG/HTML responses, and bodies above five MB. Uses a bounded
+        32 MiB shared asset cache and sends nosniff. Cookies and credentials
+        are never forwarded upstream. This endpoint cannot fetch arbitrary URLs.
+      parameters:
+        - in: query
+          name: url
+          required: true
+          schema: {type: string, format: uri}
+      responses:
+        '200': {description: Raster image with its verified content type}
+        '400': {description: Unsupported image URL}
+        '401': {description: Authentication required}
+        '502': {description: Upstream image unavailable or unsafe response}
+  /api/intelligent-ui/places:
+    get:
+      tags: [chat]
+      summary: Resolve a named place using Photon and OpenStreetMap data
+      description: >-
+        Requires authentication. Returns up to five candidates with label,
+        latitude, longitude and the matching OpenStreetMap source URL. A marker's
+        place field should include landmark, city and country to disambiguate.
+        No autocomplete is performed; the SPA waits for stable model output.
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: {type: string, minLength: 2, maxLength: 200}
+      responses:
+        '200':
+          description: Place candidates; an empty array means no place was located
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  query: {type: string}
+                  places:
+                    type: array
+                    maxItems: 5
+                    items:
+                      type: object
+                      required: [label, lat, lng, sourceUrl]
+                      properties:
+                        label: {type: string}
+                        lat: {type: number, minimum: -90, maximum: 90}
+                        lng: {type: number, minimum: -180, maximum: 180}
+                        sourceUrl: {type: string, format: uri}
+        '401': {description: Authentication required}
+        '502': {description: Place provider unavailable}
+  /api/intelligent-ui/route:
+    get:
+      tags: [chat]
+      summary: Fetch a driving route overview between verified coordinates
+      description: >-
+        Authenticated OSRM request for two to twenty-five stops, encoded as
+        lng,lat;lng,lat. Returns GeoJSON-order points ([longitude,latitude]),
+        distance in meters, duration in seconds and profile driving. This is
+        not walking or turn-by-turn guidance. A failure never substitutes a
+        direct connection for a street route. Successful routes cache ten minutes.
+      parameters:
+        - in: query
+          name: coords
+          required: true
+          schema: {type: string, maxLength: 1500}
+      responses:
+        '200':
+          description: Driving route geometry and metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profile: {type: string, enum: [driving]}
+                  points:
+                    type: array
+                    maxItems: 30000
+                    items:
+                      type: array
+                      minItems: 2
+                      maxItems: 2
+                      items: {type: number}
+                  distance: {type: number}
+                  duration: {type: number}
+        '400': {description: Invalid coordinate sequence}
+        '401': {description: Authentication required}
+        '502': {description: Street route unavailable}
+  /api/intelligent-ui/maps/planet:
+    get:
+      tags: [chat]
+      summary: Return OpenFreeMap TileJSON with same-origin tile templates
+      description: >-
+        Authenticated, cached metadata from the fixed OpenFreeMap provider.
+        Accepts only that provider's versioned planet template and rewrites
+        every tile URL to /api/v2/intelligent-ui/maps/tiles. MapLibre and its
+        worker are bundled, and glyphs also use a same-origin endpoint. No CSP
+        host expansion or client key is required.
+      responses:
+        '200': {description: TileJSON 3.0 with supported tile URLs and attribution}
+        '401': {description: Authentication required}
+        '502': {description: Basemap unavailable}
+  /api/intelligent-ui/maps/tiles/{release}/{z}/{x}/{file}:
+    get:
+      tags: [chat]
+      summary: Serve a bounded OpenFreeMap vector tile
+      parameters:
+        - {in: path, name: release, required: true, schema: {type: string}}
+        - {in: path, name: z, required: true, schema: {type: integer, minimum: 0, maximum: 14}}
+        - {in: path, name: x, required: true, schema: {type: integer, minimum: 0}}
+        - {in: path, name: file, required: true, description: Row number followed by .pbf, schema: {type: string}}
+      responses:
+        '200': {description: Protobuf tile under the shared asset-cache budget}
+        '400': {description: Invalid release or tile bounds}
+        '401': {description: Authentication required}
+        '502': {description: Tile unavailable}
+  /api/intelligent-ui/maps/fonts/{stack}/{range}:
+    get:
+      tags: [chat]
+      summary: Serve OpenFreeMap glyphs for the supported map font
+      parameters:
+        - {in: path, name: stack, required: true, schema: {type: string, enum: [Noto Sans Regular]}}
+        - {in: path, name: range, required: true, description: Aligned 256-codepoint range followed by .pbf, schema: {type: string}}
+      responses:
+        '200': {description: Protobuf font glyphs}
+        '400': {description: Invalid font or range}
+        '401': {description: Authentication required}
+        '502': {description: Glyphs unavailable}
+  /api/intelligent-ui/attribution/{provider}:
+    get:
+      tags: [chat]
+      summary: Open a fixed map attribution page
+      parameters:
+        - {in: path, name: provider, required: true, schema: {type: string, enum: [openfreemap, openmaptiles, openstreetmap]}}
+      responses:
+        '302': {description: Redirect to the selected provider's fixed attribution page}
+        '401': {description: Authentication required}
+        '404': {description: Unknown attribution provider}
   /api/agent-runs/capabilities:
     get:
       tags: [agents]

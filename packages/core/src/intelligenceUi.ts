@@ -4,7 +4,7 @@ const MAX_NODES = 80;
 const MAX_ID_LENGTH = 80;
 const MAX_EXTERNAL_URL_LENGTH = 2048;
 const SAFE_ID = /^[A-Za-z0-9._:-]+$/;
-const BLOCK_START = /^```(?:socrates-ui|sui)[ \t]*\r?$/gm;
+const BLOCK_START = /^```(socrates-ui|sui|openui)[ \t]*\r?$/gm;
 const BLOCK_END = /^```[ \t]*\r?$/gm;
 const FORBIDDEN_PATH_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
 
@@ -25,7 +25,8 @@ export type IntelligenceUiNodeType =
   | 'chart'
   | 'tabs'
   | 'entity'
-  | 'image-gallery';
+  | 'image-gallery'
+  | 'openui';
 
 const NODE_TYPES = new Set<IntelligenceUiNodeType>([
   'panel',
@@ -45,6 +46,7 @@ const NODE_TYPES = new Set<IntelligenceUiNodeType>([
   'tabs',
   'entity',
   'image-gallery',
+  'openui',
 ]);
 
 export type IntelligenceUiState = Record<string, unknown>;
@@ -80,6 +82,7 @@ export interface IntelligenceUiNode {
   type: IntelligenceUiNodeType;
   parent?: string;
   state?: IntelligenceUiState;
+  source?: unknown;
   title?: unknown;
   subtitle?: unknown;
   description?: unknown;
@@ -118,6 +121,7 @@ export interface IntelligenceUiNode {
 
 export interface IntelligenceUiBlockSegment {
   kind: 'ui';
+  format?: 'openui';
   source: string;
   start: number;
   end: number;
@@ -243,6 +247,7 @@ export function splitIntelligenceUiText(text: string): IntelligenceUiSegment[] {
   for (;;) {
     const startMatch = BLOCK_START.exec(source);
     if (!startMatch) break;
+    const format = startMatch[1] === 'openui' ? { format: 'openui' as const } : {};
     const fenceStart = startMatch.index;
     if (fenceStart > cursor) {
       segments.push({ kind: 'text', text: source.slice(cursor, fenceStart), start: cursor, end: fenceStart });
@@ -252,14 +257,14 @@ export function splitIntelligenceUiText(text: string): IntelligenceUiSegment[] {
     if (source[bodyStart] === '\n') bodyStart += 1;
     const endMatch = nextFenceEnd(source, bodyStart);
     if (!endMatch) {
-      segments.push({ kind: 'ui', source: source.slice(bodyStart), start: fenceStart, end: source.length, open: true });
+      segments.push({ kind: 'ui', ...format, source: source.slice(bodyStart), start: fenceStart, end: source.length, open: true });
       cursor = source.length;
       BLOCK_START.lastIndex = source.length;
       break;
     }
 
     const bodyEnd = endMatch.index;
-    segments.push({ kind: 'ui', source: source.slice(bodyStart, bodyEnd), start: fenceStart, end: BLOCK_END.lastIndex, open: false });
+    segments.push({ kind: 'ui', ...format, source: source.slice(bodyStart, bodyEnd), start: fenceStart, end: BLOCK_END.lastIndex, open: false });
     cursor = BLOCK_END.lastIndex;
     if (source[cursor] === '\n') cursor += 1;
     BLOCK_START.lastIndex = cursor;

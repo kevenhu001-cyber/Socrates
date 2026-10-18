@@ -21,6 +21,7 @@ import sessionRouter from './routes/sessions.js';
    user's recent sessions via the LLM. Mounted before /api/chat so its
    /api/suggestions/* paths are not claimed by the chat router. */
 import suggestionsRouter from './routes/suggestions.js';
+import intelligentUiMediaRouter from './routes/intelligentUiMedia.js';
 import chatRouter from './routes/chat.js';
 import chatTurnsRouter from './routes/chatTurns.js';
 import ttsRouter from './routes/tts.js';
@@ -570,6 +571,7 @@ app.use('/api/sessions', sessionRouter);
 // built-in Beagle model from real history and preferences. Mounted before
 // /api/chat so its /api/suggestions/* paths are not claimed by that router.
 app.use('/api/suggestions', suggestionsRouter);
+app.use('/api/intelligent-ui', intelligentUiMediaRouter);
 app.use('/api/tts', ttsRouter);
 // P_session-chunks — session-scoped BM25 retrieval over a session's
 // own history. Used by the chat surface to surface related past

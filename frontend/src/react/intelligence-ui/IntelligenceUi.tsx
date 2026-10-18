@@ -38,6 +38,7 @@ export function IntelligenceUiBlock({ source, tools = [], open = false, showActi
     children,
     tools,
     readOnly,
+    streaming: open,
   };
 
   return (

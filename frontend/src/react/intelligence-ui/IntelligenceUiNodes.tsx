@@ -1,3 +1,4 @@
+import { LazyOpenUiBlock } from './LazyOpenUiBlock';
 import {
   intelligenceUiChartDomain,
   isSafeIntelligenceUiStateKey,
@@ -564,6 +565,7 @@ function UiImageGallery({ node, context }: { node: IntelligenceUiNode; context: 
 export function UiNode({ node, context }: { node: IntelligenceUiNode; context: RenderContext }): ReactNode {
   if (!resolveVisible(node, context)) return null;
   switch (node.type) {
+    case 'openui': return typeof node.source === 'string' ? <LazyOpenUiBlock source={node.source} readOnly={context.readOnly} open={context.streaming} embedded /> : null;
     case 'panel': return <UiPanel node={node} context={context} />;
     case 'stack': return <UiStack node={node} context={context} />;
     case 'grid': return <UiGrid node={node} context={context} />;

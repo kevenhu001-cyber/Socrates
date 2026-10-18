@@ -1,0 +1,114 @@
+/* OpenUI primitives bridge to the active Socrates theme; loaded on demand. */
+.intui-openui {
+  --iui-ink: var(--ui-text-primary);
+  --iui-muted: var(--ui-text-secondary);
+  --iui-faint: var(--ui-text-tertiary);
+  --iui-canvas: var(--ui-bg-surface);
+  --iui-surface: var(--ui-bg-raised);
+  --iui-surface-strong: var(--ui-bg-control);
+  --iui-border: var(--ui-border-subtle);
+  --iui-info: var(--ui-info);
+  --iui-success: var(--ui-success);
+  --iui-warning: var(--ui-warning);
+  --iui-danger: var(--ui-danger);
+  --iui-purple: var(--ui-link);
+  --iui-pink: var(--ui-thinking-accent);
+  --iui-chart-1: var(--ui-info);
+  --iui-chart-2: var(--ui-success);
+  --iui-chart-3: var(--ui-warning);
+  --iui-chart-4: var(--ui-danger);
+  --iui-chart-5: var(--ui-text-secondary);
+  --iui-chart-6: var(--ui-thinking-accent);
+  --iui-info-soft: color-mix(in srgb, var(--ui-info) 12%, transparent);
+  --iui-success-soft: color-mix(in srgb, var(--ui-success) 12%, transparent);
+  --iui-warning-soft: color-mix(in srgb, var(--ui-warning) 12%, transparent);
+  --iui-danger-soft: color-mix(in srgb, var(--ui-danger) 12%, transparent);
+  --iui-purple-soft: var(--iui-info-soft);
+  --iui-pink-soft: var(--iui-warning-soft);
+  --iui-radius-sm: var(--ui-radius-sm);
+  --iui-radius-md: var(--ui-radius-md);
+  --iui-radius-lg: var(--ui-radius-lg);
+  --iui-radius-xl: var(--ui-radius-xl);
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--iui-ink);
+  font: var(--ui-font-size-sm) / 1.6 var(--font-sans);
+}
+.intui-openui *, .intui-openui *::before, .intui-openui *::after { box-sizing: border-box; }
+.intui-openui :is(.iui-col, .iui-box, .iui-form, .iui-card) { display: flex; flex-direction: column; min-width: 0; }
+.intui-openui .iui-row { display: flex; flex-direction: row; align-items: center; gap: var(--ui-space-sm); min-width: 0; }
+.intui-openui .iui-row > * { min-width: 0; }
+.intui-openui .iui-flow { gap: var(--ui-space-md); }
+.intui-openui .iui-grid { display: grid; min-width: 0; }
+.intui-openui .iui-spacer { flex: 1; }
+.intui-openui .iui-card { padding: var(--ui-space-lg); border: 1px solid var(--iui-border); border-radius: var(--ui-radius-lg); background: var(--iui-canvas); }
+.intui-openui .iui-card-soft { background: var(--iui-surface); }
+.intui-openui .iui-form { gap: var(--ui-space-md); }
+.intui-openui .iui-divider { width: 100%; border: 0; border-top: 1px solid var(--iui-border); }
+.intui-openui .iui-title { font-weight: var(--ui-font-weight-semibold); line-height: 1.3; font-variant-numeric: tabular-nums; }
+.intui-openui .iui-title-sm { font-size: var(--ui-font-size-sm); }
+.intui-openui .iui-title-md { font-size: var(--ui-font-size-md); }
+.intui-openui .iui-title-lg { font-size: var(--ui-font-size-lg); }
+.intui-openui .iui-title-xl { font-size: var(--ui-font-size-xl); }
+.intui-openui .iui-title-2xl { font-size: 2rem; }
+.intui-openui .iui-title-3xl { font-size: 2.5rem; }
+.intui-openui :is(.iui-text, .iui-caption) { margin: 0; white-space: pre-line; }
+.intui-openui :is(.iui-caption, .iui-text-xs) { font-size: var(--ui-font-size-xs); color: var(--iui-muted); }
+.intui-openui .iui-text-sm { font-size: var(--ui-font-size-sm); }
+.intui-openui .iui-text-lg { font-size: var(--ui-font-size-lg); }
+.intui-openui :is(.iui-weight-medium, .iui-label) { font-weight: var(--ui-font-weight-medium); }
+.intui-openui .iui-weight-semibold { font-weight: var(--ui-font-weight-semibold); }
+.intui-openui .iui-badge { align-self: start; padding: var(--ui-space-xxs) var(--ui-space-sm); border-radius: var(--ui-radius-pill); background: var(--iui-surface); font-size: var(--ui-font-size-xs); }
+.intui-openui .iui-link { color: var(--ui-link); text-underline-offset: .2em; }
+.intui-openui :is(.iui-button, .iui-input, .iui-segmented button, .iui-choice) { min-height: var(--ui-control-md); border: 1px solid var(--iui-border); border-radius: var(--ui-radius-control); padding: var(--ui-space-xs) var(--ui-space-sm); background: var(--iui-canvas); color: var(--iui-ink); font: inherit; }
+.intui-openui .iui-button { display: inline-flex; align-items: center; justify-content: center; gap: var(--ui-space-xs); cursor: pointer; }
+.intui-openui .iui-button-solid { background: var(--ui-accent-strong); color: var(--ui-bg-surface); }
+.intui-openui .iui-button-soft { background: var(--iui-surface); }
+.intui-openui .iui-button-ghost { background: transparent; border-color: transparent; }
+.intui-openui .iui-button-sm { min-height: var(--ui-control-sm); }
+.intui-openui .iui-button-lg { min-height: var(--ui-control-touch); }
+.intui-openui .iui-block { width: 100%; }
+.intui-openui button:disabled { opacity: .5; cursor: default; }
+.intui-openui :is(button, input, select, textarea):focus-visible { outline: 2px solid var(--ui-info); outline-offset: 2px; }
+.intui-openui .iui-field { display: flex; flex-direction: column; gap: var(--ui-space-xs); min-width: 0; }
+.intui-openui .iui-input { width: 100%; min-width: 0; }
+.intui-openui .iui-textarea { resize: vertical; }
+.intui-openui :is(.iui-check, .iui-slider-head, .iui-timer-actions) { display: flex; align-items: center; gap: var(--ui-space-sm); }
+.intui-openui .iui-check { min-height: var(--ui-control-md); cursor: pointer; }
+.intui-openui .iui-check input { accent-color: var(--ui-info); }
+.intui-openui .iui-check.is-done span { text-decoration: line-through; color: var(--iui-muted); }
+.intui-openui .iui-segmented { display: flex; flex-wrap: wrap; gap: var(--ui-space-xxs); }
+.intui-openui .iui-segmented button { flex: 1; cursor: pointer; }
+.intui-openui .is-selected { background: var(--iui-surface-strong); }
+.intui-openui .iui-radio-group { border: 0; padding: 0; margin: 0; min-width: 0; }
+.intui-openui .iui-radio-group > div { display: flex; flex-wrap: wrap; gap: var(--ui-space-sm); }
+.intui-openui .iui-radio-list > div { flex-direction: column; }
+.intui-openui :is(.iui-choice-text, .iui-timer-read) { display: flex; flex-direction: column; }
+.intui-openui .iui-choice-description { display: block; color: var(--iui-muted); font-size: var(--ui-font-size-xs); }
+.intui-openui .iui-slider-head { justify-content: space-between; }
+.intui-openui .iui-range { width: 100%; min-height: var(--ui-control-sm); accent-color: var(--ui-info); }
+.intui-openui .iui-slider-marks { position: relative; min-height: 1.6em; font-size: var(--ui-font-size-xs); }
+.intui-openui .iui-slider-marks span { position: absolute; transform: translateX(-50%); }
+.intui-openui .iui-timer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--ui-space-md); }
+.intui-openui .iui-timer-time { font-size: 2rem; font-variant-numeric: tabular-nums; }
+.intui-openui .iui-flashcard { display: flex; flex-direction: column; gap: var(--ui-space-sm); align-items: center; justify-content: center; width: 100%; min-height: 10rem; padding: var(--ui-space-lg); border: 1px solid var(--iui-border); border-radius: var(--ui-radius-lg); background: var(--iui-surface); color: var(--iui-ink); font: inherit; cursor: pointer; }
+.intui-openui .iui-carousel { display: flex; gap: var(--ui-space-md); overflow-x: auto; scroll-snap-type: x mandatory; }
+.intui-openui .iui-carousel > * { flex: 0 0 min(85%, 20rem); scroll-snap-align: start; }
+.intui-openui .iui-image { margin: 0; }
+.intui-openui .iui-image img { display: block; width: 100%; height: auto; border-radius: var(--ui-radius-md); }
+.intui-openui :is(.iui-image figcaption, .iui-table caption) { color: var(--iui-muted); font-size: var(--ui-font-size-xs); text-align: start; }
+.intui-openui .iui-table-wrap { overflow-x: auto; }
+.intui-openui .iui-table { width: 100%; border-collapse: collapse; }
+.intui-openui .iui-table :is(th, td) { padding: var(--ui-space-sm); border-bottom: 1px solid var(--iui-border); text-align: start; }
+.intui-openui .iui-svg { display: block; max-width: 100%; }
+.intui-openui .iui-chart { margin: 0; min-width: 0; }
+.intui-openui .iui-chart-plot { position: relative; }
+.intui-openui :is(.iui-chart-plot svg, .iui-pie svg) { max-width: 100%; overflow: visible; }
+.intui-openui .iui-chart-grid { stroke: var(--iui-border); }
+.intui-openui :is(.iui-chart-tick, .iui-chart-category) { fill: var(--iui-muted); font-size: 11px; }
+.intui-openui .iui-chart-hover { fill: var(--iui-surface); }
+.intui-openui .iui-chart-tooltip { position: absolute; top: 0; padding: var(--ui-space-sm); border: 1px solid var(--iui-border); border-radius: var(--ui-radius-md); background: var(--iui-canvas); pointer-events: none; font-size: var(--ui-font-size-xs); }
+.intui-openui :is(.iui-chart-legend, .iui-chart-legend span, .iui-pie-legend > div) { display: flex; align-items: center; gap: var(--ui-space-sm); }
+.intui-openui .iui-chart-legend { justify-content: center; flex-wrap: wrap; }
+.intui-openui :is(.iui-chart-legend i, .iui-pie-legend i) { width: .65em; height: .65em; border-radius: var(--ui-radius-xs); }
+.intui-openui .iui-pie { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-md); }

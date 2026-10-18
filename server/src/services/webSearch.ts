@@ -482,7 +482,7 @@ function decodeEntities(s: string): string {
     });
 }
 
-function parseBingImageHtml(html: string): ImageResult[] {
+export function parseBingImageHtml(html: string): ImageResult[] {
   if (!html) return [];
   const results: ImageResult[] = [];
   const seen = new Set();
@@ -493,8 +493,9 @@ function parseBingImageHtml(html: string): ImageResult[] {
     const madMatch = card.match(/mad\s*=\s*"([^"]+)"/) || card.match(/m\s*=\s*"([^"]+)"/);
     if (!madMatch) continue;
     try {
-      const data = JSON.parse(decodeURIComponent(madMatch[1]));
-      const imgUrl = data.imgurl || data.turl || '';
+      const raw = decodeEntities(madMatch[1]);
+      const data = JSON.parse(/^%7b/i.test(raw) ? decodeURIComponent(raw) : raw);
+      const imgUrl = data.murl || data.imgurl || data.turl || '';
       const thumbUrl = data.thumburl || data.turl || '';
       const sourceUrl = data.purl || data.curl || '';
       const title = data.t || '';

@@ -52,3 +52,19 @@ test('native UI validation failures reach persistence outcome accounting', async
   assert.equal(outcomes[0].result.status, 'failed');
   assert.equal(outcomes[0].result.errorCode, 'invalid_tool_arguments');
 });
+
+test('native OpenUI nodes use the existing tool contract and retain source for clients', async () => {
+  const { INTELLIGENT_UI_TOOL } = await import('../src/services/intelligentUi.js');
+  const source = 'root = Col([Text("Hello from OpenUI")])';
+  const args = { version: 1, nodes: [{ id: 'openui', type: 'openui', source }] };
+  const events = [];
+  const outcome = await executeIntelligentUi(args, { id: 'openui-call' }, { emitter: { event: (...args) => events.push(args) } });
+  assert.equal(outcome.result.status, 'completed');
+  assert.equal(events[0][1].name, 'render_intelligent_ui');
+  const nodeSchema = INTELLIGENT_UI_TOOL.function.parameters.properties.nodes.items.properties;
+  assert.ok(nodeSchema.type.enum.includes('openui'));
+  assert.match(nodeSchema.source.description, /Available positional signatures/);
+  for (const invalid of ['', ' ', null, 'x'.repeat(50001)]) {
+    assert.equal(validateIntelligentUi({ version: 1, nodes: [{ id: 'app', type: 'openui', source: invalid }] }).ok, false);
+  }
+});

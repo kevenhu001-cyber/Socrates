@@ -1,4 +1,4 @@
-const TYPES = ['panel', 'stack', 'grid', 'text', 'metric', 'progress', 'divider', 'callout', 'slider', 'choice', 'toggle', 'button', 'table', 'chart', 'tabs', 'entity', 'image-gallery'];
+const TYPES = ['panel', 'stack', 'grid', 'text', 'metric', 'progress', 'divider', 'callout', 'slider', 'choice', 'toggle', 'button', 'table', 'chart', 'tabs', 'entity', 'image-gallery', 'openui'];
 
 /** Bound complexity and reject unsafe data before it is stored or rendered. */
 export function validateIntelligentUi(value) {
@@ -25,6 +25,9 @@ export function validateIntelligentUi(value) {
         || typeof node.type !== 'string' || !TYPES.includes(node.type) || ids.has(node.id)
         || (node.parent !== undefined && (typeof node.parent !== 'string' || !safeId(node.parent)))) {
       return { ok: false, error: 'Invalid or duplicate node id/type' };
+    }
+    if (node.type === 'openui' && (typeof node.source !== 'string' || !node.source.trim() || node.source.length > 50000)) {
+      return { ok: false, error: 'OpenUI nodes require 1–50000 characters of source' };
     }
     ids.add(node.id);
   }

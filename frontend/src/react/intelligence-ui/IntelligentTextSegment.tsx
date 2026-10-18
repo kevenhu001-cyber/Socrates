@@ -3,6 +3,7 @@ import { useRef } from 'react';
 import { LiveTextSegment } from '../tool-run/LiveTextSegment';
 import type { ProseRenderer } from '../tool-run/proseRenderer';
 import type { ToolCallRecord } from '../tool-run/toolRunModel';
+import { LazyOpenUiBlock } from './LazyOpenUiBlock';
 import { LazyIntelligenceUiBlock } from './LazyIntelligenceUiBlock';
 import { splitIntelligenceUiText } from '@socrates/core';
 
@@ -61,6 +62,7 @@ export function IntelligentTextSegment({
            JSONL records arrive and the same block expands in place. */
         const key = `${segment.kind}-${segment.start}`;
         if (segment.kind === 'ui') {
+          if (segment.format === 'openui') return <LazyOpenUiBlock key={key} source={segment.source} open={live && segment.open} readOnly={readOnly} />;
           return (
             <LazyIntelligenceUiBlock
               key={key}

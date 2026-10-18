@@ -168,3 +168,17 @@ test('copy and TTS helpers can remove UI source while preserving prose', () => {
   assert.match(stripped, /Use this result/);
   assert.match(stripped, /Then continue/);
 });
+
+test('OpenUI fences split prose and strip source from copy and speech output', () => {
+  const source = 'Before.\n```openui\nroot = Col([Text("Hello")])\n```\nAfter.';
+  const segments = splitIntelligenceUiText(source);
+  assert.deepEqual(segments.map((segment) => segment.kind), ['text', 'ui', 'text']);
+  assert.equal(segments[1].format, 'openui');
+  assert.equal(segments[1].open, false);
+  assert.match(segments[1].source, /root = Col/);
+  assert.equal(stripIntelligenceUiBlocks(source), 'Before.\nAfter.');
+  const live = splitIntelligenceUiText('```openui\nroot = Col([heading])\nheading = Title("Hi');
+  assert.equal(live[0].open, true);
+  assert.equal(live[0].format, 'openui');
+  assert.match(live[0].source, /heading = Title/);
+});
