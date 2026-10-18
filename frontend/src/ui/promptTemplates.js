@@ -10,7 +10,7 @@ let _impl = null;
 function loadPromptTemplatesImpl() {
   if (_impl) return Promise.resolve(_impl);
   if (!_implPromise) {
-    _implPromise = import('./promptTemplates.impl.js')
+    _implPromise = import('./promptTemplates.impl.mjs')
       .then(function (module) { _impl = module; return module; })
       .catch(function (error) {
         _implPromise = null;
