@@ -25,6 +25,11 @@ export type { LoadedSession, ExamDataShape, ExamQuestion } from './loader.impl.t
 
 type LoaderImpl = typeof import('./loader.impl.ts');
 
+type SessionLoaderWindow = Window & {
+  clearActiveTemplate?: () => void;
+  _currentSessionId?: string | null;
+};
+
 let _loaderImport: Promise<LoaderImpl> | null = null;
 let _loaderModule: LoaderImpl | null = null;
 
@@ -44,8 +49,9 @@ function loadLoaderImpl(): Promise<LoaderImpl> {
 
 function clearActiveTemplate(): void {
   try {
-    if (typeof window !== 'undefined' && typeof window.clearActiveTemplate === 'function') {
-      window.clearActiveTemplate();
+    const win = window as SessionLoaderWindow;
+    if (typeof window !== 'undefined' && typeof win.clearActiveTemplate === 'function') {
+      win.clearActiveTemplate();
     }
   } catch (error) {
     reportSwallow(error, 'session/loader.clearActiveTemplate');
@@ -82,7 +88,7 @@ export function resetSessionTransients(): void {
  * helper here prevents chat/sessionBootstrap from retaining that whole graph. */
 export function setCurrentSessionId(id: string | null, silent?: boolean): void {
   stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: id });
-  try { (window as Window & { _currentSessionId?: string | null })._currentSessionId = id; }
+  try { (window as SessionLoaderWindow)._currentSessionId = id; }
   catch (error) { reportSwallow(error, 'session/loader.setCurrentSessionId'); }
   if (!silent) publishReactChatRuntime({ type: 'state-synced', reason: 'session-id-changed' });
 }
