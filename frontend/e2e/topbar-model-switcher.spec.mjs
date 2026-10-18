@@ -49,7 +49,12 @@ test('switcher toggles the configuration menu below it and closes on outside cli
   await expect(pop).toHaveCount(0);
 });
 
-test('phones keep the switcher hidden', async ({ page }) => {
+test('phones expose compact model settings alongside the mode tabs', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.locator('#topModelSwitcher')).toBeHidden();
+  await expect(page.locator('#topModelSwitcher')).toBeVisible();
+  await expect(page.locator('#topModelSwitcher .top-model-switcher-settings')).toBeVisible();
+  await expect(page.locator('#topModelSwitcher .top-model-switcher-name')).toBeHidden();
+  await expect(page.locator('#topModeSwitch')).toBeVisible();
+  await page.locator('#topModelSwitcher').click();
+  await expect(page.locator('.chat-config-pop')).toBeInViewport();
 });

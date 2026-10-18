@@ -189,8 +189,8 @@
   --ui-border-alpha: 0.25;
 }
 
-/* Phone drawer overrides: the drawer tracks ~80vw (capped at 330px) so a
-   sliver of the page stays visible behind it, matching the reference drawer.
+/* Phone drawer overrides: the drawer tracks ~65vw (capped at 280px), keeping
+   the main pane visible as in the user's 2026-10-18 phone reference.
    Declared here because tokens.css is the single owner of the `--ui-*`
    namespace — the css-debt theme-ownership guard rejects palette
    re-declarations from the polish layer. Every consumer of
@@ -198,6 +198,6 @@
    base 254px value never reaches a phone viewport. */
 @media (max-width: 768px) {
   :root {
-    --ui-sidebar-mobile: min(330px, 80vw);
+    --ui-sidebar-mobile: min(280px, 65vw);
   }
 }

@@ -3,9 +3,9 @@ import { createPortal } from 'react-dom';
 
 /** Shared viewport-aware menu: portals escape scrolling lists, with keyboard
  * navigation and focus restoration owned here instead of individual surfaces. */
-export function AnchoredMenu({ anchor, onClose, className, children, above = false, spill = false }: {
+export function AnchoredMenu({ anchor, onClose, className, children, above = false, spill = false, label }: {
   anchor: RefObject<HTMLElement | null>; onClose: () => void;
-  className: string; children: ReactNode; above?: boolean; spill?: boolean;
+  className: string; children: ReactNode; above?: boolean; spill?: boolean; label?: string;
 }) {
   const menu = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ left: 8, top: 8 });
@@ -32,7 +32,8 @@ export function AnchoredMenu({ anchor, onClose, className, children, above = fal
   // Initial focus belongs to opening, not to positioning or the exit animation.
   // Re-running it while closing would steal Escape/Tab's destination focus.
   useLayoutEffect(() => {
-    menu.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus({ preventScroll: true });
+    const selected = menu.current?.querySelector<HTMLElement>('[role="menuitemradio"][aria-checked="true"]');
+    (selected || menu.current?.querySelector<HTMLElement>('[role^="menuitem"]'))?.focus({ preventScroll: true });
   }, []);
 
   useLayoutEffect(() => {
@@ -65,7 +66,7 @@ export function AnchoredMenu({ anchor, onClose, className, children, above = fal
   const host = document.getElementById('appShell');
   if (!host) return null;
   return createPortal(<div ref={menu} className={`anchored-menu ${className}`.trim()} data-state={closing ? 'closing' : 'open'} data-placement={above ? 'above' : 'below'} data-align={spill && innerWidth <= 768 ? 'start' : 'end'} inert={closing} role="menu" style={{ position: 'fixed', ...position }}
-    onClick={(event) => event.stopPropagation()}
+    aria-label={label} onClick={(event) => event.stopPropagation()}
     onKeyDown={(event) => {
       if (event.key === 'Escape' || event.key === 'Tab') {
         if (event.key === 'Escape') event.preventDefault();
@@ -76,7 +77,7 @@ export function AnchoredMenu({ anchor, onClose, className, children, above = fal
       }
       if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
         event.preventDefault();
-        const items = [...event.currentTarget.querySelectorAll<HTMLElement>('[role="menuitem"]')];
+        const items = [...event.currentTarget.querySelectorAll<HTMLElement>('[role^="menuitem"]')];
         const index = items.indexOf(document.activeElement as HTMLElement);
         items[event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 :
           (index + (event.key === 'ArrowUp' ? -1 : 1) + items.length) % items.length]?.focus();

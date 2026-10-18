@@ -1,8 +1,9 @@
 import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
 import { createRoot, type Root } from 'react-dom/client';
 import type { MouseEvent as ReactMouseEvent } from 'react';
+import { Plus } from 'lucide-react';
 
-import { getLegacyActions } from '../legacy/gateway.ts';
+import { getLegacyActions, i18n } from '../legacy/gateway.ts';
 import { openNav } from '../../sidebar/navigation.service';
 import { useNavigationStore } from '../../sidebar/navigation.store';
 import { SidebarNavButton } from './SidebarNavButton';
@@ -15,7 +16,7 @@ function SidebarNav() {
     <>
       {BUTTONS.map((button) => {
         const isActive = button.key !== 'new' && button.key !== 'skills' && active === button.key;
-        return (
+        const navigation = (
           <SidebarNavButton
             key={button.key}
             item={button}
@@ -37,6 +38,16 @@ function SidebarNav() {
             }}
           />
         );
+        if (button.key !== 'projects') return navigation;
+        return <div className="sidebar-project-nav" key={button.key}>
+          {navigation}
+          <button type="button" className="sidebar-project-create" data-i18n-aria="projects.create" data-i18n-title="projects.create" aria-label={i18n('projects.create', 'Create project')}
+            title={i18n('projects.create', 'Create project')} onClick={() => {
+              openNav('projects');
+              void import('../pages/workspace/workspace.dialogs').then(({ openProjectForm }) => openProjectForm())
+                .catch(() => getLegacyActions().messages.showToast?.(i18n('sidebar.projectOpenFailed', 'Could not open the project form. Please try again.')));
+            }}><Plus aria-hidden="true" /></button>
+        </div>;
       })}
     </>
   );

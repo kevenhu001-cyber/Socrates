@@ -12,6 +12,7 @@ import type { MouseEvent as ReactMouseEvent, RefObject } from 'react';
 export interface SessionItem {
   id: string;
   title: string;
+  projectId?: string | null;
   topic?: string;
   updatedAt: string | number | null;
   createdAt: string | number | null;

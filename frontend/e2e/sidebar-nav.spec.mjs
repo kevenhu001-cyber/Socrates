@@ -10,7 +10,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('sidebar exposes the primary destinations', async ({ page }) => {
-  const visibleIds = await page.locator('#sidebarNav > .sidebar-nav-btn').evaluateAll((buttons) =>
+  const visibleIds = await page.locator('#sidebarNav .sidebar-nav-btn').evaluateAll((buttons) =>
     buttons.filter((button) => getComputedStyle(button).display !== 'none').map((button) => button.id),
   );
   expect(visibleIds).toEqual([

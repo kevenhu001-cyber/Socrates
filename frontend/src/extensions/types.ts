@@ -106,8 +106,8 @@ export interface SearchProgressHandle {
 export interface AgentRunEvent {
   runId: string;
   workflow: 'explore' | 'deepResearch' | 'research' | 'analyze' | 'agent';
-  stage: 'planning' | 'searching' | 'reading' | 'synthesizing' | 'working' | 'awaiting_approval' | 'completed' | 'failed';
-  status: 'pending' | 'running' | 'succeeded' | 'failed';
+  stage: 'queued' | 'recovering' | 'cancelled' | 'planning' | 'searching' | 'reading' | 'synthesizing' | 'working' | 'awaiting_approval' | 'completed' | 'failed';
+  status: 'pending' | 'running' | 'succeeded' | 'failed' | 'cancelled';
   current?: number;
   total?: number;
   message?: string;

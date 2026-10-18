@@ -1,6 +1,7 @@
 import type { AccountUsage, Assistant, ChatRequest, ChatSseHandlers, FileExtractResult, Mistake, MobileTokenPair, Project, ProviderKey, SearchHit, Session, SessionShare, ShareVisibility, StoredFile, StoredFilePreview, User } from '@socrates/contracts';
 import { consumeSseBuffer, dispatchChatSseFrame } from '@socrates/core';
 import type { KeyValueStore } from '@socrates/platform';
+import type { ResearchJob, ResearchJobRequest } from '@socrates/contracts';
 
 export type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
 export type TokenState = Partial<MobileTokenPair>;
@@ -181,6 +182,14 @@ export function createApiClient(input: {
     refresh,
     fetchWithAuth,
     invalidateSession,
+    research: {
+      create: async (body: ResearchJobRequest) => (await request<{ job: ResearchJob }>('/research-jobs', { method: 'POST', body: JSON.stringify(body) })).job,
+      list: async (sessionId?: string) => (await request<{ jobs: ResearchJob[] }>(`/research-jobs${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ''}`)).jobs,
+      get: async (id: string) => (await request<{ job: ResearchJob }>(`/research-jobs/${encodeURIComponent(id)}`)).job,
+      result: async (id: string) => (await request<{ message: import('@socrates/contracts').Message | null }>(`/research-jobs/${encodeURIComponent(id)}/result`)).message,
+      cancel: async (id: string) => (await request<{ job: ResearchJob }>(`/research-jobs/${encodeURIComponent(id)}/cancel`, { method: 'POST' })).job,
+      retry: async (id: string) => (await request<{ job: ResearchJob }>(`/research-jobs/${encodeURIComponent(id)}/retry`, { method: 'POST' })).job,
+    },
     auth: {
       me: async () => (await request<{ user: User }>('/auth/me')).user,
       login: async (email: string, password: string) => {

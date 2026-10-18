@@ -94,10 +94,7 @@
   outline-offset: 2px;
 }
 
-@media (max-width: 768px) {
-  /* The phone drawer owns the mode switch (#mobileMode). */
-  #appShell .top-mode-switch { display: none; }
-}
+.top-model-switcher-settings { display: none; }
 
 /* P_mode-segment-top — the chat header owns this control, and the workspace /
    exam / admin views own their own. Those views already hide #mobileMode in

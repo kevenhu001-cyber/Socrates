@@ -46,27 +46,7 @@ test('pre-search ranks Chinese snippets without fetching every result page', asy
   expect(batchCalls).toBe(0);
 });
 
-test('deep research fetches only selected pages after searching', async ({ page }) => {
-  await mockAuthedApp(page);
-  let batchCalls = 0;
-  await page.route('**/api/**/fetch-batch', async (route) => {
-    batchCalls += 1;
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ results: [
-      { ok: true, url: 'https://example.test/research', title: 'Research source', content: 'EXTRACTED_PAGE_SENTINEL primary source evidence' },
-    ] }) });
-  });
-  await gotoAndSettle(page, '/');
-  await waitForAppShell(page);
-  const report = await page.evaluate(async () => {
-    window.getActiveProvider = () => null;
-    window.fetchWebContext = async () => ({ ok: true, sources: [
-      { url: 'https://example.test/research', title: 'Research source', snippet: 'search snippet' },
-    ] });
-    return window.startDeepResearch('Research a topic');
-  });
-  expect(batchCalls).toBe(1);
-  expect(report).toContain('EXTRACTED_PAGE_SENTINEL');
-});
+// Durable Deep Research submission and recovery are covered in research-jobs.spec.mjs.
 
 test('search progress exposes elapsed time and keyboard-accessible details', async ({ page }) => {
   await mockAuthedApp(page);

@@ -445,12 +445,12 @@
       <div class="recents-header">
         <span class="recents-title" data-i18n-key="sidebar.recentSessions">Recents</span>
         <!-- Trailing actions mirroring the reference drawer's 最近 header:
-             compose starts a new chat; ··· opens Storage (archived chats). -->
+             compose starts a new chat; React mounts the organization menu. -->
         <span class="recents-header-actions">
           <button type="button" class="recents-head-btn" id="recentsNewBtn" title="New chat" data-i18n-title="sidebar.newChat" data-i18n-aria="sidebar.newChat" aria-label="New chat">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><path d="M14.8 7.2a1.9 1.9 0 0 1 2.7 2.7l-6.4 6.4-3.6.9.9-3.6Z"/></svg>
           </button>
-          <button type="button" class="recents-head-btn" id="recentsMoreBtn" title="Archived sessions" data-i18n-title="profile.archivedSessions" data-i18n-aria="profile.archivedSessions" aria-label="Archived sessions" aria-haspopup="dialog">
+          <button type="button" class="recents-head-btn" id="recentsMoreBtn" title="Organize chats" data-i18n-title="sidebar.organize" data-i18n-aria="sidebar.organize" aria-label="Organize chats" aria-haspopup="menu" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2.1"/><circle cx="12" cy="12" r="2.1"/><circle cx="19" cy="12" r="2.1"/></svg>
           </button>
         </span>
@@ -581,8 +581,9 @@
       </button>
       <!-- chatgpt.com top-left model switcher: opens the shared chat
            configuration popover (model · reasoning effort · speed · manage
-           models). Desktop only; phones keep the composer pill. -->
+           models). Phones show a compact configuration icon on the home screen. -->
       <button type="button" class="top-model-switcher" id="topModelSwitcher" data-chat-config-trigger aria-haspopup="dialog" aria-expanded="false" data-i18n-title="topbar.modelSwitcher" data-i18n-aria="topbar.modelSwitcher" title="Model and reasoning" aria-label="Model and reasoning">
+        <svg class="top-model-switcher-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9m4 0h3M4 17h3m4 0h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
         <span class="top-model-switcher-name">Socrates</span>
         <span class="top-model-switcher-model" id="topModelSwitcherModel"></span>
         <svg class="top-model-switcher-caret" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4.5 6.5 3.5 3.5 3.5-3.5"/></svg>

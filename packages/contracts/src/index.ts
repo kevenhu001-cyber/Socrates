@@ -312,6 +312,40 @@ export interface ProviderKey {
 }
 
 export type ScheduledFrequency = 'once' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'custom';
+export type ResearchStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
+export interface ResearchJobRequest {
+  query: string;
+  /** Stable across submission retries; a new intentional task uses a new key. */
+  idempotencyKey: string;
+  sessionId?: string | null;
+  projectId?: string | null;
+}
+export interface ResearchJob {
+  id: string;
+  sessionId: string | null;
+  projectId: string | null;
+  query: string;
+  status: ResearchStatus;
+  eventSequence: number;
+  plan: string[];
+  searched: number;
+  sourceCount: number;
+  attempts: number;
+  resultArtifactId: string | null;
+  error: string | null;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+}
+export interface ResearchJobEvent {
+  id: string;
+  jobId: string;
+  sequence: number;
+  stage: 'queued' | 'planning' | 'searching' | 'reading' | 'synthesizing' | 'recovering' | 'completed' | 'failed' | 'cancelled';
+  status: ResearchStatus;
+  createdAt: string;
+}
+
 export type ScheduledStatus = 'pending' | 'active' | 'paused' | 'completed' | 'failed';
 
 export interface ScheduledTask {

@@ -22,8 +22,7 @@ for (const [label, model, viewport, lang] of [
       else if (await page.locator('.effort-trigger:visible').count()) {
         await page.locator('.effort-trigger:visible').first().click();
       } else {
-        await page.locator('#mobileModeTrigger').click();
-        await page.locator('#mobileConfigBtn').click();
+        await page.locator('#topModelSwitcher').click();
       }
       const pop = page.locator('.chat-config-pop');
       await pop.getByRole('button', { name: lang === 'zh' ? /思考强度/ : /Reasoning effort/ }).click();

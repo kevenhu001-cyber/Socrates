@@ -229,8 +229,9 @@ if (typeof document !== "undefined") {
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
       e.preventDefault();
       var options = Array.prototype.slice.call(topSwitch.querySelectorAll(".top-mode-switch-option"));
+      var focusedOption = e.target.closest && e.target.closest(".top-mode-switch-option");
       var index = options.findIndex(function (node) {
-        return node.getAttribute("data-mode") === _currentMode();
+        return focusedOption ? node === focusedOption : node.getAttribute("data-mode") === _currentMode();
       });
       if (index < 0) return;
       /* Wrap around: a two-position control has nowhere to go, so reversing

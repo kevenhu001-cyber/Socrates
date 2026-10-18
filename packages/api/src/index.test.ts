@@ -16,6 +16,27 @@ function mockFetch(routes: Record<string, { status: number; body: unknown }>) {
   return { fetch: fetch as typeof globalThis.fetch, calls };
 }
 
+test('research submits a durable key and can recover, cancel and retry the same job', async () => {
+  const job = { id: 'job 1', status: 'queued' };
+  const { fetch, calls } = mockFetch({
+    'POST /research-jobs': { status: 202, body: { job } },
+    '/research-jobs?sessionId=session%201': { status: 200, body: { jobs: [job] } },
+    '/research-jobs/job%201': { status: 200, body: { job } },
+    '/research-jobs/job%201/result': { status: 200, body: { message: { clientId: 'research-job 1', rawText: 'Saved report' } } },
+    'POST /research-jobs/job%201/cancel': { status: 200, body: { job: { ...job, status: 'cancelled' } } },
+    'POST /research-jobs/job%201/retry': { status: 202, body: { job } },
+  });
+  const api = createApiClient({ baseUrl: 'https://test/api/v2', fetch, storage: createMemoryStore() });
+  const body = { query: 'Evidence', idempotencyKey: 'stable-key', sessionId: 'session 1' };
+  assert.equal((await api.research.create(body)).id, job.id);
+  assert.deepEqual(JSON.parse(String(calls[0].init?.body)), body);
+  assert.equal((await api.research.list('session 1'))[0].id, job.id);
+  assert.equal((await api.research.get(job.id)).id, job.id);
+  assert.equal((await api.research.result(job.id))?.rawText, 'Saved report');
+  assert.equal((await api.research.cancel(job.id)).status, 'cancelled');
+  assert.equal((await api.research.retry(job.id)).status, 'queued');
+});
+
 test('projects.list returns projects', async () => {
   const { fetch } = mockFetch({ '/projects': { status: 200, body: { projects: [{ id: 'p1', name: 'Math' }] } } });
   const api = createApiClient({ baseUrl: 'https://test/api/v2', fetch, storage: createMemoryStore() });

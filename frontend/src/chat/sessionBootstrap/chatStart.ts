@@ -131,7 +131,7 @@ export async function startChatSession(context: SessionStartContext): Promise<vo
     });
 
   let syncController: StreamingTurnController | null = null;
-  if (typeof win.addStreamingMessage === 'function') {
+  if (!context.deepResearchOn && typeof win.addStreamingMessage === 'function') {
     try {
       syncController = await win.addStreamingMessage({
         async onRetry() {

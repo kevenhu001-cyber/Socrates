@@ -19,8 +19,7 @@ test('reference home keeps its bottom composer and phone configuration usable', 
   expect(769 - rect.y - rect.height).toBe(24);
   const greeting = await page.locator('#topicTitle').boundingBox();
   expect(Math.abs(greeting.y + greeting.height / 2 - 344.765)).toBeLessThan(1);
-  await page.locator('#mobileModeTrigger').click();
-  await page.locator('#mobileConfigBtn').click();
+  await page.locator('#topModelSwitcher').click();
   await expect(page.locator('.chat-config-pop')).toBeVisible();
   await page.keyboard.press('Escape');
   await page.setViewportSize({ width: 320, height: 568 });

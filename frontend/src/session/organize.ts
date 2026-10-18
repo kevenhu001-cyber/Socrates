@@ -303,6 +303,7 @@ export function _sessionRowFields(s: SessionRow): SessionItem {
   return {
     id: s.id,
     title: (s.title as string) || '',
+    projectId: typeof s.projectId === 'string' ? s.projectId : typeof s.project_id === 'string' ? s.project_id : null,
     topic: (s.topic as string) || '',
     updatedAt: (s.updated_at || s.updatedAt || null) as string | number | null,
     createdAt: (s.created_at || s.createdAt || null) as string | number | null,
@@ -322,7 +323,7 @@ export function _sameRow(a: SessionItem | undefined, b: SessionItem): boolean {
   if (a.title !== b.title || a.topic !== b.topic || a.updatedAt !== b.updatedAt
     || a.createdAt !== b.createdAt || a.totalQ !== b.totalQ || a.mode !== b.mode
     || a.phase !== b.phase || a.kind !== b.kind || a.pinned !== b.pinned
-    || a.label !== b.label || a.archivedAt !== b.archivedAt) return false;
+    || a.label !== b.label || a.archivedAt !== b.archivedAt || a.projectId !== b.projectId) return false;
   if (a.branchedFrom !== b.branchedFrom) {
     if (!a.branchedFrom || !b.branchedFrom) return false;
     if (a.branchedFrom.sessionId !== b.branchedFrom.sessionId

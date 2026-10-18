@@ -327,4 +327,5 @@ test('Deep Research extension: Start on landing enters chat and runs research', 
   await expect(page.locator('#msgList .msg.user')).toContainText('history of the printing press');
 
   await expect.poll(() => page.evaluate(() => window.__researchCalls || [])).toEqual(['history of the printing press']);
+  expect(await page.evaluate(() => window.stateStore.read('messages').filter((message) => message.type === 'streaming'))).toEqual([]);
 });

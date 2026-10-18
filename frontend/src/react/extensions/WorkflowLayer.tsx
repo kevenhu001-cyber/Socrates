@@ -5,10 +5,11 @@ import {
   subscribeToAgentRuns,
 } from '../../extensions/agentRunStore';
 import { ExploreStepper } from './ExploreStepper';
+import { ResearchJobs } from './ResearchJobs';
 
 const HIDE_DELAY_MS = 1600;
 
-export function WorkflowLayer() {
+function EphemeralWorkflowLayer() {
   const snapshot = useSyncExternalStore(
     subscribeToAgentRuns,
     getAgentRunSnapshot,
@@ -49,4 +50,8 @@ export function WorkflowLayer() {
       <ExploreStepper />
     </div>
   );
+}
+
+export function WorkflowLayer() {
+  return <><ResearchJobs /><EphemeralWorkflowLayer /></>;
 }

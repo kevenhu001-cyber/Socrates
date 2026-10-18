@@ -1,0 +1,38 @@
+.research-jobs {
+  width: min(760px, calc(100% - 24px));
+  max-height: 30vh;
+  overflow-y: auto;
+  margin: 8px auto 4px;
+  display: grid;
+  gap: 8px;
+  color: var(--ui-text-primary);
+  font-size: var(--ui-text-ui);
+}
+.research-job { min-width: 0; }
+.research-job-footer, .research-job-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.research-job-query {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ui-text-muted);
+}
+.research-jobs button {
+  min-height: var(--ui-control-sm);
+  padding: 0 12px;
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-bg-raised);
+  color: var(--ui-text-primary);
+  cursor: pointer;
+}
+.research-jobs button:hover { background: var(--ui-bg-hover); }
+.research-jobs button:focus-visible { outline: 2px solid var(--ui-text-primary); outline-offset: 2px; }
+.research-jobs button:disabled { opacity: .5; cursor: wait; }
+.research-job-error { margin: 0; color: var(--ui-text-muted); }

@@ -1336,6 +1336,162 @@ paths:
   # ========================================================================
   # P2.2 — Scheduled tasks, connectors and learning state
   # ========================================================================
+  /api/research-jobs:
+    get:
+      tags: [research]
+      operationId: listResearchJobs
+      summary: List the current user's latest 50 research jobs
+      parameters:
+        - in: query
+          name: sessionId
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Research snapshots, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [jobs]
+                properties:
+                  jobs: { type: array, items: { $ref: '#/components/schemas/ResearchJob' } }
+    post:
+      tags: [research]
+      operationId: createResearchJob
+      summary: Queue research independently of the browser connection
+      description: |
+        Requires chat:write. At most three queued/running jobs per user.
+        The required body idempotencyKey is persisted with the job (independent
+        of the general Idempotency-Key header middleware). Repeating the key
+        and normalized payload returns the current snapshot of the same job;
+        changing the payload returns 409. Ownership and session/project
+        consistency are checked. sessionId and projectId default to null.
+        Research uses the owner's active server-stored model provider.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [query, idempotencyKey]
+              properties:
+                query: { type: string, minLength: 1, maxLength: 1200 }
+                idempotencyKey: { type: string, minLength: 1, maxLength: 128 }
+                sessionId: { type: [string, 'null'], format: uuid }
+                projectId: { type: [string, 'null'], format: uuid }
+      responses:
+        '202':
+          description: Durable job accepted or replayed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResearchJobEnvelope' }
+        '400': { description: Invalid body }
+        '404': { description: Session or project is not owned by this user, or their scopes do not match }
+        '409': { description: Key payload mismatch or active job limit exceeded }
+
+  /api/research-jobs/{jobId}:
+    parameters:
+      - { in: path, name: jobId, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [research]
+      operationId: getResearchJob
+      description: Requires chat:read. The resultArtifactId points to a private Markdown artifact retrieved through the existing artifacts API. Provider errors use redacted research_* codes.
+      responses:
+        '200':
+          description: Current snapshot
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResearchJobEnvelope' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/research-jobs/{jobId}/result:
+    parameters:
+      - { in: path, name: jobId, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [research]
+      operationId: getResearchResult
+      description: |
+        Requires chat:read. A successful session-bound job commits its report
+        message, private Markdown/LaTeX artifacts and terminal event in one transaction. The
+        message uses a stable clientId of research-{jobId}. This endpoint
+        returns the current canonical message so reconnecting clients do not
+        duplicate reports or restore text the user has edited or deleted.
+        Returns null before success, for a session-less job, or after message
+        deletion. The artifact remains available independently.
+      responses:
+        '200':
+          description: Canonical saved report message or null
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message]
+                properties:
+                  message:
+                    oneOf:
+                      - { $ref: '#/components/schemas/Message' }
+                      - { type: 'null' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/research-jobs/{jobId}/events:
+    parameters:
+      - { in: path, name: jobId, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [research]
+      operationId: streamResearchEvents
+      description: |
+        Requires chat:read. Persisted events are replayed in sequence order,
+        then polled across worker processes. Frames contain id (sequence),
+        event: research_event, and JSON data matching ResearchJobEvent.
+        Last-Event-ID takes precedence over after. Disconnecting only closes
+        the subscription; research continues. Slow consumers are disconnected
+        and should reconnect with their last received ID. The stream closes
+        after all terminal events; clients should refresh the snapshot before
+        deciding whether to reconnect. No lease tokens or source bodies leak.
+      parameters:
+        - { in: header, name: Last-Event-ID, schema: { type: integer, minimum: 0 } }
+        - { in: query, name: after, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        '200':
+          description: Ordered lifecycle event stream with keepalives
+          content:
+            text/event-stream:
+              schema: { type: string }
+        '400': { description: Invalid UUID, invalid cursor or cursor ahead of the job }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/research-jobs/{jobId}/cancel:
+    parameters:
+      - { in: path, name: jobId, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [research]
+      operationId: cancelResearchJob
+      description: Requires chat:write. Revokes the lease immediately. Repeating cancellation of a terminal job returns its current snapshot. In-flight read-only provider work may finish but cannot commit.
+      responses:
+        '200':
+          description: Current snapshot
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResearchJobEnvelope' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/research-jobs/{jobId}/retry:
+    parameters:
+      - { in: path, name: jobId, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [research]
+      operationId: retryResearchJob
+      description: Requires chat:write. Requeues a failed/cancelled job, retains valid checkpoints and event sequence, and resets the recovery attempt budget. Empty-source failures repeat search. Only queued or expired-running work is claimed automatically, up to three lease attempts. Provider calls have a ten-minute execution deadline per attempt.
+      responses:
+        '202':
+          description: Requeued snapshot
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResearchJobEnvelope' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { description: Job cannot be retried or active job limit exceeded }
+
   /api/scheduled-tasks:
     get:
       tags: [scheduled]
@@ -4032,6 +4188,40 @@ components:
           schema: { $ref: '#/components/schemas/Error' }
 
   schemas:
+    ResearchJobEnvelope:
+      type: object
+      required: [job]
+      properties:
+        job: { $ref: '#/components/schemas/ResearchJob' }
+    ResearchJob:
+      type: object
+      required: [id, sessionId, projectId, query, status, plan, searched, sourceCount, eventSequence, attempts, resultArtifactId, error, createdAt, updatedAt, completedAt]
+      properties:
+        id: { type: string, format: uuid }
+        sessionId: { type: [string, 'null'], format: uuid }
+        projectId: { type: [string, 'null'], format: uuid }
+        query: { type: string }
+        status: { type: string, enum: [queued, running, succeeded, failed, cancelled] }
+        plan: { type: array, items: { type: string } }
+        searched: { type: integer }
+        sourceCount: { type: integer }
+        eventSequence: { type: integer }
+        attempts: { type: integer }
+        resultArtifactId: { type: [string, 'null'], format: uuid }
+        error: { type: [string, 'null'] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        completedAt: { type: [string, 'null'], format: date-time }
+    ResearchJobEvent:
+      type: object
+      required: [id, jobId, sequence, stage, status, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        jobId: { type: string, format: uuid }
+        sequence: { type: integer }
+        stage: { type: string, enum: [queued, planning, searching, reading, synthesizing, recovering, completed, failed, cancelled] }
+        status: { type: string, enum: [queued, running, succeeded, failed, cancelled] }
+        createdAt: { type: string, format: date-time }
     ChatTurn:
       type: object
       required: [id, clientTurnId, status, generation]
@@ -4107,6 +4297,7 @@ components:
       type: object
       properties:
         id: { type: string, format: uuid }
+        clientId: { type: [string, 'null'], description: Stable client identity used to deduplicate restored messages }
         sessionId: { type: string, format: uuid }
         role: { type: string, enum: [user, assistant, system] }
         content: { type: string }

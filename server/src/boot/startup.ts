@@ -192,6 +192,14 @@ function startSchedulerDaemon(): void {
   })();
 }
 
+function startResearchDaemon(): void {
+  void import('../services/core/researchWorker.js').then(({ startResearchWorker }) => {
+    startResearchWorker();
+  }).catch((error: unknown) => {
+    console.warn('[research] not started:', error instanceof Error ? error.name : 'unknown');
+  });
+}
+
 /** Reconnect persisted Codex threads after a process restart.
  * A failed reconnect is recorded as `disconnected`; the run and event
  * history remain available for an explicit resume and are never discarded. */
@@ -235,6 +243,7 @@ export function startBackgroundTasks(): void {
   if (envFlag('LLM_WARMUP_ENABLED')) warmLlmProvider();
   if (envFlag('LLM_KEEP_WARM_ENABLED')) startLlmKeepWarmWorker();
   startSchedulerDaemon();
+  startResearchDaemon();
   recoverAgentRuns();
   startMonitor();
 }

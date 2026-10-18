@@ -1,5 +1,9 @@
 # Mobile reference contract — 2026-10-04
 
+Current home-header and drawer behavior is updated in
+[the 2026-10-18 reference](mobile-reference-2026-10-18.md). The original capture
+below remains context for the unchanged directory and composer surfaces.
+
 The six user-provided screenshots show home, the free account drawer, session
 actions, plugins, the library and the account menu. Their 1200×2670 images
 include 306px of Android/Chrome chrome. Compare the webpage at 390×769 CSS

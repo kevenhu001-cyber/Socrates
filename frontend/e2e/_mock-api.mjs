@@ -102,6 +102,10 @@ export async function mockAuthedApp(page, options = {}) {
       await route.fulfill(jsonResponse({ csrfToken: CSRF_COOKIE_VALUE, ok: true }));
       return;
     }
+    if (apiUrl.includes('/api/research-jobs')) {
+      await route.fulfill(jsonResponse({ jobs: [] }));
+      return;
+    }
     if (apiUrl.includes('/api/sessions')) {
       if (req.method() === 'GET') {
         await route.fulfill(jsonResponse(MOCK_SESSIONS));

@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useEffect, useReducer, useSyncExternalStore } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import type { AgentRunEvent } from '../../extensions/types';
@@ -6,14 +6,15 @@ import {
   getAgentRunSnapshot,
   subscribeToAgentRuns,
 } from '../../extensions/agentRunStore';
+import { t } from '../legacy/gateway';
 
 export type WorkflowStage = 'planning' | 'searching' | 'reading' | 'synthesizing';
 
 const STAGES: ReadonlyArray<{ key: WorkflowStage; label: string }> = [
-  { key: 'planning', label: 'Plan' },
-  { key: 'searching', label: 'Search' },
-  { key: 'reading', label: 'Read' },
-  { key: 'synthesizing', label: 'Report' },
+  { key: 'planning', label: 'research.plan' },
+  { key: 'searching', label: 'research.search' },
+  { key: 'reading', label: 'research.read' },
+  { key: 'synthesizing', label: 'research.report' },
 ];
 
 function stageIndex(stage: AgentRunEvent['stage']): number {
@@ -35,29 +36,35 @@ function isPastStage(event: AgentRunEvent | null, idx: number): boolean {
 }
 
 function statusLabel(event: AgentRunEvent | null): string {
-  if (!event) return 'Idle';
-  if (event.stage === 'completed') return 'Complete';
-  if (event.stage === 'failed') return 'Failed';
-  if (event.status === 'running') return event.message || 'Running…';
-  return event.message || 'In progress';
+  if (!event) return t('research.idle');
+  if (event.message) return event.message;
+  if (event.stage === 'completed') return t('research.complete');
+  if (event.stage === 'failed') return t('research.failed');
+  if (event.stage === 'cancelled') return t('research.cancelled');
+  return t('research.running');
 }
 
 function workflowLabel(workflow: AgentRunEvent['workflow'] | undefined): string {
-  if (workflow === 'deepResearch') return 'Deep research';
-  if (workflow === 'research') return 'Find sources';
-  if (workflow === 'explore') return 'Explore';
-  return 'Workflow';
+  if (workflow === 'deepResearch') return t('research.title');
+  if (workflow === 'research') return t('research.findSources');
+  if (workflow === 'explore') return t('research.explore');
+  return t('research.workflow');
 }
 
-export function ExploreStepper() {
+export function ExploreStepper({ event: supplied }: { event?: AgentRunEvent } = {}) {
   const snapshot = useSyncExternalStore(
     subscribeToAgentRuns,
     getAgentRunSnapshot,
     getAgentRunSnapshot,
   );
 
-  const event = snapshot.lastEvent;
-  const done = !!event && (event.stage === 'completed' || event.stage === 'failed');
+  const [, refreshLanguage] = useReducer((revision: number) => revision + 1, 0);
+  useEffect(() => {
+    document.addEventListener('socrates:langchange', refreshLanguage);
+    return () => document.removeEventListener('socrates:langchange', refreshLanguage);
+  }, []);
+  const event = supplied || snapshot.lastEvent;
+  const done = !!event && (event.stage === 'completed' || event.stage === 'failed' || event.stage === 'cancelled');
   const failed = !!event && event.stage === 'failed';
 
   return (
@@ -73,11 +80,11 @@ export function ExploreStepper() {
           <span>{statusLabel(event)}</span>
         </span>
         <span className="agent-stepper-workflow">
-          {event ? event.workflow : ''}
+          {workflowLabel(event?.workflow)}
         </span>
       </div>
       {event?.current && event.total ? (
-        <div className="agent-stepper-progress" aria-label={`${event.current} of ${event.total} complete`}>
+        <div className="agent-stepper-progress" aria-label={t('research.progress').replace('{current}', String(event.current)).replace('{total}', String(event.total))}>
           <span style={{ width: `${Math.min(100, Math.round((event.current / event.total) * 100))}%` }} />
         </div>
       ) : null}
@@ -96,7 +103,7 @@ export function ExploreStepper() {
               .join(' ')}
           >
             <span className="agent-stepper-dot" aria-hidden="true" />
-            <span className="agent-stepper-label">{stage.label}</span>
+            <span className="agent-stepper-label">{t(stage.label)}</span>
           </li>
         ))}
       </ol>

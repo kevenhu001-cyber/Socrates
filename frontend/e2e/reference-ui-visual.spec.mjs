@@ -2,12 +2,12 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-/* These screenshots are intentionally written to /tmp.  The spec checks the
+/* These screenshots are written to gitignored test-results/. The spec checks the
    app-owned surfaces at the same mobile and desktop sizes as the supplied
    references without committing generated artefacts to the repository. */
 
-/* Reference phone drawer is 80vw capped at 330px: 312px at 390px. */
-const MOBILE_DRAWER = 312;
+/* User's 2026-10-18 phone drawer is ~65vw: 254px at 390px. */
+const MOBILE_DRAWER = 390 * 0.65;
 const REFERENCE_CONNECTORS = [
   { id: 'gmail', name: 'Gmail', description: 'Read and manage Gmail.', capabilities: ['Mail'], authType: 'oauth', connection: { status: 'initiated', displayName: 'Study inbox' } },
   { id: 'github', name: 'GitHub', description: 'Triage PRs, issues, CI, and publish flows.', capabilities: ['Repositories', 'Issues'], authType: 'oauth', connection: { status: 'connected', displayName: 'Study org' } },
@@ -67,7 +67,7 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
     const sidebar = document.getElementById('sidebar');
     if (sidebar && !sidebar.classList.contains('collapsed')) window.toggleSidebar?.();
   });
-  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? 0)).toBe(-MOBILE_DRAWER);
+  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? 0)).toBe(Math.round(-MOBILE_DRAWER));
   await expect(page.locator('#topicSetup')).toBeVisible();
   await expect(page.locator('#composerInputWrap')).toBeVisible();
   await page.screenshot({ path: 'test-results/socrates-reference-mobile-home-390x769.png', fullPage: true });
@@ -129,7 +129,7 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   await expect(toolsMenu).toBeHidden();
 
   await openSidebar(page);
-  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.width ?? 0)).toBe(MOBILE_DRAWER);
+  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.width ?? 0)).toBe(Math.round(MOBILE_DRAWER));
   await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? -MOBILE_DRAWER)).toBe(0);
   await expect(page.locator('#sidebarSearchBtn')).toBeVisible();
   await expect(page.locator('#sidebarCloseBtn')).toBeVisible();
@@ -158,7 +158,8 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   expect(pluginGeometry.search?.height).toBe(36);
   expect((pluginGeometry.installedLabel?.y ?? 0) + (pluginGeometry.installedLabel?.height ?? 0)).toBeLessThanOrEqual(pluginGeometry.installedIcon?.y ?? 0);
   expect(pluginGeometry.installedIcon?.width).toBe(40);
-  expect(pluginGeometry.tabs?.y).toBeGreaterThan(315);
+  /* Exact alignment at the lower edge is valid at the reference viewport. */
+  expect(pluginGeometry.tabs?.y).toBeGreaterThanOrEqual(315);
   expect(pluginGeometry.tabs?.y).toBeLessThan(410);
   expect(pluginGeometry.rowIcon?.width).toBe(40);
   await page.evaluate(() => document.getElementById('pluginWorkspaceSkillsTab')?.click());

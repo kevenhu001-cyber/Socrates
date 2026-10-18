@@ -22,6 +22,42 @@
   }
   #appShell #sidebarOpenBtn svg, #appShell #mobileNewChatBtn svg { width: 24px; height: 24px; }
   #appShell .mobile-newchat-btn { display: inline-flex; align-items: center; justify-content: center; }
+  /* The same mode control now serves desktop and phone. Model settings
+     remain available as a separate, labelled action at the trailing edge. */
+  #appShell .top-bar #mobileMode { display: none; }
+  #appShell .top-mode-switch {
+    display: inline-flex;
+    width: min(152px, calc(100vw - 112px));
+    top: calc(50% + env(safe-area-inset-top, 0px) / 2);
+  }
+  #appShell .top-mode-switch-option {
+    flex: 1;
+    min-width: 0;
+    height: var(--ui-control-sm);
+    padding-inline: 12px;
+    font-size: var(--ui-text-ui);
+  }
+  body:not([data-conversation-active="true"]) #appShell .mobile-newchat-btn { display: none; }
+  body:not([data-conversation-active="true"]) #appShell #topModelSwitcher {
+    position: absolute;
+    right: 8px;
+    top: calc(50% + env(safe-area-inset-top, 0px) / 2);
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--ui-control-md);
+    height: var(--ui-control-md);
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    border-radius: var(--ui-radius-pill);
+    background: transparent;
+    color: var(--ui-text-primary);
+  }
+  body:not([data-conversation-active="true"]) #appShell #topModelSwitcher :is(.top-model-switcher-name, .top-model-switcher-model, .top-model-switcher-caret) { display: none; }
+  body:not([data-conversation-active="true"]) #appShell .top-model-switcher-settings { display: block; width: 22px; height: 22px; }
+  #appShell #topModelSwitcher:focus-visible { outline: 2px solid var(--ui-focus-ring); outline-offset: 2px; }
   #appShell #mobileMode { position: absolute; left: 58px; top: calc(50% + env(safe-area-inset-top, 0px) / 2); transform: translateY(-50%); }
   #appShell #mobileModeTrigger {
     display: inline-flex;

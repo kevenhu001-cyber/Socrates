@@ -16,6 +16,8 @@ import type { Server } from 'node:http';
 export function installShutdown(server: Server): void {
   const shutdown = async (signal: string) => {
     console.log(`[server] Received ${signal}, shutting down…`);
+    const { stopResearchWorker } = await import('../services/core/researchWorker.js');
+    stopResearchWorker();
     server.close(async () => {
       console.log('[server] HTTP server closed — draining connections');
       stopExpiredCleanup();
