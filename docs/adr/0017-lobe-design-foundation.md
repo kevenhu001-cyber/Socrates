@@ -11,19 +11,21 @@ Lobe UI v6 provides an AIGC-oriented component system and a documented default t
 
 ## Decision
 
-Socrates Design System v2 adopts the **default Lobe UI v6 neutral token values** as the canonical foundation for:
+Socrates Design System v2 adopts the **default Lobe UI v6 neutral token values and foundation metrics** as the canonical foundation for:
 
 - layout, container, elevated, and secondary-container surfaces;
 - primary / secondary / tertiary / disabled text roles;
 - subtle / default / strong borders;
 - backdrop masks;
-- monochrome primary and standard semantic status colors.
+- monochrome primary and standard semantic status colors;
+- spacing, base radii, typography metrics, control heights, breakpoints, and motion durations/easing.
 
 Socrates keeps its existing semantic API as the compatibility boundary:
 
 - Web components continue consuming `--ui-*` variables.
 - Shared and native clients continue consuming `@socrates/theme`.
 - Lobe CSS variables are bridged onto the same Socrates roles in `frontend/src/styles/themes.css`.
+- Theme-independent Lobe metrics live under `foundation*` exports and `--ui-foundation-*` CSS variables.
 
 This is intentionally a **foundation alignment**, not a product-layout rewrite. Product-specific geometry and behavior remain Socrates-owned, including:
 
@@ -58,17 +60,37 @@ Light mode follows Lobe default neutral roles:
 - tertiary text: `#8a8a8a`
 - border: `#e3e3e3`
 
+## Foundation metrics
+
+The v2 foundation exposes the current Lobe v6 metrics without forcing every Socrates product surface to use every rung:
+
+- spacing: `4 / 8 / 12 / 16 / 20 / 24 / 32 / 48`
+- radius: `4 / 6 / 8 / 12`
+- controls: `28 / 36 / 40`, with `18` for the interactive micro-size
+- body typography: `12 / 14 / 16 / 20`
+- headings: `38 / 30 / 24 / 20 / 16`
+- strong weight: `600`
+- motion durations: `100 / 200 / 300ms`
+- breakpoints: `480 / 576 / 768 / 992 / 1200 / 1600 / 1920`
+
+Socrates product tokens may alias a matching foundation rung. They may also deliberately diverge where the product contract requires it. In particular, the existing `2px` optical spacing rung, `44px` mobile hit area, `42px` workspace search control, composer capsule radii, message-bubble radius, and product animation timings remain Socrates-owned.
+
+The font-family choice is also not changed by this ADR. Socrates continues using its shipped Inter/MiSans/Plus Jakarta Sans stack; this migration aligns typography metrics rather than introducing a new font payload.
+
 ## Migration sequence
 
-1. Cut the canonical palette over while retaining the `--ui-*` API.
-2. Keep Web and Universal App theme packages in lockstep.
-3. Introduce Lobe primitives behind Socrates adapters, starting with menu / popover / modal infrastructure.
-4. Migrate base spacing / control metrics separately so mobile touch targets and visual-reference tests can be updated deliberately rather than incidentally.
-5. Treat historical ChatGPT parity measurements as interaction references, not the canonical palette contract.
+1. Cut the canonical palette over while retaining the `--ui-*` API. **Done.**
+2. Keep Web and Universal App palette packages in lockstep. **Done.**
+3. Add Lobe-aligned foundation spacing / radius / typography / control / breakpoint / motion metrics behind Socrates tokens. **Done.**
+4. Introduce Lobe/Base UI primitives behind Socrates adapters, starting with menu / popover / modal infrastructure.
+5. Migrate visual-reference assertions from the historical ChatGPT palette without weakening geometry or interaction checks.
+6. Treat historical ChatGPT parity measurements as interaction references, not the canonical design-token contract.
 
 ## Consequences
 
 - Existing components change appearance without a wholesale component rewrite.
+- Common Socrates product tokens can inherit exact Lobe rungs while product-specific geometry stays stable.
+- Web and Universal clients now have an explicit, testable foundation contract instead of parallel hand-maintained numbers.
 - Visual-reference tests that encoded the old ChatGPT-derived neutral values must be updated as part of this migration.
-- Future Lobe primitives can share the same palette through the Lobe CSS-variable aliases instead of creating a second theme system.
+- Future Lobe/Base UI primitives can share the same palette and metrics instead of creating a second theme system.
 - The Universal App receives the same foundation through `@socrates/theme`; it does not depend on React DOM or Lobe Web components.

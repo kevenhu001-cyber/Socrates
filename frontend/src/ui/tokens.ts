@@ -49,9 +49,98 @@ export interface ThemePalette {
   readonly onAccent: string;
 }
 
-/* Spacing remains the existing Socrates product ladder for this phase. The
- * values are already a subset of Lobe's 4px rhythm; geometry migration is
- * intentionally decoupled from the palette cut-over. */
+/**
+ * Lobe UI v6 foundation metrics. Keep these values in lockstep with
+ * `packages/theme/src/tokens.ts` and `styles/tokens.css`.
+ *
+ * These are intentionally separate from Socrates product tokens below:
+ * product geometry may opt into a foundation rung, while touch targets,
+ * composer geometry and optical adjustments remain free to diverge.
+ */
+export const foundationSpacing = {
+  xxs: 4,
+  xs: 8,
+  sm: 12,
+  base: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
+} as const;
+
+export type FoundationSpacingToken = keyof typeof foundationSpacing;
+
+export const foundationRadius = {
+  xs: 4,
+  sm: 6,
+  base: 8,
+  lg: 12,
+} as const;
+
+export type FoundationRadiusToken = keyof typeof foundationRadius;
+
+export const foundationControl = {
+  sm: 28,
+  base: 36,
+  lg: 40,
+  interactive: 18,
+  outline: 2,
+  paddingHorizontal: 12,
+  paddingHorizontalSm: 8,
+} as const;
+
+export const foundationTypography = {
+  fontSize: {
+    sm: 12,
+    base: 14,
+    lg: 16,
+    xl: 20,
+    heading1: 38,
+    heading2: 30,
+    heading3: 24,
+    heading4: 20,
+    heading5: 16,
+  },
+  lineHeight: {
+    sm: 1.6666666666666667,
+    base: 1.5714285714285714,
+    lg: 1.5,
+    heading1: 1.2105263157894737,
+    heading2: 1.2666666666666666,
+    heading3: 1.3333333333333333,
+    heading4: 1.4,
+    heading5: 1.5,
+  },
+  weightStrong: 600,
+} as const;
+
+export const foundationMotion = {
+  duration: {
+    fast: 100,
+    mid: 200,
+    slow: 300,
+  },
+  easing: {
+    inOut: 'cubic-bezier(0.645, 0.045, 0.355, 1)',
+    out: 'cubic-bezier(0.215, 0.61, 0.355, 1)',
+    outBack: 'cubic-bezier(0.12, 0.4, 0.29, 1.46)',
+    outCirc: 'cubic-bezier(0.08, 0.82, 0.17, 1)',
+    outQuint: 'cubic-bezier(0.23, 1, 0.32, 1)',
+  },
+} as const;
+
+export const foundationBreakpoints = {
+  xs: 480,
+  sm: 576,
+  md: 768,
+  lg: 992,
+  xl: 1200,
+  xxl: 1600,
+  xxxl: 1920,
+} as const;
+
+/* Socrates product spacing. `xxs` is an intentional 2px optical rung; the
+ * remaining common rungs are a subset of the Lobe 4px foundation ladder. */
 export const spacing = {
   xxs: 2,
   xs: 4,
@@ -64,8 +153,7 @@ export const spacing = {
 
 export type SpacingToken = keyof typeof spacing;
 
-/* Base radii are already aligned with Lobe (4 / 6 / 8 / 12). Larger values
- * are Socrates product tokens for cards, composer and pill geometry. */
+/* Base radii align with Lobe; larger values are Socrates product geometry. */
 export const radius = {
   none: 0,
   xs: 4,

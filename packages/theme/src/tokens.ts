@@ -1,9 +1,9 @@
 /**
  * @socrates/theme — cross-client design tokens.
  *
- * Socrates Design System v2 uses the Lobe UI v6 default neutral palette as
- * its foundation while preserving Socrates-owned product geometry. This file
- * mirrors `frontend/src/ui/tokens.ts` for the Universal App and packages.
+ * Socrates Design System v2 uses the Lobe UI v6 default neutral palette and
+ * foundation metrics while preserving Socrates-owned product geometry. This
+ * file mirrors `frontend/src/ui/tokens.ts` for the Universal App and packages.
  */
 
 export type ThemeMode = 'light' | 'dark';
@@ -49,7 +49,90 @@ export interface ThemePalette {
   readonly onAccent: string;
 }
 
-/** Existing Socrates product spacing; already follows a 4px rhythm. */
+/** Lobe UI v6 foundation metrics shared by Web and native clients. */
+export const foundationSpacing = {
+  xxs: 4,
+  xs: 8,
+  sm: 12,
+  base: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
+} as const;
+
+export type FoundationSpacingToken = keyof typeof foundationSpacing;
+
+export const foundationRadius = {
+  xs: 4,
+  sm: 6,
+  base: 8,
+  lg: 12,
+} as const;
+
+export type FoundationRadiusToken = keyof typeof foundationRadius;
+
+export const foundationControl = {
+  sm: 28,
+  base: 36,
+  lg: 40,
+  interactive: 18,
+  outline: 2,
+  paddingHorizontal: 12,
+  paddingHorizontalSm: 8,
+} as const;
+
+export const foundationTypography = {
+  fontSize: {
+    sm: 12,
+    base: 14,
+    lg: 16,
+    xl: 20,
+    heading1: 38,
+    heading2: 30,
+    heading3: 24,
+    heading4: 20,
+    heading5: 16,
+  },
+  lineHeight: {
+    sm: 1.6666666666666667,
+    base: 1.5714285714285714,
+    lg: 1.5,
+    heading1: 1.2105263157894737,
+    heading2: 1.2666666666666666,
+    heading3: 1.3333333333333333,
+    heading4: 1.4,
+    heading5: 1.5,
+  },
+  weightStrong: 600,
+} as const;
+
+export const foundationMotion = {
+  duration: {
+    fast: 100,
+    mid: 200,
+    slow: 300,
+  },
+  easing: {
+    inOut: 'cubic-bezier(0.645, 0.045, 0.355, 1)',
+    out: 'cubic-bezier(0.215, 0.61, 0.355, 1)',
+    outBack: 'cubic-bezier(0.12, 0.4, 0.29, 1.46)',
+    outCirc: 'cubic-bezier(0.08, 0.82, 0.17, 1)',
+    outQuint: 'cubic-bezier(0.23, 1, 0.32, 1)',
+  },
+} as const;
+
+export const foundationBreakpoints = {
+  xs: 480,
+  sm: 576,
+  md: 768,
+  lg: 992,
+  xl: 1200,
+  xxl: 1600,
+  xxxl: 1920,
+} as const;
+
+/** Existing Socrates product spacing; retained for compatibility. */
 export const spacing = {
   xxs: 2,
   xs: 4,
@@ -62,7 +145,7 @@ export const spacing = {
 
 export type SpacingToken = keyof typeof spacing;
 
-/** Base 4 / 6 / 8 / 12 rungs align with Lobe; larger values are product tokens. */
+/** Legacy shared product radii; use `foundationRadius` for foundation work. */
 export const radius = {
   none: 0,
   sm: 4,
