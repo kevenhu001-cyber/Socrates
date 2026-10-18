@@ -4,34 +4,49 @@ import test from 'node:test';
 import {
   flushDeferredMessageRows,
   registerDeferredMessageRowsFlusher,
+  restoreDeferredMessageRows,
 } from '../src/react/message-list/deferredRows.ts';
 
-test('flushing is a no-op before the message list registers', () => {
+test('flush and restore are no-ops before the message list registers', () => {
   assert.doesNotThrow(() => flushDeferredMessageRows());
+  assert.doesNotThrow(() => restoreDeferredMessageRows());
 });
 
-test('flushing invokes the active message-list registration until cleanup', () => {
-  let calls = 0;
-  const unregister = registerDeferredMessageRowsFlusher(() => { calls += 1; });
+test('the active message-list registration owns both full mount and bounded restore', () => {
+  const calls = [];
+  const unregister = registerDeferredMessageRowsFlusher(
+    () => calls.push('flush'),
+    () => calls.push('restore'),
+  );
 
   flushDeferredMessageRows();
-  assert.equal(calls, 1);
+  restoreDeferredMessageRows();
+  assert.deepEqual(calls, ['flush', 'restore']);
 
   unregister();
   flushDeferredMessageRows();
-  assert.equal(calls, 1);
+  restoreDeferredMessageRows();
+  assert.deepEqual(calls, ['flush', 'restore']);
 });
 
 test('stale cleanup cannot clear a newer message-list registration', () => {
   const calls = [];
-  const unregisterOld = registerDeferredMessageRowsFlusher(() => calls.push('old'));
-  const unregisterNew = registerDeferredMessageRowsFlusher(() => calls.push('new'));
+  const unregisterOld = registerDeferredMessageRowsFlusher(
+    () => calls.push('old-flush'),
+    () => calls.push('old-restore'),
+  );
+  const unregisterNew = registerDeferredMessageRowsFlusher(
+    () => calls.push('new-flush'),
+    () => calls.push('new-restore'),
+  );
 
   unregisterOld();
   flushDeferredMessageRows();
-  assert.deepEqual(calls, ['new']);
+  restoreDeferredMessageRows();
+  assert.deepEqual(calls, ['new-flush', 'new-restore']);
 
   unregisterNew();
   flushDeferredMessageRows();
-  assert.deepEqual(calls, ['new']);
+  restoreDeferredMessageRows();
+  assert.deepEqual(calls, ['new-flush', 'new-restore']);
 });
