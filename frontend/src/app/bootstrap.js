@@ -1,5 +1,4 @@
 import { installModalA11y } from '../ui/modalA11y.js';
-import { ensureFuse, ensureHighlight, ensureKatex } from '../vendor/lazy.js';
 import { bootstrapReactCompatibilityRuntime } from '../react/bootstrap.tsx';
 import { mountAuthListeners } from '../auth/index.ts';
 import { mountLegacyShellListeners } from '../ui/legacyShellListeners.js';
@@ -37,11 +36,6 @@ export function bootstrapApp(options) {
     console.error('[react-migration] compatibility runtime failed to initialize', error);
   }
 
-  /* streamingTurn stays out of the entry chunk (saves parse+eval on the
-     critical path). Warm it from the post-load idle queue below instead of
-     spending a connection on a hidden auth page; authenticated sessions
-     still get the same warm-on-idle behavior before the first send. */
-
   mountLegacyShellListeners({
     toggleSidebar: options.toggleSidebar,
     startNewChat: options.startNewChat,
@@ -62,41 +56,6 @@ export function bootstrapApp(options) {
   /* usage.js listeners mount lazily inside windowExports' usage loader —
      the overlay only exists once the module loads. */
 
-  window.__socratesEnsureFuse = ensureFuse;
-  /* P_perf-defer-idle-vendors — the KaTeX/highlight/Fuse/exam prefetches
-     below are pure best-effort (every consumer lazy-loads on demand), but
-     requestIdleCallback fires while authBoot is still awaiting the
-     network — i.e. right in the middle of the boot waterfall. On a slow
-     link those ~500 KB then fight fonts, API responses and the entry
-     tail for the six-per-origin connections, delaying first paint. Gate
-     them on window `load` (all render-blocking work done) plus idle, so
-     the boot waterfall carries only what first paint needs. */
-  const loadIdleVendors = () => {
-    try { ensureHighlight().catch(() => { /* idle preload is best effort */ }); } catch (_) {}
-    try { ensureFuse().catch(() => { /* idle preload is best effort */ }); } catch (_) {}
-    try { ensureKatex().catch(() => { /* idle preload is best effort */ }); } catch (_) {}
-    /* Warm the exam chunk (11KB gz) at idle so the sidebar entry opens
-       instantly; the module stays lazy for users who never visit it —
-       this only moves the fetch off the click path. */
-    try { if (typeof window.__loadExamModule === 'function') window.__loadExamModule(); } catch (_) {}
-    /* Same for streamingTurn (12KB gz): once warm, addStreamingMessage
-       serves synchronously again (placeholder lands in the same task). */
-    try { if (typeof window.__loadStreamingTurn === 'function') window.__loadStreamingTurn(); } catch (_) { /* prefetch is best effort */ }
-  };
-  const scheduleIdleVendors = () => {
-    if (typeof requestIdleCallback === 'function') {
-      try { requestIdleCallback(loadIdleVendors, { timeout: 15000 }); }
-      catch (_) { setTimeout(loadIdleVendors, 15000); }
-    } else {
-      setTimeout(loadIdleVendors, 15000);
-    }
-  };
-  try {
-    /* `load` may already have fired when a cached entry evaluates fast
-       (document.readyState === 'complete'); polling readyState avoids a
-       prefetch that never runs on repeat visits. */
-    if (typeof document !== 'undefined' && document.readyState === 'complete') scheduleIdleVendors();
-    else if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') window.addEventListener('load', scheduleIdleVendors, { once: true });
-    else scheduleIdleVendors();
-  } catch (_) { scheduleIdleVendors(); }
+  // Optional vendors and feature executors load from their consumers.
+  // An idle callback is not evidence that this visit needs those features.
 }

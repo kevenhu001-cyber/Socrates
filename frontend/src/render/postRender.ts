@@ -1,5 +1,6 @@
 import { esc } from './helpers.ts';
 import { openVizModalRaw } from './vizStubs.js';
+import { highlightCodeElement } from './highlight.ts';
 
 /** Add language labels and fullscreen controls to rendered code blocks. */
 export function wireCodeBlockHeaders(body: Element | null): void {
@@ -9,10 +10,11 @@ export function wireCodeBlockHeaders(body: Element | null): void {
     ? body.querySelectorAll('pre')
     : body.querySelectorAll('.msg-body pre,.think-content pre,.tool-run-prose pre');
   for (const pre of pres) {
-    if (pre.previousElementSibling?.matches('.code-block-header')) continue;
     if (pre.closest?.('.exec-artifact,.agent-tool-card,.viz')) continue;
-    const code = pre.querySelector('code');
+    const code = pre.querySelector<HTMLElement>('code');
     if (!code) continue;
+    highlightCodeElement(code);
+    if (pre.previousElementSibling?.matches('.code-block-header')) continue;
 
     const match = (code.className || '').match(/language-(\w+)/);
     let lang = match?.[1] || '';

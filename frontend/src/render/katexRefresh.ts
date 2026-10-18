@@ -1,5 +1,5 @@
 /* render/katexRefresh.ts — extracted from main.js.
- * KaTeX-lazy re-render + hljs language-safe patch.
+ * KaTeX-lazy re-render.
  * Zero-behavior-change lift.
  */
 import { onKatexReady } from '../vendor/lazy.js';
@@ -7,7 +7,6 @@ import { stateStore } from '../state/store.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { processPendingMermaid, processPendingViz, processPendingVizActions, reclaimVizCards } from './vizStubs.js';
 import { wireCodeBlockHeaders } from './postRender.ts';
-import { safeHljsLang } from './helpers.ts';
 
 /** The subset of a session message this repaint touches. */
 interface RepaintableMessage {
@@ -21,10 +20,6 @@ interface RepaintableMessage {
 /** Legacy globals this module reads through the window bridge. */
 interface KatexLegacyWindow extends Window {
   renderAssistantHTML?: (rawText: string) => string;
-  hljs?: {
-    highlightElement?: ((el: Element) => unknown) & { __socratesSafePatched?: boolean };
-    getLanguage?: (name: string) => unknown;
-  };
   /** Legacy hook main.js calls after a vendor retry. */
   __socratesRerenderMath?: () => void;
 }
@@ -118,27 +113,3 @@ if (typeof window !== 'undefined') {
   (window as KatexLegacyWindow).__socratesRerenderMath = rerenderMathAfterKatex;
 }
 try { onKatexReady(rerenderMathAfterKatex); } catch { /* empty-catch: intentional — vendor loader is optional */ }
-
-/* P_hljs-unknown-lang — monkey-patch hljs.highlightElement. */
-export function patchHljsHighlightElement(): void {
-  if (typeof window === 'undefined') return;
-  const hl = (window as KatexLegacyWindow).hljs;
-  if (!hl || typeof hl.highlightElement !== 'function' || hl.highlightElement.__socratesSafePatched) return;
-  const orig = hl.highlightElement.bind(hl);
-  hl.highlightElement = function patchedHighlightElement(el: Element): unknown {
-    try {
-      if (el && el.classList && typeof hl.getLanguage === 'function') {
-        const classes = Array.prototype.slice.call(el.classList || []) as string[];
-        for (let i = 0; i < classes.length; i++) {
-          const c = classes[i];
-          if (c.indexOf('language-') !== 0) continue;
-          if (!safeHljsLang(c.slice('language-'.length))) el.classList.remove(c);
-        }
-      }
-    } catch { /* swallow — fall through to the original call */ }
-    return orig(el);
-  } as typeof hl.highlightElement & { __socratesSafePatched?: boolean };
-  hl.highlightElement.__socratesSafePatched = true;
-}
-
-try { patchHljsHighlightElement(); } catch { /* empty-catch: intentional — hljs is loaded lazily */ }

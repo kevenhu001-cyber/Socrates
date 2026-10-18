@@ -48,7 +48,7 @@ test('workflow layer mounts empty and shows stepper on research planning', async
   await expect(page.locator('#workflowLayerReactRoot .workflow-layer')).toHaveCount(1);
   await expect(page.locator('#chatView #workflowLayerReactRoot')).toHaveCount(1);
   await expect(page.locator('.agent-stepper')).toBeVisible();
-  await expect(page.locator('.agent-stepper-workflow')).toHaveText('research');
+  await expect(page.locator('.agent-stepper-workflow')).toHaveText('Find sources');
   await expect(page.locator('.agent-stepper-stages .agent-stepper-stage')).toHaveCount(4);
   await expect(page.locator('.agent-stepper-stage-active')).toHaveText(/Plan/);
 });

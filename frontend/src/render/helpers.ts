@@ -90,10 +90,8 @@ export function stripCitationMarkers(s: string): string {
    hljs falls back to no-highlight silently. Used by:
      • render/markdown.js — when parsing ``` fences in the markdown
        renderer, drops unknown tags before they reach the DOM.
-     • main.js — a monkey-patch around hljs.highlightElement that
-       strips `language-*` classes from already-rendered DOM, so the
-       same safety net covers raw HTML the model emits without going
-       through the markdown renderer. */
+     • render/highlight.ts validates DOM language tags when the lazy
+       highlighter arrives, including tags parsed before it was ready. */
 export function safeHljsLang(lang: string): string {
   const l = (lang || '').toLowerCase().trim();
   if (!l) return '';

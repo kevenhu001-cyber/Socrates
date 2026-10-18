@@ -14,6 +14,7 @@
  */
 
 import { formatToolOutput } from '../render/toolOutput.ts';
+import { highlightCodeElement } from '../render/highlight.ts';
 import { copyText, setCopyFeedback, trTool } from './toolCardHelpers.js';
 import { startToolCardTimer } from './toolCardTimer.js';
 import { STROKE_ICONS, toolIcon } from './icons/toolIcons.ts';
@@ -437,12 +438,7 @@ export function updateToolCardCode(tcId, argsJson, language) {
   // highlight to keep typing smooth.
   if (extracted.parsed) {
     codeEl.classList.remove("agent-tool-code-streaming");
-    try {
-      if (typeof hljs !== "undefined") {
-        hljs.highlightElement(codeInner);
-        codeInner.dataset.hljsDone = "1";
-      }
-    } catch (_) {}
+    highlightCodeElement(codeInner);
   }
   if (typeof window.scrollMainToBottom === "function") window.scrollMainToBottom();
   return extracted;

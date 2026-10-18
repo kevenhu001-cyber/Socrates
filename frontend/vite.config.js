@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { gzipSync, brotliCompressSync, constants as zlibConstants } from 'node:zlib';
 import { join, resolve } from 'node:path';
+import { createEntryGraphPlugin } from './scripts/entry-graph.mjs';
 
 function getBuildId() {
   const configured = process.env.SOCRATES_BUILD_ID || process.env.GITHUB_SHA;
@@ -499,6 +500,7 @@ export default defineConfig({
     // createObfuscatorPlugin(),
     createPrecompressedAssetsPlugin(),
     createCssPreloadPlugin(),
+    createEntryGraphPlugin(),
   ],
   server: {
     port: 5173,

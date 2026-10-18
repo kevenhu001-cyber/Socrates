@@ -3,7 +3,7 @@ import { useRef } from 'react';
 import { LiveTextSegment } from '../tool-run/LiveTextSegment';
 import type { ProseRenderer } from '../tool-run/proseRenderer';
 import type { ToolCallRecord } from '../tool-run/toolRunModel';
-import { IntelligenceUiBlock } from './IntelligenceUi';
+import { LazyIntelligenceUiBlock } from './LazyIntelligenceUiBlock';
 import { splitIntelligenceUiText } from '@socrates/core';
 
 interface IntelligentTextSegmentProps {
@@ -62,7 +62,7 @@ export function IntelligentTextSegment({
         const key = `${segment.kind}-${segment.start}`;
         if (segment.kind === 'ui') {
           return (
-            <IntelligenceUiBlock
+            <LazyIntelligenceUiBlock
               key={key}
               source={segment.source}
               tools={tools}

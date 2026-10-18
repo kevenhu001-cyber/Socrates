@@ -13,7 +13,7 @@
  * `[data-visualization-id]` dedup hold across the two paths.
  */
 import { validateIntelligentUi } from '@socrates/core';
-import { IntelligenceUiBlock } from '../intelligence-ui/IntelligenceUi';
+import { LazyIntelligenceUiBlock } from '../intelligence-ui/LazyIntelligenceUiBlock';
 import { useEffect, useRef, useState } from 'react';
 
 import { ToolOutputRenderer } from '../tool-output/ToolOutputRenderer';
@@ -91,7 +91,7 @@ export function ToolRunAttachments({ call, tools = [call], readOnly }: ToolRunAt
       const source = document.nodes.map((node) => JSON.stringify(node)).join('\n');
       if (source) {
         return <div className="tool-inline-attachments" data-tool-anchor={call.id}>
-          <IntelligenceUiBlock
+          <LazyIntelligenceUiBlock
             source={source}
             showActivityCue={false}
             tools={tools}

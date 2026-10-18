@@ -17,7 +17,7 @@ import { closeStorageModal } from './storage.js';
 import { closePromptTemplatesModal } from './promptTemplates.js';
 /* Settings is a lazy React surface; the stable close command stays on window. */
 import { closeProfile, openProfile, toggleProfileWebSearch } from './profile.js';
-import { isFindOpen } from '../react/find-in-session/FindInSession.tsx';
+import { isFindOpen } from '../react/find-in-session/findInSession.actions.ts';
 import { getComposerMarkdown, setComposerMarkdown, focusComposer } from '../composer/controller.ts';
 import { findLastUserMessage } from '../render/markdown.ts';
 

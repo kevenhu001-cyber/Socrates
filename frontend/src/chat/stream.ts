@@ -14,7 +14,6 @@ import {
   waitForAIRetry,
   type AIRequestOptions,
 } from './retryPolicy.ts';
-import { runStreamAttempt } from './streamAttempt.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 /** Bridges installed by main.js before any stream can run; a required shape
@@ -147,6 +146,14 @@ export async function callAPIStream(
       current: opts && typeof opts.turnId === 'string' ? opts.turnId : null,
     };
     let lastError: Error | null = null;
+
+    // Shell consumers need the stream API, not the HTTP reader and SSE
+    // processor. Bind cancellation BEFORE loading that execution graph so
+    // Stop/session changes during a cold import cannot send a stale request.
+    activeAbortHandle = (reason) => turnController.abort(reason || 'user-stop');
+    win._activeChatAbort = activeAbortHandle;
+    const { runStreamAttempt } = await import('./streamAttempt.js');
+    if (turnController.signal.aborted) return { text: '', cancelled: true };
 
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       /* streamAttempt.js is still untyped; the outcome union is declared here

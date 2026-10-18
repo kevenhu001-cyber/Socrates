@@ -237,7 +237,7 @@ function _formatMsgProgressive(t: string, opts?: StreamingPreprocessOptions): st
     return save('<span style="color:hsl(var(--text-400));font-style:italic;font-size:0.9em">…</span>');
   });
 
-  const katex = getKatex();
+  const katex = getKatex(s);
   const inlineCodeGuard = _stashInlineCode(s);
   s = inlineCodeGuard.text;
 
@@ -332,7 +332,7 @@ export function formatMsg(t: string | null | undefined): string {
 
 function _formatMsg(t: string): string {
   const marked = getMarked();
-  const katex = getKatex();
+  const katex = getKatex(t);
   /* Markdown and math are independent capabilities. If KaTeX is missing
      because its optional CDN script failed, we must still run marked so
      structural Markdown such as `---` remains a horizontal rule instead of

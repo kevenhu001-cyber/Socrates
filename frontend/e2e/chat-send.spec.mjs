@@ -561,7 +561,7 @@ test('the live turn keeps exactly one row while deltas arrive', async ({ page })
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  const clientId = await page.evaluate(async () => {
+  await page.evaluate(() => {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Streaming ownership' });
     window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '33333333-3333-4333-8333-333333333333' });
@@ -573,14 +573,21 @@ test('the live turn keeps exactly one row while deltas arrive', async ({ page })
        test a co-ownership state the app no longer enters — addStreamingMessage
        skips its own appendChild as soon as React owns #msgList. */
     window.__streamPromise = window.askChatTurn('Keep the next streamed answer visible.');
-    const streaming = window.stateStore.read("messages").filter((m) => m.type === 'streaming').pop();
-    return streaming ? streaming.clientId : '';
   });
+  // First use can still be downloading streamingTurn. Observe the real
+  // placeholder instead of relying on an idle prefetch to make it synchronous.
+  await expect.poll(() => page.evaluate(() =>
+    window.stateStore.read('messages').some((message) => message.type === 'streaming'),
+  )).toBe(true);
+  const clientId = await page.evaluate(() =>
+    window.stateStore.read('messages').filter((message) => message.type === 'streaming').pop()?.clientId,
+  );
   expect(clientId, 'a streaming entry is in state.messages').toBeTruthy();
 
   const rows = page.locator(`.msg[data-client-id="${clientId}"]`);
   await expect(rows).toHaveCount(1);
   await expect(rows.first()).toBeVisible();
+  await page.waitForFunction(() => typeof window.__pushDelta === 'function');
 
   /* A streamed delta keeps its last few characters in hand (chat/stream.js
      holds them back in case a `<think` tag straddles the chunk boundary), so

@@ -22,7 +22,6 @@ import { hydrateRecentsFilterChips, hydrateSidebarNav } from '../../sidebar';
 import { mountSidebarChrome } from '../../sidebar-chrome';
 import { mountSessionList } from '../../session-list';
 import { mountMessageList } from '../../message-list';
-import { WorkflowLayer } from '../../extensions/WorkflowLayer';
 import { getLegacyActions, i18n } from '../../legacy/gateway.ts';
 import { handleComposerEscape, submitComposer } from '../../composer-input/lifecycle';
 import { hydrateAttachmentChipsRows } from '../../attachments/AttachmentChipsRow';
@@ -154,7 +153,11 @@ export function mountRegistryList(): MountSpec[] {
     } },
     { hostId: 'workflowLayerReactRoot', label: 'workflow-layer',
       ensureHost: ensureWorkflowHost,
-      mount: (host) => { createRoot(host).render(<ErrorBoundary><WorkflowLayer /></ErrorBoundary>); } },
+      mount: (host) => {
+        void import('../../extensions/WorkflowLayer').then(({ WorkflowLayer }) => {
+          createRoot(host).render(<ErrorBoundary><WorkflowLayer /></ErrorBoundary>);
+        });
+      } },
 
   ];
 }

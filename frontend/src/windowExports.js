@@ -136,7 +136,7 @@ window.onCmdKKey = onCmdKKey;
 window.openCmdK = openCmdK;
 
 /* ─── ui/findInSession.js — P0.2 in-session find (Ctrl-F) ─── */
-import { openFindInSession, closeFindInSession, findNext, findPrev } from './react/find-in-session/FindInSession.tsx';
+import { openFindInSession, closeFindInSession, findNext, findPrev } from './react/find-in-session/findInSession.actions.ts';
 window.openFindInSession = openFindInSession;
 window.closeFindInSession = closeFindInSession;
 window.findNext = findNext;

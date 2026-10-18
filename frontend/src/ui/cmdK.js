@@ -1,6 +1,7 @@
 import { stateStore } from '../state/store.js';
 import { showToast } from './toast.js';
 import { loadSession } from '../session/loader.ts';
+import { ensureFuse } from '../vendor/lazy.js';
 
 /* ui/cmdK.js — Wave 1b of main-js-split plan.
  * Cmd-K global search palette: indexer (fuse.js), open/close, render,
@@ -75,11 +76,20 @@ function _publishCmdKState() {
 function rebuildCmdKIndex() {
   if (typeof Fuse === "undefined") {
     try {
-      if (typeof window.__socratesEnsureFuse === "function") {
-        window.__socratesEnsureFuse().then(function () {
-          if (typeof Fuse !== "undefined") rebuildCmdKIndex();
-        }).catch(function () { /* keep server search as fallback */ });
-      }
+      ensureFuse().then(function () {
+        if (!window.CURRENT_USER || typeof Fuse === "undefined") return;
+        rebuildCmdKIndex();
+        var overlay = document.getElementById("cmdKOverlay");
+        var input = document.getElementById("cmdKInput");
+        if (overlay && !overlay.classList.contains("hidden") && input && input.value.trim()) {
+          var hits = _cmdKIndex.search(input.value.trim(), { limit: 20 });
+          _cmdKResults = hits.concat(_cmdKResults.filter(function (hit) {
+            return hit.kind === 'remote' && !hits.some(function (local) { return local.item.id === hit.id; });
+          }));
+          _cmdKSelected = 0;
+          _publishCmdKState();
+        }
+      }).catch(function () { /* keep server search as fallback */ });
     } catch (_) { /* ignore */ }
     return;
   }

@@ -1,6 +1,6 @@
 /* KaTeX heuristics and tolerant render helpers shared by Markdown passes. */
 import { KATEX_MACROS, _looksLikeLatex } from './helpers.ts';
-import { ensureKatex, onKatexReady } from '../vendor/lazy.js';
+import { ensureKatex } from '../vendor/lazy.js';
 
 interface KatexLike {
   renderToString: (
@@ -14,27 +14,17 @@ interface KatexLike {
   ) => string;
 }
 
-let _katexRerenderArmed = false;
+/** Code samples are literal; only prose math delimiters can demand KaTeX. */
+export function hasMathDelimiters(text: string): boolean {
+  const prose = text.replace(/```[\s\S]*?(?:```|$)|`[^`\n]*`/g, '').replace(/\\\$/g, '');
+  return /\$|\\[([]/.test(prose);
+}
 
-export function getKatex(): KatexLike | undefined {
+export function getKatex(text?: string): KatexLike | undefined {
   const katex = (globalThis as { katex?: KatexLike }).katex;
-  if (!katex) {
-    /* P_perf-lazy-katex — KaTeX ships after first paint; when a renderer
-       hits math before it arrives, arm a one-shot re-render so the same
-       message repaints with real formulas once the module loads. */
-    try { ensureKatex(); } catch (_) { /* ignore */ }
-    if (!_katexRerenderArmed) {
-      _katexRerenderArmed = true;
-      try {
-        onKatexReady(() => {
-          if (typeof window === 'undefined') return;
-          const rerender = (window as unknown as { __socratesRerenderMath?: () => void }).__socratesRerenderMath;
-          if (typeof rerender === 'function') {
-            try { rerender(); } catch (_) { /* ignore */ }
-          }
-        });
-      } catch (_) { /* ignore */ }
-    }
+  if (!katex && (text === undefined || hasMathDelimiters(text))) {
+    // katexRefresh owns the single ready subscription and repaint revision.
+    void ensureKatex().catch(() => { /* text stays readable; a later render can retry */ });
   }
   return katex;
 }
