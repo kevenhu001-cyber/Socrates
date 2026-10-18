@@ -106,7 +106,52 @@ export function pinToBottom(list: HTMLElement): void {
   }, STICKY_MS);
 }
 
+function firstVisibleMessageRow(host: HTMLElement): HTMLElement | null {
+  const hostRect = host.getBoundingClientRect();
+  for (const child of Array.from(host.children)) {
+    if (!(child instanceof HTMLElement) || !child.classList.contains('msg')) continue;
+    if (!child.dataset.clientId) continue;
+    const rect = child.getBoundingClientRect();
+    if (rect.bottom >= hostRect.top + 1) return child;
+  }
+  return null;
+}
+
+export function captureScrollAnchor(host: HTMLElement): ScrollAnchor {
+  const pinned = isSticky(host) || host.scrollHeight - host.scrollTop - host.clientHeight <= 2;
+  const anchor: ScrollAnchor = {
+    height: host.scrollHeight,
+    top: host.scrollTop,
+    pinned,
+  };
+  if (pinned) return anchor;
+
+  const row = firstVisibleMessageRow(host);
+  if (!row?.dataset.clientId) return anchor;
+  anchor.clientId = row.dataset.clientId;
+  anchor.visualTop = row.getBoundingClientRect().top - host.getBoundingClientRect().top;
+  return anchor;
+}
+
+function rowByClientId(host: HTMLElement, clientId: string): HTMLElement | null {
+  for (const child of Array.from(host.children)) {
+    if (child instanceof HTMLElement && child.dataset.clientId === clientId) return child;
+  }
+  return null;
+}
+
 export function correctScrollAnchor(anchor: ScrollAnchor, host: HTMLElement): void {
-  if (anchor.pinned) stickTo(host);
-  else writeScrollTop(host, anchor.top + (host.scrollHeight - anchor.height), 'history');
+  if (anchor.pinned) {
+    stickTo(host);
+    return;
+  }
+  if (anchor.clientId && typeof anchor.visualTop === 'number') {
+    const row = rowByClientId(host, anchor.clientId);
+    if (row) {
+      const visualTop = row.getBoundingClientRect().top - host.getBoundingClientRect().top;
+      writeScrollTop(host, host.scrollTop + (visualTop - anchor.visualTop), 'history');
+      return;
+    }
+  }
+  writeScrollTop(host, anchor.top + (host.scrollHeight - anchor.height), 'history');
 }

@@ -2,23 +2,53 @@ import { flushSync } from 'react-dom';
 import { useEffect, useLayoutEffect, useReducer, useRef } from 'react';
 
 import { registerDeferredMessageRowsFlusher } from './deferredRows';
-import { correctScrollAnchor, isSticky, pinToBottom, releaseSticky, scrollHost } from './messageScroll';
-import { CHUNK_ROWS, indexOfId, NEAR_TOP_PX, resolveMountedRows, type MountTrack, type ScrollAnchor } from './progressiveMount';
-import { entryId } from './messageIdentity';
+import {
+  captureScrollAnchor,
+  correctScrollAnchor,
+  pinToBottom,
+  releaseSticky,
+  scrollHost,
+} from './messageScroll';
+import {
+  fullMountWindow,
+  hasLiveTail,
+  indexOfId,
+  MAX_MOUNTED_ROWS,
+  NEAR_BOTTOM_PX,
+  NEAR_TOP_PX,
+  resolveMountedRows,
+  shiftMountWindow,
+  windowAroundIndex,
+  type MountTrack,
+  type MountWindowState,
+  type ScrollAnchor,
+} from './progressiveMount';
 import type { LegacyChatMessage } from '../types/domain';
+
+function sameWindow(track: MountTrack, next: MountWindowState): boolean {
+  return track.floor === next.floor
+    && track.ceiling === next.ceiling
+    && track.full === next.full;
+}
 
 export function useProgressiveMessageMount(items: ReadonlyArray<LegacyChatMessage>): {
   mounted: ReadonlyArray<LegacyChatMessage>;
   start: number;
 } {
-  const trackRef = useRef<MountTrack>({ items: Object.freeze([]), floor: null });
+  const trackRef = useRef<MountTrack>({
+    items: Object.freeze([]),
+    floor: null,
+    ceiling: null,
+    full: false,
+  });
   const anchorRef = useRef<ScrollAnchor | null>(null);
   const [, rerender] = useReducer((count: number) => count + 1, 0);
   const mountWindow = resolveMountedRows(items, trackRef.current);
-  const { floor, mounted, replaced, start } = mountWindow;
+  const { ceiling, end, floor, full, mounted, replaced, start } = mountWindow;
+  const liveTail = hasLiveTail(items);
 
   useLayoutEffect(() => {
-    trackRef.current = { items, floor };
+    trackRef.current = { items, floor, ceiling, full };
     const anchor = anchorRef.current;
     anchorRef.current = null;
     const host = anchor ? scrollHost() : null;
@@ -33,56 +63,98 @@ export function useProgressiveMessageMount(items: ReadonlyArray<LegacyChatMessag
     }
   });
 
+  useEffect(() => registerDeferredMessageRowsFlusher(
+    () => {
+      const track = trackRef.current;
+      if (track.full) return;
+      flushSync(() => {
+        const host = scrollHost();
+        anchorRef.current = host ? captureScrollAnchor(host) : null;
+        const next = fullMountWindow();
+        trackRef.current = { ...track, ...next };
+        rerender();
+      });
+    },
+    () => {
+      const track = trackRef.current;
+      if (!track.full) return;
+      flushSync(() => {
+        const host = scrollHost();
+        const anchor = host ? captureScrollAnchor(host) : null;
+        anchorRef.current = anchor;
+        const anchorIndex = anchor?.clientId
+          ? indexOfId(track.items, anchor.clientId)
+          : track.items.length - 1;
+        const next = windowAroundIndex(track.items, anchorIndex >= 0 ? anchorIndex : track.items.length - 1);
+        trackRef.current = { ...track, ...next };
+        rerender();
+      });
+    },
+  ), []);
+
   useEffect(() => {
-    if (floor === null) return undefined;
+    if (full) return undefined;
+    const host = scrollHost();
+    if (!host) return undefined;
+
     let cancelled = false;
     let idleHandle: number | null = null;
-    const expand = (all: boolean) => {
-      if (cancelled) return;
-      const track = trackRef.current;
-      if (track.floor === null) return;
-      const index = indexOfId(track.items, track.floor);
-      const next = all || index <= CHUNK_ROWS ? 0 : index - CHUNK_ROWS;
-      const host = scrollHost();
-      if (host) {
-        anchorRef.current = {
-          height: host.scrollHeight,
-          top: host.scrollTop,
-          pinned: isSticky(host) || host.scrollHeight - host.scrollTop - host.clientHeight <= 2,
-        };
-      }
-      track.floor = next > 0 ? entryId(track.items[next], `idx-${next}`) : null;
-      cancelled = true;
-      rerender();
-    };
     const browser = window as Window & {
       requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
       cancelIdleCallback?: (handle: number) => void;
     };
-    if (typeof browser.requestIdleCallback === 'function') {
-      idleHandle = browser.requestIdleCallback(() => expand(false), { timeout: 200 });
-    } else {
-      idleHandle = window.setTimeout(() => expand(false), 32);
-    }
-    const host = scrollHost();
-    const onScroll = () => {
-      if (host && host.scrollTop < NEAR_TOP_PX) expand(false);
+
+    const shift = (direction: 'older' | 'newer') => {
+      if (cancelled) return;
+      const track = trackRef.current;
+      const next = shiftMountWindow(track.items, track, direction);
+      if (sameWindow(track, next)) return;
+      anchorRef.current = captureScrollAnchor(host);
+      trackRef.current = { ...track, ...next };
+      cancelled = true;
+      rerender();
     };
-    if (host) host.addEventListener('scroll', onScroll, { passive: true });
-    const unregisterFlusher = registerDeferredMessageRowsFlusher(
-      () => { flushSync(() => expand(true)); },
-    );
+
+    const onScroll = () => {
+      if (cancelled) return;
+      if (start > 0 && host.scrollTop < NEAR_TOP_PX) {
+        /* While a response streams, keep its tail row resident. We may grow
+           backward up to the cap, but we do not slide the whole window away
+           from the live assistant row. */
+        if (!liveTail || mounted.length < MAX_MOUNTED_ROWS) shift('older');
+        return;
+      }
+      const distanceFromBottom = host.scrollHeight - host.scrollTop - host.clientHeight;
+      if (end < items.length && distanceFromBottom < NEAR_BOTTOM_PX) shift('newer');
+    };
+
+    host.addEventListener('scroll', onScroll, { passive: true });
+
+    /* Only fill enough older history to make the initial window comfortably
+       scrollable. The previous implementation kept expanding every idle frame
+       until the entire transcript lived in the DOM. */
+    if (
+      start > 0
+      && mounted.length < MAX_MOUNTED_ROWS
+      && host.scrollHeight <= host.clientHeight + NEAR_TOP_PX
+    ) {
+      const fill = () => shift('older');
+      if (typeof browser.requestIdleCallback === 'function') {
+        idleHandle = browser.requestIdleCallback(fill, { timeout: 200 });
+      } else {
+        idleHandle = window.setTimeout(fill, 32);
+      }
+    }
+
     return () => {
       cancelled = true;
       if (idleHandle !== null) {
         if (typeof browser.cancelIdleCallback === 'function') browser.cancelIdleCallback(idleHandle);
         else window.clearTimeout(idleHandle);
       }
-      if (host) host.removeEventListener('scroll', onScroll);
-      unregisterFlusher();
+      host.removeEventListener('scroll', onScroll);
     };
-    /* Stream renders do not re-arm the idle timer; expansion reads current refs. */
-  }, [floor]);
+  }, [ceiling, end, floor, full, items.length, liveTail, mounted.length, start]);
 
   return { mounted, start };
 }
