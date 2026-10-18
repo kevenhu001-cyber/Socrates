@@ -20,17 +20,21 @@ function loadStorageImpl() {
   return _implPromise;
 }
 
+function runStorageAction(action) {
+  void loadStorageImpl().then(action).catch(function () { /* loader logs */ });
+}
+
 function openStorageModal() {
-  return loadStorageImpl().then(function (module) { return module.openStorageModal(); });
+  runStorageAction(function (module) { module.openStorageModal(); });
 }
 
 function closeStorageModal() {
-  if (_impl) return _impl.closeStorageModal();
-  if (_implPromise) return _implPromise.then(function (module) { return module.closeStorageModal(); });
+  if (_impl) _impl.closeStorageModal();
+  else if (_implPromise) void _implPromise.then(function (module) { module.closeStorageModal(); }).catch(function () {});
 }
 
 function renderArchivedList() {
-  return loadStorageImpl().then(function (module) { return module.renderArchivedList(); });
+  runStorageAction(function (module) { module.renderArchivedList(); });
 }
 
 export { loadStorageImpl, openStorageModal, closeStorageModal, renderArchivedList };
