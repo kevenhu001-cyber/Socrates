@@ -81,6 +81,10 @@ test('production entry keeps the static closure gzip transfer under budget', () 
     'src/react/extensions/WorkflowLayer.tsx',
     'src/react/find-in-session/FindInSession.tsx',
     'src/chat/streamAttempt.js',
+    'src/ui/share.impl.mjs',
+    'src/ui/cheatsheet.impl.mjs',
+    'src/ui/storage.impl.mjs',
+    'src/ui/promptTemplates.impl.mjs',
   ];
   for (const id of lazyOnly) {
     const module = report.modules.find((item) => item.id === id);

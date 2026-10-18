@@ -1,51 +1,40 @@
-/* ui/storage.js — Wave 1c of main-js-split plan.
- * Storage modal: archived sessions list with restore / purge actions.
- * Extracted from main.js (in post-Wave-1b): openStorageModal at L9872,
- * closeStorageModal at L9885, renderArchivedList at L10011.
- *
- * Under the always-on React runtime the modal DOM (#storageModalOverlay)
- * is fully owned by React (frontend/src/react/storageModal/), which
- * renders the archived rows from the published `archived` data. This
- * module therefore never writes modal DOM; it only publishes state
- * through window.__socratesStorageBridge.
- *
- * Touches the following globals:
- *   - getArchivedSessions (from main.js)
+/* Lightweight facade for the archived-session storage surface.
+ * The modal implementation is only needed after the user opens archived
+ * chats; keeping this module tiny prevents its React bridge helpers from
+ * joining the application entry graph.
  */
+let _implPromise = null;
+let _impl = null;
 
-var _storageOpen = false;
-
-function _publishStorageState() {
-  try {
-    var bridge = window.__socratesStorageBridge;
-    if (bridge && typeof bridge.publish === "function") {
-      bridge.publish({
-        archived: (window.getArchivedSessions ? window.getArchivedSessions() : []).map(function (s) {
-          var raw = s.archivedAt;
-          var ms = typeof raw === 'number' ? raw : Date.parse(raw || '') || 0;
-          return { id: s.id, title: s.title, topic: s.topic, archivedAt: ms };
-        }),
-        open: _storageOpen,
+function loadStorageImpl() {
+  if (_impl) return Promise.resolve(_impl);
+  if (!_implPromise) {
+    _implPromise = import('./storage.impl.mjs')
+      .then(function (module) { _impl = module; return module; })
+      .catch(function (error) {
+        _implPromise = null;
+        console.error('[storage] failed to load feature runtime', error);
+        throw error;
       });
-    }
-  } catch (_) { /* swallow */ }
+  }
+  return _implPromise;
+}
+
+function runStorageAction(action) {
+  void loadStorageImpl().then(action).catch(function () { /* loader logs */ });
 }
 
 function openStorageModal() {
-  _storageOpen = true;
-  _publishStorageState();
+  runStorageAction(function (module) { module.openStorageModal(); });
 }
 
 function closeStorageModal() {
-  _storageOpen = false;
-  _publishStorageState();
+  if (_impl) _impl.closeStorageModal();
+  else if (_implPromise) void _implPromise.then(function (module) { module.closeStorageModal(); }).catch(function () {});
 }
 
-/* Re-publishes the archived list so the React modal refreshes.
-   Kept under its legacy name because main.js calls it after
-   restore / purge mutations. */
 function renderArchivedList() {
-  _publishStorageState();
+  runStorageAction(function (module) { module.renderArchivedList(); });
 }
 
-export { openStorageModal, closeStorageModal, renderArchivedList };
+export { loadStorageImpl, openStorageModal, closeStorageModal, renderArchivedList };
