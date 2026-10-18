@@ -19,6 +19,11 @@ import { apiFetch } from '../util/api.ts';
 import { showToast } from '../ui/toast.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { queueMessageOp } from '../session/mutationOutbox.ts';
+import {
+  prepareUserEditBranch,
+  prepareAssistantRegenerateBranch,
+  switchMessageBranch,
+} from './branchManager.ts';
 
 function _t(key) {
   try {
@@ -108,11 +113,13 @@ export function editUserMessage(messageId){
        once the user turn is different, so we drop them from the
        authoritative state + the DOM before re-sending. */
     var editedText=next;
+    var branchRes = prepareUserEditBranch(messageId, editedText);
+    var branchInfo = branchRes ? branchRes.branchInfo : null;
     /* React renders user messages from html; commit it with the text so its
        next render preserves the edited body. */
     entry=stateStore.dispatch({
       type:"session/update-message",index:idx,clientId:entry.clientId,
-      patch:{rawText:editedText,html:formatMsg(editedText)},
+      patch:{rawText:editedText,html:formatMsg(editedText),branchInfo:branchInfo},
     });
     if(!entry)return;
     restoreMessageBody(entry,body);
@@ -218,6 +225,11 @@ export function regenerateAssistantMessage(messageId){
   var userText=userEntry&&userEntry.rawText;
   if(!userText)return;
   var userMessageId=userEntry.clientId||userEntry.id;
+  /* Prepare branch variants for assistant regeneration (< 1 / 2 >). */
+  var regenRes = prepareAssistantRegenerateBranch(messageId);
+  if (regenRes) {
+    turnState.pendingAssistantBranchInfo = regenRes.branchInfo;
+  }
   /* P0.1 BUG-P01-04 — rewind to the user turn instead of splicing only
      the single assistant bubble. Regenerating a reply invalidates every
      message that followed it, so drop them all from state + DOM (matches
@@ -364,3 +376,5 @@ export function branchFromMessage(messageId, opts){
     }
   });
 }
+
+export { switchMessageBranch };

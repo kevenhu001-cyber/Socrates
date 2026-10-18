@@ -37,6 +37,7 @@ export function syncComposerShellFlags(root) {
     var shell = shells[s];
     var hasPlugins = false;
     var hasFiles = false;
+    var hasQueue = false;
     try {
       hasPlugins = !!shell.querySelector('.composer-plugin-chips');
       var chips = shell.querySelector(':scope > .attachment-chips');
@@ -47,6 +48,7 @@ export function syncComposerShellFlags(root) {
         // Fall back to text check: React may render whitespace only.
         hasFiles = (chips.textContent || '').trim().length > 0;
       }
+      hasQueue = !!shell.querySelector('.composer-queue-banner');
     } catch (_) { /* detached node */ }
     /* toggle(name, force) is a true no-op when the class already matches, so
        it emits no MutationRecord. add()/remove() always mutate the attribute
@@ -54,6 +56,7 @@ export function syncComposerShellFlags(root) {
        observer below every frame — an idle feedback loop. */
     shell.classList.toggle('has-plugin-chips', hasPlugins);
     shell.classList.toggle('has-attachments', hasFiles);
+    shell.classList.toggle('has-queue', hasQueue);
   }
 }
 

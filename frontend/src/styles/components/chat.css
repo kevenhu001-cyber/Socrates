@@ -285,3 +285,56 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 .msg-action-menu button:hover, .msg-action-menu button:focus-visible { background: var(--ui-bg-hover); }
 .msg-action-menu svg { width: 16px; height: 16px; flex-shrink: 0; }
 .msg-action-menu .msg-action-mobile-only { display: none; }
+
+/* ── Message Branch Switcher (< 1 / 2 > in-place navigation) ────────── */
+.msg-branch-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-xxs);
+  margin-right: var(--ui-space-xs);
+  color: var(--ui-text-tertiary);
+  font-family: var(--font-sans);
+  font-size: var(--ui-font-size-xs);
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+.msg-branch-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ui-control-badge);
+  height: var(--ui-control-badge);
+  min-width: var(--ui-control-badge);
+  min-height: var(--ui-control-badge);
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-sm);
+  background: transparent;
+  color: var(--ui-text-secondary);
+  cursor: pointer;
+  transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+}
+
+.msg-branch-btn:hover:not(:disabled) {
+  background: var(--ui-bg-hover-ghost);
+  color: var(--ui-text-primary);
+}
+
+.msg-branch-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.msg-branch-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.msg-branch-counter {
+  padding: 0 4px;
+  font-weight: 500;
+  color: var(--ui-text-secondary);
+  white-space: nowrap;
+}
+

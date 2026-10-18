@@ -33,6 +33,7 @@ export interface MessageToolbarCallbacks {
   onBranch?: () => void;
   onReExplain?: () => void;
   onReadAloud?: (ev: React.MouseEvent<HTMLButtonElement>) => void;
+  onSwitchBranch?: (targetIndex: number) => void;
 }
 
 export interface MessageItemProps {

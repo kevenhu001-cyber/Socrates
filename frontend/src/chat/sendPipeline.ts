@@ -20,6 +20,11 @@ import {
   isWebSearchOn,
   prefetchStreamingTurn,
 } from './send/runtime.ts';
+import { enqueuePrompt } from './promptQueue.ts';
+import { clearComposer } from '../composer/controller.ts';
+import { resetAttachments } from '../attachments.js';
+import { renderAttachmentChips } from '../attachments/render.js';
+import { updateComposerBtn } from '../ui/topicSetup.js';
 
 function refreshTutorWebContext(text: string): void {
   const topic = stateStore.read('topic');
@@ -53,6 +58,24 @@ export async function submitChatMessage(
   options?: CommitSendOptions,
 ): Promise<void> {
   const sendOptions = options || {};
+
+  /* Prompt Queueing (ChatGPT-style) — when a streaming turn is in flight,
+     follow-up prompts from the user are queued instead of aborting the stream.
+     When the stream finishes naturally, the queued prompt is automatically dequeued. */
+  if ((turnState.turnUi.inProgress || turnState.chatStreaming) && !sendOptions.bypassQueue) {
+    const input = captureSendInput(textOverride);
+    if (!input || !input.text.trim()) return;
+    const currentSessionId = (stateStore.read('currentSessionId') as string) || null;
+    enqueuePrompt({ text: input.text, sessionId: currentSessionId });
+    if (input.isComposerSubmit) {
+      clearComposer('chat');
+      resetAttachments();
+      renderAttachmentChips();
+      updateComposerBtn();
+    }
+    return;
+  }
+
   /* P_send-prefetch-defer — prefetchStreamingTurn() warms the
      dynamic import for the streaming turn module so the first
      click doesn't pay the parse cost. Calling it on every click

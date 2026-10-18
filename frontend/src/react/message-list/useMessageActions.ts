@@ -124,5 +124,8 @@ export function useMessageToolbarCallbacks(message: LegacyChatMessage): MessageT
     onReadAloud: role === 'assistant' && id
       ? (ev: React.MouseEvent<HTMLButtonElement>) => doReadAloud(message, ev)
       : undefined,
+    onSwitchBranch: legacy && id
+      ? (targetIndex: number) => legacy.messages.switchMessageBranch(id!, targetIndex)
+      : undefined,
   };
 }

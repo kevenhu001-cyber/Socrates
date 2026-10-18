@@ -68,6 +68,7 @@ export interface TurnState {
   liveTurnRuntimes: Map<string, LiveTurnRuntime>;
   liveSearchRetry: ((query: string, detail?: unknown) => void) | null;
   toolRetryWired: boolean;
+  pendingAssistantBranchInfo: unknown | null;
 }
 
 /* Active-chat controller + pending-turn payloads. Previously module-local
@@ -84,6 +85,7 @@ export const turnState: TurnState = {
   liveTurnRuntimes: new Map(),
   liveSearchRetry: null,
   toolRetryWired: false,
+  pendingAssistantBranchInfo: null,
 };
 
 export function getTurnState(): TurnState {
@@ -99,6 +101,7 @@ export function resetTurnState(): void {
   turnState.chatStreaming = false;
   turnState.turnUi = { inProgress: false, lastUserMessageId: null };
   turnState.liveRetryOwner = null;
+  turnState.pendingAssistantBranchInfo = null;
   if (turnState.liveTurnRuntimes && typeof turnState.liveTurnRuntimes.clear === 'function') {
     turnState.liveTurnRuntimes.clear();
   }

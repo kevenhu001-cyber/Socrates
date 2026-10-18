@@ -137,12 +137,14 @@ export function addStreamingMessage(opts){
         html:null,
         type:"streaming",
         actions:null,
+        branchInfo: turnState.pendingAssistantBranchInfo || null,
         _turnAnchorMinHeight: undefined,
         _turnAnchorMode: undefined,
         _turnViewportTarget: undefined,
       }},
     ],
   });
+  turnState.pendingAssistantBranchInfo = null;
   var msgIdx=stateStore.read("messages").length-1;
   publishReactChatRuntime({type:"stream-started",messageId:clientId});
   /* Defer the leading-reserve measurement to the next animation frame.

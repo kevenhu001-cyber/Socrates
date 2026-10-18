@@ -171,14 +171,19 @@
     transform: translate(-50%, -50%) !important;
   }
 
-  /* The filter now works on the mobile tool and connected-app lists too. */
+  /* The filter now works at the top of the mobile tool and connected-app lists too. */
   body #composerToolsMenu .composer-tools-footer-search {
+    position: sticky;
+    top: 0;
+    z-index: 2;
     display: flex !important;
     align-items: center;
+    gap: 8px;
     min-height: 36px;
-    margin: 4px 4px 0;
-    padding: 0 8px;
-    border-top: 1px solid var(--cg-border);
+    margin: 0;
+    padding: 6px 12px;
+    background: var(--cg-surface);
+    border-bottom: 1px solid var(--cg-border);
   }
 
   #composerToolsMenu .composer-tools-footer-search input {

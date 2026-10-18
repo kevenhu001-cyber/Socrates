@@ -6,6 +6,7 @@ import { useRichComposerEditor } from './useRichComposerEditor';
 import { useComposerController } from './useComposerController';
 import { useComposerPresentation } from './useComposerPresentation';
 import { ComposerPluginChips, useWebSearchOn } from './ComposerPluginChips';
+import { ComposerQueueBanner } from './ComposerQueueBanner';
 import { FormattingToolbar } from './FormattingToolbar';
 import { i18n } from '../legacy/gateway.ts';
 
@@ -64,6 +65,7 @@ export function RichComposer({
       data-surface={surface}
       style={{ '--composer-placeholder': JSON.stringify(activePlaceholder) } as React.CSSProperties}
     >
+      <ComposerQueueBanner surface={surface} />
       <ComposerPluginChips surface={surface} />
       {showToolbar ? <FormattingToolbar editor={editor} /> : null}
       <EditorContent editor={editor} />

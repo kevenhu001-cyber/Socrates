@@ -127,12 +127,13 @@
   display: inline-flex;
   align-items: center;
   gap: var(--ui-space-xs, 6px);
-  min-height: var(--ui-control-sm);
-  padding: 4px 8px;
+  min-height: 24px;
+  height: 24px;
+  padding: 2px 8px;
   border: 0;
-  border-radius: var(--ui-radius-md);
+  border-radius: var(--ui-radius-pill);
   background: transparent;
-  color: var(--ui-text-secondary);
+  color: var(--ui-text-muted, var(--ui-text-secondary));
   font: 500 var(--ui-font-size-sm) / 1.4 var(--font-sans);
   text-align: start;
   cursor: pointer;
@@ -242,8 +243,11 @@
 .thinking-accordion-toggle:disabled { cursor: default; opacity: 1; }
 .thinking-accordion-toggle:disabled:hover { background: transparent; color: var(--ui-text-secondary); }
 .turn-activity-surface .thinking-accordion-inner {
-  border-inline-start: 1px solid var(--ui-border-subtle);
-  padding-inline-start: var(--ui-space-sm);
+  border-inline-start: 2px solid var(--ui-border-default);
+  margin-inline-start: 6px;
+  padding-inline-start: var(--ui-space-md);
+  margin-top: var(--ui-space-xs);
+  margin-bottom: var(--ui-space-xs);
 }
 .turn-activity-surface .thinking-accordion-text { border: 0; margin: 0; padding: 0; }
 .turn-activity-surface .turn-activity-list { list-style: none; padding: 0; }

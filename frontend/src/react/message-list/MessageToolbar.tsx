@@ -118,6 +118,47 @@ function IconButton({ label, onClick, children, svgInner, active, modifier }: Ic
   );
 }
 
+interface MessageBranchSwitcherProps {
+  currentIndex: number;
+  total: number;
+  onPrev: () => void;
+  onNext: () => void;
+}
+
+function MessageBranchSwitcher({ currentIndex, total, onPrev, onNext }: MessageBranchSwitcherProps): React.ReactElement {
+  return (
+    <div className="msg-branch-switcher" role="group" aria-label={i18n('message.branch.navigation', 'Message versions')}>
+      <button
+        type="button"
+        className="btn btn-icon btn-touch msg-toolbar-btn msg-branch-btn msg-branch-prev"
+        disabled={currentIndex <= 0}
+        onClick={onPrev}
+        aria-label={i18n('message.branch.prev', 'Previous version')}
+        title={i18n('message.branch.prev', 'Previous version')}
+      >
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+      </button>
+      <span className="msg-branch-counter" aria-live="polite">
+        {currentIndex + 1} / {total}
+      </span>
+      <button
+        type="button"
+        className="btn btn-icon btn-touch msg-toolbar-btn msg-branch-btn msg-branch-next"
+        disabled={currentIndex >= total - 1}
+        onClick={onNext}
+        aria-label={i18n('message.branch.next', 'Next version')}
+        title={i18n('message.branch.next', 'Next version')}
+      >
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 interface MessageToolbarProps {
   message: LegacyChatMessage;
   role: 'user' | 'assistant';
@@ -149,8 +190,19 @@ function MessageToolbar({ message, role, pending = false }: MessageToolbarProps)
       aria-hidden="true" inert style={{ visibility: 'hidden' }} />;
   }
 
+  const branchInfo = message.branchInfo;
+  const hasBranches = !!(branchInfo && Array.isArray(branchInfo.variants) && branchInfo.variants.length > 1);
+
   return (
     <div className="msg-toolbar" data-role={role} data-message-id={id}>
+      {hasBranches && c.onSwitchBranch && (
+        <MessageBranchSwitcher
+          currentIndex={branchInfo.currentIndex}
+          total={branchInfo.variants.length}
+          onPrev={() => c.onSwitchBranch?.(branchInfo.currentIndex - 1)}
+          onNext={() => c.onSwitchBranch?.(branchInfo.currentIndex + 1)}
+        />
+      )}
       <IconButton
         label={copied ? i18n('message.copied', 'Copied') : i18n('message.copy', 'Copy')}
         onClick={handleCopy}

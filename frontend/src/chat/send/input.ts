@@ -48,6 +48,7 @@ export interface SendPayload {
 
 export interface CommitSendOptions {
   blurAfterSend?: boolean;
+  bypassQueue?: boolean;
 }
 
 /** Legacy bridges the send path reads. */

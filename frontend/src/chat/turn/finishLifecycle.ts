@@ -7,6 +7,7 @@ import { announceTranscript } from '../../ui/liveRegion.js';
 import { saveCurrentSession } from '../../session/persistence.ts';
 import { appendLocalMemory } from '../../storage/localMemory.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
+import { dequeuePrompt } from '../promptQueue.ts';
 import { readTurnMessage } from './runtimeState.ts';
 import type { TurnRuntimeState } from './runtimeState.ts';
 import type { FinishRender, FinishRenderResult } from './finishRender.ts';
@@ -100,6 +101,20 @@ export function createFinishLifecycle(
       }
     } catch (error) { reportSwallow(error, 'streamingTurn.finishAfterRender.announceTranscript'); }
 
+    /* Branch variant update — commit final text & html into active variant */
+    const currentMsg = readTurnMessage(state.msgIdx);
+    if (currentMsg && currentMsg.branchInfo && Array.isArray((currentMsg.branchInfo as any).variants)) {
+      const bInfo = currentMsg.branchInfo as any;
+      const currIdx = bInfo.currentIndex;
+      if (bInfo.variants[currIdx]) {
+        bInfo.variants[currIdx].rawText = state.full;
+        bInfo.variants[currIdx].html = visibleFinal;
+        bInfo.variants[currIdx].reasoningContent = state.fullReasoning || null;
+        bInfo.variants[currIdx].toolCalls = currentMsg.toolCalls;
+        bInfo.variants[currIdx].turnRuntime = currentMsg.turnRuntime;
+      }
+    }
+
     const kbNodes = stateStore.read('kbNodes') as readonly unknown[];
     if (stateStore.read('phase') === 'chat'
       || (stateStore.read('topic') && kbNodes.length)) {
@@ -115,6 +130,22 @@ export function createFinishLifecycle(
       try { markTurnEnded(); }
       catch (error) { reportSwallow(error, 'streamingTurn.finishAfterRender.markTurnEnded'); }
       turnState.activeChatCtl = null;
+
+      /* Prompt Queueing (ChatGPT-style) — auto-drain queued prompt if one is waiting. */
+      const currentSessionId = stateStore.read('currentSessionId') as string | null;
+      const nextPrompt = dequeuePrompt(currentSessionId);
+      if (nextPrompt) {
+        setTimeout(() => {
+          try {
+            const win = window as any;
+            if (typeof win.submitChatMessage === 'function') {
+              void win.submitChatMessage(nextPrompt.text, { bypassQueue: true });
+            }
+          } catch (error) {
+            reportSwallow(error, 'streamingTurn.finishAfterRender.drainPromptQueue');
+          }
+        }, 50);
+      }
     }
 
     finishViewport.settle();

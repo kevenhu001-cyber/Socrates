@@ -7,6 +7,7 @@ interface CanvasToolbarProps {
   extensionIcon: string;
   extensionLabel: string;
   hasEdited: boolean;
+  isFullscreen?: boolean;
   onToggleEdit: () => void;
   onCopy: () => void;
   onIterate: () => void;
@@ -24,6 +25,7 @@ export function CanvasToolbar({
   extensionIcon,
   extensionLabel,
   hasEdited,
+  isFullscreen,
   onToggleEdit,
   onCopy,
   onIterate,
@@ -78,9 +80,10 @@ export function CanvasToolbar({
         <button
           type="button"
           className="canvas-btn"
+          aria-pressed={isFullscreen}
           onClick={onFullscreen}
         >
-          {t('composer.canvas.fullscreen')}
+          {isFullscreen ? t('composer.canvas.exitFullscreen') : t('composer.canvas.fullscreen')}
         </button>
       </div>
       {hasEdited ? (

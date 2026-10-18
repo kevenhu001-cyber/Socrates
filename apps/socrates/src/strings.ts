@@ -270,6 +270,7 @@ function en() {
     editFailed: 'Could not edit the message',
     regenerateFailed: 'Could not regenerate the reply',
     branchFailed: 'Could not create the branch',
+    featureInDevelopment: (feature: string) => `${feature} is coming soon to the Universal app.`,
   };
 }
 
@@ -537,6 +538,7 @@ const zh: AppStrings = {
     editFailed: '编辑消息失败',
     regenerateFailed: '重新生成失败',
     branchFailed: '创建分支失败',
+    featureInDevelopment: (feature: string) => `${feature} 正在适配中，敬请期待。`,
 };
 
 export function appStrings(language: AppLanguage = 'en'): AppStrings {

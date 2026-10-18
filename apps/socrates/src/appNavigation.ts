@@ -1,5 +1,5 @@
 import { useEffect, useMemo, type Dispatch, type SetStateAction } from 'react';
-import { BackHandler } from 'react-native';
+import { Alert, BackHandler } from 'react-native';
 import type { User } from '@socrates/contracts';
 import type { SidebarNavItem, SidebarUser, UiStrings } from '@socrates/ui';
 import type { AppStrings } from './strings';
@@ -80,13 +80,17 @@ export function useSidebarNavigation({
   const navItems = useMemo<SidebarNavItem[]>(() => {
     const closeDrawer = () => { if (compact) setSidebarOpen(false); };
     const goTo = (destination: AppScreen) => { closeDrawer(); setScreen(destination); };
+    const handleFeatureNotice = (featureName: string) => {
+      closeDrawer();
+      Alert.alert(featureName, appCopy.featureInDevelopment(featureName));
+    };
     return [
       { key: 'new', label: uiCopy.newChat, icon: 'new-chat', onPress: createSession },
       { key: 'library', label: uiCopy.navLibrary, icon: 'library', active: screen === 'files', onPress: () => goTo('files') },
       { key: 'projects', label: uiCopy.navProjects, accessibilityLabel: appCopy.openProjects, icon: 'projects', active: screen === 'projects', onPress: () => goTo('projects') },
-      { key: 'scheduled', label: uiCopy.navScheduled, icon: 'scheduled', onPress: () => undefined },
-      { key: 'plugins', label: uiCopy.navPlugins, icon: 'plugins', onPress: () => undefined },
-      { key: 'sites', label: uiCopy.navSites, icon: 'sites', badge: uiCopy.newBadge, onPress: () => undefined },
+      { key: 'scheduled', label: uiCopy.navScheduled, icon: 'scheduled', onPress: () => handleFeatureNotice(uiCopy.navScheduled) },
+      { key: 'plugins', label: uiCopy.navPlugins, icon: 'plugins', onPress: () => handleFeatureNotice(uiCopy.navPlugins) },
+      { key: 'sites', label: uiCopy.navSites, icon: 'sites', badge: uiCopy.newBadge, onPress: () => handleFeatureNotice(uiCopy.navSites) },
       {
         key: 'more',
         label: uiCopy.navMore,

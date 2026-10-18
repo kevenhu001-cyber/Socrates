@@ -12,6 +12,7 @@
 export interface LegacyMessages {
   editUserMessage(messageId: string): void;
   regenerateAssistantMessage(messageId: string): void;
+  switchMessageBranch(messageId: string, targetIndex: number): void;
   deleteUserMessage(messageId: string): Promise<void> | void;
   branchFromMessage(messageId: string, options?: { reExplain?: boolean }): Promise<void> | void;
   sendFeedback(messageId: string, value: 'up' | 'down'): void;

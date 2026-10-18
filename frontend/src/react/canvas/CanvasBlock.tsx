@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import type { LegacyChatMessage } from '../types/domain';
 import { setComposerMarkdown } from '../../composer/controller.ts';
@@ -36,7 +36,19 @@ export function CanvasBlock({ message, html, canvasId, originalText }: CanvasBlo
   const innerRef = useRef<HTMLDivElement | null>(null);
   const [mode, setMode] = useState<CanvasMode>('view-edited');
   const [hasEdited, setHasEdited] = useState<boolean>(!!message.editedText);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const t = useTranslation();
+
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
 
   /* Seed the contenteditable body from sanitized html on first mount and
      whenever the underlying html changes (e.g. session restore). Editing
@@ -95,9 +107,7 @@ export function CanvasBlock({ message, html, canvasId, originalText }: CanvasBlo
   }, []);
 
   const fullscreen = useCallback(() => {
-    const root = innerRef.current?.closest('.canvas-block') as HTMLElement | null;
-    if (!root) return;
-    root.classList.toggle('is-fullscreen');
+    setIsFullscreen((prev) => !prev);
   }, []);
 
   const toggleOriginal = useCallback(() => {
@@ -112,12 +122,13 @@ export function CanvasBlock({ message, html, canvasId, originalText }: CanvasBlo
   })();
 
   return (
-    <div className="canvas-block" data-canvas-id={canvasId} data-output-mode="canvas">
+    <div className={`canvas-block${isFullscreen ? ' is-fullscreen' : ''}`} data-canvas-id={canvasId} data-output-mode="canvas">
       <CanvasToolbar
         mode={mode}
         extensionIcon={extensionIcon}
         extensionLabel={extensionLabel}
         hasEdited={hasEdited}
+        isFullscreen={isFullscreen}
         onToggleEdit={toggleEdit}
         onCopy={copy}
         onIterate={iterate}

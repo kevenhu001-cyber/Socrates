@@ -105,6 +105,21 @@
     "plus   chips  effort mic    send";
   padding-top: 10px;
 }
+#appShell .composer-shell.has-queue:not(.voice-recording-active) {
+  grid-template-areas:
+    "queue  queue  queue  queue  queue"
+    "editor editor editor editor editor"
+    "plus   chips  effort mic    send";
+  padding-top: 10px;
+}
+#appShell .composer-shell.has-queue.has-attachments:not(.voice-recording-active) {
+  grid-template-areas:
+    "files  files  files  files  files"
+    "queue  queue  queue  queue  queue"
+    "editor editor editor editor editor"
+    "plus   chips  effort mic    send";
+  padding-top: 10px;
+}
 #appShell .composer-shell > .attachment-chips {
   grid-area: files;
   min-width: 0;
@@ -115,7 +130,7 @@
 }
 
 /* ── Editor ────────────────────────────────────────────────────────────── */
-#appShell .composer-shell .rich-composer > :not(.composer-plugin-chips):not(.rich-composer-toolbar) {
+#appShell .composer-shell .rich-composer > :not(.composer-plugin-chips):not(.rich-composer-toolbar):not(.composer-queue-banner) {
   grid-area: editor;
   align-self: center;
   min-width: 0;
@@ -446,6 +461,21 @@
     box-shadow: var(--ui-composer-shadow);
   }
   #appShell .composer-shell.has-attachments:not(.voice-recording-active) {
+    padding-top: 12px;
+  }
+  #appShell .composer-shell.has-queue:not(.voice-recording-active) {
+    grid-template-areas:
+      "queue  queue  queue  queue  queue"
+      "editor editor editor editor editor"
+      "plus   chips  effort mic    send";
+    padding-top: 10px;
+  }
+  #appShell .composer-shell.has-queue.has-attachments:not(.voice-recording-active) {
+    grid-template-areas:
+      "files  files  files  files  files"
+      "queue  queue  queue  queue  queue"
+      "editor editor editor editor editor"
+      "plus   chips  effort mic    send";
     padding-top: 12px;
   }
   #appShell .composer-shell .rich-composer-editor,
@@ -781,3 +811,88 @@
   width: 11px;
   height: 11px;
 }
+
+/* ── Prompt Queue Banner (ChatGPT-style queued messages) ──────────────── */
+#appShell .composer-shell .composer-queue-banner {
+  grid-area: queue;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-sm);
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 var(--ui-space-xs) 0;
+  padding: 4px 10px;
+  background: var(--ui-bg-surface-elevated, var(--ui-bg-surface));
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-md);
+  font-family: var(--font-sans);
+  font-size: var(--ui-font-size-xs);
+  color: var(--ui-text-secondary);
+}
+
+#appShell .composer-shell .composer-queue-main {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-xs);
+  min-width: 0;
+  overflow: hidden;
+}
+
+#appShell .composer-shell .composer-queue-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--ui-text-muted);
+  flex-shrink: 0;
+}
+
+#appShell .composer-shell .composer-queue-badge {
+  font-weight: 600;
+  color: var(--ui-text-primary);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+#appShell .composer-shell .composer-queue-text {
+  color: var(--ui-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#appShell .composer-shell .composer-queue-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-xs);
+  flex-shrink: 0;
+}
+
+#appShell .composer-shell .composer-queue-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--ui-control-xs);
+  box-sizing: border-box;
+  border-radius: var(--ui-radius-sm);
+  border: 0;
+  background: transparent;
+  color: var(--ui-text-muted);
+  cursor: pointer;
+}
+
+#appShell .composer-shell .composer-queue-btn:hover {
+  background: var(--ui-bg-control-hover);
+  color: var(--ui-text-primary);
+}
+
+#appShell .composer-shell .composer-queue-edit {
+  padding: 0 8px;
+  font-size: var(--ui-font-size-xs);
+  font-weight: 500;
+}
+
+#appShell .composer-shell .composer-queue-cancel {
+  width: var(--ui-control-xs);
+  padding: 0;
+}
+

@@ -77,8 +77,8 @@ export function TurnActivitySurface({ publicSummary = '', activities = [], isLiv
             {isLive && status?.elapsedSec ? <span className="thinking-status-detail">{status.elapsedSec}s</span> : null}
           </span>
           {hasDetails ? <span className="thinking-accordion-chev" aria-hidden="true">
-            <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor">
-              <path d="M4 6l4 4 4-4H4z" />
+            <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 6l4 4 4-4" />
             </svg>
           </span> : null}
         </button>

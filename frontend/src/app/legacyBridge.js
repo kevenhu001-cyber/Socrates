@@ -33,7 +33,7 @@ import { saveCurrentSession } from '../session/persistence.ts';
    below returns a promise, which every caller already awaits. */
 import { openAttachmentPicker, openMediaPicker } from '../attachments/render.js';
 import { getCustomInstructionsString, saveProfileName, onCustomInstructionsChange, toggleProfileWebSearch } from '../ui/profile.js';
-import { editUserMessage, regenerateAssistantMessage, branchFromMessage } from '../chat/editBranch.js';
+import { editUserMessage, regenerateAssistantMessage, branchFromMessage, switchMessageBranch } from '../chat/editBranch.js';
 import { toggleReadAloud } from '../ui/readAloud.js';
 import { selectShareVis, copyShareLink } from '../ui/share.js';
 import { closeCheatsheet } from '../ui/cheatsheet.js';
@@ -145,11 +145,13 @@ window.startSession = startSession;
 window.submitChatMessage = submitChatMessage;
 window.cycleActiveProject = cycleActiveProject;
 window.stopChatResponse = stopChatResponse;
+window.switchMessageBranch = switchMessageBranch;
 
 window.__socratesLegacy = {
   messages: {
     editUserMessage: window.editUserMessage,
     regenerateAssistantMessage: window.regenerateAssistantMessage,
+    switchMessageBranch: window.switchMessageBranch,
     deleteUserMessage: window.deleteUserMessage,
     branchFromMessage: window.branchFromMessage,
     sendFeedback: window.sendFeedback,

@@ -120,7 +120,7 @@ export function deriveTurnPresentationState(message: LegacyChatMessage, options:
     intentSummary,
     outcomeSummary: !live ? message.summary?.trim() || '' : '',
     publicSummary,
-    reasoningDurationSec: reasoningMs > 0 ? reasoningMs / 1000 : undefined,
+    reasoningDurationSec: reasoningMs > 0 ? reasoningMs / 1000 : (typeof message.reasoningDurationSec === 'number' && message.reasoningDurationSec > 0 ? message.reasoningDurationSec : undefined),
     showToolbar: !live,
     showCursor: live && !status && !options.hasRunningRow,
     isSettled: !live,

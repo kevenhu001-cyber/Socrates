@@ -207,6 +207,23 @@ export interface LegacyChatMessage {
   /** Server-owned public progress; private reasoning is never used as copy. */
   _activity?: import("@socrates/contracts").PublicTurnActivity;
   turnRuntime?: import("@socrates/contracts").TurnRuntime | null;
+  /** In-place message branching variants and active index (< 1 / 2 >). */
+  branchInfo?: {
+    currentIndex: number;
+    variants: ReadonlyArray<{
+      clientId?: string;
+      id?: string;
+      role?: string;
+      rawText?: string;
+      html?: string | null;
+      type?: string | null;
+      attachments?: ReadonlyArray<unknown>;
+      toolCalls?: ReadonlyArray<unknown>;
+      turnRuntime?: unknown;
+      reasoningContent?: string | null;
+      followingMessages?: ReadonlyArray<LegacyChatMessage>;
+    }>;
+  } | null;
 }
 
 /**
