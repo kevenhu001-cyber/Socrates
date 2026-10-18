@@ -1,66 +1,33 @@
 /**
- * @socrates/theme — design tokens.
+ * @socrates/theme — cross-client design tokens.
  *
- * These values are ported verbatim from `frontend/src/ui/tokens.ts`
- * (which is itself mirrored into `frontend/src/styles/tokens.css` for
- * CSS consumers). They are the single source of truth across the
- * Socrates client surface.
- *
- * Phase 0 of the reverse-align plan (see
- * `mobile/docs/frontend-parity.md`) creates this package so mobile
- * consumes the same vocabulary instead of inventing a parallel
- * dark-only ChatGPT-style palette.
- *
- * Conventions (inherited from `frontend/src/ui/tokens.ts`):
- *  - All color tokens are HSL triplets (`H S% L%`) so theme files
- *    compose them with `hsl(...)` directly.
- *  - Spacing follows a 4 px scale (`xxs`, `xs`, `sm`, `md`, `lg`,
- *    `xl`, `xxl`).
- *  - Breakpoints match the project's existing media-query ladders
- *    (≤480 px, ≤768 px, ≥1200 px).
- *  - Accent is a fixed monochrome ramp (white-on-black in dark mode,
- *    black-on-white in light mode). The app no longer ships a
- *    selectable theme colour.
+ * Socrates Design System v2 uses the Lobe UI v6 default neutral palette as
+ * its foundation while preserving Socrates-owned product geometry. This file
+ * mirrors `frontend/src/ui/tokens.ts` for the Universal App and packages.
  */
 
 export type ThemeMode = 'light' | 'dark';
 export type ThemePreference = ThemeMode | 'system';
 
-/* Accent lightness ladder — one row per role (foreground / soft
-   background / surface). Components only need to know the role,
-   not the lightness, so the ladder is grouped here. */
 export interface AccentScale {
-  /** Strong accent for primary buttons, active borders, link text. */
   readonly strong: string;
-  /** Softer accent for chips, soft borders, hint text. */
   readonly soft: string;
-  /** Background tint behind accent surfaces (e.g. tooltip body). */
   readonly surface: string;
 }
 
 export interface ThemeBackgrounds {
-  /** Page-level background. */
   readonly page: string;
-  /** Slightly raised surface (sidebar, chat column, modal body). */
   readonly raised: string;
-  /** Even more raised (cards, popovers, dropdowns). */
   readonly overlay: string;
-  /** Hover-state wash. */
   readonly hover: string;
-  /** Edge of the canvas / decorative backgrounds. */
   readonly sunken: string;
 }
 
 export interface ThemeText {
-  /** High-contrast body text. */
   readonly primary: string;
-  /** Secondary text (descriptions, helper labels). */
   readonly secondary: string;
-  /** Muted captions. */
   readonly tertiary: string;
-  /** Hint placeholders. */
   readonly muted: string;
-  /** Disabled / unreachable. */
   readonly disabled: string;
 }
 
@@ -82,7 +49,7 @@ export interface ThemePalette {
   readonly onAccent: string;
 }
 
-/** Spacing scale — 4 px base. */
+/** Existing Socrates product spacing; already follows a 4px rhythm. */
 export const spacing = {
   xxs: 2,
   xs: 4,
@@ -95,20 +62,18 @@ export const spacing = {
 
 export type SpacingToken = keyof typeof spacing;
 
-/** Radii — keep the ladder narrow so all surfaces round together. */
+/** Base 4 / 6 / 8 / 12 rungs align with Lobe; larger values are product tokens. */
 export const radius = {
   none: 0,
   sm: 4,
   md: 8,
   lg: 12,
-  /** Dialogs and cards in the web workspace use a 16px outer radius. */
   xl: 16,
   pill: 999,
 } as const;
 
 export type RadiusToken = keyof typeof radius;
 
-/** Font sizes — rem-equivalent pixel ramps for native typography. */
 export const fontSize = {
   xxs: 12,
   xs: 13,
@@ -132,7 +97,6 @@ export const lineHeight = {
   relaxed: 1.7,
 } as const;
 
-/** Breakpoints — must match the legacy @media queries in styles.css. */
 export const breakpoints = {
   sm: 480,
   md: 768,
@@ -141,84 +105,75 @@ export const breakpoints = {
 
 export type BreakpointToken = keyof typeof breakpoints;
 
-/** Default easing curves — reused across transitions. */
 export const easing = {
-  /** Standard `cubic-bezier(0.16, 1, 0.3, 1)` — exit/enter ramps. */
   out: [0.16, 1, 0.3, 1] as const,
-  /** `cubic-bezier(0.34, 1.3, 0.64, 1)` — popovers, modals. */
   spring: [0.34, 1.3, 0.64, 1] as const,
 };
 
-/** Standard border alpha so component code can blend `--ui-border-*`
- *  with a single, consistent opacity. */
 export const borderAlpha = 0.25;
 
-/**
- * Values are ported verbatim from `frontend/src/ui/tokens.ts`, which was
- * retuned to chatgpt.com's measured neutral scale (docs/ref/chatgpt-parity.md).
- * `rn.ts` keeps a separate hand-mapped hex table for the phone canvas.
- */
+/** Lobe default neutral palette projected into Socrates semantic roles. */
 export const darkPalette: ThemePalette = {
   mode: 'dark',
   accent: {
-    strong: '0 0% 94%',
-    soft: '0 0% 18%',
-    surface: '0 0% 18%',
+    strong: '0 0% 93%',
+    soft: '0 0% 7%',
+    surface: '0 0% 7%',
   },
   bg: {
-    page: '0 0% 8%',
-    raised: '0 0% 11%',
-    overlay: '0 0% 16%',
-    hover: '0 0% 17%',
-    sunken: '0 0% 5%',
+    page: '0 0% 0%',
+    raised: '0 0% 5%',
+    overlay: '0 0% 10%',
+    hover: '0 0% 13%',
+    sunken: '0 0% 2%',
   },
   text: {
-    primary: '0 0% 91%',
-    secondary: '0 0% 76%',
-    tertiary: '0 0% 61%',
-    muted: '0 0% 50%',
-    disabled: '0 0% 38%',
+    primary: '0 0% 90%',
+    secondary: '0 0% 71%',
+    tertiary: '0 0% 56%',
+    muted: '0 0% 56%',
+    disabled: '0 0% 42%',
   },
   border: {
-    subtle: '0 0% 15%',
-    default: '0 0% 19%',
-    strong: '0 0% 25%',
+    subtle: '0 0% 10%',
+    default: '0 0% 13%',
+    strong: '0 0% 18%',
   },
-  danger: '1 100% 70%',
-  success: '169 71% 56%',
-  muted: '0 0% 50%',
+  danger: '1 78% 61%',
+  success: '90 58% 49%',
+  muted: '0 0% 56%',
   onAccent: '0 0% 0%',
 };
 
 export const lightPalette: ThemePalette = {
   mode: 'light',
   accent: {
-    strong: '0 0% 5%',
-    soft: '0 0% 91%',
-    surface: '0 0% 91%',
+    strong: '0 0% 13%',
+    soft: '0 0% 96%',
+    surface: '0 0% 96%',
   },
   bg: {
-    page: '0 0% 100%',
-    raised: '0 0% 98%',
+    page: '0 0% 97%',
+    raised: '0 0% 100%',
     overlay: '0 0% 100%',
-    hover: '0 0% 95%',
-    sunken: '0 0% 100%',
+    hover: '0 0% 93%',
+    sunken: '0 0% 98%',
   },
   text: {
-    primary: '0 0% 5%',
-    secondary: '0 0% 36%',
-    tertiary: '0 0% 43%',
-    muted: '0 0% 45%',
-    disabled: '0 0% 71%',
+    primary: '0 0% 12%',
+    secondary: '0 0% 40%',
+    tertiary: '0 0% 54%',
+    muted: '0 0% 54%',
+    disabled: '0 0% 69%',
   },
   border: {
-    subtle: '0 0% 94%',
-    default: '0 0% 90%',
-    strong: '0 0% 80%',
+    subtle: '0 0% 93%',
+    default: '0 0% 89%',
+    strong: '0 0% 87%',
   },
-  danger: '3 79% 47%',
-  success: '171 97% 25%',
-  muted: '0 0% 45%',
+  danger: '10 88% 58%',
+  success: '144 100% 31%',
+  muted: '0 0% 54%',
   onAccent: '0 0% 100%',
 };
 
@@ -231,12 +186,7 @@ export function getThemePalette(mode: ThemeMode): ThemePalette {
   return palettes[mode];
 }
 
-/** Page background the early paint hook should use before the bundle
- *  loads. Values must stay in sync with `darkPalette.bg.page` /
- *  `lightPalette.bg.page`. */
+/** Lobe default colorBgLayout values used for pre-paint. */
 export function resolveBackground(mode: ThemeMode): string {
-  /* Hex literals, not the HSL triplets above — this value is painted
-   * before any stylesheet parses, so it must be a self-contained color.
-   * Keep in sync with `bg.page` in both palettes. */
-  return mode === 'light' ? '#fafafa' : '#212121';
+  return mode === 'light' ? '#f8f8f8' : '#000000';
 }

@@ -1,19 +1,9 @@
 /**
  * RN-native helpers built on top of `@socrates/theme/tokens`.
  *
- * React Native does not parse `hsl(H S% L%)` triplet strings — only hex
- * / rgb / rgba / named colors. This module precomputes the canonical
- * hex equivalent of every token color so RN components can consume
- * them without rewriting the palette. The values are intentionally
- * stable: do not introduce per-mode drift between tokens.ts and the
- * hex table; if either changes, regenerate both.
- *
- * Source: the canonical HSL palettes in `frontend/src/ui/tokens.ts`.
- * This table keeps their exact hex equivalents for React Native, which
- * does not parse the HSL triplet strings used by CSS and shared tokens.
- *
- * The returned table is a direct HSL-to-hex projection of the canonical
- * frontend palette; native surfaces share its mode-specific color roles.
+ * React Native consumes concrete color strings rather than the HSL triplets
+ * used by shared tokens. Socrates Design System v2 projects the Lobe UI v6
+ * default neutral values into the existing native palette shape.
  */
 
 import {
@@ -54,67 +44,65 @@ export interface ThemePaletteHex extends Omit<ThemePalette, 'accent' | 'bg' | 't
 
 const darkHex: ThemePaletteHex = {
   mode: 'dark',
-  /* Monochrome accent values from the shared frontend HSL palette. */
   accent: {
-    strong: '#f0f0f0',
-    soft: '#2e2e2e',
-    surface: '#2e2e2e',
+    strong: '#eeeeee',
+    soft: '#111111',
+    surface: '#111111',
   },
-  /* HSL-to-hex equivalents of `frontend/src/ui/tokens.ts`. */
   bg: {
-    page: '#141414',
-    raised: '#1c1c1c',
-    overlay: '#292929',
-    hover: '#292929',
-    sunken: '#0d0d0d',
+    page: '#000000',
+    raised: '#0d0d0d',
+    overlay: '#1a1a1a',
+    hover: '#202020',
+    sunken: '#060606',
   },
   text: {
-    primary: '#e8e8e8',
-    secondary: '#c2c2c2',
-    tertiary: '#9b9b9b',
-    muted: '#808080',
-    disabled: '#626262',
+    primary: '#e6e6e6',
+    secondary: '#b4b4b4',
+    tertiary: '#8f8f8f',
+    muted: '#8f8f8f',
+    disabled: '#6b6b6b',
   },
   border: {
-    subtle: '#262626',
-    default: '#303030',
-    strong: '#404040',
+    subtle: '#1a1a1a',
+    default: '#202020',
+    strong: '#2d2d2d',
   },
-  danger: '#ff6764',
-  success: '#42dec2',
-  muted: '#808080',
+  danger: '#e95350',
+  success: '#80c933',
+  muted: '#8f8f8f',
   onAccent: '#000000',
 };
 
 const lightHex: ThemePaletteHex = {
   mode: 'light',
   accent: {
-    strong: '#0d0d0d',
-    soft: '#e8e8e8',
-    surface: '#e8e8e8',
+    strong: '#222222',
+    soft: '#f5f5f5',
+    surface: '#f5f5f5',
   },
   bg: {
-    page: '#ffffff',
-    raised: '#fafafa',
+    page: '#f8f8f8',
+    raised: '#ffffff',
     overlay: '#ffffff',
-    hover: '#f3f3f3',
-    sunken: '#ffffff',
+    hover: '#eeeeee',
+    sunken: '#fbfbfb',
   },
   text: {
-    primary: '#0d0d0d',
-    secondary: '#5c5c5c',
-    tertiary: '#6e6e6e',
-    muted: '#737373',
-    disabled: '#b5b5b5',
+    primary: '#1f1f1f',
+    secondary: '#666666',
+    tertiary: '#8a8a8a',
+    muted: '#8a8a8a',
+    disabled: '#b0b0b0',
   },
   border: {
-    subtle: '#f0f0f0',
-    default: '#e6e6e6',
-    strong: '#cccccc',
+    subtle: '#eeeeee',
+    default: '#e3e3e3',
+    strong: '#dddddd',
   },
-  danger: '#d8241a',
-  success: '#027c6a',
-  muted: '#737373',
+  danger: '#f35837',
+  success: '#00a03f',
+  muted: '#8a8a8a',
   onAccent: '#ffffff',
 };
 
@@ -128,72 +116,55 @@ export function getThemePaletteHex(mode: ThemeMode): ThemePaletteHex {
 }
 
 /**
- * Surface colors that the SPA declares as free-standing CSS variables in
- * `frontend/src/styles/themes.css` (`--ui-bg-sidebar`, `--ui-bg-bubble`,
- * `--ui-bg-composer`, `--ui-composer-border`, `--ui-bg-control`,
- * `--ui-bg-hover-ghost`, `--ui-bg-chip`, `--ui-avatar-bg`,
- * `--ui-text-placeholder`). Ported verbatim so RN surfaces paint the
- * exact baseline color; keep in sync with themes.css when it changes.
+ * Web surface roles mirrored for React Native. These remain product-level
+ * roles even though their values now derive from the Lobe neutral foundation.
  */
 export interface UiSurfaceHex {
-  /** Sidebar column (`--ui-bg-sidebar`). */
   readonly sidebar: string;
-  /** User message bubble (`--ui-bg-bubble`). */
   readonly bubble: string;
-  /** User message bubble on ≤768px (renders one step lighter in dark). */
   readonly bubbleStrong: string;
-  /** Composer card (`--ui-bg-composer`). */
   readonly composer: string;
-  /** Composer hairline (desktop `--ui-composer-border`). */
   readonly composerBorder: string;
-  /** Composer hairline on ≤768px (themes.css phone override, 7%). */
   readonly composerBorderCompact: string;
-  /** Circular control fill — avatar, phone composer rail (`--ui-bg-control`). */
   readonly control: string;
-  /** Circular control fill on ≤768px (`--ui-bg-control`, dark phone step 56). */
   readonly controlCompact: string;
-  /** Selected control fill — active sidebar view button (`--ui-bg-surface`). */
   readonly surface: string;
-  /** Quiet hover wash on icon buttons (`--ui-bg-hover-ghost`). */
   readonly hoverGhost: string;
-  /** Chip fill (`--ui-bg-chip`). */
   readonly chip: string;
-  /** Avatar disc (`--ui-avatar-bg`). */
   readonly avatar: string;
-  /** Placeholder text (`--ui-text-placeholder`). */
   readonly placeholder: string;
 }
 
 const darkSurfaces: UiSurfaceHex = {
-  sidebar: '#1e1e1e',
-  bubble: '#202020',
-  bubbleStrong: '#2e2e2e',
-  composer: '#1c1c1c',
-  composerBorder: 'rgba(255, 255, 255, 0.14)',
-  composerBorderCompact: 'rgba(255, 255, 255, 0.07)',
-  control: '#303030',
-  controlCompact: '#383838',
-  surface: '#212121',
-  hoverGhost: 'rgba(255, 255, 255, 0.08)',
-  chip: 'rgba(255, 255, 255, 0.07)',
-  avatar: '#303030',
-  placeholder: '#808080',
+  sidebar: '#0d0d0d',
+  bubble: '#1a1a1a',
+  bubbleStrong: '#1a1a1a',
+  composer: '#0d0d0d',
+  composerBorder: '#202020',
+  composerBorderCompact: '#202020',
+  control: '#2d2d2d',
+  controlCompact: '#2d2d2d',
+  surface: '#1a1a1a',
+  hoverGhost: 'rgba(255, 255, 255, 0.06)',
+  chip: 'rgba(255, 255, 255, 0.06)',
+  avatar: '#2d2d2d',
+  placeholder: '#6b6b6b',
 };
 
 const lightSurfaces: UiSurfaceHex = {
-  sidebar: '#fcfcfc',
-  bubble: '#f3f3f3',
-  bubbleStrong: '#f3f3f3',
+  sidebar: '#ffffff',
+  bubble: '#ffffff',
+  bubbleStrong: '#ffffff',
   composer: '#ffffff',
-  composerBorder: 'rgba(0, 0, 0, 0.20)',
-  composerBorderCompact: 'rgba(0, 0, 0, 0.20)',
-  control: '#e8e8e8',
-  controlCompact: '#e8e8e8',
-  surface: '#f3f3f3',
-  hoverGhost: 'rgba(0, 0, 0, 0.05)',
-  chip: 'rgba(0, 0, 0, 0.05)',
-  avatar: '#737373',
-  placeholder: '#8f8f8f',
+  composerBorder: '#e3e3e3',
+  composerBorderCompact: '#e3e3e3',
+  control: '#f5f5f5',
+  controlCompact: '#f5f5f5',
+  surface: '#ffffff',
+  hoverGhost: 'rgba(0, 0, 0, 0.03)',
+  chip: 'rgba(0, 0, 0, 0.03)',
+  avatar: '#8a8a8a',
+  placeholder: '#b0b0b0',
 };
 
 const surfacesHex: Readonly<Record<ThemeMode, UiSurfaceHex>> = {
@@ -205,27 +176,17 @@ export function getUiSurfaceHex(mode: ThemeMode): UiSurfaceHex {
   return surfacesHex[mode];
 }
 
-/** Drop-in replacement for mobile's existing `Palette` shape so the
- *  ThemeProvider can swap its source without touching call-sites.
- *  Add new fields here when mobile's local `theme.ts` adds more. */
 export interface MappedPalette extends ThemePaletteHex {
-  /** `statusBarStyle` is an RN/Expo convention not in tokens.ts. */
   readonly statusBarStyle: 'light' | 'dark';
-  /** `white` / `black` convenience colors used by mobile buttons. */
   readonly white: string;
   readonly black: string;
-  /** Generic scrollbar tint. */
   readonly scrollbar: string;
-  /** Generic overlay tint (for backdrop modals). */
   readonly overlay: string;
-  /** Reasoning card backgrounds — used by MessageBubble. */
   readonly reasoningBg: string;
   readonly reasoningFg: string;
-  /** Code block container colors. */
   readonly codeBg: string;
   readonly codeFg: string;
   readonly codeBorder: string;
-  /** Tool card container colors. */
   readonly toolCardBg: string;
   readonly toolCardBgHover: string;
   readonly toolCardBgSunken: string;
@@ -242,18 +203,18 @@ export function buildMappedPalette(mode: ThemeMode): MappedPalette {
     statusBarStyle: isDark ? 'light' : 'dark',
     white: '#ffffff',
     black: '#000000',
-    scrollbar: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.20)',
-    overlay: isDark ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.45)',
-    reasoningBg: isDark ? '#1a1a1a' : '#efefef',
-    reasoningFg: isDark ? '#a0a0a0' : '#4a4a4a',
-    codeBg: isDark ? '#0a0a0a' : '#f0f0f0',
-    codeFg: isDark ? '#e7e7e7' : '#1a1a1a',
-    codeBorder: isDark ? '#232323' : '#d0d0d0',
-    toolCardBg: isDark ? 'rgba(255,255,255,0.062)' : 'rgba(0,0,0,0.05)',
-    toolCardBgHover: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)',
-    toolCardBgSunken: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.032)',
-    toolCardBorder: isDark ? 'rgba(255,255,255,0.095)' : 'rgba(0,0,0,0.11)',
-    toolCardBorderStrong: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.19)',
-    toolCardFocus: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)',
+    scrollbar: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.12)',
+    overlay: 'rgba(0,0,0,0.44)',
+    reasoningBg: isDark ? '#0d0d0d' : '#ffffff',
+    reasoningFg: isDark ? '#8f8f8f' : '#666666',
+    codeBg: isDark ? '#0d0d0d' : '#ffffff',
+    codeFg: isDark ? '#e6e6e6' : '#1f1f1f',
+    codeBorder: isDark ? '#202020' : '#eeeeee',
+    toolCardBg: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)',
+    toolCardBgHover: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)',
+    toolCardBgSunken: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)',
+    toolCardBorder: isDark ? '#202020' : '#e3e3e3',
+    toolCardBorderStrong: isDark ? '#2d2d2d' : '#dddddd',
+    toolCardFocus: isDark ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.32)',
   };
 }

@@ -1,87 +1,121 @@
-/* Theme values are the single source of truth for every first-party surface.
-   The dark neutral ramp follows the supplied charcoal reference: a near-black
-   canvas, a subtly lighter sidebar, and low-contrast borders and surfaces. The
-   bridge below maps older palette families (--cg-*, --chatgpt-*,
-   --conversation-*, legacy HSL channels) onto these names, so changing a value
-   here repaints the app.
+/*
+ * themes.css — canonical Socrates palette and compatibility bridge.
+ *
+ * Socrates Design System v2 uses the Lobe UI default neutral token values as
+ * its foundation while keeping the stable `--ui-*` semantic API consumed by
+ * first-party components, legacy compatibility CSS, and the Universal App.
+ * Product geometry (composer, bubbles, transcript width, tutor/Intelligent UI)
+ * remains Socrates-owned in tokens.css and component styles.
+ *
+ * Upstream reference: @lobehub/ui v6 default token snapshot
+ * (`createLobeToken.test.ts.snap`). Keep Lobe aliases below mapped onto the
+ * Socrates semantic roles so future Lobe primitives and existing components
+ * paint from one palette.
+ */
 
-   Page and sidebar use adjacent neutral steps separated by a hairline; raised
-   surfaces (composer, menus, bubbles) step up in lightness in dark mode and
-   sit white-on-white with a shadow in light. */
 html[data-theme="socrates"][data-mode],
 html[data-theme="socrates"][data-mode]:lang(zh) {
   --font-sans: "Inter", "MiSans", "Plus Jakarta Sans", sans-serif;
   --cg-font: var(--font-sans);
-  /* One typeface. The display face used to be Newsreader (legacy/00), which
-     still leaked into the auth card title and the workspace dialog title
-     while every other surface had already converged on Inter. Aliasing it
-     here — at the same specificity as the legacy declaration, and later in
-     the cascade — retires the second face without touching the legacy
-     slices. The bundled Newsreader files stay for now. */
   --font-display: var(--font-sans);
+
+  /* Lobe structural aliases. Values are supplied by the effective mode. */
+  --lobe-border-radius-xs: var(--ui-radius-xs);
+  --lobe-border-radius-sm: var(--ui-radius-sm);
+  --lobe-border-radius: var(--ui-radius-md);
+  --lobe-border-radius-lg: var(--ui-radius-lg);
 }
+
 [data-mode="dark"] {
   color-scheme: dark;
-  --ui-bg-page: #141414;
-  --ui-bg-sidebar: #1e1e1e;
-  --ui-sidebar-border: rgb(255 255 255 / 6%);
-  --ui-bg-raised: #1c1c1c;
-  --ui-bg-surface: #212121;
-  --ui-bg-control: #303030;
-  /* Solid wash for rows on the page/sidebar; the ghost variant is for rows
-     inside raised surfaces (menus, dialogs), where a solid step would vanish. */
-  --ui-bg-hover: #292929;
-  --ui-bg-selected: rgb(38 38 38);
-  --ui-bg-pill-selected: rgb(56 56 56);
-  --ui-bg-hover-ghost: rgb(255 255 255 / 8%);
-  --ui-bg-overlay: #292929;
-  --ui-text-primary: #e8e8e8;
-  --ui-text-secondary: #c2c2c2;
-  --ui-text-tertiary: #9b9b9b;
-  --ui-text-muted: #808080;
-  --ui-text-disabled: #626262;
-  /* The dark reference drawer paints its glyphs and labels true-white rather
-     than the muted #e8e8e8 body text, so the phone drawer reads as a distinct
-     surface. Declared here to keep the hardcoded white out of the polish
-     layer, where the css-debt hex ratchet would count it as new debt. */
-  --ui-sidebar-glyph: #ffffff;
-  --ui-border-subtle: rgb(255 255 255 / 6%);
-  --ui-border-default: rgb(255 255 255 / 10%);
-  --ui-border-strong: rgb(255 255 255 / 16%);
-  --ui-backdrop: rgb(0 0 0 / 55%);
-  --ui-on-accent: #000;
-  --ui-accent-strong: #f0f0f0;
-  --ui-danger: #ff6764;
-  --ui-thinking-accent: hsl(18 48% 50%);
-  --ui-success: #42dec2;
-  --ui-info: var(--ui-link);
-  --ui-warning: var(--ui-thinking-accent);
+
+  /* Lobe neutral foundation: layout / container / elevated. */
+  --ui-bg-page: #000000;
+  --ui-bg-sidebar: #0d0d0d;
+  --ui-bg-raised: #0d0d0d;
+  --ui-bg-sunken: #060606;
+  --ui-bg-surface: #1a1a1a;
+  --ui-bg-overlay: #1a1a1a;
+  --ui-bg-control: #2d2d2d;
+  --ui-bg-hover: rgb(255 255 255 / 6%);
+  --ui-bg-selected: #111111;
+  --ui-bg-pill-selected: #333333;
+  --ui-bg-hover-ghost: rgb(255 255 255 / 6%);
+  --ui-sidebar-border: #1a1a1a;
+
+  /* Lobe text neutral roles. */
+  --ui-text-primary: #e6e6e6;
+  --ui-text-secondary: #b4b4b4;
+  --ui-text-tertiary: #8f8f8f;
+  --ui-text-muted: #8f8f8f;
+  --ui-text-placeholder: #6b6b6b;
+  --ui-text-disabled: #6b6b6b;
+  --ui-sidebar-glyph: #e6e6e6;
+
+  /* Lobe border / mask roles. */
+  --ui-border-subtle: #1a1a1a;
+  --ui-border-default: #202020;
+  --ui-border-strong: #2d2d2d;
+  --ui-backdrop: rgb(0 0 0 / 44%);
+
+  /* Lobe monochrome primary + semantic status colors. */
+  --ui-on-accent: #000000;
+  --ui-accent-strong: #eeeeee;
+  --ui-danger: #e95350;
+  --ui-success: #80c933;
+  --ui-thinking-accent: #ffbe45;
+  --ui-info: #4cb3ff;
+  --ui-warning: #ffbe45;
+  --ui-link: #4cb3ff;
+
+  /* Product surfaces retain Socrates roles while using Lobe foundation values. */
   --ui-avatar-bg: var(--ui-bg-control);
-  --ui-bg-composer: #1c1c1c;
-  --ui-bg-chip: rgb(255 255 255 / 7%);
-  --ui-bg-chip-hover: rgb(255 255 255 / 11%);
-  --ui-bg-bubble: #202020;
-  --ui-bg-segment-active: rgb(255 255 255 / 12%);
-  --ui-shadow-popover: 0 8px 16px rgb(0 0 0 / 32%), inset 0 0 1px rgb(255 255 255 / 20%), 0 0 1px rgb(0 0 0 / 62%);
-  --ui-shadow-dialog: 0 24px 64px rgb(0 0 0 / 22%), 0 4px 16px rgb(0 0 0 / 12%), inset 0 0 1px rgb(255 255 255 / 20%);
-  --ui-composer-border: rgb(255 255 255 / 11%);
-  --ui-composer-shadow: inset 0 0 1px rgb(255 255 255 / 6%);
-  /* Composer tool chip (web search). chatgpt.com keeps #3566f0 text in dark
-     mode too, which is ~3.3:1 on the composer; we lift it to pass WCAG AA. */
-  --ui-tool-chip-text: rgb(129 166 249);
-  --ui-tool-chip-hover-bg: rgb(2 5 98);
-  --ui-tool-chip-hover-text: rgb(218 230 253);
-  --ui-link: rgb(129 166 249);
-  --ui-bg-code: var(--ui-bg-raised);
-  /* Phone code blocks keep a distinct header band in dark mode. */
-  --ui-bg-code-header: var(--ui-bg-control);
-  --ui-border-code: var(--ui-border-default);
-  /* Dialog cards (auth, workspace dialogs) sit one step above the page. */
-  --ui-bg-dialog: var(--ui-bg-surface);
-  /* Placeholders stay at the muted step; labels use --ui-text-muted. */
-  --ui-text-placeholder: var(--ui-text-muted);
-  --ui-scrollbar-thumb: rgb(255 255 255 / 12%);
-  --ui-scrollbar-thumb-hover: rgb(255 255 255 / 22%);
+  --ui-bg-composer: #0d0d0d;
+  --ui-bg-chip: rgb(255 255 255 / 6%);
+  --ui-bg-chip-hover: rgb(255 255 255 / 10%);
+  --ui-bg-bubble: #1a1a1a;
+  --ui-bg-segment-active: #111111;
+  --ui-shadow-popover: 0 17.5px 23.4px rgb(0 0 0 / 6%), 0 9.4px 12.5px rgb(0 0 0 / 5%), 0 5.25px 7px rgb(0 0 0 / 3%), 0 2.8px 3.7px -2px rgb(0 0 0 / 2%), 0 1.2px 1.5px rgb(0 0 0 / 2%);
+  --ui-shadow-dialog: 0 40px 80px rgb(0 0 0 / 9%), 0 20px 40px rgb(0 0 0 / 8%), 0 10px 20px rgb(0 0 0 / 6%), 0 5px 10px rgb(0 0 0 / 5%), 0 2px 4px rgb(0 0 0 / 3%);
+  --ui-composer-border: #202020;
+  --ui-composer-shadow: none;
+  --ui-tool-chip-text: #4cb3ff;
+  --ui-tool-chip-hover-bg: #001a35;
+  --ui-tool-chip-hover-text: #9cdaff;
+  --ui-bg-code: #0d0d0d;
+  --ui-bg-code-header: #1a1a1a;
+  --ui-border-code: #202020;
+  --ui-bg-dialog: #1a1a1a;
+  --ui-scrollbar-thumb: rgb(255 255 255 / 16%);
+  --ui-scrollbar-thumb-hover: rgb(255 255 255 / 28%);
+
+  /* Lobe UI v6 CSS-variable bridge. */
+  --lobe-color-bg-layout: var(--ui-bg-page);
+  --lobe-color-bg-container: var(--ui-bg-raised);
+  --lobe-color-bg-container-secondary: var(--ui-bg-sunken);
+  --lobe-color-bg-elevated: var(--ui-bg-overlay);
+  --lobe-color-bg-mask: var(--ui-backdrop);
+  --lobe-color-bg-text-hover: var(--ui-bg-hover);
+  --lobe-color-border: var(--ui-border-default);
+  --lobe-color-border-secondary: var(--ui-border-subtle);
+  --lobe-color-text: var(--ui-text-primary);
+  --lobe-color-text-heading: var(--ui-text-primary);
+  --lobe-color-text-secondary: var(--ui-text-secondary);
+  --lobe-color-text-tertiary: var(--ui-text-tertiary);
+  --lobe-color-text-description: var(--ui-text-tertiary);
+  --lobe-color-text-placeholder: var(--ui-text-placeholder);
+  --lobe-color-text-disabled: var(--ui-text-disabled);
+  --lobe-color-primary: var(--ui-accent-strong);
+  --lobe-color-primary-text: var(--ui-accent-strong);
+  --lobe-color-primary-bg: var(--ui-bg-selected);
+  --lobe-color-error: var(--ui-danger);
+  --lobe-color-success: var(--ui-success);
+  --lobe-color-warning: var(--ui-warning);
+  --lobe-color-info: var(--ui-info);
+  --lobe-color-link: var(--ui-link);
+  --lobe-control-item-bg-active: var(--ui-bg-selected);
+  --lobe-control-item-bg-hover: var(--ui-bg-hover);
+
   --chat-page: var(--ui-bg-page);
   --chat-surface: var(--ui-bg-surface);
   --chat-control: var(--ui-bg-control);
@@ -94,121 +128,118 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
 
 [data-mode="light"] {
   color-scheme: light;
-  --ui-bg-page: #ffffff;
-  --ui-bg-sidebar: #fcfcfc;
-  --ui-sidebar-border: rgb(0 0 0 / 10%);
-  --ui-bg-raised: #f9f9f9;
-  --ui-bg-surface: #f3f3f3;
-  --ui-bg-control: #e8e8e8;
-  --ui-bg-hover: #f3f3f3;
-  --ui-bg-selected: rgb(243 243 243);
-  --ui-bg-pill-selected: rgb(232 232 232);
-  --ui-bg-hover-ghost: rgb(0 0 0 / 5%);
-  --ui-bg-overlay: #ffffff;
-  --ui-text-primary: #0d0d0d;
-  --ui-text-secondary: #5d5d5d;
-  --ui-text-tertiary: #6e6e6e;
-  /* #8f8f8f (chatgpt.com) is 3.2:1 on white, below WCAG AA for the small
-     labels that use this step (section headers, disclaimers, descriptions).
-     #737373 clears 4.5:1 on the page, sidebar and raised surfaces; the
-     composer placeholder keeps the lighter reference value below. */
-  --ui-text-muted: #737373;
-  --ui-text-placeholder: #8f8f8f;
-  --ui-text-disabled: #b4b4b4;
-  --ui-border-subtle: rgb(0 0 0 / 6%);
-  --ui-border-default: rgb(0 0 0 / 10%);
-  --ui-border-strong: rgb(0 0 0 / 20%);
-  --ui-backdrop: rgb(0 0 0 / 40%);
-  --ui-on-accent: #fff;
-  --ui-accent-strong: #0d0d0d;
-  --ui-danger: #d8241a;
-  --ui-thinking-accent: hsl(18 48% 42%);
-  --ui-success: #027c6a;
-  --ui-info: var(--ui-link);
-  --ui-warning: var(--ui-thinking-accent);
-  --ui-avatar-bg: var(--ui-text-muted);
-  --ui-bg-composer: #fff;
-  --ui-bg-chip: rgb(0 0 0 / 5%);
-  --ui-bg-chip-hover: rgb(0 0 0 / 8%);
-  --ui-bg-bubble: #f3f3f3;
-  --ui-bg-segment-active: #fff;
-  --ui-shadow-popover: 0 8px 12px rgb(0 0 0 / 8%), 0 0 1px rgb(0 0 0 / 62%);
-  --ui-shadow-dialog: 0 24px 64px rgb(0 0 0 / 22%), 0 4px 16px rgb(0 0 0 / 12%);
-  --ui-composer-border: rgb(0 0 0 / 13%);
-  --ui-composer-shadow: 0 1px 2px rgb(0 0 0 / 3%);
-  --ui-tool-chip-text: rgb(53 102 240);
-  --ui-tool-chip-hover-bg: rgb(237 243 254);
-  --ui-tool-chip-hover-text: rgb(36 81 218);
-  --ui-link: rgb(36 81 218);
-  --ui-bg-code: var(--ui-bg-raised);
-  /* Light code blocks are one card, like the desktop transcript. */
-  --ui-bg-code-header: var(--ui-bg-code);
-  --ui-border-code: var(--ui-border-subtle);
-  /* White-on-white with a hairline + shadow, never a grey slab. */
-  --ui-bg-dialog: var(--ui-bg-page);
-  --ui-scrollbar-thumb: rgb(0 0 0 / 16%);
-  --ui-scrollbar-thumb-hover: rgb(0 0 0 / 28%);
-}
 
-/* The supplied phone references use three solid surface steps, with no
-   tinted shadows: input 33, controls 56, popovers 53 (8-bit neutral). */
-@media (max-width: 768px) {
-  [data-mode="dark"] {
-    --ui-bg-control: rgb(56 56 56);
-    --ui-bg-overlay: rgb(53 53 53);
-    --ui-composer-border: rgb(255 255 255 / 7%);
-    --ui-composer-shadow: none;
-    --ui-link: rgb(109 169 239);
-    --ui-danger: rgb(229 72 77);
-  }
+  /* Lobe neutral foundation: layout / container / elevated. */
+  --ui-bg-page: #f8f8f8;
+  --ui-bg-sidebar: #ffffff;
+  --ui-bg-raised: #ffffff;
+  --ui-bg-sunken: #fbfbfb;
+  --ui-bg-surface: #ffffff;
+  --ui-bg-overlay: #ffffff;
+  --ui-bg-control: #f5f5f5;
+  --ui-bg-hover: rgb(0 0 0 / 3%);
+  --ui-bg-selected: #f5f5f5;
+  --ui-bg-pill-selected: #eeeeee;
+  --ui-bg-hover-ghost: rgb(0 0 0 / 3%);
+  --ui-sidebar-border: #eeeeee;
+
+  /* Lobe text neutral roles. */
+  --ui-text-primary: #1f1f1f;
+  --ui-text-secondary: #666666;
+  --ui-text-tertiary: #8a8a8a;
+  --ui-text-muted: #8a8a8a;
+  --ui-text-placeholder: #b0b0b0;
+  --ui-text-disabled: #b0b0b0;
+  --ui-sidebar-glyph: #1f1f1f;
+
+  /* Lobe border / mask roles. */
+  --ui-border-subtle: #eeeeee;
+  --ui-border-default: #e3e3e3;
+  --ui-border-strong: #dddddd;
+  --ui-backdrop: rgb(0 0 0 / 44%);
+
+  /* Lobe monochrome primary + semantic status colors. */
+  --ui-on-accent: #ffffff;
+  --ui-accent-strong: #222222;
+  --ui-danger: #f35837;
+  --ui-success: #00a03f;
+  --ui-thinking-accent: #feb400;
+  --ui-info: #0076e3;
+  --ui-warning: #feb400;
+  --ui-link: #0060cc;
+
+  /* Product surfaces retain Socrates roles while using Lobe foundation values. */
+  --ui-avatar-bg: var(--ui-text-tertiary);
+  --ui-bg-composer: #ffffff;
+  --ui-bg-chip: rgb(0 0 0 / 3%);
+  --ui-bg-chip-hover: rgb(0 0 0 / 6%);
+  --ui-bg-bubble: #ffffff;
+  --ui-bg-segment-active: #f5f5f5;
+  --ui-shadow-popover: 0 17.5px 23.4px rgb(0 0 0 / 4%), 0 9.4px 12.5px rgb(0 0 0 / 3%), 0 5.25px 7px rgb(0 0 0 / 2%), 0 2.8px 3.7px -2px rgb(0 0 0 / 1%), 0 1.2px 1.5px rgb(0 0 0 / 1%);
+  --ui-shadow-dialog: 0 40px 80px rgb(0 0 0 / 9%), 0 20px 40px rgb(0 0 0 / 8%), 0 10px 20px rgb(0 0 0 / 6%), 0 5px 10px rgb(0 0 0 / 5%), 0 2px 4px rgb(0 0 0 / 3%);
+  --ui-composer-border: #e3e3e3;
+  --ui-composer-shadow: none;
+  --ui-tool-chip-text: #0060cc;
+  --ui-tool-chip-hover-bg: #edf4ff;
+  --ui-tool-chip-hover-text: #2c91ff;
+  --ui-bg-code: #ffffff;
+  --ui-bg-code-header: #fbfbfb;
+  --ui-border-code: #eeeeee;
+  --ui-bg-dialog: #ffffff;
+  --ui-scrollbar-thumb: rgb(0 0 0 / 12%);
+  --ui-scrollbar-thumb-hover: rgb(0 0 0 / 24%);
+
+  /* Lobe UI v6 CSS-variable bridge. */
+  --lobe-color-bg-layout: var(--ui-bg-page);
+  --lobe-color-bg-container: var(--ui-bg-raised);
+  --lobe-color-bg-container-secondary: var(--ui-bg-sunken);
+  --lobe-color-bg-elevated: var(--ui-bg-overlay);
+  --lobe-color-bg-mask: var(--ui-backdrop);
+  --lobe-color-bg-text-hover: var(--ui-bg-hover);
+  --lobe-color-border: var(--ui-border-default);
+  --lobe-color-border-secondary: var(--ui-border-subtle);
+  --lobe-color-text: var(--ui-text-primary);
+  --lobe-color-text-heading: var(--ui-text-primary);
+  --lobe-color-text-secondary: var(--ui-text-secondary);
+  --lobe-color-text-tertiary: var(--ui-text-tertiary);
+  --lobe-color-text-description: var(--ui-text-tertiary);
+  --lobe-color-text-placeholder: var(--ui-text-placeholder);
+  --lobe-color-text-disabled: var(--ui-text-disabled);
+  --lobe-color-primary: var(--ui-accent-strong);
+  --lobe-color-primary-text: var(--ui-accent-strong);
+  --lobe-color-primary-bg: var(--ui-bg-selected);
+  --lobe-color-error: var(--ui-danger);
+  --lobe-color-success: var(--ui-success);
+  --lobe-color-warning: var(--ui-warning);
+  --lobe-color-info: var(--ui-info);
+  --lobe-color-link: var(--ui-link);
+  --lobe-control-item-bg-active: var(--ui-bg-selected);
+  --lobe-control-item-bg-hover: var(--ui-bg-hover);
 }
 
 /* ---------------------------------------------------------------------------
- * Compatibility bridge (moved here from polish/tokens.css, 2026-09-30).
+ * Compatibility bridge.
  *
- * themes.css is the sole owner of the palette, so the legacy token families
- * that restore/ and legacy/ still consume — --chatgpt-*, --cg-*, --cgv-*,
- * --conversation-*, and the HSL channel families (--bg-, --text-, --border-
- * prefixed) — are aliased onto the --ui-* ramp here. Keeping them in this
- * file is what lets polish/tokens.css go away: check-css-debt.mjs and
- * check-surface-ownership.mjs both exempt themes.css, so the bridge cannot
- * register as a competing palette or as a desktop owner for the topbar and
- * sidebar surfaces.
- *
- * HSL channels cannot alias a hex token (consumers write
- * hsl(var(--bg-100))), so they carry the same neutral steps as the ramp.
+ * `themes.css` remains the sole palette owner. Older token families used by
+ * legacy/restore CSS alias into the same Socrates v2 roles so no compatibility
+ * surface can silently retain the former ChatGPT-derived neutral ramp.
  * ------------------------------------------------------------------------- */
 
 :root {
-  /* Library file-type colours. One token per category (the categories come
-     from react/pages/workspace/libraryFileTypes.tsx), mapped onto
-     --ui-file-color by the .library-file-* classes below.
-     Each value has to work in THREE roles, so the steps are chosen rather
-     than copied: a filled desktop tile with a white glyph, a glyph on the
-     light phone tile (--ui-bg-surface), and a glyph on the dark phone tile.
-     Every one of them clears 3:1 in all three (the previous desktop set was
-     Tailwind-500 rgb() literals inside polish/workspace.css — white on
-     amber was ~2:1 — and the phone row only had tokens for three of the
-     eight categories, so the rest fell back to plain ink). */
-  --ui-file-image: rgb(225 29 72);    /* rose-600  */
-  --ui-file-html: rgb(13 148 136);    /* teal-600  */
-  --ui-file-doc: rgb(37 99 235);      /* blue-600  */
-  --ui-file-code: rgb(147 51 234);    /* purple-600*/
-  --ui-file-table: rgb(21 128 61);    /* green-700 */
-  --ui-file-video: rgb(220 38 38);    /* red-600   */
-  --ui-file-audio: rgb(180 83 9);     /* amber-700 */
-  --ui-file-file: rgb(100 116 139);   /* slate-500 */
+  --ui-file-image: rgb(225 29 72);
+  --ui-file-html: rgb(13 148 136);
+  --ui-file-doc: rgb(37 99 235);
+  --ui-file-code: rgb(147 51 234);
+  --ui-file-table: rgb(21 128 61);
+  --ui-file-video: rgb(220 38 38);
+  --ui-file-audio: rgb(180 83 9);
+  --ui-file-file: rgb(100 116 139);
   --ui-shadow-menu: var(--ui-shadow-popover);
   --ui-shadow-modal: var(--ui-shadow-dialog);
   --ui-shadow-toast: 0 6px 22px rgb(0 0 0 / 14%);
-
-  /* Focus — single hairline ring, never the UA blue. */
   --ui-focus-ring: 0 0 0 2px var(--ui-bg-page), 0 0 0 4px var(--ui-border-strong);
 
-  /* One font family everywhere: the parity rules that pin --chatgpt-font
-     land on the bundled face (--cg-font) instead of a second stack. */
   --chatgpt-font: var(--cg-font);
-
   --chatgpt-page: var(--ui-bg-page);
   --chatgpt-rail: var(--ui-bg-sidebar);
   --chatgpt-surface: var(--ui-bg-surface);
@@ -224,10 +255,6 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --conversation-text-secondary: var(--conversation-text-muted);
 }
 
-/* File-type colour per category — the desktop tile fills with it
-   (polish/workspace.css), the phone row icon paints its glyph with it
-   (polish/mobile-directories.css). Same hue, same file type, both
-   breakpoints. */
 .library-file-image { --ui-file-color: var(--ui-file-image); }
 .library-file-html { --ui-file-color: var(--ui-file-html); }
 .library-file-doc { --ui-file-color: var(--ui-file-doc); }
@@ -237,10 +264,6 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
 .library-file-audio { --ui-file-color: var(--ui-file-audio); }
 .library-file-file { --ui-file-color: var(--ui-file-file); }
 
-/* chat-surface pins --conversation-page/--cg-page/--cg-rail at
-   html[data-theme][data-mode] (0,2,1); the remap lives at the same
-   specificity and wins by order. The two blocks differ only where the old
-   families mapped a name to different ramp steps per mode. */
 html[data-theme="socrates"][data-mode="dark"],
 html[data-theme="socrates"][data-mode="light"] {
   --cg-page: var(--ui-bg-page);
@@ -267,50 +290,47 @@ html[data-theme="socrates"][data-mode="light"] {
   --conversation-text-muted: var(--ui-text-tertiary);
   --conversation-user: var(--ui-bg-bubble);
 }
-html[data-theme="socrates"][data-mode="dark"] { --cg-surface-raised: var(--ui-bg-control); }
-html[data-theme="socrates"][data-mode="light"] { --cg-surface-raised: var(--ui-bg-raised); }
 
-/* Legacy HSL channels — neutral (hue 0, saturation 0) steps of the same ramp:
-   dark bg #141414 / #1a1a1a / #1f1f1f / #292929, text #e8e8e8 → #808080. */
 html[data-theme="socrates"][data-mode="dark"] {
-  --bg-000: 0 0% 8%;
-  --bg-100: 0 0% 10%;
-  --bg-200: 0 0% 12%;
-  --bg-300: 0 0% 16%;
-  --text-000: 0 0% 93%;
-  --text-100: 0 0% 91%;
-  --text-200: 0 0% 77%;
-  --text-300: 0 0% 65%;
-  --text-350: 0 0% 61%;
-  --text-400: 0 0% 58%;
-  /* 50% (#808080) keeps small labels readable on the charcoal page. */
-  --text-500: 0 0% 50%;
-  --border-100: 0 0% 16%;
-  --border-200: 0 0% 18%;
-  --border-300: 0 0% 20%;
-  --border-400: 0 0% 23%;
-  --border-500: 0 0% 26%;
+  --cg-surface-raised: var(--ui-bg-control);
+
+  /* Legacy HSL channels projected from the Lobe default neutral ramp. */
+  --bg-000: 0 0% 0%;
+  --bg-100: 0 0% 5%;
+  --bg-200: 0 0% 10%;
+  --bg-300: 0 0% 13%;
+  --text-000: 0 0% 100%;
+  --text-100: 0 0% 90%;
+  --text-200: 0 0% 71%;
+  --text-300: 0 0% 56%;
+  --text-350: 0 0% 56%;
+  --text-400: 0 0% 50%;
+  --text-500: 0 0% 42%;
+  --border-100: 0 0% 10%;
+  --border-200: 0 0% 13%;
+  --border-300: 0 0% 18%;
+  --border-400: 0 0% 27%;
+  --border-500: 0 0% 33%;
 }
 
-/* light: bg #fff / #fcfcfc / #f9f9f9 / #f3f3f3, text #0d0d0d → #737373.
-   --text-500 mirrors --ui-text-muted (45% = #737373, AA on the page and the
-   sidebar); the old 56% step was 3.2:1 and made every legacy caption,
-   section label and meta line fail contrast. */
 html[data-theme="socrates"][data-mode="light"] {
+  --cg-surface-raised: var(--ui-bg-raised);
+
+  /* Legacy HSL channels projected from the Lobe default neutral ramp. */
   --bg-000: 0 0% 100%;
-  --bg-100: 0 0% 99%;
-  --bg-200: 0 0% 98%;
-  --bg-300: 0 0% 95%;
-  --text-000: 0 0% 5%;
-  --text-100: 0 0% 5%;
-  --text-200: 0 0% 24%;
-  --text-300: 0 0% 36%;
-  --text-350: 0 0% 40%;
-  --text-400: 0 0% 43%;
-  --text-500: 0 0% 45%;
-  --border-100: 0 0% 91%;
-  --border-200: 0 0% 87%;
-  --border-300: 0 0% 80%;
-  --border-400: 0 0% 70%;
-  --border-500: 0 0% 60%;
+  --bg-100: 0 0% 98%;
+  --bg-200: 0 0% 97%;
+  --bg-300: 0 0% 93%;
+  --text-000: 0 0% 0%;
+  --text-100: 0 0% 12%;
+  --text-200: 0 0% 40%;
+  --text-300: 0 0% 54%;
+  --text-350: 0 0% 54%;
+  --text-400: 0 0% 60%;
+  --text-500: 0 0% 69%;
+  --border-100: 0 0% 93%;
+  --border-200: 0 0% 89%;
+  --border-300: 0 0% 87%;
+  --border-400: 0 0% 80%;
+  --border-500: 0 0% 68%;
 }
