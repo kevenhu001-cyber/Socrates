@@ -1,287 +1,71 @@
-import { stateStore } from '../state/store.js';
-import { showToast } from './toast.js';
-import { loadSession } from '../session/loader.ts';
-import { ensureFuse } from '../vendor/lazy.js';
+/* Cmd+K compatibility facade.
+ * The palette/search implementation is interaction-triggered, but this public
+ * module stays statically importable by windowExports, lifecycle cleanup and
+ * session persistence without retaining the full search runtime at startup. */
+let runtimePromise = null;
+let runtime = null;
+let pendingDirty = false;
+let pendingReset = false;
 
-/* ui/cmdK.js — Wave 1b of main-js-split plan.
- * Cmd-K global search palette: indexer (fuse.js), open/close, render,
- * keyboard navigation, hit selection. Extracted from main.js L844-L1067.
- *
- * Touches the following globals (read from window.*):
- *   - Fuse (CDN)
- *   - SERVER_SESSIONS, CURRENT_USER, state.session.*
- *   - esc (render/helpers.js)
- *   - apiFetch (util/api.ts)
- *   - loadSession, showToast
- *
- * Bridge: windowExports.js exposes closeCmdK + onCmdKInput + onCmdKKey so
- * index.html's inline handlers (L571/L575) keep working.
- */
-
-var _cmdKIndex = null;
-var _cmdKIndexDirty = false;
-var _cmdKIndexDocs = [];
-var _cmdKResults = [];
-var _cmdKSelected = 0;
-var _cmdKRecent = [];
-try {
-  _cmdKRecent = JSON.parse(localStorage.getItem("socrates-search-recent") || "[]") || [];
-} catch (_) { _cmdKRecent = []; }
-
-function markCmdKIndexDirty() {
-  _cmdKIndexDirty = true;
-}
-
-/* The index and the recent-query list are built from the signed-in account's
-   sessions, so app/lifecycle.js drops them on user switch. `socrates-search-recent`
-   goes too — otherwise the queries resurface on the next reload. */
-export function resetCmdKSearchState() {
-  _cmdKIndex = null;
-  _cmdKIndexDirty = false;
-  _cmdKIndexDocs = [];
-  _cmdKResults = [];
-  _cmdKSelected = 0;
-  _cmdKRecent = [];
-  try { localStorage.removeItem("socrates-search-recent"); } catch (_) { /* private mode */ }
-}
-
-/* React migration bridge — fires whenever the legacy state changes so the
-   React compatibility root can mirror the palette via useSyncExternalStore.
-   The registry is installed by frontend/src/react/cmdk/cmdKRuntimeStore.ts
-   on `?react=1` boot; in legacy mode no listener is attached, so every
-   helper is a cheap no-op. */
-function _publishCmdKState() {
-  try {
-    var bridge = window.__socratesCmdK;
-    if (bridge && typeof bridge.publish === "function") {
-      bridge.publish({
-        isOpen: !document.getElementById("cmdKOverlay").classList.contains("hidden"),
-        query: (document.getElementById("cmdKInput") || {}).value || "",
-        results: _cmdKResults,
-        selectedIndex: _cmdKSelected,
-        recent: _cmdKRecent,
-      });
-    }
-  } catch (_) { /* swallow — bridge is best-effort */ }
-}
-
-/* React owns the CmdK overlay's children unconditionally under the
-   always-on runtime. `renderCmdKResultsHTML` is kept as a no-op so
-   legacy callers that build HTML strings can still call it; the
-   legacy HTML is discarded. */
-
-/* renderCmdKResultsHTML is intentionally a no-op: React owns the
-   results panel and reads its state from the CmdK bridge. */
-
-function rebuildCmdKIndex() {
-  if (typeof Fuse === "undefined") {
-    try {
-      ensureFuse().then(function () {
-        if (!window.CURRENT_USER || typeof Fuse === "undefined") return;
-        rebuildCmdKIndex();
-        var overlay = document.getElementById("cmdKOverlay");
-        var input = document.getElementById("cmdKInput");
-        if (overlay && !overlay.classList.contains("hidden") && input && input.value.trim()) {
-          var hits = _cmdKIndex.search(input.value.trim(), { limit: 20 });
-          _cmdKResults = hits.concat(_cmdKResults.filter(function (hit) {
-            return hit.kind === 'remote' && !hits.some(function (local) { return local.item.id === hit.id; });
-          }));
-          _cmdKSelected = 0;
-          _publishCmdKState();
+function loadCmdKRuntime() {
+  if (!runtimePromise) {
+    runtimePromise = import('./cmdK.impl.mjs')
+      .then(function (module) {
+        runtime = module;
+        if (pendingReset) {
+          module.resetCmdKSearchState();
+          pendingReset = false;
         }
-      }).catch(function () { /* keep server search as fallback */ });
-    } catch (_) { /* ignore */ }
+        if (pendingDirty) {
+          module.markCmdKIndexDirty();
+          pendingDirty = false;
+        }
+        return module;
+      })
+      .catch(function (error) {
+        runtimePromise = null;
+        runtime = null;
+        console.error('[cmdK] failed to load runtime', error);
+        throw error;
+      });
+  }
+  return runtimePromise;
+}
+
+function invoke(name, args, loadIfMissing) {
+  if (runtime) {
+    if (typeof runtime[name] === 'function') runtime[name].apply(null, args);
     return;
   }
-  var docs = [];
-  var sessions = window.SERVER_SESSIONS || [];
-  sessions.forEach(function (s) {
-    docs.push({
-      kind: "session",
-      id: s.id,
-      title: s.title || s.topic || "(untitled)",
-      topic: s.topic || "",
-      mode: s.mode || "tutor",
-      updatedAt: s.updated_at || s.updatedAt || 0,
-      snippet: s.preview || (s.title || s.topic || "").slice(0, 140),
-    });
-  });
-  var messages = stateStore.read('messages') || [];
-  messages.forEach(function (m) {
-    if (!m.rawText) return;
-    var role = m.role === "user" ? "You" : "Assistant";
-    docs.push({
-      kind: "message",
-      id: m.clientId || m.id,
-      sessionId: stateStore.read('currentSessionId'),
-      title: role + ": " + (m.rawText || "").slice(0, 80),
-      topic: stateStore.read('topic') || "",
-      snippet: (m.rawText || "").slice(0, 200),
-    });
-  });
-  _cmdKIndexDocs = docs;
-  _cmdKIndex = new Fuse(docs, {
-    keys: ["title", "topic", "snippet"],
-    threshold: 0.4,
-    ignoreLocation: true,
-    minMatchCharLength: 2,
-    includeMatches: true,
-  });
+  if (!runtimePromise && loadIfMissing === false) return;
+  loadCmdKRuntime().then(function (module) {
+    if (typeof module[name] === 'function') module[name].apply(null, args);
+  }).catch(function () { /* loader already reports the error */ });
 }
 
-function openCmdK() {
-  if (!window.CURRENT_USER) return;
-  if (!_cmdKIndex || _cmdKIndexDirty) {
-    rebuildCmdKIndex();
-    _cmdKIndexDirty = false;
+export function resetCmdKSearchState() {
+  try { localStorage.removeItem('socrates-search-recent'); } catch (_) { /* private mode */ }
+  if (runtime) {
+    runtime.resetCmdKSearchState();
+    pendingReset = false;
+  } else {
+    pendingReset = true;
   }
-  var overlay = document.getElementById("cmdKOverlay");
-  if (overlay) overlay.classList.remove("hidden");
-  var input = document.getElementById("cmdKInput");
-  if (input) { input.value = ""; setTimeout(function () { input.focus(); }, 0); }
-  renderCmdKResults(_cmdKRecent.length ? [
-    { kind: "recent", label: "Recent", items: _cmdKRecent.slice(0, 5) },
-  ] : []);
-  _cmdKResults = [];
-  _cmdKSelected = 0;
-  _publishCmdKState();
 }
 
-function closeCmdK() {
-  var overlay = document.getElementById("cmdKOverlay");
-  if (overlay) overlay.classList.add("hidden");
-  _publishCmdKState();
+export function markCmdKIndexDirty() {
+  if (runtime) runtime.markCmdKIndexDirty();
+  else pendingDirty = true;
 }
 
-function onCmdKInput(q) {
-  q = (q || "").trim();
-  if (!q) {
-    renderCmdKResults(_cmdKRecent.length ? [
-      { kind: "recent", label: "Recent", items: _cmdKRecent.slice(0, 5) },
-    ] : []);
-    return;
-  }
-  var hits = _cmdKIndex ? _cmdKIndex.search(q, { limit: 20 }) : [];
-  try {
-    window.apiFetch("/api/search", {
-      method: "POST",
-      body: { q: q, scope: "all", limit: 20 },
-    }).then(function (r) {
-      if (r && Array.isArray(r.hits) && r.hits.length) {
-        /* Stale-response guard — the user may have kept typing while
-           the server round-trip was in flight. */
-        var cur = ((document.getElementById("cmdKInput") || {}).value || "").trim();
-        if (cur !== q) return;
-        var seen = {};
-        _cmdKResults.forEach(function (h) {
-          var it = h.item || h;
-          if (it && it.id) seen[it.id] = true;
-        });
-        var serverHits = r.hits.filter(function (h) {
-          return h && h.id && !seen[h.id];
-        }).map(function (h) {
-          return { kind: "remote", id: h.id, sessionId: h.sessionId, title: h.title, snippet: h.snippet || "" };
-        });
-        if (!serverHits.length) return;
-        /* React owns #cmdKResults — publish through the bridge instead
-           of appending DOM behind React's back. */
-        _cmdKResults = _cmdKResults.concat(serverHits);
-        _publishCmdKState();
-      }
-    }).catch(function () { /* offline or 404 — ignore */ });
-  } catch (_) { /* swallow */ }
-  _cmdKResults = hits;
-  _cmdKSelected = 0;
-  renderCmdKResultsHits(q, hits);
-  _publishCmdKState();
-}
+export function openCmdK() { invoke('openCmdK', [], true); }
+export function closeCmdK() { invoke('closeCmdK', [], false); }
+export function onCmdKInput(q) { invoke('onCmdKInput', [q], true); }
+export function onCmdKKey(ev) { invoke('onCmdKKey', [ev], true); }
+export function openCmdKResult(idx) { invoke('openCmdKResult', [idx], true); }
+export function rebuildCmdKIndex() { invoke('rebuildCmdKIndex', [], true); }
+export function renderCmdKResults(sections) { invoke('renderCmdKResults', [sections], true); }
+export function renderCmdKResultsHits(q, hits) { invoke('renderCmdKResultsHits', [q, hits], true); }
+export function updateCmdKSelected() { invoke('updateCmdKSelected', [], true); }
 
-function renderCmdKResultsHits(_q, _hits) {}
-
-function renderCmdKResults(_sections) {}
-
-function updateCmdKSelected() {
-  var rows = document.querySelectorAll("#cmdKResults .cmd-k-row");
-  rows.forEach(function (r, i) {
-    r.classList.toggle("selected", i === _cmdKSelected);
-    if (i === _cmdKSelected && r.scrollIntoView) {
-      r.scrollIntoView({ block: "nearest" });
-    }
-  });
-}
-
-function openCmdKResult(idx) {
-  var hit = _cmdKResults[idx];
-  if (!hit) return;
-  var item = hit.item || hit;
-  var q = document.getElementById("cmdKInput").value.trim();
-  if (q) {
-    _cmdKRecent = _cmdKRecent.filter(function (x) { return x !== q; });
-    _cmdKRecent.unshift(q);
-    _cmdKRecent = _cmdKRecent.slice(0, 10);
-    try { localStorage.setItem("socrates-search-recent", JSON.stringify(_cmdKRecent)); } catch (_) {}
-  }
-  if (item.kind === "session") {
-    loadSession(item.id);
-  } else if (item.kind === "message" && item.sessionId) {
-    loadSession(item.sessionId);
-  } else if (item.kind === "remote" && item.sessionId) {
-    loadSession(item.sessionId);
-  }
-  closeCmdK();
-  _publishCmdKState();
-}
-
-function onCmdKKey(ev) {
-  if (ev.key === "Escape") {
-    ev.preventDefault();
-    closeCmdK();
-  } else if (ev.key === "ArrowDown") {
-    ev.preventDefault();
-    if (_cmdKResults.length) {
-      _cmdKSelected = (_cmdKSelected + 1) % _cmdKResults.length;
-      updateCmdKSelected();
-    }
-  } else if (ev.key === "ArrowUp") {
-    ev.preventDefault();
-    if (_cmdKResults.length) {
-      _cmdKSelected = (_cmdKSelected - 1 + _cmdKResults.length) % _cmdKResults.length;
-      updateCmdKSelected();
-    }
-  } else if (ev.key === "Enter") {
-    ev.preventDefault();
-    if (_cmdKResults.length) {
-      openCmdKResult(_cmdKSelected);
-    } else {
-      var q = document.getElementById("cmdKInput").value.trim();
-      if (q) {
-        window.apiFetch("/api/search", {
-          method: "POST",
-          body: { q: q, scope: "all", limit: 20 },
-        }).then(function (r) {
-          if (r && Array.isArray(r.hits) && r.hits.length) {
-            _cmdKResults = r.hits.map(function (h) {
-              return { item: { kind: "remote", id: h.id, sessionId: h.sessionId, title: h.title, snippet: h.snippet || "" } };
-            });
-            _cmdKSelected = 0;
-            renderCmdKResultsHits(q, _cmdKResults);
-            _publishCmdKState();
-          } else {
-            showToast("No matches");
-          }
-        }).catch(function () {
-          showToast("Search failed");
-        });
-      }
-    }
-  }
-  _publishCmdKState();
-}
-
-export {
-  rebuildCmdKIndex, openCmdK, closeCmdK,
-  onCmdKInput, onCmdKKey, renderCmdKResults,
-  renderCmdKResultsHits,
-  openCmdKResult, updateCmdKSelected,
-  markCmdKIndexDirty,
-};
+export { loadCmdKRuntime };

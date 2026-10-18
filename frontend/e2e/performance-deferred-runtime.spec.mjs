@@ -18,12 +18,15 @@ function productionStaticScripts() {
   return { report, scripts };
 }
 
-test('session restore and message-action runtimes stay outside the production static closure', () => {
+test('interaction-only runtimes stay outside the production static closure', () => {
   const { report, scripts } = productionStaticScripts();
   const deferred = [
     'src/session/loader.impl.ts',
     'src/chat/editBranch.impl.mjs',
     'src/ui/readAloud.impl.mjs',
+    'src/session/organize.ts',
+    'src/ui/cmdK.impl.mjs',
+    'src/ui/knowledgeDetail.impl.mjs',
   ];
 
   for (const id of deferred) {
