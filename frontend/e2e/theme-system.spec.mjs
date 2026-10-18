@@ -34,21 +34,45 @@ test('theme selector follows the operating system and persists explicit modes', 
       chatgptPage: styles.getPropertyValue('--chatgpt-page').trim(),
       conversationPage: styles.getPropertyValue('--conversation-page').trim(),
       legacyPage: styles.getPropertyValue('--bg-000').trim(),
+      lobeLayout: styles.getPropertyValue('--lobe-color-bg-layout').trim(),
+      lobeContainer: styles.getPropertyValue('--lobe-color-bg-container').trim(),
+      lobeElevated: styles.getPropertyValue('--lobe-color-bg-elevated').trim(),
     };
   });
-  expect(darkPalette.page).toBe('#141414');
-  expect(darkPalette.sidebar).toBe('#1e1e1e');
-  expect(darkPalette.raised).toBe('#1c1c1c');
-  expect(darkPalette.surface).toBe('#212121');
-  // Supplied charcoal reference ramp (styles/themes.css).
+  expect(darkPalette.page).toBe('#000000');
+  expect(darkPalette.sidebar).toBe('#0d0d0d');
+  expect(darkPalette.raised).toBe('#0d0d0d');
+  expect(darkPalette.surface).toBe('#1a1a1a');
+  // Socrates v2 keeps every compatibility family on the Lobe-aligned source.
   expect(darkPalette.cgPage).toBe(darkPalette.page);
   expect(darkPalette.chatgptPage).toBe(darkPalette.page);
   expect(darkPalette.conversationPage).toBe(darkPalette.page);
-  expect(darkPalette.legacyPage).toBe('0 0% 8%');
+  expect(darkPalette.legacyPage).toBe('0 0% 0%');
+  expect(darkPalette.lobeLayout).toBe(darkPalette.page);
+  expect(darkPalette.lobeContainer).toBe(darkPalette.raised);
+  expect(darkPalette.lobeElevated).toBe(darkPalette.surface);
 
   await themeSegs.locator('[data-theme-option="system"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'system');
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'light');
+
+  const lightPalette = await page.evaluate(() => {
+    const styles = getComputedStyle(document.documentElement);
+    return {
+      page: styles.getPropertyValue('--ui-bg-page').trim(),
+      raised: styles.getPropertyValue('--ui-bg-raised').trim(),
+      elevated: styles.getPropertyValue('--ui-bg-surface').trim(),
+      text: styles.getPropertyValue('--ui-text-primary').trim(),
+      border: styles.getPropertyValue('--ui-border-default').trim(),
+    };
+  });
+  expect(lightPalette).toEqual({
+    page: '#f8f8f8',
+    raised: '#ffffff',
+    elevated: '#ffffff',
+    text: '#1f1f1f',
+    border: '#e3e3e3',
+  });
 
   await page.emulateMedia({ colorScheme: 'dark' });
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
