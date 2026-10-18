@@ -3,7 +3,7 @@
  * Zero-behavior-change lift. Session list data comes from session modules;
  * the window.renderRecents bridge in main.js stays as the public entry.
  */
-import { _publishSessionList } from '../session/organize.ts';
+import { publishSessionList } from '../session/sessionListPublisher.ts';
 import { hasCachedProjects, loadCachedProjects } from '../projects/projectCache.ts';
 import { refreshRecentsFilterChipData } from '../sidebar/sidebar.service.ts';
 import { apiFetch } from '../util/api.ts';
@@ -26,7 +26,7 @@ export function doRenderRecents() {
      so React re-renders from state. The legacy innerHTML rendering
      was reachable only when session-list was not migrated, which is
      no longer possible after the always-on React runtime landed. */
-  _publishSessionList();
+  publishSessionList();
   refreshRecentsFilterData();
 }
 

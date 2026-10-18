@@ -10,7 +10,7 @@ import { resendLastUserMessage, setChatStopState, handleSendClick, stopChatRespo
 import { setCurrentUser, markAuthSuccess, isInAuthGraceWindow, clearPerUserClientState, toggleAppMode, resetApp, startNewChat, signOut, toggleIncognito } from './lifecycle.js';
 import { getExplanation } from '../tutor/socraticTurn.js';
 import { setActiveTemplate, clearActiveTemplate } from '../chat/templateSlash.js';
-import { openTagEditor, closeTagEditor, onSessionDragStart, onSessionDragEnd, cycleActiveProject } from '../session/organize.ts';
+import { openTagEditor, closeTagEditor, onSessionDragStart, onSessionDragEnd, cycleActiveProject } from '../session/organizeRuntime.ts';
 import { askChatTurn } from '../chat/turnController.js';
 /* chat/streamingTurn.js (~65KB) is lazy — window.addStreamingMessage is
    an async proxy below; all call sites sit inside async send/restore
