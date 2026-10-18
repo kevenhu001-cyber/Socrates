@@ -21,33 +21,40 @@ function loadPromptTemplatesImpl() {
   return _implPromise;
 }
 
+function runPromptTemplatesAction(action) {
+  void loadPromptTemplatesImpl().then(action).catch(function () { /* loader logs */ });
+}
+
 function openPromptTemplatesModal() {
-  return loadPromptTemplatesImpl().then(function (module) { return module.openPromptTemplatesModal(); });
+  runPromptTemplatesAction(function (module) { module.openPromptTemplatesModal(); });
 }
 
 function closePromptTemplatesModal() {
-  if (_impl) return _impl.closePromptTemplatesModal();
-  if (_implPromise) return _implPromise.then(function (module) { return module.closePromptTemplatesModal(); });
+  if (_impl) _impl.closePromptTemplatesModal();
+  else if (_implPromise) void _implPromise.then(function (module) { module.closePromptTemplatesModal(); }).catch(function () {});
 }
 
 function renderPromptTemplatesModal() {
-  return loadPromptTemplatesImpl().then(function (module) { return module.renderPromptTemplatesModal(); });
+  runPromptTemplatesAction(function (module) { module.renderPromptTemplatesModal(); });
 }
 
+/* Kept only for legacy compatibility. First-party rendering happens inside
+   the implementation module, so callers should not depend on this helper
+   synchronously before the feature has loaded. */
 function renderPromptRow(template, editable) {
   return loadPromptTemplatesImpl().then(function (module) { return module.renderPromptRow(template, editable); });
 }
 
 function onPromptRowDelete(id) {
-  return loadPromptTemplatesImpl().then(function (module) { return module.onPromptRowDelete(id); });
+  runPromptTemplatesAction(function (module) { module.onPromptRowDelete(id); });
 }
 
 function openPromptTemplateEditor(id) {
-  return loadPromptTemplatesImpl().then(function (module) { return module.openPromptTemplateEditor(id); });
+  runPromptTemplatesAction(function (module) { module.openPromptTemplateEditor(id); });
 }
 
 function onPromptTemplateEditorSave(id) {
-  return loadPromptTemplatesImpl().then(function (module) { return module.onPromptTemplateEditorSave(id); });
+  runPromptTemplatesAction(function (module) { module.onPromptTemplateEditorSave(id); });
 }
 
 export {
