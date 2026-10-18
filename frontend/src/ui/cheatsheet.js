@@ -18,15 +18,21 @@ function loadCheatsheetImpl() {
   return _implPromise;
 }
 
+function runCheatsheetAction(action) {
+  void loadCheatsheetImpl().then(action).catch(function () { /* loader logs */ });
+}
+
 export function openCheatsheet() {
-  return loadCheatsheetImpl().then(function (module) { return module.openCheatsheet(); });
+  runCheatsheetAction(function (module) { module.openCheatsheet(); });
 }
 
 export function closeCheatsheet() {
-  if (_impl) return _impl.closeCheatsheet();
-  if (_implPromise) return _implPromise.then(function (module) { return module.closeCheatsheet(); });
+  if (_impl) _impl.closeCheatsheet();
+  else if (_implPromise) void _implPromise.then(function (module) { module.closeCheatsheet(); }).catch(function () {});
 }
 
+/* No first-party caller consumes this helper directly; retain it for legacy
+   compatibility while keeping the implementation out of startup. */
 export function buildCheatsheetSection(title, rows) {
   return loadCheatsheetImpl().then(function (module) { return module.buildCheatsheetSection(title, rows); });
 }
