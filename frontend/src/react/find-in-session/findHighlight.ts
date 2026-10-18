@@ -9,7 +9,10 @@
  */
 
 import { prefersReducedMotion } from '../../ui/motion.js';
-import { flushDeferredMessageRows } from '../message-list/deferredRows';
+import {
+  flushDeferredMessageRows,
+  restoreDeferredMessageRows,
+} from '../message-list/deferredRows';
 
 let _findMatches: HTMLElement[] = [];
 let _findIndex = -1;
@@ -58,10 +61,13 @@ function highlightTextNodes(query: string): { matchCount: number } {
   clearHighlights();
   _findQuery = query;
   const list = msgList();
-  if (!_findQuery || !list) return { matchCount: 0 };
-  /* P_progressive-mount — a freshly opened long session mounts its older rows
-     over a few idle frames; search the whole transcript, not just the tail. */
-  try { flushDeferredMessageRows(); } catch { /* empty-catch: intentional — search mounted rows if progressive flush fails. */ }
+  if (!_findQuery || !list) {
+    try { restoreDeferredMessageRows(); } catch { /* empty-catch: best-effort bounded restore. */ }
+    return { matchCount: 0 };
+  }
+  /* The normal transcript is a bounded DOM window. Search explicitly opts
+     into the expensive full mount, then releases it when the query closes. */
+  try { flushDeferredMessageRows(); } catch { /* empty-catch: intentional — search mounted rows if full mount fails. */ }
   const needle = _findQuery.toLowerCase();
   const textNodes: Text[] = [];
   const bodies = list.querySelectorAll('.msg-body');
@@ -123,4 +129,5 @@ export function navigatePrev(): { matchCount: number; activeIndex: number } {
 export function closeHighlights(): void {
   clearHighlights();
   _findQuery = '';
+  try { restoreDeferredMessageRows(); } catch { /* empty-catch: closing search must remain safe. */ }
 }
