@@ -145,11 +145,11 @@ export function correctScrollAnchor(anchor: ScrollAnchor, host: HTMLElement): vo
     stickTo(host);
     return;
   }
-  if (anchor.clientId && Number.isFinite(anchor.visualTop)) {
+  if (anchor.clientId && typeof anchor.visualTop === 'number') {
     const row = rowByClientId(host, anchor.clientId);
     if (row) {
       const visualTop = row.getBoundingClientRect().top - host.getBoundingClientRect().top;
-      writeScrollTop(host, host.scrollTop + (visualTop - Number(anchor.visualTop)), 'history');
+      writeScrollTop(host, host.scrollTop + (visualTop - anchor.visualTop), 'history');
       return;
     }
   }

@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   MAX_MOUNTED_ROWS,
   fullMountWindow,
+  hasLiveTail,
   indexOfId,
   resolveMountedRows,
   shiftMountWindow,
@@ -118,6 +119,29 @@ test('older scrolling grows to the cap, then slides the bounded window', () => {
   assert.equal(backTowardTail.start, 40);
   assert.equal(backTowardTail.end, 100);
   assert.equal(backTowardTail.ceiling, null);
+});
+
+test('a live assistant tail cannot be stranded outside a historical window', () => {
+  const items = history(99);
+  items.push({
+    id: 'message-99',
+    role: 'assistant',
+    type: 'streaming',
+    rawText: 'Still streaming',
+  });
+
+  assert.equal(hasLiveTail(items), true);
+  const resolved = resolveMountedRows(items, {
+    items,
+    floor: 'message-20',
+    ceiling: 'message-80',
+    full: false,
+  });
+
+  assert.equal(resolved.start, 88);
+  assert.equal(resolved.end, 100);
+  assert.equal(resolved.ceiling, null);
+  assert.equal(resolved.mounted.at(-1)?.id, 'message-99');
 });
 
 test('full mount is explicit and collapse can center around the visible row', () => {

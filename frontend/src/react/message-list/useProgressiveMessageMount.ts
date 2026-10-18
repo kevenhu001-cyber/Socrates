@@ -11,6 +11,7 @@ import {
 } from './messageScroll';
 import {
   fullMountWindow,
+  hasLiveTail,
   indexOfId,
   MAX_MOUNTED_ROWS,
   NEAR_BOTTOM_PX,
@@ -44,6 +45,7 @@ export function useProgressiveMessageMount(items: ReadonlyArray<LegacyChatMessag
   const [, rerender] = useReducer((count: number) => count + 1, 0);
   const mountWindow = resolveMountedRows(items, trackRef.current);
   const { ceiling, end, floor, full, mounted, replaced, start } = mountWindow;
+  const liveTail = hasLiveTail(items);
 
   useLayoutEffect(() => {
     trackRef.current = { items, floor, ceiling, full };
@@ -116,7 +118,10 @@ export function useProgressiveMessageMount(items: ReadonlyArray<LegacyChatMessag
     const onScroll = () => {
       if (cancelled) return;
       if (start > 0 && host.scrollTop < NEAR_TOP_PX) {
-        shift('older');
+        /* While a response streams, keep its tail row resident. We may grow
+           backward up to the cap, but we do not slide the whole window away
+           from the live assistant row. */
+        if (!liveTail || mounted.length < MAX_MOUNTED_ROWS) shift('older');
         return;
       }
       const distanceFromBottom = host.scrollHeight - host.scrollTop - host.clientHeight;
@@ -149,7 +154,7 @@ export function useProgressiveMessageMount(items: ReadonlyArray<LegacyChatMessag
       }
       host.removeEventListener('scroll', onScroll);
     };
-  }, [ceiling, end, floor, full, items.length, mounted.length, start]);
+  }, [ceiling, end, floor, full, items.length, liveTail, mounted.length, start]);
 
   return { mounted, start };
 }

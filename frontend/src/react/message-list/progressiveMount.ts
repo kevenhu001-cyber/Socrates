@@ -31,6 +31,16 @@ function lastId(items: ReadonlyArray<LegacyChatMessage>): string | null {
   return items.length ? entryId(items[items.length - 1], `idx-${items.length - 1}`) : null;
 }
 
+export function hasLiveTail(items: ReadonlyArray<LegacyChatMessage>): boolean {
+  const last = items.length ? items[items.length - 1] : null;
+  return Boolean(
+    last
+    && last.role === 'assistant'
+    && last.type === 'streaming'
+    && last._streamSettled !== true,
+  );
+}
+
 function isReplacement(
   previous: ReadonlyArray<LegacyChatMessage>,
   next: ReadonlyArray<LegacyChatMessage>,
@@ -97,7 +107,8 @@ export function resolveMountedRows(
   replaced: boolean;
 } {
   const replaced = items !== previous.items && isReplacement(previous.items, items);
-  let state: MountWindowState = replaced
+  const forceLiveTail = !previous.full && previous.ceiling !== null && hasLiveTail(items);
+  let state: MountWindowState = replaced || forceLiveTail
     ? tailState(items)
     : { floor: previous.floor, ceiling: previous.ceiling, full: previous.full };
   let indexes = resolvedIndexes(items, state);
