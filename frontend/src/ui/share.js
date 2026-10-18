@@ -3,7 +3,7 @@
  * The full share/read-only-session renderer pulls tool cards and
  * visualization helpers. Keep those bytes out of the application entry graph:
  * only the tiny chrome synchronizer stays eager, while every feature action
- * loads share.impl.js on first use. Existing import paths and window bridges
+ * loads share.impl.mjs on first use. Existing import paths and window bridges
  * keep the same names, so callers do not need a migration wave just to gain
  * the loading boundary.
  */
@@ -14,7 +14,7 @@ let _shareImpl = null;
 function loadShareImpl() {
   if (_shareImpl) return Promise.resolve(_shareImpl);
   if (!_shareImplPromise) {
-    _shareImplPromise = import('./share.impl.js')
+    _shareImplPromise = import('./share.impl.mjs')
       .then(function (module) {
         _shareImpl = module;
         return module;
@@ -98,7 +98,7 @@ function renderSharedQuestionCard(idx, question) {
 
 /* Historical named exports are retained for compatibility. They were not used
    as live bindings by first-party callers; the authoritative runtime values
-   live in share.impl.js once the feature is loaded. */
+   live in share.impl.mjs once the feature is loaded. */
 var _shareVisibility = 'public';
 var _shareToken = null;
 var _shareUrl = '';
