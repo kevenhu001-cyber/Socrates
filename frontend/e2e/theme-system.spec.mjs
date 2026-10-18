@@ -43,14 +43,13 @@ test('theme selector follows the operating system and persists explicit modes', 
   expect(darkPalette.sidebar).toBe('#0d0d0d');
   expect(darkPalette.raised).toBe('#0d0d0d');
   expect(darkPalette.surface).toBe('#1a1a1a');
-  // Socrates v2 keeps every compatibility family on the Lobe-aligned source.
-  expect(darkPalette.cgPage).toBe(darkPalette.page);
-  expect(darkPalette.chatgptPage).toBe(darkPalette.page);
-  expect(darkPalette.conversationPage).toBe(darkPalette.page);
+  expect(darkPalette.cgPage).toBe('var(--ui-bg-page)');
+  expect(darkPalette.chatgptPage).toBe('var(--ui-bg-page)');
+  expect(darkPalette.conversationPage).toBe('var(--ui-bg-page)');
   expect(darkPalette.legacyPage).toBe('0 0% 0%');
-  expect(darkPalette.lobeLayout).toBe(darkPalette.page);
-  expect(darkPalette.lobeContainer).toBe(darkPalette.raised);
-  expect(darkPalette.lobeElevated).toBe(darkPalette.surface);
+  expect(darkPalette.lobeLayout).toBe('var(--ui-bg-page)');
+  expect(darkPalette.lobeContainer).toBe('var(--ui-bg-raised)');
+  expect(darkPalette.lobeElevated).toBe('var(--ui-bg-overlay)');
 
   await themeSegs.locator('[data-theme-option="system"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'system');

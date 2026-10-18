@@ -1,16 +1,10 @@
 /*
  * themes.css — canonical Socrates palette and compatibility bridge.
  *
- * Socrates Design System v2 uses the Lobe UI default neutral token values as
- * its foundation while keeping the stable `--ui-*` semantic API consumed by
- * first-party components, legacy compatibility CSS, and the Universal App.
- * Product geometry (composer, bubbles, transcript width, tutor/Intelligent UI)
- * remains Socrates-owned in tokens.css and component styles.
- *
- * Upstream reference: @lobehub/ui v6 default token snapshot
- * (`createLobeToken.test.ts.snap`). Keep Lobe aliases below mapped onto the
- * Socrates semantic roles so future Lobe primitives and existing components
- * paint from one palette.
+ * Socrates Design System v2 uses the Lobe UI v6 default neutral token values
+ * as its foundation while keeping the stable `--ui-*` API consumed by the
+ * existing Web UI and shared theme package. Product geometry remains owned by
+ * tokens.css / component styles.
  */
 
 html[data-theme="socrates"][data-mode],
@@ -19,7 +13,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --cg-font: var(--font-sans);
   --font-display: var(--font-sans);
 
-  /* Lobe structural aliases. Values are supplied by the effective mode. */
+  /* Base 4 / 6 / 8 / 12 radii already match the Lobe foundation. */
   --lobe-border-radius-xs: var(--ui-radius-xs);
   --lobe-border-radius-sm: var(--ui-radius-sm);
   --lobe-border-radius: var(--ui-radius-md);
@@ -35,86 +29,59 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-bg-raised: #0d0d0d;
   --ui-bg-sunken: #060606;
   --ui-bg-surface: #1a1a1a;
-  --ui-bg-overlay: #1a1a1a;
+  --ui-bg-overlay: var(--ui-bg-surface);
   --ui-bg-control: #2d2d2d;
   --ui-bg-hover: rgb(255 255 255 / 6%);
   --ui-bg-selected: #111111;
   --ui-bg-pill-selected: #333333;
-  --ui-bg-hover-ghost: rgb(255 255 255 / 6%);
-  --ui-sidebar-border: #1a1a1a;
+  --ui-bg-hover-ghost: var(--ui-bg-hover);
+  --ui-sidebar-border: var(--ui-bg-surface);
 
   /* Lobe text neutral roles. */
   --ui-text-primary: #e6e6e6;
   --ui-text-secondary: #b4b4b4;
   --ui-text-tertiary: #8f8f8f;
-  --ui-text-muted: #8f8f8f;
+  --ui-text-muted: var(--ui-text-tertiary);
   --ui-text-placeholder: #6b6b6b;
-  --ui-text-disabled: #6b6b6b;
-  --ui-sidebar-glyph: #e6e6e6;
+  --ui-text-disabled: var(--ui-text-placeholder);
+  --ui-sidebar-glyph: var(--ui-text-primary);
 
   /* Lobe border / mask roles. */
-  --ui-border-subtle: #1a1a1a;
+  --ui-border-subtle: var(--ui-bg-surface);
   --ui-border-default: #202020;
-  --ui-border-strong: #2d2d2d;
+  --ui-border-strong: var(--ui-bg-control);
   --ui-backdrop: rgb(0 0 0 / 44%);
 
   /* Lobe monochrome primary + semantic status colors. */
-  --ui-on-accent: #000000;
+  --ui-on-accent: var(--ui-bg-page);
   --ui-accent-strong: #eeeeee;
-  --ui-danger: #e95350;
-  --ui-success: #80c933;
-  --ui-thinking-accent: #ffbe45;
-  --ui-info: #4cb3ff;
-  --ui-warning: #ffbe45;
-  --ui-link: #4cb3ff;
+  --ui-danger: rgb(233 83 80);
+  --ui-success: rgb(128 201 51);
+  --ui-thinking-accent: rgb(255 190 69);
+  --ui-info: rgb(76 179 255);
+  --ui-warning: var(--ui-thinking-accent);
+  --ui-link: var(--ui-info);
 
-  /* Product surfaces retain Socrates roles while using Lobe foundation values. */
+  /* Socrates product roles projected from the foundation. */
   --ui-avatar-bg: var(--ui-bg-control);
-  --ui-bg-composer: #0d0d0d;
-  --ui-bg-chip: rgb(255 255 255 / 6%);
+  --ui-bg-composer: var(--ui-bg-raised);
+  --ui-bg-chip: var(--ui-bg-hover);
   --ui-bg-chip-hover: rgb(255 255 255 / 10%);
-  --ui-bg-bubble: #1a1a1a;
-  --ui-bg-segment-active: #111111;
+  --ui-bg-bubble: var(--ui-bg-surface);
+  --ui-bg-segment-active: var(--ui-bg-selected);
   --ui-shadow-popover: 0 17.5px 23.4px rgb(0 0 0 / 6%), 0 9.4px 12.5px rgb(0 0 0 / 5%), 0 5.25px 7px rgb(0 0 0 / 3%), 0 2.8px 3.7px -2px rgb(0 0 0 / 2%), 0 1.2px 1.5px rgb(0 0 0 / 2%);
   --ui-shadow-dialog: 0 40px 80px rgb(0 0 0 / 9%), 0 20px 40px rgb(0 0 0 / 8%), 0 10px 20px rgb(0 0 0 / 6%), 0 5px 10px rgb(0 0 0 / 5%), 0 2px 4px rgb(0 0 0 / 3%);
-  --ui-composer-border: #202020;
+  --ui-composer-border: var(--ui-border-default);
   --ui-composer-shadow: none;
-  --ui-tool-chip-text: #4cb3ff;
-  --ui-tool-chip-hover-bg: #001a35;
-  --ui-tool-chip-hover-text: #9cdaff;
-  --ui-bg-code: #0d0d0d;
-  --ui-bg-code-header: #1a1a1a;
-  --ui-border-code: #202020;
-  --ui-bg-dialog: #1a1a1a;
+  --ui-tool-chip-text: var(--ui-info);
+  --ui-tool-chip-hover-bg: rgb(0 26 53);
+  --ui-tool-chip-hover-text: rgb(156 218 255);
+  --ui-bg-code: var(--ui-bg-raised);
+  --ui-bg-code-header: var(--ui-bg-surface);
+  --ui-border-code: var(--ui-border-default);
+  --ui-bg-dialog: var(--ui-bg-surface);
   --ui-scrollbar-thumb: rgb(255 255 255 / 16%);
   --ui-scrollbar-thumb-hover: rgb(255 255 255 / 28%);
-
-  /* Lobe UI v6 CSS-variable bridge. */
-  --lobe-color-bg-layout: var(--ui-bg-page);
-  --lobe-color-bg-container: var(--ui-bg-raised);
-  --lobe-color-bg-container-secondary: var(--ui-bg-sunken);
-  --lobe-color-bg-elevated: var(--ui-bg-overlay);
-  --lobe-color-bg-mask: var(--ui-backdrop);
-  --lobe-color-bg-text-hover: var(--ui-bg-hover);
-  --lobe-color-border: var(--ui-border-default);
-  --lobe-color-border-secondary: var(--ui-border-subtle);
-  --lobe-color-text: var(--ui-text-primary);
-  --lobe-color-text-heading: var(--ui-text-primary);
-  --lobe-color-text-secondary: var(--ui-text-secondary);
-  --lobe-color-text-tertiary: var(--ui-text-tertiary);
-  --lobe-color-text-description: var(--ui-text-tertiary);
-  --lobe-color-text-placeholder: var(--ui-text-placeholder);
-  --lobe-color-text-disabled: var(--ui-text-disabled);
-  --lobe-color-primary: var(--ui-accent-strong);
-  --lobe-color-primary-text: var(--ui-accent-strong);
-  --lobe-color-primary-bg: var(--ui-bg-selected);
-  --lobe-color-error: var(--ui-danger);
-  --lobe-color-success: var(--ui-success);
-  --lobe-color-warning: var(--ui-warning);
-  --lobe-color-info: var(--ui-info);
-  --lobe-color-link: var(--ui-link);
-  --lobe-control-item-bg-active: var(--ui-bg-selected);
-  --lobe-control-item-bg-hover: var(--ui-bg-hover);
 
   --chat-page: var(--ui-bg-page);
   --chat-surface: var(--ui-bg-surface);
@@ -135,61 +102,65 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-bg-raised: #ffffff;
   --ui-bg-sunken: #fbfbfb;
   --ui-bg-surface: #ffffff;
-  --ui-bg-overlay: #ffffff;
+  --ui-bg-overlay: var(--ui-bg-surface);
   --ui-bg-control: #f5f5f5;
   --ui-bg-hover: rgb(0 0 0 / 3%);
-  --ui-bg-selected: #f5f5f5;
+  --ui-bg-selected: var(--ui-bg-control);
   --ui-bg-pill-selected: #eeeeee;
-  --ui-bg-hover-ghost: rgb(0 0 0 / 3%);
-  --ui-sidebar-border: #eeeeee;
+  --ui-bg-hover-ghost: var(--ui-bg-hover);
+  --ui-sidebar-border: var(--ui-bg-pill-selected);
 
   /* Lobe text neutral roles. */
   --ui-text-primary: #1f1f1f;
   --ui-text-secondary: #666666;
   --ui-text-tertiary: #8a8a8a;
-  --ui-text-muted: #8a8a8a;
+  --ui-text-muted: var(--ui-text-tertiary);
   --ui-text-placeholder: #b0b0b0;
-  --ui-text-disabled: #b0b0b0;
-  --ui-sidebar-glyph: #1f1f1f;
+  --ui-text-disabled: var(--ui-text-placeholder);
+  --ui-sidebar-glyph: var(--ui-text-primary);
 
   /* Lobe border / mask roles. */
-  --ui-border-subtle: #eeeeee;
+  --ui-border-subtle: var(--ui-bg-pill-selected);
   --ui-border-default: #e3e3e3;
   --ui-border-strong: #dddddd;
   --ui-backdrop: rgb(0 0 0 / 44%);
 
   /* Lobe monochrome primary + semantic status colors. */
-  --ui-on-accent: #ffffff;
+  --ui-on-accent: var(--ui-bg-surface);
   --ui-accent-strong: #222222;
-  --ui-danger: #f35837;
-  --ui-success: #00a03f;
-  --ui-thinking-accent: #feb400;
-  --ui-info: #0076e3;
-  --ui-warning: #feb400;
-  --ui-link: #0060cc;
+  --ui-danger: rgb(243 88 55);
+  --ui-success: rgb(0 160 63);
+  --ui-thinking-accent: rgb(254 180 0);
+  --ui-info: rgb(0 118 227);
+  --ui-warning: var(--ui-thinking-accent);
+  --ui-link: rgb(0 96 204);
 
-  /* Product surfaces retain Socrates roles while using Lobe foundation values. */
+  /* Socrates product roles projected from the foundation. */
   --ui-avatar-bg: var(--ui-text-tertiary);
-  --ui-bg-composer: #ffffff;
-  --ui-bg-chip: rgb(0 0 0 / 3%);
+  --ui-bg-composer: var(--ui-bg-surface);
+  --ui-bg-chip: var(--ui-bg-hover);
   --ui-bg-chip-hover: rgb(0 0 0 / 6%);
-  --ui-bg-bubble: #ffffff;
-  --ui-bg-segment-active: #f5f5f5;
+  --ui-bg-bubble: var(--ui-bg-surface);
+  --ui-bg-segment-active: var(--ui-bg-control);
   --ui-shadow-popover: 0 17.5px 23.4px rgb(0 0 0 / 4%), 0 9.4px 12.5px rgb(0 0 0 / 3%), 0 5.25px 7px rgb(0 0 0 / 2%), 0 2.8px 3.7px -2px rgb(0 0 0 / 1%), 0 1.2px 1.5px rgb(0 0 0 / 1%);
   --ui-shadow-dialog: 0 40px 80px rgb(0 0 0 / 9%), 0 20px 40px rgb(0 0 0 / 8%), 0 10px 20px rgb(0 0 0 / 6%), 0 5px 10px rgb(0 0 0 / 5%), 0 2px 4px rgb(0 0 0 / 3%);
-  --ui-composer-border: #e3e3e3;
+  --ui-composer-border: var(--ui-border-default);
   --ui-composer-shadow: none;
-  --ui-tool-chip-text: #0060cc;
-  --ui-tool-chip-hover-bg: #edf4ff;
-  --ui-tool-chip-hover-text: #2c91ff;
-  --ui-bg-code: #ffffff;
-  --ui-bg-code-header: #fbfbfb;
-  --ui-border-code: #eeeeee;
-  --ui-bg-dialog: #ffffff;
+  --ui-tool-chip-text: var(--ui-link);
+  --ui-tool-chip-hover-bg: rgb(237 244 255);
+  --ui-tool-chip-hover-text: rgb(44 145 255);
+  --ui-bg-code: var(--ui-bg-surface);
+  --ui-bg-code-header: var(--ui-bg-sunken);
+  --ui-border-code: var(--ui-border-subtle);
+  --ui-bg-dialog: var(--ui-bg-surface);
   --ui-scrollbar-thumb: rgb(0 0 0 / 12%);
   --ui-scrollbar-thumb-hover: rgb(0 0 0 / 24%);
+}
 
-  /* Lobe UI v6 CSS-variable bridge. */
+/* Lobe UI v6 CSS-variable bridge. The Lobe namespace deliberately aliases
+ * Socrates semantic roles rather than defining a second independent palette. */
+[data-mode="dark"],
+[data-mode="light"] {
   --lobe-color-bg-layout: var(--ui-bg-page);
   --lobe-color-bg-container: var(--ui-bg-raised);
   --lobe-color-bg-container-secondary: var(--ui-bg-sunken);
@@ -218,11 +189,9 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
 }
 
 /* ---------------------------------------------------------------------------
- * Compatibility bridge.
- *
- * `themes.css` remains the sole palette owner. Older token families used by
- * legacy/restore CSS alias into the same Socrates v2 roles so no compatibility
- * surface can silently retain the former ChatGPT-derived neutral ramp.
+ * Compatibility bridge. `themes.css` remains the sole palette owner; older
+ * families alias into the same v2 source so legacy/restore surfaces cannot
+ * silently retain the previous ChatGPT-derived neutral ramp.
  * ------------------------------------------------------------------------- */
 
 :root {
@@ -293,8 +262,6 @@ html[data-theme="socrates"][data-mode="light"] {
 
 html[data-theme="socrates"][data-mode="dark"] {
   --cg-surface-raised: var(--ui-bg-control);
-
-  /* Legacy HSL channels projected from the Lobe default neutral ramp. */
   --bg-000: 0 0% 0%;
   --bg-100: 0 0% 5%;
   --bg-200: 0 0% 10%;
@@ -315,8 +282,6 @@ html[data-theme="socrates"][data-mode="dark"] {
 
 html[data-theme="socrates"][data-mode="light"] {
   --cg-surface-raised: var(--ui-bg-raised);
-
-  /* Legacy HSL channels projected from the Lobe default neutral ramp. */
   --bg-000: 0 0% 100%;
   --bg-100: 0 0% 98%;
   --bg-200: 0 0% 97%;
