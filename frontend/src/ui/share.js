@@ -28,6 +28,10 @@ function loadShareImpl() {
   return _shareImplPromise;
 }
 
+function runShareAction(action) {
+  void loadShareImpl().then(action).catch(function () { /* loadShareImpl logs */ });
+}
+
 /* This is part of session/auth chrome and runs frequently, so keep it fully
    synchronous and dependency-free instead of waking the heavy share runtime. */
 function toggleShareBtn() {
@@ -45,32 +49,35 @@ function toggleShareBtn() {
 }
 
 function openShareModal(sessionId) {
-  return loadShareImpl().then(function (module) { return module.openShareModal(sessionId); });
+  runShareAction(function (module) { module.openShareModal(sessionId); });
 }
 
 function closeShareModal() {
-  if (_shareImpl) return _shareImpl.closeShareModal();
-  if (_shareImplPromise) return _shareImplPromise.then(function (module) { return module.closeShareModal(); });
+  if (_shareImpl) {
+    _shareImpl.closeShareModal();
+  } else if (_shareImplPromise) {
+    void _shareImplPromise.then(function (module) { module.closeShareModal(); }).catch(function () {});
+  }
 }
 
 function selectShareVis(vis) {
-  return loadShareImpl().then(function (module) { return module.selectShareVis(vis); });
+  runShareAction(function (module) { module.selectShareVis(vis); });
 }
 
 function renderShareModal() {
-  if (_shareImpl) return _shareImpl.renderShareModal();
+  if (_shareImpl) _shareImpl.renderShareModal();
 }
 
 function createShareLink() {
-  return loadShareImpl().then(function (module) { return module.createShareLink(); });
+  runShareAction(function (module) { void module.createShareLink(); });
 }
 
 function copyShareLink() {
-  return loadShareImpl().then(function (module) { return module.copyShareLink(); });
+  runShareAction(function (module) { module.copyShareLink(); });
 }
 
 function revokeShareLink() {
-  return loadShareImpl().then(function (module) { return module.revokeShareLink(); });
+  runShareAction(function (module) { void module.revokeShareLink(); });
 }
 
 /* If sharing was never opened there is no feature-local token to clear. This
@@ -80,10 +87,13 @@ function resetShareToken() {
   if (_shareImpl) {
     _shareImpl.resetShareToken();
   } else if (_shareImplPromise) {
-    void _shareImplPromise.then(function (module) { module.resetShareToken(); });
+    void _shareImplPromise.then(function (module) { module.resetShareToken(); }).catch(function () {});
   }
 }
 
+/* Public-share routing was already async/await. Preserve that contract so the
+   route naturally waits for the feature chunk before rendering the read-only
+   transcript. */
 function loadSharedSession(token) {
   return loadShareImpl().then(function (module) { return module.loadSharedSession(token); });
 }
@@ -93,7 +103,7 @@ function loadSharedExamSession(session) {
 }
 
 function renderSharedQuestionCard(idx, question) {
-  return loadShareImpl().then(function (module) { return module.renderSharedQuestionCard(idx, question); });
+  runShareAction(function (module) { module.renderSharedQuestionCard(idx, question); });
 }
 
 /* Historical named exports are retained for compatibility. They were not used
