@@ -56,7 +56,8 @@ test('selected activity has one status and no inferred summary', () => {
     isLive: true, statusLabel: 'Analyzing the question',
   }));
   assert.equal((html.match(/role="status"/g) || []).length, 1);
-  assert.match(html, /turn-activity-dot/);
+  assert.match(html, /data-live="true"/);
+  assert.doesNotMatch(html, /turn-activity-dot/);
   assert.doesNotMatch(html, /shimmer-text|private reasoning|turn-summary-text/);
 });
 

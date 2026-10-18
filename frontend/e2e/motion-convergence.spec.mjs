@@ -51,9 +51,10 @@ test('thinking, tools and recording share one primary persistent cue', async ({ 
     if (!shell) return null;
     const fixture = document.createElement('div');
     fixture.id = 'motion-convergence-fixture';
-    fixture.className = 'turn-activity-surface';
+    fixture.className = 'turn-activity-surface thinking-accordion';
+    fixture.dataset.live = 'true';
     fixture.innerHTML = `
-      <div class="thinking-status"><span class="turn-activity-dot"></span>
+      <div class="thinking-status">
         <span class="tool-inline-tool-icon"></span>
         <span class="thinking-status-label">Thinking</span>
       </div>
@@ -78,7 +79,6 @@ test('thinking, tools and recording share one primary persistent cue', async ({ 
     const thinking = fixture.querySelector('.thinking-status-label');
 
     return {
-      dot: animation('.turn-activity-dot'),
       thinkingLabel: animation('.thinking-status-label'),
       thinkingIcon: animation('.thinking-status .tool-inline-tool-icon'),
       thinkingBackground: thinking ? getComputedStyle(thinking).backgroundImage : null,
@@ -92,10 +92,9 @@ test('thinking, tools and recording share one primary persistent cue', async ({ 
   });
 
   expect(normal).not.toBeNull();
-  expect(normal.dot).toBe('ui-activity-breathe');
-  expect(normal.thinkingLabel).toBe('none');
+  expect(normal.thinkingLabel).toBe('ui-activity-highlight');
   expect(normal.thinkingIcon).toBe('none');
-  expect(normal.thinkingBackground).toBe('none');
+  expect(normal.thinkingBackground).toContain('linear-gradient');
   expect(normal.inlineLabel).toBe('none');
   expect(normal.inlineIcon).toBe('none');
   expect(normal.agentLabel).toBe('none');
@@ -127,4 +126,10 @@ test('thinking, tools and recording share one primary persistent cue', async ({ 
   expect(reduced.agent).toBe('none');
   expect(reduced.voiceHalo).toBe('none');
   expect(reduced.fill).not.toBe('transparent');
+
+  await page.emulateMedia({ reducedMotion: 'no-preference', forcedColors: 'active' });
+  const label = page.locator('#motion-convergence-fixture .thinking-status-label');
+  await expect(label).toHaveCSS('animation-name', 'none');
+  await expect(label).toHaveCSS('background-image', 'none');
+  expect(await label.evaluate((node) => getComputedStyle(node).color)).not.toBe('rgba(0, 0, 0, 0)');
 });

@@ -83,9 +83,20 @@ export function TurnEvidence({ runtime, text, children }: { runtime?: TurnRuntim
         {source.snippet ? <p>{source.snippet}</p> : null}
       </div>)}
     </aside>, document.body) : null}
-    {citedSources.length ? <details className="turn-sources">
-      <summary>{i18n('citation.sources', 'Sources')} · {citedSources.length}</summary>
-      <ol>{citedSources.map((source) => <li key={source.id} value={sources.indexOf(source) + 1}>
+    {citedSources.length ? <details className="turn-sources" data-source-count={citedSources.length}>
+      <summary aria-label={`${i18n('citation.sources', 'Sources')} · ${citedSources.length}`}>
+        <svg className="turn-sources-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M4 2.5h5.5L12 5v8.5H4z" />
+          <path d="M9.5 2.5V5H12M6 8h4M6 10.5h4" />
+        </svg>
+        <span className="turn-sources-label">{i18n('citation.sources', 'Sources')}</span>
+        <span className="turn-sources-divider" aria-hidden="true">·</span>
+        <span className="turn-sources-count" aria-hidden="true">{citedSources.length}</span>
+        <svg className="turn-sources-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="m4 6 4 4 4-4" />
+        </svg>
+      </summary>
+      <ol aria-label={i18n('citation.sources', 'Sources')}>{citedSources.map((source) => <li key={source.id} value={sources.indexOf(source) + 1}>
         <a href={source.url} target="_blank" rel="noopener noreferrer">{source.title}</a>
         <small>{new URL(source.url).hostname}</small>
         {source.snippet ? <p>{source.snippet}</p> : null}

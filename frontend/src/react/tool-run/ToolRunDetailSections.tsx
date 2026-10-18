@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { formatToolOutput } from '../../render/toolOutput.ts';
 import { basename, tf, translate } from '../../ui/toolPresentationModel.ts';
 import type { DetailSection, TechSection, ToolRunView } from './toolRunModel.js';
@@ -60,31 +60,48 @@ export function ResultSection({ section }: { section: DetailSection }) {
    only runs on the truncated preview so large dumps avoid an expensive pass. */
 function ExpandableTextSection({ section }: { section: Extract<DetailSection, { kind: 'output' | 'error' }> }) {
   const [expanded, setExpanded] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const feedbackTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const copyAttempt = useRef(0);
+  useEffect(() => () => {
+    clearTimeout(feedbackTimer.current);
+    copyAttempt.current += 1;
+  }, []);
   const expandable = !!section.fullText && section.fullText !== section.text;
   const shown = expanded && section.fullText ? section.fullText : section.text;
   const rich = section.kind === 'output' && !expanded ? formatToolOutput(shown) : null;
 
   const copy = async () => {
+    const attempt = ++copyAttempt.current;
+    clearTimeout(feedbackTimer.current);
     const text = section.fullText || section.text;
+    let copied: boolean;
     try {
       await navigator.clipboard.writeText(text);
+      copied = true;
     } catch (_) {
       /* Clipboard can be denied (permissions, insecure context) — fall
          back to a selection copy path. */
+      const textarea = document.createElement('textarea');
+      const focused = document.activeElement;
       try {
-        const textarea = document.createElement('textarea');
         textarea.value = text;
         textarea.style.position = 'fixed';
         textarea.style.opacity = '0';
         document.body.appendChild(textarea);
         textarea.select();
-        document.execCommand('copy');
+        copied = document.execCommand('copy');
+      } catch (_) {
+        // Clipboard denial is recoverable; report failure and allow another try.
+        copied = false;
+      } finally {
         textarea.remove();
-      } catch (_) { /* leave copied=false */ }
+        if (focused instanceof window.HTMLElement && focused.isConnected) focused.focus({ preventScroll: true });
+      }
     }
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1500);
+    if (attempt !== copyAttempt.current) return;
+    setCopyState(copied ? 'copied' : 'failed');
+    feedbackTimer.current = setTimeout(() => setCopyState('idle'), 1500);
   };
 
   return (
@@ -106,8 +123,9 @@ function ExpandableTextSection({ section }: { section: Extract<DetailSection, { 
               : tf('tool.showAll', 'Show all ({n} chars)', { n: (section.fullText || '').length.toLocaleString() })}
           </button>
         ) : null}
-        <button type="button" className="tool-inline-action" onClick={copy}>
-          {copied ? translate('tool.copied', 'Copied') : translate('tool.copy', 'Copy')}
+        <button type="button" className="tool-inline-action" onClick={copy} aria-live="polite">
+          {copyState === 'copied' ? translate('tool.copied', 'Copied')
+            : copyState === 'failed' ? translate('tool.copyFailed', 'Copy failed') : translate('tool.copy', 'Copy')}
         </button>
       </div>
     </section>

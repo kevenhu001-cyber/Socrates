@@ -12,6 +12,9 @@ export const ResearchRequest = z.object({
   projectId: z.string().uuid().nullable().default(null),
   idempotencyKey: z.string().trim().min(1).max(128),
 }).strict();
+export const ResearchRefinementRequest = z.object({
+  instruction: z.string().trim().min(1).max(600),
+}).strict();
 export const ResearchId = z.string().uuid();
 export const ResearchCursor = z.coerce.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 export type ResearchJob = typeof researchJobs.$inferSelect;
@@ -21,7 +24,7 @@ export const RESEARCH_MAX_ATTEMPTS = 3;
 
 export function publicResearchJob(job: ResearchJob) {
   const { leaseToken: _token, leaseExpiresAt: _expires, idempotencyKey: _key, userId: _owner, steps, ...rest } = job;
-  return { ...rest, plan: steps.plan || [], searched: steps.searches?.length || 0, sourceCount: steps.sources?.length || 0 };
+  return { ...rest, focus: steps.focus || null, plan: steps.plan || [], searched: steps.searches?.length || 0, sourceCount: steps.sources?.length || 0 };
 }
 
 // Caller holds the job row lock. Event and snapshot commit together so a
@@ -102,6 +105,48 @@ export async function controlResearchJob(userId: string, id: string, action: 'ca
       attempts: action === 'retry' ? 0 : job.attempts, completedAt: action === 'cancel' ? new Date() : null }).where(eq(researchJobs.id, id)).returning();
     await event(tx, job, status, status);
     return { ...updated, eventSequence: job.eventSequence + 1 };
+  });
+}
+
+/**
+ * Refine an active task without mutating its worker-owned checkpoint. The
+ * current job is fenced and kept as a cancelled history item; the replacement
+ * starts from a clean plan with the user's new focus in its durable steps.
+ */
+export async function refineResearchJob(userId: string, id: string, input: unknown) {
+  const parsed = ResearchRefinementRequest.safeParse(input);
+  if (!parsed.success) throw new BadRequest('Invalid research refinement', parsed.error.flatten());
+  return getDb().transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 17))`);
+    const [job] = await tx.select().from(researchJobs).where(and(eq(researchJobs.id, id), eq(researchJobs.userId, userId))).for('update');
+    if (!job) throw new NotFound('Research job not found');
+    if (!['queued', 'running'].includes(job.status)) throw new Conflict('Only active research can be refined');
+    const active = await tx.select({ id: researchJobs.id }).from(researchJobs).where(and(
+      eq(researchJobs.userId, userId),
+      inArray(researchJobs.status, ['queued', 'running']),
+      sql`${researchJobs.id} <> ${id}`,
+    )).limit(3);
+    if (active.length >= 3) throw new Conflict('At most three research jobs may be active');
+
+    const [cancelled] = await tx.update(researchJobs).set({
+      status: 'cancelled', leaseToken: null, leaseExpiresAt: null, error: null,
+      completedAt: sql`clock_timestamp()`, updatedAt: sql`clock_timestamp()`,
+    }).where(eq(researchJobs.id, id)).returning();
+    await event(tx, job, 'cancelled', 'cancelled');
+
+    const [replacement] = await tx.insert(researchJobs).values({
+      userId: job.userId,
+      sessionId: job.sessionId,
+      projectId: job.projectId,
+      query: job.query,
+      idempotencyKey: `refine-${job.id}-${randomUUID()}`,
+      steps: { focus: parsed.data.instruction },
+    }).returning();
+    await event(tx, replacement, 'queued', 'queued');
+    return {
+      previous: { ...cancelled, eventSequence: job.eventSequence + 1 },
+      job: { ...replacement, eventSequence: 1 },
+    };
   });
 }
 

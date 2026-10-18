@@ -55,7 +55,17 @@ function observedStatus(message: LegacyChatMessage, activity: PublicTurnActivity
   const legacy = message._liveStatus;
   switch (activity.type) {
     case 'thinking':
-      if (hasVisibleAnswerText(message)) return undefined;
+      /* P0 response interleaving — a visible answer does not mean the model
+         has stopped working. Keep one compact live cue until the turn/tool
+         lifecycle actually settles, so users can read the answer while the
+         remaining work continues. */
+      if (hasVisibleAnswerText(message)) {
+        return {
+          phase: 'thinking',
+          label: translate('think.thinking', 'Thinking…'),
+          elapsedSec: legacy?.phase === 'thinking' ? legacy.elapsedSec : undefined,
+        };
+      }
       return hasObservedReasoning(message)
         ? { phase: 'thinking', label: translate('think.thinking', 'Thinking…'), elapsedSec: legacy?.phase === 'thinking' ? legacy.elapsedSec : undefined }
         : { phase: 'waiting', label: translate('think.waitingForResponse', 'Waiting for the response.'), elapsedSec: legacy?.phase === 'waiting' ? legacy.elapsedSec : undefined };

@@ -20,22 +20,28 @@ export interface ToolRunDetailProps {
   view: ToolRunView;
   /** Share / history-replay surfaces hide the actions that mutate state. */
   readOnly?: boolean;
+  inFlight?: boolean;
 }
 
-export function ToolRunDetail({ view }: ToolRunDetailProps) {
+export function ToolRunDetail({ view, inFlight = false }: ToolRunDetailProps) {
   const hasResults = view.sections.length > 0;
+  const hasLiveOutput = inFlight && Boolean(view.livePreview || view.liveOutput);
   return (
     <div className="tool-inline-detail">
-      {view.sections.map((section, index) => (
+      {hasLiveOutput ? <>
+        {view.livePreview ? <pre className="tool-inline-code-preview">{view.livePreview}</pre> : null}
+        {view.liveOutput ? <pre className="tool-inline-code-preview is-output">{view.liveOutput}</pre> : null}
+      </> : null}
+      {!hasLiveOutput ? view.sections.map((section, index) => (
         <ResultSection key={`${section.kind}-${index}`} section={section} />
-      ))}
-      {!hasResults && !view.tech.length ? (
+      )) : null}
+      {!hasLiveOutput && !hasResults && !view.tech.length ? (
         <section className="tool-inline-detail-section">
           <div className="tool-inline-detail-empty">{translate('tool.noDetails', 'No additional details.')}</div>
         </section>
       ) : null}
       {view.tech.length ? (
-        <details className="tool-inline-tech">
+        <details className="tool-inline-tech" key="technical-details">
           <summary className="tool-inline-tech-summary">
             <span
               className="tool-inline-tech-icon"

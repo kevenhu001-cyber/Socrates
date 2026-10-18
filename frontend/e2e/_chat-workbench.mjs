@@ -9,7 +9,7 @@ export const WORKBENCH_VIEWPORTS = Object.freeze({
 export async function prepareChatWorkbench(page, options = {}) {
   const viewport = options.viewport || WORKBENCH_VIEWPORTS.desktop;
   await page.setViewportSize(viewport);
-  await mockAuthedApp(page);
+  await mockAuthedApp(page, { lang: options.lang || 'en' });
   if (options.streamBody) {
     await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
       await route.fulfill({

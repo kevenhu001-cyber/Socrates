@@ -6,7 +6,7 @@ import cookieParser from 'cookie-parser';
 import { eq, sql } from 'drizzle-orm';
 import { initDb, getDb, closeDb } from '../src/db/index.js';
 import { users, authSessions, researchJobs, artifacts, sessions, projects, usageEvents, messages } from '../src/db/schema/index.js';
-import { createResearchJob, claimResearchJob, saveResearchCheckpoint, renewResearchLease, getResearchJob, getResearchResult, listResearchEvents, controlResearchJob, publicResearchJob } from '../src/services/core/researchJobs.js';
+import { createResearchJob, claimResearchJob, saveResearchCheckpoint, renewResearchLease, getResearchJob, getResearchResult, listResearchEvents, controlResearchJob, refineResearchJob, publicResearchJob } from '../src/services/core/researchJobs.js';
 import { runClaimedResearch, assertResearchBudget } from '../src/services/core/researchWorker.js';
 import researchRouter from '../src/routes/researchJobs.js';
 import { listen, httpRequest } from './_http.js';
@@ -116,6 +116,21 @@ describe('durable research (PostgreSQL)', { skip: !process.env.TEST_DATABASE_URL
       read: async (sources) => sources,
     }));
     assert.equal((await getResearchJob(userId, submitted.id)).status, 'succeeded');
+  });
+
+  test('refining an active job fences its history and queues a focused replacement', async () => {
+    const submitted = await submit();
+    const refined = await refineResearchJob(userId, submitted.id, { instruction: 'Compare primary sources and surface disagreements.' });
+    assert.equal(refined.previous.id, submitted.id);
+    assert.equal(refined.previous.status, 'cancelled');
+    assert.equal(refined.previous.eventSequence, 2);
+    assert.equal(refined.job.status, 'queued');
+    assert.equal(refined.job.eventSequence, 1);
+    assert.equal(refined.job.query, submitted.query);
+    assert.equal(refined.job.steps.focus, 'Compare primary sources and surface disagreements.');
+    assert.equal(publicResearchJob(refined.job).focus, 'Compare primary sources and surface disagreements.');
+    await assert.rejects(refineResearchJob(userId, submitted.id, { instruction: 'Try another angle.' }), { code: 'CONFLICT' });
+    await controlResearchJob(userId, refined.job.id, 'cancel');
   });
 
   test('HTTP auth, validation and Last-Event-ID replay work across disconnected subscribers', async () => {

@@ -1,4 +1,4 @@
-import type { Message, ResearchJob, ResearchJobEvent, ResearchJobRequest } from '@socrates/contracts';
+import type { Message, ResearchJob, ResearchJobEvent, ResearchJobRefineResult, ResearchJobRequest } from '@socrates/contracts';
 
 export interface ResearchScope { userId: string; sessionId: string; projectId: string | null }
 export interface ResearchView { job: ResearchJob; stage: string; reconnecting: boolean; busy: boolean }
@@ -14,6 +14,7 @@ export interface ResearchClientPorts {
   create(body: ResearchJobRequest, signal: AbortSignal): Promise<ResearchJob>;
   get(id: string, signal: AbortSignal): Promise<ResearchJob>;
   control(id: string, action: 'cancel' | 'retry', signal: AbortSignal): Promise<ResearchJob>;
+  refine(id: string, instruction: string, signal: AbortSignal): Promise<ResearchJobRefineResult>;
   watch(id: string, after: number, signal: AbortSignal, event: (event: ResearchJobEvent) => Promise<void>): Promise<void>;
   hasReport(job: ResearchJob): boolean;
   report(job: ResearchJob, signal: AbortSignal): Promise<Message | null>;
@@ -31,6 +32,87 @@ export function researchStage(job: ResearchJob): string {
   return 'planning';
 }
 
+type ResearchAcceptor = (job: ResearchJob, epoch: number, stage?: string) => Promise<void>;
+interface ResearchControllerRuntime {
+  ports: ResearchClientPorts;
+  snapshot: () => ResearchSnapshot;
+  signal: () => AbortSignal;
+  current: (epoch: number) => boolean;
+  emit: (patch: Partial<ResearchSnapshot>) => void;
+}
+
+function upsertResearchView(snapshot: ResearchSnapshot, view: ResearchView): ResearchView[] {
+  return snapshot.jobs.some((entry) => entry.job.id === view.job.id)
+    ? snapshot.jobs.map((entry) => entry.job.id === view.job.id ? view : entry)
+    : [...snapshot.jobs, view];
+}
+
+async function deliverResearchReport(job: ResearchJob, epoch: number, runtime: ResearchControllerRuntime) {
+  if (job.status !== 'succeeded' || !job.resultArtifactId || runtime.ports.hasReport(job)) return;
+  try {
+    const message = await runtime.ports.report(job, runtime.signal());
+    if (runtime.current(epoch) && message) runtime.ports.deliver(job, message);
+  } catch {
+    if (runtime.current(epoch)) runtime.emit({ issue: 'result' });
+  }
+}
+
+function createResearchAcceptor(runtime: ResearchControllerRuntime): ResearchAcceptor {
+  return async (job, epoch, stage) => {
+    if (!runtime.current(epoch) || job.sessionId !== runtime.snapshot().scope?.sessionId) return;
+    const previous = runtime.snapshot().jobs.find((view) => view.job.id === job.id);
+    if (previous && previous.job.eventSequence > job.eventSequence) return;
+    const view: ResearchView = { job, stage: stage || researchStage(job), reconnecting: false, busy: previous?.busy || false };
+    runtime.emit({ jobs: upsertResearchView(runtime.snapshot(), view) });
+    await deliverResearchReport(job, epoch, runtime);
+  };
+}
+
+interface ResearchWatcherDeps {
+  ports: ResearchClientPorts;
+  snapshot: () => ResearchSnapshot;
+  signal: () => AbortSignal;
+  current: (epoch: number) => boolean;
+  patchView: (id: string, patch: Partial<ResearchView>) => void;
+  watching: Set<string>;
+  accept: ResearchAcceptor;
+}
+
+function startResearchWatcher(job: ResearchJob, epoch: number, deps: ResearchWatcherDeps) {
+  if (!active(job) || deps.watching.has(job.id) || !deps.current(epoch)) return;
+  const ownedWatchers = deps.watching;
+  ownedWatchers.add(job.id);
+  const signal = deps.signal();
+  void (async () => {
+    let cursor = job.eventSequence;
+    let failures = 0;
+    while (deps.current(epoch)) {
+      try {
+        await deps.ports.watch(job.id, cursor, signal, async (event) => {
+          if (!deps.current(epoch) || event.jobId !== job.id || event.sequence <= cursor) return;
+          const latest = await deps.ports.get(job.id, signal);
+          await deps.accept(latest, epoch, latest.eventSequence === event.sequence ? event.stage : undefined);
+          cursor = event.sequence;
+          failures = 0;
+        });
+        if (!deps.current(epoch)) return;
+        const latest = await deps.ports.get(job.id, signal);
+        await deps.accept(latest, epoch);
+        cursor = Math.max(cursor, latest.eventSequence);
+        if (!active(latest)) return;
+      } catch {
+        if (!deps.current(epoch)) return;
+      }
+      deps.patchView(job.id, { reconnecting: true });
+      await deps.ports.delay(Math.min(15_000, 1000 * 2 ** Math.min(failures++, 4)), signal);
+    }
+  })().catch(() => { /* Scope cancellation ends the reconnect delay. */ }).finally(() => {
+    ownedWatchers.delete(job.id);
+    const latest = deps.snapshot().jobs.find((view) => view.job.id === job.id)?.job;
+    if (deps.current(epoch) && latest && active(latest)) startResearchWatcher(latest, epoch, deps);
+  });
+}
+
 /** Owns subscriptions for one account/session. Every async completion checks
  * its captured generation before changing UI or delivering a report. */
 export function createResearchController(ports: ResearchClientPorts) {
@@ -45,57 +127,11 @@ export function createResearchController(ports: ResearchClientPorts) {
   };
   const current = (epoch: number) => epoch === generation && !abort.signal.aborted;
   const patchView = (id: string, patch: Partial<ResearchView>) => emit({ jobs: snapshot.jobs.map((view) => view.job.id === id ? { ...view, ...patch } : view) });
-
-  async function accept(job: ResearchJob, epoch: number, stage?: string) {
-    if (!current(epoch) || job.sessionId !== snapshot.scope?.sessionId) return;
-    const previous = snapshot.jobs.find((view) => view.job.id === job.id);
-    if (previous && previous.job.eventSequence > job.eventSequence) return;
-    const view = { job, stage: stage || researchStage(job), reconnecting: false, busy: previous?.busy || false };
-    emit({ jobs: previous ? snapshot.jobs.map((entry) => entry.job.id === job.id ? view : entry) : [...snapshot.jobs, view] });
-    if (job.status === 'succeeded' && job.resultArtifactId && !ports.hasReport(job)) {
-      try {
-        const message = await ports.report(job, abort.signal);
-        if (current(epoch) && message) ports.deliver(job, message);
-      } catch {
-        if (current(epoch)) emit({ issue: 'result' });
-      }
-    }
-  }
-
-  function watch(job: ResearchJob, epoch: number) {
-    if (!active(job) || watching.has(job.id) || !current(epoch)) return;
-    const ownedWatchers = watching;
-    ownedWatchers.add(job.id);
-    const signal = abort.signal;
-    void (async () => {
-      let cursor = job.eventSequence;
-      let failures = 0;
-      while (current(epoch)) {
-        try {
-          await ports.watch(job.id, cursor, signal, async (event) => {
-            if (!current(epoch) || event.jobId !== job.id || event.sequence <= cursor) return;
-            const latest = await ports.get(job.id, signal);
-            await accept(latest, epoch, latest.eventSequence === event.sequence ? event.stage : undefined);
-            cursor = event.sequence;
-            failures = 0;
-          });
-          if (!current(epoch)) return;
-          const latest = await ports.get(job.id, signal);
-          await accept(latest, epoch);
-          cursor = Math.max(cursor, latest.eventSequence);
-          if (!active(latest)) return;
-        } catch {
-          if (!current(epoch)) return;
-        }
-        patchView(job.id, { reconnecting: true });
-        await ports.delay(Math.min(15_000, 1000 * 2 ** Math.min(failures++, 4)), signal);
-      }
-    })().catch(() => { /* Scope cancellation ends the reconnect delay. */ }).finally(() => {
-      ownedWatchers.delete(job.id);
-      const latest = snapshot.jobs.find((view) => view.job.id === job.id)?.job;
-      if (current(epoch) && latest && active(latest)) watch(latest, epoch);
-    });
-  }
+  const runtime: ResearchControllerRuntime = { ports, snapshot: () => snapshot, signal: () => abort.signal, current, emit };
+  const accept = createResearchAcceptor(runtime);
+  const watch = (job: ResearchJob, epoch: number) => startResearchWatcher(job, epoch, {
+    ports, snapshot: () => snapshot, signal: () => abort.signal, current, patchView, watching, accept,
+  });
 
   async function refresh() {
     const epoch = generation;
@@ -162,10 +198,25 @@ export function createResearchController(ports: ResearchClientPorts) {
     finally { if (current(epoch)) patchView(id, { busy: false }); }
   }
 
+  async function refine(id: string, instruction: string) {
+    const epoch = generation;
+    const view = snapshot.jobs.find((entry) => entry.job.id === id);
+    if (!view || view.busy || !active(view.job) || !instruction.trim()) return;
+    patchView(id, { busy: true });
+    try {
+      const result = await ports.refine(id, instruction.trim(), abort.signal);
+      await accept(result.previous, epoch);
+      await accept(result.job, epoch);
+      watch(result.job, epoch);
+      return result.job;
+    } catch { if (current(epoch)) emit({ issue: 'action' }); }
+    finally { if (current(epoch)) patchView(id, { busy: false }); }
+  }
+
   return {
     getSnapshot: () => snapshot,
     subscribe: (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; },
-    open, refresh, submit, control,
+    open, refresh, submit, control, refine,
     discardPending: () => {
       if (snapshot.submitting || !snapshot.scope) return;
       ports.pending(snapshot.scope, null);

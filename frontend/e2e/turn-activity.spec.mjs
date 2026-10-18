@@ -25,12 +25,14 @@ test('activity hands the same message body to the first answer token', async ({ 
   await expect(surface).toHaveAttribute('data-turn-state', 'live');
   const status = message.locator('.thinking-status');
   await expect(status).toHaveCount(1);
-  await expect(status.locator('.turn-activity-dot')).toHaveCount(1);
+  await expect(status.locator('.thinking-status-label')).toHaveCSS('animation-name', 'ui-activity-highlight');
   await expect(status.locator('.thinking-status-label')).not.toHaveClass(/shimmer-text/);
   const before = await status.boundingBox();
 
   await page.evaluate(() => window.__thinkingController.append('回答从同一个消息正文位置开始。'));
-  await expect(message.locator('.thinking-status')).toHaveCount(0);
+  await expect(message.locator('.thinking-status')).toHaveCount(1);
+  await expect(message.locator('.turn-activity-surface')).toHaveAttribute('data-answer-started', 'true');
+  await expect(message.locator('.thinking-status-context')).toContainText('Answering while activity continues');
   const answer = message.locator('.tool-run-prose p').first();
   await expect(answer).toContainText('回答从同一个消息正文位置开始。');
   await expect(surface).toHaveAttribute('data-turn-state', 'live');
@@ -65,7 +67,9 @@ test('waiting time is separate from observed model reasoning', async ({ page }) 
   await page.screenshot({ path: 'test-results/observed-reasoning.png' });
   await expect(message).not.toContainText('PRIVATE REASONING');
   await page.evaluate(() => window.__waitingController.append('这才是正文。'));
-  await expect(status).toHaveCount(0);
+  await expect(status).toHaveCount(1);
+  await expect(message.locator('.turn-activity-surface')).toHaveAttribute('data-answer-started', 'true');
+  await expect(message.locator('.thinking-status-context')).toContainText('Answering while activity continues');
   await page.evaluate(() => window.__waitingController.finish());
 });
 
@@ -100,7 +104,7 @@ test('streaming actions are absent and running tools own the activity surface', 
   await expect(message.locator('.tool-inline[data-state="running"]')).toHaveCount(1);
   await expect(message.locator('.thinking-status')).toHaveCount(1);
   await expect(message.locator('.turn-activity-surface')).toHaveCount(1);
-  await expect(message.locator('.turn-activity-dot')).toHaveCount(1);
+  await expect(message.locator('.thinking-status-label')).toHaveCSS('animation-name', 'ui-activity-highlight');
   await expect(message.locator('.msg-toolbar button')).toHaveCount(0);
   await page.screenshot({ path: 'test-results/turn-activity-running.png' });
 

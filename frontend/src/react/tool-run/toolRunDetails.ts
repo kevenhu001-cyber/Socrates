@@ -11,12 +11,15 @@ import {
 } from '../../ui/toolPresentationModel.ts';
 import {durationOf, toolRunStateOf} from '../../ui/toolPresentationState.ts';
 import type {
+  ApprovalDecision,
   ApprovalView,
   SourceItem,
   ToolCallRecord,
   ToolRunState,
   ToolRunView,
 } from './toolRunModel.types.ts';
+
+type ApprovalRecord = NonNullable<ToolCallRecord['approval']>;
 
 /* ── per-row view ──────────────────────────────────────────────────────── */
 
@@ -25,6 +28,93 @@ const DETAIL_HEAD_LINES = 5;
 const DETAIL_TAIL_LINES = 5;
 const MAX_SOURCES = 12;
 const MAX_SOURCE_HOSTS = 8;
+const DEFAULT_APPROVAL_DECISIONS: ApprovalDecision[] = [
+  'accept', 'acceptForSession', 'decline', 'stop',
+];
+
+function normalizeApprovalDecision(value: unknown): ApprovalDecision | null {
+  const decision = String(value || '').trim();
+  if (decision === 'accept') return 'accept';
+  if (decision === 'acceptForSession' || decision === 'accept_for_session') return 'acceptForSession';
+  if (decision === 'decline' || decision === 'reject') return 'decline';
+  if (decision === 'stop' || decision === 'interrupt' || decision === 'cancel') return 'stop';
+  return null;
+}
+
+function approvalDecisionsOf(raw: unknown): ApprovalDecision[] {
+  if (!Array.isArray(raw)) return DEFAULT_APPROVAL_DECISIONS.slice();
+  const seen = new Set<ApprovalDecision>();
+  const decisions: ApprovalDecision[] = [];
+  for (const value of raw) {
+    const normalized = normalizeApprovalDecision(value);
+    if (normalized && !seen.has(normalized)) {
+      seen.add(normalized);
+      decisions.push(normalized);
+    }
+  }
+  return decisions;
+}
+
+function normalizeApprovalState(value: unknown): string {
+  const state = String(value || '').trim().toLowerCase();
+  if (!state || state === 'pending') return 'pending';
+  if (new Set(['accept', 'accepted', 'accepted_for_session', 'acceptforsession']).has(state)) return 'accepted';
+  if (new Set(['decline', 'declined', 'rejected']).has(state)) return 'declined';
+  if (new Set(['stop', 'stopped', 'cancelled', 'canceled', 'interrupted']).has(state)) return 'stopped';
+  return state;
+}
+
+function approvalTitleOf(kind: string): string {
+  if (kind === 'commandExecution') return translate('tool.codexCommandApproval', 'The agent wants to run a command');
+  if (kind === 'fileChange') return translate('tool.codexFileApproval', 'The agent wants to change files');
+  return translate('tool.codexApproval', 'The agent needs your approval');
+}
+
+function approvalStatusTextOf(state: string, uiText: string): string {
+  if (uiText) return uiText;
+  if (state === 'declined') return translate('tool.approvalDeclined', 'Declined');
+  if (state === 'stopped') return translate('tool.runStopped', 'Stop requested');
+  if (state === 'accepted') return translate('tool.approvalAccepted', 'Approved');
+  return translate('tool.awaitingApproval', 'Waiting for your decision');
+}
+
+function approvalFactsOf(approval: ApprovalRecord, kind: string): Array<{ label: string; value: string }> {
+  const facts: Array<{ label: string; value: string }> = [];
+  const action = approvalActionText(approval.command || approval.changes, kind);
+  if (action) facts.push({ label: translate('tool.action', 'Action'), value: action });
+  /* A command approval can carry both an executable action and a structured
+     change payload. Keep those separate so the user can see what will run
+     and what data it will touch before choosing a scope. */
+  if (approval.command && approval.changes != null) {
+    facts.push({
+      label: translate('tool.data', 'Data'),
+      value: approvalActionText(approval.changes, translate('tool.details', 'Details')),
+    });
+  }
+  if (approval.reason) facts.push({ label: translate('tool.reason', 'Reason'), value: String(approval.reason) });
+  facts.push({
+    label: translate('tool.destination', 'Destination'),
+    value: String(approval.cwd || '[workspace]'),
+  });
+  return facts;
+}
+
+function approvalDisabledOf(approval: ApprovalRecord, state: string): boolean {
+  if (approval.ui && typeof approval.ui.disabled === 'boolean') return approval.ui.disabled;
+  return state !== 'pending';
+}
+
+function approvalActionText(value: unknown, fallback: string): string {
+  if (typeof value === 'string') return value.trim() || fallback;
+  if (value == null) return fallback;
+  try {
+    const text = JSON.stringify(value);
+    if (!text) return fallback;
+    return text.length > 1_200 ? `${text.slice(0, 1_197)}…` : text;
+  } catch (_) {
+    return String(value) || fallback;
+  }
+}
 
 /**
  * Line-aware head/tail truncation. Mirrors ui/toolInline.ts's
@@ -270,37 +360,20 @@ export function approvalViewOf(call: ToolCallRecord): ApprovalView | null {
   const approval = call.approval;
   if (!approval || !approval.approvalId || !approval.runId) return null;
   const kind = String(approval.kind || '');
-  const title = kind === 'commandExecution'
-    ? translate('tool.codexCommandApproval', 'The agent wants to run a command')
-    : kind === 'fileChange'
-      ? translate('tool.codexFileApproval', 'The agent wants to change files')
-      : translate('tool.codexApproval', 'The agent needs your approval');
-  const facts: Array<{ label: string; value: string }> = [];
-  const action = approval.command || approval.changes || kind;
-  if (action) facts.push({ label: translate('tool.action', 'Action'), value: String(action) });
-  if (approval.reason) facts.push({ label: translate('tool.reason', 'Reason'), value: String(approval.reason) });
-  facts.push({
-    label: translate('tool.path', 'Workspace'),
-    value: String(approval.cwd || '[workspace]'),
-  });
+  const title = approvalTitleOf(kind);
   const status = String(approval.status || 'pending');
-  const decided = status !== 'pending';
+  const state = normalizeApprovalState(approval.ui && approval.ui.state ? approval.ui.state : status);
+  const uiText = approval.ui && approval.ui.text ? approval.ui.text : '';
+  const decisions = approvalDecisionsOf(approval.availableDecisions);
   return {
     approvalId: String(approval.approvalId),
     runId: String(approval.runId),
     title,
-    facts,
-    status: approval.ui && approval.ui.text
-      ? approval.ui.text
-      : decided
-        ? status === 'decline'
-          ? translate('tool.approvalDeclined', 'Declined')
-          : translate('tool.approvalAccepted', 'Approved')
-        : translate('tool.awaitingApproval', 'Waiting for your decision'),
-    state: (approval.ui && approval.ui.state) || status,
-    disabled: approval.ui && typeof approval.ui.disabled === 'boolean'
-      ? approval.ui.disabled
-      : decided,
+    facts: approvalFactsOf(approval, kind),
+    status: approvalStatusTextOf(state, uiText),
+    state,
+    disabled: approvalDisabledOf(approval, state),
+    decisions,
   };
 }
 

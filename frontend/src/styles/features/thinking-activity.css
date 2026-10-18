@@ -47,14 +47,6 @@
 }
 
 /* One process disclosure owns intent, public summaries and tool activity. */
-.turn-activity-dot {
-  display: inline-block;
-  flex: 0 0 5px;
-  width: 5px;
-  height: 5px;
-  border-radius: var(--ui-radius-pill);
-  background: currentColor;
-}
 .turn-activity-intent {
   margin: var(--ui-space-xs) 0;
   color: var(--ui-text-secondary);
@@ -114,6 +106,33 @@
   box-shadow: none;
 }
 
+/* P0 response interleaving — once answer prose is on screen, activity is
+   process metadata rather than a second pre-answer block. Keep it visually
+   quiet and close to the response while preserving the same disclosure and
+   live status semantics for screen readers. */
+.thinking-accordion[data-answer-started="true"] {
+  margin-top: 0;
+  margin-bottom: var(--ui-space-xs);
+}
+.thinking-accordion[data-answer-started="true"] .thinking-accordion-toggle {
+  min-height: var(--ui-control-xs, 28px);
+  padding-block: 0;
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+}
+.thinking-accordion[data-answer-started="true"] .thinking-accordion-title {
+  font-weight: 450;
+}
+.thinking-status-context {
+  max-width: 22rem;
+  overflow: hidden;
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xxs);
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .thinking-accordion-head {
   display: flex;
   align-items: center;
@@ -127,9 +146,11 @@
   display: inline-flex;
   align-items: center;
   gap: var(--ui-space-xs, 6px);
-  min-height: 24px;
-  height: 24px;
-  padding: 2px 8px;
+  min-width: 0;
+  max-width: 100%;
+  min-height: var(--ui-control-sm);
+  padding: var(--ui-space-xxs) var(--ui-space-sm);
+  margin-inline-start: calc(-1 * var(--ui-space-sm));
   border: 0;
   border-radius: var(--ui-radius-pill);
   background: transparent;
@@ -137,6 +158,7 @@
   font: 500 var(--ui-font-size-sm) / 1.4 var(--font-sans);
   text-align: start;
   cursor: pointer;
+  touch-action: manipulation;
   transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease;
 }
 
@@ -156,8 +178,17 @@
   gap: var(--ui-space-xs, 6px);
   min-width: 0;
 }
+.thinking-accordion-left > .tool-inline-tool-icon {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+.thinking-accordion-left > .tool-inline-tool-icon svg { width: 100%; height: 100%; }
 
 .thinking-accordion-title {
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-size: var(--ui-font-size-sm);
   font-weight: 500;
   color: inherit;
@@ -176,41 +207,57 @@
   justify-content: center;
   width: 12px;
   height: 12px;
+  flex: 0 0 12px;
   color: var(--ui-text-tertiary);
   transition: transform var(--ui-duration-overlay) var(--ui-ease-out);
 }
+.thinking-accordion-chev svg { display: block; width: 100%; height: 100%; }
 
 .thinking-accordion[data-open="true"] .thinking-accordion-chev {
   transform: rotate(180deg);
+}
+
+/* Only the active caption has a soft travelling highlight. Tool history and
+   completed thoughts remain still; the palette continues to come from themes. */
+@supports (background-clip: text) {
+  .thinking-accordion[data-live="true"] .thinking-status-label {
+    background-image: linear-gradient(100deg, var(--ui-text-muted) 35%, var(--ui-text-primary) 50%, var(--ui-text-muted) 65%);
+    background-size: 250% 100%;
+    background-clip: text;
+    color: transparent;
+  }
 }
 
 .thinking-accordion-body {
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
-  transform: translateY(-2px);
   pointer-events: none;
   transition:
     grid-template-rows var(--ui-duration-overlay) var(--ui-ease-apple, ease),
-    opacity var(--ui-duration-fast) var(--ui-ease-content, ease),
-    transform var(--ui-duration-overlay) var(--ui-ease-apple, ease);
+    opacity var(--ui-duration-fast) var(--ui-ease-content, ease);
 }
 
 .thinking-accordion[data-open="true"] .thinking-accordion-body {
   grid-template-rows: 1fr;
   opacity: 1;
-  transform: translateY(0);
   pointer-events: auto;
 }
 
 .thinking-accordion-inner {
+  min-height: 0;
+  min-width: 0;
   overflow: hidden;
 }
 
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce), (forced-colors: active) {
   .thinking-accordion-body,
   .thinking-accordion-chev {
     transition: none;
+  }
+  .thinking-accordion[data-live="true"] .thinking-status-label {
+    background-image: none;
+    color: inherit;
   }
 }
 
@@ -228,8 +275,7 @@
   overflow-wrap: anywhere;
 }
 
-/* Public timeline entries are stable observations; running tool rows own
-   their activity cue. The disclosure itself has no perpetual animation. */
+/* Public timeline entries remain still beneath the one live caption. */
 .turn-activity-list {
   margin: var(--ui-space-xs) 0;
   padding-inline-start: var(--ui-space-lg);
@@ -237,19 +283,23 @@
   font-size: var(--ui-font-size-sm);
   line-height: var(--ui-line-height-relaxed);
 }
-.turn-activity-list li { padding-block: var(--ui-space-xxs); overflow-wrap: anywhere; }
+.turn-activity-entry { padding-block: var(--ui-space-xxs); overflow-wrap: anywhere; }
 .turn-activity-phase { margin-inline-start: var(--ui-space-sm); color: var(--ui-text-tertiary); }
 
 .thinking-accordion-toggle:disabled { cursor: default; opacity: 1; }
 .thinking-accordion-toggle:disabled:hover { background: transparent; color: var(--ui-text-secondary); }
-.turn-activity-surface .thinking-accordion-inner {
-  border-inline-start: 2px solid var(--ui-border-default);
-  margin-inline-start: 6px;
-  padding-inline-start: var(--ui-space-md);
-  margin-top: var(--ui-space-xs);
-  margin-bottom: var(--ui-space-xs);
+.turn-activity-content {
+  min-width: 0;
+  border-inline-start: 1px solid var(--ui-border-default);
+  margin: var(--ui-space-xs) 0 var(--ui-space-sm) var(--ui-space-xxs);
+  padding-inline-start: var(--ui-space-lg);
 }
 .turn-activity-surface .thinking-accordion-text { border: 0; margin: 0; padding: 0; }
-.turn-activity-surface .turn-activity-list { list-style: none; padding: 0; }
+.turn-activity-surface .turn-activity-list { list-style: none; padding: 0; margin: 0; }
+.turn-activity-list:empty { display: none; }
+
+@media (max-width: 768px) {
+  .thinking-accordion-toggle { min-height: var(--ui-control-touch); }
+}
 
 .thinking-status-detail { color: var(--ui-text-tertiary); font-size: var(--ui-font-size-xxs); font-variant-numeric: tabular-nums; }

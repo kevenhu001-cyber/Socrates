@@ -92,7 +92,7 @@ test('display modes preserve node identity, edited values and tabs across fullsc
   await expect(count).toContainText('3');
 });
 
-test('a live turn has one breathing cue and reduced motion disables it', async ({ page }) => {
+test('a live turn has one text highlight and reduced motion disables it', async ({ page }) => {
   await prepareChatWorkbench(page);
   await page.evaluate(async () => {
     const ctl = await window.addStreamingMessage({ userPrompt: 'Check assumptions.' });
@@ -102,19 +102,19 @@ test('a live turn has one breathing cue and reduced motion disables it', async (
   });
   const activity = page.locator('.turn-activity-surface');
   await expect(activity).toHaveCount(1);
-  await expect(activity.locator('.turn-activity-dot')).toHaveCount(1);
-  expect(await activity.locator('.turn-activity-dot').evaluate((node) => getComputedStyle(node).animationName)).toBe('ui-activity-breathe');
+  await expect(activity.locator('.turn-activity-dot')).toHaveCount(0);
+  await expect(activity.locator('.thinking-status-label')).toHaveCSS('animation-name', 'ui-activity-highlight');
   await activity.locator('button').first().click();
-  expect(await activity.locator('.tool-inline-tool-icon').evaluate((node) => getComputedStyle(node).animationName)).toBe('none');
+  await expect(activity.locator('.tool-inline .tool-inline-tool-icon')).toHaveCSS('animation-name', 'none');
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  expect(await activity.locator('.turn-activity-dot').evaluate((node) => getComputedStyle(node).animationName)).toBe('none');
+  await expect(activity.locator('.thinking-status-label')).toHaveCSS('animation-name', 'none');
   await page.evaluate(() => {
     const ctl = window.__unifiedController;
     ctl.recordToolResult({ id: 'search', name: 'web_search', ok: true, status: 'completed', output: 'Checked.' });
     ctl.append('The answer.');
     ctl.finish();
   });
-  await expect(activity.locator('.turn-activity-dot')).toHaveCount(0);
+  await expect(activity.locator('.thinking-status-label')).toHaveCSS('animation-name', 'none');
   await expect(activity.locator('button').first()).toHaveAttribute('aria-expanded', 'true');
 });
 

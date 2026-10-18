@@ -10,10 +10,14 @@ function fixture() {
   const delivered = [];
   const pending = new Map();
   const watches = [];
-  const job = { id: 'job', sessionId: scope.sessionId, projectId: null, query: 'Evidence', status: 'queued', eventSequence: 1, plan: [], searched: 0, sourceCount: 0, resultArtifactId: null };
+  const job = { id: 'job', sessionId: scope.sessionId, projectId: null, query: 'Evidence', focus: null, status: 'queued', eventSequence: 1, plan: [], searched: 0, sourceCount: 0, resultArtifactId: null };
   const ports = {
     list: async () => [], create: async () => ({ ...job }), get: async () => ({ ...job }),
     control: async (_id, action) => { job.status = action === 'cancel' ? 'cancelled' : 'queued'; job.eventSequence++; return { ...job }; },
+    refine: async (_id, instruction) => ({
+      previous: { ...job, status: 'cancelled', eventSequence: job.eventSequence + 1 },
+      job: { ...job, id: 'job-refined', status: 'queued', eventSequence: 1, focus: instruction },
+    }),
     watch: (id, after, signal, onEvent) => new Promise((resolve) => { watches.push({ id, after, signal, onEvent, resolve }); signal.addEventListener('abort', () => resolve(), { once: true }); }),
     hasReport: (job) => delivered.some((entry) => entry.job.id === job.id),
     report: async () => ({ clientId: 'research-job', rawText: 'Report' }),
@@ -85,6 +89,19 @@ test('cancel and retry reuse a job, and stale snapshots cannot overwrite the new
   assert.equal(f.client.getSnapshot().jobs[0].job.status, 'cancelled');
   await f.client.control('job', 'retry');
   assert.equal(f.client.getSnapshot().jobs[0].job.status, 'queued');
+  f.client.open(null);
+});
+
+test('refining an active job keeps the cancelled history and watches the focused replacement', async () => {
+  const f = fixture();
+  f.client.open(scope); await tick(); await f.client.submit('Evidence');
+  const replacement = await f.client.refine('job', 'Compare primary sources');
+  assert.equal(replacement.id, 'job-refined');
+  assert.deepEqual(f.client.getSnapshot().jobs.map((view) => [view.job.id, view.job.status, view.job.focus]), [
+    ['job', 'cancelled', null],
+    ['job-refined', 'queued', 'Compare primary sources'],
+  ]);
+  assert.equal(f.watches.at(-1).id, 'job-refined');
   f.client.open(null);
 });
 

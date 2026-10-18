@@ -6,11 +6,11 @@
 
 @media (min-width: 769px) {
   #appShell .home-quick-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
     width: min(100%, var(--ui-content-chat));
-    margin: 28px auto 0;
+    margin: 18px auto 0;
     animation: homeStartersIn var(--ui-duration-normal) var(--ui-ease-apple, ease) both;
   }
 
@@ -20,22 +20,24 @@
     align-items: center;
     box-sizing: border-box;
     width: 100%;
-    min-height: 48px;
-    padding: 4px 44px 4px 10px;
-    gap: 12px;
-    border: 0;
-    border-radius: var(--ui-radius-row);
-    background: transparent;
+    min-height: 42px;
+    padding: 4px 38px 4px 10px;
+    gap: 8px;
+    border: 1px solid var(--ui-border-subtle);
+    border-radius: var(--ui-radius-control);
+    background: var(--ui-bg-subtle, transparent);
     color: var(--ui-text-secondary);
     text-align: left;
     cursor: pointer;
     transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
+                border-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
                 color var(--ui-duration-hover) var(--ui-ease-apple, ease);
   }
 
   #appShell .home-quick-action:hover,
   #appShell .home-quick-action:focus-within {
     background: var(--ui-bg-hover);
+    border-color: var(--ui-border-default);
     color: var(--ui-text-primary);
   }
 
@@ -43,10 +45,10 @@
     display: flex;
     flex: 1 1 auto;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     min-width: 0;
     margin: 0;
-    padding: 8px 0;
+    padding: 6px 0;
     min-height: var(--ui-control-sm);
     border: 0;
     background: transparent;
@@ -59,16 +61,16 @@
   #appShell .home-quick-action-icon {
     display: inline-grid;
     place-items: center;
-    flex: 0 0 20px;
-    width: 20px;
-    height: 20px;
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
     color: var(--ui-text-muted);
   }
 
   #appShell .home-quick-action-icon svg {
     display: block;
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
   }
 
   #appShell .home-quick-action-copy {
@@ -93,8 +95,8 @@
     right: 6px;
     display: inline-grid;
     place-items: center;
-    width: 32px;
-    height: 32px;
+    width: var(--ui-control-sm);
+    height: var(--ui-control-sm);
     padding: 0;
     border: 0;
     border-radius: 50%;

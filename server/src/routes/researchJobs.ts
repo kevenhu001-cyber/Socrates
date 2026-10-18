@@ -5,7 +5,7 @@ import { BadRequest } from '../lib/errors.js';
 import { writeSseHeaders, startSseKeepalive, trackSseConnection } from '../lib/sse.js';
 import {
   createResearchJob, getResearchJob, getResearchResult, listResearchJobs, listResearchEvents,
-  controlResearchJob, publicResearchJob, ResearchId, ResearchCursor,
+  controlResearchJob, refineResearchJob, publicResearchJob, ResearchId, ResearchCursor,
 } from '../services/core/researchJobs.js';
 
 const router = Router();
@@ -41,6 +41,12 @@ for (const action of ['cancel', 'retry'] as const) {
     catch (error) { next(error); }
   });
 }
+router.post('/:id/refine', async (req, res, next) => {
+  try {
+    const result = await refineResearchJob(req.userId!, String(req.params.id), req.body);
+    res.status(202).json({ job: publicResearchJob(result.job), previous: publicResearchJob(result.previous) });
+  } catch (error) { next(error); }
+});
 
 router.get('/:id/events', async (req, res, next) => {
   let closed = false;

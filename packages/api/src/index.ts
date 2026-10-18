@@ -1,7 +1,7 @@
 import type { AccountUsage, Assistant, ChatRequest, ChatSseHandlers, FileExtractResult, Mistake, MobileTokenPair, Project, ProviderKey, SearchHit, Session, SessionShare, ShareVisibility, StoredFile, StoredFilePreview, User } from '@socrates/contracts';
 import { consumeSseBuffer, dispatchChatSseFrame } from '@socrates/core';
 import type { KeyValueStore } from '@socrates/platform';
-import type { ResearchJob, ResearchJobRequest } from '@socrates/contracts';
+import type { ResearchJob, ResearchJobRefineRequest, ResearchJobRefineResult, ResearchJobRequest } from '@socrates/contracts';
 
 export type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
 export type TokenState = Partial<MobileTokenPair>;
@@ -189,6 +189,7 @@ export function createApiClient(input: {
       result: async (id: string) => (await request<{ message: import('@socrates/contracts').Message | null }>(`/research-jobs/${encodeURIComponent(id)}/result`)).message,
       cancel: async (id: string) => (await request<{ job: ResearchJob }>(`/research-jobs/${encodeURIComponent(id)}/cancel`, { method: 'POST' })).job,
       retry: async (id: string) => (await request<{ job: ResearchJob }>(`/research-jobs/${encodeURIComponent(id)}/retry`, { method: 'POST' })).job,
+      refine: async (id: string, body: ResearchJobRefineRequest) => request<ResearchJobRefineResult>(`/research-jobs/${encodeURIComponent(id)}/refine`, { method: 'POST', body: JSON.stringify(body) }),
     },
     auth: {
       me: async () => (await request<{ user: User }>('/auth/me')).user,

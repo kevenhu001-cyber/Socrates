@@ -3,6 +3,9 @@ import type {ToolCallLike} from '../../ui/toolPresentationModel.ts';
 
 export type ToolRunState = 'running' | 'done' | 'error' | 'stopped' | 'awaiting';
 
+/** Decisions a provider can expose for a pending tool approval. */
+export type ApprovalDecision = 'accept' | 'acceptForSession' | 'decline' | 'stop';
+
 export interface SourceItem {
   title: string;
   url: string;
@@ -144,7 +147,8 @@ export interface ToolCallRecord extends ToolCallLike {
     approvalId?: string;
     kind?: string;
     command?: string;
-    changes?: string;
+    changes?: unknown;
+    availableDecisions?: string[];
     reason?: string;
     cwd?: string;
     status?: string;
@@ -164,6 +168,8 @@ export interface ApprovalView {
   /** 'pending' until a decision is sent; then 'accepted' / 'declined' / 'stopped'. */
   state: string;
   disabled: boolean;
+  /** Provider-supported actions, normalized to the UI's decision vocabulary. */
+  decisions: ApprovalDecision[];
 }
 
 export interface ThinkRange {

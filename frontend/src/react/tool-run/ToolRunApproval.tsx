@@ -10,8 +10,9 @@
  * flight so the status line ("Saving your decision…", "Approved") arrives as
  * data rather than as a textContent write into nodes it no longer owns.
  */
+import { useId, type MouseEvent } from 'react';
 import { getLegacyActions, i18n } from '../legacy/gateway.ts';
-import type { ApprovalView } from './toolRunModel';
+import type { ApprovalDecision, ApprovalView } from './toolRunModel';
 
 export interface ToolRunApprovalProps {
   view: ApprovalView;
@@ -22,7 +23,7 @@ export interface ToolRunApprovalProps {
   readOnly?: boolean;
 }
 
-const DECISIONS: ReadonlyArray<{ decision: string; key: string; fallback: string; primary?: boolean }> = [
+const DECISIONS: ReadonlyArray<{ decision: ApprovalDecision; key: string; fallback: string; primary?: boolean }> = [
   { decision: 'accept', key: 'tool.approveOnce', fallback: 'Allow once', primary: true },
   { decision: 'acceptForSession', key: 'tool.approveRun', fallback: 'Allow this run' },
   { decision: 'decline', key: 'tool.decline', fallback: 'Decline' },
@@ -30,7 +31,10 @@ const DECISIONS: ReadonlyArray<{ decision: string; key: string; fallback: string
 ];
 
 export function ToolRunApproval({ view, messageId, toolCallId, readOnly }: ToolRunApprovalProps) {
-  const decide = (decision: string) => async (event: React.MouseEvent<HTMLButtonElement>) => {
+  const titleId = useId();
+  const copyId = useId();
+  const statusId = useId();
+  const decide = (decision: ApprovalDecision) => async (event: MouseEvent<HTMLButtonElement>) => {
     /* The legacy path answers approvals through a delegated document listener;
        stop here so a decision is never submitted twice. */
     event.preventDefault();
@@ -49,14 +53,17 @@ export function ToolRunApproval({ view, messageId, toolCallId, readOnly }: ToolR
       data-approval-id={view.approvalId}
       data-run-id={view.runId}
       data-state={view.state}
-      role="alert"
+      aria-labelledby={titleId}
+      aria-describedby={`${copyId} ${statusId}`}
+      aria-busy={view.disabled && view.state === 'pending' ? 'true' : undefined}
+      role="region"
       aria-live="polite"
     >
       <div className="tool-inline-approval-heading">
         <span className="tool-inline-approval-dot" aria-hidden="true" />
-        <strong>{view.title}</strong>
+        <strong id={titleId}>{view.title}</strong>
       </div>
-      <p className="tool-inline-approval-copy">
+      <p id={copyId} className="tool-inline-approval-copy">
         {i18n('tool.codexApprovalCopy', 'Review the action before it continues.')}
       </p>
       {view.facts.map((fact) => (
@@ -65,23 +72,22 @@ export function ToolRunApproval({ view, messageId, toolCallId, readOnly }: ToolR
           <code className="tool-inline-approval-fact-value">{fact.value}</code>
         </div>
       ))}
-      <div className="tool-inline-approval-status">{view.status}</div>
-      {readOnly ? null : (
+      <div id={statusId} className="tool-inline-approval-status" role="status">{view.status}</div>
+      {!readOnly && !view.disabled && view.state === 'pending' && view.decisions.length ? (
         <div className="tool-inline-approval-actions">
-          {DECISIONS.map((spec) => (
+          {DECISIONS.filter((spec) => view.decisions.includes(spec.decision)).map((spec) => (
             <button
               type="button"
               key={spec.decision}
               className={`tool-inline-approval-action${spec.primary ? ' primary' : ''}`}
               data-approval-action={spec.decision}
-              disabled={view.disabled}
               onClick={decide(spec.decision)}
             >
               {i18n(spec.key, spec.fallback)}
             </button>
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

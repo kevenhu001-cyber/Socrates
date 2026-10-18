@@ -1492,6 +1492,43 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { description: Job cannot be retried or active job limit exceeded }
 
+  /api/research-jobs/{jobId}/refine:
+    parameters:
+      - { in: path, name: jobId, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [research]
+      operationId: refineResearchJob
+      description: |
+        Requires chat:write. Atomically cancels the active source job and
+        queues a replacement with the same question plus a durable user focus
+        instruction. The source snapshot is returned as previous so clients
+        can preserve the task history. The replacement starts with a clean
+        plan and is subject to the same three-active-job limit.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [instruction]
+              properties:
+                instruction: { type: string, minLength: 1, maxLength: 600 }
+      responses:
+        '202':
+          description: Source task cancelled and replacement queued
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [job, previous]
+                properties:
+                  job: { $ref: '#/components/schemas/ResearchJob' }
+                  previous: { $ref: '#/components/schemas/ResearchJob' }
+        '400': { description: Invalid refinement instruction }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { description: Job is not active or the active job limit would be exceeded }
+
   /api/scheduled-tasks:
     get:
       tags: [scheduled]
@@ -4195,12 +4232,13 @@ components:
         job: { $ref: '#/components/schemas/ResearchJob' }
     ResearchJob:
       type: object
-      required: [id, sessionId, projectId, query, status, plan, searched, sourceCount, eventSequence, attempts, resultArtifactId, error, createdAt, updatedAt, completedAt]
+      required: [id, sessionId, projectId, query, focus, status, plan, searched, sourceCount, eventSequence, attempts, resultArtifactId, error, createdAt, updatedAt, completedAt]
       properties:
         id: { type: string, format: uuid }
         sessionId: { type: [string, 'null'], format: uuid }
         projectId: { type: [string, 'null'], format: uuid }
         query: { type: string }
+        focus: { type: [string, 'null'] }
         status: { type: string, enum: [queued, running, succeeded, failed, cancelled] }
         plan: { type: array, items: { type: string } }
         searched: { type: integer }

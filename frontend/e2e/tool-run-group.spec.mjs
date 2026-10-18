@@ -504,6 +504,7 @@ test('a pending approval stays visible outside a collapsed tool row', async ({ p
           id: 'approval-tool', runId: 'run-approval', approvalId: 'approval-123',
           kind: 'commandExecution', command: 'npm test', cwd: '/workspace',
           reason: 'Validate the project', status: 'pending',
+          availableDecisions: ['accept', 'decline'],
         });
       } });
       return Promise.resolve(new Response(stream, {
@@ -546,6 +547,8 @@ test('a pending approval stays visible outside a collapsed tool row', async ({ p
   await expect(row).not.toHaveAttribute('open', '');
   await expect(prompt.getByRole('button', { name: 'Allow once' })).toBeVisible();
   await expect(prompt.getByRole('button', { name: 'Decline' })).toBeVisible();
+  await expect(prompt.locator('[data-approval-action="acceptForSession"]')).toHaveCount(0);
+  await expect(prompt.locator('[data-approval-action="stop"]')).toHaveCount(0);
 
   await prompt.locator('[data-approval-action="accept"]').click();
   await expect(prompt.locator('.tool-inline-approval-status')).toHaveText('Approved');

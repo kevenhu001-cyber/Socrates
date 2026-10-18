@@ -86,7 +86,7 @@ test('live chrome never fabricates summary content or repeats tool activity', as
     { id: 'summary', kind: 'reasoning_summary', phase: 'running', startedAt: 0, text: 'Compared publication dates.' },
   ], showActivityCue: false });
   await act(() => toggle().click());
-  assert.equal(container.querySelectorAll('li').length, 1);
+  assert.equal(container.querySelectorAll('[role="listitem"]').length, 1);
   assert.doesNotMatch(container.textContent, /Searching|In progress|Reviewing your question|Response ready/);
   assert.equal(container.querySelector('[data-live="true"]'), null);
 });
@@ -94,7 +94,7 @@ test('live chrome never fabricates summary content or repeats tool activity', as
 test('summary list stays concise and localizes the observed thought duration', async () => {
   const activities = Array.from({ length: 8 }, (_, i) => ({ id: `summary-${i}`, kind: 'reasoning_summary', phase: 'done', startedAt: i, text: `Finding ${i}` }));
   await render({ activities: [...activities, { ...activities[7], id: 'duplicate' }], isLive: false, elapsedSec: 12.3 });
-  assert.equal(container.querySelectorAll('li').length, 5);
+  assert.equal(container.querySelectorAll('[role="listitem"]').length, 5);
   assert.match(toggle().textContent, /Thought for 12s/);
   await act(() => { lang = 'zh'; document.dispatchEvent(new window.Event('socrates:langchange')); });
   assert.match(toggle().textContent, /思考了 12 秒/);

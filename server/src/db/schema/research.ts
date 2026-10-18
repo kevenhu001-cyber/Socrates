@@ -5,6 +5,7 @@ import { projects, artifacts } from './content.js';
 
 export interface ResearchSource { url: string; title: string; content: string }
 export interface ResearchSteps {
+  focus?: string;
   plan?: string[];
   searches?: ResearchSource[][];
   sources?: ResearchSource[];

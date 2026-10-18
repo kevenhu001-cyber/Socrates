@@ -41,17 +41,7 @@ export function ToolRunRow({ view, startedAt, messageId, readOnly, nested, activ
         <summary className="tool-inline-head" aria-expanded={open}>
           <ToolRunRowHead view={view} elapsedMs={elapsedMs} />
         </summary>
-        {open ? (
-          inFlight ? (
-            <div className="tool-inline-detail">
-              {view.livePreview ? <pre className="tool-inline-code-preview">{view.livePreview}</pre> : null}
-              {view.liveOutput ? <pre className="tool-inline-code-preview is-output">{view.liveOutput}</pre> : null}
-              {!view.livePreview && !view.liveOutput ? <ToolRunDetail view={view} readOnly={readOnly} /> : null}
-            </div>
-          ) : (
-            <ToolRunDetail view={view} readOnly={readOnly} />
-          )
-        ) : null}
+        {open ? <ToolRunDetail view={view} inFlight={inFlight} readOnly={readOnly} /> : null}
       </details> : <div {...rowData}>
         <div className="tool-inline-head"><ToolRunRowHead view={view} elapsedMs={elapsedMs} /></div>
       </div>) : null}

@@ -22,14 +22,16 @@
   }
 }
 
-/* One subtle breathing dot is the sole persistent cue for a live turn.
+/* One soft text highlight is the sole persistent cue for a live turn.
    Tool glyphs and text stay still inside the activity history. */
-#appShell .turn-activity-dot {
-  animation: ui-activity-breathe 1800ms ease-in-out infinite;
+@supports (background-clip: text) {
+  #appShell .thinking-accordion[data-live="true"] .thinking-status-label {
+    animation: ui-activity-highlight var(--ui-duration-shimmer) linear infinite;
+  }
 }
-@keyframes ui-activity-breathe {
-  0%, 100% { opacity: .45; }
-  50% { opacity: .85; }
+@keyframes ui-activity-highlight {
+  from { background-position: 150% 0; }
+  to { background-position: -100% 0; }
 }
 #appShell .turn-activity-surface :is(.tool-inline-tool-icon, .agent-step-icon, .tool-inline-label, .tool-run-summary-label, .agent-step-label) {
   animation: none;
@@ -50,7 +52,7 @@
   70%, 100% { transform: scale(1.9); opacity: 0; }
 }
 
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce), (forced-colors: active) {
   #appShell :is(
     .shimmer-text,
     .thinking-status-label,
@@ -59,7 +61,7 @@
     .agent-step-label
   ).shimmer-text,
   #appShell .voice-recording-indicator::after,
-  #appShell .turn-activity-dot {
+  #appShell .thinking-accordion[data-live="true"] .thinking-status-label {
     animation: none;
   }
 }

@@ -1,5 +1,5 @@
 import { consumeResearchStream } from './researchStream.ts';
-import type { Message, ResearchJob, ResearchJobRequest } from '@socrates/contracts';
+import type { Message, ResearchJob, ResearchJobRefineResult, ResearchJobRequest } from '@socrates/contracts';
 import { apiFetch, apiFetchRaw } from '../util/api.ts';
 import { stateStore } from '../state/store.js';
 import { saveCurrentSession } from '../session/persistence.ts';
@@ -29,6 +29,7 @@ export const researchClient = createResearchController({
   },
   get: async (id, signal) => (await apiFetch<{ job: ResearchJob }>(`/api/research-jobs/${encodeURIComponent(id)}`, { signal })).job,
   control: async (id, action, signal) => (await apiFetch<{ job: ResearchJob }>(`/api/research-jobs/${encodeURIComponent(id)}/${action}`, { method: 'POST', signal })).job,
+  refine: async (id, instruction, signal) => await apiFetch<ResearchJobRefineResult>(`/api/research-jobs/${encodeURIComponent(id)}/refine`, { method: 'POST', body: { instruction }, signal }),
   watch: async (id, after, signal, onEvent) => {
     // A separate stream controller releases apiFetchRaw's linked abort
     // listener on every reconnect, including a clean server EOF.
@@ -85,4 +86,9 @@ export async function submitResearch(query: string) {
   if (!query.trim() || query.trim().length > 1200) throw new Error('research_invalid_query');
   researchClient.open(scope);
   return researchClient.submit(query);
+}
+
+/** Fetch the durable report on demand for the full-screen report workspace. */
+export async function fetchResearchReport(jobId: string, signal?: AbortSignal): Promise<Message | null> {
+  return (await apiFetch<{ message: Message | null }>(`/api/research-jobs/${encodeURIComponent(jobId)}/result`, { signal })).message;
 }

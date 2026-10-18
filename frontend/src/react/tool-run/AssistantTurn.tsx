@@ -118,6 +118,12 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
     segment.kind === 'group' ? segment.running.length > 0
       : segment.kind === 'tool' && ['running', 'awaiting'].includes(toolRunStateOf(segment.call)),
   );
+  /* The activity strip is mounted before the transcript so tool rows can
+     remain in their sentence-safe position. Tell it when real answer prose
+     has started, though, so the strip can become the small interleaved
+     progress cue ChatGPT uses while the response continues composing. */
+  const hasAnswerProse = segments.some((segment) => segment.kind === 'text' && segment.text.trim().length > 0)
+    || Boolean(storedProse.trim());
   const hasSettledTool = calls.some((c) => toolRunStateOf(c) === 'done');
   const activeTool = calls.find((call) => ['running', 'awaiting'].includes(toolRunStateOf(call)));
   const presentation = deriveTurnPresentationState(message, { live: isLive, hasRunningRow, hasSettledTool, activeTool });
@@ -138,6 +144,7 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
           elapsedSec={presentation.reasoningDurationSec}
           statusLabel={presentation.activityLabel}
           intentSummary={presentation.intentSummary}
+          answerStarted={hasAnswerProse}
           hasTools={segments.some((segment) => segment.kind === 'tool' || segment.kind === 'group')}
         >
           {segments.map((segment, index) => segment.kind === 'group'

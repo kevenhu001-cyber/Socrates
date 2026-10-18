@@ -325,6 +325,7 @@ export interface ResearchJob {
   sessionId: string | null;
   projectId: string | null;
   query: string;
+  focus: string | null;
   status: ResearchStatus;
   eventSequence: number;
   plan: string[];
@@ -336,6 +337,13 @@ export interface ResearchJob {
   createdAt: string;
   updatedAt: string;
   completedAt: string | null;
+}
+export interface ResearchJobRefineRequest {
+  instruction: string;
+}
+export interface ResearchJobRefineResult {
+  job: ResearchJob;
+  previous: ResearchJob;
 }
 export interface ResearchJobEvent {
   id: string;

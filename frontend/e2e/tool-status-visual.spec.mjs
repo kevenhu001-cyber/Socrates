@@ -70,7 +70,8 @@ test('deferred tool shows a clean single status line, no orphan dots', async ({ 
   // The deferred state: status line visible, NO mounted tool row yet.
   await expect(bubble.locator('.tool-inline')).toHaveCount(0);
   await expect(bubble).toContainText(/正在更新文件|工具运行中/);
-  await expect(bubble.locator('.thinking-status .turn-activity-dot')).toHaveCount(1);
+  await expect(bubble.locator('.thinking-status .tool-inline-tool-icon')).toHaveCount(1);
+  await expect(bubble.locator('.thinking-status-label')).toHaveCSS('animation-name', 'ui-activity-highlight');
   await expect(bubble.locator('.thinking-status .thinking-spinner')).toHaveCount(0);
 
   // No orphaned stream cursor next to the status icon: while the live

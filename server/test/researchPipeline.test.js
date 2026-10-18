@@ -44,6 +44,20 @@ test('research resumes a saved search checkpoint without repeating completed cal
   assert.equal(result.report, 'Recovered report [1]');
 });
 
+test('research refinement focus reaches both planning and synthesis prompts', async () => {
+  const { ports } = fixture();
+  const prompts = [];
+  const complete = ports.complete;
+  ports.complete = async (messages, maxTokens, signal) => {
+    prompts.push(messages);
+    return complete(messages, maxTokens, signal);
+  };
+  await executeResearch('question', { focus: 'Compare primary sources and call out disagreements.' }, ports, new AbortController().signal);
+  assert.match(prompts[0][0].content, /Additional user focus: Compare primary sources/);
+  assert.match(prompts[0][1].content, /Additional user focus: Compare primary sources/);
+  assert.match(prompts.at(-1)[1].content, /Additional user focus: Compare primary sources/);
+});
+
 test('invalid planning JSON uses a bounded fallback; no sources fails before synthesis', async () => {
   const { ports } = fixture();
   let completions = 0;

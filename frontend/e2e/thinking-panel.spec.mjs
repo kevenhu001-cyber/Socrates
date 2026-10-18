@@ -118,6 +118,10 @@ test('parallel tools keep their order, DOM identity, and open details as later c
   await expect(first).toBeVisible();
   await trigger.click();
   const handle = await first.elementHandle();
+  const detailHandle = await first.locator(':scope > .tool-inline-detail').elementHandle();
+  const technical = first.locator('.tool-inline-tech');
+  await technical.locator('summary').click();
+  await expect(technical).toHaveAttribute('open', '');
   await page.evaluate(() => window.__pushThinkingFrame('tool_result', {
     id: 'second-fast', name: 'web_search', ok: true, status: 'completed', output: 'Found source',
     results: [{ title: 'Source', url: 'https://example.test/fast' }],
@@ -129,6 +133,9 @@ test('parallel tools keep their order, DOM identity, and open details as later c
   await page.evaluate(() => window.__pushThinkingFrame('tool_result', { id: 'first-slow', name: 'Read', ok: true, status: 'completed', output: 'export const value = 1;' }));
   await expect(first).toHaveAttribute('data-state', 'done');
   expect(await page.evaluate((node) => node === document.querySelector('[data-tcid="first-slow"]'), handle)).toBe(true);
+  expect(await page.evaluate((node) => node === document.querySelector('[data-tcid="first-slow"] > .tool-inline-detail'), detailHandle)).toBe(true);
+  await expect(technical).toHaveAttribute('open', '');
+  await expect(first.locator('.tool-inline-detail .tool-inline-detail')).toHaveCount(0);
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   await page.evaluate(() => window.__finishPlain());
 });

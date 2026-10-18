@@ -11,6 +11,7 @@ import test from 'node:test';
 
 import {
   buildTurnLayout,
+  approvalViewOf,
   detailText,
   extractCodePreview,
   findThinkRanges,
@@ -218,6 +219,32 @@ test('derives one state from either the live run phase or the persisted flags', 
   // A call with nothing but its arguments is the one that really never resolved.
   assert.equal(toolRunStateOf({ id: 'x', name: 'Read' }), 'running');
   assert.equal(toolRunStateOf({ id: 'x', name: 'Read', input: { file_path: 'a.py' }, textOffset: 3 }), 'running');
+});
+
+test('approval views normalize provider decisions and structured file changes', () => {
+  const view = approvalViewOf({
+    id: 'approval-call', name: 'workspace_agent',
+    approval: {
+      runId: 'run-1', approvalId: 'approval-1', kind: 'fileChange',
+      changes: { files: [{ path: 'src/app.ts', operation: 'edit' }] },
+      availableDecisions: ['accept', 'interrupt', 'accept'], status: 'pending',
+    },
+  });
+  assert.ok(view);
+  assert.equal(view.state, 'pending');
+  assert.deepEqual(view.decisions, ['accept', 'stop']);
+  assert.match(view.facts[0].value, /src\/app\.ts/);
+  assert.doesNotMatch(view.facts[0].value, /\[object Object\]/);
+});
+
+test('approval views collapse terminal provider statuses into stable UI states', () => {
+  const view = approvalViewOf({
+    id: 'approval-call', name: 'workspace_agent',
+    approval: { runId: 'run-1', approvalId: 'approval-1', status: 'accepted_for_session' },
+  });
+  assert.equal(view.state, 'accepted');
+  assert.equal(view.disabled, true);
+  assert.equal(view.status, 'Approved');
 });
 
 /* ── labels ──────────────────────────────────────────────────────────── */

@@ -5,6 +5,7 @@ import { waitForAppShell } from './_mock-api.mjs';
 const SESSION = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const OTHER = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const JOB = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+const REFINED = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 const USER = { clientId: 'user-question', role: 'user', rawText: 'Research evidence', type: 'user' };
 
 async function setup(page) {
@@ -14,7 +15,7 @@ async function setup(page) {
   // Loaded sessions already have a title. Keep automatic title generation
   // outside the assertion that research performs no browser LLM/tool work.
   await page.evaluate(() => window.stateStore.dispatch({ type: 'state/set', key: 'sessionTitle', value: 'Research evidence' }));
-  const state = { job: null, message: null, submissions: [], cursors: [], controls: [], failSubmit: false, holdResult: null, resultRequests: 0, browserTools: 0 };
+  const state = { job: null, refinedJob: null, message: null, submissions: [], refinements: [], cursors: [], controls: [], failSubmit: false, holdResult: null, resultRequests: 0, browserTools: 0 };
   const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
   await page.route('**/api/**/sessions**', async (route) => {
     const request = route.request();
@@ -31,22 +32,34 @@ async function setup(page) {
     if (url.pathname.endsWith('/research-jobs') && req.method() === 'POST') {
       const body = req.postDataJSON();
       state.submissions.push(body);
-      state.job ||= { id: JOB, sessionId: body.sessionId, projectId: null, query: body.query, status: 'queued', eventSequence: 1, plan: [], searched: 0, sourceCount: 0, resultArtifactId: null, error: null, attempts: 0,
+      state.job ||= { id: JOB, sessionId: body.sessionId, projectId: null, query: body.query, focus: null, status: 'queued', eventSequence: 1, plan: ['Clarify the research question', 'Compare relevant sources', 'Write a sourced report'], searched: 0, sourceCount: 0, resultArtifactId: null, error: null, attempts: 0,
         createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), completedAt: null };
       if (state.failSubmit) { state.failSubmit = false; return route.abort('failed'); }
       return json(route, { job: state.job }, 202);
     }
-    if (url.pathname.endsWith('/research-jobs')) return json(route, { jobs: state.job && url.searchParams.get('sessionId') === SESSION ? [state.job] : [] });
+    if (url.pathname.endsWith('/research-jobs')) return json(route, { jobs: url.searchParams.get('sessionId') === SESSION ? [state.job, state.refinedJob].filter(Boolean) : [] });
     if (url.pathname.endsWith('/events')) {
       const after = Number(req.headers()['last-event-id'] || 0);
       state.cursors.push(after);
-      const event = { jobId: JOB, sequence: state.job.eventSequence, stage: state.job.status === 'succeeded' ? 'completed' : state.job.status, status: state.job.status };
+      const eventJobId = url.pathname.match(/research-jobs\/([^/]+)\/events/)?.[1];
+      const eventJob = eventJobId === REFINED ? state.refinedJob : state.job;
+      const event = { jobId: eventJobId || JOB, sequence: eventJob?.eventSequence || 1, stage: eventJob?.status === 'succeeded' ? 'completed' : eventJob?.status || 'queued', status: eventJob?.status || 'queued' };
       return route.fulfill({ contentType: 'text/event-stream', body: event.sequence > after ? `id: ${event.sequence}\nevent: research_event\ndata: ${JSON.stringify(event)}\n\n` : ': keepalive\n\n' });
     }
     if (url.pathname.endsWith('/result')) {
       state.resultRequests++;
       if (state.holdResult) await state.holdResult;
       return json(route, { message: state.message });
+    }
+    const refine = url.pathname.endsWith('/refine');
+    if (refine) {
+      const body = req.postDataJSON();
+      state.controls.push('refine');
+      state.refinements.push(body.instruction);
+      state.job.status = 'cancelled';
+      state.job.eventSequence++;
+      state.refinedJob = { ...state.job, id: REFINED, status: 'queued', eventSequence: 1, focus: body.instruction, plan: ['Clarify the research question', 'Compare relevant sources', 'Write a sourced report'], searched: 0, sourceCount: 0 };
+      return json(route, { job: state.refinedJob, previous: state.job }, 202);
     }
     const action = url.pathname.match(/\/(cancel|retry)$/)?.[1];
     if (action) {
@@ -73,6 +86,9 @@ test('submits a durable task, shows reconnecting state and supports cancel/retry
   const state = await setup(page);
   await page.evaluate(() => window.startDeepResearch('Research evidence'));
   await expect(page.getByRole('button', { name: 'Cancel research', exact: true })).toBeVisible();
+  await expect(page.locator('.research-plan-panel')).toBeVisible();
+  await expect(page.locator('.research-plan-title')).toHaveText('Plan');
+  await expect(page.locator('.research-plan-step').first()).toContainText('Clarify the research question');
   expect(state.submissions).toHaveLength(1);
   expect(state.submissions[0]).toMatchObject({ sessionId: SESSION, query: 'Research evidence' });
   expect(state.submissions[0].idempotencyKey).toBeTruthy();
@@ -163,4 +179,35 @@ test('failed research retains a visible reason and retries the same task', async
   await expect(page.getByRole('button', { name: 'Cancel research', exact: true })).toBeVisible();
   expect(state.controls).toEqual(['retry']);
   expect(state.submissions).toHaveLength(1);
+});
+
+test('adjusting focus cancels the current run and shows the replacement focus', async ({ page }) => {
+  const state = await setup(page);
+  await page.evaluate(() => window.startDeepResearch('Research evidence'));
+  await page.getByRole('button', { name: 'Adjust focus', exact: true }).click();
+  await expect(page.getByLabel('What should the next research run focus on?')).toBeVisible();
+  await page.getByLabel('What should the next research run focus on?').fill('Compare primary sources and call out disagreements.');
+  await page.getByRole('button', { name: 'Run with this focus', exact: true }).click();
+  await expect(page.locator('.research-job-focus')).toContainText('Compare primary sources and call out disagreements.');
+  expect(state.controls).toEqual(['refine']);
+  expect(state.refinements).toEqual(['Compare primary sources and call out disagreements.']);
+  await expect(page.locator('[data-research-status="cancelled"]')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Adjust focus', exact: true })).toBeVisible();
+});
+
+test('completed research opens a report workspace with plan, sources and activity sections', async ({ page }) => {
+  const state = await setup(page);
+  await page.evaluate(() => window.startDeepResearch('Research evidence'));
+  state.complete();
+  await expect(page.locator('#msgList')).toContainText('Persistent research report sentinel');
+  await page.getByRole('button', { name: 'Open report', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Research evidence' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText('Persistent research report sentinel');
+  await expect(dialog.locator('#research-report-plan')).toContainText('Clarify the research question');
+  await expect(dialog.locator('#research-report-sources')).toContainText('Sources are attached to the report.');
+  await expect(dialog.locator('#research-report-activity')).toContainText('Completed');
+  await page.screenshot({ path: 'test-results/research-report-workspace-desktop.png', animations: 'disabled' });
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(dialog).toBeHidden();
 });

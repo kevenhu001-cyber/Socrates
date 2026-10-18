@@ -2,6 +2,8 @@ import type { LiveTurnStatus } from '../types/domain';
 import type { TurnActivityEntry } from '@socrates/contracts';
 import { useEffect, useId, useReducer, useState, type ReactNode } from 'react';
 import { i18n } from '../legacy/gateway';
+import { STROKE_ICONS } from '../../ui/icons/toolIcons';
+import { ToolActivityIcon } from './ToolActivityIcon';
 
 export interface TurnActivitySurfaceProps {
   /** Public model-provided summary only. Never pass parsed reasoning text here. */
@@ -13,11 +15,13 @@ export interface TurnActivitySurfaceProps {
   status?: LiveTurnStatus;
   showActivityCue?: boolean;
   intentSummary?: string;
+  /** True once answer prose has started, even if the turn is still live. */
+  answerStarted?: boolean;
   children?: ReactNode;
   hasTools?: boolean;
 }
 
-export function TurnActivitySurface({ publicSummary = '', activities = [], isLive = false, elapsedSec, statusLabel, status, showActivityCue = true, intentSummary, children, hasTools = false }: TurnActivitySurfaceProps) {
+export function TurnActivitySurface({ publicSummary = '', activities = [], isLive = false, elapsedSec, statusLabel, status, showActivityCue = true, intentSummary, answerStarted = false, children, hasTools = false }: TurnActivitySurfaceProps) {
   const [isOpen, setIsOpen] = useState(false);
   const bodyId = useId();
   const [, refreshLanguage] = useReducer((revision: number) => revision + 1, 0);
@@ -58,6 +62,7 @@ export function TurnActivitySurface({ publicSummary = '', activities = [], isLiv
       data-turn-surface-part="activity"
       data-activity-timeline={timeline.length ? "true" : undefined}
       data-live={isLive && showActivityCue ? 'true' : undefined}
+      data-answer-started={answerStarted ? 'true' : undefined}
       data-open={isOpen ? 'true' : 'false'}
     >
       <div className={`thinking-accordion-head${isLive ? ' thinking-status' : ''}`} data-phase={isLive ? status?.phase : undefined}>
@@ -70,28 +75,31 @@ export function TurnActivitySurface({ publicSummary = '', activities = [], isLiv
           onClick={() => setIsOpen((previous) => !previous)}
         >
           <span className="thinking-accordion-left">
-            {isLive && showActivityCue ? <span className="turn-activity-dot" aria-hidden="true" /> : null}
+            {isLive && status?.toolName ? <ToolActivityIcon name={status.toolName} /> : null}
             <span className="thinking-accordion-title thinking-status-label" role={isLive ? 'status' : undefined}>
               {title}
             </span>
+            {isLive && answerStarted ? (
+              <span className="thinking-status-context">{i18n('think.answeringWhileWorking', 'Answering while activity continues')}</span>
+            ) : null}
             {isLive && status?.elapsedSec ? <span className="thinking-status-detail">{status.elapsedSec}s</span> : null}
           </span>
-          {hasDetails ? <span className="thinking-accordion-chev" aria-hidden="true">
-            <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 6l4 4 4-4" />
-            </svg>
-          </span> : null}
+          {hasDetails ? <span className="thinking-accordion-chev" aria-hidden="true"
+            dangerouslySetInnerHTML={{ __html: STROKE_ICONS.chevronDown }}
+          /> : null}
         </button>
       </div>
       <div id={bodyId} className="thinking-accordion-body" aria-hidden={!isOpen} inert={!isOpen}>
         <div className="thinking-accordion-inner">
-          {intentSummary ? <p className="turn-activity-intent">{intentSummary}</p> : null}
-          <ol className="turn-activity-list">
-            {summaries.map((entry) => <li key={entry.id} data-activity-id={entry.id} data-phase={entry.phase}>
-              <div className="thinking-accordion-text">{entry.text?.trim()}</div>
-            </li>)}
-          </ol>
-          {children}
+          <div className="turn-activity-content">
+            {intentSummary ? <p className="turn-activity-intent">{intentSummary}</p> : null}
+            <div className="turn-activity-list" role="list">
+              {summaries.map((entry) => <div className="turn-activity-entry" role="listitem" key={entry.id} data-activity-id={entry.id} data-phase={entry.phase}>
+                <div className="thinking-accordion-text">{entry.text?.trim()}</div>
+              </div>)}
+            </div>
+            {children}
+          </div>
         </div>
       </div>
     </div>
