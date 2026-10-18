@@ -52,9 +52,9 @@
   cursor: pointer;
   user-select: none;
   transition:
-    background-color var(--ui-duration-hover) ease,
-    color var(--ui-duration-hover) ease,
-    border-color var(--ui-duration-hover) ease;
+    background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
+    color var(--ui-duration-hover) var(--ui-ease-apple, ease),
+    border-color var(--ui-duration-hover) var(--ui-ease-apple, ease);
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
@@ -122,8 +122,8 @@
   cursor: pointer;
   user-select: none;
   transition:
-    background-color var(--ui-duration-hover) ease,
-    color var(--ui-duration-hover) ease;
+    background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
+    color var(--ui-duration-hover) var(--ui-ease-apple, ease);
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }

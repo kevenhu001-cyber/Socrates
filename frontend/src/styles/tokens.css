@@ -110,8 +110,19 @@
   --ui-ease-spring-snappy: cubic-bezier(0.16, 1, 0.3, 1);
   --ui-ease-spring-bouncy: cubic-bezier(0.34, 1.3, 0.64, 1);
   --ui-ease-spring-gentle: cubic-bezier(0.25, 1, 0.5, 1);
+  /* Apple-style deceleration — iOS/macOS system curve: fast departure,
+     long gentle settle. Used for content reveals and page transitions
+     where motion should feel natural rather than mechanical. */
+  --ui-ease-apple: cubic-bezier(0.25, 0.1, 0.25, 1);
+  /* Content entrance — a softer ease-out for prose, cards, and message
+     bubbles fading in. Less aggressive than --ui-ease-out so text
+     doesn't snap into place. */
+  --ui-ease-content: cubic-bezier(0.22, 0.61, 0.36, 1);
   --ui-press-scale: 0.975;
   --ui-press-scale-sm: 0.96;
+  /* Micro-feedback — instant acknowledgement for hover/focus shifts that
+     must feel zero-latency (like Apple's button highlight). */
+  --ui-duration-micro: 80ms;
   --ui-duration-fast: 140ms;
   --ui-duration-normal: 220ms;
   /* chatgpt.com motion (docs/ref/chatgpt-parity.md): colour feedback on

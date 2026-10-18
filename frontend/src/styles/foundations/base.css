@@ -1,4 +1,5 @@
 html, body { background: var(--ui-bg-page); }
+html { scroll-behavior: smooth; }
 
 body, button, input, textarea, select {
   font-family: var(--font-sans);
@@ -8,6 +9,7 @@ body {
   color: var(--ui-text-primary);
   letter-spacing: 0;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
@@ -17,6 +19,24 @@ button { -webkit-tap-highlight-color: transparent; }
 :focus-visible {
   outline: 2px solid color-mix(in srgb, var(--ui-text-primary) 55%, transparent);
   outline-offset: 2px;
+  transition: outline-color var(--ui-duration-micro, 80ms) ease;
+}
+
+/* Minimalist scrollbar — Apple-inspired pill with smooth hover transition */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--ui-scrollbar-thumb);
+  border-radius: var(--ui-radius-pill);
+  transition: background-color var(--ui-duration-fast) var(--ui-ease-apple, ease);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ui-scrollbar-thumb-hover);
 }
 
 .hidden { display: none !important; }

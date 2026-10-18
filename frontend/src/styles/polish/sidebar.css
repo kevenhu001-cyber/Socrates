@@ -42,8 +42,8 @@
   #appShell #sidebarCloseBtn {
     border-radius: var(--ui-radius-sm);
     color: var(--ui-text-tertiary);
-    transition: background-color var(--ui-duration-hover) ease,
-                color var(--ui-duration-hover) ease;
+    transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
+                color var(--ui-duration-hover) var(--ui-ease-apple, ease);
   }
   #appShell #newChatBtn:hover,
   #appShell #sidebarCloseBtn:hover,
@@ -67,8 +67,8 @@
     padding-inline: 8px;
     border-radius: var(--ui-radius-row);
     color: var(--ui-text-secondary);
-    transition: background-color var(--ui-duration-hover) ease,
-                color var(--ui-duration-hover) ease;
+    transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
+                color var(--ui-duration-hover) var(--ui-ease-apple, ease);
   }
   #appShell #sidebarNav .sidebar-nav-btn:hover,
   #appShell #sidebarNav .sidebar-nav-btn:focus-visible {
@@ -96,9 +96,9 @@
     padding-inline: 8px;
     border-radius: var(--ui-radius-row);
     color: var(--ui-text-secondary);
-    transition: background-color var(--ui-duration-hover) ease,
-                color var(--ui-duration-hover) ease,
-                box-shadow var(--ui-duration-hover) ease;
+    transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
+                color var(--ui-duration-hover) var(--ui-ease-apple, ease),
+                box-shadow var(--ui-duration-hover) var(--ui-ease-apple, ease);
   }
   #appShell #sidebar .sidebar-search:hover {
     background: var(--ui-bg-hover);
@@ -158,8 +158,8 @@
     padding-inline: 8px;
     border-radius: var(--ui-radius-row);
     color: var(--ui-text-secondary);
-    transition: background-color var(--ui-duration-hover) ease,
-                color var(--ui-duration-hover) ease;
+    transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
+                color var(--ui-duration-hover) var(--ui-ease-apple, ease);
   }
   #appShell #sidebar .recent-item-text {
     color: inherit;
@@ -214,8 +214,8 @@
     padding: 6px 8px;
     border-radius: var(--ui-radius-row);
     color: var(--ui-text-secondary);
-    transition: background-color var(--ui-duration-hover) ease,
-                color var(--ui-duration-hover) ease;
+    transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
+                color var(--ui-duration-hover) var(--ui-ease-apple, ease);
   }
   #appShell .sidebar-account-trigger:hover,
   #appShell .sidebar-account-trigger:focus-visible,

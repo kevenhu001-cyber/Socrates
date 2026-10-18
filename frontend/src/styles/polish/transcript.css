@@ -165,7 +165,7 @@
 @keyframes msgIn {
   0% {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(6px);
   }
   100% {
     opacity: 1;
@@ -181,7 +181,7 @@
 }
 
 #appShell .msg.assistant:not([data-stream-settled]) {
-  animation: msgIn var(--ui-duration-normal) var(--ui-ease-spring-snappy) both;
+  animation: msgIn var(--ui-duration-normal) var(--ui-ease-content, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
 }
 
 #appShell .msg.assistant[data-stream-settled] { animation: none; }
@@ -286,8 +286,8 @@
   height: 12px;
 }
 @keyframes streamCursorPulse {
-  0%, 100% { opacity: 0.9; }
-  50% { opacity: 0.28; }
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 0.32; }
 }
 @media (prefers-reduced-motion: reduce) {
   #appShell .stream-cursor::before { animation: none; opacity: 0.7; }

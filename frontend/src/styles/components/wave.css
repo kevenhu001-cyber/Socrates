@@ -39,14 +39,14 @@
   border-radius: var(--ui-radius-pill);
   background: currentColor;
   transform-origin: center;
-  animation: wave-bar-swell var(--ui-wave-duration) var(--ui-ease-standard) infinite;
+  animation: wave-bar-swell var(--ui-wave-duration) var(--ui-ease-apple, ease) infinite;
   animation-delay: var(--ui-wave-delay, 0ms);
 }
 
 @keyframes wave-bar-swell {
   0%,
   100% {
-    opacity: 0.2;
+    opacity: 0.25;
     transform: scaleY(0.42);
   }
   /* The lit column: opacity climbs as the band passes, then falls again.
@@ -54,11 +54,11 @@
      reflow mid-animation. */
   18%,
   82% {
-    opacity: 0.28;
+    opacity: 0.32;
     transform: scaleY(0.55);
   }
   50% {
-    opacity: 1;
+    opacity: 0.95;
     transform: scaleY(1);
   }
 }

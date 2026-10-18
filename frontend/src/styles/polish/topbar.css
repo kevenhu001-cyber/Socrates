@@ -28,14 +28,16 @@
 /* Icon buttons: quiet ghost controls, hairline-free until hover. */
 #appShell .top-bar .toggle-sidebar {
   color: var(--ui-text-tertiary);
-  transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease;
+  transition: background-color var(--ui-duration-fast) var(--ui-ease-apple, ease),
+              color var(--ui-duration-fast) var(--ui-ease-apple, ease);
 }
 @media (max-width: 768px) {
 #appShell .top-bar .icon-btn,
 #appShell .top-bar .find-btn,
 #appShell .top-bar .share-btn {
   color: var(--ui-text-tertiary);
-  transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease;
+  transition: background-color var(--ui-duration-fast) var(--ui-ease-apple, ease),
+              color var(--ui-duration-fast) var(--ui-ease-apple, ease);
 }
 }
 #appShell .top-bar .toggle-sidebar:hover {

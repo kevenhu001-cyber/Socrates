@@ -120,13 +120,13 @@
    (polish/composer.css, restore/chat-surface.css). Reduced motion collapses
    this via foundations/base.css. */
 @keyframes ui-overlay-in {
-  from { opacity: 0; transform: scale(var(--ui-overlay-enter-scale, .98)); }
-  to { opacity: 1; transform: scale(1); }
+  from { opacity: 0; transform: scale(var(--ui-overlay-enter-scale, .97)); filter: blur(0.5px); }
+  to { opacity: 1; transform: scale(1); filter: blur(0); }
 }
 
 @keyframes ui-overlay-out {
-  from { opacity: 1; transform: scale(1); }
-  to { opacity: 0; transform: scale(var(--ui-overlay-enter-scale, .98)); }
+  from { opacity: 1; transform: scale(1); filter: blur(0); }
+  to { opacity: 0; transform: scale(var(--ui-overlay-enter-scale, .97)); filter: blur(0.5px); }
 }
 
 @keyframes ui-scrim-in {
@@ -152,7 +152,7 @@
 .library-row-menu,
 .library-new-menu,
 .library-filter-menu {
-  animation: ui-overlay-in var(--ui-duration-overlay) var(--ui-ease-spring-gentle) both;
+  animation: ui-overlay-in var(--ui-duration-overlay) var(--ui-ease-apple, cubic-bezier(0.25, 0.1, 0.25, 1)) both;
 }
 
 /* Anchored surfaces grow from the edge that touches their trigger, so the
@@ -267,6 +267,8 @@
 .stg-toggle-track {
   background: var(--ui-bg-control);
   border-color: var(--ui-border-default);
+  transition: background-color var(--ui-duration-fast, 140ms) var(--ui-ease-apple, ease),
+              border-color var(--ui-duration-fast, 140ms) var(--ui-ease-apple, ease);
 }
 .stg-toggle-track.on {
   background: var(--ui-accent-strong);
@@ -275,6 +277,8 @@
 .stg-toggle-knob {
   background: var(--ui-text-secondary);
   box-shadow: 0 1px 2px rgb(0 0 0 / 25%);
+  transition: transform var(--ui-duration-fast, 140ms) var(--ui-ease-spring-snappy, ease),
+              background-color var(--ui-duration-fast, 140ms) ease;
 }
 [data-mode="light"] .stg-toggle-knob { background: var(--ui-bg-page); }
 .stg-toggle-track.on .stg-toggle-knob { background: var(--ui-on-accent); }

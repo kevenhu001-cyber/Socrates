@@ -191,9 +191,9 @@
   transform: translateY(-2px);
   pointer-events: none;
   transition:
-    grid-template-rows var(--ui-duration-overlay) var(--ui-ease-out),
-    opacity var(--ui-duration-fast) var(--ui-ease-out),
-    transform var(--ui-duration-overlay) var(--ui-ease-out);
+    grid-template-rows var(--ui-duration-overlay) var(--ui-ease-apple, ease),
+    opacity var(--ui-duration-fast) var(--ui-ease-content, ease),
+    transform var(--ui-duration-overlay) var(--ui-ease-apple, ease);
 }
 
 .thinking-accordion[data-open="true"] .thinking-accordion-body {

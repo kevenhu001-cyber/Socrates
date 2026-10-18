@@ -11,6 +11,7 @@
     gap: 4px;
     width: min(100%, var(--ui-content-chat));
     margin: 28px auto 0;
+    animation: homeStartersIn var(--ui-duration-normal) var(--ui-ease-apple, ease) both;
   }
 
   #appShell .home-quick-action {
@@ -28,8 +29,8 @@
     color: var(--ui-text-secondary);
     text-align: left;
     cursor: pointer;
-    transition: background-color var(--ui-duration-hover) ease,
-                color var(--ui-duration-hover) ease;
+    transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
+                color var(--ui-duration-hover) var(--ui-ease-apple, ease);
   }
 
   #appShell .home-quick-action:hover,
@@ -145,11 +146,11 @@
 
 @media (min-width: 769px) {
   body[data-app-mode="tutor"] #appShell .home-quick-actions { display: none; }
-  body[data-app-mode="tutor"] #appShell .home-tutor-starters {
+  body[data-app-mode="tutor"]  #appShell .home-tutor-starters {
     display: block;
     width: min(100%, var(--ui-content-chat));
     margin: 28px auto 0;
-    animation: homeStartersIn var(--ui-duration-normal) var(--ui-ease-out) both;
+    animation: homeStartersIn var(--ui-duration-normal) var(--ui-ease-apple, ease) both;
   }
   #appShell .home-tutor-starters h2 {
     margin: 0 0 12px 12px;
@@ -181,8 +182,8 @@
     font-size: var(--ui-font-size-sm);
     line-height: 1.5;
     cursor: pointer;
-    transition: background-color var(--ui-duration-hover) ease,
-                border-color var(--ui-duration-hover) ease;
+    transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
+                border-color var(--ui-duration-hover) var(--ui-ease-apple, ease);
   }
   #appShell .home-tutor-card:hover {
     background: var(--ui-bg-hover);
@@ -217,6 +218,7 @@
   to { opacity: 1; transform: translateY(0); }
 }
 @media (prefers-reduced-motion: reduce) {
+  #appShell .home-quick-actions,
   body[data-app-mode="tutor"] #appShell .home-tutor-starters { animation: none; }
   #appShell .home-tutor-card { transition: none; }
 }
