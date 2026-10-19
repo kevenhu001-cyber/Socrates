@@ -22,13 +22,39 @@ test('shared SSE consumers receive activity and safely ignore it without a handl
   assert.deepEqual(events, [{ type: 'thinking' }]);
 });
 
-test('thinking activity retires when visible answer prose starts', () => {
+// Response interleaving: a visible answer does not mean the turn finished, so
+// the thinking cue stays until the turn/tool lifecycle actually settles. Only
+// the retired activity types (public_reasoning_summary, synthesizing) disappear
+// on first prose — see observedStatus() in src/ui/turnActivityModel.ts.
+test('thinking cue survives answer prose because the turn may still be working', () => {
   const live = deriveTurnPresentationState({
     type: 'streaming',
     rawText: 'The answer is ready.',
     _activity: { type: 'thinking' },
   }, { live: true });
-  assert.equal(live.status, undefined);
+  assert.equal(live.status?.phase, 'thinking');
+  assert.equal(live.status?.elapsedSec, undefined);
+});
+
+test('thinking cue is dropped once the turn has settled', () => {
+  const settled = deriveTurnPresentationState({
+    type: 'streaming',
+    rawText: 'The answer is ready.',
+    _activity: { type: 'thinking' },
+    _streamSettled: true,
+  });
+  assert.equal(settled.status, undefined);
+});
+
+test('retired activity types hide as soon as answer prose starts', () => {
+  for (const type of ['public_reasoning_summary', 'synthesizing']) {
+    const live = deriveTurnPresentationState({
+      type: 'streaming',
+      rawText: 'The answer is ready.',
+      _activity: { type },
+    }, { live: true });
+    assert.equal(live.status, undefined, `${type} should retire on prose`);
+  }
 });
 
 test('think-only raw text keeps the activity line visible', () => {

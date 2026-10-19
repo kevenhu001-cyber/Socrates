@@ -100,7 +100,7 @@ jobs:
         with:
           path: sbom
           key: >-
-            ${{ runner.os }}-sbom-cdx-6.0.1-v3-${{
+            ${{ runner.os }}-sbom-cdx-6.0.1-v4-lockonly-${{
               hashFiles('frontend/package-lock.json', 'server/package-lock.json', 'apps/socrates/package-lock.json')
             }}
 
@@ -114,8 +114,17 @@ jobs:
           mkdir -p sbom
           for project in frontend server apps/socrates; do
             echo "::group::$project"
-            (cd "$project" && npm ci --ignore-scripts --prefer-offline --no-audit --no-fund)
+            # --package-lock-only: the SBOM is derived from the lockfile, which
+            # is the authoritative, reviewable supply-chain record. Without it
+            # cyclonedx-npm shells out to `npm ls --all`, which walks the
+            # symlinked `file:../../packages/*` links under apps/socrates and
+            # reports ELSPROBLEMS (their own transitive deps are never
+            # installed), turning every run into a false compliance failure.
+            # No `npm ci` here: nothing is executed and the lockfile alone
+            # describes the dependency set, so skipping the install also
+            # removes the download step from the SBOM job entirely.
             cyclonedx-npm \
+              --package-lock-only \
               --output-format JSON \
               --output-file "sbom/${project//\//-}.cdx.json" \
               "$project/package-lock.json"
@@ -127,6 +136,17 @@ jobs:
           test -s sbom/frontend.cdx.json
           test -s sbom/server.cdx.json
           test -s sbom/apps-socrates.cdx.json
+          # A silently empty SBOM is worse than a failing one: assert each file
+          # actually carries a dependency graph, not just valid JSON.
+          for f in sbom/*.cdx.json; do
+            node -e '
+              const b = require(process.argv[1]);
+              const n = (b.components || []).length;
+              if (!b.metadata || !b.metadata.component) throw new Error(`no metadata.component in ${process.argv[1]}`);
+              if (n < 1) throw new Error(`no components in ${process.argv[1]}`);
+              console.log(`${process.argv[1]}: ${n} components`);
+            ' "$f"
+          done
 
       - uses: actions/upload-artifact@v7
         with:

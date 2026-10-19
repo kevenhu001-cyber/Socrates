@@ -60,7 +60,7 @@ test('startup thinking activity remains waiting until provider reasoning is obse
   assert.equal(thinking.phase, 'thinking');
   assert.equal(thinking.elapsedSec, 1);
   assert.match(thinking.label, /Thinking/);
-  assert.equal(deriveTurnPresentationState({ ...waiting, rawText: 'Answer.' }).status, undefined);
+  assert.equal(deriveTurnPresentationState({ ...waiting, rawText: 'Answer.', _streamSettled: true }).status, undefined);
 });
 
 test('intent, public reasoning, status and completed observations stay separate', () => {

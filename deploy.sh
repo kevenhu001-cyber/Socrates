@@ -119,6 +119,106 @@ else
   SUDO=""
 fi
 
+# ─── 0a. Merge-gate check: the deployed commit must be green on CI ──────
+# The health gates further down verify only that the *running* system answers
+# correctly; nothing here can detect that the merge gate has been red for days
+# (2026-10-19: 40 consecutive red CI runs on main shipped to production). This
+# gate closes that gap: refuse to deploy a commit whose CI has not passed.
+#
+# Bypasses, in order of intent:
+#   DEPLOY_SKIP_CI_CHECK=1  — an explicit, per-invocation override. Logged, and
+#                             recorded in .deploy-state.json so an audited
+#                             bypass is visible after the fact.
+#   --dry-run               — the whole dry-run path is unaffected.
+#   no git / no gh / no auth— cannot verify; warn loudly rather than block, so
+#                             an air-gapped host is never silently locked out.
+# Treats "no run found for this commit" as a failure: an unpushed or
+# force-pushed commit has no gate result, which is exactly the case to catch.
+REQUIRED_CI_WORKFLOWS="${REQUIRED_CI_WORKFLOWS:-CI Security}"
+ci_gate_check() {
+  local source_dir="$1"
+  local skip="${DEPLOY_SKIP_CI_CHECK:-0}"
+
+  if [[ "$skip" == "1" ]]; then
+    echo "  ci.gate  SKIPPED by DEPLOY_SKIP_CI_CHECK=1 (override, will be recorded)" >&2
+    DEPLOY_CI_GATE_STATUS="skipped-by-operator"
+    return 0
+  fi
+  if [[ "${1:-}" == "--dry-run" ]] || [[ "${DRY_RUN:-0}" == "1" ]]; then
+    return 0
+  fi
+  if ! command -v git >/dev/null 2>&1 || ! command -v gh >/dev/null 2>&1; then
+    echo "  ci.gate  UNVERIFIED — git/gh unavailable on this host; deploy proceeding" >&2
+    DEPLOY_CI_GATE_STATUS="unverified-no-gh"
+    return 0
+  fi
+
+  local commit
+  commit=$(git -C "$source_dir" rev-parse HEAD 2>/dev/null || true)
+  if [[ -z "$commit" ]]; then
+    echo "  ci.gate  UNVERIFIED — cannot resolve HEAD in $source_dir" >&2
+    DEPLOY_CI_GATE_STATUS="unverified-no-git"
+    return 0
+  fi
+
+  local short="${commit:0:8}"
+  local failed=""
+  local missing=""
+  local errored=""
+  for wf in $REQUIRED_CI_WORKFLOWS; do
+    # --commit filters to runs for this exact SHA; take the newest attempt.
+    # Judge failure by gh's exit status, not by stderr being non-empty: gh can
+    # emit warnings on a perfectly good query. Capture stderr separately so an
+    # API/network failure is reported as "could not verify" rather than being
+    # confused with "no run exists" — they need different operator responses
+    # (retry vs. push CI).
+    local status err rc
+    err=$(mktemp)
+    set +e
+    status=$(gh run list --workflow "$wf" --commit "$commit" --limit 1 \
+      --json conclusion -q '.[0].conclusion // empty' 2>"$err")
+    rc=$?
+    set -e
+    if [[ $rc -ne 0 ]]; then
+      errored="$errored $wf($(head -1 "$err" | tr -d '\n' | cut -c1-80))"
+    fi
+    rm -f "$err"
+    case "$status" in
+      success) echo "  ci.gate  $wf: success" ;;
+      "")      [[ -z "$errored" ]] && missing="$missing $wf" ;;
+      *)       failed="$failed $wf($status)" ;;
+    esac
+  done
+
+  if [[ -n "$failed" || -n "$missing" ]]; then
+    echo "ERROR: refusing to deploy ${short} — merge gate is not green." >&2
+    [[ -n "$failed" ]]  && echo "       failing: $failed" >&2
+    [[ -n "$missing" ]] && echo "       no completed run for this commit: $missing" >&2
+    echo "       Fix CI, or re-run with DEPLOY_SKIP_CI_CHECK=1 to override" >&2
+    echo "       deliberately (the override is recorded in .deploy-state.json)." >&2
+    DEPLOY_CI_GATE_STATUS="blocked:$failed$missing"
+    return 1
+  fi
+  if [[ -n "$errored" ]]; then
+    # Not proof of a red gate, but not proof of a green one either. Fail
+    # closed: an unverifiable gate must not silently become a passing gate.
+    echo "ERROR: refusing to deploy ${short} — could not verify the merge gate." >&2
+    echo "       gh API errors for:$errored" >&2
+    echo "       This is a transport failure, not a CI verdict. Retry once" >&2
+    echo "       network is healthy, or set DEPLOY_SKIP_CI_CHECK=1 to deploy" >&2
+    echo "       deliberately (the override is recorded in .deploy-state.json)." >&2
+    DEPLOY_CI_GATE_STATUS="unverified:$errored"
+    return 1
+  fi
+
+  echo "  ci.gate  all required workflows green for ${short}"
+  DEPLOY_CI_GATE_STATUS="green"
+  return 0
+}
+
+DEPLOY_CI_GATE_STATUS="not-run"
+ci_gate_check "$(dirname "$(readlink -f "$0")")"
+
 # npm itself runs without sudo, but older deployments may have left tens of
 # thousands of root-owned files under node_modules. npm ci removes and
 # recreates entries, so even one such file can fail the release with EACCES.
@@ -1227,6 +1327,7 @@ if [[ $GATE_FAILED -eq 0 ]]; then
     "frontendBundleSha256": "${SRC_SHA256:-}",
     "frontendBundleSize": ${SRC_SIZE:-0},
     "srcDesc": "${SRC_DESC:-}",
+    "ciGate": "${DEPLOY_CI_GATE_STATUS}",
     "checks": {
       "frontendReachable": true,
       "siteReachable": true,

@@ -35,12 +35,18 @@ router.get('/:id/result', async (req, res, next) => {
   try { res.json({ message: await getResearchResult(req.userId!, String(req.params.id)) }); }
   catch (error) { next(error); }
 });
-for (const action of ['cancel', 'retry'] as const) {
-  router.post(`/:id/${action}`, async (req, res, next) => {
-    try { res.status(action === 'retry' ? 202 : 200).json({ job: publicResearchJob(await controlResearchJob(req.userId!, String(req.params.id), action)) }); }
-    catch (error) { next(error); }
-  });
-}
+// Declared one route per action rather than looping over ['cancel','retry']:
+// the OpenAPI drift ratchet (scripts/check-openapi-drift.mjs) discovers routes
+// by matching literal path strings, so a template-literal path here would be
+// invisible to it and silently drop both endpoints from contract drift checks.
+router.post('/:id/cancel', async (req, res, next) => {
+  try { res.status(200).json({ job: publicResearchJob(await controlResearchJob(req.userId!, String(req.params.id), 'cancel')) }); }
+  catch (error) { next(error); }
+});
+router.post('/:id/retry', async (req, res, next) => {
+  try { res.status(202).json({ job: publicResearchJob(await controlResearchJob(req.userId!, String(req.params.id), 'retry')) }); }
+  catch (error) { next(error); }
+});
 router.post('/:id/refine', async (req, res, next) => {
   try {
     const result = await refineResearchJob(req.userId!, String(req.params.id), req.body);

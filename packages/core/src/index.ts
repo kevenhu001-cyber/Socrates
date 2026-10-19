@@ -1,5 +1,5 @@
 export * from './intelligenceUi';
-export * from './turnRuntime';
+export * from './turnRuntime.js';
 export { validateIntelligentUi } from './intelligentUiValidation.js';
 export * from './visualizationMath.js';
 import type { Attachment, ChatSseHandlers, JsonValue, Message, Session } from '@socrates/contracts';
