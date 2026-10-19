@@ -79,7 +79,7 @@ test('message list renders assistant messages with toolbar and model label', asy
   await expect(toolbar.locator('button.msg-toolbar-btn[aria-label="Helpful"]')).toHaveCount(1);
   await expect(toolbar.locator('button.msg-toolbar-btn[aria-label="Not helpful"]')).toHaveCount(1);
   await expect(toolbar.locator('button.msg-toolbar-btn[aria-label="Regenerate response"]')).toHaveCount(1);
-  await expect(toolbar.locator('button[popovertarget]')).toHaveCount(1);
+  await expect(toolbar.getByRole('button', { name: 'More actions', exact: true })).toHaveCount(1);
   await expect(toolbar.getByRole('menuitem', { name: 'Branch from here' })).toHaveCount(0);
 });
 
@@ -201,8 +201,8 @@ test('message list toolbar action buttons dispatch to legacy window globals', as
   await assistantBubble.hover();
   await assistantBubble.locator('button.msg-toolbar-btn[aria-label="Regenerate response"]').click();
   await assistantBubble.locator('button.msg-toolbar-btn[aria-label="Helpful"]').click();
-  await assistantBubble.locator('button[popovertarget]').click();
-  await assistantBubble.getByRole('menuitem', { name: 'Branch from here' }).click();
+  await assistantBubble.getByRole('button', { name: 'More actions', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Branch from here', exact: true }).click();
 
   const assistantResult = await page.evaluate(() => ({
     edits: window.__msgSpecEditCalls,

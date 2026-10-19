@@ -290,6 +290,5 @@
 
 @media (max-width: 768px) {
   #appShell .msg-toolbar-feedback { display: none; }
-  .msg-action-menu .msg-action-mobile-only { display: flex; }
   .msg-action-menu button { min-height: var(--ui-control-touch); }
 }

@@ -75,9 +75,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
    ownership check excludes. */
 #appShell .recent-item-menu {
   display: none;
-  position: absolute;
-  right: 0;
-  top: calc(100% + 2px);
   z-index: var(--ui-z-popover, 200);
   min-width: 196px;
   flex-direction: column;
@@ -259,7 +256,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   #appShell .recent-item-overflow:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
 }
 
-/* Shared viewport menus escape scrolling drawers via AnchoredMenu. */
+/* Shared viewport menus escape scrolling drawers via the menu portal. */
 #appShell .recent-item-menu.is-open { display: flex; }
 #appShell .sidebar-account-trigger { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; padding: 6px; border: 0; border-radius: var(--ui-radius-row); background: transparent; color: var(--ui-text-primary); text-align: left; font: inherit; cursor: pointer; }
 #appShell .sidebar-account-trigger:hover, #appShell .sidebar-account-trigger[aria-expanded="true"] { background: var(--ui-bg-hover); }

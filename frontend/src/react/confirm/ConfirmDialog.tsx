@@ -1,159 +1,57 @@
 import { markHostMountedBy } from '../lib/boot/ownership';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-
-import { getLegacyActions, i18n } from '../legacy/gateway.ts';
+import { getLegacyActions } from '../legacy/gateway';
+import { reportSwallow } from '../../util/reportSwallow';
 import { installConfirmBridge, useConfirmSnapshot } from './confirm.bridge';
-import { trapFocus, setModalOpen } from '../../ui/modalA11y.js';
 
-/* M4 step 4.5c — React owns the confirm-dialog overlay. Legacy
-   ui/confirm.js publishes `{ open, title, msg, danger }` and keeps the
-   `showConfirm` Promise resolver; React mirrors visibility and renders
-   the buttons, calling legacy.closeConfirm(true/false). Focus/Esc
-   replace the old `installModalA11y({ overlayId: 'confirmDialog' })`
-   registration (which is removed from main.js). */
+type ConfirmRuntime = typeof import('./ConfirmDialogContent');
+let runtimePromise: Promise<ConfirmRuntime> | null = null;
 
+function loadConfirmRuntime() {
+  return runtimePromise ??= import('./ConfirmDialogContent').catch((error) => {
+    runtimePromise = null;
+    throw error;
+  });
+}
+
+/** The boot root subscribes immediately; modal primitives load on first use. */
 function ConfirmDialog() {
-  const snap = useConfirmSnapshot();
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const prevFocusRef = useRef<HTMLElement | null>(null);
-  const legacy = getLegacyActions();
-  const [closing, setClosing] = useState(false);
-  const wasOpenRef = useRef(snap.open);
-  const cachedSnapRef = useRef(snap);
-  if (snap.open) cachedSnapRef.current = snap;
+  const snapshot = useConfirmSnapshot();
+  const [runtime, setRuntime] = useState<ConfirmRuntime | null>(null);
+  const cancel = useCallback(() => getLegacyActions().confirm.closeConfirm(false), []);
 
   useEffect(() => {
-    if (wasOpenRef.current && !snap.open) {
-      setClosing(true);
-      const timer = window.setTimeout(() => {
-        setClosing(false);
-      }, 120);
-      wasOpenRef.current = snap.open;
-      return () => window.clearTimeout(timer);
-    }
-    wasOpenRef.current = snap.open;
-    return undefined;
-  }, [snap.open]);
-
-  const isVisible = snap.open || closing;
-  const renderSnap = snap.open ? snap : cachedSnapRef.current;
-
-  /* Focus management: remember the trigger element on open, focus the
-     title (data-initial-focus, matching the legacy modalA11y behavior),
-     and restore focus to the trigger when the dialog closes. */
-  useEffect(() => {
-    if (snap.open) {
-      setModalOpen('confirmDialog', true);
-      prevFocusRef.current =
-        document.activeElement instanceof HTMLElement
-          ? document.activeElement
-          : null;
-      const t1 = window.setTimeout(() => {
-        const explicit = overlayRef.current?.querySelector(
-          '[data-initial-focus]',
-        ) as HTMLElement | null;
-        const target =
-          explicit ??
-          (overlayRef.current?.querySelector('#confirmOkBtn') as
-            | HTMLElement
-            | null);
-        if (target) {
-          try {
-            target.focus({ preventScroll: true });
-          } catch (_err) {
-            /* focus is best-effort */
-          }
-        }
-      }, 50);
-      return () => {
-        window.clearTimeout(t1);
-        setModalOpen('confirmDialog', false);
-      };
-    }
-    const prev = prevFocusRef.current;
-    prevFocusRef.current = null;
-    if (prev && typeof prev.focus === 'function') {
-      try {
-        prev.focus({ preventScroll: true });
-      } catch (_err) {
-        /* focus restore is best-effort */
+    if (!snapshot.open || runtime) return;
+    let cancelled = false;
+    void loadConfirmRuntime().then((loaded) => {
+      if (!cancelled) setRuntime(loaded);
+    }).catch((error) => {
+      if (cancelled) return;
+      reportSwallow(error, 'confirm:load');
+      cancel();
+    });
+    const dismissKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' && event.key !== 'Tab') return;
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
       }
-    }
-    return undefined;
-  }, [snap.open]);
+      cancel();
+    };
+    const outside = () => cancel();
+    document.addEventListener('keydown', dismissKey, true);
+    document.addEventListener('pointerdown', outside, true);
+    return () => {
+      cancelled = true;
+      document.removeEventListener('keydown', dismissKey, true);
+      document.removeEventListener('pointerdown', outside, true);
+    };
+  }, [snapshot.open, runtime, cancel]);
 
-  /* Esc-to-close. The legacy modalA11y bound closeConfirm(false); React
-     owns the overlay now, so the keydown listener lives here. */
-  useEffect(() => {
-    const overlay = overlayRef.current;
-    if (!overlay) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        legacy.confirm.closeConfirm(false);
-      } else if (e.key === 'Tab') {
-        trapFocus(e, overlay);
-      }
-    }
-    overlay.addEventListener('keydown', onKey, true);
-    return () => overlay.removeEventListener('keydown', onKey, true);
-  }, [legacy]);
-
-  /* Backdrop click closes as "cancel" (target === overlay host). */
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      legacy.confirm.closeConfirm(false);
-    }
-  };
-
-  return (
-    <div
-      ref={overlayRef}
-      className={`confirm-dialog${isVisible ? '' : ' hidden'}`}
-      data-state={closing ? 'closing' : snap.open ? 'open' : 'closed'}
-      id="confirmDialog"
-      role="alertdialog"
-      aria-modal="true"
-      aria-labelledby="confirmTitle"
-      aria-describedby="confirmMsg"
-      onClick={handleOverlayClick}
-    >
-      <div
-        className="confirm-box"
-        data-state={closing ? 'closing' : snap.open ? 'open' : 'closed'}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div
-          className="confirm-title"
-          id="confirmTitle"
-          tabIndex={-1}
-          data-initial-focus="true"
-        >
-          {renderSnap.title}
-        </div>
-        <div className="confirm-msg" id="confirmMsg">
-          {renderSnap.msg}
-        </div>
-        <div className="confirm-actions" id="confirmActions">
-          <button
-            className="confirm-btn cancel"
-            id="confirmCancelBtn"
-            onClick={() => legacy.confirm.closeConfirm(false)}
-          >
-            {i18n('common.cancel', 'Cancel')}
-          </button>
-          <button
-            className={`confirm-btn ${renderSnap.danger ? 'danger' : 'primary'}`}
-            id="confirmOkBtn"
-            onClick={() => legacy.confirm.closeConfirm(true)}
-          >
-            {renderSnap.danger ? i18n('common.delete', 'Delete') : i18n('common.ok', 'OK')}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  // Keep the loaded root alive so Base UI can finish exit motion and restore
+  // focus after the legacy Promise has already resolved.
+  return runtime ? <runtime.ConfirmDialogContent snapshot={snapshot} /> : null;
 }
 
 /**

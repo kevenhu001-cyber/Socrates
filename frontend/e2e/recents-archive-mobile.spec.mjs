@@ -107,7 +107,7 @@ test('phone row menu shows tag/archive/delete and archive POSTs from a real clic
   await expect(overflow).toBeVisible();
   await overflow.click();
 
-  const menu = page.locator('#appShell > .recent-item-menu');
+  const menu = page.locator('#appShell .recent-item-menu');
   await expect(menu).toBeVisible();
   await expect(row).toHaveClass(/actions-open/);
 
@@ -128,8 +128,10 @@ test('phone row menu shows tag/archive/delete and archive POSTs from a real clic
       return { opacity: cs.opacity, display: cs.display, w: Math.round(r.width), h: Math.round(r.height) };
     };
     const menuCs = getComputedStyle(el);
+    // The shared primitive owns fixed positioning and stacking on its wrapper.
+    const layerCs = getComputedStyle(el.parentElement);
     return {
-      menu: { display: menuCs.display, position: menuCs.position, z: menuCs.zIndex },
+      menu: { display: menuCs.display, position: layerCs.position, z: layerCs.zIndex },
       tag: pick('.recent-item-tag-btn'),
       archive: pick('.recent-item-archive'),
       del: pick('.recent-item-del'),

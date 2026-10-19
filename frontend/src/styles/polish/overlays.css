@@ -157,13 +157,12 @@
 
 /* Anchored surfaces grow from the edge that touches their trigger, so the
    entrance reads as the menu unfolding from the button instead of a card
-   fading in at its centre. AnchoredMenu reports its placement/alignment;
+   fading in at its centre. The menu adapter reports its placement/alignment;
    the library menus are positioned by their own right/left anchors. */
 .anchored-menu { transform-origin: top right; }
 .anchored-menu[data-placement="above"] { transform-origin: bottom right; }
 .anchored-menu[data-align="start"] { transform-origin: top left; }
 .anchored-menu[data-align="start"][data-placement="above"] { transform-origin: bottom left; }
-.msg-action-menu { transform-origin: top left; }
 #appShell .library-row-menu,
 #appShell .library-new-menu { transform-origin: top right; }
 #appShell .library-filter-menu { transform-origin: top left; }
@@ -490,4 +489,3 @@
   font-style: italic;
   line-height: 1.4;
 }
-

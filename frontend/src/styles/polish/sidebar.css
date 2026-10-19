@@ -243,7 +243,7 @@
   }
 
   /* Match the compact rail: account menus should feel like menus, not modal
-     cards. Keep the existing AnchoredMenu lifecycle and accessibility. */
+     cards. Keep the shared menu lifecycle and accessibility. */
   #appShell .sidebar-account-menu {
     width: 236px;
     padding: 6px;

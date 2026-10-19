@@ -47,7 +47,7 @@ for (const mobile of [false, true]) {
     const toolbar = page.locator('.msg-toolbar[data-role="assistant"]');
     await expect(toolbar.locator(':scope > button')).toHaveCount(3);
     await expect(toolbar.getByRole('button', { name: 'Helpful', exact: true })).toHaveCount(mobile ? 0 : 1);
-    const more = toolbar.locator('button[popovertarget]');
+    const more = toolbar.getByRole('button', { name: 'More actions', exact: true });
     await more.click();
     const menu = page.getByRole('menu');
     await expect(menu).toBeVisible();

@@ -23,6 +23,7 @@
 
 var _wired = {};
 var _openTracker = new Map(); // overlay id -> previous activeElement
+var _managedFocus = new Set(); // primitive-managed modals skip the legacy Tab trap
 
 function updateAppShellInert() {
   if (typeof document === 'undefined') return;
@@ -35,11 +36,20 @@ function updateAppShellInert() {
   }
 }
 
-export function setModalOpen(id, isOpen, previousElement) {
+/**
+ * @param {string} id
+ * @param {boolean} isOpen
+ * @param {HTMLElement | null} [previousElement]
+ * @param {{ focusManaged?: boolean }} [options]
+ */
+export function setModalOpen(id, isOpen, previousElement = null, options = {}) {
   if (isOpen) {
     _openTracker.set(id, previousElement || (typeof document !== 'undefined' ? document.activeElement : null));
+    if (options.focusManaged) _managedFocus.add(id);
+    else _managedFocus.delete(id);
   } else {
     _openTracker.delete(id);
+    _managedFocus.delete(id);
   }
   updateAppShellInert();
 }
@@ -81,6 +91,7 @@ if (typeof document !== 'undefined') {
     if (e.key !== 'Tab' || _openTracker.size === 0) return;
     var keys = Array.from(_openTracker.keys());
     var activeOverlayId = keys[keys.length - 1];
+    if (_managedFocus.has(activeOverlayId)) return;
     var overlay = document.getElementById(activeOverlayId);
     if (overlay && !overlay.classList.contains('hidden')) {
       trapFocus(e, overlay);

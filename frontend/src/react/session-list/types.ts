@@ -1,4 +1,4 @@
-import type { MouseEvent as ReactMouseEvent, RefObject } from 'react';
+import type { ComponentPropsWithRef, MouseEvent as ReactMouseEvent, ReactElement } from 'react';
 
 /**
  * Shared contracts for the session-list (recents) React migration boundary.
@@ -49,9 +49,13 @@ export interface SessionProjectOption {
 
 export interface SessionRowMenuProps {
   session: SessionItem;
-  anchor: RefObject<HTMLElement | null>;
+  trigger: ReactElement<ComponentPropsWithRef<'button'>>;
   open: boolean;
+  onOpenChange: (open: boolean) => void;
   projects: SessionProjectOption[] | null;
+  loadingProjects: boolean;
+  projectError: string;
+  saveError: string;
   saving: boolean;
   onClose: () => void;
   onBack: () => void;

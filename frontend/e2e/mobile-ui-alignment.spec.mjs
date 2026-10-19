@@ -108,6 +108,9 @@ test('project organization survives reload, respects search and retains the arch
   await expect(page.locator('.recents-project-label')).toHaveText(['数学学习']);
   await page.locator('#sidebarSearch').fill('');
   await page.locator('#recentsMoreBtn').click();
+  const selected = menu.getByRole('menuitemradio').nth(1);
+  await expect(selected).toHaveAttribute('aria-checked', 'true');
+  await expect(selected).toBeFocused();
   await menu.getByRole('menuitemradio', { name: 'As a list' }).click();
   await expect(page.locator('.recents-project-label')).toHaveCount(0);
   await expect(page.locator('.recent-item')).toHaveCount(3);

@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useRef, useState } from 'react';
+import React, { memo, useCallback, useState } from 'react';
 import { t } from '../legacy/gateway.ts';
 import { detailCache } from '../../session/detailCache.ts';
 import type { SessionItem } from './types';
@@ -31,18 +31,24 @@ function SessionRowBase({
   onDragEnd,
 }: SessionRowProps) {
   const [actionsOpen, setActionsOpen] = useState(false);
-  const menuAnchor = useRef<HTMLButtonElement>(null);
-  const closeMenu = useCallback(() => setActionsOpen(false), []);
+  const hideMenu = useCallback(() => setActionsOpen(false), []);
   const {
     renaming,
     setRenaming,
     saving,
     error,
     projects,
-    setProjects,
+    loadingProjects,
+    projectError,
+    resetProjects,
+    closeMenu,
     update,
     loadProjects,
-  } = useSessionRowActions(session.id, closeMenu);
+  } = useSessionRowActions(session.id, hideMenu);
+  const setMenuOpen = useCallback((open: boolean) => {
+    if (open) setActionsOpen(true);
+    else closeMenu();
+  }, [closeMenu]);
 
   return (
     <div
@@ -68,8 +74,8 @@ function SessionRowBase({
         onCancelRename={() => setRenaming(false)}
       />
       <div className="recent-item-actions">
-        <button
-          ref={menuAnchor}
+        <SessionRowMenu
+          trigger={<button
           className="btn-icon recent-item-overflow"
           type="button"
           title={t('session.moreActions')}
@@ -80,7 +86,6 @@ function SessionRowBase({
           data-i18n-aria="session.moreActions"
           onClick={(event) => {
             event.stopPropagation();
-            setActionsOpen((open) => !open);
           }}
         >
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -88,15 +93,17 @@ function SessionRowBase({
             <circle cx="12" cy="12" r="2.1" />
             <circle cx="19" cy="12" r="2.1" />
           </svg>
-        </button>
-        <SessionRowMenu
+        </button>}
           session={session}
-          anchor={menuAnchor}
           open={actionsOpen}
+          onOpenChange={setMenuOpen}
           projects={projects}
+          loadingProjects={loadingProjects}
+          projectError={projectError}
+          saveError={error}
           saving={saving}
           onClose={closeMenu}
-          onBack={() => setProjects(null)}
+          onBack={resetProjects}
           onChooseProject={(projectId) => void update({ projectId })}
           onRename={(event) => {
             closeMenu();

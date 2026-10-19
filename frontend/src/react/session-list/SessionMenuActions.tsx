@@ -1,4 +1,6 @@
 import { Pin, Tag } from 'lucide-react';
+import type { RefObject } from 'react';
+import type { FoundationMenuItem } from '../menu/FoundationMenu';
 import { getLegacyActionsOrNull, t } from '../legacy/gateway.ts';
 import { sidebarIcons } from '../../sidebar/sidebarIcons';
 import type { SessionRowMenuProps } from './types';
@@ -14,7 +16,7 @@ const CHEVRON_RIGHT =
 type SessionMenuActionsProps = Pick<
   SessionRowMenuProps,
   'session' | 'onClose' | 'onRename' | 'onTag' | 'onPin' | 'onArchive' | 'onDelete' | 'onMoveToProject'
->;
+> & { Item: typeof FoundationMenuItem; focusRef: RefObject<HTMLElement | null> };
 
 export function SessionMenuActions({
   session,
@@ -25,6 +27,8 @@ export function SessionMenuActions({
   onArchive,
   onDelete,
   onMoveToProject,
+  Item,
+  focusRef,
 }: SessionMenuActionsProps) {
   const share = () => {
     onClose();
@@ -34,36 +38,32 @@ export function SessionMenuActions({
 
   return (
     <>
-      <button className="btn-icon recent-item-menu-row recent-item-share" type="button" role="menuitem" title={t('session.ctxShare')} onClick={share}>
+      <Item className="btn-icon recent-item-menu-row recent-item-share" title={t('session.ctxShare')} onClick={share}>
         <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: SHARE_ICON }} />
         <span className="recent-item-action-text">{t('session.ctxShare')}</span>
-      </button>
-      <button className="btn-icon recent-item-menu-row recent-item-rename" type="button" role="menuitem" title={t('session.ctxRename')} onClick={onRename}>
+      </Item>
+      <Item className="btn-icon recent-item-menu-row recent-item-rename" title={t('session.ctxRename')} onClick={onRename}>
         <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: RENAME_ICON }} />
         <span className="recent-item-action-text">{t('session.ctxRename')}</span>
-      </button>
-      <button
+      </Item>
+      <Item
         className="btn-icon recent-item-menu-row recent-item-tag-btn"
-        type="button"
-        role="menuitem"
         title={t('session.editTags')}
         aria-label={t('session.editTags')}
         onClick={onTag}
       >
         <span className="recent-item-action-icon"><Tag strokeWidth={1.8} aria-hidden="true" /></span>
         <span className="recent-item-action-text">{t('session.editTags')}</span>
-      </button>
+      </Item>
       <div className="recent-item-menu-divider" />
-      <button className="btn-icon recent-item-menu-row recent-item-pin" type="button" role="menuitem" title={t(pinLabel)} onClick={onPin}>
+      <Item className="btn-icon recent-item-menu-row recent-item-pin" title={t(pinLabel)} onClick={onPin}>
         <span className="recent-item-action-icon">
           <Pin strokeWidth={1.8} aria-hidden="true" style={{ transform: 'rotate(45deg)' }} />
         </span>
         <span className="recent-item-action-text">{t(pinLabel)}</span>
-      </button>
-      <button
+      </Item>
+      <Item
         className="btn-icon recent-item-menu-row recent-item-archive"
-        type="button"
-        role="menuitem"
         data-archive-session="1"
         title={t('session.ctxArchive')}
         aria-label={t('session.ctxArchive')}
@@ -73,11 +73,9 @@ export function SessionMenuActions({
       >
         <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: ARCHIVE_ICON }} />
         <span className="recent-item-action-text" data-i18n-key="session.ctxArchive">{t('session.ctxArchive')}</span>
-      </button>
-      <button
+      </Item>
+      <Item
         className="btn-icon recent-item-menu-row recent-item-del"
-        type="button"
-        role="menuitem"
         title={t('session.ctxDelete')}
         aria-label={t('session.ctxDelete')}
         data-i18n-title="session.ctxDelete"
@@ -86,13 +84,13 @@ export function SessionMenuActions({
       >
         <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: DELETE_ICON }} />
         <span className="recent-item-action-text" data-i18n-key="session.ctxDelete">{t('session.ctxDelete')}</span>
-      </button>
+      </Item>
       <div className="recent-item-menu-divider" />
-      <button className="btn-icon recent-item-menu-row recent-item-project" type="button" role="menuitem" title={t('session.ctxMoveToProject')} onClick={onMoveToProject}>
+      <Item ref={focusRef} closeOnClick={false} className="btn-icon recent-item-menu-row recent-item-project" title={t('session.ctxMoveToProject')} onClick={onMoveToProject}>
         <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: PROJECT_ICON }} />
         <span className="recent-item-action-text">{t('session.ctxMoveToProject')}</span>
         <span className="recent-item-action-trailing" dangerouslySetInnerHTML={{ __html: CHEVRON_RIGHT }} />
-      </button>
+      </Item>
     </>
   );
 }

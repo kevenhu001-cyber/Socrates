@@ -30,11 +30,30 @@ test('interaction-only runtimes stay outside the production static closure', () 
     'src/tutor/socraticTurn.impl.mjs',
     'src/chat/sessionBootstrap/tutorStart.impl.mjs',
     'src/chat/send/tutorFlow.impl.ts',
+    'src/react/menu/FoundationMenu.tsx',
+    'src/react/dialog/FoundationDialog.tsx',
+    'src/react/confirm/ConfirmDialogContent.tsx',
   ];
 
   for (const id of deferred) {
     const module = report.modules.find((item) => item.id === id);
     expect(module, `missing deferred module ${id}`).toBeTruthy();
     expect(scripts.has(module.chunk), `${id} leaked into static closure`).toBe(false);
+  }
+
+  const primitives = report.modules.filter((item) => item.id.includes('node_modules/@base-ui/'));
+  expect(primitives.length, 'Base UI must be present in the deferred primitive runtimes').toBeGreaterThan(0);
+  for (const module of primitives) {
+    expect(scripts.has(module.chunk), `${module.id} leaked into static closure`).toBe(false);
+  }
+
+  const chunks = new Map(report.chunks.map((chunk) => [chunk.file, chunk]));
+  for (const id of ['src/react/menu/FoundationMenu.tsx', 'src/react/dialog/FoundationDialog.tsx']) {
+    const primitive = report.modules.find((item) => item.id === id);
+    const scripts = new Set([primitive.chunk]);
+    for (const file of scripts) {
+      expect(file, `${id} must not load an editor or drawing runtime`).not.toMatch(/vendor-(?:editor|tldraw|three)-/);
+      for (const dependency of chunks.get(file).imports) scripts.add(dependency);
+    }
   }
 });

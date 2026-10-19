@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { ChevronRight, CircleUserRound, LifeBuoy, LogOut, Settings, Sparkles, SlidersHorizontal } from 'lucide-react';
 import { useUserInfo } from './sidebarChrome.bridge';
 import { getCurrentLang, getLegacyActions } from '../legacy/gateway.ts';
-import { FoundationMenu, FoundationMenuItem, FoundationMenuLink } from '../menu/FoundationMenu';
+import { DeferredMenu } from '../menu/DeferredMenu';
 
 export function SidebarFooter() {
   const user = useUserInfo();
@@ -20,10 +20,11 @@ export function SidebarFooter() {
     <span className="user-identity"><span className="user-name">{user.displayName}</span>
       <span className="user-plan"><span className={`tier-badge ${user.tier}`}>{tier}</span></span></span></>;
   return <div className="sidebar-footer-account-wrap">
-    <FoundationMenu open={open} onOpenChange={setOpen} above className="sidebar-account-menu"
+    <DeferredMenu open={open} onOpenChange={setOpen} above className="sidebar-account-menu"
       label={label('账户', 'Account')}
       trigger={<button type="button" className="sidebar-account-trigger"
         title={user.displayName} aria-label={[user.displayName, tier].filter(Boolean).join(' · ')}>{identity}</button>}>
+      {({ FoundationMenuItem, FoundationMenuLink }) => <>
       <FoundationMenuItem className="account-menu-identity" onClick={() => { close(); getLegacyActions().navigation.openProfile(); }}>{identity}<ChevronRight /></FoundationMenuItem>
       <hr />
       <FoundationMenuLink href="https://topodrive.top/pricing"><Sparkles />{label('升级套餐', 'Upgrade plan')}</FoundationMenuLink>
@@ -33,6 +34,7 @@ export function SidebarFooter() {
       <hr />
       <FoundationMenuItem onClick={() => { close(); getLegacyActions().navigation.openCheatsheet(); }}><LifeBuoy />{label('帮助', 'Help')}<ChevronRight className="account-menu-trailing" /></FoundationMenuItem>
       {user.isSignedIn && <FoundationMenuItem onClick={() => { close(); getLegacyActions().navigation.signOut(); }}><LogOut />{label('退出登录', 'Sign out')}</FoundationMenuItem>}
-    </FoundationMenu>
+      </>}
+    </DeferredMenu>
   </div>;
 }

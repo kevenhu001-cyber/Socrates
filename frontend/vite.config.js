@@ -442,6 +442,13 @@ export default defineConfig({
             return 'vendor-react';
           }
           if (f.includes('/node_modules/')) {
+            // Menus, editors and tldraw share these small dependencies. Giving
+            // them independent chunks prevents an opened menu from fetching an
+            // entire heavy editor just to reach its positioning/store helpers.
+            if (f.includes('/node_modules/@floating-ui/')) return 'vendor-floating';
+            // Keep React's store shim with React: separating its CommonJS
+            // helpers into another chunk creates a vendor-react import cycle.
+            if (f.includes('/node_modules/use-sync-external-store/')) return 'vendor-react';
             if (f.includes('/node_modules/react-dom/') || f.includes('/node_modules/react/') || f.includes('/node_modules/scheduler/') || f.includes('/node_modules/zustand/')) {
               return 'vendor-react';
             }

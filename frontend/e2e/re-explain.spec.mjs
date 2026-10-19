@@ -30,15 +30,18 @@ async function bootChat(page, streamBodies) {
   await expect(page.locator('#msgList .msg')).toHaveCount(2);
 }
 
+async function requestReExplanation(page) {
+  await page.locator('#msgList .msg.assistant').getByRole('button', { name: 'More actions', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Re-explain from a different angle', exact: true }).click();
+  await expect(page.getByRole('alertdialog')).toBeVisible();
+}
+
 test('re-explain sends a visible prompt and streams an answer', async ({ page }) => {
   const streamBodies = [];
   await bootChat(page, streamBodies);
 
-  await page.locator('#msgList .msg.assistant button.msg-toolbar-btn[aria-label="Re-explain from a different angle"]').click();
-  const confirmBtn = page.locator('#confirmOkBtn');
-  if (await confirmBtn.isVisible().catch(() => false)) {
-    await confirmBtn.click();
-  }
+  await requestReExplanation(page);
+  await page.locator('#confirmOkBtn').click();
 
   const promptBubble = page.locator('#msgList .msg.user').last();
   await expect(promptBubble.locator('.msg-body')).toHaveText(RE_EXPLAIN_TEXT);
@@ -53,12 +56,9 @@ test('cancelling the re-explain confirm pushes nothing and fires no turn', async
   const streamBodies = [];
   await bootChat(page, streamBodies);
 
-  await page.locator('#msgList .msg.assistant button.msg-toolbar-btn[aria-label="Re-explain from a different angle"]').click();
-  await expect(page.locator('#confirmDialog')).not.toHaveClass(/hidden/);
-  /* M4 step 4.5c — the confirm dialog is React-owned; the cancel
-     button is now #confirmCancelBtn (no more data-action closeConfirm). */
+  await requestReExplanation(page);
   await page.locator('#confirmCancelBtn').click();
-  await page.waitForTimeout(500);
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
 
   const state = await page.evaluate(() => ({
     userTexts: Array.from(document.querySelectorAll('#msgList .msg.user')).map((u) => (u.querySelector('.msg-body')?.textContent || '').trim()),

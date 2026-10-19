@@ -27,9 +27,22 @@ const factoryBridge = createImmutableBridge<ConfirmSnapshot, Action>({
   reducer: (_state, action) => action,
 });
 
+let returnFocusElement: HTMLElement | null = null;
+
 const bridge: ConfirmBridge = Object.assign(factoryBridge, {
-  publish: factoryBridge.dispatch,
+  publish: (snapshot: Action) => {
+    // Capture at publication, before an exiting menu can move focus again or
+    // the deferred modal runtime finishes loading. Keep DOM out of snapshots.
+    if (snapshot.open && !factoryBridge.getSnapshot().open) {
+      returnFocusElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    }
+    factoryBridge.dispatch(snapshot);
+  },
 }) as ConfirmBridge;
+
+export function getConfirmReturnFocus(): HTMLElement | null {
+  return returnFocusElement?.isConnected ? returnFocusElement : null;
+}
 
 export function installConfirmBridge(): ConfirmBridge {
   if (typeof window !== 'undefined') {
