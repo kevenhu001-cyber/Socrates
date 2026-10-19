@@ -114,17 +114,22 @@ jobs:
           mkdir -p sbom
           for project in frontend server apps/socrates; do
             echo "::group::$project"
-            # --package-lock-only: the SBOM is derived from the lockfile, which
-            # is the authoritative, reviewable supply-chain record. Without it
-            # cyclonedx-npm shells out to `npm ls --all`, which walks the
-            # symlinked `file:../../packages/*` links under apps/socrates and
-            # reports ELSPROBLEMS (their own transitive deps are never
-            # installed), turning every run into a false compliance failure.
+            # --package-lock-only: build the SBOM from the lockfile, the
+            # authoritative and reviewable supply-chain record, rather than
+            # from whatever node_modules happens to be installed.
+            # --ignore-npm-errors: even in lockfile-only mode the tool shells
+            # out to `npm ls`, which walks the symlinked `file:../../packages/*`
+            # links under apps/socrates. Those packages are first-party source,
+            # never installed, so npm reports their own deps (react, zustand,
+            # @socrates/contracts) as ELSPROBLEMS and exits non-zero. That is a
+            # layout artefact, not a broken dependency tree — the lockfile is
+            # still a complete and correct inventory.
             # No `npm ci` here: nothing is executed and the lockfile alone
-            # describes the dependency set, so skipping the install also
-            # removes the download step from the SBOM job entirely.
+            # describes the dependency set, so this also drops the download step.
+            # Completeness is asserted in the verification step below.
             cyclonedx-npm \
               --package-lock-only \
+              --ignore-npm-errors \
               --output-format JSON \
               --output-file "sbom/${project//\//-}.cdx.json" \
               "$project/package-lock.json"
