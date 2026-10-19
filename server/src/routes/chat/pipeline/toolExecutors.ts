@@ -70,6 +70,20 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
   const runToolCall = async (entry: PreparedCall, activeToolNames: string[]): Promise<StreamMessage> => {
     const tc = entry.call;
     const toolName: string = entry.toolName;
+    const cancelled = (): StreamMessage => {
+      const result = { status: 'cancelled', error: 'tool_cancelled', errorCode: 'tool_cancelled', retryable: false };
+      deps.emitter.event('tool_result', { id: tc.id, name: toolName, ok: false, ...result });
+      deps.onResult?.(tc.id, result);
+      // Stopping is not a tool failure and must not consume its retry budget.
+      deps.toolPolicy.unmarkCall(toolName, hashToolArguments(entry.args));
+      return {
+        role: 'tool', tool_call_id: tc.id, name: toolName,
+        content: wrapUntrustedToolResult(toolName, '[cancelled] Tool execution was stopped.'),
+      };
+    };
+    // This runner may only be reached after waiting for a concurrency/serial
+    // slot. The pipeline's pre-batch check cannot protect that queue window.
+    if (deps.abortSignal.aborted) return cancelled();
 
     /* One rejection path for every pre-execution failure. The model
      * gets the field errors, the tool's schema, and a copy-ready
@@ -134,12 +148,17 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
       const backoffMs = deps.toolPolicy.retryDelayMs(toolName);
       if (backoffMs > 0 && !deps.abortSignal.aborted) {
         await new Promise<void>((resolve) => {
-          const timer = setTimeout(resolve, backoffMs);
-          const onAbort = () => { clearTimeout(timer); resolve(); };
-          if (deps.abortSignal.aborted) { onAbort(); return; }
-          deps.abortSignal.addEventListener('abort', onAbort, { once: true });
+          const settle = () => {
+            clearTimeout(timer);
+            deps.abortSignal.removeEventListener('abort', settle);
+            resolve();
+          };
+          const timer = setTimeout(settle, backoffMs);
+          if (deps.abortSignal.aborted) { settle(); return; }
+          deps.abortSignal.addEventListener('abort', settle, { once: true });
         });
       }
+      if (deps.abortSignal.aborted) return cancelled();
       try {
         outcome = await executor(entry.args, tc, executorContext, { activeToolNames });
       } catch (err) {

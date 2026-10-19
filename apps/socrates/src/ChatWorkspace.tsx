@@ -1,15 +1,22 @@
-import React, { type ComponentProps } from 'react';
+import React, { memo, type ComponentProps } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import type { Session } from '@socrates/contracts';
 import type { ThemePaletteHex, ThemeMode } from '@socrates/theme';
 import { ChatMessageList, Composer, DiagView, ExamView, type UiLanguage } from '@socrates/ui';
+import { useChatStore } from '@socrates/chat';
 import type { AppStrings } from './strings';
 import { styles } from './appStyles';
 
 type DiagnosticProps = Omit<ComponentProps<typeof DiagView>, 'mode' | 'language'>;
 type ExamProps = Omit<ComponentProps<typeof ExamView>, 'mode' | 'language'>;
 type MessageListProps = Omit<ComponentProps<typeof ChatMessageList>, 'style' | 'compact' | 'messages' | 'mode' | 'language' | 'findQuery' | 'activeFindIndex'>;
-type ComposerProps = Omit<ComponentProps<typeof Composer>, 'compact' | 'mode' | 'language'>;
+type ComposerProps = Omit<ComponentProps<typeof Composer>, 'compact' | 'mode' | 'language' | 'value' | 'onChangeText'> & Partial<Pick<ComponentProps<typeof Composer>, 'value' | 'onChangeText'>>;
+
+function ConnectedComposer({ composer, compact, mode, language }: { composer: ComposerProps; compact: boolean; mode: ThemeMode; language: UiLanguage }) {
+  const value = useChatStore((state) => state.draft);
+  const onChangeText = useChatStore((state) => state.setDraft);
+  return <Composer {...composer} value={composer.value ?? value} onChangeText={composer.onChangeText ?? onChangeText} compact={compact} mode={mode} language={language} />;
+}
 
 interface ChatWorkspaceProps {
   compact: boolean;
@@ -32,7 +39,7 @@ interface ChatWorkspaceProps {
 }
 
 /** Transcript, exam cards, edit state and composer for the chat route. */
-export function ChatWorkspace({
+function ChatWorkspaceComponent({
   compact,
   mode,
   language,
@@ -68,6 +75,8 @@ export function ChatWorkspace({
         <>
           <ChatMessageList
             {...messageList}
+            key={active?.id || 'new-chat'}
+            onPromptSelect={useChatStore.getState().setDraft}
             style={styles.list}
             compact={compact}
             messages={active?.messages || []}
@@ -82,9 +91,11 @@ export function ChatWorkspace({
               <Text style={{ color: palette.text.primary }}>{appCopy.cancel}</Text>
             </Pressable>
           </View> : null}
-          <Composer {...composer} compact={compact} mode={mode} language={language} />
+          <ConnectedComposer composer={composer} compact={compact} mode={mode} language={language} />
         </>
       )}
     </>
   );
 }
+
+export const ChatWorkspace = memo(ChatWorkspaceComponent);

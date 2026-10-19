@@ -1,9 +1,8 @@
 /**
  * @socrates/theme — cross-client design tokens.
  *
- * Socrates Design System v2 uses the Lobe UI v6 default neutral palette and
- * foundation metrics while preserving Socrates-owned product geometry. This
- * file mirrors `frontend/src/ui/tokens.ts` for the Universal App and packages.
+ * Socrates Universal uses an original, cross-client neutral theme with product-owned
+ * semantic roles. These tokens support the Universal App and shared packages.
  */
 
 export type ThemeMode = 'light' | 'dark';
@@ -49,7 +48,7 @@ export interface ThemePalette {
   readonly onAccent: string;
 }
 
-/** Lobe UI v6 foundation metrics shared by Web and native clients. */
+/** Shared foundation metrics for Universal clients. */
 export const foundationSpacing = {
   xxs: 4,
   xs: 8,
@@ -195,68 +194,68 @@ export const easing = {
 
 export const borderAlpha = 0.25;
 
-/** Lobe default neutral palette projected into Socrates semantic roles. */
+/** Universal dark neutral palette, tuned for clear layered surfaces. */
 export const darkPalette: ThemePalette = {
   mode: 'dark',
   accent: {
-    strong: '0 0% 93%',
-    soft: '0 0% 7%',
-    surface: '0 0% 7%',
+    strong: '0 0% 93.3%',
+    soft: '0 0% 6.7%',
+    surface: '0 0% 6.7%',
   },
   bg: {
-    page: '0 0% 0%',
-    raised: '0 0% 5%',
-    overlay: '0 0% 10%',
-    hover: '0 0% 13%',
-    sunken: '0 0% 2%',
+    page: '0 0% 12.94%',
+    raised: '0 0% 18.82%',
+    overlay: '0 0% 18.43%',
+    hover: '0 0% 20%',
+    sunken: '0 0% 9.02%',
   },
   text: {
-    primary: '0 0% 90%',
-    secondary: '0 0% 71%',
-    tertiary: '0 0% 56%',
-    muted: '0 0% 56%',
-    disabled: '0 0% 42%',
+    primary: '0 0% 92.55%',
+    secondary: '0 0% 70.6%',
+    tertiary: '0 0% 60.8%',
+    muted: '0 0% 60.8%',
+    disabled: '0 0% 46.7%',
   },
   border: {
-    subtle: '0 0% 10%',
-    default: '0 0% 13%',
-    strong: '0 0% 18%',
+    subtle: '0 0% 16.1%',
+    default: '0 0% 22%',
+    strong: '0 0% 27.1%',
   },
   danger: '1 78% 61%',
   success: '90 58% 49%',
-  muted: '0 0% 56%',
+  muted: '0 0% 60.8%',
   onAccent: '0 0% 0%',
 };
 
 export const lightPalette: ThemePalette = {
   mode: 'light',
   accent: {
-    strong: '0 0% 13%',
-    soft: '0 0% 96%',
-    surface: '0 0% 96%',
+    strong: '0 0% 13.33%',
+    soft: '0 0% 95.69%',
+    surface: '0 0% 95.69%',
   },
   bg: {
-    page: '0 0% 97%',
+    page: '0 0% 100%',
     raised: '0 0% 100%',
     overlay: '0 0% 100%',
-    hover: '0 0% 93%',
-    sunken: '0 0% 98%',
+    hover: '0 0% 95.69%',
+    sunken: '0 0% 97.84%',
   },
   text: {
     primary: '0 0% 12%',
     secondary: '0 0% 40%',
-    tertiary: '0 0% 54%',
-    muted: '0 0% 54%',
+    tertiary: '0 0% 45%',
+    muted: '0 0% 45%',
     disabled: '0 0% 69%',
   },
   border: {
-    subtle: '0 0% 93%',
-    default: '0 0% 89%',
-    strong: '0 0% 87%',
+    subtle: '0 0% 93.33%',
+    default: '0 0% 89.02%',
+    strong: '0 0% 86.67%',
   },
   danger: '10 88% 58%',
   success: '144 100% 31%',
-  muted: '0 0% 54%',
+  muted: '0 0% 45%',
   onAccent: '0 0% 100%',
 };
 
@@ -269,7 +268,7 @@ export function getThemePalette(mode: ThemeMode): ThemePalette {
   return palettes[mode];
 }
 
-/** Lobe default colorBgLayout values used for pre-paint. */
+/** Background color used for first paint by each theme mode. */
 export function resolveBackground(mode: ThemeMode): string {
-  return mode === 'light' ? '#f8f8f8' : '#000000';
+  return mode === 'light' ? '#ffffff' : '#212121';
 }

@@ -50,7 +50,10 @@ function mistakeContextOf(session: Session): { topic: string; node: string; node
 
 /** Own Tutor progress, knowledge snapshots, quiz/practice feedback and redo cards. */
 export function useTutorProgress({ active, activeId, accountEpoch, runTurn, submitTurn }: UseTutorProgressOptions) {
-  const activeMistakes = useMemo(() => active?.mode === 'tutor' ? normalizeMistakes(active.mistakes) : [], [active]);
+  const activeMistakes = useMemo(
+    () => active?.mode === 'tutor' ? normalizeMistakes(active.mistakes) : [],
+    [active?.mode, active?.mistakes],
+  );
   const activeMistakeFilter: MistakeFilter = active?.mistakeFilter === 'unresolved' || active?.mistakeFilter === 'resolved' ? active.mistakeFilter : 'all';
   const [redo, setRedo] = useState<RedoState>({ sessionId: null, items: [], resets: {} });
   const tutorSaveQueues = useRef(new Map<string, Promise<void>>());

@@ -31,7 +31,9 @@ const MIME = {
 
 console.log('[universal] exporting web bundle…');
 const apiBaseUrl = process.env.UNIVERSAL_API_BASE_URL || 'http://127.0.0.1:4176/api/v2';
-execSync('npm run export:web', { cwd: app, stdio: 'inherit', env: { ...process.env, EXPO_PUBLIC_API_BASE_URL: apiBaseUrl } });
+// Expo inlines public environment variables; Metro can otherwise reuse an old
+// API URL after switching from a development/production export to this mock gate.
+execSync('npm run export:web -- --clear', { cwd: app, stdio: 'inherit', env: { ...process.env, EXPO_PUBLIC_API_BASE_URL: apiBaseUrl } });
 execSync('node scripts/check-api-bundle.mjs', { cwd: app, stdio: 'inherit', env: { ...process.env, EXPO_PUBLIC_API_BASE_URL: apiBaseUrl } });
 
 const server = createServer(async (req, res) => {

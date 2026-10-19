@@ -2,8 +2,7 @@
  * RN-native helpers built on top of `@socrates/theme/tokens`.
  *
  * React Native consumes concrete color strings rather than the HSL triplets
- * used by shared tokens. Socrates Design System v2 projects the Lobe UI v6
- * default neutral values into the existing native palette shape.
+ * used by shared tokens. Socrates Universal projects its neutral palette into the native palette shape.
  */
 
 import {
@@ -50,27 +49,27 @@ const darkHex: ThemePaletteHex = {
     surface: '#111111',
   },
   bg: {
-    page: '#000000',
-    raised: '#0d0d0d',
-    overlay: '#1a1a1a',
-    hover: '#202020',
-    sunken: '#060606',
+    page: '#212121',
+    raised: '#303030',
+    overlay: '#2f2f2f',
+    hover: '#333333',
+    sunken: '#171717',
   },
   text: {
-    primary: '#e6e6e6',
+    primary: '#ececec',
     secondary: '#b4b4b4',
-    tertiary: '#8f8f8f',
-    muted: '#8f8f8f',
-    disabled: '#6b6b6b',
+    tertiary: '#9b9b9b',
+    muted: '#9b9b9b',
+    disabled: '#777777',
   },
   border: {
-    subtle: '#1a1a1a',
-    default: '#202020',
-    strong: '#2d2d2d',
+    subtle: '#292929',
+    default: '#383838',
+    strong: '#454545',
   },
   danger: '#e95350',
   success: '#80c933',
-  muted: '#8f8f8f',
+  muted: '#9b9b9b',
   onAccent: '#000000',
 };
 
@@ -78,21 +77,21 @@ const lightHex: ThemePaletteHex = {
   mode: 'light',
   accent: {
     strong: '#222222',
-    soft: '#f5f5f5',
-    surface: '#f5f5f5',
+    soft: '#f4f4f4',
+    surface: '#f4f4f4',
   },
   bg: {
-    page: '#f8f8f8',
+    page: '#ffffff',
     raised: '#ffffff',
     overlay: '#ffffff',
-    hover: '#eeeeee',
-    sunken: '#fbfbfb',
+    hover: '#f4f4f4',
+    sunken: '#f9f9f9',
   },
   text: {
     primary: '#1f1f1f',
     secondary: '#666666',
-    tertiary: '#8a8a8a',
-    muted: '#8a8a8a',
+    tertiary: '#737373',
+    muted: '#737373',
     disabled: '#b0b0b0',
   },
   border: {
@@ -102,7 +101,7 @@ const lightHex: ThemePaletteHex = {
   },
   danger: '#f35837',
   success: '#00a03f',
-  muted: '#8a8a8a',
+  muted: '#737373',
   onAccent: '#ffffff',
 };
 
@@ -117,7 +116,7 @@ export function getThemePaletteHex(mode: ThemeMode): ThemePaletteHex {
 
 /**
  * Web surface roles mirrored for React Native. These remain product-level
- * roles even though their values now derive from the Lobe neutral foundation.
+ * roles even though their values derive from the Universal neutral foundation.
  */
 export interface UiSurfaceHex {
   readonly sidebar: string;
@@ -136,35 +135,35 @@ export interface UiSurfaceHex {
 }
 
 const darkSurfaces: UiSurfaceHex = {
-  sidebar: '#0d0d0d',
-  bubble: '#1a1a1a',
-  bubbleStrong: '#1a1a1a',
-  composer: '#0d0d0d',
-  composerBorder: '#202020',
-  composerBorderCompact: '#202020',
-  control: '#2d2d2d',
-  controlCompact: '#2d2d2d',
-  surface: '#1a1a1a',
+  sidebar: '#171717',
+  bubble: '#303030',
+  bubbleStrong: '#303030',
+  composer: '#303030',
+  composerBorder: '#454545',
+  composerBorderCompact: '#454545',
+  control: '#383838',
+  controlCompact: '#383838',
+  surface: '#2f2f2f',
   hoverGhost: 'rgba(255, 255, 255, 0.06)',
   chip: 'rgba(255, 255, 255, 0.06)',
-  avatar: '#2d2d2d',
-  placeholder: '#6b6b6b',
+  avatar: '#454545',
+  placeholder: '#9b9b9b',
 };
 
 const lightSurfaces: UiSurfaceHex = {
-  sidebar: '#ffffff',
-  bubble: '#ffffff',
-  bubbleStrong: '#ffffff',
-  composer: '#ffffff',
+  sidebar: '#f9f9f9',
+  bubble: '#f4f4f4',
+  bubbleStrong: '#f4f4f4',
+  composer: '#f4f4f4',
   composerBorder: '#e3e3e3',
   composerBorderCompact: '#e3e3e3',
   control: '#f5f5f5',
   controlCompact: '#f5f5f5',
-  surface: '#ffffff',
+  surface: '#f9f9f9',
   hoverGhost: 'rgba(0, 0, 0, 0.03)',
   chip: 'rgba(0, 0, 0, 0.03)',
   avatar: '#8a8a8a',
-  placeholder: '#b0b0b0',
+  placeholder: '#737373',
 };
 
 const surfacesHex: Readonly<Record<ThemeMode, UiSurfaceHex>> = {
@@ -205,16 +204,16 @@ export function buildMappedPalette(mode: ThemeMode): MappedPalette {
     black: '#000000',
     scrollbar: isDark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.12)',
     overlay: 'rgba(0,0,0,0.44)',
-    reasoningBg: isDark ? '#0d0d0d' : '#ffffff',
-    reasoningFg: isDark ? '#8f8f8f' : '#666666',
-    codeBg: isDark ? '#0d0d0d' : '#ffffff',
-    codeFg: isDark ? '#e6e6e6' : '#1f1f1f',
-    codeBorder: isDark ? '#202020' : '#eeeeee',
+    reasoningBg: isDark ? '#171717' : '#f9f9f9',
+    reasoningFg: isDark ? '#b4b4b4' : '#666666',
+    codeBg: isDark ? '#171717' : '#f9f9f9',
+    codeFg: isDark ? '#ececec' : '#1f1f1f',
+    codeBorder: isDark ? '#383838' : '#e3e3e3',
     toolCardBg: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)',
     toolCardBgHover: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.06)',
     toolCardBgSunken: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)',
-    toolCardBorder: isDark ? '#202020' : '#e3e3e3',
-    toolCardBorderStrong: isDark ? '#2d2d2d' : '#dddddd',
+    toolCardBorder: isDark ? '#383838' : '#e3e3e3',
+    toolCardBorderStrong: isDark ? '#454545' : '#dddddd',
     toolCardFocus: isDark ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.32)',
   };
 }

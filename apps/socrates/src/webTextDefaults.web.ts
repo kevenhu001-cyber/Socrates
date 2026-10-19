@@ -1,4 +1,5 @@
-import { WEB_FONT_FAMILY } from '@socrates/theme';
+import { getThemePaletteHex, WEB_FONT_FAMILY } from '@socrates/theme';
+import { installWebFonts } from './fonts.web';
 
 /* Symbols the SPA takes from fontsource subset 109 (see `src/fonts.ts`). */
 const NOTO_SUBSET_109_SYMBOLS = 'U+a5,U+2192,U+2605';
@@ -38,6 +39,7 @@ function installAccountMenuOutsidePointer(): void {
  * as the SPA, then match its inherited Web text rasterization defaults. */
 export function installWebTextDefaults(theme: 'dark' | 'light' = 'dark'): void {
   if (typeof document === 'undefined') return;
+  installWebFonts();
   installAccountMenuOutsidePointer();
   const expoFonts = document.getElementById('expo-generated-fonts') as HTMLStyleElement | null;
   const rules = expoFonts?.sheet?.cssRules;
@@ -59,11 +61,38 @@ export function installWebTextDefaults(theme: 'dark' | 'light' = 'dark'): void {
   root.style.setProperty('-webkit-font-smoothing', 'antialiased');
   root.style.setProperty('-moz-osx-font-smoothing', 'grayscale');
   root.style.setProperty('text-rendering', 'optimizeLegibility');
+  const palette = getThemePaletteHex(theme);
+  root.style.setProperty('--socrates-focus', palette.text.secondary);
+  root.style.setProperty('--socrates-scrollbar', palette.border.strong);
+  root.style.setProperty('background-color', palette.bg.page);
 
   const renderingFixes = document.getElementById('socrates-web-text-rendering') as HTMLStyleElement | null
     || document.createElement('style');
   renderingFixes.id = 'socrates-web-text-rendering';
   renderingFixes.textContent = `
+    #socrates-main [role="button"]:focus-visible,
+    #socrates-sidebar [role="button"]:focus-visible,
+    #socrates-sidebar [role="menuitem"]:focus-visible {
+      outline: 2px solid var(--socrates-focus);
+      outline-offset: 2px;
+    }
+    #socrates-composer-shell:focus-within {
+      border-color: var(--socrates-focus) !important;
+    }
+    /* The shell indicates focus; avoid a sharp second outline inside it. */
+    #socrates-composer-input:focus { outline: none; }
+    @supports (field-sizing: content) {
+      #socrates-composer-input { field-sizing: content; height: auto !important; min-height: 36px; max-height: 192px; }
+      @media (max-width: 768px) {
+        #socrates-composer-input { min-height: 24px; max-height: 160px; }
+      }
+    }
+    [id^="socrates-message-row-"]:focus-within [id="socrates-message-toolbar"] { opacity: 1 !important; }
+    #socrates-message-list, #socrates-sidebar-recents {
+      scrollbar-width: thin;
+      scrollbar-color: var(--socrates-scrollbar) transparent;
+      overscroll-behavior: contain;
+    }
     /* RNW's FlatList applies an identity translate transform to its web
        scroll container. The baseline SPA does not transform the transcript;
        disabling it here preserves native scrolling while matching browser

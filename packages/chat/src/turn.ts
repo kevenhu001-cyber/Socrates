@@ -24,7 +24,35 @@ export async function runChatTurn(input: {
   const session = () => store.getState().sessions.find((s) => s.id === store.getState().turnSessionId);
   let ready = false;
   let failure: string | null = null;
-  const update = (change: (message: Message) => Message) => { if (current() && !input.signal.aborted) store.getState().updateTurn(input.turnId, change); };
+  const update = (change: (message: Message) => Message, allowAborted = false) => { if (current() && (allowAborted || !input.signal.aborted)) store.getState().updateTurn(input.turnId, change); };
+  // Network chunks can arrive in synchronous bursts. Coalesce text-only
+  // arrivals within the current microtask so each burst causes one transcript
+  // copy/store notification rather than one per token; flush before persistence.
+  let pendingText = '';
+  let pendingReasoning = '';
+  let textFlushQueued = false;
+  const flushText = () => {
+    textFlushQueued = false;
+    const text = pendingText;
+    const reasoning = pendingReasoning;
+    pendingText = '';
+    pendingReasoning = '';
+    if (!text && !reasoning) return;
+    update((m) => ({
+      ...m,
+      ...(text ? { rawText: `${m.rawText || ''}${text}` } : {}),
+      ...(reasoning ? { reasoningContent: `${m.reasoningContent || ''}${reasoning}` } : {}),
+    }), true);
+  };
+  const queueText = (text: string, reasoning = false) => {
+    if (!current() || input.signal.aborted) return;
+    if (reasoning) pendingReasoning += text;
+    else pendingText += text;
+    if (!textFlushQueued) {
+      textFlushQueued = true;
+      queueMicrotask(flushText);
+    }
+  };
   const toolIds = new Map<number, string>();
   const tool = (event: 'use' | 'result' | 'progress' | 'delta', payload: JsonValue) => {
     if (Array.isArray(payload)) { payload.forEach((entry) => tool(event, entry)); return; }
@@ -86,8 +114,8 @@ export async function runChatTurn(input: {
       messages,
       signal: input.signal,
       handlers: {
-        onDelta: (delta) => update((m) => ({ ...m, rawText: `${m.rawText || ''}${delta}` })),
-        onReasoning: (delta) => update((m) => ({ ...m, reasoningContent: `${m.reasoningContent || ''}${delta}` })),
+        onDelta: (delta) => queueText(delta),
+        onReasoning: (delta) => queueText(delta, true),
         onToolUse: (p) => tool('use', p), onToolResult: (p) => tool('result', p),
         onToolProgress: (p) => tool('progress', p), onToolCallDelta: (p) => tool('delta', p),
         onError: (error) => { failure = error; },
@@ -96,6 +124,7 @@ export async function runChatTurn(input: {
   } catch (error) {
     if (!input.signal.aborted) failure = error instanceof Error ? error.message : 'Chat failed';
   } finally {
+    flushText();
     if (current()) {
       if (ready && session()) {
         try { await input.save(session()!); }

@@ -1,12 +1,13 @@
-import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MessageContent, MistakeRedoCard, type MessageActions, type MistakeRedoItem } from './MessageContent.tsx';
 import type { Message, Session } from '@socrates/contracts';
 import { fontStyle, getThemePaletteHex, getUiSurfaceHex, type FontWeight, type ThemeMode } from '@socrates/theme';
 import { uiStrings, type UiLanguage } from './strings';
-import Animated, { LinearTransition } from 'react-native-reanimated';
 import { FlatList, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Icon, type IconName } from './icons';
-import { countFindMatches, findMessageMatches } from './findMessages';
+import { buildMessageFindIndex } from './findMessages';
+import { nextTranscriptFollowState } from './transcriptScroll';
+import { shouldSubmitComposerKey } from './composerKeyboard';
 import type { TeachingPlan, TeachingStage } from './tutor';
 import { KnowledgeBoundaryPanel, type BoundarySnapshot, type KnowledgeBoundaryNode } from './KnowledgeBoundaryPanel';
 import { getTutorLegacyPalette, tutorRgba } from './tutorTheme';
@@ -57,8 +58,8 @@ export type UiMode = ThemeMode;
  *            (radius 10, 6/10 padding, 20px glyphs), 32px footer buttons.
  * Transcript: parity/transcript.css — 768px column, 16/28 prose, user
  *            bubble radius 18 / max 70% / #202020, 32px icon toolbar.
- * Composer : parity/composer-unified.css — 52px capsule, radius 28,
- *            padding 7/10/7/8, 36px round controls, 4px gaps.
+ * Composer : shared two-row editor, 36px round controls and 4px gaps;
+ *            compact keeps the reference-pinned phone padding/radius.
  * Tokens   : styles/tokens.css + styles/themes.css (dark values shown).
  * ---------------------------------------------------------------------- */
 const SIDEBAR_WIDTH = 260;
@@ -858,11 +859,14 @@ function ToolbarButton({ label, icon, onPress, color, hover, size = 18 }: { labe
 function MessageToolbar({ message, language, actions, ghost, hover, compact, hovered }: { message: Message; language: UiLanguage; actions: MessageActions; ghost: string; hover: string; compact: boolean; hovered: boolean }) {
   const t = uiStrings(language);
   const [copied, setCopied] = useState(false);
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (copyTimer.current) clearTimeout(copyTimer.current); }, []);
   const copy = async () => {
     try {
       await actions.onCopyText?.(message.rawText || '');
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (copyTimer.current) clearTimeout(copyTimer.current);
+      copyTimer.current = setTimeout(() => setCopied(false), 2000);
     } catch { setCopied(false); }
   };
   const user = message.role === 'user';
@@ -877,15 +881,15 @@ function MessageToolbar({ message, language, actions, ghost, hover, compact, hov
       <View nativeID="socrates-message-toolbar" style={[styles.toolbar, compact && styles.toolbarCompact, user ? styles.toolbarUser : styles.toolbarAssistant, compact && (user ? styles.toolbarUserCompact : styles.toolbarAssistantCompact), { opacity }]}>
       {actions.onCopyText ? <ToolbarButton size={iconSize} label={copied ? t.copiedMessage : t.copyMessage} icon={copied ? 'check' : 'copy'} onPress={() => void copy()} color={ghost} hover={hover} /> : null}
       {userEditable && actions.onEditMessage ? <ToolbarButton size={iconSize} label={t.editMessage} icon="edit" onPress={() => actions.onEditMessage!(message)} color={ghost} hover={hover} /> : null}
-      {userEditable ? <ToolbarButton size={iconSize} label={t.deleteMessage} icon="delete" onPress={() => actions.onDeleteMessage?.(message)} color={ghost} hover={hover} /> : null}
+      {userEditable && actions.onDeleteMessage ? <ToolbarButton size={iconSize} label={t.deleteMessage} icon="delete" onPress={() => actions.onDeleteMessage!(message)} color={ghost} hover={hover} /> : null}
       {assistant ? <>
-        <ToolbarButton size={iconSize} label={t.shareConversation} icon="share" onPress={() => actions.onShareMessage?.(message)} color={ghost} hover={hover} />
-        <ToolbarButton size={iconSize} label={t.regenerateMessage} icon="regenerate" onPress={() => actions.onRegenerateMessage?.(message)} color={ghost} hover={hover} />
-        <ToolbarButton size={iconSize} label={t.helpful} icon="thumb-up" onPress={() => actions.onThumbsUpMessage?.(message)} color={ghost} hover={hover} />
-        <ToolbarButton size={iconSize} label={t.notHelpful} icon="thumb-down" onPress={() => actions.onThumbsDownMessage?.(message)} color={ghost} hover={hover} />
-        <ToolbarButton size={iconSize} label={t.branchMessage} icon="branch" onPress={() => actions.onBranchMessage?.(message)} color={ghost} hover={hover} />
-        <ToolbarButton size={iconSize} label={t.reExplain} icon="bulb" onPress={() => actions.onReExplainMessage?.(message)} color={ghost} hover={hover} />
-        <ToolbarButton size={iconSize} label={t.listenMessage} icon="speaker" onPress={() => actions.onSpeakText?.(message.rawText || '')} color={ghost} hover={hover} />
+        {actions.onShareMessage ? <ToolbarButton size={iconSize} label={t.shareConversation} icon="share" onPress={() => actions.onShareMessage!(message)} color={ghost} hover={hover} /> : null}
+        {actions.onRegenerateMessage ? <ToolbarButton size={iconSize} label={t.regenerateMessage} icon="regenerate" onPress={() => actions.onRegenerateMessage!(message)} color={ghost} hover={hover} /> : null}
+        {actions.onThumbsUpMessage ? <ToolbarButton size={iconSize} label={t.helpful} icon="thumb-up" onPress={() => actions.onThumbsUpMessage!(message)} color={ghost} hover={hover} /> : null}
+        {actions.onThumbsDownMessage ? <ToolbarButton size={iconSize} label={t.notHelpful} icon="thumb-down" onPress={() => actions.onThumbsDownMessage!(message)} color={ghost} hover={hover} /> : null}
+        {actions.onBranchMessage ? <ToolbarButton size={iconSize} label={t.branchMessage} icon="branch" onPress={() => actions.onBranchMessage!(message)} color={ghost} hover={hover} /> : null}
+        {actions.onReExplainMessage ? <ToolbarButton size={iconSize} label={t.reExplain} icon="bulb" onPress={() => actions.onReExplainMessage!(message)} color={ghost} hover={hover} /> : null}
+        {actions.onSpeakText ? <ToolbarButton size={iconSize} label={t.listenMessage} icon="speaker" onPress={() => actions.onSpeakText!(message.rawText || '')} color={ghost} hover={hover} /> : null}
       </> : null}
     </View>
   );
@@ -900,9 +904,8 @@ const MessageRow = memo(function MessageRow({ message, mode = 'light', language 
   // an assistant turn followed by a user turn gets 40px.
   const gapTop = first ? 0 : user && previousRole === 'assistant' ? 40 : compact && previousRole === 'user' ? 24 : 20;
   return (
-    <Animated.View
+    <View
       nativeID={`socrates-message-row-${message.clientId}`}
-      layout={LinearTransition}
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
       style={[styles.msg, { marginTop: gapTop }, user && styles.msgUser]}
@@ -911,7 +914,7 @@ const MessageRow = memo(function MessageRow({ message, mode = 'light', language 
         <MessageContent message={message} mode={mode} language={language} compact={compact} findQuery={findQuery} findStartIndex={findStartIndex} activeFindIndex={activeFindIndex} {...actions} />
       </View>
       <MessageToolbar message={message} language={language} actions={actions} ghost={compact ? p.text.muted : p.text.secondary} hover={s.hoverGhost} compact={compact} hovered={hovered} />
-    </Animated.View>
+    </View>
   );
 });
 
@@ -925,6 +928,7 @@ export function ChatMessageList({
   findQuery = '',
   activeFindIndex = -1,
   redoItems,
+  onPromptSelect,
   ...actions
 }: {
   messages: Message[];
@@ -940,24 +944,46 @@ export function ChatMessageList({
   activeFindIndex?: number;
   /** Mistake-book redos appended after the transcript (local-only). */
   redoItems?: MistakeRedoItem[];
+  /** Fill the draft, never send a suggestion without the learner's action. */
+  onPromptSelect?(prompt: string): void;
 } & MessageActions) {
   const p = paletteFor(mode);
   const t = uiStrings(language);
+  // Destructuring `...actions` creates a fresh object on every render; rebuild
+  // it from callback identities so streaming updates do not invalidate the
+  // FlatList renderer when host handlers themselves are stable.
+  const stableActions = useMemo(() => ({ ...actions }), [
+    actions.onCopyText, actions.onSpeakText, actions.onEditMessage, actions.onRegenerateMessage,
+    actions.onBranchMessage, actions.onDeleteMessage, actions.onShareMessage, actions.onThumbsUpMessage,
+    actions.onThumbsDownMessage, actions.onReExplainMessage, actions.onOpenArtifact, actions.resolveImage,
+    actions.onOpenFile, actions.onOpenStoredArtifact, actions.onQuizPick, actions.onPracticeSubmit,
+    actions.quizSlotResets,
+  ]);
   const listRef = useRef<FlatList<Message>>(null);
+  // Follow streamed/appended content only while the reader is near the end.
+  // This avoids yanking someone back down after they scroll up to reread.
+  const followsBottom = useRef(true);
+  const lastScrollOffset = useRef(0);
+  const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   const redoCount = redoItems?.length || 0;
+  const scrollToLatest = useCallback((animated: boolean) => {
+    // FlatList estimates the last row frame and can omit trailing padding.
+    // Its underlying ScrollView knows the actual rendered scroll extent.
+    const responder = listRef.current?.getScrollResponder() as unknown as ScrollView | null;
+    if (responder?.scrollToEnd) responder.scrollToEnd({ animated });
+    else listRef.current?.scrollToEnd({ animated });
+  }, []);
   useEffect(() => {
     // Baseline appends the redo card and scrolls the transcript to it.
-    if (redoCount) requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
-  }, [redoCount]);
-  const matches = useMemo(() => findMessageMatches(messages, findQuery), [messages, findQuery]);
-  const findOffsets = useMemo(() => {
-    let offset = 0;
-    return messages.map((message) => {
-      const start = offset;
-      offset += countFindMatches(message.rawText || message.content || '', findQuery);
-      return start;
-    });
-  }, [messages, findQuery]);
+    if (redoCount) requestAnimationFrame(() => scrollToLatest(true));
+  }, [redoCount, scrollToLatest]);
+  const { matches, offsets: findOffsets } = useMemo(() => buildMessageFindIndex(messages, findQuery), [messages, findQuery]);
+  // Keep the list renderer stable across streaming parent renders. MessageRow is
+  // memoized, so unchanged message objects (the historical transcript) remain
+  // untouched while only the actively streamed row receives fresh content.
+  const renderMessage = useMemo(() => ({ item, index }: { item: Message; index: number }) => (
+    <MessageRow message={item} mode={mode} language={language} compact={compact} first={index === 0} previousRole={index > 0 ? messages[index - 1].role : undefined} findQuery={findQuery} findStartIndex={findOffsets[index] || 0} activeFindIndex={activeFindIndex} {...stableActions} />
+  ), [mode, language, compact, messages, findQuery, findOffsets, activeFindIndex, stableActions]);
   useEffect(() => {
     if (!matches.length || activeFindIndex < 0) return;
     const hit = matches[activeFindIndex % matches.length];
@@ -965,23 +991,52 @@ export function ChatMessageList({
   }, [activeFindIndex, matches]);
   if (!messages.length) {
     return (
-      <View style={styles.empty}>
-        <Text style={[styles.emptyText, { color: p.text.muted }, fam(language)]}>{emptyText ?? t.emptyChat}</Text>
+      <View nativeID="socrates-empty-chat" style={[styles.empty, style]}>
+        <Text accessibilityRole="header" style={[styles.emptyText, compact && styles.emptyTextCompact, { color: p.text.primary }, fam(language, 'semibold')]}>{emptyText ?? t.emptyChat}</Text>
+        <Text style={[styles.emptyHint, { color: p.text.secondary }, fam(language)]}>{t.emptyChatHint}</Text>
+        {onPromptSelect ? <View style={styles.starterPrompts}>
+          {t.starterPrompts.map((prompt) => <Pressable key={prompt} accessibilityRole="button" onPress={() => onPromptSelect(prompt)} style={({ pressed }) => [styles.starterPrompt, { borderColor: p.border.default, backgroundColor: pressed ? p.bg.hover : 'transparent' }]}>
+            <Text style={[styles.starterPromptText, { color: p.text.secondary }, fam(language)]}>{prompt}</Text>
+          </Pressable>)}
+        </View> : null}
       </View>
     );
   }
   return (
-<FlatList
+    <View style={[styles.transcriptFrame, style]}>
+    <FlatList
       ref={listRef}
       nativeID="socrates-message-list"
-      style={style}
+      style={styles.transcriptList}
+      accessibilityRole="list"
+      keyboardShouldPersistTaps="handled"
+      scrollEventThrottle={16}
+      onScroll={(event) => {
+        const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+        // Growing/virtualized content can move the end away before our next
+        // follow scroll lands. Only an actual upward movement opts out.
+        followsBottom.current = nextTranscriptFollowState(followsBottom.current, contentSize.height, contentOffset.y, layoutMeasurement.height, lastScrollOffset.current);
+        lastScrollOffset.current = contentOffset.y;
+        setShowJumpToLatest(!followsBottom.current);
+      }}
+      onContentSizeChange={() => {
+        if (followsBottom.current) scrollToLatest(false);
+      }}
       contentContainerStyle={[styles.messages, compact && styles.messagesCompact]}
       data={messages}
-      keyExtractor={(item, index) => item.id || item.clientId || String(index)}
+      keyExtractor={(item, index) => item.clientId || item.id || String(index)}
       onScrollToIndexFailed={({ index }) => listRef.current?.scrollToOffset({ offset: Math.max(0, index * 120), animated: true })}
-      renderItem={({ item, index }) => <MessageRow message={item} mode={mode} language={language} compact={compact} first={index === 0} previousRole={index > 0 ? messages[index - 1].role : undefined} findQuery={findQuery} findStartIndex={findOffsets[index] || 0} activeFindIndex={activeFindIndex} {...actions} />}
+      renderItem={renderMessage}
       ListFooterComponent={redoCount ? <>{redoItems!.map((item) => <MistakeRedoCard key={item.id} item={item} mode={mode} language={language} onQuizPick={actions.onQuizPick} onPracticeSubmit={actions.onPracticeSubmit} />)}</> : undefined}
     />
+    {showJumpToLatest ? <Pressable accessibilityRole="button" accessibilityLabel={t.jumpToLatest} onPress={() => {
+      followsBottom.current = true;
+      setShowJumpToLatest(false);
+      scrollToLatest(true);
+    }} style={[styles.jumpToLatest, { backgroundColor: p.bg.raised, borderColor: p.border.default }]}>
+      <Text style={{ color: p.text.primary, fontSize: 22, lineHeight: 26 }}>↓</Text>
+    </Pressable> : null}
+    </View>
   );
 }
 
@@ -1029,7 +1084,11 @@ export function Composer({
   const p = paletteFor(mode);
   const s = getUiSurfaceHex(mode);
   const t = uiStrings(language);
+  const inputRef = useRef<TextInput>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const minInputHeight = compact ? 24 : 36;
+  const [inputHeight, setInputHeight] = useState(minInputHeight);
+  useEffect(() => { if (!value) setInputHeight(minInputHeight); }, [value, minInputHeight]);
   const enabled = value.trim().length > 0 || attachments.length > 0;
   const idleVoice = !streaming && !enabled && voiceInputSupported && !!onToggleListen;
   const attachItems = [
@@ -1040,24 +1099,43 @@ export function Composer({
   // Baseline primary control: stop while streaming, send with a draft,
   // disabled otherwise (baseline's idle voice glyph needs voice mode).
   const primary = streaming ? 'stop' : enabled ? 'send' : idleVoice ? 'voice' : 'send';
-  const primaryLabel = streaming ? t.stopGenerating : t.sendMessage;
+  const primaryLabel = streaming ? t.stopGenerating : idleVoice ? (listening ? t.stopVoiceInput : t.startVoiceInput) : t.sendMessage;
   const primaryRun = () => {
     if (streaming) { onStop(); return; }
-    if (enabled) onSend();
+    if (enabled) { onSend(); inputRef.current?.focus(); }
     else if (idleVoice) onToggleListen?.();
   };
   const input = (
     <TextInput
+      ref={inputRef}
       nativeID="socrates-composer-input"
       accessibilityLabel={t.messagePlaceholder}
+      accessibilityHint={Platform.OS === 'web' && !compact ? t.composerKeyboardHint : undefined}
       multiline
       numberOfLines={1}
       value={value}
       onChangeText={onChangeText}
+      onFocus={() => setMenuOpen(false)}
       placeholder={t.messagePlaceholder}
       placeholderTextColor={s.placeholder}
-      style={[styles.input, compact && styles.inputCompact, { color: p.text.primary }, fam(language)]}
-      onSubmitEditing={() => enabled && !streaming && onSend()}
+      style={[styles.input, compact && styles.inputCompact, { color: p.text.primary, height: inputHeight }, fam(language)]}
+      onContentSizeChange={(event) => setInputHeight(Math.max(minInputHeight, Math.min(compact ? 160 : 192, event.nativeEvent.contentSize.height)))}
+      onKeyPress={(event) => {
+        const keyboard = event as unknown as { key?: string; shiftKey?: boolean; nativeEvent: { key?: string; isComposing?: boolean; keyCode?: number }; preventDefault?(): void };
+        // KeyboardEvent exposes IME fields as inherited getters, not enumerable
+        // properties: spreading nativeEvent would silently discard them.
+        if (!shouldSubmitComposerKey({ key: keyboard.key || keyboard.nativeEvent.key, shiftKey: keyboard.shiftKey, isComposing: keyboard.nativeEvent.isComposing, keyCode: keyboard.nativeEvent.keyCode }, Platform.OS === 'web' && !compact)) return;
+        keyboard.preventDefault?.();
+        if (enabled && !streaming) onSend();
+      }}
+      // Native multiline inputs submit only on an explicit submit action.
+      // On web, guard IME composition so Enter confirms CJK candidates rather
+      // than prematurely sending the draft.
+      onSubmitEditing={(event) => {
+        const nativeEvent = event as unknown as { nativeEvent?: { isComposing?: boolean; key?: string } };
+        if (nativeEvent.nativeEvent?.isComposing || (nativeEvent.nativeEvent?.key && nativeEvent.nativeEvent.key !== 'Enter')) return;
+        if (enabled && !streaming) onSend();
+      }}
     />
   );
   return (
@@ -1077,11 +1155,11 @@ export function Composer({
             ))}
           </View>
         ) : null}
-        {compact ? input : null}
+        {input}
         <View style={[styles.controlsRow, compact && styles.controlsRowCompact]}>
           {attachItems.length ? (
             <View>
-              <Pressable accessibilityRole="button" accessibilityLabel={t.addAttachments} accessibilityState={{ expanded: menuOpen }} onPress={() => setMenuOpen((open) => !open)} style={[styles.roundBtn, compact && { backgroundColor: s.controlCompact }]}>
+              <Pressable accessibilityRole="button" accessibilityLabel={t.addAttachments} accessibilityState={{ expanded: menuOpen }} aria-expanded={menuOpen} onPress={() => setMenuOpen((open) => !open)} style={[styles.roundBtn, compact && { backgroundColor: s.controlCompact }]}>
                 <Icon name="plus" size={20} color={p.text.primary} />
               </Pressable>
               {menuOpen ? (
@@ -1095,17 +1173,7 @@ export function Composer({
               ) : null}
             </View>
           ) : null}
-          {compact ? <View style={styles.controlsSpacerCompact} /> : null}
-          {!compact ? input : null}
-          {!compact ? (
-            <Pressable accessibilityRole="button" accessibilityLabel={t.reasoning} onPress={() => undefined} style={styles.effortBtn}>
-                      <Text nativeID="socrates-effort-text-label" style={[styles.effortText, { color: p.text.secondary }, fam(language)]}>{t.thinkingEffort}</Text>
-                      <Text nativeID="socrates-effort-text-value" style={[styles.effortText, { color: p.text.secondary }, fam(language)]}>{t.effortMedium}</Text>
-              <View nativeID="socrates-effort-caret" style={[styles.effortCaret, compact && styles.effortCaretCompact]}>
-                <Icon name="caret" size={compact ? 14 : 16} color={p.text.muted} />
-              </View>
-            </Pressable>
-          ) : null}
+          <View style={styles.controlsSpacerCompact} />
           {voiceInputSupported && onToggleListen ? (
             <Pressable accessibilityRole="button" accessibilityLabel={listening ? t.stopVoiceInput : t.startVoiceInput} accessibilityState={{ expanded: listening }} onPress={onToggleListen} style={[styles.roundBtn, compact && { backgroundColor: s.controlCompact }]}>
               <Icon name="mic" size={20} color={listening ? p.danger : p.text.primary} />
@@ -1299,15 +1367,23 @@ const styles = StyleSheet.create({
   toolBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
   toolBtnCompact: { width: 32, height: 32 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
-  emptyText: { fontSize: 16, lineHeight: 28, textAlign: 'center' },
+  emptyText: { fontSize: 28, lineHeight: 38, letterSpacing: -0.6, textAlign: 'center', maxWidth: 600 },
+  emptyTextCompact: { fontSize: 24, lineHeight: 34, letterSpacing: -0.4 },
+  emptyHint: { fontSize: 14, lineHeight: 22, textAlign: 'center', marginTop: 12, maxWidth: 460 },
+  starterPrompts: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 24, maxWidth: 560 },
+  starterPrompt: { borderWidth: 1, borderRadius: 22, minHeight: 44, justifyContent: 'center', paddingHorizontal: 16, paddingVertical: 10 },
+  starterPromptText: { fontSize: 13, lineHeight: 20 },
+  transcriptFrame: { flex: 1, minHeight: 0, position: 'relative' },
+  transcriptList: { flex: 1 },
+  jumpToLatest: { position: 'absolute', bottom: 12, alignSelf: 'center', width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center', elevation: 2 },
 
   /* ── Composer ───────────────────────────────────────────────────────── */
-  composerSlot: { width: '100%', alignItems: 'center', paddingBottom: 6 },
+  composerSlot: { width: '100%', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 6 },
   composerSlotCompact: { paddingHorizontal: 16 },
-  shell: { width: '100%', maxWidth: CONTENT_WIDTH, minHeight: 52, borderRadius: 28, borderWidth: 1, paddingTop: 7, paddingBottom: 7, paddingLeft: 8, paddingRight: 10, gap: 4 },
+  shell: { width: '100%', maxWidth: CONTENT_WIDTH, minHeight: 96, borderRadius: 24, borderWidth: 1, paddingTop: 10, paddingBottom: 8, paddingLeft: 8, paddingRight: 8, gap: 4 },
   /* parity/composer-unified.css phone block: `padding: 12px 8px 8px` — the
      desktop 10px right inset drops to 8px, and the rail is a second row. */
-  shellCompact: { paddingTop: 12, paddingBottom: 8, paddingLeft: 8, paddingRight: 8, rowGap: 3 },
+  shellCompact: { minHeight: 0, borderRadius: 28, paddingTop: 12, paddingBottom: 8, paddingLeft: 8, paddingRight: 8, rowGap: 3 },
   attachBar: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, paddingTop: 8, paddingHorizontal: 2, marginLeft: 2 },
   chip: { flexDirection: 'row', alignItems: 'center', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, gap: 8, maxWidth: 220 },
   chipText: { fontSize: 14, lineHeight: 20, flexShrink: 1 },
@@ -1318,11 +1394,7 @@ const styles = StyleSheet.create({
   roundBtn: { width: 36, height: 36, minWidth: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   send: { backgroundColor: '#e8e8e8' },
   sendDisabled: { opacity: 0.3 },
-  effortBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, height: 36, minHeight: 36, paddingLeft: 12, paddingRight: 10, borderRadius: 999 },
-  effortCaret: { width: 16, height: 16, opacity: 0.65 },
-  effortCaretCompact: { width: 14, height: 14 },
-  effortText: { fontSize: 14, lineHeight: 20 },
   plusMenu: { position: 'absolute', bottom: 44, left: 0, zIndex: 60, minWidth: 180, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, padding: 6, gap: 2 },
-  input: { flex: 1, height: 36, minHeight: 24, maxHeight: 336, fontSize: 16, lineHeight: 24, paddingVertical: 6, paddingHorizontal: 8 },
-  inputCompact: { width: '100%', height: 24, flex: 0, fontSize: 16, lineHeight: 24, paddingVertical: 0 },
+  input: { width: '100%', flexShrink: 0, height: 36, minHeight: 24, maxHeight: 192, fontSize: 16, lineHeight: 24, paddingVertical: 6, paddingHorizontal: 8 },
+  inputCompact: { width: '100%', height: 24, flex: 0, flexBasis: 'auto', flexShrink: 0, fontSize: 16, lineHeight: 24, paddingVertical: 0 },
 });

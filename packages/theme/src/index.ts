@@ -4,9 +4,8 @@
  * Usage:
  *   import { spacing, palettesHex, getThemePalette } from '@socrates/theme';
  *
- * `tokens.ts` re-exports the canonical source mirrored from
- * `frontend/src/ui/tokens.ts`. `rn.ts` adds RN-native helpers that
- * resolve HSL triplets to hex strings for StyleSheet consumers.
+ * `tokens.ts` defines the shared Universal palette. `rn.ts` provides aligned
+ * concrete hex values and surface roles for native StyleSheet consumers.
  */
 
 export * from './tokens';

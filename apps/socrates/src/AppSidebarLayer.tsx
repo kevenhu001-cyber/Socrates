@@ -1,4 +1,4 @@
-import React, { type ComponentProps } from 'react';
+import React, { memo, type ComponentProps } from 'react';
 import { Pressable } from 'react-native';
 import { Sidebar } from '@socrates/ui';
 import type { ThemeMode } from '@socrates/theme';
@@ -14,7 +14,7 @@ interface AppSidebarLayerProps {
 }
 
 /** Sidebar and its phone-sized dismiss surface. */
-export function AppSidebarLayer({ open, compact, mode, backdropLabel, sidebar, onClose }: AppSidebarLayerProps) {
+function AppSidebarLayerComponent({ open, compact, mode, backdropLabel, sidebar, onClose }: AppSidebarLayerProps) {
   return (
     <>
       {open ? <Sidebar {...sidebar} /> : null}
@@ -30,3 +30,5 @@ export function AppSidebarLayer({ open, compact, mode, backdropLabel, sidebar, o
     </>
   );
 }
+
+export const AppSidebarLayer = memo(AppSidebarLayerComponent);

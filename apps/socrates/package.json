@@ -23,6 +23,7 @@
     "@socrates/theme": "file:../../packages/theme",
     "@socrates/ui": "file:../../packages/ui",
     "expo": "~57.0.27",
+    "expo-asset": "~57.0.19",
     "expo-clipboard": "~57.0.2",
     "expo-document-picker": "~57.0.0",
     "expo-file-system": "~57.0.0",

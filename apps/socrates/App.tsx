@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { KeyboardAvoidingView, Linking, Platform, StatusBar, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
-import type { Session } from '@socrates/contracts';
+import type { Message, Session } from '@socrates/contracts';
 import { useChatStore, visibleSessions as getVisibleSessions } from '@socrates/chat';
 import { useAuthStore } from '@socrates/auth';
 import { useSettingsStore } from '@socrates/settings';
@@ -45,7 +45,7 @@ import { useProjectRouteActions } from './src/useProjectRouteActions';
 import { useCatalogActions } from './src/useCatalogActions';
 import { useOutboxSync } from './src/useOutboxSync';
 
-const initialSessions: Session[] = [{ id: 'welcome', title: 'Welcome to Socrates', topic: 'Universal app', mode: 'chat', phase: 'chat', messages: [{ clientId: 'welcome-assistant', role: 'assistant', rawText: 'How can I help you learn today?' }] }];
+const initialSessions: Session[] = [{ id: 'welcome', title: 'Welcome to Socrates', topic: '', mode: 'chat', phase: 'chat', messages: [] }];
 
 function messageKey(message: { clientId?: string | null; id?: string }): string | null {
   return message.clientId || message.id || null;
@@ -82,7 +82,6 @@ function SocratesApp() {
   const { listening, voiceInputSupported, stopComposerAudio, speak, toggleListen, reset: resetVoiceInput } = useVoiceInput();
   const sessions = useChatStore((state) => state.sessions);
   const activeId = useChatStore((state) => state.activeSessionId);
-  const draft = useChatStore((state) => state.draft);
   const status = useChatStore((state) => state.status);
   const authStatus = useAuthStore((state) => state.status);
   const user = useAuthStore((state) => state.user);
@@ -342,6 +341,10 @@ function SocratesApp() {
   }, [clearAuthNotice, clearStaged, closeFind, resetAccountUsage, resetCatalog, resetFileAccess, resetLearningSetup, resetMessageActions, resetOutboxNotice, resetProjectLibrary, resetShare, resetVoiceInput]);
   useAppLifecycle({ accountEpoch, streamAbort, user, resetAccountState, syncLibrary, loadProviders, resetProviders });
   const stop = useCallback(() => { streamAbort.current?.abort(); }, []);
+  const shareMessage = useCallback(() => openShare(), [openShare]);
+  const editMessage = useCallback((message: Message) => startEdit(messageKey(message) || '', message.rawText || ''), [startEdit]);
+  const regenerateMessage = useCallback((message: Message) => { void regenerate(messageKey(message) || ''); }, [regenerate]);
+  const branchMessage = useCallback((message: Message) => { void branchFrom(messageKey(message) || ''); }, [branchFrom]);
   const { navItems, sidebarUser } = useSidebarNavigation({
     screen,
     compact,
@@ -561,7 +564,7 @@ function SocratesApp() {
           sidebarOpen={sidebarOpen}
           projectFilter={projectFilter}
           projectName={activeProject?.name || ''}
-          hasActiveSession={!!active}
+          hasActiveSession={!!active?.messages?.length}
           canShare={!!user && !user.isGuest}
           activeModelLabel={activeModelLabel}
           language={language}
@@ -601,10 +604,10 @@ function SocratesApp() {
           messageList={{
             onCopyText: copyText,
             onSpeakText: speak,
-            onShareMessage: () => openShare(),
-            onEditMessage: user && !user.isGuest ? (message) => startEdit(messageKey(message) || '', message.rawText || '') : undefined,
-            onRegenerateMessage: user && !user.isGuest ? (message) => void regenerate(messageKey(message) || '') : undefined,
-            onBranchMessage: (message) => void branchFrom(messageKey(message) || ''),
+            onShareMessage: shareMessage,
+            onEditMessage: user && !user.isGuest ? editMessage : undefined,
+            onRegenerateMessage: user && !user.isGuest ? regenerateMessage : undefined,
+            onBranchMessage: branchMessage,
             onOpenArtifact: setArtifact,
             onOpenStoredArtifact: openStoredArtifact,
             resolveImage,
@@ -617,9 +620,7 @@ function SocratesApp() {
           editingId={editingId}
           onCancelEdit={cancelEdit}
           composer={{
-            value: draft,
             streaming: status === 'sending' || status === 'streaming',
-            onChangeText: useChatStore.getState().setDraft,
             onSend: editingId ? commitEditSend : send,
             onStop: stop,
             attachments: staged.map((item) => ({ id: item.localId, name: item.name })),
@@ -700,8 +701,8 @@ export default function App() {
   // Baseline typography: the SPA ships Inter (+ Noto Sans SC for CJK) from
   // @fontsource; the app loads the same faces before the first paint so
   // every text node measures identically.
-  const [fontsLoaded] = useFonts(FONTS);
-  return <SafeAreaProvider><IconRendererProvider renderer={webIconRenderer}>{fontsLoaded ? <SocratesApp /> : null}</IconRendererProvider></SafeAreaProvider>;
+  const [fontsLoaded, fontsError] = useFonts(FONTS);
+  return <SafeAreaProvider><IconRendererProvider renderer={webIconRenderer}>{fontsLoaded || fontsError ? <SocratesApp /> : <SafeAreaView style={styles.safe}><View style={styles.center}><Text accessibilityRole="progressbar">Loading Socrates…</Text></View></SafeAreaView>}</IconRendererProvider></SafeAreaProvider>;
 }
 
 /** Baseline `SidebarFooter.tsx` upgrade link. */

@@ -96,8 +96,8 @@ test('universal edit rewrites a turn, regenerates, branches and retries a failed
     }
     const composer = page.getByLabel('Ask Socrates', { exact: true });
     const send = page.getByRole('button', { name: 'Send message' });
-    // The composer swaps Send/Stop with the turn: Send visible means idle.
-    const idle = () => expect(send).toBeVisible();
+    // Empty drafts can offer voice instead of Send; Stop is the stream state.
+    const idle = () => expect(page.getByRole('button', { name: 'Stop generating', exact: true })).toHaveCount(0);
 
     // Fresh turn.
     await row('New chat');

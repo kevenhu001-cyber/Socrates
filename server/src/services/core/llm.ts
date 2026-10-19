@@ -233,9 +233,12 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
     /* Named AbortError so the callers' existing `name === 'AbortError'`
        guard treats a cancelled backoff as a cancellation, not as another
        provider failure worth retrying. */
-    const aborted = () => reject(Object.assign(new Error('LLM request aborted'), { name: 'AbortError' }));
+    const aborted = () => {
+      clearTimeout(timer);
+      reject(Object.assign(new Error('LLM request aborted'), { name: 'AbortError' }));
+    };
     if (signal?.aborted) {
-      aborted();
+      reject(Object.assign(new Error('LLM request aborted'), { name: 'AbortError' }));
       return;
     }
     const timer = setTimeout(() => {
@@ -553,6 +556,7 @@ export async function streamChatCompletion(
   onToolCallDelta?: (delta: { index: number; id?: string; name?: string; argumentsDelta?: string; arguments: string; final?: boolean }) => void,
 ) {
   const { apiBase, apiKey, signal, tools } = opts;
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
 
   try {
     if (Array.isArray(tools) && tools.length > 0) {
@@ -645,7 +649,7 @@ export async function streamChatCompletion(
           if ((err as Error).name === 'AbortError') throw err; // let the outer catch classify it
           lastError = err as Error;
           if (attempt < TRANSIENT_ATTEMPTS - 1) {
-            await sleep(1000);
+            await sleep(1000, signal);
             continue;
           }
           throw err;
@@ -673,7 +677,7 @@ export async function streamChatCompletion(
       return;
     }
 
-    const reader = response!.body.getReader();
+    reader = response!.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
     let finishReason: string | null = null;
@@ -762,7 +766,7 @@ export async function streamChatCompletion(
       _emitToolDelta(next, next.function.arguments);
     };
 
-    while (true) {
+    readStream: while (true) {
       const { done, value } = await reader.read();
       if (done) break;
       if (!value || value.byteLength === 0) continue;
@@ -773,7 +777,13 @@ export async function streamChatCompletion(
 
       for (const line of lines) {
         const trimmed = line.trim();
-        if (!trimmed || trimmed === 'data: [DONE]') continue;
+        if (trimmed === 'data: [DONE]') {
+          // The protocol is complete even if the gateway keeps its body open.
+          // Ignore any bytes after DONE; usage must precede this marker.
+          buffer = '';
+          break readStream;
+        }
+        if (!trimmed) continue;
         if (!trimmed.startsWith('data: ')) {
           if (trimmed.startsWith('{')) {
             try {
@@ -961,6 +971,13 @@ export async function streamChatCompletion(
         ? err
         : new Error(typeof err === 'string' && err.length > 0 ? err : 'LLM request failed');
       onError(normalized);
+    }
+  } finally {
+    if (reader) {
+      // Early error frames and DONE must not leave an unread provider body
+      // holding a pool slot. Cleanup errors must not mask the stream result.
+      try { await reader.cancel(); } catch { /* upstream may already have failed */ }
+      reader.releaseLock();
     }
   }
 }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 import { fontStyle, type ThemePaletteHex } from '@socrates/theme';
 import { Icon, type UiStrings } from '@socrates/ui';
@@ -28,7 +28,7 @@ interface ChatTopBarProps {
 }
 
 /** Baseline topbar: model switcher and conversation actions. */
-export function ChatTopBar({
+function ChatTopBarComponent({
   compact,
   sidebarOpen,
   projectFilter,
@@ -77,12 +77,6 @@ export function ChatTopBar({
         ) : null}
         {hasActiveSession ? (
           <>
-            {!(compact && projectFilter) ? (
-              <Pressable accessibilityRole="button" accessibilityLabel={uiCopy.artifactSummary} onPress={() => undefined} style={[styles.summaryBtn, compact && styles.summaryBtnCompact]}>
-                <Icon name="summary" size={compact ? 16 : 18} color={compact ? palette.text.secondary : palette.text.primary} />
-                <Text nativeID="socrates-topbar-summary-label" testID="socrates-topbar-summary-label" style={[styles.summaryText, compact && styles.summaryTextCompact, { color: compact ? palette.text.secondary : palette.text.primary }, fam(compact ? 'regular' : 'medium')]}>{uiCopy.artifactSummary}</Text>
-              </Pressable>
-            ) : null}
             <Pressable accessibilityRole="button" accessibilityLabel={uiCopy.findInConversation} onPress={onOpenFind} style={[styles.topbarBtn, compact && styles.topbarBtnCompact]}>
               <Icon name="search" size={compact ? 24 : 18} color={compact ? palette.text.tertiary : palette.text.primary} />
             </Pressable>
@@ -95,3 +89,5 @@ export function ChatTopBar({
     </View>
   );
 }
+
+export const ChatTopBar = memo(ChatTopBarComponent);

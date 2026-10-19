@@ -81,3 +81,25 @@ headers），并可下载；侧栏 “打开文件” 进入文件库（列表 /
 composer 圆角 24 / light+dark），再按 `docs/plans/universal-app-migration.md`
 逐模块扩大（Chat/Composer → Sidebar/Nav → Auth → Settings → Library/Projects →
 Search → Agent/Tools → Editor/Canvas）。
+
+### 聊天体验与性能
+
+Universal 聊天界面的中性色层次、欢迎空态和快捷草稿已主动向 ChatGPT 风格调整，
+因此不再要求这些聊天表面与旧 SPA 像素一致；产品品牌和跨平台组件仍由 Socrates 自己维护。
+[OpenAI Apps SDK UI](https://github.com/openai/apps-sdk-ui) 和
+[ChatKit](https://github.com/openai/chatkit-js) 面向 Web，不直接引入共享 RN 核心。
+
+Web 字体用 `fonts.web.ts` 注册按需 CSS 字体，`font-display: swap` 不阻塞认证和输入，
+中文字符出现后才请求对应字重；原生仍使用 `fontAssets.ts` 的 Expo 字体加载。
+草稿订阅限制在输入组件内，SSE 同一微任务中的文字/推理片段合并后再更新 store，
+取消、失败和持久化前会刷新已收到的文本。消息列表上翻暂停自动跟随，可回到最新消息。
+
+在仓库根运行 `npm --prefix apps/socrates run test:shared` 和
+`node scripts/check-packages-dom.mjs`；浏览器定向回归可在 `frontend/` 运行：
+
+```bash
+npm run test:universal -- e2e/universal-performance.spec.mjs e2e/universal-scroll.spec.mjs
+```
+
+该入口会清理 Expo 导出缓存，防止切换 API 环境时复用旧的内联地址。
+浏览器 mobile 项目只是手机视口，不代替 Android/iOS 真机性能验证。

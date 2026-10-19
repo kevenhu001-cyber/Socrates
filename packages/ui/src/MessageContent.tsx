@@ -12,9 +12,10 @@ import { practiceAnswerMatches, type ParsedPractice, type ParsedQuiz, type QuizO
 import { toolArtifacts, toolDurationLabel, toolFailureText, toolInputPreview, toolInputText, toolLabel, toolOutputText, toolSearchResults, toolState } from './toolModel';
 import { uiStrings, type UiLanguage, type UiStrings } from './strings';
 import { getTutorLegacyPalette } from './tutorTheme';
+import { findTextMatches } from './findTextMatches';
 
 type Palette = ReturnType<typeof getThemePaletteHex>;
-type FindRenderContext = { query: string; nextIndex: number; activeIndex: number };
+type FindRenderContext = { query: string; normalizedQuery: string; nextIndex: number; activeIndex: number };
 export type ResolvedImageSource = { uri: string; headers?: Record<string, string> };
 /** One quiz pick: the host applies stage transitions and (only when a
  * correct answer is declared and the pick is wrong) a synthetic turn. */
@@ -77,20 +78,17 @@ const openLink = (url: string) => { const safe = safeLink(url); if (safe) void L
 
 function findText(text: string, context: FindRenderContext | undefined): React.ReactNode {
   if (!context?.query) return text;
-  const needle = context.query.toLocaleLowerCase();
-  const lower = text.toLocaleLowerCase();
+  const matches = findTextMatches(text, context.normalizedQuery);
+  if (!matches.length) return text;
   const parts: React.ReactNode[] = [];
   let cursor = 0;
-  let offset = lower.indexOf(needle);
-  while (offset >= 0) {
+  for (const [offset, end] of matches) {
     if (offset > cursor) parts.push(text.slice(cursor, offset));
     const active = context.nextIndex === context.activeIndex;
-    parts.push(<Text key={`find-${context.nextIndex}`} style={active ? styles.findActive : styles.findMark}>{text.slice(offset, offset + needle.length)}</Text>);
+    parts.push(<Text key={`find-${context.nextIndex}`} style={active ? styles.findActive : styles.findMark}>{text.slice(offset, end)}</Text>);
     context.nextIndex++;
-    cursor = offset + needle.length;
-    offset = lower.indexOf(needle, cursor);
+    cursor = end;
   }
-  if (cursor === 0) return text;
   if (cursor < text.length) parts.push(text.slice(cursor));
   return <>{parts}</>;
 }
@@ -403,7 +401,8 @@ export const MessageContent = memo(function MessageContent({ message, mode, lang
   const font = fontStyle('regular', language, Platform.OS === 'web');
   const messageId = (message.clientId || message.id || 'message').replace(/[^A-Za-z0-9_-]/g, '-');
   const nativeIdPrefix = `socrates-message-assistant-${messageId}`;
-  const find: FindRenderContext | undefined = findQuery.trim() ? { query: findQuery.trim(), nextIndex: findStartIndex, activeIndex: activeFindIndex } : undefined;
+  const normalizedFindQuery = findQuery.trim();
+  const find: FindRenderContext | undefined = normalizedFindQuery ? { query: normalizedFindQuery, normalizedQuery: normalizedFindQuery.toLocaleLowerCase(), nextIndex: findStartIndex, activeIndex: activeFindIndex } : undefined;
   return <View style={{ gap: 8 }}>
     {content.reasoning ? <View style={[styles.reasoning, { borderColor: p.border.default }]}>
       <Pressable accessibilityRole="button" accessibilityLabel={t.toggleReasoning} accessibilityState={{ expanded: showReasoning }} onPress={() => setShowReasoning(!showReasoning)}><Text style={{ color: p.text.muted }}>{t.reasoning} {showReasoning ? '⌃' : '⌄'}</Text></Pressable>
