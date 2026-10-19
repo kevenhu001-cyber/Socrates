@@ -1,25 +1,39 @@
-/** Legacy Tutor/sidebar colors mirrored from frontend/src/styles/themes.css.
- * The Tutor widgets still use the frontend's --text-* / --bg-* channels,
- * whose contrast steps intentionally differ from the newer shared palette. */
+import { getThemePaletteHex, getUiSurfaceHex } from '@socrates/theme';
+
+/**
+ * Tutor compatibility palette derived from the canonical Socrates theme.
+ *
+ * This used to freeze a second copy of the old ChatGPT-derived neutral ramp.
+ * Socrates Design System v2 keeps the Tutor surface shape for compatibility,
+ * but every value now resolves from `@socrates/theme` so Web and Universal App
+ * cannot drift when the foundation palette changes.
+ */
 export function getTutorLegacyPalette(mode: 'light' | 'dark') {
-  if (mode === 'dark') {
-    return {
-      /* Measured SPA computed fill for `hsl(145 50% 50%)` (node + done marker). */
-      accent: '#ffffff',
-      success: '#40BF75',
-      border: '#333333',
-      bg: { sidebar: '#1e1e1e', raised: '#1f1f1f', soft: '#292929', card: '#1a1a1a' },
-      text: { primary: '#e8e8e8', secondary: '#c4c4c4', tertiary: '#a6a6a6', caption: '#949494', muted: '#808080' },
-      rgba: { accent08: 'rgba(255,255,255,0.08)', accent12: 'rgba(255,255,255,0.12)', soft80: 'rgba(41,41,41,0.8)' },
-    } as const;
-  }
+  const base = getThemePaletteHex(mode);
+  const surfaces = getUiSurfaceHex(mode);
+
   return {
-    accent: '#1a1a1a',
-    success: '#40BF75',
-    border: '#cccccc',
-    bg: { sidebar: '#ffffff', raised: '#fafafa', soft: '#f3f3f3', card: '#fcfcfc' },
-    text: { primary: '#0d0d0d', secondary: '#3d3d3d', tertiary: '#5c5c5c', caption: '#6e6e6e', muted: '#737373' },
-    rgba: { accent08: 'rgba(26,26,26,0.08)', accent12: 'rgba(26,26,26,0.12)', soft80: 'rgba(243,243,243,0.8)' },
+    accent: base.accent.strong,
+    success: base.success,
+    border: base.border.strong,
+    bg: {
+      sidebar: surfaces.sidebar,
+      raised: base.bg.overlay,
+      soft: base.bg.hover,
+      card: surfaces.surface,
+    },
+    text: {
+      primary: base.text.primary,
+      secondary: base.text.secondary,
+      tertiary: base.text.tertiary,
+      caption: base.text.tertiary,
+      muted: base.text.muted,
+    },
+    rgba: {
+      accent08: tutorRgba(base.accent.strong, 0.08),
+      accent12: tutorRgba(base.accent.strong, 0.12),
+      soft80: tutorRgba(base.bg.hover, 0.8),
+    },
   } as const;
 }
 

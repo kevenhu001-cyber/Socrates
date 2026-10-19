@@ -1,84 +1,33 @@
 /**
- * Design tokens — single source of truth for color, spacing, typography,
- * and breakpoint values across the UI.
+ * Design tokens — shared Socrates semantic vocabulary.
  *
- * Tokens are published as CSS custom properties in
- * `src/styles/tokens.css` (the `--ui-*` namespace) and consumed by
- * component CSS, theme files, and JS code that needs to derive a
- * runtime value (e.g. `resolveBackground()` paints the document
- * background before the bundle finishes parsing so the first frame
- * never shows the default browser white flash).
- *
- * Conventions
- *  - All color tokens are HSL strings (`H S% L%`) so theme files
- *    compose them with `hsl(...)` directly. Hex values are reserved
- *    for `resolveBackground()` (one-shot pre-paint before CSS is
- *    available) and the legacy `displayPrefs` swatches.
- *  - Spacing follows a 4 px scale (`xxs`, `xs`, `sm`, `md`, `lg`,
- *    `xl`, `xxl`). Components should prefer the token over a literal
- *    pixel value to keep the rhythm consistent.
- *  - Breakpoints match the project's existing media-query ladders
- *    (≤480 px, ≤768 px, ≥1200 px).
- *  - Accent steps are monochrome: the app ships no selectable theme
- *    colour, so the accent ladder mirrors the black/white/gray palette
- *    in `styles.css`.
- *
- * Theme resolution
- *  - `themeMode` describes the *effective* mode (light/dark) that
- *    drives styling. `themePreference` is the user's choice between
- *    light/dark/system; resolution of system → mode lives in
- *    `displayPrefs.js` to keep the boot path free of dynamic
- *    imports.
- *  - `resolveBackground(mode)` returns the paint color used by the
- *    early theme-paint hook in `index.html`. The values mirror
- *    the page background the bundled CSS produces once it loads, so
- *    there is no visible flash between the pre-paint and the
- *    stylesheet taking effect.
+ * Socrates Design System v2 keeps the stable `--ui-*` / TypeScript API but
+ * sources its neutral foundation from the Lobe UI v6 default token set.
+ * Product-specific geometry and motion remain Socrates-owned.
  */
 
-/** Theme mode that drives styling. `system` is resolved into
- *  `light` or `dark` before any token is read at runtime. */
 export type ThemeMode = 'light' | 'dark';
-
-/** User preference as stored in localStorage. `system` means
- *  follow the OS-level prefers-color-scheme media query. */
 export type ThemePreference = ThemeMode | 'system';
 
-/* Accent lightness ladder — one row per role (foreground / soft
-   background / dark surface). Components only need to know the role,
-   not the lightness, so the ladder is grouped here. */
 export interface AccentScale {
-  /** Strong accent for primary buttons, active borders, link text. */
   readonly strong: string;
-  /** Softer accent for chips, soft borders, hint text. */
   readonly soft: string;
-  /** Background tint behind accent surfaces (e.g. tooltip body). */
   readonly surface: string;
 }
 
 export interface ThemeBackgrounds {
-  /** Page-level background; what `resolveBackground(mode)` returns. */
   readonly page: string;
-  /** Slightly raised surface (sidebar, chat column, modal body). */
   readonly raised: string;
-  /** Even more raised (cards, popovers, dropdowns). */
   readonly overlay: string;
-  /** Hover-state wash. */
   readonly hover: string;
-  /** Edge of the canvas / decorative backgrounds. */
   readonly sunken: string;
 }
 
 export interface ThemeText {
-  /** High-contrast body text. */
   readonly primary: string;
-  /** Secondary text (descriptions, helper labels). */
   readonly secondary: string;
-  /** Muted captions. */
   readonly tertiary: string;
-  /** Hint placeholders. */
   readonly muted: string;
-  /** Disabled / unreachable. */
   readonly disabled: string;
 }
 
@@ -100,9 +49,98 @@ export interface ThemePalette {
   readonly onAccent: string;
 }
 
-/* Spacing scale — 4 px base, doubled up to xxl. Components use these
-   instead of pixel literals so a future redesign can re-tune the
-   rhythm from this one file. */
+/**
+ * Lobe UI v6 foundation metrics. Keep these values in lockstep with
+ * `packages/theme/src/tokens.ts` and `styles/tokens.css`.
+ *
+ * These are intentionally separate from Socrates product tokens below:
+ * product geometry may opt into a foundation rung, while touch targets,
+ * composer geometry and optical adjustments remain free to diverge.
+ */
+export const foundationSpacing = {
+  xxs: 4,
+  xs: 8,
+  sm: 12,
+  base: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
+} as const;
+
+export type FoundationSpacingToken = keyof typeof foundationSpacing;
+
+export const foundationRadius = {
+  xs: 4,
+  sm: 6,
+  base: 8,
+  lg: 12,
+} as const;
+
+export type FoundationRadiusToken = keyof typeof foundationRadius;
+
+export const foundationControl = {
+  sm: 28,
+  base: 36,
+  lg: 40,
+  interactive: 18,
+  outline: 2,
+  paddingHorizontal: 12,
+  paddingHorizontalSm: 8,
+} as const;
+
+export const foundationTypography = {
+  fontSize: {
+    sm: 12,
+    base: 14,
+    lg: 16,
+    xl: 20,
+    heading1: 38,
+    heading2: 30,
+    heading3: 24,
+    heading4: 20,
+    heading5: 16,
+  },
+  lineHeight: {
+    sm: 1.6666666666666667,
+    base: 1.5714285714285714,
+    lg: 1.5,
+    heading1: 1.2105263157894737,
+    heading2: 1.2666666666666666,
+    heading3: 1.3333333333333333,
+    heading4: 1.4,
+    heading5: 1.5,
+  },
+  weightStrong: 600,
+} as const;
+
+export const foundationMotion = {
+  duration: {
+    fast: 100,
+    mid: 200,
+    slow: 300,
+  },
+  easing: {
+    inOut: 'cubic-bezier(0.645, 0.045, 0.355, 1)',
+    out: 'cubic-bezier(0.215, 0.61, 0.355, 1)',
+    outBack: 'cubic-bezier(0.12, 0.4, 0.29, 1.46)',
+    outCirc: 'cubic-bezier(0.08, 0.82, 0.17, 1)',
+    outQuint: 'cubic-bezier(0.23, 1, 0.32, 1)',
+  },
+} as const;
+
+export const foundationBreakpoints = {
+  xs: 480,
+  sm: 576,
+  md: 768,
+  lg: 992,
+  xl: 1200,
+  xxl: 1600,
+  xxxl: 1920,
+} as const;
+
+/* Socrates product spacing. `xxs` is an intentional 2px optical rung; the
+ * remaining common rungs are a subset of the Lobe 4px foundation ladder. */
 export const spacing = {
   xxs: 2,
   xs: 4,
@@ -115,7 +153,7 @@ export const spacing = {
 
 export type SpacingToken = keyof typeof spacing;
 
-/* Radii — canonical scale */
+/* Base radii align with Lobe; larger values are Socrates product geometry. */
 export const radius = {
   none: 0,
   xs: 4,
@@ -130,23 +168,19 @@ export const radius = {
 
 export type RadiusToken = keyof typeof radius;
 
-/* Typography — sizes/weights/line heights. Components reference these
-   tokens through CSS custom properties (`--ui-font-size-*` etc.) so
-   theming and accessibility remixes can override the values without
-   touching JS. */
 export const fontSize = {
-  xxs: '0.75rem', // 12 px
-  xs:  '0.8125rem', // 13 px
-  sm:  '0.875rem', // 14 px
-  md:  '1rem',    // 16 px
-  lg:  '1.125rem', // 18 px
-  xl:  '1.25rem',  // 20 px
-  xxl: '1.5rem',   // 24 px
+  xxs: '0.75rem',
+  xs: '0.8125rem',
+  sm: '0.875rem',
+  md: '1rem',
+  lg: '1.125rem',
+  xl: '1.25rem',
+  xxl: '1.5rem',
 } as const;
 
 export const fontWeight = {
   regular: 400,
-  medium:  500,
+  medium: 500,
   semibold: 600,
   bold: 700,
 } as const;
@@ -157,81 +191,78 @@ export const lineHeight = {
   relaxed: 1.7,
 } as const;
 
-/* Breakpoints — must match the legacy @media queries in styles.css.
-   Keep the values centralized so future responsive audits don't have to
-   grep the file. */
 export const breakpoints = {
   sm: 480,
   md: 768,
   lg: 1200,
 } as const;
 
-/* Theme palettes — colors only. Spacing/typography/radii are mode-
-   independent. Each palette is consumed by `themes.css` to author
-   the `[data-mode=dark|light]` selectors; the JS side reads
-   `resolveBackground()` for pre-paint and `getThemePalette(mode)`
-   for runtime-derived colors. */
+/**
+ * Lobe default neutral palette projected into Socrates semantic roles.
+ * Values stay as HSL triplets because legacy CSS consumers compose them with
+ * `hsl(...)`; `themes.css` carries the exact upstream hex values.
+ */
 export const darkPalette: ThemePalette = {
   mode: 'dark',
   accent: {
-    strong: '0 0% 94%',
-    soft: '0 0% 18%',
-    surface: '0 0% 18%',
+    strong: '0 0% 93%',       // #eeeeee
+    soft: '0 0% 7%',          // #111111
+    surface: '0 0% 7%',       // #111111
   },
   bg: {
-    page: '0 0% 8%',
-    raised: '0 0% 11%',
-    overlay: '0 0% 16%',
-    hover: '0 0% 17%',
-    sunken: '0 0% 5%',
+    page: '0 0% 0%',          // #000000  colorBgLayout
+    raised: '0 0% 5%',        // #0d0d0d  colorBgContainer
+    overlay: '0 0% 10%',      // #1a1a1a  colorBgElevated
+    hover: '0 0% 13%',        // #202020  neutral hover step
+    sunken: '0 0% 2%',        // #060606  containerSecondary
   },
   text: {
-    primary: '0 0% 91%',
-    secondary: '0 0% 76%',
-    tertiary: '0 0% 61%',
-    muted: '0 0% 50%',
-    disabled: '0 0% 38%',
+    primary: '0 0% 90%',      // #e6e6e6
+    secondary: '0 0% 71%',    // #b4b4b4
+    tertiary: '0 0% 56%',     // #8f8f8f
+    muted: '0 0% 56%',        // description / idle icon role
+    disabled: '0 0% 42%',     // #6b6b6b
   },
   border: {
-    subtle: '0 0% 15%',
-    default: '0 0% 19%',
-    strong: '0 0% 25%',
+    subtle: '0 0% 10%',       // #1a1a1a
+    default: '0 0% 13%',      // #202020
+    strong: '0 0% 18%',       // #2d2d2d
   },
-  danger: '1 100% 70%',
-  success: '169 71% 56%',
-  muted: '0 0% 50%',
+  danger: '1 78% 61%',        // #e95350
+  success: '90 58% 49%',      // #80c933
+  muted: '0 0% 56%',
   onAccent: '0 0% 0%',
 };
 
 export const lightPalette: ThemePalette = {
   mode: 'light',
   accent: {
-    strong: '0 0% 5%',
-    soft: '0 0% 91%',
-    surface: '0 0% 91%',
+    strong: '0 0% 13%',       // #222222
+    soft: '0 0% 96%',         // #f5f5f5
+    surface: '0 0% 96%',      // #f5f5f5
   },
   bg: {
-    page: '0 0% 100%',
-    raised: '0 0% 98%',
-    overlay: '0 0% 100%',
-    hover: '0 0% 95%',
-    sunken: '0 0% 100%',
+    page: '0 0% 97%',         // #f8f8f8  colorBgLayout
+    raised: '0 0% 100%',      // #ffffff  colorBgContainer
+    overlay: '0 0% 100%',     // #ffffff  colorBgElevated
+    hover: '0 0% 93%',        // #eeeeee  neutral hover step
+    sunken: '0 0% 98%',       // #fbfbfb  containerSecondary
   },
   text: {
-    primary: '0 0% 5%',
-    secondary: '0 0% 36%',
-    tertiary: '0 0% 43%',
-    muted: '0 0% 45%',
-    disabled: '0 0% 71%',
+    primary: '0 0% 12%',      // #1f1f1f
+    secondary: '0 0% 40%',    // #666666
+    tertiary: '0 0% 54%',     // #8a8a8a
+    muted: '0 0% 54%',
+    disabled: '0 0% 69%',     // #b0b0b0
   },
   border: {
-    subtle: '0 0% 94%',
-    default: '0 0% 90%',
-    strong: '0 0% 80%',
+    subtle: '0 0% 93%',       // #eeeeee
+    default: '0 0% 89%',      // #e3e3e3
+    strong: '0 0% 87%',       // #dddddd
   },
-  danger: '3 79% 47%',
-  success: '171 97% 25%',
-  muted: '0 0% 45%',
+  danger: '10 88% 58%',       // #f35837
+  success: '144 100% 31%',    // #00a03f
+  muted: '0 0% 54%',
   onAccent: '0 0% 100%',
 };
 
@@ -245,15 +276,9 @@ export function getThemePalette(mode: ThemeMode): ThemePalette {
 }
 
 /**
- * Returns the page background to paint on `document.documentElement`
- * before the bundle CSS finishes parsing. The theme-paint hook
- * in `index.html` calls this synchronously so the first frame
- * already matches the effective theme and no white flash shows.
- *
- * The hex values mirror the page background the bundled CSS produces
- * once it loads (see `themes.css`). Keep the two in sync if either
- * drifts.
+ * First-frame page paint. These exact values mirror Lobe colorBgLayout and
+ * `styles/themes.css`, preventing a flash before the stylesheet parses.
  */
 export function resolveBackground(mode: ThemeMode): string {
-  return mode === 'light' ? '#ffffff' : '#141414';
+  return mode === 'light' ? '#f8f8f8' : '#000000';
 }

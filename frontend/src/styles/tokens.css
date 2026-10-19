@@ -2,32 +2,80 @@
  * tokens.css — design-token CSS variables.
  *
  * Single source of truth for the `--ui-*` token namespace. The actual
- * theme values (light/dark/accent) live in themes.css; this file only
- * declares the *names* so component CSS can reference them without
- * caring about which mode is currently active.
+ * theme values (light/dark/accent) live in themes.css; this file owns
+ * theme-independent foundation and product geometry.
  *
- * Keep the names here aligned with src/ui/tokens.ts so JS-driven
- * values (e.g. resolveBackground) and CSS-driven values agree on the
- * same vocabulary.
+ * Keep the names here aligned with src/ui/tokens.ts so JS-driven and
+ * CSS-driven values agree on the same vocabulary.
  */
 
 :root {
-  /* Spacing — 4 px scale */
-  --ui-space-xxs: 2px;
-  --ui-space-xs: 4px;
-  --ui-space-sm: 8px;
-  --ui-space-md: 12px;
-  --ui-space-lg: 16px;
-  --ui-space-xl: 24px;
-  --ui-space-xxl: 32px;
+  /* Lobe UI v6 foundation metrics. Product tokens below may alias these
+     rungs where semantics match; Socrates-specific geometry is not forced
+     onto this ladder. */
+  --ui-foundation-space-xxs: 4px;
+  --ui-foundation-space-xs: 8px;
+  --ui-foundation-space-sm: 12px;
+  --ui-foundation-space-base: 16px;
+  --ui-foundation-space-md: 20px;
+  --ui-foundation-space-lg: 24px;
+  --ui-foundation-space-xl: 32px;
+  --ui-foundation-space-xxl: 48px;
 
-  /* Radii — canonical scale */
+  --ui-foundation-radius-xs: 4px;
+  --ui-foundation-radius-sm: 6px;
+  --ui-foundation-radius-base: 8px;
+  --ui-foundation-radius-lg: 12px;
+
+  --ui-foundation-control-sm: 28px;
+  --ui-foundation-control-base: 36px;
+  --ui-foundation-control-lg: 40px;
+  --ui-foundation-control-interactive: 18px;
+  --ui-foundation-control-outline: 2px;
+  --ui-foundation-control-padding: 12px;
+  --ui-foundation-control-padding-sm: 8px;
+
+  --ui-foundation-font-size-sm: 12px;
+  --ui-foundation-font-size-base: 14px;
+  --ui-foundation-font-size-lg: 16px;
+  --ui-foundation-font-size-xl: 20px;
+  --ui-foundation-font-size-heading-1: 38px;
+  --ui-foundation-font-size-heading-2: 30px;
+  --ui-foundation-font-size-heading-3: 24px;
+  --ui-foundation-font-size-heading-4: 20px;
+  --ui-foundation-font-size-heading-5: 16px;
+  --ui-foundation-font-weight-strong: 600;
+  --ui-foundation-line-height-sm: 1.6666666667;
+  --ui-foundation-line-height-base: 1.5714285714;
+  --ui-foundation-line-height-lg: 1.5;
+
+  --ui-foundation-duration-fast: 100ms;
+  --ui-foundation-duration-mid: 200ms;
+  --ui-foundation-duration-slow: 300ms;
+  --ui-foundation-ease-in-out: cubic-bezier(0.645, 0.045, 0.355, 1);
+  --ui-foundation-ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --ui-foundation-ease-out-back: cubic-bezier(0.12, 0.4, 0.29, 1.46);
+  --ui-foundation-ease-out-circ: cubic-bezier(0.08, 0.82, 0.17, 1);
+  --ui-foundation-ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
+
+  /* Socrates product spacing. The 2px optical rung is intentionally outside
+     the Lobe ladder; the remaining shared rungs inherit the foundation. */
+  --ui-space-xxs: 2px;
+  --ui-space-xs: var(--ui-foundation-space-xxs);
+  --ui-space-sm: var(--ui-foundation-space-xs);
+  --ui-space-md: var(--ui-foundation-space-sm);
+  --ui-space-lg: var(--ui-foundation-space-base);
+  --ui-space-xl: var(--ui-foundation-space-lg);
+  --ui-space-xxl: var(--ui-foundation-space-xl);
+
+  /* Radii — common rungs derive from the Lobe foundation; larger values are
+     Socrates product tokens. */
   --ui-radius-none: 0;
-  --ui-radius-xs: 4px;
-  --ui-radius-sm: 6px;
-  --ui-radius-control: 8px;
-  --ui-radius-md: 8px;
-  --ui-radius-lg: 12px;
+  --ui-radius-xs: var(--ui-foundation-radius-xs);
+  --ui-radius-sm: var(--ui-foundation-radius-sm);
+  --ui-radius-control: var(--ui-foundation-radius-base);
+  --ui-radius-md: var(--ui-foundation-radius-base);
+  --ui-radius-lg: var(--ui-foundation-radius-lg);
   --ui-radius-xl: 16px;
   --ui-radius-2xl: 20px;
   --ui-radius-composer: 24px;
@@ -38,32 +86,16 @@
   --ui-radius-bubble: 18px;
   --ui-radius-pill: 999px;
 
-  /* Controls and responsive shell.
-     The ladder is the source of truth for interactive-control height.
-     32/40/44 are the original rungs; 36 and 42 were added because they are
-     what the shipped desktop density actually is — the topbar switcher/find/
-     share buttons, the Library toolbar and the directory tabs all sit at
-     36px, and every workspace search pill at 42px. They were literals in six
-     files, which put them permanently one edit away from drifting apart.
-     Naming them keeps `npm run lint:button-sizes` honest: it treats these as
-     on-ladder, so a new literal is still blocked, but a deliberate change is
-     a one-line edit here instead of a baseline bump. */
+  /* Controls and responsive shell. Lobe's 28/36/40 ladder is available as
+     foundation metrics. Socrates retains its product density and the 44px
+     mobile tap-target contract. */
   --ui-control-sm: 32px;
-  --ui-control-md: 40px;
+  --ui-control-md: var(--ui-foundation-control-lg);
   --ui-control-touch: 44px;
-  /* Desktop chrome density — the row height of the topbar buttons, the
-     directory tab rails and the Library toolbar. */
-  --ui-control-desktop: 36px;
-  /* Workspace search field / pill. Taller than a toolbar button because it
-     carries placeholder text, and identical across every directory page. */
+  --ui-control-desktop: var(--ui-foundation-control-base);
   --ui-control-search: 42px;
-  /* Micro controls — chip dismissals and attachment badges. */
   --ui-control-xs: 24px;
   --ui-control-badge: 20px;
-  /* Semantic alias for "mobile tap target": same value as
-     --ui-control-touch but lets mobile-controls.css and buttons.css
-     read intent (touch hit area) rather than reusing a generic "touch"
-     slot — keeps the two knobs free to diverge later. */
   --ui-hit-area: 44px;
   --ui-sidebar-mobile: 254px;
   --ui-mobile-row: 40px;
@@ -75,24 +107,21 @@
   --ui-content-chat: calc(768px * var(--app-width-scale, 1));
   --ui-safe-bottom: max(16px, env(safe-area-inset-bottom, 0px));
 
-  /* Typography — sizes.
-     Each rung is the reference size at the default display step (M) and
-     scales with the user's text-size preference through --app-type-scale
-     (1 at M, <1 at S, >1 at L/XL). Without this the tokens were a dead
-     end — every surface on the scale stayed put while the transcript and
-     the landing greeting grew, so the preference only half applied. */
-  --ui-font-size-xxs: calc(0.75rem * var(--app-type-scale));
-  --ui-font-size-xs: calc(0.8125rem * var(--app-type-scale));
-  --ui-font-size-sm: calc(0.875rem * var(--app-type-scale));
-  --ui-font-size-md: calc(1rem * var(--app-type-scale));
-  --ui-font-size-lg: calc(1.125rem * var(--app-type-scale));
-  --ui-font-size-xl: calc(1.25rem * var(--app-type-scale));
-  --ui-font-size-xxl: calc(1.5rem * var(--app-type-scale));
+  /* Typography — Socrates product scale. Rungs that exactly match Lobe are
+     derived from foundation values; 13px/18px remain deliberate product
+     density steps. */
+  --ui-font-size-xxs: calc(var(--ui-foundation-font-size-sm) * var(--app-type-scale));
+  --ui-font-size-xs: calc(13px * var(--app-type-scale));
+  --ui-font-size-sm: calc(var(--ui-foundation-font-size-base) * var(--app-type-scale));
+  --ui-font-size-md: calc(var(--ui-foundation-font-size-lg) * var(--app-type-scale));
+  --ui-font-size-lg: calc(18px * var(--app-type-scale));
+  --ui-font-size-xl: calc(var(--ui-foundation-font-size-xl) * var(--app-type-scale));
+  --ui-font-size-xxl: calc(var(--ui-foundation-font-size-heading-3) * var(--app-type-scale));
 
   /* Typography — weights */
   --ui-font-weight-regular: 400;
   --ui-font-weight-medium: 500;
-  --ui-font-weight-semibold: 600;
+  --ui-font-weight-semibold: var(--ui-foundation-font-weight-strong);
   --ui-font-weight-bold: 700;
 
   /* Typography — line heights */
@@ -100,113 +129,69 @@
   --ui-line-height-normal: 1.5;
   --ui-line-height-relaxed: 1.7;
 
-  /* Breakpoints (documented; CSS @media is the consumer, not this
-     file — JS-side spacing/rhythm lookups read these via
+  /* Breakpoints (documented; CSS @media is the consumer, not this file —
+     JS-side spacing/rhythm lookups read the full Lobe ladder from
      src/ui/tokens.ts). */
 
-  /* Default easing curves — reused across transitions. */
+  /* Default easing curves — product motion plus explicit Lobe foundation
+     durations/easings above. */
   --ui-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ui-ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
   --ui-ease-spring-snappy: cubic-bezier(0.16, 1, 0.3, 1);
   --ui-ease-spring-bouncy: cubic-bezier(0.34, 1.3, 0.64, 1);
   --ui-ease-spring-gentle: cubic-bezier(0.25, 1, 0.5, 1);
-  /* Apple-style deceleration — iOS/macOS system curve: fast departure,
-     long gentle settle. Used for content reveals and page transitions
-     where motion should feel natural rather than mechanical. */
   --ui-ease-apple: cubic-bezier(0.25, 0.1, 0.25, 1);
-  /* Content entrance — a softer ease-out for prose, cards, and message
-     bubbles fading in. Less aggressive than --ui-ease-out so text
-     doesn't snap into place. */
   --ui-ease-content: cubic-bezier(0.22, 0.61, 0.36, 1);
   --ui-press-scale: 0.975;
   --ui-press-scale-sm: 0.96;
-  /* Micro-feedback — instant acknowledgement for hover/focus shifts that
-     must feel zero-latency (like Apple's button highlight). */
   --ui-duration-micro: 80ms;
   --ui-duration-fast: 140ms;
   --ui-duration-normal: 220ms;
-  /* chatgpt.com motion (docs/ref/chatgpt-parity.md): colour feedback on
-     hover is ~100ms; menus and dialogs fade + scale over 160ms. */
-  --ui-duration-hover: 100ms;
+  --ui-duration-hover: var(--ui-foundation-duration-fast);
   --ui-duration-overlay: 160ms;
   --ui-ease-standard: ease;
   --ui-overlay-enter-scale: 0.98;
-  /* Pulse rhythm — one cadence for all breathing indicators (cursor,
-     status dots, skeletons) so the app never shows two competing tempos.
-     Spin keeps its own faster lane for progress rings. */
   --ui-duration-pulse: 1200ms;
   --ui-duration-pulse-slow: 1600ms;
   --ui-duration-spin: 900ms;
-  /* Steady activity wave: slow enough to read as "working", not "flashing".
-     Linear motion + a seamless loop (see polish/motion.css) keep the tempo
-     constant so the label feels stable. */
   --ui-duration-shimmer: 3000ms;
 
-  /* Wave loader (styles/components/wave.css + react/wave/Wave.tsx).
-     A left-to-right band of bars whose lit column travels across the row and
-     wraps, so "work is happening" reads as motion rather than as a frozen
-     skeleton. The cadence sits on the pulse lane (not the faster spin lane)
-     so a wave never competes with the stream cursor for the same tempo. */
+  /* Wave loader (styles/components/wave.css + react/wave/Wave.tsx). */
   --ui-wave-duration: 1400ms;
   --ui-wave-bar-count: 5;
   --ui-wave-bar-width: 3px;
   --ui-wave-bar-gap: 3px;
-  /* Height of the tallest bar; shorter bars scale off this. */
   --ui-wave-bar-height: 14px;
-  /* Lit-column keyframe: dim → mid → lit → mid → dim. */
   --ui-wave-step: 0%;
 
-  /* Press feedback (styles/polish/press.css + ui/pressFeedback.js). Every
-     control keeps fixed geometry and acknowledges a press through paint
-     only; compact icon controls dim slightly further than wide buttons so
-     their small surface still reads. `--ui-press-opacity*` are consumed by
-     press.css — renaming or dropping them here silently removes press
-     feedback app-wide without breaking any geometry test. */
+  /* Press feedback. */
   --ui-press-opacity: 0.82;
   --ui-press-opacity-sm: 0.72;
-  /* Row-style controls (menus, lists) acknowledge a press with a tint
-     instead of dimming the whole row. */
   --ui-press-tint: color-mix(in srgb, var(--ui-bg-hover), var(--ui-text-primary) 8%);
 
-  /* chatgpt.com type scale: 14px UI chrome, 16px/28px transcript and
-     composer, 24px/28px landing greeting. Like the --ui-font-size-* rungs
-     these track the text-size preference via --app-type-scale. */
-  --ui-text-ui: calc(14px * var(--app-type-scale));
+  /* Product text roles. */
+  --ui-text-ui: calc(var(--ui-foundation-font-size-base) * var(--app-type-scale));
   --ui-text-ui-line: calc(20px * var(--app-type-scale));
-  --ui-text-body: calc(16px * var(--app-type-scale));
+  --ui-text-body: calc(var(--ui-foundation-font-size-lg) * var(--app-type-scale));
   --ui-text-body-line: calc(28px * var(--app-type-scale));
-  --ui-text-hero: calc(24px * var(--app-type-scale));
-  /* 1 at the default display step (M = --app-font-scale 1.125), so the
-     default renders the reference sizes and S/L/XL scale around them. */
+  --ui-text-hero: calc(var(--ui-foundation-font-size-heading-3) * var(--app-type-scale));
   --app-type-scale: calc(var(--app-font-scale, 1.125) / 1.125);
 
   /* Layering */
   --ui-z-header: 20;
-  /* Persistent chrome that sits above the header but below any overlay:
-     the sidebar column, and the anchored dropdown menus it and the content
-     toolbars open. */
   --ui-z-panel: 30;
   --ui-z-menu: 40;
   --ui-z-backdrop: 80;
   --ui-z-drawer: 90;
   --ui-z-popover: 200;
   --ui-z-modal: 400;
-  /* A full-screen sheet launched from a tool card must cover a modal
-     (--ui-z-modal) and the modal+10 bump, so it keeps its own top rung. */
   --ui-z-sheet: 1600;
 
-  /* Standard border alpha so component CSS can blend the
-     `--ui-border-*` token with a single, consistent opacity. */
   --ui-border-alpha: 0.25;
 }
 
 /* Phone drawer overrides: the drawer tracks ~65vw (capped at 280px), keeping
-   the main pane visible as in the user's 2026-10-18 phone reference.
-   Declared here because tokens.css is the single owner of the `--ui-*`
-   namespace — the css-debt theme-ownership guard rejects palette
-   re-declarations from the polish layer. Every consumer of
-   --ui-sidebar-mobile already sits inside a max-width: 768px query, so the
-   base 254px value never reaches a phone viewport. */
+   the main pane visible as in the user's 2026-10-18 phone reference. */
 @media (max-width: 768px) {
   :root {
     --ui-sidebar-mobile: min(280px, 65vw);
