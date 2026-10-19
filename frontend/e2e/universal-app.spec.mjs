@@ -237,7 +237,15 @@ test('universal app manages projects and sessions end to end', async ({ page }) 
   await expect(page.getByRole('button', { name: 'Attach a file' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Take a photo' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Add photos and files' }).click();
-  await expect(page.getByRole('button', { name: 'Start voice input' })).toBeVisible();
+  // With an empty draft the primary action also starts voice input. Prepare
+  // a draft so we can check the dedicated mic alongside the send action.
+  const composer = page.getByLabel('Ask Socrates', { exact: true });
+  await composer.fill('Voice input remains available with a draft');
+  await expect(page.getByRole('button', { name: 'Send message', exact: true })).toBeVisible();
+  const microphone = page.getByRole('button', { name: 'Start voice input', exact: true });
+  await expect(microphone).toHaveCount(1);
+  await expect(microphone).toBeVisible();
+  await composer.fill('');
 
   // Delete HW 1 from the session menu (two-tap confirm purges everywhere).
   await selectRow('HW 1');

@@ -2,6 +2,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import app from '../src/app.js';
+import { shutdownPubsub } from '../src/lib/pubsub.js';
 
 const token = 'unit-test-internal-metrics-token-with-enough-entropy';
 let server;
@@ -15,6 +16,8 @@ before(async () => {
 after(async () => {
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   delete process.env.INTERNAL_METRICS_TOKEN;
+  // app imports pubsub, whose dedicated PG listener keeps the process alive.
+  await shutdownPubsub();
 });
 
 async function get(path, authorization) {

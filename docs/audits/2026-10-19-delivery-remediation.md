@@ -283,3 +283,42 @@ HEAD 与当前 `sendPipeline.ts:62–76` 都规定：流式回合进行中且没
 - 正式证据：`/tmp/socrates-animation-review/regression.log`、`regression-results.json` 和 `regression-results/` 的两份失败 trace；构建和单测日志分别为 `build.log`、`unit.log`。正式复核使用仓库外 `review.config.mjs`，只调整服务端口与产物输出；测试使用原仓库 specs、原 timeout / retries / trace 设置和单 worker。诊断副本没有进入正式回归集合。
 
 **最终结论：不做没有根因证据的产品改动，保留两项阻塞。** 本轮仅更新整改记录；没有更改任何产品源码或仓库测试断言。已用开始时的已跟踪 diff 作逐文件比较、核对工作区路径清单和关键源码校验和，前批已跟踪改动逐字保留，所有原有工作区路径保持相同修改/删除/未跟踪状态，暂存区为空。HEAD 仍为 `526bc59c86e8e01548ef8185df45d2bbcaa875ab`，未提交、推送、部署或改动远端规则。`git diff --check` 通过。
+
+## 继续归因：刷新受软件合成链路约束，尚无可安全落地的产品修复
+
+本轮从已推送的 `07bf68363901499910566bfe80ab93f3f1f3fc2d` 和干净工作区开始。没有修改产品源码、原仓库 specs、动画参数或门禁；没有提交、推送。取证副本、Chromium Performance trace 及分析脚本均在 `/tmp/socrates-perf-review/`，不进入正式测试集合。
+
+### 主线程不足以解释所有 33ms 间隔
+
+保持原 `retain-on-failure` Playwright trace、60 秒 timeout、零 retries、单 worker 和真实发送/自然出队路径，在仓库外副本增加 Chromium timeline、渲染分类及采样耗时记录。第一轮 idle / streaming 仍以 **7 / 6** 个合格中间帧失败，轨迹均单调落在 12px；随后两轮细分渲染采集分别是 **8 / 8**（两项通过）及 **7 / 8**（idle 失败）。插桩运行有额外负载，不能替代原始 specs 的正式门禁，也不能从一次两项通过宣称恢复。
+
+失败的第一轮动画观测区间内，renderer main thread 最大单任务约 **13.6 / 13.8ms**；Layout 单事件最大约 **0.66 / 0.39ms**，没有出现贯穿整个 33ms 间隔的 JS 长任务。确实存在一次约 **8.3 / 8.1ms** 的样式计算，发生在 scroll handler 读取 `scrollTop` 时，不应假装应用工作量为零。但另一些 33.3ms RAF 间隔中，主线程两次实际回调间仅忙碌约 **3.7 / 2.8ms**；因此不能把全部刷新缺失归因于 React commit 或强制布局。
+
+同一失败窗口里，`VizCompositorThread` 的 display deadline 任务连续耗时约 **17–20ms**。增加 `viz/gpu/skia` 分类后，已确认运行的是 **SoftwareRenderer**：主要成本位于 `Display::DrawAndSwap → DirectRenderer::DrawFrame → SoftwareRenderer::DoDrawQuad`，不是仅凭进程名字猜测。细分运行的单次 DrawFrame 中位数约 **14.6–16.1ms**，已逼近 60Hz 的 16.7ms 预算；每个被采集帧另可见约 **3.7–3.9ms** 的 `ImageOperations::Resize`，源图 **1,024,000 pixels（1280×800）**、目标图 **324,000 pixels**，与 trace 整页采集缩图链路一致。Resize 嵌套在 DrawFrame 内，不能再次与 DrawFrame 总时长相加。原失败轮未开启细分分类，故不能把后轮各子成本数字无条件外推到前轮。
+
+这将主要瓶颈从“来源完全未知的 RAF 缺口”收窄到了**本地软件合成/整帧采集的渲染节奏**；同时保留应用场景绘制复杂度和宿主速度的影响，尚不能声称全部只是 trace 噪声，也未定位到应改动的单一产品 CSS、React 或动画调度缺陷。没有为验证假说而关闭 trace、改变浏览器绘制后端或减轻正式采样负载。
+
+### 采样确有顺序延迟，但没有漏掉已执行的插值
+
+逐个关联 bundle 与原源码，而非只看函数名：生产 bundle 第 2 行第 **61378** 列的 `n` 是 `velocityScrollTo` 的 **scroll listener**（`scroll.js:212–215`），第 **61611** 列的 `m` 才是 **RAF 插值 tick**（`scroll.js:228–269`）。把前者当成插值会得出错误的采样顺序结论。
+
+实测测试 tick 在同一轮 RAF 中先于动画 tick 执行，通常相差零点几毫秒；因此当前采样读取的是上一轮写入的位置，而不是本轮稍后才写入的新位置。固定顺序本身不会丢失中间帧：测试继续到释放后 20 帧，下一次 tick 会读到该写入。把每个实际动画 RAF 的时间戳代回既有 **205ms / 670px / easeOutQuint**，与**下一次**采样的 offset 逐项对照，第一轮 idle / streaming 最大误差均 **0.494px 以下**，其他复核亦在整数舍入误差内。未见测试漏掉已经执行的中间插值；帧数减少对应实际 RAF 时间戳跨过刷新机会。
+
+没有更改采样几何读取路径；第一轮整次采样最大耗时约 **0.4 / 0.6ms**。`frames` 包括 prompt 尚未出现时的记录，不能与 `offsets` 混为一谈：第一轮分别为 **44/42** 和 **68/41** 条。启动准备发生在首个动画 tick 之前，而动画计时从首个 tick 的 RAF timestamp 开始，不能把 reserve/DOM mount 等待直接算成侵占 205ms 动画时长。
+
+### 保留边界与证据
+
+目前没有足够证据支持修改产品实现。仍保留至少 8 个中间帧、原单调性、位移和落点断言；不延长动画或 timeout，不 skip，不改门禁，也不把不稳定通过当成修复。若继续区分产品绘制成本与执行环境成本，需要同一 trace/测试条件下可比的硬件加速或其他执行宿主性能证据，或能归因到具体可见绘制节点的受控实验；不能在本轮凭软件合成成本直接删除视觉效果换绿。
+
+主要复现与取证文件：
+- `/tmp/socrates-perf-review-prepare.py`：从原 spec 生成仓库外副本；`/tmp/socrates-perf-review/performance.spec.mjs`、`perf.config.mjs` 为实际运行副本/配置（细分采集在副本额外开启 viz/gpu/skia 分类）。
+- `/tmp/socrates-perf-review/timeline-{idle,streaming}-trace.json` 及对应 `-samples.json`：第一轮失败的主线程/RAF 证据。
+- 同目录 `render-{idle,streaming}-trace.json`、`render-confirm-{idle,streaming}-trace.json` 与各自 samples：后两轮软件绘制细分证据。
+- 同目录 `analyze.py`、`correlate.py`、`timeline-summary.json`、`correlation-summary.json`、`sampling-order-proof.json`：事件占用、精确回调识别和曲线/下一帧采样对照。缺失 trace 分类的汇总成本为 0，表示未采集到该分类，不表示实际没有绘制。
+### 本轮正式回归结果
+
+在所有性能采集结束后，使用未插桩的原仓库八个 specs、原断言/timeout/retries/trace 和单 worker 完整串行执行 **61 项：59 通过、2 失败、0 跳过、0 flaky**，约 3.6 分钟，无 max-failures 提前停止。失败仍仅为桌面 full-transcript 的 idle / streaming 发送动画，两项均 **7 个**合格中间帧，未达原 `>=8`；两条轨迹仍单调到达 12px。其余七个 specs 全部通过。没有把诊断轮的通过替代本轮正式结果，也没有将本次结果外推为完整 SPA smoke 或远端 CI 状态。
+
+正式日志：`/tmp/socrates-perf-review/regression.log`；结构化结果：`/tmp/socrates-animation-review/perf-final-results.json`；原始失败 trace：`/tmp/socrates-animation-review/perf-final-results/`。本轮没有改产品源码，复用上轮已验证构建的同一生产产物，未重复声称本轮新做了 build 或 73 项单测。最终工作区仅本文新增内容，原 specs 与产品源码仍等于 HEAD；暂存区为空，HEAD 仍为 `07bf68363901499910566bfe80ab93f3f1f3fc2d`，没有提交、推送、部署或改动远端规则。
+
+**当前结论：软件合成及整帧采集的帧预算压力已有直接证据，采样漏读和动画曲线误写不受本轮证据支持；具体产品缺陷归因仍未闭环，不做猜测性修复，保留原两项门禁阻塞。**
