@@ -36,8 +36,7 @@ test('mobile conversation home matches the compact dark reference layout', async
       topicFontSize: parseFloat(getComputedStyle(document.querySelector('#composerRoot .rich-composer-editor')).fontSize),
       viewportHeight: window.innerHeight,
       /* .main is a transparent layout box; the painted surface is
-         .main-content (the shell's page colour). Dark mode uses a layered
-         charcoal canvas so the shell has depth without pure black. */
+         .main-content (the shell's canonical page colour). */
       background: getComputedStyle(document.querySelector('.main-content')).backgroundColor,
       pageToken: getComputedStyle(document.getElementById('appShell')).getPropertyValue('--ui-bg-page').trim(),
     };
@@ -63,9 +62,9 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.topicFontSize).toBeGreaterThanOrEqual(16);
   expect(geometry.topicFontSize).toBeLessThanOrEqual(18);
   expect(geometry.composer?.y).toBeGreaterThan(550);
-  /* The mobile canvas shares the charcoal page token with the desktop shell. */
-  expect(geometry.background).toBe('rgb(20, 20, 20)');
-  expect(geometry.pageToken).toBe('#141414');
+  /* The mobile canvas shares the Lobe-aligned page token with desktop. */
+  expect(geometry.background).toBe('rgb(0, 0, 0)');
+  expect(geometry.pageToken).toBe('#000000');
 
   /* P_greeting-mobile-center — the landing greeting must be visually
      centred horizontally on the viewport and sit just above the optical
