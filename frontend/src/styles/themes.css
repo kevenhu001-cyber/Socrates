@@ -64,15 +64,15 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
 
   /* Socrates product roles projected from the foundation. */
   --ui-avatar-bg: var(--ui-bg-control);
-  --ui-bg-composer: var(--ui-bg-raised);
+  --ui-bg-composer: #212121;
   --ui-bg-chip: var(--ui-bg-hover);
   --ui-bg-chip-hover: rgb(255 255 255 / 10%);
-  --ui-bg-bubble: var(--ui-bg-surface);
+  --ui-bg-bubble: #2a2a2a;
   --ui-bg-segment-active: var(--ui-bg-selected);
   --ui-shadow-popover: 0 17.5px 23.4px rgb(0 0 0 / 6%), 0 9.4px 12.5px rgb(0 0 0 / 5%), 0 5.25px 7px rgb(0 0 0 / 3%), 0 2.8px 3.7px -2px rgb(0 0 0 / 2%), 0 1.2px 1.5px rgb(0 0 0 / 2%);
   --ui-shadow-dialog: 0 40px 80px rgb(0 0 0 / 9%), 0 20px 40px rgb(0 0 0 / 8%), 0 10px 20px rgb(0 0 0 / 6%), 0 5px 10px rgb(0 0 0 / 5%), 0 2px 4px rgb(0 0 0 / 3%);
-  --ui-composer-border: var(--ui-border-default);
-  --ui-composer-shadow: none;
+  --ui-composer-border: rgb(255 255 255 / 15%);
+  --ui-composer-shadow: inset 0 0 1px rgb(255 255 255 / 20%);
   --ui-tool-chip-text: var(--ui-info);
   --ui-tool-chip-hover-bg: rgb(0 26 53);
   --ui-tool-chip-hover-text: rgb(156 218 255);
@@ -114,8 +114,8 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-text-primary: #1f1f1f;
   --ui-text-secondary: #666666;
   --ui-text-tertiary: #8a8a8a;
-  --ui-text-muted: var(--ui-text-tertiary);
-  --ui-text-placeholder: #b0b0b0;
+  --ui-text-muted: #727272;
+  --ui-text-placeholder: #8f8f8f;
   --ui-text-disabled: var(--ui-text-placeholder);
   --ui-sidebar-glyph: var(--ui-text-primary);
 
@@ -140,12 +140,12 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-bg-composer: var(--ui-bg-surface);
   --ui-bg-chip: var(--ui-bg-hover);
   --ui-bg-chip-hover: rgb(0 0 0 / 6%);
-  --ui-bg-bubble: var(--ui-bg-surface);
+  --ui-bg-bubble: #f4f4f4;
   --ui-bg-segment-active: var(--ui-bg-control);
   --ui-shadow-popover: 0 17.5px 23.4px rgb(0 0 0 / 4%), 0 9.4px 12.5px rgb(0 0 0 / 3%), 0 5.25px 7px rgb(0 0 0 / 2%), 0 2.8px 3.7px -2px rgb(0 0 0 / 1%), 0 1.2px 1.5px rgb(0 0 0 / 1%);
   --ui-shadow-dialog: 0 40px 80px rgb(0 0 0 / 9%), 0 20px 40px rgb(0 0 0 / 8%), 0 10px 20px rgb(0 0 0 / 6%), 0 5px 10px rgb(0 0 0 / 5%), 0 2px 4px rgb(0 0 0 / 3%);
-  --ui-composer-border: var(--ui-border-default);
-  --ui-composer-shadow: none;
+  --ui-composer-border: rgb(0 0 0 / 12%);
+  --ui-composer-shadow: 0 0 0 1px rgb(0 0 0 / 4%), 0 2px 8px rgb(0 0 0 / 4%), 0 12px 32px rgb(0 0 0 / 3%);
   --ui-tool-chip-text: var(--ui-link);
   --ui-tool-chip-hover-bg: rgb(237 244 255);
   --ui-tool-chip-hover-text: rgb(44 145 255);
@@ -256,7 +256,7 @@ html[data-theme="socrates"][data-mode="light"] {
   --conversation-control-hover: color-mix(in srgb, var(--ui-bg-control), var(--ui-text-primary) 8%);
   --conversation-border: var(--ui-border-default);
   --conversation-text: var(--ui-text-primary);
-  --conversation-text-muted: var(--ui-text-tertiary);
+  --conversation-text-muted: var(--ui-text-muted);
   --conversation-user: var(--ui-bg-bubble);
 }
 
@@ -291,8 +291,8 @@ html[data-theme="socrates"][data-mode="light"] {
   --text-200: 0 0% 40%;
   --text-300: 0 0% 54%;
   --text-350: 0 0% 54%;
-  --text-400: 0 0% 60%;
-  --text-500: 0 0% 69%;
+  --text-400: 0 0% 43%;
+  --text-500: 0 0% 45%;
   --border-100: 0 0% 93%;
   --border-200: 0 0% 89%;
   --border-300: 0 0% 87%;

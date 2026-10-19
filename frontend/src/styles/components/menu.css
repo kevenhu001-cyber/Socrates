@@ -16,7 +16,7 @@ body #composerToolsMenu.composer-tools-menu {
   width: 236px;
   min-width: 236px;
   max-width: calc(100vw - 24px);
-  max-height: min(44dvh, 336px);
+  max-height: min(75dvh, 520px);
   overflow-y: auto;
   overscroll-behavior: contain;
   /* One popover shape for every floating surface: 12px, the value

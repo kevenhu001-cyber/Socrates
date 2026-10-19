@@ -436,17 +436,19 @@
 
 #appShell .workspace-dialog,
 #appShell .modal-overlay,
-#appShell .cmd-k-overlay { background: var(--ui-backdrop); }
+#appShell .cmd-k-overlay,
+.cmd-k-overlay { background: var(--ui-backdrop); }
 
 /* .workspace-dialog-card's chrome is pinned by chatgpt-ui's !important
    rule (border/radius/dialog bg/shadow) — it still takes color above. */
 #appShell .modal,
 #appShell .modal-card,
-#appShell .cmd-k-modal {
+#appShell .cmd-k-modal,
+.cmd-k-modal {
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-2xl);
   background: var(--ui-bg-overlay);
-  box-shadow: var(--ui-shadow-popover);
+  box-shadow: var(--ui-shadow-dialog);
 }
 
 #appShell .visualization-card {

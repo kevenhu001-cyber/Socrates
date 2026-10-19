@@ -62,7 +62,9 @@ test('light conversation home has a neutral readable palette and balanced compos
   expect(geometry.composer?.bottom ?? 960).toBeLessThan(960 * 0.64);
   await expect(page.locator('.home-ideas, .chat-suggestions, #topicQuickActions')).toHaveCount(0);
   expect(luminance(geometry.pageBackground)).toBeGreaterThan(0.88);
-  expect(luminance(geometry.sidebarBackground)).toBeLessThan(luminance(geometry.pageBackground));
+  /* The Lobe-aligned page and slightly brighter container sidebar are adjacent
+     neutral foundation steps separated by a hairline. */
+  expect(luminance(geometry.sidebarBackground)).toBeGreaterThanOrEqual(luminance(geometry.pageBackground));
   expect(luminance(geometry.composerBackground)).toBeGreaterThanOrEqual(luminance(geometry.pageBackground));
   expect(contrast(geometry.titleColor, geometry.pageBackground)).toBeGreaterThan(10);
 

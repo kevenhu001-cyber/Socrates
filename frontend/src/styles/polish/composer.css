@@ -138,6 +138,7 @@ body #composerToolsMenu .composer-tools-item kbd {
 
 /* Under-composer disclaimer: quiet centered microcopy. */
 #appShell .disclaimer {
+  color: var(--ui-text-muted);
   font-size: var(--ui-font-size-xxs);
   letter-spacing: 0;
 }
