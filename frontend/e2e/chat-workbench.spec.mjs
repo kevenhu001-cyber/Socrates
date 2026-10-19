@@ -49,10 +49,10 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
   expect(contract.page).not.toBe('');
   expect(contract.surface).not.toBe('');
   expect(contract.mainBackgroundImage).toBe('none');
-  /* The charcoal page and slightly brighter reference sidebar are adjacent
-     neutral steps separated by a hairline. */
-  expect(contract.pageBackground).toBe('rgb(20, 20, 20)');
-  expect(contract.sidebarBackground).toBe('rgb(30, 30, 30)');
+  /* The Lobe-aligned page and slightly brighter sidebar are adjacent
+     neutral foundation steps separated by a hairline. */
+  expect(contract.pageBackground).toBe('rgb(0, 0, 0)');
+  expect(contract.sidebarBackground).toBe('rgb(13, 13, 13)');
   expect(contract.sidebarBorder).not.toBe('0px');
   expect(contract.topbarHeight).toBeGreaterThanOrEqual(50);
 
