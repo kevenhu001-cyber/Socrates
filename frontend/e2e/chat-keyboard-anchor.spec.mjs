@@ -17,6 +17,7 @@ import { test } from './_lib.mjs';
 import { expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
+import { readHistory } from './_history-reader.mjs';
 
 /* Install a controllable visual viewport before the bundle loads. The app
    shims must not use the real browser property, so every module that
@@ -58,6 +59,9 @@ function installFakeVisualViewport(page) {
 }
 
 async function seedChat(page, count = 40) {
+  const expectedRows = Array.from({ length: count }, (_, i) => (
+    `History ${i + 1}: ${'content '.repeat(8)}`
+  ));
   await page.evaluate((n) => {
     window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
     window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '99999999-9999-4999-8999-999999999999' });
@@ -68,7 +72,7 @@ async function seedChat(page, count = 40) {
       window.addMessage(i % 2 ? 'assistant' : 'user', `History ${i + 1}: ${'content '.repeat(8)}`);
     }
   }, count);
-  await expect(page.locator('#msgList .msg')).toHaveCount(count);
+  await readHistory(page, expectedRows);
   await page.waitForTimeout(250);
 }
 

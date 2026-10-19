@@ -112,6 +112,6 @@ for (const theme of ['dark', 'light']) {
     await expect(page.getByRole('heading', { name: 'How can I help you learn today?' })).toBeVisible();
     await expect(page.getByLabel('Ask Socrates', { exact: true })).toBeInViewport();
     await page.evaluate(() => document.fonts.ready);
-    await page.screenshot({ path: `test-results/universal-landing-${theme}-${encodeURIComponent(testInfo.project.name)}.png` });
+    await page.screenshot({ path: `test-results/universal-landing-${encodeURIComponent(theme)}-${encodeURIComponent(testInfo.project.name)}.png` });
   });
 }

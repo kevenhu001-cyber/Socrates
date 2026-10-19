@@ -56,7 +56,10 @@ async function prepareDelayedStream(page, options = {}) {
       const text = `Earlier message ${i}: ${'context '.repeat(12)}`;
       earlier.push({ clientId: 'pre-' + i, role: 'assistant', rawText: text, html: `<p>${text}</p>`, type: null });
     }
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-stream', role: 'user', rawText: 'Stream smoothly', html: null }, ...earlier] });
+    /* History precedes the current prompt, as it does in a real transcript.
+       The initial progressive window must include the submitted user row so
+       the product (not the fixture) can establish the send-time anchor. */
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [...earlier, { clientId: 'user-stream', role: 'user', rawText: 'Stream smoothly', html: null }] });
     window.__testActivateMainView('chatView');
 
     const list = document.getElementById('msgList');
@@ -163,11 +166,21 @@ test('streaming respects an intentional scroll-away', async ({ page }) => {
   const bubble = page.locator('.msg.assistant').last();
   await expect(bubble.locator('.tool-run-prose.is-live')).toContainText('keeps growing');
 
-  await page.evaluate(() => {
-    const list = document.getElementById('msgList');
-    list.scrollTop = 0;
-    list.dispatchEvent(new Event('scroll', { bubbles: true }));
-  });
+  const list = page.locator('#msgList');
+  await list.hover();
+  await expect.poll(async () => {
+    const position = await list.evaluate((node) => ({
+      top: node.scrollTop,
+      first: node.querySelector(':scope > .msg')?.dataset.clientId,
+    }));
+    /* Native wheel intent cancels a running follow animation. Keep reading
+       older chunks until this is the real transcript top, not window top. */
+    if (position.first !== 'pre-0' || position.top >= 8) {
+      await page.mouse.wheel(0, -10000);
+      return false;
+    }
+    return true;
+  }).toBe(true);
   await expect.poll(() => page.evaluate(() => window.stateStore.read("_userScrolledAway"))).toBe(true);
   await expect(bubble.locator('.tool-run-prose.is-live')).toContainText('pinned scrolling behavior');
   expect(await page.evaluate(() => document.getElementById('msgList').scrollTop)).toBeLessThan(8);

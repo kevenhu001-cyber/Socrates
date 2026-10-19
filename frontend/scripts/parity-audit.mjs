@@ -16,6 +16,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { mockAuthedApp, waitForAppShell } from '../e2e/_mock-api.mjs';
 import { gotoAndSettle } from '../e2e/_lib.mjs';
+import { writeValidatedBaseline } from './parity-baseline.mjs';
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => {
   const [k, v] = a.replace(/^--/, '').split('=');
@@ -411,21 +412,19 @@ if (args.update || args.check) {
 
   if (args.update) {
     const unresolved = findUnresolvedRoles(gated, written);
-    if (unresolved.length) {
-      console.error('refusing to write a baseline with roles that never resolved:');
-      for (const u of unresolved) console.error(`  ${u.role} → "${u.selector}" resolved in ${u.resolvedIn}`);
-      console.error('  fix the selector in SOCRATES_ROLES before baselining.');
+    try {
+      writeValidatedBaseline(BASELINE_PATH, {
+        scenarios: gated,
+        defects: writtenDefects,
+        unresolved,
+        partial: Boolean(args.quick || args.only),
+        tolerancePx: GEOM_TOLERANCE_PX,
+      });
+      console.log(`parity baseline written: ${BASELINE_PATH}`);
+    } catch (error) {
+      console.error(error.message);
       exitCode = 1;
     }
-    writeFileSync(BASELINE_PATH, JSON.stringify({
-      note: 'Committed visual baseline for scripts/parity-audit.mjs --check. ' +
-            'Only stable fields are recorded (no x/y). Regenerate with ' +
-            '`npm run parity:update` and review the diff.',
-      tolerancePx: GEOM_TOLERANCE_PX,
-      generatedBy: 'parity-audit.mjs --update',
-      scenarios: gated,
-    }, null, 1) + '\n');
-    console.log(`parity baseline written: ${BASELINE_PATH}`);
   }
 
   if (args.check) {

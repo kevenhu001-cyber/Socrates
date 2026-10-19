@@ -91,6 +91,52 @@ tags:
     description: Model Context Protocol (MCP) Streamable HTTP discovery and documentation surfaces
 
 paths:
+  /api/_internal/metrics:
+    x-internal: true
+    get:
+      x-internal: true
+      summary: Operator-only process and rolling request diagnostics
+      description: |
+        Disabled (404) unless INTERNAL_METRICS_TOKEN contains at least 32 bytes.
+        Requires that dedicated server-side Bearer credential, not a user token.
+        The /api/v2/_internal/metrics alias has identical behavior. Scrapes are
+        excluded from request sampling and telemetry. Not a Prometheus endpoint.
+      security:
+        - InternalMetricsBearer: []
+      responses:
+        '200':
+          description: Process-local diagnostics; response must not be cached
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [uptimeSeconds, process, requests, activeSseConnections]
+                properties:
+                  uptimeSeconds: { type: number }
+                  activeSseConnections: { type: number, minimum: 0 }
+                  process:
+                    type: object
+                    properties:
+                      pid: { type: integer }
+                      memory:
+                        type: object
+                        properties:
+                          rssBytes: { type: number }
+                          heapTotalBytes: { type: number }
+                          heapUsedBytes: { type: number }
+                          externalBytes: { type: number }
+                          arrayBuffersBytes: { type: number }
+                  requests:
+                    type: object
+                    properties:
+                      avgResponseMs: { type: [number, 'null'] }
+                      successRate: { type: [number, 'null'] }
+        '401':
+          description: Missing or malformed Bearer credential
+        '403':
+          description: Incorrect operator credential
+        '404':
+          description: Metrics disabled or token configuration too short
   /api/health:
     get:
       summary: Health check and database connectivity probe
@@ -4313,6 +4359,10 @@ paths:
 
 components:
   securitySchemes:
+    InternalMetricsBearer:
+      type: http
+      scheme: bearer
+      description: Dedicated high-entropy server-side INTERNAL_METRICS_TOKEN
     cookieAuth:
       type: apiKey
       in: cookie

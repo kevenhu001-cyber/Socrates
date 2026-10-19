@@ -35,6 +35,8 @@ server {
 }
 NGINX
   printf 'active\n' > "$base/systemctl.state"
+  git -C "$base" init -q
+  git -C "$base" -c user.name=Fixture -c user.email=fixture@example.test commit --allow-empty -qm fixture
   : > "$base/systemctl.log"
 
   tr -d '\r' < "$ROOT/deploy.sh" > "$base/deploy.sh"
@@ -96,6 +98,20 @@ case "${1:-}" in
     ;;
   show) printf '4242\n' ;;
   *) exit 0 ;;
+esac
+SH
+
+  cat > "$base/bin/gh" <<'SH'
+#!/usr/bin/env bash
+if [[ "${MOCK_GH_ERROR:-0}" == "1" ]]; then
+  echo 'mock API unavailable' >&2
+  exit 1
+fi
+case "${MOCK_GH_RESULT:-success}" in
+  success) printf 'success\n' ;;
+  failure) printf 'failure\n' ;;
+  missing) : ;;
+  *) printf '%s\n' "$MOCK_GH_RESULT" ;;
 esac
 SH
 
@@ -223,6 +239,73 @@ run_deploy() {
     "$base/deploy.sh"
 }
 
+# Exercise the real deploy.sh gate through its normal invocation. A skip is
+# auditable, green proceeds, while red/missing/API-error remain fail closed.
+ci_skip_base=$(make_fixture ci-skip)
+run_deploy "$ci_skip_base" DEPLOY_SKIP_CI_CHECK=1 >"$ci_skip_base/output.log" 2>&1
+grep -q 'ci.gate  SKIPPED by DEPLOY_SKIP_CI_CHECK=1' "$ci_skip_base/output.log"
+grep -q '"ciGate": "skipped-by-operator"' "$ci_skip_base/deploy-state.json"
+
+ci_success_base=$(make_fixture ci-success)
+run_deploy "$ci_success_base" >"$ci_success_base/output.log" 2>&1
+grep -q 'all required workflows green' "$ci_success_base/output.log"
+grep -q '"ciGate": "green"' "$ci_success_base/deploy-state.json"
+
+for ci_case in failure missing unverifiable cancelled in-progress unknown; do
+  ci_base=$(make_fixture "ci-$ci_case")
+  case "$ci_case" in
+    failure) ci_env=(MOCK_GH_RESULT=failure) ;;
+    missing) ci_env=(MOCK_GH_RESULT=missing) ;;
+    unverifiable) ci_env=(MOCK_GH_ERROR=1) ;;
+    cancelled) ci_env=(MOCK_GH_RESULT=cancelled) ;;
+    in-progress) ci_env=(MOCK_GH_RESULT=in_progress) ;;
+    unknown) ci_env=(MOCK_GH_RESULT=queued) ;;
+  esac
+  if run_deploy "$ci_base" "${ci_env[@]}" >"$ci_base/output.log" 2>&1; then
+    echo "CI gate $ci_case unexpectedly succeeded" >&2
+    exit 1
+  fi
+  case "$ci_case" in
+    failure|cancelled|in-progress|unknown) grep -q 'failing:.*CI(' "$ci_base/output.log" ;;
+    missing) grep -q 'no completed run for this commit:.*CI' "$ci_base/output.log" ;;
+    unverifiable) grep -q 'could not verify the merge gate' "$ci_base/output.log" ;;
+  esac
+done
+
+# Probe the actual gate function in a clean child shell so missing commands and
+# an invalid checkout can be tested without changing deploy's full-run fixture.
+ci_gate_source="$WORK/ci-gate.sh"
+{ echo 'REQUIRED_CI_WORKFLOWS="CI Security"'; awk '/^ci_gate_check\(\)/,/^}/' "$ROOT/deploy.sh"; } > "$ci_gate_source"
+mkdir -p "$WORK/only-git" "$WORK/only-gh" "$WORK/only-gh-bin"
+cat > "$WORK/only-gh-bin/git" <<'SH'
+#!/usr/bin/env bash
+if [[ "${1:-}" == "-C" && "${3:-}" == "rev-parse" ]]; then printf 'deadbeef12345678\n'; else exit 1; fi
+SH
+cat > "$WORK/only-gh-bin/gh" <<'SH'
+#!/usr/bin/env bash
+printf 'success\n'
+SH
+chmod +x "$WORK/only-gh-bin/"*
+for missing_case in gh git head; do
+  case "$missing_case" in
+    gh) test_path="$WORK/only-gh-bin"; rm -f "$test_path/gh" ;;
+    git) test_path="$WORK/only-gh-bin"; rm -f "$test_path/git" ;;
+    head) test_path="$WORK/only-gh-bin"; cat > "$test_path/git" <<'SH'
+#!/usr/bin/env bash
+exit 1
+SH
+      chmod +x "$test_path/git" ;;
+  esac
+  if env PATH="$test_path" /bin/bash -c 'source "$1"; DEPLOY_CI_GATE_STATUS=not-run; ci_gate_check /not/a/repo' _ "$ci_gate_source" >"$WORK/ci-$missing_case.log" 2>&1; then
+    echo "CI gate missing-$missing_case unexpectedly succeeded" >&2
+    exit 1
+  fi
+  case "$missing_case" in
+    head) grep -q 'refusing to deploy' "$WORK/ci-$missing_case.log" ;;
+    *) grep -q 'git and gh are required' "$WORK/ci-$missing_case.log" ;;
+  esac
+done
+
 success_base=$(make_fixture success)
 run_deploy "$success_base" >"$success_base/output.log"
 grep -q 'new backend' "$success_base/server/dist/index.runtime.js"
@@ -305,4 +388,4 @@ if run_deploy "$lock_base" MOCK_FLOCK_HELD=1 >"$lock_base/output.log" 2>&1; then
 fi
 grep -q 'another Socrates deploy is already in progress' "$lock_base/output.log"
 
-echo "deploy flow: success, lock contention, health gate, cleanup, and rollback passed"
+echo "deploy flow: CI gate skip/success/failure/missing/unverifiable, success, lock contention, health gate, cleanup, and rollback passed"

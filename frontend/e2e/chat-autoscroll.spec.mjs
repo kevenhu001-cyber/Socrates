@@ -71,7 +71,9 @@ async function bootStreamingChat(page) {
       const text = `Earlier message ${i}: ${'context '.repeat(12)}`;
       earlier.push({ clientId: 'pre-' + i, role: 'assistant', rawText: text, html: `<p>${text}</p>`, type: null });
     }
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-scroll', role: 'user', rawText: 'Scroll smoothly', html: null }, ...earlier] });
+    /* The submitted prompt belongs after its history. Putting it first leaves
+       it outside the initial tail window, so no send-time anchor can mount. */
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [...earlier, { clientId: 'user-scroll', role: 'user', rawText: 'Scroll smoothly', html: null }] });
     /* The renderer re-reads state.messages when the turn publishes its first
        event, so start the stream, then wait for the list to actually overflow
        before pinning — "at the bottom" is meaningless while nothing scrolls. */
@@ -243,6 +245,16 @@ async function bootSendableChat(page) {
       window.addMessage(i % 2 ? 'assistant' : 'user', `Anchor history ${i + 1}: ${'context '.repeat(12)}`);
     }
   });
+  /* History is progressively mounted, not eagerly rendered in full. Read
+     upward through the real scroll surface before requiring all 30 rows.
+     This also guards against the 13–60-row expansion regression. */
+  await page.locator('#msgList .msg').last().scrollIntoViewIfNeeded();
+  await page.locator('#msgList').hover();
+  await expect.poll(async () => {
+    const count = await page.locator('#msgList .msg').count();
+    if (count !== 30) await page.mouse.wheel(0, -2000);
+    return count;
+  }).toBe(30);
   await expect(page.locator('#msgList .msg')).toHaveCount(30);
   await page.evaluate(() => {
     const list = document.getElementById('msgList');
@@ -330,11 +342,20 @@ test('sticky bottom resumes once the answer outgrows the prompt reserve', async 
      (sticky bottom) even though the prompt-anchor row is still mounted. */
   await page.evaluate(() => window.__pushDelta('Long streamed content keeps arriving. '.repeat(140)));
   await expect.poll(() => distanceFromBottom(page)).toBeLessThanOrEqual(4);
+  /* The playback clock can still have most of this delta buffered at the
+     first bottom sample. Require the entire live answer to be visible, then
+     check again: a transient pin must not hide a lost final resize delivery. */
+  await expect(page.locator('#msgList .tool-run-prose.is-live')).toHaveText('Long streamed content keeps arriving. '.repeat(140).trim());
+  await expect.poll(() => page.evaluate(() => {
+    const row = document.querySelector('#msgList .msg.assistant.turn-viewport-anchor');
+    return Boolean(row && row.getBoundingClientRect().height > parseFloat(row.style.minHeight) + 1);
+  })).toBe(true);
+  await expect.poll(() => distanceFromBottom(page)).toBeLessThanOrEqual(4);
   expect(await page.evaluate(() => window.stateStore.read("_userScrolledAway"))).toBe(false);
   const tailVisible = await page.evaluate(() => {
     const list = document.getElementById('msgList');
     const live = list.querySelector('.tool-run-prose.is-live');
-    if (!live) return true;
+    if (!live) return false;
     return live.getBoundingClientRect().bottom <= list.getBoundingClientRect().bottom + 1;
   });
   expect(tailVisible).toBe(true);

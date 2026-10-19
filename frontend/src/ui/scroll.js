@@ -325,6 +325,9 @@ export function initChatComposerReserve(options){
   var contentFrame=0;
   var pinSlack=96;
   var lastMetrics=null;
+  /* Scroll events may arrive after layout growth but before its observer.
+     They must not consume the previous message-height measurement. */
+  var contentMetrics=null;
   var lastPinned=false;
   var composerFollowFrame=0;
   var composerFollowUntil=0;
@@ -524,64 +527,70 @@ export function initChatComposerReserve(options){
   function scheduleContentFollow(baselineOverride){
     if(contentFrame||!list)return;
     /* The mutation fallback passes the baseline captured BEFORE the DOM
-       change; the ResizeObserver path uses the current baseline. */
-    var previous=baselineOverride||lastMetrics;
-    var current=readMetrics();
-    /* The list-level baseline can hold a transient mid-commit height that
-       settled with no observer replay (batched React commits, the
-       scrollbar-gutter reflow shortening every message, a font swap). A
-       stale-high baseline masks real growth: grew and the pre-growth pin
-       check both compute against a bottom that no longer exists. When the
-       same message element persists between samples, undo just its own
-       height delta — an append to it never moves scrollTop, so this
-       reconstructs the true pre-growth bottom exactly. */
-    var sameMessage=!!(previous&&current&&previous.msg&&
-      previous.msg===current.msg&&
-      previous.msgHeight!=null&&current.msgHeight!=null);
-    var growth=sameMessage?current.msgHeight-previous.msgHeight:null;
-    var grew=!!current&&(growth!=null
-      ?growth>1
-      :(!!previous&&current.scrollHeight>previous.scrollHeight+1));
-    /* ResizeObserver fires after layout. Compare the current scrollTop with
-       the PREVIOUS scrollHeight to recover whether the reader was pinned
-       before the latest message grew. This also handles a scrollTop write and
-       a rich-content resize occurring in the same task, before the browser
-       dispatches the scroll event. */
-    var beforeGrowth=previous&&list?{
-      scrollHeight:growth!=null?current.scrollHeight-growth:previous.scrollHeight,
-      scrollTop:list.scrollTop,
-      clientHeight:previous.clientHeight
-    }:null;
-    /* Retry positioning intentionally keeps the replacement at the failed
-       answer's visible offset. Its dedicated viewport anchor owns scrolling;
-       snapping it to the bottom here would erase that position. */
-    var retryOwnsViewport=!!(lastMessage&&
-      lastMessage.getAttribute("data-viewport-anchor")==="retry");
-    /* A fresh send owns the scroll while its anchor is still gliding and
-       converging (chat/turnAnchor.ts). Once that window closes, growth that
-       pushes the answer past the reserved room follows the tail again when
-       the reader is still pinned — the prompt-anchor itself does not block
-       sticky-bottom. The hold window (the post-settle ResizeObserver guard
-       that keeps the prompt at the top offset while the answer grows in
-       its reserve) likewise blocks follow: hold writes scrollTop instantly
-       and any concurrent content-follow tween would race against it. */
-    var turnAnchorSettling=!!(list&&list.dataset&&list.dataset.turnAnchorSettling==="true");
-    var turnAnchorHold=!!(list&&list.dataset&&list.dataset.turnAnchorHold==="true");
-    var shouldFollow=grew&&!retryOwnsViewport&&!turnAnchorSettling&&!turnAnchorHold&&wasPinned(beforeGrowth);
+       change; neither path uses a baseline advanced by scroll events. */
+    var previous=baselineOverride||contentMetrics||lastMetrics;
     contentFrame=requestAnimationFrame(function(){
       contentFrame=0;
+      /* Read at execution, not notification: more growth may be coalesced into
+         this frame, including the final resize of a streamed answer. */
+      var current=readMetrics();
+      /* The list-level baseline can hold a transient mid-commit height that
+         settled with no observer replay (batched React commits, the
+         scrollbar-gutter reflow shortening every message, a font swap). A
+         stale-high baseline masks real growth: grew and the pre-growth pin
+         check both compute against a bottom that no longer exists. When the
+         same message element persists between samples, undo just its own
+         height delta — an append to it never moves scrollTop, so this
+         reconstructs the true pre-growth bottom exactly. */
+      var sameMessage=!!(previous&&current&&previous.msg&&
+        previous.msg===current.msg&&
+        previous.msgHeight!=null&&current.msgHeight!=null);
+      var growth=sameMessage?current.msgHeight-previous.msgHeight:null;
+      var grew=!!current&&(growth!=null
+        ?growth>1
+        :(!!previous&&current.scrollHeight>previous.scrollHeight+1));
+      /* ResizeObserver fires after layout. Compare the current scrollTop with
+         the PREVIOUS scrollHeight to recover whether the reader was pinned
+         before the latest message grew. This also handles a scrollTop write and
+         a rich-content resize occurring in the same task, before the browser
+         dispatches the scroll event. */
+      var beforeGrowth=previous&&list?{
+        scrollHeight:growth!=null?current.scrollHeight-growth:previous.scrollHeight,
+        scrollTop:list.scrollTop,
+        clientHeight:previous.clientHeight
+      }:null;
+      /* Retry positioning intentionally keeps the replacement at the failed
+         answer's visible offset. Its dedicated viewport anchor owns scrolling;
+         snapping it to the bottom here would erase that position. */
+      var retryOwnsViewport=!!(lastMessage&&
+        lastMessage.getAttribute("data-viewport-anchor")==="retry");
+      /* A fresh send owns the scroll while its anchor is still gliding and
+         converging (chat/turnAnchor.ts). Once that window closes, growth that
+         pushes the answer past the reserved room follows the tail again when
+         the reader is still pinned — the prompt-anchor itself does not block
+         sticky-bottom. The hold window (the post-settle ResizeObserver guard
+         that keeps the prompt at the top offset while the answer grows in
+         its reserve) likewise blocks follow: hold writes scrollTop instantly
+         and any concurrent content-follow tween would race against it. */
+      var turnAnchorSettling=!!(list&&list.dataset&&list.dataset.turnAnchorSettling==="true");
+      var turnAnchorHold=!!(list&&list.dataset&&list.dataset.turnAnchorHold==="true");
+      var shouldFollow=grew&&!retryOwnsViewport&&!turnAnchorSettling&&!turnAnchorHold&&wasPinned(beforeGrowth);
       if(shouldFollow&&!userScrolledAway()){
         /* Keep one bottom-follow animation active; its live target moves with
            streamed content instead of restarting the easing curve per update. */
         smoothScrollToBottom(list,{smooth:true,retarget:true});
       }
+      contentMetrics=current;
       rememberMetrics();
     });
   }
 
   var lastMessage=null;
   var messageResizeObserver=typeof ResizeObserver==="function"&&list
-    ?new ResizeObserver(scheduleContentFollow)
+    /* ResizeObserver passes entries, not our optional pre-mutation metrics.
+       Forwarding that array as baselineOverride silently disables the resize
+       growth check, leaving sticky-bottom dependent on mutation timing. */
+    ?new ResizeObserver(function(){scheduleContentFollow();})
     :null;
   /* P_content-follow-fallback — headless/backgrounded frames can delay
      ResizeObserver delivery on the last message. Watch the last message's
@@ -596,7 +605,7 @@ export function initChatComposerReserve(options){
      Send-time anchors are excluded inside scheduleContentFollow. */
   var messageSubtreeObserver=typeof MutationObserver==="function"
     ?new MutationObserver(function(){
-      var baselineBefore=lastMetrics;
+      var baselineBefore=contentMetrics||lastMetrics;
       if(!contentFrame){
         contentFrame=requestAnimationFrame(function(){
           /* Defer one more frame so send-time anchor positioning (which
@@ -617,6 +626,8 @@ export function initChatComposerReserve(options){
     if(next===lastMessage)return;
     messageResizeObserver.disconnect();
     lastMessage=next;
+    /* Appending/replacing a row is not in-message content growth. */
+    contentMetrics=readMetrics();
     if(lastMessage)messageResizeObserver.observe(lastMessage);
     if(messageSubtreeObserver){
       messageSubtreeObserver.disconnect();

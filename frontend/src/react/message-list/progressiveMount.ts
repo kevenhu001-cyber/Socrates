@@ -149,7 +149,9 @@ export function shiftMountWindow(
   direction: MountWindowDirection,
 ): MountWindowState {
   const resolved = resolveMountedRows(items, current);
-  if (resolved.full || items.length <= MAX_MOUNTED_ROWS) {
+  // The resident cap bounds growth; it must not prevent an initial 12-row
+  // window from revealing the rest of a 13–60-row transcript.
+  if (resolved.full) {
     return { floor: resolved.floor, ceiling: resolved.ceiling, full: resolved.full };
   }
 

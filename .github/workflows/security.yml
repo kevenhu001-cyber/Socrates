@@ -138,20 +138,7 @@ jobs:
 
       - name: Verify SBOM cache/generation output
         run: |
-          test -s sbom/frontend.cdx.json
-          test -s sbom/server.cdx.json
-          test -s sbom/apps-socrates.cdx.json
-          # A silently empty SBOM is worse than a failing one: assert each file
-          # actually carries a dependency graph, not just valid JSON.
-          for f in sbom/*.cdx.json; do
-            node -e '
-              const b = require(process.argv[1]);
-              const n = (b.components || []).length;
-              if (!b.metadata || !b.metadata.component) throw new Error(`no metadata.component in ${process.argv[1]}`);
-              if (n < 1) throw new Error(`no components in ${process.argv[1]}`);
-              console.log(`${process.argv[1]}: ${n} components`);
-            ' "$f"
-          done
+          node scripts/verify-sbom.mjs sbom
 
       - uses: actions/upload-artifact@v7
         with:

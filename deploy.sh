@@ -130,8 +130,8 @@ fi
 #                             recorded in .deploy-state.json so an audited
 #                             bypass is visible after the fact.
 #   --dry-run               — the whole dry-run path is unaffected.
-#   no git / no gh / no auth— cannot verify; warn loudly rather than block, so
-#                             an air-gapped host is never silently locked out.
+#   Missing git/gh or an unresolvable HEAD fails closed; only the explicit
+#                             operator override or dry-run bypasses this gate.
 # Treats "no run found for this commit" as a failure: an unpushed or
 # force-pushed commit has no gate result, which is exactly the case to catch.
 REQUIRED_CI_WORKFLOWS="${REQUIRED_CI_WORKFLOWS:-CI Security}"
@@ -148,17 +148,19 @@ ci_gate_check() {
     return 0
   fi
   if ! command -v git >/dev/null 2>&1 || ! command -v gh >/dev/null 2>&1; then
-    echo "  ci.gate  UNVERIFIED — git/gh unavailable on this host; deploy proceeding" >&2
-    DEPLOY_CI_GATE_STATUS="unverified-no-gh"
-    return 0
+    echo "ERROR: refusing to deploy — git and gh are required to verify the merge gate." >&2
+    echo "       Install the missing command(s), or set DEPLOY_SKIP_CI_CHECK=1 to override deliberately." >&2
+    DEPLOY_CI_GATE_STATUS="unverified-missing-git-or-gh"
+    return 1
   fi
 
   local commit
   commit=$(git -C "$source_dir" rev-parse HEAD 2>/dev/null || true)
   if [[ -z "$commit" ]]; then
-    echo "  ci.gate  UNVERIFIED — cannot resolve HEAD in $source_dir" >&2
-    DEPLOY_CI_GATE_STATUS="unverified-no-git"
-    return 0
+    echo "ERROR: refusing to deploy — cannot resolve HEAD in $source_dir; cannot verify the merge gate." >&2
+    echo "       Ensure this is a valid Git checkout, or set DEPLOY_SKIP_CI_CHECK=1 to override deliberately." >&2
+    DEPLOY_CI_GATE_STATUS="unverified-no-head"
+    return 1
   fi
 
   local short="${commit:0:8}"
@@ -175,7 +177,7 @@ ci_gate_check() {
     local status err rc
     err=$(mktemp)
     set +e
-    status=$(gh run list --workflow "$wf" --commit "$commit" --limit 1 \
+    status=$(cd "$source_dir" && gh run list --workflow "$wf" --commit "$commit" --limit 1 \
       --json conclusion -q '.[0].conclusion // empty' 2>"$err")
     rc=$?
     set -e

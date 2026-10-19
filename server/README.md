@@ -16,6 +16,20 @@ npm run test:strict # source tests with no force-exit; detects leaked handles
 npm start          # stable compatibility entry -> compiled runtime
 ```
 
+## Internal process metrics
+
+`GET /api/_internal/metrics` (also available as `/api/v2/_internal/metrics`)
+returns in-memory request aggregates, active SSE connections, process uptime,
+and Node.js memory figures. It is **disabled by default** (404). To enable it,
+configure `INTERNAL_METRICS_TOKEN` with a unique randomly generated secret of at
+least 32 bytes and keep it in the server's secret store; do not commit it or
+expose it in frontend configuration. Scrapes require
+`Authorization: Bearer <token>`. Missing credentials return 401 and invalid
+credentials return 403. The handler does not make access decisions from client
+IP or forwarded headers. Metrics scrapes are excluded from request aggregates
+and OTLP request metrics so monitoring does not contaminate observed business
+traffic. Disable access by unsetting the token and restarting the process.
+
 The test commands run each test file in its own process. Strict mode does not
 use Node's force-exit flag; worker-backed services close their pools explicitly
 so leaked handles remain observable.

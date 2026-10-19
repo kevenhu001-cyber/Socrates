@@ -14,6 +14,8 @@ import type { TurnRuntimeState } from './runtimeState.ts';
 /** What `capture()` froze so `settle()` can reapply it. */
 interface FinishViewportCapture {
   scroller: HTMLElement;
+  sessionId: string | null;
+  latestMessageId: string | null;
   scrolledAway: boolean;
   scrollTop: number;
   streamRowId: string | null;
@@ -113,6 +115,11 @@ export function createFinishViewport(state: TurnRuntimeState): FinishViewport {
         : (_fvInnerAnchor || _fvAnchor);
       _finishViewport = {
         scroller: list,
+        sessionId: stateStore.read('currentSessionId') as string | null,
+        latestMessageId: (() => {
+          const messages = stateStore.read('messages') as Array<{ clientId?: string }> | undefined;
+          return messages?.length ? messages[messages.length - 1].clientId || null : null;
+        })(),
         /* Freeze the reader-intent flag NOW: layout churn during the
            handoff fires scroll events that can flip the live flag
            without any user input. */
@@ -232,6 +239,13 @@ export function createFinishViewport(state: TurnRuntimeState): FinishViewport {
     let _fvFrames = 0;
     const _fvSettle = (): void => {
       if (_fvUserIntent) { _fvDetachIntent(); return; }
+      const _fvMessages = stateStore.read('messages') as Array<{ clientId?: string }> | undefined;
+      const _fvLatestId = _fvMessages?.length ? _fvMessages[_fvMessages.length - 1].clientId || null : null;
+      if (stateStore.read('currentSessionId') !== viewport.sessionId ||
+        _fvLatestId !== viewport.latestMessageId) {
+        _fvDetachIntent();
+        return;
+      }
       try { _fvApply(); } catch { /* frame apply failed */ }
       if (++_fvFrames < 30) { requestAnimationFrame(_fvSettle); }
       else { _fvDetachIntent(); }

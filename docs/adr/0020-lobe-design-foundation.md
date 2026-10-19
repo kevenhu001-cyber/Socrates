@@ -1,4 +1,4 @@
-# ADR 0017: Lobe-aligned design foundation
+# ADR 0020: Lobe-aligned design foundation
 
 - **Status:** Accepted
 - **Date:** 2026-10-18

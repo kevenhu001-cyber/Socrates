@@ -107,7 +107,8 @@ export async function startTracing(): Promise<void> {
         new HttpInstrumentation({
           ignoreIncomingRequestHook: (req) => {
             const url = req.url || '';
-            return url.startsWith('/api/health') || url.startsWith('/api/status');
+            return url.startsWith('/api/health') || url.startsWith('/api/status') ||
+              url.startsWith('/api/_internal/metrics') || url.startsWith('/api/v2/_internal/metrics');
           },
         }),
         new ExpressInstrumentation(),

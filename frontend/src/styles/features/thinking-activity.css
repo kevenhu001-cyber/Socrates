@@ -115,7 +115,7 @@
   margin-bottom: var(--ui-space-xs);
 }
 .thinking-accordion[data-answer-started="true"] .thinking-accordion-toggle {
-  min-height: var(--ui-control-xs, 28px);
+  min-height: var(--ui-control-sm);
   padding-block: 0;
   color: var(--ui-text-tertiary);
   font-size: var(--ui-font-size-xs);
@@ -299,7 +299,10 @@
 .turn-activity-list:empty { display: none; }
 
 @media (max-width: 768px) {
-  .thinking-accordion-toggle { min-height: var(--ui-control-touch); }
+  .thinking-accordion-toggle,
+  .thinking-accordion[data-answer-started="true"] .thinking-accordion-toggle {
+    min-height: var(--ui-control-touch);
+  }
 }
 
 .thinking-status-detail { color: var(--ui-text-tertiary); font-size: var(--ui-font-size-xxs); font-variant-numeric: tabular-nums; }

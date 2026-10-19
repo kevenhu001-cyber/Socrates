@@ -163,6 +163,7 @@ frontend/index.html.bak
 !frontend/public/logo.png
 !apps/socrates/assets/logo.png
 !frontend/e2e/composer-tools-visual-baseline.spec.mjs-snapshots/*.png
+!/docs/assets/parity-2026-10-19/*.png
 
 # ── Local Playwright debug probe scripts/artifacts ──
 frontend/debug/

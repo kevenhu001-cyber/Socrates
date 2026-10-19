@@ -16,11 +16,17 @@
     "test:unit": "npm --prefix server run test:unit && npm --prefix frontend run test:unit",
     "test:shared": "npm --prefix apps/socrates run test:shared",
     "verify": "npm run typecheck && npm run lint && npm run test:shared",
-    "lint:server-boundaries": "node server/scripts/check-service-boundaries.mjs"
+    "lint:server-boundaries": "node server/scripts/check-service-boundaries.mjs",
+    "openapi:generate": "node scripts/generate-site-openapi.mjs",
+    "openapi:check": "node scripts/generate-site-openapi.mjs --check",
+    "test:openapi": "node --test test/site-openapi.test.mjs"
   },
   "dependencies": {
     "@fontsource/plus-jakarta-sans": "^5.3.0",
     "playwright": "^1.61.1",
     "pyodide": "^0.26.4"
+  },
+  "devDependencies": {
+    "yaml": "^2.9.1"
   }
 }

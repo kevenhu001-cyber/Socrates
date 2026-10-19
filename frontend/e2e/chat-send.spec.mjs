@@ -5,6 +5,7 @@
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
+import { readHistory } from './_history-reader.mjs';
 
 test('clicking send mounts a streaming bubble or surfaces a notice without throwing', async ({ page }) => {
   await mockAuthedApp(page);
@@ -198,7 +199,9 @@ test('Tutor button send uses the same top anchor while the reply streams', async
       window.addMessage(role, text);
     }
   });
-  await expect(page.locator('#msgList .msg')).toHaveCount(24);
+  await readHistory(page, Array.from({ length: 24 }, (_, i) => (
+    `Tutor history ${i + 1}: ${'reasoning context '.repeat(10)}`
+  )));
   await page.evaluate(() => {
     const list = document.getElementById('msgList');
     list.scrollTop = list.scrollHeight;
@@ -315,7 +318,9 @@ test('a sent prompt keeps its top offset across viewport changes', async ({ page
       window.addMessage(i % 2 ? 'assistant' : 'user', `Reserve follow history ${i + 1}: ${'context '.repeat(12)}`);
     }
   });
-  await expect(page.locator('#msgList .msg')).toHaveCount(30);
+  await readHistory(page, Array.from({ length: 30 }, (_, i) => (
+    `Reserve follow history ${i + 1}: ${'context '.repeat(12)}`
+  )));
   await page.evaluate(() => {
     const list = document.getElementById('msgList');
     list.scrollTop = list.scrollHeight;

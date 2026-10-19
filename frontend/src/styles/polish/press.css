@@ -41,7 +41,6 @@
   .new-reply-pill
 ) {
   --press-opacity: var(--ui-press-opacity-sm);
-  --press-scale: var(--ui-press-scale-sm);
 }
 
 /* Row-style controls: a whole row (or menu item) shrinking reads as a
@@ -109,8 +108,7 @@
     .thinking-status-clickable
   ) {
     scale: 1;
-    transition: scale var(--ui-duration-fast) var(--ui-ease-spring-snappy),
-                opacity var(--ui-duration-fast) ease;
+    transition: opacity var(--ui-duration-fast) ease;
   }
 
   :is(button, [role="button"], [role="tab"]):not(
@@ -133,7 +131,7 @@
     .extensions-item,
     .thinking-status-clickable
   ):is(:active, .is-pressed) {
-    scale: var(--press-scale, var(--ui-press-scale, 0.975));
+    scale: 1;
     opacity: var(--press-opacity, var(--ui-press-opacity));
   }
 
@@ -158,7 +156,7 @@
     .thinking-status-clickable
   ).is-press-release {
     scale: 1;
-    transition: scale var(--ui-duration-normal) var(--ui-ease-spring-bouncy);
+    transition: opacity var(--ui-duration-fast) ease;
   }
 }
 

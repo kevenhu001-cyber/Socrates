@@ -31,6 +31,11 @@ function sameWindow(track: MountTrack, next: MountWindowState): boolean {
     && track.full === next.full;
 }
 
+export function turnOwnsMountViewport(host: Pick<HTMLElement, 'dataset'>): boolean {
+  return host.dataset.turnAnchorSettling === 'true'
+    || host.dataset.turnViewportOwner === 'turn';
+}
+
 export function useProgressiveMessageMount(items: ReadonlyArray<LegacyChatMessage>): {
   mounted: ReadonlyArray<LegacyChatMessage>;
   start: number;
@@ -105,7 +110,7 @@ export function useProgressiveMessageMount(items: ReadonlyArray<LegacyChatMessag
     };
 
     const shift = (direction: 'older' | 'newer') => {
-      if (cancelled) return;
+      if (cancelled || turnOwnsMountViewport(host)) return;
       const track = trackRef.current;
       const next = shiftMountWindow(track.items, track, direction);
       if (sameWindow(track, next)) return;
@@ -117,6 +122,7 @@ export function useProgressiveMessageMount(items: ReadonlyArray<LegacyChatMessag
 
     const onScroll = () => {
       if (cancelled) return;
+      if (turnOwnsMountViewport(host)) return;
       if (start > 0 && host.scrollTop < NEAR_TOP_PX) {
         /* While a response streams, keep its tail row resident. We may grow
            backward up to the cap, but we do not slide the whole window away
@@ -138,7 +144,9 @@ export function useProgressiveMessageMount(items: ReadonlyArray<LegacyChatMessag
       && mounted.length < MAX_MOUNTED_ROWS
       && host.scrollHeight <= host.clientHeight + NEAR_TOP_PX
     ) {
-      const fill = () => shift('older');
+      const fill = () => {
+        if (!turnOwnsMountViewport(host)) shift('older');
+      };
       if (typeof browser.requestIdleCallback === 'function') {
         idleHandle = browser.requestIdleCallback(fill, { timeout: 200 });
       } else {

@@ -55,6 +55,7 @@ import visionRouter from './routes/vision.js';
 import agentRunsRouter from './routes/agentRuns.js';
 import researchJobsRouter from './routes/researchJobs.js';
 import statusRouter from './routes/status.js';
+import internalMetricsRouter from './routes/internalMetrics.js';
 import mobileRouter from './routes/mobile.js';
 import mcpRouter from './routes/mcp.js';
 import mcpDocsRouter from './routes/mcpDocs.js';
@@ -285,14 +286,16 @@ app.use(function requestTiming(req, res, next) {
     // and 5xx count as failures so the rate reflects real error traffic
     // instead of pinning at 100% (only <500 would hide 429/404/400).
     const ok = res.statusCode >= 200 && res.statusCode < 400;
-    recordRequestSample(ms, ok);
+    const url = (req.originalUrl || req.url || '').replace(/^\/api\/v2(?=\/|$)/, '/api');
+    // Scrapes are operational probes, not business traffic; excluding them
+    // prevents frequent polling from biasing the public status aggregates.
+    if (!url.startsWith('/api/_internal/metrics')) recordRequestSample(ms, ok);
     // OTLP request metrics share the tracer's health/status exclusion:
     // those two endpoints would dominate the histogram without saying
     // anything about real traffic. No-op when telemetry is off. The /api/v2
     // alias is stripped first — this middleware runs before apiV2Rewrite,
     // so mobile's /api/v2/health probes would otherwise slip the filter.
-    const url = (req.originalUrl || req.url || '').replace(/^\/api\/v2/, '');
-    if (!url.startsWith('/api/health') && !url.startsWith('/api/status')) {
+    if (!url.startsWith('/api/health') && !url.startsWith('/api/status') && !url.startsWith('/api/_internal/metrics')) {
       const route = `${req.baseUrl || ''}${(req.route as { path?: string } | undefined)?.path || ''}`;
       recordHttpMetrics(ms, route, req.method, res.statusCode);
     }
@@ -447,7 +450,9 @@ app.use('/api', (req, res, next) => {
    Idempotency-Key middleware sits beside it: writes that carry a key
    get their JSON response replayed on retry (24 h). */
 app.use('/api', apiDefaultLimiter, idempotencyMiddleware);
-
+// Private, default-disabled process diagnostics. The same mount is reached
+// through /api/v2 by apiV2Rewrite above; route itself never trusts proxy headers.
+app.use('/api/_internal/metrics', internalMetricsRouter);
 app.get('/api/health', async (_req, res) => {
   try {
     const db = getDb();

@@ -32,9 +32,11 @@ function installControllableStream(page) {
   return page.addInitScript(() => {
     const nativeFetch = window.fetch.bind(window);
     window.__streams = [];
+    window.__streamRequests = [];
     window.fetch = (input, init) => {
       const url = typeof input === 'string' ? input : (input && input.url) || '';
       if (!/\/api\/(?:v2\/)?chat\/stream/.test(url)) return nativeFetch(input, init);
+      try { window.__streamRequests.push(JSON.parse(init.body)); } catch (_) { window.__streamRequests.push(init.body); }
       const encoder = new TextEncoder();
       let controllerRef;
       let closed = false;
@@ -87,7 +89,49 @@ async function bootChat(page, messageCount) {
       window.addMessage(i % 2 ? 'assistant' : 'user', `Glide history ${i + 1}: ${'context '.repeat(i % 2 ? 40 : 10)}`);
     }
   }, messageCount);
-  if (messageCount) await expect(page.locator('#msgList .msg')).toHaveCount(messageCount);
+  if (messageCount) await expect(page.locator('#msgList .msg')).not.toHaveCount(0);
+}
+
+/* Read upward through the actual transcript. Progressive mounting starts at
+   the newest 12 rows and reveals older rows in chunks; record each row as it
+   enters the DOM rather than assuming the whole history is resident at once. */
+async function readHistory(page, expectedCount) {
+  const list = page.locator('#msgList');
+  await list.locator('.msg').last().scrollIntoViewIfNeeded();
+  await list.hover();
+  const seen = new Set();
+  for (let step = 0; step < expectedCount; step += 1) {
+    const state = await page.evaluate(() => {
+      const node = document.getElementById('msgList');
+      return {
+        top: node.scrollTop,
+        mounted: [...node.querySelectorAll('.msg')].map((row) => row.textContent || ''),
+      };
+    });
+    for (const text of state.mounted) {
+      const match = text.match(/Glide history (\d+):/);
+      if (match) seen.add(Number(match[1]));
+    }
+    expect(state.mounted.length, 'resident transcript rows stay bounded').toBeLessThanOrEqual(60);
+    if (state.top <= 0) break;
+    await page.mouse.wheel(0, -1200);
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  }
+  const finalState = await page.evaluate(() => {
+    const node = document.getElementById('msgList');
+    return { top: node.scrollTop, mounted: [...node.querySelectorAll('.msg')].map((row) => row.textContent || '') };
+  });
+  for (const text of finalState.mounted) {
+    const match = text.match(/Glide history (\d+):/);
+    if (match) seen.add(Number(match[1]));
+  }
+  expect(finalState.top).toBe(0);
+  expect(finalState.mounted.length).toBeLessThanOrEqual(60);
+  expect(seen.size, 'the reader actually traversed the complete historical transcript').toBe(expectedCount);
+  const storedHistory = await page.evaluate(() => window.stateStore.read('messages')
+    .filter((message) => /^Glide history \d+:/.test(message.rawText || ''))
+    .map((message) => message.rawText.match(/^Glide history (\d+):/)[1]));
+  expect(storedHistory).toEqual(Array.from({ length: expectedCount }, (_, index) => String(index + 1)));
 }
 
 /* Put the reader where the scenario says. */
@@ -128,18 +172,22 @@ async function startBackgroundAnswer(page) {
 
 /* Submit and sample every frame until the send anchor lets go, plus a
    20-frame tail so a late correction after the release is caught too. */
-async function sendAndSample(page, text) {
-  const samples = page.evaluate(() => new Promise((resolve) => {
+async function beginGlideSampling(page, text) {
+  return page.evaluate((expectedText) => new Promise((resolve) => {
     const list = document.getElementById('msgList');
-    const initialUsers = list.querySelectorAll('.msg.user').length;
+    const initialIds = new Set(window.stateStore.read('messages').map((message) => message.clientId));
     const offsets = [];
     let sawSettling = false;
     let tail = 0;
     const deadline = performance.now() + 3500;
     const tick = () => {
-      const users = list.querySelectorAll('.msg.user');
-      if (users.length > initialUsers) {
-        const prompt = users[users.length - 1];
+      /* A send from old history moves the bounded window to the live tail:
+         DOM user counts may shrink, even though a new user was appended. */
+      const message = window.stateStore.read('messages').find((entry) => (
+        entry.role === 'user' && entry.rawText === expectedText && !initialIds.has(entry.clientId)
+      ));
+      const prompt = message && [...list.querySelectorAll('.msg.user')].find((row) => row.dataset.clientId === message.clientId);
+      if (prompt) {
         offsets.push(prompt.getBoundingClientRect().top - list.getBoundingClientRect().top);
       }
       if (list.dataset.turnAnchorSettling === 'true') sawSettling = true;
@@ -151,7 +199,11 @@ async function sendAndSample(page, text) {
       requestAnimationFrame(tick);
     };
     tick();
-  }));
+  }), text);
+}
+
+async function sendAndSample(page, text) {
+  const samples = beginGlideSampling(page, text);
   await page.evaluate((prompt) => { void window.submitChatMessage(prompt); }, text);
   return samples;
 }
@@ -207,14 +259,40 @@ for (const vp of VIEWPORTS) {
         await gotoAndSettle(page, '/');
         await waitForAppShell(page);
         await bootChat(page, scenario.messages);
+        if (scenario.messages > 12) await readHistory(page, scenario.messages);
         if (streaming) {
           await placeReader(page, 'bottom');
           await startBackgroundAnswer(page);
         }
         await placeReader(page, scenario.where);
 
-        const result = await sendAndSample(page, 'Take me to the newest prompt');
-        await page.evaluate(() => clearInterval(window.__bgTimer));
+        let result;
+        if (streaming) {
+          const priorUsers = await page.evaluate(() => window.stateStore.read('messages').filter((entry) => entry.role === 'user').length);
+          await page.evaluate(() => {
+            window.__queueChanges = [];
+            document.addEventListener('socrates:promptqueuechange', (event) => window.__queueChanges.push(event.detail.count));
+            void window.submitChatMessage('Take me to the newest prompt');
+          });
+          await expect.poll(() => page.evaluate(() => window.__queueChanges.includes(1))).toBe(true);
+          expect(await page.evaluate(() => window.stateStore.read('messages').filter((entry) => entry.role === 'user').length)).toBe(priorUsers);
+          await expect(page.locator('#msgList .msg.user').filter({ hasText: 'Take me to the newest prompt' })).toHaveCount(0);
+          const priorStreams = await page.evaluate(() => window.__streams.length);
+          const priorRequests = await page.evaluate(() => window.__streamRequests.length);
+          const samples = beginGlideSampling(page, 'Take me to the newest prompt');
+          await page.evaluate(() => {
+            clearInterval(window.__bgTimer);
+            window.__streams[window.__streams.length - 1].finish();
+          });
+          result = await samples;
+          await expect.poll(() => page.evaluate(() => window.__queueChanges.includes(0))).toBe(true);
+          await expect.poll(() => page.evaluate((count) => window.__streams.length > count, priorStreams)).toBe(true);
+          await expect.poll(() => page.evaluate((count) => window.__streamRequests.slice(count).some((body) => JSON.stringify(body).includes('Take me to the newest prompt')), priorRequests)).toBe(true);
+          expect(await page.evaluate(() => window.stateStore.read('messages').filter((entry) => entry.role === 'user').length)).toBe(priorUsers + 1);
+          await expect(page.locator('#msgList .msg.user').last()).toContainText('Take me to the newest prompt');
+        } else {
+          result = await sendAndSample(page, 'Take me to the newest prompt');
+        }
         assertGlide(result, { expectMotion: scenario.motion });
 
         const offset = await promptOffset(page);
@@ -235,6 +313,7 @@ test('reduced motion: a send from deep history lands on the prompt without anima
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await bootChat(page, 80);
+  await readHistory(page, 80);
   await placeReader(page, 'history');
   const { offsets } = await sendAndSample(page, 'Reduced motion send');
   const start = offsets[0];

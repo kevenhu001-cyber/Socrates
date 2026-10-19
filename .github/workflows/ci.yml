@@ -168,6 +168,25 @@ jobs:
           fi
           echo "clean: no conflict markers in tracked files"
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install root tooling
+        run: npm ci --ignore-scripts --prefer-offline --no-audit --no-fund
+
+      - name: Published OpenAPI projection check and focused test
+        run: |
+          npm run openapi:check
+          npm run test:openapi
+
+      - name: Delivery guard regression tests
+        run: |
+          node --test scripts/test-verify-sbom.mjs
+          bash scripts/test-deploy-flow.sh
+
       # Route↔spec drift ratchet. Lives here rather than in the `server`
       # job on purpose: docs/api/openapi.yaml is classified docs-only, so
       # a spec-only edit never triggers the server job — but this job

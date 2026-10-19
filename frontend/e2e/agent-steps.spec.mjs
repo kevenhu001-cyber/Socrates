@@ -52,7 +52,12 @@ test('the workspace agent streams its steps into the chat', async ({ page }) => 
   });
 
   const bubble = page.locator('.msg.assistant').last();
-  const steps = bubble.locator('.agent-step');
+  const surface = bubble.locator('.turn-activity-surface');
+  /* Agent steps are owned by the React activity disclosure. The legacy step
+     markup is only a compatibility artifact and may sit beneath this surface;
+     exercise the visible user path rather than targeting that hidden copy. */
+  await surface.locator('.thinking-accordion-toggle').click();
+  const steps = surface.locator('.agent-step');
   await expect(steps).toHaveCount(3);
   await expect(steps.nth(0).locator('.agent-step-label')).toHaveText('读取了文件');
   await expect(steps.nth(1).locator('.agent-step-label')).toHaveText('已运行 npm run test:unit');
@@ -63,18 +68,19 @@ test('the workspace agent streams its steps into the chat', async ({ page }) => 
   await expect(steps.nth(2).locator('.agent-step-cmd')).toHaveText('notes.txt');
 
   // One plan card per run, showing the final state of every item.
-  const plan = bubble.locator('.agent-plan');
+  const plan = surface.locator('.agent-plan');
   await expect(plan).toHaveCount(1);
   await expect(plan).toHaveAttribute('data-progress', '2/2');
   await expect(plan.locator('.agent-plan-item')).toHaveCount(2);
 
   // The run reports its total duration and is collapsed once finished.
-  const run = bubble.locator('.agent-run');
+  const run = surface.locator('.agent-run');
   await expect(run).toHaveAttribute('data-state', 'done');
   await expect(run.locator('.agent-run-elapsed')).toHaveText('用时 1m 2s');
 
   // Expanding a step reveals the command and its output.
-  await steps.nth(1).locator('.agent-step-head').click();
+  const stepHead = steps.nth(1).locator('.agent-step-head');
+  await stepHead.click();
   await expect(steps.nth(1).locator('.agent-step-pre[data-kind="output"]')).toContainText('226 pass');
 
   /* P_declarative-tool-run — what survives serialization is the data, not the
@@ -84,11 +90,11 @@ test('the workspace agent streams its steps into the chat', async ({ page }) => 
      would only re-test the implementation this change removes. */
   const persisted = await page.evaluate(() => {
     const message = window.stateStore.read("messages")[window.stateStore.read("messages").length - 1];
-    return message && message.html ? message.html : '';
+    return message ? { rawText: message.rawText || '', html: message.html || '' } : { rawText: '', html: '' };
   });
-  expect(persisted, 'the answer text is still stored as html').toContain('notes.txt');
-  expect(persisted, 'no agent chrome is baked into the answer').not.toContain('agent-run-host');
-  expect(persisted, 'no step markup is baked into the answer').not.toContain('agent-step');
+  expect(persisted.rawText, 'the answer text is stored as plain text').toContain('notes.txt');
+  expect(persisted.html, 'no agent chrome is baked into legacy html').not.toContain('agent-run-host');
+  expect(persisted.html, 'no step markup is baked into legacy html').not.toContain('agent-step');
 
   const stored = await page.evaluate(() => {
     const message = window.stateStore.read("messages")[window.stateStore.read("messages").length - 1];
