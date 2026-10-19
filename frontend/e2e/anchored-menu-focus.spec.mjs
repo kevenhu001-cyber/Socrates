@@ -64,3 +64,70 @@ test('Tab and outside pointer dismissal preserve the next focus destination', as
   await expect(menu).toHaveCount(0);
   await expect(outside).toBeFocused();
 });
+
+test('account menu opens from the keyboard and supports bounds and typeahead', async ({ page }) => {
+  const trigger = page.locator('.sidebar-account-trigger');
+  const menu = page.getByRole('menu', { name: 'Account', exact: true });
+  await trigger.focus();
+  await page.keyboard.press('ArrowUp');
+  await expect(menu.getByRole('menuitem').last()).toBeFocused();
+  await expect(trigger).toHaveAttribute('aria-controls', await menu.getAttribute('id'));
+  await page.keyboard.press('Home');
+  await expect(menu.getByRole('menuitem').first()).toBeFocused();
+  await page.keyboard.press('ArrowUp');
+  await expect(menu.getByRole('menuitem').last()).toBeFocused();
+  await page.keyboard.press('End');
+  await expect(menu.getByRole('menuitem').last()).toBeFocused();
+  await page.keyboard.type('Settings');
+  await expect(menu.getByRole('menuitem', { name: 'Settings', exact: true })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(menu).toHaveCount(0);
+  await expect(page.locator('.settings-modal')).toBeVisible();
+});
+
+for (const variant of ['light', 'dark', 'mobile']) {
+  test(`account menu stays within the ${variant} viewport`, async ({ page }, testInfo) => {
+    if (variant === 'mobile') {
+      await page.setViewportSize({ width: 390, height: 640 });
+      await page.evaluate(() => {
+        if (document.getElementById('sidebar')?.classList.contains('collapsed')) window.toggleSidebar?.();
+      });
+    }
+    await page.evaluate((theme) => {
+      if (document.documentElement.dataset.mode !== theme) window.toggleTheme();
+    }, variant === 'dark' ? 'dark' : 'light');
+    await page.locator('.sidebar-account-trigger').click();
+    const menu = page.locator('.sidebar-account-menu');
+    await expect(menu).toBeVisible();
+    // Wait for entrance motion to finish before measuring the actual surface.
+    await menu.evaluate((node) => Promise.all(node.getAnimations().map((animation) => animation.finished)));
+    const bounds = await menu.boundingBox();
+    const viewport = page.viewportSize();
+    expect(bounds.x).toBeGreaterThanOrEqual(5);
+    expect(bounds.y).toBeGreaterThanOrEqual(5);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(viewport.width - 5);
+    expect(bounds.y + bounds.height).toBeLessThanOrEqual(viewport.height - 5);
+    await expect(menu.getByRole('menuitem', { name: 'Sign out', exact: true })).toBeInViewport();
+    await testInfo.attach(`account-menu-${variant}`, {
+      body: await page.screenshot(),
+      contentType: 'image/png',
+    });
+  });
+}
+
+test('a short viewport scrolls the account menu and keeps its last action reachable', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 220 });
+  const trigger = page.locator('.sidebar-account-trigger');
+  await trigger.focus();
+  await page.keyboard.press('ArrowDown');
+  const menu = page.locator('.sidebar-account-menu');
+  await expect(menu).toBeVisible();
+  await expect.poll(() => menu.evaluate((node) => node.scrollHeight > node.clientHeight)).toBe(true);
+  await page.keyboard.press('End');
+  const last = menu.getByRole('menuitem').last();
+  await expect(last).toBeFocused();
+  await expect(last).toBeInViewport();
+  await page.keyboard.press('Escape');
+  await expect(menu).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+});

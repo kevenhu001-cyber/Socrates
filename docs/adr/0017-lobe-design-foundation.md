@@ -82,8 +82,8 @@ The font-family choice is also not changed by this ADR. Socrates continues using
 1. Cut the canonical palette over while retaining the `--ui-*` API. **Done.**
 2. Keep Web and Universal App palette packages in lockstep. **Done.**
 3. Add Lobe-aligned foundation spacing / radius / typography / control / breakpoint / motion metrics behind Socrates tokens. **Done.**
-4. Introduce Lobe/Base UI primitives behind Socrates adapters, starting with menu / popover / modal infrastructure.
-5. Migrate visual-reference assertions from the historical ChatGPT palette without weakening geometry or interaction checks.
+4. Introduce Lobe/Base UI primitives behind Socrates adapters, starting with menu / popover / modal infrastructure. **In progress:** the account menu now uses `@base-ui/react` through `FoundationMenu`; session/organization menus still use `AnchoredMenu`, and popovers/dialogs remain follow-up work.
+5. Migrate visual-reference assertions from the historical ChatGPT palette without weakening geometry or interaction checks. **Initial palette assertions done** in the foundation commit; continue checking each migrated surface.
 6. Treat historical ChatGPT parity measurements as interaction references, not the canonical design-token contract.
 
 ## Consequences
@@ -94,3 +94,35 @@ The font-family choice is also not changed by this ADR. Socrates continues using
 - Visual-reference tests that encoded the old ChatGPT-derived neutral values must be updated as part of this migration.
 - Future Lobe/Base UI primitives can share the same palette and metrics instead of creating a second theme system.
 - The Universal App receives the same foundation through `@socrates/theme`; it does not depend on React DOM or Lobe Web components.
+
+## Account-menu primitive migration (2026-10-19)
+
+The first product migration uses [Base UI Menu](https://base-ui.com/react/components/menu)
+1.9.0 behind `frontend/src/react/menu/FoundationMenu.tsx`. Only the SPA depends
+on this package. It adds no install scripts and leaves shared/native packages
+DOM-free.
+
+The account trigger, item buttons and pricing link retain their existing
+Socrates classes and actions. The adapter keeps the app-shell portal, overlay
+motion, first-item focus on pointer opening and nonmodal outside interaction.
+Base UI supplies trigger ARIA relationships, keyboard opening, roving focus,
+typeahead, dismissal, focus restoration and collision-aware positioning. The
+surface scrolls within the available viewport height instead of clipping items.
+
+Next migrate organization/session menus, including selected radio items and the
+project-picker view, before replacing the older `AnchoredMenu` implementation.
+Popover and modal migration remain separate steps. No server, schema or
+deployment changes are required.
+
+Validation: frontend lint and production build passed; the focused
+`foundationTokens` / `menuPrimitive` unit files passed all six tests.
+`anchored-menu-focus` / `theme-system` passed nine browser tests, and
+`sidebar-nav` passed fourteen. Light, dark and phone screenshots were inspected.
+The theme spec also fixes a foundation-commit assertion that expected literal
+`var(...)` strings from `getComputedStyle()`: it now compares resolved aliases
+against the canonical palette while retaining the exact color assertions.
+
+Bundle follow-up: the production graph currently retains 136 Base UI modules
+in the eager sidebar dependency graph. Review this startup cost before extending
+the migration to more primitives; the account-menu dependency is not lazy yet.
+These changes have not been committed or deployed.
