@@ -206,6 +206,11 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             } catch (e: Exception) { if (epoch == loadEpoch) _state.update { it.copy(busy = false, error = e.message ?: "无法打开会话") } }
         }
     }
+    fun openSessionById(id: String) {
+        if (id.isBlank() || id.length > 128) return
+        if (!api.isLoggedIn) { showAuth(true); return }
+        selectSession(ChatSession(id = id))
+    }
     fun send(text: String): Boolean = sendInternal(text)
     private fun sendInternal(text: String, replay: ChatMessage? = null): Boolean {
         val snapshot = _state.value
@@ -220,11 +225,12 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         var session = (snapshot.current ?: ChatSession(title = text.trim().take(40).ifBlank { attachment?.name ?: "新对话" }, createdAt = Instant.now().toString())).copy(messages = snapshot.messages + user)
         val assistant = ChatMessage(role = "assistant", content = "")
         val epoch = ++turnEpoch; stopped = false
+        val turnStartedAt = android.os.SystemClock.elapsedRealtime()
         _state.update { it.copy(current = session, messages = session.messages + assistant, attachment = if (replay == null) null else snapshot.attachment, streaming = true, activity = "正在思考") }
         turnJob = viewModelScope.launch {
             var failure: Throwable? = null
             var sessionSaved = false
-            val textBuffer = StringBuilder(); val reasoningBuffer = StringBuilder(); val lock = Any()
+            val textBuffer = StringBuilder(); val rawTextBuffer = StringBuilder(); val reasoningBuffer = StringBuilder(); val lock = Any()
             val tools = ToolHistory()
             var latestActivity = "正在思考"
             var revision = 0L
@@ -233,7 +239,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 val chunk = synchronized(lock) {
                     if (revision == publishedRevision) null else {
                         publishedRevision = revision
-                        Triple(textBuffer.toString(), reasoningBuffer.toString(), tools.snapshot())
+                        Triple(textBuffer.toString(), reasoningBuffer.toString(), tools.snapshot(rawTextBuffer.toString()).put("reasoningDurationMs", (android.os.SystemClock.elapsedRealtime() - turnStartedAt).coerceAtLeast(0)))
                     }
                 } ?: return
                 val (body, reason, toolWire) = chunk
@@ -248,7 +254,12 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     if (!stopped && turnEpoch == epoch) api.streamChat(session.id, session.messages,
                         onDelta = { synchronized(lock) { textBuffer.append(it); revision++ } },
                         onReasoning = { synchronized(lock) { reasoningBuffer.append(it); revision++ } },
-                        onActivity = { event -> synchronized(lock) { tools.accept(event); latestActivity = event.payload.optString("summary").ifBlank { event.payload.optString("message").ifBlank { event.payload.optString("label").ifBlank { event.payload.optString("name").ifBlank { "正在使用工具" } } } }.take(180); revision++ } },
+                        onActivity = { event -> synchronized(lock) {
+                            tools.accept(event)
+                            latestActivity = event.payload.optString("summary").ifBlank { event.payload.optString("message").ifBlank { event.payload.optString("label").ifBlank { event.payload.optString("name").ifBlank { "正在使用工具" } } } }.take(180)
+                            revision++
+                        } },
+                        onRawDelta = { raw -> synchronized(lock) { rawTextBuffer.append(raw); revision++ } },
                         onDone = { failure = it }, context = JSONObject(session.wire?.toString() ?: "{}").put("mode", session.mode).put("reasoning_effort", _state.value.reasoningEffort).apply { if (session.mode == "tutor") put("_systemPrompt", LearningModels.tutorSystemPrompt(session)) })
                 }
             } catch (e: Exception) { failure = e }

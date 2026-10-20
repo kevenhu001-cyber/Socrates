@@ -1,4 +1,32 @@
 plugins { id("com.android.application"); id("org.jetbrains.kotlin.android"); id("org.jetbrains.kotlin.plugin.compose") }
+val repositoryRoot = rootProject.projectDir.resolve("../..")
+val toolRendererAssets = layout.buildDirectory.dir("generated/toolRendererAssets")
+val toolRendererVendorAssets = layout.buildDirectory.dir("generated/toolRendererVendorAssets")
+val prepareToolRendererAssets by tasks.registering(Copy::class) {
+    from(repositoryRoot.resolve("frontend/src/vendor-files")) {
+        include("echarts.min.js", "mermaid.min.js", "plotly.min.js")
+        into("vendor-files")
+    }
+    into(toolRendererVendorAssets)
+}
+val bundleToolRenderer by tasks.registering(Exec::class) {
+    val output = toolRendererAssets.get().file("render/tool-renderer.js").asFile
+    workingDir(repositoryRoot)
+    commandLine(repositoryRoot.resolve("frontend/node_modules/.bin/esbuild").absolutePath,
+        "apps/socrates-android/renderer/toolRendererEntry.ts",
+        "--bundle", "--minify", "--format=esm", "--platform=browser", "--target=es2020",
+        "--define:process.env.NODE_ENV=\"production\"", "--outfile=${output.absolutePath}")
+    inputs.file(rootProject.file("renderer/toolRendererEntry.ts"))
+    inputs.dir(repositoryRoot.resolve("frontend/src"))
+    inputs.dir(repositoryRoot.resolve("frontend/node_modules/@socrates/core"))
+    inputs.file(repositoryRoot.resolve("frontend/package-lock.json"))
+    outputs.file(output)
+    outputs.file(toolRendererAssets.get().file("render/tool-renderer.css"))
+    doFirst { output.parentFile.mkdirs() }
+}
+android.sourceSets.getByName("main").assets.srcDir(toolRendererAssets)
+android.sourceSets.getByName("main").assets.srcDir(toolRendererVendorAssets)
+tasks.named("preBuild").configure { dependsOn(bundleToolRenderer, prepareToolRendererAssets) }
 android {
  namespace = "com.socrates.android"; compileSdk = 35
  defaultConfig { applicationId = "com.socrates.android"; minSdk = 26; targetSdk = 35; versionCode = 5; versionName = "1.4"; testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" }
@@ -10,6 +38,7 @@ android {
 }
 dependencies {
  implementation("androidx.core:core-ktx:1.15.0")
+ implementation("androidx.webkit:webkit:1.12.1")
  implementation("androidx.activity:activity-compose:1.10.1")
  implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
  implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")

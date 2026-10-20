@@ -3,6 +3,7 @@
 package com.socrates.android.ui
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -49,6 +50,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.core.content.pm.ShortcutInfoCompat
+import androidx.core.content.pm.ShortcutManagerCompat
+import androidx.core.graphics.drawable.IconCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -102,6 +106,7 @@ fun SocratesApp(vm: ChatViewModel = viewModel()) {
     val audioPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> if (granted) voice.start() else vm.error("麦克风权限未开启，可以继续使用文字输入。") }
     val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(vm::attach) }
     var attachmentMenu by remember { mutableStateOf(false) }
+    var fileSourceMenu by remember { mutableStateOf(false) }
     var capturedUri by rememberSaveable { mutableStateOf<String?>(null) }
     val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { saved ->
         capturedUri?.let { uri -> if (saved) vm.attach(android.net.Uri.parse(uri)) }
@@ -145,6 +150,19 @@ fun SocratesApp(vm: ChatViewModel = viewModel()) {
                     when (action) {
                         "share" -> shareTranscript(context, ui.messages)
                         "link" -> ui.current?.let { if (!ui.streaming && !ui.busy) shareSession = it.id }
+                        "home" -> ui.current?.let { session ->
+                            val shortcutIntent = Intent(context, com.socrates.android.MainActivity::class.java)
+                                .setAction(com.socrates.android.MainActivity.ACTION_OPEN_SESSION)
+                                .putExtra(com.socrates.android.MainActivity.EXTRA_SESSION_ID, session.id)
+                                .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                            val shortcut = ShortcutInfoCompat.Builder(context, "session-${session.id}")
+                                .setShortLabel(session.title.ifBlank { "Socrates 对话" }.take(25))
+                                .setLongLabel(session.title.ifBlank { "打开 Socrates 对话" }.take(45))
+                                .setIcon(IconCompat.createWithResource(context, com.socrates.android.R.drawable.ic_socrates))
+                                .setIntent(shortcutIntent)
+                                .build()
+                            if (!ShortcutManagerCompat.requestPinShortcut(context, shortcut, null)) vm.error("设备暂不支持添加会话快捷方式。")
+                        }
                         "find" -> find = true
                         "pin" -> ui.current?.let(vm::togglePinned)
                         "archive" -> ui.current?.let { if (com.socrates.android.data.SessionActions.isArchived(it)) vm.restoreSession(it) else vm.archiveSession(it) }
@@ -184,10 +202,14 @@ fun SocratesApp(vm: ChatViewModel = viewModel()) {
     }, onPhoto = {
         attachmentMenu = false
         if (ui.loggedIn) photoPicker.launch(arrayOf("image/*")) else vm.showAuth(true)
-    }, onFile = {
+    }, onFileSources = {
         attachmentMenu = false
+        if (ui.loggedIn) fileSourceMenu = true else vm.showAuth(true)
+    }, onPlugins = { attachmentMenu = false; openResource("插件", "", "") }, onReasoning = { attachmentMenu = false; reasoningMenu = true }, reasoning = ui.reasoningEffort)
+    if (fileSourceMenu) FileSourceSheet(onDismiss = { fileSourceMenu = false }, onDevice = {
+        fileSourceMenu = false
         if (ui.loggedIn) filePicker.launch(arrayOf("*/*")) else vm.showAuth(true)
-    }, onLibrary = { attachmentMenu = false; openResource("资料库", "", "") }, onPlugins = { attachmentMenu = false; openResource("插件", "", "") }, onReasoning = { attachmentMenu = false; reasoningMenu = true }, reasoning = ui.reasoningEffort)
+    }, onLibrary = { fileSourceMenu = false; openResource("资料库", "", "") })
     if (reasoningMenu) ReasoningPicker(ui.reasoningEffort, !ui.streaming && !ui.busy, onSelect = { vm.setReasoningEffort(it); reasoningMenu = false }, onDismiss = { reasoningMenu = false })
     if (projectPicker) ui.current?.let { session -> ConversationProjectPicker(session, ui.baseUrl, onAuthLost = { scope.launch { projectPicker = false; vm.logout(); vm.showAuth(true) } }, onDismiss = { projectPicker = false }, onMoved = { moved -> vm.selectSession(moved); projectPicker = false }, onError = vm::error) }
     if (uploadedFiles) ConversationFiles(ui.messages, onDismiss = { uploadedFiles = false }, onUseFile = { id, name, mime -> vm.useLibraryFile(id, name, mime); uploadedFiles = false })
@@ -294,6 +316,7 @@ private fun ChatHeader(work: Boolean, recording: Boolean, hasMessages: Boolean, 
                     SocratesMenuItem({ Text("在聊天中查找") }, { action("find") }, leadingIcon = { ReferenceIcon(ReferenceGlyph.Search) })
                     SocratesMenuItem({ Text("分享聊天文本") }, { action("share") }, leadingIcon = { ReferenceIcon(ReferenceGlyph.Share) })
                     if (session != null) {
+                        SocratesMenuItem({ Text("添加到主屏幕") }, { action("home") }, leadingIcon = { ReferenceIcon(ReferenceGlyph.Plus) })
                         SocratesMenuItem({ Text("重命名") }, { action("manage") }, leadingIcon = { ReferenceIcon(ReferenceGlyph.Compose) })
                         SocratesMenuItem({ Text(if (com.socrates.android.data.SessionActions.isArchived(session)) "取消归档" else "归档") }, { action("archive") }, leadingIcon = { ReferenceIcon(ReferenceGlyph.Archive) })
                         SocratesMenuItem({ Text("删除", color = Color(0xFFB3261E)) }, { action("delete") }, leadingIcon = { ReferenceIcon(ReferenceGlyph.Trash, tint = Color(0xFFB3261E)) })
@@ -345,7 +368,8 @@ private fun Transcript(ui: ChatUiState, modifier: Modifier = Modifier, jumpId: S
 private fun MessageBubble(message: ChatMessage, streaming: Boolean, activity: String, actionsEnabled: Boolean = true, speech: SpeechPlayback, feedback: String, onAction: (String, ChatMessage) -> Unit = { _, _ -> }) {
     val user = message.role == "user"
     val clipboard = LocalClipboardManager.current
-    var showReasoning by rememberSaveable(message.id) { mutableStateOf(false) }
+    val publicSummary = message.wire?.optString("publicReasoningSummary").orEmpty().takeIf { it.isNotBlank() && it != "null" }
+    val turnSegments = remember(message.content, message.wire?.toString()) { AssistantTurnLayout.build(message.content, message.wire) }
     Column(Modifier.fillMaxWidth(), horizontalAlignment = if (user) Alignment.End else Alignment.Start) {
         message.imageDataUrl?.let { MessageImage(it, message.attachmentName ?: "图片"); Spacer(Modifier.height(10.dp)) }
         if (user) {
@@ -354,11 +378,23 @@ private fun MessageBubble(message: ChatMessage, streaming: Boolean, activity: St
                 SelectionContainer { Text(message.content.substringBefore("\n\n<资料"), fontSize = 16.sp, lineHeight = 24.sp) }
             }
         } else {
-            if (message.reasoning.isNotBlank()) {
-                SocratesTextButton(onClick = { showReasoning = !showReasoning }, contentPadding = PaddingValues(0.dp)) { ReferenceIcon(ReferenceGlyph.Reasoning, null, Modifier.size(15.dp), tint = Color.Gray); Spacer(Modifier.width(8.dp)); Text(if (showReasoning) "收起思考" else if (streaming && message.content.isBlank()) "正在思考" else "查看思考过程", color = Color.Gray, fontSize = 13.sp) }
-                AnimatedVisibility(showReasoning) { Text(message.reasoning, Modifier.padding(bottom = 16.dp), fontSize = 14.sp, lineHeight = 22.sp, color = Color.Gray) }
+            val privateThinkingExists = message.reasoning.isNotBlank()
+            if (streaming || privateThinkingExists || publicSummary != null) {
+                val seconds = ((message.wire?.optLong("reasoningDurationMs") ?: 0L) / 1000L).coerceAtLeast(0)
+                Row(Modifier.padding(bottom = if (publicSummary == null) 6.dp else 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (streaming) SocratesSpinner(Modifier.size(13.dp), strokeWidth = 1.5.dp, color = Color.Gray)
+                    else ReferenceIcon(ReferenceGlyph.Reasoning, null, Modifier.size(15.dp), tint = Color.Gray)
+                    Spacer(Modifier.width(8.dp))
+                    Text(if (streaming) "思考中" else "思考了 ${seconds}秒", color = Color.Gray, fontSize = 13.sp)
+                }
+                publicSummary?.let { Text("公开思考摘要", Modifier.padding(bottom = 2.dp), style = MaterialTheme.typography.labelSmall, color = SocratesDesign.Muted); NativeMarkdown(it, Modifier.fillMaxWidth()) }
             }
-            if (message.content.isNotEmpty()) NativeMarkdown(message.content, Modifier.fillMaxWidth())
+            turnSegments.forEach { segment ->
+                when (segment) {
+                    is AssistantTurnSegment.Text -> if (segment.value.isNotBlank()) NativeMarkdown(segment.value, Modifier.fillMaxWidth())
+                    is AssistantTurnSegment.Tool -> ToolActivityCard(segment.call)
+                }
+            }
             if (streaming && (message.content.isBlank() || activity.isNotBlank())) Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 SocratesSpinner(Modifier.size(12.dp), strokeWidth = 1.5.dp, color = Color.Gray)
                 Spacer(Modifier.width(8.dp)); Text(activity.ifBlank { "正在回复" }, color = Color.Gray, fontSize = 12.sp, maxLines = 2)

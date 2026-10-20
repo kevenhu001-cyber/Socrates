@@ -6,6 +6,35 @@ import java.util.UUID
 
 /** Shared wire rules mirror server/routes/sessions.ts, not any sample conversation. */
 object ChatWire {
+    fun hydrateMessage(m: JSONObject): ChatMessage {
+        val attachment = m.optJSONArray("attachments")?.optJSONObject(0)
+        val rawText = m.optString("rawText").takeUnless { m.isNull("rawText") || it.isBlank() }
+            ?: m.optString("content").takeUnless { m.isNull("content") || it.isBlank() }
+            ?: m.optString("html").takeUnless { m.isNull("html") }.orEmpty()
+        val wire = JSONObject(m.toString())
+        var reasoning = m.optString("reasoningContent")
+        val visibleText = if (m.optString("role") == "assistant" && rawText.contains("<think>", ignoreCase = true)) {
+            val (visible, inlineThinking) = InlineThinkScanner.split(rawText)
+            reasoning = listOf(reasoning, inlineThinking).filter(String::isNotBlank).joinToString("\n\n—— inline thinking ——\n\n")
+            wire.put("rawText", visible).put("content", visible).put("reasoningContent", reasoning)
+            val calls = wire.optJSONArray("toolCalls")
+            if (calls != null) for (callIndex in 0 until calls.length()) {
+                val call = calls.optJSONObject(callIndex) ?: continue
+                if (call.has("textOffset") && !call.isNull("textOffset")) {
+                    call.put("textOffset", InlineThinkScanner.visibleOffset(rawText, call.optInt("textOffset")))
+                }
+            }
+            visible
+        } else rawText
+        return ChatMessage(
+            id = m.optString("id").ifBlank { UUID.randomUUID().toString() }, role = m.optString("role", "assistant"),
+            content = visibleText, reasoning = reasoning,
+            createdAt = m.optString("createdAt").takeIf { it.isNotBlank() && it != "null" },
+            imageDataUrl = attachment?.optString("dataUrl")?.takeIf { !it.isNullOrBlank() && it != "null" },
+            attachmentName = attachment?.optString("name")?.takeIf { !it.isNullOrBlank() && it != "null" }, wire = wire,
+        )
+    }
+
     fun attachment(name: String, mime: String, size: Long, fileId: String? = null, text: String = "", dataUrl: String? = null): JSONObject =
         JSONObject().put("id", UUID.randomUUID().toString()).put("kind", if (mime.startsWith("image/")) "image" else "document")
             .put("name", name.take(500)).put("mime", mime.take(200)).put("size", size).apply {

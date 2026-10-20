@@ -59,9 +59,12 @@ class NativeUiTest {
     }
     @Test fun attachmentPopupHasRealCameraPhotoAndDocumentActions() {
         compose.onNodeWithContentDescription("添加附件").performClick()
-        listOf("拍照", "照片", "文件", "资料库", "插件").forEach {
+        listOf("拍照", "照片", "文件", "插件", "推理强度").forEach {
             compose.onNodeWithText(it).assertIsDisplayed()
         }
+        compose.onNodeWithText("文件").performClick()
+        compose.onNodeWithText("从设备选择").assertIsDisplayed()
+        compose.onNodeWithText("从资料库选择").assertIsDisplayed()
     }
     @Test fun browserLoginExplainsThatReturningDoesNotAuthenticateNativeApi() {
         compose.onNodeWithContentDescription("消息输入框").performTextInput("保留草稿")
@@ -101,7 +104,7 @@ class NativeUiTest {
     private fun capture(name: String) {
         compose.waitForIdle()
         val bitmap = requireNotNull(androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot())
-        val directory = requireNotNull(compose.activity.getExternalFilesDir("ui-evidence")).apply { mkdirs() }
+        val directory = java.io.File(compose.activity.filesDir, "ui-evidence").apply { mkdirs() }
         java.io.File(directory, "$name.png").outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
         bitmap.recycle()
     }

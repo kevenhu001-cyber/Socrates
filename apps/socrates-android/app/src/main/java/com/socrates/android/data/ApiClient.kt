@@ -51,11 +51,13 @@ internal class SseDecoder(
     private val onDelta: (String) -> Unit,
     private val onReasoning: (String) -> Unit,
     private val onActivity: (ChatActivity) -> Unit,
+    private val onRawDelta: (String) -> Unit = {},
 ) {
     private var event = "message"
     private val data = StringBuilder()
     var done: Boolean = false
         private set
+    private val inlineThink = InlineThinkScanner(onDelta, onReasoning)
 
     fun acceptLine(rawLine: String) {
         if (done) return
@@ -70,31 +72,43 @@ internal class SseDecoder(
             "data" -> data.append(value).append('\n')
         }
     }
-    fun finish() { if (!done && data.isNotEmpty()) dispatch() }
+    fun finish() { if (!done && data.isNotEmpty()) dispatch(); inlineThink.finish() }
     private fun dispatch() {
         val raw = data.toString().removeSuffix("\n")
         val current = event
         event = "message"; data.setLength(0)
-        if (raw == "[DONE]") { done = true; return }
+        if (raw == "[DONE]") { inlineThink.finish(); done = true; return }
         if (raw.isEmpty()) return
         if (current == "error") throw IOException(errorMessage(raw))
+        if (current != "message") {
+            val rows = runCatching { JSONArray(raw) }.getOrNull()
+            if (rows != null) {
+                for (index in 0 until rows.length()) rows.optJSONObject(index)?.let { onActivity(ChatActivity(current, it)) }
+                return
+            }
+        }
         val json = try { JSONObject(raw) } catch (_: Exception) { null }
         if (json == null) {
-            if (current == "message") onDelta(raw) else onActivity(ChatActivity(current, JSONObject().put("data", raw)))
+            if (current == "message") emitContent(raw) else onActivity(ChatActivity(current, JSONObject().put("data", raw)))
             return
         }
         if (current != "message") { onActivity(ChatActivity(current, json)); return }
         if (json.has("error") && !json.isNull("error")) throw IOException(errorMessage(raw))
-        if (json.opt("delta") is String) { onDelta(json.getString("delta")); return }
+        if (json.opt("delta") is String) { emitContent(json.getString("delta")); return }
         val choices = json.optJSONArray("choices")
         val delta = choices?.optJSONObject(0)?.optJSONObject("delta") ?: json.optJSONObject("delta")
         if (delta != null) {
-            delta.optString("content").takeIf(String::isNotEmpty)?.let(onDelta)
+            delta.optString("content").takeIf(String::isNotEmpty)?.let(::emitContent)
             listOf("reasoning_content", "reasoning", "thinking").forEach { key -> emitText(delta.opt(key), onReasoning) }
             return
         }
         // Non-chat structured server events are surfaced as activities.
         onActivity(ChatActivity("message", json))
+    }
+    private fun emitContent(raw: String) {
+        if (raw.isEmpty()) return
+        onRawDelta(raw)
+        inlineThink.push(raw)
     }
     private fun errorMessage(raw: String): String {
         val obj = try { JSONObject(raw) } catch (_: Exception) { null }
@@ -246,7 +260,7 @@ class ApiClient(context: Context, initialBaseUrl: String = DEFAULT_BASE_URL, pri
         return parseSession(body)
     }
 
-    fun streamChat(sessionId: String, messages: List<ChatMessage>, onDelta: (String) -> Unit, onReasoning: (String) -> Unit = {}, onActivity: (ChatActivity) -> Unit = {}, onDone: (Throwable?) -> Unit = {}, context: JSONObject? = null): ChatStream {
+    fun streamChat(sessionId: String, messages: List<ChatMessage>, onDelta: (String) -> Unit, onReasoning: (String) -> Unit = {}, onActivity: (ChatActivity) -> Unit = {}, onDone: (Throwable?) -> Unit = {}, context: JSONObject? = null, onRawDelta: (String) -> Unit = {}): ChatStream {
         val wireMessages = JSONArray()
         context?.optString("_systemPrompt")?.takeIf { it.isNotBlank() }?.let {
             wireMessages.put(JSONObject().put("role", "system").put("content", it))
@@ -286,7 +300,7 @@ class ApiClient(context: Context, initialBaseUrl: String = DEFAULT_BASE_URL, pri
                 if (it.code == 401 && !isAuthEndpoint(request)) { invalidateSession(); throw ApiException(401, "Session expired") }
                 if (!it.isSuccessful) throw apiException(it.code, it.body?.string().orEmpty())
                 val source = it.body?.source() ?: throw IOException("Empty SSE response")
-                consumeSse(source, onDelta, onReasoning, onActivity)
+                consumeSse(source, onDelta, onReasoning, onActivity, onRawDelta)
             }
         } catch (error: Throwable) { if (!handle.isCancelled) failure = error }
         finally { activeStream = null; onDone(failure) }
@@ -408,19 +422,15 @@ class ApiClient(context: Context, initialBaseUrl: String = DEFAULT_BASE_URL, pri
         return ApiException(status, message.ifBlank { "HTTP $status" }, text)
     }
     private fun url(path: String) = baseUrl + if (path.startsWith('/')) path else "/$path"
-    private fun consumeSse(source: BufferedSource, onDelta: (String) -> Unit, onReasoning: (String) -> Unit, onActivity: (ChatActivity) -> Unit) {
-        val decoder = SseDecoder(onDelta, onReasoning, onActivity)
+    private fun consumeSse(source: BufferedSource, onDelta: (String) -> Unit, onReasoning: (String) -> Unit, onActivity: (ChatActivity) -> Unit, onRawDelta: (String) -> Unit) {
+        val decoder = SseDecoder(onDelta, onReasoning, onActivity, onRawDelta)
         while (!decoder.done && !source.exhausted()) decoder.acceptLine(source.readUtf8Line() ?: break)
         decoder.finish()
         if (!decoder.done) throw IOException("回复连接提前断开，已保留收到的内容。")
     }
     private fun parseSession(json: JSONObject): ChatSession {
         val array = json.optJSONArray("messages") ?: JSONArray()
-        val messages = (0 until array.length()).map { i ->
-            val m = array.optJSONObject(i) ?: JSONObject()
-            val attachment = m.optJSONArray("attachments")?.optJSONObject(0)
-            ChatMessage(id = m.optString("id").ifBlank { UUID.randomUUID().toString() }, role = m.optString("role", "assistant"), content = m.optString("rawText").takeUnless { m.isNull("rawText") || it.isBlank() } ?: m.optString("content").takeUnless { m.isNull("content") || it.isBlank() } ?: m.optString("html").takeUnless { m.isNull("html") }.orEmpty(), reasoning = m.optString("reasoningContent"), createdAt = m.optString("createdAt").takeIf { it.isNotBlank() && it != "null" }, imageDataUrl = attachment?.optString("dataUrl")?.takeIf { !it.isNullOrBlank() && it != "null" }, attachmentName = attachment?.optString("name")?.takeIf { !it.isNullOrBlank() && it != "null" }, wire = JSONObject(m.toString()))
-        }
+        val messages = (0 until array.length()).map { i -> ChatWire.hydrateMessage(array.optJSONObject(i) ?: JSONObject()) }
         return ChatSession(id = json.optString("id"), title = json.optString("title"), topic = json.optString("topic"), mode = json.optString("mode", "chat"), phase = json.optString("phase", "chat"), kind = json.optString("kind", "chat"), messages = messages, createdAt = json.optString("createdAt").takeIf { it.isNotBlank() && it != "null" }, updatedAt = json.optString("updatedAt").takeIf { it.isNotBlank() && it != "null" }, wire = JSONObject(json.toString()))
     }
     private fun encode(value: String) = URLEncoder.encode(value, "UTF-8")

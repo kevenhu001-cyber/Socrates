@@ -34,7 +34,7 @@ internal fun shareTranscript(context: Context, messages: List<ChatMessage>) {
 
 @Composable
 internal fun AttachmentSheet(onDismiss: () -> Unit, onCamera: () -> Unit, onPhoto: () -> Unit,
-    onFile: () -> Unit, onLibrary: () -> Unit, onPlugins: () -> Unit,
+    onFileSources: () -> Unit, onPlugins: () -> Unit,
     onReasoning: () -> Unit, reasoning: String) {
     val density = LocalDensity.current
     Popup(alignment = Alignment.BottomStart,
@@ -44,11 +44,21 @@ internal fun AttachmentSheet(onDismiss: () -> Unit, onCamera: () -> Unit, onPhot
             Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
                 AttachmentAction(ReferenceGlyph.Camera, "拍照", onCamera)
                 AttachmentAction(ReferenceGlyph.Image, "照片", onPhoto)
-                AttachmentAction(ReferenceGlyph.Paperclip, "文件", onFile)
-                AttachmentAction(ReferenceGlyph.Archive, "资料库", onLibrary)
+                AttachmentAction(ReferenceGlyph.Paperclip, "文件", onFileSources)
                 AttachmentAction(ReferenceGlyph.Plugin, "插件", onPlugins)
                 AttachmentAction(ReferenceGlyph.Reasoning, "推理强度", onReasoning, active = reasoning != "none")
             }
+        }
+    }
+}
+
+@Composable
+internal fun FileSourceSheet(onDismiss: () -> Unit, onDevice: () -> Unit, onLibrary: () -> Unit) {
+    SocratesSheet(onDismissRequest = onDismiss) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp)) {
+            Text("添加文件", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 6.dp, bottom = 8.dp))
+            AttachmentAction(ReferenceGlyph.Paperclip, "从设备选择", onDevice)
+            AttachmentAction(ReferenceGlyph.Archive, "从资料库选择", onLibrary)
         }
     }
 }

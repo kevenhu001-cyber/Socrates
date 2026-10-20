@@ -1,6 +1,7 @@
 package com.socrates.android.data
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -52,11 +53,51 @@ class SseDecoderTest {
         assertEquals(listOf("pondering"), reasoning)
     }
 
+    @Test fun routesInlineThinkBlocksToPrivateReasoningAcrossChunkBoundaries() {
+        val visible = mutableListOf<String>()
+        val reasoning = mutableListOf<String>()
+        val decoder = SseDecoder(visible::add, reasoning::add, {})
+        listOf("data: Hello <thi", "data: nk>private ", "data: thought</think> world", "", "data: [DONE]", "").forEach(decoder::acceptLine)
+        assertEquals("Hello  world", visible.joinToString(""))
+        assertEquals("private thought", reasoning.joinToString(""))
+    }
+
+    @Test fun routesMultipleThinkBlocksAndLeavesOrdinaryAnglesAlone() {
+        val visible = mutableListOf<String>()
+        val reasoning = mutableListOf<String>()
+        val decoder = SseDecoder(visible::add, reasoning::add, {})
+        decoder.acceptLine("data: x < 3; <think>a</think> y <think>b</think> z")
+        decoder.acceptLine(""); decoder.acceptLine("data: [DONE]"); decoder.acceptLine("")
+        assertEquals("x < 3;  y  z", visible.joinToString(""))
+        assertEquals("ab", reasoning.joinToString(""))
+    }
+
+    @Test fun flushesIncompleteOpeningTagAsVisibleAndUnclosedThoughtAsPrivate() {
+        val visible = mutableListOf<String>()
+        val reasoning = mutableListOf<String>()
+        val decoder = SseDecoder(visible::add, reasoning::add, {})
+        decoder.acceptLine("data: answer <thi"); decoder.finish()
+        assertEquals("answer <thi", visible.joinToString(""))
+        assertTrue(reasoning.isEmpty())
+        val open = SseDecoder(visible::add, reasoning::add, {})
+        open.acceptLine("data: <think>secret tail"); open.finish()
+        assertEquals("secret tail", reasoning.last())
+        assertFalse(visible.joinToString("").contains("secret"))
+    }
+
     @Test fun emitsNamedToolActivity() {
         val activities = mutableListOf<ChatActivity>()
         val decoder = SseDecoder({}, {}, activities::add)
         decoder.acceptLine("event: tool_call"); decoder.acceptLine("data: {\"name\":\"search\"}"); decoder.acceptLine("")
         assertEquals("tool_call", activities.single().event); assertEquals("search", activities.single().payload.optString("name"))
+    }
+    @Test fun expandsBatchToolUseEventsIntoIndividualActivities() {
+        val activities = mutableListOf<ChatActivity>()
+        val decoder = SseDecoder({}, {}, activities::add)
+        decoder.acceptLine("event: tool_use")
+        decoder.acceptLine("data: [{\"id\":\"one\",\"name\":\"search\"},{\"id\":\"two\",\"name\":\"fetch\"}]")
+        decoder.acceptLine("")
+        assertEquals(listOf("search", "fetch"), activities.map { it.payload.optString("name") })
     }
 
     @Test fun stringErrorThrowsVerbatim() {

@@ -25,14 +25,24 @@ class MainActivity : ComponentActivity() {
             statusBarStyle = SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
         )
-        setContent { SocratesTheme { SocratesApp() } }
+        val chatViewModel = ViewModelProvider(this)[ChatViewModel::class.java]
+        setContent { SocratesTheme { SocratesApp(chatViewModel) } }
+        handleShortcut(intent, chatViewModel)
         handleCallback(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        handleShortcut(intent, ViewModelProvider(this)[ChatViewModel::class.java])
         handleCallback(intent)
+    }
+
+    private fun handleShortcut(shortcutIntent: Intent?, vm: ChatViewModel) {
+        if (shortcutIntent?.action != ACTION_OPEN_SESSION) return
+        val sessionId = shortcutIntent.getStringExtra(EXTRA_SESSION_ID)?.takeIf { it.isNotBlank() && it.length <= 128 } ?: return
+        shortcutIntent.removeExtra(EXTRA_SESSION_ID)
+        vm.openSessionById(sessionId)
     }
 
     private fun handleCallback(callbackIntent: Intent?) {
@@ -59,5 +69,10 @@ class MainActivity : ComponentActivity() {
                 vm.error("浏览器登录未完成，请从应用重新尝试。")
             }
         }
+    }
+
+    companion object {
+        const val ACTION_OPEN_SESSION = "com.socrates.android.OPEN_SESSION"
+        const val EXTRA_SESSION_ID = "com.socrates.android.extra.SESSION_ID"
     }
 }

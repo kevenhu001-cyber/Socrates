@@ -24,6 +24,17 @@ class ChatWireTest {
         assertEquals("new", result.getString("rawText")); assertFalse(raw.has("rawText"))
         assertEquals(1, result.getJSONArray("toolCalls").length())
     }
+    @Test fun oldInlineThinkingMessagesHydrateIntoPrivateReasoningAndVisibleOffsets() {
+        val raw = "Before <think>secret thought</think> after"
+        val wire = JSONObject().put("id", "assistant").put("role", "assistant").put("rawText", raw)
+            .put("toolCalls", JSONArray().put(JSONObject().put("id", "tool").put("name", "search").put("textOffset", raw.indexOf("after"))))
+        val hydrated = ChatWire.hydrateMessage(wire)
+        assertEquals("Before  after", hydrated.content)
+        assertEquals("secret thought", hydrated.reasoning)
+        assertFalse(hydrated.content.contains("secret"))
+        assertEquals("Before  ".length, hydrated.wire!!.getJSONArray("toolCalls").getJSONObject(0).getInt("textOffset"))
+        assertEquals(raw, wire.getString("rawText"))
+    }
     @Test fun plainAndMultimodalContentRemainGeneral() {
         assertEquals("任意内容", ChatWire.content(ChatMessage(role = "user", content = "任意内容")))
         val raw = JSONObject().put("attachments", JSONArray().put(ChatWire.attachment("图", "image/png", 1, dataUrl = "data:image/png;base64,QQ==")))
@@ -59,5 +70,34 @@ class ChatWireTest {
         val snapshot = h.snapshot(); snapshot.getJSONArray("toolCalls").getJSONObject(0).put("name", "mutated")
         val call = h.snapshot().getJSONArray("toolCalls").getJSONObject(0)
         assertTrue(call.getBoolean("isError")); assertNotEquals("mutated", call.getString("name")); assertEquals("denied", call.getString("errorText"))
+    }
+    @Test fun toolProgressApprovalAndPublicSummaryRemainStructured() {
+        val history = ToolHistory()
+        history.accept(ChatActivity("tool_use", JSONObject().put("id", "t").put("name", "workspace").put("textOffset", 4)))
+        history.accept(ChatActivity("tool_approval", JSONObject().put("toolCallId", "t").put("runId", "run").put("approvalId", "approval").put("status", "pending")))
+        history.accept(ChatActivity("public_reasoning_summary", JSONObject().put("text", "Public summary")))
+        val snapshot = history.snapshot()
+        val call = snapshot.getJSONArray("toolCalls").getJSONObject(0)
+        assertEquals("awaiting_approval", call.getString("progressPhase"))
+        assertEquals("approval", call.getJSONObject("approval").getString("approvalId"))
+        assertEquals(4, call.getInt("textOffset"))
+        assertEquals("Public summary", snapshot.getString("publicReasoningSummary"))
+    }
+    @Test fun toolOffsetsAreRebasedWhenAThinkTagCompletesAfterTheEvent() {
+        val history = ToolHistory()
+        val offset = "Before <thi".length
+        history.accept(ChatActivity("tool_use", JSONObject().put("id", "t").put("name", "search").put("textOffset", offset)))
+        assertEquals(offset, history.snapshot().getJSONArray("toolCalls").getJSONObject(0).getInt("textOffset"))
+        val completedRawText = "Before <think>private</think> answer"
+        assertEquals("Before ".length, history.snapshot(completedRawText).getJSONArray("toolCalls").getJSONObject(0).getInt("textOffset"))
+    }
+    @Test fun pendingApprovalResultIsNotRenderedAsFailure() {
+        val history = ToolHistory()
+        history.accept(ChatActivity("tool_use", JSONObject().put("id", "t").put("name", "workspace")))
+        history.accept(ChatActivity("tool_result", JSONObject().put("id", "t").put("ok", false).put("status", "awaiting_approval")
+            .put("approval", JSONObject().put("approvalId", "approval-1").put("status", "pending"))))
+        val call = history.snapshot().getJSONArray("toolCalls").getJSONObject(0)
+        assertEquals("awaiting_approval", call.getString("progressPhase"))
+        assertFalse(call.getBoolean("isError"))
     }
 }

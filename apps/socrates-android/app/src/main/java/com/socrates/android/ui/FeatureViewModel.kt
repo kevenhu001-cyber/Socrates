@@ -24,7 +24,8 @@ import java.time.ZonedDateTime
 import java.util.concurrent.atomic.AtomicLong
 
  data class FeatureState(
-    val kind: String = "", val items: List<FeatureItem> = emptyList(), val selected: FeatureItem? = null,
+    val kind: String = "", val items: List<FeatureItem> = emptyList(), val legacyPluginItems: List<FeatureItem> = emptyList(), val selected: FeatureItem? = null,
+    val connectorConfigured: Boolean = false, val openConnectorAvailable: Boolean = false,
     val loading: Boolean = false, val busy: Boolean = false, val error: String? = null, val notice: String? = null,
     val name: String = "", val description: String = "", val prompt: String = "", val frequency: String = "once",
     val systemPrompt: String = "", val memoryCursor: String? = null, val includeDisabledMemories: Boolean = true,
@@ -43,13 +44,16 @@ class FeatureViewModel(application: Application) : AndroidViewModel(application)
     private val generation = AtomicLong(0)
     private var listJob: Job? = null
     private var mutationJob: Job? = null
+    private var connectorRefreshJob: Job? = null
+    private val connectorRefreshLock = Any()
+    private val pendingConnectorRefresh = linkedSetOf<String>()
     private var imageJob: Job? = null
     private val thumbnailCache = object : LruCache<String, Bitmap>(12 * 1024 * 1024) { override fun sizeOf(key: String, value: Bitmap) = value.byteCount }
     private val thumbnailPermits = Semaphore(2)
     @Volatile private var thumbnailEpoch = 0L
 
     fun open(kind: String) {
-        listJob?.cancel(); mutationJob?.cancel(); imageJob?.cancel(); generation.incrementAndGet()
+        listJob?.cancel(); mutationJob?.cancel(); connectorRefreshJob?.cancel(); imageJob?.cancel(); generation.incrementAndGet()
         thumbnailEpoch++
         thumbnailCache.evictAll()
         api = newClient()
@@ -69,7 +73,7 @@ class FeatureViewModel(application: Application) : AndroidViewModel(application)
         "图像" -> "creations/images" to "images"
         "助手" -> "creations/items/assistants" to "items"
         "定时任务" -> "scheduled-tasks" to "tasks"
-        "插件" -> "plugins" to "plugins"
+        "插件" -> "project-connectors" to "connectors"
         else -> "" to ""
     }
 
@@ -81,26 +85,58 @@ class FeatureViewModel(application: Application) : AndroidViewModel(application)
         listJob = viewModelScope.launch {
             try {
                 val (endpoint, key) = path()
+                val kind = _state.value.kind
                 val result = withContext(Dispatchers.IO) {
-                    if (_state.value.kind == "记忆") api.requestResourceQuery("GET", endpoint, mapOf("limit" to "50", "includeDisabled" to _state.value.includeDisabledMemories.toString()))
-                    else if (endpoint == "files") {
-                        val all = org.json.JSONArray(); val seen = mutableSetOf<String>(); var cursor: String? = null
-                        do {
-                            kotlinx.coroutines.currentCoroutineContext().ensureActive()
-                            val query = mutableMapOf("limit" to "100"); cursor?.let { query["cursor"] = it }
-                            val page = api.requestResourceQuery("GET", endpoint, query)
-                            val rows = page.optJSONArray(key) ?: org.json.JSONArray()
-                            for (i in 0 until rows.length()) all.put(rows.opt(i))
-                            cursor = page.optString("nextCursor").takeIf { it.isNotBlank() && it != "null" }
-                            check(cursor == null || seen.add(cursor!!)) { "资料库分页游标未前进，请稍后重试。" }
-                        } while (cursor != null)
-                        JSONObject().put(key, all)
-                    } else api.requestResource("GET", endpoint)
+                    when (kind) {
+                        "记忆" -> api.requestResourceQuery("GET", endpoint, mapOf("limit" to "50", "includeDisabled" to _state.value.includeDisabledMemories.toString()))
+                        "资料库" -> {
+                            val files = loadAllPages("files", "files")
+                            val artifacts = loadAllPages("artifacts", "artifacts")
+                            JSONObject().put("files", files).put("artifacts", artifacts)
+                        }
+                        "插件" -> {
+                            val catalog = api.requestResource("GET", "project-connectors")
+                            val legacy = runCatching { api.requestResource("GET", "plugins") }.getOrDefault(JSONObject())
+                            catalog.put("legacyPlugins", legacy.optJSONArray("plugins") ?: org.json.JSONArray())
+                        }
+                        else -> api.requestResource("GET", endpoint)
+                    }
                 }
-                val rows = FeatureModels.items(result, key, if (_state.value.kind == "资料库" || _state.value.kind == "图像") listOf("name", "title") else if (_state.value.kind == "记忆") listOf("text") else listOf("title", "name"))
-                if (generation.get() == token) _state.value = _state.value.copy(items = rows, selected = _state.value.selected?.let { selected -> rows.firstOrNull { it.id == selected.id } ?: selected }, loading = false, error = null, memoryCursor = result.optString("nextCursor").takeIf { _state.value.kind == "记忆" && it.isNotBlank() && it != "null" })
+                val rows = when (kind) {
+                    "资料库" -> {
+                        val files = FeatureModels.items(result, "files", listOf("name", "title"))
+                        val artifacts = FeatureModels.items(result, "artifacts", listOf("name", "title")).onEach { it.raw.put("_collection", "artifacts") }
+                        files + artifacts
+                    }
+                    "插件" -> FeatureModels.items(result, key, listOf("name")).onEach { it.raw.put("_recordType", "connector") }
+                    else -> FeatureModels.items(result, key, if (kind == "图像") listOf("name", "title") else if (kind == "记忆") listOf("text") else listOf("title", "name"))
+                }
+                val legacyPlugins = if (kind == "插件") FeatureModels.items(result, "legacyPlugins", listOf("name")) else _state.value.legacyPluginItems
+                if (generation.get() == token) _state.value = _state.value.copy(
+                    items = rows,
+                    legacyPluginItems = legacyPlugins,
+                    connectorConfigured = if (kind == "插件") result.optBoolean("configured") else _state.value.connectorConfigured,
+                    openConnectorAvailable = if (kind == "插件") result.optJSONObject("openConnector")?.let { it.optBoolean("available") || it.optBoolean("cloud") } == true else _state.value.openConnectorAvailable,
+                    selected = _state.value.selected?.let { selected -> rows.firstOrNull { it.id == selected.id } ?: selected },
+                    loading = false, error = null,
+                    memoryCursor = result.optString("nextCursor").takeIf { kind == "记忆" && it.isNotBlank() && it != "null" },
+                )
             } catch (e: Exception) { if (generation.get() == token) _state.value = _state.value.copy(loading = false, unauthorized = (e as? com.socrates.android.data.ApiException)?.statusCode == 401, error = e.message ?: "加载失败，请重试。") }
         }
+    }
+
+    private suspend fun loadAllPages(endpoint: String, key: String): org.json.JSONArray {
+        val all = org.json.JSONArray(); val seen = mutableSetOf<String>(); var cursor: String? = null
+        do {
+            kotlinx.coroutines.currentCoroutineContext().ensureActive()
+            val query = mutableMapOf("limit" to "100"); cursor?.let { query["cursor"] = it }
+            val page = api.requestResourceQuery("GET", endpoint, query)
+            val rows = page.optJSONArray(key) ?: org.json.JSONArray()
+            for (index in 0 until rows.length()) all.put(rows.opt(index))
+            cursor = page.optString("nextCursor").takeIf { it.isNotBlank() && it != "null" }
+            check(cursor == null || seen.add(cursor!!)) { "$endpoint 分页游标未前进，请稍后重试。" }
+        } while (cursor != null)
+        return all
     }
 
     private fun loadCodex() {
@@ -136,6 +172,7 @@ class FeatureViewModel(application: Application) : AndroidViewModel(application)
     fun setName(value: String) { _state.value = _state.value.copy(name = value) }
     fun setDescription(value: String) { _state.value = _state.value.copy(description = value) }
     fun setPrompt(value: String) { _state.value = _state.value.copy(prompt = value) }
+    fun setScheduledTemplate(title: String, prompt: String) { _state.value = _state.value.copy(name = title.take(120), prompt = prompt, frequency = "once", taskAt = ZonedDateTime.now().plusHours(1).withSecond(0).withNano(0).toOffsetDateTime().toString()) }
     fun setSystemPrompt(value: String) { _state.value = _state.value.copy(systemPrompt = value) }
     fun setIncludeDisabledMemories(value: Boolean) { _state.value = _state.value.copy(includeDisabledMemories = value); load() }
     fun loadMoreMemories() {
@@ -192,7 +229,12 @@ class FeatureViewModel(application: Application) : AndroidViewModel(application)
             }
             "插件" -> { body.put("name", s.name).put("description", s.description).put("type", "extension"); method = if (current == null) "POST" else "PATCH"; endpoint = "plugins" + (current?.let { "/${it.id}" } ?: "") }
             "助手" -> { val source = current?.raw?.optString("source").orEmpty(); val config = runCatching { JSONObject(source) }.getOrElse { JSONObject() }; config.put("instructions", s.description); body.put("title", s.name).put("source", config.toString()); method = if (current == null) "POST" else "PATCH"; endpoint = "creations/items/assistants" + (current?.let { "/${it.id}" } ?: "") }
-            "资料库" -> { require(current != null) { "请使用下方上传按钮添加资料。" }; body.put("name", s.name); method = "PATCH"; endpoint = "files/${current.id}" }
+            "资料库" -> {
+                require(current != null) { "请使用下方上传按钮添加资料。" }
+                val collection = current.raw.optString("_collection").ifBlank { "files" }
+                if (collection == "artifacts") body.put("title", s.name) else body.put("name", s.name)
+                method = "PATCH"; endpoint = "$collection/${current.id}"
+            }
             else -> throw IllegalStateException("此页面不支持创建或编辑。")
         }
         withContext(Dispatchers.IO) { api.requestResource(method, endpoint, body) }
@@ -217,9 +259,52 @@ class FeatureViewModel(application: Application) : AndroidViewModel(application)
         load()
     }
 
+    fun connectConnector(id: String, body: JSONObject = JSONObject(), onAuthorizationUrl: (String) -> Unit = {}) = mutate {
+        require(id.matches(Regex("[A-Za-z0-9_-]{1,128}"))) { "无效的连接器 ID。" }
+        val result = withContext(Dispatchers.IO) { api.requestResource("POST", "project-connectors/$id/connect", body) }
+        val authorizationUrl = result.optString("authorizationUrl")
+        if (authorizationUrl.isNotBlank()) {
+            val uri = Uri.parse(authorizationUrl)
+            require(uri.scheme == "https" && !uri.host.isNullOrBlank()) { "连接器返回了无效的授权地址。" }
+            synchronized(connectorRefreshLock) { pendingConnectorRefresh += id }
+            _state.value = _state.value.copy(notice = "请在浏览器完成授权，返回后刷新连接状态。")
+            load()
+            onAuthorizationUrl(authorizationUrl)
+        } else {
+            _state.value = _state.value.copy(notice = if (result.optString("status") == "connected") "连接成功。" else "连接请求已提交。")
+            load()
+        }
+    }
+
+    fun refreshConnectorStatus(id: String) = mutate {
+        require(id.matches(Regex("[A-Za-z0-9_-]{1,128}"))) { "无效的连接器 ID。" }
+        withContext(Dispatchers.IO) { api.requestResource("GET", "project-connectors/$id/status") }
+        load()
+    }
+
+    fun refreshConnectorStatuses() {
+        val initiated = _state.value.items.filter { it.raw.optString("_recordType") == "connector" && it.raw.optJSONObject("connection")?.optString("status") == "initiated" }.map { it.id }
+        val pending = synchronized(connectorRefreshLock) { (initiated + pendingConnectorRefresh).distinct() }
+        if (pending.isEmpty() || connectorRefreshJob?.isActive == true) return
+        connectorRefreshJob = viewModelScope.launch {
+            val refreshed = withContext(Dispatchers.IO) {
+                pending.filter { id -> runCatching { api.requestResource("GET", "project-connectors/$id/status") }.isSuccess }
+            }
+            synchronized(connectorRefreshLock) { pendingConnectorRefresh.removeAll(refreshed.toSet()) }
+            load()
+        }
+    }
+
+    fun disconnectConnector(id: String) = mutate {
+        require(id.matches(Regex("[A-Za-z0-9_-]{1,128}"))) { "无效的连接器 ID。" }
+        withContext(Dispatchers.IO) { api.requestResource("DELETE", "project-connectors/$id/connection") }
+        load()
+    }
+
     fun deleteConfirmed() = mutate {
         val id = _state.value.needsConfirmation ?: return@mutate
-        val endpoint = when (_state.value.kind) { "项目" -> "projects/$id"; "记忆" -> "memory/$id"; "资料库", "图像" -> "files/$id"; "助手" -> "creations/items/assistants/$id"; "定时任务" -> "scheduled-tasks/$id"; "插件" -> "plugins/$id"; else -> throw IllegalStateException("不支持删除") }
+        val selected = _state.value.items.firstOrNull { it.id == id }
+        val endpoint = when (_state.value.kind) { "项目" -> "projects/$id"; "记忆" -> "memory/$id"; "资料库" -> "${selected?.raw?.optString("_collection")?.ifBlank { "files" } ?: "files"}/$id"; "图像" -> "files/$id"; "助手" -> "creations/items/assistants/$id"; "定时任务" -> "scheduled-tasks/$id"; "插件" -> "plugins/$id"; else -> throw IllegalStateException("不支持删除") }
         withContext(Dispatchers.IO) { api.requestResource("DELETE", endpoint) }
         _state.value = _state.value.copy(needsConfirmation = null, selected = null, notice = "已删除。")
         load()
