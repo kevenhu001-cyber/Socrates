@@ -304,6 +304,27 @@ function holdTurnViewport(): void {
   if (hold.align) alignPromptToOffset(list, promptRow, hold.targetOffset);
 }
 
+/**
+ * Let the active hold watch another row of the transcript.
+ *
+ * The hold keeps the submitted prompt at the top offset by re-aligning it
+ * whenever the transcript's layout moves, and it watches the answer row and
+ * the viewport. That is enough while the answer is the only thing that
+ * changes — but retiring a spent reserve shrinks the transcript ABOVE the
+ * prompt, and the browser's scroll clamp is what moves the reader. Nothing
+ * the hold watches changes in that case, so the prompt would come to rest a
+ * few pixels above its slot.
+ *
+ * Watching the retired row gives the hold the signal it needs: the row
+ * settles to its final height on the next React commit, and the hold
+ * re-aligns the prompt in that frame — before it paints.
+ */
+function observeTurnViewportRow(el: HTMLElement): void {
+  const hold = viewportHold;
+  if (!hold || !hold.observer) return;
+  try { hold.observer.observe(el); } catch (_) { /* detached row */ }
+}
+
 function startTurnViewportHold(
   list: TurnAnchorList | null,
   rowFor: () => HTMLElement | null,
@@ -431,11 +452,16 @@ export function scheduleActiveTurnToTop(
       }
     }
     /* Keep the newest prompt visually still across the collapse: measure
-       its viewport offset before and after and correct any drift (the
-       browser's clamp is already baked into the "after" measurement). */
+       its slot inside the transcript before and after and correct any drift
+       (the browser's clamp is already baked into the "after" measurement).
+       The measurement is list-relative rather than viewport-absolute, so a
+       reading taken in a later frame stays comparable when the transcript
+       itself moves in the viewport (a composer or keyboard resize). */
     const promptRows = list.querySelectorAll('.msg.user');
     const promptRow = promptRows.length ? (promptRows[promptRows.length - 1] as HTMLElement) : null;
-    const promptTopBefore = promptRow ? promptRow.getBoundingClientRect().top : null;
+    const promptOffsetBefore = promptRow
+      ? promptRow.getBoundingClientRect().top - list.getBoundingClientRect().top
+      : null;
     const stubIds: string[] = [];
     let cleared = 0;
     for (let i = 0; i < rows.length; i += 1) {
@@ -467,10 +493,18 @@ export function scheduleActiveTurnToTop(
         }
       }
       cleared += 1;
+      /* The hold re-aligns the prompt whenever the layout moves it. This
+         row's retirement is exactly such a move, and it only becomes
+         visible on the next React commit — so hand the row to the hold
+         instead of measuring the drift here, where the collapse has not
+         happened yet. */
+      observeTurnViewportRow(el);
     }
     if (!cleared) return;
-    if (promptRow && promptTopBefore != null) {
-      const drift = promptRow.getBoundingClientRect().top - promptTopBefore;
+    if (promptRow && promptOffsetBefore != null) {
+      const drift = promptRow.getBoundingClientRect().top
+        - list.getBoundingClientRect().top
+        - promptOffsetBefore;
       if (Math.abs(drift) > 0.5) {
         suppressScrollPositionIntent(200);
         writeScrollTop(list, Math.max(0, list.scrollTop + drift), 'turn');

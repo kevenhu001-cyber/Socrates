@@ -1,4 +1,4 @@
-import test from 'node:test';
+import test, { mock } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { JSDOM } from 'jsdom';
@@ -149,6 +149,7 @@ test('scheduleTurnToTopForMessage waits for a React row to mount by client id', 
     assert.equal(list.__socratesTurnViewportOwner, true);
   } finally {
     releaseTurnViewportHold();
+    mock.timers.reset();
     stateStore.dispatch({ type: 'state/set', key: 'messages', value: previousMessages });
     restoreRaf();
     list.remove();
@@ -166,4 +167,130 @@ test('turnAnchorReserve keeps the prompt at the top offset with the answer filli
   /* Non-finite geometry (a detached or hidden list) falls back to the floor. */
   assert.equal(turnAnchorReserve(NaN, 81, 0), 120);
   assert.equal(turnAnchorReserve(800, Number.POSITIVE_INFINITY, 0), 120);
+});
+
+test('retiring a spent reserve keeps the prompt in its slot when the row settles later', async () => {
+  const list = makeList();
+  /* JSDOM has no layout: drive the transcript's geometry by hand. The
+     reader sits 8px short of the bottom, so the transcript's scroll range
+     shrinks by more than the reader can give back when the spent row
+     settles — which is what used to leave the prompt above its slot. */
+  const clientHeight = 666;
+  let scrollHeight = 3288;
+  let scrollTop = 2614;
+  /* The prompt's position inside the transcript's content never moves; its
+     visible offset is that position minus the scroll offset. */
+  let promptContent = 2626;
+  const clampScroll = () => {
+    const max = Math.max(0, scrollHeight - clientHeight);
+    if (scrollTop > max) scrollTop = max;
+  };
+  Object.defineProperty(list, 'clientHeight', { value: clientHeight, configurable: true });
+  Object.defineProperty(list, 'scrollHeight', { get: () => scrollHeight, configurable: true });
+  Object.defineProperty(list, 'scrollTop', {
+    get: () => scrollTop,
+    set: (value) => { scrollTop = value; clampScroll(); },
+    configurable: true,
+  });
+  list.getBoundingClientRect = () => ({ top: 0, bottom: clientHeight, height: clientHeight });
+
+  const prompt = makeUser(list);
+  prompt.getBoundingClientRect = () => ({
+    top: promptContent - scrollTop,
+    bottom: promptContent - scrollTop + 80,
+    height: 80,
+  });
+  Object.defineProperty(prompt, 'offsetTop', { get: () => promptContent, configurable: true });
+
+  /* The spent turn's answer: reserved, and above the visible transcript. */
+  const spent = makeAssistant(list, 'spent');
+  spent.classList.add('turn-viewport-anchor');
+  spent.style.minHeight = '534px';
+  let spentHeight = 534;
+  spent.getBoundingClientRect = () => ({
+    top: 200 - scrollTop, bottom: 200 - scrollTop + spentHeight, height: spentHeight,
+  });
+
+  /* The new turn's answer: the row the hold owns. */
+  const assistant = makeAssistant(list, 'current');
+  assistant.getBoundingClientRect = () => ({
+    top: scrollTop + 900, bottom: scrollTop + 940, height: 40,
+  });
+
+  const previousMessages = stateStore.read('messages');
+  const observers = [];
+  const previousResizeObserver = globalThis.ResizeObserver;
+  globalThis.ResizeObserver = class {
+    constructor(callback) { this.callback = callback; this.observed = new Set(); observers.push(this); }
+    observe(element) { this.observed.add(element); }
+    unobserve(element) { this.observed.delete(element); }
+    disconnect() { this.observed.clear(); }
+  };
+  /* A real ResizeObserver only fires for the elements it watches, so a
+     layout change in an unwatched row must not reach the hold. */
+  const resize = (element) => {
+    for (const observer of observers) {
+      if (observer.observed.has(element)) { observer.callback(); return true; }
+    }
+    return false;
+  };
+  const queue = [];
+  const restoreRaf = stubRaf(queue);
+  mock.timers.enable({ apis: ['Date'] });
+  const pump = (times = 8) => {
+    for (let i = 0; i < times; i += 1) {
+      const frame = queue.shift();
+      if (!frame) break;
+      if (frame.length > 0) frame(i * 16);
+      else frame();
+    }
+  };
+  try {
+    stateStore.dispatch({
+      type: 'state/set',
+      key: 'messages',
+      value: [
+        { clientId: 'user-1', role: 'user', rawText: 'hello', html: null },
+        { clientId: 'spent', role: 'assistant', rawText: 'old answer', html: null, _turnAnchorMinHeight: 534 },
+        { clientId: 'current', role: 'assistant', rawText: '', html: null, _turnAnchorMinHeight: 562 },
+      ],
+    });
+
+    scheduleActiveTurnToTop(list, assistant, -1, null);
+    await Promise.resolve();
+    pump();
+    /* The turn's settle window runs on a deadline: let it expire so the
+       spent reserve is retired. */
+    mock.timers.tick(200);
+    pump();
+
+    /* The spent row's reserve is retired once the new turn's glide has
+       landed: the row loses its anchor, but its CONTENT only settles on the
+       next React commit. */
+    assert.equal(spent.classList.contains('turn-viewport-anchor'), false);
+    assert.equal(spent.style.minHeight, '');
+
+    /* The commit lands: the row settles 154px shorter, the transcript's
+       scroll range shrinks with it, and the browser clamps the scroll
+       offset — which is what moves the reader. */
+    spentHeight = 380;
+    promptContent -= 154;
+    scrollHeight = 3134;
+    clampScroll();
+    assert.equal(prompt.getBoundingClientRect().top, 4);
+
+    /* The hold watches the retired row, so the commit reaches it and it
+       re-aligns the prompt in its slot. */
+    assert.equal(resize(spent), true, 'the hold watches the retired row');
+    assert.equal(scrollTop, 2460);
+    assert.equal(prompt.getBoundingClientRect().top, 12);
+  } finally {
+    releaseTurnViewportHold();
+    mock.timers.reset();
+    stateStore.dispatch({ type: 'state/set', key: 'messages', value: previousMessages });
+    if (previousResizeObserver === undefined) delete globalThis.ResizeObserver;
+    else globalThis.ResizeObserver = previousResizeObserver;
+    restoreRaf();
+    list.remove();
+  }
 });

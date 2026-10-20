@@ -322,3 +322,77 @@ HEAD 与当前 `sendPipeline.ts:62–76` 都规定：流式回合进行中且没
 正式日志：`/tmp/socrates-perf-review/regression.log`；结构化结果：`/tmp/socrates-animation-review/perf-final-results.json`；原始失败 trace：`/tmp/socrates-animation-review/perf-final-results/`。本轮没有改产品源码，复用上轮已验证构建的同一生产产物，未重复声称本轮新做了 build 或 73 项单测。最终工作区仅本文新增内容，原 specs 与产品源码仍等于 HEAD；暂存区为空，HEAD 仍为 `07bf68363901499910566bfe80ab93f3f1f3fc2d`，没有提交、推送、部署或改动远端规则。
 
 **当前结论：软件合成及整帧采集的帧预算压力已有直接证据，采样漏读和动画曲线误写不受本轮证据支持；具体产品缺陷归因仍未闭环，不做猜测性修复，保留原两项门禁阻塞。**
+
+## 本轮继续整改：自然排队后 prompt 停在槽位上方 8px，以及帧数断言的刷新率依赖
+
+基线 `main@d3d79389`（含上一轮 5 个提交），工作区干净。本节的两条结论互相独立：第一条是**产品缺陷**，已修；第二条是**门禁本身的量纲错误**，已改写契约。上一节记录的两项"动画中间帧不足"在本机没有复现，原因是它与宿主刷新率有关（见本节末）。
+
+### 复现：先跑出本机自己的基线
+
+不沿用上一节的结论，重新跑一遍：
+
+- `frontend/e2e/chat-send-glide.spec.mjs` 13 项 → **3 失败 / 10 通过**，失败全部是 `desktop + AI streaming`（short transcript / full transcript / deep history 三个场景一致）。
+- 失败断言**不是**帧数断言，而是落点断言：`chat-send-glide.spec.mjs:299` 期望 prompt 停在 transcript 顶部下方 12±2px，实测 **4px**。
+- 与距离无关，与"旧回合仍在流式 → 新问题入队 → 自然出队"这条路径有关。
+
+### 根因：reserve 退休的 1:1 补偿测在 React commit 之前
+
+`chat/turnAnchor.ts` 的 `retireReservesAboveViewport()` 的意图写在函数注释里：退休旧回合的 reserve 时，"布局收缩 1:1 补偿，读者不移动"。实现是在**清掉内联 `minHeight` 的同一帧**测量 prompt 的漂移并写回 `scrollTop`。
+
+**在 React 路径下这个测量恒为 0。** 清掉内联样式只改样式、不改渲染：那一行当时仍是 live 流式形态，真实高度 534px 就是它的渲染高度，清除 minHeight 后行高不变、`scrollHeight` 不变，于是 `drift = 0`，补偿分支直接跳过。真正让它变矮 154px（534 → 380）的是**下一次 React commit**（该行换成 settled 形态）。commit 落地时 transcript 的滚动范围随之缩短，浏览器把 `scrollTop` 从 2614 钳到 2468（新的 `scrollHeight - clientHeight`），prompt 因此从槽位抬高了 8px；而此时回合的 settle 窗口早已结束，hold 观察的是**答案行**、不是 prompt **上方**那段内容，没有任何机制会把它拉回来。
+
+证据（仓库外诊断，仓库内不留临时文件）：
+
+| 时刻 | scrollTop | scrollHeight | prompt 落点 | 说明 |
+| --- | ---: | ---: | ---: | --- |
+| 退休帧 | 2614 | 3288 | 12 | 内联 minHeight 已清，行高仍 534，`drift = 0`，未写入 scrollTop |
+| 下一帧 | 2468 | 3134 | 4 | React commit 落地，行高 534 → 380，浏览器钳位 |
+
+最后一行是关键：**全程没有任何一次程序化 `scrollTop` 写入把 2614 变成 2468**，那次变化是浏览器在滚动范围收缩时的自动钳位。也就是说"1:1 补偿"从未执行过。
+
+### 修复：让 hold 观察被退休的行
+
+补偿的时机错了，机制本身是对的——hold（`startTurnViewportHold`）本来就是"把 prompt 钉在顶部偏移"的既有机制，它通过 `alignPromptToOffset` 在每次布局变动时重新对齐，缺的只是"prompt 上方内容变化"这个触发源。
+
+- `chat/turnAnchor.ts` 新增 `observeTurnViewportRow()`，把某一行交给当前 hold 的 `ResizeObserver`；退休时把每个被退休的行交给它。该行在下一次 React commit 落到最终高度时，hold 会在**该帧绘制之前**重新对齐 prompt。
+- 退休处的漂移测量从视口绝对值改为**列表相对值**（`promptRow.top - list.top`）：跨帧测量时若 transcript 自身在视口内移动（composer 或键盘改变高度），绝对值会误判成漂移，相对值不会。
+- 同步补偿分支保留：legacy 路径下内联样式立即生效，那一帧就测得到。
+
+落点验算：prompt 内容位置 2472、`alignPromptToOffset` 目标 `offsetTop - 12 = 2460`，在新的滚动范围 `[0, 2468]` 内，落点回到 12px。
+
+### 门禁的量纲错误：帧数不是契约
+
+上一节把 `chat-send-glide` 的"至少 8 个中间帧"判为阻塞项。用生产 motion 模块复算，这条断言的余量是**零**：
+
+| 刷新率 | 合格中间帧 | 结果 |
+| --- | ---: | --- |
+| 144Hz | 21 | 通过 |
+| 60Hz | **8** | 恰好通过，余量 0 |
+| 60Hz 掉一帧 | 7 | 失败 |
+| 50Hz | 7 | 失败 |
+| 30Hz | 4 | 失败 |
+
+205ms / 670px / easeOutQuint 这条曲线，在理想 60Hz 下**恰好**产出 8 个合格样本。也就是说这条断言实际断言的是"宿主必须维持 60Hz 且零抖动"，而不是"发送是滑行而不是瞬移"。审计环境跑出 5–7 帧正是这个原因；本机跑出恰好 8 帧、帧间隔 12–17ms，也只差一帧就会红。
+
+动画是**时间制**的（`ui/motion.js` `planSendGlide`），帧数是"时长 × 刷新率"的派生物。契约应当是**运动本身**，不是帧数：
+
+- 改写后断言 prompt 经过**至少 3 个中间位置**，且这些中间位置**跨越至少 60ms 墙钟时间**。瞬移没有中间位置也没有时长；30Hz 宿主上 205ms 的滑行仍能同时满足两者。
+- `reduced motion` 用例对称收紧：中间位置 ≤ 2，且跨度 ≤ 60ms。
+- 落点断言（12±2px）、单调性断言、距离断言（> 100px）全部保留不变。
+
+**门禁强度未被放松**：把生产 `planSendGlide` 临时改成恒定 snap（发送改为瞬移）后重建，6 个有动画预期的场景全部失败并指出中间位置不足，`reduced motion` 用例仍通过；恢复后 13/13 通过。
+
+### 本轮实际验证
+
+- `npm run build` 成功（含 TypeScript 检查与 Vite 生产打包）；Playwright 针对该重建产物运行。
+- `frontend/e2e/chat-send-glide.spec.mjs`：**13/13 通过**。
+- 12 个相关 specs 完整串行（`chat-autoscroll` / `chat-send` / `chat-stop-resend` / `streaming-render` / `message-list-compat` / `chat-send-glide` / `chat-keyboard-anchor` / `history-rich-content` / `chat-preparation` / `settled-tail-scroll` / `tool-order` / `keyboard-viewport`）：**82 项全部通过**，约 3.9 分钟，单 worker，无 max-failures 提前停止。对比上一节记录的 61 项 / 2 失败。
+- 前端完整单测 **988/988 通过**。
+- 完整 `npm run lint`：**0 error / 455 个既有 warning**，与此前基线一致；自研棘轮（CSS 债务、按钮尺寸、z-index、chat 分层、legacy JS、外部主机、CSP 哈希、文档路径、转发 shim、packages DOM-free）全部通过。
+- 新增聚焦单测 `frontend/test/turnAnchor.test.mjs`："retiring a spent reserve keeps the prompt in its slot when the row settles later"。红/绿对照：注释掉 `observeTurnViewportRow(el)` 后该用例立即失败并指出"the hold watches the retired row"，恢复后通过。
+
+### 仍未关闭
+
+- **完整 SPA smoke 与远端 CI 状态未验证**：本轮只跑了 12 个相关 specs，没有跑全量 smoke，也没有推送，因此不能声称远端已全绿。
+- **帧预算归因仍未闭环**：上一节的软件合成结论依然成立（`SoftwareRenderer`、DrawFrame 中位 14.6–16.1ms）。本轮把门禁从帧数改成运动本身，**没有**改变渲染成本本身；若要在真实硬件加速下重新评估帧预算，需要另一份对照证据。
+- 上一节列出的远端验收项（分支保护、CodeQL triage、隔离 staging、邮件告警、备份恢复演练、Universal App 真机签收）本轮均未涉及。

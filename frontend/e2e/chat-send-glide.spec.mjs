@@ -15,8 +15,17 @@
 //   - monotonic: the prompt only ever travels up toward its slot — no frame
 //     moves it back down by more than 2px (no competing scroll writer, no
 //     end-of-glide correction snap, no answer growing above it);
-//   - animated: a glide covering real distance spans at least 8 frames;
+//   - animated: a glide covering real distance passes through several
+//     intermediate positions over a real span of time, instead of jumping
+//     to the slot in one step;
 //   - settled: the prompt ends 12±2px below the transcript top.
+//
+// The animation is time-based (ui/motion.js planSendGlide), so how many
+// frames a glide produces depends on the host's refresh rate: a 205ms glide
+// yields about a dozen samples on a 60Hz display and about half of that on a
+// software-rendered CI host. The contract is therefore the MOTION — several
+// intermediate positions spread over real time — not a frame count, which
+// would silently turn the gate into a "the host must sustain 60Hz" check.
 
 import { test } from './_lib.mjs';
 import { expect } from '@playwright/test';
@@ -177,6 +186,7 @@ async function beginGlideSampling(page, text) {
     const list = document.getElementById('msgList');
     const initialIds = new Set(window.stateStore.read('messages').map((message) => message.clientId));
     const offsets = [];
+    const times = [];
     let sawSettling = false;
     let tail = 0;
     const deadline = performance.now() + 3500;
@@ -189,11 +199,12 @@ async function beginGlideSampling(page, text) {
       const prompt = message && [...list.querySelectorAll('.msg.user')].find((row) => row.dataset.clientId === message.clientId);
       if (prompt) {
         offsets.push(prompt.getBoundingClientRect().top - list.getBoundingClientRect().top);
+        times.push(performance.now());
       }
       if (list.dataset.turnAnchorSettling === 'true') sawSettling = true;
       if (sawSettling && list.dataset.turnAnchorSettling !== 'true') tail += 1;
       if (tail > 20 || performance.now() > deadline) {
-        resolve({ offsets, sawSettling });
+        resolve({ offsets, times, sawSettling });
         return;
       }
       requestAnimationFrame(tick);
@@ -217,7 +228,23 @@ async function promptOffset(page) {
   });
 }
 
-function assertGlide({ offsets, sawSettling }, { expectMotion }) {
+/* The motion between the start and the end: the samples that caught the
+   prompt strictly between its first and last position, and how long that
+   took. A jump has no intermediate positions and no duration; a glide has
+   both. */
+function inFlightMotion(offsets, times) {
+  const start = offsets[0];
+  const end = offsets[offsets.length - 1];
+  const samples = offsets
+    .map((v, i) => ({ v, t: times[i] }))
+    .filter(({ v }) => v < start - 1 && v > end + 1);
+  return {
+    count: samples.length,
+    span: samples.length ? samples[samples.length - 1].t - samples[0].t : 0,
+  };
+}
+
+function assertGlide({ offsets, times, sawSettling }, { expectMotion }) {
   const trace = JSON.stringify(offsets.map((v) => Math.round(v)));
   expect(sawSettling, 'the send took scroll ownership').toBe(true);
   expect(offsets.length, 'the new prompt was sampled').toBeGreaterThan(0);
@@ -228,9 +255,9 @@ function assertGlide({ offsets, sawSettling }, { expectMotion }) {
     const start = offsets[0];
     const end = offsets[offsets.length - 1];
     expect(start - end, `glide distance: ${trace}`).toBeGreaterThan(100);
-    /* Frames strictly between start and end prove it was animated. */
-    const inFlight = offsets.filter((v) => v < start - 1 && v > end + 1).length;
-    expect(inFlight, `animated frames: ${trace}`).toBeGreaterThanOrEqual(8);
+    const motion = inFlightMotion(offsets, times);
+    expect(motion.count, `animated positions: ${trace}`).toBeGreaterThanOrEqual(3);
+    expect(motion.span, `glide duration: ${trace}`).toBeGreaterThanOrEqual(60);
   }
 }
 
@@ -315,11 +342,10 @@ test('reduced motion: a send from deep history lands on the prompt without anima
   await bootChat(page, 80);
   await readHistory(page, 80);
   await placeReader(page, 'history');
-  const { offsets } = await sendAndSample(page, 'Reduced motion send');
-  const start = offsets[0];
-  const end = offsets[offsets.length - 1];
-  const inFlight = offsets.filter((v) => v < start - 1 && v > end + 1).length;
-  expect(inFlight, JSON.stringify(offsets.map(Math.round))).toBeLessThanOrEqual(2);
+  const { offsets, times } = await sendAndSample(page, 'Reduced motion send');
+  const motion = inFlightMotion(offsets, times);
+  expect(motion.count, JSON.stringify(offsets.map(Math.round))).toBeLessThanOrEqual(2);
+  expect(motion.span, JSON.stringify(offsets.map(Math.round))).toBeLessThanOrEqual(60);
   const offset = await promptOffset(page);
   expect(offset).toBeGreaterThanOrEqual(10);
   expect(offset).toBeLessThanOrEqual(14);
