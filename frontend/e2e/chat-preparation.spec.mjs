@@ -90,3 +90,41 @@ test('starting a new conversation cancels pending page reading without sending t
   expect(bodies).toHaveLength(0);
   await expect(page.locator('#topicSetup')).toBeVisible();
 });
+
+test('a follow-up during a normal stream queues until the current answer finishes', async ({ page }) => {
+  await boot(page);
+  await page.evaluate(() => window.renderRecents());
+  await page.evaluate(() => {
+    const nativeFetch = window.fetch.bind(window);
+    const encoder = new TextEncoder();
+    window.__normalStreamRequests = 0;
+    window.fetch = (input, options) => {
+      const url = typeof input === 'string' ? input : input?.url || '';
+      if (!url.includes('/chat/stream')) return nativeFetch(input, options);
+      window.__normalStreamRequests += 1;
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode('data: {"choices":[{"delta":{"content":"The current answer is still streaming."}}]}\n\n'));
+          const finish = () => {
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+            controller.close();
+          };
+          if (window.__normalStreamRequests === 1) window.__finishNormalStream = finish;
+          else finish();
+        },
+      });
+      return Promise.resolve(new Response(stream, {
+        status: 200, headers: { 'Content-Type': 'text/event-stream' },
+      }));
+    };
+    window.submitChatMessage('Start a normal answer');
+  });
+  await expect(page.locator('#msgList .msg.assistant').last()).toContainText('The current answer');
+  expect(await page.evaluate(() => typeof window._activeChatAbort)).toBe('function');
+  await page.evaluate(() => window.submitChatMessage('Follow-up after this answer'));
+  await expect(page.locator('.composer-queue-banner')).toContainText('Follow-up after this answer');
+  expect(await page.evaluate(() => window.__normalStreamRequests)).toBe(1);
+  await page.evaluate(() => window.__finishNormalStream());
+  await expect.poll(() => page.evaluate(() => window.__normalStreamRequests)).toBe(2);
+  await expect(page.locator('.composer-queue-banner')).toHaveCount(0);
+});

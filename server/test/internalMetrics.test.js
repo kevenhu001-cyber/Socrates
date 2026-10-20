@@ -75,3 +75,44 @@ test('valid bearer credential returns process/request/SSE metrics identically vi
   assert.deepEqual(afterAlias.requests, body.requests,
     'completed v2 scrapes must not contribute to business request samples');
 });
+
+test('successful business requests populate metrics while disabled and rejected scrapes do not', async () => {
+  const hello = await get('/api/hello');
+  assert.equal(hello.status, 200);
+  assert.deepEqual(await hello.json(), { message: 'hello' });
+  process.env.INTERNAL_METRICS_TOKEN = token;
+  const beforeScrapes = await (await get('/api/_internal/metrics', `Bearer ${token}`)).json();
+  assert.equal(typeof beforeScrapes.requests.avgResponseMs, 'number');
+  assert.equal(beforeScrapes.requests.successRate, 100);
+  for (const path of ['/api/_internal/metrics?probe=1', '/api/v2/_internal/metrics?probe=1']) {
+    delete process.env.INTERNAL_METRICS_TOKEN;
+    const disabled = await get(path);
+    assert.equal(disabled.status, 404);
+    await disabled.text();
+    process.env.INTERNAL_METRICS_TOKEN = token;
+    for (const [credential, status] of [[undefined, 401], ['Bearer wrong', 403]]) {
+      const rejected = await get(path, credential);
+      assert.equal(rejected.status, status);
+      await rejected.text();
+    }
+  }
+  const afterScrapes = await (await get('/api/v2/_internal/metrics', `Bearer ${token}`)).json();
+  assert.deepEqual(afterScrapes.requests, beforeScrapes.requests,
+    'disabled/unauthorized canonical and v2 scrapes cannot skew a real business sample');
+});
+
+test('metrics expose finite active SSE counts and clamp invalid or negative locals', async () => {
+  process.env.INTERNAL_METRICS_TOKEN = token;
+  const previous = app.locals.sseCount;
+  try {
+    for (const [value, expected] of [[undefined, 0], [NaN, 0], [-4, 0], [7, 7]]) {
+      app.locals.sseCount = value;
+      const response = await get('/api/_internal/metrics', `Bearer ${token}`);
+      assert.equal(response.status, 200);
+      assert.equal((await response.json()).activeSseConnections, expected);
+    }
+  } finally {
+    if (previous === undefined) delete app.locals.sseCount;
+    else app.locals.sseCount = previous;
+  }
+});

@@ -379,7 +379,13 @@ test('conversation transcript remains independently scrollable', async ({ page }
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     window.__testActivateMainView('chatView');
-    for (let index = 0; index < 32; index += 1) {
+    window.addMessage('user', `Scrollable history 1: ${'conversation content '.repeat(8)}`);
+  });
+  // Establish an appended conversation before adding the remaining turns.
+  // A single bulk replacement deliberately mounts only a bounded history tail.
+  await expect(page.locator('#msgList .msg').first()).toContainText('Scrollable history 1:');
+  await page.evaluate(() => {
+    for (let index = 1; index < 32; index += 1) {
       window.addMessage(
         index % 2 ? 'assistant' : 'user',
         `Scrollable history ${index + 1}: ${'conversation content '.repeat(8)}`,
@@ -424,7 +430,11 @@ test('a growing composer keeps the latest message visible and the transcript pin
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     window.__testActivateMainView('chatView');
-    for (let index = 0; index < 18; index += 1) {
+    window.addMessage('user', 'Composer resize history 1: enough content to keep the transcript scrollable.');
+  });
+  await expect(page.locator('#msgList .msg').first()).toContainText('Composer resize history 1:');
+  await page.evaluate(() => {
+    for (let index = 1; index < 18; index += 1) {
       window.addMessage(
         index % 2 ? 'assistant' : 'user',
         `Composer resize history ${index + 1}: enough content to keep the transcript scrollable.`,
@@ -479,7 +489,11 @@ test('late growth in the latest answer follows pinned readers but preserves manu
   await page.evaluate(() => {
     window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     window.__testActivateMainView('chatView');
-    for (let index = 0; index < 20; index += 1) {
+    window.addMessage('user', 'Late layout history 1: async rich content may change this answer height.');
+  });
+  await expect(page.locator('#msgList .msg').first()).toContainText('Late layout history 1:');
+  await page.evaluate(() => {
+    for (let index = 1; index < 20; index += 1) {
       window.addMessage(
         index % 2 ? 'assistant' : 'user',
         `Late layout history ${index + 1}: async rich content may change this answer height.`,

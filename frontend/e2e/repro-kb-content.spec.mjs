@@ -34,7 +34,11 @@ async function seedChat(page, count = 30) {
     window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
     window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '99999999-9999-4999-8999-999999999999' });
     window.__testActivateMainView('chatView');
-    for (let i = 0; i < n; i += 1) {
+    window.addMessage('user', `History 1: ${'content '.repeat(8)}`);
+  }, count);
+  await expect(page.locator('#msgList .msg').first()).toContainText('History 1:');
+  await page.evaluate((n) => {
+    for (let i = 1; i < n; i += 1) {
       window.addMessage(i % 2 ? 'assistant' : 'user', `History ${i + 1}: ${'content '.repeat(8)}`);
     }
   }, count);

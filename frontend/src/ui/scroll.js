@@ -374,13 +374,16 @@ export function initChatComposerReserve(options){
     if(!current)return;
     var previousTop=lastMetrics?lastMetrics.scrollTop:current.scrollTop;
     var previousHeight=lastMetrics&&lastMetrics.clientHeight;
-    lastMetrics=current;
-    /* A flex-layout resize can dispatch a scroll event without user input.
-       If scrollTop did not move, keep the old bottom-follow intent and let
-       the layout observer below settle the new bottom. */
-    if(lastPinned&&previousHeight!=null
+    /* A queued bottom scroll can arrive after flex shrinks the viewport but
+       before ResizeObserver. Preserve the OLD viewport metrics until that
+       observer recovers pin intent from the new scrollTop; even lastPinned
+       may still describe the position before the first bottom scroll.
+       Upward movement still samples normally, and real wheel/touch/key
+       intent independently blocks follow through _userScrolledAway. */
+    if(previousHeight!=null
        && current.clientHeight<previousHeight-1
-       && Math.abs(current.scrollTop-previousTop)<=1)return;
+       && current.scrollTop>=previousTop-1)return;
+    lastMetrics=current;
     lastPinned=wasPinned(current);
   }
 
@@ -460,7 +463,7 @@ export function initChatComposerReserve(options){
          inset-driven re-anchor for the live keyboard path belongs to
          ui/keyboard/index.ts, which captures pin intent before the first
          frame writes. */
-      if(!pinnedBeforeResize)return;
+      if(!pinnedBeforeResize){rememberMetrics();return;}
       /* A newly submitted turn deliberately owns the prompt's viewport
          offset while the composer changes height. The send path marks that
          ownership on the live list; history/layout-only updates do not. */

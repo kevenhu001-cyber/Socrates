@@ -139,6 +139,10 @@ test('an active tool at the turn tail owns progress without an extra cursor', as
     window.__tailPromise = window.askChatTurn('写文件');
   });
 
+  await page.waitForFunction(() => (
+    typeof window.__pushText === 'function'
+    && typeof window.__pushToolUse === 'function'
+  ), null, { timeout: 15_000 });
   const bubble = page.locator('.msg.assistant').last().locator('.msg-body');
   // Finish the paragraph before the tool fires, then keep the stream open:
   // the row mounts at the turn tail, so its cursor must follow it.

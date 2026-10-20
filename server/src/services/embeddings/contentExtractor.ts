@@ -167,6 +167,11 @@ class WorkerSlot {
       if (this.failedBoots > 3) {
         throw new Error('content_extractor_disabled: too many boot failures');
       }
+      // A worker can time out or exit while this caller is queued. The
+      // runOne() entry check then predates its death: reaping here replaces
+      // it before retrying, instead of spinning on a resolved claim chain
+      // and starving the exit event (and every other timer) indefinitely.
+      this.pool._reapDeadSlots();
       if (this.tryClaim()) return;
       // Busy — wait for the in-flight claim to release, then re-check.
       await this._claimChain;

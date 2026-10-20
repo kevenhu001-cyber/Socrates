@@ -499,7 +499,7 @@
   display: flex;
   align-items: center;
   gap: var(--ui-space-xs);
-  min-height: var(--ui-control-sm);
+  min-height: var(--ui-control-xs);
   max-width: max-content;
   padding: 0;
   border-radius: 0;

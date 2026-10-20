@@ -964,6 +964,7 @@ export function ChatMessageList({
   // This avoids yanking someone back down after they scroll up to reread.
   const followsBottom = useRef(true);
   const lastScrollOffset = useRef(0);
+  const followFrame = useRef<number | null>(null);
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   const redoCount = redoItems?.length || 0;
   const scrollToLatest = useCallback((animated: boolean) => {
@@ -972,6 +973,9 @@ export function ChatMessageList({
     const responder = listRef.current?.getScrollResponder() as unknown as ScrollView | null;
     if (responder?.scrollToEnd) responder.scrollToEnd({ animated });
     else listRef.current?.scrollToEnd({ animated });
+  }, []);
+  useEffect(() => () => {
+    if (followFrame.current !== null) cancelAnimationFrame(followFrame.current);
   }, []);
   useEffect(() => {
     // Baseline appends the redo card and scrolls the transcript to it.
@@ -1010,7 +1014,9 @@ export function ChatMessageList({
       style={styles.transcriptList}
       accessibilityRole="list"
       keyboardShouldPersistTaps="handled"
-      scrollEventThrottle={16}
+      // RN Web also throttles synthetic/native events within a frame. Do not
+      // discard an upward movement immediately after a programmatic follow.
+      scrollEventThrottle={Platform.OS === 'web' ? 1 : 16}
       onScroll={(event) => {
         const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
         // Growing/virtualized content can move the end away before our next
@@ -1020,7 +1026,14 @@ export function ChatMessageList({
         setShowJumpToLatest(!followsBottom.current);
       }}
       onContentSizeChange={() => {
-        if (followsBottom.current) scrollToLatest(false);
+        // ResizeObserver/virtualization can report growth before the pending
+        // scroll event. Let that event update reader intent before following,
+        // otherwise a resize can snap an upward scroll straight back down.
+        if (followFrame.current !== null) cancelAnimationFrame(followFrame.current);
+        followFrame.current = requestAnimationFrame(() => {
+          followFrame.current = null;
+          if (followsBottom.current) scrollToLatest(false);
+        });
       }}
       contentContainerStyle={[styles.messages, compact && styles.messagesCompact]}
       data={messages}

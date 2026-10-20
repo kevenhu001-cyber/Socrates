@@ -49,7 +49,7 @@ const BAD_SPEC = {
   title: 'Broken pie',
   caption: 'Missing series',
   accessibilitySummary: 'A pie with no data.',
-  payload: { categories: [], series: null },
+  payload: { categories: [], series: [{ data: null }] },
 };
 
 const SEARCH_RESULTS = [

@@ -7,11 +7,13 @@ async function installStream(page, immediate = true) {
     const nativeFetch = window.fetch.bind(window);
     const encoder = new TextEncoder();
     let ref;
+    window.__thinkingStreamReady = false;
     window.fetch = (input, init) => {
       const url = typeof input === 'string' ? input : input?.url || '';
       if (!url.includes('/chat/stream')) return nativeFetch(input, init);
       const body = new ReadableStream({ start(controller) {
         ref = controller;
+        window.__thinkingStreamReady = true;
         if (immediate) controller.enqueue(encoder.encode('data: {"choices":[{"delta":{"reasoning_content":"private reasoning"}}]}\n\n'));
       } });
       return Promise.resolve(new Response(body, { headers: { 'Content-Type': 'text/event-stream' } }));
@@ -60,6 +62,7 @@ async function startTurn(page, immediate = true) {
   await boot(page, [{ clientId: 'user-think', role: 'user', rawText: 'Think it through', html: null }]);
   await installStream(page, immediate);
   await page.evaluate(() => { window.__thinkTurnPromise = window.askChatTurn('Think it through'); });
+  await page.waitForFunction(() => window.__thinkingStreamReady === true, null, { timeout: 15_000 });
   return page.locator('.msg.assistant').last();
 }
 

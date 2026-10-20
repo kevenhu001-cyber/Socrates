@@ -153,8 +153,8 @@ test('phone library filters actual images and selects only visible rows', async 
     const sidebar = document.getElementById('sidebar');
     if (sidebar && !sidebar.classList.contains('collapsed')) window.toggleSidebar?.();
   });
-  // The reference phone drawer is 80vw capped at 330px: 312px at 390px.
-  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? 0)).toBe(-312);
+  // The reference phone drawer is 65vw capped at 280px: 253.5px at 390px.
+  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? 0)).toBe(Math.round(-390 * 0.65));
   await expect(page.locator('.library-directory')).toBeVisible();
   await page.screenshot({ path: 'test-results/socrates-reference-mobile-library-list-390x769.png' });
   await page.getByRole('tab', { name: 'Images' }).click();

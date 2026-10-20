@@ -71,11 +71,9 @@ function measure(proj) {
     /* A failing test also fails coverage collection. Surface that clearly
      * rather than reporting "coverage dropped". */
     out = `${err.stdout ?? ''}${err.stderr ?? ''}`;
-    if (!/all files/.test(out)) {
-      console.error(`[coverage] ${proj}: the test run itself failed; fix the tests first.`);
-      console.error(out.trim().split('\n').slice(-25).join('\n'));
-      process.exit(1);
-    }
+    console.error(`[coverage] ${proj}: the test run itself failed; fix the tests first.`);
+    console.error(out.trim());
+    process.exit(1);
   }
 
   const rows = out.split('\n').filter((l) => l.includes('all files'));

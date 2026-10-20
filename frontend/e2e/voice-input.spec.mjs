@@ -100,13 +100,13 @@ async function enterChat(page) {
   await page.waitForTimeout(300);
 }
 
-test('incognito lives in the 更多 popover; the header keeps one new-chat control', async ({ page }) => {
+test('incognito lives in the 更多 popover; new-chat stays out of the home header', async ({ page }) => {
   await bootVoiceFixture(page, { width: 390, height: 844 });
-  /* Reference top bar: hamburger · mode pill · a single circular new-chat
-     button. Incognito moved into the sidebar's 更多 menu. */
+  /* The home header keeps the hamburger and mode pill; new-chat is hidden
+     here. Incognito moved into the sidebar's 更多 menu. */
   const newChat = page.locator('#mobileNewChatBtn');
   const incognito = page.locator('#mobileIncognitoBtn');
-  await expect(newChat).toBeVisible();
+  await expect(newChat).toBeHidden();
   await expect(incognito).toBeHidden();
 
   await page.locator('#sidebarOpenBtn').click();
@@ -131,8 +131,8 @@ test('incognito lives in the 更多 popover; the header keeps one new-chat contr
 
   await enterChat(page);
 
-  /* The header contract is unchanged in-conversation: the circular
-     new-chat control stays, incognito remains out of the header. */
+  /* New-chat becomes available in the active conversation header;
+     incognito remains out of the header. */
   await expect(newChat).toBeVisible();
   await expect(incognito).toBeHidden();
 });

@@ -44,7 +44,7 @@ export function enqueuePrompt(input: { text: string; sessionId?: string | null }
     sessionId: input.sessionId ?? null,
     createdAt: Date.now(),
   };
-  queuedPrompts.push(item);
+  queuedPrompts = [...queuedPrompts, item];
   emit();
   return item;
 }
@@ -54,13 +54,15 @@ export function dequeuePrompt(sessionId?: string | null): QueuedPrompt | undefin
   if (sessionId) {
     const idx = queuedPrompts.findIndex((p) => !p.sessionId || p.sessionId === sessionId);
     if (idx >= 0) {
-      const [item] = queuedPrompts.splice(idx, 1);
+      const item = queuedPrompts[idx];
+      queuedPrompts = queuedPrompts.filter((_, index) => index !== idx);
       emit();
       return item;
     }
     return undefined;
   }
-  const item = queuedPrompts.shift();
+  const [item, ...remaining] = queuedPrompts;
+  queuedPrompts = remaining;
   emit();
   return item;
 }

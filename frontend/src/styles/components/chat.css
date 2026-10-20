@@ -136,7 +136,13 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   #appShell #msgList > .msg.user {
     contain-intrinsic-size: auto 90px;
   }
-  #appShell #msgList > .msg.assistant[data-stream-settled="true"] {
+  /* Keep the newest pair measured, just like user rows below. A settled
+     answer mounted below the fold has no remembered size yet: using the
+     240px estimate until the first bottom scroll can shrink it to its real
+     height during composer reflow, moving scrollTop upward and falsely
+     releasing the reader's bottom-follow intent. Anchors also need exact
+     geometry. Older settled history still skips off-screen layout. */
+  #appShell #msgList > .msg.assistant[data-stream-settled="true"]:nth-last-child(n + 3):not(.turn-viewport-anchor) {
     content-visibility: auto;
     contain-intrinsic-size: auto 240px;
   }

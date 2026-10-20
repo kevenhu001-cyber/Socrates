@@ -81,3 +81,25 @@ test('submitChatMessage enqueues when streaming is active', async () => {
   clearPromptQueue();
 });
 
+
+test('promptQueue publishes stable immutable snapshots for React external-store consumers', () => {
+  clearPromptQueue();
+  const empty = getQueuedPrompts();
+  assert.equal(getQueuedPrompts(), empty, 'unchanged reads must keep their reference');
+  const first = enqueuePrompt({ text: 'First', sessionId: 's1' });
+  const one = getQueuedPrompts();
+  assert.notEqual(one, empty);
+  assert.deepEqual(empty, []);
+  enqueuePrompt({ text: 'Second', sessionId: 's2' });
+  const two = getQueuedPrompts();
+  assert.notEqual(two, one);
+  assert.deepEqual(one, [first], 'older snapshots must not be changed by enqueue');
+  assert.equal(dequeuePrompt('s1'), first);
+  const remaining = getQueuedPrompts();
+  assert.notEqual(remaining, two);
+  assert.equal(two.length, 2, 'session dequeue must preserve the previous snapshot');
+  dequeuePrompt();
+  assert.notEqual(getQueuedPrompts(), remaining);
+  assert.equal(remaining.length, 1, 'FIFO dequeue must preserve the previous snapshot');
+  clearPromptQueue();
+});

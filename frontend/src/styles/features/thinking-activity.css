@@ -118,7 +118,7 @@
   min-height: var(--ui-control-sm);
   padding-block: 0;
   color: var(--ui-text-tertiary);
-  font-size: var(--ui-font-size-xs);
+  font-size: var(--ui-font-size-sm);
 }
 .thinking-accordion[data-answer-started="true"] .thinking-accordion-title {
   font-weight: 450;

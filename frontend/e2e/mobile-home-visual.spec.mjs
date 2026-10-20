@@ -15,6 +15,7 @@ test('mobile conversation home matches the compact dark reference layout', async
   await page.waitForTimeout(350);
 
   const leftButton = page.locator('#sidebarOpenBtn');
+  const landingNewChat = page.locator('#mobileNewChatBtn');
   const composer = page.locator('#composerInputWrap');
   const editor = page.locator('#composerRoot .rich-composer-editor');
 
@@ -22,6 +23,7 @@ test('mobile conversation home matches the compact dark reference layout', async
   await expect(page.locator('.mobile-starter-prompt')).toHaveCount(0);
   await expect(page.locator('.home-ideas, .chat-suggestions, #topicQuickActions')).toHaveCount(0);
   await expect(leftButton).toBeVisible();
+  await expect(landingNewChat).toBeHidden();
   await expect(composer).toBeVisible();
 
   const geometry = await page.evaluate(() => {
@@ -31,7 +33,6 @@ test('mobile conversation home matches the compact dark reference layout', async
     };
     return {
       left: rect('#sidebarOpenBtn'),
-      right: rect('#mobileNewChatBtn'),
       composer: rect('#composerInputWrap'),
       topicFontSize: parseFloat(getComputedStyle(document.querySelector('#composerRoot .rich-composer-editor')).fontSize),
       viewportHeight: window.innerHeight,
@@ -44,9 +45,6 @@ test('mobile conversation home matches the compact dark reference layout', async
 
   expect(geometry.left?.width).toBe(44);
   expect(geometry.left?.height).toBe(44);
-  /* The new-chat action is a landing top-bar button, so it takes the same
-     44px tactile chip as the hamburger (restore/chat-surface.css). */
-  expect(geometry.right?.width).toBe(44);
   expect(geometry.composer?.width).toBeGreaterThanOrEqual(320);
   /* Empty-home mobile composer uses the reference's two-row 85px stack
      (editor on row 1, add/dictation/send controls on row 2). The height

@@ -11,8 +11,8 @@ for (const theme of ['light', 'dark']) for (const mobile of [false, true]) {
     await page.addInitScript((theme) => localStorage.setItem('socrates-theme', theme), theme);
     await prepareChatWorkbench(page);
     if (mobile) await page.setViewportSize({ width: 390, height: 844 });
-    await page.evaluate(({ source, quote, citation, claim }) => {
-      const ctl = window.__evidenceCtl = window.addStreamingMessage({ userPrompt: 'Check the result.' });
+    await page.evaluate(async ({ source, quote, citation, claim }) => {
+      const ctl = window.__evidenceCtl = await window.addStreamingMessage({ userPrompt: 'Check the result.' });
       let seq = 0;
       window.__evidenceEvent = (payload) => ctl.recordTurnEvent({ version: 1, turnId: 'evidence', seq: ++seq, at: Date.now(), ...payload });
       window.__evidenceEvent({ type: 'source.upsert', source });

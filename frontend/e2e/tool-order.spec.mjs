@@ -1,12 +1,12 @@
-// e2e/tool-order.spec.mjs — live paragraph deferral and restored sentence placement.
+// e2e/tool-order.spec.mjs — paragraph deferral and unified activity placement.
 //
-// A tool row belongs to the paragraph during which it fired:
+// Tool rows belong to the activity surface, not between answer paragraphs:
 //   1. (live) a tool_use that lands mid-paragraph mounts NOTHING until the
 //      paragraph completes — the TurnStatus tool-running line covers the
-//      gap — then mounts exactly once, behind the paragraph (a finished
+//      gap — then mounts exactly once in the activity surface (a finished
 //      sentence alone is not enough);
-//   2. (restored) an offset behind "原因有三：" advances through the next
-//      complete sentence, so a long paragraph does not push tools to its end.
+//   2. (restored) a colon offset still splits prose at the next complete
+//      sentence, but the row stays in activity before both prose segments.
 import { expect, test } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
@@ -61,10 +61,16 @@ async function startControllableStream(page) {
     window.__testActivateMainView('chatView');
     window.__orderTurnPromise = window.askChatTurn('天气');
   });
+  await page.waitForFunction(() => (
+    typeof window.__pushText === 'function'
+    && typeof window.__pushToolUse === 'function'
+    && typeof window.__pushToolResult === 'function'
+    && typeof window.__closeStream === 'function'
+  ), null, { timeout: 15_000 });
   return page.locator('.msg.assistant').last().locator('.msg-body');
 }
 
-test('a live row waits for its paragraph, then mounts once behind it', async ({ page }) => {
+test('a live row waits for its paragraph, then mounts once in activity before the prose', async ({ page }) => {
   const body = await startControllableStream(page);
 
   /* The <think> tail buffer holds back up to 7 chars per frame, so the
@@ -90,7 +96,7 @@ test('a live row waits for its paragraph, then mounts once behind it', async ({ 
 
   /* Complete the paragraph: the <think> tail buffer holds back ~7 chars,
      so push enough that the blank line flushes through, then exactly one
-     row must mount behind the paragraph. */
+     row must mount in the unified activity surface. */
   await page.evaluate(() => window.__pushText('！查到了。今天很暖和。\n\n第二段讲讲结果。'));
   const row = body.locator('.tool-inline[data-tcid="live-search"]');
   await expect(row).toHaveCount(1);
@@ -100,15 +106,18 @@ test('a live row waits for its paragraph, then mounts once behind it', async ({ 
     window.__closeStream();
   });
   await expect(row).toHaveAttribute('data-state', 'done');
+  await expect(body.locator('.stream-cursor')).toHaveCount(0);
 
-  /* Strict order: the prose holding the paragraph precedes the row, and the
-     post-tool prose follows it — nothing above jumped below the row. */
+  /* Strict order: one activity row precedes both prose segments; no tool
+     row is inserted between the original paragraph and the answer tail. */
   const order = await body.evaluate((el) => {
     const out = [];
-    for (const node of Array.from(el.children)) {
+    for (const node of Array.from(el.querySelector('.turn-evidence').children)) {
       if (node.classList.contains('tool-inline-attachments')) continue;
       if (node.classList.contains('tool-run-prose')) {
         out.push(`text:${(node.textContent || '').replace(/▍/g, '').trim()}`);
+      } else if (node.classList.contains('turn-activity-surface')) {
+        for (const row of node.querySelectorAll('.tool-inline')) out.push(`row:${row.dataset.tcid}`);
       } else if (node.classList.contains('tool-run-group')) {
         for (const row of node.querySelectorAll(':scope > .tool-inline')) out.push(`row:${row.dataset.tcid}`);
       } else if (node.classList.contains('tool-inline')) {
@@ -121,10 +130,12 @@ test('a live row waits for its paragraph, then mounts once behind it', async ({ 
     }
     return out;
   });
-  const rowIdx = order.findIndex((s) => s === 'row:live-search');
-  expect(rowIdx).toBeGreaterThan(-1);
-  expect(order.slice(0, rowIdx).join('\n')).toContain('我先来查一下北京今天的天气情况。');
-  expect(order.slice(rowIdx + 1).join('\n')).toContain('第二段讲讲结果');
+  expect(order).toEqual([
+    'row:live-search',
+    'text:我先来查一下北京今天的天气情况。后来出太阳了！查到了。今天很暖和。',
+    'text:', // The paragraph-separating whitespace retains its prose segment.
+    'text:第二段讲讲结果。',
+  ]);
 });
 
 /* ── finalized colon order ─────────────────────────────────────────── */
@@ -180,14 +191,17 @@ async function loadColonFixture(page) {
   return page.locator('#msgList .msg.assistant').last().locator('.msg-body');
 }
 
-test('a colon never anchors a restored row: it advances to the next sentence', async ({ page }) => {
+test('a restored colon-offset row stays in activity while prose splits at the next sentence', async ({ page }) => {
   const body = await loadColonFixture(page);
+  await expect(body.locator('.turn-activity-surface .tool-inline[data-tcid="c1"]')).toHaveCount(1);
   const order = await body.evaluate((el) => {
     const out = [];
-    for (const node of Array.from(el.children)) {
+    for (const node of Array.from(el.querySelector('.turn-evidence').children)) {
       if (node.classList.contains('tool-inline-attachments')) continue;
       if (node.classList.contains('tool-run-prose')) {
         out.push(`text:${(node.textContent || '').trim()}`);
+      } else if (node.classList.contains('turn-activity-surface')) {
+        for (const row of node.querySelectorAll('.tool-inline')) out.push(`row:${row.dataset.tcid}`);
       } else if (node.classList.contains('tool-run-group')) {
         for (const row of node.querySelectorAll(':scope > .tool-inline')) out.push(`row:${row.dataset.tcid}`);
       } else if (node.classList.contains('tool-inline')) {
@@ -198,11 +212,11 @@ test('a colon never anchors a restored row: it advances to the next sentence', a
     }
     return out;
   });
-  /* A lone call gets no aggregate header: the row stays near its fire point
-     while still waiting for a complete sentence after the colon. */
+  /* The row belongs to activity; the sentence-safe prose split remains
+     intact without inserting a tool between the two text segments. */
   expect(order).toEqual([
-    'text:原因有三：第一。',
     'row:c1',
+    'text:原因有三：第一。',
     'text:第二。尾巴。',
   ]);
 });

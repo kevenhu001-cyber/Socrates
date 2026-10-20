@@ -129,18 +129,22 @@ router.get('/', async (req, res, next) => {
     const limit = Math.min(parseInt(req.query.limit as string, 10) || 50, 200);
     const cursor = req.query.cursor || null;
 
-    let query = db.select({
+    const conditions = [eq(files.userId, req.userId!)];
+    if (cursor) {
+      // Match the complete ordering and resolve the cursor within this user.
+      // Calling .where() twice replaces (rather than adds to) the owner filter.
+      conditions.push(sql`(${files.uploadedAt}, ${files.id}) < (
+        SELECT ${files.uploadedAt}, ${files.id} FROM ${files}
+        WHERE ${files.id} = ${cursor}::uuid AND ${files.userId} = ${req.userId!}
+      )`);
+    }
+
+    const rows = await db.select({
       id: files.id, name: files.name, mimeType: files.mimeType,
       size: files.size, kind: files.kind, sha256: files.sha256,
       sessionId: files.sessionId, uploadedAt: files.uploadedAt,
     }).from(files)
-      .where(eq(files.userId, req.userId!));
-
-    if (cursor) {
-      query = (query as any).where(sql`${files.id} < ${cursor}::uuid`);
-    }
-
-    const rows = await query
+      .where(and(...conditions))
       .orderBy(sql`${files.uploadedAt} DESC, ${files.id} DESC`)
       .limit(limit + 1);
 

@@ -56,6 +56,8 @@ export interface TurnUiState {
 
 export interface TurnState {
   activeChatCtl: ActiveChatController | null;
+  /** Abort callback for the active linked-page preparation phase only. */
+  activePagePreparationAbort: (() => void) | null;
   pendingAttachments: unknown[] | null;
   pendingBranchContext: unknown;
   /** Either a plain string or the multimodal parts array built by
@@ -75,6 +77,7 @@ export interface TurnState {
    vars in main.js with a comment noting window mirrors were removed. */
 export const turnState: TurnState = {
   activeChatCtl: null,
+  activePagePreparationAbort: null,
   pendingAttachments: null,
   pendingBranchContext: null,
   pendingChatContent: null,
@@ -92,8 +95,15 @@ export function getTurnState(): TurnState {
   return turnState;
 }
 
+/** Whether an in-flight turn should retain the normal follow-up queue policy. */
+export function shouldQueueChatSend(): boolean {
+  return (turnState.turnUi.inProgress || turnState.chatStreaming)
+    && typeof turnState.activePagePreparationAbort !== 'function';
+}
+
 export function resetTurnState(): void {
   turnState.activeChatCtl = null;
+  turnState.activePagePreparationAbort = null;
   turnState.pendingAttachments = null;
   turnState.pendingBranchContext = null;
   turnState.pendingChatContent = null;

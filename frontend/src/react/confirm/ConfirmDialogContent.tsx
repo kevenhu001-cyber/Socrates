@@ -3,6 +3,14 @@ import { FoundationDialog, FoundationDialogClose, FoundationDialogDescription, F
 import { getLegacyActions, i18n } from '../legacy/gateway';
 import type { ConfirmSnapshot } from './types';
 import { getConfirmReturnFocus } from './confirm.bridge';
+import { setModalOpen } from '../../ui/modalA11y.js';
+
+function restoreConfirmFocus(): HTMLElement | null {
+  // Base UI resolves finalFocus as the confirm popup closes. Release its modal
+  // registration first so a nested parent dialog can receive focus again.
+  setModalOpen('confirmDialog', false);
+  return getConfirmReturnFocus();
+}
 
 /** Loaded on the first confirmation, not when the compatibility root boots. */
 export function ConfirmDialogContent({ snapshot }: { snapshot: ConfirmSnapshot }) {
@@ -15,7 +23,7 @@ export function ConfirmDialogContent({ snapshot }: { snapshot: ConfirmSnapshot }
   }, []);
 
   return <FoundationDialog id="confirmDialog" open={snapshot.open} onOpenChange={onOpenChange}
-    overlayClassName="confirm-dialog" className="confirm-box" role="alertdialog" initialFocus={title} finalFocus={getConfirmReturnFocus}>
+    overlayClassName="confirm-dialog" className="confirm-box" role="alertdialog" initialFocus={title} finalFocus={restoreConfirmFocus}>
     <FoundationDialogTitle id="confirmTitle" className="confirm-title" ref={title} tabIndex={-1} data-initial-focus="true">
       {content.title}
     </FoundationDialogTitle>

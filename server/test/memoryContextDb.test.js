@@ -33,7 +33,7 @@ describe('appendMemoryContext: PostgreSQL recall', { skip: !databaseUrl }, () =>
           { userId, text: 'newer project fact', scope: 'project', projectId, createdAt: new Date(base + 1000) },
           { userId, text: 'other project secret', scope: 'project', projectId: otherProjectId, createdAt: new Date(base + 2000) },
           { userId, text: 'disabled fact', scope: 'global', enabled: false, createdAt: new Date(base + 3000) },
-          { otherUserId, text: 'other user secret', scope: 'global', createdAt: new Date(base + 4000) },
+          { userId: otherUserId, text: 'other user secret', scope: 'global', createdAt: new Date(base + 4000) },
           { userId, text: 'mislabeled project fact', scope: 'other', projectId, createdAt: new Date(base + 5000) },
         ]);
         const messages = [{ role: 'system', content: 'Base' }, { role: 'user', content: 'Hello' }];

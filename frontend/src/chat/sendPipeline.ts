@@ -1,5 +1,5 @@
 /* chat/sendPipeline.ts — public entry point for submitting a chat turn. */
-import { turnState } from './turnState.ts';
+import { turnState, shouldQueueChatSend } from './turnState.ts';
 import { loadWebSearch } from './webSearchLoader.ts';
 import { shouldRefreshSearch } from './webSearchPolicy.ts';
 import { shouldAutoSearchTutor } from '../tutor/policy.js';
@@ -62,7 +62,7 @@ export async function submitChatMessage(
   /* Prompt Queueing (ChatGPT-style) — when a streaming turn is in flight,
      follow-up prompts from the user are queued instead of aborting the stream.
      When the stream finishes naturally, the queued prompt is automatically dequeued. */
-  if ((turnState.turnUi.inProgress || turnState.chatStreaming) && !sendOptions.bypassQueue) {
+  if (shouldQueueChatSend() && !sendOptions.bypassQueue) {
     const input = captureSendInput(textOverride);
     if (!input || !input.text.trim()) return;
     const currentSessionId = (stateStore.read('currentSessionId') as string) || null;

@@ -166,6 +166,7 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
   if(urls.length){
     const preparation = new AbortController();
     const abortPreparation = () => preparation.abort();
+    turnState.activePagePreparationAbort = abortPreparation;
     window._activeChatAbort = abortPreparation;
     try{
       var fetched=await fetchPagesForContext(urls, { signal: preparation.signal, timeoutMs: CHAT_PAGE_CONTEXT_TIMEOUT_MS });
@@ -173,6 +174,9 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
       pageResults=fetched.results||[];
     }catch(_){pageBlocks=[];pageResults=[]}
     finally {
+      if (turnState.activePagePreparationAbort === abortPreparation) {
+        turnState.activePagePreparationAbort = null;
+      }
       if (window._activeChatAbort === abortPreparation) window._activeChatAbort = null;
     }
     if (preparation.signal.aborted || turnWasCancelled()) return;
