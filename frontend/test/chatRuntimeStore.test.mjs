@@ -120,6 +120,32 @@ test('a message-added and a stream-started in one frame are both observed', () =
   assert.deepEqual(seen, ['message-added', 'stream-started']);
 });
 
+test('a frame that adds many messages still produces one lifecycle commit', () => {
+  const bridge = freshBridge();
+  const seen = [];
+  const stop = bridge.subscribe(() => { seen.push(bridge.getSnapshot().lastEvent); });
+  const start = bridge.getSnapshot().revision;
+
+  const rows = Array.from({ length: 12 }, (_, index) => ({
+    clientId: `u-${index}`, role: 'user', type: 'user', rawText: `m${index}`,
+  }));
+  stateStore.dispatch({ type: 'session/replace-messages', payload: rows });
+  for (const row of rows) {
+    bridge.publish({ type: 'message-added', messageId: row.clientId });
+  }
+
+  runFrames();
+  stop();
+
+  /* One commit for the frame, not one per message: the snapshot already
+     carries every row, and committing each event would walk the whole
+     message list once per event — the cost the single slot was there to
+     avoid. The lifecycle slot keeps one entry per event type. */
+  assert.deepEqual(seen, ['message-added']);
+  assert.equal(bridge.getSnapshot().revision, start + 1);
+  assert.equal(bridge.getSnapshot().messages.length, 12);
+});
+
 test('tool updates for multiple messages still produce one snapshot commit', () => {
   const bridge = freshBridge();
   stateStore.dispatch({

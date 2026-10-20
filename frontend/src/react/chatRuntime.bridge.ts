@@ -93,13 +93,22 @@ let pendingToolRuns: Set<string> | null = null;
    pays one rAF instead of two snapshot walks. Terminal events drain this
    queue before committing so lifecycle ordering survives.
 
-   The queue keeps BOTH events. A single slot where the later event
-   overwrote the earlier one was equivalent to the synchronous pair only for
-   the FINAL snapshot — it dropped one listener notification, so a subscriber
-   that samples `lastEvent` never saw `message-added` when the pair landed in
-   the same frame. That race is observable: the legacy lifecycle contract
-   requires both events to be seen, and e2e/react-compat.spec.mjs asserts it. */
-const pendingLifecycleQueue: ChatRuntimeEvent[] = [];
+   The queue keeps ONE SLOT PER EVENT TYPE. A single slot where the later
+   event overwrote the earlier one was equivalent to the synchronous pair only
+   for the FINAL snapshot — it dropped one listener notification, so a
+   subscriber that samples `lastEvent` never saw `message-added` when the
+   pair landed in the same frame. That race is observable: the legacy
+   lifecycle contract requires both events to be seen, and
+   e2e/react-compat.spec.mjs asserts it.
+
+   One slot per TYPE, not one slot per event: a transcript that grows by a
+   dozen messages in one frame publishes a dozen `message-added` events, and
+   committing each of them would walk the whole message list a dozen times
+   in one frame — that is the cost the single slot was there to avoid. The
+   newest event of a type wins (the older ones describe rows the snapshot
+   already carries), while the slot keeps its position so publication order
+   survives. */
+const pendingLifecycle: ChatRuntimeEvent[] = [];
 /* Arrival order for the two queues. `message-added`/`stream-started` and
    `tool-run-updated` can land in the same frame; flushing them in a fixed
    order (tool runs first, lifecycle second) made `lastEvent` report the
@@ -320,7 +329,7 @@ function scheduleFrame(): void {
  */
 function flushQueuedCommits(): void {
   const queued: Array<{ seq: number; flush: () => void }> = [];
-  if (pendingLifecycleQueue.length > 0) {
+  if (pendingLifecycle.length > 0) {
     queued.push({ seq: pendingLifecycleSeq, flush: flushPendingLifecycle });
   }
   if (pendingToolRuns && pendingToolRuns.size > 0) {
@@ -331,15 +340,29 @@ function flushQueuedCommits(): void {
 }
 
 /**
+ * Queue a lifecycle event, keeping one slot per event type. The newest event
+ * of a type replaces the one already queued (its messageId is the freshest),
+ * but the slot keeps its position so publication order survives.
+ */
+function queueLifecycleEvent(event: ChatRuntimeEvent): void {
+  const existing = pendingLifecycle.findIndex((queued) => queued.type === event.type);
+  if (existing >= 0) {
+    pendingLifecycle[existing] = event;
+    return;
+  }
+  pendingLifecycle.push(event);
+}
+
+/**
  * Drain the queued lifecycle events (message-added / stream-started) in
- * publication order. Every queued event gets its own commit, so a
- * subscriber observes each one — a subscriber that samples `lastEvent` must
- * see `message-added` even when the pair lands in the same frame. No-op when
- * the queue is empty so the rAF callback above can call this unconditionally.
+ * publication order. Every queued type gets its own commit, so a subscriber
+ * observes each one — a subscriber that samples `lastEvent` must see
+ * `message-added` even when the pair lands in the same frame. No-op when the
+ * queue is empty so the rAF callback above can call this unconditionally.
  */
 function flushPendingLifecycle(): void {
-  if (pendingLifecycleQueue.length === 0) return;
-  const events = pendingLifecycleQueue.splice(0, pendingLifecycleQueue.length);
+  if (pendingLifecycle.length === 0) return;
+  const events = pendingLifecycle.splice(0, pendingLifecycle.length);
   for (const event of events) commit(event);
 }
 
@@ -395,14 +418,14 @@ function publish(event: ChatRuntimeEvent): void {
     return;
   }
 
-  /* Coalesce the two click-frame lifecycle events into one commit per
-     animation frame. The click frame pays one rAF instead of two snapshot
-     walks; the events themselves are kept in publication order so no
-     lifecycle notification is lost. */
+  /* Coalesce the click-frame lifecycle events into one commit per
+     animation frame, one slot per event type. The click frame pays one rAF
+     instead of a snapshot walk per event; the events themselves are kept in
+     publication order so no lifecycle notification is lost. */
   if (event.type === 'message-added' || event.type === 'stream-started') {
     const seq = ++eventSeq;
-    if (pendingLifecycleQueue.length === 0) pendingLifecycleSeq = seq;
-    pendingLifecycleQueue.push(event);
+    if (pendingLifecycle.length === 0) pendingLifecycleSeq = seq;
+    queueLifecycleEvent(event);
     scheduleFrame();
     return;
   }
@@ -452,7 +475,7 @@ const chatRuntimeBridge: ImmutableBridge<ChatRuntimeSnapshot, ChatRuntimeEvent> 
     });
     pendingDelta = null;
     pendingToolRuns = null;
-    pendingLifecycleQueue.length = 0;
+    pendingLifecycle.length = 0;
     pendingLifecycleSeq = 0;
     pendingToolRunsSeq = 0;
     eventSeq = 0;
