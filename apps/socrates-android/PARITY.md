@@ -2,9 +2,16 @@
 
 功能以 Socrates 项目本身的实际行为为准；视觉以用户参考图为几何基准，并与现有前端设计语言对齐。当前为原生 Kotlin / Jetpack Compose 客户端 1.4 开发版；**尚未达到完整功能对齐**。没有向产品写入截图中的对话、示例课程、账号资源或演示业务数据。测试数据只存在于测试源码中。
 
-本轮对照仓库 HEAD：`44675b86`，核对当前本地 `origin/main` 同为此提交；沿用交接时已确认的主线基线，本轮未重新 fetch。开始时已有上一轮未提交的会话整理、助手配置、开场白/草稿、资料库文档/PDF、跨会话搜索和测试修正，全部保留；未使用 stash/reset 覆盖它们。本轮仅修改原生 Android 与其说明，不改 Web/后端/Expo，不部署、不提交或推送；浏览器安全登录交接保留不动。以下历史记录描述各自批次，不代表本轮新增授权或验收。
+本轮对照仓库 HEAD：`92ccbc650852ce923224354de4cd740e5ad6bc88`，开始时工作树干净；沿用交接确认的已推送主线基线，本轮未重新 fetch。保留全部既有提交，不使用 stash/reset。仅修改原生 Android UI、相关测试与本说明，不改 Web/后端/Expo，不部署、不提交或推送；Chrome 安全登录与全部功能路由保持不动。以下历史记录描述各自批次，不代表本轮新增授权或验收。
 
-## 最新：登录入口重设计与完整安全绘制区域
+## 最新：胶囊模式切换与可滚动的完整抽屉
+- 按本轮参考图的可见设计要求重做原生 `ChatModeSwitch`：浅灰胶囊轨道、4dp 内边距、白色圆角选中 pill 和 2dp 轻阴影，选中/未选中文字区分主次。使用 Foundation 自定义控件，不引入默认 Material 分段控件。每个 tab 自身至少 44dp 高，轨道整体默认至少 52dp，避免原先 44dp 轨道扣除两侧 4dp 后实际 tab 只有 36dp 高的问题。保留真实聊天/工作状态与原有切换入口条件；选中态提供 Tab/selected 语义和分组，重复点击当前选中项不重复派发模式切换。
+- 顶栏改为独立居中轴，胶囊不依赖左右操作宽度凑平衡；两侧图标操作与轨道分离，取消右侧操作共用的白色胶囊背景。保留侧栏、模型设置、新建对话、会话菜单及录音禁用规则。顶栏由固定高度改为最小 68dp，文字放大时允许随控件扩高；中央为两侧 44dp 操作保留间距，不更换业务内容。
+- 抽屉标题、可展开搜索、导航入口、历史会话与底部聊天/帐号全部纳入**同一个 LazyColumn**，不再让固定头部/搜索/底栏挤压中间列表。在内容不足一屏时，`SidebarFooterArrangement` 将最后的底栏排到视口底部；超过可用高度时改为正常顺序滚动，底栏可滚入视口，不承诺长历史中仍悬浮常显。继续在抽屉内部消费一次 `safeDrawing`（系统栏、挖孔、IME），外层 sheet 保持零 inset，底部另留 8dp 内容间距。
+- 顺手修正直接发现的基础布局问题：侧栏水平留白由 30dp 调整为 24dp，让 80% 宽抽屉保留更多有效内容；品牌标题可用宽度受约束并单行省略，不挤走搜索按钮；导航行由固定 48dp 改为最小 48dp 并允许文字换行扩高；会话行明确最小 44dp；底部聊天按钮弹性让位，帐号操作仍保留 44dp 触控区域。不扩大到其它业务页或全局视觉重做。
+- 未打开或复制上传图片；按本轮已提供的可见设计描述实施。新增 JVM 排列数学/源码接线回归，以及模式选中、独立图标操作、320dp/2倍字体顶栏、短屏展开搜索与长历史抽屉的 AndroidTest 源码。**没有运行设备、模拟器或 AndroidTest，也没有像素、真实系统 inset 或手势验证**；源码编译不等于上述 UI 场景实测。最终代码级检查结果记录在下文“验证边界”。
+
+## 上一轮：登录入口重设计与完整安全绘制区域
 - 从 `UtilityScreens.kt` 提取独立 `LoginScreen.kt`，继续使用原生 Foundation 自定义控件和现有 Socrates 中性色。对照仓库 Web `polish/auth.css`、`restore/chatgpt-ui.css` 的克制层级、统一中轴和圆角语言，采用成熟对话产品常见的单主操作欢迎页，不复刻商标、虚构第三方登录或业务内容。纯白画布、30sp/38sp 欢迎标题、52dp 最小胶囊主按钮，浏览器说明放在主操作后；移除大头像和多段说明占据首屏的层级，不增加本地密码表单或假登录路径。
 - 旧登录标题栏左侧实际 44dp 关闭按钮、右侧 48dp 空占位，两个弹性间隔仍会造成标题中心偏移。改为独立 Box 居中品牌、右侧真实关闭操作，不靠不对称占位平衡。正文/按钮共享最多 400dp 内容列、24dp 水平页边距；滚动层内部用有限视口的 `maxHeight` 作为内容最小高度，长屏自然居中，短屏、横屏或大字体时自然增高并滚动，不用固定英雄区或底部固定按钮裁切内容。按钮可换行扩高，关闭、返回草稿、重试均保留。
 - 主聊天视口、侧栏内部、全屏登录和共享 `SocratesSheet` 宿主统一使用 `WindowInsets.safeDrawing`，Snackbar 使用其水平/底部子集。原 status/navigation/IME padding 能自动消费已用 inset，**不能宣称原实现必然双重补底距**；可证明的覆盖缺口是没有完整声明 display cutout/caption 等安全绘制区域，尤其横向挖孔。侧栏原先已有竖向系统栏避让，本轮不是首次为其增加状态栏 padding。新策略同时消费系统栏、挖孔和 IME，子级已有 IME padding 不再重复补已消费区域；背景仍可延伸到边缘。
@@ -344,7 +351,25 @@
 
 图片附件应使用真实 `mime`、大小与持久文件 ID；内联 `dataUrl` 有后端限制。跨端历史未知字段需要保留，不能只保存当前原生 UI 认识的字段。
 ## 验证边界
-### 最新：登录重设计与安全区
+### 最新：胶囊切换与完整抽屉滚动
+在 `apps/socrates-android` 执行以下命令，首次 **BUILD SUCCESSFUL in 43s**；随后仅修正新增 AndroidTest 辅助 Composable 的命名警告，使用同一命令复验，**BUILD SUCCESSFUL in 8s**（应用构建/单测为 up-to-date，AndroidTest 源码重新编译、lint 重新完成）：
+
+```sh
+./gradlew assembleDebug testDebugUnitTest \
+  --tests 'com.socrates.android.ui.NavigationLayoutTest' \
+  --tests 'com.socrates.android.ui.LoginLayoutContractTest' \
+  --tests 'com.socrates.android.ui.NativeControlsParityTest' \
+  --tests 'com.socrates.android.ui.CustomUiContractTest' \
+  lintDebug compileDebugAndroidTestKotlin --console=plain
+```
+
+实际执行 **4 类、20 项 JVM 测试，0 失败、0 错误、0 跳过**：新增 `NavigationLayoutTest` 8 项（5 项排列数学，3 项源码接线），以及登录布局契约 5 项、基础控件契约 3 项、自定义控件契约 4 项。排列数学覆盖内容不足、恰好填满、溢出不重叠、空/只有 footer、隐藏搜索项；不是 Compose 实际测量。未重跑完整 JVM 套件。`CustomUiContractTest` 在本轮起始基线可通过，历史登录批次记载的全局契约失败不代表当前 HEAD 的状态。
+
+`assembleDebug` 成功生成 `app/build/outputs/apk/debug/app-debug.apk`（debug/test-signed，非发布签名）；最终 lint **0 错误、37 条 Warning、2 条 Information**。新增 `NavigationLayoutUiTest` **5 项 AndroidTest 源码**及全部既有 AndroidTest 源码编译成功，覆盖选中态/重复点击、独立按钮与中央轴、会话菜单路径、短屏大字体展开搜索、长历史滚至底栏。**仅编译，没有执行 AndroidTest、connected tests、设备或模拟器测试；没有像素/截图验收，不宣称真实 inset、键盘、滚动手势、阴影或无障碍绘制已验证。**
+
+本轮共 6 个文件，均在原生 Android 目录：`SocratesApp.kt`、新增 `NavigationLayout.kt`、新增 `NavigationLayoutTest.kt`、新增 `NavigationLayoutUiTest.kt`、更新 `LoginLayoutContractTest.kt` 的侧栏水平间距断言，以及本清单。`git diff --check` 通过；未增加依赖，未修改登录/认证源码、Web/服务端/Expo、功能路由；未读取上传图片，未提交、推送、部署或启动设备。下文均为历史批次记录，不算本轮验收。
+
+### 上一轮：登录重设计与安全区
 最终源码执行 `assembleDebug lintDebug compileDebugAndroidTestKotlin testDebugUnitTest` 成功，定向选择 `LoginLayoutContractTest`、`NativeControlsParityTest`、`BrowserLoginHandoffTest`、`AuthValidationTest`，共 **4 类、18 项 JVM 测试，0 失败、0 错误、0 跳过**。新增 5 项为源码接线契约，不是 Compose 测量或像素测试；锁定唯一入口、Chrome 三种启动结果、居中/限宽/先滚动后最小高度、safeDrawing 接线、标题/状态语义和显式关闭/重试。没有重跑全仓 JVM 套件。
 
 新增 `LoginLayoutUiTest` **3 项 AndroidTest 源码**，覆盖品牌中心轴、宽窗口 400dp 上限与按钮共轴、320×360dp/2倍字体下操作和页尾可滚至及最小点击高度。新增和全部既有 AndroidTest 源码编译通过；**没有在设备或模拟器执行**，不证明真实 Dialog inset、系统键盘动画、横向挖孔、Chrome 启动/回调、触控、无障碍或像素外观。独立只读复核未发现明确代码回归，同样保留上述边界。

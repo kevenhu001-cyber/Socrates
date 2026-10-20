@@ -401,20 +401,14 @@ fun SocratesApp(vm: ChatViewModel = viewModel()) {
 }
 
 @Composable
-private fun ChatHeader(work: Boolean, recording: Boolean, hasMessages: Boolean, session: com.socrates.android.data.ChatSession?, onConversationAction: (String) -> Unit, onMenu: () -> Unit, onMode: (Boolean) -> Unit, onNew: () -> Unit) {
+internal fun ChatHeader(work: Boolean, recording: Boolean, hasMessages: Boolean, session: com.socrates.android.data.ChatSession?, onConversationAction: (String) -> Unit, onMenu: () -> Unit, onMode: (Boolean) -> Unit, onNew: () -> Unit) {
     var menu by remember { mutableStateOf(false) }
-    Row(Modifier.fillMaxWidth().height(SocratesDesign.HeaderHeight).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-        CircleAction("打开侧边栏", onMenu) { ReferenceIcon(ReferenceGlyph.Menu) }
-        if (!hasMessages || work) BoxWithConstraints(Modifier.widthIn(max = 170.dp).width(170.dp).height(44.dp).clip(CircleShape).background(Color(0xFFE8E8E8)).padding(4.dp)) {
-            val x by animateDpAsState(if (work) maxWidth / 2 else 0.dp, spring(stiffness = Spring.StiffnessMediumLow), label = "tab")
-            Box(Modifier.offset { androidx.compose.ui.unit.IntOffset(x.roundToPx(), 0) }.width(maxWidth / 2).fillMaxHeight().background(Color.White, CircleShape))
-            Row(Modifier.fillMaxSize()) {
-                listOf("聊天", "工作").forEachIndexed { index, label ->
-                    Box(Modifier.weight(1f).fillMaxHeight().clip(CircleShape).selectable(selected = work == (index == 1), role = androidx.compose.ui.semantics.Role.Tab, onClick = { onMode(index == 1) }), contentAlignment = Alignment.Center) { Text(label, fontSize = 14.sp, color = Ink) }
-                }
-            }
-        } else Spacer(Modifier.weight(1f))
-        Row(Modifier.clip(CircleShape).background(Color.White), verticalAlignment = Alignment.CenterVertically) {
+    Box(Modifier.testTag("chat-header").fillMaxWidth().heightIn(min = SocratesDesign.HeaderHeight).padding(horizontal = 14.dp, vertical = 8.dp)) {
+        CircleAction("打开侧边栏", onMenu, Modifier.align(Alignment.CenterStart)) { ReferenceIcon(ReferenceGlyph.Menu) }
+        if (!hasMessages || work) Box(Modifier.align(Alignment.Center).padding(horizontal = 52.dp)) {
+            ChatModeSwitch(work, onMode, Modifier.testTag("chat-mode-switch").widthIn(max = 170.dp).fillMaxWidth())
+        }
+        Row(Modifier.align(Alignment.CenterEnd), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
             SocratesIconButton(onClick = if (hasMessages) onNew else { { onConversationAction("models") } }, enabled = !recording) {
                 ReferenceIcon(if (hasMessages) ReferenceGlyph.Compose else ReferenceGlyph.Reasoning, if (hasMessages) "新建对话" else "模型设置", tint = if (recording) Color.LightGray else Ink)
             }
@@ -649,7 +643,7 @@ private fun VoiceComposer(voice: VoiceInput, onSend: (String) -> Boolean) {
 }
 
 @Composable
-private fun NativeSidebar(ui: ChatUiState, onNew: () -> Unit, onSelect: (com.socrates.android.data.ChatSession) -> Unit, onProfile: () -> Unit, onRefresh: () -> Unit, onSessionMenu: (com.socrates.android.data.ChatSession) -> Unit, onRestore: (com.socrates.android.data.ChatSession) -> Unit, onImages: () -> Unit, onLibrary: () -> Unit, onProjects: () -> Unit, onAssistants: () -> Unit, onTasks: () -> Unit, onPlugins: () -> Unit, onCodex: () -> Unit, onGlobalSearch: () -> Unit) {
+internal fun NativeSidebar(ui: ChatUiState, onNew: () -> Unit, onSelect: (com.socrates.android.data.ChatSession) -> Unit, onProfile: () -> Unit, onRefresh: () -> Unit, onSessionMenu: (com.socrates.android.data.ChatSession) -> Unit, onRestore: (com.socrates.android.data.ChatSession) -> Unit, onImages: () -> Unit, onLibrary: () -> Unit, onProjects: () -> Unit, onAssistants: () -> Unit, onTasks: () -> Unit, onPlugins: () -> Unit, onCodex: () -> Unit, onGlobalSearch: () -> Unit) {
     var search by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
     var archived by rememberSaveable { mutableStateOf(false) }
@@ -659,69 +653,74 @@ private fun NativeSidebar(ui: ChatUiState, onNew: () -> Unit, onSelect: (com.soc
     val knownTags = remember(ui.sessions) { SessionHistory.knownTags(ui.sessions) }
     val visibleSessions = remember(ui.sessions, query, archived, tag) { SessionHistory.filter(ui.sessions, query, archived, tag) }
     val groups = remember(visibleSessions, now) { visibleSessions.groupBy { SessionHistory.groupLabel(it, now) } }
-    Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 30.dp)) {
-        Row(Modifier.fillMaxWidth().height(78.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Socrates", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-.5).sp)
-            SocratesIconButton(onClick = { search = !search; if (!search) { query = ""; tag = null } }) { ReferenceIcon(ReferenceGlyph.Search, if (search) "关闭会话搜索" else "搜索会话", Modifier.size(25.dp)) }
-        }
-        AnimatedVisibility(search) {
-            Column(Modifier.padding(bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SocratesField(query, { query = it }, Modifier.fillMaxWidth(), placeholder = { Text("搜索标题、摘要或标签") }, singleLine = true, shape = CircleShape)
-                Text("在已同步会话的标题、主题、摘要和标签中查找，不搜索消息全文。", style = MaterialTheme.typography.bodySmall, color = SocratesDesign.Muted)
-                SocratesTextButton(onClick = onGlobalSearch) { Text("在服务器搜索消息全文") }
-                if (knownTags.isNotEmpty() || tag != null) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    SocratesFilterChip(selected = tag == null, onClick = { tag = null }, label = { Text("全部标签") })
-                    (knownTags + listOfNotNull(tag)).distinct().forEach { label ->
-                        SocratesFilterChip(selected = tag == label, onClick = { tag = if (tag == label) null else label }, label = { Text(label, maxLines = 1) })
-                    }
-                }
+    LazyColumn(Modifier.testTag("sidebar-list").fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 24.dp),
+        contentPadding = PaddingValues(bottom = 8.dp), verticalArrangement = SidebarFooterArrangement) {
+        item(key = "sidebar-header") {
+            Row(Modifier.fillMaxWidth().heightIn(min = 78.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Socrates", Modifier.weight(1f), fontSize = 22.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-.5).sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                SocratesIconButton(onClick = { search = !search; if (!search) { query = ""; tag = null } }) { ReferenceIcon(ReferenceGlyph.Search, if (search) "关闭会话搜索" else "搜索会话", Modifier.size(25.dp)) }
             }
         }
-        LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(bottom = 16.dp)) {
-            if (!search) {
-                item { SidebarAction(ReferenceGlyph.Image, "图像", onImages) }
-                item { SidebarAction(ReferenceGlyph.Archive, "资料库", onLibrary) }
-                item { SidebarAction(ReferenceGlyph.Folder, "项目", onProjects) }
-                item { SidebarAction(ReferenceGlyph.Compose, "Codex", onCodex) }
-                item { SidebarAction(ReferenceGlyph.Clock, "定时任务", onTasks) }
-                item { SidebarAction(ReferenceGlyph.Plugin, "插件", onPlugins) }
-                item { SocratesDivider(Modifier.padding(top = 24.dp, bottom = 24.dp), color = Color(0xFFE8E8E8)) }
-            }
-            if (ui.loggedIn) item { SocratesTextButton(onClick = { archived = !archived }) { Text(if (archived) "返回最近对话" else "查看归档", fontSize = 13.sp, color = Color.Gray) } }
-            if (ui.loggedIn && visibleSessions.isEmpty()) item {
-                Column(Modifier.padding(vertical = 16.dp)) {
-                    Text(if (ui.busy) "正在同步会话…" else if (query.isNotBlank() || tag != null) "没有匹配的对话" else if (archived) "没有已归档的对话" else "还没有对话", fontSize = 14.sp, color = Color.Gray)
-                    SocratesTextButton(onClick = onRefresh) { Text("刷新") }
-                }
-            }
-            groups.forEach { (label, sessions) ->
-                item(key = "group-$label") { Text(label, Modifier.padding(top = 16.dp, bottom = 6.dp).semantics { heading() }, style = MaterialTheme.typography.labelMedium, color = SocratesDesign.Muted) }
-                items(sessions, key = { it.id }) { session ->
-                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).combinedClickable(onClick = { onSelect(session) }, onLongClickLabel = "管理会话", onLongClick = { onSessionMenu(session) }).padding(vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(session.title.ifBlank { session.topic.ifBlank { "新对话" } }, fontSize = 17.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            val tags = SessionHistory.tags(session)
-                            if (tags.isNotEmpty()) Text(tags.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = SocratesDesign.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            val preview = session.wire?.opt("preview") as? String
-                            if (query.isNotBlank() && !preview.isNullOrBlank()) Text(preview, style = MaterialTheme.typography.bodySmall, color = SocratesDesign.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        item(key = "sidebar-search") {
+            AnimatedVisibility(search) {
+                Column(Modifier.padding(bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SocratesField(query, { query = it }, Modifier.fillMaxWidth(), placeholder = { Text("搜索标题、摘要或标签") }, singleLine = true, shape = CircleShape)
+                    Text("在已同步会话的标题、主题、摘要和标签中查找，不搜索消息全文。", style = MaterialTheme.typography.bodySmall, color = SocratesDesign.Muted)
+                    SocratesTextButton(onClick = onGlobalSearch) { Text("在服务器搜索消息全文") }
+                    if (knownTags.isNotEmpty() || tag != null) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        SocratesFilterChip(selected = tag == null, onClick = { tag = null }, label = { Text("全部标签") })
+                        (knownTags + listOfNotNull(tag)).distinct().forEach { label ->
+                            SocratesFilterChip(selected = tag == label, onClick = { tag = if (tag == label) null else label }, label = { Text(label, maxLines = 1) })
                         }
-                        if (com.socrates.android.data.SessionActions.isPinned(session)) ReferenceIcon(ReferenceGlyph.Pin, "已置顶", Modifier.size(14.dp), Color.Gray)
-                        if (archived) SocratesTextButton(onClick = { onRestore(session) }) { Text("恢复", fontSize = 13.sp) }
-                        if (ui.current?.id == session.id) Box(Modifier.padding(start = 8.dp).size(9.dp).background(Blue, CircleShape))
                     }
                 }
             }
         }
-        Row(Modifier.fillMaxWidth().padding(vertical = 18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            SocratesButton(onClick = onNew, shape = CircleShape, containerColor = Blue, contentColor = Color.White, contentPadding = PaddingValues(horizontal = 22.dp, vertical = 14.dp)) { ReferenceIcon(ReferenceGlyph.Compose, null, Modifier.size(22.dp)); Spacer(Modifier.width(10.dp)); Text("聊天", fontSize = 17.sp) }
-            CircleAction("帐号与设置", onProfile) { Box(Modifier.size(32.dp).background(Color(0xFF21B99F), CircleShape), contentAlignment = Alignment.Center) { Text(if (ui.loggedIn) ui.accountName.take(2).uppercase() else "S", color = Color.White, fontSize = 14.sp) } }
+        if (!search) {
+            item { SidebarAction(ReferenceGlyph.Image, "图像", onImages) }
+            item { SidebarAction(ReferenceGlyph.Archive, "资料库", onLibrary) }
+            item { SidebarAction(ReferenceGlyph.Folder, "项目", onProjects) }
+            item { SidebarAction(ReferenceGlyph.Compose, "Codex", onCodex) }
+            item { SidebarAction(ReferenceGlyph.Clock, "定时任务", onTasks) }
+            item { SidebarAction(ReferenceGlyph.Plugin, "插件", onPlugins) }
+            item { SocratesDivider(Modifier.padding(top = 24.dp, bottom = 24.dp), color = Color(0xFFE8E8E8)) }
+        }
+        if (ui.loggedIn) item { SocratesTextButton(onClick = { archived = !archived }) { Text(if (archived) "返回最近对话" else "查看归档", fontSize = 13.sp, color = Color.Gray) } }
+        if (ui.loggedIn && visibleSessions.isEmpty()) item {
+            Column(Modifier.padding(vertical = 16.dp)) {
+                Text(if (ui.busy) "正在同步会话…" else if (query.isNotBlank() || tag != null) "没有匹配的对话" else if (archived) "没有已归档的对话" else "还没有对话", fontSize = 14.sp, color = Color.Gray)
+                SocratesTextButton(onClick = onRefresh) { Text("刷新") }
+            }
+        }
+        groups.forEach { (label, sessions) ->
+            item(key = "group-$label") { Text(label, Modifier.padding(top = 16.dp, bottom = 6.dp).semantics { heading() }, style = MaterialTheme.typography.labelMedium, color = SocratesDesign.Muted) }
+            items(sessions, key = { it.id }) { session ->
+                Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).combinedClickable(onClick = { onSelect(session) }, onLongClickLabel = "管理会话", onLongClick = { onSessionMenu(session) }).padding(vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(session.title.ifBlank { session.topic.ifBlank { "新对话" } }, fontSize = 17.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        val tags = SessionHistory.tags(session)
+                        if (tags.isNotEmpty()) Text(tags.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = SocratesDesign.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        val preview = session.wire?.opt("preview") as? String
+                        if (query.isNotBlank() && !preview.isNullOrBlank()) Text(preview, style = MaterialTheme.typography.bodySmall, color = SocratesDesign.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    }
+                    if (com.socrates.android.data.SessionActions.isPinned(session)) ReferenceIcon(ReferenceGlyph.Pin, "已置顶", Modifier.size(14.dp), Color.Gray)
+                    if (archived) SocratesTextButton(onClick = { onRestore(session) }) { Text("恢复", fontSize = 13.sp) }
+                    if (ui.current?.id == session.id) Box(Modifier.padding(start = 8.dp).size(9.dp).background(Blue, CircleShape))
+                }
+            }
+        }
+        item(key = "sidebar-footer") {
+            Row(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                SocratesButton(onClick = onNew, modifier = Modifier.weight(1f, fill = false), shape = CircleShape, containerColor = Blue, contentColor = Color.White, contentPadding = PaddingValues(horizontal = 22.dp, vertical = 14.dp)) { ReferenceIcon(ReferenceGlyph.Compose, null, Modifier.size(22.dp)); Spacer(Modifier.width(10.dp)); Text("聊天", fontSize = 17.sp) }
+                CircleAction("帐号与设置", onProfile) { Box(Modifier.size(32.dp).background(Color(0xFF21B99F), CircleShape), contentAlignment = Alignment.Center) { Text(if (ui.loggedIn) ui.accountName.take(2).uppercase() else "S", color = Color.White, fontSize = 14.sp) } }
+            }
         }
     }
 }
 
 @Composable
 private fun SidebarAction(icon: ReferenceGlyph, title: String, onClick: () -> Unit) {
-    Row(Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick), verticalAlignment = Alignment.CenterVertically) {
-        ReferenceIcon(icon, null, Modifier.size(23.dp), tint = Ink); Spacer(Modifier.width(14.dp)); Text(title, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Ink)
+    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick).padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        ReferenceIcon(icon, null, Modifier.size(23.dp), tint = Ink); Spacer(Modifier.width(14.dp)); Text(title, Modifier.weight(1f), fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Ink)
     }
 }

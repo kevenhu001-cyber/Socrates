@@ -51,7 +51,7 @@ class LoginLayoutContractTest {
         assertTrue(source("LoginScreen.kt").contains("windowInsetsPadding(WindowInsets.safeDrawing)"))
         val app = source("SocratesApp.kt")
         assertTrue(app.contains("Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing))"))
-        assertTrue(app.contains("windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 30.dp)"))
+        assertTrue(app.contains("windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 24.dp)"))
         assertTrue(app.contains("WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)"))
         assertTrue(source("SocratesControls.kt").contains("windowInsetsPadding(WindowInsets.safeDrawing), contentAlignment = Alignment.BottomCenter"))
     }
