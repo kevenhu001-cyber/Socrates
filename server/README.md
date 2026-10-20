@@ -177,3 +177,9 @@ same check without frontend lint. Parser/configuration failures fail the check.
 The scope is dependency direction, not all service cycles or arbitrary runtime
 code loading. See [ADR 0019](../docs/adr/0019-service-dependency-boundaries.md).
 No runtime configuration or database migration is required for this guard.
+
+### Android browser-to-native login deployment
+
+The browser handoff API uses the fixed `https://app.topodrive.top/auth/android/callback` redirect and five-minute PKCE-bound one-time codes. Do not configure a caller-controlled redirect URI. Exchange is cookie-free; authorize requires a browser `sid`, exact same-origin Origin, and matching CSRF cookie/header. Install Android App Links only after setting `ANDROID_APP_LINKS_PACKAGE_NAME=com.socrates.android` and `ANDROID_APP_LINKS_SHA256_FINGERPRINTS` to the actual release signing certificate SHA-256 fingerprint(s), colon-separated and comma-separated for rotation. Obtain these from the release signing key (`keytool -list -v -keystore ...`); do not use debug fingerprints in production. If absent or malformed, `/.well-known/assetlinks.json` returns `[]` (fail closed). Verify the published file and App Links on a signed device before enabling the Android flow; this change has not been device-tested.
+
+For nginx installations with SPA `try_files` fallback, install the exact-match proxy snippet in `ops/nginx/app-assetlinks-proxy.conf.example` inside the `app.topodrive.top` TLS server block before static fallback; this repo does not own the production nginx vhost, so verify the deployed vhost and public JSON after installation.

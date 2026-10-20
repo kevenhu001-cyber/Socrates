@@ -1,0 +1,38 @@
+name: Native Android build
+
+on:
+  push:
+    paths:
+      - 'apps/socrates-android/**'
+      - '.github/workflows/native-android-build.yml'
+  pull_request:
+    paths:
+      - 'apps/socrates-android/**'
+      - '.github/workflows/native-android-build.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK 35
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Build and run JVM tests
+        working-directory: apps/socrates-android
+        run: ./gradlew build testDebugUnitTest assembleDebugAndroidTest
+      - name: Preserve APKs and verification reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: socrates-native-android
+          path: |
+            apps/socrates-android/app/build/outputs/apk/debug/*.apk
+            apps/socrates-android/app/build/outputs/apk/androidTest/debug/*.apk
+            apps/socrates-android/app/build/reports/tests/testDebugUnitTest/
+            apps/socrates-android/app/build/reports/lint-results-*.html

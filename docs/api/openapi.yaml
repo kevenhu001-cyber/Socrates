@@ -91,6 +91,20 @@ tags:
     description: Model Context Protocol (MCP) Streamable HTTP discovery and documentation surfaces
 
 paths:
+  /.well-known/assetlinks.json:
+    get:
+      tags: [mobile]
+      summary: Android verified App Links association
+      description: Returns only explicitly configured package and release-signing SHA-256 certificates; missing or invalid configuration returns an empty array. Served directly without authentication or redirects and with no-store caching.
+      security: []
+      responses:
+        '200':
+          description: Android Digital Asset Links association array, or an empty array when unconfigured
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: object }
   /api/_internal/metrics:
     x-internal: true
     get:
@@ -2767,6 +2781,46 @@ paths:
       responses:
         '302':
           description: Redirects to target or home with session cookie established
+  /api/auth/mobile/browser/authorize:
+    post:
+      tags: [mobile]
+      summary: Issue a one-time Android browser session handoff code
+      description: Requires a live browser sid cookie, exact same-origin Origin, and matching CSRF cookie/header. Callback URL is fixed to app.topodrive.top; codes expire in five minutes.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [state, codeChallenge]
+              properties:
+                state: { type: string, pattern: '^[a-f0-9]{64}$' }
+                codeChallenge: { type: string, pattern: '^[A-Za-z0-9_-]{43}$', description: Base64url SHA-256 challenge (S256) }
+      responses:
+        '200': { description: Fixed callback URL containing short-lived code and echoed state }
+        '401': { description: No valid browser session }
+        '403': { description: Origin or CSRF validation failed }
+  /api/auth/mobile/browser/exchange:
+    post:
+      tags: [mobile]
+      summary: Exchange a one-time browser handoff code using PKCE
+      description: Cookie-free, CSRF-exempt endpoint. Code is single-use and expires after five minutes. Responses use no-store and no-referrer.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, codeVerifier]
+              properties:
+                code: { type: string, pattern: '^[a-f0-9]{64}$' }
+                codeVerifier: { type: string, minLength: 43, maxLength: 128, pattern: '^[A-Za-z0-9._~-]+$' }
+      responses:
+        '200': { description: Existing mobile access and refresh token pair }
+        '400': { description: 'Invalid, expired, replayed code, or invalid verifier' }
   /api/auth/mobile/login:
     post:
       tags: [mobile]

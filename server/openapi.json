@@ -237,6 +237,8 @@
         }
       }
     },
+    "/auth/mobile/browser/authorize": {"post": {"operationId": "mobileBrowserAuthorize", "tags": ["Mobile"], "summary": "Issue one-time Android browser handoff code", "description": "Requires a live browser sid, exact same-origin Origin, and matching CSRF cookie/header. Fixed callback; five-minute code expiry.", "security": [{"sessionCookie": []}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["state", "codeChallenge"], "properties": {"state": {"type": "string", "pattern": "^[a-f0-9]{64}$"}, "codeChallenge": {"type": "string", "pattern": "^[A-Za-z0-9_-]{43}$"}}}}}}, "responses": {"200": {"description": "Fixed callback URL and expiry"}, "401": {"description": "No browser session"}, "403": {"description": "Origin or CSRF rejected"}}}},
+    "/auth/mobile/browser/exchange": {"post": {"operationId": "mobileBrowserExchange", "tags": ["Mobile"], "summary": "Exchange one-time handoff code using PKCE", "description": "Cookie-free and CSRF-exempt. Code expires in five minutes and is single-use.", "security": [], "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["code", "codeVerifier"], "properties": {"code": {"type": "string", "pattern": "^[a-f0-9]{64}$"}, "codeVerifier": {"type": "string", "minLength": 43, "maxLength": 128, "pattern": "^[A-Za-z0-9._~-]+$"}}}}}}, "responses": {"200": {"description": "Mobile access and refresh token pair"}, "400": {"description": "Invalid, expired, or replayed code"}}}},
     "/mobile/login": {
       "post": {
         "tags": ["Auth", "Mobile"],

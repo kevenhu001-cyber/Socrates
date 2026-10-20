@@ -768,3 +768,7 @@ Built with care, for learners everywhere.
 [中文版说明 →](README.zh.md)
 
 </div>
+
+## Standalone native Android app
+
+The independently maintained native Android app lives in [`apps/socrates-android`](apps/socrates-android/). It was added at the user's request and does **not** replace the existing Expo app. See its README for JDK/SDK requirements, API configuration, network-security policy, build/test commands, and device-performance caveats.

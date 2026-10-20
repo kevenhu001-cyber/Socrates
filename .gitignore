@@ -183,3 +183,8 @@ UI-UX-UPGRADE-ACTION-PLAN.md
 /apps/socrates/.expo/
 
 /apps/socrates/preview-artifacts/
+
+# Standalone native Android project generated state and machine-local SDK path
+local.properties
+.gradle/
+**/build/

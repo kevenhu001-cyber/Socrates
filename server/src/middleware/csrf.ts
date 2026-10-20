@@ -199,6 +199,11 @@ export function setCsrfToken(req: Request, res: Response) {
  *       refresh token, or OAuth capability is the credential instead.
  */
 export function csrfProtection(req: Request, res: Response, next: NextFunction) {
+  // Apply privacy headers before global CSRF/rate-limit handling so failures
+  // cannot cache or leak a handoff URL/code via referrers.
+  if (req.path === '/api/auth/mobile/browser/authorize' || req.path === '/api/auth/mobile/browser/exchange') {
+    res.set({ 'Cache-Control': 'no-store, no-cache, must-revalidate', Pragma: 'no-cache', 'Referrer-Policy': 'no-referrer' });
+  }
   // Skip for safe methods
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
     return next();
@@ -216,6 +221,8 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
     return next();
   }
 
+  // Native exchange intentionally has no browser cookie; it is bound by PKCE and is one-time.
+  if (req.path === '/api/auth/mobile/browser/exchange') return next();
   if (MOBILE_CREDENTIAL_PATHS.has(req.path)) return next();
 
   if (MCP_PATHS.has(req.path)) return next();

@@ -1,0 +1,12 @@
+Markwon 4.6.2 (Apache-2.0)
+https://github.com/noties/Markwon
+https://raw.githubusercontent.com/noties/Markwon/master/LICENSE
+Native theme: https://noties.io/Markwon/docs/v4/core/theme.html
+LaTeX configuration: https://noties.io/Markwon/docs/v4/ext-latex/
+Markwon uses $$ for inline math; our normalizer also accepts single-dollar and parenthesis/bracket delimiters without touching code.
+
+JLaTeXMath Android 0.2.0
+https://github.com/noties/jlatexmath-android
+https://raw.githubusercontent.com/noties/jlatexmath-android/master/LICENSE
+https://raw.githubusercontent.com/noties/jlatexmath-android/master/COPYING
+GPL-2.0-or-later with the independent-module linking exception reproduced in the bundled LICENSE; the upstream LICENSE also describes font-specific licenses.

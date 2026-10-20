@@ -4,6 +4,7 @@
 import { setBuiltInProviderModel } from '../config/providerConfig.service.ts';
 import { showToast } from '../ui/toast.js';
 import { openMobileTargetFromUrl } from '../native/mobileWebSessionBridge.js';
+import { captureBrowserLoginRequest } from '../native/browserLoginHandoff.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { renderUserFooter } from '../ui/profile.js';
 import { revealAppAndHydrate } from './index.ts';
@@ -97,6 +98,7 @@ async function finishUnavailableBoot(): Promise<void> {
 }
 
 export async function authBoot(): Promise<void> {
+  captureBrowserLoginRequest();
   /* index.html preloads csrf/me/config while the module graph evaluates. */
   const preflight = readBootPreflight();
   const csrfReady = lazyCsrfBootstrap(preflight);

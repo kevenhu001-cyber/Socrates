@@ -11,6 +11,7 @@
    session teardown before returning the user to this gate. */
 
 import { notifyEmbeddedAuthExpired } from '../native/mobileWebSessionBridge.js';
+import { offerBrowserLoginHandoff } from '../native/browserLoginHandoff.ts';
 import { syncCookieConsentPlacement } from '../cookieConsent.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { afterAuthEnter } from './postAuth.ts';
@@ -210,6 +211,7 @@ export function revealAppAndHydrate(onHydrated?: () => void): void {
   let hydration: Promise<void>;
   try { hydration = afterAuthEnter(); } catch (err) { hydration = Promise.reject(err); }
   hideGate();
+  offerBrowserLoginHandoff();
   /* React's compatibility registry is intentionally deferred until the app
      is visible. This keeps the auth route from downloading the hidden
      composer/editor and modal graph. Share routes do not call this function

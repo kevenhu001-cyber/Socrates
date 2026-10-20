@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import type { Request, Response, CookieOptions } from 'express';
-import { randomBytes, createHmac, timingSafeEqual } from 'node:crypto';
+import { randomBytes, createHmac, timingSafeEqual, createHash } from 'node:crypto';
+import { eq, and, gt, sql } from 'drizzle-orm';
+import { getDb } from '../db/index.js';
+import { authSessions } from '../db/schema/index.js';
+import { buildMobileTokenPair } from '../services/core/auth.js';
 import { setCsrfToken, setCsrfCookie, clearCsrfCookie } from '../middleware/csrf.js';
 import { requireAuth, requireMobileBearer, requestCredential } from '../middleware/auth.js';
 import { authLimiter, codeLoginLimiter, resetLimiter } from '../middleware/rateLimit.js';
@@ -106,6 +110,65 @@ export function redirectMobileWebSession(
 }
 
 router.get('/csrf-token', setCsrfToken);
+const HANDOFF_ORIGIN = 'https://app.topodrive.top';
+const HANDOFF_TTL_MS = 5 * 60 * 1000;
+function noHandoffCache(res: Response) {
+  res.set({ 'Cache-Control': 'no-store, no-cache, must-revalidate', Pragma: 'no-cache', 'Referrer-Policy': 'no-referrer' });
+}
+function validHex64(value: unknown): value is string { return typeof value === 'string' && /^[a-f0-9]{64}$/.test(value); }
+function exactOrigin(req: Request) {
+  return req.get('origin') === `${req.protocol}://${req.get('host')}` && req.get('origin') === HANDOFF_ORIGIN;
+}
+function strictBrowserCsrf(req: Request) {
+  const header = req.get('x-csrf-token');
+  const cookie = req.cookies?.csrf;
+  if (typeof header !== 'string' || typeof cookie !== 'string' || !header) return false;
+  const a = Buffer.from(header);
+  const b = Buffer.from(cookie);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+router.post('/mobile/browser/authorize', authLimiter, async (req, res, next) => {
+  noHandoffCache(res);
+  try {
+    const sid = req.cookies?.sid;
+    if (!exactOrigin(req) || !strictBrowserCsrf(req) || typeof sid !== 'string' || !/^[a-f0-9]{64}$/.test(sid) || req.headers.authorization !== undefined) return res.status(403).json({ error: 'handoff_unavailable' });
+    const { state, codeChallenge } = req.body ?? {};
+    if (!validHex64(state) || typeof codeChallenge !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(codeChallenge)) return res.status(400).json({ error: 'handoff_unavailable' });
+    const db = getDb();
+    const [session] = await db.select({ userId: authSessions.userId }).from(authSessions).where(and(eq(authSessions.token, sid), gt(authSessions.expiresAt, new Date()))).limit(1);
+    if (!session) return res.status(401).json({ error: 'handoff_unavailable' });
+    const code = randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + HANDOFF_TTL_MS);
+    const hash = createHash('sha256').update(code).digest('hex');
+    await db.insert(authSessions).values({ token: `nh.${codeChallenge}.${hash}`, userId: session.userId, expiresAt });
+    const url = `${HANDOFF_ORIGIN}/auth/android/callback#code=${code}&state=${state}`;
+    return res.json({ url, expiresAt: expiresAt.toISOString() });
+  } catch (err) { next(err); }
+});
+router.post('/mobile/browser/exchange', authLimiter, async (req, res, next) => {
+  noHandoffCache(res);
+  try {
+    const { code, codeVerifier } = req.body ?? {};
+    const verifierPattern = /^[A-Za-z0-9._~-]{43,128}$/;
+    if (typeof code !== 'string' || !/^[a-f0-9]{64}$/.test(code) || typeof codeVerifier !== 'string' || !verifierPattern.test(codeVerifier)) return res.status(400).json({ error: 'invalid_handoff' });
+    const challenge = Buffer.from(createHash('sha256').update(codeVerifier, 'ascii').digest('base64url'));
+    const expectedChallenge = challenge.toString('ascii');
+    const digest = createHash('sha256').update(code).digest('hex');
+    const db = getDb();
+    const [consumed] = await db.transaction(async tx => {
+      const rows = await tx.delete(authSessions).where(and(eq(authSessions.token, sql`'nh.' || ${expectedChallenge} || '.' || ${digest}`), gt(authSessions.expiresAt, new Date()))).returning({ userId: authSessions.userId });
+      if (!rows.length) return [];
+      const pair = buildMobileTokenPair();
+      await tx.insert(authSessions).values([
+        { token: pair.accessToken, userId: rows[0].userId, expiresAt: pair.accessExpiresAt },
+        { token: pair.refreshToken, userId: rows[0].userId, expiresAt: pair.refreshExpiresAtDate },
+      ]);
+      return [{ userId: rows[0].userId, pair }];
+    });
+    if (!consumed) return res.status(400).json({ error: 'invalid_handoff' });
+    return res.json({ accessToken: consumed.pair.accessToken, refreshToken: consumed.pair.refreshToken, expiresAt: consumed.pair.expiresAt, refreshExpiresAt: consumed.pair.refreshExpiresAt });
+  } catch (err) { next(err); }
+});
 
 router.post('/register', authLimiter, audit('register'), async (req, res, next) => {
   try {
@@ -167,6 +230,8 @@ export const MOBILE_AUTH_ROUTE_PATHS = [
   '/mobile/web-session',
   '/mobile/web-session/consume',
   '/mobile/oauth/exchange',
+  '/mobile/browser/authorize',
+  '/mobile/browser/exchange',
 ] as const;
 
 router.post('/mobile/refresh', authLimiter, async (req, res, next) => {

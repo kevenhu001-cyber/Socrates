@@ -118,6 +118,8 @@ describe('mobile auth token contract', () => {
       '/mobile/web-session',
       '/mobile/web-session/consume',
       '/mobile/oauth/exchange',
+      '/mobile/browser/authorize',
+      '/mobile/browser/exchange',
     ]);
   });
 

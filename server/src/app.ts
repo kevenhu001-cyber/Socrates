@@ -521,6 +521,14 @@ function sendOauthMetadata(_req: express.Request, res: express.Response) {
 app.get('/.well-known/oauth-authorization-server', sendOauthMetadata);
 app.get('/.well-known/oauth-authorization-server/api/oauth', sendOauthMetadata);
 app.get('/.well-known/openid-configuration', sendOauthMetadata);
+app.get('/.well-known/assetlinks.json', (_req, res) => {
+  const packageName = process.env.ANDROID_APP_LINKS_PACKAGE_NAME;
+  const raw = process.env.ANDROID_APP_LINKS_SHA256_FINGERPRINTS ?? '';
+  const fingerprints = raw.split(',').map((value) => value.trim().toUpperCase()).filter((value) => /^[A-F0-9]{2}(?::[A-F0-9]{2}){31}$/.test(value));
+  res.set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
+  if (!packageName || !/^[A-Za-z0-9_.]+$/.test(packageName) || !fingerprints.length) return res.json([]);
+  return res.json([{ relation: ['delegate_permission/common.handle_all_urls'], target: { namespace: 'android_app', package_name: packageName, sha256_cert_fingerprints: [...new Set(fingerprints)] } }]);
+});
 
 // Public configuration endpoint (no auth required).
 // Tells the SPA whether the built-in Beagle provider is available.
