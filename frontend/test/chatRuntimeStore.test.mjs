@@ -94,6 +94,32 @@ test('stream and tool-run publishes coalesce to one commit per frame', () => {
   assert.equal(bridge.getSnapshot().stream.textLength, 5, 'the last delta wins');
 });
 
+test('a message-added and a stream-started in one frame are both observed', () => {
+  const bridge = freshBridge();
+  const seen = [];
+  const stop = bridge.subscribe(() => { seen.push(bridge.getSnapshot().lastEvent); });
+
+  stateStore.dispatch({
+    type: 'session/replace-messages',
+    payload: [{ clientId: 'u-1', role: 'user', type: 'user', rawText: 'hi' }],
+  });
+  /* The click frame: addMessage() publishes message-added, the turn start
+     publishes stream-started. Both can land in the same animation frame. */
+  bridge.publish({ type: 'message-added', messageId: 'u-1' });
+  bridge.publish({ type: 'stream-started', messageId: 'a-1' });
+
+  assert.deepEqual(seen, [], 'nothing commits before the frame');
+  runFrames();
+  stop();
+
+  /* The legacy lifecycle contract: a subscriber must observe the message
+     being added AND the stream starting. A single coalescing slot let the
+     later event overwrite the earlier one, so the pair silently lost one
+     notification — and the e2e spec that asserts the contract then failed
+     at random, depending on where the frame boundary fell. */
+  assert.deepEqual(seen, ['message-added', 'stream-started']);
+});
+
 test('tool updates for multiple messages still produce one snapshot commit', () => {
   const bridge = freshBridge();
   stateStore.dispatch({

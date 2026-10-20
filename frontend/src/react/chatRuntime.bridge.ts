@@ -88,17 +88,25 @@ let pendingToolRuns: Set<string> | null = null;
 /* P_bridge-coalesce-lifecycle — `message-added` and `stream-started` arrive
    back-to-back on the click frame from chat/messages.js + chat/streamingTurn.js.
    The synchronous `commit()` pair used to fire two `Object.freeze` walks over
-   the message list and two listener notifications back-to-back. Queue the
-   second one until the next animation frame; multiple events in the same
-   frame collapse into a single commit (the last queued event wins, matching
-   what a synchronous pair would have produced). Terminal events drain this
-   slot before committing so lifecycle ordering survives. */
-let pendingLifecycle: ChatRuntimeEvent | null = null;
+   the message list and two listener notifications back-to-back. Queue them
+   until the next animation frame and commit them there, so the click frame
+   pays one rAF instead of two snapshot walks. Terminal events drain this
+   queue before committing so lifecycle ordering survives.
+
+   The queue keeps BOTH events. A single slot where the later event
+   overwrote the earlier one was equivalent to the synchronous pair only for
+   the FINAL snapshot — it dropped one listener notification, so a subscriber
+   that samples `lastEvent` never saw `message-added` when the pair landed in
+   the same frame. That race is observable: the legacy lifecycle contract
+   requires both events to be seen, and e2e/react-compat.spec.mjs asserts it. */
+const pendingLifecycleQueue: ChatRuntimeEvent[] = [];
 /* Arrival order for the two queues. `message-added`/`stream-started` and
    `tool-run-updated` can land in the same frame; flushing them in a fixed
    order (tool runs first, lifecycle second) made `lastEvent` report the
    older event. Track a monotonic sequence so the frame drains them in the
-   order they were published. */
+   order they were published. The lifecycle group is positioned by its FIRST
+   queued event, so a tool run published between two lifecycle events still
+   drains after the whole group. */
 let pendingLifecycleSeq = 0;
 let pendingToolRunsSeq = 0;
 let eventSeq = 0;
@@ -312,7 +320,7 @@ function scheduleFrame(): void {
  */
 function flushQueuedCommits(): void {
   const queued: Array<{ seq: number; flush: () => void }> = [];
-  if (pendingLifecycle) {
+  if (pendingLifecycleQueue.length > 0) {
     queued.push({ seq: pendingLifecycleSeq, flush: flushPendingLifecycle });
   }
   if (pendingToolRuns && pendingToolRuns.size > 0) {
@@ -323,15 +331,16 @@ function flushQueuedCommits(): void {
 }
 
 /**
- * Drain the queued lifecycle event (message-added / stream-started) into
- * a single commit. No-op when the slot is empty so the rAF callback above
- * can call this unconditionally.
+ * Drain the queued lifecycle events (message-added / stream-started) in
+ * publication order. Every queued event gets its own commit, so a
+ * subscriber observes each one — a subscriber that samples `lastEvent` must
+ * see `message-added` even when the pair lands in the same frame. No-op when
+ * the queue is empty so the rAF callback above can call this unconditionally.
  */
 function flushPendingLifecycle(): void {
-  if (!pendingLifecycle) return;
-  const event = pendingLifecycle;
-  pendingLifecycle = null;
-  commit(event);
+  if (pendingLifecycleQueue.length === 0) return;
+  const events = pendingLifecycleQueue.splice(0, pendingLifecycleQueue.length);
+  for (const event of events) commit(event);
 }
 
 /* Defer the next delta commit until its cadence deadline, then hand it to
@@ -387,12 +396,13 @@ function publish(event: ChatRuntimeEvent): void {
   }
 
   /* Coalesce the two click-frame lifecycle events into one commit per
-     animation frame. The second event in the same frame overwrites the
-     slot — that's identical to what two synchronous commits would have
-     produced for the snapshot's lastEvent/stream fields. */
+     animation frame. The click frame pays one rAF instead of two snapshot
+     walks; the events themselves are kept in publication order so no
+     lifecycle notification is lost. */
   if (event.type === 'message-added' || event.type === 'stream-started') {
-    pendingLifecycle = event;
-    pendingLifecycleSeq = ++eventSeq;
+    const seq = ++eventSeq;
+    if (pendingLifecycleQueue.length === 0) pendingLifecycleSeq = seq;
+    pendingLifecycleQueue.push(event);
     scheduleFrame();
     return;
   }
@@ -442,7 +452,7 @@ const chatRuntimeBridge: ImmutableBridge<ChatRuntimeSnapshot, ChatRuntimeEvent> 
     });
     pendingDelta = null;
     pendingToolRuns = null;
-    pendingLifecycle = null;
+    pendingLifecycleQueue.length = 0;
     pendingLifecycleSeq = 0;
     pendingToolRunsSeq = 0;
     eventSeq = 0;
