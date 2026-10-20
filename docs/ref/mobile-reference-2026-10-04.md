@@ -19,7 +19,7 @@ account, session, file and connector data.
 | Directories | 36px search, 40px tabs/app icons, 60px file rows | `polish/mobile-directories.css` |
 | Popovers | viewport-clamped portal, 40px rows, 20px corners | `menu/AnchoredMenu.tsx`, `components/sidebar.css` |
 | Colors | black page, composer #212121, controls #383838, menus #353535 | `themes.css` |
-| Text | locally bundled Inter and Noto Sans SC | `foundations/fonts.css`, `themes.css` |
+| Text | locally bundled Inter and MiSans (MiSans replaced Noto Sans SC in 824b0864) | `foundations/fonts.css`, `themes.css` |
 
 `themes.css` remains imported exactly once and last. Repeated phone geometry
 was removed from compatibility files instead of covered with another cascade

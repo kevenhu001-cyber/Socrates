@@ -42,9 +42,12 @@ ratchets that at zero). Motion/type tokens live in `styles/tokens.css`
 `--ui-text-ui` 14px, `--ui-text-body` 16/28, `--ui-text-hero` 24px).
 
 Deliberate deviations: the light page is `#f8f8f8` (chatgpt.com logged-out:
-`#fcfcfc`) so the sidebar still reads as a separate band; dark tool-chip text
-is lifted to `#81a6f9` for WCAG AA; the bundled Plus Jakarta Sans face is kept
-as the single UI font instead of the system stack.
+`#fcfcfc`) so the sidebar still reads as a separate band, and the sidebar
+container itself is `#ffffff` with a neutral `#eeeeee` hairline and a 3%
+black hover wash (chatgpt.com: `#fcfcfc`, `1px rgba(0,0,0,.1)`, `#f3f3f3`) —
+this is the Lobe foundation in `docs/adr/0020-lobe-design-foundation.md`;
+dark tool-chip text is lifted to `#81a6f9` for WCAG AA; the bundled Plus
+Jakarta Sans face is kept as the single UI font instead of the system stack.
 
 The light neutral ramp is lifted for WCAG AA. The reference's secondary
 (`#5d5d5d`) and tertiary tones are both too light for small text on the

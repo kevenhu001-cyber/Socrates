@@ -1,9 +1,26 @@
 // e2e/placeholder-localization.spec.mjs — the zh chat placeholder must
 // localize at runtime and keep the bundled western UI face first in the
-// mixed-script stack, with Noto Sans SC available for CJK fallback.
+// mixed-script stack, with the bundled CJK face available for CJK fallback.
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
+
+/* The CJK face is MiSans (Xiaomi), bundled from the `misans` npm package and
+   served from this app's own origin — it replaced Noto Sans SC in
+   824b0864. The face is what the assertion is about; the name in the stack
+   is only the proof that the stack points at it. */
+const CJK_FACE = 'MiSans';
+
+/* The name in a font stack is not proof the face is usable: a @font-face
+   whose file is missing still leaves the name in the computed style, and the
+   glyphs then silently fall back to a system CJK font. Ask the FontFaceSet
+   to actually load the face for CJK codepoints and require a match. */
+async function cjkFaceLoads(page) {
+  return page.evaluate(async (family) => {
+    const faces = await document.fonts.load(`16px "${family}"`, '中文测试');
+    return faces.length > 0;
+  }, CJK_FACE);
+}
 
 test('zh UI localizes live with the bundled Inter face', async ({ page }) => {
   await mockAuthedApp(page);
@@ -29,9 +46,10 @@ test('zh UI localizes live with the bundled Inter face', async ({ page }) => {
   expect(zhState).not.toBeNull();
   expect(zhState.content).toContain('有问题，随便问');
   expect(zhState.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('Inter');
-  expect(zhState.fontFamily).toContain('Noto Sans SC');
+  expect(zhState.fontFamily).toContain(CJK_FACE);
   expect(zhState.fontFamily).toContain('Inter');
   expect(zhState.fontFamily).not.toContain('Microsoft YaHei');
+  expect(await cjkFaceLoads(page)).toBe(true);
 
   /* Switching back to English must restore the Latin UI face. */
   await page.evaluate(() => window.setLang('en'));
@@ -63,9 +81,10 @@ test('landing greeting has no leading logo and keeps the western Inter face in C
     beforeContent: getComputedStyle(el, '::before').content,
   }));
   expect(zhStyle.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('Inter');
-  expect(zhStyle.fontFamily).toContain('Noto Sans SC');
+  expect(zhStyle.fontFamily).toContain(CJK_FACE);
   expect(zhStyle.fontFamily).toContain('Inter');
   expect(zhStyle.fontFamily).not.toContain('Microsoft YaHei');
+  expect(await cjkFaceLoads(page)).toBe(true);
   expect(zhStyle.paddingLeft).toBe('0px');
   expect(['none', 'normal']).toContain(zhStyle.beforeContent);
 

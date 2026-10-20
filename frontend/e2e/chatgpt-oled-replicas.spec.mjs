@@ -126,7 +126,11 @@ test('capture all 5 reference replica screens on mobile OLED', async ({ page }) 
   await expect(firstItem).toBeVisible();
   const dotsBtn = firstItem.locator('.recent-item-overflow');
   await dotsBtn.click();
-  await expect(page.locator('#appShell > .recent-item-menu')).toBeVisible();
+  /* The Base UI menu migration (fc644b65 / 02ff2289) moved this menu out of
+     #appShell's direct children: the overlay now sits in its own react-aria
+     container. Anchor on the menu's role instead of its DOM parent — the same
+     selector session-row-menu.spec.mjs and recents-archive.spec.mjs use. */
+  await expect(page.locator('.recent-item-menu[role="menu"]')).toBeVisible();
   await page.waitForTimeout(150);
   await page.screenshot({ path: 'test-results/replica-3-mobile-context-menu.png' });
 
@@ -136,7 +140,6 @@ test('capture all 5 reference replica screens on mobile OLED', async ({ page }) 
   await expect(page.locator('.plugin-directory')).toBeVisible();
   await page.waitForTimeout(200);
   await page.screenshot({ path: 'test-results/replica-4-mobile-plugins.png' });
-
   // Scroll down to inspect more connector icons (Discord, Asana, Airtable, Jira, etc.)
   await page.locator('[data-connector-id="discord"]').scrollIntoViewIfNeeded();
   await page.waitForTimeout(200);

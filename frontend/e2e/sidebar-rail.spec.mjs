@@ -1,6 +1,9 @@
-// e2e/sidebar-rail.spec.mjs — desktop sidebar parity with chatgpt.com
-// (docs/ref/chatgpt-parity.md): 36px rows with a solid hover wash,
-// single-line history, and a 52px icon rail when collapsed.
+// e2e/sidebar-rail.spec.mjs — desktop sidebar geometry and palette.
+// The geometry is chatgpt.com parity (docs/ref/chatgpt-parity.md): 36px rows,
+// single-line history, a 52px icon rail when collapsed. The palette is the
+// Lobe foundation (docs/adr/0020-lobe-design-foundation.md) — the container
+// is #ffffff on a #f8f8f8 page, which is a documented deviation from
+// chatgpt.com's #fcfcfc.
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
@@ -54,15 +57,25 @@ test('open sidebar uses quiet 36px rows, compact chrome and one-line history', a
   expect(rows.itemH).toBe(36);
   expect(rows.metaVisible).toBe(false);
   expect(rows.modeBadgeVisible).toBe(false);
-  expect(rows.sidebarBg).toBe('rgb(252, 252, 252)');
-  expect(rows.sidebarBorder).toBe('1px rgba(0, 0, 0, 0.1)');
+  /* The palette below is the Lobe foundation, not chatgpt.com's. ADR 0020
+     sets light mode layout #f8f8f8 / container #ffffff, and the parity
+     reference records the deviation: the page is #f8f8f8 precisely so the
+     white sidebar still reads as a separate band. chatgpt.com's #fcfcfc
+     sidebar and its 1px rgba(0,0,0,.1) hairline are the pre-foundation
+     values this spec was written against. */
+  expect(rows.sidebarBg).toBe('rgb(255, 255, 255)');
+  /* --ui-sidebar-border → --ui-bg-pill-selected (#eeeeee): a neutral hairline,
+     not the translucent black chatgpt.com uses. */
+  expect(rows.sidebarBorder).toBe('1px rgb(238, 238, 238)');
   expect(rows.headerH).toBe(52);
   expect(rows.logoFontSize).toBe('16px');
   expect(rows.footerBorderTop).toBe('0px');
   expect(rows.avatarSize).toBe(28);
 
+  /* --ui-bg-hover is a 3% black wash, so the computed value stays translucent
+     and composites to rgb(247, 247, 247) over the white sidebar. */
   await page.locator('#navProjects').hover();
-  await expect(page.locator('#navProjects')).toHaveCSS('background-color', 'rgb(243, 243, 243)');
+  await expect(page.locator('#navProjects')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0.03)');
 });
 
 test('collapsing keeps a 52px icon rail with named buttons and reopens from it', async ({ page }) => {

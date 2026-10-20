@@ -183,20 +183,57 @@
 
 **命令。** `DEPLOY_SKIP_CI_CHECK=1 ./deploy.sh`。**不要**用 `--dry-run`：它只跳过 CI 门禁，参数解析不匹配，随后仍会走完整生产部署路径。
 
-**门禁状态。** CI 工作流是红的，红的原因全部是**既有**失败，与本轮改动无关：
+**门禁状态。** CI 工作流是红的，红的原因全部是**既有**失败，与本轮改动无关。这四条在部署后的第二轮里逐一做了归因，结论见下一节「门禁失败的归因」：1 条是 Base UI 菜单迁移漏改的选择器，1 条是 2026-10-10 之后再没刷过的截图基线，2 条是换肤/换字体时漏改的过期断言。**没有一条是产品缺陷。**
 
-1. `chatgpt-oled-replicas` —— 截图基线陈旧（基线图 252×497 vs 实际 252×388，25% 像素不同）。基线最后刷新于 2026-10-10，此后有 78 笔 UI 提交。**本轮没有顺手重刷**——那等于替 78 笔提交「洗绿」，应由人审阅 PNG diff。
-2. `composer-tools-visual-baseline` —— 同上。
-3. `placeholder-localization` ×2 —— 字体栈缺 `Noto Sans SC`，而字体栈方向（系统栈 vs 保留 Plus Jakarta Sans）是留给用户的产品决策。
-4. `sidebar-rail` —— 断言写死 `rgb(252,252,252)`，light 主题的 `--ui-bg-sidebar` 是 `#ffffff`，3/255 之差。没有参考文档能判定哪边是对的，所以本轮不动。
-
-本轮相对基线**没有新增**失败：基线 9 条 → 本轮 4 条（修掉 `chat-light-palette`×3、`mobile-reference`），加上部署期间发现并修掉的 `react-compat` 竞态。
+本轮相对基线**没有新增**失败：基线 9 条 → 4 条（修掉 `chat-light-palette`×3、`mobile-reference`），加上部署期间发现并修掉的 `react-compat` 竞态。
 
 **部署内容与结果。** `faaed6f5` → `2ff53480`，13 个提交，含 85 个 frontend 文件与 27 个 server 文件；无新迁移（上次部署已含到 `0044`）。入口 `index.1792473412.html`（75067 bytes），nginx `try_files` 已指向该文件，16 项健康门禁全过，`ciGate` 记录为 `skipped-by-operator`。
 
+## 门禁失败的归因
+
+部署把门禁的 4 条既有失败顶到了眼前。与其"看着像过期就改断言"，不如逐条取证——**每条都先问"产品到底对不对"**，再决定是改断言还是改实现。
+
+**`chatgpt-oled-replicas` —— 漏改的选择器，不是截图基线。** 第一眼看上去像陈旧截图，但这条 spec 根本没有 `toHaveScreenshot` 断言，它只是往 `test-results/` 写图供人眼看。CI 的真实错误是：
+
+```
+Error: expect(locator).toBeVisible() failed
+Locator: locator('#appShell > .recent-item-menu')
+Error: element(s) not found
+```
+
+点击 recents 行的溢出按钮后，菜单没有出现在 `#appShell` 的**直接子节点**里。实测证明菜单本身是好的：`menuCount: 1`、`visible: true`、`aria-expanded: "true"`、`aria-haspopup: "menu"`、位置 201,476 / 158×328 全部正确——只是被 react-aria 的 overlay 容器 `DIV#_r_a_` 包着，不再是 `#appShell` 的直接子节点。
+
+时间线钉死了责任：`fc644b65` 引入 `FoundationMenu`（Base UI 迁移），`02ff2289`「finish Base UI migration for menus and confirm dialog」**在同一个提交里把 `recents-archive.spec.mjs` 的选择器改成了后代选择器**，却漏了这条。同一个 spec 家族里另外三条早就改好了（`session-row-menu.spec.mjs` 用 `.recent-item-menu[role="menu"]`、`recents-archive*.spec.mjs` 用 `#appShell .recent-item-menu`，`mobile-reference.spec.mjs` 用 `.recent-item-menu`），只有它还在用直接子节点写法。改成按 role 锚定，与 `session-row-menu.spec.mjs` 一致。
+
+**`composer-tools-visual-baseline` —— 基线确实过期，产品是新的。** 基线图 252×497 vs 当前 252×388，25% 像素不同。先量后看：菜单 `clientHeight: 386` / `scrollHeight: 595` / `overflowY: auto` / `max-height: 387.969px`，滚到底后最后一项 "Manage apps" `visibleAfterScroll: true`——**内容更高了但可滚动、可达，不是被裁掉**。新增的顶部搜索框、"Search tools and connected apps"，是 `max-height` + 滚动这套设计的直接结果：菜单不再在矮视口里溢出。
+
+然后是人眼比对（不是只信像素比例）。浅色与深色各看一张全尺寸图：圆形图标 chip **仍然在**（浅色下 chip 约 `#f0f0f0` 对菜单 `#f8f8f8`，缩略图上几乎看不出来，一开始误判成"chip 被删了"；深色下是 `#3c3c3c` 对 `#2d2d2d`）。真实变化是三件事：多了顶部搜索框、行距收紧给搜索框腾位、菜单底色随主题演进。判定为**基线过期**，重刷。
+
+重刷时连 `win32` 的 8 张一起删了：仓库里没有 Windows runner，CI 只跑 `ubuntu-latest`，这 8 张自最早的提交起就从未被比对过，而且在 linux 上**无法重新生成**——它们画的是一个已经不存在的菜单。留着等于给未来的 Windows 首次运行埋一个假失败；删掉后 Playwright 会按"首次运行写新图并标记待审"的正确行为走。
+
+**`placeholder-localization` ×2 —— 换字体时漏改断言，产品是对的。** spec 断言字体栈里有 `Noto Sans SC`，实际是 `"Inter", "MiSans", "Plus Jakarta Sans", sans-serif`。
+
+`824b0864`「replace Noto Sans SC with MiSans for CJK text」是一次**明确的产品决策**：换掉 CJK 字体，同步更新了 `fonts.css`、`package.json`、`themes.css`，但**没有更新这条 spec**。`frontend/README.md` 的 Credits 段还写着 MiSans 的 IP 许可要求署名，`docs/ref/mobile-reference-2026-10-04.md:22` 和 `design-qa.md` 两处却还写着 Noto Sans SC。
+
+真实浏览器实测确认产品正常：`document.fonts.check('16px MiSans', '中文测试')` → `true`，`document.fonts.check('16px Inter', 'Latin')` → `true`，实际计算值 `Inter, MiSans, "Plus Jakarta Sans", sans-serif`，中文问候语 `我们先从哪里开始呢？` 正常渲染，栈里没有 `Microsoft YaHei` / `PingFang` / `system-ui`——"拉丁走 Inter、CJK 走本地打包的字体"这个意图是成立的。
+
+断言改成 `MiSans`，并且**加了一条更强的**：`document.fonts.load('16px "MiSans"', '中文测试')` 必须返回匹配的 face。字体名出现在栈里并不能证明字体可用——文件缺失时名字照样在计算样式里，字形会静默回落到系统中文字体；这条断言能在打包出错时真的拦住。
+
+**`sidebar-rail` —— 三条 ChatGPT 旧调色板断言，产品符合 ADR 0020。** 这条 spec 的断言不止一条过期，第一条挂了把后面两条都挡住了，所以必须**逐条实测**而不是只改第一个失败的：
+
+| 断言 | spec 期望（chatgpt.com） | 实测（我们的 Lobe 基座） | ADR 0020 |
+| --- | --- | --- | --- |
+| `sidebarBg` | `rgb(252,252,252)` | `rgb(255,255,255)` | container `#ffffff` ✓ |
+| `sidebarBorder` | `1px rgba(0,0,0,0.1)` | `1px rgb(238,238,238)` | 中性描边 `#eeeeee` |
+| hover wash | `rgb(243,243,243)` | `rgba(0,0,0,0.03)` | `--ui-bg-hover` 令牌 |
+
+`d0e8bfe0`「feat(theme): adopt Lobe UI design foundation」把 light 主题换成 Lobe 基座（layout `#f8f8f8` / container `#ffffff`），提交信息里明说"migrate stale visual palette assertions"，但漏了这一条 spec。`docs/ref/chatgpt-parity.md` 里的 `#fcfcfc` 是**chatgpt.com 的参考采样值**，不是我们的——同文件的偏差清单明写"the light page is `#f8f8f8` (chatgpt.com logged-out: `#fcfcfc`) so the sidebar still reads as a separate band"。产品符合 ADR，断言是过期。顺带把偏差清单补全（侧栏容器、描边、hover 三项），免得下一个读文档的人又被 `#fcfcfc` 误导。
+
+**结论：4 条全部是门禁侧的问题，产品没有缺陷。** 处理方式是改断言、改正选择器、重刷基线——没有一条是靠放宽阈值蒙混过去的。
+
 ## 仍然敞开 / 本轮未做
 
-- **字体栈方向（审计 P2）**未动：仓库里三套字体栈并存（`themes.css` 实际生效的 `"Inter","MiSans","Plus Jakarta Sans"`、`legacy/00-foundations.css` 注释里写的 Plus Jakarta Sans primary、`legacy/02-modals-library.css` 硬编码的第三套）。OpenAI 的规范是"始终继承系统字体栈"，`docs/ref/chatgpt-parity.md` 记录的却是"保留 Plus Jakarta Sans 作为唯一 UI 字体"。这是产品决策，本轮不自行拍板。
+- **字体栈方向（审计 P2）**未动，但范围已经收窄：CJK 字体早已定案——`824b0864` 把 Noto Sans SC 换成 MiSans（本地打包、`unicode-range` 让拉丁落到 Inter、CJK 落到 MiSans、README 有 IP 署名要求），本轮只是把漏改的 spec 与两份文档补齐。**仍然开着的是拉丁 UI 字体**：仓库里三套并存（`themes.css` 实际生效的 `"Inter","MiSans","Plus Jakarta Sans"`、`legacy/00-foundations.css` 注释里写的 Plus Jakarta Sans primary、`legacy/02-modals-library.css` 硬编码的第三套）。OpenAI 的规范是"始终继承系统字体栈"，`docs/ref/chatgpt-parity.md` 记录的却是"保留 Plus Jakarta Sans 作为唯一 UI 字体"。这是产品决策，本轮不自行拍板。
 - **深色占位符** `--ui-text-placeholder: #6b6b6b` 在深色面上是 3.27，同样低于 AA。本轮只做浅色主题，占位符一档保持参考色值。
 - **审计 P2 的卡片规则**未动：可视化卡片的 4 个等权重动作、`IntelligentSurface` 用 `<select>` 让用户切 5 种显示模式、卡内 `role="tablist"`、Canvas 工具栏 5 个按钮、5 处嵌套滚动。这些是结构改动，量级高于本轮。
 - **命名空间仍分裂**：`--cg-*` / `--chatgpt-*` / `--conversation-*` 三套别名桥接仍在 `themes.css` 里，`restore/` 仍活 569 个 `!important`。
