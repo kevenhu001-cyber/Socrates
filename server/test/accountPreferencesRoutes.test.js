@@ -106,12 +106,13 @@ test('API key create validates public HTTPS provider URLs and required fields', 
 });
 
 test('API key patch rotates secret without disclosing it, and invalid or foreign ids are not found', async () => {
-  const rotated = await f.request(`/api/api-key/${ownKey}`, { method: 'PATCH', body: { key: 'rotated-secret-6789', label: 'Renamed' } });
+  const rotatedInput = 'test test test';
+  const rotated = await f.request(`/api/api-key/${ownKey}`, { method: 'PATCH', body: { key: rotatedInput, label: 'Renamed' } });
   assert.equal(rotated.status, 200);
   assert.equal(rotated.body.label, 'Renamed');
-  assert.equal(rotated.body.keyHint, 'rotated-');
+  assert.equal(rotated.body.keyHint, rotatedInput.slice(0, 8));
   assert.equal(rotated.body.hasKey, true);
-  assert.equal(JSON.stringify(rotated.body).includes('rotated-secret-6789'), false);
+  assert.equal(JSON.stringify(rotated.body).includes(rotatedInput), false);
   assert.equal('keyCiphertext' in rotated.body, false);
   assert.equal((await f.request('/api/api-key/not-a-uuid', { method: 'PATCH', body: { label: 'x' } })).status, 404);
   assert.equal((await f.request(`/api/api-key/${ownKey}`, { as: f.other, method: 'PATCH', body: { label: 'stolen' } })).status, 404);
