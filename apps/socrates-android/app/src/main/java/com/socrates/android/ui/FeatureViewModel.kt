@@ -11,6 +11,8 @@ import androidx.lifecycle.viewModelScope
 import com.socrates.android.data.ApiClient
 import com.socrates.android.data.FeatureItem
 import com.socrates.android.data.FeatureModels
+import com.socrates.android.data.LibraryResourceKey
+import com.socrates.android.data.LibrarySelectionController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -23,11 +25,20 @@ import java.io.File
 import java.time.ZonedDateTime
 import java.util.concurrent.atomic.AtomicLong
 
+data class DocumentPreviewState(
+    val text: DocumentTextPreview? = null, val textLoading: Boolean = false,
+    val textError: String? = null, val pdfBytes: ByteArray? = null,
+    val pdfLoading: Boolean = false, val pdfError: String? = null,
+)
+
  data class FeatureState(
     val kind: String = "", val items: List<FeatureItem> = emptyList(), val legacyPluginItems: List<FeatureItem> = emptyList(), val selected: FeatureItem? = null,
     val connectorConfigured: Boolean = false, val openConnectorAvailable: Boolean = false,
     val loading: Boolean = false, val busy: Boolean = false, val error: String? = null, val notice: String? = null,
     val name: String = "", val description: String = "", val prompt: String = "", val frequency: String = "once",
+    val assistantStarter: String = "",
+    val assistantDescription: String = "",
+    val documentPreview: DocumentPreviewState = DocumentPreviewState(),
     val systemPrompt: String = "", val memoryCursor: String? = null, val includeDisabledMemories: Boolean = true,
     val taskAt: String = ZonedDateTime.now().plusHours(1).withSecond(0).withNano(0).toOffsetDateTime().toString(),
     val imageBytes: ByteArray? = null, val imageLoading: Boolean = false, val codexEnabled: Boolean = false, val needsConfirmation: String? = null, val unauthorized: Boolean = false
@@ -37,23 +48,103 @@ class FeatureViewModel(application: Application) : AndroidViewModel(application)
     private val prefs = application.getSharedPreferences("socrates_native_settings", 0)
     private val _state = kotlinx.coroutines.flow.MutableStateFlow(FeatureState())
     val state = _state
-    private fun newClient() = ApiClient(getApplication<Application>()) {
-        _state.value = _state.value.copy(unauthorized = true)
+    private fun newClient(): ApiClient = ApiClient(getApplication<Application>()) {
+        // ApiClient may invoke this on an IO thread. Keep controller mutations on Main.
+        viewModelScope.launch { if (!api.isLoggedIn) clearAccountState() }
     }
-    private var api = newClient()
+    private var api: ApiClient = newClient()
+    val librarySelection: LibrarySelectionController = LibrarySelectionController(
+        scope = viewModelScope,
+        delete = { key ->
+            val client = api
+            withContext(Dispatchers.IO) { client.requestResource("DELETE", "${key.collection}/${key.id}") }
+        },
+        onDeleted = { key ->
+            _state.value = _state.value.copy(items = _state.value.items.filterNot { LibraryResourceKey.from(it) == key })
+        },
+        onUnauthorized = ::clearAccountState,
+    )
+    val taskExecution: com.socrates.android.data.TaskExecutionController = com.socrates.android.data.TaskExecutionController(
+        scope = viewModelScope,
+        read = { id ->
+            val client = api
+            withContext(Dispatchers.IO) {
+                com.socrates.android.data.TaskExecutionRepository { method, path, body -> client.requestResource(method, path, body) }.read(id)
+            }
+        },
+        readSession = { id -> val client = api; withContext(Dispatchers.IO) { client.getSession(id) } },
+        onUnauthorized = ::clearAccountState,
+    )
+    val artifactReader = com.socrates.android.data.ArtifactReaderController(
+        scope = viewModelScope,
+        readCurrent = { id ->
+            val client = api
+            withContext(Dispatchers.IO) {
+                com.socrates.android.data.ArtifactReaderRepository(client::readArtifactResource).current(id)
+            }
+        },
+        readVersions = { id ->
+            val client = api
+            withContext(Dispatchers.IO) {
+                com.socrates.android.data.ArtifactReaderRepository(client::readArtifactResource).versions(id)
+            }
+        },
+        onUnauthorized = ::clearAccountState,
+    )
     private val generation = AtomicLong(0)
+    val agentRunReader = com.socrates.android.data.AgentRunReaderController(
+        scope = viewModelScope,
+        read = { id ->
+            val client = api
+            withContext(Dispatchers.IO) {
+                com.socrates.android.data.AgentRunReaderRepository(client::readAgentRunResource).read(id)
+            }
+        },
+        onUnauthorized = ::clearAccountState,
+    )
     private var listJob: Job? = null
     private var mutationJob: Job? = null
     private var connectorRefreshJob: Job? = null
     private val connectorRefreshLock = Any()
     private val pendingConnectorRefresh = linkedSetOf<String>()
     private var imageJob: Job? = null
+    private var documentTextJob: Job? = null
+    private var documentPdfJob: Job? = null
+    private val documentGeneration = AtomicLong(0)
     private val thumbnailCache = object : LruCache<String, Bitmap>(12 * 1024 * 1024) { override fun sizeOf(key: String, value: Bitmap) = value.byteCount }
     private val thumbnailPermits = Semaphore(2)
     @Volatile private var thumbnailEpoch = 0L
 
+    private fun clearAccountState() {
+        generation.incrementAndGet()
+        listJob?.cancel(); mutationJob?.cancel(); connectorRefreshJob?.cancel(); imageJob?.cancel()
+        librarySelection.clear()
+        cancelDocumentPreview()
+        taskExecution.clear()
+        artifactReader.clear()
+        agentRunReader.clear()
+        thumbnailEpoch++
+        thumbnailCache.evictAll()
+        synchronized(connectorRefreshLock) { pendingConnectorRefresh.clear() }
+        _state.value = FeatureState(kind = _state.value.kind, unauthorized = true)
+    }
+
+    fun confirmLibraryDelete() {
+        if (_state.value.kind != "资料库" || _state.value.busy || librarySelection.state.value.busy || librarySelection.state.value.confirmation == null) return
+        // A refresh begun before confirmation must not resurrect deleted rows.
+        listJob?.cancel()
+        generation.incrementAndGet()
+        _state.value = _state.value.copy(loading = false, error = null, notice = null)
+        librarySelection.deleteConfirmed()
+    }
+
     fun open(kind: String) {
         listJob?.cancel(); mutationJob?.cancel(); connectorRefreshJob?.cancel(); imageJob?.cancel(); generation.incrementAndGet()
+        cancelDocumentPreview()
+        taskExecution.clear()
+        artifactReader.clear()
+        agentRunReader.clear()
+        librarySelection.clear()
         thumbnailEpoch++
         thumbnailCache.evictAll()
         api = newClient()
@@ -78,6 +169,7 @@ class FeatureViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun load() {
+        if (librarySelection.state.value.busy) return
         if (_state.value.kind == "Codex") { loadCodex(); return }
         listJob?.cancel()
         val token = generation.incrementAndGet()
@@ -109,15 +201,19 @@ class FeatureViewModel(application: Application) : AndroidViewModel(application)
                         files + artifacts
                     }
                     "插件" -> FeatureModels.items(result, key, listOf("name")).onEach { it.raw.put("_recordType", "connector") }
+                    "助手" -> FeatureModels.items(result, key, listOf("title", "name")).map { item -> item.copy(description = AssistantConfig.fromSource(item.raw.optString("source")).description) }
                     else -> FeatureModels.items(result, key, if (kind == "图像") listOf("name", "title") else if (kind == "记忆") listOf("text") else listOf("title", "name"))
                 }
                 val legacyPlugins = if (kind == "插件") FeatureModels.items(result, "legacyPlugins", listOf("name")) else _state.value.legacyPluginItems
+                if (generation.get() == token && kind == "资料库") librarySelection.reconcile(rows)
                 if (generation.get() == token) _state.value = _state.value.copy(
                     items = rows,
                     legacyPluginItems = legacyPlugins,
                     connectorConfigured = if (kind == "插件") result.optBoolean("configured") else _state.value.connectorConfigured,
                     openConnectorAvailable = if (kind == "插件") result.optJSONObject("openConnector")?.let { it.optBoolean("available") || it.optBoolean("cloud") } == true else _state.value.openConnectorAvailable,
-                    selected = _state.value.selected?.let { selected -> rows.firstOrNull { it.id == selected.id } ?: selected },
+                    selected = _state.value.selected?.let { selected -> rows.firstOrNull {
+                        if (kind == "资料库") LibraryResourceKey.from(it) == LibraryResourceKey.from(selected) else it.id == selected.id
+                    } ?: selected },
                     loading = false, error = null,
                     memoryCursor = result.optString("nextCursor").takeIf { kind == "记忆" && it.isNotBlank() && it != "null" },
                 )
@@ -171,6 +267,8 @@ class FeatureViewModel(application: Application) : AndroidViewModel(application)
 
     fun setName(value: String) { _state.value = _state.value.copy(name = value) }
     fun setDescription(value: String) { _state.value = _state.value.copy(description = value) }
+    fun setAssistantStarter(value: String) { _state.value = _state.value.copy(assistantStarter = value) }
+    fun setAssistantDescription(value: String) { _state.value = _state.value.copy(assistantDescription = value) }
     fun setPrompt(value: String) { _state.value = _state.value.copy(prompt = value) }
     fun setScheduledTemplate(title: String, prompt: String) { _state.value = _state.value.copy(name = title.take(120), prompt = prompt, frequency = "once", taskAt = ZonedDateTime.now().plusHours(1).withSecond(0).withNano(0).toOffsetDateTime().toString()) }
     fun setSystemPrompt(value: String) { _state.value = _state.value.copy(systemPrompt = value) }
@@ -188,9 +286,15 @@ class FeatureViewModel(application: Application) : AndroidViewModel(application)
     fun setFrequency(value: String) { _state.value = _state.value.copy(frequency = value) }
     fun setTaskAt(value: String) { _state.value = _state.value.copy(taskAt = value) }
     fun select(item: FeatureItem?) {
-        val instructions = item?.raw?.optString("source")?.let { source -> runCatching { JSONObject(source).optString("instructions") }.getOrDefault(source) }.orEmpty()
+        val assistantConfig = if (_state.value.kind == "助手") AssistantConfig.fromSource(item?.raw?.optString("source")) else AssistantConfig()
         imageJob?.cancel()
-        _state.value = _state.value.copy(selected = item, imageBytes = null, imageLoading = false, name = item?.title.orEmpty(), description = if (_state.value.kind == "助手") instructions else if (_state.value.kind == "记忆") item?.raw?.optString("text").orEmpty() else item?.raw?.optString("description").orEmpty(), systemPrompt = item?.raw?.optString("systemPrompt").orEmpty(), prompt = item?.raw?.optString("prompt").orEmpty(), frequency = item?.raw?.optString("frequency")?.takeIf { it.isNotBlank() } ?: "once", taskAt = item?.raw?.optString("nextRunAt")?.takeIf { it.isNotBlank() && it != "null" } ?: _state.value.taskAt)
+        cancelDocumentPreview()
+        taskExecution.clear()
+        artifactReader.clear()
+        agentRunReader.clear()
+        _state.value = _state.value.copy(documentPreview = DocumentPreviewState())
+        _state.value = _state.value.copy(selected = item, imageBytes = null, imageLoading = false, name = item?.title.orEmpty(), description = if (_state.value.kind == "助手") assistantConfig.instructions else if (_state.value.kind == "记忆") item?.raw?.optString("text").orEmpty() else item?.raw?.optString("description").orEmpty(), assistantDescription = assistantConfig.description, assistantStarter = assistantConfig.starter, systemPrompt = item?.raw?.optString("systemPrompt").orEmpty(), prompt = item?.raw?.optString("prompt").orEmpty(), frequency = item?.raw?.optString("frequency")?.takeIf { it.isNotBlank() } ?: "once", taskAt = item?.raw?.optString("nextRunAt")?.takeIf { it.isNotBlank() && it != "null" } ?: _state.value.taskAt)
+        if (item != null && _state.value.kind == "资料库" && DocumentPreviewPolicy.canExtractText(item.raw)) loadDocumentText()
         if (item != null && _state.value.kind == "图像") {
             _state.value = _state.value.copy(imageLoading = true)
             imageJob = viewModelScope.launch { try { val rawUrl = item.raw.optString("url")
@@ -200,6 +304,65 @@ class FeatureViewModel(application: Application) : AndroidViewModel(application)
                 val bytes = withContext(Dispatchers.IO) { api.downloadFile(item.id, 8 * 1024 * 1024) }; if (_state.value.selected?.id == item.id) _state.value = _state.value.copy(imageBytes = bytes, imageLoading = false) } catch (e: Exception) { if (_state.value.selected?.id == item.id) _state.value = _state.value.copy(imageLoading = false, error = e.message ?: "图片预览加载失败") } }
         }
     }
+
+    private fun cancelDocumentPreview() {
+        documentGeneration.incrementAndGet()
+        documentTextJob?.cancel(); documentPdfJob?.cancel()
+    }
+
+    fun releaseDocumentPreview() {
+        cancelDocumentPreview()
+        _state.value = _state.value.copy(documentPreview = DocumentPreviewState())
+    }
+
+    fun loadDocumentText() {
+        val item = _state.value.selected ?: return
+        if (_state.value.kind != "资料库" || !DocumentPreviewPolicy.canExtractText(item.raw)) return
+        documentTextJob?.cancel()
+        val token = documentGeneration.get()
+        val client = api
+        _state.value = _state.value.copy(documentPreview = _state.value.documentPreview.copy(textLoading = true, textError = null))
+        documentTextJob = viewModelScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    require(item.id.matches(Regex("[A-Za-z0-9_-]{1,128}"))) { "无效的文件 ID" }
+                    DocumentTextPreview.fromResponse(client.requestResource("GET", "files/${item.id}/content"))
+                }
+                ensureActive()
+                if (documentGeneration.get() == token) _state.value = _state.value.copy(documentPreview = _state.value.documentPreview.copy(text = result, textLoading = false))
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e
+            } catch (e: Exception) {
+                ensureActive()
+                if (documentGeneration.get() == token) _state.value = _state.value.copy(documentPreview = _state.value.documentPreview.copy(textLoading = false, textError = e.message ?: "文档文字提取失败，请重试。"))
+            }
+        }
+    }
+
+    fun loadDocumentPdf() {
+        val item = _state.value.selected ?: return
+        if (_state.value.kind != "资料库" || !DocumentPreviewPolicy.isPdf(item.raw) || _state.value.documentPreview.pdfLoading) return
+        documentPdfJob?.cancel()
+        val token = documentGeneration.get()
+        val client = api
+        _state.value = _state.value.copy(documentPreview = _state.value.documentPreview.copy(pdfLoading = true, pdfError = null))
+        documentPdfJob = viewModelScope.launch {
+            try {
+                val bytes = withContext(Dispatchers.IO) {
+                    // Older summaries may omit size. Metadata is only an early rejection;
+                    // downloadFile enforces the real byte cap even for chunked responses.
+                    require(item.raw.optLong("size") <= DocumentPreviewPolicy.MAX_PDF_BYTES) { "PDF 原件预览限 20 MB，可改看提取文字。" }
+                    client.downloadFile(item.id, DocumentPreviewPolicy.MAX_PDF_BYTES)
+                }
+                ensureActive()
+                if (documentGeneration.get() == token) _state.value = _state.value.copy(documentPreview = _state.value.documentPreview.copy(pdfBytes = bytes, pdfLoading = false))
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e
+            } catch (e: Exception) {
+                ensureActive()
+                if (documentGeneration.get() == token) _state.value = _state.value.copy(documentPreview = _state.value.documentPreview.copy(pdfLoading = false, pdfError = e.message ?: "PDF 原件加载失败，请重试。"))
+            }
+        }
+    }
+
     fun requestDelete(item: FeatureItem) { _state.value = _state.value.copy(needsConfirmation = item.id) }
     fun cancelDelete() { _state.value = _state.value.copy(needsConfirmation = null) }
 
@@ -228,7 +391,7 @@ class FeatureViewModel(application: Application) : AndroidViewModel(application)
                 method = if (current == null) "POST" else "PATCH"; endpoint = "scheduled-tasks" + (current?.let { "/${it.id}" } ?: "")
             }
             "插件" -> { body.put("name", s.name).put("description", s.description).put("type", "extension"); method = if (current == null) "POST" else "PATCH"; endpoint = "plugins" + (current?.let { "/${it.id}" } ?: "") }
-            "助手" -> { val source = current?.raw?.optString("source").orEmpty(); val config = runCatching { JSONObject(source) }.getOrElse { JSONObject() }; config.put("instructions", s.description); body.put("title", s.name).put("source", config.toString()); method = if (current == null) "POST" else "PATCH"; endpoint = "creations/items/assistants" + (current?.let { "/${it.id}" } ?: "") }
+            "助手" -> { val config = AssistantConfig.fromSource(current?.raw?.optString("source")).copy(description = s.assistantDescription.trim(), instructions = s.description.trim(), starter = s.assistantStarter.trim()); body.put("title", s.name.trim()).put("source", config.toSource()); method = if (current == null) "POST" else "PATCH"; endpoint = "creations/items/assistants" + (current?.let { "/${it.id}" } ?: "") }
             "资料库" -> {
                 require(current != null) { "请使用下方上传按钮添加资料。" }
                 val collection = current.raw.optString("_collection").ifBlank { "files" }
@@ -254,9 +417,32 @@ class FeatureViewModel(application: Application) : AndroidViewModel(application)
 
     fun runTask(item: FeatureItem) = mutate {
         require(_state.value.kind == "定时任务")
-        withContext(Dispatchers.IO) { api.requestResource("POST", "scheduled-tasks/${item.id}/run") }
-        _state.value = _state.value.copy(notice = "任务已运行；请刷新最近会话查看结果。")
+        val client = api
+        val updated = withContext(Dispatchers.IO) {
+            com.socrates.android.data.TaskExecutionRepository { method, path, body -> client.requestResource(method, path, body) }.runNow(item.id)
+        }
+        kotlinx.coroutines.currentCoroutineContext().ensureActive()
+        _state.value = _state.value.copy(items = _state.value.items.map { if (it.id == item.id) updated else it }, selected = _state.value.selected?.let { if (it.id == item.id) updated else it }, notice = "运行请求已结束，请查看真实执行状态与结果。")
+        taskExecution.open(item.id)
         load()
+    }
+
+    fun openTaskExecution(item: FeatureItem) {
+        if (_state.value.kind == "定时任务" && !_state.value.busy) taskExecution.open(item.id)
+    }
+
+    fun openAgentRunReader(item: FeatureItem) {
+        if (_state.value.kind == "Codex" && !_state.value.busy && _state.value.selected?.id == item.id) {
+            agentRunReader.open(item.id)
+        }
+    }
+
+    fun openArtifactReader(item: FeatureItem) {
+        if (_state.value.kind == "资料库" && !_state.value.busy && !librarySelection.state.value.busy &&
+            item.raw.optString("_collection") == "artifacts" &&
+            LibraryResourceKey.from(_state.value.selected ?: return) == LibraryResourceKey.from(item)) {
+            artifactReader.open(item.id)
+        }
     }
 
     fun connectConnector(id: String, body: JSONObject = JSONObject(), onAuthorizationUrl: (String) -> Unit = {}) = mutate {
@@ -303,10 +489,14 @@ class FeatureViewModel(application: Application) : AndroidViewModel(application)
 
     fun deleteConfirmed() = mutate {
         val id = _state.value.needsConfirmation ?: return@mutate
-        val selected = _state.value.items.firstOrNull { it.id == id }
+        val selected = _state.value.selected?.takeIf { it.id == id } ?: _state.value.items.firstOrNull { it.id == id }
         val endpoint = when (_state.value.kind) { "项目" -> "projects/$id"; "记忆" -> "memory/$id"; "资料库" -> "${selected?.raw?.optString("_collection")?.ifBlank { "files" } ?: "files"}/$id"; "图像" -> "files/$id"; "助手" -> "creations/items/assistants/$id"; "定时任务" -> "scheduled-tasks/$id"; "插件" -> "plugins/$id"; else -> throw IllegalStateException("不支持删除") }
         withContext(Dispatchers.IO) { api.requestResource("DELETE", endpoint) }
-        _state.value = _state.value.copy(needsConfirmation = null, selected = null, notice = "已删除。")
+        cancelDocumentPreview()
+        taskExecution.clear()
+        artifactReader.clear()
+        agentRunReader.clear()
+        _state.value = _state.value.copy(needsConfirmation = null, selected = null, documentPreview = DocumentPreviewState(), notice = "已删除。")
         load()
     }
 
@@ -329,8 +519,13 @@ class FeatureViewModel(application: Application) : AndroidViewModel(application)
         load()
     }
 
+    override fun onCleared() {
+        agentRunReader.clear()
+        super.onCleared()
+    }
+
     private fun mutate(block: suspend () -> Unit) {
-        if (_state.value.busy) return
+        if (_state.value.busy || librarySelection.state.value.busy) return
         val token = generation.incrementAndGet()
         _state.value = _state.value.copy(busy = true, error = null, notice = null)
         mutationJob = viewModelScope.launch {

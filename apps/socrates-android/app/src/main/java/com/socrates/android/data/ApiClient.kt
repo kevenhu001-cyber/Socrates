@@ -130,6 +130,8 @@ class ApiClient(context: Context, initialBaseUrl: String = DEFAULT_BASE_URL, pri
         const val DEFAULT_BASE_URL = "https://app.topodrive.top/api/v2"
         private const val PREFS_NAME = "socrates_api_session"
         private val TOKEN_REFRESH_LOCK = Any()
+        private val AUTH_SCOPE_LOCK = Any()
+        private val authSessionEpoch = java.util.concurrent.atomic.AtomicLong(0)
         @Volatile private var authGeneration: Long = 0
         private const val TOKEN_KEY = "mobile_token_pair"
         private const val BASE_URL_KEY = "base_url"
@@ -152,17 +154,18 @@ class ApiClient(context: Context, initialBaseUrl: String = DEFAULT_BASE_URL, pri
             }
         }
     val isLoggedIn: Boolean get() = try { tokens().optString("accessToken").isNotBlank() } catch (_: Exception) { false }
-    @Synchronized private fun tokens(): JSONObject = try {
+    private fun tokens(): JSONObject = try {
         if (prefs.getString(BASE_URL_KEY, baseUrl) != baseUrl) JSONObject()
         else JSONObject(prefs.getString(TOKEN_KEY, "{}") ?: "{}").let { pair ->
             if (pair.has("_server") && pair.optString("_server") != baseUrl) JSONObject() else pair
         }
     } catch (_: Exception) { JSONObject() }
-    private fun saveTokens(json: JSONObject) {
+    private fun saveTokens(json: JSONObject, newSession: Boolean = false) = synchronized(AUTH_SCOPE_LOCK) {
         if (prefs.getString(BASE_URL_KEY, baseUrl) != baseUrl) throw ApiException(409, "连接已改变，请重新登录。")
         prefs.edit().putString(TOKEN_KEY, JSONObject(json.toString()).put("_server", baseUrl).toString()).apply()
+        if (newSession) authSessionEpoch.incrementAndGet()
     }
-    private fun clearTokens() { prefs.edit().remove(TOKEN_KEY).apply() }
+    private fun clearTokens() = synchronized(AUTH_SCOPE_LOCK) { prefs.edit().remove(TOKEN_KEY).apply(); authSessionEpoch.incrementAndGet(); Unit }
     private fun requireTokens(json: JSONObject) {
         if (json.optString("accessToken").isBlank() || json.optString("refreshToken").isBlank()) throw ApiException(502, "服务器返回的登录凭据不完整。")
     }
@@ -192,7 +195,7 @@ class ApiClient(context: Context, initialBaseUrl: String = DEFAULT_BASE_URL, pri
             if (!response.isSuccessful) throw ApiException(response.code, "浏览器登录交换失败。")
             JSONObject(body)
         }
-        synchronized(this) { if (generation != authGeneration || baseUrl != expectedBase || !BrowserLoginHandoff.productionBase(baseUrl)) throw ApiException(409, "服务器连接或登录状态已改变，请重新开始登录。"); requireTokens(result); saveTokens(result) }
+        synchronized(this) { if (generation != authGeneration || baseUrl != expectedBase || !BrowserLoginHandoff.productionBase(baseUrl)) throw ApiException(409, "服务器连接或登录状态已改变，请重新开始登录。"); requireTokens(result); saveTokens(result, newSession = true) }
         return result.optJSONObject("user") ?: currentUser()
     }
 
@@ -201,7 +204,7 @@ class ApiClient(context: Context, initialBaseUrl: String = DEFAULT_BASE_URL, pri
         val result = jsonRequest("POST", "/auth/mobile/login", JSONObject().put("email", email).put("password", password), authenticated = false)
         synchronized(this) {
             if (generation != authGeneration) throw ApiException(409, "连接或登录状态已改变，请重试。")
-            requireTokens(result); saveTokens(result)
+            requireTokens(result); saveTokens(result, newSession = true)
         }
         return result.optJSONObject("user") ?: JSONObject()
     }
@@ -210,7 +213,7 @@ class ApiClient(context: Context, initialBaseUrl: String = DEFAULT_BASE_URL, pri
         val result = jsonRequest("POST", "/auth/mobile/login-with-code", JSONObject().put("email", email).put("code", code), authenticated = false)
         synchronized(this) {
             if (generation != authGeneration) throw ApiException(409, "连接或登录状态已改变，请重试。")
-            requireTokens(result); saveTokens(result)
+            requireTokens(result); saveTokens(result, newSession = true)
         }
         return result.optJSONObject("user") ?: JSONObject()
     }
@@ -319,21 +322,21 @@ class ApiClient(context: Context, initialBaseUrl: String = DEFAULT_BASE_URL, pri
     fun readLearningDraft(owner: String, sessionId: String): JSONObject? =
         prefs.getString(learningDraftKey(owner, sessionId), null)?.let { runCatching { JSONObject(it) }.getOrNull() }
 
-    /** Read an owned image without exposing tokens in URLs or loading an unbounded response. */
+    /** Read an owned file without exposing tokens in URLs or loading an unbounded response. */
     fun downloadFile(id: String, maxBytes: Int = 8 * 1024 * 1024): ByteArray {
         require(id.matches(Regex("[A-Za-z0-9_-]{1,128}"))) { "无效的文件 ID" }
         require(maxBytes in 1..(20 * 1024 * 1024))
         return execute(authorizedRequest("GET", "/files/$id/raw").build()).use { response ->
             if (!response.isSuccessful) throw apiException(response.code, response.body?.string().orEmpty())
             val body = response.body ?: throw IOException("文件内容为空")
-            require(body.contentLength() <= maxBytes) { "图片不能超过 8 MB" }
+            require(body.contentLength() <= maxBytes) { "文件超过本次读取上限（$maxBytes 字节）" }
             body.byteStream().use { input ->
                 val output = java.io.ByteArrayOutputStream()
                 val buffer = ByteArray(8192)
                 while (true) {
                     val count = input.read(buffer)
                     if (count < 0) break
-                    require(output.size() + count <= maxBytes) { "图片不能超过 8 MB" }
+                    require(output.size() + count <= maxBytes) { "文件超过本次读取上限（$maxBytes 字节）" }
                     output.write(buffer, 0, count)
                 }
                 output.toByteArray()
@@ -354,6 +357,48 @@ class ApiClient(context: Context, initialBaseUrl: String = DEFAULT_BASE_URL, pri
     /** Read a server resource using a non-empty relative path (absolute URLs and traversal are rejected). */
     fun readResource(path: String): JSONObject {
         return requestResource("GET", path)
+    }
+    /** Dedicated bounded, read-only artifact routes; never accepts a URL from server content. */
+    fun readArtifactResource(id: String, versions: Boolean = false): JSONObject {
+        ArtifactReaderPolicy.requireId(id)
+        val path = "/artifacts/$id" + if (versions) "/versions" else ""
+        return readScopedResource(path, ::readArtifactJson)
+    }
+    /** Explicit snapshot GET only: no SSE subscription, execution, retry or approval endpoints. */
+    fun readAgentRunResource(id: String): JSONObject {
+        AgentRunReaderPolicy.requireId(id)
+        return readScopedResource("/agent-runs/$id", ::readAgentRunJson)
+    }
+    private fun readScopedResource(path: String, decode: (okhttp3.Response) -> JSONObject): JSONObject {
+        val epoch: Long
+        val generation: Long
+        val server: String
+        var request: Request
+        synchronized(AUTH_SCOPE_LOCK) {
+            epoch = authSessionEpoch.get(); generation = authGeneration; server = baseUrl
+            request = authorizedRequest("GET", path).build()
+        }
+        val isCurrent = { authSessionEpoch.get() == epoch && authGeneration == generation && baseUrl == server }
+        return readScopedJson(
+            isCurrent = isCurrent,
+            // Requests carry a captured token; never rebuild with a different login's credentials.
+            send = { http.newCall(request).execute() },
+            refresh = {
+                val refreshed = refreshTokens(request.header("Authorization")?.removePrefix("Bearer "), isCurrent)
+                synchronized(AUTH_SCOPE_LOCK) {
+                    if (refreshed && isCurrent()) { request = authorizedRequest("GET", path).build(); true } else false
+                }
+            },
+            invalidate = {
+                val invalidated = synchronized(AUTH_SCOPE_LOCK) {
+                    if (!isCurrent()) false else {
+                        authGeneration++; activeStream?.cancel(); activeStream = null; clearTokens(); true
+                    }
+                }
+                if (invalidated) onAuthLost?.invoke()
+            },
+            decode = decode,
+        )
     }
     /** Same-origin API operations shared by native feature modules. Never accepts absolute URLs. */
     fun requestResource(method: String, path: String, body: JSONObject? = null, authenticated: Boolean = true): JSONObject {
@@ -396,9 +441,11 @@ class ApiClient(context: Context, initialBaseUrl: String = DEFAULT_BASE_URL, pri
         return response
     }
     /** One refresh request at a time. Only definitive 401/403 invalidates credentials; transient failures preserve them. */
-    private fun refreshTokens(observedAccess: String? = null): Boolean {
+    private fun refreshTokens(observedAccess: String? = null, isCurrentScope: (() -> Boolean)? = null): Boolean {
       synchronized(TOKEN_REFRESH_LOCK) {
+        if (isCurrentScope?.invoke() == false) return false
         val generation = authGeneration
+        val sessionEpoch = authSessionEpoch.get()
         val refreshBase = baseUrl
         val current = tokens(); val access = current.optString("accessToken")
         if (!observedAccess.isNullOrBlank() && access.isNotBlank() && access != observedAccess) return true
@@ -406,10 +453,15 @@ class ApiClient(context: Context, initialBaseUrl: String = DEFAULT_BASE_URL, pri
         val body = JSONObject().put("refreshToken", refresh).toString().toRequestBody(JSON_MEDIA)
         val req = Request.Builder().url(refreshBase + "/auth/mobile/refresh").post(body).header("Content-Type", "application/json").build()
         return http.newCall(req).execute().use { response ->
-            if (generation != authGeneration || refreshBase != baseUrl) false
-            else if (response.code == 401 || response.code == 403) { clearTokens(); authGeneration++; onAuthLost?.invoke(); false }
-            else if (!response.isSuccessful) throw apiException(response.code, response.body?.string().orEmpty())
-            else { val result = parseJson(response); requireTokens(result); saveTokens(result); true }
+            // Only credential writes are locked; account UI does not wait on network IO.
+            val result = if (response.isSuccessful) parseJson(response) else null
+            val errorText = if (!response.isSuccessful && response.code !in setOf(401, 403)) response.body?.string().orEmpty() else ""
+            synchronized(AUTH_SCOPE_LOCK) {
+                if (generation != authGeneration || sessionEpoch != authSessionEpoch.get() || refreshBase != baseUrl || isCurrentScope?.invoke() == false) false
+                else if (response.code == 401 || response.code == 403) { clearTokens(); authGeneration++; onAuthLost?.invoke(); false }
+                else if (!response.isSuccessful) throw apiException(response.code, errorText)
+                else { requireTokens(result!!); saveTokens(result); true }
+            }
         }
     }
     }

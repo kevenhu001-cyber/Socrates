@@ -55,14 +55,17 @@ fun ToolActivityCard(call: JSONObject) {
                 arguments?.let { DetailValue("输入", displayJson(it)) }
                 call.opt("approval")?.takeUnless { it == JSONObject.NULL }?.let { DetailValue("审批", displayJson(it)) }
                 val preview = call.optString("_liveOutput")
-                if (preview.isNotBlank()) DetailValue("运行输出", preview)
+                if (preview.isNotBlank()) ToolOutputValue("运行输出", preview)
                 val outputs = toolOutputs(call)
                 outputs.forEachIndexed { index, output ->
                     when (output.optString("kind")) {
                         "visualization" -> output.optJSONObject("spec")?.let { RichResultView(JSONObject().put("kind", "visualization").put("spec", it), it.optString("template")) }
                         "artifact" -> ArtifactResult(output.optString("fileId"), output.optString("mimeType"), output.optString("name"))
-                        "text" -> output.optString("text").takeIf(String::isNotBlank)?.let { DetailValue(if (output.optString("stream") == "stderr") "错误输出" else "结果", it) }
-                        else -> DetailValue("结果 ${index + 1}", output.optString("raw").ifBlank { output.toString(2) })
+                        "text" -> output.optString("text").takeIf(String::isNotBlank)?.let {
+                            val stderr = output.optString("stream") == "stderr"
+                            ToolOutputValue(if (stderr) "错误输出" else "结果", it, format = !stderr)
+                        }
+                        else -> ToolOutputValue("结果 ${index + 1}", output.optString("raw").ifBlank { output.toString(2) })
                     }
                 }
                 call.optJSONArray("results")?.takeIf { it.length() > 0 }?.let { DetailValue("补充结果", displayJson(it)) }
@@ -84,10 +87,10 @@ fun ToolActivityCard(call: JSONObject) {
                     }
                 }
                 if (outputs.isEmpty()) {
-                    call.opt("output")?.takeUnless { it == JSONObject.NULL }?.let { DetailValue("结果", displayJson(it)) }
+                    call.opt("output")?.takeUnless { it == JSONObject.NULL }?.let { ToolOutputValue("结果", displayJson(it)) }
                 }
                 listOf("errorText" to "错误", "error" to "错误", "stderr" to "错误输出", "detail" to "详情").forEach { (key, label) ->
-                    call.opt(key)?.takeUnless { it == JSONObject.NULL }?.toString()?.takeIf(String::isNotBlank)?.let { DetailValue(label, it) }
+                    call.opt(key)?.takeUnless { it == JSONObject.NULL }?.toString()?.takeIf(String::isNotBlank)?.let { ToolOutputValue(label, it, format = false) }
                 }
                 call.optJSONArray("artifacts")?.let { artifacts ->
                     for (index in 0 until artifacts.length()) {

@@ -18,7 +18,6 @@ import java.util.UUID
 
 private const val MAX_ATTACHMENT = 20 * 1024 * 1024
 
-data class PendingAttachment(val name: String, val text: String = "", val imageDataUrl: String? = null, val wire: JSONObject? = null)
 data class ResourceRow(val id: String, val title: String, val detail: String)
 data class ChatUiState(
     val sessions: List<ChatSession> = emptyList(), val current: ChatSession? = null,
@@ -26,29 +25,57 @@ data class ChatUiState(
     val busy: Boolean = false, val authBusy: Boolean = false, val loggedIn: Boolean = false,
     val showAuth: Boolean = false, val error: String? = null, val sheetError: String? = null,
     val baseUrl: String = ApiClient.DEFAULT_BASE_URL, val accountName: String = "登录",
-    val activity: String = "", val attachment: PendingAttachment? = null,
+    val activity: String = "", val attachments: List<PendingAttachment> = emptyList(),
     val resources: List<ResourceRow> = emptyList(), val resourceLoading: Boolean = false,
     val resourceError: String? = null,
     val reasoningEffort: String = "medium",
     val feedbackRatings: Map<String, String> = emptyMap(),
+    val tagsSaving: Boolean = false, val tagsError: String? = null,
+    val composerDraft: ComposerDraft = ComposerDraft(),
+    val searchJump: SearchJump? = null,
+    val searchOpening: Boolean = false,
 )
+
+data class SearchJump(val messageId: String, val key: String = UUID.randomUUID().toString())
 
 class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val preferences = application.getSharedPreferences("socrates_native_settings", 0)
     private val _state = MutableStateFlow(ChatUiState())
     val state = _state.asStateFlow()
-    private val api = ApiClient(application, preferences.getString("baseUrl", ApiClient.DEFAULT_BASE_URL) ?: ApiClient.DEFAULT_BASE_URL) {
+    private val api: ApiClient = ApiClient(application, preferences.getString("baseUrl", ApiClient.DEFAULT_BASE_URL) ?: ApiClient.DEFAULT_BASE_URL) {
         turnEpoch++; loadEpoch++; accountEpoch++
+        globalSearch.clear()
+        transcriptExport.clear()
+        voicePreferences.clear()
         _state.update { ChatUiState(baseUrl = it.baseUrl, showAuth = true, error = "登录已过期，请重新登录。") }
     }
+    val globalSearch: GlobalSearchController = GlobalSearchController(viewModelScope) { query, scope ->
+        withContext(Dispatchers.IO) {
+            GlobalSearchRepository { method, path, body -> api.requestResource(method, path, body) }.search(query, scope)
+        }
+    }
+    private val voicePreferencesRepository = VoicePreferencesRepository { method, path, body -> api.requestResource(method, path, body) }
+    val voicePreferences = VoicePreferencesController(viewModelScope,
+        loadPreference = { withContext(Dispatchers.IO) { voicePreferencesRepository.load() } },
+        savePreference = { language -> withContext(Dispatchers.IO) { voicePreferencesRepository.save(language) } },
+        onAuthLost = { _state.update { ChatUiState(baseUrl = it.baseUrl, showAuth = true) } })
+    val transcriptExport = TranscriptExportController(viewModelScope)
+    fun openTranscriptExport() {
+        val current = _state.value
+        if (current.streaming || current.busy || current.messages.isEmpty()) return
+        if (!transcriptExport.open(current.current?.title.orEmpty(), current.messages))
+            error("请先完成或取消已有的文件选择，再重新导出。")
+    }
     private var turnJob: Job? = null
+    private var searchOpenJob: Job? = null
+    private var searchOpenEpoch: Long? = null
     @Volatile private var turnEpoch = 0L
     @Volatile private var loadEpoch = 0L
     @Volatile private var stopped = false
     @Volatile private var accountEpoch = 0L
     init {
         _state.update { it.copy(baseUrl = api.baseUrl, loggedIn = api.isLoggedIn) }
-        if (api.isLoggedIn) refresh()
+        if (api.isLoggedIn) { voicePreferences.load(); refresh() }
     }
     fun error(message: String) { _state.update { it.copy(error = message) } }
     fun clearError() { _state.update { it.copy(error = null) } }
@@ -60,6 +87,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val user = withContext(Dispatchers.IO) { api.login(email, password) }
                 _state.update { it.copy(authBusy = false, loggedIn = true, showAuth = false, accountName = user.optString("displayName").takeIf { n -> n.isNotBlank() && n != "null" } ?: email.substringBefore('@')) }
+                voicePreferences.clear(); voicePreferences.load()
                 refresh()
             } catch (e: Exception) { _state.update { it.copy(authBusy = false, sheetError = e.message ?: "登录失败") } }
         }
@@ -67,13 +95,41 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     /** Called only after the shared ApiClient has persisted a successful token pair. */
     fun authenticated(user: JSONObject) {
         stop(); turnJob?.cancel(); turnEpoch++; accountEpoch++; loadEpoch++
+        globalSearch.clear()
+        transcriptExport.clear()
+        voicePreferences.clear()
         _state.update { ChatUiState(baseUrl = api.baseUrl, loggedIn = true,
             accountName = user.optString("displayName").takeIf { n -> n.isNotBlank() && n != "null" }
                 ?: user.optString("email").substringBefore('@').ifBlank { "我的帐号" }) }
+        voicePreferences.load()
         refresh()
     }
     fun setReasoningEffort(value: String) {
         _state.update { it.copy(reasoningEffort = SessionActions.reasoningEffort(value)) }
+    }
+    fun clearTagsError() { _state.update { it.copy(tagsError = null) } }
+    fun saveSessionTags(session: ChatSession, tags: List<String>, onSaved: () -> Unit) {
+        val before = _state.value
+        if (!before.loggedIn || before.streaming || before.busy || before.tagsSaving) return
+        val epoch = accountEpoch
+        if (!_state.compareAndSet(before, before.copy(tagsSaving = true, tagsError = null))) return
+        viewModelScope.launch {
+            try {
+                val saved = withContext(Dispatchers.IO) {
+                    SessionTagRepository { method, path, body -> api.requestResource(method, path, body) }.save(session.id, tags)
+                }
+                if (epoch != accountEpoch) return@launch
+                // Merge into the latest records, not the editor's stale summary or message snapshot.
+                _state.update { ui -> ui.copy(
+                    sessions = ui.sessions.map { if (it.id == session.id) SessionHistory.withTags(it, saved) else it },
+                    current = ui.current?.let { if (it.id == session.id) SessionHistory.withTags(it, saved) else it },
+                    tagsSaving = false, tagsError = null,
+                ) }
+                onSaved()
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { if (epoch == accountEpoch) _state.update { it.copy(tagsError = e.message ?: "标签保存失败，请重试。") } }
+            finally { if (epoch == accountEpoch) _state.update { it.copy(tagsSaving = false) } }
+        }
     }
     fun togglePinned(session: ChatSession) {
         if (_state.value.streaming || _state.value.busy || !_state.value.loggedIn) return
@@ -137,12 +193,17 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 withContext(Dispatchers.IO) { api.requestResource("DELETE", "sessions/${session.id}") }
                 if (epoch == accountEpoch) _state.update { ui -> ui.copy(sessions = ui.sessions.filterNot { it.id == session.id },
-                    current = ui.current?.takeUnless { it.id == session.id }, messages = if (ui.current?.id == session.id) emptyList() else ui.messages) }
+                    current = ui.current?.takeUnless { it.id == session.id }, messages = if (ui.current?.id == session.id) emptyList() else ui.messages,
+                    composerDraft = if (ui.current?.id == session.id) ComposerDraft() else ui.composerDraft,
+                    attachments = if (ui.current?.id == session.id) emptyList() else ui.attachments) }
             } catch (e: Exception) { if (epoch == accountEpoch) error(e.message ?: "删除失败") }
         }
     }
     fun logout() {
         stop(); turnEpoch++; loadEpoch++; accountEpoch++
+        globalSearch.clear()
+        transcriptExport.clear()
+        voicePreferences.clear()
         _state.update { ChatUiState(baseUrl = api.baseUrl, authBusy = true) }
         viewModelScope.launch {
             try { withContext(Dispatchers.IO) { api.logout() } }
@@ -158,6 +219,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 val changed = url.trimEnd('/') != api.baseUrl
                 if (changed) {
                     stop(); turnEpoch++; loadEpoch++; accountEpoch++
+                    globalSearch.clear()
+                    transcriptExport.clear()
+                    voicePreferences.clear()
                     withContext(Dispatchers.IO) {
                         api.baseUrl = url
                         preferences.edit().putString("baseUrl", api.baseUrl).apply()
@@ -169,6 +233,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     fun refresh() {
+        if (attachmentLoad?.let(::attachmentScopeValid) == true) return
         if (!api.isLoggedIn) { showAuth(true); return }
         val epoch = ++loadEpoch
         _state.update { it.copy(busy = true) }
@@ -186,19 +251,19 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     fun newChat() {
         if (_state.value.streaming) { error("请先停止当前回复，再开启新对话。"); return }
         loadEpoch++
-        _state.update { it.copy(current = null, messages = emptyList(), attachment = null, activity = "", busy = false) }
+        _state.update { ChatWorkspace.open(it) }
     }
-    fun startBoundChat(id: String, title: String, assistant: Boolean = false) {
-        if (_state.value.streaming) { error("请先停止当前回复，再切换工作区。"); return }
-        if (!api.isLoggedIn) { showAuth(true); return }
+    fun startBoundChat(id: String, title: String, assistant: Boolean = false, source: String? = null): Boolean {
+        if (_state.value.streaming) { error("请先停止当前回复，再切换工作区。"); return false }
+        if (!api.isLoggedIn) { showAuth(true); return false }
         loadEpoch++
-        val wire = JSONObject().put(if (assistant) "assistantId" else "projectId", id)
-        _state.update { it.copy(current = ChatSession(title = title, wire = wire), messages = emptyList(), attachment = null, busy = false, activity = "") }
+        _state.update { ChatWorkspace.bound(it, id, title, assistant, source) }
+        return true
     }
     fun selectSession(session: ChatSession) {
         if (_state.value.streaming) { error("请先停止当前回复，再切换对话。"); return }
         val epoch = ++loadEpoch
-        _state.update { it.copy(current = session, messages = session.messages, busy = true, attachment = null) }
+        _state.update { ChatWorkspace.open(it, session).copy(busy = true) }
         viewModelScope.launch {
             try {
                 val full = withContext(Dispatchers.IO) { api.getSession(session.id) }
@@ -211,22 +276,56 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         if (!api.isLoggedIn) { showAuth(true); return }
         selectSession(ChatSession(id = id))
     }
+    fun openSearchHit(hit: SearchHit, onOpened: (ChatSession, Boolean) -> Unit, onFailure: (String) -> Unit) {
+        val before = _state.value
+        if (!before.loggedIn) { showAuth(true); return }
+        if (before.streaming || before.busy || before.tagsSaving) { onFailure("请先等待当前操作完成或停止回复，再打开搜索结果。"); return }
+        if (!GlobalSearchRepository.validId(hit.sessionId)) return
+        val epoch = ++loadEpoch
+        val account = accountEpoch
+        searchOpenEpoch = epoch
+        _state.update { it.copy(busy = true, searchOpening = true) }
+        searchOpenJob = viewModelScope.launch {
+            try {
+                val full = withContext(Dispatchers.IO) { api.getSession(hit.sessionId) }
+                if (epoch != loadEpoch || account != accountEpoch) return@launch
+                val messageId = SearchNavigation.messageId(full, hit)
+                val learning = full.kind == "exam" || full.mode == "tutor"
+                // Do not replace the current conversation or draft until the real session loads successfully.
+                _state.update { ui -> ChatWorkspace.openSearch(ui, full, messageId, learning) }
+                onOpened(full, hit.kind == "message" && (messageId == null || learning))
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { if (epoch == loadEpoch && account == accountEpoch) onFailure(e.message ?: "无法打开会话，请重试。") }
+            finally {
+                if (epoch == loadEpoch && account == accountEpoch) _state.update { it.copy(busy = false, searchOpening = false) }
+                if (searchOpenEpoch == epoch) searchOpenEpoch = null
+            }
+        }
+    }
+    fun cancelSearchOpening() {
+        if (searchOpenEpoch != null && searchOpenEpoch == loadEpoch) {
+            loadEpoch++
+            _state.update { it.copy(busy = false, searchOpening = false) }
+        }
+        searchOpenEpoch = null
+        searchOpenJob?.cancel()
+    }
     fun send(text: String): Boolean = sendInternal(text)
     private fun sendInternal(text: String, replay: ChatMessage? = null): Boolean {
         val snapshot = _state.value
-        if (snapshot.streaming || snapshot.busy || (text.isBlank() && snapshot.attachment == null)) return false
+        if (snapshot.streaming || snapshot.busy || attachmentLoad?.let(::attachmentScopeValid) == true || (text.isBlank() && snapshot.attachments.isEmpty())) return false
         if (!api.isLoggedIn) { showAuth(true); return false }
         if (snapshot.current?.let { it.kind == "exam" } == true) {
             error("测验请使用作答与评分页面，不能作为普通聊天发送。"); return false
         }
-        val attachment = snapshot.attachment
-        val content = text.trim() + if (attachment?.text?.isNotBlank() == true) "\n\n<资料 name=\"${attachment.name}\">\n${attachment.text}\n</资料>" else ""
-        val user = replay?.copy(content = text.trim()) ?: ChatMessage(role = "user", content = content.ifBlank { "请分析这个附件。" }, imageDataUrl = attachment?.imageDataUrl, attachmentName = attachment?.name, wire = attachment?.wire?.let { JSONObject().put("attachments", JSONArray().put(it)) })
-        var session = (snapshot.current ?: ChatSession(title = text.trim().take(40).ifBlank { attachment?.name ?: "新对话" }, createdAt = Instant.now().toString())).copy(messages = snapshot.messages + user)
+        val user = try {
+            replay?.copy(content = text.trim()) ?: AttachmentDraft.message(text, snapshot.attachments)
+        } catch (e: IllegalArgumentException) { error(e.message ?: "附件无法发送。"); return false }
+        var session = (snapshot.current ?: ChatSession(title = text.trim().take(40).ifBlank { snapshot.attachments.firstOrNull()?.name ?: "新对话" }, createdAt = Instant.now().toString())).copy(messages = snapshot.messages + user)
         val assistant = ChatMessage(role = "assistant", content = "")
         val epoch = ++turnEpoch; stopped = false
         val turnStartedAt = android.os.SystemClock.elapsedRealtime()
-        _state.update { it.copy(current = session, messages = session.messages + assistant, attachment = if (replay == null) null else snapshot.attachment, streaming = true, activity = "正在思考") }
+        _state.update { it.copy(current = session, messages = session.messages + assistant, attachments = if (replay == null) emptyList() else snapshot.attachments, streaming = true, activity = "正在思考") }
         turnJob = viewModelScope.launch {
             var failure: Throwable? = null
             var sessionSaved = false
@@ -310,7 +409,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 val branch = ChatWire.branch(current.copy(messages = ui.messages), message.id)
                 val saved = withContext(Dispatchers.IO) { api.saveSession(branch) }
                 val adopted = branch.copy(id = saved.id, wire = saved.wire)
-                if (epoch == accountEpoch) _state.update { it.copy(busy = false, current = adopted, messages = adopted.messages, sessions = listOf(adopted) + it.sessions) }
+                if (epoch == accountEpoch) _state.update { ChatWorkspace.open(it, adopted).copy(sessions = listOf(adopted) + it.sessions) }
             } catch (e: Exception) { if (epoch == accountEpoch) _state.update { it.copy(busy = false, error = e.message ?: "创建分支失败") } }
         }
     }
@@ -335,86 +434,189 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     fun stop() { stopped = true; api.cancelStream() }
-    fun removeAttachment() { _state.update { it.copy(attachment = null) } }
+    @Volatile private var attachmentLoad: AttachmentLoadScope? = null
+    // Kept only in this ViewModel: a process-recreated picker must not import into a new account/draft.
+    private val attachmentPicker = AttachmentPickerGate()
+    fun beginAttachmentPicker(): String? {
+        val ui = _state.value
+        if (!ui.loggedIn || !api.isLoggedIn) { showAuth(true); return null }
+        if (ui.busy || ui.streaming || attachmentLoad?.let(::attachmentScopeValid) == true) {
+            error("请先等待当前操作完成，再添加附件。"); return null
+        }
+        if (ui.attachments.size >= AttachmentDraft.MAX_COUNT) {
+            error("每条消息最多添加 ${AttachmentDraft.MAX_COUNT} 个附件。"); return null
+        }
+        return attachmentPicker.begin(accountEpoch, ui.composerDraft.key)
+    }
+    fun cancelAttachmentPicker(ticket: String?) {
+        attachmentPicker.cancel(ticket)
+    }
+    fun attachPicked(uris: List<Uri>, ticket: String) {
+        val picker = attachmentPicker.consume(ticket, accountEpoch, _state.value.composerDraft.key) ?: return
+        if (uris.isEmpty()) return
+        val selected = try { AttachmentBatch.selection(uris, _state.value.attachments.size) }
+        catch (e: IllegalArgumentException) { error(e.message ?: "所选附件超过剩余名额。"); return }
+        val scope = beginAttachment(picker.draftKey) ?: return
+        val existing = _state.value.attachments
+        viewModelScope.launch {
+            try {
+                val attachments = withContext(Dispatchers.IO) {
+                    AttachmentBatch.load(selected, existing, { requireAttachmentScope(scope) }) { uri, staged ->
+                        readDeviceAttachment(uri, scope, staged)
+                    }
+                }
+                if (!attachmentScopeValid(scope)) return@launch
+                _state.update { ui ->
+                    if (!scope.matches(accountEpoch, ui.composerDraft.key, attachmentLoad)) ui
+                    else ui.copy(attachments = attachments, busy = false)
+                }
+                attachmentLoad = null
+            } catch (e: Exception) {
+                failAttachment(scope, if (e is CancellationException) e else
+                    IllegalArgumentException("本次所选附件未加入草稿，原有附件保留。${e.message ?: "附件处理失败"}。已上传的文件可能仍在资料库中。", e))
+                if (e is CancellationException) throw e
+            }
+        }
+    }
+    private fun attachmentScopeValid(scope: AttachmentLoadScope): Boolean =
+        scope.matches(accountEpoch, _state.value.composerDraft.key, attachmentLoad)
+    private fun requireAttachmentScope(scope: AttachmentLoadScope) {
+        if (!attachmentScopeValid(scope)) throw CancellationException("Attachment draft scope changed")
+    }
+    private fun beginAttachment(draftKey: String): AttachmentLoadScope? {
+        val before = _state.value
+        if (draftKey != before.composerDraft.key) return null // Deliberately ignore a picker from an old chat/account.
+        if (before.busy || before.streaming || attachmentLoad?.let(::attachmentScopeValid) == true) {
+            error("当前操作尚未完成，未添加所选附件。请完成后重新选择。"); return null
+        }
+        if (!api.isLoggedIn) { showAuth(true); return null }
+        if (before.attachments.size >= AttachmentDraft.MAX_COUNT) { error("每条消息最多添加 ${AttachmentDraft.MAX_COUNT} 个附件。"); return null }
+        val scope = AttachmentLoadScope(accountEpoch, draftKey)
+        if (!_state.compareAndSet(before, before.copy(busy = true))) return null
+        attachmentLoad = scope
+        return scope
+    }
+    private fun finishAttachment(scope: AttachmentLoadScope, attachment: PendingAttachment) {
+        if (!attachmentScopeValid(scope)) return
+        _state.update { ui ->
+            if (!scope.matches(accountEpoch, ui.composerDraft.key, attachmentLoad)) return@update ui
+            try { ui.copy(attachments = AttachmentDraft.append(ui.attachments, attachment), busy = false) }
+            catch (e: IllegalArgumentException) { ui.copy(busy = false, error = e.message) }
+        }
+        attachmentLoad = null
+    }
+    private fun failAttachment(scope: AttachmentLoadScope, error: Exception) {
+        if (!attachmentScopeValid(scope)) return
+        _state.update { ui ->
+            if (!scope.matches(accountEpoch, ui.composerDraft.key, attachmentLoad)) ui
+            else ui.copy(busy = false, error = if (error is CancellationException) null else error.message ?: "附件处理失败")
+        }
+        attachmentLoad = null
+    }
+    fun removeAttachment(key: String) {
+        _state.update { if (it.busy || it.streaming || attachmentLoad?.let(::attachmentScopeValid) == true) it else it.copy(attachments = AttachmentDraft.remove(it.attachments, key)) }
+    }
+    fun moveAttachment(draftKey: String, key: String, step: Int) {
+        _state.update { ui ->
+            if (ui.composerDraft.key != draftKey || ui.busy || ui.streaming || attachmentLoad?.let(::attachmentScopeValid) == true) ui
+            else ui.copy(attachments = AttachmentDraft.move(ui.attachments, key, step))
+        }
+    }
+    /** Returns a local validation error; never performs a file write or network request. */
+    fun editAttachmentText(draftKey: String, key: String, originalText: String, text: String): String? {
+        while (true) {
+            val ui = _state.value
+            if (ui.composerDraft.key != draftKey) return "聊天已切换，未应用本次修改。"
+            if (ui.busy || ui.streaming || attachmentLoad?.let(::attachmentScopeValid) == true) return "当前操作尚未完成，未应用本次修改。"
+            val attachment = ui.attachments.firstOrNull { it.key == key } ?: return "该附件已不在当前草稿中。"
+            if (attachment.text != originalText) return "附件文字已改变，请重新打开后编辑。"
+            val edited = try { AttachmentDraft.editText(ui.attachments, key, text) }
+            catch (e: IllegalArgumentException) { return e.message ?: "无法应用文字修改。" }
+            if (_state.compareAndSet(ui, ui.copy(attachments = edited))) return null
+        }
+    }
     fun useLibraryFile(id: String, name: String, mime: String) {
-        if (!api.isLoggedIn) { showAuth(true); return }
-        if (_state.value.streaming) { error("请先停止当前回复。"); return }
-        val epoch = accountEpoch
-        _state.update { it.copy(busy = true) }
+        if (!GlobalSearchRepository.validId(id)) { error("无效的文件 ID。"); return }
+        val scope = beginAttachment(_state.value.composerDraft.key) ?: return
         viewModelScope.launch {
             try {
                 val attachment = withContext(Dispatchers.IO) {
+                    requireAttachmentScope(scope)
                     val file = api.requestResource("GET", "files/$id")
+                    requireAttachmentScope(scope)
                     val actualMime = file.optString("mimeType").ifBlank { mime }
                     val actualName = file.optString("name").ifBlank { name }
                     if (actualMime.startsWith("image/")) {
                         val bytes = api.downloadFile(id)
+                        requireAttachmentScope(scope)
                         require(bytes.isNotEmpty()) { "图片内容为空" }
                         AttachmentImage.dataUrl(bytes).let { data -> PendingAttachment(actualName, imageDataUrl = data, wire = ChatWire.attachment(actualName, actualMime, bytes.size.toLong(), id, dataUrl = data)) }
                     } else {
                         val result = api.requestResource("GET", "files/$id/content")
+                        requireAttachmentScope(scope)
                         val text = result.optString("text").take(100_000)
                         require(text.isNotBlank()) { "该文件没有可读取的文本，暂不能用于对话。" }
                         PendingAttachment(actualName, text = text, wire = ChatWire.attachment(actualName, actualMime, file.optLong("size"), id, text))
                     }
                 }
-                if (epoch == accountEpoch) _state.update { it.copy(attachment = attachment, busy = false) }
-            } catch (e: Exception) { if (epoch == accountEpoch) _state.update { it.copy(busy = false, error = e.message ?: "读取资料失败") } }
+                finishAttachment(scope, attachment)
+            } catch (e: Exception) { failAttachment(scope, e); if (e is CancellationException) throw e }
         }
     }
-    fun attach(uri: Uri) {
-        if (!api.isLoggedIn) { showAuth(true); return }
-        if (_state.value.streaming) { error("请等待当前回复结束后添加资料。"); return }
-        val attachmentEpoch = accountEpoch
-        _state.update { it.copy(busy = true) }
-        viewModelScope.launch {
-            try {
-                val attachment = withContext(Dispatchers.IO) {
-                    val resolver = getApplication<Application>().contentResolver
-                    var name = "attachment"
-                    resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE), null, null, null)?.use { cursor ->
-                        if (cursor.moveToFirst()) {
-                            name = cursor.getString(0) ?: name
-                            if (!cursor.isNull(1)) require(cursor.getLong(1) <= MAX_ATTACHMENT) { "附件不能超过 20 MB" }
-                        }
-                    }
-                    val bytes = resolver.openInputStream(uri)?.use { input ->
-                        val output = ByteArrayOutputStream()
-                        val buffer = ByteArray(8192)
-                        var total = 0
-                        while (true) {
-                            val read = input.read(buffer)
-                            if (read < 0) break
-                            total += read
-                            require(total <= MAX_ATTACHMENT) { "附件不能超过 20 MB" }
-                            output.write(buffer, 0, read)
-                        }
-                        output.toByteArray()
-                    } ?: throw java.io.IOException("无法读取文件")
-                    require(bytes.size <= MAX_ATTACHMENT) { "附件不能超过 20 MB" }
-                    val mime = resolver.getType(uri) ?: "application/octet-stream"
-                    val directory = File(getApplication<Application>().cacheDir, "uploads").apply { mkdirs() }
-                    val local = File(directory, "${System.nanoTime()}-${name.replace(Regex("[^\\p{L}\\p{N}._-]"), "_").take(100)}")
-                    try {
-                        local.writeBytes(bytes)
-                        if (mime.startsWith("image/")) {
-                            require(bytes.size <= 8 * 1024 * 1024) { "图片不能超过 8 MB" }
-                            val uploaded = api.uploadFile(local, mimeType = mime)
-                            val dataUrl = AttachmentImage.dataUrl(bytes)
-                            PendingAttachment(name, imageDataUrl = dataUrl, wire = ChatWire.attachment(name, mime, bytes.size.toLong(), uploaded.id, dataUrl = dataUrl))
-                        } else {
-                            val extracted = api.extractFile(local, mime)
-                            require(extracted.optBoolean("ok", true)) { extracted.optString("error", "文件解析失败") }
-                            val text = extracted.optString("text").take(100_000)
-                            require(text.isNotBlank()) { "该文件没有可提取的文本，请尝试其他格式。" }
-                            val uploaded = api.uploadFile(local, mimeType = mime)
-                            PendingAttachment(name, text = text, wire = ChatWire.attachment(name, mime, bytes.size.toLong(), uploaded.id, text))
-                        }
-                    } finally { local.delete() }
-                }
-                if (attachmentEpoch == accountEpoch) _state.update { it.copy(attachment = attachment, busy = false) }
-            } catch (e: Exception) { if (attachmentEpoch == accountEpoch) _state.update { it.copy(busy = false, error = e.message ?: "附件处理失败") } }
+    /** Same per-file path for camera, photos and documents; the batch retains one busy/scope lease. */
+    private fun readDeviceAttachment(uri: Uri, scope: AttachmentLoadScope, staged: List<PendingAttachment>): PendingAttachment {
+        requireAttachmentScope(scope)
+        val resolver = getApplication<Application>().contentResolver
+        var name = "attachment"
+        resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE), null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                name = cursor.getString(0) ?: name
+                if (!cursor.isNull(1)) require(cursor.getLong(1) <= MAX_ATTACHMENT) { "附件不能超过 20 MB" }
+            }
         }
+        val bytes = resolver.openInputStream(uri)?.use { input ->
+            val output = ByteArrayOutputStream()
+            val buffer = ByteArray(8192)
+            var total = 0
+            while (true) {
+                requireAttachmentScope(scope)
+                val read = input.read(buffer)
+                if (read < 0) break
+                total += read
+                require(total <= MAX_ATTACHMENT) { "附件不能超过 20 MB" }
+                output.write(buffer, 0, read)
+            }
+            output.toByteArray()
+        } ?: throw java.io.IOException("无法读取文件")
+        require(bytes.size <= MAX_ATTACHMENT) { "附件不能超过 20 MB" }
+        val mime = resolver.getType(uri) ?: "application/octet-stream"
+        val directory = File(getApplication<Application>().cacheDir, "uploads").apply { mkdirs() }
+        val local = File(directory, "${System.nanoTime()}-${name.replace(Regex("[^\\p{L}\\p{N}._-]"), "_").take(100)}")
+        return try {
+            local.writeBytes(bytes)
+            if (mime.startsWith("image/")) {
+                require(bytes.size <= 8 * 1024 * 1024) { "图片不能超过 8 MB" }
+                requireAttachmentScope(scope)
+                val dataUrl = AttachmentImage.dataUrl(bytes)
+                AttachmentDraft.append(staged, PendingAttachment(name, imageDataUrl = dataUrl))
+                requireAttachmentScope(scope)
+                val uploaded = api.uploadFile(local, mimeType = mime)
+                requireAttachmentScope(scope)
+                PendingAttachment(name, imageDataUrl = dataUrl, wire = ChatWire.attachment(name, mime, bytes.size.toLong(), uploaded.id, dataUrl = dataUrl))
+            } else {
+                requireAttachmentScope(scope)
+                val extracted = api.extractFile(local, mime)
+                requireAttachmentScope(scope)
+                require(extracted.optBoolean("ok", true)) { extracted.optString("error", "文件解析失败") }
+                val text = extracted.optString("text").take(100_000)
+                require(text.isNotBlank()) { "该文件没有可提取的文本，请尝试其他格式。" }
+                AttachmentDraft.append(staged, PendingAttachment(name, text = text))
+                requireAttachmentScope(scope)
+                val uploaded = api.uploadFile(local, mimeType = mime)
+                requireAttachmentScope(scope)
+                PendingAttachment(name, text = text, wire = ChatWire.attachment(name, mime, bytes.size.toLong(), uploaded.id, text))
+            }
+        } finally { local.delete() }
     }
     fun loadResource(path: String, key: String) {
         if (!api.isLoggedIn) { showAuth(true); return }
@@ -431,5 +633,5 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             } catch (e: Exception) { _state.update { it.copy(resourceLoading = false, resourceError = e.message ?: "无法读取目录") } }
         }
     }
-    override fun onCleared() { api.cancelStream(); super.onCleared() }
+    override fun onCleared() { attachmentPicker.clear(); attachmentLoad = null; api.cancelStream(); super.onCleared() }
 }

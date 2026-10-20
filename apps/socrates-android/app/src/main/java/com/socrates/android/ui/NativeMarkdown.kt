@@ -1,10 +1,5 @@
 package com.socrates.android.ui
 
-import android.text.Spanned
-import android.graphics.Typeface
-import android.text.method.LinkMovementMethod
-import android.util.TypedValue
-import android.widget.TextView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -25,10 +20,10 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import io.noties.markwon.AbstractMarkwonPlugin
 import io.noties.markwon.Markwon
 import io.noties.markwon.MarkwonConfiguration
+import io.noties.markwon.SoftBreakAddsNewLinePlugin
 import io.noties.markwon.core.MarkwonTheme
 import io.noties.markwon.ext.latex.JLatexMathPlugin
 import io.noties.markwon.ext.strikethrough.StrikethroughPlugin
@@ -36,53 +31,54 @@ import io.noties.markwon.ext.tables.TablePlugin
 import io.noties.markwon.ext.tasklist.TaskListPlugin
 import io.noties.markwon.inlineparser.MarkwonInlineParserPlugin
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.util.concurrent.Executors
 
 // Bounded, process-wide pool: a long transcript must not create a thread pool per bubble.
 private val mathExecutor = Executors.newFixedThreadPool(2)
-private data class RenderPart(val source: String, val language: String? = null)
 
-private fun renderParts(source: String): List<RenderPart> {
-    val result = mutableListOf<RenderPart>()
-    val prose = StringBuilder()
-    val code = StringBuilder()
-    var fence: String? = null
-    var language = ""
-    fun flush() { if (prose.isNotBlank()) result += RenderPart(prose.toString().trimEnd()); prose.clear() }
-    source.lines().forEach { line ->
-        val value = line.trimStart()
-        val active = fence
-        if (active == null && (value.startsWith("```") || value.startsWith("~~~"))) {
-            flush()
-            val char = value[0]
-            fence = value.takeWhile { it == char }
-            language = value.drop(fence!!.length).trim()
-        } else if (active != null && value.startsWith(active) && value.dropWhile { it == active[0] }.isBlank()) {
-            result += RenderPart(code.toString().trimEnd('\n'), language); code.clear(); fence = null
-        } else if (active != null) code.appendLine(line) else prose.appendLine(line)
-    }
-    if (fence != null) result += RenderPart(code.toString().trimEnd('\n'), language)
-    flush()
-    return result
-}
+private data class PreparedMarkdownPart(
+    val part: MarkdownFences.Part,
+    val preview: MarkdownSource.Preview,
+    val pipeToken: String,
+)
+
+private data class PreparedMarkdown(
+    val source: String,
+    val streaming: Boolean,
+    val parts: List<PreparedMarkdownPart>,
+)
 
 /** Native TextView spans, not a WebView. No HTML or JavaScript execution; bounded public HTTPS/data images only. */
 @Composable
-fun NativeMarkdown(text: String, modifier: Modifier = Modifier) {
+fun NativeMarkdown(text: String, modifier: Modifier = Modifier, streaming: Boolean = false) {
     val context = LocalContext.current
     val density = LocalDensity.current
     val textPx = with(density) { 17.sp.toPx() }
     val markwon = remember(context, textPx) {
         Markwon.builder(context)
-            .usePlugin(MarkwonInlineParserPlugin.create())
+            // Registered before JLatexMathPlugin adds its general-purpose $$ processor.
+            .usePlugin(MarkwonInlineParserPlugin.create {
+                it.addInlineProcessor(MarkdownTableMath()).addInlineProcessor(MarkdownProseMath())
+            })
             .usePlugin(JLatexMathPlugin.create(textPx, textPx * 1.16f) { builder ->
                 builder.inlinesEnabled(true).executorService(mathExecutor)
             })
             .usePlugin(MarkdownImagesPlugin.create(context))
-            .usePlugin(TablePlugin.create(context))
+            .usePlugin(TablePlugin.create { theme ->
+                // Unsupported/depth-limited subtrees retain the native span fallback, without zebra fills.
+                theme.tableBorderColor(NativeReadingColors.borderSubtle).tableBorderWidth(1)
+                    .tableCellPadding(with(density) { 8.dp.roundToPx() })
+                    .tableHeaderRowBackgroundColor(android.graphics.Color.TRANSPARENT)
+                    .tableOddRowBackgroundColor(android.graphics.Color.TRANSPARENT)
+                    .tableEvenRowBackgroundColor(android.graphics.Color.TRANSPARENT)
+            })
             .usePlugin(StrikethroughPlugin.create())
             .usePlugin(TaskListPlugin.create(context))
+            // Web uses marked { breaks: true } for both streaming and settled prose.
+            // Change only SoftLineBreak rendering, not source, AST ownership or code literals.
+            .usePlugin(SoftBreakAddsNewLinePlugin.create())
             .usePlugin(object : AbstractMarkwonPlugin() {
                 override fun configureConfiguration(builder: MarkwonConfiguration.Builder) {
                     builder.linkResolver { view, link ->
@@ -105,32 +101,55 @@ fun NativeMarkdown(text: String, modifier: Modifier = Modifier) {
                 }
             }).build()
     }
-    val parts = remember(text) { renderParts(text) }
+    // Code-region discovery is a real block parse, not a main-thread line heuristic.
+    val prepared by produceState<PreparedMarkdown?>(null, text, streaming) {
+        value = withContext(Dispatchers.Default) {
+            val parts = MarkdownFences.parts(text)
+            val result = parts.mapIndexed { index, part ->
+                ensureActive()
+                val token = MarkdownTables.pipeToken(part.source)
+                val preview = if (part.language == null) MarkdownSource.preview(
+                    part.source, streaming && index == parts.lastIndex, token
+                ) else MarkdownSource.Preview(part.source)
+                PreparedMarkdownPart(part, preview, token)
+            }
+            ensureActive()
+            PreparedMarkdown(text, streaming, result)
+        }
+    }
+    // Do not display a previous streaming revision while the new source is being prepared.
+    val parts = prepared?.takeIf { it.source == text && it.streaming == streaming }?.parts.orEmpty()
     Column(modifier, verticalArrangement = Arrangement.spacedBy(18.dp)) {
-        parts.forEach { part ->
+        parts.forEach { preparedPart ->
+            val part = preparedPart.part
             if (part.language != null) CodePanel(part.source, part.language)
             else {
-                val normalized = remember(part.source) { MarkdownSource.normalize(part.source) }
-                // CommonMark parsing runs off the main thread; obsolete streaming work is cancelled.
-                val rendered by produceState<Spanned?>(null, normalized, markwon) {
-                    value = withContext(Dispatchers.Default) { markwon.toMarkdown(normalized) }
+                val pipeToken = preparedPart.pipeToken
+                val preview = preparedPart.preview
+                val normalized = preview.markdown
+                if (normalized.isNotBlank()) {
+                    // CommonMark parsing runs off the main thread; obsolete streaming work is cancelled.
+                    val rendered by produceState<List<NativeMarkdownBlock>?>(null, normalized, markwon, pipeToken) {
+                        value = withContext(Dispatchers.Default) { renderMarkdownBlocks(markwon, normalized, pipeToken) { ensureActive() } }
+                    }
+                    NativeMarkdownBlocks(rendered.orEmpty(), markwon, Modifier.fillMaxWidth().semantics {
+                        this.text = AnnotatedString(part.source.removeSuffix(preview.pendingMath.orEmpty()))
+                    })
                 }
-                AndroidView(
-                    factory = { ctx -> TextView(ctx).apply {
-                        setTextColor(0xFF101010.toInt())
-                        setTextSize(TypedValue.COMPLEX_UNIT_PX, textPx)
-                        typeface = Typeface.create("sans-serif", Typeface.NORMAL)
-                        includeFontPadding = false
-                        setLineSpacing(with(density) { 7.sp.toPx() }, 1f)
-                        setTextIsSelectable(true)
-                        movementMethod = LinkMovementMethod.getInstance()
-                        // Avoid restoring a stale selection into a later, streamed version.
-                        isSaveEnabled = false
-                    } },
-                    update = { view -> rendered?.let { if (view.tag !== it) { markwon.setParsedMarkdown(view, it); view.tag = it } } },
-                    modifier = Modifier.fillMaxWidth().semantics { this.text = AnnotatedString(part.source) }
-                )
+                preview.pendingMath?.let { PendingMathSource(it) }
             }
+        }
+    }
+}
+
+/** Literal, selectable source while an explicit delimiter is still arriving; never repaired TeX. */
+@Composable
+private fun PendingMathSource(source: String) {
+    Column(Modifier.fillMaxWidth().background(Color(0xFFF5F5F5), RoundedCornerShape(12.dp)).padding(12.dp)) {
+        Text("公式生成中 · 原文", fontSize = 12.sp, color = Color.Gray)
+        SelectionContainer {
+            Text(source, Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 6.dp),
+                fontFamily = FontFamily.Monospace, fontSize = 14.sp, lineHeight = 22.sp, color = Color(0xFF434343))
         }
     }
 }

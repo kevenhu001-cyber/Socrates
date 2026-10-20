@@ -1,10 +1,8 @@
 package com.socrates.android.ui
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -13,10 +11,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -58,65 +52,6 @@ fun WorkSpace(onOpenChat: () -> Unit, onAttach: () -> Unit, onSettings: () -> Un
         listOf("项目", "资料库", "助手", "定时任务", "图像", "记忆", "模型与服务商", "教学与测验", "插件", "Codex").forEach { feature ->
             SocratesCard(onClick = { onFeature(feature) }, shape = RoundedCornerShape(24.dp), containerColor = Color.White, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(24.dp)) { Text(feature, style = MaterialTheme.typography.titleMedium) }
-            }
-        }
-    }
-}
-
-/** No credentials collected here: Chrome owns web authentication and its cookies. */
-@Composable
-fun AuthFlowSheet(onDismiss: () -> Unit, openBrowser: (() -> BrowserLogin.Result)? = null, baseUrl: String = com.socrates.android.data.ApiClient.DEFAULT_BASE_URL) {
-    val context = LocalContext.current
-    var opened by rememberSaveable { mutableStateOf(false) }
-    var error by rememberSaveable { mutableStateOf<String?>(null) }
-    androidx.compose.ui.window.Dialog(
-        onDismissRequest = onDismiss,
-        properties = androidx.compose.ui.window.DialogProperties(
-            usePlatformDefaultWidth = false,
-            decorFitsSystemWindows = false,
-            dismissOnBackPress = false,
-            dismissOnClickOutside = false
-        )
-    ) {
-        BackHandler(onBack = onDismiss)
-        Column(Modifier.fillMaxSize().background(SocratesDesign.Page).statusBarsPadding().navigationBarsPadding()) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                SocratesIconButton(onClick = onDismiss) { ReferenceIcon(ReferenceGlyph.Close, "关闭登录") }
-                Spacer(Modifier.weight(1f))
-                Text("Socrates", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.weight(1f))
-                Spacer(Modifier.size(48.dp))
-            }
-            Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 28.dp, vertical = 32.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                Box(Modifier.size(56.dp).background(SocratesDesign.Ink, CircleShape), contentAlignment = Alignment.Center) {
-                    ReferenceIcon(ReferenceGlyph.Person, null, tint = Color.White)
-                }
-                Text("在 Chrome 中登录", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold, color = SocratesDesign.Ink)
-                Text("使用 Socrates 网页版完成登录、注册或找回密码。", style = MaterialTheme.typography.bodyLarge, color = SocratesDesign.Muted)
-                SocratesCard(shape = RoundedCornerShape(20.dp), containerColor = Color.White, modifier = Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            ReferenceIcon(ReferenceGlyph.Globe, null)
-                            Text("app.topodrive.top", style = MaterialTheme.typography.titleMedium)
-                        }
-                        Text("仅通过 Chrome 打开此 HTTPS 站点。应用不读取浏览器密码、Cookie，也不通过网址传递登录凭据。", style = MaterialTheme.typography.bodyMedium, color = SocratesDesign.Muted)
-                    }
-                }
-                Text("登录成功后将通过已验证的 HTTPS App Link 安全返回应用。", style = MaterialTheme.typography.bodyMedium, color = SocratesDesign.Muted)
-                if (opened) Text("已打开 Chrome；完成登录后将返回此应用。", modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }, color = SocratesDesign.Ink)
-                error?.let { Text(it, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive }, color = MaterialTheme.colorScheme.error) }
-                SocratesButton(onClick = {
-                    when (openBrowser?.invoke() ?: BrowserLogin.open(context, baseUrl)) {
-                        BrowserLogin.Result.Opened -> { opened = true; error = null }
-                        BrowserLogin.Result.ChromeUnavailable -> { opened = false; error = "未找到可用的 Chrome。请安装或启用 Chrome 后重试。" }
-                        BrowserLogin.Result.LaunchFailed -> { opened = false; error = if (!com.socrates.android.data.BrowserLoginHandoff.productionBase(baseUrl)) "浏览器登录仅支持生产服务器；自定义服务器帐号保持不变，请在连接设置切回生产服务器。" else "系统不允许启动 Chrome。请检查设备的浏览器访问限制后重试。" }
-                    }
-                }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), shape = RoundedCornerShape(18.dp)) {
-                    ReferenceIcon(ReferenceGlyph.Globe, null)
-                    Spacer(Modifier.width(10.dp))
-                    Text(if (opened) "重新打开 Chrome" else "通过 Chrome 继续", style = MaterialTheme.typography.titleMedium)
-                }
-                SocratesTextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.CenterHorizontally)) { Text("返回应用，保留草稿") }
             }
         }
     }

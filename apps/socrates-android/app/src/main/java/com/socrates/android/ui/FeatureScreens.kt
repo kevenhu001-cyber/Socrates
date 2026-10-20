@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items as staggeredItems
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -53,12 +54,20 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.socrates.android.data.FeatureItem
+import com.socrates.android.data.LibraryResourceKey
+import com.socrates.android.data.LibrarySelectionState
 import org.json.JSONObject
 
 @Composable
-fun FeatureSheet(kind: String, onDismiss: () -> Unit, onStartChat: (String) -> Unit, onAuthLost: () -> Unit = {}, onUseFile: (String, String, String) -> Unit = { _, _, _ -> }, onUseProject: (String, String) -> Unit = { _, _ -> }, onUseAssistant: (String, String) -> Unit = { _, _ -> }, onOpenSession: (String) -> Unit = {}) {
+fun FeatureSheet(kind: String, onDismiss: () -> Unit, onStartChat: (String) -> Unit, onAuthLost: () -> Unit = {}, onUseFile: (String, String, String) -> Unit = { _, _, _ -> }, onUseProject: (String, String) -> Unit = { _, _ -> }, onUseAssistant: (String, String, String?) -> Unit = { _, _, _ -> }, onOpenSession: (String) -> Unit = {}) {
     val vm: FeatureViewModel = viewModel()
     val state by vm.state.collectAsStateWithLifecycle()
+    val execution by vm.taskExecution.state.collectAsStateWithLifecycle()
+    val librarySelection by vm.librarySelection.state.collectAsStateWithLifecycle()
+    val artifactReader by vm.artifactReader.state.collectAsStateWithLifecycle()
+    val agentRunReader by vm.agentRunReader.state.collectAsStateWithLifecycle()
+    val busy = state.busy || librarySelection.busy
+    var selectingLibrary by remember(kind) { mutableStateOf(false) }
     var editing by remember(kind) { mutableStateOf(false) }
     var query by remember(kind) { mutableStateOf("") }
     var taskFilter by remember(kind) { mutableStateOf("已开启") }
@@ -70,8 +79,10 @@ fun FeatureSheet(kind: String, onDismiss: () -> Unit, onStartChat: (String) -> U
     val lifecycle = LocalLifecycleOwner.current
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(vm::upload) }
     val goBack: () -> Unit = {
-        if (!state.busy) {
+        if (!busy) {
             when {
+                librarySelection.confirmation != null -> vm.librarySelection.cancelDelete()
+                selectingLibrary -> { selectingLibrary = false; vm.librarySelection.clearSelection() }
                 editing -> editing = false
                 state.selected != null -> vm.select(null)
                 else -> onDismiss()
@@ -79,6 +90,7 @@ fun FeatureSheet(kind: String, onDismiss: () -> Unit, onStartChat: (String) -> U
         }
     }
     LaunchedEffect(kind) { vm.open(kind) }
+    DisposableEffect(vm, kind) { onDispose { vm.releaseDocumentPreview(); vm.taskExecution.clear(); vm.librarySelection.clear(); vm.artifactReader.clear(); vm.agentRunReader.clear() } }
     DisposableEffect(lifecycle, kind, vm) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME && kind == "插件") vm.refreshConnectorStatuses()
@@ -95,7 +107,7 @@ fun FeatureSheet(kind: String, onDismiss: () -> Unit, onStartChat: (String) -> U
         Box(Modifier.fillMaxSize().background(SocratesDesign.Page)) {
             Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()) {
                 Row(Modifier.fillMaxWidth().height(SocratesDesign.HeaderHeight).padding(horizontal = SocratesDesign.PageGutter), verticalAlignment = Alignment.CenterVertically) {
-                    SocratesIconButton(goBack, Modifier.background(Color.White, CircleShape), enabled = !state.busy) {
+                    SocratesIconButton(goBack, Modifier.background(Color.White, CircleShape), enabled = !busy) {
                         ReferenceIcon(ReferenceGlyph.Back, if (state.selected != null || editing) "返回" else "关闭")
                     }
                     Text(
@@ -136,36 +148,52 @@ fun FeatureSheet(kind: String, onDismiss: () -> Unit, onStartChat: (String) -> U
                         }, label = { Text(label) }) }
                     }
                 }
+                if (kind == "资料库" && state.selected == null && !editing) {
+                    val visible = FeatureDirectoryModels.filter(state.items, query, kind, taskFilter, libraryFilter, projectFilter)
+                    LibrarySelectionToolbar(
+                        state.items, visible, librarySelection, selectingLibrary, enabled = !busy && !state.loading,
+                        onStart = { selectingLibrary = true },
+                        onDone = { selectingLibrary = false; vm.librarySelection.clearSelection() },
+                        onSelectVisible = { vm.librarySelection.selectVisible(visible) },
+                        onClear = vm.librarySelection::clearSelection,
+                        onDelete = vm.librarySelection::requestDelete, onRefresh = vm::load,
+                    )
+                }
                 when {
                     state.loading && state.items.isEmpty() -> Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { SocratesSpinner() }
                     editing -> if (kind == "图像") ImagePromptForm(state.prompt, vm::setPrompt, state.busy, vm::createImage) { editing = false }
-                        else FeatureForm(kind, state.selected != null, state.name, state.description, state.prompt, state.frequency, state.taskAt, state.systemPrompt, state.busy, vm::setName, vm::setDescription, vm::setPrompt, vm::setFrequency, vm::setTaskAt, vm::setSystemPrompt, { vm.save() }, { editing = false })
+                        else FeatureForm(kind, state.selected != null, state.name, state.description, state.prompt, state.frequency, state.taskAt, state.systemPrompt, state.busy, vm::setName, vm::setDescription, vm::setPrompt, vm::setFrequency, vm::setTaskAt, vm::setSystemPrompt, { vm.save() }, { editing = false }, state.assistantDescription, vm::setAssistantDescription, state.assistantStarter, vm::setAssistantStarter)
                     state.selected != null -> FeatureDetail(kind, state.selected!!, vm, state.busy, state.connectorConfigured, onUseFile, onUseProject, onUseAssistant, onOpenSession, state.imageBytes, state.imageLoading,
+                        documentPreview = state.documentPreview,
                         onConnectConnector = { item ->
                             if (item.raw.optJSONObject("credentialInput")?.optJSONArray("fields")?.length()?.let { it > 0 } == true) credentialConnector = item
                             else vm.connectConnector(item.id) { url -> context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
                         }, onRefreshConnector = vm::refreshConnectorStatus, onDisconnectConnector = { disconnectConnector = it }) { editing = true }
-                    else -> FeatureList(kind, state.items, state.legacyPluginItems, state.connectorConfigured, state.openConnectorAvailable, state.loading, state.busy, vm, query, taskFilter, libraryFilter, projectFilter, onStartChat,
+                    else -> FeatureList(kind, state.items, state.legacyPluginItems, state.connectorConfigured, state.openConnectorAvailable, state.loading, busy, vm, query, taskFilter, libraryFilter, projectFilter, onStartChat,
                         onScheduledTemplate = { template -> vm.select(null); vm.setScheduledTemplate(template.title, template.prompt); editing = true }, onCreate = { editing = true; vm.select(null) }, onSelect = vm::select,
                         onConnectConnector = { item ->
                             if (item.raw.optJSONObject("credentialInput")?.optJSONArray("fields")?.length()?.let { it > 0 } == true) credentialConnector = item
                             else vm.connectConnector(item.id) { url -> context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
-                        }, onLegacyPluginToggle = vm::toggle, onLegacyPluginDelete = vm::requestDelete)
+                        }, onLegacyPluginToggle = vm::toggle, onLegacyPluginDelete = vm::requestDelete,
+                        selectingLibrary = selectingLibrary, librarySelection = librarySelection, onLibraryToggle = vm.librarySelection::toggle)
                 }
                 if (state.selected == null && !editing && kind in setOf("资料库", "项目", "图像", "插件", "记忆")) {
                     Column(Modifier.fillMaxWidth().padding(horizontal = SocratesDesign.ComposerInset, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             SocratesField(query, { query = it }, Modifier.weight(1f).testTag("feature-search-$kind"), leadingIcon = { ReferenceIcon(ReferenceGlyph.Search, tint = SocratesDesign.Muted) }, placeholder = { Text("搜索$kind") }, singleLine = true, shape = CircleShape)
-                            if (kind == "资料库") SocratesIconButton(onClick = { picker.launch(arrayOf("*/*")) }, modifier = Modifier.background(Color.White, CircleShape), enabled = !state.busy) {
-                                if (state.busy) SocratesSpinner(Modifier.size(20.dp)) else ReferenceIcon(ReferenceGlyph.Plus, "上传资料")
+                            if (kind == "资料库") SocratesIconButton(onClick = { picker.launch(arrayOf("*/*")) }, modifier = Modifier.background(Color.White, CircleShape), enabled = !busy && !selectingLibrary && !state.loading) {
+                                if (busy) SocratesSpinner(Modifier.size(20.dp)) else ReferenceIcon(ReferenceGlyph.Plus, "上传资料")
                             }
                         }
                         if (kind == "记忆") SocratesTextButton(onClick = { vm.setIncludeDisabledMemories(!state.includeDisabledMemories) }, enabled = !state.busy && !state.loading, modifier = Modifier.align(Alignment.End)) { Text(if (state.includeDisabledMemories) "含停用" else "仅启用") }
                     }
                 }
             }
+            if (kind == "资料库") librarySelection.confirmation?.let { keys ->
+                LibraryDeleteConfirmation(keys, state.items, librarySelection.busy, vm::confirmLibraryDelete, vm.librarySelection::cancelDelete)
+            }
             state.needsConfirmation?.let { id ->
-                val target = (state.items + state.legacyPluginItems).firstOrNull { it.id == id }
+                val target = state.selected?.takeIf { it.id == id } ?: (state.items + state.legacyPluginItems).firstOrNull { it.id == id }
                 SocratesAlert(
                     onDismissRequest = { if (!state.busy) vm.cancelDelete() }, title = { Text("确认删除？") },
                     text = { Text("${target?.title ?: "此资源"} 将被永久删除。此操作无法撤销。") },
@@ -187,10 +215,20 @@ fun FeatureSheet(kind: String, onDismiss: () -> Unit, onStartChat: (String) -> U
             }
         }
     }
+    if (kind == "定时任务" && execution.taskId != null) TaskExecutionSheet(
+        execution, vm.taskExecution::refresh, vm.taskExecution::loadSession, vm.taskExecution::clear,
+    )
+    if (kind == "资料库" && artifactReader.artifactId != null) ArtifactReaderSheet(
+        artifactReader, vm.artifactReader::refresh, vm.artifactReader::loadVersions,
+        vm.artifactReader::select, vm.artifactReader::clear,
+    )
+    if (kind == "Codex" && agentRunReader.runId != null) AgentRunReaderSheet(
+        agentRunReader, vm.agentRunReader::refresh, vm.agentRunReader::clear,
+    )
 }
 
 @Composable
-private fun ColumnScope.FeatureList(kind: String, items: List<FeatureItem>, legacyPluginItems: List<FeatureItem>, connectorConfigured: Boolean, openConnectorAvailable: Boolean, loading: Boolean, busy: Boolean, vm: FeatureViewModel, query: String, taskFilter: String, libraryFilter: String, projectFilter: String, onStartChat: (String) -> Unit, onScheduledTemplate: (ScheduledTemplate) -> Unit, onCreate: () -> Unit, onSelect: (FeatureItem) -> Unit, onConnectConnector: (FeatureItem) -> Unit, onLegacyPluginToggle: (FeatureItem) -> Unit, onLegacyPluginDelete: (FeatureItem) -> Unit) {
+private fun ColumnScope.FeatureList(kind: String, items: List<FeatureItem>, legacyPluginItems: List<FeatureItem>, connectorConfigured: Boolean, openConnectorAvailable: Boolean, loading: Boolean, busy: Boolean, vm: FeatureViewModel, query: String, taskFilter: String, libraryFilter: String, projectFilter: String, onStartChat: (String) -> Unit, onScheduledTemplate: (ScheduledTemplate) -> Unit, onCreate: () -> Unit, onSelect: (FeatureItem) -> Unit, onConnectConnector: (FeatureItem) -> Unit, onLegacyPluginToggle: (FeatureItem) -> Unit, onLegacyPluginDelete: (FeatureItem) -> Unit, selectingLibrary: Boolean = false, librarySelection: LibrarySelectionState = LibrarySelectionState(), onLibraryToggle: (FeatureItem) -> Unit = {}) {
     val directoryState by vm.state.collectAsStateWithLifecycle()
     val filtered = FeatureDirectoryModels.filter(items, query, kind, taskFilter, libraryFilter, projectFilter)
     if (kind == "插件") {
@@ -231,13 +269,17 @@ private fun ColumnScope.FeatureList(kind: String, items: List<FeatureItem>, lega
     }
     if (kind == "资料库" || kind == "图像") {
         LazyVerticalStaggeredGrid(columns = StaggeredGridCells.Fixed(2), modifier = Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalItemSpacing = 14.dp) {
-            staggeredItems(filtered, key = { it.id }) { item ->
+            staggeredItems(filtered, key = { "${it.raw.optString("_collection").ifBlank { "files" }}/${it.id}" }) { item ->
                 val mime = item.raw.optString("mimeType").ifBlank { item.raw.optString("mime") }
-                val imageFile = kind == "图像" || mime.startsWith("image/")
-                val bitmap by produceState<Bitmap?>(null, item.id, imageFile, item.raw.optString("url")) { value = if (imageFile) runCatching { vm.thumbnail(item.id, item.raw.optString("url")) }.getOrNull() else null }
+                val resourceKey = LibraryResourceKey.from(item)
+                val imageFile = kind == "图像" || (resourceKey?.collection == "files" && mime.startsWith("image/"))
+                val bitmap by produceState<Bitmap?>(null, resourceKey, imageFile, item.raw.optString("url")) { value = if (imageFile) runCatching { vm.thumbnail(item.id, item.raw.optString("url")) }.getOrNull() else null }
                 val tileHeight = if (kind == "图像") 214.dp else if (imageFile) 116.dp else 172.dp
                 SocratesCard(Modifier.fillMaxWidth().height(tileHeight), shape = RoundedCornerShape(if (kind == "图像") 22.dp else 16.dp)) {
-                    Box(Modifier.fillMaxSize().clickable(enabled = !busy, role = Role.Button) { onSelect(item) }) {
+                    val selected = resourceKey in librarySelection.selection
+                    val action = if (kind == "资料库" && selectingLibrary) Modifier.toggleable(value = selected, enabled = !busy && !loading && resourceKey != null, role = Role.Checkbox, onValueChange = { onLibraryToggle(item) })
+                        else Modifier.clickable(enabled = !busy, role = Role.Button) { onSelect(item) }
+                    Box(Modifier.fillMaxSize().then(action)) {
                         if (imageFile) {
                             if (bitmap != null) Image(bitmap!!.asImageBitmap(), contentDescription = item.title, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                             else Column(Modifier.align(Alignment.Center).padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -250,6 +292,12 @@ private fun ColumnScope.FeatureList(kind: String, items: List<FeatureItem>, lega
                             val document = mime.contains("pdf", true) || mime.contains("presentation", true)
                             val web = mime.contains("html", true) || mime.contains("xml", true)
                             ReferenceIcon(if (web) ReferenceGlyph.Globe else ReferenceGlyph.Document, modifier = Modifier.align(Alignment.BottomStart).padding(16.dp).size(22.dp), tint = if (document) Color(0xFFEB5353) else SocratesDesign.Blue)
+                        }
+                        if (kind == "资料库" && selectingLibrary) {
+                            Box(Modifier.align(Alignment.TopEnd).padding(8.dp).size(28.dp).background(if (selected) SocratesDesign.Blue else Color.White, CircleShape), contentAlignment = Alignment.Center) {
+                                if (selected) ReferenceIcon(ReferenceGlyph.Check, modifier = Modifier.size(18.dp), tint = Color.White)
+                                else Text("○", color = SocratesDesign.Muted)
+                            }
                         }
                     }
                 }
@@ -385,6 +433,7 @@ private fun ConnectorMark(name: String) {
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun ConnectorCredentialsDialog(item: FeatureItem, busy: Boolean, onDismiss: () -> Unit, onConnect: (JSONObject) -> Unit) {
     val fields = item.raw.optJSONObject("credentialInput")?.optJSONArray("fields")
@@ -437,7 +486,7 @@ private fun FeatureResourceRow(kind: String, item: FeatureItem, busy: Boolean, o
 }
 
 @Composable
-private fun ColumnScope.FeatureDetail(kind: String, item: FeatureItem, vm: FeatureViewModel, busy: Boolean, connectorConfigured: Boolean, onUseFile: (String, String, String) -> Unit, onUseProject: (String, String) -> Unit, onUseAssistant: (String, String) -> Unit, onOpenSession: (String) -> Unit, imageBytes: ByteArray?, imageLoading: Boolean, onConnectConnector: (FeatureItem) -> Unit, onRefreshConnector: (String) -> Unit, onDisconnectConnector: (FeatureItem) -> Unit, onEdit: () -> Unit) {
+private fun ColumnScope.FeatureDetail(kind: String, item: FeatureItem, vm: FeatureViewModel, busy: Boolean, connectorConfigured: Boolean, onUseFile: (String, String, String) -> Unit, onUseProject: (String, String) -> Unit, onUseAssistant: (String, String, String?) -> Unit, onOpenSession: (String) -> Unit, imageBytes: ByteArray?, imageLoading: Boolean, documentPreview: DocumentPreviewState, onConnectConnector: (FeatureItem) -> Unit, onRefreshConnector: (String) -> Unit, onDisconnectConnector: (FeatureItem) -> Unit, onEdit: () -> Unit) {
     var projectResources by remember(item.id) { mutableStateOf(false) }
     if (projectResources) ProjectResourcesSheet(item.id, onDismiss = { projectResources = false }, onOpenSession = onOpenSession)
     Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -461,7 +510,11 @@ private fun ColumnScope.FeatureDetail(kind: String, item: FeatureItem, vm: Featu
                 else -> Text("图片预览暂不可用；仍可尝试在对话中附加原文件。", color = SocratesDesign.Muted)
             }
         }
+        if (kind == "资料库") DocumentPreview(item, documentPreview, vm::loadDocumentText, vm::loadDocumentPdf)
         if (kind == "资料库" && item.raw.optString("_collection") == "artifacts") {
+            SocratesOutlinedButton(onClick = { vm.openArtifactReader(item) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+                Text("阅读完整原文与历史版本")
+            }
             val source = item.raw.optString("source")
             val artifactType = item.raw.optString("type").lowercase()
             when {
@@ -486,7 +539,7 @@ private fun ColumnScope.FeatureDetail(kind: String, item: FeatureItem, vm: Featu
             "记忆" -> listOf("记忆内容" to item.raw.optString("text"), "状态" to if (item.raw.optBoolean("enabled", true)) "已启用" else "已停用")
             "资料库" -> listOf("文件类型" to item.raw.optString("mimeType").ifBlank { item.raw.optString("mime") }, "大小（字节）" to item.raw.optString("size"), "类别" to item.raw.optString("kind"), "上传时间" to item.raw.optString("uploadedAt"))
             "图像" -> listOf("文件名" to item.raw.optString("name"), "图片文件" to item.raw.optString("kind", "image"), "上传时间" to item.raw.optString("uploadedAt"), "文件 ID" to item.id)
-            "助手" -> listOf("助手指令" to runCatching { org.json.JSONObject(item.raw.optString("source")).optString("instructions") }.getOrDefault(item.raw.optString("source")), "更新时间" to item.raw.optString("updatedAt"))
+            "助手" -> AssistantConfig.fromSource(item.raw.optString("source")).let { listOf("描述" to it.description, "助手指令" to it.instructions, "开场白" to it.starter, "更新时间" to item.raw.optString("updatedAt")) }
             "定时任务" -> listOf("执行内容" to item.raw.optString("prompt"), "频率" to ScheduledTaskPresentation.frequencyLabel(item.raw.optString("frequency")), "状态" to ScheduledTaskPresentation.statusLabel(item.raw.optString("status")), "下次运行" to item.raw.optString("nextRunAt"), "最近运行" to item.raw.optString("lastRunAt"), "执行次数" to item.raw.optString("runCount"))
             "插件" -> if (item.raw.optString("_recordType") == "connector") {
                 val capabilities = item.raw.optJSONArray("capabilities")?.let { array -> (0 until array.length()).map { array.optString(it) }.filter { it.isNotBlank() }.joinToString("、") }.orEmpty()
@@ -517,7 +570,7 @@ private fun ColumnScope.FeatureDetail(kind: String, item: FeatureItem, vm: Featu
             SocratesButton(onClick = { onUseProject(item.id, item.title) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text("开始项目对话") }
             SocratesOutlinedButton(onClick = { projectResources = true }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text("管理项目会话") }
         }
-        if (kind == "助手") SocratesButton(onClick = { onUseAssistant(item.id, item.title) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text("使用此助手") }
+        if (kind == "助手") SocratesButton(onClick = { onUseAssistant(item.id, item.title, item.raw.optString("source")) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text("使用此助手") }
         if (connector && connectionStatus != "connected" && connectionStatus != "initiated" && connectorConnectable) SocratesButton(onClick = { onConnectConnector(item) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text(if (busy) "连接中…" else "连接 ${item.title}") }
         if (connector && connectionStatus != "connected" && connectionStatus != "initiated" && !connectorConnectable) Text("此连接器尚未在服务器配置，暂不可连接。", color = SocratesDesign.Muted, style = MaterialTheme.typography.bodySmall)
         if (connector && connectionStatus == "initiated") SocratesOutlinedButton(onClick = { onRefreshConnector(item.id) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text(if (busy) "检查中…" else "刷新授权状态") }
@@ -527,14 +580,16 @@ private fun ColumnScope.FeatureDetail(kind: String, item: FeatureItem, vm: Featu
         }
         if (kind == "插件" && !connector) SocratesOutlinedButton(onClick = { vm.toggle(item) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text(if (item.raw.optBoolean("isEnabled", true)) "停用插件" else "启用插件") }
         if (kind == "定时任务") SocratesOutlinedButton(onClick = { vm.runTask(item) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text(if (busy) "处理中…" else "立即运行") }
+        if (kind == "定时任务") SocratesOutlinedButton(onClick = { vm.openTaskExecution(item) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text("查看执行结果") }
         if (kind == "定时任务") SocratesOutlinedButton(onClick = { vm.toggle(item) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text(if (ScheduledTaskPresentation.isActive(item.raw.optString("status"))) "暂停任务" else "恢复任务") }
+        if (kind == "Codex") SocratesOutlinedButton(onClick = { vm.openAgentRunReader(item) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text("读取运行详情与事件片段") }
         if (editable) SocratesOutlinedButton(onClick = onEdit, enabled = !busy, modifier = Modifier.fillMaxWidth()) { ReferenceIcon(ReferenceGlyph.Compose, modifier = Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("编辑") }
         if (kind != "Codex" && !connector && !(kind == "插件" && item.raw.optBoolean("isBuiltin", false))) SocratesTextButton(onClick = { vm.requestDelete(item) }, enabled = !busy, modifier = Modifier.align(Alignment.CenterHorizontally)) { ReferenceIcon(ReferenceGlyph.Trash, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error); Spacer(Modifier.width(8.dp)); Text("删除", color = MaterialTheme.colorScheme.error) }
     }
 }
 
 @Composable
-private fun ColumnScope.FeatureForm(kind: String, isEditing: Boolean, name: String, description: String, prompt: String, frequency: String, taskAt: String, systemPrompt: String, busy: Boolean, setName: (String) -> Unit, setDescription: (String) -> Unit, setPrompt: (String) -> Unit, setFrequency: (String) -> Unit, setTaskAt: (String) -> Unit, setSystemPrompt: (String) -> Unit, save: () -> Unit, cancel: () -> Unit) {
+private fun ColumnScope.FeatureForm(kind: String, isEditing: Boolean, name: String, description: String, prompt: String, frequency: String, taskAt: String, systemPrompt: String, busy: Boolean, setName: (String) -> Unit, setDescription: (String) -> Unit, setPrompt: (String) -> Unit, setFrequency: (String) -> Unit, setTaskAt: (String) -> Unit, setSystemPrompt: (String) -> Unit, save: () -> Unit, cancel: () -> Unit, assistantDescription: String, setAssistantDescription: (String) -> Unit, assistantStarter: String, setAssistantStarter: (String) -> Unit) {
     Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(if (isEditing) "编辑$kind" else "新增$kind", Modifier.semantics { heading() }, style = MaterialTheme.typography.headlineSmall)
         if (kind != "记忆") SocratesField(name, setName, Modifier.fillMaxWidth(), enabled = !busy, label = { Text(if (kind == "定时任务") "任务名称" else "名称") }, singleLine = true)
@@ -544,7 +599,12 @@ private fun ColumnScope.FeatureForm(kind: String, isEditing: Boolean, name: Stri
                 SocratesField(systemPrompt, setSystemPrompt, Modifier.fillMaxWidth(), enabled = !busy, label = { Text("项目指令") }, minLines = 4)
             }
             "记忆" -> SocratesField(description, setDescription, Modifier.fillMaxWidth(), enabled = !busy, label = { Text("记忆内容") }, minLines = 4)
-            "插件", "助手" -> SocratesField(description, setDescription, Modifier.fillMaxWidth(), enabled = !busy, label = { Text(if (kind == "助手") "助手指令" else "描述") }, minLines = 3)
+            "插件" -> SocratesField(description, setDescription, Modifier.fillMaxWidth(), enabled = !busy, label = { Text("描述") }, minLines = 3)
+            "助手" -> {
+                SocratesField(assistantDescription, setAssistantDescription, Modifier.fillMaxWidth(), enabled = !busy, label = { Text("描述") }, minLines = 2)
+                SocratesField(description, setDescription, Modifier.fillMaxWidth(), enabled = !busy, label = { Text("助手指令") }, minLines = 4)
+                SocratesField(assistantStarter, setAssistantStarter, Modifier.fillMaxWidth(), enabled = !busy, label = { Text("开场白") }, minLines = 2)
+            }
             "定时任务" -> {
                 SocratesField(prompt, setPrompt, Modifier.fillMaxWidth(), enabled = !busy, label = { Text("执行内容") }, minLines = 3)
                 SocratesField(taskAt, setTaskAt, Modifier.fillMaxWidth(), enabled = !busy, label = { Text("首次运行时间（含时区）") }, supportingText = { Text("使用 ISO 8601 日期时间并包含时区；默认约一小时后。", style = MaterialTheme.typography.bodySmall, color = SocratesDesign.Muted) }, singleLine = true)
@@ -556,7 +616,7 @@ private fun ColumnScope.FeatureForm(kind: String, isEditing: Boolean, name: Stri
             }
             "资料库" -> Text("资料内容在本页只读，支持重命名、查看与删除。", color = SocratesDesign.Muted, style = MaterialTheme.typography.bodySmall)
         }
-        val valid = (if (kind == "记忆") description.isNotBlank() else name.isNotBlank()) && (kind != "定时任务" || prompt.isNotBlank() && taskAt.isNotBlank())
+        val valid = (if (kind == "记忆") description.isNotBlank() else name.isNotBlank()) && (kind != "助手" || description.isNotBlank()) && (kind != "定时任务" || prompt.isNotBlank() && taskAt.isNotBlank())
         SocratesButton(onClick = save, modifier = Modifier.fillMaxWidth(), enabled = !busy && valid) {
             if (busy) { SocratesSpinner(Modifier.size(18.dp), color = Color.White); Spacer(Modifier.width(8.dp)) }
             Text(if (busy) "保存中…" else "保存")

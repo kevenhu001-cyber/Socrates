@@ -233,7 +233,7 @@ fun SocratesSheet(onDismissRequest: () -> Unit, modifier: Modifier = Modifier,
     // SheetState is accepted for source compatibility. Dismissal remains owned by each caller,
     // including its busy guard. No stock Material sheet, shape or drag handle is rendered.
     Dialog(onDismissRequest, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
-        Box(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding(), contentAlignment = Alignment.BottomCenter) {
+        Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing), contentAlignment = Alignment.BottomCenter) {
             Box(Modifier.matchParentSize().clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismissRequest))
             Column(modifier.widthIn(max = 600.dp).fillMaxWidth().heightIn(max = 720.dp).clip(RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
                 .background(containerColor).padding(top = 10.dp)) {

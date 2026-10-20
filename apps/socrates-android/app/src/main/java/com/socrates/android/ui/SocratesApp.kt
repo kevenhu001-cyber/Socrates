@@ -2,6 +2,7 @@
 
 package com.socrates.android.ui
 
+import android.app.Activity
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -42,6 +43,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -59,6 +61,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.socrates.android.data.ChatMessage
+import com.socrates.android.data.SessionHistory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -70,6 +73,7 @@ private val Gray = Color(0xFFF0F0F0)
 @Composable
 fun SocratesApp(vm: ChatViewModel = viewModel()) {
     val ui by vm.state.collectAsStateWithLifecycle()
+    var composerDraft by rememberSaveable(ui.composerDraft.key) { mutableStateOf(ui.composerDraft.initialText) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val drawer = rememberSocratesDrawerState()
@@ -81,15 +85,44 @@ fun SocratesApp(vm: ChatViewModel = viewModel()) {
     var resource by rememberSaveable { mutableStateOf<String?>(null) }
     var profile by remember { mutableStateOf(false) }
     var account by remember { mutableStateOf(false) }
+    var voiceSettings by remember(ui.loggedIn, ui.baseUrl, ui.accountName) { mutableStateOf(false) }
+    val voicePreferences by vm.voicePreferences.state.collectAsStateWithLifecycle()
+    DisposableEffect(vm, voiceSettings) {
+        val wasOpen = voiceSettings
+        onDispose { if (wasOpen) vm.voicePreferences.dismiss() }
+    }
     var learningKind by remember { mutableStateOf<String?>(null) }
     var learningId by remember { mutableStateOf<String?>(null) }
     var shareSession by remember { mutableStateOf<String?>(null) }
+    val exportState by vm.transcriptExport.state.collectAsStateWithLifecycle()
+    var exportPickerTicket by rememberSaveable { mutableStateOf<String?>(null) }
+    val exportPicker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val ticket = exportPickerTicket
+        exportPickerTicket = null
+        val uri = result.data?.data?.takeIf { result.resultCode == Activity.RESULT_OK && it.scheme == "content" }
+        vm.transcriptExport.picked(ticket, if (uri == null) null else { bytes ->
+            com.socrates.android.data.TranscriptExport.write(bytes) { context.contentResolver.openOutputStream(uri, "wt") }
+        })
+    }
+    DisposableEffect(vm, ui.composerDraft.key) {
+        onDispose { vm.transcriptExport.clear() }
+    }
     var find by remember { mutableStateOf(false) }
     var findQuery by remember { mutableStateOf("") }
-    var jumpId by remember { mutableStateOf<String?>(null) }
+    var jumpId by remember(ui.current?.id) { mutableStateOf(ui.searchJump) }
+    var globalSearch by remember { mutableStateOf(false) }
+    var searchOpenError by remember { mutableStateOf<String?>(null) }
+    var pendingSearchHit by remember { mutableStateOf<com.socrates.android.data.SearchHit?>(null) }
+    val searchState by vm.globalSearch.state.collectAsStateWithLifecycle()
+    LaunchedEffect(ui.searchJump) { ui.searchJump?.let { jumpId = it } }
+    DisposableEffect(vm, globalSearch) {
+        val wasOpen = globalSearch
+        onDispose { if (wasOpen) { vm.cancelSearchOpening(); vm.globalSearch.clear() } }
+    }
     var editMessage by remember { mutableStateOf<ChatMessage?>(null) }
     var editText by remember { mutableStateOf("") }
     var sessionAction by remember { mutableStateOf<com.socrates.android.data.ChatSession?>(null) }
+    var tagSession by remember(ui.loggedIn, ui.baseUrl, ui.accountName) { mutableStateOf<com.socrates.android.data.ChatSession?>(null) }
     var rename by remember { mutableStateOf(false) }
     var sessionTitle by remember { mutableStateOf("") }
     val voice = remember { VoiceInput(context.applicationContext, vm::error) }
@@ -103,27 +136,63 @@ fun SocratesApp(vm: ChatViewModel = viewModel()) {
         lifecycle.lifecycle.addObserver(observer)
         onDispose { lifecycle.lifecycle.removeObserver(observer); voice.cancel(); speech.dispose() }
     }
-    val audioPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> if (granted) voice.start() else vm.error("麦克风权限未开启，可以继续使用文字输入。") }
-    val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(vm::attach) }
+    fun beginRecording() {
+        val current = vm.state.value
+        val preference = vm.voicePreferences.state.value
+        if (current.streaming || current.busy) return
+        if (current.loggedIn && !preference.canRecord) {
+            vm.error("请在语音输入偏好中重新读取并确认账号语言后再录音。")
+            voiceSettings = true
+            return
+        }
+        voice.start(if (current.loggedIn) preference.confirmed!! else com.socrates.android.data.VoiceLanguage.AUTO)
+    }
+    val audioPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> if (granted) beginRecording() else vm.error("麦克风权限未开启，可以继续使用文字输入。") }
+    var filePickerTicket by rememberSaveable { mutableStateOf<String?>(null) }
+    var photoPickerTicket by rememberSaveable { mutableStateOf<String?>(null) }
+    var cameraTicket by rememberSaveable { mutableStateOf<String?>(null) }
+    val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        val ticket = filePickerTicket; filePickerTicket = null
+        if (ticket != null) vm.attachPicked(uris, ticket)
+    }
     var attachmentMenu by remember { mutableStateOf(false) }
     var fileSourceMenu by remember { mutableStateOf(false) }
     var capturedUri by rememberSaveable { mutableStateOf<String?>(null) }
     val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { saved ->
-        capturedUri?.let { uri -> if (saved) vm.attach(android.net.Uri.parse(uri)) }
+        val ticket = cameraTicket; cameraTicket = null
+        if (ticket != null) vm.attachPicked(if (saved) capturedUri?.let { listOf(android.net.Uri.parse(it)) }.orEmpty() else emptyList(), ticket)
         capturedUri = null
     }
-    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(vm::attach) }
-    fun attach() { attachmentMenu = true }
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        val ticket = photoPickerTicket; photoPickerTicket = null
+        if (ticket != null) vm.attachPicked(uris, ticket)
+    }
+    fun attachmentPickerReady(): Boolean {
+        val current = vm.state.value
+        if (!current.loggedIn) { vm.showAuth(true); return false }
+        if (current.busy || current.streaming) { vm.error("请先等待当前操作完成，再添加附件。"); return false }
+        if (current.attachments.size >= AttachmentDraft.MAX_COUNT) { vm.error("每条消息最多添加 ${AttachmentDraft.MAX_COUNT} 个附件。"); return false }
+        return true
+    }
+    fun attach() { if (attachmentPickerReady()) attachmentMenu = true }
     fun record() {
         if (ui.streaming || ui.busy) return
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) voice.start() else audioPermission.launch(Manifest.permission.RECORD_AUDIO)
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) beginRecording() else audioPermission.launch(Manifest.permission.RECORD_AUDIO)
     }
     fun openResource(title: String, path: String, key: String) {
         scope.launch { drawer.close() }
         if (!ui.loggedIn) { vm.showAuth(true); return }
         resource = title
     }
-    LaunchedEffect(ui.loggedIn, ui.baseUrl) { if (!ui.loggedIn) { projectPicker = false; uploadedFiles = false; reasoningMenu = false; resource = null; account = false; shareSession = null; learningId = null; learningKind = null } }
+    fun openGlobalResult(hit: com.socrates.android.data.SearchHit) {
+        searchOpenError = null
+        vm.openSearchHit(hit, onOpened = { session, unlocated ->
+            globalSearch = false; vm.globalSearch.clear(); work = false
+            if (session.kind == "exam" || session.mode == "tutor") { learningId = session.id; learningKind = null; resource = "教学与测验" }
+            if (unlocated) vm.error(if (session.kind == "exam" || session.mode == "tutor") "已打开学习会话；该视图暂不支持消息定位。" else "已打开会话，但匹配消息已变化或不存在。")
+        }, onFailure = { searchOpenError = it })
+    }
+    LaunchedEffect(ui.loggedIn, ui.baseUrl) { if (!ui.loggedIn) { globalSearch = false; pendingSearchHit = null; searchOpenError = null; jumpId = null; projectPicker = false; uploadedFiles = false; reasoningMenu = false; resource = null; account = false; shareSession = null; learningId = null; learningKind = null } }
     LaunchedEffect(ui.error) { ui.error?.let { snackbar.showSnackbar(it); vm.clearError() } }
     BackHandler(drawer.isOpen || voice.active || work) {
         when { drawer.isOpen -> scope.launch { drawer.close() }; voice.active -> voice.cancel(); else -> work = false }
@@ -140,15 +209,18 @@ fun SocratesApp(vm: ChatViewModel = viewModel()) {
                     onProjects = { openResource("项目", "/projects", "projects") },
                     onAssistants = { openResource("助手", "/creations/items/assistants", "items") },
                     onTasks = { openResource("定时任务", "/scheduled-tasks", "tasks") },
-                    onPlugins = { openResource("插件", "/plugins", "plugins") }, onCodex = { openResource("Codex", "/projects", "projects") })
+                    onPlugins = { openResource("插件", "/plugins", "plugins") }, onCodex = { openResource("Codex", "/projects", "projects") },
+                    onGlobalSearch = { if (!ui.loggedIn) vm.showAuth(true) else { globalSearch = true; searchOpenError = null; scope.launch { drawer.close() } } })
             }
         }
     ) {
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFFF8F8F8), Color(0xFFFDFDFD), Color(0xFFFDFDFD), Color(0xFFF7F7F7))))) {
-            Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()) {
+            // safeDrawing includes system bars, display cutouts and IME; consume once at the viewport.
+            Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
                 ChatHeader(work, voice.active, ui.messages.isNotEmpty(), ui.current, onConversationAction = { action ->
                     when (action) {
                         "share" -> shareTranscript(context, ui.messages)
+                        "export" -> vm.openTranscriptExport()
                         "link" -> ui.current?.let { if (!ui.streaming && !ui.busy) shareSession = it.id }
                         "home" -> ui.current?.let { session ->
                             val shortcutIntent = Intent(context, com.socrates.android.MainActivity::class.java)
@@ -184,31 +256,43 @@ fun SocratesApp(vm: ChatViewModel = viewModel()) {
                             "up", "down", "none" -> vm.feedback(message, action)
                         }
                     }
-                    Composer(ui, voice, onSend = vm::send, onStop = vm::stop, onAttach = ::attach, onRecord = ::record, onRemoveAttachment = vm::removeAttachment, onReasoning = { reasoningMenu = true })
+                    Composer(ui, voice, composerDraft, onDraftChange = { composerDraft = it }, onSend = vm::send, onStop = vm::stop, onAttach = ::attach, onRecord = ::record, onRemoveAttachment = vm::removeAttachment,
+                        onMoveAttachment = { key, step -> vm.moveAttachment(ui.composerDraft.key, key, step) },
+                        onEditAttachment = { key, original, text -> vm.editAttachmentText(ui.composerDraft.key, key, original, text) },
+                        onReasoning = { reasoningMenu = true })
                 }
             }
-            SocratesSnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).navigationBarsPadding().imePadding().padding(bottom = 90.dp, start = 12.dp, end = 12.dp))
+            SocratesSnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)).padding(bottom = 90.dp, start = 12.dp, end = 12.dp))
         }
     }
     if (attachmentMenu) AttachmentSheet(onDismiss = { attachmentMenu = false }, onCamera = {
         attachmentMenu = false
-        if (!ui.loggedIn) vm.showAuth(true) else try {
+        if (attachmentPickerReady()) try {
             val captures = java.io.File(context.cacheDir, "captures").apply { mkdirs() }
             captures.listFiles()?.filter { System.currentTimeMillis() - it.lastModified() > 86_400_000 }?.forEach { it.delete() }
             val image = java.io.File.createTempFile("camera-", ".jpg", captures)
             val uri = androidx.core.content.FileProvider.getUriForFile(context, context.packageName + ".files", image)
-            capturedUri = uri.toString(); camera.launch(uri)
-        } catch (e: Exception) { vm.error("无法打开相机，请选择照片或文件。") }
+            val ticket = vm.beginAttachmentPicker()
+            if (ticket != null) { capturedUri = uri.toString(); cameraTicket = ticket; camera.launch(uri) }
+        } catch (e: Exception) { vm.cancelAttachmentPicker(cameraTicket); cameraTicket = null; capturedUri = null; vm.error("无法打开相机，请选择照片或文件。") }
     }, onPhoto = {
         attachmentMenu = false
-        if (ui.loggedIn) photoPicker.launch(arrayOf("image/*")) else vm.showAuth(true)
+        if (attachmentPickerReady()) vm.beginAttachmentPicker()?.let { ticket ->
+            photoPickerTicket = ticket
+            try { photoPicker.launch(arrayOf("image/*")) }
+            catch (e: Exception) { vm.cancelAttachmentPicker(ticket); photoPickerTicket = null; vm.error("无法打开照片选择器，请尝试从设备选择。") }
+        }
     }, onFileSources = {
         attachmentMenu = false
         if (ui.loggedIn) fileSourceMenu = true else vm.showAuth(true)
     }, onPlugins = { attachmentMenu = false; openResource("插件", "", "") }, onReasoning = { attachmentMenu = false; reasoningMenu = true }, reasoning = ui.reasoningEffort)
     if (fileSourceMenu) FileSourceSheet(onDismiss = { fileSourceMenu = false }, onDevice = {
         fileSourceMenu = false
-        if (ui.loggedIn) filePicker.launch(arrayOf("*/*")) else vm.showAuth(true)
+        if (attachmentPickerReady()) vm.beginAttachmentPicker()?.let { ticket ->
+            filePickerTicket = ticket
+            try { filePicker.launch(arrayOf("*/*")) }
+            catch (e: Exception) { vm.cancelAttachmentPicker(ticket); filePickerTicket = null; vm.error("无法打开系统文件选择器，请重试。") }
+        }
     }, onLibrary = { fileSourceMenu = false; openResource("资料库", "", "") })
     if (reasoningMenu) ReasoningPicker(ui.reasoningEffort, !ui.streaming && !ui.busy, onSelect = { vm.setReasoningEffort(it); reasoningMenu = false }, onDismiss = { reasoningMenu = false })
     if (projectPicker) ui.current?.let { session -> ConversationProjectPicker(session, ui.baseUrl, onAuthLost = { scope.launch { projectPicker = false; vm.logout(); vm.showAuth(true) } }, onDismiss = { projectPicker = false }, onMoved = { moved -> vm.selectSession(moved); projectPicker = false }, onError = vm::error) }
@@ -222,10 +306,13 @@ fun SocratesApp(vm: ChatViewModel = viewModel()) {
             if (ui.loggedIn) SocratesTextButton(onClick = { profile = false; account = true }) { ReferenceIcon(ReferenceGlyph.Person, null); Spacer(Modifier.width(12.dp)); Text("帐号资料与安全") }
             if (ui.loggedIn) SocratesTextButton(onClick = { profile = false; resource = "模型与服务商" }) { Text("模型与服务商") }
             if (ui.loggedIn) SocratesTextButton(onClick = { profile = false; resource = "记忆" }) { Text("记忆") }
+            if (ui.loggedIn) SocratesTextButton(onClick = { profile = false; voiceSettings = true; vm.voicePreferences.load() }) { ReferenceIcon(ReferenceGlyph.Mic, null); Spacer(Modifier.width(12.dp)); Text("语音输入偏好") }
             SocratesTextButton(onClick = { profile = false; settings = true }) { ReferenceIcon(ReferenceGlyph.Settings, null); Spacer(Modifier.width(12.dp)); Text("连接设置") }
             SocratesTextButton(onClick = { profile = false; if (ui.loggedIn) vm.logout() else vm.showAuth(true) }) { ReferenceIcon(if (ui.loggedIn) ReferenceGlyph.SignOut else ReferenceGlyph.Person, null); Spacer(Modifier.width(12.dp)); Text(if (ui.loggedIn) "退出登录" else "登录 Socrates") }
         }
     }
+    if (voiceSettings && ui.loggedIn) VoicePreferencesSheet(voicePreferences, vm.voicePreferences::edit,
+        vm.voicePreferences::save, vm.voicePreferences::load, { voiceSettings = false })
     if (account) AccountProfileSheet(onDismiss = { account = false })
     if (resource == "模型与服务商") ProviderSheet(onDismiss = { resource = null })
     if (resource == "教学与测验") androidx.compose.ui.window.Dialog(
@@ -248,11 +335,37 @@ fun SocratesApp(vm: ChatViewModel = viewModel()) {
     resource?.takeUnless { it in setOf("模型与服务商", "教学与测验") }?.let { title -> FeatureSheet(title, onDismiss = { resource = null }, onAuthLost = { vm.refresh() },
         onOpenSession = { id -> resource = null; work = false; val session = ui.sessions.firstOrNull { it.id == id }; if (session?.kind == "exam" || session?.mode == "tutor") { learningId = id; resource = "教学与测验" } else vm.selectSession(com.socrates.android.data.ChatSession(id = id)) },
         onUseFile = { id, name, mime -> resource = null; work = false; vm.useLibraryFile(id, name, mime) },
-        onUseProject = { id, title -> resource = null; work = false; vm.startBoundChat(id, title) },
-        onUseAssistant = { id, title -> resource = null; work = false; vm.startBoundChat(id, title, assistant = true) }, onStartChat = { prompt ->
+        onUseProject = { id, title -> if (vm.startBoundChat(id, title)) { resource = null; work = false } },
+        onUseAssistant = { id, title, source -> if (vm.startBoundChat(id, title, assistant = true, source = source)) { resource = null; work = false } }, onStartChat = { prompt ->
         resource = null; work = false; vm.newChat(); vm.send(prompt)
     }) }
     shareSession?.let { id -> SessionShareSheet(id) { shareSession = null } }
+    if (exportState.isOpen) SessionExportSheet(exportState,
+        onFormat = vm.transcriptExport::choose,
+        onSave = { vm.transcriptExport.prepare { request ->
+            exportPickerTicket = request.ticket
+            exportPicker.launch(Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = request.mimeType
+                putExtra(Intent.EXTRA_TITLE, request.fileName)
+            })
+        } }, onDismiss = vm.transcriptExport::dismiss)
+    tagSession?.takeIf { ui.loggedIn }?.let { session ->
+        SessionTagEditor(session, SessionHistory.knownTags(ui.sessions), ui.tagsSaving, !ui.busy && !ui.streaming,
+            ui.tagsError, onSave = { tags -> vm.saveSessionTags(session, tags) { tagSession = null } }, onDismiss = { tagSession = null })
+    }
+    if (globalSearch && ui.loggedIn) GlobalSearchSheet(searchState, ui.sessions, ui.searchOpening, !ui.streaming && !ui.busy && !ui.tagsSaving,
+        searchOpenError, onEdit = { query, filter -> searchOpenError = null; vm.cancelSearchOpening(); vm.globalSearch.edit(query, filter) },
+        onSubmit = { searchOpenError = null; vm.cancelSearchOpening(); vm.globalSearch.submit() }, onOpen = { hit ->
+            if (hit.sessionId != ui.current?.id && (composerDraft.isNotBlank() || ui.attachments.isNotEmpty())) pendingSearchHit = hit
+            else openGlobalResult(hit)
+        }, onDismiss = { globalSearch = false; pendingSearchHit = null; searchOpenError = null; vm.cancelSearchOpening(); vm.globalSearch.clear() })
+    pendingSearchHit?.takeIf { globalSearch && ui.loggedIn }?.let { hit ->
+        SocratesAlert(onDismissRequest = { pendingSearchHit = null }, title = { Text("离开当前聊天？") },
+            text = { Text("当前有未发送文字或附件。切换到另一普通聊天会清空这些内容；打开失败或进入学习页面则保留。") },
+            confirmButton = { SocratesTextButton(onClick = { pendingSearchHit = null; openGlobalResult(hit) }, enabled = !ui.busy && !ui.streaming && !ui.tagsSaving) { Text("打开会话") } },
+            dismissButton = { SocratesTextButton(onClick = { pendingSearchHit = null }) { Text("取消") } })
+    }
     if (find) SocratesSheet(onDismissRequest = { find = false }) {
         Column(Modifier.fillMaxWidth().imePadding().padding(20.dp)) {
             SocratesField(findQuery, { findQuery = it }, label = { Text("搜索当前会话") }, modifier = Modifier.fillMaxWidth())
@@ -260,7 +373,7 @@ fun SocratesApp(vm: ChatViewModel = viewModel()) {
             Text(if (findQuery.isBlank()) "输入关键词" else "找到 ${matches.size} 条消息")
             LazyColumn(Modifier.heightIn(max = 400.dp)) {
                 items(matches, key = { it.id }) { message ->
-                    SocratesTextButton(onClick = { jumpId = message.id; find = false }) { Text(message.content, maxLines = 3, overflow = TextOverflow.Ellipsis) }
+                    SocratesTextButton(onClick = { jumpId = SearchJump(message.id); find = false }) { Text(message.content, maxLines = 3, overflow = TextOverflow.Ellipsis) }
                 }
             }
         }
@@ -277,7 +390,11 @@ fun SocratesApp(vm: ChatViewModel = viewModel()) {
             confirmButton = { SocratesTextButton(onClick = { vm.renameSession(session, sessionTitle); sessionAction = null }, enabled = sessionTitle.isNotBlank()) { Text("保存") } },
             dismissButton = { SocratesTextButton(onClick = { sessionAction = null }) { Text("取消") } })
         else SocratesAlert(onDismissRequest = { sessionAction = null }, title = { Text(session.title.ifBlank { "会话管理" }) },
-            text = { Column { SocratesTextButton(onClick = { rename = true }) { Text("重命名") }; Text("删除将永久移除此会话及其关联数据，无法撤销。") } },
+            text = { Column {
+                SocratesTextButton(onClick = { rename = true }) { Text("重命名") }
+                SocratesTextButton(onClick = { vm.clearTagsError(); tagSession = session; sessionAction = null }, enabled = !ui.busy && !ui.streaming) { Text("管理标签") }
+                Text("删除将永久移除此会话及其关联数据，无法撤销。")
+            } },
             confirmButton = { SocratesTextButton(onClick = { vm.deleteSession(session); sessionAction = null }, enabled = !ui.streaming) { Text("永久删除", color = MaterialTheme.colorScheme.error) } },
             dismissButton = { SocratesTextButton(onClick = { sessionAction = null }) { Text("取消") } })
     }
@@ -315,6 +432,7 @@ private fun ChatHeader(work: Boolean, recording: Boolean, hasMessages: Boolean, 
                     SocratesMenuItem({ Text("已上传文件") }, { action("files") }, leadingIcon = { ReferenceIcon(ReferenceGlyph.Paperclip) })
                     SocratesMenuItem({ Text("在聊天中查找") }, { action("find") }, leadingIcon = { ReferenceIcon(ReferenceGlyph.Search) })
                     SocratesMenuItem({ Text("分享聊天文本") }, { action("share") }, leadingIcon = { ReferenceIcon(ReferenceGlyph.Share) })
+                    SocratesMenuItem({ Text("导出聊天文件") }, { action("export") }, leadingIcon = { ReferenceIcon(ReferenceGlyph.Archive) })
                     if (session != null) {
                         SocratesMenuItem({ Text("添加到主屏幕") }, { action("home") }, leadingIcon = { ReferenceIcon(ReferenceGlyph.Plus) })
                         SocratesMenuItem({ Text("重命名") }, { action("manage") }, leadingIcon = { ReferenceIcon(ReferenceGlyph.Compose) })
@@ -335,8 +453,9 @@ private fun CircleAction(description: String, onClick: () -> Unit, modifier: Mod
 }
 
 @Composable
-private fun Transcript(ui: ChatUiState, modifier: Modifier = Modifier, jumpId: String? = null, speech: SpeechPlayback, onMessageAction: (String, ChatMessage) -> Unit = { _, _ -> }) {
+private fun Transcript(ui: ChatUiState, modifier: Modifier = Modifier, jumpId: SearchJump? = null, speech: SpeechPlayback, onMessageAction: (String, ChatMessage) -> Unit = { _, _ -> }) {
     val list = rememberLazyListState()
+    var handledJump by remember(ui.current?.id) { mutableStateOf<String?>(null) }
     val tolerance = with(LocalDensity.current) { 64.dp.toPx() }
     val nearBottom by remember { derivedStateOf {
         val last = list.layoutInfo.visibleItemsInfo.lastOrNull()
@@ -344,9 +463,12 @@ private fun Transcript(ui: ChatUiState, modifier: Modifier = Modifier, jumpId: S
             last.offset + last.size - list.layoutInfo.viewportEndOffset < tolerance)
     } }
     val scope = rememberCoroutineScope()
-    LaunchedEffect(jumpId) { ui.messages.indexOfFirst { it.id == jumpId }.takeIf { it >= 0 }?.let { list.animateScrollToItem(it) } }
-    LaunchedEffect(ui.messages.size, ui.messages.lastOrNull()?.content?.length) {
-        if (ui.messages.isNotEmpty() && (nearBottom || ui.messages.last().role == "user")) {
+    LaunchedEffect(ui.current?.id, jumpId, ui.messages.size, ui.messages.lastOrNull()?.content?.length) {
+        val index = if (jumpId != null && jumpId.key != handledJump) ui.messages.indexOfFirst { it.id == jumpId.messageId } else -1
+        if (index >= 0) {
+            handledJump = jumpId?.key
+            list.scrollToItem(index)
+        } else if (ui.messages.isNotEmpty() && (nearBottom || ui.messages.last().role == "user")) {
             withFrameNanos { }
             list.scrollToItem(ui.messages.lastIndex, Int.MAX_VALUE)
         }
@@ -371,10 +493,9 @@ private fun MessageBubble(message: ChatMessage, streaming: Boolean, activity: St
     val publicSummary = message.wire?.optString("publicReasoningSummary").orEmpty().takeIf { it.isNotBlank() && it != "null" }
     val turnSegments = remember(message.content, message.wire?.toString()) { AssistantTurnLayout.build(message.content, message.wire) }
     Column(Modifier.fillMaxWidth(), horizontalAlignment = if (user) Alignment.End else Alignment.Start) {
-        message.imageDataUrl?.let { MessageImage(it, message.attachmentName ?: "图片"); Spacer(Modifier.height(10.dp)) }
+        MessageAttachmentList(message)
         if (user) {
             Column(Modifier.widthIn(max = 300.dp).background(Color(0xFFF0F1FB), RoundedCornerShape(24.dp)).padding(horizontal = 18.dp, vertical = 12.dp)) {
-                message.attachmentName?.let { Text("附件 · $it", fontSize = 12.sp, color = Color.Gray); Spacer(Modifier.height(6.dp)) }
                 SelectionContainer { Text(message.content.substringBefore("\n\n<资料"), fontSize = 16.sp, lineHeight = 24.sp) }
             }
         } else {
@@ -389,9 +510,11 @@ private fun MessageBubble(message: ChatMessage, streaming: Boolean, activity: St
                 }
                 publicSummary?.let { Text("公开思考摘要", Modifier.padding(bottom = 2.dp), style = MaterialTheme.typography.labelSmall, color = SocratesDesign.Muted); NativeMarkdown(it, Modifier.fillMaxWidth()) }
             }
-            turnSegments.forEach { segment ->
+            turnSegments.forEachIndexed { index, segment ->
                 when (segment) {
-                    is AssistantTurnSegment.Text -> if (segment.value.isNotBlank()) NativeMarkdown(segment.value, Modifier.fillMaxWidth())
+                    is AssistantTurnSegment.Text -> if (segment.value.isNotBlank()) NativeMarkdown(
+                        segment.value, Modifier.fillMaxWidth(), streaming = AssistantTurnLayout.isLiveTextTail(turnSegments, index, streaming)
+                    )
                     is AssistantTurnSegment.Tool -> ToolActivityCard(segment.call)
                 }
             }
@@ -435,18 +558,21 @@ private fun MessageBubble(message: ChatMessage, streaming: Boolean, activity: St
 }
 
 @Composable
-private fun Composer(ui: ChatUiState, voice: VoiceInput, onSend: (String) -> Boolean, onStop: () -> Unit, onAttach: () -> Unit, onRecord: () -> Unit, onRemoveAttachment: () -> Unit, onReasoning: () -> Unit) {
-    var draft by rememberSaveable(ui.current?.id) { mutableStateOf("") }
+private fun Composer(ui: ChatUiState, voice: VoiceInput, draft: String, onDraftChange: (String) -> Unit, onSend: (String) -> Boolean, onStop: () -> Unit, onAttach: () -> Unit, onRecord: () -> Unit, onRemoveAttachment: (String) -> Unit,
+    onMoveAttachment: (String, Int) -> Unit, onEditAttachment: (String, String, String) -> String?, onReasoning: () -> Unit) {
     var focused by remember { mutableStateOf(false) }
     val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-    val expanded = focused || keyboardOpen || draft.contains('\n') || ui.attachment != null
+    val expanded = focused || keyboardOpen || draft.contains('\n') || ui.attachments.isNotEmpty()
     val horizontal by animateDpAsState(if (expanded || voice.active) 12.dp else 34.dp, tween(180), label = "composerInset")
     Column(Modifier.fillMaxWidth().padding(horizontal = horizontal).padding(top = 8.dp, bottom = 14.dp)) {
-        AnimatedVisibility(ui.attachment != null) {
-            ui.attachment?.let { a -> SocratesInputChip(selected = false, onClick = {}, label = { Text(a.name, maxLines = 1, overflow = TextOverflow.Ellipsis) }, leadingIcon = { ReferenceIcon(ReferenceGlyph.Paperclip, null, Modifier.size(16.dp)) }, trailingIcon = { SocratesIconButton(onClick = onRemoveAttachment, Modifier.size(32.dp)) { ReferenceIcon(ReferenceGlyph.Close, "移除附件", Modifier.size(16.dp)) } }) }
+        key(ui.composerDraft.key) {
+            AttachmentStrip(ui.attachments, !ui.busy && !ui.streaming && !voice.active, onRemoveAttachment, onMoveAttachment, onEditAttachment)
         }
         val recording = voice.active
         val focusRequester = remember { FocusRequester() }
+        LaunchedEffect(ui.composerDraft.key) {
+            if (ui.composerDraft.initialText.isNotEmpty()) focusRequester.requestFocus()
+        }
         val corner by animateDpAsState(if (expanded) 24.dp else 32.dp, tween(180), label = "composerCorner")
         // Keep the same editor composed AND placed during recording. Removing it would close the IME.
         // It reports zero height and is hidden from paint/accessibility; the real voice row takes its place.
@@ -461,24 +587,24 @@ private fun Composer(ui: ChatUiState, voice: VoiceInput, onSend: (String) -> Boo
                 AnimatedVisibility(!expanded) {
                     SocratesIconButton(onClick = onAttach, enabled = !recording && !ui.busy && !ui.streaming, modifier = Modifier.size(44.dp)) { ReferenceIcon(ReferenceGlyph.Plus, "添加附件", Modifier.size(26.dp), tint = Ink) }
                 }
-                DraftField(draft, { if (!recording) draft = it }, { focused = it }, if (ui.messages.isEmpty()) "询问 Socrates" else "回复 Socrates",
+                DraftField(draft, { if (!recording) onDraftChange(it) }, { focused = it }, if (ui.messages.isEmpty()) "询问 Socrates" else "回复 Socrates",
                     Modifier.weight(1f).focusRequester(focusRequester)
                         .padding(horizontal = if (expanded) 8.dp else 4.dp, vertical = 8.dp)
                         .heightIn(min = 24.dp, max = 150.dp))
-                if (!expanded) ComposerActions(draft, ui, onRecord, onStop) { if (onSend(draft)) draft = "" }
+                if (!expanded) ComposerActions(draft, ui, onRecord, onStop) { if (onSend(draft)) onDraftChange("") }
             }
             AnimatedVisibility(expanded) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     SocratesIconButton(onClick = onAttach, enabled = !recording && !ui.busy && !ui.streaming) { ReferenceIcon(ReferenceGlyph.Plus, "添加附件", Modifier.size(27.dp), tint = Ink) }
                     Spacer(Modifier.weight(1f))
                     SocratesIconButton(onClick = onReasoning, enabled = !recording && !ui.busy && !ui.streaming) { ReferenceIcon(ReferenceGlyph.Reasoning, "推理强度", Modifier.size(23.dp), if (ui.reasoningEffort == "medium") Color(0xFF999999) else Blue) }
-                    ComposerActions(draft, ui, onRecord, onStop) { if (onSend(draft)) draft = "" }
+                    ComposerActions(draft, ui, onRecord, onStop) { if (onSend(draft)) onDraftChange("") }
                 }
             }
         }
         if (recording) VoiceComposer(voice) { phrase ->
             val accepted = onSend(phrase)
-            if (!accepted) draft = phrase
+            onDraftChange(if (accepted) "" else phrase)
             accepted
         }
     }
@@ -491,8 +617,8 @@ private fun DraftField(text: String, onValue: (String) -> Unit, onFocus: (Boolea
 
 @Composable
 private fun ComposerActions(draft: String, ui: ChatUiState, onRecord: () -> Unit, onStop: () -> Unit, onSend: () -> Unit) {
-    if (!ui.streaming && draft.isBlank() && ui.attachment == null) SocratesIconButton(onClick = onRecord, enabled = !ui.busy, modifier = Modifier.size(44.dp)) { ReferenceIcon(ReferenceGlyph.Mic, "语音输入", Modifier.size(25.dp), tint = Ink) }
-    val sendable = draft.isNotBlank() || ui.attachment != null
+    if (!ui.streaming && draft.isBlank() && ui.attachments.isEmpty()) SocratesIconButton(onClick = onRecord, enabled = !ui.busy, modifier = Modifier.size(44.dp)) { ReferenceIcon(ReferenceGlyph.Mic, "语音输入", Modifier.size(25.dp), tint = Ink) }
+    val sendable = draft.isNotBlank() || ui.attachments.isNotEmpty()
     CircleAction(if (ui.streaming) "停止回复" else if (sendable) "发送消息" else "开始语音输入", if (ui.streaming) onStop else if (sendable) onSend else onRecord, Modifier.size(44.dp), blue = true, enabled = !ui.busy) {
         when { ui.busy -> SocratesSpinner(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp); ui.streaming -> Box(Modifier.size(13.dp).background(Color.White, RoundedCornerShape(3.dp))); sendable -> ReferenceIcon(ReferenceGlyph.ArrowUp, null, Modifier.size(23.dp), tint = Color.White); else -> VoiceMark() }
     }
@@ -523,17 +649,34 @@ private fun VoiceComposer(voice: VoiceInput, onSend: (String) -> Boolean) {
 }
 
 @Composable
-private fun NativeSidebar(ui: ChatUiState, onNew: () -> Unit, onSelect: (com.socrates.android.data.ChatSession) -> Unit, onProfile: () -> Unit, onRefresh: () -> Unit, onSessionMenu: (com.socrates.android.data.ChatSession) -> Unit, onRestore: (com.socrates.android.data.ChatSession) -> Unit, onImages: () -> Unit, onLibrary: () -> Unit, onProjects: () -> Unit, onAssistants: () -> Unit, onTasks: () -> Unit, onPlugins: () -> Unit, onCodex: () -> Unit) {
+private fun NativeSidebar(ui: ChatUiState, onNew: () -> Unit, onSelect: (com.socrates.android.data.ChatSession) -> Unit, onProfile: () -> Unit, onRefresh: () -> Unit, onSessionMenu: (com.socrates.android.data.ChatSession) -> Unit, onRestore: (com.socrates.android.data.ChatSession) -> Unit, onImages: () -> Unit, onLibrary: () -> Unit, onProjects: () -> Unit, onAssistants: () -> Unit, onTasks: () -> Unit, onPlugins: () -> Unit, onCodex: () -> Unit, onGlobalSearch: () -> Unit) {
     var search by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
     var archived by rememberSaveable { mutableStateOf(false) }
-    val visibleSessions = ui.sessions.filter { com.socrates.android.data.SessionActions.isArchived(it) == archived && (query.isBlank() || it.title.contains(query, true) || it.topic.contains(query, true)) }.sortedByDescending { com.socrates.android.data.SessionActions.isPinned(it) }
-    Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 30.dp)) {
+    var tag by rememberSaveable(ui.loggedIn, ui.baseUrl, ui.accountName) { mutableStateOf<String?>(null) }
+    var now by remember { mutableStateOf(java.time.ZonedDateTime.now()) }
+    LaunchedEffect(Unit) { while (true) { delay(60_000); now = java.time.ZonedDateTime.now() } }
+    val knownTags = remember(ui.sessions) { SessionHistory.knownTags(ui.sessions) }
+    val visibleSessions = remember(ui.sessions, query, archived, tag) { SessionHistory.filter(ui.sessions, query, archived, tag) }
+    val groups = remember(visibleSessions, now) { visibleSessions.groupBy { SessionHistory.groupLabel(it, now) } }
+    Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 30.dp)) {
         Row(Modifier.fillMaxWidth().height(78.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Socrates", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-.5).sp)
-            SocratesIconButton(onClick = { search = !search; if (!search) query = "" }) { ReferenceIcon(ReferenceGlyph.Search, "搜索会话", Modifier.size(25.dp)) }
+            SocratesIconButton(onClick = { search = !search; if (!search) { query = ""; tag = null } }) { ReferenceIcon(ReferenceGlyph.Search, if (search) "关闭会话搜索" else "搜索会话", Modifier.size(25.dp)) }
         }
-        AnimatedVisibility(search) { SocratesField(query, { query = it }, Modifier.fillMaxWidth().padding(bottom = 12.dp), placeholder = { Text("搜索历史会话") }, singleLine = true, shape = CircleShape) }
+        AnimatedVisibility(search) {
+            Column(Modifier.padding(bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SocratesField(query, { query = it }, Modifier.fillMaxWidth(), placeholder = { Text("搜索标题、摘要或标签") }, singleLine = true, shape = CircleShape)
+                Text("在已同步会话的标题、主题、摘要和标签中查找，不搜索消息全文。", style = MaterialTheme.typography.bodySmall, color = SocratesDesign.Muted)
+                SocratesTextButton(onClick = onGlobalSearch) { Text("在服务器搜索消息全文") }
+                if (knownTags.isNotEmpty() || tag != null) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    SocratesFilterChip(selected = tag == null, onClick = { tag = null }, label = { Text("全部标签") })
+                    (knownTags + listOfNotNull(tag)).distinct().forEach { label ->
+                        SocratesFilterChip(selected = tag == label, onClick = { tag = if (tag == label) null else label }, label = { Text(label, maxLines = 1) })
+                    }
+                }
+            }
+        }
         LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(bottom = 16.dp)) {
             if (!search) {
                 item { SidebarAction(ReferenceGlyph.Image, "图像", onImages) }
@@ -547,16 +690,25 @@ private fun NativeSidebar(ui: ChatUiState, onNew: () -> Unit, onSelect: (com.soc
             if (ui.loggedIn) item { SocratesTextButton(onClick = { archived = !archived }) { Text(if (archived) "返回最近对话" else "查看归档", fontSize = 13.sp, color = Color.Gray) } }
             if (ui.loggedIn && visibleSessions.isEmpty()) item {
                 Column(Modifier.padding(vertical = 16.dp)) {
-                    Text(if (ui.busy) "正在同步会话…" else if (query.isNotBlank()) "没有匹配的对话" else if (archived) "没有已归档的对话" else "还没有对话", fontSize = 14.sp, color = Color.Gray)
+                    Text(if (ui.busy) "正在同步会话…" else if (query.isNotBlank() || tag != null) "没有匹配的对话" else if (archived) "没有已归档的对话" else "还没有对话", fontSize = 14.sp, color = Color.Gray)
                     SocratesTextButton(onClick = onRefresh) { Text("刷新") }
                 }
             }
-            items(visibleSessions, key = { it.id }) { session ->
-                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).combinedClickable(onClick = { onSelect(session) }, onLongClickLabel = "管理会话", onLongClick = { onSessionMenu(session) }).padding(vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(session.title.ifBlank { session.topic.ifBlank { "新对话" } }, Modifier.weight(1f), fontSize = 17.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    if (com.socrates.android.data.SessionActions.isPinned(session)) ReferenceIcon(ReferenceGlyph.Pin, "已置顶", Modifier.size(14.dp), Color.Gray)
-                    if (archived) SocratesTextButton(onClick = { onRestore(session) }) { Text("恢复", fontSize = 13.sp) }
-                    if (ui.current?.id == session.id) Box(Modifier.padding(start = 8.dp).size(9.dp).background(Blue, CircleShape))
+            groups.forEach { (label, sessions) ->
+                item(key = "group-$label") { Text(label, Modifier.padding(top = 16.dp, bottom = 6.dp).semantics { heading() }, style = MaterialTheme.typography.labelMedium, color = SocratesDesign.Muted) }
+                items(sessions, key = { it.id }) { session ->
+                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).combinedClickable(onClick = { onSelect(session) }, onLongClickLabel = "管理会话", onLongClick = { onSessionMenu(session) }).padding(vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(session.title.ifBlank { session.topic.ifBlank { "新对话" } }, fontSize = 17.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            val tags = SessionHistory.tags(session)
+                            if (tags.isNotEmpty()) Text(tags.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = SocratesDesign.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            val preview = session.wire?.opt("preview") as? String
+                            if (query.isNotBlank() && !preview.isNullOrBlank()) Text(preview, style = MaterialTheme.typography.bodySmall, color = SocratesDesign.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        }
+                        if (com.socrates.android.data.SessionActions.isPinned(session)) ReferenceIcon(ReferenceGlyph.Pin, "已置顶", Modifier.size(14.dp), Color.Gray)
+                        if (archived) SocratesTextButton(onClick = { onRestore(session) }) { Text("恢复", fontSize = 13.sp) }
+                        if (ui.current?.id == session.id) Box(Modifier.padding(start = 8.dp).size(9.dp).background(Blue, CircleShape))
+                    }
                 }
             }
         }

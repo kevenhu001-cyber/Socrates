@@ -25,4 +25,36 @@ class AssistantTurnLayoutTest {
         assertEquals("answer", (rows[0] as AssistantTurnSegment.Text).value)
         assertEquals("legacy", (rows[1] as AssistantTurnSegment.Tool).call.optString("id"))
     }
+
+    @Test fun onlyLastTextAfterPositionedToolCanGrow() {
+        val wire = JSONObject().put("toolCalls", JSONArray().put(JSONObject()
+            .put("id", "t").put("name", "lookup").put("textOffset", 3)))
+        val rows = AssistantTurnLayout.build("one two", wire)
+        assertEquals(listOf(false, false, true), rows.indices.map { AssistantTurnLayout.isLiveTextTail(rows, it, true) })
+    }
+
+    @Test fun textBeforeTrailingToolIsNotTreatedAsGrowing() {
+        val wire = JSONObject().put("toolCalls", JSONArray().put(JSONObject()
+            .put("id", "t").put("name", "lookup").put("textOffset", 6)))
+        val rows = AssistantTurnLayout.build("answer", wire)
+        assertEquals(listOf(false, false), rows.indices.map { AssistantTurnLayout.isLiveTextTail(rows, it, true) })
+    }
+
+    @Test fun unknownAndInvalidToolOffsetsConservativelyDisablePreview() {
+        listOf(null, -1, 100).forEach { offset ->
+            val call = JSONObject().put("id", "t").put("name", "lookup")
+            if (offset != null) call.put("textOffset", offset)
+            val rows = AssistantTurnLayout.build("answer", JSONObject().put("toolCalls", JSONArray().put(call)))
+            assertEquals(listOf(false, false), rows.indices.map { AssistantTurnLayout.isLiveTextTail(rows, it, true) })
+        }
+    }
+
+    @Test fun stoppedAndEmptyTurnsHaveNoLiveTail() {
+        val rows = AssistantTurnLayout.build("answer", null)
+        assertEquals(true, AssistantTurnLayout.isLiveTextTail(rows, 0, true))
+        assertEquals(false, AssistantTurnLayout.isLiveTextTail(rows, 0, false))
+        assertEquals(false, AssistantTurnLayout.isLiveTextTail(rows, -1, true))
+        assertEquals(false, AssistantTurnLayout.isLiveTextTail(rows, 1, true))
+        assertEquals(false, AssistantTurnLayout.isLiveTextTail(emptyList(), -1, true))
+    }
 }

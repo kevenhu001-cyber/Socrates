@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.socrates.android.data.VoiceLanguage
 
 /** Uses the installed Android recognition service; never fabricates a transcript or waveform. */
 class VoiceInput(private val context: Context, private val onError: (String) -> Unit) {
@@ -20,7 +21,7 @@ class VoiceInput(private val context: Context, private val onError: (String) -> 
     private var recognizer: SpeechRecognizer? = null
     private var pendingSend: ((String) -> Unit)? = null
 
-    fun start() {
+    fun start(language: VoiceLanguage = VoiceLanguage.AUTO) {
         if (!SpeechRecognizer.isRecognitionAvailable(context)) {
             onError("此设备未安装语音识别服务，请启用系统语音输入后重试。"); return
         }
@@ -61,7 +62,7 @@ class VoiceInput(private val context: Context, private val onError: (String) -> 
             })
             service.startListening(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "zh-CN")
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, language.recognitionTag())
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
                 putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
             })

@@ -10,6 +10,11 @@ internal sealed interface AssistantTurnSegment {
 
 /** Interleaves persisted tool rows with answer text using the shared textOffset contract. */
 internal object AssistantTurnLayout {
+    // A trailing tool (including legacy unknown offsets) makes the growable text boundary uncertain.
+    // Prefer the existing literal/final renderer over guessing that an earlier fragment can grow.
+    fun isLiveTextTail(segments: List<AssistantTurnSegment>, index: Int, streaming: Boolean): Boolean =
+        streaming && index == segments.lastIndex && segments.getOrNull(index) is AssistantTurnSegment.Text
+
     fun build(text: String, wire: JSONObject?): List<AssistantTurnSegment> {
         val calls = wire?.optJSONArray("toolCalls") ?: JSONArray()
         val positioned = mutableListOf<Pair<Int, JSONObject>>()

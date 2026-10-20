@@ -63,7 +63,7 @@ class ChatWireTest {
         val calls = history.snapshot().getJSONArray("toolCalls")
         assertEquals(1, calls.length()); val call = calls.getJSONObject(0)
         assertEquals("t", call.getString("id")); assertEquals("completed", call.getString("progressPhase")); assertFalse(call.getBoolean("isError"))
-        assertEquals("file", call.getJSONArray("artifacts").getJSONObject(0).getString("id")); assertEquals(2, JSONObject(call.getString("output")).getInt("count"))
+        assertEquals("file", call.getJSONArray("artifacts").getJSONObject(0).getString("id")); assertEquals(2, call.getJSONObject("output").getInt("count"))
     }
     @Test fun toolFailureAndSnapshotAreStable() {
         val h = ToolHistory(); h.accept(ChatActivity("tool_result", JSONObject().put("id", "failed").put("ok", false).put("errorText", "denied")))

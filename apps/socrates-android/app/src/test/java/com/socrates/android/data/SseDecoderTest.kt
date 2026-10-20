@@ -57,7 +57,8 @@ class SseDecoderTest {
         val visible = mutableListOf<String>()
         val reasoning = mutableListOf<String>()
         val decoder = SseDecoder(visible::add, reasoning::add, {})
-        listOf("data: Hello <thi", "data: nk>private ", "data: thought</think> world", "", "data: [DONE]", "").forEach(decoder::acceptLine)
+        // Blank lines terminate SSE events; adjacent data lines belong to one payload with literal newlines.
+        listOf("data: Hello <thi", "", "data: nk>private ", "", "data: thought</think> world", "", "data: [DONE]", "").forEach(decoder::acceptLine)
         assertEquals("Hello  world", visible.joinToString(""))
         assertEquals("private thought", reasoning.joinToString(""))
     }
@@ -81,7 +82,7 @@ class SseDecoderTest {
         assertTrue(reasoning.isEmpty())
         val open = SseDecoder(visible::add, reasoning::add, {})
         open.acceptLine("data: <think>secret tail"); open.finish()
-        assertEquals("secret tail", reasoning.last())
+        assertEquals("secret tail", reasoning.joinToString(""))
         assertFalse(visible.joinToString("").contains("secret"))
     }
 
