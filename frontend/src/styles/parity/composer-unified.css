@@ -337,11 +337,13 @@
 }
 #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn) svg { display: block; width: 20px; height: 20px; }
 
-/* Primary action: voice mode when empty, send when there is a draft, stop
-   while a turn streams — one filled circle, like chatgpt.com. */
+/* Primary action: send when there is a draft, stop while a turn streams —
+   one filled circle, like chatgpt.com. The fill is the accent role, not a
+   text token: the dark theme's --ui-text-primary is #e6e6e6, which reads as
+   a greyed-out control rather than the inverted disc the reference ships. */
 #appShell .composer-shell .composer-primary-btn {
-  background: var(--ui-text-primary);
-  color: var(--ui-bg-page);
+  background: var(--ui-accent-strong);
+  color: var(--ui-on-accent);
   font-weight: 500;
 }
 #appShell .composer-shell .composer-primary-btn:hover { opacity: 0.8; }

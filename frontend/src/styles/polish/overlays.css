@@ -394,10 +394,10 @@
   width: 100%;
   padding: 10px 14px;
   border-radius: var(--ui-radius-lg);
-  border: 0.5px solid hsl(var(--border-300) / 0.15);
-  background: hsl(var(--bg-200));
+  border: 0.5px solid var(--ui-border-subtle);
+  background: var(--ui-bg-control);
   font-size: calc(13.5px * var(--app-font-scale, 1));
-  color: hsl(var(--text-100));
+  color: var(--ui-text-primary);
   font-family: inherit;
   outline: none;
   resize: vertical;
@@ -405,10 +405,10 @@
   transition: border-color 0.12s;
 }
 .settings-textarea:focus {
-  border-color: hsl(var(--accent-000) / 0.4);
+  border-color: var(--ui-border-strong);
 }
 .settings-textarea::placeholder {
-  color: hsl(var(--text-500));
+  color: var(--ui-text-placeholder);
 }
 .settings-memory-list {
   display: flex;
@@ -426,8 +426,8 @@
   gap: 12px;
   padding: 8px 12px;
   border-radius: var(--ui-radius-control);
-  background: hsl(var(--bg-200));
-  border: 0.5px solid hsl(var(--border-300) / 0.1);
+  background: var(--ui-bg-control);
+  border: 0.5px solid var(--ui-border-subtle);
 }
 .settings-memory-content {
   display: flex;
@@ -441,15 +441,15 @@
   font-weight: 600;
   padding: 2px 6px;
   border-radius: var(--ui-radius-xs);
-  background: hsl(var(--bg-300));
-  color: hsl(var(--text-300));
+  background: var(--ui-bg-chip);
+  color: var(--ui-text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.03em;
   flex-shrink: 0;
 }
 .settings-memory-val {
   font-size: var(--ui-font-size-xs);
-  color: hsl(var(--text-100));
+  color: var(--ui-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -457,7 +457,7 @@
 .settings-memory-del-btn {
   background: transparent;
   border: none;
-  color: hsl(var(--text-400));
+  color: var(--ui-text-secondary);
   padding: 4px;
   border-radius: var(--ui-radius-xs);
   cursor: pointer;
@@ -467,8 +467,8 @@
   transition: color 0.12s, background 0.12s;
 }
 .settings-memory-del-btn:hover {
-  color: hsl(0 65% 55%);
-  background: hsl(var(--bg-300));
+  color: var(--ui-danger);
+  background: var(--ui-bg-chip);
 }
 .settings-memory-add-form {
   display: flex;
@@ -484,7 +484,7 @@
 }
 .settings-empty-hint {
   font-size: 12.5px;
-  color: hsl(var(--text-400));
+  color: var(--ui-text-secondary);
   padding: 12px 4px;
   font-style: italic;
   line-height: 1.4;

@@ -37,9 +37,7 @@ export function mountLegacyShellListeners(actions) {
        produce a usable turn but still pays every cost. Set
        pointer-events:none for one animation frame so the second
        synthetic click cannot land on the same button; the next rAF
-       restores it after the React commit. Voice mode below skips
-       the guard because the speech toggle reuses the same button
-       and a single tap must remain reliable. */
+       restores it after the React commit. */
     const guardReentrancy = !streaming && button?.classList.contains('active');
     if (guardReentrancy && button) {
       button.style.pointerEvents = 'none';
@@ -49,10 +47,10 @@ export function mountLegacyShellListeners(actions) {
       if (raf) raf(() => { button.style.pointerEvents = ''; });
       else setTimeout(() => { button.style.pointerEvents = ''; }, 16);
     }
-    if (button && !button.classList.contains('active') && !streaming) {
-      window.toggleSpeechInput?.(surface);
-      return;
-    }
+    /* P_composer-primary-split — the primary is submit-only. It used to
+       start dictation when the draft was empty, which gave the composer two
+       controls that announced the same action ("Voice input"); the
+       microphone is the one and only dictation entry point now. */
     if (surface === 'chat') {
       actions.sendMessage();
       return;

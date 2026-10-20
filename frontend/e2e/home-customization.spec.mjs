@@ -85,8 +85,10 @@ test('display settings change theme, text scale, and content width', async ({ pa
   await page.locator('#displayThemeSegs [data-theme-option="light"]').click();
 
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'light');
-  await expect(page.locator('#displayPrefsFontLabel')).toHaveText('XL');
-  await expect(page.locator('#displayPrefsWidthLabel')).toHaveText('XL');
+  // P_display-prefs-no-dup — the segmented controls carry the value, so the
+  // selected radio is what states it.
+  await expect(page.locator('#displayPrefsFontSegs [aria-checked="true"]')).toHaveText('XL');
+  await expect(page.locator('#displayPrefsWidthSegs [aria-checked="true"]')).toHaveText('XL');
   const after = await page.locator('#composerInputWrap').boundingBox();
   const afterTitleSize = await page.locator('#topicTitle').evaluate((element) => parseFloat(getComputedStyle(element).fontSize));
   expect(after?.width ?? 0).toBeGreaterThan((before?.width ?? 0) + 250);

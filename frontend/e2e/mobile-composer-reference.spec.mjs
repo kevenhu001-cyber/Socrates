@@ -122,13 +122,13 @@ test('mobile composer keeps model selector and reference controls discoverable',
      dropdown here rather than the (now-absent) top pill. */
   await expect(page.locator('#mobileMode')).toBeHidden();
   await expect(composer.locator('#composerMicBtn')).toBeVisible();
-  /* Empty composer → the shared primary control is the voice-input
-     affordance (waveform icon + label), not a disabled arrow.
-     "开始语音输入" is the zh rendering of the "Start voice input" label
-     that e2e/voice-input.spec.mjs pins in English; the shorter "语音输入"
-     this used to expect is not a label the app emits. */
-  await expect(composer.locator('#composerPrimaryBtn')).toHaveAttribute('aria-label', '开始语音输入');
-  await expect(composer.locator('#composerPrimaryBtn .icon-voice')).toHaveCount(1);
+  /* Empty composer → the shared primary control is the submit action: it
+     shows the send arrow and stays disabled until a draft exists. The
+     microphone beside it is the one and only dictation control, so a screen
+     reader meets two clearly different buttons. "发送" is the zh rendering
+     of the "Send" label that e2e/voice-input.spec.mjs pins in English. */
+  await expect(composer.locator('#composerPrimaryBtn')).toHaveAttribute('aria-label', '发送');
+  await expect(composer.locator('#composerPrimaryBtn .icon-arrow')).toHaveCount(1);
   /* The reference pill reads the current level (高/中/低), not the
      section label. The phone rail deliberately does not chip the default:
      parity/composer-unified.css hides

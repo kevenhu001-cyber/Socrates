@@ -32,12 +32,10 @@ function mobileMicForSurface(surface) {
 }
 
 function setListening(surface, listening) {
-  const primary = document.getElementById('composerPrimaryBtn');
-  if (primary) {
-    primary.classList.toggle('is-listening', !!listening);
-    primary.setAttribute('aria-pressed', listening ? 'true' : 'false');
-  }
-
+  /* P_composer-primary-split — only the microphone is a dictation control.
+     The primary button is submit-only, so it must not carry the
+     .is-listening state or an aria-pressed toggle: that made a screen
+     reader announce the send control as a pressed dictation button. */
   const mobileMic = mobileMicForSurface(surface);
   if (mobileMic) {
     mobileMic.classList.toggle('is-listening', !!listening);

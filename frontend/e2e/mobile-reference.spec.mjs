@@ -10,8 +10,11 @@ test('reference home keeps its bottom composer and phone configuration usable', 
   await waitForAppShell(page);
   await page.evaluate(() => document.fonts.ready);
   const composer = page.locator('#composerInputWrap');
-  await expect(composer).toHaveCSS('background-color', 'rgb(28, 28, 28)');
-  await expect(page.locator('#composerPrimaryBtn .icon-voice')).toBeVisible();
+  /* The phone composer's dark surface is #212121 — docs/ref/mobile-reference-2026-10-04.md
+     pins "black page, composer #212121" and themes.css ships that value. This
+     assertion used to expect #1c1c1c, which matches neither. */
+  await expect(composer).toHaveCSS('background-color', 'rgb(33, 33, 33)');
+  await expect(page.locator('#composerPrimaryBtn .icon-arrow')).toBeVisible();
   const rect = await composer.boundingBox();
   expect(rect.x).toBe(16);
   expect(rect.width).toBe(358);

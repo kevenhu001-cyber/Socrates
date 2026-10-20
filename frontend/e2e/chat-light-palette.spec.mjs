@@ -133,6 +133,12 @@ test('mobile light conversation inverts header controls and the canvas fade', as
     };
     return {
       inputBar: pick('.chat-input-bar', ['backgroundImage']),
+      // The canvas the composer fades into, read live: the assertion used to
+      // hard-code white, which was the light page colour before the page
+      // moved to --ui-bg-page (#f8f8f8). Pinning the token keeps the intent
+      // ("the fade lands on the page, not on a black band") and makes the
+      // contrast checks run against the colour that is actually rendered.
+      canvas: getComputedStyle(document.querySelector('.main-content')).backgroundColor,
       openBtn: pick('#sidebarOpenBtn', ['backgroundColor', 'color']),
       findBtn: pick('#findBtn', ['color']),
       shareBtn: pick('#shareBtn', ['color']),
@@ -143,15 +149,16 @@ test('mobile light conversation inverts header controls and the canvas fade', as
   expect(mobile.findBtn).not.toBeNull();
   expect(mobile.shareBtn).not.toBeNull();
 
-  // The composer fade must land on the white phone canvas, not a black band.
-  expect(mobile.inputBar.backgroundImage).toContain('rgb(255, 255, 255) 24px');
+  // The composer fade must land on the phone canvas, not a black band.
+  expect(mobile.inputBar.backgroundImage).toContain(`${mobile.canvas} 24px`);
   expect(mobile.inputBar.backgroundImage).not.toContain('rgb(0, 0, 0) 24px');
 
-  // Header controls are borderless dark glyphs on the white page now.
+  // Header controls are borderless dark glyphs on the page now.
+  const canvas = parseRgb(mobile.canvas);
   const openFg = parseRgb(mobile.openBtn.color);
-  expect(contrast(openFg, [255, 255, 255])).toBeGreaterThanOrEqual(4.5);
+  expect(contrast(openFg, canvas)).toBeGreaterThanOrEqual(4.5);
 
-  // …and the icon-only actions are dark on the white bar.
-  expect(contrast(parseRgb(mobile.findBtn.color), [255, 255, 255])).toBeGreaterThanOrEqual(4.5);
-  expect(contrast(parseRgb(mobile.shareBtn.color), [255, 255, 255])).toBeGreaterThanOrEqual(4.5);
+  // …and the icon-only actions are dark on the page.
+  expect(contrast(parseRgb(mobile.findBtn.color), canvas)).toBeGreaterThanOrEqual(4.5);
+  expect(contrast(parseRgb(mobile.shareBtn.color), canvas)).toBeGreaterThanOrEqual(4.5);
 });

@@ -54,17 +54,27 @@
 }
 
 /* Terminal chat state shares the canonical palette and control ladder.
-   The old tutor stylesheet no longer owns chat errors or Retry/Resend. */
+   The old tutor stylesheet no longer owns chat errors or Retry/Resend.
+
+   P_error-surface — a failure now reads the same way wherever it appears:
+   danger-coloured text at the body-meta step. The turn-level error used to
+   be a bordered card at the xxs step while the nested tool error was bare
+   text at the xs step, so one screen could show a red box next to a red
+   line. Only the container differs now: the turn error also carries a
+   Retry/Resend action, so it keeps a 2px danger rule (the same left-rule
+   language the callouts and quotes use) instead of a card — a card inside
+   the transcript's tool rows is what the reference asks us to avoid. */
 .msg-error {
   display: flex;
   align-items: center;
   gap: var(--ui-space-sm);
-  padding: var(--ui-space-sm);
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-control);
+  padding: var(--ui-space-xs) 0 var(--ui-space-xs) var(--ui-space-sm);
+  border: 0;
+  border-inline-start: 2px solid var(--ui-danger);
+  border-radius: 0;
   background: transparent;
   color: var(--ui-danger);
-  font-size: var(--ui-font-size-xxs);
+  font-size: var(--ui-font-size-xs);
   line-height: var(--ui-text-ui-line);
 }
 .msg-error-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }

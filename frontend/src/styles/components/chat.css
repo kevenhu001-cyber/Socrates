@@ -2,8 +2,23 @@
    structurally unchanged; this module is its sole visual owner. */
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .chat-view {
   width: 100%;
-  max-width: calc(var(--ui-content-chat) + 40px);
+  max-width: calc(var(--ui-content-chat) + 2 * var(--ui-content-gutter));
   margin-inline: auto;
+}
+
+/* Desktop: the chat view carries the same gutter the transcript uses, so the
+   composer capsule and the message column resolve to one shared column.
+   Before this, the capsule was sized by min(100%, --ui-content-chat) against
+   the un-padded chat view while the transcript reserved a 20px gutter — the
+   two only agreed while the main pane was wider than
+   --ui-content-chat + 40px, and below that the capsule ran 40px wider than
+   the messages and its edges missed theirs. The phone layout keeps its own
+   reference-pinned gutters, so the padding is desktop-only. */
+@media (min-width: 769px) {
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .chat-view {
+    box-sizing: border-box;
+    padding-inline: var(--ui-content-gutter);
+  }
 }
 
 @media (max-width: 768px) {

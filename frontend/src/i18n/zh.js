@@ -155,7 +155,6 @@ export const zh = {
     "chrome.shareConversation":"分享此对话",
     "chrome.addToolsFiles":"添加工具与文件",
     "chrome.voiceInput":"语音输入",
-    "chrome.startVoiceInput":"开始语音输入",
     "chrome.quickActions":"快捷操作",
     "chrome.previousMatch":"上一处",
     "chrome.nextMatch":"下一处",

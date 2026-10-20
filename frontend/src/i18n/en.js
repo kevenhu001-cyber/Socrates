@@ -154,7 +154,6 @@ export const en = {
     "chrome.shareConversation":"Share this conversation",
     "chrome.addToolsFiles":"Add tools and files",
     "chrome.voiceInput":"Voice input",
-    "chrome.startVoiceInput":"Start voice input",
     "chrome.quickActions":"Quick actions",
     "chrome.previousMatch":"Previous match",
     "chrome.nextMatch":"Next match",

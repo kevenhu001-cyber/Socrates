@@ -233,8 +233,10 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
   #appShell .top-model-switcher-model {
     min-width: 0;
     overflow: hidden;
-    color: var(--ui-text-tertiary);
-    font-weight: 400;
+    /* The model is the switcher's value, not de-emphasised metadata: the
+       reference switcher is a single 18px/600 label. */
+    color: var(--ui-text-secondary);
+    font-weight: 600;
     text-overflow: ellipsis;
   }
   #appShell .top-model-switcher-model:empty { display: none; }

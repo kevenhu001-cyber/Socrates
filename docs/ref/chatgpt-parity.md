@@ -31,20 +31,48 @@ Re-capture: `node frontend/scripts/chatgpt-ref.mjs`; Socrates side:
 
 ## Token mapping (Socrates)
 
-`styles/themes.css` holds the ramp above as `--ui-*`; `styles/polish/tokens.css`
-aliases `--cg-*`, `--chatgpt-*`, `--conversation-*` and the legacy HSL
-channels onto it. Motion/type tokens live in `styles/tokens.css`
+`styles/themes.css` holds the ramp above as `--ui-*` and bridges the older
+namespaces onto it — `--cg-*`, `--chatgpt-*`, `--conversation-*` and the Lobe
+`--lobe-color-*` set. It also still publishes the historical HSL channels
+(`--text-*`, `--bg-*`, `--border-*`, `--accent-*`) because the frozen
+`legacy/` and `restore/` trees read them; those are a second palette and no
+live file may read them any more (`frontend/scripts/check-css-debt.mjs`
+ratchets that at zero). Motion/type tokens live in `styles/tokens.css`
 (`--ui-duration-hover` 100ms, `--ui-duration-overlay` 160ms,
 `--ui-text-ui` 14px, `--ui-text-body` 16/28, `--ui-text-hero` 24px).
-Deliberate deviations: light page is `#fff` (chatgpt.com logged-out: `#fcfcfc`)
-so the `#fcfcfc` sidebar still reads as a separate band; dark tool-chip text is
-lifted to `#81a6f9` for WCAG AA; the bundled Plus Jakarta Sans face is kept as
-the single UI font instead of the system stack. Light `--ui-text-muted` is
-`#737373` (reference `#8f8f8f` is 3.2:1 on white and fails AA for the small
-labels that use it); the composer and search placeholders keep `#8f8f8f` via
-`--ui-text-placeholder`. Dialog scrims are a flat `--ui-backdrop` with no blur,
-and menus/dialogs share one `ui-overlay-in` entrance (`polish/overlays.css`).
-Guarded by `e2e/theme-contrast.spec.mjs`.
+
+Deliberate deviations: the light page is `#f8f8f8` (chatgpt.com logged-out:
+`#fcfcfc`) so the sidebar still reads as a separate band; dark tool-chip text
+is lifted to `#81a6f9` for WCAG AA; the bundled Plus Jakarta Sans face is kept
+as the single UI font instead of the system stack.
+
+The light neutral ramp is lifted for WCAG AA. The reference's secondary
+(`#5d5d5d`) and tertiary tones are both too light for small text on the
+`#f8f8f8` page, so `--ui-text-secondary` is `#595959` (6.6:1) and
+`--ui-text-tertiary` is `#6b6b6b` (5.0:1 on the page, 4.8:1 on the darkest
+light surface). `--ui-text-muted` is an alias of `--ui-text-tertiary`: one
+de-emphasised text colour, not two near-identical ones — the dark theme has
+always aliased them. The semantic tones are lifted the same way because they
+are painted as *text* (tool-card error lines, callout titles, the approval
+status, the settings "yes"): `--ui-danger` `rgb(176 45 28)`, `--ui-success`
+`rgb(12 110 51)`, `--ui-info` `rgb(0 92 184)`, `--ui-warning` `rgb(125 82 0)`
+— each clears 4.5:1 on the page *and* on the pale tint it is mixed into.
+`--ui-thinking-accent` stays a vivid chart/accent colour and is never body
+text; `--ui-warning` no longer aliases it. The composer and search
+placeholders keep the reference `#8f8f8f` via `--ui-text-placeholder`.
+
+The hero is 24px through `--ui-text-hero`, which carries the *normalized*
+`--app-type-scale` (`--app-font-scale / 1.125`); it used to read the raw
+`--app-font-scale` and rendered the hero at 27px. The conversation column is
+`--ui-content-chat` (768px) inside a `--ui-content-gutter` (40px) gutter, and
+the transcript and the composer capsule share that one column, so their
+edges line up at every main-pane width. The composer primary is submit-only:
+it shows the send arrow and sits at 30% until a draft exists, and the
+microphone is the one and only dictation control.
+
+Dialog scrims are a flat `--ui-backdrop` with no blur, and menus/dialogs share
+one `ui-overlay-in` entrance (`polish/overlays.css`). Guarded by
+`e2e/theme-contrast.spec.mjs`.
 
 ## Sidebar (styles/parity/sidebar.css)
 

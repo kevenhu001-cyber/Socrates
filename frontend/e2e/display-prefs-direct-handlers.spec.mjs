@@ -32,8 +32,10 @@ test('display preferences own their controls without data-action delegation', as
     input.dispatchEvent(new Event('input', { bubbles: true }));
   });
 
-  await expect(page.locator('#displayPrefsFontLabel')).toHaveText('XL');
-  await expect(page.locator('#displayPrefsWidthLabel')).toHaveText('XL');
+  // P_display-prefs-no-dup — the segmented controls carry the value, so the
+  // selected radio is what states it.
+  await expect(page.locator('#displayPrefsFontSegs [aria-checked="true"]')).toHaveText('XL');
+  await expect(page.locator('#displayPrefsWidthSegs [aria-checked="true"]')).toHaveText('XL');
   await expect(page.locator('#gridToggle')).toHaveClass(/on/);
   await expect.poll(() => page.evaluate(() => ({
     display: JSON.parse(localStorage.getItem('socrates-display') || '{}'),

@@ -144,7 +144,11 @@
   #appShell #topicSetup .topic-title.greeting {
     position: static;
     margin: 0 0 48px;
-    font-size: calc(24px * var(--app-font-scale, 1));
+    /* --ui-text-hero carries the normalized type scale (--app-type-scale =
+       --app-font-scale / 1.125), so the hero is the reference's 24px at the
+       default font setting. The raw --app-font-scale used here double-counted
+       the default and rendered the hero at 27px. */
+    font-size: var(--ui-text-hero);
     line-height: 1.25;
     letter-spacing: -0.02em;
     font-weight: 400;

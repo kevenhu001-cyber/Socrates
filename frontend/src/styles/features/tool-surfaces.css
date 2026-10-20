@@ -124,7 +124,7 @@
   border-radius:0;
   background:transparent;
   box-shadow:none;
-  color:hsl(var(--text-100));
+  color:var(--ui-text-primary);
 }
 .msg.assistant .msg-body:has(.tool-inline) p,
 .msg.assistant .msg-body:has(.tool-inline) li,
@@ -132,21 +132,21 @@
 .msg.assistant .msg-body:has(.tool-run-group) li,
 .msg.assistant .msg-body:has(.agent-tool-card) p,
 .msg.assistant .msg-body:has(.agent-tool-card) li{
-  color:hsl(var(--text-100));
+  color:var(--ui-text-primary);
 }
 .msg.assistant .msg-body:has(.tool-inline) strong,
 .msg.assistant .msg-body:has(.tool-run-group) strong,
 .msg.assistant .msg-body:has(.agent-tool-card) strong{
-  color:hsl(var(--text-000));
+  color:var(--ui-accent-strong);
 }
 .msg.assistant .msg-body:has(.tool-inline) a,
 .msg.assistant .msg-body:has(.tool-run-group) a,
 .msg.assistant .msg-body:has(.agent-tool-card) a{
-  color:hsl(var(--text-100));
-  text-decoration-color:hsl(var(--text-400));
+  color:var(--ui-text-primary);
+  text-decoration-color:var(--ui-text-secondary);
 }
 .msg.assistant .msg-body:has(.tool-inline) a:hover,
 .msg.assistant .msg-body:has(.tool-run-group) a:hover,
 .msg.assistant .msg-body:has(.agent-tool-card) a:hover{
-  color:hsl(var(--text-000));
+  color:var(--ui-accent-strong);
 }

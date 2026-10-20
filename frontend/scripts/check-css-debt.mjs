@@ -176,6 +176,22 @@ const METRICS = {
    * exceptions (a hero, a one-off) should be deleted rather than baselined.
    */
   literalFontSize: /font-size:\s*(?:\d+(?:\.\d+)?px|calc\(\s*\d+(?:\.\d+)?px)/g,
+  /*
+   * Reads of a numbered legacy channel.
+   *
+   * themes.css still publishes the historical HSL channels (--text-*, --bg-*,
+   * --border-*, --accent-*, --brand-*, --oncolor-*, --surface-*) because the
+   * frozen legacy/ and restore/ trees read them. They are a second palette
+   * running beside --ui-*, and the two do not agree value-for-value (the
+   * legacy text-300 is 54% grey while --ui-text-tertiary is a different
+   * step), so a live file that reads one renders a colour nobody chose in
+   * themes.css and drifts whenever either ramp is re-tuned.
+   *
+   * The live side is zero: every live reader now uses an --ui-* role. The
+   * frozen side stays frozen at its current count — legacy/ and restore/ are
+   * historical geometry, not something to migrate in this pass.
+   */
+  legacyChannel: /var\(--(?:text|bg|border|accent|brand|oncolor|surface)-\d+/g,
 };
 
 /* ---------- 1. cascade order ---------- */

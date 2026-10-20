@@ -18,7 +18,7 @@ function legacyTurnActions(): ComposerTurnWindow {
 
 /** React renders the primary button; this typed command owns its send/stop transition. */
 export function setChatStopState(active: boolean): void {
-  const button = document.getElementById('composerPrimaryBtn');
+  const button = document.getElementById('composerPrimaryBtn') as HTMLButtonElement | null;
   if (!button) return;
   if (active) {
     button.classList.add('chat-stop');
@@ -27,6 +27,12 @@ export function setChatStopState(active: boolean): void {
     button.classList.remove('chat-stop');
     button.dataset.stop = '0';
   }
+  /* P_composer-primary-split — the primary is disabled while there is
+     nothing to send, but a live turn owns the button as Stop, so it must
+     never be unreachable. The `.active` class is the canSend signal the
+     composer controller maintains, so this stays correct whichever order
+     the draft clear and the stream start land in. */
+  button.disabled = active ? false : !button.classList.contains('active');
 }
 
 export function handleSendClick(): void {

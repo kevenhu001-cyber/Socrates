@@ -23,7 +23,7 @@
     width: 100%;
     max-width: none;
     margin-inline: 0;
-    padding: 28px max(20px, calc((100% - var(--ui-content-chat)) / 2)) 24px;
+    padding: 28px max(var(--ui-content-gutter), calc((100% - var(--ui-content-chat)) / 2)) 24px;
     gap: 0;
     scroll-padding-block: 24px;
     font-family: var(--font-sans);

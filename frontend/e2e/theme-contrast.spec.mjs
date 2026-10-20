@@ -91,6 +91,77 @@ test('light muted labels clear AA and the placeholder keeps its reference tone',
   expect(thumb.a).toBeGreaterThan(0.1);
 });
 
+test('light palette roles clear AA on every light surface they sit on', async ({ page }) => {
+  await openApp(page, { mode: 'light' });
+  const probe = await page.evaluate(() => {
+    const host = document.createElement('div');
+    host.setAttribute('aria-hidden', 'true');
+    host.style.cssText = 'position:fixed;left:-9999px;top:0;';
+    document.body.appendChild(host);
+    const resolve = (expr, property) => {
+      const node = document.createElement('span');
+      node.style[property] = expr;
+      host.appendChild(node);
+      const value = getComputedStyle(node)[property];
+      node.remove();
+      return value;
+    };
+    const color = (token) => resolve(`var(${token})`, 'color');
+    const surface = (token) => resolve(`var(${token})`, 'backgroundColor');
+    const out = {
+      page: getComputedStyle(document.querySelector('.main-content')).backgroundColor,
+      surfaces: {
+        surface: surface('--ui-bg-surface'),
+        bubble: surface('--ui-bg-bubble'),
+        control: surface('--ui-bg-control'),
+      },
+      text: {
+        secondary: color('--ui-text-secondary'),
+        tertiary: color('--ui-text-tertiary'),
+        muted: color('--ui-text-muted'),
+      },
+      tone: {
+        danger: color('--ui-danger'),
+        success: color('--ui-success'),
+        info: color('--ui-info'),
+        warning: color('--ui-warning'),
+      },
+    };
+    host.remove();
+    return out;
+  });
+
+  /* The tone colours are also painted on a 16% tint of themselves (the
+   * tool-card error value, the metric-delta chip), which is the worst
+   * background they ever sit on — colour-mix() in srgb, mixed in the test
+   * so the assertion does not depend on how the browser serialises it. */
+  const tint = (fg, pct, bg) => {
+    const f = rgb(fg);
+    const b = rgb(bg);
+    const p = pct / 100;
+    return { r: f.r * p + b.r * (1 - p), g: f.g * p + b.g * (1 - p), b: f.b * p + b.b * (1 - p) };
+  };
+
+  for (const [name, value] of Object.entries(probe.text)) {
+    expect.soft(contrast(rgb(value), rgb(probe.page)), `--ui-text-${name} on the page`).toBeGreaterThanOrEqual(4.5);
+    for (const [surfaceName, surfaceValue] of Object.entries(probe.surfaces)) {
+      expect.soft(contrast(rgb(value), rgb(surfaceValue)), `--ui-text-${name} on --ui-bg-${surfaceName}`).toBeGreaterThanOrEqual(4.5);
+    }
+  }
+  for (const [name, value] of Object.entries(probe.tone)) {
+    expect.soft(contrast(rgb(value), rgb(probe.page)), `--ui-${name} on the page`).toBeGreaterThanOrEqual(4.5);
+    for (const [surfaceName, surfaceValue] of Object.entries(probe.surfaces)) {
+      expect.soft(contrast(rgb(value), rgb(surfaceValue)), `--ui-${name} on --ui-bg-${surfaceName}`).toBeGreaterThanOrEqual(4.5);
+    }
+    const onTint = tint(value, 16, probe.page);
+    expect.soft(contrast(rgb(value), onTint), `--ui-${name} on its own 16% tint`).toBeGreaterThanOrEqual(4.5);
+  }
+
+  /* "muted" is an alias of "tertiary" — one de-emphasised text colour, not
+   * two near-identical ones (the dark theme has always aliased them). */
+  expect(probe.text.muted).toBe(probe.text.tertiary);
+});
+
 test('light dialogs are white cards over a flat token scrim', async ({ page }) => {
   await openApp(page, { mode: 'light' });
   await page.evaluate(() => window.openSettings());

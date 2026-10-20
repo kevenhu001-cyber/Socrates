@@ -112,6 +112,15 @@ export function syncEffortUI() {
     if (modelEl) modelEl.textContent = model || "";
     var label = model ? model + " · " + _labelFor(v) : _labelFor(v);
     switcher.setAttribute("title", label);
+    /* WCAG 2.5.3 (label in name): the accessible name has to contain the text
+       the button shows. A static "Model and reasoning" did not, so the model
+       is named first and the control's purpose follows it. The purpose phrase
+       stays localized through the same i18n key the title uses. */
+    var nameEl = switcher.querySelector(".top-model-switcher-name");
+    var visible = nameEl ? String(nameEl.textContent || "").trim() : "";
+    var purpose = _t("topbar.modelSwitcher", "Model and reasoning");
+    var accessible = (visible + " " + model).replace(/\s+/g, " ").trim();
+    switcher.setAttribute("aria-label", accessible ? accessible + " — " + purpose : purpose);
   }
 }
 

@@ -105,6 +105,14 @@
   --ui-sidebar-desktop: 260px;
   --ui-detail-width: 420px;
   --ui-content-chat: calc(768px * var(--app-width-scale, 1));
+  /* The conversation column's gutter — the minimum inset between the main
+     pane's edge and the shared composer/message column.
+     The landing column already insets its composer by 40px (mainInner's
+     16px + #topicSetup's 24px); the transcript and the in-session composer
+     now use the same 40px, so the capsule's edges land on the message
+     column's edges at every main-pane width instead of only when the pane
+     is wider than --ui-content-chat + 40px. */
+  --ui-content-gutter: 40px;
   --ui-safe-bottom: max(16px, env(safe-area-inset-bottom, 0px));
 
   /* Typography — Socrates product scale. Rungs that exactly match Lobe are

@@ -483,9 +483,12 @@
         </button>
         <div class="display-prefs-popover hidden" id="displayPrefsPopover">
           <div class="display-prefs-row">
+            <!-- P_display-prefs-no-dup — a segmented control states its own
+                 selection (the checked radio), so the right-hand value readout
+                 repeated the same word twice on screen. The row is now just
+                 the setting's name plus the control that carries the value. -->
             <div class="display-prefs-label">
               <span data-i18n-key="display.theme">Theme</span>
-              <span class="value" id="displayThemeModeLabel">Dark</span>
             </div>
             <div class="display-prefs-segs display-theme-segs" id="displayThemeSegs" role="radiogroup" data-i18n-aria="display.theme" aria-label="Theme">
               <button class="display-prefs-seg" type="button" data-theme-option="system" role="radio" aria-checked="false" data-i18n-key="display.themeSystem">System</button>
@@ -494,21 +497,21 @@
             </div>
           </div>
           <div class="display-prefs-row">
-            <div class="display-prefs-label"><span data-i18n-key="sidebar.textSize">Text size</span><span class="value" id="displayPrefsFontLabel">M</span></div>
-            <div class="display-prefs-segs" id="displayPrefsFontSegs">
-              <button type="button" class="display-prefs-seg" data-font="1">S</button>
-              <button type="button" class="display-prefs-seg" data-font="1.125">M</button>
-              <button type="button" class="display-prefs-seg" data-font="1.25">L</button>
-              <button type="button" class="display-prefs-seg" data-font="1.375">XL</button>
+            <div class="display-prefs-label"><span data-i18n-key="sidebar.textSize">Text size</span></div>
+            <div class="display-prefs-segs" id="displayPrefsFontSegs" role="radiogroup" data-i18n-aria="sidebar.textSize" aria-label="Text size">
+              <button type="button" class="display-prefs-seg" role="radio" aria-checked="true" data-font="1">S</button>
+              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-font="1.125">M</button>
+              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-font="1.25">L</button>
+              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-font="1.375">XL</button>
             </div>
           </div>
           <div class="display-prefs-row">
-            <div class="display-prefs-label"><span data-i18n-key="sidebar.contentWidth">Content width</span><span class="value" id="displayPrefsWidthLabel">M</span></div>
-            <div class="display-prefs-segs" id="displayPrefsWidthSegs">
-              <button type="button" class="display-prefs-seg" data-width="0.85" title="Narrow" data-i18n-title="sidebar.narrow">S</button>
-              <button type="button" class="display-prefs-seg" data-width="1" title="Medium" data-i18n-title="sidebar.medium">M</button>
-              <button type="button" class="display-prefs-seg" data-width="1.3" title="Wide" data-i18n-title="sidebar.wide">L</button>
-              <button type="button" class="display-prefs-seg" data-width="1.7" title="Full width" data-i18n-title="sidebar.fullWidth">XL</button>
+            <div class="display-prefs-label"><span data-i18n-key="sidebar.contentWidth">Content width</span></div>
+            <div class="display-prefs-segs" id="displayPrefsWidthSegs" role="radiogroup" data-i18n-aria="sidebar.contentWidth" aria-label="Content width">
+              <button type="button" class="display-prefs-seg" role="radio" aria-checked="true" data-width="0.85" title="Narrow" data-i18n-title="sidebar.narrow">S</button>
+              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-width="1" title="Medium" data-i18n-title="sidebar.medium">M</button>
+              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-width="1.3" title="Wide" data-i18n-title="sidebar.wide">L</button>
+              <button type="button" class="display-prefs-seg" role="radio" aria-checked="false" data-width="1.7" title="Full width" data-i18n-title="sidebar.fullWidth">XL</button>
             </div>
           </div>
           <!-- Grid background toggle -->
@@ -582,7 +585,13 @@
       <!-- chatgpt.com top-left model switcher: opens the shared chat
            configuration popover (model · reasoning effort · speed · manage
            models). Phones show a compact configuration icon on the home screen. -->
-      <button type="button" class="top-model-switcher" id="topModelSwitcher" data-chat-config-trigger aria-haspopup="dialog" aria-expanded="false" data-i18n-title="topbar.modelSwitcher" data-i18n-aria="topbar.modelSwitcher" title="Model and reasoning" aria-label="Model and reasoning">
+      <!-- P_a11y-label-in-name — the switcher shows "Socrates <model>", so a
+           static aria-label ("Model and reasoning") broke WCAG 2.5.3: the
+           accessible name has to contain the visible text. The name is owned
+           by ui/effortPicker.js, which already writes the model into the
+           button and re-runs on every language change (i18n.js calls
+           window.syncEffortUI). -->
+      <button type="button" class="top-model-switcher" id="topModelSwitcher" data-chat-config-trigger aria-haspopup="dialog" aria-expanded="false" data-i18n-title="topbar.modelSwitcher" title="Model and reasoning">
         <svg class="top-model-switcher-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9m4 0h3M4 17h3m4 0h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
         <span class="top-model-switcher-name">Socrates</span>
         <span class="top-model-switcher-model" id="topModelSwitcherModel"></span>

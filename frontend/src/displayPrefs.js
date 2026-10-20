@@ -64,11 +64,9 @@ export function syncThemeUI() {
     option.classList.toggle("on", active);
     option.setAttribute("aria-checked", active ? "true" : "false");
   });
-  var label = document.getElementById("displayThemeModeLabel");
-  if (label) {
-    var key = preference === "system" ? "display.themeSystem" : (preference === "light" ? "display.themeLight" : "display.themeDark");
-    label.textContent = typeof window.t === "function" ? window.t(key) : preference;
-  }
+  /* P_display-prefs-no-dup — the theme row is a radiogroup, so the checked
+     radio already states the current theme. The old #displayThemeModeLabel
+     readout repeated the same word next to it. */
   var toggle = document.getElementById("themeToggle");
   if (toggle) {
     toggle.setAttribute("data-theme-preference", preference);
@@ -197,23 +195,21 @@ export function saveDisplayPrefs() {
 }
 
 export function syncDisplayPrefsUI() {
-  var fLabel = document.getElementById("displayPrefsFontLabel");
-  var wLabel = document.getElementById("displayPrefsWidthLabel");
-  if (fLabel) {
-    var fi = DISPLAY_FONT_STEPS.indexOf(displayPrefs.font);
-    fLabel.textContent = fi >= 0 ? FONT_LABELS[fi] : "M";
-  }
-  if (wLabel) {
-    var wi = DISPLAY_WIDTH_STEPS.indexOf(displayPrefs.width);
-    wLabel.textContent = wi >= 0 ? WIDTH_LABELS[wi] : "M";
-  }
+  /* P_display-prefs-no-dup — the text-size and content-width rows are
+     radiogroups now, so the selected radio carries the value on its own.
+     The old #displayPrefsFontLabel / #displayPrefsWidthLabel readouts
+     printed the same letter the highlighted segment already showed. */
   var fWrap = document.getElementById("displayPrefsFontSegs");
   if (fWrap) Array.from(fWrap.children).forEach(function (b) {
-    b.classList.toggle("on", parseFloat(b.dataset.font) === displayPrefs.font);
+    var active = parseFloat(b.dataset.font) === displayPrefs.font;
+    b.classList.toggle("on", active);
+    b.setAttribute("aria-checked", active ? "true" : "false");
   });
   var wWrap = document.getElementById("displayPrefsWidthSegs");
   if (wWrap) Array.from(wWrap.children).forEach(function (b) {
-    b.classList.toggle("on", parseFloat(b.dataset.width) === displayPrefs.width);
+    var active = parseFloat(b.dataset.width) === displayPrefs.width;
+    b.classList.toggle("on", active);
+    b.setAttribute("aria-checked", active ? "true" : "false");
   });
   /* Drive the sliding ::before indicator on each segs wrapper.
      After toggling .on, the active button's offsetLeft/offsetWidth

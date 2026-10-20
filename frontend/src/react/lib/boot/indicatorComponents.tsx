@@ -8,7 +8,6 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { AudioLines } from 'lucide-react';
 import { stateStore } from '../../../state/store.js';
 import { useChatStreamStatus, useIsChatStreaming } from '../../useChatRuntime';
 
@@ -18,7 +17,6 @@ const ICON_PROPS = {
 
 function SendArrowIcon() { return <svg viewBox="0 0 24 24" {...ICON_PROPS} strokeWidth="2.5" className="icon-arrow"><path d="M12 19V5M5 12l7-7 7 7" /></svg>; }
 function StopSquareIcon() { return <svg viewBox="0 0 24 24" {...ICON_PROPS} strokeWidth="2" className="icon-stop"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>; }
-function VoiceWaveIcon() { return <AudioLines aria-hidden="true" strokeWidth={2.2} className="icon-voice" />; }
 /* The pill's visibility is part of the sticky-bottom contract: while an
    answer streams, a reader who scrolls away gets the "↓ New reply"
    affordance and clicking it re-pins. `_userScrolledAway` is owned by the
@@ -35,10 +33,10 @@ function useScrolledAway(): boolean {
 }
 
 /* The legacy updateComposerBtn mirrors draft state onto the button's
-   `.active` class (canSend = has text or attachments). Observe that class
-   so the icon swaps voice ⇄ arrow exactly when the legacy contract flips,
-   without duplicating its canSend logic. Single button since the composer
-   shell is one instance (P_composer-single). */
+   `.active` class (canSend = has text or attachments) and owns the
+   disabled state. Observe that class so the icon swaps exactly when the
+   legacy contract flips, without duplicating its canSend logic. Single
+   button since the composer shell is one instance (P_composer-single). */
 function useControlClass(className: string): boolean {
   const [active, setActive] = useState(
     () => document.getElementById('composerPrimaryBtn')?.classList.contains(className) ?? false,
@@ -73,8 +71,11 @@ export function NewReplyPill({ host }: { host?: HTMLElement | null }) {
   return <>↓ New reply</>;
 }
 
-/* One primary action: idle voice waveform, draft send arrow, streaming stop.
-   The .active class is mirrored by the existing composer state controller. */
+/* One primary action: the send arrow, or the stop square while a turn
+   streams. P_composer-primary-split retired the idle voice waveform — the
+   microphone is the only dictation control, so the primary never changes
+   identity with the draft. The .active class is mirrored by the existing
+   composer state controller. */
 export function PrimaryButton() {
   const streamStatus = useChatStreamStatus();
   /* ui/sendGlyph.js holds `.is-sending` for one short beat after a
@@ -82,7 +83,6 @@ export function PrimaryButton() {
      glyph so the swap reads as one motion instead of arrow → stop flicker
      while the draft clears and the stream starts. */
   const sending = useControlClass('is-sending');
-  const hasDraft = useControlClass('active');
   if (sending) {
     return (
       <>
@@ -92,5 +92,5 @@ export function PrimaryButton() {
     );
   }
   if (streamStatus === 'streaming') return <StopSquareIcon />;
-  return hasDraft ? <SendArrowIcon /> : <VoiceWaveIcon />;
+  return <SendArrowIcon />;
 }

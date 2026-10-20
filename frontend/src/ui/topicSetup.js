@@ -20,9 +20,10 @@ export function autoResize(el){
   el.style.height = Math.min(el.scrollHeight, maxH) + "px";
 }
 
-/* The primary action follows the draft: waveform starts voice input when
-   empty, arrow sends text/attachments, and Stop always remains enabled while
-   a turn streams. The sibling microphone stays a direct dictation shortcut. */
+/* The primary action follows the draft: the arrow sends text/attachments,
+   Stop always remains enabled while a turn streams, and the button stays
+   disabled (at 30%) until there is something to send. The microphone is the
+   one and only dictation entry point. */
 export function updateComposerBtn(){
   var surface = "topic";
   try{ surface = getVisibleComposerSurface(); }catch(_){/* default above */}
@@ -41,11 +42,15 @@ export function updateComposerBtn(){
     || b.classList.contains("chat-stop")
     || b.classList.contains("agent-stop");
   var label = typeof window.t === "function"
-    ? window.t(streaming ? "chat.stop" : canSend ? "chat.send" : "chrome.startVoiceInput")
-    : (streaming ? "Stop generating" : canSend ? "Send" : "Voice input");
+    ? window.t(streaming ? "chat.stop" : "chat.send")
+    : (streaming ? "Stop generating" : "Send");
   b.setAttribute("aria-label", label);
   b.setAttribute("title", label);
-  b.disabled = false;
+  /* P_composer-primary-split — the primary is submit-only, so it is
+     disabled until there is a draft or an attachment to send. The markup
+     ships it disabled and the 30% disabled style lives in
+     parity/composer-unified.css. */
+  b.disabled = streaming ? false : !canSend;
   var wrap = document.getElementById("composerInputWrap");
   if(wrap) wrap.classList.toggle("has-text", !!(v || hasAtt));
 }

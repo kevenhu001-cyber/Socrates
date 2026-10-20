@@ -156,13 +156,15 @@ function applyI18n(){
   if(tdisc)tdisc.textContent=t(appMode==="chat"?"topic.disclaimerChat":"profile.disclaimerTutor");
   var cpb=document.getElementById("composerPrimaryBtn");
   if(cpb&&!cpb.classList.contains("chat-stop")&&!cpb.classList.contains("agent-stop")){
-    var composerLabel=t(cpb.classList.contains("active")?"chat.send":"chrome.startVoiceInput");
+    /* P_composer-primary-split — the primary is submit-only, so it always
+       speaks "Send"; the microphone carries the dictation label. */
+    var composerLabel=t("chat.send");
     cpb.setAttribute("aria-label",composerLabel);
     cpb.setAttribute("title",composerLabel);
     if(typeof window.updateComposerBtn==="function"){
       try{window.updateComposerBtn();}catch(e){reportSwallow(e, 'i18n.applyI18n.updateComposerBtn'); }
     }else{
-      cpb.disabled=false;
+      cpb.disabled=!cpb.classList.contains("active");
     }
   }
   var el=document.getElementById("extensionsLabel");

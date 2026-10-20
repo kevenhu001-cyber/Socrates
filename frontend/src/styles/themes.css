@@ -110,11 +110,22 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-bg-hover-ghost: var(--ui-bg-hover);
   --ui-sidebar-border: var(--ui-bg-pill-selected);
 
-  /* Lobe text neutral roles. */
+  /* Lobe text neutral roles.
+   *
+   * The three neutral text tiers are spaced so each one is legible on its own
+   * (WCAG AA, 4.5:1) AND still reads as a distinct step. The reference
+   * secondary (#5d5d5d) and tertiary tones are both too light for small text
+   * on the #f8f8f8 page, so both are lifted here:
+   *   primary   #1f1f1f  15.5:1
+   *   secondary #595959   6.6:1
+   *   tertiary  #6b6b6b   5.0:1   (4.8:1 on the darkest light surface, #f4f4f4)
+   * "muted" is the same role as "tertiary" — it is an alias so there is one
+   * de-emphasised text colour, not two near-identical ones. The placeholder
+   * keeps the reference #8f8f8f (see docs/ref/chatgpt-parity.md). */
   --ui-text-primary: #1f1f1f;
-  --ui-text-secondary: #666666;
-  --ui-text-tertiary: #8a8a8a;
-  --ui-text-muted: #727272;
+  --ui-text-secondary: #595959;
+  --ui-text-tertiary: #6b6b6b;
+  --ui-text-muted: var(--ui-text-tertiary);
   --ui-text-placeholder: #8f8f8f;
   --ui-text-disabled: var(--ui-text-placeholder);
   --ui-sidebar-glyph: var(--ui-text-primary);
@@ -125,14 +136,25 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-border-strong: #dddddd;
   --ui-backdrop: rgb(0 0 0 / 44%);
 
-  /* Lobe monochrome primary + semantic status colors. */
+  /* Lobe monochrome primary + semantic status colors.
+   *
+   * The semantic tones are also text colors here (tool-card error lines, the
+   * callout title, the approval status, the settings "yes"), so they are
+   * tuned to clear AA on the light page AND on the pale tints they are mixed
+   * into (color-mix 6–16% over the page/surface):
+   *   danger  rgb(176 45 28)  6.1:1 on the page, 4.7:1 on its own 16% tint
+   *   success rgb(12 110 51)  6.0:1 / 4.7:1
+   *   info    rgb(0 92 184)   6.1:1 / 4.8:1
+   *   warning rgb(125 82 0)   6.4:1 / 5.1:1
+   * The thinking accent stays a vivid chart/accent colour and is never used
+   * as body text; warning no longer aliases it. */
   --ui-on-accent: var(--ui-bg-surface);
   --ui-accent-strong: #222222;
-  --ui-danger: rgb(243 88 55);
-  --ui-success: rgb(0 160 63);
+  --ui-danger: rgb(176 45 28);
+  --ui-success: rgb(12 110 51);
   --ui-thinking-accent: rgb(254 180 0);
-  --ui-info: rgb(0 118 227);
-  --ui-warning: var(--ui-thinking-accent);
+  --ui-info: rgb(0 92 184);
+  --ui-warning: rgb(125 82 0);
   --ui-link: rgb(0 96 204);
 
   /* Socrates product roles projected from the foundation. */
