@@ -1,6 +1,8 @@
 # OpenAI UI 差距审计的整改回合
 
-本轮从本地 `main@ee93806a` 开始，落地上一轮 OpenAI UI 差距审计（对照 <https://developers.openai.com/plugins/concepts/ui-guidelines> 与 `@openai/apps-sdk-ui` 的实测清单）中的 P0 与 P1 项。上一轮的审计结论只在工作会话中交付、没有落盘，本文件按仓库惯例补成可追溯的记录，并顺带修正 [前端 UI 体验评审](2026-10-16-frontend-ui-experience-review.md) 里已过期的条目。未推送代码、未部署、未改动远端配置；本机通过不等于远端 CI 全绿。
+本轮从本地 `main@ee93806a` 开始，落地上一轮 OpenAI UI 差距审计（对照 <https://developers.openai.com/plugins/concepts/ui-guidelines> 与 `@openai/apps-sdk-ui` 的实测清单）中的 P0 与 P1 项。上一轮的审计结论只在工作会话中交付、没有落盘，本文件按仓库惯例补成可追溯的记录，并顺带修正 [前端 UI 体验评审](2026-10-16-frontend-ui-experience-review.md) 里已过期的条目。
+
+改动已提交并推送（`b9b63f36` / `88e1d73a` / `6ae34705` / `18da7d32` / `2ff53480`），并已部署到生产。部署时 CI 门禁以 `DEPLOY_SKIP_CI_CHECK=1` 显式覆盖，覆盖记录写进 `.deploy-state.json` 的 `ciGate` 字段（`skipped-by-operator`）；原因、逐条失败清单与「部署时发现并修掉的既有竞态」见文末两节。
 
 审计的结论与实测数据见上一轮报告；本文件只记录**改了什么、为什么这么改、怎么验的**，以及仍然敞开的项。
 
@@ -139,7 +141,7 @@
 ## 验证
 
 - `npm run lint`：**0 error / 455 warning**（与改动前基线一致），其中 css-debt 棘轮通过（live `legacyChannel=0`）。
-- `npm run test:unit`（frontend）：**988 / 988 通过**。
+- `npm run test:unit`（frontend）：**990 / 990 通过**（988 + 部署阶段新增的 2 条桥接层用例）。
 - 构建：`npm run build` 通过（中途因 `composerTurn.ts` 的 `HTMLElement` 缺 `disabled` 报过一次 TS2339，已用 `HTMLButtonElement` 收窄修掉）。
 - Playwright（21 个受影响 spec，单 worker，3.3 分钟）：**81 / 81 通过**。
 
@@ -155,6 +157,43 @@
 - `chat-light-palette` 的移动端画布渐变断言原本写死白色 `rgb(255,255,255) 24px`。渐变实际用的是 `var(--ui-bg-page)`，浅色页早已从 `#fff` 变成 `#f8f8f8`。断言改为**读取实际渲染的页面色再比对**（`${canvas} 24px`），意图（"渐变落在页面色上、不是黑带"）不变，而三条头部控件的对比度检查改为对真实画布色计算——`#f8f8f8` 比白略深，门槛反而略严。
 - `mobile-reference` 的手机 composer 底色断言原本期望 `rgb(28,28,28)`（#1c1c1c）。`docs/ref/mobile-reference-2026-10-04.md:21` 写明的是 "black page, composer #212121"，`themes.css` 发的也是 `#212121`——断言与参考和实现都不符，改为 `rgb(33, 33, 33)`。
 
+## 部署时发现并修掉的一个既有竞态
+
+这一节记录的是**部署准备阶段**发现的东西：它与本轮 UI 整改无关，但挡在部署门禁前面，所以顺手修了。
+
+**现象。** CI run `39360582444`（commit `6ae34705`）比改动前的基线 run `39351963933`（commit `ee93806a`）多一条失败：`e2e/react-compat.spec.mjs:64`「React chat store observes legacy message and stream lifecycle」。基线是 9 failed / 524 passed，这一轮是 6 failed / 528 passed——本轮修掉了 `chat-light-palette`×3 与 `mobile-reference`，却同时冒出这一条。
+
+**归属：不是本轮改动引入的。** 同一台机器、同一组参数（`--repeat-each=15 --workers=4`）压测：改动前基线 `ee93806a` 挂 1/15，`6ae34705` 也挂 1/15——失败率一致，CI 在基线那次只是没踩到。
+
+**根因。** `frontend/src/react/chatRuntime.bridge.ts` 的 `P_bridge-coalesce-lifecycle` 把 `message-added` 与 `stream-started` 合并进**一个槽位**，同帧内后到的覆盖先到的。`e9c0ffe2` 引入它时的前提是「last wins 等价于两次同步提交」——这只对**最终快照**成立，对**通知次数**不成立：订阅者采样 `lastEvent` 时就看不到 `message-added` 了。两个事件是否落在同一帧取决于帧边界，所以是竞态而不是恒定行为。契约依据在 `e2e/react-compat.spec.mjs`（它断言的就是「订阅者必须看到两个事件」）；`e9c0ffe2` 改了桥接层但没动这条 spec。
+
+**第一次修法过度了。** `18da7d32` 把单槽改成**队列**、每个事件各提交一次。契约守住了，但同一帧里连发 18 条 `message-added` 的场景（会话列表一次长出 18 条消息）会变成 18 次全量 reconcile——正是那个槽位当初要省的成本。CI 立刻抓到：`e2e/keyboard-viewport.spec.mjs:423` 在 run `39364373391` 上失败，而它在 `6ae34705` 上是绿的；本地压测 2/20 对 0/20。
+
+**最终修法（`2ff53480`）。** 槽位**按事件类型**各留一个：同类事件后者覆盖前者（取最新的 messageId）但保留原有位置，于是发布顺序不变。一帧 18 条 `message-added` 仍只提交 1 次，而 `message-added` + `stream-started` 提交 2 次——契约要的正是后者。
+
+**验证。**
+
+- `test/chatRuntimeStore.test.mjs` 新增两条用例，用假 rAF 确定性地驱动这次碰撞：同帧两个事件必须都被看到；同帧 12 条 `message-added` 必须只提交 1 次且快照带齐 12 行。
+- e2e `react-compat` 那条：修复前 14/15，修复后 30/30。
+- `keyboard-viewport` 重载压测（同一台机器、同一参数）：HEAD 与 `6ae34705` 均为 2/60——一致，说明它本身是既有抖动，不是回归。
+- `confirm-dialog.spec.mjs:89`（焦点恢复）也是负载敏感的既有抖动：HEAD 192 次测试中 1 次失败，基线 `ee93806a` 288 次测试中 1 次失败，同一失败率。
+- 单测 990 / 990；桥接相关 13 个 spec 重载跑 96 / 96；lint 0 error / 455 warning（与基线一致）。
+
+## 部署与门禁
+
+**命令。** `DEPLOY_SKIP_CI_CHECK=1 ./deploy.sh`。**不要**用 `--dry-run`：它只跳过 CI 门禁，参数解析不匹配，随后仍会走完整生产部署路径。
+
+**门禁状态。** CI 工作流是红的，红的原因全部是**既有**失败，与本轮改动无关：
+
+1. `chatgpt-oled-replicas` —— 截图基线陈旧（基线图 252×497 vs 实际 252×388，25% 像素不同）。基线最后刷新于 2026-10-10，此后有 78 笔 UI 提交。**本轮没有顺手重刷**——那等于替 78 笔提交「洗绿」，应由人审阅 PNG diff。
+2. `composer-tools-visual-baseline` —— 同上。
+3. `placeholder-localization` ×2 —— 字体栈缺 `Noto Sans SC`，而字体栈方向（系统栈 vs 保留 Plus Jakarta Sans）是留给用户的产品决策。
+4. `sidebar-rail` —— 断言写死 `rgb(252,252,252)`，light 主题的 `--ui-bg-sidebar` 是 `#ffffff`，3/255 之差。没有参考文档能判定哪边是对的，所以本轮不动。
+
+本轮相对基线**没有新增**失败：基线 9 条 → 本轮 4 条（修掉 `chat-light-palette`×3、`mobile-reference`），加上部署期间发现并修掉的 `react-compat` 竞态。
+
+**部署内容与结果。** `faaed6f5` → `2ff53480`，13 个提交，含 85 个 frontend 文件与 27 个 server 文件；无新迁移（上次部署已含到 `0044`）。入口 `index.1792473412.html`（75067 bytes），nginx `try_files` 已指向该文件，16 项健康门禁全过，`ciGate` 记录为 `skipped-by-operator`。
+
 ## 仍然敞开 / 本轮未做
 
 - **字体栈方向（审计 P2）**未动：仓库里三套字体栈并存（`themes.css` 实际生效的 `"Inter","MiSans","Plus Jakarta Sans"`、`legacy/00-foundations.css` 注释里写的 Plus Jakarta Sans primary、`legacy/02-modals-library.css` 硬编码的第三套）。OpenAI 的规范是"始终继承系统字体栈"，`docs/ref/chatgpt-parity.md` 记录的却是"保留 Plus Jakarta Sans 作为唯一 UI 字体"。这是产品决策，本轮不自行拍板。
@@ -162,3 +201,5 @@
 - **审计 P2 的卡片规则**未动：可视化卡片的 4 个等权重动作、`IntelligentSurface` 用 `<select>` 让用户切 5 种显示模式、卡内 `role="tablist"`、Canvas 工具栏 5 个按钮、5 处嵌套滚动。这些是结构改动，量级高于本轮。
 - **命名空间仍分裂**：`--cg-*` / `--chatgpt-*` / `--conversation-*` 三套别名桥接仍在 `themes.css` 里，`restore/` 仍活 569 个 `!important`。
 - **legacy HSL 通道本身仍在**：`themes.css` 继续发布 `--text-*` / `--bg-*` / `--border-*` / `--accent-*` 等通道供冻结区读取（frozen 基线 1429）。彻底退役要动 `legacy/` 与 `restore/`，属于冻结区，本轮不做；棘轮已经保证 live 区不再新增。
+- **桥接层仍做帧级合并**：`react-compat` 那条竞态的根因修了，但同类风险还在——未来若再引入新的帧级合并路径，需要同样逐事件核对「会不会把某个事件类型整个吞掉」。`test/chatRuntimeStore.test.mjs` 的两条用例是这一类的守门断言。
+- **两条负载敏感的既有抖动只做了归属取证**：`keyboard-viewport.spec.mjs:423`（composer 变高时 transcript 失钉）与 `confirm-dialog.spec.mjs:89`（对话框关闭后焦点未归位）。本轮用同机同参对照确认了它们与本轮改动无关，但**没有定位根因、没有降低抖动率**——它们需要各自的专项。
