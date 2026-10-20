@@ -40,7 +40,7 @@ internal fun AttachmentSheet(onDismiss: () -> Unit, onCamera: () -> Unit, onPhot
     Popup(alignment = Alignment.BottomStart,
         offset = with(density) { IntOffset(24.dp.roundToPx(), -12.dp.roundToPx()) },
         onDismissRequest = onDismiss, properties = PopupProperties(focusable = true)) {
-        Column(Modifier.widthIn(max = 258.dp).width(258.dp).navigationBarsPadding().shadow(12.dp, RoundedCornerShape(30.dp)).background(Color.White, RoundedCornerShape(30.dp))) {
+        Column(Modifier.widthIn(max = 258.dp).width(258.dp).navigationBarsPadding().shadow(12.dp, RoundedCornerShape(SocratesDesign.DialogRadius)).background(Color.White, RoundedCornerShape(SocratesDesign.DialogRadius))) {
             Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
                 AttachmentAction(ReferenceGlyph.Camera, "拍照", onCamera)
                 AttachmentAction(ReferenceGlyph.Image, "照片", onPhoto)
@@ -65,14 +65,14 @@ internal fun FileSourceSheet(onDismiss: () -> Unit, onDevice: () -> Unit, onLibr
 
 @Composable
 private fun AttachmentAction(icon: ReferenceGlyph, title: String, onClick: () -> Unit, active: Boolean = false) {
-    Row(Modifier.fillMaxWidth().height(58.dp).clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick)
+    Row(Modifier.fillMaxWidth().heightIn(min = 58.dp).clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick)
         .padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(44.dp).background(Color(0xFFF0F0F0), CircleShape), contentAlignment = Alignment.Center) {
-            ReferenceIcon(icon, tint = if (active) SocratesDesign.Blue else SocratesDesign.Ink)
+        Box(Modifier.size(44.dp).background(SocratesDesign.Selected, CircleShape), contentAlignment = Alignment.Center) {
+            ReferenceIcon(icon, tint = if (active) SocratesDesign.Accent else SocratesDesign.Ink)
         }
         Spacer(Modifier.width(12.dp))
-        Text(title, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge, color = if (active) SocratesDesign.Blue else SocratesDesign.Ink)
-        if (active) ReferenceIcon(ReferenceGlyph.Check, modifier = Modifier.size(20.dp), tint = SocratesDesign.Blue)
+        Text(title, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge, color = if (active) SocratesDesign.Accent else SocratesDesign.Ink)
+        if (active) ReferenceIcon(ReferenceGlyph.Check, modifier = Modifier.size(20.dp), tint = SocratesDesign.Accent)
     }
 }
 
@@ -81,11 +81,11 @@ internal fun ReasoningPicker(value: String, enabled: Boolean, onSelect: (String)
     SocratesSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().padding(20.dp)) {
             Text("推理强度", style = MaterialTheme.typography.headlineSmall)
-            Text("应用于下一次回复；实际支持程度取决于当前模型。", Modifier.padding(top = 8.dp, bottom = 14.dp), color = Color.Gray, style = MaterialTheme.typography.bodyMedium)
+            Text("应用于下一次回复；实际支持程度取决于当前模型。", Modifier.padding(top = 8.dp, bottom = 14.dp), color = SocratesDesign.Muted, style = MaterialTheme.typography.bodyMedium)
             listOf("none" to "不启用", "low" to "轻量", "medium" to "标准", "high" to "深入").forEach { (key, label) ->
                 SocratesMenuItem(text = { Text(label) }, onClick = { onSelect(key) }, enabled = enabled,
-                    leadingIcon = { ReferenceIcon(ReferenceGlyph.Reasoning, tint = if (key == value) SocratesDesign.Blue else Color.Gray) },
-                    trailingIcon = if (key == value) ({ ReferenceIcon(ReferenceGlyph.Check, "已选择", tint = SocratesDesign.Blue) }) else null)
+                    leadingIcon = { ReferenceIcon(ReferenceGlyph.Reasoning, tint = if (key == value) SocratesDesign.Accent else SocratesDesign.Muted) },
+                    trailingIcon = if (key == value) ({ ReferenceIcon(ReferenceGlyph.Check, "已选择", tint = SocratesDesign.Accent) }) else null)
             }
             SocratesTextButton(onClick = onDismiss, modifier = Modifier.align(Alignment.End)) { Text("关闭") }
         }

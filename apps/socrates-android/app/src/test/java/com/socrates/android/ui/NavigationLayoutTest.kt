@@ -53,7 +53,7 @@ class NavigationLayoutTest {
         val layout = source("NavigationLayout.kt")
         listOf("selectableGroup()", "heightIn(min = 44.dp)", "role = Role.Tab",
             "shadow(if (selected) 2.dp else 0.dp", "if (selected) Color.White",
-            "background(Color(0xFFECECEC))", "if (!selected) onMode(mode)").forEach {
+            "background(SocratesDesign.PillSelected)", "if (!selected) onMode(mode)").forEach {
             assertTrue("Missing segment contract: $it", layout.contains(it))
         }
     }
@@ -61,7 +61,7 @@ class NavigationLayoutTest {
     @Test fun drawerHasOneSafeScrollableViewportAndAllSectionsAreItems() {
         val app = source("SocratesApp.kt").substringAfter("internal fun NativeSidebar")
         assertEquals(1, Regex("LazyColumn\\(").findAll(app).count())
-        assertTrue(app.contains("windowInsetsPadding(WindowInsets.safeDrawing)"))
+        assertTrue(app.contains("windowInsetsPadding(AppSafeInsets)"))
         assertTrue(app.contains("verticalArrangement = SidebarFooterArrangement"))
         listOf("sidebar-header", "sidebar-search", "sidebar-footer").forEach {
             assertTrue(app.contains("item(key = \"$it\")"))
@@ -70,5 +70,15 @@ class NavigationLayoutTest {
         assertTrue(app.contains("heightIn(min = 44.dp)"))
         assertFalse(app.contains("height(48.dp)"))
         assertFalse(app.contains("Modifier.weight(1f), contentPadding"))
+    }
+
+    @Test fun drawerIsAnInWindowOverlaySoTheScrimAndFooterCoverTheRealWindow() {
+        val controls = source("SocratesControls.kt")
+        val drawer = controls.substringAfter("fun SocratesNavigationDrawer").substringBefore("fun SocratesDrawerSheet")
+        assertFalse("A separate Dialog window is inset by the status bar on some OEMs", drawer.contains("Dialog("))
+        assertFalse(drawer.contains("DialogWindowProvider"))
+        assertTrue(drawer.contains("BackHandler { drawerState.close() }"))
+        assertTrue(drawer.contains("Modifier.clearAndSetSemantics {}"))
+        assertTrue(controls.contains("WindowInsets.systemGestures.only(WindowInsetsSides.Bottom)"))
     }
 }

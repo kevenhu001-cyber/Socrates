@@ -65,9 +65,7 @@ import com.socrates.android.data.SessionHistory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-private val Blue = Color(0xFF3865EF)
-private val Ink = Color(0xFF101010)
-private val Gray = Color(0xFFF0F0F0)
+private val Ink = SocratesDesign.Ink
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -215,8 +213,8 @@ fun SocratesApp(vm: ChatViewModel = viewModel()) {
         }
     ) {
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFFF8F8F8), Color(0xFFFDFDFD), Color(0xFFFDFDFD), Color(0xFFF7F7F7))))) {
-            // safeDrawing includes system bars, display cutouts and IME; consume once at the viewport.
-            Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
+            // AppSafeInsets adds the bottom gesture zone to safeDrawing; consume once at the viewport.
+            Column(Modifier.fillMaxSize().windowInsetsPadding(AppSafeInsets)) {
                 ChatHeader(work, voice.active, ui.messages.isNotEmpty(), ui.current, onConversationAction = { action ->
                     when (action) {
                         "share" -> shareTranscript(context, ui.messages)
@@ -262,7 +260,7 @@ fun SocratesApp(vm: ChatViewModel = viewModel()) {
                         onReasoning = { reasoningMenu = true })
                 }
             }
-            SocratesSnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)).padding(bottom = 90.dp, start = 12.dp, end = 12.dp))
+            SocratesSnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).windowInsetsPadding(AppSafeInsets.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)).padding(bottom = 90.dp, start = 12.dp, end = 12.dp))
         }
     }
     if (attachmentMenu) AttachmentSheet(onDismiss = { attachmentMenu = false }, onCamera = {
@@ -300,9 +298,9 @@ fun SocratesApp(vm: ChatViewModel = viewModel()) {
     if (ui.showAuth) AuthFlowSheet(onDismiss = { vm.showAuth(false) }, baseUrl = ui.baseUrl)
     if (settings) ConnectionSheet(ui.baseUrl, ui.authBusy, ui.sheetError, { vm.configure(it) { settings = false } }, { settings = false })
     if (profile) SocratesSheet(onDismissRequest = { profile = false }, containerColor = Color.White) {
-        Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(if (ui.loggedIn) ui.accountName else "Socrates", style = MaterialTheme.typography.headlineSmall)
-            Text(ui.baseUrl, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Text(ui.baseUrl, style = MaterialTheme.typography.bodySmall, color = SocratesDesign.Muted)
             if (ui.loggedIn) SocratesTextButton(onClick = { profile = false; account = true }) { ReferenceIcon(ReferenceGlyph.Person, null); Spacer(Modifier.width(12.dp)); Text("帐号资料与安全") }
             if (ui.loggedIn) SocratesTextButton(onClick = { profile = false; resource = "模型与服务商" }) { Text("模型与服务商") }
             if (ui.loggedIn) SocratesTextButton(onClick = { profile = false; resource = "记忆" }) { Text("记忆") }
@@ -314,22 +312,24 @@ fun SocratesApp(vm: ChatViewModel = viewModel()) {
     if (voiceSettings && ui.loggedIn) VoicePreferencesSheet(voicePreferences, vm.voicePreferences::edit,
         vm.voicePreferences::save, vm.voicePreferences::load, { voiceSettings = false })
     if (account) AccountProfileSheet(onDismiss = { account = false })
-    if (resource == "模型与服务商") ProviderSheet(onDismiss = { resource = null })
+    if (resource == "模型与服务商") ProviderSheet(accountKey = ui.accountName, onDismiss = { resource = null })
     if (resource == "教学与测验") androidx.compose.ui.window.Dialog(
         onDismissRequest = { resource = null; learningId = null; learningKind = null },
-        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
         Box(Modifier.fillMaxSize().background(SocratesDesign.Page)) {
-            CompositionLocalProvider(LocalContentColor provides SocratesDesign.Ink) { when {
-                learningId != null -> LearningSessionScreen(learningId!!, onTutorChat = { id -> resource = null; learningId = null; vm.selectSession(com.socrates.android.data.ChatSession(id = id)); work = false }, onClose = { resource = null; learningId = null; learningKind = null }, onAuthLost = { vm.refresh() })
-                learningKind != null -> LearningSetupScreen(learningKind!!, onCreated = { id -> learningId = id; vm.refresh() }, onClose = { learningKind = null }, onAuthLost = { vm.refresh() })
-                else -> Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text("教学与测验", style = MaterialTheme.typography.headlineMedium)
-                    SocratesButton(onClick = { learningKind = "tutor" }) { Text("创建导师诊断") }
-                    SocratesButton(onClick = { learningKind = "exam" }) { Text("创建测验") }
-                    SocratesTextButton(onClick = { resource = null }) { Text("返回") }
-                }
-            } }
+            Box(Modifier.fillMaxSize().windowInsetsPadding(AppSafeInsets)) {
+                CompositionLocalProvider(LocalContentColor provides SocratesDesign.Ink) { when {
+                    learningId != null -> LearningSessionScreen(learningId!!, onTutorChat = { id -> resource = null; learningId = null; vm.selectSession(com.socrates.android.data.ChatSession(id = id)); work = false }, onClose = { resource = null; learningId = null; learningKind = null }, onAuthLost = { vm.refresh() })
+                    learningKind != null -> LearningSetupScreen(learningKind!!, onCreated = { id -> learningId = id; vm.refresh() }, onClose = { learningKind = null }, onAuthLost = { vm.refresh() })
+                    else -> Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Text("教学与测验", style = MaterialTheme.typography.headlineMedium)
+                        SocratesButton(onClick = { learningKind = "tutor" }) { Text("创建导师诊断") }
+                        SocratesButton(onClick = { learningKind = "exam" }) { Text("创建测验") }
+                        SocratesTextButton(onClick = { resource = null }) { Text("返回") }
+                    }
+                } }
+            }
         }
     }
     resource?.takeUnless { it in setOf("模型与服务商", "教学与测验") }?.let { title -> FeatureSheet(title, onDismiss = { resource = null }, onAuthLost = { vm.refresh() },
@@ -367,7 +367,7 @@ fun SocratesApp(vm: ChatViewModel = viewModel()) {
             dismissButton = { SocratesTextButton(onClick = { pendingSearchHit = null }) { Text("取消") } })
     }
     if (find) SocratesSheet(onDismissRequest = { find = false }) {
-        Column(Modifier.fillMaxWidth().imePadding().padding(20.dp)) {
+        Column(Modifier.fillMaxWidth().imePadding().verticalScroll(rememberScrollState()).padding(20.dp)) {
             SocratesField(findQuery, { findQuery = it }, label = { Text("搜索当前会话") }, modifier = Modifier.fillMaxWidth())
             val matches = ui.messages.filter { findQuery.isNotBlank() && it.content.contains(findQuery, true) }
             Text(if (findQuery.isBlank()) "输入关键词" else "找到 ${matches.size} 条消息")
@@ -410,12 +410,12 @@ internal fun ChatHeader(work: Boolean, recording: Boolean, hasMessages: Boolean,
         }
         Row(Modifier.align(Alignment.CenterEnd), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
             SocratesIconButton(onClick = if (hasMessages) onNew else { { onConversationAction("models") } }, enabled = !recording) {
-                ReferenceIcon(if (hasMessages) ReferenceGlyph.Compose else ReferenceGlyph.Reasoning, if (hasMessages) "新建对话" else "模型设置", tint = if (recording) Color.LightGray else Ink)
+                ReferenceIcon(if (hasMessages) ReferenceGlyph.Compose else ReferenceGlyph.Reasoning, if (hasMessages) "新建对话" else "模型设置", tint = if (recording) SocratesDesign.Disabled else Ink)
             }
             if (hasMessages && !work) Box {
                 SocratesIconButton(onClick = { menu = true }) { ReferenceIcon(ReferenceGlyph.More, "对话菜单") }
                 SocratesMenu(menu, { menu = false }, modifier = Modifier.width(206.dp)) {
-                    session?.title?.takeIf { it.isNotBlank() }?.let { Text(it, Modifier.padding(horizontal = 24.dp, vertical = 8.dp), color = Color.Gray, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                    session?.title?.takeIf { it.isNotBlank() }?.let { Text(it, Modifier.padding(horizontal = 24.dp, vertical = 8.dp), color = SocratesDesign.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis) }
                     fun action(key: String) { menu = false; onConversationAction(key) }
                     SocratesMenuItem({ Text("分享会话链接") }, { action("link") }, leadingIcon = { ReferenceIcon(ReferenceGlyph.Share) })
                     if (session != null) {
@@ -431,7 +431,7 @@ internal fun ChatHeader(work: Boolean, recording: Boolean, hasMessages: Boolean,
                         SocratesMenuItem({ Text("添加到主屏幕") }, { action("home") }, leadingIcon = { ReferenceIcon(ReferenceGlyph.Plus) })
                         SocratesMenuItem({ Text("重命名") }, { action("manage") }, leadingIcon = { ReferenceIcon(ReferenceGlyph.Compose) })
                         SocratesMenuItem({ Text(if (com.socrates.android.data.SessionActions.isArchived(session)) "取消归档" else "归档") }, { action("archive") }, leadingIcon = { ReferenceIcon(ReferenceGlyph.Archive) })
-                        SocratesMenuItem({ Text("删除", color = Color(0xFFB3261E)) }, { action("delete") }, leadingIcon = { ReferenceIcon(ReferenceGlyph.Trash, tint = Color(0xFFB3261E)) })
+                        SocratesMenuItem({ Text("删除", color = SocratesDesign.Danger) }, { action("delete") }, leadingIcon = { ReferenceIcon(ReferenceGlyph.Trash, tint = SocratesDesign.Danger) })
                     }
                 }
             }
@@ -440,9 +440,9 @@ internal fun ChatHeader(work: Boolean, recording: Boolean, hasMessages: Boolean,
 }
 
 @Composable
-private fun CircleAction(description: String, onClick: () -> Unit, modifier: Modifier = Modifier, blue: Boolean = false, enabled: Boolean = true, content: @Composable () -> Unit) {
+private fun CircleAction(description: String, onClick: () -> Unit, modifier: Modifier = Modifier, accent: Boolean = false, enabled: Boolean = true, content: @Composable () -> Unit) {
     Box(modifier.size(44.dp).clip(CircleShape).clickable(enabled = enabled, onClick = onClick).semantics { contentDescription = description }, contentAlignment = Alignment.Center) {
-        Box(Modifier.size(if (blue) 32.dp else 44.dp).background(if (blue) Blue else Color.White, CircleShape), contentAlignment = Alignment.Center) { content() }
+        Box(Modifier.size(if (accent) 36.dp else 44.dp).background(if (accent) SocratesDesign.Accent else Color.White, CircleShape), contentAlignment = Alignment.Center) { content() }
     }
 }
 
@@ -475,7 +475,7 @@ private fun Transcript(ui: ChatUiState, modifier: Modifier = Modifier, jumpId: S
         }
         if (ui.busy) SocratesSpinner(Modifier.align(Alignment.TopCenter).padding(12.dp).size(20.dp), strokeWidth = 2.dp)
         AnimatedVisibility(!nearBottom && ui.messages.isNotEmpty(), Modifier.align(Alignment.BottomCenter), enter = fadeIn() + slideInVertically { it / 2 }, exit = fadeOut()) {
-            CircleAction("滚动到底部", { scope.launch { list.animateScrollToItem(ui.messages.lastIndex, Int.MAX_VALUE) } }, Modifier.border(1.dp, Color(0xFFE9E9E9), CircleShape)) { ReferenceIcon(ReferenceGlyph.ArrowDown, null, Modifier.size(20.dp)) }
+            CircleAction("滚动到底部", { scope.launch { list.animateScrollToItem(ui.messages.lastIndex, Int.MAX_VALUE) } }, Modifier.border(1.dp, SocratesDesign.Line, CircleShape)) { ReferenceIcon(ReferenceGlyph.ArrowDown, null, Modifier.size(20.dp)) }
         }
     }
 }
@@ -489,7 +489,7 @@ private fun MessageBubble(message: ChatMessage, streaming: Boolean, activity: St
     Column(Modifier.fillMaxWidth(), horizontalAlignment = if (user) Alignment.End else Alignment.Start) {
         MessageAttachmentList(message)
         if (user) {
-            Column(Modifier.widthIn(max = 300.dp).background(Color(0xFFF0F1FB), RoundedCornerShape(24.dp)).padding(horizontal = 18.dp, vertical = 12.dp)) {
+            Column(Modifier.widthIn(max = 300.dp).background(Color(0xFFF4F4F4), RoundedCornerShape(18.dp)).padding(horizontal = 18.dp, vertical = 12.dp)) {
                 SelectionContainer { Text(message.content.substringBefore("\n\n<资料"), fontSize = 16.sp, lineHeight = 24.sp) }
             }
         } else {
@@ -497,10 +497,10 @@ private fun MessageBubble(message: ChatMessage, streaming: Boolean, activity: St
             if (streaming || privateThinkingExists || publicSummary != null) {
                 val seconds = ((message.wire?.optLong("reasoningDurationMs") ?: 0L) / 1000L).coerceAtLeast(0)
                 Row(Modifier.padding(bottom = if (publicSummary == null) 6.dp else 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                    if (streaming) SocratesSpinner(Modifier.size(13.dp), strokeWidth = 1.5.dp, color = Color.Gray)
-                    else ReferenceIcon(ReferenceGlyph.Reasoning, null, Modifier.size(15.dp), tint = Color.Gray)
+                    if (streaming) SocratesSpinner(Modifier.size(13.dp), strokeWidth = 1.5.dp, color = SocratesDesign.Muted)
+                    else ReferenceIcon(ReferenceGlyph.Reasoning, null, Modifier.size(15.dp), tint = SocratesDesign.Muted)
                     Spacer(Modifier.width(8.dp))
-                    Text(if (streaming) "思考中" else "思考了 ${seconds}秒", color = Color.Gray, fontSize = 13.sp)
+                    Text(if (streaming) "思考中" else "思考了 ${seconds}秒", color = SocratesDesign.Muted, fontSize = 13.sp)
                 }
                 publicSummary?.let { Text("公开思考摘要", Modifier.padding(bottom = 2.dp), style = MaterialTheme.typography.labelSmall, color = SocratesDesign.Muted); NativeMarkdown(it, Modifier.fillMaxWidth()) }
             }
@@ -513,21 +513,21 @@ private fun MessageBubble(message: ChatMessage, streaming: Boolean, activity: St
                 }
             }
             if (streaming && (message.content.isBlank() || activity.isNotBlank())) Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                SocratesSpinner(Modifier.size(12.dp), strokeWidth = 1.5.dp, color = Color.Gray)
-                Spacer(Modifier.width(8.dp)); Text(activity.ifBlank { "正在回复" }, color = Color.Gray, fontSize = 12.sp, maxLines = 2)
+                SocratesSpinner(Modifier.size(12.dp), strokeWidth = 1.5.dp, color = SocratesDesign.Muted)
+                Spacer(Modifier.width(8.dp)); Text(activity.ifBlank { "正在回复" }, color = SocratesDesign.Muted, fontSize = 12.sp, maxLines = 2)
             }
             if (!streaming && message.content.isNotBlank()) {
                 val context = LocalContext.current
                 var menu by remember { mutableStateOf(false) }
                 Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    SocratesIconButton(onClick = { clipboard.setText(AnnotatedString(message.content)) }, modifier = Modifier.size(36.dp, 44.dp)) { ReferenceIcon(ReferenceGlyph.Copy, "复制回复", Modifier.size(19.dp), Color(0xFF929292)) }
+                    SocratesIconButton(onClick = { clipboard.setText(AnnotatedString(message.content)) }, modifier = Modifier.size(36.dp, 44.dp)) { ReferenceIcon(ReferenceGlyph.Copy, "复制回复", Modifier.size(19.dp), SocratesDesign.Muted) }
                     listOf("up" to ReferenceGlyph.ThumbUp, "down" to ReferenceGlyph.ThumbDown).forEach { (value, glyph) ->
-                        SocratesIconButton(onClick = { val next = if (feedback == value) "none" else value; onAction(next, message) }, enabled = actionsEnabled, modifier = Modifier.size(36.dp, 44.dp)) { ReferenceIcon(glyph, if (value == "up") "有帮助" else "没有帮助", Modifier.size(19.dp), if (feedback == value) Ink else Color(0xFF929292)) }
+                        SocratesIconButton(onClick = { val next = if (feedback == value) "none" else value; onAction(next, message) }, enabled = actionsEnabled, modifier = Modifier.size(36.dp, 44.dp)) { ReferenceIcon(glyph, if (value == "up") "有帮助" else "没有帮助", Modifier.size(19.dp), if (feedback == value) Ink else SocratesDesign.Muted) }
                     }
-                    SocratesIconButton(onClick = { speech.toggle(message.id, message.content) }, modifier = Modifier.size(36.dp, 44.dp)) { ReferenceIcon(ReferenceGlyph.Speaker, if (speech.playingId == message.id) "停止朗读" else "朗读回复", Modifier.size(19.dp), if (speech.playingId == message.id) Blue else Color(0xFF929292)) }
-                    SocratesIconButton(onClick = { shareTranscript(context, listOf(message)) }, modifier = Modifier.size(36.dp, 44.dp)) { ReferenceIcon(ReferenceGlyph.Share, "分享回复文本", Modifier.size(19.dp), Color(0xFF929292)) }
+                    SocratesIconButton(onClick = { speech.toggle(message.id, message.content) }, modifier = Modifier.size(36.dp, 44.dp)) { ReferenceIcon(ReferenceGlyph.Speaker, if (speech.playingId == message.id) "停止朗读" else "朗读回复", Modifier.size(19.dp), if (speech.playingId == message.id) Ink else SocratesDesign.Muted) }
+                    SocratesIconButton(onClick = { shareTranscript(context, listOf(message)) }, modifier = Modifier.size(36.dp, 44.dp)) { ReferenceIcon(ReferenceGlyph.Share, "分享回复文本", Modifier.size(19.dp), SocratesDesign.Muted) }
                     Box {
-                        SocratesIconButton(onClick = { menu = true }, modifier = Modifier.size(36.dp, 44.dp)) { ReferenceIcon(ReferenceGlyph.More, "消息操作", Modifier.size(19.dp), Color(0xFF929292)) }
+                        SocratesIconButton(onClick = { menu = true }, modifier = Modifier.size(36.dp, 44.dp)) { ReferenceIcon(ReferenceGlyph.More, "消息操作", Modifier.size(19.dp), SocratesDesign.Muted) }
                         SocratesMenu(menu, { menu = false }) {
                             SocratesMenuItem({ Text("重新生成（移除后续消息）") }, { menu = false; onAction("regenerate", message) }, enabled = actionsEnabled)
                             SocratesMenuItem({ Text("从此处创建分支") }, { menu = false; onAction("branch", message) }, enabled = actionsEnabled)
@@ -541,7 +541,7 @@ private fun MessageBubble(message: ChatMessage, streaming: Boolean, activity: St
         if (user && actionsEnabled && message.content.isNotBlank()) {
             var userMenu by remember { mutableStateOf(false) }
             Box(Modifier.align(Alignment.End)) {
-                SocratesIconButton(onClick = { userMenu = true }, modifier = Modifier.size(36.dp)) { ReferenceIcon(ReferenceGlyph.More, "用户消息操作", Modifier.size(17.dp), Color(0xFF929292)) }
+                SocratesIconButton(onClick = { userMenu = true }, modifier = Modifier.size(36.dp)) { ReferenceIcon(ReferenceGlyph.More, "用户消息操作", Modifier.size(17.dp), SocratesDesign.Muted) }
                 SocratesMenu(userMenu, { userMenu = false }) {
                     SocratesMenuItem({ Text("编辑并重发") }, { userMenu = false; onAction("edit", message) })
                     SocratesMenuItem({ Text("从此处创建分支") }, { userMenu = false; onAction("branch", message) })
@@ -567,14 +567,14 @@ private fun Composer(ui: ChatUiState, voice: VoiceInput, draft: String, onDraftC
         LaunchedEffect(ui.composerDraft.key) {
             if (ui.composerDraft.initialText.isNotEmpty()) focusRequester.requestFocus()
         }
-        val corner by animateDpAsState(if (expanded) 24.dp else 32.dp, tween(180), label = "composerCorner")
+        val shape = RoundedCornerShape(SocratesDesign.ComposerRadius)
         // Keep the same editor composed AND placed during recording. Removing it would close the IME.
         // It reports zero height and is hidden from paint/accessibility; the real voice row takes its place.
         val hiddenEditor = if (recording) Modifier.alpha(0f).clearAndSetSemantics { } else Modifier
         Column(Modifier.fillMaxWidth().then(hiddenEditor).layout { measurable, constraints ->
             val editor = measurable.measure(constraints)
             layout(editor.width, if (recording) 0 else editor.height) { editor.placeRelative(0, 0) }
-        }.clip(RoundedCornerShape(corner)).background(Color.White)
+        }.clip(shape).background(Color.White).border(1.dp, Color(0x1F000000), shape)
             .animateContentSize(spring(stiffness = Spring.StiffnessMediumLow))
             .padding(horizontal = 8.dp, vertical = 2.dp)) {
             Row(Modifier.fillMaxWidth().heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -591,7 +591,7 @@ private fun Composer(ui: ChatUiState, voice: VoiceInput, draft: String, onDraftC
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     SocratesIconButton(onClick = onAttach, enabled = !recording && !ui.busy && !ui.streaming) { ReferenceIcon(ReferenceGlyph.Plus, "添加附件", Modifier.size(27.dp), tint = Ink) }
                     Spacer(Modifier.weight(1f))
-                    SocratesIconButton(onClick = onReasoning, enabled = !recording && !ui.busy && !ui.streaming) { ReferenceIcon(ReferenceGlyph.Reasoning, "推理强度", Modifier.size(23.dp), if (ui.reasoningEffort == "medium") Color(0xFF999999) else Blue) }
+                    SocratesIconButton(onClick = onReasoning, enabled = !recording && !ui.busy && !ui.streaming) { ReferenceIcon(ReferenceGlyph.Reasoning, "推理强度", Modifier.size(23.dp), if (ui.reasoningEffort == "medium") SocratesDesign.Muted else SocratesDesign.Ink) }
                     ComposerActions(draft, ui, onRecord, onStop) { if (onSend(draft)) onDraftChange("") }
                 }
             }
@@ -606,15 +606,15 @@ private fun Composer(ui: ChatUiState, voice: VoiceInput, draft: String, onDraftC
 
 @Composable
 private fun DraftField(text: String, onValue: (String) -> Unit, onFocus: (Boolean) -> Unit, placeholder: String, modifier: Modifier) {
-    BasicTextField(value = text, onValueChange = onValue, textStyle = TextStyle(fontSize = 17.sp, lineHeight = 24.sp, color = Ink), cursorBrush = androidx.compose.ui.graphics.SolidColor(Blue), modifier = modifier.onFocusChanged { onFocus(it.isFocused) }.semantics { contentDescription = "消息输入框" }, keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences), maxLines = 6, decorationBox = { inner -> Box { if (text.isEmpty()) Text(placeholder, fontSize = 17.sp, color = Color(0xFF999999)); inner() } })
+    BasicTextField(value = text, onValueChange = onValue, textStyle = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, color = Ink), cursorBrush = androidx.compose.ui.graphics.SolidColor(Ink), modifier = modifier.onFocusChanged { onFocus(it.isFocused) }.semantics { contentDescription = "消息输入框" }, keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences), maxLines = 6, decorationBox = { inner -> Box { if (text.isEmpty()) Text(placeholder, fontSize = 16.sp, color = SocratesDesign.Placeholder); inner() } })
 }
 
 @Composable
 private fun ComposerActions(draft: String, ui: ChatUiState, onRecord: () -> Unit, onStop: () -> Unit, onSend: () -> Unit) {
     if (!ui.streaming && draft.isBlank() && ui.attachments.isEmpty()) SocratesIconButton(onClick = onRecord, enabled = !ui.busy, modifier = Modifier.size(44.dp)) { ReferenceIcon(ReferenceGlyph.Mic, "语音输入", Modifier.size(25.dp), tint = Ink) }
     val sendable = draft.isNotBlank() || ui.attachments.isNotEmpty()
-    CircleAction(if (ui.streaming) "停止回复" else if (sendable) "发送消息" else "开始语音输入", if (ui.streaming) onStop else if (sendable) onSend else onRecord, Modifier.size(44.dp), blue = true, enabled = !ui.busy) {
-        when { ui.busy -> SocratesSpinner(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp); ui.streaming -> Box(Modifier.size(13.dp).background(Color.White, RoundedCornerShape(3.dp))); sendable -> ReferenceIcon(ReferenceGlyph.ArrowUp, null, Modifier.size(23.dp), tint = Color.White); else -> VoiceMark() }
+    CircleAction(if (ui.streaming) "停止回复" else if (sendable) "发送消息" else "开始语音输入", if (ui.streaming) onStop else if (sendable) onSend else onRecord, Modifier.size(44.dp), accent = true, enabled = !ui.busy) {
+        when { ui.busy -> SocratesSpinner(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp); ui.streaming -> Box(Modifier.size(12.dp).background(Color.White, RoundedCornerShape(3.dp))); sendable -> ReferenceIcon(ReferenceGlyph.ArrowUp, null, Modifier.size(20.dp), tint = Color.White); else -> VoiceMark() }
     }
 }
 
@@ -630,14 +630,14 @@ private fun VoiceComposer(voice: VoiceInput, onSend: (String) -> Boolean) {
     val bars = remember { mutableStateListOf<Float>().apply { repeat(36) { add(0f) } } }
     LaunchedEffect(voice.active) { while (voice.active) { bars.removeAt(0); bars.add(if (voice.listening) voice.amplitude else 0f); delay(75) } }
     Column {
-        if (voice.transcript.isNotBlank()) Text(voice.transcript, Modifier.padding(12.dp).heightIn(max = 100.dp).verticalScroll(rememberScrollState()), color = Color.Gray, fontSize = 14.sp)
+        if (voice.transcript.isNotBlank()) Text(voice.transcript, Modifier.padding(12.dp).heightIn(max = 100.dp).verticalScroll(rememberScrollState()), color = SocratesDesign.Muted, fontSize = 14.sp)
         Row(Modifier.fillMaxWidth().height(48.dp).clip(CircleShape).background(Color.White).padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             SocratesIconButton(onClick = voice::cancel) { ReferenceIcon(ReferenceGlyph.Close, "取消语音", Modifier.size(24.dp)) }
             Canvas(Modifier.weight(1f).height(28.dp).semantics { contentDescription = if (voice.listening) "录音音量波形" else "语音识别已停止" }) {
                 bars.forEachIndexed { index, value -> val x = size.width * (index + .5f) / bars.size; val height = (3.dp.toPx() + value * (size.height - 3.dp.toPx())); drawLine(if (index < 18) Color(0xFFCCCCCC) else Color(0xFF888888), androidx.compose.ui.geometry.Offset(x, (size.height - height) / 2), androidx.compose.ui.geometry.Offset(x, (size.height + height) / 2), 2.5.dp.toPx(), StrokeCap.Round) }
             }
             SocratesIconButton(onClick = voice::stop, enabled = voice.listening) { Box(Modifier.size(15.dp).background(Ink, RoundedCornerShape(4.dp)).semantics { contentDescription = "停止录音" }) }
-            CircleAction("发送语音识别结果", { voice.send { onSend(it) } }, Modifier.size(36.dp), blue = true) { ReferenceIcon(ReferenceGlyph.ArrowUp, null, Modifier.size(24.dp), tint = Color.White) }
+            CircleAction("发送语音识别结果", { voice.send { onSend(it) } }, Modifier.size(44.dp), accent = true) { ReferenceIcon(ReferenceGlyph.ArrowUp, null, Modifier.size(20.dp), tint = Color.White) }
         }
     }
 }
@@ -653,7 +653,7 @@ internal fun NativeSidebar(ui: ChatUiState, onNew: () -> Unit, onSelect: (com.so
     val knownTags = remember(ui.sessions) { SessionHistory.knownTags(ui.sessions) }
     val visibleSessions = remember(ui.sessions, query, archived, tag) { SessionHistory.filter(ui.sessions, query, archived, tag) }
     val groups = remember(visibleSessions, now) { visibleSessions.groupBy { SessionHistory.groupLabel(it, now) } }
-    LazyColumn(Modifier.testTag("sidebar-list").fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 24.dp),
+    LazyColumn(Modifier.testTag("sidebar-list").fillMaxSize().windowInsetsPadding(AppSafeInsets).padding(horizontal = 24.dp),
         contentPadding = PaddingValues(bottom = 8.dp), verticalArrangement = SidebarFooterArrangement) {
         item(key = "sidebar-header") {
             Row(Modifier.fillMaxWidth().heightIn(min = 78.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
@@ -683,36 +683,36 @@ internal fun NativeSidebar(ui: ChatUiState, onNew: () -> Unit, onSelect: (com.so
             item { SidebarAction(ReferenceGlyph.Compose, "Codex", onCodex) }
             item { SidebarAction(ReferenceGlyph.Clock, "定时任务", onTasks) }
             item { SidebarAction(ReferenceGlyph.Plugin, "插件", onPlugins) }
-            item { SocratesDivider(Modifier.padding(top = 24.dp, bottom = 24.dp), color = Color(0xFFE8E8E8)) }
+            item { SocratesDivider(Modifier.padding(top = 24.dp, bottom = 24.dp)) }
         }
-        if (ui.loggedIn) item { SocratesTextButton(onClick = { archived = !archived }) { Text(if (archived) "返回最近对话" else "查看归档", fontSize = 13.sp, color = Color.Gray) } }
+        if (ui.loggedIn) item { SocratesTextButton(onClick = { archived = !archived }) { Text(if (archived) "返回最近对话" else "查看归档", fontSize = 13.sp, color = SocratesDesign.Muted) } }
         if (ui.loggedIn && visibleSessions.isEmpty()) item {
             Column(Modifier.padding(vertical = 16.dp)) {
-                Text(if (ui.busy) "正在同步会话…" else if (query.isNotBlank() || tag != null) "没有匹配的对话" else if (archived) "没有已归档的对话" else "还没有对话", fontSize = 14.sp, color = Color.Gray)
+                Text(if (ui.busy) "正在同步会话…" else if (query.isNotBlank() || tag != null) "没有匹配的对话" else if (archived) "没有已归档的对话" else "还没有对话", fontSize = 14.sp, color = SocratesDesign.Muted)
                 SocratesTextButton(onClick = onRefresh) { Text("刷新") }
             }
         }
         groups.forEach { (label, sessions) ->
             item(key = "group-$label") { Text(label, Modifier.padding(top = 16.dp, bottom = 6.dp).semantics { heading() }, style = MaterialTheme.typography.labelMedium, color = SocratesDesign.Muted) }
             items(sessions, key = { it.id }) { session ->
-                Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp)).combinedClickable(onClick = { onSelect(session) }, onLongClickLabel = "管理会话", onLongClick = { onSessionMenu(session) }).padding(vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).clip(RoundedCornerShape(SocratesDesign.RowRadius)).combinedClickable(onClick = { onSelect(session) }, onLongClickLabel = "管理会话", onLongClick = { onSessionMenu(session) }).padding(vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(session.title.ifBlank { session.topic.ifBlank { "新对话" } }, fontSize = 17.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(session.title.ifBlank { session.topic.ifBlank { "新对话" } }, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         val tags = SessionHistory.tags(session)
                         if (tags.isNotEmpty()) Text(tags.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = SocratesDesign.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         val preview = session.wire?.opt("preview") as? String
                         if (query.isNotBlank() && !preview.isNullOrBlank()) Text(preview, style = MaterialTheme.typography.bodySmall, color = SocratesDesign.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
-                    if (com.socrates.android.data.SessionActions.isPinned(session)) ReferenceIcon(ReferenceGlyph.Pin, "已置顶", Modifier.size(14.dp), Color.Gray)
+                    if (com.socrates.android.data.SessionActions.isPinned(session)) ReferenceIcon(ReferenceGlyph.Pin, "已置顶", Modifier.size(14.dp), SocratesDesign.Muted)
                     if (archived) SocratesTextButton(onClick = { onRestore(session) }) { Text("恢复", fontSize = 13.sp) }
-                    if (ui.current?.id == session.id) Box(Modifier.padding(start = 8.dp).size(9.dp).background(Blue, CircleShape))
+                    if (ui.current?.id == session.id) Box(Modifier.padding(start = 8.dp).size(9.dp).background(SocratesDesign.Accent, CircleShape))
                 }
             }
         }
         item(key = "sidebar-footer") {
             Row(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SocratesButton(onClick = onNew, modifier = Modifier.weight(1f, fill = false), shape = CircleShape, containerColor = Blue, contentColor = Color.White, contentPadding = PaddingValues(horizontal = 22.dp, vertical = 14.dp)) { ReferenceIcon(ReferenceGlyph.Compose, null, Modifier.size(22.dp)); Spacer(Modifier.width(10.dp)); Text("聊天", fontSize = 17.sp) }
-                CircleAction("帐号与设置", onProfile) { Box(Modifier.size(32.dp).background(Color(0xFF21B99F), CircleShape), contentAlignment = Alignment.Center) { Text(if (ui.loggedIn) ui.accountName.take(2).uppercase() else "S", color = Color.White, fontSize = 14.sp) } }
+                SocratesButton(onClick = onNew, modifier = Modifier.weight(1f, fill = false), shape = CircleShape, containerColor = SocratesDesign.Accent, contentColor = Color.White, contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)) { ReferenceIcon(ReferenceGlyph.Compose, null, Modifier.size(20.dp)); Spacer(Modifier.width(10.dp)); Text("聊天", fontSize = 16.sp) }
+                CircleAction("帐号与设置", onProfile) { Box(Modifier.size(24.dp).background(SocratesDesign.Avatar, CircleShape), contentAlignment = Alignment.Center) { Text(if (ui.loggedIn) ui.accountName.take(2).uppercase() else "S", color = Color.White, fontSize = 10.sp) } }
             }
         }
     }
@@ -720,7 +720,7 @@ internal fun NativeSidebar(ui: ChatUiState, onNew: () -> Unit, onSelect: (com.so
 
 @Composable
 private fun SidebarAction(icon: ReferenceGlyph, title: String, onClick: () -> Unit) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick).padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-        ReferenceIcon(icon, null, Modifier.size(23.dp), tint = Ink); Spacer(Modifier.width(14.dp)); Text(title, Modifier.weight(1f), fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Ink)
+    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(SocratesDesign.RowRadius)).clickable(onClick = onClick).padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        ReferenceIcon(icon, null, Modifier.size(24.dp), tint = Ink); Spacer(Modifier.width(12.dp)); Text(title, Modifier.weight(1f), fontSize = 16.sp, color = Ink)
     }
 }

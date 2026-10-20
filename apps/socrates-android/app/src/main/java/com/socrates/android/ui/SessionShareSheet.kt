@@ -1,6 +1,8 @@
 package com.socrates.android.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -43,7 +45,7 @@ fun SessionShareSheet(sessionId: String, onDismiss: () -> Unit) {
         if (token.isBlank()) "" else api.baseUrl.toHttpUrl().newBuilder().encodedPath("/").query(null).addQueryParameter("share", token).build().toString()
     }
     SocratesSheet(onDismissRequest = { if (!busy) onDismiss() }) {
-        Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("分享会话链接", style = MaterialTheme.typography.headlineSmall)
             Text("创建链接会让其他人按所选可见性查看会话内容。不要分享密码或私人资料。重新创建会替换旧链接。")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

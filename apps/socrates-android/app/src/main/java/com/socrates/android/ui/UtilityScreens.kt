@@ -26,7 +26,7 @@ fun ConnectionSheet(baseUrl: String, busy: Boolean, error: String?, onSave: (Str
         Column(Modifier.fillMaxWidth().imePadding().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text("连接 Socrates", style = MaterialTheme.typography.headlineSmall)
             Text("切换服务器会退出当前原生帐号，避免凭据被发送到其他服务器。浏览器登录仅支持生产服务器，不会把生产帐号保存到自定义服务器。", color = SocratesDesign.Muted)
-            SocratesField(address, { address = it }, Modifier.fillMaxWidth(), enabled = !busy, label = { Text("API 地址（包含 /api/v2）") }, singleLine = true, shape = RoundedCornerShape(20.dp), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
+            SocratesField(address, { address = it }, Modifier.fillMaxWidth(), enabled = !busy, label = { Text("API 地址（包含 /api/v2）") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
             Text("生产环境仅支持 HTTPS；调试版本允许连接本机开发服务。", style = MaterialTheme.typography.bodySmall, color = SocratesDesign.Muted)
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             SocratesButton(onClick = { onSave(address.trim()) }, enabled = !busy && address.isNotBlank(), modifier = Modifier.fillMaxWidth()) { Text("保存连接") }
@@ -42,7 +42,7 @@ fun WorkSpace(onOpenChat: () -> Unit, onAttach: () -> Unit, onSettings: () -> Un
         Text("与 Socrates 一起思考、整理和探索。", color = SocratesDesign.Muted)
         Spacer(Modifier.height(12.dp))
         listOf(Triple("继续对话", "连接你的 Socrates 会话", onOpenChat), Triple("添加资料", "从设备选择文件作为对话背景", onAttach), Triple("连接设置", "管理你的 Socrates API 服务", onSettings)).forEach { (title, subtitle, action) ->
-            SocratesCard(onClick = action, shape = RoundedCornerShape(24.dp), containerColor = Color.White, modifier = Modifier.fillMaxWidth()) {
+            SocratesCard(onClick = action, containerColor = Color.White, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(title, style = MaterialTheme.typography.titleMedium)
                     Text(subtitle, color = SocratesDesign.Muted, style = MaterialTheme.typography.bodyMedium)
@@ -50,7 +50,7 @@ fun WorkSpace(onOpenChat: () -> Unit, onAttach: () -> Unit, onSettings: () -> Un
             }
         }
         listOf("项目", "资料库", "助手", "定时任务", "图像", "记忆", "模型与服务商", "教学与测验", "插件", "Codex").forEach { feature ->
-            SocratesCard(onClick = { onFeature(feature) }, shape = RoundedCornerShape(24.dp), containerColor = Color.White, modifier = Modifier.fillMaxWidth()) {
+            SocratesCard(onClick = { onFeature(feature) }, containerColor = Color.White, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(24.dp)) { Text(feature, style = MaterialTheme.typography.titleMedium) }
             }
         }

@@ -4,9 +4,11 @@ package com.socrates.android.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -37,7 +39,7 @@ fun GlobalSearchSheet(
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(onSearch = { if (!state.loading) onSubmit() }),
                         supportingText = { Text("最多 ${GlobalSearchRepository.MAX_QUERY} 个字符") })
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         SearchScope.entries.forEach { filter ->
                             SocratesFilterChip(state.scope == filter, { onEdit(state.query, filter) }, { Text(filter.label) })
                         }

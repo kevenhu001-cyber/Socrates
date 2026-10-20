@@ -7,21 +7,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -126,7 +116,7 @@ fun ProjectResourcesSheet(projectId: String, onDismiss: () -> Unit, onOpenSessio
     LaunchedEffect(projectId) { load() }
 
     SocratesSheet(onDismissRequest = { if (busyId == null) onDismiss() }) {
-        Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 20.dp, vertical = 8.dp)) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("项目资源", style = MaterialTheme.typography.headlineSmall)
                 SocratesTextButton(onClick = onDismiss, enabled = busyId == null) { Text("关闭") }
@@ -139,9 +129,10 @@ fun ProjectResourcesSheet(projectId: String, onDismiss: () -> Unit, onOpenSessio
             error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(vertical = 10.dp)) }
             if (!loading && error == null && tab == 0) {
                 SocratesTextButton(onClick = { showOther = !showOther }) { Text(if(showOther) "仅看当前项目" else "从其他会话移入此项目") }
-                if (sessions.isEmpty()) Text("此项目还没有会话。", modifier = Modifier.padding(16.dp))
+                val visibleSessions = sessions.filter { showOther || it.wire?.optString("projectId") == projectId }
+                if (visibleSessions.isEmpty()) Text(if (showOther) "没有可移入此项目的其他会话。" else "此项目还没有会话。", modifier = Modifier.padding(16.dp))
                 LazyColumn(Modifier.heightIn(max = 430.dp)) {
-                    items(sessions.filter { showOther || it.wire?.optString("projectId") == projectId }, key = { it.id }) { session ->
+                    items(visibleSessions, key = { it.id }) { session ->
                         Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                             Column(Modifier.weight(1f)) {
                                 Text(session.title.ifBlank { session.topic.ifBlank { "未命名会话" } }, style = MaterialTheme.typography.titleMedium)

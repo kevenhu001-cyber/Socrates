@@ -39,7 +39,7 @@ fun ArtifactReaderSheet(
         scope.launch { listState.animateScrollToItem(0) }
     }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
-        Column(Modifier.fillMaxSize().background(SocratesDesign.Page).statusBarsPadding().navigationBarsPadding()) {
+        Column(Modifier.fillMaxSize().background(SocratesDesign.Page).windowInsetsPadding(AppSafeInsets)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp)) {
                 Text("作品原文与版本", Modifier.weight(1f).semantics { heading() }, style = MaterialTheme.typography.titleLarge)
                 SocratesTextButton(onClick = onDismiss) { Text("关闭") }

@@ -37,7 +37,7 @@ internal object SidebarFooterArrangement : Arrangement.Vertical {
  */
 @Composable
 internal fun ChatModeSwitch(work: Boolean, onMode: (Boolean) -> Unit, modifier: Modifier = Modifier) {
-    Row(modifier.height(IntrinsicSize.Min).clip(CircleShape).background(Color(0xFFECECEC))
+    Row(modifier.height(IntrinsicSize.Min).clip(CircleShape).background(SocratesDesign.PillSelected)
         .selectableGroup().padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
         listOf("聊天", "工作").forEachIndexed { index, label ->
             val mode = index == 1

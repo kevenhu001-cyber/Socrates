@@ -38,8 +38,8 @@ private val NativeTypography = Typography(
 )
 
 private val NativeShapes = Shapes(
-    extraSmall = RoundedCornerShape(6.dp), small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(20.dp), large = RoundedCornerShape(28.dp),
+    extraSmall = RoundedCornerShape(8.dp), small = RoundedCornerShape(10.dp),
+    medium = RoundedCornerShape(16.dp), large = RoundedCornerShape(28.dp),
     extraLarge = RoundedCornerShape(32.dp),
 )
 
@@ -49,9 +49,9 @@ fun SocratesTheme(content: @Composable () -> Unit) {
         colorScheme = lightColorScheme(
             primary = Color(0xFF222222), onPrimary = Color.White,
             primaryContainer = Color(0xFFEAEAEA), onPrimaryContainer = Color(0xFF111111), inversePrimary = Color.White,
-            secondary = Color(0xFF3865EF), onSecondary = Color.White,
-            secondaryContainer = Color(0xFFF0F0F0), onSecondaryContainer = Color(0xFF111111),
-            tertiary = Color(0xFF666666), onTertiary = Color.White,
+            secondary = Color(0xFF222222), onSecondary = Color.White,
+            secondaryContainer = Color(0xFFF5F5F5), onSecondaryContainer = Color(0xFF111111),
+            tertiary = Color(0xFF6B6B6B), onTertiary = Color.White,
             tertiaryContainer = Color(0xFFF1F3FA), onTertiaryContainer = Color(0xFF202020),
             background = Color(0xFFF8F8F8), onBackground = Color(NativeReadingColors.textPrimary),
             surface = Color.White, onSurface = Color(NativeReadingColors.textPrimary),
@@ -60,7 +60,7 @@ fun SocratesTheme(content: @Composable () -> Unit) {
             surfaceBright = Color.White, surfaceDim = Color(0xFFFBFBFB),
             surfaceContainerLowest = Color.White, surfaceContainerLow = Color(0xFFFBFBFB),
             surfaceContainer = Color(0xFFF5F5F5), surfaceContainerHigh = Color(0xFFEEEEEE), surfaceContainerHighest = Color(0xFFE3E3E3),
-            error = Color(0xFFB3261E), onError = Color.White,
+            error = Color(0xFFB02D1C), onError = Color.White,
             errorContainer = Color(0xFFFFECEA), onErrorContainer = Color(0xFF721C16),
             outline = Color(NativeReadingColors.textSecondary), outlineVariant = Color(NativeReadingColors.borderDefault), scrim = Color.Black,
         ),

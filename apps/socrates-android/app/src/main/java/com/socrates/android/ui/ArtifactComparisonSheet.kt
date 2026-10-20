@@ -50,7 +50,7 @@ private fun ArtifactComparisonSheet(inputs: List<ComparisonInput>, onDismiss: ()
     val before = inputs.first { it.version == from }
     val after = inputs.first { it.version == to }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
-        Column(Modifier.fillMaxSize().background(SocratesDesign.Page).statusBarsPadding().navigationBarsPadding()) {
+        Column(Modifier.fillMaxSize().background(SocratesDesign.Page).windowInsetsPadding(AppSafeInsets)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp)) {
                 Text("本地版本对比", Modifier.weight(1f).semantics { heading() }, style = MaterialTheme.typography.titleLarge)
                 SocratesTextButton(onClick = onDismiss) { Text("关闭对比") }

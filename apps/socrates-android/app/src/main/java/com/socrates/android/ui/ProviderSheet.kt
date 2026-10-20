@@ -53,13 +53,13 @@ private class ProviderViewModel(app: Application) : AndroidViewModel(app) {
     }
 }
 
-/** Full-screen provider manager. A parent can open it with ProviderSheet(onDismiss = { ... }). */
+/** Full-screen provider manager. A parent can open it with ProviderSheet(accountKey, onDismiss = { ... }). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProviderSheet(onDismiss: () -> Unit) {
+fun ProviderSheet(accountKey: String, onDismiss: () -> Unit) {
     val app = LocalContext.current.applicationContext as Application
     val server = remember { ApiClient(app).baseUrl }
-    val vm: ProviderViewModel = viewModel(key = "providers-$server", factory = object : ViewModelProvider.Factory {
+    val vm: ProviderViewModel = viewModel(key = "providers-$accountKey-$server", factory = object : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST") override fun <T : ViewModel> create(modelClass: Class<T>): T = ProviderViewModel(app) as T
     })
     val state by vm.state.collectAsStateWithLifecycle()
@@ -71,12 +71,12 @@ fun ProviderSheet(onDismiss: () -> Unit) {
     var deleting by remember { mutableStateOf<ProviderEntry?>(null) }
     LaunchedEffect(state.revision) { if (state.revision > 0) { editing = false; selected = null; secret = "" } }
     fun edit(entry: ProviderEntry?) { selected = entry; editing = true; label = entry?.label.orEmpty(); url = entry?.url.orEmpty(); model = entry?.model.orEmpty(); secret = ""; multimodal = entry?.isMultimodal ?: true }
-    BackHandler { if (deleting != null) deleting = null else if (editing) editing = false else if (selected != null) selected = null else onDismiss() }
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = true)) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         Box(Modifier.fillMaxSize().background(SocratesDesign.Page)) {
+            BackHandler { if (deleting != null) deleting = null else if (editing) editing = false else if (selected != null) selected = null else onDismiss() }
             CompositionLocalProvider(LocalContentColor provides SocratesDesign.Ink) {
-            Column(Modifier.fillMaxSize().imePadding()) {
-                Row(Modifier.fillMaxWidth().height(60.dp).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.fillMaxSize().windowInsetsPadding(AppSafeInsets)) {
+                Row(Modifier.fillMaxWidth().heightIn(min = 60.dp).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                     SocratesIconButton(onClick = { if (editing) editing = false else if (selected != null) selected = null else onDismiss() }) { ReferenceIcon(ReferenceGlyph.Back, "返回") }
                     Text(if (editing) if (selected == null) "新增服务商" else "编辑服务商" else "模型与服务商", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
                     if (!editing && selected == null) SocratesTextButton(onClick = { edit(null) }) { Text("添加") }
@@ -100,7 +100,7 @@ fun ProviderSheet(onDismiss: () -> Unit) {
                     }
                     else -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         if (state.providers.isEmpty()) Text("没有可用服务商。可添加自定义服务商。", Modifier.padding(12.dp))
-                        state.providers.forEach { p -> SocratesCard(Modifier.fillMaxWidth().clickable { selected = p }, shape = RoundedCornerShape(16.dp)) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) { Row(verticalAlignment = Alignment.CenterVertically) { Text(p.label, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium); if (p.isActive) Text("当前", color = MaterialTheme.colorScheme.primary) }; Text("${p.model} · ${p.url}", style = MaterialTheme.typography.bodySmall); Text(if (p.hasKey) "密钥已配置 · ${p.keyHint.orEmpty()}" else "未配置密钥", style = MaterialTheme.typography.bodySmall); if (!p.isActive) SocratesTextButton(onClick = { vm.activate(p.id) }, enabled = !state.busy) { Text("启用") } } } }
+                        state.providers.forEach { p -> SocratesCard(Modifier.fillMaxWidth().clickable { selected = p }) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) { Row(verticalAlignment = Alignment.CenterVertically) { Text(p.label, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium); if (p.isActive) Text("当前", color = MaterialTheme.colorScheme.primary) }; Text("${p.model} · ${p.url}", style = MaterialTheme.typography.bodySmall); Text(if (p.hasKey) "密钥已配置 · ${p.keyHint.orEmpty()}" else "未配置密钥", style = MaterialTheme.typography.bodySmall); if (!p.isActive) SocratesTextButton(onClick = { vm.activate(p.id) }, enabled = !state.busy) { Text("启用") } } } }
                         Text("启用的服务商决定聊天使用的模型。没有个人启用项时，服务端使用系统默认模型。系统模型配置由管理员管理，不在此调用管理员接口。", style = MaterialTheme.typography.bodySmall)
                     }
                 }

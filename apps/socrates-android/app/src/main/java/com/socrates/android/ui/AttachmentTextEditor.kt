@@ -49,21 +49,22 @@ internal fun AttachmentTextEditor(
                 style = MaterialTheme.typography.bodySmall, color = SocratesDesign.Muted)
             error?.let { Text(it, Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
-            if (confirmDiscard) {
-                Text("有尚未应用的修改，要放弃吗？", style = MaterialTheme.typography.bodyMedium)
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SocratesTextButton(onClick = { confirmDiscard = false }, modifier = Modifier.weight(1f)) { Text("继续编辑") }
-                    SocratesTextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("放弃修改") }
-                }
-            } else {
-                Row(Modifier.align(Alignment.End), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SocratesTextButton(onClick = ::close) { Text("取消") }
-                    SocratesButton(onClick = {
-                        error = onApply(text)
-                        if (error == null) onDismiss()
-                    }, enabled = text != attachment.text, modifier = Modifier.testTag("attachment-text-apply")) { Text("应用到草稿") }
-                }
+            Row(Modifier.align(Alignment.End), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SocratesTextButton(onClick = ::close) { Text("取消") }
+                SocratesButton(onClick = {
+                    error = onApply(text)
+                    if (error == null) onDismiss()
+                }, enabled = text != attachment.text, modifier = Modifier.testTag("attachment-text-apply")) { Text("应用到草稿") }
             }
         }
+    }
+    if (confirmDiscard) {
+        SocratesAlert(
+            onDismissRequest = { confirmDiscard = false },
+            title = { Text("放弃未应用的修改？") },
+            text = { Text("附件文字的改动尚未应用到草稿，关闭后这些改动会丢失。") },
+            confirmButton = { SocratesTextButton(onClick = onDismiss) { Text("放弃修改") } },
+            dismissButton = { SocratesTextButton(onClick = { confirmDiscard = false }) { Text("继续编辑") } },
+        )
     }
 }

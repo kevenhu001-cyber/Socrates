@@ -2,9 +2,34 @@
 
 功能以 Socrates 项目本身的实际行为为准；视觉以用户参考图为几何基准，并与现有前端设计语言对齐。当前为原生 Kotlin / Jetpack Compose 客户端 1.4 开发版；**尚未达到完整功能对齐**。没有向产品写入截图中的对话、示例课程、账号资源或演示业务数据。测试数据只存在于测试源码中。
 
-本轮对照仓库 HEAD：`92ccbc650852ce923224354de4cd740e5ad6bc88`，开始时工作树干净；沿用交接确认的已推送主线基线，本轮未重新 fetch。保留全部既有提交，不使用 stash/reset。仅修改原生 Android UI、相关测试与本说明，不改 Web/后端/Expo，不部署、不提交或推送；Chrome 安全登录与全部功能路由保持不动。以下历史记录描述各自批次，不代表本轮新增授权或验收。
+本轮对照仓库 HEAD：`8c8e0059b9c18f721ae2cbacd6e68b00cb0166b9`；已执行 `git fetch origin --prune` 并快进到该提交，开始时工作树干净。保留全部既有提交，不使用 stash/reset。仅修改原生 Android 抽屉/安全区、三轮 UI 审计与前端组件 token 对齐涉及的界面接线、相关测试与本说明，不改 Web/后端/Expo，不部署、不提交或推送；Chrome 安全登录与全部功能路由保持不动。以下历史记录描述各自批次，不代表本轮新增授权或验收。
 
-## 最新：胶囊模式切换与可滚动的完整抽屉
+## 最新：与前端 UI 组件 token 对齐
+- 对照 `frontend/src/styles/themes.css`（唯一 Web 浅色色板）、`tokens.css` 与 `polish/buttons.css`，把 `SocratesDesign` 从各自的近似值收敛为同一角色：`Ink #1F1F1F`、`Muted #6B6B6B`、`Accent #222222`、`Page #F8F8F8`、`Selected #F5F5F5`、`PillSelected/LineSubtle #EEEEEE`、`Line #E3E3E3`、`LineStrong #DDDDDD`、`Placeholder #8F8F8F`、`Avatar #6B6B6B`、`Link #0060CC`、`Danger #B02D1C`，并新增 8/10/16/28dp 的 control/row/dialog/composer 圆角角色。移除原生自造的蓝 `#3865EF`、淡紫气泡 `#F0F1FB`、绿色头像 `#21B99F` 与 `#929292` 工具栏灰。
+- 共享控件改为 Web 的按钮/输入语法：文字与描边按钮 8dp 圆角、14px 常规字重、44dp 触控高度；输入框 8dp 圆角、44dp 最小高度、12/10 内边距、1dp 状态边框与 `#8F8F8F` 占位；筛选 chip 使用 `#EEEEEE` 选中底与 14px 常规字重；输入 chip 改为胶囊。卡片/菜单/提示框/底部面板统一 16dp（提示框最大 400dp、20dp 内边距；底部面板不再绘制拖拽条），开关改为 36×20 轨道 + 16dp 滑块，单选改为 18dp 直径/2dp 描边，进度条改用 accent，分隔线使用 `#EEEEEE`。
+- 对话面：composer 固定 28dp 圆角并始终绘制 `rgb(0 0 0 / 12%)` 的 1dp 边框，编辑文字 16/24、光标 ink、占位 `#8F8F8F`，发送键为 36dp accent 圆 + 44dp 触控区、20dp 箭头；用户气泡改为 `#F4F4F4`/18dp；消息操作图标使用 `Muted`，激活反馈/朗读使用 ink。侧栏当前会话点、资料库选中标记与底部“聊天”按钮改为 accent，导航行 10dp 圆角/24dp 图标/16px 常规字，会话标题 16px，头像 24dp `#6B6B6B`；Markdown 链接改用 `#0060CC`，代码面使用 `#F5F5F5` 与 ink。
+- 保留为 Android 触控适配而非视觉偏差：所有可点区域至少 44dp、顶栏最小 68dp、模式分段每个 tab 至少 44dp、面板/阅读器消费 `AppSafeInsets`。没有新增 Material 默认控件、深色主题、Web/Expo/后端改动或业务数据；未运行设备/模拟器或 AndroidTest，不声称真实密度、字体缩放或像素验收。源码契约新增于 `NativeControlsParityTest`，最终构建结果见文末“验证边界”。
+
+## 上一轮：第二轮原生 UI 审计，修复阅读器安全区、重复插件与可增长瓦片
+- 按“审视其余 UI 功能问题”的要求逐页检查原生界面，只修改可复现的接线/布局缺陷，不做整体视觉重做。全屏资料目录已消费 `AppSafeInsets`，但四个独立全屏阅读对话框（任务执行、作品原文/版本、运行记录、本地版本对比）仍只做 `statusBarsPadding + navigationBarsPadding`：手势导航底部保留区与横向挖孔没有被覆盖。现统一改为 `windowInsetsPadding(AppSafeInsets)`，内容仍可滚动，关闭/刷新路径不变。
+- 分享会话与项目资源 sheet 内部各自残留 `navigationBarsPadding`。`SocratesSheet` 宿主已消费 `AppSafeInsets`，Compose 会把已消费的 inset 对子级归零，因此这些内层补距实际是 no-op，**不构成“双重叠加”**；本轮移除无效调用并清理随之失效的显式 import，避免后续误以为宿主内需要再补导航栏。
+- 插件目录原先在“已安装”横向卡下方又把同样的已安装连接器放进热门/新品推荐列表，造成同屏重复；现在“已安装”区块只在未筛选“已连接”时显示，按钮文案改为真实含义“查看已连接 ›”，筛选后只保留一个已连接列表。连接器凭证表单经核对：`api_key` 服务端契约固定单字段 `apiKey`，现有取值不受映射顺序影响，未改。
+- 资料库/图像网格的非图片文档瓦片使用固定 172dp，高度在大字体或长标题下会裁切；改为 `heightIn(min = 172.dp)` 允许随内容增高。图片瓦片仍保持固定高度以维持网格节奏。作品（artifact）详情原显示“在对话中附加”，但附件接口只接受文件 ID，点击必然失败；现对 `_collection == "artifacts"` 隐藏该按钮，文件与图像行为不变。
+- 教学与测验的全屏 Dialog 仍使用平台默认窗口适配，手势导航底部保留区与横向挖孔不在 `AppSafeInsets` 覆盖范围内；现与其它全屏页一致：关闭 decor 自动适配，页面背景仍铺满窗口，内容层消费 `AppSafeInsets`。查找当前会话与帐号资料两个 sheet 内容不可滚动，横屏或短窗口下底部操作会被裁掉；现在整体可滚动，查找 sheet 保留 IME padding。顶栏、抽屉、聊天/工作视图与既有登录/阅读链路未改动。新增 `FeatureScreensContractTest` 7 项源码接线回归；**没有设备/模拟器或 AndroidTest 执行**，不声称真实 OEM inset、字体缩放或横屏像素验收。
+- 全屏“模型与服务商”仍由平台 decor 自动适配 inset，横向挖孔与底部手势区不在 `AppSafeInsets` 覆盖内；现改为 `decorFitsSystemWindows = false` + `windowInsetsPadding(AppSafeInsets)`，标题栏由固定 60dp 改为 `heightIn(min = 60.dp)`。返回键处理移入 Dialog 组合窗口，编辑/详情/删除子状态才能先于 Dialog 的 `onDismissRequest` 响应返回；`ProviderViewModel` 缓存键加入当前帐号，切换帐号后不会复用上一帐号的服务商列表。
+- 全局搜索范围与测验难度两组筛选 chip 原本是不可滚动的普通 `Row`，大字体或窄屏下末尾选项被挤出可见区且无法触达；现加 `horizontalScroll`，保留原 chip 尺寸、选择语义与默认顺序。
+- 分享会话 sheet 整体可滚动，短窗口或横屏下“创建/更新链接”按钮可滚入视口。项目资源会话页的空态改为按当前 `showOther` 过滤结果判断，避免出现“列表为空却声称有内容”或“有可移入会话却显示空态”。
+- 消息详情不再重复输出“附件 · 名称”：`MessageAttachmentList` 已在每条消息顶部统一展示附件名，原 `MessageDetails` 又对非图片附件打印一次。任务执行页在 `runId` 存在但运行详情与错误同时缺失时不再静默，改为显示说明与刷新操作；附件菜单项由固定 58dp 改为最小 58dp，大字体可扩高。
+- 附件文字编辑器的“放弃修改”确认原先渲染在滚动内容底部，点击遮罩或返回时确认区可能落在视口外；现改为独立的 `SocratesAlert` 确认对话框，任何滚动位置都能看到。
+- 本轮再增 5 项源码契约回归，`FeatureScreensContractTest` 共 12 项。**仍未运行设备/模拟器或 AndroidTest**；源码扫描与 JVM 编译不能替代真实 inset、字体缩放、IME 或横屏行为验收。
+
+## 上一轮：抽屉改回窗口内覆盖层，修复底部截断与状态栏遮罩缺口
+- 对照本轮两张实机截图（工作模式首页与已展开抽屉）：首页卡片在底部被系统区域截断，抽屉底部蓝色“聊天”按钮与绿色帐号圆钮被裁到屏幕外，且状态栏区域没有变暗。工作模式内容本身仍是可滚动页面，不把“截图未滚到底”当作 bug；真正需要修复的是抽屉窗口/inset 接线与页面底部安全区。
+- 原 `SocratesNavigationDrawer` 使用独立 `Dialog` 窗口；部分 OEM 会按状态栏对 Dialog 内容做一次 inset，却仍按整块显示屏测量高度，导致整张抽屉下移、footer 落到屏幕外；scrim 也只覆盖 Dialog 内容区，状态栏保持原亮度。现改为应用窗口内的全屏 `Box` 覆盖层：打开时对背景内容 `clearAndSetSemantics`，scrim 覆盖整个窗口（含状态栏），sheet 仍占 80% 宽并自行消费安全区；保留左缘滑动打开、左滑关闭、点击 scrim 关闭与 BackHandler，不引入新路由。
+- 新增 `AppSafeInsets = safeDrawing ∪ systemGestures(Bottom)`：手势导航设备可能报告 0 的 `navigationBars` 但仍保留底部上滑区，仅并集底部一侧，避免左右手势区挤压内容。应用根视口、Snackbar、共享 `SocratesSheet` 宿主与侧栏 LazyColumn 全部改用该 inset；侧栏 footer 现在稳定落在系统手势区之上，80% 抽屉的底部按钮不再被裁切。
+- 截图仅用于定位可见截断，未另存或复制进仓库。更新 JVM 源码契约（抽屉不得再创建 Dialog、必须保留 BackHandler/背景语义清理/底部手势并集），新增 AndroidTest 覆盖层铺满宿主窗口、footer 落在窗口内、scrim 点击关闭。**没有设备/模拟器（宿主无 KVM）或 AndroidTest 执行，也没有像素、真实 OEM 窗口 inset 或手势验收**；编译与全量 JVM 测试不等于上述 UI 场景实测。最终代码级结果见“验证边界”。
+
+## 上一轮：胶囊模式切换与可滚动的完整抽屉
 - 按本轮参考图的可见设计要求重做原生 `ChatModeSwitch`：浅灰胶囊轨道、4dp 内边距、白色圆角选中 pill 和 2dp 轻阴影，选中/未选中文字区分主次。使用 Foundation 自定义控件，不引入默认 Material 分段控件。每个 tab 自身至少 44dp 高，轨道整体默认至少 52dp，避免原先 44dp 轨道扣除两侧 4dp 后实际 tab 只有 36dp 高的问题。保留真实聊天/工作状态与原有切换入口条件；选中态提供 Tab/selected 语义和分组，重复点击当前选中项不重复派发模式切换。
 - 顶栏改为独立居中轴，胶囊不依赖左右操作宽度凑平衡；两侧图标操作与轨道分离，取消右侧操作共用的白色胶囊背景。保留侧栏、模型设置、新建对话、会话菜单及录音禁用规则。顶栏由固定高度改为最小 68dp，文字放大时允许随控件扩高；中央为两侧 44dp 操作保留间距，不更换业务内容。
 - 抽屉标题、可展开搜索、导航入口、历史会话与底部聊天/帐号全部纳入**同一个 LazyColumn**，不再让固定头部/搜索/底栏挤压中间列表。在内容不足一屏时，`SidebarFooterArrangement` 将最后的底栏排到视口底部；超过可用高度时改为正常顺序滚动，底栏可滚入视口，不承诺长历史中仍悬浮常显。继续在抽屉内部消费一次 `safeDrawing`（系统栏、挖孔、IME），外层 sheet 保持零 inset，底部另留 8dp 内容间距。
@@ -351,7 +376,44 @@
 
 图片附件应使用真实 `mime`、大小与持久文件 ID；内联 `dataUrl` 有后端限制。跨端历史未知字段需要保留，不能只保存当前原生 UI 认识的字段。
 ## 验证边界
-### 最新：胶囊切换与完整抽屉滚动
+### 最新：前端 UI 组件 token 对齐
+在 `apps/socrates-android` 使用本机临时安装的 Android SDK（`platforms;android-35`、`build-tools;35.0.0`；`local.properties` 已被 gitignore）执行：
+
+```sh
+./gradlew --no-daemon testDebugUnitTest assembleDebug lintDebug compileDebugAndroidTestKotlin
+```
+
+**BUILD SUCCESSFUL in 1m 50s**（63 个任务，16 项执行）。全量 JVM **51 个测试类 / 754 项测试，0 失败、0 错误、0 跳过**；其中 `NativeControlsParityTest` 由 3 项扩展到 9 项。`compileDebugKotlin`、`compileDebugUnitTestKotlin`、`compileDebugAndroidTestKotlin`、`assembleDebug` 与 `lintDebug` 均通过；Debug APK 位于 `app/build/outputs/apk/debug/app-debug.apk`，仍为 debug/test-signed，不是发布签名包。`lintDebug` **0 错误、25 条 Warning、2 条 Information**，均为既有/环境级提示，没有新增错误；`git diff --check` 通过。
+
+本轮按 `frontend/src/styles/themes.css`、`tokens.css`、`polish/buttons.css` 收敛 `SocratesDesign` token，并改到共享控件、消息气泡、输入区、侧栏、Markdown 与功能页调用点；旧的原生专属蓝/淡紫/青绿/灰值已移除。44dp 触控目标、68dp 聊天头部、44dp 分段选项与参考几何是有意保留的原生适配，仍由测试锁定。**没有执行 connectedDebugAndroidTest**：宿主无 `/dev/kvm`，也没有设备或模拟器，因此不声称真实 OEM inset、字体缩放、IME、横屏滚动、返回键或像素级视觉已验收。未修改 Web/后端/Expo、登录交接或功能路由，未提交、推送或部署。
+
+### 上一轮：第二轮 UI 审计（安全区、筛选 chip、重复附件与静默分支）
+在 `apps/socrates-android` 使用本机临时安装的 Android SDK（`platforms;android-35`、`build-tools;35.0.0`；`local.properties` 已被 gitignore）执行：
+
+```sh
+./gradlew --no-daemon testDebugUnitTest assembleDebug lintDebug compileDebugAndroidTestKotlin
+```
+
+**BUILD SUCCESSFUL in 2m 31s**（63 个任务，16 项执行）。全量 JVM **51 个测试类 / 748 项测试，0 失败、0 错误、0 跳过**；其中 `FeatureScreensContractTest` 12 项。`compileDebugKotlin`、`compileDebugUnitTestKotlin`、`compileDebugAndroidTestKotlin`、`assembleDebug` 与 `lintDebug` 均通过；Debug APK 位于 `app/build/outputs/apk/debug/app-debug.apk`，仍为 debug/test-signed，不是发布签名包。`lintDebug` **0 错误、25 条 Warning、2 条 Information**，与上一轮相同的既有/环境级提示，没有新增错误；`git diff --check` 通过。
+
+本轮新增 `FeatureScreensContractTest` 5 项（覆盖 ProviderSheet 的安全区/返回键/帐号缓存键、两组横向滚动 chip、分享/项目 sheet 滚动与过滤空态、附件去重、任务运行详情兜底、附件菜单最小高度与放弃修改确认），并把 `.kotlin/` 加入应用级 `.gitignore`。**没有执行 connectedDebugAndroidTest**：宿主无 `/dev/kvm`，也没有设备或模拟器，因此不声称真实 OEM inset、字体缩放、IME、横屏滚动、返回键或像素级视觉已验收。本轮新增/修改 13 个文件，均在 `apps/socrates-android/`；未修改 Web/后端/Expo、登录交接或功能路由，未提交、推送或部署。
+
+### 上一轮：抽屉窗口内覆盖层与底部安全区
+在 `apps/socrates-android` 使用本机临时安装的 Android SDK（`platforms;android-35`、`build-tools;35.0.0`；`local.properties` 已被 gitignore）执行：
+
+```sh
+./gradlew --no-daemon compileDebugKotlin compileDebugUnitTestKotlin \
+  compileDebugAndroidTestKotlin testDebugUnitTest
+./gradlew --no-daemon testDebugUnitTest
+./gradlew --no-daemon assembleDebug
+./gradlew --no-daemon lintDebug
+```
+
+首次全量 JVM 运行执行 **736 项测试，1 项失败**：`LoginLayoutContractTest.fullScreenContentAndSheetsAlsoAvoidHorizontalCutoutsAndIme` 仍断言旧的 `WindowInsets.safeDrawing` 接线。该失败正是本轮把根视口/侧栏/sheet 宿主切到 `AppSafeInsets` 的预期接线变化；同步更新契约后重跑**无过滤器全量 736 项，0 失败、0 错误、0 跳过**。`compileDebugKotlin`、`compileDebugUnitTestKotlin`、`compileDebugAndroidTestKotlin` 与 `assembleDebug` 均成功；Debug APK 位于 `app/build/outputs/apk/debug/app-debug.apk`，仍为 debug/test-signed，不是发布签名包。
+
+`lintDebug` **0 错误、25 条 Warning、2 条 Information**，均为既有或环境级提示，没有新增错误。`git diff --check` 通过。新增 `NavigationLayoutUiTest` 1 项 AndroidTest 源码（该文件共 6 项）与全部既有 AndroidTest 一起编译通过，覆盖覆盖层与宿主窗口同界、footer 落在窗口底部内、背景语义清除与 scrim 点击关闭；**没有执行 connectedDebugAndroidTest，宿主无 `/dev/kvm`，也没有设备、模拟器、像素或真实手势/OEM 窗口 inset 验证**。本轮修改 6 个文件，均在 `apps/socrates-android/`，未修改 Web/后端/Expo、登录交接或功能路由，未提交、推送或部署。
+
+### 上一轮：胶囊切换与完整抽屉滚动
 在 `apps/socrates-android` 执行以下命令，首次 **BUILD SUCCESSFUL in 43s**；随后仅修正新增 AndroidTest 辅助 Composable 的命名警告，使用同一命令复验，**BUILD SUCCESSFUL in 8s**（应用构建/单测为 up-to-date，AndroidTest 源码重新编译、lint 重新完成）：
 
 ```sh

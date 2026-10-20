@@ -1,6 +1,7 @@
 package com.socrates.android.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -35,7 +36,7 @@ fun LearningSetupScreen(kind: String, onCreated: (String) -> Unit, onClose: () -
             SocratesField(topic,{topic=it},label={Text("主题")},modifier=Modifier.fillMaxWidth())
             Text("题目数量"); Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){(if(kind=="exam")listOf(3,5,10) else listOf(3,5)).forEach{ SocratesFilterChip(count==it,{count=it},label={Text("$it")}) }}
             if(kind=="exam") {
-                Text("难度"); Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){listOf("beginner","intermediate","hard","expert").forEach{SocratesFilterChip(difficulty==it,{difficulty=it},label={Text(it)})}}
+                Text("难度"); Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement=Arrangement.spacedBy(6.dp)){listOf("beginner","intermediate","hard","expert").forEach{SocratesFilterChip(difficulty==it,{difficulty=it},label={Text(it)})}}
                 Text("题型（至少选择一种）")
                 LearningModels.types.forEach { type -> SocratesFilterChip(type in selected,{selected=if(type in selected){if(selected.size>1)selected-type else selected}else selected+type},label={Text(type)}) }
                 SocratesField(instructions,{instructions=it},label={Text("额外要求")},modifier=Modifier.fillMaxWidth(),minLines=2)

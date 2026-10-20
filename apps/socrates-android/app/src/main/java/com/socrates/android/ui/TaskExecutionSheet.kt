@@ -28,7 +28,7 @@ fun TaskExecutionSheet(
     onDismiss: () -> Unit,
 ) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
-        Column(Modifier.fillMaxSize().background(SocratesDesign.Page).statusBarsPadding().navigationBarsPadding()) {
+        Column(Modifier.fillMaxSize().background(SocratesDesign.Page).windowInsetsPadding(AppSafeInsets)) {
             LazyColumn(
                 Modifier.fillMaxSize().testTag("task-execution-content"),
                 contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 28.dp),
@@ -84,12 +84,13 @@ fun TaskExecutionSheet(
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     } else if (snapshot.run == null) {
-                        snapshot.runError?.let { message -> item {
+                        item {
                             Column(Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite }, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(message, color = MaterialTheme.colorScheme.error)
-                                SocratesOutlinedButton(onClick = onRefresh, enabled = !state.loading) { Text("重试") }
+                                val message = snapshot.runError
+                                Text(message ?: "尚未获取到最近一次运行记录详情；它可能仍在写入或已被清理。", color = if (message != null) MaterialTheme.colorScheme.error else SocratesDesign.Muted)
+                                SocratesOutlinedButton(onClick = onRefresh, enabled = !state.loading) { Text(if (message != null) "重试" else "刷新") }
                             }
-                        } }
+                        }
                     } else {
                         val run = snapshot.run
                         item {

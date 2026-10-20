@@ -1,5 +1,6 @@
 package com.socrates.android.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.*
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.*
@@ -27,6 +28,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
@@ -38,33 +40,52 @@ import androidx.compose.ui.window.*
  * Controls are built from Foundation rather than stock Material widgets.
  */
 object SocratesDesign {
-    // Native defaults follow the semantic neutral ramp in frontend/themes.css.
-    val Ink = Color(0xFF1F1F1F)
-    val Muted = Color(0xFF6B6B6B)
-    val Blue = Color(0xFF3865EF)
-    val Page = Color(0xFFF8F8F8)
-    val Selected = Color(0xFFF5F5F5)
-    val Line = Color(0xFFE3E3E3)
-    val Focus = Color(0xFF595959)
+    // Native defaults follow frontend/src/styles/themes.css, the sole Web palette owner.
+    val Ink = Color(0xFF1F1F1F) // --ui-text-primary
+    val Muted = Color(0xFF6B6B6B) // --ui-text-tertiary
+    val Accent = Color(0xFF222222) // --ui-accent-strong
+    val Link = Color(0xFF0060CC) // --ui-link
+    val Danger = Color(0xFFB02D1C)
+    val Page = Color(0xFFF8F8F8) // --ui-bg-page
+    val Selected = Color(0xFFF5F5F5) // --ui-bg-control / --ui-bg-selected
+    val PillSelected = Color(0xFFEEEEEE) // --ui-bg-pill-selected
+    val Line = Color(0xFFE3E3E3) // --ui-border-default
+    val LineSubtle = Color(0xFFEEEEEE) // --ui-border-subtle
+    val LineStrong = Color(0xFFDDDDDD) // --ui-border-strong
+    val Focus = LineStrong
     val Disabled = Color(0xFF8F8F8F)
+    val Placeholder = Color(0xFF8F8F8F)
+    val Avatar = Color(0xFF6B6B6B) // --ui-avatar-bg
     val Touch = 44.dp
     val PageGutter = 16.dp
     val HeaderHeight = 68.dp
     val ComposerInset = 34.dp
     val ComposerExpandedInset = 12.dp
+    val ControlRadius = 8.dp // --ui-radius-control
+    val RowRadius = 10.dp // --ui-radius-row
+    val DialogRadius = 16.dp // --ui-radius-xl
+    val ComposerRadius = 28.dp // --ui-radius-composer-desktop
 }
+
+/** safeDrawing plus the bottom gesture exclusion area. Some gesture-navigation devices
+ * report a zero navigationBars inset while still reserving a swipe zone at the screen
+ * edge; without it, scrolling content and the drawer footer render under the system bar.
+ * Only the bottom side is unioned so the left/right gesture zones do not inset content.
+ */
+internal val AppSafeInsets: WindowInsets
+    @Composable get() = WindowInsets.safeDrawing.union(WindowInsets.systemGestures.only(WindowInsetsSides.Bottom))
 
 @Composable
 fun SocratesButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
-    shape: Shape = CircleShape, containerColor: Color = SocratesDesign.Ink, contentColor: Color = Color.White,
+    shape: Shape = RoundedCornerShape(SocratesDesign.ControlRadius), containerColor: Color = SocratesDesign.Accent, contentColor: Color = Color.White,
     disabledContainerColor: Color = containerColor.copy(alpha = .16f), disabledContentColor: Color = contentColor.copy(alpha = .45f),
-    contentPadding: PaddingValues = PaddingValues(horizontal = 22.dp, vertical = 13.dp),
+    contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
     content: @Composable RowScope.() -> Unit) {
     val background = if (enabled) containerColor else disabledContainerColor
     val foreground = if (enabled) contentColor else disabledContentColor
     var focused by remember { mutableStateOf(false) }
     CompositionLocalProvider(LocalContentColor provides foreground) {
-        ProvideTextStyle(MaterialTheme.typography.labelLarge) {
+        ProvideTextStyle(MaterialTheme.typography.bodyMedium) {
             Row(modifier.heightIn(min = 44.dp).clip(shape).background(background)
                 .border(if (focused) 2.dp else 0.dp, if (focused) SocratesDesign.Focus else Color.Transparent, shape)
                 .onFocusChanged { focused = it.isFocused }
@@ -81,9 +102,9 @@ fun SocratesTextButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabl
     content: @Composable RowScope.() -> Unit) {
     var focused by remember { mutableStateOf(false) }
     CompositionLocalProvider(LocalContentColor provides if (enabled) SocratesDesign.Ink else SocratesDesign.Disabled) {
-        ProvideTextStyle(MaterialTheme.typography.labelLarge) {
-            Row(modifier.heightIn(min = 44.dp).clip(CircleShape)
-                .border(if (focused) 2.dp else 0.dp, if (focused) SocratesDesign.Focus else Color.Transparent, CircleShape)
+        ProvideTextStyle(MaterialTheme.typography.bodyMedium) {
+            Row(modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(SocratesDesign.ControlRadius))
+                .border(if (focused) 2.dp else 0.dp, if (focused) SocratesDesign.Focus else Color.Transparent, RoundedCornerShape(SocratesDesign.ControlRadius))
                 .onFocusChanged { focused = it.isFocused }
                 .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
                 .padding(contentPadding), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, content = content)
@@ -94,7 +115,7 @@ fun SocratesTextButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabl
 @Composable
 fun SocratesOutlinedButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
     content: @Composable RowScope.() -> Unit) {
-    SocratesTextButton(onClick, modifier.border(1.dp, SocratesDesign.Line, CircleShape), enabled, content = content)
+    SocratesTextButton(onClick, modifier.border(1.dp, SocratesDesign.Line, RoundedCornerShape(SocratesDesign.ControlRadius)), enabled, content = content)
 }
 
 @Composable
@@ -115,7 +136,7 @@ fun SocratesField(value: String, onValueChange: (String) -> Unit, modifier: Modi
     enabled: Boolean = true, label: (@Composable () -> Unit)? = null, placeholder: (@Composable () -> Unit)? = null,
     leadingIcon: (@Composable () -> Unit)? = null, trailingIcon: (@Composable () -> Unit)? = null,
     singleLine: Boolean = false, minLines: Int = 1, maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
-    shape: Shape = RoundedCornerShape(20.dp), visualTransformation: VisualTransformation = VisualTransformation.None,
+    shape: Shape = RoundedCornerShape(SocratesDesign.ControlRadius), visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default, keyboardActions: KeyboardActions = KeyboardActions.Default,
     isError: Boolean = false, supportingText: (@Composable () -> Unit)? = null) {
     var focused by remember { mutableStateOf(false) }
@@ -128,15 +149,15 @@ fun SocratesField(value: String, onValueChange: (String) -> Unit, modifier: Modi
         }
         BasicTextField(value, onValueChange, enabled = enabled, singleLine = singleLine, minLines = minLines,
             maxLines = maxLines, visualTransformation = visualTransformation, keyboardOptions = keyboardOptions, keyboardActions = keyboardActions,
-            textStyle = MaterialTheme.typography.bodyLarge.copy(color = SocratesDesign.Ink), cursorBrush = SolidColor(SocratesDesign.Blue),
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).onFocusChanged { focused = it.isFocused },
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = SocratesDesign.Ink), cursorBrush = SolidColor(SocratesDesign.Ink),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp).onFocusChanged { focused = it.isFocused },
             decorationBox = { inner ->
                 Row(Modifier.fillMaxWidth().clip(shape).background(Color.White)
-                    .border(if (focused) 2.dp else 1.dp, if (isError) Color(0xFFB02D1C) else if (focused) SocratesDesign.Focus else SocratesDesign.Line, shape)
-                    .padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    .border(1.dp, if (isError) SocratesDesign.Danger else if (focused) SocratesDesign.Focus else SocratesDesign.Line, shape)
+                    .padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (leadingIcon != null) { CompositionLocalProvider(LocalContentColor provides SocratesDesign.Muted) { leadingIcon() }; Spacer(Modifier.width(12.dp)) }
                     Box(Modifier.weight(1f)) {
-                        if (value.isEmpty() && placeholder != null) CompositionLocalProvider(LocalContentColor provides SocratesDesign.Muted) { placeholder() }
+                        if (value.isEmpty() && placeholder != null) CompositionLocalProvider(LocalContentColor provides SocratesDesign.Placeholder) { placeholder() }
                         inner()
                     }
                     if (trailingIcon != null) { Spacer(Modifier.width(8.dp)); trailingIcon() }
@@ -150,8 +171,8 @@ fun SocratesField(value: String, onValueChange: (String) -> Unit, modifier: Modi
 fun SocratesFilterChip(selected: Boolean, onClick: () -> Unit, label: @Composable () -> Unit,
     modifier: Modifier = Modifier, enabled: Boolean = true) {
     CompositionLocalProvider(LocalContentColor provides if (selected) SocratesDesign.Ink else SocratesDesign.Muted) {
-        ProvideTextStyle(MaterialTheme.typography.titleMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)) {
-            Box(modifier.heightIn(min = 44.dp).clip(CircleShape).background(if (selected) SocratesDesign.Selected else Color.Transparent)
+        ProvideTextStyle(MaterialTheme.typography.bodyMedium) {
+            Box(modifier.heightIn(min = 44.dp).clip(CircleShape).background(if (selected) SocratesDesign.PillSelected else Color.Transparent)
                 .selectable(selected, enabled = enabled, role = Role.Tab, onClick = onClick).padding(horizontal = 16.dp, vertical = 11.dp), contentAlignment = Alignment.Center) { label() }
         }
     }
@@ -160,15 +181,15 @@ fun SocratesFilterChip(selected: Boolean, onClick: () -> Unit, label: @Composabl
 @Composable
 fun SocratesInputChip(selected: Boolean, onClick: () -> Unit, label: @Composable () -> Unit,
     leadingIcon: (@Composable () -> Unit)? = null, trailingIcon: (@Composable () -> Unit)? = null) {
-    Row(Modifier.padding(bottom = 8.dp).clip(RoundedCornerShape(18.dp)).background(Color.White)
-        .border(1.dp, SocratesDesign.Line, RoundedCornerShape(18.dp)).selectable(selected, role = Role.Button, onClick = onClick)
+    Row(Modifier.padding(bottom = 8.dp).clip(CircleShape).background(Color.White)
+        .border(1.dp, SocratesDesign.Line, CircleShape).selectable(selected, role = Role.Button, onClick = onClick)
         .padding(start = 12.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         leadingIcon?.invoke(); Spacer(Modifier.width(8.dp)); Box(Modifier.weight(1f, fill = false)) { label() }; trailingIcon?.invoke()
     }
 }
 
 @Composable
-fun SocratesCard(modifier: Modifier = Modifier, shape: Shape = RoundedCornerShape(22.dp),
+fun SocratesCard(modifier: Modifier = Modifier, shape: Shape = RoundedCornerShape(SocratesDesign.DialogRadius),
     containerColor: Color = Color.White, contentColor: Color = SocratesDesign.Ink,
     disabledContainerColor: Color = containerColor, disabledContentColor: Color = contentColor.copy(alpha = .45f),
     onClick: (() -> Unit)? = null, enabled: Boolean = true, content: @Composable ColumnScope.() -> Unit) {
@@ -181,7 +202,7 @@ fun SocratesCard(modifier: Modifier = Modifier, shape: Shape = RoundedCornerShap
 
 @Composable
 fun SocratesOutlinedCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    SocratesCard(modifier.border(1.dp, SocratesDesign.Line, RoundedCornerShape(22.dp)), content = content)
+    SocratesCard(modifier.border(1.dp, SocratesDesign.Line, RoundedCornerShape(SocratesDesign.DialogRadius)), content = content)
 }
 
 private object MenuPosition : PopupPositionProvider {
@@ -194,7 +215,7 @@ private object MenuPosition : PopupPositionProvider {
 
 @Composable
 fun SocratesMenu(expanded: Boolean, onDismissRequest: () -> Unit, modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(26.dp), containerColor: Color = Color.White, content: @Composable ColumnScope.() -> Unit) {
+    shape: Shape = RoundedCornerShape(SocratesDesign.DialogRadius), containerColor: Color = Color.White, content: @Composable ColumnScope.() -> Unit) {
     if (expanded) Popup(popupPositionProvider = MenuPosition, onDismissRequest = onDismissRequest, properties = PopupProperties(focusable = true)) {
         Column(modifier.widthIn(min = 220.dp, max = 300.dp).heightIn(max = 520.dp).shadow(18.dp, shape).clip(shape)
             .background(containerColor).verticalScroll(rememberScrollState()).padding(vertical = 12.dp), content = content)
@@ -217,8 +238,8 @@ fun SocratesAlert(onDismissRequest: () -> Unit, confirmButton: @Composable () ->
     modifier: Modifier = Modifier, title: (@Composable () -> Unit)? = null, text: (@Composable () -> Unit)? = null,
     dismissButton: (@Composable () -> Unit)? = null) {
     Dialog(onDismissRequest, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Column(modifier.widthIn(max = 440.dp).fillMaxWidth().padding(20.dp).clip(RoundedCornerShape(28.dp)).background(Color.White)
-            .padding(24.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+        Column(modifier.widthIn(max = 400.dp).fillMaxWidth().padding(20.dp).clip(RoundedCornerShape(SocratesDesign.DialogRadius)).background(Color.White)
+            .padding(20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
             if (title != null) ProvideTextStyle(MaterialTheme.typography.headlineSmall) { title() }
             if (text != null) Box(Modifier.heightIn(max = 340.dp).verticalScroll(rememberScrollState())) { text() }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) { dismissButton?.invoke(); Spacer(Modifier.width(8.dp)); confirmButton() }
@@ -233,11 +254,11 @@ fun SocratesSheet(onDismissRequest: () -> Unit, modifier: Modifier = Modifier,
     // SheetState is accepted for source compatibility. Dismissal remains owned by each caller,
     // including its busy guard. No stock Material sheet, shape or drag handle is rendered.
     Dialog(onDismissRequest, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
-        Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing), contentAlignment = Alignment.BottomCenter) {
+        Box(Modifier.fillMaxSize().windowInsetsPadding(AppSafeInsets), contentAlignment = Alignment.BottomCenter) {
             Box(Modifier.matchParentSize().clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismissRequest))
-            Column(modifier.widthIn(max = 600.dp).fillMaxWidth().heightIn(max = 720.dp).clip(RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
-                .background(containerColor).padding(top = 10.dp)) {
-                Box(Modifier.align(Alignment.CenterHorizontally).size(34.dp, 4.dp).background(Color(0xFFDDDDDD), CircleShape))
+            Column(modifier.widthIn(max = 600.dp).fillMaxWidth().heightIn(max = 720.dp)
+                .clip(RoundedCornerShape(topStart = SocratesDesign.DialogRadius, topEnd = SocratesDesign.DialogRadius))
+                .background(containerColor).padding(top = 16.dp)) {
                 content()
             }
         }
@@ -246,11 +267,11 @@ fun SocratesSheet(onDismissRequest: () -> Unit, modifier: Modifier = Modifier,
 
 @Composable
 fun SocratesSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
-    val offset by animateDpAsState(if (checked) 20.dp else 2.dp, label = "switch")
+    val offset by animateDpAsState(if (checked) 18.dp else 2.dp, label = "switch")
     Box(modifier.size(50.dp, 44.dp).clip(CircleShape).toggleable(checked, enabled = enabled, role = Role.Switch, onValueChange = onCheckedChange), contentAlignment = Alignment.Center) {
-        Box(Modifier.size(46.dp, 28.dp).background(
-            when { !enabled -> SocratesDesign.Line; checked -> SocratesDesign.Ink; else -> Color(0xFFDDDDDD) }, CircleShape)) {
-            Box(Modifier.offset { IntOffset(offset.roundToPx(), 2.dp.roundToPx()) }.size(24.dp)
+        Box(Modifier.size(36.dp, 20.dp).background(
+            when { !enabled -> SocratesDesign.LineSubtle; checked -> SocratesDesign.Accent; else -> SocratesDesign.LineStrong }, CircleShape)) {
+            Box(Modifier.offset { IntOffset(offset.roundToPx(), 2.dp.roundToPx()) }.size(16.dp)
                 .background(if (enabled) Color.White else SocratesDesign.Disabled, CircleShape))
         }
     }
@@ -262,7 +283,7 @@ fun SocratesRadio(selected: Boolean, onClick: (() -> Unit)?, modifier: Modifier 
         else modifier.size(44.dp).selectable(selected, enabled = enabled, role = Role.RadioButton, onClick = onClick)
     Canvas(control) {
         val radioColor = if (enabled) SocratesDesign.Ink else SocratesDesign.Disabled
-        drawCircle(if (selected) radioColor else SocratesDesign.Line, 10.dp.toPx(), style = Stroke(1.5.dp.toPx()))
+        drawCircle(if (selected) radioColor else SocratesDesign.Line, 9.dp.toPx(), style = Stroke(2.dp.toPx()))
         if (selected) drawCircle(radioColor, 5.dp.toPx())
     }
 }
@@ -282,7 +303,7 @@ fun SocratesProgress(progress: () -> Float, modifier: Modifier = Modifier) {
     val value = progress().coerceIn(0f, 1f)
     Canvas(modifier.fillMaxWidth().height(3.dp).semantics { progressBarRangeInfo = ProgressBarRangeInfo(value, 0f..1f) }) {
         drawLine(SocratesDesign.Line, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), size.height, StrokeCap.Round)
-        drawLine(SocratesDesign.Blue, Offset(0f, size.height / 2), Offset(size.width * value, size.height / 2), size.height, StrokeCap.Round)
+        drawLine(SocratesDesign.Accent, Offset(0f, size.height / 2), Offset(size.width * value, size.height / 2), size.height, StrokeCap.Round)
     }
 }
 
@@ -301,7 +322,10 @@ fun rememberSocratesDrawerState(): SocratesDrawerState = remember { SocratesDraw
 fun SocratesNavigationDrawer(drawerState: SocratesDrawerState, gesturesEnabled: Boolean = true,
     scrimColor: Color = Color.Black.copy(alpha = .48f), drawerContent: @Composable () -> Unit, content: @Composable () -> Unit) {
     Box(Modifier.fillMaxSize()) {
-        content()
+        // The drawer stays in the activity window. A Dialog window is inset by the status
+        // bar on some OEMs while still sizing itself to the full display, which shifted the
+        // whole sheet down and cut its footer off below the screen edge.
+        Box(Modifier.fillMaxSize().then(if (drawerState.isOpen) Modifier.clearAndSetSemantics {} else Modifier)) { content() }
         if (gesturesEnabled && !drawerState.isOpen) Box(Modifier.align(Alignment.CenterStart).width(16.dp).fillMaxHeight().pointerInput(drawerState) {
             var distance = 0f
             detectHorizontalDragGestures(onDragStart = { distance = 0f }, onHorizontalDrag = { change, amount ->
@@ -309,9 +333,8 @@ fun SocratesNavigationDrawer(drawerState: SocratesDrawerState, gesturesEnabled: 
                 if (distance > 48.dp.toPx()) { change.consume(); drawerState.open() }
             })
         })
-    }
-    if (drawerState.isOpen) {
-        Dialog(onDismissRequest = drawerState::close, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+        if (drawerState.isOpen) {
+            BackHandler { drawerState.close() }
             val gesture = if (!gesturesEnabled) Modifier else Modifier.pointerInput(drawerState) {
                 var distance = 0f
                 detectHorizontalDragGestures(onDragStart = { distance = 0f }, onHorizontalDrag = { change, amount ->
@@ -319,11 +342,8 @@ fun SocratesNavigationDrawer(drawerState: SocratesDrawerState, gesturesEnabled: 
                     if (distance < -64.dp.toPx()) { change.consume(); drawerState.close() }
                 })
             }
-            Box(Modifier.fillMaxSize().then(gesture)) {
-                // This dialog owns focus/back trapping; there is no stock drawer or platform scrim.
-                val view = androidx.compose.ui.platform.LocalView.current
-                SideEffect { (view.parent as? DialogWindowProvider)?.window?.setDimAmount(0f) }
-                Box(Modifier.matchParentSize().background(scrimColor).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = drawerState::close))
+            Box(Modifier.testTag("drawer-overlay").fillMaxSize().then(gesture)) {
+                Box(Modifier.testTag("drawer-scrim").matchParentSize().background(scrimColor).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = drawerState::close))
                 drawerContent()
             }
         }
@@ -338,7 +358,7 @@ fun SocratesDrawerSheet(modifier: Modifier = Modifier, drawerContainerColor: Col
 }
 
 @Composable
-fun SocratesDivider(modifier: Modifier = Modifier, color: Color = SocratesDesign.Line, thickness: Dp = 1.dp) {
+fun SocratesDivider(modifier: Modifier = Modifier, color: Color = SocratesDesign.LineSubtle, thickness: Dp = 1.dp) {
     Box(modifier.fillMaxWidth().height(thickness).background(color))
 }
 
@@ -366,8 +386,8 @@ fun SocratesSnackbarHost(hostState: SnackbarHostState, modifier: Modifier = Modi
             data.dismiss()
         }
     }
-    if (data != null) Row(modifier.widthIn(max = 520.dp).fillMaxWidth().shadow(6.dp, RoundedCornerShape(22.dp))
-        .clip(RoundedCornerShape(22.dp)).background(SocratesDesign.Ink).padding(start = 18.dp, end = 8.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+    if (data != null) Row(modifier.widthIn(max = 520.dp).fillMaxWidth().shadow(6.dp, RoundedCornerShape(SocratesDesign.DialogRadius))
+        .clip(RoundedCornerShape(SocratesDesign.DialogRadius)).background(SocratesDesign.Ink).padding(start = 18.dp, end = 8.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(data.visuals.message, Modifier.weight(1f), color = Color.White, style = MaterialTheme.typography.bodyMedium)
         val actionLabel = data.visuals.actionLabel
         if (actionLabel != null) {

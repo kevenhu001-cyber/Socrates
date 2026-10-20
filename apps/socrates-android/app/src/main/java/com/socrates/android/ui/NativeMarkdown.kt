@@ -13,6 +13,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -94,9 +95,9 @@ fun NativeMarkdown(text: String, modifier: Modifier = Modifier, streaming: Boole
                         .headingBreakHeight(0)
                         .blockMargin(with(density) { 20.dp.roundToPx() })
                         .bulletWidth(with(density) { 4.dp.roundToPx() })
-                        .codeTextColor(0xFF434343.toInt())
-                        .codeBackgroundColor(0xFFF0F0F0.toInt())
-                        .linkColor(0xFF2855C7.toInt())
+                        .codeTextColor(SocratesDesign.Ink.toArgb())
+                        .codeBackgroundColor(0xFFF5F5F5.toInt())
+                        .linkColor(SocratesDesign.Link.toArgb())
                         .isLinkUnderlined(false)
                 }
             }).build()
@@ -145,11 +146,11 @@ fun NativeMarkdown(text: String, modifier: Modifier = Modifier, streaming: Boole
 /** Literal, selectable source while an explicit delimiter is still arriving; never repaired TeX. */
 @Composable
 private fun PendingMathSource(source: String) {
-    Column(Modifier.fillMaxWidth().background(Color(0xFFF5F5F5), RoundedCornerShape(12.dp)).padding(12.dp)) {
-        Text("公式生成中 · 原文", fontSize = 12.sp, color = Color.Gray)
+    Column(Modifier.fillMaxWidth().background(SocratesDesign.Selected, RoundedCornerShape(12.dp)).padding(12.dp)) {
+        Text("公式生成中 · 原文", fontSize = 12.sp, color = SocratesDesign.Muted)
         SelectionContainer {
             Text(source, Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 6.dp),
-                fontFamily = FontFamily.Monospace, fontSize = 14.sp, lineHeight = 22.sp, color = Color(0xFF434343))
+                fontFamily = FontFamily.Monospace, fontSize = 14.sp, lineHeight = 22.sp, color = SocratesDesign.Ink)
         }
     }
 }
@@ -157,13 +158,13 @@ private fun PendingMathSource(source: String) {
 @Composable
 private fun CodePanel(source: String, language: String) {
     val clipboard = LocalClipboardManager.current
-    Column(Modifier.fillMaxWidth().background(Color(0xFFF5F5F5), RoundedCornerShape(16.dp))) {
+    Column(Modifier.fillMaxWidth().background(SocratesDesign.Selected, RoundedCornerShape(16.dp))) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(language.ifBlank { "代码" }, Modifier.weight(1f), fontSize = 12.sp, color = Color.Gray)
-            SocratesIconButton(onClick = { clipboard.setText(AnnotatedString(source)) }) { ReferenceIcon(ReferenceGlyph.Copy, "复制代码", Modifier.size(16.dp), Color.Gray) }
+            Text(language.ifBlank { "代码" }, Modifier.weight(1f), fontSize = 12.sp, color = SocratesDesign.Muted)
+            SocratesIconButton(onClick = { clipboard.setText(AnnotatedString(source)) }) { ReferenceIcon(ReferenceGlyph.Copy, "复制代码", Modifier.size(16.dp), SocratesDesign.Muted) }
         }
         SelectionContainer {
-            Text(source, Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = 16.dp), fontFamily = FontFamily.Monospace, fontSize = 14.sp, lineHeight = 22.sp, color = Color(0xFF252525))
+            Text(source, Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = 16.dp), fontFamily = FontFamily.Monospace, fontSize = 14.sp, lineHeight = 22.sp, color = SocratesDesign.Ink)
         }
     }
 }

@@ -47,13 +47,13 @@ class LoginLayoutContractTest {
     }
 
     @Test fun fullScreenContentAndSheetsAlsoAvoidHorizontalCutoutsAndIme() {
-        // safeDrawing is Compose's union of system bars, display cutout and IME.
+        // AppSafeInsets is safeDrawing plus the bottom gesture exclusion zone.
         assertTrue(source("LoginScreen.kt").contains("windowInsetsPadding(WindowInsets.safeDrawing)"))
         val app = source("SocratesApp.kt")
-        assertTrue(app.contains("Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing))"))
-        assertTrue(app.contains("windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 24.dp)"))
-        assertTrue(app.contains("WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)"))
-        assertTrue(source("SocratesControls.kt").contains("windowInsetsPadding(WindowInsets.safeDrawing), contentAlignment = Alignment.BottomCenter"))
+        assertTrue(app.contains("Column(Modifier.fillMaxSize().windowInsetsPadding(AppSafeInsets))"))
+        assertTrue(app.contains("windowInsetsPadding(AppSafeInsets).padding(horizontal = 24.dp)"))
+        assertTrue(app.contains("AppSafeInsets.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)"))
+        assertTrue(source("SocratesControls.kt").contains("windowInsetsPadding(AppSafeInsets), contentAlignment = Alignment.BottomCenter"))
     }
 
     @Test fun closeBackRetryAndDraftReturnRemainExplicitRealActions() {

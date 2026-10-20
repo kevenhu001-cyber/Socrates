@@ -49,10 +49,10 @@ internal fun ConversationFiles(messages: List<ChatMessage>, onDismiss: () -> Uni
     SocratesSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().padding(20.dp)) {
             Text("已上传文件", style = MaterialTheme.typography.headlineSmall)
-            if (files.isEmpty()) Text("此聊天尚未上传文件。", Modifier.padding(vertical = 28.dp), color = Color.Gray)
+            if (files.isEmpty()) Text("此聊天尚未上传文件。", Modifier.padding(vertical = 28.dp), color = SocratesDesign.Muted)
             LazyColumn(Modifier.heightIn(max = 420.dp).padding(top = 12.dp)) {
                 items(files) { file ->
-                    SocratesMenuItem(text = { Column { Text(file.name); Text(if (file.id == null) "此历史附件没有可重复引用的文件记录" else "附加到下一条消息", style = MaterialTheme.typography.bodySmall, color = Color.Gray) } },
+                    SocratesMenuItem(text = { Column { Text(file.name); Text(if (file.id == null) "此历史附件没有可重复引用的文件记录" else "附加到下一条消息", style = MaterialTheme.typography.bodySmall, color = SocratesDesign.Muted) } },
                         onClick = { file.id?.let { onUseFile(it, file.name, file.mime) } }, enabled = file.id != null,
                         leadingIcon = { ReferenceIcon(ReferenceGlyph.Paperclip) })
                 }
@@ -110,15 +110,15 @@ internal fun ConversationProjectPicker(session: ChatSession, baseUrl: String, on
     SocratesSheet(onDismissRequest = { if (!busy) onDismiss() }) {
         Column(Modifier.fillMaxWidth().padding(20.dp)) {
             Text("添加到项目", style = MaterialTheme.typography.headlineSmall)
-            Text(session.title.ifBlank { "当前聊天" }, Modifier.padding(top = 8.dp, bottom = 16.dp), color = Color.Gray)
+            Text(session.title.ifBlank { "当前聊天" }, Modifier.padding(top = 8.dp, bottom = 16.dp), color = SocratesDesign.Muted)
             if (loading || busy) SocratesSpinner(Modifier.align(Alignment.CenterHorizontally).padding(12.dp))
             error?.let { Text(it, color = MaterialTheme.colorScheme.error); SocratesTextButton(onClick = { revision++ }, enabled = !busy) { Text("重试") } }
-            if (!loading && projects.isEmpty() && error == null) Text("还没有项目，请先在项目页创建。", Modifier.padding(vertical = 20.dp), color = Color.Gray)
+            if (!loading && projects.isEmpty() && error == null) Text("还没有项目，请先在项目页创建。", Modifier.padding(vertical = 20.dp), color = SocratesDesign.Muted)
             LazyColumn(Modifier.heightIn(max = 380.dp)) {
                 items(projects, key = { it.first }) { (id, name) ->
                     SocratesMenuItem(text = { Text(name) }, onClick = { move(id) }, enabled = !busy && id != currentProject,
                         leadingIcon = { ReferenceIcon(ReferenceGlyph.Folder) },
-                        trailingIcon = if (id == currentProject) ({ ReferenceIcon(ReferenceGlyph.Check, "当前项目", tint = SocratesDesign.Blue) }) else null)
+                        trailingIcon = if (id == currentProject) ({ ReferenceIcon(ReferenceGlyph.Check, "当前项目", tint = SocratesDesign.Ink) }) else null)
                 }
                 if (currentProject.isNotBlank() && currentProject != "null") item {
                     SocratesMenuItem({ Text("移出当前项目") }, { move(null) }, enabled = !busy, leadingIcon = { ReferenceIcon(ReferenceGlyph.Close) })

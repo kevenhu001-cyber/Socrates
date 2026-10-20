@@ -1,15 +1,19 @@
 package com.socrates.android
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.socrates.android.data.ChatSession
 import com.socrates.android.ui.*
 import org.junit.Assert.*
@@ -114,6 +118,37 @@ class NavigationLayoutUiTest {
         compose.onNodeWithTag("sidebar-list").performScrollToNode(hasContentDescription("帐号与设置"))
         compose.onNodeWithContentDescription("帐号与设置").assertIsDisplayed().assertHasClickAction()
         compose.onNodeWithText("聊天").assertIsDisplayed().assertHasClickAction()
+    }
+
+    @Test fun drawerOverlayCoversTheHostWindowAndKeepsItsFooterOnScreen() {
+        val drawer = SocratesDrawerState()
+        compose.setContent {
+            SocratesTheme {
+                Box(Modifier.testTag("drawer-host").requiredSize(320.dp, 480.dp)) {
+                    SocratesNavigationDrawer(drawer, gesturesEnabled = false, drawerContent = {
+                        SocratesDrawerSheet(Modifier.fillMaxWidth(.8f)) {
+                            Text("Socrates")
+                            Box(Modifier.weight(1f))
+                            Text("聊天", Modifier.testTag("drawer-footer"), fontSize = 17.sp)
+                        }
+                    }) { Text("会话", Modifier.testTag("drawer-content")) }
+                }
+            }
+        }
+        val host = compose.onNodeWithTag("drawer-host").fetchSemanticsNode().boundsInRoot
+        compose.runOnIdle { drawer.open() }
+        val overlay = compose.onNodeWithTag("drawer-overlay").fetchSemanticsNode().boundsInRoot
+        assertEquals(host.left, overlay.left, 1f)
+        assertEquals(host.top, overlay.top, 1f)
+        assertEquals(host.right, overlay.right, 1f)
+        assertEquals(host.bottom, overlay.bottom, 1f)
+        compose.onNodeWithTag("drawer-content").assertDoesNotExist()
+        val footer = compose.onNodeWithTag("drawer-footer").fetchSemanticsNode().boundsInRoot
+        assertTrue("footer must stay inside the window", footer.bottom <= host.bottom + 1f)
+        assertEquals(host.bottom, footer.bottom, 1f)
+        compose.onNodeWithTag("drawer-scrim").performClick()
+        compose.onNodeWithTag("drawer-overlay").assertDoesNotExist()
+        compose.onNodeWithTag("drawer-content").assertIsDisplayed()
     }
 
     @Composable

@@ -267,10 +267,4 @@ fun MessageDetails(wire: JSONObject?) {
             SelectionContainer { Text(listOf(title, url).filter(String::isNotBlank).joinToString("\n").ifBlank { sources.opt(i).toString() }, style = MaterialTheme.typography.bodySmall) }
         }
     }
-    val attachments = wire?.optJSONArray("attachments")
-    if (attachments != null) for (i in 0 until attachments.length()) {
-        val attachment = attachments.optJSONObject(i) ?: continue
-        if (attachment.optString("kind") != "image" || attachment.optString("dataUrl").isBlank())
-            Text("附件 · " + attachment.optString("name").ifBlank { "文件" }, style = MaterialTheme.typography.labelMedium)
-    }
 }

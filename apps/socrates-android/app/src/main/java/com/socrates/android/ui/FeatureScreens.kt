@@ -105,8 +105,8 @@ fun FeatureSheet(kind: String, onDismiss: () -> Unit, onStartChat: (String) -> U
     BackHandler(onBack = goBack)
     Dialog(onDismissRequest = goBack, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         Box(Modifier.fillMaxSize().background(SocratesDesign.Page)) {
-            Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()) {
-                Row(Modifier.fillMaxWidth().height(SocratesDesign.HeaderHeight).padding(horizontal = SocratesDesign.PageGutter), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.fillMaxSize().windowInsetsPadding(AppSafeInsets)) {
+                Row(Modifier.fillMaxWidth().heightIn(min = SocratesDesign.HeaderHeight).padding(horizontal = SocratesDesign.PageGutter), verticalAlignment = Alignment.CenterVertically) {
                     SocratesIconButton(goBack, Modifier.background(Color.White, CircleShape), enabled = !busy) {
                         ReferenceIcon(ReferenceGlyph.Back, if (state.selected != null || editing) "返回" else "关闭")
                     }
@@ -239,7 +239,7 @@ private fun ColumnScope.FeatureList(kind: String, items: List<FeatureItem>, lega
         if (filtered.isEmpty() && !loading) {
             Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 26.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Spacer(Modifier.height(42.dp))
-                Text(when (taskFilter) { "已暂停" -> "暂无已暂停的自动化流程"; "已完成" -> "暂无已完成的自动化流程"; else -> "尚无已安排的自动化流程" }, color = Color(0xFF666666), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleMedium)
+                Text(when (taskFilter) { "已暂停" -> "暂无已暂停的自动化流程"; "已完成" -> "暂无已完成的自动化流程"; else -> "尚无已安排的自动化流程" }, color = SocratesDesign.Muted, textAlign = TextAlign.Center, style = MaterialTheme.typography.titleMedium)
                 if (query.isBlank()) ScheduledRecommendations(onSelect = onScheduledTemplate)
             }
         } else LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -275,7 +275,7 @@ private fun ColumnScope.FeatureList(kind: String, items: List<FeatureItem>, lega
                 val imageFile = kind == "图像" || (resourceKey?.collection == "files" && mime.startsWith("image/"))
                 val bitmap by produceState<Bitmap?>(null, resourceKey, imageFile, item.raw.optString("url")) { value = if (imageFile) runCatching { vm.thumbnail(item.id, item.raw.optString("url")) }.getOrNull() else null }
                 val tileHeight = if (kind == "图像") 214.dp else if (imageFile) 116.dp else 172.dp
-                SocratesCard(Modifier.fillMaxWidth().height(tileHeight), shape = RoundedCornerShape(if (kind == "图像") 22.dp else 16.dp)) {
+                SocratesCard(Modifier.fillMaxWidth().then(if (imageFile) Modifier.height(tileHeight) else Modifier.heightIn(min = tileHeight))) {
                     val selected = resourceKey in librarySelection.selection
                     val action = if (kind == "资料库" && selectingLibrary) Modifier.toggleable(value = selected, enabled = !busy && !loading && resourceKey != null, role = Role.Checkbox, onValueChange = { onLibraryToggle(item) })
                         else Modifier.clickable(enabled = !busy, role = Role.Button) { onSelect(item) }
@@ -289,12 +289,11 @@ private fun ColumnScope.FeatureList(kind: String, items: List<FeatureItem>, lega
                             if (kind == "图像") Text(item.title, Modifier.align(Alignment.BottomStart).fillMaxWidth().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0x77000000)))).padding(horizontal = 12.dp, vertical = 14.dp), style = MaterialTheme.typography.titleMedium, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         } else {
                             Text(item.title, Modifier.align(Alignment.TopStart).padding(16.dp), style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                            val document = mime.contains("pdf", true) || mime.contains("presentation", true)
                             val web = mime.contains("html", true) || mime.contains("xml", true)
-                            ReferenceIcon(if (web) ReferenceGlyph.Globe else ReferenceGlyph.Document, modifier = Modifier.align(Alignment.BottomStart).padding(16.dp).size(22.dp), tint = if (document) Color(0xFFEB5353) else SocratesDesign.Blue)
+                            ReferenceIcon(if (web) ReferenceGlyph.Globe else ReferenceGlyph.Document, modifier = Modifier.align(Alignment.BottomStart).padding(16.dp).size(22.dp), tint = SocratesDesign.Muted)
                         }
                         if (kind == "资料库" && selectingLibrary) {
-                            Box(Modifier.align(Alignment.TopEnd).padding(8.dp).size(28.dp).background(if (selected) SocratesDesign.Blue else Color.White, CircleShape), contentAlignment = Alignment.Center) {
+                            Box(Modifier.align(Alignment.TopEnd).padding(8.dp).size(28.dp).background(if (selected) SocratesDesign.Accent else Color.White, CircleShape), contentAlignment = Alignment.Center) {
                                 if (selected) ReferenceIcon(ReferenceGlyph.Check, modifier = Modifier.size(18.dp), tint = Color.White)
                                 else Text("○", color = SocratesDesign.Muted)
                             }
@@ -328,7 +327,7 @@ private fun ScheduledRecommendations(onSelect: (ScheduledTemplate) -> Unit) {
     Column(Modifier.fillMaxWidth().padding(top = 36.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text("推荐", style = MaterialTheme.typography.titleMedium, color = SocratesDesign.Muted)
         scheduledTemplates.forEach { template ->
-            SocratesCard(Modifier.fillMaxWidth().clickable(role = Role.Button) { onSelect(template) }, shape = RoundedCornerShape(24.dp)) {
+            SocratesCard(Modifier.fillMaxWidth().clickable(role = Role.Button) { onSelect(template) }) {
                 Row(Modifier.fillMaxWidth().heightIn(min = 78.dp).padding(horizontal = 18.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(template.icon, fontSize = 28.sp)
                     Column(Modifier.weight(1f).padding(start = 14.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -357,11 +356,11 @@ private fun ColumnScope.PluginDirectoryList(
     val installed = visible.filter { it.raw.optJSONObject("connection")?.optString("status") in setOf("connected", "initiated") }
     val legacyVisible = legacyItems.filter { query.isBlank() || it.title.contains(query, true) || it.description.contains(query, true) }
     Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-        if (installed.isNotEmpty()) {
+        if (installed.isNotEmpty() && !connectedOnly) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("已安装", style = MaterialTheme.typography.titleMedium, color = SocratesDesign.Muted, modifier = Modifier.weight(1f))
-                    SocratesTextButton(onClick = { connectedOnly = true }) { Text("查看全部 ›") }
+                    SocratesTextButton(onClick = { connectedOnly = true }) { Text("查看已连接 ›") }
                 }
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     installed.forEach { item ->
@@ -396,7 +395,7 @@ private fun ColumnScope.PluginDirectoryList(
         }
         if (!configured && !openConnectorAvailable && connectors.isNotEmpty()) Text("连接器服务尚未完成服务器配置。", color = SocratesDesign.Muted, style = MaterialTheme.typography.bodySmall)
         if (legacyVisible.isNotEmpty()) {
-            SocratesDivider(color = Color(0xFFE8E8E8))
+            SocratesDivider()
             Text("我的插件", style = MaterialTheme.typography.titleMedium, color = SocratesDesign.Muted)
             legacyVisible.forEach { item -> PluginRow(item, onSelect, { onLegacyToggle(item) }, { onLegacyDelete(item) }, enabled = !busy) }
         }
@@ -411,7 +410,7 @@ private fun ConnectorCatalogRow(item: FeatureItem, configured: Boolean, busy: Bo
     val available = !item.raw.has("available") || item.raw.optBoolean("available")
     val connectable = available && (item.id.startsWith("oc_") || configured)
     Row(Modifier.fillMaxWidth().heightIn(min = 82.dp), verticalAlignment = Alignment.CenterVertically) {
-        Row(Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).clickable(role = Role.Button) { onSelect(item) }.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.weight(1f).clip(RoundedCornerShape(SocratesDesign.RowRadius)).clickable(role = Role.Button) { onSelect(item) }.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             ConnectorMark(item.title)
             Column(Modifier.weight(1f).padding(start = 14.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(item.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -419,7 +418,7 @@ private fun ConnectorCatalogRow(item: FeatureItem, configured: Boolean, busy: Bo
             }
         }
         if (connected || initiated) SocratesTextButton(onClick = { onSelect(item) }, enabled = !busy) { Text(if (connected) "管理" else "授权中") }
-        else if (connectable) SocratesIconButton(onClick = { onConnect(item) }, enabled = !busy) { ReferenceIcon(ReferenceGlyph.Plus, "连接${item.title}", tint = SocratesDesign.Blue) }
+        else if (connectable) SocratesIconButton(onClick = { onConnect(item) }, enabled = !busy) { ReferenceIcon(ReferenceGlyph.Plus, "连接${item.title}", tint = SocratesDesign.Ink) }
         else Text("不可用", Modifier.padding(horizontal = 8.dp), style = MaterialTheme.typography.labelSmall, color = SocratesDesign.Muted)
     }
 }
@@ -468,9 +467,9 @@ private fun FeatureResourceRow(kind: String, item: FeatureItem, busy: Boolean, o
     val status = item.raw.optString("status")
     val toggleable = kind == "记忆" || kind == "定时任务" && status in setOf("pending", "active", "paused")
     val checked = if (kind == "记忆") item.raw.optBoolean("enabled", true) else ScheduledTaskPresentation.isActive(status)
-    SocratesCard(Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp)) {
+    SocratesCard(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).clickable(enabled = !busy, role = Role.Button, onClick = onSelect).padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(Modifier.weight(1f).clip(RoundedCornerShape(SocratesDesign.RowRadius)).clickable(enabled = !busy, role = Role.Button, onClick = onSelect).padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(item.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (item.description.isNotBlank()) Text(item.description, style = MaterialTheme.typography.bodySmall, color = SocratesDesign.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (kind == "定时任务") {
@@ -565,7 +564,7 @@ private fun ColumnScope.FeatureDetail(kind: String, item: FeatureItem, vm: Featu
         val connectorAvailable = !item.raw.has("available") || item.raw.optBoolean("available")
         val connectorConnectable = connectorAvailable && (item.id.startsWith("oc_") || connectorConfigured)
         val editable = kind in setOf("项目", "记忆", "资料库", "定时任务", "助手") || kind == "插件" && !connector && !item.raw.optBoolean("isBuiltin", false)
-        if (kind == "图像" || kind == "资料库") SocratesButton(onClick = { onUseFile(item.id, item.title, item.raw.optString("mimeType").ifBlank { item.raw.optString("mime", "application/octet-stream") }) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text("在对话中附加") }
+        if ((kind == "图像" || kind == "资料库") && item.raw.optString("_collection") != "artifacts") SocratesButton(onClick = { onUseFile(item.id, item.title, item.raw.optString("mimeType").ifBlank { item.raw.optString("mime", "application/octet-stream") }) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text("在对话中附加") }
         if (kind == "项目") {
             SocratesButton(onClick = { onUseProject(item.id, item.title) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text("开始项目对话") }
             SocratesOutlinedButton(onClick = { projectResources = true }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text("管理项目会话") }
@@ -629,14 +628,14 @@ private fun ColumnScope.FeatureForm(kind: String, isEditing: Boolean, name: Stri
 private fun PluginRow(item: FeatureItem, onSelect: (FeatureItem) -> Unit, onToggle: () -> Unit, onDelete: () -> Unit, enabled: Boolean) {
     var menu by remember(item.id) { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth().heightIn(min = 78.dp), verticalAlignment = Alignment.CenterVertically) {
-        Row(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).clickable(enabled = enabled, role = Role.Button) { onSelect(item) }.padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.weight(1f).clip(RoundedCornerShape(SocratesDesign.RowRadius)).clickable(enabled = enabled, role = Role.Button) { onSelect(item) }.padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             val letter = item.title.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "?"
             val palette = listOf(Color(0xFFECE8FF), Color(0xFFE2F2EC), Color(0xFFFFEEE2), Color(0xFFE6EFFC))
             val color = palette[(item.title.hashCode() and Int.MAX_VALUE) % palette.size]
             Box(Modifier.size(48.dp).background(color, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) { Text(letter, fontWeight = FontWeight.Bold, color = Color(0xFF343644)) }
             Column(Modifier.weight(1f).padding(start = 16.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(item.title, fontSize = 17.sp, lineHeight = 22.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(item.description.ifBlank { item.raw.optString("type") }, fontSize = 14.sp, lineHeight = 19.sp, color = Color(0xFF666666), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(item.description.ifBlank { item.raw.optString("type") }, fontSize = 14.sp, lineHeight = 19.sp, color = SocratesDesign.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
         Box {
