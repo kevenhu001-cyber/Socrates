@@ -16,450 +16,233 @@
   <link rel="preload" href="/media/fonts/geist-sans-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/fonts.css?cb=20261021v5">
   <link rel="stylesheet" href="/site.css?cb=20261021b">
+  <link rel="stylesheet" href="/home-refresh.css?cb=20261021c">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Socrates">
   <meta property="og:title" content="Socrates — 理解，始于一个问题。">
   <meta property="og:description" content="为真正想理解的人打造的 AI 导师——以苏格拉底式对话、持久回忆与知识地图为核心。">
   <meta property="og:url" content="https://topodrive.top/zh/">
-  <meta property="og:image" content="https://topodrive.top/media/socrates-home-question-atlas-v2.webp">
+  <meta property="og:image" content="https://topodrive.top/media/socrates-home-dialogue-photo-v1.webp">
   <meta property="og:locale" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Socrates — 理解，始于一个问题。">
   <meta name="twitter:description" content="为真正想理解的人打造的 AI 导师。">
-  <meta name="twitter:image" content="https://topodrive.top/media/socrates-home-question-atlas-v2.webp">
+  <meta name="twitter:image" content="https://topodrive.top/media/socrates-home-dialogue-photo-v1.webp">
   <script src="/locale.js?cb=20261021v6"></script>
 </head>
-<body id="top">
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+<body id="top" class="home-refresh">
+  <svg class="home-symbols" width="0" height="0" aria-hidden="true" focusable="false">
     <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M2.8 8h10.2M9 4.1 12.9 8 9 11.9"/></symbol>
-    <symbol id="i-up" viewBox="0 0 16 16"><path d="M8 13V3M3.9 7.1 8 3l4.1 4.1"/></symbol>
     <symbol id="i-menu" viewBox="0 0 20 20"><path d="M3.5 6.5h13M3.5 10h13M3.5 13.5h13"/></symbol>
     <symbol id="i-close" viewBox="0 0 20 20"><path d="m5 5 10 10M15 5 5 15"/></symbol>
-    <symbol id="i-check" viewBox="0 0 16 16"><path d="m3 8.2 3.1 3.1L13 4.6"/></symbol>
   </svg>
+  <a class="home-skip" href="#main">跳到主要内容</a>
 
-  <a class="skip" href="#main">跳到主要内容</a>
-
-  <header class="hdr">
-    <div class="shell hdr-in">
-      <a class="brand" href="/" aria-label="Socrates 首页">
-        <img src="/logo.png" width="20" height="20" alt="">
+  <header class="home-site-header">
+    <div class="home-shell home-header-inner">
+      <a class="home-brand" href="/zh/" aria-label="Socrates 首页">
+        <img src="/logo.png" width="21" height="21" alt="">
         <span class="brand-word">Socrates</span>
       </a>
-      <nav class="nav" aria-label="主导航">
+      <nav class="home-nav" aria-label="主导航">
         <a href="/zh/product">产品</a>
         <a href="/zh/research">研究</a>
-        <a href="/zh/principles">原则</a>
-        <a href="/zh/learn">学习</a>
         <a href="/zh/developers">开发者</a>
         <a href="/zh/about">公司</a>
       </nav>
-      <div class="hdr-act">
-        <a class="hdr-lang" href="/" data-locale-switcher hreflang="en" lang="en">English</a>
-        <a class="hdr-login" href="https://app.topodrive.top">登录</a>
-        <a class="btn btn--sm" href="https://app.topodrive.top">开始使用</a>
-        <button class="menu-btn" type="button" data-menu-btn aria-expanded="false" aria-controls="mobile-menu" aria-label="打开菜单">
-          <svg class="ico open" viewBox="0 0 20 20" aria-hidden="true"><use href="#i-menu"/></svg>
-          <svg class="ico close" viewBox="0 0 20 20" aria-hidden="true"><use href="#i-close"/></svg>
+      <div class="home-header-actions">
+        <a class="home-language" href="/" data-locale-switcher hreflang="en" lang="en">English</a>
+        <a class="home-login" href="https://app.topodrive.top">登录</a>
+        <a class="home-header-button" href="https://app.topodrive.top">开始使用<svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        <button class="home-menu-button" type="button" data-menu-btn aria-expanded="false" aria-controls="home-mobile-menu" aria-label="打开菜单">
+          <svg class="home-icon open" viewBox="0 0 20 20" aria-hidden="true"><use href="#i-menu"/></svg>
+          <svg class="home-icon close" viewBox="0 0 20 20" aria-hidden="true"><use href="#i-close"/></svg>
         </button>
       </div>
     </div>
-    <div class="mobile-menu" id="mobile-menu" data-mobile-menu>
-      <nav aria-label="移动导航">
-        <a href="/zh/product">产品</a>
-        <a href="/zh/research">研究</a>
-        <a href="/zh/principles">原则</a>
-        <a href="/zh/learn">学习</a>
-        <a href="/zh/developers">开发者</a>
-        <a href="/zh/about">公司</a>
-      </nav>
-      <div class="m-act">
-        <a class="btn" href="https://app.topodrive.top">开始使用</a>
-        <a class="btn btn--ghost" href="https://app.topodrive.top">登录</a>
-      </div>
-      <div class="m-lang">
+    <nav class="home-mobile-menu" id="home-mobile-menu" data-mobile-menu aria-label="移动导航">
+      <a href="/zh/product">产品</a>
+      <a href="/zh/research">研究</a>
+      <a href="/zh/developers">开发者</a>
+      <a href="/zh/about">公司</a>
+      <div class="home-mobile-actions">
         <a href="/" data-locale-switcher hreflang="en" lang="en">English</a>
-        <a href="/pricing">定价</a>
-        <a href="/contact">联系</a>
+        <a href="/zh/pricing">定价</a>
+        <a href="/zh/contact">联系</a>
       </div>
-    </div>
+    </nav>
   </header>
 
   <main id="main">
-    <section class="hero">
-      <div class="shell">
-        <p class="eyebrow">AI 导师</p>
-        <h1 class="display hero-title">理解，始于<span class="nowrap">一个问题。</span></h1>
-        <p class="lede hero-lede">让一个想法，经由对话、回忆与连接，延续下去。你的对话属于你，我们不会用它训练模型。</p>
-        <div class="hero-actions">
-          <a class="btn" href="https://app.topodrive.top">开始学习<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-          <a class="btn btn--ghost" href="/zh/research">阅读研究</a>
-        </div>
-        <p class="hero-note">Free 方案永久免费 · 无需信用卡 · 随时导出或删除会话</p>
-
-        <div class="stage" data-reveal>
-          <div class="stage-bar">
-            <span class="stage-live" aria-hidden="true"></span>
-            <span>会话</span>
-            <span class="sep">/</span>
-            <span>分布式系统</span>
-            <span class="end">6 轮 · 私密</span>
-          </div>
-          <div class="stage-body">
-            <div class="stage-chat">
-              <p class="msg msg--user">为什么重试掩码能让失败的请求最终通过？</p>
-              <div class="msg msg--tutor">
-                <span class="msg-who">Socrates</span>
-                请求失败一次之后，有什么变了——是同一个载荷，还是不同的形状？
-              </div>
-              <p class="msg msg--user">同一个载荷。我们只是把字节再发一次。</p>
-              <div class="msg msg--tutor">
-                <span class="msg-who">Socrates</span>
-                如果字节没变，掩码究竟改变了什么？试着说出那个真正在移动的变量。
-              </div>
-              <p class="msg msg--user">哦——是时间。用另一个系统时钟去重试，并不是换一个请求。</p>
-              <span class="recall"><strong>回忆</strong><span class="dot"></span>3 天后<span class="dot"></span>为什么时间重要？</span>
-            </div>
-            <aside class="stage-map" aria-label="本次会话的知识地图">
-              <div class="map-head"><span>知识地图</span><b>4 个连接</b></div>
-              <div class="map-canvas">
-                <svg viewBox="0 0 360 300" role="img" aria-label="重试掩码连接着幂等性、退避、系统时钟与请求形状。">
-                  <circle cx="180" cy="150" r="38" fill="none" stroke="#d8d8d3" stroke-width="1" stroke-dasharray="2 4"/>
-                  <path class="map-line map-line--on" d="M180 150 C150 122 118 96 92 74"/>
-                  <path class="map-line" d="M180 150 C222 118 252 98 282 80"/>
-                  <path class="map-line map-line--on" d="M180 150 C146 182 112 208 84 234"/>
-                  <path class="map-line" d="M180 150 C220 180 246 202 276 228"/>
-                  <circle class="map-node" cx="92" cy="74" r="4"/>
-                  <circle class="map-node" cx="282" cy="80" r="4"/>
-                  <circle class="map-node map-node--on" cx="84" cy="234" r="4"/>
-                  <circle class="map-node" cx="276" cy="228" r="4"/>
-                  <circle class="map-node map-node--on" cx="180" cy="150" r="7"/>
-                  <text class="map-text" x="92" y="58" text-anchor="middle">幂等性</text>
-                  <text class="map-text" x="282" y="64" text-anchor="middle">退避</text>
-                  <text class="map-text map-text--on" x="84" y="254" text-anchor="middle">系统时钟</text>
-                  <text class="map-text" x="276" y="248" text-anchor="middle">请求形状</text>
-                  <text class="map-text map-text--on" x="180" y="176" text-anchor="middle">重试掩码</text>
-                </svg>
-              </div>
-            </aside>
-          </div>
-        </div>
-        <div class="stage-foot">
-          <span>一段真实会话的节选。每一次交流都保持私密。</span>
-          <a class="link" href="/zh/product">Socrates 如何教学<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-        </div>
+    <section class="home-hero">
+      <div class="home-shell home-hero-inner">
+        <p class="home-eyebrow">为真正想理解的人打造的 AI 导师</p>
+        <h1>理解，始于<br>一个问题。</h1>
+        <p class="home-hero-copy">让一个想法，经由对话、回忆与连接，延续下去。你的对话属于你，我们不会用它训练模型。</p>
+        <a class="home-prompt-card" href="https://app.topodrive.top" aria-label="开始一次苏格拉底式学习">
+          <span class="home-prompt-label">一个值得追问的问题</span>
+          <span class="home-prompt-row">
+            <span>为什么重试掩码能让失败的请求最终通过？</span>
+            <span class="home-prompt-arrow" aria-hidden="true"><svg class="home-icon" viewBox="0 0 16 16"><use href="#i-arrow"/></svg></span>
+          </span>
+        </a>
+        <p class="home-hero-note">永久免费 · 无需信用卡 · 随时导出或删除会话</p>
       </div>
     </section>
 
-    <section class="sec" aria-labelledby="loop-title">
-      <div class="shell">
-        <div class="sec-head">
-          <p class="eyebrow sec-eyebrow">学习循环</p>
-          <h2 class="sec-title" id="loop-title">提问，追问，回忆，连接。</h2>
-          <p class="sec-desc">四个动作，一段对话。导师沿着你推理中的缝隙，而不是答案的表面。</p>
-        </div>
-        <ol class="loop">
-          <li class="step" data-reveal><span class="step-num">01</span><h3>提问</h3><p>从理解最诚实的边缘开始。</p></li>
-          <li class="step" data-reveal style="--d:.06s"><span class="step-num">02</span><h3>对话</h3><p>导师沿着缝隙，而不是表面。</p></li>
-          <li class="step" data-reveal style="--d:.12s"><span class="step-num">03</span><h3>回忆</h3><p>当想法真正属于你时，它自会回来。</p></li>
-          <li class="step" data-reveal style="--d:.18s"><span class="step-num">04</span><h3>连接</h3><p>写进你自己的知识地图。</p></li>
-        </ol>
-      </div>
-    </section>
-
-    <section class="img-band" aria-label="田野笔记">
-      <div class="shell">
-        <figure data-reveal>
-          <div class="media media--wide">
-            <img src="/media/socrates-field-notes.webp" alt="阳光下的石桌上摊开一本笔记：一页是几何草图，另一页夹着一张半透明的折纸。" width="1672" height="941" loading="lazy" decoding="async">
-          </div>
-          <figcaption class="caption"><span>Fig. 01 — 田野笔记</span><span>一页为下一个问题留着的纸。</span></figcaption>
+    <section class="home-featured" aria-labelledby="home-featured-title">
+      <div class="home-shell home-featured-grid">
+        <figure class="home-featured-image">
+          <img src="/media/socrates-home-dialogue-photo-v1.webp" alt="两位学习者在摊开的笔记本上一起梳理一张图示。" width="1672" height="941" fetchpriority="high" decoding="async">
         </figure>
+        <div class="home-featured-copy">
+          <span class="home-feature-label">01 / 对话</span>
+          <h2 id="home-featured-title">一位跟随你思路的导师。</h2>
+          <p>先停留在还不明白的地方。导师跟随你的推理，再提出更准确的问题。</p>
+          <a class="home-text-link" href="/zh/product">了解 Socrates 如何教学<svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        </div>
       </div>
     </section>
 
-    <section class="sec sec--soft" aria-labelledby="atlas-title">
-      <div class="shell">
-        <div class="atlas">
-          <div class="atlas-copy" data-reveal>
-            <p class="eyebrow">产品 — 问题图谱</p>
-            <h2 class="h2" id="atlas-title">问题，长成一片<br>有待研究的田野。</h2>
-            <p class="body">让一个棘手的主题，沿着对话、回忆，以及那些让它重新有用的连接，被一路追下去。问题图谱是我们当前的首页地图：它让问题穿过论据、回忆与相连的想法。</p>
-            <a class="link" href="/zh/product">探索学习地图<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+    <section class="home-section" aria-labelledby="home-product-title">
+      <div class="home-shell">
+        <div class="home-section-heading">
+          <div>
+            <p class="home-section-label">学习循环</p>
+            <h2 id="home-product-title">一段对话，四种注意力。</h2>
           </div>
-          <figure class="atlas-media" data-reveal style="--d:.08s">
-            <div class="media">
-              <img src="/media/socrates-question-map.webp" alt="一张摊开在深色桌面上的大幅纸地图，路线由手工标记。" width="1672" height="941" loading="lazy" decoding="async">
-            </div>
-            <figcaption class="caption"><span>Fig. 02 — 问题图谱</span><span>路径，而非摘要</span></figcaption>
-          </figure>
+          <a class="home-text-link" href="/zh/product">探索产品<svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
         </div>
-        <div class="feature-row">
-          <div class="feature" data-reveal><h3>路径，而非摘要</h3><p>通往一个想法的路径始终可见，你可以回到推理本身，而不是一个被压平的答案。</p></div>
-          <div class="feature" data-reveal style="--d:.06s"><h3>在对的间隔回忆</h3><p>有用的时刻会变成小提示，出现在提取仍然需要费力的那个点上。</p></div>
-          <div class="feature" data-reveal style="--d:.12s"><h3>一张与你一起生长的地图</h3><p>问题会跨会话连接。地图围绕你的兴趣生长，而不是一套固定的课程。</p></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="sec" aria-labelledby="blocks-title">
-      <div class="shell">
-        <div class="sec-head">
-          <p class="eyebrow sec-eyebrow">四个产品区块</p>
-          <h2 class="sec-title" id="blocks-title">一段对话，四种注意力。</h2>
-          <p class="sec-desc">对话、回忆、知识地图与练习不是四个独立功能，而是同一个循环的四个侧面。</p>
-        </div>
-        <div class="feature-cards">
-          <article class="fc" data-reveal>
-            <div class="fc-media"><img src="/media/socrates-home-dialogue-thread-v1.webp" alt="由一条细线连接的纸片序列。" width="1672" height="941" loading="lazy" decoding="async"></div>
-            <div class="fc-body"><span class="fc-num">01</span><h3>对话</h3><p>停留在那个还说不通的地方。导师跟随你的推理，给出更锋利的问题。</p></div>
+        <div class="home-product-grid">
+          <article class="home-product-card">
+            <div class="home-card-image"><img src="/media/socrates-home-study-photo-v1.webp" alt="" width="1672" height="941" loading="lazy" decoding="async"></div>
+            <span class="home-card-label">01 / 对话</span>
+            <h3>跟随思路继续追问。</h3>
+            <p>停留在还不明白的地方，从中找到更准确的问题。</p>
           </article>
-          <article class="fc" data-reveal style="--d:.06s">
-            <div class="fc-media"><img src="/media/socrates-recall-cards.webp" alt="一块夹着回忆卡片的写字板。" width="1672" height="941" loading="lazy" decoding="async"></div>
-            <div class="fc-body"><span class="fc-num">02</span><h3>回忆</h3><p>在一个想法淡去之前，把它带回来。回忆提示让你用自己的话重新回答有用的时刻。</p></div>
+          <article class="home-product-card">
+            <div class="home-card-image"><img src="/media/socrates-home-recall-photo-v1.webp" alt="" width="1672" height="941" loading="lazy" decoding="async"></div>
+            <span class="home-card-label">02 / 回忆</span>
+            <h3>回到真正重要的想法。</h3>
+            <p>有用的时刻会变成小提示，在提取仍需要费力时再次出现。</p>
           </article>
-          <article class="fc" data-reveal>
-            <div class="fc-media"><img src="/media/socrates-question-orbit-v2.webp" alt="深色背景上绕着中心点旋转的纸片。" width="1672" height="941" loading="lazy" decoding="async"></div>
-            <div class="fc-body"><span class="fc-num">03</span><h3>知识地图</h3><p>看见正在学习的事物之间那条线。问题会跨会话形成一张不断生长的地图。</p></div>
+          <article class="home-product-card">
+            <div class="home-card-image"><img src="/media/socrates-home-map-photo-v1.webp" alt="" width="1672" height="940" loading="lazy" decoding="async"></div>
+            <span class="home-card-label">03 / 知识地图</span>
+            <h3>看见想法之间的连接。</h3>
+            <p>问题会跨会话相连。地图围绕你的兴趣生长，而非固定课程。</p>
           </article>
-          <article class="fc" data-reveal style="--d:.06s">
-            <div class="fc-media"><img src="/media/socrates-learning-instrument-v2.webp" alt="俯视一件由层叠圆盘与透镜组成的学习仪器。" width="1672" height="941" loading="lazy" decoding="async"></div>
-            <div class="fc-body"><span class="fc-num">04</span><h3>练习</h3><p>不必表演确定，也能确认自己懂了。低压力的问题会揭示什么已经成立、什么还缺一块。</p></div>
+          <article class="home-product-card">
+            <div class="home-card-image"><img src="/media/socrates-learning-practice-cycle-v3.webp" alt="" width="1672" height="941" loading="lazy" decoding="async"></div>
+            <span class="home-card-label">04 / 练习</span>
+            <h3>找出理解真正站得住的部分。</h3>
+            <p>低压力的问题呈现你理解了什么，也指出下一个疑问在哪里。</p>
           </article>
         </div>
       </div>
     </section>
 
-    <section class="sec" aria-labelledby="dialogue-title">
-      <div class="shell">
-        <div class="conv">
-          <div class="conv-copy" data-reveal>
-            <p class="eyebrow">在对话中</p>
-            <h2 class="h2" id="dialogue-title">一位跟随你思考的导师。</h2>
-            <p class="body">一段真实课堂的切片——它把对话引向一个更尖锐的问题，而不是一个更快的答案。</p>
-            <a class="link" href="/zh/product">Socrates 如何教学<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-          </div>
-          <div class="chat" data-reveal style="--d:.08s">
-            <div class="chat-head"><span>会话 · 分布式系统</span><span class="end">6 轮</span></div>
-            <ol class="chat-body">
-              <li class="turn turn--learner">为什么重试掩码能让失败的请求最终通过？</li>
-              <li class="turn turn--tutor"><span class="turn-role">Socrates</span>请求失败一次之后，有什么变了——是同一个载荷，还是不同的形状？</li>
-              <li class="turn turn--learner">同一个载荷。我们只是把字节再发一次。</li>
-              <li class="turn turn--tutor"><span class="turn-role">Socrates</span>如果字节没变，掩码究竟改变了什么？试着说出那个真正在移动的变量。</li>
-              <li class="turn turn--learner">哦——是时间。用另一个系统时钟去重试，并不是换一个请求。</li>
-              <li class="turn turn--tutor"><span class="turn-role">Socrates</span>那么在你的服务里，那个时钟究竟住在哪里？更慢的客户端有没有可能因此胜过更快的那个？</li>
-            </ol>
-            <div class="chat-foot">
-              <span class="small">私密默认。不会用于训练模型。</span>
-              <a class="link" href="https://app.topodrive.top">问下一个问题<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-            </div>
-          </div>
+    <section class="home-approach" aria-labelledby="home-approach-title">
+      <div class="home-shell home-approach-grid">
+        <div>
+          <p class="home-section-label">围绕难题构建</p>
+          <h2 id="home-approach-title">理解不止于一个答案。</h2>
+        </div>
+        <div class="home-approach-copy">
+          <p>有用的导师会记住问题的来路，而不是把每次提问都当成独立事件。对话、回忆、练习与想法之间的连接会留在一起。</p>
+          <p>对话属于你，我们不会用它训练模型。你可以从账户页面导出或删除任何会话。</p>
+          <a class="home-text-link" href="/zh/principles">我们的原则<svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
         </div>
       </div>
     </section>
 
-    <section class="sec" aria-labelledby="research-title">
-      <div class="shell">
-        <div class="sec-head">
-          <p class="eyebrow sec-eyebrow">研究</p>
-          <h2 class="sec-title" id="research-title">最新研究</h2>
-          <p class="sec-desc">关于“理解如何留存”的短文与田野笔记——由团队撰写，观点变化时随之修订。</p>
-          <a class="link link--muted sec-link" href="/zh/research">查看全部研究<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+    <section class="home-section" aria-labelledby="home-research-title">
+      <div class="home-shell">
+        <div class="home-section-heading">
+          <div>
+            <p class="home-section-label">Socrates 研究</p>
+            <h2 id="home-research-title">关于如何让学习留下来的笔记。</h2>
+          </div>
+          <a class="home-text-link" href="/zh/research">查看全部研究<svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
         </div>
-        <div class="rows">
-          <a class="row row--thumb" href="/zh/research/memory-recall/"><span class="row-thumb"><img src="/media/socrates-research-memory-route-v1.webp" alt="" width="1672" height="941" loading="lazy" decoding="async"></span><span class="row-meta">记忆<br>7 分钟阅读 · 2026 年 8 月 12 日</span><span class="row-title">回到一个想法的路径</span><svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-          <a class="row row--thumb" href="/zh/research/explanation-evidence/"><span class="row-thumb"><img src="/media/socrates-research-explanation-evidence-v1.webp" alt="" width="1672" height="941" loading="lazy" decoding="async"></span><span class="row-meta">解释<br>6 分钟阅读 · 2026 年 7 月 29 日</span><span class="row-title">当清晰的解释变成论据</span><svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-          <a class="row row--thumb" href="/zh/research/maps-preserve-path/"><span class="row-thumb"><img src="/media/socrates-research-maps-path-v1.webp" alt="" width="1672" height="941" loading="lazy" decoding="async"></span><span class="row-meta">知识地图<br>8 分钟阅读 · 2026 年 6 月 24 日</span><span class="row-title">保留路径的地图</span><svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-        </div>
-      </div>
-    </section>
-
-    <section class="sec sec--soft" aria-labelledby="stories-title">
-      <div class="shell">
-        <div class="sec-head">
-          <p class="eyebrow sec-eyebrow">从实践里长出的故事</p>
-          <h2 class="sec-title" id="stories-title">从实践里长出的故事。</h2>
-          <a class="link link--muted sec-link" href="/zh/research">全部故事<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-        </div>
-        <div class="cards">
-          <article class="card" data-reveal>
-            <a class="card-media" href="/zh/research/honest-pause/" tabindex="-1" aria-hidden="true"><img src="/media/socrates-research-honest-pause-v1.webp" alt="" width="1672" height="941" loading="lazy" decoding="async"></a>
-            <div class="card-body">
-              <span class="card-meta">研究 · 8 分钟阅读</span>
-              <h3 class="card-title"><a href="/zh/research/honest-pause/">一次诚实停顿的价值。</a></h3>
-              <p class="card-desc">当导师停止填补沉默，让学员把一个想法说完，会发生什么。</p>
-              <span class="card-foot">Tomás Soto · 实践负责人 · 2026 年 7 月 11 日</span>
-            </div>
+        <div class="home-research-grid">
+          <article class="home-research-card">
+            <div class="home-article-image"><img src="/media/socrates-research-memory-route-v1.webp" alt="" width="1672" height="941" loading="lazy" decoding="async"></div>
+            <span class="home-article-meta">记忆 · 7 分钟阅读 · 2026 年 8 月 12 日</span>
+            <h3><a href="/zh/research/memory-recall/">回到一个想法的路径</a></h3>
+            <p>一个小小的提示变化，如何比重复答案更可靠地唤起概念。</p>
+            <a class="home-text-link" href="/zh/research/memory-recall/">阅读文章<svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
           </article>
-          <article class="card" data-reveal style="--d:.06s">
-            <a class="card-media" href="/zh/research/tutor-curiosity/" tabindex="-1" aria-hidden="true"><img src="/media/socrates-research-tutor-boundaries-v1.webp" alt="" width="1672" height="941" loading="lazy" decoding="async"></a>
-            <div class="card-body">
-              <span class="card-meta">研究 · 10 分钟阅读</span>
-              <h3 class="card-title"><a href="/zh/research/tutor-curiosity/">导师何时该承认不确定。</a></h3>
-              <p class="card-desc">关于信心、校准，以及那些让导师值得信任的时刻。</p>
-              <span class="card-foot">Jules Laurent · 辅导负责人 · 2026 年 5 月 14 日</span>
-            </div>
+          <article class="home-research-card">
+            <div class="home-article-image"><img src="/media/socrates-research-explanation-evidence-v1.webp" alt="" width="1672" height="941" loading="lazy" decoding="async"></div>
+            <span class="home-article-meta">解释 · 6 分钟阅读 · 2026 年 7 月 29 日</span>
+            <h3><a href="/zh/research/explanation-evidence/">当清晰的解释成为证据</a></h3>
+            <p>关于“用自己的话解释”提示的三年 A/B 数据。</p>
+            <a class="home-text-link" href="/zh/research/explanation-evidence/">阅读文章<svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
           </article>
-          <article class="card" data-reveal style="--d:.12s">
-            <a class="card-media" href="/zh/research/what-learners-keep/" tabindex="-1" aria-hidden="true"><img src="/media/socrates-research-what-learners-keep-v1.webp" alt="" width="1672" height="941" loading="lazy" decoding="async"></a>
-            <div class="card-body">
-              <span class="card-meta">研究 · 9 分钟阅读</span>
-              <h3 class="card-title"><a href="/zh/research/what-learners-keep/">一节课之后，学员留下了什么。</a></h3>
-              <p class="card-desc">一周之后，留下来的很少是摘要，而是抵达它的那条路径。</p>
-              <span class="card-foot">Rin Park · 实践共同作者 · 2026 年 4 月 30 日</span>
-            </div>
+          <article class="home-research-card">
+            <div class="home-article-image"><img src="/media/socrates-research-maps-path-v1.webp" alt="" width="1672" height="941" loading="lazy" decoding="async"></div>
+            <span class="home-article-meta">知识地图 · 8 分钟阅读 · 2026 年 6 月 24 日</span>
+            <h3><a href="/zh/research/maps-preserve-path/">保留路径的地图</a></h3>
+            <p>一篇关于如何呈现关系、又不把活的主题变成静态图表的实践记录。</p>
+            <a class="home-text-link" href="/zh/research/maps-preserve-path/">阅读文章<svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
           </article>
         </div>
       </div>
     </section>
 
-    <section class="quote-band" aria-label="原则四">
-      <img src="/media/socrates-research-knowledge-topology-v3.webp" alt="" width="1672" height="941" loading="lazy" decoding="async">
-      <div class="shell">
-        <blockquote data-reveal>
-          <p>“页面知道什么时候该安静。”</p>
-          <cite>清晰，而非喧闹 — 原则 04</cite>
-        </blockquote>
+    <section class="home-final" aria-labelledby="home-final-title">
+      <div class="home-shell">
+        <p class="home-section-label">为理解留出空间</p>
+        <h2 id="home-final-title">继续追问下去。</h2>
+        <p class="home-final-copy">检验一个想法的边界，在需要时，回到那些真正有用的连接。</p>
+        <a class="home-button" href="https://app.topodrive.top">开始使用<svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
       </div>
     </section>
-
-    <section class="sec" aria-labelledby="principles-title">
-      <div class="shell">
-        <div class="pr">
-          <div class="pr-intro" data-reveal>
-            <p class="eyebrow">围绕难题而构建</p>
-            <h2 class="h2" id="principles-title">一条通往困难想法的清晰路径。</h2>
-            <p class="body">这些原则指导我们在构建 Socrates 时所做的取舍。</p>
-            <a class="link" href="/zh/principles">我们的原则<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-          </div>
-          <ol class="pr-list">
-            <li class="pr-item" data-reveal><span class="pr-num">01</span><div><h3>对话，而非灌输</h3><p>导师先追问，再回答。</p></div></li>
-            <li class="pr-item" data-reveal><span class="pr-num">02</span><div><h3>回忆，而非新奇</h3><p>好的导师记得走进问题的路径。</p></div></li>
-            <li class="pr-item" data-reveal><span class="pr-num">03</span><div><h3>练习，而非消费</h3><p>理解来自提取、解释与修订。</p></div></li>
-            <li class="pr-item" data-reveal><span class="pr-num">04</span><div><h3>清晰，而非喧闹</h3><p>页面知道什么时候该安静。</p></div></li>
-            <li class="pr-item" data-reveal><span class="pr-num">05</span><div><h3>你的思考，你的数据</h3><p>对话属于你，我们不会用它训练模型。</p></div></li>
-          </ol>
-        </div>
-      </div>
-    </section>
-
-    <section class="band" aria-labelledby="stats-title">
-      <div class="shell">
-        <div class="band-head"><p id="stats-title">六周干预结果 · 2026 年 5–7 月</p><a href="/zh/research">阅读研究</a></div>
-        <div class="stats">
-          <div class="stat" data-reveal><span class="stat-value">184</span><p class="stat-label">参与项目的活跃学员</p></div>
-          <div class="stat" data-reveal style="--d:.06s"><span class="stat-value">1,247</span><p class="stat-label">记录的回忆提示</p></div>
-          <div class="stat" data-reveal style="--d:.12s"><span class="stat-value">+17 pp</span><p class="stat-label">平均处理效应 · 重述 vs 原文</p></div>
-          <div class="stat" data-reveal style="--d:.18s"><span class="stat-value">63%</span><p class="stat-label">“差一点就懂”组的一周留存</p></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="sec" aria-labelledby="news-title">
-      <div class="shell">
-        <div class="sec-head">
-          <p class="eyebrow sec-eyebrow">新闻室</p>
-          <h2 class="sec-title" id="news-title">最新动态</h2>
-          <a class="link link--muted sec-link" href="/zh/announcements">查看更多<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-        </div>
-        <div class="news-feature">
-          <a class="nf-main" href="/zh/announcements" data-reveal>
-            <div class="media"><img src="/media/socrates-recall.webp" alt="画在纸上的圆形回忆图。" width="1672" height="941" loading="lazy" decoding="async"></div>
-            <span class="news-meta">学习 · 2026 年 8 月 12 日</span>
-            <h3 class="nf-title">推出引导式回忆。</h3>
-            <p class="nf-desc">一种回到值得保留的问题的新方式，为你的第一次尝试留出足够停顿。</p>
-            <span class="link">阅读这篇笔记<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></span>
-          </a>
-          <div class="nf-list" data-reveal style="--d:.06s">
-            <a class="news-item" href="/zh/announcements"><span><span class="news-meta">研究 · 2026 年 8 月 2 日</span><span class="news-title">关于回到一个想法的路径的笔记。</span></span><svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-            <a class="news-item" href="/zh/announcements"><span><span class="news-meta">产品 · 2026 年 7 月 18 日</span><span class="news-title">Socrates Studio 开放了。</span></span><svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-            <a class="news-item" href="/zh/announcements"><span><span class="news-meta">产品 · 2026 年 7 月 4 日</span><span class="news-title">更清晰地跟随一条学习路径。</span></span><svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-            <a class="news-item" href="/zh/announcements"><span><span class="news-meta">公告 · 2026 年 6 月 21 日</span><span class="news-title">研究线索有了新家。</span></span><svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-            <a class="news-item" href="/zh/announcements"><span><span class="news-meta">产品 · 2026 年 6 月 9 日</span><span class="news-title">带上你自己的模型密钥。</span></span><svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-            <a class="link nf-all" href="/zh/announcements">查看更多<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="sec" aria-labelledby="faq-title">
-      <div class="shell">
-        <div class="faq-split">
-          <div class="faq-intro" data-reveal>
-            <p class="eyebrow">常见问题</p>
-            <h2 class="h2" id="faq-title">一些常见问题。</h2>
-            <p class="body">关于使用的几个实际问题，简短回答。其余都在产品里。</p>
-          </div>
-          <div class="faq-col" data-reveal style="--d:.06s">
-            <div class="faq">
-              <details><summary>Socrates 免费吗？</summary><div class="faq-body">是的——Free 方案永久免费。付费方案解锁更多容量与工具。</div></details>
-              <details><summary>会用我的对话训练模型吗？</summary><div class="faq-body">不会。我们不会用用户对话训练模型。每个会话都可以从账户页面导出或删除。</div></details>
-              <details><summary>可以自带 API Key 吗？</summary><div class="faq-body">可以。Free 方案和所有付费方案都支持 BYOK（自带密钥），适用于任何受支持的服务商。</div></details>
-              <details><summary>支持发票和增值税吗？</summary><div class="faq-body">支持。在账户页面填写账单信息；欧盟客户会按适用规定计入增值税。</div></details>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="cta" aria-labelledby="cta-title">
-      <div class="shell">
-        <h2 class="display" id="cta-title" data-reveal>为理解留出空间。</h2>
-        <p class="body" data-reveal style="--d:.06s">试探一个想法的边界。在需要时，回到那个有用的连接。</p>
-        <a class="btn" href="https://app.topodrive.top" data-reveal style="--d:.12s">开始使用 Socrates<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-        <p class="cta-note">Free 方案永久免费 · 无需信用卡</p>
-      </div>
-    </section>
-
   </main>
 
-  <footer class="ftr">
-    <div class="shell">
-      <div class="ftr-grid">
-        <div class="ftr-brand">
-          <a class="brand" href="/" aria-label="Socrates 首页">
-            <img src="/logo.png" width="20" height="20" alt="">
+  <footer class="home-footer">
+    <div class="home-shell">
+      <div class="home-footer-grid">
+        <div class="home-footer-brand">
+          <a class="home-brand" href="/zh/" aria-label="Socrates 首页">
+            <img src="/logo.png" width="21" height="21" alt="">
             <span class="brand-word">Socrates</span>
           </a>
-          <p>为真正想理解的人打造的 AI 导师。以苏格拉底式对话、持久回忆与知识地图为核心。</p>
+          <p>为真正想理解的人打造的 AI 导师，以苏格拉底式对话、持久回忆与知识地图为核心。</p>
         </div>
-        <nav class="ftr-col" aria-label="Product">
+        <nav class="home-footer-nav" aria-label="产品">
           <h2>产品</h2>
-          <a href="/product">学习地图</a>
-          <a href="/pricing">定价</a>
+          <a href="/zh/product">学习地图</a>
+          <a href="/zh/pricing">定价</a>
           <a href="/zh/developers">开发者</a>
           <a href="https://app.topodrive.top">打开 Socrates</a>
         </nav>
-        <nav class="ftr-col" aria-label="Learn">
+        <nav class="home-footer-nav" aria-label="学习">
           <h2>学习</h2>
           <a href="/zh/research">研究</a>
-          <a href="/learn">学习指南</a>
-          <a href="/documents">文档</a>
-          <a href="/guide">指南</a>
+          <a href="/zh/developers">开发者指南</a>
+          <a href="/zh/documents">文档</a>
+          <a href="/zh/principles">原则</a>
         </nav>
-        <nav class="ftr-col" aria-label="Company">
+        <nav class="home-footer-nav" aria-label="公司">
           <h2>公司</h2>
-          <a href="/about">关于</a>
-          <a href="/contact">联系</a>
-          <a href="/announcements">公告</a>
-          <a href="https://status.topodrive.top">状态</a>
-        </nav>
-        <nav class="ftr-col" aria-label="Resources">
-          <h2>资源</h2>
-          <a href="/" data-locale-switcher hreflang="en" lang="en">English</a>
-          <a href="/privacy">隐私</a>
-          <a href="/terms">条款</a>
-          <a href="/openapi.json">OpenAPI</a>
+          <a href="/zh/about">关于</a>
+          <a href="/zh/contact">联系</a>
+          <a href="/zh/announcements">动态</a>
+          <a href="/zh/privacy">隐私</a>
+          <a href="/zh/terms">条款</a>
         </nav>
       </div>
-      <div class="ftr-bot">
-        <span>© 2026 Socrates · 为真正想理解的人打造。</span>
-        <div class="ftr-social" aria-label="Social links">
+      <div class="home-footer-bottom">
+        <span>© 2026 Socrates · 为真正想理解的人而建。</span>
+        <div class="home-footer-social" aria-label="社交链接">
           <a href="https://x.com/topodrive" target="_blank" rel="me noopener">X</a>
           <a href="https://github.com/topodrive" target="_blank" rel="me noopener">GitHub</a>
           <a href="https://www.youtube.com/@topodrive" target="_blank" rel="me noopener">YouTube</a>
           <a href="https://www.linkedin.com/company/topodrive" target="_blank" rel="me noopener">LinkedIn</a>
+          <a href="/" data-locale-switcher hreflang="en" lang="en">English</a>
         </div>
       </div>
     </div>
@@ -467,4 +250,5 @@
 
   <script src="/site.js?cb=20261021b"></script>
 </body>
+
 </html>
