@@ -665,3 +665,7 @@
 html[data-detail-open="true"][data-detail-layout="docked"] #appShell .main {
   margin-inline-end: var(--ui-detail-width);
 }
+
+/* Window slots preserve measured row heights; spacers must not flex-shrink. */
+#appShell #sidebar .recents-window-row { display: flow-root; flex-shrink: 0; }
+#appShell #sidebar .recents-window-row[data-timeline-index="0"] > .recents-time-label { padding-top: 0; }

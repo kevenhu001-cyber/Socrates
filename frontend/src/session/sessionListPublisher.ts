@@ -13,6 +13,7 @@ interface SessionListWindow extends Window {
  * Keep this module deliberately narrow: recents rendering needs a synchronous
  * snapshot publisher during normal app startup, but it does not need tag
  * editing, drag/drop project moves, or other organize interactions. */
+let previousRows: SessionItem[] = [];
 const rowCache: Record<string, SessionItem> = Object.create(null);
 
 export function sessionRowFields(s: SessionRow): SessionItem {
@@ -90,8 +91,10 @@ export function publishSessionList(): void {
       if (!live[key]) delete rowCache[key];
     }
 
+    const nextRows = sessions.map(stableSessionRow);
+    if (previousRows.length !== nextRows.length || nextRows.some((row, index) => row !== previousRows[index])) previousRows = nextRows;
     bridge.publish({
-      sessions: sessions.map(stableSessionRow),
+      sessions: previousRows,
       currentSessionId: stateStore.read('currentSessionId') as string | null,
       searchQuery: searchQ,
       filter,

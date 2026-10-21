@@ -23,7 +23,7 @@ function SessionListInner() {
 
   useEffect(() => {
     if (sessions.length > 0) {
-      detailCache.idleWarmup(sessions.map((session) => session.id).filter(Boolean));
+      detailCache.idleWarmup(sessions.slice(0, 3).map((session) => session.id));
     }
   }, [sessions]);
 

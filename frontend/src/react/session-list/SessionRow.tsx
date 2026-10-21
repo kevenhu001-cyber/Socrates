@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useState } from 'react';
+import React, { memo, useCallback, useState, useEffect } from 'react';
 import { t } from '../legacy/gateway.ts';
 import { detailCache } from '../../session/detailCache.ts';
 import type { SessionItem } from './types';
@@ -11,7 +11,8 @@ export interface SessionRowProps {
   session: SessionItem;
   isActive: boolean;
   /* Keeps relative-time labels fresh in memoized rows. */
-  nowTick: number;
+  timeLabel: string;
+  onRetentionChange?: (id: string, active: boolean) => void;
   onPick: (id: string) => void;
   onTag: (id: string, event: React.MouseEvent) => void;
   onArchive: (id: string, event: React.MouseEvent) => void;
@@ -23,13 +24,16 @@ export interface SessionRowProps {
 function SessionRowBase({
   session,
   isActive,
+  timeLabel,
   onPick,
   onTag,
   onArchive,
   onDelete,
   onDragStart,
   onDragEnd,
+  onRetentionChange,
 }: SessionRowProps) {
+  const [dragging, setDragging] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
   const hideMenu = useCallback(() => setActionsOpen(false), []);
   const {
@@ -45,6 +49,11 @@ function SessionRowBase({
     update,
     loadProjects,
   } = useSessionRowActions(session.id, hideMenu);
+  const retained = actionsOpen || renaming || saving || dragging;
+  useEffect(() => {
+    onRetentionChange?.(session.id, retained);
+    return () => onRetentionChange?.(session.id, false);
+  }, [onRetentionChange, session.id, retained]);
   const setMenuOpen = useCallback((open: boolean) => {
     if (open) setActionsOpen(true);
     else closeMenu();
@@ -59,14 +68,15 @@ function SessionRowBase({
       data-recent-id={safeId(session.id)}
       data-recent-actual={session.id}
       draggable
-      onDragStart={(event) => onDragStart(event, session.id)}
-      onDragEnd={onDragEnd}
+      onDragStart={(event) => { setDragging(true); onDragStart(event, session.id); }}
+      onDragEnd={(event) => { setDragging(false); onDragEnd(event); }}
       onPointerEnter={() => { void detailCache.prefetch(session.id); }}
       onTouchStart={() => { void detailCache.prefetch(session.id); }}
       onClick={() => onPick(session.id)}
     >
       <SessionRowDetails
         session={session}
+        timeLabel={timeLabel}
         renaming={renaming}
         saving={saving}
         error={error}
@@ -136,11 +146,12 @@ function SessionRowBase({
 export const SessionRow = memo(SessionRowBase, (previous, next) => (
   previous.session === next.session
   && previous.isActive === next.isActive
-  && previous.nowTick === next.nowTick
+  && previous.timeLabel === next.timeLabel
   && previous.onPick === next.onPick
   && previous.onTag === next.onTag
   && previous.onArchive === next.onArchive
   && previous.onDelete === next.onDelete
   && previous.onDragStart === next.onDragStart
+  && previous.onRetentionChange === next.onRetentionChange
   && previous.onDragEnd === next.onDragEnd
 ));

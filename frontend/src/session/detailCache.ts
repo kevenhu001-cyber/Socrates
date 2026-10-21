@@ -148,68 +148,111 @@ export function invalidate(id: string | null | undefined): void {
   if (id != null) {
     _entries.delete(id);
     _inflightPrefetches.delete(id);
+    warmupIds.delete(id);
+    for (let index = prefetchQueue.length - 1; index >= 0; index--) {
+      if (prefetchQueue[index].id === id) prefetchQueue.splice(index, 1)[0].resolve(null);
+    }
+    for (const task of activePrefetches) {
+      if (task.id === id) { task.controller.abort(); task.resolve(null); }
+    }
   }
 }
 
-/**
- * Prefetch a session in the background (e.g. on pointerenter / touchstart).
- * De-duplicates concurrent in-flight requests and avoids re-fetching cached entries.
- */
+type PrefetchTask = {
+  id: string;
+  promise: Promise<CachedDetailResponse | null>;
+  resolve: (response: CachedDetailResponse | null) => void;
+  controller: AbortController;
+  generation: number;
+};
+const prefetchQueue: PrefetchTask[] = [];
+const activePrefetches = new Set<PrefetchTask>();
+const MAX_PREFETCHES = 2;
+let generation = 0;
+let warmupHandle: ReturnType<typeof setTimeout> | number | null = null;
+let warmupUsesIdle = false;
+const warmupIds = new Set<string>();
+
+function cancelWarmup(): void {
+  if (warmupHandle !== null) {
+    if (warmupUsesIdle && typeof cancelIdleCallback === 'function') cancelIdleCallback(warmupHandle as number);
+    else clearTimeout(warmupHandle);
+  }
+  warmupHandle = null;
+  warmupIds.clear();
+}
+
+function pumpPrefetches(): void {
+  while (activePrefetches.size < MAX_PREFETCHES && prefetchQueue.length) {
+    const task = prefetchQueue.shift()!;
+    activePrefetches.add(task);
+    void apiFetch<CachedDetailResponse>('/api/sessions/' + encodeURIComponent(task.id), { signal: task.controller.signal })
+      .then((response) => {
+        if (task.generation !== generation || task.controller.signal.aborted) return null;
+        if (response && typeof response === 'object') store(task.id, response);
+        return response;
+      }).catch(() => null).then((response) => {
+        task.resolve(response);
+        activePrefetches.delete(task);
+        if (_inflightPrefetches.get(task.id) === task.promise) _inflightPrefetches.delete(task.id);
+        pumpPrefetches();
+      });
+  }
+}
+
+/** Background details share one bounded queue, including hover and idle work. */
 export function prefetch(id: string | null | undefined): Promise<CachedDetailResponse | null> {
   if (!id || typeof id !== 'string') return Promise.resolve(null);
-  if (has(id)) {
-    const cached = lookup(id);
-    return Promise.resolve(cached ? cached.response : null);
-  }
+  if (has(id)) return Promise.resolve(lookup(id)?.response ?? null);
   const inflight = _inflightPrefetches.get(id);
   if (inflight) return inflight;
-
-  const p = Promise.resolve().then(function () {
-    if (typeof apiFetch === 'function') {
-      return apiFetch<CachedDetailResponse>('/api/sessions/' + encodeURIComponent(id));
-    }
-    return null;
-  }).then(function (s) {
-    _inflightPrefetches.delete(id);
-    if (s && typeof s === 'object') {
-      store(id, s);
-    }
-    return s;
-  }).catch(function () {
-    _inflightPrefetches.delete(id);
-    return null;
-  });
-
-  _inflightPrefetches.set(id, p);
-  return p;
+  let resolve!: PrefetchTask['resolve'];
+  const promise = new Promise<CachedDetailResponse | null>((done) => { resolve = done; });
+  _inflightPrefetches.set(id, promise);
+  // Hovering a long list must not retain an unbounded backlog of details.
+  if (prefetchQueue.length >= MAX_ENTRIES) {
+    const dropped = prefetchQueue.shift()!;
+    _inflightPrefetches.delete(dropped.id);
+    dropped.resolve(null);
+  }
+  prefetchQueue.push({ id, promise, resolve, controller: new AbortController(), generation });
+  pumpPrefetches();
+  return promise;
 }
 
 export function getInflight(id: string): Promise<CachedDetailResponse | null> | null {
   return _inflightPrefetches.get(id) || null;
 }
 
-/**
- * Preload the top-N recent sessions during browser idle time so switching is 0ms.
- */
+/** Repeated list publications merge into one cancellable idle job. */
 export function idleWarmup(sessionIds: ReadonlyArray<string | null | undefined>): void {
-  if (!Array.isArray(sessionIds) || !sessionIds.length) return;
-  const queue = sessionIds.filter(function (id): id is string { return !!id && !has(id); }).slice(0, 3);
-  if (!queue.length) return;
-
-  const step = function (): void {
-    if (!queue.length) return;
-    const nextId = queue.shift();
-    if (!nextId) return;
-    prefetch(nextId).then(function () {
-      if (queue.length) {
-        if (typeof requestIdleCallback === 'function') requestIdleCallback(step, { timeout: 3000 });
-        else setTimeout(step, 300);
-      }
-    });
+  for (const id of sessionIds.slice(0, 3)) {
+    if (warmupIds.size >= 3) break;
+    if (id && !has(id)) warmupIds.add(id);
+  }
+  if (!warmupIds.size || warmupHandle !== null) return;
+  const step = () => {
+    warmupHandle = null;
+    const ids = [...warmupIds].slice(0, 3);
+    warmupIds.clear();
+    ids.forEach((id) => { void prefetch(id); });
   };
+  warmupUsesIdle = typeof requestIdleCallback === 'function';
+  warmupHandle = warmupUsesIdle ? requestIdleCallback(step, { timeout: 3000 }) : setTimeout(step, 300);
+}
 
-  if (typeof requestIdleCallback === 'function') requestIdleCallback(step, { timeout: 3000 });
-  else setTimeout(step, 300);
+/** Account boundary: cancel work AND prevent late responses repopulating cache. */
+export function clear(): void {
+  generation += 1;
+  cancelWarmup();
+  for (const task of [...prefetchQueue, ...activePrefetches]) {
+    task.controller.abort();
+    task.resolve(null);
+  }
+  prefetchQueue.length = 0;
+  activePrefetches.clear();
+  _inflightPrefetches.clear();
+  _entries.clear();
 }
 
 /* Session-level scalars a save can move. Messages are handled separately
@@ -319,8 +362,7 @@ export function has(id: string): boolean {
 
 /* Test seams. */
 export function _reset(): void {
-  _entries.clear();
-  _inflightPrefetches.clear();
+  clear();
 }
 export function _size(): number { return _entries.size; }
 export const limits = { MAX_ENTRIES, MAX_ENTRY_BYTES, MAX_AGE_MS, REVALIDATE_AFTER_MS };
@@ -336,6 +378,7 @@ export const detailCache = {
   foldSave: foldSave,
   has: has,
   isFresh: isFresh,
+  clear: clear,
   _reset: _reset,
   _size: _size,
   limits: limits,

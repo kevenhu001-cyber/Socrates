@@ -37,9 +37,9 @@ export function modeLabel(session: SessionItem): { key: string; cls: string } {
   return { key: 'tutor.modeTutor', cls: 'mode-tutor' };
 }
 
-export function buildMeta(session: SessionItem): string[] {
+export function buildMeta(session: SessionItem, timeLabel?: string): string[] {
   const meta = [
-    formatRelativeTime(session.updatedAt || session.createdAt || Date.now()),
+    timeLabel ?? formatRelativeTime(session.updatedAt || session.createdAt || Date.now()),
   ];
   if (session.totalQ) meta.push(String(session.totalQ) + ' Qs');
   if (session.branchedFrom) {

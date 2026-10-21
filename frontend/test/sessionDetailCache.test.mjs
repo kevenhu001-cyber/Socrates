@@ -190,3 +190,81 @@ test('prefetch returns cached response immediately if already cached', async () 
   assert.equal(detailCache.getInflight('P1'), null);
 });
 
+
+test('prefetch shares two slots, deduplicates, and invalidation cannot resurrect stale data', async () => {
+  _reset();
+  const originalFetch = globalThis.fetch;
+  const pending = [];
+  globalThis.fetch = (url, options) => new Promise((resolve) => pending.push({ url, options, resolve }));
+  const respond = (request, id) => request.resolve(new Response(JSON.stringify({ id, kind: 'chat', messages: [] }), { status: 200 }));
+  const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
+  try {
+    const a = detailCache.prefetch('queue-a');
+    assert.equal(detailCache.prefetch('queue-a'), a);
+    const b = detailCache.prefetch('queue-b');
+    const c = detailCache.prefetch('queue-c');
+    assert.equal(pending.length, 2);
+    invalidate('queue-a');
+    assert.equal(pending[0].options.signal.aborted, true);
+    respond(pending[0], 'queue-a');
+    await a;
+    await tick();
+    assert.equal(has('queue-a'), false);
+    assert.equal(pending.length, 3);
+    respond(pending[1], 'queue-b');
+    respond(pending[2], 'queue-c');
+    assert.equal((await b).id, 'queue-b');
+    assert.equal((await c).id, 'queue-c');
+  } finally { detailCache.clear(); globalThis.fetch = originalFetch; }
+});
+
+test('account clear resolves queued work and late responses cannot repopulate cache', async () => {
+  _reset();
+  const originalFetch = globalThis.fetch;
+  const pending = [];
+  globalThis.fetch = (_url, options) => new Promise((resolve) => pending.push({ options, resolve }));
+  try {
+    const jobs = ['old-a', 'old-b', 'old-c'].map(detailCache.prefetch);
+    detailCache.clear();
+    assert.deepEqual(await Promise.all(jobs), [null, null, null]);
+    assert.equal(pending.length, 2, 'queued request never started');
+    assert.ok(pending.every((request) => request.options.signal.aborted));
+    for (const request of pending) request.resolve(new Response(JSON.stringify({ id: 'old-a', messages: [] })));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(_size(), 0);
+    assert.equal(detailCache.getInflight('old-a'), null);
+  } finally { detailCache.clear(); globalThis.fetch = originalFetch; }
+});
+
+test('idle warmups share one cancellable job and hover backlog stays bounded', async () => {
+  _reset();
+  const originalFetch = globalThis.fetch;
+  const originalIdle = globalThis.requestIdleCallback;
+  const originalCancel = globalThis.cancelIdleCallback;
+  let scheduled = 0, cancelled = 0;
+  const pending = [];
+  globalThis.requestIdleCallback = () => ++scheduled;
+  globalThis.cancelIdleCallback = () => { cancelled++; };
+  globalThis.fetch = () => new Promise((resolve) => pending.push(resolve));
+  try {
+    detailCache.idleWarmup(['warm-a', 'warm-b']);
+    detailCache.idleWarmup(['warm-b', 'warm-c']);
+    assert.equal(scheduled, 1);
+    detailCache.clear();
+    assert.equal(cancelled, 1);
+    const jobs = Array.from({ length: 30 }, (_, i) => detailCache.prefetch(`hover-${i}`));
+    assert.equal(pending.length, 2);
+    const queued = Array.from({ length: 30 }, (_, i) => detailCache.getInflight(`hover-${i}`)).filter(Boolean);
+    assert.equal(queued.length, limits.MAX_ENTRIES + 2);
+    assert.equal(await jobs[2], null, 'oldest queued hover was dropped');
+    detailCache.clear();
+    assert.ok((await Promise.all(jobs)).every((response) => response === null));
+    pending.forEach((resolve) => resolve(new Response('{}')));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  } finally {
+    detailCache.clear();
+    globalThis.fetch = originalFetch;
+    globalThis.requestIdleCallback = originalIdle;
+    globalThis.cancelIdleCallback = originalCancel;
+  }
+});

@@ -9,6 +9,7 @@ const PIN_ICON =
 
 interface SessionRowDetailsProps {
   session: SessionItem;
+  timeLabel: string;
   renaming: boolean;
   saving: boolean;
   error: string;
@@ -18,6 +19,7 @@ interface SessionRowDetailsProps {
 
 export function SessionRowDetails({
   session,
+  timeLabel,
   renaming,
   saving,
   error,
@@ -25,7 +27,7 @@ export function SessionRowDetails({
   onCancelRename,
 }: SessionRowDetailsProps) {
   const mode = modeLabel(session);
-  const meta = buildMeta(session);
+  const meta = buildMeta(session, timeLabel);
   const title = session.title || session.topic || '(untitled)';
   const label = session.label || '';
 
