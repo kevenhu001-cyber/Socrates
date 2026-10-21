@@ -242,3 +242,17 @@
   #appShell #msgList .msg-body tr:last-child td:not(.intui-table *) { border-bottom: 0; }
 
 }
+
+/* Newly published prose on desktop and mobile; settled paragraphs stay still. */
+.tool-run-prose.is-live .stream-append-reveal {
+  animation: stream-append-reveal 180ms ease-out both;
+}
+
+@keyframes stream-append-reveal {
+  from { opacity: 0.25; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tool-run-prose.is-live .stream-append-reveal { animation: none; }
+}

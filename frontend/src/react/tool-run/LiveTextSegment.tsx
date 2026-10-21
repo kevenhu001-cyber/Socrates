@@ -1,11 +1,14 @@
 import { memo, useLayoutEffect, useMemo, useRef } from 'react';
 import { createSettledProseCache } from '../../render/proseCache.ts';
 import { createSettledSplitter } from '../../render/streaming.ts';
+import { createStreamReveal } from '../../render/streamReveal.ts';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import type { ProseRenderer } from './proseRenderer';
 
-const SettledBlock = memo(function SettledBlock({ html, live = false, tail = false }: { html: { __html: string }; live?: boolean; tail?: boolean }) {
+const SettledBlock = memo(function SettledBlock({ html, live = false, tail = false, source = '' }: { html: { __html: string }; live?: boolean; tail?: boolean; source?: string }) {
   const ref = useRef<HTMLDivElement | null>(null);
+  const revealRef = useRef<ReturnType<typeof createStreamReveal> | null>(null);
+  const revealedMarkupRef = useRef<string | null>(null);
   useLayoutEffect(() => {
     const element = ref.current;
     if (!element) return;
@@ -14,7 +17,15 @@ const SettledBlock = memo(function SettledBlock({ html, live = false, tail = fal
     } catch {
       /* empty-catch: intentional — code header wiring must not break prose */
     }
-  }, [html]);
+    if (live && tail && revealedMarkupRef.current !== html.__html) {
+      if (!revealRef.current) revealRef.current = createStreamReveal();
+      revealRef.current(element, source);
+      revealedMarkupRef.current = html.__html;
+    } else if (!live) {
+      revealRef.current = null;
+      revealedMarkupRef.current = null;
+    }
+  }, [html, live, tail, source]);
   return (
     <div
       ref={ref}
@@ -33,11 +44,9 @@ interface LiveTextSegmentProps extends ProseRenderer {
  * Keeps completed markdown blocks stable while reparsing only the open tail.
  *
  * The playback clock already smooths network bursts before this component
- * sees them. Do not decorate every commit by walking and rewriting the live
- * DOM: that duplicates React's work on the hottest path and becomes
- * increasingly expensive for long, still-open paragraphs/code/math blocks.
- * Visual smoothness therefore comes from paced text publication plus the
- * lightweight cursor, while settled blocks remain untouched.
+ * sees them. Only the bounded suffix of the open prose tail receives a
+ * time-anchored opacity reveal; completed blocks and code/math DOM stay
+ * untouched. No layout measurements or per-character animation loop.
  *
  * The splitter is held in a ref because its pure text index can be replayed
  * safely if React abandons a concurrent render.
@@ -49,9 +58,9 @@ export function LiveTextSegment({ text, live = true, settled, tail }: LiveTextSe
   const splitterRef = useRef<ReturnType<typeof createSettledSplitter> | null>(null);
   if (!splitterRef.current) splitterRef.current = createSettledSplitter();
   const splitter = splitterRef.current;
-  const { blocks, tailBox } = useMemo(() => {
+  const { blocks, tailBox, tailSource } = useMemo(() => {
     const split = splitter.push(text);
-    return { blocks: prefixCache(split.blocks, settled), tailBox: tail(split.tail) };
+    return { blocks: prefixCache(split.blocks, settled), tailBox: tail(split.tail), tailSource: split.tail };
   }, [prefixCache, splitter, text, settled, tail]);
 
   return (
@@ -59,7 +68,7 @@ export function LiveTextSegment({ text, live = true, settled, tail }: LiveTextSe
       {blocks.map((html, index) => (
         <SettledBlock key={index} html={html} />
       ))}
-      <SettledBlock html={tailBox} live={live} tail />
+      <SettledBlock html={tailBox} live={live} tail source={tailSource} />
     </>
   );
 }
