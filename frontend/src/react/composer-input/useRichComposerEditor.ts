@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { cancelComposerNotification, getCachedComposerMarkdown, scheduleComposerNotification } from './composerMarkdown';
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -10,6 +11,7 @@ import { Markdown } from '@tiptap/markdown';
 import DOMPurify from 'dompurify';
 import {
   isComposerSurfaceTransitioning,
+  readComposerSurface,
   notifyComposerChange,
 } from '../../composer/controller.ts';
 import type { ComposerSurface } from '../../composer/types.ts';
@@ -61,8 +63,9 @@ export function useRichComposerEditor({
   ], [onRemoveExtension]);
   const tokenWasPresent = useRef(false);
 
-  return useEditor({
+  const editor = useEditor({
     extensions,
+    shouldRerenderOnTransaction: false,
     content: '',
     editorProps: {
       attributes: {
@@ -132,12 +135,17 @@ export function useRichComposerEditor({
       } else {
         tokenWasPresent.current = activeToken;
       }
-      if (!switchingSurface) notifyComposerChange(surface, editor.getMarkdown());
-      /* Lock the current geometry in the mutation task so paste/delete cannot
-         paint an unanimated intrinsic height before the next frame. */
-      shape.syncComposerShape(editor.view.dom as HTMLElement, true);
+      cancelComposerNotification(editor);
+      if (!switchingSurface) scheduleComposerNotification(editor, () => {
+        if (readComposerSurface() === surface) notifyComposerChange(surface, getCachedComposerMarkdown(editor));
+      });
+      /* Geometry is measured once on the next frame; beforeinput already
+         captured the painted start height for the existing animation. */
+      shape.syncComposerShape(editor.view.dom as HTMLElement);
     },
   });
+  useEffect(() => () => { if (editor) cancelComposerNotification(editor); }, [editor]);
+  return editor;
 }
 
 function syncExtensionMetadata(editor: import('@tiptap/react').Editor): boolean {

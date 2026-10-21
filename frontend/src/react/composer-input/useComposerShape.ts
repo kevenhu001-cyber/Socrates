@@ -3,6 +3,7 @@ import type { ComposerSurface } from '../../composer/types.ts';
 import {
   cancelComposerShapeAnimation,
   clearPluginOnlyShape,
+  releaseComposerMeasureProbe,
   shouldExpandComposer,
   transitionComposerShape,
   type CollapsedComposerMeasure,
@@ -20,6 +21,8 @@ export interface ComposerShapeHandlers {
 export function useComposerShape(surface: ComposerSurface) {
   /* Focus and geometry stay separate: a one-line draft keeps the same shape
      while focused, and mobile grows only when the rendered draft needs it. */
+  const pendingGeometryRelease = useRef<(() => void) | null>(null);
+  const measuredEditorRef = useRef<HTMLElement | null>(null);
   const composerWrapRef = useRef<HTMLElement | null>(null);
   const shapeFrameRef = useRef<number | null>(null);
   const shapeAnimationRef = useRef<ShapeAnimation | null>(null);
@@ -36,6 +39,19 @@ export function useComposerShape(surface: ComposerSurface) {
     const wrap = editorDom.closest<HTMLElement>('.composer-input-wrap');
     if (wrap && wrap.getClientRects().length) {
       shapeHeightRef.current = wrap.getBoundingClientRect().height;
+      // Hold the previous painted height until the coalesced geometry pass.
+      // Without this, deleting a paragraph paints an auto-height collapse one
+      // frame before the existing shrink animation starts (a visible bounce).
+      if (wrap.classList.contains('composer-multiline') && !shapeAnimationRef.current && !pendingGeometryRelease.current) {
+        const previous = wrap.style.getPropertyValue('height');
+        const priority = wrap.style.getPropertyPriority('height');
+        wrap.style.setProperty('height', shapeHeightRef.current + 'px', 'important');
+        pendingGeometryRelease.current = () => {
+          if (previous) wrap.style.setProperty('height', previous, priority);
+          else wrap.style.removeProperty('height');
+          pendingGeometryRelease.current = null;
+        };
+      }
     }
   }, []);
 
@@ -47,15 +63,20 @@ export function useComposerShape(surface: ComposerSurface) {
     if (shapeFrameRef.current !== null) cancelAnimationFrame(shapeFrameRef.current);
     const run = () => {
       shapeFrameRef.current = null;
+      measuredEditorRef.current = editorDom;
       const wrap = editorDom.closest<HTMLElement>('.composer-input-wrap');
       if (!wrap) return;
       /* View swaps briefly expose a pre-layout collapsed box. Skip that frame
          so it cannot become a false animation source. */
       const hiddenAncestor = editorDom.closest('.chat-view.hidden, .topic-setup.hidden, .main-inner.hidden');
-      if (hiddenAncestor) return;
+      if (hiddenAncestor) { pendingGeometryRelease.current?.(); return; }
       /* Plugin chips own the empty first row; the empty editor below them
          must not toggle the multiline class from its intrinsic height. */
-      if (clearPluginOnlyShape(editorDom, wrap, shapeState)) return;
+      if (clearPluginOnlyShape(editorDom, wrap, shapeState)) {
+        // Plugin-only layout intentionally removed the temporary height.
+        pendingGeometryRelease.current = null;
+        return;
+      }
       /* While the shell is between tiers, editor measurements are transient.
          Retry after the current animation lands before classifying the draft. */
       if (shapeAnimationRef.current) {
@@ -68,6 +89,7 @@ export function useComposerShape(surface: ComposerSurface) {
         surface,
         collapsedMeasureRef,
       );
+      pendingGeometryRelease.current?.();
       transitionComposerShape(wrap, shouldExpand, shapeState);
     };
     if (immediate) run();
@@ -99,9 +121,12 @@ export function useComposerShape(surface: ComposerSurface) {
     return () => {
       composerWrapRef.current?.classList.remove('composer-focused');
       composerWrapRef.current?.classList.remove('composer-multiline');
+      pendingGeometryRelease.current?.();
       cancelComposerShapeAnimation(shapeState);
       if (shapeFrameRef.current !== null) cancelAnimationFrame(shapeFrameRef.current);
       shapeFrameRef.current = null;
+      if (measuredEditorRef.current) releaseComposerMeasureProbe(measuredEditorRef.current);
+      measuredEditorRef.current = null;
       collapsedMeasureRef.current = null;
       shapeHeightRef.current = null;
       composerWrapRef.current = null;

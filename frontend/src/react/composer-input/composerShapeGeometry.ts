@@ -74,6 +74,13 @@ function updateCollapsedMeasure(
   collapsedMeasureRef.current = cacheCollapsedMeasure(editorDom, wrapWidth, singleLineHeight);
 }
 
+const measureProbes = new WeakMap<HTMLElement, { host: HTMLElement; editor: HTMLElement; html: string }>();
+
+export function releaseComposerMeasureProbe(editorDom: HTMLElement): void {
+  measureProbes.get(editorDom)?.host.remove();
+  measureProbes.delete(editorDom);
+}
+
 function createCollapsedMeasureProbe(
   editorDom: HTMLElement,
   wrapWidth: number,
@@ -84,7 +91,8 @@ function createCollapsedMeasureProbe(
     1,
     collapsedMeasure.editorWidth + wrapWidth - collapsedMeasure.wrapWidth,
   );
-  const host = document.createElement('div');
+  const previous = measureProbes.get(editorDom);
+  const host = previous?.host ?? document.createElement('div');
   host.className = 'rich-composer composer-shape-probe';
   host.dataset.surface = surface;
   host.setAttribute('aria-hidden', 'true');
@@ -98,7 +106,9 @@ function createCollapsedMeasureProbe(
     'contain:layout style',
   ].join(';');
 
-  const editor = editorDom.cloneNode(true) as HTMLElement;
+  const editor = previous?.editor ?? editorDom.cloneNode(false) as HTMLElement;
+  const html = editorDom.innerHTML;
+  if (!previous || previous.html !== html) editor.innerHTML = html;
   editor.removeAttribute('contenteditable');
   editor.removeAttribute('aria-label');
   editor.style.cssText = collapsedMeasure.editorStyle;
@@ -107,8 +117,11 @@ function createCollapsedMeasureProbe(
   editor.style.setProperty('min-height', '0', 'important');
   editor.style.setProperty('max-height', 'none', 'important');
   editor.style.setProperty('overflow', 'visible', 'important');
-  host.appendChild(editor);
-  document.body.appendChild(host);
+  if (!previous) {
+    host.appendChild(editor);
+    document.body.appendChild(host);
+  }
+  measureProbes.set(editorDom, { host, editor, html });
   return { host, editor };
 }
 
@@ -128,8 +141,10 @@ export function shouldExpandComposer(
      intrinsic box before an explicit line break is reflected in layout. */
   if (!isMultiline) updateCollapsedMeasure(editorDom, wrapWidth, collapsedMeasureRef);
 
+  // Structural line breaks prove expansion without cloning or measuring a
+  // second DOM tree. Only a wrapped single paragraph needs the narrow probe.
+  if (editorDom.querySelector('br:not(.ProseMirror-trailingBreak), p + p, li + li')) return true;
   let measureDom = editorDom;
-  let probeHost: HTMLElement | null = null;
   if (isMultiline && collapsedMeasureRef.current) {
     const probe = createCollapsedMeasureProbe(
       editorDom,
@@ -137,7 +152,6 @@ export function shouldExpandComposer(
       surface,
       collapsedMeasureRef.current,
     );
-    probeHost = probe.host;
     measureDom = probe.editor;
   }
 
@@ -154,7 +168,6 @@ export function shouldExpandComposer(
   const hasRenderedBreak = Boolean(
     measureDom.querySelector('br:not(.ProseMirror-trailingBreak), p + p, li + li'),
   );
-  probeHost?.remove();
 
   /* Empty editors can exceed one line because of the surface's CSS minimum
      height. Only text or a rendered break may expand the shell. */

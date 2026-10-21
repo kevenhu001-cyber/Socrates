@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from 'react';
+import { getCachedComposerMarkdown } from './composerMarkdown';
 import type { Editor } from '@tiptap/react';
 import {
   registerComposer,
@@ -10,7 +11,7 @@ export function useComposerController(
   surface: ComposerSurface,
   captureShapeHeight: (editorDom: HTMLElement) => void,
 ): void {
-  const getMarkdown = useCallback(() => (editor ? editor.getMarkdown() : ''), [editor]);
+  const getMarkdown = useCallback(() => (editor ? getCachedComposerMarkdown(editor) : ''), [editor]);
 
   const setExtensionToken = useCallback((token: ComposerExtensionToken | null) => {
     if (!editor) return;
