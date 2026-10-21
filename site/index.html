@@ -15,7 +15,7 @@
   <link rel="preload" href="/media/fonts/geist-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/media/fonts/geist-sans-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/site.css?cb=20261021b">
-  <link rel="stylesheet" href="/home-refresh.css?cb=20261021c">
+  <link rel="stylesheet" href="/home-refresh.css?cb=20261024e">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Socrates">
   <meta property="og:title" content="Socrates — Understanding begins with a question.">
@@ -152,7 +152,7 @@
         "@type": "WebPage",
         "speakable": {
           "@type": "SpeakableSpecification",
-          "cssSelector": [".hero-title", ".hero-lede"]
+          "cssSelector": [".home-hero h1"]
         },
         "url": "https://topodrive.top/"
       }
@@ -164,25 +164,35 @@
 <body id="top" class="home-refresh">
   <svg class="home-symbols" width="0" height="0" aria-hidden="true" focusable="false">
     <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M2.8 8h10.2M9 4.1 12.9 8 9 11.9"/></symbol>
+    <symbol id="i-up" viewBox="0 0 16 16"><path d="M8 13V3M3.9 7.1 8 3l4.1 4.1"/></symbol>
     <symbol id="i-menu" viewBox="0 0 20 20"><path d="M3.5 6.5h13M3.5 10h13M3.5 13.5h13"/></symbol>
     <symbol id="i-close" viewBox="0 0 20 20"><path d="m5 5 10 10M15 5 5 15"/></symbol>
+    <symbol id="i-search" viewBox="0 0 20 20"><circle cx="9" cy="9" r="5.4"/><path d="m13.2 13.2 3.3 3.3"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7"/><path d="M3.2 10h13.6M10 3c2.2 2.3 3.2 4.6 3.2 7s-1 4.7-3.2 7c-2.2-2.3-3.2-4.6-3.2-7S7.8 5.3 10 3Z"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></symbol>
+    <symbol id="i-github" viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></symbol>
+    <symbol id="i-youtube" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></symbol>
+    <symbol id="i-linkedin" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></symbol>
   </svg>
   <a class="home-skip" href="#main">Skip to content</a>
 
   <header class="home-site-header">
     <div class="home-shell home-header-inner">
       <a class="home-brand" href="/" aria-label="Socrates home">
-        <img src="/logo.png" width="21" height="21" alt="">
+        <img src="/logo.png" width="24" height="24" alt="">
         <span class="brand-word">Socrates</span>
       </a>
       <nav class="home-nav" aria-label="Primary">
         <a href="/product">Product</a>
         <a href="/research">Research</a>
         <a href="/developers">Developers</a>
+        <a href="/pricing">Pricing</a>
         <a href="/about">Company</a>
       </nav>
       <div class="home-header-actions">
-        <a class="home-language" href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
+        <a class="home-search" href="/learn" aria-label="Search Socrates">
+          <svg class="home-icon" viewBox="0 0 20 20" aria-hidden="true"><use href="#i-search"/></svg>
+        </a>
         <a class="home-login" href="https://app.topodrive.top">Log in</a>
         <a class="home-header-button" href="https://app.topodrive.top">Try Socrates<svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
         <button class="home-menu-button" type="button" data-menu-btn aria-expanded="false" aria-controls="home-mobile-menu" aria-label="Open menu">
@@ -195,139 +205,313 @@
       <a href="/product">Product</a>
       <a href="/research">Research</a>
       <a href="/developers">Developers</a>
+      <a href="/pricing">Pricing</a>
       <a href="/about">Company</a>
       <div class="home-mobile-actions">
+        <a href="https://app.topodrive.top">Try Socrates</a>
+        <a href="/learn">Search</a>
         <a href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
-        <a href="/pricing">Pricing</a>
         <a href="/contact">Contact</a>
       </div>
     </nav>
   </header>
 
   <main id="main">
-    <section class="home-hero">
-      <div class="home-shell home-hero-inner">
-        <p class="home-eyebrow">An AI tutor for people who want to understand</p>
-        <h1>Understanding begins<br>with a question.</h1>
-        <p class="home-hero-copy">Follow a thought through dialogue, recall, and connection — until it becomes yours. Private by default, and never used to train models.</p>
-        <a class="home-prompt-card" href="https://app.topodrive.top" aria-label="Start a Socratic learning session">
-          <span class="home-prompt-label">A question to begin with</span>
-          <span class="home-prompt-row">
-            <span>Why does a retry mask help a failed request get through?</span>
-            <span class="home-prompt-arrow" aria-hidden="true"><svg class="home-icon" viewBox="0 0 16 16"><use href="#i-arrow"/></svg></span>
-          </span>
+    <section class="home-hero" aria-labelledby="hero-title">
+      <canvas class="hero-canvas" data-particles aria-hidden="true"></canvas>
+      <div class="home-hero-inner">
+        <h1 id="hero-title">What do you want to understand?</h1>
+
+        <form class="ask-form" data-ask-form action="https://app.topodrive.top" method="get">
+          <div class="ask-box">
+            <label class="home-sr-only" for="askInput">Message Socrates</label>
+            <textarea class="ask-input" id="askInput" name="q" rows="1" placeholder=" " autocomplete="off" spellcheck="false"></textarea>
+            <span class="ask-placeholder" data-ask-placeholder aria-hidden="true">Message Socrates</span>
+            <button class="ask-send" type="submit" aria-label="Open Socrates and start a conversation">
+              <svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-up"/></svg>
+            </button>
+          </div>
+        </form>
+
+        <div class="ask-suggestions" aria-label="Question starters">
+          <button class="ask-chip" type="button" data-ask-chip data-question="Why does a retry mask help a failed request get through?">Start a dialogue</button>
+          <button class="ask-chip" type="button" data-ask-chip data-question="Quiz me on the Krebs cycle.">Recall</button>
+          <button class="ask-chip" type="button" data-ask-chip data-question="Map what I know about entropy.">Knowledge map</button>
+          <button class="ask-chip" type="button" data-ask-chip data-question="Give me an exam-style question on Bayes' theorem.">Exam mode</button>
+          <a class="ask-chip" href="/product">More</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="home-feature" aria-label="Featured">
+      <div class="home-shell feature-layout">
+        <a class="feature-main" href="/product">
+          <div class="feature-media">
+            <div class="demo-frame" aria-hidden="true">
+              <div class="demo-app">
+                <aside class="demo-rail">
+                  <div class="demo-brand"><img src="/logo.png" alt="">Socrates</div>
+                  <div class="demo-new">＋&nbsp; New question</div>
+                  <div>
+                    <div class="demo-label">Library</div>
+                    <div class="demo-nav">
+                      <span class="is-active">Today</span>
+                      <span>Recall</span>
+                      <span>Knowledge map</span>
+                      <span>Exam mode</span>
+                      <span>Mistake book</span>
+                    </div>
+                  </div>
+                  <div class="demo-recents">
+                    <div class="demo-label">Recent</div>
+                    <span class="is-active">Retries &amp; idempotency</span>
+                    <span>Eigenvectors, slowly</span>
+                    <span>The Krebs cycle</span>
+                    <span>Bayes, again</span>
+                  </div>
+                  <div class="demo-user"><span class="demo-avatar">JL</span>Jamie L.</div>
+                </aside>
+
+                <div class="demo-chat">
+                  <div class="demo-chat-head">
+                    <div class="demo-thread-title">Retries &amp; idempotency <span class="demo-live">Live</span></div>
+                    <div class="demo-head-actions"><span></span><span></span></div>
+                  </div>
+                  <div class="demo-thread">
+                    <div class="demo-msg demo-msg--user">Why does a retry mask help a failed request get through?</div>
+                    <div class="demo-msg demo-msg--tutor">
+                      <span class="demo-tutor-avatar"><img src="/logo.png" alt=""></span>
+                      <div class="demo-tutor-body">
+                        <div class="demo-tutor-name">Socrates</div>
+                        <p>Before the mask — what has to be true about the request for a retry to be safe?</p>
+                      </div>
+                    </div>
+                    <div class="demo-msg demo-msg--user">That repeating it won’t cause a second side effect?</div>
+                    <div class="demo-msg demo-msg--tutor">
+                      <span class="demo-tutor-avatar"><img src="/logo.png" alt=""></span>
+                      <div class="demo-tutor-body">
+                        <div class="demo-tutor-name">Socrates</div>
+                        <p>Exactly. The mask decides which failure is allowed to surface.</p>
+                        <div class="demo-question">What would you want the caller to see if all three attempts fail?</div>
+                        <div class="demo-suggestions"><span>The final error</span><span>Every attempt</span><span>A summary</span></div>
+                      </div>
+                    </div>
+                    <div class="demo-msg demo-msg--user demo-msg--extra">So the mask is a contract with the caller?</div>
+                    <div class="demo-msg demo-msg--tutor demo-msg--extra">
+                      <span class="demo-tutor-avatar"><img src="/logo.png" alt=""></span>
+                      <div class="demo-tutor-body">
+                        <div class="demo-tutor-name">Socrates</div>
+                        <p>A contract with one outcome — even if the work happened three times.</p>
+                        <div class="demo-recall">Recall queued · in 2 days</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="demo-compose">Ask a follow-up…<span class="demo-send"><svg class="home-icon" viewBox="0 0 16 16"><use href="#i-up"/></svg></span></div>
+                </div>
+
+                <aside class="demo-map">
+                  <div class="demo-map-head"><span>Knowledge map</span><span class="demo-map-count">5 concepts</span></div>
+                  <div class="demo-map-canvas">
+                    <svg class="demo-map-lines" viewBox="0 0 100 100" preserveAspectRatio="none">
+                      <path d="M50 14C42 22 30 28 24 37" stroke-dasharray="1.5 2.5" vector-effect="non-scaling-stroke"/>
+                      <path d="M50 14C62 22 73 30 77 42" stroke-dasharray="1.5 2.5" vector-effect="non-scaling-stroke"/>
+                      <path d="M24 37C24 48 32 56 37 65" stroke-dasharray="1.5 2.5" vector-effect="non-scaling-stroke"/>
+                      <path d="M77 42C64 50 48 54 37 65" stroke-dasharray="1.5 2.5" vector-effect="non-scaling-stroke"/>
+                      <path d="M77 42C79 56 76 68 70 78" stroke-dasharray="1.5 2.5" vector-effect="non-scaling-stroke"/>
+                      <path d="M37 65C48 72 59 75 70 78" stroke-dasharray="1.5 2.5" vector-effect="non-scaling-stroke"/>
+                    </svg>
+                    <span class="demo-node demo-node--a">Retries</span>
+                    <span class="demo-node demo-node--b">Idempotency</span>
+                    <span class="demo-node demo-node--c">Backoff</span>
+                    <span class="demo-node demo-node--d">Partial failure</span>
+                    <span class="demo-node demo-node--e">Durable log</span>
+                  </div>
+                  <div class="demo-map-foot">Built from this session</div>
+                </aside>
+              </div>
+            </div>
+          </div>
+          <div class="feature-caption">
+            <h2>A tutor that asks before it answers.</h2>
+            <p class="feature-meta"><span>Product</span><span>Oct 7, 2026</span><span>8 min read</span></p>
+          </div>
         </a>
-        <p class="home-hero-note">Free tier · No card required · Export or delete any session</p>
-      </div>
-    </section>
 
-    <section class="home-featured" aria-labelledby="home-featured-title">
-      <div class="home-shell home-featured-grid">
-        <figure class="home-featured-image">
-          <img src="/media/socrates-home-dialogue-photo-v1.webp" alt="Two learners trace a diagram together in an open notebook." width="1672" height="941" fetchpriority="high" decoding="async">
-        </figure>
-        <div class="home-featured-copy">
-          <span class="home-feature-label">01 / Dialogue</span>
-          <h2 id="home-featured-title">A tutor that follows your thinking.</h2>
-          <p>Stay with the part that does not make sense yet. The tutor follows your reasoning and offers a sharper question.</p>
-          <a class="home-text-link" href="/product">How Socrates teaches<svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        <div class="feature-rail">
+          <a class="rail-card" href="/research/memory-recall/">
+            <div class="rail-media art art--recall" data-art aria-hidden="true">
+              <span class="art__mesh"></span><span class="art__noise"></span>
+              <span class="art__index">01</span>
+              <span class="art__word">recall</span>
+            </div>
+            <h3>The route back to an idea.</h3>
+            <p class="rail-meta">Research · Aug 12, 2026</p>
+          </a>
+
+          <a class="rail-card" href="/research/maps-preserve-path/">
+            <div class="rail-media art art--map" data-art aria-hidden="true">
+              <span class="art__mesh"></span><span class="art__noise"></span>
+              <span class="art__index">02</span>
+              <span class="art__word">map</span>
+            </div>
+            <h3>Maps that preserve the path.</h3>
+            <p class="rail-meta">Knowledge mapping · Jun 24, 2026</p>
+          </a>
+
+          <a class="rail-card" href="/product">
+            <div class="rail-media art art--practice" data-art aria-hidden="true">
+              <span class="art__mesh"></span><span class="art__noise"></span>
+              <span class="art__index">03</span>
+              <span class="art__word">practice</span>
+            </div>
+            <h3>Low-stakes practice, high-retention recall.</h3>
+            <p class="rail-meta">Product · Sep 29, 2026</p>
+          </a>
         </div>
       </div>
     </section>
 
-    <section class="home-section" aria-labelledby="home-product-title">
+    <section class="home-news" aria-labelledby="news-title">
       <div class="home-shell">
-        <div class="home-section-heading">
-          <div>
-            <p class="home-section-label">The learning loop</p>
-            <h2 id="home-product-title">One conversation, four kinds of attention.</h2>
-          </div>
-          <a class="home-text-link" href="/product">Explore the product<svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        <div class="section-head">
+          <h2 id="news-title">Recent news</h2>
+          <a class="section-link" href="/announcements">View more</a>
         </div>
-        <div class="home-product-grid">
-          <article class="home-product-card">
-            <div class="home-card-image"><img src="/media/socrates-home-study-photo-v1.webp" alt="" width="1672" height="941" loading="lazy" decoding="async"></div>
-            <span class="home-card-label">01 / Dialogue</span>
-            <h3>Follow the thought.</h3>
-            <p>Stay with the part that does not make sense yet. Find the sharper question inside it.</p>
-          </article>
-          <article class="home-product-card">
-            <div class="home-card-image"><img src="/media/socrates-home-recall-photo-v1.webp" alt="" width="1672" height="941" loading="lazy" decoding="async"></div>
-            <span class="home-card-label">02 / Recall</span>
-            <h3>Return to what matters.</h3>
-            <p>Useful moments return as small prompts, timed for the point where retrieval still takes effort.</p>
-          </article>
-          <article class="home-product-card">
-            <div class="home-card-image"><img src="/media/socrates-home-map-photo-v1.webp" alt="" width="1672" height="940" loading="lazy" decoding="async"></div>
-            <span class="home-card-label">03 / Knowledge map</span>
-            <h3>See the connections.</h3>
-            <p>Questions connect across sessions. Your map grows around your interests, not a fixed curriculum.</p>
-          </article>
-          <article class="home-product-card">
-            <div class="home-card-image"><img src="/media/socrates-learning-practice-cycle-v3.webp" alt="" width="1672" height="941" loading="lazy" decoding="async"></div>
-            <span class="home-card-label">04 / Practice</span>
-            <h3>Find what holds.</h3>
-            <p>Low-stakes questions reveal what you understand and where the next question lives.</p>
-          </article>
+        <div class="news-grid">
+          <a class="news-item" href="/announcements">
+            <div class="news-thumb art art--violet" data-art aria-hidden="true">
+              <span class="art__mesh"></span><span class="art__noise"></span>
+            </div>
+            <div class="news-body">
+              <h3>Socrates 3.2: a quieter tutor.</h3>
+              <p class="news-meta">Product · Oct 20, 2026</p>
+            </div>
+          </a>
+          <a class="news-item" href="/product#mistake-book">
+            <div class="news-thumb"><img src="/media/socrates-editorial-learning-cards-v1.webp" width="800" height="800" loading="lazy" alt="A learner arranging index cards beside a notebook"></div>
+            <div class="news-body">
+              <h3>Introducing the mistake book.</h3>
+              <p class="news-meta">Product · Sep 23, 2026</p>
+            </div>
+          </a>
+          <a class="news-item" href="/research/memory-recall/">
+            <div class="news-thumb"><img src="/media/socrates-document-recall-cycle-v2.webp" width="800" height="800" loading="lazy" alt="A circular diagram of the recall cycle"></div>
+            <div class="news-body">
+              <h3>Why retrieval beats rereading.</h3>
+              <p class="news-meta">Research · Oct 6, 2026</p>
+            </div>
+          </a>
+          <a class="news-item" href="/product#knowledge-map">
+            <div class="news-thumb"><img src="/media/socrates-newsroom-signal-v2.webp" width="800" height="800" loading="lazy" alt="A map of connected notes and signals"></div>
+            <div class="news-body">
+              <h3>Knowledge map v2.</h3>
+              <p class="news-meta">Product · Sep 15, 2026</p>
+            </div>
+          </a>
+          <a class="news-item" href="/guide">
+            <div class="news-thumb"><img src="/media/socrates-editorial-field-notes-v1.webp" width="800" height="800" loading="lazy" alt="Field notes on a desk"></div>
+            <div class="news-body">
+              <h3>A field guide to Socratic prompts.</h3>
+              <p class="news-meta">Research · Aug 30, 2026</p>
+            </div>
+          </a>
+          <a class="news-item" href="/about">
+            <div class="news-thumb art art--coral" data-art aria-hidden="true">
+              <span class="art__mesh"></span><span class="art__noise"></span>
+            </div>
+            <div class="news-body">
+              <h3>Socrates for study groups.</h3>
+              <p class="news-meta">Company · Oct 1, 2026</p>
+            </div>
+          </a>
         </div>
       </div>
     </section>
 
-    <section class="home-approach" aria-labelledby="home-approach-title">
-      <div class="home-shell home-approach-grid">
-        <div>
-          <p class="home-section-label">Built around hard questions</p>
-          <h2 id="home-approach-title">Understanding is more than an answer.</h2>
-        </div>
-        <div class="home-approach-copy">
-          <p>A useful tutor remembers the path into a question instead of treating every prompt as an isolated event. Dialogue, recall, practice, and the connections between ideas stay together.</p>
-          <p>Conversations are private. We do not train on them. You can export or delete every session from your account.</p>
-          <a class="home-text-link" href="/principles">Our principles<svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-        </div>
-      </div>
-    </section>
-
-    <section class="home-section" aria-labelledby="home-research-title">
+    <section class="home-stories" aria-labelledby="stories-title">
       <div class="home-shell">
-        <div class="home-section-heading">
-          <div>
-            <p class="home-section-label">Socrates Research</p>
-            <h2 id="home-research-title">Notes on what helps learning last.</h2>
-          </div>
-          <a class="home-text-link" href="/research">View all research<svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        <div class="section-head">
+          <h2 id="stories-title">Stories</h2>
+          <a class="section-link" href="/about">View all</a>
         </div>
-        <div class="home-research-grid">
-          <article class="home-research-card">
-            <div class="home-article-image"><img src="/media/socrates-research-memory-route-v1.webp" alt="" width="1672" height="941" loading="lazy" decoding="async"></div>
-            <span class="home-article-meta">Memory · 7 min read · Aug 12, 2026</span>
-            <h3><a href="/research/memory-recall/">The route back to an idea.</a></h3>
-            <p>How a small change in prompt can surface a concept more reliably than a repeated answer.</p>
-            <a class="home-text-link" href="/research/memory-recall/">Read the essay<svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-          </article>
-          <article class="home-research-card">
-            <div class="home-article-image"><img src="/media/socrates-research-explanation-evidence-v1.webp" alt="" width="1672" height="941" loading="lazy" decoding="async"></div>
-            <span class="home-article-meta">Explanation · 6 min read · Jul 29, 2026</span>
-            <h3><a href="/research/explanation-evidence/">When a clear explanation becomes evidence.</a></h3>
-            <p>Three years of A/B data on “explain this in your own words” prompts.</p>
-            <a class="home-text-link" href="/research/explanation-evidence/">Read the essay<svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-          </article>
-          <article class="home-research-card">
-            <div class="home-article-image"><img src="/media/socrates-research-maps-path-v1.webp" alt="" width="1672" height="941" loading="lazy" decoding="async"></div>
-            <span class="home-article-meta">Knowledge mapping · 8 min read · Jun 24, 2026</span>
-            <h3><a href="/research/maps-preserve-path/">Maps that preserve the path.</a></h3>
-            <p>A field note on showing relationships without turning a living subject into a static diagram.</p>
-            <a class="home-text-link" href="/research/maps-preserve-path/">Read the essay<svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-          </article>
+        <div class="card-grid">
+          <a class="card" href="/about">
+            <div class="media"><img src="/media/socrates-home-dialogue-photo-v1.webp" width="900" height="900" loading="lazy" alt="Two learners in conversation at a table"></div>
+            <h3>Learning to stay with the question.</h3>
+            <p class="card-meta"><span>Sep 18, 2026</span></p>
+          </a>
+          <a class="card" href="/research/maps-preserve-path/">
+            <div class="media"><img src="/media/socrates-home-map-photo-v1.webp" width="900" height="900" loading="lazy" alt="A hand-drawn map of connected ideas"></div>
+            <h3>What a map remembers that a chat forgets.</h3>
+            <p class="card-meta"><span>Aug 27, 2026</span></p>
+          </a>
+          <a class="card" href="/research/memory-recall/">
+            <div class="media"><img src="/media/socrates-home-recall-photo-v1.webp" width="900" height="900" loading="lazy" alt="Index cards arranged for recall practice"></div>
+            <h3>The quiet interval between sessions.</h3>
+            <p class="card-meta"><span>Aug 9, 2026</span></p>
+          </a>
         </div>
       </div>
     </section>
 
-    <section class="home-final" aria-labelledby="home-final-title">
+    <section class="home-research" aria-labelledby="research-title">
       <div class="home-shell">
-        <p class="home-section-label">Make room for understanding</p>
-        <h2 id="home-final-title">Keep following the question.</h2>
-        <p class="home-final-copy">Test the edges of an idea. Return to the useful connection when you need it again.</p>
-        <a class="home-button" href="https://app.topodrive.top">Try Socrates<svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        <div class="section-head">
+          <h2 id="research-title">Latest research</h2>
+          <a class="section-link" href="/research">View more</a>
+        </div>
+        <div class="card-grid">
+          <a class="card" href="/research/memory-recall/">
+            <div class="media"><img src="/media/socrates-research-memory-route-v1.webp" width="900" height="900" loading="lazy" alt="A research diagram of a memory route"></div>
+            <h3>Retrieval, not repetition.</h3>
+            <p class="card-meta"><span>Research</span><span>Oct 6, 2026</span></p>
+          </a>
+          <a class="card" href="/research/tutor-boundaries/">
+            <div class="media"><img src="/media/socrates-research-tutor-boundaries-v1.webp" width="900" height="900" loading="lazy" alt="A diagram of boundaries around a tutor"></div>
+            <h3>Where a tutor should stop.</h3>
+            <p class="card-meta"><span>Research</span><span>Sep 22, 2026</span></p>
+          </a>
+          <a class="card" href="/research/what-learners-keep/">
+            <div class="media"><img src="/media/socrates-research-what-learners-keep-v1.webp" width="900" height="900" loading="lazy" alt="Notes on what learners keep after a session"></div>
+            <h3>What learners keep.</h3>
+            <p class="card-meta"><span>Research</span><span>Sep 4, 2026</span></p>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="home-teams" aria-labelledby="teams-title">
+      <div class="home-shell">
+        <div class="section-head">
+          <h2 id="teams-title">Socrates for teams</h2>
+          <a class="section-link" href="/about">View more</a>
+        </div>
+        <div class="card-grid">
+          <a class="card" href="/about">
+            <div class="media"><img src="/media/socrates-team-practice-kit-v1.webp" width="900" height="900" loading="lazy" alt="A practice kit laid out for a study group"></div>
+            <h3>For the seminar room.</h3>
+            <p class="card-meta"><span>Education</span><span>Aug 20, 2026</span></p>
+          </a>
+          <a class="card" href="/about">
+            <div class="media"><img src="/media/socrates-team-topology-v2.webp" width="900" height="900" loading="lazy" alt="A network map of a study group"></div>
+            <h3>For the study group.</h3>
+            <p class="card-meta"><span>Teams</span><span>Aug 10, 2026</span></p>
+          </a>
+          <a class="card" href="/about">
+            <div class="media"><img src="/media/socrates-editorial-educators-v1.webp" width="900" height="900" loading="lazy" alt="An educator's desk with notes and books"></div>
+            <h3>For the whole cohort.</h3>
+            <p class="card-meta"><span>Education</span><span>Aug 1, 2026</span></p>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="home-cta" aria-labelledby="cta-title">
+      <div class="home-shell">
+        <div class="home-cta-band">
+          <h2 id="cta-title">Start with a question.</h2>
+          <a class="home-button" href="https://app.topodrive.top">Try Socrates</a>
+        </div>
       </div>
     </section>
   </main>
@@ -335,50 +519,103 @@
   <footer class="home-footer">
     <div class="home-shell">
       <div class="home-footer-grid">
-        <div class="home-footer-brand">
-          <a class="home-brand" href="/" aria-label="Socrates home">
-            <img src="/logo.png" width="21" height="21" alt="">
-            <span class="brand-word">Socrates</span>
-          </a>
-          <p>An AI tutor for people who want to understand. Built around Socratic dialogue, durable recall, and a knowledge map.</p>
+        <div class="home-footer-col home-footer-nav">
+          <div class="home-footer-group">
+            <h2>Learn</h2>
+            <a href="/guide">Guide</a>
+            <a href="/documents">Documents</a>
+            <a href="/principles">Principles</a>
+            <a href="/announcements">Announcements</a>
+          </div>
+          <div class="home-footer-group">
+            <h2>Practice</h2>
+            <a href="/product">Recall</a>
+            <a href="/product">Exam mode</a>
+            <a href="/product">Mistake book</a>
+          </div>
         </div>
-        <nav class="home-footer-nav" aria-label="Product">
-          <h2>Product</h2>
-          <a href="/product">Learning map</a>
-          <a href="/pricing">Pricing</a>
-          <a href="/developers">Developers</a>
-          <a href="https://app.topodrive.top">Open Socrates</a>
-        </nav>
-        <nav class="home-footer-nav" aria-label="Learn">
-          <h2>Learn</h2>
-          <a href="/research">Research</a>
-          <a href="/developers">Developersing guide</a>
-          <a href="/documents">Documents</a>
-          <a href="/principles">Principles</a>
-        </nav>
-        <nav class="home-footer-nav" aria-label="Company">
-          <h2>Company</h2>
-          <a href="/about">About</a>
-          <a href="/contact">Contact</a>
-          <a href="/announcements">Announcements</a>
-          <a href="/privacy">Privacy</a>
-          <a href="/terms">Terms</a>
-        </nav>
+        <div class="home-footer-col home-footer-nav">
+          <div class="home-footer-group">
+            <h2>Research</h2>
+            <a href="/research">Research index</a>
+            <a href="/research/memory-recall/">Memory &amp; recall</a>
+            <a href="/research/explanation-evidence/">Explanation &amp; evidence</a>
+            <a href="/research/maps-preserve-path/">Maps preserve path</a>
+          </div>
+          <div class="home-footer-group">
+            <h2>Open questions</h2>
+            <a href="/research/tutor-curiosity/">Tutor curiosity</a>
+            <a href="/research/honest-pause/">The honest pause</a>
+            <a href="/research/what-learners-keep/">What learners keep</a>
+          </div>
+        </div>
+        <div class="home-footer-col home-footer-nav">
+          <div class="home-footer-group">
+            <h2>Product</h2>
+            <a href="/product">Socrates</a>
+            <a href="/pricing">Pricing</a>
+            <a href="/developers">Developers</a>
+            <a href="/api-keys">API keys</a>
+          </div>
+          <div class="home-footer-group">
+            <h2>Resources</h2>
+            <a href="/openapi.json">OpenAPI</a>
+            <a href="https://status.topodrive.top">Status</a>
+            <a href="/llms.txt">llms.txt</a>
+            <a href="https://github.com/topodrive">GitHub</a>
+          </div>
+        </div>
+        <div class="home-footer-col home-footer-nav">
+          <div class="home-footer-group">
+            <h2>Company</h2>
+            <a href="/about">About</a>
+            <a href="/contact">Contact</a>
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Terms</a>
+          </div>
+          <div class="home-footer-group">
+            <h2>Support</h2>
+            <a href="/contact">Help center</a>
+            <a href="/account">Account</a>
+            <a href="/checkout">Billing</a>
+          </div>
+        </div>
+        <div class="home-footer-col home-footer-nav">
+          <div class="home-footer-group">
+            <h2>More</h2>
+            <a href="/announcements">Stories</a>
+            <a href="/research">Field notes</a>
+            <a href="/guide">Academy</a>
+            <a href="/principles">Our principles</a>
+          </div>
+          <div class="home-footer-group">
+            <h2>Get started</h2>
+            <a href="https://app.topodrive.top">Try Socrates</a>
+            <a href="https://app.topodrive.top">Log in</a>
+            <a href="/pricing">Plans</a>
+          </div>
+        </div>
       </div>
+
       <div class="home-footer-bottom">
-        <span>© 2026 Socrates · Built for people who want to understand.</span>
-        <div class="home-footer-social" aria-label="Social links">
-          <a href="https://x.com/topodrive" target="_blank" rel="me noopener">X</a>
-          <a href="https://github.com/topodrive" target="_blank" rel="me noopener">GitHub</a>
-          <a href="https://www.youtube.com/@topodrive" target="_blank" rel="me noopener">YouTube</a>
-          <a href="https://www.linkedin.com/company/topodrive" target="_blank" rel="me noopener">LinkedIn</a>
-          <a href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
+        <nav class="home-footer-social" aria-label="Social">
+          <a href="https://x.com/topodrive" aria-label="X"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-x"/></svg></a>
+          <a href="https://github.com/topodrive" aria-label="GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-github"/></svg></a>
+          <a href="https://www.youtube.com/@topodrive" aria-label="YouTube"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-youtube"/></svg></a>
+          <a href="https://www.linkedin.com/company/topodrive" aria-label="LinkedIn"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-linkedin"/></svg></a>
+        </nav>
+        <div class="home-footer-legal">
+          <span>Socrates © 2025–2026</span>
+          <a href="/privacy#cookies">Manage cookies</a>
         </div>
+        <a class="home-footer-locale" href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">
+          <svg class="home-icon" viewBox="0 0 20 20" aria-hidden="true"><use href="#i-globe"/></svg><span class="locale-label">English</span>
+        </a>
       </div>
     </div>
   </footer>
 
   <script src="/site.js?cb=20261021b"></script>
+  <script src="/home-aurora.js?cb=20261024e"></script>
 </body>
-
 </html>
