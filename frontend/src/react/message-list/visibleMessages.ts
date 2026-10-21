@@ -12,13 +12,13 @@ function isRenderable(entry: LegacyChatMessage): boolean {
 }
 
 let visibleMessagesCache: ReadonlyArray<LegacyChatMessage> = Object.freeze([]);
-let visibleMessagesRevision = -1;
+let sourceMessages: ReadonlyArray<LegacyChatMessage> | null = null;
 
 export function getVisibleMessagesSnapshot(): ReadonlyArray<LegacyChatMessage> {
   const snapshot = getChatRuntimeSnapshot();
-  /* The list/filter result is revision-scoped. Individual message objects are
+  /* The list/filter result is scoped to the canonical message array. Individual message objects are
      immutable and keep stable identity when that row did not change. */
-  if (visibleMessagesRevision === snapshot.revision) return visibleMessagesCache;
+  if (sourceMessages === snapshot.messages) return visibleMessagesCache;
 
   const seen = new Set<string>();
   const next: LegacyChatMessage[] = [];
@@ -29,7 +29,7 @@ export function getVisibleMessagesSnapshot(): ReadonlyArray<LegacyChatMessage> {
     next.push(entry);
   });
 
-  visibleMessagesRevision = snapshot.revision;
+  sourceMessages = snapshot.messages;
   visibleMessagesCache = Object.freeze(next);
   return visibleMessagesCache;
 }

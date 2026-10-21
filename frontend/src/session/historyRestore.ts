@@ -1,12 +1,13 @@
 /* Restore persisted session messages and their local recovery paths.
  * These helpers own the boundary between saved session data, the transcript
  * store, and browser-local history. */
+import { whenSessionIdle } from './afterSessionPaint.ts';
 import { normalizeTurnRuntime } from '@socrates/core';
 import { stateStore } from '../state/store.js';
 import { buildUserContentParts } from '../chat/history.js';
 import { quietTurn } from '../chat/turnUi.ts';
 import { apiFetch } from '../util/api.ts';
-import { loadLocalMemory, _memKey } from '../storage/localMemory.ts';
+import { loadLocalMemory, LOCAL_MEMORY_MAX, _memKey } from '../storage/localMemory.ts';
 import { batchSetItem } from '../batchStorage.js';
 import { formatMsg } from '../render/markdown.ts';
 import { esc } from '../render/helpers.ts';
@@ -84,11 +85,6 @@ export interface RestorableSession {
   messages?: PersistedMessage[];
 }
 
-/** Run `work` on idle, falling back to a short timeout. */
-function whenIdle(work: () => void, timeout: number): void {
-  if (typeof requestIdleCallback === 'function') requestIdleCallback(work, { timeout });
-  else setTimeout(work, 100);
-}
 
 interface ChatTurnWindow extends Window {
   askChatTurn?: (text: string, parts: unknown) => unknown;
@@ -267,12 +263,12 @@ export function restoreInterruptedResponse(session: RestorableSession, msgList: 
 
 /* Build the local fast-path history from server rows only when no local copy
    exists, and defer the work until the browser is idle. */
-export function mirrorSessionHistory(session: RestorableSession): void {
-  if (loadLocalMemory(session.id)) return;
+export function mirrorSessionHistory(session: RestorableSession, isCurrent: () => boolean = () => stateStore.read('currentSessionId') === session.id, signal?: AbortSignal): void {
   const sync = function (): void {
+    if (!isCurrent() || loadLocalMemory(session.id)) return;
     try {
       const record = { topic: session.topic || '', ts: Date.now(), messages: [] as Array<{ role: string | undefined; content: string }> };
-      (session.messages || []).forEach(function (message) {
+      (session.messages || []).slice(-LOCAL_MEMORY_MAX).forEach(function (message) {
         let text = '';
         if (message.rawText) {
           text = message.rawText;
@@ -283,11 +279,13 @@ export function mirrorSessionHistory(session: RestorableSession): void {
         if (!text) return;
         record.messages.push({ role: message.role, content: text });
       });
-      if (record.messages.length) batchSetItem(_memKey(session.id), JSON.stringify(record));
+      let bytes = record.messages.reduce((total, message) => total + message.content.length, 0);
+      while (bytes > 1_000_000 && record.messages.length) bytes -= record.messages.shift()!.content.length;
+      if (isCurrent() && record.messages.length) batchSetItem(_memKey(session.id), JSON.stringify(record));
     } catch (error) {
       /* mirror failed */
       reportSwallow(error, 'session/historyRestore.mirrorSessionHistory');
     }
   };
-  whenIdle(sync, 2000);
+  whenSessionIdle(sync, 2000, signal);
 }

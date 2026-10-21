@@ -5,6 +5,7 @@
  * P_save-drain-removed: loadSession no longer waits on the save pipeline — the
  * save queue posts a self-contained snapshot (see session/saveState.ts).
  */
+import { afterSessionPaint } from './afterSessionPaint.ts';
 import { stateStore } from '../state/store.js';
 import { saveState } from './saveState.ts';
 import { serverCache } from './serverCache.ts';
@@ -530,6 +531,7 @@ export async function loadSession(id: string): Promise<void> {
     } catch (e) { reportSwallow(e, 'session/loader.loadSession~4', 'expected'); }
     if (s.projectId) {
       refreshCachedProjects(function () { return apiFetch('/api/projects'); }).then(function (rows) {
+        if (currentLoadAbort.signal.aborted || stateStore.read('currentSessionId') !== s.id) return;
         win.__activeProject = rows.filter(function (p) { return p.id === s.projectId; })[0] || null;
       }).catch(function () { return null; });
     } else { win.__activeProject = null; }
@@ -626,14 +628,17 @@ export async function loadSession(id: string): Promise<void> {
        reload mid-stream). Fire-and-forget: the bubble owns its slot and
        goes inert on session switch via stillOwnsSlot. */
     try { void reattachPendingTurn(s.id); } catch (e) { reportSwallow(e, 'session/loader.loadSession~6'); }
-    mirrorSessionHistory(s);
     if (_appMode() !== 'chat' || (s.kbNodes && s.kbNodes.length > 0)) updateKB();
     _renderRecents();
-    _renderMistakes();
-    _updateMistakesBadge();
     /* Rebuild the tutor plan from restored node state before publishing. */
     syncRestoredTutorPlan();
     publishReactChatRuntime({ type: 'state-synced', reason: 'session-loaded' });
+    const stillCurrent = () => !currentLoadAbort.signal.aborted && stateStore.read('currentSessionId') === s.id;
+    afterSessionPaint(currentLoadAbort.signal, stillCurrent, () => {
+      mirrorSessionHistory(s, stillCurrent, currentLoadAbort.signal);
+      _renderMistakes();
+      _updateMistakesBadge();
+    });
     /* P_history-slice (retired) — this used to re-run buildAssistantHtml over
        every restored assistant turn in background slices and patch the result
        into message.html. Every such row is rendered declaratively from rawText
