@@ -1,178 +1,243 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Explore the Socrates learning loop: dialogue, recall, maps, and practice.">
+  <meta name="theme-color" content="#ffffff">
   <title>Product — Socrates</title>
-  <link rel="icon" href="favicon.png">
-  
-  
-  <link rel="stylesheet" href="fonts.css?cb=20260922v3">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap"></noscript>
-  <link rel="stylesheet" href="editorial.css?cb=20260922a-v3">
-  <link rel="stylesheet" href="brand.css?cb=20260922b-v3">
-<script src="locale.js?cb=20261021v6"></script>  <link rel="canonical" href="https://topodrive.top/product">
+  <meta name="description" content="The learning loop in detail.">
+  <link rel="icon" href="/favicon.png">
+  <link rel="canonical" href="https://topodrive.top/product">
   <link rel="alternate" type="text/markdown" href="https://topodrive.top/product.md" title="Markdown twin of this page">
+  <link rel="preload" href="/media/fonts/geist-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/media/fonts/geist-sans-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/site.css?cb=20261021b">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Socrates">
+  <meta property="og:title" content="Product — Socrates">
+  <meta property="og:description" content="The learning loop in detail.">
+  <meta property="og:url" content="https://topodrive.top/product">
+  <meta name="twitter:card" content="summary">
+  <script src="/locale.js?cb=20261021v6"></script>
 </head>
-<body class="ed-site">
-  <a class="ed-skip" href="#main">Skip to content</a>
-  <header class="ed-header"><div class="ed-shell"><nav class="ed-header-inner" data-ed-nav aria-label="Primary navigation">
-    <a class="ed-brand" href="index" aria-label="Socrates home"><img src="/logo.png" width="24" height="24" alt=""><span class="ed-brand-word">Socrates</span></a>
-    <div class="ed-nav-links" id="site-menu" data-menu-panel><a href="research">Research</a><a href="product">Product</a><a href="principles">Principles</a><a href="learn">Learn</a><a href="developers">Developers</a><a href="about">Company</a></div>
-    <div class="ed-header-actions"><div class="ed-lang" data-lang-root><button class="ed-lang-toggle" type="button" data-lang-toggle aria-haspopup="true" aria-expanded="false" aria-label="Language"><svg class="ed-lang-globe" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M3 12h18M12 3c2.6 2.6 2.6 15.4 0 18M12 3c-2.6 2.6-2.6 15.4 0 18" stroke="currentColor" stroke-width="1.6"/></svg><span class="ed-lang-label">Language</span><svg class="ed-lang-caret" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="ed-lang-menu" data-lang-menu role="menu" hidden><button class="ed-lang-item" type="button" data-lang="en" role="menuitem"><span>English</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="ed-lang-item" type="button" data-lang="zh" role="menuitem"><span>中文</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div><a class="ed-button" href="https://app.topodrive.top">Try Socrates</a></div>
-    <button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="Menu"><span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
-  </nav></div></header>
+<body id="top">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M2.8 8h10.2M9 4.1 12.9 8 9 11.9"/></symbol>
+    <symbol id="i-up" viewBox="0 0 16 16"><path d="M8 13V3M3.9 7.1 8 3l4.1 4.1"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 20 20"><path d="M3.5 6.5h13M3.5 10h13M3.5 13.5h13"/></symbol>
+    <symbol id="i-close" viewBox="0 0 20 20"><path d="m5 5 10 10M15 5 5 15"/></symbol>
+    <symbol id="i-check" viewBox="0 0 16 16"><path d="m3 8.2 3.1 3.1L13 4.6"/></symbol>
+  </svg>
+
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="hdr">
+    <div class="shell hdr-in">
+      <a class="brand" href="/" aria-label="Socrates home">
+        <img src="/logo.png" width="20" height="20" alt="">
+        <span class="brand-word">Socrates</span>
+      </a>
+      <nav class="nav" aria-label="Primary">
+        <a href="/product" aria-current="page">Product</a>
+        <a href="/research">Research</a>
+        <a href="/principles">Principles</a>
+        <a href="/learn">Learn</a>
+        <a href="/developers">Developers</a>
+        <a href="/about">Company</a>
+      </nav>
+      <div class="hdr-act">
+        <a class="hdr-lang" href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
+        <a class="hdr-login" href="https://app.topodrive.top">Log in</a>
+        <a class="btn btn--sm" href="https://app.topodrive.top">Try Socrates</a>
+        <button class="menu-btn" type="button" data-menu-btn aria-expanded="false" aria-controls="mobile-menu" aria-label="Open menu">
+          <svg class="ico open" viewBox="0 0 20 20" aria-hidden="true"><use href="#i-menu"/></svg>
+          <svg class="ico close" viewBox="0 0 20 20" aria-hidden="true"><use href="#i-close"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="mobile-menu" id="mobile-menu" data-mobile-menu>
+      <nav aria-label="Mobile">
+        <a href="/product">Product</a>
+        <a href="/research">Research</a>
+        <a href="/principles">Principles</a>
+        <a href="/learn">Learn</a>
+        <a href="/developers">Developers</a>
+        <a href="/about">Company</a>
+      </nav>
+      <div class="m-act">
+        <a class="btn" href="https://app.topodrive.top">Try Socrates</a>
+        <a class="btn btn--ghost" href="https://app.topodrive.top">Log in</a>
+      </div>
+      <div class="m-lang">
+        <a href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/contact">Contact</a>
+      </div>
+    </div>
+  </header>
 
   <main id="main">
-    <section class="ed-page-hero"><div class="ed-shell ed-page-hero-grid ed-reveal">
-      <div><p class="ed-kicker">The learning loop</p><h1 class="ed-page-title" data-animate-text>A tutor for the work beneath the answer.</h1></div>
-      <p class="ed-copy-serif">Socrates keeps the conversation moving until an idea is yours: question it, explain it, recall it, and connect it.</p>
-    </div></section>
 
-    <section class="ed-section-tight"><div class="ed-shell ed-black-band ed-reveal">
-      <div class="ed-black-band-inner">
-        <div class="ed-black-band-copy"><div><p class="ed-kicker" style="color:rgba(244,241,233,.44)">A practice, not a feed</p><h2>Not one more answer. A way to make one answer useful.</h2><p>Every exchange is designed to leave a trace you can revisit: the claim, the reason, the uncertainty, and the next question.</p></div><a class="ed-link ed-link-light" href="https://app.topodrive.top">Begin a conversation</a></div>
-        <div class="ed-black-band-media"><img  alt="An editorial reasoning path that travels from a question through evidence toward connected understanding" src="/media/socrates-product-reasoning-path-v2.webp" loading="lazy" decoding="async" width="1672" height="941"></div>
+    <section class="page-head">
+      <div class="shell">
+        <p class="eyebrow">Product</p>
+        <h1 class="page-title">A tutor for the work beneath the answer.</h1>
+        <p class="page-lede">Socrates keeps the conversation moving until an idea is yours: question it, explain it, recall it, and connect it.</p>
+        <div class="page-meta">
+          <div><b>Four movements</b>One learning loop</div>
+          <div><b>Seven tools</b>In every session</div>
+          <div><b>Free tier</b>Permanently free</div>
+        </div>
       </div>
-    </div></section>
+    </section>
 
-    <section class="ed-section"><div class="ed-shell">
-      <div class="ed-product-grid">
-        <article class="ed-product-block" id="dialogue">
-          <div class="ed-product-meta-col">
-            <div class="ed-mini-demo" aria-hidden="true">
-              <div class="ed-mini-bubble-a">Why does this matter here?</div>
-              <div class="ed-mini-bubble-b">Same bytes, different wall clock.</div>
-            </div>
-            <div class="ed-product-meta-text"><p class="ed-kicker">01 / Dialogue</p><p class="ed-meta">Start with uncertainty</p></div>
+    <section class="sec sec--flush">
+      <div class="shell">
+        <div class="sec-head">
+          <p class="eyebrow sec-eyebrow">The loop</p>
+          <h2 class="sec-title">Ask, follow up, recall, map.</h2>
+          <p class="sec-desc">The product surfaces the same loop in every session. Nothing is added that does not serve it.</p>
+        </div>
+        <ol class="loop">
+          <li class="step"><span class="step-num">01</span><h3>Question</h3><p>Begin with the honest edge of your understanding.</p></li>
+          <li class="step"><span class="step-num">02</span><h3>Dialogue</h3><p>The tutor follows the seam, not the surface.</p></li>
+          <li class="step"><span class="step-num">03</span><h3>Recall</h3><p>Returns when the idea is yours.</p></li>
+          <li class="step"><span class="step-num">04</span><h3>Connection</h3><p>Writes itself into your map.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="sec sec--soft">
+      <div class="shell">
+        <div class="sec-head">
+          <p class="eyebrow sec-eyebrow">The four product blocks</p>
+          <h2 class="sec-title">One conversation, four kinds of attention.</h2>
+          <p class="sec-desc">Dialogue, recall, map, and practice are not separate features. They are the same loop seen from four angles.</p>
+        </div>
+        <div class="blocks">
+          <article class="block"><span class="block-num">01 / Dialogue</span><h3>Stay with the part that does not make sense yet.</h3><p>The tutor follows your reasoning and offers a sharper question, so the next step comes from your own understanding.</p></article>
+          <article class="block"><span class="block-num">02 / Recall</span><h3>Bring an idea back before it fades.</h3><p>Recall prompts revisit useful moments in your own words, timed for the point where retrieval still takes effort.</p></article>
+          <article class="block"><span class="block-num">03 / Knowledge map</span><h3>See the thread between the things you are learning.</h3><p>Questions form a growing map across sessions, so an idea from statistics can meet a note from philosophy.</p></article>
+          <article class="block"><span class="block-num">04 / Practice</span><h3>Check for understanding without performing certainty.</h3><p>Low-stakes questions reveal what holds and what is missing, before an exam does it for you.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec">
+      <div class="shell split">
+        <div class="split-main">
+          <p class="eyebrow">Pieces of the loop</p>
+          <h2 class="h2" style="margin-top:18px">Everything the tutor needs. Nothing it does not.</h2>
+          <dl class="defs" style="margin-top:36px">
+            <div class="def"><dt>Socratic dialogue</dt><dd>Streaming responses with LaTeX, code, and inline diagrams.</dd></div>
+            <div class="def"><dt>Recall queue</dt><dd>A small prompt queue that returns ideas on schedule.</dd></div>
+            <div class="def"><dt>Knowledge map</dt><dd>Relationships between ideas, visible across sessions.</dd></div>
+            <div class="def"><dt>Exam mode</dt><dd>Retrieval practice at the end of a study block.</dd></div>
+            <div class="def"><dt>Mistake book</dt><dd>Collects the seams in your explanations.</dd></div>
+            <div class="def"><dt>Multi-model</dt><dd>Pick a fast model for clarification, a deeper one for a long thread.</dd></div>
+            <div class="def"><dt>BYOK</dt><dd>Bring your own API key, supported from the Free tier up.</dd></div>
+          </dl>
+        </div>
+        <aside class="split-side">
+          <div class="card" style="padding:24px">
+            <p class="eyebrow">Plans</p>
+            <p class="body" style="margin-top:14px">Free is permanently free. Paid tiers add capacity, exam mode, and web search.</p>
+            <a class="link" href="/pricing" style="margin-top:18px">Compare plans<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
           </div>
-          <h2>Stay with the part that does not make sense yet.</h2>
-          <p>Ask in ordinary language. Socrates follows your reasoning, offers a sharper question, and helps you find the assumptions hiding underneath an answer.</p>
-        </article>
-        <article class="ed-product-block" id="recall">
-          <div class="ed-product-meta-col">
-            <div class="ed-mini-demo" aria-hidden="true">
-              <div class="ed-mini-card">
-                <div class="ed-mini-card-front">Why this step?</div>
-                <div class="ed-mini-card-back">+1 day</div>
-              </div>
-            </div>
-            <div class="ed-product-meta-text"><p class="ed-kicker">02 / Recall</p><p class="ed-meta">Return at the right time</p></div>
-          </div>
-          <h2>Bring an idea back before it fades.</h2>
-          <p>Turn useful moments into small prompts for later. Revisiting an explanation in your own words makes the next conversation more precise.</p>
-        </article>
-        <article class="ed-product-block" id="knowledge-map">
-          <div class="ed-product-meta-col">
-            <div class="ed-mini-demo" aria-hidden="true">
-              <span class="ed-mini-node"></span><span class="ed-mini-node"></span><span class="ed-mini-node"></span><span class="ed-mini-node"></span>
-            </div>
-            <div class="ed-product-meta-text"><p class="ed-kicker">03 / Knowledge map</p><p class="ed-meta">Make connections visible</p></div>
-          </div>
-          <h2>See the thread between the things you are learning.</h2>
-          <p>Your questions form a growing map, so a concept in statistics can meet an old idea from philosophy or a note from yesterday’s reading.</p>
-        </article>
-        <article class="ed-product-block" id="exam">
-          <div class="ed-product-meta-col">
-            <div class="ed-mini-demo" aria-hidden="true">
-              <div class="ed-mini-pulse"></div>
-            </div>
-            <div class="ed-product-meta-text"><p class="ed-kicker">04 / Practice</p><p class="ed-meta">Test the edges</p></div>
-          </div>
-          <h2>Check for understanding without performing certainty.</h2>
-          <p>Use low-stakes questions and short explanations to discover what holds, what is missing, and where a better question should begin.</p>
-        </article>
+        </aside>
       </div>
-    </div></section>
+    </section>
 
-    <section class="ed-section-tight ed-section-line"><div class="ed-shell">
-      <div class="ed-reveal" style="max-width:680px;margin:0 auto 8px;text-align:center">
-        <p class="ed-kicker">The path of a session</p>
-        <h2 class="ed-title">From a question to a question worth keeping.</h2>
-      </div>
-      <div class="ed-path-timeline" aria-label="The path of a Socrates session">
-        <div class="ed-path-step"><span class="ed-path-node"></span><strong>Question</strong><span>An honest edge, in your own words.</span></div>
-        <div class="ed-path-step"><span class="ed-path-node"></span><strong>Dialogue</strong><span>The tutor follows the seam.</span></div>
-        <div class="ed-path-step"><span class="ed-path-node"></span><strong>Recall</strong><span>Returns when the idea is yours.</span></div>
-        <div class="ed-path-step"><span class="ed-path-node"></span><strong>Connection</strong><span>Writes itself into your map.</span></div>
-      </div>
-      <div class="ed-stats-strip" style="margin-top:24px">
-        <div>
-          <p>Active learners · last 90 days</p>
-          <b><span class="ed-stat" data-stat-value="1240" data-stat-duration="1500">1,240</span></b>
+    <section class="sec sec--soft">
+      <div class="shell">
+        <div class="sec-head">
+          <p class="eyebrow sec-eyebrow">Tools</p>
+          <h2 class="sec-title">Bring the work with you.</h2>
+          <p class="sec-desc">Tools are available where they help a session, and quiet where they do not.</p>
         </div>
-        <div>
-          <p>Median session length</p>
-          <b><span class="ed-stat" data-stat-value="26" data-stat-suffix=" min" data-stat-duration="1000">26 min</span></b>
-        </div>
-        <div>
-          <p>Returning learners at week 4</p>
-          <b><span class="ed-stat" data-stat-value="68" data-stat-suffix="%" data-stat-duration="1100">68%</span></b>
-        </div>
-        <div>
-          <p>Learning at the edge</p>
-          <b>All in.</b>
+        <div class="topics topics--4">
+          <article class="topic"><h3>Web search</h3><p>Available on Descartes and Euclid for questions that need the open web.</p></article>
+          <article class="topic"><h3>Files</h3><p>Upload a file and the tutor can read it inside the conversation.</p></article>
+          <article class="topic"><h3>Connectors</h3><p>Bring external context into a session without leaving the thread.</p></article>
+          <article class="topic"><h3>Scheduled tasks</h3><p>Recurring recall prompts that arrive when the idea is due again.</p></article>
         </div>
       </div>
-    </div></section>
+    </section>
 
-    <section class="ed-section-tight ed-section-line"><div class="ed-shell ed-inline-feature ed-reveal">
-      <img  alt="Memory fragments revisited at intervals along a fine copper recall route" src="/media/socrates-product-recall-intervals-v2.webp" loading="lazy" decoding="async" width="1122" height="1402">
-      <div><p class="ed-kicker" style="color:rgba(244,241,233,.44)">Built for continuity</p><h2>Today’s question should improve tomorrow’s starting point.</h2><p>Socrates is intentionally calm: a durable place for your thinking, rather than another stream asking for your attention.</p><a class="ed-link ed-link-light" href="pricing">See plans and access</a></div>
-    </div></section>
-
-    <section class="ed-section"><div class="ed-shell">
-      <div class="ed-reveal" style="max-width:680px">
-        <p class="ed-kicker">What a session leaves behind</p>
-        <h2 class="ed-title ed-artifact">The session is the artifact.</h2>
-        <p class="ed-copy" style="margin-top:20px">Each conversation writes itself into a small, durable file you can revisit. The question, your first attempt, the sharper sub-questions, and the place this idea now lives in your map. Nothing is wasted in a feed you cannot find again.</p>
-      </div>
-      <div class="ed-product-grid" style="margin-top:48px">
-        <article class="ed-product-block ed-reveal"><div><p class="ed-kicker">A / Question</p><p class="ed-meta">The starting sentence</p></div><h2>The honest edge you typed in.</h2><p>The exact prompt that began the conversation is preserved with the rest of the session, so the path back to an idea is always visible.</p></article>
-        <article class="ed-product-block ed-reveal"><div><p class="ed-kicker">B / Sharper questions</p><p class="ed-meta">What the conversation became</p></div><h2>The questions Socrates returned to you.</h2><p>Useful sub-questions are saved alongside your responses, so a later review can pick up the thread without re-reading the whole exchange.</p></article>
-        <article class="ed-product-block ed-reveal"><div><p class="ed-kicker">C / Your attempt</p><p class="ed-meta">The piece you wrote back</p></div><h2>The explanation in your own words.</h2><p>Your own short summary is the most honest signal of what you understand. It is kept next to the tutor’s response, so progress is visible.</p></article>
-        <article class="ed-product-block ed-reveal"><div><p class="ed-kicker">D / Connections</p><p class="ed-meta">The map entry</p></div><h2>The place it joins the rest of your map.</h2><p>When a concept touches something you already asked about, Socrates writes the connection into your knowledge map for the next time.</p></article>
-      </div>
-    </div></section>
-
-    <section class="ed-section ed-section-line"><div class="ed-shell">
-      <div class="ed-subject-grid ed-reveal">
-        <div>
-          <p class="ed-kicker">Subjects you can bring</p>
-          <h2 class="ed-statement-title">A wide shelf of subjects, with care for the edges of each.</h2>
-          <p class="ed-copy" style="margin-top:24px">Socrates is designed for ideas that need explaining more than they need looking up. The list below is not exhaustive, and we keep expanding the subjects it does well.</p>
+    <section class="sec">
+      <div class="shell">
+        <div class="sec-head">
+          <p class="eyebrow sec-eyebrow">By the numbers</p>
+          <h2 class="sec-title">Across the last 90 days of production sessions.</h2>
         </div>
-        <div class="ed-ledger" aria-label="Subjects Socrates handles">
-          <div class="ed-ledger-row"><span>01</span><strong>Mathematics</strong><span>Calculus, linear algebra, probability, proof</span></div>
-          <div class="ed-ledger-row"><span>02</span><strong>Statistics &amp; data</strong><span>Modelling, inference, interpretation</span></div>
-          <div class="ed-ledger-row"><span>03</span><strong>Physics &amp; engineering</strong><span>Mechanics, circuits, signals</span></div>
-          <div class="ed-ledger-row"><span>04</span><strong>Computer science</strong><span>Algorithms, systems, type theory</span></div>
-          <div class="ed-ledger-row"><span>05</span><strong>Philosophy</strong><span>Logic, ethics, language, mind</span></div>
-          <div class="ed-ledger-row"><span>06</span><strong>Writing &amp; rhetoric</strong><span>Argument, structure, revision</span></div>
-          <div class="ed-ledger-row"><span>07</span><strong>History &amp; politics</strong><span>Argument from primary sources</span></div>
-          <div class="ed-ledger-row"><span>08</span><strong>Biology &amp; chemistry</strong><span>Mechanism before vocabulary</span></div>
-          <div class="ed-ledger-row"><span>09</span><strong>Music &amp; theory</strong><span>Counterpoint, harmony, analysis</span></div>
-          <div class="ed-ledger-row"><span>10</span><strong>Languages</strong><span>Grammar, translation, interpretation</span></div>
+        <div class="stat-strip">
+          <div><b>1,240</b><span>Active learners</span></div>
+          <div><b>26 min</b><span>Median session length</span></div>
+          <div><b>68%</b><span>Returning learners at week 4</span></div>
         </div>
       </div>
-    </div></section>
+    </section>
 
-    <section class="ed-section-tight"><div class="ed-shell ed-black-band ed-reveal">
-      <div class="ed-black-band-inner">
-        <div class="ed-black-band-copy">
-          <div><p class="ed-kicker" style="color:rgba(244,241,233,.44)">A different kind of tutor</p><h2>Not a search box with personality.</h2><p>Most AI products reward the next prompt. Socrates rewards the next question you can articulate in your own words. The interface gets quieter as the conversation deepens, not louder.</p></div>
-          <a class="ed-link ed-link-light" href="principles">See our principles</a>
-        </div>
-        <div class="ed-black-band-media"><img  alt="An editorial reasoning path that travels from a question through evidence toward connected understanding" src="/media/socrates-product-reasoning-path-v2.webp" loading="lazy" decoding="async" width="1672" height="941"></div>
+    <section class="cta-slim">
+      <div class="shell">
+        <h2 class="h2">Start with a question.</h2>
+        <p class="body">Open Socrates and bring the thing you have been circling. The Free tier is permanently free.</p>
+        <a class="btn" href="https://app.topodrive.top">Open Socrates<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
       </div>
-    </div></section>
+    </section>
+
   </main>
 
-  <footer class="ed-footer"><div class="ed-shell ed-footer-frame"><div class="ed-footer-top"><div class="ed-footer-brand"><a class="ed-brand" href="index"><img src="/logo.png" width="24" height="24" alt=""><span class="ed-brand-word">Socrates</span></a><p>An AI tutor for people who want to understand.</p></div><div class="ed-footer-column"><h2>Product</h2><a href="product">Learning map</a><a href="pricing">Pricing</a><a href="https://app.topodrive.top">Open Socrates</a></div><div class="ed-footer-column"><h2>Learn</h2><a href="announcements">Announcements</a><a href="documents">Documents</a><a href="research">Research</a></div><div class="ed-footer-column"><h2>Company</h2><a href="about">About</a><a href="contact">Contact</a><a href="guide">Learning guide</a></div><div class="ed-footer-column"><h2>Resources</h2><a href="zh/index">中文</a><a href="privacy">Privacy</a><a href="terms">Terms</a></div></div><div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>Built for people who want to understand.</span></div></div></footer>
-  <script src="editorial.js?cb=20260824"></script>
+  <footer class="ftr">
+    <div class="shell">
+      <div class="ftr-grid">
+        <div class="ftr-brand">
+          <a class="brand" href="/" aria-label="Socrates home">
+            <img src="/logo.png" width="20" height="20" alt="">
+            <span class="brand-word">Socrates</span>
+          </a>
+          <p>An AI tutor for people who want to understand. Built around Socratic dialogue, durable recall, and a knowledge map.</p>
+        </div>
+        <nav class="ftr-col" aria-label="Product">
+          <h2>Product</h2>
+          <a href="/product">Learning map</a>
+          <a href="/pricing">Pricing</a>
+          <a href="/developers">Developers</a>
+          <a href="https://app.topodrive.top">Open Socrates</a>
+        </nav>
+        <nav class="ftr-col" aria-label="Learn">
+          <h2>Learn</h2>
+          <a href="/research">Research</a>
+          <a href="/learn">Learning guide</a>
+          <a href="/documents">Documents</a>
+          <a href="/guide">Guide</a>
+        </nav>
+        <nav class="ftr-col" aria-label="Company">
+          <h2>Company</h2>
+          <a href="/about">About</a>
+          <a href="/contact">Contact</a>
+          <a href="/announcements">Announcements</a>
+          <a href="https://status.topodrive.top">Status</a>
+        </nav>
+        <nav class="ftr-col" aria-label="Resources">
+          <h2>Resources</h2>
+          <a href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="/openapi.json">OpenAPI</a>
+        </nav>
+      </div>
+      <div class="ftr-bot">
+        <span>© 2026 Socrates · Built for people who want to understand.</span>
+        <div class="ftr-social" aria-label="Social links">
+          <a href="https://x.com/topodrive" target="_blank" rel="me noopener">X</a>
+          <a href="https://github.com/topodrive" target="_blank" rel="me noopener">GitHub</a>
+          <a href="https://www.youtube.com/@topodrive" target="_blank" rel="me noopener">YouTube</a>
+          <a href="https://www.linkedin.com/company/topodrive" target="_blank" rel="me noopener">LinkedIn</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/site.js?cb=20261021b"></script>
 </body>
 </html>

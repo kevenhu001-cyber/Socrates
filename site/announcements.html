@@ -1,65 +1,162 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="News and updates from Socrates.">
-  <title>Socrates — News</title>
-  <link rel="icon" href="favicon.png">
-  
-  
-  <link rel="stylesheet" href="fonts.css?cb=20260922v3">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap"></noscript>
-  <link rel="stylesheet" href="editorial.css?cb=20260922a-v3">
-  <link rel="stylesheet" href="brand.css?cb=20260922b-v3">
-<script src="locale.js?cb=20261021v6"></script>  <link rel="canonical" href="https://topodrive.top/announcements">
+  <meta name="theme-color" content="#ffffff">
+  <title>Announcements — Socrates</title>
+  <meta name="description" content="What we shipped recently.">
+  <link rel="icon" href="/favicon.png">
+  <link rel="canonical" href="https://topodrive.top/announcements">
   <link rel="alternate" type="text/markdown" href="https://topodrive.top/announcements.md" title="Markdown twin of this page">
+  <link rel="preload" href="/media/fonts/geist-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/media/fonts/geist-sans-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/site.css?cb=20261021b">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Socrates">
+  <meta property="og:title" content="Announcements — Socrates">
+  <meta property="og:description" content="What we shipped recently.">
+  <meta property="og:url" content="https://topodrive.top/announcements">
+  <meta name="twitter:card" content="summary">
+  <script src="/locale.js?cb=20261021v6"></script>
 </head>
-<body class="ed-site ed-news-page">
-  <a class="ed-skip" href="#main">Skip to content</a>
-  <header class="ed-header">
-    <div class="ed-shell"><nav class="ed-header-inner" data-ed-nav aria-label="Primary navigation"><a class="ed-brand" href="index"><img src="/logo.png" width="24" height="24" alt=""><span class="ed-brand-word">Socrates</span></a><div class="ed-nav-links" id="site-menu" data-menu-panel><a href="research">Research</a><a href="product">Product</a><a href="principles">Principles</a><a href="learn">Learn</a><a href="developers">Developers</a><a href="about">Company</a></div><div class="ed-header-actions"><div class="ed-lang" data-lang-root><button class="ed-lang-toggle" type="button" data-lang-toggle aria-haspopup="true" aria-expanded="false" aria-label="Language"><svg class="ed-lang-globe" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M3 12h18M12 3c2.6 2.6 2.6 15.4 0 18M12 3c-2.6 2.6-2.6 15.4 0 18" stroke="currentColor" stroke-width="1.6"/></svg><span class="ed-lang-label">Language</span><svg class="ed-lang-caret" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="ed-lang-menu" data-lang-menu role="menu" hidden><button class="ed-lang-item" type="button" data-lang="en" role="menuitem"><span>English</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="ed-lang-item" type="button" data-lang="zh" role="menuitem"><span>中文</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div><a class="ed-button" href="https://app.topodrive.top">Try Socrates</a></div><button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="Menu"><span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button></nav></div>
+<body id="top">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M2.8 8h10.2M9 4.1 12.9 8 9 11.9"/></symbol>
+    <symbol id="i-up" viewBox="0 0 16 16"><path d="M8 13V3M3.9 7.1 8 3l4.1 4.1"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 20 20"><path d="M3.5 6.5h13M3.5 10h13M3.5 13.5h13"/></symbol>
+    <symbol id="i-close" viewBox="0 0 20 20"><path d="m5 5 10 10M15 5 5 15"/></symbol>
+    <symbol id="i-check" viewBox="0 0 16 16"><path d="m3 8.2 3.1 3.1L13 4.6"/></symbol>
+  </svg>
+
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="hdr">
+    <div class="shell hdr-in">
+      <a class="brand" href="/" aria-label="Socrates home">
+        <img src="/logo.png" width="20" height="20" alt="">
+        <span class="brand-word">Socrates</span>
+      </a>
+      <nav class="nav" aria-label="Primary">
+        <a href="/product">Product</a>
+        <a href="/research">Research</a>
+        <a href="/principles">Principles</a>
+        <a href="/learn">Learn</a>
+        <a href="/developers">Developers</a>
+        <a href="/about">Company</a>
+      </nav>
+      <div class="hdr-act">
+        <a class="hdr-lang" href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
+        <a class="hdr-login" href="https://app.topodrive.top">Log in</a>
+        <a class="btn btn--sm" href="https://app.topodrive.top">Try Socrates</a>
+        <button class="menu-btn" type="button" data-menu-btn aria-expanded="false" aria-controls="mobile-menu" aria-label="Open menu">
+          <svg class="ico open" viewBox="0 0 20 20" aria-hidden="true"><use href="#i-menu"/></svg>
+          <svg class="ico close" viewBox="0 0 20 20" aria-hidden="true"><use href="#i-close"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="mobile-menu" id="mobile-menu" data-mobile-menu>
+      <nav aria-label="Mobile">
+        <a href="/product">Product</a>
+        <a href="/research">Research</a>
+        <a href="/principles">Principles</a>
+        <a href="/learn">Learn</a>
+        <a href="/developers">Developers</a>
+        <a href="/about">Company</a>
+      </nav>
+      <div class="m-act">
+        <a class="btn" href="https://app.topodrive.top">Try Socrates</a>
+        <a class="btn btn--ghost" href="https://app.topodrive.top">Log in</a>
+      </div>
+      <div class="m-lang">
+        <a href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/contact">Contact</a>
+      </div>
+    </div>
   </header>
+
   <main id="main">
-    <section class="ed-shell ed-news-hero ed-reveal">
-      <h1>Newsroom</h1>
-      <div class="ed-news-contact" aria-label="News contacts">
-        <a href="contact"><span>Product and press</span><strong>Bring us a question</strong></a>
-        <a href="contact"><span>Learning support</span><strong>How to get help</strong></a>
-        <a href="documents"><span>Media and documents</span><strong>Browse the library</strong></a>
+
+    <section class="page-head">
+      <div class="shell">
+        <p class="eyebrow">Announcements</p>
+        <h1 class="page-title">What we shipped recently.</h1>
+        <p class="page-lede">Socrates releases in small, careful steps. Each change has a short note here.</p>
       </div>
     </section>
 
-    <section class="ed-shell ed-news-split">
-      <figure class="ed-reveal"><img  alt="An archival editorial signal of linked research fragments and a cobalt relay mark" src="/media/socrates-newsroom-signal-v2.webp" loading="lazy" decoding="async" width="1448" height="1086"></figure>
-      <div class="ed-news-feed">
-        <div class="ed-news-toolbar ed-reveal">
-          <p class="ed-kicker">News</p>
-          <label class="ed-search-field ed-news-search"><span>Search news</span><input type="search" data-ed-search aria-controls="news-list" placeholder="Search by title or topic" autocomplete="off"></label>
+    <section class="sec sec--flush">
+      <div class="shell">
+        <div class="timeline">
+          <div class="tl-item"><span class="tl-year">May 2026</span><div><h3>Follow-up prompts at the seam of an explanation</h3><p>The tutor now waits for the learner to finish before offering a next-step prompt.</p></div></div>
+          <div class="tl-item"><span class="tl-year">April 2026</span><div><h3>Multi-model per session</h3><p>Choose a fast model for clarification, a deeper model for a long thread.</p></div></div>
+          <div class="tl-item"><span class="tl-year">March 2026</span><div><h3>Knowledge map v2</h3><p>The map now surfaces relationships from earlier sessions, not just the current one.</p></div></div>
+          <div class="tl-item"><span class="tl-year">February 2026</span><div><h3>Mistake book</h3><p>Save the moments where your explanation showed a seam; revisit them on a schedule.</p></div></div>
+          <div class="tl-item"><span class="tl-year">January 2026</span><div><h3>Better BYOK</h3><p>Bring your own key for any supported provider.</p></div></div>
+          <div class="tl-item"><span class="tl-year">December 2025</span><div><h3>Recall queue refresh</h3><p>Easier scheduling, more control over cadence.</p></div></div>
         </div>
-        <p class="ed-year-rule">2026</p>
-        <div class="ed-news-rail ed-reveal" id="news-list" aria-live="polite">
-          <article class="ed-news-item" data-ed-item="announcements"><div class="ed-row-meta"><span class="ed-pill" data-cat="Announcements">Announcements</span><span>August 12, 2026</span></div><h2>Introducing guided recall.</h2><p>A new way to return to questions worth keeping open, with enough pause for your own first attempt.</p></article>
-          <article class="ed-news-item" data-ed-item="research"><div class="ed-row-meta"><span class="ed-pill" data-cat="Research">Research</span><span>August 02, 2026</span></div><h2>Notes on the route back to an idea.</h2><p>New field research on prompts that make a concept available without flattening its context.</p></article>
-          <article class="ed-news-item" data-ed-item="learning"><div class="ed-row-meta"><span class="ed-pill" data-cat="Learning">Learning</span><span>July 18, 2026</span></div><h2>Socrates Studio is open.</h2><p>A smaller set of practical paths for beginning a topic, testing an explanation, and building a knowledge map.</p></article>
-          <article class="ed-news-item" data-ed-item="product"><div class="ed-row-meta"><span class="ed-pill" data-cat="Product">Product</span><span>July 04, 2026</span></div><h2>A clearer way to follow a learning path.</h2><p>Topics, questions, and the useful links between them now stay visible as you work.</p></article>
-          <article class="ed-news-item" data-ed-item="announcements"><div class="ed-row-meta"><span class="ed-pill" data-cat="Announcements">Announcements</span><span>June 21, 2026</span></div><h2>A new home for the research threads.</h2><p>The five ongoing research threads—memory, explanation, practice, knowledge mapping, and tutoring—now live on a single research page.</p></article>
-          <article class="ed-news-item" data-ed-item="product"><div class="ed-row-meta"><span class="ed-pill" data-cat="Product">Product</span><span>June 09, 2026</span></div><h2>Bring your own model key.</h2><p>Connect Anthropic, OpenAI, or compatible providers from the API Keys page and use them inside any session.</p></article>
-          <article class="ed-news-item" data-ed-item="learning"><div class="ed-row-meta"><span class="ed-pill" data-cat="Learning">Learning</span><span>May 28, 2026</span></div><h2>Anatomy of a useful question, now in print.</h2><p>The Studio guide is now a longer essay with worked examples from real subjects.</p></article>
-          <article class="ed-news-item" data-ed-item="announcements"><div class="ed-row-meta"><span class="ed-pill" data-cat="Announcements">Announcements</span><span>May 14, 2026</span></div><h2>Knowledge maps age with your study.</h2><p>Maps now keep a record of when a node was last visited, so you can see what is fresh and what needs a return.</p></article>
-          <article class="ed-news-item" data-ed-item="research"><div class="ed-row-meta"><span class="ed-pill" data-cat="Research">Research</span><span>April 30, 2026</span></div><h2>What learners keep after a session.</h2><p>A small study on the parts of a conversation that people actually revisit a week later.</p></article>
-          <article class="ed-news-item" data-ed-item="product"><div class="ed-row-meta"><span class="ed-pill" data-cat="Product">Product</span><span>April 18, 2026</span></div><h2>Calmer interface, deeper sessions.</h2><p>The default interface now steps out of the way as a conversation deepens, instead of asking for the next turn.</p></article>
-          <article class="ed-news-item" data-ed-item="announcements"><div class="ed-row-meta"><span class="ed-pill" data-cat="Announcements">Announcements</span><span>April 02, 2026</span></div><h2>Privacy page rewritten, plainly.</h2><p>The privacy notice is now written to be readable. Every data category, every destination, every retention rule.</p></article>
-          <article class="ed-news-item" data-ed-item="learning"><div class="ed-row-meta"><span class="ed-pill" data-cat="Learning">Learning</span><span>March 20, 2026</span></div><h2>A first look at exam mode.</h2><p>Exam mode asks first, then explains. The first version is rolling out to Descartes and Euclid plans.</p></article>
-        </div>
-        <p class="ed-filter-empty" data-ed-empty hidden>No news matched that search.</p>
       </div>
     </section>
+
+    <section class="sec">
+      <div class="shell">
+        <div class="notice"><strong>Subscribe.</strong> The announcements index is updated weekly. For research notes, read <a href="/research">Research</a>; for the full product story, see <a href="/product">Product</a>.</div>
+      </div>
+    </section>
+
   </main>
-  <footer class="ed-footer"><div class="ed-shell ed-footer-frame"><div class="ed-footer-top"><div class="ed-footer-brand"><a class="ed-brand" href="index"><img src="/logo.png" width="24" height="24" alt=""><span class="ed-brand-word">Socrates</span></a><p>An AI tutor for people who want to understand.</p></div><div class="ed-footer-column"><h2>Product</h2><a href="product">Learning map</a><a href="pricing">Pricing</a><a href="https://app.topodrive.top">Open Socrates</a></div><div class="ed-footer-column"><h2>Learn</h2><a href="research">Research</a><a href="principles">Principles</a><a href="learn">Learn</a></div><div class="ed-footer-column"><h2>Company</h2><a href="about">About</a><a href="contact">Contact</a><a href="announcements" aria-current="page">News</a></div><div class="ed-footer-column"><h2>Resources</h2><a href="zh/index">中文</a><a href="privacy">Privacy</a><a href="terms">Terms</a></div></div><div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>Built for people who want to understand.</span></div></div></footer>
-  <script src="editorial.js?cb=20260824"></script>
+
+  <footer class="ftr">
+    <div class="shell">
+      <div class="ftr-grid">
+        <div class="ftr-brand">
+          <a class="brand" href="/" aria-label="Socrates home">
+            <img src="/logo.png" width="20" height="20" alt="">
+            <span class="brand-word">Socrates</span>
+          </a>
+          <p>An AI tutor for people who want to understand. Built around Socratic dialogue, durable recall, and a knowledge map.</p>
+        </div>
+        <nav class="ftr-col" aria-label="Product">
+          <h2>Product</h2>
+          <a href="/product">Learning map</a>
+          <a href="/pricing">Pricing</a>
+          <a href="/developers">Developers</a>
+          <a href="https://app.topodrive.top">Open Socrates</a>
+        </nav>
+        <nav class="ftr-col" aria-label="Learn">
+          <h2>Learn</h2>
+          <a href="/research">Research</a>
+          <a href="/learn">Learning guide</a>
+          <a href="/documents">Documents</a>
+          <a href="/guide">Guide</a>
+        </nav>
+        <nav class="ftr-col" aria-label="Company">
+          <h2>Company</h2>
+          <a href="/about">About</a>
+          <a href="/contact">Contact</a>
+          <a href="/announcements">Announcements</a>
+          <a href="https://status.topodrive.top">Status</a>
+        </nav>
+        <nav class="ftr-col" aria-label="Resources">
+          <h2>Resources</h2>
+          <a href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="/openapi.json">OpenAPI</a>
+        </nav>
+      </div>
+      <div class="ftr-bot">
+        <span>© 2026 Socrates · Built for people who want to understand.</span>
+        <div class="ftr-social" aria-label="Social links">
+          <a href="https://x.com/topodrive" target="_blank" rel="me noopener">X</a>
+          <a href="https://github.com/topodrive" target="_blank" rel="me noopener">GitHub</a>
+          <a href="https://www.youtube.com/@topodrive" target="_blank" rel="me noopener">YouTube</a>
+          <a href="https://www.linkedin.com/company/topodrive" target="_blank" rel="me noopener">LinkedIn</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/site.js?cb=20261021b"></script>
 </body>
 </html>

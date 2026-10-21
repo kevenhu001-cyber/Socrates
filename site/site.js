@@ -49,7 +49,7 @@
         observer.unobserve(entry.target);
       });
     },
-    { rootMargin: '0px 0px -8% 0px', threshold: 0.05 }
+    { rootMargin: '200px 0px 200px 0px', threshold: 0.01 }
   );
 
   items.forEach(function (item) {

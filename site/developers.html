@@ -1,278 +1,227 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Socrates developer portal — OpenAPI spec, authentication (OAuth 2.0 + scoped agent keys), MCP server, rate limits, and quickstart for building agents on the Socrates API.">
-  <title>Developers — Socrates API, auth, and MCP</title>
+  <meta name="theme-color" content="#ffffff">
+  <title>Socrates Developers — API, auth, and MCP</title>
+  <meta name="description" content="Developer portal for the Socrates API — OpenAPI, OAuth 2.0 + PKCE, scoped keys, MCP, and conventions.">
+  <link rel="icon" href="/favicon.png">
   <link rel="canonical" href="https://topodrive.top/developers">
-  <link rel="alternate" type="text/markdown" href="/developers.md">
-  <link rel="icon" href="favicon.png">
-  <link rel="stylesheet" href="fonts.css?cb=20260922v3">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="editorial.css?cb=20260922a-v3">
-  <link rel="stylesheet" href="brand.css?cb=20260922b-v3">
-  <script src="editorial.js?cb=20260824" defer></script>
-  <script src="locale.js?cb=20261021v6" defer></script>
+  <link rel="alternate" type="text/markdown" href="https://topodrive.top/developers.md" title="Markdown twin of this page">
+  <link rel="preload" href="/media/fonts/geist-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/media/fonts/geist-sans-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/site.css?cb=20261021b">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Socrates">
+  <meta property="og:title" content="Socrates Developers — API, auth, and MCP">
+  <meta property="og:description" content="Developer portal for the Socrates API — OpenAPI, OAuth 2.0 + PKCE, scoped keys, MCP, and conventions.">
+  <meta property="og:url" content="https://topodrive.top/developers">
+  <meta name="twitter:card" content="summary">
+  <script src="/locale.js?cb=20261021v6"></script>
 </head>
-<body class="ed-site">
-  <a class="ed-skip" href="#main">Skip to content</a>
+<body id="top">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M2.8 8h10.2M9 4.1 12.9 8 9 11.9"/></symbol>
+    <symbol id="i-up" viewBox="0 0 16 16"><path d="M8 13V3M3.9 7.1 8 3l4.1 4.1"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 20 20"><path d="M3.5 6.5h13M3.5 10h13M3.5 13.5h13"/></symbol>
+    <symbol id="i-close" viewBox="0 0 20 20"><path d="m5 5 10 10M15 5 5 15"/></symbol>
+    <symbol id="i-check" viewBox="0 0 16 16"><path d="m3 8.2 3.1 3.1L13 4.6"/></symbol>
+  </svg>
 
-  <header class="ed-header">
-    <div class="ed-shell">
-      <nav class="ed-header-inner" data-ed-nav aria-label="Primary navigation">
-        <a class="ed-brand" href="index" aria-label="Socrates home"><img src="/logo.png" width="24" height="24" alt=""><span class="ed-brand-word">Socrates</span></a>
-        <div class="ed-nav-links" id="site-menu" data-menu-panel><a href="research">Research</a><a href="product">Product</a><a href="principles">Principles</a><a href="learn">Learn</a><a href="developers">Developers</a><a href="about">Company</a></div>
-        <div class="ed-header-actions">
-          <div class="ed-lang-root" data-lang-root>
-            <button class="ed-lang-toggle" type="button" data-lang-toggle aria-expanded="false" aria-label="Language selection: English"><svg class="ed-lang-globe" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg><span class="ed-lang-current">EN</span><svg class="ed-lang-caret" width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><path d="M2.5 3.75L5 6.25L7.5 3.75H2.5Z"></path></svg></button>
-            <div class="ed-lang-menu" data-lang-menu hidden>
-              <button class="ed-lang-item" type="button" data-lang="en" aria-current="true"><span class="ed-lang-name">English</span><span class="ed-lang-region">US</span></button>
-              <button class="ed-lang-item" type="button" data-lang="zh"><span class="ed-lang-name">简体中文</span><span class="ed-lang-region">CN</span></button>
-            </div>
-          </div>
-          <a class="ed-button" href="https://app.topodrive.top">Try Socrates</a>
-        </div>
-        <button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="Menu"><span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="hdr">
+    <div class="shell hdr-in">
+      <a class="brand" href="/" aria-label="Socrates home">
+        <img src="/logo.png" width="20" height="20" alt="">
+        <span class="brand-word">Socrates</span>
+      </a>
+      <nav class="nav" aria-label="Primary">
+        <a href="/product">Product</a>
+        <a href="/research">Research</a>
+        <a href="/principles">Principles</a>
+        <a href="/learn">Learn</a>
+        <a href="/developers" aria-current="page">Developers</a>
+        <a href="/about">Company</a>
       </nav>
+      <div class="hdr-act">
+        <a class="hdr-lang" href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
+        <a class="hdr-login" href="https://app.topodrive.top">Log in</a>
+        <a class="btn btn--sm" href="https://app.topodrive.top">Try Socrates</a>
+        <button class="menu-btn" type="button" data-menu-btn aria-expanded="false" aria-controls="mobile-menu" aria-label="Open menu">
+          <svg class="ico open" viewBox="0 0 20 20" aria-hidden="true"><use href="#i-menu"/></svg>
+          <svg class="ico close" viewBox="0 0 20 20" aria-hidden="true"><use href="#i-close"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="mobile-menu" id="mobile-menu" data-mobile-menu>
+      <nav aria-label="Mobile">
+        <a href="/product">Product</a>
+        <a href="/research">Research</a>
+        <a href="/principles">Principles</a>
+        <a href="/learn">Learn</a>
+        <a href="/developers">Developers</a>
+        <a href="/about">Company</a>
+      </nav>
+      <div class="m-act">
+        <a class="btn" href="https://app.topodrive.top">Try Socrates</a>
+        <a class="btn btn--ghost" href="https://app.topodrive.top">Log in</a>
+      </div>
+      <div class="m-lang">
+        <a href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/contact">Contact</a>
+      </div>
     </div>
   </header>
 
   <main id="main">
-    <section class="ed-page-hero">
-      <div class="ed-shell ed-page-hero-grid ed-reveal">
-        <div>
-          <p class="ed-kicker">Developers &amp; API</p>
-          <h1 class="ed-page-title" data-animate-text>Build agents on Socrates.</h1>
-        </div>
-        <div>
-          <p class="ed-copy-serif">Everything an automated client needs: a typed OpenAPI surface, OAuth 2.0 with PKCE, scoped long-lived agent keys, an MCP server, and machine-readable discovery at predictable URLs.</p>
-          <div class="ed-hero-actions" style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap">
-            <a class="ed-button" href="/openapi.json" target="_blank" rel="noopener">View OpenAPI Spec</a>
-            <a class="ed-button-quiet" href="/auth.md">Auth Guide</a>
-          </div>
+
+    <section class="page-head">
+      <div class="shell">
+        <p class="eyebrow">Developers</p>
+        <h1 class="page-title">Build agents on Socrates.</h1>
+        <p class="page-lede">A typed OpenAPI surface, OAuth 2.0 with PKCE, scoped long-lived agent keys, an MCP server, and machine-readable discovery at predictable URLs.</p>
+        <div class="page-meta">
+          <div><b>OpenAPI 3.0</b>Every public endpoint</div>
+          <div><b>OAuth 2.0 + PKCE</b>Third-party agents</div>
+          <div><b>MCP</b>Streamable HTTP, read-only</div>
         </div>
       </div>
     </section>
 
-    <!-- Quickstart 3-step grid -->
-    <section class="ed-section-tight">
-      <div class="ed-shell">
-        <div class="ed-reveal" style="margin-bottom:32px">
-          <p class="ed-kicker">Quickstart</p>
-          <h2 class="ed-title">Three steps to your first agent call.</h2>
+    <section class="sec sec--flush">
+      <div class="shell">
+        <div class="sec-head">
+          <p class="eyebrow sec-eyebrow">Quickstart</p>
+          <h2 class="sec-title">Three steps to a first call.</h2>
         </div>
-
-        <div class="ed-card-grid" style="grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));gap:20px">
-          <article class="ed-card ed-reveal" style="display:flex;flex-direction:column;justify-content:space-between">
-            <div>
-              <span class="ed-mono-kicker" style="font-size:12px;color:var(--site-clay);font-weight:600">STEP 01</span>
-              <h3 style="margin:12px 0 8px;font-size:20px;font-weight:600">Pick an auth route</h3>
-              <p style="color:var(--site-ink-soft);font-size:14.5px;line-height:1.6">Third-party agents use the <a class="ed-link" href="/auth.md">OAuth 2.0 authorization-code flow with PKCE</a>. First-party automation mints a scoped key in <a class="ed-link" href="https://app.topodrive.top">the app</a> or via the API.</p>
-            </div>
-            <pre style="margin-top:16px;padding:12px;border-radius:8px;background:var(--site-ink);color:#ffffff;font-size:12px;overflow-x:auto;font-family:var(--site-mono)"><code>Authorization: Bearer ak_&lt;keyId&gt;.&lt;secret&gt;</code></pre>
-          </article>
-
-          <article class="ed-card ed-reveal" style="display:flex;flex-direction:column;justify-content:space-between">
-            <div>
-              <span class="ed-mono-kicker" style="font-size:12px;color:var(--site-clay);font-weight:600">STEP 02</span>
-              <h3 style="margin:12px 0 8px;font-size:20px;font-weight:600">Read the contract</h3>
-              <p style="color:var(--site-ink-soft);font-size:14.5px;line-height:1.6">Every public endpoint is specified in the <a class="ed-link" href="/openapi.json">OpenAPI 3.0 specification</a> — operationIds, request/response schemas, error codes, and per-operation OAuth scopes.</p>
-            </div>
-            <pre style="margin-top:16px;padding:12px;border-radius:8px;background:var(--site-ink);color:#ffffff;font-size:12px;overflow-x:auto;font-family:var(--site-mono)"><code>curl -s https://topodrive.top/openapi.json</code></pre>
-          </article>
-
-          <article class="ed-card ed-reveal" style="display:flex;flex-direction:column;justify-content:space-between">
-            <div>
-              <span class="ed-mono-kicker" style="font-size:12px;color:var(--site-clay);font-weight:600">STEP 03</span>
-              <h3 style="margin:12px 0 8px;font-size:20px;font-weight:600">Call the API</h3>
-              <p style="color:var(--site-ink-soft);font-size:14.5px;line-height:1.6">Base URL <code>https://app.topodrive.top</code>. Health probe first: <code>GET /api/v2/health</code>. Rate-limit headers (<code>RateLimit-Limit / -Remaining / -Reset</code>) ride every response.</p>
-            </div>
-            <pre style="margin-top:16px;padding:12px;border-radius:8px;background:var(--site-ink);color:#ffffff;font-size:12px;overflow-x:auto;font-family:var(--site-mono)"><code>GET https://app.topodrive.top/api/v2/health</code></pre>
-          </article>
+        <div class="steps3">
+          <div class="step3"><span class="step-num">01</span><h3>Pick an auth route</h3><p>Third-party agents use the OAuth 2.0 authorization-code flow with PKCE. First-party automation mints a scoped key via <code>POST /api/account/agent-keys</code>.</p></div>
+          <div class="step3"><span class="step-num">02</span><h3>Read the contract</h3><p>Every public endpoint is specified in the OpenAPI 3.0 specification — operationIds, schemas, error codes, and per-operation scopes.</p></div>
+          <div class="step3"><span class="step-num">03</span><h3>Call the API</h3><p>Base URL <code>https://app.topodrive.top</code>. Health probe: <code>GET /api/v2/health</code>. Rate-limit headers ride every response.</p></div>
         </div>
       </div>
     </section>
 
-    <!-- Discovery Index Table -->
-    <section class="ed-section ed-section-line">
-      <div class="ed-shell">
-        <div class="ed-reveal" style="margin-bottom:28px">
-          <p class="ed-kicker">Machine-readable endpoints</p>
-          <h2 class="ed-title">Discovery index.</h2>
-          <p class="ed-copy">Socrates advertises machine-readable contracts and manifests at standardized URLs for agent crawlers, developer toolchains, and LLMs.</p>
+    <section class="sec">
+      <div class="shell">
+        <div class="sec-head">
+          <p class="eyebrow sec-eyebrow">Discovery index</p>
+          <h2 class="sec-title">Everything is at a predictable URL.</h2>
+          <a class="link link--muted sec-link" href="/openapi.json">Open the spec<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
         </div>
-
-        <div class="ed-table-wrap ed-reveal" style="border:1px solid var(--site-line);border-radius:14px;overflow:hidden;background:var(--site-paper-soft)">
-          <table style="width:100%;border-collapse:collapse;text-align:left;font-size:14px">
-            <thead>
-              <tr style="border-bottom:1px solid var(--site-line);background:rgba(0,0,0,.03)">
-                <th style="padding:14px 20px;font-family:var(--site-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--site-ink-muted)">Resource</th>
-                <th style="padding:14px 20px;font-family:var(--site-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--site-ink-muted)">Endpoint</th>
-                <th style="padding:14px 20px;font-family:var(--site-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--site-ink-muted)">Format</th>
-              </tr>
-            </thead>
+        <div class="prose" style="max-width:none">
+          <div class="table-scroll">
+          <table>
+            <thead><tr><th>Resource</th><th>URL</th><th>Format</th></tr></thead>
             <tbody>
-              <tr style="border-bottom:1px solid var(--site-line)">
-                <td style="padding:16px 20px;font-weight:500">OpenAPI specification</td>
-                <td style="padding:16px 20px"><a class="ed-link" href="/openapi.json" style="font-family:var(--site-mono);font-size:13px">/openapi.json</a></td>
-                <td style="padding:16px 20px"><span class="ed-pill" style="font-size:11px">openapi+json</span></td>
-              </tr>
-              <tr style="border-bottom:1px solid var(--site-line)">
-                <td style="padding:16px 20px;font-weight:500">Authentication reference</td>
-                <td style="padding:16px 20px"><a class="ed-link" href="/auth.md" style="font-family:var(--site-mono);font-size:13px">/auth.md</a></td>
-                <td style="padding:16px 20px"><span class="ed-pill" style="font-size:11px">markdown</span></td>
-              </tr>
-              <tr style="border-bottom:1px solid var(--site-line)">
-                <td style="padding:16px 20px;font-weight:500">Protected-resource metadata (RFC 9728)</td>
-                <td style="padding:16px 20px"><a class="ed-link" href="/.well-known/oauth-protected-resource" style="font-family:var(--site-mono);font-size:13px">/.well-known/oauth-protected-resource</a></td>
-                <td style="padding:16px 20px"><span class="ed-pill" style="font-size:11px">json</span></td>
-              </tr>
-              <tr style="border-bottom:1px solid var(--site-line)">
-                <td style="padding:16px 20px;font-weight:500">Authorization-server metadata (RFC 8414)</td>
-                <td style="padding:16px 20px"><a class="ed-link" href="/.well-known/oauth-authorization-server" style="font-family:var(--site-mono);font-size:13px">/.well-known/oauth-authorization-server</a></td>
-                <td style="padding:16px 20px"><span class="ed-pill" style="font-size:11px">json</span></td>
-              </tr>
-              <tr style="border-bottom:1px solid var(--site-line)">
-                <td style="padding:16px 20px;font-weight:500">MCP server (Streamable HTTP, read-only tools)</td>
-                <td style="padding:16px 20px"><a class="ed-link" href="https://app.topodrive.top/api/mcp" style="font-family:var(--site-mono);font-size:13px">app.topodrive.top/api/mcp</a></td>
-                <td style="padding:16px 20px"><span class="ed-pill" style="font-size:11px">json-rpc 2.0</span></td>
-              </tr>
-              <tr style="border-bottom:1px solid var(--site-line)">
-                <td style="padding:16px 20px;font-weight:500">MCP server card</td>
-                <td style="padding:16px 20px"><a class="ed-link" href="/.well-known/mcp/server-card.json" style="font-family:var(--site-mono);font-size:13px">/.well-known/mcp/server-card.json</a></td>
-                <td style="padding:16px 20px"><span class="ed-pill" style="font-size:11px">json</span></td>
-              </tr>
-              <tr style="border-bottom:1px solid var(--site-line)">
-                <td style="padding:16px 20px;font-weight:500">A2A agent card</td>
-                <td style="padding:16px 20px"><a class="ed-link" href="/.well-known/agent-card.json" style="font-family:var(--site-mono);font-size:13px">/.well-known/agent-card.json</a></td>
-                <td style="padding:16px 20px"><span class="ed-pill" style="font-size:11px">json</span></td>
-              </tr>
-              <tr style="border-bottom:1px solid var(--site-line)">
-                <td style="padding:16px 20px;font-weight:500">Agent skills index (v0.2.0)</td>
-                <td style="padding:16px 20px"><a class="ed-link" href="/.well-known/agent-skills/index.json" style="font-family:var(--site-mono);font-size:13px">/.well-known/agent-skills/index.json</a></td>
-                <td style="padding:16px 20px"><span class="ed-pill" style="font-size:11px">json</span></td>
-              </tr>
-              <tr style="border-bottom:1px solid var(--site-line)">
-                <td style="padding:16px 20px;font-weight:500">Skill package (agentskills format)</td>
-                <td style="padding:16px 20px"><a class="ed-link" href="/SKILL.md" style="font-family:var(--site-mono);font-size:13px">/SKILL.md</a></td>
-                <td style="padding:16px 20px"><span class="ed-pill" style="font-size:11px">markdown</span></td>
-              </tr>
-              <tr style="border-bottom:1px solid var(--site-line)">
-                <td style="padding:16px 20px;font-weight:500">API catalog (RFC 9727 linkset)</td>
-                <td style="padding:16px 20px"><a class="ed-link" href="/.well-known/api-catalog" style="font-family:var(--site-mono);font-size:13px">/.well-known/api-catalog</a></td>
-                <td style="padding:16px 20px"><span class="ed-pill" style="font-size:11px">linkset+json</span></td>
-              </tr>
-              <tr>
-                <td style="padding:16px 20px;font-weight:500">Navigation index for LLMs</td>
-                <td style="padding:16px 20px"><a class="ed-link" href="/llms.txt" style="font-family:var(--site-mono);font-size:13px">/llms.txt</a> · <a class="ed-link" href="/llms-full.txt" style="font-family:var(--site-mono);font-size:13px">/llms-full.txt</a></td>
-                <td style="padding:16px 20px"><span class="ed-pill" style="font-size:11px">plain text</span></td>
-              </tr>
+              <tr><td>OpenAPI specification</td><td><a href="/openapi.json">/openapi.json</a></td><td><code>application/openapi+json</code></td></tr>
+              <tr><td>Authentication reference</td><td><a href="/auth.md">/auth.md</a></td><td><code>text/markdown</code></td></tr>
+              <tr><td>Protected-resource metadata</td><td><a href="/.well-known/oauth-protected-resource">/.well-known/oauth-protected-resource</a></td><td><code>application/json</code></td></tr>
+              <tr><td>Authorization-server metadata</td><td><a href="/.well-known/oauth-authorization-server">/.well-known/oauth-authorization-server</a></td><td><code>application/json</code></td></tr>
+              <tr><td>MCP server</td><td><a href="https://app.topodrive.top/api/mcp">app.topodrive.top/api/mcp</a></td><td>JSON-RPC 2.0</td></tr>
+              <tr><td>MCP server card</td><td><a href="/.well-known/mcp/server-card.json">/.well-known/mcp/server-card.json</a></td><td><code>application/json</code></td></tr>
+              <tr><td>A2A agent card</td><td><a href="/.well-known/agent-card.json">/.well-known/agent-card.json</a></td><td><code>application/json</code></td></tr>
+              <tr><td>Agent skills index</td><td><a href="/.well-known/agent-skills/index.json">/.well-known/agent-skills/index.json</a></td><td><code>application/json</code></td></tr>
+              <tr><td>Skill package</td><td><a href="/SKILL.md">/SKILL.md</a></td><td><code>text/markdown</code></td></tr>
+              <tr><td>Agent plugin manifest</td><td><a href="/plugin.json">/plugin.json</a></td><td><code>application/json</code></td></tr>
+              <tr><td>API catalog</td><td><a href="/.well-known/api-catalog">/.well-known/api-catalog</a></td><td><code>application/linkset+json</code></td></tr>
+              <tr><td>Agent instructions</td><td><a href="/agents.md">/agents.md</a></td><td><code>text/markdown</code></td></tr>
+              <tr><td>LLM navigation</td><td><a href="/llms.txt">/llms.txt</a> · <a href="/llms-full.txt">/llms-full.txt</a></td><td><code>text/plain</code></td></tr>
             </tbody>
           </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- API Conventions Grid -->
-    <section class="ed-section">
-      <div class="ed-shell">
-        <div class="ed-reveal" style="margin-bottom:36px">
-          <p class="ed-kicker">Architecture &amp; Rules</p>
-          <h2 class="ed-title">What every endpoint has in common.</h2>
-        </div>
-
-        <div class="ed-card-grid" style="grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:20px">
-          <article class="ed-card ed-reveal">
-            <h3 style="margin:0 0 10px;font-size:18px;font-weight:600">Typed errors</h3>
-            <p style="color:var(--site-ink-soft);font-size:14.5px;line-height:1.6">Failures return one shape: <code>{"code": "MACHINE_READABLE_CODE", "message": "human detail", "detail": …}</code> with standard HTTP statuses: 400 validation, 401 <code>UNAUTHORIZED</code>, 403 <code>INSUFFICIENT_SCOPE</code>, 404 <code>NOT_FOUND</code>, 429 <code>TOO_MANY_REQUESTS</code>.</p>
-          </article>
-
-          <article class="ed-card ed-reveal">
-            <h3 style="margin:0 0 10px;font-size:18px;font-weight:600">Scoped grants</h3>
-            <p style="color:var(--site-ink-soft);font-size:14.5px;line-height:1.6">OAuth tokens and agent keys carry grants from a closed set (<code>chat:read/write</code>, <code>sessions:…</code>, <code>memory:…</code>, <code>files:…</code>, <code>projects:…</code>). Read methods demand <code>:read</code>, mutations demand <code>:write</code>.</p>
-          </article>
-
-          <article class="ed-card ed-reveal">
-            <h3 style="margin:0 0 10px;font-size:18px;font-weight:600">Idempotency</h3>
-            <p style="color:var(--site-ink-soft);font-size:14.5px;line-height:1.6">Send <code>Idempotency-Key: &lt;uuid&gt;</code> on any write; replays within 24 hours return the original response instead of duplicating work.</p>
-          </article>
-
-          <article class="ed-card ed-reveal">
-            <h3 style="margin:0 0 10px;font-size:18px;font-weight:600">Rate limits</h3>
-            <p style="color:var(--site-ink-soft);font-size:14.5px;line-height:1.6">Standard <code>RateLimit-Limit</code>, <code>RateLimit-Remaining</code>, and <code>RateLimit-Reset</code> headers are returned on every request for client-side proactive throttling.</p>
-          </article>
-
-          <article class="ed-card ed-reveal">
-            <h3 style="margin:0 0 10px;font-size:18px;font-weight:600">Cursor pagination</h3>
-            <p style="color:var(--site-ink-soft);font-size:14.5px;line-height:1.6">List endpoints respond with <code>{items, cursor, hasMore}</code>. Pass <code>?cursor=&lt;cursor&gt;</code> until <code>hasMore</code> returns false.</p>
-          </article>
-
-          <article class="ed-card ed-reveal">
-            <h3 style="margin:0 0 10px;font-size:18px;font-weight:600">Predictable versioning</h3>
-            <p style="color:var(--site-ink-soft);font-size:14.5px;line-height:1.6">Deprecations are announced with a <code>Sunset</code> header (HTTP date) and notes in announcements at least 90 days before removal.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- Support Banner -->
-    <section class="ed-section-tight">
-      <div class="ed-shell">
-        <div class="ed-inline-feature ed-reveal">
-          <div style="grid-column:1 / -1">
-            <p class="ed-kicker" style="color:rgba(244,241,233,.44)">Integration Support</p>
-            <h2 style="margin:12px 0;font-size:clamp(26px, 3vw, 36px)">Questions while integrating?</h2>
-            <p style="max-width:60ch;color:rgba(244,241,233,.8);font-size:16px;line-height:1.6">Email <a class="ed-link ed-link-light" href="mailto:help@addtech.site">help@addtech.site</a> — include your request ID (the <code>X-Request-Id</code> response header) and we can trace the exact execution call.</p>
           </div>
         </div>
       </div>
     </section>
+
+    <section class="sec sec--soft">
+      <div class="shell split">
+        <div class="split-main">
+          <p class="eyebrow">Conventions</p>
+          <h2 class="h2" style="margin-top:18px">Predictable by design.</h2>
+          <dl class="defs" style="margin-top:32px">
+            <div class="def"><dt>Typed errors</dt><dd><code>{"code": "MACHINE_READABLE_CODE", "message": "…", "detail": …}</code> with correct status; 401 carries an RFC 6750 <code>WWW-Authenticate</code> challenge.</dd></div>
+            <div class="def"><dt>Scopes</dt><dd>Closed set <code>chat|memory|sessions|files|projects</code> × <code>read|write</code>; declared per operation and enforced server-side.</dd></div>
+            <div class="def"><dt>Idempotency</dt><dd><code>Idempotency-Key: &lt;uuid&gt;</code> on writes; a 24 h replay window returns the original response.</dd></div>
+            <div class="def"><dt>Rate limits</dt><dd><code>RateLimit-Limit/-Remaining/-Reset</code> on every response; <code>Retry-After</code> on 429.</dd></div>
+            <div class="def"><dt>Pagination</dt><dd><code>{items, cursor, hasMore}</code>; pass <code>?cursor=</code> until <code>hasMore: false</code>.</dd></div>
+            <div class="def"><dt>Long jobs</dt><dd>Bulk import returns <code>202 {jobId, status}</code>; poll <code>GET /api/import/:id</code>.</dd></div>
+            <div class="def"><dt>Versioning</dt><dd>The mobile contract is versioned under <code>/api/v2/*</code>; deprecations signal via <code>Sunset</code> header plus an announcement at least 90 days ahead.</dd></div>
+          </dl>
+          <pre class="code-block"><code>curl https://app.topodrive.top/api/v2/health \
+  -H "Authorization: Bearer ak_&lt;keyId&gt;.&lt;secret&gt;"</code></pre>
+        </div>
+        <aside class="split-side">
+          <div class="card" style="padding:24px">
+            <p class="eyebrow">Need help?</p>
+            <p class="body" style="margin-top:14px">Include your <code>X-Request-Id</code> response header and we can trace the exact call.</p>
+            <a class="link" href="mailto:help@addtech.site" style="margin-top:18px">help@addtech.site<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="sec">
+      <div class="shell">
+        <div class="notice"><strong>Security disclosures.</strong> See <a href="/.well-known/security.txt">/.well-known/security.txt</a>. We read every report directly.</div>
+      </div>
+    </section>
+
   </main>
 
-  <footer class="ed-footer">
-    <div class="ed-shell ed-footer-frame">
-      <div class="ed-footer-top">
-        <div class="ed-footer-brand">
-          <a class="ed-brand" href="index"><img src="/logo.png" width="24" height="24" alt=""><span class="ed-brand-word">Socrates</span></a>
-          <p>An AI tutor for people who want to understand.</p>
-          <div class="ed-footer-social">
-            <a href="https://github.com/kevenhu001-cyber/Socrates" aria-label="GitHub" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg></a>
-            <a href="https://x.com" aria-label="X / Twitter" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
-          </div>
+  <footer class="ftr">
+    <div class="shell">
+      <div class="ftr-grid">
+        <div class="ftr-brand">
+          <a class="brand" href="/" aria-label="Socrates home">
+            <img src="/logo.png" width="20" height="20" alt="">
+            <span class="brand-word">Socrates</span>
+          </a>
+          <p>An AI tutor for people who want to understand. Built around Socratic dialogue, durable recall, and a knowledge map.</p>
         </div>
-        <div class="ed-footer-column">
+        <nav class="ftr-col" aria-label="Product">
           <h2>Product</h2>
-          <a href="product">Learning map</a>
-          <a href="pricing">Pricing</a>
+          <a href="/product">Learning map</a>
+          <a href="/pricing">Pricing</a>
+          <a href="/developers">Developers</a>
           <a href="https://app.topodrive.top">Open Socrates</a>
-        </div>
-        <div class="ed-footer-column">
-          <h2>Developers</h2>
-          <a href="developers">API Reference</a>
-          <a href="/openapi.json">OpenAPI Spec</a>
-          <a href="/auth.md">OAuth Guide</a>
-          <a href="https://app.topodrive.top/api/mcp">MCP Server</a>
-        </div>
-        <div class="ed-footer-column">
+        </nav>
+        <nav class="ftr-col" aria-label="Learn">
           <h2>Learn</h2>
-          <a href="announcements">Announcements</a>
-          <a href="documents">Documents</a>
-          <a href="research">Research</a>
-        </div>
-        <div class="ed-footer-column">
+          <a href="/research">Research</a>
+          <a href="/learn">Learning guide</a>
+          <a href="/documents">Documents</a>
+          <a href="/guide">Guide</a>
+        </nav>
+        <nav class="ftr-col" aria-label="Company">
+          <h2>Company</h2>
+          <a href="/about">About</a>
+          <a href="/contact">Contact</a>
+          <a href="/announcements">Announcements</a>
+          <a href="https://status.topodrive.top">Status</a>
+        </nav>
+        <nav class="ftr-col" aria-label="Resources">
           <h2>Resources</h2>
-          <a href="zh/developers">中文</a>
-          <a href="privacy">Privacy</a>
-          <a href="terms">Terms</a>
-        </div>
+          <a href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="/openapi.json">OpenAPI</a>
+        </nav>
       </div>
-      <div class="ed-footer-bottom">
-        <span>&copy; 2026 Socrates</span>
-        <span>Built for people who want to understand.</span>
+      <div class="ftr-bot">
+        <span>© 2026 Socrates · Built for people who want to understand.</span>
+        <div class="ftr-social" aria-label="Social links">
+          <a href="https://x.com/topodrive" target="_blank" rel="me noopener">X</a>
+          <a href="https://github.com/topodrive" target="_blank" rel="me noopener">GitHub</a>
+          <a href="https://www.youtube.com/@topodrive" target="_blank" rel="me noopener">YouTube</a>
+          <a href="https://www.linkedin.com/company/topodrive" target="_blank" rel="me noopener">LinkedIn</a>
+        </div>
       </div>
     </div>
   </footer>
+
+  <script src="/site.js?cb=20261021b"></script>
 </body>
 </html>

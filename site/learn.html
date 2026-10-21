@@ -1,85 +1,195 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Learning resources and guided practices from Socrates.">
-  <title>Socrates — Learn</title>
-  <link rel="icon" href="favicon.png">
-  
-  
-  <link rel="stylesheet" href="fonts.css?cb=20260922v3">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap"></noscript>
-  <link rel="stylesheet" href="editorial.css?cb=20260922a-v3">
-  <link rel="stylesheet" href="brand.css?cb=20260922b-v3">
-<script src="locale.js?cb=20261021v6"></script>  <link rel="canonical" href="https://topodrive.top/learn">
+  <meta name="theme-color" content="#ffffff">
+  <title>Learn — Socrates</title>
+  <meta name="description" content="Tutorials, lessons, and worked examples.">
+  <link rel="icon" href="/favicon.png">
+  <link rel="canonical" href="https://topodrive.top/learn">
   <link rel="alternate" type="text/markdown" href="https://topodrive.top/learn.md" title="Markdown twin of this page">
+  <link rel="preload" href="/media/fonts/geist-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/media/fonts/geist-sans-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/site.css?cb=20261021b">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Socrates">
+  <meta property="og:title" content="Learn — Socrates">
+  <meta property="og:description" content="Tutorials, lessons, and worked examples.">
+  <meta property="og:url" content="https://topodrive.top/learn">
+  <meta name="twitter:card" content="summary">
+  <script src="/locale.js?cb=20261021v6"></script>
 </head>
-<body class="ed-site ed-learning-page">
-  <a class="ed-skip" href="#main">Skip to content</a>
-  <header class="ed-header">
-    <div class="ed-shell"><nav class="ed-header-inner" data-ed-nav aria-label="Primary navigation"><a class="ed-brand" href="index"><img src="/logo.png" width="24" height="24" alt=""><span class="ed-brand-word">Socrates</span></a><div class="ed-nav-links" id="site-menu" data-menu-panel><a href="research">Research</a><a href="product">Product</a><a href="principles">Principles</a><a href="learn">Learn</a><a href="developers">Developers</a><a href="about">Company</a></div><div class="ed-header-actions"><div class="ed-lang" data-lang-root><button class="ed-lang-toggle" type="button" data-lang-toggle aria-haspopup="true" aria-expanded="false" aria-label="Language"><svg class="ed-lang-globe" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M3 12h18M12 3c2.6 2.6 2.6 15.4 0 18M12 3c-2.6 2.6-2.6 15.4 0 18" stroke="currentColor" stroke-width="1.6"/></svg><span class="ed-lang-label">Language</span><svg class="ed-lang-caret" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="ed-lang-menu" data-lang-menu role="menu" hidden><button class="ed-lang-item" type="button" data-lang="en" role="menuitem"><span>English</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="ed-lang-item" type="button" data-lang="zh" role="menuitem"><span>中文</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div><a class="ed-button" href="https://app.topodrive.top">Try Socrates</a></div><button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="Menu"><span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button></nav></div>
+<body id="top">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M2.8 8h10.2M9 4.1 12.9 8 9 11.9"/></symbol>
+    <symbol id="i-up" viewBox="0 0 16 16"><path d="M8 13V3M3.9 7.1 8 3l4.1 4.1"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 20 20"><path d="M3.5 6.5h13M3.5 10h13M3.5 13.5h13"/></symbol>
+    <symbol id="i-close" viewBox="0 0 20 20"><path d="m5 5 10 10M15 5 5 15"/></symbol>
+    <symbol id="i-check" viewBox="0 0 16 16"><path d="m3 8.2 3.1 3.1L13 4.6"/></symbol>
+  </svg>
+
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="hdr">
+    <div class="shell hdr-in">
+      <a class="brand" href="/" aria-label="Socrates home">
+        <img src="/logo.png" width="20" height="20" alt="">
+        <span class="brand-word">Socrates</span>
+      </a>
+      <nav class="nav" aria-label="Primary">
+        <a href="/product">Product</a>
+        <a href="/research">Research</a>
+        <a href="/principles">Principles</a>
+        <a href="/learn" aria-current="page">Learn</a>
+        <a href="/developers">Developers</a>
+        <a href="/about">Company</a>
+      </nav>
+      <div class="hdr-act">
+        <a class="hdr-lang" href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
+        <a class="hdr-login" href="https://app.topodrive.top">Log in</a>
+        <a class="btn btn--sm" href="https://app.topodrive.top">Try Socrates</a>
+        <button class="menu-btn" type="button" data-menu-btn aria-expanded="false" aria-controls="mobile-menu" aria-label="Open menu">
+          <svg class="ico open" viewBox="0 0 20 20" aria-hidden="true"><use href="#i-menu"/></svg>
+          <svg class="ico close" viewBox="0 0 20 20" aria-hidden="true"><use href="#i-close"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="mobile-menu" id="mobile-menu" data-mobile-menu>
+      <nav aria-label="Mobile">
+        <a href="/product">Product</a>
+        <a href="/research">Research</a>
+        <a href="/principles">Principles</a>
+        <a href="/learn">Learn</a>
+        <a href="/developers">Developers</a>
+        <a href="/about">Company</a>
+      </nav>
+      <div class="m-act">
+        <a class="btn" href="https://app.topodrive.top">Try Socrates</a>
+        <a class="btn btn--ghost" href="https://app.topodrive.top">Log in</a>
+      </div>
+      <div class="m-lang">
+        <a href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/contact">Contact</a>
+      </div>
+    </div>
   </header>
+
   <main id="main">
-    <section class="ed-shell ed-learning-hero ed-reveal">
-      <h1>Socrates Studio</h1>
-      <p>Practical learning resources for people who want to make difficult subjects clearer, one useful question at a time.</p>
-    </section>
 
-    <section class="ed-shell ed-course-band ed-reveal" aria-label="Featured learning paths">
-      <div class="ed-course-intro">
-        <h2>Featured learning paths</h2>
-        <p>Short, useful courses for turning an uncertain beginning into a repeatable practice. Work through the idea, keep the important connections, and take the next question with you.</p>
-        <a class="ed-button-quiet" href="documents">Browse the library</a>
-      </div>
-      <div class="ed-course-grid">
-        <a class="ed-course-card" href="guide"><span>Featured path</span><h3>Ask better questions</h3><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12h15M13 5l7 7-7 7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
-        <a class="ed-course-card" href="product#knowledge-map"><span>Featured path</span><h3>Build a learning map</h3><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12h15M13 5l7 7-7 7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+    <section class="page-head">
+      <div class="shell">
+        <p class="eyebrow">Learn</p>
+        <h1 class="page-title">Tutorials, lessons, and worked examples.</h1>
+        <p class="page-lede">Socrates is at its best with a learner who is willing to do the work. The Learn hub collects the patterns and worked examples that have come up often in our sessions, organized by topic.</p>
       </div>
     </section>
 
-    <section class="ed-shell ed-learning-object ed-reveal">
-      <img  alt="A warm editorial practice cycle of learning fragments revisited by a copper path and cobalt feedback point" src="/media/socrates-learning-practice-cycle-v3.webp" loading="lazy" decoding="async" width="1672" height="941">
-      <div><p class="ed-kicker">A practice, not a performance</p><h2>Learn at the pace an idea asks for.</h2><p>The Studio gives you a place to make a first attempt, test an explanation, and return when you are ready to see a different connection.</p><a class="ed-link" href="https://app.topodrive.top">Open Socrates</a></div>
-    </section>
-
-    <section class="ed-reference-rule"><div class="ed-shell ed-research-coda ed-reveal"><h2>Resources that stay close to the work.</h2><div><p>We make guides for the places where learning usually slows down: beginning, explaining, remembering, and picking up a subject again.</p><p>Each is designed to be used alongside your own notes, questions, and changing point of view.</p></div></div></section>
-
-    <section class="ed-reference-rule">
-      <div class="ed-shell ed-reveal">
-        <p class="ed-kicker">How to use the Studio</p>
-        <h2 class="ed-split-heading">Three ways to read a guide.</h2>
-        <div class="ed-product-grid ed-mt-24">
-          <article class="ed-product-block"><div><p class="ed-kicker">Read</p><p class="ed-meta">At your own pace</p></div><h2>Skim the guide for the idea, then save it for later.</h2><p>Each guide is structured so the first paragraph carries the main argument. If you stop there, you still have something to think about. The deeper sections add examples and worked reasoning for the second read.</p></article>
-          <article class="ed-product-block"><div><p class="ed-kicker">Practice</p><p class="ed-meta">With Socrates</p></div><h2>Bring the guide into a session as your first prompt.</h2><p>Open the guide, copy the smallest unfinished thought, and ask Socrates to walk it with you. The guide becomes a launching pad rather than a destination.</p></article>
-          <article class="ed-product-block"><div><p class="ed-kicker">Share</p><p class="ed-meta">In your own notes</p></div><h2>Use the guide as a frame for what you already know.</h2><p>Many readers keep a running note titled with the guide and write a short reflection after each session. Over a month, the note becomes a record of how your understanding has shifted.</p></article>
+    <section class="sec sec--flush">
+      <div class="shell">
+        <div class="sec-head">
+          <p class="eyebrow sec-eyebrow">Topics</p>
+          <h2 class="sec-title">Start where the difficulty is.</h2>
+          <p class="sec-desc">Each topic is a sequence of short, focused pieces. A piece poses a question, walks through a small example, and ends with a recall prompt.</p>
+        </div>
+        <div class="topics">
+          <article class="topic"><h3>Programming</h3><p>Language-agnostic patterns, data structures, algorithms, debugging.</p></article>
+          <article class="topic"><h3>Mathematics</h3><p>Calculus, linear algebra, statistics, formal reasoning.</p></article>
+          <article class="topic"><h3>Computer science</h3><p>Systems, networks, databases, ML foundations.</p></article>
+          <article class="topic"><h3>Languages</h3><p>Chinese and English study, with retrieval practice built in.</p></article>
+          <article class="topic"><h3>Exams</h3><p>Retrieval practice and the exam-mode workflow.</p></article>
         </div>
       </div>
     </section>
 
-    <section class="ed-reference-rule">
-      <div class="ed-shell ed-reveal ed-split-grid">
-        <div>
-          <p class="ed-kicker">The library</p>
-          <h2 class="ed-split-heading">More places to begin.</h2>
-          <p class="ed-copy ed-mt-18">The library collects short field notes, working methods, and longer essays on the practice of understanding. We add to it when we have something we would want to read ourselves.</p>
-          <a class="ed-link ed-mt-18" href="documents">Browse the library</a>
+    <section class="sec sec--soft">
+      <div class="shell split">
+        <div class="split-main">
+          <p class="eyebrow">How a Learn page is structured</p>
+          <h2 class="h2" style="margin-top:18px">Closer to a notebook than a textbook.</h2>
+          <div class="prose" style="margin-top:24px">
+            <p>Each topic is a sequence of short, focused pieces. A piece poses a question, walks through a small example, and ends with a recall prompt scheduled by the queue.</p>
+            <p>The intent is not coverage. It is the next honest step, followed by a reason to return to it.</p>
+          </div>
         </div>
-        <div class="ed-ledger" aria-label="Selected library entries">
-          <a class="ed-ledger-row" href="guide"><span>01</span><strong>The anatomy of a useful question</strong><span>Field guide</span></a>
-          <a class="ed-ledger-row" href="documents"><span>02</span><strong>A smaller ritual for active recall</strong><span>Practice</span></a>
-          <a class="ed-ledger-row" href="documents"><span>03</span><strong>Explaining well to understand</strong><span>Method</span></a>
-          <a class="ed-ledger-row" href="documents"><span>04</span><strong>Returning without starting over</strong><span>Practice</span></a>
-          <a class="ed-ledger-row" href="research"><span>05</span><strong>The route back to an idea</strong><span>Field note</span></a>
-          <a class="ed-ledger-row" href="research"><span>06</span><strong>Maps that preserve the path</strong><span>Working note</span></a>
+        <aside class="split-side">
+          <div class="card" style="padding:24px">
+            <p class="eyebrow">Start a topic</p>
+            <p class="body" style="margin-top:14px">Pick the Free plan to start. The tutor will guide the rest.</p>
+            <a class="btn" href="https://app.topodrive.top" style="margin-top:18px;width:100%">Try Socrates<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="sec">
+      <div class="shell">
+        <div class="sec-head">
+          <p class="eyebrow sec-eyebrow">See also</p>
+          <h2 class="sec-title">Go a little deeper.</h2>
+        </div>
+        <div class="rows">
+          <a class="row" href="/research"><span class="row-meta">Research</span><span class="row-title">Essays on how we built the tutor</span><svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          <a class="row" href="/product"><span class="row-meta">Product</span><span class="row-title">The learning loop in detail</span><svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          <a class="row" href="/guide"><span class="row-meta">Guide</span><span class="row-title">A short guide to using Socrates well</span><svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          <a class="row" href="/pricing"><span class="row-meta">Pricing</span><span class="row-title">What each tier includes</span><svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
         </div>
       </div>
     </section>
+
   </main>
-  <footer class="ed-footer"><div class="ed-shell ed-footer-frame"><div class="ed-footer-top"><div class="ed-footer-brand"><a class="ed-brand" href="index"><img src="/logo.png" width="24" height="24" alt=""><span class="ed-brand-word">Socrates</span></a><p>An AI tutor for people who want to understand.</p></div><div class="ed-footer-column"><h2>Product</h2><a href="product">Learning map</a><a href="pricing">Pricing</a><a href="https://app.topodrive.top">Open Socrates</a></div><div class="ed-footer-column"><h2>Learn</h2><a href="research">Research</a><a href="principles">Principles</a><a href="learn">Learn</a></div><div class="ed-footer-column"><h2>Company</h2><a href="about">About</a><a href="contact">Contact</a><a href="announcements">News</a></div><div class="ed-footer-column"><h2>Resources</h2><a href="zh/index">中文</a><a href="privacy">Privacy</a><a href="terms">Terms</a></div></div><div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>Built for people who want to understand.</span></div></div></footer>
-  <script src="editorial.js?cb=20260824"></script>
+
+  <footer class="ftr">
+    <div class="shell">
+      <div class="ftr-grid">
+        <div class="ftr-brand">
+          <a class="brand" href="/" aria-label="Socrates home">
+            <img src="/logo.png" width="20" height="20" alt="">
+            <span class="brand-word">Socrates</span>
+          </a>
+          <p>An AI tutor for people who want to understand. Built around Socratic dialogue, durable recall, and a knowledge map.</p>
+        </div>
+        <nav class="ftr-col" aria-label="Product">
+          <h2>Product</h2>
+          <a href="/product">Learning map</a>
+          <a href="/pricing">Pricing</a>
+          <a href="/developers">Developers</a>
+          <a href="https://app.topodrive.top">Open Socrates</a>
+        </nav>
+        <nav class="ftr-col" aria-label="Learn">
+          <h2>Learn</h2>
+          <a href="/research">Research</a>
+          <a href="/learn">Learning guide</a>
+          <a href="/documents">Documents</a>
+          <a href="/guide">Guide</a>
+        </nav>
+        <nav class="ftr-col" aria-label="Company">
+          <h2>Company</h2>
+          <a href="/about">About</a>
+          <a href="/contact">Contact</a>
+          <a href="/announcements">Announcements</a>
+          <a href="https://status.topodrive.top">Status</a>
+        </nav>
+        <nav class="ftr-col" aria-label="Resources">
+          <h2>Resources</h2>
+          <a href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="/openapi.json">OpenAPI</a>
+        </nav>
+      </div>
+      <div class="ftr-bot">
+        <span>© 2026 Socrates · Built for people who want to understand.</span>
+        <div class="ftr-social" aria-label="Social links">
+          <a href="https://x.com/topodrive" target="_blank" rel="me noopener">X</a>
+          <a href="https://github.com/topodrive" target="_blank" rel="me noopener">GitHub</a>
+          <a href="https://www.youtube.com/@topodrive" target="_blank" rel="me noopener">YouTube</a>
+          <a href="https://www.linkedin.com/company/topodrive" target="_blank" rel="me noopener">LinkedIn</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/site.js?cb=20261021b"></script>
 </body>
 </html>
