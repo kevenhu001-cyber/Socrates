@@ -1,24 +1,19 @@
 import { useEffect, useState } from 'react';
-import type { SettingsLabel } from './settings.types';
-
-const SECTION_KEYS = [
-  'general', 'display', 'notifications', 'personalization',
-  'models', 'apps', 'data', 'account',
-];
+import { SETTINGS_SECTIONS, type SettingsLabel, type SettingsSection } from './settings.types';
 
 export function useSettingsNavigation(label: SettingsLabel) {
-  const [section, setSection] = useState('general');
+  const [section, setSection] = useState<SettingsSection>('general');
   const [query, setQuery] = useState('');
   useEffect(() => {
     const selectSection = (event: Event) => {
-      const value = (event as CustomEvent<string>).detail;
-      if (SECTION_KEYS.includes(value)) setSection(value);
+      const value = (event as CustomEvent<SettingsSection>).detail;
+      if (SETTINGS_SECTIONS.includes(value)) setSection(value);
     };
     document.addEventListener('socrates:settings-section', selectSection);
     return () => document.removeEventListener('socrates:settings-section', selectSection);
   }, []);
 
-  const categories: Array<[string, string]> = [
+  const categories: Array<[SettingsSection, string]> = [
     ['general', label('通用', 'General')],
     ['display', label('外观', 'Display')],
     ['notifications', label('通知', 'Notifications')],

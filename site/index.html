@@ -1,31 +1,30 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Socrates helps people turn difficult questions into durable understanding.">
-  <title>Socrates — Questions make room for understanding.</title>
-  <link rel="icon" href="favicon.png">
-  
-  
-  <link rel="stylesheet" href="fonts.css?cb=20260922v3">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap"></noscript>
-  <link rel="stylesheet" href="editorial.css?cb=20260922a-v3">
-  <link rel="stylesheet" href="brand.css?cb=20260922b-v3">
+  <meta name="theme-color" content="#ffffff">
+  <title>Socrates — Understanding begins with a question.</title>
+  <meta name="description" content="An AI tutor for people who want to understand — built around Socratic dialogue, durable recall, and a knowledge map.">
+  <link rel="icon" href="/favicon.png">
   <link rel="canonical" href="https://topodrive.top/">
   <link rel="alternate" type="text/markdown" href="https://topodrive.top/index.md" title="Markdown twin of the home page">
+  <link rel="alternate" hreflang="en" href="https://topodrive.top/">
+  <link rel="alternate" hreflang="zh-CN" href="https://topodrive.top/zh/">
+  <link rel="alternate" hreflang="x-default" href="https://topodrive.top/">
+  <link rel="preload" href="/media/fonts/geist-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/media/fonts/geist-sans-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/site.css?cb=20261021a">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Socrates">
-  <meta property="og:title" content="Socrates — Questions make room for understanding.">
+  <meta property="og:title" content="Socrates — Understanding begins with a question.">
   <meta property="og:description" content="An AI tutor for people who want to understand — built around Socratic dialogue, durable recall, and a knowledge map that ages with the learner.">
   <meta property="og:url" content="https://topodrive.top/">
   <meta property="og:image" content="https://topodrive.top/media/socrates-home-question-atlas-v2.webp">
   <meta property="og:locale" content="en_US">
+  <meta property="og:locale:alternate" content="zh_CN">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Socrates — Questions make room for understanding.">
+  <meta name="twitter:title" content="Socrates — Understanding begins with a question.">
   <meta name="twitter:description" content="An AI tutor for people who want to understand.">
   <meta name="twitter:image" content="https://topodrive.top/media/socrates-home-question-atlas-v2.webp">
   <script type="application/ld+json">
@@ -152,162 +151,438 @@
         "@type": "WebPage",
         "speakable": {
           "@type": "SpeakableSpecification",
-          "cssSelector": [".ed-display", ".ed-statement-title", ".ed-serif.ed-hero-sub"]
+          "cssSelector": [".hero-title", ".hero-lede"]
         },
         "url": "https://topodrive.top/"
       }
     ]
   }
   </script>
-<script src="locale.js?cb=20260910"></script></head>
-<body class="ed-site">
-  <a class="ed-skip" href="#main">Skip to content</a>
+  <script src="/locale.js?cb=20261021v6"></script>
+</head>
+<body id="top">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M2.8 8h10.2M9 4.1 12.9 8 9 11.9"/></symbol>
+    <symbol id="i-up" viewBox="0 0 16 16"><path d="M8 13V3M3.9 7.1 8 3l4.1 4.1"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 20 20"><path d="M3.5 6.5h13M3.5 10h13M3.5 13.5h13"/></symbol>
+    <symbol id="i-close" viewBox="0 0 20 20"><path d="m5 5 10 10M15 5 5 15"/></symbol>
+    <symbol id="i-check" viewBox="0 0 16 16"><path d="m3 8.2 3.1 3.1L13 4.6"/></symbol>
+  </svg>
 
-  <header class="ed-header">
-    <div class="ed-shell">
-      <nav class="ed-header-inner" data-ed-nav aria-label="Primary navigation">
-        <a class="ed-brand" href="index" aria-label="Socrates home"><img src="/logo.png" width="24" height="24" alt=""><span class="ed-brand-word">Socrates</span></a>
-        <div class="ed-nav-links" id="site-menu" data-menu-panel><a href="research">Research</a><a href="product">Product</a><a href="principles">Principles</a><a href="learn">Learn</a><a href="developers">Developers</a><a href="about">Company</a></div>
-        <div class="ed-header-actions">
-          <div class="ed-lang" data-lang-root><button class="ed-lang-toggle" type="button" data-lang-toggle aria-haspopup="true" aria-expanded="false" aria-label="Language"><svg class="ed-lang-globe" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M3 12h18M12 3c2.6 2.6 2.6 15.4 0 18M12 3c-2.6 2.6-2.6 15.4 0 18" stroke="currentColor" stroke-width="1.6"/></svg><span class="ed-lang-label">Language</span><svg class="ed-lang-caret" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="ed-lang-menu" data-lang-menu role="menu" hidden><button class="ed-lang-item" type="button" data-lang="en" role="menuitem"><span>English</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="ed-lang-item" type="button" data-lang="zh" role="menuitem"><span>中文</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div>
-          <a class="ed-button" href="https://app.topodrive.top/">Open Socrates</a>
-        </div>
-        <button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="Menu"><span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="hdr">
+    <div class="shell hdr-in">
+      <a class="brand" href="/" aria-label="Socrates home">
+        <img src="/logo.png" width="20" height="20" alt="">
+        <span>Socrates</span>
+      </a>
+      <nav class="nav" aria-label="Primary">
+        <a href="/product">Product</a>
+        <a href="/research">Research</a>
+        <a href="/principles">Principles</a>
+        <a href="/learn">Learn</a>
+        <a href="/developers">Developers</a>
+        <a href="/about">Company</a>
       </nav>
+      <div class="hdr-act">
+        <a class="hdr-lang" href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
+        <a class="hdr-login" href="https://app.topodrive.top">Log in</a>
+        <a class="btn btn--sm" href="https://app.topodrive.top">Try Socrates</a>
+        <button class="menu-btn" type="button" data-menu-btn aria-expanded="false" aria-controls="mobile-menu" aria-label="Open menu">
+          <svg class="ico open" viewBox="0 0 20 20" aria-hidden="true"><use href="#i-menu"/></svg>
+          <svg class="ico close" viewBox="0 0 20 20" aria-hidden="true"><use href="#i-close"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="mobile-menu" id="mobile-menu" data-mobile-menu>
+      <nav aria-label="Mobile">
+        <a href="/product">Product</a>
+        <a href="/research">Research</a>
+        <a href="/principles">Principles</a>
+        <a href="/learn">Learn</a>
+        <a href="/developers">Developers</a>
+        <a href="/about">Company</a>
+      </nav>
+      <div class="m-act">
+        <a class="btn" href="https://app.topodrive.top">Try Socrates</a>
+        <a class="btn btn--ghost" href="https://app.topodrive.top">Log in</a>
+      </div>
+      <div class="m-lang">
+        <a href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/contact">Contact</a>
+      </div>
     </div>
   </header>
 
   <main id="main">
-    <section class="ed-home-hero">
-      <div class="ed-hero-nebula" aria-hidden="true"></div>
-      <div class="ed-shell">
-        <div class="ed-hero-grid ed-reveal">
-          <div class="ed-hero-lead">
-            <p class="ed-hero-flag"><span aria-hidden="true"></span>New · The Question Atlas</p>
-            <h1 class="ed-display" data-animate-text>Understanding begins with a question.</h1>
+    <section class="hero">
+      <div class="shell">
+        <p class="eyebrow">AI tutor</p>
+        <h1 class="display hero-title">Understanding<br>begins with a<br>question.</h1>
+        <p class="lede hero-lede">Follow a thought through dialogue, recall, and connection — until it becomes yours. Private by default, and never used to train models.</p>
+        <div class="hero-actions">
+          <a class="btn" href="https://app.topodrive.top">Start learning<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          <a class="btn btn--ghost" href="/research">Read the research</a>
+        </div>
+        <p class="hero-note">Free tier · No card required · Export or delete any session</p>
+
+        <div class="stage" data-reveal>
+          <div class="stage-bar">
+            <span class="stage-live" aria-hidden="true"></span>
+            <span>Session</span>
+            <span class="sep">/</span>
+            <span>Distributed systems</span>
+            <span class="end">6 turns · private</span>
           </div>
-          <p class="ed-serif ed-hero-sub">Follow a thought through dialogue, recall, and connection.</p>
-          <div class="ed-hero-actions">
-            <a class="ed-button" href="https://app.topodrive.top">Try Socrates</a>
-            <a class="ed-button ed-button-ghost" href="research">Read the research</a>
+          <div class="stage-body">
+            <div class="stage-chat">
+              <p class="msg msg--user">Why does a retry mask help a failed request get through?</p>
+              <div class="msg msg--tutor">
+                <span class="msg-who">Socrates</span>
+                What changes about the request after it fails once — is it the same payload, or a different shape?
+              </div>
+              <p class="msg msg--user">Same payload. We just resend the bytes.</p>
+              <div class="msg msg--tutor">
+                <span class="msg-who">Socrates</span>
+                So if the bytes are the same, what does the mask actually change? Try to name the variable that moves.
+              </div>
+              <p class="msg msg--user">Oh — the timing. It is a different wall clock, not a different request.</p>
+              <span class="recall"><strong>Recall</strong><span class="dot"></span>in 3 days<span class="dot"></span>Why does timing matter?</span>
+            </div>
+            <aside class="stage-map" aria-label="Knowledge map for this session">
+              <div class="map-head"><span>Knowledge map</span><b>4 connections</b></div>
+              <div class="map-canvas">
+                <svg viewBox="0 0 360 300" role="img" aria-label="Retry masks connected to idempotency, backoff, wall clock, and request shape.">
+                  <circle cx="180" cy="150" r="38" fill="none" stroke="#d8d8d3" stroke-width="1" stroke-dasharray="2 4"/>
+                  <path class="map-line map-line--on" d="M180 150 C150 122 118 96 92 74"/>
+                  <path class="map-line" d="M180 150 C222 118 252 98 282 80"/>
+                  <path class="map-line map-line--on" d="M180 150 C146 182 112 208 84 234"/>
+                  <path class="map-line" d="M180 150 C220 180 246 202 276 228"/>
+                  <circle class="map-node" cx="92" cy="74" r="4"/>
+                  <circle class="map-node" cx="282" cy="80" r="4"/>
+                  <circle class="map-node map-node--on" cx="84" cy="234" r="4"/>
+                  <circle class="map-node" cx="276" cy="228" r="4"/>
+                  <circle class="map-node map-node--on" cx="180" cy="150" r="7"/>
+                  <text class="map-text" x="92" y="58" text-anchor="middle">Idempotency</text>
+                  <text class="map-text" x="282" y="64" text-anchor="middle">Backoff</text>
+                  <text class="map-text map-text--on" x="84" y="254" text-anchor="middle">Wall clock</text>
+                  <text class="map-text" x="276" y="248" text-anchor="middle">Request shape</text>
+                  <text class="map-text map-text--on" x="180" y="176" text-anchor="middle">Retry masks</text>
+                </svg>
+              </div>
+            </aside>
           </div>
         </div>
-        <div class="ed-home-stage ed-reveal">
-          <nav class="ed-stage-index" aria-label="Explore Socrates">
-            <a href="research">Research</a>
-            <a href="product">Product</a>
-            <a href="principles">Principles</a>
-          </nav>
-          <img  alt="A dark editorial learning map that carries a question through evidence, recall, and connected ideas" src="/media/socrates-home-question-atlas-v2.webp" loading="lazy" decoding="async" width="1672" height="941">
-          <div class="ed-network-copy"><h2>Questions become a field of study.</h2><p>Trace a difficult subject through dialogue, recall, and the connections that make it useful again.</p></div>
-          <p class="ed-meta ed-stage-caption">Socrates research / 2026</p>
+        <div class="stage-foot">
+          <span>A real session, shortened. Every exchange stays private.</span>
+          <a class="link" href="/product">How Socrates teaches<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
         </div>
       </div>
     </section>
 
-    <section class="ed-section ed-section-line" aria-labelledby="in-conversation-title">
-      <div class="ed-shell">
-        <div class="ed-reveal" style="max-width:760px;margin:0 auto 28px;text-align:center">
-          <p class="ed-kicker">In conversation</p>
-          <h2 class="ed-title" id="in-conversation-title">A tutor that follows your thinking.</h2>
-          <p class="ed-copy" style="margin-top:14px">A short slice of a real session — the kind of exchange that ends in a sharper question, not a faster answer.</p>
+    <section class="sec" aria-labelledby="loop-title">
+      <div class="shell">
+        <div class="sec-head">
+          <p class="eyebrow sec-eyebrow">The learning loop</p>
+          <h2 class="sec-title" id="loop-title">Ask, follow up, recall, map.</h2>
+          <p class="sec-desc">Four movements, one conversation. The tutor follows the seam in your reasoning, not the surface of the answer.</p>
         </div>
+        <ol class="loop">
+          <li class="step" data-reveal>
+            <span class="step-num">01</span>
+            <h3>Question</h3>
+            <p>Begin with the honest edge of your understanding.</p>
+          </li>
+          <li class="step" data-reveal style="--d:.06s">
+            <span class="step-num">02</span>
+            <h3>Dialogue</h3>
+            <p>The tutor follows the seam, not the surface.</p>
+          </li>
+          <li class="step" data-reveal style="--d:.12s">
+            <span class="step-num">03</span>
+            <h3>Recall</h3>
+            <p>Returns when the idea is yours.</p>
+          </li>
+          <li class="step" data-reveal style="--d:.18s">
+            <span class="step-num">04</span>
+            <h3>Connection</h3>
+            <p>Writes itself into your map.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
 
-        <div class="ed-chat-demo ed-reveal-paragraphs">
-          <div class="ed-chat-head"><span class="ed-chat-head-dot"></span><span>Session · mathematics · 6 turns</span></div>
-          <div class="ed-chat-thread">
-            <div class="ed-chat-bubble user">Why does a retry mask help a failed request get through?</div>
-            <div class="ed-chat-bubble tutor">Good question. What changes about the request after it fails once — is it the same payload, or a different shape?</div>
-            <div class="ed-chat-bubble user">Same payload. We just resend the bytes.</div>
-            <div class="ed-chat-bubble tutor">So if the bytes are the same, what does the mask actually change? Try to name the variable that moves.</div>
-            <div class="ed-chat-bubble user">Oh — the timing. The mask is just a way to retry with a different wall clock, not a different request.</div>
-            <div class="ed-chat-bubble tutor">Right. Now: where in your service does that clock actually live, and could a slower client ever beat a faster one because of it?</div>
+    <section class="sec sec--soft" aria-labelledby="atlas-title">
+      <div class="shell">
+        <div class="atlas">
+          <div class="atlas-copy" data-reveal>
+            <p class="eyebrow">Product — The Question Atlas</p>
+            <h2 class="h2" id="atlas-title">Questions become a field of study.</h2>
+            <p class="body">Trace a difficult subject through dialogue, recall, and the connections that make it useful again. The atlas keeps the route, not just the answer.</p>
+            <a class="link" href="/product">Explore the learning map<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          </div>
+          <figure class="atlas-media" data-reveal style="--d:.08s">
+            <div class="media">
+              <img src="/media/socrates-question-map.webp" alt="A large paper map unfolded on a dark table, its routes marked by hand." width="1672" height="941" loading="lazy" decoding="async">
+            </div>
+            <figcaption class="caption"><span>Fig. 01 — The Question Atlas</span><span>Routes, not summaries</span></figcaption>
+          </figure>
+        </div>
+        <div class="feature-row">
+          <div class="feature" data-reveal>
+            <h3>Routes, not summaries</h3>
+            <p>The path into an idea stays visible, so you can return to the reasoning rather than a flattened answer.</p>
+          </div>
+          <div class="feature" data-reveal style="--d:.06s">
+            <h3>Recall at the right interval</h3>
+            <p>Useful moments return as small prompts, timed for the point where retrieval still takes effort.</p>
+          </div>
+          <div class="feature" data-reveal style="--d:.12s">
+            <h3>A map that ages with you</h3>
+            <p>Questions connect across sessions. The map grows around your interests, not a fixed curriculum.</p>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="ed-section ed-section-line">
-      <div class="ed-shell">
-        <div class="ed-stats-strip ed-reveal-paragraphs">
-          <div>
-            <p>Active learners · six-week intervention</p>
-            <b><span class="ed-stat" data-stat-value="184" data-stat-duration="1300">184</span></b>
+    <section class="sec" aria-labelledby="dialogue-title">
+      <div class="shell">
+        <div class="conv">
+          <div class="conv-copy" data-reveal>
+            <p class="eyebrow">In conversation</p>
+            <h2 class="h2" id="dialogue-title">A tutor that follows your thinking.</h2>
+            <p class="body">A short slice of a real session — the kind of exchange that ends in a sharper question, not a faster answer.</p>
+            <a class="link" href="/product">How Socrates teaches<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
           </div>
-          <div>
-            <p>Recall prompts · April – July 2026</p>
-            <b><span class="ed-stat" data-stat-value="1247" data-stat-duration="1500">1,247</span></b>
-          </div>
-          <div>
-            <p>Average treatment effect · re-framed prompts</p>
-            <b><span class="ed-stat" data-stat-prefix="+" data-stat-value="17" data-stat-suffix=" pp" data-stat-duration="1100">+17 pp</span></b>
+          <div class="chat" data-reveal style="--d:.08s">
+            <div class="chat-head">
+              <span>Session · Distributed systems</span>
+              <span class="end">6 turns</span>
+            </div>
+            <ol class="chat-body">
+              <li class="turn turn--learner">Why does a retry mask help a failed request get through?</li>
+              <li class="turn turn--tutor"><span class="turn-role">Socrates</span>What changes about the request after it fails once — is it the same payload, or a different shape?</li>
+              <li class="turn turn--learner">Same payload. We just resend the bytes.</li>
+              <li class="turn turn--tutor"><span class="turn-role">Socrates</span>So if the bytes are the same, what does the mask actually change? Try to name the variable that moves.</li>
+              <li class="turn turn--learner">Oh — the timing. It is a different wall clock, not a different request.</li>
+              <li class="turn turn--tutor"><span class="turn-role">Socrates</span>Right. Where in your service does that clock live, and could a slower client ever beat a faster one because of it?</li>
+            </ol>
+            <div class="chat-foot">
+              <span class="small">Private by default. Not used to train models.</span>
+              <a class="link" href="https://app.topodrive.top">Ask the next question<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="ed-section ed-section-line">
-      <div class="ed-shell ed-home-statement ed-reveal">
-        <div>
-          <p class="ed-kicker">Built around hard questions</p>
-          <h2 class="ed-statement-title">We do not make the subject smaller. We make the path into it clearer.</h2>
+    <section class="sec" aria-labelledby="research-title">
+      <div class="shell">
+        <div class="sec-head">
+          <p class="eyebrow sec-eyebrow">Research</p>
+          <h2 class="sec-title" id="research-title">Latest research</h2>
+          <p class="sec-desc">Essays and field notes on what we have learned about learning — short, written by the team, and revised when our view changes.</p>
+          <a class="link link--muted sec-link" href="/research">View all research<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
         </div>
-        <div class="ed-home-statement-copy">
-          <p class="ed-copy-serif">Socrates is an AI tutor for people who want to understand—not just finish an answer.</p>
-          <p class="ed-copy">Start where you are. Test the edges of an idea. Return to the useful connection when you need it again.</p>
-          <a class="ed-link" href="product">Explore the learning loop →</a>
+        <div class="rows">
+          <a class="row" href="/research/memory-recall/">
+            <span class="row-meta">Memory · 7 min read<br>Aug 12, 2026</span>
+            <span class="row-title">The route back to an idea</span>
+            <svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg>
+          </a>
+          <a class="row" href="/research/explanation-evidence/">
+            <span class="row-meta">Explanation · 6 min read<br>Jul 29, 2026</span>
+            <span class="row-title">When a clear explanation becomes evidence</span>
+            <svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg>
+          </a>
+          <a class="row" href="/research/maps-preserve-path/">
+            <span class="row-meta">Knowledge mapping · 8 min read<br>Jun 24, 2026</span>
+            <span class="row-title">Maps that preserve the path</span>
+            <svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg>
+          </a>
         </div>
       </div>
     </section>
 
-    <section class="ed-section ed-section-line" aria-labelledby="latest-research-title">
-      <div class="ed-shell">
-        <div class="ed-home-research-heading ed-reveal">
-          <div>
-            <p class="ed-kicker">Latest research</p>
-            <h2 class="ed-title" id="latest-research-title">What we are learning about learning.</h2>
-          </div>
-          <a class="ed-link" href="research">View all research →</a>
+    <section class="sec sec--soft" aria-labelledby="stories-title">
+      <div class="shell">
+        <div class="sec-head">
+          <p class="eyebrow sec-eyebrow">From the practice</p>
+          <h2 class="sec-title" id="stories-title">Stories from the work.</h2>
+          <a class="link link--muted sec-link" href="/research">All stories<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
         </div>
+        <div class="cards">
+          <article class="card" data-reveal>
+            <a class="card-media" href="/research/honest-pause/" tabindex="-1" aria-hidden="true">
+              <img src="/media/socrates-research-honest-pause-v1.webp" alt="" width="1672" height="941" loading="lazy" decoding="async">
+            </a>
+            <div class="card-body">
+              <span class="card-meta">Research · 8 min read</span>
+              <h3 class="card-title"><a href="/research/honest-pause/">The value of an honest pause.</a></h3>
+              <p class="card-desc">What happens when a tutor stops filling the silence and lets a learner finish a thought.</p>
+              <span class="card-foot">Tomás Soto · Practice lead · Jul 11, 2026</span>
+            </div>
+          </article>
+          <article class="card" data-reveal style="--d:.06s">
+            <a class="card-media" href="/research/tutor-curiosity/" tabindex="-1" aria-hidden="true">
+              <img src="/media/socrates-research-tutor-boundaries-v1.webp" alt="" width="1672" height="941" loading="lazy" decoding="async">
+            </a>
+            <div class="card-body">
+              <span class="card-meta">Research · 10 min read</span>
+              <h3 class="card-title"><a href="/research/tutor-curiosity/">When a tutor should say it is unsure.</a></h3>
+              <p class="card-desc">A study of confidence, calibration, and the moments that make a tutor trustworthy.</p>
+              <span class="card-foot">Jules Laurent · Tutoring lead · May 14, 2026</span>
+            </div>
+          </article>
+          <article class="card" data-reveal style="--d:.12s">
+            <a class="card-media" href="/research/what-learners-keep/" tabindex="-1" aria-hidden="true">
+              <img src="/media/socrates-research-what-learners-keep-v1.webp" alt="" width="1672" height="941" loading="lazy" decoding="async">
+            </a>
+            <div class="card-body">
+              <span class="card-meta">Research · 9 min read</span>
+              <h3 class="card-title"><a href="/research/what-learners-keep/">What learners keep after a session.</a></h3>
+              <p class="card-desc">A week later, what remains is rarely the summary. It is the route taken to it.</p>
+              <span class="card-foot">Rin Park · Practice co-author · Apr 30, 2026</span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
 
-        <div class="ed-essay-list ed-reveal">
-          <a class="ed-essay-row" href="research/memory-recall/">
-            <span class="ed-essay-date">Aug 12, 2026</span>
-            <span class="ed-essay-title">The route back to an idea.</span>
-            <span class="ed-essay-tag">Memory · 7 min</span>
+    <section class="sec" aria-labelledby="principles-title">
+      <div class="shell">
+        <div class="pr">
+          <div class="pr-intro" data-reveal>
+            <p class="eyebrow">Built around hard questions</p>
+            <h2 class="h2" id="principles-title">A clearer path into difficult ideas.</h2>
+            <p class="body">These principles guide the trade-offs we make while building Socrates.</p>
+            <a class="link" href="/principles">Our principles<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          </div>
+          <ol class="pr-list">
+            <li class="pr-item" data-reveal><span class="pr-num">01</span><div><h3>Dialogue over delivery</h3><p>The tutor asks before it answers.</p></div></li>
+            <li class="pr-item" data-reveal><span class="pr-num">02</span><div><h3>Recall over novelty</h3><p>A useful tutor remembers the path into a question.</p></div></li>
+            <li class="pr-item" data-reveal><span class="pr-num">03</span><div><h3>Practice over consumption</h3><p>Understanding grows through retrieval, explanation, and revision.</p></div></li>
+            <li class="pr-item" data-reveal><span class="pr-num">04</span><div><h3>Clarity over spectacle</h3><p>The page knows when to be quiet.</p></div></li>
+            <li class="pr-item" data-reveal><span class="pr-num">05</span><div><h3>Your thinking, your data</h3><p>Conversations are private. We do not train on them.</p></div></li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" aria-labelledby="stats-title">
+      <div class="shell">
+        <div class="band-head">
+          <p id="stats-title">Across the six-week intervention · May–July 2026</p>
+          <a href="/research">Read the research</a>
+        </div>
+        <div class="stats">
+          <div class="stat" data-reveal><span class="stat-value">184</span><p class="stat-label">Active learners enrolled</p></div>
+          <div class="stat" data-reveal style="--d:.06s"><span class="stat-value">1,247</span><p class="stat-label">Recall prompts logged</p></div>
+          <div class="stat" data-reveal style="--d:.12s"><span class="stat-value">+17 pp</span><p class="stat-label">Average treatment effect · re-framed vs verbatim</p></div>
+          <div class="stat" data-reveal style="--d:.18s"><span class="stat-value">63%</span><p class="stat-label">One-week retention · “almost clear” subgroup</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec" aria-labelledby="news-title">
+      <div class="shell">
+        <div class="sec-head">
+          <p class="eyebrow sec-eyebrow">Newsroom</p>
+          <h2 class="sec-title" id="news-title">Recent news</h2>
+          <a class="link link--muted sec-link" href="/announcements">View more<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        </div>
+        <div class="news">
+          <a class="news-item" href="/announcements">
+            <span><span class="news-meta">Learning · Aug 12, 2026</span><span class="news-title">Introducing guided recall.</span></span>
+            <svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg>
           </a>
-          <a class="ed-essay-row" href="research/explanation-evidence/">
-            <span class="ed-essay-date">Jul 29, 2026</span>
-            <span class="ed-essay-title">When a clear explanation becomes evidence.</span>
-            <span class="ed-essay-tag">Explanation · 6 min</span>
+          <a class="news-item" href="/announcements">
+            <span><span class="news-meta">Research · Aug 02, 2026</span><span class="news-title">Notes on the route back to an idea.</span></span>
+            <svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg>
           </a>
-          <a class="ed-essay-row" href="research/honest-pause/">
-            <span class="ed-essay-date">Jul 11, 2026</span>
-            <span class="ed-essay-title">The value of an honest pause.</span>
-            <span class="ed-essay-tag">Practice · 5 min</span>
+          <a class="news-item" href="/announcements">
+            <span><span class="news-meta">Product · Jul 18, 2026</span><span class="news-title">Socrates Studio is open.</span></span>
+            <svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg>
           </a>
-          <a class="ed-essay-row" href="research/maps-preserve-path/">
-            <span class="ed-essay-date">Jun 24, 2026</span>
-            <span class="ed-essay-title">Maps that preserve the path.</span>
-            <span class="ed-essay-tag">Knowledge mapping · 8 min</span>
+          <a class="news-item" href="/announcements">
+            <span><span class="news-meta">Product · Jul 04, 2026</span><span class="news-title">A clearer way to follow a learning path.</span></span>
+            <svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg>
+          </a>
+          <a class="news-item" href="/announcements">
+            <span><span class="news-meta">Announcements · Jun 21, 2026</span><span class="news-title">A new home for the research threads.</span></span>
+            <svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg>
+          </a>
+          <a class="news-item" href="/announcements">
+            <span><span class="news-meta">Product · Jun 09, 2026</span><span class="news-title">Bring your own model key.</span></span>
+            <svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg>
           </a>
         </div>
+      </div>
+    </section>
+
+    <section class="cta" aria-labelledby="cta-title">
+      <div class="shell">
+        <h2 class="display" id="cta-title" data-reveal>Make room for understanding.</h2>
+        <p class="body" data-reveal style="--d:.06s">Test the edges of an idea. Return to the useful connection when you need it again.</p>
+        <a class="btn" href="https://app.topodrive.top" data-reveal style="--d:.12s">Try Socrates<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        <p class="cta-note">Free tier · No card required</p>
       </div>
     </section>
   </main>
 
-  <footer class="ed-footer">
-    <div class="ed-shell ed-footer-frame">
-      <div class="ed-footer-top">
-        <div class="ed-footer-brand"><a class="ed-brand" href="index"><img src="/logo.png" width="24" height="24" alt=""><span class="ed-brand-word">Socrates</span></a><p>An AI tutor for people who want to understand.</p></div>
-        <div class="ed-footer-column"><h2>Product</h2><a href="product">Learning map</a><a href="pricing">Pricing</a><a href="https://app.topodrive.top">Open Socrates</a></div>
-        <div class="ed-footer-column"><h2>Learn</h2><a href="developers">Developers</a><a href="announcements">Announcements</a><a href="documents">Documents</a><a href="research">Research</a></div>
-        <div class="ed-footer-column"><h2>Company</h2><a href="about">About</a><a href="contact">Contact</a><a href="guide">Learning guide</a></div>
-        <div class="ed-footer-column"><h2>Resources</h2><a href="zh/index">中文</a><a href="privacy">Privacy</a><a href="terms">Terms</a></div>
+  <footer class="ftr">
+    <div class="shell">
+      <div class="ftr-grid">
+        <div class="ftr-brand">
+          <a class="brand" href="/" aria-label="Socrates home">
+            <img src="/logo.png" width="20" height="20" alt="">
+            <span>Socrates</span>
+          </a>
+          <p>An AI tutor for people who want to understand. Built around Socratic dialogue, durable recall, and a knowledge map.</p>
+        </div>
+        <nav class="ftr-col" aria-label="Product">
+          <h2>Product</h2>
+          <a href="/product">Learning map</a>
+          <a href="/pricing">Pricing</a>
+          <a href="/developers">Developers</a>
+          <a href="https://app.topodrive.top">Open Socrates</a>
+        </nav>
+        <nav class="ftr-col" aria-label="Learn">
+          <h2>Learn</h2>
+          <a href="/research">Research</a>
+          <a href="/learn">Learning guide</a>
+          <a href="/documents">Documents</a>
+          <a href="/guide">Guide</a>
+        </nav>
+        <nav class="ftr-col" aria-label="Company">
+          <h2>Company</h2>
+          <a href="/about">About</a>
+          <a href="/contact">Contact</a>
+          <a href="/announcements">Announcements</a>
+          <a href="https://status.topodrive.top">Status</a>
+        </nav>
+        <nav class="ftr-col" aria-label="Resources">
+          <h2>Resources</h2>
+          <a href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="/openapi.json">OpenAPI</a>
+        </nav>
       </div>
-      <div class="ed-footer-bottom"><span>© 2026 Socrates</span><span>Built for people who want to understand.</span></div>
+      <div class="ftr-bot">
+        <span>© 2026 Socrates · Built for people who want to understand.</span>
+        <div class="ftr-social" aria-label="Social links">
+          <a href="https://x.com/topodrive" target="_blank" rel="me noopener">X</a>
+          <a href="https://github.com/topodrive" target="_blank" rel="me noopener">GitHub</a>
+          <a href="https://www.youtube.com/@topodrive" target="_blank" rel="me noopener">YouTube</a>
+          <a href="https://www.linkedin.com/company/topodrive" target="_blank" rel="me noopener">LinkedIn</a>
+        </div>
+      </div>
     </div>
   </footer>
-  <script src="editorial.js?cb=20260824"></script>
+
+  <script src="/site.js?cb=20261021a"></script>
 </body>
 </html>

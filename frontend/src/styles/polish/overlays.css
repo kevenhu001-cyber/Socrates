@@ -232,14 +232,37 @@
 
 /* ── Settings modal — keep the nav rail, refine chrome ── */
 .settings-modal {
-  border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-xl, 16px);
   box-shadow: var(--ui-shadow-modal);
 }
-.settings-nav button { border-radius: var(--ui-radius-control, 8px); }
-.settings-nav button.active { background: var(--ui-bg-surface); }
-.settings-btn { border-radius: var(--ui-radius-control, 8px); }
 .settings-close { border-radius: var(--ui-radius-control, 8px); }
+
+/* Settings layout lives with its chrome; visited categories retain their DOM. */
+.settings-modal.settings-modal--full { display:flex; flex-direction:column; width:min(94vw,900px); max-width:900px; height:min(88vh,720px); max-height:88vh; overflow:hidden; border:1px solid var(--ui-border-default); background:var(--ui-bg-page); color:var(--ui-text-primary); }
+.settings-modal--full .settings-header { display:flex; align-items:center; justify-content:space-between; flex:none; min-height:54px; padding:0 22px; border-bottom:1px solid var(--ui-border-default); }
+.settings-modal--full .settings-title { font-weight:var(--ui-font-weight-semibold); font-size:var(--ui-font-size-md); }
+.settings-modal--full .settings-shell { display:grid; grid-template-columns:218px minmax(0,1fr); min-height:0; flex:1; }
+.settings-modal--full .settings-nav { display:flex; flex-direction:column; align-items:stretch; gap:2px; padding:18px 10px; border-right:1px solid var(--ui-border-default); overflow:auto; }
+.settings-modal--full .settings-nav input { box-sizing:border-box; width:100%; height:var(--ui-control-desktop); margin-bottom:12px; padding:8px 10px; border:1px solid var(--ui-border-default); border-radius:var(--ui-radius-control); color:var(--ui-text-primary); background:var(--ui-bg-composer); font:inherit; }
+.settings-modal--full .settings-nav button { min-height:var(--ui-control-desktop); padding:8px 12px; border:0; border-radius:var(--ui-radius-control); text-align:left; color:var(--ui-text-primary); background:transparent; font:inherit; font-size:var(--ui-font-size-xs); cursor:pointer; }
+.settings-modal--full .settings-nav button:hover, .settings-modal--full .settings-nav button.active { background:var(--ui-bg-hover); }
+.settings-modal--full .settings-body { display:block; min-height:0; overflow:auto; padding:24px 34px; }
+.settings-modal--full .settings-pane[hidden] { display:none; }
+.settings-modal--full .settings-pane { display:flex; flex-direction:column; gap:18px; }
+.settings-modal--full .settings-pane > h2 { margin:0 0 10px; color:var(--ui-text-primary); font-size:var(--ui-font-size-xl); font-weight:600; }
+.settings-modal--full .settings-pane > p { margin:0; color:var(--ui-text-tertiary); font-size:var(--ui-font-size-sm); }
+.settings-modal--full .settings-choice { display:flex; align-items:center; justify-content:space-between; gap:20px; min-height:55px; border-bottom:1px solid var(--ui-border-default); color:var(--ui-text-primary); font-size:var(--ui-font-size-sm); }
+.settings-modal--full .settings-choice select { min-width:130px; padding:8px 10px; border:1px solid var(--ui-border-default); border-radius:var(--ui-radius-control); color:var(--ui-text-primary); background:var(--ui-bg-composer); }
+.settings-modal--full .settings-section { margin-top:20px; }
+.settings-modal--full .settings-save-error { margin:20px 0 0; color:var(--ui-text-tertiary); font-size:var(--ui-font-size-xxs); }
+@media(max-width:640px) {
+  .settings-modal.settings-modal--full { width:100vw; height:100dvh; max-height:100dvh; border-radius:0; }
+  .settings-modal--full .settings-shell { display:flex; flex-direction:column; }
+  .settings-modal--full .settings-nav { flex:none; flex-direction:row; gap:4px; padding:10px; border-right:0; border-bottom:1px solid var(--ui-border-default); overflow-x:auto; }
+  .settings-modal--full .settings-nav input { display:none; }
+  .settings-modal--full .settings-nav button { white-space:nowrap; }
+  .settings-modal--full .settings-body { padding:20px 18px; }
+}
 
 /* ── Profile modal ── */
 .profile-modal {

@@ -1,6 +1,8 @@
 import { pushHomeRoute, pushWorkspaceRoute, workspaceForPath } from '../app/router.js';
 import { activateMainView, getVisibleCoreView } from '../ui/mainViewController.js';
-import { setActiveDestination } from './navigation.store.ts';
+import { getActiveDestination, setActiveDestination } from './navigation.store.ts';
+import { DESTINATIONS, isPageDestination } from './navigation.destinations';
+import { toggleSidebar } from './sidebar.service';
 import type { SidebarNavKey } from '../react/sidebar/types';
 
 type NavigationDestination = Exclude<SidebarNavKey, null>;
@@ -10,14 +12,9 @@ type NavigationAdapters = Partial<Record<NavigationTarget, DestinationOpener>> &
   closePanels?: () => void;
 };
 
-const NAVIGATION_DESTINATIONS: ReadonlySet<string> = new Set([
-  'library', 'projects', 'scheduled', 'plugins', 'images', 'assistants',
-  'sites', 'exam', 'admin', 'more', 'skills',
-]);
-
 let adapters: NavigationAdapters = {};
 let routeListenersInstalled = false;
-let pluginsReturnView = 'topicSetup';
+let homeReturnView = 'topicSetup';
 
 export function registerNavigationAdapters(next: NavigationAdapters): void {
   adapters = next;
@@ -28,13 +25,17 @@ export function setActiveNav(destination: SidebarNavKey): void {
 }
 
 export function openNav(name: string, options?: { fromRoute?: boolean }): void {
-  if (!NAVIGATION_DESTINATIONS.has(name)) return;
+  if (!isPageDestination(name) && name !== 'more' && name !== 'skills') return;
   const destination = name as NavigationTarget;
   const fromRoute = options?.fromRoute === true;
 
-  if (destination !== 'more' && !fromRoute) pushWorkspaceRoute(destination);
-  if (destination === 'plugins') pluginsReturnView = getVisibleCoreView(document);
-  setActiveNav(destination === 'skills' ? null : destination);
+  if (isPageDestination(destination)) {
+    const coreView = getVisibleCoreView(document);
+    if (!document.getElementById(coreView)?.classList.contains('hidden')) homeReturnView = coreView;
+    if (!fromRoute) pushWorkspaceRoute(destination);
+    setActiveNav(destination);
+    activateMainView(DESTINATIONS[destination].host, document);
+  }
   if (destination !== 'more') adapters.closePanels?.();
   adapters[destination]?.();
 
@@ -42,28 +43,29 @@ export function openNav(name: string, options?: { fromRoute?: boolean }): void {
   // the drawer after navigation. More remains an in-drawer interaction.
   if (destination !== 'more' && window.innerWidth < 768) {
     const sidebar = document.getElementById('sidebar');
-    const backdrop = document.getElementById('sidebarBackdrop');
     if (sidebar && !sidebar.classList.contains('collapsed')) {
-      sidebar.classList.add('collapsed');
-      backdrop?.classList.remove('show');
-      const legacyWindow = window as Window & { sidebarOpen?: boolean; syncSidebarBtns?: () => void };
-      legacyWindow.sidebarOpen = false;
-      try { localStorage.setItem('socrates-sb', '0'); } catch { /* storage is optional */ }
-      legacyWindow.syncSidebarBtns?.();
+      toggleSidebar();
     }
   }
 }
 
 export function exitPluginsView(): void {
-  activateMainView(pluginsReturnView || 'topicSetup', document);
+  activateMainView(homeReturnView, document);
   pushHomeRoute();
-  pluginsReturnView = 'topicSetup';
   setActiveNav(null);
 }
 
 export function syncWorkspaceRoute(): void {
   const destination = workspaceForPath(location.pathname);
-  if (destination) openNav(destination, { fromRoute: true });
+  if (destination) {
+    openNav(destination, { fromRoute: true });
+  } else if (location.pathname === '/' && getActiveDestination() !== null) {
+    // A history transition home restores the existing session; it must not
+    // start a new chat or erase drafts. Query-based session loading stays
+    // with the session owner.
+    activateMainView(homeReturnView, document);
+    setActiveNav(null);
+  }
 }
 
 export function installNavigationRouteListeners(): void {

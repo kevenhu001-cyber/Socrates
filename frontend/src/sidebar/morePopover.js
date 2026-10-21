@@ -104,12 +104,6 @@ function _close(p) {
   document.removeEventListener("keydown", p.__onEsc, true);
   p.__onDoc = null;
   p.__onEsc = null;
-  /* Clear the active state on the More button via the nav
-     dispatcher. We can't import setActiveNav here without a cycle,
-     so we reach it through window (windowExports.js attaches it). */
-  try {
-    if (typeof window.setActiveNav === "function") window.setActiveNav(null);
-  } catch (_) { /* ignore */ }
   _publishMorePopover(false);
 }
 

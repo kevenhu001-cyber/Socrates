@@ -9,12 +9,12 @@
       "legacyChannel": 0
     },
     "frozen": {
-      "important": 689,
-      "hexColor": 113,
-      "literalRadius": 329,
+      "important": 688,
+      "hexColor": 92,
+      "literalRadius": 325,
       "stackedId": 60,
-      "literalFontSize": 547,
-      "legacyChannel": 1429
+      "literalFontSize": 539,
+      "legacyChannel": 1420
     }
   },
   "generatedBy": "check-css-debt.mjs --update"

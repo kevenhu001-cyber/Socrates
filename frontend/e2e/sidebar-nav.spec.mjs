@@ -252,3 +252,39 @@ test('Admin page hides the chat top-bar chrome', async ({ page }) => {
   await page.evaluate(() => window.openNav('library'));
   await expect(page.locator('#shareBtn')).toBeVisible();
 });
+
+test('history home restores the landing and More preserves the selected page', async ({ page }) => {
+  await page.locator('#navProjects').click();
+  await expect(page.locator('#spacesPanel')).toBeVisible();
+  await page.locator('#navMore').click();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#navProjects')).toHaveClass(/active/);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator('#topicSetup')).toBeVisible();
+  await expect(page.locator('#spacesPanel')).toBeHidden();
+  await expect(page.locator('#sidebarNav .sidebar-nav-btn.active')).toHaveCount(0);
+  await page.goForward();
+  await expect(page.locator('#spacesPanel')).toBeVisible();
+  await expect(page.locator('#navProjects')).toHaveClass(/active/);
+  await page.reload();
+  await expect(page.locator('#spacesPanel')).toBeVisible();
+  await expect(page.locator('#navProjects')).toHaveClass(/active/);
+});
+
+test('every routed destination restores its page host after a direct visit', async ({ page }) => {
+  for (const [destination, host] of [
+    ['library', 'libraryPanel'], ['projects', 'spacesPanel'], ['scheduled', 'scheduledPanel'],
+    ['plugins', 'pluginsPanel'], ['images', 'imagesPanel'], ['assistants', 'assistantsPanel'],
+    ['sites', 'sitesPanel'], ['exam', 'examView'], ['admin', 'adminPanel'],
+  ]) {
+    await page.goto('/' + destination);
+    await waitForAppShell(page);
+    await expect(page.locator('#' + host)).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('data-main-view', host);
+    if (destination !== 'admin') {
+      await expect(page.locator('#nav' + destination[0].toUpperCase() + destination.slice(1))).toHaveClass(/active/);
+    }
+    await expect(page.locator('#topicSetup')).toBeHidden();
+  }
+});

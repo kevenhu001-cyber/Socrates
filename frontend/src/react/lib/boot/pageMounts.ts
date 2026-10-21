@@ -4,15 +4,11 @@
    mounts it into its panel (which React owns outright). */
 
 import { loadPage } from './pageLoader.ts';
+import { DESTINATIONS, isWorkspacePage, type WorkspacePage } from '../../../sidebar/navigation.destinations';
 
-const WORKSPACE_HOSTS: Record<string, string> = {
-  library: 'libraryPanel',
-  projects: 'spacesPanel',
-  plugins: 'pluginsPanel',
-};
-
-export function mountWorkspacePage(page: string): void {
-  loadPage(WORKSPACE_HOSTS[page] || 'pluginsPanel', async () => {
+export function mountWorkspacePage(page: WorkspacePage): void {
+  if (!isWorkspacePage(page)) return;
+  loadPage(DESTINATIONS[page].host, async () => {
     const { mountWorkspacePage: mount } = await import('../../pages/workspace/WorkspacePage');
     mount(page);
   });

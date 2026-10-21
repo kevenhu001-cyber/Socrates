@@ -32,13 +32,11 @@ export function ModelsSettingsPane({
   return (
     <div className="settings-pane" hidden={hidden}>
       <div className="settings-hero">
-        <div>
-          <h2 className="settings-hero-title">{label('模型与语音', 'Models & voice')}</h2>
-          <p className="settings-hero-subtitle">{label(
-            '配置对话和图片模型。语音输入使用浏览器麦克风。',
-            'Configure chat and image models. Voice input uses your browser microphone.',
-          )}</p>
-        </div>
+        <h2 className="settings-hero-title">{label('模型与语音', 'Models & voice')}</h2>
+        <p className="settings-hero-subtitle">{label(
+          '配置对话和图片模型。语音输入使用浏览器麦克风。',
+          'Configure chat and image models. Voice input uses your browser microphone.',
+        )}</p>
       </div>
       <section className="settings-section">
         <div className="settings-section-head">

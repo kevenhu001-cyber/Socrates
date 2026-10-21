@@ -4,22 +4,23 @@ import { WorkspaceLoadingView } from './WorkspaceLoadingView';
 import { LibraryView } from './LibraryView';
 import { ProjectsView } from './ProjectsView';
 import { PluginsView } from './PluginsView';
+import { DESTINATIONS, isWorkspacePage, type WorkspacePage as WorkspacePageKey } from '../../../sidebar/navigation.destinations';
 
-function WorkspacePage({ page }: { page: string }) {
-  const snap = useWorkspaceSnapshot();
+function WorkspacePage({ page }: { page: WorkspacePageKey }) {
+  const snap = useWorkspaceSnapshot(page);
   const dispatch = useWorkspaceDispatch();
 
   if (snap.loading) {
     return <WorkspaceLoadingView page={page} />;
   }
 
-  switch (page) {
+  switch (snap.page) {
     case 'library':
-      return <LibraryView data={snap.libraryData} dispatch={dispatch} />;
+      return <LibraryView data={snap.data} dispatch={dispatch} />;
     case 'projects':
-      return <ProjectsView projects={snap.projectsData} dispatch={dispatch} />;
+      return <ProjectsView projects={snap.data} dispatch={dispatch} />;
     case 'plugins':
-      return <PluginsView plugins={snap.pluginsData} configured={snap.projectConnectorConfigured} openConnectorAvailable={snap.openConnectorAvailable} dispatch={dispatch} />;
+      return <PluginsView plugins={snap.data} configured={snap.configured} openConnectorAvailable={snap.openConnectorAvailable} dispatch={dispatch} />;
     default:
       return null;
   }
@@ -29,10 +30,11 @@ function WorkspacePage({ page }: { page: string }) {
 /*  Mount / unmount helpers                                            */
 /* ------------------------------------------------------------------ */
 
-const roots = new Map<string, Root>();
+const roots = new Map<WorkspacePageKey, Root>();
 
-export function mountWorkspacePage(page: string): void {
-  const panelId = page === 'library' ? 'libraryPanel' : page === 'projects' ? 'spacesPanel' : 'pluginsPanel';
+export function mountWorkspacePage(page: WorkspacePageKey): void {
+  if (!isWorkspacePage(page)) return;
+  const panelId = DESTINATIONS[page].host;
   const panel = document.getElementById(panelId);
   if (!panel) return;
 
@@ -42,10 +44,9 @@ export function mountWorkspacePage(page: string): void {
     roots.set(page, root);
   }
   root.render(<WorkspacePage page={page} />);
-  panel.classList.remove('hidden');
 }
 
-export function unmountWorkspacePage(page: string): void {
+export function unmountWorkspacePage(page: WorkspacePageKey): void {
   const root = roots.get(page);
   if (root) {
     root.unmount();

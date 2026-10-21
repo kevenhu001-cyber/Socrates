@@ -150,6 +150,20 @@
       return true;
     }
 
+    /* A link that carries its own wordmark is the site brand, never a
+       language switcher. Both the current homepage design (.brand-word)
+       and the legacy editorial design (.ed-brand-word) ship the logo and
+       the "Socrates" wordmark as children of the anchor.
+       localiseLinks() runs more than once (the MutationObserver on body
+       re-runs it after the first pass mutates the DOM), and by the second
+       pass a brand link already points at this locale's home ("/zh/" on the
+       Chinese page). That href matches the "points at the other locale's
+       home" heuristic below, so the brand used to be mistaken for a
+       switcher — and setSwitchLabel() then replaced the whole anchor
+       content with the word "English", destroying the logo image and the
+       wordmark. Bail out before that can happen. */
+    if (link.querySelector(".brand-word, .ed-brand-word")) return false;
+
     var label = (link.textContent || "").trim();
     /* Match the language-switch anchor by either: its href pointing at the
        other locale's home, or its visible label being one of the canonical

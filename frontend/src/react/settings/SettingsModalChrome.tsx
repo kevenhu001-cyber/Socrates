@@ -1,4 +1,4 @@
-import type { SettingsLabel } from './settings.types';
+import type { SettingsLabel, SettingsSection } from './settings.types';
 
 export function SettingsHeader({
   label,
@@ -34,12 +34,12 @@ export function SettingsNavigation({
   onQueryChange,
   onSectionChange,
 }: {
-  categories: Array<[string, string]>;
+  categories: Array<[SettingsSection, string]>;
   label: SettingsLabel;
   query: string;
-  section: string;
+  section: SettingsSection;
   onQueryChange: (query: string) => void;
-  onSectionChange: (section: string) => void;
+  onSectionChange: (section: SettingsSection) => void;
 }) {
   return (
     <aside className="settings-nav" aria-label={label('设置分类', 'Settings categories')}>

@@ -1,33 +1,27 @@
-/* app/router.js — single owner of the path↔view route table and the
-   view-scoped history writes.
+/* app/router.js — path helpers and view-scoped history writes.
+   Route and host metadata lives in sidebar/navigation.destinations.ts.
 
    Boundaries:
-   - View paths (/library, /projects, …, /exam, /admin) live here.
+   - View paths (/library, /projects, …, /exam, /admin) use that metadata.
    - Session-id query params (?chat= / ?exam=) stay in session/store.js —
      those key off sessions, not views.
    - Auth redirect params (?next= / ?redirect=) stay in auth/boot.js.
    Navigation orchestration (openNav, syncWorkspaceRoute) lives in the
    typed sidebar/navigation.service.ts owner. */
 
-export var WORKSPACE_ROUTES = {
-  library: "/library",
-  projects: "/projects",
-  scheduled: "/scheduled",
-  plugins: "/plugins",
-  images: "/images",
-  assistants: "/assistants",
-  sites: "/sites",
-  exam: "/exam",
-  admin: "/admin",
-};
+import { DESTINATIONS } from '../sidebar/navigation.destinations.ts';
+
+export var WORKSPACE_ROUTES = /* @__PURE__ */ (() => Object.fromEntries(
+  Object.entries(DESTINATIONS).map(([name, { path }]) => [name, path]),
+))();
 
 export function workspaceForPath(pathname) {
   var clean = String(pathname || "/").replace(/\/+$/, "") || "/";
-  return Object.keys(WORKSPACE_ROUTES).find(function (name) { return WORKSPACE_ROUTES[name] === clean; }) || null;
+  return Object.keys(DESTINATIONS).find(function (name) { return DESTINATIONS[name].path === clean; }) || null;
 }
 
 export function pushWorkspaceRoute(name) {
-  var next = WORKSPACE_ROUTES[name];
+  var next = DESTINATIONS[name]?.path;
   if (next && location.pathname !== next) history.pushState({ workspace: name }, "", next);
 }
 

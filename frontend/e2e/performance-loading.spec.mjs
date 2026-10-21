@@ -85,6 +85,11 @@ test('production entry keeps the static closure gzip transfer under budget', () 
     'src/ui/cheatsheet.impl.mjs',
     'src/ui/storage.impl.mjs',
     'src/ui/promptTemplates.impl.mjs',
+    'src/react/settings/GeneralSettingsPane.tsx',
+    'src/react/settings/ModelsSettingsPane.tsx',
+    'src/react/settings/DisplaySettingsPane.tsx',
+    'src/react/settings/PersonalizationSettingsPane.tsx',
+    'src/react/settings/AccountSettingsPane.tsx',
   ];
   for (const id of lazyOnly) {
     const module = report.modules.find((item) => item.id === id);
@@ -144,4 +149,60 @@ test('session check starts before slow config finishes', async ({ page }) => {
   await gotoAndSettle(page, '/');
   await expect(page.locator('#authGate')).toBeHidden();
   expect(sessionStartedEarly).toBe(true);
+});
+
+test('late workspace imports cannot reveal an inactive page', async ({ page }) => {
+  const report = JSON.parse(readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'));
+  const workspace = report.modules.find((module) => module.id === 'src/react/pages/workspace/WorkspacePage.tsx');
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  let requested = false;
+  await page.route(`**/${workspace.chunk}`, async (route) => {
+    requested = true;
+    await gate;
+    await route.continue();
+  });
+  try {
+    await mockAuthedApp(page);
+    await gotoAndSettle(page, '/');
+    await login(page);
+    await page.locator('#navLibrary').click();
+    await expect.poll(() => requested).toBe(true);
+    await page.locator('#navProjects').click();
+    release();
+    await expect(page.locator('.projects-directory')).toBeVisible();
+    await expect(page.locator('#libraryPanel')).toBeHidden();
+    await expect(page.locator('#navProjects')).toHaveClass(/active/);
+    await expect(page).toHaveURL(/\/projects$/);
+  } finally {
+    release();
+  }
+});
+
+test('late creation imports cannot replace a newer navigation destination', async ({ page }) => {
+  const report = JSON.parse(readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'));
+  const creation = report.modules.find((module) => module.id === 'src/ui/creationSurfaces.js');
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  let requested = false;
+  await page.route(`**/${creation.chunk}`, async (route) => {
+    requested = true;
+    await gate;
+    await route.continue();
+  });
+  try {
+    await mockAuthedApp(page);
+    await gotoAndSettle(page, '/');
+    await login(page);
+    await page.evaluate(() => window.openNav('sites'));
+    await expect.poll(() => requested).toBe(true);
+    await page.locator('#navLibrary').click();
+    release();
+    await expect(page.locator('.library-directory')).toBeVisible();
+    await expect(page.locator('#sitesPanel')).toBeHidden();
+    await expect(page.locator('#navLibrary')).toHaveClass(/active/);
+    await expect(page).toHaveURL(/\/library$/);
+  } finally {
+    release();
+  }
 });

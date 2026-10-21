@@ -236,3 +236,56 @@ test('provider save keeps successful rows when another provider request fails', 
   await expect(overlay.locator('#providerList .provider-row[data-id^="new-"]')).toHaveCount(1);
   await expect(page.locator('.msg-toast').filter({ hasText: 'Saved 1 provider(s), but 1 failed' })).toBeVisible();
 });
+
+test('settings mounts only visited categories and preserves provider drafts across navigation and reopen', async ({ page }) => {
+  await page.evaluate(() => window.openSettings());
+  const overlay = page.locator('#settingsOverlay');
+  await expect(overlay.locator('.settings-pane')).toHaveCount(1);
+  await expect(overlay.locator('.settings-pane h2')).toHaveText('General');
+  await expect(overlay.locator('#providerList')).toHaveCount(0);
+  await overlay.locator('[data-section="models"]').click();
+  await overlay.locator('#addProviderBtn').click();
+  const draft = overlay.locator('.provider-row[data-id^="new-"] input[data-field="label"]').first();
+  await draft.fill('Keep this draft');
+  await overlay.locator('[data-section="general"]').click();
+  await expect(overlay.locator('.settings-pane')).toHaveCount(2);
+  await expect(draft).toBeHidden();
+  await overlay.locator('[data-section="models"]').click();
+  await expect(draft).toHaveValue('Keep this draft');
+  await overlay.locator('#settingsCloseBtn').click();
+  await page.evaluate(() => window.openSettings());
+  await expect(draft).toBeVisible();
+  await expect(draft).toHaveValue('Keep this draft');
+  await overlay.locator('.settings-nav input').fill('Account');
+  await expect(overlay.locator('.settings-nav button')).toHaveCount(1);
+  await expect(overlay.locator('.settings-nav button')).toHaveText('Account');
+});
+
+test('settings category load failure stays local and can be retried', async ({ page }) => {
+  const { readFileSync } = await import('node:fs');
+  const { resolve } = await import('node:path');
+  const report = JSON.parse(readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'));
+  const pane = report.modules.find((module) => module.id === 'src/react/settings/DisplaySettingsPane.tsx');
+  let failures = 0;
+  await page.route(`**/${pane.chunk}*`, async (route) => {
+    failures++;
+    await route.abort('failed');
+  });
+  await page.evaluate(() => window.openSettings());
+  const overlay = page.locator('#settingsOverlay');
+  await overlay.locator('[data-section="display"]').click();
+  await expect(overlay.getByRole('alert')).toContainText('Could not load this category');
+  expect(failures).toBeGreaterThan(0);
+  await overlay.locator('[data-section="general"]').click();
+  await expect(overlay.locator('.settings-pane:visible h2')).toHaveText('General');
+  await overlay.locator('[data-section="display"]').click();
+  await overlay.getByRole('button', { name: 'Try again', exact: true }).click();
+  await expect.poll(() => failures).toBeGreaterThan(1);
+  await expect(overlay.getByRole('alert')).toBeVisible();
+  await page.unroute(`**/${pane.chunk}*`);
+  await overlay.getByRole('button', { name: 'Try again', exact: true }).click();
+  await expect(overlay.locator('.settings-pane:visible h2')).toHaveText('Display');
+  await expect(overlay.getByRole('alert')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(overlay).toBeHidden();
+});

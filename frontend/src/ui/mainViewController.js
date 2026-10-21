@@ -2,13 +2,9 @@ import { setConversationChrome } from './topBarState.js';
 import { activateComposerSurface } from '../composer/controller.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { closeDetailSurface } from './detailSurface.ts';
+import { CORE_VIEW_IDS, MAIN_PAGE_IDS } from '../sidebar/navigation.destinations.ts';
 
-export const CORE_VIEW_IDS = ['topicSetup', 'diagnosticView', 'chatView'];
-
-export const MAIN_PAGE_IDS = [
-  'libraryPanel', 'spacesPanel', 'scheduledPanel', 'pluginsPanel', 'imagesPanel',
-  'assistantsPanel', 'sitesPanel', 'adminPanel', 'examView',
-];
+export { CORE_VIEW_IDS, MAIN_PAGE_IDS };
 
 const WORKSPACE_PAGE_IDS = new Set(MAIN_PAGE_IDS.filter((id) => id !== 'examView'));
 const CONVERSATION_CHROME_VIEWS = new Set(['chatView', 'examView']);

@@ -1,8 +1,7 @@
 import { getApiFetch, getLegacyActions } from '../../legacy/gateway.ts';
 import { getCachedProjects, hasCachedProjects, refreshCachedProjects, setCachedProjects } from '../../../projects/projectCache.ts';
-import { patchLibraryData, patchWorkspaceSnapshot, setLibraryCollections, setWorkspacePlugins, setWorkspaceProjects, useWorkspaceStore } from './workspace.store';
+import { patchLibraryData, setWorkspaceLoading, setLibraryCollections, setWorkspacePlugins, setWorkspaceProjects, useWorkspaceStore } from './workspace.store';
 import type { LibraryItem, PluginItem } from './types';
-import { stateStore } from '../../../state/store.js';
 
 type ApiResponse<T> = T & { error?: string };
 type JsonApi = (path: string, options?: Record<string, unknown>) => Promise<any>;
@@ -19,7 +18,7 @@ function toast(message: string): void {
 
 export async function loadLibraryData(): Promise<void> {
   const state = useWorkspaceStore.getState();
-  if (!state.libraryData.files.length && !state.libraryData.artifacts.length) patchWorkspaceSnapshot({ loading: true, error: null });
+  if (!state.libraryData.files.length && !state.libraryData.artifacts.length) setWorkspaceLoading('library', true);
   try {
     const request = api();
     const [files, artifacts] = await Promise.all([
@@ -27,48 +26,46 @@ export async function loadLibraryData(): Promise<void> {
       request('/api/artifacts?limit=100') as Promise<ApiResponse<{ artifacts?: LibraryItem[] }>>,
     ]);
     setLibraryCollections(files.files || [], artifacts.artifacts || []);
-    patchWorkspaceSnapshot({ loading: false, error: null });
+    setWorkspaceLoading('library', false);
   } catch (error) {
     setLibraryCollections([], []);
-    patchWorkspaceSnapshot({ loading: false, error: null });
+    setWorkspaceLoading('library', false);
     const status = error && typeof error === 'object' ? (error as { status?: number }).status : undefined;
     toast(status === 401 ? 'Sign in to upload files and create artifacts.' : 'Your library could not be loaded. Try again.');
   }
 }
 
 export async function loadProjectsData(): Promise<void> {
-  if (!hasCachedProjects()) patchWorkspaceSnapshot({ loading: true, error: null });
+  if (!hasCachedProjects()) setWorkspaceLoading('projects', true);
   try {
     await refreshCachedProjects(() => api()('/api/projects'));
     setWorkspaceProjects(getCachedProjects() as any[]);
-    patchWorkspaceSnapshot({ loading: false, error: null });
+    setWorkspaceLoading('projects', false);
   } catch (error) {
     // Preserve the last successful list while reporting the failed refresh.
     setWorkspaceProjects(getCachedProjects() as any[]);
-    patchWorkspaceSnapshot({ loading: false, error: null });
+    setWorkspaceLoading('projects', false);
     const status = error && typeof error === 'object' ? (error as { status?: number }).status : undefined;
     toast(status === 401 ? 'Sign in to create projects.' : 'Projects could not be loaded. Try again.');
   }
 }
 
 export async function loadPluginsData(): Promise<void> {
-  if (!useWorkspaceStore.getState().pluginsData.length) patchWorkspaceSnapshot({ loading: true, error: null });
+  if (!useWorkspaceStore.getState().pluginsData.length) setWorkspaceLoading('plugins', true);
   try {
     const result = await api()('/api/project-connectors') as ApiResponse<{
       connectors?: PluginItem[];
       configured?: boolean;
       openConnector?: { available?: boolean; cloud?: boolean };
     }>;
-    const projectId = stateStore.read('currentProjectId') as string | null;
     setWorkspacePlugins(result.connectors || [], {
       projectConnectorConfigured: Boolean(result.configured),
       openConnectorAvailable: Boolean(result.openConnector?.available || result.openConnector?.cloud),
-      mcpProjectId: projectId || null,
     });
-    patchWorkspaceSnapshot({ loading: false, error: null });
+    setWorkspaceLoading('plugins', false);
   } catch (error) {
-    setWorkspacePlugins([], { projectConnectorConfigured: false, openConnectorAvailable: false, mcpProjectId: null });
-    patchWorkspaceSnapshot({ loading: false, error: null });
+    setWorkspacePlugins([], { projectConnectorConfigured: false, openConnectorAvailable: false });
+    setWorkspaceLoading('plugins', false);
     const status = error && typeof error === 'object' ? (error as { status?: number }).status : undefined;
     toast(status === 401 ? 'Sign in to connect apps.' : 'Apps could not be loaded. Try again.');
   }

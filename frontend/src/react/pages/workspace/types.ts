@@ -1,16 +1,12 @@
+import type { WorkspacePage } from '../../../sidebar/navigation.destinations';
+
 export interface WorkspaceSnapshot {
-  activePage: 'library' | 'projects' | 'plugins' | null;
   libraryData: { files: ReadonlyArray<LibraryItem>; artifacts: ReadonlyArray<LibraryItem>; tab: 'files' | 'artifacts'; query: string; selection: Readonly<Record<string, boolean>>; renameItem: string | null };
   projectsData: ReadonlyArray<ProjectItem>;
   pluginsData: ReadonlyArray<PluginItem>;
   projectConnectorConfigured: boolean;
   openConnectorAvailable: boolean;
-  mcpData: ReadonlyArray<McpServerItem>;
-  mcpConfigured: boolean;
-  mcpProjectId: string | null;
-  loading: boolean;
-  error: string | null;
-  revision: number;
+  loadingByPage: Record<WorkspacePage, boolean>;
 }
 
 export interface LibraryItem { id: string; name?: string; title?: string; kind?: string; size?: number; uploadedAt?: string; updatedAt?: string; mimeType?: string; source?: string; }

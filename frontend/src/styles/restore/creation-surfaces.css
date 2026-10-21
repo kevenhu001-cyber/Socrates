@@ -85,34 +85,6 @@
 .creation-editor .creation-generation button { align-self:flex-end; padding:9px 12px; border:1px solid var(--chatgpt-line, #444); border-radius:8px; color:var(--chatgpt-text, #f4f4f4); background:var(--chatgpt-composer, #303030); cursor:pointer; white-space:nowrap; }
 .creation-editor footer { justify-content:flex-end; padding-top:7px; }
 .creation-editor footer button:not(.creation-primary) { padding:8px 12px; border:0; color:inherit; background:transparent; cursor:pointer; }
-/* Settings uses one persistent provider host so legacy provider and tone
-   controls keep their event handlers while the category changes. */
-.settings-modal.settings-modal--full { display:flex; flex-direction:column; width:min(94vw,900px); max-width:900px; height:min(88vh,720px); max-height:88vh; overflow:hidden; border:1px solid var(--chatgpt-line, #444); background:var(--chatgpt-page, #212121); color:var(--chatgpt-text, #f4f4f4); }
-.settings-modal--full .settings-header { flex:none; min-height:54px; padding:0 22px; border-bottom:1px solid var(--chatgpt-line, #444); }
-.settings-modal--full .settings-title { color:var(--chatgpt-text, #f4f4f4); font-size:16px; }
-.settings-modal--full .settings-shell { display:grid; grid-template-columns:218px minmax(0,1fr); min-height:0; flex:1; }
-.settings-modal--full .settings-nav { display:flex; flex-direction:column; align-items:stretch; gap:2px; padding:18px 10px; border-right:1px solid var(--chatgpt-line, #444); overflow:auto; }
-.settings-modal--full .settings-nav input { box-sizing:border-box; width:100%; height:36px; margin-bottom:12px; padding:8px 10px; border:1px solid var(--chatgpt-line, #444); border-radius:8px; color:var(--chatgpt-text, #f4f4f4); background:var(--chatgpt-composer, #303030); font:inherit; }
-.settings-modal--full .settings-nav button { min-height:37px; padding:8px 12px; border:0; border-radius:7px; text-align:left; color:var(--chatgpt-text, #f4f4f4); background:transparent; font:inherit; font-size:13px; cursor:pointer; }
-.settings-modal--full .settings-nav button:hover, .settings-modal--full .settings-nav button.active { background:var(--chatgpt-hover, #303030); }
-.settings-modal--full .settings-body { display:block; min-height:0; overflow:auto; padding:24px 34px; }
-.settings-modal--full .settings-pane[hidden] { display:none !important; }
-.settings-modal--full .settings-pane { display:flex; flex-direction:column; gap:18px; }
-.settings-modal--full .settings-pane > h2 { margin:0 0 10px; color:var(--chatgpt-text, #f4f4f4); font-size:21px; font-weight:600; }
-.settings-modal--full .settings-pane > p { margin:0; color:var(--chatgpt-muted, #a0a0a0); font-size:14px; }
-.settings-modal--full .settings-choice { display:flex; align-items:center; justify-content:space-between; gap:20px; min-height:55px; border-bottom:1px solid var(--chatgpt-line, #444); color:var(--chatgpt-text, #f4f4f4); font-size:14px; }
-.settings-modal--full .settings-choice select { min-width:130px; padding:8px 10px; border:1px solid var(--chatgpt-line, #444); border-radius:8px; color:var(--chatgpt-text, #f4f4f4); background:var(--chatgpt-composer, #303030); }
-.settings-modal--full .settings-hero-title, .settings-modal--full .settings-section h3 { color:var(--chatgpt-text, #f4f4f4); }
-.settings-modal--full .settings-section { margin-top:20px; }
-.settings-modal--full .settings-save-error { margin:20px 0 0; color:var(--chatgpt-muted, #a0a0a0); font-size:12px; }
-@media(max-width:640px) {
-  .settings-modal.settings-modal--full { width:100vw; height:100dvh; max-height:100dvh; border-radius:0; }
-  .settings-modal--full .settings-shell { display:flex; flex-direction:column; }
-  .settings-modal--full .settings-nav { flex:none; flex-direction:row; gap:4px; padding:10px; border-right:0; border-bottom:1px solid var(--chatgpt-line, #444); overflow-x:auto; }
-  .settings-modal--full .settings-nav input { display:none; }
-  .settings-modal--full .settings-nav button { white-space:nowrap; }
-  .settings-modal--full .settings-body { padding:20px 18px; }
-}
 @media(max-width:768px) {
   #appShell .creation-panel { padding:88px 16px 48px; }
   #appShell #sitesPanel { width:100%; padding:20px 16px 48px !important; }

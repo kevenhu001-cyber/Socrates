@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://topodrive.top/</loc><changefreq>weekly</changefreq><priority>1.0</priority><lastmod>2026-08-22</lastmod></url>
-  <url><loc>https://topodrive.top/index.md</loc><changefreq>weekly</changefreq><priority>0.8</priority><lastmod>2026-08-22</lastmod></url>
+  <url><loc>https://topodrive.top/</loc><changefreq>weekly</changefreq><priority>1.0</priority><lastmod>2026-10-21</lastmod></url>
+  <url><loc>https://topodrive.top/index.md</loc><changefreq>weekly</changefreq><priority>0.8</priority><lastmod>2026-10-21</lastmod></url>
   <url><loc>https://topodrive.top/about</loc><changefreq>monthly</changefreq><priority>0.7</priority><lastmod>2026-08-22</lastmod></url>
   <url><loc>https://topodrive.top/pricing</loc><changefreq>monthly</changefreq><priority>0.9</priority><lastmod>2026-08-22</lastmod></url>
   <url><loc>https://topodrive.top/developers</loc><changefreq>monthly</changefreq><priority>0.8</priority><lastmod>2026-08-22</lastmod></url>
@@ -27,7 +27,8 @@
   <url><loc>https://topodrive.top/research/memory-recall/</loc><changefreq>monthly</changefreq><priority>0.7</priority><lastmod>2026-08-22</lastmod></url>
   <url><loc>https://topodrive.top/research/tutor-curiosity/</loc><changefreq>monthly</changefreq><priority>0.7</priority><lastmod>2026-08-22</lastmod></url>
   <url><loc>https://topodrive.top/research/what-learners-keep/</loc><changefreq>monthly</changefreq><priority>0.7</priority><lastmod>2026-08-22</lastmod></url>
-  <url><loc>https://topodrive.top/zh/</loc><changefreq>monthly</changefreq><priority>0.7</priority><lastmod>2026-08-22</lastmod></url>
+  <url><loc>https://topodrive.top/zh/</loc><changefreq>monthly</changefreq><priority>0.7</priority><lastmod>2026-10-21</lastmod></url>
+  <url><loc>https://topodrive.top/zh.md</loc><changefreq>monthly</changefreq><priority>0.8</priority><lastmod>2026-10-21</lastmod></url>
   <url><loc>https://topodrive.top/openapi.json</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-08-22</lastmod></url>
   <url><loc>https://topodrive.top/llms.txt</loc><changefreq>monthly</changefreq><priority>0.8</priority><lastmod>2026-08-22</lastmod></url>
   <url><loc>https://topodrive.top/llms-full.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-08-22</lastmod></url>

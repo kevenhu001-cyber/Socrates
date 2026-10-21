@@ -49,7 +49,7 @@ test('the stylesheet entry does not reconnect historical parity layers', async (
 });
 
 test('migrated workspace panels are single React-owned page hosts', async () => {
-  const [html, workspacePage, pageMounts, navJs, navService, navAdapters, mainJs] = await Promise.all([
+  const [html, workspacePage, pageMounts, navJs, navService, navAdapters, mainJs, destinations] = await Promise.all([
     read('index.html'),
     read('src/react/pages/workspace/WorkspacePage.tsx'),
     read('src/react/lib/boot/pageMounts.ts'),
@@ -57,6 +57,7 @@ test('migrated workspace panels are single React-owned page hosts', async () => 
     read('src/sidebar/navigation.service.ts'),
     read('src/sidebar/navigation.adapters.ts'),
     read('src/main.js'),
+    read('src/sidebar/navigation.destinations.ts'),
   ]);
   assert.equal(html.includes('id="libraryList"'), false, 'legacy inner Library host must stay removed');
   assert.equal(html.includes('id="spacesList"'), false, 'legacy inner Projects host must stay removed');
@@ -72,13 +73,27 @@ test('migrated workspace panels are single React-owned page hosts', async () => 
      (#msgList) and the composer column (#chatView), with DOM order
      matching the visual order (transcript first). */
   assert.match(html, /<div class="chat-page hidden" id="chatPage">\s*<div class="msg-list" id="msgList"><\/div>\s*<div class="chat-view chat-view-lifted hidden" id="chatView">/);
-  assert.match(workspacePage, /page === 'library' \? 'libraryPanel' : page === 'projects' \? 'spacesPanel' : 'pluginsPanel'/);
+  /* ADR 0022: navigation.destinations.ts is the single source of truth for
+     the route→host mapping. The workspace page must read its panel host from
+     that table, and the old inline duplication must not come back. */
+  assert.match(workspacePage, /from ['"][^'"]*navigation\.destinations['"]/);
+  assert.match(workspacePage, /DESTINATIONS\[page\]\.host/);
+  assert.equal(
+    /page === 'library' \? 'libraryPanel' : page === 'projects' \? 'spacesPanel' : 'pluginsPanel'/.test(workspacePage),
+    false,
+    'inline panel-host ternary must stay removed in favour of the shared destinations table',
+  );
+  assert.match(destinations, /library: \{ path: '\/library', host: 'libraryPanel' \}/);
+  assert.match(destinations, /projects: \{ path: '\/projects', host: 'spacesPanel' \}/);
+  assert.match(destinations, /plugins: \{ path: '\/plugins', host: 'pluginsPanel' \}/);
   /* Page mounting is a module API. The adapter module imports pageMounts.ts,
      while nav.js routes through navigation.service; window.__socratesMount*
      compatibility globals must not come back. */
-  assert.match(pageMounts, /library: 'libraryPanel'/);
-  assert.match(pageMounts, /projects: 'spacesPanel'/);
-  assert.match(pageMounts, /plugins: 'pluginsPanel'/);
+  assert.match(pageMounts, /from ['"][^'"]*navigation\.destinations['"]/);
+  assert.match(pageMounts, /loadPage\(DESTINATIONS\[page\]\.host/);
+  for (const inlineHost of ["library: 'libraryPanel'", "projects: 'spacesPanel'", "plugins: 'pluginsPanel'"]) {
+    assert.equal(pageMounts.includes(inlineHost), false, `inline host map ${inlineHost} must stay removed in favour of the shared destinations table`);
+  }
   assert.match(navJs, /from ["']\.\/navigation\.service\.ts["']/);
   assert.match(navAdapters, /from ["']\.\.\/react\/lib\/boot\/pageMounts\.ts["']/);
   assert.match(navService, /adapters\[destination\]\?\.\(\)/);
