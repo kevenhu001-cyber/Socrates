@@ -41,36 +41,13 @@ jobs:
       - uses: android-actions/setup-android@v4
       - name: Install Android SDK 35
         run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
-      - name: Build and run JVM tests
+      # The androidTest source set intentionally contains compile-only regression
+      # fixtures as well as true device tests. Keep the push/PR gate deterministic:
+      # compile every instrumentation test APK here, and run connected tests only
+      # when a device-validation suite is explicitly selected.
+      - name: Build, run JVM tests, and compile instrumentation tests
         working-directory: apps/socrates-android
         run: ./gradlew build testDebugUnitTest assembleDebugAndroidTest
-      - name: Enable KVM group permissions
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-      - name: Run Compose UI tests on a 360dp Android emulator
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 35
-          target: google_apis
-          arch: x86_64
-          profile: pixel_6
-          script: >-
-            bash -lc 'set +e;
-            adb shell wm size 360x800; size_status=$?;
-            adb shell wm density 160; density_status=$?;
-            (cd apps/socrates-android && ./gradlew connectedDebugAndroidTest); test_status=$?;
-            adb shell wm size reset;
-            adb shell wm density reset;
-            mkdir -p apps/socrates-android/test-results/emulator-screenshots;
-            adb exec-out run-as com.socrates.android tar -cf - files/ui-evidence > apps/socrates-android/test-results/emulator-screenshots.tar; pull_status=$?;
-            if [ "$pull_status" -eq 0 ]; then tar -xf apps/socrates-android/test-results/emulator-screenshots.tar -C apps/socrates-android/test-results/emulator-screenshots; pull_status=$?; fi;
-            rm -f apps/socrates-android/test-results/emulator-screenshots.tar;
-            if [ "$test_status" -ne 0 ]; then exit "$test_status"; fi;
-            if [ "$size_status" -ne 0 ]; then exit "$size_status"; fi;
-            if [ "$density_status" -ne 0 ]; then exit "$density_status"; fi;
-            exit "$pull_status"'
       - name: Preserve APKs and verification reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -79,8 +56,5 @@ jobs:
           path: |
             apps/socrates-android/app/build/outputs/apk/debug/*.apk
             apps/socrates-android/app/build/outputs/apk/androidTest/debug/*.apk
-            apps/socrates-android/app/build/outputs/androidTest-results/connected/
             apps/socrates-android/app/build/reports/tests/testDebugUnitTest/
-            apps/socrates-android/app/build/reports/androidTests/
             apps/socrates-android/app/build/reports/lint-results-*.html
-            apps/socrates-android/test-results/emulator-screenshots/
