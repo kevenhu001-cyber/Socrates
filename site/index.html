@@ -15,7 +15,7 @@
   <link rel="preload" href="/media/fonts/geist-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/media/fonts/geist-sans-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/site.css?cb=20261021b">
-  <link rel="stylesheet" href="/home-refresh.css?cb=20261021g">
+  <link rel="stylesheet" href="/home-refresh.css?cb=20261021h">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Socrates">
   <meta property="og:title" content="Socrates — Understanding begins with a question.">
@@ -202,16 +202,18 @@
       </div>
     </div>
     <nav class="home-mobile-menu" id="home-mobile-menu" data-mobile-menu aria-label="Mobile">
-      <a href="/product">Product</a>
-      <a href="/research">Research</a>
-      <a href="/developers">Developers</a>
-      <a href="/pricing">Pricing</a>
-      <a href="/about">Company</a>
-      <div class="home-mobile-actions">
-        <a href="https://app.topodrive.top">Try Socrates</a>
-        <a href="/learn">Search</a>
-        <a href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
-        <a href="/contact">Contact</a>
+      <div class="home-mobile-menu-inner">
+        <a href="/product">Product</a>
+        <a href="/research">Research</a>
+        <a href="/developers">Developers</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/about">Company</a>
+        <div class="home-mobile-actions">
+          <a href="https://app.topodrive.top">Try Socrates</a>
+          <a href="/learn">Search</a>
+          <a href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
+          <a href="/contact">Contact</a>
+        </div>
       </div>
     </nav>
   </header>
@@ -243,7 +245,7 @@
       </div>
     </section>
 
-    <section class="home-feature" aria-label="Featured">
+    <section class="home-feature" aria-label="Featured" data-reveal>
       <div class="home-shell feature-layout">
         <a class="feature-main" href="/product">
           <div class="feature-media">
@@ -371,13 +373,13 @@
       </div>
     </section>
 
-    <section class="home-news" aria-labelledby="news-title">
+    <section class="home-news" aria-labelledby="news-title" data-reveal>
       <div class="home-shell">
         <div class="section-head">
           <h2 id="news-title">Recent news</h2>
           <a class="section-link" href="/announcements">View more</a>
         </div>
-        <div class="news-grid">
+        <div class="news-grid" data-reveal-group>
           <a class="news-item" href="/announcements">
             <div class="news-thumb"><img src="/media/socrates-research-honest-pause-v1.webp" width="1672" height="941" loading="lazy" alt="A quiet arrangement of paper, stone and clay on a dark desk"></div>
             <div class="news-body">
@@ -424,13 +426,13 @@
       </div>
     </section>
 
-    <section class="home-stories" aria-labelledby="stories-title">
+    <section class="home-stories" aria-labelledby="stories-title" data-reveal>
       <div class="home-shell">
         <div class="section-head">
           <h2 id="stories-title">Stories</h2>
           <a class="section-link" href="/about">View all</a>
         </div>
-        <div class="card-grid">
+        <div class="card-grid" data-reveal-group>
           <a class="card" href="/about">
             <div class="media"><img src="/media/socrates-home-dialogue-photo-v1.webp" width="900" height="900" loading="lazy" alt="Two learners in conversation at a table"></div>
             <h3>Learning to stay with the question.</h3>
@@ -450,13 +452,13 @@
       </div>
     </section>
 
-    <section class="home-research" aria-labelledby="research-title">
+    <section class="home-research" aria-labelledby="research-title" data-reveal>
       <div class="home-shell">
         <div class="section-head">
           <h2 id="research-title">Latest research</h2>
           <a class="section-link" href="/research">View more</a>
         </div>
-        <div class="card-grid">
+        <div class="card-grid" data-reveal-group>
           <a class="card" href="/research/memory-recall/">
             <div class="media"><img src="/media/socrates-research-memory-route-v1.webp" width="900" height="900" loading="lazy" alt="A research diagram of a memory route"></div>
             <h3>Retrieval, not repetition.</h3>
@@ -476,13 +478,13 @@
       </div>
     </section>
 
-    <section class="home-teams" aria-labelledby="teams-title">
+    <section class="home-teams" aria-labelledby="teams-title" data-reveal>
       <div class="home-shell">
         <div class="section-head">
           <h2 id="teams-title">Socrates for teams</h2>
           <a class="section-link" href="/about">View more</a>
         </div>
-        <div class="card-grid">
+        <div class="card-grid" data-reveal-group>
           <a class="card" href="/about">
             <div class="media"><img src="/media/socrates-team-practice-kit-v1.webp" width="900" height="900" loading="lazy" alt="A practice kit laid out for a study group"></div>
             <h3>For the seminar room.</h3>
@@ -502,7 +504,7 @@
       </div>
     </section>
 
-    <section class="home-cta" aria-labelledby="cta-title">
+    <section class="home-cta" aria-labelledby="cta-title" data-reveal>
       <div class="home-shell">
         <div class="home-cta-band">
           <h2 id="cta-title">Start with a question.</h2>
@@ -611,7 +613,7 @@
     </div>
   </footer>
 
-  <script src="/site.js?cb=20261021b"></script>
+  <script src="/site.js?cb=20261021h"></script>
   <script src="/home-aurora.js?cb=20261021g"></script>
 </body>
 </html>

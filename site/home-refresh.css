@@ -197,6 +197,31 @@ body.home-refresh :where(.ask-input):focus-visible {
   color: var(--muted);
 }
 
+/* Navigation underlines draw in from the left instead of switching on. */
+.home-nav a {
+  position: relative;
+}
+
+.home-nav a::after {
+  content: '';
+  position: absolute;
+  right: 11px;
+  bottom: 20px;
+  left: 11px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 280ms cubic-bezier(0.22, 0.7, 0.2, 1), opacity 200ms ease;
+}
+
+.home-nav a:hover::after,
+.home-nav a:focus-visible::after {
+  opacity: 0.35;
+  transform: scaleX(1);
+}
+
 .home-header-actions {
   display: flex;
   margin-left: auto;
@@ -263,42 +288,116 @@ body.home-refresh :where(.ask-input):focus-visible {
 }
 
 .home-menu-button {
+  position: relative;
   display: none;
   width: 40px;
   height: 40px;
   place-items: center;
   border-radius: 999px;
+  transition: background 160ms ease, transform 160ms var(--ease);
+}
+
+.home-menu-button:active {
+  transform: scale(0.94);
 }
 
 .home-menu-button .home-icon {
   width: 20px;
   height: 20px;
+  transition: opacity 180ms ease, transform 320ms cubic-bezier(0.22, 0.7, 0.2, 1);
 }
 
+/* Both glyphs stay mounted and cross-fade with a rotation, so the button
+   reads as one icon morphing rather than two icons swapping. */
 .home-menu-button .close {
-  display: none;
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.6);
 }
 
 .home-menu-button[aria-expanded='true'] .open {
-  display: none;
+  opacity: 0;
+  transform: rotate(90deg) scale(0.6);
 }
 
 .home-menu-button[aria-expanded='true'] .close {
-  display: block;
+  opacity: 1;
+  transform: none;
 }
 
 .home-mobile-menu {
-  display: none;
-  border-top: 1px solid var(--line);
+  display: grid;
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  border-top: 1px solid transparent;
   background: #fff;
-  padding: 20px var(--pad) 32px;
+  opacity: 0;
+  transition:
+    grid-template-rows 360ms cubic-bezier(0.22, 0.7, 0.2, 1),
+    opacity 200ms ease,
+    border-color 200ms ease;
 }
 
 .home-mobile-menu.is-open {
-  display: block;
+  grid-template-rows: 1fr;
+  border-top-color: var(--line);
+  opacity: 1;
 }
 
-.home-mobile-menu > a {
+/* The inner wrapper is what actually collapses: grid-template-rows animates
+   between 0fr and 1fr, so the panel keeps its natural height with no
+   hard-coded max-height to fight with. */
+.home-mobile-menu-inner {
+  min-height: 0;
+  overflow: hidden;
+  padding: 0 var(--pad);
+}
+
+.home-mobile-menu.is-open .home-mobile-menu-inner {
+  padding-block: 20px 32px;
+  transition: padding 360ms cubic-bezier(0.22, 0.7, 0.2, 1);
+}
+
+/* Menu links land one after another. Using an animation (not a transition)
+   means the cascade replays on every open, not just the first one. */
+.home-mobile-menu.is-open .home-mobile-menu-inner > a {
+  animation: menu-item-in 380ms cubic-bezier(0.22, 0.7, 0.2, 1) both;
+}
+
+.home-mobile-menu.is-open .home-mobile-menu-inner > a:nth-child(1) { animation-delay: 70ms; }
+.home-mobile-menu.is-open .home-mobile-menu-inner > a:nth-child(2) { animation-delay: 100ms; }
+.home-mobile-menu.is-open .home-mobile-menu-inner > a:nth-child(3) { animation-delay: 130ms; }
+.home-mobile-menu.is-open .home-mobile-menu-inner > a:nth-child(4) { animation-delay: 160ms; }
+.home-mobile-menu.is-open .home-mobile-menu-inner > a:nth-child(5) { animation-delay: 190ms; }
+.home-mobile-menu.is-open .home-mobile-menu-inner > .home-mobile-actions { animation-delay: 230ms; }
+
+.home-mobile-menu.is-open .home-mobile-menu-inner > .home-mobile-actions {
+  animation: menu-item-in 380ms cubic-bezier(0.22, 0.7, 0.2, 1) both;
+}
+
+@keyframes menu-item-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Scrim behind the open menu: tapping it closes the menu, which is what
+   people expect on a phone. */
+.home-menu-scrim {
+  position: fixed;
+  z-index: 90;
+  inset: var(--header) 0 0;
+  background: rgba(0, 0, 0, 0.12);
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+
+.home-menu-scrim.is-on {
+  opacity: 1;
+}
+
+.home-mobile-menu-inner > a {
   display: block;
   padding: 10px 0;
   font-size: 28px;
@@ -321,6 +420,12 @@ body.home-refresh :where(.ask-input):focus-visible {
   border-radius: 999px;
   padding: 0 16px;
   font-size: 14px;
+  transition: background-color 180ms ease, border-color 180ms ease, transform 180ms var(--ease);
+}
+
+.home-mobile-actions a:hover {
+  background: var(--soft);
+  border-color: var(--line-strong);
 }
 
 /* --------------------------------------------------------------------------
@@ -2093,5 +2198,192 @@ body.home-refresh .news-item:nth-last-child(-n + 2) {
 
   .hero-canvas {
     display: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Motion
+   -------------------------------------------------------------------------- */
+
+/* The hero assembles once on load. Short, eased, and staggered so the eye
+   lands on the question before the composer and the suggestions. */
+.home-hero h1 {
+  animation: hero-in 720ms cubic-bezier(0.22, 0.7, 0.2, 1) both;
+  animation-delay: 60ms;
+}
+
+.ask-form {
+  animation: hero-in 720ms cubic-bezier(0.22, 0.7, 0.2, 1) both;
+  animation-delay: 150ms;
+}
+
+.ask-suggestions {
+  animation: hero-in 720ms cubic-bezier(0.22, 0.7, 0.2, 1) both;
+  animation-delay: 240ms;
+}
+
+@keyframes hero-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Sections fade up as they enter the viewport. The shared rule in site.css
+   covers the mechanics; this is the homepage-tuned version of it. */
+.js body.home-refresh [data-reveal] {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 720ms cubic-bezier(0.22, 0.7, 0.2, 1),
+    transform 720ms cubic-bezier(0.22, 0.7, 0.2, 1);
+  transition-delay: var(--d, 0ms);
+}
+
+.js body.home-refresh [data-reveal].is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* Grid children cascade instead of arriving as one block. */
+.js body.home-refresh [data-reveal-group] > * {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 620ms cubic-bezier(0.22, 0.7, 0.2, 1),
+    transform 620ms cubic-bezier(0.22, 0.7, 0.2, 1);
+}
+
+.js body.home-refresh [data-reveal].is-in [data-reveal-group] > *,
+.js body.home-refresh [data-reveal-group].is-in > * {
+  opacity: 1;
+  transform: none;
+}
+
+.js body.home-refresh [data-reveal].is-in [data-reveal-group] > *:nth-child(1),
+.js body.home-refresh [data-reveal-group].is-in > *:nth-child(1) { transition-delay: 40ms; }
+.js body.home-refresh [data-reveal].is-in [data-reveal-group] > *:nth-child(2),
+.js body.home-refresh [data-reveal-group].is-in > *:nth-child(2) { transition-delay: 100ms; }
+.js body.home-refresh [data-reveal].is-in [data-reveal-group] > *:nth-child(3),
+.js body.home-refresh [data-reveal-group].is-in > *:nth-child(3) { transition-delay: 160ms; }
+.js body.home-refresh [data-reveal].is-in [data-reveal-group] > *:nth-child(4),
+.js body.home-refresh [data-reveal-group].is-in > *:nth-child(4) { transition-delay: 220ms; }
+.js body.home-refresh [data-reveal].is-in [data-reveal-group] > *:nth-child(5),
+.js body.home-refresh [data-reveal-group].is-in > *:nth-child(5) { transition-delay: 280ms; }
+.js body.home-refresh [data-reveal].is-in [data-reveal-group] > *:nth-child(6),
+.js body.home-refresh [data-reveal-group].is-in > *:nth-child(6) { transition-delay: 340ms; }
+.js body.home-refresh [data-reveal].is-in [data-reveal-group] > *:nth-child(7),
+.js body.home-refresh [data-reveal-group].is-in > *:nth-child(7) { transition-delay: 400ms; }
+.js body.home-refresh [data-reveal].is-in [data-reveal-group] > *:nth-child(8),
+.js body.home-refresh [data-reveal-group].is-in > *:nth-child(8) { transition-delay: 460ms; }
+
+/* Pointer feedback. Everything pressable answers the press. */
+.home-nav a,
+.home-login,
+.home-header-button,
+.home-search,
+.ask-chip,
+.ask-send,
+.home-button,
+.section-link,
+.card h3,
+.rail-card h3,
+.news-item h3 {
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    opacity 180ms ease,
+    transform 180ms var(--ease);
+}
+
+.home-header-button:active,
+.home-button:active,
+.ask-chip:active,
+.home-mobile-actions a:active,
+.home-login:active {
+  transform: scale(0.97);
+}
+
+.home-header-button:active .home-icon,
+.home-button:active .home-icon {
+  transform: translateX(0);
+}
+
+/* The CTA arrow drifts forward on hover — a small cue that the button
+   takes you somewhere. */
+.home-header-button .home-icon,
+.home-button .home-icon {
+  transition: transform 240ms var(--ease);
+}
+
+.home-header-button:hover .home-icon,
+.home-button:hover .home-icon {
+  transform: translateX(3px);
+}
+
+.home-header-button:hover,
+.home-button:hover {
+  transform: translateY(-1px);
+}
+
+.ask-chip:hover {
+  background: var(--soft);
+  border-color: var(--line-strong);
+  transform: translateY(-1px);
+}
+
+.section-link:hover {
+  color: var(--ink);
+}
+
+.card:hover h3,
+.rail-card:hover h3,
+.news-item:hover h3 {
+  color: var(--ink);
+}
+
+/* Cards lift a hair on hover, so the whole row feels alive rather than
+   only the thumbnail. Layout properties stay untouched — .news-item is a
+   grid, .card and .rail-card are blocks. The grid children need the extra
+   selector weight because the reveal cascade also owns their transform. */
+.card,
+.rail-card,
+.news-item {
+  transition: transform 300ms cubic-bezier(0.22, 0.7, 0.2, 1);
+}
+
+.rail-card:hover {
+  transform: translateY(-3px);
+}
+
+.js body.home-refresh [data-reveal-group] > .card:hover,
+.js body.home-refresh [data-reveal-group] > .news-item:hover {
+  transform: translateY(-3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-hero h1,
+  .ask-form,
+  .ask-suggestions {
+    animation: none;
+  }
+
+  .js body.home-refresh [data-reveal],
+  .js body.home-refresh [data-reveal-group],
+  .js body.home-refresh [data-reveal-group] > * {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .home-mobile-menu,
+  .home-mobile-menu-inner,
+  .home-menu-button .home-icon,
+  .home-menu-scrim {
+    transition: none;
+  }
+
+  .home-mobile-menu.is-open .home-mobile-menu-inner > a,
+  .home-mobile-menu.is-open .home-mobile-menu-inner > .home-mobile-actions {
+    animation: none;
   }
 }
