@@ -6,6 +6,8 @@ The [second pass](../audits/2026-10-18-demand-loading-pass-2.md) removes uncondi
 
 ## Measure
 
+The [2026-10-22 history restoration audit](../audits/2026-10-22-history-restore-performance.md) covers a separate runtime bottleneck: parsing every raw-only historical message before mounting the transcript. Restoring data without eager HTML generation reduced the local 1,000-row response-to-paint proxy from 672 to 109 ms at normal CPU and 2,940 to 476 ms at 4× slowdown. The audit documents the synthetic setup, cold-open limits, focused regression checks, and remaining opportunities; these are not field INP measurements.
+
 Build from `frontend/` with `npm run build`, then run `npm run audit:entry` for the static import graph and gzip totals. The generated `dist/.vite/entry-graph.json` retains all resolved import edges plus the retained modules and chunk closure. Run `node scripts/measure-load.mjs --runs=3` for origin-loopback cold/warm anonymous sessions, or add `--public` to traverse the configured `HTTPS_PROXY` and the public CDN. The script prints individual requests, Cloudflare cache statuses, and median TTFB, FCP, LCP, long-task time, critical transfer bytes, fonts, and auth calls. For a local candidate, start `node e2e/dist-server.mjs` and use `node scripts/measure-load.mjs --url=http://127.0.0.1:4173/`; this static server does not compress responses, so compare timing rather than transfer bytes against the gzip production baseline. Repeat measurements with the same browser, network, location, and signed-in state.
 
 ## Delivery configuration

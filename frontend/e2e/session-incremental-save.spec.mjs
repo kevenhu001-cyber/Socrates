@@ -85,7 +85,7 @@ test('an incremental save still reconstructs the whole transcript after reload',
     const acc = [];
     const transcript = [
       { clientId: 'u1', role: 'user', rawText: '什么是导数', html: null },
-      { clientId: 'a1', role: 'assistant', rawText: '导数描述变化率。', html: '<p>导数描述变化率。</p>' },
+      { clientId: 'a1', role: 'assistant', rawText: '导数描述变化率。', html: null },
       { clientId: 'u2', role: 'user', rawText: '能举个例子吗', html: null },
       { clientId: 'a2', role: 'assistant', rawText: '例如 f(x)=x^2, f\'(x)=2x。', html: '<p>例如 f(x)=x^2</p>' },
     ];
@@ -121,6 +121,16 @@ test('an incremental save still reconstructs the whole transcript after reload',
     .toBe(4);
   const restored = await page.evaluate(() => window.stateStore.read('messages').map((m) => m.clientId));
   expect(restored.sort()).toEqual(['a1', 'a2', 'u1', 'u2']);
+  // Raw-only restored answers must stay synced; viewing them must not invent
+  // an HTML change that causes the next save to re-upload old history.
+  await page.evaluate(() => {
+    window.stateStore.dispatch({ type: 'session/append-message', payload: {
+      clientId: 'u3', role: 'user', rawText: '继续', html: '',
+    } });
+    window.saveCurrentSession();
+  });
+  await expect.poll(() => store.posts.at(-1)).toEqual(['u3']);
+  expect(store.messages.get('a1').html).toBeNull();
 });
 
 test('an edited message is re-sent even when its length is unchanged', async ({ page }) => {

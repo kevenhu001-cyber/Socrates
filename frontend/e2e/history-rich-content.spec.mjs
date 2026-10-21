@@ -16,7 +16,8 @@ const VIZ_SPEC = {
   },
 };
 
-test('loading an old conversation rebuilds scaffold widgets and visualizations', async ({ page }) => {
+for (const withSnapshot of [true, false]) {
+test(`loading an old conversation rebuilds scaffold widgets and visualizations (${withSnapshot ? 'stale HTML' : 'raw only'})`, async ({ page }) => {
   await mockAuthedApp(page);
   await page.route(new RegExp('/api/(?:v2/)?sessions/' + SESSION_ID + '(?:\\?.*)?$'), async (route) => {
     await route.fulfill({
@@ -35,14 +36,14 @@ test('loading an old conversation rebuilds scaffold widgets and visualizations',
           {
             id: 'history-user',
             role: 'user',
-            rawText: 'Explain a parabola',
-            html: '<p>Explain a parabola</p>',
+            rawText: 'Explain a **parabola**',
+            html: withSnapshot ? '<p>Explain a <strong>parabola</strong></p>' : undefined,
           },
           {
             id: 'history-assistant',
             role: 'assistant',
             rawText: '<definition><term>Parabola</term><body>A quadratic curve.</body></definition>\n\nThe graph is below.',
-            html: '<p>stale snapshot without dynamic content</p>',
+            html: withSnapshot ? '<p>stale snapshot without dynamic content</p>' : undefined,
             toolCalls: [{
               id: 'history-viz',
               name: 'render_visualization',
@@ -74,6 +75,7 @@ test('loading an old conversation rebuilds scaffold widgets and visualizations',
   await expect.poll(() => page.evaluate(() => window.__activeProject?.id)).toBe('project-restore');
 
   await expect(page.locator('#msgList .msg')).toHaveCount(2);
+  await expect(page.locator('#msgList .msg.user strong')).toHaveText('parabola');
   await expect(page.locator('.inline-definition-term')).toHaveText('Parabola');
   await expect(page.locator('.inline-definition-body')).toContainText('A quadratic curve');
   await expect(page.locator('.visualization-card')).toContainText('Restored parabola');
@@ -86,7 +88,15 @@ test('loading an old conversation rebuilds scaffold widgets and visualizations',
   await expect(restoredTool.locator('.agent-tool-head')).toHaveAttribute('aria-expanded', 'true');
   await expect(restoredTool.locator('.agent-tool-body')).toBeVisible();
   await expect(restoredTool.locator('.agent-tool-out')).toContainText('Visualization ready');
+  if (!withSnapshot) {
+    await page.screenshot({ path: 'test-results/raw-history-desktop.png' });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.locator('.inline-definition-term')).toHaveText('Parabola');
+    await expect(page.locator('.visualization-card')).toBeVisible();
+    await page.screenshot({ path: 'test-results/raw-history-mobile.png' });
+  }
 });
+}
 
 const INLINE_SESSION_ID = '33333333-3333-4333-8333-333333333333';
 

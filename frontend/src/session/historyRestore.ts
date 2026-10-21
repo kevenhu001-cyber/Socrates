@@ -107,18 +107,11 @@ export function restoreSessionMessage(m: PersistedMessage): RestoredMessage {
      separately. Replacing clientId with m.id makes the next save insert a
      duplicate row and causes message actions to lose their client identity. */
   const clientId = m.clientId || m.id || ('loaded-' + generateId());
-  let html = '';
-  if (m.role === 'assistant' && m.rawText) {
-    /* Rebuild assistant markup from the canonical source, never from the
-       stored snapshot. This lets current renderers restore old conversations. */
-    html = m.html || '';
-    if (!html) {
-      try { html = buildAssistantHtml(m.rawText); }
-      catch { html = formatMsg(m.rawText); }
-    }
-  } else {
-    html = m.html || (m.rawText ? formatMsg(m.rawText) : '');
-  }
+  /* MessageBody/AssistantTurn render canonical rawText when a row mounts.
+     Building markup here parses offscreen history and schedules scaffold
+     mounts for discarded slots. Retain supplied snapshots for compatibility
+     and persistence; leave raw-only rows raw until they actually mount. */
+  let html = m.html || '';
   if (typeof html === 'string' && html.indexOf('think-block') !== -1) {
     html = html.replace(/<details class="think-block[\s\S]*?<\/details>/gi, '');
   }

@@ -1,5 +1,6 @@
-import type { RefObject } from 'react';
+import { useMemo, type RefObject } from 'react';
 
+import { formatMsg } from '../../render/markdown.ts';
 import { CanvasBlock } from '../canvas';
 import { AssistantTurn } from '../tool-run/AssistantTurn';
 import type { LegacyChatMessage } from '../types/domain';
@@ -19,6 +20,12 @@ export function MessageBody({
   declarative: boolean;
   bodyRef: RefObject<HTMLDivElement | null>;
 }) {
+  const rawText = typeof message.rawText === 'string' ? message.rawText : '';
+  // Preserve historical user Markdown without parsing every offscreen row in
+  // the loader. Newly sent user messages still display their original text.
+  const bodyHtml = useMemo(() => html || (
+    message.restoredFromHistory && role !== 'assistant' ? formatMsg(rawText) : ''
+  ), [html, message.restoredFromHistory, role, rawText]);
   if (message.outputMode === 'canvas' && message.canvasId && role === 'assistant') {
     return (
       <CanvasBlock
@@ -48,13 +55,13 @@ export function MessageBody({
      rawText via React children (auto-escaped, no DOMPurify roundtrip) so
      the user sees their original text without a markdown pass on every
      send. */
-  if (!html && typeof message.rawText === 'string' && message.rawText.length > 0) {
+  if (!bodyHtml && rawText.length > 0) {
     return (
       <div className="msg-body" ref={bodyRef}>
-        {message.rawText}
+        {rawText}
       </div>
     );
   }
 
-  return <div className="msg-body" ref={bodyRef} dangerouslySetInnerHTML={{ __html: html }} />;
+  return <div className="msg-body" ref={bodyRef} dangerouslySetInnerHTML={{ __html: bodyHtml }} />;
 }

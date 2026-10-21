@@ -15,7 +15,9 @@ export function useMessagePostRender(
   bodyRef: RefObject<HTMLDivElement | null>,
 ): void {
   useLayoutEffect(() => {
-    if (!html || isLive || !clientId) return;
+    // Restored rows may contain canonical prose/tools without an HTML snapshot.
+    // Their declarative body still needs chart, image, and tool-output wiring.
+    if ((!html && !message.restoredFromHistory) || isLive || !clientId) return;
     const root = bodyRef.current;
     if (!root) return;
     const postRender = getLegacyActions().postRender;
