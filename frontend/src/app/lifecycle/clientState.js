@@ -1,3 +1,4 @@
+import { clearSharedProseCache } from '../../render/proseCache.ts';
 import { saveState } from '../../session/saveState.ts';
 import { detailCache } from '../../session/detailCache.ts';
 import { turnState } from '../../chat/turnState.ts';
@@ -41,6 +42,7 @@ function renderUserLists() {
 /** Clear user-owned caches before a new user can see the application shell. */
 export function clearPerUserClientState() {
   attemptCleanup('app/lifecycle.clearPerUser.sessionLoad', () => saveState.loadAbortCtl?.abort());
+  attemptCleanup('app/lifecycle.clearPerUser.renderCache', clearSharedProseCache);
   attemptCleanup('app/lifecycle.clearPerUser.detailCache', () => detailCache.clear());
   attemptCleanup('app/lifecycle.clearPerUser.serverCache', () => {
     if (Array.isArray(serverCache.sessions)) serverCache.sessions.length = 0;

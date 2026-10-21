@@ -1,29 +1,9 @@
+import { createProseCache, sharedFinalProseCache, clearSharedProseCache } from '../../render/proseCache.ts';
 import { useMemo } from 'react';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import { stripLegacyToolHtml } from './toolRunModel.js';
 
 const IMPURE_OUTPUT = /class="viz"|-slot"|canvas-block/;
-const FINAL_CACHE_BUDGET = 8_000_000;
-const finalProseCache = new Map<string, { __html: string }>();
-let finalProseCacheChars = 0;
-
-function hashText(text: string): string {
-  let h1 = 0xdeadbeef;
-  let h2 = 0x41c6ce57;
-  for (let i = 0; i < text.length; i++) {
-    const char = text.charCodeAt(i);
-    h1 = Math.imul(h1 ^ char, 2654435761);
-    h2 = Math.imul(h2 ^ char, 1597334677);
-  }
-  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-  return (h2 >>> 0).toString(36) + (h1 >>> 0).toString(36);
-}
-
-function proseCacheKey(prefix: string, text: string): string {
-  return prefix + text.length + ':' + hashText(text);
-}
-
 function renderEnvKey(): string {
   if (typeof window === 'undefined') return '0';
   const runtime = window as unknown as {
@@ -38,32 +18,18 @@ function renderEnvKey(): string {
 }
 
 function sharedFinalProse(text: string, paint: () => string): { __html: string } {
-  const key = renderEnvKey() + proseCacheKey('t', text);
-  const hit = finalProseCache.get(key);
-  if (hit !== undefined) {
-    finalProseCache.delete(key);
-    finalProseCache.set(key, hit);
-    return hit;
-  }
+  const key = renderEnvKey() + text;
+  const hit = sharedFinalProseCache.get(key);
+  if (hit !== undefined) return hit;
   const box = { __html: paint() };
   if (IMPURE_OUTPUT.test(box.__html)) return box;
-  finalProseCache.set(key, box);
-  finalProseCacheChars += box.__html.length + text.length;
-  while (finalProseCacheChars > FINAL_CACHE_BUDGET && finalProseCache.size > 1) {
-    const oldest = finalProseCache.keys().next().value as string;
-    const dropped = finalProseCache.get(oldest);
-    finalProseCache.delete(oldest);
-    /* Hashed keys discard source-length accounting; this conservative estimate
-       lets the cache drain without retaining a second copy of long prose. */
-    finalProseCacheChars -= (dropped ? dropped.__html.length : 0) + 64;
-  }
+  sharedFinalProseCache.set(key, box);
   return box;
 }
 
 /** Test hook: forget every shared render. */
 export function __resetSharedProseCache(): void {
-  finalProseCache.clear();
-  finalProseCacheChars = 0;
+  clearSharedProseCache();
 }
 
 export interface ProseRenderer {
@@ -93,22 +59,14 @@ export function useProseRenderer(live: boolean): ProseRenderer {
       }
     };
 
-    const cache = new Map<string, { __html: string }>();
+    const cache = createProseCache(1_000_000, 200);
     const settled = (text: string): { __html: string } => {
-      const key = proseCacheKey((live ? 'l' : 'f') + mathRevision, text);
+      const key = text;
       const hit = cache.get(key);
       if (hit !== undefined) return hit;
       const box = live
         ? { __html: paint(text, true) }
         : sharedFinalProse(text, () => paint(text, true));
-      if (cache.size > 200) {
-        let drop = Math.ceil(cache.size / 2);
-        for (const oldKey of cache.keys()) {
-          if (drop <= 0) break;
-          cache.delete(oldKey);
-          drop -= 1;
-        }
-      }
       cache.set(key, box);
       return box;
     };

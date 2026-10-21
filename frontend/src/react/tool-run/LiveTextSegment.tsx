@@ -1,9 +1,10 @@
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { memo, useLayoutEffect, useMemo, useRef } from 'react';
+import { createSettledProseCache } from '../../render/proseCache.ts';
 import { createSettledSplitter } from '../../render/streaming.ts';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import type { ProseRenderer } from './proseRenderer';
 
-function SettledBlock({ html, live = false, tail = false }: { html: { __html: string }; live?: boolean; tail?: boolean }) {
+const SettledBlock = memo(function SettledBlock({ html, live = false, tail = false }: { html: { __html: string }; live?: boolean; tail?: boolean }) {
   const ref = useRef<HTMLDivElement | null>(null);
   useLayoutEffect(() => {
     const element = ref.current;
@@ -21,7 +22,7 @@ function SettledBlock({ html, live = false, tail = false }: { html: { __html: st
       dangerouslySetInnerHTML={html}
     />
   );
-}
+});
 
 interface LiveTextSegmentProps extends ProseRenderer {
   text: string;
@@ -42,13 +43,16 @@ interface LiveTextSegmentProps extends ProseRenderer {
  * safely if React abandons a concurrent render.
  */
 export function LiveTextSegment({ text, live = true, settled, tail }: LiveTextSegmentProps) {
+  const prefixCacheRef = useRef<ReturnType<typeof createSettledProseCache> | null>(null);
+  if (!prefixCacheRef.current) prefixCacheRef.current = createSettledProseCache();
+  const prefixCache = prefixCacheRef.current;
   const splitterRef = useRef<ReturnType<typeof createSettledSplitter> | null>(null);
   if (!splitterRef.current) splitterRef.current = createSettledSplitter();
   const splitter = splitterRef.current;
   const { blocks, tailBox } = useMemo(() => {
     const split = splitter.push(text);
-    return { blocks: split.blocks.map(block => settled(block)), tailBox: tail(split.tail) };
-  }, [splitter, text, settled, tail]);
+    return { blocks: prefixCache(split.blocks, settled), tailBox: tail(split.tail) };
+  }, [prefixCache, splitter, text, settled, tail]);
 
   return (
     <>
