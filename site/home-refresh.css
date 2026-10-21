@@ -554,7 +554,7 @@ body.home-refresh :where(.ask-input):focus-visible {
 }
 
 .rail-media {
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
   background: var(--soft);
 }
@@ -916,7 +916,7 @@ body.home-refresh :where(.ask-input):focus-visible {
   min-width: 0;
   flex-direction: column;
   overflow: hidden;
-  background: #bdf3ff;
+  background: #e3edf2;
   color: #062033;
   padding: 1.6cqw 1.4cqw 1.2cqw;
 }
@@ -926,15 +926,17 @@ body.home-refresh :where(.ask-input):focus-visible {
   position: absolute;
   z-index: 0;
   inset: -32%;
+  /* One hue family instead of four saturated ones. The map reads as a
+     diagram on tinted paper rather than a rainbow, and the slower drift
+     keeps the panel still enough to read the nodes on top of it. */
   background:
-    radial-gradient(38% 40% at 22% 18%, #22d3ee 0%, #22d3ee 34%, transparent 68%),
-    radial-gradient(42% 44% at 80% 26%, #60a5fa 0%, #60a5fa 36%, transparent 70%),
-    radial-gradient(38% 40% at 66% 78%, #f472b6 0%, #f472b6 36%, transparent 68%),
-    radial-gradient(34% 38% at 16% 84%, #c084fc 0%, #c084fc 34%, transparent 68%),
-    linear-gradient(152deg, #96ebff 0%, #b8f3ff 34%, #d9c9ff 72%, #ffc6e6 100%);
-  filter: blur(3.4cqw) saturate(1.18);
+    radial-gradient(46% 48% at 24% 20%, #7fc4d8 0%, #7fc4d8 38%, transparent 70%),
+    radial-gradient(44% 46% at 78% 30%, #6f9fd0 0%, #6f9fd0 38%, transparent 72%),
+    radial-gradient(42% 44% at 64% 80%, #9aa8cf 0%, #9aa8cf 36%, transparent 70%),
+    linear-gradient(150deg, #e4eef2 0%, #dbe6ee 38%, #e9e6ef 74%, #f2ece4 100%);
+  filter: blur(3.4cqw) saturate(0.88);
   opacity: 0.96;
-  animation: demo-aura 20s ease-in-out infinite alternate;
+  animation: demo-aura 34s ease-in-out infinite alternate;
 }
 
 .demo-map::after {
@@ -944,7 +946,7 @@ body.home-refresh :where(.ask-input):focus-visible {
   inset: 0;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
   mix-blend-mode: soft-light;
-  opacity: 0.14;
+  opacity: 0.24;
   pointer-events: none;
 }
 
@@ -1062,8 +1064,8 @@ body.home-refresh :where(.ask-input):focus-visible {
 }
 
 @keyframes demo-aura {
-  0% { transform: translate3d(-2%, -1%, 0) scale(1.02) rotate(-2deg); }
-  100% { transform: translate3d(2%, 2%, 0) scale(1.1) rotate(2deg); }
+  0% { transform: translate3d(-1.5%, -1%, 0) scale(1.02) rotate(-1deg); }
+  100% { transform: translate3d(1.5%, 1%, 0) scale(1.05) rotate(1deg); }
 }
 
 @keyframes demo-node-float {
@@ -1324,6 +1326,49 @@ body.home-refresh :where(.ask-input):focus-visible {
   font-size: max(9px, 2.5cqw);
   font-weight: 500;
   letter-spacing: 0.14em;
+}
+
+/* --------------------------------------------------------------------------
+   Photographic panels
+
+   OpenAI stopped using synthetic colour fields as page furniture and moved
+   to editorial photography, which is why the pages read as "material" rather
+   than "template". These panels use the same principle: a real photograph,
+   desaturated a touch, with a soft pool of light under the label so the
+   wordmark keeps its contrast without a heavy scrim.
+   -------------------------------------------------------------------------- */
+
+.art--photo {
+  background: #e7e3dc;
+  box-shadow: none;
+}
+
+.art--photo::after {
+  background:
+    radial-gradient(56% 42% at 80% 84%, rgba(255, 255, 255, 0.74) 0%, rgba(255, 255, 255, 0) 72%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 40%);
+}
+
+.art__photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.88) contrast(1.03);
+  transition: transform 700ms var(--ease);
+}
+
+.rail-card:hover .art__photo {
+  transform: scale(1.03);
+}
+
+.art--photo .art__word {
+  text-shadow: 0 1px 16px rgba(255, 255, 255, 0.55);
+}
+
+.art--photo .art__index {
+  text-shadow: 0 1px 10px rgba(255, 255, 255, 0.5);
 }
 
 .art__word {

@@ -346,6 +346,9 @@
      overlaps stay luminous instead of turning muddy, and no layer darkens
      toward black. Layers are art-directed rather than randomized so the
      composition is stable.
+
+     The homepage panels now use photography instead (see .art--photo), so
+     this generator only runs for elements that opt back in with data-art.
      ------------------------------------------------------------------------ */
 
   var ART_PALETTES = {
