@@ -1,6 +1,6 @@
 import { isCitableTurnRange } from '@socrates/core';
 import { createPortal } from 'react-dom';
-import { useEffect, useRef, useState, type ReactNode, type SyntheticEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type SyntheticEvent } from 'react';
 import type { TurnRuntime } from '@socrates/contracts';
 import { i18n } from '../legacy/gateway';
 
@@ -64,12 +64,29 @@ export function TurnEvidence({ runtime, text, children }: { runtime?: TurnRuntim
     if (preview?.claimId === claimId && preview.pinned === pinned) return;
     anchorRef.current = anchor;
     const rect = anchor.getBoundingClientRect();
-    setPreview({ claimId, left: Math.max(16, Math.min(rect.left, window.innerWidth - 376)), top: Math.max(16, Math.min(rect.bottom + 8, window.innerHeight - 300)), pinned });
+    setPreview({ claimId, left: Math.max(16, Math.min(rect.left, window.innerWidth - 376)), top: rect.bottom + 8, pinned });
   };
 
   const hoverClose = () => {
     if (!preview?.pinned) hoverTimer.current = setTimeout(() => setPreview(null), 150);
   };
+
+  // Keep the preview clear of its own citation. A popover that covers the
+  // trigger cannot be dismissed: removing it hands the pointer back to the
+  // citation, the browser re-fires mouseover and the preview opens again.
+  // Sit below the citation, and flip above it when the viewport has no room.
+  useLayoutEffect(() => {
+    if (!preview) return;
+    const node = dialogRef.current;
+    const anchor = anchorRef.current;
+    if (!node || !anchor) return;
+    const rect = anchor.getBoundingClientRect();
+    const height = node.offsetHeight;
+    const gap = 8;
+    const below = rect.bottom + gap;
+    const top = below + height > window.innerHeight - 16 ? Math.max(16, rect.top - gap - height) : below;
+    if (top !== preview.top) setPreview((current) => (current ? { ...current, top } : current));
+  }, [preview]);
 
   return <div className="turn-evidence" onClick={(event) => show(event, true)} onMouseOver={show} onFocus={show}
     onMouseEnter={cancelHoverClose} onMouseLeave={hoverClose}
