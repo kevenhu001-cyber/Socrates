@@ -53,7 +53,7 @@ test('thinkingSuffix prepends high-effort guidance for tutor mode', () => {
   setAppMode('tutor');
   try {
     const suffix = thinkingSuffix();
-    assert.match(suffix, /prioritize depth/);
+    assert.match(suffix, /deepen the explanation/);
     assert.match(suffix, /Do not emit <think> blocks/);
   } finally {
     setAppMode('chat');
