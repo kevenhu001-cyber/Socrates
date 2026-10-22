@@ -54,6 +54,14 @@ test('dataflow follows action dependencies and scoped form submission', () => {
   for (const source of valid) assert.deepEqual(programIssues(source), [], source);
 });
 
+test('the Visualization component tells the model its argument shape', async () => {
+  const { library } = await import('../src/react/intelligence-ui/openui/library.ts');
+  const description = library.toJSONSchema()['$defs'].Visualization.description;
+  assert.match(description, /arguments are the template name, a short title, the template payload and an accessibility summary/);
+  assert.match(description, /Never pass the full render_visualization envelope/);
+  assert.doesNotMatch(description, /using its exact template\/payload contract/);
+});
+
 test('runtime diagnostics identify invalid calculations in arbitrary nested state', async () => {
   const { openUiStateIssue } = await import('@socrates/core');
   assert.equal(openUiStateIssue({ result: 4, rows: [{ amount: 3 }] }), null);

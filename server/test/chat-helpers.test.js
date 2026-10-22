@@ -111,7 +111,8 @@ describe('enforceServerSystemBoundary', () => {
     /* Global defaults allow task-specific formats and explicit user preferences. */
     assert.match(out[0].content, /Default to connected natural-language paragraphs/i);
     assert.match(out[0].content, /Follow the user's explicit preferences for length, depth, and format/i);
-    assert.match(out[0].content, /prefer Intelligent UI through `render_intelligent_ui` if it is available and suitable/i);
+    assert.match(out[0].content, /use `render_visualization` for a static chart/i);
+    assert.match(out[0].content, /use Intelligent UI through `render_intelligent_ui` when the visual needs live controls/i);
     assert.match(out[0].content, /For mathematics, use LaTeX/);
     /* The new client-system classifier (P_client_system_classifier)
        routes unstyled client strings like "Call [web_search: query]"

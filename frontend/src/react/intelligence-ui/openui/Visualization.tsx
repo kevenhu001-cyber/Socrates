@@ -10,7 +10,11 @@ interface MountedCard { _visualizationUpdate?: (spec: Record<string, unknown>) =
 export const Visualization = defineComponent({
   name: 'Visualization',
   props: z.object({ template: z.string(), title: z.string(), payload: z.record(z.string(), z.unknown()), accessibilitySummary: z.string(), caption: z.string().optional() }),
-  description: 'Embed a native render_visualization card using its exact template/payload contract. Payload expressions can read $state; controls update the visual locally. Prefer Chart for simple charts.',
+  /* The model reads this description, so it has to name the argument shape
+     exactly. Saying "its exact template/payload contract" made the model pass
+     the whole render_visualization envelope as the first argument, which the
+     server then rejected with a field error about the payload instead. */
+  description: 'Embed a native visual card from the existing template set. The arguments are the template name, a short title, the template payload and an accessibility summary, in that order. The payload is the template inner data, for example {"categories":["A","B"],"series":[{"name":"Values","data":[1,2]}]}. Never pass the full render_visualization envelope {version, template, title, accessibilitySummary, payload} here: template, title, payload and accessibilitySummary are separate arguments. Payload expressions can read $state; controls update the visual locally. Prefer Chart for simple charts.',
   component: function VisualizationView({ props }) {
     const host = useRef<HTMLDivElement>(null);
     const mounted = useRef<MountedCard | null>(null);

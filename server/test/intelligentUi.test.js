@@ -8,6 +8,8 @@ after(async () => {
 import assert from 'node:assert/strict';
 import { validateIntelligentUi } from '../src/services/intelligentUi.js';
 import { executeIntelligentUi } from '../src/routes/chat/pipeline/executors/intelligentUi.js';
+import { SERVER_SYSTEM_POLICY } from '../src/lib/chatPolicy.js';
+import { OPENUI_SCHEMA, OPENUI_TOOL_GUIDANCE } from '../src/services/openUiPrompt.generated.js';
 
 const node = { id: 'root', type: 'panel', title: 'A useful view' };
 test('native UI validates version, node bounds, identity and parent graph', () => {
@@ -92,4 +94,31 @@ test('composed visualizations receive the existing native payload validation', (
     assert.equal(result.ok, false);
     assert.match(result.error, /Visualization/);
   }
+});
+
+test('the Visualization envelope misuse is reported as the argument shape it is', () => {
+  const envelope = '{"version":1,"template":"bar","title":"T","accessibilitySummary":"S","payload":{"categories":["A"],"series":[{"name":"n","data":[1]}]}}';
+  /* Passing the whole native envelope as the first argument, or nesting it in
+     the payload, is the shape the model reaches for when it confuses the two
+     contracts. Both must be named, not reported as a missing payload field. */
+  const asFirstArgument = `root = Col([Visualization(${envelope},"T")])`;
+  const nested = `root = Col([Visualization("bar","T",${envelope},"S")])`;
+  for (const source of [asFirstArgument, nested]) {
+    const result = validateIntelligentUi({ version: 1, nodes: [{ id: 'app', type: 'openui', source }] });
+    assert.equal(result.ok, false);
+    assert.match(result.error, /separate arguments|four arguments in order/);
+    assert.doesNotMatch(result.error, /payload\.series: Required/);
+  }
+});
+
+test('the server policy routes static visuals to the flat contract and interactive ones to Intelligent UI', () => {
+  assert.match(SERVER_SYSTEM_POLICY, /render_visualization` for a static chart/);
+  assert.match(SERVER_SYSTEM_POLICY, /render_intelligent_ui` when the visual needs live controls/);
+  assert.doesNotMatch(SERVER_SYSTEM_POLICY, /including for static visuals/);
+});
+
+test('the generated OpenUI guidance states the Visualization argument shape', () => {
+  const description = OPENUI_SCHEMA['$defs'].Visualization.description;
+  assert.match(description, /Never pass the full render_visualization envelope/);
+  assert.match(OPENUI_TOOL_GUIDANCE, /never the full render_visualization envelope/);
 });

@@ -66,6 +66,21 @@ for (const mode of ['light', 'dark', 'mobile']) {
   });
 }
 
+test('the intelligent UI tool call renders an OpenUI program with a native visual', async ({ page }) => {
+  const program = 'root = Col([Slider($n, 1, 8, 1, "Amount"), Text("Amount: " + $n), Visualization("bar", "Linked", {categories:["A"],series:[{name:"Amount",data:[$n]}]}, "Linked chart")])\n$n = 2';
+  await prepareChatWorkbench(page, { messages: [{
+    clientId: 'tool-openui', role: 'assistant', rawText: 'Here is the tool.', type: null,
+    toolCalls: [{ id: 'ui', name: 'render_intelligent_ui', status: 'completed', textOffset: 0, output: '', input: {
+      version: 1, nodes: [{ id: 'openui', type: 'openui', source: program }],
+    } }],
+  }] });
+  const ui = page.locator('.intui-openui');
+  await expect(ui.getByText('Amount: 2', { exact: true })).toBeVisible();
+  const stage = ui.locator('.visualization-stage');
+  await expect(stage).toBeVisible();
+  await expect.poll(() => stage.evaluate((el) => window.echarts?.getInstanceByDom(el)?.getOption().series[0].data[0])).toBe(2);
+});
+
 test('invalid local results surface a repair action with current input state', async ({ page }) => {
   const source = 'root = Col([Input($amount,"Amount","number"),Input($divisor,"Divisor","number"),Button("Compute",@Set($result,$amount / $divisor)),Text("Result: " + $result)])\n$amount = 5\n$divisor = 1\n$result = 0';
   await prepareChatWorkbench(page, { messages: [{ clientId: 'bad-result', role: 'assistant', type: 'assistant', rawText: '```openui\n' + source + '\n```', html: '' }] });

@@ -26,6 +26,21 @@ payload changes update the same chart instance. Other engines remount their
 visual card when their payload changes; OpenUI control state stays mounted.
 The simple OpenUI `Chart` is still available for lightweight charts.
 
+The `payload` argument is the template's inner data, for example
+`{"categories":["A"],"series":[{"name":"Values","data":[1,2]}]}`. It is not the
+`render_visualization` envelope `{version, template, title, accessibilitySummary,
+payload}`: the template, title, payload and accessibility summary are four
+separate arguments. The server rejects the envelope shape by name so a model
+that confuses the two contracts is corrected instead of being told that a
+payload field is missing.
+
+Routing follows the shape of the request. A static chart, function graph,
+diagram, timeline or comparison uses `render_visualization` directly, because
+its flat contract has a documented payload and an example per template. A
+visual that needs live controls, local state or interaction uses Intelligent UI
+through `render_intelligent_ui` and embeds the native template with the
+`Visualization` component, so controls and the chart stay one surface.
+
 A pocket calculator remains one optional deterministic component:
 `root = Col([Calculator("计算器")])`. It uses immediate pocket-calculator
 arithmetic (2 + 3 × 4 = 20), with decimal entry, repeated operations, clear,
