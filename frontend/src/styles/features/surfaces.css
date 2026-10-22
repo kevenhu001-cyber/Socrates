@@ -143,7 +143,9 @@
   width: 100%;
   max-width: 1040px;
   margin: 0 auto;
-  padding: 40px 32px 64px;
+  /* 42px, not 40px: the head offset is shared with Library and Plugins so
+     the four directory pages put their title on one baseline. */
+  padding: 42px 32px 64px;
 }
 
 /* Scope tabs mirror .plugin-directory-tabs: plain-text pills with a

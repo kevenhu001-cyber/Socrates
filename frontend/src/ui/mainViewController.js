@@ -22,7 +22,7 @@ function setHidden(doc, ids, hidden) {
 }
 
 function resetShellState(doc) {
-  doc.body.classList.remove('workspace-active', 'plugins-active', 'library-active', 'admin-active', 'exam-active');
+  doc.body.classList.remove('workspace-active', 'plugins-active', 'library-active', 'projects-active', 'scheduled-active', 'admin-active', 'exam-active');
   const pluginTabs = doc.getElementById('pluginWorkspaceTabs');
   if (pluginTabs) pluginTabs.hidden = true;
   doc.querySelectorAll("[data-exam-only='true']").forEach((element) => element.classList.add('hidden'));
@@ -78,6 +78,8 @@ export function activateMainView(viewId, doc) {
     currentDocument.body.classList.add('workspace-active');
     currentDocument.body.classList.toggle('plugins-active', viewId === 'pluginsPanel');
     currentDocument.body.classList.toggle('library-active', viewId === 'libraryPanel');
+    currentDocument.body.classList.toggle('projects-active', viewId === 'spacesPanel');
+    currentDocument.body.classList.toggle('scheduled-active', viewId === 'scheduledPanel');
     currentDocument.body.classList.toggle('admin-active', viewId === 'adminPanel');
     const pluginTabs = currentDocument.getElementById('pluginWorkspaceTabs');
     if (pluginTabs) pluginTabs.hidden = viewId !== 'pluginsPanel';

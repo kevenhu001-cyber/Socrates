@@ -15,11 +15,11 @@ const menuOf = (page) => page.getByRole('menu', { name: 'More actions', exact: t
 const triggerOf = (page, index = 0) => page.locator('#msgList .msg.assistant').nth(index)
   .getByRole('button', { name: 'More actions', exact: true });
 
-async function boot(page, viewport = { width: 1440, height: 900 }) {
+async function boot(page, viewport = { width: 1440, height: 900 }, count = 2) {
   await prepareChatWorkbench(page, { viewport });
   await expect(page).toHaveURL('http://127.0.0.1:4173/');
   await expect(page).toHaveTitle(/Socrates/);
-  await page.evaluate(() => {
+  await page.evaluate((total) => {
     window.__overflowCalls = [];
     const messages = window.__socratesLegacy.messages;
     messages.branchFromMessage = (id, options) => window.__overflowCalls.push(['branch', id, options || null]);
@@ -27,8 +27,9 @@ async function boot(page, viewport = { width: 1440, height: 900 }) {
     messages.toggleReadAloud = (button, text, id) => window.__overflowCalls.push(['read', id, text, button.tagName]);
     window.addMessage('assistant', 'First response for menu testing.');
     window.addMessage('assistant', 'Second response for menu testing.');
-  });
-  await expect(page.locator('#msgList .msg.assistant')).toHaveCount(2);
+    for (let i = 2; i < total; i++) window.addMessage('assistant', `Response ${i + 1} for menu testing.`);
+  }, count);
+  await expect(page.locator('#msgList .msg.assistant')).toHaveCount(count);
   await expect(page.locator('vite-error-overlay')).toHaveCount(0);
 }
 
@@ -107,13 +108,16 @@ test('phone feedback is keyboard reachable and tracks viewport changes while ope
 });
 
 test('switching message menus and dismissing with Tab or outside press preserves the destination', async ({ page }) => {
-  await boot(page);
-  // Start below the other trigger so the open surface does not cover it.
-  await triggerOf(page, 1).click();
-  await triggerOf(page).click();
+  await boot(page, { width: 1440, height: 900 }, 4);
+  // Reach the far trigger first. The open surface must not cover the trigger
+  // the user aims at, whichever way the transcript anchors its content, so
+  // the two triggers under test sit far enough apart to clear each other's
+  // menu.
+  await triggerOf(page, 0).click();
+  await triggerOf(page, 3).click();
   await expect(menuOf(page)).toHaveCount(1);
   await menuOf(page).getByRole('menuitem', { name: 'Branch from here' }).click();
-  expect(await calls(page)).toEqual([['branch', await messageId(page), null]]);
+  expect(await calls(page)).toEqual([['branch', await messageId(page, 3), null]]);
   await triggerOf(page).click();
   await page.keyboard.press('Tab');
   await expect(menuOf(page)).toHaveCount(0);

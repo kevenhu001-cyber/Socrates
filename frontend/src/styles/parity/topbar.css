@@ -279,17 +279,18 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
   /* Icon-only on desktop (sidebar-nav.spec contract). */
   #appShell #shareBtn { width: var(--ui-control-desktop); padding: 0; }
 
-  /* Plugins and Library share a compact 44px header. The panel below already
-     carries its own directory head/toolbar, so the shared bar only needs
-     to host the --ui-control-desktop tabs pill; the sidebar toggle shrinks
-     to the same row to keep the 4px inset. */
-  body:is(.plugins-active, .library-active) #appShell .top-bar {
+  /* Every directory page carries its own head, so the shared bar only needs
+     to host the --ui-control-desktop tabs pill. Library and Plugins already
+     use the compact 44px row; Projects and Scheduled join them here, which
+     keeps the directory title on one baseline across the four pages instead
+     of stepping 8px down when the 52px bar is used. */
+  body:is(.plugins-active, .library-active, .projects-active, .scheduled-active) #appShell .top-bar {
     height: 44px;
     min-height: 44px;
   }
-  body:is(.plugins-active, .library-active) #appShell .top-bar-left,
-  body:is(.plugins-active, .library-active) #appShell .top-bar-right { height: 44px; }
-  body:is(.plugins-active, .library-active) #appShell #sidebarOpenBtn {
+  body:is(.plugins-active, .library-active, .projects-active, .scheduled-active) #appShell .top-bar-left,
+  body:is(.plugins-active, .library-active, .projects-active, .scheduled-active) #appShell .top-bar-right { height: 44px; }
+  body:is(.plugins-active, .library-active, .projects-active, .scheduled-active) #appShell #sidebarOpenBtn {
     width: var(--ui-control-desktop);
     min-width: var(--ui-control-desktop);
     height: var(--ui-control-desktop);

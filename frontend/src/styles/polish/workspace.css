@@ -146,6 +146,23 @@
   padding: 42px 32px 64px;
 }
 
+/* The Projects directory carried no column of its own: its head sat flush
+   against the 768px page column while Library, Scheduled and Plugins inset
+   theirs by 32px, so the title jumped sideways and downwards on every
+   switch. Give it the same box as Library — same centred column, same
+   heading inset, same head offset — so all four directory pages land on
+   one baseline. Desktop only: the phone keeps its own reference rhythm
+   (restore/mobile-parity.css). */
+@media (min-width: 769px) {
+  #appShell .projects-directory {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 42px 32px 64px;
+  }
+}
+
 #appShell .library-head {
   display: flex;
   align-items: flex-start;

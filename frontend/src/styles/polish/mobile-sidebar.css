@@ -80,7 +80,11 @@
   #appShell .recents-panel { padding: 0; margin-top: 0; }
   #appShell .recents-header { display: flex; align-items: center; justify-content: space-between; height: 30px; min-height: 30px; margin-top: 0; padding: 0 4px 0 10px; }
   #appShell .recents-title { font-size: calc(14px * var(--app-type-scale)); font-weight: 500; line-height: 20px; letter-spacing: 0; color: var(--ui-text-muted); }
-  #appShell .recents-head-btn { display: grid; place-items: center; width: 22px; height: 32px; padding: 0; border: 0; background: transparent; color: var(--ui-text-muted); }
+  /* 32px, not 22px: the drawer row holds two of these side by side, and a
+     22px-wide button fell under the WCAG 2.2 SC 2.5.8 24×24 floor for
+     pointer targets. 32px matches the session-row overflow button in the
+     same drawer. */
+  #appShell .recents-head-btn { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; background: transparent; color: var(--ui-text-muted); }
   #appShell .recents-head-btn svg { width: 20px; height: 20px; }
   #appShell .recent-item { display: flex; align-items: center; height: var(--ui-mobile-row); min-height: var(--ui-mobile-row); padding: 0 6px 0 16px; border-radius: var(--ui-radius-row); font-size: calc(16px * var(--app-type-scale)); }
   #appShell .recent-item-text { font-size: inherit; line-height: 24px; font-weight: 400; }

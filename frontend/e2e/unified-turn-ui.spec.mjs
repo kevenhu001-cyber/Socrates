@@ -59,8 +59,13 @@ for (const mobile of [false, true]) {
     await expect(menu).toBeHidden();
     await expect(more).toBeFocused();
     await more.click();
-    await page.locator('.tool-run-prose').click();
+    // The overflow menu opens toward the free space, and on a bottom-anchored
+    // transcript that is over the tail of the message it belongs to. Dismiss
+    // with a press outside the menu: the composer editor.
+    const editor = page.locator('#composerRoot .rich-composer-editor');
+    await editor.click();
     await expect(menu).toBeHidden();
+    await expect(editor).toBeFocused();
     if (mobile) await page.screenshot({ path: 'test-results/unified-turn-mobile.png' });
   });
 }

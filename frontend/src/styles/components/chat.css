@@ -109,6 +109,39 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   }
 }
 
+/* P_transcript-bottom-anchor — a short conversation sat at the TOP of the
+   transcript, so a two-message exchange left the rest of the reading area
+   empty: 570px of void on a 1440×900 desktop (74% of the 766px transcript)
+   and 481px on a 390×844 phone (71% of 677px). Worse, on the desktop the
+   landing surface centres its composer (y=429) while the chat surface parks
+   it at the bottom (y=822), so the first send moved the composer 393px
+   while the message appeared at the screen top — the two states did not
+   share an anchor.
+
+   The fix is the standard bottom-anchored flex column: an auto top margin
+   on the FIRST row absorbs the free space, so the conversation block rests on
+   the composer's edge while it still fits, and collapses to 0 the moment it
+   overflows. Deliberately NOT `justify-content: flex-end`: that clips the
+   overflow at the start edge of a scroll container, making the top of a long
+   conversation unreachable. An auto margin keeps the scroll range intact and
+   the transition seamless — the last line of content now ends 24px (desktop)
+   and 36px (phone) above the transcript's bottom edge, which is the
+   transcript's own padding.
+
+   Applied to `:first-child` rather than a `::before` spacer so the row list
+   keeps its exact children (the settled-tail spec reads `list.children`), and
+   so the mobile `gap: 24px` is not spent on an empty pseudo row.
+
+   The `.msg:first-child` variant is not redundant: parity/transcript.css
+   zeroes the row margins with `#appShell #msgList > .msg { margin: 0 }`,
+   which is one class more specific than a bare `:first-child` and would
+   swallow it. Only the first row is matched here — the rows after it take
+   their spacing from `parity/transcript.css`'s `+ .msg` rules. */
+#appShell #msgList > :first-child,
+#appShell #msgList > .msg:first-child {
+  margin-top: auto;
+}
+
 /* P_stream-finish-clip — #msgList is a flex column, and the turn-anchor
    reserve gives the newest row an explicit min-height, which replaces the
    automatic "never smaller than my content" minimum. With the default
