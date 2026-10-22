@@ -9,7 +9,10 @@
 .page-visual-page:not(.ed-site) .page-lede { max-width: 60ch; margin-top: 22px; line-height: 1.58; }
 .page-visual-page:not(.ed-site) .sec { padding-block: clamp(62px, 7vw, 98px); }
 .page-visual-page:not(.ed-site) .sec.sec--flush { padding-top: clamp(28px, 3.4vw, 46px); }
-.page-visual-page:not(.ed-site) .split { gap: clamp(32px, 5vw, 76px); }
+/* The 12-column scaffold keeps 11 gaps between the tracks. A 32px floor
+   made those gaps alone wider than the content box on a 360px phone, so
+   the gap now scales all the way down with the viewport. */
+.page-visual-page:not(.ed-site) .split { gap: clamp(12px, 5vw, 76px); }
 
 .ed-site.page-visual-page .ed-shell {
   width: min(1360px, calc(100% - 80px));
@@ -51,6 +54,12 @@
   grid-template-columns: minmax(0, 1.16fr) repeat(2, minmax(0, .92fr));
   gap: clamp(16px, 2vw, 28px);
   align-items: start;
+}
+
+/* A two-figure band. The third figure on the page moves down into the
+   section it supports, as a .page-media-inline figure. */
+.page-media-grid.is-pair {
+  grid-template-columns: minmax(0, 1.16fr) minmax(0, .92fr);
 }
 
 .page-media-card { min-width: 0; margin: 0; }
@@ -162,6 +171,16 @@ body.ed-site main .page-media-frame img {
   margin: clamp(38px, 6vw, 60px) 0;
 }
 
+/* A figure that sits between two sections, in its own block so it never
+   lands inside a multi-column grid. */
+.page-media-figure {
+  padding-block: clamp(8px, 1.4vw, 18px);
+}
+
+.page-media-figure .page-media-inline {
+  margin-block: clamp(28px, 4vw, 52px);
+}
+
 .page-media-inline .page-media-frame {
   aspect-ratio: 1.82 / 1;
   border-radius: 10px;
@@ -175,6 +194,7 @@ body.ed-site main .page-media-frame img {
   .page-media-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .page-media-card:nth-child(3):last-child { grid-column: 1 / -1; }
   .page-media-card:nth-child(3):last-child .page-media-frame { aspect-ratio: 1.82 / 1; }
+  .page-media-grid.is-pair { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (max-width: 620px) {
@@ -212,6 +232,8 @@ body.ed-site main .page-media-frame img {
   .page-media-checkout figcaption { grid-template-columns: 24px minmax(0, 1fr); gap: 7px; font-size: 12px; }
   .page-media-inline { margin: 38px 0; }
   .page-media-inline .page-media-frame { aspect-ratio: 1.35 / 1; }
+  .page-media-grid.is-pair { grid-template-columns: minmax(0, 1fr); }
+  .page-media-grid.is-pair .page-media-card .page-media-frame { aspect-ratio: 1.5 / 1; }
 }
 
 @media (max-width: 390px) {

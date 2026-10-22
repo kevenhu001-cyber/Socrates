@@ -858,6 +858,7 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
   .ed-header-inner.is-open .ed-nav-links a:nth-child(4) { transition-delay: .13s; }
   .ed-header-inner.is-open .ed-nav-links a:nth-child(5) { transition-delay: .16s; }
   .ed-header-inner.is-open .ed-nav-links a:nth-child(6) { transition-delay: .19s; }
+  .ed-header-inner.is-open .ed-nav-links a:nth-child(7) { transition-delay: .22s; }
   .ed-nav-links a:hover { background: var(--ed-paper-strong); }
   .ed-header-actions { display: none; }
 }

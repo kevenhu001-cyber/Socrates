@@ -74,6 +74,24 @@
     });
   }
 
+  var footerGroups = doc.querySelectorAll('details.home-footer-col');
+  if (footerGroups.length && window.matchMedia) {
+    var compactFooter = window.matchMedia('(max-width: 760px)');
+    var syncFooter = function () {
+      footerGroups.forEach(function (group) {
+        // Do not strand keyboard focus inside a panel when a resize hides it.
+        if (compactFooter.matches && group.contains(doc.activeElement)) {
+          var summary = group.querySelector('summary');
+          if (summary && summary !== doc.activeElement) summary.focus({ preventScroll: true });
+        }
+        group.open = !compactFooter.matches;
+      });
+    };
+
+    syncFooter();
+    compactFooter.addEventListener('change', syncFooter);
+  }
+
   var items = doc.querySelectorAll('[data-reveal]');
   if (!items.length) return;
 

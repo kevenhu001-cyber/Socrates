@@ -162,7 +162,7 @@
        switcher — and setSwitchLabel() then replaced the whole anchor
        content with the word "English", destroying the logo image and the
        wordmark. Bail out before that can happen. */
-    if (link.querySelector(".brand-word, .ed-brand-word")) return false;
+    if (link.querySelector(".brand-word, .ed-brand-word, .site-brand-label")) return false;
 
     var label = (link.textContent || "").trim();
     /* Match the language-switch anchor by either: its href pointing at the
@@ -634,7 +634,8 @@
        Chinese translation of the same article, not the Chinese home. */
     document.querySelectorAll("a").forEach(function (link) {
       var rawHref = link.getAttribute("href");
-      if (!rawHref || isExternalHref(rawHref)) return;
+      // Shared resources have no translated twin; keep their root URLs intact.
+      if (!rawHref || isExternalHref(rawHref) || link.hasAttribute("data-site-static")) return;
 
       if (isLocaleLink(link, rawHref)) {
         var targetLocale = locale === LOCALES.zh ? LOCALES.en : LOCALES.zh;

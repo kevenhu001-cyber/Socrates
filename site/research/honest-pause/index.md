@@ -9,7 +9,7 @@ last-updated: 2026-08-25
 
 > Why a moment of uncertainty can give an intelligent tutor better material to work with.
 
-*Tomás Soto · Practice lead · 8 min · Jul 11, 2026*
+*Tomás Soto · Practice lead · 5 min · Jul 11, 2026*
 
 ## The moment that shows up
 

@@ -9,7 +9,7 @@ last-updated: 2026-08-25
 
 > A small study on the parts of a conversation that people actually revisit a week later.
 
-*Rin Park · Practice co-author · 9 min · Apr 30, 2026*
+*Rin Park · Practice co-author · 6 min · Apr 30, 2026*
 
 ## How we ran the study
 

@@ -1,61 +1,62 @@
 ---
 title: Product — Socrates
-description: The learning loop in detail.
+description: Go beyond the answer with dialogue, recall, a knowledge map, and practice.
 canonical: https://topodrive.top/product
-last-updated: 2026-08-22
+last-updated: 2026-10-22
 ---
 
-# Product — Socrates
+# Go beyond the answer.
 
-> The learning loop in detail.
+Work through a difficult idea in your own words. Come back to it, connect it, and find out what you really understand.
 
-Socrates is built around a single loop: **ask, follow up, recall, map**. The product surfaces that loop in every session.
+[Try Socrates](https://app.topodrive.top)
 
-## The loop
+## An illustrative session
 
-1. **Question.** Begin with the honest edge of your understanding.
-2. **Dialogue.** The tutor follows the seam, not the surface.
-3. **Recall.** Returns when the idea is yours.
-4. **Connection.** Writes itself into your map.
+The web page shows a non-interactive illustration, not a live conversation:
 
-## By the numbers
+- **Learner:** Why isn't a positive test the whole story?
+- **Socrates:** Imagine 1,000 people. If 1% have the condition, how many people is that? And who else might test positive?
+- **Learner:** 10 people. But some of the other 990 could get a false positive, too.
+- **A better question:** How does the base rate change what a positive result means?
 
-Across the last 90 days of production sessions:
+## One question. Four ways to make it yours.
 
-| Measure | Value |
-| --- | --- |
-| Active learners | 1,240 |
-| Median session length | 26 min |
-| Returning learners at week 4 | 68% |
+### 01 / Dialogue
 
-## The four product blocks
+Stay with the part that doesn't make sense. Bring a question, a document, or an unfinished explanation. The tutor follows your reasoning and asks for the next step, rather than ending the conversation at the first answer.
 
-- **01 / Dialogue** — Stay with the part that does not make sense yet. The tutor follows your reasoning and offers a sharper question.
-- **02 / Recall** — Bring an idea back before it fades. Recall prompts revisit useful moments in your own words.
-- **03 / Knowledge map** — See the thread between the things you are learning. Questions form a growing map across sessions.
-- **04 / Practice** — Check for understanding without performing certainty. Low-stakes questions reveal what holds and what is missing.
+[Find your starting point](https://topodrive.top/guide)
 
-## Pieces of the loop
+### 02 / Recall
 
-- **Socratic dialogue** — streaming responses with LaTeX, code, and inline diagrams.
-- **Recall queue** — a small prompt queue that returns ideas on schedule.
-- **Knowledge map** — relationships between ideas, visible across sessions.
-- **Exam mode** — retrieval practice at the end of a study block.
-- **Mistake book** — collects the seams in your explanations.
-- **Multi-model** — pick a fast model for clarification, a deeper one for a long thread.
-- **BYOK** — bring your own API key, supported from the Free tier up.
+Bring an idea back, not the whole transcript. Practise retrieving the idea in your own words, instead of mistaking a familiar explanation for something you can use.
 
-## Tools
+[Read about retrieval](https://topodrive.top/research/memory-recall/)
 
-- **Web search** — Descartes and Euclid.
-- **Files** — upload a file, the tutor can read it.
-- **Connectors** — bring external context into a session.
-- **Scheduled tasks** — recurring recall prompts.
+### 03 / Knowledge map
 
-## Plans
+See where this idea connects. Keep relationships between ideas visible, so a new conversation can pick up a thread from an earlier one.
 
-See [pricing.md](https://topodrive.top/pricing.md) for the full plan comparison.
+In the illustration, Bayesian reasoning connects base rates, test accuracy, evidence, and decisions.
 
-## Try it
+[Explore connected learning](https://topodrive.top/research/maps-preserve-path/)
 
-[Open Socrates](https://app.topodrive.top) — the Free tier is permanently free.
+### 04 / Practice
+
+Find the gap before the exam does. Test an explanation with a short question. Use feedback and your mistake book to see which part holds up, and which part deserves another conversation.
+
+Feature availability, including exam mode, depends on your plan. [Compare practice features](https://topodrive.top/pricing).
+
+## Bring the work. Keep the thread.
+
+- **Start from a document:** Bring your source material into the conversation. [Documents](https://topodrive.top/documents).
+- **Choose your model:** Match the model and your plan to the thinking you want to do. [Plans](https://topodrive.top/pricing).
+- **Bring your own key:** Use a provider API key to manage your own model access. [Developers](https://topodrive.top/developers).
+- **Know where you stand:** Read how your information is handled. [Privacy](https://topodrive.top/privacy).
+
+## Bring the question you haven't quite solved.
+
+Start on Free. Choose more capacity when you need it.
+
+[Try Socrates](https://app.topodrive.top) · [View plans](https://topodrive.top/pricing)

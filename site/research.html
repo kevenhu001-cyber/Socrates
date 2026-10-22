@@ -5,229 +5,188 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#ffffff">
   <title>Research — Socrates</title>
-  <meta name="description" content="Essays and field notes from the team behind Socrates.">
+  <meta name="description" content="Essays and working notes on memory, explanation, practice, knowledge maps, and AI tutoring. Browse the Socrates research index.">
   <link rel="icon" href="/favicon.png">
   <link rel="canonical" href="https://topodrive.top/research">
+  <link rel="alternate" hreflang="en" href="https://topodrive.top/research">
+  <link rel="alternate" hreflang="zh-CN" href="https://topodrive.top/zh/research">
+  <link rel="alternate" hreflang="x-default" href="https://topodrive.top/research">
   <link rel="alternate" type="text/markdown" href="https://topodrive.top/research.md" title="Markdown twin of this page">
   <link rel="preload" href="/media/fonts/geist-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/media/fonts/geist-sans-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/site.css?cb=20261021b">
+  <link rel="stylesheet" href="/content.css?cb=20261022r3">
+  <link rel="stylesheet" href="/research.css?cb=20261022r3">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Socrates">
   <meta property="og:title" content="Research — Socrates">
-  <meta property="og:description" content="Essays and field notes from the team behind Socrates.">
+  <meta property="og:description" content="Working notes on what helps understanding hold.">
   <meta property="og:url" content="https://topodrive.top/research">
   <meta name="twitter:card" content="summary">
-  <script src="/locale.js?cb=20261021v6"></script>
-  <link rel="stylesheet" href="page-media.css?cb=20261021a">
+  <script src="/locale.js?cb=20261022r2"></script>
+  <link rel="stylesheet" href="/chrome.css?cb=20261022r2">
 </head>
-<body id="top" class="page-visual-page">
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-    <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M2.8 8h10.2M9 4.1 12.9 8 9 11.9"/></symbol>
-    <symbol id="i-up" viewBox="0 0 16 16"><path d="M8 13V3M3.9 7.1 8 3l4.1 4.1"/></symbol>
-    <symbol id="i-menu" viewBox="0 0 20 20"><path d="M3.5 6.5h13M3.5 10h13M3.5 13.5h13"/></symbol>
-    <symbol id="i-close" viewBox="0 0 20 20"><path d="m5 5 10 10M15 5 5 15"/></symbol>
-    <symbol id="i-check" viewBox="0 0 16 16"><path d="m3 8.2 3.1 3.1L13 4.6"/></symbol>
-  </svg>
-
-  <a class="skip" href="#main">Skip to content</a>
-  <header class="hdr">
-    <div class="shell hdr-in">
-      <a class="brand" href="/" aria-label="Socrates home">
-        <img src="/logo.png" width="20" height="20" alt="">
-        <span class="brand-word">Socrates</span>
-      </a>
-      <nav class="nav" aria-label="Primary">
-        <a href="/product">Product</a>
-        <a href="/research" aria-current="page">Research</a>
-        <a href="/principles">Principles</a>
-        <a href="/learn">Learn</a>
-        <a href="/developers">Developers</a>
-        <a href="/about">Company</a>
-      </nav>
-      <div class="hdr-act">
-        <a class="hdr-lang" href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
-        <a class="hdr-login" href="https://app.topodrive.top">Log in</a>
-        <a class="btn btn--sm" href="https://app.topodrive.top">Try Socrates</a>
-        <button class="menu-btn" type="button" data-menu-btn aria-expanded="false" aria-controls="mobile-menu" aria-label="Open menu">
-          <svg class="ico open" viewBox="0 0 20 20" aria-hidden="true"><use href="#i-menu"/></svg>
-          <svg class="ico close" viewBox="0 0 20 20" aria-hidden="true"><use href="#i-close"/></svg>
-        </button>
+<body class="content-page research-page">
+  <a class="content-skip" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="site-chrome-shell site-header-inner">
+      <a class="site-brand" href="/" aria-label="Socrates home"><img src="/logo.png" width="24" height="24" alt=""><span class="site-brand-label">Socrates</span></a>
+      <nav class="site-nav" aria-label="Primary navigation"><a href="/product">Product</a><a href="/research" aria-current="page">Research</a><a href="/principles">Principles</a><a href="/learn">Learn</a><a href="/developers">Developers</a><a href="/pricing">Pricing</a><a href="/about">Company</a></nav>
+      <div class="site-header-actions">
+        <a class="site-locale" href="/zh/research" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
+        <a class="site-login" href="https://app.topodrive.top">Log in</a>
+        <a class="site-try" href="https://app.topodrive.top">Try Socrates<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <button class="site-menu-toggle" type="button" data-site-menu-toggle aria-controls="site-mobile-menu" aria-expanded="false" aria-label="Open menu" data-open-label="Open menu" data-close-label="Close menu"><span></span><span></span></button>
       </div>
     </div>
-    <div class="mobile-menu" id="mobile-menu" data-mobile-menu>
-      <nav aria-label="Mobile">
-        <a href="/product">Product</a>
-        <a href="/research">Research</a>
-        <a href="/principles">Principles</a>
-        <a href="/learn">Learn</a>
-        <a href="/developers">Developers</a>
-        <a href="/about">Company</a>
-      </nav>
-      <div class="m-act">
-        <a class="btn" href="https://app.topodrive.top">Try Socrates</a>
-        <a class="btn btn--ghost" href="https://app.topodrive.top">Log in</a>
-      </div>
-      <div class="m-lang">
-        <a href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
-        <a href="/pricing">Pricing</a>
-        <a href="/contact">Contact</a>
-      </div>
+    <div class="site-mobile-menu" id="site-mobile-menu" hidden>
+      <nav aria-label="Mobile navigation"><a href="/product">Product</a><a href="/research" aria-current="page">Research</a><a href="/principles">Principles</a><a href="/learn">Learn</a><a href="/developers">Developers</a><a href="/pricing">Pricing</a><a href="/about">Company</a></nav>
+      <div class="site-mobile-utilities"><a href="/account">My account</a><a href="/contact">Contact</a><a class="site-locale" href="/zh/research" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a></div>
     </div>
   </header>
-
-  <main id="main">
-
-    <section class="page-head">
-      <div class="shell">
-        <p class="eyebrow">Research</p>
-        <h1 class="page-title">Essays and field notes from the team behind Socrates.</h1>
-        <p class="page-lede">Socrates Research is our ongoing notes on what we have learned about learning. The essays are short, written by the team, and updated when our view changes.</p>
-        <div class="page-meta">
-          <div><b>Six</b>Published notes</div>
-          <div><b>Five</b>Active research threads</div>
-          <div><b>1,847</b>Explanation episodes analysed</div>
-        </div>
-      </div>
-    </section>
-    <section class="page-media-band" aria-labelledby="page-media-title">
-      <div class="page-media-shell">
-        <h2 id="page-media-title" class="page-media-sr-only">Visual notes</h2>
-        <div class="page-media-grid" role="list">
-          <figure class="page-media-card is-feature" role="listitem">
-            <div class="page-media-frame"><img src="/media/socrates-editorial-research-vellum-v1.webp" alt="Fine graphite lines connect small studies on translucent vellum." width="1672" height="941" loading="lazy" decoding="async"></div>
-            <figcaption><span class="page-media-index">01</span><span>From observation to a map</span></figcaption>
-          </figure>
-          <figure class="page-media-card" role="listitem">
-            <div class="page-media-frame"><img src="/media/socrates-research-memory-route-v1.webp" alt="A small research map showing how a learner returns to an idea." width="1672" height="941" loading="lazy" decoding="async"></div>
-            <figcaption><span class="page-media-index">02</span><span>The route back</span></figcaption>
-          </figure>
-          <figure class="page-media-card" role="listitem">
-            <div class="page-media-frame"><img src="/media/socrates-research-explanation-evidence-v1.webp" alt="Two paper notes placed in relation as evidence for an explanation." width="1672" height="941" loading="lazy" decoding="async"></div>
-            <figcaption><span class="page-media-index">03</span><span>An explanation made visible</span></figcaption>
-          </figure>
-        </div>
-      </div>
+  <main id="main" class="content-shell">
+    <section class="content-hero" aria-labelledby="research-title">
+      <h1 class="content-title" id="research-title">Research</h1>
+      <div class="content-hero-copy"><p class="content-intro">What helps an idea stay useful after a conversation? Essays and working notes on memory, explanation, and learning with an AI tutor.</p><a class="content-link" href="#about-notes">About these notes <span aria-hidden="true">↓</span></a></div>
     </section>
 
-
-    <section class="sec sec--flush">
-      <div class="shell">
-        <div class="sec-head">
-          <p class="eyebrow sec-eyebrow">Latest essays</p>
-          <h2 class="sec-title">Notes on what makes understanding hold.</h2>
-          <a class="link link--muted sec-link" href="https://app.topodrive.top">Read in the app<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-        </div>
-        <div class="rows">
-          <a class="row" href="/research/memory-recall/">
-            <span class="row-meta">Memory<br>7 min read · Aug 12, 2026</span>
-            <span class="row-title">The route back to an idea</span><svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg>
-          </a>
-          <a class="row" href="/research/explanation-evidence/">
-            <span class="row-meta">Explanation<br>6 min read · Jul 29, 2026</span>
-            <span class="row-title">When a clear explanation becomes evidence</span><svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg>
-          </a>
-          <a class="row" href="/research/honest-pause/">
-            <span class="row-meta">Research<br>8 min read · Jul 11, 2026</span>
-            <span class="row-title">The value of an honest pause</span><svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg>
-          </a>
-          <a class="row" href="/research/maps-preserve-path/">
-            <span class="row-meta">Knowledge mapping<br>8 min read · Jun 24, 2026</span>
-            <span class="row-title">Maps that preserve the path</span><svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg>
-          </a>
-          <a class="row" href="/research/tutor-curiosity/">
-            <span class="row-meta">Research<br>10 min read · May 14, 2026</span>
-            <span class="row-title">When a tutor should say it is unsure</span><svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg>
-          </a>
-          <a class="row" href="/research/what-learners-keep/">
-            <span class="row-meta">Research<br>9 min read · Apr 30, 2026</span>
-            <span class="row-title">What learners keep after a session</span><svg class="ico row-arrow" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg>
-          </a>
-        </div>
+    <section class="research-directory" aria-labelledby="research-index-title">
+      <div class="research-toolbar"><h2 id="research-index-title">Latest notes</h2><p class="research-count" role="status" aria-live="polite" aria-atomic="true" data-research-count data-count-one="1 note" data-count-many="{count} notes">6 notes</p></div>
+      <div class="research-filters" role="group" aria-label="Filter notes by topic" data-research-filters hidden>
+        <button type="button" data-research-filter="all" aria-controls="research-notes" aria-pressed="true">All</button><button type="button" data-research-filter="memory" aria-controls="research-notes" aria-pressed="false">Memory</button><button type="button" data-research-filter="explanation" aria-controls="research-notes" aria-pressed="false">Explanation</button><button type="button" data-research-filter="practice" aria-controls="research-notes" aria-pressed="false">Practice</button><button type="button" data-research-filter="mapping" aria-controls="research-notes" aria-pressed="false">Mapping</button><button type="button" data-research-filter="tutoring" aria-controls="research-notes" aria-pressed="false">Tutoring</button>
       </div>
+      <ul class="research-list" id="research-notes" aria-labelledby="research-index-title">
+        <li class="research-note" id="memory" data-research-topic="memory"><a href="/research/memory-recall/">
+          <span class="research-note-media"><img src="/media/socrates-research-memory-route-v1.webp" width="1672" height="941" alt="" decoding="async"></span>
+          <div class="research-note-copy"><p class="research-note-meta"><span>Memory</span><time datetime="2026-08-12">Aug 12, 2026</time><span data-reading-minutes="7">7 min read</span></p><h3>The route back to an idea</h3></div>
+          <p class="research-note-summary">Why changing the shape of a recall prompt may help learners reconstruct an idea, rather than simply recognise an answer.</p><span class="research-note-arrow" aria-hidden="true">→</span>
+        </a></li>
+        <li class="research-note" id="explanation" data-research-topic="explanation"><a href="/research/explanation-evidence/">
+          <span class="research-note-media"><img src="/media/socrates-research-explanation-evidence-v1.webp" width="1672" height="941" alt="" loading="lazy" decoding="async"></span>
+          <div class="research-note-copy"><p class="research-note-meta"><span>Explanation</span><time datetime="2026-07-29">Jul 29, 2026</time><span data-reading-minutes="6">6 min read</span></p><h3>When a clear explanation becomes evidence</h3></div>
+          <p class="research-note-summary">How explaining an idea in your own words can expose the gaps that a fluent answer leaves hidden.</p><span class="research-note-arrow" aria-hidden="true">→</span>
+        </a></li>
+        <li class="research-note" id="practice" data-research-topic="practice"><a href="/research/honest-pause/">
+          <span class="research-note-media"><img src="/media/socrates-research-honest-pause-v1.webp" width="1672" height="941" alt="" loading="lazy" decoding="async"></span>
+          <div class="research-note-copy"><p class="research-note-meta"><span>Practice</span><time datetime="2026-07-11">Jul 11, 2026</time><span data-reading-minutes="5">5 min read</span></p><h3>The value of an honest pause</h3></div>
+          <p class="research-note-summary">How making uncertainty explicit changes the next question a tutor can ask.</p><span class="research-note-arrow" aria-hidden="true">→</span>
+        </a></li>
+        <li class="research-note" id="mapping" data-research-topic="mapping"><a href="/research/maps-preserve-path/">
+          <span class="research-note-media"><img src="/media/socrates-research-maps-path-v1.webp" width="1672" height="941" alt="" loading="lazy" decoding="async"></span>
+          <div class="research-note-copy"><p class="research-note-meta"><span>Knowledge mapping</span><time datetime="2026-06-24">Jun 24, 2026</time><span data-reading-minutes="8">8 min read</span></p><h3>Maps that preserve the path</h3></div>
+          <p class="research-note-summary">What a knowledge map needs to keep: not just concepts, but the path that connected them.</p><span class="research-note-arrow" aria-hidden="true">→</span>
+        </a></li>
+        <li class="research-note" data-research-topic="practice"><a href="/research/what-learners-keep/">
+          <span class="research-note-media"><img src="/media/socrates-research-what-learners-keep-v1.webp" width="1672" height="941" alt="" loading="lazy" decoding="async"></span>
+          <div class="research-note-copy"><p class="research-note-meta"><span>Practice</span><time datetime="2026-04-30">Apr 30, 2026</time><span data-reading-minutes="6">6 min read</span></p><h3>What learners keep after a session</h3></div>
+          <p class="research-note-summary">What people choose to revisit after a conversation, and what that suggests about saving useful moments.</p><span class="research-note-arrow" aria-hidden="true">→</span>
+        </a></li>
+        <li class="research-note" id="tutoring" data-research-topic="tutoring"><a href="/research/tutor-curiosity/">
+          <span class="research-note-media"><img src="/media/socrates-research-tutor-boundaries-v1.webp" width="1672" height="941" alt="" loading="lazy" decoding="async"></span>
+          <div class="research-note-copy"><p class="research-note-meta"><span>Tutoring</span><time datetime="2026-02-18">Feb 18, 2026</time><span data-reading-minutes="7">7 min read</span></p><h3>When a tutor should say it is unsure</h3></div>
+          <p class="research-note-summary">When a model should acknowledge uncertainty instead of offering a confident guess.</p><span class="research-note-arrow" aria-hidden="true">→</span>
+        </a></li>
+      </ul>
     </section>
 
-    <section class="sec sec--soft">
-      <div class="shell split">
-        <div class="split-main">
-          <p class="eyebrow">Why we publish this</p>
-          <h2 class="h2" style="margin-top:18px">Make the decisions legible.</h2>
-          <div class="prose" style="margin-top:24px">
-            <p>We write these notes to make our decisions legible. If the tutor behaves a particular way during a session, there is usually a note here that explains why.</p>
-            <p>They are working documents, not marketing. When a result does not replicate, or our view changes, the note changes with it.</p>
-          </div>
-        </div>
-        <aside class="split-side">
-          <div class="card" style="padding:24px">
-            <p class="eyebrow">Push back</p>
-            <p class="body" style="margin-top:14px">If a note raises an idea you want to push further — partnership, replication, or a contradiction — write to us.</p>
-            <a class="link" href="mailto:help@addtech.site" style="margin-top:18px">help@addtech.site<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-          </div>
-        </aside>
-      </div>
+    <section class="content-section research-about" id="about-notes" aria-labelledby="about-notes-title">
+      <div><p class="content-eyebrow">Why we publish</p><h2 class="content-heading" id="about-notes-title">Make our choices open to question.</h2></div>
+      <div class="content-prose"><p>These are team-authored essays and working notes. They explain the questions behind the product, rather than ask you to take its behaviour on trust.</p><p>Read each note for its methods, limitations, and open questions. A finding in one setting is not a promise about every learner. We welcome alternative explanations and questions we can test.</p><a class="content-link" href="/contact">Discuss a note with us <span aria-hidden="true">→</span></a></div>
     </section>
-
-    <section class="cta-slim">
-      <div class="shell">
-        <h2 class="h2">Read the notes, then push back.</h2>
-        <p class="body">The best research conversations start with a disagreement we can test.</p>
-        <a class="btn btn--ghost" href="/contact">Contact the team<svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-      </div>
-    </section>
-
   </main>
-
-  <footer class="ftr">
-    <div class="shell">
-      <div class="ftr-grid">
-        <div class="ftr-brand">
-          <a class="brand" href="/" aria-label="Socrates home">
-            <img src="/logo.png" width="20" height="20" alt="">
-            <span class="brand-word">Socrates</span>
-          </a>
-          <p>An AI tutor for people who want to understand. Built around Socratic dialogue, durable recall, and a knowledge map.</p>
-        </div>
-        <nav class="ftr-col" aria-label="Product">
-          <h2>Product</h2>
-          <a href="/product">Learning map</a>
-          <a href="/pricing">Pricing</a>
-          <a href="/developers">Developers</a>
-          <a href="https://app.topodrive.top">Open Socrates</a>
-        </nav>
-        <nav class="ftr-col" aria-label="Learn">
-          <h2>Learn</h2>
-          <a href="/research">Research</a>
-          <a href="/learn">Learning guide</a>
-          <a href="/documents">Documents</a>
-          <a href="/guide">Guide</a>
-        </nav>
-        <nav class="ftr-col" aria-label="Company">
-          <h2>Company</h2>
-          <a href="/about">About</a>
-          <a href="/contact">Contact</a>
-          <a href="/announcements">Announcements</a>
-          <a href="https://status.topodrive.top">Status</a>
-        </nav>
-        <nav class="ftr-col" aria-label="Resources">
-          <h2>Resources</h2>
-          <a href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
-          <a href="/privacy">Privacy</a>
-          <a href="/terms">Terms</a>
-          <a href="/openapi.json">OpenAPI</a>
-        </nav>
+  <footer class="site-footer">
+    <div class="site-chrome-shell">
+      <div class="site-footer-grid">
+        <details class="site-footer-col" open>
+          <summary class="site-footer-summary">Learn &amp; practice</summary>
+          <div class="site-footer-group">
+            <h2>Learn</h2>
+            <a href="/guide">Guide</a>
+            <a href="/documents">Documents</a>
+            <a href="/principles">Principles</a>
+            <a href="/announcements">Announcements</a>
+          </div>
+          <div class="site-footer-group">
+            <h2>Practice</h2>
+            <a href="/product#recall">Recall</a>
+            <a href="/product#exam">Exam mode</a>
+            <a href="/product#mistake-book">Mistake book</a>
+          </div>
+        </details>
+        <details class="site-footer-col" open>
+          <summary class="site-footer-summary">Research</summary>
+          <div class="site-footer-group">
+            <h2>Research</h2>
+            <a href="/research">Research index</a>
+            <a href="/research/memory-recall/">Memory &amp; recall</a>
+            <a href="/research/explanation-evidence/">Explanation &amp; evidence</a>
+            <a href="/research/maps-preserve-path/">Maps preserve path</a>
+          </div>
+          <div class="site-footer-group">
+            <h2>Open questions</h2>
+            <a href="/research/tutor-curiosity/">Tutor curiosity</a>
+            <a href="/research/honest-pause/">The honest pause</a>
+            <a href="/research/what-learners-keep/">What learners keep</a>
+          </div>
+        </details>
+        <details class="site-footer-col" open>
+          <summary class="site-footer-summary">Product &amp; resources</summary>
+          <div class="site-footer-group">
+            <h2>Product</h2>
+            <a href="/product">Socrates</a>
+            <a href="/pricing">Pricing</a>
+            <a href="/developers">Developers</a>
+            <a href="/api-keys">API keys</a>
+          </div>
+          <div class="site-footer-group">
+            <h2>Resources</h2>
+            <a href="/openapi.json" data-site-static>OpenAPI</a>
+            <a href="https://status.topodrive.top">Status</a>
+            <a href="/llms.txt" data-site-static>llms.txt</a>
+            <a href="https://github.com/topodrive">GitHub</a>
+          </div>
+        </details>
+        <details class="site-footer-col" open>
+          <summary class="site-footer-summary">Company &amp; support</summary>
+          <div class="site-footer-group">
+            <h2>Company</h2>
+            <a href="/about">About</a>
+            <a href="/contact">Contact</a>
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Terms</a>
+          </div>
+          <div class="site-footer-group">
+            <h2>Support</h2>
+            <a href="/contact">Help center</a>
+            <a href="/account">Account</a>
+            <a href="/checkout">Billing</a>
+          </div>
+        </details>
+        <details class="site-footer-col" open>
+          <summary class="site-footer-summary">More</summary>
+          <div class="site-footer-group">
+            <h2>More</h2>
+            <a href="/announcements">Stories</a>
+            <a href="/research">Field notes</a>
+            <a href="/guide">Academy</a>
+            <a href="/principles">Our principles</a>
+          </div>
+          <div class="site-footer-group">
+            <h2>Get started</h2>
+            <a href="https://app.topodrive.top">Try Socrates</a>
+            <a href="https://app.topodrive.top">Log in</a>
+            <a href="/pricing">Plans</a>
+          </div>
+        </details>
       </div>
-      <div class="ftr-bot">
-        <span>© 2026 Socrates · Built for people who want to understand.</span>
-        <div class="ftr-social" aria-label="Social links">
-          <a href="https://x.com/topodrive" target="_blank" rel="me noopener">X</a>
-          <a href="https://github.com/topodrive" target="_blank" rel="me noopener">GitHub</a>
-          <a href="https://www.youtube.com/@topodrive" target="_blank" rel="me noopener">YouTube</a>
-          <a href="https://www.linkedin.com/company/topodrive" target="_blank" rel="me noopener">LinkedIn</a>
-        </div>
+      <div class="site-footer-bottom">
+        <a class="site-brand" href="/" aria-label="Socrates home"><img src="/logo.png" width="24" height="24" alt=""><span class="site-brand-label">Socrates</span></a>
+        <nav class="site-footer-social" aria-label="Social links"><a href="https://x.com/topodrive" target="_blank" rel="me noopener">X</a><a href="https://github.com/topodrive" target="_blank" rel="me noopener">GitHub</a><a href="https://www.youtube.com/@topodrive" target="_blank" rel="me noopener">YouTube</a><a href="https://www.linkedin.com/company/topodrive" target="_blank" rel="me noopener">LinkedIn</a></nav>
+        <p class="site-footer-legal">© 2026 Socrates · Built for people who want to understand.</p>
+        <a class="site-locale" href="/zh/research" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
       </div>
     </div>
   </footer>
-
-  <script src="/site.js?cb=20261021b"></script>
+  <script src="/research-index.js?cb=20261022r3"></script>
+  <script src="/chrome.js?cb=20261022r2"></script>
 </body>
 </html>

@@ -9,7 +9,7 @@ last-updated: 2026-08-25
 
 > On the conditions under which a model admitting uncertainty is more useful than a fluent guess.
 
-*Jules Laurent · Tutoring lead · 10 min · May 14, 2026*
+*Jules Laurent · Tutoring lead · 7 min · Feb 18, 2026*
 
 ## The problem with a smooth answer
 

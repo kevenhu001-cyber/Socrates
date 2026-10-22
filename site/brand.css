@@ -6381,3 +6381,36 @@ body.ed-site .ed-article hr:has(+ p.ed-method-note) { display: none; }
 body.ed-site .ed-timeline-step { display: none !important; }
 body.ed-site .ed-timeline-row { grid-template-columns: 1fr; }
 /* ── END Research cleanup pass 2 ── */
+
+/* ── Z24. Primary nav density ───────────────────────────────────────────
+   The primary nav now carries all seven destinations in one order
+   (Product, Research, Principles, Learn, Developers, Pricing, Company)
+   on every page, including this editorial/app shell. Between ~980px and
+   1200px the full-size nav no longer fits beside the brand and the
+   actions, so tighten the type and the gap before the mobile breakpoint
+   takes over. Above 1200px the generous spacing is restored. */
+@media (max-width: 1200px) {
+  body.ed-site .ed-header-inner {
+    grid-template-columns: minmax(118px, 1fr) auto auto;
+    gap: 16px;
+  }
+
+  body.ed-site .ed-nav-links { gap: 14px; }
+  body.ed-site .ed-nav-links a { font-size: 13px; }
+
+  /* The language globe stays; the word does not fit. The button keeps its
+     aria-label, so the control stays labelled. */
+  body.ed-site .ed-lang-label { display: none; }
+  body.ed-site .ed-lang-toggle { padding-inline: 6px; }
+}
+
+/* ── Z25. Narrow-viewport fit ───────────────────────────────────────────
+   The result rows used fixed minimum column widths (120px + 140px), which
+   together are wider than the content box on a 360px phone. The page then
+   scrolled sideways. Let the tracks shrink instead. */
+@media (max-width: 620px) {
+  body.ed-site .ed-result-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) 52px;
+    gap: 10px;
+  }
+}

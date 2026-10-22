@@ -19,7 +19,10 @@
     "lint:server-boundaries": "node server/scripts/check-service-boundaries.mjs",
     "openapi:generate": "node scripts/generate-site-openapi.mjs",
     "openapi:check": "node scripts/generate-site-openapi.mjs --check",
-    "test:openapi": "node --test test/site-openapi.test.mjs"
+    "test:openapi": "node --test test/site-openapi.test.mjs",
+    "site:sync": "node scripts/sync-site-chrome.mjs",
+    "test:site": "node scripts/sync-site-chrome.mjs --check && node --test test/site-layout.test.mjs test/site-product.test.mjs test/site-content.test.mjs",
+    "test:site:content": "node --test test/site-content.test.mjs"
   },
   "dependencies": {
     "@fontsource/plus-jakarta-sans": "^5.3.0",

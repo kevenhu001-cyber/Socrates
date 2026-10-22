@@ -9,7 +9,7 @@ last-updated: 2026-08-25
 
 > Three years of A/B data on "explain this in your own words" prompts.
 
-*Mira Mendel · Explanation lead · 9 min · Jul 29, 2026*
+*Mira Mendel · Explanation lead · 6 min · Jul 29, 2026*
 
 ## The "explain it back" prompt, three years on
 

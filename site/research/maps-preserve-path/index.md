@@ -9,7 +9,7 @@ last-updated: 2026-08-25
 
 > A field note on showing relationships without turning a living subject into a static diagram.
 
-*Aiko Yamada · Knowledge mapping lead · 11 min · Jun 24, 2026*
+*Aiko Yamada · Knowledge mapping lead · 8 min · Jun 24, 2026*
 
 ## The map that did not survive
 

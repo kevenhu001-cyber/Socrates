@@ -1,33 +1,58 @@
 ---
 title: Research — Socrates
-description: Essays and field notes from the team behind Socrates.
+description: Essays and working notes on memory, explanation, practice, knowledge maps, and AI tutoring.
 canonical: https://topodrive.top/research
-last-updated: 2026-08-22
+last-updated: 2026-10-22
 ---
 
-# Research — Socrates
+# Research
 
-> Essays and field notes from the team behind Socrates.
+What helps an idea stay useful after a conversation? Essays and working notes on memory, explanation, and learning with an AI tutor.
 
-Socrates Research is our ongoing notes on what we have learned about learning. The essays are short, written by the team, and updated when our view changes.
+## Latest notes
 
-## By the numbers
+Six notes, newest first. The web index also offers optional topic filters; every article is available without JavaScript.
 
-Six published notes · five active research threads · 1,847 explanation episodes analysed.
+### [The route back to an idea](https://topodrive.top/research/memory-recall/)
 
-## Latest essays
+Memory · Aug 12, 2026 · 7 min read
 
-- [The route back to an idea](research/memory-recall/) — How a small change in prompt can surface a concept more reliably than a repeated answer.
-- [When a clear explanation becomes evidence](research/explanation-evidence/) — Three years of A/B data on "explain this in your own words" prompts.
-- [The value of an honest pause](research/honest-pause/) — Why a moment of uncertainty gives a tutor better material than fluent confidence.
-- [Maps that preserve the path](research/maps-preserve-path/) — A field note on showing relationships without turning a living subject into a static diagram.
-- [When a tutor should say it is unsure](research/tutor-curiosity/) — On the conditions under which a model admitting uncertainty is more useful than a fluent guess.
-- [What learners keep after a session](research/what-learners-keep/) — A small study on the parts of a conversation that people actually revisit a week later.
+Why changing the shape of a recall prompt may help learners reconstruct an idea, rather than simply recognise an answer.
 
-## Why we publish this
+### [When a clear explanation becomes evidence](https://topodrive.top/research/explanation-evidence/)
 
-We write these notes to make our decisions legible. If the tutor behaves a particular way during a session, there is usually a note here that explains why.
+Explanation · Jul 29, 2026 · 6 min read
 
-## Contact
+How explaining an idea in your own words can expose the gaps that a fluent answer leaves hidden.
 
-If a research note raises an idea you want to push further — partnership, replication, or a contradiction — write to [help@addtech.site](mailto:help@addtech.site).
+### [The value of an honest pause](https://topodrive.top/research/honest-pause/)
+
+Practice · Jul 11, 2026 · 5 min read
+
+How making uncertainty explicit changes the next question a tutor can ask.
+
+### [Maps that preserve the path](https://topodrive.top/research/maps-preserve-path/)
+
+Knowledge mapping · Jun 24, 2026 · 8 min read
+
+What a knowledge map needs to keep: not just concepts, but the path that connected them.
+
+### [What learners keep after a session](https://topodrive.top/research/what-learners-keep/)
+
+Practice · Apr 30, 2026 · 6 min read
+
+What people choose to revisit after a conversation, and what that suggests about saving useful moments.
+
+### [When a tutor should say it is unsure](https://topodrive.top/research/tutor-curiosity/)
+
+Tutoring · Feb 18, 2026 · 7 min read
+
+When a model should acknowledge uncertainty instead of offering a confident guess.
+
+## Make our choices open to question
+
+These are team-authored essays and working notes. They explain the questions behind the product, rather than ask you to take its behaviour on trust.
+
+Read each note for its methods, limitations, and open questions. A finding in one setting is not a promise about every learner. We welcome alternative explanations and questions we can test.
+
+[Discuss a note with us](https://topodrive.top/contact).

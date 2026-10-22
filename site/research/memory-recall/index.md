@@ -9,7 +9,7 @@ last-updated: 2026-08-25
 
 > A study of why a changed prompt can surface a concept more reliably than a repeated answer.
 
-*Sora Reyes · Memory co-author · 10 min · Aug 12, 2026*
+*Sora Reyes · Memory co-author · 7 min · Aug 12, 2026*
 
 ## The question we kept seeing
 

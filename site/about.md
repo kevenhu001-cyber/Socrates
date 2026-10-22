@@ -1,52 +1,46 @@
 ---
-title: About — Socrates
-description: Build for people who want to think.
+title: Company — Socrates
+description: Why we build Socrates, how we work, and how to reach the team.
 canonical: https://topodrive.top/about
-last-updated: 2026-08-22
+last-updated: 2026-10-22
 ---
 
-# About — Socrates
+# A place for independent thinking.
 
-> Build for people who want to think.
+We build tools that help people question an explanation, try an idea, and decide what they understand for themselves.
 
-We are making a quieter kind of AI companion: one that rewards curiosity, preserves context, and helps people form their own view.
+The web page's editorial illustration depicts a learning conversation; it is not a photograph of the Socrates team.
 
-## Why Socrates
+## Why we build
 
-Understanding is more valuable than an answer on demand. AI can make it easy to move on too soon. We believe its better role is to create room for reflection, practice, and stronger questions.
+An answer is a starting point. Understanding takes more.
 
-[Talk with the team](https://topodrive.top/contact)
+AI makes it easy to get a fluent answer and move on. But recognising an explanation is not the same as being able to use it, question it, or explain it to someone else.
 
-## Our commitments
+Socrates starts from a different question: what would a tool look like if it made more room for the learner's own thinking? That question shapes the dialogue, the practice, and the connections we choose to keep.
 
-A considered tool for a considered life. The measure of a learning product is not how long it keeps you scrolling. It is whether you leave with more agency over what you know and how you know it.
+## Who is behind it
 
-1. **Questions over performance** — We design for intellectual honesty: it should be safe to begin with an incomplete thought.
-2. **Context over novelty** — A useful tutor remembers the path into a question instead of treating every prompt as an isolated event.
-3. **Practice over consumption** — Understanding grows through retrieval, explanation, and revision.
-4. **Clarity over spectacle** — We make deliberate choices about tone, pacing, and interface so the ideas have room to breathe.
-5. **Care with confidence** — When the tutor is uncertain, it says so plainly.
-6. **Your thinking, your data** — Conversations are private. We do not train on them. Export or delete every session from the account page.
+A small team. Get to know our work.
 
-## How it began
+We work across AI-assisted learning, product design, and software engineering. Our common task is to make difficult ideas easier to work with, without doing the learner's thinking for them.
 
-Socrates started as a small notebook experiment between two people who taught mathematics and computer science at different universities. We wanted a tutor that could stay with a student for the difficult second week — the period when the early enthusiasm fades and the real work begins.
-
-- **2024** — First prototype. An internal tool for our own students.
-- **Early 2025** — Quiet opening. An invite-only beta with a few hundred learners and teachers.
-- **Late 2025** — Public launch. Socrates opened as a free and paid tutor for everyone.
-- **2026** — Studio & recall. The learning paths and recall queue joined the tutor.
-
-## Who builds it
-
-A small team that has taught for a living. The team behind Socrates has taught at universities, written textbooks, graded a lot of late homework, and watched many students get stuck in the same place.
+The product, our research notes, and our published updates are the most direct way to get to know our work. If you want to discuss a learning problem or a collaboration, write to [help@addtech.site](mailto:help@addtech.site).
 
 ## How we work
 
-Quiet shipping, weekly notes. We release small, careful improvements and write a short announcement for each one. Read every change in the [newsroom](https://topodrive.top/announcements).
+1. **Start with where someone gets stuck.** An unfinished explanation tells us more than a polished answer. We design around the next useful question, not the longest response.
+2. **Build, test, and revisit.** We make focused changes and record what changed. The work is not finished just because a feature has shipped. [Read the updates](https://topodrive.top/announcements).
+3. **Explain the choices, including their limits.** Our notes make room for methods, uncertainty, and questions that remain open. Our principles and privacy information should be easy to find, too. [Principles](https://topodrive.top/principles) · [Privacy](https://topodrive.top/privacy).
 
-## Where we are headed
+## Get to know the work
 
-A tutor that grows with your map. The next year is about knowledge maps that age well, study plans that respect your week, and exam mode that takes the question seriously.
+- [Product](https://topodrive.top/product): How dialogue, recall, a knowledge map, and practice fit together.
+- [Research](https://topodrive.top/research): Essays and working notes on what helps understanding hold.
+- [Updates](https://topodrive.top/announcements): Product announcements and notes from the team.
 
-[Write to us](https://topodrive.top/contact)
+## Bring a question about learning
+
+A product question, a research disagreement, or an idea for a collaboration — tell us what you are working on.
+
+[Contact the team](https://topodrive.top/contact) · [help@addtech.site](mailto:help@addtech.site)
