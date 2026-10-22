@@ -331,6 +331,14 @@ export function initChatComposerReserve(options){
   var lastPinned=false;
   var composerFollowFrame=0;
   var composerFollowUntil=0;
+  /* The transcript viewport height as the ResizeObserver last saw it. Only
+     this observer writes the value. The shared metrics snapshot (lastMetrics)
+     is refreshed by the content-follow path and by the scroll listener, so by
+     the time a composer resize is delivered it can already describe the
+     shrunken viewport — and the pin recovery below would read "the reader
+     sits 188px above the bottom" and refuse to re-pin a reader who never left
+     the bottom. */
+  var observedViewportHeight=null;
 
   function readMetrics(){
     if(!list)return null;
@@ -442,6 +450,11 @@ export function initChatComposerReserve(options){
          rAF. A ResizeObserver delivery from the same flex reflow must not
          write scrollTop a second time, or the composer appears to wobble even
          when its inset is monotonic. */
+      var current=readMetrics();
+      /* The viewport height from BEFORE this resize. Read it before the new
+         height is recorded, and keep it in a slot no other path refreshes. */
+      var heightBeforeResize=observedViewportHeight;
+      if(current)observedViewportHeight=current.clientHeight;
       if(keyboardTransitionActive())return;
       if(!list||userScrolledAway())return;
       /* A programmatic scrollTop write dispatches its scroll event after the
@@ -450,10 +463,22 @@ export function initChatComposerReserve(options){
          current top against the previous viewport metrics to recover the
          user's pre-resize bottom intent without adding another scroll owner. */
       var previous=lastMetrics;
-      var current=readMetrics();
       var pinnedBeforeResize=lastPinned;
-      if(!pinnedBeforeResize&&previous&&current){
-        pinnedBeforeResize=previous.scrollHeight-current.scrollTop-previous.clientHeight<=pinSlack;
+      if(!pinnedBeforeResize&&current){
+        /* "Was the reader at the bottom before the viewport changed?" The
+           content height has to be the CURRENT one: rows revealed by
+           content-visibility settle the real scrollHeight after the last
+           metrics sample, and a stale height turns the distance into a
+           number the reader never had — 154px instead of 0 for a reader who
+           was pinned. That reads as "the reader left the bottom" and strands
+           the transcript above the newest message. The viewport height has to
+           be the PRE-resize one, because the resize is what moved the reader
+           away from the bottom in the first place. */
+        var heightBefore=heightBeforeResize!=null?heightBeforeResize:
+          (previous?previous.clientHeight:null);
+        if(heightBefore!=null){
+          pinnedBeforeResize=current.scrollHeight-current.scrollTop-heightBefore<=pinSlack;
+        }
       }
       /* Only a reader who was following the bottom gets re-pinned. An
          external --keyboard-inset write (a native bridge that changes the

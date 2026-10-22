@@ -195,6 +195,68 @@ test('a viewport shrink overlapping a genuine upward scroll never restores the b
   }
 });
 
+test('a composer shrink re-pins a reader whose transcript height settled after the last sample', async () => {
+  const h = makeHarness();
+  try {
+    let top = 0;
+    Object.defineProperty(h.list, 'scrollTop', {
+      get: () => top,
+      set: value => { top = Math.max(0, Math.min(value, h.list.scrollHeight - h.list.clientHeight)); },
+    });
+    const { initChatComposerReserve } = await import('../src/ui/scroll.js');
+    const dispose = initChatComposerReserve({ list: h.list });
+    try {
+      /* The transcript is sampled while the reader still sits at the top. */
+      h.fireScroll();
+      /* content-visibility reveals the real row heights afterwards: the
+         transcript ends up shorter than the sample, and no observer fires to
+         refresh it. */
+      h.list.scrollHeight = 846;
+      /* The reader jumps to the bottom; that scroll event is still queued. */
+      top = 846 - 600;
+      /* The composer grows before the queued scroll event is delivered. */
+      h.list.clientHeight -= 188;
+      h.fireScroll();
+      h.fireComposerResize();
+      assert.equal(
+        h.list.scrollHeight - h.list.scrollTop - h.list.clientHeight,
+        0,
+        'a reader who was at the bottom stays at the bottom',
+      );
+    } finally { dispose(); }
+  } finally { h.restore(); }
+});
+
+test('a composer shrink re-pins a reader even when a later sample replaced the pre-shrink viewport height', async () => {
+  const h = makeHarness();
+  try {
+    let top = 0;
+    Object.defineProperty(h.list, 'scrollTop', {
+      get: () => top,
+      set: value => { top = Math.max(0, Math.min(value, h.list.scrollHeight - h.list.clientHeight)); },
+    });
+    const { initChatComposerReserve } = await import('../src/ui/scroll.js');
+    const dispose = initChatComposerReserve({ list: h.list });
+    try {
+      /* The observer's first delivery records the viewport height it saw
+         while the transcript was laid out. */
+      h.fireComposerResize();
+      h.fireScroll();
+      top = h.list.scrollHeight - h.list.clientHeight;
+      h.list.clientHeight -= 188;
+      /* A content follow samples the transcript AFTER the shrink, so the
+         shared metrics no longer carry the pre-shrink viewport height. */
+      h.fireGrowth({ grow: false });
+      h.fireComposerResize();
+      assert.equal(
+        h.list.scrollHeight - h.list.scrollTop - h.list.clientHeight,
+        0,
+        'the pre-shrink viewport height survives the later sample',
+      );
+    } finally { dispose(); }
+  } finally { h.restore(); }
+});
+
 test('a downward scroll that was not pinned before viewport shrink keeps its reading position', async () => {
   const h = makeHarness();
   try {
