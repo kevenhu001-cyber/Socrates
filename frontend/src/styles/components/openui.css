@@ -6,7 +6,7 @@
   --iui-canvas: var(--ui-bg-surface);
   --iui-surface: var(--ui-bg-raised);
   --iui-surface-strong: var(--ui-bg-control);
-  --iui-border: var(--ui-border-subtle);
+  --iui-border: var(--ui-border-default);
   --iui-info: var(--ui-info);
   --iui-success: var(--ui-success);
   --iui-warning: var(--ui-warning);
@@ -38,10 +38,10 @@
 .intui-openui :is(.iui-col, .iui-box, .iui-form, .iui-card) { display: flex; flex-direction: column; min-width: 0; }
 .intui-openui .iui-row { display: flex; flex-direction: row; align-items: center; gap: var(--ui-space-sm); min-width: 0; }
 .intui-openui .iui-row > * { min-width: 0; }
-.intui-openui .iui-flow { gap: var(--ui-space-md); }
+.intui-openui .iui-flow { gap: var(--ui-space-lg); }
 .intui-openui .iui-grid { display: grid; min-width: 0; }
 .intui-openui .iui-spacer { flex: 1; }
-.intui-openui .iui-card { padding: var(--ui-space-lg); border: 1px solid var(--iui-border); border-radius: var(--ui-radius-lg); background: var(--iui-canvas); }
+.intui-openui .iui-card { padding: var(--ui-space-xl); border: 1px solid var(--iui-border); border-radius: var(--ui-radius-xl); background: var(--iui-canvas); }
 .intui-openui .iui-card-soft { background: var(--iui-surface); }
 .intui-openui .iui-form { gap: var(--ui-space-md); }
 .intui-openui .iui-divider { width: 100%; border: 0; border-top: 1px solid var(--iui-border); }
@@ -60,33 +60,32 @@
 .intui-openui .iui-weight-semibold { font-weight: var(--ui-font-weight-semibold); }
 .intui-openui .iui-badge { align-self: start; padding: var(--ui-space-xxs) var(--ui-space-sm); border-radius: var(--ui-radius-pill); background: var(--iui-surface); font-size: var(--ui-font-size-xs); }
 .intui-openui .iui-link { color: var(--ui-link); text-underline-offset: .2em; }
-.intui-openui :is(.iui-button, .iui-input, .iui-segmented button, .iui-choice) { min-height: var(--ui-control-md); border: 1px solid var(--iui-border); border-radius: var(--ui-radius-control); padding: var(--ui-space-xs) var(--ui-space-sm); background: var(--iui-canvas); color: var(--iui-ink); font: inherit; }
-.intui-openui .iui-button { display: inline-flex; align-items: center; justify-content: center; gap: var(--ui-space-xs); cursor: pointer; }
-.intui-openui .iui-button-solid { background: var(--ui-accent-strong); color: var(--ui-bg-surface); }
+.intui-openui :where(.iui-button, .iui-input, .iui-segmented button, .iui-choice) { min-height: var(--ui-control-md); border: 1px solid var(--ui-border-strong); border-radius: var(--ui-radius-row); padding: var(--ui-space-xs) var(--ui-space-sm); background: var(--iui-canvas); color: var(--iui-ink); font: inherit; }
+.intui-openui .iui-button { font-weight: var(--ui-font-weight-medium); transition: background-color var(--ui-duration-hover) ease, border-color var(--ui-duration-hover) ease; display: inline-flex; align-items: center; justify-content: center; gap: var(--ui-space-xs); cursor: pointer; }
+.intui-openui .iui-button-solid { background: var(--ui-accent-strong); color: var(--ui-on-accent); }
 .intui-openui .iui-button-soft { background: var(--iui-surface); }
 .intui-openui .iui-button-ghost { background: transparent; border-color: transparent; }
 .intui-openui .iui-button-sm { min-height: var(--ui-control-sm); }
 .intui-openui .iui-button-lg { min-height: var(--ui-control-touch); }
 .intui-openui .iui-block { width: 100%; }
 .intui-openui button:disabled { opacity: .5; cursor: default; }
-.intui-openui :is(button, input, select, textarea):focus-visible { outline: 2px solid var(--ui-info); outline-offset: 2px; }
+.intui-openui :is(button, input, select, textarea):focus-visible { outline: 2px solid var(--ui-text-tertiary); outline-offset: 2px; }
 .intui-openui .iui-field { display: flex; flex-direction: column; gap: var(--ui-space-xs); min-width: 0; }
 .intui-openui .iui-input { width: 100%; min-width: 0; }
 .intui-openui .iui-textarea { resize: vertical; }
 .intui-openui :is(.iui-check, .iui-slider-head, .iui-timer-actions) { display: flex; align-items: center; gap: var(--ui-space-sm); }
 .intui-openui .iui-check { min-height: var(--ui-control-md); cursor: pointer; }
-.intui-openui .iui-check input { accent-color: var(--ui-info); }
+.intui-openui .iui-check input { accent-color: var(--ui-text-primary); }
 .intui-openui .iui-check.is-done span { text-decoration: line-through; color: var(--iui-muted); }
 .intui-openui .iui-segmented { display: flex; flex-wrap: wrap; gap: var(--ui-space-xxs); }
 .intui-openui .iui-segmented button { flex: 1; cursor: pointer; }
-.intui-openui .is-selected { background: var(--iui-surface-strong); }
+.intui-openui .is-selected { background: var(--ui-accent-strong); color: var(--ui-on-accent); border-color: transparent; }
 .intui-openui .iui-radio-group { border: 0; padding: 0; margin: 0; min-width: 0; }
 .intui-openui .iui-radio-group > div { display: flex; flex-wrap: wrap; gap: var(--ui-space-sm); }
 .intui-openui .iui-radio-list > div { flex-direction: column; }
 .intui-openui :is(.iui-choice-text, .iui-timer-read) { display: flex; flex-direction: column; }
 .intui-openui .iui-choice-description { display: block; color: var(--iui-muted); font-size: var(--ui-font-size-xs); }
 .intui-openui .iui-slider-head { justify-content: space-between; }
-.intui-openui .iui-range { width: 100%; min-height: var(--ui-control-sm); accent-color: var(--ui-info); }
 .intui-openui .iui-slider-marks { position: relative; min-height: 1.6em; font-size: var(--ui-font-size-xs); }
 .intui-openui .iui-slider-marks span { position: absolute; transform: translateX(-50%); }
 .intui-openui .iui-timer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--ui-space-md); }
@@ -112,3 +111,63 @@
 .intui-openui .iui-chart-legend { justify-content: center; flex-wrap: wrap; }
 .intui-openui :is(.iui-chart-legend i, .iui-pie-legend i) { width: .65em; height: .65em; border-radius: var(--ui-radius-xs); }
 .intui-openui .iui-pie { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-md); }
+
+/* Neutral, consistent interactive states shared by every generated tool. */
+.intui-openui .iui-button:not(:disabled):hover { background: var(--ui-bg-control); border-color: var(--ui-text-tertiary); }
+.intui-openui .iui-button-solid:not(:disabled):hover { background: var(--ui-text-secondary); color: var(--ui-bg-page); }
+.intui-openui .iui-input { background: var(--ui-bg-raised); }
+.intui-openui .iui-input::placeholder { color: var(--ui-text-placeholder); }
+.intui-openui .iui-label { color: var(--ui-text-secondary); font-size: var(--ui-font-size-xs); }
+.intui-openui .iui-notice { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--ui-space-md); padding: var(--ui-space-lg); border: 1px solid var(--ui-border-default); border-radius: var(--ui-radius-lg); background: var(--ui-bg-control); }
+.intui-openui .iui-notice p { flex: 1 1 18rem; }
+.intui-openui .iui-table th { color: var(--ui-text-secondary); font-size: var(--ui-font-size-xs); font-weight: var(--ui-font-weight-medium); }
+.intui-openui [data-openui-visualization] { min-width: 0; }
+
+/* One short field does not need the whole width of its card; a form that
+   wants the full measure keeps it by using a wide layout. */
+.intui-openui .iui-field { max-width: 24rem; }
+
+/* Segmented choices stay a compact group instead of stretching into tabs
+   the width of the card. `block` still means "fill the row". */
+.intui-openui .iui-segmented { align-self: flex-start; width: fit-content; max-width: 100%; padding: var(--ui-space-xxs); background: var(--ui-bg-control); border-radius: var(--ui-radius-lg); }
+.intui-openui .iui-segmented button { flex: 0 0 auto; min-height: var(--ui-control-sm); border-color: transparent; background: transparent; }
+.intui-openui .iui-segmented button.is-selected { background: var(--ui-accent-strong); color: var(--ui-on-accent); }
+.intui-openui .iui-segmented.iui-block { align-self: stretch; width: 100%; }
+.intui-openui .iui-segmented.iui-block button { flex: 1 1 0; }
+
+/* The visible rail and knob are drawn from the position the control
+   publishes. The native input stays transparent: it keeps the keyboard
+   contract and the pointer target, and the focus ring lands on the knob
+   instead of a frame drawn around a track. */
+.intui-openui .iui-slider-rail { position: relative; height: var(--ui-control-sm); }
+.intui-openui .iui-slider-track { position: absolute; top: 50%; left: var(--ui-space-sm); right: var(--ui-space-sm); height: var(--ui-space-xs); transform: translateY(-50%); border-radius: var(--ui-radius-pill); background: var(--ui-bg-control); }
+.intui-openui .iui-slider-fill { position: absolute; inset: 0 auto 0 0; width: calc(var(--iui-range-progress, 0) * 100%); border-radius: var(--ui-radius-pill); background: var(--ui-text-secondary); }
+.intui-openui .iui-slider-thumb { position: absolute; top: 50%; left: calc(var(--iui-range-progress, 0) * 100%); width: var(--ui-space-lg); height: var(--ui-space-lg); transform: translate(-50%, -50%); border: 2px solid var(--ui-bg-surface); border-radius: var(--ui-radius-pill); background: var(--ui-text-secondary); }
+.intui-openui .iui-range { position: absolute; top: 0; left: 0; width: 100%; height: 100%; margin: 0; appearance: none; -webkit-appearance: none; border: 0; background: transparent; opacity: 0; cursor: pointer; }
+.intui-openui .iui-range::-webkit-slider-thumb { width: 0; height: 0; }
+.intui-openui .iui-range::-moz-range-thumb { width: 0; height: 0; }
+.intui-openui .iui-range:disabled { cursor: default; }
+.intui-openui .iui-slider:focus-within .iui-slider-thumb { box-shadow: 0 0 0 var(--ui-space-xxs) var(--ui-bg-surface), 0 0 0 calc(var(--ui-space-xxs) * 2) var(--ui-text-tertiary); }
+
+/* The calculator reads as one instrument: a display panel, quiet function
+   keys, a grouped operator column and a single accent action. */
+.intui-openui .iui-calculator { max-width: 24rem; }
+.intui-openui .iui-calculator output { display: block; min-height: var(--ui-space-xxl); padding: var(--ui-space-md) var(--ui-space-lg); border-radius: var(--ui-radius-md); background: var(--ui-bg-control); color: var(--ui-text-primary); font-size: var(--ui-font-size-xxl); line-height: 1.2; text-align: end; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.intui-openui .iui-calculator button { background: var(--ui-bg-control); border-color: transparent; }
+.intui-openui .iui-calculator .iui-calculator-fn { color: var(--ui-text-tertiary); }
+.intui-openui .iui-calculator .iui-calculator-op { color: var(--ui-text-secondary); font-weight: var(--ui-font-weight-medium); }
+.intui-openui .iui-calculator .iui-calculator-equals { grid-column: span 2; background: var(--ui-accent-strong); color: var(--ui-on-accent); }
+
+/* An embedded visual belongs to the surface that holds it, and the card's
+   own toolbar joins the tool's style. The app shell owns the card's border
+   and background by id, so the rule that removes a second frame inside a
+   card has to reach that id too; a visual that is the whole surface keeps
+   its own frame. */
+.intui-openui [data-openui-visualization] .visualization-card { margin: 0; font-family: var(--font-sans); }
+#appShell .intui-openui .iui-card [data-openui-visualization] .visualization-card { border-color: transparent; background: transparent; }
+.intui-openui [data-openui-visualization] .visualization-header { padding: var(--ui-space-xs) 0; border-bottom-color: var(--ui-border-default); }
+.intui-openui [data-openui-visualization] .visualization-actions button { min-height: var(--ui-control-sm); padding: 0 var(--ui-space-sm); border: 1px solid transparent; border-radius: var(--ui-radius-sm); color: var(--ui-text-tertiary); font-size: var(--ui-font-size-xs); }
+.intui-openui [data-openui-visualization] .visualization-actions button:hover { color: var(--ui-text-primary); background: var(--ui-bg-control); }
+
+/* Keep inputs editable, but never present a known-invalid value as a result. */
+.intui-openui .iui-program[data-invalid-result="true"] :is(.iui-text, .iui-title, .iui-chart, .iui-table-wrap, .iui-svg, [data-openui-visualization]) { display: none; }

@@ -596,7 +596,7 @@
   margin: 0;
   padding: 0;
   border: 0;
-  background: var(--ui-bg-page);
+  background: transparent;
   color: var(--ui-text-primary);
   font: inherit;
 }
@@ -605,12 +605,12 @@
   align-items: center;
   justify-content: flex-end;
   gap: var(--ui-space-xs);
-  margin-bottom: var(--ui-space-xs);
+  margin-bottom: var(--ui-space-md);
 }
 .intui-surface-toolbar :is(button, select) {
   min-height: var(--ui-control-sm);
-  padding: 0 var(--ui-space-xs);
-  border: 1px solid var(--ui-border-subtle);
+  padding: 0 var(--ui-space-sm);
+  border: 1px solid transparent;
   border-radius: var(--ui-radius-control);
   background: transparent;
   color: var(--ui-text-secondary);
@@ -628,7 +628,9 @@
   outline: 2px solid var(--ui-border-strong);
   outline-offset: 2px;
 }
-.intui-surface-document { display: grid; gap: var(--ui-space-sm); }
+.intui-surface-label { display: inline-flex; align-items: center; gap: var(--ui-space-sm); margin-right: auto; color: var(--ui-text-tertiary); font-size: var(--ui-font-size-xs); }
+.intui-surface-expand { display: inline-flex; align-items: center; justify-content: center; width: var(--ui-control-sm); }
+.intui-surface-document { display: grid; gap: var(--ui-space-lg); }
 .intui-surface-shell[data-display-mode="compact"] .intui-surface-document {
   max-height: 18rem;
   overflow: auto;

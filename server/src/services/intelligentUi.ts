@@ -1,3 +1,5 @@
+import { validateIntelligentUi as validateEnvelope } from '../../../packages/core/src/intelligentUiValidation.js';
+import { validateOpenUiProgram } from './openUiProgram.js';
 import { OPENUI_TOOL_GUIDANCE } from './openUiPrompt.generated.js';
 const TYPES = ['panel', 'stack', 'grid', 'text', 'metric', 'progress', 'divider', 'callout', 'slider', 'choice', 'toggle', 'button', 'table', 'chart', 'tabs', 'entity', 'image-gallery', 'openui'];
 export const INTELLIGENT_UI_TOOL = {
@@ -55,4 +57,21 @@ export const INTELLIGENT_UI_TOOL = {
   },
 };
 
-export { validateIntelligentUi } from '../../../packages/core/src/intelligentUiValidation.js';
+export function validateIntelligentUi(value: unknown): { ok: true } | { ok: false; error: string } {
+  const envelope = validateEnvelope(value);
+  if (!envelope.ok) return envelope;
+  for (const node of (value as { nodes: Array<{ id: string; type: string; source?: string; action?: { type?: string; key?: string; prompt?: unknown; url?: unknown } }> }).nodes) {
+    if (node.type === 'button' || node.action) {
+      const action = node.action;
+      if (!action || !['set', 'increment', 'prompt', 'open_url'].includes(action.type || '')) return { ok: false, error: `UI ${node.id}: supply a supported explicit button action` };
+      if (['set', 'increment'].includes(action.type!) && (typeof action.key !== 'string' || !/^[A-Za-z0-9._:-]{1,80}$/.test(action.key) || ['__proto__', 'constructor', 'prototype'].includes(action.key))) return { ok: false, error: `UI ${node.id}: local actions need a safe state key` };
+      if (action.type === 'set' && !('value' in action)) return { ok: false, error: `UI ${node.id}: set action needs a value` };
+      if (action.type === 'prompt' && !action.prompt) return { ok: false, error: `UI ${node.id}: prompt action needs prompt content` };
+      if (action.type === 'open_url' && !action.url) return { ok: false, error: `UI ${node.id}: open_url action needs a URL` };
+    }
+    if (node.type !== 'openui') continue;
+    const issues = validateOpenUiProgram(node.source!);
+    if (issues.length) return { ok: false, error: `OpenUI ${node.id}: ${issues.join('; ')}` };
+  }
+  return { ok: true };
+}

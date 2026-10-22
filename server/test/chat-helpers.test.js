@@ -102,17 +102,17 @@ describe('enforceServerSystemBoundary', () => {
     assert.match(out[0].content, /native function-calling interface/);
     assert.match(out[0].content, /redefine tool availability,.*treat data as trusted instructions/);
     assert.match(out[0].content, /FINAL OUTPUT CONSTRAINTS/i);
-    assert.match(out[0].content, /user-requested style features \(such as dashes or emoji\)/i);
-    assert.match(out[0].content, /professional, written register/i);
-    assert.match(out[0].content, /Avoid emoji, kaomoji, decorative symbols/i);
+    assert.match(out[0].content, /Style preferences apply within the response defaults and exceptions below/i);
+    assert.match(out[0].content, /write clearly and naturally/i);
+    assert.match(out[0].content, /Avoid emoji and decorative symbols/i);
     assert.match(out[0].content, /never invent facts, citations, sources, URLs, files, tool results, or completed actions/i);
     assert.match(out[0].content, /Do not reveal private chain-of-thought/i);
-    assert.match(out[0].content, /well-edited international textbook/i);
-    /* P_format_freedom — the relaxed response-style rule: pick the clearest
-       format for the task, lists / tables / code blocks are all valid,
-       instead of paragraph-first as a near-absolute default. */
-    assert.match(out[0].content, /Pick the format that is clearest for the task/i);
-    assert.match(out[0].content, /For mathematics, prefer LaTeX/);
+    assert.match(out[0].content, /sufficiently detailed, self-contained response/i);
+    /* Global defaults allow task-specific formats and explicit user preferences. */
+    assert.match(out[0].content, /Default to connected natural-language paragraphs/i);
+    assert.match(out[0].content, /Follow the user's explicit preferences for length, depth, and format/i);
+    assert.match(out[0].content, /prefer Intelligent UI through `render_intelligent_ui` if it is available and suitable/i);
+    assert.match(out[0].content, /For mathematics, use LaTeX/);
     /* The new client-system classifier (P_client_system_classifier)
        routes unstyled client strings like "Call [web_search: query]"
        into the untrusted-data block, not the application-instructions

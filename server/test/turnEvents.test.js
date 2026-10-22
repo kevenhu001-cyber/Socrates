@@ -138,3 +138,14 @@ test('model-authored UI transactions validate revisions, remove subtrees and rol
   assert.equal(edit(2, [{ op: 'patch', nodeId: 'root', props: { title: 'Late' } }]).ok, false);
   assert.deepEqual(f.ctl.registerSources([{ url: 'https://example.test/late' }]), []);
 });
+
+test('invalid OpenUI source patches are rejected atomically without changing the revision', () => {
+  const f = fixture();
+  const node = { id: 'app', type: 'openui', source: 'root = Col([Calculator("Calculator")])' };
+  f.ctl.toolResult('ui', true, { version: 1, nodes: [node] });
+  const before = f.runtime();
+  const result = f.ctl.patchUi({ surfaceId: 'ui', revision: 0, operations: [{ op: 'patch', nodeId: 'app', props: { source: 'root = Col([Button("=")])' } }] });
+  assert.equal(result.ok, false);
+  assert.match(result.error, /explicit action/);
+  assert.deepEqual(f.runtime(), before);
+});

@@ -271,6 +271,7 @@ export async function mountVisualization(spec, host, options) {
       if (isCancelled()) { disposeCard(card); return null; }
       var useCanvas = spec.template === 'heatmap' || (spec.payload.series || []).some(function (series) { return series.data && series.data.length > 1200; });
       chart = echarts.init(stage, null, { renderer: useCanvas ? 'canvas' : 'svg' });
+      card.dataset.visualizationRenderer = 'echarts';
       var chartOpts = optionForChart(spec, palette());
       if (!chartOpts) {
         chart.dispose();
@@ -374,6 +375,27 @@ export async function mountVisualization(spec, host, options) {
     }
     if (isCancelled()) { disposeCard(card); return null; }
     var echartsInstance = chartTemplates.includes(spec.template) ? chart : null;
+    // OpenUI controls update native charts in place; keep zoom and the card identity.
+    if (echartsInstance) card._visualizationUpdate = function (next) {
+      if (card._visualizationDisposed || echartsInstance.isDisposed() || next.template !== spec.template) return false;
+      var nextOptions = optionForChart(next, palette());
+      if (!nextOptions) return false;
+      echartsInstance.setOption(nextOptions, { replaceMerge: ['series'] });
+      spec = next;
+      if (liveEntry) liveEntry.spec = next;
+      card.querySelector('.visualization-header h3').textContent = next.title || '';
+      card.querySelector('.visualization-summary').textContent = next.accessibilitySummary || '';
+      card.setAttribute('aria-label', (next.title || '') + '. ' + (next.accessibilitySummary || ''));
+      card.querySelector('.visualization-data').innerHTML = renderVisualizationTable(next, esc, vizT);
+      var caption = card.querySelector('.visualization-caption');
+      if (!caption && next.caption) {
+        caption = document.createElement('figcaption');
+        caption.className = 'visualization-caption';
+        card.querySelector('.visualization-figure').appendChild(caption);
+      }
+      if (caption) caption.textContent = next.caption || '';
+      return true;
+    };
     bindCard(card, spec, chart, {
       /* ECharts' toolbox `restore` action crashes some series types
          (radar: "reading 'childAt'"); re-applying the option is the

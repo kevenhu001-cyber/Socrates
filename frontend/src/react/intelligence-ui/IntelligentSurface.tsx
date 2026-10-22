@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Maximize2, PanelsTopLeft, X } from 'lucide-react';
 import { i18n } from '../legacy/gateway';
 
 export type IntelligentDisplayMode = 'inline' | 'compact' | 'carousel' | 'fullscreen' | 'pip';
@@ -31,6 +32,7 @@ export function IntelligentSurface({ children, displayMode = 'inline' }: { child
     role={mode === 'fullscreen' ? 'dialog' : 'region'} aria-label={i18n('intui.surface', 'Interactive result')}
     onCancel={(event) => { event.preventDefault(); exit(); }}>
     <div className="intui-surface-toolbar">
+      <span className="intui-surface-label"><PanelsTopLeft size={16} aria-hidden />{i18n('intui.surface', 'Interactive result')}</span>
       {mode !== 'fullscreen' ? <label>
         <span className="sr-only">{i18n('intui.displayMode', 'Display mode')}</span>
         <select value={mode} onChange={(event) => setChoice(event.currentTarget.value as IntelligentDisplayMode)}>
@@ -40,10 +42,10 @@ export function IntelligentSurface({ children, displayMode = 'inline' }: { child
           <option value="pip">{i18n('intui.pip', 'Floating')}</option>
         </select>
       </label> : null}
-      <button type="button" onClick={() => {
+      <button type="button" className="intui-surface-expand" aria-label={mode === 'fullscreen' ? i18n('dialog.close', 'Close') : i18n('chrome.fullscreen', 'Fullscreen')} title={mode === 'fullscreen' ? i18n('dialog.close', 'Close') : i18n('chrome.fullscreen', 'Fullscreen')} onClick={() => {
         if (mode === 'fullscreen') exit();
         else { previousMode.current = mode; setChoice('fullscreen'); }
-      }}>{mode === 'fullscreen' ? i18n('dialog.close', 'Close') : i18n('chrome.fullscreen', 'Fullscreen')}</button>
+      }}>{mode === 'fullscreen' ? <X size={16} aria-hidden /> : <Maximize2 size={16} aria-hidden />}</button>
       {mode === 'pip' ? <button type="button" onClick={() => setChoice('inline')}>{i18n('intui.inline', 'Inline')}</button> : null}
     </div>
     <div className="intui-surface-document">{children}</div>

@@ -225,3 +225,5 @@ export function createDraftSession(id: string, mode: Session['mode'] = 'chat'): 
 export * from './turnEvidence.js';
 export * from './intelligentUiPatch.js';
 export * from './turnRuntimeText.js';
+export { openUiProgramIssues, openUiStateIssue, openUiRuntimeIssues } from './openUiProgram.js';
+export { calculatorStep, initialCalculatorState, type CalculatorState } from './calculator';

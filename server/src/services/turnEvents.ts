@@ -101,6 +101,8 @@ export function createTurnEventController(emit: (event: TurnEvent) => void, turn
       if (!Number.isSafeInteger(args.revision) || args.revision !== (surface.revision || 0)) return fail(`Stale revision; current revision is ${surface.revision || 0}`);
       const result = applyIntelligentUiPatch(surface.nodes, args.operations);
       if (!result.ok) return fail(result.error);
+      const validation = validateIntelligentUi({ version: 1, nodes: result.nodes });
+      if (!validation.ok) return fail(validation.error);
       if (!publish({ type: 'ui.edit', surfaceId: surface.id, baseRevision: surface.revision || 0, operations: args.operations as import('../../../packages/contracts/src/turnEvent.js').TurnUiEdit[] })) return fail('Turn snapshot limit exceeded');
       return { ok: true as const, output: `Updated surface ${surface.id}; revision ${(surface.revision || 0) + 1}. Nodes: ${result.nodes.map((node) => node.id).join(', ')}` };
     },

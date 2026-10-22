@@ -8,20 +8,19 @@ import {
   useStateField,
   useTriggerAction,
 } from "@openuidev/react-lang";
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { z } from "zod/v4";
 import { Glyph } from "./glyph";
 import { bg, children, color, onColor, cx, option, radius, radiusSchema, space, textOf, toOption, type Option } from "./style";
 
 type Plan = Parameters<ReturnType<typeof useTriggerAction>>[2];
 
-/** Runs an action prop. With no action, a button sends its label to the assistant. */
+/** Host requests must be explicit; missing actions never send button labels to chat. */
 function useRunAction() {
   const trigger = useTriggerAction();
   const formName = useFormName();
-  return (message: string, plan: unknown, sendLabel: boolean) => {
+  return (message: string, plan: unknown) => {
     if (plan) void trigger(message, formName, plan as Plan);
-    else if (sendLabel) void trigger(message, formName);
   };
 }
 
@@ -74,8 +73,8 @@ export const Button = defineComponent({
           `iui-button-${props.size ?? "md"}`,
           props.block && "iui-block",
         )}
-        disabled={!!props.disabled || streaming}
-        onClick={() => run(label, props.action, true)}
+        disabled={!!props.disabled || streaming || !props.action}
+        onClick={() => run(label, props.action)}
       >
         {props.icon ? <Glyph name={props.icon} size={props.size === "sm" ? 14 : 16} /> : null}
         {label}
@@ -104,7 +103,7 @@ export const IconButton = defineComponent({
         aria-label={label}
         title={props.label || undefined}
         disabled={streaming}
-        onClick={() => run(label, props.action, false)}
+        onClick={() => run(label, props.action)}
       >
         <Glyph name={props.icon} size={16} />
       </button>
@@ -128,7 +127,7 @@ export const Pressable = defineComponent({
     const streaming = useIsStreaming();
     const ref = useRef<HTMLDivElement>(null);
     const press = () => {
-      if (!streaming) run(textOf(ref.current), props.action, false);
+      if (!streaming) run(textOf(ref.current), props.action);
     };
     // Clicks meant for a control inside the tile stay with that control.
     const onClick = (event: MouseEvent<HTMLDivElement>) => {
@@ -309,6 +308,11 @@ export const Slider = defineComponent({
     const readout = prefix ? `${unit}${numberText(value)}` : `${numberText(value)}${unit}`;
     const marks = (props.marks ?? []).filter((m) => m && Number.isFinite(m.value) && m.value >= min && m.value <= max);
     const id = useId();
+    /* The visible rail and knob are drawn from the position the control
+       publishes, so the native input can stay transparent: it keeps the
+       keyboard contract and the pointer target without painting a box around
+       a track, and the focus ring lands on the knob instead of the frame. */
+    const progress = max > min ? Math.min(1, Math.max(0, (value - min) / (max - min))) : 0;
     return (
       <div className="iui-slider">
         {(props.label || props.unit) && (
@@ -317,24 +321,30 @@ export const Slider = defineComponent({
             <output htmlFor={id}>{readout}</output>
           </div>
         )}
-        <input
-          id={id}
-          className="iui-range"
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          aria-label={props.label ? undefined : "Value"}
-          aria-valuetext={readout}
-          onChange={(event) => field.setValue(Number(event.target.value))}
-        />
+        <div className="iui-slider-rail">
+          <div className="iui-slider-track" aria-hidden="true" style={{ "--iui-range-progress": String(progress) } as CSSProperties}>
+            <span className="iui-slider-fill" />
+            <span className="iui-slider-thumb" />
+          </div>
+          <input
+            id={id}
+            className="iui-range"
+            type="range"
+            min={min}
+            max={max}
+            step={step}
+            value={value}
+            aria-label={props.label ? undefined : "Value"}
+            aria-valuetext={readout}
+            onChange={(event) => field.setValue(Number(event.target.value))}
+          />
+        </div>
         {marks.length > 0 && (
           <div className="iui-slider-marks" aria-hidden>
             {marks.map((m, i) => {
               const at = (m.value - min) / (max - min);
               return (
-                <span key={i} className={cx(at <= 0.02 && "is-start", at >= 0.98 && "is-end")} style={{ left: `calc(9px + (100% - 18px) * ${at})` }}>
+                <span key={i} className={cx(at <= 0.02 && "is-start", at >= 0.98 && "is-end")} style={{ left: `calc(var(--ui-space-sm) + (100% - var(--ui-space-sm) * 2) * ${at})` }}>
                   {m.label}
                 </span>
               );

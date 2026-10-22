@@ -68,3 +68,28 @@ test('native OpenUI nodes use the existing tool contract and retain source for c
     assert.equal(validateIntelligentUi({ version: 1, nodes: [{ id: 'app', type: 'openui', source: invalid }] }).ok, false);
   }
 });
+
+test('OpenUI semantic failures produce actionable tool feedback', async () => {
+  for (const source of ['not a program', 'root = Col([Button("=")])', 'root = Col([Input(5, "Amount")])', 'root = Col([Text($missing)])']) {
+    const outcome = await executeIntelligentUi({ version: 1, nodes: [{ id: 'app', type: 'openui', source }] }, { id: 'bad-ui' }, { emitter: { event() {} } });
+    assert.equal(outcome.result.status, 'failed', source);
+    assert.match(outcome.result.correction, /Fix the UI/);
+  }
+  assert.equal(validateIntelligentUi({ version: 1, nodes: [{ id: 'app', type: 'openui', source: 'root = Col([Calculator("计算器")])' }] }).ok, true);
+});
+
+test('legacy native UI cannot report successful nonfunctional buttons', () => {
+  for (const action of [undefined, { type: 'calculate' }, { type: 'set', key: '__proto__', value: 3 }, { type: 'prompt' }, { type: 'set', key: 'result' }]) {
+    assert.equal(validateIntelligentUi({ version: 1, nodes: [{ id: 'action', type: 'button', label: 'Run', action }] }).ok, false);
+  }
+});
+
+test('composed visualizations receive the existing native payload validation', () => {
+  const valid = 'root = Col([Slider($n,1,8),Visualization("bar","Linked",{categories:["A"],series:[{data:[$n * 2]}]},"Linked chart")])\n$n = 2';
+  assert.equal(validateIntelligentUi({ version: 1, nodes: [{ id: 'app', type: 'openui', source: valid }] }).ok, true);
+  for (const source of [valid.replace('"bar"', '"unknown"'), valid.replace('series:', 'wrong:')]) {
+    const result = validateIntelligentUi({ version: 1, nodes: [{ id: 'app', type: 'openui', source }] });
+    assert.equal(result.ok, false);
+    assert.match(result.error, /Visualization/);
+  }
+});
