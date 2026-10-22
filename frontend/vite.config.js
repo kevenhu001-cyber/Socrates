@@ -256,32 +256,6 @@ function handleStubbedApi(req, res, next, localPath) {
         return void readBody(req).then(() => send(res, 200, { ok: true, stub: true }));
 }
 
-/* P_perf-css-preload — Vite injects `modulepreload` for entry JS but nothing
-   for the entry stylesheet. Preload only that critical stylesheet: the
-   media=print links in index.html already defer the static below-fold slices,
-   while KaTeX and tldraw CSS belong to dynamic modules and must stay out of
-   the first-paint request graph. Preloading every CSS asset used to make
-   those lazy modules pay a cross-border RTT on every cold visit. */
-function createCssPreloadPlugin() {
-  return {
-    name: 'socrates-css-preload',
-    enforce: 'post',
-    transformIndexHtml: {
-      order: 'post',
-      handler(html, ctx) {
-        if (!ctx.bundle) return html;
-        const css = Object.keys(ctx.bundle).filter((f) =>
-          /(?:^|\/)index(?:-[^/]+)?\.css$/.test(f));
-        if (!css.length) return html;
-        const tags = css
-          .map((f) => `<link rel="preload" as="style" href="/${f}" onload="this.onload=null;this.rel='stylesheet'">`)
-          .join('\n    ');
-        return html.replace('</head>', `    ${tags}\n  </head>`);
-      },
-    },
-  };
-}
-
 /* P_perf-gzip-static — production nginx serves /assets/ with
    `gzip_static on` (ops/nginx/app-performance.conf.example), which only
    picks up pre-compressed `<file>.gz` siblings. Vite does not emit them,
@@ -412,6 +386,12 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     cssCodeSplit: true,
+    /* Vite checks minified chunks before gzip. The production entry graph has
+       a separate compressed-transfer budget, while the largest emitted files
+       are intentionally demand-loaded visualization runtimes (tldraw, MapLibre
+       and Three.js). Keep a 1.5 MB raw ceiling to avoid flagging those deferred
+       libraries while still surfacing further growth in a single chunk. */
+    chunkSizeWarningLimit: 1500,
     /* P_perf-no-css-data-urls — small below-fold stylesheets (deferred-*
        leaves) reach the build as plain assets, not CSS entries, so the
        default 4 KB inline budget would emit them as data: URLs. Two
@@ -483,6 +463,8 @@ export default defineConfig({
       },
     },
     target: 'es2020',
+    // Terser reduces public transfer size; client-side code is never secret.
+    // Avoid runtime string-table obfuscation, which adds parse/decode work.
     minify: 'terser',
     terserOptions: {
       compress: {
@@ -504,9 +486,7 @@ export default defineConfig({
   },
   plugins: [
     createLocalApiStubPlugin(),
-    // createObfuscatorPlugin(),
     createPrecompressedAssetsPlugin(),
-    createCssPreloadPlugin(),
     createEntryGraphPlugin(),
   ],
   server: {
