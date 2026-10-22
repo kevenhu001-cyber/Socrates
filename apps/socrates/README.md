@@ -38,8 +38,10 @@ src/share.*.ts             # 岛内分享（Web navigator.share / RN Share）
 
 可视化消息的卡片与文档生成在共享层
 `packages/ui/src/{visualization,artifacts,artifactDocument}.ts`：DOM-free 地把
-`render_visualization` v1 spec / `html`、`mermaid`、`three`、`viz` 栅栏转成自包含 HTML，
+`render_intelligent_ui` 中提取的 Visualization v1 spec、旧 `render_visualization` spec，以及
+`html`、`mermaid`、`three`、`viz` 栅栏转成自包含 HTML，
 卡片只显示摘要 + “打开”，重型文档在沙箱岛中渲染，不进消息列表或共享核心。
+原生端展示 OpenUI 初始状态的图表快照；Web 端保留完整的 OpenUI 控件和交互。
 
 文件作品闭环
 附件落库后带 `fileId`；消息里的附件卡与 markdown 图片（`/api/files/:id/raw`）

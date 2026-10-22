@@ -148,6 +148,7 @@ export function restoreSessionMessage(m: PersistedMessage): RestoredMessage {
            inline tool layout survives a reload. */
         textOffset: typeof tc.textOffset === 'number' ? tc.textOffset : undefined,
         visualization: (visualization && visualization.version === 1) ? visualization : undefined,
+        visualizations: Array.isArray(tc.visualizations) ? tc.visualizations.slice(0, 8) : undefined,
         /* Keep the normalized output list when present. The renderer
            validates entries and can fall back to legacy output fields. */
         outputs: Array.isArray(tc.outputs) ? tc.outputs : undefined,

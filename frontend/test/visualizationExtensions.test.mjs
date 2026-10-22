@@ -63,7 +63,8 @@ test('extension failures route a bounded repair prompt through tool-retry', () =
 
   assert.equal(dispatched.type, 'tool-retry');
   assert.equal(dispatched.bubbles, true);
-  assert.equal(dispatched.detail.tool, 'render_visualization');
+  assert.equal(dispatched.detail.tool, 'render_intelligent_ui');
+  assert.match(dispatched.detail.prompt, /Rebuild it with render_intelligent_ui/);
   assert.match(dispatched.detail.prompt, /switch to a simpler built-in template/);
   assert.match(dispatched.detail.prompt, /math_construction cannot work right now/);
 });

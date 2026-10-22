@@ -179,10 +179,10 @@ export const CODE_INTERPRETER_TOOL = {
       '- **Group multi-step work in a single call.** Several independent calculations belong in one `code` body — the runner is one exec per tool call, and the per-turn tool-call budget (stated in the native-tool contract) is finite.\n\n' +
       '## When to call\n' +
       '- Arithmetic, unit conversion, numeric verification, solving an equation, "is X > Y".\n' +
-      '- Complex computation, user-file analysis, data preprocessing, or explicitly requested CSV/PNG exports. For ordinary inline charts and function graphs, use render_visualization instead.\n' +
+      '- Complex computation, user-file analysis, data preprocessing, or explicitly requested CSV/PNG exports. For ordinary inline charts and function graphs, use render_intelligent_ui with the Visualization component instead.\n' +
       '- Small data-exploration snippets (load inline data, summarize, sample-check a derivation).\n\n' +
       '## When NOT to call\n' +
-      '- Illustrations of concrete subjects (animals, people, scenes, logos, icons) — those MUST go through render_visualization with the svg_illustration template. SVG output here is rejected with `illustration_not_supported`. Never use code_interpreter for illustrations.\n' +
+      '- Illustrations of concrete subjects (animals, people, scenes, logos, icons) — those MUST go through render_intelligent_ui with a Visualization component using the svg_illustration template. SVG output here is rejected with `illustration_not_supported`. Never use code_interpreter for illustrations.\n' +
       '- Conceptual answers, code review, prose, explanations — answer those directly in markdown.\n' +
       '- Trivial single-step arithmetic you can do in your head.\n\n' +
       `## Limits\n` +

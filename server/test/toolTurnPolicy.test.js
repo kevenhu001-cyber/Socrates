@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import { createToolTurnPolicy, hashToolArguments } from '../src/services/tools/toolTurnPolicy.js';
 
-const ALL_TOOLS = ['web_search', 'code_interpreter', 'render_visualization', 'workspace_agent'];
+const ALL_TOOLS = ['web_search', 'code_interpreter', 'render_intelligent_ui', 'workspace_agent'];
 
 test('default budget offers tools for twelve hops', () => {
   const policy = createToolTurnPolicy();
@@ -24,14 +24,14 @@ test('two malformed calls no longer disable the toolset', () => {
 
 test('a third consecutive failure withdraws only the failing tool', () => {
   const policy = createToolTurnPolicy();
-  for (let i = 0; i < 3; i++) policy.recordResult('render_visualization', false, 'visual_spec_invalid');
+  for (let i = 0; i < 3; i++) policy.recordResult('render_intelligent_ui', false, 'invalid_tool_arguments');
   assert.deepEqual(policy.enabledToolNames(ALL_TOOLS), [
     'web_search', 'code_interpreter', 'workspace_agent',
   ]);
-  assert.deepEqual(policy.disabledTools(), [{ name: 'render_visualization', reason: 'visual_spec_invalid' }]);
-  assert.equal(policy.disabledReason('render_visualization'), 'visual_spec_invalid');
+  assert.deepEqual(policy.disabledTools(), [{ name: 'render_intelligent_ui', reason: 'invalid_tool_arguments' }]);
+  assert.equal(policy.disabledReason('render_intelligent_ui'), 'invalid_tool_arguments');
   assert.equal(policy.disabledReason('web_search'), null);
-  assert.equal(policy.remainingRetries('render_visualization'), 0);
+  assert.equal(policy.remainingRetries('render_intelligent_ui'), 0);
   // Other tools are untouched and the turn continues.
   assert.equal(policy.toolsAllowed(3), true);
 });
@@ -50,7 +50,7 @@ test('failures are tracked per tool, not globally', () => {
   const policy = createToolTurnPolicy();
   policy.recordResult('web_search', false, 'web_search_failed');
   policy.recordResult('code_interpreter', false, 'execution_failed');
-  policy.recordResult('render_visualization', false, 'visual_spec_invalid');
+  policy.recordResult('render_intelligent_ui', false, 'invalid_tool_arguments');
   assert.deepEqual(policy.disabledTools(), []);
   assert.deepEqual(policy.enabledToolNames(ALL_TOOLS), ALL_TOOLS);
 });

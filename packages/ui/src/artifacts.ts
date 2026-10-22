@@ -2,8 +2,8 @@
  * Universal App's isolated artifact islands.
  *
  * A message can carry heavy content two ways:
- *   - a native `render_visualization` tool result (`tool.visualization`,
- *     the v1 spec), and
+ *   - a native visualization tool result (legacy `tool.visualization` or
+ *     the v1 specs extracted from Intelligent UI source), and
  *   - a fenced code block whose language is an island kind (```html /
  *     ```mermaid / ```three / ```viz), which the model is told not to emit
  *     but which still appears in older history.
@@ -100,14 +100,29 @@ export function descriptorFromVisualization(spec: VisualizationSpec, mode: Theme
   };
 }
 
-/** Visualization cards for a message's tool calls (deduped by call id). */
+/** Visualization cards for each call (exact duplicate specs within a call are removed). */
 export function artifactsFromToolCalls(toolCalls: ToolCall[] | undefined, mode: ThemeMode): ArtifactDescriptor[] {
-  return (toolCalls || [])
-    .map((tool, index) => {
-      const spec = visualizationSpecOf(tool);
-      return spec ? descriptorFromVisualization(spec, mode, `artifact-${tool.id || index}`) : null;
-    })
-    .filter((descriptor): descriptor is ArtifactDescriptor => descriptor !== null);
+  const descriptors: ArtifactDescriptor[] = [];
+  (toolCalls || []).forEach((tool, index) => {
+    const phase = String(tool.progressPhase || '').toLowerCase();
+    if (tool.isError === true || ['failed', 'cancelled', 'stopped', 'aborted'].includes(phase)) return;
+    const candidates = [
+      visualizationSpecOf(tool),
+      ...(Array.isArray(tool.visualizations) ? tool.visualizations.filter(isVisualizationSpec) : []),
+    ].filter((spec): spec is VisualizationSpec => spec !== null);
+    const seen = new Set<string>();
+    const specs = candidates.filter((spec) => {
+      const key = JSON.stringify(spec);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    specs.forEach((spec, specIndex) => {
+      const suffix = specs.length > 1 ? `-${specIndex + 1}` : '';
+      descriptors.push(descriptorFromVisualization(spec, mode, `artifact-${tool.id || index}${suffix}`));
+    });
+  });
+  return descriptors;
 }
 
 /** Build a descriptor from a fenced island block; returns null for plain code. */

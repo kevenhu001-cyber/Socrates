@@ -49,7 +49,7 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
       lines.push('- `execution_timeout` → the work exceeded the time budget. Split into smaller runs, or pre-compute in numpy/pandas instead of Python loops.');
       lines.push('- `output_limit_exceeded` → stdout/stderr hit the 64 KB cap. Save the data to a file, print a summary, describe the summary in prose.');
       lines.push('- `code_interpreter_unavailable` / `skipped` → the runner is off; do not retry. Tell the user.');
-      lines.push('- `illustration_not_supported` → you tried to draw an SVG / illustration via code_interpreter. Call render_visualization with the svg_illustration template instead.');
+      lines.push('- `illustration_not_supported` → you tried to draw an SVG / illustration via code_interpreter. Call render_intelligent_ui with a Visualization component using the svg_illustration template instead.');
       lines.push('- `SyntaxError: \'await\' outside function` → you wrote top-level `await`. Put the awaited statements inside `async def main():` and call `asyncio.run(main())` at the end.');
       lines.push('- `SyntaxError` (other) / `IndentationError` → re-read the source as if it were the body of `def __main__():`; fix indentation; nothing is permitted at module scope that would not be valid in `python -c`.');
       lines.push('- `NameError` → the variable was from a previous call. Recompute it in this run.');

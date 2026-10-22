@@ -53,6 +53,9 @@ function freezeToolCall(call: ToolCall): ToolCall {
     visualization: call.visualization
       ? freezeToolData(call.visualization)
       : call.visualization,
+    visualizations: call.visualizations
+      ? freezeToolData(call.visualizations)
+      : call.visualizations,
   });
 }
 

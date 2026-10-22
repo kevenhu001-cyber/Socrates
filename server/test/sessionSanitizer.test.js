@@ -69,6 +69,26 @@ test('artifact item fields are clipped and non-objects normalized', () => {
   assert.deepEqual(artifacts[1], { id: '' });
 });
 
+test('embedded visualizations are capped while preserving unknown spec fields', () => {
+  const toolCall = {
+    id: 'c1',
+    name: 'render_intelligent_ui',
+    visualizations: Array.from({ length: 10 }, (_, i) => ({
+      version: 1,
+      template: 'bar',
+      title: 'Chart ' + i,
+      accessibilitySummary: 'A chart',
+      payload: { series: [{ data: [i] }] },
+      futureField: { retained: true },
+    })),
+  };
+  const out = sanitizeSessionPayload(payloadWithToolCall(toolCall));
+  const visualizations = out.messages[0].toolCalls[0].visualizations;
+  assert.equal(visualizations.length, 8);
+  assert.deepEqual(visualizations[0].futureField, { retained: true });
+  assert.equal(SessionPayloadSchema.safeParse(out).success, true);
+});
+
 test('structured detail is stringified instead of failing z.string()', () => {
   const toolCall = {
     id: 'c1', name: 'create_plan',

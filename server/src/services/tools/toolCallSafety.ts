@@ -610,8 +610,8 @@ const TOOL_NAME_ALIASES: Record<string, string> = {
   plan: 'create_plan', make_plan: 'create_plan', todo: 'create_plan', todo_write: 'create_plan',
   update_plan: 'create_plan', spec: 'create_spec', requirements: 'create_spec',
   // visualization
-  visualize: 'render_visualization', visualization: 'render_visualization',
-  chart: 'render_visualization', plot: 'render_visualization', draw: 'render_visualization',
+  visualize: 'render_intelligent_ui', visualization: 'render_intelligent_ui',
+  chart: 'render_intelligent_ui', plot: 'render_intelligent_ui', draw: 'render_intelligent_ui',
 };
 
 /** Namespace prefixes providers prepend to a function name. */

@@ -43,7 +43,7 @@ export interface ToolCall {
    *    structured failure surface from the backend.
    *  - `status` — 'awaiting_approval' | 'timeout' | 'completed' | 'failed'.
    *  - `argumentsText` — cumulative streamed `arguments` while in flight.
-   *  - `visualization` — persisted chart spec for the attached viz card.
+   *  - `visualization(s)` — persisted chart spec(s) for attached viz cards.
    */
   textOffset?: number;
   _run?: { phase?: string; durationMs?: number; startedAt?: number; endedAt?: number };
@@ -57,6 +57,7 @@ export interface ToolCall {
   /** Last `tool_progress` phase (`stdout` / `stderr` / `queued` / …). */
   _progressPhase?: string;
   visualization?: Record<string, unknown> | null;
+  visualizations?: unknown[];
 }
 
 export interface ChatMessage {

@@ -15,7 +15,8 @@ const { restoreSessionMessage } = await import('../src/session/historyRestore.ts
 test('restoring raw-only assistant history keeps canonical data without parsing offscreen prose', () => {
   parses = 0;
   const rawText = 'An **answer** with a <definition><term>term</term><body>definition</body></definition>.';
-  const tool = { id: 'call-1', name: 'search', input: { query: 'term' }, output: 'found', textOffset: 10 };
+  const visualizations = [{ version: 1, template: 'bar', payload: { series: [{ data: [1] }] }, extension: { retained: true } }];
+  const tool = { id: 'call-1', name: 'render_intelligent_ui', input: { query: 'term' }, output: 'found', textOffset: 10, visualizations };
   const source = { id: 'server-1', clientId: 'client-1', role: 'assistant', rawText,
     toolCalls: [tool], reasoning_content: 'reason', reasoning_duration_sec: 3 };
   const row = restoreSessionMessage(source);
@@ -29,6 +30,7 @@ test('restoring raw-only assistant history keeps canonical data without parsing 
   assert.equal(row.reasoningDurationSec, 3);
   assert.equal(row.toolCalls[0].textOffset, 10);
   assert.deepEqual(row.toolCalls[0].input, tool.input);
+  assert.deepEqual(row.toolCalls[0].visualizations, visualizations);
   assert.equal(source.html, undefined);
 });
 

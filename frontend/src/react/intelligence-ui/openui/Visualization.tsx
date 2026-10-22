@@ -14,7 +14,7 @@ export const Visualization = defineComponent({
      exactly. Saying "its exact template/payload contract" made the model pass
      the whole render_visualization envelope as the first argument, which the
      server then rejected with a field error about the payload instead. */
-  description: 'Embed a native visual card from the existing template set. The arguments are the template name, a short title, the template payload and an accessibility summary, in that order. The payload is the template inner data, for example {"categories":["A","B"],"series":[{"name":"Values","data":[1,2]}]}. Never pass the full render_visualization envelope {version, template, title, accessibilitySummary, payload} here: template, title, payload and accessibilitySummary are separate arguments. Payload expressions can read $state; controls update the visual locally. Prefer Chart for simple charts.',
+  description: 'Embed a native visual card from the existing template set. Use this component for static and interactive charts, function graphs, diagrams, timelines, comparisons, simulations and illustrations. The arguments are the template name, a short title, the template payload and an accessibility summary, in that order; caption is optional. The payload is the template inner data, for example {"categories":["A","B"],"series":[{"name":"Values","data":[1,2]}]}. Never pass a versioned visualization envelope here: template, title, payload and accessibilitySummary are separate arguments. Payload expressions can read $state; compose this component with controls when interaction helps.',
   component: function VisualizationView({ props }) {
     const host = useRef<HTMLDivElement>(null);
     const mounted = useRef<MountedCard | null>(null);

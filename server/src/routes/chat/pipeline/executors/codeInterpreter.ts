@@ -37,18 +37,18 @@ export const executeCodeInterpreter: ToolExecutor = async (
     emitter.event('tool_result', {
       id: tc.id, ok: false, status: 'failed',
       output: '', stderr: '',
-      error: 'Illustrations should use render_visualization with the svg_illustration template, not code_interpreter. Call render_visualization instead.',
+      error: 'Illustrations should use render_intelligent_ui with a Visualization component using the svg_illustration template, not code_interpreter. Call render_intelligent_ui instead.',
       errorCode: 'illustration_not_supported',
       retryable: false,
-      userMessage: '插画请使用 render_visualization 工具的 svg_illustration 模板，不要使用代码执行工具。',
-      detail: 'code_interpreter is for data analysis, not illustrations. Call render_visualization with the svg_illustration template.',
+      userMessage: '插画请使用 render_intelligent_ui 工具，通过 Visualization 组件调用 svg_illustration 模板，不要使用代码执行工具。',
+      detail: 'code_interpreter is for data analysis, not illustrations. Call render_intelligent_ui with a Visualization component using the svg_illustration template.',
       artifacts: [], executionId: null, durationMs: 0,
     });
     return {
       result: {
         status: 'failed',
         errorCode: 'illustration_not_supported',
-        error: 'Illustrations should use render_visualization with the svg_illustration template, not code_interpreter. Call render_visualization instead.',
+        error: 'Illustrations should use render_intelligent_ui with a Visualization component using the svg_illustration template, not code_interpreter. Call render_intelligent_ui instead.',
       },
       outcomeRecorded: false,
     };

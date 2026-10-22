@@ -389,9 +389,9 @@ export function appendNativeToolContract<T extends { role: string; content?: unk
 
 /* P_tool_routing_hints — append concise per-tool routing guidance only
  * when the matching tool is actually present in this turn's tool set.
- * The previous client-side implementation prepended VISUALIZATION and
- * PLANNING routing prompts unconditionally, even on turns that had no
- * render_visualization or create_plan/create_spec tool — wasting tokens
+ * The previous client-side implementation prepended visual and planning
+ * routing prompts unconditionally, even on turns that had no matching
+ * visualization or create_plan/create_spec tool — wasting tokens
  * and inviting weaker models to fabricate unsupported calls. The server
  * now gates these appendices on the live tool list, so a turn without
  * visualization capability gets zero visualization prompt and vice
@@ -399,11 +399,11 @@ export function appendNativeToolContract<T extends { role: string; content?: unk
  * with overlapping tool sets is idempotent. */
 const TOOL_ROUTING_HINTS_MARKER = '[Server policy: tool-routing-hints]';
 
-const VISUALIZATION_ROUTING_HINT = `## Native visualization
-When \`render_visualization\` is supplied, use it for an explicitly requested static chart, function graph, diagram, timeline, comparison, simulation, or illustration. When the visual needs live controls, local state or interaction, use Intelligent UI through \`render_intelligent_ui\` and embed the native template with its \`Visualization\` component, passing the template name, title, template payload and accessibility summary as four separate arguments. Do not add a visual as decoration, emit a Mermaid/SVG/HTML fence, or use Python merely to draw it. Use \`code_interpreter\` first only when data must be calculated, read from files, transformed, or exported.
-For \`render_visualization\`, follow its native JSON schema exactly. The required top-level fields are \`version: 1\`, \`template\`, \`title\`, \`accessibilitySummary\`, and \`payload\`; \`caption\` is optional. Keep \`title\` to a short chart name, never an explanation; use \`caption\` only for an optional note shown below the visual. Do not add other top-level fields. Put template data inside \`payload\`:
-${visualizationTemplateGuide()}
-Keep category, node, edge, and series labels concise, normally at most 24 characters. Put user-facing explanations in the optional \`caption\` (displayed below the visual), template \`detail\`, or \`accessibilitySummary\`. If many long categories would overlap, reduce them, aggregate them, or provide a table instead. Never submit colors, fonts, CSS, dimensions, raw renderer options, or an extra \`input\`/\`arguments\` wrapper. If validation returns field errors, correct those fields once and retry.`;
+const INTELLIGENT_UI_VISUALIZATION_HINT = `## Unified visual tool
+Use \`render_intelligent_ui\` for every explicitly requested static or interactive chart, function graph, diagram, timeline, comparison, simulation, or illustration. A static visual is one \`openui\` node containing a \`Visualization(...)\` component; when interaction helps, compose that component with controls and bind both to the same local state. Use the existing native template renderer rather than a Mermaid/SVG/HTML fence or Python drawing code. Use \`code_interpreter\` first only when data must be calculated, read from files, transformed, or exported.
+Call \`Visualization\` with four separate arguments in this order: template name, short title, template payload, accessibility summary. Add an optional fifth caption only when a note below the card helps. The payload is the template's inner data, never a versioned visualization envelope. Keep labels concise; put explanations in the caption, payload details, or accessibility summary. Never submit colors, fonts, CSS, dimensions, raw renderer options, or a legacy \`render_visualization\` call. If validation returns field errors, correct those fields once and retry.
+Available templates and their payload contracts:
+${visualizationTemplateGuide()}`;
 
 const PLANNING_ROUTING_HINT = `## Planning and specification tools
 When \`create_plan\` is supplied, call it for a genuinely multi-step request: a roadmap, study schedule, or step-by-step approach the user must act on in order. Send a short \`title\`, an optional one-sentence \`goal\`, and 1-30 ordered \`steps\` (each \`{title, detail?, status?}\`, where status is \`todo\`, \`in_progress\`, or \`done\`). Do not call it for a single-step answer or to restate prose you already wrote.
@@ -427,7 +427,7 @@ export function appendToolRoutingHints<T extends { role: string; content?: unkno
   const blocks: string[] = [];
   if (nameSet.has('web_search')) blocks.push(WEB_SEARCH_ROUTING_HINT);
   if (nameSet.has('web_fetch')) blocks.push(WEB_FETCH_ROUTING_HINT);
-  if (nameSet.has('render_visualization')) blocks.push(VISUALIZATION_ROUTING_HINT);
+  if (nameSet.has('render_intelligent_ui')) blocks.push(INTELLIGENT_UI_VISUALIZATION_HINT);
   if (nameSet.has('create_plan') || nameSet.has('create_spec')) blocks.push(PLANNING_ROUTING_HINT);
   if (nameSet.has('read_attachment')) blocks.push(READ_ATTACHMENT_ROUTING_HINT);
   if (nameSet.has('workspace_agent')) blocks.push(WORKSPACE_AGENT_ROUTING_HINT);

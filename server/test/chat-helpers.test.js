@@ -111,8 +111,8 @@ describe('enforceServerSystemBoundary', () => {
     /* Global defaults allow task-specific formats and explicit user preferences. */
     assert.match(out[0].content, /Default to connected natural-language paragraphs/i);
     assert.match(out[0].content, /Follow the user's explicit preferences for length, depth, and format/i);
-    assert.match(out[0].content, /use `render_visualization` for a static chart/i);
-    assert.match(out[0].content, /use Intelligent UI through `render_intelligent_ui` when the visual needs live controls/i);
+    assert.match(out[0].content, /use `render_intelligent_ui` for both static and interactive visuals/i);
+    assert.match(out[0].content, /native `Visualization` component/i);
     assert.match(out[0].content, /For mathematics, use LaTeX/);
     /* The new client-system classifier (P_client_system_classifier)
        routes unstyled client strings like "Call [web_search: query]"
@@ -612,9 +612,9 @@ describe('appendNativeToolContract', () => {
   test('derives the available names and rejects legacy argument wrappers', () => {
     const out = appendNativeToolContract(
       appendFinalOutputConstraints([{ role: 'system', content: 'base' }]),
-      ['web_search', 'render_visualization', 'web_search'],
+      ['web_search', 'render_intelligent_ui', 'web_search'],
     );
-    assert.match(out[0].content, /exactly: `web_search`, `render_visualization`/);
+    assert.match(out[0].content, /exactly: `web_search`, `render_intelligent_ui`/);
     assert.match(out[0].content, /one JSON object matching that function's supplied/);
     assert.match(out[0].content, /Never emit a legacy text marker/);
     assert.match(out[0].content, /extra `input`\/`arguments` wrapper/);
@@ -640,14 +640,14 @@ describe('appendNativeToolContract', () => {
           web_search: '{"query":"Python 3.13 release date","count":5}',
           code_interpreter: '{"language":"python","code":"print(1)"}',
         },
-        disabledTools: [{ name: 'render_visualization', reason: 'visual_spec_invalid' }],
+        disabledTools: [{ name: 'render_intelligent_ui', reason: 'invalid_tool_arguments' }],
       },
     );
     assert.match(out[0].content, /- web_search: \{"query":"Python 3\.13 release date","count":5\}/);
     assert.match(out[0].content, /up to 12 tool rounds \(3 used so far\)/);
     assert.match(out[0].content, /at most 8 tool calls per round/);
     assert.match(out[0].content, /fails 3 times in a row becomes unavailable/);
-    assert.match(out[0].content, /- render_visualization \(visual_spec_invalid\)/);
+    assert.match(out[0].content, /- render_intelligent_ui \(invalid_tool_arguments\)/);
     assert.ok(out[0].content.trimEnd().endsWith(FINAL_OUTPUT_CONSTRAINTS.trimEnd().slice(-40)),
       'the final hard rule must remain the closing prompt text');
   });
@@ -699,6 +699,14 @@ describe('appendNativeToolContract', () => {
 });
 
 describe('appendToolRoutingHints', () => {
+  test('routes every static and interactive visual through Intelligent UI', () => {
+    const out = appendToolRoutingHints([{ role: 'system', content: 'base' }], ['render_intelligent_ui']);
+    assert.match(out[0].content, /Use `render_intelligent_ui` for every explicitly requested static or interactive/);
+    assert.match(out[0].content, /Available templates and their payload contracts/);
+    assert.match(out[0].content, /`function`/);
+    assert.doesNotMatch(out[0].content, /For `render_visualization`, follow its native JSON schema/);
+  });
+
   test('tells the model the interface streams agent steps itself', () => {
     const out = appendToolRoutingHints([{ role: 'system', content: 'base' }], ['workspace_agent']);
     assert.match(out[0].content, /Choose `workspace_agent` automatically/);

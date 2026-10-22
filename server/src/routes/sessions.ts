@@ -139,10 +139,11 @@ export const SessionPayloadSchema = z.object({
       }).passthrough()).max(20).optional(),
       /* P_inline-restore — character offset in the assistant's rawText
        * where this tool call split the reply, plus the native
-       * visualization spec the run produced. Both are needed to
+       * visualization specs the run produced. These are needed to
        * rebuild the inline text→row→chart layout on reload/share. */
       textOffset: z.number().int().nonnegative().max(10_000_000).optional().nullable(),
       visualization: z.any().optional().nullable(),
+      visualizations: z.array(z.any()).max(8).optional(),
       /* P_tool-run-restore — the Codex step log and the terminal status the
        * declarative renderer (frontend/src/react/tool-run) needs to rebuild a
        * run's state without the live SSE stream. Steps are capped client-side
@@ -269,6 +270,7 @@ export function sanitizeSessionPayload(body: any): any {
           x.executionId = clipStr(x.executionId, 200);
           x.runId = clipStr(x.runId, 200);
           x.status = clipStr(x.status, 60);
+          if (Array.isArray(x.visualizations)) x.visualizations = x.visualizations.slice(0, 8);
           /* Loose truthy/falsy values (1, '1', 'yes') collapse to a
              boolean so z.boolean() never sees a non-boolean. */
           if (x.isError != null) x.isError = x.isError === true || x.isError === 'true' || x.isError === 1 || x.isError === '1';
@@ -709,10 +711,11 @@ router.post('/', writeLimiter, async (req, res, next) => {
                     /* P_inline-restore — round-trip the pieces the client
                      * needs to rebuild the inline tool layout: search
                      * results (row source lists), the rawText split
-                     * offset, and the native visualization spec. */
+                     * offset, and native visualization specs. */
                     results: Array.isArray(tc.results) ? tc.results.slice(0, 20) : [],
                     textOffset: typeof tc.textOffset === 'number' ? tc.textOffset : null,
                     visualization: tc.visualization == null ? null : tc.visualization,
+                    visualizations: Array.isArray(tc.visualizations) ? tc.visualizations.slice(0, 8) : [],
                     runId: tc.runId == null ? null : String(tc.runId).slice(0, 200),
                     status: tc.status == null ? null : String(tc.status).slice(0, 60),
                     /* Well-formed only, and capped: the renderer ignores a

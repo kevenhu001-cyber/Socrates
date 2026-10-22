@@ -7,16 +7,17 @@ function prepare() { const s = useChatStore.getState(); s.reset(); s.setSessions
 
 test('stream stays with its saved UUID after switching conversations and separates reasoning/tools', async () => {
   prepare(); const saved: Session[] = []; let streamId = '';
+  const visualizations = [{ version: 1, template: 'bar', title: 'Sales', accessibilitySummary: 'Sales by quarter', payload: { series: [{ data: [12] }] } }];
   await runChatTurn({ sessionId: 'session-a', turnId: 't', text: 'Question', signal: new AbortController().signal, isCurrent: () => true,
     save: async (s) => { saved.push(structuredClone(s)); return { ...row('11111111-1111-4111-8111-111111111111', s.projectId), title: 'Saved' }; },
     stream: async (input) => {
       streamId = input.sessionId;
       useChatStore.getState().selectSession('b'); input.handlers.onReasoning?.('thinking'); input.handlers.onDelta?.('answer');
-      input.handlers.onToolUse?.([{ id: 'call', name: 'search', input: { query: 'x' } }]); input.handlers.onToolResult?.({ id: 'call', ok: true, output: 'result', results: [{ url: 'https://example.com' }] });
+      input.handlers.onToolUse?.([{ id: 'call', name: 'render_intelligent_ui', input: { version: 1, nodes: [] } }]); input.handlers.onToolResult?.({ id: 'call', name: 'render_intelligent_ui', ok: true, output: 'result', results: [{ url: 'https://example.com' }], visualizations });
     },
   });
   assert.equal(streamId, '11111111-1111-4111-8111-111111111111'); assert.equal(saved.length, 2);
-  const message = saved[1].messages![1]; assert.equal(message.rawText, 'answer'); assert.equal(message.reasoningContent, 'thinking'); assert.equal(message.toolCalls?.length, 1); assert.equal(message.toolCalls?.[0].output, 'result');
+  const message = saved[1].messages![1]; assert.equal(message.rawText, 'answer'); assert.equal(message.reasoningContent, 'thinking'); assert.equal(message.toolCalls?.length, 1); assert.equal(message.toolCalls?.[0].output, 'result'); assert.deepEqual(message.toolCalls?.[0].visualizations, visualizations);
   assert.equal(useChatStore.getState().sessions.find((s) => s.id === 'b')!.messages!.length, 0); assert.equal(useChatStore.getState().status, 'idle');
 });
 test('session creation failure does not call stream and keeps unsaved messages with an error', async () => {

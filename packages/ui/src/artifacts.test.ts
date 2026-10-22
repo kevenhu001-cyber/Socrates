@@ -37,6 +37,28 @@ test('visualization tool calls yield descriptors once per call', () => {
   assert.match(descriptors[0].document(), /<path /);
 });
 
+test('Intelligent UI tool calls yield one artifact for each embedded visualization', () => {
+  const descriptors = artifactsFromToolCalls([{
+    id: 'ui-1',
+    name: 'render_intelligent_ui',
+    visualizations: [
+      { version: 1, template: 'bar', title: 'Revenue', accessibilitySummary: 'Revenue by month', payload: { categories: ['Jan'], series: [{ data: [10] }] } },
+      { version: 1, template: 'line', title: 'Growth', accessibilitySummary: 'Growth over time', payload: { categories: ['Jan'], series: [{ data: [2] }] } },
+      { version: 2, template: 'unknown', title: 'Ignored', accessibilitySummary: 'Invalid version', payload: {} },
+    ],
+  }], 'light');
+  assert.equal(descriptors.length, 2);
+  assert.deepEqual(descriptors.map((artifact) => artifact.title), ['Revenue', 'Growth']);
+  assert.deepEqual(descriptors.map((artifact) => artifact.id), ['artifact-ui-1-1', 'artifact-ui-1-2']);
+  assert.match(descriptors[0].document(), /<svg/);
+  assert.deepEqual(artifactsFromToolCalls([{
+    id: 'failed-ui',
+    name: 'render_intelligent_ui',
+    isError: true,
+    visualizations: [{ version: 1, template: 'bar', title: 'Rejected', accessibilitySummary: 'Rejected chart', payload: {} }],
+  }], 'light'), []);
+});
+
 test('bridge messages are validated before they reach the host', () => {
   assert.deepEqual(parseArtifactBridgeMessage('{"type":"ready","artifactId":"a1"}'), { type: 'ready', artifactId: 'a1' });
   assert.deepEqual(parseArtifactBridgeMessage({ type: 'resize', height: 340 }), { type: 'resize', height: 340 });

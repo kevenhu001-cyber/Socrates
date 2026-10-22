@@ -58,7 +58,7 @@ test('the Visualization component tells the model its argument shape', async () 
   const { library } = await import('../src/react/intelligence-ui/openui/library.ts');
   const description = library.toJSONSchema()['$defs'].Visualization.description;
   assert.match(description, /arguments are the template name, a short title, the template payload and an accessibility summary/);
-  assert.match(description, /Never pass the full render_visualization envelope/);
+  assert.match(description, /Never pass a versioned visualization envelope/);
   assert.doesNotMatch(description, /using its exact template\/payload contract/);
 });
 

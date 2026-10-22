@@ -461,6 +461,25 @@ test('visualization results retain terminal metadata and spec for session saves'
   runtime.dispose();
 });
 
+test('Intelligent UI result snapshots survive tool runtime projection for session saves', () => {
+  const { message, runtime } = agentRuntimeHarness();
+  const spec = {
+    version: 1,
+    template: 'line',
+    title: 'Daily signups',
+    accessibilitySummary: 'Signups by day.',
+    payload: { categories: ['Mon'], series: [{ name: 'Signups', data: [8] }] },
+  };
+  runtime.recordToolUse({ id: 'ui-viz-1', name: 'render_intelligent_ui', input: { version: 1, nodes: [] } });
+  runtime.recordToolResult({
+    id: 'ui-viz-1', name: 'render_intelligent_ui', ok: true, status: 'completed',
+    output: 'Rendered 1 UI nodes', visualizations: [spec],
+  });
+  const entry = message.toolCalls.find((call) => call.id === 'ui-viz-1');
+  assert.deepEqual(entry.visualizations, [spec]);
+  runtime.dispose();
+});
+
 test('a failed agent run marks the entry failed on the data', () => {
   const { message, runtime } = agentRuntimeHarness();
   runtime.recordToolUse({ id: 'agent-1', name: 'workspace_agent', input: {} });

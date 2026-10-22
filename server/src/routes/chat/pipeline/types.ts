@@ -39,6 +39,8 @@ export type ToolResult = {
   artifactFileIds?: Array<{ id?: string; name?: string; mimeType?: string | null }>;
   executionId?: string | null;
   visualization?: { template?: string; title?: string } | null;
+  /** Validated Visualization v1 snapshots extracted from OpenUI source for clients without an OpenUI runtime. */
+  visualizations?: Array<Record<string, unknown>>;
   plan?: { title?: string; steps?: unknown[] } | null;
   spec?: { title?: string; requirements?: unknown[] } | null;
   results?: unknown;

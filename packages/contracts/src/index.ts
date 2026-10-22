@@ -133,6 +133,8 @@ export interface ToolCall {
   results?: Array<Record<string, JsonValue>>;
   textOffset?: number;
   visualization?: JsonValue;
+  /** Validated v1 visual snapshots extracted from an OpenUI tool result. */
+  visualizations?: JsonValue[];
   approval?: ToolApproval;
 }
 

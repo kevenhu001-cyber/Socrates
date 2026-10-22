@@ -18,16 +18,32 @@ function withVisualizationArgumentHint(issues: string[]): string[] {
 }
 
 export function validateOpenUiProgram(source: string): string[] {
+  return inspectOpenUiProgram(source).issues;
+}
+
+/** Parse and validate OpenUI once, returning native Visualization specs that
+ * can be consumed by clients without an OpenUI runtime (for example the
+ * Universal App). Dynamic values are evaluated from the program's declared
+ * initial state; unresolved client-only values stay in the OpenUI document. */
+export function inspectOpenUiProgram(source: string): {
+  issues: string[];
+  visualizations: Array<Record<string, unknown>>;
+} {
   try {
     const declarations = split(tokenize(source)).map((statement) => statement.id);
     const parsed = parser.parse(source);
-    return [
+    const embedded = inspectEmbeddedVisualizations([parsed.root, parsed.rootExpression], parsed.stateDeclarations);
+    const issues = [
       ...withVisualizationArgumentHint(openUiProgramIssues(parsed, declarations)),
       ...openUiRuntimeIssues(parsed, parsed.stateDeclarations),
-      ...embeddedVisualizationIssues([parsed.root, parsed.rootExpression], parsed.stateDeclarations),
+      ...embedded.issues,
     ];
+    return {
+      issues: [...new Set(issues)].slice(0, 8),
+      visualizations: issues.length === 0 ? embedded.visualizations : [],
+    };
   } catch {
-    return ['OpenUI program could not be parsed; use the supplied component signatures'];
+    return { issues: ['OpenUI program could not be parsed; use the supplied component signatures'], visualizations: [] };
   }
 }
 
@@ -54,8 +70,12 @@ function envelopeMisuse(props: Record<string, unknown>): string | null {
 
 /** Apply the existing visual contract to composed visuals whenever defaults are evaluable.
  * Custom client-only functions stay with the client; they are never executed here. */
-function embeddedVisualizationIssues(root: unknown, state: Record<string, unknown>): string[] {
+function inspectEmbeddedVisualizations(root: unknown, state: Record<string, unknown>): {
+  issues: string[];
+  visualizations: Array<Record<string, unknown>>;
+} {
   const issues: string[] = [];
+  const visualizations: Array<Record<string, unknown>> = [];
   let budget = 20000;
   const walk = (value: unknown, depth = 0): void => {
     if (!value || typeof value !== 'object' || --budget < 0 || depth > 100) return;
@@ -81,12 +101,16 @@ function embeddedVisualizationIssues(root: unknown, state: Record<string, unknow
         const spec = resolve({ version: 1, ...props });
         if (!unresolved) {
           const validation = validateVisualizationSpec(spec);
-          if (!validation.ok) issues.push(`Visualization: ${validation.issues?.map((issue) => `${issue.path}: ${issue.message}`).join('; ')}`);
+          if (!validation.ok) {
+            issues.push(`Visualization: ${validation.issues?.map((issue) => `${issue.path}: ${issue.message}`).join('; ')}`);
+          } else if (visualizations.length < 8) {
+            visualizations.push(validation.spec as unknown as Record<string, unknown>);
+          }
         }
       }
     }
     for (const item of Object.values(node)) walk(item, depth + 1);
   };
   walk(root);
-  return [...new Set(issues)].slice(0, 8);
+  return { issues: [...new Set(issues)].slice(0, 8), visualizations };
 }

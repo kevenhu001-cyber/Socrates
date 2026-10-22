@@ -4,9 +4,11 @@ The SPA's `render_intelligent_ui` tool now composes controls, local actions,
 computed results and existing native visualization engines in one surface.
 The primary contract is input -> state -> action/derived value -> visible output
 or an intentional form submission; validation is independent of the tool's name.
-`render_visualization`, native JSON nodes and old message formats remain readable.
-The Universal App retains its existing generic Intelligent UI fallback; this
-change does not add an OpenUI runtime to native clients.
+Legacy `render_visualization` calls, native JSON nodes and old message formats
+remain readable. The server extracts validated initial `Visualization` specs
+from OpenUI programs into the tool result so clients without an OpenUI runtime
+can still render their charts. The Universal App uses those snapshots inside
+its existing artifact island; web keeps the full OpenUI controls and interaction.
 
 ## Composition
 
@@ -34,12 +36,10 @@ separate arguments. The server rejects the envelope shape by name so a model
 that confuses the two contracts is corrected instead of being told that a
 payload field is missing.
 
-Routing follows the shape of the request. A static chart, function graph,
-diagram, timeline or comparison uses `render_visualization` directly, because
-its flat contract has a documented payload and an example per template. A
-visual that needs live controls, local state or interaction uses Intelligent UI
-through `render_intelligent_ui` and embeds the native template with the
-`Visualization` component, so controls and the chart stay one surface.
+All reader-facing charts, function graphs, diagrams, timelines and comparisons
+use `render_intelligent_ui`. A static visual can be one OpenUI `Visualization`
+component; when interaction helps, compose it with controls bound to the same
+local state so they stay one surface.
 
 A pocket calculator remains one optional deterministic component:
 `root = Col([Calculator("计算器")])`. It uses immediate pocket-calculator

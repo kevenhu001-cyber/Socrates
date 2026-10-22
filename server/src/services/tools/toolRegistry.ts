@@ -72,7 +72,10 @@ export function createToolRegistry({ codeInterpreterToolDef, mode, connectorConn
        must not overlap an in-flight agent run. */
     { name: 'workspace_agent', modelDefinition: WORKSPACE_AGENT_TOOL, enabled: PI_AGENT_ENABLED, pure: false, sessionSerial: 'workspace' },
     { name: 'initialize_workspace', modelDefinition: INITIALIZE_WORKSPACE_TOOL, enabled: PI_AGENT_ENABLED, pure: false, sessionSerial: 'workspace' },
-    { name: 'render_visualization', modelDefinition: VISUALIZATION_TOOL, enabled: process.env.VISUALIZATION_TOOL_ENABLED !== 'false', pure: true, sessionSerial: false },
+    /* Legacy flat-spec route. Keep its schema/executor readable for older
+       server-side compatibility code, but stop offering a second model-facing
+       visualization tool; all new visuals use render_intelligent_ui. */
+    { name: 'render_visualization', modelDefinition: VISUALIZATION_TOOL, enabled: false, pure: true, sessionSerial: false },
     /* Tutor and Chat share the same native capability surface. Pedagogical
        search restraint belongs in the Tutor system policy; hiding the schema
        here made the client prompt promise a tool the model could not call. */

@@ -6,9 +6,9 @@ import {PI_AGENT_ENABLED} from '../src/services/tools/piAgent.js';
 test('tool registry exposes the same native search and visual tools in tutor mode', () => {
   const chat = createToolRegistry({ codeInterpreterToolDef: { function: { name: 'code_interpreter' } }, mode: 'chat' });
   const workspaceTools = PI_AGENT_ENABLED ? ['workspace_agent', 'initialize_workspace'] : [];
-  assert.deepEqual(chat.definitions.map((tool) => tool.function.name), ['code_interpreter', ...workspaceTools, 'render_visualization', 'web_search', 'web_fetch', 'read_attachment', 'save_memory', 'render_intelligent_ui', 'patch_intelligent_ui', 'cite_sources', 'create_plan', 'create_spec', 'create_site', 'arxiv_search']);
+  assert.deepEqual(chat.definitions.map((tool) => tool.function.name), ['code_interpreter', ...workspaceTools, 'web_search', 'web_fetch', 'read_attachment', 'save_memory', 'render_intelligent_ui', 'patch_intelligent_ui', 'cite_sources', 'create_plan', 'create_spec', 'create_site', 'arxiv_search']);
   const tutor = createToolRegistry({ codeInterpreterToolDef: null, mode: 'tutor' });
-  assert.deepEqual(tutor.definitions.map((tool) => tool.function.name), [...workspaceTools, 'render_visualization', 'web_search', 'web_fetch', 'read_attachment', 'save_memory', 'render_intelligent_ui', 'patch_intelligent_ui', 'cite_sources', 'create_plan', 'create_spec', 'create_site', 'arxiv_search']);
+  assert.deepEqual(tutor.definitions.map((tool) => tool.function.name), [...workspaceTools, 'web_search', 'web_fetch', 'read_attachment', 'save_memory', 'render_intelligent_ui', 'patch_intelligent_ui', 'cite_sources', 'create_plan', 'create_spec', 'create_site', 'arxiv_search']);
   /* sessionSerial carries the lane name: workspace tools share 'workspace'
      (a reset must not overlap an agent run); code_interpreter's scratch
      dir is an independent 'code' lane. */
@@ -17,7 +17,8 @@ test('tool registry exposes the same native search and visual tools in tutor mod
   assert.equal(chat.get('initialize_workspace').sessionSerial, 'workspace');
   assert.equal(chat.get('initialize_workspace').pure, false);
   assert.equal(tutor.get('workspace_agent').pure, false);
-  assert.equal(chat.get('render_visualization').pure, true);
+  assert.equal(chat.get('render_visualization').enabled, false);
+  assert.equal(chat.get('render_intelligent_ui').enabled, true);
   assert.equal(chat.get('patch_intelligent_ui').sessionSerial, chat.get('render_intelligent_ui').sessionSerial);
   assert.equal(chat.get('cite_sources').enabled, true);
   /* read_attachment is pure (no side effects) and unserialized — the

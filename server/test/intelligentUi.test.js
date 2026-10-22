@@ -88,12 +88,32 @@ test('legacy native UI cannot report successful nonfunctional buttons', () => {
 
 test('composed visualizations receive the existing native payload validation', () => {
   const valid = 'root = Col([Slider($n,1,8),Visualization("bar","Linked",{categories:["A"],series:[{data:[$n * 2]}]},"Linked chart")])\n$n = 2';
-  assert.equal(validateIntelligentUi({ version: 1, nodes: [{ id: 'app', type: 'openui', source: valid }] }).ok, true);
+  const accepted = validateIntelligentUi({ version: 1, nodes: [{ id: 'app', type: 'openui', source: valid }] });
+  assert.equal(accepted.ok, true);
+  if (accepted.ok) {
+    assert.equal(accepted.visualizations.length, 1);
+    assert.equal(accepted.visualizations[0].template, 'bar');
+    assert.deepEqual(accepted.visualizations[0].payload.categories, ['A']);
+    assert.equal(accepted.visualizations[0].payload.series[0].data[0], 4);
+  }
   for (const source of [valid.replace('"bar"', '"unknown"'), valid.replace('series:', 'wrong:')]) {
     const result = validateIntelligentUi({ version: 1, nodes: [{ id: 'app', type: 'openui', source }] });
     assert.equal(result.ok, false);
     assert.match(result.error, /Visualization/);
   }
+});
+
+test('Intelligent UI tool results expose extracted visuals to native clients', async () => {
+  const source = 'root = Col([Visualization("bar","Sales",{categories:["Q1"],series:[{name:"Sales",data:[12]}]},"Sales by quarter")])';
+  const events = [];
+  const outcome = await executeIntelligentUi(
+    { version: 1, nodes: [{ id: 'app', type: 'openui', source }] },
+    { id: 'chart-ui' },
+    { emitter: { event: (...args) => events.push(args) } },
+  );
+  assert.equal(outcome.result.status, 'completed');
+  assert.equal(outcome.result.visualizations.length, 1);
+  assert.equal(events[0][1].visualizations[0].template, 'bar');
 });
 
 test('the Visualization envelope misuse is reported as the argument shape it is', () => {
@@ -111,14 +131,14 @@ test('the Visualization envelope misuse is reported as the argument shape it is'
   }
 });
 
-test('the server policy routes static visuals to the flat contract and interactive ones to Intelligent UI', () => {
-  assert.match(SERVER_SYSTEM_POLICY, /render_visualization` for a static chart/);
-  assert.match(SERVER_SYSTEM_POLICY, /render_intelligent_ui` when the visual needs live controls/);
-  assert.doesNotMatch(SERVER_SYSTEM_POLICY, /including for static visuals/);
+test('the server policy routes static and interactive visuals through Intelligent UI', () => {
+  assert.match(SERVER_SYSTEM_POLICY, /render_intelligent_ui` for both static and interactive visuals/);
+  assert.match(OPENUI_TOOL_GUIDANCE, /render_intelligent_ui for every reader-facing visual/);
+  assert.doesNotMatch(SERVER_SYSTEM_POLICY, /render_visualization` for a static chart/);
 });
 
 test('the generated OpenUI guidance states the Visualization argument shape', () => {
   const description = OPENUI_SCHEMA['$defs'].Visualization.description;
-  assert.match(description, /Never pass the full render_visualization envelope/);
-  assert.match(OPENUI_TOOL_GUIDANCE, /never the full render_visualization envelope/);
+  assert.match(description, /The arguments are the template name, a short title, the template payload and an accessibility summary/);
+  assert.match(OPENUI_TOOL_GUIDANCE, /never a versioned visualization envelope/);
 });

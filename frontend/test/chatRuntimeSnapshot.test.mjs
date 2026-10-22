@@ -22,6 +22,7 @@ test('a published message snapshot is isolated from later legacy mutations', () 
       results: [{ title: 'before', metadata: { rank: 1 } }],
       artifacts: [{ id: 'artifact-1', name: 'before.txt' }],
       visualization: { kind: 'bar', axis: { label: 'before' } },
+      visualizations: [{ version: 1, payload: { series: [{ data: [1] }] } }],
     }],
     _liveStatus: { phase: 'tool-running', label: 'Searching' },
   };
@@ -39,6 +40,7 @@ test('a published message snapshot is isolated from later legacy mutations', () 
   source.toolCalls[0].artifacts[0].name = 'after.txt';
   source.toolCalls[0].visualization.kind = 'line';
   source.toolCalls[0].visualization.axis.label = 'after';
+  source.toolCalls[0].visualizations[0].payload.series[0].data[0] = 2;
   source._liveStatus.label = 'Done';
 
   assert.equal(published.rawText, 'hello');
@@ -52,6 +54,7 @@ test('a published message snapshot is isolated from later legacy mutations', () 
   assert.equal(published.toolCalls[0].artifacts[0].name, 'before.txt');
   assert.equal(published.toolCalls[0].visualization.kind, 'bar');
   assert.equal(published.toolCalls[0].visualization.axis.label, 'before');
+  assert.equal(published.toolCalls[0].visualizations[0].payload.series[0].data[0], 1);
   assert.equal(published._liveStatus.label, 'Searching');
   assert.ok(Object.isFrozen(published));
   assert.ok(Object.isFrozen(published.toolCalls));
@@ -61,6 +64,7 @@ test('a published message snapshot is isolated from later legacy mutations', () 
   assert.ok(Object.isFrozen(published.toolCalls[0].detail.request));
   assert.ok(Object.isFrozen(published.toolCalls[0].results[0].metadata));
   assert.ok(Object.isFrozen(published.toolCalls[0].visualization.axis));
+  assert.ok(Object.isFrozen(published.toolCalls[0].visualizations[0].payload.series[0].data));
 });
 
 test('an already-frozen domain message crosses the snapshot boundary zero-copy', () => {

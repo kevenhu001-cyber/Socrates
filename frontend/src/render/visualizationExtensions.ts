@@ -95,10 +95,10 @@ export function renderExtension(
    the full spec in context from its own tool call, so the prompt only
    carries template/title + the error. */
 function extensionRepairPrompt(spec: ExtensionSpec | null | undefined, errMsg: unknown): string {
-  let msg = 'The render_visualization card "' + String((spec && spec.title) || '').slice(0, 80)
+  let msg = 'The Visualization card "' + String((spec && spec.title) || '').slice(0, 80)
     + '" (template: ' + (spec && spec.template) + ') failed to render in the client: '
     + String(errMsg || 'render error').slice(0, 300)
-    + '. Call render_visualization once more with a corrected spec — fix the payload, or switch to a simpler built-in template (chart/graph templates are more reliable than extension templates).';
+    + '. Rebuild it with render_intelligent_ui using one openui node whose source calls Visualization(template, title, corrected payload, accessibilitySummary) — fix the payload, or switch to a simpler built-in template (chart/graph templates are more reliable than extension templates).';
   /* GeoGebra is the only renderer loaded from a third-party CDN. When
      the CDN itself is unreachable, retrying the same template cannot
      help — tell the model to express the construction with a
@@ -120,6 +120,6 @@ export function dispatchExtensionRepair(
   if (!card || typeof card.dispatchEvent !== 'function') return;
   card.dispatchEvent(new CustomEvent('tool-retry', {
     bubbles: true,
-    detail: { tool: 'render_visualization', prompt: extensionRepairPrompt(spec, errMsg) },
+    detail: { tool: 'render_intelligent_ui', prompt: extensionRepairPrompt(spec, errMsg) },
   }));
 }

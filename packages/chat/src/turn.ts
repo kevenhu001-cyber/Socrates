@@ -77,6 +77,7 @@ export async function runChatTurn(input: {
         if (value.output !== undefined && typeof value.output !== 'string') call.output = JSON.stringify(value.output);
         call.progressPhase = call.isError ? 'failed' : 'completed';
         for (const key of ['plan', 'spec', 'visualization'] as const) if (value[key] !== undefined) call[key] = value[key];
+        if (Array.isArray(value.visualizations)) call.visualizations = value.visualizations;
         if (typeof value.durationMs === 'number') call.durationMs = value.durationMs;
         if (typeof value.executionId === 'string') call.executionId = value.executionId;
         if (typeof value.retryable === 'boolean') call.retryable = value.retryable;

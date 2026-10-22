@@ -1,12 +1,12 @@
 import { validateIntelligentUi as validateEnvelope } from '../../../packages/core/src/intelligentUiValidation.js';
-import { validateOpenUiProgram } from './openUiProgram.js';
+import { inspectOpenUiProgram } from './openUiProgram.js';
 import { OPENUI_TOOL_GUIDANCE } from './openUiPrompt.generated.js';
 const TYPES = ['panel', 'stack', 'grid', 'text', 'metric', 'progress', 'divider', 'callout', 'slider', 'choice', 'toggle', 'button', 'table', 'chart', 'tabs', 'entity', 'image-gallery', 'openui'];
 export const INTELLIGENT_UI_TOOL = {
   type: 'function' as const,
   function: {
     name: 'render_intelligent_ui',
-    description: 'Render a small interactive UI alongside prose. Nodes have unique id/type and optional parent. Root state and bind support local controls: slider, choice, toggle and tabs. Values support {state:key}, {tool:callId,path:field}, or {op:add|sub|mul|div|round|min|max|eq|if|concat,args:[]}. Actions: set, increment, prompt, open_url. Charts use kind:bar|line and points:[{label,value}]; tables use columns and rows. Callouts and progress bars accept tone:neutral|info|success|warning|danger; metrics accept delta and trend:up|down|flat. For working tools and richer layouts, prefer one openui node with source in OpenUI Lang 1.0 (see source property). Existing native nodes remain supported. No HTML, CSS, JS or executable handlers. Emit parents before children and write each complete node before starting the next. Keep essential conclusions in prose. After success, the surface ID is this tool call ID and revision is 0. Use patch_intelligent_ui to modify it in this turn while preserving local controls.',
+    description: 'Render reader-facing visuals and interactive UI alongside prose. Use this single tool for static or interactive charts, function graphs, diagrams, timelines, comparisons, simulations and illustrations. For a native visualization template, use one openui node with source in OpenUI Lang 1.0 and a Visualization(template, title, payload, accessibilitySummary) component; its payload is the template inner data. Compose controls with Visualization when interaction helps and bind them to shared local state. Nodes have unique id/type and optional parent. Root state and bind support local controls: slider, choice, toggle and tabs. Values support {state:key}, {tool:callId,path:field}, or {op:add|sub|mul|div|round|min|max|eq|if|concat,args:[]}. Actions: set, increment, prompt, open_url. Tables use columns and rows. Callouts and progress bars accept tone:neutral|info|success|warning|danger; metrics accept delta and trend:up|down|flat. No HTML, CSS, JS or executable handlers. Emit parents before children and write each complete node before starting the next. Keep essential conclusions in prose. After success, the surface ID is this tool call ID and revision is 0. Use patch_intelligent_ui to modify it in this turn while preserving local controls.',
     parameters: {
       type: 'object', additionalProperties: false, required: ['version', 'nodes'],
       properties: {
@@ -57,9 +57,12 @@ export const INTELLIGENT_UI_TOOL = {
   },
 };
 
-export function validateIntelligentUi(value: unknown): { ok: true } | { ok: false; error: string } {
+export function validateIntelligentUi(value: unknown):
+  | { ok: true; visualizations: Array<Record<string, unknown>> }
+  | { ok: false; error: string } {
   const envelope = validateEnvelope(value);
   if (!envelope.ok) return envelope;
+  const visualizations: Array<Record<string, unknown>> = [];
   for (const node of (value as { nodes: Array<{ id: string; type: string; source?: string; action?: { type?: string; key?: string; prompt?: unknown; url?: unknown } }> }).nodes) {
     if (node.type === 'button' || node.action) {
       const action = node.action;
@@ -70,8 +73,9 @@ export function validateIntelligentUi(value: unknown): { ok: true } | { ok: fals
       if (action.type === 'open_url' && !action.url) return { ok: false, error: `UI ${node.id}: open_url action needs a URL` };
     }
     if (node.type !== 'openui') continue;
-    const issues = validateOpenUiProgram(node.source!);
-    if (issues.length) return { ok: false, error: `OpenUI ${node.id}: ${issues.join('; ')}` };
+    const inspected = inspectOpenUiProgram(node.source!);
+    if (inspected.issues.length) return { ok: false, error: `OpenUI ${node.id}: ${inspected.issues.join('; ')}` };
+    visualizations.push(...inspected.visualizations.slice(0, Math.max(0, 8 - visualizations.length)));
   }
-  return { ok: true };
+  return { ok: true, visualizations };
 }

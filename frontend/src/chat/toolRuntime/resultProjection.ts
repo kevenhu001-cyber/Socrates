@@ -14,6 +14,7 @@ export interface ToolResultInput {
   name?: string;
   results?: unknown[];
   visualization?: { version: number; [key: string]: unknown } | null;
+  visualizations?: unknown[] | null;
   detail?: unknown;
   retryable?: boolean;
   executionId?: string;
@@ -102,6 +103,7 @@ function optionalResultFields(result: ToolResultInput): Record<string, unknown> 
   if (result.errorCode !== undefined) fields.errorCode = result.errorCode ?? null;
   if (result.detail !== undefined) fields.detail = result.detail ?? null;
   if (typeof result.retryable === 'boolean') fields.retryable = result.retryable;
+  if (Array.isArray(result.visualizations)) fields.visualizations = result.visualizations.slice(0, 8);
   return fields;
 }
 

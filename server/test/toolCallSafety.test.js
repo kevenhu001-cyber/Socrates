@@ -227,7 +227,7 @@ test('repairToolArguments works without a schema', () => {
 /* ── resolveToolName ─────────────────────────────────────────────── */
 
 const REGISTRY_NAMES = [
-  'code_interpreter', 'workspace_agent', 'render_visualization',
+  'code_interpreter', 'workspace_agent', 'render_intelligent_ui',
   'web_search', 'web_fetch', 'create_plan', 'create_spec',
 ];
 
@@ -254,7 +254,7 @@ test('resolveToolName maps documented synonyms onto canonical tools', () => {
     run_code: 'code_interpreter',
     plan: 'create_plan',
     spec: 'create_spec',
-    chart: 'render_visualization',
+    chart: 'render_intelligent_ui',
   };
   for (const [requested, expected] of Object.entries(cases)) {
     const resolved = resolveToolName(requested, REGISTRY_NAMES);

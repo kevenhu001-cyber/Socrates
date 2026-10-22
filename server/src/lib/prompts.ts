@@ -28,7 +28,7 @@ const TEACHER_MODE_PROMPT_PATH = path.resolve(REPO_ROOT, 'prompts/teacher-mode.m
  * for code_interpreter. The tool's own `description` field already
  * covers the runnable-Python rules (no top-level await, etc.) — the
  * markdown file complements that with the dispatch logic the model
- * needs to choose between code_interpreter, render_visualization, and
+ * needs to choose between code_interpreter, render_intelligent_ui, and
  * a hand-written ```viz block. The file is intended to be
  * hot-reloaded; the loader reads mtime on every call and re-caches
  * when it changes. */
@@ -121,7 +121,7 @@ export async function getTeacherModePrompt() {
  * duplicate) the tool's function-calling `description` field: the
  * `description` field is canonical for the runnable-Python rules,
  * while this markdown is canonical for "when to call this tool vs.
- * render_visualization vs. a hand-written ```viz block".
+ * render_intelligent_ui vs. a hand-written ```viz block".
  *
  * Returns null if the file can't be read; the caller should fall
  * back to not injecting anything (the `description` field still
