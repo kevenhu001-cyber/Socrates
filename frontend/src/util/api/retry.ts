@@ -1,4 +1,5 @@
 import type { ApiRequestOptions } from './request.ts';
+import { abortableDelay, throwIfAborted } from '../abort.ts';
 
 export interface RetryOptions {
   retries?: number;
@@ -43,6 +44,7 @@ export function createRetryApiFetch<T>(
     let attempt = 0;
 
     while (true) {
+      throwIfAborted(userSignal);
       try {
         return await fetchJson(path, opts);
       } catch (caught) {
@@ -51,7 +53,7 @@ export function createRetryApiFetch<T>(
         if (!isRetryable(error) || attempt >= retries || (userSignal && userSignal.aborted)) throw error;
         attempt += 1;
         error.retried = attempt;
-        await new Promise((resolve) => setTimeout(resolve, retryDelay(backoffMs, attempt)));
+        await abortableDelay(retryDelay(backoffMs, attempt), userSignal);
       }
     }
   };

@@ -65,8 +65,8 @@ export async function createChatTurn(input: {
   return { turn: res.turn as ChatTurn, created: !!res.created };
 }
 
-export async function getChatTurn(turnId: string): Promise<{ turn: ChatTurn; events: TurnEventFrame[] }> {
-  const res = await apiFetch(`/api/chat-turns/${encodeURIComponent(turnId)}`);
+export async function getChatTurn(turnId: string, signal?: AbortSignal | null): Promise<{ turn: ChatTurn; events: TurnEventFrame[] }> {
+  const res = await apiFetch(`/api/chat-turns/${encodeURIComponent(turnId)}`, { signal });
   return { turn: res.turn as ChatTurn, events: (res.events || []) as TurnEventFrame[] };
 }
 

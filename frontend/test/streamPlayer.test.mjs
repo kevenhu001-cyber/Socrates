@@ -12,6 +12,7 @@ import { createStreamPlayer } from '../src/render/streamPlayer.ts';
 function harness(stepMs = 16) {
   let nowMs = 0;
   let queued = null;
+  let delayed = null;
   const now = () => nowMs;
   const raf = (cb) => { queued = cb; };
   function frame() {
@@ -22,12 +23,18 @@ function harness(stepMs = 16) {
   function run(frames) {
     for (let i = 0; i < frames; i++) {
       nowMs += stepMs;
-      if (!queued) break;
+      if (!queued && delayed && nowMs >= delayed.at) {
+        const cb = delayed.cb; delayed = null; cb();
+      }
       frame();
     }
   }
   return {
     now, raf, run,
+    delay(cb, ms) {
+      const item = { cb, at: nowMs + ms }; delayed = item;
+      return () => { if (delayed === item) delayed = null; };
+    },
     advance(ms) { nowMs += ms; },
     frame,
     get hasQueued() { return queued !== null; },
@@ -41,7 +48,7 @@ test('push does not paint synchronously; frames paint the visible prefix', () =>
   const player = createStreamPlayer({
     onFrame: (text, f) => frames.push({ text, ...f }),
     now: h.now,
-    raf: h.raf,
+    raf: h.raf, delay: h.delay,
   });
   player.push('Hello, world!');
   // No paint until a frame runs.
@@ -59,7 +66,7 @@ test('a burst reveals gradually across frames, never all in the first frame', ()
   const player = createStreamPlayer({
     onFrame: (text) => frames.push(text.length),
     now: h.now,
-    raf: h.raf,
+    raf: h.raf, delay: h.delay,
   });
   player.push(big);
   // Run a handful of frames; the burst must NOT be fully revealed at once.
@@ -83,7 +90,7 @@ test('upstream stall drives a starved state change once buffer drains', () => {
     onFrame: () => {},
     onStateChange: (s) => states.push(s),
     now: h.now,
-    raf: h.raf,
+    raf: h.raf, delay: h.delay,
     config: { starveAfterMs: 100 },
   });
   player.push('short');
@@ -97,7 +104,7 @@ test('a new push after a stall revives the loop', () => {
   const player = createStreamPlayer({
     onFrame: (text) => { lastText = text; },
     now: h.now,
-    raf: h.raf,
+    raf: h.raf, delay: h.delay,
     config: { starveAfterMs: 100 },
   });
   player.push('AAAA');
@@ -118,7 +125,7 @@ test('beginDrain flushes the remaining buffer then fires onDone once', () => {
     onFrame: (text) => { lastText = text; },
     onDone: () => { doneCount += 1; },
     now: h.now,
-    raf: h.raf,
+    raf: h.raf, delay: h.delay,
   });
   player.push('The quick brown fox');
   h.run(2); // partial playback
@@ -139,7 +146,7 @@ test('flushNow makes everything visible immediately and fires onDone', () => {
     onFrame: (text) => { lastText = text; },
     onDone: () => { doneCount += 1; },
     now: h.now,
-    raf: h.raf,
+    raf: h.raf, delay: h.delay,
   });
   player.push('immediate content here');
   player.flushNow();
@@ -157,7 +164,7 @@ test('DONE flushes a large pending answer once and invalidates its queued frame'
   const frames = [];
   let done = 0;
   const player = createStreamPlayer({
-    now: h.now, raf: h.raf,
+    now: h.now, raf: h.raf, delay: h.delay,
     onFrame: (visible) => frames.push(visible),
     onDone: () => { done++; },
   });
@@ -177,7 +184,7 @@ test('dispose drops stale queued frames (no paint into a torn-down turn)', () =>
   const player = createStreamPlayer({
     onFrame: (text) => frames.push(text),
     now: h.now,
-    raf: h.raf,
+    raf: h.raf, delay: h.delay,
   });
   player.push('should not paint after dispose');
   // A frame is queued but not yet run.
@@ -192,7 +199,7 @@ test('playedLen never exceeds totalLen', () => {
   const player = createStreamPlayer({
     onFrame: () => {},
     now: h.now,
-    raf: h.raf,
+    raf: h.raf, delay: h.delay,
   });
   player.push('a'.repeat(300));
   for (let i = 0; i < 500; i++) {
@@ -281,4 +288,49 @@ test('alpha=0 restores the legacy buffer-depth cadence', () => {
   const rows = playScript(events, 5_000);
   const rates = new Set(rows.map((r) => Math.round(r.cps)));
   assert.ok(rates.size <= 2, `depth-only cadence should be near-constant, saw ${rates.size} values`);
+});
+
+test('empty buffers park animation frames and use one delayed starvation check', () => {
+  const h = harness();
+  const states = [];
+  const player = createStreamPlayer({ now: h.now, raf: h.raf, delay: h.delay,
+    onFrame() {}, onStateChange: (state) => states.push(state),
+  });
+  player.push('A');
+  h.run(2);
+  assert.equal(h.hasQueued, false, 'no animation work while waiting for the network');
+  h.run(30);
+  assert.equal(states.at(-1), 'starved');
+  assert.equal(h.hasQueued, false);
+});
+
+test('a burst after a long network stall starts smoothly without accumulated idle credit', () => {
+  const h = harness();
+  const frames = [];
+  const player = createStreamPlayer({ now: h.now, raf: h.raf, delay: h.delay,
+    onFrame: (text) => frames.push(text),
+  });
+  player.push('A');
+  h.run(100);
+  h.advance(10_000);
+  player.push('B'.repeat(1000));
+  h.run(1);
+  assert.ok(frames.at(-1).length < 50, 'first recovered frame must not dump the burst');
+  h.run(100);
+  assert.equal(frames.at(-1), 'A' + 'B'.repeat(1000));
+});
+
+test('dispose cancels the delayed idle wake', () => {
+  const h = harness();
+  const states = [];
+  const player = createStreamPlayer({ now: h.now, raf: h.raf, delay: h.delay,
+    onFrame() {}, onStateChange: (state) => states.push(state),
+  });
+  player.push('A');
+  h.run(2);
+  player.dispose();
+  const count = states.length;
+  h.run(100);
+  assert.equal(states.length, count);
+  assert.equal(h.hasQueued, false);
 });

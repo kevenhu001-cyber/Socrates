@@ -76,11 +76,11 @@ export function linkAbortSignal(signal: AbortSignal | null | undefined, source: 
   let onAbort: (() => void) | null = null;
   if (signal) {
     if (signal.aborted) {
-      try { controller.abort(); }
+      try { controller.abort(signal.reason); }
       catch (error) { reportSwallow(error, source + '.abort'); }
     } else {
       onAbort = () => {
-        try { controller.abort(); }
+        try { controller.abort(signal.reason); }
         catch (error) { reportSwallow(error, source + '.abort'); }
       };
       signal.addEventListener('abort', onAbort, { once: true });

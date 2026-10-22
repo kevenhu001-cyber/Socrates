@@ -170,7 +170,10 @@ test('reduced motion displays streamed prose immediately', async ({ page }) => {
   const live = page.locator('.msg.assistant').last().locator('.tool-run-prose.is-live');
   await expect(live).toContainText('中文流式输出');
   expect(await live.locator('.stream-append-reveal').count()).toBe(0);
-  expect(await live.evaluate((el) => el.getAnimations({ subtree: true }).length)).toBe(0);
+  // The reduced-motion CSS collapses transitions to 0.01ms; Chromium can
+  // still list them until its next animation tick. Reject persistent motion
+  // without racing that final tick.
+  await expect.poll(() => live.evaluate((el) => el.getAnimations({ subtree: true }).length)).toBe(0);
 });
 
 test('a paragraph that settles mid-stream does not replay an entrance animation', async ({ page }) => {
@@ -224,4 +227,35 @@ test('kill switch paints the whole arrived text immediately', async ({ page }) =
   // With smoothing off, the first paint after the delta already carries the
   // whole arrived text — no gradual reveal window.
   await expect(live).toContainText('disables smooth playback entirely');
+});
+
+test('input stays responsive during a network gap and the resumed burst is paced', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  const prefix = 'The first part is already readable. ';
+  const burst = 'Recovered content stays smooth. '.repeat(50);
+  await page.evaluate((prefix) => {
+    window.__recoveredOpening = null;
+    const observer = new MutationObserver(() => {
+      const text = document.querySelector('.tool-run-prose.is-live')?.textContent || '';
+      if (text.length <= prefix.length || window.__recoveredOpening) return;
+      window.__recoveredOpening = { length: text.length, delayMs: performance.now() - window.__smoothArrivedAt };
+      observer.disconnect();
+    });
+    observer.observe(document.getElementById('msgList'), { subtree: true, childList: true, characterData: true });
+  }, prefix);
+  await startStream(page, { deltas: [prefix, burst], gapMs: 1500, holdOpenMs: 1500 });
+  const bubble = page.locator('.msg.assistant').last();
+  await expect(bubble.locator('.stream-cursor.is-starved')).toHaveCount(1);
+  const input = page.locator('#composerInputWrap .tiptap');
+  await input.fill('Typing remains available while the connection pauses.');
+  await expect(input).toHaveText('Typing remains available while the connection pauses.');
+  await expect.poll(() => page.evaluate(() => window.__recoveredOpening)).toBeTruthy();
+  const opening = await page.evaluate(() => window.__recoveredOpening);
+  expect(opening.delayMs).toBeLessThan(500);
+  if (opening.delayMs < 120) expect(opening.length).toBeLessThan((prefix + burst).length - 1);
+  await expect(bubble).toContainText((prefix + burst).trimEnd());
+  await page.evaluate(() => window.__smoothPromise);
+  await expect(input).toHaveText('Typing remains available while the connection pauses.');
+  expect(errors).toEqual([]);
 });

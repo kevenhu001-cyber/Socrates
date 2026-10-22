@@ -184,3 +184,32 @@ test('retryApiFetch applies the configured retry count and exposes the final att
   });
   assert.equal(calls, 2);
 });
+
+test('cancelling during backoff settles immediately and never sends another request', async () => {
+  const { createRetryApiFetch } = await import('../src/util/api/retry.ts');
+  const abort = new AbortController();
+  let calls = 0;
+  let started;
+  const first = new Promise((resolve) => { started = resolve; });
+  const retry = createRetryApiFetch(async () => {
+    calls++;
+    started();
+    throw Object.assign(new Error('Network unavailable'), { status: 0 });
+  });
+  const pending = retry('/api/test', { signal: abort.signal }, { backoffMs: 60_000 });
+  await first;
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  abort.abort('session-switch');
+  await assert.rejects(pending, { name: 'AbortError', message: 'session-switch' });
+  assert.equal(calls, 1);
+});
+
+test('already cancelled requests never reach the transport', async () => {
+  const { createRetryApiFetch } = await import('../src/util/api/retry.ts');
+  const abort = new AbortController();
+  abort.abort('user-stop');
+  let calls = 0;
+  const retry = createRetryApiFetch(async () => { calls++; });
+  await assert.rejects(retry('/api/test', { signal: abort.signal }), { name: 'AbortError' });
+  assert.equal(calls, 0);
+});

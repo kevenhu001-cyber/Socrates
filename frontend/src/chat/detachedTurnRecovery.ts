@@ -2,6 +2,7 @@
  * server turn continued running. */
 import { getChatTurn, subscribeChatTurnEvents, type ChatTurn, type TurnEventFrame } from './turnClient.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { abortableDelay } from '../util/abort.ts';
 
 /** Callbacks the recovering stream drives — the same surface stream.js owns. */
 export interface DetachedRecoveryContext {
@@ -23,6 +24,8 @@ interface RecoveryState {
   done: boolean;
   failed: boolean;
   maxSeq: number;
+  /** Durable content replay starts at zero; suppress the prefix already shown. */
+  replayLength: number;
 }
 
 type Snapshot = { turn: ChatTurn; events: TurnEventFrame[] };
@@ -52,8 +55,13 @@ const EVENT_HANDLERS = new Map<string, FrameHandler>([
   ['content', (data, state, context) => {
     const frame = data as { delta?: unknown };
     if (typeof frame.delta !== 'string') return;
-    state.full += frame.delta;
-    invoke(context.onDelta, [frame.delta], 'chat/detachedTurnRecovery.onDelta');
+    const start = state.replayLength;
+    state.replayLength += frame.delta.length;
+    const missing = frame.delta.slice(Math.max(0, state.full.length - start));
+    if (missing) {
+      state.full += missing;
+      invoke(context.onDelta, [missing], 'chat/detachedTurnRecovery.onDelta');
+    }
   }],
   ['reasoning', (data, _state, context) => {
     const frame = data as { delta?: unknown };
@@ -84,7 +92,8 @@ function applyDetachedTurnFrame(
   context: DetachedRecoveryContext,
   controller: AbortController,
 ): void {
-  if (!frame) return;
+  if (!frame || state.done || state.failed || context.signal?.aborted) return;
+  if (!Number.isInteger(frame.sequence) || frame.sequence <= state.maxSeq) return;
   try {
     const data = frame.data || {};
     const handler = EVENT_HANDLERS.get(frame.event);
@@ -103,15 +112,13 @@ function completedTurnResult(
   turn: ChatTurn | null | undefined,
   state: RecoveryState,
   context: DetachedRecoveryContext,
-  callbackFirst: boolean,
 ): { text: string; html: null; widgets: never[] } | null {
   if (!turn || turn.status !== 'completed') return null;
   const finalText = turn.fullText || state.full;
   if (finalText.length > state.full.length) {
     const remaining = finalText.slice(state.full.length);
-    if (callbackFirst) invoke(context.onDelta, [remaining], 'chat/detachedTurnRecovery.onDelta.final');
     state.full = finalText;
-    if (!callbackFirst) invoke(context.onDelta, [remaining], 'chat/detachedTurnRecovery.onDelta.remaining');
+    invoke(context.onDelta, [remaining], 'chat/detachedTurnRecovery.onDelta.remaining');
   }
   return { text: state.full, html: null, widgets: [] };
 }
@@ -126,8 +133,9 @@ async function pollDetachedTurn(
     if (context.signal && context.signal.aborted) break;
 
     let snapshot: Snapshot | null = null;
-    try { snapshot = await getChatTurn(turnId); }
+    try { snapshot = await getChatTurn(turnId, context.signal); }
     catch (error) { reportSwallow(error, 'chat/detachedTurnRecovery.pollCheck'); }
+    if (context.signal?.aborted) return null;
     if (snapshot && snapshot.turn) {
       if (snapshot.turn.turnRuntime) {
         invoke(context.opts && context.opts.onTurnSnapshot, [snapshot.turn.turnRuntime], 'chat/detachedTurnRecovery.runtimeSnapshot');
@@ -137,7 +145,7 @@ async function pollDetachedTurn(
           invoke(context.opts && context.opts.onTurnEvent, [frame.data], 'chat/detachedTurnRecovery.snapshot');
         }
       }
-      const completed = completedTurnResult(snapshot.turn, state, context, true);
+      const completed = completedTurnResult(snapshot.turn, state, context);
       if (completed) return completed;
       if (isFailedTurn(snapshot.turn)) return null;
     }
@@ -150,41 +158,17 @@ async function pollDetachedTurn(
 
     if (state.done) return { text: state.full, html: null, widgets: [] };
     if (state.failed) return null;
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    try { await abortableDelay(800, context.signal); }
+    catch { return null; }
   }
   return state.done ? { text: state.full, html: null, widgets: [] } : null;
-}
-
-async function recoverActiveTurn(
-  turnId: string,
-  state: RecoveryState,
-  context: DetachedRecoveryContext,
-  controller: AbortController,
-): Promise<{ text: string; html: null; widgets: never[] } | null> {
-  try {
-    const initial = await getChatTurn(turnId);
-    if (initial && initial.turn) {
-      if (initial.turn.turnRuntime) {
-        invoke(context.opts && context.opts.onTurnSnapshot, [initial.turn.turnRuntime], 'chat/detachedTurnRecovery.runtimeSnapshot');
-      }
-      for (const frame of initial.events || []) {
-        if (frame.event === 'turn_event') {
-          invoke(context.opts && context.opts.onTurnEvent, [frame.data], 'chat/detachedTurnRecovery.snapshot');
-        }
-      }
-      const completed = completedTurnResult(initial.turn, state, context, false);
-      if (completed) return completed;
-      if (isFailedTurn(initial.turn)) return null;
-    }
-  } catch (error) { reportSwallow(error, 'chat/detachedTurnRecovery.initialCheck'); }
-  return pollDetachedTurn(turnId, state, context, controller);
 }
 
 export async function recoverDetachedTurn(
   turnId: string,
   context: DetachedRecoveryContext,
 ): Promise<{ text: string; html: null; widgets: never[] } | null> {
-  const state: RecoveryState = { full: context.currentFull || '', done: false, failed: false, maxSeq: 0 };
+  const state: RecoveryState = { full: context.currentFull || '', done: false, failed: false, maxSeq: 0, replayLength: 0 };
   const controller = new AbortController();
   const signal = context.signal;
   const abortBridge = () => abortSubscription(controller, 'user-abort', 'chat/detachedTurnRecovery.abortBridge');
@@ -193,8 +177,9 @@ export async function recoverDetachedTurn(
     signal.addEventListener('abort', abortBridge, { once: true });
   }
 
-  try { return await recoverActiveTurn(turnId, state, context, controller); }
+  try { return await pollDetachedTurn(turnId, state, context, controller); }
   finally {
+    abortSubscription(controller, 'recovery-finished', 'chat/detachedTurnRecovery.cleanup');
     if (signal) {
       try { signal.removeEventListener('abort', abortBridge); }
       catch (error) { reportSwallow(error, 'chat/detachedTurnRecovery.removeAbortBridge'); }

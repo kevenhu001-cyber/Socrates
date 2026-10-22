@@ -18,6 +18,7 @@
 
 import {
   createPlaybackClock,
+  DEFAULT_PLAYBACK_CONFIG,
   type PlaybackClock,
   type PlaybackConfig,
   type PlaybackState,
@@ -57,6 +58,8 @@ export interface StreamPlayerOptions {
   config?: Partial<PlaybackConfig>;
   now?: () => number;
   raf?: (cb: () => void) => void;
+  /** Schedule a one-shot idle wake; returns a cancellation callback. */
+  delay?: (cb: () => void, ms: number) => () => void;
 }
 
 export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
@@ -65,6 +68,12 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
   const onFrame = options.onFrame;
   const onDone = options.onDone;
   const onStateChange = options.onStateChange;
+  const delay = options.delay || ((cb: () => void, ms: number) => {
+    const timer = setTimeout(cb, ms);
+    return () => clearTimeout(timer);
+  });
+  const starveAfterMs = Math.max(0, options.config?.starveAfterMs ?? DEFAULT_PLAYBACK_CONFIG.starveAfterMs);
+  let cancelIdle: (() => void) | null = null;
 
   let full = '';
   const clock: PlaybackClock = createPlaybackClock(options.config, now());
@@ -102,14 +111,15 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
         }
         return; // clock is terminal; stop the loop
       }
-      /* Keep ticking while there is buffered text to play OR while a stall
-         could still be reported (buffer empty but not yet starved). Once
-         starved with an empty buffer, stop until the next push() revives
-         the loop — no busy-spin during a long upstream stall. */
+      /* An empty buffer needs one delayed state check, not a frame loop.
+         Keep animation frames available for input and scrolling during gaps. */
       if (clock.playedLen() < clock.totalLen()) {
         schedule();
-      } else if (r.state !== 'starved') {
-        schedule();
+      } else if (r.state === 'playing') {
+        cancelIdle = delay(() => {
+          cancelIdle = null;
+          if (captured === generation) schedule();
+        }, starveAfterMs);
       }
     };
   }
@@ -120,18 +130,28 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
     raf(tick(generation));
   }
 
+  function clearIdle(): void {
+    cancelIdle?.();
+    cancelIdle = null;
+  }
+
   return {
     push(delta: string): void {
       if (!delta) return;
+      clearIdle();
+      // Idle time must not become playback credit for a new network burst.
+      if (clock.playedLen() === clock.totalLen()) clock.tick(now());
       full += delta;
       clock.push(full.length, now());
       schedule();
     },
     beginDrain(): void {
+      clearIdle();
       clock.beginDrain();
       schedule();
     },
     flushNow(): void {
+      clearIdle();
       /* End-of-turn safety: make everything visible and paint synchronously,
          bypassing the adaptive rate. Used by abort/teardown paths that must
          not animate. */
@@ -164,6 +184,7 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
       return clock.totalLen();
     },
     dispose(): void {
+      clearIdle();
       generation += 1;
       scheduled = false;
     },
