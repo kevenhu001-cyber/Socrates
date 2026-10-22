@@ -124,7 +124,7 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
     push(delta: string): void {
       if (!delta) return;
       full += delta;
-      clock.push(full.length);
+      clock.push(full.length, now());
       schedule();
     },
     beginDrain(): void {
@@ -135,10 +135,9 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
       /* End-of-turn safety: make everything visible and paint synchronously,
          bypassing the adaptive rate. Used by abort/teardown paths that must
          not animate. */
-      clock.beginDrain();
-      // Advance the clock far enough to consume the whole buffer at once.
       const played = clock.playedLen();
       const total = clock.totalLen();
+      clock.flushNow();
       if (total > played) {
         onFrame(full.slice(0, total), {
           state: 'done',

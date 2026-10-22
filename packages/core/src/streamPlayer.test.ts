@@ -58,8 +58,8 @@ describe('createPlaybackClock — steady arrival', () => {
 
 describe('createPlaybackClock — burst is smoothed', () => {
   test('a single burst reveals gradually across frames, never in one tick', () => {
-    const clock = createPlaybackClock(CFG, 0);
-    clock.push(1000); // 1000 chars land at once
+    const clock = createPlaybackClock({ ...CFG, maxLagMs: 0 }, 0);
+    clock.push(1000); // Explicit rate-only mode keeps the legacy gradual reveal.
     const first = clock.tick(16); // one 16ms frame
     assert.ok(first.revealed > 0, 'reveals some');
     assert.ok(first.revealed < 1000, 'does not reveal the whole burst in one frame');
@@ -75,6 +75,46 @@ describe('createPlaybackClock — burst is smoothed', () => {
     assert.equal(clock.playedLen(), 1000);
     // 1000 chars at maxCps 600 => ~1.7s => ~100 frames. Well above a few.
     assert.ok(frames > 30, `expected gradual playback, got ${frames} frames`);
+  });
+});
+
+describe('createPlaybackClock — bounded display latency', () => {
+  test('a large burst catches up by the lag budget without losing text', () => {
+    const clock = createPlaybackClock();
+    clock.push(10000, 0);
+    assert.ok(clock.tick(16).playedLen < 10000);
+    assert.equal(clock.tick(DEFAULT_PLAYBACK_CONFIG.maxLagMs).playedLen, 10000);
+  });
+
+  test('continuous arrivals cannot postpone the deadline of older text', () => {
+    const clock = createPlaybackClock();
+    for (let at = 0; at <= 1000; at += 16) {
+      clock.push((at / 16 + 1) * 500, at);
+      const frame = clock.tick(at);
+      const due = Math.floor((at - DEFAULT_PLAYBACK_CONFIG.maxLagMs) / 16);
+      if (due >= 0) assert.ok(frame.playedLen >= (due + 1) * 500);
+      assert.ok(frame.playedLen <= clock.totalLen());
+    }
+  });
+
+  test('a resumed clock does not delay already expired arrivals', () => {
+    const clock = createPlaybackClock();
+    clock.push(10000, 0);
+    assert.equal(clock.tick(5000).playedLen, 10000);
+  });
+
+  test('arrival sampling accumulates short frames independently of playback', () => {
+    const withEma = createPlaybackClock({ maxLagMs: 0, arrivalEmaAlpha: 1, catchUpPending: 1000000 });
+    const withoutEma = createPlaybackClock({ maxLagMs: 0, arrivalEmaAlpha: 0, catchUpPending: 1000000 });
+    let sampledRate = 0;
+    let legacyRate = 0;
+    for (let at = 16; at <= 256; at += 16) {
+      withEma.push(at, at);
+      withoutEma.push(at, at);
+      sampledRate = withEma.tick(at).cps;
+      legacyRate = withoutEma.tick(at).cps;
+    }
+    assert.ok(sampledRate > legacyRate * 2, 'short-frame arrivals contribute to the rate sample');
   });
 });
 

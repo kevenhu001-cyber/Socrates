@@ -45,11 +45,8 @@ export function createFinishLifecycle(
     if (state.finished) return;
 
     const player = state._streamPlayer;
-    if (state._smooth && player && player.playedLen() < player.totalLen()) {
-      state._finishContinuation = finishBody;
-      player.beginDrain();
-      return;
-    }
+    // Upstream has finished: commit the full answer before releasing the turn.
+    // Decorative playback must not delay persistence or the next queued prompt.
     if (player) player.flushNow();
     finishBody();
   }

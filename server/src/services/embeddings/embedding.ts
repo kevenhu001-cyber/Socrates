@@ -22,6 +22,7 @@ import { getLlmDispatcher } from '../core/llm.js';
 import { getDb } from '../../db/index.js';
 import { embeddingConfig } from '../../db/schema/index.js';
 import { decrypt, encryptionKey } from '../../lib/crypto.js';
+import { withTimeBudget } from '../../lib/timeBudget.js';
 
 export interface EmbeddingProviderConfig {
   url: string;
@@ -168,9 +169,24 @@ const MAX_CHARS_PER_TEXT = 8_000;
 
 export async function embedTexts(
   texts: string[],
+  options: { signal?: AbortSignal } = {},
 ): Promise<number[][] | null> {
+  if (options.signal?.aborted) return null;
   const config = await getActiveEmbeddingConfig();
+  if (options.signal?.aborted) return null;
   if (!config) return null;
+  return requestEmbeddingBatch(config, texts, options);
+}
+
+/** Transport half of embedding, shared by configured requests and isolated
+ * transport checks. Configuration lookup stays outside the caller's abortable
+ * HTTP operation; no request may start after its retrieval budget expired. */
+export async function requestEmbeddingBatch(
+  config: EmbeddingProviderConfig,
+  texts: string[],
+  options: { signal?: AbortSignal } = {},
+): Promise<number[][] | null> {
+  if (options.signal?.aborted) return null;
   if (!config.keyPlaintext) return null;
   if (!isAllowedEmbeddingUrl(config.url)) return null;
   if (!texts.length) return [];
@@ -190,36 +206,39 @@ export async function embedTexts(
     body.dimensions = config.dimensions;
   }
   try {
-    const upstream = await fetch(`${baseUrl}/embeddings`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.keyPlaintext}`,
-        'Accept-Encoding': 'identity',
-      },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(EMBED_TIMEOUT_MS),
-      dispatcher: getLlmDispatcher(),
-    } as unknown as RequestInit);
-    if (!upstream.ok) {
-      const detail = await upstream.text().catch(() => '');
-      console.warn(`[embedding] upstream ${upstream.status}: ${detail.slice(0, 200)}`);
-      return null;
-    }
-    const payload = await upstream.json() as { data?: Array<{ embedding?: number[] }> };
-    const vectors: number[][] = (payload?.data || []).map((d) => d?.embedding || []);
-    if (vectors.length !== texts.length) {
-      console.warn(`[embedding] returned ${vectors.length} vectors for ${texts.length} inputs`);
-      return null;
-    }
-    for (const vec of vectors) {
-      if (!Array.isArray(vec) || vec.length !== config.dimensions) {
-        console.warn(`[embedding] vector length ${vec?.length} does not match dimensions ${config.dimensions}`);
+    return await withTimeBudget(async (signal) => {
+      const upstream = await fetch(`${baseUrl}/embeddings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${config.keyPlaintext}`,
+          'Accept-Encoding': 'identity',
+        },
+        body: JSON.stringify(body),
+        signal,
+        dispatcher: getLlmDispatcher(),
+      } as unknown as RequestInit);
+      if (!upstream.ok) {
+        const detail = await upstream.text().catch(() => '');
+        console.warn(`[embedding] upstream ${upstream.status}: ${detail.slice(0, 200)}`);
         return null;
       }
-    }
-    return vectors;
+      const payload = await upstream.json() as { data?: Array<{ embedding?: number[] }> };
+      const vectors: number[][] = (payload?.data || []).map((d) => d?.embedding || []);
+      if (vectors.length !== texts.length) {
+        console.warn(`[embedding] returned ${vectors.length} vectors for ${texts.length} inputs`);
+        return null;
+      }
+      for (const vec of vectors) {
+        if (!Array.isArray(vec) || vec.length !== config.dimensions) {
+          console.warn(`[embedding] vector length ${vec?.length} does not match dimensions ${config.dimensions}`);
+          return null;
+        }
+      }
+      return vectors;
+    }, { signal: options.signal, timeoutMs: EMBED_TIMEOUT_MS }, () => null);
   } catch (err) {
+    if (options.signal?.aborted) return null;
     console.warn('[embedding] failed:', (err as Error).message);
     return null;
   }

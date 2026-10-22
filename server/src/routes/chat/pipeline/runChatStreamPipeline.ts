@@ -49,6 +49,7 @@ import {
   resolveUsage
 } from '../../../services/core/usageTracker.js';
 import {annotateSpan, withSpan} from '../../../lib/telemetry.js';
+import { createChatTiming } from '../../../lib/chatTiming.js';
 import {startSseKeepalive, trackSseConnection} from '../../../lib/sse.js';
 import {
   appendNativeToolContract,
@@ -73,17 +74,12 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
 
 async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registerCleanup?: (release: () => void) => void): Promise<void> {
   const { req, res, prep, sessionIdFromQuery, projectIdFromBody, turnId } = ctx;
-  /* P_ttfb-metric — anchor for the time-to-first-token breakdown. Logged once
-     per turn when the first content/reasoning delta reaches the client, so
-     upstream-slow vs. pipeline-slow can be told apart in production instead of
-     guessed at. Cheap: one Date.now() at entry plus one log line per turn. */
-  const ttfbStart = Date.now();
-  let ttfbReported = false;
+  // The route starts timing before auth/preparation. Reasoning and answer
+  // text have separate first-output milestones; SSE padding counts as neither.
+  const timing = ctx.timing ?? createChatTiming();
   const reportTtfb = (kind: 'content' | 'reasoning') => {
-    if (ttfbReported) return;
-    ttfbReported = true;
-    const ms = Date.now() - ttfbStart;
-    if (ms > 250) console.log(`[ttfb] first-${kind} ${ms}ms turn=${turnId || '-'} model=${prep.payload.provider?.model || '-'}`);
+    if (!timing.mark(`first_${kind}`)) return;
+    console.log('[chat-latency]', JSON.stringify({ turnId: turnId || null, kind, milestonesMs: timing.snapshot() }));
   };
   const { messages: finalMessages, provider, safeExtraBody, mode, temperature, maxTokens, reasoning_effort, responseSpeed } = prep.payload;
   /* P_prep-parallel — prefer the tool context the route shell started
@@ -473,6 +469,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
    * twice. Every threshold is environment-tunable.
    * ───────────────────────────────────────────────────────────── */
   const toolCtx = await toolCtxPromise;
+  timing.mark('tools_ready');
   const { toolPolicy, toolRegistry, toolDefs, toolNames, schemaForTool, toolExamples, FUZZY_SAFE, connectorConnectionsByProvider, projectConnectorConnectionsByProvider } = toolCtx;
   const MAX_TOOL_ITERATIONS = toolCtx.MAX_TOOL_ITERATIONS;
   const executionResults = new Map<string, import("./types.js").ToolResult>();
@@ -562,6 +559,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
        iteration index is an attribute rather than a separate span name —
        that keeps them groupable while still showing which hop was slow.
        This is the span that answers "was it the provider or was it us". */
+    timing.mark('upstream_started');
     await withSpan('llm.stream', {
       'llm.model': provider.model,
       'llm.tools_offered': toolsAllowed ? activeToolDefs.length : 0,

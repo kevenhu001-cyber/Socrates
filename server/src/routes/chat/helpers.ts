@@ -33,6 +33,7 @@ import {visualizationTemplateGuide} from '../../services/visualization.js';
    We re-export it from here so the call sites inside this route
    family (`prependTeacherModePrompt`) keep a single import path. */
 import {getCodeInterpreterPrompt, getTeacherModePrompt} from '../../lib/prompts.js';
+import { withTimeBudget } from '../../lib/timeBudget.js';
 /* ─────────────────────────────────────────────────────────────────
    extra_body sanitiser
    ─────────────────────────────────────────────────────────────────
@@ -135,6 +136,7 @@ async function resolveRagContext(
   messages: ChatMessage[],
   ragSessionId: string | undefined,
   userId: string | undefined,
+  signal?: AbortSignal,
 ): Promise<PolicyBlock | null> {
   if (!ragSessionId || !userId || !/^[0-9a-fA-F-]{8,64}$/.test(ragSessionId)) return null;
   /* Retrieval query — the last user message's plain text. */
@@ -155,13 +157,8 @@ async function resolveRagContext(
 
   try {
     const { searchSessionChunksHybrid, sessionOwnedBy } = await import('../../services/embeddings/chunkIndex.js');
-    /* P_ttfb-rag-timeout — the hybrid search's vector leg burns a remote
-     * embedding call, which on a flaky cross-border link can park the turn
-     * for seconds before the first token. RAG is best-effort recall: race
-     * the retrieval against a short budget (default 2s, CHAT_RAG_TIMEOUT_MS,
-     * capped at 10s) and degrade to no injection on timeout — the same
-     * outcome as an empty index. The orphaned retrieval still settles in
-     * the background; a late success is simply unused by this turn. */
+    // Preserve completed lexical recall when optional vector enrichment runs
+    // out of time. Ownership remains an independent, mandatory injection gate.
     const rawTimeout = Number(process.env.CHAT_RAG_TIMEOUT_MS);
     const timeoutMs = Number.isFinite(rawTimeout) && rawTimeout > 0
       ? Math.min(10_000, Math.floor(rawTimeout))
@@ -169,32 +166,14 @@ async function resolveRagContext(
     /* The ownership check gates what is INJECTED, not what is read: the
        search is scoped to the session id and its hits are discarded unless
        the caller owns the session, so both can run at once. */
-    const retrieval = Promise.all([
-      sessionOwnedBy(ragSessionId, userId),
-      searchSessionChunksHybrid(ragSessionId, query, { limit: RAG_MAX_HITS }),
+    const rawVectorTimeout = Number(process.env.CHAT_RAG_VECTOR_TIMEOUT_MS);
+    const vectorTimeoutMs = Math.min(timeoutMs, Number.isFinite(rawVectorTimeout) && rawVectorTimeout > 0
+      ? Math.floor(rawVectorTimeout) : 500);
+    const [owned, hits] = await Promise.all([
+      withTimeBudget(() => sessionOwnedBy(ragSessionId, userId), { timeoutMs, signal }, () => false),
+      searchSessionChunksHybrid(ragSessionId, query, { limit: RAG_MAX_HITS, timeoutMs, vectorTimeoutMs, signal }),
     ]);
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    let timed: Awaited<typeof retrieval> | null;
-    try {
-      timed = await Promise.race([
-        retrieval,
-        new Promise<null>((resolve) => {
-          timer = setTimeout(() => resolve(null), timeoutMs);
-          timer.unref?.();
-        }),
-      ]);
-    } finally {
-      if (timer) clearTimeout(timer);
-    }
-    /* A timed-out race leaves `retrieval` pending; attach a no-op catch so
-       a late rejection is never reported as unhandled. */
-    retrieval.catch(() => {});
-    if (!timed) {
-      console.warn('[chat] RAG context injection timed out after', timeoutMs, 'ms; continuing without recall');
-      return null;
-    }
-    const [owned, hits] = timed;
-    if (!owned) return null;
+    if (!owned || signal?.aborted) return null;
     if (!hits.length) return null;
     const blocks: string[] = [];
     let total = 0;
@@ -862,6 +841,7 @@ export function endSseWithError(res: import('express').Response, err: unknown): 
 export async function prepareChatRequest(
   req: Request,
   res: Response,
+  options: { signal?: AbortSignal } = {},
 ): Promise<
   | { ok: false }
   | {
@@ -910,7 +890,7 @@ export async function prepareChatRequest(
   const teacherPromise: Promise<PolicyBlock | null> = mode === 'tutor'
     ? getTeacherModePrompt().then((prompt) => ({ marker: TEACHER_MODE_MARKER, prompt }))
     : Promise.resolve(null);
-  const ragPromise = resolveRagContext(messages, parsed.ragSessionId, req.userId ?? undefined);
+  const ragPromise = resolveRagContext(messages, parsed.ragSessionId, req.userId ?? undefined, options.signal);
   const assistantPromise = resolveAssistantInstructions(parsed.assistantId, parsed.sessionId, req.userId ?? undefined);
   const memoryPromise = resolveMemoryContext(req.userId ?? undefined, projectId ?? undefined);
   /* The join below awaits every promise, but a rejection that settles while

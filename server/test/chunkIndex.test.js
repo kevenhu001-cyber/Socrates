@@ -27,6 +27,7 @@ import {
   removeMessageChunks,
   sessionOwnedBy,
 } from '../src/services/embeddings/chunkIndex.js';
+import { appendRagContext } from '../src/routes/chat/helpers.js';
 
 let dbAvailable = false;
 const TEST_USER_ID = '00000000-0000-0000-0000-0000000000a3';
@@ -250,5 +251,20 @@ describe('chunkIndex.searchSessionChunksHybrid', () => {
     assert.ok(hits.length >= 1, 'at least one hit');
     assert.ok(hits[0].text.toLowerCase().includes('eiffel tower'),
       'first hit mentions the Eiffel Tower');
+  });
+
+  test('budgeted chat retrieval retains lexical hits and still gates injection by ownership', async (t) => {
+    if (!dbAvailable) return t.skip();
+    await indexMessageChunks(TEST_MESSAGE_ID, TEST_SESSION_ID,
+      'The Eiffel Tower is a wrought-iron lattice tower in Paris, France.');
+    const query = 'Where is the Eiffel Tower located?';
+    const hits = await searchSessionChunksHybrid(TEST_SESSION_ID, query, {
+      limit: 3, timeoutMs: 2000, vectorTimeoutMs: 500,
+    });
+    assert.ok(hits.some((hit) => hit.text.includes('Eiffel Tower')));
+    const input = [{ role: 'system', content: 'Base policy' }, { role: 'user', content: query }];
+    const owned = await appendRagContext(input, TEST_SESSION_ID, TEST_USER_ID);
+    assert.match(owned[0].content, /Eiffel Tower/);
+    assert.equal(await appendRagContext(input, TEST_SESSION_ID, TEST_OTHER_USER_ID), input);
   });
 });

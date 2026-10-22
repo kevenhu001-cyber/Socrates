@@ -35,6 +35,7 @@ import { runChatStreamPipeline } from './pipeline/runChatStreamPipeline.js';
 import { createStreamToolContext } from './pipeline/toolContext.js';
 import { createChatTurn, withChatTurnExecution } from '../../services/core/chatTurns.js';
 import { writeSseEvent } from '../../lib/sse.js';
+import { createChatTiming, type ChatTiming } from '../../lib/chatTiming.js';
 
 import type { Request, Router } from 'express';
 
@@ -73,7 +74,12 @@ export function registerStreamRoute(router: Router) {
    * with the sync POST / route in chat.js — both endpoints spend
    * the user's LLM quota and write per-user rows, so both must be
    * gated identically. */
-  router.post('/stream', requireAuth, resourceScope('chat'), chatRateLimitDispatch, async (req, res, next) => {
+  router.post('/stream', (_req, res, next) => {
+    res.locals.chatTiming = createChatTiming();
+    next();
+  }, requireAuth, resourceScope('chat'), chatRateLimitDispatch, async (req, res, next) => {
+    const timing = res.locals.chatTiming as ChatTiming;
+    timing.mark('authenticated');
     try {
       const sessionIdFromQuery = parseChatSessionId(req.query.sessionId ?? req.body?.sessionId);
       const projectIdFromBody = typeof req.body?.projectId === 'string' ? req.body.projectId : null;
@@ -110,23 +116,26 @@ export function registerStreamRoute(router: Router) {
         : Promise.resolve(null);
       const turnPromise = resolveTurnBinding(req, sessionIdFromQuery, ownershipPromise);
       const [, turnId] = await Promise.all([ownershipPromise, turnPromise]);
+      timing.mark('bound');
 
       // Claim before preparation: RAG/provider prelude can itself call an
       // upstream model. Losing retries must not perform that work either.
       try {
         await withChatTurnExecution(req.userId!, turnId, async (executionSignal) => {
+          timing.mark('claimed');
           const bodyMode = (req.body as { mode?: unknown } | undefined)?.mode;
           const toolCtxPromise = createStreamToolContext(
             req as typeof req & { userId?: string }, bodyMode === 'tutor' ? 'tutor' : 'chat',
           );
           toolCtxPromise.catch(() => {});
-          const prep = await prepareChatRequest(req, res);
+          const prep = await prepareChatRequest(req, res, { signal: executionSignal });
           if (!prep.ok) throw new Error('Request preparation failed');
+          timing.mark('prepared');
           if (executionSignal.aborted) throw new Error('Turn execution interrupted during preparation');
           await runChatStreamPipeline({
             req: req as typeof req & { userId?: string }, res, prep,
             sessionIdFromQuery, projectIdFromBody, turnId, toolCtxPromise, ssePrimed,
-            executionSignal, executionClaimed: true,
+            executionSignal, executionClaimed: true, timing,
           });
         });
       } catch (err) {

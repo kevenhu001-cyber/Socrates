@@ -198,7 +198,6 @@ export function addStreamingMessage(opts){
     thinkCtl: null,
     inlineToolRows: [],
     _streamPlayer: null,
-    _finishContinuation: null,
     /* runtime singletons (filled in below) */
     toolRuntime: null,
     cancelScheduledRender: function(){},
@@ -402,8 +401,8 @@ export function addStreamingMessage(opts){
   /* P_smooth-stream — the playback player decouples arrival from playback.
      push(delta) only fills the buffer; onFrame reveals the played prefix at
      an adaptive rate via doRender(). onStateChange feeds the cursor animation.
-     onDone fires after finish()'s beginDrain() flushes the buffer — that is
-     where completion metadata is saved (via state._finishContinuation).
+     finish() flushes the full arrived answer immediately before committing
+     completion metadata, so playback cannot hold the next turn hostage.
      The rAF seam is bound to the shared `pendingRender` slot so
      cancelScheduledRender() teardown cancels a player-queued frame. */
   var _streamPlayer=createStreamPlayer({
@@ -420,11 +419,6 @@ export function addStreamingMessage(opts){
         patchOwnedMessage({_playbackState:_state},true);
         publishReactChatRuntime({type:"stream-delta",messageId:clientId,textLength:_visibleLen});
       }
-    },
-    onDone:function(){
-      var _cont=state._finishContinuation;
-      state._finishContinuation=null;
-      if(typeof _cont==="function"){try{_cont()}catch(e){reportSwallow(e, 'streamingTurn.doRender.finishContinuation'); }}
     },
     now:function(){return performance.now()},
     raf:function(cb){pendingRender=requestAnimationFrame(cb)}

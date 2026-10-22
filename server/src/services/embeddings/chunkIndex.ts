@@ -31,6 +31,7 @@ import {
   type RagChunk,
 } from './rag.js';
 import { embedTexts, getActiveEmbeddingConfig } from './embedding.js';
+import { collectHybridRetrieval, type HybridRetrievalOptions } from './hybridRetrieval.js';
 
 export interface IndexedChunk {
   id: string;
@@ -197,43 +198,36 @@ export async function sessionOwnedBy(
 export async function searchSessionChunksHybrid(
   sessionId: string,
   query: string,
-  options: { limit?: number; minScore?: number } = {},
+  options: HybridRetrievalOptions & { minScore?: number } = {},
 ): Promise<RagSearchHit[]> {
   const limit = Math.max(1, Math.min(50, options.limit ?? 8));
-  /* P_ttfb-rag-shortcircuit — both legs below are wasted work when the
-     session has no indexed chunks: the BM25 leg would load zero rows and
-     the vector leg would burn a remote embedding call plus a pgvector
-     query to fuse nothing. One indexed EXISTS probe (~1 ms)
-     short-circuits all of it on the path to the first token. Fresh
-     sessions and sessions saved while indexing was off hit this on
-     every turn. */
-  try {
-    const db = getDb();
-    const [probe] = await db
-      .select({ id: sessionChunks.id })
-      .from(sessionChunks)
-      .where(eq(sessionChunks.sessionId, sessionId))
-      .limit(1);
-    if (!probe) return [];
-  } catch {
-    /* A failed probe must not fail retrieval — fall through to the
-       normal legs, which degrade to [] / BM25-only on their own. */
-  }
-  /* P_prep-parallel — the two legs are independent; the vector leg usually
-     includes a remote embedding call, so running BM25 behind it (or it
-     behind BM25) put both latencies on the path to the first token. */
-  const bm25Promise = searchSessionChunks(sessionId, query, { limit });
-  const vectorPromise = (async () => {
+  // Both legs share the empty-index probe. Start it inside the overall budget
+  // so a slow database cannot extend chat's retrieval deadline.
+  let probe: Promise<boolean> | undefined;
+  const hasChunks = (signal: AbortSignal) => {
+    if (signal.aborted) return Promise.resolve(false);
+    return probe ??= (async () => {
+      try {
+        const [row] = await getDb().select({ id: sessionChunks.id }).from(sessionChunks)
+          .where(eq(sessionChunks.sessionId, sessionId)).limit(1);
+        return Boolean(row);
+      } catch {
+        // Probe failure preserves the existing best-effort retrieval path.
+        return true;
+      }
+    })();
+  };
+  return collectHybridRetrieval(async (signal) => {
+    if (!(await hasChunks(signal)) || signal.aborted) return [];
+    return searchSessionChunks(sessionId, query, { limit });
+  }, async (signal) => {
     try {
+      if (!(await hasChunks(signal)) || signal.aborted) return null;
       const config = await getActiveEmbeddingConfig();
-      if (!config) return null;
-      const [queryVector] = (await embedTexts([query])) || [];
-      if (!queryVector || queryVector.length !== config.dimensions) return null;
-      const db = getDb();
-      /* pgvector cosine distance: 0 = identical, 2 = opposite. We use
-         the raw distance as the vector score (lower = better) and fuse
-         with RRF so the two scales never have to be calibrated. */
-      return await db
+      if (!config || signal.aborted) return null;
+      const [queryVector] = (await embedTexts([query], { signal })) || [];
+      if (signal.aborted || !queryVector || queryVector.length !== config.dimensions) return null;
+      return await getDb()
         .select({
           id: sessionChunks.id,
           messageId: sessionChunks.messageId,
@@ -242,53 +236,12 @@ export async function searchSessionChunksHybrid(
           distance: sql<number>`"embedding" <=> ${JSON.stringify(queryVector)}::vector`,
         })
         .from(sessionChunks)
-        .where(and(
-          eq(sessionChunks.sessionId, sessionId),
-          isNotNull(sessionChunks.embedding),
-        ))
+        .where(and(eq(sessionChunks.sessionId, sessionId), isNotNull(sessionChunks.embedding)))
         .orderBy(sql`"embedding" <=> ${JSON.stringify(queryVector)}::vector`)
         .limit(limit);
     } catch (err) {
-      console.warn('[chunkIndex] hybrid vector leg failed, degrading to BM25:', (err as Error).message);
+      if (!signal.aborted) console.warn('[chunkIndex] hybrid vector leg failed, degrading to BM25:', (err as Error).message);
       return null;
     }
-  })();
-  const [bm25Hits, vectorRows] = await Promise.all([bm25Promise, vectorPromise]);
-
-  /* Vector leg. Any pgvector / provider hiccup above degraded to null,
-     which means BM25-only. */
-  try {
-    if (!vectorRows || !vectorRows.length) return bm25Hits;
-
-    /* RRF fusion. Each list contributes 1 / (k + rank) with k=60
-       (standard RRF constant). A chunk that appears in both lists
-       sums the contributions. */
-    const K = 60;
-    const fused = new Map<string, { chunk: IndexedChunk; score: number }>();
-    bm25Hits.forEach((hit, idx) => {
-      const key = `${hit.messageId}:${hit.ordinal}`;
-      const cur = fused.get(key) || { chunk: hit, score: 0 };
-      cur.score += 1 / (K + idx + 1);
-      fused.set(key, cur);
-    });
-    vectorRows.forEach((row, idx) => {
-      const key = `${row.messageId}:${row.ordinal}`;
-      const chunk: IndexedChunk = {
-        id: row.id,
-        messageId: row.messageId,
-        ordinal: row.ordinal,
-        text: row.text,
-      };
-      const cur = fused.get(key) || { chunk, score: 0 };
-      cur.score += 1 / (K + idx + 1);
-      fused.set(key, cur);
-    });
-    return [...fused.values()]
-      .sort((a, b) => b.score - a.score)
-      .slice(0, limit)
-      .map((entry) => ({ ...entry.chunk, score: entry.score }));
-  } catch (err) {
-    console.warn('[chunkIndex] vector re-rank failed, BM25-only:', (err as Error).message);
-    return bm25Hits;
-  }
+  }, options);
 }

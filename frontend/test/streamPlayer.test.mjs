@@ -145,6 +145,30 @@ test('flushNow makes everything visible immediately and fires onDone', () => {
   player.flushNow();
   assert.equal(lastText, 'immediate content here');
   assert.equal(doneCount, 1);
+  assert.equal(player.playedLen(), player.totalLen());
+  assert.equal(player.getState(), 'done');
+  h.run(100);
+  assert.equal(doneCount, 1);
+});
+
+test('DONE flushes a large pending answer once and invalidates its queued frame', () => {
+  const h = harness();
+  const text = '正文🙂'.repeat(5000);
+  const frames = [];
+  let done = 0;
+  const player = createStreamPlayer({
+    now: h.now, raf: h.raf,
+    onFrame: (visible) => frames.push(visible),
+    onDone: () => { done++; },
+  });
+  player.push(text);
+  h.run(1);
+  player.flushNow();
+  h.run(100);
+  player.flushNow();
+  assert.equal(frames.at(-1), text);
+  assert.equal(frames.filter((visible) => visible === text).length, 1);
+  assert.equal(done, 1);
 });
 
 test('dispose drops stale queued frames (no paint into a torn-down turn)', () => {

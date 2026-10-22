@@ -89,7 +89,6 @@ export interface TurnRuntimeState {
   thinkCtl: ThinkCtl | null;
   inlineToolRows: InlineToolRow[];
   _streamPlayer: StreamPlayer | null;
-  _finishContinuation: (() => void) | null;
   _smooth: boolean;
 
   /* runtime singletons */

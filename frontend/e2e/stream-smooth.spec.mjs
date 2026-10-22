@@ -29,6 +29,7 @@ async function startStream(page, { deltas, gapMs = 400, smooth = true, holdOpenM
           const push = () => {
             if (index < deltas.length) {
               const payload = { choices: [{ delta: { content: deltas[index++] } }] };
+              window.__smoothArrivedAt = performance.now();
               controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
               timer = setTimeout(push, gapMs);
               return;
@@ -36,6 +37,7 @@ async function startStream(page, { deltas, gapMs = 400, smooth = true, holdOpenM
             // Optionally hold the SSE open (no more deltas) to exercise a stall
             // with an empty buffer before [DONE].
             timer = setTimeout(() => {
+              window.__smoothDoneAt = performance.now();
               controller.enqueue(encoder.encode('data: [DONE]\n\n'));
               controller.close();
             }, holdOpenMs);
@@ -65,27 +67,66 @@ test.beforeEach(async ({ page }) => {
   await waitForAppShell(page);
 });
 
-test('a large burst is revealed gradually, not dumped in one frame', async ({ page }) => {
-  // One giant delta arrives at once. With smoothing the visible length must
-  // trail the arrived length for at least one measurable moment.
+for (const holdOpenMs of [2000, 0]) {
+  test(`large burst bounds display lag, DONE hold ${holdOpenMs}ms`, async ({ page }, info) => {
+    const text = '快速回复应及时显示，不能积压在播放队列里。'.repeat(500);
+    await page.evaluate((text) => {
+      window.__burstProbe = {};
+      const started = performance.now();
+      const sample = () => {
+        const row = document.querySelector('#msgList .msg.assistant:last-of-type');
+        if ((row?.querySelector('.msg-body')?.textContent || '').includes(text)) {
+          window.__burstProbe.paintedAt ??= performance.now();
+        }
+        if (window.__burstProbe.paintedAt && row?.dataset.streamSettled === 'true') {
+          window.__burstProbe.settledAt = performance.now();
+          return;
+        }
+        if (performance.now() - started < 6000) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    }, text);
+    await startStream(page, { deltas: [text], gapMs: 50, holdOpenMs });
+    await expect.poll(() => page.evaluate(() => window.__burstProbe.settledAt), { timeout: 6000 }).toBeTruthy();
+    const timing = await page.evaluate(() => ({
+      arrivalToPaintMs: window.__burstProbe.paintedAt - window.__smoothArrivedAt,
+      doneToSettledMs: window.__burstProbe.settledAt - window.__smoothDoneAt,
+    }));
+    await info.attach('burst-latency', { body: JSON.stringify(timing), contentType: 'application/json' });
+    expect(timing.arrivalToPaintMs).toBeLessThan(500);
+    expect(timing.doneToSettledMs).toBeLessThan(500);
+    await expect(page.locator('#msgList .msg.assistant').last()).toContainText(text);
+    if (holdOpenMs === 0) await page.screenshot({ path: 'test-results/stream-burst-finished.png' });
+  });
+}
+
+test('a burst paces its opening and catches up once the display deadline expires', async ({ page }) => {
+  // Capture the first DOM update inside the page. A later automation round
+  // trip may arrive after the 120ms deadline, when catching up is required.
   const big = 'Lorem ipsum dolor sit amet '.repeat(60); // ~1600 chars in one burst
+  await page.evaluate(() => {
+    window.__smoothOpening = null;
+    const observer = new MutationObserver(() => {
+      const text = (document.querySelector('.tool-run-prose.is-live')?.textContent || '').trimEnd();
+      if (!text.length) return;
+      window.__smoothOpening = { length: text.length, at: performance.now() };
+      observer.disconnect();
+    });
+    observer.observe(document.getElementById('msgList'), { subtree: true, childList: true, characterData: true });
+  });
   await startStream(page, { deltas: [big], gapMs: 200, holdOpenMs: 12000 });
 
   const live = page.locator('.msg.assistant').last().locator('.tool-run-prose.is-live');
   await expect(live).toBeVisible();
 
-  // Sample the visible length shortly after the burst arrives: it must be
-  // well under the full arrived length (the burst is being played out).
-  const midway = await page.evaluate(async () => {
-    const read = () => (document.querySelector('.tool-run-prose.is-live')?.textContent || '').length;
-    const start = performance.now();
-    while (read() === 0 && performance.now() - start < 3000) {
-      await new Promise((r) => requestAnimationFrame(r));
-    }
-    return read();
-  });
-  expect(midway).toBeGreaterThan(0);
-  expect(midway).toBeLessThan(big.length);
+  await expect.poll(() => page.evaluate(() => window.__smoothOpening)).toBeTruthy();
+  const opening = await page.evaluate(() => ({ ...window.__smoothOpening,
+    delayMs: window.__smoothOpening.at - window.__smoothArrivedAt,
+  }));
+  expect(opening.length).toBeGreaterThan(0);
+  expect(opening.delayMs).toBeLessThan(500);
+  // If the browser missed the pacing window, a full first paint is correct.
+  if (opening.delayMs < 120) expect(opening.length).toBeLessThan(big.trimEnd().length);
 
   // It eventually catches up to the whole burst (measured on the bubble, since
   // once playback completes the tail is a settled block, not the live region).

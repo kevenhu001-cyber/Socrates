@@ -100,6 +100,8 @@ export interface ChatStreamPipelineContext {
   executionSignal?: AbortSignal;
   /** Server-internal: the route has already claimed the prelude and execution. */
   executionClaimed?: boolean;
+  /** Server-local milestones, starting before route authentication. */
+  timing?: import('../../../lib/chatTiming.js').ChatTiming;
   /**
    * P_prep-parallel — the tool context promise started by the route
    * shell alongside ownership/turn/prep, so the connector snapshot

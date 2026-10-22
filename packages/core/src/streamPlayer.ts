@@ -34,7 +34,7 @@ export type PlaybackState = 'idle' | 'playing' | 'starved' | 'draining' | 'done'
 export interface PlaybackConfig {
   /** Baseline visual rate when the buffer is shallow (chars/second). */
   baseCps: number;
-  /** Hard ceiling on the visual rate so a burst never snaps into view. */
+  /** Normal visual rate ceiling; expired arrivals bypass it to bound lag. */
   maxCps: number;
   /**
    * Buffer depth (pending chars) at which the rate reaches `maxCps`. Between 0
@@ -65,6 +65,8 @@ export interface PlaybackConfig {
   /** Lower/upper clamp on the smoothed arrival rate before it drives the clock. */
   minSmoothedCps: number;
   maxSmoothedCps: number;
+  /** Maximum age of undisplayed arrivals; 0 keeps rate-only playback. */
+  maxLagMs: number;
 }
 
 export const DEFAULT_PLAYBACK_CONFIG: PlaybackConfig = {
@@ -91,6 +93,7 @@ export const DEFAULT_PLAYBACK_CONFIG: PlaybackConfig = {
      clock, so one pathological sample cannot pin the reveal rate. */
   minSmoothedCps: 24,
   maxSmoothedCps: 1600,
+  maxLagMs: 120,
 };
 
 export interface TickResult {
@@ -105,11 +108,13 @@ export interface TickResult {
 
 export interface PlaybackClock {
   /** Record the new total arrived length. Monotonic; shrinking is ignored. */
-  push(totalLen: number): void;
+  push(totalLen: number, nowMs?: number): void;
   /** Advance the visual cursor to `nowMs`. Returns the post-tick snapshot. */
   tick(nowMs: number): TickResult;
   /** finish() was called upstream: flush the remaining buffer, then go done. */
   beginDrain(): void;
+  /** Publish all arrived content and enter the terminal state immediately. */
+  flushNow(): void;
   /** True once draining has fully caught up (playedLen === totalLen). */
   isDone(): boolean;
   /** Current visible length without advancing. */
@@ -130,6 +135,7 @@ function clampConfig(config: Partial<PlaybackConfig> | undefined): PlaybackConfi
   c.arrivalSampleMinMs = Math.max(0, c.arrivalSampleMinMs);
   c.minSmoothedCps = Math.max(1, c.minSmoothedCps);
   c.maxSmoothedCps = Math.max(c.minSmoothedCps, c.maxSmoothedCps);
+  c.maxLagMs = Number.isFinite(c.maxLagMs) ? Math.max(0, c.maxLagMs) : DEFAULT_PLAYBACK_CONFIG.maxLagMs;
   return c;
 }
 
@@ -194,6 +200,12 @@ export function createPlaybackClock(
   let smoothedArrivalCps: number | null = null;
   /** `total` at the previous arrival sample, for the per-sample char delta. */
   let sampledTotal = 0;
+  let sampledAt = startMs;
+  // Only unpublished arrivals are retained. Coalesce arrivals within one
+  // sampling bucket using its earliest timestamp, so memory stays bounded
+  // even when transport delivers thousands of tiny deltas between frames.
+  let arrivals: Array<{ at: number; total: number }> = [];
+  let arrivalHead = 0;
 
   function pending(): number {
     return total - played;
@@ -201,11 +213,12 @@ export function createPlaybackClock(
 
   /** Feed one arrival sample into the EMA. Ignores sub-threshold intervals. */
   function sampleArrival(nowMs: number): void {
-    const dt = nowMs - lastActiveMs;
+    const dt = nowMs - sampledAt;
     const added = total - sampledTotal;
+    if (dt <= 0 || dt < cfg.arrivalSampleMinMs) return;
     sampledTotal = total;
-    if (added <= 0) return;
-    if (dt < cfg.arrivalSampleMinMs) return;
+    sampledAt = nowMs;
+    if (added <= 0 || cfg.arrivalEmaAlpha === 0) return;
     const instant = (added * 1000) / dt;
     if (!Number.isFinite(instant) || instant <= 0) return;
     smoothedArrivalCps = smoothedArrivalCps == null
@@ -224,11 +237,17 @@ export function createPlaybackClock(
   }
 
   return {
-    push(totalLen: number): void {
+    push(totalLen: number, nowMs = lastTickMs): void {
       const next = Math.max(total, Math.floor(totalLen) || 0);
       if (next > total) {
         total = next;
         started = true;
+        if (cfg.maxLagMs > 0) {
+          const at = Math.max(lastTickMs, nowMs);
+          const last = arrivals[arrivals.length - 1];
+          if (last && at - last.at < 8) last.total = total;
+          else arrivals.push({ at, total });
+        }
       }
     },
     tick(nowMs: number): TickResult {
@@ -247,6 +266,13 @@ export function createPlaybackClock(
           played = Math.min(total, played + step);
           carry -= step;
         }
+        // The rate shapes normal small updates; it must never turn a fast
+        // answer into seconds of artificial waiting. Reveal expired arrivals
+        // even when they exceed maxCps, leaving fresh arrivals paced normally.
+        while (arrivalHead < arrivals.length && nowMs - arrivals[arrivalHead].at >= cfg.maxLagMs) {
+          played = Math.max(played, arrivals[arrivalHead].total);
+          arrivalHead += 1;
+        }
         /* Never carry fractional progress past a fully-consumed buffer. */
         if (played >= total) carry = 0;
         lastActiveMs = nowMs;
@@ -254,6 +280,14 @@ export function createPlaybackClock(
         /* Nothing buffered: no fractional carry should leak into the next
            burst as an instantaneous jump. */
         carry = 0;
+      }
+      while (arrivalHead < arrivals.length && arrivals[arrivalHead].total <= played) arrivalHead += 1;
+      if (arrivalHead === arrivals.length) {
+        arrivals = [];
+        arrivalHead = 0;
+      } else if (arrivalHead > 64) {
+        arrivals = arrivals.slice(arrivalHead);
+        arrivalHead = 0;
       }
       const state = currentState(nowMs);
       const cps = pending() > 0
@@ -263,6 +297,13 @@ export function createPlaybackClock(
     },
     beginDrain(): void {
       draining = true;
+    },
+    flushNow(): void {
+      draining = true;
+      played = total;
+      carry = 0;
+      arrivals = [];
+      arrivalHead = 0;
     },
     isDone(): boolean {
       return draining && played >= total;

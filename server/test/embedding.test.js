@@ -16,7 +16,66 @@
  */
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { isAllowedEmbeddingUrl } from '../src/services/embeddings/embedding.js';
+import { embedTexts, isAllowedEmbeddingUrl, requestEmbeddingBatch } from '../src/services/embeddings/embedding.js';
+
+test('cancelled embeddings return without provider lookup or network work', async () => {
+  const controller = new AbortController();
+  controller.abort();
+  assert.equal(await embedTexts(['query'], { signal: controller.signal }), null);
+});
+
+const transportConfig = { url: 'https://embedding.example.test/v1', model: 'test-model', keyPlaintext: 'test-key', dimensions: 2 };
+
+test('embedding transport passes cancellation to a pending fetch', async (t) => {
+  const controller = new AbortController();
+  let requestSignal;
+  t.mock.method(globalThis, 'fetch', async (_url, options) => {
+    requestSignal = options.signal;
+    return new Promise((_resolve, reject) => requestSignal.addEventListener('abort', () => reject(requestSignal.reason), { once: true }));
+  });
+  const pending = requestEmbeddingBatch(transportConfig, ['query'], { signal: controller.signal });
+  await Promise.resolve();
+  controller.abort();
+  assert.equal(await pending, null);
+  assert.equal(requestSignal.aborted, true);
+});
+
+test('embedding cancellation also bounds a stalled response body', async (t) => {
+  const controller = new AbortController();
+  let requestSignal;
+  t.mock.method(globalThis, 'fetch', async (_url, options) => {
+    requestSignal = options.signal;
+    return { ok: true, json: () => new Promise(() => {}) };
+  });
+  const pending = requestEmbeddingBatch(transportConfig, ['query'], { signal: controller.signal });
+  for (let i = 0; i < 5; i++) await Promise.resolve();
+  controller.abort();
+  assert.equal(await pending, null);
+  assert.equal(requestSignal.aborted, true);
+});
+
+test('embedding transport preserves request shape and validates returned dimensions', async (t) => {
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    assert.equal(url, 'https://embedding.example.test/v1/embeddings');
+    assert.deepEqual(JSON.parse(options.body), { model: 'test-model', input: ['query'], dimensions: 2 });
+    return { ok: true, json: async () => ({ data: [{ embedding: [0.2, 0.8] }] }) };
+  });
+  assert.deepEqual(await requestEmbeddingBatch(transportConfig, ['query']), [[0.2, 0.8]]);
+});
+
+test('background embedding keeps its 30-second ceiling and aborts timed-out transport', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  let requestSignal;
+  t.mock.method(globalThis, 'fetch', async (_url, options) => {
+    requestSignal = options.signal;
+    return new Promise(() => {});
+  });
+  const pending = requestEmbeddingBatch(transportConfig, ['query']);
+  await Promise.resolve();
+  t.mock.timers.tick(30000);
+  assert.equal(await pending, null);
+  assert.equal(requestSignal.aborted, true);
+});
 
 describe('embedding.isAllowedEmbeddingUrl — SSRF guard', () => {
   test('accepts a canonical public https endpoint', () => {
