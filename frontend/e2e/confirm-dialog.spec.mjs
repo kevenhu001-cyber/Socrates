@@ -88,7 +88,8 @@ test('cancel, backdrop and accept preserve the boolean Promise result across rep
 
 test('a confirmation above settings releases only its own modal and restores parent focus', async ({ page }) => {
   await boot(page);
-  await page.locator('#apiSettingsBtn').click();
+  const trigger = page.locator('#apiSettingsBtn');
+  await trigger.click();
   const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
   await expect(settings).toBeVisible();
   const opener = page.locator('#settingsOverlay .settings-nav button').first();
@@ -106,6 +107,7 @@ test('a confirmation above settings releases only its own modal and restores par
   await page.keyboard.press('Escape');
   await expect(page.locator('#settingsOverlay')).toBeHidden();
   await expect(page.locator('#appShell')).not.toHaveAttribute('inert', '');
+  await expect(trigger).toBeFocused();
 });
 
 test('reopening during exit keeps the next confirmation visible and uses the new copy', async ({ page }) => {

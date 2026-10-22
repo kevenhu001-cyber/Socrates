@@ -89,6 +89,25 @@ test('settings modal closes on backdrop click and via Esc', async ({ page }) => 
   await expect(overlay).toBeHidden();
 });
 
+test('settings keeps the focus where the user moved it and hands it back to the trigger on close', async ({ page }) => {
+  const trigger = page.locator('#apiSettingsBtn');
+  await trigger.click();
+  const overlay = page.locator('#settingsOverlay');
+  await expect(overlay).toBeVisible();
+
+  // Move the focus while the deferred initial focus is still pending. Once it
+  // lands it must not take the focus back from the control the user picked.
+  const nav = overlay.locator('.settings-nav button').first();
+  await nav.focus();
+  await page.waitForTimeout(250);
+  await expect(nav).toBeFocused();
+
+  // Closing returns the focus to the trigger that opened the dialog.
+  await page.keyboard.press('Escape');
+  await expect(overlay).toBeHidden();
+  await expect(trigger).toBeFocused();
+});
+
 test('settings toggle flips the track class and persists', async ({ page }) => {
   const overlay = await openModelsPane(page);
   const track = overlay.locator('#stgToggleTrack');
