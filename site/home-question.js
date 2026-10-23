@@ -74,4 +74,39 @@
 
     syncValue();
   });
+
+  /* Interactive connection highlighting between the map and the dialogue */
+  var demoFrame = document.querySelector('.demo-frame');
+  if (demoFrame) {
+    var nodes = demoFrame.querySelectorAll('.demo-node');
+    var messages = demoFrame.querySelectorAll('.demo-msg');
+    var reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    nodes.forEach(function (node, index) {
+      node.style.cursor = 'pointer';
+      node.setAttribute('role', 'button');
+      node.setAttribute('tabindex', '0');
+      var highlight = function () {
+        nodes.forEach(function (n) { n.classList.remove('is-active'); });
+        node.classList.add('is-active');
+        if (reduced.matches) return;
+        var targetIndex = index === 0 ? 1 : 3;
+        var targetMsg = messages[targetIndex];
+        if (targetMsg && targetMsg.animate) {
+          targetMsg.animate([
+            { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(0,0,0,0)' },
+            { transform: 'scale(1.015)', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' },
+            { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(0,0,0,0)' }
+          ], { duration: 380, easing: 'cubic-bezier(.16, 1, .3, 1)' });
+        }
+      };
+      node.addEventListener('mouseenter', highlight);
+      node.addEventListener('click', highlight);
+      node.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          highlight();
+        }
+      });
+    });
+  }
 }());
