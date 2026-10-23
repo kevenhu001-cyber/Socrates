@@ -38,7 +38,7 @@ test('page view-transition wrapper preserves immediate fallback and supported pa
       startViewTransition(update) {
         starts += 1;
         update();
-        return {};
+        return { skipTransition() {} };
       },
     });
     withViewTransition(() => { updates += 1; });
@@ -55,6 +55,39 @@ test('page view-transition wrapper preserves immediate fallback and supported pa
     });
     withViewTransition(() => { updates += 1; });
     assert.equal(updates, 4);
+
+    // A throwing mutation must not run twice in synchronous adapters.
+    setDocument({ startViewTransition(update) { update(); } });
+    assert.throws(() => withViewTransition(() => {
+      updates += 1;
+      throw new Error('mutation failed');
+    }), /mutation failed/);
+    assert.equal(updates, 5);
+
+    // Repeated navigation skips the old snapshot, but never drops updates.
+    let skips = 0;
+    setDocument({
+      startViewTransition(update) {
+        update();
+        return { skipTransition() { skips += 1; } };
+      },
+    });
+    withViewTransition(() => { updates += 1; });
+    withViewTransition(() => { updates += 1; });
+    assert.equal(skips, 1);
+    assert.equal(updates, 7);
+
+    // Reduced motion bypasses the API, including its deferred update phase.
+    const previousWindow = globalThis.window;
+    try {
+      globalThis.window = { matchMedia: () => ({ matches: true }) };
+      withViewTransition(() => { updates += 1; });
+      assert.equal(skips, 2);
+      assert.equal(updates, 8);
+    } finally {
+      if (previousWindow === undefined) delete globalThis.window;
+      else globalThis.window = previousWindow;
+    }
   } finally {
     if (hadDocument) setDocument(previous);
     else setDocument(undefined);

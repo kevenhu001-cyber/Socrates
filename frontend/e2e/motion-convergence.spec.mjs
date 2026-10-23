@@ -45,6 +45,59 @@ test('desktop sidebar commits layout once and animates the main surface with tra
   expect(spatial.duration).toBe(180);
 });
 
+test('rapid sidebar reversal preserves the visible position and reduced motion snaps', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  const result = await page.evaluate(() => {
+    const sidebar = document.getElementById('sidebar');
+    const main = document.querySelector('#appShell .main');
+    sidebar.classList.remove('collapsed');
+    window.toggleSidebar();
+    const motion = main.getAnimations()[0];
+    motion.pause();
+    motion.currentTime = 60;
+    const visibleInset = parseFloat(getComputedStyle(main).paddingLeft)
+      + new DOMMatrixReadOnly(getComputedStyle(main).transform).m41;
+    window.toggleSidebar();
+    const next = main.getAnimations()[0];
+    next.pause();
+    next.currentTime = 0;
+    const reversedInset = parseFloat(getComputedStyle(main).paddingLeft)
+      + new DOMMatrixReadOnly(getComputedStyle(main).transform).m41;
+    next.finish();
+    return { visibleInset, reversedInset };
+  });
+  expect(Math.abs(result.visibleInset - result.reversedInset)).toBeLessThan(1);
+  await page.screenshot({ path: 'test-results/motion-sidebar-settled.png', animations: 'disabled' });
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const count = await page.evaluate(() => {
+    window.toggleSidebar();
+    return document.querySelector('#appShell .main').getAnimations().length;
+  });
+  expect(count).toBe(0);
+});
+
+test('overlay motion uses only opacity and transform with a crisp ease-out', async ({ page }) => {
+  const result = await page.evaluate(() => {
+    const menu = document.createElement('div');
+    menu.className = 'anchored-menu';
+    menu.textContent = 'Motion fixture';
+    document.getElementById('appShell').append(menu);
+    const style = getComputedStyle(menu);
+    const frames = menu.getAnimations().flatMap((animation) => animation.effect.getKeyframes());
+    const result = {
+      duration: style.animationDuration,
+      easing: style.animationTimingFunction,
+      hasFilter: frames.some((frame) => 'filter' in frame),
+    };
+    menu.remove();
+    return result;
+  });
+  expect(result.duration).toBe('0.16s');
+  expect(result.easing).toBe('cubic-bezier(0.16, 1, 0.3, 1)');
+  expect(result.hasFilter).toBe(false);
+});
+
 test('thinking, tools and recording share one primary persistent cue', async ({ page }) => {
   const normal = await page.evaluate(() => {
     const shell = document.getElementById('appShell');

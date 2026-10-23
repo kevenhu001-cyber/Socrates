@@ -17,6 +17,9 @@
  * feature-detect branch.
  */
 
+import { prefersReducedMotion } from './motion.js';
+
+let activeTransition: ViewTransition | null = null;
 let featureChecked = false;
 let supported = false;
 
@@ -34,13 +37,14 @@ function detect(): boolean {
  * captures the pre-state, runs the mutation, and cross-fades to the
  * post-state in one native paint. No-op when the browser lacks the API.
  *
- * `update` runs synchronously inside the transition's update phase, so
- * React/legacy mutations stay in the same JS task as the click. Callers
- * must NOT await anything inside `update` — that would defeat the
- * one-frame contract and re-introduce the layout-thrash window.
+ * The browser schedules `update` after capturing the old state (not in
+ * the click task). Callers must keep it synchronous and must NOT await
+ * network work inside it. Reduced motion bypasses snapshotting entirely.
  */
 export function withViewTransition(update: () => void): void {
-  if (typeof document === 'undefined') {
+  if (typeof document === 'undefined' || prefersReducedMotion()) {
+    activeTransition?.skipTransition();
+    activeTransition = null;
     update();
     return;
   }
@@ -49,16 +53,27 @@ export function withViewTransition(update: () => void): void {
     update();
     return;
   }
-  /* P_zero-delay — startViewTransition's `ready` resolves once the new
-     state has been captured. We deliberately do NOT await it: the browser
-     applies the cross-fade automatically and `update` runs inside the
-     transition phase, which is what makes the swap one-frame. */
+  /* Keep rapid navigation responsive instead of stacking snapshot fades.
+     skipTransition still runs the old update callback, preserving order. */
+  activeTransition?.skipTransition();
+  activeTransition = null;
+  let invoked = false;
   try {
-    start(update);
-  } catch (_) {
-    /* Defensive fallback — the spec says startViewTransition throws if
-       called from inside another transition. Bypassing it preserves the
-       old behavior instead of leaving the click silent. */
+    const transition = start(() => {
+      invoked = true;
+      update();
+    });
+    activeTransition = transition;
+    // Skipping a transition rejects `ready`; it is expected on rapid input.
+    void transition.ready?.catch(() => { /* intentional: superseded snapshot */ });
+    void transition.finished?.then(() => {
+      if (activeTransition === transition) activeTransition = null;
+    }, () => {
+      if (activeTransition === transition) activeTransition = null;
+    });
+  } catch (error) {
+    // Never replay a mutation that itself threw in a synchronous adapter.
+    if (invoked) throw error;
     update();
   }
 }

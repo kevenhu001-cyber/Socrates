@@ -116,10 +116,17 @@ export function toggleSidebar(): void {
   const desktop = window.innerWidth >= DESKTOP_SIDEBAR_BREAKPOINT;
   const main = desktop ? document.querySelector<HTMLElement>('#appShell .main') : null;
 
-  /* A rapid second toggle should start from the committed layout state, not
-     from the transform of the animation that is still in flight. */
+  /* Read the visible position BEFORE cancelling. On a rapid reversal the
+     committed inset already points at the previous destination, while the
+     compositor is still in flight. Carry its current offset into the next
+     FLIP so the content never snaps to that unfinished destination. */
+  let visibleOffset = 0;
+  if (main && mainShiftAnimation) {
+    const transform = getComputedStyle(main).transform;
+    if (transform !== 'none') visibleOffset = new DOMMatrixReadOnly(transform).m41;
+  }
+  const beforeInset = main ? mainSidebarInset(main) + visibleOffset : 0;
   cancelDesktopSidebarMotion();
-  const beforeInset = main ? mainSidebarInset(main) : 0;
 
   const wasCollapsed = sidebar.classList.contains('collapsed');
   if (wasCollapsed) {

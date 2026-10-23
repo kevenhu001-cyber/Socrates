@@ -120,13 +120,15 @@
    (polish/composer.css, restore/chat-surface.css). Reduced motion collapses
    this via foundations/base.css. */
 @keyframes ui-overlay-in {
-  from { opacity: 0; transform: scale(var(--ui-overlay-enter-scale, .97)); filter: blur(0.5px); }
-  to { opacity: 1; transform: scale(1); filter: blur(0); }
+  /* Opacity + transform stay compositor-friendly; animating blur on a large
+     settings dialog repaints its text and makes the entrance look soft. */
+  from { opacity: 0; transform: scale(var(--ui-overlay-enter-scale, .97)); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 @keyframes ui-overlay-out {
-  from { opacity: 1; transform: scale(1); filter: blur(0); }
-  to { opacity: 0; transform: scale(var(--ui-overlay-enter-scale, .97)); filter: blur(0.5px); }
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(var(--ui-overlay-enter-scale, .97)); }
 }
 
 @keyframes ui-scrim-in {
@@ -152,7 +154,7 @@
 .library-row-menu,
 .library-new-menu,
 .library-filter-menu {
-  animation: ui-overlay-in var(--ui-duration-overlay) var(--ui-ease-apple, cubic-bezier(0.25, 0.1, 0.25, 1)) both;
+  animation: ui-overlay-in var(--ui-duration-overlay) var(--ui-ease-out) both;
 }
 
 /* Anchored surfaces grow from the edge that touches their trigger, so the

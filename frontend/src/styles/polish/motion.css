@@ -22,6 +22,15 @@
   }
 }
 
+/* Native surface swaps use the same short clock as overlays, rather than
+   the legacy 300ms fade that keeps a stale snapshot over fresh controls. */
+::view-transition-group(root),
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--ui-duration-overlay);
+  animation-timing-function: var(--ui-ease-out);
+}
+
 /* One soft text highlight is the sole persistent cue for a live turn.
    Tool glyphs and text stay still inside the activity history. */
 @supports (background-clip: text) {
