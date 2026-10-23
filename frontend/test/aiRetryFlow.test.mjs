@@ -269,3 +269,109 @@ test('turn execution conflict sanitizes lastCallError when detached recovery fai
   assert.equal(lastError.includes('already been claimed'), false);
   assert.equal(lastError.includes('Turn execution conflict'), true);
 });
+
+test('a retried turn interrupts the superseded server turn instead of leaving it running', async () => {
+  /* P_retry-abandons-superseded-turn — a retry renews clientTurn.id and opens
+     a NEW server turn. Without an explicit interrupt the previous turn keeps
+     generating upstream tokens until the server's stale-turn reclaim runs
+     (120 s), so one user action can leave several concurrent paid
+     generations. */
+  const requested = [];
+  installStreamEnvironment((url, opts) => {
+    const target = String(url);
+    requested.push(target);
+    if (target.includes('/interrupt')) {
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        async text() {
+          return JSON.stringify({ turn: { id: 'turn-orphan-1', status: 'interrupted' }, idempotent: false });
+        },
+      };
+    }
+    if (requested.filter((r) => r.includes('/chat/stream')).length === 1) {
+      return {
+        ok: true,
+        status: 200,
+        body: streamBody([
+          'event: turn_bound\ndata: {"turnId":"turn-orphan-1"}\n\n',
+          'data: [DONE]\n\n',
+        ]),
+      };
+    }
+    return {
+      ok: true,
+      status: 200,
+      body: streamBody(['data: {"choices":[{"delta":{"content":"second attempt"}}]}\n\n']),
+    };
+  });
+
+  const { callAPIStream } = await import('../src/chat/stream.ts');
+  const result = await callAPIStream(
+    [{ role: 'user', content: 'leave no orphan' }],
+    256,
+    () => {},
+    () => {},
+    { maxAttempts: 2, sleep: async () => {}, clientTurn: { id: 'turn-client-1' } },
+  );
+
+  assert.equal(result?.text, 'second attempt');
+  /* The abandoned turn must be interrupted on the server. */
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  assert.ok(
+    requested.some((r) => r.includes('/chat-turns/turn-orphan-1/interrupt')),
+    `the superseded turn was never interrupted (requests: ${JSON.stringify(requested)})`,
+  );
+});
+
+test('a retry that rebinds the same turn does not interrupt it', async () => {
+  /* The next attempt rebinds the SAME turn when an explicit turnId is
+     supplied — interrupting it would kill the attempt that is about to
+     start. */
+  const requested = [];
+  installStreamEnvironment((url) => {
+    const target = String(url);
+    requested.push(target);
+    if (target.includes('/interrupt')) {
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        async text() { return JSON.stringify({ turn: { id: 'turn-same-1', status: 'interrupted' }, idempotent: false }); },
+      };
+    }
+    if (requested.filter((r) => r.includes('/chat/stream')).length === 1) {
+      return {
+        ok: true,
+        status: 200,
+        body: streamBody([
+          'event: turn_bound\ndata: {"turnId":"turn-same-1"}\n\n',
+          'data: [DONE]\n\n',
+        ]),
+      };
+    }
+    return {
+      ok: true,
+      status: 200,
+      body: streamBody(['data: {"choices":[{"delta":{"content":"rebound"}}]}\n\n']),
+    };
+  });
+
+  const { callAPIStream } = await import('../src/chat/stream.ts');
+  const result = await callAPIStream(
+    [{ role: 'user', content: 'rebind the same turn' }],
+    256,
+    () => {},
+    () => {},
+    { maxAttempts: 2, sleep: async () => {}, turnId: 'turn-same-1' },
+  );
+
+  assert.equal(result?.text, 'rebound');
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  assert.equal(
+    requested.some((r) => r.includes('/interrupt')),
+    false,
+    'rebinding the same turn must not interrupt it',
+  );
+});

@@ -14,7 +14,7 @@ import {
   waitForAIRetry,
   type AIRequestOptions,
 } from './retryPolicy.ts';
-import { newClientTurnId } from './turnClient.ts';
+import { abandonServerTurn, newClientTurnId } from './turnClient.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 /** Bridges installed by main.js before any stream can run; a required shape
@@ -181,6 +181,16 @@ export async function callAPIStream(
       if (outcome.kind === 'success' || outcome.kind === 'cancelled') return outcome.result;
       if (outcome.kind === 'retry') {
         lastError = outcome.error;
+        /* The failed attempt's server turn keeps generating upstream tokens
+           until the server's stale-turn reclaim runs (120 s). With several
+           attempts allowed per user action that is several concurrent paid
+           generations for one question — stop the turn we are replacing
+           before opening the next one.
+           Skip it when the next attempt rebinds the SAME turn (an explicit
+           turnId): interrupting that would kill the attempt that is about to
+           start. */
+        const rebindsSameTurn = !!(opts && typeof opts.turnId === 'string' && opts.turnId);
+        if (!rebindsSameTurn) abandonServerTurn(activeTurn.current);
         /* Renew clientTurnId so attempt 2 does not collide with attempt 1's
            turn execution claim on the server. */
         if (opts && typeof opts === 'object' && opts.clientTurn && typeof (opts.clientTurn as any).id === 'string') {

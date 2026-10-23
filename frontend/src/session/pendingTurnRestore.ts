@@ -29,6 +29,9 @@ interface StreamingTurnController {
   recordAgentStep?(data: unknown): void;
   recordAgentPlan?(data: unknown): void;
   finish(): void;
+  /** Finalize the bubble as an error: clears the live spinner and the elapsed
+   *  timer, keeps the partial text, and renders a Retry affordance. */
+  replaceWithError?(message: string, retry?: () => unknown): void;
 }
 
 /** Chat bridges published by the legacy shell (main.js / legacyBridge.js). */
@@ -59,11 +62,28 @@ function storedMessages(): StoredMessage[] {
  *   open                → open a live bubble and tail events from lastSeq.
  * All paths are best-effort and session-scoped: if the user switches
  * sessions mid-tail the subscription aborts and the bubble's
- * stillOwnsSlot guard keeps the writes inert. */
-export async function reattachPendingTurn(sessionId: string): Promise<void> {
+ * stillOwnsSlot guard keeps the writes inert.
+ *
+ * P_single-recovery-owner — a session must be recovered by exactly one
+ * owner. The interrupted-response fallback (a partial bubble with its own
+ * Retry button) and this live re-attach (a bubble that replays the same
+ * answer) would otherwise both render the same text, and the fallback's
+ * Retry button aborts this bubble. This module wins whenever it can take
+ * ownership, and calls `fallback` only when it cannot. */
+export async function reattachPendingTurn(sessionId: string, fallback?: () => void): Promise<void> {
+  let usedFallback = false;
+  const runFallback = (): void => {
+    if (usedFallback) return;
+    /* Never touch another session: the fallback appends to the CURRENT
+       transcript, so it must not run after the user switched away. */
+    if (stateStore.read('currentSessionId') !== sessionId) return;
+    usedFallback = true;
+    if (typeof fallback !== 'function') return;
+    try { fallback(); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.fallback'); }
+  };
   let pending = null;
-  try { pending = loadPendingTurn(sessionId); } catch { return; }
-  if (!pending || (!pending.turnId && !pending.clientTurnId)) return;
+  try { pending = loadPendingTurn(sessionId); } catch { runFallback(); return; }
+  if (!pending || (!pending.turnId && !pending.clientTurnId)) { runFallback(); return; }
   let snapshot: { turn: ChatTurn; events: TurnEventFrame[] } | null = null;
   try {
     if (pending.turnId) {
@@ -78,12 +98,14 @@ export async function reattachPendingTurn(sessionId: string): Promise<void> {
     }
   } catch {
     try { clearPendingTurn(sessionId); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~1'); }
+    runFallback();
     return;
   }
-  if (!snapshot || !snapshot.turn) return;
+  if (!snapshot || !snapshot.turn) { runFallback(); return; }
   const turn = snapshot.turn;
   if (turn.sessionId && turn.sessionId !== sessionId) {
     try { clearPendingTurn(sessionId); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~2'); }
+    runFallback();
     return;
   }
   if (stateStore.read('currentSessionId') !== sessionId) return;
@@ -103,6 +125,10 @@ export async function reattachPendingTurn(sessionId: string): Promise<void> {
           try { publishReactChatRuntime({ type: 'state-synced', reason: 'pending-turn-completed' }); }
           catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~3'); }
         }
+      } else {
+        /* Completed but empty: this module has nothing to show, so the
+           partial-answer fallback owns the recovery. */
+        runFallback();
       }
     } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~4'); }
     try { clearPendingTurn(sessionId); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~5'); }
@@ -110,31 +136,38 @@ export async function reattachPendingTurn(sessionId: string): Promise<void> {
   }
   if (turn.status === 'failed' || turn.status === 'interrupted') {
     try { clearPendingTurn(sessionId); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~6'); }
+    /* The turn is dead: this module cannot own the recovery, so the
+       partial-answer fallback does. */
+    runFallback();
     return;
   }
-  if (typeof win.addStreamingMessage !== 'function') return;
+  if (typeof win.addStreamingMessage !== 'function') { runFallback(); return; }
+  /* The retry closure is shared by the live bubble and by the error
+     affordance that replaces it, so a failed re-attach still offers a
+     working Retry button. */
+  const retryThisTurn = function (): void {
+    try {
+      let lastUserEntry: StoredMessage | null = null;
+      let lastUser: string | null = null;
+      const list = storedMessages();
+      for (let ui = list.length - 1; ui >= 0; ui--) {
+        if (list[ui] && list[ui].role === 'user') {
+          lastUserEntry = list[ui];
+          lastUser = lastUserEntry.rawText || null;
+          break;
+        }
+      }
+      if (lastUser && typeof win.askChatTurn === 'function') {
+        /* Same slicing hazard as the recovered-stream retry above: carry
+           the stored multimodal parts through the replay. */
+        let lastUserParts = null;
+        try { lastUserParts = buildUserContentParts(lastUser, lastUserEntry && lastUserEntry.attachments); } catch { lastUserParts = null; }
+        quietTurn(win.askChatTurn(lastUser, lastUserParts));
+      }
+    } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~7'); }
+  };
   const ctl = await win.addStreamingMessage({
-    onRetry: function () {
-      try {
-        let lastUserEntry: StoredMessage | null = null;
-        let lastUser: string | null = null;
-        const list = storedMessages();
-        for (let ui = list.length - 1; ui >= 0; ui--) {
-          if (list[ui] && list[ui].role === 'user') {
-            lastUserEntry = list[ui];
-            lastUser = lastUserEntry.rawText || null;
-            break;
-          }
-        }
-        if (lastUser && typeof win.askChatTurn === 'function') {
-          /* Same slicing hazard as the recovered-stream retry above: carry
-             the stored multimodal parts through the replay. */
-          let lastUserParts = null;
-          try { lastUserParts = buildUserContentParts(lastUser, lastUserEntry && lastUserEntry.attachments); } catch { lastUserParts = null; }
-          quietTurn(win.askChatTurn(lastUser, lastUserParts));
-        }
-      } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~7'); }
-    },
+    onRetry: retryThisTurn,
   });
   const subAbort = new AbortController();
   let maxSeq = Number(pending.lastSeq) || 0;
@@ -164,8 +197,17 @@ export async function reattachPendingTurn(sessionId: string): Promise<void> {
         try { subAbort.abort('done'); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~11'); }
         return;
       } else if (frame.event === 'turn_failed') {
+        /* P_failed-turn-not-success — a failed turn must NOT be finalized
+           through the success path: that renders the truncated answer as a
+           normal reply, clears the error state and saves it as a good
+           message, so the user never learns the turn failed. Replace the
+           bubble with the error affordance instead. */
         try {
-          if (turn.fullText || ctl) ctl.finish();
+          if (typeof ctl.replaceWithError === 'function') {
+            ctl.replaceWithError('The response failed. Tap Retry to try again.', retryThisTurn);
+          } else {
+            ctl.finish();
+          }
         } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~12'); }
         try { clearPendingTurn(sessionId); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~13'); }
         try { subAbort.abort('done'); } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~14'); }
@@ -189,5 +231,21 @@ export async function reattachPendingTurn(sessionId: string): Promise<void> {
       onEvent: applyFrame,
       onError: function () { /* empty-catch: intentional — replay errors are reported by the outer catch */ },
     });
-  } catch (error) { reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~18'); }
+  } catch (error) {
+    reportSwallow(error, 'session/pendingTurnRestore.reattachPendingTurn~18');
+    /* P_subscribe-failure-not-stuck — the bubble was opened BEFORE the
+       subscription, and it owns the live spinner, the Stop button and the
+       1 Hz elapsed timer. If the subscription fails and we simply return,
+       the bubble spins forever with no way to stop it: only the next send
+       resets the turn state. Close it with the error affordance. */
+    try {
+      if (typeof ctl.replaceWithError === 'function') {
+        ctl.replaceWithError('Lost the connection to the model. Tap Retry to try again.', retryThisTurn);
+      } else {
+        ctl.finish();
+      }
+    } catch (caught) { reportSwallow(caught, 'session/pendingTurnRestore.reattachPendingTurn~19'); }
+    try { clearPendingTurn(sessionId); } catch (caught) { reportSwallow(caught, 'session/pendingTurnRestore.reattachPendingTurn~20'); }
+    try { subAbort.abort('subscribe-failed'); } catch (caught) { reportSwallow(caught, 'session/pendingTurnRestore.reattachPendingTurn~21'); }
+  }
 }

@@ -610,7 +610,18 @@ export async function loadSession(id: string): Promise<void> {
     /* The local mirror may contain assistant output not yet persisted by the
        server; an interrupted server stream also gets an inline retry action. */
     restoreLocalAssistantFallback(s);
-    restoreInterruptedResponse(s, msgList as HTMLElement);
+    /* P_single-recovery-owner — a session must be recovered by exactly one
+       owner. The interrupted-response fallback (a partial bubble with its own
+       Retry button) and the pending-turn re-attach (a live bubble that
+       replays the same answer) would otherwise both render the same text,
+       and the fallback's Retry button aborts the live bubble. The re-attach
+       owns the recovery whenever it can, and calls back into the fallback
+       only when it cannot — so the partial is never shown next to the
+       recovered answer. */
+    const restorePartialFallback = function (): void {
+      try { restoreInterruptedResponse(s, msgList as HTMLElement); }
+      catch (e) { reportSwallow(e, 'session/loader.restorePartialFallback'); }
+    };
     /* P_context-race — currentSessionId and URL are set HERE, AFTER
        stateStore.read("messages") has been fully rebuilt. Setting them earlier
        (before the forEach rebuild loop) left a window where
@@ -627,7 +638,7 @@ export async function loadSession(id: string): Promise<void> {
     /* M2 async — re-attach a still-open detached turn (network drop or
        reload mid-stream). Fire-and-forget: the bubble owns its slot and
        goes inert on session switch via stillOwnsSlot. */
-    try { void reattachPendingTurn(s.id); } catch (e) { reportSwallow(e, 'session/loader.loadSession~6'); }
+    try { void reattachPendingTurn(s.id, restorePartialFallback); } catch (e) { reportSwallow(e, 'session/loader.loadSession~6'); }
     if (_appMode() !== 'chat' || (s.kbNodes && s.kbNodes.length > 0)) updateKB();
     _renderRecents();
     /* Rebuild the tutor plan from restored node state before publishing. */

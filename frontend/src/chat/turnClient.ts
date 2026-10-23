@@ -15,6 +15,7 @@
 import { apiFetch, apiFetchRaw } from '../util/api.ts';
 import { batchPeek, batchRemoveItem, batchSetItem } from '../batchStorage.js';
 import { consumeSseBuffer } from '../../../packages/core/src/index.ts';
+import { reportSwallow } from '../util/reportSwallow.ts';
 
 export interface ChatTurn {
   id: string;
@@ -76,6 +77,30 @@ export async function interruptChatTurn(turnId: string): Promise<{ turn: ChatTur
     body: {},
   });
   return { turn: res.turn as ChatTurn, idempotent: !!res.idempotent };
+}
+
+/**
+ * Stop a server turn the client is abandoning.
+ *
+ * A retry renews clientTurn.id and opens a NEW server turn; the previous one
+ * keeps generating upstream tokens until the server's stale-turn reclaim runs
+ * (120 s). With several attempts allowed per user action that is several
+ * concurrent paid generations for one question.
+ *
+ * Best-effort by design: the interrupt is fire-and-forget, so a failed call
+ * never delays or breaks the retry. The server-side reclaim stays the
+ * backstop, and marking the turn 'interrupted' makes the next execution
+ * heartbeat drop the upstream request.
+ *
+ * Only call this for a turn this client created and is replacing. When the
+ * next attempt rebinds the SAME turn (an explicit turnId), interrupting it
+ * would kill the attempt that is about to start.
+ */
+export function abandonServerTurn(turnId: string | null | undefined): void {
+  if (!turnId) return;
+  void interruptChatTurn(turnId).catch((error) => {
+    reportSwallow(error, 'chat/turnClient.abandonServerTurn');
+  });
 }
 
 export interface TurnSubscribeHandlers {
