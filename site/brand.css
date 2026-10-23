@@ -6345,14 +6345,44 @@ body.ed-site .ed-article p.ed-method-note {
 }
 body.ed-site .ed-article p.ed-method-note .ed-method-label { font-family: var(--ed-sans); }
 
-/* key takeaways: simple list, no box */
-body.ed-site .ed-key-takeaways { border: 0; background: none; padding: 0; margin: 0 0 2.6em; }
-body.ed-site .ed-key-takeaways h2 {
-  font-family: var(--ed-sans); font-weight: 600; text-transform: uppercase;
-  letter-spacing: .08em; font-size: 13px; color: var(--ed-ink-muted); margin: 0 0 .9em;
+/* key takeaways: structured monograph brief */
+body.ed-site .ed-key-takeaways {
+  border: 1px solid #ededed;
+  border-left: 2px solid var(--ed-ink);
+  background: #fbfbfb;
+  padding: 24px 28px;
+  margin: 0 0 2.6em;
+  border-radius: 0 8px 8px 0;
 }
-body.ed-site .ed-key-takeaways ul { padding-left: 20px; }
-body.ed-site .ed-key-takeaways li { font-family: var(--ed-sans); font-size: 16px; line-height: 1.6; color: var(--ed-ink); }
+body.ed-site .ed-key-takeaways h2 {
+  font-family: var(--ed-sans);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: 12px;
+  color: var(--ed-ink);
+  margin: 0 0 1em;
+}
+body.ed-site .ed-key-takeaways ul {
+  padding-left: 18px;
+  margin: 0;
+}
+body.ed-site .ed-key-takeaways li {
+  font-family: var(--ed-sans);
+  font-size: 15px;
+  line-height: 1.65;
+  color: #2b2b2b;
+}
+body.ed-site .ed-key-takeaways li + li {
+  margin-top: 8px;
+}
+body.ed-site .ed-report-byline {
+  font-variant-numeric: tabular-nums;
+}
+body.ed-site .ed-chart-tick text,
+body.ed-site .ed-chart-anno text {
+  font-variant-numeric: tabular-nums;
+}
 
 /* neutralise warm clay accents -> ink (monochrome, OpenAI-like) */
 body.ed-site .ed-bar-fill { fill: var(--ed-ink) !important; }

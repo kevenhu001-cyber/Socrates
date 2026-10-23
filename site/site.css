@@ -264,6 +264,7 @@ ol {
   line-height: 1.04;
   letter-spacing: -0.04em;
   font-weight: 500;
+  text-wrap: balance;
 }
 
 .h3 {
@@ -271,18 +272,21 @@ ol {
   line-height: 1.2;
   letter-spacing: -0.025em;
   font-weight: 500;
+  text-wrap: balance;
 }
 
 .lede {
   font-size: clamp(17px, 1.6vw, 20px);
   line-height: 1.5;
   color: var(--muted);
+  text-wrap: pretty;
 }
 
 .body {
   font-size: 16px;
   line-height: 1.6;
   color: var(--muted);
+  text-wrap: pretty;
 }
 
 .small {
@@ -1626,9 +1630,9 @@ ol {
 .plan {
   display: flex;
   flex-direction: column;
-  padding: 26px 24px 24px;
+  padding: 28px 24px 24px;
   border: 1px solid var(--line);
-  border-radius: var(--r-lg);
+  border-radius: var(--r-md);
   background: #fff;
 }
 
@@ -1642,17 +1646,21 @@ ol {
   display: inline-flex;
   align-self: flex-start;
   margin-bottom: 14px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: var(--bg-soft-2);
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+  font-family: var(--font-mono);
   font-size: 10px;
-  letter-spacing: 0.02em;
-  color: var(--ink-2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
 }
 
 .plan--dark .plan-tag {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  border-color: rgba(255, 255, 255, 0.22);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .plan-name {
@@ -1667,6 +1675,7 @@ ol {
   line-height: 1;
   letter-spacing: -0.04em;
   font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 
 .plan-price span {
@@ -2524,15 +2533,20 @@ ol {
 }
 
 .pr-list--full .pr-item p {
-  margin-top: 8px;
+  margin-top: 10px;
   max-width: 62ch;
   font-size: 15px;
-  line-height: 1.65;
+  line-height: 1.7;
+  color: var(--muted);
 }
 
 .pr-list--full .pr-num {
+  font-family: var(--font-mono);
   font-size: 12px;
-  padding-top: 8px;
+  color: var(--muted);
+  padding-top: 6px;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Cookie consent — aligned to the site system */
