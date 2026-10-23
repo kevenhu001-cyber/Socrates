@@ -9,6 +9,392 @@
 
 set -Eeuo pipefail
 
+# ─── Scope selection ───────────────────────────────────────────────────
+#   ./deploy.sh                     full release: SPA + backend + migrations
+#   ./deploy.sh --site-only         publish only the marketing site
+#   ./deploy.sh --site-only --dry-run
+#                                   validate the marketing site, write nothing
+#   ./deploy.sh /path/to/index.html legacy: publish one prebuilt SPA document
+#
+# --site-only publishes the static marketing tree (topodrive.top) and
+# nothing else: no frontend build, no database migration, no backend
+# restart, no nginx reload. It still takes the deploy lock, so it cannot
+# interleave with a full release.
+#
+# --dry-run is only implemented for the site scope. It used to mean "skip
+# the merge gate and then deploy everything anyway", which was a footgun;
+# outside --site-only it is now refused outright.
+deploy_usage() {
+  cat <<'EOF'
+deploy.sh — publish the Socrates web properties.
+
+Usage:
+  ./deploy.sh                          full release: SPA bundle + backend
+                                       (frontend build, migrations, restart)
+  ./deploy.sh --site-only              publish only the marketing site
+                                       (topodrive.top) — no SPA build, no
+                                       migration, no backend restart
+  ./deploy.sh --site-only --dry-run    validate the marketing site tree and
+                                       report what would be published, without
+                                       writing anything
+  ./deploy.sh --site-only --require-merge-gate
+                                       also enforce the repo merge gate on the
+                                       site-only path (off by default: no CI
+                                       workflow covers site/)
+  ./deploy.sh /path/to/index.html      legacy: publish one prebuilt SPA doc
+
+Environment:
+  SITE_DIR            source tree for the marketing site
+  SITE_WEB_ROOT       published location of the marketing site
+  SITE_PUBLIC_URL     public base URL used by the site-only health gate
+EOF
+}
+
+DEPLOY_SCOPE="full"
+DRY_RUN="${DRY_RUN:-0}"
+SITE_REQUIRE_MERGE_GATE=0
+for arg in "$@"; do
+  case "$arg" in
+    --site-only)
+      DEPLOY_SCOPE="site"
+      ;;
+    --dry-run)
+      DRY_RUN=1
+      ;;
+    --require-merge-gate)
+      SITE_REQUIRE_MERGE_GATE=1
+      ;;
+    -h|--help)
+      deploy_usage
+      exit 0
+      ;;
+    --*)
+      echo "ERROR: unknown option '$arg'" >&2
+      echo "Run './deploy.sh --help' for the supported options." >&2
+      exit 2
+      ;;
+    *)
+      # Legacy positional: a path to a prebuilt SPA document. Handled
+      # further down by the single-file publish path.
+      ;;
+  esac
+done
+
+if [[ "$DRY_RUN" == "1" && "$DEPLOY_SCOPE" != "site" ]]; then
+  echo "ERROR: --dry-run is only supported together with --site-only." >&2
+  echo "       A full release touches the SPA bundle, the database and the" >&2
+  echo "       backend service, and cannot be rehearsed without writing." >&2
+  echo "       Use: ./deploy.sh --site-only --dry-run" >&2
+  exit 2
+fi
+
+
+# ─── Marketing site publisher ─────────────────────────────────────────
+# Publish the static marketing tree into its own web root. Kept above the
+# backend build so the --site-only path can publish exactly this tree
+# without compiling or restarting anything.
+
+# Snapshot every page and stylesheet we publish, so a failed health gate
+# can restore the previous site. backup_previous() only keeps the SPA-style
+# index.html, which is not enough to roll back ~50 marketing pages.
+backup_site_previous() {
+  [[ -d "$SITE_WEB_ROOT" ]] || { echo ""; return 0; }
+  local stamp dest f rel
+  stamp=$(date +%Y%m%d-%H%M%S)
+  dest="$SITE_WEB_ROOT/.previous/site-$stamp"
+  $SUDO mkdir -p "$dest"
+  while IFS= read -r -d '' f; do
+    rel="${f#"$SITE_WEB_ROOT"/}"
+    $SUDO mkdir -p "$dest/$(dirname "$rel")"
+    $SUDO cp -a "$f" "$dest/$rel"
+  done < <(find "$SITE_WEB_ROOT" -maxdepth 3 \( -name '*.html' -o -name '*.css' \) -print0)
+  echo "$dest"
+}
+
+# Restore the snapshot taken before a failed publish.
+restore_site_previous() {
+  local snap="$1" f rel
+  [[ -n "$snap" && -d "$snap" ]] || return 0
+  echo "Restoring the previous marketing site from $snap…" >&2
+  while IFS= read -r -d '' f; do
+    rel="${f#"$snap"/}"
+    $SUDO mkdir -p "$SITE_WEB_ROOT/$(dirname "$rel")"
+    $SUDO cp -a "$f" "$SITE_WEB_ROOT/$rel"
+  done < <(find "$snap" -type f -print0)
+}
+
+# Every internal reference in the published tree must resolve to a file we
+# actually publish. nginx serves the tree with
+#   try_files $uri $uri.html $uri/ =404
+# so a reference is live only when one of those three candidates exists.
+site_link_check() {
+  local broken=0 checked=0 html ref abs
+  while IFS= read -r -d '' html; do
+    while IFS= read -r ref; do
+      case "$ref" in
+        http*|//*|mailto:*|tel:*|data:*|javascript:*) continue ;;
+      esac
+      [[ "$ref" == \#* ]] && continue
+      ref="${ref%%#*}"
+      ref="${ref%%\?*}"
+      [[ -z "$ref" ]] && continue
+      case "$ref" in
+        /api/*|/assets/*) continue ;;
+      esac
+      if [[ "$ref" == /* ]]; then
+        abs=$(realpath -m "$SITE_DIR$ref")
+      else
+        abs=$(realpath -m "$(dirname "$html")/$ref")
+      fi
+      checked=$((checked + 1))
+      if [[ -e "$abs" || -e "$abs.html" || -e "$abs/index.html" ]]; then
+        continue
+      fi
+      echo "  BROKEN ${html#"$SITE_DIR"/} -> $ref" >&2
+      broken=$((broken + 1))
+    done < <(grep -oE '(href|src)="[^"]*"' "$html" | sed -E 's/^(href|src)="//; s/"$//')
+  done < <(find "$SITE_DIR" -name '*.html' -print0)
+  echo "  checked $checked internal references across the site tree"
+  [[ "$broken" -eq 0 ]]
+}
+
+# Assert that the origin actually serves the page we just wrote. The HTML
+# is cached at the edge for 5 minutes, so the probe carries a cache-buster
+# to read through the CDN to nginx instead of a stale edge copy.
+site_content_check() {
+  local label="$1" url="$2" needle="$3"
+  local body code
+  body=$(curl -s --max-time 12 "${url}?cb=$(date +%s%N)" || echo "")
+  code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 12 "${url}?cb=$(date +%s%N)" || echo 000)
+  if [[ ! "$code" =~ ^2 ]]; then
+    GATE_RESULTS+=("  $label $code  ← FAIL")
+    echo "GATE FAIL: $label returned $code ($url)" >&2
+    GATE_FAILED=1
+    return 1
+  fi
+  if [[ -n "$needle" && "$body" != *"$needle"* ]]; then
+    GATE_RESULTS+=("  $label content MISMATCH  ← FAIL")
+    echo "GATE FAIL: $label did not serve the expected content ('$needle') ($url)" >&2
+    GATE_FAILED=1
+    return 1
+  fi
+  GATE_RESULTS+=("  $label $code ok")
+  return 0
+}
+
+# Publish the marketing site and nothing else.
+# backup_previous() used to live below the site branch, where the full
+# release path called it but the --site-only path could not: bash resolves
+# a function at call time, so a definition after the call site is invisible.
+
+backup_previous() {
+  local web_root="$1"
+  [[ -d "$web_root" ]] || return 0
+  $SUDO mkdir -p "$web_root/.previous"
+  # Stable-name files (e.g. /var/www/topodrive.top/index.html) copy as
+  # themselves; versioned files (index.<TS>.html) keep their timestamp.
+  for f in "$web_root"/index*.html "$web_root"/index*.html.gz "$web_root"/index*.html.br "$web_root"/status*.html; do
+    [[ -f "$f" ]] || continue
+    $SUDO cp -a "$f" "$web_root/.previous/$(basename "$f")"
+  done
+  if [[ -d "$web_root/assets" ]]; then
+    $SUDO rm -rf "$web_root/.previous/assets"
+    $SUDO cp -a "$web_root/assets" "$web_root/.previous/assets"
+  fi
+}
+
+run_site_only_deploy() {
+  local snapshot html_pages
+
+  echo "══ marketing site only ══"
+  echo "  source:  $SITE_DIR"
+  echo "  webroot: $SITE_WEB_ROOT"
+
+  if [[ ! -d "$SITE_DIR" ]]; then
+    echo "ERROR: site source directory not found: $SITE_DIR" >&2
+    exit 1
+  fi
+
+  echo "── pre-flight ──"
+  # The repo merge gate covers the SPA and the server; no CI workflow
+  # covers site/, so it says nothing about the bytes this path publishes.
+  # It is therefore informational here unless the operator asks for it.
+  if [[ "$SITE_REQUIRE_MERGE_GATE" == "1" ]]; then
+    ci_gate_check "$(dirname "$(readlink -f "$0")")"
+  else
+    echo "  ci.gate  not applicable — no CI workflow covers site/"
+    DEPLOY_CI_GATE_STATUS="not-applicable:site-only"
+  fi
+
+  if ! site_link_check; then
+    echo "ERROR: refusing to publish — the site tree has unresolved internal references." >&2
+    exit 1
+  fi
+
+  html_pages=$(find "$SITE_DIR" -name '*.html' | wc -l)
+  if [[ "$DRY_RUN" == "1" ]]; then
+    echo "── dry run ──"
+    echo "  would publish $html_pages HTML pages from $SITE_DIR"
+    echo "  no files were written"
+    # Must exit the script, not just this function: falling through would
+    # continue into the full release pipeline and publish the SPA bundle,
+    # the database migrations and the backend as well.
+    exit 0
+  fi
+
+  # Snapshot first: a failed gate restores from here.
+  snapshot=$(backup_site_previous)
+  echo "  snapshot: ${snapshot:-<none>}"
+
+  deploy_marketing_site
+
+  echo "── gate ──"
+  site_content_check "site home          " "${SITE_PUBLIC_URL%/}/"                          'href="/pricing"'
+  site_content_check "site product       " "${SITE_PUBLIC_URL%/}/product"                   'href="/pricing"'
+  site_content_check "site zh home       " "${SITE_PUBLIC_URL%/}/zh/"                       'href="/zh/pricing"'
+  site_content_check "site research note " "${SITE_PUBLIC_URL%/}/research/memory-recall/"  'The route back to an idea'
+  site_content_check "site pricing       " "${SITE_PUBLIC_URL%/}/pricing"                   'Pricing'
+
+  if [[ $GATE_FAILED -ne 0 ]]; then
+    echo "ERROR: the marketing site failed its health gate — restoring the previous pages." >&2
+    restore_site_previous "$snapshot"
+    exit 1
+  fi
+
+  # Record the site-only release separately. The main .deploy-state.json
+  # describes a full release (SPA bundle, migrations, backend); claiming
+  # those checks here would be false.
+  local state_tmp commit dirty ts tmp
+  state_tmp="${STATE_FILE%.json}.site.json"
+  commit=$(git -C "$(dirname "$(readlink -f "$0")")" rev-parse HEAD 2>/dev/null || echo unknown)
+  dirty=$(git -C "$(dirname "$(readlink -f "$0")")" status --porcelain=v1 --untracked-files=all 2>/dev/null | grep -c . || echo 0)
+  ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  tmp=$(mktemp "${state_tmp}.XXXXXX.tmp")
+  cat > "$tmp" <<EOF
+{
+  "lastSuccessfulSiteDeploy": {
+    "commit": "${commit}",
+    "worktreeDirtyFiles": ${dirty},
+    "timestamp": "${ts}",
+    "htmlPages": ${html_pages},
+    "snapshot": "${snapshot}",
+    "ciGate": "${DEPLOY_CI_GATE_STATUS}",
+    "checks": {
+      "siteHomeReachable": true,
+      "siteProductReachable": true,
+      "siteZhHomeReachable": true,
+      "siteResearchNoteReachable": true,
+      "sitePricingReachable": true,
+      "internalReferencesResolved": true
+    }
+  }
+}
+EOF
+  mv "$tmp" "$state_tmp"
+
+  echo "─── gate ───"
+  printf '%s\n' "${GATE_RESULTS[@]}"
+  echo "────────────"
+  echo "✓ marketing site published ($html_pages pages)"
+  echo "  url:    ${SITE_PUBLIC_URL%/}/"
+  echo "  state:  $state_tmp"
+  echo "  rollback: ${snapshot:-<none>}"
+  echo "  note:   edge caches HTML for 5 minutes; a hard refresh may be needed."
+  exit 0
+}
+
+deploy_marketing_site() {
+  if [ -d "$SITE_DIR" ]; then
+    backup_previous "$SITE_WEB_ROOT"
+    $SUDO install -m 644 -o www-data -g www-data "$SITE_DIR/base.css" "$SITE_WEB_ROOT/base.css"
+    $SUDO install -m 644 -o www-data -g www-data "$SITE_DIR/index.html" "$SITE_WEB_ROOT/index.html"
+    for page in pricing guide about contact terms privacy account api-keys profile checkout announcements documents learn principles product research developers; do
+      if [ -f "$SITE_DIR/$page.html" ]; then
+        $SUDO install -m 644 -o www-data -g www-data "$SITE_DIR/$page.html" "$SITE_WEB_ROOT/$page.html"
+      fi
+    done
+    if [ -d "$SITE_DIR/zh" ]; then
+      $SUDO mkdir -p "$SITE_WEB_ROOT/zh"
+      for page in index pricing guide about contact terms privacy checkout account api-keys profile announcements documents learn principles product research developers; do
+        if [ -f "$SITE_DIR/zh/$page.html" ]; then
+          $SUDO install -m 644 -o www-data -g www-data "$SITE_DIR/zh/$page.html" "$SITE_WEB_ROOT/zh/$page.html"
+        fi
+      done
+    fi
+    # Static assets — images, fonts, and sibling .css/.js the marketing pages
+    # reference. Files explicitly copied above are excluded by name so the
+    # hard-coded install commands remain the source of truth for those.
+    # llms.txt / *.md / *.xml / *.json / *.jsonl are also installed so the
+    # site root gains a sitemap, an llms.txt, an OpenAPI reference, and a
+    # Markdown twin for agents that prefer non-HTML representations.
+    while IFS= read -r -d '' asset; do
+      fname=$(basename "$asset")
+      case "$fname" in
+        *.png|*.ico|*.svg|*.jpg|*.jpeg|*.webp|*.gif|*.woff|*.woff2|*.css|*.js|*.md|*.txt|*.xml|*.json|*.jsonl) ;;
+        *) continue ;;
+      esac
+      # Never overwrite any HTML or the editorial base stylesheet from this loop.
+      case "$fname" in
+        *.html|base.css) continue ;;
+      esac
+      $SUDO install -m 644 -o www-data -g www-data "$asset" "$SITE_WEB_ROOT/$fname"
+    done < <(find "$SITE_DIR" -maxdepth 1 -type f \
+        ! -name '*.html' \
+        ! -name 'base.css' \
+        ! -name '.*' \
+        ! -name '*~' \
+        -print0)
+
+    # Markdown side-cars for the HTML pages ship beside the HTML files
+    # (e.g. site/pricing.md alongside site/pricing.html). The wildcard
+    # loop above only copies top-level files; mirror a parallel tree of
+    # .md twins so every page that has one is reachable as <page>.md.
+    while IFS= read -r -d '' md_src; do
+      rel="${md_src#"$SITE_DIR/"}"
+      $SUDO mkdir -p "$SITE_WEB_ROOT/$(dirname "$rel")"
+      $SUDO install -m 644 -o www-data -g www-data "$md_src" "$SITE_WEB_ROOT/$rel"
+    done < <(find "$SITE_DIR" -type f -name '*.md' \
+        ! -path '*/.git/*' \
+        -print0)
+
+    # /.well-known/* discovery files (agent-card, api-catalog, security.txt…)
+    if [ -d "$SITE_DIR/.well-known" ]; then
+      while IFS= read -r -d '' well_known; do
+        rel="${well_known#"$SITE_DIR/"}"
+        $SUDO mkdir -p "$SITE_WEB_ROOT/$(dirname "$rel")"
+        $SUDO install -m 644 -o www-data -g www-data "$well_known" "$SITE_WEB_ROOT/$rel"
+      done < <(find "$SITE_DIR/.well-known" -type f -print0)
+    fi
+
+    # Copy site/media/ directory (editorial images referenced by new pages)
+    if [ -d "$SITE_DIR/media" ]; then
+      $SUDO mkdir -p "$SITE_WEB_ROOT/media"
+      $SUDO cp -a "$SITE_DIR/media/"* "$SITE_WEB_ROOT/media/"
+    fi
+
+    # Copy article subdirectories (research/, learn/, etc.) so each
+    # essay/guide page is reachable as /research/<slug>/. nginx's
+    # try_files already falls back to index.html inside the directory.
+    # `developers`, `api`, and `auth` are also included so their
+    # llms.txt indexes (and any future siblings) get copied automatically.
+    for sub in research learn announcements guides posts articles developers api auth; do
+      if [ -d "$SITE_DIR/$sub" ]; then
+        $SUDO mkdir -p "$SITE_WEB_ROOT/$sub"
+        $SUDO cp -a "$SITE_DIR/$sub/." "$SITE_WEB_ROOT/$sub/"
+      fi
+    done
+
+    # Copy translated article subdirectories as well. These live below
+    # site/zh/ and must mirror the English directory layout on the public site.
+    for sub in research learn announcements guides posts articles developers api auth; do
+      if [ -d "$SITE_DIR/zh/$sub" ]; then
+        $SUDO mkdir -p "$SITE_WEB_ROOT/zh/$sub"
+        $SUDO cp -a "$SITE_DIR/zh/$sub/." "$SITE_WEB_ROOT/zh/$sub/"
+      fi
+    done
+  fi
+}
+
 FRONTEND_DIR="${FRONTEND_DIR:-/home/ubuntu/User/Socrates/frontend}"
 SERVER_DIR="${SERVER_DIR:-/home/ubuntu/User/Socrates/server}"
 APP_WEB_ROOT="${APP_WEB_ROOT:-/var/www/app.topodrive.top}"
@@ -219,6 +605,63 @@ ci_gate_check() {
 }
 
 DEPLOY_CI_GATE_STATUS="not-run"
+
+# ─── Shared health-gate helpers ────────────────────────────────────────
+# Both the full release and the site-only release assert against live
+# URLs. The helper lives here so the site-only path can use it before the
+# SPA-specific gates further down are reached.
+GATE_FAILED=0
+GATE_RESULTS=()
+
+gate_check() {
+  local label="$1" url="$2"; shift 2
+  local code=""
+  local attempts=1
+  local attempt
+
+  # nginx reloads gracefully and EdgeOne can briefly route a request to an
+  # old worker. Retry only the app entry gate so that a short handoff window
+  # does not turn an otherwise valid release into a false failure.
+  # `mobile api + db` joins it because it closes the same versioned-path run
+  # against a backend restarted moments earlier: a cold first request there
+  # can exceed the 8s curl budget exactly as it can for mobile.bootstrap.
+  case "$label" in
+    "app frontend        "|"mobile api + db     ")
+      attempts="${APP_GATE_ATTEMPTS:-3}"
+      ;;
+  esac
+
+  for ((attempt = 1; attempt <= attempts; attempt++)); do
+    code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 "$@" "$url" || echo 000)
+    if [[ "$code" =~ ^2 ]]; then
+      GATE_RESULTS+=("  $label $code")
+      return 0
+    fi
+    if (( attempt < attempts )); then
+      sleep "${APP_GATE_RETRY_DELAY_SEC:-2}"
+    fi
+  done
+
+  GATE_RESULTS+=("  $label $code  ← FAIL")
+  echo "GATE FAIL: $label returned $code ($url)" >&2
+  GATE_FAILED=1
+}
+
+# ─── Site-only release ─────────────────────────────────────────────────
+# Everything above this point is scope-neutral: the deploy lock is held,
+# sudo has been resolved and the shared gate helpers exist. The site-only
+# path publishes the marketing tree and exits — no frontend build, no
+# migration, no backend restart, no nginx reload — so the repo merge gate
+# (which covers the SPA and the server, not site/) is left to the full
+# release below.
+if [[ "$DEPLOY_SCOPE" == "site" ]]; then
+  run_site_only_deploy
+  # run_site_only_deploy always exits. If it ever returns instead, fail
+  # loudly rather than falling through into the full release pipeline.
+  echo "ERROR: site-only release returned without completing" >&2
+  exit 1
+fi
+
 ci_gate_check "$(dirname "$(readlink -f "$0")")"
 
 # npm itself runs without sudo, but older deployments may have left tens of
@@ -253,21 +696,6 @@ repair_node_modules_ownership "$FRONTEND_DIR"
 # to .previous/ using its existing name so the rollback path
 # `cp -a .previous/index.<old-ts>.html .` followed by `sed` to
 # repoint nginx try_files is symmetric with the deploy path.
-backup_previous() {
-  local web_root="$1"
-  [[ -d "$web_root" ]] || return 0
-  $SUDO mkdir -p "$web_root/.previous"
-  # Stable-name files (e.g. /var/www/topodrive.top/index.html) copy as
-  # themselves; versioned files (index.<TS>.html) keep their timestamp.
-  for f in "$web_root"/index*.html "$web_root"/index*.html.gz "$web_root"/index*.html.br "$web_root"/status*.html; do
-    [[ -f "$f" ]] || continue
-    $SUDO cp -a "$f" "$web_root/.previous/$(basename "$f")"
-  done
-  if [[ -d "$web_root/assets" ]]; then
-    $SUDO rm -rf "$web_root/.previous/assets"
-    $SUDO cp -a "$web_root/assets" "$web_root/.previous/assets"
-  fi
-}
 
 # Point the SPA fallback at the exact entry written by this deploy. Older
 # versions only replaced the /__APP_INDEX__ placeholder, so the first
@@ -782,95 +1210,9 @@ else
 fi
 
 # ─── 2. Marketing site (topodrive.top) ───────────────────────────────
-if [ -d "$SITE_DIR" ]; then
-  backup_previous "$SITE_WEB_ROOT"
-  $SUDO install -m 644 -o www-data -g www-data "$SITE_DIR/base.css" "$SITE_WEB_ROOT/base.css"
-  $SUDO install -m 644 -o www-data -g www-data "$SITE_DIR/index.html" "$SITE_WEB_ROOT/index.html"
-  for page in pricing guide about contact terms privacy account api-keys profile checkout announcements documents learn principles product research developers; do
-    if [ -f "$SITE_DIR/$page.html" ]; then
-      $SUDO install -m 644 -o www-data -g www-data "$SITE_DIR/$page.html" "$SITE_WEB_ROOT/$page.html"
-    fi
-  done
-  if [ -d "$SITE_DIR/zh" ]; then
-    $SUDO mkdir -p "$SITE_WEB_ROOT/zh"
-    for page in index pricing guide about contact terms privacy checkout account api-keys profile announcements documents learn principles product research developers; do
-      if [ -f "$SITE_DIR/zh/$page.html" ]; then
-        $SUDO install -m 644 -o www-data -g www-data "$SITE_DIR/zh/$page.html" "$SITE_WEB_ROOT/zh/$page.html"
-      fi
-    done
-  fi
-  # Static assets — images, fonts, and sibling .css/.js the marketing pages
-  # reference. Files explicitly copied above are excluded by name so the
-  # hard-coded install commands remain the source of truth for those.
-  # llms.txt / *.md / *.xml / *.json / *.jsonl are also installed so the
-  # site root gains a sitemap, an llms.txt, an OpenAPI reference, and a
-  # Markdown twin for agents that prefer non-HTML representations.
-  while IFS= read -r -d '' asset; do
-    fname=$(basename "$asset")
-    case "$fname" in
-      *.png|*.ico|*.svg|*.jpg|*.jpeg|*.webp|*.gif|*.woff|*.woff2|*.css|*.js|*.md|*.txt|*.xml|*.json|*.jsonl) ;;
-      *) continue ;;
-    esac
-    # Never overwrite any HTML or the editorial base stylesheet from this loop.
-    case "$fname" in
-      *.html|base.css) continue ;;
-    esac
-    $SUDO install -m 644 -o www-data -g www-data "$asset" "$SITE_WEB_ROOT/$fname"
-  done < <(find "$SITE_DIR" -maxdepth 1 -type f \
-      ! -name '*.html' \
-      ! -name 'base.css' \
-      ! -name '.*' \
-      ! -name '*~' \
-      -print0)
+# Published by deploy_marketing_site() (defined above).
+deploy_marketing_site
 
-  # Markdown side-cars for the HTML pages ship beside the HTML files
-  # (e.g. site/pricing.md alongside site/pricing.html). The wildcard
-  # loop above only copies top-level files; mirror a parallel tree of
-  # .md twins so every page that has one is reachable as <page>.md.
-  while IFS= read -r -d '' md_src; do
-    rel="${md_src#"$SITE_DIR/"}"
-    $SUDO mkdir -p "$SITE_WEB_ROOT/$(dirname "$rel")"
-    $SUDO install -m 644 -o www-data -g www-data "$md_src" "$SITE_WEB_ROOT/$rel"
-  done < <(find "$SITE_DIR" -type f -name '*.md' \
-      ! -path '*/.git/*' \
-      -print0)
-
-  # /.well-known/* discovery files (agent-card, api-catalog, security.txt…)
-  if [ -d "$SITE_DIR/.well-known" ]; then
-    while IFS= read -r -d '' well_known; do
-      rel="${well_known#"$SITE_DIR/"}"
-      $SUDO mkdir -p "$SITE_WEB_ROOT/$(dirname "$rel")"
-      $SUDO install -m 644 -o www-data -g www-data "$well_known" "$SITE_WEB_ROOT/$rel"
-    done < <(find "$SITE_DIR/.well-known" -type f -print0)
-  fi
-
-  # Copy site/media/ directory (editorial images referenced by new pages)
-  if [ -d "$SITE_DIR/media" ]; then
-    $SUDO mkdir -p "$SITE_WEB_ROOT/media"
-    $SUDO cp -a "$SITE_DIR/media/"* "$SITE_WEB_ROOT/media/"
-  fi
-
-  # Copy article subdirectories (research/, learn/, etc.) so each
-  # essay/guide page is reachable as /research/<slug>/. nginx's
-  # try_files already falls back to index.html inside the directory.
-  # `developers`, `api`, and `auth` are also included so their
-  # llms.txt indexes (and any future siblings) get copied automatically.
-  for sub in research learn announcements guides posts articles developers api auth; do
-    if [ -d "$SITE_DIR/$sub" ]; then
-      $SUDO mkdir -p "$SITE_WEB_ROOT/$sub"
-      $SUDO cp -a "$SITE_DIR/$sub/." "$SITE_WEB_ROOT/$sub/"
-    fi
-  done
-
-  # Copy translated article subdirectories as well. These live below
-  # site/zh/ and must mirror the English directory layout on the public site.
-  for sub in research learn announcements guides posts articles developers api auth; do
-    if [ -d "$SITE_DIR/zh/$sub" ]; then
-      $SUDO mkdir -p "$SITE_WEB_ROOT/zh/$sub"
-      $SUDO cp -a "$SITE_DIR/zh/$sub/." "$SITE_WEB_ROOT/zh/$sub/"
-    fi
-  done
-fi
 
 # ─── 2b. Status page (status.topodrive.top) ──────────────────────────
 # Uses a versioned filename (status.<TS>.html) so EdgeOne CDN sees a
@@ -1022,43 +1364,8 @@ fi
 # pointing at a stale upstream port, copy step silently failing, etc).
 # On any gate failure, the state file is left untouched so the last
 # known-good deploy stays recorded, and the script exits non-zero.
-GATE_FAILED=0
-GATE_RESULTS=()
-
-gate_check() {
-  local label="$1" url="$2"; shift 2
-  local code=""
-  local attempts=1
-  local attempt
-
-  # nginx reloads gracefully and EdgeOne can briefly route a request to an
-  # old worker. Retry only the app entry gate so that a short handoff window
-  # does not turn an otherwise valid release into a false failure.
-  # `mobile api + db` joins it because it closes the same versioned-path run
-  # against a backend restarted moments earlier: a cold first request there
-  # can exceed the 8s curl budget exactly as it can for mobile.bootstrap.
-  case "$label" in
-    "app frontend        "|"mobile api + db     ")
-      attempts="${APP_GATE_ATTEMPTS:-3}"
-      ;;
-  esac
-
-  for ((attempt = 1; attempt <= attempts; attempt++)); do
-    code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 "$@" "$url" || echo 000)
-    if [[ "$code" =~ ^2 ]]; then
-      GATE_RESULTS+=("  $label $code")
-      return 0
-    fi
-    if (( attempt < attempts )); then
-      sleep "${APP_GATE_RETRY_DELAY_SEC:-2}"
-    fi
-  done
-
-  GATE_RESULTS+=("  $label $code  ← FAIL")
-  echo "GATE FAIL: $label returned $code ($url)" >&2
-  GATE_FAILED=1
-}
-
+# GATE_FAILED / GATE_RESULTS / gate_check() are defined in the shared
+# gate-helper block near the top of this script.
 if [[ "$NGINX_STATUS" != "reloaded" ]]; then
   GATE_RESULTS+=("  nginx reload $NGINX_STATUS  ← FAIL")
   GATE_FAILED=1

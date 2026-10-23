@@ -86,6 +86,7 @@ server.log.bak.*
 
 # ── Deploy state (written by deploy.sh on successful deploys) ──
 .deploy-state.json
+.deploy-state.site.json
 
 # ── Local runtime state (SQLite DB for mobile, project id) ──
 .freebuff/
