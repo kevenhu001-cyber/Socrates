@@ -28,87 +28,10 @@
           "reason": "Upstream GHSA-86w9-cpqp-85rv in node-forge <= 1.4.0; build/signing tooling only; unblocks on upstream Expo/node-forge patch."
         },
         {
-          "name": "@expo/metro",
-          "severity": "high",
-          "direct": false,
-          "range": "*",
-          "reason": "Upstream GHSA-vfj7-8cjw-p6xm in braces <= 3.0.3 within Metro dev tooling; static production export unaffected; unblocks on upstream Expo/Metro patch."
-        },
-        {
-          "name": "@expo/metro-config",
-          "severity": "high",
-          "direct": false,
-          "range": "<=0.0.1-canary-20240418-8d74597 || >=0.1.49-alpha.0",
-          "reason": "Upstream GHSA-vfj7-8cjw-p6xm in braces <= 3.0.3 within Metro dev tooling; static production export unaffected; unblocks on upstream Expo/Metro patch."
-        },
-        {
-          "name": "@react-native/community-cli-plugin",
-          "severity": "high",
-          "direct": false,
-          "range": "*",
-          "reason": "Upstream GHSA-vfj7-8cjw-p6xm in braces <= 3.0.3 within Metro dev tooling; static production export unaffected; unblocks on upstream Expo/Metro patch."
-        },
-        {
-          "name": "@react-native/metro-config",
-          "severity": "high",
-          "direct": false,
-          "range": "*",
-          "reason": "Upstream GHSA-vfj7-8cjw-p6xm in braces <= 3.0.3 within Metro dev tooling; static production export unaffected; unblocks on upstream Expo/Metro patch."
-        },
-        {
-          "name": "@react-native/virtualized-lists",
-          "severity": "high",
-          "direct": false,
-          "range": ">=0.85.0-nightly-20260108-1236b6be4",
-          "reason": "Upstream GHSA-vfj7-8cjw-p6xm in braces <= 3.0.3 within Metro dev tooling; static production export unaffected; unblocks on upstream Expo/Metro patch."
-        },
-        {
-          "name": "braces",
-          "severity": "high",
-          "direct": false,
-          "range": "*",
-          "reason": "Upstream GHSA-vfj7-8cjw-p6xm in braces <= 3.0.3 within Metro dev tooling; static production export unaffected; unblocks on upstream Expo/Metro patch."
-        },
-        {
           "name": "expo",
           "severity": "high",
           "direct": true,
           "range": ">=45.0.0-beta.1",
-          "reason": "Upstream GHSA-vfj7-8cjw-p6xm in braces <= 3.0.3 within Metro dev tooling; static production export unaffected; unblocks on upstream Expo/Metro patch."
-        },
-        {
-          "name": "metro",
-          "severity": "high",
-          "direct": false,
-          "range": ">=0.71.0",
-          "reason": "Upstream GHSA-vfj7-8cjw-p6xm in braces <= 3.0.3 within Metro dev tooling; static production export unaffected; unblocks on upstream Expo/Metro patch."
-        },
-        {
-          "name": "metro-config",
-          "severity": "high",
-          "direct": false,
-          "range": ">=0.71.0",
-          "reason": "Upstream GHSA-vfj7-8cjw-p6xm in braces <= 3.0.3 within Metro dev tooling; static production export unaffected; unblocks on upstream Expo/Metro patch."
-        },
-        {
-          "name": "metro-file-map",
-          "severity": "high",
-          "direct": false,
-          "range": "*",
-          "reason": "Upstream GHSA-vfj7-8cjw-p6xm in braces <= 3.0.3 within Metro dev tooling; static production export unaffected; unblocks on upstream Expo/Metro patch."
-        },
-        {
-          "name": "metro-transform-worker",
-          "severity": "high",
-          "direct": false,
-          "range": ">=0.71.0",
-          "reason": "Upstream GHSA-vfj7-8cjw-p6xm in braces <= 3.0.3 within Metro dev tooling; static production export unaffected; unblocks on upstream Expo/Metro patch."
-        },
-        {
-          "name": "micromatch",
-          "severity": "high",
-          "direct": false,
-          "range": ">=0.2.0",
           "reason": "Upstream GHSA-vfj7-8cjw-p6xm in braces <= 3.0.3 within Metro dev tooling; static production export unaffected; unblocks on upstream Expo/Metro patch."
         },
         {
@@ -117,27 +40,6 @@
           "direct": false,
           "range": "*",
           "reason": "Upstream GHSA-86w9-cpqp-85rv in node-forge <= 1.4.0; build/signing tooling only; unblocks on upstream Expo/node-forge patch."
-        },
-        {
-          "name": "react-native",
-          "severity": "high",
-          "direct": true,
-          "range": ">=0.73.0-nightly-20230506-1af868c52",
-          "reason": "Upstream GHSA-vfj7-8cjw-p6xm in braces <= 3.0.3 within Metro dev tooling; static production export unaffected; unblocks on upstream Expo/Metro patch."
-        },
-        {
-          "name": "react-native-reanimated",
-          "severity": "high",
-          "direct": true,
-          "range": "3.20.0-nightly-20250722-b6c8b9a3c - 4.0.0-nightly-20250309-9ce9085cb || 4.1.7 - 4.2.0-nightly-20251017-235c127fd || >=4.2.3",
-          "reason": "Upstream GHSA-vfj7-8cjw-p6xm in braces <= 3.0.3 within Metro dev tooling; static production export unaffected; unblocks on upstream Expo/Metro patch."
-        },
-        {
-          "name": "react-native-worklets",
-          "severity": "high",
-          "direct": false,
-          "range": ">=0.8.0-bundle-mode-preview-1",
-          "reason": "Upstream GHSA-vfj7-8cjw-p6xm in braces <= 3.0.3 within Metro dev tooling; static production export unaffected; unblocks on upstream Expo/Metro patch."
         }
       ]
     }
