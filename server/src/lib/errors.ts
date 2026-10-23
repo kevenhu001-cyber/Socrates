@@ -17,13 +17,17 @@ export class ApiError extends Error {
    * @param {string} code    Machine-readable error code, e.g. "UNVERIFIED"
    * @param {string} message Human-readable description
    * @param {object} [detail] Optional extra payload
+   * @param {boolean} [retryable] Explicit retry ownership. `false` tells the
+   *   client that replaying the request cannot help (a deterministic failure
+   *   or a budget the server already spent), so it must not retry.
    */
-  constructor(status: number, code: string, message: string, detail?: unknown) {
+  constructor(status: number, code: string, message: string, detail?: unknown, retryable?: boolean) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
     this.detail = detail || null;
+    if (typeof retryable === 'boolean') this.retryable = retryable;
   }
 }
 

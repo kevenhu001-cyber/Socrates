@@ -1,5 +1,5 @@
 import { ContentPartSchema, MessageSchema, type ChatMessage } from '../../lib/chatMessageSchema.js';
-import { SERVER_SYSTEM_POLICY, FINAL_OUTPUT_CONSTRAINTS_MARKER, appendServerPolicy, appendFinalOutputConstraints, injectUserContext } from '../../lib/chatPolicy.js';
+import { SERVER_SYSTEM_POLICY, FINAL_OUTPUT_CONSTRAINTS_MARKER, appendServerPolicy, appendFinalOutputConstraints, injectUserContext, insertProviderIdentity } from '../../lib/chatPolicy.js';
 export { SERVER_SYSTEM_POLICY, FINAL_OUTPUT_CONSTRAINTS, appendFinalOutputConstraints, injectUserContext } from '../../lib/chatPolicy.js';
 /**
  * Chat route helpers.
@@ -33,10 +33,11 @@ import {visualizationTemplateGuide} from '../../services/visualization.js';
    src/lib/prompts.js (mtime-keyed cache, placeholder substitution).
    We re-export it from here so the call sites inside this route
    family (`prependTeacherModePrompt`) keep a single import path. */
-import {getCodeInterpreterPrompt, getTeacherModePrompt} from '../../lib/prompts.js';
+import {getCodeInterpreterPrompt, getTeacherModePrompt, getBeagleSystemPrompt} from '../../lib/prompts.js';
 import { withTimeBudget } from '../../lib/timeBudget.js';
 import { splitPromptContext, appendTurnContext } from '../../lib/chatPromptContext.js';
-import { resolveSessionPrompt } from '../../services/core/sessionPromptSnapshot.js';
+import { resolveSessionPromptOrAssemble } from '../../services/core/sessionPromptSnapshot.js';
+import { buildSseErrorFrame } from '../../lib/sseErrorFrame.js';
 /* ─────────────────────────────────────────────────────────────────
    extra_body sanitiser
    ─────────────────────────────────────────────────────────────────
@@ -805,15 +806,23 @@ export function writeSsePrime(res: import('express').Response): boolean {
    still use the legacy `res.status(...).json(...)` path — this helper
    assumes headers are out. */
 export function endSseWithError(res: import('express').Response, err: unknown): void {
-  const message = err instanceof Error ? err.message : String(err);
-  const code = err instanceof ApiError ? err.code : 'INTERNAL';
-  const status = err instanceof ApiError ? err.status : 500;
+  /* P_sse-error-contract — the error frame carries the same machine-readable
+     fields as the JSON error path (status / code / retryable), so the browser
+     can tell a deterministic failure (quota, bad key, unsupported mode) from
+     a transient one and does not replay a whole turn for a request that
+     cannot succeed. buildSseErrorFrame also guarantees that a raw upstream
+     provider body is never forwarded to the client. */
+  const details = buildSseErrorFrame(err);
   const safe = (() => {
-    try { return JSON.stringify({ error: message, message, code, status }); } catch { return '{}'; }
+    try { return JSON.stringify(details); } catch { return '{}'; }
   })();
   try {
     if (!res.headersSent) {
-      res.status(status).json({ code, message });
+      res.status(details.status ?? 500).json({
+        code: details.code,
+        message: details.message,
+        ...(typeof details.retryable === 'boolean' ? { retryable: details.retryable } : {}),
+      });
       return;
     }
     res.write(`event: error\ndata: ${safe}\n\n`);
@@ -836,37 +845,38 @@ export function endSseWithError(res: import('express').Response, err: unknown): 
  *   7. Reject image content when the active provider is not marked as
  *      multimodal, then apply the legacy transform for any non-image parts.
  *
- * Returns either { ok: true, payload } or { ok: false, error } where
- * `error` is an Express response already written (the caller must
- * just `return` after receiving it). This shape avoids forcing the
- * route to know about every failure mode — the helpers stay the
- * single source of truth for the prelude. */
+ * Returns { ok: true, payload } on success and REJECTS with a typed ApiError
+ * on every failure. The rejection is deliberate: the SSE route commits a
+ * 200 + text/event-stream before the prelude runs, so a failure that wrote
+ * `res.status(...).json(...)` here would land a JSON body on an SSE stream
+ * and then degrade into an opaque "Request preparation failed" 500 — which
+ * the browser then replays as a whole turn. A typed rejection lets the SSE
+ * path emit a structured `event: error` frame with the real status/code and
+ * the JSON path return the same status through the error middleware. */
 export async function prepareChatRequest(
   req: Request,
   res: Response,
   options: { signal?: AbortSignal } = {},
 ): Promise<
-  | { ok: false }
-  | {
-      ok: true;
-      payload: {
-        messages: ChatMessage[];
-        provider: Provider;
-        safeExtraBody: Record<string, unknown> | undefined;
-        mode: 'tutor' | 'chat';
-        temperature: number;
-        maxTokens: number | undefined;
-        reasoning_effort?: 'none' | 'low' | 'medium' | 'high';
-        responseSpeed: 'standard' | 'fast';
-      };
-    }
+  {
+    ok: true;
+    payload: {
+      messages: ChatMessage[];
+      provider: Provider;
+      safeExtraBody: Record<string, unknown> | undefined;
+      mode: 'tutor' | 'chat';
+      temperature: number;
+      maxTokens: number | undefined;
+      reasoning_effort?: 'none' | 'low' | 'medium' | 'high';
+      responseSpeed: 'standard' | 'fast';
+    };
+  }
 > {
   let parsed: ChatPayload;
   try {
     parsed = ChatPayloadSchema.parse(req.body);
   } catch (err) {
-    res.status(400).json({ code: 'INVALID_REQUEST', message: (err as Error).message });
-    return { ok: false };
+    throw new ApiError(400, 'INVALID_REQUEST', (err as Error).message);
   }
   const { messages, temperature = 0.3, max_tokens, mode = 'chat', reasoning_effort, response_speed, extra_body } = parsed;
 
@@ -888,7 +898,7 @@ export async function prepareChatRequest(
   // Only the first request reads and injects persona, user context and saved
   // memories. Existing sessions hydrate lazily once after this release. The
   // server-owned snapshot survives browser reloads and process restarts.
-  const promptPromise = resolveSessionPrompt(req.userId ?? undefined, sessionId, async () => {
+  const promptPromise = resolveSessionPromptOrAssemble(req.userId ?? undefined, sessionId, async () => {
     const [teacherBlock, assistantBlock, memoryBlock] = await Promise.all([
       mode === 'tutor' ? getTeacherModePrompt().then((prompt) => ({ marker: TEACHER_MODE_MARKER, prompt })) : null,
       resolveAssistantInstructions(parsed.assistantId, sessionId, req.userId ?? undefined),
@@ -938,16 +948,13 @@ export async function prepareChatRequest(
   // Started alongside the context lookups above (P_prep-parallel).
   const provider = await providerPromise;
   if (!provider) {
-    res.status(503).json({ code: 'NO_PROVIDER', message: 'No active LLM provider configured' });
-    return { ok: false };
+    throw new ApiError(503, 'NO_PROVIDER', 'No active LLM provider configured');
   }
   if (!provider.keyPlaintext) {
     console.error('[chat] Provider key decryption failed for provider:', provider.id, provider.label);
-    res.status(503).json({
-      code: 'KEY_DECRYPT_FAILED',
-      message: 'API key decryption failed. Please re-enter your API key in Settings.',
-    });
-    return { ok: false };
+    throw new ApiError(503, 'KEY_DECRYPT_FAILED',
+      'API key decryption failed. Please re-enter your API key in Settings.',
+      undefined, false);
   }
 
   validateThinkingMode(provider.model, reasoning_effort, safeExtraBody);
@@ -955,9 +962,18 @@ export async function prepareChatRequest(
   if (provider.isBuiltIn) {
     const limitErr = await checkBeagleMonthlyLimit(req.userId, req.user?.tier);
     if (limitErr) {
-      res.status(429).json({ code: 'MONTHLY_LIMIT', message: limitErr.message });
-      return { ok: false };
+      throw new ApiError(429, 'MONTHLY_LIMIT', limitErr.message, undefined, false);
     }
+    /* P_provider-identity-not-session-state — the built-in provider identity is
+       resolved per request against the provider that will actually serve this
+       turn. It is deliberately NOT part of the shared session prompt snapshot:
+       the next turn of this session may be served by a user-configured
+       (BYOK) provider, and a frozen "You are Beagle" would then be sent to
+       their own upstream. */
+    finalMessages[0] = {
+      ...finalMessages[0],
+      content: insertProviderIdentity(String(finalMessages[0].content ?? ''), await getBeagleSystemPrompt()),
+    };
   }
 
   /* P_attachments-multimodal — frontend upload validation is the fast path,
@@ -966,11 +982,9 @@ export async function prepareChatRequest(
      before token estimation or an upstream request so the response is an
      explicit capability error instead of a silent text-only degradation. */
   if (containsImageUrlParts(finalMessages) && !isMultimodalProvider(provider)) {
-    res.status(400).json({
-      code: 'MODEL_NOT_MULTIMODAL',
-      message: 'The selected model is not marked as multimodal and cannot process image attachments. Enable Multimodal for this model or select a vision-capable model.',
-    });
-    return { ok: false };
+    throw new ApiError(400, 'MODEL_NOT_MULTIMODAL',
+      'The selected model is not marked as multimodal and cannot process image attachments. Enable Multimodal for this model or select a vision-capable model.',
+      undefined, false);
   }
 
   /* Preserve the legacy transform for callers that reach this point with

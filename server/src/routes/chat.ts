@@ -44,7 +44,6 @@ router.post('/', requireAuth, resourceScope('chat'), chatRateLimitDispatch, audi
      * client applies no deadline of its own either. */
     res.locals.timeoutMs = 0;
     const prep = await prepareChatRequest(req, res);
-    if (!prep.ok) return;
     const { messages: finalMessages, provider, safeExtraBody, temperature, maxTokens, reasoning_effort, responseSpeed } = prep.payload;
 
     const promptTokens = estimateMessageTokens(finalMessages);

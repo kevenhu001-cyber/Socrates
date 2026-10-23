@@ -123,6 +123,20 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
     });
   }
 
+  // Upstream provider failures (LlmProviderError) carry a status and a code
+  // but embed the provider's raw response text in their message. Report the
+  // status and code so the browser can tell an exhausted upstream budget from
+  // a transient failure — and never forward the provider body.
+  if (err && (err.name === 'LlmProviderError' || err.code === 'LLM_UPSTREAM_ERROR') && typeof err.status === 'number') {
+    return res.status(err.status).json({
+      code: 'LLM_UPSTREAM_ERROR',
+      message: `LLM request failed (upstream ${err.status}). Try again later or switch model.`,
+      // The server already spent its provider retry budget; replaying here
+      // would just repeat the same paid failure.
+      retryable: false,
+    });
+  }
+
   // Zod validation errors — strip issues in production to avoid
   // leaking schema details or user input through error messages.
   if (err.name === 'ZodError') {

@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSessionPromptResolver } from '../src/services/core/sessionPromptSnapshot.js';
+import { createSessionPromptResolver, createDegradableResolver } from '../src/services/core/sessionPromptSnapshot.js';
 import { splitPromptContext, appendTurnContext } from '../src/lib/chatPromptContext.js';
-import { injectUserContext, SERVER_SYSTEM_POLICY, appendFinalOutputConstraints } from '../src/lib/chatPolicy.js';
+import { injectUserContext, SERVER_SYSTEM_POLICY, appendFinalOutputConstraints, insertProviderIdentity, BEAGLE_IDENTITY_MARKER, FINAL_OUTPUT_CONSTRAINTS_MARKER, FINAL_OUTPUT_CONSTRAINTS } from '../src/lib/chatPolicy.js';
+import { NotFound } from '../src/lib/errors.js';
 import { appendNativeToolContract, appendToolRoutingHints } from '../src/routes/chat/helpers.js';
 
 function store() {
@@ -124,4 +125,59 @@ test('live tool budget changes only the suffix after stable tool routing', () =>
   assert.match(prefix(first), /Unified visual tool/);
   assert.notEqual(first[0].content, second[0].content);
   assert.equal(base[0].content.includes(marker), false);
+});
+
+/* ── P_provider-identity-not-session-state ──────────────────────────────
+   The built-in provider identity must never be frozen into the shared
+   session prompt snapshot: the next turn of the same session may be
+   served by a user-configured (BYOK) provider, and a snapshot carrying
+   "You are Beagle" would then be sent to their own upstream. */
+
+test('provider identity is inserted per request, never frozen into the shared snapshot', () => {
+  const snapshot = appendFinalOutputConstraints(
+    injectUserContext([{ role: 'system', content: SERVER_SYSTEM_POLICY }], { displayName: 'Ada', tier: 'free' }, { sessionSnapshot: true }),
+  )[0].content;
+
+  // The snapshot itself carries no provider identity.
+  assert.equal(snapshot.includes(BEAGLE_IDENTITY_MARKER), false);
+
+  // It is appended on the way out, and only when a built-in provider serves the turn.
+  const withIdentity = insertProviderIdentity(snapshot, 'You are Beagle.');
+  assert.match(withIdentity, /You are Beagle\./);
+  assert.equal(insertProviderIdentity(snapshot, null), snapshot);
+});
+
+test('provider identity is inserted before the closing final-output constraints', () => {
+  const snapshot = appendFinalOutputConstraints(
+    injectUserContext([{ role: 'system', content: SERVER_SYSTEM_POLICY }], { displayName: 'Ada', tier: 'free' }, { sessionSnapshot: true }),
+  )[0].content;
+  const withIdentity = insertProviderIdentity(snapshot, 'You are Beagle.');
+  // The constraints block must stay the closing text of the system prompt.
+  assert.ok(withIdentity.indexOf(FINAL_OUTPUT_CONSTRAINTS_MARKER) > withIdentity.indexOf(BEAGLE_IDENTITY_MARKER));
+  assert.ok(withIdentity.endsWith(FINAL_OUTPUT_CONSTRAINTS));
+  // Idempotent: a second insertion must not duplicate the identity.
+  assert.equal(insertProviderIdentity(withIdentity, 'You are Beagle.'), withIdentity);
+});
+
+/* ── P_snapshot-store-degrade ───────────────────────────────────────────
+   The snapshot is an optimisation, not a correctness requirement. A missing
+   migration or a transient database error must degrade to per-turn assembly
+   instead of failing the whole chat turn — but ownership failures must
+   still propagate, or a caller could use somebody else's session id. */
+
+test('a broken snapshot store degrades to per-turn assembly instead of failing the turn', async () => {
+  const resolve = createDegradableResolver(async () => {
+    throw new Error('relation "session_prompt_snapshots" does not exist');
+  });
+  let calls = 0;
+  const prompt = await resolve('owner', 'session', async () => { calls++; return 'assembled for this turn'; });
+  assert.equal(prompt, 'assembled for this turn');
+  assert.equal(calls, 1);
+});
+
+test('ownership failures are never degraded away', async () => {
+  const resolve = createDegradableResolver(async () => {
+    throw new NotFound('Session not found');
+  });
+  await assert.rejects(() => resolve('other', 'session', async () => 'must not be served'), /Session not found/);
 });

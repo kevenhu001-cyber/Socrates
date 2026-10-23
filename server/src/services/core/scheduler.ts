@@ -275,15 +275,29 @@ export async function runScheduledTaskNow(
       return updated;
     });
   } catch (error) {
-    // The provider may already have completed. A failed result transaction
-    // must not become an unbounded sequence of paid model replays on lease
-    // expiry. Fence the quarantine by the same owner token; never overwrite
-    // a replacement worker's state or resume a user-paused task.
-    await withScheduledTaskLease(lease, async (tx, current) => {
-      await tx.update(scheduledTasks).set({ status: 'paused', nextRunAt: null, updatedAt: new Date() }).where(eq(scheduledTasks.id, current.id));
-      await tx.update(scheduledTaskLeases).set({ state: 'failed', error: 'Result persistence failed; review before manually retrying.', updatedAt: new Date() })
-        .where(and(eq(scheduledTaskLeases.taskId, current.id), eq(scheduledTaskLeases.ownerToken, lease.ownerToken)));
-    }).catch((quarantineError) => console.warn('[scheduler] unable to fence failed completion:', (quarantineError as Error).message));
+    /* The provider may already have completed. A failed result transaction
+     * must not become an unbounded sequence of paid model replays on lease
+     * expiry. Fence the quarantine by the same owner token; never overwrite
+     * a replacement worker's state or resume a user-paused task.
+     *
+     * A controlled stop is NOT a result-persistence failure. `scheduler_shutdown`
+     * and `scheduled_lease_lost` abort the run deliberately; quarantining them
+     * would permanently disable the user's recurring task, because
+     * claimScheduledTask only re-claims 'active'/'pending' tasks — a task left
+     * 'paused' with nextRunAt=null is never picked up again. Every deploy that
+     * landed during an in-flight run would silently kill that schedule. Leave
+     * the task runnable so the next poll re-claims it once the lease expires. */
+    if (controller.signal.aborted) {
+      console.warn(
+        `[scheduler] task ${task.id} stopped without a result (${String(controller.signal.reason)}); leaving the schedule runnable`,
+      );
+    } else {
+      await withScheduledTaskLease(lease, async (tx, current) => {
+        await tx.update(scheduledTasks).set({ status: 'paused', nextRunAt: null, updatedAt: new Date() }).where(eq(scheduledTasks.id, current.id));
+        await tx.update(scheduledTaskLeases).set({ state: 'failed', error: 'Result persistence failed; review before manually retrying.', updatedAt: new Date() })
+          .where(and(eq(scheduledTaskLeases.taskId, current.id), eq(scheduledTaskLeases.ownerToken, lease.ownerToken)));
+      }).catch((quarantineError) => console.warn('[scheduler] unable to fence failed completion:', (quarantineError as Error).message));
+    }
     throw error;
   } finally {
     clearInterval(heartbeat); clearTimeout(deadline); activeControllers.delete(controller);
@@ -337,9 +351,16 @@ export function startScheduler(): void {
 /** Stop the poll loop. Idempotent. */
 export function stopScheduler(): void {
   stopping = true;
-  for (const controller of activeControllers) controller.abort('scheduler_shutdown');
+  abortActiveScheduledRuns('scheduler_shutdown');
   if (pollTimer) {
     clearInterval(pollTimer);
     pollTimer = null;
   }
+}
+
+/** Abort every in-flight scheduled run with the given reason. A deliberate
+ *  stop is not a result-persistence failure: the run keeps the lease, so the
+ *  task must stay runnable for the next poll instead of being quarantined. */
+export function abortActiveScheduledRuns(reason: string): void {
+  for (const controller of activeControllers) controller.abort(reason);
 }

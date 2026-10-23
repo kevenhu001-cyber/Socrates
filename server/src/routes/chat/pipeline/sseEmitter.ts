@@ -8,6 +8,7 @@
 
 import type { Response } from 'express';
 import type { ToolCallDelta } from './types.js';
+import { buildSseErrorFrame } from '../../../lib/sseErrorFrame.js';
 
 function flush(response: Response): void {
   try { (response as { flush?: () => void }).flush?.(); } catch {}
@@ -78,23 +79,11 @@ export class SseEmitter {
   /** Error frame + terminal DONE + end (upstream error path). */
   fatal(error: Error): void {
     console.error('[chat/stream] LLM error:', error.message);
-    // Never forward raw upstream bodies to the client — they may
-    // contain provider-specific details. Map to a status-only message;
-    // the full body stays in the server log above.
-    const failure = error as Error & { status?: number; code?: string; retryable?: boolean };
-    const status = failure.status;
-    const unsupportedMode = failure.code === 'MODEL_MODE_UNSUPPORTED';
-    const safeMessage = unsupportedMode ? error.message : typeof status === 'number'
-      ? `LLM request failed (upstream ${status}). Try again later or switch model.`
-      : 'The model connection failed. Please try again.';
-    // HTTP is already 200 after SSE starts. Preserve machine-readable failure
-    // semantics so the browser does not replay a 400 or exhausted 429 budget.
-    const details = {
-      error: safeMessage, message: safeMessage,
-      ...(typeof status === 'number' ? { status } : {}),
-      code: unsupportedMode ? 'MODEL_MODE_UNSUPPORTED' : 'LLM_UPSTREAM_ERROR',
-      retryable: failure.retryable ?? (typeof status !== 'number'),
-    };
+    // Never forward raw upstream bodies to the client — they may contain
+    // provider-specific details. buildSseErrorFrame maps every failure to a
+    // status-based message and keeps the machine-readable status/code/retryable
+    // contract, so the browser does not replay a 400 or an exhausted 429.
+    const details = buildSseErrorFrame(error, { fallbackCode: 'LLM_UPSTREAM_ERROR' });
     try {
       this.writeRaw(`event: error\ndata: ${JSON.stringify(details)}\n\n`);
       this.response.write('data: [DONE]\n\n');

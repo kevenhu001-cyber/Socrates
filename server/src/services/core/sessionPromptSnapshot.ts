@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { getDb } from '../../db/index.js';
 import { sessions, sessionPromptSnapshots } from '../../db/schema/index.js';
-import { NotFound } from '../../lib/errors.js';
+import { NotFound, ApiError } from '../../lib/errors.js';
 
 export interface SessionPromptStore {
   /** Must check current session ownership, including when a snapshot exists. */
@@ -59,3 +59,45 @@ const databaseStore: SessionPromptStore = {
 };
 
 export const resolveSessionPrompt = createSessionPromptResolver(databaseStore);
+
+/**
+ * Resolve the frozen session prompt, falling back to assembling it for this
+ * turn when the snapshot store is unavailable.
+ *
+ * The snapshot is an optimisation, not a correctness requirement: it exists so
+ * later turns of a session reuse turn-1's system prefix. A missing migration
+ * (the table does not exist yet) or a transient database error must therefore
+ * degrade to per-turn assembly instead of failing the whole chat turn. The
+ * degraded path re-reads the prompt files and memory on every turn, which is
+ * slower but behaviourally equivalent.
+ *
+ * Ownership failures are NOT degradable: `readOwned` raises NotFound when the
+ * session does not belong to the caller, and swallowing that would let a
+ * caller use someone else's session id. ApiError subclasses therefore always
+ * propagate; only infrastructure failures fall back.
+ */
+export async function resolveSessionPromptOrAssemble(
+  userId: string | undefined,
+  sessionId: string | undefined,
+  assemble: () => Promise<string>,
+): Promise<string> {
+  return createDegradableResolver(resolveSessionPrompt)(userId, sessionId, assemble);
+}
+
+/** Testable seam: wraps any resolver with the degrade behaviour above. */
+export function createDegradableResolver(
+  resolve: (userId: string | undefined, sessionId: string | undefined, assemble: () => Promise<string>) => Promise<string>,
+): (userId: string | undefined, sessionId: string | undefined, assemble: () => Promise<string>) => Promise<string> {
+  return async (userId, sessionId, assemble) => {
+    try {
+      return await resolve(userId, sessionId, assemble);
+    } catch (err) {
+      if (err instanceof ApiError) throw err;
+      console.warn(
+        '[session-prompt] snapshot store unavailable, assembling per turn:',
+        (err as Error).message,
+      );
+      return assemble();
+    }
+  };
+}

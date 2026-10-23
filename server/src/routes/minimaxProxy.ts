@@ -10,8 +10,10 @@ import { getBeagleSystemPrompt } from '../lib/prompts.js';
 import { enforceServerSystemBoundary, appendAssistantInstructions, appendMemoryContext, prependTeacherModePrompt, appendFinalOutputConstraints, injectUserContext, transformMessagesForModel, SSE_PRIME } from './chat/helpers.js';
 import { isUuid } from '../lib/validate.js';
 import { BadRequest } from '../lib/errors.js';
-import { resolveSessionPrompt } from '../services/core/sessionPromptSnapshot.js';
+import { resolveSessionPromptOrAssemble } from '../services/core/sessionPromptSnapshot.js';
 import { splitPromptContext, appendTurnContext } from '../lib/chatPromptContext.js';
+import { insertProviderIdentity } from '../lib/chatPolicy.js';
+import { buildSseErrorFrame } from '../lib/sseErrorFrame.js';
 
 const router = Router();
 
@@ -53,20 +55,23 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
     // /chat and /chat/stream. Switching transport must not replace the prefix.
     const mode = req.body.mode === 'tutor' ? 'tutor' : 'chat';
     const context = splitPromptContext(Array.isArray(rawMessages) ? rawMessages : [], mode);
-    const systemPrompt = await resolveSessionPrompt(req.userId ?? undefined, sessionId, async () => {
+    /* P_provider-identity-not-session-state — the built-in provider identity
+     * (prompts/beagle.md) must NOT be frozen into the shared session
+     * snapshot. This session may later be served by the user's own BYOK
+     * provider, and a snapshot carrying "You are Beagle" would then be sent
+     * to their own upstream on every subsequent turn. The snapshot keeps only
+     * provider-independent session state; the identity is appended per
+     * request, after the snapshot has been resolved. */
+    let systemPrompt = await resolveSessionPromptOrAssemble(req.userId ?? undefined, sessionId, async () => {
       let initialized = enforceServerSystemBoundary(context.initialization);
       initialized = injectUserContext(initialized, req.user, { sessionSnapshot: !!sessionId });
       if (mode === 'tutor') initialized = await prependTeacherModePrompt(initialized);
       initialized = await appendAssistantInstructions(initialized, assistantId, sessionId, req.userId ?? undefined);
       initialized = await appendMemoryContext(initialized, req.userId ?? undefined, isUuid(req.body.projectId) ? req.body.projectId : undefined);
-      const beaglePrompt = await getBeagleSystemPrompt();
-      const marker = '<!-- @beagle-system-prompt -->';
-      if (beaglePrompt && !String(initialized[0].content).includes(marker)) {
-        initialized[0] = { ...initialized[0], content: `${initialized[0].content}\n\n${marker}\n${beaglePrompt}` };
-      }
       initialized = appendFinalOutputConstraints(initialized);
       return initialized[0].content as string;
     });
+    systemPrompt = insertProviderIdentity(systemPrompt, await getBeagleSystemPrompt());
     let messages = transformMessagesForModel([
       { role: 'system', content: systemPrompt },
       ...appendTurnContext(context.conversation, context.turnInstructions, null),
@@ -185,8 +190,11 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
         // onError
         (err) => {
           console.error('[minimax] stream error:', err.message);
+          // Never forward a raw upstream provider body: the message may embed
+          // the provider's response text. The shared frame keeps status/code
+          // and states whether a replay could help.
           try {
-            res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+            res.write(`data: ${JSON.stringify(buildSseErrorFrame(err))}\n\n`);
             res.write('data: [DONE]\n\n');
             res.end();
           } catch { /* ignore */ }

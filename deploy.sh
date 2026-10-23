@@ -735,6 +735,56 @@ set_app_index_target() {
   fi
 }
 
+# Read the SPA entry filename that nginx currently falls back to. The new
+# bundle is copied into the web root and nginx is re-pointed BEFORE the health
+# gate runs, so a failed gate has to put the previous entry back — otherwise
+# the new SPA stays live against a rolled-back backend, which is a guaranteed
+# half-deploy (new UI, old /api/v2).
+current_app_index_target() {
+  local conf
+  for conf in "${APP_NGINX_CONFIGS[@]}"; do
+    [[ -f "$conf" ]] || continue
+    local found
+    found=$($SUDO grep -oE 'try_files[[:space:]]+\$uri[[:space:]]+/index\.[0-9]+\.html;' "$conf" 2>/dev/null | head -1 | grep -oE 'index\.[0-9]+\.html' || true)
+    if [[ -n "$found" ]]; then
+      echo "$found"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Restore the SPA bundle that was live before this deploy.
+rollback_frontend() {
+  local previous="$1"
+  if [[ -z "$previous" ]]; then
+    echo "ERROR: no previous SPA entry was recorded; cannot restore the frontend automatically" >&2
+    return 1
+  fi
+  if [[ ! -f "$APP_WEB_ROOT/.previous/$previous" ]]; then
+    echo "ERROR: previous SPA entry $previous is missing from $APP_WEB_ROOT/.previous/" >&2
+    return 1
+  fi
+
+  echo "Restoring the previous SPA entry: $previous" >&2
+  $SUDO cp -a "$APP_WEB_ROOT/.previous/$previous" "$APP_WEB_ROOT/$previous"
+  for sibling in "$previous.gz" "$previous.br"; do
+    if [[ -f "$APP_WEB_ROOT/.previous/$sibling" ]]; then
+      $SUDO cp -a "$APP_WEB_ROOT/.previous/$sibling" "$APP_WEB_ROOT/$sibling"
+    fi
+  done
+
+  if ! set_app_index_target "$previous"; then
+    echo "ERROR: failed to re-point nginx at $previous" >&2
+    return 1
+  fi
+  if ! $SUDO nginx -t >/dev/null 2>&1; then
+    echo "ERROR: nginx config is invalid after the frontend rollback" >&2
+    return 1
+  fi
+  $SUDO nginx -s reload >/dev/null 2>&1 || echo "WARNING: nginx did not reload after the frontend rollback" >&2
+}
+
 # ─── Content-Security-Policy for the SPA document ─────────────────────
 #
 # Why this lives in deploy.sh: nginx serves the SPA from $APP_WEB_ROOT, so
@@ -963,8 +1013,9 @@ rollback_backend() {
     return 0
   fi
   if [[ ! -d "$BACKEND_PREVIOUS" ]]; then
-    echo "WARNING: no previous backend build is available for automatic rollback" >&2
-    return 0
+    echo "ERROR: no previous backend build is available for automatic rollback." >&2
+    echo "       The failed build stays live at $BACKEND_DIST — restore a known-good build by hand." >&2
+    return 1
   fi
 
   local failed_dist="$SERVER_DIR/dist.failed.$(date +%s).$$"
@@ -987,7 +1038,7 @@ rollback_backend() {
 handle_deploy_error() {
   local exit_code=$?
   trap - ERR
-  rollback_backend
+  rollback_backend || true
   if [[ "$BACKEND_SWAPPED" != "1" && "$BACKEND_STOPPED" == "1" ]]; then
     if $SUDO systemctl is-active --quiet socrates-api; then
       BACKEND_STOPPED=0
@@ -1089,6 +1140,11 @@ SRC_MD5=""
 SRC_SHA256=""
 
 # ─── 1. Build the frontend (Vite) ─────────────────────────────────────
+# Remember which SPA entry nginx serves right now. The new entry is installed
+# and nginx is re-pointed before the health gate, so a failed gate must be
+# able to restore this one.
+APP_PREVIOUS_TARGET="$(current_app_index_target || true)"
+
 if [[ "${1:-}" != "" && -f "${1}" ]]; then
   # Legacy mode: deploy a single index.html file directly. Mirror the
   # production-mode versioning so the nginx try_files sentinel can be
@@ -1705,7 +1761,14 @@ EOF
     fi
   ) &>/dev/null &
 else
-  rollback_backend
+  FRONTEND_ROLLBACK_OK=true
+  if ! rollback_backend; then
+    GATE_RESULTS+=("  backend: NOT restored (no known-good build available — the failed build is still live)")
+  fi
+  if ! rollback_frontend "$APP_PREVIOUS_TARGET"; then
+    FRONTEND_ROLLBACK_OK=false
+    GATE_RESULTS+=("  frontend: NOT restored automatically — the new SPA entry is still live")
+  fi
   GATE_RESULTS+=("  state: NOT updated (gate failed — last known-good preserved)")
 fi
 
@@ -1738,11 +1801,13 @@ else
   printf '%s\n' "${GATE_RESULTS[@]}" >&2
   echo "────────────" >&2
   echo "The previous bundle (versioned filename + content) is preserved at $APP_WEB_ROOT/.previous/" >&2
-  echo "The backend build was restored automatically when a previous build was available." >&2
-  echo "To restore the frontend, copy the prior index.<TS>.html back and re-point nginx:" >&2
-  echo "    sudo cp -a $APP_WEB_ROOT/.previous/index.<old-ts>.html $APP_WEB_ROOT/" >&2
-  echo "    sudo sed -i 's|/index\\.[0-9]\\+\\.html|/index.<old-ts>.html|' $NGINX_APP_CONF" >&2
-  echo "    sudo nginx -s reload" >&2
+  echo "The backend build and the SPA entry were restored automatically when a previous build was available." >&2
+  if [[ "${FRONTEND_ROLLBACK_OK:-false}" != "true" ]]; then
+    echo "The frontend was NOT restored automatically. To restore it by hand:" >&2
+    echo "    sudo cp -a $APP_WEB_ROOT/.previous/index.<old-ts>.html $APP_WEB_ROOT/" >&2
+    echo "    sudo sed -i 's|/index\\.[0-9]\\+\\.html|/index.<old-ts>.html|' $NGINX_APP_CONF" >&2
+    echo "    sudo nginx -s reload" >&2
+  fi
   echo "State file $STATE_FILE was NOT updated — last known-good deploy is still recorded there." >&2
   exit 1
 fi

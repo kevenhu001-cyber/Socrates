@@ -218,6 +218,30 @@ export async function touchChatTurnExecution(userId: string, turnId: string): Pr
   return rows.length === 1;
 }
 
+/**
+ * One execution-heartbeat tick.
+ *
+ * The turn is only aborted when the server can prove the turn is no longer
+ * ours (the touch affected no row: another worker took it over, or it was
+ * interrupted). A heartbeat that FAILS is not proof of anything: the signal
+ * this aborts IS the upstream fetch signal, so aborting on a transient
+ * database error truncates an answer the provider is still billing for. A
+ * failed tick therefore leaves the turn running; if the database really is
+ * gone, recoverStaleChatTurns() reclaims it once the heartbeat window
+ * expires.
+ */
+export async function runExecutionHeartbeat(
+  controller: AbortController,
+  touch: () => Promise<boolean>,
+): Promise<void> {
+  try {
+    const owned = await touch();
+    if (!owned) controller.abort('turn_interrupted');
+  } catch (err) {
+    console.warn('[chat-turns] execution heartbeat failed (turn left running):', (err as Error).message);
+  }
+}
+
 /** The claim also covers preparation: RAG expansion/provider prelude can
  * itself spend upstream tokens, so it must not run for losing retries. */
 export async function withChatTurnExecution<T>(userId: string, turnId: string, work: (signal: AbortSignal) => Promise<T>): Promise<T> {
@@ -227,9 +251,10 @@ export async function withChatTurnExecution<T>(userId: string, turnId: string, w
   const heartbeat = setInterval(() => {
     if (renewing) return;
     renewing = true;
-    void touchChatTurnExecution(userId, turnId).then((owned) => {
-      if (!owned) controller.abort('turn_interrupted');
-    }).catch(() => controller.abort('execution_heartbeat_failed')).finally(() => { renewing = false; });
+    void runExecutionHeartbeat(
+      controller,
+      () => touchChatTurnExecution(userId, turnId),
+    ).finally(() => { renewing = false; });
   }, 20_000);
   heartbeat.unref();
   try { return await work(controller.signal); }

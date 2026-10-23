@@ -10,6 +10,7 @@ import { NotFound, BadRequest, TooManyRequests } from '../lib/errors.js';
 import { getBeagleQuota } from '../lib/tiers.js';
 import { isUuid } from '../lib/validate.js';
 import { sanitizeStoredHtml, sanitizePlainText } from '../lib/sanitize.js';
+import { buildSseErrorFrame } from '../lib/sseErrorFrame.js';
 import { getActiveApiKey } from '../services/core/apiKey.js';
 import { streamChatCompletion } from '../services/core/llm.js';
 import { trackSseConnection, startSseKeepalive } from '../lib/sse.js';
@@ -304,11 +305,11 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
             res.end();
           } catch { /* client gone */ }
         } catch (err) {
-          try { res.write(`data: ${JSON.stringify({ error: (err as Error).message })}\n\n`); res.end(); } catch { /* ignore */ }
+          try { res.write(`data: ${JSON.stringify(buildSseErrorFrame(err))}\n\n`); res.end(); } catch { /* ignore */ }
         }
       },
       (err: Error) => {
-        try { res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`); res.end(); } catch { /* ignore */ }
+        try { res.write(`data: ${JSON.stringify(buildSseErrorFrame(err))}\n\n`); res.end(); } catch { /* ignore */ }
       },
     );
   } catch (err) { next(err); }

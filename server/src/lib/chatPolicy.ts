@@ -65,6 +65,32 @@ export function appendFinalOutputConstraints(messages: ChatMessage[]): ChatMessa
   return appendServerPolicy(messages, FINAL_OUTPUT_CONSTRAINTS_MARKER, FINAL_OUTPUT_CONSTRAINTS);
 }
 
+/* P_provider-identity-not-session-state — the built-in provider's identity
+   spec (prompts/beagle.md) is a TRANSPORT concern, not session state. A
+   session can switch between the built-in provider and a user-configured
+   (BYOK) provider at any time, so the identity must be resolved per request
+   against the provider that will actually serve the turn. Freezing it into
+   the session prompt snapshot would leak "You are Beagle" to a user's own
+   provider for every later turn of that session. */
+export const BEAGLE_IDENTITY_MARKER = '<!-- @beagle-system-prompt -->';
+
+/**
+ * Insert a provider-identity block into an assembled system prompt, keeping
+ * the final output constraints as the closing text (models weight the last
+ * instruction most heavily, and the constraints block is documented as
+ * always winning).
+ */
+export function insertProviderIdentity(systemPrompt: string, identity: string | null | undefined): string {
+  if (!identity) return systemPrompt;
+  if (systemPrompt.includes(BEAGLE_IDENTITY_MARKER)) return systemPrompt;
+  const block = `${BEAGLE_IDENTITY_MARKER}\n${identity}`;
+  const markerAt = systemPrompt.indexOf(FINAL_OUTPUT_CONSTRAINTS_MARKER);
+  if (markerAt === -1) return `${systemPrompt}\n\n${block}`;
+  const head = systemPrompt.slice(0, markerAt).replace(/\s+$/, '');
+  const tail = systemPrompt.slice(markerAt);
+  return `${head}\n\n${block}\n\n${tail}`;
+}
+
 
 /* ─────────────────────────────────────────────────────────────────
    User-context injection (prompt-injection defence)

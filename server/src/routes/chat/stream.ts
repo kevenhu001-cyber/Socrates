@@ -129,7 +129,6 @@ export function registerStreamRoute(router: Router) {
           );
           toolCtxPromise.catch(() => {});
           const prep = await prepareChatRequest(req, res, { signal: executionSignal });
-          if (!prep.ok) throw new Error('Request preparation failed');
           timing.mark('prepared');
           if (executionSignal.aborted) throw new Error('Turn execution interrupted during preparation');
           await runChatStreamPipeline({

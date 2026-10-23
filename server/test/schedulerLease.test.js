@@ -9,7 +9,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { initDb, closeDb } from '../src/db/index.js';
 import { users, apiKeys, scheduledTasks, scheduledTaskLeases, messages } from '../src/db/schema/index.js';
 import { claimScheduledTask, renewScheduledTaskLease, withScheduledTaskLease } from '../src/services/core/scheduledTaskLease.js';
-import { runScheduledTaskNow, pollScheduledTasksOnce } from '../src/services/core/scheduler.js';
+import { runScheduledTaskNow, pollScheduledTasksOnce, abortActiveScheduledRuns } from '../src/services/core/scheduler.js';
 import { encrypt, encryptionKey } from '../src/lib/crypto.js';
 import { getLlmDispatcher } from '../src/services/core/llm.js';
 import { shutdownPubsub } from '../src/lib/pubsub.js';
@@ -203,6 +203,34 @@ test('a stale worker finishing after lease takeover cannot persist messages or c
     await assert.rejects(() => runScheduledTaskNow(task, { automatic: true }), { status: 409 });
     assert.equal((await readTask(task.id)).runCount, 0);
     assert.equal((await readTask(task.id)).sessionId, null);
+  } finally {
+    providerHook = null;
+    await db.update(scheduledTasks).set({ status: 'paused' }).where(eq(scheduledTasks.id, task.id));
+  }
+});
+
+test('a controlled stop leaves a recurring task runnable instead of pausing it forever', { skip: !enabled }, async () => {
+  /* P_scheduler-shutdown-not-persistence-failure — a deliberate stop (lease
+     lost / scheduler shutdown) is not a result-persistence failure. The
+     quarantine sets status='paused' and nextRunAt=null, and
+     claimScheduledTask only re-claims 'active'/'pending' tasks — so quarantining
+     a controlled stop permanently kills the user's recurring schedule. Every
+     deploy landing during an in-flight run used to trigger exactly that. */
+  const task = await makeTask({ frequency: 'hourly' });
+  let markEntered;
+  const atProvider = new Promise((resolve) => { markEntered = resolve; });
+  providerHook = async () => { markEntered(); await new Promise((r) => setTimeout(r, 2000)); };
+  try {
+    const run = runScheduledTaskNow(task, { automatic: true });
+    await atProvider;
+    abortActiveScheduledRuns('scheduler_shutdown');
+    await assert.rejects(() => run, { status: 409 });
+    const updated = await readTask(task.id);
+    assert.equal(updated.status, 'active', 'a controlled shutdown must not pause the recurring task');
+    assert.ok(updated.nextRunAt, 'a controlled shutdown must preserve the next run slot');
+    const [lease] = await db.select().from(scheduledTaskLeases).where(eq(scheduledTaskLeases.taskId, task.id));
+    assert.doesNotMatch(lease.error ?? '', /persistence failed/,
+      'a controlled shutdown must not be recorded as a result persistence failure');
   } finally {
     providerHook = null;
     await db.update(scheduledTasks).set({ status: 'paused' }).where(eq(scheduledTasks.id, task.id));
