@@ -298,6 +298,24 @@ export interface FileExtractResult {
   errorCode?: string;
 }
 
+/** What a client needs to know about a provider's model, without learning
+ * which model it is. The built-in provider's model name is deliberately not
+ * exposed (it would leak the operator's LLM choice), so this boolean
+ * summary is how a client learns that the selected model can — or cannot —
+ * switch thinking off and whether it has reasoning-effort levels at all.
+ *
+ * Optional everywhere: a client that does not know the field must keep
+ * working, and must treat an absent summary as "nothing is known" rather
+ * than as "unsupported". */
+export interface ProviderCapabilities {
+  /** The model reasons — it has a thinking channel of its own. */
+  isReasoning?: boolean;
+  /** The user may ask for "no thinking" (Instant). */
+  supportsInstant?: boolean;
+  /** The model accepts a reasoning-effort level. */
+  supportsEffort?: boolean;
+}
+
 /** GET /api/api-key row: a model provider. Secrets never leave the server
  * (`hasKey` boolean + `keyHint` only); activating one deactivates the rest. */
 export interface ProviderKey {
@@ -311,6 +329,8 @@ export interface ProviderKey {
   isMultimodal?: boolean;
   hasKey?: boolean;
   createdAt?: string | null;
+  /** Capability summary derived from the model's own contract. */
+  capabilities?: ProviderCapabilities;
 }
 
 export type ScheduledFrequency = 'once' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'custom';

@@ -70,12 +70,17 @@ export function ModelPickerPanel({ providers, activeId, effort, speed, onPickMod
 interface EffortPanelProps {
   effort: ReasoningEffort;
   speed: ResponseSpeed;
+  /** False when the active model cannot switch thinking off. */
+  supportsInstant?: boolean;
   onBack: () => void;
   onCommit: (effort: ReasoningEffort, speed: ResponseSpeed) => void;
 }
 
-export function EffortPanel({ effort, speed, onBack, onCommit }: EffortPanelProps) {
-  const stops = EFFORT_STOPS;
+export function EffortPanel({ effort, speed, supportsInstant = true, onBack, onCommit }: EffortPanelProps) {
+  /* P_model-capability-registry — a model that cannot switch thinking off
+     has no Instant stop. Offering it would promise a mode the server
+     rejects with a capability error. */
+  const stops = supportsInstant ? EFFORT_STOPS : EFFORT_STOPS.filter((stop) => stop !== 'instant');
   const sliderIndex = stops.indexOf(effort);
   return (
     <>
@@ -83,10 +88,12 @@ export function EffortPanel({ effort, speed, onBack, onCommit }: EffortPanelProp
         <span><strong>{effortLabel(effort)}</strong></span>
         <span className="chat-config-value"><ChevronIcon /></span>
       </button>
-      <button type="button" className="chat-config-row" aria-pressed={effort === 'instant'} onClick={() => onCommit('instant', speed)}>
+      <button type="button" className="chat-config-row" aria-pressed={effort === 'instant'} disabled={!supportsInstant} onClick={() => onCommit('instant', speed)}>
         <span>
           <strong>{i18n('effort.instant', 'Instant')}</strong>
-          <small>{i18n('chatconfig.instantHint', 'Answer directly without thinking')}</small>
+          <small>{supportsInstant
+            ? i18n('chatconfig.instantHint', 'Answer directly without thinking')
+            : i18n('chatconfig.instantUnsupported', 'This model always reasons')}</small>
         </span>
         {effort === 'instant' ? <CheckIcon /> : null}
       </button>

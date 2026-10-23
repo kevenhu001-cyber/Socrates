@@ -1,5 +1,6 @@
 import { apiFetch } from '../util/api.ts';
 import { showToast } from '../ui/toast.js';
+import type { ProviderCapabilities } from '@socrates/contracts';
 import {
   getProviderConfigSnapshot,
   publishProviderConfig,
@@ -75,6 +76,19 @@ export function resetProviderConfigForUser(): void {
   resetProviderConfig();
 }
 
+/** Capability summary as the server publishes it. Every field is coerced to
+ * a strict boolean: a forged or malformed value must not be able to look
+ * like "supported" through truthiness. */
+function normalizeCapabilities(raw: unknown): ProviderCapabilities | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const source = raw as Record<string, unknown>;
+  const out: ProviderCapabilities = {};
+  if (typeof source.isReasoning === 'boolean') out.isReasoning = source.isReasoning;
+  if (typeof source.supportsInstant === 'boolean') out.supportsInstant = source.supportsInstant;
+  if (typeof source.supportsEffort === 'boolean') out.supportsEffort = source.supportsEffort;
+  return Object.keys(out).length ? out : undefined;
+}
+
 function normalizeProvider(row: Record<string, unknown>): ProviderConfig {
   const id = String(row.id || '');
   return {
@@ -86,6 +100,7 @@ function normalizeProvider(row: Record<string, unknown>): ProviderConfig {
     isBuiltIn: row.isBuiltIn === true || id === BUILT_IN_ID,
     hasKey: row.hasKey === true || Boolean(row.key),
     serverIsActive: row.isActive === true,
+    capabilities: normalizeCapabilities(row.capabilities),
   };
 }
 
@@ -109,7 +124,15 @@ export async function refreshProviderConfig(): Promise<ProviderConfigSnapshot> {
     if (serverBuiltIn?.model) builtInModel = serverBuiltIn.model;
     const customProviders = rows.filter((provider) => provider.id !== BUILT_IN_ID);
     const hasBuiltIn = Boolean(window.SERVER_HAS_BEAGLE_KEY);
-    const builtIn: ProviderConfig = { ...BUILT_IN_BASE, model: builtInModel, hasKey: hasBuiltIn };
+    const builtIn: ProviderConfig = {
+      ...BUILT_IN_BASE,
+      model: builtInModel,
+      hasKey: hasBuiltIn,
+      /* The built-in provider is a system row: it never appears in the
+         caller's provider list, so its capability summary travels beside
+         the list. */
+      capabilities: normalizeCapabilities(result?.builtInCapabilities),
+    };
     const lastId = loadLastActiveId();
     let activeId: string | null = null;
 

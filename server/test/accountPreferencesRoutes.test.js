@@ -88,11 +88,19 @@ test('API key creation and listing expose only safe metadata and isolate owners'
   }
   assert.equal('keyCiphertext' in created.body, false);
   assert.equal('key' in created.body, false);
+  /* P_model-capability-registry — the provider row carries what the model
+     can do, so a client never has to guess from the model name. An
+     undeclared model keeps Instant available and has no effort levels. */
+  assert.deepEqual(created.body.capabilities, { isReasoning: true, supportsInstant: true, supportsEffort: false });
   const listed = await f.request('/api/api-key/');
   assert.equal(listed.status, 200);
   assert.equal(listed.body.providers.length, 1);
   assert.equal(listed.body.providers[0].hasKey, true);
   assert.equal('keyCiphertext' in listed.body.providers[0], false);
+  assert.deepEqual(listed.body.providers[0].capabilities, { isReasoning: true, supportsInstant: true, supportsEffort: false });
+  /* The built-in provider is a system row: it is not in the caller's list,
+     but its capabilities travel beside it. */
+  assert.ok('builtInCapabilities' in listed.body);
   assert.equal((await f.request('/api/api-key/', { as: f.other })).body.providers.length, 0);
 });
 

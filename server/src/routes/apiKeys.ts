@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { eq, and, ne, count, sql } from 'drizzle-orm';
+import { eq, and, ne, count, isNotNull, sql } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { apiKeys } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -9,6 +9,30 @@ import { encrypt, encryptionKey } from '../lib/crypto.js';
 import { getApiKeyLimit } from '../lib/tiers.js';
 import { isUuid } from '../lib/validate.js';
 import { invalidateApiKeyCache } from '../services/core/apiKey.js';
+import { summarizeModelCapabilities, type ProviderCapabilitySummary } from '../lib/modelCapabilities.js';
+
+/* P_model-capability-registry — a client cannot tell whether the selected
+ * model can switch thinking off or has effort levels at all: the built-in
+ * provider's model name is deliberately hidden (P_privacy-leak), and a
+ * user-configured model is an arbitrary string. The registry decides, so the
+ * summary travels with the provider row instead of the client guessing from
+ * a model name. */
+function withCapabilities<T extends { model?: string | null }>(row: T): T & { capabilities: ProviderCapabilitySummary } {
+  return { ...row, capabilities: summarizeModelCapabilities(row.model || '') };
+}
+
+/* The built-in provider is a system row (no userId), so it is not part of
+ * the caller's provider list. Its capabilities are published next to the
+ * list because the SPA needs them for the same effort picker. */
+function summarizeBuiltInCapabilities(model: string): ProviderCapabilitySummary {
+  /* BEAGLE_IS_REASONING is the operator's escape hatch for an upstream that
+   * is not a reasoning model at all. It overrides the registry rather than
+   * the other way round: the operator knows what they pointed at. */
+  if (process.env.BEAGLE_IS_REASONING === 'false') {
+    return { isReasoning: false, supportsInstant: true, supportsEffort: false };
+  }
+  return summarizeModelCapabilities(model);
+}
 
 /* P_apikey-ciphertext-leak — projection shared by every response that
  * returns an apiKeys row. The encrypted AES-GCM payload is stored
@@ -72,8 +96,18 @@ router.get('/', async (req, res, next) => {
     }).from(apiKeys).where(eq(apiKeys.userId, req.userId!));
     /* Drizzle returns the boolean expression as a JS boolean already, but
        normalise to be defensive against future driver changes. */
-    const keys = rows.map((r) => ({ ...r, hasKey: r.hasKey === true }));
-    return res.json({ providers: keys });
+    const keys = rows.map((r) => withCapabilities({ ...r, hasKey: r.hasKey === true }));
+    /* The built-in provider row carries no userId, so it never appears in
+       the caller's list — but the SPA still offers it as a model choice and
+       needs the same capability summary for it. */
+    const [builtInRow] = await db.select({ model: apiKeys.model })
+      .from(apiKeys)
+      .where(and(eq(apiKeys.isBuiltIn, true), isNotNull(apiKeys.keyCiphertext)))
+      .limit(1);
+    return res.json({
+      providers: keys,
+      builtInCapabilities: builtInRow ? summarizeBuiltInCapabilities(builtInRow.model) : null,
+    });
   } catch (err) { next(err); }
 });
 
@@ -127,7 +161,7 @@ router.post('/', audit('create_api_key', (req) => ({ label: req.body?.label, url
        to the new key instead of serving the old one. */
     invalidateApiKeyCache(req.userId);
 
-    return res.status(201).json(result);
+    return res.status(201).json(withCapabilities(result));
   } catch (err) { next(err); }
 });
 
@@ -185,7 +219,7 @@ router.patch('/:id', async (req, res, next) => {
        All three change the answer getActiveApiKey() should give, so
        drop the cached entry. */
     invalidateApiKeyCache(req.userId);
-    return res.json(updated);
+    return res.json(withCapabilities(updated));
   } catch (err) { next(err); }
 });
 

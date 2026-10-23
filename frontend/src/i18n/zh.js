@@ -871,6 +871,7 @@ export const zh = {
     "effort.medium":"中",
     "effort.instant":"立即",
     "chatconfig.instantHint":"无需思考，直接回答",
+    "chatconfig.instantUnsupported":"该模型始终会思考",
     "effort.low":"低",
     "chatconfig.title":"配置",
     "chatconfig.models":"模型",

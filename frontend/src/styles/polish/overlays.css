@@ -53,6 +53,10 @@
 }
 .chat-config-row:hover,
 .chat-config-row:focus-visible { background: var(--ui-bg-hover-ghost); }
+/* P_model-capability-registry — a control the active model cannot honour
+   (Instant on a model that always reasons) is shown, but not offered. */
+.chat-config-row:disabled { opacity: 0.5; cursor: not-allowed; }
+.chat-config-row:disabled:hover { background: transparent; }
 .chat-config-row small,
 .chat-config-value { color: var(--ui-text-tertiary); }
 .chat-config-divider { background: var(--ui-border-default); }

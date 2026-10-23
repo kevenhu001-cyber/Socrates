@@ -1,3 +1,5 @@
+import type { ProviderCapabilities } from '@socrates/contracts';
+
 export type ProviderField = 'label' | 'url' | 'model' | 'vision' | 'key';
 export type ProviderErrorField = Exclude<ProviderField, 'vision'>;
 
@@ -11,6 +13,10 @@ export interface ProviderConfig {
   isBuiltIn: boolean;
   hasKey: boolean;
   serverIsActive?: boolean;
+  /* P_model-capability-registry — what the server knows the model can do.
+     Absent means "not published": the browser then forwards the user's
+     intent and lets the server resolve it, as it did before. */
+  capabilities?: ProviderCapabilities;
 }
 
 export interface ProviderConfigErrors {

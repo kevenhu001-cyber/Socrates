@@ -20,7 +20,6 @@ import {
 
 interface BootLegacyWindow extends Window {
   __i18nReady?: Promise<unknown>;
-  BEAGLE_IS_REASONING?: boolean;
   isInAuthGraceWindow?: () => boolean;
   setCurrentUser?: (user: unknown) => void;
   markAuthSuccess?: () => void;
@@ -32,7 +31,6 @@ interface BootLegacyWindow extends Window {
 interface ServerConfig {
   hasBeagleKey?: boolean;
   beagleModel?: unknown;
-  isReasoning?: boolean;
 }
 
 /* Let the default locale chunk settle before exposing either authenticated
@@ -57,8 +55,10 @@ async function publishServerConfig(configRequest: Promise<unknown>): Promise<voi
       if (typeof config.beagleModel === 'string') setBuiltInProviderModel(config.beagleModel);
       hasBuiltInKey = true;
     }
-    try { (window as BootLegacyWindow).BEAGLE_IS_REASONING = config?.isReasoning === true; }
-    catch (error) { reportSwallow(error, 'auth/boot.config.setReasoningFlag'); }
+    /* P_model-capability-registry — the built-in provider's capabilities no
+       longer come from a coarse boolean here. The server publishes what the
+       active model supports alongside the provider list, and the browser
+       needs that to know whether Instant is available at all. */
   } catch (error) {
     reportSwallow(error, 'auth/boot.config.fetch');
   }

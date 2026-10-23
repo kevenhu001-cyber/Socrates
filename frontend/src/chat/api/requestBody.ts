@@ -1,6 +1,9 @@
 import { stateStore } from '../../state/store.js';
-import { getStoredResponseSpeed, getStoredReasoningEffort } from '../../config/chatPreferences.ts';
+import { getStoredResponseSpeed, getStoredReasoningEffort, type ReasoningEffort } from '../../config/chatPreferences.ts';
+import { getProviderConfigSnapshot } from '../../config/providerConfig.store.ts';
+import { resolveEffortRequest } from '../../config/effectiveEffort.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
+import type { ProviderCapabilities } from '@socrates/contracts';
 
 /** One wire-format message. Providers accept extra fields, so the shape stays open. */
 export interface ChatRequestMessage {
@@ -57,6 +60,21 @@ function prependCustomInstructions(body: ChatRequestBody): void {
   });
 }
 
+/** What the server says the active model can do. Absent means "not
+ * published": the request then carries the user's intent and the server
+ * resolves it against the real model, which is the only side that knows
+ * the built-in model's name. */
+function activeProviderCapabilities(): ProviderCapabilities | null {
+  try {
+    const config = getProviderConfigSnapshot();
+    const active = (config.providers || []).find((provider) => provider && provider.id === config.activeId);
+    return active?.capabilities ?? null;
+  } catch (error) {
+    reportSwallow(error, 'chat/api.requestBody.capabilities');
+    return null;
+  }
+}
+
 function attachReasoningOptions(body: ChatRequestBody): void {
   /* P_model-capability-registry — the browser expresses INTENT, never a
      provider parameter.
@@ -70,16 +88,20 @@ function attachReasoningOptions(body: ChatRequestBody): void {
      `reasoning_split` that other providers reject. The server resolves both
      against its capability registry now.
 
-     The level is always sent: the server drops it for a model that does not
-     accept one, so an unsupported model costs nothing on the wire. */
-  const effort = getStoredReasoningEffort();
-  if (effort === 'instant') {
-    body.reasoning_effort = 'none';
-    return;
-  }
+     The server also publishes what the active model supports, so a stored
+     preference the model cannot satisfy (Instant on a model that always
+     reasons) never reaches the wire as a request that is bound to fail. */
   const win = window as RequestBodyWindow;
-  body.reasoning_effort = (typeof win.getReasoningEffort === 'function' && win.getReasoningEffort())
-    || effort;
+  const raw = (typeof win.getReasoningEffort === 'function' && win.getReasoningEffort())
+    || getStoredReasoningEffort();
+  /* The legacy bridge is untyped; an unexpected value falls back to the
+     stored preference rather than reaching the wire. */
+  const effort: ReasoningEffort = raw === 'instant' || raw === 'low' || raw === 'medium' || raw === 'high'
+    ? raw
+    : getStoredReasoningEffort();
+  const request = resolveEffortRequest(effort, activeProviderCapabilities());
+  if (request === undefined) return;
+  body.reasoning_effort = request;
 }
 
 /* Shared by probe, streaming, built-in, and custom-provider requests. */

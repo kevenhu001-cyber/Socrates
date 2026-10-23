@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { saveChatPreferences, type ReasoningEffort, type ResponseSpeed } from '../../config/chatPreferences';
+import { resolveEffectiveEffort } from '../../config/effectiveEffort';
 import { pickActiveProviderById } from '../../pickers.js';
 import { getLegacyActions, i18n } from '../legacy/gateway.ts';
 import { markHostMountedBy } from '../lib/boot/ownership';
@@ -43,17 +44,27 @@ export function ChatConfiguration() {
   const snapshot = useChatConfigurationSnapshot();
   const popRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<View>('main');
+  /* P_model-capability-registry — what the active model supports, as the
+     server published it. A stored preference the model cannot satisfy (an
+     Instant that the model cannot honour) is shown as the level that is
+     actually in effect, so the picker never claims something the request
+     will not ask for. */
+  const activeCapabilities = useMemo(() => {
+    const active = snapshot.providers.find((provider) => provider.id === snapshot.activeId);
+    return active?.capabilities ?? null;
+  }, [snapshot.providers, snapshot.activeId]);
+  const effectiveEffort = resolveEffectiveEffort(snapshot.effort, activeCapabilities);
   /* Selections commit immediately (menu semantics), so the rendered state is
      local — the bridge snapshot only refreshes on the next open. */
-  const [effort, setEffort] = useState<ReasoningEffort>(snapshot.effort);
+  const [effort, setEffort] = useState<ReasoningEffort>(effectiveEffort);
   const [speed, setSpeed] = useState<ResponseSpeed>(snapshot.speed);
 
   useEffect(() => {
     if (!snapshot.open) return;
     setView('main');
-    setEffort(snapshot.effort);
+    setEffort(effectiveEffort);
     setSpeed(snapshot.speed);
-  }, [snapshot.open, snapshot.revision, snapshot.effort, snapshot.speed]);
+  }, [snapshot.open, snapshot.revision, effectiveEffort, snapshot.speed]);
 
   useEffect(() => {
     if (!snapshot.open) return;
@@ -120,7 +131,13 @@ export function ChatConfiguration() {
         />
       ) : null}
       {view === 'effort' ? (
-        <EffortPanel effort={effort} speed={speed} onBack={() => setView('main')} onCommit={commitPreferences} />
+        <EffortPanel
+          effort={effort}
+          speed={speed}
+          supportsInstant={activeCapabilities?.supportsInstant !== false}
+          onBack={() => setView('main')}
+          onCommit={commitPreferences}
+        />
       ) : null}
       {view === 'speed' ? (
         <SpeedPanel

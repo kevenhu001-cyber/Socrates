@@ -8,7 +8,6 @@ import { LAST_ACTIVE_ID_KEY, saveLastActiveId, loadLastActiveId } from './provid
 
 /** Legacy window members this module still mirrors through the global scope. */
 interface ProvidersLegacyWindow extends Window {
-  BEAGLE_IS_REASONING?: boolean;
   appMode?: string;
   webSearchOn?: boolean;
   applyI18n?: () => void;
@@ -51,9 +50,6 @@ try {
   extensiveThinkingOn = (savedEffort === "high");
 } catch (e) {reportSwallow(e, 'config/providers.restoreReasoningEffort', 'expected'); }
 
-/* P_privacy-leak — built-in providers don't expose their model name,
- * so the regex-based check below would always return false for them.
- * Use the boolean capability hint bridged from /api/config instead. */
 function setWebSearchOn(value: unknown): boolean {
   webSearchOn = !!value;
   try { (window as ProvidersLegacyWindow).webSearchOn = webSearchOn; } catch (e) {reportSwallow(e, 'config/providers.setWebSearchOn'); }

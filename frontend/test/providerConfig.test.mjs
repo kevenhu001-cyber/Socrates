@@ -160,3 +160,34 @@ test('Instant remains available across all providers without a model allowlist',
   }
   reset();
 });
+
+test('the request body follows the capability the server published', async () => {
+  const { buildChatRequestBody } = await import('../src/chat/api/requestBody.ts');
+  const publish = (capabilities) => {
+    reset();
+    storage.set('socrates-reasoning-effort', 'instant');
+    store.publishProviderConfig({
+      providers: [{ id: 'active', model: 'kimi-k3', label: 'Kimi', hasKey: true, capabilities }],
+      activeId: 'active',
+    });
+  };
+
+  /* The model always reasons: an Instant request would be rejected by the
+     server, so the closest level the app has is sent instead. */
+  publish({ isReasoning: true, supportsInstant: false, supportsEffort: true });
+  assert.equal(buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7).reasoning_effort, 'low');
+
+  /* The model has neither Instant nor effort levels: no effort parameter
+     goes on the wire at all. */
+  publish({ isReasoning: true, supportsInstant: false, supportsEffort: false });
+  assert.equal('reasoning_effort' in buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7), false);
+
+  /* A model that supports Instant keeps the standard no-thinking field. */
+  publish({ isReasoning: true, supportsInstant: true, supportsEffort: true });
+  assert.equal(buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7).reasoning_effort, 'none');
+
+  /* Nothing published → the intent is forwarded and the server decides. */
+  publish(undefined);
+  assert.equal(buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7).reasoning_effort, 'none');
+  reset();
+});

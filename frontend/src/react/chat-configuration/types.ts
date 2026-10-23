@@ -1,4 +1,5 @@
 import type { ReasoningEffort, ResponseSpeed } from '../../config/chatPreferences';
+import type { ProviderCapabilities } from '@socrates/contracts';
 
 export interface ChatProviderOption {
   id: string;
@@ -6,6 +7,8 @@ export interface ChatProviderOption {
   model?: string;
   url?: string;
   isBuiltIn?: boolean;
+  /* What the server says this model supports. Absent = nothing known. */
+  capabilities?: ProviderCapabilities;
 }
 
 export interface ChatConfigurationAnchor {

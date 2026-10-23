@@ -678,6 +678,51 @@ export function assertThinkingModeSupported(
   }
 }
 
+/* ── Client-facing summary ───────────────────────────────────────────── */
+
+/**
+ * What a client needs to know about a model, without learning which model it
+ * is.
+ *
+ * The built-in provider's model name is deliberately hidden from the SPA
+ * (P_privacy-leak), so a boolean summary is the only way the UI can honour
+ * the operator's model choice. It is also the only thing the UI needs: the
+ * effort picker must not offer "Instant" for a model that cannot switch
+ * thinking off, and it must not offer effort levels for a model that has no
+ * such levels.
+ */
+export interface ProviderCapabilitySummary {
+  /** The model reasons — it has a thinking channel of its own. */
+  isReasoning: boolean;
+  /** The user may ask for "no thinking" (Instant). */
+  supportsInstant: boolean;
+  /** The model accepts a reasoning-effort level. */
+  supportsEffort: boolean;
+}
+
+/**
+ * Summarise a model's capabilities for a client.
+ *
+ * The mapping is deliberately permissive where the registry is silent: an
+ * undeclared model keeps Instant available, because refusing it would block a
+ * request the upstream may well accept. What the registry declares as
+ * impossible is reported as impossible.
+ */
+export function summarizeModelCapabilities(model: string): ProviderCapabilitySummary {
+  const capability = resolveModelCapability(model);
+  return {
+    /* A model that never thinks is not a reasoning model. */
+    isReasoning: capability.thinking !== 'not_applicable',
+    /* Instant is available when the model can switch thinking off, when it
+     * never thinks (trivially satisfied), or when nothing is declared. */
+    supportsInstant: capability.thinking === 'supported'
+      || capability.thinking === 'not_applicable'
+      || capability.thinking === 'unknown',
+    /* Only a family that documents effort levels has them. */
+    supportsEffort: capability.effort === 'supported',
+  };
+}
+
 /* ── Context budget ──────────────────────────────────────────────────── */
 
 /**

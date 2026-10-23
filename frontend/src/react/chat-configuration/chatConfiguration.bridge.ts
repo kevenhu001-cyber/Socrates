@@ -58,6 +58,7 @@ export function openChatConfiguration(trigger?: HTMLElement | null): void {
     model: provider.model,
     url: provider.url,
     isBuiltIn: provider.isBuiltIn,
+    capabilities: provider.capabilities,
   }));
   installChatConfigurationBridge().publish({
     open: true,

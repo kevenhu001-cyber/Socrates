@@ -894,6 +894,7 @@ export const en = {
     "effort.medium":"Medium",
     "effort.instant":"Instant",
     "chatconfig.instantHint":"Answer directly without thinking",
+    "chatconfig.instantUnsupported":"This model always reasons",
     "effort.low":"Low",
     "chatconfig.title":"Chat settings",
     "chatconfig.models":"Models",

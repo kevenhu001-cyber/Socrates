@@ -3032,6 +3032,41 @@ paths:
     get:
       tags: [users]
       summary: EXISTING — list BYO providers
+      description: >-
+        Returns the caller's provider rows. Every row carries a `capabilities`
+        summary derived from that model's own contract, so a client never has
+        to infer what the model can do from its name — the built-in provider's
+        model name is deliberately not exposed. The response also carries
+        `builtInCapabilities`: the built-in provider is a system row and is
+        therefore not part of the caller's list, but its capability summary
+        travels beside the list.
+      responses:
+        '200':
+          description: The caller's providers plus the built-in provider's capability summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  providers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string, format: uuid }
+                        label: { type: string }
+                        url: { type: string }
+                        model: { type: string }
+                        keyHint: { type: string, nullable: true }
+                        isActive: { type: boolean }
+                        isBuiltIn: { type: boolean }
+                        isMultimodal: { type: boolean }
+                        hasKey: { type: boolean }
+                        createdAt: { type: string, format: date-time }
+                        capabilities: { $ref: '#/components/schemas/ProviderCapabilities' }
+                  builtInCapabilities:
+                    nullable: true
+                    allOf: [{ $ref: '#/components/schemas/ProviderCapabilities' }]
     post:
       tags: [users]
       summary: EXISTING
@@ -3058,11 +3093,15 @@ paths:
         service automatically falls back to standard and is reported in meta.
         An optional `assistantId` selects an owned configurable assistant; an
         owned `sessionId` restores that session's assistant when omitted.
-        Instant mode uses `reasoning_effort: none` on OpenAI-compatible models,
-        or allowlisted `extra_body` controls: `thinking: {type: disabled}`,
+        Instant mode is resolved against the model's declared capability: the
+        server encodes it the way that model documents it —
+        `reasoning_effort: none`, `thinking: {type: disabled}`,
         `enable_thinking: false`, or `chat_template_kwargs: {enable_thinking: false}`.
         Explicit no-thinking controls are preserved during compatibility retries;
-        providers that reject them return an error instead of silently enabling thinking.
+        a model that cannot switch thinking off is rejected before any upstream
+        call rather than silently resuming thinking. Reasoning-effort levels are
+        translated into the provider's own vocabulary, and are not sent at all
+        to a model that documents no such levels.
   /api/chat/stream:
     post:
       tags: [users]
@@ -4524,6 +4563,23 @@ components:
           schema: { $ref: '#/components/schemas/Error' }
 
   schemas:
+    ProviderCapabilities:
+      type: object
+      description: >-
+        What a provider's model can actually do, derived from the model's own
+        documented contract. Every field is optional: a client that receives
+        no summary must keep working and must read an absent field as
+        "nothing is known", never as "unsupported".
+      properties:
+        isReasoning:
+          type: boolean
+          description: The model reasons — it has a thinking channel of its own.
+        supportsInstant:
+          type: boolean
+          description: The user may ask for "no thinking" (Instant).
+        supportsEffort:
+          type: boolean
+          description: The model accepts a reasoning-effort level.
     ResearchJobEnvelope:
       type: object
       required: [job]

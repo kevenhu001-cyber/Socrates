@@ -6,6 +6,7 @@ import {
   resolveContextBudget,
   resolveModelCapability,
   mapEffortLevel,
+  summarizeModelCapabilities,
 } from '../src/lib/modelCapabilities.js';
 
 /**
@@ -159,6 +160,37 @@ test('a model that ignores or rejects effort levels is never sent one', async ()
   }
   assert.equal(mapEffortLevel(resolveModelCapability('custom-model'), 'high'), undefined);
   assert.equal(mapEffortLevel(resolveModelCapability('deepseek-chat'), 'medium'), 'high');
+});
+
+/* ── Client-facing summary ───────────────────────────────────────────── */
+
+test('the capability summary tells a client what the model can do', () => {
+  /* MiniMax-M3 reasons, can switch thinking off, and ignores effort levels. */
+  assert.deepEqual(
+    summarizeModelCapabilities('MiniMax-M3'),
+    { isReasoning: true, supportsInstant: true, supportsEffort: false },
+  );
+  /* M3.1 Flash always thinks but tunes its depth. */
+  assert.deepEqual(
+    summarizeModelCapabilities('MiniMax-M3.1-Flash'),
+    { isReasoning: true, supportsInstant: false, supportsEffort: true },
+  );
+  /* Kimi-K3 always thinks and has effort levels of its own. */
+  assert.deepEqual(
+    summarizeModelCapabilities('kimi-k3'),
+    { isReasoning: true, supportsInstant: false, supportsEffort: true },
+  );
+  /* A model that never thinks needs no switch and has no effort levels. */
+  assert.deepEqual(
+    summarizeModelCapabilities('gpt-4o'),
+    { isReasoning: false, supportsInstant: true, supportsEffort: false },
+  );
+  /* An undeclared model keeps Instant: refusing it would block a request
+     the upstream may well accept. */
+  assert.deepEqual(
+    summarizeModelCapabilities('custom-model'),
+    { isReasoning: true, supportsInstant: true, supportsEffort: false },
+  );
 });
 
 /* ── Context budget ─────────────────────────────────────────────────── */

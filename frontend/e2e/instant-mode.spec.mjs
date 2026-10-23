@@ -64,3 +64,40 @@ for (const [label, model, viewport, lang] of [
     expect(requests[1].extra_body?.thinking?.type).not.toBe('disabled');
   });
 }
+
+test('Instant is not offered for a model that cannot switch thinking off', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.addInitScript(() => {
+    localStorage.setItem('socrates-last-active-id', 'instant-provider');
+    localStorage.setItem('socrates-reasoning-effort', 'instant');
+  });
+  /* The server publishes what the model supports. This model always
+     reasons, so Instant is not something the request could carry. */
+  await mockAuthedApp(page, { lang: 'en', apiKeys: { providers: [{ id: 'instant-provider', label: 'Kimi', model: 'kimi-k3', url: 'https://provider.example/v1', hasKey: true, isActive: true, capabilities: { isReasoning: true, supportsInstant: false, supportsEffort: true } }] } });
+  const requests = [];
+  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async route => {
+    requests.push(route.request().postDataJSON());
+    await route.fulfill({ contentType: 'text/event-stream', body: 'data: {"choices":[{"delta":{"content":"Answer."}}]}\n\ndata: [DONE]\n\n' });
+  });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.locator('#topModelSwitcher').click();
+  const pop = page.locator('.chat-config-pop');
+  await pop.getByRole('button', { name: /Reasoning effort/ }).click();
+  const instant = pop.locator('button[aria-pressed]');
+  await expect(instant).toBeDisabled();
+  await expect(instant).toContainText('always reasons');
+  /* The Instant stop is gone from the slider as well. */
+  await expect(pop.getByRole('slider')).toHaveAttribute('max', '2');
+  await expect(pop.locator('.chat-config-slider-dots span')).toHaveCount(3);
+
+  /* A stored Instant never reaches the wire for a model that cannot honour
+     it — the closest level the app has is sent instead. */
+  await page.evaluate(() => {
+    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.__testActivateMainView('chatView');
+    window.submitChatMessage('Answer directly.');
+  });
+  await expect.poll(() => requests.length).toBe(1);
+  expect(requests[0].reasoning_effort).toBe('low');
+});
