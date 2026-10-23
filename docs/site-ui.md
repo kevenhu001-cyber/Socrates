@@ -15,6 +15,18 @@ Navigation and footer destinations exist in the HTML, with no runtime template f
 
 Keep the `.site-brand-label` exclusion in `site/locale.js`: a brand link to `/zh/` is not a language switch. Shared resource links carry `data-site-static` so OpenAPI and llms.txt are not rewritten to nonexistent translated paths.
 
+## Homepage content
+
+`site/index.html` and `site/zh/index.html` share `site/home-refresh.css`. It is the homepage's complete content stylesheet (the legacy `site.css` is not loaded). Shared navigation/footer still belong only to `chrome.css`; keep generic reset specificity below the shared chrome. The English display line uses the locally hosted Newsreader italic; Chinese keeps the same sans-serif family and varies weight instead of switching to an unrelated serif theme.
+
+The hero is an editorial composition: proposition and primary action beside `site/media/socrates-probability-plate.svg`. This original static illustration shows a 10×10 point grid and a 1/100 annotation, not a research result or product screenshot. Keep its square proportions, meaningful alt text, eager/high-priority loading and single visual focus. On phones it follows the primary action. Do not restore the competing story rail, ambient particles, gradient fields or hover parallax; the old `home-aurora.js` is retired.
+
+The product preview sits on a warm ground as one readable foreground sheet. Both desktop and phone retain all four messages, including the learner's correction, plus the two connected ideas. Never use a container-scaled miniature client. Keep the explicit illustrative/not-live caption and avoid fabricated profile names, fake inputs or live-status badges.
+
+Keep the lower page varied: open reading lists, a landscape learning story, a text-first dark research band, and a second editorial learning scene. Do not restore repeated poster grids, duplicate a cover across sections, imply that illustrations are customer case studies, or advertise an unverified team edition. Homepage research titles and dates follow the research index and linked articles. Explicit CSS image heights/aspect ratios must override HTML intrinsic dimensions so phone images do not accidentally render as 941px-tall posters.
+
+The native GET question form is a supporting destination at `#ask`, not the hero visual. `site/home-question.js` only enhances starters and Enter submission; native form encoding owns the handoff, including multiline text. Shift+Enter inserts a newline and IME confirmation must not submit. Starter buttons are hidden without JavaScript rather than left inert. Keep the visible app-handoff explanation and its `aria-describedby` association. Run `npm run test:site:home` for bilingual composition, breakpoint containment, chrome, motion/no-motion, no-JS and handoff coverage. These tests intentionally replace the old rail/first-viewport-preview geometry contracts. App navigation in tests is intercepted locally, never sent to a real account.
+
 ## Product content
 
 `site/product.html` and `site/zh/product.html` share `site/product.css` and the same section/anchor structure. Edit both translations together; the browser tests check structural parity, readable interface copy, deep links, first-viewport CTA placement and no-JS behavior. Keep their Markdown twins in sync.

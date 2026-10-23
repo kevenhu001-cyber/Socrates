@@ -1,114 +1,96 @@
 ---
-title: Socrates
+title: Socrates — Understanding begins with a question.
 description: An AI tutor for people who want to understand — built around Socratic dialogue, durable recall, and a knowledge map.
 canonical: https://topodrive.top/
-last-updated: 2026-10-21
+last-updated: 2026-10-23
 ---
 
-# Socrates
+# Not just answers. Understanding.
 
-> An AI tutor for people who want to understand — built around Socratic dialogue, durable recall, and a knowledge map.
+Socrates · An AI tutor
 
-## Understanding begins with a question.
+Stay with a difficult idea. A tutor that asks, listens, and helps you find your own way through.
 
-Follow a thought through dialogue, recall, and connection. The tutor asks before it answers. Conversations are private, and are not used to train models.
+[Try Socrates](https://app.topodrive.top) · [See how it works](https://topodrive.top/#learning-session)
 
-[Try Socrates](https://app.topodrive.top) · [Read the research](https://topodrive.top/research)
+For the questions worth thinking through.
 
-### Start with a question
+## A change of perspective
 
-> Why does a retry mask help a failed request get through?
+[Original probability illustration](https://topodrive.top/media/socrates-probability-plate.svg): an ink-blue grid of 100 points, with one point highlighted in orange. A paper slip reads one over one hundred.
 
-Explore [dialogue](https://app.topodrive.top), [recall](https://topodrive.top/product), and the [knowledge map](https://topodrive.top/product).
+One in a hundred. A different way to see the question.
 
-## Questions become a field of study
+## A tutor that asks before it answers
 
-Trace a difficult subject through dialogue, recall, and the connections that make it useful again. The Question Atlas is our current home map: it carries a question through evidence, recall, and connected ideas.
+Start with what you think. Follow the question a little further. Keep the connection that makes it click.
 
-[Explore the learning map](https://topodrive.top/product)
+### Illustrative session: probability
 
-## Latest research
+This is a non-interactive illustration, not a live conversation.
 
-- [The route back to an idea](https://topodrive.top/research/memory-recall/) — Memory · 7 min read · Aug 12, 2026
-- [When a clear explanation becomes evidence](https://topodrive.top/research/explanation-evidence/) — Explanation · 6 min read · Jul 29, 2026
-- [Maps that preserve the path](https://topodrive.top/research/maps-preserve-path/) — Knowledge mapping · 8 min read · Jun 24, 2026
+- **Learner:** Why isn’t a positive test the whole story?
+- **Socrates:** If 1 in 100 people has the condition, how many is that in a group of 1,000?
+- **Learner:** Ten. Some of the other 990 might test positive, too.
+- **Socrates:** Exactly. A positive result needs context: the base rate and the false positives.
 
-[View all research](https://topodrive.top/research)
+**A connection to keep:** Base rate → False positives.
 
-## Stories from the work
+Next time, try explaining this connection without looking at the conversation.
 
-- [The value of an honest pause](https://topodrive.top/research/honest-pause/) — Research · 8 min read · Tomás Soto · Practice lead · Jul 11, 2026. What happens when a tutor stops filling the silence and lets a learner finish a thought.
-- [When a tutor should say it is unsure](https://topodrive.top/research/tutor-curiosity/) — Research · 10 min read · Jules Laurent · Tutoring lead · May 14, 2026. A study of confidence, calibration, and the moments that make a tutor trustworthy.
-- [What learners keep after a session](https://topodrive.top/research/what-learners-keep/) — Research · 9 min read · Rin Park · Practice co-author · Apr 30, 2026. A week later, what remains is rarely the summary. It is the route taken to it.
+[Explore the product](https://topodrive.top/product)
 
-[All stories](https://topodrive.top/research)
+## Explore further
 
-## The learning loop
+- [Follow-up prompts at the seam of an explanation](https://topodrive.top/announcements) — Product updates · May 2026
+- [Turn a mistake into the next question](https://topodrive.top/product#mistake-book) — Practice · Mistake book
+- [Your learning data and privacy](https://topodrive.top/privacy) — Privacy · How we handle data
+- [Follow a connection across sessions](https://topodrive.top/product#knowledge-map) — Product · Knowledge map
+- [A field guide to better questions](https://topodrive.top/guide) — Guide · Getting started
+- [Why we’re building Socrates](https://topodrive.top/about) — Company · Our approach
 
-Ask, follow up, recall, map.
+## Inside a learning session
 
-1. **Question** — Begin with the honest edge of your understanding.
-2. **Dialogue** — The tutor follows the seam, not the surface.
-3. **Recall** — Returns when the idea is yours.
-4. **Connection** — Writes itself into your map.
+### Keep a good question going
 
-[See the product](https://topodrive.top/product)
+An answer can be a beginning. Work through the part you cannot explain yet, then give yourself a reason to return.
 
-## In conversation
+1. [Put it in your own words](https://topodrive.top/product#dialogue). Start with what you think, not a perfect prompt.
+2. [Find the connection](https://topodrive.top/product#knowledge-map). See how the next question fits what you already know.
+3. [Come back to it](https://topodrive.top/product#recall). Try explaining the idea again, without the conversation.
 
-A short slice of a real session — the kind of exchange that ends in a sharper question, not a faster answer.
+The accompanying learning scene is illustrative, not a customer case study.
 
-- **Learner:** Why does a retry mask help a failed request get through?
-- **Socrates:** What changes about the request after it fails once — is it the same payload, or a different shape?
-- **Learner:** Same payload. We just resend the bytes.
-- **Socrates:** So if the bytes are the same, what does the mask actually change? Try to name the variable that moves.
-- **Learner:** Oh — the timing. It is a different wall clock, not a different request.
-- **Socrates:** Right. Where in your service does that clock live, and could a slower client ever beat a faster one because of it?
+## From our research
 
-[How Socrates teaches](https://topodrive.top/product)
+What makes an explanation useful after a conversation ends? Read the questions, methods, and limits behind our work.
 
-## By the numbers
+- [The route back to an idea](https://topodrive.top/research/memory-recall/) — Memory · Aug 12, 2026. Why changing a recall prompt may help a learner reconstruct an idea, rather than recognise an answer.
+- [When a clear explanation becomes evidence](https://topodrive.top/research/explanation-evidence/) — Explanation · Jul 29, 2026. What explaining something in your own words can reveal about your understanding.
+- [The value of an honest pause](https://topodrive.top/research/honest-pause/) — Practice · Jul 11, 2026. How making uncertainty explicit changes the next question a tutor can ask.
 
-Across the six-week intervention (May – Jul 2026):
+[All research](https://topodrive.top/research)
 
-| Measure | Value |
-| --- | --- |
-| Active learners enrolled | 184 |
-| Recall prompts logged | 1,247 |
-| Average treatment effect · re-framed vs verbatim | +17 pp |
-| One-week retention, “almost clear” subgroup | 63% |
+## For the way you learn
 
-[Read the research](https://topodrive.top/research)
+### Your subject. Your next step.
 
-## Built around hard questions
+Bring a question from the work already in front of you. Use Socrates to think it through, then take your explanation back into the world.
 
-- **Dialogue over delivery** — The tutor asks before it answers.
-- **Recall over novelty** — A useful tutor remembers the path into a question.
-- **Practice over consumption** — Understanding grows through retrieval, explanation, and revision.
-- **Clarity over spectacle** — The page knows when to be quiet.
-- **Your thinking, your data** — Conversations are private. We do not train on them.
+- Work through a concept on your own.
+- Bring a clearer question to your study group.
+- Prepare the explanation you want to try in class.
 
-[Our principles](https://topodrive.top/principles)
+The accompanying independent study scene is an editorial illustration.
 
-## Recent news
+[Find a way to begin](https://topodrive.top/guide)
 
-- **Learning · Aug 12, 2026 — [Introducing guided recall](https://topodrive.top/announcements).** A new way to return to questions worth keeping open, with enough pause for your own first attempt.
-- **Research · Aug 02, 2026 — [Notes on the route back to an idea](https://topodrive.top/announcements).** New field research on prompts that make a concept available without flattening its context.
-- **Product · Jul 18, 2026 — [Socrates Studio is open](https://topodrive.top/announcements).** A smaller set of practical paths for beginning a topic, testing an explanation, and building a knowledge map.
-- **Product · Jul 04, 2026 — [A clearer way to follow a learning path](https://topodrive.top/announcements).** Topics, questions, and the useful links between them now stay visible as you work.
-- **Announcements · Jun 21, 2026 — [A new home for the research threads](https://topodrive.top/announcements).** The five ongoing research threads now live on a single research page.
-- **Product · Jun 09, 2026 — [Bring your own model key](https://topodrive.top/announcements).** Connect Anthropic, OpenAI, or compatible providers from the API Keys page and use them inside any session.
+## What do you want to understand?
 
-[View more](https://topodrive.top/announcements)
+Bring an unfinished thought. You don’t need a perfect prompt. The question form on the homepage continues with your question in the Socrates app.
 
-## Make room for understanding.
+Question starters: Bayes’ theorem, biology practice, ideas about entropy.
 
-Test the edges of an idea. Return to the useful connection when you need it again.
-
-[Try Socrates](https://app.topodrive.top) — The Free tier is permanently free. No card required.
-
-[Try Socrates](https://app.topodrive.top) · [Product](https://topodrive.top/product) · [Principles](https://topodrive.top/principles) · [Privacy](https://topodrive.top/privacy) · [Terms](https://topodrive.top/terms) · [中文](https://topodrive.top/zh/)
-
----
+[Try Socrates](https://app.topodrive.top) · [Product](https://topodrive.top/product) · [Pricing](https://topodrive.top/pricing) · [中文](https://topodrive.top/zh/)
 
 © 2026 Socrates · Built for people who want to understand.

@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="760" viewBox="0 0 760 760" fill="none">
+  <title>One in a hundred</title>
+  <desc>An original probability illustration: one orange point among one hundred points on an ink-blue printed sheet. A cutout isolates the point, while the full grid keeps its context visible.</desc>
+  <defs>
+    <pattern id="dots" width="40" height="40" patternUnits="userSpaceOnUse" x="0" y="0">
+      <circle cx="20" cy="20" r="6" fill="#EAE8DC"/>
+    </pattern>
+    <pattern id="ruling" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M0 40H40V0" stroke="#EAE8DC" stroke-opacity=".09" stroke-width=".8"/>
+    </pattern>
+    <filter id="paper" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency=".7" numOctaves="3" stitchTiles="stitch" result="grain"/>
+      <feColorMatrix in="grain" type="saturate" values="0"/>
+      <feComponentTransfer><feFuncA type="linear" slope=".12"/></feComponentTransfer>
+      <feBlend in="SourceGraphic" mode="multiply"/>
+    </filter>
+  </defs>
+  <path fill="#E5E2D9" d="M0 0h760v760H0z"/>
+  <path d="M42 42h28m-28 0v28m648-28h28m0 0v28M42 690v28m0 0h28m648-28v28m0 0h-28" stroke="#9F9F93" stroke-width="1"/>
+  <path d="M92 99 624 42l68 573-532 58z" fill="#C7C4B9"/>
+  <g transform="rotate(-7 380 350)">
+    <path fill="#1F424A" d="M104 76h536v568H104z" filter="url(#paper)"/>
+    <path d="M140 122h34m-34 0v34m430-34h34m0 0v34M140 558v34m0 0h34m430-34v34m0 0h-34" stroke="#B4C3BE" stroke-width="1"/>
+    <path fill="url(#ruling)" d="M160 160h400v400H160z"/>
+    <path fill="url(#dots)" d="M160 160h400v400H160z"/>
+    <circle cx="460" cy="340" r="6.5" fill="#E69B72"/>
+    <circle cx="460" cy="340" r="18" stroke="#E69B72" stroke-width="1.4"/>
+    <path d="m476 330 66-45h56" stroke="#E69B72" stroke-width="1.2"/>
+    <path d="M176 610h148m26 0h68m26 0h116" stroke="#B4C3BE" stroke-opacity=".55"/>
+  </g>
+  <path d="m373 458 234-10 11 225-234 10z" fill="#BAB7AC" fill-opacity=".5"/>
+  <g transform="rotate(3 490 558)">
+    <path fill="#F6F3E9" d="M366 442h252v228H366z" filter="url(#paper)"/>
+    <circle cx="397" cy="473" r="5" fill="#BC6845"/>
+    <path d="M416 473h170" stroke="#C0BAAD"/>
+    <text x="390" y="552" font-family="Georgia, 'Times New Roman', serif" font-size="64" fill="#243C40">1</text>
+    <path d="M391 573h195" stroke="#243C40" stroke-width="1.3"/>
+    <text x="386" y="641" font-family="Georgia, 'Times New Roman', serif" font-size="64" fill="#243C40">100</text>
+    <path d="m550 620 14 10 21-27" stroke="#BC6845" stroke-width="1.6"/>
+  </g>
+  <path d="M70 693h161m-161 8h96" stroke="#96998C" stroke-width="1"/>
+</svg>
