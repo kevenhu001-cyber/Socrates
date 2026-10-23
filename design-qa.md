@@ -143,3 +143,77 @@ final result: passed
 本轮 Summary 视觉与交互验收：passed。
 
 final result: passed
+
+---
+
+## 2026-10-23 Marketing homepage restoration
+
+Final result: passed
+
+Scope: restore the existing bilingual Socrates marketing homepage using the two supplied OpenAI screenshots as its layout/style reference. Socrates branding, product copy, illustrations, photographs and destinations intentionally remain product-specific.
+
+## Visual evidence
+
+- Desktop source: `/tmp/orca-paste-1792719803417-50e2ca67-7ca4-42d5-8d59-dad0cdb075ab.png` (2989 × 1588 pixels).
+- Mobile source: `/tmp/orca-paste-1792719814380-6a7707f0-0fd7-4bd0-9c55-303a42aa7ec4.png` (949 × 1394 pixels).
+- Desktop implementation: `test-results/site-restore/desktop.png`, viewport 2048 × 1088 CSS pixels, deviceScaleFactor 1.
+- Mobile implementation: `test-results/site-restore/mobile.png`, viewport 430 × 632 CSS pixels, deviceScaleFactor 1.
+- Additional views: `phone.png` at 390 × 844 and `english.png` at 1440 × 1000 in the same evidence directory.
+- Full-view comparisons: `test-results/site-restore/compare-desktop.png` and `compare-mobile.png` put reference and implementation together.
+- Focused question-entry comparison: `test-results/site-restore/compare-composer.png`, reference above implementation.
+- Full-page captures: `desktop-full.png`, `mobile-full.png`, `phone-full.png`, `english-full.png`. Supporting images were scrolled into view and decoded before these captures.
+
+Original CSS viewport and device density are not available for the supplied images. The desktop reference was normalized proportionally to 2048 × 1088 and the mobile reference to 430 × 632 before comparison. These are normalized visual comparisons, not claims about the original site's CSS dimensions. Both implementations were captured at those CSS sizes with deviceScaleFactor 1. All comparisons use the initial empty composer, dismissed consent panel, closed navigation menu and reduced-motion state.
+
+Browser plugin not available. The repository's existing Playwright Chromium workflow was used, as authorized by AGENTS.md. Target flow: homepage → fill a question or choose a starter → native GET handoff preserves the question; mobile navigation → language switch → translated homepage.
+
+## Comparison history
+
+1. [P1, fixed] Initial repository implementation used a split hero, italic display type and a dominant illustration. Replaced with a centered question, white background, rounded composer and pill controls. Moved existing art into the supporting card row.
+2. [P2, fixed] First capture retained a narrow shared header shell on a large viewport. Set the homepage header shell to the full shared content width. Post-fix desktop comparison shows aligned navigation and content gutters.
+3. [P2, fixed] Initial mobile textarea was 120px tall because its native rows/padding exceeded the intended height. Explicit sizing now yields a 96px composer. Post-fix mobile comparison shows the first content card beginning at y=504, close to the normalized source.
+4. [P2, fixed] Narrow-screen artwork had a height cap that cropped its square composition. Removed the cap. 320px browser checks now confirm the full square composition in both languages.
+5. [P2, fixed] Desktop pills and input radius were smaller than the reference. Final values use 20px pill text, 54px pills, a 34px composer radius and a 144px composer. The final desktop composer begins at y=395; first cards begin at y=859.
+
+No actionable P0/P1/P2 findings remain within the requested style-restoration scope.
+
+## Required fidelity surfaces
+
+- Fonts and typography: existing local Geist Sans and Noto Sans SC remain. Removed the editorial italic preload/hero treatment. Checked title hierarchy, body readability, localized wrapping and pill sizes.
+- Spacing and layout: centered 1056px maximum composer, large white margins, desktop preview plus supporting card, wrapped mobile pills and stacked cards. Tested breakpoint boundaries and 320px through 1920px layouts without overflow; inspected the 2048px capture separately.
+- Colors and tokens: white page, near-black typography, neutral gray borders/cards and a quiet input shadow. Removed warm/green page palettes from the homepage stylesheet.
+- Image quality: reused existing product assets without new placeholder drawings or generated replacements. Verified every main image decoded. Existing logo/favicon bytes remain identical. Product illustrations deliberately differ from OpenAI's content.
+- Copy and content: English and Chinese structure matches; Socrates questions, product explanations, research metadata and destinations remain. Both Markdown twins reflect the new entry heading and walkthrough link.
+
+## Functional verification
+
+`npm run test:site:home`: 46 passed, 0 failed, 0 skipped. Coverage includes both languages, geometry, readable preview text, independent composer starters, exact question handoff, Shift+Enter, IME confirmation, no-JS forms, progressive reveals, native footer accordions, menu focus/Escape/inert state, question shortcut and language switching. App handoffs were intercepted locally; no test question was sent to a live account.
+
+Standalone capture checks: correct URL/title; meaningful rendered content; no framework overlay; no console/page/resource errors; no horizontal overflow; all main images decoded. Checked at 2048 × 1088, 430 × 632, 390 × 844 and 1440 × 1000.
+
+`node scripts/sync-site-chrome.mjs --check`: 40 public pages, 0 out of sync. Only the two homepages gain the question shortcut. JavaScript syntax checks and `git diff --check` passed. This is a buildless static site; the SPA/server builds were outside the change scope.
+
+## Residual limits
+
+Chromium verification only; no physical iOS/Android device or Safari/Firefox run. Live authentication and actual app submission are outside this static marketing change. No deployment performed. Existing product imagery, the Socrates wordmark and hamburger menu are intentional differences from the OpenAI screenshots.
+
+Implementation checklist: complete. final result: passed
+
+
+---
+
+## 2026-10-23 Public marketing layout and motion refinement
+
+Current scope final result: passed.
+
+The complete evidence ledger is `frontend/test-results/site-unified/design-qa.md`. Original user screenshots remain the hero/style reference; fresh section concepts and rendered captures were opened and directly compared in `compare-feature.png` and `compare-stories.png`. The OpenAI automated browser capture returned 403, so it was rejected as visual evidence.
+
+The shared public shell, wordmark, typography, neutral palette and media framing are unified across 40 public pages. The homepage has compact news columns, alternating learning scenes and three research covers. The bottom CTA remains absent. Progressive entrances, hover effects, menu staggering, empty-input hint transitions, article progress and supported view transitions respect reduced motion and preserve no-JS reading.
+
+Fixed double anchor offsets, missing Chinese font declarations and loose preview/list spacing before final comparison. Retained actual product assets, claims and the non-live disclosure; normalized concepts to the 1440px implementation width. Checked the five fidelity surfaces plus the allowed hero-copy inventory.
+
+`npm run test:site`: 113/113 passed. Additional smoke: 40 pages × 2 viewports with no overflow or runtime errors. Public template sync, JS syntax, documentation paths, favicon equality, whitespace and site-only dry-run checks passed. Browser plugin unavailable; used the repository's authorized Playwright Chromium workflow. Remaining limits: no physical-device or Safari/Firefox run.
+
+final result: passed
+
+Final narrow-screen follow-up: fixed shrinking grid tracks and made the Chinese developer resource table keyboard-scrollable. The new focused regression passed; rechecks at 320px, 390px and 1440px show no document overflow or runtime/resource errors. The 80-case public smoke ledger now has no unresolved issues. This supplements the 113-test broad run above.

@@ -5,13 +5,17 @@ canonical: https://topodrive.top/zh/
 last-updated: 2026-10-23
 ---
 
-# 不止于答案。更接近理解。
+# 有什么可以帮忙的？
 
 Socrates · AI 导师
 
 和一个难题多待一会儿。让导师通过倾听与追问，陪你找到自己的理解方式。
 
-[试用 Socrates](https://app.topodrive.top) · [看看如何学习](https://topodrive.top/zh/#learning-session)
+在第一屏直接提问：把正在想的问题写进输入框，然后在应用里继续。
+
+问题起点：开始一段对话、回忆、知识地图、考试模式。
+
+[试用 Socrates](https://app.topodrive.top) · [看看如何学习](https://topodrive.top/zh/product#dialogue)
 
 为那些值得认真想一想的问题。
 
@@ -19,7 +23,7 @@ Socrates · AI 导师
 
 [原创概率图版](https://topodrive.top/media/socrates-probability-plate.svg)：一张墨蓝色图版上排列着 100 个点，其中一个以橙色标出；前方纸片上写着一百分之一。
 
-一百分之一。把整体看清，问题也会不同。
+一百分之一。
 
 ## 先提问，再回答的导师
 
@@ -55,9 +59,9 @@ Socrates · AI 导师
 
 答案可以是起点。先弄清楚还解释不明白的那一处，再给自己一个值得回来的理由。
 
-1. [先用自己的话说一遍](https://topodrive.top/zh/product#dialogue)。从你现在的理解开始，不必准备完美的提示词。
-2. [找到那条连接](https://topodrive.top/zh/product#knowledge-map)。看看新的问题，怎样接上你已经理解的知识。
-3. [隔一段时间，再回来](https://topodrive.top/zh/product#recall)。不看对话，试着重新解释这个想法。
+1. [先用自己的话说一遍](https://topodrive.top/zh/product#dialogue)。
+2. [找到那条连接](https://topodrive.top/zh/product#knowledge-map)。
+3. [隔一段时间，再回来](https://topodrive.top/zh/product#recall)。
 
 配图是学习场景示意，并非真实客户案例。
 
@@ -84,12 +88,6 @@ Socrates · AI 导师
 配图是独立学习场景的编辑示意图。
 
 [找到你的开始方式](https://topodrive.top/zh/guide)
-
-## 你想理解什么？
-
-带来一个还没想通的念头，不必准备完美的提示词。首页提问表单会带着这个问题，在 Socrates 应用中继续。
-
-问题起点：贝叶斯定理、生物知识练习、关于熵的概念。
 
 [试用 Socrates](https://app.topodrive.top) · [产品](https://topodrive.top/zh/product) · [定价](https://topodrive.top/zh/pricing) · [English](https://topodrive.top/)
 

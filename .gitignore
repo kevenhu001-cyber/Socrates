@@ -41,6 +41,7 @@ Thumbs.db
 
 # ── Playwright MCP artifacts ──
 .playwright-mcp/
+test-results/
 
 # ── OpenCode / IDE ──
 .omo/

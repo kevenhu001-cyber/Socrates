@@ -5,13 +5,17 @@ canonical: https://topodrive.top/
 last-updated: 2026-10-23
 ---
 
-# Not just answers. Understanding.
+# What can I help you understand?
 
 Socrates · An AI tutor
 
 Stay with a difficult idea. A tutor that asks, listens, and helps you find your own way through.
 
-[Try Socrates](https://app.topodrive.top) · [See how it works](https://topodrive.top/#learning-session)
+Ask straight away: write the question you are carrying into the box, and keep it going in the app.
+
+Question starters: start a dialogue, recall, knowledge map, exam mode.
+
+[Try Socrates](https://app.topodrive.top) · [See how it works](https://topodrive.top/product#dialogue)
 
 For the questions worth thinking through.
 
@@ -19,7 +23,7 @@ For the questions worth thinking through.
 
 [Original probability illustration](https://topodrive.top/media/socrates-probability-plate.svg): an ink-blue grid of 100 points, with one point highlighted in orange. A paper slip reads one over one hundred.
 
-One in a hundred. A different way to see the question.
+One in a hundred.
 
 ## A tutor that asks before it answers
 
@@ -55,9 +59,9 @@ Next time, try explaining this connection without looking at the conversation.
 
 An answer can be a beginning. Work through the part you cannot explain yet, then give yourself a reason to return.
 
-1. [Put it in your own words](https://topodrive.top/product#dialogue). Start with what you think, not a perfect prompt.
-2. [Find the connection](https://topodrive.top/product#knowledge-map). See how the next question fits what you already know.
-3. [Come back to it](https://topodrive.top/product#recall). Try explaining the idea again, without the conversation.
+1. [Put it in your own words](https://topodrive.top/product#dialogue).
+2. [Find the connection](https://topodrive.top/product#knowledge-map).
+3. [Come back to it](https://topodrive.top/product#recall).
 
 The accompanying learning scene is illustrative, not a customer case study.
 
@@ -84,12 +88,6 @@ Bring a question from the work already in front of you. Use Socrates to think it
 The accompanying independent study scene is an editorial illustration.
 
 [Find a way to begin](https://topodrive.top/guide)
-
-## What do you want to understand?
-
-Bring an unfinished thought. You don’t need a perfect prompt. The question form on the homepage continues with your question in the Socrates app.
-
-Question starters: Bayes’ theorem, biology practice, ideas about entropy.
 
 [Try Socrates](https://app.topodrive.top) · [Product](https://topodrive.top/product) · [Pricing](https://topodrive.top/pricing) · [中文](https://topodrive.top/zh/)
 

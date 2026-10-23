@@ -14,8 +14,7 @@
   <link rel="alternate" hreflang="x-default" href="https://topodrive.top/">
   <link rel="preload" href="/media/fonts/geist-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/media/fonts/geist-sans-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/fonts.css?cb=20261021v5">
-  <link rel="stylesheet" href="/home-refresh.css?cb=20261023e1">
+  <link rel="stylesheet" href="/home-refresh.css?cb=20261023u1">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Socrates">
   <meta property="og:title" content="Socrates — 理解，始于一个问题。">
@@ -28,10 +27,12 @@
   <meta name="twitter:title" content="Socrates — 理解，始于一个问题。">
   <meta name="twitter:description" content="为真正想理解的人打造的 AI 导师。">
   <meta name="twitter:image" content="https://topodrive.top/media/socrates-home-dialogue-photo-v1.webp">
-  <script src="/locale.js?cb=20261022r2"></script>
-  <link rel="stylesheet" href="/chrome.css?cb=20261022r2">
+  <script src="/locale.js?cb=20261023u1"></script>
+  <link rel="stylesheet" href="/fonts.css?cb=20261023u1">
+  <link rel="stylesheet" href="/public.css?cb=20261023u1">
+  <link rel="stylesheet" href="/chrome.css?cb=20261023u1">
 </head>
-<body id="top" class="home-refresh">
+<body id="top" class="home-refresh" data-site-public>
   <svg class="home-symbols" width="0" height="0" aria-hidden="true" focusable="false">
     <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M2.8 8h10.2M9 4.1 12.9 8 9 11.9"/></symbol>
     <symbol id="i-up" viewBox="0 0 16 16"><path d="M8 13V3M3.9 7.1 8 3l4.1 4.1"/></symbol>
@@ -50,46 +51,47 @@
     <div class="site-chrome-shell site-header-inner">
       <a class="site-brand" href="/zh/" aria-label="Socrates 首页"><img src="/logo.png" width="24" height="24" alt=""><span class="site-brand-label">Socrates</span></a>
       <nav class="site-nav" aria-label="主导航"><a href="/zh/product">产品</a><a href="/zh/research">研究</a><a href="/zh/principles">原则</a><a href="/zh/learn">学习</a><a href="/zh/developers">开发者</a><a href="/zh/pricing">定价</a><a href="/zh/about">公司</a></nav>
+      <a class="site-search" href="#askInputHero" aria-label="开始提问"><svg class="home-icon" viewBox="0 0 20 20" aria-hidden="true"><use href="#i-search"/></svg></a>
       <div class="site-header-actions">
         <a class="site-locale" href="/" data-locale-switcher hreflang="en" lang="en">English</a>
         <a class="site-login" href="https://app.topodrive.top">登录</a>
-        <a class="site-try" href="https://app.topodrive.top">试用 Socrates<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a class="site-try" href="https://app.topodrive.top">试用 Socrates<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 12 12 4M4 4h8v8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
         <button class="site-menu-toggle" type="button" data-site-menu-toggle aria-controls="site-mobile-menu" aria-expanded="false" aria-label="打开菜单" data-open-label="打开菜单" data-close-label="关闭菜单"><span></span><span></span></button>
       </div>
     </div>
     <div class="site-mobile-menu" id="site-mobile-menu" hidden>
       <nav aria-label="移动导航"><a href="/zh/product">产品</a><a href="/zh/research">研究</a><a href="/zh/principles">原则</a><a href="/zh/learn">学习</a><a href="/zh/developers">开发者</a><a href="/zh/pricing">定价</a><a href="/zh/about">公司</a></nav>
-      <div class="site-mobile-utilities"><a href="/zh/account">我的账户</a><a href="/zh/contact">联系</a><a class="site-locale" href="/" data-locale-switcher hreflang="en" lang="en">English</a></div>
+      <div class="site-mobile-utilities"><a href="https://app.topodrive.top">试用 Socrates</a><a href="/zh/account">我的账户</a><a href="/zh/contact">联系</a><a class="site-locale" href="/" data-locale-switcher hreflang="en" lang="en">English</a></div>
     </div>
   </header>
 
   <main id="main">
     <section class="home-hero home-shell" aria-labelledby="hero-title">
       <div class="home-hero-inner">
-        <p class="home-eyebrow">Socrates · AI 导师</p>
-        <h1 id="hero-title">不止于答案。<em>更接近理解。</em></h1>
-        <p class="hero-description">和一个难题多待一会儿。让导师通过倾听与追问，陪你找到自己的理解方式。</p>
-        <div class="hero-actions">
-          <a class="home-button" href="https://app.topodrive.top">试用 Socrates <span aria-hidden="true">↗</span></a>
-          <a class="home-text-link" href="#learning-session">看看如何学习 <span aria-hidden="true">↓</span></a>
+        <h1 id="hero-title">有什么可以帮忙的？</h1>
+        <div class="hero-ask">
+          <form class="ask-form" data-ask-form action="https://app.topodrive.top" method="get">
+            <div class="ask-box">
+              <label class="home-sr-only" for="askInputHero">你想问 Socrates 的问题</label>
+              <textarea class="ask-input" id="askInputHero" name="q" rows="2" placeholder=" " aria-describedby="ask-handoff-hero" autocomplete="off" spellcheck="false"></textarea>
+              <span class="ask-placeholder" data-ask-prompts="[&quot;帮我一步步理解贝叶斯定理……&quot;, &quot;把两个学过的概念联系起来……&quot;, &quot;考考我今天学到的知识……&quot;]" aria-hidden="true">帮我理解一个新概念……</span>
+              <button class="ask-send" type="submit" aria-label="打开 Socrates 并开始对话"><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-up"/></svg></button>
+            </div>
+            <p class="ask-handoff home-sr-only" id="ask-handoff-hero">带着这个问题，在 Socrates 应用中继续。</p>
+          </form>
+          <div class="ask-suggestions" aria-label="问题起点">
+            <button class="ask-chip" type="button" data-ask-chip data-question="帮我理解贝叶斯定理，请先问问我已经知道什么。">开始一段对话</button>
+            <button class="ask-chip" type="button" data-ask-chip data-question="考考我三羧酸循环，一次问一个问题。">回忆</button>
+            <button class="ask-chip" type="button" data-ask-chip data-question="帮我把熵和已经理解的概念联系起来。">知识地图</button>
+            <button class="ask-chip" type="button" data-ask-chip data-question="给我出一道贝叶斯定理的考试题。">考试模式</button>
+            <a class="ask-chip ask-chip--link" href="/zh/product">更多</a>
+          </div>
         </div>
-        <p class="hero-footnote">为那些值得认真想一想的问题。</p>
       </div>
-      <figure class="hero-plate">
-        <img class="hero-art" src="/media/socrates-probability-plate.svg" width="760" height="760" fetchpriority="high" alt="一张墨蓝色图版上排列着 100 个点，其中一个以橙色标出；前方纸片上写着一百分之一。">
-        <figcaption><span class="plate-index">01 / 换个角度</span><span>一百分之一。<br>把整体看清，问题也会不同。</span></figcaption>
-      </figure>
     </section>
 
     <section class="home-feature" id="learning-session" aria-labelledby="feature-title" data-reveal>
       <div class="home-shell feature-layout">
-        <div class="feature-intro">
-          <p class="home-eyebrow">不只是回答，更是学习</p>
-          <h2 id="feature-title">先提问，<br>再回答的导师。</h2>
-          <p class="feature-description">从你现在的想法开始，再沿着问题走远一点。把让你想通的那条连接，留在自己的理解里。</p>
-          <a class="home-text-link" href="/zh/product">了解产品 <span aria-hidden="true">→</span></a>
-          <p class="feature-note"><span>01 — 对话</span><span>02 — 连接</span><span>03 — 回顾</span></p>
-        </div>
         <a class="feature-main" href="/zh/product" aria-labelledby="feature-title">
           <div class="feature-media">
             <div class="demo-frame">
@@ -135,6 +137,21 @@
           </div>
         </a>
 
+        <a class="hero-plate" href="/zh/product#knowledge-map">
+          <span class="plate-media"><img class="hero-art" src="/media/socrates-probability-plate.svg" width="760" height="760" fetchpriority="high" alt="一张墨蓝色图版上排列着 100 个点，其中一个以橙色标出；前方纸片上写着一百分之一。"></span>
+          <div class="plate-caption"><span class="plate-index">换个角度</span><span>一百分之一。</span></div>
+        </a>
+        <div class="feature-intro">
+          <h2 id="feature-title">先提问，<br>再回答的导师。</h2>
+          <div class="feature-intro-copy">
+            <p class="feature-description feature-description--lead">和一个难题多待一会儿。让导师通过倾听与追问，陪你找到自己的理解方式。</p>
+            <p class="feature-description">从你现在的想法开始，再沿着问题走远一点。把让你想通的那条连接，留在自己的理解里。</p>
+            <div class="hero-actions">
+              <a class="home-button" href="https://app.topodrive.top">试用 Socrates <span aria-hidden="true">↗</span></a>
+              <a class="home-text-link" href="/zh/product">了解产品 <span aria-hidden="true">→</span></a>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -146,42 +163,36 @@
         </div>
         <div class="news-grid" data-reveal-group>
           <a class="news-item" href="/zh/announcements">
-            <span class="news-index">01</span>
             <div class="news-body">
               <h3>在解释的衔接处，继续追问。</h3>
               <p class="news-meta">产品动态 · 2026 年 5 月</p>
             </div>
           </a>
           <a class="news-item" href="/zh/product#mistake-book">
-            <span class="news-index">02</span>
             <div class="news-body">
               <h3>把一次错误，变成下一个问题。</h3>
               <p class="news-meta">练习 · 错题本</p>
             </div>
           </a>
           <a class="news-item" href="/zh/privacy">
-            <span class="news-index">03</span>
             <div class="news-body">
               <h3>你的学习数据与隐私。</h3>
               <p class="news-meta">隐私 · 数据如何处理</p>
             </div>
           </a>
           <a class="news-item" href="/zh/product#knowledge-map">
-            <span class="news-index">04</span>
             <div class="news-body">
               <h3>让连接延续到下一次学习。</h3>
               <p class="news-meta">产品 · 知识地图</p>
             </div>
           </a>
           <a class="news-item" href="/zh/guide">
-            <span class="news-index">05</span>
             <div class="news-body">
               <h3>从一个更好的问题开始。</h3>
               <p class="news-meta">指南 · 开始使用</p>
             </div>
           </a>
           <a class="news-item" href="/zh/about">
-            <span class="news-index">06</span>
             <div class="news-body">
               <h3>为什么我们要做 Socrates。</h3>
               <p class="news-meta">公司 · 我们的工作方式</p>
@@ -199,16 +210,16 @@
         </div>
         <div class="story-layout">
           <figure class="story-visual">
-            <img src="/media/socrates-home-dialogue-photo-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt="两个人对着摊开的笔记本，一起梳理概念之间的连接。">
+            <div class="story-media"><img src="/media/socrates-home-dialogue-photo-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt="两个人对着摊开的笔记本，一起梳理概念之间的连接。"></div>
             <figcaption>学习场景示意，并非真实客户案例。</figcaption>
           </figure>
           <div>
             <h3 class="home-editorial-title">让一个好问题，继续下去。</h3>
             <p class="home-editorial-copy">答案可以是起点。先弄清楚还解释不明白的那一处，再给自己一个值得回来的理由。</p>
             <div class="story-steps">
-              <a class="story-step" href="/zh/product#dialogue"><span>01</span><div><h3>先用自己的话说一遍。</h3><p>从你现在的理解开始，不必准备完美的提示词。</p></div><span aria-hidden="true">↗</span></a>
-              <a class="story-step" href="/zh/product#knowledge-map"><span>02</span><div><h3>找到那条连接。</h3><p>看看新的问题，怎样接上你已经理解的知识。</p></div><span aria-hidden="true">↗</span></a>
-              <a class="story-step" href="/zh/product#recall"><span>03</span><div><h3>隔一段时间，再回来。</h3><p>不看对话，试着重新解释这个想法。</p></div><span aria-hidden="true">↗</span></a>
+              <a class="story-step" href="/zh/product#dialogue"><span>01</span><div><h3>先用自己的话说一遍。</h3></div><span aria-hidden="true">↗</span></a>
+              <a class="story-step" href="/zh/product#knowledge-map"><span>02</span><div><h3>找到那条连接。</h3></div><span aria-hidden="true">↗</span></a>
+              <a class="story-step" href="/zh/product#recall"><span>03</span><div><h3>隔一段时间，再回来。</h3></div><span aria-hidden="true">↗</span></a>
             </div>
           </div>
         </div>
@@ -222,11 +233,10 @@
           <a class="section-link" href="/zh/research">全部研究</a>
         </div>
         <div class="home-research-layout">
-          <p class="home-research-intro">一段对话结束后，什么样的解释还能留下来？了解我们工作背后的问题、方法，以及它们的局限。</p>
           <ul class="home-research-list">
-            <li><a class="home-research-note" href="/zh/research/memory-recall/"><div><p class="home-research-meta"><span>记忆</span><time datetime="2026-08-12">2026 年 8 月 12 日</time></p><h3>回到一个想法的路径</h3><p>改变回忆提示的形状，为什么可能帮助学习者重建想法，而不只是认出一个答案。</p></div><span class="home-research-arrow" aria-hidden="true">↗</span></a></li>
-            <li><a class="home-research-note" href="/zh/research/explanation-evidence/"><div><p class="home-research-meta"><span>解释</span><time datetime="2026-07-29">2026 年 7 月 29 日</time></p><h3>清晰解释何时成为证据</h3><p>用自己的话解释一个想法，如何让那些被流畅答案掩盖的理解缺口变得可见。</p></div><span class="home-research-arrow" aria-hidden="true">↗</span></a></li>
-            <li><a class="home-research-note" href="/zh/research/honest-pause/"><div><p class="home-research-meta"><span>练习</span><time datetime="2026-07-11">2026 年 7 月 11 日</time></p><h3>诚实停顿的价值</h3><p>把不确定说清楚，会怎样改变导师接下来能够提出的问题。</p></div><span class="home-research-arrow" aria-hidden="true">↗</span></a></li>
+            <li><a class="home-research-note" href="/zh/research/memory-recall/"><span class="home-research-media"><img src="/media/socrates-research-memory-route-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>记忆</span><time datetime="2026-08-12">2026 年 8 月 12 日</time></p><h3>回到一个想法的路径</h3></div></a></li>
+            <li><a class="home-research-note" href="/zh/research/explanation-evidence/"><span class="home-research-media"><img src="/media/socrates-research-explanation-evidence-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>解释</span><time datetime="2026-07-29">2026 年 7 月 29 日</time></p><h3>清晰解释何时成为证据</h3></div></a></li>
+            <li><a class="home-research-note" href="/zh/research/honest-pause/"><span class="home-research-media"><img src="/media/socrates-research-honest-pause-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>练习</span><time datetime="2026-07-11">2026 年 7 月 11 日</time></p><h3>诚实停顿的价值</h3></div></a></li>
           </ul>
         </div>
       </div>
@@ -246,35 +256,13 @@
             <a class="section-link" href="/zh/guide">找到你的开始方式</a>
           </div>
           <figure class="story-visual">
-            <img src="/media/socrates-editorial-developer-workbench-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt="一位学习者对照手写笔记和打开的笔记本电脑整理思路。">
+            <div class="story-media"><img src="/media/socrates-editorial-developer-workbench-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt="一位学习者对照手写笔记和打开的笔记本电脑整理思路。"></div>
             <figcaption>独立学习场景的编辑示意图。</figcaption>
           </figure>
         </div>
       </div>
     </section>
 
-    <section class="home-cta" id="ask" aria-labelledby="cta-title" data-reveal>
-      <div class="home-shell home-cta-band">
-        <div class="question-intro"><p class="home-eyebrow">你的下一个问题</p><h2 id="cta-title">你想理解什么？</h2><p>带来一个还没想通的念头，不必准备完美的提示词。</p></div>
-        <div class="question-entry">
-          <form class="ask-form" data-ask-form action="https://app.topodrive.top" method="get">
-            <div class="ask-box">
-              <label class="home-sr-only" for="askInput">你想问 Socrates 的问题</label>
-              <textarea class="ask-input" id="askInput" name="q" rows="2" placeholder=" " aria-describedby="ask-handoff" autocomplete="off"></textarea>
-              <span class="ask-placeholder" aria-hidden="true">从你正在想的事情开始……</span>
-              <button class="ask-send" type="submit" aria-label="打开 Socrates 并开始对话"><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-up"/></svg></button>
-            </div>
-            <p class="ask-handoff" id="ask-handoff">带着这个问题，在 Socrates 应用中继续。</p>
-          </form>
-          <div class="ask-suggestions" aria-label="问题起点">
-            <button class="ask-chip" type="button" data-ask-chip data-question="帮我理解贝叶斯定理，请先问问我已经知道什么。">贝叶斯定理</button>
-            <button class="ask-chip" type="button" data-ask-chip data-question="考考我三羧酸循环，一次问一个问题。">生物知识练习</button>
-            <button class="ask-chip" type="button" data-ask-chip data-question="帮我把熵和已经理解的概念联系起来。">关于熵的概念</button>
-            <a class="ask-chip ask-chip--link" href="/zh/product">了解产品 <span aria-hidden="true">→</span></a>
-          </div>
-        </div>
-      </div>
-    </section>
   </main>
 
   <footer class="site-footer">
@@ -372,7 +360,8 @@
   </footer>
 
   <script src="/site.js?cb=20261022p0"></script>
-  <script src="/home-question.js?cb=20261023e1"></script>
-  <script src="/chrome.js?cb=20261022r2"></script>
+  <script src="/home-question.js?cb=20261023u1"></script>
+  <script src="/chrome.js?cb=20261023u1"></script>
+  <script src="/motion.js?cb=20261023u1"></script>
 </body>
 </html>

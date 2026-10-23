@@ -8,7 +8,6 @@
   <link rel="canonical" href="https://topodrive.top/zh/developers">
   <link rel="alternate" type="text/markdown" href="/developers.md">
   <link rel="icon" href="../favicon.png">
-  <link rel="stylesheet" href="../fonts.css?cb=20260922v3">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="../editorial.css?cb=20260922a-v3">
@@ -16,9 +15,11 @@
   <script src="../editorial.js?cb=20260824" defer></script>
   <script src="../locale.js?cb=20261021v6" defer></script>
   <link rel="stylesheet" href="../page-media.css?cb=20261021a">
-  <link rel="stylesheet" href="/chrome.css?cb=20261022r2">
+  <link rel="stylesheet" href="/fonts.css?cb=20261023u1">
+  <link rel="stylesheet" href="/public.css?cb=20261023u1">
+  <link rel="stylesheet" href="/chrome.css?cb=20261023u1">
 </head>
-<body class="ed-site page-visual-page">
+<body class="ed-site page-visual-page" data-site-public>
   <a class="ed-skip" href="#main">跳至主要内容</a>
 
   <header class="site-header">
@@ -28,13 +29,13 @@
       <div class="site-header-actions">
         <a class="site-locale" href="/developers" data-locale-switcher hreflang="en" lang="en">English</a>
         <a class="site-login" href="https://app.topodrive.top">登录</a>
-        <a class="site-try" href="https://app.topodrive.top">试用 Socrates<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a class="site-try" href="https://app.topodrive.top">试用 Socrates<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 12 12 4M4 4h8v8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
         <button class="site-menu-toggle" type="button" data-site-menu-toggle aria-controls="site-mobile-menu" aria-expanded="false" aria-label="打开菜单" data-open-label="打开菜单" data-close-label="关闭菜单"><span></span><span></span></button>
       </div>
     </div>
     <div class="site-mobile-menu" id="site-mobile-menu" hidden>
       <nav aria-label="移动导航"><a href="/zh/product">产品</a><a href="/zh/research">研究</a><a href="/zh/principles">原则</a><a href="/zh/learn">学习</a><a href="/zh/developers" aria-current="page">开发者</a><a href="/zh/pricing">定价</a><a href="/zh/about">公司</a></nav>
-      <div class="site-mobile-utilities"><a href="/zh/account">我的账户</a><a href="/zh/contact">联系</a><a class="site-locale" href="/developers" data-locale-switcher hreflang="en" lang="en">English</a></div>
+      <div class="site-mobile-utilities"><a href="https://app.topodrive.top">试用 Socrates</a><a href="/zh/account">我的账户</a><a href="/zh/contact">联系</a><a class="site-locale" href="/developers" data-locale-switcher hreflang="en" lang="en">English</a></div>
     </div>
   </header>
 
@@ -79,7 +80,7 @@
           <h2 class="ed-title">三步发起首次智能体调用。</h2>
         </div>
 
-        <div class="ed-card-grid" style="grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));gap:20px">
+        <div class="ed-card-grid" style="grid-template-columns:repeat(auto-fit, minmax(min(100%, 300px), 1fr));gap:20px">
           <article class="ed-card ed-reveal" style="display:flex;flex-direction:column;justify-content:space-between">
             <div>
               <span class="ed-mono-kicker" style="font-size:12px;color:var(--site-clay);font-weight:600">步骤 01</span>
@@ -119,7 +120,7 @@
           <p class="ed-copy">Socrates 在标准化固定路径公布机器可读的协议和清单，供智能体抓取、开发者工具链及大语言模型自动识别。</p>
         </div>
 
-        <div class="ed-table-wrap ed-reveal" style="border:1px solid var(--site-line);border-radius:14px;overflow:hidden;background:var(--site-paper-soft)">
+        <div class="ed-table-wrap ed-reveal" role="region" aria-label="机器可读接口" tabindex="0" style="border:1px solid var(--site-line);border-radius:14px;overflow-x:auto;background:var(--site-paper-soft)">
           <table style="width:100%;border-collapse:collapse;text-align:left;font-size:14px">
             <thead>
               <tr style="border-bottom:1px solid var(--site-line);background:rgba(0,0,0,.03)">
@@ -198,7 +199,7 @@
           <h2 class="ed-title">所有端点的通用设计。</h2>
         </div>
 
-        <div class="ed-card-grid" style="grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:20px">
+        <div class="ed-card-grid" style="grid-template-columns:repeat(auto-fit, minmax(min(100%, 320px), 1fr));gap:20px">
           <article class="ed-card ed-reveal">
             <h3 style="margin:0 0 10px;font-size:18px;font-weight:600">结构化错误响应</h3>
             <p style="color:var(--site-ink-soft);font-size:14.5px;line-height:1.6">错误采用统一格式：<code>{"code": "MACHINE_READABLE_CODE", "message": "human detail", "detail": …}</code>，并严格对应 400 校验失败、401 未认证、403 权限不足、404 未找到、429 频控等标准 HTTP 状态。</p>
@@ -347,6 +348,7 @@
       </div>
     </div>
   </footer>
-  <script src="/chrome.js?cb=20261022r2"></script>
+  <script src="/chrome.js?cb=20261023u1"></script>
+  <script src="/motion.js?cb=20261023u1"></script>
 </body>
 </html>

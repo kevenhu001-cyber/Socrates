@@ -1,0 +1,100 @@
+/* Public marketing foundations. Page files own composition; chrome.css owns navigation.
+   This sheet bridges older article templates into the same public-site system. */
+:root {
+  --site-color-ink: #111;
+  --site-color-copy: #454545;
+  --site-color-muted: #737373;
+  --site-color-line: #e5e5e5;
+  --site-color-surface: #f7f7f7;
+  --site-font: 'Geist Sans', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+  --site-font-mono: 'Geist Mono', ui-monospace, monospace;
+  --site-width: 1536px;
+  --site-gutter: clamp(24px, 4.445vw, 64px);
+  --site-header-height: 80px;
+  --site-radius: 12px;
+  --site-space-section: clamp(64px, 7vw, 104px);
+  --site-ease: cubic-bezier(.22, 1, .36, 1);
+  --site-motion-fast: 200ms;
+  --site-motion-medium: 400ms;
+  --site-motion-slow: 700ms;
+}
+[data-site-public] {
+  --font-sans: var(--site-font);
+  --font-serif: var(--site-font);
+  --font-display: var(--site-font);
+  --site-serif-latin: var(--site-font);
+  --site-serif-cjk: var(--site-font);
+  --ed-serif: var(--site-font);
+  --ed-sans: var(--site-font);
+  --site-ink: var(--site-color-ink);
+  --site-ink-muted: var(--site-color-muted);
+  --ed-ink: var(--site-color-ink);
+  --ed-ink-muted: var(--site-color-muted);
+  --content-ink: var(--site-color-ink);
+  --content-muted: var(--site-color-muted);
+  --content-line: var(--site-color-line);
+  --pad: var(--site-gutter);
+  --shell: var(--site-width);
+  --header-h: var(--site-header-height);
+  --ed-header-h: var(--site-header-height);
+  margin: 0;
+  background: #fff;
+  color: var(--site-color-ink);
+  font-family: var(--site-font);
+  -webkit-font-smoothing: antialiased;
+}
+/* One offset per anchor; scroll-padding and scroll-margin must not add up. */
+html { scroll-padding-top: 0; }
+[data-site-public] main [id] { scroll-margin-top: calc(var(--site-header-height) + 24px); }
+[data-site-public] :is(.home-shell, .shell) { width: 100%; max-width: var(--site-width); margin-inline: auto; padding-inline: var(--site-gutter); }
+[data-site-public] :is(.content-shell, .product-shell), [data-site-public].ed-site .ed-shell { width: min(calc(100% - var(--site-gutter) * 2), calc(var(--site-width) - var(--site-gutter) * 2)); margin-inline: auto; }
+[data-site-public] :is(.content-title, .page-title, .product-hero h1, .ed-report-title, .ed-page-title) { font-family: var(--site-font); font-weight: 500; letter-spacing: -.045em; }
+[data-site-public] :is(.page-title, .ed-report-title, .ed-page-title) { font-size: clamp(36px, 4.6vw, 64px); line-height: 1.12; }
+[data-site-public] .page-head { padding-block: 64px 48px; }
+[data-site-public] .page-lede { line-height: 1.7; }
+[data-site-public] .content-hero { padding-block: 64px 48px; }
+[data-site-public] :is(.content-prose, .page-prose, .ed-article) { line-height: 1.8; }
+[data-site-public] :is(.content-button, .product-button, .home-button, .btn) { transition: background var(--site-motion-fast), color var(--site-motion-fast), transform var(--site-motion-fast) var(--site-ease); }
+[data-site-public] :is(.content-button, .product-button, .home-button, .btn):active { transform: scale(.98); }
+[data-site-public] :is(.content-link, .product-text-link, .home-text-link, .section-link) { transition: gap var(--site-motion-fast) var(--site-ease), color var(--site-motion-fast); }
+[data-site-public] :is(.content-link, .product-text-link, .home-text-link, .section-link):hover { gap: 16px; }
+[data-site-public] :is(.research-filters button, .ask-chip) { transition: background var(--site-motion-fast), color var(--site-motion-fast), border-color var(--site-motion-fast), transform var(--site-motion-fast) var(--site-ease); }
+[data-site-public] :is(.research-filters button, .ask-chip):active { transform: scale(.97); }
+[data-site-public] :is(.research-note-arrow, .story-step > span:last-child, .company-work-list a > span:last-child) { transition: transform var(--site-motion-medium) var(--site-ease); }
+[data-site-public] :is(.story-step, .company-work-list a):hover > span:last-child { transform: translateX(4px); }
+[data-site-public] .research-note-media, [data-site-public] .company-visual-frame { border-radius: var(--site-radius); }
+[data-site-public] :is(.research-note-media img, .story-media img, .home-research-media img, .hero-art, .company-visual img) { transition: transform var(--site-motion-slow) var(--site-ease); }
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  [data-site-public] .research-note a:hover .research-note-media img,
+  [data-site-public] .home-research-note:hover img,
+  [data-site-public] .hero-plate:hover .hero-art,
+  [data-site-public] .story-visual:hover .story-media img,
+  [data-site-public] .company-visual:hover img { transform: scale(1.035); }
+}
+[data-site-public] .product-sample--recall { background: var(--site-color-surface); }
+[data-site-public] .product-recall-card { border-color: var(--site-color-line); }
+[data-site-public] .product-preview, [data-site-public] .product-sample { border-radius: var(--site-radius); }
+[data-site-public].ed-site :is(.ed-copy-serif, .ed-report-standfirst, .ed-article .lede) { font-family: var(--site-font); }
+[data-site-public] [data-site-reveal] { scroll-margin-top: calc(var(--site-header-height) + 24px); }
+
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: site-page-out 140ms ease both; }
+::view-transition-new(root) { animation: site-page-in 260ms var(--site-ease) both; }
+@keyframes site-page-out { to { opacity: 0; } }
+@keyframes site-page-in { from { opacity: 0; transform: translateY(6px); } }
+
+@media (max-width: 760px) {
+  :root { --site-gutter: 20px; --site-header-height: 64px; --site-space-section: 64px; }
+  [data-site-public] .page-head, [data-site-public] .content-hero { padding-block: 40px 32px; }
+}
+@media (max-width: 380px) {
+  :root { --site-gutter: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --site-motion-fast: 0ms; --site-motion-medium: 0ms; --site-motion-slow: 0ms; }
+  html { scroll-behavior: auto; }
+  [data-site-public] :is(.content-link, .product-text-link, .home-text-link, .section-link):hover { gap: 10px; }
+  [data-site-public] :is(.research-note-media img, .story-media img, .home-research-media img, .hero-art, .company-visual img) { transform: none; }
+  @view-transition { navigation: none; }
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+}

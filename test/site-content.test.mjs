@@ -25,6 +25,7 @@ for (const prefix of ['', '/zh']) {
           return {
             width: document.documentElement.scrollWidth,
             font: getComputedStyle(title).fontFamily,
+            localChineseFont: Array.from(document.fonts).some((font) => font.family.includes('Noto Sans SC') && font.status === 'loaded'),
             headerHeight: document.querySelector('.site-header').getBoundingClientRect().height,
             heroBottom: hero.getBoundingClientRect().bottom,
             clipped: nodes.filter((node) => node.scrollWidth > node.clientWidth + 1).map((node) => node.className),
@@ -32,8 +33,9 @@ for (const prefix of ['', '/zh']) {
           };
         });
         assert.equal(geometry.width, width);
-        assert.equal(geometry.headerHeight, 64);
+        assert.equal(geometry.headerHeight, width <= 760 ? 64 : 80);
         assert.match(geometry.font, /Geist Sans/);
+        if (prefix) assert.ok(geometry.localChineseFont, 'Chinese content uses the local sans family instead of platform-dependent serif fallback');
         assert.deepEqual(geometry.clipped, [], 'text must wrap rather than be clipped');
         assert.ok(geometry.bodySize >= 15);
         assert.ok(geometry.heroBottom < 650, 'the introduction must not consume the whole first screen');
@@ -149,4 +151,16 @@ test('reading-page translations share structure, and index metadata matches the 
       }
     }
   }
+});
+
+
+test('Chinese developer quickstart fits a 320px phone and its wide table remains keyboard-scrollable', async (t) => {
+  const page = await sitePage(site, t, '/zh/developers', 320);
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), 320);
+  const table = page.locator('.ed-table-wrap');
+  assert.ok(await table.evaluate((node) => node.scrollWidth > node.clientWidth));
+  await table.focus();
+  await page.keyboard.press('ArrowRight');
+  await page.waitForFunction(() => document.querySelector('.ed-table-wrap').scrollLeft > 0);
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), 320);
 });

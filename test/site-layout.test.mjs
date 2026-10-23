@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { sitePage, startSite, stopSite } from './helpers/site-browser.mjs';
 
-// Browser geometry for the editorial homepage and unchanged shared chrome.
+// Browser geometry for the reference-style question homepage and shared chrome.
 // Run with npm run test:site:home (requires Playwright Chromium).
 let site;
 before(async () => { site = await startSite(); });
@@ -10,7 +10,7 @@ after(async () => { await stopSite(site); });
 
 for (const path of ['/', '/zh/']) {
   for (const width of [320, 390, 560]) {
-    test(`${path} at ${width}px: artwork and the complete learning example reflow without clipping`, async (t) => {
+    test(`${path} at ${width}px: question, pills and learning cards reflow without clipping`, async (t) => {
       const page = await sitePage(site, t, path, width);
       const layout = await page.evaluate(() => {
         const rect = (selector) => document.querySelector(selector).getBoundingClientRect().toJSON();
@@ -22,59 +22,66 @@ for (const path of ['/', '/zh/']) {
           title: rect('h1'),
           art: rect('.hero-art'),
           copy: rect('.home-hero-inner'),
-          action: rect('.hero-actions .home-button'),
+          composer: rect('.hero-ask .ask-box'),
+          suggestions: rect('.hero-ask .ask-suggestions'),
           frame: rect('.feature-media'),
           map: rect('.demo-map'),
           nodesFit: nodes.every((node) => node.left >= map.left - 1 && node.right <= map.right + 1),
           messages: [...document.querySelectorAll('.demo-msg')].filter((node) => node.checkVisibility()).length,
-          indexWidth: parseFloat(getComputedStyle(document.querySelector('.news-item')).gridTemplateColumns),
+          newsColumns: getComputedStyle(document.querySelector('.news-grid')).gridTemplateColumns.split(' ').length,
         };
       });
       assert.equal(layout.pageWidth, layout.viewport);
-      assert.ok(layout.art.y >= layout.copy.y + layout.copy.height, 'phone art follows the proposition, not beside an unreadably narrow title');
+      assert.ok(layout.frame.y > layout.suggestions.bottom, 'cards follow the complete question entry');
+      assert.ok(layout.art.y > layout.frame.y, 'the supporting art stacks after the preview on phones');
       assert.ok(layout.art.x >= 0 && layout.art.right <= width);
-      assert.ok(layout.action.bottom < 500, 'the primary action remains above the artwork on phones');
+      assert.ok(layout.composer.bottom < 400, 'the composer stays in the first viewport on phones');
+      assert.ok(layout.composer.height <= 100, 'the mobile composer matches the compact reference');
+      assert.ok(Math.abs(layout.composer.x + layout.composer.width / 2 - width / 2) < 1);
       assert.equal(layout.messages, 4, 'the learner correction remains visible');
       assert.ok(layout.nodesFit);
       assert.ok(layout.map.bottom <= layout.frame.bottom + 1);
-      assert.ok(layout.indexWidth <= 30);
+      assert.equal(layout.newsColumns, 1);
 
-      await page.locator('.hero-actions .home-text-link').click();
-      await page.waitForFunction(() => {
-        const top = document.querySelector('#learning-session').getBoundingClientRect().top;
-        return top >= 64 && top < 150;
-      });
+      await page.locator('.hero-ask .ask-chip--link').click();
+      await page.waitForURL(`${site.baseURL}${path === '/' ? '/' : '/zh/'}product`);
+      await page.goBack();
       await page.locator('[data-ask-chip]').last().focus();
       assert.ok(await page.locator('[data-ask-chip]').last().evaluate((node) => document.activeElement === node));
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), width);
     });
   }
 
-  test(`${path}: desktop has one dominant illustration and a readable product sheet`, async (t) => {
+  test(`${path}: desktop centers the question above a wide preview and supporting card`, async (t) => {
     const page = await sitePage(site, t, path, 1440);
     const geometry = await page.evaluate(() => {
-      const copy = document.querySelector('.home-hero-inner').getBoundingClientRect();
+      const composer = document.querySelector('.hero-ask .ask-box').getBoundingClientRect();
       const art = document.querySelector('.hero-art').getBoundingClientRect();
       const intro = document.querySelector('.feature-intro').getBoundingClientRect();
       const preview = document.querySelector('.feature-main').getBoundingClientRect();
       return {
-        sideBySide: art.left >= copy.right,
-        artWidth: art.width,
-        actionBottom: document.querySelector('.hero-actions').getBoundingClientRect().bottom,
+        centered: Math.abs(composer.x + composer.width / 2 - innerWidth / 2) < 1,
+        composerWidth: composer.width,
+        composerBottom: composer.bottom,
+        artBelowQuestion: art.top > composer.bottom,
+        artBesidePreview: art.left > preview.right,
+        previewBeforeIntro: preview.bottom <= intro.top,
         titleSize: parseFloat(getComputedStyle(document.querySelector('h1')).fontSize),
-        previewBesideIntro: preview.left >= intro.right,
+        previewRatio: preview.width / art.width,
         previewWidth: preview.width,
         sheetColour: getComputedStyle(document.querySelector('.feature-media')).backgroundColor,
         groundColour: getComputedStyle(document.querySelector('.home-feature')).backgroundColor,
         tutorSize: parseFloat(getComputedStyle(document.querySelector('.demo-tutor-body p')).fontSize),
       };
     });
-    assert.ok(geometry.sideBySide);
-    assert.ok(geometry.artWidth >= 500 && geometry.artWidth <= 650);
-    assert.ok(geometry.actionBottom < 800);
-    assert.ok(geometry.titleSize >= 60);
-    assert.ok(geometry.previewBesideIntro && geometry.previewWidth >= 650);
-    assert.notEqual(geometry.sheetColour, geometry.groundColour, 'depth comes from a foreground sheet on a distinct ground');
+    assert.ok(geometry.centered);
+    assert.ok(geometry.composerWidth >= 880 && geometry.composerWidth <= 1056);
+    assert.ok(geometry.composerBottom < 600);
+    assert.ok(geometry.titleSize >= 32 && geometry.titleSize <= 42);
+    assert.ok(geometry.artBelowQuestion && geometry.artBesidePreview);
+    assert.ok(geometry.previewBeforeIntro, 'cards enter the page before the longer product copy');
+    assert.ok(geometry.previewRatio >= 2.3 && geometry.previewRatio <= 2.4 && geometry.previewWidth >= 650);
+    assert.equal(geometry.groundColour, 'rgba(0, 0, 0, 0)', 'the feature section continues the white page');
     assert.ok(geometry.tutorSize >= 16);
     assert.equal(await page.locator('canvas, [data-art], .feature-rail').count(), 0);
     assert.equal(await page.locator('.site-footer-grid').evaluate((grid) => getComputedStyle(grid).gridTemplateColumns.split(' ').length), 5);
@@ -129,13 +136,13 @@ for (const width of [561, 760, 761, 900, 1180, 1181, 1920]) {
     const page = await sitePage(site, t, '/', width);
     const layout = await page.evaluate(() => ({
       pageWidth: document.documentElement.scrollWidth,
-      newsIndex: parseFloat(getComputedStyle(document.querySelector('.news-item')).gridTemplateColumns),
-      heroColumns: getComputedStyle(document.querySelector('.home-hero')).gridTemplateColumns.split(' ').length,
+      newsColumns: getComputedStyle(document.querySelector('.news-grid')).gridTemplateColumns.split(' ').length,
+      cardColumns: getComputedStyle(document.querySelector('.feature-layout')).gridTemplateColumns.split(' ').length,
       openGroups: document.querySelectorAll('details.site-footer-col[open]').length,
     }));
     assert.equal(layout.pageWidth, width);
-    assert.ok(layout.newsIndex <= 30);
-    assert.equal(layout.heroColumns, width <= 760 ? 1 : 2);
+    assert.equal(layout.newsColumns, width <= 760 ? 1 : 3);
+    assert.equal(layout.cardColumns, width <= 760 ? 1 : 2);
     assert.equal(layout.openGroups, width <= 760 ? 0 : 5);
   });
 }

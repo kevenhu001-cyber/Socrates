@@ -6,10 +6,10 @@ import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../site/', import.meta.url));
-const version = '20261022r2';
+const version = '20261023u1';
 const appPages = new Set(['account', 'profile', 'api-keys', 'checkout']);
 const appURL = 'https://app.topodrive.top';
-const arrow = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const arrow = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 12 12 4M4 4h8v8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 const copy = {
   en: {
@@ -70,10 +70,11 @@ export function renderChrome(pathname, locale) {
   const nav = keys.map((key, i) => `<a href="${localHref(`/${key}`, locale)}"${key === page ? ' aria-current="page"' : ''}>${text.nav[i]}</a>`).join('');
   const otherPath = locale === 'zh' ? pathname : `/zh${pathname}`;
   const language = `<a class="site-locale" href="${otherPath}" data-locale-switcher hreflang="${text.languageTag}" lang="${text.languageTag}">${text.language}</a>`;
+  const questionShortcut = !page ? `\n      <a class="site-search" href="#askInputHero" aria-label="${locale === 'zh' ? '开始提问' : 'Ask a question'}"><svg class="home-icon" viewBox="0 0 20 20" aria-hidden="true"><use href="#i-search"/></svg></a>` : '';
   const header = `<header class="site-header">
     <div class="site-chrome-shell site-header-inner">
       ${brand(locale)}
-      <nav class="site-nav" aria-label="${text.primary}">${nav}</nav>
+      <nav class="site-nav" aria-label="${text.primary}">${nav}</nav>${questionShortcut}
       <div class="site-header-actions">
         ${language}
         <a class="site-login" href="${appURL}">${text.login}</a>
@@ -83,7 +84,7 @@ export function renderChrome(pathname, locale) {
     </div>
     <div class="site-mobile-menu" id="site-mobile-menu" hidden>
       <nav aria-label="${text.mobile}">${nav}</nav>
-      <div class="site-mobile-utilities"><a href="${localHref('/account', locale)}">${text.account}</a><a href="${localHref('/contact', locale)}">${text.contact}</a>${language}</div>
+      <div class="site-mobile-utilities"><a href="${appURL}">${text.try}</a><a href="${localHref('/account', locale)}">${text.account}</a><a href="${localHref('/contact', locale)}">${text.contact}</a>${language}</div>
     </div>
   </header>`;
   const columns = text.groups.map((groups, i) => `<details class="site-footer-col" open>
@@ -139,10 +140,14 @@ export async function syncChrome({ check = false } = {}) {
       .replace(/<header class="(?:home-site-header|hdr|ed-header|site-header)"[\s\S]*?<\/header>/, header)
       .replace(/<footer class="(?:home-footer|ftr|ed-footer|site-footer)"[\s\S]*?<\/footer>/, footer)
       .replace(/[ \t]*<link rel="stylesheet" href="\/chrome\.css[^\"]*">\r?\n?/g, '')
+      .replace(/[ \t]*<link rel="stylesheet" href="\/public\.css[^\"]*">\r?\n?/g, '')
+      .replace(/[ \t]*<link rel="stylesheet" href="[^\"]*fonts\.css[^\"]*">\r?\n?/g, (tag) => locale === 'zh' ? '' : tag)
       .replace(/[ \t]*<script src="\/chrome\.js[^\"]*"><\/script>\r?\n?/g, '')
+      .replace(/[ \t]*<script src="\/motion\.js[^\"]*"><\/script>\r?\n?/g, '')
+      .replace(/<body\b(?![^>]*\bdata-site-public)([^>]*)>/, '<body$1 data-site-public>')
       .replace(/(<script src="[^\"]*\/locale\.js)\?[^\"]*("><\/script>)/g, `$1?cb=${version}$2`)
-      .replace(/\s*<\/head>/, `\n  <link rel="stylesheet" href="/chrome.css?cb=${version}">\n</head>`)
-      .replace(/\s*<\/body>/, `\n  <script src="/chrome.js?cb=${version}"></script>\n</body>`);
+      .replace(/\s*<\/head>/, `\n${locale === 'zh' ? `  <link rel="stylesheet" href="/fonts.css?cb=${version}">\n` : ''}  <link rel="stylesheet" href="/public.css?cb=${version}">\n  <link rel="stylesheet" href="/chrome.css?cb=${version}">\n</head>`)
+      .replace(/\s*<\/body>/, `\n  <script src="/chrome.js?cb=${version}"></script>\n  <script src="/motion.js?cb=${version}"></script>\n</body>`);
     // Preserve existing whitespace around all non-generated content.
     if (source !== next) {
       changed.push(relativePath);

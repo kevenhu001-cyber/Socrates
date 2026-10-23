@@ -10,15 +10,16 @@ after(async () => { await stopSite(site); });
 for (const prefix of ['', '/zh']) {
   const path = `${prefix}/`;
   for (const width of [320, 390, 760, 761, 1280, 1920]) {
-    test(`${path} at ${width}px: readable preview, distinct editorial layouts and contained text`, async (t) => {
+    test(`${path} at ${width}px: centered question entry, readable cards and contained text`, async (t) => {
       const page = await sitePage(site, t, path, width);
       const geometry = await page.evaluate(() => {
         const visible = (node) => node.checkVisibility();
-        const text = [...document.querySelectorAll('main h1, main h2, main h3, main p, .demo-node')].filter(visible);
+        const text = [...document.querySelectorAll('main h1, main h2, main h3, main p:not(.home-sr-only), .demo-node')].filter(visible);
         const demo = document.querySelector('.demo-tutor-body p');
         const hero = document.querySelector('.home-hero').getBoundingClientRect();
         const art = document.querySelector('.hero-art').getBoundingClientRect();
-        const action = document.querySelector('.hero-actions .home-button').getBoundingClientRect();
+        const ask = document.querySelector('.hero-ask .ask-box').getBoundingClientRect();
+        const title = document.querySelector('h1').getBoundingClientRect();
         const images = [...document.querySelectorAll('main img')].map((image) => image.getAttribute('src')).filter((src) => src !== '/logo.png');
         const map = document.querySelector('.demo-map-canvas').getBoundingClientRect();
         return {
@@ -26,8 +27,13 @@ for (const prefix of ['', '/zh']) {
           heroTop: hero.top,
           artTop: art.top,
           artRatio: art.width / art.height,
-          actionBottom: action.bottom,
-          questionTop: document.querySelector('.home-cta').getBoundingClientRect().top,
+          askBottom: ask.bottom,
+          askCenter: ask.x + ask.width / 2,
+          titleCenter: title.x + title.width / 2,
+          titleBottom: title.bottom,
+          askTop: ask.top,
+          background: getComputedStyle(document.body).backgroundColor,
+          radius: parseFloat(getComputedStyle(document.querySelector('.ask-box')).borderRadius),
           featureTop: document.querySelector('.home-feature').getBoundingClientRect().top,
           questionSize: parseFloat(getComputedStyle(document.querySelector('.demo-msg--user')).fontSize),
           tutorSize: parseFloat(getComputedStyle(demo).fontSize),
@@ -38,17 +44,24 @@ for (const prefix of ['', '/zh']) {
         };
       });
       assert.equal(geometry.width, width);
-      assert.ok(geometry.actionBottom < 700, 'the primary action is available in the first viewport');
-      assert.ok(geometry.artTop < 620, 'the editorial artwork enters the first viewport on phones too');
+      assert.ok(geometry.askBottom < 700, 'the question can be submitted from the first viewport');
+      assert.ok(Math.abs(geometry.askCenter - width / 2) < 1);
+      assert.ok(Math.abs(geometry.titleCenter - width / 2) < 1);
+      assert.ok(geometry.titleBottom < geometry.askTop, 'the title sits above the composer');
+      assert.ok(geometry.artTop >= geometry.featureTop, 'artwork belongs to the cards below the question');
       assert.ok(Math.abs(geometry.artRatio - 1) < .01, 'the diagram keeps its square composition');
-      assert.ok(geometry.questionTop > geometry.featureTop, 'the question form supports the page rather than competing with the hero');
+      assert.equal(geometry.background, 'rgb(255, 255, 255)');
+      assert.ok(geometry.radius >= 18, 'the composer retains the rounded reference silhouette');
+      assert.equal(await page.locator('[data-ask-form]').count(), 1, 'the homepage has one question entry at the top');
       assert.ok(geometry.tutorSize >= 16 && geometry.questionSize >= 15, 'preview copy uses actual reading sizes, not container-scaled pixels');
       assert.deepEqual(geometry.clippedText, []);
       assert.equal(geometry.clippedNodes, false, 'both connected ideas fit in the preview');
       assert.equal(new Set(geometry.images).size, geometry.images.length, 'do not reuse a cover in multiple sections');
-      assert.equal(geometry.images.length, 3, 'one original diagram and two editorial scenes, not a wall of generated covers');
+      assert.equal(geometry.images.length, 6, 'one original diagram, two learning scenes and three source-backed research covers');
       assert.ok(geometry.editorialRatios.every((ratio) => ratio >= 1.3 && ratio <= 1.8), 'editorial images stay landscape, not an intrinsic 941px-tall poster');
-      assert.ok(await page.locator('.hero-description').isVisible());
+      assert.equal(await page.locator('.home-hero .hero-art, .home-hero .hero-actions, .home-hero em').count(), 0, 'the first screen stays focused on the question');
+      assert.equal(await page.locator('.hero-ask .ask-chip').count(), 5);
+      assert.ok(await page.locator('.feature-description--lead').isVisible());
       assert.equal(await page.locator('.demo-rail, .demo-live, .demo-compose, .demo-suggestions').count(), 0, 'remove tiny navigation and controls that imply a live session');
       assert.match(await page.locator('.feature-meta').innerText(), /not a live conversation|并非实时对话/);
       assert.equal(await page.locator('.feature-main').getAttribute('aria-labelledby'), 'feature-title');
@@ -56,53 +69,56 @@ for (const prefix of ['', '/zh']) {
       assert.equal(await page.locator('canvas, [data-art], .feature-rail').count(), 0, 'no particles, generated gradient fields or competing story rail');
       assert.equal(await page.locator('.hero-plate img').getAttribute('loading'), null, 'the main artwork is not lazy-loaded');
       assert.equal(await page.locator('.hero-plate img').getAttribute('fetchpriority'), 'high');
-      assert.match(await page.locator('#askInput').getAttribute('aria-describedby'), /ask-handoff/);
+      assert.match(await page.locator('#askInputHero').getAttribute('aria-describedby'), /ask-handoff/);
       assert.equal(await page.locator('.story-layout').count(), 1);
       assert.equal(await page.locator('.home-research-list li').count(), 3);
-      assert.equal(await page.locator('.home-research img, .home-stories .card-grid, .home-teams .card-grid').count(), 0);
+      assert.equal(await page.locator('.home-research img').count(), 3);
+      assert.equal(await page.locator('.home-stories .card-grid, .home-teams .card-grid').count(), 0);
       assert.equal(await page.locator('.learning-layout').count(), 1);
       assert.match(await page.locator('.home-stories figcaption').innerText(), /not a customer case study|并非真实客户案例/);
     });
   }
 
-  test(`${path}: question starters work by keyboard and hand off the exact question without calling the app`, async (t) => {
-    const page = await sitePage(site, t, path, 390);
-    const starters = page.locator('[data-ask-chip]');
-    assert.equal(await starters.count(), 3);
-    for (const starter of await starters.all()) {
-      await starter.focus();
-      await page.keyboard.press('Enter');
-      assert.equal(await page.locator('#askInput').inputValue(), await starter.getAttribute('data-question'));
-      assert.ok(await page.locator('#askInput').evaluate((node) => document.activeElement === node));
-    }
-    const question = prefix ? '为什么检测阳性还不能确定结果？' : 'Why isn’t a positive test the whole story?';
-    await page.locator('#askInput').fill(question);
-    assert.ok(await page.locator('.ask-form').evaluate((node) => node.classList.contains('has-value')));
-    // Fulfil navigation locally: the test must never send a question to a real account/API.
-    await page.route('https://app.topodrive.top/**', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<title>Handoff fixture</title>' }));
-    const request = page.waitForRequest((request) => new URL(request.url()).origin === 'https://app.topodrive.top');
-    await page.locator('#askInput').press('Enter');
-    const target = new URL((await request).url());
-    assert.equal(target.searchParams.get('q'), question);
-    await page.waitForURL((url) => url.origin === target.origin);
-  });
+  for (const [scope, inputID, count] of [['.hero-ask', '#askInputHero', 4]]) {
+    test(`${path} ${scope}: starters fill the question entry and hand off the exact question`, async (t) => {
+      const page = await sitePage(site, t, path, 390);
+      const input = page.locator(inputID);
+      const starters = page.locator(`${scope} [data-ask-chip]`);
+      assert.equal(await starters.count(), count);
+      for (const starter of await starters.all()) {
+        await starter.focus();
+        await page.keyboard.press('Enter');
+        assert.equal(await input.inputValue(), await starter.getAttribute('data-question'));
+        assert.ok(await input.evaluate((node) => document.activeElement === node));
+      }
+      const question = prefix ? '为什么检测阳性还不能确定结果？' : 'Why isn’t a positive test the whole story?';
+      await input.fill(question);
+      assert.ok(await page.locator(`${scope} .ask-form`).evaluate((node) => node.classList.contains('has-value')));
+      await page.route('https://app.topodrive.top/**', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<title>Handoff fixture</title>' }));
+      const request = page.waitForRequest((request) => new URL(request.url()).origin === 'https://app.topodrive.top');
+      await input.press('Enter');
+      const target = new URL((await request).url());
+      assert.equal(target.searchParams.get('q'), question);
+      await page.waitForURL((url) => url.origin === target.origin);
+    });
 
-  test(`${path}: the native handoff preserves multiline text and IME composition`, async (t) => {
-    const page = await sitePage(site, t, path, 390);
-    const input = page.locator('#askInput');
-    await input.fill(prefix ? '我正在想' : 'I am thinking');
-    await input.dispatchEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true });
-    assert.equal(new URL(page.url()).pathname, path, 'IME confirmation must not submit');
-    await input.press('Shift+Enter');
-    assert.ok((await input.inputValue()).endsWith('\n'), 'Shift+Enter inserts a new line instead of submitting');
-    const question = prefix ? '第一行：贝叶斯？\n第二行：基础发生率 & 假阳性。' : 'First line: Bayes?\nSecond line: base rate & false positives.';
-    await input.fill(question);
-    await page.route('https://app.topodrive.top/**', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<title>Multiline handoff fixture</title>' }));
-    const request = page.waitForRequest((request) => new URL(request.url()).origin === 'https://app.topodrive.top');
-    await page.locator('.ask-send').click();
-    assert.equal(new URL((await request).url()).searchParams.get('q').replaceAll('\r\n', '\n'), question);
-    await page.waitForURL((url) => url.origin === 'https://app.topodrive.top');
-  });
+    test(`${path} ${scope}: native handoff preserves multiline text and IME composition`, async (t) => {
+      const page = await sitePage(site, t, path, 390);
+      const input = page.locator(inputID);
+      await input.fill(prefix ? '我正在想' : 'I am thinking');
+      await input.dispatchEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true });
+      assert.equal(new URL(page.url()).pathname, path, 'IME confirmation must not submit');
+      await input.press('Shift+Enter');
+      assert.ok((await input.inputValue()).endsWith('\n'), 'Shift+Enter inserts a new line');
+      const question = prefix ? '第一行：贝叶斯？\n第二行：基础发生率 & 假阳性。' : 'First line: Bayes?\nSecond line: base rate & false positives.';
+      await input.fill(question);
+      await page.route('https://app.topodrive.top/**', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<title>Multiline handoff fixture</title>' }));
+      const request = page.waitForRequest((request) => new URL(request.url()).origin === 'https://app.topodrive.top');
+      await page.locator(`${scope} .ask-send`).click();
+      assert.equal(new URL((await request).url()).searchParams.get('q').replaceAll('\r\n', '\n'), question);
+      await page.waitForURL((url) => url.origin === 'https://app.topodrive.top');
+    });
+  }
 
   test(`${path}: normal-motion sections reveal and the story remains keyboard-navigable`, async (t) => {
     const context = await site.browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'no-preference' });
@@ -113,7 +129,7 @@ for (const prefix of ['', '/zh']) {
     page.on('pageerror', (error) => errors.push(error.message));
     await page.goto(site.baseURL + path);
     await page.locator('[data-consent-choice="essential"]').click();
-    for (const selector of ['.home-news', '.home-stories', '.home-research', '.home-teams', '.home-cta']) {
+    for (const selector of ['.home-news', '.home-stories', '.home-research', '.home-teams']) {
       await page.locator(selector).scrollIntoViewIfNeeded();
       await page.waitForFunction((selector) => getComputedStyle(document.querySelector(selector)).opacity === '1', selector);
     }
@@ -127,21 +143,44 @@ for (const prefix of ['', '/zh']) {
     assert.deepEqual(errors, []);
   });
 
+  test(`${path}: mobile question shortcut, menu and language switch remain usable`, async (t) => {
+    const page = await sitePage(site, t, path, 390);
+    await page.locator('.site-search').click();
+    assert.ok(await page.locator('#askInputHero').evaluate((node) => document.activeElement === node));
+    const menu = page.locator('[data-site-menu-toggle]');
+    await menu.click();
+    assert.equal(await menu.getAttribute('aria-expanded'), 'true');
+    assert.ok(await page.locator('main').evaluate((node) => node.inert));
+    assert.ok(await page.locator('.site-mobile-menu nav a').first().evaluate((node) => document.activeElement === node));
+    await page.keyboard.press('Escape');
+    assert.equal(await menu.getAttribute('aria-expanded'), 'false');
+    assert.ok(await menu.evaluate((node) => document.activeElement === node));
+    assert.ok(!(await page.locator('main').evaluate((node) => node.inert)));
+    await menu.click();
+    await page.locator('.site-mobile-utilities .site-locale').click();
+    await page.waitForURL((url) => url.pathname === (prefix ? '/' : '/zh/'));
+    assert.equal(await page.locator('.hero-ask').count(), 1);
+    assert.match(await page.locator('h1').innerText(), prefix ? /What can I help/ : /有什么可以帮忙/);
+  });
+
   test(`${path}: no-JS has a working native form and reading links, not inert starter buttons`, async (t) => {
     const page = await sitePage(site, t, path, 390, false);
-    assert.equal(await page.locator('.ask-form').getAttribute('action'), 'https://app.topodrive.top');
-    assert.equal(await page.locator('.ask-form').getAttribute('method'), 'get');
-    assert.equal(await page.locator('#askInput').getAttribute('name'), 'q');
+    assert.equal(await page.locator('.ask-form').count(), 1);
+    for (const form of await page.locator('.ask-form').all()) {
+      assert.equal(await form.getAttribute('action'), 'https://app.topodrive.top');
+      assert.equal(await form.getAttribute('method'), 'get');
+    }
+    assert.equal(await page.locator('#askInputHero').getAttribute('name'), 'q');
     assert.equal(await page.locator('[data-ask-chip]').evaluateAll((nodes) => nodes.filter((node) => node.checkVisibility()).length), 0);
-    assert.ok(await page.locator('.ask-chip--link').isVisible());
+    assert.ok(await page.locator('.hero-ask .ask-chip--link').isVisible());
     assert.equal(await page.locator('.home-research-note').evaluateAll((nodes) => nodes.filter((node) => node.checkVisibility()).length), 3);
     assert.equal(await page.locator('.story-step').count(), 3);
     assert.equal(await page.locator('.site-footer-grid a').evaluateAll((nodes) => nodes.filter((node) => node.checkVisibility()).length), 36);
     const question = prefix ? '不使用脚本，也能带着问题开始。' : 'A question from a browser without JavaScript.';
-    await page.locator('#askInput').fill(question);
+    await page.locator('#askInputHero').fill(question);
     await page.route('https://app.topodrive.top/**', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<title>Native form fixture</title>' }));
     const request = page.waitForRequest((request) => new URL(request.url()).origin === 'https://app.topodrive.top');
-    await page.locator('.ask-send').click();
+    await page.locator('.hero-ask .ask-send').click();
     const handoff = await request;
     assert.equal(handoff.method(), 'GET');
     assert.equal(new URL(handoff.url()).searchParams.get('q'), question);
@@ -158,7 +197,7 @@ test('home translations share structure, useful deep links and published researc
     const twinPath = i === 0 ? 'index.md' : 'zh.md';
     const twin = await readFile(new URL(`../site/${twinPath}`, import.meta.url), 'utf8');
     assert.ok(source.includes(`href="https://topodrive.top/${twinPath}"`), 'each locale advertises its actual Markdown twin');
-    assert.match(twin, i === 0 ? /# Not just answers\. Understanding\./ : /# 不止于答案。更接近理解。/);
+    assert.match(twin, i === 0 ? /# What can I help you understand\?/ : /# 有什么可以帮忙的？/);
     assert.ok(!source.includes('/home-aurora.js'), 'retired particle and gradient code is not loaded');
     assert.ok(!source.includes('href="/site.css'), 'homepage content has one canonical stylesheet');
     const index = await readFile(new URL(`../site/${prefix}research.html`, import.meta.url), 'utf8');

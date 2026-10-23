@@ -14,8 +14,7 @@
   <link rel="alternate" hreflang="x-default" href="https://topodrive.top/">
   <link rel="preload" href="/media/fonts/geist-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/media/fonts/geist-sans-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="/media/fonts/newsreader-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/home-refresh.css?cb=20261023e1">
+  <link rel="stylesheet" href="/home-refresh.css?cb=20261023u1">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Socrates">
   <meta property="og:title" content="Socrates — Understanding begins with a question.">
@@ -159,10 +158,11 @@
     ]
   }
   </script>
-  <script src="/locale.js?cb=20261022r2"></script>
-  <link rel="stylesheet" href="/chrome.css?cb=20261022r2">
+  <script src="/locale.js?cb=20261023u1"></script>
+  <link rel="stylesheet" href="/public.css?cb=20261023u1">
+  <link rel="stylesheet" href="/chrome.css?cb=20261023u1">
 </head>
-<body id="top" class="home-refresh">
+<body id="top" class="home-refresh" data-site-public>
   <svg class="home-symbols" width="0" height="0" aria-hidden="true" focusable="false">
     <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M2.8 8h10.2M9 4.1 12.9 8 9 11.9"/></symbol>
     <symbol id="i-up" viewBox="0 0 16 16"><path d="M8 13V3M3.9 7.1 8 3l4.1 4.1"/></symbol>
@@ -181,46 +181,47 @@
     <div class="site-chrome-shell site-header-inner">
       <a class="site-brand" href="/" aria-label="Socrates home"><img src="/logo.png" width="24" height="24" alt=""><span class="site-brand-label">Socrates</span></a>
       <nav class="site-nav" aria-label="Primary navigation"><a href="/product">Product</a><a href="/research">Research</a><a href="/principles">Principles</a><a href="/learn">Learn</a><a href="/developers">Developers</a><a href="/pricing">Pricing</a><a href="/about">Company</a></nav>
+      <a class="site-search" href="#askInputHero" aria-label="Ask a question"><svg class="home-icon" viewBox="0 0 20 20" aria-hidden="true"><use href="#i-search"/></svg></a>
       <div class="site-header-actions">
         <a class="site-locale" href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a>
         <a class="site-login" href="https://app.topodrive.top">Log in</a>
-        <a class="site-try" href="https://app.topodrive.top">Try Socrates<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a class="site-try" href="https://app.topodrive.top">Try Socrates<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 12 12 4M4 4h8v8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
         <button class="site-menu-toggle" type="button" data-site-menu-toggle aria-controls="site-mobile-menu" aria-expanded="false" aria-label="Open menu" data-open-label="Open menu" data-close-label="Close menu"><span></span><span></span></button>
       </div>
     </div>
     <div class="site-mobile-menu" id="site-mobile-menu" hidden>
       <nav aria-label="Mobile navigation"><a href="/product">Product</a><a href="/research">Research</a><a href="/principles">Principles</a><a href="/learn">Learn</a><a href="/developers">Developers</a><a href="/pricing">Pricing</a><a href="/about">Company</a></nav>
-      <div class="site-mobile-utilities"><a href="/account">My account</a><a href="/contact">Contact</a><a class="site-locale" href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a></div>
+      <div class="site-mobile-utilities"><a href="https://app.topodrive.top">Try Socrates</a><a href="/account">My account</a><a href="/contact">Contact</a><a class="site-locale" href="/zh/" data-locale-switcher hreflang="zh-CN" lang="zh-CN">中文</a></div>
     </div>
   </header>
 
   <main id="main">
     <section class="home-hero home-shell" aria-labelledby="hero-title">
       <div class="home-hero-inner">
-        <p class="home-eyebrow">Socrates · An AI tutor</p>
-        <h1 id="hero-title">Not just answers.<em>Understanding.</em></h1>
-        <p class="hero-description">Stay with a difficult idea. A tutor that asks, listens, and helps you find your own way through.</p>
-        <div class="hero-actions">
-          <a class="home-button" href="https://app.topodrive.top">Try Socrates <span aria-hidden="true">↗</span></a>
-          <a class="home-text-link" href="#learning-session">See how it works <span aria-hidden="true">↓</span></a>
+        <h1 id="hero-title">What can I help you understand?</h1>
+        <div class="hero-ask">
+          <form class="ask-form" data-ask-form action="https://app.topodrive.top" method="get">
+            <div class="ask-box">
+              <label class="home-sr-only" for="askInputHero">Your question for Socrates</label>
+              <textarea class="ask-input" id="askInputHero" name="q" rows="2" placeholder=" " aria-describedby="ask-handoff-hero" autocomplete="off" spellcheck="false"></textarea>
+              <span class="ask-placeholder" data-ask-prompts="[&quot;Explain Bayes’ theorem, one step at a time…&quot;, &quot;Help me connect two ideas…&quot;, &quot;Quiz me on something I learned…&quot;]" aria-hidden="true">Help me understand a new idea…</span>
+              <button class="ask-send" type="submit" aria-label="Open Socrates and start a conversation"><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-up"/></svg></button>
+            </div>
+            <p class="ask-handoff home-sr-only" id="ask-handoff-hero">Continue with your question in the Socrates app.</p>
+          </form>
+          <div class="ask-suggestions" aria-label="Question starters">
+            <button class="ask-chip" type="button" data-ask-chip data-question="Help me understand Bayes’ theorem. Ask what I already know first.">Start a dialogue</button>
+            <button class="ask-chip" type="button" data-ask-chip data-question="Quiz me on the Krebs cycle, one question at a time.">Recall</button>
+            <button class="ask-chip" type="button" data-ask-chip data-question="Help me connect entropy to ideas I already understand.">Knowledge map</button>
+            <button class="ask-chip" type="button" data-ask-chip data-question="Give me an exam-style question on Bayes’ theorem.">Exam mode</button>
+            <a class="ask-chip ask-chip--link" href="/product">More</a>
+          </div>
         </div>
-        <p class="hero-footnote">For the questions worth thinking through.</p>
       </div>
-      <figure class="hero-plate">
-        <img class="hero-art" src="/media/socrates-probability-plate.svg" width="760" height="760" fetchpriority="high" alt="An ink-blue grid of 100 points, with one point highlighted in orange. A paper slip reads one over one hundred.">
-        <figcaption><span class="plate-index">01 / A change of perspective</span><span>One in a hundred.<br>A different way to see the question.</span></figcaption>
-      </figure>
     </section>
 
     <section class="home-feature" id="learning-session" aria-labelledby="feature-title" data-reveal>
       <div class="home-shell feature-layout">
-        <div class="feature-intro">
-          <p class="home-eyebrow">The learning, not just the answer</p>
-          <h2 id="feature-title">A tutor that asks<br>before it answers.</h2>
-          <p class="feature-description">Start with what you think. Follow the question a little further. Keep the connection that makes it click.</p>
-          <a class="home-text-link" href="/product">Explore the product <span aria-hidden="true">→</span></a>
-          <p class="feature-note"><span>01 — Dialogue</span><span>02 — Connection</span><span>03 — Recall</span></p>
-        </div>
         <a class="feature-main" href="/product" aria-labelledby="feature-title">
           <div class="feature-media">
             <div class="demo-frame">
@@ -266,6 +267,21 @@
           </div>
         </a>
 
+        <a class="hero-plate" href="/product#knowledge-map">
+          <span class="plate-media"><img class="hero-art" src="/media/socrates-probability-plate.svg" width="760" height="760" fetchpriority="high" alt="An ink-blue grid of 100 points, with one point highlighted in orange. A paper slip reads one over one hundred."></span>
+          <div class="plate-caption"><span class="plate-index">A change of perspective</span><span>One in a hundred.</span></div>
+        </a>
+        <div class="feature-intro">
+          <h2 id="feature-title">A tutor that asks<br>before it answers.</h2>
+          <div class="feature-intro-copy">
+            <p class="feature-description feature-description--lead">Stay with a difficult idea. A tutor that asks, listens, and helps you find your own way through.</p>
+            <p class="feature-description">Start with what you think. Follow the question a little further. Keep the connection that makes it click.</p>
+            <div class="hero-actions">
+              <a class="home-button" href="https://app.topodrive.top">Try Socrates <span aria-hidden="true">↗</span></a>
+              <a class="home-text-link" href="/product">Explore the product <span aria-hidden="true">→</span></a>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -277,42 +293,36 @@
         </div>
         <div class="news-grid" data-reveal-group>
           <a class="news-item" href="/announcements">
-            <span class="news-index">01</span>
             <div class="news-body">
               <h3>Follow-up prompts at the seam of an explanation.</h3>
               <p class="news-meta">Product updates · May 2026</p>
             </div>
           </a>
           <a class="news-item" href="/product#mistake-book">
-            <span class="news-index">02</span>
             <div class="news-body">
               <h3>Turn a mistake into the next question.</h3>
               <p class="news-meta">Practice · Mistake book</p>
             </div>
           </a>
           <a class="news-item" href="/privacy">
-            <span class="news-index">03</span>
             <div class="news-body">
               <h3>Your learning data and privacy.</h3>
               <p class="news-meta">Privacy · How we handle data</p>
             </div>
           </a>
           <a class="news-item" href="/product#knowledge-map">
-            <span class="news-index">04</span>
             <div class="news-body">
               <h3>Follow a connection across sessions.</h3>
               <p class="news-meta">Product · Knowledge map</p>
             </div>
           </a>
           <a class="news-item" href="/guide">
-            <span class="news-index">05</span>
             <div class="news-body">
               <h3>A field guide to better questions.</h3>
               <p class="news-meta">Guide · Getting started</p>
             </div>
           </a>
           <a class="news-item" href="/about">
-            <span class="news-index">06</span>
             <div class="news-body">
               <h3>Why we’re building Socrates.</h3>
               <p class="news-meta">Company · Our approach</p>
@@ -330,16 +340,16 @@
         </div>
         <div class="story-layout">
           <figure class="story-visual">
-            <img src="/media/socrates-home-dialogue-photo-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt="Two people tracing a connection together on an open notebook.">
+            <div class="story-media"><img src="/media/socrates-home-dialogue-photo-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt="Two people tracing a connection together on an open notebook."></div>
             <figcaption>Illustrative learning scene, not a customer case study.</figcaption>
           </figure>
           <div>
             <h3 class="home-editorial-title">Keep a good question going.</h3>
             <p class="home-editorial-copy">An answer can be a beginning. Work through the part you cannot explain yet, then give yourself a reason to return.</p>
             <div class="story-steps">
-              <a class="story-step" href="/product#dialogue"><span>01</span><div><h3>Put it in your own words.</h3><p>Start with what you think, not a perfect prompt.</p></div><span aria-hidden="true">↗</span></a>
-              <a class="story-step" href="/product#knowledge-map"><span>02</span><div><h3>Find the connection.</h3><p>See how the next question fits what you already know.</p></div><span aria-hidden="true">↗</span></a>
-              <a class="story-step" href="/product#recall"><span>03</span><div><h3>Come back to it.</h3><p>Try explaining the idea again, without the conversation.</p></div><span aria-hidden="true">↗</span></a>
+              <a class="story-step" href="/product#dialogue"><span>01</span><div><h3>Put it in your own words.</h3></div><span aria-hidden="true">↗</span></a>
+              <a class="story-step" href="/product#knowledge-map"><span>02</span><div><h3>Find the connection.</h3></div><span aria-hidden="true">↗</span></a>
+              <a class="story-step" href="/product#recall"><span>03</span><div><h3>Come back to it.</h3></div><span aria-hidden="true">↗</span></a>
             </div>
           </div>
         </div>
@@ -353,11 +363,10 @@
           <a class="section-link" href="/research">All research</a>
         </div>
         <div class="home-research-layout">
-          <p class="home-research-intro">What makes an explanation useful after a conversation ends? Read the questions, methods, and limits behind our work.</p>
           <ul class="home-research-list">
-            <li><a class="home-research-note" href="/research/memory-recall/"><div><p class="home-research-meta"><span>Memory</span><time datetime="2026-08-12">Aug 12, 2026</time></p><h3>The route back to an idea</h3><p>Why changing a recall prompt may help a learner reconstruct an idea, rather than recognise an answer.</p></div><span class="home-research-arrow" aria-hidden="true">↗</span></a></li>
-            <li><a class="home-research-note" href="/research/explanation-evidence/"><div><p class="home-research-meta"><span>Explanation</span><time datetime="2026-07-29">Jul 29, 2026</time></p><h3>When a clear explanation becomes evidence</h3><p>What explaining something in your own words can reveal about your understanding.</p></div><span class="home-research-arrow" aria-hidden="true">↗</span></a></li>
-            <li><a class="home-research-note" href="/research/honest-pause/"><div><p class="home-research-meta"><span>Practice</span><time datetime="2026-07-11">Jul 11, 2026</time></p><h3>The value of an honest pause</h3><p>How making uncertainty explicit changes the next question a tutor can ask.</p></div><span class="home-research-arrow" aria-hidden="true">↗</span></a></li>
+            <li><a class="home-research-note" href="/research/memory-recall/"><span class="home-research-media"><img src="/media/socrates-research-memory-route-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>Memory</span><time datetime="2026-08-12">Aug 12, 2026</time></p><h3>The route back to an idea</h3></div></a></li>
+            <li><a class="home-research-note" href="/research/explanation-evidence/"><span class="home-research-media"><img src="/media/socrates-research-explanation-evidence-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>Explanation</span><time datetime="2026-07-29">Jul 29, 2026</time></p><h3>When a clear explanation becomes evidence</h3></div></a></li>
+            <li><a class="home-research-note" href="/research/honest-pause/"><span class="home-research-media"><img src="/media/socrates-research-honest-pause-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt=""></span><div><p class="home-research-meta"><span>Practice</span><time datetime="2026-07-11">Jul 11, 2026</time></p><h3>The value of an honest pause</h3></div></a></li>
           </ul>
         </div>
       </div>
@@ -377,35 +386,13 @@
             <a class="section-link" href="/guide">Find a way to begin</a>
           </div>
           <figure class="story-visual">
-            <img src="/media/socrates-editorial-developer-workbench-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt="A learner working between handwritten notes and an open laptop.">
+            <div class="story-media"><img src="/media/socrates-editorial-developer-workbench-v1.webp" width="1672" height="941" loading="lazy" decoding="async" alt="A learner working between handwritten notes and an open laptop."></div>
             <figcaption>Editorial illustration of an independent study session.</figcaption>
           </figure>
         </div>
       </div>
     </section>
 
-    <section class="home-cta" id="ask" aria-labelledby="cta-title" data-reveal>
-      <div class="home-shell home-cta-band">
-        <div class="question-intro"><p class="home-eyebrow">Your next question</p><h2 id="cta-title">What do you want<br>to understand?</h2><p>Bring an unfinished thought. You don’t need a perfect prompt.</p></div>
-        <div class="question-entry">
-          <form class="ask-form" data-ask-form action="https://app.topodrive.top" method="get">
-            <div class="ask-box">
-              <label class="home-sr-only" for="askInput">Your question for Socrates</label>
-              <textarea class="ask-input" id="askInput" name="q" rows="2" placeholder=" " aria-describedby="ask-handoff" autocomplete="off"></textarea>
-              <span class="ask-placeholder" aria-hidden="true">Start with what’s on your mind…</span>
-              <button class="ask-send" type="submit" aria-label="Open Socrates and start a conversation"><svg class="home-icon" viewBox="0 0 16 16" aria-hidden="true"><use href="#i-up"/></svg></button>
-            </div>
-            <p class="ask-handoff" id="ask-handoff">Continue with your question in the Socrates app.</p>
-          </form>
-          <div class="ask-suggestions" aria-label="Question starters">
-            <button class="ask-chip" type="button" data-ask-chip data-question="Help me understand Bayes’ theorem. Ask what I already know first.">Bayes’ theorem</button>
-            <button class="ask-chip" type="button" data-ask-chip data-question="Quiz me on the Krebs cycle, one question at a time.">Biology practice</button>
-            <button class="ask-chip" type="button" data-ask-chip data-question="Help me connect entropy to ideas I already understand.">Ideas about entropy</button>
-            <a class="ask-chip ask-chip--link" href="/product">Explore the product <span aria-hidden="true">→</span></a>
-          </div>
-        </div>
-      </div>
-    </section>
   </main>
 
   <footer class="site-footer">
@@ -503,7 +490,8 @@
   </footer>
 
   <script src="/site.js?cb=20261022p0"></script>
-  <script src="/home-question.js?cb=20261023e1"></script>
-  <script src="/chrome.js?cb=20261022r2"></script>
+  <script src="/home-question.js?cb=20261023u1"></script>
+  <script src="/chrome.js?cb=20261023u1"></script>
+  <script src="/motion.js?cb=20261023u1"></script>
 </body>
 </html>
