@@ -34,6 +34,7 @@
 - Server or schema: run typecheck and focused tests; document migration/rollback implications.
 - Cross-client API changes: update the OpenAPI description and check `apps/socrates/` + `packages/contracts` compatibility.
 - Deployment changes: use a non-production dry-run environment or shell-level validation before operating on web roots or services.
+- Model-capability / provider-contract work: read `docs/plans/2026-10-23-stability-hardening-handoff.md` first. It carries the current verification baseline, the rules for extending `server/src/lib/modelCapabilities.ts`, and the open backlog. Only models whose vendor documentation has been checked may be added to that registry.
 
 ## Architecture guards (run inside `npm run lint`)
 
