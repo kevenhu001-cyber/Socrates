@@ -7,9 +7,11 @@ import { chatLimiter } from '../middleware/rateLimit.js';
 import { sanitizeExtraBody } from '../lib/sanitize.js';
 import { trackSseConnection, startSseKeepalive } from '../lib/sse.js';
 import { getBeagleSystemPrompt } from '../lib/prompts.js';
-import { enforceServerSystemBoundary, appendAssistantInstructions, appendFinalOutputConstraints, injectUserContext, transformMessagesForModel, SSE_PRIME } from './chat/helpers.js';
+import { enforceServerSystemBoundary, appendAssistantInstructions, appendMemoryContext, prependTeacherModePrompt, appendFinalOutputConstraints, injectUserContext, transformMessagesForModel, SSE_PRIME } from './chat/helpers.js';
 import { isUuid } from '../lib/validate.js';
 import { BadRequest } from '../lib/errors.js';
+import { resolveSessionPrompt } from '../services/core/sessionPromptSnapshot.js';
+import { splitPromptContext, appendTurnContext } from '../lib/chatPromptContext.js';
 
 const router = Router();
 
@@ -41,64 +43,34 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
     }
 
     /* `model` is intentionally not read — see P_privacy-leak below. */
-    const { messages: rawMessages, temperature, max_tokens, stream, reasoning_effort, response_speed, extra_body, assistantId, sessionId } = req.body;
-    if ((assistantId && !isUuid(assistantId)) || (sessionId && !isUuid(sessionId))) throw new BadRequest('Invalid assistant or session id');
+    const { messages: rawMessages, temperature, max_tokens, stream, reasoning_effort, response_speed, extra_body, assistantId, sessionId: bodySessionId } = req.body;
+    const sessionId = req.query.sessionId ?? bodySessionId;
+    if ((assistantId && !isUuid(assistantId)) || (sessionId !== undefined && !isUuid(sessionId))
+        || (bodySessionId !== undefined && bodySessionId !== sessionId)) throw new BadRequest('Invalid or conflicting assistant/session id');
     const responseSpeed = response_speed === 'fast' ? 'fast' : 'standard';
 
-    /* P_beagle-system-prompt — inject the full behavior spec from
-       prompts/beagle.md as the first system message. This is the
-       Beagle identity (Topodrive), tool-routing guidance, and response-
-       behavior rules that the built-in MiniMax-M3 base model must
-       follow when called through this proxy. The full spec lives on
-       disk and is loaded/cached by lib/prompts.js so editing the .md
-       is picked up on the next request.
-
-       If the file can't be read for any reason, we continue without it
-       rather than 500 — the upstream still works, just with weaker
-       guardrails. The error is already logged by getBeagleSystemPrompt.
-
-       Skip injection if the client already supplied a system message
-       that *is* the beagle spec (identified by a stable marker the
-       frontend can include to avoid double-loading). */
-    const beaglePrompt = await getBeagleSystemPrompt();
-    /* Apply the same immutable response/tool policy used by /api/chat.
-       The built-in route used to rely on the browser-provided prompt, so
-       direct clients and older app builds could silently bypass the common
-       writing rules. Collapsing client system blocks first also leaves one
-       canonical system message for every upstream provider. */
-    let messages = enforceServerSystemBoundary(Array.isArray(rawMessages) ? rawMessages : []);
-    /* P_proxy-user-context — mirror the /api/chat assembly: inject the
-       current date, user display name/tier, and the image-description
-       untrusted-data rule as the freshest data the model reads. Without
-       this the built-in path silently skips the date / locale / image-
-       injection rules that /api/chat enforces. */
-    messages = injectUserContext(messages, req.user);
-    messages = await appendAssistantInstructions(messages, assistantId, sessionId, req.userId ?? undefined);
-    if (beaglePrompt) {
-      const BEAGLE_MARKER = '<!-- @beagle-system-prompt -->';
-      const alreadyHasBeagle = messages.some(
-        (m) => m && m.role === 'system' && typeof m.content === 'string' && m.content.includes(BEAGLE_MARKER)
-      );
-      if (!alreadyHasBeagle) {
-        const taggedPrompt = `${BEAGLE_MARKER}\n${beaglePrompt}`;
-        messages = messages.slice();
-        messages[0] = {
-          ...messages[0],
-          content: `${messages[0].content}\n\n${taggedPrompt}`,
-        };
+    // Legacy built-in/synchronous callers share the SAME session snapshot as
+    // /chat and /chat/stream. Switching transport must not replace the prefix.
+    const mode = req.body.mode === 'tutor' ? 'tutor' : 'chat';
+    const context = splitPromptContext(Array.isArray(rawMessages) ? rawMessages : [], mode);
+    const systemPrompt = await resolveSessionPrompt(req.userId ?? undefined, sessionId, async () => {
+      let initialized = enforceServerSystemBoundary(context.initialization);
+      initialized = injectUserContext(initialized, req.user, { sessionSnapshot: !!sessionId });
+      if (mode === 'tutor') initialized = await prependTeacherModePrompt(initialized);
+      initialized = await appendAssistantInstructions(initialized, assistantId, sessionId, req.userId ?? undefined);
+      initialized = await appendMemoryContext(initialized, req.userId ?? undefined, isUuid(req.body.projectId) ? req.body.projectId : undefined);
+      const beaglePrompt = await getBeagleSystemPrompt();
+      const marker = '<!-- @beagle-system-prompt -->';
+      if (beaglePrompt && !String(initialized[0].content).includes(marker)) {
+        initialized[0] = { ...initialized[0], content: `${initialized[0].content}\n\n${marker}\n${beaglePrompt}` };
       }
-    }
-    /* P_proxy-multimodal-transform — defense-in-depth for any future
-       built-in model that is text-only (the current provider is marked
-       multimodal, so this is currently a no-op). Mirrors /api/chat so
-       non-multimodal upstreams get a coherent text placeholder instead
-       of a confusing upstream 400. */
-    messages = transformMessagesForModel(messages, provider);
-    /* P_no-dash-final — mirror the /api/chat assembly: the no-dash hard rule
-       must be the LAST text of the system prompt on the built-in Beagle path
-       too, so it cannot be buried under beagle.md. Keep this after every
-       other prompt-injection step. */
-    messages = appendFinalOutputConstraints(messages);
+      initialized = appendFinalOutputConstraints(initialized);
+      return initialized[0].content as string;
+    });
+    let messages = transformMessagesForModel([
+      { role: 'system', content: systemPrompt },
+      ...appendTurnContext(context.conversation, context.turnInstructions, null),
+    ], provider);
     /* P_privacy-leak — the upstream model name is operator-configured
      * and must never be settable from the client. Even though the SPA
      * currently doesn't know the real model (we strip it from

@@ -119,6 +119,7 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
       code: err.code,
       message: err.message,
       detail: err.detail || undefined,
+      ...(typeof err.retryable === 'boolean' ? { retryable: err.retryable } : {}),
     });
   }
 

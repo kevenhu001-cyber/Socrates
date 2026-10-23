@@ -9,6 +9,8 @@ export class ApiError extends Error {
   status: number;
   code: string;
   detail: unknown | null;
+  /** Explicit retry ownership, when the server already spent its budget. */
+  retryable?: boolean;
 
   /**
    * @param {number} status  HTTP status code

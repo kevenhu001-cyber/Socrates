@@ -226,16 +226,13 @@ describe('streamChatCompletion: stream_options compatibility fallback', () => {
     assert.deepEqual(bodies[1].messages, bodies[0].messages, 'retry keeps the conversation');
   });
 
-  test('adding usage accounting did not add an upstream round-trip', async () => {
-    // The invariant worth pinning: `stream_options` is dropped by the SAME
-    // compatibility variant that was already dropping something else, not by
-    // a variant of its own. Every extra variant is another request to the
-    // provider on the 400 path, and llm.test.js pins those counts as a
-    // contract. A tools request must still recover in exactly ONE retry.
+  test('an explicit stream_options rejection retries once while preserving tools', async () => {
+    // Only a diagnosed unsupported field permits fallback. Usage accounting
+    // must not silently remove tools and change the meaning of the request.
     const bodies = [];
     globalThis.fetch = async (_url, init) => {
       bodies.push(JSON.parse(init.body));
-      if (bodies.length === 1) return new Response('bad field', { status: 400 });
+      if (bodies.length === 1) return new Response('unknown field stream_options', { status: 400 });
       return new Response(new ReadableStream({
         start(c) { c.enqueue(new TextEncoder().encode('data: [DONE]\n\n')); c.close(); },
       }), { status: 200 });
@@ -245,7 +242,7 @@ describe('streamChatCompletion: stream_options compatibility fallback', () => {
     assert.equal(bodies.length, 2, 'exactly one retry, same as before usage accounting');
     assert.ok('stream_options' in bodies[0], 'first attempt asks for usage');
     assert.ok(!('stream_options' in bodies[1]), 'retry drops stream_options');
-    assert.ok(!('tools' in bodies[1]), 'and drops tools in the same step, not a later one');
+    assert.deepEqual(bodies[1].tools, tools, 'a usage-only fallback preserves tools');
   });
 
   test('a plain stream still gets a recovery path of its own', async () => {
@@ -255,7 +252,7 @@ describe('streamChatCompletion: stream_options compatibility fallback', () => {
     const bodies = [];
     globalThis.fetch = async (_url, init) => {
       bodies.push(JSON.parse(init.body));
-      if (bodies.length === 1) return new Response('unknown field', { status: 400 });
+      if (bodies.length === 1) return new Response('unknown field stream_options', { status: 400 });
       return new Response(new ReadableStream({
         start(c) { c.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"ok"}}]}\n\ndata: [DONE]\n\n')); c.close(); },
       }), { status: 200 });

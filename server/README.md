@@ -11,10 +11,21 @@ npm run dev        # tsx watch over the TypeScript source tree
 npm run typecheck  # strict TypeScript check
 npm run lint       # typecheck + service dependency boundary guard
 npm run build      # strict check + emit into dist/
-npm test           # source tests through tsx; force-exit safety enabled
-npm run test:strict # source tests with no force-exit; detects leaked handles
+npm test           # isolated per-file tests through tsx; guarded test database
+npm run test:strict # same runner; fails if DATABASE_URL is absent
 npm start          # stable compatibility entry -> compiled runtime
 ```
+
+## Session prompt caching
+
+Session-scoped chat initializes its system context once and persists it in the
+server-only `session_prompt_snapshots` table (migration 0046). Later turns,
+reloads and server restarts reuse the same prompt bytes. Custom instructions,
+assistant/persona settings and memory changes apply to new sessions, not to an
+existing snapshot. Existing conversations initialize lazily on their next chat.
+Sessionless auxiliary completions stay stateless. Retrieval, current teaching
+state and actual tool availability remain turn-scoped; they must not rewrite
+the fixed base prefix. See [design and rollback notes](../docs/plans/2026-10-23-session-prompt-cache.md).
 
 ## Internal process metrics
 
@@ -30,9 +41,21 @@ IP or forwarded headers. Metrics scrapes are excluded from request aggregates
 and OTLP request metrics so monitoring does not contaminate observed business
 traffic. Disable access by unsetting the token and restarting the process.
 
-The test commands run each test file in its own process. Strict mode does not
-use Node's force-exit flag; worker-backed services close their pools explicitly
-so leaked handles remain observable.
+`npm test` runs each test file in its own process; `test:unit` is the one-shot
+runner. Both validate the database target before running any tests. Set
+`TEST_DATABASE_URL` (takes precedence over `.env`) or an explicit `DATABASE_URL`
+whose database name contains a separated `test`/`qa` component, e.g.
+`socrates_test`. A production/default database such as `socrates` is rejected;
+there is no unsafe bypass. Node test-runner calls to `initDb` enforce the same
+check. `test:strict` additionally fails when no database is supplied. To run
+DB-free focused tests without loading the checkout's `.env`, use:
+
+```sh
+env -u DATABASE_URL node --import tsx --test test/llmProtocol.test.mjs
+```
+
+Worker-backed services close their pools explicitly so leaked handles remain
+observable. Do not run a DB-backed suite against a production `.env`.
 
 `src/index.js` is intentionally a small compatibility entry because existing
 systemd installations may execute that path directly. The application runtime

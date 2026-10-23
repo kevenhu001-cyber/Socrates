@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { and, eq, gt, sql } from 'drizzle-orm';
 import { getDb, type Database } from '../../db/index.js';
-import { scheduledTaskLeases, scheduledTasks } from '../../db/schema/index.js';
+import { scheduledTaskLeases, scheduledTasks, users } from '../../db/schema/index.js';
 import { Conflict, NotFound } from '../../lib/errors.js';
 
 type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
@@ -15,6 +15,14 @@ export async function claimScheduledTask(taskId: string, userId: string, automat
     const [task] = await tx.select().from(scheduledTasks)
       .where(and(eq(scheduledTasks.id, taskId), eq(scheduledTasks.userId, userId))).for('update');
     if (!task) throw new NotFound('Scheduled task not found');
+    // Defensive even before the FK-repair migration: a deleted account must
+    // never fall through to the operator-funded global model key.
+    const [owner] = await tx.select({ id: users.id }).from(users).where(eq(users.id, userId)).for('key share');
+    if (!owner) {
+      await tx.update(scheduledTasks).set({ status: 'paused', nextRunAt: null, updatedAt: new Date() }).where(eq(scheduledTasks.id, taskId));
+      await tx.update(scheduledTaskLeases).set({ state: 'failed', error: 'Task owner no longer exists', updatedAt: new Date() }).where(eq(scheduledTaskLeases.taskId, taskId));
+      return null;
+    }
     if (automatic && !['active', 'pending'].includes(task.status)) return null;
     const clock = await tx.execute<{ time: string }>(sql`select clock_timestamp()::text as time`);
     const now = new Date(clock.rows[0].time);

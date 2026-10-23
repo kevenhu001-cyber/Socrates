@@ -112,9 +112,12 @@ export function isRetryableAIError(
   signal?: AbortSignal,
 ): boolean {
   if (semanticActivity || isUserAbort(error, signal)) return false;
+  // The server owns provider backoff. An exhausted provider budget must not
+  // become a fresh whole-turn budget in the browser (JSON or SSE transport).
+  if (asRecord(error)?.retryable === false || errorBody(error)?.retryable === false) return false;
 
   const code = errorCode(error);
-  if (/MONTHLY_LIMIT|QUOTA|INVALID[_ -]?API[_ -]?KEY|AUTH|UNAUTHORIZED|FORBIDDEN|INVALID[_ -]?REQUEST|CONTENT[_ -]?POLICY|BAD[_ -]?REQUEST/.test(code)) {
+  if (/MONTHLY_LIMIT|QUOTA|INVALID[_ -]?API[_ -]?KEY|AUTH|UNAUTHORIZED|FORBIDDEN|INVALID[_ -]?REQUEST|MODEL_MODE_UNSUPPORTED|CONTENT[_ -]?POLICY|BAD[_ -]?REQUEST/.test(code)) {
     return false;
   }
 

@@ -81,12 +81,22 @@ export class SseEmitter {
     // Never forward raw upstream bodies to the client — they may
     // contain provider-specific details. Map to a status-only message;
     // the full body stays in the server log above.
-    const status = (error as Error & { status?: number }).status;
-    const safeMessage = typeof status === 'number'
-      ? `LLM request failed (upstream ${status}). Try again or switch model.`
-      : error.message;
+    const failure = error as Error & { status?: number; code?: string; retryable?: boolean };
+    const status = failure.status;
+    const unsupportedMode = failure.code === 'MODEL_MODE_UNSUPPORTED';
+    const safeMessage = unsupportedMode ? error.message : typeof status === 'number'
+      ? `LLM request failed (upstream ${status}). Try again later or switch model.`
+      : 'The model connection failed. Please try again.';
+    // HTTP is already 200 after SSE starts. Preserve machine-readable failure
+    // semantics so the browser does not replay a 400 or exhausted 429 budget.
+    const details = {
+      error: safeMessage, message: safeMessage,
+      ...(typeof status === 'number' ? { status } : {}),
+      code: unsupportedMode ? 'MODEL_MODE_UNSUPPORTED' : 'LLM_UPSTREAM_ERROR',
+      retryable: failure.retryable ?? (typeof status !== 'number'),
+    };
     try {
-      this.writeRaw(`event: error\ndata: ${JSON.stringify({ error: safeMessage, message: safeMessage })}\n\n`);
+      this.writeRaw(`event: error\ndata: ${JSON.stringify(details)}\n\n`);
       this.response.write('data: [DONE]\n\n');
       this.response.end();
     } catch { /* ignore */ }

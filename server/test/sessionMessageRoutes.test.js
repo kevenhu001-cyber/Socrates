@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { eq, inArray } from 'drizzle-orm';
 import { appRouteFixture } from './_appRouteFixture.js';
-import { sessions, messages, artifacts, artifactVersions, feedback, mistakes, usageEvents } from '../src/db/schema/index.js';
+import { sessions, messages, artifacts, artifactVersions, feedback, mistakes, usageEvents, sessionPromptSnapshots } from '../src/db/schema/index.js';
 
 const f = appRouteFixture();
 async function session(user = f.owner, extra = {}) {
@@ -36,9 +36,11 @@ test('session pagination is owner-scoped, excludes archived rows, and returns a 
 test('session detail retains message metadata without duplicating content and hides foreign ids', async () => {
   const s = await session();
   const m = await message(s, { clientId: 'client-detail', html: '<p>rendered</p>', attachments: [{ id: 'a', kind: 'file', name: 'note', mime: 'text/plain', size: 1 }] });
+  await f.db.insert(sessionPromptSnapshots).values({ sessionId: s.id, userId: f.owner.id, systemPrompt: 'private-server-only-prompt' });
   const detail = await f.request(`/api/sessions/${s.id}`);
   assert.equal(detail.status, 200);
   assert.equal(detail.body.id, s.id);
+  assert.equal(JSON.stringify(detail.body).includes('private-server-only-prompt'), false);
   assert.equal(detail.body.messages[0].id, m.id);
   assert.equal(detail.body.messages[0].html, '<p>rendered</p>');
   assert.equal(detail.body.messages[0].clientId, 'client-detail');

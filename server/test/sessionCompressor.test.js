@@ -23,6 +23,23 @@ function makeMessages(n) {
   return out;
 }
 
+test('compression preserves complete user/assistant/tool groups and reasoning', async () => {
+  process.env.SESSION_COMPRESS_DISABLE = '1';
+  try {
+    const interaction = [
+      { role: 'user', content: 'run tool' },
+      { role: 'assistant', content: '', reasoning_content: 'r'.repeat(8000), tool_calls: [{ id: 'c1', type: 'function', function: { name: 'lookup', arguments: '{}' } }] },
+      { role: 'tool', content: 'tool output', tool_call_id: 'c1' },
+      { role: 'assistant', content: 'answer', reasoning_content: 'final reasoning' },
+    ];
+    const input = [{ role: 'user', content: 'old' }, { role: 'assistant', content: 'previous' }, ...interaction];
+    const result = await compressSessionMessages(input, { keepTurns: 2, triggerTokens: 500 });
+    assert.equal(result.didCompress, true, 'reasoning must count towards the trigger');
+    assert.deepEqual(result.messages.slice(1), interaction, 'tail may expand to keep the entire tool interaction');
+    assert.equal(result.droppedTurns, 2);
+  } finally { delete process.env.SESSION_COMPRESS_DISABLE; }
+});
+
 describe('sessionCompressor: short histories pass through', () => {
   test('under the keep window returns input untouched', async () => {
     const input = makeMessages(5);

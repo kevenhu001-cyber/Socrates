@@ -709,7 +709,7 @@
         "tags": ["Auth"],
         "operationId": "streamChatCompletion",
         "summary": "Streaming chat completion",
-        "description": "Stream a Socratic tutor reply as `text/event-stream`. The tutor asks before it answers. Reuse the same `Idempotency-Key` to make network retries safe — replays return the same stream.",
+        "description": "Stream a Socratic tutor reply as `text/event-stream`. A session's system instructions, selected assistant, user context and saved memories are initialized once and stored server-side. Later turns reuse the same frozen prompt bytes; changed persona/custom instructions/memories apply to new sessions. Dynamic lesson state, recall and live tool budgets do not regenerate that base prefix. Existing sessions initialize lazily on their next chat; sessionless completions remain stateless. No new client field is required. The tutor asks before it answers. Reuse the same `Idempotency-Key` to make network retries safe — replays return the same stream.",
         "security": [{ "sessionCookie": [], "oauthBearer": [] }],
         "parameters": [
           { "$ref": "#/components/parameters/IdempotencyKey" }
@@ -1329,11 +1329,11 @@
         "type": "object",
         "required": ["sessionId", "content"],
         "properties": {
-          "sessionId": { "type": "string", "format": "uuid" },
+          "sessionId": { "type": "string", "format": "uuid", "description": "Owned conversation scope for the immutable server-side prompt snapshot. Body and query sessionId must agree when both are supplied. Deleting the session cascades the snapshot; it is not exposed in session metadata or shares." },
           "content": { "type": "string", "minLength": 1, "maxLength": 32000 },
           "mode": { "type": "string", "enum": ["socratic", "tutor"], "default": "socratic" },
           "response_speed": { "type": "string", "enum": ["standard", "fast"], "default": "standard", "description": "Requests priority service when fast; unsupported providers automatically fall back to standard." },
-          "reasoning_effort": { "type": "string", "enum": ["none", "low", "medium", "high"], "description": "Use none for Instant on OpenAI-compatible models. Explicit no-thinking controls are retained during compatibility retries." },
+          "reasoning_effort": { "type": "string", "enum": ["none", "low", "medium", "high"], "description": "Use none for Instant only on models that support disabling thinking. Unsupported modes (including Instant on MiniMax-M3.1-Flash) fail locally with 400 MODEL_MODE_UNSUPPORTED and are not retried. Low/medium/high tune supported thinking models." },
           "extra_body": { "type": "object", "description": "Allowlisted provider options. Instant uses thinking.type=disabled, enable_thinking=false, or chat_template_kwargs.enable_thinking=false for the matching provider." }
         }
       },
@@ -1346,7 +1346,7 @@
             "type": "string",
             "enum": ["start", "token", "tool", "preference_fallback", "turn_summary", "complete", "error"]
           },
-          "data": { "type": "object", "additionalProperties": true }
+          "data": { "type": "object", "additionalProperties": true, "properties": { "status": { "type": "integer", "description": "On error events, the upstream or local validation status; the SSE HTTP response may already be 200." }, "code": { "type": "string", "description": "Safe machine-readable error code, without provider credentials or response bodies." }, "retryable": { "type": "boolean", "description": "False when the server has exhausted provider retries or the error is deterministic. Clients must not automatically replay the turn." } } }
         }
       }
     }

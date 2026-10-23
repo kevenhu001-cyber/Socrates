@@ -142,15 +142,21 @@ export async function compressSessionMessages(
   let totalTokens = 0;
   try {
     totalTokens = estimateMessageTokens(
-      messages.map((m) => ({ role: typeof m.role === 'string' ? m.role : 'user', content: textOf(m) })),
+      messages.map((m) => ({ ...m, role: typeof m.role === 'string' ? m.role : 'user', content: m.content || textOf(m) })),
     );
   } catch {
     return none;
   }
   if (totalTokens <= triggerTokens) return none;
 
-  const tail = messages.slice(messages.length - keepTurns).map(stripHeavyPayloads);
-  const head = messages.slice(0, messages.length - keepTurns);
+  // Cut only at a user-turn boundary. Slicing by message count can leave a
+  // tool result without its assistant tool_calls (or only half a multi-tool
+  // result batch), causing deterministic provider 400s on the next request.
+  let tailStart = messages.length - keepTurns;
+  while (tailStart > 0 && messages[tailStart].role !== 'user') tailStart--;
+  if (tailStart === 0) return none; // never split the current interaction
+  const tail = messages.slice(tailStart).map(stripHeavyPayloads);
+  const head = messages.slice(0, tailStart);
   const headLines = head.map(asHistoryLine).filter((l): l is string => !!l);
 
   /* Tail-only fallback — used whenever no summary can be produced. The

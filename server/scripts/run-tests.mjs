@@ -2,6 +2,7 @@ import { readdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import './test-env.mjs';
 
 const serverDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const testDir = resolve(serverDir, 'test');
@@ -38,7 +39,7 @@ for (const testFile of testFiles) {
   // silently skip, leaving the OAuth and auth-middleware paths uncovered.
   // dotenv never overrides variables already present in the environment, so
   // CI can still pin NODE_ENV/DATABASE_URL explicitly.
-  const nodeArgs = ['--import', 'dotenv/config', '--import', 'tsx', '--test'];
+  const nodeArgs = ['--import', 'tsx', '--import', resolve(serverDir, 'scripts/test-env.mjs'), '--test'];
   nodeArgs.push(resolve(testDir, testFile));
 
   const result = spawnSync(

@@ -64,6 +64,18 @@ async function runStream(options = {}) {
   );
 }
 
+test('stream never replays an exhausted server-side provider retry budget', async () => {
+  for (const response of [
+    { status: 429, body: { message: 'model busy', code: 'LLM_UPSTREAM_ERROR', retryable: false } },
+    { chunks: ['event: error\ndata: {"message":"model busy","status":429,"code":"LLM_UPSTREAM_ERROR","retryable":false}\n\ndata: [DONE]\n\n'] },
+    { chunks: ['event: error\ndata: {"message":"select Low thinking","status":400,"code":"MODEL_MODE_UNSUPPORTED","retryable":false}\n\ndata: [DONE]\n\n'] },
+  ]) {
+    const env = installStreamEnvironment([response]);
+    await runStream();
+    assert.equal(env.calls(), 1);
+  }
+});
+
 test('stream retries a transient HTTP failure once before visible output', async () => {
   const notices = [];
   const env = installStreamEnvironment([

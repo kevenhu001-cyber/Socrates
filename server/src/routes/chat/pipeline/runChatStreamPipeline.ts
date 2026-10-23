@@ -513,29 +513,19 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     /* Withdrawn tools are removed from both the request and the prompt,
      * so the model is never invited to call something the loop will
      * reject. Everything else stays available. */
-    const activeToolNames = toolsAllowed ? toolPolicy.enabledToolNames(toolNames) : [];
+    const activeToolNames = toolsAllowed ? toolPolicy.enabledToolNames(toolNames).slice().sort() : [];
     const activeToolDefs = toolsAllowed
       ? toolDefs.filter((tool) => activeToolNames.includes(
         (tool as { function?: { name?: string } }).function?.name || '',
-      ))
+      )).sort((a, b) => String(a.function?.name || '').localeCompare(String(b.function?.name || ''), 'en'))
       : [];
     /* The model-facing contract must describe the same capability set as
      * this request. In the final, tools-disabled hop the upstream gets no
      * `tools` field, so do not leave the initial registry list in the
      * system message and invite an unavailable call. */
-    let requestMessages = appendToolRoutingHints(
-      appendNativeToolContract(
-        workingMessages,
-        activeToolNames,
-        {
-          limits: toolsAllowed ? toolPolicy.snapshot() : null,
-          disabledTools: toolPolicy.disabledTools(),
-          examples: toolExamples,
-          droppedCalls: lastDroppedCalls,
-        },
-      ),
-      activeToolNames,
-    );
+    // Stable tool guidance comes before the changing per-hop budget. A
+    // counter update must not invalidate the large visualization/code prefix.
+    let requestMessages = appendToolRoutingHints(workingMessages, activeToolNames);
     /* Keep the code-runtime appendix aligned with the executable tool
      * list. In particular, the final tools-disabled hop must not tell
      * the model that code_interpreter is callable. The helper inserts
@@ -543,6 +533,12 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     if (toolsAllowed && activeToolNames.includes('code_interpreter')) {
       requestMessages = await prependCodeInterpreterPrompt(requestMessages);
     }
+    requestMessages = appendNativeToolContract(requestMessages, activeToolNames, {
+      limits: toolsAllowed ? toolPolicy.snapshot() : null,
+      disabledTools: toolPolicy.disabledTools(),
+      examples: toolExamples,
+      droppedCalls: lastDroppedCalls,
+    });
     let iterFinishReason: string | null = null;
     const toolCallsThisTurn: ToolCall[] = [];
     /* Content and reasoning emitted during THIS hop only. When the hop
@@ -569,6 +565,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
         apiBase: provider.url,
         apiKey: provider.keyPlaintext,
         model: provider.model,
+        userId: req.userId,
         messages: requestMessages,
         maxTokens,
         temperature,
@@ -705,7 +702,8 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
         const continueAssistant: Record<string, unknown> = { role: 'assistant', content: iterContent };
         if (iterReasoning) {
           continueAssistant.reasoning_content = iterReasoning;
-          continueAssistant.reasoning_details = [{ type: 'reasoning.text', text: iterReasoning }];
+          // Official MiniMax/DeepSeek chat contracts replay reasoning_content,
+          // not an invented duplicate reasoning_details representation.
         }
         workingMessages = workingMessages.concat([
           continueAssistant,
@@ -878,7 +876,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
          `reasoning_content`, MiniMax requires `reasoning_details`
          entries. Providers that emit neither never see these fields. */
       assistantToolMessage.reasoning_content = iterReasoning;
-      assistantToolMessage.reasoning_details = [{ type: 'reasoning.text', text: iterReasoning }];
+      // Preserve one canonical reasoning representation on subsequent hops.
     }
     workingMessages = workingMessages.concat([assistantToolMessage]);
 

@@ -124,7 +124,7 @@ test('settings and workspace code load only when opened', async ({ page }) => {
 test('anonymous boot checks the session once', async ({ page }) => {
   await mockAuthedApp(page);
   let sessionChecks = 0;
-  await page.route(/\/api\/v2\/auth\/me(?:\?|$)/, (route) => {
+  await page.route(/\/api\/(?:v2\/)?auth\/me(?:\?|$)/, (route) => {
     sessionChecks += 1;
     return route.fulfill({ status: 401, contentType: 'application/json', body: '{"error":"unauthorized"}' });
   });

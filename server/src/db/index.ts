@@ -1,6 +1,7 @@
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
 import * as schema from './schema/index.js';
+import { assertTestDatabaseUrl } from '../lib/testDatabaseSafety.js';
 
 const { Pool } = pg;
 
@@ -15,6 +16,7 @@ let db: Database | null = null;
  * Call once at startup.
  */
 export function initDb(databaseUrl: string): Database {
+  if (process.env.NODE_TEST_CONTEXT) assertTestDatabaseUrl(databaseUrl);
   if (db) return db;
 
   // Set statement_timeout on every connection via PostgreSQL connection

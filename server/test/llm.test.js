@@ -886,7 +886,8 @@ describe('callChatCompletion', () => {
     }
     assert.ok(err, 'expected throw');
     assert.equal(err.status, 429);
-    assert.equal(err.code, 'LLM_API_ERROR');
+    assert.equal(err.code, 'LLM_UPSTREAM_ERROR');
+    assert.equal(err.retryable, false);
   });
 });
 
@@ -937,7 +938,7 @@ describe('runChatStreamPipeline: length continuation', () => {
     assert.equal(requests.length, 2);
     assert.equal(requests[1].messages.at(-2).content, 'part-1');
     assert.equal(requests[1].messages.at(-2).reasoning_content, 'reason-1');
-    assert.deepEqual(requests[1].messages.at(-2).reasoning_details, [{ type: 'reasoning.text', text: 'reason-1' }]);
+    assert.equal(requests[1].messages.at(-2).reasoning_details, undefined, 'do not invent a second reasoning representation');
     assert.match(requests[1].messages.at(-1).content, /Continue exactly where you stopped/);
     const streamed = frames.filter((frame) => frame.includes('"content":"part-')).join('');
     assert.match(streamed, /part-1/);
@@ -966,7 +967,7 @@ describe('Instant mode survives compatibility retries', () => {
       const errors = [];
       globalThis.fetch = async (_url, init) => {
         attempts.push(JSON.parse(init.body));
-        return makeJsonResponse({ error: 'unsupported option' }, 400);
+        return makeJsonResponse({ error: attempts.length === 1 ? 'service_tier unsupported' : 'optional field unsupported' }, 400);
       };
       await streamChatCompletion({ ...BASE_OPTS, ...control, response_speed: 'fast' }, () => {}, () => {}, error => errors.push(error));
       assert.ok(errors.length > 0, 'unsupported Instant must remain an error');
@@ -1014,9 +1015,9 @@ test('Instant wins conflicting thinking options on every MiniMax fallback', asyn
   const bodies = [];
   globalThis.fetch = async (_url, init) => {
     bodies.push(JSON.parse(init.body));
-    return makeJsonResponse({ error: 'unsupported' }, 400);
+    return makeJsonResponse({ error: 'thinking disabled is not supported' }, 400);
   };
   await streamChatCompletion({ ...BASE_OPTS, model: 'MiniMax-M3', reasoning_effort: 'none', extra_body: { thinking: { type: 'enabled' } } }, () => {}, () => {}, () => {});
-  assert.ok(bodies.length > 1);
+  assert.equal(bodies.length, 1, 'a deterministic thinking rejection must not cause compatibility replays');
   for (const body of bodies) assert.deepEqual(body.thinking, { type: 'disabled' });
 });

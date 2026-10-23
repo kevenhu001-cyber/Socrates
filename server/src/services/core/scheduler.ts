@@ -12,7 +12,7 @@
    ────────────────────────────────────────────── */
 import { and, eq, inArray, isNotNull, isNull, lte, ne, or, sql } from 'drizzle-orm';
 import { getDb } from '../../db/index.js';
-import { Conflict } from '../../lib/errors.js';
+import { Conflict, NotFound } from '../../lib/errors.js';
 import { claimScheduledTask, renewScheduledTaskLease, withScheduledTaskLease, type ScheduledLease } from './scheduledTaskLease.js';
 import { scheduledTasks, scheduledTaskLeases, sessions, messages, users } from '../../db/schema/index.js';
 import { getActiveApiKey } from './apiKey.js';
@@ -82,6 +82,8 @@ interface ExecutionOutcome { runId?: string; awaitingApproval?: boolean; content
 
 async function executeTask(task: ScheduledTaskRow, lease: ScheduledLease, signal: AbortSignal): Promise<ExecutionOutcome> {
   const db = getDb();
+  const [owner] = await db.select().from(users).where(eq(users.id, task.userId)).limit(1);
+  if (!owner) throw new NotFound('Task owner no longer exists');
   let agentRunId: string | undefined;
   let content = '';
   let sessionId = task.sessionId;
@@ -170,11 +172,7 @@ async function executeTask(task: ScheduledTaskRow, lease: ScheduledLease, signal
     },
     { role: 'user', content: promptText },
   ];
-  const [owner] = await db.select().from(users)
-    .where(eq(users.id, task.userId)).limit(1);
-  if (owner) {
-    chatMessages = injectUserContext(chatMessages, owner);
-  }
+  chatMessages = injectUserContext(chatMessages, owner);
   chatMessages = appendFinalOutputConstraints(chatMessages);
 
   if (task.agentKind !== 'codex') {
@@ -182,6 +180,7 @@ async function executeTask(task: ScheduledTaskRow, lease: ScheduledLease, signal
       apiBase: (provider!.url || '').replace(/\/+$/, ''),
       apiKey: provider!.keyPlaintext!,
       model: provider!.model,
+      userId: task.userId,
       messages: chatMessages,
       maxTokens: 8000,
       temperature: 0.5,
@@ -275,6 +274,17 @@ export async function runScheduledTaskNow(
         .where(and(eq(scheduledTaskLeases.taskId, task.id), eq(scheduledTaskLeases.ownerToken, lease.ownerToken)));
       return updated;
     });
+  } catch (error) {
+    // The provider may already have completed. A failed result transaction
+    // must not become an unbounded sequence of paid model replays on lease
+    // expiry. Fence the quarantine by the same owner token; never overwrite
+    // a replacement worker's state or resume a user-paused task.
+    await withScheduledTaskLease(lease, async (tx, current) => {
+      await tx.update(scheduledTasks).set({ status: 'paused', nextRunAt: null, updatedAt: new Date() }).where(eq(scheduledTasks.id, current.id));
+      await tx.update(scheduledTaskLeases).set({ state: 'failed', error: 'Result persistence failed; review before manually retrying.', updatedAt: new Date() })
+        .where(and(eq(scheduledTaskLeases.taskId, current.id), eq(scheduledTaskLeases.ownerToken, lease.ownerToken)));
+    }).catch((quarantineError) => console.warn('[scheduler] unable to fence failed completion:', (quarantineError as Error).message));
+    throw error;
   } finally {
     clearInterval(heartbeat); clearTimeout(deadline); activeControllers.delete(controller);
   }

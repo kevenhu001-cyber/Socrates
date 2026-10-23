@@ -114,7 +114,7 @@ function sanitizePromptScalar(raw: unknown, max = 120): string {
    free/paid/guest plan when they ask about feature limits. If a
    specific surface needs the email or plan, it can fetch them
    through a dedicated route rather than have every chat carry them. */
-export function injectUserContext(messages: ChatMessage[], user: User | null): ChatMessage[] {
+export function injectUserContext(messages: ChatMessage[], user: User | null, options: { sessionSnapshot?: boolean } = {}): ChatMessage[] {
   if (!user) return messages;
 
   const now = new Date();
@@ -125,7 +125,9 @@ export function injectUserContext(messages: ChatMessage[], user: User | null): C
     hour: '2-digit', minute: '2-digit',
   });
 
-  let userCtx = `[System context (auto-injected)]\nCurrent date: ${dateStr}\nCurrent time: ${timeStr}`;
+  const dateLabel = options.sessionSnapshot ? 'Session context initialized on' : 'Current date';
+  const timeLabel = options.sessionSnapshot ? 'Initialization time (not a live clock)' : 'Current time';
+  let userCtx = `[System context (auto-injected)]\n${dateLabel}: ${dateStr}\n${timeLabel}: ${timeStr}`;
 
   if (user.displayName) userCtx += `\nUser display name: ${sanitizePromptScalar(user.displayName)}`;
   if (user.tier) userCtx += `\nUser plan tier: ${sanitizePromptScalar(user.tier, 40)}`;
@@ -137,7 +139,11 @@ export function injectUserContext(messages: ChatMessage[], user: User | null): C
   const first = messages[0];
   if (first && first.role === 'system' && typeof first.content === 'string') {
     const cloned = messages.slice();
-    cloned[0] = { ...first, content: userCtx + '\n\n' + first.content };
+    // A session snapshot keeps the shared policy prefix ahead of per-user
+    // data. Standalone callers retain their existing real-time ordering.
+    cloned[0] = { ...first, content: options.sessionSnapshot
+      ? first.content + '\n\n' + userCtx
+      : userCtx + '\n\n' + first.content };
     return cloned;
   }
   return [{ role: 'system', content: userCtx }, ...messages];

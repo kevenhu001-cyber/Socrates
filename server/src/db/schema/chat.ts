@@ -76,6 +76,16 @@ export const sessions = pgTable('sessions', {
   index('sessions_kind_idx').on(table.kind),
 ]);
 
+/** Server-owned, immutable prompt initialized on the first chat request.
+ * Kept separate from session wire metadata so exports/shares/PUT cannot
+ * disclose or overwrite the trusted system boundary. */
+export const sessionPromptSnapshots = pgTable('session_prompt_snapshots', {
+  sessionId: uuid('session_id').primaryKey().references(() => sessions.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  systemPrompt: text('system_prompt').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 /* ──────────────────────────────────────────────
    Messages
    ────────────────────────────────────────────── */

@@ -118,6 +118,15 @@ export function estimateMessageTokens(messages: unknown): number {
         }
       }
     }
+    if (message && typeof message === 'object') {
+      const m = message as Record<string, unknown>;
+      // Tool-mode reasoning is part of the next request's context (MiniMax
+      // and DeepSeek). Do not budget only visible prose, or a short-looking
+      // conversation can silently exhaust the provider's context/TPM budget.
+      if (typeof m.reasoning_content === 'string') total += estimateTokens(m.reasoning_content);
+      else if (Array.isArray(m.reasoning_details)) total += estimateTokens(JSON.stringify(m.reasoning_details));
+      if (Array.isArray(m.tool_calls)) total += estimateTokens(JSON.stringify(m.tool_calls));
+    }
   }
   /* Per-message overhead for role markers / formatting (rough). */
   return total + messages.length * 4;

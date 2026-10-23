@@ -316,6 +316,20 @@
       "when": 1792252542669,
       "tag": "0044_research_jobs",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1792728000000,
+      "tag": "0045_repair_scheduled_task_integrity",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1792738559702,
+      "tag": "0046_session_prompt_snapshots",
+      "breakpoints": true
     }
   ]
 }

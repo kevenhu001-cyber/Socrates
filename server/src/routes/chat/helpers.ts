@@ -25,6 +25,7 @@ import {pickChatLimiterFor} from '../../middleware/rateLimit.js';
 
 import type {NextFunction, Request, Response} from 'express';
 import {getActiveApiKey} from '../../services/core/apiKey.js';
+import {validateThinkingMode} from '../../services/core/llmProtocol.js';
 import {estimateMessageTokens} from '../../services/core/usageTracker.js';
 import {visualizationTemplateGuide} from '../../services/visualization.js';
 /* P_teacher-mode-cache — the teacher-mode system prompt lives on
@@ -34,6 +35,8 @@ import {visualizationTemplateGuide} from '../../services/visualization.js';
    family (`prependTeacherModePrompt`) keep a single import path. */
 import {getCodeInterpreterPrompt, getTeacherModePrompt} from '../../lib/prompts.js';
 import { withTimeBudget } from '../../lib/timeBudget.js';
+import { splitPromptContext, appendTurnContext } from '../../lib/chatPromptContext.js';
+import { resolveSessionPrompt } from '../../services/core/sessionPromptSnapshot.js';
 /* ─────────────────────────────────────────────────────────────────
    extra_body sanitiser
    ─────────────────────────────────────────────────────────────────
@@ -111,9 +114,9 @@ async function resolveAssistantInstructions(
  * clearly-labeled block that marks it as background context, not as
  * instructions. The model is told to treat it as factual recall
  * material and to ignore any directive that appears inside it. The
- * block is appended to the canonical first system message BEFORE the
- * final-output-constraints step so the no-dash rule still closes the
- * prompt.
+ * standalone appendRagContext helper folds it into the system message.
+ * Live chat instead attaches recall to the current user-turn tail, keeping
+ * the persisted system prefix immutable.
  *
  * Failure modes all degrade to "no injection": missing sessionId, a
  * session the caller does not own, no indexed chunks, retrieval
@@ -825,8 +828,8 @@ export function endSseWithError(res: import('express').Response, err: unknown): 
 
 /* Run the canonical prelude that every chat endpoint shares:
  *   1. Zod-validate the request body.
- *   2. Inject real-time user context into the first system message.
- *   3. Prepend the teacher-mode system prompt when mode === 'tutor'.
+ *   2. Initialize the server-owned session prompt once, or load its snapshot.
+ *   3. Attach changing lesson/recall context outside that stable prefix.
  *   4. Sanitise extra_body (whitelist-only keys).
  *   5. Resolve the user's active LLM provider + decrypted key.
  *   6. Enforce the per-tier monthly Beagle quota for built-in keys.
@@ -867,104 +870,68 @@ export async function prepareChatRequest(
   }
   const { messages, temperature = 0.3, max_tokens, mode = 'chat', reasoning_effort, response_speed, extra_body } = parsed;
 
-  /* Live-turn context window — the save path already compresses at
-     persist time, but a burst between saves (or a single very large
-     message) can still push a request past the upstream context window
-     and fail the whole turn. Reuse the save-path compressor as a
-     ceiling guard: over the budget, older turns collapse to a summary
-     (built-in provider) or a visibly-marked tail. Client system messages
-     (custom instructions, memories, project context) are preserved and
-     never compressed away. Failures degrade to the original messages —
-     windowing must never fail the turn itself. */
-  /* P_prep-parallel — everything below that does I/O is independent of the
-     others, so start it all now and join before assembly:
-       - the provider lookup (+ key decrypt),
-       - the server policy blocks (teacher prompt, RAG recall, assistant
-         instructions, saved memories),
-       - the context-window guard (which may itself call a summarizer).
-     RAG takes its query from the last user message, which the window guard
-     never removes (it always keeps the latest turns), so resolving it from
-     the unwindowed list yields the same query. */
+  /* Provider lookup, per-turn recall and prompt hydration overlap. Prompt
+     initialization is lazy: later turns do not reread profile/memory/role
+     settings or inject a new clock. Windowing only touches conversation
+     messages and preserves the canonical persisted system prefix. */
   const projectId = typeof parsed.projectId === 'string' ? parsed.projectId : undefined;
+  const querySessionId = req.query.sessionId;
+  const sessionId = typeof querySessionId === 'string' ? querySessionId : parsed.sessionId;
+  if ((querySessionId !== undefined && typeof querySessionId !== 'string')
+      || (sessionId !== undefined && !z.string().uuid().safeParse(sessionId).success)
+      || (parsed.sessionId && sessionId !== parsed.sessionId)) {
+    throw new ApiError(400, 'INVALID_REQUEST', 'Invalid or conflicting sessionId');
+  }
+  const context = splitPromptContext(messages, mode);
   const providerPromise = getActiveApiKey(req.userId);
-  const teacherPromise: Promise<PolicyBlock | null> = mode === 'tutor'
-    ? getTeacherModePrompt().then((prompt) => ({ marker: TEACHER_MODE_MARKER, prompt }))
-    : Promise.resolve(null);
   const ragPromise = resolveRagContext(messages, parsed.ragSessionId, req.userId ?? undefined, options.signal);
-  const assistantPromise = resolveAssistantInstructions(parsed.assistantId, parsed.sessionId, req.userId ?? undefined);
-  const memoryPromise = resolveMemoryContext(req.userId ?? undefined, projectId ?? undefined);
-  /* The join below awaits every promise, but a rejection that settles while
-     an earlier await is still pending would be reported as unhandled first. */
-  for (const p of [providerPromise, teacherPromise, ragPromise, assistantPromise, memoryPromise]) p.catch(() => {});
+  // Only the first request reads and injects persona, user context and saved
+  // memories. Existing sessions hydrate lazily once after this release. The
+  // server-owned snapshot survives browser reloads and process restarts.
+  const promptPromise = resolveSessionPrompt(req.userId ?? undefined, sessionId, async () => {
+    const [teacherBlock, assistantBlock, memoryBlock] = await Promise.all([
+      mode === 'tutor' ? getTeacherModePrompt().then((prompt) => ({ marker: TEACHER_MODE_MARKER, prompt })) : null,
+      resolveAssistantInstructions(parsed.assistantId, sessionId, req.userId ?? undefined),
+      resolveMemoryContext(req.userId ?? undefined, projectId),
+    ]);
+    let initialized = enforceServerSystemBoundary(context.initialization);
+    initialized = injectUserContext(initialized, req.user, { sessionSnapshot: !!sessionId });
+    initialized = applyPolicyBlock(initialized, teacherBlock);
+    initialized = applyPolicyBlock(initialized, assistantBlock);
+    initialized = applyPolicyBlock(initialized, memoryBlock);
+    initialized = appendFinalOutputConstraints(initialized);
+    return initialized[0].content as string;
+  });
+  for (const p of [providerPromise, ragPromise, promptPromise]) p.catch(() => {});
+  const [systemPrompt, ragBlock] = await Promise.all([promptPromise, ragPromise]);
+  let conversation = appendTurnContext(context.conversation, context.turnInstructions, ragBlock?.prompt ?? null);
+  let finalMessages: ChatMessage[] = [{ role: 'system', content: systemPrompt }, ...conversation];
 
-  let windowedMessages: ChatMessage[] = messages;
+  // Windowing can replace old conversation with a rolling summary, never
+  // regenerate or compress away the frozen system prefix. Include its real
+  // size rather than later client-supplied system messages that we ignore.
   try {
     const rawBudget = Number(process.env.CHAT_CONTEXT_MAX_TOKENS);
     const budget = Number.isFinite(rawBudget) && rawBudget > 0 ? Math.floor(rawBudget) : 100_000;
-    if (estimateMessageTokens(messages) > budget) {
+    if (estimateMessageTokens(finalMessages) > budget) {
       const { compressSessionMessages } = await import('../../services/embeddings/sessionCompressor.js');
       const rawKeep = Number(process.env.CHAT_CONTEXT_KEEP_TURNS);
-      const compressed = await compressSessionMessages(
-        messages.filter((m) => m.role !== 'system'),
-        {
-          triggerTokens: budget,
-          ...(Number.isFinite(rawKeep) && rawKeep > 0 ? { keepTurns: Math.floor(rawKeep) } : {}),
-        },
-      );
+      const compressed = await compressSessionMessages(conversation, {
+        triggerTokens: Math.max(1, budget - estimateMessageTokens([finalMessages[0]])),
+        ...(Number.isFinite(rawKeep) && rawKeep > 0 ? { keepTurns: Math.floor(rawKeep) } : {}),
+      });
       if (compressed.didCompress && compressed.messages.length) {
-        windowedMessages = [
-          ...messages.filter((m) => m.role === 'system'),
-          ...(compressed.messages as ChatMessage[]),
-        ];
-        console.info('[chat] context window compression', JSON.stringify({
-          droppedTurns: compressed.droppedTurns,
-          summarizer: compressed.summarizer,
-        }));
+        // The persistence compressor emits summary.rawText; adapt it to the
+        // provider wire format and keep it untrusted, not a new system rule.
+        const wireMessages = compressed.messages.map((m) => ({ ...m, content: m.content ?? m.rawText ?? '' })) as ChatMessage[];
+        conversation = splitPromptContext(wireMessages, mode).conversation;
+        finalMessages = [finalMessages[0], ...conversation];
+        console.info('[chat] context window compression', JSON.stringify({ droppedTurns: compressed.droppedTurns, summarizer: compressed.summarizer }));
       }
     }
   } catch (err) {
     console.warn('[chat] context window compression skipped:', (err as Error).message);
   }
-
-  /* System-prompt assembly order. Every step below folds into the single
-     canonical first system message; the final prompt reads top-to-bottom as:
-       1. [System context — auto-injected] dynamic user/date block (step 2
-          PREPENDS it so the model reads it as the freshest data; this order
-          is asserted by chat-helpers.test.js and must not change).
-       2. SERVER_SYSTEM_POLICY (global tool protocol + writing rules) with
-          client system text collapsed into <client_application_instructions>.
-       3. teacher-mode.md (tutor mode only, appended).
-       4. code-interpreter.md routing/runtime contract, added only when the
-          streaming route supplies code_interpreter (appended per iteration).
-       5. FINAL_OUTPUT_CONSTRAINTS — the no-dash hard rule ALWAYS closes the
-          prompt. Add any new assembly step ABOVE this call, never after it.
-     The built-in Beagle path (routes/minimaxProxy.ts) mirrors steps 2 and 5
-     with beagle.md in place of steps 3-4. */
-  /* Same failure precedence as the sequential chain: a missing assistant
-     (NotFound) still rejects the request before the provider is checked. */
-  const [teacherBlock, ragBlock, assistantBlock, memoryBlock] = await Promise.all([
-    teacherPromise, ragPromise, assistantPromise, memoryPromise,
-  ]);
-
-  let finalMessages = enforceServerSystemBoundary(windowedMessages);
-  finalMessages = injectUserContext(finalMessages, req.user);
-  finalMessages = applyPolicyBlock(finalMessages, teacherBlock);
-  // P_rag-context — session recall, appended BEFORE the final hard rule
-  // so the no-dash constraint still closes the system prompt. All
-  // failure modes degrade to no-injection; the chat turn never fails
-  // because RAG failed.
-  finalMessages = applyPolicyBlock(finalMessages, ragBlock);
-  finalMessages = applyPolicyBlock(finalMessages, assistantBlock);
-  // Server-side memory recall — without this the rows written by the
-  // save_memory tool (or the /api/memory CRUD) would never reach the
-  // model, since the client only injects its own local copy.
-  finalMessages = applyPolicyBlock(finalMessages, memoryBlock);
-  // Tool-specific routing is added by the streaming route only when the
-  // matching native tool is present. Sync requests and unavailable tools do
-  // not receive stale instructions that invite an impossible call.
-  // P_no-dash-final — must remain the LAST prompt-assembly step so the
-  // no-dash constraint closes the system prompt. See FINAL_OUTPUT_CONSTRAINTS.
-  finalMessages = appendFinalOutputConstraints(finalMessages);
 
   const safeExtraBody = sanitizeExtraBody(extra_body);
 
@@ -982,6 +949,8 @@ export async function prepareChatRequest(
     });
     return { ok: false };
   }
+
+  validateThinkingMode(provider.model, reasoning_effort, safeExtraBody);
 
   if (provider.isBuiltIn) {
     const limitErr = await checkBeagleMonthlyLimit(req.userId, req.user?.tier);

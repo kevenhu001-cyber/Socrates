@@ -7,6 +7,7 @@
 import { randomUUID } from 'node:crypto';
 import dns from 'node:dns';
 import { Agent, EnvHttpProxyAgent, ProxyAgent, type Dispatcher } from 'undici';
+import { applyProviderControls, isMiniMaxFlash, isPermanentQuotaError, permitsCompatibilityFallback, providerHeaders, providerPayloadFailure } from './llmProtocol.js';
 
 /* ─── High-performance LLM HTTP Dispatcher ────────────────────────────────
  * Keeps connections alive across turns and tools (60s idle timeout), enables
@@ -139,6 +140,8 @@ interface ChatCompletionRequestOptions {
   apiBase: string;
   apiKey: string;
   model: string;
+  /** Server-owned identity, never accepted from extra_body. */
+  userId?: string | null;
   messages: Array<{ role: string; content: unknown; [key: string]: unknown }>;
   maxTokens?: number;
   temperature?: number;
@@ -159,6 +162,9 @@ interface ChatCompletionRequestOptions {
 export class LlmProviderError extends Error {
   readonly status: number;
   readonly providerBody: string;
+  readonly code = 'LLM_UPSTREAM_ERROR';
+  /** Provider retries are exhausted here; the browser must not replay them. */
+  readonly retryable = false;
 
   constructor(status: number, body: string) {
     const compactBody = body.slice(0, 200);
@@ -216,13 +222,18 @@ export function attemptsForUpstreamStatus(status: number): number {
  * exhausted window and burn the remaining attempts simultaneously.
  */
 export function upstreamRetryDelayMs(status: number, attempt: number, retryAfterHeader: string | null): number {
-  const retryAfterSec = Number.parseFloat(retryAfterHeader || '');
-  if (Number.isFinite(retryAfterSec) && retryAfterSec > 0) {
-    return Math.min(Math.round(retryAfterSec * 1000), RETRY_AFTER_CEILING_MS);
+  const value = (retryAfterHeader || '').trim();
+  const retryAfterMs = /^\d+(?:\.\d+)?$/.test(value)
+    ? Number(value) * 1000
+    : Date.parse(value) - Date.now();
+  if (Number.isFinite(retryAfterMs) && retryAfterMs >= 0) {
+    // Never retry BEFORE the provider's window. Longer waits are surfaced
+    // instead of being truncated into another guaranteed 429.
+    return Math.round(retryAfterMs);
   }
   if (status === RATE_LIMIT_STATUS) {
-    /* 2 s, 4 s, 8 s, 16 s — ~30 s of patience, which outlasts a typical RPM
-     * window instead of racing it. */
+    /* Bounded patience, NOT a guarantee a minute window has reset.
+     * Explicit Retry-After takes priority over this jittered fallback. */
     return Math.min(2000 * 2 ** attempt, 20_000) + Math.floor(Math.random() * 500);
   }
   return (attempt === 0 ? 800 : 1600) + Math.floor(Math.random() * 400);
@@ -259,25 +270,9 @@ function normalizeProviderMessages(messages: ChatCompletionRequestOptions['messa
     if ((message.role === 'assistant' && Array.isArray(message.tool_calls)) || message.role === 'tool') {
       normalized = { ...message, content: message.content == null ? '' : message.content };
     }
-    /* Reasoning models need their thinking echoed back when the turn is
-       replayed: DeepSeek reads `reasoning_content`, MiniMax requires the
-       `reasoning_details` array form. Persisted history only carries
-       reasoning_content — synthesize the details array when missing so a
-       MiniMax hop does not see a bare assistant turn (its documented
-       protocol violation for tool-call continuation). */
-    if (
-      normalized.role === 'assistant'
-      && typeof (normalized as Record<string, unknown>).reasoning_content === 'string'
-      && ((normalized as Record<string, unknown>).reasoning_content as string).length > 0
-      && !Array.isArray((normalized as Record<string, unknown>).reasoning_details)
-    ) {
-      normalized = {
-        ...normalized,
-        reasoning_details: [
-          { type: 'reasoning.text', text: (normalized as Record<string, unknown>).reasoning_content },
-        ],
-      } as typeof normalized;
-    }
+    // Preserve provider-returned reasoning verbatim. Current MiniMax and
+    // DeepSeek document reasoning_content; synthesizing a second details
+    // representation for every provider duplicates context tokens.
     return normalized;
   });
 }
@@ -317,6 +312,7 @@ function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: boolean
       base.thinking = { type: 'disabled' };
     }
   }
+  applyProviderControls(base, opts);
   const hasTools = Array.isArray(tools) && tools.length > 0;
   const withTools: Record<string, unknown> = {
     ...base,
@@ -329,17 +325,12 @@ function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: boolean
    * request-local fallback, so a temporary incompatibility cannot disable
    * tools for every later conversation. */
   const variants: Array<{ body: Record<string, unknown>; reason: string; speedApplied: 'standard' | 'fast' }> = [
-    { body: withTools, reason: 'initial', speedApplied: response_speed === 'fast' ? 'fast' : 'standard' },
+    { body: withTools, reason: 'initial', speedApplied: response_speed === 'fast' && !isMiniMaxFlash(model) ? 'fast' : 'standard' },
   ];
   let compatibilityBase = withTools;
 
-  /* `stream_options` is the newest field we send and a plausible source of a
-   * 400 on an older OpenAI-compatible gateway. It is dropped by the FIRST
-   * compatibility variant rather than by a variant of its own: each variant
-   * costs another upstream round-trip, and losing exact usage accounting is
-   * strictly cheaper than another request. Folding it in keeps the retry
-   * count identical to what it was before usage accounting existed for every
-   * request shape that already had a fallback. */
+  /* Usage reporting is optional; native tools and explicit Instant semantics
+   * are not. Select a fallback only after a diagnosed unsupported field. */
   const dropStreamOptions = (body: Record<string, unknown>) => {
     if (!stream) return body;
     const { stream_options: _streamOptions, ...rest } = body;
@@ -349,15 +340,18 @@ function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: boolean
   /* Priority service is provider-specific. Its fallback is deliberately the
      first compatibility variant so tools, reasoning_effort and extra_body
      survive when a generic OpenAI-compatible gateway rejects service_tier. */
-  if (response_speed === 'fast') {
+  if (response_speed === 'fast' && !isMiniMaxFlash(model)) {
     const { service_tier: _serviceTier, ...withoutPriority } = compatibilityBase;
     compatibilityBase = dropStreamOptions(withoutPriority);
     variants.push({ body: compatibilityBase, reason: 'provider-400-without-priority', speedApplied: 'standard' });
   }
+  if (stream) {
+    variants.push({ body: dropStreamOptions(withTools), reason: 'provider-400-with-stream-options', speedApplied: response_speed === 'fast' && !isMiniMaxFlash(model) ? 'fast' : 'standard' });
+  }
   if (hasTools) {
     const { tools: _tools, tool_choice: _toolChoice, ...withoutTools } = compatibilityBase;
-    compatibilityBase = dropStreamOptions(withoutTools);
-    variants.push({ body: compatibilityBase, reason: 'provider-400-with-tools', speedApplied: 'standard' });
+    // A tools-specific fallback must not contaminate reasoning/usage fallbacks.
+    variants.push({ body: dropStreamOptions(withoutTools), reason: 'provider-400-with-tools', speedApplied: 'standard' });
   }
   /* Optional reasoning fields are another common source of 400s on generic
    * gateways. Only try this stricter form after the previous compatibility
@@ -370,24 +364,28 @@ function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: boolean
       // that rejects it must fail rather than silently resume thinking.
       if (key === 'chat_template_kwargs' && (withoutOptional.chat_template_kwargs as { enable_thinking?: boolean } | undefined)?.enable_thinking === false) continue;
       if (key === 'enable_thinking' && withoutOptional.enable_thinking === false) continue;
-      if (key === 'thinking' && (withoutOptional.thinking as { type?: string } | undefined)?.type === 'disabled') continue;
+      if (key === 'thinking' && (isMiniMaxFlash(model) || (withoutOptional.thinking as { type?: string } | undefined)?.type === 'disabled')) continue;
+      if (key === 'reasoning_split' && isMiniMaxFlash(model)) continue;
       delete withoutOptional[key];
     }
+    if (isMiniMaxFlash(model)) withoutOptional.reasoning_effort = base.reasoning_effort;
     variants.push({ body: withoutOptional, reason: 'provider-400-with-optional-fields', speedApplied: 'standard' });
   }
-  /* Only when NO other compatibility variant exists does stream_options get
-   * one of its own — otherwise a plain streaming request (no tools, no
-   * priority, no reasoning fields) would have no recovery path at all for a
-   * gateway that rejects the field, which is a capability the pre-usage code
-   * never needed. */
-  if (stream && variants.length === 1) {
-    variants.push({
-      body: dropStreamOptions(withTools),
-      reason: 'provider-400-with-stream-options',
-      speedApplied: response_speed === 'fast' ? 'fast' : 'standard',
-    });
-  }
   return variants;
+}
+
+/** Select a diagnosed fallback, not the next speculative body. Never
+ * reintroduce previously rejected fields. Each step strictly loses a field. */
+function nextCompatibilityVariant(variants: ReturnType<typeof requestBodyVariants>, currentIndex: number, errorBody: string): number {
+  const current = variants[currentIndex].body;
+  for (let index = 1; index < variants.length; index++) {
+    if (!permitsCompatibilityFallback(errorBody, variants[index].reason)) continue;
+    const candidate = Object.fromEntries(Object.entries(variants[index].body).filter(([key]) => key in current));
+    if (!Object.keys(current).some((key) => !(key in candidate))) continue;
+    variants[index] = { ...variants[index], body: candidate };
+    return index;
+  }
+  return -1;
 }
 
 export function isToolFinishReason(reason: unknown): boolean {
@@ -596,11 +594,7 @@ export async function streamChatCompletion(
           markLlmActivity();
           response = await fetch(`${apiBase}/chat/completions`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${apiKey}`,
-              'Accept-Encoding': 'identity',
-            },
+            headers: providerHeaders(apiKey, true),
             body: JSON.stringify(variant.body),
             signal,
             dispatcher: getLlmDispatcher(),
@@ -612,9 +606,11 @@ export async function streamChatCompletion(
 
           const errBody = await response.text().catch(() => '');
           lastError = new LlmProviderError(response.status, errBody);
-          if (response.status === 400 && variantIndex < variants.length - 1) {
+          const fallbackIndex = response.status === 400 ? nextCompatibilityVariant(variants, variantIndex, errBody) : -1;
+          if (fallbackIndex >= 0) {
             tryNextVariant = true;
-            if (variants[variantIndex + 1]?.reason === 'provider-400-with-tools') {
+            variantIndex = fallbackIndex - 1; // outer loop advances to the diagnosed body
+            if (variants[fallbackIndex]?.reason === 'provider-400-with-tools') {
               console.warn('[LLM] provider rejected native tool request; retrying with compatibility payload', JSON.stringify({
                 status: response.status,
                 toolCount: Array.isArray(tools) ? tools.length : 0,
@@ -628,12 +624,13 @@ export async function streamChatCompletion(
             }
             break;
           }
-          if (!isRetryableUpstreamStatus(response.status)) break;
+          if (!isRetryableUpstreamStatus(response.status) || isPermanentQuotaError(errBody)) break;
           /* Rate-limited / transient failure — wait and retry with a delay
              sized to the failure kind (see upstreamRetryDelayMs). */
           const total = attemptsForUpstreamStatus(response.status);
           if (attempt >= total - 1) break;
           const delayMs = upstreamRetryDelayMs(response.status, attempt, response.headers.get('retry-after'));
+          if (delayMs > RETRY_AFTER_CEILING_MS) break;
           console.warn('[LLM] upstream ' + response.status + '; retrying', JSON.stringify({
             attempt: attempt + 1,
             of: total,
@@ -777,22 +774,20 @@ export async function streamChatCompletion(
 
       for (const line of lines) {
         const trimmed = line.trim();
-        if (trimmed === 'data: [DONE]') {
+        if (trimmed.startsWith('data:') && trimmed.slice(5).trim() === '[DONE]') {
           // The protocol is complete even if the gateway keeps its body open.
           // Ignore any bytes after DONE; usage must precede this marker.
           buffer = '';
           break readStream;
         }
         if (!trimmed) continue;
-        if (!trimmed.startsWith('data: ')) {
+        if (!trimmed.startsWith('data:')) {
           if (trimmed.startsWith('{')) {
             try {
               const errObj = JSON.parse(trimmed);
-              if (errObj && (errObj.error || errObj.code || (errObj.base_resp && errObj.base_resp.status_code !== 0))) {
-                const msg = typeof errObj.error === 'object'
-                  ? errObj.error.message
-                  : (errObj.error || errObj.message || errObj.base_resp?.status_msg || 'Upstream error');
-                onError(new Error(msg));
+              const failure = providerPayloadFailure(errObj);
+              if (failure) {
+                onError(new LlmProviderError(failure.status, failure.body));
                 return;
               }
             } catch { /* ignore */ }
@@ -801,10 +796,10 @@ export async function streamChatCompletion(
         }
 
         try {
-          const json = JSON.parse(trimmed.slice(6));
-          if (json.error) {
-            const msg = typeof json.error === 'object' ? json.error.message : json.error;
-            onError(new Error(msg || 'Upstream error in stream'));
+          const json = JSON.parse(trimmed.slice(5).trimStart());
+          const failure = providerPayloadFailure(json);
+          if (failure) {
+            onError(new LlmProviderError(failure.status, failure.body));
             return;
           }
           /* Usage arrives in its OWN frame, after the last content delta,
@@ -877,9 +872,14 @@ export async function streamChatCompletion(
     // `buffer.startsWith('data: ')` guard silently dropped that final
     // frame — truncating the tail of a streamed tool call.
     const tail = buffer.trim();
-    if (tail.startsWith('data: ')) {
+    if (tail.startsWith('data:') || tail.startsWith('{')) {
       try {
-        const json = JSON.parse(tail.slice(6));
+        const json = JSON.parse(tail.startsWith('data:') ? tail.slice(5).trimStart() : tail);
+        const failure = providerPayloadFailure(json);
+        if (failure) {
+          onError(new LlmProviderError(failure.status, failure.body));
+          return;
+        }
         /* The usage frame is the LAST frame of the stream, so it very often
            ends up here rather than in the loop above — the buffer keeps it
            when the upstream closes without a trailing newline. Read it
@@ -1011,11 +1011,7 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
       try {
         response = await fetch(`${apiBase}/chat/completions`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-            'Accept-Encoding': 'identity',
-          },
+          headers: providerHeaders(apiKey, false),
           body: JSON.stringify(variant.body),
           signal,
           dispatcher: getLlmDispatcher(),
@@ -1031,7 +1027,9 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
         break;
       }
       const errBody = await response.text().catch(() => '');
-      if (response.status === 400 && variantIndex < variants.length - 1) {
+      const fallbackIndex = response.status === 400 ? nextCompatibilityVariant(variants, variantIndex, errBody) : -1;
+      if (fallbackIndex >= 0) {
+        variantIndex = fallbackIndex - 1;
         console.warn('[LLM] provider rejected optional request fields; retrying with compatibility payload', JSON.stringify({
           status: response.status,
           toolCount: Array.isArray(tools) ? tools.length : 0,
@@ -1039,15 +1037,13 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
         }));
         break;
       }
-      if (!isRetryableUpstreamStatus(response.status)
-          || attempt >= attemptsForUpstreamStatus(response.status) - 1) {
-        const { ApiError } = await import('../../lib/errors.js');
-        /* Forward the upstream status code so the client sees 429 (quota),
-           401 (bad key), etc. instead of a generic 500. The error handler
-           serialises ApiError with the correct HTTP status. */
-        throw new ApiError(response.status, 'LLM_API_ERROR', `LLM API error ${response.status}: ${errBody.slice(0, 200)}`);
-      }
       const delayMs = upstreamRetryDelayMs(response.status, attempt, response.headers.get('retry-after'));
+      if (!isRetryableUpstreamStatus(response.status) || isPermanentQuotaError(errBody)
+          || attempt >= attemptsForUpstreamStatus(response.status) - 1 || delayMs > RETRY_AFTER_CEILING_MS) {
+        const { ApiError } = await import('../../lib/errors.js');
+        console.warn('[LLM] completion failed', JSON.stringify({ status: response.status, attempts: attempt + 1 }));
+        throw Object.assign(new ApiError(response.status, 'LLM_UPSTREAM_ERROR', `LLM API error ${response.status}. Try again later or switch model.`), { retryable: false });
+      }
       console.warn('[LLM] upstream ' + response.status + ' on the non-streaming path; retrying', JSON.stringify({
         attempt: attempt + 1,
         delayMs,
@@ -1066,8 +1062,13 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
        estimate. Surfaced below so callers can prefer measured numbers. */
     usage?: unknown;
   };
-  /* P_deepseek-mode — preserve reasoning_content on the final
-     message so the client can persist it for the next turn. */
+  const failure = providerPayloadFailure(json);
+  if (failure) {
+    const { ApiError } = await import('../../lib/errors.js');
+    console.warn('[LLM] error in successful HTTP body', JSON.stringify({ status: failure.status }));
+    throw Object.assign(new ApiError(failure.status, 'LLM_UPSTREAM_ERROR', `LLM API error ${failure.status}. Try again later or switch model.`), { retryable: false });
+  }
+  /* Preserve reasoning_content for the next tool/history request. */
   const message = json.choices?.[0]?.message || {};
   const finishReason = json.choices?.[0]?.finish_reason || null;
   return {

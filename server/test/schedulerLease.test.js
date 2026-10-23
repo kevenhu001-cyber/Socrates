@@ -72,6 +72,15 @@ initDb(process.env.DATABASE_URL); try { ${code} } finally { await closeDb(); }`;
   });
 }
 
+test('deleting an owner cascades tasks and leases instead of leaving active background work', { skip: !enabled }, async () => {
+  const [owner] = await db.insert(users).values({ email: `cascade-${crypto.randomUUID()}@test.invalid`, passwordHash: 'test-only' }).returning();
+  const task = await makeTask({ userId: owner.id });
+  await claimScheduledTask(task.id, owner.id, true);
+  await db.delete(users).where(eq(users.id, owner.id));
+  assert.equal(await readTask(task.id), undefined);
+  assert.equal((await db.select().from(scheduledTaskLeases).where(eq(scheduledTaskLeases.taskId, task.id))).length, 0);
+});
+
 test('independent processes serialize a task claim without advancing its scheduled slot', { skip: !enabled, timeout: 10000 }, async () => {
   const task = await makeTask();
   const code = `const r = await claimScheduledTask(${JSON.stringify(task.id)}, ${JSON.stringify(userId)}, true); console.log(r ? 'claimed' : 'busy');`;
@@ -198,6 +207,30 @@ test('a stale worker finishing after lease takeover cannot persist messages or c
     providerHook = null;
     await db.update(scheduledTasks).set({ status: 'paused' }).where(eq(scheduledTasks.id, task.id));
   }
+});
+
+test('a result transaction failure pauses the task instead of replaying paid provider work', { skip: !enabled }, async () => {
+  const task = await makeTask({ frequency: 'hourly' });
+  const original = db.transaction;
+  const beforeCalls = calls;
+  providerHook = async () => {
+    let failOnce = true;
+    db.transaction = function (...args) {
+      if (failOnce) { failOnce = false; return Promise.reject(new Error('synthetic result persistence failure')); }
+      return original.apply(this, args);
+    };
+  };
+  try {
+    await assert.rejects(() => runScheduledTaskNow(task, { automatic: true }), /synthetic result persistence failure/);
+    const updated = await readTask(task.id);
+    assert.equal(updated.status, 'paused');
+    assert.equal(updated.nextRunAt, null);
+    const [lease] = await db.select().from(scheduledTaskLeases).where(eq(scheduledTaskLeases.taskId, task.id));
+    assert.equal(lease.state, 'failed');
+    assert.match(lease.error, /persistence failed/);
+    await pollScheduledTasksOnce();
+    assert.equal(calls - beforeCalls, 1);
+  } finally { db.transaction = original; providerHook = null; }
 });
 
 test('ordinary provider failure settles a one-shot atomically instead of leaving a running lease', { skip: !enabled }, async () => {

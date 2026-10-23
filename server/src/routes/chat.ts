@@ -52,6 +52,7 @@ router.post('/', requireAuth, resourceScope('chat'), chatRateLimitDispatch, audi
       apiBase: provider.url,
       apiKey: provider.keyPlaintext!,
       model: provider.model,
+      userId: req.userId,
       messages: finalMessages,
       maxTokens,
       temperature,

@@ -131,14 +131,11 @@ describe('estimateMessageTokens', () => {
   });
 
   test('handles messages with null content (OpenAI tool_calls)', () => {
-    /* Assistant messages carrying tool_calls have content: null
-       per the OpenAI protocol. estimateMessageTokens must not
-       crash on these — they're free text but still carry the
-       per-message overhead. */
+    /* Null prose is valid, but tool call JSON still consumes input tokens. */
     const out = estimateMessageTokens([
       { role: 'assistant', content: null, tool_calls: [{ id: 'c1' }] },
     ]);
-    assert.equal(out, 4); // overhead only, no content
+    assert.equal(out, 4 + estimateTokens(JSON.stringify([{ id: 'c1' }])));
   });
 
   test('skips null / non-object messages (counts them as overhead only)', () => {

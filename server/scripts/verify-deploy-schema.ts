@@ -13,6 +13,7 @@
 import 'dotenv/config';
 import { sql } from 'drizzle-orm';
 import { initDb, closeDb } from '../src/db/index.js';
+import { missingScheduledTaskForeignKeys, type ForeignKeyShape } from '../src/lib/deploySchema.js';
 
 /* Relations the current backend reads/writes on hot paths. If any is
    missing, requests fail with `relation "..." does not exist`. */
@@ -21,8 +22,10 @@ const REQUIRED_TABLES = [
   'session_chunks', // session-scoped RAG BM25 index (M3 deferred)
   'embedding_config', // admin-managed embedding provider (admin backend)
   'chat_turns', // detached async chat turns (M1)
+  'session_prompt_snapshots', // immutable conversation prompt (0046)
   'chat_turn_events', // turn event replay log (M1)
   'idempotency_receipts', // atomic write + replay receipts (0042)
+  'scheduled_tasks', // owner/session foreign keys are verified below
   'scheduled_task_leases', // multi-process scheduler claim + recovery (0041)
 ] as const;
 
@@ -53,6 +56,21 @@ async function main() {
       );
       process.exit(1);
     }
+
+    const constraints = await q<ForeignKeyShape>(sql`
+      SELECT a.attname AS source_column, target.relname AS target_table,
+             b.attname AS target_column, c.confdeltype AS on_delete, c.convalidated AS validated
+      FROM pg_constraint c
+      JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
+      JOIN pg_class target ON target.oid = c.confrelid
+      JOIN pg_namespace target_schema ON target_schema.oid = target.relnamespace
+      JOIN pg_attribute b ON b.attrelid = c.confrelid AND b.attnum = c.confkey[1]
+      WHERE c.conrelid = 'public.scheduled_tasks'::regclass AND c.contype = 'f'
+        AND cardinality(c.conkey) = 1 AND cardinality(c.confkey) = 1
+        AND target_schema.nspname = 'public'
+    `);
+    const missingKeys = missingScheduledTaskForeignKeys(constraints);
+    if (missingKeys.length) throw new Error(`Missing validated foreign keys: ${missingKeys.join(', ')}. Apply migration 0045; do not bypass this gate.`);
 
     /* Informational only: without the pgvector extension the
        session_chunks.embedding column + HNSW index are skipped by
