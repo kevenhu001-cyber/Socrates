@@ -1,9 +1,9 @@
+import { interfaceIcon } from '../../ui/icons/interfaceIcons';
 // frontend/src/extensions/modules/deepResearch.ts
 
 import type { ExtensionDefinition } from '../types';
 
-export const DEEP_RESEARCH_ICON =
-  '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/><path d="M8 11a3 3 0 0 1 6 0"/></svg>';
+export const DEEP_RESEARCH_ICON = interfaceIcon('research', 18);
 
 interface DeepResearchWindow {
   deepResearchOn?: boolean;

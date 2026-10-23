@@ -67,11 +67,11 @@ test('theme selector follows the operating system and persists explicit modes', 
     };
   });
   expect(lightPalette).toEqual({
-    page: '#f8f8f8',
+    page: '#ffffff',
     raised: '#ffffff',
     elevated: '#ffffff',
-    text: '#1f1f1f',
-    border: '#e3e3e3',
+    text: '#111111',
+    border: '#e5e5e5',
   });
 
   await page.emulateMedia({ colorScheme: 'dark' });

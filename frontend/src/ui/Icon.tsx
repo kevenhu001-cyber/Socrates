@@ -5,9 +5,7 @@
  *  - name     : registered icon name (see iconRegistry.ts).
  *  - size     : width / height in pixels. Defaults to 16, matching
  *                the most common button-icon footprint in the app.
- *  - strokeWidth : override the default `stroke-width="2"`. The pin
- *                  glyph uses 1.5; callers can pass any positive
- *                  value.
+ *  - strokeWidth : override the shared 1.75px stroke.
  *  - className : extra utility classes (margin, alignment, color
  *                  helpers from the design-token CSS).
  *  - ...rest   : arbitrary svg attributes (`role`, `aria-*`,
@@ -17,13 +15,14 @@
  *  - The `spinner` name renders an empty `<span>` so the consumer
  *    can apply the existing `thinking-ring` class without losing
  *    layout. Other names render a real `<svg>`.
- *  - Unknown names render a transparent 0×0 placeholder so layout
+ *  - Unknown names render an empty SVG so layout
  *    stays stable; no unknown string ever becomes HTML, so the
  *    `dangerouslySetInnerHTML` removal in M4 has no security
  *    regression.
  */
 
 import React from 'react';
+import { INTERFACE_ICON_STROKE } from './icons/interfaceIcons';
 
 import { type IconName } from './iconRegistry';
 import { getIconDescriptor } from './iconRegistry';
@@ -36,7 +35,7 @@ export interface IconProps
 }
 
 export const Icon = React.forwardRef<SVGSVGElement, IconProps>(function Icon(
-  { name, size = 16, strokeWidth = 2, className, ...rest },
+  { name, size = 16, strokeWidth = INTERFACE_ICON_STROKE, className, ...rest },
   ref,
 ) {
   const descriptor = getIconDescriptor(name);
@@ -65,6 +64,7 @@ export const Icon = React.forwardRef<SVGSVGElement, IconProps>(function Icon(
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
+      focusable="false"
       className={className}
       {...rest}
     >

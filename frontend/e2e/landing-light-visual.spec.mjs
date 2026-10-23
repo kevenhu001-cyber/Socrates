@@ -34,6 +34,8 @@ test('light conversation home has a neutral readable palette and balanced compos
       sidebarBackground: rgb('#sidebar'),
       composerBackground: rgb('#composerInputWrap'),
       titleColor: rgb('#topicTitle', 'color'),
+      titleSize: getComputedStyle(document.querySelector('#topicTitle')).fontSize,
+      fontFamily: getComputedStyle(document.querySelector('#topicTitle')).fontFamily,
     };
   });
   const rgbChannels = (value) => (value.match(/\d+/g) ?? []).slice(0, 3).map(Number);
@@ -55,6 +57,8 @@ test('light conversation home has a neutral readable palette and balanced compos
   /* ChatGPT.html measures 768 x 52 with a 16px editor at 1440x900. */
   expect(geometry.composer?.height).toBe(52);
   expect(geometry.topicFontSize).toBe(16);
+  expect(geometry.titleSize).toBe('30px');
+  expect(geometry.fontFamily).toContain('Geist Sans');
   /* Current ChatGPT landing geometry leaves a 36px pause between the 24/28
      greeting and the 768×52 composer. */
   expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeGreaterThanOrEqual(34);
@@ -62,9 +66,10 @@ test('light conversation home has a neutral readable palette and balanced compos
   expect(geometry.composer?.bottom ?? 960).toBeLessThan(960 * 0.64);
   await expect(page.locator('.home-ideas, .chat-suggestions, #topicQuickActions')).toHaveCount(0);
   expect(luminance(geometry.pageBackground)).toBeGreaterThan(0.88);
-  /* The Lobe-aligned page and slightly brighter container sidebar are adjacent
-     neutral foundation steps separated by a hairline. */
-  expect(luminance(geometry.sidebarBackground)).toBeGreaterThanOrEqual(luminance(geometry.pageBackground));
+  // Match site/'s white paper canvas and quiet gray navigation rail.
+  expect(geometry.pageBackground).toBe('rgb(255, 255, 255)');
+  expect(geometry.sidebarBackground).toBe('rgb(247, 247, 247)');
+  expect(luminance(geometry.sidebarBackground)).toBeLessThan(luminance(geometry.pageBackground));
   expect(luminance(geometry.composerBackground)).toBeGreaterThanOrEqual(luminance(geometry.pageBackground));
   expect(contrast(geometry.titleColor, geometry.pageBackground)).toBeGreaterThan(10);
 

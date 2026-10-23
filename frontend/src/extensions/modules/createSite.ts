@@ -1,7 +1,7 @@
+import { interfaceIcon } from '../../ui/icons/interfaceIcons';
 import type { ExtensionDefinition } from '../types';
 
-export const CREATE_SITE_ICON =
-  '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18"/><circle cx="6.5" cy="6.5" r=".6" fill="currentColor" stroke="none"/><circle cx="9.5" cy="6.5" r=".6" fill="currentColor" stroke="none"/><path d="m10.5 13-1.8 1.8 1.8 1.8m3-3.6 1.8 1.8-1.8 1.8"/></svg>';
+export const CREATE_SITE_ICON = interfaceIcon('site', 18);
 
 export const CREATE_SITE_SYSTEM_PROMPT = [
   'You are in site creation mode. The user describes a page or small site they want published.',

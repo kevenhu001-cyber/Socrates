@@ -6,24 +6,8 @@
    restore layer. Keep this file's position in legacy/index.css stable.
    ========================================================================== */
 
-/* P_perf-self-host — the original Google Fonts set is bundled from
-   @fontsource and served from this origin, so no page request touches
-   fonts.googleapis.com and CJK glyphs come from the locally hosted Noto
-   Sans SC subsets.
-
-   Latin sans face: Plus Jakarta Sans (primary) + Inter (fallback).
-   Plus Jakarta Sans is the planned western face — a humanist-geometric
-   sans with warmer, more distinctive letterforms that pairs with the
-   Newsreader serif display face. Inter remains as a local fallback so
-   mixed Chinese/Latin strings never silently fall back to a
-   platform-dependent western face. Both families are bundled from
-   @fontsource so production and local dev share the same file set. */
-@import "@fontsource/plus-jakarta-sans/400.css";
-@import "@fontsource/plus-jakarta-sans/500.css";
-@import "@fontsource/plus-jakarta-sans/600.css";
-@import "@fontsource/newsreader/400.css";
-@import "@fontsource/newsreader/500.css";
-@import "@fontsource/newsreader/400-italic.css";
+/* P_perf-self-host — foundations/fonts.css owns the locally hosted brand
+   fonts. Keep this compatibility layer free of independent font imports. */
 
 :root{--always-white:0 0% 100%;--always-black:0 0% 0%;--keyboard-inset:0px;/* defaults — displayPrefs.js writes the real values at runtime */--app-font-scale:1;--app-width-scale:1}
 /* Shared timing tokens for composer focus expansion. Keyboard avoidance is

@@ -1,9 +1,9 @@
+import { interfaceIcon } from '../../ui/icons/interfaceIcons';
 // frontend/src/extensions/modules/write.ts
 
 import type { ExtensionDefinition } from '../types';
 
-export const WRITE_EDIT_ICON =
-  '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+export const WRITE_EDIT_ICON = interfaceIcon('edit', 18);
 
 export const WRITE_EDIT_SYSTEM_PROMPT =
   'You are an expert writing and editing assistant. Help the user compose, rewrite, or polish any text \u2014 essays, emails, posts, reports, documentation, scripts, or creative writing.\n\n' +

@@ -437,17 +437,6 @@ body.workspace-active #appShell .main-page {
     left: 0;
   }
 
-  #appShell #topicSetup .topic-title.greeting {
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    min-height: 42px !important;
-    margin: 0 auto !important;
-    font-weight: 400 !important;
-    line-height: 28px !important;
-    letter-spacing: -0.01em !important;
-  }
-
   #appShell #composerInputWrap:not(.voice-recording-active):not(.composer-multiline):not(.has-plugin-chips) .rich-composer > div {
     display: flex !important;
     align-items: center !important;

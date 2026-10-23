@@ -73,7 +73,7 @@
   --ui-radius-none: 0;
   --ui-radius-xs: var(--ui-foundation-radius-xs);
   --ui-radius-sm: var(--ui-foundation-radius-sm);
-  --ui-radius-control: var(--ui-foundation-radius-base);
+  --ui-radius-control: var(--ui-radius-row);
   --ui-radius-md: var(--ui-foundation-radius-base);
   --ui-radius-lg: var(--ui-foundation-radius-lg);
   --ui-radius-xl: 16px;
@@ -85,6 +85,8 @@
   --ui-radius-row: 10px;
   --ui-radius-bubble: 18px;
   --ui-radius-pill: 999px;
+  --ui-radius-popover: var(--ui-radius-xl);
+  --ui-radius-dialog: var(--ui-radius-2xl);
 
   /* Controls and responsive shell. Lobe's 28/36/40 ladder is available as
      foundation metrics. Socrates retains its product density and the 44px
@@ -155,10 +157,11 @@
   --ui-duration-micro: 80ms;
   --ui-duration-fast: 140ms;
   --ui-duration-normal: 220ms;
-  --ui-duration-hover: var(--ui-foundation-duration-fast);
-  --ui-duration-overlay: 160ms;
+  --ui-duration-hover: var(--ui-duration-fast);
+  --ui-duration-overlay: 180ms;
+  --ui-duration-exit: 120ms;
   --ui-ease-standard: ease;
-  --ui-overlay-enter-scale: 0.98;
+  --ui-overlay-enter-scale: 0.985;
   --ui-duration-pulse: 1200ms;
   --ui-duration-pulse-slow: 1600ms;
   --ui-duration-spin: 900ms;
@@ -173,8 +176,8 @@
   --ui-wave-step: 0%;
 
   /* Press feedback. */
-  --ui-press-opacity: 0.82;
-  --ui-press-opacity-sm: 0.72;
+  --ui-press-opacity: 0.9;
+  --ui-press-opacity-sm: 0.84;
   --ui-press-tint: color-mix(in srgb, var(--ui-bg-hover), var(--ui-text-primary) 8%);
 
   /* Product text roles. */

@@ -65,9 +65,16 @@ async function holdAndMeasure(page, selector) {
 
 test('the primary composer button stays geometrically stable while pressed', async ({ page }) => {
   await boot(page);
-  const { pressed, released } = await holdAndMeasure(page, '#composerPrimaryBtn');
+  await page.locator('#composerRoot .rich-composer-editor').fill('A draft enables the send control.');
+  await expect(page.locator('#composerPrimaryBtn')).toHaveCSS('opacity', '1');
+  // Exercise the real pointer states without sending this test draft upstream.
+  await page.locator('#composerPrimaryBtn').evaluate((button) => {
+    button.addEventListener('click', (event) => event.stopImmediatePropagation(), { capture: true, once: true });
+  });
+  const { pressed, released, opacityBefore, opacityDuring } = await holdAndMeasure(page, '#composerPrimaryBtn');
   expect(pressed).toBe(1);
   expect(released).toBe(1);
+  expect(opacityDuring).toBeLessThan(opacityBefore);
 });
 
 test('a generic button uses stable paint-only feedback', async ({ page }) => {

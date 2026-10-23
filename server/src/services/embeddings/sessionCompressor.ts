@@ -31,7 +31,8 @@ import {createHash} from 'node:crypto';
 import {resolveContextBudget} from '../../lib/modelCapabilities.js';
 import {callChatCompletion} from '../core/llm.js';
 import {getActiveApiKey} from '../core/apiKey.js';
-import {estimateMessageTokens} from '../core/usageTracker.js';
+import {estimateContextMessageTokens} from '../core/usageTracker.js';
+import {createSummaryMemo} from '../../lib/summaryMemo.js';
 
 export interface CompressibleMessage {
   role?: unknown;
@@ -102,9 +103,7 @@ const SUMMARY_SYSTEM_PROMPT =
    input, so a growing conversation still returns fresh recent turns.
    Bounded to a handful of entries and time-limited, so an edit to an old
    turn (new digest) re-summarizes. */
-const COMPRESS_MEMO_MAX = 8;
-const COMPRESS_MEMO_TTL_MS = 10 * 60 * 1000;
-const compressMemo = new Map<string, { summary: string; summaryTokens: number; headLength: number; at: number }>();
+const compressMemo = createSummaryMemo();
 
 /* P_summary-stable-id — the clientId carried by the synthetic summary
    message. It is no longer persisted anywhere (see the scope note above),
@@ -114,10 +113,6 @@ const compressMemo = new Map<string, { summary: string; summaryTokens: number; h
    appending a new one per request. */
 const SUMMARY_CLIENT_ID = 'context-summary';
 
-function headDigest(lines: string[]): string {
-  return createHash('sha256').update(lines.join('\n'), 'utf8').digest('hex');
-}
-
 /* Test seam — clears the memoized summaries. */
 export function __resetCompressMemo(): void {
   compressMemo.clear();
@@ -125,7 +120,7 @@ export function __resetCompressMemo(): void {
 
 export async function compressSessionMessages(
   input: CompressibleMessage[],
-  opts: { keepTurns?: number; triggerTokens?: number; model?: string } = {},
+  opts: { keepTurns?: number; triggerTokens?: number; model?: string; cacheScope?: string } = {},
 ): Promise<CompressionResult> {
   const messages = Array.isArray(input) ? input.slice() : [];
   const keepTurns = opts.keepTurns ?? numEnv('SESSION_COMPRESS_KEEP_TURNS', 24);
@@ -149,23 +144,36 @@ export async function compressSessionMessages(
     summaryTokens: 0,
     summarizer: 'none',
   };
-  if (messages.length <= keepTurns) return none;
+  if (messages.length < 2) return none;
 
-  let totalTokens = 0;
+  let messageTokens: number[];
   try {
-    totalTokens = estimateMessageTokens(
-      messages.map((m) => ({ ...m, role: typeof m.role === 'string' ? m.role : 'user', content: m.content || textOf(m) })),
-    );
+    messageTokens = messages.map((m) => estimateContextMessageTokens([
+      { ...m, role: typeof m.role === 'string' ? m.role : 'user', content: m.content || textOf(m) },
+    ]));
   } catch {
     return none;
   }
+  const totalTokens = messageTokens.reduce((sum, count) => sum + count, 0);
   if (totalTokens <= triggerTokens) return none;
 
   // Cut only at a user-turn boundary. Slicing by message count can leave a
   // tool result without its assistant tool_calls (or only half a multi-tool
   // result batch), causing deterministic provider 400s on the next request.
-  let tailStart = messages.length - keepTurns;
+  let tailStart = Math.max(0, messages.length - keepTurns);
   while (tailStart > 0 && messages[tailStart].role !== 'user') tailStart--;
+  // keepTurns is a ceiling, not a promise to send an oversized tail. Even
+  // two long exchanges can exceed a small model's window. Leave space for
+  // a summary and advance only over complete user/assistant/tool groups.
+  const tailBudget = Math.max(1, triggerTokens - Math.min(1200, Math.floor(triggerTokens * 0.2)));
+  let tailTokens = messageTokens.slice(tailStart).reduce((sum, count) => sum + count, 0);
+  while (tailTokens > tailBudget) {
+    let nextUser = tailStart + 1;
+    while (nextUser < messages.length && messages[nextUser].role !== 'user') nextUser++;
+    if (nextUser === messages.length) break; // current interaction is indivisible
+    for (let i = tailStart; i < nextUser; i++) tailTokens -= messageTokens[i];
+    tailStart = nextUser;
+  }
   if (tailStart === 0) return none; // never split the current interaction
   const tail = messages.slice(tailStart).map(stripHeavyPayloads);
   const head = messages.slice(0, tailStart);
@@ -220,60 +228,46 @@ export async function compressSessionMessages(
   /* P_compress-memo — return the memoized summary for this exact head
      instead of paying for the LLM again. The tail is rebuilt below from
      the current input, so the caller still gets fresh recent turns. */
-  const digest = headDigest(headLines);
-  const now = Date.now();
-  const memo = compressMemo.get(digest);
-  if (memo && now - memo.at < COMPRESS_MEMO_TTL_MS && memo.headLength === head.length) {
-    /* Refresh LRU position. */
-    compressMemo.delete(digest);
-    compressMemo.set(digest, { ...memo, at: now });
-    return finishWithSummary(memo.summary, memo.summaryTokens);
-  }
+  const digest = createHash('sha256').update(JSON.stringify([
+    opts.cacheScope ?? null, provider.id, provider.url, provider.model, head.length, headLines,
+  ])).digest('hex');
 
   const transcript = headLines.join('\n\n').slice(0, 60000);
-  let summary = '';
-  try {
-    /* Save-path budget: a compression must never stall the session save
-     * behind a 5-minute upstream window. 45 s covers a dense summary;
-     * on timeout we keep the recent tail (the route sanitizer already
-     * guarantees the save itself lands). */
-    const signal =
-      typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
-        ? AbortSignal.timeout(45000)
-        : undefined;
-    const completion = await callChatCompletion({
-      apiBase: provider.url,
-      apiKey: provider.keyPlaintext,
-      model: provider.model,
-      messages: [
-        { role: 'system', content: SUMMARY_SYSTEM_PROMPT },
-        { role: 'user', content: `Summarize this earlier conversation (about ${head.length} messages):\n\n${transcript}` },
-      ],
-      maxTokens: 800,
-      temperature: 0.2,
-      ...(signal ? { signal } : {}),
-    });
-    summary = String(completion?.content || '').trim().slice(0, 8000);
-  } catch (err) {
-    console.warn('[compress] summarizer failed, keeping tail only:', (err as Error).message);
-    summary = '';
-  }
+  const { url: apiBase, keyPlaintext: apiKey, model } = provider;
+  const summarize = async () => {
+    try {
+      // Bound the model-input preparation delay. On timeout the original
+      // transcript remains persisted and only this request uses tail-only.
+      const signal = AbortSignal.timeout(45000);
+      const completion = await callChatCompletion({
+        apiBase,
+        apiKey,
+        model,
+        messages: [
+          { role: 'system', content: SUMMARY_SYSTEM_PROMPT },
+          { role: 'user', content: `Summarize this earlier conversation (about ${head.length} messages):\n\n${transcript}` },
+        ],
+        maxTokens: 800,
+        temperature: 0.2,
+        signal,
+      });
+      return String(completion?.content || '').trim().slice(0, 8000);
+    } catch (err) {
+      console.warn('[compress] summarizer failed, keeping tail only:', (err as Error).message);
+      return '';
+    }
+  };
+  // Sessionless callers never share cached conversation data.
+  const summary = opts.cacheScope ? await compressMemo.get(digest, summarize) : await summarize();
   if (!summary) {
     return tailOnly();
   }
 
   let summaryTokens = 0;
   try {
-    summaryTokens = estimateMessageTokens([{ role: 'system', content: summary }]);
+    summaryTokens = estimateContextMessageTokens([{ role: 'system', content: summary }]);
   } catch {
     summaryTokens = 0;
-  }
-  compressMemo.delete(digest);
-  compressMemo.set(digest, { summary, summaryTokens, headLength: head.length, at: Date.now() });
-  while (compressMemo.size > COMPRESS_MEMO_MAX) {
-    const oldest = compressMemo.keys().next().value;
-    if (oldest === undefined) break;
-    compressMemo.delete(oldest);
   }
   return finishWithSummary(summary, summaryTokens);
 

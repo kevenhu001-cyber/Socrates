@@ -1,17 +1,18 @@
 /*
  * themes.css — canonical Socrates palette and compatibility bridge.
  *
- * Socrates Design System v2 uses the Lobe UI v6 default neutral token values
- * as its foundation while keeping the stable `--ui-*` API consumed by the
- * existing Web UI and shared theme package. Product geometry remains owned by
- * tokens.css / component styles.
+ * Light surfaces share site/'s white paper, neutral ink and Geist brand face.
+ * The stable `--ui-*` API and Lobe aliases keep existing features compatible.
+ * Product geometry remains owned by tokens.css / component styles.
  */
 
 html[data-theme="socrates"][data-mode],
 html[data-theme="socrates"][data-mode]:lang(zh) {
-  --font-sans: "Inter", "MiSans", "Plus Jakarta Sans", sans-serif;
+  --font-sans: "Geist Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
   --cg-font: var(--font-sans);
   --font-display: var(--font-sans);
+  --font-serif: var(--font-sans);
+  --font-mono: "Geist Mono", "Noto Sans SC", ui-monospace, "SFMono-Regular", Consolas, monospace;
 
   /* Base 4 / 6 / 8 / 12 radii already match the Lobe foundation. */
   --lobe-border-radius-xs: var(--ui-radius-xs);
@@ -69,8 +70,9 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-bg-chip-hover: rgb(255 255 255 / 10%);
   --ui-bg-bubble: #2a2a2a;
   --ui-bg-segment-active: var(--ui-bg-selected);
-  --ui-shadow-popover: 0 17.5px 23.4px rgb(0 0 0 / 6%), 0 9.4px 12.5px rgb(0 0 0 / 5%), 0 5.25px 7px rgb(0 0 0 / 3%), 0 2.8px 3.7px -2px rgb(0 0 0 / 2%), 0 1.2px 1.5px rgb(0 0 0 / 2%);
-  --ui-shadow-dialog: 0 40px 80px rgb(0 0 0 / 9%), 0 20px 40px rgb(0 0 0 / 8%), 0 10px 20px rgb(0 0 0 / 6%), 0 5px 10px rgb(0 0 0 / 5%), 0 2px 4px rgb(0 0 0 / 3%);
+  --ui-shadow-control: 0 1px 3px rgb(0 0 0 / 16%);
+  --ui-shadow-popover: 0 12px 36px -8px rgb(0 0 0 / 28%), 0 2px 8px rgb(0 0 0 / 14%);
+  --ui-shadow-dialog: 0 24px 64px -12px rgb(0 0 0 / 32%), 0 4px 16px rgb(0 0 0 / 14%);
   --ui-composer-border: rgb(255 255 255 / 15%);
   --ui-composer-shadow: inset 0 0 1px rgb(255 255 255 / 20%);
   --ui-tool-chip-text: var(--ui-info);
@@ -96,9 +98,9 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
 [data-mode="light"] {
   color-scheme: light;
 
-  /* Lobe neutral foundation: layout / container / elevated. */
-  --ui-bg-page: #f8f8f8;
-  --ui-bg-sidebar: #ffffff;
+  /* Marketing-site paper/ink foundation, projected through the existing API. */
+  --ui-bg-page: #ffffff;
+  --ui-bg-sidebar: #f7f7f7;
   --ui-bg-raised: #ffffff;
   --ui-bg-sunken: #fbfbfb;
   --ui-bg-surface: #ffffff;
@@ -122,7 +124,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
    * "muted" is the same role as "tertiary" — it is an alias so there is one
    * de-emphasised text colour, not two near-identical ones. The placeholder
    * keeps the reference #8f8f8f (see docs/ref/chatgpt-parity.md). */
-  --ui-text-primary: #1f1f1f;
+  --ui-text-primary: #111111;
   --ui-text-secondary: #595959;
   --ui-text-tertiary: #6b6b6b;
   --ui-text-muted: var(--ui-text-tertiary);
@@ -132,8 +134,8 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
 
   /* Lobe border / mask roles. */
   --ui-border-subtle: var(--ui-bg-pill-selected);
-  --ui-border-default: #e3e3e3;
-  --ui-border-strong: #dddddd;
+  --ui-border-default: #e5e5e5;
+  --ui-border-strong: #d4d4d4;
   --ui-backdrop: rgb(0 0 0 / 44%);
 
   /* Lobe monochrome primary + semantic status colors.
@@ -149,7 +151,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
    * The thinking accent stays a vivid chart/accent colour and is never used
    * as body text; warning no longer aliases it. */
   --ui-on-accent: var(--ui-bg-surface);
-  --ui-accent-strong: #222222;
+  --ui-accent-strong: #111111;
   --ui-danger: rgb(176 45 28);
   --ui-success: rgb(12 110 51);
   --ui-thinking-accent: rgb(254 180 0);
@@ -163,11 +165,12 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-bg-chip: var(--ui-bg-hover);
   --ui-bg-chip-hover: rgb(0 0 0 / 6%);
   --ui-bg-bubble: #f4f4f4;
-  --ui-bg-segment-active: var(--ui-bg-control);
-  --ui-shadow-popover: 0 17.5px 23.4px rgb(0 0 0 / 4%), 0 9.4px 12.5px rgb(0 0 0 / 3%), 0 5.25px 7px rgb(0 0 0 / 2%), 0 2.8px 3.7px -2px rgb(0 0 0 / 1%), 0 1.2px 1.5px rgb(0 0 0 / 1%);
-  --ui-shadow-dialog: 0 40px 80px rgb(0 0 0 / 9%), 0 20px 40px rgb(0 0 0 / 8%), 0 10px 20px rgb(0 0 0 / 6%), 0 5px 10px rgb(0 0 0 / 5%), 0 2px 4px rgb(0 0 0 / 3%);
-  --ui-composer-border: rgb(0 0 0 / 12%);
-  --ui-composer-shadow: 0 0 0 1px rgb(0 0 0 / 4%), 0 2px 8px rgb(0 0 0 / 4%), 0 12px 32px rgb(0 0 0 / 3%);
+  --ui-bg-segment-active: var(--ui-bg-surface);
+  --ui-shadow-control: 0 1px 3px rgb(0 0 0 / 6%);
+  --ui-shadow-popover: 0 10px 32px -8px rgb(0 0 0 / 10%), 0 2px 6px rgb(0 0 0 / 4%);
+  --ui-shadow-dialog: 0 24px 64px -16px rgb(0 0 0 / 14%), 0 4px 12px rgb(0 0 0 / 4%);
+  --ui-composer-border: var(--ui-border-strong);
+  --ui-composer-shadow: 0 1px 2px rgb(0 0 0 / 3%), 0 8px 24px -8px rgb(0 0 0 / 6%);
   --ui-tool-chip-text: var(--ui-link);
   --ui-tool-chip-hover-bg: rgb(237 244 255);
   --ui-tool-chip-hover-text: rgb(44 145 255);
@@ -228,7 +231,8 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-shadow-menu: var(--ui-shadow-popover);
   --ui-shadow-modal: var(--ui-shadow-dialog);
   --ui-shadow-toast: 0 6px 22px rgb(0 0 0 / 14%);
-  --ui-focus-ring: 0 0 0 2px var(--ui-bg-page), 0 0 0 4px var(--ui-border-strong);
+  --ui-focus-ring: color-mix(in srgb, var(--ui-text-primary) 55%, transparent);
+  --ui-focus-shadow: 0 0 0 2px var(--ui-bg-page), 0 0 0 4px var(--ui-border-strong);
 
   --chatgpt-font: var(--cg-font);
   --chatgpt-page: var(--ui-bg-page);

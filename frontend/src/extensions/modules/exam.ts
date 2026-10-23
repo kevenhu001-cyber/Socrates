@@ -1,9 +1,9 @@
+import { interfaceIcon } from '../../ui/icons/interfaceIcons';
 // frontend/src/extensions/modules/exam.ts
 
 import type { ExtensionDefinition } from '../types';
 
-export const EXAM_ICON =
-  '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 3h16v18H4z"/><path d="M8 8h8M8 12h5M8 16h3"/><path d="m15 15 1.5 1.5L20 13"/></svg>';
+export const EXAM_ICON = interfaceIcon('exam', 18);
 
 interface ExamWindow {
   state?: { _examInView?: boolean };

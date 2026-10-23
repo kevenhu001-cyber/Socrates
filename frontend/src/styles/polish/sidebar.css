@@ -248,7 +248,7 @@
     width: 236px;
     padding: 6px;
     border: 1px solid var(--ui-border-subtle);
-    border-radius: var(--ui-radius-lg);
+    border-radius: var(--ui-radius-popover);
     background: var(--ui-bg-surface);
     box-shadow: var(--ui-shadow-menu);
   }
@@ -320,11 +320,6 @@
      same as the session titles below them. */
   color: var(--ui-text-primary);
   transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease;
-}
-}
-@media (max-width: 768px) {
-#appShell .sidebar-nav-btn svg {
-  stroke-width: 1.8;
 }
 }
 @media (max-width: 768px) {
@@ -600,7 +595,7 @@
 
 /* ── More popover ── */
 #appShell .sidebar-more-popover {
-  border-radius: var(--ui-radius-lg, 12px);
+  border-radius: var(--ui-radius-popover);
   border: 1px solid var(--ui-border-subtle);
   box-shadow: var(--ui-shadow-menu);
   padding: 4px;

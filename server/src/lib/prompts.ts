@@ -34,57 +34,54 @@ const TEACHER_MODE_PROMPT_PATH = path.resolve(REPO_ROOT, 'prompts/teacher-mode.m
  * when it changes. */
 const CODE_INTERPRETER_PROMPT_PATH = path.resolve(REPO_ROOT, 'prompts/code-interpreter.md');
 
-/* Per-file mtime-keyed cache. Key = absolute path, value = { mtime, content }. */
-const cache = new Map<string, { mtime: number; content: string }>();
-
-async function loadPrompt(filePath: string): Promise<string | null> {
-  try {
-    const stat = await fs.stat(filePath);
-    const mtime = stat.mtimeMs;
-    const hit = cache.get(filePath);
-    if (hit && hit.mtime === mtime) return hit.content;
-
-    const raw = await fs.readFile(filePath, 'utf8');
-    const content = substitutePlaceholders(raw, filePath);
-    cache.set(filePath, { mtime, content });
-    return content;
-  } catch (err) {
-    console.error('[prompts] Failed to load', filePath + ':', (err as Error).message);
-    return null;
-  }
+interface PromptFiles {
+  stat(path: string): Promise<{ mtimeMs: number; size: number }>;
+  readFile(path: string, encoding: 'utf8'): Promise<string>;
 }
 
-/* Replace `[current date]` (and `[current year]`) placeholders with the
-   actual values at request time. This is what makes the hardcoded date
-   in prompts/beagle.md stay current without manual edits every month.
-
-   We do the substitution at *load* time and cache the result for the
-   same mtime, so a request that lands within the same second as a
-   reload will see the same date. The cost of re-running this on every
-   request (every chat turn) is one Date.toLocaleDateString call —
-   cheaper than re-reading disk. If we ever need per-request date
-   freshness within the same minute, switch to a per-call wrapper. */
-let substitutedForDate: string | null = null;
-let substitutedContent: string | null = null;
-function substitutePlaceholders(raw: string, filePath: string): string {
-  if (filePath !== BEAGLE_PROMPT_PATH) return raw;
-  const now = new Date();
-  const today = now.toLocaleDateString('en-US', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-  });
-  const year = String(now.getFullYear());
-  // Recompute only when the calendar day changes — saves re-running
-  // the two .replace calls on every chat turn when nothing has changed.
-  const dayKey = now.toDateString();
-  if (dayKey === substitutedForDate && substitutedContent !== null) {
-    return substitutedContent;
+/** Cache source bytes, never rendered dates. Coalesce cold reads and reloads,
+ * but stat each new request so edits are visible without a process restart.
+ * The injectable filesystem/clock keep the invalidation tests independent of
+ * the real prompt files. Session snapshots remain frozen by their own store. */
+export function createPromptLoader(files: PromptFiles = fs, clock = () => new Date()) {
+  const cache = new Map<string, { mtime: number; size: number; raw: string }>();
+  const pending = new Map<string, Promise<string | null>>();
+  async function read(filePath: string): Promise<string | null> {
+    try {
+      const stat = await files.stat(filePath);
+      const hit = cache.get(filePath);
+      if (hit && hit.mtime === stat.mtimeMs && hit.size === stat.size) return hit.raw;
+      const raw = await files.readFile(filePath, 'utf8');
+      cache.set(filePath, { mtime: stat.mtimeMs, size: stat.size, raw });
+      return raw;
+    } catch (err) {
+      cache.delete(filePath);
+      console.error('[prompts] Failed to load', filePath + ':', (err as Error).message);
+      return null;
+    }
   }
-  substitutedForDate = dayKey;
-  substitutedContent = raw
-    .replace(/\[current date\]/g, today)
-    .replace(/\[current year\]/g, year);
-  return substitutedContent;
+  return {
+    async load(filePath: string, interpolateDates = false): Promise<string | null> {
+      let work = pending.get(filePath);
+      if (!work) {
+        work = read(filePath);
+        pending.set(filePath, work);
+      }
+      let raw: string | null;
+      try { raw = await work; }
+      finally { if (pending.get(filePath) === work) pending.delete(filePath); }
+      if (raw === null || !interpolateDates) return raw;
+      const now = clock();
+      return raw.replace(/\[current date\]/g, now.toLocaleDateString('en-US', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      })).replace(/\[current year\]/g, String(now.getFullYear()));
+    },
+    clear() { cache.clear(); },
+  };
 }
+
+const promptLoader = createPromptLoader();
+const loadPrompt = (filePath: string) => promptLoader.load(filePath, filePath === BEAGLE_PROMPT_PATH);
 
 /* ─────────────────────────────────────────────────────────────────
    Public API
@@ -134,7 +131,5 @@ export async function getCodeInterpreterPrompt() {
 /* Test hook — wipe the in-memory cache so tests can simulate file edits
    without going through the filesystem. Not exported on the route layer. */
 export function _clearPromptCacheForTests() {
-  cache.clear();
-  substitutedForDate = null;
-  substitutedContent = null;
+  promptLoader.clear();
 }

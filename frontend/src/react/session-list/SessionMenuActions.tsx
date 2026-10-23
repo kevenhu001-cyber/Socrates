@@ -1,4 +1,4 @@
-import { Pin, Tag } from 'lucide-react';
+import { Icon } from '../../ui/Icon';
 import type { RefObject } from 'react';
 import type { FoundationMenuItem } from '../menu/FoundationMenu';
 import { getLegacyActionsOrNull, t } from '../legacy/gateway.ts';
@@ -10,8 +10,7 @@ const RENAME_ICON = sidebarIcons.rename;
 const ARCHIVE_ICON = sidebarIcons.archive;
 const DELETE_ICON = sidebarIcons.delete;
 const PROJECT_ICON = sidebarIcons.projects;
-const CHEVRON_RIGHT =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="m9.5 6 6 6-6 6"/></svg>';
+const CHEVRON_RIGHT = sidebarIcons.chevronRight;
 
 type SessionMenuActionsProps = Pick<
   SessionRowMenuProps,
@@ -52,13 +51,13 @@ export function SessionMenuActions({
         aria-label={t('session.editTags')}
         onClick={onTag}
       >
-        <span className="recent-item-action-icon"><Tag strokeWidth={1.8} aria-hidden="true" /></span>
+        <span className="recent-item-action-icon"><Icon name="tag" /></span>
         <span className="recent-item-action-text">{t('session.editTags')}</span>
       </Item>
       <div className="recent-item-menu-divider" />
       <Item className="btn-icon recent-item-menu-row recent-item-pin" title={t(pinLabel)} onClick={onPin}>
         <span className="recent-item-action-icon">
-          <Pin strokeWidth={1.8} aria-hidden="true" style={{ transform: 'rotate(45deg)' }} />
+          <Icon name="pin" />
         </span>
         <span className="recent-item-action-text">{t(pinLabel)}</span>
       </Item>

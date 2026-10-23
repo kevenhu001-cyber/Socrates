@@ -1,9 +1,9 @@
+import { interfaceIcon } from '../../ui/icons/interfaceIcons';
 // frontend/src/extensions/modules/extensiveThinking.ts
 
 import type { ExtensionDefinition } from '../types';
 
-export const EXTENSIVE_THINKING_ICON =
-  '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v1H7a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h1v1a3 3 0 0 0 3 3"/><path d="M12 22a3 3 0 0 0 3-3v-1h2a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2h-1v-1a3 3 0 0 0-3-3"/><circle cx="12" cy="12" r="1.5" opacity="0.5"/></svg>';
+export const EXTENSIVE_THINKING_ICON = interfaceIcon('thinking', 18);
 
 const STORAGE_KEY = 'socrates-extensive-thinking';
 

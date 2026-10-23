@@ -21,7 +21,21 @@ import {
   estimateMessageTokens,
   recordUsage,
   IMAGE_TOKEN_ESTIMATE,
+  estimateContextTokens,
+  estimateContextMessageTokens,
 } from '../src/services/core/usageTracker.js';
+
+test('context planning counts Unicode conservatively without changing billing estimates', () => {
+  assert.equal(estimateContextTokens(''), 0);
+  assert.equal(estimateContextTokens('abcde'), 2);
+  assert.equal(estimateContextTokens('中文对话'), 6);
+  assert.equal(estimateContextTokens('🙂'), 2);
+  assert.equal(estimateContextTokens('abcd中文'), 4);
+  assert.equal(estimateTokens('中文对话'), 1, 'historical billing fallback stays independent');
+  const input = [{ role: 'assistant', content: '答案', reasoning_content: '推理'.repeat(100), tool_calls: [{ function: { name: 'lookup', arguments: '{"query":"中文"}' } }] }];
+  assert.ok(estimateContextMessageTokens(input) > 300, 'reasoning and tool arguments consume context too');
+  assert.equal(estimateContextMessageTokens([{ content: [{ type: 'text', text: '中文' }, { type: 'image_url' }] }]), 3 + IMAGE_TOKEN_ESTIMATE + 4);
+});
 
 /* ── estimateTokens ───────────────────────────────────────────── */
 

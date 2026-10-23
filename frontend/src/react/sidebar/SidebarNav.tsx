@@ -1,7 +1,7 @@
 import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
 import { createRoot, type Root } from 'react-dom/client';
 import type { MouseEvent as ReactMouseEvent } from 'react';
-import { Plus } from 'lucide-react';
+import { Icon } from '../../ui/Icon';
 
 import { getLegacyActions, i18n } from '../legacy/gateway.ts';
 import { openNav } from '../../sidebar/navigation.service';
@@ -46,7 +46,7 @@ function SidebarNav() {
               openNav('projects');
               void import('../pages/workspace/workspace.dialogs').then(({ openProjectForm }) => openProjectForm())
                 .catch(() => getLegacyActions().messages.showToast?.(i18n('sidebar.projectOpenFailed', 'Could not open the project form. Please try again.')));
-            }}><Plus aria-hidden="true" /></button>
+            }}><Icon name="plus" /></button>
         </div>;
       })}
     </>

@@ -92,20 +92,41 @@ export function estimateTokens(text: unknown): number {
   return Math.max(1, Math.round(String(text).length / 4));
 }
 
+/** Conservative context planning heuristic, separate from the historical
+ * billing fallback. ASCII uses ceil(chars/4); non-ASCII uses ceil(UTF-8 bytes/2)
+ * so Chinese, Japanese and emoji are not budgeted as English prose. This is
+ * not a provider tokenizer or a price estimate; provider usage stays canonical. */
+export function estimateContextTokens(text: unknown): number {
+  if (!text) return 0;
+  const value = String(text);
+  // Count without allocating one RegExp match per character in long prompts.
+  let ascii = 0;
+  for (let i = 0; i < value.length; i++) if (value.charCodeAt(i) < 128) ascii++;
+  return Math.ceil(ascii / 4 + (Buffer.byteLength(value, 'utf8') - ascii) / 2);
+}
+
 export function estimateMessageTokens(messages: unknown): number {
+  return countMessageTokens(messages, estimateTokens);
+}
+
+export function estimateContextMessageTokens(messages: unknown): number {
+  return countMessageTokens(messages, estimateContextTokens);
+}
+
+function countMessageTokens(messages: unknown, countText: (text: unknown) => number): number {
   if (!Array.isArray(messages)) return 0;
   let total = 0;
   for (const message of messages) {
     const c = message && typeof message === 'object'
       ? (message as { content?: unknown }).content
       : undefined;
-    if (typeof c === 'string') total += estimateTokens(c);
+    if (typeof c === 'string') total += countText(c);
     else if (Array.isArray(c)) {
       for (const part of c) {
         if (!part || typeof part !== 'object') continue;
         const typedPart = part as { text?: unknown; type?: unknown };
         if (typeof typedPart.text === 'string') {
-          total += estimateTokens(typedPart.text);
+          total += countText(typedPart.text);
         } else if (typedPart.type === 'image_url') {
           /* P_attachments — count each image_url part as ~765
            * tokens so the heatmap accurately reflects the cost of
@@ -123,9 +144,9 @@ export function estimateMessageTokens(messages: unknown): number {
       // Tool-mode reasoning is part of the next request's context (MiniMax
       // and DeepSeek). Do not budget only visible prose, or a short-looking
       // conversation can silently exhaust the provider's context/TPM budget.
-      if (typeof m.reasoning_content === 'string') total += estimateTokens(m.reasoning_content);
-      else if (Array.isArray(m.reasoning_details)) total += estimateTokens(JSON.stringify(m.reasoning_details));
-      if (Array.isArray(m.tool_calls)) total += estimateTokens(JSON.stringify(m.tool_calls));
+      if (typeof m.reasoning_content === 'string') total += countText(m.reasoning_content);
+      else if (Array.isArray(m.reasoning_details)) total += countText(JSON.stringify(m.reasoning_details));
+      if (Array.isArray(m.tool_calls)) total += countText(JSON.stringify(m.tool_calls));
     }
   }
   /* Per-message overhead for role markers / formatting (rough). */

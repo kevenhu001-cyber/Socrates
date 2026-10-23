@@ -1,7 +1,7 @@
+import { interfaceIcon } from '../../ui/icons/interfaceIcons';
 import type { ExtensionDefinition } from '../types';
 
-export const CREATE_IMAGE_ICON =
-  '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-5-5L5 20"/><path d="M18 2v4m-2-2h4"/></svg>';
+export const CREATE_IMAGE_ICON = interfaceIcon('image', 18);
 
 export const CREATE_IMAGE_SYSTEM_PROMPT = [
   'You are in image creation mode. The user has just submitted an image brief.',

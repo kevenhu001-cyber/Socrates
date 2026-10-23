@@ -1,9 +1,9 @@
+import { interfaceIcon } from '../../ui/icons/interfaceIcons';
 // frontend/src/extensions/modules/explore.ts
 
 import type { ExtensionDefinition } from '../types';
 
-export const EXPLORE_ICON =
-  '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>';
+export const EXPLORE_ICON = interfaceIcon('compass', 18);
 
 export const EXPLORE_SYSTEM_PROMPT =
   'You are running the Explore workflow — a staged research system that turns an open question into a polished deliverable.\n\n' +

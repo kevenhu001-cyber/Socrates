@@ -1,3 +1,4 @@
+import { Icon } from '../../../ui/Icon';
 /**
  * Indicator components — small React roots registered by the boot registry.
  *
@@ -15,7 +16,7 @@ const ICON_PROPS = {
   fill: 'none', stroke: 'currentColor', strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true,
 } as const;
 
-function SendArrowIcon() { return <svg viewBox="0 0 24 24" {...ICON_PROPS} strokeWidth="2.5" className="icon-arrow"><path d="M12 19V5M5 12l7-7 7 7" /></svg>; }
+function SendArrowIcon() { return <Icon name="arrowUp" strokeWidth={2.25} className="icon-arrow" />; }
 function StopSquareIcon() { return <svg viewBox="0 0 24 24" {...ICON_PROPS} strokeWidth="2" className="icon-stop"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>; }
 /* The pill's visibility is part of the sticky-bottom contract: while an
    answer streams, a reader who scrolls away gets the "↓ New reply"

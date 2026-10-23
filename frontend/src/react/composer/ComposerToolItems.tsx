@@ -1,3 +1,4 @@
+import { Icon } from '../../ui/Icon';
 import { i18n, menuCopy, MOBILE_MENU_ITEMS, type MenuItemSpec } from './composerToolsMenuData';
 import type { ComposerToolsAction } from './types';
 
@@ -64,7 +65,7 @@ export function MobileMenuItem({
       <span className="composer-tools-icon" dangerouslySetInnerHTML={{ __html: icon }} />
       <span className="composer-tools-copy"><span>{text}</span></span>
       {active ? (
-        <svg className="composer-tools-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+        <Icon name="check" className="composer-tools-check" />
       ) : null}
     </button>
   );

@@ -136,7 +136,7 @@
        other floating surface uses. A literal 20px here is what kept the
        phone card rounder than the desktop one and than the model-config
        popover it opens beside. */
-    border-radius: var(--ui-radius-lg) !important;
+    border-radius: var(--ui-radius-popover) !important;
   }
 
   /* Reference rows are full-height touch targets with a 44px chip, not the
@@ -290,16 +290,6 @@
    ========================================================================== */
 @media (min-width: 769px) {
   /* Reference header: 52px bar, 36px rows at 8px inset. */
-
-  /* Landing greeting — the reference sets 24px/28px at weight 400 and leaves
-     a 36px gap down to the capsule. The size stays multiplied by the user's
-     text-scale preference, as it was before this pass. */
-  #appShell#appShell#appShell #topicSetup .topic-title.greeting {
-    margin: 0 auto 36px !important;
-    font-weight: 400 !important;
-    line-height: 28px !important;
-    letter-spacing: normal !important;
-  }
 
   /* Idle capsule — one 52px row of 36px hit areas around the editor. The
      third track is the effort pill's slot (auto so "Beagle · 中" fits),

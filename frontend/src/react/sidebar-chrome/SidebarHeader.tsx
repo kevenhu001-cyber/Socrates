@@ -1,3 +1,4 @@
+import { Icon } from '../../ui/Icon';
 import { getLegacyActions, t } from '../legacy/gateway.ts';
 import { sidebarIcons } from '../../sidebar/sidebarIcons';
 import { useUserInfo } from './sidebarChrome.bridge';
@@ -30,9 +31,7 @@ export function SidebarHeader() {
           height={20}
         />
         <span>Socrates</span>
-        <svg className="cg-sidebar-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="m7 10 5 5 5-5" />
-        </svg>
+        <Icon name="chevronDown" className="cg-sidebar-caret" />
       </div>
       <div className="sidebar-header-actions">
         <button

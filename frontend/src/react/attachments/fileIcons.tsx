@@ -1,25 +1,6 @@
-/**
- * SVG icons for the attachment chip row.
- *
- * Each icon is a 24×24 outline that lives inside a 28×28 rounded chip
- * background. Icons are tinted via `currentColor`, so the chip CSS
- * (color: hsl(var(--text-300)) in the dark theme) decides the final
- * hue. The reference design uses a single accent (a soft blue) across
- * every kind, so every glyph here shares the same stroke style and
- * we don't recolor per file type — picking the right glyph is the
- * visual signal.
- *
- * Add new kinds by appending to FILE_ICON_PICKER below; the picker
- * runs once per chip render and short-circuits at the first match.
- *
- * Glyph design rules (kept consistent so every chip looks like the
- * same family):
- *   - 24×24 viewBox, stroke 2px, round caps/joins, fill none.
- *   - The document outline is the same path for office/text kinds;
- *     the inner glyph (W, X, P, PDF, …) is the only thing that
- *     changes.
- *   - Code / image / generic use a distinct outline shape.
- */
+/** Attachment glyphs use the shared rounded document shell. Office badges keep
+ * their familiar semantic colors; neutral files inherit the current theme. */
+import { interfaceIcon, interfaceIconInnerHtml } from '../../ui/icons/interfaceIcons';
 import type { AttachmentEntry } from './types';
 
 /* Structural subset the icon picker actually reads — widened so both
@@ -27,58 +8,50 @@ import type { AttachmentEntry } from './types';
    (optional id, ReadonlyArray rows) can drive it. */
 export type IconSource = Pick<AttachmentEntry, 'kind' | 'docKind' | 'mime' | 'name'>;
 
-const DOC_PATH =
-  '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>' +
-  '<polyline points="14 2 14 8 20 8"/>';
-
+const DOC_PATH = interfaceIconInnerHtml('document');
 const OFFICE_BADGE = (color: string, letter: string) =>
-  `<rect x="3" y="10" width="10" height="9" rx="1.5" fill="${color}" stroke="none"/>` +
-  `<text x="8" y="17" text-anchor="middle" font-size="7" font-weight="800" font-family="ui-sans-serif,system-ui,sans-serif" fill="#ffffff" stroke="none">${letter}</text>`;
+  `<rect x="3" y="10" width="10" height="9" rx="2.5" fill="${color}" stroke="none"/>` +
+  `<text x="8" y="17" text-anchor="middle" font-size="7" font-weight="800" font-family="Geist Sans,Arial,sans-serif" fill="#ffffff" stroke="none">${letter}</text>`;
 
 const WORD_ICON =
-  `<svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_PATH}${OFFICE_BADGE('#2563eb', 'W')}</svg>`;
+  `<svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_PATH}${OFFICE_BADGE('#2563eb', 'W')}</svg>`;
 const EXCEL_ICON =
-  `<svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_PATH}${OFFICE_BADGE('#16a34a', 'X')}</svg>`;
+  `<svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_PATH}${OFFICE_BADGE('#16a34a', 'X')}</svg>`;
 const POWERPOINT_ICON =
-  `<svg viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_PATH}${OFFICE_BADGE('#ea580c', 'P')}</svg>`;
+  `<svg viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_PATH}${OFFICE_BADGE('#ea580c', 'P')}</svg>`;
 const PDF_ICON =
-  `<svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_PATH}${OFFICE_BADGE('#dc2626', 'P')}</svg>`;
+  `<svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_PATH}${OFFICE_BADGE('#dc2626', 'P')}</svg>`;
 
 const TEXT_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
   DOC_PATH +
   '<line x1="8" y1="13" x2="16" y2="13"/>' +
   '<line x1="8" y1="17" x2="13" y2="17"/>' +
   '</svg>';
 
 const EPUB_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
   '<path d="M12 6c-2-1.5-5-2-8-2v14c3 0 6 0.5 8 2 2-1.5 5-2 8-2V4c-3 0-6 0.5-8 2z"/>' +
   '<line x1="12" y1="6" x2="12" y2="20"/>' +
   '</svg>';
 const RTF_ICON = WORD_ICON;
 
 const CODE_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
   DOC_PATH +
   '<polyline points="8 13 6 15 8 17" stroke-width="1.8"/>' +
   '<polyline points="12 13 14 15 12 17" stroke-width="1.8"/>' +
   '</svg>';
 
-const IMAGE_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-  '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>' +
-  '<circle cx="8.5" cy="8.5" r="1.5"/>' +
-  '<polyline points="21 15 16 10 5 21"/>' +
-  '</svg>';
+const IMAGE_ICON = interfaceIcon('image');
 
 const FILE_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
   DOC_PATH +
   '</svg>';
 
 const MEDIA_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
   DOC_PATH +
   '<polygon points="9 12 14 15 9 18 9 12" fill="#8b5cf6" stroke="none"/>' +
   '</svg>';

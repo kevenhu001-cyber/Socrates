@@ -1,3 +1,4 @@
+import { Icon } from '../../ui/Icon';
 import { useEffect, useState } from 'react';
 
 import { repositionComposerTools } from '../../ui/composerTools';
@@ -75,10 +76,7 @@ export function ComposerToolMenuItems({
   return (
     <>
       <label className="composer-tools-header-search composer-tools-search composer-tools-footer-search">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
+        <Icon name="search" />
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}

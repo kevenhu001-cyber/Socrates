@@ -1,3 +1,4 @@
+import { interfaceIcon } from '../../ui/icons/interfaceIcons';
 import {
   t as _t,
 } from '../legacy/gateway.ts';
@@ -6,8 +7,6 @@ import { extensiveThinkingExtension } from '../../extensions/modules/extensiveTh
 import type { ExtensionDefinition } from '../../extensions/types';
 
 export type MenuItemSpec = ExtensionDefinition;
-
-const MOBILE_MENU_ICON_OPEN = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
 
 export const MOBILE_MENU_ITEMS: ReadonlyArray<{
   action: 'camera' | 'photos';
@@ -19,13 +18,13 @@ export const MOBILE_MENU_ITEMS: ReadonlyArray<{
     action: 'camera',
     labelKey: 'composer.tools.camera',
     label: 'Camera',
-    icon: MOBILE_MENU_ICON_OPEN + '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
+    icon: interfaceIcon('camera', 18),
   },
   {
     action: 'photos',
     labelKey: 'composer.tools.photos',
     label: 'Photos',
-    icon: MOBILE_MENU_ICON_OPEN + '<rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>',
+    icon: interfaceIcon('image', 18),
   },
 ];
 

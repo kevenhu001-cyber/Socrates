@@ -27,7 +27,7 @@ test('account menu uses the shared overlay entrance anchored to its trigger edge
   });
 
   expect(motion.animationName).toBe('ui-overlay-in');
-  expect(motion.animationDuration).toBe('0.16s');
+  expect(motion.animationDuration).toBe('0.18s');
   expect(motion.placement).toBe('above');
   expect(motion.align).toBe('end');
   expect(motion.originX).toBeCloseTo(motion.width, 0);
@@ -89,9 +89,11 @@ for (const variant of ['light', 'dark', 'mobile']) {
   test(`account menu stays within the ${variant} viewport`, async ({ page }, testInfo) => {
     if (variant === 'mobile') {
       await page.setViewportSize({ width: 390, height: 640 });
-      await page.evaluate(() => {
-        if (document.getElementById('sidebar')?.classList.contains('collapsed')) window.toggleSidebar?.();
-      });
+      // The resize handler closes the desktop drawer on a width change. Wait
+      // for that commit before reopening through the real mobile control.
+      await expect(page.locator('#sidebar')).toHaveClass(/collapsed/);
+      await page.locator('#sidebarOpenBtn').click();
+      await expect(page.locator('#sidebar')).not.toHaveClass(/collapsed/);
     }
     await page.evaluate((theme) => {
       if (document.documentElement.dataset.mode !== theme) window.toggleTheme();

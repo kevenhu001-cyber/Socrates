@@ -78,12 +78,15 @@
   box-shadow: var(--ui-composer-shadow);
   transform: none;
   /* Paint-only feedback; geometry changes are animated by RichComposer. */
-  transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+  transition: border-color var(--ui-duration-overlay) var(--ui-ease-out),
+              background-color var(--ui-duration-overlay) var(--ui-ease-out),
+              box-shadow var(--ui-duration-overlay) var(--ui-ease-out);
 }
 
 /* A quiet focus cue keeps the capsule readable without a bright outer glow. */
 #appShell .composer-shell:not(.voice-recording-active):focus-within {
   border-color: var(--ui-border-strong);
+  box-shadow: var(--ui-composer-shadow), 0 0 0 1px var(--ui-border-strong);
 }
 
 /* Two-row layout: a real multi-line draft, or any tool / plugin chip.
@@ -346,12 +349,17 @@
   color: var(--ui-on-accent);
   font-weight: 500;
 }
-#appShell .composer-shell .composer-primary-btn:hover { opacity: 0.8; }
+#appShell .composer-shell .composer-primary-btn:hover { opacity: var(--ui-press-opacity); }
 /* Paint-only feedback for compact composer controls; polish/press.css keeps
    their circles and SVG geometry fixed throughout the press. They dim a
    step further than wide buttons so the 36px disc still reads as pressed. */
 #appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn) {
   --press-opacity: var(--ui-press-opacity-sm);
+}
+/* The controls' resting opacity is pinned by this owner. Mirror the pressed
+   paint here too so the generic press rule is not lost to that specificity. */
+#appShell .composer-shell :is(.composer-tools-trigger, .mobile-mic-btn, .composer-primary-btn):not(:disabled):is(:active, .is-pressed) {
+  opacity: var(--press-opacity);
 }
 #appShell .composer-shell .composer-primary-btn:disabled { opacity: 0.3; cursor: default; }
 #appShell .composer-shell .composer-primary-btn > span { display: grid; place-items: center; }

@@ -1,3 +1,5 @@
+import { Icon } from '../../ui/Icon';
+import { INTERFACE_ICON_STROKE } from '../../ui/icons/interfaceIcons';
 import { useRef, useState, useSyncExternalStore, type MouseEvent, type ReactNode } from 'react';
 import { i18n } from '../legacy/gateway';
 import { DeferredMenu } from '../menu/DeferredMenu';
@@ -26,7 +28,7 @@ export function MessageOverflow({ actions }: { actions: OverflowAction[] }) {
   const label = i18n('message.moreActions', 'More actions');
   return <DeferredMenu open={open} onOpenChange={setOpen} className="msg-action-menu" label={label} align="start"
     trigger={<button ref={trigger} type="button" className="btn btn-icon btn-touch msg-toolbar-btn" aria-label={label}>
-      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="19" cy="12" r="1.7" /></svg>
+      <Icon name="more" />
     </button>}>
     {({ FoundationMenuItem }) => actions.filter((action) => mobile || !action.mobileOnly).map((action) =>
       <FoundationMenuItem key={action.label} className={action.mobileOnly ? 'msg-action-mobile-only' : undefined}
@@ -37,7 +39,7 @@ export function MessageOverflow({ actions }: { actions: OverflowAction[] }) {
           trigger.current?.focus({ preventScroll: true });
           action.onClick?.(event);
         }}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{action.icon}</svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={INTERFACE_ICON_STROKE} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{action.icon}</svg>
         {action.label}
       </FoundationMenuItem>,
     )}

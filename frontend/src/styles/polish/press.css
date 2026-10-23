@@ -108,7 +108,13 @@
     .thinking-status-clickable
   ) {
     scale: 1;
-    transition: opacity var(--ui-duration-fast) ease;
+    /* A press must not replace the button's hover colors with an opacity-only
+       transition. Keep the same paint channels through press and release. */
+    transition: opacity var(--ui-duration-fast) var(--ui-ease-out),
+                background-color var(--ui-duration-hover) var(--ui-ease-out),
+                border-color var(--ui-duration-hover) var(--ui-ease-out),
+                color var(--ui-duration-hover) var(--ui-ease-out),
+                box-shadow var(--ui-duration-hover) var(--ui-ease-out);
   }
 
   :is(button, [role="button"], [role="tab"]):not(
@@ -156,13 +162,12 @@
     .thinking-status-clickable
   ).is-press-release {
     scale: 1;
-    transition: opacity var(--ui-duration-fast) ease;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   :is(button, [role="button"], [role="tab"]):not(:disabled, [aria-disabled="true"]):is(:active, .is-pressed) {
     scale: 1;
-    opacity: 0.8;
+    opacity: var(--ui-press-opacity);
   }
 }

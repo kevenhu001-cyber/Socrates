@@ -28,7 +28,7 @@ import type {NextFunction, Request, Response} from 'express';
 import {getActiveApiKey} from '../../services/core/apiKey.js';
 import {validateThinkingMode} from '../../services/core/llmProtocol.js';
 import {DEFAULT_MAX_TOKENS} from '../../services/core/llm.js';
-import {estimateMessageTokens} from '../../services/core/usageTracker.js';
+import {estimateContextMessageTokens} from '../../services/core/usageTracker.js';
 import {visualizationTemplateGuide} from '../../services/visualization.js';
 /* P_teacher-mode-cache — the teacher-mode system prompt lives on
    disk and rarely changes. The canonical loader is in
@@ -936,11 +936,12 @@ export async function prepareChatRequest(
       overrideTokens: Number(process.env.CHAT_CONTEXT_MAX_TOKENS),
       reserveTokens: max_tokens ?? DEFAULT_MAX_TOKENS,
     });
-    if (estimateMessageTokens(finalMessages) > budget.budget) {
+    if (estimateContextMessageTokens(finalMessages) > budget.budget) {
       const { compressSessionMessages } = await import('../../services/embeddings/sessionCompressor.js');
       const rawKeep = Number(process.env.CHAT_CONTEXT_KEEP_TURNS);
       const compressed = await compressSessionMessages(conversation, {
-        triggerTokens: Math.max(1, budget.budget - estimateMessageTokens([finalMessages[0]])),
+        ...(req.userId && sessionId ? { cacheScope: `${req.userId}:${sessionId}` } : {}),
+        triggerTokens: Math.max(1, budget.budget - estimateContextMessageTokens([finalMessages[0]])),
         ...(Number.isFinite(rawKeep) && rawKeep > 0 ? { keepTurns: Math.floor(rawKeep) } : {}),
       });
       if (compressed.didCompress && compressed.messages.length) {

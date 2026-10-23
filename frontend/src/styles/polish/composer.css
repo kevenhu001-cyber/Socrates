@@ -11,6 +11,11 @@
 @media (min-width: 769px) {
 :root:not(#_composer-a):not(#_composer-b):not(#_composer-c) #appShell #topicSetup .topic-title.greeting {
   font-family: var(--cg-font);
+  /* Brand typography has one live owner; the old restore pins are retired. */
+  margin: 0 auto 36px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.025em;
 }
 }
 
@@ -44,27 +49,25 @@
    nothing to converge here. */
 
 /* "+" open animation — same motion language as the rest of the overlay
-   system: a very small anchored lift, .98 scale, shared 160ms/ease-out.
+   system: a 2px anchored lift and the shared scale / duration / easing.
    The menu lives on <body> and is shown by removing .hidden (display:none),
    so this animation replays on every open without JS coordination. */
 @keyframes composerToolsIn {
   from {
     opacity: 0;
-    transform: translateY(var(--_ct-dir, -4px)) scale(var(--ui-overlay-enter-scale, .98));
-    filter: blur(0.5px);
+    transform: translateY(var(--_ct-dir, -2px)) scale(var(--ui-overlay-enter-scale));
   }
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
-    filter: blur(0);
   }
 }
 body #composerToolsMenu.composer-tools-menu:not(.hidden) {
-  animation: composerToolsIn var(--ui-duration-overlay) var(--ui-ease-apple, ease) both;
+  animation: composerToolsIn var(--ui-duration-overlay) var(--ui-ease-out) both;
   transform-origin: top left;
 }
 body #composerToolsMenu.composer-tools-menu[data-menu-side="above"]:not(.hidden) {
-  --_ct-dir: 4px;
+  --_ct-dir: 2px;
   transform-origin: bottom left;
 }
 @media (prefers-reduced-motion: reduce) {

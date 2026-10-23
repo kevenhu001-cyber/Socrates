@@ -1,3 +1,4 @@
+import { Icon } from '../../ui/Icon';
 import { useEffect, useLayoutEffect, useState } from 'react';
 import type { ComposerSurface } from '../../composer/types.ts';
 import { syncComposerShellFlags } from '../../ui/composerShape.js';
@@ -48,13 +49,8 @@ function WebSearchChip() {
       }}
     >
       <span className="composer-tool-chip-icon" aria-hidden="true">
-        <svg className="composer-tool-chip-glyph" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="10" cy="10" r="7.25" />
-          <path d="M2.75 10h14.5M10 2.75c2 2 3 4.4 3 7.25s-1 5.25-3 7.25c-2-2-3-4.4-3-7.25s1-5.25 3-7.25Z" />
-        </svg>
-        <svg className="composer-tool-chip-close" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-          <path d="m6 6 8 8M14 6l-8 8" />
-        </svg>
+        <Icon name="globe" className="composer-tool-chip-glyph" />
+        <Icon name="close" className="composer-tool-chip-close" />
       </span>
       <span className="composer-tool-chip-label">{label}</span>
     </button>
@@ -105,7 +101,7 @@ function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
               removeComposerPlugin(surface, plugin.id);
             }}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" /></svg>
+            <Icon name="close" />
           </button>
         </span>
       ))}

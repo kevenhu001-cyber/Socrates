@@ -143,15 +143,13 @@
 @media (min-width: 769px) {
   #appShell #topicSetup .topic-title.greeting {
     position: static;
-    margin: 0 0 48px;
-    /* --ui-text-hero carries the normalized type scale (--app-type-scale =
-       --app-font-scale / 1.125), so the hero is the reference's 24px at the
-       default font setting. The raw --app-font-scale used here double-counted
-       the default and rendered the hero at 27px. */
-    font-size: var(--ui-text-hero);
-    line-height: 1.25;
+    margin: 0 auto 36px;
+    /* Match the site's stronger heading while retaining the normalized
+       user text scale. Mobile keeps its separate reference-pinned metrics. */
+    font-size: calc(var(--ui-foundation-font-size-heading-2) * var(--app-type-scale));
+    line-height: 1.3;
     letter-spacing: -0.02em;
-    font-weight: 400;
+    font-weight: 500;
   }
 }
 

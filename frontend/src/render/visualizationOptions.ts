@@ -63,15 +63,9 @@ function normalizeFunction(spec: VizSpec): {
   return { series: series, xExtent: [minX, maxX], yExtent: yExtent };
 }
 
-/* ECharts ignores CSS variables read at runtime, so we pass concrete HSL
- * strings. The chart is re-rendered when the user toggles the theme
- * (see _watchTheme). Keep the bundled Plus Jakarta Sans (with Inter
- * fallback) as the authoritative font family — system-ui is a fallback
- * only if the bundled faces are unavailable, never the default. */
-/* P_viz-google-fonts — Chinese glyphs resolve to the bundled Noto Sans SC
-   rather than an OS-dependent fallback. Keep Plus Jakarta Sans first
-   for Latin/numerals, Inter as local fallback. */
-export const VIZ_FONT_FAMILY = "'Plus Jakarta Sans','Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif";
+/* Canvas/SVG renderers need a concrete family list. Keep it aligned with
+   themes.css so chart labels use the same Geist and Noto faces as the UI. */
+export const VIZ_FONT_FAMILY = "'Geist Sans','Noto Sans SC','PingFang SC','Microsoft YaHei',Arial,sans-serif";
 
 function legendOptions(
   series: readonly unknown[],

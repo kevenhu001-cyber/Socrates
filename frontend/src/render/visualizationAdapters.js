@@ -1,4 +1,5 @@
 import { whenFontsReady } from './helpers.ts';
+import { VIZ_FONT_FAMILY } from './visualizationOptions.ts';
 import { ensureMermaid, ensurePlotly } from '../vendor/lazy.js';
 
 let plotlyPromise;
@@ -115,13 +116,13 @@ async function mountPlotly(spec, stage, helpers) {
   const categories = spec.payload.categories || [];
   const longestCategory = categories.reduce((max, value) => Math.max(max, Array.from(String(value ?? '')).length), 0);
   const tickAngle = categories.length > 10 ? -40 : (categories.length > 6 && longestCategory > 18 ? -28 : 0);
-  await whenFontsReady('Plus Jakarta Sans');
+  await whenFontsReady('Geist Sans');
   await Plotly.newPlot(stage, traces, {
     autosize: true,
     margin: { l: 58, r: 22, t: 24, b: tickAngle ? 96 : 58 },
     paper_bgcolor: 'transparent',
     plot_bgcolor: 'transparent',
-    font: { family: "'Plus Jakarta Sans','Inter','Noto Sans SC',sans-serif", color: colors.text, size: 12 },
+    font: { family: VIZ_FONT_FAMILY, color: colors.text, size: 12 },
     xaxis: { title: { text: spec.payload.xLabel || 'x' }, gridcolor: colors.grid, zerolinecolor: colors.muted, automargin: true, tickangle: tickAngle },
     yaxis: { title: { text: spec.payload.yLabel || 'y' }, gridcolor: colors.grid, zerolinecolor: colors.muted, automargin: true },
     legend: { orientation: 'h', y: 1.08 },
@@ -200,6 +201,7 @@ async function mountMermaid(spec, stage) {
     mermaid.initialize({
       startOnLoad: false,
       securityLevel: 'strict',
+      fontFamily: VIZ_FONT_FAMILY,
       theme: document.documentElement.getAttribute('data-mode') === 'dark' ? 'dark' : 'neutral',
       flowchart: { htmlLabels: false, curve: 'basis', useMaxWidth: true },
     });
@@ -209,7 +211,7 @@ async function mountMermaid(spec, stage) {
     stage.innerHTML = svg;
     bindFunctions?.(stage);
   };
-  await whenFontsReady('Plus Jakarta Sans');
+  await whenFontsReady('Geist Sans');
   await draw();
   const stopWatchingTheme = watchTheme(() => { draw().catch(() => {}); });
   return {

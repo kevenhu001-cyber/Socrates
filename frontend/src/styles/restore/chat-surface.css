@@ -152,11 +152,7 @@ body,
   position: static !important;
   display: block !important;
   max-width: min(100%, 620px);
-  margin: 0 auto 28px !important;
   color: var(--conversation-text) !important;
-  font-weight: 400 !important;
-  line-height: 1.25 !important;
-  letter-spacing: -0.01em !important;
   text-align: center !important;
 }
 }
@@ -384,9 +380,6 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
    composer, and a grown (multiline) chat composer keeps 40px controls while
    the idle rail stays 36px. */
 @media (min-width: 769px) {
-  #appShell#appShell#appShell #topicSetup .topic-title.greeting {
-    margin: 0 auto 22px !important;
-  }
 
   /* Desktop and phone surfaces share the charcoal page token. The literal
      repins were retired — themes.css's bridge owns --conversation-page. */
@@ -483,7 +476,6 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 
 #appShell#appShell #topicSetup .topic-title.greeting {
   color: var(--chat-text) !important;
-  font-weight: 400 !important;
 }
 }
 

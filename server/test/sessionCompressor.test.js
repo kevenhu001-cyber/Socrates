@@ -51,6 +51,26 @@ describe('sessionCompressor: short histories pass through', () => {
 });
 
 describe('sessionCompressor: over-budget histories compress', () => {
+  test('a short history still compresses when its text exceeds the budget', async () => {
+    process.env.SESSION_COMPRESS_DISABLE = '1';
+    try {
+      const input = Array.from({ length: 8 }, (_, i) => ({ role: i % 2 ? 'assistant' : 'user', content: '中文'.repeat(100) }));
+      const result = await compressSessionMessages(input, { triggerTokens: 1000 });
+      assert.equal(result.didCompress, true, 'the 24-message keep window must not bypass token budgeting');
+      assert.deepEqual(result.messages.slice(1), input.slice(-2));
+      assert.equal(result.droppedTurns, 6);
+    } finally { delete process.env.SESSION_COMPRESS_DISABLE; }
+  });
+  test('Chinese history crosses the context budget before the English billing heuristic', async () => {
+    process.env.SESSION_COMPRESS_DISABLE = '1';
+    try {
+      const input = Array.from({ length: 30 }, (_, i) => ({ role: i % 2 ? 'assistant' : 'user', content: '中文'.repeat(50) }));
+      const result = await compressSessionMessages(input, { triggerTokens: 1000, keepTurns: 4 });
+      assert.equal(result.didCompress, true);
+      assert.equal(result.droppedTurns, 26);
+      assert.deepEqual(result.messages.slice(1), input.slice(-4));
+    } finally { delete process.env.SESSION_COMPRESS_DISABLE; }
+  });
   test('tail-only path keeps the most recent turns verbatim', async () => {
     process.env.SESSION_COMPRESS_DISABLE = '1';
     process.env.SESSION_COMPRESS_TOKENS = '500';

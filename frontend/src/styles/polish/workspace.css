@@ -222,7 +222,7 @@
   z-index: var(--ui-z-menu);
   min-width: 120px;
   padding: 4px;
-  border-radius: var(--ui-radius-lg);
+  border-radius: var(--ui-radius-popover);
   background: var(--ui-bg-surface);
   border: 1px solid var(--ui-border-subtle);
   box-shadow: var(--ui-shadow-popover);
@@ -320,7 +320,7 @@
   gap: 2px;
   background: var(--ui-bg-raised);
   border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-control);
+  border-radius: var(--ui-radius-popover);
   box-shadow: var(--ui-shadow-popover);
 }
 

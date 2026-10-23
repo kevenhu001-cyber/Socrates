@@ -23,7 +23,7 @@
   }
   #appShell .cg-sidebar-caret { display: none; }
   #appShell #sidebarHeader .btn-icon { position: relative; display: grid; place-items: center; width: 40px; min-width: 40px; height: 40px; min-height: 40px; padding: 0; }
-  #appShell #sidebarHeader .btn-icon svg { width: 24px; height: 24px; stroke-width: 2.1; }
+  #appShell #sidebarHeader .btn-icon svg { width: 24px; height: 24px; }
   #appShell #sidebarHeader #sidebarSearchBtn { border: 0; border-radius: var(--ui-radius-pill); background: transparent; }
   #appShell .sidebar-search input { font-size: calc(16px * var(--app-type-scale)); line-height: 24px; }
   #appShell #sidebarNav { display: flex; flex-direction: column; gap: 0; padding: 0; }
@@ -42,7 +42,7 @@
     line-height: 24px;
     color: var(--ui-text-primary);
   }
-  #appShell #sidebarNav .sidebar-nav-btn svg { width: 24px; height: 24px; stroke-width: 2.1; }
+  #appShell #sidebarNav .sidebar-nav-btn svg { width: 24px; height: 24px; }
   #appShell #sidebarNav .nav-label { line-height: 24px; }
   #appShell #sidebarNav #navNew { order: 0; }
   #appShell #sidebarNav #navImages { order: 5; }
@@ -112,7 +112,7 @@
      ratchet tracks. */
   [data-mode="dark"] #appShell #sidebar svg {
     color: var(--ui-sidebar-glyph);
-    stroke-width: 2.1;
+
     stroke-linecap: round;
     stroke-linejoin: round;
   }

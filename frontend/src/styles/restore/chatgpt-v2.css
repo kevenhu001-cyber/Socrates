@@ -10,10 +10,6 @@
   #appShell #topicSetup > .topic-sub,
   #appShell #topicSetup > .mobile-starter-prompts,
   #appShell #topicSetup > .cg-history { position: relative; }
-  #appShell .topic-title.greeting {
-    font-weight: 500 !important;
-    letter-spacing: -0.025em !important;
-  }
   /* P_chatgpt-composer-desktop — the home composer geometry is borrowed
      from the ChatGPT reference surface: 768px width, 52px height, 28px
      fully-rounded pill, no idle border, and 36px square buttons. The grid

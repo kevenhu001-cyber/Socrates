@@ -19,13 +19,8 @@ body #composerToolsMenu.composer-tools-menu {
   max-height: min(75dvh, 520px);
   overflow-y: auto;
   overscroll-behavior: contain;
-  /* One popover shape for every floating surface: 12px, the value
-     polish/overlays.css documents for menus and popovers. This card was
-     --ui-radius-2xl (20px) here, 16px !important in
-     restore/chatgpt-parity.css on desktop and 20px again in the phone
-     block below — three radii for one menu, none of them the documented
-     one. */
-  border-radius: var(--ui-radius-lg);
+  /* The same soft corner on desktop, phone, account and configuration menus. */
+  border-radius: var(--ui-radius-popover);
   animation: none;
 }
 body #composerToolsMenu.composer-tools-menu::before { display: none; }
@@ -97,7 +92,7 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
   width: min(254px, calc(100vw - 32px));
   max-height: min(60dvh, 420px);
   padding: 8px;
-  border-radius: var(--ui-radius-lg);
+  border-radius: var(--ui-radius-popover);
 }
 .chat-config-pop button { border-radius: var(--ui-radius-control); }
 .chat-config-pop input[type="range"] { accent-color: var(--ui-link); }
@@ -141,7 +136,7 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
     min-width: 236px;
     height: min(48dvh, 234px);
     max-height: min(48dvh, 234px);
-    border-radius: var(--ui-radius-lg);
+    border-radius: var(--ui-radius-popover);
   }
   [data-mode="dark"] body #composerToolsMenu.composer-tools-menu { background: var(--ui-bg-surface); }
   #composerToolsMenu .composer-tools-item,

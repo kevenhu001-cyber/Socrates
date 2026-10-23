@@ -3,6 +3,7 @@ import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test.beforeEach(async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference', forcedColors: 'none' });
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -93,9 +94,68 @@ test('overlay motion uses only opacity and transform with a crisp ease-out', asy
     menu.remove();
     return result;
   });
-  expect(result.duration).toBe('0.16s');
+  expect(result.duration).toBe('0.18s');
   expect(result.easing).toBe('cubic-bezier(0.16, 1, 0.3, 1)');
   expect(result.hasFilter).toBe(false);
+});
+
+test('button hover colors keep their transition through press and release', async ({ page }) => {
+  const phases = await page.evaluate(() => {
+    const button = document.createElement('button');
+    button.className = 'btn';
+    button.textContent = 'Press feedback';
+    document.body.append(button);
+    const read = () => getComputedStyle(button).transitionProperty.split(',').map((value) => value.trim());
+    const idle = read();
+    button.classList.add('is-pressed');
+    const pressed = read();
+    button.classList.replace('is-pressed', 'is-press-release');
+    const released = read();
+    button.remove();
+    return [idle, pressed, released];
+  });
+  for (const properties of phases) {
+    expect(properties).toEqual(expect.arrayContaining(['opacity', 'background-color', 'color', 'border-color']));
+    expect(properties).not.toContain('all');
+  }
+});
+
+test('focus outlines use a color and the account input retains its separate halo', async ({ page }) => {
+  const focus = await page.evaluate(() => {
+    const style = getComputedStyle(document.documentElement);
+    const input = document.createElement('input');
+    input.className = 'settings-account-name';
+    document.body.append(input);
+    input.focus();
+    const result = {
+      validColor: CSS.supports('color', style.getPropertyValue('--ui-focus-ring').trim()),
+      validShadow: CSS.supports('box-shadow', style.getPropertyValue('--ui-focus-shadow').trim()),
+      shadow: getComputedStyle(input).boxShadow,
+    };
+    input.remove();
+    return result;
+  });
+  expect(focus.validColor).toBe(true);
+  expect(focus.validShadow).toBe(true);
+  expect(focus.shadow).not.toBe('none');
+});
+
+test('composer menu opens crisply on the shared clock and respects reduced motion', async ({ page }) => {
+  await page.locator('#composerToolsBtn').click();
+  const menu = page.locator('#composerToolsMenu');
+  await expect(menu).toBeVisible();
+  const motion = await menu.evaluate((node) => {
+    const style = getComputedStyle(node);
+    const frames = node.getAnimations().flatMap((animation) => animation.effect.getKeyframes());
+    return { duration: style.animationDuration, easing: style.animationTimingFunction,
+      radius: style.borderTopLeftRadius, hasFilter: frames.some((frame) => 'filter' in frame) };
+  });
+  expect(motion.duration).toBe('0.18s');
+  expect(motion.easing).toBe('cubic-bezier(0.16, 1, 0.3, 1)');
+  expect(motion.radius).toBe('16px');
+  expect(motion.hasFilter).toBe(false);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(menu).toHaveCSS('animation-name', 'none');
 });
 
 test('thinking, tools and recording share one primary persistent cue', async ({ page }) => {

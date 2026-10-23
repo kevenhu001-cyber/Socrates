@@ -80,9 +80,9 @@
   min-width: 126px;
   padding: 5px;
   border: 1px solid var(--ui-border-default);
-  border-radius: var(--ui-radius-row);
+  border-radius: var(--ui-radius-popover);
   background: var(--ui-bg-surface);
-  box-shadow: 0 10px 28px rgb(0 0 0 / 20%);
+  box-shadow: var(--ui-shadow-menu);
 }
 #appShell .library-row-menu button { padding: 8px 10px; border: 0; border-radius: var(--ui-radius-sm); background: transparent; color: var(--ui-text-primary); font: inherit; text-align: left; cursor: pointer; }
 #appShell .library-row-menu button:hover { background: var(--ui-bg-hover); }

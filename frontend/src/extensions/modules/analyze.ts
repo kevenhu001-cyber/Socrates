@@ -1,9 +1,9 @@
+import { interfaceIcon } from '../../ui/icons/interfaceIcons';
 // frontend/src/extensions/modules/analyze.ts
 
 import type { ExtensionDefinition } from '../types';
 
-export const ANALYZE_ICON =
-  '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/><path d="m4 7 6-4 6 7 5-4"/></svg>';
+export const ANALYZE_ICON = interfaceIcon('analyze', 18);
 
 export const DATA_ANALYSIS_SYSTEM_PROMPT =
   'You are in data-analysis mode. Treat attached files and pasted data as the working dataset.\n\n' +

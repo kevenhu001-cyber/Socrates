@@ -1,7 +1,7 @@
 /*
  * polish/overlays.css — one contract for every floating surface:
- * hairline border, unified radii (menu/popover 12 / modal 16),
- * token shadows, soft backdrop blur.
+ * hairline border, shared popover/dialog radii, two-layer shadows,
+ * and crisp compositor-only motion.
  */
 
 /* ── Menus & popovers ── */
@@ -29,9 +29,12 @@
 .extensions-menu,
 .tag-editor-popover,
 .mobile-mode-menu {
-  border-radius: var(--ui-radius-lg, 12px);
+  border-radius: var(--ui-radius-popover);
 }
-.chat-config-pop { border-radius: var(--ui-radius-lg, 12px); }
+.chat-config-pop {
+  border-radius: var(--ui-radius-popover);
+  animation: ui-overlay-in var(--ui-duration-overlay) var(--ui-ease-out) both;
+}
 
 /* Generation-config popover — converge on the same density as the "+"
    tools menu: 14px type, 40px rows, quiet hairline divider. The card
@@ -112,7 +115,7 @@
 }
 
 /* ── Motion: one entrance for dialogs, menus and popovers ──
-   docs/ref/chatgpt-parity.md: menus and dialogs fade + scale over ~160ms
+   Menus and dialogs share a short fade + scale
    ease-out (tokens.css --ui-duration-overlay / --ui-overlay-enter-scale).
    Before this every surface had its own entrance: dialogs slid 12px over
    200ms (confirm 150ms), and the command palette plus the sidebar "more" /
@@ -126,13 +129,13 @@
 @keyframes ui-overlay-in {
   /* Opacity + transform stay compositor-friendly; animating blur on a large
      settings dialog repaints its text and makes the entrance look soft. */
-  from { opacity: 0; transform: scale(var(--ui-overlay-enter-scale, .97)); }
+  from { opacity: 0; transform: scale(var(--ui-overlay-enter-scale)); }
   to { opacity: 1; transform: scale(1); }
 }
 
 @keyframes ui-overlay-out {
   from { opacity: 1; transform: scale(1); }
-  to { opacity: 0; transform: scale(var(--ui-overlay-enter-scale, .97)); }
+  to { opacity: 0; transform: scale(var(--ui-overlay-enter-scale)); }
 }
 
 @keyframes ui-scrim-in {
@@ -199,7 +202,7 @@
 [data-state="closing"].composer-tools-menu,
 [data-state="closing"].model-picker-menu,
 [data-state="closing"].extensions-menu {
-  animation: ui-overlay-out 120ms var(--ui-ease-out) forwards;
+  animation: ui-overlay-out var(--ui-duration-exit) var(--ui-ease-out) forwards;
 }
 
 .confirm-dialog[data-state="closing"],
@@ -208,7 +211,7 @@
 .usage-overlay[data-state="closing"],
 .share-overlay[data-state="closing"],
 .cmd-k-overlay[data-state="closing"] {
-  animation: ui-scrim-out 120ms var(--ui-ease-out) forwards;
+  animation: ui-scrim-out var(--ui-duration-exit) var(--ui-ease-out) forwards;
 }
 
 /* ── CmdK palette ── */
@@ -228,7 +231,7 @@
 .usage-modal,
 .confirm-box {
   border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-xl, 16px);
+  border-radius: var(--ui-radius-dialog);
   box-shadow: var(--ui-shadow-modal);
 }
 /* .modal-card's dialog fill used to come from restore/chatgpt-ui.css's
@@ -238,7 +241,7 @@
 
 /* ── Settings modal — keep the nav rail, refine chrome ── */
 .settings-modal {
-  border-radius: var(--ui-radius-xl, 16px);
+  border-radius: var(--ui-radius-dialog);
   box-shadow: var(--ui-shadow-modal);
 }
 .settings-close { border-radius: var(--ui-radius-control, 8px); }
@@ -273,7 +276,7 @@
 /* ── Profile modal ── */
 .profile-modal {
   border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-xl, 16px);
+  border-radius: var(--ui-radius-dialog);
   box-shadow: var(--ui-shadow-modal);
 }
 /* Same identity chip as the sidebar account row (parity/sidebar.css). The
@@ -345,7 +348,7 @@
   border-radius: var(--ui-radius-xs, 4px);
   min-width: 0;
 }
-.settings-account-name:focus { box-shadow: var(--ui-focus-ring); }
+.settings-account-name:focus { box-shadow: var(--ui-focus-shadow); }
 .settings-account-email {
   color: var(--ui-text-muted);
   font-size: var(--ui-font-size-xs);

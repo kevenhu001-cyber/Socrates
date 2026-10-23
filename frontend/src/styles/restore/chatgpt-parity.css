@@ -38,10 +38,6 @@
     min-height: 0 !important;
     height: auto;
     max-width: min(100%, 768px);
-    margin: 0 auto 48px !important;
-    font-weight: 400 !important;
-    line-height: 28px !important;
-    letter-spacing: 0 !important;
   }
 
   /* Compact add-content popover. Only the row inset lives here now.
@@ -91,7 +87,7 @@
   #composerToolsMenu .composer-tools-icon svg {
     width: 20px !important;
     height: 20px !important;
-    stroke-width: 1.8 !important;
+
   }
 
   #composerToolsMenu .composer-tools-copy {

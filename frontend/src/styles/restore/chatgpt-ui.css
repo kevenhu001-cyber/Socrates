@@ -358,9 +358,6 @@ body,
 #appShell .topic-title.greeting {
   max-width: 680px;
   color: var(--cg-text) !important;
-  font-weight: 520 !important;
-  letter-spacing: -0.04em !important;
-  line-height: 1.2 !important;
 }
 }
 
@@ -1061,15 +1058,6 @@ body.workspace-active #appShell .workspace-row:hover {
    3. A centered row of quick capability chips under the composer
       (markup: #topicQuickActions in index.html; logic: ui/quickChips.js). */
 
-@media (min-width: 769px) {
-
-#appShell .topic-title.greeting {
-  /* font-size moved on — the canonical 24px owner is
-     layout/app-shell.css (desktop) / polish/composer.css (mobile). */
-  font-weight: 600 !important;
-  letter-spacing: -.025em !important;
-}
-}
 
 
 
@@ -1120,13 +1108,6 @@ body.workspace-active #appShell .workspace-row:hover {
 }
 }
 
-@media (min-width: 769px) {
-
-#appShell .topic-title.greeting {
-  font-weight: 550 !important;
-  letter-spacing: -.035em !important;
-}
-}
 
 body.workspace-active #appShell #mainInner {
   width: min(100%, 1120px);

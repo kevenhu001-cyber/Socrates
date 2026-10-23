@@ -1,3 +1,4 @@
+import { Icon } from '../../ui/Icon';
 import { useEffect, useMemo, useState } from 'react';
 
 import { i18n } from './composerToolsMenuData';
@@ -41,7 +42,7 @@ function ComposerPluginItem({
       <PluginMark plugin={plugin} />
       <span className="composer-tools-plugin-name">{plugin.name}</span>
       {selected ? (
-        <svg className="composer-tools-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+        <Icon name="check" className="composer-tools-check" />
       ) : null}
     </button>
   );

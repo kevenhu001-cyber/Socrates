@@ -5,11 +5,9 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-/* The CJK face is MiSans (Xiaomi), bundled from the `misans` npm package and
-   served from this app's own origin — it replaced Noto Sans SC in
-   824b0864. The face is what the assertion is about; the name in the stack
-   is only the proof that the stack points at it. */
-const CJK_FACE = 'MiSans';
+/* Match the marketing site's Geist UI and locally hosted Noto Sans SC
+   fallback. Require real font loading as well as the declared stack. */
+const CJK_FACE = 'Noto Sans SC';
 
 /* The name in a font stack is not proof the face is usable: a @font-face
    whose file is missing still leaves the name in the computed style, and the
@@ -22,7 +20,7 @@ async function cjkFaceLoads(page) {
   }, CJK_FACE);
 }
 
-test('zh UI localizes live with the bundled Inter face', async ({ page }) => {
+test('zh UI localizes live with the bundled Geist Sans face', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -45,11 +43,17 @@ test('zh UI localizes live with the bundled Inter face', async ({ page }) => {
   });
   expect(zhState).not.toBeNull();
   expect(zhState.content).toContain('有问题，随便问');
-  expect(zhState.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('Inter');
+  expect(zhState.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('Geist Sans');
   expect(zhState.fontFamily).toContain(CJK_FACE);
-  expect(zhState.fontFamily).toContain('Inter');
-  expect(zhState.fontFamily).not.toContain('Microsoft YaHei');
+  expect(zhState.fontFamily).toContain('Geist Sans');
+  expect(zhState.fontFamily).not.toContain('MiSans');
   expect(await cjkFaceLoads(page)).toBe(true);
+  const brandFaces = await page.evaluate(async () => Promise.all([
+    document.fonts.load('400 16px "Geist Sans"', 'Socrates'),
+    document.fonts.load('700 16px "Geist Sans"', 'Socrates'),
+    document.fonts.load('400 16px "Geist Mono"', 'const value = 1;'),
+  ]).then((groups) => groups.every((faces) => faces.length > 0 && faces.every((face) => face.status === 'loaded'))));
+  expect(brandFaces).toBe(true);
 
   /* Switching back to English must restore the Latin UI face. */
   await page.evaluate(() => window.setLang('en'));
@@ -58,10 +62,10 @@ test('zh UI localizes live with the bundled Inter face', async ({ page }) => {
     const p = el.querySelector('p.is-editor-empty:first-child');
     return p ? getComputedStyle(p, '::before').fontFamily : '';
   });
-  expect(enFont).toContain('Inter');
+  expect(enFont).toContain('Geist Sans');
 });
 
-test('landing greeting has no leading logo and keeps the western Inter face in Chinese UI', async ({ page }) => {
+test('landing greeting has no leading logo and keeps the western Geist Sans face in Chinese UI', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -80,15 +84,15 @@ test('landing greeting has no leading logo and keeps the western Inter face in C
     paddingLeft: getComputedStyle(el).paddingLeft,
     beforeContent: getComputedStyle(el, '::before').content,
   }));
-  expect(zhStyle.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('Inter');
+  expect(zhStyle.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('Geist Sans');
   expect(zhStyle.fontFamily).toContain(CJK_FACE);
-  expect(zhStyle.fontFamily).toContain('Inter');
-  expect(zhStyle.fontFamily).not.toContain('Microsoft YaHei');
+  expect(zhStyle.fontFamily).toContain('Geist Sans');
+  expect(zhStyle.fontFamily).not.toContain('MiSans');
   expect(await cjkFaceLoads(page)).toBe(true);
   expect(zhStyle.paddingLeft).toBe('0px');
   expect(['none', 'normal']).toContain(zhStyle.beforeContent);
 
   await page.evaluate(() => window.setLang('en'));
   const enFont = await greeting.evaluate((el) => getComputedStyle(el).fontFamily);
-  expect(enFont.split(',')[0].replace(/["']/g, '').trim()).toBe('Inter');
+  expect(enFont.split(',')[0].replace(/["']/g, '').trim()).toBe('Geist Sans');
 });

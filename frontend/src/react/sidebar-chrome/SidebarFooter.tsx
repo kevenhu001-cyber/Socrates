@@ -1,5 +1,6 @@
+import { Icon } from '../../ui/Icon';
 import { useCallback, useState } from 'react';
-import { ChevronRight, CircleUserRound, LifeBuoy, LogOut, Settings, Sparkles, SlidersHorizontal } from 'lucide-react';
+import { CircleUserRound, LifeBuoy, LogOut, Sparkles } from 'lucide-react';
 import { useUserInfo } from './sidebarChrome.bridge';
 import { getCurrentLang, getLegacyActions } from '../legacy/gateway.ts';
 import { DeferredMenu } from '../menu/DeferredMenu';
@@ -25,15 +26,15 @@ export function SidebarFooter() {
       trigger={<button type="button" className="sidebar-account-trigger"
         title={user.displayName} aria-label={[user.displayName, tier].filter(Boolean).join(' · ')}>{identity}</button>}>
       {({ FoundationMenuItem, FoundationMenuLink }) => <>
-      <FoundationMenuItem className="account-menu-identity" onClick={() => { close(); getLegacyActions().navigation.openProfile(); }}>{identity}<ChevronRight /></FoundationMenuItem>
+      <FoundationMenuItem className="account-menu-identity" onClick={() => { close(); getLegacyActions().navigation.openProfile(); }}>{identity}<Icon name="chevronRight" /></FoundationMenuItem>
       <hr />
-      <FoundationMenuLink href="https://topodrive.top/pricing"><Sparkles />{label('升级套餐', 'Upgrade plan')}</FoundationMenuLink>
-      <FoundationMenuItem onClick={() => navigate('personalization')}><SlidersHorizontal />{label('个性化', 'Personalization')}</FoundationMenuItem>
-      <FoundationMenuItem onClick={() => { close(); getLegacyActions().navigation.openProfile(); }}><CircleUserRound />{label('个人资料', 'Profile')}</FoundationMenuItem>
-      <FoundationMenuItem onClick={() => navigate('general')}><Settings />{label('设置', 'Settings')}</FoundationMenuItem>
+      <FoundationMenuLink href="https://topodrive.top/pricing"><Sparkles strokeWidth={1.75} aria-hidden="true" />{label('升级套餐', 'Upgrade plan')}</FoundationMenuLink>
+      <FoundationMenuItem onClick={() => navigate('personalization')}><Icon name="sliders" />{label('个性化', 'Personalization')}</FoundationMenuItem>
+      <FoundationMenuItem onClick={() => { close(); getLegacyActions().navigation.openProfile(); }}><CircleUserRound strokeWidth={1.75} aria-hidden="true" />{label('个人资料', 'Profile')}</FoundationMenuItem>
+      <FoundationMenuItem onClick={() => navigate('general')}><Icon name="gear" />{label('设置', 'Settings')}</FoundationMenuItem>
       <hr />
-      <FoundationMenuItem onClick={() => { close(); getLegacyActions().navigation.openCheatsheet(); }}><LifeBuoy />{label('帮助', 'Help')}<ChevronRight className="account-menu-trailing" /></FoundationMenuItem>
-      {user.isSignedIn && <FoundationMenuItem onClick={() => { close(); getLegacyActions().navigation.signOut(); }}><LogOut />{label('退出登录', 'Sign out')}</FoundationMenuItem>}
+      <FoundationMenuItem onClick={() => { close(); getLegacyActions().navigation.openCheatsheet(); }}><LifeBuoy strokeWidth={1.75} aria-hidden="true" />{label('帮助', 'Help')}<Icon name="chevronRight" className="account-menu-trailing" /></FoundationMenuItem>
+      {user.isSignedIn && <FoundationMenuItem onClick={() => { close(); getLegacyActions().navigation.signOut(); }}><LogOut strokeWidth={1.75} aria-hidden="true" />{label('退出登录', 'Sign out')}</FoundationMenuItem>}
       </>}
     </DeferredMenu>
   </div>;

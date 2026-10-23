@@ -53,7 +53,7 @@
   width: calc(50% - 2px);
   border-radius: var(--ui-radius-pill);
   background: var(--ui-bg-segment-active);
-  box-shadow: var(--ui-shadow-menu);
+  box-shadow: var(--ui-shadow-control);
   transform: translateX(0);
   transition: transform var(--ui-duration-normal) var(--ui-ease-out);
   z-index: -1;

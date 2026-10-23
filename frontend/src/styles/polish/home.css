@@ -6,12 +6,13 @@
 
 @media (min-width: 769px) {
   #appShell .home-quick-actions {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
     width: min(100%, var(--ui-content-chat));
-    margin: 18px auto 0;
-    animation: homeStartersIn var(--ui-duration-normal) var(--ui-ease-apple, ease) both;
+    margin: 24px auto 0;
+    animation: homeStartersIn var(--ui-duration-normal) var(--ui-ease-out) both;
   }
 
   #appShell .home-quick-action {
@@ -19,13 +20,13 @@
     display: flex;
     align-items: center;
     box-sizing: border-box;
-    width: 100%;
-    min-height: 42px;
-    padding: 4px 38px 4px 10px;
+    width: auto;
+    min-height: var(--ui-control-touch);
+    padding: 4px 34px 4px 14px;
     gap: 8px;
-    border: 1px solid var(--ui-border-subtle);
-    border-radius: var(--ui-radius-control);
-    background: var(--ui-bg-subtle, transparent);
+    border: 1px solid var(--ui-border-default);
+    border-radius: var(--ui-radius-pill);
+    background: var(--ui-bg-surface);
     color: var(--ui-text-secondary);
     text-align: left;
     cursor: pointer;
@@ -61,10 +62,12 @@
   #appShell .home-quick-action-icon {
     display: inline-grid;
     place-items: center;
-    flex: 0 0 18px;
-    width: 18px;
-    height: 18px;
-    color: var(--ui-text-muted);
+    flex: 0 0 var(--ui-control-xs);
+    width: var(--ui-control-xs);
+    height: var(--ui-control-xs);
+    border-radius: var(--ui-radius-pill);
+    background: var(--ui-bg-control);
+    color: var(--ui-text-secondary);
   }
 
   #appShell .home-quick-action-icon svg {
@@ -152,7 +155,7 @@
     display: block;
     width: min(100%, var(--ui-content-chat));
     margin: 28px auto 0;
-    animation: homeStartersIn var(--ui-duration-normal) var(--ui-ease-apple, ease) both;
+    animation: homeStartersIn var(--ui-duration-normal) var(--ui-ease-out) both;
   }
   #appShell .home-tutor-starters h2 {
     margin: 0 0 12px 12px;
@@ -216,7 +219,7 @@
 }
 
 @keyframes homeStartersIn {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(3px); }
   to { opacity: 1; transform: translateY(0); }
 }
 @media (prefers-reduced-motion: reduce) {
