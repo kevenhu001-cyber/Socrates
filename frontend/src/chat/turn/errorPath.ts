@@ -145,6 +145,7 @@ export function createErrorPath(state: TurnRuntimeState): ErrorPath {
       turnState.chatStreaming = false;
       try { setChatStopState(false); } catch { /* stop state already cleared */ }
       try { markTurnEnded(); } catch { /* turn already ended */ }
+      turnState.activeChatCtl = null;
     }
     /* Drop the legacy bubble so the next snapshot-driven re-render
        doesn't duplicate the finalized error bubble. (Same bug as

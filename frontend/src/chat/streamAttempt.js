@@ -4,7 +4,7 @@
 import { apiFetchRaw } from '../util/api.ts';
 import { buildChatRequestBody } from './api/requestBody.ts';
 import { consumeSseBuffer } from '../../../packages/core/src/index.ts';
-import { createChatTurn } from './turnClient.ts';
+import { createChatTurn, newClientTurnId } from './turnClient.ts';
 import { recoverDetachedTurn } from './detachedTurnRecovery.ts';
 import { createStreamFrameProcessor, makeStreamError } from './streamFrameProcessor.ts';
 import { isUserAbort } from './retryPolicy.ts';
@@ -37,6 +37,19 @@ function cancelledStreamResult(processor) {
     widgets: processor.formattedHtml && processor.formattedHtml.widgets || [],
     cancelled: true,
   };
+}
+
+function isClaimConflictError(error) {
+  if (!error) return false;
+  const status = error.status ?? error.body?.status;
+  const code = String(error.code ?? error.body?.code ?? '').toUpperCase();
+  const message = String(error.message ?? error.body?.message ?? error.error ?? '').toLowerCase();
+  return (
+    status === 409 ||
+    code === 'CONFLICT' ||
+    message.includes('already been claimed') ||
+    message.includes('already bound')
+  );
 }
 
 async function retryOrCancel(context, error) {
@@ -92,6 +105,16 @@ async function requestStream(context, signal) {
     if (isUserAbort(error, signal) || isUserAbort(error, context.turnSignal)) {
       return cancelled(emptyCancelledResult());
     }
+    if (isClaimConflictError(error) || isClaimConflictError(requestError)) {
+      const recovered = await recoverAfterReadError(error, { full: '', formattedHtml: null }, context);
+      if (recovered) return completed(recovered);
+      if (context.opts && context.opts.clientTurn && typeof context.opts.clientTurn === 'object') {
+        context.opts.clientTurn.id = newClientTurnId();
+      }
+      context.activeTurn.current = null;
+      context.setLastCallError('Turn execution conflict. Please click Retry to create a new turn.');
+      return failed();
+    }
     const retryOutcome = await retryOrCancel(context, requestError);
     if (retryOutcome) return retryOutcome;
     console.error('[API stream] request failed:', error);
@@ -112,6 +135,13 @@ async function recoverAfterReadError(error, processor, context) {
   if (isUserAbort(error, context.attemptSignal) || isUserAbort(error, context.turnSignal)) return null;
 
   let turnId = context.activeTurn.current;
+  if (!turnId && error) {
+    if (typeof error.turnId === 'string' && error.turnId) turnId = error.turnId;
+    else if (error.body && typeof error.body.turnId === 'string' && error.body.turnId) turnId = error.body.turnId;
+  }
+  if (!turnId && context.opts && typeof context.opts.turnId === 'string' && context.opts.turnId) {
+    turnId = context.opts.turnId;
+  }
   if (!turnId && context.opts && context.opts.clientTurn && typeof context.opts.clientTurn.id === 'string') {
     try {
       const existing = await createChatTurn({ clientTurnId: context.opts.clientTurn.id });
@@ -119,6 +149,11 @@ async function recoverAfterReadError(error, processor, context) {
     } catch (caught) { reportSwallow(caught, 'chat/stream.createChatTurn'); }
   }
   if (!turnId) return null;
+  if (!context.activeTurn.current) context.activeTurn.current = turnId;
+  if (context.opts && typeof context.opts.onTurnBound === 'function') {
+    try { context.opts.onTurnBound(turnId); }
+    catch (caught) { reportSwallow(caught, 'chat/streamAttempt.onTurnBound'); }
+  }
 
   try {
     console.info('[API stream] connection dropped, recovering from detached turn:', turnId);
@@ -180,6 +215,13 @@ async function handleReadError(error, reader, processor, context) {
 
   const recovered = await recoverAfterReadError(error, processor, context);
   if (recovered) return completed(recovered);
+  if (isClaimConflictError(error)) {
+    if (context.opts && context.opts.clientTurn && typeof context.opts.clientTurn === 'object') {
+      context.opts.clientTurn.id = newClientTurnId();
+    }
+    context.activeTurn.current = null;
+    context.setLastCallError('Turn execution conflict. Please click Retry to create a new turn.');
+  }
   return failed();
 }
 
@@ -221,6 +263,16 @@ function cancelResponseBody(body) {
 
 async function finishStreamResponse(processor, stream, context) {
   if (processor.streamError) {
+    if (isClaimConflictError(processor.streamError)) {
+      const recovered = await recoverAfterReadError(processor.streamError, processor, context);
+      if (recovered) return completed(recovered);
+      if (context.opts && context.opts.clientTurn && typeof context.opts.clientTurn === 'object') {
+        context.opts.clientTurn.id = newClientTurnId();
+      }
+      context.activeTurn.current = null;
+      context.setLastCallError('Turn execution conflict. Please click Retry to create a new turn.');
+      return failed();
+    }
     if (!processor.semanticActivity) return retryThenFail(context, processor.streamError);
     context.setLastCallError(processor.streamError.message || 'stream request failed');
     return failed();

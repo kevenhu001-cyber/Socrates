@@ -14,6 +14,7 @@ import {
   waitForAIRetry,
   type AIRequestOptions,
 } from './retryPolicy.ts';
+import { newClientTurnId } from './turnClient.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 /** Bridges installed by main.js before any stream can run; a required shape
@@ -180,6 +181,12 @@ export async function callAPIStream(
       if (outcome.kind === 'success' || outcome.kind === 'cancelled') return outcome.result;
       if (outcome.kind === 'retry') {
         lastError = outcome.error;
+        /* Renew clientTurnId so attempt 2 does not collide with attempt 1's
+           turn execution claim on the server. */
+        if (opts && typeof opts === 'object' && opts.clientTurn && typeof (opts.clientTurn as any).id === 'string') {
+          (opts.clientTurn as { id: string }).id = newClientTurnId();
+        }
+        activeTurn.current = null;
         continue;
       }
       return null;

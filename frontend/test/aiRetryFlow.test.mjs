@@ -33,9 +33,12 @@ function installStreamEnvironment(responses) {
     STREAM_MAX_ATTEMPTS: 6,
     appMode: 'chat',
   };
-  globalThis.fetch = async () => {
-    const response = responses[Math.min(calls, responses.length - 1)];
+  globalThis.fetch = async (url, opts) => {
     calls += 1;
+    if (typeof responses === 'function') {
+      return responses(url, opts, calls);
+    }
+    const response = responses[Math.min(calls - 1, responses.length - 1)];
     if (response.status) {
       const body = response.body || {};
       return {
@@ -130,4 +133,127 @@ test('stream treats reasoning tokens as semantic output and does not retry', asy
   assert.equal(thinkingReceived, 'thinking deeply...');
   assert.equal(result?.semanticActivity, true);
   assert.equal(env.calls(), 1, 'turn must not be replayed when reasoning was delivered');
+});
+
+test('stream reconnects to detached turn when execution is already claimed', async () => {
+  installStreamEnvironment((url) => {
+    if (String(url).includes('turn-claimed-1')) {
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        async text() {
+          return JSON.stringify({
+            turn: { id: 'turn-claimed-1', status: 'completed', fullText: 'recovered from claimed turn' },
+            events: [],
+          });
+        },
+      };
+    }
+    return {
+      ok: true,
+      status: 200,
+      body: streamBody([
+        'event: turn_bound\ndata: {"turnId":"turn-claimed-1"}\n\n',
+        'event: error\ndata: {"status":409,"code":"CONFLICT","message":"This turn has already been claimed. Reconnect to its events or create a new turn to retry."}\n\n',
+        'data: [DONE]\n\n',
+      ]),
+    };
+  });
+
+  const { callAPIStream } = await import('../src/chat/stream.ts');
+  const result = await callAPIStream(
+    [{ role: 'user', content: 'test claim' }],
+    256,
+    () => {},
+    () => {},
+    { maxAttempts: 2, sleep: async () => {} },
+  );
+
+  assert.equal(result?.text, 'recovered from claimed turn');
+});
+
+test('stream retry renews clientTurn.id so attempt 2 does not collide with attempt 1', async () => {
+  const seenClientTurnIds = [];
+  const clientTurn = { id: 'turn-initial-123' };
+  installStreamEnvironment((url, opts) => {
+    if (String(url).includes('chat/stream') && opts?.body) {
+      try {
+        const parsed = JSON.parse(opts.body);
+        if (parsed.clientTurn?.id) {
+          seenClientTurnIds.push(parsed.clientTurn.id);
+        }
+      } catch { /* empty-catch: intentional — malformed test body */ }
+    }
+    if (seenClientTurnIds.length === 1) {
+      return {
+        ok: true,
+        status: 200,
+        body: streamBody(['data: [DONE]\n\n']),
+      };
+    }
+    return {
+      ok: true,
+      status: 200,
+      body: streamBody(['data: {"choices":[{"delta":{"content":"success on retry"}}]}\n\n']),
+    };
+  });
+
+  const { callAPIStream } = await import('../src/chat/stream.ts');
+  const result = await callAPIStream(
+    [{ role: 'user', content: 'test retry client turn id' }],
+    256,
+    () => {},
+    () => {},
+    { maxAttempts: 2, sleep: async () => {}, clientTurn },
+  );
+
+  assert.equal(result?.text, 'success on retry');
+  assert.equal(seenClientTurnIds.length, 2);
+  assert.equal(seenClientTurnIds[0], 'turn-initial-123');
+  assert.notEqual(seenClientTurnIds[1], 'turn-initial-123');
+  assert.equal(clientTurn.id, seenClientTurnIds[1]);
+});
+
+test('turn execution conflict sanitizes lastCallError when detached recovery fails', async () => {
+  installStreamEnvironment((url) => {
+    if (String(url).includes('turn-fail-1')) {
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        async text() {
+          return JSON.stringify({
+            turn: { id: 'turn-fail-1', status: 'failed', fullText: '' },
+            events: [],
+          });
+        },
+      };
+    }
+    return {
+      ok: true,
+      status: 200,
+      body: streamBody([
+        'event: turn_bound\ndata: {"turnId":"turn-fail-1"}\n\n',
+        'event: error\ndata: {"status":409,"code":"CONFLICT","message":"This turn has already been claimed. Reconnect to its events or create a new turn to retry."}\n\n',
+        'data: [DONE]\n\n',
+      ]),
+    };
+  });
+
+  const { callAPIStream } = await import('../src/chat/stream.ts');
+  const { stateStore } = await import('../src/state/store.js');
+  const result = await callAPIStream(
+    [{ role: 'user', content: 'test claim fail' }],
+    256,
+    () => {},
+    () => {},
+    { maxAttempts: 2, sleep: async () => {} },
+  );
+
+  assert.equal(result, null);
+  const lastError = stateStore.read('lastCallError');
+  assert.ok(lastError);
+  assert.equal(lastError.includes('already been claimed'), false);
+  assert.equal(lastError.includes('Turn execution conflict'), true);
 });

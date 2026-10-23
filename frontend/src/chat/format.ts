@@ -109,14 +109,18 @@ function handleChatApiResult(
     ctl.finish();
   } else {
     const lastCallError = stateStore.read('lastCallError') as string | null;
-    const reason: string = lastCallError || 'empty response (no error detail)';
+    const isClaimConflict = !!(lastCallError && /already been claimed|already bound/i.test(lastCallError));
+    const sanitizedError = isClaimConflict
+      ? 'Turn execution conflict. Please click Retry to create a new turn.'
+      : lastCallError;
+    const reason: string = sanitizedError || 'empty response (no error detail)';
     const isCancel = /cancel|user-stop|superseded|new-session|session-switch|session-expired|session-deleted|session-purged|session-reset|archived-session|msg-edit|msg-regen|signout/i.test(reason);
     if (isCancel) {
       stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'cancelled' });
       ctl.abort();
-    } else if (lastCallError) {
+    } else if (sanitizedError) {
       stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'error' });
-      ctl.replaceWithError(lastCallError, function () {
+      ctl.replaceWithError(sanitizedError, function () {
         /* P_turn-abort-quiet — the retried turn can itself abort
            (session-expired races the retry click); guard the promise so
            it never becomes an unhandledrejection + red banner. */

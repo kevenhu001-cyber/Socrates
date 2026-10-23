@@ -304,7 +304,7 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
   }catch (e) {reportSwallow(e, 'chat/turnController.askChatTurn#11'); }
   var _onTurnBound=function(turnId){
     if(!turnId)return;
-    try{if(_turnSessionId)savePendingTurn(_turnSessionId,{turnId:turnId,clientTurnId:_clientTurnId,lastSeq:0});}catch (e) {reportSwallow(e, 'chat/turnController.askChatTurn#12'); }
+    try{if(_turnSessionId)savePendingTurn(_turnSessionId,{turnId:turnId,clientTurnId:_clientTurn.id,lastSeq:0});}catch (e) {reportSwallow(e, 'chat/turnController.askChatTurn#12'); }
   };
   /* P_inline-tools — tool status is now carried by the inline
      .tool-inline rows inside the bubble (created via the streaming
@@ -370,7 +370,7 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
      failure keeps it so reload/reconnect can re-attach to the detached
      run instead of opening a duplicate LLM call. */
   try{
-    if(_turnSessionId&&(result&&(result.text||result.cancelled)))clearPendingTurn(_turnSessionId,_clientTurnId);
+    if(_turnSessionId&&(result&&(result.text||result.cancelled)))clearPendingTurn(_turnSessionId,_clientTurn.id);
   }catch (e) {reportSwallow(e, 'chat/turnController.askChatTurn#13'); }
   publishActiveWorkflowFinish(!!(result&&result.text&&String(result.text).trim()));
   if(!ctl || typeof ctl.isFinished !== "function" || !ctl.isFinished()){
