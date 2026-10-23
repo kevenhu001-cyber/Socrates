@@ -200,7 +200,7 @@ test('native UI can mount from cumulative arguments before the tool result arriv
 });
 
 
-test('MiniMax M3 requests split reasoning without an unsupported low-effort claim', async ({ page }) => {
+test('the browser states the effort intent and leaves MiniMax specifics to the server', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('socrates-last-active-id', 'minimax-m3');
     localStorage.setItem('socrates-reasoning-effort', 'low');
@@ -219,7 +219,10 @@ test('MiniMax M3 requests split reasoning without an unsupported low-effort clai
     window.submitChatMessage('Say hello.');
   });
   await expect.poll(() => sentBody).toBeTruthy();
-  expect(sentBody.extra_body).toEqual({ reasoning_split: true });
-  expect(sentBody.reasoning_effort).toBeUndefined();
+  /* The browser states the intent and injects no vendor field: MiniMax's
+     reasoning_split and its thinking switch are resolved server-side from
+     the real model, which the browser cannot know. */
+  expect(sentBody.extra_body).toBeUndefined();
+  expect(sentBody.reasoning_effort).toBe('low');
   await expect(page.locator('#msgList .msg.assistant').last()).toContainText('M3 answer.');
 });

@@ -157,6 +157,7 @@ describe('streamChatCompletion: happy path', () => {
     await streamChatCompletion(
       {
         ...BASE_OPTS,
+        model: 'deepseek-chat',
         reasoning_effort: 'high',
         extra_body: { thinking: { type: 'enabled' } },
       },
@@ -165,6 +166,21 @@ describe('streamChatCompletion: happy path', () => {
     const sentBody = JSON.parse(globalThis.fetch.mock.calls[0].arguments[1].body);
     assert.equal(sentBody.reasoning_effort, 'high');
     assert.deepEqual(sentBody.thinking, { type: 'enabled' });
+  });
+
+  test('an undeclared model is never sent a reasoning effort it may reject', async () => {
+    globalThis.fetch = mock.fn(async () =>
+      makeSseResponse([{ choices: [{ delta: { content: 'x' }, finish_reason: 'stop' }] }, sseDone()]),
+    );
+    await streamChatCompletion(
+      { ...BASE_OPTS, reasoning_effort: 'high' },
+      () => {}, () => {}, () => {},
+    );
+    const sentBody = JSON.parse(globalThis.fetch.mock.calls[0].arguments[1].body);
+    /* The capability registry does not know this model, so it does not
+       assume the model accepts the OpenAI reasoning extensions. Sending the
+       field would cost a rejected round trip on every request. */
+    assert.equal(sentBody.reasoning_effort, undefined);
   });
 
   test('fast response speed requests priority service tier', async () => {
@@ -189,6 +205,7 @@ describe('streamChatCompletion: happy path', () => {
     await streamChatCompletion(
       {
         ...BASE_OPTS,
+        model: 'deepseek-chat',
         response_speed: 'fast',
         reasoning_effort: 'high',
         extra_body: { reasoning_split: true },

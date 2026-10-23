@@ -44,7 +44,6 @@ function clearContext() {
   storage.delete('socrates-response-speed');
   window.appMode = 'chat';
   delete window.getCustomInstructionsString;
-  delete window.isReasoningProvider;
   delete window.getReasoningEffort;
 }
 
@@ -56,7 +55,6 @@ test('request body copies messages and includes session, project, assistant, and
   localStorage.setItem('socrates-response-speed', 'fast');
   window.appMode = 'tutor';
   window.getCustomInstructionsString = () => 'Prefer concise explanations.';
-  window.isReasoningProvider = () => true;
   window.getReasoningEffort = () => 'high';
   const messages = [{ role: 'user', content: 'Explain recursion.' }];
 

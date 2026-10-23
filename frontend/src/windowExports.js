@@ -22,11 +22,10 @@ import { SERVER_HAS_BEAGLE_KEY } from './auth/boot.ts';
 window.SERVER_HAS_BEAGLE_KEY = SERVER_HAS_BEAGLE_KEY;
 
 /* ─── config/providers.js ─── */
-import { appMode, webSearchOn, extensiveThinkingOn, isReasoningProvider, syncAppModeUI, setAppMode, thinkingOn } from './config/providers.ts';
+import { appMode, webSearchOn, extensiveThinkingOn, syncAppModeUI, setAppMode, thinkingOn } from './config/providers.ts';
 window.appMode = appMode;
 window.webSearchOn = webSearchOn;
 window.extensiveThinkingOn = extensiveThinkingOn;
-window.isReasoningProvider = isReasoningProvider;
 window.syncAppModeUI = syncAppModeUI;
 window.setAppMode = setAppMode;
 window.thinkingOn = thinkingOn;

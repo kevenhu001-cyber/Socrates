@@ -21,11 +21,13 @@ import {getBeagleQuota} from '../../lib/tiers.js';
 import {getDb} from '../../db/index.js';
 import {usageEvents, artifacts, sessions} from '../../db/schema/index.js';
 import {isMultimodalProvider} from '../../lib/multimodal.js';
+import {resolveContextBudget} from '../../lib/modelCapabilities.js';
 import {pickChatLimiterFor} from '../../middleware/rateLimit.js';
 
 import type {NextFunction, Request, Response} from 'express';
 import {getActiveApiKey} from '../../services/core/apiKey.js';
 import {validateThinkingMode} from '../../services/core/llmProtocol.js';
+import {DEFAULT_MAX_TOKENS} from '../../services/core/llm.js';
 import {estimateMessageTokens} from '../../services/core/usageTracker.js';
 import {visualizationTemplateGuide} from '../../services/visualization.js';
 /* P_teacher-mode-cache — the teacher-mode system prompt lives on
@@ -921,13 +923,24 @@ export async function prepareChatRequest(
   // regenerate or compress away the frozen system prefix. Include its real
   // size rather than later client-supplied system messages that we ignore.
   try {
-    const rawBudget = Number(process.env.CHAT_CONTEXT_MAX_TOKENS);
-    const budget = Number.isFinite(rawBudget) && rawBudget > 0 ? Math.floor(rawBudget) : 100_000;
-    if (estimateMessageTokens(finalMessages) > budget) {
+    /* P_model-capability-registry — the conversation budget follows the
+       window of the model that will actually serve this turn. It used to be
+       one global constant (100 000 tokens) for every model, which is wrong
+       in both directions: a 1M-token model was compressed far too early (and
+       paid for a summary it did not need), while a model with a smaller
+       window was allowed past the point where the provider rejects the
+       request with a context-length 400 — a failure the compatibility chain
+       treats as terminal. */
+    const budgetProvider = await providerPromise.catch(() => null);
+    const budget = resolveContextBudget(budgetProvider?.model ?? '', {
+      overrideTokens: Number(process.env.CHAT_CONTEXT_MAX_TOKENS),
+      reserveTokens: max_tokens ?? DEFAULT_MAX_TOKENS,
+    });
+    if (estimateMessageTokens(finalMessages) > budget.budget) {
       const { compressSessionMessages } = await import('../../services/embeddings/sessionCompressor.js');
       const rawKeep = Number(process.env.CHAT_CONTEXT_KEEP_TURNS);
       const compressed = await compressSessionMessages(conversation, {
-        triggerTokens: Math.max(1, budget - estimateMessageTokens([finalMessages[0]])),
+        triggerTokens: Math.max(1, budget.budget - estimateMessageTokens([finalMessages[0]])),
         ...(Number.isFinite(rawKeep) && rawKeep > 0 ? { keepTurns: Math.floor(rawKeep) } : {}),
       });
       if (compressed.didCompress && compressed.messages.length) {
@@ -936,7 +949,13 @@ export async function prepareChatRequest(
         const wireMessages = compressed.messages.map((m) => ({ ...m, content: m.content ?? m.rawText ?? '' })) as ChatMessage[];
         conversation = splitPromptContext(wireMessages, mode).conversation;
         finalMessages = [finalMessages[0], ...conversation];
-        console.info('[chat] context window compression', JSON.stringify({ droppedTurns: compressed.droppedTurns, summarizer: compressed.summarizer }));
+        console.info('[chat] context window compression', JSON.stringify({
+          droppedTurns: compressed.droppedTurns,
+          summarizer: compressed.summarizer,
+          budget: budget.budget,
+          budgetSource: budget.source,
+          contextWindow: budget.contextWindow ?? null,
+        }));
       }
     }
   } catch (err) {

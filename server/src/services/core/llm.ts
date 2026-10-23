@@ -7,7 +7,7 @@
 import { randomUUID } from 'node:crypto';
 import dns from 'node:dns';
 import { Agent, EnvHttpProxyAgent, ProxyAgent, type Dispatcher } from 'undici';
-import { applyProviderControls, isMiniMaxFlash, isPermanentQuotaError, permitsCompatibilityFallback, providerHeaders, providerPayloadFailure } from './llmProtocol.js';
+import { applyProviderControls, isPermanentQuotaError, permitsCompatibilityFallback, providerHeaders, providerPayloadFailure } from './llmProtocol.js';
 
 /* ─── High-performance LLM HTTP Dispatcher ────────────────────────────────
  * Keeps connections alive across turns and tools (60s idle timeout), enables
@@ -134,7 +134,7 @@ export function startLlmKeepWarmWorker(targetBaseUrl?: string): void {
  * at 32K, but use a conservative default when the caller did not choose a
  * budget explicitly.  Operators can raise this for a known-compatible
  * provider without changing the API contract. */
-const DEFAULT_MAX_TOKENS = Math.max(256, Number.parseInt(process.env.LLM_DEFAULT_MAX_TOKENS || '8192', 10) || 8192);
+export const DEFAULT_MAX_TOKENS = Math.max(256, Number.parseInt(process.env.LLM_DEFAULT_MAX_TOKENS || '8192', 10) || 8192);
 
 interface ChatCompletionRequestOptions {
   apiBase: string;
@@ -295,24 +295,21 @@ function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: boolean
        fields with a 400, so `stream_options` is stripped by the first
        compatibility variant below rather than being sent unconditionally. */
     ...(stream ? { stream_options: { include_usage: true } } : {}),
-    ...(reasoning_effort ? { reasoning_effort } : {}),
     ...(response_speed === 'fast' ? { service_tier: 'priority' } : {}),
     ...(extra_body ? { ...extra_body } : {}),
   } as Record<string, unknown>;
-  if (reasoning_effort === 'none') {
-    const name = model.toLowerCase();
-    // Resolve against the server-owned model identity. The browser can offer
-    // Instant for every provider without knowing private built-in model names.
-    if (/qwen|qwq/.test(name)) {
-      delete base.reasoning_effort;
-      if (/dashscope|aliyuncs/i.test(opts.apiBase)) base.enable_thinking = false;
-      else base.chat_template_kwargs = { enable_thinking: false };
-    } else if (/minimax|deepseek|glm|kimi/.test(name)) {
-      delete base.reasoning_effort;
-      base.thinking = { type: 'disabled' };
-    }
-  }
-  applyProviderControls(base, opts);
+  /* P_model-capability-registry — every provider-specific decision below is
+     read from the declared capabilities of THIS model (lib/modelCapabilities.ts),
+     not from a brand substring. A model the registry does not know gets the
+     OpenAI-standard body and nothing vendor-specific. */
+  const { capability, protectedKeys } = applyProviderControls(base, {
+    model,
+    apiBase: opts.apiBase,
+    userId: opts.userId,
+    reasoning_effort,
+    extra_body,
+  });
+  const protectedKeySet = new Set(protectedKeys);
   const hasTools = Array.isArray(tools) && tools.length > 0;
   const withTools: Record<string, unknown> = {
     ...base,
@@ -325,7 +322,7 @@ function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: boolean
    * request-local fallback, so a temporary incompatibility cannot disable
    * tools for every later conversation. */
   const variants: Array<{ body: Record<string, unknown>; reason: string; speedApplied: 'standard' | 'fast' }> = [
-    { body: withTools, reason: 'initial', speedApplied: response_speed === 'fast' && !isMiniMaxFlash(model) ? 'fast' : 'standard' },
+    { body: withTools, reason: 'initial', speedApplied: response_speed === 'fast' && capability.supportsServiceTier ? 'fast' : 'standard' },
   ];
   let compatibilityBase = withTools;
 
@@ -340,13 +337,13 @@ function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: boolean
   /* Priority service is provider-specific. Its fallback is deliberately the
      first compatibility variant so tools, reasoning_effort and extra_body
      survive when a generic OpenAI-compatible gateway rejects service_tier. */
-  if (response_speed === 'fast' && !isMiniMaxFlash(model)) {
+  if (response_speed === 'fast' && capability.supportsServiceTier) {
     const { service_tier: _serviceTier, ...withoutPriority } = compatibilityBase;
     compatibilityBase = dropStreamOptions(withoutPriority);
     variants.push({ body: compatibilityBase, reason: 'provider-400-without-priority', speedApplied: 'standard' });
   }
   if (stream) {
-    variants.push({ body: dropStreamOptions(withTools), reason: 'provider-400-with-stream-options', speedApplied: response_speed === 'fast' && !isMiniMaxFlash(model) ? 'fast' : 'standard' });
+    variants.push({ body: dropStreamOptions(withTools), reason: 'provider-400-with-stream-options', speedApplied: response_speed === 'fast' && capability.supportsServiceTier ? 'fast' : 'standard' });
   }
   if (hasTools) {
     const { tools: _tools, tool_choice: _toolChoice, ...withoutTools } = compatibilityBase;
@@ -360,15 +357,20 @@ function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: boolean
     const { reasoning_effort: _effort, ...withoutReasoning } = compatibilityBase;
     const withoutOptional = dropStreamOptions({ ...withoutReasoning, ...(base.reasoning_effort === 'none' ? { reasoning_effort: 'none' } : {}) });
     for (const key of Object.keys(extra_body || {})) {
-      // Instant is an explicit output mode, not an optional hint. A provider
-      // that rejects it must fail rather than silently resume thinking.
+      /* Instant is an explicit output mode, not an optional hint. A provider
+         that rejects it must fail rather than silently resume thinking. The
+         same holds for the keys the server itself set from the capability
+         registry. */
+      if (protectedKeySet.has(key)) continue;
       if (key === 'chat_template_kwargs' && (withoutOptional.chat_template_kwargs as { enable_thinking?: boolean } | undefined)?.enable_thinking === false) continue;
       if (key === 'enable_thinking' && withoutOptional.enable_thinking === false) continue;
-      if (key === 'thinking' && (isMiniMaxFlash(model) || (withoutOptional.thinking as { type?: string } | undefined)?.type === 'disabled')) continue;
-      if (key === 'reasoning_split' && isMiniMaxFlash(model)) continue;
+      if (key === 'thinking' && (withoutOptional.thinking as { type?: string } | undefined)?.type === 'disabled') continue;
       delete withoutOptional[key];
     }
-    if (isMiniMaxFlash(model)) withoutOptional.reasoning_effort = base.reasoning_effort;
+    /* A model whose effort the server chose itself (not the caller) keeps
+       it: dropping it would silently move the model to the provider's own
+       default, which is a stronger — and more expensive — mode. */
+    if (capability.defaultEffort) withoutOptional.reasoning_effort = base.reasoning_effort;
     variants.push({ body: withoutOptional, reason: 'provider-400-with-optional-fields', speedApplied: 'standard' });
   }
   return variants;

@@ -1,5 +1,4 @@
 import { stateStore } from '../../state/store.js';
-import { isMiniMaxProvider } from '../../config/providers.ts';
 import { getStoredResponseSpeed, getStoredReasoningEffort } from '../../config/chatPreferences.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 
@@ -29,7 +28,6 @@ export interface ChatRequestBody {
 interface RequestBodyWindow extends Window {
   appMode?: string;
   getCustomInstructionsString?: () => string;
-  isReasoningProvider?: () => boolean;
   getReasoningEffort?: () => string;
 }
 
@@ -60,19 +58,26 @@ function prependCustomInstructions(body: ChatRequestBody): void {
 }
 
 function attachReasoningOptions(body: ChatRequestBody): void {
-  // Output separation is independent of support for granular effort levels.
-  // M3 supports reasoning_split but only adaptive/disabled thinking, so the
-  // effort gate must not suppress the reasoning stream needed by the UI.
-  if (isMiniMaxProvider()) body.extra_body = { reasoning_split: true };
+  /* P_model-capability-registry — the browser expresses INTENT, never a
+     provider parameter.
+
+     "Instant" means "do not reason"; how that is encoded belongs to the
+     model, and the server is the only side that knows the real model — the
+     built-in model's name is deliberately hidden from the browser. The
+     browser used to guess the vendor from the model name, which silently
+     dropped the user's Low/Medium/High for whole model families
+     (deepseek-chat, kimi-k2.6, …) and injected a MiniMax-only
+     `reasoning_split` that other providers reject. The server resolves both
+     against its capability registry now.
+
+     The level is always sent: the server drops it for a model that does not
+     accept one, so an unsupported model costs nothing on the wire. */
   const effort = getStoredReasoningEffort();
   if (effort === 'instant') {
-    // The server translates Instant using the real configured model, including
-    // built-in models whose names are intentionally hidden from the browser.
     body.reasoning_effort = 'none';
     return;
   }
   const win = window as RequestBodyWindow;
-  if (typeof win.isReasoningProvider !== 'function' || !win.isReasoningProvider()) return;
   body.reasoning_effort = (typeof win.getReasoningEffort === 'function' && win.getReasoningEffort())
     || effort;
 }

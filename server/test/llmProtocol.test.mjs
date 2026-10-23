@@ -77,13 +77,28 @@ test('diagnosed fallback order preserves tools and never reintroduces rejected f
       : new Response('data: {"choices":[{"delta":{"content":"ok"}}]}\n\ndata: [DONE]\n\n');
   };
   let text = '';
-  await streamChatCompletion({ ...opts, model: 'gpt-4o', response_speed: 'fast', reasoning_effort: 'high', tools: [{ type: 'function', function: { name: 'test', parameters: {} } }] }, (chunk) => { text += chunk; }, () => {}, (e) => { throw e; });
+  /* A declared family that supports effort forwards it, so the
+     optional-fields fallback still has a field to drop. */
+  await streamChatCompletion({ ...opts, model: 'deepseek-chat', response_speed: 'fast', reasoning_effort: 'high', tools: [{ type: 'function', function: { name: 'test', parameters: {} } }] }, (chunk) => { text += chunk; }, () => {}, (e) => { throw e; });
   assert.equal(text, 'ok');
   assert.equal(bodies.length, 4);
   for (const body of bodies) assert.equal(body.tools.length, 1);
   for (const body of bodies.slice(1)) assert.equal(body.stream_options, undefined);
   for (const body of bodies.slice(2)) assert.equal(body.service_tier, undefined);
   assert.equal(bodies[3].reasoning_effort, undefined);
+});
+
+test('a declared non-reasoning model is never sent a reasoning effort at all', async () => {
+  const bodies = [];
+  globalThis.fetch = async (_url, init) => {
+    bodies.push(JSON.parse(init.body));
+    return new Response('data: {"choices":[{"delta":{"content":"ok"}}]}\n\ndata: [DONE]\n\n');
+  };
+  await streamChatCompletion({ ...opts, model: 'gpt-4o', reasoning_effort: 'high' }, () => {}, () => {}, (e) => { throw e; });
+  assert.equal(bodies.length, 1);
+  /* gpt-4o rejects `reasoning_effort`. Sending it costs a failed round trip
+     on every turn; the capability registry keeps the field off the wire. */
+  assert.equal(bodies[0].reasoning_effort, undefined);
 });
 
 test('Retry-After supports delta seconds and HTTP dates; never retries before a long window', async () => {

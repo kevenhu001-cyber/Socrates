@@ -28,6 +28,7 @@
  */
 
 import {createHash} from 'node:crypto';
+import {resolveContextBudget} from '../../lib/modelCapabilities.js';
 import {callChatCompletion} from '../core/llm.js';
 import {getActiveApiKey} from '../core/apiKey.js';
 import {estimateMessageTokens} from '../core/usageTracker.js';
@@ -124,11 +125,22 @@ export function __resetCompressMemo(): void {
 
 export async function compressSessionMessages(
   input: CompressibleMessage[],
-  opts: { keepTurns?: number; triggerTokens?: number } = {},
+  opts: { keepTurns?: number; triggerTokens?: number; model?: string } = {},
 ): Promise<CompressionResult> {
   const messages = Array.isArray(input) ? input.slice() : [];
   const keepTurns = opts.keepTurns ?? numEnv('SESSION_COMPRESS_KEEP_TURNS', 24);
-  const triggerTokens = opts.triggerTokens ?? numEnv('SESSION_COMPRESS_TOKENS', 24000);
+  /* P_model-capability-registry — the trigger follows the window of the model
+     the conversation is destined for. It used to be one global constant
+     (24 000 tokens) for every model and every endpoint. A model with a small
+     window was compressed far too late — the request went out oversized and
+     the provider rejected it with a context-length 400, which the
+     compatibility chain treats as terminal — while a model with a large
+     window was compressed far too early. The caller passes an explicit
+     trigger whenever it knows the target model; `opts.model` is the fallback
+     for callers that do not. */
+  const envTrigger = numEnv('SESSION_COMPRESS_TOKENS', 0);
+  const triggerTokens = opts.triggerTokens
+    ?? (envTrigger > 0 ? envTrigger : resolveContextBudget(opts.model ?? '').budget);
   const none: CompressionResult = {
     didCompress: false,
     messages,
@@ -162,7 +174,13 @@ export async function compressSessionMessages(
   /* Tail-only fallback — used whenever no summary can be produced. The
      marker message mirrors the [Context summary] notice so the reader
      (and the model) can see that earlier turns were dropped rather than
-     silently disappearing. */
+     silently disappearing.
+     P_context-marker-prefix — the prefix has to be one the prompt splitter
+     recognises: lib/chatPromptContext.ts keeps "[Conversation summary" and
+     "[Context summary" blocks in the conversation. With any other prefix the
+     marker was classified as a system initialization block and dropped along
+     with the head, so the model saw a conversation that simply started
+     later, with no indication that earlier turns had existed. */
   const tailOnly = (): CompressionResult => ({
     ...none,
     didCompress: true,
@@ -170,7 +188,7 @@ export async function compressSessionMessages(
       {
         role: 'system',
         clientId: SUMMARY_CLIENT_ID,
-        rawText: `[Context notice — ${head.length} earlier messages were removed to fit the context window; no summary was available, so they are lost.]`,
+        rawText: `[Context summary — ${head.length} earlier messages were removed to fit the context window; no summary was available, so they are lost.]`,
         type: 'summary',
       },
       ...tail,

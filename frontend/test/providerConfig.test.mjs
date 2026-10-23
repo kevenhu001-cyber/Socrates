@@ -110,40 +110,38 @@ test('missing user and user-switch reset clear provider state and key drafts', a
 });
 
 
-test('MiniMax M3.1 forwards the selected low effort and split reasoning', async () => {
+test('the browser expresses the selected effort and leaves vendor encoding to the server', async () => {
   reset();
-  const { isReasoningProvider } = await import('../src/config/providers.ts');
   const { buildChatRequestBody } = await import('../src/chat/api/requestBody.ts');
   store.publishProviderConfig({ providers: [{ id: 'minimax', model: 'MiniMax-M3.1-Flash-Preview', label: 'MiniMax', hasKey: true }], activeId: 'minimax' });
-  window.isReasoningProvider = isReasoningProvider;
   window.getReasoningEffort = () => 'low';
   try {
-    assert.equal(isReasoningProvider(), true);
     const body = buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7);
     assert.equal(body.reasoning_effort, 'low');
-    assert.deepEqual(body.extra_body, { reasoning_split: true });
+    /* The browser must not inject vendor fields. MiniMax's reasoning_split
+       and its thinking switch are resolved server-side from the real model —
+       the built-in model's name is deliberately hidden from the browser, so
+       a name-based guess in the SPA cannot be right for it. */
+    assert.equal('extra_body' in body, false);
   } finally {
-    delete window.isReasoningProvider;
     delete window.getReasoningEffort;
     reset();
   }
 });
 
 
-test('MiniMax M3 separates reasoning without claiming granular effort support', async () => {
+test('the effort intent is sent for models whose family ignores effort levels', async () => {
   reset();
-  const { isReasoningProvider } = await import('../src/config/providers.ts');
   const { buildChatRequestBody } = await import('../src/chat/api/requestBody.ts');
   store.publishProviderConfig({ providers: [{ id: 'minimax', model: 'MiniMax-M3', label: 'MiniMax', hasKey: true }], activeId: 'minimax' });
-  window.isReasoningProvider = isReasoningProvider;
   window.getReasoningEffort = () => 'low';
   try {
     const body = buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7);
-    assert.deepEqual(body.extra_body, { reasoning_split: true });
-    assert.equal('reasoning_effort' in body, false);
-    assert.equal('thinking' in body.extra_body, false, 'Low must not silently disable thinking');
+    /* MiniMax-M3 accepts the field but ignores it. The server knows that and
+       drops it; the browser only states what the user picked. */
+    assert.equal(body.reasoning_effort, 'low');
+    assert.equal('extra_body' in body, false);
   } finally {
-    delete window.isReasoningProvider;
     delete window.getReasoningEffort;
     reset();
   }

@@ -63,38 +63,12 @@ function setWebSearchOn(value: unknown): boolean {
   return webSearchOn;
 }
 
-function _isReasoningForActive(): boolean {
-  const config = getProviderConfigSnapshot();
-  const active = config.activeId;
-  if (!active) return false;
-  const p = config.providers.find(function (x) { return x && x.id === active; });
-  if (!p) return false;
-  if (p.isBuiltIn) return !!(window as ProvidersLegacyWindow).BEAGLE_IS_REASONING;
-  const m = (p.model || "").toLowerCase();
-  const l = (p.label || "").toLowerCase();
-  // M3.1 exposes effort on the OpenAI-compatible endpoint. Omitting it
-  // silently uses the provider default rather than the selected Low level.
-  return /deepseek-r1|qwq-|minimax-m1|minimax-m3\.1(?:-|$)|reasoning|think/.test(m) || /deepseek-r1|qwq/.test(l);
-}
-
-function isReasoningProvider(): boolean {
-  return _isReasoningForActive();
-}
-
 function hasUsableActive(): boolean {
   const config = getProviderConfigSnapshot();
   const active = config.activeId;
   if (!active) return false;
   const p = config.providers.find(function (x) { return x && x.id === active; });
   return !!p;
-}
-
-function isMiniMaxProvider(): boolean {
-  const config = getProviderConfigSnapshot();
-  const active = config.activeId;
-  if (!active) return false;
-  const p = config.providers.find(function (x) { return x && x.id === active; });
-  return p ? /minimax/.test((p.model || "").toLowerCase()) : false;
 }
 
 function ensureSessionShape(s?: Record<string, unknown> | null): Record<string, unknown> {
@@ -163,8 +137,7 @@ const refreshApiConfig = refreshProviderConfig;
 
 export {
   webSearchOn, setWebSearchOn, extensiveThinkingOn, appMode, thinkingOn,
-  isReasoningProvider, hasUsableActive,
-  isMiniMaxProvider, ensureSessionShape,
+  hasUsableActive, ensureSessionShape,
   syncAppModeUI, syncSidebarForMode, setAppMode,
   refreshApiConfig,
   LAST_ACTIVE_ID_KEY, saveLastActiveId, loadLastActiveId,
