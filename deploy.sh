@@ -529,7 +529,13 @@ fi
 # "Server CI" — a name with a space would split into "Server" and "CI", and
 # "Server" is not a workflow either. The file names contain no spaces.
 # gh accepts either form; the file names are the unambiguous one.
-REQUIRED_CI_WORKFLOWS="${REQUIRED_CI_WORKFLOWS:-ci.yml server-ci.yml security.yml}"
+#
+# Only workflows that run on EVERY push to main belong here. server-ci.yml is
+# filtered to server/**, so a commit that does not touch the server (a
+# deploy.sh fix, say) legitimately has no run for it and the gate would
+# refuse forever. The server lane is still covered: ci.yml's own Server job
+# runs on every commit that touches server/**.
+REQUIRED_CI_WORKFLOWS="${REQUIRED_CI_WORKFLOWS:-ci.yml security.yml}"
 ci_gate_check() {
   local source_dir="$1"
   local skip="${DEPLOY_SKIP_CI_CHECK:-0}"
