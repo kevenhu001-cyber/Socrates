@@ -140,6 +140,41 @@ for arg in "$@"; do
   fi
   prev_arg="$arg"
 done
+# The status-page gate probes the status origin through --resolve and the
+# public hostname without it. Serve the artifact this release installed for
+# the origin probe, so the gate's byte comparison compares real content, and
+# let each path be broken independently.
+if [[ "$*" == *"status.topodrive.top"* ]]; then
+  if [[ "$*" == *"/api/status"* ]]; then
+    if [[ "${MOCK_STATUS_FEED_FAIL:-0}" == "1" ]]; then
+      printf '503'
+      exit 0
+    fi
+    printf '200'
+    exit 0
+  fi
+  if [[ "$*" == *"--resolve"* ]]; then
+    if [[ -n "$output_file" ]]; then
+      status_artifact=$(ls -1 "$STATUS_DIR"/status.*.html 2>/dev/null | head -1)
+      if [[ -n "$status_artifact" ]]; then
+        cat "$status_artifact" > "$output_file"
+      else
+        printf '<html>status</html>\n' > "$output_file"
+      fi
+      if [[ "${MOCK_STATUS_ARTIFACT_FAIL:-0}" == "1" ]]; then
+        printf '<html>stale artifact</html>\n' > "$output_file"
+      fi
+    fi
+    printf '200'
+    exit 0
+  fi
+  if [[ "${MOCK_STATUS_PUBLIC_FAIL:-0}" == "1" ]]; then
+    printf '503'
+    exit 0
+  fi
+  printf '200'
+  exit 0
+fi
 if [[ -n "$output_file" ]]; then
   printf '<html><div id="adminPanel"></div>new frontend</html>\n' > "$output_file"
 fi
@@ -171,6 +206,17 @@ SH
 #!/usr/bin/env bash
 cat >/dev/null
 printf '{"ok":true}\n'
+SH
+
+  cat > "$base/bin/getent" <<'SH'
+#!/usr/bin/env bash
+# The status-page gate resolves the public hostname before deciding whether a
+# missing DNS record may pass the gate. Default to "does not resolve" so the
+# fixture exercises the DNS-missing path; MOCK_STATUS_DNS=resolved flips it.
+if [[ "${MOCK_STATUS_DNS:-missing}" == "resolved" ]]; then
+  printf '203.0.113.10   %s\n' "${2:-unknown}"
+fi
+exit 0
 SH
 
   cat > "$base/bin/chown" <<'SH'
@@ -338,6 +384,43 @@ if compgen -G "$success_base/server/.dist-next.*" >/dev/null; then
   exit 1
 fi
 
+# The status-page gate separates a broken artifact (blocking) from a missing
+# public DNS record (reported, not blocking): the zone lives in DNSPod, so a
+# missing A record cannot be repaired from the repository or from deploy.sh.
+status_dns_missing_base=$(make_fixture status-dns-missing)
+run_deploy "$status_dns_missing_base" >"$status_dns_missing_base/output.log" 2>&1
+grep -q 'GATE WARN: status hostname status.topodrive.top has no DNS record' "$status_dns_missing_base/output.log"
+grep -q 'public DNS missing for status.topodrive.top' "$status_dns_missing_base/output.log"
+grep -q '"statusPublicDns": "unresolved"' "$status_dns_missing_base/deploy-state.json"
+
+status_dns_strict_base=$(make_fixture status-dns-strict)
+if run_deploy "$status_dns_strict_base" STATUS_GATE_REQUIRE_PUBLIC=1 >"$status_dns_strict_base/output.log" 2>&1; then
+  echo "status gate strict mode unexpectedly succeeded without a DNS record" >&2
+  exit 1
+fi
+grep -q 'status hostname status.topodrive.top does not resolve in DNS' "$status_dns_strict_base/output.log"
+
+status_artifact_base=$(make_fixture status-artifact-mismatch)
+if run_deploy "$status_artifact_base" MOCK_STATUS_ARTIFACT_FAIL=1 >"$status_artifact_base/output.log" 2>&1; then
+  echo "status artifact mismatch unexpectedly succeeded" >&2
+  exit 1
+fi
+grep -q 'status page origin serves' "$status_artifact_base/output.log"
+
+status_feed_base=$(make_fixture status-feed-failure)
+if run_deploy "$status_feed_base" MOCK_STATUS_FEED_FAIL=1 >"$status_feed_base/output.log" 2>&1; then
+  echo "status feed failure unexpectedly succeeded" >&2
+  exit 1
+fi
+grep -q 'GATE FAIL: status feed returned 503' "$status_feed_base/output.log"
+
+status_public_base=$(make_fixture status-public-broken)
+if run_deploy "$status_public_base" MOCK_STATUS_DNS=resolved MOCK_STATUS_PUBLIC_FAIL=1 >"$status_public_base/output.log" 2>&1; then
+  echo "broken public status page unexpectedly succeeded" >&2
+  exit 1
+fi
+grep -q 'GATE FAIL: status page' "$status_public_base/output.log"
+
 build_failure_base=$(make_fixture build-failure)
 if run_deploy "$build_failure_base" MOCK_FRONTEND_BUILD_FAIL=1 >"$build_failure_base/output.log" 2>&1; then
   echo "frontend build failure unexpectedly succeeded" >&2
@@ -388,4 +471,4 @@ if run_deploy "$lock_base" MOCK_FLOCK_HELD=1 >"$lock_base/output.log" 2>&1; then
 fi
 grep -q 'another Socrates deploy is already in progress' "$lock_base/output.log"
 
-echo "deploy flow: CI gate skip/success/failure/missing/unverifiable, success, lock contention, health gate, cleanup, and rollback passed"
+echo "deploy flow: CI gate skip/success/failure/missing/unverifiable, success, lock contention, health gate, cleanup, rollback, and the status-page gate (DNS missing/strict/artifact/feed/public) passed"

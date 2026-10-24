@@ -627,6 +627,10 @@ DEPLOY_CI_GATE_STATUS="not-run"
 # SPA-specific gates further down are reached.
 GATE_FAILED=0
 GATE_RESULTS=()
+# Public reachability of the status hostname, filled in by
+# status_page_gate_check() and recorded in .deploy-state.json.
+STATUS_PUBLIC_DNS_STATE="unknown"
+STATUS_PUBLIC_REACHABLE=false
 
 gate_check() {
   local label="$1" url="$2"; shift 2
@@ -641,7 +645,7 @@ gate_check() {
   # against a backend restarted moments earlier: a cold first request there
   # can exceed the 8s curl budget exactly as it can for mobile.bootstrap.
   case "$label" in
-    "app frontend        "|"mobile api + db     ")
+    "app frontend        "|"mobile api + db     "|"status page         ")
       attempts="${APP_GATE_ATTEMPTS:-3}"
       ;;
   esac
@@ -660,6 +664,125 @@ gate_check() {
   GATE_RESULTS+=("  $label $code  ← FAIL")
   echo "GATE FAIL: $label returned $code ($url)" >&2
   GATE_FAILED=1
+}
+
+# ─── Status page gate ──────────────────────────────────────────────────
+# The status page is a static artifact: this release installs
+# $STATUS_DIR/status.<TS>.html and rewrites the nginx vhost's try_files to
+# point at it. Two things can be wrong, and they need different reactions.
+#
+#   1. The release published a broken artifact — the file was not installed,
+#      nginx still resolves try_files to the previous build, the vhost
+#      errors, or the status feed behind it is down. That is the release's
+#      own responsibility, so it blocks the release.
+#
+#   2. The public hostname has no DNS record. The zone lives in DNSPod, and a
+#      missing A record is repaired in the DNS console — neither the
+#      repository nor this script can do it. Blocking every release on that
+#      makes the pipeline unshippable, so it is reported loudly and left to
+#      the operator instead.
+#
+# The origin probe talks to the local nginx with the real SNI and Host, so it
+# exercises the exact vhost, certificate and try_files path the public
+# hostname uses, and it compares the served bytes with the file this release
+# installed. A public hostname that resolves but misbehaves stays a hard
+# failure.
+#
+# STATUS_GATE_REQUIRE_PUBLIC=1 restores the strict "the public URL must
+# answer 2xx" behaviour even when the hostname does not resolve.
+status_page_gate_check() {
+  local label="status page         "
+  local url="${STATUS_PUBLIC_URL%/}/"
+  local scheme="${STATUS_PUBLIC_URL%%://*}"
+  local authority="${STATUS_PUBLIC_URL#*://}"
+  authority="${authority%%/*}"
+  local host="$authority"
+  local port=""
+  if [[ "$authority" == *:* ]]; then
+    port="${authority##*:}"
+    host="${authority%%:*}"
+  fi
+  if [[ -z "$port" ]]; then
+    port=443
+    [[ "$scheme" == "http" ]] && port=80
+  fi
+
+  if [[ "$scheme" != "http" && "$scheme" != "https" ]] || [[ -z "$host" ]] || [[ "$host" == */* ]]; then
+    echo "GATE FAIL: STATUS_PUBLIC_URL is not a usable URL ($STATUS_PUBLIC_URL)" >&2
+    GATE_RESULTS+=("  $label unusable STATUS_PUBLIC_URL  ← FAIL")
+    GATE_FAILED=1
+    return 0
+  fi
+
+  local probe=(--max-time 8 --noproxy '*' --resolve "$host:$port:127.0.0.1")
+  local tmp
+  tmp=$(mktemp)
+  local code
+  code=$(curl -s "${probe[@]}" -o "$tmp" -w '%{http_code}' "$url" || echo 000)
+  if [[ ! "$code" =~ ^2 ]]; then
+    echo "GATE FAIL: status page origin returned $code ($url via the local nginx vhost)" >&2
+    GATE_RESULTS+=("  $label origin $code  ← FAIL")
+    GATE_FAILED=1
+    rm -f "$tmp"
+    return 0
+  fi
+
+  if [[ -n "${STATUS_FILE:-}" && -f "$STATUS_DIR/$STATUS_FILE" ]]; then
+    local deployed_md5 served_md5
+    deployed_md5=$(md5sum "$STATUS_DIR/$STATUS_FILE" | cut -d' ' -f1)
+    served_md5=$(md5sum "$tmp" | cut -d' ' -f1)
+    if [[ "$deployed_md5" != "$served_md5" ]]; then
+      echo "GATE FAIL: status page origin serves $served_md5 but this release installed $deployed_md5 (stale try_files?)" >&2
+      GATE_RESULTS+=("  $label artifact MISMATCH  ← FAIL")
+      GATE_FAILED=1
+      rm -f "$tmp"
+      return 0
+    fi
+    GATE_RESULTS+=("  $label artifact matches $STATUS_FILE")
+  fi
+  rm -f "$tmp"
+
+  local feed_code
+  feed_code=$(curl -s "${probe[@]}" -o /dev/null -w '%{http_code}' "$scheme://$authority/api/status" || echo 000)
+  if [[ ! "$feed_code" =~ ^2 ]]; then
+    echo "GATE FAIL: status feed returned $feed_code ($scheme://$authority/api/status)" >&2
+    GATE_RESULTS+=("  $label feed $feed_code  ← FAIL")
+    GATE_FAILED=1
+    return 0
+  fi
+  GATE_RESULTS+=("  $label feed $feed_code")
+
+  local resolved
+  resolved=$(getent hosts "$host" 2>/dev/null | awk 'NR==1{print $1}')
+  STATUS_PUBLIC_DNS_STATE="unresolved"
+  if [[ -n "$resolved" ]]; then
+    STATUS_PUBLIC_DNS_STATE="resolved"
+    STATUS_PUBLIC_REACHABLE=false
+    local failed_before="${GATE_FAILED:-0}"
+    gate_check "$label" "$url"
+    if [[ "${GATE_FAILED:-0}" == "$failed_before" ]]; then
+      STATUS_PUBLIC_REACHABLE=true
+    fi
+    return 0
+  fi
+
+  if [[ "${STATUS_GATE_REQUIRE_PUBLIC:-0}" == "1" ]]; then
+    echo "GATE FAIL: status hostname $host does not resolve in DNS (STATUS_GATE_REQUIRE_PUBLIC=1)" >&2
+    GATE_RESULTS+=("  $label DNS unresolved (strict)  ← FAIL")
+    GATE_FAILED=1
+    return 0
+  fi
+
+  local app_host app_ip
+  app_host="${APP_PUBLIC_URL#*://}"
+  app_host="${app_host%%/*}"
+  app_host="${app_host%%:*}"
+  app_ip=$(getent hosts "$app_host" 2>/dev/null | awk 'NR==1{print $1}')
+  echo "GATE WARN: status hostname $host has no DNS record — the status page is served correctly by the origin, but https://$host/ is unreachable from the public internet." >&2
+  if [[ -n "$app_ip" ]]; then
+    echo "         fix: add an A record $host -> $app_ip in the DNSPod zone for topodrive.top (DNS console access is required; the repository cannot do it)." >&2
+  fi
+  GATE_RESULTS+=("  $label origin ok (public DNS missing for $host)")
 }
 
 # ─── Site-only release ─────────────────────────────────────────────────
@@ -1526,7 +1649,7 @@ if [[ -n "${APP_FILE:-}" && -f "$APP_DEPLOYED_PATH" ]]; then
 fi
 
 gate_check "marketing site      " "${SITE_PUBLIC_URL%/}/"
-gate_check "status page         " "${STATUS_PUBLIC_URL%/}/"
+status_page_gate_check
 
 # 4.5c. Mobile bootstrap contract through the exact public `/api/v2` path the
 # APK and SPA use. This catches stale nginx rewrites, a mismatched APP_URL in
@@ -1712,6 +1835,8 @@ if [[ $GATE_FAILED -eq 0 ]]; then
       "frontendReachable": true,
       "siteReachable": true,
       "statusReachable": true,
+      "statusPublicDns": "${STATUS_PUBLIC_DNS_STATE:-unknown}",
+      "statusPublicReachable": ${STATUS_PUBLIC_REACHABLE:-false},
       "mobileBootstrapAligned": true,
       "mobileApiDatabaseReachable": true,
       "apiConfigJsonValid": true,
