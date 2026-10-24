@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { rgbChannels } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 const id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
@@ -12,8 +13,11 @@ test('reference home keeps its bottom composer and phone configuration usable', 
   const composer = page.locator('#composerInputWrap');
   /* The phone composer's dark surface is the ladder's L4 rung (#181818) —
      docs/ref/mobile-reference-2026-10-04.md pins "composer #181818" and
-     themes.css ships that value. */
-  await expect(composer).toHaveCSS('background-color', 'rgb(24, 24, 24)');
+     themes.css ships that value. The layered palette expresses the surface
+     as a translucent `color(srgb …)`, so compare the resolved channels: the
+     pinned hue is unchanged, only its notation and alpha are. */
+  const composerBackground = await composer.evaluate((el) => getComputedStyle(el).backgroundColor);
+  expect(rgbChannels(composerBackground)).toEqual([24, 24, 24]);
   await expect(page.locator('#composerPrimaryBtn .icon-arrow')).toBeVisible();
   const rect = await composer.boundingBox();
   expect(rect.x).toBe(16);

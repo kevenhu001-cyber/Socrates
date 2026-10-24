@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { gotoAndSettle } from './_lib.mjs';
+import { gotoAndSettle, rgbChannels } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test('light conversation home has a neutral readable palette and balanced composer position', async ({ page }) => {
@@ -38,7 +38,6 @@ test('light conversation home has a neutral readable palette and balanced compos
       fontFamily: getComputedStyle(document.querySelector('#topicTitle')).fontFamily,
     };
   });
-  const rgbChannels = (value) => (value.match(/\d+/g) ?? []).slice(0, 3).map(Number);
   const luminance = (value) => {
     const channels = rgbChannels(value).map((channel) => {
       const normalized = channel / 255;

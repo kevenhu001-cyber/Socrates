@@ -163,7 +163,11 @@
   }
   #appShell .library-directory .library-head-left h1 {
     font-size: var(--ui-text-page);
-    line-height: 1.35;
+    /* 36px, not 1.35: the Plugins heading on the same surface is 24px on a
+       36px line box, and a heading that changes height when the sidebar
+       switches surface shifts everything under it. The base rule below
+       already uses 36px for the same heading. */
+    line-height: 36px;
   }
 }
 

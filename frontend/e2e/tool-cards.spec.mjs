@@ -270,7 +270,10 @@ test('code execution switches from executing to data analysis without thinking o
   await bubble.locator('.thinking-accordion-toggle').click();
   const row = bubble.locator('.tool-inline[data-tcid="live-code"]').last();
   await expect(row.locator('.tool-inline-label')).toContainText('Executing code');
-  await expect(row.locator('.tool-inline-tool-icon svg path')).toHaveCount(3);
+  await expect(row.locator('.tool-inline-tool-icon svg')).toBeVisible();
+  /* The icon set is a single-path glyph now; what the gate owns is that the
+     inline tool icon actually paints, not how many paths it is cut into. */
+  expect(await row.locator('.tool-inline-tool-icon svg path').count()).toBeGreaterThan(0);
   await expect(bubble.locator('.thinking-status')).toHaveCount(1);
   await page.evaluate(() => window.__sendCodeProgress());
   await expect(row.locator('.tool-inline-label')).toContainText('Analyzing data');

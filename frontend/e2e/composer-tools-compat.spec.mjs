@@ -92,12 +92,10 @@ test('Composer tools menu opens via legacy entry point and React mirrors state',
   const desktopItems = menu.locator('.composer-tools-desktop-items [data-composer-action]');
   await expect(desktopItems).toHaveCount(10);
   await expect(desktopItems.nth(0)).toContainText('Upload files');
-  /* Footer filter narrows the expanded list. */
-  await menu.locator('.composer-tools-footer-search input').fill('exam');
-  await expect(menu.locator('.composer-tools-desktop-items [data-composer-action]')).toHaveCount(1);
-  await expect(menu.locator('.composer-tools-desktop-items [data-composer-action]').first()).toContainText('Generate exam');
-  await menu.locator('.composer-tools-footer-search input').fill('');
-  await expect(menu.locator('.composer-tools-desktop-items [data-composer-action]')).toHaveCount(10);
+  /* The menu carries no filter field, so the whole list is always shown and
+     nothing can be narrowed away. */
+  await expect(menu.locator('.composer-tools-footer-search')).toHaveCount(0);
+  await expect(desktopItems.filter({ hasText: 'Generate exam' })).toHaveCount(1);
   await expect(menu.locator('.composer-tools-desktop-items .composer-tools-group-label').first())
     .toContainText(/Add context|添加资料/);
   await page.screenshot({

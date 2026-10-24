@@ -74,7 +74,7 @@ test('canceling the chat reset keeps the connected plugin unselected', async ({ 
   await expect(page.locator('.composer-plugin-chip')).toHaveCount(0);
 });
 
-test('plus menu supports real connector search, multi-select, and removal', async ({ page }) => {
+test('plus menu supports connector multi-select and removal', async ({ page }) => {
   await mockAuthedApp(page, { lang: 'en' });
   await mockConnectedCatalog(page);
   await gotoAndSettle(page, '/');
@@ -86,13 +86,12 @@ test('plus menu supports real connector search, multi-select, and removal', asyn
   await expect(menu.locator('[data-composer-plugin]')).toHaveCount(2);
   // Disconnected connectors stay out of the composer roster.
   await expect(menu.locator('[data-composer-plugin="gmail"]')).toHaveCount(0);
-
-  const search = menu.locator('.composer-tools-search input');
-  await search.fill('notion');
-  await expect(menu.locator('[data-composer-plugin]')).toHaveCount(1);
+  // The composer roster carries no filter field any more, so every connected
+  // app stays on screen.
+  await expect(menu.locator('.composer-tools-search')).toHaveCount(0);
   await expect(menu.locator('[data-composer-plugin="notion"]')).toBeVisible();
+  await expect(menu.locator('[data-composer-plugin="github"]')).toBeVisible();
 
-  await search.fill('');
   await page.locator('[data-composer-plugin="github"]').click();
   await page.locator('[data-composer-plugin="notion"]').click();
   await expect(page.locator('#composerInputWrap .composer-plugin-chip')).toHaveCount(2);

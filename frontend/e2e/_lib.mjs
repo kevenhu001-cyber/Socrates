@@ -8,6 +8,31 @@ import { test as base } from '@playwright/test';
 
 export const test = base;
 
+/**
+ * Resolved 8-bit RGB channels of a computed colour value.
+ *
+ * The layered palette expresses its surfaces as `color(srgb r g b / a)` —
+ * channels are 0..1 — while plain tokens stay `rgb(r, g, b)` with 0..255
+ * channels. Comparing the serialised strings made every colour gate fail the
+ * moment a surface became translucent, even though the hue was unchanged.
+ * Compare the channels instead: the geometry and palette assertions keep
+ * their meaning, and only the notation stops mattering.
+ */
+export function rgbChannels(value) {
+  const text = String(value ?? '');
+  const numbers = (text.match(/[\d.]+/g) ?? []).map(Number);
+  if (numbers.length < 3) return null;
+  const scale = text.includes('srgb') ? 255 : 1;
+  return numbers.slice(0, 3).map((channel) => Math.round(channel * scale));
+}
+
+/** True when two computed colours resolve to the same RGB channels. */
+export function sameRgb(left, right) {
+  const a = rgbChannels(left);
+  const b = rgbChannels(right);
+  return a !== null && b !== null && a.every((channel, index) => channel === b[index]);
+}
+
 export const REQUIRED_BINDINGS = [
   'setLang', 't', 'setRecentsSearch', 'setRecentsFilter', 'clearRecentsFilter',
   'openSettings', 'closeSettings', 'openUsageModal', 'closeUsageModal',

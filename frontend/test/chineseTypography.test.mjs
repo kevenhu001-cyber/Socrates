@@ -28,6 +28,25 @@ test('Chinese prose uses full-width punctuation and matched, nested quotes', () 
   assert.equal(normalizeChineseProse('他说: “你好!"'), '他说： “你好！”');
 });
 
+test('abbreviations keep their trailing period instead of ending the sentence', () => {
+  /* The period in "e.g." closes the abbreviation; turning it into a Chinese
+     full stop split the sentence in half ("例如 e.g。这样写。"). */
+  assert.equal(normalizeChineseProse('例如 e.g. 这样写。'), '例如 e.g. 这样写。');
+  assert.equal(normalizeChineseProse('也就是说 i.e. 这一点。'), '也就是说 i.e. 这一点。');
+  assert.equal(normalizeChineseProse('比如 U.S. 的数据。'), '比如 U.S. 的数据。');
+  assert.equal(normalizeChineseProse('参考 Dr. Smith 的观点。'), '参考 Dr. Smith 的观点。');
+  assert.equal(normalizeChineseProse('版本 No. 5 的说明。'), '版本 No. 5 的说明。');
+  assert.equal(normalizeChineseProse('见 Fig. 3 的说明。'), '见 Fig. 3 的说明。');
+  assert.equal(normalizeChineseProse('换言之 etc. 都可以。'), '换言之 etc. 都可以。');
+  assert.equal(normalizeChineseProse('对比 A vs. B 的差异。'), '对比 A vs. B 的差异。');
+  assert.equal(normalizeChineseProse('例如 e.g.'), '例如 e.g.');
+  /* A word that merely ends a Chinese clause still takes the full stop, and
+     a dotted identifier is not an abbreviation. */
+  assert.equal(normalizeChineseProse('使用 React.'), '使用 React。');
+  assert.equal(normalizeChineseProse('使用 Node.js.'), '使用 Node.js。');
+  assert.equal(normalizeChineseProse('配置 src/main.ts 完成。'), '配置 src/main.ts 完成。');
+});
+
 test('URLs, file paths, JSON, formulas, numbers, versions and template data remain exact', () => {
   for (const data of [
     'https://example.test/中文?q=1,2', 'name@example.test', 'C:\\目录\\配置.json', '配置.json',

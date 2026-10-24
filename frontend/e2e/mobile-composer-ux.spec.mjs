@@ -9,7 +9,7 @@ async function enterChat(page) {
   });
 }
 
-test('mobile composer groups tools, filters actions, and reflects active search', async ({ page }) => {
+test('mobile composer groups tools and reflects the active tool', async ({ page }) => {
   await mockAuthedApp(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoAndSettle(page, '/');
@@ -25,13 +25,12 @@ test('mobile composer groups tools, filters actions, and reflects active search'
     .toContainText(/Add context|添加资料/);
   await expect(menu.locator('.composer-tools-mobile-items [data-composer-action="webSearch"]')).toBeVisible();
 
-  const search = menu.locator('.composer-tools-footer-search input');
-  await expect(search).toBeVisible();
-  await search.fill('write');
+  /* The plus menu carries no filter field any more: every action stays on
+     screen, so the roster never depends on a search box that is not there. */
+  await expect(menu.locator('.composer-tools-footer-search')).toHaveCount(0);
   await expect(menu.locator('.composer-tools-mobile-items [data-composer-action="write"]')).toBeVisible();
-  await expect(menu.locator('.composer-tools-mobile-items [data-composer-action="webSearch"]')).toHaveCount(0);
+  await expect(menu.locator('.composer-tools-mobile-items [data-composer-action="webSearch"]')).toBeVisible();
 
-  await search.fill('');
   await menu.locator('.composer-tools-mobile-items [data-composer-action="webSearch"]').click();
   await expect(menu).toHaveClass(/hidden/);
 

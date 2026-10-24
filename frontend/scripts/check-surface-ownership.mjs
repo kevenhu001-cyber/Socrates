@@ -127,16 +127,19 @@ for (const file of walk(STYLES)) {
  * this surface". It cannot answer "does another live file already say
  * something else about the same property", which is how several real defects
  * survived it: `.tier-badge` carried three font-sizes across three files, the
- * composer tools footer search had two heights in one popover, and the
- * `.recents-time-label` group header changed size between breakpoints. Each
+ * `.recents-time-label` group header changed size between breakpoints, and
+ * the composer tools footer search had two heights in one popover. Each
  * resolved silently by @import order, so the shipped value was whichever file
  * sorted last and the other declaration was invisible dead code that a later
  * edit could revive.
+ *
+ * The composer tools footer search entry was retired with the search control
+ * itself (2026-10-25): the class no longer has a rule anywhere, so the pair
+ * could never fire again and only looked like an active guard.
  */
 const duplicatePairs = [
   ['.tier-badge', 'font-size'],
   ['.recents-time-label', 'font-size'],
-  ['.composer-tools-footer-search', 'min-height'],
 ];
 
 /* Last simple selector of a compound: "#appShell .a .b" -> ".b". */

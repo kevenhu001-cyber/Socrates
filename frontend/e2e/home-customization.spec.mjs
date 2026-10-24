@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { gotoAndSettle } from './_lib.mjs';
+import { gotoAndSettle, sameRgb } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test('landing greeting stays one static line regardless of the hour', async ({ page }) => {
@@ -127,7 +127,7 @@ test('light conversation is readable and find opens at the upper right', async (
       text: value('#msgList .msg.assistant .msg-body', 'color'),
     };
   });
-  expect(colors.topBar).toBe(colors.page);
+  expect(sameRgb(colors.topBar, colors.page)).toBe(true);
   expect(colors.text).not.toBe(colors.page);
 
   await page.locator('#findBtn').click();

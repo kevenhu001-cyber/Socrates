@@ -1,3 +1,26 @@
+/** Abbreviations that keep their trailing period.
+ *
+ * The period in "e.g." / "U.S." / "Dr." closes the abbreviation; it does not
+ * end the sentence. Handing it to the Chinese full stop breaks the sentence
+ * in half ("例如 e.g。这样写。"), so the whole token stays ASCII. The dotted
+ * form is kept separate from the word form because a word may legitimately
+ * carry a sentence period after it ("使用 Node.js。") while an abbreviation
+ * never does. */
+const ABBREVIATION_WORDS = [
+  'Mr', 'Mrs', 'Ms', 'Dr', 'Prof', 'Sr', 'Jr', 'St', 'Mt', 'Rev', 'Gen', 'Col',
+  'Capt', 'Sgt', 'Lt', 'Maj', 'Hon', 'etc', 'vs', 'al', 'ca', 'cf', 'ibid', 'viz',
+  'resp', 'approx', 'incl', 'excl', 'orig', 'trans', 'est', 'Min', 'Max', 'Avg',
+  'Sec', 'No', 'Nos', 'Fig', 'Figs', 'Vol', 'Vols', 'Ch', 'Art', 'Para', 'Ref',
+  'Eq', 'Eqs', 'Tab', 'Inc', 'Ltd', 'Co', 'Corp', 'Dept', 'Univ', 'Misc',
+  'Ave', 'Blvd', 'Rd', 'Sq', 'Ft',
+];
+/* `(?:[A-Za-z]\.){2,}` covers the dotted initialisms — e.g. / i.e. / U.S. —
+   including their final period; the alternation covers the word forms. */
+const abbreviation = new RegExp(
+  `(?:[A-Za-z]\\.){2,}|\\b(?:${ABBREVIATION_WORDS.join('|')})\\.`,
+  'gi',
+);
+
 /** Chinese prose only. Call after Markdown parsing so syntax and attributes
  * never pass through this transform. Offsets stay stable: every edit is one
  * UTF-16 code unit, including paired Chinese quotes. */
@@ -7,6 +30,7 @@ export function normalizeChineseProse(text: string): string {
   const protect = (start: number, end: number) => protectedChars.fill(1, start, end);
   const technical = /https?:\/\/[^\s<>"'，。！？；（）]+|www\.[^\s<>"'，。！？；（）]+|[\w.+-]+@[\w.-]+\.[a-z]{2,}|[a-z]:[\\/][^\s<>"'，。！？；（）]+|(?:\.{1,2}\/|\/)[\p{L}\p{N}_.~/-]+|[\p{L}\p{N}_-]+\.[a-z][a-z\d_-]*(?:\.[a-z\d_-]+)*|\d+(?:[.,:/-]\d+)+|\{[\w]+\}(?::\{[\w]+\})*|\$\$[\s\S]*?\$\$|\$[^\n$]+\$|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\]/giu;
   for (const match of text.matchAll(technical)) protect(match.index, match.index + match[0].length);
+  for (const match of text.matchAll(abbreviation)) protect(match.index, match.index + match[0].length);
   for (const match of text.matchAll(/\b[a-z_]\w*\([^\p{Script=Han}()\n]*\)/giu)) protect(match.index, match.index + match[0].length);
   // Ordinals in headings and plain list labels are formatting, not prose.
   for (const match of text.matchAll(/^\s*\d+[.)]\s+/gm)) protect(match.index, match.index + match[0].length);
