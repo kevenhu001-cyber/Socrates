@@ -211,12 +211,21 @@ SH
   cat > "$base/bin/getent" <<'SH'
 #!/usr/bin/env bash
 # The status-page gate resolves the public hostname before deciding whether a
-# missing DNS record may pass the gate. Default to "does not resolve" so the
-# fixture exercises the DNS-missing path; MOCK_STATUS_DNS=resolved flips it.
-if [[ "${MOCK_STATUS_DNS:-missing}" == "resolved" ]]; then
-  printf '203.0.113.10   %s\n' "${2:-unknown}"
-fi
-exit 0
+# missing DNS record may pass the gate. Default to "no such host" (rc=2, the
+# shape a real resolver returns for NXDOMAIN); MOCK_STATUS_DNS=resolved flips
+# it, MOCK_STATUS_DNS=error emulates a resolver that failed outright.
+case "${MOCK_STATUS_DNS:-missing}" in
+  resolved)
+    printf '203.0.113.10   %s\n' "${2:-unknown}"
+    exit 0
+    ;;
+  error)
+    exit 4
+    ;;
+  *)
+    exit 2
+    ;;
+esac
 SH
 
   cat > "$base/bin/chown" <<'SH'
@@ -399,6 +408,13 @@ if run_deploy "$status_dns_strict_base" STATUS_GATE_REQUIRE_PUBLIC=1 >"$status_d
   exit 1
 fi
 grep -q 'status hostname status.topodrive.top does not resolve in DNS' "$status_dns_strict_base/output.log"
+
+status_dns_error_base=$(make_fixture status-dns-error)
+if run_deploy "$status_dns_error_base" MOCK_STATUS_DNS=error >"$status_dns_error_base/output.log" 2>&1; then
+  echo "status gate with a failed DNS lookup unexpectedly succeeded" >&2
+  exit 1
+fi
+grep -q 'GATE FAIL: DNS lookup for status.topodrive.top failed' "$status_dns_error_base/output.log"
 
 status_artifact_base=$(make_fixture status-artifact-mismatch)
 if run_deploy "$status_artifact_base" MOCK_STATUS_ARTIFACT_FAIL=1 >"$status_artifact_base/output.log" 2>&1; then

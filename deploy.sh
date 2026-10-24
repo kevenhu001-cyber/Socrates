@@ -752,8 +752,22 @@ status_page_gate_check() {
   fi
   GATE_RESULTS+=("  $label feed $feed_code")
 
-  local resolved
-  resolved=$(getent hosts "$host" 2>/dev/null | awk 'NR==1{print $1}')
+  local resolved="" dns_rc=0
+  if command -v timeout >/dev/null 2>&1; then
+    resolved=$(timeout 15 getent hosts "$host" 2>/dev/null) || dns_rc=$?
+  else
+    resolved=$(getent hosts "$host" 2>/dev/null) || dns_rc=$?
+  fi
+  resolved=$(printf '%s' "$resolved" | awk 'NR==1{print $1}')
+  if [[ "$dns_rc" != "0" && "$dns_rc" != "2" ]]; then
+    # The lookup itself failed (resolver down, timeout, ...) — that is not the
+    # same as "this hostname has no record", and it must not downgrade a check
+    # the release could not perform.
+    echo "GATE FAIL: DNS lookup for $host failed (rc=$dns_rc)" >&2
+    GATE_RESULTS+=("  $label DNS lookup failed (rc=$dns_rc)  ← FAIL")
+    GATE_FAILED=1
+    return 0
+  fi
   STATUS_PUBLIC_DNS_STATE="unresolved"
   if [[ -n "$resolved" ]]; then
     STATUS_PUBLIC_DNS_STATE="resolved"
@@ -777,7 +791,9 @@ status_page_gate_check() {
   app_host="${APP_PUBLIC_URL#*://}"
   app_host="${app_host%%/*}"
   app_host="${app_host%%:*}"
-  app_ip=$(getent hosts "$app_host" 2>/dev/null | awk 'NR==1{print $1}')
+  # `set -o pipefail` makes a failing lookup fail the whole pipeline, so the
+  # lookup is guarded — a missing app record only costs the hint line.
+  app_ip=$( { getent hosts "$app_host" 2>/dev/null || true; } | awk 'NR==1{print $1}')
   echo "GATE WARN: status hostname $host has no DNS record — the status page is served correctly by the origin, but https://$host/ is unreachable from the public internet." >&2
   if [[ -n "$app_ip" ]]; then
     echo "         fix: add an A record $host -> $app_ip in the DNSPod zone for topodrive.top (DNS console access is required; the repository cannot do it)." >&2
