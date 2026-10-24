@@ -266,8 +266,8 @@ for ci_case in failure missing unverifiable cancelled in-progress unknown; do
     exit 1
   fi
   case "$ci_case" in
-    failure|cancelled|in-progress|unknown) grep -q 'failing:.*CI(' "$ci_base/output.log" ;;
-    missing) grep -q 'no completed run for this commit:.*CI' "$ci_base/output.log" ;;
+    failure|cancelled|in-progress|unknown) grep -q 'failing:.*ci\.yml(' "$ci_base/output.log" ;;
+    missing) grep -q 'no completed run for this commit:.*ci\.yml' "$ci_base/output.log" ;;
     unverifiable) grep -q 'could not verify the merge gate' "$ci_base/output.log" ;;
   esac
 done
@@ -275,7 +275,7 @@ done
 # Probe the actual gate function in a clean child shell so missing commands and
 # an invalid checkout can be tested without changing deploy's full-run fixture.
 ci_gate_source="$WORK/ci-gate.sh"
-{ echo 'REQUIRED_CI_WORKFLOWS="CI Security"'; awk '/^ci_gate_check\(\)/,/^}/' "$ROOT/deploy.sh"; } > "$ci_gate_source"
+{ echo 'REQUIRED_CI_WORKFLOWS="ci.yml security.yml"'; awk '/^ci_gate_check\(\)/,/^}/' "$ROOT/deploy.sh"; } > "$ci_gate_source"
 mkdir -p "$WORK/only-git" "$WORK/only-gh" "$WORK/only-gh-bin"
 cat > "$WORK/only-gh-bin/git" <<'SH'
 #!/usr/bin/env bash
